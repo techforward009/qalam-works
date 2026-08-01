@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Noto_Nastaliq_Urdu, Inter } from "next-[#121417]/font/google";
+import { Noto_Nastaliq_Urdu, Inter } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ 
