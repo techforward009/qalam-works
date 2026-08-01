@@ -1,21 +1,17 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  :root {
-    --background: #fdfbf7; /* کلاسک کاغذی سفید / Off-white */
-    --foreground: #111827; /* گہرا سلیٹی ٹیکسٹ تاکہ آنکھوں پر بوجھ نہ پڑے */
-  }
-  
-  .dark {
-    --background: #1a1d20; /* نرم چارکول ڈارک (Pitch Black کی جگہ) */
-    --foreground: #f9fafb; /* روشن سفید ٹیکسٹ (High Contrast) */
-  }
+:root {
+  --background: #fdfbf7;
+  --foreground: #111827;
+}
+
+.dark {
+  --background: #121417;
+  --foreground: #f9fafb;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
