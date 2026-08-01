@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Feather, Sparkles, Layers, Sliders, Layout, Type } from "lucide-react";
+import { Feather, Sparkles, Layers, Sliders, Layout, Type, Wrench, Box, Briefcase } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Home() {
@@ -13,6 +13,8 @@ export default function Home() {
       {/* Navigation Header */}
       <header className="border-b border-slate-200 dark:border-slate-800/80 backdrop-blur-md bg-white/70 dark:bg-[#121417]/70 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          
+          {/* 1. Logo Section */}
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
               <Feather className="w-6 h-6 hover:rotate-12 transition-transform duration-300 cursor-pointer" />
@@ -22,8 +24,24 @@ export default function Home() {
             </span>
           </div>
 
+          {/* 2. Middle Navigation Buttons (ٹولز، سینڈباکس، سروسز) */}
+          <nav className="hidden md:flex items-center gap-6 font-medium text-sm text-slate-600 dark:text-slate-300">
+            <a href="#tools" className="flex items-center gap-1.5 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+              <Wrench className="w-4 h-4 text-amber-500" />
+              <span>ٹولز</span>
+            </a>
+            <a href="#sandbox" className="flex items-center gap-1.5 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+              <Box className="w-4 h-4 text-amber-500" />
+              <span>سینڈباکس</span>
+            </a>
+            <a href="#services" className="flex items-center gap-1.5 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+              <Briefcase className="w-4 h-4 text-amber-500" />
+              <span>سروسز</span>
+            </a>
+          </nav>
+
+          {/* 3. Action Section (Theme Toggle & Explore Suite) */}
           <div className="flex items-center gap-3">
-            {/* Theme Switcher Button */}
             <ThemeToggle />
             
             <button 
@@ -36,9 +54,10 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Hero Section */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20">
-        <div className="text-center space-y-6">
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20">
+        {/* Hero Banner */}
+        <div className="max-w-5xl mx-auto text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-medium">
             <Sparkles className="w-4 h-4" />
             <span>Modern Digital Atelier for Typography</span>
@@ -53,8 +72,8 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Live Typography Sandbox */}
-        <section className="mt-14 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a1d21] shadow-xl transition-all">
+        {/* Live Typography Sandbox Section */}
+        <section id="sandbox" className="mt-14 max-w-5xl mx-auto p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a1d21] shadow-xl transition-all">
           <div className="flex flex-col sm:flex-row items-center justify-between pb-6 mb-6 border-b border-slate-100 dark:border-slate-800 gap-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
               <Sliders className="w-4 h-4 text-amber-500" />
@@ -75,7 +94,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Interactive Text Preview */}
+          {/* Textarea Preview */}
           <div className="min-h-[140px] flex items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-[#121417] border border-slate-200/60 dark:border-slate-800">
             <textarea
               value={sampleText}
@@ -87,21 +106,21 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Feature Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-          <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white/50 dark:bg-[#1a1d21]/50 backdrop-blur-sm">
+        {/* Bottom Feature Cards Grid */}
+        <section id="tools" className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-5xl mx-auto">
+          <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#1a1d21] shadow-sm hover:shadow-md transition-shadow">
             <Layout className="w-8 h-8 text-amber-500 mb-4" />
             <h3 className="font-bold text-lg mb-2 text-slate-800 dark:text-white">متحرک لے آؤٹ</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">صفحات کی خطاطی اور جدید لے آؤٹ کے لیے مخصوص ٹولز۔</p>
           </div>
 
-          <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white/50 dark:bg-[#1a1d21]/50 backdrop-blur-sm">
+          <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#1a1d21] shadow-sm hover:shadow-md transition-shadow">
             <Type className="w-8 h-8 text-amber-500 mb-4" />
             <h3 className="font-bold text-lg mb-2 text-slate-800 dark:text-white">ٹائپوگرافی سینڈ باکس</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">متن کا سائز، فاصلے اور نستعلیق فونٹس لائیو ٹیسٹ کریں۔</p>
           </div>
 
-          <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white/50 dark:bg-[#1a1d21]/50 backdrop-blur-sm">
+          <div id="services" className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#1a1d21] shadow-sm hover:shadow-md transition-shadow">
             <Layers className="w-8 h-8 text-amber-500 mb-4" />
             <h3 className="font-bold text-lg mb-2 text-slate-800 dark:text-white">ملٹی لینگویج سوٹ</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">اردو، عربی اور فارسی متن کی پروسیسنگ کا باقاعدہ نظام۔</p>
