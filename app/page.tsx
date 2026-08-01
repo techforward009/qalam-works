@@ -27,7 +27,7 @@ export default function Home() {
   const [sampleText, setSampleText] = useState("قلم ورکس — اردو اور عربی ٹائپوگرافی کا جدید مرکز");
 
   return (
-    <div dir="rtl" className="min-h-screen bg-amber-50/40 dark:bg-[#121417] text-slate-900 dark:text-slate-100 transition-colors duration-300 font-sans flex flex-col justify-between">
+    <div dir="rtl" className="min-h-screen bg-amber-50/40 dark:bg-[#121417] text-slate-900 dark:text-slate-100 transition-colors duration-300 flex flex-col justify-between">
       <div>
         {/* Navigation Header */}
         <header className="border-b border-slate-200 dark:border-slate-800/80 backdrop-blur-md bg-white/70 dark:bg-[#121417]/70 sticky top-0 z-50">
@@ -44,7 +44,7 @@ export default function Home() {
             </div>
 
             {/* Navigation Buttons */}
-            <nav className="hidden md:flex items-center gap-8 font-medium text-sm text-slate-600 dark:text-slate-300">
+            <nav className="hidden md:flex items-center gap-8 font-medium text-base text-slate-600 dark:text-slate-300 font-nastaliq">
               <a href="#tools" className="flex items-center gap-2 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
                 <Wrench className="w-4 h-4 text-amber-500" />
                 <span>ٹولز</span>
@@ -82,7 +82,7 @@ export default function Home() {
               <span>Modern Digital Atelier for Typography</span>
             </div>
 
-            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-[2.2] font-nastaliq">
               اردو اور عربی ٹائپوگرافی اور ٹیکسٹ پروسیسنگ کا <span className="text-amber-600 dark:text-amber-400">جدید مرکز</span>
             </h1>
 
@@ -99,8 +99,8 @@ export default function Home() {
                 <span>Live Customizer</span>
               </div>
 
-              <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
-                <span className="text-xs text-slate-500 dark:text-slate-400">سائز: {fontSize}px</span>
+              <div className="flex items-center gap-4 w-full sm:w-auto justify-end font-nastaliq">
+                <span className="text-sm text-slate-500 dark:text-slate-400">سائز: {fontSize}px</span>
                 <input
                   type="range"
                   min="18"
@@ -113,13 +113,13 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Textarea Preview */}
-            <div className="min-h-[140px] flex items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-[#121417] border border-slate-200/60 dark:border-slate-800">
+            {/* Textarea Preview (Renders pure Nastaliq font) */}
+            <div className="min-h-[160px] flex items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-[#121417] border border-slate-200/60 dark:border-slate-800">
               <textarea
                 value={sampleText}
                 onChange={(e) => setSampleText(e.target.value)}
                 style={{ fontSize: `${fontSize}px` }}
-                className="w-full bg-transparent border-none outline-none text-center text-slate-800 dark:text-slate-100 resize-none leading-relaxed font-sans"
+                className="w-full bg-transparent border-none outline-none text-center text-slate-800 dark:text-slate-100 resize-none leading-[2.2] font-nastaliq"
                 rows={2}
               />
             </div>
@@ -129,30 +129,30 @@ export default function Home() {
           <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-5xl mx-auto">
             <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#1a1d21] shadow-sm hover:shadow-md transition-shadow">
               <Layout className="w-8 h-8 text-amber-500 mb-4" />
-              <h3 className="font-bold text-lg mb-2 text-slate-800 dark:text-white">متحرک لے آؤٹ</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">صفحات کی خطاطی اور جدید لے آؤٹ کے لیے مخصوص ٹولز۔</p>
+              <h3 className="font-bold text-xl mb-2 text-slate-800 dark:text-white font-nastaliq">متحرک لے آؤٹ</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-nastaliq leading-[2]">صفحات کی خطاطی اور جدید لے آؤٹ کے لیے مخصوص ٹولز۔</p>
             </div>
 
             <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#1a1d21] shadow-sm hover:shadow-md transition-shadow">
               <Type className="w-8 h-8 text-amber-500 mb-4" />
-              <h3 className="font-bold text-lg mb-2 text-slate-800 dark:text-white">ٹائپوگرافی سینڈ باکس</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">متن کا سائز، فاصلے اور نستعلیق فونٹس لائیو ٹیسٹ کریں۔</p>
+              <h3 className="font-bold text-xl mb-2 text-slate-800 dark:text-white font-nastaliq">ٹائپوگرافی سینڈ باکس</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-nastaliq leading-[2]">متن کا سائز، فاصلے اور نستعلیق فونٹس لائیو ٹیسٹ کریں۔</p>
             </div>
 
             <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#1a1d21] shadow-sm hover:shadow-md transition-shadow">
               <Layers className="w-8 h-8 text-amber-500 mb-4" />
-              <h3 className="font-bold text-lg mb-2 text-slate-800 dark:text-white">ملٹی لینگویج سوٹ</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">اردو، عربی اور فارسی متن کی پروسیسنگ کا باقاعدہ نظام۔</p>
+              <h3 className="font-bold text-xl mb-2 text-slate-800 dark:text-white font-nastaliq">ملٹی لینگویج سوٹ</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-nastaliq leading-[2]">اردو، عربی اور فارسی متن کی پروسیسنگ کا باقاعدہ نظام۔</p>
             </div>
           </section>
 
           {/* Section 1: Utility Suite (کارآمد ٹولز) */}
           <section id="tools" className="mt-20 max-w-5xl mx-auto">
             <div className="text-center space-y-2 mb-10">
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
-                کارآمد ٹولز <span className="text-slate-500 dark:text-slate-400 font-normal text-xl">(Utility Suite)</span>
+              <h2 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-white font-nastaliq leading-[2]">
+                کارآمد ٹولز <span className="text-slate-500 dark:text-slate-400 font-normal text-xl font-sans">(Utility Suite)</span>
               </h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400">اردو اور عربی متن کی تصحیح اور فارمیٹنگ کے خودکار حل</p>
+              <p className="text-base text-slate-600 dark:text-slate-400 font-nastaliq">اردو اور عربی متن کی تصحیح اور فارمیٹنگ کے خودکار حل</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -161,7 +161,7 @@ export default function Home() {
                   <Space className="w-6 h-6" />
                 </div>
                 <h3 className="font-bold text-base mb-1 text-slate-800 dark:text-white">Spacing & Kerning</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">الفاظ اور حروف کے درمیانی فاصلے کی خودکار درستگی۔</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-nastaliq leading-[2]">الفاظ اور حروف کے درمیانی فاصلے کی خودکار درستگی۔</p>
               </div>
 
               <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#1a1d21] hover:border-amber-500/50 transition-all text-center group cursor-pointer">
@@ -169,7 +169,7 @@ export default function Home() {
                   <Code className="w-6 h-6" />
                 </div>
                 <h3 className="font-bold text-base mb-1 text-slate-800 dark:text-white">Unicode Standardizer</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">مختلف فونٹس کے نان سٹینڈرڈ کوڈز کو سٹینڈرڈ میں بدلنا۔</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-nastaliq leading-[2]">مختلف فونٹس کے نان سٹینڈرڈ کوڈز کو سٹینڈرڈ میں بدلنا۔</p>
               </div>
 
               <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#1a1d21] hover:border-amber-500/50 transition-all text-center group cursor-pointer">
@@ -177,7 +177,7 @@ export default function Home() {
                   <Scissors className="w-6 h-6" />
                 </div>
                 <h3 className="font-bold text-base mb-1 text-slate-800 dark:text-white">Tashkeel Stripper</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">عربی اور اردو متن سے اعراب اور اعراب کی صفائی۔</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-nastaliq leading-[2]">عربی اور اردو متن سے اعراب اور اعراب کی صفائی۔</p>
               </div>
 
               <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#1a1d21] hover:border-amber-500/50 transition-all text-center group cursor-pointer">
@@ -185,7 +185,7 @@ export default function Home() {
                   <Calculator className="w-6 h-6" />
                 </div>
                 <h3 className="font-bold text-base mb-1 text-slate-800 dark:text-white">Smart Word Counter</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">الفاظ، حروف اور حرکات کی سمارٹ گنتی۔</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 font-nastaliq leading-[2]">الفاظ، حروف اور حرکات کی سمارٹ گنتی۔</p>
               </div>
             </div>
           </section>
@@ -193,10 +193,10 @@ export default function Home() {
           {/* Section 2: Professional Services (پیشہ ورانہ خدمات) */}
           <section id="services" className="mt-20 max-w-5xl mx-auto">
             <div className="text-center space-y-2 mb-10">
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
-                پیشہ ورانہ خدمات <span className="text-slate-500 dark:text-slate-400 font-normal text-xl">(Services)</span>
+              <h2 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-white font-nastaliq leading-[2]">
+                پیشہ ورانہ خدمات <span className="text-slate-500 dark:text-slate-400 font-normal text-xl font-sans">(Services)</span>
               </h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400">کتابوں کی کمپوزنگ، ترجمہ اور پبلشنگ کی اعلیٰ ترین کوالٹی</p>
+              <p className="text-base text-slate-600 dark:text-slate-400 font-nastaliq">کتابوں کی کمپوزنگ، ترجمہ اور پبلشنگ کی اعلیٰ ترین کوالٹی</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -206,9 +206,9 @@ export default function Home() {
                     <BookOpen className="w-6 h-6" />
                   </div>
                   <h3 className="font-bold text-lg mb-2 text-slate-800 dark:text-white">Book Compositing</h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6">کتاب ترتیب و تزئین، لے آؤٹ اور نفیس ٹائپوگرافی۔</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-[2] font-nastaliq mb-6">کتاب ترتیب و تزئین، لے آؤٹ اور نفیس ٹائپوگرافی۔</p>
                 </div>
-                <a href="#" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:gap-2 transition-all">
+                <a href="#" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:gap-2 transition-all font-nastaliq">
                   <span>تفصیلات دیکھیں</span>
                   <ArrowLeft className="w-3.5 h-3.5" />
                 </a>
@@ -220,9 +220,9 @@ export default function Home() {
                     <Languages className="w-6 h-6" />
                   </div>
                   <h3 className="font-bold text-lg mb-2 text-slate-800 dark:text-white">Multilingual Translation</h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6">اردو، عربی، فارسی اور انگریزی کے درست تراجم۔</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-[2] font-nastaliq mb-6">اردو، عربی، فارسی اور انگریزی کے درست تراجم۔</p>
                 </div>
-                <a href="#" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:gap-2 transition-all">
+                <a href="#" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:gap-2 transition-all font-nastaliq">
                   <span>تفصیلات دیکھیں</span>
                   <ArrowLeft className="w-3.5 h-3.5" />
                 </a>
@@ -234,9 +234,9 @@ export default function Home() {
                     <Book className="w-6 h-6" />
                   </div>
                   <h3 className="font-bold text-lg mb-2 text-slate-800 dark:text-white">Desktop Publishing (DTP)</h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6">پرنٹ ریڈی ڈیزائنز، کور پیجز اور رسائل کی سیٹنگ۔</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-[2] font-nastaliq mb-6">پرنٹ ریڈی ڈیزائنز، کور پیجز اور رسائل کی سیٹنگ۔</p>
                 </div>
-                <a href="#" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:gap-2 transition-all">
+                <a href="#" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:gap-2 transition-all font-nastaliq">
                   <span>تفصیلات دیکھیں</span>
                   <ArrowLeft className="w-3.5 h-3.5" />
                 </a>
@@ -246,7 +246,7 @@ export default function Home() {
         </main>
       </div>
 
-      {/* Footer Section (With Strictly Forced LTR Span for the Dot Fix) */}
+      {/* Footer Section */}
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-[#121417]/80 backdrop-blur-sm py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-slate-500 dark:text-slate-400">
