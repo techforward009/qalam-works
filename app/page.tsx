@@ -246,14 +246,18 @@ export default function Home() {
         </main>
       </div>
 
-      {/* Footer Section */}
+      {/* Footer Section (With Strictly Forced LTR Span for the Dot Fix) */}
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-[#121417]/80 backdrop-blur-sm py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <pdir="ltr" className="text-xs text-slate-500 dark:text-slate-400 text-left">
-            © 2026 Qalam Works. The Modern Atelier for Urdu & Arabic Typography.
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            <span dir="ltr" className="inline-block">
+              &copy; 2026 Qalam Works. The Modern Atelier for Urdu &amp; Arabic Typography&#46;
+            </span>
           </p>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-slate-700 dark:text-slate-200 dir-ltr">Qalam Works</span>
+            <span dir="ltr" className="font-bold text-sm text-slate-700 dark:text-slate-200">
+              Qalam Works
+            </span>
             <div className="p-1 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
               <PenTool className="w-4 h-4" />
             </div>
