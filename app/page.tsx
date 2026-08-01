@@ -86,8 +86,11 @@ export default function Home() {
               اردو اور عربی ٹائپوگرافی اور ٹیکسٹ پروسیسنگ کا <span className="text-amber-600 dark:text-amber-400">جدید مرکز</span>
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto dir-ltr">
-              The Modern Digital Atelier & Workspace for Text, Language, and Urdu/Arabic Typography.
+            {/* Hero Subtitle with Forced LTR Dot Fix */}
+            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
+              <span dir="ltr" className="inline-block">
+                The Modern Digital Atelier &amp; Workspace for Text, Language, and Urdu/Arabic Typography&#46;
+              </span>
             </p>
           </div>
 
@@ -113,7 +116,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Textarea Preview (Renders pure Nastaliq font) */}
+            {/* Textarea Preview */}
             <div className="min-h-[160px] flex items-center justify-center p-4 rounded-xl bg-slate-50 dark:bg-[#121417] border border-slate-200/60 dark:border-slate-800">
               <textarea
                 value={sampleText}
@@ -146,7 +149,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Section 1: Utility Suite (کارآمد ٹولز) */}
+          {/* Section 1: Utility Suite */}
           <section id="tools" className="mt-20 max-w-5xl mx-auto">
             <div className="text-center space-y-2 mb-10">
               <h2 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-white font-nastaliq leading-[2]">
@@ -190,7 +193,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Section 2: Professional Services (پیشہ ورانہ خدمات) */}
+          {/* Section 2: Professional Services */}
           <section id="services" className="mt-20 max-w-5xl mx-auto">
             <div className="text-center space-y-2 mb-10">
               <h2 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-white font-nastaliq leading-[2]">
