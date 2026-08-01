@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Feather, Sparkles, Layers, Sliders, Layout, Type, Wrench, Box, Briefcase } from "lucide-react";
+import { PenTool, Sparkles, Layers, Sliders, Layout, Type, Wrench, Box, Briefcase } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Home() {
@@ -9,38 +9,38 @@ export default function Home() {
   const [sampleText, setSampleText] = useState("قلم ورکس — اردو اور عربی ٹائپوگرافی کا جدید مرکز");
 
   return (
-    <div className="min-h-screen bg-amber-50/40 dark:bg-[#121417] text-slate-900 dark:text-slate-100 transition-colors duration-300">
+    <div dir="rtl" className="min-h-screen bg-amber-50/40 dark:bg-[#121417] text-slate-900 dark:text-slate-100 transition-colors duration-300 font-sans">
       {/* Navigation Header */}
       <header className="border-b border-slate-200 dark:border-slate-800/80 backdrop-blur-md bg-white/70 dark:bg-[#121417]/70 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
-          {/* 1. Logo Section */}
+          {/* 1. Logo Section (Classic Nib Icon Restored) */}
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Feather className="w-6 h-6 hover:rotate-12 transition-transform duration-300 cursor-pointer" />
+              <PenTool className="w-6 h-6 hover:rotate-12 transition-transform duration-300 cursor-pointer" />
             </div>
-            <span className="font-bold text-xl tracking-tight text-slate-800 dark:text-white">
+            <span className="font-bold text-xl tracking-tight text-slate-800 dark:text-white dir-ltr">
               Qalam Works
             </span>
           </div>
 
-          {/* 2. Middle Navigation Buttons (ٹولز، سینڈباکس، سروسز) */}
-          <nav className="hidden md:flex items-center gap-6 font-medium text-sm text-slate-600 dark:text-slate-300">
-            <a href="#tools" className="flex items-center gap-1.5 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+          {/* 2. Middle Navigation Buttons */}
+          <nav className="hidden md:flex items-center gap-8 font-medium text-sm text-slate-600 dark:text-slate-300">
+            <a href="#tools" className="flex items-center gap-2 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
               <Wrench className="w-4 h-4 text-amber-500" />
               <span>ٹولز</span>
             </a>
-            <a href="#sandbox" className="flex items-center gap-1.5 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+            <a href="#sandbox" className="flex items-center gap-2 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
               <Box className="w-4 h-4 text-amber-500" />
               <span>سینڈباکس</span>
             </a>
-            <a href="#services" className="flex items-center gap-1.5 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+            <a href="#services" className="flex items-center gap-2 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
               <Briefcase className="w-4 h-4 text-amber-500" />
               <span>سروسز</span>
             </a>
           </nav>
 
-          {/* 3. Action Section (Theme Toggle & Explore Suite) */}
+          {/* 3. Action Section */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
             
