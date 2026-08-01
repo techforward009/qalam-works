@@ -1,18 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --background: #fdfbf7;
-  --foreground: #111827;
+@layer base {
+  :root {
+    --font-nastaliq: 'Noto Nastaliq Urdu', serif;
+  }
 }
 
-.dark {
-  --background: #121417;
-  --foreground: #f9fafb;
-}
-
-body {
-  background-color: var(--background);
-  color: var(--foreground);
+/* نستعلیق کے لیے خاص کلاس تاکہ سائز اور لائن اسپیسنگ متوازن ہو */
+.font-nastaliq {
+  font-family: var(--font-nastaliq);
+  line-height: 2.2; /* لائنوں کے درمیان فاصلے کو بہتر کرنے کے لیے */
 }
