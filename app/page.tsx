@@ -21,13 +21,13 @@ export default function Home() {
           AI-Powered Urdu, Arabic & Persian Publishing Tools
         </p>
 
-        {/* Value Proposition */}
+        {/* Concise Value Proposition */}
         <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto mb-6 leading-relaxed">
           <span dir="ltr" className="block font-medium text-gray-800 mb-1">
-            Professional-grade tools for Unicode normalization, Arabic-script typography correction, and publication-ready text preparation in Urdu, Arabic, Persian and multilingual documents.
+            Professional AI tools for Unicode correction, Arabic-script typography, and publication-ready Urdu, Arabic & Persian documents.
           </span>
           <span className="text-xs md:text-sm text-gray-500 font-nastaliq block">
-            (اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی، ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید AI معاون اوزار)
+            (اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی اور اشاعتی تیاری کے لیے جدید AI اوزار)
           </span>
         </p>
 
@@ -73,14 +73,14 @@ export default function Home() {
             <p className="text-gray-600 text-xs md:text-sm" dir="ltr">AI-assisted text correction and layout preparation for complex scripts</p>
           </div>
 
-          {/* Tools Grid with Finalized Examples & Features */}
+          {/* Tools Grid with Final Polished Content */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
             
             {/* Tool 1: Unicode Standardizer */}
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Unicode Standardizer</h3>
-                <p className="text-xs text-gray-500 mb-2">یونیکوڈ اسٹینڈرڈائزر (Arabic characters → Urdu standards)</p>
+                <p className="text-xs text-gray-500 mb-2">یونیکوڈ اسٹینڈرڈائزر (Arabic/Persian characters → Standard Urdu forms)</p>
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">Normalizes Arabic/Persian letter variants into standard Urdu shapes using AI-powered script normalization.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
@@ -93,7 +93,7 @@ export default function Home() {
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Diacritics & Tashkeel Manager</h3>
-                <p className="text-xs text-gray-500 mb-2">تشکیل اور اعراب کا مینیجر (Grammar-aware tashkeel)</p>
+                <p className="text-xs text-gray-500 mb-2">تشکیل اور اعراب کا مینیجر (AI-assisted grammar-aware tashkeel)</p>
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">Intelligently manages, adds, or cleans short vowels (Zabar, Zair, Paish).</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
@@ -109,8 +109,8 @@ export default function Home() {
                 <p className="text-xs text-gray-500 mb-2">پبلیکیشن کوالٹی چیکر (Preflight Audit)</p>
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">AI-powered scan for Arabic/Urdu punctuation errors, broken ligatures, citation formatting, orphan lines & page layout issues.</p>
               </div>
-              <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 text-left" dir="ltr">
-                <div className="text-amber-700 font-semibold text-xs">Status: AI Preflight Audit Ready</div>
+              <div className="bg-gray-50 p-2.5 rounded-lg text-xs text-amber-800 font-medium text-left" dir="ltr">
+                ✓ Checks: Punctuation • RTL • Citations • Typography
               </div>
             </div>
 
