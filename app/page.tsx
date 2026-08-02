@@ -32,7 +32,7 @@ export default function Home() {
           </span>
         </p>
 
-        {/* Action Buttons */}
+        {/* Action Buttons with Refined CTA Hierarchy */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-3 w-full max-w-lg mx-auto">
           <Link
             href="#tools"
@@ -50,7 +50,7 @@ export default function Home() {
 
           <Link
             href="#demo"
-            className="w-full sm:w-auto bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-semibold px-5 py-2.5 rounded-lg transition-all text-sm text-center"
+            className="w-full sm:w-auto bg-transparent hover:bg-amber-50/60 text-gray-600 hover:text-amber-900 border border-transparent hover:border-amber-200 font-medium px-4 py-2.5 transition-all text-sm text-center"
           >
             لائیو مثال دیکھیں / Try Demo
           </Link>
@@ -69,7 +69,7 @@ export default function Home() {
       {/* 2. Why Qalam Works? (Refined Value Section) */}
       <section id="why-us" className="max-w-6xl mx-auto px-4 py-8 bg-amber-50/50 border-y border-amber-100/60 my-4">
         <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold mb-2 text-amber-900" dir="ltr">
+          <h2 className="text-2xl md:text-3xl font-bold mb-1 text-amber-900" dir="ltr">
             Why Qalam Works?
           </h2>
           <h3 className="text-xl md:text-2xl font-bold mb-3 font-nastaliq text-amber-800">
@@ -85,9 +85,9 @@ export default function Home() {
           {/* Pillar 1: Script-Native AI */}
           <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm">
             <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">01 / Script-Native AI</div>
-            <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">عام AI سے ہٹ کر تخصیص شدہ</h3>
+            <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">اردو، عربی و فارسی کے لیے خصوصی AI</h3>
             <p className="text-xs text-gray-600 leading-relaxed" dir="ltr">
-              Generic AI tools often mishandle Urdu spellings and RTL formatting. Qalam Works is designed specifically for Arabic, Persian, and Urdu script rules, ligatures, and Unicode standards.
+              Generic AI tools often struggle with Urdu spellings and RTL formatting. Qalam Works is designed specifically for Arabic, Persian, and Urdu script rules, ligatures, and Unicode standards.
             </p>
           </div>
 
@@ -96,7 +96,7 @@ export default function Home() {
             <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">02 / Massive Time Saver</div>
             <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">گھنٹوں کا کام سیکنڈوں میں</h3>
             <p className="text-xs text-gray-600 leading-relaxed" dir="ltr">
-              Manually fixing mixed character variants, spacing anomalies, and missing diacritics can take hours of manual effort. Our preflight engine automates layout and typography auditing instantly.
+              Manually fixing mixed character variants, spacing anomalies, and missing diacritics can take hours of manual effort. Our preflight engine automates layout and typography auditing efficiently.
             </p>
           </div>
 
