@@ -1,5 +1,6 @@
 import Link from "next/link";
 import InteractiveDemo from "./components/InteractiveDemo";
+import PublicationQualityChecker from "./components/PublicationQualityChecker";
 
 export default function Home() {
   return (
@@ -36,24 +37,24 @@ export default function Home() {
         {/* Action Buttons with Refined CTA Hierarchy */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-3 w-full max-w-lg mx-auto">
           <Link
-            href="#tools"
+            href="#demo"
             className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-all text-sm text-center"
           >
             Paste & Process Text / متن پیسٹ کریں
           </Link>
 
           <Link
-            href="#upload"
+            href="#quality-checker"
             className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 font-semibold px-5 py-2.5 rounded-lg shadow-sm transition-all text-sm text-center"
           >
-            Upload Document / فائل اپ لوڈ کریں
+            Quality Audit / کوالٹی چیک کریں
           </Link>
 
           <Link
-            href="#demo"
+            href="#why-us"
             className="w-full sm:w-auto bg-transparent hover:bg-amber-50/60 text-gray-600 hover:text-amber-900 border border-transparent hover:border-amber-200 font-medium px-4 py-2.5 transition-all text-sm text-center"
           >
-            لائیو مثال دیکھیں / Try Demo
+            مزید جانیں / Learn More
           </Link>
         </div>
       </section>
@@ -167,61 +168,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. AI Utility Suite & Tools Cards (MVP Freeze) */}
-      <section id="tools" className="max-w-6xl mx-auto px-4 py-8 bg-amber-50/30 border-t border-amber-100/60 text-center">
-        <div className="pt-2">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-1 font-nastaliq text-center">متن کی اصلاح و اشاعت کے اوزار / AI Publishing Suite</h2>
-          </div>
-
-          {/* Tools Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            
-            {/* Tool 1: Unicode Standardizer */}
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col items-center justify-between">
-              <div className="w-full">
-                <h3 className="text-base font-bold mb-1 text-amber-700">Unicode Standardizer</h3>
-                <p className="text-xs text-gray-500 mb-2" dir="ltr">Arabic/Persian variants → Standardized forms</p>
-                <p className="text-xs text-gray-600 mb-3 text-center" dir="ltr">Converts Arabic/Persian letter variants into standardized forms for clean, consistent publishing.</p>
-              </div>
-              <div className="w-full bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-center" dir="ltr">
-                <div className="text-red-600">Before: علي عليه السلام، كربلاء، يحيى</div>
-                <div className="text-green-600">After: علی علیہ السلام، کربلا، یحییٰ</div>
-              </div>
-            </div>
-
-            {/* Tool 2: Diacritics & Tashkeel Manager */}
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col items-center justify-between">
-              <div className="w-full">
-                <h3 className="text-base font-bold mb-1 text-amber-700">Diacritics & Tashkeel Manager</h3>
-                <p className="text-xs text-gray-500 mb-1">تشکیل و اعراب کی اصلاح</p>
-                <p className="text-xs font-medium text-amber-800 mb-2" dir="ltr">AI-Assisted Tashkeel & Diacritics Management</p>
-                <p className="text-xs text-gray-600 mb-3 text-center" dir="ltr">Intelligently manages, adds, or cleans short vowels (Zabar, Zair, Paish).</p>
-              </div>
-              <div className="w-full bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-center" dir="ltr">
-                <div className="text-red-600">Before: السلام عليكم</div>
-                <div className="text-green-600">After: اَلسَّلَامُ عَلَيْكُمْ</div>
-              </div>
-            </div>
-
-            {/* Tool 3: Publication Quality Checker */}
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col items-center justify-between">
-              <div className="w-full">
-                <h3 className="text-base font-bold mb-1 text-amber-700">Publication Quality Checker</h3>
-                <p className="text-xs text-gray-500 mb-2">پبلیکیشن کوالٹی چیکر (Preflight Audit)</p>
-                <p className="text-xs text-gray-600 mb-3 text-center" dir="ltr">Detects RTL issues, typography errors, spacing problems, citation & reference formatting issues, and publication formatting errors.</p>
-              </div>
-              <div className="w-full bg-gray-50 p-2.5 rounded-lg text-xs text-amber-800 font-medium text-center" dir="ltr">
-                ✓ Checks: RTL • Typography • Citations • Layout • Punctuation • Spacing
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Interactive Demo Section (Functional Component) */}
+      {/* 4. Core Core Engines: Unicode Standardizer v1.0 */}
       <InteractiveDemo />
+
+      {/* 5. Core Engines: Publication Quality Checker MVP */}
+      <PublicationQualityChecker />
 
     </div>
   );
