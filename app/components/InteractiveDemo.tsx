@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { standardizeUrduText } from "@/utils/unicodeStandardizer";
+import { standardizeUrduText } from "../../../src/utils/unicodeStandardizer";
 
 export default function InteractiveDemo() {
   const [input, setInput] = useState("علي عليه السلام ، كربلاء ؛ يحيى ؟");
