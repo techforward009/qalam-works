@@ -17,15 +17,10 @@ export default function Home() {
           Qalam Works
         </h1>
         
-        <div className="text-lg md:text-2xl font-semibold text-amber-800 mb-3 leading-snug px-2" dir="ltr">
+        <div className="text-lg md:text-2xl font-semibold text-amber-800 mb-4 leading-snug px-2" dir="ltr">
           <span className="block sm:inline">AI-Powered Publishing Tools</span>{" "}
           <span className="block sm:inline text-base md:text-xl font-medium text-gray-700">for Urdu, Arabic & Persian</span>
         </div>
-
-        {/* Workflow Value Tagline */}
-        <p className="text-xs md:text-sm font-medium text-amber-700 mb-4 tracking-wide" dir="ltr">
-          Automating Arabic-script publishing workflows with AI
-        </p>
 
         {/* Value Proposition */}
         <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto mb-6 leading-relaxed">
@@ -63,23 +58,66 @@ export default function Home() {
         
         <div className="mt-3">
           <Link
-            href="#services"
+            href="#why-us"
             className="text-xs md:text-sm text-gray-600 hover:text-amber-700 underline transition-all"
           >
-            Services / تمام سروسز دیکھیں
+            Why Qalam Works? / کیوں انتخاب کریں؟
           </Link>
         </div>
       </section>
 
-      {/* 2. AI Utility Suite & Tools Cards */}
+      {/* 2. Why Qalam Works? (Value & Infrastructure Section) */}
+      <section id="why-us" className="max-w-6xl mx-auto px-4 py-8 bg-amber-50/50 border-y border-amber-100/60 my-4">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold mb-2 font-nastaliq text-amber-900">
+            Why Qalam Works? / کیوں انتخاب کریں؟
+          </h2>
+          <p className="text-gray-600 text-xs md:text-sm max-w-2xl mx-auto" dir="ltr">
+            Traditional word processors and generic AI tools fail with complex Arabic-script typography. We built infrastructure specifically for it.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
+          
+          {/* Pillar 1: Beyond Generic AI */}
+          <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm">
+            <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">01 / Script-Native AI</div>
+            <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">عام AI سے ہٹ کر تخصیص شدہ</h3>
+            <p className="text-xs text-gray-600 leading-relaxed" dir="ltr">
+              Generic LLMs hallucinate Urdu spellings and break RTL formatting. Qalam Works is fine-tuned exclusively for Arabic, Persian, and Urdu script rules, ligatures, and Unicode standards.
+            </p>
+          </div>
+
+          {/* Pillar 2: Hours to Seconds */}
+          <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm">
+            <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">02 / Massive Time Saver</div>
+            <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">گھنٹوں کا کام سیکنڈوں میں</h3>
+            <p className="text-xs text-gray-600 leading-relaxed" dir="ltr">
+              Manually fixing mixed character variants, spacing anomalies, and missing diacritics takes days. Our preflight engine automates layout and typography auditing instantly.
+            </p>
+          </div>
+
+          {/* Pillar 3: Publication Ready */}
+          <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm">
+            <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">03 / Publication-Grade Output</div>
+            <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">اشاعت کے لیے تیار معیار</h3>
+            <p className="text-xs text-gray-600 leading-relaxed" dir="ltr">
+              Output documents are optimized for academic journals, publishing houses, and professional presses, ensuring zero typography errors before going to print.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 3. AI Utility Suite & Tools Cards */}
       <section id="tools" className="max-w-6xl mx-auto px-4 py-8">
-        <div className="border-t border-gray-200 pt-8">
+        <div className="pt-2">
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold mb-1 font-nastaliq">متن کی اصلاح و اشاعت کے اوزار / AI Publishing Suite</h2>
             <p className="text-gray-600 text-xs md:text-sm" dir="ltr">Automating Arabic-script publishing workflows and complex layout preparation</p>
           </div>
 
-          {/* Tools Grid with Perfected Content & Examples */}
+          {/* Tools Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
             
             {/* Tool 1: Unicode Standardizer */}
