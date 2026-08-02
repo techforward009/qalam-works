@@ -4,7 +4,7 @@ import { useState } from "react";
 import { standardizeUrduText } from "../utils/unicodeStandardizer";
 
 export default function InteractiveDemo() {
-  const [input, setInput] = useState("علي عليه السلام ، كربلاء ؛ يحيى ؟");
+  const [input, setInput] = useState("قال الامام علي عليه السلام: العلم نور ، والجهل ظلام");
   const { output, badges, summary } = standardizeUrduText(input);
 
   return (
@@ -28,7 +28,7 @@ export default function InteractiveDemo() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="یہاں متن درج کریں..."
-              className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-amber-500 text-center"
+              className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-amber-500 text-right"
               dir="rtl"
             />
           </div>
@@ -41,28 +41,44 @@ export default function InteractiveDemo() {
               className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[100px] overflow-x-auto flex items-center justify-center text-center"
               dir="rtl"
             >
-              {output || <span className="text-gray-400 font-sans text-xs">نتائج یہاں ظاہر ہوں گے...</span>}
+              {input.trim() ? (
+                output
+              ) : (
+                <span className="text-gray-400 font-sans text-xs">نتائج یہاں ظاہر ہوں گے...</span>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Qalam Audit Report Summary Box */}
-        <div className="mb-4 bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex flex-wrap items-center justify-center gap-4 font-mono" dir="ltr">
-          <span className="font-bold text-amber-950">Qalam Report:</span>
-          <span>Total Corrections: {summary.totalCorrections}</span>
-          <span>Arabic Normalizations: {summary.arabicNormalizations}</span>
-          <span>Spacing Fixes: {summary.spacingFixes}</span>
-          <span>Punctuation Fixes: {summary.punctuationFixes}</span>
+        {/* Qalam Audit Report Summary Box (Mobile Optimized Stack/Flex) */}
+        <div className="mb-4 bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 font-mono" dir="ltr">
+          {input.trim() ? (
+            <div className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-4">
+              <span className="font-bold text-amber-950">Qalam Report:</span>
+              <span>Total Corrections: {summary.totalCorrections}</span>
+              <span>Arabic Normalizations: {summary.arabicNormalizations}</span>
+              <span>Spacing Fixes: {summary.spacingFixes}</span>
+              <span>Punctuation Fixes: {summary.punctuationFixes}</span>
+            </div>
+          ) : (
+            <span className="text-gray-400 font-sans text-xs">
+              Paste text to generate Qalam Report
+            </span>
+          )}
         </div>
 
-        {/* Dynamic Badges */}
+        {/* Conditional Dynamic Badges */}
         <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex flex-wrap items-center justify-center gap-2 md:gap-3 text-xs font-medium text-green-700" dir="ltr">
-          {badges.map((badge, index) => (
-            <span key={index} className="flex items-center">
-              {badge}
-              {index < badges.length - 1 && <span className="text-gray-300 ml-2 md:ml-3">•</span>}
-            </span>
-          ))}
+          {input.trim() ? (
+            badges.map((badge, index) => (
+              <span key={index} className="flex items-center">
+                {badge}
+                {index < badges.length - 1 && <span className="text-gray-300 ml-2 md:ml-3">•</span>}
+              </span>
+            ))
+          ) : (
+            <span className="text-gray-400 font-sans text-xs">Awaiting input text...</span>
+          )}
         </div>
       </div>
     </section>
