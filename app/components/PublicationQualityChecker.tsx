@@ -14,7 +14,7 @@ export default function PublicationQualityChecker() {
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         <div className="text-center mb-6">
           <h2 className="text-xl md:text-2xl font-bold mb-1 font-nastaliq text-amber-900">
-            پبلیکیشن کوالٹی چیکر / Quality Audit
+            پبلیکیشن کوالٹی آڈٹ / Publication Quality Audit
           </h2>
           <p className="text-xs md:text-sm text-gray-600" dir="ltr">
             Paste your text below to audit layout, typography, punctuation, and text quality.
