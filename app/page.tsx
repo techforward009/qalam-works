@@ -1,5 +1,5 @@
 import Link from "next/link";
-import InteractiveDemo from "@/components/InteractiveDemo";
+import InteractiveDemo from "../src/components/InteractiveDemo";
 
 export default function Home() {
   return (
