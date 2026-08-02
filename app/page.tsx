@@ -9,50 +9,57 @@ export default function Home() {
         
         {/* Target Audience Tag */}
         <div className="inline-block bg-amber-100 text-amber-800 text-xs md:text-sm font-medium px-4 py-1.5 rounded-full mb-6 shadow-sm">
-          مترجمین، محققین، ناشرین، مدارس اور اشاعتی اداروں کے لیے
+          For Researchers, Translators, Academic Publishers & Scribes
         </div>
 
-        {/* Main Title */}
-        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 font-nastaliq leading-relaxed">
-          اردو اور عربی ٹائپوگرافی اور ٹیکسٹ پروسیسنگ کا جدید مرکز
+        {/* Main Title (Ultra Short & Punchy) */}
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 font-nastaliq leading-relaxed">
+          Qalam Works
         </h1>
-
-        {/* Refined Value Proposition */}
-        <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10">
-          کمپوزنگ، پروف ریڈنگ، یونیکوڈ اصلاح اور اشاعتی تیاری — ایک ہی جگہ۔
+        
+        <p className="text-xl md:text-2xl font-semibold text-amber-800 mb-6">
+          Precision Typography & Multilingual Publishing Suite
         </p>
 
-        {/* Action Buttons (Stacked on mobile, row on desktop) */}
+        {/* Sub-headline / Value Proposition */}
+        <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto mb-10 leading-relaxed">
+          Unicode standardization, typography correction, and publishing preparation for Urdu, Arabic & Persian.
+          <span className="block text-sm text-gray-500 mt-1 font-nastaliq">
+            (اردو، عربی اور فارسی کے لیے یونیکوڈ کی درستی، ٹائپوگرافی کی اصلاح اور اشاعتی تیاری)
+          </span>
+        </p>
+
+        {/* Action Buttons (English-first Bilingual Stack/Row) */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-3 w-full max-w-md mx-auto">
           <Link
             href="#tools"
             className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-all text-base text-center"
           >
-            متن پیسٹ کریں / ٹولز دیکھیں
+            Paste Text / متن پیسٹ کریں
           </Link>
 
           <Link
             href="#upload"
             className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 font-semibold px-6 py-3 rounded-lg shadow-sm transition-all text-base text-center"
           >
-            فائل اپ لوڈ کریں
+            Upload File / فائل اپ لوڈ کریں
           </Link>
 
           <Link
             href="#services"
             className="w-full sm:w-auto bg-transparent hover:bg-gray-100 text-gray-700 font-medium px-6 py-3 rounded-lg transition-all text-base text-center"
           >
-            تمام سروسز دیکھیں
+            Services / تمام سروسز
           </Link>
         </div>
       </section>
 
-      {/* 2. Utility Suite & Tools Cards (Before/After Examples) */}
+      {/* 2. Utility Suite & Tools Cards (Global Standard) */}
       <section id="tools" className="max-w-6xl mx-auto px-4 py-12">
         <div className="border-t border-gray-200 pt-12">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold mb-3 font-nastaliq">فوری یوٹیلیٹی ٹولز</h2>
-            <p className="text-gray-600">ایک کلک پر اردو اور عربی متن کی خامیوں کو دور کریں</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">Utility Suite / فوری یوٹیلیٹی ٹولز</h2>
+            <p className="text-gray-600 text-sm md:text-base">Instant text correction and layout preparation for complex scripts</p>
           </div>
 
           {/* Tools Grid with Before/After Examples */}
@@ -60,30 +67,33 @@ export default function Home() {
             
             {/* Tool 1 */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
-              <h3 className="text-xl font-bold mb-2 text-amber-700">یونیکوڈ اسٹینڈرڈائزر</h3>
-              <p className="text-sm text-gray-600 mb-4">عربی ک اور ی کو درست اردو شکل میں تبدیل کرتا ہے۔</p>
-              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100">
-                <div className="text-red-600"><span className="font-bold">قبل:</span> كِتاب (عربی ک)</div>
-                <div className="text-green-600"><span className="font-bold">بعد:</span> کتاب (اردو ک)</div>
+              <h3 className="text-lg font-bold mb-1 text-amber-700">Unicode Standardizer</h3>
+              <p className="text-xs text-gray-500 mb-3">یونیکوڈ اسٹینڈرڈائزر</p>
+              <p className="text-sm text-gray-600 mb-4">Fixes Arabic/Persian letter variants into standard Urdu shapes.</p>
+              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100 font-mono">
+                <div className="text-red-600"><span>Before:</span> كِتاب (Arabic Kaf)</div>
+                <div className="text-green-600"><span>After:</span> کتاب (Urdu Kaf)</div>
               </div>
             </div>
 
             {/* Tool 2 */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
-              <h3 className="text-xl font-bold mb-2 text-amber-700">تشکیل اسٹرپر (Tashkeel Stripper)</h3>
-              <p className="text-sm text-gray-600 mb-4">متن سے زبر، زیر، پیش اور تشدید کو باآسانی ہٹاتا ہے۔</p>
-              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100">
-                <div className="text-red-600"><span className="font-bold">قبل:</span> اَلْعِلْمُ نُورٌ</div>
-                <div className="text-green-600"><span className="font-bold">بعد:</span> العلم نور</div>
+              <h3 className="text-lg font-bold mb-1 text-amber-700">Diacritics & Tashkeel Manager</h3>
+              <p className="text-xs text-gray-500 mb-3">تشکیل اور اعراب کا مینیجر</p>
+              <p className="text-sm text-gray-600 mb-4">Cleans or manages short vowels (Zabar, Zair, Paish) seamlessly.</p>
+              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100 font-mono">
+                <div className="text-red-600"><span>Before:</span> اَلْعِلْمُ نُورٌ</div>
+                <div className="text-green-600"><span>After:</span> العلم نور</div>
               </div>
             </div>
 
             {/* Tool 3 */}
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
-              <h3 className="text-xl font-bold mb-2 text-amber-700">اسمارٹ ورڈ کاؤنٹر</h3>
-              <p className="text-sm text-gray-600 mb-4">الفاظ، حروف اور پیراگراف کی درست گنتی کریں۔</p>
+              <h3 className="text-lg font-bold mb-1 text-amber-700">Smart Text Metrics</h3>
+              <p className="text-xs text-gray-500 mb-3">اسمارٹ ٹیکسٹ میٹرکس</p>
+              <p className="text-sm text-gray-600 mb-4">Accurate word counting, character spacing, and typography metrics.</p>
               <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100">
-                <div className="text-gray-700"><span className="font-bold">حالت:</span> لائیو کاؤنٹ اور اسپیس مینجمنٹ</div>
+                <div className="text-gray-700"><span className="font-bold">Status:</span> Live Metrics & Spacing Analysis</div>
               </div>
             </div>
 
