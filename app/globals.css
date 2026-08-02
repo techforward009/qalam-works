@@ -1,11 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @layer base {
   :root {
     --font-nastaliq: 'Noto Nastaliq Urdu', serif;
   }
 }
 
-/* نستعلیق کے لیے خاص کلاس تاکہ سائز اور لائن اسپیسنگ متوازن ہو */
 .font-nastaliq {
   font-family: var(--font-nastaliq);
-  line-height: 2.2; /* لائنوں کے درمیان فاصلے کو بہتر کرنے کے لیے */
+  line-height: 2.2;
 }
