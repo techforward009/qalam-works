@@ -50,13 +50,13 @@ export default function InteractiveDemo() {
           </div>
         </div>
 
-        {/* Qalam Audit Report Summary Box (Mobile Optimized Stack/Flex) */}
+        {/* Qalam Audit Report Summary Box */}
         <div className="mb-4 bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 font-mono" dir="ltr">
           {input.trim() ? (
             <div className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-2 md:gap-4">
               <span className="font-bold text-amber-950">Qalam Report:</span>
               <span>Total Corrections: {summary.totalCorrections}</span>
-              <span>Arabic Normalizations: {summary.arabicNormalizations}</span>
+              <span>Script Normalizations: {summary.arabicNormalizations}</span>
               <span>Spacing Fixes: {summary.spacingFixes}</span>
               <span>Punctuation Fixes: {summary.punctuationFixes}</span>
             </div>
@@ -70,12 +70,16 @@ export default function InteractiveDemo() {
         {/* Conditional Dynamic Badges */}
         <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex flex-wrap items-center justify-center gap-2 md:gap-3 text-xs font-medium text-green-700" dir="ltr">
           {input.trim() ? (
-            badges.map((badge, index) => (
-              <span key={index} className="flex items-center">
-                {badge}
-                {index < badges.length - 1 && <span className="text-gray-300 ml-2 md:ml-3">•</span>}
-              </span>
-            ))
+            badges.map((badge, index) => {
+              // Convert text for UI display if needed
+              const displayBadge = badge === "✓ RTL Optimized" ? "✓ RTL Compatible" : badge;
+              return (
+                <span key={index} className="flex items-center">
+                  {displayBadge}
+                  {index < badges.length - 1 && <span className="text-gray-300 ml-2 md:ml-3">•</span>}
+                </span>
+              );
+            })
           ) : (
             <span className="text-gray-400 font-sans text-xs">Awaiting input text...</span>
           )}
