@@ -8,7 +8,7 @@ export default function InteractiveDemo() {
   const { output, badges } = standardizeUrduText(input);
 
   return (
-    <section id="demo" className="max-w-4xl mx-auto px-4 py-10">
+    <section id="demo" className="max-w-4xl mx-auto px-4 py-8 text-center">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         <div className="text-center mb-6">
           <h2 className="text-xl md:text-2xl font-bold mb-1 font-nastaliq text-amber-900">
@@ -19,26 +19,26 @@ export default function InteractiveDemo() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1" dir="ltr">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-center">
+          <div className="flex flex-col items-center">
+            <label className="block text-xs font-semibold text-gray-700 mb-1 text-center w-full" dir="ltr">
               Input Sample (Raw Text):
             </label>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="یہاں متن درج کریں..."
-              className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-amber-500 text-center"
               dir="rtl"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-amber-800 mb-1" dir="ltr">
+          <div className="flex flex-col items-center">
+            <label className="block text-xs font-semibold text-amber-800 mb-1 text-center w-full" dir="ltr">
               Processed Output (Qalam Works):
             </label>
             <div
-              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[100px] overflow-x-auto"
+              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[100px] overflow-x-auto flex items-center justify-center text-center"
               dir="rtl"
             >
               {output || <span className="text-gray-400 font-sans text-xs">نتائج یہاں ظاہر ہوں گے...</span>}
