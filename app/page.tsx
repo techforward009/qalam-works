@@ -9,7 +9,7 @@ export default function Home() {
         
         {/* Target Audience Tag */}
         <div className="inline-block bg-amber-100 text-amber-800 text-xs md:text-sm font-medium px-4 py-1.5 rounded-full mb-4 shadow-sm" dir="ltr">
-          For Researchers, Translators, Academic Publishers & Scribes
+          For Researchers • Translators • Publishers • Digital Scribes
         </div>
 
         {/* Main Title & Compact Spacing */}
@@ -18,7 +18,7 @@ export default function Home() {
         </h1>
         
         <p className="text-lg md:text-xl font-semibold text-amber-800 mb-4" dir="ltr">
-          AI-Powered Text Cleaning, Typography & Publishing Tools for Arabic Scripts
+          AI-Powered Urdu, Arabic & Persian Publishing Tools
         </p>
 
         {/* Value Proposition */}
@@ -27,11 +27,11 @@ export default function Home() {
             Professional-grade tools for Unicode normalization, Arabic-script typography correction, and publication-ready text preparation in Urdu, Arabic, Persian and multilingual documents.
           </span>
           <span className="text-xs md:text-sm text-gray-500 font-nastaliq block">
-            (اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی، ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید پیشہ ورانہ اوزار)
+            (اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی، ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید AI معاون اوزار)
           </span>
         </p>
 
-        {/* Action Buttons (Primary, Secondary & Live Demo) */}
+        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-3 w-full max-w-lg mx-auto">
           <Link
             href="#tools"
@@ -73,7 +73,7 @@ export default function Home() {
             <p className="text-gray-600 text-xs md:text-sm" dir="ltr">AI-assisted text correction and layout preparation for complex scripts</p>
           </div>
 
-          {/* Tools Grid with Enhanced Before/After Examples */}
+          {/* Tools Grid with Finalized Examples & Features */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
             
             {/* Tool 1: Unicode Standardizer */}
@@ -81,11 +81,11 @@ export default function Home() {
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Unicode Standardizer</h3>
                 <p className="text-xs text-gray-500 mb-2">یونیکوڈ اسٹینڈرڈائزر (Arabic characters → Urdu standards)</p>
-                <p className="text-xs text-gray-600 mb-3" dir="ltr">Normalizes Arabic/Persian letter variants into standard Urdu shapes using AI matching.</p>
+                <p className="text-xs text-gray-600 mb-3" dir="ltr">Normalizes Arabic/Persian letter variants into standard Urdu shapes using AI-powered script normalization.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
-                <div className="text-red-600">Before: يحيى كـتاب</div>
-                <div className="text-green-600">After: یحییٰ کتاب</div>
+                <div className="text-red-600">Before: علي عليه السلام</div>
+                <div className="text-green-600">After: علی علیہ السلام</div>
               </div>
             </div>
 
@@ -107,7 +107,7 @@ export default function Home() {
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Publication Quality Checker</h3>
                 <p className="text-xs text-gray-500 mb-2">پبلیکیشن کوالٹی چیکر (Preflight Audit)</p>
-                <p className="text-xs text-gray-600 mb-3" dir="ltr">AI-powered scan for inconsistent spaces, footnote issues, numeric anomalies & RTL errors.</p>
+                <p className="text-xs text-gray-600 mb-3" dir="ltr">AI-powered scan for Arabic/Urdu punctuation errors, broken ligatures, citation formatting, orphan lines & page layout issues.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 text-left" dir="ltr">
                 <div className="text-amber-700 font-semibold text-xs">Status: AI Preflight Audit Ready</div>
