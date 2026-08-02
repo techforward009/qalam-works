@@ -70,9 +70,9 @@ export default function Home() {
               <h3 className="text-lg font-bold mb-1 text-amber-700">Unicode Standardizer</h3>
               <p className="text-xs text-gray-500 mb-3">یونیکوڈ اسٹینڈرڈائزر</p>
               <p className="text-sm text-gray-600 mb-4" dir="ltr">Fixes Arabic/Persian letter variants into standard Urdu shapes.</p>
-              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100 font-mono" dir="ltr">
-                <div className="text-red-600"><span>Before:</span> كِتاب (Arabic Kaf)</div>
-                <div className="text-green-600"><span>After:</span> کتاب (Urdu Kaf)</div>
+              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
+                <div className="text-red-600">Before: كِتاب (Arabic Kaf)</div>
+                <div className="text-green-600">After: کتاب (Urdu Kaf)</div>
               </div>
             </div>
 
@@ -81,9 +81,9 @@ export default function Home() {
               <h3 className="text-lg font-bold mb-1 text-amber-700">Diacritics & Tashkeel Manager</h3>
               <p className="text-xs text-gray-500 mb-3">تشکیل اور اعراب کا مینیجر</p>
               <p className="text-sm text-gray-600 mb-4" dir="ltr">Cleans or manages short vowels (Zabar, Zair, Paish) seamlessly.</p>
-              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100 font-mono" dir="ltr">
-                <div className="text-red-600"><span>Before:</span> اَلْعِلْمُ نُورٌ</div>
-                <div className="text-green-600"><span>After:</span> العلم نور</div>
+              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
+                <div className="text-red-600">Before: اَلْعِلْمُ نُورٌ</div>
+                <div className="text-green-600">After: العلم نور</div>
               </div>
             </div>
 
@@ -92,8 +92,8 @@ export default function Home() {
               <h3 className="text-lg font-bold mb-1 text-amber-700">Smart Text Metrics</h3>
               <p className="text-xs text-gray-500 mb-3">اسمارٹ ٹیکسٹ میٹرکس</p>
               <p className="text-sm text-gray-600 mb-4" dir="ltr">Accurate word counting, character spacing, and typography metrics.</p>
-              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100">
-                <div className="text-gray-700"><span className="font-bold">Status:</span> Live Metrics & Spacing Analysis</div>
+              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-1 border border-gray-100 text-left" dir="ltr">
+                <div className="text-gray-700">Status: Live Metrics & Spacing Analysis</div>
               </div>
             </div>
 
