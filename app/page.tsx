@@ -21,13 +21,13 @@ export default function Home() {
           AI-Powered Urdu, Arabic & Persian Publishing Tools
         </p>
 
-        {/* Concise Value Proposition */}
+        {/* Value Proposition with Normalization */}
         <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto mb-6 leading-relaxed">
           <span dir="ltr" className="block font-medium text-gray-800 mb-1">
-            Professional AI tools for Unicode correction, Arabic-script typography, and publication-ready Urdu, Arabic & Persian documents.
+            Professional AI tools for Unicode normalization, Arabic-script typography, and publication-ready Urdu, Arabic & Persian documents.
           </span>
           <span className="text-xs md:text-sm text-gray-500 font-nastaliq block">
-            (اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی اور اشاعتی تیاری کے لیے جدید AI اوزار)
+            (اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی، ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید AI معاون اوزار)
           </span>
         </p>
 
@@ -70,17 +70,17 @@ export default function Home() {
         <div className="border-t border-gray-200 pt-8">
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold mb-1 font-nastaliq">متن کی اصلاح و اشاعت کے اوزار / AI Publishing Suite</h2>
-            <p className="text-gray-600 text-xs md:text-sm" dir="ltr">AI-assisted text correction and layout preparation for complex scripts</p>
+            <p className="text-gray-600 text-xs md:text-sm" dir="ltr">Automating Arabic-script publishing workflows and complex layout preparation</p>
           </div>
 
-          {/* Tools Grid with Final Polished Content */}
+          {/* Tools Grid with Clean Layout & No Broken Brackets */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
             
             {/* Tool 1: Unicode Standardizer */}
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Unicode Standardizer</h3>
-                <p className="text-xs text-gray-500 mb-2">یونیکوڈ اسٹینڈرڈائزر (Arabic/Persian characters → Standard Urdu forms)</p>
+                <p className="text-xs text-gray-500 mb-2" dir="ltr">Arabic/Persian variants → Standard Urdu forms</p>
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">Normalizes Arabic/Persian letter variants into standard Urdu shapes using AI-powered script normalization.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
@@ -93,7 +93,8 @@ export default function Home() {
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Diacritics & Tashkeel Manager</h3>
-                <p className="text-xs text-gray-500 mb-2">تشکیل اور اعراب کا مینیجر (AI-assisted grammar-aware tashkeel)</p>
+                <p className="text-xs text-gray-500 mb-1">تشکیل اور اعراب کا مینیجر</p>
+                <p className="text-xs font-medium text-amber-800 mb-2" dir="ltr">AI-assisted grammar-aware Tashkeel</p>
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">Intelligently manages, adds, or cleans short vowels (Zabar, Zair, Paish).</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
@@ -107,10 +108,10 @@ export default function Home() {
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Publication Quality Checker</h3>
                 <p className="text-xs text-gray-500 mb-2">پبلیکیشن کوالٹی چیکر (Preflight Audit)</p>
-                <p className="text-xs text-gray-600 mb-3" dir="ltr">AI-powered scan for Arabic/Urdu punctuation errors, broken ligatures, citation formatting, orphan lines & page layout issues.</p>
+                <p className="text-xs text-gray-600 mb-3" dir="ltr">AI-powered preflight scan for Arabic/Urdu punctuation errors, broken ligatures, citation formatting, and page layout issues.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs text-amber-800 font-medium text-left" dir="ltr">
-                ✓ Checks: Punctuation • RTL • Citations • Typography
+                ✓ Checks: RTL • Typography • Citations • Layout • Punctuation
               </div>
             </div>
 
