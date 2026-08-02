@@ -1,4 +1,5 @@
 import Link from "next/link";
+import InteractiveDemo from "@/components/InteractiveDemo";
 
 export default function Home() {
   return (
@@ -228,38 +229,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 5. Interactive Demo Section (Workflow Preview) */}
-      <section id="demo" className="max-w-4xl mx-auto px-4 py-10">
-        <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
-          <div className="text-center mb-6">
-            <h2 className="text-xl md:text-2xl font-bold mb-1 font-nastaliq text-amber-900">لائیو ڈیمو / Interactive Demo Preview</h2>
-            <p className="text-xs md:text-sm text-gray-600" dir="ltr">Experience real-time Arabic-script processing and normalization.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1" dir="ltr">Input Sample (Raw Text):</label>
-              <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[80px]" dir="rtl">
-                علي عليه السلام الكتابه العربيه
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-amber-800 mb-1" dir="ltr">Processed Output (Qalam Works):</label>
-              <div className="bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[80px]" dir="rtl">
-                علی علیہ السلام الکتابة العربية
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex flex-wrap items-center justify-center gap-3 text-xs font-medium text-green-700" dir="ltr">
-            <span>✓ Unicode fixed</span>
-            <span className="text-gray-300">•</span>
-            <span>✓ RTL optimized</span>
-            <span className="text-gray-300">•</span>
-            <span>✓ Typography checked</span>
-          </div>
-        </div>
-      </section>
+      {/* 5. Interactive Demo Section (Functional Component) */}
+      <InteractiveDemo />
 
     </div>
   );
