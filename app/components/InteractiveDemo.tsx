@@ -5,7 +5,7 @@ import { standardizeUrduText } from "../utils/unicodeStandardizer";
 
 export default function InteractiveDemo() {
   const [input, setInput] = useState("علي عليه السلام ، كربلاء ؛ يحيى ؟");
-  const { output, badges } = standardizeUrduText(input);
+  const { output, badges, summary } = standardizeUrduText(input);
 
   return (
     <section id="demo" className="max-w-4xl mx-auto px-4 py-8 text-center">
@@ -46,6 +46,16 @@ export default function InteractiveDemo() {
           </div>
         </div>
 
+        {/* Qalam Audit Report Summary Box */}
+        <div className="mb-4 bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex flex-wrap items-center justify-center gap-4 font-mono" dir="ltr">
+          <span className="font-bold text-amber-950">Qalam Report:</span>
+          <span>Total Corrections: {summary.totalCorrections}</span>
+          <span>Arabic Normalizations: {summary.arabicNormalizations}</span>
+          <span>Spacing Fixes: {summary.spacingFixes}</span>
+          <span>Punctuation Fixes: {summary.punctuationFixes}</span>
+        </div>
+
+        {/* Dynamic Badges */}
         <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex flex-wrap items-center justify-center gap-2 md:gap-3 text-xs font-medium text-green-700" dir="ltr">
           {badges.map((badge, index) => (
             <span key={index} className="flex items-center">
