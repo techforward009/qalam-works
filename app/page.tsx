@@ -66,43 +66,43 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. Why Qalam Works? (Value & Infrastructure Section) */}
+      {/* 2. Why Qalam Works? (Refined Value Section) */}
       <section id="why-us" className="max-w-6xl mx-auto px-4 py-8 bg-amber-50/50 border-y border-amber-100/60 my-4">
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold mb-2 font-nastaliq text-amber-900">
             Why Qalam Works? / کیوں انتخاب کریں؟
           </h2>
           <p className="text-gray-600 text-xs md:text-sm max-w-2xl mx-auto" dir="ltr">
-            Traditional word processors and generic AI tools fail with complex Arabic-script typography. We built infrastructure specifically for it.
+            Traditional word processors and generic AI tools struggle with complex Arabic-script typography. Qalam Works is built specifically for these challenges.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
           
-          {/* Pillar 1: Beyond Generic AI */}
+          {/* Pillar 1: Script-Native AI */}
           <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm">
             <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">01 / Script-Native AI</div>
             <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">عام AI سے ہٹ کر تخصیص شدہ</h3>
             <p className="text-xs text-gray-600 leading-relaxed" dir="ltr">
-              Generic LLMs hallucinate Urdu spellings and break RTL formatting. Qalam Works is fine-tuned exclusively for Arabic, Persian, and Urdu script rules, ligatures, and Unicode standards.
+              Generic AI tools often mishandle Urdu spellings and RTL formatting. Qalam Works is designed specifically for Arabic, Persian, and Urdu script rules, ligatures, and Unicode standards.
             </p>
           </div>
 
-          {/* Pillar 2: Hours to Seconds */}
+          {/* Pillar 2: Massive Time Saver */}
           <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm">
             <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">02 / Massive Time Saver</div>
             <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">گھنٹوں کا کام سیکنڈوں میں</h3>
             <p className="text-xs text-gray-600 leading-relaxed" dir="ltr">
-              Manually fixing mixed character variants, spacing anomalies, and missing diacritics takes days. Our preflight engine automates layout and typography auditing instantly.
+              Manually fixing mixed character variants, spacing anomalies, and missing diacritics can take hours of manual effort. Our preflight engine automates layout and typography auditing instantly.
             </p>
           </div>
 
-          {/* Pillar 3: Publication Ready */}
+          {/* Pillar 3: Publication-Grade Output */}
           <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm">
             <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">03 / Publication-Grade Output</div>
             <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">اشاعت کے لیے تیار معیار</h3>
             <p className="text-xs text-gray-600 leading-relaxed" dir="ltr">
-              Output documents are optimized for academic journals, publishing houses, and professional presses, ensuring zero typography errors before going to print.
+              Output documents are optimized for academic journals, publishing houses, and professional presses, reducing typography errors before going to print.
             </p>
           </div>
 
@@ -114,7 +114,6 @@ export default function Home() {
         <div className="pt-2">
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold mb-1 font-nastaliq">متن کی اصلاح و اشاعت کے اوزار / AI Publishing Suite</h2>
-            <p className="text-gray-600 text-xs md:text-sm" dir="ltr">Automating Arabic-script publishing workflows and complex layout preparation</p>
           </div>
 
           {/* Tools Grid */}
