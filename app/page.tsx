@@ -17,17 +17,22 @@ export default function Home() {
           Qalam Works
         </h1>
         
-        <p className="text-lg md:text-xl font-semibold text-amber-800 mb-4" dir="ltr">
+        <p className="text-lg md:text-xl font-semibold text-amber-800 mb-3" dir="ltr">
           AI-Powered Urdu, Arabic & Persian Publishing Tools
         </p>
 
-        {/* Value Proposition with Normalization */}
+        {/* Workflow Value Tagline */}
+        <p className="text-xs md:text-sm font-medium text-amber-700 mb-4 tracking-wide" dir="ltr">
+          Automating Arabic-script publishing workflows with AI
+        </p>
+
+        {/* Value Proposition */}
         <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto mb-6 leading-relaxed">
           <span dir="ltr" className="block font-medium text-gray-800 mb-1">
             Professional AI tools for Unicode normalization, Arabic-script typography, and publication-ready Urdu, Arabic & Persian documents.
           </span>
           <span className="text-xs md:text-sm text-gray-500 font-nastaliq block">
-            (اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی، ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید AI معاون اوزار)
+            (اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی، ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید AI اوزار)
           </span>
         </p>
 
@@ -73,7 +78,7 @@ export default function Home() {
             <p className="text-gray-600 text-xs md:text-sm" dir="ltr">Automating Arabic-script publishing workflows and complex layout preparation</p>
           </div>
 
-          {/* Tools Grid with Clean Layout & No Broken Brackets */}
+          {/* Tools Grid with User-Friendly & Clean Content */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
             
             {/* Tool 1: Unicode Standardizer */}
@@ -81,7 +86,7 @@ export default function Home() {
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Unicode Standardizer</h3>
                 <p className="text-xs text-gray-500 mb-2" dir="ltr">Arabic/Persian variants → Standard Urdu forms</p>
-                <p className="text-xs text-gray-600 mb-3" dir="ltr">Normalizes Arabic/Persian letter variants into standard Urdu shapes using AI-powered script normalization.</p>
+                <p className="text-xs text-gray-600 mb-3" dir="ltr">Converts Arabic/Persian letter variants into correct Urdu forms for clean, consistent publishing.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
                 <div className="text-red-600">Before: علي عليه السلام</div>
@@ -94,7 +99,7 @@ export default function Home() {
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Diacritics & Tashkeel Manager</h3>
                 <p className="text-xs text-gray-500 mb-1">تشکیل اور اعراب کا مینیجر</p>
-                <p className="text-xs font-medium text-amber-800 mb-2" dir="ltr">AI-assisted grammar-aware Tashkeel</p>
+                <p className="text-xs font-medium text-amber-800 mb-2" dir="ltr">AI-assisted Grammar-aware Tashkeel</p>
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">Intelligently manages, adds, or cleans short vowels (Zabar, Zair, Paish).</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
