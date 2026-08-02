@@ -12,13 +12,14 @@ export default function Home() {
           For Researchers • Translators • Publishers • Digital Scribes
         </div>
 
-        {/* Main Title & Compact Spacing */}
-        <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-2 font-nastaliq leading-relaxed">
+        {/* Main Title with Clean Mobile Line Break */}
+        <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight mb-2 font-nastaliq leading-relaxed">
           Qalam Works
         </h1>
         
-        <p className="text-lg md:text-xl font-semibold text-amber-800 mb-3" dir="ltr">
-          AI-Powered Urdu, Arabic & Persian Publishing Tools
+        <p className="text-lg md:text-2xl font-semibold text-amber-800 mb-3 leading-snug" dir="ltr">
+          AI-Powered Publishing Tools <br className="hidden sm:inline" />
+          <span className="text-base md:text-xl font-medium text-gray-700">for Urdu, Arabic & Persian</span>
         </p>
 
         {/* Workflow Value Tagline */}
@@ -32,24 +33,24 @@ export default function Home() {
             Professional AI tools for Unicode normalization, Arabic-script typography, and publication-ready Urdu, Arabic & Persian documents.
           </span>
           <span className="text-xs md:text-sm text-gray-500 font-nastaliq block">
-            اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی، ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید AI اوزار
+            اردو، عربی اور فارسی متن کی اصلاح، یونی کوڈ معیاری کاری، خوبصورت ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید AI اوزار
           </span>
         </p>
 
-        {/* Action Buttons */}
+        {/* Action Buttons with Actionable Labels */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-3 w-full max-w-lg mx-auto">
           <Link
             href="#tools"
             className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-all text-sm text-center"
           >
-            متن پیسٹ کریں / Paste Text
+            Paste & Process Text / متن پیسٹ کریں
           </Link>
 
           <Link
             href="#upload"
             className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 font-semibold px-5 py-2.5 rounded-lg shadow-sm transition-all text-sm text-center"
           >
-            فائل اپ لوڈ کریں / Upload File
+            Upload Document / فائل اپ لوڈ کریں
           </Link>
 
           <Link
@@ -78,19 +79,19 @@ export default function Home() {
             <p className="text-gray-600 text-xs md:text-sm" dir="ltr">Automating Arabic-script publishing workflows and complex layout preparation</p>
           </div>
 
-          {/* Tools Grid with Final Polish */}
+          {/* Tools Grid with Refined Content */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
             
             {/* Tool 1: Unicode Standardizer */}
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Unicode Standardizer</h3>
-                <p className="text-xs text-gray-500 mb-2" dir="ltr">Arabic/Persian variants → Standard Urdu forms</p>
+                <p className="text-xs text-gray-500 mb-2" dir="ltr">Arabic/Persian variants → Standardized forms</p>
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">Converts Arabic/Persian letter variants into standardized forms for clean, consistent publishing.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
-                <div className="text-red-600">Before: علي عليه السلام</div>
-                <div className="text-green-600">After: علی علیہ السلام</div>
+                <div className="text-red-600">Before: يحيى، علي، كربلاء</div>
+                <div className="text-green-600">After: یحییٰ، علی، کربلا</div>
               </div>
             </div>
 
@@ -99,7 +100,7 @@ export default function Home() {
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Diacritics & Tashkeel Manager</h3>
                 <p className="text-xs text-gray-500 mb-1">تشکیل اور اعراب کا مینیجر</p>
-                <p className="text-xs font-medium text-amber-800 mb-2" dir="ltr">AI-Assisted Grammar-Aware Tashkeel</p>
+                <p className="text-xs font-medium text-amber-800 mb-2" dir="ltr">AI-Assisted Tashkeel & Diacritics Management</p>
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">Intelligently manages, adds, or cleans short vowels (Zabar, Zair, Paish).</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
@@ -113,7 +114,7 @@ export default function Home() {
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Publication Quality Checker</h3>
                 <p className="text-xs text-gray-500 mb-2">پبلیکیشن کوالٹی چیکر (Preflight Audit)</p>
-                <p className="text-xs text-gray-600 mb-3" dir="ltr">AI-powered preflight scan for Arabic/Urdu punctuation errors, broken ligatures, citation formatting, and page layout issues.</p>
+                <p className="text-xs text-gray-600 mb-3" dir="ltr">Detects RTL issues, typography errors, spacing problems, citation mistakes and publication formatting issues.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs text-amber-800 font-medium text-left" dir="ltr">
                 ✓ Checks: RTL • Typography • Citations • Layout • Punctuation • Spacing
