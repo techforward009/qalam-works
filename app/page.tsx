@@ -32,7 +32,7 @@ export default function Home() {
             Professional AI tools for Unicode normalization, Arabic-script typography, and publication-ready Urdu, Arabic & Persian documents.
           </span>
           <span className="text-xs md:text-sm text-gray-500 font-nastaliq block">
-            (اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی، ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید AI اوزار)
+            اردو، عربی، فارسی اور مخلوط متن کی اصلاح، یونی کوڈ معیار بندی، ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید AI اوزار
           </span>
         </p>
 
@@ -78,7 +78,7 @@ export default function Home() {
             <p className="text-gray-600 text-xs md:text-sm" dir="ltr">Automating Arabic-script publishing workflows and complex layout preparation</p>
           </div>
 
-          {/* Tools Grid with User-Friendly & Clean Content */}
+          {/* Tools Grid with Final Polish */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
             
             {/* Tool 1: Unicode Standardizer */}
@@ -86,7 +86,7 @@ export default function Home() {
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Unicode Standardizer</h3>
                 <p className="text-xs text-gray-500 mb-2" dir="ltr">Arabic/Persian variants → Standard Urdu forms</p>
-                <p className="text-xs text-gray-600 mb-3" dir="ltr">Converts Arabic/Persian letter variants into correct Urdu forms for clean, consistent publishing.</p>
+                <p className="text-xs text-gray-600 mb-3" dir="ltr">Converts Arabic/Persian letter variants into standardized forms for clean, consistent publishing.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
                 <div className="text-red-600">Before: علي عليه السلام</div>
@@ -99,7 +99,7 @@ export default function Home() {
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Diacritics & Tashkeel Manager</h3>
                 <p className="text-xs text-gray-500 mb-1">تشکیل اور اعراب کا مینیجر</p>
-                <p className="text-xs font-medium text-amber-800 mb-2" dir="ltr">AI-assisted Grammar-aware Tashkeel</p>
+                <p className="text-xs font-medium text-amber-800 mb-2" dir="ltr">AI-Assisted Grammar-Aware Tashkeel</p>
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">Intelligently manages, adds, or cleans short vowels (Zabar, Zair, Paish).</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
@@ -116,7 +116,7 @@ export default function Home() {
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">AI-powered preflight scan for Arabic/Urdu punctuation errors, broken ligatures, citation formatting, and page layout issues.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs text-amber-800 font-medium text-left" dir="ltr">
-                ✓ Checks: RTL • Typography • Citations • Layout • Punctuation
+                ✓ Checks: RTL • Typography • Citations • Layout • Punctuation • Spacing
               </div>
             </div>
 
