@@ -12,15 +12,15 @@ export default function Home() {
           For Researchers • Translators • Publishers • Digital Scribes
         </div>
 
-        {/* Main Title with Clean Mobile Line Break */}
+        {/* Main Title with Robust Mobile Line Break & Padding */}
         <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight mb-2 font-nastaliq leading-relaxed">
           Qalam Works
         </h1>
         
-        <p className="text-lg md:text-2xl font-semibold text-amber-800 mb-3 leading-snug" dir="ltr">
-          AI-Powered Publishing Tools <br className="hidden sm:inline" />
-          <span className="text-base md:text-xl font-medium text-gray-700">for Urdu, Arabic & Persian</span>
-        </p>
+        <div className="text-lg md:text-2xl font-semibold text-amber-800 mb-3 leading-snug px-2" dir="ltr">
+          <span className="block sm:inline">AI-Powered Publishing Tools</span>{" "}
+          <span className="block sm:inline text-base md:text-xl font-medium text-gray-700">for Urdu, Arabic & Persian</span>
+        </div>
 
         {/* Workflow Value Tagline */}
         <p className="text-xs md:text-sm font-medium text-amber-700 mb-4 tracking-wide" dir="ltr">
@@ -37,7 +37,7 @@ export default function Home() {
           </span>
         </p>
 
-        {/* Action Buttons with Actionable Labels */}
+        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-3 w-full max-w-lg mx-auto">
           <Link
             href="#tools"
@@ -79,7 +79,7 @@ export default function Home() {
             <p className="text-gray-600 text-xs md:text-sm" dir="ltr">Automating Arabic-script publishing workflows and complex layout preparation</p>
           </div>
 
-          {/* Tools Grid with Refined Content */}
+          {/* Tools Grid with Perfected Content & Examples */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
             
             {/* Tool 1: Unicode Standardizer */}
@@ -90,8 +90,8 @@ export default function Home() {
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">Converts Arabic/Persian letter variants into standardized forms for clean, consistent publishing.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs space-y-1 border border-gray-100 font-mono text-left" dir="ltr">
-                <div className="text-red-600">Before: يحيى، علي، كربلاء</div>
-                <div className="text-green-600">After: یحییٰ، علی، کربلا</div>
+                <div className="text-red-600">Before: علي عليه السلام، كربلاء، يحيى</div>
+                <div className="text-green-600">After: علی علیہ السلام، کربلا، یحییٰ</div>
               </div>
             </div>
 
@@ -99,7 +99,7 @@ export default function Home() {
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Diacritics & Tashkeel Manager</h3>
-                <p className="text-xs text-gray-500 mb-1">تشکیل اور اعراب کا مینیجر</p>
+                <p className="text-xs text-gray-500 mb-1">تشکیل و اعراب کی اصلاح</p>
                 <p className="text-xs font-medium text-amber-800 mb-2" dir="ltr">AI-Assisted Tashkeel & Diacritics Management</p>
                 <p className="text-xs text-gray-600 mb-3" dir="ltr">Intelligently manages, adds, or cleans short vowels (Zabar, Zair, Paish).</p>
               </div>
@@ -114,7 +114,7 @@ export default function Home() {
               <div>
                 <h3 className="text-base font-bold mb-1 text-amber-700">Publication Quality Checker</h3>
                 <p className="text-xs text-gray-500 mb-2">پبلیکیشن کوالٹی چیکر (Preflight Audit)</p>
-                <p className="text-xs text-gray-600 mb-3" dir="ltr">Detects RTL issues, typography errors, spacing problems, citation mistakes and publication formatting issues.</p>
+                <p className="text-xs text-gray-600 mb-3" dir="ltr">Detects RTL issues, typography errors, spacing problems, citation & reference formatting issues, and publication formatting errors.</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg text-xs text-amber-800 font-medium text-left" dir="ltr">
                 ✓ Checks: RTL • Typography • Citations • Layout • Punctuation • Spacing
