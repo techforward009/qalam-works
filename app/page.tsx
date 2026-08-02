@@ -6,7 +6,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#FDFBF7] text-[#121417] flex flex-col font-sans text-center" dir="rtl">
       
       {/* 1. Hero Section */}
-      <section className="max-w-5xl mx-auto px-4 pt-8 pb-8 text-center">
+      <section className="max-w-5xl mx-auto px-4 pt-8 pb-6 text-center">
         
         {/* Target Audience Tag */}
         <div className="inline-block bg-amber-100 text-amber-800 text-xs md:text-sm font-medium px-4 py-1.5 rounded-full mb-4 shadow-sm mx-auto" dir="ltr">
@@ -56,19 +56,10 @@ export default function Home() {
             لائیو مثال دیکھیں / Try Demo
           </Link>
         </div>
-        
-        <div className="mt-3 text-center">
-          <Link
-            href="#who-is-it-for"
-            className="text-xs md:text-sm text-gray-600 hover:text-amber-700 underline transition-all inline-block"
-          >
-            Who is it for? / یہ کس کے لیے ہے؟
-          </Link>
-        </div>
       </section>
 
       {/* 2. Why Qalam Works? (Value Section) */}
-      <section id="why-us" className="max-w-6xl mx-auto px-4 py-8 bg-amber-50/50 border-y border-amber-100/60 my-4 text-center">
+      <section id="why-us" className="max-w-6xl mx-auto px-4 py-8 bg-amber-50/50 border-y border-amber-100/60 my-2 text-center">
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold mb-1 text-amber-900" dir="ltr">
             Why Qalam Works?
