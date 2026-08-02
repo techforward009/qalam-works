@@ -58,15 +58,15 @@ export default function Home() {
         
         <div className="mt-3">
           <Link
-            href="#why-us"
+            href="#who-is-it-for"
             className="text-xs md:text-sm text-gray-600 hover:text-amber-700 underline transition-all"
           >
-            Why Qalam Works? / کیوں انتخاب کریں؟
+            Who is it for? / یہ کس کے لیے ہے؟
           </Link>
         </div>
       </section>
 
-      {/* 2. Why Qalam Works? (Refined Value Section) */}
+      {/* 2. Why Qalam Works? (Value Section) */}
       <section id="why-us" className="max-w-6xl mx-auto px-4 py-8 bg-amber-50/50 border-y border-amber-100/60 my-4">
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold mb-1 text-amber-900" dir="ltr">
@@ -112,8 +112,71 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. AI Utility Suite & Tools Cards */}
-      <section id="tools" className="max-w-6xl mx-auto px-4 py-8">
+      {/* 3. Who is Qalam Works for? (Target Audience Section) */}
+      <section id="who-is-it-for" className="max-w-6xl mx-auto px-4 py-8">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold mb-1 text-amber-900" dir="ltr">
+            Who is Qalam Works for?
+          </h2>
+          <h3 className="text-xl md:text-2xl font-bold mb-3 font-nastaliq text-amber-800">
+            یہ پلیٹ فارم کس کے لیے ہے؟
+          </h3>
+          <p className="text-gray-600 text-xs md:text-sm max-w-2xl mx-auto" dir="ltr">
+            Built for professionals working with Arabic-script text and high-volume publishing workflows.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-right">
+          
+          {/* Card 1: Researchers */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div>
+              <div className="text-amber-600 text-sm font-bold mb-1" dir="ltr">01</div>
+              <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">محققین (Researchers)</h3>
+              <p className="text-xs text-gray-600 leading-relaxed mt-2" dir="ltr">
+                Clean academic texts, precise references, and proper Arabic-script formatting for thesis and papers.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2: Translators */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div>
+              <div className="text-amber-600 text-sm font-bold mb-1" dir="ltr">02</div>
+              <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">مترجمین (Translators)</h3>
+              <p className="text-xs text-gray-600 leading-relaxed mt-2" dir="ltr">
+                Standardize multilingual texts across Urdu, Arabic, and Persian to prepare publication-ready outputs.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: Publishers */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div>
+              <div className="text-amber-600 text-sm font-bold mb-1" dir="ltr">03</div>
+              <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">ناشرین (Publishers)</h3>
+              <p className="text-xs text-gray-600 leading-relaxed mt-2" dir="ltr">
+                Reduce proofreading turnaround time, eliminate layout flaws, and dramatically improve print quality.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 4: Digital Scribes */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div>
+              <div className="text-amber-600 text-sm font-bold mb-1" dir="ltr">04</div>
+              <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">ڈیجیٹل کاتبین (Digital Scribes)</h3>
+              <p className="text-xs text-gray-600 leading-relaxed mt-2" dir="ltr">
+                Convert messy raw text dumps into clean, structurally uniform documents ready for typesetting.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 4. AI Utility Suite & Tools Cards (MVP Freeze) */}
+      <section id="tools" className="max-w-6xl mx-auto px-4 py-8 bg-amber-50/30 border-t border-amber-100/60">
         <div className="pt-2">
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold mb-1 font-nastaliq">متن کی اصلاح و اشاعت کے اوزار / AI Publishing Suite</h2>
@@ -161,6 +224,39 @@ export default function Home() {
               </div>
             </div>
 
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Interactive Demo Section (Workflow Preview) */}
+      <section id="demo" className="max-w-4xl mx-auto px-4 py-10">
+        <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
+          <div className="text-center mb-6">
+            <h2 className="text-xl md:text-2xl font-bold mb-1 font-nastaliq text-amber-900">لائیو ڈیمو / Interactive Demo Preview</h2>
+            <p className="text-xs md:text-sm text-gray-600" dir="ltr">Experience real-time Arabic-script processing and normalization.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1" dir="ltr">Input Sample (Raw Text):</label>
+              <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[80px]" dir="rtl">
+                علي عليه السلام الكتابه العربيه
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-amber-800 mb-1" dir="ltr">Processed Output (Qalam Works):</label>
+              <div className="bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[80px]" dir="rtl">
+                علی علیہ السلام الکتابة العربية
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex flex-wrap items-center justify-center gap-3 text-xs font-medium text-green-700" dir="ltr">
+            <span>✓ Unicode fixed</span>
+            <span className="text-gray-300">•</span>
+            <span>✓ RTL optimized</span>
+            <span className="text-gray-300">•</span>
+            <span>✓ Typography checked</span>
           </div>
         </div>
       </section>
