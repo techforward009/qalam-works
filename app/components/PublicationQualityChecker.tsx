@@ -50,6 +50,7 @@ export default function PublicationQualityChecker() {
               <span className="font-bold block text-amber-900 mb-1">Typography:</span>
               <div>• Multiple Spaces: {report.typography.multipleSpaces}</div>
               <div>• Empty Lines: {report.typography.emptyLines}</div>
+              <div>• Long Paragraphs: {report.typography.longParagraphs}</div>
             </div>
 
             {/* Punctuation Section */}
@@ -63,6 +64,7 @@ export default function PublicationQualityChecker() {
             <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">
               <span className="font-bold block text-amber-900 mb-1">Text Quality:</span>
               <div>• Repeated Words: {report.textQuality.repeatedWords}</div>
+              <div>• Mixed Script: {report.textQuality.mixedScript}</div>
             </div>
           </div>
         </div>
