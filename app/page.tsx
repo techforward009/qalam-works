@@ -69,9 +69,12 @@ export default function Home() {
       {/* 2. Why Qalam Works? (Refined Value Section) */}
       <section id="why-us" className="max-w-6xl mx-auto px-4 py-8 bg-amber-50/50 border-y border-amber-100/60 my-4">
         <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold mb-2 font-nastaliq text-amber-900">
-            Why Qalam Works? / کیوں انتخاب کریں؟
+          <h2 className="text-2xl md:text-3xl font-bold mb-2 text-amber-900" dir="ltr">
+            Why Qalam Works?
           </h2>
+          <h3 className="text-xl md:text-2xl font-bold mb-3 font-nastaliq text-amber-800">
+            کیوں انتخاب کریں؟
+          </h3>
           <p className="text-gray-600 text-xs md:text-sm max-w-2xl mx-auto" dir="ltr">
             Traditional word processors and generic AI tools struggle with complex Arabic-script typography. Qalam Works is built specifically for these challenges.
           </p>
