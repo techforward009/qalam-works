@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { validateFile } from "../utils/fileValidation";
-import { processDocument } from "../utils/documentExtractor";
+import { handleDocumentUpload } from "../actions/documentAction";
 import { PipelineResult } from "../types/documentPipeline";
 import { downloadCleanedText } from "../utils/downloadCleanedText";
 
@@ -35,8 +35,11 @@ export default function DocumentUpload() {
     await new Promise((r) => setTimeout(r, 400));
 
     setStepMessage("Running Quality Audit & Generating Qalam Report...");
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
     
-    const pipelineResult = await processDocument(selectedFile);
+    const pipelineResult = await handleDocumentUpload(formData);
     setLoading(false);
 
     if (!pipelineResult.success) {
