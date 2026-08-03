@@ -9,6 +9,7 @@ import { downloadCleanedText } from "../utils/downloadCleanedText";
 export default function DocumentUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [stepMessage, setStepMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PipelineResult | null>(null);
   const [activeTab, setActiveTab] = useState<"preview" | "report">("report");
@@ -26,11 +27,20 @@ export default function DocumentUpload() {
     setFile(selectedFile);
     setLoading(true);
 
+    // Simulated / Stage-wise Progress Simulation for Pro UX
+    setStepMessage("Extracting text from document...");
+    await new Promise((r) => setTimeout(r, 400));
+    
+    setStepMessage("Normalizing Unicode & Spacing...");
+    await new Promise((r) => setTimeout(r, 400));
+
+    setStepMessage("Running Quality Audit & Generating Qalam Report...");
+    
     const pipelineResult = await processDocument(selectedFile);
     setLoading(false);
 
     if (!pipelineResult.success) {
-      setError(pipelineResult.error || "فائل پروسیسنگ ناکام ہو گئی / Processing error.");
+      setError(pipelineResult.error || "فائل پراسیس کرنے میں خرابی پیش آئی / Processing error.");
       return;
     }
 
@@ -56,7 +66,7 @@ export default function DocumentUpload() {
           </p>
         </div>
 
-        {/* Drag & Drop / Upload Area */}
+        {/* Drag & Drop / Upload Area with Brand-Aligned Icon & Clean SaaS Text */}
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
@@ -70,14 +80,16 @@ export default function DocumentUpload() {
             id="file-upload-input"
           />
           <label htmlFor="file-upload-input" className="cursor-pointer flex flex-col items-center w-full">
+            {/* Document + AI Sparkle / Upload Icon */}
             <svg className="w-10 h-10 text-amber-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 11V7m0 0L10 9m2-2l2 2" />
             </svg>
             <span className="text-sm font-semibold text-amber-900 mb-1">
-              فائل یہاں ڈراپ کریں یا منتخب کرنے کے لیے کلک کریں
+              اپنی دستاویز یہاں ڈراپ کریں یا منتخب کریں
             </span>
             <span className="text-xs text-gray-500" dir="ltr">
-              Supports .txt and .docx (Max size: 5MB)
+              Drop your document here or click to browse (.txt, .docx up to 5MB)
             </span>
           </label>
         </div>
@@ -89,11 +101,12 @@ export default function DocumentUpload() {
           </div>
         )}
 
-        {/* Loading State */}
+        {/* Loading State with Progress Step Feedback */}
         {loading && (
           <div className="py-8 flex flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700 mb-2"></div>
-            <p className="text-xs text-amber-900 font-medium">فائل پراسیس ہو رہی ہے، براہ کرم انتظار کریں...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700 mb-3"></div>
+            <p className="text-xs font-bold text-amber-900 mb-1">پراسیسنگ جاری ہے...</p>
+            <p className="text-[11px] text-amber-700 font-mono" dir="ltr">{stepMessage}</p>
           </div>
         )}
 
