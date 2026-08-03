@@ -1,6 +1,7 @@
 import Link from "next/link";
 import InteractiveDemo from "./components/InteractiveDemo";
 import PublicationQualityChecker from "./components/PublicationQualityChecker";
+import DocumentUpload from "./components/DocumentUpload";
 
 export default function Home() {
   return (
@@ -51,10 +52,10 @@ export default function Home() {
           </Link>
 
           <Link
-            href="#why-us"
-            className="w-full sm:w-auto bg-transparent hover:bg-amber-50/60 text-gray-600 hover:text-amber-900 border border-transparent hover:border-amber-200 font-medium px-4 py-2.5 transition-all text-sm text-center"
+            href="#document-upload"
+            className="w-full sm:w-auto bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-semibold px-5 py-2.5 rounded-lg shadow-sm transition-all text-sm text-center"
           >
-            مزید جانیں / Learn More
+            Upload File / فائل اپ لوڈ
           </Link>
         </div>
       </section>
@@ -168,11 +169,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. Core Core Engines: Unicode Standardizer v1.0 */}
+      {/* 4. Core Engines: Unicode Standardizer v1.0 */}
       <InteractiveDemo />
 
       {/* 5. Core Engines: Publication Quality Checker MVP */}
       <PublicationQualityChecker />
+
+      {/* 6. Document Upload Pipeline */}
+      <DocumentUpload />
 
     </div>
   );
