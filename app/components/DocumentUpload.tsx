@@ -30,7 +30,7 @@ export default function DocumentUpload() {
     setLoading(false);
 
     if (!pipelineResult.success) {
-      setError(pipelineResult.error || "فائل پراسیس کرنے میں خرابی پیش آئی / Processing error.");
+      setError(pipelineResult.error || "فائل پروسیسنگ ناکام ہو گئی / Processing error.");
       return;
     }
 
