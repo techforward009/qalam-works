@@ -1,59 +1,50 @@
 import mammoth from "mammoth";
-import { standardizeUrduText } from "./unicodeStandardizer";
+import { standardizeUrduText } from "./unicodeNormalizer";
 import { checkTextQuality } from "./qualityChecker";
 import { PipelineResult } from "../types/documentPipeline";
-import { formatFileSize } from "./fileValidation";
 
 export async function processDocument(file: File): Promise<PipelineResult> {
   try {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     let rawText = "";
-    const fileExtension = file.name.split(".").pop()?.toLowerCase();
 
-    if (fileExtension === "txt") {
-      rawText = await file.text();
-    } else if (fileExtension === "docx") {
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
+    if (file.name.endsWith(".docx")) {
+      const result = await mammoth.extractRawText({ buffer });
       rawText = result.value;
     } else {
-      return { success: false, error: "ناقابلِ تائید فائل فارمیٹ / Unsupported file format." };
+      const decoder = new TextDecoder("utf-8");
+      rawText = decoder.decode(buffer);
     }
 
-    if (!rawText.trim()) {
-      return { success: false, error: "فائل خالی ہے یا متن نہیں نکالا جا سکا / File is empty or text could not be extracted." };
-    }
+    const { cleanedText, stats: normStats } = standardizeUrduText(rawText);
+    const qualityAudit = checkTextQuality(cleanedText);
 
-    // 1. Normalize Text (Corrections Applied)
-    const standardizationResult = standardizeUrduText(rawText);
-    const cleanedText = standardizationResult.output;
-
-    // 2. Audit Remaining Issues on Normalized Output
-    const remainingIssues = checkTextQuality(cleanedText);
-
-    // 3. Compute Metrics
-    const characterCount = cleanedText.length;
+    const fileSizeKB = (file.size / 1024).toFixed(1) + " KB";
     const wordCount = cleanedText.trim() ? cleanedText.trim().split(/\s+/).length : 0;
+    const characterCount = cleanedText.length;
 
     return {
       success: true,
-      originalText: rawText,
       cleanedText,
       summary: {
         fileName: file.name,
-        fileType: file.type || `.${fileExtension}`,
-        fileSize: formatFileSize(file.size),
-        characterCount,
+        fileSize: fileSizeKB,
         wordCount,
+        characterCount,
         correctionsApplied: {
-          totalCorrections: standardizationResult.summary.totalCorrections,
-          arabicNormalizations: standardizationResult.summary.arabicNormalizations,
-          spacingFixes: standardizationResult.summary.spacingFixes,
-          punctuationFixes: standardizationResult.summary.punctuationFixes,
+          totalCorrections: normStats.total,
+          arabicNormalizations: normStats.arabic,
+          spacingFixes: normStats.spacing,
+          punctuationFixes: normStats.punctuation,
         },
-        remainingIssues,
+        remainingIssues: qualityAudit,
       },
     };
-  } catch (err: any) {
-    return { success: false, error: err.message || "فائل پراسیس کرنے میں خرابی پیش آئی / Error processing file." };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to process document.",
+    };
   }
 }
