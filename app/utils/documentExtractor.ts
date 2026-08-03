@@ -1,5 +1,5 @@
 import mammoth from "mammoth";
-import { standardizeUrduText } from "./unicodeNormalizer";
+import { standardizeUrduText } from "./unicodeStandardizer";
 import { checkTextQuality } from "./qualityChecker";
 import { PipelineResult } from "../types/documentPipeline";
 
