@@ -17,7 +17,12 @@ export async function processDocument(file: File): Promise<PipelineResult> {
       rawText = decoder.decode(buffer);
     }
 
-    const { cleanedText, stats: normStats } = standardizeUrduText(rawText);
+    const standardizationResult = standardizeUrduText(rawText);
+    const cleanedText = typeof standardizationResult === "string" ? standardizationResult : standardizationResult.cleanedText;
+    const normStats = typeof standardizationResult === "string" 
+      ? { total: 0, arabic: 0, spacing: 0, punctuation: 0 } 
+      : (standardizationResult.stats || { total: 0, arabic: 0, spacing: 0, punctuation: 0 });
+
     const qualityAudit = checkTextQuality(cleanedText);
 
     const fileSizeKB = (file.size / 1024).toFixed(1) + " KB";
