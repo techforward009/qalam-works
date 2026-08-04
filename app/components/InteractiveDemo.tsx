@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { standardizeUrduText } from "../utils/unicodeStandardizer";
+import { standardizeUrduText } from "../../utils/unicode/standardizeUrduText";
 
 export default function InteractiveDemo() {
   const [input, setInput] = useState("قال الامام علي عليه السلام: العلم نور ، والجهل ظلام");
@@ -71,7 +71,6 @@ export default function InteractiveDemo() {
         <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex flex-wrap items-center justify-center gap-2 md:gap-3 text-xs font-medium text-green-700" dir="ltr">
           {input.trim() ? (
             badges.map((badge, index) => {
-              // Convert text for UI display if needed
               const displayBadge = badge === "✓ RTL Optimized" ? "✓ RTL Compatible" : badge;
               return (
                 <span key={index} className="flex items-center">
@@ -83,6 +82,16 @@ export default function InteractiveDemo() {
           ) : (
             <span className="text-gray-400 font-sans text-xs">Awaiting input text...</span>
           )}
+        </div>
+
+        {/* Link to full tool */}
+        <div className="mt-4 text-center" dir="ltr">
+          <a
+            href="/tools/unicode-standardizer"
+            className="text-xs md:text-sm font-semibold text-amber-700 hover:text-amber-900 underline"
+          >
+            Open full Unicode Standardizer tool →
+          </a>
         </div>
       </div>
     </section>
