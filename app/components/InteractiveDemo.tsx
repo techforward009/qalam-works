@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { standardizeUrduText } from "../../utils/unicode/standardizeUrduText";
+import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 
 export default function InteractiveDemo() {
   const [input, setInput] = useState("قال الامام علي عليه السلام: العلم نور ، والجهل ظلام");
