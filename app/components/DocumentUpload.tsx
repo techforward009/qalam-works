@@ -20,17 +20,16 @@ export default function DocumentUpload() {
 
     const validation = validateFile(selectedFile);
     if (!validation.valid) {
-      setError(validation.error || "فائل کی توثیق ناکام ہو گئی / File validation failed.");
+      setError(validation.error || "فائل ناکام ہو گئی / File validation failed.");
       return;
     }
 
     setFile(selectedFile);
     setLoading(true);
 
-    // Simulated / Stage-wise Progress Simulation for Pro UX
     setStepMessage("Extracting text from document...");
     await new Promise((r) => setTimeout(r, 400));
-    
+
     setStepMessage("Normalizing Unicode & Spacing...");
     await new Promise((r) => setTimeout(r, 400));
 
@@ -38,12 +37,12 @@ export default function DocumentUpload() {
 
     const formData = new FormData();
     formData.append("file", selectedFile);
-    
+
     const pipelineResult = await handleDocumentUpload(formData);
     setLoading(false);
 
     if (!pipelineResult.success) {
-      setError(pipelineResult.error || "فائل پراسیس کرنے میں خرابی پیش آئی / Processing error.");
+      setError(pipelineResult.error || "فائل پراسیس کرنے میں خرابی ہوئی / Processing error.");
       return;
     }
 
@@ -62,14 +61,13 @@ export default function DocumentUpload() {
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         <div className="text-center mb-6">
           <h2 className="text-xl md:text-2xl font-bold mb-1 font-nastaliq text-amber-900">
-            ڈاکومنٹ پبلیکیشن پائپ لائن / Document Pipeline
+            ڈاکومنٹ پائپ لائن / Document Pipeline
           </h2>
           <p className="text-xs md:text-sm text-gray-600" dir="ltr">
             Upload .txt or .docx files for automated extraction, Unicode normalization, and quality audit.
           </p>
         </div>
 
-        {/* Drag & Drop / Upload Area with Brand-Aligned Icon & Clean SaaS Text */}
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
@@ -83,10 +81,9 @@ export default function DocumentUpload() {
             id="file-upload-input"
           />
           <label htmlFor="file-upload-input" className="cursor-pointer flex flex-col items-center w-full">
-            {/* Document + AI Sparkle / Upload Icon */}
             <svg className="w-10 h-10 text-amber-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 11V7m0 0L10 9m2-2l2 2" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 11V7m0 0l-2 2m2-2l2 2" />
             </svg>
             <span className="text-sm font-semibold text-amber-900 mb-1">
               اپنی دستاویز یہاں ڈراپ کریں یا منتخب کریں
@@ -97,14 +94,12 @@ export default function DocumentUpload() {
           </label>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium">
             {error}
           </div>
         )}
 
-        {/* Loading State with Progress Step Feedback */}
         {loading && (
           <div className="py-8 flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700 mb-3"></div>
@@ -113,10 +108,8 @@ export default function DocumentUpload() {
           </div>
         )}
 
-        {/* Results & Summary */}
         {result && result.summary && (
           <div className="text-left" dir="ltr">
-            {/* Tab Navigation */}
             <div className="flex border-b border-amber-200 mb-4">
               <button
                 onClick={() => setActiveTab("report")}
@@ -142,7 +135,6 @@ export default function DocumentUpload() {
 
             {activeTab === "report" ? (
               <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 text-xs text-amber-950 font-mono space-y-4">
-                {/* File Metadata */}
                 <div className="border-b border-amber-200 pb-3">
                   <span className="font-bold block text-sm text-amber-900 mb-2">File Metadata</span>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
@@ -153,7 +145,6 @@ export default function DocumentUpload() {
                   </div>
                 </div>
 
-                {/* Corrections Applied */}
                 <div className="border-b border-amber-200 pb-3">
                   <span className="font-bold block text-sm text-green-800 mb-2">Corrections Applied (Standardizer v1.0)</span>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px] text-green-900">
@@ -164,7 +155,6 @@ export default function DocumentUpload() {
                   </div>
                 </div>
 
-                {/* Remaining Issues */}
                 <div>
                   <span className="font-bold block text-sm text-amber-900 mb-2">Remaining Quality Issues (Audit v0.1)</span>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
@@ -195,7 +185,6 @@ export default function DocumentUpload() {
               </div>
             )}
 
-            {/* Download Action Button */}
             <div className="mt-6 flex justify-center">
               <button
                 onClick={() => result.cleanedText && downloadCleanedText(result.cleanedText, result.summary!.fileName)}
@@ -210,6 +199,16 @@ export default function DocumentUpload() {
             </div>
           </div>
         )}
+
+        {/* Link to full tool */}
+        <div className="mt-4 text-center" dir="ltr">
+          <a
+            href="/tools/document-cleaner"
+            className="text-xs md:text-sm font-semibold text-amber-700 hover:text-amber-900 underline"
+          >
+            Open full Document Cleaner tool →
+          </a>
+        </div>
       </div>
     </section>
   );
