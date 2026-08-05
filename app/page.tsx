@@ -21,17 +21,17 @@ export default function Home() {
         </h1>
         
         <div className="text-lg md:text-2xl font-semibold text-amber-800 mb-4 leading-snug px-2 text-center" dir="ltr">
-          <span className="block sm:inline">AI-Powered Publishing Tools</span>{" "}
+          <span className="block sm:inline">Professional Publishing Tools</span>{" "}
           <span className="block sm:inline text-base md:text-xl font-medium text-gray-700">for Urdu, Arabic & Persian</span>
         </div>
 
         {/* Value Proposition */}
         <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto mb-6 leading-relaxed text-center">
           <span dir="ltr" className="block font-medium text-gray-800 mb-1">
-            Professional AI tools for Unicode normalization, Arabic-script typography, and publication-ready Urdu, Arabic & Persian documents.
+            Professional tools for Unicode normalization, Arabic-script typography, and publication-ready Urdu, Arabic & Persian documents.
           </span>
           <span className="text-xs md:text-sm text-gray-500 font-nastaliq block">
-            اردو، عربی اور فارسی متن کی اصلاح، یونی کوڈ معیاری کاری، خوبصورت ٹائپوگرافی اور اشاعتی تیاری کے لیے جدید AI اوزار
+            اردو، عربی اور فارسی متن کی اصلاح، یونی کوڈ معیاری کاری، خوبصورت ٹائپوگرافی اور اشاعتی تیاری کے لیے پیشہ ورانہ اوزار
           </span>
         </p>
 
@@ -70,18 +70,18 @@ export default function Home() {
             کیوں انتخاب کریں؟
           </h3>
           <p className="text-gray-600 text-xs md:text-sm max-w-2xl mx-auto" dir="ltr">
-            Traditional word processors and generic AI tools struggle with complex Arabic-script typography. Qalam Works is built specifically for these challenges.
+            Traditional word processors and generic tools struggle with complex Arabic-script typography. Qalam Works is built specifically for these challenges.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
           
-          {/* Pillar 1: Script-Native AI */}
+          {/* Pillar 1: Script-Native Rules */}
           <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm flex flex-col items-center">
-            <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">01 / Script-Native AI</div>
-            <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">اردو، عربی و فارسی کے لیے خصوصی AI</h3>
+            <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">01 / Script-Native Rules</div>
+            <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">اردو، عربی و فارسی کے لیے خصوصی رسم الخط انجن</h3>
             <p className="text-xs text-gray-600 leading-relaxed text-center" dir="ltr">
-              Generic AI tools often struggle with Urdu spellings and RTL formatting. Qalam Works is designed specifically for Arabic, Persian, and Urdu script rules, ligatures, and Unicode standards.
+              Generic tools often struggle with Urdu spellings and RTL formatting. Qalam Works is designed specifically for Arabic, Persian, and Urdu script rules, ligatures, and Unicode standards.
             </p>
           </div>
 
