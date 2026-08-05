@@ -51,11 +51,22 @@ export function standardizeUrduText(input: string): StandardizeResult {
   const punctuationRegex = /,|;|\?/g;
   const matchesPunctuation = text.match(punctuationRegex);
   if (matchesPunctuation) {
-    punctuationFixes = matchesPunctuation.length;
+    punctuationFixes += matchesPunctuation.length;
     text = text
       .replace(/,/g, "،")
       .replace(/;/g, "؛")
       .replace(/\?/g, "؟");
+  }
+
+  // 3b. Remove stray space before Urdu/Arabic punctuation marks.
+  // Unlike English, these marks attach directly to the preceding word —
+  // no space before them. This fixes both marks just converted above and
+  // any Urdu punctuation already in the source text with a stray space.
+  const spaceBeforePunctuationRegex = /[ \t]+([،؛؟۔])/g;
+  const matchesSpaceBeforePunctuation = text.match(spaceBeforePunctuationRegex);
+  if (matchesSpaceBeforePunctuation) {
+    punctuationFixes += matchesSpaceBeforePunctuation.length;
+    text = text.replace(spaceBeforePunctuationRegex, "$1");
   }
 
   const totalCorrections = arabicNormalizations + spacingFixes + punctuationFixes;
