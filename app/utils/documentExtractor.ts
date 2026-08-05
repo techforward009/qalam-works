@@ -1,6 +1,6 @@
 import mammoth from "mammoth";
 import { standardizeUrduText } from "./unicode/standardizeUrduText";
-import { checkTextQuality } from "./qualityChecker";
+import { checkTextQuality } from "./quality/checkTextQuality";
 import { PipelineResult } from "../types/documentPipeline";
 
 /**
