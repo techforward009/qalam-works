@@ -43,11 +43,22 @@ export default function UnicodeStandardizerTool() {
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         {/* Clarification note — not a translator */}
         <div
-          className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900"
+          className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900"
           dir="rtl"
         >
           یہ ٹول متن کا مفہوم یا زبان تبدیل نہیں کرتا — یہ صرف رسم الخط کے مختلف Unicode
           variants کو معیاری بناتا ہے (ترجمہ نہیں، صرف ٹائپوگرافی کی درستگی)۔
+        </div>
+
+        {/* Note about protecting Arabic quotations */}
+        <div
+          className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900"
+          dir="rtl"
+        >
+          اگر متن میں اصل عربی اقتباس (حدیث، آیت وغیرہ) شامل ہو جسے تبدیل نہیں ہونا چاہیے، تو اسے{" "}
+          <span dir="ltr" className="font-mono bg-white px-1 rounded">{"{{ }}"}</span>{" "}
+          کے درمیان لکھیں — مثلاً <span dir="ltr" className="font-mono">{"{{قال...}}"}</span> —
+          یہ حصہ بالکل جوں کا توں رہے گا۔
         </div>
 
         {/* Editor */}
