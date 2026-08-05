@@ -1,1 +1,153 @@
+"use client";
 
+import { useState } from "react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
+
+function ToolbarButton({
+  onClick,
+  active,
+  children,
+  label,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  children: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+        active
+          ? "bg-amber-600 text-white border-amber-600"
+          : "bg-white text-gray-700 border-gray-300 hover:border-amber-400"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | "ltr"; setDir: (d: "rtl" | "ltr") => void }) {
+  if (!editor) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-gray-200" dir="ltr">
+      <ToolbarButton label="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
+        B
+      </ToolbarButton>
+      <ToolbarButton label="Italic" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}>
+        I
+      </ToolbarButton>
+      <ToolbarButton label="Heading 1" active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+        H1
+      </ToolbarButton>
+      <ToolbarButton label="Heading 2" active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+        H2
+      </ToolbarButton>
+      <ToolbarButton label="Bullet List" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+        • List
+      </ToolbarButton>
+      <ToolbarButton label="Numbered List" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+        1. List
+      </ToolbarButton>
+      <ToolbarButton label="Blockquote" active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+        " Quote
+      </ToolbarButton>
+      <ToolbarButton
+        label="Link"
+        active={editor.isActive("link")}
+        onClick={() => {
+          const url = window.prompt("URL:");
+          if (url) editor.chain().focus().setLink({ href: url }).run();
+          else editor.chain().focus().unsetLink().run();
+        }}
+      >
+        Link
+      </ToolbarButton>
+
+      <div className="w-px bg-gray-300 mx-1" />
+
+      <ToolbarButton label="Right-to-left (Urdu/Arabic/Persian)" active={dir === "rtl"} onClick={() => setDir("rtl")}>
+        RTL
+      </ToolbarButton>
+      <ToolbarButton label="Left-to-right (English)" active={dir === "ltr"} onClick={() => setDir("ltr")}>
+        LTR
+      </ToolbarButton>
+    </div>
+  );
+}
+
+export default function DocumentStudioEditor() {
+  const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
+  const [copied, setCopied] = useState(false);
+
+  const editor = useEditor({
+    extensions: [StarterKit, Link.configure({ openOnClick: false })],
+    content: "<p></p>",
+    immediatelyRender: false,
+  });
+
+  const handleCopy = async () => {
+    if (!editor) return;
+    try {
+      await navigator.clipboard.writeText(editor.getText());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable — button stays as "Copy"
+    }
+  };
+
+  const handleDownload = () => {
+    if (!editor) return;
+    const text = editor.getText();
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "qalam-document.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto px-4">
+      <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
+        <Toolbar editor={editor} dir={dir} setDir={setDir} />
+
+        <div
+          className="border border-gray-300 rounded-lg p-4 min-h-[300px] focus-within:ring-2 focus-within:ring-amber-500"
+          dir={dir}
+        >
+          <EditorContent
+            editor={editor}
+            className={`prose prose-sm max-w-none focus:outline-none ${
+              dir === "rtl" ? "font-nastaliq text-right" : "text-left"
+            }`}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2 mt-4" dir="ltr">
+          <button
+            onClick={handleCopy}
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
+          >
+            {copied ? "✓ Copied" : "Copy Text"}
+          </button>
+          <button
+            onClick={handleDownload}
+            className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
+          >
+            Download .txt
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
