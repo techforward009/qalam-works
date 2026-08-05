@@ -18,12 +18,15 @@ export interface StandardizeResult {
 // Character-level normalization map (Urdu-side). Only applied OUTSIDE
 // {{ }}-protected segments, since these letters are correct as-is in
 // classical Arabic (hadith, ayat) and should not be rewritten to Urdu forms.
+// The Alif-Hamza fix (أ/إ → ا) is safe here specifically because standard
+// Urdu orthography doesn't use hamza-on-alif at all — its presence in Urdu
+// prose is almost always a stray Arabic-keyboard artifact, not intentional.
 const CHAR_NORMALIZATIONS: { pattern: RegExp; replacement: string; label: string }[] = [
   { pattern: /ي/g, replacement: "ی", label: "ي → ی (عربی یے کو اردو یے میں تبدیل کیا گیا)" },
   { pattern: /ى/g, replacement: "ی", label: "ى → ی (الف مقصورہ کو اردو یے میں تبدیل کیا گیا)" },
   { pattern: /ك/g, replacement: "ک", label: "ك → ک (عربی کاف کو اردو کاف میں تبدیل کیا گیا)" },
-  { pattern: /أ/g, replacement: "ا", label: "أ → ا (ہمزہ والا الف سادہ الف میں تبدیل کیا گیا)" },
-  { pattern: /إ/g, replacement: "ا", label: "إ → ا (ہمزہ والا الف سادہ الف میں تبدیل کیا گیا)" },
+  { pattern: /أ/g, replacement: "ا", label: "أ → ا (ہمزہ والا الف سادہ الف میں تبدیل کیا گیا — صرف اردو متن میں)" },
+  { pattern: /إ/g, replacement: "ا", label: "إ → ا (ہمزہ والا الف سادہ الف میں تبدیل کیا گیا — صرف اردو متن میں)" },
 ];
 
 // Character-level normalization map (Arabic-side). Only applied INSIDE
@@ -33,6 +36,8 @@ const CHAR_NORMALIZATIONS: { pattern: RegExp; replacement: string; label: string
 // is unambiguous and safe.
 const ARABIC_ONLY_NORMALIZATIONS: { pattern: RegExp; replacement: string; label: string }[] = [
   { pattern: /ہ/g, replacement: "ه", label: "ہ → ه (اردو ہے کو عربی ہے میں تبدیل کیا گیا)" },
+  { pattern: /ک/g, replacement: "ك", label: "ک → ك (اردو کاف کو عربی کاف میں تبدیل کیا گیا)" },
+  { pattern: /ے/g, replacement: "ي", label: "ے → ي (اردو یے بڑی کو عربی یے میں تبدیل کیا گیا)" },
 ];
 
 // ASCII punctuation to Urdu/Arabic punctuation. Applied BOTH inside and
