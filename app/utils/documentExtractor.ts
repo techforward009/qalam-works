@@ -1,5 +1,5 @@
 import mammoth from "mammoth";
-import { standardizeUrduText } from "./unicodeStandardizer";
+import { standardizeUrduText } from "./unicode/standardizeUrduText";
 import { checkTextQuality } from "./qualityChecker";
 import { PipelineResult } from "../types/documentPipeline";
 
@@ -8,7 +8,6 @@ export async function processDocument(file: File): Promise<PipelineResult> {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     let rawText = "";
-
     if (file.name.endsWith(".docx")) {
       const result = await mammoth.extractRawText({ buffer });
       rawText = result.value;
@@ -18,13 +17,15 @@ export async function processDocument(file: File): Promise<PipelineResult> {
     }
 
     const standardizationResult = standardizeUrduText(rawText);
-    const cleanedText = typeof standardizationResult === "string" ? standardizationResult : standardizationResult.cleanedText;
-    const normStats = typeof standardizationResult === "string" 
-      ? { total: 0, arabic: 0, spacing: 0, punctuation: 0 } 
-      : (standardizationResult.stats || { total: 0, arabic: 0, spacing: 0, punctuation: 0 });
+    const cleanedText = standardizationResult.output;
+    const normStats = {
+      total: standardizationResult.summary.totalCorrections,
+      arabic: standardizationResult.summary.arabicNormalizations,
+      spacing: standardizationResult.summary.spacingFixes,
+      punctuation: standardizationResult.summary.punctuationFixes,
+    };
 
     const qualityAudit = checkTextQuality(cleanedText);
-
     const fileSizeKB = (file.size / 1024).toFixed(1) + " KB";
     const wordCount = cleanedText.trim() ? cleanedText.trim().split(/\s+/).length : 0;
     const characterCount = cleanedText.length;
