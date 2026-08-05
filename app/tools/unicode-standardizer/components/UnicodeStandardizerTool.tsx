@@ -57,7 +57,7 @@ export default function UnicodeStandardizerTool() {
               Standardized Output / درست شدہ متن
             </label>
             <div
-              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[180px] overflow-y-auto text-right"
+              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[180px] overflow-y-auto text-right whitespace-pre-wrap"
               dir="rtl"
             >
               {hasInput ? (
