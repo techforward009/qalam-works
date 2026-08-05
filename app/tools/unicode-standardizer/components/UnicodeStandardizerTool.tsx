@@ -3,12 +3,16 @@
 import { useState } from "react";
 import { standardizeUrduText } from "../../../utils/unicode/standardizeUrduText";
 
+const SAMPLE_TEXT =
+  "قال ابن مسعود رضي الله عنه : ليس العلم بكثرة الرواية ، إنما العلم نور يقذف في القلب";
+
 export default function UnicodeStandardizerTool() {
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
 
   const { output, badges, summary } = standardizeUrduText(input);
   const hasInput = input.trim().length > 0;
+  const alreadyStandardized = hasInput && summary.totalCorrections === 0;
 
   const handleCopy = async () => {
     if (!output) return;
@@ -37,12 +41,29 @@ export default function UnicodeStandardizerTool() {
   return (
     <div className="max-w-4xl mx-auto px-4">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
+        {/* Clarification note — not a translator */}
+        <div
+          className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900"
+          dir="rtl"
+        >
+          یہ ٹول متن کا مفہوم یا زبان تبدیل نہیں کرتا — یہ صرف رسم الخط کے مختلف Unicode
+          variants کو معیاری بناتا ہے (ترجمہ نہیں، صرف ٹائپوگرافی کی درستگی)۔
+        </div>
+
         {/* Editor */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="flex flex-col">
-            <label className="block text-xs font-semibold text-gray-700 mb-1" dir="ltr">
-              Input Text / اصل متن
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-gray-700" dir="ltr">
+                Input Text / اصل متن
+              </label>
+              <button
+                onClick={() => setInput(SAMPLE_TEXT)}
+                className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline"
+              >
+                Try Example
+              </button>
+            </div>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -110,6 +131,16 @@ export default function UnicodeStandardizerTool() {
             </span>
           )}
         </div>
+
+        {/* Positive success state when no corrections were needed */}
+        {alreadyStandardized && (
+          <div
+            className="mb-4 bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800 font-medium text-center"
+            dir="rtl"
+          >
+            مبارک ہو! آپ کا متن پہلے ہی معیاری شکل میں موجود ہے۔
+          </div>
+        )}
 
         {/* Badges */}
         <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex flex-wrap items-center gap-2 md:gap-3 text-xs font-medium text-green-700" dir="ltr">
