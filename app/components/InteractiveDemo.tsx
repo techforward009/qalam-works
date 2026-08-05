@@ -38,7 +38,7 @@ export default function InteractiveDemo() {
               Processed Output (Qalam Works):
             </label>
             <div
-              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[100px] overflow-x-auto flex items-center justify-center text-center"
+              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[100px] overflow-x-auto flex items-center justify-center text-center whitespace-pre-wrap"
               dir="rtl"
             >
               {input.trim() ? (
