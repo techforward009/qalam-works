@@ -31,9 +31,6 @@ const CHAR_NORMALIZATIONS: { pattern: RegExp; replacement: string; label: string
 
 // Character-level normalization map (Arabic-side). Only applied INSIDE
 // {{ }}-protected segments — the reverse direction of CHAR_NORMALIZATIONS.
-// Urdu "ہ" (Heh Goal, U+06C1) never occurs in correct Arabic text, so
-// converting it to Arabic "ه" (U+0647) inside a protected Arabic quotation
-// is unambiguous and safe.
 const ARABIC_ONLY_NORMALIZATIONS: { pattern: RegExp; replacement: string; label: string }[] = [
   { pattern: /ہ/g, replacement: "ه", label: "ہ → ه (اردو ہے کو عربی ہے میں تبدیل کیا گیا)" },
   { pattern: /ک/g, replacement: "ك", label: "ک → ك (اردو کاف کو عربی کاف میں تبدیل کیا گیا)" },
@@ -41,8 +38,7 @@ const ARABIC_ONLY_NORMALIZATIONS: { pattern: RegExp; replacement: string; label:
 ];
 
 // ASCII punctuation to Urdu/Arabic punctuation. Applied BOTH inside and
-// outside {{ }}-protected segments — correct punctuation spacing/style
-// applies to Arabic text just as much as Urdu.
+// outside {{ }}-protected segments.
 const PUNCTUATION_NORMALIZATIONS: { pattern: RegExp; replacement: string; label: string }[] = [
   { pattern: /,/g, replacement: "،", label: "، (انگریزی کوما کو اردو کوما میں تبدیل کیا گیا)" },
   { pattern: /;/g, replacement: "؛", label: "؛ (انگریزی سیمی کولن کو اردو سیمی کولن میں تبدیل کیا گیا)" },
@@ -51,9 +47,6 @@ const PUNCTUATION_NORMALIZATIONS: { pattern: RegExp; replacement: string; label:
 
 const SPACE_BEFORE_PUNCTUATION_REGEX = /[ \t]+([:،؛؟۔])/g;
 
-// {{ ... }} — content inside is treated as classical Arabic: gets
-// Arabic-side character fixes + punctuation/spacing cleanup, but NOT the
-// Urdu-side character normalization.
 const PRESERVE_MARKER_REGEX = /\{\{([\s\S]*?)\}\}/g;
 const PLACEHOLDER_PREFIX = "\u0000PRESERVED";
 const PLACEHOLDER_SUFFIX = "\u0000";
@@ -84,6 +77,21 @@ function cleanSpacingAndPunctuation(
   let spacingFixes = 0;
   let punctuationFixes = 0;
 
+  // Normalize Windows-style line endings (CRLF, \r\n) to plain \n first.
+  // Counted under its own label — separate from "extra spaces" — since
+  // it's an invisible file-format artifact (common when files are saved
+  // from Windows Notepad), not a visible spacing mistake in the text.
+  const crlfMatches = text.match(/\r/g);
+  if (crlfMatches && crlfMatches.length > 0) {
+    const fix = crlfMatches.length;
+    spacingFixes += fix;
+    const label = "لائن اینڈنگ (Windows CRLF) نارملائز کی گئی — فائل فارمیٹ کی پوشیدہ علامت، نظر آنے والی خالی جگہ نہیں";
+    corrections.set(label, (corrections.get(label) || 0) + fix);
+    text = text.replace(/\r/g, "");
+  }
+
+  // Whitespace cleanup — preserves line breaks, only collapses repeated
+  // spaces/tabs within a line and trims stray blank lines.
   {
     const originalLength = text.length;
     const cleanedLines = text
@@ -120,9 +128,7 @@ export function standardizeUrduText(input: string): StandardizeResult {
   let spacingFixes = 0;
   let punctuationFixes = 0;
 
-  // 0. Extract {{ }}-protected segments and process them as Arabic text:
-  // Arabic-side character fixes (ہ → ه) + punctuation/spacing cleanup —
-  // but never the Urdu-side character normalization.
+  // 0. Extract {{ }}-protected segments and process them as Arabic text.
   const preserved: string[] = [];
   let text = input.replace(PRESERVE_MARKER_REGEX, (_match, inner: string) => {
     const arabicFix = applyCharNormalizations(inner, ARABIC_ONLY_NORMALIZATIONS, corrections);
@@ -149,7 +155,7 @@ export function standardizeUrduText(input: string): StandardizeResult {
     punctuationFixes += result.punctuationFixes;
   }
 
-  // 4. Restore {{ }}-protected segments (already Arabic-cleaned).
+  // 4. Restore {{ }}-protected segments.
   if (preserved.length > 0) {
     text = text.replace(
       new RegExp(`${PLACEHOLDER_PREFIX}(\\d+)${PLACEHOLDER_SUFFIX}`, "g"),
