@@ -62,7 +62,7 @@ export function standardizeUrduText(input: string): StandardizeResult {
   // Unlike English, these marks attach directly to the preceding word —
   // no space before them. This fixes both marks just converted above and
   // any Urdu punctuation already in the source text with a stray space.
-  const spaceBeforePunctuationRegex = /[ \t]+([،؛؟۔])/g;
+  const spaceBeforePunctuationRegex = /[ \t]+([:،؛؟۔])/g;
   const matchesSpaceBeforePunctuation = text.match(spaceBeforePunctuationRegex);
   if (matchesSpaceBeforePunctuation) {
     punctuationFixes += matchesSpaceBeforePunctuation.length;
