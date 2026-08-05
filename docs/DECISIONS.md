@@ -96,6 +96,16 @@ it quietly captures the traffic benefit without the positioning cost.
 It also becomes the testing ground for the PDF export pipeline and
 template system that Document Studio and Research Assistant will reuse.
 
+**Implementation note (2026-08-05):** Invoice Studio v1 MVP shipped —
+basic invoice form (seller/client/items/totals), one Qalam-branded
+template, bilingual Urdu/English labels (not full Arabic — matches the
+rest of the site's convention), browser print-to-PDF (no new
+dependency), reused the old invoiceEngine.ts calculation logic verbatim.
+Deferred to a later version: multiple templates, multi-invoice
+management, undo/redo, Smart Draft parser, logo/signature upload, bank
+details, payment tracking, advanced reviewer. Not linked from homepage
+or navigation, per this decision.
+
 ---
 
 ## Decision: Folder Architecture
@@ -231,3 +241,54 @@ Qalam Works is meant to eventually generate revenue, the plan will need
 to be reviewed (likely upgraded to Vercel Pro) once the product is
 actively monetized — this is not an issue today, but should not be
 forgotten as the roadmap progresses toward Phase 6 (AI Backend + SaaS).
+
+**Resolution note (2026-08-05):** Discovered 6 duplicate Vercel projects
+all connected to the same GitHub repo, all auto-deploying on every push.
+Kept only qalam-works-r8ko (the correctly-configured one) and deleted the
+other 5. The GitHub-Vercel connection also had to be disconnected and
+reconnected once to fix a broken auto-deploy trigger.
+
+---
+
+## Decision: Document Editor Engine
+
+**Date:** 2026-08-05
+**Status:** Approved
+
+**Decision:**
+TipTap (built on ProseMirror) is the rich text editor engine for
+Document Studio.
+
+**Reason:**
+Document Studio's core problem isn't just "let the user type text" — it's
+RTL/LTR mixed formatting, custom Qalam-specific actions (running
+standardization/quality-check on selected text), and long-term
+extensibility toward tables, footnotes, and collaboration-style features
+later. TipTap has a mature extension model suited to exactly this, and
+its community/ecosystem size matters for a solo developer who will often
+need existing solutions rather than building from primitives. Lexical
+(Meta's newer editor framework) was considered but has a smaller,
+more implementation-heavy ecosystem for custom extensions right now.
+
+**Accepted trade-off:** this is a deliberate, one-time exception to the
+"no unnecessary dependencies" principle used everywhere in Phase 2/2.5 —
+a real rich text editor cannot be safely hand-built from `contentEditable`
+for production use.
+
+---
+
+## Decision: DOCX Export Engine
+
+**Date:** 2026-08-05
+**Status:** Approved
+
+**Decision:**
+The `docx` npm package (dolanmiu/docx) is used for generating new .docx
+files in Document Studio's export pipeline.
+
+**Reason:**
+The existing `mammoth` dependency (already used in the Document Pipeline)
+only reads/extracts text from DOCX files — it cannot generate new ones.
+`docx` is the standard tool for programmatically building new .docx files
+(headings, paragraphs, tables, styles). `mammoth` stays for reading;
+`docx` is added for writing — complementary, not overlapping.
