@@ -10,7 +10,7 @@ export default function UnicodeStandardizerTool() {
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const { output, badges, summary } = standardizeUrduText(input);
+  const { output, badges, summary, corrections } = standardizeUrduText(input);
   const hasInput = input.trim().length > 0;
   const alreadyStandardized = hasInput && summary.totalCorrections === 0;
 
@@ -139,6 +139,26 @@ export default function UnicodeStandardizerTool() {
             dir="rtl"
           >
             مبارک ہو! آپ کا متن پہلے ہی معیاری شکل میں موجود ہے۔
+          </div>
+        )}
+
+        {/* Detailed breakdown — exactly what changed and how many times */}
+        {hasInput && corrections.length > 0 && (
+          <div className="mb-4 bg-white border border-gray-200 rounded-xl p-3" dir="rtl">
+            <p className="text-sm font-bold text-gray-800 mb-2">کیا تبدیل ہوا؟</p>
+            <ul className="space-y-1">
+              {corrections.map((c, i) => (
+                <li
+                  key={i}
+                  className="text-xs text-gray-700 flex items-start justify-between gap-2 border-b border-gray-100 last:border-0 py-1"
+                >
+                  <span>{c.label}</span>
+                  <span className="text-gray-500 font-mono whitespace-nowrap" dir="ltr">
+                    ×{c.count}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
