@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { checkTextQuality } from "../utils/qualityChecker";
+import { checkTextQuality } from "../utils/quality/checkTextQuality";
 
 export default function PublicationQualityChecker() {
   const [input, setInput] = useState(
-    "قال الامام علي عليه السلام: العلم نور, والجهل ظلام. العلم العلم نور"
+    "قال الامام امام علی علیہ السلام: العلم نور، والجهل ظلام ، ون م العلم م ون العلم"
   );
   const report = checkTextQuality(input);
 
@@ -29,7 +29,7 @@ export default function PublicationQualityChecker() {
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="متن یہاں درج کریں..."
+            placeholder="یہاں متن پیسٹ کریں..."
             className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-amber-500 text-right"
             dir="rtl"
           />
@@ -81,6 +81,16 @@ export default function PublicationQualityChecker() {
           ) : (
             <span className="text-gray-400 font-sans text-xs">No issues found. Ready for publication!</span>
           )}
+        </div>
+
+        {/* Link to full tool */}
+        <div className="mt-4 text-center" dir="ltr">
+          <a
+            href="/tools/quality-checker"
+            className="text-xs md:text-sm font-semibold text-amber-700 hover:text-amber-900 underline"
+          >
+            Open full Quality Checker tool →
+          </a>
         </div>
       </div>
     </section>
