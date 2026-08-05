@@ -1,4 +1,4 @@
-import { QualityReport } from "../utils/qualityChecker";
+import { QualityReport } from "../utils/quality/checkTextQuality";
 
 export interface PipelineSummary {
   fileName: string;
