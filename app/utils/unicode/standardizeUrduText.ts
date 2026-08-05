@@ -30,12 +30,19 @@ export function standardizeUrduText(input: string): StandardizeResult {
   }
 
   // 2. Whitespace Cleanup & precise counting
-  const originalLength = text.length;
-  const hasExtraSpaces = /\s{2,}/.test(text) || text.startsWith(" ") || text.endsWith(" ");
-  if (hasExtraSpaces || /\s+/.test(text)) {
-    text = text.replace(/\s+/g, " ").trim();
-    if (text.length !== originalLength) {
-      spacingFixes = Math.abs(originalLength - text.length);
+  // Preserves line breaks (each line/paragraph stays separate) — only
+  // collapses repeated spaces/tabs within a line and trims stray blank
+  // lines. Does NOT merge distinct lines into one, since Urdu religious
+  // texts, references, and footnotes rely on separate lines to stay separate.
+  {
+    const originalLength = text.length;
+    const cleanedLines = text
+      .split("\n")
+      .map((line) => line.replace(/[ \t]+/g, " ").trim());
+    let cleaned = cleanedLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    if (cleaned !== text) {
+      spacingFixes = Math.abs(originalLength - cleaned.length) || 1;
+      text = cleaned;
     }
   }
 
