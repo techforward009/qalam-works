@@ -140,6 +140,11 @@ export default function InvoiceGeneratorTool() {
             <p className="text-sm font-bold text-amber-900 mb-2" dir="ltr">
               Line Items / اشیاء
             </p>
+            <div className="grid grid-cols-12 gap-2 mb-1 text-[10px] text-gray-400" dir="ltr">
+              <span className="col-span-6 text-right">Description</span>
+              <span className="col-span-2 text-right">Qty</span>
+              <span className="col-span-3 text-right">Price</span>
+            </div>
             <div className="space-y-2">
               {invoice.items.map((it, idx) => (
                 <div key={it.id} className="grid grid-cols-12 gap-2 items-center">
@@ -156,6 +161,7 @@ export default function InvoiceGeneratorTool() {
                     className="col-span-2 border border-gray-300 p-2 rounded-lg text-xs"
                     dir="ltr"
                     step="0.01"
+                    placeholder="Qty"
                   />
                   <input
                     type="number"
@@ -164,6 +170,7 @@ export default function InvoiceGeneratorTool() {
                     className="col-span-3 border border-gray-300 p-2 rounded-lg text-xs"
                     dir="ltr"
                     step="0.01"
+                    placeholder="Price"
                   />
                   <button
                     onClick={() => removeItem(idx)}
