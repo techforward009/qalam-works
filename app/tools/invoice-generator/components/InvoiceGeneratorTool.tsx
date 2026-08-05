@@ -6,7 +6,7 @@ import {
   fromMinor,
   type Invoice,
   type LineItem,
-} from "../../../utils/invoiceEngine";
+} from "../utils/invoiceEngine";
 
 function newItem(): LineItem {
   return {
