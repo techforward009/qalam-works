@@ -160,7 +160,10 @@ function editorToPlainText(editor: Editor, dir: "rtl" | "ltr"): string {
   const json = editor.getJSON();
   const lines: string[] = [];
   (json.content ?? []).forEach((node) => serializeBlock(node, lines, dir));
-  return lines.join("\n");
+  // \r\n (not just \n) so line breaks show correctly in every Notepad
+  // variant and mobile text editor, not only apps like Word that treat
+  // a bare \n as a line break too.
+  return lines.join("\r\n");
 }
 
 export default function DocumentStudioEditor() {
