@@ -1,7 +1,7 @@
 import { buildDocumentAuditReport } from "../tools/document-studio/utils/buildDocumentAuditReport";
 import type { DocNode } from "../tools/document-studio/utils/extractPlainText";
 
-export interface DocumentAnalysisResult {
+export interface QualityReport {
   typography: {
     mixedScript: number;
     emptyLines: number;
@@ -16,14 +16,12 @@ export interface DocumentAnalysisResult {
     mixedScript: number;
   };
   badges: string[];
-  score: number;
-  totalIssues: number;
 }
 
-export function extractDocumentMetadata(doc: DocNode): DocumentAnalysisResult {
+export function extractDocumentData(doc: DocNode) {
   const auditReport = buildDocumentAuditReport(doc);
 
-  return {
+  const qualityReport: QualityReport = {
     typography: {
       mixedScript: auditReport.counts.mixedScript,
       emptyLines: 0,
@@ -37,8 +35,18 @@ export function extractDocumentMetadata(doc: DocNode): DocumentAnalysisResult {
       repeatedWords: 0,
       mixedScript: auditReport.counts.mixedScript,
     },
-    badges: auditReport.recommendations.map((rec) => rec.titleEnglish),
-    score: auditReport.score,
-    totalIssues: auditReport.totalIssues,
+    badges: auditReport.recommendations.map((r) => r.titleEnglish),
+  };
+
+  return {
+    auditReport,
+    qualityReport,
   };
 }
+
+// documentAction.ts کی امپورٹ کی مطابقت کے لیے ایکسپورٹڈ پرائمری فنکشن
+export function processDocument(doc: DocNode) {
+  return extractDocumentData(doc);
+}
+
+export default processDocument;
