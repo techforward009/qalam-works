@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import { extractPlainText, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
+
+const DRAFT_STORAGE_KEY = "qalam-document-studio-draft";
+const AUTOSAVE_DEBOUNCE_MS = 1000;
 
 function ToolbarButton({
   onClick,
@@ -21,6 +24,7 @@ function ToolbarButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       title={label}
       className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
@@ -99,26 +103,36 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
   );
 }
 
-// Plain-text extraction (numbering, bullets, RTL-safe bidi handling, \r\n
-// line endings) now lives in utils/extractPlainText.ts as the single
-// reusable source — Copy/Download here, and the Quality Checker input in
-// utils/buildQualityInput.ts, both call into it instead of duplicating
-// this traversal.
 function editorToPlainText(editor: Editor, dir: "rtl" | "ltr"): string {
-  return extractPlainText(editor.getJSON(), dir);
+  return extractPlainText(editor.getJSON() as DocNode, dir);
+}
+
+function getInitialDraftContent(): DocNode | string {
+  if (typeof window === "undefined") return "<p></p>";
+  try {
+    const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!saved) return "<p></p>";
+    const parsed = JSON.parse(saved);
+    if (parsed && typeof parsed === "object" && parsed.type === "doc") {
+      return parsed as DocNode;
+    }
+  } catch (err) {
+    console.error("Failed to parse initial draft from localStorage:", err);
+  }
+  return "<p></p>";
 }
 
 export default function DocumentStudioEditor() {
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [copied, setCopied] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
 
-  // Standardize Document flow: calculate the normalized result first and
-  // hold it here for review — nothing touches the editor until the user
-  // presses Confirm. "alreadyClean" is a separate transient flag so the
-  // "already standardized" message doesn't get mixed up with an actual
-  // pending preview.
   const [preview, setPreview] = useState<{ document: DocNode; report: NormalizeReport } | null>(null);
   const [alreadyClean, setAlreadyClean] = useState(false);
+
+  // Browser-safe timeout ref (avoids Node types dependency)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [initialContent] = useState(() => getInitialDraftContent());
 
   const editor = useEditor({
     extensions: [
@@ -126,9 +140,62 @@ export default function DocumentStudioEditor() {
       Link.configure({ openOnClick: false }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
     ],
-    content: "<p></p>",
+    content: initialContent,
     immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      setSaveStatus("saving");
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+      saveTimerRef.current = setTimeout(() => {
+        try {
+          const json = editor.getJSON();
+          localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(json));
+          setSaveStatus("saved");
+        } catch (err) {
+          console.error("Autosave error:", err);
+          setSaveStatus("idle");
+        }
+      }, AUTOSAVE_DEBOUNCE_MS);
+    },
   });
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  const handleWrapperClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!editor) return;
+    if (e.target === e.currentTarget && !editor.isFocused) {
+      editor.commands.focus("end");
+    }
+  };
+
+  const handleNewDocument = () => {
+    if (!editor) return;
+    if (window.confirm("کیا آپ نیا مسودہ شروع کرنا چاہتے ہیں؟ غیر محفوظ شدہ تبدیلیاں ختم ہو جائیں گی۔ / Start new document?")) {
+      editor.commands.setContent("<p></p>");
+      try {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      } catch (e) {
+        console.error("Failed to clear localStorage", e);
+      }
+      setSaveStatus("idle");
+      setPreview(null);
+    }
+  };
+
+  const handleClearDraft = () => {
+    if (window.confirm("کیا آپ محفوظ شدہ ڈرافٹ کو حذف کرنا چاہتے ہیں؟ / Clear saved draft from browser storage?")) {
+      try {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+        setSaveStatus("idle");
+      } catch (e) {
+        console.error("Failed to remove draft", e);
+      }
+    }
+  };
 
   const handleStandardizeClick = () => {
     if (!editor) return;
@@ -143,11 +210,26 @@ export default function DocumentStudioEditor() {
 
   const handleConfirmStandardize = () => {
     if (!editor || !preview) return;
-    // A single setContent call = a single ProseMirror transaction, so this
-    // is one undo step — Ctrl+Z (or the future Undo button) reverts the
-    // whole normalization at once, not fix-by-fix.
-    editor.commands.setContent(preview.document);
-    setPreview(null);
+
+    try {
+      const { state, view } = editor;
+      const normalizedDoc = state.schema.nodeFromJSON(preview.document);
+
+      if (normalizedDoc.type !== state.doc.type) {
+        console.error("Invalid doc type during normalization application");
+        setPreview(null);
+        return;
+      }
+
+      const tr = state.tr.replaceWith(0, state.doc.content.size, normalizedDoc.content);
+      tr.setMeta("addToHistory", true);
+
+      view.dispatch(tr);
+    } catch (err) {
+      console.error("Failed to apply standardization transaction safely:", err);
+    } finally {
+      setPreview(null);
+    }
   };
 
   const handleCancelStandardize = () => {
@@ -161,7 +243,7 @@ export default function DocumentStudioEditor() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard API unavailable — button stays as "Copy"
+      // Clipboard API fallback
     }
   };
 
@@ -182,17 +264,18 @@ export default function DocumentStudioEditor() {
   return (
     <div className="max-w-4xl mx-auto px-4">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
-        <Toolbar editor={editor} dir={dir} setDir={setDir} />
+        <div className="flex justify-between items-center mb-2">
+          <Toolbar editor={editor} dir={dir} setDir={setDir} />
+          <div className="text-xs text-stone-500 font-sans" dir="ltr">
+            {saveStatus === "saving" && "💾 Saving..."}
+            {saveStatus === "saved" && "✓ Saved to browser"}
+          </div>
+        </div>
 
-        {/* Clicking anywhere in this box — not just directly on an existing
-            line of text — should activate the editor. Without this handler,
-            ProseMirror's contentEditable region is only as tall as its
-            content, so empty space below the last line doesn't focus it
-            and can look like the box is inactive. */}
         <div
           className="border border-gray-300 rounded-lg p-4 min-h-[300px] focus-within:ring-2 focus-within:ring-amber-500 cursor-text"
           dir={dir}
-          onClick={() => editor?.chain().focus("end").run()}
+          onClick={handleWrapperClick}
         >
           <EditorContent
             editor={editor}
@@ -202,29 +285,48 @@ export default function DocumentStudioEditor() {
           />
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-4" dir="ltr">
-          <button
-            onClick={handleCopy}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
-          >
-            {copied ? "✓ Copied" : "Copy Text"}
-          </button>
-          <button
-            onClick={handleDownload}
-            className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
-          >
-            Download .txt
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-4" dir="ltr">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
+            >
+              {copied ? "✓ Copied" : "Copy Text"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
+            >
+              Download .txt
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2 text-xs">
+            <button
+              type="button"
+              onClick={handleNewDocument}
+              className="px-3 py-1.5 rounded-md border border-stone-300 text-stone-700 hover:bg-stone-100 transition"
+            >
+              New Document / نیا مسودہ
+            </button>
+            <button
+              type="button"
+              onClick={handleClearDraft}
+              className="px-3 py-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50 transition"
+            >
+              Clear Draft / ڈرافٹ صاف کریں
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Publishing intelligence lives in its own panel, separate from the
-          formatting toolbar above — keeps "make it bold" and "make it
-          correct" visually distinct, per the 3B plan. */}
       <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md mt-4" dir="rtl">
         <h2 className="text-sm font-bold text-amber-800 mb-3">قلم ٹولز / Qalam Tools</h2>
 
         <button
+          type="button"
           onClick={handleStandardizeClick}
           className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
         >
@@ -248,12 +350,14 @@ export default function DocumentStudioEditor() {
             </ul>
             <div className="flex gap-2" dir="ltr">
               <button
+                type="button"
                 onClick={handleConfirmStandardize}
                 className="px-4 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
               >
                 تصدیق کریں / Confirm
               </button>
               <button
+                type="button"
                 onClick={handleCancelStandardize}
                 className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
               >
@@ -264,11 +368,6 @@ export default function DocumentStudioEditor() {
         )}
       </div>
 
-      {/* Scoped styling for editor content — Tailwind's base reset strips
-          default heading/list/blockquote styling, so headings, lists, and
-          blockquotes need explicit rules here to look different from plain
-          paragraphs. Logical (inline-start) properties are used so styling
-          flips correctly between RTL and LTR. */}
       <style jsx global>{`
         .qalam-editor-content p {
           margin: 0.35rem 0;
@@ -312,9 +411,6 @@ export default function DocumentStudioEditor() {
           color: #b45309;
           text-decoration: underline;
         }
-        /* Makes the actual contentEditable region fill the visible box,
-           so the whole box is clickable/typeable, not just the line(s)
-           of existing text. */
         .qalam-editor-content .ProseMirror {
           min-height: 260px;
         }
