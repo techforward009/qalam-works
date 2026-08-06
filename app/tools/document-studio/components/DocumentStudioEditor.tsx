@@ -113,7 +113,16 @@ function nodeText(node: JSONContent): string {
     .join("");
 }
 
-function serializeBlock(node: JSONContent, lines: string[], listPrefix?: string) {
+// "1." is plain Latin digits + a neutral period. When that sits right next
+// to Urdu/Arabic (RTL) text with no direction marker, Word/Notepad's bidi
+// algorithm can reorder it visually (dot appears before the digit). Wrapping
+// it in RTL marks (U+200F) forces it to render in the correct order in any
+// app, without changing the underlying character.
+function formatOrderedPrefix(n: number, dir: "rtl" | "ltr"): string {
+  return dir === "rtl" ? `\u200F${n}.\u200F ` : `${n}. `;
+}
+
+function serializeBlock(node: JSONContent, lines: string[], dir: "rtl" | "ltr", listPrefix?: string) {
   switch (node.type) {
     case "paragraph":
     case "heading": {
@@ -122,35 +131,35 @@ function serializeBlock(node: JSONContent, lines: string[], listPrefix?: string)
       break;
     }
     case "blockquote": {
-      node.content?.forEach((child) => serializeBlock(child, lines, listPrefix));
+      node.content?.forEach((child) => serializeBlock(child, lines, dir, listPrefix));
       break;
     }
     case "bulletList": {
-      node.content?.forEach((item) => serializeBlock(item, lines, "• "));
+      node.content?.forEach((item) => serializeBlock(item, lines, dir, "• "));
       break;
     }
     case "orderedList": {
       const start = typeof node.attrs?.start === "number" ? node.attrs.start : 1;
-      node.content?.forEach((item, i) => serializeBlock(item, lines, `${start + i}. `));
+      node.content?.forEach((item, i) => serializeBlock(item, lines, dir, formatOrderedPrefix(start + i, dir)));
       break;
     }
     case "listItem": {
       // A list item's own paragraph gets the number/bullet prefix; any
       // further nested blocks (nested lists, extra paragraphs) are
       // serialized without repeating the prefix.
-      node.content?.forEach((child, i) => serializeBlock(child, lines, i === 0 ? listPrefix : undefined));
+      node.content?.forEach((child, i) => serializeBlock(child, lines, dir, i === 0 ? listPrefix : undefined));
       break;
     }
     default: {
-      node.content?.forEach((child) => serializeBlock(child, lines, listPrefix));
+      node.content?.forEach((child) => serializeBlock(child, lines, dir, listPrefix));
     }
   }
 }
 
-function editorToPlainText(editor: Editor): string {
+function editorToPlainText(editor: Editor, dir: "rtl" | "ltr"): string {
   const json = editor.getJSON();
   const lines: string[] = [];
-  (json.content ?? []).forEach((node) => serializeBlock(node, lines));
+  (json.content ?? []).forEach((node) => serializeBlock(node, lines, dir));
   return lines.join("\n");
 }
 
@@ -171,7 +180,7 @@ export default function DocumentStudioEditor() {
   const handleCopy = async () => {
     if (!editor) return;
     try {
-      await navigator.clipboard.writeText(editorToPlainText(editor));
+      await navigator.clipboard.writeText(editorToPlainText(editor, dir));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -181,7 +190,7 @@ export default function DocumentStudioEditor() {
 
   const handleDownload = () => {
     if (!editor) return;
-    const text = editorToPlainText(editor);
+    const text = editorToPlainText(editor, dir);
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
