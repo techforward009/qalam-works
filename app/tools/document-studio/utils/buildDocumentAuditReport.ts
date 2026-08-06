@@ -1,4 +1,4 @@
-import { checkTextQuality } from "../../../utils/checkTextQuality";
+import { checkTextQuality } from "@/app/utils/checkTextQuality";
 import { buildQualityInput } from "./buildQualityInput";
 import type { DocNode } from "./extractPlainText";
 
@@ -41,12 +41,10 @@ function createEmptyAuditReport(): QualityAuditReport {
 export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
   const input = buildQualityInput(doc);
 
-  // Empty document check (returns a fresh, un-shared object instance)
   if (!input || !input.trim()) {
     return createEmptyAuditReport();
   }
 
-  // Pure execution of checkTextQuality — strict issue object access without fallback hiding
   const rawResults = checkTextQuality(input);
   const issues = rawResults.issues;
 
@@ -57,7 +55,6 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
     longParagraphs: 0,
   };
 
-  // Exhaustive switch mapping strictly tied to QualityIssue.type union
   for (const issue of issues) {
     switch (issue.type) {
       case "script_mix":
@@ -83,7 +80,6 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
 
   const recommendations: QualityRecommendation[] = [];
 
-  // Category-level recommendations only if count > 0
   if (counts.mixedScript > 0) {
     recommendations.push({
       id: "rec-mixed-script",
