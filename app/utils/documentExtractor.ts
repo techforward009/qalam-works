@@ -1,5 +1,5 @@
-import { buildDocumentAuditReport } from "@/tools/document-studio/utils/buildDocumentAuditReport";
-import type { PipelineResult } from "@/types/documentPipeline";
+import { buildDocumentAuditReport } from "../tools/document-studio/utils/buildDocumentAuditReport";
+import type { PipelineResult } from "../types/documentPipeline";
 
 export async function processDocument(file: File): Promise<PipelineResult> {
   const text = await file.text();
