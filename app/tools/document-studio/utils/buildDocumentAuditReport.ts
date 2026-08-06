@@ -47,10 +47,15 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
 
   const rawResults: any = checkTextQuality(input);
 
-  const issues: any[] = Array.isArray(rawResults)
+  // checkTextQuality کے تمام ممکنہ ایرے سٹرکچرز کو ہینڈل کرنا
+  const issuesList: any[] = Array.isArray(rawResults)
     ? rawResults
     : Array.isArray(rawResults?.issues)
     ? rawResults.issues
+    : Array.isArray(rawResults?.errors)
+    ? rawResults.errors
+    : Array.isArray(rawResults?.details)
+    ? rawResults.details
     : [];
 
   const counts: QualityIssueCounts = {
@@ -60,38 +65,41 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
     longParagraphs: 0,
   };
 
-  for (const issue of issues) {
+  for (const issue of issuesList) {
     if (!issue) continue;
-    const type = issue.type || issue.category;
-    switch (type) {
-      case "script_mix":
-      case "mixedScript":
-        counts.mixedScript++;
-        break;
-      case "punctuation":
-        counts.punctuation++;
-        break;
-      case "spacing":
-        counts.spacing++;
-        break;
-      case "paragraph_length":
-      case "longParagraphs":
-        counts.longParagraphs++;
-        break;
+    
+    // Type کی تصدیق (type, category, kind, code)
+    const issueType = String(issue.type || issue.category || issue.kind || issue.code || issue);
+
+    if (issueType.includes("script") || issueType.includes("mix")) {
+      counts.mixedScript++;
+    } else if (issueType.includes("punct")) {
+      counts.punctuation++;
+    } else if (issueType.includes("space") || issueType.includes("spacing")) {
+      counts.spacing++;
+    } else if (issueType.includes("para") || issueType.includes("length")) {
+      counts.longParagraphs++;
+    } else {
+      // اگر کوئی اور ایشو ہو تو اسے بھی گنتی میں شامل کریں
+      counts.mixedScript++;
     }
   }
 
-  const totalIssues =
+  // اگر کیٹگری میچ نہ ہو لیکن issuesList میں ڈیٹا موجود ہو
+  const parsedCount =
     counts.mixedScript +
     counts.punctuation +
     counts.spacing +
     counts.longParagraphs;
 
-  // اگر issues موجود ہیں تو score لازماً 100 سے کم ہونا چاہیے
+  const totalIssues = parsedCount > 0 ? parsedCount : issuesList.length;
+
+  // اگر مسائل 0 سے زیادہ ہوں تو Score کو 100 سے لازمی کم کریں
   let score = typeof rawResults?.score === "number" ? rawResults.score : 100;
+
   if (totalIssues > 0) {
-    const calculatedScore = Math.max(0, 100 - totalIssues * 10);
-    score = Math.min(score, calculatedScore < 100 ? calculatedScore : 90);
+    const calculated = Math.max(50, 100 - totalIssues * 10);
+    score = score < 100 ? score : calculated;
   }
 
   const recommendations: QualityRecommendation[] = [];
