@@ -127,7 +127,7 @@ export default function DocumentStudioEditor() {
         >
           <EditorContent
             editor={editor}
-            className={`prose prose-sm max-w-none focus:outline-none ${
+            className={`qalam-editor-content focus:outline-none ${
               dir === "rtl" ? "font-nastaliq text-right" : "text-left"
             }`}
           />
@@ -148,6 +148,56 @@ export default function DocumentStudioEditor() {
           </button>
         </div>
       </div>
+
+      {/* Scoped styling for editor content — Tailwind's base reset strips
+          default heading/list/blockquote styling, so headings, lists, and
+          blockquotes need explicit rules here to look different from plain
+          paragraphs. Logical (inline-start) properties are used so styling
+          flips correctly between RTL and LTR. */}
+      <style jsx global>{`
+        .qalam-editor-content p {
+          margin: 0.35rem 0;
+        }
+        .qalam-editor-content h1 {
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin: 0.75rem 0 0.5rem;
+        }
+        .qalam-editor-content h2 {
+          font-size: 1.25rem;
+          font-weight: 700;
+          margin: 0.65rem 0 0.4rem;
+        }
+        .qalam-editor-content h3 {
+          font-size: 1.1rem;
+          font-weight: 700;
+          margin: 0.55rem 0 0.35rem;
+        }
+        .qalam-editor-content ul {
+          list-style: disc;
+          padding-inline-start: 1.5rem;
+          margin: 0.35rem 0;
+        }
+        .qalam-editor-content ol {
+          list-style: decimal;
+          padding-inline-start: 1.5rem;
+          margin: 0.35rem 0;
+        }
+        .qalam-editor-content li {
+          margin: 0.15rem 0;
+        }
+        .qalam-editor-content blockquote {
+          border-inline-start: 3px solid #d97706;
+          padding-inline-start: 1rem;
+          color: #57534e;
+          font-style: italic;
+          margin: 0.5rem 0;
+        }
+        .qalam-editor-content a {
+          color: #b45309;
+          text-decoration: underline;
+        }
+      `}</style>
     </div>
   );
 }
