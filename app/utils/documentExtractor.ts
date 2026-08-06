@@ -1,10 +1,9 @@
-import { buildDocumentAuditReport } from "../tools/document-studio/utils/buildDocumentAuditReport";
-import type { PipelineResult } from "../types/documentPipeline";
+import { buildDocumentAuditReport } from "@/app/tools/document-studio/utils/buildDocumentAuditReport";
+import type { PipelineResult } from "@/app/types/documentPipeline";
 
-export async function processDocumentPipeline(file: File): Promise<PipelineResult> {
+export async function processDocument(file: File): Promise<PipelineResult> {
   const text = await file.text();
-  
-  // Dummy node conversion for basic text processing
+
   const docNode = {
     type: "doc",
     content: [
@@ -34,7 +33,16 @@ export async function processDocumentPipeline(file: File): Promise<PipelineResul
         spacingFixes: 0,
         punctuationFixes: 0,
       },
-      remainingIssues: auditReport,
+      remainingIssues: {
+        typography: auditReport.counts.mixedScript,
+        punctuation: auditReport.counts.punctuation,
+        textQuality: auditReport.counts.spacing,
+        badges: auditReport.totalIssues,
+      },
     },
   };
+}
+
+export async function processDocumentPipeline(file: File): Promise<PipelineResult> {
+  return processDocument(file);
 }
