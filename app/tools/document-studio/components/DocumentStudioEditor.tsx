@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useEditor, EditorContent, type Editor, type JSONContent } from "@tiptap/react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
+import { extractPlainText } from "../utils/extractPlainText";
 
 function ToolbarButton({
   onClick,
@@ -97,73 +98,13 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
   );
 }
 
-// Walks the editor's JSON document tree and produces plain text that
-// mirrors what's shown on screen: each block (paragraph/heading/list item/
-// quote line) on its own line, with manual "1. " / "2. " numbering for
-// ordered lists and "• " for bullet lists — since those numbers/bullets
-// are CSS-only in the editor and are not part of the real text content.
-function nodeText(node: JSONContent): string {
-  if (!node.content) return "";
-  return node.content
-    .map((child) => {
-      if (child.type === "text") return child.text ?? "";
-      if (child.type === "hardBreak") return "\n";
-      return nodeText(child);
-    })
-    .join("");
-}
-
-// "1." is plain Latin digits + a neutral period. When that sits right next
-// to Urdu/Arabic (RTL) text with no direction marker, Word/Notepad's bidi
-// algorithm can reorder it visually (dot appears before the digit). Wrapping
-// it in RTL marks (U+200F) forces it to render in the correct order in any
-// app, without changing the underlying character.
-function formatOrderedPrefix(n: number, dir: "rtl" | "ltr"): string {
-  return dir === "rtl" ? `\u200F${n}.\u200F ` : `${n}. `;
-}
-
-function serializeBlock(node: JSONContent, lines: string[], dir: "rtl" | "ltr", listPrefix?: string) {
-  switch (node.type) {
-    case "paragraph":
-    case "heading": {
-      const text = nodeText(node);
-      lines.push(listPrefix ? `${listPrefix}${text}` : text);
-      break;
-    }
-    case "blockquote": {
-      node.content?.forEach((child) => serializeBlock(child, lines, dir, listPrefix));
-      break;
-    }
-    case "bulletList": {
-      node.content?.forEach((item) => serializeBlock(item, lines, dir, "• "));
-      break;
-    }
-    case "orderedList": {
-      const start = typeof node.attrs?.start === "number" ? node.attrs.start : 1;
-      node.content?.forEach((item, i) => serializeBlock(item, lines, dir, formatOrderedPrefix(start + i, dir)));
-      break;
-    }
-    case "listItem": {
-      // A list item's own paragraph gets the number/bullet prefix; any
-      // further nested blocks (nested lists, extra paragraphs) are
-      // serialized without repeating the prefix.
-      node.content?.forEach((child, i) => serializeBlock(child, lines, dir, i === 0 ? listPrefix : undefined));
-      break;
-    }
-    default: {
-      node.content?.forEach((child) => serializeBlock(child, lines, dir, listPrefix));
-    }
-  }
-}
-
+// Plain-text extraction (numbering, bullets, RTL-safe bidi handling, \r\n
+// line endings) now lives in utils/extractPlainText.ts as the single
+// reusable source — Copy/Download here, and the Quality Checker input in
+// utils/buildQualityInput.ts, both call into it instead of duplicating
+// this traversal.
 function editorToPlainText(editor: Editor, dir: "rtl" | "ltr"): string {
-  const json = editor.getJSON();
-  const lines: string[] = [];
-  (json.content ?? []).forEach((node) => serializeBlock(node, lines, dir));
-  // \r\n (not just \n) so line breaks show correctly in every Notepad
-  // variant and mobile text editor, not only apps like Word that treat
-  // a bare \n as a line break too.
-  return lines.join("\r\n");
+  return extractPlainText(editor.getJSON(), dir);
 }
 
 export default function DocumentStudioEditor() {
