@@ -1,4 +1,4 @@
-import { checkTextQuality } from "@/utils/checkTextQuality";
+import { checkTextQuality } from "../../../utils/checkTextQuality";
 import { buildQualityInput } from "./buildQualityInput";
 import type { DocNode } from "./extractPlainText";
 
