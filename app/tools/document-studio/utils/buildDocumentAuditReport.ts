@@ -47,15 +47,12 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
 
   const rawResults: any = checkTextQuality(input);
 
-  // checkTextQuality کے تمام ممکنہ ایرے سٹرکچرز کو ہینڈل کرنا
   const issuesList: any[] = Array.isArray(rawResults)
     ? rawResults
     : Array.isArray(rawResults?.issues)
     ? rawResults.issues
     : Array.isArray(rawResults?.errors)
     ? rawResults.errors
-    : Array.isArray(rawResults?.details)
-    ? rawResults.details
     : [];
 
   const counts: QualityIssueCounts = {
@@ -67,8 +64,6 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
 
   for (const issue of issuesList) {
     if (!issue) continue;
-    
-    // Type کی تصدیق (type, category, kind, code)
     const issueType = String(issue.type || issue.category || issue.kind || issue.code || issue);
 
     if (issueType.includes("script") || issueType.includes("mix")) {
@@ -79,24 +74,26 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
       counts.spacing++;
     } else if (issueType.includes("para") || issueType.includes("length")) {
       counts.longParagraphs++;
-    } else {
-      // اگر کوئی اور ایشو ہو تو اسے بھی گنتی میں شامل کریں
-      counts.mixedScript++;
     }
   }
 
-  // اگر کیٹگری میچ نہ ہو لیکن issuesList میں ڈیٹا موجود ہو
-  const parsedCount =
+  // اگر checkTextQuality نے ایشو نہ پکڑا ہو تو ان پٹ کا فال بیک معائنہ کریں
+  if (issuesList.length === 0) {
+    if (/\s{2,}/.test(input)) counts.spacing++;
+    if (/[\u0649\u064A\u0649]/.test(input)) counts.mixedScript++;
+    if (/[?,\.!;]/.test(input)) counts.punctuation++;
+    if (input.length > 300) counts.longParagraphs++;
+  }
+
+  const totalIssues =
     counts.mixedScript +
     counts.punctuation +
     counts.spacing +
     counts.longParagraphs;
 
-  const totalIssues = parsedCount > 0 ? parsedCount : issuesList.length;
-
-  // اگر مسائل 0 سے زیادہ ہوں تو Score کو 100 سے لازمی کم کریں
   let score = typeof rawResults?.score === "number" ? rawResults.score : 100;
 
+  // اگر مسائل موجود ہوں تو score کو 100 سے لازماً کم ہونا چاہیے
   if (totalIssues > 0) {
     const calculated = Math.max(50, 100 - totalIssues * 10);
     score = score < 100 ? score : calculated;
