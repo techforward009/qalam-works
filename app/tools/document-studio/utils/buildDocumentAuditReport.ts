@@ -47,14 +47,11 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
 
   const rawResults: any = checkTextQuality(input);
 
-  // اگر checkTextQuality خود ایک array ریٹرن کر رہا ہو یا rawResults.issues موجود ہو
   const issues: any[] = Array.isArray(rawResults)
     ? rawResults
     : Array.isArray(rawResults?.issues)
     ? rawResults.issues
     : [];
-
-  const score: number = typeof rawResults?.score === "number" ? rawResults.score : 100;
 
   const counts: QualityIssueCounts = {
     mixedScript: 0,
@@ -89,6 +86,12 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
     counts.punctuation +
     counts.spacing +
     counts.longParagraphs;
+
+  // اگر checkTextQuality سے score نہ ملے یا issues کی موجودگی میں 100 ہو، تو اسکور خود کیلکولیٹ کریں
+  let score = typeof rawResults?.score === "number" ? rawResults.score : 100;
+  if (totalIssues > 0 && score === 100) {
+    score = Math.max(0, 100 - totalIssues * 10);
+  }
 
   const recommendations: QualityRecommendation[] = [];
 
