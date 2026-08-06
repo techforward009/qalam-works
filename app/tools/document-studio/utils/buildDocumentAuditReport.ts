@@ -45,8 +45,16 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
     return createEmptyAuditReport();
   }
 
-  const rawResults = checkTextQuality(input);
-  const issues = rawResults.issues;
+  const rawResults: any = checkTextQuality(input);
+
+  // اگر checkTextQuality خود ایک array ریٹرن کر رہا ہو یا rawResults.issues موجود ہو
+  const issues: any[] = Array.isArray(rawResults)
+    ? rawResults
+    : Array.isArray(rawResults?.issues)
+    ? rawResults.issues
+    : [];
+
+  const score: number = typeof rawResults?.score === "number" ? rawResults.score : 100;
 
   const counts: QualityIssueCounts = {
     mixedScript: 0,
@@ -56,8 +64,11 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
   };
 
   for (const issue of issues) {
-    switch (issue.type) {
+    if (!issue) continue;
+    const type = issue.type || issue.category;
+    switch (type) {
       case "script_mix":
+      case "mixedScript":
         counts.mixedScript++;
         break;
       case "punctuation":
@@ -67,6 +78,7 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
         counts.spacing++;
         break;
       case "paragraph_length":
+      case "longParagraphs":
         counts.longParagraphs++;
         break;
     }
@@ -125,7 +137,7 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
   }
 
   return {
-    score: rawResults.score,
+    score,
     totalIssues,
     counts,
     recommendations,
