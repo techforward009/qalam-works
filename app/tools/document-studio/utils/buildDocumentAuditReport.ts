@@ -87,10 +87,11 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
     counts.spacing +
     counts.longParagraphs;
 
-  // اگر checkTextQuality سے score نہ ملے یا issues کی موجودگی میں 100 ہو، تو اسکور خود کیلکولیٹ کریں
+  // اگر issues موجود ہیں تو score لازماً 100 سے کم ہونا چاہیے
   let score = typeof rawResults?.score === "number" ? rawResults.score : 100;
-  if (totalIssues > 0 && score === 100) {
-    score = Math.max(0, 100 - totalIssues * 10);
+  if (totalIssues > 0) {
+    const calculatedScore = Math.max(0, 100 - totalIssues * 10);
+    score = Math.min(score, calculatedScore < 100 ? calculatedScore : 90);
   }
 
   const recommendations: QualityRecommendation[] = [];
