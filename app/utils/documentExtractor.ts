@@ -1,48 +1,44 @@
 import { buildDocumentAuditReport } from "../tools/document-studio/utils/buildDocumentAuditReport";
-import type { PipelineResult } from "../types/documentPipeline";
+import type { DocNode } from "../tools/document-studio/utils/extractPlainText";
 
-export async function processDocument(file: File): Promise<PipelineResult> {
-  const text = await file.text();
-
-  const docNode = {
-    type: "doc",
-    content: [
-      {
-        type: "paragraph",
-        content: [{ type: "text", text }],
-      },
-    ],
+export interface DocumentAnalysisResult {
+  typography: {
+    mixedScript: number;
+    emptyLines: number;
+    longParagraphs: number;
   };
-
-  const auditReport = buildDocumentAuditReport(docNode);
-  const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-  const characterCount = text.length;
-
-  return {
-    rawText: text,
-    processedText: text,
-    summary: {
-      fileType: file.type || "text/plain",
-      fileName: file.name,
-      fileSize: `${(file.size / 1024).toFixed(2)} KB`,
-      wordCount,
-      characterCount,
-      correctionsApplied: {
-        totalCorrections: 0,
-        arabicNormalizations: 0,
-        spacingFixes: 0,
-        punctuationFixes: 0,
-      },
-      remainingIssues: {
-        typography: auditReport.counts.mixedScript,
-        punctuation: auditReport.counts.punctuation,
-        textQuality: auditReport.counts.spacing,
-        badges: auditReport.totalIssues,
-      },
-    },
+  punctuation: {
+    mixedPunctuation: number;
+    wrongQuotes: number;
   };
+  textQuality: {
+    repeatedWords: number;
+    mixedScript: number;
+  };
+  badges: string[];
+  score: number;
+  totalIssues: number;
 }
 
-export async function processDocumentPipeline(file: File): Promise<PipelineResult> {
-  return processDocument(file);
+export function extractDocumentMetadata(doc: DocNode): DocumentAnalysisResult {
+  const auditReport = buildDocumentAuditReport(doc);
+
+  return {
+    typography: {
+      mixedScript: auditReport.counts.mixedScript,
+      emptyLines: 0,
+      longParagraphs: auditReport.counts.longParagraphs,
+    },
+    punctuation: {
+      mixedPunctuation: auditReport.counts.punctuation,
+      wrongQuotes: 0,
+    },
+    textQuality: {
+      repeatedWords: 0,
+      mixedScript: auditReport.counts.mixedScript,
+    },
+    badges: auditReport.recommendations.map((rec) => rec.titleEnglish),
+    score: auditReport.score,
+    totalIssues: auditReport.totalIssues,
+  };
 }
