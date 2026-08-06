@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
+import TextAlign from "@tiptap/extension-text-align";
 
 function ToolbarButton({
   onClick,
@@ -71,6 +72,21 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
 
       <div className="w-px bg-gray-300 mx-1" />
 
+      <ToolbarButton label="Align Left" active={editor.isActive({ textAlign: "left" })} onClick={() => editor.chain().focus().setTextAlign("left").run()}>
+        ⇤
+      </ToolbarButton>
+      <ToolbarButton label="Align Center" active={editor.isActive({ textAlign: "center" })} onClick={() => editor.chain().focus().setTextAlign("center").run()}>
+        ⇔
+      </ToolbarButton>
+      <ToolbarButton label="Align Right" active={editor.isActive({ textAlign: "right" })} onClick={() => editor.chain().focus().setTextAlign("right").run()}>
+        ⇥
+      </ToolbarButton>
+      <ToolbarButton label="Justify" active={editor.isActive({ textAlign: "justify" })} onClick={() => editor.chain().focus().setTextAlign("justify").run()}>
+        ☰
+      </ToolbarButton>
+
+      <div className="w-px bg-gray-300 mx-1" />
+
       <ToolbarButton label="Right-to-left (Urdu/Arabic/Persian)" active={dir === "rtl"} onClick={() => setDir("rtl")}>
         RTL
       </ToolbarButton>
@@ -86,7 +102,11 @@ export default function DocumentStudioEditor() {
   const [copied, setCopied] = useState(false);
 
   const editor = useEditor({
-    extensions: [StarterKit, Link.configure({ openOnClick: false })],
+    extensions: [
+      StarterKit,
+      Link.configure({ openOnClick: false }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+    ],
     content: "<p></p>",
     immediatelyRender: false,
   });
@@ -149,11 +169,6 @@ export default function DocumentStudioEditor() {
         </div>
       </div>
 
-      {/* Scoped styling for editor content — Tailwind's base reset strips
-          default heading/list/blockquote styling, so headings, lists, and
-          blockquotes need explicit rules here to look different from plain
-          paragraphs. Logical (inline-start) properties are used so styling
-          flips correctly between RTL and LTR. */}
       <style jsx global>{`
         .qalam-editor-content p {
           margin: 0.35rem 0;
