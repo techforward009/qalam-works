@@ -141,9 +141,15 @@ export default function DocumentStudioEditor() {
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         <Toolbar editor={editor} dir={dir} setDir={setDir} />
 
+        {/* Clicking anywhere in this box — not just directly on an existing
+            line of text — should activate the editor. Without this handler,
+            ProseMirror's contentEditable region is only as tall as its
+            content, so empty space below the last line doesn't focus it
+            and can look like the box is inactive. */}
         <div
-          className="border border-gray-300 rounded-lg p-4 min-h-[300px] focus-within:ring-2 focus-within:ring-amber-500"
+          className="border border-gray-300 rounded-lg p-4 min-h-[300px] focus-within:ring-2 focus-within:ring-amber-500 cursor-text"
           dir={dir}
+          onClick={() => editor?.chain().focus("end").run()}
         >
           <EditorContent
             editor={editor}
@@ -169,6 +175,11 @@ export default function DocumentStudioEditor() {
         </div>
       </div>
 
+      {/* Scoped styling for editor content — Tailwind's base reset strips
+          default heading/list/blockquote styling, so headings, lists, and
+          blockquotes need explicit rules here to look different from plain
+          paragraphs. Logical (inline-start) properties are used so styling
+          flips correctly between RTL and LTR. */}
       <style jsx global>{`
         .qalam-editor-content p {
           margin: 0.35rem 0;
@@ -211,6 +222,12 @@ export default function DocumentStudioEditor() {
         .qalam-editor-content a {
           color: #b45309;
           text-decoration: underline;
+        }
+        /* Makes the actual contentEditable region fill the visible box,
+           so the whole box is clickable/typeable, not just the line(s)
+           of existing text. */
+        .qalam-editor-content .ProseMirror {
+          min-height: 260px;
         }
       `}</style>
     </div>
