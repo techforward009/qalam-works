@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { useEditor, EditorContent, type Editor, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
@@ -97,6 +97,63 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
   );
 }
 
+// Walks the editor's JSON document tree and produces plain text that
+// mirrors what's shown on screen: each block (paragraph/heading/list item/
+// quote line) on its own line, with manual "1. " / "2. " numbering for
+// ordered lists and "• " for bullet lists — since those numbers/bullets
+// are CSS-only in the editor and are not part of the real text content.
+function nodeText(node: JSONContent): string {
+  if (!node.content) return "";
+  return node.content
+    .map((child) => {
+      if (child.type === "text") return child.text ?? "";
+      if (child.type === "hardBreak") return "\n";
+      return nodeText(child);
+    })
+    .join("");
+}
+
+function serializeBlock(node: JSONContent, lines: string[], listPrefix?: string) {
+  switch (node.type) {
+    case "paragraph":
+    case "heading": {
+      const text = nodeText(node);
+      lines.push(listPrefix ? `${listPrefix}${text}` : text);
+      break;
+    }
+    case "blockquote": {
+      node.content?.forEach((child) => serializeBlock(child, lines, listPrefix));
+      break;
+    }
+    case "bulletList": {
+      node.content?.forEach((item) => serializeBlock(item, lines, "• "));
+      break;
+    }
+    case "orderedList": {
+      const start = typeof node.attrs?.start === "number" ? node.attrs.start : 1;
+      node.content?.forEach((item, i) => serializeBlock(item, lines, `${start + i}. `));
+      break;
+    }
+    case "listItem": {
+      // A list item's own paragraph gets the number/bullet prefix; any
+      // further nested blocks (nested lists, extra paragraphs) are
+      // serialized without repeating the prefix.
+      node.content?.forEach((child, i) => serializeBlock(child, lines, i === 0 ? listPrefix : undefined));
+      break;
+    }
+    default: {
+      node.content?.forEach((child) => serializeBlock(child, lines, listPrefix));
+    }
+  }
+}
+
+function editorToPlainText(editor: Editor): string {
+  const json = editor.getJSON();
+  const lines: string[] = [];
+  (json.content ?? []).forEach((node) => serializeBlock(node, lines));
+  return lines.join("\n");
+}
+
 export default function DocumentStudioEditor() {
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [copied, setCopied] = useState(false);
@@ -114,7 +171,7 @@ export default function DocumentStudioEditor() {
   const handleCopy = async () => {
     if (!editor) return;
     try {
-      await navigator.clipboard.writeText(editor.getText());
+      await navigator.clipboard.writeText(editorToPlainText(editor));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -124,7 +181,7 @@ export default function DocumentStudioEditor() {
 
   const handleDownload = () => {
     if (!editor) return;
-    const text = editor.getText();
+    const text = editorToPlainText(editor);
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
