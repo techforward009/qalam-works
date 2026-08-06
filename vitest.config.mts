@@ -1,17 +1,14 @@
 import { defineConfig } from "vitest/config";
-import fileURLToPath from "node:url";
-import path from "node:path";
-
-const __dirname = path.dirname(fileURLToPath.fileURLToPath(import.meta.url));
+import path from "path";
 
 export default defineConfig({
   test: {
-    globals: true,
     environment: "node",
+    globals: true,
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./"),
+      "@": path.resolve(__dirname, "./app"),
     },
   },
 });
