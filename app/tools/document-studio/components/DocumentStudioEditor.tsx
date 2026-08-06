@@ -5,7 +5,8 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
-import { extractPlainText } from "../utils/extractPlainText";
+import { extractPlainText, type DocNode } from "../utils/extractPlainText";
+import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 
 function ToolbarButton({
   onClick,
@@ -111,6 +112,14 @@ export default function DocumentStudioEditor() {
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [copied, setCopied] = useState(false);
 
+  // Standardize Document flow: calculate the normalized result first and
+  // hold it here for review — nothing touches the editor until the user
+  // presses Confirm. "alreadyClean" is a separate transient flag so the
+  // "already standardized" message doesn't get mixed up with an actual
+  // pending preview.
+  const [preview, setPreview] = useState<{ document: DocNode; report: NormalizeReport } | null>(null);
+  const [alreadyClean, setAlreadyClean] = useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -120,6 +129,30 @@ export default function DocumentStudioEditor() {
     content: "<p></p>",
     immediatelyRender: false,
   });
+
+  const handleStandardizeClick = () => {
+    if (!editor) return;
+    const result = normalizeDocumentNodes(editor.getJSON() as DocNode);
+    if (!result.changed) {
+      setAlreadyClean(true);
+      setTimeout(() => setAlreadyClean(false), 3000);
+      return;
+    }
+    setPreview({ document: result.document, report: result.report });
+  };
+
+  const handleConfirmStandardize = () => {
+    if (!editor || !preview) return;
+    // A single setContent call = a single ProseMirror transaction, so this
+    // is one undo step — Ctrl+Z (or the future Undo button) reverts the
+    // whole normalization at once, not fix-by-fix.
+    editor.commands.setContent(preview.document);
+    setPreview(null);
+  };
+
+  const handleCancelStandardize = () => {
+    setPreview(null);
+  };
 
   const handleCopy = async () => {
     if (!editor) return;
@@ -183,6 +216,52 @@ export default function DocumentStudioEditor() {
             Download .txt
           </button>
         </div>
+      </div>
+
+      {/* Publishing intelligence lives in its own panel, separate from the
+          formatting toolbar above — keeps "make it bold" and "make it
+          correct" visually distinct, per the 3B plan. */}
+      <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md mt-4" dir="rtl">
+        <h2 className="text-sm font-bold text-amber-800 mb-3">قلم ٹولز / Qalam Tools</h2>
+
+        <button
+          onClick={handleStandardizeClick}
+          className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
+        >
+          معیاری بنائیں / Standardize Document
+        </button>
+
+        {alreadyClean && (
+          <p className="mt-3 text-sm text-green-700">
+            ✓ متن پہلے ہی معیاری ہے / Document is already standardized
+          </p>
+        )}
+
+        {preview && (
+          <div className="mt-4 border border-amber-300 rounded-lg p-4 bg-amber-50">
+            <p className="text-sm font-semibold text-gray-800 mb-2">تجویز کردہ تبدیلیاں / Proposed changes:</p>
+            <ul className="text-sm text-gray-700 space-y-1 mb-4">
+              <li>کل تصحیحات / Total corrections: {preview.report.totalCorrections}</li>
+              <li>رسم الخط / Script normalizations: {preview.report.scriptNormalizations}</li>
+              <li>خالی جگہ / Spacing fixes: {preview.report.spacingFixes}</li>
+              <li>رموز اوقاف / Punctuation fixes: {preview.report.punctuationFixes}</li>
+            </ul>
+            <div className="flex gap-2" dir="ltr">
+              <button
+                onClick={handleConfirmStandardize}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
+              >
+                تصدیق کریں / Confirm
+              </button>
+              <button
+                onClick={handleCancelStandardize}
+                className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+              >
+                منسوخ / Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Scoped styling for editor content — Tailwind's base reset strips
