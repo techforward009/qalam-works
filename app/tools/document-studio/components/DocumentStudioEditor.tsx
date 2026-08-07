@@ -95,6 +95,15 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
 
       <div className="w-px bg-gray-300 mx-1" />
 
+      <ToolbarButton label="Undo" onClick={() => editor.chain().focus().undo().run()}>
+        ↶ Undo
+      </ToolbarButton>
+      <ToolbarButton label="Redo" onClick={() => editor.chain().focus().redo().run()}>
+        ↷ Redo
+      </ToolbarButton>
+
+      <div className="w-px bg-gray-300 mx-1" />
+
       <ToolbarButton label="Right-to-left (Urdu/Arabic/Persian)" active={dir === "rtl"} onClick={() => setDir("rtl")}>
         RTL
       </ToolbarButton>
@@ -368,7 +377,12 @@ export default function DocumentStudioEditor() {
 
         {alreadyClean && (
           <p className="mt-3 text-sm text-green-700">
-            ✓ متن پہلے ہی معیاری ہے / Document is already standardized
+            ✓ اس متن میں مزید کوئی خودکار اصلاح دستیاب نہیں / No further automatic corrections available for this text
+            {auditReport && auditReport.totalIssues > 0 && (
+              <span className="block text-amber-700 mt-1">
+                (نوٹ: Quality Audit ابھی بھی {auditReport.totalIssues} ایسا مسئلہ دکھا رہا ہے جسے دستی طور پر دیکھنا ہوگا — یہ خودکار اصلاح کی فہرست میں شامل نہیں / Note: Quality Audit still shows {auditReport.totalIssues} issue(s) needing manual review — these aren't part of automatic correction)
+              </span>
+            )}
           </p>
         )}
 
