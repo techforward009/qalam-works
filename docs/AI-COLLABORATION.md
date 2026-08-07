@@ -65,17 +65,26 @@ Lower-risk work may be implemented by Gemini:
 
 ---
 
-## Verification Rule
+## Evidence Rule
 
-No task is complete until applicable checks pass:
+When reporting repository status, the AI must distinguish between:
 
-- `npm test`
-- `npx tsc --noEmit`
-- production build
-- live browser verification for UI/editor behavior
+- **Verified** (seen directly in the current file/repo/output)
+- **Inferred** (reasoned but not verified)
+- **Proposed** (recommended future change)
 
-The AI must clearly distinguish, in its own report of the work:
+Never present inferred information as verified.
 
-- verified output (actually run and observed)
-- inferred/expected behavior (reasoned about but not run)
-- manual verification still required (needs Sajjad to check live)
+---
+
+## Definition of Done
+
+A coding task is not complete until:
+
+1. TypeScript passes
+2. Tests pass (if applicable)
+3. Production build passes
+4. Required manual verification is completed
+5. Changes are committed and pushed
+
+Until then, status should be: **IN PROGRESS**.
