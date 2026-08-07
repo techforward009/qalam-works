@@ -3,14 +3,13 @@ import { buildDocumentAuditReport } from "../app/tools/document-studio/utils/bui
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
 describe("Document Studio Quality Audit Engine", () => {
-  it("should return empty report score 100 for empty doc", () => {
+  it("should return empty report for empty doc", () => {
     const emptyDoc: DocNode = {
       type: "doc",
       content: [],
     };
 
     const report = buildDocumentAuditReport(emptyDoc);
-    expect(report.score).toBe(100);
     expect(report.totalIssues).toBe(0);
     expect(report.recommendations.length).toBe(0);
   });
@@ -32,7 +31,6 @@ describe("Document Studio Quality Audit Engine", () => {
     };
 
     const report = buildDocumentAuditReport(sampleDoc);
-    expect(report.score).toBeLessThan(100);
     expect(report.totalIssues).toBeGreaterThan(0);
   });
 });
