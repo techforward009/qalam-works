@@ -8,6 +8,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { extractPlainText, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
+import { buildDocxBlob } from "../utils/buildDocxDocument";
 import { QualityAuditPanel } from "./QualityAuditPanel";
 
 const DRAFT_STORAGE_KEY = "qalam-document-studio-draft";
@@ -310,6 +311,25 @@ export default function DocumentStudioEditor() {
     URL.revokeObjectURL(url);
   };
 
+  // Async — unlike handleDownload above — because buildDocxBlob is async
+  // (docx's Packer.toBlob() genuinely is; see PHASE-3C-DOCX-SPEC.md §3).
+  const handleDownloadDocx = async () => {
+    if (!editor) return;
+    try {
+      const blob = await buildDocxBlob(editor.getJSON() as DocNode, dir);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "qalam-document.docx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to generate .docx:", err);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
@@ -349,6 +369,13 @@ export default function DocumentStudioEditor() {
               className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
             >
               Download .txt
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadDocx}
+              className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
+            >
+              Download .docx
             </button>
           </div>
 
