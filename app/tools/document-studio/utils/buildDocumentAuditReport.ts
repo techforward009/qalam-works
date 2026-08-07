@@ -51,7 +51,7 @@ function toCounts(report: QualityReport, longParagraphs: number): QualityIssueCo
   return {
     mixedScript: report.textQuality.mixedScript,
     punctuation: report.punctuation.mixedPunctuation + report.punctuation.wrongQuotes + report.punctuation.duplicatedPunctuation,
-    spacing: report.typography.multipleSpaces + report.typography.emptyLines,
+    spacing: report.typography.multipleSpaces + report.typography.emptyLines + report.typography.missingSpaceAfterPunctuation,
     longParagraphs,
     repeatedWords: report.textQuality.repeatedWords,
   };
