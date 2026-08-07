@@ -4,6 +4,7 @@ export interface QualityReport {
     multipleSpaces: number;
     emptyLines: number;
     longParagraphs: number;
+    missingSpaceAfterPunctuation: number;
   };
   punctuation: {
     mixedPunctuation: number;
@@ -28,6 +29,7 @@ interface PartialCounts {
   multipleSpaces: number;
   emptyLines: number;
   longParagraphs: number;
+  missingSpaceAfterPunctuation: number;
   mixedPunctuation: number;
   wrongQuotes: number;
   duplicatedPunctuation: number;
@@ -37,7 +39,10 @@ interface PartialCounts {
 
 function checkUniversal(
   text: string
-): Pick<PartialCounts, "multipleSpaces" | "emptyLines" | "longParagraphs" | "wrongQuotes" | "duplicatedPunctuation"> {
+): Pick<
+  PartialCounts,
+  "multipleSpaces" | "emptyLines" | "longParagraphs" | "wrongQuotes" | "duplicatedPunctuation" | "missingSpaceAfterPunctuation"
+> {
   // Multiple spaces — space/tab runs only, NOT newlines (newlines are
   // "Empty Lines", a separate issue; counting both from the same runs
   // double-reported the same whitespace before).
@@ -90,7 +95,15 @@ function checkUniversal(
   const duplicatedMatches = text.match(/([.,!?;:،؛؟۔])\1+/g);
   const duplicatedPunctuation = duplicatedMatches ? duplicatedMatches.length : 0;
 
-  return { multipleSpaces, emptyLines, longParagraphs, wrongQuotes, duplicatedPunctuation };
+  // A closing bracket/paren or colon immediately followed by a letter or
+  // digit with no space (found 2026-08-07: "(المتوفی:179ھ)نے" — missing
+  // space both after the colon before "179" and after ")" before "نے").
+  // Limited to ) ] : specifically (not { } or [ ) to avoid any interaction
+  // with the {{ }} preserve-marker syntax elsewhere in the codebase.
+  const missingSpaceMatches = text.match(/[)\]:][A-Za-z0-9\u0600-\u06FF]/g);
+  const missingSpaceAfterPunctuation = missingSpaceMatches ? missingSpaceMatches.length : 0;
+
+  return { multipleSpaces, emptyLines, longParagraphs, wrongQuotes, duplicatedPunctuation, missingSpaceAfterPunctuation };
 }
 
 function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript"> {
@@ -135,6 +148,7 @@ export function checkTextQuality(input: string): QualityReport {
     universal.longParagraphs +
     universal.wrongQuotes +
     universal.duplicatedPunctuation +
+    universal.missingSpaceAfterPunctuation +
     scriptSensitive.mixedPunctuation +
     scriptSensitive.repeatedWords +
     scriptSensitive.mixedScript;
@@ -147,6 +161,7 @@ export function checkTextQuality(input: string): QualityReport {
     if (scriptSensitive.mixedPunctuation) badges.push("✓ Punctuation Issues Detected");
     if (universal.wrongQuotes) badges.push("✓ Quote Formatting Issues");
     if (universal.duplicatedPunctuation) badges.push("✓ Duplicated Punctuation Found");
+    if (universal.missingSpaceAfterPunctuation) badges.push("✓ Missing Space After Punctuation");
     if (universal.emptyLines) badges.push("✓ Layout Spacing Issues");
     if (scriptSensitive.repeatedWords) badges.push("✓ Repeated Words Found");
     if (scriptSensitive.mixedScript) badges.push("✓ Mixed Script Detected");
@@ -159,6 +174,7 @@ export function checkTextQuality(input: string): QualityReport {
       multipleSpaces: universal.multipleSpaces,
       emptyLines: universal.emptyLines,
       longParagraphs: universal.longParagraphs,
+      missingSpaceAfterPunctuation: universal.missingSpaceAfterPunctuation,
     },
     punctuation: {
       mixedPunctuation: scriptSensitive.mixedPunctuation,
