@@ -51,18 +51,15 @@ export const QualityAuditPanel: React.FC<QualityAuditPanelProps> = ({
         </div>
       )}
 
-      {/* Header & Score / Total Issues Display */}
+      {/* Header & Total Issues Display. A numeric "score" used to be shown
+          here too, but that 100/90/80...-style formula was never reviewed
+          or approved as a business rule (see buildDocumentAuditReport.ts,
+          2026-08-07 note) — showing it prominently implied a certainty it
+          doesn't have. Total issues + the category breakdown below are the
+          real, directly-measured numbers. */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div className="flex items-center gap-3">
-          <div className="px-3 py-1 rounded-full text-lg font-bold border border-slate-200 bg-slate-50 text-slate-700">
-            {report.score} / 100
-          </div>
-          <div className="flex flex-col text-xs text-slate-500">
-            <span className="font-medium">کیفیت کا اسکور</span>
-            <span className="text-slate-600 font-semibold mt-0.5">
-              کل مسائل: {report.totalIssues}
-            </span>
-          </div>
+        <div className="px-3 py-1 rounded-full text-lg font-bold border border-slate-200 bg-slate-50 text-slate-700">
+          کل مسائل: {report.totalIssues}
         </div>
         <h3 className="text-base font-bold text-slate-800">
           متن کی معیار جانچ (Quality Audit)
@@ -70,7 +67,7 @@ export const QualityAuditPanel: React.FC<QualityAuditPanelProps> = ({
       </div>
 
       {/* Issues Breakdown Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center text-xs">
         <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
           <div className="text-slate-500 font-medium">رسم الخط (Script)</div>
           <div className="text-sm font-bold text-slate-700 mt-1">
@@ -93,6 +90,12 @@ export const QualityAuditPanel: React.FC<QualityAuditPanelProps> = ({
           <div className="text-slate-500 font-medium">طویل پیراگراف</div>
           <div className="text-sm font-bold text-slate-700 mt-1">
             {report.counts.longParagraphs}
+          </div>
+        </div>
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+          <div className="text-slate-500 font-medium">تکرارِ الفاظ (Repeated)</div>
+          <div className="text-sm font-bold text-slate-700 mt-1">
+            {report.counts.repeatedWords}
           </div>
         </div>
       </div>
