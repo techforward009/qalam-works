@@ -35,4 +35,11 @@ describe("Unicode Standardizer Engine Tests", () => {
     const result = standardizeUrduText("رکو...");
     expect(result.output).toBe("رکو.");
   });
+
+  // Reported 2026-08-07: "(المتوفی:179ھ)نے" — missing space after a
+  // closing bracket and after a colon.
+  test("Should insert a missing space after a closing bracket and after a colon", () => {
+    const result = standardizeUrduText("اور حضرت امام مالک علیہ الرحمہ (المتوفی:179ھ)نے فرمایا");
+    expect(result.output).toBe("اور حضرت امام مالک علیہ الرحمہ (المتوفی: 179ھ) نے فرمایا");
+  });
 });

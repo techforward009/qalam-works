@@ -53,3 +53,17 @@ describe("checkTextQuality — duplicated punctuation", () => {
     expect(result.punctuation.duplicatedPunctuation).toBe(0);
   });
 });
+
+describe("checkTextQuality — missing space after punctuation", () => {
+  // Reported 2026-08-07: "(المتوفی:179ھ)نے" — a closing bracket and a
+  // colon each immediately followed by the next word/number with no space.
+  test("flags a missing space after a closing bracket and after a colon", () => {
+    const result = checkTextQuality("اور حضرت امام مالک علیہ الرحمہ (المتوفی:179ھ)نے فرمایا");
+    expect(result.typography.missingSpaceAfterPunctuation).toBe(2);
+  });
+
+  test("does not flag properly spaced punctuation", () => {
+    const result = checkTextQuality("یہ ٹھیک ہے: درست طریقے سے۔ اور (یہ بھی) ٹھیک ہے۔");
+    expect(result.typography.missingSpaceAfterPunctuation).toBe(0);
+  });
+});
