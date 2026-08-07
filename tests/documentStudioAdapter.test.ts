@@ -55,21 +55,61 @@ describe("extractPlainText", () => {
     expect(lines[0]).toBe("عنوان Heading");
     expect(lines.some((l) => l.includes("• پہلا نکتہ"))).toBe(true);
     expect(lines.some((l) => l.includes("• دوسرا نکتہ"))).toBe(true);
-    // RTL numbering is wrapped in U+200F marks around "1." / "2."
-    expect(lines.some((l) => l.includes("\u200F1.\u200F السلام علیک"))).toBe(true);
-    expect(lines.some((l) => l.includes("\u200F2.\u200F و علی الارواح"))).toBe(true);
+    // RTL numbering is wrapped in U+200E (LRM) marks around "1." / "2." —
+    // strip marks before comparing, since the general bidi-weak-run
+    // isolation (for brackets/digits elsewhere in a document) also wraps
+    // digits and can add further marks on top; only the logical order
+    // matters here.
+    expect(lines.some((l) => l.replace(/\u200E/g, "").includes("1. السلام علیک"))).toBe(true);
+    expect(lines.some((l) => l.replace(/\u200E/g, "").includes("2. و علی الارواح"))).toBe(true);
   });
 
   test("uses plain 'N. ' numbering (no bidi marks) in LTR mode", () => {
     const text = extractPlainText(sampleDoc(), "ltr");
     expect(text.includes("1. السلام علیک")).toBe(true);
-    expect(text.includes("\u200F")).toBe(false);
+    expect(text.includes("\u200E")).toBe(false);
   });
 
   test("extracts mixed RTL/LTR text within one paragraph correctly", () => {
     const text = extractPlainText(sampleDoc(), "rtl");
     expect(text).toContain("عنوان Heading");
     expect(text).toContain("یہ بولڈ اور italic ہے۔");
+  });
+
+  // Regression test for a real bug (2026-08-07, reported: a citation bracket
+  // "[...]" that looked correct in the browser editor came out reversed when
+  // the downloaded .txt was opened in Microsoft Word). Follow-up finding,
+  // same day: an RLM (U+200F) fix had NO effect — confirmed via a live A/B
+  // test comparing the same text in an RTL vs LTR Word paragraph — because
+  // brackets are Unicode-*mirrored* characters that flip their glyph under
+  // RTL resolution specifically; adding more "this is RTL" marks to text
+  // that's already RTL changes nothing. LRM (U+200E), which forces an
+  // LTR-resolved run, is the fix that actually stops the mirroring.
+  test("isolates authored brackets and digits (citation-style refs) with LRM, not RLM, for correct rendering in RTL export", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "[اتحاف السادة المتقین ج.1 ص.501 دار الکتب العلمیہ]" }],
+        },
+      ],
+    };
+    const text = extractPlainText(doc, "rtl");
+    expect(text).toContain("\u200E[\u200E");
+    expect(text).toContain("\u200E]\u200E");
+    // stripping the marks recovers the exact original, untouched text
+    expect(text.replace(/\u200E/g, "")).toBe("[اتحاف السادة المتقین ج.1 ص.501 دار الکتب العلمیہ]");
+  });
+
+  test("does not add bidi marks around brackets/digits in LTR mode", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: "[citation] page 501, vol. 2" }] }],
+    };
+    const text = extractPlainText(doc, "ltr");
+    expect(text).toBe("[citation] page 501, vol. 2");
+    expect(text.includes("\u200E")).toBe(false);
   });
 });
 
@@ -87,7 +127,7 @@ describe("getBlockTexts / buildQualityInput", () => {
     const input = buildQualityInput(sampleDoc());
     const paragraphs = input.split("\n");
     expect(paragraphs.length).toBeGreaterThanOrEqual(getBlockTexts(sampleDoc()).length);
-    expect(input).not.toContain("\u200F");
+    expect(input).not.toContain("\u200E");
   });
 });
 
