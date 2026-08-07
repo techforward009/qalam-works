@@ -215,6 +215,7 @@ function ReportPanel({
             <span className="font-bold block text-amber-900 mb-1">Punctuation:</span>
             <div>• Mixed Punctuation: {report.punctuation.mixedPunctuation}</div>
             <div>• Wrong Quotes: {report.punctuation.wrongQuotes}</div>
+            <div>• Duplicated Punctuation: {report.punctuation.duplicatedPunctuation}</div>
           </div>
           <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">
             <span className="font-bold block text-amber-900 mb-1">Text Quality:</span>
