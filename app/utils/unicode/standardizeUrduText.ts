@@ -47,6 +47,11 @@ const PUNCTUATION_NORMALIZATIONS: { pattern: RegExp; replacement: string; label:
 
 const SPACE_BEFORE_PUNCTUATION_REGEX = /[ \t]+([:،؛؟۔])/g;
 const DUPLICATED_PUNCTUATION_REGEX = /([.,!?;:،؛؟۔])\1+/g;
+// Same character set as checkTextQuality.ts's missing-space-after-punctuation
+// check, but with capturing groups so the match can be re-inserted with a
+// space between. Limited to ) ] : — not { } or [ — to avoid any interaction
+// with the {{ }} preserve-marker syntax elsewhere in this file.
+const MISSING_SPACE_AFTER_REGEX = /([)\]:])([A-Za-z0-9\u0600-\u06FF])/g;
 
 const PRESERVE_MARKER_REGEX = /\{\{([\s\S]*?)\}\}/g;
 const PLACEHOLDER_PREFIX = "\u0000PRESERVED";
@@ -132,6 +137,18 @@ function cleanSpacingAndPunctuation(
     const label = "دہرائے گئے رموز اوقاف (مثلاً ؟؟ یا !!) کو ایک ہی نشان میں تبدیل کیا گیا";
     corrections.set(label, (corrections.get(label) || 0) + duplicatedMatches.length);
     text = text.replace(DUPLICATED_PUNCTUATION_REGEX, "$1");
+  }
+
+  // A closing bracket/paren or colon immediately followed by a letter or
+  // digit with no space — insert the missing space. Counted under
+  // spacingFixes (it's a missing-space correction), not punctuationFixes
+  // (the punctuation mark itself isn't being changed).
+  const missingSpaceMatches = text.match(MISSING_SPACE_AFTER_REGEX);
+  if (missingSpaceMatches) {
+    spacingFixes += missingSpaceMatches.length;
+    const label = "بند بریکٹ یا کولن کے بعد گمشدہ خالی جگہ شامل کی گئی";
+    corrections.set(label, (corrections.get(label) || 0) + missingSpaceMatches.length);
+    text = text.replace(MISSING_SPACE_AFTER_REGEX, "$1 $2");
   }
 
   return { text, spacingFixes, punctuationFixes };
