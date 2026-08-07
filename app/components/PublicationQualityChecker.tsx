@@ -58,6 +58,7 @@ export default function PublicationQualityChecker() {
               <span className="font-bold block text-amber-900 mb-1">Punctuation:</span>
               <div>• Mixed Punctuation: {report.punctuation.mixedPunctuation}</div>
               <div>• Wrong Quotes: {report.punctuation.wrongQuotes}</div>
+              <div>• Duplicated Punctuation: {report.punctuation.duplicatedPunctuation}</div>
             </div>
 
             {/* Text Quality Section */}
