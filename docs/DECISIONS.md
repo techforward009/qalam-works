@@ -292,3 +292,34 @@ only reads/extracts text from DOCX files — it cannot generate new ones.
 `docx` is the standard tool for programmatically building new .docx files
 (headings, paragraphs, tables, styles). `mammoth` stays for reading;
 `docx` is added for writing — complementary, not overlapping.
+
+---
+
+## Decision: AI Collaboration Policy — Risk-Based Role Division
+
+**Date:** 2026-08-06
+**Status:** Approved (supersedes the role-assignment part of the
+2026-08-04 "AI Collaboration Workflow" entry above)
+
+**Decision:**
+Gemini is added to the coding rotation alongside Claude. The detailed,
+day-to-day operating rules — role assignments, the mandatory
+inspect-before-diff rule, the risk classification for what each AI may
+touch, and the verification checklist — now live in a separate file,
+`docs/AI-COLLABORATION.md`, not in this decisions log. Role division is
+risk-based (which parts of the codebase are high-stakes to get wrong),
+not model-based (no assumption that one model is categorically better
+than another).
+
+**Reason:**
+Claude subscription usage limits were slowing work down, prompting
+Gemini's addition. A review of the resulting work (ChatGPT audit,
+2026-08-06) found the friction wasn't really "Gemini vs Claude" — it was
+that inspection-before-coding discipline wasn't being consistently
+applied. Making that rule explicit and universal (applies to any AI used
+on this project, present or future) addresses the actual root cause,
+rather than the specific tool. AI-COLLABORATION.md is kept separate from
+this file because it's an operational/process document that will be
+referenced and followed on every task, whereas this file is a historical
+log of one-time decisions.
+
