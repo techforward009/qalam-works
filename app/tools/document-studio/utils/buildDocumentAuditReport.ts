@@ -1,4 +1,4 @@
-import { checkTextQuality } from "../../../utils/quality/checkTextQuality";
+import { checkTextQuality, type QualityReport } from "../../../utils/quality/checkTextQuality";
 import { buildQualityInput } from "./buildQualityInput";
 import type { DocNode } from "./extractPlainText";
 
@@ -7,6 +7,7 @@ export interface QualityIssueCounts {
   punctuation: number;
   spacing: number;
   longParagraphs: number;
+  repeatedWords: number;
 }
 
 export interface QualityRecommendation {
@@ -33,8 +34,22 @@ function createEmptyAuditReport(): QualityAuditReport {
       punctuation: 0,
       spacing: 0,
       longParagraphs: 0,
+      repeatedWords: 0,
     },
     recommendations: [],
+  };
+}
+
+// checkTextQuality() returns one structured QualityReport object, never an
+// array of "issues" — so this maps its real fields directly into the
+// QualityIssueCounts shape, instead of guessing at a shape it doesn't have.
+function toCounts(report: QualityReport): QualityIssueCounts {
+  return {
+    mixedScript: report.textQuality.mixedScript,
+    punctuation: report.punctuation.mixedPunctuation + report.punctuation.wrongQuotes,
+    spacing: report.typography.multipleSpaces + report.typography.emptyLines,
+    longParagraphs: report.typography.longParagraphs,
+    repeatedWords: report.textQuality.repeatedWords,
   };
 }
 
@@ -45,59 +60,21 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
     return createEmptyAuditReport();
   }
 
-  const rawResults: any = checkTextQuality(input);
+  const report = checkTextQuality(input);
+  const counts = toCounts(report);
 
-  const issuesList: any[] = Array.isArray(rawResults)
-    ? rawResults
-    : Array.isArray(rawResults?.issues)
-    ? rawResults.issues
-    : Array.isArray(rawResults?.errors)
-    ? rawResults.errors
-    : [];
-
-  const counts: QualityIssueCounts = {
-    mixedScript: 0,
-    punctuation: 0,
-    spacing: 0,
-    longParagraphs: 0,
-  };
-
-  for (const issue of issuesList) {
-    if (!issue) continue;
-    const issueType = String(issue.type || issue.category || issue.kind || issue.code || issue);
-
-    if (issueType.includes("script") || issueType.includes("mix")) {
-      counts.mixedScript++;
-    } else if (issueType.includes("punct")) {
-      counts.punctuation++;
-    } else if (issueType.includes("space") || issueType.includes("spacing")) {
-      counts.spacing++;
-    } else if (issueType.includes("para") || issueType.includes("length")) {
-      counts.longParagraphs++;
-    }
-  }
-
-  // اگر checkTextQuality نے ایشو نہ پکڑا ہو تو ان پٹ کا فال بیک معائنہ کریں
-  if (issuesList.length === 0) {
-    if (/\s{2,}/.test(input)) counts.spacing++;
-    if (/[\u0649\u064A\u0649]/.test(input)) counts.mixedScript++;
-    if (/[?,\.!;]/.test(input)) counts.punctuation++;
-    if (input.length > 300) counts.longParagraphs++;
-  }
-
+  // Computed from the same counts shown in this report, so the two numbers
+  // always agree.
   const totalIssues =
-    counts.mixedScript +
-    counts.punctuation +
-    counts.spacing +
-    counts.longParagraphs;
+    counts.mixedScript + counts.punctuation + counts.spacing + counts.longParagraphs + counts.repeatedWords;
 
-  let score = typeof rawResults?.score === "number" ? rawResults.score : 100;
-
-  // اگر مسائل موجود ہوں تو score کو 100 سے لازماً کم ہونا چاہیے
-  if (totalIssues > 0) {
-    const calculated = Math.max(50, 100 - totalIssues * 10);
-    score = score < 100 ? score : calculated;
-  }
+  // NOTE (2026-08-07, per Sajjad): this 100/90/80.../50-floor formula is a
+  // placeholder, not an approved business rule — it hasn't been reviewed or
+  // locked in DECISIONS.md. Score is intentionally NOT shown in
+  // QualityAuditPanel right now; it's kept here (rather than deleted) so a
+  // future approved scoring model has a slot to land in without another
+  // interface change. Do not treat this number as meaningful until then.
+  const score = totalIssues > 0 ? Math.max(50, 100 - totalIssues * 10) : 100;
 
   const recommendations: QualityRecommendation[] = [];
 
@@ -142,6 +119,17 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
       titleEnglish: "Paragraph Structure",
       descriptionUrdu:
         "کچھ پیراگراف بہت طویل ہیں۔ پڑھنے میں آسانی کے لیے انہیں چھوٹے حصوں میں تقسیم کریں۔",
+    });
+  }
+
+  if (counts.repeatedWords > 0) {
+    recommendations.push({
+      id: "rec-repeated-words",
+      type: "repeatedWords",
+      titleUrdu: "تکرارِ الفاظ",
+      titleEnglish: "Repeated Words",
+      descriptionUrdu:
+        "کچھ الفاظ لگاتار دو مرتبہ آ گئے ہیں، جو عموماً ٹائپنگ کی غلطی ہوتی ہے۔ جائزہ لیں۔",
     });
   }
 
