@@ -210,6 +210,7 @@ function ReportPanel({
             <div>• Multiple Spaces: {report.typography.multipleSpaces}</div>
             <div>• Empty Lines: {report.typography.emptyLines}</div>
             <div>• Long Paragraphs: {report.typography.longParagraphs}</div>
+            <div>• Missing Space After Punctuation: {report.typography.missingSpaceAfterPunctuation}</div>
           </div>
           <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">
             <span className="font-bold block text-amber-900 mb-1">Punctuation:</span>
