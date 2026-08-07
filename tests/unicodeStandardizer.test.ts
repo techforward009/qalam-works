@@ -22,4 +22,17 @@ describe("Unicode Standardizer Engine Tests", () => {
     expect(result.badges).toContain("✓ Text Already Standardized");
     expect(result.summary.totalCorrections).toBe(0);
   });
+
+  // Follow-up fix (2026-08-07): any punctuation mark repeated 2+ times in a
+  // row is collapsed to a single occurrence, in any script.
+  test("Should collapse duplicated punctuation marks to a single instance", () => {
+    const result = standardizeUrduText("کیا یہ ٹھیک ہے؟؟ بالکل!!");
+    expect(result.output).toBe("کیا یہ ٹھیک ہے؟ بالکل!");
+    expect(result.summary.punctuationFixes).toBeGreaterThan(0);
+  });
+
+  test("Should collapse 3+ repeats (e.g. an ellipsis typed as multiple periods) too", () => {
+    const result = standardizeUrduText("رکو...");
+    expect(result.output).toBe("رکو.");
+  });
 });
