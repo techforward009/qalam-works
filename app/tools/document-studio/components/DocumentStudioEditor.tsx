@@ -7,6 +7,8 @@ import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import { extractPlainText, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
+import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
+import { QualityAuditPanel } from "./QualityAuditPanel";
 
 const DRAFT_STORAGE_KEY = "qalam-document-studio-draft";
 const AUTOSAVE_DEBOUNCE_MS = 1000;
@@ -130,6 +132,13 @@ export default function DocumentStudioEditor() {
   const [preview, setPreview] = useState<{ document: DocNode; report: NormalizeReport } | null>(null);
   const [alreadyClean, setAlreadyClean] = useState(false);
 
+  const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
+  const [isAuditStale, setIsAuditStale] = useState(false);
+  // Mirrors "auditReport !== null" but as a ref, so the onUpdate callback
+  // below (captured once when the editor is created) can check it without
+  // reading stale React state from a closure.
+  const hasAuditReportRef = useRef(false);
+
   // Browser-safe timeout ref (avoids Node types dependency)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [initialContent] = useState(() => getInitialDraftContent());
@@ -143,6 +152,10 @@ export default function DocumentStudioEditor() {
     content: initialContent,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
+      if (hasAuditReportRef.current) {
+        setIsAuditStale(true);
+      }
+
       setSaveStatus("saving");
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
@@ -183,6 +196,9 @@ export default function DocumentStudioEditor() {
       }
       setSaveStatus("idle");
       setPreview(null);
+      setAuditReport(null);
+      hasAuditReportRef.current = false;
+      setIsAuditStale(false);
     }
   };
 
@@ -234,6 +250,14 @@ export default function DocumentStudioEditor() {
 
   const handleCancelStandardize = () => {
     setPreview(null);
+  };
+
+  const handleRunAudit = () => {
+    if (!editor) return;
+    const report = buildDocumentAuditReport(editor.getJSON() as DocNode);
+    setAuditReport(report);
+    hasAuditReportRef.current = true;
+    setIsAuditStale(false);
   };
 
   const handleCopy = async () => {
@@ -325,13 +349,22 @@ export default function DocumentStudioEditor() {
       <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md mt-4" dir="rtl">
         <h2 className="text-sm font-bold text-amber-800 mb-3">قلم ٹولز / Qalam Tools</h2>
 
-        <button
-          type="button"
-          onClick={handleStandardizeClick}
-          className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
-        >
-          معیاری بنائیں / Standardize Document
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleStandardizeClick}
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
+          >
+            معیاری بنائیں / Standardize Document
+          </button>
+          <button
+            type="button"
+            onClick={handleRunAudit}
+            className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
+          >
+            معیار جانچیں / Run Quality Audit
+          </button>
+        </div>
 
         {alreadyClean && (
           <p className="mt-3 text-sm text-green-700">
@@ -366,6 +399,10 @@ export default function DocumentStudioEditor() {
             </div>
           </div>
         )}
+
+        <div className="mt-4">
+          <QualityAuditPanel report={auditReport} isStale={isAuditStale} />
+        </div>
       </div>
 
       <style jsx global>{`
