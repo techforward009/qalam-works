@@ -50,7 +50,7 @@ function createEmptyAuditReport(): QualityAuditReport {
 function toCounts(report: QualityReport, longParagraphs: number): QualityIssueCounts {
   return {
     mixedScript: report.textQuality.mixedScript,
-    punctuation: report.punctuation.mixedPunctuation + report.punctuation.wrongQuotes,
+    punctuation: report.punctuation.mixedPunctuation + report.punctuation.wrongQuotes + report.punctuation.duplicatedPunctuation,
     spacing: report.typography.multipleSpaces + report.typography.emptyLines,
     longParagraphs,
     repeatedWords: report.textQuality.repeatedWords,
