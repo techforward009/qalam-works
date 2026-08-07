@@ -1,6 +1,6 @@
 import { checkTextQuality, type QualityReport } from "../../../utils/quality/checkTextQuality";
 import { buildQualityInput } from "./buildQualityInput";
-import type { DocNode } from "./extractPlainText";
+import { getBlockTexts, type DocNode } from "./extractPlainText";
 
 export interface QualityIssueCounts {
   mixedScript: number;
@@ -43,14 +43,44 @@ function createEmptyAuditReport(): QualityAuditReport {
 // checkTextQuality() returns one structured QualityReport object, never an
 // array of "issues" — so this maps its real fields directly into the
 // QualityIssueCounts shape, instead of guessing at a shape it doesn't have.
-function toCounts(report: QualityReport): QualityIssueCounts {
+//
+// longParagraphs is the one exception, computed separately below (see
+// countLongParagraphs) rather than taken from report.typography.longParagraphs
+// — see that function's comment for why.
+function toCounts(report: QualityReport, longParagraphs: number): QualityIssueCounts {
   return {
     mixedScript: report.textQuality.mixedScript,
     punctuation: report.punctuation.mixedPunctuation + report.punctuation.wrongQuotes,
     spacing: report.typography.multipleSpaces + report.typography.emptyLines,
-    longParagraphs: report.typography.longParagraphs,
+    longParagraphs,
     repeatedWords: report.textQuality.repeatedWords,
   };
+}
+
+// BUG THIS FIXES (found 2026-08-07, via Sajjad's screenshot of a document
+// made of 8 separate short paragraph/citation lines flagged as "1 long
+// paragraph"): checkTextQuality's own longParagraphs check
+// (app/utils/quality/checkTextQuality.ts) splits its input on a BLANK line
+// (/\n\s*\n/) to find paragraph boundaries — that's the right convention for
+// its actual caller (the standalone Quality Checker tool, which gets raw
+// pasted/uploaded text where blank lines are the real paragraph separator).
+// But buildQualityInput() joins Document Studio's separate, structurally-
+// known paragraph/heading/list-item blocks with a single "\n" (not a blank
+// line) specifically so multipleSpaces/emptyLines aren't miscounted — which
+// means checkTextQuality's blank-line paragraph split never fires here, and
+// it silently treats the ENTIRE document as one giant "paragraph" for the
+// length check. A document made of many short blocks whose total length
+// exceeds 250 characters (nearly any real document) gets wrongly flagged.
+//
+// Fix: Document Studio already knows its real paragraph boundaries
+// structurally (one entry per block from getBlockTexts) — no need to
+// re-derive them from whitespace at all. Count long paragraphs directly
+// against those real blocks, using the same threshold and whitespace-
+// collapse convention as checkTextQuality for consistency.
+function countLongParagraphs(doc: DocNode): number {
+  const LONG_PARAGRAPH_THRESHOLD = 250;
+  return getBlockTexts(doc).filter((block) => block.replace(/\s+/g, " ").trim().length > LONG_PARAGRAPH_THRESHOLD)
+    .length;
 }
 
 export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
@@ -61,7 +91,7 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
   }
 
   const report = checkTextQuality(input);
-  const counts = toCounts(report);
+  const counts = toCounts(report, countLongParagraphs(doc));
 
   // Computed from the same counts shown in this report, so the two numbers
   // always agree.
