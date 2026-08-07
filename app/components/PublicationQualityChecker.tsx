@@ -51,6 +51,7 @@ export default function PublicationQualityChecker() {
               <div>• Multiple Spaces: {report.typography.multipleSpaces}</div>
               <div>• Empty Lines: {report.typography.emptyLines}</div>
               <div>• Long Paragraphs: {report.typography.longParagraphs}</div>
+              <div>• Missing Space After Punctuation: {report.typography.missingSpaceAfterPunctuation}</div>
             </div>
 
             {/* Punctuation Section */}
