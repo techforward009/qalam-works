@@ -48,26 +48,15 @@ function sampleDoc(): DocNode {
 }
 
 describe("extractPlainText", () => {
-  test("reconstructs numbering and bullets, one block per line, RTL-safe", () => {
+  test("reconstructs numbering and bullets, one block per line", () => {
     const text = extractPlainText(sampleDoc(), "rtl");
     const lines = text.split("\r\n");
 
     expect(lines[0]).toBe("عنوان Heading");
     expect(lines.some((l) => l.includes("• پہلا نکتہ"))).toBe(true);
     expect(lines.some((l) => l.includes("• دوسرا نکتہ"))).toBe(true);
-    // RTL numbering is wrapped in U+200E (LRM) marks around "1." / "2." —
-    // strip marks before comparing, since the general bidi-weak-run
-    // isolation (for brackets/digits elsewhere in a document) also wraps
-    // digits and can add further marks on top; only the logical order
-    // matters here.
-    expect(lines.some((l) => l.replace(/\u200E/g, "").includes("1. السلام علیک"))).toBe(true);
-    expect(lines.some((l) => l.replace(/\u200E/g, "").includes("2. و علی الارواح"))).toBe(true);
-  });
-
-  test("uses plain 'N. ' numbering (no bidi marks) in LTR mode", () => {
-    const text = extractPlainText(sampleDoc(), "ltr");
-    expect(text.includes("1. السلام علیک")).toBe(true);
-    expect(text.includes("\u200E")).toBe(false);
+    expect(lines.some((l) => l.includes("1. السلام علیک"))).toBe(true);
+    expect(lines.some((l) => l.includes("2. و علی الارواح"))).toBe(true);
   });
 
   test("extracts mixed RTL/LTR text within one paragraph correctly", () => {
@@ -76,16 +65,14 @@ describe("extractPlainText", () => {
     expect(text).toContain("یہ بولڈ اور italic ہے۔");
   });
 
-  // Regression test for a real bug (2026-08-07, reported: a citation bracket
-  // "[...]" that looked correct in the browser editor came out reversed when
-  // the downloaded .txt was opened in Microsoft Word). Follow-up finding,
-  // same day: an RLM (U+200F) fix had NO effect — confirmed via a live A/B
-  // test comparing the same text in an RTL vs LTR Word paragraph — because
-  // brackets are Unicode-*mirrored* characters that flip their glyph under
-  // RTL resolution specifically; adding more "this is RTL" marks to text
-  // that's already RTL changes nothing. LRM (U+200E), which forces an
-  // LTR-resolved run, is the fix that actually stops the mirroring.
-  test("isolates authored brackets and digits (citation-style refs) with LRM, not RLM, for correct rendering in RTL export", () => {
+  // Regression test for a rolled-back bidi-marker experiment (2026-08-07):
+  // two separate attempts at wrapping brackets/digits in invisible bidi
+  // marks (RLM, then LRM) to fix a Word-specific rendering quirk both
+  // failed, and the second one broke direct-copy-paste, which had been
+  // working correctly before either attempt. Brackets/digits are exported
+  // as plain, unmarked text — no invisible characters — until there's a way
+  // to actually verify a fix against real Word rendering first.
+  test("exports brackets and digits as plain text, with no invisible bidi marks", () => {
     const doc: DocNode = {
       type: "doc",
       content: [
@@ -96,20 +83,18 @@ describe("extractPlainText", () => {
       ],
     };
     const text = extractPlainText(doc, "rtl");
-    expect(text).toContain("\u200E[\u200E");
-    expect(text).toContain("\u200E]\u200E");
-    // stripping the marks recovers the exact original, untouched text
-    expect(text.replace(/\u200E/g, "")).toBe("[اتحاف السادة المتقین ج.1 ص.501 دار الکتب العلمیہ]");
+    expect(text).toBe("[اتحاف السادة المتقین ج.1 ص.501 دار الکتب العلمیہ]");
+    expect(text.includes("\u200E")).toBe(false);
+    expect(text.includes("\u200F")).toBe(false);
   });
 
-  test("does not add bidi marks around brackets/digits in LTR mode", () => {
+  test("LTR mode is unaffected (plain text either way)", () => {
     const doc: DocNode = {
       type: "doc",
       content: [{ type: "paragraph", content: [{ type: "text", text: "[citation] page 501, vol. 2" }] }],
     };
     const text = extractPlainText(doc, "ltr");
     expect(text).toBe("[citation] page 501, vol. 2");
-    expect(text.includes("\u200E")).toBe(false);
   });
 });
 
