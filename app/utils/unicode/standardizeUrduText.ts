@@ -46,6 +46,7 @@ const PUNCTUATION_NORMALIZATIONS: { pattern: RegExp; replacement: string; label:
 ];
 
 const SPACE_BEFORE_PUNCTUATION_REGEX = /[ \t]+([:،؛؟۔])/g;
+const DUPLICATED_PUNCTUATION_REGEX = /([.,!?;:،؛؟۔])\1+/g;
 
 const PRESERVE_MARKER_REGEX = /\{\{([\s\S]*?)\}\}/g;
 const PLACEHOLDER_PREFIX = "\u0000PRESERVED";
@@ -117,6 +118,20 @@ function cleanSpacingAndPunctuation(
     const label = "رموز اوقاف (، ؛ ؟ : ۔) سے پہلے کی خالی جگہ ہٹائی گئی";
     corrections.set(label, (corrections.get(label) || 0) + matchesSpaceBeforePunctuation.length);
     text = text.replace(SPACE_BEFORE_PUNCTUATION_REGEX, "$1");
+  }
+
+  // Same punctuation mark repeated 2+ times in a row ("؟؟"، "!!"، "۔۔"،
+  // "،،", "..") — collapse to a single occurrence. Quote characters are
+  // deliberately not included here; a stray extra quote mark isn't safe to
+  // auto-delete the same way (it could just as easily be the MISSING
+  // partner's twin typed in the wrong spot), so that stays a flagged-only
+  // issue in the Quality Checker rather than an automatic correction here.
+  const duplicatedMatches = text.match(DUPLICATED_PUNCTUATION_REGEX);
+  if (duplicatedMatches) {
+    punctuationFixes += duplicatedMatches.length;
+    const label = "دہرائے گئے رموز اوقاف (مثلاً ؟؟ یا !!) کو ایک ہی نشان میں تبدیل کیا گیا";
+    corrections.set(label, (corrections.get(label) || 0) + duplicatedMatches.length);
+    text = text.replace(DUPLICATED_PUNCTUATION_REGEX, "$1");
   }
 
   return { text, spacingFixes, punctuationFixes };
