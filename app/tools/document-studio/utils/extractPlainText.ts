@@ -33,13 +33,42 @@ function nodeText(node: DocNode): string {
     .join("");
 }
 
-// "1." is plain Latin digits + a neutral period. When that sits right next
-// to Urdu/Arabic (RTL) text with no direction marker, Word/Notepad's bidi
-// algorithm can reorder it visually (dot appears before the digit). Wrapping
-// it in RTL marks (U+200F) forces it to render in the correct order in any
-// app, without changing the underlying character.
+// "1." is plain Latin digits + a neutral period, and digits are ordered
+// left-to-right by nature. Sitting right inside RTL text with no direction
+// marker, the digit/period pair can visually reorder (dot before the digit).
+// Wrapping it in LTR marks (U+200E — NOT U+200F/RTL, since the run needs to
+// resolve as LTR to keep its own internal left-to-right order) forces the
+// correct order in any app, without changing the underlying characters.
 function formatOrderedPrefix(n: number, dir: Direction): string {
-  return dir === "rtl" ? `\u200F${n}.\u200F ` : `${n}. `;
+  return dir === "rtl" ? `\u200E${n}.\u200E ` : `${n}. `;
+}
+
+// Same idea as the numbering fix above, but for two related, distinct bidi
+// problems that both showed up in one document (found 2026-08-07, confirmed
+// via a live A/B test: the exact same downloaded text kept its "]...[" bug
+// in Word's default RTL paragraph direction, but rendered correctly the
+// moment the paragraph was switched to LTR — proving this is a mirroring
+// issue, not a missing-marker issue):
+//
+// 1. Brackets/parens ( ) [ ] are Unicode "mirrored" characters — Word (and
+//    other bidi-aware renderers) deliberately flips their GLYPH when the
+//    run resolves as RTL, by design, so a "grouping" symbol still opens
+//    toward the start of the text visually. That's correct behavior for
+//    brackets used as grouping symbols — but wrong for brackets that are
+//    just literal citation-marker characters authored as part of the text
+//    (e.g. "[Reference]"), which should keep their authored shape.
+// 2. Digits, same reordering risk as the "1." case above.
+//
+// An earlier version of this used RTL marks (U+200F) here — which did
+// nothing, because the surrounding text was already RTL; adding more "this
+// is RTL" markers to an already-RTL run changes nothing. The actual fix is
+// the opposite: force an LTR-resolved run (U+200E) around these characters,
+// which both keeps digit/period order correct AND stops the bracket
+// mirroring, matching the LTR-paragraph behavior that confirmed this works.
+const BIDI_WEAK_RUN = /[0-9[\]().]+/g;
+
+function isolateBidiWeakRuns(text: string): string {
+  return text.replace(BIDI_WEAK_RUN, (match) => `\u200E${match}\u200E`);
 }
 
 function walkForDisplay(node: DocNode, lines: string[], dir: Direction, listPrefix?: string) {
@@ -86,7 +115,8 @@ function walkForDisplay(node: DocNode, lines: string[], dir: Direction, listPref
 export function extractPlainText(doc: DocNode, dir: Direction): string {
   const lines: string[] = [];
   (doc.content ?? []).forEach((node) => walkForDisplay(node, lines, dir));
-  return lines.join("\r\n");
+  const joined = lines.join("\r\n");
+  return dir === "rtl" ? isolateBidiWeakRuns(joined) : joined;
 }
 
 // Walks the document collecting one raw-text entry per block — no list
