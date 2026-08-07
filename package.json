@@ -15,6 +15,7 @@
     "@tiptap/pm": "^3.29.2",
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
+    "docx": "^9.7.1",
     "lucide-react": "^1.28.0",
     "mammoth": "^1.8.0",
     "next": "16.2.12",
