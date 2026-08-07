@@ -9,6 +9,13 @@ function docWithText(text: string): DocNode {
   };
 }
 
+function docFromLines(lines: string[]): DocNode {
+  return {
+    type: "doc",
+    content: lines.map((text) => ({ type: "paragraph", content: [{ type: "text", text }] })),
+  };
+}
+
 describe("checkTextQuality — real shape sanity check", () => {
   test("returns a single structured object, never an array or an {issues:[]} shape", () => {
     const result = checkTextQuality("test  text, with issues?");
@@ -52,6 +59,35 @@ describe("buildDocumentAuditReport", () => {
     const report = buildDocumentAuditReport(docWithText(longText));
     expect(report.counts.longParagraphs).toBeGreaterThan(0);
     expect(report.recommendations.some((r) => r.type === "longParagraphs")).toBe(true);
+  });
+
+  // Regression test for a real bug (2026-08-07, found via Sajjad's screenshot):
+  // a document made of several genuinely short paragraphs, whose combined
+  // length exceeds 250 chars, was being wrongly flagged as "1 long
+  // paragraph" — because checkTextQuality's own paragraph-split (on a blank
+  // line) never matched buildQualityInput's single-"\n" block join, so the
+  // whole document was checked as one block. Fixed by computing
+  // longParagraphs directly from the document's real per-block boundaries.
+  test("does NOT flag several short paragraphs as one long paragraph, even if their combined length exceeds 250 chars", () => {
+    const shortLines = [
+      "یہ پہلا مختصر جملہ ہے",
+      "یہ دوسرا مختصر جملہ ہے",
+      "یہ تیسرا مختصر جملہ ہے",
+      "یہ چوتھا مختصر جملہ ہے، تھوڑا لمبا کرنے کے لیے کچھ اور الفاظ شامل کر رہے ہیں",
+      "یہ پانچواں مختصر جملہ ہے",
+      "یہ چھٹا مختصر جملہ ہے، اور اسے بھی تھوڑا لمبا بنا رہے ہیں تاکہ مجموعی طوالت 250 سے تجاوز کر جائے",
+    ];
+    const combinedLength = shortLines.join("\n").length;
+    expect(combinedLength).toBeGreaterThan(250); // confirms the test actually exercises the bug condition
+
+    const report = buildDocumentAuditReport(docFromLines(shortLines));
+    expect(report.counts.longParagraphs).toBe(0);
+  });
+
+  test("still flags each genuinely long paragraph individually, in a multi-paragraph document", () => {
+    const longLine = "لفظ ".repeat(80); // ~400 chars, one block
+    const report = buildDocumentAuditReport(docFromLines([longLine, "چھوٹا جملہ", longLine]));
+    expect(report.counts.longParagraphs).toBe(2);
   });
 
   test("detects repeated adjacent words as their own category", () => {
