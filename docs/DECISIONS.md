@@ -323,3 +323,31 @@ this file because it's an operational/process document that will be
 referenced and followed on every task, whereas this file is a historical
 log of one-time decisions.
 
+---
+
+## Decision: Phase 3B Frozen, Word-Bidi Deferred to Phase 3C
+
+**Date:** 2026-08-07
+**Status:** Approved
+
+**Decision:**
+Phase 3B (Publishing Intelligence) is frozen at its MVP-complete state —
+see `PHASE-3B-CLOSURE.md` for exactly what's automated-tested vs.
+manually-verified. Plain-text (`.txt`) export remains plain text only;
+it is not extended further to try to fix Word-specific bidi rendering.
+That limitation is documented in `KNOWN-LIMITATIONS.md` as a structural
+constraint of the plain-text format, not a bug. Word-quality export
+responsibility moves entirely to Phase 3C (DOCX Export), which starts
+next.
+
+**Reason:**
+Two attempts at fixing bracket-mirroring in Word via invisible Unicode
+bidi marks (RLM, then LRM) both failed, and the second broke
+direct-copy-paste behavior that had been working correctly — concrete
+proof that plain text has no way to carry the paragraph-direction
+metadata this problem actually needs. Continuing to guess at plain-text
+bidi marker fixes was diminishing-returns engineering effort; a real
+`.docx` file can encode paragraph direction explicitly, which is the
+correct place to solve "Word-quality" export instead.
+
+
