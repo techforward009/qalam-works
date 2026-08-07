@@ -164,6 +164,7 @@ export default function DocumentStudioEditor() {
       if (hasAuditReportRef.current) {
         setIsAuditStale(true);
       }
+      setAlreadyClean(false);
 
       setSaveStatus("saving");
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -205,6 +206,7 @@ export default function DocumentStudioEditor() {
       }
       setSaveStatus("idle");
       setPreview(null);
+      setAlreadyClean(false);
       setAuditReport(null);
       hasAuditReportRef.current = false;
       setIsAuditStale(false);
@@ -226,10 +228,16 @@ export default function DocumentStudioEditor() {
     if (!editor) return;
     const result = normalizeDocumentNodes(editor.getJSON() as DocNode);
     if (!result.changed) {
+      // No auto-dismiss timer here: this message can include a manual-review
+      // note (see the alreadyClean block in the JSX below) that's genuinely
+      // useful to keep visible, not a fleeting confirmation toast — a fixed
+      // timeout previously made it vanish before it could be fully read.
+      // It clears naturally on the next Standardize click, text edit, or
+      // New Document instead.
       setAlreadyClean(true);
-      setTimeout(() => setAlreadyClean(false), 3000);
       return;
     }
+    setAlreadyClean(false);
     setPreview({ document: result.document, report: result.report });
   };
 
@@ -283,7 +291,15 @@ export default function DocumentStudioEditor() {
   const handleDownload = () => {
     if (!editor) return;
     const text = editorToPlainText(editor, dir);
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    // A leading BOM (U+FEFF) makes apps that guess a text file's encoding —
+    // Word chief among them — reliably detect UTF-8 instead of guessing.
+    // Without it, Word's "open this .txt file directly" path could mis-detect
+    // the encoding and mangle the invisible RTL isolation marks (U+200F)
+    // used elsewhere in this file for correct bracket/digit ordering, even
+    // though the exact same text pasted from the clipboard rendered fine
+    // (clipboard content always carries unambiguous Unicode metadata).
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
