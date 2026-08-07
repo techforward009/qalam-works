@@ -8,6 +8,7 @@ export interface QualityReport {
   punctuation: {
     mixedPunctuation: number;
     wrongQuotes: number;
+    duplicatedPunctuation: number;
   };
   textQuality: {
     repeatedWords: number;
@@ -29,11 +30,14 @@ interface PartialCounts {
   longParagraphs: number;
   mixedPunctuation: number;
   wrongQuotes: number;
+  duplicatedPunctuation: number;
   repeatedWords: number;
   mixedScript: number;
 }
 
-function checkUniversal(text: string): Pick<PartialCounts, "multipleSpaces" | "emptyLines" | "longParagraphs" | "wrongQuotes"> {
+function checkUniversal(
+  text: string
+): Pick<PartialCounts, "multipleSpaces" | "emptyLines" | "longParagraphs" | "wrongQuotes" | "duplicatedPunctuation"> {
   // Multiple spaces — space/tab runs only, NOT newlines (newlines are
   // "Empty Lines", a separate issue; counting both from the same runs
   // double-reported the same whitespace before).
@@ -59,9 +63,34 @@ function checkUniversal(text: string): Pick<PartialCounts, "multipleSpaces" | "e
   // Straight/ASCII quotation marks — typographically these should be
   // curly quotes in published text, regardless of script.
   const quoteMatches = text.match(/["']/g);
-  const wrongQuotes = quoteMatches ? quoteMatches.length : 0;
+  const straightQuotes = quoteMatches ? quoteMatches.length : 0;
 
-  return { multipleSpaces, emptyLines, longParagraphs, wrongQuotes };
+  // Unmatched curly double quotes — e.g. a closing " with no opening "
+  // anywhere before it (found 2026-08-07: a document missing its opening
+  // quote read as "0 punctuation issues", because straight-quote counting
+  // alone doesn't see curly quotes at all, correct or not — it was never
+  // checking whether they're actually paired). Deliberately limited to the
+  // double curly pair only: the single curly pair (' ') is also the
+  // ordinary typographic apostrophe (e.g. "don't"), so counting open/close
+  // imbalance there would flag normal apostrophe use as a false positive.
+  const openCurly = (text.match(/\u201C/g) || []).length;
+  const closeCurly = (text.match(/\u201D/g) || []).length;
+  const unmatchedCurlyQuotes = Math.abs(openCurly - closeCurly);
+
+  const wrongQuotes = straightQuotes + unmatchedCurlyQuotes;
+
+  // Any single punctuation mark repeated 2+ times in a row — "؟؟", "!!",
+  // "۔۔", "،،", ".." — almost always an accidental double keystroke, in any
+  // script. Deliberately not script-sensitive (unlike mixedPunctuation
+  // below) since a doubled mark is a mistake regardless of which script's
+  // punctuation it is. Quote characters are intentionally excluded here —
+  // they already have their own, more precise unmatched-pair check above;
+  // counting them again under a generic "duplicated" rule would double-flag
+  // the same underlying defect under two different names.
+  const duplicatedMatches = text.match(/([.,!?;:،؛؟۔])\1+/g);
+  const duplicatedPunctuation = duplicatedMatches ? duplicatedMatches.length : 0;
+
+  return { multipleSpaces, emptyLines, longParagraphs, wrongQuotes, duplicatedPunctuation };
 }
 
 function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript"> {
@@ -105,6 +134,7 @@ export function checkTextQuality(input: string): QualityReport {
     universal.emptyLines +
     universal.longParagraphs +
     universal.wrongQuotes +
+    universal.duplicatedPunctuation +
     scriptSensitive.mixedPunctuation +
     scriptSensitive.repeatedWords +
     scriptSensitive.mixedScript;
@@ -116,6 +146,7 @@ export function checkTextQuality(input: string): QualityReport {
     if (universal.multipleSpaces) badges.push("✓ Spacing Issues Detected");
     if (scriptSensitive.mixedPunctuation) badges.push("✓ Punctuation Issues Detected");
     if (universal.wrongQuotes) badges.push("✓ Quote Formatting Issues");
+    if (universal.duplicatedPunctuation) badges.push("✓ Duplicated Punctuation Found");
     if (universal.emptyLines) badges.push("✓ Layout Spacing Issues");
     if (scriptSensitive.repeatedWords) badges.push("✓ Repeated Words Found");
     if (scriptSensitive.mixedScript) badges.push("✓ Mixed Script Detected");
@@ -132,6 +163,7 @@ export function checkTextQuality(input: string): QualityReport {
     punctuation: {
       mixedPunctuation: scriptSensitive.mixedPunctuation,
       wrongQuotes: universal.wrongQuotes,
+      duplicatedPunctuation: universal.duplicatedPunctuation,
     },
     textQuality: {
       repeatedWords: scriptSensitive.repeatedWords,
