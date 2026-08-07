@@ -1,6 +1,6 @@
 // Adapter layer — no React, no editor instance, no DOM API. Prepares a
-// TipTap JSON document as input for checkTextQuality() (app/utils/
-// qualityChecker.ts), which treats each newline-separated chunk of its
+// TipTap JSON document as input for checkTextQuality() (app/utils/quality/
+// checkTextQuality.ts), which treats each newline-separated chunk of its
 // input as one "paragraph" for its long-paragraph check.
 //
 // Each heading, list item, and blockquote line is kept as its own entry
