@@ -115,3 +115,67 @@ the pattern that wasted effort here (three sequential blind-ish attempts
 directly against production code based on Unicode bidi theory each
 time). Until/unless that spike finds something real, this stays a
 documented, accepted limitation — not something to re-attempt casually.
+
+## PDF Export
+
+**Status (2026-08-08):** v1 approved and scoped — visual/print quality
+only. Scholarly searchable text remains unsolved research.
+
+**v1 decision:** Ship "Download PDF (Visual/Print)" using the validated
+Chromium (puppeteer-core + @sparticuz/chromium) HTML-to-PDF approach.
+Visual quality for Urdu/Arabic/Persian/mixed RTL-LTR — including Nastaliq
+— is independently verified excellent (see the PDF spike investigation).
+No attempt is made at a searchable/copyable text layer in v1; the PDF is
+visual/print-only, same category as a printed page or a screenshot.
+
+**Why not searchable in v1 — full investigation summary:**
+An extensive investigation (2026-08-08) tested seven PDF-generation
+approaches for extractable Urdu/Arabic/Nastaliq text: Chromium,
+WeasyPrint, LibreOffice headless, Typst, and XeLaTeX+Polyglossia (all
+tested for real), plus PrinceXML and Paged.js (evaluated from documented
+behavior, not tested — Prince is commercial/unavailable in-sandbox,
+Paged.js is a Chromium-based pagination layer, not an independent PDF
+engine). **All five tested engines failed** at producing Urdu/Arabic
+text that searches or copies correctly — each in a different way
+(character fragmentation, word/character reordering, or outright NULL/
+missing Unicode mappings), confirming this is a shared, ecosystem-wide
+challenge for complex Arabic-script shaping in PDF text layers, not a
+single engine's fixable bug.
+
+A follow-up "hybrid PDF" investigation (visual Chromium layer + a
+separately-authored invisible Unicode text layer, PDF text-rendering
+mode 3 — the same technique OCR tools like Tesseract/ocrmypdf use) found
+a working character-reversal encoding for the invisible layer — but only
+for ONE of five real-world extraction paths tested (poppler/pdftotext).
+The same PDF FAILED in PDFium (the actual engine behind both Chrome's
+and Microsoft Edge's built-in PDF viewers), pdfminer.six/pdfplumber,
+pypdf, and LibreOffice's own PDF-import filter — each disagreeing with
+poppler's bidi-reprocessing behavior differently. The invisible-text
+mechanism itself is sound (proven pixel-identical visual output); no
+single text encoding was found that satisfies multiple real extraction
+engines simultaneously. This remains open, unsolved research, not a
+regression — it was never working broadly to begin with.
+
+**v1 scope boundary:** the "Download PDF (Visual/Print)" button ships
+without any invisible/searchable text layer. UI copy explicitly labels
+it "(Visual/Print)" so users understand it's for viewing/printing/
+sharing, not for text search — same pattern as the "(Plain Text)" and
+"(For Word / Publishing)" labels already on the .txt/.docx buttons.
+
+**Future research (not blocking v1, no timeline):**
+1. A properly-configured XeLaTeX+Polyglossia pipeline is historically the
+   most credible path for genuinely scholarly Arabic/Urdu PDF output —
+   this session's XeLaTeX attempt had font-fallback rendering problems
+   from a rushed setup, not a confirmed capability failure; a dedicated,
+   careful attempt is worth a future spike.
+2. A PrinceXML commercial trial — strong reputation specifically for
+   correct ToUnicode/CMap generation in complex scripts; never tested,
+   requires a license.
+3. Finding a single invisible-text encoding that satisfies poppler,
+   PDFium, and LibreOffice simultaneously (if one exists at all) — not
+   attempted yet; would need per-engine empirical iteration the way the
+   poppler-only encoding was found.
+Any of these should be pursued as an isolated spike per the established
+pattern here — real generation, real multi-tool extraction testing,
+Verified/Failed/Inferred reported separately — never assumed from theory
+or from a single tool's success.
