@@ -1,7 +1,33 @@
-import { processDocument } from "../utils/documentExtractor";
-import type { DocNode } from "../tools/document-studio/utils/extractPlainText";
+import { extractTextFromFile } from "../utils/documents/extractTextFromFile";
+import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
+import { checkTextQuality } from "../utils/quality/checkTextQuality";
+import type { PipelineResult } from "../types/documentPipeline";
 
-export async function handleDocumentUpload(input: FormData | File) {
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+/**
+ * The full Document Cleaner pipeline: extract → standardize → audit →
+ * assemble a PipelineResult (see app/types/documentPipeline.ts).
+ *
+ * REBUILT 2026-08-08 — the previous version had drifted completely from
+ * this contract: it read .docx files with file.text() (which doesn't
+ * decode a binary ZIP file correctly — .docx is a ZIP archive, not plain
+ * text), built a malformed DocNode ({ text: fileText } with no `content`
+ * array, which every adapter in app/tools/document-studio/utils/ requires
+ * to find any text at all), and returned { auditReport, qualityReport }
+ * instead of the { summary, cleanedText } shape DocumentCleanerTool.tsx
+ * actually renders — so uploads silently produced an empty, all-zero
+ * report with no visible error. Reconnected to the real, working engines
+ * already used elsewhere in the app (extractTextFromFile, which properly
+ * handles .docx via mammoth and .txt encoding detection;
+ * standardizeUrduText for corrections; checkTextQuality for the
+ * remaining-issues audit on the cleaned text).
+ */
+export async function handleDocumentUpload(input: FormData | File): Promise<PipelineResult> {
   try {
     let file: File | null = null;
 
@@ -11,30 +37,37 @@ export async function handleDocumentUpload(input: FormData | File) {
       file = input;
     }
 
-    if (!file || typeof file.text !== "function") {
+    if (!file || typeof file.arrayBuffer !== "function") {
       return {
         success: false,
         error: "No valid file uploaded / فائل موصول نہیں ہوئی۔",
       };
     }
 
-    const fileText = await file.text();
+    const originalText = await extractTextFromFile(file);
+    const { output: cleanedText, summary: correctionsApplied } = standardizeUrduText(originalText);
+    const remainingIssues = checkTextQuality(cleanedText);
 
-    const docNode: DocNode = {
-      text: fileText,
-    };
-
-    const result = await processDocument(docNode);
+    const wordCount = cleanedText.trim() ? cleanedText.trim().split(/\s+/).length : 0;
 
     return {
       success: true,
-      error: undefined as string | undefined,
-      ...result,
+      originalText,
+      cleanedText,
+      summary: {
+        fileName: file.name,
+        fileType: file.name.toLowerCase().endsWith(".docx") ? "DOCX" : "TXT",
+        fileSize: formatFileSize(file.size),
+        characterCount: cleanedText.length,
+        wordCount,
+        correctionsApplied,
+        remainingIssues,
+      },
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       success: false,
-      error: err?.message || "Processing error / پراسیسنگ میں خرابی۔",
+      error: err instanceof Error ? err.message : "Processing error / پراسیسنگ میں خرابی۔",
     };
   }
 }
