@@ -24,19 +24,19 @@ export default function Header() {
 
   return (
     <header className="bg-white border-b border-amber-200/80 sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="font-bold text-lg text-amber-900" dir="ltr">
+      <div className="max-w-6xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
+        <Link href="/" className="font-bold text-xl md:text-2xl tracking-tight text-amber-900" dir="ltr">
           Qalam Works
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-6" dir="ltr">
+        <nav className="hidden md:flex items-center gap-8" dir="ltr">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`text-sm font-medium transition-colors ${
-                isActive(link.href) ? "text-amber-700 font-bold" : "text-gray-600 hover:text-amber-700"
+              className={`text-base font-semibold transition-colors ${
+                isActive(link.href) ? "text-amber-700" : "text-gray-700 hover:text-amber-700"
               }`}
             >
               {link.label}
