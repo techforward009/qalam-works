@@ -9,7 +9,10 @@ import { extractPlainText, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
 import { buildDocxBlob } from "../utils/buildDocxDocument";
+import { plainTextToDocNode } from "../utils/plainTextToDocNode";
 import { QualityAuditPanel } from "./QualityAuditPanel";
+import { validateFile } from "../../../utils/fileValidation";
+import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 
 const DRAFT_STORAGE_KEY = "qalam-document-studio-draft";
 const AUTOSAVE_DEBOUNCE_MS = 1000;
@@ -142,6 +145,9 @@ export default function DocumentStudioEditor() {
   const [preview, setPreview] = useState<{ document: DocNode; report: NormalizeReport } | null>(null);
   const [alreadyClean, setAlreadyClean] = useState(false);
 
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [docxImportNotice, setDocxImportNotice] = useState(false);
+
   const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
   const [isAuditStale, setIsAuditStale] = useState(false);
   // Mirrors "auditReport !== null" but as a ref, so the onUpdate callback
@@ -166,6 +172,7 @@ export default function DocumentStudioEditor() {
         setIsAuditStale(true);
       }
       setAlreadyClean(false);
+      setDocxImportNotice(false);
 
       setSaveStatus("saving");
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -222,6 +229,53 @@ export default function DocumentStudioEditor() {
       } catch (e) {
         console.error("Failed to remove draft", e);
       }
+    }
+  };
+
+  // v1 file import (Option A, per Sajjad's 2026-08-08 decision): both .txt
+  // and .docx come in as PLAIN TEXT only — extractTextFromFile() uses
+  // mammoth.extractRawText() for .docx, which does not preserve headings/
+  // bold/lists/layout. A formatting-preserving import (mammoth.convertToHtml
+  // + TipTap's generateJSON) is a separate, later "Option B" spike, not part
+  // of this change. Reuses the exact same validateFile/extractTextFromFile
+  // Document Cleaner already uses, and the newly-shared plainTextToDocNode.
+  const handleUploadFile = async (file: File) => {
+    setUploadError(null);
+    setDocxImportNotice(false);
+
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error || "فائل ناکام ہو گئی / File validation failed.");
+      return;
+    }
+
+    if (editor && !editor.isEmpty) {
+      const confirmed = window.confirm(
+        "موجودہ متن کو اپلوڈ شدہ فائل سے تبدیل کر دیا جائے گا۔ جاری رکھیں؟ / This will replace the current content in the editor. Continue?"
+      );
+      if (!confirmed) return;
+    }
+
+    try {
+      const text = await extractTextFromFile(file);
+      const docNode = plainTextToDocNode(text);
+      editor?.commands.setContent(docNode);
+
+      // Same full-state reset as New Document — the previous document's
+      // preview/audit/save state no longer describes what's in the editor.
+      setSaveStatus("idle");
+      setPreview(null);
+      setAlreadyClean(false);
+      setAuditReport(null);
+      hasAuditReportRef.current = false;
+      setIsAuditStale(false);
+
+      if (file.name.toLowerCase().endsWith(".docx")) {
+        setDocxImportNotice(true);
+      }
+    } catch (err) {
+      console.error("Failed to import file:", err);
+      setUploadError("فائل درآمد کرنے میں خرابی ہوئی / Failed to import file.");
     }
   };
 
@@ -379,7 +433,24 @@ export default function DocumentStudioEditor() {
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-2 text-xs">
+          <div className="flex flex-wrap gap-2 text-xs items-center">
+            <input
+              type="file"
+              accept=".txt,.docx"
+              onChange={(e) => {
+                const f = e.target.files && e.target.files[0];
+                if (f) handleUploadFile(f);
+                e.target.value = ""; // allow re-selecting the same file later
+              }}
+              className="hidden"
+              id="document-studio-upload-input"
+            />
+            <label
+              htmlFor="document-studio-upload-input"
+              className="px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-50 transition cursor-pointer"
+            >
+              Upload File / فائل اپلوڈ کریں (.txt, .docx)
+            </label>
             <button
               type="button"
               onClick={handleNewDocument}
@@ -396,6 +467,18 @@ export default function DocumentStudioEditor() {
             </button>
           </div>
         </div>
+
+        {uploadError && (
+          <div className="mt-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
+            {uploadError}
+          </div>
+        )}
+
+        {docxImportNotice && (
+          <div className="mt-3 bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-xs" dir="rtl">
+            ⚠️ .docx فائل صرف خام متن کے طور پر درآمد ہوئی ہے — اصل فارمیٹنگ (headings، bold، lists، ترتیب) محفوظ نہیں رہی۔ / The .docx file was imported as plain text only — original formatting (headings, bold, lists, layout) was not preserved.
+          </div>
+        )}
       </div>
 
       <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md mt-4" dir="rtl">
