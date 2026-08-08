@@ -33,17 +33,18 @@ function nodeText(node: DocNode): string {
     .join("");
 }
 
-// ROLLED BACK 2026-08-07. Two attempts at fixing bracket/digit rendering in
-// Word by wrapping them in invisible bidi marks both failed in practice:
-// RLM (U+200F) had no effect; switching to LRM (U+200E) still didn't fix
-// Word AND broke direct-copy-paste, which had been working correctly before
-// either attempt. Both fixes were reasoned from Unicode bidi theory, but
-// neither was verified against the actual target (Word) before shipping —
-// guessing further without a way to test real Word rendering risks more
-// regressions than it's worth. Numbering and bracket/digit runs are now
-// exported as plain, unmarked text again, matching pre-2026-08-07 behavior.
-// If this needs revisiting, it should start from controlled, one-variable-
-// at-a-time evidence from an actual Word document, not another guess.
+// ROLLED BACK 2026-08-07, BRIEFLY RESTORED AND RE-REVERTED 2026-08-08.
+// A brief restoration of RLM marks here (to fix "1." reordering when a
+// downloaded .txt is opened directly in Word) was itself reverted the same
+// day: a 3-way comparison (direct clipboard paste vs. opening the
+// downloaded .txt vs. opening a .docx) showed paste already renders
+// numbering AND brackets correctly with NO marks at all — Word inherits
+// the paste target's context. Since paste and file-open share the exact
+// same string, adding marks to fix file-open risks reintroducing the
+// exact paste regression from the earlier LRM incident, for a benefit
+// that's no longer worth the risk: `.txt` is now positioned as a plain-
+// text-only export (see the Download .txt / .docx button labels), with
+// DOCX as the actual Word-quality path. See KNOWN-LIMITATIONS.md.
 function formatOrderedPrefix(n: number): string {
   return `${n}. `;
 }
