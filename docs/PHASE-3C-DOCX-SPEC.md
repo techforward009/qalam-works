@@ -145,7 +145,7 @@ plain-text path and keeps the two export formats independently testable.
 
 ## 4. TipTap Node/Mark → DOCX Mapping
 
-**Verified 2026-08-07** — via `scripts/docx-spike.ts`: generated a real
+**Verified 2026-08-07** — via `scripts/verification/docx-spike.ts`: generated a real
 `.docx`, unzipped it, and inspected the actual OOXML (`word/document.xml`,
 `word/numbering.xml`, `word/_rels/document.xml.rels`) directly, rather
 than trusting the package's TypeScript types alone. All rows below are
@@ -236,7 +236,7 @@ backlog item for a future iteration, not something v1 needs to solve.
 
 1. ✅ Done — Install `docx` (`docx@9.7.1`), confirm `npx tsc --noEmit`
    and `npm test` stay clean with the new dependency present
-2. ✅ Done — `scripts/docx-spike.ts`: a standalone script (not part of
+2. ✅ Done — `scripts/verification/docx-spike.ts`: a standalone script (not part of
    the app) proving heading/bold/italic/bullet-list/numbered-list/
    hyperlink/RTL-bidi/alignment all produce valid, correct OOXML —
    verified by unzipping the real output and inspecting the XML directly
