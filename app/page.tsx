@@ -169,13 +169,47 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. Core Engines: Unicode Standardizer v1.0 */}
+      {/* 4. Document Studio Callout — the flagship, most-complete tool
+          currently had no presence on the homepage at all (no card, no
+          link, unreachable except by knowing the URL directly). This
+          section follows the existing card visual pattern (bg-white,
+          rounded-xl border, amber accents, bilingual heading) rather than
+          introducing a new style, per the discoverability-first fix. */}
+      <section id="document-studio-callout" className="max-w-4xl mx-auto px-4 py-8 text-center">
+        <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
+          <div className="inline-block bg-amber-100 text-amber-800 text-xs font-medium px-3 py-1 rounded-full mb-3" dir="ltr">
+            Flagship / سب سے جامع ٹول
+          </div>
+          <h2 className="text-xl md:text-2xl font-bold mb-1 text-amber-900" dir="ltr">
+            Document Studio
+          </h2>
+          <h3 className="text-lg md:text-xl font-bold mb-3 font-nastaliq text-amber-800">
+            ڈاکومنٹ اسٹوڈیو
+          </h3>
+          <p className="text-sm text-gray-600 max-w-2xl mx-auto mb-2" dir="ltr">
+            A full writing workspace for Urdu, Arabic & Persian — rich-text editing,
+            one-click standardization, a built-in quality audit, and publication-ready
+            Word (.docx) export, all in one place.
+          </p>
+          <p className="text-xs md:text-sm text-gray-500 font-nastaliq mb-6">
+            لکھیں، معیاری بنائیں، معیار جانچیں، اور Word کے لیے تیار دستاویز حاصل کریں — ایک ہی جگہ
+          </p>
+          <Link
+            href="/tools/document-studio"
+            className="inline-block bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-sm"
+          >
+            Open Document Studio / ڈاکومنٹ اسٹوڈیو کھولیں
+          </Link>
+        </div>
+      </section>
+
+      {/* 5. Core Engines: Unicode Standardizer v1.0 */}
       <InteractiveDemo />
 
-      {/* 5. Core Engines: Publication Quality Checker MVP */}
+      {/* 6. Core Engines: Publication Quality Checker MVP */}
       <PublicationQualityChecker />
 
-      {/* 6. Document Upload Pipeline */}
+      {/* 7. Document Upload Pipeline */}
       <DocumentUpload />
 
     </div>
