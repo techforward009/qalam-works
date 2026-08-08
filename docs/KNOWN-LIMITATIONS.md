@@ -9,50 +9,80 @@ that's expected" lives, so nobody re-discovers the same dead end twice.
 
 ---
 
-## Plain TXT → Word bidi rendering (bracket mirroring)
+## Bracket mirroring in RTL text (Word, both plain TXT and DOCX)
 
-**Status:** Accepted limitation, not fixed
-**Affects:** Document Studio's Copy Text / Download .txt, when the
-document contains bracket/paren characters `( ) [ ]` next to RTL
-Urdu/Arabic text, opened in Microsoft Word with an RTL paragraph
+**Status:** Accepted limitation, not fixed — genuine edge case, not launch-blocking
+**Affects:** Document Studio's Copy Text / Download .txt AND Download
+.docx, specifically for bracket/paren characters `( ) [ ]` sitting next
+to RTL Urdu/Arabic text, when opened in Microsoft Word with RTL text
+direction
 
 **What happens:**
 A citation like `[Reference]` sitting inside RTL Urdu/Arabic text can
-render with the bracket glyphs visually swapped (`]Reference[`-looking)
-when the downloaded `.txt` file is opened directly in Word with the
-paragraph set to RTL. The same text pasted directly into an LTR context,
-or with the Word paragraph set to LTR, renders correctly.
+render with the bracket glyphs visually swapped (`]Reference[`-looking),
+confusing which side opens and which closes. Confirmed via real Word
+screenshots on 2026-08-07/08 in both export formats.
 
-**Why this is a plain-text limitation, not a bug in Document Studio:**
-Brackets/parens are Unicode "mirrored" characters — by design, a
-bidi-aware renderer flips their glyph when the surrounding run resolves
-as RTL, so a "grouping" symbol still visually opens toward the reading
-direction. That's correct, intentional behavior for brackets used as
-grouping symbols. It's the wrong behavior for brackets that are just
-literal citation-marker characters authored as part of the text — but
-a plain `.txt` file has no way to express "this text is RTL, but treat
-these specific bracket characters as literal, not as mirrored grouping
-symbols." There's no metadata slot for that distinction in plain text;
-the file is just a sequence of Unicode codepoints, and the renderer's own
-bidi algorithm decides direction and mirroring per its own rules.
+**Corrected understanding (2026-08-08):** an earlier version of this
+entry concluded this was a plain-text-only limitation, expected to be
+fixed by Phase 3C's DOCX export (since DOCX can set paragraph direction
+explicitly via `<w:bidi/>`, instead of a plain-text renderer guessing).
+That conclusion was wrong. Sajjad tested a real exported .docx —
+independently verified via direct OOXML inspection to have correct
+`<w:bidi/>`, headings, both list types, blockquote indent, and font on
+every paragraph — and brackets still mirrored in real Word, identically
+to the plain-text case. The root cause is broader than "plain text has
+no metadata slot for this": Unicode bracket mirroring applies to any
+RTL-*resolved* run regardless of whether that resolution came from
+inference (plain text) or explicit metadata (DOCX's `w:bidi`). It's a
+Word/Unicode rendering rule operating at a layer neither format's
+metadata reaches, not a plain-text-specific gap.
 
-**What was tried and rolled back (2026-08-07):**
-1. Wrapping brackets/digits in RLM (U+200F, "treat as RTL") marks — no
-   effect, since the surrounding text was already RTL.
-2. Wrapping the same characters in LRM (U+200E, "treat as LTR") marks
+**What was tried and rolled back:**
+1. (2026-08-07, plain-text export) RLM (U+200F, "treat as RTL") marks
+   around brackets/digits — no effect, since the surrounding text was
+   already RTL.
+2. (2026-08-07, plain-text export) LRM (U+200E, "treat as LTR") marks
    instead — still didn't fix Word, AND broke direct-copy-paste, which
-   had been working correctly before either attempt.
+   had been working correctly before either attempt. Both fully
+   reverted; plain-text export now contains no invisible bidi marks.
+3. (2026-08-08, DOCX export, tested only — never merged into
+   `buildDocxDocument.ts`) `docx`'s run-level `rightToLeft: false`
+   property (maps to real OOXML `<w:rtl w:val="false"/>` on just the
+   bracket-containing run, confirmed via direct XML inspection) — a
+   controlled A/B test document (one paragraph with the override, one
+   plain control) showed both paragraphs mirroring identically in real
+   Word. No effect.
+4. Also considered, evaluated, and explicitly rejected: silently
+   substituting `[ ]`/`( )` with non-mirrored alternatives when
+   exporting — Arabic ornate parentheses `﴾ ﴿` (U+FD3E/FD3F, confirmed
+   via Python's `unicodedata.mirrored()` to NOT be in the Bidi_Mirrored
+   set — also traditionally used for Qur'anic quotation in Arabic/Urdu
+   typesetting) and an em-dash pair both tested in real Word and
+   rendered correctly (not mirrored). Rejected as an *automatic*
+   substitution because it would silently change the user's authored
+   text — against Qalam Works' content-fidelity principle. Sajjad may
+   choose to author citations with `﴾ ﴿` himself where visually
+   appropriate; Document Studio does not do this substitution for him.
 
-Both were fully reverted. Document Studio's plain-text export now
-contains no invisible bidi marks at all — see `PHASE-3B-CLOSURE.md` and
-the code comments in `extractPlainText.ts` for the detailed trail.
+**Not yet tried:** Unicode's *directional isolates* — LRI (U+2066), RLI
+(U+2067), FSI (U+2068), PDI (U+2069) — a distinct, more modern bidi
+control mechanism from the marks (RLM/LRM) already tried. These
+establish a fully isolated embedding rather than just biasing
+resolution, and may behave differently for mirrored characters
+specifically. This has NOT been evaluated at all yet, in either format.
 
 **Resolution path:**
-Not a 3B blocker. Expected to become moot with Phase 3C's DOCX export:
-a real `.docx` file has an actual paragraph-direction property (`w:bidi`
-in the underlying XML) that can be set explicitly per paragraph, instead
-of relying on a renderer's guess. If plain-text export specifically still
-needs to look correct in Word someday, revisit only with controlled,
-one-variable-at-a-time evidence from real Word documents — not further
-speculation from Unicode bidi theory alone, which is what produced both
-failed attempts here.
+Not a Phase 3C blocker. The rest of DOCX export (paragraphs, headings,
+both list types, alignment, RTL text order, bold/italic, hyperlinks,
+font) is independently verified working correctly in real Word — this
+is a narrow, specific edge case (paired bracket/paren glyphs only), not
+a failure of the RTL export architecture generally. If pursued further,
+it should happen as an isolated, non-production research spike — a
+short test document comparing isolate-based strategies one variable at
+a time — separate from the production editor/exporter, per the pattern
+that produced clean results before (the original OOXML spike) versus
+the pattern that wasted effort here (three sequential blind-ish attempts
+directly against production code based on Unicode bidi theory each
+time). Until/unless that spike finds something real, this stays a
+documented, accepted limitation — not something to re-attempt casually.

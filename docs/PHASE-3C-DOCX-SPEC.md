@@ -1,10 +1,40 @@
 # Phase 3C — DOCX Export: Technical Spec
 
-**Status:** Step 1 spike complete — mapping table below is now
-verified against the real installed package, not assumed
-**Date:** 2026-08-07
+**Status:** v1 complete and verified in real Word, with one documented
+edge-case exception — see below
+**Date:** 2026-08-08
 **Depends on:** `DOCUMENT-STUDIO-SPEC.md` §4 (Decision: DOCX Export),
 `docs/DECISIONS.md` "Phase 3B Frozen, Word-Bidi Deferred to Phase 3C"
+
+## 0. Real Word verification results (2026-08-08)
+
+Sajjad tested real exported .docx files (both self-authored, containing
+headings, both list types, bold, blockquote, RTL Urdu text, and
+citation-style brackets) by opening them in actual Microsoft Word.
+Independently cross-checked by Claude via direct OOXML inspection
+(unzip + inspect `word/document.xml`) for each file, not just visual
+report.
+
+**Confirmed working correctly in real Word:**
+- RTL paragraph direction and Urdu text order
+- Noto Nastaliq Urdu font rendering
+- Heading 1 and Heading 2 styles
+- Bullet lists and numbered lists (as two independently-verified,
+  distinct list types)
+- Bold text
+- Blockquote indentation
+- General document readability — "بالکل قدرتی نظر آ رہے ہیں" (looks
+  completely natural), per Sajjad's own assessment of the non-bracket
+  content
+
+**Confirmed NOT working — one specific edge case:**
+Bracket/paren characters (`[ ]`, `( )`) used as citation markers
+visually mirror in Word regardless of export format (plain text or
+DOCX) — see `KNOWN-LIMITATIONS.md` → "Bracket mirroring in RTL text" for
+the full investigation, three failed fix attempts, and why this is not
+treated as a Phase 3C blocker. This is a narrow, specific limitation
+affecting only paired mirrored punctuation — not a failure of the RTL
+export architecture generally.
 
 ## 1. Goal
 
@@ -12,8 +42,9 @@ Given the same TipTap JSON document Document Studio already works with
 (the `DocNode` shape in `extractPlainText.ts`), produce a real `.docx`
 file where paragraph direction, alignment, and basic formatting are
 encoded as actual DOCX properties — not inferred by a renderer's bidi
-guessing, which is exactly the class of problem `KNOWN-LIMITATIONS.md`
-documents for plain-text export.
+guessing. (Note: this successfully fixed RTL text order and every other
+verified property above — see §0 for the one specific exception it did
+not fix.)
 
 ## 2. v1 Scope (locked, per Sajjad's 2026-08-07 direction)
 

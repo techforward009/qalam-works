@@ -350,4 +350,38 @@ bidi marker fixes was diminishing-returns engineering effort; a real
 `.docx` file can encode paragraph direction explicitly, which is the
 correct place to solve "Word-quality" export instead.
 
+---
 
+## Decision: Phase 3C DOCX Export Accepted as Complete, With One Documented Exception
+
+**Date:** 2026-08-08
+**Status:** Approved
+
+**Decision:**
+Phase 3C (DOCX Export) v1 is accepted as complete. Bracket/paren
+mirroring (`[ ]`, `( )` used as citation markers) in real Word remains
+unresolved and is documented in `KNOWN-LIMITATIONS.md`, not fixed —
+but this does NOT block Phase 3C or delay moving on to other work.
+Document Studio does not automatically substitute brackets with
+non-mirrored alternatives (e.g. `﴾ ﴿`) on export, even though testing
+showed these render correctly — an automatic substitution would change
+the user's authored text, which conflicts with Qalam Works' content-
+fidelity principle. Sajjad may choose such characters himself when
+authoring, entirely outside Document Studio's control.
+
+**Reason:**
+Real Word testing (both self-authored test files, cross-verified by
+Claude via direct OOXML inspection) confirmed every other v1 property —
+RTL text order, Nastaliq font, both heading levels, both list types,
+bold, blockquote indent — renders correctly and the overall document
+"looks completely natural." The bracket issue is a narrow, well-
+understood Unicode rendering rule (paired punctuation mirrors under any
+RTL-resolved run, in any format) rather than a defect in the RTL export
+architecture. Three attempted fixes (RLM marks, LRM marks, DOCX
+run-level `rightToLeft` override) were each tested in real Word and each
+failed — continuing to guess at fixes directly in production code was
+the same diminishing-returns pattern the plain-text bidi attempts fell
+into. Any further investigation (e.g. Unicode directional isolates —
+LRI/RLI/FSI/PDI, not yet tried) is deferred to a separate, isolated
+research spike outside the production editor/exporter, rather than more
+trial-and-error against `buildDocxDocument.ts` directly.
