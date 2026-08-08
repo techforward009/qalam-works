@@ -148,6 +148,8 @@ export default function DocumentStudioEditor() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [docxImportNotice, setDocxImportNotice] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
   const [isAuditStale, setIsAuditStale] = useState(false);
@@ -412,6 +414,44 @@ export default function DocumentStudioEditor() {
     }
   };
 
+  // v1 — visual/print quality only, no searchable text layer (see
+  // docs/KNOWN-LIMITATIONS.md's "PDF Export" section for the full
+  // investigation behind that decision). Sends structured DocNode JSON
+  // to the server, not raw HTML — the server (app/api/export-pdf/route.ts)
+  // builds the actual HTML and renders it, keeping the request small and
+  // the server's own template in full control of what markup ever exists.
+  const handleDownloadPdf = async () => {
+    if (!editor) return;
+    setPdfError(null);
+    setIsExportingPdf(true);
+    try {
+      const response = await fetch("/api/export-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doc: editor.getJSON(), dir }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Export failed with status ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "qalam-document.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to generate PDF:", err);
+      setPdfError("PDF بنانے میں خرابی ہوئی / Failed to generate PDF.");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
@@ -451,6 +491,12 @@ export default function DocumentStudioEditor() {
         {uploadError && (
           <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
             {uploadError}
+          </div>
+        )}
+
+        {pdfError && (
+          <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
+            {pdfError}
           </div>
         )}
 
@@ -505,6 +551,22 @@ export default function DocumentStudioEditor() {
               className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
             >
               Download .docx <span className="text-[10px] font-normal text-amber-500">(For Word / Publishing)</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isExportingPdf}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${
+                isExportingPdf
+                  ? "border-amber-300 text-amber-400 cursor-not-allowed"
+                  : "border-amber-600 text-amber-700 hover:bg-amber-50"
+              }`}
+            >
+              {isExportingPdf ? "PDF بن رہی ہے... / Generating..." : (
+                <>
+                  Download PDF <span className="text-[10px] font-normal text-amber-500">(Visual/Print)</span>
+                </>
+              )}
             </button>
           </div>
 
