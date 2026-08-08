@@ -1,4 +1,4 @@
-// Same verification philosophy as scripts/docx-spike.ts (see
+// Same verification philosophy as scripts/verification/docx-spike.ts (see
 // PHASE-3C-DOCX-SPEC.md §7): asserting that createDocxDocument() doesn't
 // throw proves almost nothing about correctness. These tests pack the
 // real Document to a buffer and unzip it with JSZip to inspect the actual
@@ -196,7 +196,7 @@ describe("createDocxDocument — lists", () => {
     ]);
     const xml = await extractDocumentXml(doc, "ltr");
     // docx always includes one baseline numbering entry regardless of how
-    // many lists are registered (confirmed via scripts/docx-spike.ts too —
+    // many lists are registered (confirmed via scripts/verification/docx-spike.ts too —
     // 2 registered lists produced 3 <w:num> entries there as well), so the
     // robust check is that the two lists IN THE DOCUMENT reference two
     // DISTINCT numId values, not an exact total count in numbering.xml.
