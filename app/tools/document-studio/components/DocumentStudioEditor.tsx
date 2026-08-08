@@ -368,14 +368,14 @@ export default function DocumentStudioEditor() {
               onClick={handleDownload}
               className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
             >
-              Download .txt
+              Download .txt <span className="text-[10px] font-normal text-amber-500">(Plain Text)</span>
             </button>
             <button
               type="button"
               onClick={handleDownloadDocx}
               className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
             >
-              Download .docx
+              Download .docx <span className="text-[10px] font-normal text-amber-500">(For Word / Publishing)</span>
             </button>
           </div>
 
