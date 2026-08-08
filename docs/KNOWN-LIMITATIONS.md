@@ -23,6 +23,35 @@ render with the bracket glyphs visually swapped (`]Reference[`-looking),
 confusing which side opens and which closes. Confirmed via real Word
 screenshots on 2026-08-07/08 in both export formats.
 
+**Three distinct paths, three distinct results (found 2026-08-08, via
+ChatGPT's analysis of Sajjad's screenshots):** the same exported text
+behaves differently depending on how it reaches Word — this matters for
+deciding where to invest further effort.
+
+| Path | Result |
+|---|---|
+| Copy Text → paste into Word | ✅ Brackets and numbering both correct — Word inherits the paste target's existing RTL paragraph context |
+| Download .txt → opened directly in Word | ❌ Brackets mirror, AND numbering ("1.") can reorder — Word has no metadata and must guess direction/mirroring itself |
+| Download .docx → opened in Word | ✅ Numbering/RTL/headings/lists/font all correct, ⚠️ brackets still mirror (see above) |
+
+This is why a numbering fix that once worked can reappear broken later
+even with no logic change: paste and file-open are genuinely different
+Word import contexts, not the same rendering path with the same inputs.
+It also means any invisible-mark fix applied to the exported string
+affects BOTH the paste and file-open paths at once — there's no way to
+target one without the other, since they share the exact same text.
+
+**Resulting product decision (2026-08-08):** stop trying to make `.txt`
+Word-quality. It's positioned as a plain-text-only export (labeled
+"Plain Text" in the UI); DOCX is the actual Word/publishing-quality path
+(labeled "For Word / Publishing"). A brief attempt to restore RLM marks
+for numbering specifically (to fix the file-open path) was reverted the
+same day it was made — direct paste already works correctly with zero
+marks, so adding marks back to fix file-open would risk reintroducing a
+paste regression for a fix that's no longer worth the risk under this
+positioning. `extractPlainText.ts` now contains no invisible bidi marks
+anywhere, for any case.
+
 **Corrected understanding (2026-08-08):** an earlier version of this
 entry concluded this was a plain-text-only limitation, expected to be
 fixed by Phase 3C's DOCX export (since DOCX can set paragraph direction
