@@ -5,6 +5,23 @@ import { validateFile } from "../../../utils/fileValidation";
 import { handleDocumentUpload } from "../../../actions/documentAction";
 import { PipelineResult } from "../../../types/documentPipeline";
 import { downloadCleanedText } from "../../../utils/downloadCleanedText";
+import { buildDocxBlob } from "../../document-studio/utils/buildDocxDocument";
+import type { DocNode } from "../../document-studio/utils/extractPlainText";
+
+// The cleaned text here is flat plain text (no formatting/structure survives
+// the extract→standardize round trip) — one paragraph per line is the most
+// faithful, honest representation to hand to the DOCX exporter, rather than
+// guessing at headings/lists that aren't actually known at this point.
+function plainTextToDocNode(text: string): DocNode {
+  const lines = text.split(/\r\n|\r|\n/);
+  return {
+    type: "doc",
+    content: lines.map((line) => ({
+      type: "paragraph",
+      content: line.length > 0 ? [{ type: "text", text: line }] : undefined,
+    })),
+  };
+}
 
 export default function DocumentCleanerTool() {
   const [file, setFile] = useState<File | null>(null);
@@ -54,6 +71,20 @@ export default function DocumentCleanerTool() {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileChange(e.dataTransfer.files[0]);
     }
+  };
+
+  const handleDownloadDocx = async () => {
+    if (!result?.cleanedText) return;
+    const blob = await buildDocxBlob(plainTextToDocNode(result.cleanedText), "rtl");
+    const baseName = (result.summary?.fileName || "document").replace(/\.[^.]+$/, "");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${baseName}-qalam-cleaned.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -176,7 +207,7 @@ export default function DocumentCleanerTool() {
               </div>
             )}
 
-            <div className="mt-6 flex justify-center">
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
               <button
                 onClick={() => result.cleanedText && downloadCleanedText(result.cleanedText, result.summary!.fileName)}
                 className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-xs flex items-center gap-2"
@@ -187,6 +218,18 @@ export default function DocumentCleanerTool() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
               </button>
+              {result.summary.fileType === "DOCX" && (
+                <button
+                  onClick={handleDownloadDocx}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-xs flex items-center gap-2"
+                  dir="ltr"
+                >
+                  <span>Download Cleaned File (.docx)</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         )}
