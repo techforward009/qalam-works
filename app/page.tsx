@@ -203,13 +203,45 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 5. Core Engines: Unicode Standardizer v1.0 */}
+      {/* 5. Translation & Publishing Services — completes the "Tools +
+          Expertise" dual positioning: right after the visitor sees the
+          tools (self-serve), this offers the professional-services path
+          (done-for-you). Deliberately compact per spec — no pricing, no
+          long service list, no translator profiles; a single mailto CTA
+          for launch v1, matching the same visual card pattern as the
+          Document Studio callout above. */}
+      <section id="services" className="max-w-4xl mx-auto px-4 py-8 text-center">
+        <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
+          <h2 className="text-xl md:text-2xl font-bold mb-1 text-amber-900" dir="ltr">
+            Translation &amp; Publishing Services
+          </h2>
+          <h3 className="text-lg md:text-xl font-bold mb-4 font-nastaliq text-amber-800">
+            ترجمہ و اشاعتی خدمات
+          </h3>
+          <p className="text-sm text-gray-600 max-w-2xl mx-auto mb-2" dir="ltr">
+            Need more than a tool? We also provide professional translation,
+            editing, proofreading, standardization, and publication-preparation
+            services for Urdu, Arabic, Persian, and English content.
+          </p>
+          <p className="text-xs md:text-sm text-gray-500 font-nastaliq mb-6">
+            اگر آپ کو صرف ٹول نہیں بلکہ ماہر معاونت درکار ہو، تو ہم ترجمہ، ادارت، پروف ریڈنگ، معیاری کاری اور اشاعتی تیاری کی خدمات بھی فراہم کرتے ہیں۔
+          </p>
+          <Link
+            href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Project%20Inquiry"
+            className="inline-block bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-sm"
+          >
+            Discuss Your Project / اپنا منصوبہ زیرِ بحث لائیں
+          </Link>
+        </div>
+      </section>
+
+      {/* 6. Core Engines: Unicode Standardizer v1.0 */}
       <InteractiveDemo />
 
-      {/* 6. Core Engines: Publication Quality Checker MVP */}
+      {/* 7. Core Engines: Publication Quality Checker MVP */}
       <PublicationQualityChecker />
 
-      {/* 7. Document Upload Pipeline */}
+      {/* 8. Document Upload Pipeline */}
       <DocumentUpload />
 
     </div>
