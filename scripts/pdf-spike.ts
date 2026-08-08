@@ -9,7 +9,7 @@
 //
 // Deliberately isolated: does not import from app/tools/document-studio/*,
 // does not modify DocumentStudioEditor.tsx, adds no UI. Matches the same
-// evidence-first pattern as scripts/docx-spike.ts.
+// evidence-first pattern as scripts/verification/docx-spike.ts.
 
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
