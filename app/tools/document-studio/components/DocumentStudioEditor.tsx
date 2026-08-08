@@ -147,6 +147,7 @@ export default function DocumentStudioEditor() {
 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [docxImportNotice, setDocxImportNotice] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
   const [isAuditStale, setIsAuditStale] = useState(false);
@@ -172,7 +173,10 @@ export default function DocumentStudioEditor() {
         setIsAuditStale(true);
       }
       setAlreadyClean(false);
-      setDocxImportNotice(false);
+      // Deliberately NOT clearing docxImportNotice here anymore (2026-08-08
+      // requirement change): it must be a genuinely persistent, explicitly-
+      // dismissed notice (the "Got it" button below), not one that quietly
+      // vanishes the moment the user types — that was too easy to miss.
 
       setSaveStatus("saving");
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -215,6 +219,7 @@ export default function DocumentStudioEditor() {
       setSaveStatus("idle");
       setPreview(null);
       setAlreadyClean(false);
+      setDocxImportNotice(false);
       setAuditReport(null);
       hasAuditReportRef.current = false;
       setIsAuditStale(false);
@@ -249,6 +254,18 @@ export default function DocumentStudioEditor() {
       return;
     }
 
+    // Pre-import warning (added 2026-08-08, per Sajjad's requirement that the
+    // formatting-loss warning appear BEFORE import, not only after): a .docx
+    // file always loses its original formatting on import in v1 (Option A —
+    // plain text only), so this needs saying before the user commits to it,
+    // not just as an after-the-fact notice.
+    if (file.name.toLowerCase().endsWith(".docx")) {
+      const proceedWithDocx = window.confirm(
+        "یہ .docx فائل صرف خام متن کے طور پر درآمد ہوگی — عنوانات (headings)، بولڈ، فہرستیں (lists) اور صفحہ بندی محفوظ نہیں رہیں گی۔ جاری رکھیں؟\n\nThis .docx file will be imported as plain text only — headings, bold, lists, and layout will NOT be preserved. Continue?"
+      );
+      if (!proceedWithDocx) return;
+    }
+
     if (editor && !editor.isEmpty) {
       const confirmed = window.confirm(
         "موجودہ متن کو اپلوڈ شدہ فائل سے تبدیل کر دیا جائے گا۔ جاری رکھیں؟ / This will replace the current content in the editor. Continue?"
@@ -256,6 +273,7 @@ export default function DocumentStudioEditor() {
       if (!confirmed) return;
     }
 
+    setIsImporting(true);
     try {
       const text = await extractTextFromFile(file);
       const docNode = plainTextToDocNode(text);
@@ -276,6 +294,8 @@ export default function DocumentStudioEditor() {
     } catch (err) {
       console.error("Failed to import file:", err);
       setUploadError("فائل درآمد کرنے میں خرابی ہوئی / Failed to import file.");
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -395,6 +415,53 @@ export default function DocumentStudioEditor() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <input
+            type="file"
+            accept=".txt,.docx"
+            onChange={(e) => {
+              const f = e.target.files && e.target.files[0];
+              if (f) handleUploadFile(f);
+              e.target.value = ""; // allow re-selecting the same file later
+            }}
+            className="hidden"
+            id="document-studio-upload-input"
+            disabled={isImporting}
+          />
+          <label
+            htmlFor="document-studio-upload-input"
+            className={`px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition flex items-center gap-2 ${
+              isImporting
+                ? "bg-amber-300 text-white cursor-not-allowed"
+                : "bg-amber-600 text-white hover:bg-amber-700 cursor-pointer"
+            }`}
+          >
+            {isImporting ? "درآمد ہو رہا ہے... / Importing..." : "فائل اپلوڈ کریں / Upload File (.txt, .docx)"}
+          </label>
+        </div>
+
+        {uploadError && (
+          <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
+            {uploadError}
+          </div>
+        )}
+
+        {docxImportNotice && (
+          <div className="mb-3 bg-amber-50 border-2 border-amber-400 text-amber-900 p-3 rounded-lg text-xs flex items-start justify-between gap-3" dir="rtl">
+            <span>
+              ⚠️ .docx فائل صرف خام متن کے طور پر درآمد ہوئی ہے — اصل فارمیٹنگ (headings، bold، lists، ترتیب) محفوظ نہیں رہی۔ / The .docx file was imported as plain text only — original formatting (headings, bold, lists, layout) was not preserved.
+            </span>
+            <button
+              type="button"
+              onClick={() => setDocxImportNotice(false)}
+              className="shrink-0 px-2 py-1 rounded-md border border-amber-400 text-amber-800 hover:bg-amber-100 transition text-xs font-semibold"
+              dir="ltr"
+            >
+              سمجھ گیا / Got it
+            </button>
+          </div>
+        )}
+
         <div
           className="border border-gray-300 rounded-lg p-4 min-h-[300px] focus-within:ring-2 focus-within:ring-amber-500 cursor-text"
           dir={dir}
@@ -434,23 +501,6 @@ export default function DocumentStudioEditor() {
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs items-center">
-            <input
-              type="file"
-              accept=".txt,.docx"
-              onChange={(e) => {
-                const f = e.target.files && e.target.files[0];
-                if (f) handleUploadFile(f);
-                e.target.value = ""; // allow re-selecting the same file later
-              }}
-              className="hidden"
-              id="document-studio-upload-input"
-            />
-            <label
-              htmlFor="document-studio-upload-input"
-              className="px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 hover:bg-amber-50 transition cursor-pointer"
-            >
-              Upload File / فائل اپلوڈ کریں (.txt, .docx)
-            </label>
             <button
               type="button"
               onClick={handleNewDocument}
@@ -467,18 +517,6 @@ export default function DocumentStudioEditor() {
             </button>
           </div>
         </div>
-
-        {uploadError && (
-          <div className="mt-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
-            {uploadError}
-          </div>
-        )}
-
-        {docxImportNotice && (
-          <div className="mt-3 bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-xs" dir="rtl">
-            ⚠️ .docx فائل صرف خام متن کے طور پر درآمد ہوئی ہے — اصل فارمیٹنگ (headings، bold، lists، ترتیب) محفوظ نہیں رہی۔ / The .docx file was imported as plain text only — original formatting (headings, bold, lists, layout) was not preserved.
-          </div>
-        )}
       </div>
 
       <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md mt-4" dir="rtl">
