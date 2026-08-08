@@ -65,14 +65,15 @@ describe("extractPlainText", () => {
     expect(text).toContain("یہ بولڈ اور italic ہے۔");
   });
 
-  // Regression test for a rolled-back bidi-marker experiment (2026-08-07):
-  // two separate attempts at wrapping brackets/digits in invisible bidi
-  // marks (RLM, then LRM) to fix a Word-specific rendering quirk both
-  // failed, and the second one broke direct-copy-paste, which had been
-  // working correctly before either attempt. Brackets/digits are exported
-  // as plain, unmarked text — no invisible characters — until there's a way
-  // to actually verify a fix against real Word rendering first.
-  test("exports brackets and digits as plain text, with no invisible bidi marks", () => {
+  // Regression test for the rolled-back GENERAL bracket-isolation attempt
+  // (2026-08-07) AND a briefly-restored-then-re-reverted numbering fix
+  // (2026-08-08 — see the formatOrderedPrefix comment in
+  // extractPlainText.ts): a 3-way real-Word comparison showed direct
+  // clipboard paste already renders numbering AND brackets correctly with
+  // NO invisible marks, so nothing in this file adds any — plain,
+  // unmarked text universally. `.txt` is positioned as plain-text-only;
+  // DOCX is the Word-quality export path (see KNOWN-LIMITATIONS.md).
+  test("exports numbering, brackets, and digits as fully plain text, with no invisible bidi marks", () => {
     const doc: DocNode = {
       type: "doc",
       content: [
