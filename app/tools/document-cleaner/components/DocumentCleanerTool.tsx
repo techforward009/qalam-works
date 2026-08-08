@@ -6,22 +6,7 @@ import { handleDocumentUpload } from "../../../actions/documentAction";
 import { PipelineResult } from "../../../types/documentPipeline";
 import { downloadCleanedText } from "../../../utils/downloadCleanedText";
 import { buildDocxBlob } from "../../document-studio/utils/buildDocxDocument";
-import type { DocNode } from "../../document-studio/utils/extractPlainText";
-
-// The cleaned text here is flat plain text (no formatting/structure survives
-// the extract→standardize round trip) — one paragraph per line is the most
-// faithful, honest representation to hand to the DOCX exporter, rather than
-// guessing at headings/lists that aren't actually known at this point.
-function plainTextToDocNode(text: string): DocNode {
-  const lines = text.split(/\r\n|\r|\n/);
-  return {
-    type: "doc",
-    content: lines.map((line) => ({
-      type: "paragraph",
-      content: line.length > 0 ? [{ type: "text", text: line }] : undefined,
-    })),
-  };
-}
+import { plainTextToDocNode } from "../../document-studio/utils/plainTextToDocNode";
 
 export default function DocumentCleanerTool() {
   const [file, setFile] = useState<File | null>(null);
