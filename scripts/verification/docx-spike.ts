@@ -1,7 +1,7 @@
 // Phase 3C spike (docs/PHASE-3C-DOCX-SPEC.md §7 step 2). Not part of the
 // app — a standalone script to prove the `docx` package's real API shape
 // before writing the actual buildDocxDocument.ts adapter. Run with:
-//   npx tsx scripts/docx-spike.ts
+//   npx tsx scripts/verification/docx-spike.ts
 // then unzip the output .docx and inspect the real OOXML — that's the
 // actual verification, not just "the script ran without throwing."
 
