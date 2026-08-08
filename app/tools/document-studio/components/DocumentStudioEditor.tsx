@@ -9,7 +9,7 @@ import { extractPlainText, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
 import { buildDocxBlob } from "../utils/buildDocxDocument";
-import { plainTextToDocNode } from "../utils/plainTextToDocNode";
+import { plainTextToDocNode, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
 import { QualityAuditPanel } from "./QualityAuditPanel";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
@@ -275,7 +275,15 @@ export default function DocumentStudioEditor() {
 
     setIsImporting(true);
     try {
-      const text = await extractTextFromFile(file);
+      const rawText = await extractTextFromFile(file);
+      const isDocxFile = file.name.toLowerCase().endsWith(".docx");
+      // DOCX-only fix (2026-08-08): collapse mammoth's artificial "\n\n"
+      // paragraph separators (and its trailing end-of-document artifact)
+      // before this reaches plainTextToDocNode (unchanged) — see
+      // normalizeDocxParagraphBreaks' own comment for the full empirical
+      // basis. .txt files skip this entirely; their blank lines and
+      // trailing newline (if any) are already meaningful as typed.
+      const text = isDocxFile ? normalizeDocxParagraphBreaks(rawText) : rawText;
       const docNode = plainTextToDocNode(text);
       editor?.commands.setContent(docNode);
 
@@ -288,7 +296,7 @@ export default function DocumentStudioEditor() {
       hasAuditReportRef.current = false;
       setIsAuditStale(false);
 
-      if (file.name.toLowerCase().endsWith(".docx")) {
+      if (isDocxFile) {
         setDocxImportNotice(true);
       }
     } catch (err) {
