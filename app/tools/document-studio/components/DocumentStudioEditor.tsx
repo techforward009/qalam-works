@@ -14,6 +14,16 @@ import { generateDocumentSuggestions, type DocumentSuggestion } from "../utils/g
 import { findAllTextMatches } from "../utils/findReplace";
 import { extractDocumentOutline, type OutlineEntry } from "../utils/documentOutline";
 import {
+  addGlossaryEntry,
+  updateGlossaryEntry,
+  removeGlossaryEntry,
+  loadGlossary,
+  saveGlossary,
+  exportGlossaryToJson,
+  importGlossaryFromJson,
+  type GlossaryEntry,
+} from "../utils/glossary";
+import {
   createReviewState,
   acceptSuggestion,
   ignoreSuggestion,
@@ -30,6 +40,7 @@ import { DocumentStatsBar } from "./DocumentStatsBar";
 import { SuggestionsPanel } from "./SuggestionsPanel";
 import { FindReplacePanel } from "./FindReplacePanel";
 import { DocumentOutlinePanel } from "./DocumentOutlinePanel";
+import { GlossaryPanel } from "./GlossaryPanel";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import { formatFileSize } from "../../../utils/formatFileSize";
@@ -264,6 +275,30 @@ export default function DocumentStudioEditor() {
 
   // Phase 1 Professional Usability (2026-08-09) — Document Outline state.
   const [outline, setOutline] = useState<OutlineEntry[]>([]);
+
+  // User-defined Terminology Glossary MVP (2026-08-09) — loaded once from
+  // localStorage on mount, same lazy-initializer pattern already used for
+  // the draft content above (getInitialDraftContent).
+  const [glossary, setGlossary] = useState<GlossaryEntry[]>(() => loadGlossary());
+  const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
+  // Mirrors `glossary` state but as a ref, so the onUpdate callback below
+  // (captured once when the editor is created — same reasoning as
+  // hasAuditReportRef above) always reads the CURRENT glossary rather
+  // than whatever it was when the editor was first created.
+  const glossaryRef = useRef<GlossaryEntry[]>(glossary);
+  useEffect(() => {
+    glossaryRef.current = glossary;
+    saveGlossary(glossary);
+    // Refresh suggestions immediately when the glossary itself changes
+    // (add/edit/delete/import) — otherwise a newly-added glossary term
+    // wouldn't be reflected in the Suggestions panel until the next
+    // document edit, which would feel like the glossary "didn't work".
+    if (editor) {
+      const json = editor.getJSON();
+      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, undefined, glossary)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [glossary]);
   const [isAuditStale, setIsAuditStale] = useState(false);
   // Mirrors "auditReport !== null" but as a ref, so the onUpdate callback
   // below (captured once when the editor is created) can check it without
@@ -320,7 +355,7 @@ export default function DocumentStudioEditor() {
         const context = createDocumentAnalysisContext(json);
         setStats(buildDocumentStats(json, context));
         setHealth(buildDocumentHealthReport(json, context));
-        setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, context)));
+        setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, context, glossaryRef.current)));
       };
 
       if (analysisTimerRef.current) clearTimeout(analysisTimerRef.current);
@@ -370,7 +405,7 @@ export default function DocumentStudioEditor() {
       const context = createDocumentAnalysisContext(json);
       setStats(buildDocumentStats(json, context));
       setHealth(buildDocumentHealthReport(json, context));
-      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, context)));
+      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, context, glossaryRef.current)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
@@ -618,6 +653,54 @@ export default function DocumentStudioEditor() {
     }
   };
 
+  // User-defined Terminology Glossary MVP (2026-08-09) — thin wrappers
+  // around the pure functions in glossary.ts. All persistence happens
+  // via the useEffect above (triggered by the `glossary` state change),
+  // not here directly, keeping these handlers simple.
+  const handleGlossaryAdd = (incorrectTerm: string, correctTerm: string, note: string): string | null => {
+    const { entries, error } = addGlossaryEntry(glossary, incorrectTerm, correctTerm, note || undefined);
+    if (!error) setGlossary(entries);
+    return error;
+  };
+
+  const handleGlossaryUpdate = (id: string, incorrectTerm: string, correctTerm: string, note: string): string | null => {
+    const { entries, error } = updateGlossaryEntry(glossary, id, incorrectTerm, correctTerm, note || undefined);
+    if (!error) setGlossary(entries);
+    return error;
+  };
+
+  const handleGlossaryDelete = (id: string) => {
+    setGlossary((prev) => removeGlossaryEntry(prev, id));
+  };
+
+  const handleGlossaryExport = () => {
+    const json = exportGlossaryToJson(glossary);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "qalam-glossary.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleGlossaryImport = (jsonText: string): string | null => {
+    const { entries, error } = importGlossaryFromJson(jsonText);
+    if (error) return error;
+    // Imported entries are MERGED with the existing glossary (via
+    // addGlossaryEntry's own duplicate handling — an imported term that
+    // already exists updates that entry rather than duplicating it),
+    // rather than replacing the whole glossary outright.
+    let merged = glossary;
+    for (const entry of entries) {
+      merged = addGlossaryEntry(merged, entry.incorrectTerm, entry.correctTerm, entry.note).entries;
+    }
+    setGlossary(merged);
+    return null;
+  };
+
   // Suggestion Review Workflow (2026-08-09) — Accept/Ignore only move a
   // suggestion between the pending/accepted/ignored lists; neither one
   // touches the editor's content. No text changes until "Apply Accepted"
@@ -671,7 +754,7 @@ export default function DocumentStudioEditor() {
     const finalContext = createDocumentAnalysisContext(finalJson);
     setStats(buildDocumentStats(finalJson, finalContext));
     setHealth(buildDocumentHealthReport(finalJson, finalContext));
-    setReviewState((prev) => refreshPendingSuggestions({ ...prev, accepted: [] }, generateDocumentSuggestions(finalJson, finalContext)));
+    setReviewState((prev) => refreshPendingSuggestions({ ...prev, accepted: [] }, generateDocumentSuggestions(finalJson, finalContext, glossaryRef.current)));
   };
 
   const handleCopy = async () => {
@@ -796,6 +879,13 @@ export default function DocumentStudioEditor() {
             >
               🔍 Find &amp; Replace
             </button>
+            <button
+              type="button"
+              onClick={() => setIsGlossaryOpen((prev) => !prev)}
+              className="px-2.5 py-1 rounded-md border border-slate-300 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition"
+            >
+              📖 Glossary{glossary.length > 0 ? ` (${glossary.length})` : ""}
+            </button>
             <div className="text-xs text-stone-500 font-sans" dir="ltr">
               {saveStatus === "saving" && "💾 Saving..."}
               {saveStatus === "saved" && "✓ Saved to browser"}
@@ -818,6 +908,19 @@ export default function DocumentStudioEditor() {
               onReplaceCurrent={handleReplaceCurrent}
               onReplaceAll={handleReplaceAll}
               onClose={handleCloseFindReplace}
+            />
+          </div>
+        )}
+
+        {isGlossaryOpen && (
+          <div className="mb-3">
+            <GlossaryPanel
+              entries={glossary}
+              onAdd={handleGlossaryAdd}
+              onUpdate={handleGlossaryUpdate}
+              onDelete={handleGlossaryDelete}
+              onExport={handleGlossaryExport}
+              onImport={handleGlossaryImport}
             />
           </div>
         )}

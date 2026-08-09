@@ -1,6 +1,7 @@
 import { generateDocumentSuggestions } from "../app/tools/document-studio/utils/generateDocumentSuggestions";
 import { applySuggestionToText } from "../app/tools/document-studio/utils/suggestionReview";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
+import type { GlossaryEntry } from "../app/tools/document-studio/utils/glossary";
 
 function paragraph(text: string): DocNode {
   return { type: "paragraph", content: [{ type: "text", text }] };
@@ -491,5 +492,97 @@ describe("generateDocumentSuggestions — Terminology Consistency Checker (MVP)"
     const suggestions = generateDocumentSuggestions(docWith([paragraph(words)]));
     const terms = suggestions.filter((s) => s.category === "terminology");
     expect(terms.length).toBeLessThanOrEqual(5);
+  });
+});
+
+// User-defined Terminology Glossary MVP (2026-08-09)
+describe("generateDocumentSuggestions — User-defined Terminology Glossary", () => {
+  const glossary: GlossaryEntry[] = [
+    { id: "1", incorrectTerm: "انٹرنیٹ نیٹ", correctTerm: "انٹرنیٹ", note: "مختصر شکل استعمال کریں" },
+  ];
+
+  test("flags a glossary term found in the document", () => {
+    const suggestions = generateDocumentSuggestions(
+      docWith([paragraph("یہ انٹرنیٹ نیٹ استعمال کرتا ہے۔")]),
+      undefined,
+      glossary
+    );
+    const term = suggestions.find((s) => s.type === "terminology-glossary");
+    expect(term).toBeDefined();
+    expect(term!.originalText).toBe("انٹرنیٹ نیٹ");
+    expect(term!.suggestedText).toBe("انٹرنیٹ");
+  });
+
+  test("reuses the existing 'terminology' category (no new category introduced)", () => {
+    const suggestions = generateDocumentSuggestions(
+      docWith([paragraph("انٹرنیٹ نیٹ")]),
+      undefined,
+      glossary
+    );
+    const term = suggestions.find((s) => s.type === "terminology-glossary");
+    expect(term!.category).toBe("terminology");
+  });
+
+  test("is fully backward compatible — omitting the glossary parameter produces no glossary suggestions", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ انٹرنیٹ نیٹ استعمال کرتا ہے۔")]));
+    expect(suggestions.filter((s) => s.type === "terminology-glossary")).toHaveLength(0);
+  });
+
+  test("an empty glossary array produces no glossary suggestions", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("انٹرنیٹ نیٹ")]), undefined, []);
+    expect(suggestions.filter((s) => s.type === "terminology-glossary")).toHaveLength(0);
+  });
+
+  test("ignores glossary terms found only inside {{ }} protected content", () => {
+    const suggestions = generateDocumentSuggestions(
+      docWith([paragraph("{{انٹرنیٹ نیٹ}} کا اصل حوالہ یہاں ہے")]),
+      undefined,
+      glossary
+    );
+    expect(suggestions.filter((s) => s.type === "terminology-glossary")).toHaveLength(0);
+  });
+
+  test("does not flag when the glossary term simply isn't present", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ ایک عام جملہ ہے۔")]), undefined, glossary);
+    expect(suggestions.filter((s) => s.type === "terminology-glossary")).toHaveLength(0);
+  });
+
+  test("includes the glossary note in the explanation when provided", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("انٹرنیٹ نیٹ")]), undefined, glossary);
+    const term = suggestions.find((s) => s.type === "terminology-glossary");
+    expect(term!.explanation).toContain("مختصر شکل استعمال کریں");
+  });
+
+  test("never auto-applies — suggestedText is only ever a proposal reviewable via the standard workflow", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("انٹرنیٹ نیٹ")]), undefined, glossary);
+    const term = suggestions.find((s) => s.type === "terminology-glossary");
+    // The document text itself is never touched by generateDocumentSuggestions —
+    // confirmed structurally: this function returns data only, no mutation path exists.
+    expect(term).toBeDefined();
+    expect(typeof term!.suggestedText).toBe("string");
+  });
+
+  test("multiple glossary entries are each checked independently", () => {
+    const multiGlossary: GlossaryEntry[] = [
+      { id: "1", incorrectTerm: "انٹرنیٹ نیٹ", correctTerm: "انٹرنیٹ" },
+      { id: "2", incorrectTerm: "کمپیوٹر مشین", correctTerm: "کمپیوٹر" },
+    ];
+    const suggestions = generateDocumentSuggestions(
+      docWith([paragraph("انٹرنیٹ نیٹ اور کمپیوٹر مشین دونوں موجود ہیں۔")]),
+      undefined,
+      multiGlossary
+    );
+    const terms = suggestions.filter((s) => s.type === "terminology-glossary");
+    expect(terms).toHaveLength(2);
+  });
+
+  test("provides surrounding context (contextBefore/contextAfter) for a glossary match", () => {
+    const suggestions = generateDocumentSuggestions(
+      docWith([paragraph("یہ انٹرنیٹ نیٹ استعمال کرتا ہے۔")]),
+      undefined,
+      glossary
+    );
+    const term = suggestions.find((s) => s.type === "terminology-glossary");
+    expect(term!.contextBefore.length).toBeGreaterThan(0);
   });
 });

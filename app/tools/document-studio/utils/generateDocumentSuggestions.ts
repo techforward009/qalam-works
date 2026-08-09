@@ -26,6 +26,8 @@
 
 import { getBlockTexts, type DocNode, type DocumentAnalysisContext } from "./extractPlainText";
 import { countHeadingHierarchyIssues, countEmptyParagraphs, countLongParagraphs } from "./buildDocumentAuditReport";
+import { findAllTextMatches } from "./findReplace";
+import type { GlossaryEntry } from "./glossary";
 import {
   PRESERVE_MARKER_REGEX,
   MULTIPLE_SPACES_REGEX,
@@ -452,6 +454,51 @@ function findMixedScriptSuggestions(text: string): DocumentSuggestion[] {
   return suggestions;
 }
 
+// L0) User-defined Terminology Glossary (2026-08-09) — reuses the SAME
+// "terminology" category as the Unicode-variant checker below (explicit
+// requirement: "reuse existing terminology category"), and the exact
+// same findAllTextMatches() pure function already used by Find & Replace
+// (app/tools/document-studio/utils/findReplace.ts) — no new text-
+// matching logic invented here. Unlike the Unicode-variant checker
+// (document-level, no findable position), a glossary term DOES have a
+// concrete original text and a user-specified replacement, so this is
+// per-instance, matching the same style as Unicode/spacing/typography
+// suggestions above (contextBefore/After populated, capped at
+// MAX_EXAMPLES_PER_TYPE per glossary entry).
+//
+// Preview only — glossary suggestions go through the exact same Accept/
+// Ignore/Apply workflow as every other suggestion; nothing here ever
+// writes to the document directly. `{{ }}`-protected content is exempt,
+// same reason as every other terminology/script-sensitive check: a
+// classical quotation's original wording must never be "corrected".
+function findGlossarySuggestions(text: string, glossary: readonly GlossaryEntry[]): DocumentSuggestion[] {
+  if (glossary.length === 0) return [];
+
+  const stripped = stripProtectedMarkers(text);
+  const suggestions: DocumentSuggestion[] = [];
+
+  for (const entry of glossary) {
+    const matches = findAllTextMatches(stripped, entry.incorrectTerm);
+    for (const match of matches.slice(0, MAX_EXAMPLES_PER_TYPE)) {
+      const { before, match: exact, after } = extractWithContext(text, match.index, match.length);
+      suggestions.push({
+        type: "terminology-glossary",
+        category: "terminology",
+        severity: "medium",
+        originalText: exact,
+        suggestedText: entry.correctTerm,
+        explanation: entry.note
+          ? `آپ کی glossary کے مطابق: "${entry.incorrectTerm}" کی بجائے "${entry.correctTerm}" استعمال کریں۔ ${entry.note}`
+          : `آپ کی glossary کے مطابق: "${entry.incorrectTerm}" کی بجائے "${entry.correctTerm}" استعمال کریں۔`,
+        contextBefore: before,
+        contextAfter: after,
+      });
+    }
+  }
+
+  return suggestions;
+}
+
 // L) Terminology Consistency Checker (MVP, 2026-08-09) — Unicode-form
 // variant detection ONLY. Reuses the exact same UNICODE_REPLACEMENT map
 // already established above (ي→ی, ك→ک, ه→ہ) for the Yeh/Kaf/Heh
@@ -608,8 +655,17 @@ function findStructureSuggestions(doc: DocNode, blocks?: readonly string[]): Doc
  * getBlockTexts(doc) traversal (this function alone previously did it 3
  * times — once directly, twice via the structure counters). Falls back
  * to computing everything internally when not provided.
+ *
+ * User-defined Terminology Glossary (2026-08-09): accepts an optional
+ * `glossary` list (defaults to none) — a purely additive parameter, so
+ * every existing (doc)/(doc, context) call site continues to work
+ * unchanged with no glossary suggestions generated at all.
  */
-export function generateDocumentSuggestions(doc: DocNode, context?: DocumentAnalysisContext): DocumentSuggestion[] {
+export function generateDocumentSuggestions(
+  doc: DocNode,
+  context?: DocumentAnalysisContext,
+  glossary: readonly GlossaryEntry[] = []
+): DocumentSuggestion[] {
   const blocks = context?.blocks ?? getBlockTexts(doc);
   const text = context?.joinedText ?? blocks.join("\n");
   const structureSuggestions = findStructureSuggestions(doc, blocks);
@@ -628,6 +684,7 @@ export function generateDocumentSuggestions(doc: DocNode, context?: DocumentAnal
     ...findQuoteSuggestions(text),
     ...findDuplicatedPunctuationSuggestions(text),
     ...findTerminologySuggestions(text),
+    ...findGlossarySuggestions(text, glossary),
     ...structureSuggestions,
   ];
 }
