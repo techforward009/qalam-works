@@ -10,6 +10,7 @@
 
 import {
   AlignmentType,
+  BorderStyle,
   Document,
   ExternalHyperlink,
   HeadingLevel,
@@ -50,6 +51,18 @@ const PAGE_MARGIN = { top: 1440, bottom: 1440, left: 1440, right: 1440 };
 // spacing in docx's twentieths-of-a-point line-spacing unit (240 =
 // single, 480 = double); `before`/`after` are in twips.
 const PARAGRAPH_SPACING = { before: 120, after: 120, line: 360, lineRule: LineRuleType.AUTO };
+
+// v1.2 Phase 2A — Enhanced Blockquote Styling. Matches the editor's own
+// visual language (DocumentStudioEditor.tsx's .qalam-editor-content CSS
+// uses `border-inline-start: 3px solid #d97706` — the same amber-600
+// accent color used throughout the site's UI — plus a light amber tint).
+// Corrects an earlier, incorrect assumption in this file's own comment
+// ("DOCX doesn't render CSS-style borders the same way, out of scope") —
+// verified 2026-08-09 by generating real OOXML: docx's Paragraph border/
+// shading options work correctly and produce real <w:pBdr>/<w:shd>.
+const BLOCKQUOTE_BORDER_COLOR = "D97706"; // amber-600, no leading '#'
+const BLOCKQUOTE_SHADING_FILL = "FEF3C7"; // amber-100, subtle tint
+const BLOCKQUOTE_INDENT = 720; // unchanged from v1 — 0.5in
 
 function fontFor(dir: Direction): string {
   return dir === "rtl" ? FONT_RTL : FONT_LTR;
@@ -96,26 +109,55 @@ function alignmentFor(node: DocNode): (typeof AlignmentType)[keyof typeof Alignm
 interface NumberingContext {
   configs: Array<{
     reference: string;
-    levels: Array<{ level: number; format: (typeof LevelFormat)[keyof typeof LevelFormat]; text: string; alignment: (typeof AlignmentType)[keyof typeof AlignmentType] }>;
+    levels: Array<{
+      level: number;
+      format: (typeof LevelFormat)[keyof typeof LevelFormat];
+      text: string;
+      alignment: (typeof AlignmentType)[keyof typeof AlignmentType];
+      style?: { paragraph?: { indent?: { start: number } } };
+    }>;
   }>;
   counter: number;
 }
 
+// v1.2 Phase 2A — one list level's definition. Indent increases 720
+// twips (0.5in) per depth, matching Word's own default multi-level list
+// indent convention — verified empirically that a single numbering
+// reference can mix formats across levels (e.g. bullet at level 0,
+// decimal at level 1) for correctly nested "mixed" lists.
+function levelDefinition(depth: number, kind: "bullet" | "ordered") {
+  return {
+    level: depth,
+    format: kind === "bullet" ? LevelFormat.BULLET : LevelFormat.DECIMAL,
+    text: kind === "bullet" ? "•" : `%${depth + 1}.`,
+    alignment: AlignmentType.START,
+    style: { paragraph: { indent: { start: 720 + depth * 720 } } },
+  };
+}
+
+// Registers a brand-new, independent list — used only for a TOP-LEVEL
+// bulletList/orderedList (one that isn't nested inside another list's
+// item). Unchanged behavior from v1: each top-level list still gets its
+// own reference, starting at level 0.
 function registerList(ctx: NumberingContext, kind: "bullet" | "ordered"): string {
   ctx.counter += 1;
   const reference = `qalam-list-${ctx.counter}`;
-  ctx.configs.push({
-    reference,
-    levels: [
-      {
-        level: 0,
-        format: kind === "bullet" ? LevelFormat.BULLET : LevelFormat.DECIMAL,
-        text: kind === "bullet" ? "•" : "%1.",
-        alignment: AlignmentType.START,
-      },
-    ],
-  });
+  ctx.configs.push({ reference, levels: [levelDefinition(0, kind)] });
   return reference;
+}
+
+// v1.2 Phase 2A — adds a new nesting level to an ALREADY-registered list
+// reference (rather than creating a whole separate, unrelated list), so
+// a nested bulletList/orderedList found inside a listItem visually nests
+// under its parent using the same coherent numbering definition. A
+// no-op if that depth is already defined (e.g. a second nested list at
+// the same depth reuses the existing level).
+function ensureLevel(ctx: NumberingContext, reference: string, depth: number, kind: "bullet" | "ordered"): void {
+  const config = ctx.configs.find((c) => c.reference === reference);
+  if (!config) return;
+  if (!config.levels.some((l) => l.level === depth)) {
+    config.levels.push(levelDefinition(depth, kind));
+  }
 }
 
 // Walks a paragraph/heading's inline content (text nodes with marks,
@@ -183,16 +225,28 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
       ];
     }
     case "blockquote": {
-      // v1: plain indented paragraphs, no border/shading (per spec §2 —
-      // DOCX doesn't render CSS-style borders the same way, out of scope).
+      // v1.2 Phase 2A: real border + shading (previously plain indent
+      // only — see the BLOCKQUOTE_* constants' comment for why the old
+      // "DOCX doesn't support this" assumption was incorrect). Border
+      // goes on the side text visually starts from — right for RTL,
+      // left for LTR — matching the editor's own `border-inline-start`
+      // CSS behavior rather than a fixed physical side.
       const out: Paragraph[] = [];
       (node.content ?? []).forEach((child) => {
         if (child.type === "paragraph") {
           out.push(
             new Paragraph({
               bidirectional: dir === "rtl",
-              indent: { start: 720 },
+              indent: { start: BLOCKQUOTE_INDENT },
               spacing: PARAGRAPH_SPACING,
+              border: {
+                [dir === "rtl" ? "right" : "left"]: {
+                  style: BorderStyle.SINGLE,
+                  size: 12,
+                  color: BLOCKQUOTE_BORDER_COLOR,
+                },
+              },
+              shading: { fill: BLOCKQUOTE_SHADING_FILL },
               children: convertInline(child.content, dir),
             })
           );
@@ -206,7 +260,7 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
       const reference = registerList(ctx, "bullet");
       const out: Paragraph[] = [];
       (node.content ?? []).forEach((item) => {
-        out.push(...convertListItem(item, dir, ctx, reference));
+        out.push(...convertListItem(item, dir, ctx, reference, 0));
       });
       return out;
     }
@@ -214,7 +268,7 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
       const reference = registerList(ctx, "ordered");
       const out: Paragraph[] = [];
       (node.content ?? []).forEach((item) => {
-        out.push(...convertListItem(item, dir, ctx, reference));
+        out.push(...convertListItem(item, dir, ctx, reference, 0));
       });
       return out;
     }
@@ -229,22 +283,38 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
   }
 }
 
-function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, reference: string): Paragraph[] {
+// v1.2 Phase 2A: `depth` (default 0, unchanged for existing flat lists)
+// tracks nesting level. A nested bulletList/orderedList found inside a
+// listItem's content — previously fell through to convertNode's default
+// case and flattened to the SAME level with a brand-new, unrelated
+// numbering reference — now correctly adds a new level to the PARENT
+// list's own reference and recurses at depth+1, so it visually nests
+// under its parent with proper indent, supporting mixed bullet/numbered
+// nesting too.
+function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, reference: string, depth: number): Paragraph[] {
   const out: Paragraph[] = [];
   (item.content ?? []).forEach((child, i) => {
     if (i === 0 && child.type === "paragraph") {
       out.push(
         new Paragraph({
           bidirectional: dir === "rtl",
-          numbering: { reference, level: 0 },
+          numbering: { reference, level: depth },
           spacing: PARAGRAPH_SPACING,
           children: convertInline(child.content, dir),
         })
       );
+    } else if (child.type === "bulletList" || child.type === "orderedList") {
+      const nestedKind = child.type === "bulletList" ? "bullet" : "ordered";
+      const nestedDepth = depth + 1;
+      ensureLevel(ctx, reference, nestedDepth, nestedKind);
+      (child.content ?? []).forEach((nestedItem) => {
+        out.push(...convertListItem(nestedItem, dir, ctx, reference, nestedDepth));
+      });
     } else {
-      // Nested lists/extra paragraphs inside a list item — out of v1 scope
-      // (spec explicitly excludes nested lists); walk without a numbering
-      // reference rather than silently dropping the content.
+      // Any other extra content inside a list item (e.g. a second
+      // paragraph that isn't a nested list) — out of v1 scope, same as
+      // before; walk without a numbering reference rather than
+      // silently dropping it.
       out.push(...convertNode(child, dir, ctx));
     }
   });
