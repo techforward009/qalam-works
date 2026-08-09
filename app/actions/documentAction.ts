@@ -1,13 +1,8 @@
 import { extractTextFromFile } from "../utils/documents/extractTextFromFile";
 import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 import { checkTextQuality } from "../utils/quality/checkTextQuality";
+import { formatFileSize } from "../utils/formatFileSize";
 import type { PipelineResult } from "../types/documentPipeline";
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
 
 /**
  * The full Document Cleaner pipeline: extract → standardize → audit →
