@@ -13,9 +13,12 @@ import {
   BorderStyle,
   Document,
   ExternalHyperlink,
+  Footer,
+  Header,
   HeadingLevel,
   LevelFormat,
   LineRuleType,
+  PageNumber,
   Packer,
   Paragraph,
   TextRun,
@@ -52,6 +55,23 @@ const PAGE_MARGIN = { top: 1440, bottom: 1440, left: 1440, right: 1440 };
 // single, 480 = double); `before`/`after` are in twips.
 const PARAGRAPH_SPACING = { before: 120, after: 120, line: 360, lineRule: LineRuleType.AUTO };
 
+// v1.3 Phase — Professional Polish: heading-specific spacing, larger for
+// higher-level headings, tapering down for H3/H4, distinct from (and
+// larger than) plain PARAGRAPH_SPACING's before/after — `line`/lineRule
+// stay the same 1.5-line spacing as the rest of the document for visual
+// consistency, only before/after vary by level.
+const HEADING_SPACING: Record<number, { before: number; after: number }> = {
+  1: { before: 480, after: 240 }, // H1 — most visual separation
+  2: { before: 360, after: 200 }, // H2 — medium
+  3: { before: 240, after: 160 }, // H3 — smaller
+  4: { before: 200, after: 120 }, // H4 — smallest, closest to body text
+};
+
+function headingSpacingFor(level: unknown): { before: number; after: number; line: number; lineRule: (typeof LineRuleType)[keyof typeof LineRuleType] } {
+  const levels = typeof level === "number" && level in HEADING_SPACING ? HEADING_SPACING[level] : HEADING_SPACING[4];
+  return { ...levels, line: PARAGRAPH_SPACING.line, lineRule: PARAGRAPH_SPACING.lineRule };
+}
+
 // v1.2 Phase 2A — Enhanced Blockquote Styling. Matches the editor's own
 // visual language (DocumentStudioEditor.tsx's .qalam-editor-content CSS
 // uses `border-inline-start: 3px solid #d97706` — the same amber-600
@@ -63,6 +83,12 @@ const PARAGRAPH_SPACING = { before: 120, after: 120, line: 360, lineRule: LineRu
 const BLOCKQUOTE_BORDER_COLOR = "D97706"; // amber-600, no leading '#'
 const BLOCKQUOTE_SHADING_FILL = "FEF3C7"; // amber-100, subtle tint
 const BLOCKQUOTE_INDENT = 720; // unchanged from v1 — 0.5in
+
+// v1.3 Phase — blockquote text is always italic and slightly smaller than
+// body text (10pt = 20 half-points; docx run sizes are in half-points),
+// regardless of the DocNode's own bold/italic marks — a quotation's
+// visual identity, matching common professional document conventions.
+const BLOCKQUOTE_FONT_SIZE_HALF_POINTS = 20;
 
 function fontFor(dir: Direction): string {
   return dir === "rtl" ? FONT_RTL : FONT_LTR;
@@ -164,13 +190,21 @@ function ensureLevel(ctx: NumberingContext, reference: string, depth: number, ki
 // hardBreak) into docx run objects. Link hrefs are preserved as real
 // hyperlinks (approved 2026-08-07); an invalid/missing href falls back to
 // plain formatted text rather than dropping the content.
-function convertInline(nodes: DocNode[] | undefined, dir: Direction): ParagraphChild[] {
+//
+// v1.3 Phase: `overrides` is optional and only passed by the blockquote
+// case below — every other call site (paragraph, heading, list item)
+// omits it, so their output is byte-for-byte unchanged from before.
+function convertInline(
+  nodes: DocNode[] | undefined,
+  dir: Direction,
+  overrides?: { forceItalic?: boolean; size?: number }
+): ParagraphChild[] {
   if (!nodes) return [];
   const runs: ParagraphChild[] = [];
 
   for (const node of nodes) {
     if (node.type === "hardBreak") {
-      runs.push(new TextRun({ text: "", break: 1, font: fontFor(dir) }));
+      runs.push(new TextRun({ text: "", break: 1, font: fontFor(dir), size: overrides?.size }));
       continue;
     }
     if (node.type !== "text" || typeof node.text !== "string" || node.text.length === 0) {
@@ -178,7 +212,7 @@ function convertInline(nodes: DocNode[] | undefined, dir: Direction): ParagraphC
     }
 
     const bold = node.marks?.some((m) => m.type === "bold") ?? false;
-    const italics = node.marks?.some((m) => m.type === "italic") ?? false;
+    const italics = overrides?.forceItalic || (node.marks?.some((m) => m.type === "italic") ?? false);
     const linkMark = node.marks?.find((m) => m.type === "link");
     const href = linkMark?.attrs?.href;
 
@@ -187,12 +221,12 @@ function convertInline(nodes: DocNode[] | undefined, dir: Direction): ParagraphC
         new ExternalHyperlink({
           link: href,
           children: [
-            new TextRun({ text: node.text, bold, italics, style: "Hyperlink", font: fontFor(dir) }),
+            new TextRun({ text: node.text, bold, italics, style: "Hyperlink", font: fontFor(dir), size: overrides?.size }),
           ],
         })
       );
     } else {
-      runs.push(new TextRun({ text: node.text, bold, italics, font: fontFor(dir) }));
+      runs.push(new TextRun({ text: node.text, bold, italics, font: fontFor(dir), size: overrides?.size }));
     }
   }
 
@@ -213,13 +247,14 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
       ];
     }
     case "heading": {
-      const heading = headingLevelFor(node.attrs?.level);
+      const level = node.attrs?.level;
+      const heading = headingLevelFor(level);
       return [
         new Paragraph({
           heading,
           bidirectional: dir === "rtl",
           alignment: alignmentFor(node),
-          spacing: PARAGRAPH_SPACING,
+          spacing: headingSpacingFor(level),
           children: convertInline(node.content, dir),
         }),
       ];
@@ -247,7 +282,7 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
                 },
               },
               shading: { fill: BLOCKQUOTE_SHADING_FILL },
-              children: convertInline(child.content, dir),
+              children: convertInline(child.content, dir, { forceItalic: true, size: BLOCKQUOTE_FONT_SIZE_HALF_POINTS }),
             })
           );
         } else {
@@ -321,6 +356,23 @@ function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, r
   return out;
 }
 
+// v1.3 Phase — derives a document title from the DocNode itself (the
+// first H1 heading's plain text), falling back to "Qalam Works" if none
+// exists. No new parameter added to createDocxDocument's signature — the
+// title comes entirely from data already present in `doc`, so no other
+// file needs to change to supply it.
+function deriveDocumentTitle(doc: DocNode): string {
+  const firstNode = (doc.content ?? [])[0];
+  if (firstNode?.type === "heading" && firstNode.attrs?.level === 1) {
+    const text = (firstNode.content ?? [])
+      .filter((n) => n.type === "text" && typeof n.text === "string")
+      .map((n) => n.text)
+      .join("");
+    if (text.trim().length > 0) return text;
+  }
+  return "Qalam Works";
+}
+
 /**
  * Sync, pure mapping from a TipTap-shaped DocNode to a docx.Document.
  * No I/O — safe to call directly in tests and assert on the result.
@@ -333,7 +385,17 @@ export function createDocxDocument(doc: DocNode, dir: Direction): Document {
     children.push(...convertNode(node, dir, ctx));
   });
 
+  const title = deriveDocumentTitle(doc);
+
   return new Document({
+    // v1.3 Phase — Professional Polish: document metadata. Subject and
+    // Keywords are Qalam Works' own reasonable defaults (not derivable
+    // from the DocNode) — Subject describes the export's origin, and
+    // Keywords reflects the language direction actually used.
+    title,
+    creator: "Qalam Works",
+    subject: "Document exported from Qalam Works Document Studio",
+    keywords: dir === "rtl" ? "Urdu, Arabic, Persian, RTL" : "English, LTR",
     numbering: ctx.configs.length > 0 ? { config: ctx.configs } : undefined,
     sections: [
       {
@@ -342,6 +404,33 @@ export function createDocxDocument(doc: DocNode, dir: Direction): Document {
             size: PAGE_SIZE_A4,
             margin: PAGE_MARGIN,
           },
+        },
+        headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                bidirectional: dir === "rtl",
+                children: [new TextRun({ text: title, font: fontFor(dir), size: 18 })],
+              }),
+            ],
+          }),
+        },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    children: [PageNumber.CURRENT, " / ", PageNumber.TOTAL_PAGES],
+                    font: fontFor(dir),
+                    size: 18,
+                  }),
+                ],
+              }),
+            ],
+          }),
         },
         children,
       },
