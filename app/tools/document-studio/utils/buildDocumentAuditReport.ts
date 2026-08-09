@@ -12,6 +12,10 @@ export interface QualityIssueCounts {
   mixedUrduArabicForms: number;
   headingHierarchy: number;
   emptyParagraphs: number;
+  // Advanced Typography Analyzer (Document Intelligence v2, 2026-08-09):
+  spaceBeforePunctuation: number;
+  tatweelCount: number;
+  inconsistentPunctuationStyle: number;
 }
 
 export interface QualityRecommendation {
@@ -65,6 +69,9 @@ function createEmptyAuditReport(): QualityAuditReport {
       mixedUrduArabicForms: 0,
       headingHierarchy: 0,
       emptyParagraphs: 0,
+      spaceBeforePunctuation: 0,
+      tatweelCount: 0,
+      inconsistentPunctuationStyle: 0,
     },
     recommendations: [],
     readiness: { typography: "ok", unicodeConsistency: "ok", structure: "ok", rtlLtr: "ok" },
@@ -95,6 +102,9 @@ function toCounts(
     mixedUrduArabicForms: report.textQuality.mixedUrduArabicForms,
     headingHierarchy,
     emptyParagraphs,
+    spaceBeforePunctuation: report.typography.spaceBeforePunctuation,
+    tatweelCount: report.typography.tatweelCount,
+    inconsistentPunctuationStyle: report.punctuation.inconsistentPunctuationStyle ? 1 : 0,
   };
 }
 
@@ -171,9 +181,24 @@ function countHeadingHierarchyIssues(doc: DocNode): number {
 // PublishingReadiness's own comment for why). Each category maps to a
 // distinct, non-overlapping signal already computed in `counts`, so no
 // single issue is silently counted toward two different readiness labels.
+//
+// Document Intelligence v2 (2026-08-09): the two new Advanced Typography
+// checks (spaceBeforePunctuation, tatweelCount) fold into `typography`
+// readiness (they ARE typography concerns); inconsistentPunctuationStyle
+// also folds into `typography` for the same reason — there is no separate
+// "punctuation readiness" category, and punctuation style consistency is
+// a typography matter, not a script/structure/direction one.
 function computeReadiness(counts: QualityIssueCounts): PublishingReadiness {
   return {
-    typography: counts.spacing + counts.longParagraphs === 0 ? "ok" : "needs_review",
+    typography:
+      counts.spacing +
+        counts.longParagraphs +
+        counts.spaceBeforePunctuation +
+        counts.tatweelCount +
+        counts.inconsistentPunctuationStyle ===
+      0
+        ? "ok"
+        : "needs_review",
     unicodeConsistency: counts.mixedUrduArabicForms === 0 ? "ok" : "needs_review",
     structure: counts.headingHierarchy + counts.emptyParagraphs === 0 ? "ok" : "needs_review",
     rtlLtr: counts.mixedScript === 0 ? "ok" : "needs_review",
@@ -205,7 +230,10 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
     counts.repeatedWords +
     counts.mixedUrduArabicForms +
     counts.headingHierarchy +
-    counts.emptyParagraphs;
+    counts.emptyParagraphs +
+    counts.spaceBeforePunctuation +
+    counts.tatweelCount +
+    counts.inconsistentPunctuationStyle;
 
   // NOTE (2026-08-07, per Sajjad): this 100/90/80.../50-floor formula is a
   // placeholder, not an approved business rule — it hasn't been reviewed or
@@ -260,6 +288,39 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
       titleEnglish: "Spacing Standardization",
       descriptionUrdu:
         "متن میں دہرے اسپیسز یا الگ تھلگ الفاظ کے درمیان فاصلہ درست کریں۔",
+    });
+  }
+
+  if (counts.spaceBeforePunctuation > 0) {
+    recommendations.push({
+      id: "rec-space-before-punctuation",
+      type: "spaceBeforePunctuation",
+      titleUrdu: "رموزِ اوقاف سے پہلے خالی جگہ",
+      titleEnglish: "Space Before Punctuation",
+      descriptionUrdu:
+        "کچھ رموزِ اوقاف (، ؛ ؟ ۔) سے پہلے غیر ضروری خالی جگہ موجود ہے۔ انہیں پچھلے لفظ سے متصل کریں۔",
+    });
+  }
+
+  if (counts.tatweelCount > 0) {
+    recommendations.push({
+      id: "rec-tatweel",
+      type: "tatweelCount",
+      titleUrdu: "تطویل (کشیدہ) حروف",
+      titleEnglish: "Tatweel/Kashida Characters",
+      descriptionUrdu:
+        "متن میں تطویل (ـ) حروف موجود ہیں، جو عام طور پر کاپی پیسٹ سے آ جاتے ہیں اور عام تحریر میں غیر ضروری ہیں۔",
+    });
+  }
+
+  if (counts.inconsistentPunctuationStyle > 0) {
+    recommendations.push({
+      id: "rec-inconsistent-punctuation-style",
+      type: "inconsistentPunctuationStyle",
+      titleUrdu: "رموزِ اوقاف کا غیر یکساں انداز",
+      titleEnglish: "Inconsistent Punctuation Style",
+      descriptionUrdu:
+        "دستاویز میں ایک ہی نشان (جیسے کوما) کی انگریزی اور اردو دونوں شکلیں استعمال ہوئی ہیں۔ ایک ہی انداز اپنائیں۔",
     });
   }
 
