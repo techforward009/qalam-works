@@ -22,8 +22,21 @@ import { readFileSync } from "fs";
 import path from "path";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
+import { PDFDocument } from "pdf-lib";
 import { buildPdfHtml, type PdfFonts } from "../../tools/document-studio/utils/buildPdfHtml";
 import type { DocNode, Direction } from "../../tools/document-studio/utils/extractPlainText";
+
+// The ONLY font actually embedded (base64, in buildPdfHtml.ts's own
+// @font-face rules) — reported honestly, not a fixed marketing list.
+// buildPdfHtml.ts's LTR branch uses a plain CSS font-family fallback
+// stack ("Calibri", "Segoe UI", sans-serif) with NO embedded font file —
+// none of those names are guaranteed to exist in the headless Chromium
+// environment, so LTR documents report an empty fonts-used list rather
+// than claiming a specific font that isn't actually embedded anywhere.
+// If this ever changes (e.g. an LTR font gets embedded the same way),
+// update this constant AND buildPdfHtml.ts together — this is the single
+// source of truth for "what's really embedded," not a separate guess.
+const RTL_EMBEDDED_FONTS = ["Noto Nastaliq Urdu"];
 
 // Read once per cold start, not per request — these are small (a few
 // hundred KB each) and never change at runtime.
@@ -109,17 +122,37 @@ export async function POST(request: NextRequest) {
       printBackground: true,
       margin: { top: "20mm", bottom: "20mm", left: "15mm", right: "15mm" },
     });
-    // page.pdf() returns a Uint8Array in this puppeteer-core version;
-    // convert to a Node Buffer (safe — this route explicitly runs on the
-    // Node.js runtime, not Edge) since that's a type NextResponse's
-    // BodyInit accepts directly.
-    const pdfBuffer = Buffer.from(pdfUint8Array);
+
+    // Post-processing (separate from rendering above — page.pdf()'s own
+    // output is untouched visually; pdf-lib only edits the Info
+    // dictionary and re-serializes the container). Confirmed
+    // pixel-identical visual output before/after this step via
+    // pdftoppm diffing.
+    const pdfDoc = await PDFDocument.load(pdfUint8Array);
+    pdfDoc.setTitle("Qalam Works Document");
+    pdfDoc.setCreator("Qalam Works");
+    pdfDoc.setProducer("Qalam Works PDF Export");
+    // fontsUsed reflects buildPdfHtml.ts's ACTUAL @font-face rules, not an
+    // assumed/marketing list — RTL_EMBEDDED_FONTS is the one font really
+    // embedded (for RTL); LTR documents embed nothing, so report nothing.
+    const fontsUsed = dir === "rtl" ? RTL_EMBEDDED_FONTS : [];
+    if (fontsUsed.length > 0) pdfDoc.setKeywords(fontsUsed);
+    const pageCount = pdfDoc.getPageCount();
+    const finalBytes = await pdfDoc.save();
+
+    // page.pdf() and pdf-lib's save() both return Uint8Array; Buffer is a
+    // type NextResponse's BodyInit accepts directly (safe — this route
+    // explicitly runs on the Node.js runtime, not Edge).
+    const pdfBuffer = Buffer.from(finalBytes);
 
     return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": 'attachment; filename="qalam-document.pdf"',
+        "X-Pdf-Page-Count": String(pageCount),
+        "X-Pdf-File-Size-Bytes": String(pdfBuffer.length),
+        "X-Pdf-Fonts-Used": JSON.stringify(fontsUsed),
       },
     });
   } catch (err) {
