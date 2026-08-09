@@ -25,6 +25,19 @@ async function extractRelsXml(doc: DocNode, dir: "rtl" | "ltr"): Promise<string>
   return file.async("text");
 }
 
+// v1.2 Phase 2A — mixed/nested list tests need to inspect both the
+// paragraph-level numPr/ilvl (document.xml) and the level format
+// definitions (numbering.xml) together.
+async function extractBothXml(doc: DocNode, dir: "rtl" | "ltr"): Promise<{ docXml: string; numberingXml: string }> {
+  const buffer = await Packer.toBuffer(createDocxDocument(doc, dir));
+  const zip = await JSZip.loadAsync(buffer);
+  const docFile = zip.file("word/document.xml");
+  const numFile = zip.file("word/numbering.xml");
+  if (!docFile) throw new Error("word/document.xml missing from generated docx");
+  if (!numFile) throw new Error("word/numbering.xml missing from generated docx");
+  return { docXml: await docFile.async("text"), numberingXml: await numFile.async("text") };
+}
+
 function docWith(content: DocNode["content"]): DocNode {
   return { type: "doc", content };
 }
@@ -352,5 +365,174 @@ describe("createDocxDocument — v1.1 Phase 1: fonts unchanged (explicit regress
     );
     expect(rtlXml).toContain("Noto Nastaliq Urdu");
     expect(ltrXml).toContain("Calibri");
+  });
+});
+
+// v1.2 Phase 2A (2026-08-09): Enhanced Blockquote Styling + Nested Lists.
+describe("createDocxDocument — v1.2 Phase 2A: enhanced blockquote", () => {
+  test("adds a real paragraph border (not just indent)", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "A quote" }] }] }]),
+      "ltr"
+    );
+    expect(xml).toContain("<w:pBdr>");
+  });
+
+  test("adds subtle shading", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "A quote" }] }] }]),
+      "ltr"
+    );
+    expect(xml).toContain('<w:shd w:fill="FEF3C7"');
+  });
+
+  test("border sits on the left for LTR", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "quote" }] }] }]),
+      "ltr"
+    );
+    expect(xml).toMatch(/<w:pBdr><w:left/);
+  });
+
+  test("border sits on the right for RTL (matches border-inline-start behavior)", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "اقتباس" }] }] }]),
+      "rtl"
+    );
+    expect(xml).toMatch(/<w:pBdr><w:right/);
+  });
+
+  test("still applies existing spacing (Phase 1 behavior preserved)", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "quote" }] }] }]),
+      "ltr"
+    );
+    expect(xml).toContain("<w:spacing");
+  });
+});
+
+describe("createDocxDocument — v1.2 Phase 2A: nested lists", () => {
+  test("a nested bullet list indents to level 1 under its parent item, same numId", async () => {
+    const xml = await extractDocumentXml(
+      docWith([
+        {
+          type: "bulletList",
+          content: [
+            {
+              type: "listItem",
+              content: [
+                { type: "paragraph", content: [{ type: "text", text: "Outer A" }] },
+                {
+                  type: "bulletList",
+                  content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Inner A1" }] }] }],
+                },
+              ],
+            },
+            { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Outer B" }] }] },
+          ],
+        },
+      ]),
+      "ltr"
+    );
+    const ilvls = [...xml.matchAll(/<w:ilvl w:val="(\d+)"\/>/g)].map((m) => m[1]);
+    const numIds = [...xml.matchAll(/<w:numId w:val="(\d+)"\/>/g)].map((m) => m[1]);
+    expect(ilvls).toEqual(["0", "1", "0"]);
+    expect(new Set(numIds).size).toBe(1);
+  });
+
+  test("a nested ordered list under a bullet parent gets a decimal format at its level (mixed nesting)", async () => {
+    const doc = docWith([
+      {
+        type: "bulletList",
+        content: [
+          {
+            type: "listItem",
+            content: [
+              { type: "paragraph", content: [{ type: "text", text: "Outer" }] },
+              {
+                type: "orderedList",
+                content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Inner numbered" }] }] }],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+    const { docXml, numberingXml } = await extractBothXml(doc, "ltr");
+    expect(docXml).toMatch(/<w:ilvl w:val="0"\/>[\s\S]*<w:ilvl w:val="1"\/>/);
+    expect(numberingXml).toContain('<w:numFmt w:val="decimal"/>');
+  });
+
+  test("three-level nesting reaches level 2 with correct indent", async () => {
+    const doc = docWith([
+      {
+        type: "bulletList",
+        content: [
+          {
+            type: "listItem",
+            content: [
+              { type: "paragraph", content: [{ type: "text", text: "L0" }] },
+              {
+                type: "bulletList",
+                content: [
+                  {
+                    type: "listItem",
+                    content: [
+                      { type: "paragraph", content: [{ type: "text", text: "L1" }] },
+                      {
+                        type: "bulletList",
+                        content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "L2" }] }] }],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+    const { numberingXml } = await extractBothXml(doc, "ltr");
+    expect(numberingXml).toContain('w:start="2160"');
+  });
+
+  test("existing flat lists are unaffected — every item stays at level 0", async () => {
+    const xml = await extractDocumentXml(
+      docWith([
+        {
+          type: "bulletList",
+          content: [
+            { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Item 1" }] }] },
+            { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Item 2" }] }] },
+          ],
+        },
+      ]),
+      "ltr"
+    );
+    const ilvls = [...xml.matchAll(/<w:ilvl w:val="(\d+)"\/>/g)].map((m) => m[1]);
+    expect(ilvls).toEqual(["0", "0"]);
+  });
+
+  test("nested list numbering still respects RTL", async () => {
+    const doc = docWith([
+      {
+        type: "bulletList",
+        content: [
+          {
+            type: "listItem",
+            content: [
+              { type: "paragraph", content: [{ type: "text", text: "خارجی" }] },
+              {
+                type: "bulletList",
+                content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "اندرونی" }] }] }],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+    const xml = await extractDocumentXml(doc, "rtl");
+    expect(xml).toContain("<w:bidi/>");
+    expect(xml).toContain("اندرونی");
   });
 });
