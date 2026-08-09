@@ -9,6 +9,7 @@ import { extractPlainText, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
 import { buildDocumentStats, type DocumentStats } from "../utils/buildDocumentStats";
+import { buildDocumentHealthReport, type DocumentHealthReport } from "../utils/buildDocumentHealthReport";
 import { buildDocxBlob } from "../utils/buildDocxDocument";
 import { plainTextToDocNode, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
 import { QualityAuditPanel } from "./QualityAuditPanel";
@@ -157,6 +158,7 @@ export default function DocumentStudioEditor() {
 
   const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
   const [stats, setStats] = useState<DocumentStats | null>(null);
+  const [health, setHealth] = useState<DocumentHealthReport | null>(null);
   const [isAuditStale, setIsAuditStale] = useState(false);
   // Mirrors "auditReport !== null" but as a ref, so the onUpdate callback
   // below (captured once when the editor is created) can check it without
@@ -181,7 +183,9 @@ export default function DocumentStudioEditor() {
       }
       setAlreadyClean(false);
       setPdfSummary(null);
-      setStats(buildDocumentStats(editor.getJSON()));
+      const json = editor.getJSON();
+      setStats(buildDocumentStats(json));
+      setHealth(buildDocumentHealthReport(json));
       // Deliberately NOT clearing docxImportNotice here anymore (2026-08-08
       // requirement change): it must be a genuinely persistent, explicitly-
       // dismissed notice (the "Got it" button below), not one that quietly
@@ -209,12 +213,14 @@ export default function DocumentStudioEditor() {
     };
   }, []);
 
-  // Initial stats for whatever content loaded first (fresh empty doc or a
-  // restored draft) — onUpdate only fires on subsequent user edits, not
-  // on the editor's own first mount.
+  // Initial stats/health for whatever content loaded first (fresh empty
+  // doc or a restored draft) — onUpdate only fires on subsequent user
+  // edits, not on the editor's own first mount.
   useEffect(() => {
     if (editor) {
-      setStats(buildDocumentStats(editor.getJSON()));
+      const json = editor.getJSON();
+      setStats(buildDocumentStats(json));
+      setHealth(buildDocumentHealthReport(json));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
@@ -500,7 +506,7 @@ export default function DocumentStudioEditor() {
         </div>
 
         <div className="mb-3">
-          <DocumentStatsBar stats={stats} />
+          <DocumentStatsBar stats={stats} health={health} />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-3">
