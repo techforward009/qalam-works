@@ -98,6 +98,58 @@ export const QualityAuditPanel: React.FC<QualityAuditPanelProps> = ({
             {report.counts.repeatedWords}
           </div>
         </div>
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+          <div className="text-slate-500 font-medium">اردو/عربی حروف (Char Forms)</div>
+          <div className="text-sm font-bold text-slate-700 mt-1">
+            {report.counts.mixedUrduArabicForms}
+          </div>
+        </div>
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+          <div className="text-slate-500 font-medium">عنوانات کی ترتیب (Headings)</div>
+          <div className="text-sm font-bold text-slate-700 mt-1">
+            {report.counts.headingHierarchy}
+          </div>
+        </div>
+        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+          <div className="text-slate-500 font-medium">خالی پیراگراف (Empty)</div>
+          <div className="text-sm font-bold text-slate-700 mt-1">
+            {report.counts.emptyParagraphs}
+          </div>
+        </div>
+      </div>
+
+      {/* Publishing Readiness — categorical (OK / Needs Review), not a raw
+          score. Matches the same small-badge visual language used above,
+          not a new UI system. */}
+      <div className="space-y-2 pt-1 border-t border-slate-100">
+        <h4 className="text-xs font-semibold text-slate-600 pt-2">
+          اشاعتی تیاری (Publishing Readiness)
+        </h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs">
+          {(
+            [
+              ["typography", "ٹائپوگرافی (Typography)"],
+              ["unicodeConsistency", "یونیکوڈ یکسانیت (Unicode)"],
+              ["structure", "ساخت (Structure)"],
+              ["rtlLtr", "RTL/LTR"],
+            ] as const
+          ).map(([key, label]) => {
+            const ok = report.readiness[key] === "ok";
+            return (
+              <div
+                key={key}
+                className={`p-2.5 rounded-lg border text-xs font-semibold ${
+                  ok
+                    ? "bg-emerald-50/60 border-emerald-200 text-emerald-700"
+                    : "bg-amber-50 border-amber-200 text-amber-800"
+                }`}
+              >
+                <div className="font-medium">{label}</div>
+                <div className="mt-1">{ok ? "✓ درست" : "⚠️ نظرِ ثانی درکار"}</div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Recommendations List (Display Only) */}
