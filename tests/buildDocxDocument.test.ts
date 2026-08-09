@@ -248,3 +248,109 @@ describe("buildDocxBlob", () => {
     expect(blob.size).toBeGreaterThan(0);
   });
 });
+
+// v1.1 Phase 1 (2026-08-09): professional page layout + corrected
+// heading hierarchy. Font assignments (FONT_RTL/FONT_LTR) deliberately
+// untouched — verified separately below that they remain unchanged.
+describe("createDocxDocument — v1.1 Phase 1: page layout", () => {
+  test("sets A4 page size", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "paragraph", content: [{ type: "text", text: "test" }] }]),
+      "ltr"
+    );
+    expect(xml).toContain('<w:pgSz w:w="11906" w:h="16838"');
+  });
+
+  test("sets 1-inch (1440 twip) margins on all four sides", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "paragraph", content: [{ type: "text", text: "test" }] }]),
+      "ltr"
+    );
+    expect(xml).toContain('w:top="1440"');
+    expect(xml).toContain('w:bottom="1440"');
+    expect(xml).toContain('w:left="1440"');
+    expect(xml).toContain('w:right="1440"');
+  });
+
+  test("applies paragraph/line spacing to a plain paragraph", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "paragraph", content: [{ type: "text", text: "test" }] }]),
+      "ltr"
+    );
+    expect(xml).toContain("<w:spacing");
+    expect(xml).toContain('w:line="360"');
+  });
+
+  test("applies the same spacing to headings, blockquotes, and list items too", async () => {
+    const xml = await extractDocumentXml(
+      docWith([
+        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "H" }] },
+        { type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "Q" }] }] },
+        {
+          type: "bulletList",
+          content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "L" }] }] }],
+        },
+      ]),
+      "ltr"
+    );
+    // 4 paragraphs total (heading, blockquote line, list item) should
+    // each carry their own <w:spacing> — a simple count check confirms
+    // it's applied broadly, not just to the first block.
+    const spacingCount = (xml.match(/<w:spacing/g) ?? []).length;
+    expect(spacingCount).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("createDocxDocument — v1.1 Phase 1: heading hierarchy fix", () => {
+  test("H3 maps to Heading3 style (previously silently collapsed to Heading1)", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "heading", attrs: { level: 3 }, content: [{ type: "text", text: "H3" }] }]),
+      "ltr"
+    );
+    expect(xml).toContain('w:val="Heading3"');
+    expect(xml).not.toContain('w:val="Heading1"');
+  });
+
+  test("H4 maps to Heading4 style", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "heading", attrs: { level: 4 }, content: [{ type: "text", text: "H4" }] }]),
+      "ltr"
+    );
+    expect(xml).toContain('w:val="Heading4"');
+  });
+
+  test("H1 and H2 still map correctly (no regression)", async () => {
+    const xml = await extractDocumentXml(
+      docWith([
+        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "H1" }] },
+        { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "H2" }] },
+      ]),
+      "ltr"
+    );
+    expect(xml).toContain('w:val="Heading1"');
+    expect(xml).toContain('w:val="Heading2"');
+  });
+
+  test("an unrecognized level (5) falls back to Heading4, not Heading1", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "heading", attrs: { level: 5 }, content: [{ type: "text", text: "H5" }] }]),
+      "ltr"
+    );
+    expect(xml).toContain('w:val="Heading4"');
+  });
+});
+
+describe("createDocxDocument — v1.1 Phase 1: fonts unchanged (explicit regression guard)", () => {
+  test("RTL still uses Noto Nastaliq Urdu, LTR still uses Calibri", async () => {
+    const rtlXml = await extractDocumentXml(
+      docWith([{ type: "paragraph", content: [{ type: "text", text: "متن" }] }]),
+      "rtl"
+    );
+    const ltrXml = await extractDocumentXml(
+      docWith([{ type: "paragraph", content: [{ type: "text", text: "text" }] }]),
+      "ltr"
+    );
+    expect(rtlXml).toContain("Noto Nastaliq Urdu");
+    expect(ltrXml).toContain("Calibri");
+  });
+});
