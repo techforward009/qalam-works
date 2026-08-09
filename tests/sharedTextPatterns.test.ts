@@ -44,3 +44,45 @@ describe("sharedTextPatterns — g-flag regex objects are safe to reuse for .mat
     expect("دوسرا  متن".match(patterns.MULTIPLE_SPACES_REGEX)).not.toBeNull();
   });
 });
+
+describe("sharedTextPatterns — numeral range patterns (Polish Batch, 2026-08-09)", () => {
+  test("WESTERN_DIGIT_CHAR, ARABIC_INDIC_DIGIT_CHAR, URDU_INDIC_DIGIT_CHAR each match their own range", () => {
+    expect(patterns.WESTERN_DIGIT_CHAR.test("5")).toBe(true);
+    expect(patterns.ARABIC_INDIC_DIGIT_CHAR.test("٥")).toBe(true);
+    expect(patterns.URDU_INDIC_DIGIT_CHAR.test("۵")).toBe(true);
+  });
+
+  test("numeral patterns are exported WITHOUT the /g flag (stateless .test() usage safety)", () => {
+    expect(patterns.WESTERN_DIGIT_CHAR.flags).toBe("");
+    expect(patterns.ARABIC_INDIC_DIGIT_CHAR.flags).toBe("");
+    expect(patterns.URDU_INDIC_DIGIT_CHAR.flags).toBe("");
+  });
+
+  test(".test() on the shared numeral patterns gives correct results across repeated calls (no lastIndex leakage, since there's no /g flag)", () => {
+    expect(patterns.WESTERN_DIGIT_CHAR.test("abc123")).toBe(true);
+    expect(patterns.WESTERN_DIGIT_CHAR.test("5")).toBe(true);
+    expect(patterns.WESTERN_DIGIT_CHAR.test("5")).toBe(true); // must stay true, not flip like a stateful g-flag regex would
+  });
+});
+
+describe("sharedTextPatterns — freshRegex helper", () => {
+  test("constructs an independent RegExp with the same source and flags by default", () => {
+    const fresh = patterns.freshRegex(patterns.MULTIPLE_SPACES_REGEX);
+    expect(fresh.source).toBe(patterns.MULTIPLE_SPACES_REGEX.source);
+    expect(fresh.flags).toBe(patterns.MULTIPLE_SPACES_REGEX.flags);
+    expect(fresh).not.toBe(patterns.MULTIPLE_SPACES_REGEX);
+  });
+
+  test("can force different flags (e.g. adding 'g' to a flag-less pattern for .match())", () => {
+    const withG = patterns.freshRegex(patterns.WESTERN_DIGIT_CHAR, "g");
+    expect(withG.flags).toBe("g");
+    expect("123".match(withG)).toEqual(["1", "2", "3"]);
+  });
+
+  test("two fresh instances used in separate exec() loops never interfere with each other's lastIndex", () => {
+    const regexA = patterns.freshRegex(patterns.MULTIPLE_SPACES_REGEX);
+    const regexB = patterns.freshRegex(patterns.MULTIPLE_SPACES_REGEX);
+    regexA.exec("لفظ  اگلا  دوسرا  تیسرا"); // advances regexA's lastIndex partway
+    expect(regexB.lastIndex).toBe(0); // regexB is untouched
+  });
+});

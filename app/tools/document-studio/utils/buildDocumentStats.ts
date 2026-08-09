@@ -16,6 +16,12 @@
 // it is ("Intelligence"/detection, not "Correction").
 
 import { getBlockTexts, type DocNode } from "./extractPlainText";
+import {
+  WESTERN_DIGIT_CHAR,
+  ARABIC_INDIC_DIGIT_CHAR,
+  URDU_INDIC_DIGIT_CHAR,
+  freshRegex,
+} from "../../../utils/quality/sharedTextPatterns";
 
 export interface NumeralIntelligence {
   western: number; // 0-9
@@ -40,21 +46,32 @@ export interface DocumentStats {
   language: LanguageIntelligence;
 }
 
-const WESTERN_DIGIT = /[0-9]/g;
-const ARABIC_INDIC_DIGIT = /[\u0660-\u0669]/g;
-const URDU_INDIC_DIGIT = /[\u06F0-\u06F9]/g;
-
 // Arabic script block (covers Arabic, Persian, and Urdu letters — they
 // share the same Unicode block) + Arabic Supplement, matching the same
 // range convention already used elsewhere in this app (e.g.
-// checkTextQuality.ts's missingSpaceAfterPunctuation check).
+// checkTextQuality.ts's missingSpaceAfterPunctuation check). Not moved to
+// the shared module — this counts individual characters for a
+// percentage calculation, a different purpose from
+// generateDocumentSuggestions.ts's run-based LATIN_LETTERS_REGEX
+// (/[a-zA-Z]+/g, used to find whole mixed-script spans), so despite the
+// visual similarity these were never actually the same duplicated
+// pattern.
 const ARABIC_SCRIPT_CHAR = /[\u0600-\u06FF\u0750-\u077F]/g;
 const LATIN_CHAR = /[a-zA-Z]/g;
 
+// Maintenance Batch (2026-08-09) — numeral ranges now come from the
+// shared module (previously duplicated here and in
+// generateDocumentSuggestions.ts with DIFFERENT flags: this file used
+// /g for .match(), the other used no flag for .test()). freshRegex(...,
+// "g") constructs an independent, correctly-flagged instance each call —
+// this function runs once per document analysis, so there is no
+// lastIndex-leakage risk the way a loop reusing one shared object would
+// have (see sharedTextPatterns.ts's own comment on why the canonical
+// export has no flag at all).
 function countNumerals(text: string): NumeralIntelligence {
-  const western = (text.match(WESTERN_DIGIT) ?? []).length;
-  const arabicIndic = (text.match(ARABIC_INDIC_DIGIT) ?? []).length;
-  const urduIndic = (text.match(URDU_INDIC_DIGIT) ?? []).length;
+  const western = (text.match(freshRegex(WESTERN_DIGIT_CHAR, "g")) ?? []).length;
+  const arabicIndic = (text.match(freshRegex(ARABIC_INDIC_DIGIT_CHAR, "g")) ?? []).length;
+  const urduIndic = (text.match(freshRegex(URDU_INDIC_DIGIT_CHAR, "g")) ?? []).length;
   const systemsPresent = [western > 0, arabicIndic > 0, urduIndic > 0].filter(Boolean).length;
   return { western, arabicIndic, urduIndic, isMixed: systemsPresent > 1 };
 }

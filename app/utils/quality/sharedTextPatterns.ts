@@ -58,6 +58,27 @@ export const LATIN_LETTERS_REGEX = /[a-zA-Z]+/g;
 // ASCII comma/semicolon/question-mark mixed into Urdu/Arabic text.
 export const ASCII_PUNCTUATION_REGEX = /[;,?]/g;
 
+// Numeral system ranges (2026-08-09 Maintenance Batch, completing the
+// pattern-sharing started earlier) — previously duplicated identically
+// in buildDocumentStats.ts (with a /g flag, used via .match()) and
+// generateDocumentSuggestions.ts (without /g, used via .test()).
+// Exported here WITHOUT the /g flag: a global-flag regex is stateful for
+// BOTH .exec() AND .test() (confirmed empirically — .test() on a shared
+// g-flagged regex can silently return the wrong boolean on a later call
+// depending on leftover lastIndex, the same class of bug .exec() has).
+// Any consumer that needs "find all matches" (.match() with implied
+// global behavior) should construct its own instance via
+// `new RegExp(WESTERN_DIGIT_CHAR.source, "g")` — matching this module's
+// exec()-loop safety convention.
+export const WESTERN_DIGIT_CHAR = /[0-9]/;
+export const ARABIC_INDIC_DIGIT_CHAR = /[\u0660-\u0669]/;
+export const URDU_INDIC_DIGIT_CHAR = /[\u06F0-\u06F9]/;
+
+/** Constructs a fresh, independent RegExp from a shared pattern's source/flags — safe to use in any stateful context (`.exec()` loops, or `.match()`/`.test()` with a forced "g" flag) without risking lastIndex leakage into other callers. */
+export function freshRegex(pattern: RegExp, forceFlags?: string): RegExp {
+  return new RegExp(pattern.source, forceFlags ?? pattern.flags);
+}
+
 /** Replaces {{ }}-protected content with equal-length whitespace, preserving character offsets for position-based extraction. */
 export function stripProtectedMarkers(text: string): string {
   return text.replace(PRESERVE_MARKER_REGEX, (m) => " ".repeat(m.length));

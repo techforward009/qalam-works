@@ -101,3 +101,20 @@ describe("buildDocumentStats — Language Intelligence", () => {
     expect(stats.language.dominant).toBe("none");
   });
 });
+
+describe("buildDocumentStats — Numeral Intelligence uses shared patterns correctly (Polish Batch, 2026-08-09)", () => {
+  test("still correctly counts mixed numerals after moving to shared patterns (no behavior change)", () => {
+    const stats = buildDocumentStats(docWith([paragraph("سال 2024 میں ۱۲۳ اور ١٢٣")]));
+    expect(stats.numerals.western).toBe(4);
+    expect(stats.numerals.urduIndic).toBe(3);
+    expect(stats.numerals.arabicIndic).toBe(3);
+    expect(stats.numerals.isMixed).toBe(true);
+  });
+
+  test("repeated calls to buildDocumentStats on different documents each get correct, independent numeral counts (no shared-regex leakage)", () => {
+    const first = buildDocumentStats(docWith([paragraph("۱۲۳۴۵۶۷۸۹۰")]));
+    const second = buildDocumentStats(docWith([paragraph("5")]));
+    expect(first.numerals.urduIndic).toBe(10);
+    expect(second.numerals.western).toBe(1);
+  });
+});

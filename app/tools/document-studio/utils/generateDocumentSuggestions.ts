@@ -38,6 +38,10 @@ import {
   TATWEEL_REGEX,
   ARABIC_FORM_LETTERS_REGEX,
   LATIN_LETTERS_REGEX,
+  WESTERN_DIGIT_CHAR,
+  ARABIC_INDIC_DIGIT_CHAR,
+  URDU_INDIC_DIGIT_CHAR,
+  freshRegex,
   stripProtectedMarkers,
 } from "../../../utils/quality/sharedTextPatterns";
 
@@ -73,10 +77,8 @@ const CONTEXT_RADIUS = 15;
 
 // Constructs a fresh RegExp from a shared pattern's source/flags — see
 // the file-level comment on why this matters for anything used in a
-// stateful `.exec()` loop.
-function freshRegex(pattern: RegExp): RegExp {
-  return new RegExp(pattern.source, pattern.flags);
-}
+// stateful `.exec()` loop. (Imported from the shared module — see
+// sharedTextPatterns.ts's own freshRegex, kept as one implementation.)
 
 interface Extraction {
   before: string;
@@ -215,21 +217,17 @@ function findTypographySuggestions(text: string): DocumentSuggestion[] {
 // worth making, consistently, and names Urdu-Indic as the common
 // convention in Urdu prose without forcing it. No single findable
 // position, so contextBefore/contextAfter are empty.
-const WESTERN_DIGIT = /[0-9]/;
-const ARABIC_INDIC_DIGIT = /[\u0660-\u0669]/;
-const URDU_INDIC_DIGIT = /[\u06F0-\u06F9]/;
-
 function findNumeralSuggestions(text: string): DocumentSuggestion[] {
-  const hasWestern = WESTERN_DIGIT.test(text);
-  const hasArabicIndic = ARABIC_INDIC_DIGIT.test(text);
-  const hasUrduIndic = URDU_INDIC_DIGIT.test(text);
+  const hasWestern = WESTERN_DIGIT_CHAR.test(text);
+  const hasArabicIndic = ARABIC_INDIC_DIGIT_CHAR.test(text);
+  const hasUrduIndic = URDU_INDIC_DIGIT_CHAR.test(text);
   const systemsPresent = [hasWestern, hasArabicIndic, hasUrduIndic].filter(Boolean).length;
 
   if (systemsPresent <= 1) return [];
 
-  const westernExample = text.match(new RegExp(WESTERN_DIGIT.source + "+"))?.[0] ?? "";
-  const arabicIndicExample = text.match(new RegExp(ARABIC_INDIC_DIGIT.source + "+"))?.[0] ?? "";
-  const urduIndicExample = text.match(new RegExp(URDU_INDIC_DIGIT.source + "+"))?.[0] ?? "";
+  const westernExample = text.match(new RegExp(WESTERN_DIGIT_CHAR.source + "+"))?.[0] ?? "";
+  const arabicIndicExample = text.match(new RegExp(ARABIC_INDIC_DIGIT_CHAR.source + "+"))?.[0] ?? "";
+  const urduIndicExample = text.match(new RegExp(URDU_INDIC_DIGIT_CHAR.source + "+"))?.[0] ?? "";
   const found = [westernExample, arabicIndicExample, urduIndicExample].filter(Boolean).join(" / ");
 
   return [
@@ -406,7 +404,7 @@ function findRepeatedWordSuggestions(text: string): DocumentSuggestion[] {
     suggestions.push({
       type: "typography-repeated-word",
       category: "typography",
-      severity: "low",
+      severity: "medium",
       originalText: exact,
       suggestedText: match[1],
       explanation: "لفظ لگاتار دو مرتبہ آ گیا ہے — عموماً ٹائپنگ کی غلطی۔ اگر شاعرانہ تکرار ارادی ہے تو نظرانداز کریں۔",
@@ -424,6 +422,13 @@ function findRepeatedWordSuggestions(text: string): DocumentSuggestion[] {
 // originalText verbatim, so even if this is "Accepted" and "Applied",
 // applySuggestionToText's find/replace is a genuine no-op. This is what
 // makes it a pure advisory rather than a correction.
+//
+// Category corrected to "typography" (2026-08-09 Maintenance Batch, per
+// audit finding): this is script-USAGE analysis (is Latin text present
+// in RTL prose), not Unicode character-FORM normalization the way the
+// Yeh/Kaf/Heh "unicode" category suggestions are — it never belonged
+// under "unicode" semantically, even though it shared that category's
+// broad "script-related" theme.
 function findMixedScriptSuggestions(text: string): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
   const stripped = stripProtectedMarkers(text);
@@ -434,7 +439,7 @@ function findMixedScriptSuggestions(text: string): DocumentSuggestion[] {
     const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
     suggestions.push({
       type: "unicode-mixed-script-advisory",
-      category: "unicode",
+      category: "typography",
       severity: "low",
       originalText: exact,
       suggestedText: exact, // advisory only — never proposes a change

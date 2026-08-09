@@ -361,3 +361,53 @@ describe("generateDocumentSuggestions — thousands-separator false positive fix
     expect(suggestions.some((s) => s.type === "spacing-missing-after-punctuation")).toBe(true);
   });
 });
+
+// Polish Batch (2026-08-09): severity recalibration + category correction
+describe("generateDocumentSuggestions — Severity Recalibration", () => {
+  test("typography-repeated-word is now 'medium' (was 'low') — an accidental repeated word is a likely writing error", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ یہ ایک غلطی ہے")]));
+    const rep = suggestions.find((s) => s.type === "typography-repeated-word");
+    expect(rep).toBeDefined();
+    expect(rep!.severity).toBe("medium");
+  });
+
+  test("severity filtering by 'medium' now includes repeated-word suggestions", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ یہ ایک غلطی ہے")]));
+    const mediumOnly = suggestions.filter((s) => s.severity === "medium");
+    expect(mediumOnly.some((s) => s.type === "typography-repeated-word")).toBe(true);
+  });
+
+  test("severity filtering by 'low' no longer includes repeated-word suggestions", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ یہ ایک غلطی ہے")]));
+    const lowOnly = suggestions.filter((s) => s.severity === "low");
+    expect(lowOnly.some((s) => s.type === "typography-repeated-word")).toBe(false);
+  });
+});
+
+describe("generateDocumentSuggestions — Mixed Script Category Correction", () => {
+  test("unicode-mixed-script-advisory is now under 'typography' category (was 'unicode')", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ Document Studio ہے")]));
+    const advisory = suggestions.find((s) => s.type === "unicode-mixed-script-advisory");
+    expect(advisory).toBeDefined();
+    expect(advisory!.category).toBe("typography");
+  });
+
+  test("filtering by 'unicode' category no longer includes the mixed-script advisory", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ Document Studio ہے")]));
+    const unicodeOnly = suggestions.filter((s) => s.category === "unicode");
+    expect(unicodeOnly.some((s) => s.type === "unicode-mixed-script-advisory")).toBe(false);
+  });
+
+  test("filtering by 'typography' category now includes the mixed-script advisory alongside tatweel/repeated-word", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("الحمـــد Document یہ یہ")]));
+    const typographyOnly = suggestions.filter((s) => s.category === "typography");
+    const typesFound = new Set(typographyOnly.map((s) => s.type));
+    expect(typesFound.has("unicode-mixed-script-advisory")).toBe(true);
+  });
+
+  test("genuine unicode-form suggestions (Yeh/Kaf/Heh) remain under 'unicode' category (no regression)", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("علي")]));
+    const yeh = suggestions.find((s) => s.type === "unicode-arabic-yeh");
+    expect(yeh!.category).toBe("unicode");
+  });
+});
