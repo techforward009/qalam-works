@@ -13,6 +13,7 @@ import { plainTextToDocNode, normalizeDocxParagraphBreaks } from "../utils/plain
 import { QualityAuditPanel } from "./QualityAuditPanel";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
+import { formatFileSize } from "../../../utils/formatFileSize";
 
 const DRAFT_STORAGE_KEY = "qalam-document-studio-draft";
 const AUTOSAVE_DEBOUNCE_MS = 1000;
@@ -150,6 +151,7 @@ export default function DocumentStudioEditor() {
   const [isImporting, setIsImporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfSummary, setPdfSummary] = useState<{ pages: number; fileSizeLabel: string; fontsUsed: string[] } | null>(null);
 
   const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
   const [isAuditStale, setIsAuditStale] = useState(false);
@@ -175,6 +177,7 @@ export default function DocumentStudioEditor() {
         setIsAuditStale(true);
       }
       setAlreadyClean(false);
+      setPdfSummary(null);
       // Deliberately NOT clearing docxImportNotice here anymore (2026-08-08
       // requirement change): it must be a genuinely persistent, explicitly-
       // dismissed notice (the "Got it" button below), not one that quietly
@@ -423,6 +426,7 @@ export default function DocumentStudioEditor() {
   const handleDownloadPdf = async () => {
     if (!editor) return;
     setPdfError(null);
+    setPdfSummary(null);
     setIsExportingPdf(true);
     try {
       const response = await fetch("/api/export-pdf", {
@@ -435,6 +439,10 @@ export default function DocumentStudioEditor() {
         throw new Error(`Export failed with status ${response.status}`);
       }
 
+      const pageCountHeader = response.headers.get("X-Pdf-Page-Count");
+      const fileSizeHeader = response.headers.get("X-Pdf-File-Size-Bytes");
+      const fontsUsedHeader = response.headers.get("X-Pdf-Fonts-Used");
+
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -444,6 +452,20 @@ export default function DocumentStudioEditor() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      if (pageCountHeader && fileSizeHeader) {
+        let fontsUsed: string[] = [];
+        try {
+          fontsUsed = fontsUsedHeader ? JSON.parse(fontsUsedHeader) : [];
+        } catch {
+          fontsUsed = [];
+        }
+        setPdfSummary({
+          pages: parseInt(pageCountHeader, 10),
+          fileSizeLabel: formatFileSize(parseInt(fileSizeHeader, 10)),
+          fontsUsed,
+        });
+      }
     } catch (err) {
       console.error("Failed to generate PDF:", err);
       setPdfError("PDF بنانے میں خرابی ہوئی / Failed to generate PDF.");
@@ -564,7 +586,9 @@ export default function DocumentStudioEditor() {
             >
               {isExportingPdf ? "PDF بن رہی ہے... / Generating..." : (
                 <>
-                  Download PDF <span className="text-[10px] font-normal text-amber-500">(Visual/Print)</span>
+                  Download PDF <span className="text-[10px] font-normal text-amber-500">
+                    (Visual/Print{pdfSummary ? ` — ${pdfSummary.fileSizeLabel}` : ""})
+                  </span>
                 </>
               )}
             </button>
@@ -587,6 +611,20 @@ export default function DocumentStudioEditor() {
             </button>
           </div>
         </div>
+
+        {pdfSummary && (
+          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs" dir="ltr">
+            <div className="font-semibold text-amber-800 mb-1.5">✓ PDF Export Complete</div>
+            <div className="text-stone-700 space-y-0.5">
+              <div>Pages: {pdfSummary.pages}</div>
+              <div>File Size: {pdfSummary.fileSizeLabel}</div>
+              {pdfSummary.fontsUsed.length > 0 && (
+                <div>Fonts Used: {pdfSummary.fontsUsed.map((f) => `✓ ${f}`).join("  ")}</div>
+              )}
+              <div>Format: Visual / Print PDF</div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md mt-4" dir="rtl">
