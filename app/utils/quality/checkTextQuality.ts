@@ -14,6 +14,7 @@ export interface QualityReport {
   textQuality: {
     repeatedWords: number;
     mixedScript: number;
+    mixedUrduArabicForms: number;
   };
   badges: string[];
 }
@@ -35,6 +36,7 @@ interface PartialCounts {
   duplicatedPunctuation: number;
   repeatedWords: number;
   mixedScript: number;
+  mixedUrduArabicForms: number;
 }
 
 function checkUniversal(
@@ -106,7 +108,7 @@ function checkUniversal(
   return { multipleSpaces, emptyLines, longParagraphs, wrongQuotes, duplicatedPunctuation, missingSpaceAfterPunctuation };
 }
 
-function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript"> {
+function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript" | "mixedUrduArabicForms"> {
   // ASCII comma/semicolon/question mark mixed into Urdu/Arabic text.
   const englishPunctuation = text.match(/[;,?]/g);
   const mixedPunctuation = englishPunctuation ? englishPunctuation.length : 0;
@@ -127,7 +129,19 @@ function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuati
   const latinMatches = text.match(/[a-zA-Z]+/g);
   const mixedScript = latinMatches ? latinMatches.length : 0;
 
-  return { mixedPunctuation, repeatedWords, mixedScript };
+  // Arabic-form letters (ي ى ك أ إ) appearing in what should be Urdu
+  // prose — the exact same five characters app/utils/unicode/
+  // standardizeUrduText.ts's CHAR_NORMALIZATIONS already corrects (ي→ی,
+  // ى→ی, ك→ک, أ→ا, إ→ا). This is detection only (no correction here);
+  // reuses that established mapping rather than inventing a new one, so
+  // "mixed Urdu/Arabic characters" means the same thing everywhere in
+  // the app. Skipped inside {{ }} markers for the same reason
+  // standardizeUrduText.ts skips them there — protected classical Arabic
+  // quotations correctly use these forms.
+  const arabicFormMatches = text.match(/[\u064A\u0649\u0643\u0623\u0625]/g);
+  const mixedUrduArabicForms = arabicFormMatches ? arabicFormMatches.length : 0;
+
+  return { mixedPunctuation, repeatedWords, mixedScript, mixedUrduArabicForms };
 }
 
 export function checkTextQuality(input: string): QualityReport {
@@ -151,7 +165,8 @@ export function checkTextQuality(input: string): QualityReport {
     universal.missingSpaceAfterPunctuation +
     scriptSensitive.mixedPunctuation +
     scriptSensitive.repeatedWords +
-    scriptSensitive.mixedScript;
+    scriptSensitive.mixedScript +
+    scriptSensitive.mixedUrduArabicForms;
 
   const badges: string[] = [];
   if (totalIssues === 0) {
@@ -165,6 +180,7 @@ export function checkTextQuality(input: string): QualityReport {
     if (universal.emptyLines) badges.push("✓ Layout Spacing Issues");
     if (scriptSensitive.repeatedWords) badges.push("✓ Repeated Words Found");
     if (scriptSensitive.mixedScript) badges.push("✓ Mixed Script Detected");
+    if (scriptSensitive.mixedUrduArabicForms) badges.push("✓ Mixed Urdu/Arabic Character Forms");
     if (universal.longParagraphs) badges.push("✓ Long Paragraph Warning");
   }
 
@@ -184,6 +200,7 @@ export function checkTextQuality(input: string): QualityReport {
     textQuality: {
       repeatedWords: scriptSensitive.repeatedWords,
       mixedScript: scriptSensitive.mixedScript,
+      mixedUrduArabicForms: scriptSensitive.mixedUrduArabicForms,
     },
     badges,
   };
