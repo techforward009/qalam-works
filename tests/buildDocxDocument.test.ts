@@ -694,3 +694,47 @@ describe("createDocxDocument — v1.3: document metadata", () => {
     expect(coreXml).toMatch(/<cp:keywords>[^<]*Urdu[^<]*<\/cp:keywords>/);
   });
 });
+
+// v1.4 (2026-08-09) — title detection fix: searches the whole document
+// for the first H1, not just doc.content[0].
+describe("createDocxDocument — v1.4: title detection searches the full document", () => {
+  async function coreXmlFor(doc: DocNode): Promise<string> {
+    const buffer = await Packer.toBuffer(createDocxDocument(doc, "ltr"));
+    const zip = await JSZip.loadAsync(buffer);
+    return zip.file("docProps/core.xml")!.async("text");
+  }
+
+  test("H1 as the first node is still extracted (no regression)", async () => {
+    const coreXml = await coreXmlFor(
+      docWith([{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "First Title" }] }])
+    );
+    expect(coreXml).toContain("<dc:title>First Title</dc:title>");
+  });
+
+  test("a paragraph before the H1 no longer defeats title detection", async () => {
+    const coreXml = await coreXmlFor(
+      docWith([
+        { type: "paragraph", content: [{ type: "text", text: "intro text" }] },
+        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Real Title" }] },
+      ])
+    );
+    expect(coreXml).toContain("<dc:title>Real Title</dc:title>");
+  });
+
+  test("with multiple H1 headings, the first one is used", async () => {
+    const coreXml = await coreXmlFor(
+      docWith([
+        { type: "paragraph", content: [{ type: "text", text: "x" }] },
+        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "First H1" }] },
+        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Second H1" }] },
+      ])
+    );
+    expect(coreXml).toContain("<dc:title>First H1</dc:title>");
+    expect(coreXml).not.toContain("Second H1");
+  });
+
+  test("no H1 anywhere still falls back to 'Qalam Works' (regression guard)", async () => {
+    const coreXml = await coreXmlFor(docWith([{ type: "paragraph", content: [{ type: "text", text: "no heading here" }] }]));
+    expect(coreXml).toContain("<dc:title>Qalam Works</dc:title>");
+  });
+});
