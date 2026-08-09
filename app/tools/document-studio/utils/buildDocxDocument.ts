@@ -14,6 +14,7 @@ import {
   ExternalHyperlink,
   HeadingLevel,
   LevelFormat,
+  LineRuleType,
   Packer,
   Paragraph,
   TextRun,
@@ -26,11 +27,55 @@ import type { DocNode, Direction } from "./extractPlainText";
 // class) and a standard, universally-installed LTR fallback. v1 does not
 // embed the font file — see PHASE-3C-DOCX-SPEC.md §5 for the accepted
 // fallback-rendering risk this carries.
+//
+// UNCHANGED in v1.1 Phase 1 (2026-08-09, per Sajjad's explicit
+// instruction) — font strategy is deliberately deferred to a separate
+// pass after real Word compatibility testing. Do not edit these two
+// lines as part of page-layout/heading work.
 const FONT_RTL = "Noto Nastaliq Urdu";
 const FONT_LTR = "Calibri";
 
+// v1.1 Phase 1 — professional page layout. A4 and 1-inch margins in
+// twips (1440 twips = 1 inch; A4 = 210mm × 297mm ≈ 11906 × 16838 twips,
+// the same standard value docx itself already defaults to — set here
+// explicitly rather than relying on the library's default, per the
+// audit's finding that page size was previously entirely unset).
+const PAGE_SIZE_A4 = { width: 11906, height: 16838 };
+const PAGE_MARGIN = { top: 1440, bottom: 1440, left: 1440, right: 1440 };
+
+// v1.1 Phase 1 — paragraph and line spacing, applied uniformly to every
+// Paragraph this adapter creates (regular paragraphs, headings,
+// blockquote lines, list items) so spacing is consistent throughout the
+// document rather than varying by block type. `line: 360` is 1.5-line
+// spacing in docx's twentieths-of-a-point line-spacing unit (240 =
+// single, 480 = double); `before`/`after` are in twips.
+const PARAGRAPH_SPACING = { before: 120, after: 120, line: 360, lineRule: LineRuleType.AUTO };
+
 function fontFor(dir: Direction): string {
   return dir === "rtl" ? FONT_RTL : FONT_LTR;
+}
+
+// v1.1 Phase 1 — fixes a real bug found during the DOCX audit: any
+// heading level other than exactly 2 previously collapsed to HEADING_1,
+// silently mis-exporting H3/H4 (reachable today via TipTap's markdown
+// input rules — e.g. typing "### " — even with no H3/H4 toolbar button)
+// as H1. Levels 5/6, if they ever occur, fall back to HEADING_4 rather
+// than silently becoming H1 again.
+const HEADING_MAP: Record<number, (typeof HeadingLevel)[keyof typeof HeadingLevel]> = {
+  1: HeadingLevel.HEADING_1,
+  2: HeadingLevel.HEADING_2,
+  3: HeadingLevel.HEADING_3,
+  4: HeadingLevel.HEADING_4,
+};
+
+function headingLevelFor(level: unknown): (typeof HeadingLevel)[keyof typeof HeadingLevel] {
+  if (typeof level === "number" && level in HEADING_MAP) {
+    return HEADING_MAP[level];
+  }
+  // Unrecognized/higher level (5, 6, or missing) — HEADING_4 is a safer
+  // fallback than HEADING_1, since a deeper heading is visually closer
+  // in intent to H4 than to a top-level H1.
+  return HeadingLevel.HEADING_4;
 }
 
 const ALIGNMENT_MAP: Record<string, (typeof AlignmentType)[keyof typeof AlignmentType]> = {
@@ -119,19 +164,20 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
         new Paragraph({
           bidirectional: dir === "rtl",
           alignment: alignmentFor(node),
+          spacing: PARAGRAPH_SPACING,
           numbering: listRef ? { reference: listRef.reference, level: 0 } : undefined,
           children: convertInline(node.content, dir),
         }),
       ];
     }
     case "heading": {
-      const level = node.attrs?.level;
-      const heading = level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_1;
+      const heading = headingLevelFor(node.attrs?.level);
       return [
         new Paragraph({
           heading,
           bidirectional: dir === "rtl",
           alignment: alignmentFor(node),
+          spacing: PARAGRAPH_SPACING,
           children: convertInline(node.content, dir),
         }),
       ];
@@ -146,6 +192,7 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
             new Paragraph({
               bidirectional: dir === "rtl",
               indent: { start: 720 },
+              spacing: PARAGRAPH_SPACING,
               children: convertInline(child.content, dir),
             })
           );
@@ -190,6 +237,7 @@ function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, r
         new Paragraph({
           bidirectional: dir === "rtl",
           numbering: { reference, level: 0 },
+          spacing: PARAGRAPH_SPACING,
           children: convertInline(child.content, dir),
         })
       );
@@ -217,7 +265,17 @@ export function createDocxDocument(doc: DocNode, dir: Direction): Document {
 
   return new Document({
     numbering: ctx.configs.length > 0 ? { config: ctx.configs } : undefined,
-    sections: [{ children }],
+    sections: [
+      {
+        properties: {
+          page: {
+            size: PAGE_SIZE_A4,
+            margin: PAGE_MARGIN,
+          },
+        },
+        children,
+      },
+    ],
   });
 }
 
