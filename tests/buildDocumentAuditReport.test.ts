@@ -117,3 +117,146 @@ describe("buildDocumentAuditReport", () => {
     expect(report.totalIssues).toBe(0);
   });
 });
+
+// Advanced Quality Layer (2026-08-09): heading hierarchy, empty paragraphs,
+// mixed Urdu/Arabic character forms, and Publishing Readiness.
+describe("buildDocumentAuditReport — heading hierarchy issues", () => {
+  test("document starting with H2 (not H1) is flagged", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [{ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Section" }] }],
+    };
+    const report = buildDocumentAuditReport(doc);
+    expect(report.counts.headingHierarchy).toBe(1);
+  });
+
+  test("document starting with H1 is not flagged", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Title" }] }],
+    };
+    const report = buildDocumentAuditReport(doc);
+    expect(report.counts.headingHierarchy).toBe(0);
+  });
+
+  test("H1 followed directly by H3 (skipping H2) is flagged", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Title" }] },
+        { type: "heading", attrs: { level: 3 }, content: [{ type: "text", text: "Sub-sub" }] },
+      ],
+    };
+    const report = buildDocumentAuditReport(doc);
+    expect(report.counts.headingHierarchy).toBe(1);
+  });
+
+  test("H1 -> H2 -> H3 in proper order is not flagged", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Title" }] },
+        { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Section" }] },
+        { type: "heading", attrs: { level: 3 }, content: [{ type: "text", text: "Subsection" }] },
+      ],
+    };
+    const report = buildDocumentAuditReport(doc);
+    expect(report.counts.headingHierarchy).toBe(0);
+  });
+
+  test("going shallower (H3 back to H1) is normal structure, not flagged", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Title" }] },
+        { type: "heading", attrs: { level: 3 }, content: [{ type: "text", text: "x" }] },
+      ],
+    };
+    // Note: this itself is 1 issue (H1->H3 skip). Add a second top-level
+    // H1 afterward and confirm THAT transition alone isn't double-flagged.
+    doc.content!.push({ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "New Section" }] });
+    const report = buildDocumentAuditReport(doc);
+    expect(report.counts.headingHierarchy).toBe(1); // only the H1->H3 skip, not the H3->H1 drop
+  });
+
+  test("a document with no headings at all is not flagged", () => {
+    const report = buildDocumentAuditReport(docWithText("Just a plain paragraph, no headings."));
+    expect(report.counts.headingHierarchy).toBe(0);
+  });
+});
+
+describe("buildDocumentAuditReport — empty paragraphs", () => {
+  test("flags a genuinely empty paragraph block", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "Real content." }] },
+        { type: "paragraph", content: [] },
+        { type: "paragraph", content: [{ type: "text", text: "More content." }] },
+      ],
+    };
+    const report = buildDocumentAuditReport(doc);
+    expect(report.counts.emptyParagraphs).toBe(1);
+  });
+
+  test("does not flag paragraphs that have real text", () => {
+    const report = buildDocumentAuditReport(docFromLines(["First.", "Second.", "Third."]));
+    expect(report.counts.emptyParagraphs).toBe(0);
+  });
+});
+
+describe("buildDocumentAuditReport — mixed Urdu/Arabic character forms", () => {
+  test("flags Arabic-form letters in the document", () => {
+    const report = buildDocumentAuditReport(docWithText("علي نے كتاب پڑھی۔"));
+    expect(report.counts.mixedUrduArabicForms).toBeGreaterThan(0);
+  });
+
+  test("produces a matching recommendation", () => {
+    const report = buildDocumentAuditReport(docWithText("علي نے كتاب پڑھی۔"));
+    expect(report.recommendations.some((r) => r.type === "mixedUrduArabicForms")).toBe(true);
+  });
+});
+
+describe("buildDocumentAuditReport — Publishing Readiness (categorical, not numeric)", () => {
+  test("a clean document reports 'ok' across all four categories", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "عنوان" }] },
+        { type: "paragraph", content: [{ type: "text", text: "یہ ایک سادہ اور معیاری جملہ ہے۔" }] },
+      ],
+    };
+    const report = buildDocumentAuditReport(doc);
+    expect(report.readiness).toEqual({
+      typography: "ok",
+      unicodeConsistency: "ok",
+      structure: "ok",
+      rtlLtr: "ok",
+    });
+  });
+
+  test("mixed Urdu/Arabic forms mark unicodeConsistency as needs_review only", () => {
+    const report = buildDocumentAuditReport(docWithText("علي نے كتاب پڑھی۔"));
+    expect(report.readiness.unicodeConsistency).toBe("needs_review");
+    expect(report.readiness.typography).toBe("ok");
+  });
+
+  test("a heading-hierarchy problem marks structure as needs_review", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [{ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Section" }] }],
+    };
+    const report = buildDocumentAuditReport(doc);
+    expect(report.readiness.structure).toBe("needs_review");
+  });
+
+  test("an empty document reports 'ok' across all four categories", () => {
+    const report = buildDocumentAuditReport({ type: "doc", content: [] });
+    expect(report.readiness).toEqual({
+      typography: "ok",
+      unicodeConsistency: "ok",
+      structure: "ok",
+      rtlLtr: "ok",
+    });
+  });
+});
