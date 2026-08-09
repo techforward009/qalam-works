@@ -11,6 +11,14 @@ import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buil
 import { buildDocumentStats, type DocumentStats } from "../utils/buildDocumentStats";
 import { buildDocumentHealthReport, type DocumentHealthReport } from "../utils/buildDocumentHealthReport";
 import { generateDocumentSuggestions, type DocumentSuggestion } from "../utils/generateDocumentSuggestions";
+import {
+  createReviewState,
+  acceptSuggestion,
+  ignoreSuggestion,
+  refreshPendingSuggestions,
+  suggestionKey,
+  type SuggestionReviewState,
+} from "../utils/suggestionReview";
 import { buildDocxBlob } from "../utils/buildDocxDocument";
 import { plainTextToDocNode, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
 import { QualityAuditPanel } from "./QualityAuditPanel";
@@ -143,6 +151,31 @@ function getInitialDraftContent(): DocNode | string {
   return "<p></p>";
 }
 
+// Suggestion Review Workflow (2026-08-09) — finds a suggestion's real
+// position in the LIVE ProseMirror document by searching individual text
+// nodes for the first verbatim occurrence of its originalText. Limited
+// to matches within a single text node (won't find text split across
+// separately-marked runs, e.g. half-bold half-plain) — an accepted,
+// documented limitation for v1, since the vast majority of flagged
+// issues (typos, spacing, stray characters) occur in plain, unformatted
+// text anyway. Returns null (stale-safe) if no longer found, e.g. the
+// user already edited that text some other way.
+function findSuggestionRange(editor: Editor, searchText: string): { from: number; to: number } | null {
+  let result: { from: number; to: number } | null = null;
+  editor.state.doc.descendants((node, pos) => {
+    if (result) return false;
+    if (node.isText && node.text) {
+      const idx = node.text.indexOf(searchText);
+      if (idx !== -1) {
+        result = { from: pos + idx, to: pos + idx + searchText.length };
+        return false;
+      }
+    }
+    return true;
+  });
+  return result;
+}
+
 export default function DocumentStudioEditor() {
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [copied, setCopied] = useState(false);
@@ -161,7 +194,7 @@ export default function DocumentStudioEditor() {
   const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
   const [stats, setStats] = useState<DocumentStats | null>(null);
   const [health, setHealth] = useState<DocumentHealthReport | null>(null);
-  const [suggestions, setSuggestions] = useState<DocumentSuggestion[]>([]);
+  const [reviewState, setReviewState] = useState<SuggestionReviewState>(createReviewState([]));
   const [isAuditStale, setIsAuditStale] = useState(false);
   // Mirrors "auditReport !== null" but as a ref, so the onUpdate callback
   // below (captured once when the editor is created) can check it without
@@ -189,7 +222,7 @@ export default function DocumentStudioEditor() {
       const json = editor.getJSON();
       setStats(buildDocumentStats(json));
       setHealth(buildDocumentHealthReport(json));
-      setSuggestions(generateDocumentSuggestions(json));
+      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json)));
       // Deliberately NOT clearing docxImportNotice here anymore (2026-08-08
       // requirement change): it must be a genuinely persistent, explicitly-
       // dismissed notice (the "Got it" button below), not one that quietly
@@ -225,7 +258,7 @@ export default function DocumentStudioEditor() {
       const json = editor.getJSON();
       setStats(buildDocumentStats(json));
       setHealth(buildDocumentHealthReport(json));
-      setSuggestions(generateDocumentSuggestions(json));
+      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
@@ -388,6 +421,38 @@ export default function DocumentStudioEditor() {
     setAuditReport(report);
     hasAuditReportRef.current = true;
     setIsAuditStale(false);
+  };
+
+  // Suggestion Review Workflow (2026-08-09) — Accept/Ignore only move a
+  // suggestion between the pending/accepted/ignored lists; neither one
+  // touches the editor's content. No text changes until "Apply Accepted"
+  // is pressed, and even then only the specific accepted items are
+  // applied (never a blind bulk find-replace).
+  const handleAcceptSuggestion = (key: string) => {
+    setReviewState((prev) => acceptSuggestion(prev, key));
+  };
+
+  const handleIgnoreSuggestion = (key: string) => {
+    setReviewState((prev) => ignoreSuggestion(prev, key));
+  };
+
+  // Applies each currently-accepted suggestion as its own real,
+  // targeted ProseMirror transaction (editor.chain()...insertContentAt),
+  // not a raw string replace on the document — this is what makes it
+  // automatically undoable via TipTap's built-in History extension
+  // (part of StarterKit by default), satisfying "preserve undo safety"
+  // without any extra plumbing. A suggestion whose original text can no
+  // longer be found (stale — the user already changed that part of the
+  // document some other way) is safely skipped, never force-applied.
+  const handleApplyAccepted = () => {
+    if (!editor) return;
+    for (const suggestion of reviewState.accepted) {
+      const range = findSuggestionRange(editor, suggestion.originalText);
+      if (range) {
+        editor.chain().focus().insertContentAt(range, suggestion.suggestedText).run();
+      }
+    }
+    setReviewState((prev) => ({ ...prev, accepted: [] }));
   };
 
   const handleCopy = async () => {
@@ -720,7 +785,14 @@ export default function DocumentStudioEditor() {
         </div>
 
         <div className="mt-4">
-          <SuggestionsPanel suggestions={suggestions} />
+          <SuggestionsPanel
+            pending={reviewState.pending}
+            accepted={reviewState.accepted}
+            ignored={reviewState.ignored}
+            onAccept={handleAcceptSuggestion}
+            onIgnore={handleIgnoreSuggestion}
+            onApplyAccepted={handleApplyAccepted}
+          />
         </div>
       </div>
 
