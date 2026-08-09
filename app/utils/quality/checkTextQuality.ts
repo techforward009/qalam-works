@@ -113,12 +113,14 @@ function checkUniversal(
   const duplicatedMatches = text.match(/([.,!?;:،؛؟۔])\1+/g);
   const duplicatedPunctuation = duplicatedMatches ? duplicatedMatches.length : 0;
 
-  // A closing bracket/paren or colon immediately followed by a letter or
-  // digit with no space (found 2026-08-07: "(المتوفی:179ھ)نے" — missing
-  // space both after the colon before "179" and after ")" before "نے").
-  // Limited to ) ] : specifically (not { } or [ ) to avoid any interaction
-  // with the {{ }} preserve-marker syntax elsewhere in the codebase.
-  const missingSpaceMatches = text.match(/[)\]:][A-Za-z0-9\u0600-\u06FF]/g);
+  // A closing bracket/paren/colon, or terminal punctuation (comma/
+  // exclamation/question mark, ASCII or Urdu-Arabic form) immediately
+  // followed by a letter or digit with no space (found 2026-08-07:
+  // "(المتوفی:179ھ)نے" — missing space after both ":" and ")"; extended
+  // 2026-08-09 per Batch 1 to also cover "لفظ,اگلا"/"لفظ؟اگلا"/
+  // "لفظ!اگلا"-style cases). { } and [ specifically excluded to avoid any
+  // interaction with the {{ }} preserve-marker syntax elsewhere.
+  const missingSpaceMatches = text.match(/[)\]:,!?،؟۔][A-Za-z0-9\u0600-\u06FF]/g);
   const missingSpaceAfterPunctuation = missingSpaceMatches ? missingSpaceMatches.length : 0;
 
   // Advanced Typography Analyzer (2026-08-09) — a space immediately

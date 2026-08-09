@@ -1,4 +1,5 @@
 import { generateDocumentSuggestions } from "../app/tools/document-studio/utils/generateDocumentSuggestions";
+import { applySuggestionToText } from "../app/tools/document-studio/utils/suggestionReview";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
 function paragraph(text: string): DocNode {
@@ -185,5 +186,151 @@ describe("generateDocumentSuggestions — Structure category", () => {
     };
     const suggestions = generateDocumentSuggestions(doc);
     expect(suggestions.filter((s) => s.category === "structure")).toHaveLength(0);
+  });
+});
+
+// Batch 1 (2026-08-09): Quote Correction, Duplicated Punctuation, Missing Space
+describe("generateDocumentSuggestions — Quote Correction", () => {
+  test("suggests curly opening quote for a straight quote preceded by whitespace", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph('he said "hello')]));
+    const quote = suggestions.find((s) => s.type === "punctuation-straight-quote");
+    expect(quote).toBeDefined();
+    expect(quote!.suggestedText).toBe("\u201C");
+  });
+
+  test("suggests curly closing quote for a straight quote preceded by a letter", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph('hello" said he')]));
+    const quote = suggestions.find((s) => s.type === "punctuation-straight-quote");
+    expect(quote).toBeDefined();
+    expect(quote!.suggestedText).toBe("\u201D");
+  });
+
+  test("flags unmatched curly quotes as one document-level advisory", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("\u201Chello world")]));
+    expect(suggestions.some((s) => s.type === "punctuation-unmatched-quotes")).toBe(true);
+  });
+
+  test("balanced curly quotes produce no unmatched-quote advisory", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("\u201Chello\u201D world")]));
+    expect(suggestions.some((s) => s.type === "punctuation-unmatched-quotes")).toBe(false);
+  });
+
+  test("never auto-applies — suggestedText is only ever a proposal, category is 'punctuation'", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph('"test"')]));
+    const quotes = suggestions.filter((s) => s.type === "punctuation-straight-quote");
+    expect(quotes.length).toBeGreaterThan(0);
+    quotes.forEach((q) => expect(q.category).toBe("punctuation"));
+  });
+});
+
+describe("generateDocumentSuggestions — Duplicated Punctuation", () => {
+  test("flags ؟؟ and suggests a single ؟", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("کیا یہ ٹھیک ہے؟؟")]));
+    const dup = suggestions.find((s) => s.type === "punctuation-duplicated");
+    expect(dup).toBeDefined();
+    expect(dup!.originalText).toBe("؟؟");
+    expect(dup!.suggestedText).toBe("؟");
+  });
+
+  test("flags !! and ,, too", () => {
+    const suggestionsExcl = generateDocumentSuggestions(docWith([paragraph("Wow!!")]));
+    expect(suggestionsExcl.some((s) => s.type === "punctuation-duplicated" && s.originalText === "!!")).toBe(true);
+
+    const suggestionsComma = generateDocumentSuggestions(docWith([paragraph("یہ،، وہ")]));
+    expect(suggestionsComma.some((s) => s.type === "punctuation-duplicated" && s.originalText === "،،")).toBe(true);
+  });
+
+  test("single punctuation marks are not flagged", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("کیا یہ ٹھیک ہے؟")]));
+    expect(suggestions.filter((s) => s.type === "punctuation-duplicated")).toHaveLength(0);
+  });
+});
+
+describe("generateDocumentSuggestions — Missing Space After Punctuation", () => {
+  test("flags word,next and suggests inserting a space", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ لفظ,اگلا لفظ")]));
+    const spacing = suggestions.find((s) => s.type === "spacing-missing-after-punctuation");
+    expect(spacing).toBeDefined();
+    expect(spacing!.suggestedText).toContain(", ");
+  });
+
+  test("flags word؟next (Urdu question mark)", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("کیا یہ؟نہیں")]));
+    expect(suggestions.some((s) => s.type === "spacing-missing-after-punctuation")).toBe(true);
+  });
+
+  test("flags word!next", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("واہ!زبردست")]));
+    expect(suggestions.some((s) => s.type === "spacing-missing-after-punctuation")).toBe(true);
+  });
+
+  test("properly spaced punctuation is not flagged", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ لفظ, اگلا لفظ")]));
+    expect(suggestions.filter((s) => s.type === "spacing-missing-after-punctuation")).toHaveLength(0);
+  });
+});
+
+// Batch 2 (2026-08-09): Repeated Words, Mixed Script Advisory, Structure improvements
+describe("generateDocumentSuggestions — Repeated Words Detection", () => {
+  test("flags an accidental repeated Urdu word", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ یہ ایک غلطی ہے")]));
+    const rep = suggestions.find((s) => s.type === "typography-repeated-word");
+    expect(rep).toBeDefined();
+    expect(rep!.originalText).toBe("یہ یہ");
+    expect(rep!.suggestedText).toBe("یہ");
+  });
+
+  test("flags an accidental repeated English word", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("this is is a mistake")]));
+    expect(suggestions.some((s) => s.type === "typography-repeated-word" && s.originalText === "is is")).toBe(true);
+  });
+
+  test("does not flag two different adjacent words", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ ایک اچھا دن ہے")]));
+    expect(suggestions.filter((s) => s.type === "typography-repeated-word")).toHaveLength(0);
+  });
+
+  test("ignores repetition inside {{ }} protected quotations (may be intentional rhetorical repetition)", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("{{اللہ اللہ کرتے رہو}}")]));
+    expect(suggestions.filter((s) => s.type === "typography-repeated-word")).toHaveLength(0);
+  });
+});
+
+describe("generateDocumentSuggestions — Mixed Script Intelligence (advisory only)", () => {
+  test("flags Latin text inside RTL prose as an advisory", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ Document Studio ہے")]));
+    const advisories = suggestions.filter((s) => s.type === "unicode-mixed-script-advisory");
+    expect(advisories.length).toBeGreaterThan(0);
+  });
+
+  test("never proposes a text change — suggestedText always equals originalText", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ Document Studio ہے")]));
+    const advisories = suggestions.filter((s) => s.type === "unicode-mixed-script-advisory");
+    advisories.forEach((a) => expect(a.suggestedText).toBe(a.originalText));
+  });
+
+  test("applying this advisory is a genuine no-op on the text", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ Document ہے")]));
+    const advisory = suggestions.find((s) => s.type === "unicode-mixed-script-advisory");
+    expect(advisory).toBeDefined();
+    expect(applySuggestionToText("یہ Document ہے", advisory!)).toBe("یہ Document ہے");
+  });
+
+  test("pure Urdu text with no Latin characters produces no advisory", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ ایک سادہ جملہ ہے")]));
+    expect(suggestions.filter((s) => s.type === "unicode-mixed-script-advisory")).toHaveLength(0);
+  });
+});
+
+describe("generateDocumentSuggestions — Structure: long paragraphs", () => {
+  test("flags a paragraph over the length threshold", () => {
+    const longText = "یہ ایک بہت طویل پیراگراف ہے۔ ".repeat(20);
+    const suggestions = generateDocumentSuggestions(docWith([paragraph(longText)]));
+    expect(suggestions.some((s) => s.type === "structure-long-paragraphs")).toBe(true);
+  });
+
+  test("a normal-length paragraph is not flagged", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ ایک مختصر پیراگراف ہے۔")]));
+    expect(suggestions.filter((s) => s.type === "structure-long-paragraphs")).toHaveLength(0);
   });
 });

@@ -17,7 +17,7 @@
 // directly (no duplicated detection logic there).
 
 import { getBlockTexts, type DocNode } from "./extractPlainText";
-import { countHeadingHierarchyIssues, countEmptyParagraphs } from "./buildDocumentAuditReport";
+import { countHeadingHierarchyIssues, countEmptyParagraphs, countLongParagraphs } from "./buildDocumentAuditReport";
 
 export type SuggestionCategory = "unicode" | "typography" | "numeral" | "punctuation" | "spacing" | "structure";
 export type SuggestionSeverity = "low" | "medium" | "high";
@@ -257,11 +257,183 @@ function findPunctuationSuggestions(text: string): DocumentSuggestion[] {
   return suggestions;
 }
 
+// G) Quote Correction (Batch 1, 2026-08-09). Reuses checkTextQuality.ts's
+// exact detection: straight quotes (/["']/g) and the open/close curly
+// count (\u201C/\u201D) used for its unmatched-pair check. Preview only —
+// never auto-applied (enforced by the existing Accept/Ignore/Apply
+// workflow, not by anything special here).
+//
+// Direction for a straight-quote suggestion is a simple, standard
+// "smart quotes" heuristic (whitespace/start/opening-punctuation before
+// → opening quote; otherwise → closing quote) — good enough for a
+// SUGGESTION a human reviews, not claimed to be perfect in every case.
+const OPENING_CONTEXT = /[\s([{"'\u201C\u2018]|^$/;
+
+function quoteReplacement(quoteChar: string, precedingChar: string): string {
+  const isOpening = precedingChar === "" || OPENING_CONTEXT.test(precedingChar);
+  if (quoteChar === '"') return isOpening ? "\u201C" : "\u201D";
+  return isOpening ? "\u2018" : "\u2019";
+}
+
+function findQuoteSuggestions(text: string): DocumentSuggestion[] {
+  const suggestions: DocumentSuggestion[] = [];
+
+  // Straight quotes → curly, per instance.
+  const straightQuoteRegex = /["']/g;
+  let match: RegExpExecArray | null;
+  let count = 0;
+  while (count < MAX_EXAMPLES_PER_TYPE && (match = straightQuoteRegex.exec(text)) !== null) {
+    const precedingChar = match.index > 0 ? text[match.index - 1] : "";
+    const replacement = quoteReplacement(match[0], precedingChar);
+    const { before, match: exact, after } = extractWithContext(text, match.index, 1);
+    suggestions.push({
+      type: "punctuation-straight-quote",
+      category: "punctuation",
+      severity: "low",
+      originalText: exact,
+      suggestedText: replacement,
+      explanation: "سیدھے quote کو مناسب گھمے ہوئے (curly) quote سے تبدیل کرنے کی تجویز",
+      contextBefore: before,
+      contextAfter: after,
+    });
+    count++;
+  }
+
+  // Unmatched curly double quotes — same \u201C/\u201D counting as
+  // checkTextQuality.ts. No single position to fix (the missing quote
+  // could belong anywhere), so this is ONE document-level advisory, same
+  // pattern as numeral/punctuation-consistency above.
+  const openCurly = (text.match(/\u201C/g) ?? []).length;
+  const closeCurly = (text.match(/\u201D/g) ?? []).length;
+  if (openCurly !== closeCurly) {
+    suggestions.push({
+      type: "punctuation-unmatched-quotes",
+      category: "punctuation",
+      severity: "medium",
+      originalText: `کھلے quotes: ${openCurly}، بند quotes: ${closeCurly}`,
+      suggestedText: "ہر کھلے quote کا ایک متعلقہ بند quote یقینی بنائیں",
+      explanation: "دستاویز میں گھمے ہوئے quotes کی تعداد برابر نہیں — کوئی quote بے جوڑ ہو سکتا ہے۔",
+      contextBefore: "",
+      contextAfter: "",
+    });
+  }
+
+  return suggestions;
+}
+
+// H) Duplicated Punctuation (Batch 1). Exact same regex as
+// checkTextQuality.ts's duplicatedPunctuation check
+// (/([.,!?;:،؛؟۔])\1+/g) — per instance, suggests collapsing to one.
+function findDuplicatedPunctuationSuggestions(text: string): DocumentSuggestion[] {
+  const suggestions: DocumentSuggestion[] = [];
+  const regex = /([.,!?;:،؛؟۔])\1+/g;
+  let match: RegExpExecArray | null;
+  let count = 0;
+  while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(text)) !== null) {
+    const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
+    suggestions.push({
+      type: "punctuation-duplicated",
+      category: "punctuation",
+      severity: "low",
+      originalText: exact,
+      suggestedText: match[1],
+      explanation: "دہرایا گیا رمزِ اوقاف — عام طور پر ٹائپنگ کی غلطی، ایک نشان کافی ہے۔",
+      contextBefore: before,
+      contextAfter: after,
+    });
+    count++;
+  }
+  return suggestions;
+}
+
+// I) Missing Space After Punctuation (Batch 1). Exact same (now
+// extended, see checkTextQuality.ts) regex —
+// /[)\]:,!?،؟۔][A-Za-z0-9\u0600-\u06FF]/g — per instance, suggests
+// inserting a space right after the punctuation mark.
+function findMissingSpaceSuggestions(text: string): DocumentSuggestion[] {
+  const suggestions: DocumentSuggestion[] = [];
+  const regex = /[)\]:,!?،؟۔][A-Za-z0-9\u0600-\u06FF]/g;
+  let match: RegExpExecArray | null;
+  let count = 0;
+  while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(text)) !== null) {
+    const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
+    suggestions.push({
+      type: "spacing-missing-after-punctuation",
+      category: "spacing",
+      severity: "low",
+      originalText: exact,
+      suggestedText: `${exact[0]} ${exact[1]}`,
+      explanation: "رمزِ اوقاف کے بعد خالی جگہ درکار ہے۔",
+      contextBefore: before,
+      contextAfter: after,
+    });
+    count++;
+  }
+  return suggestions;
+}
+
+// J) Repeated Words Detection (Batch 2). Same adjacent-word comparison
+// checkTextQuality.ts's repeatedWords check uses, on the same {{ }}-
+// stripped text (protected classical Arabic quotations may legitimately
+// repeat a word rhetorically — exempted here for the same reason).
+function findRepeatedWordSuggestions(text: string): DocumentSuggestion[] {
+  const suggestions: DocumentSuggestion[] = [];
+  const stripped = text.replace(PRESERVE_MARKER_REGEX, (m) => " ".repeat(m.length));
+  const regex = /(\S+)(\s+)\1(?!\S)/g;
+  let match: RegExpExecArray | null;
+  let count = 0;
+  while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(stripped)) !== null) {
+    const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
+    suggestions.push({
+      type: "typography-repeated-word",
+      category: "typography",
+      severity: "low",
+      originalText: exact,
+      suggestedText: match[1],
+      explanation: "لفظ لگاتار دو مرتبہ آ گیا ہے — عموماً ٹائپنگ کی غلطی۔ اگر شاعرانہ تکرار ارادی ہے تو نظرانداز کریں۔",
+      contextBefore: before,
+      contextAfter: after,
+    });
+    count++;
+  }
+  return suggestions;
+}
+
+// K) Mixed Script Intelligence — ADVISORY ONLY (Batch 2). Same Latin-
+// letter-run detection as checkTextQuality.ts's mixedScript check
+// (/[a-zA-Z]+/g). Deliberately proposes NO replacement — suggestedText
+// equals originalText verbatim, so even if this is "Accepted" and
+// "Applied", applySuggestionToText's find/replace is a genuine no-op.
+// This is what makes it a pure advisory rather than a correction: there
+// is no way for this suggestion to ever change the document's text.
+function findMixedScriptSuggestions(text: string): DocumentSuggestion[] {
+  const suggestions: DocumentSuggestion[] = [];
+  const stripped = text.replace(PRESERVE_MARKER_REGEX, (m) => " ".repeat(m.length));
+  const regex = /[a-zA-Z]+/g;
+  let match: RegExpExecArray | null;
+  let count = 0;
+  while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(stripped)) !== null) {
+    const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
+    suggestions.push({
+      type: "unicode-mixed-script-advisory",
+      category: "unicode",
+      severity: "low",
+      originalText: exact,
+      suggestedText: exact, // advisory only — never proposes a change
+      explanation: "Check mixed script usage — لاطینی حروف اردو/عربی متن میں شامل ہیں۔ یہ جان بوجھ کر (حوالہ، مخفف) ہو سکتا ہے۔",
+      contextBefore: before,
+      contextAfter: after,
+    });
+    count++;
+  }
+  return suggestions;
+}
+
 // F) Structure suggestions — reuses buildDocumentAuditReport.ts's own
 // exported counters directly (countHeadingHierarchyIssues,
-// countEmptyParagraphs) rather than re-implementing DocNode traversal
-// here. Document-level advisories, same as numeral/punctuation — a
-// heading-hierarchy problem or an empty paragraph doesn't have a single
+// countEmptyParagraphs, countLongParagraphs — the last added Batch 2)
+// rather than re-implementing DocNode traversal here. Document-level
+// advisories, same as numeral/punctuation — none of these has a single
 // "original text span" to highlight the way a Unicode/spacing/typography
 // issue does.
 function findStructureSuggestions(doc: DocNode): DocumentSuggestion[] {
@@ -293,6 +465,19 @@ function findStructureSuggestions(doc: DocNode): DocumentSuggestion[] {
     });
   }
 
+  if (countLongParagraphs(doc) > 0) {
+    suggestions.push({
+      type: "structure-long-paragraphs",
+      category: "structure",
+      severity: "low",
+      originalText: "کچھ پیراگراف بہت طویل ہیں",
+      suggestedText: "طویل پیراگراف کو چھوٹے حصوں میں تقسیم کریں",
+      explanation: "طویل پیراگراف پڑھنے میں مشکل بنا سکتے ہیں۔",
+      contextBefore: "",
+      contextAfter: "",
+    });
+  }
+
   return suggestions;
 }
 
@@ -308,10 +493,15 @@ export function generateDocumentSuggestions(doc: DocNode): DocumentSuggestion[] 
 
   return [
     ...findUnicodeSuggestions(text),
+    ...findMixedScriptSuggestions(text),
     ...findTypographySuggestions(text),
+    ...findRepeatedWordSuggestions(text),
     ...findSpacingSuggestions(text),
+    ...findMissingSpaceSuggestions(text),
     ...findNumeralSuggestions(text),
     ...findPunctuationSuggestions(text),
+    ...findQuoteSuggestions(text),
+    ...findDuplicatedPunctuationSuggestions(text),
     ...structureSuggestions,
   ];
 }

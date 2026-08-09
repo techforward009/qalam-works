@@ -128,7 +128,7 @@ function toCounts(
 // re-derive them from whitespace at all. Count long paragraphs directly
 // against those real blocks, using the same threshold and whitespace-
 // collapse convention as checkTextQuality for consistency.
-function countLongParagraphs(doc: DocNode): number {
+export function countLongParagraphs(doc: DocNode): number {
   const LONG_PARAGRAPH_THRESHOLD = 250;
   return getBlockTexts(doc).filter((block) => block.replace(/\s+/g, " ").trim().length > LONG_PARAGRAPH_THRESHOLD)
     .length;

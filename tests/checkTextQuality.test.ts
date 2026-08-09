@@ -159,3 +159,25 @@ describe("checkTextQuality — Advanced Typography Analyzer (no false positives,
     expect(withTatweel.totalIssues).toBe(clean.totalIssues + 1);
   });
 });
+
+describe("checkTextQuality — missing space after punctuation, extended (Batch 1, comma/exclaim/question)", () => {
+  test("flags a missing space after a comma", () => {
+    const result = checkTextQuality("یہ لفظ,اگلا لفظ");
+    expect(result.typography.missingSpaceAfterPunctuation).toBeGreaterThan(0);
+  });
+
+  test("flags a missing space after an Urdu question mark", () => {
+    const result = checkTextQuality("کیا یہ؟نہیں");
+    expect(result.typography.missingSpaceAfterPunctuation).toBeGreaterThan(0);
+  });
+
+  test("flags a missing space after an exclamation mark", () => {
+    const result = checkTextQuality("واہ!زبردست");
+    expect(result.typography.missingSpaceAfterPunctuation).toBeGreaterThan(0);
+  });
+
+  test("original bracket/colon cases still work (no regression)", () => {
+    const result = checkTextQuality("اور حضرت امام مالک علیہ الرحمہ (المتوفی:179ھ)نے فرمایا");
+    expect(result.typography.missingSpaceAfterPunctuation).toBe(2);
+  });
+});
