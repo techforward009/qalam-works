@@ -11,6 +11,8 @@ import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buil
 import { buildDocumentStats, type DocumentStats } from "../utils/buildDocumentStats";
 import { buildDocumentHealthReport, type DocumentHealthReport } from "../utils/buildDocumentHealthReport";
 import { generateDocumentSuggestions, type DocumentSuggestion } from "../utils/generateDocumentSuggestions";
+import { findAllTextMatches } from "../utils/findReplace";
+import { extractDocumentOutline, type OutlineEntry } from "../utils/documentOutline";
 import {
   createReviewState,
   acceptSuggestion,
@@ -26,6 +28,8 @@ import { plainTextToDocNode, normalizeDocxParagraphBreaks } from "../utils/plain
 import { QualityAuditPanel } from "./QualityAuditPanel";
 import { DocumentStatsBar } from "./DocumentStatsBar";
 import { SuggestionsPanel } from "./SuggestionsPanel";
+import { FindReplacePanel } from "./FindReplacePanel";
+import { DocumentOutlinePanel } from "./DocumentOutlinePanel";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import { formatFileSize } from "../../../utils/formatFileSize";
@@ -190,6 +194,48 @@ function findSuggestionRange(editor: Editor, searchText: string): { from: number
   return result;
 }
 
+// Phase 1 Professional Usability (2026-08-09) — Find & Replace. Walks
+// every text node in the live document collecting ALL occurrences of
+// `searchText` (not just the first, unlike findSuggestionRange above),
+// using the exact same non-overlapping match logic as the pure
+// findAllTextMatches() (app/tools/document-studio/utils/findReplace.ts)
+// applied per text node. Same documented limitation as
+// findSuggestionRange: won't find a match split across two differently-
+// marked runs (e.g. half-bold half-plain) — the common case (plain
+// prose) is unaffected.
+function findAllRangesInEditor(editor: Editor, searchText: string): { from: number; to: number }[] {
+  if (!searchText) return [];
+  const ranges: { from: number; to: number }[] = [];
+  editor.state.doc.descendants((node, pos) => {
+    if (node.isText && node.text) {
+      for (const match of findAllTextMatches(node.text, searchText)) {
+        ranges.push({ from: pos + match.index, to: pos + match.index + match.length });
+      }
+    }
+    return true;
+  });
+  return ranges;
+}
+
+// Phase 1 Professional Usability (2026-08-09) — Document Outline
+// navigation. Maps a heading's position within doc.content (blockIndex,
+// from extractDocumentOutline) to its real starting ProseMirror position
+// in the live editor, by counting top-level nodes the same way
+// doc.content is indexed — headings are always top-level siblings (see
+// documentOutline.ts's own comment), so this stays in sync with
+// extractDocumentOutline's indexing by construction.
+function findBlockStartPosition(editor: Editor, blockIndex: number): number | null {
+  let currentIndex = 0;
+  let foundPos: number | null = null;
+  editor.state.doc.forEach((node, offset) => {
+    if (currentIndex === blockIndex) {
+      foundPos = offset + 1; // +1: move past the block node's own opening boundary, into its text content
+    }
+    currentIndex++;
+  });
+  return foundPos;
+}
+
 export default function DocumentStudioEditor() {
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [copied, setCopied] = useState(false);
@@ -209,6 +255,15 @@ export default function DocumentStudioEditor() {
   const [stats, setStats] = useState<DocumentStats | null>(null);
   const [health, setHealth] = useState<DocumentHealthReport | null>(null);
   const [reviewState, setReviewState] = useState<SuggestionReviewState>(createReviewState([]));
+
+  // Phase 1 Professional Usability (2026-08-09) — Find & Replace state.
+  const [isFindReplaceOpen, setIsFindReplaceOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState("");
+  const [replaceQuery, setReplaceQuery] = useState("");
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
+
+  // Phase 1 Professional Usability (2026-08-09) — Document Outline state.
+  const [outline, setOutline] = useState<OutlineEntry[]>([]);
   const [isAuditStale, setIsAuditStale] = useState(false);
   // Mirrors "auditReport !== null" but as a ref, so the onUpdate callback
   // below (captured once when the editor is created) can check it without
@@ -246,6 +301,14 @@ export default function DocumentStudioEditor() {
       // deliberately cheap so deciding whether to debounce doesn't itself
       // add meaningful cost.
       const json = editor.getJSON();
+
+      // Phase 1 Professional Usability (2026-08-09) — Document Outline
+      // updates immediately (not debounced with the rest of the analysis
+      // below): extracting headings is a cheap plain-array walk, not a
+      // regex-heavy scan, so there's no performance reason to delay it,
+      // and a lagging outline would feel wrong for a navigation aid.
+      setOutline(extractDocumentOutline(json));
+
       // Shared Analysis Context (2026-08-09) — computed ONCE per
       // analysis run (inside runAnalysis, so it's still properly
       // debounced for large documents — computing it here, outside
@@ -303,6 +366,7 @@ export default function DocumentStudioEditor() {
   useEffect(() => {
     if (editor) {
       const json = editor.getJSON();
+      setOutline(extractDocumentOutline(json));
       const context = createDocumentAnalysisContext(json);
       setStats(buildDocumentStats(json, context));
       setHealth(buildDocumentHealthReport(json, context));
@@ -469,6 +533,89 @@ export default function DocumentStudioEditor() {
     setAuditReport(report);
     hasAuditReportRef.current = true;
     setIsAuditStale(false);
+  };
+
+  // Phase 1 Professional Usability (2026-08-09) — Find & Replace.
+  // Recomputes matches fresh from the live editor on every keystroke in
+  // the search box, matching document text at that moment (never a
+  // stale/cached position list). Selecting a match uses TipTap's own
+  // setTextSelection command — a native selection, giving the browser's
+  // real, built-in highlight for the current match, rather than a custom
+  // decoration overlay (keeping this to "TipTap commands only", per the
+  // explicit requirement).
+  const currentMatches = editor ? findAllRangesInEditor(editor, findQuery) : [];
+
+  const handleFindQueryChange = (value: string) => {
+    setFindQuery(value);
+    setCurrentMatchIndex(value ? 0 : -1);
+    if (editor && value) {
+      const matches = findAllRangesInEditor(editor, value);
+      if (matches.length > 0) {
+        editor.chain().setTextSelection(matches[0]).scrollIntoView().run();
+      }
+    }
+  };
+
+  const handleFindNext = () => {
+    if (!editor || currentMatches.length === 0) return;
+    const nextIndex = (currentMatchIndex + 1) % currentMatches.length;
+    setCurrentMatchIndex(nextIndex);
+    editor.chain().focus().setTextSelection(currentMatches[nextIndex]).scrollIntoView().run();
+  };
+
+  const handleFindPrevious = () => {
+    if (!editor || currentMatches.length === 0) return;
+    const prevIndex = (currentMatchIndex - 1 + currentMatches.length) % currentMatches.length;
+    setCurrentMatchIndex(prevIndex);
+    editor.chain().focus().setTextSelection(currentMatches[prevIndex]).scrollIntoView().run();
+  };
+
+  // Replaces only the CURRENT match — a real, targeted ProseMirror
+  // transaction (insertContentAt), automatically undoable via TipTap's
+  // built-in History extension, same as the Suggestion Review workflow's
+  // own apply mechanism. Never touches any other match.
+  const handleReplaceCurrent = () => {
+    if (!editor || currentMatches.length === 0 || currentMatchIndex < 0) return;
+    const range = currentMatches[currentMatchIndex];
+    editor.chain().focus().insertContentAt(range, replaceQuery).run();
+    // Matches shift after a replacement — recompute fresh rather than
+    // trusting the now-stale `currentMatches` array.
+    const refreshed = findAllRangesInEditor(editor, findQuery);
+    setCurrentMatchIndex(refreshed.length > 0 ? Math.min(currentMatchIndex, refreshed.length - 1) : -1);
+  };
+
+  // Replaces every match, one targeted transaction at a time — never a
+  // single blind bulk operation. Recomputes matches fresh after each
+  // replacement (rather than trusting pre-computed positions), since
+  // earlier replacements can shift later matches' positions when the
+  // replacement text is a different length than the search text.
+  const handleReplaceAll = () => {
+    if (!editor || !findQuery) return;
+    let remaining = findAllRangesInEditor(editor, findQuery);
+    while (remaining.length > 0) {
+      editor.chain().focus().insertContentAt(remaining[0], replaceQuery).run();
+      remaining = findAllRangesInEditor(editor, findQuery);
+    }
+    setCurrentMatchIndex(-1);
+  };
+
+  const handleCloseFindReplace = () => {
+    setIsFindReplaceOpen(false);
+    setFindQuery("");
+    setReplaceQuery("");
+    setCurrentMatchIndex(-1);
+  };
+
+  // Phase 1 Professional Usability (2026-08-09) — Document Outline
+  // navigation. Moves the cursor to the clicked heading via TipTap's own
+  // setTextSelection + scrollIntoView commands — a real, native cursor
+  // move, not a custom scroll implementation.
+  const handleOutlineNavigate = (blockIndex: number) => {
+    if (!editor) return;
+    const pos = findBlockStartPosition(editor, blockIndex);
+    if (pos !== null) {
+      editor.chain().focus().setTextSelection(pos).scrollIntoView().run();
+    }
   };
 
   // Suggestion Review Workflow (2026-08-09) — Accept/Ignore only move a
@@ -641,11 +788,45 @@ export default function DocumentStudioEditor() {
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         <div className="flex justify-between items-center mb-2">
           <Toolbar editor={editor} dir={dir} setDir={setDir} />
-          <div className="text-xs text-stone-500 font-sans" dir="ltr">
-            {saveStatus === "saving" && "💾 Saving..."}
-            {saveStatus === "saved" && "✓ Saved to browser"}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsFindReplaceOpen((prev) => !prev)}
+              className="px-2.5 py-1 rounded-md border border-slate-300 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition"
+            >
+              🔍 Find &amp; Replace
+            </button>
+            <div className="text-xs text-stone-500 font-sans" dir="ltr">
+              {saveStatus === "saving" && "💾 Saving..."}
+              {saveStatus === "saved" && "✓ Saved to browser"}
+            </div>
           </div>
         </div>
+
+        {isFindReplaceOpen && (
+          <div className="mb-3">
+            <FindReplacePanel
+              isOpen={isFindReplaceOpen}
+              searchQuery={findQuery}
+              replaceQuery={replaceQuery}
+              matchCount={currentMatches.length}
+              currentMatchIndex={currentMatchIndex}
+              onSearchChange={handleFindQueryChange}
+              onReplaceChange={setReplaceQuery}
+              onNext={handleFindNext}
+              onPrevious={handleFindPrevious}
+              onReplaceCurrent={handleReplaceCurrent}
+              onReplaceAll={handleReplaceAll}
+              onClose={handleCloseFindReplace}
+            />
+          </div>
+        )}
+
+        {outline.length > 0 && (
+          <div className="mb-3">
+            <DocumentOutlinePanel outline={outline} onNavigate={handleOutlineNavigate} />
+          </div>
+        )}
 
         <div className="mb-3">
           <DocumentStatsBar stats={stats} health={health} />
