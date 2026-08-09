@@ -536,3 +536,161 @@ describe("createDocxDocument — v1.2 Phase 2A: nested lists", () => {
     expect(xml).toContain("اندرونی");
   });
 });
+
+// v1.3 Phase — Professional Polish (2026-08-09): heading spacing,
+// enhanced blockquote (italic + size), header/footer, and metadata.
+describe("createDocxDocument — v1.3: heading-specific spacing", () => {
+  test("H1 gets the largest before/after spacing", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "H1" }] }]),
+      "ltr"
+    );
+    expect(xml).toContain('w:after="240"');
+    expect(xml).toContain('w:before="480"');
+  });
+
+  test("H2 gets medium spacing, smaller than H1", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "H2" }] }]),
+      "ltr"
+    );
+    expect(xml).toContain('w:after="200"');
+    expect(xml).toContain('w:before="360"');
+  });
+
+  test("H3 and H4 get smaller spacing than H1/H2", async () => {
+    const h3Xml = await extractDocumentXml(
+      docWith([{ type: "heading", attrs: { level: 3 }, content: [{ type: "text", text: "H3" }] }]),
+      "ltr"
+    );
+    const h4Xml = await extractDocumentXml(
+      docWith([{ type: "heading", attrs: { level: 4 }, content: [{ type: "text", text: "H4" }] }]),
+      "ltr"
+    );
+    expect(h3Xml).toContain('w:before="240"');
+    expect(h4Xml).toContain('w:before="200"');
+  });
+
+  test("plain paragraphs still use the unchanged, smaller PARAGRAPH_SPACING (regression guard)", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "paragraph", content: [{ type: "text", text: "body text" }] }]),
+      "ltr"
+    );
+    expect(xml).toContain('w:before="120"');
+    expect(xml).toContain('w:after="120"');
+  });
+});
+
+describe("createDocxDocument — v1.3: enhanced blockquote (italic + size)", () => {
+  test("blockquote text is italic even when the source has no italic mark", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "plain quote" }] }] }]),
+      "ltr"
+    );
+    const run = xml.match(/<w:pBdr>[\s\S]*?<\/w:r>/)?.[0];
+    expect(run).toContain("<w:i/>");
+  });
+
+  test("blockquote text uses the smaller 10pt (20 half-point) size", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "quote" }] }] }]),
+      "ltr"
+    );
+    expect(xml).toContain('<w:sz w:val="20"/>');
+  });
+
+  test("bold marks inside a blockquote are still preserved alongside the forced italic", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "bold quote", marks: [{ type: "bold" }] }] }] }]),
+      "ltr"
+    );
+    const run = xml.match(/<w:pBdr>[\s\S]*?<\/w:r>/)?.[0];
+    expect(run).toContain("<w:b/>");
+    expect(run).toContain("<w:i/>");
+  });
+
+  test("regular (non-blockquote) text is unaffected by the italic/size override (regression guard)", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "paragraph", content: [{ type: "text", text: "normal text" }] }]),
+      "ltr"
+    );
+    expect(xml).not.toContain("<w:i/>");
+    expect(xml).not.toContain('<w:sz w:val="20"/>');
+  });
+
+  test("existing border and shading are still present (Phase 2A behavior preserved)", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "blockquote", content: [{ type: "paragraph", content: [{ type: "text", text: "quote" }] }] }]),
+      "ltr"
+    );
+    expect(xml).toContain("<w:pBdr>");
+    expect(xml).toContain('<w:shd w:fill="FEF3C7"');
+  });
+});
+
+describe("createDocxDocument — v1.3: header and footer", () => {
+  test("header shows the document's first H1 text", async () => {
+    const buffer = await Packer.toBuffer(
+      createDocxDocument(
+        docWith([{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "My Research Paper" }] }]),
+        "ltr"
+      )
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    const headerFile = Object.keys(zip.files).find((f) => /word\/header\d+\.xml$/.test(f));
+    expect(headerFile).toBeDefined();
+    const headerXml = await zip.file(headerFile!)!.async("text");
+    expect(headerXml).toContain("My Research Paper");
+  });
+
+  test("header falls back to 'Qalam Works' when there is no H1", async () => {
+    const buffer = await Packer.toBuffer(
+      createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "just text" }] }]), "ltr")
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    const headerFile = Object.keys(zip.files).find((f) => /word\/header\d+\.xml$/.test(f));
+    const headerXml = await zip.file(headerFile!)!.async("text");
+    expect(headerXml).toContain("Qalam Works");
+  });
+
+  test("footer contains a real PAGE field", async () => {
+    const buffer = await Packer.toBuffer(createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "x" }] }]), "ltr"));
+    const zip = await JSZip.loadAsync(buffer);
+    const footerFile = Object.keys(zip.files).find((f) => /word\/footer\d+\.xml$/.test(f));
+    expect(footerFile).toBeDefined();
+    const footerXml = await zip.file(footerFile!)!.async("text");
+    expect(footerXml).toContain("PAGE");
+  });
+
+  test("footer contains a real NUMPAGES (total pages) field", async () => {
+    const buffer = await Packer.toBuffer(createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "x" }] }]), "ltr"));
+    const zip = await JSZip.loadAsync(buffer);
+    const footerFile = Object.keys(zip.files).find((f) => /word\/footer\d+\.xml$/.test(f));
+    const footerXml = await zip.file(footerFile!)!.async("text");
+    expect(footerXml).toContain("NUMPAGES");
+  });
+});
+
+describe("createDocxDocument — v1.3: document metadata", () => {
+  test("sets Title, Creator, Subject, and Keywords in docProps/core.xml", async () => {
+    const buffer = await Packer.toBuffer(
+      createDocxDocument(
+        docWith([{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "A Title" }] }]),
+        "rtl"
+      )
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    const coreXml = await zip.file("docProps/core.xml")!.async("text");
+    expect(coreXml).toContain("<dc:title>A Title</dc:title>");
+    expect(coreXml).toContain("<dc:creator>Qalam Works</dc:creator>");
+    expect(coreXml).toContain("<dc:subject>");
+    expect(coreXml).toContain("<cp:keywords>");
+  });
+
+  test("keywords reflect the document's direction", async () => {
+    const buffer = await Packer.toBuffer(createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "x" }] }]), "rtl"));
+    const zip = await JSZip.loadAsync(buffer);
+    const coreXml = await zip.file("docProps/core.xml")!.async("text");
+    expect(coreXml).toMatch(/<cp:keywords>[^<]*Urdu[^<]*<\/cp:keywords>/);
+  });
+});
