@@ -1,8 +1,9 @@
-// Document Intelligence — Suggestion Layer (2026-08-09). Generates
-// concrete, per-instance suggestions (original text → suggested text)
-// for a subset of already-detected issue categories. Deliberately
-// PREVIEW-ONLY: nothing here modifies the document, the DocNode, or any
-// export pipeline — it only produces data for display.
+// Document Intelligence — Suggestion Layer (2026-08-09, extended
+// 2026-08-09 with context display + Typography/Structure categories).
+// Generates concrete, per-instance suggestions (original text →
+// suggested text) for a subset of already-detected issue categories.
+// Deliberately PREVIEW-ONLY: nothing here modifies the document, the
+// DocNode, or any export pipeline — it only produces data for display.
 //
 // Reuses the exact same character sets and regex patterns already
 // established in checkTextQuality.ts and standardizeUrduText.ts rather
@@ -11,11 +12,14 @@
 // imported) it's because the source file only exposes COUNTS, not the
 // actual match positions/instances a suggestion needs — the patterns
 // themselves are copied verbatim and commented with their source, so
-// they can be kept in sync if the source ever changes.
+// they can be kept in sync if the source ever changes. Structure
+// suggestions reuse buildDocumentAuditReport.ts's own exported counters
+// directly (no duplicated detection logic there).
 
 import { getBlockTexts, type DocNode } from "./extractPlainText";
+import { countHeadingHierarchyIssues, countEmptyParagraphs } from "./buildDocumentAuditReport";
 
-export type SuggestionCategory = "unicode" | "spacing" | "numeral" | "punctuation";
+export type SuggestionCategory = "unicode" | "typography" | "numeral" | "punctuation" | "spacing" | "structure";
 export type SuggestionSeverity = "low" | "medium" | "high";
 
 export interface DocumentSuggestion {
@@ -25,6 +29,15 @@ export interface DocumentSuggestion {
   originalText: string;
   suggestedText: string;
   explanation: string;
+  // Suggestion Context Display (2026-08-09): the text immediately
+  // surrounding `originalText` in the document, for rendering
+  // "...contextBefore [originalText → suggestedText] contextAfter...".
+  // Empty for document-level advisories (numeral/punctuation
+  // consistency, structure) that describe a document-wide pattern
+  // rather than one findable span — there is no single position to pull
+  // context from for those.
+  contextBefore: string;
+  contextAfter: string;
 }
 
 // Same {{ }} preserve-marker convention as checkTextQuality.ts and
@@ -38,11 +51,27 @@ const PRESERVE_MARKER_REGEX = /\{\{([\s\S]*?)\}\}/g;
 // preview panel — the issue COUNT (shown separately) still reflects the
 // true total, only the example list is capped.
 const MAX_EXAMPLES_PER_TYPE = 5;
+const CONTEXT_RADIUS = 15;
 
-function contextWindow(text: string, index: number, matchLength: number, radius = 8): string {
+interface Extraction {
+  before: string;
+  match: string;
+  after: string;
+}
+
+// Separates a match from its surrounding context, rather than blending
+// them into one window — `match` is the exact, minimal span a suggestion
+// targets (used for both display highlighting and, via originalText, for
+// applySuggestionToText's find/replace), so it stays precise even as
+// display context grows independently.
+function extractWithContext(text: string, index: number, matchLength: number, radius = CONTEXT_RADIUS): Extraction {
   const start = Math.max(0, index - radius);
   const end = Math.min(text.length, index + matchLength + radius);
-  return text.slice(start, end);
+  return {
+    before: text.slice(start, index),
+    match: text.slice(index, index + matchLength),
+    after: text.slice(index + matchLength, end),
+  };
 }
 
 // A) Unicode normalization suggestions. Yeh/Kaf mappings are the exact
@@ -51,9 +80,7 @@ function contextWindow(text: string, index: number, matchLength: number, radius 
 // counts, and the exact same direction as standardizeUrduText.ts's
 // CHAR_NORMALIZATIONS (ي→ی, ك→ک). Heh (ه→ہ) is a NEW addition not
 // currently in either existing list — flagged here as detection/
-// suggestion only, at the same "medium" severity as Yeh/Kaf, since it's
-// the same category of issue (an Arabic-form letter in Urdu prose) even
-// though no automatic correction exists for it yet anywhere in the app.
+// suggestion only, at the same "medium" severity as Yeh/Kaf.
 const UNICODE_RULES: { char: string; type: string; label: string }[] = [
   { char: "ي", type: "unicode-arabic-yeh", label: "Arabic Yeh (ي) → Urdu Yeh (ی)" },
   { char: "ك", type: "unicode-arabic-kaf", label: "Arabic Kaf (ك) → Urdu Kaf (ک)" },
@@ -70,15 +97,16 @@ function findUnicodeSuggestions(text: string): DocumentSuggestion[] {
     let match: RegExpExecArray | null;
     let count = 0;
     while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(protectedStripped)) !== null) {
-      const original = contextWindow(text, match.index, 1);
-      const suggested = original.split(rule.char).join(UNICODE_REPLACEMENT[rule.char]);
+      const { before, match: exact, after } = extractWithContext(text, match.index, 1);
       suggestions.push({
         type: rule.type,
         category: "unicode",
         severity: "medium",
-        originalText: original,
-        suggestedText: suggested,
+        originalText: exact,
+        suggestedText: UNICODE_REPLACEMENT[rule.char],
         explanation: `${rule.label} — یکساں رسم الخط کے لیے تجویز کردہ`,
+        contextBefore: before,
+        contextAfter: after,
       });
       count++;
     }
@@ -96,15 +124,16 @@ function findSpacingSuggestions(text: string): DocumentSuggestion[] {
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = multiSpaceRegex.exec(text)) !== null) {
-    const original = contextWindow(text, match.index, match[0].length);
-    const suggested = original.replace(/[ \t]{2,}/g, " ");
+    const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
     suggestions.push({
       type: "spacing-multiple-spaces",
       category: "spacing",
       severity: "low",
-      originalText: original,
-      suggestedText: suggested,
+      originalText: exact,
+      suggestedText: " ",
       explanation: "دہری خالی جگہ کو ایک خالی جگہ سے تبدیل کرنے کی تجویز",
+      contextBefore: before,
+      contextAfter: after,
     });
     count++;
   }
@@ -112,15 +141,16 @@ function findSpacingSuggestions(text: string): DocumentSuggestion[] {
   const beforePunctRegex = / [.,!?;:،؛؟۔]/g;
   count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = beforePunctRegex.exec(text)) !== null) {
-    const original = contextWindow(text, match.index, match[0].length);
-    const suggested = original.replace(/ ([.,!?;:،؛؟۔])/g, "$1");
+    const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
     suggestions.push({
       type: "spacing-before-punctuation",
       category: "spacing",
       severity: "low",
-      originalText: original,
-      suggestedText: suggested,
+      originalText: exact,
+      suggestedText: exact.trimStart(),
       explanation: "رمزِ اوقاف سے پہلے خالی جگہ ہٹانے کی تجویز",
+      contextBefore: before,
+      contextAfter: after,
     });
     count++;
   }
@@ -128,13 +158,43 @@ function findSpacingSuggestions(text: string): DocumentSuggestion[] {
   return suggestions;
 }
 
-// C) Numeral consistency suggestion. Same three ranges as
+// C) Typography suggestions — tatweel/kashida (U+0640), same character
+// checkTextQuality.ts's tatweelCount check already detects. Per-instance,
+// same style as Unicode/Spacing (a tatweel is a single removable
+// character with an exact position, unlike numeral/punctuation's
+// document-wide advisories below).
+const TATWEEL_CHAR = "\u0640";
+
+function findTypographySuggestions(text: string): DocumentSuggestion[] {
+  const suggestions: DocumentSuggestion[] = [];
+  const regex = new RegExp(TATWEEL_CHAR, "g");
+  let match: RegExpExecArray | null;
+  let count = 0;
+  while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(text)) !== null) {
+    const { before, match: exact, after } = extractWithContext(text, match.index, 1);
+    suggestions.push({
+      type: "typography-tatweel",
+      category: "typography",
+      severity: "low",
+      originalText: exact,
+      suggestedText: "",
+      explanation: "تطویل (کشیدہ) حروف عام طور پر کاپی پیسٹ سے آتے ہیں اور غیر ضروری ہیں — ہٹانے کی تجویز",
+      contextBefore: before,
+      contextAfter: after,
+    });
+    count++;
+  }
+  return suggestions;
+}
+
+// D) Numeral consistency suggestion. Same three ranges as
 // buildDocumentStats.ts's Numeral Intelligence. Deliberately ONE
 // document-level suggestion (not one per digit) — converting every
 // individual number without knowing its role (a date, a citation, a
 // page number) would be presumptuous; this only flags that a choice is
 // worth making, consistently, and names Urdu-Indic as the common
-// convention in Urdu prose without forcing it.
+// convention in Urdu prose without forcing it. No single findable
+// position, so contextBefore/contextAfter are empty.
 const WESTERN_DIGIT = /[0-9]/;
 const ARABIC_INDIC_DIGIT = /[\u0660-\u0669]/;
 const URDU_INDIC_DIGIT = /[\u06F0-\u06F9]/;
@@ -147,7 +207,6 @@ function findNumeralSuggestions(text: string): DocumentSuggestion[] {
 
   if (systemsPresent <= 1) return [];
 
-  // Show one real example of each system found, for a concrete preview.
   const westernExample = text.match(new RegExp(WESTERN_DIGIT.source + "+"))?.[0] ?? "";
   const arabicIndicExample = text.match(new RegExp(ARABIC_INDIC_DIGIT.source + "+"))?.[0] ?? "";
   const urduIndicExample = text.match(new RegExp(URDU_INDIC_DIGIT.source + "+"))?.[0] ?? "";
@@ -161,11 +220,13 @@ function findNumeralSuggestions(text: string): DocumentSuggestion[] {
       originalText: found,
       suggestedText: "ایک ہی نظام (عام طور پر اردو ہندسے ۰-۹) پورے دستاویز میں یکساں استعمال کریں",
       explanation: "دستاویز میں ایک سے زیادہ ہندسوں کے نظام ملے — مغربی، عربی-انڈک، اور اردو-انڈک۔ یکسانیت تجویز کی جاتی ہے۔",
+      contextBefore: "",
+      contextAfter: "",
     },
   ];
 }
 
-// D) Punctuation consistency suggestion. Same three pairs as
+// E) Punctuation consistency suggestion. Same three pairs as
 // checkTextQuality.ts's inconsistentPunctuationStyle check. One
 // document-level suggestion per detected pair, matching the same
 // "flag the choice, don't presume the fix" reasoning as numerals above.
@@ -188,9 +249,50 @@ function findPunctuationSuggestions(text: string): DocumentSuggestion[] {
         originalText: `${pair.ascii} اور ${pair.arabic} دونوں موجود`,
         suggestedText: `صرف ${pair.arabic} استعمال کریں`,
         explanation: `${pair.label} دونوں شکلوں میں استعمال ہوا ہے۔ یکساں انداز تجویز کیا جاتا ہے۔`,
+        contextBefore: "",
+        contextAfter: "",
       });
     }
   }
+  return suggestions;
+}
+
+// F) Structure suggestions — reuses buildDocumentAuditReport.ts's own
+// exported counters directly (countHeadingHierarchyIssues,
+// countEmptyParagraphs) rather than re-implementing DocNode traversal
+// here. Document-level advisories, same as numeral/punctuation — a
+// heading-hierarchy problem or an empty paragraph doesn't have a single
+// "original text span" to highlight the way a Unicode/spacing/typography
+// issue does.
+function findStructureSuggestions(doc: DocNode): DocumentSuggestion[] {
+  const suggestions: DocumentSuggestion[] = [];
+
+  if (countHeadingHierarchyIssues(doc) > 0) {
+    suggestions.push({
+      type: "structure-heading-hierarchy",
+      category: "structure",
+      severity: "medium",
+      originalText: "عنوانات کی ترتیب میں سطح چھوٹی ہے یا H1 سے شروع نہیں ہوتی",
+      suggestedText: "عنوانات کو H1 → H2 → H3 ترتیب سے استعمال کریں",
+      explanation: "دستاویز کی عنوان کی سطحیں ترتیب سے نہیں ہیں۔",
+      contextBefore: "",
+      contextAfter: "",
+    });
+  }
+
+  if (countEmptyParagraphs(doc) > 0) {
+    suggestions.push({
+      type: "structure-empty-paragraphs",
+      category: "structure",
+      severity: "low",
+      originalText: "خالی پیراگراف موجود ہیں",
+      suggestedText: "غیر ضروری خالی پیراگراف ہٹا دیں",
+      explanation: "دستاویز میں خالی پیراگراف موجود ہیں، غالباً غیر ارادی طور پر۔",
+      contextBefore: "",
+      contextAfter: "",
+    });
+  }
+
   return suggestions;
 }
 
@@ -200,12 +302,16 @@ function findPunctuationSuggestions(text: string): DocumentSuggestion[] {
  */
 export function generateDocumentSuggestions(doc: DocNode): DocumentSuggestion[] {
   const text = getBlockTexts(doc).join("\n");
-  if (!text.trim()) return [];
+  const structureSuggestions = findStructureSuggestions(doc);
+
+  if (!text.trim()) return structureSuggestions;
 
   return [
     ...findUnicodeSuggestions(text),
+    ...findTypographySuggestions(text),
     ...findSpacingSuggestions(text),
     ...findNumeralSuggestions(text),
     ...findPunctuationSuggestions(text),
+    ...structureSuggestions,
   ];
 }

@@ -1,5 +1,5 @@
-import React from "react";
-import type { DocumentSuggestion, SuggestionCategory } from "../utils/generateDocumentSuggestions";
+import React, { useMemo, useState } from "react";
+import type { DocumentSuggestion, SuggestionCategory, SuggestionSeverity } from "../utils/generateDocumentSuggestions";
 import { suggestionKey } from "../utils/suggestionReview";
 
 interface SuggestionsPanelProps {
@@ -9,40 +9,64 @@ interface SuggestionsPanelProps {
   onAccept: (key: string) => void;
   onIgnore: (key: string) => void;
   onApplyAccepted: () => void;
+  onAcceptCategory: (category: SuggestionCategory) => void;
+  onIgnoreCategory: (category: SuggestionCategory) => void;
 }
 
 const CATEGORY_LABEL: Record<SuggestionCategory, string> = {
   unicode: "یونیکوڈ (Unicode)",
-  spacing: "خالی جگہ (Spacing)",
+  typography: "ٹائپوگرافی (Typography)",
   numeral: "ہندسے (Numerals)",
   punctuation: "رموزِ اوقاف (Punctuation)",
+  spacing: "خالی جگہ (Spacing)",
+  structure: "ساخت (Structure)",
 };
 
-const SEVERITY_STYLE: Record<DocumentSuggestion["severity"], string> = {
-  low: "bg-slate-50 border-slate-200 text-slate-600",
-  medium: "bg-amber-50 border-amber-200 text-amber-800",
-  high: "bg-red-50 border-red-200 text-red-700",
+const ALL_CATEGORIES: SuggestionCategory[] = ["unicode", "typography", "numeral", "punctuation", "spacing", "structure"];
+
+// Severity Hierarchy (2026-08-09): clear Error/Warning/Suggestion
+// labeling on top of the existing high/medium/low values — the
+// underlying severity values are unchanged (still tested/relied on
+// elsewhere), this is purely a clearer display layer.
+const SEVERITY_LABEL: Record<SuggestionSeverity, string> = {
+  high: "خرابی (Error)",
+  medium: "تنبیہ (Warning)",
+  low: "تجویز (Suggestion)",
 };
+
+const SEVERITY_STYLE: Record<SuggestionSeverity, string> = {
+  high: "bg-red-50 border-red-300 text-red-700",
+  medium: "bg-amber-50 border-amber-200 text-amber-800",
+  low: "bg-slate-50 border-slate-200 text-slate-600",
+};
+
+const SEVERITY_ORDER: SuggestionSeverity[] = ["high", "medium", "low"];
 
 function groupByCategory(list: DocumentSuggestion[]): Record<SuggestionCategory, DocumentSuggestion[]> {
-  return list.reduce<Record<SuggestionCategory, DocumentSuggestion[]>>(
-    (acc, s) => {
-      acc[s.category].push(s);
-      return acc;
-    },
-    { unicode: [], spacing: [], numeral: [], punctuation: [] }
-  );
+  const base: Record<SuggestionCategory, DocumentSuggestion[]> = {
+    unicode: [],
+    typography: [],
+    numeral: [],
+    punctuation: [],
+    spacing: [],
+    structure: [],
+  };
+  return list.reduce((acc, s) => {
+    acc[s.category].push(s);
+    return acc;
+  }, base);
 }
 
 /**
- * Document Intelligence — Suggestion Review Workflow (2026-08-09).
- * Shows PENDING suggestions with Accept/Ignore actions, plus compact
- * accepted/ignored counts. Accepting/ignoring only moves a suggestion
- * between lists here — no text changes until "Apply Accepted
- * Suggestions" is pressed separately, and even then only the specific
- * accepted items are applied (see suggestionReview.ts / the editor's own
- * apply handler) — never a blind bulk find-replace. Matches
- * QualityAuditPanel.tsx's exact visual language.
+ * Document Intelligence — Suggestion Review Workflow. Shows PENDING
+ * suggestions with surrounding context, Error/Warning/Suggestion
+ * severity, category badges + filtering, per-suggestion Accept/Ignore,
+ * and safe per-category batch actions (Accept/Ignore all PENDING items
+ * in one category — never a global "Fix All", and never touches
+ * accepted/ignored items). No text changes happen here at all — only
+ * "Apply Accepted Suggestions" (separately, per suggestion) ever
+ * modifies the document. Matches QualityAuditPanel.tsx's visual
+ * language.
  */
 export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
   pending,
@@ -51,8 +75,19 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
   onAccept,
   onIgnore,
   onApplyAccepted,
+  onAcceptCategory,
+  onIgnoreCategory,
 }) => {
+  const [categoryFilter, setCategoryFilter] = useState<SuggestionCategory | "all">("all");
+  const [severityFilter, setSeverityFilter] = useState<SuggestionSeverity | "all">("all");
+
   const total = pending.length + accepted.length + ignored.length;
+
+  const filteredPending = useMemo(() => {
+    return pending.filter(
+      (s) => (categoryFilter === "all" || s.category === categoryFilter) && (severityFilter === "all" || s.severity === severityFilter)
+    );
+  }, [pending, categoryFilter, severityFilter]);
 
   if (total === 0) {
     return (
@@ -62,7 +97,8 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
     );
   }
 
-  const grouped = groupByCategory(pending);
+  const grouped = groupByCategory(filteredPending);
+  const categoriesPresent = ALL_CATEGORIES.filter((c) => pending.some((s) => s.category === c));
 
   return (
     <div className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm space-y-4 text-right" dir="rtl">
@@ -81,26 +117,108 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
         <h3 className="text-base font-bold text-slate-800">تجاویز (Suggestions)</h3>
       </div>
 
-      {pending.length === 0 ? (
-        <p className="text-xs text-slate-500">تمام تجاویز کا جائزہ لیا جا چکا ہے۔</p>
+      {/* Category Filters */}
+      <div className="flex flex-wrap gap-1.5" dir="ltr">
+        <button
+          type="button"
+          onClick={() => setCategoryFilter("all")}
+          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
+            categoryFilter === "all" ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-600 border-slate-300"
+          }`}
+        >
+          All
+        </button>
+        {categoriesPresent.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => setCategoryFilter(cat)}
+            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
+              categoryFilter === cat ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-600 border-slate-300"
+            }`}
+          >
+            {CATEGORY_LABEL[cat]}
+          </button>
+        ))}
+      </div>
+
+      {/* Severity Filters */}
+      <div className="flex flex-wrap gap-1.5" dir="ltr">
+        <button
+          type="button"
+          onClick={() => setSeverityFilter("all")}
+          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
+            severityFilter === "all" ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-600 border-slate-300"
+          }`}
+        >
+          All Severities
+        </button>
+        {SEVERITY_ORDER.map((sev) => (
+          <button
+            key={sev}
+            type="button"
+            onClick={() => setSeverityFilter(sev)}
+            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
+              severityFilter === sev ? "bg-slate-700 text-white border-slate-700" : SEVERITY_STYLE[sev]
+            }`}
+          >
+            {SEVERITY_LABEL[sev]}
+          </button>
+        ))}
+      </div>
+
+      {filteredPending.length === 0 ? (
+        <p className="text-xs text-slate-500">اس فلٹر کے مطابق کوئی تجویز موجود نہیں۔</p>
       ) : (
         (Object.keys(grouped) as SuggestionCategory[])
           .filter((cat) => grouped[cat].length > 0)
           .map((cat) => (
             <div key={cat} className="space-y-2">
-              <h4 className="text-xs font-semibold text-slate-600">
-                {CATEGORY_LABEL[cat]} ({grouped[cat].length})
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold text-slate-600">
+                  {CATEGORY_LABEL[cat]} ({grouped[cat].length})
+                </h4>
+                {/* Batch Actions — only affect PENDING items in this category */}
+                <div className="flex gap-1.5" dir="ltr">
+                  <button
+                    type="button"
+                    onClick={() => onAcceptCategory(cat)}
+                    className="px-2 py-0.5 rounded border border-emerald-300 text-emerald-700 text-[10px] font-semibold hover:bg-emerald-50 transition"
+                  >
+                    Accept All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onIgnoreCategory(cat)}
+                    className="px-2 py-0.5 rounded border border-slate-300 text-slate-500 text-[10px] font-semibold hover:bg-slate-50 transition"
+                  >
+                    Ignore All
+                  </button>
+                </div>
+              </div>
               <ul className="space-y-2">
                 {grouped[cat].map((s) => {
                   const key = suggestionKey(s);
                   return (
                     <li key={key} className={`p-3 rounded-lg border text-xs space-y-2 ${SEVERITY_STYLE[s.severity]}`}>
-                      <div className="flex flex-wrap gap-2 items-center text-slate-700">
-                        <span className="line-through decoration-red-400">{s.originalText}</span>
-                        <span aria-hidden="true">→</span>
-                        <span className="font-semibold text-emerald-700">{s.suggestedText}</span>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold border border-current">
+                          {SEVERITY_LABEL[s.severity]}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white/60 border border-current">
+                          {CATEGORY_LABEL[s.category]}
+                        </span>
                       </div>
+
+                      {/* Suggestion Context Display: surrounding text with the issue highlighted */}
+                      <div className="flex flex-wrap gap-1 items-center text-slate-700 leading-relaxed" dir="rtl">
+                        {s.contextBefore && <span className="text-slate-400">…{s.contextBefore}</span>}
+                        <span className="line-through decoration-red-400 bg-red-50 px-1 rounded">{s.originalText}</span>
+                        <span aria-hidden="true">→</span>
+                        <span className="font-semibold text-emerald-700 bg-emerald-50 px-1 rounded">{s.suggestedText}</span>
+                        {s.contextAfter && <span className="text-slate-400">{s.contextAfter}…</span>}
+                      </div>
+
                       <p className="text-slate-500 leading-relaxed">{s.explanation}</p>
                       <div className="flex gap-2 pt-1" dir="ltr">
                         <button

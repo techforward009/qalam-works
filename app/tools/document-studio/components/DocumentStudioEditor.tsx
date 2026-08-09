@@ -15,6 +15,8 @@ import {
   createReviewState,
   acceptSuggestion,
   ignoreSuggestion,
+  acceptCategory,
+  ignoreCategory,
   refreshPendingSuggestions,
   suggestionKey,
   type SuggestionReviewState,
@@ -436,6 +438,17 @@ export default function DocumentStudioEditor() {
     setReviewState((prev) => ignoreSuggestion(prev, key));
   };
 
+  // Batch Actions — only ever affect PENDING items in the given
+  // category; already-accepted/ignored items and other categories are
+  // untouched. No global "Fix All".
+  const handleAcceptCategory = (category: DocumentSuggestion["category"]) => {
+    setReviewState((prev) => acceptCategory(prev, category));
+  };
+
+  const handleIgnoreCategory = (category: DocumentSuggestion["category"]) => {
+    setReviewState((prev) => ignoreCategory(prev, category));
+  };
+
   // Applies each currently-accepted suggestion as its own real,
   // targeted ProseMirror transaction (editor.chain()...insertContentAt),
   // not a raw string replace on the document — this is what makes it
@@ -452,7 +465,19 @@ export default function DocumentStudioEditor() {
         editor.chain().focus().insertContentAt(range, suggestion.suggestedText).run();
       }
     }
-    setReviewState((prev) => ({ ...prev, accepted: [] }));
+    // State Refresh Verification (2026-08-09): each insertContentAt above
+    // already triggers onUpdate (which itself calls setStats/setHealth/
+    // refreshPendingSuggestions), but that refresh runs against the
+    // state BEFORE `accepted` is cleared below, and the ordering of
+    // several rapid transactions vs this final state update is worth
+    // being explicit about rather than relying solely on React's
+    // batching. Recomputing directly here from the editor's final JSON
+    // guarantees stats/health reflect the truly-final document, and
+    // accepted is cleared in the same update.
+    const finalJson = editor.getJSON();
+    setStats(buildDocumentStats(finalJson));
+    setHealth(buildDocumentHealthReport(finalJson));
+    setReviewState((prev) => refreshPendingSuggestions({ ...prev, accepted: [] }, generateDocumentSuggestions(finalJson)));
   };
 
   const handleCopy = async () => {
@@ -792,6 +817,8 @@ export default function DocumentStudioEditor() {
             onAccept={handleAcceptSuggestion}
             onIgnore={handleIgnoreSuggestion}
             onApplyAccepted={handleApplyAccepted}
+            onAcceptCategory={handleAcceptCategory}
+            onIgnoreCategory={handleIgnoreCategory}
           />
         </div>
       </div>

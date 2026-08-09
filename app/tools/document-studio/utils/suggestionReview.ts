@@ -72,6 +72,24 @@ export function ignoreSuggestion(state: SuggestionReviewState, key: string): Sug
   return { pending: rest, accepted: state.accepted, ignored: [...state.ignored, removed] };
 }
 
+// Batch Actions (2026-08-09) — safe by design: only ever moves items that
+// are currently PENDING in the given category. Never touches items
+// already accepted or ignored, and never affects any other category.
+// Deliberately no "accept/ignore ALL categories" or "Fix All" action —
+// each batch action is scoped to one category at a time, matching the
+// explicit requirement not to add a global bulk action.
+export function acceptCategory(state: SuggestionReviewState, category: DocumentSuggestion["category"]): SuggestionReviewState {
+  const toAccept = state.pending.filter((s) => s.category === category);
+  const stillPending = state.pending.filter((s) => s.category !== category);
+  return { pending: stillPending, accepted: [...state.accepted, ...toAccept], ignored: state.ignored };
+}
+
+export function ignoreCategory(state: SuggestionReviewState, category: DocumentSuggestion["category"]): SuggestionReviewState {
+  const toIgnore = state.pending.filter((s) => s.category === category);
+  const stillPending = state.pending.filter((s) => s.category !== category);
+  return { pending: stillPending, accepted: state.accepted, ignored: [...state.ignored, ...toIgnore] };
+}
+
 /**
  * Applies ONE suggestion to a plain-text string: replaces the FIRST
  * verbatim occurrence of `originalText` with `suggestedText`. Stale-safe

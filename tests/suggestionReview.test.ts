@@ -2,6 +2,8 @@ import {
   createReviewState,
   acceptSuggestion,
   ignoreSuggestion,
+  acceptCategory,
+  ignoreCategory,
   applySuggestionToText,
   applyAcceptedSuggestions,
   suggestionKey,
@@ -16,6 +18,8 @@ function suggestion(overrides: Partial<DocumentSuggestion> = {}): DocumentSugges
     originalText: "علي",
     suggestedText: "علی",
     explanation: "test",
+    contextBefore: "",
+    contextAfter: "",
     ...overrides,
   };
 }
@@ -168,5 +172,55 @@ describe("suggestionKey", () => {
     const a = suggestion({ type: "unicode-arabic-yeh" });
     const b = suggestion({ type: "unicode-arabic-kaf" });
     expect(suggestionKey(a)).not.toBe(suggestionKey(b));
+  });
+});
+
+describe("acceptCategory (Batch Actions)", () => {
+  test("accepts all pending suggestions in the given category, leaves others pending", () => {
+    const s1 = suggestion({ category: "unicode" });
+    const s2 = suggestion({ type: "unicode-arabic-kaf", category: "unicode", originalText: "ك", suggestedText: "ک" });
+    const s3 = suggestion({ type: "spacing-multiple-spaces", category: "spacing", originalText: "  ", suggestedText: " " });
+    let state = createReviewState([s1, s2, s3]);
+    state = acceptCategory(state, "unicode");
+    expect(state.pending).toEqual([s3]);
+    expect(state.accepted).toEqual([s1, s2]);
+  });
+
+  test("does not affect already-accepted or already-ignored items", () => {
+    const s1 = suggestion({ category: "unicode" });
+    const s2 = suggestion({ type: "unicode-arabic-kaf", category: "unicode", originalText: "ك", suggestedText: "ک" });
+    let state = createReviewState([s1, s2]);
+    state = acceptSuggestion(state, suggestionKey(s1));
+    const acceptedBefore = state.accepted;
+    state = acceptCategory(state, "unicode");
+    expect(state.accepted).toEqual([...acceptedBefore, s2]);
+    expect(state.accepted).toHaveLength(2);
+  });
+
+  test("a category with no pending items is a no-op", () => {
+    const s1 = suggestion({ category: "spacing" });
+    const state = createReviewState([s1]);
+    const result = acceptCategory(state, "unicode");
+    expect(result).toEqual(state);
+  });
+});
+
+describe("ignoreCategory (Batch Actions)", () => {
+  test("ignores all pending suggestions in the given category, leaves others pending", () => {
+    const s1 = suggestion({ category: "unicode" });
+    const s2 = suggestion({ type: "spacing-multiple-spaces", category: "spacing", originalText: "  ", suggestedText: " " });
+    let state = createReviewState([s1, s2]);
+    state = ignoreCategory(state, "unicode");
+    expect(state.pending).toEqual([s2]);
+    expect(state.ignored).toEqual([s1]);
+  });
+
+  test("does not affect a different category's pending items", () => {
+    const s1 = suggestion({ category: "unicode" });
+    const s2 = suggestion({ type: "structure-empty-paragraphs", category: "structure", originalText: "x", suggestedText: "y" });
+    let state = createReviewState([s1, s2]);
+    state = ignoreCategory(state, "structure");
+    expect(state.pending).toEqual([s1]);
+    expect(state.ignored).toEqual([s2]);
   });
 });

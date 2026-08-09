@@ -62,7 +62,8 @@ describe("generateDocumentSuggestions — Spacing", () => {
     const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ ٹھیک ہے ، بالکل")]));
     const spaceBefore = suggestions.find((s) => s.type === "spacing-before-punctuation");
     expect(spaceBefore).toBeDefined();
-    expect(spaceBefore!.suggestedText).toContain("ہے،");
+    expect(spaceBefore!.contextBefore).toContain("ہے");
+    expect(spaceBefore!.suggestedText).toBe("،");
   });
 
   test("clean spacing produces no spacing suggestions", () => {
@@ -121,5 +122,68 @@ describe("generateDocumentSuggestions — shape and edge cases", () => {
 
   test("an empty document produces zero suggestions, not an error", () => {
     expect(generateDocumentSuggestions(docWith([]))).toEqual([]);
+  });
+});
+
+describe("generateDocumentSuggestions — Context Display", () => {
+  test("Unicode suggestions have surrounding contextBefore/contextAfter separate from the exact match", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("ابتداء علي انتہا")]));
+    const yeh = suggestions.find((s) => s.type === "unicode-arabic-yeh");
+    expect(yeh!.originalText).toBe("ي");
+    expect(yeh!.contextBefore).toContain("ابتداء");
+    expect(yeh!.contextAfter).toContain("انتہا");
+  });
+
+  test("document-level suggestions (numeral/punctuation) have empty context (no single position)", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("2024 اور ۱۲۳")]));
+    const numeral = suggestions.find((s) => s.type === "numeral-mixed");
+    expect(numeral!.contextBefore).toBe("");
+    expect(numeral!.contextAfter).toBe("");
+  });
+});
+
+describe("generateDocumentSuggestions — Typography category (tatweel)", () => {
+  test("flags tatweel characters under the 'typography' category", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("الحمـــد لله")]));
+    const tatweel = suggestions.filter((s) => s.category === "typography");
+    expect(tatweel.length).toBeGreaterThan(0);
+    expect(tatweel[0].originalText).toBe("\u0640");
+  });
+
+  test("clean text has no typography suggestions", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("الحمد لله")]));
+    expect(suggestions.filter((s) => s.category === "typography")).toHaveLength(0);
+  });
+});
+
+describe("generateDocumentSuggestions — Structure category", () => {
+  test("flags a heading-hierarchy problem under 'structure'", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [{ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Section" }] }],
+    };
+    const suggestions = generateDocumentSuggestions(doc);
+    expect(suggestions.some((s) => s.type === "structure-heading-hierarchy")).toBe(true);
+  });
+
+  test("flags empty paragraphs under 'structure'", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "Real" }] },
+        { type: "paragraph", content: [] },
+      ],
+    };
+    const suggestions = generateDocumentSuggestions(doc);
+    expect(suggestions.some((s) => s.type === "structure-empty-paragraphs")).toBe(true);
+  });
+
+  test("a well-structured document has no structure suggestions", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Title" }] }, paragraph("Body")],
+    };
+    const suggestions = generateDocumentSuggestions(doc);
+    expect(suggestions.filter((s) => s.category === "structure")).toHaveLength(0);
   });
 });

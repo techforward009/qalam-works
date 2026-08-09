@@ -142,7 +142,7 @@ function countLongParagraphs(doc: DocNode): number {
 // Enter presses), distinct from checkTextQuality's own "emptyLines" (which
 // looks for blank LINES inside already-flattened text, not real empty
 // block nodes in the document's own structure).
-function countEmptyParagraphs(doc: DocNode): number {
+export function countEmptyParagraphs(doc: DocNode): number {
   return getBlockTexts(doc).filter((block) => block.trim().length === 0).length;
 }
 
@@ -159,7 +159,7 @@ function countEmptyParagraphs(doc: DocNode): number {
 //    directly to H3, skipping H2) — going shallower (H3 back to H1) is
 //    normal document structure (starting a new top-level section) and is
 //    NOT flagged.
-function countHeadingHierarchyIssues(doc: DocNode): number {
+export function countHeadingHierarchyIssues(doc: DocNode): number {
   const levels: number[] = [];
   (doc.content ?? []).forEach((node) => {
     if (node.type === "heading" && typeof node.attrs?.level === "number") {
