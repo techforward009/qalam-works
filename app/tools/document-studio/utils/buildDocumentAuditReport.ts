@@ -8,6 +8,10 @@ export interface QualityIssueCounts {
   spacing: number;
   longParagraphs: number;
   repeatedWords: number;
+  // Advanced Quality Layer (2026-08-09):
+  mixedUrduArabicForms: number;
+  headingHierarchy: number;
+  emptyParagraphs: number;
 }
 
 export interface QualityRecommendation {
@@ -18,11 +22,34 @@ export interface QualityRecommendation {
   descriptionUrdu: string;
 }
 
+// Advanced Quality Layer (2026-08-09) — a categorical, non-numeric
+// readiness signal per publishing concern. Deliberately "ok"/"needs_review"
+// rather than a score: a raw 100/90/80...-style number was already tried
+// for the overall audit (see the `score` field below) and explicitly
+// rejected from the UI for implying false precision it hadn't earned —
+// this follows the same principle at the category level.
+//
+// `rtlLtr` is a documented approximation, not a true per-block direction
+// check: DocNode has no per-block direction attribute at all (direction is
+// one global `dir` value for the whole document, set by the editor/export
+// pipeline, not stored per-node) — so there is no way to detect "block A is
+// marked RTL but block B is marked LTR" from the data available. This
+// category is assessed from `mixedScript` instead (Latin text embedded in
+// RTL prose), the closest real, observable signal to RTL/LTR embedding
+// quality that current architecture can actually measure.
+export interface PublishingReadiness {
+  typography: "ok" | "needs_review";
+  unicodeConsistency: "ok" | "needs_review";
+  structure: "ok" | "needs_review";
+  rtlLtr: "ok" | "needs_review";
+}
+
 export interface QualityAuditReport {
   score: number;
   totalIssues: number;
   counts: QualityIssueCounts;
   recommendations: QualityRecommendation[];
+  readiness: PublishingReadiness;
 }
 
 function createEmptyAuditReport(): QualityAuditReport {
@@ -35,8 +62,12 @@ function createEmptyAuditReport(): QualityAuditReport {
       spacing: 0,
       longParagraphs: 0,
       repeatedWords: 0,
+      mixedUrduArabicForms: 0,
+      headingHierarchy: 0,
+      emptyParagraphs: 0,
     },
     recommendations: [],
+    readiness: { typography: "ok", unicodeConsistency: "ok", structure: "ok", rtlLtr: "ok" },
   };
 }
 
@@ -44,16 +75,26 @@ function createEmptyAuditReport(): QualityAuditReport {
 // array of "issues" — so this maps its real fields directly into the
 // QualityIssueCounts shape, instead of guessing at a shape it doesn't have.
 //
-// longParagraphs is the one exception, computed separately below (see
-// countLongParagraphs) rather than taken from report.typography.longParagraphs
-// — see that function's comment for why.
-function toCounts(report: QualityReport, longParagraphs: number): QualityIssueCounts {
+// longParagraphs, headingHierarchy, and emptyParagraphs are the exceptions,
+// computed separately below from the DocNode's real structure (see each
+// function's own comment) rather than taken from checkTextQuality's output,
+// which only ever sees flattened plain text and can't see block boundaries
+// or heading levels at all.
+function toCounts(
+  report: QualityReport,
+  longParagraphs: number,
+  headingHierarchy: number,
+  emptyParagraphs: number
+): QualityIssueCounts {
   return {
     mixedScript: report.textQuality.mixedScript,
     punctuation: report.punctuation.mixedPunctuation + report.punctuation.wrongQuotes + report.punctuation.duplicatedPunctuation,
     spacing: report.typography.multipleSpaces + report.typography.emptyLines + report.typography.missingSpaceAfterPunctuation,
     longParagraphs,
     repeatedWords: report.textQuality.repeatedWords,
+    mixedUrduArabicForms: report.textQuality.mixedUrduArabicForms,
+    headingHierarchy,
+    emptyParagraphs,
   };
 }
 
@@ -83,6 +124,62 @@ function countLongParagraphs(doc: DocNode): number {
     .length;
 }
 
+// Advanced Quality Layer (2026-08-09) — empty paragraph/heading blocks.
+// Reuses the already-exported getBlockTexts() (same traversal Copy/
+// Download and the long-paragraph check use) rather than writing a new
+// tree walk — a block whose text is empty/whitespace-only after trimming
+// is very likely an accidental blank line left in the document (e.g. two
+// Enter presses), distinct from checkTextQuality's own "emptyLines" (which
+// looks for blank LINES inside already-flattened text, not real empty
+// block nodes in the document's own structure).
+function countEmptyParagraphs(doc: DocNode): number {
+  return getBlockTexts(doc).filter((block) => block.trim().length === 0).length;
+}
+
+// Advanced Quality Layer (2026-08-09) — heading hierarchy issues. Only
+// looks at TOP-LEVEL headings (doc.content directly) since TipTap/
+// ProseMirror's schema doesn't allow a heading node to be nested inside a
+// list item or blockquote anyway — headings are always block-level
+// siblings, matching how buildDocxDocument.ts's own title-detection
+// (deriveDocumentTitle) already treats headings the same way.
+//
+// Two kinds of issue counted:
+// 1. The document's first heading isn't H1 (starts "too deep").
+// 2. A heading skips a level going deeper than its predecessor (e.g. H1
+//    directly to H3, skipping H2) — going shallower (H3 back to H1) is
+//    normal document structure (starting a new top-level section) and is
+//    NOT flagged.
+function countHeadingHierarchyIssues(doc: DocNode): number {
+  const levels: number[] = [];
+  (doc.content ?? []).forEach((node) => {
+    if (node.type === "heading" && typeof node.attrs?.level === "number") {
+      levels.push(node.attrs.level as number);
+    }
+  });
+
+  if (levels.length === 0) return 0;
+
+  let issues = 0;
+  if (levels[0] !== 1) issues += 1;
+  for (let i = 1; i < levels.length; i++) {
+    if (levels[i] > levels[i - 1] + 1) issues += 1;
+  }
+  return issues;
+}
+
+// Advanced Quality Layer (2026-08-09) — categorical, not numeric (see
+// PublishingReadiness's own comment for why). Each category maps to a
+// distinct, non-overlapping signal already computed in `counts`, so no
+// single issue is silently counted toward two different readiness labels.
+function computeReadiness(counts: QualityIssueCounts): PublishingReadiness {
+  return {
+    typography: counts.spacing + counts.longParagraphs === 0 ? "ok" : "needs_review",
+    unicodeConsistency: counts.mixedUrduArabicForms === 0 ? "ok" : "needs_review",
+    structure: counts.headingHierarchy + counts.emptyParagraphs === 0 ? "ok" : "needs_review",
+    rtlLtr: counts.mixedScript === 0 ? "ok" : "needs_review",
+  };
+}
+
 export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
   const input = buildQualityInput(doc);
 
@@ -91,12 +188,24 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
   }
 
   const report = checkTextQuality(input);
-  const counts = toCounts(report, countLongParagraphs(doc));
+  const counts = toCounts(
+    report,
+    countLongParagraphs(doc),
+    countHeadingHierarchyIssues(doc),
+    countEmptyParagraphs(doc)
+  );
 
   // Computed from the same counts shown in this report, so the two numbers
   // always agree.
   const totalIssues =
-    counts.mixedScript + counts.punctuation + counts.spacing + counts.longParagraphs + counts.repeatedWords;
+    counts.mixedScript +
+    counts.punctuation +
+    counts.spacing +
+    counts.longParagraphs +
+    counts.repeatedWords +
+    counts.mixedUrduArabicForms +
+    counts.headingHierarchy +
+    counts.emptyParagraphs;
 
   // NOTE (2026-08-07, per Sajjad): this 100/90/80.../50-floor formula is a
   // placeholder, not an approved business rule — it hasn't been reviewed or
@@ -105,6 +214,8 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
   // future approved scoring model has a slot to land in without another
   // interface change. Do not treat this number as meaningful until then.
   const score = totalIssues > 0 ? Math.max(50, 100 - totalIssues * 10) : 100;
+
+  const readiness = computeReadiness(counts);
 
   const recommendations: QualityRecommendation[] = [];
 
@@ -116,6 +227,17 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
       titleEnglish: "Script Normalization",
       descriptionUrdu:
         "متن میں عربی/فارسی اور اردو حروف کا غیر معیاری امتزاج موجود ہے۔ معیاری بنائیں بٹن استعمال کریں۔",
+    });
+  }
+
+  if (counts.mixedUrduArabicForms > 0) {
+    recommendations.push({
+      id: "rec-mixed-urdu-arabic-forms",
+      type: "mixedUrduArabicForms",
+      titleUrdu: "اردو/عربی حروف کی یکسانیت",
+      titleEnglish: "Urdu/Arabic Character Consistency",
+      descriptionUrdu:
+        "متن میں عربی رسم الخط کے حروف (ي، ى، ك، أ، إ) اردو تحریر میں شامل ہیں۔ یونیکوڈ اسٹینڈرڈائزر سے درست کریں۔",
     });
   }
 
@@ -152,6 +274,28 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
     });
   }
 
+  if (counts.headingHierarchy > 0) {
+    recommendations.push({
+      id: "rec-heading-hierarchy",
+      type: "headingHierarchy",
+      titleUrdu: "عنوانات کی ترتیب",
+      titleEnglish: "Heading Hierarchy",
+      descriptionUrdu:
+        "عنوانات کی سطحیں (H1، H2، H3...) ترتیب سے نہیں ہیں — کوئی سطح چھوڑی گئی ہے یا دستاویز H1 سے شروع نہیں ہوتی۔",
+    });
+  }
+
+  if (counts.emptyParagraphs > 0) {
+    recommendations.push({
+      id: "rec-empty-paragraphs",
+      type: "emptyParagraphs",
+      titleUrdu: "خالی پیراگراف",
+      titleEnglish: "Empty Paragraphs",
+      descriptionUrdu:
+        "دستاویز میں خالی پیراگراف موجود ہیں (غالباً غیر ارادی طور پر Enter دبانے سے)۔ انہیں ہٹا دیں۔",
+    });
+  }
+
   if (counts.repeatedWords > 0) {
     recommendations.push({
       id: "rec-repeated-words",
@@ -168,5 +312,6 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
     totalIssues,
     counts,
     recommendations,
+    readiness,
   };
 }
