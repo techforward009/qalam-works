@@ -20,9 +20,18 @@ const CATEGORY_LABEL: Record<SuggestionCategory, string> = {
   punctuation: "رموزِ اوقاف (Punctuation)",
   spacing: "خالی جگہ (Spacing)",
   structure: "ساخت (Structure)",
+  terminology: "اصطلاحی یکسانیت (Terminology)",
 };
 
-const ALL_CATEGORIES: SuggestionCategory[] = ["unicode", "typography", "numeral", "punctuation", "spacing", "structure"];
+const ALL_CATEGORIES: SuggestionCategory[] = [
+  "unicode",
+  "typography",
+  "numeral",
+  "punctuation",
+  "spacing",
+  "structure",
+  "terminology",
+];
 
 // Severity Hierarchy (2026-08-09): clear Error/Warning/Suggestion
 // labeling on top of the existing high/medium/low values — the
@@ -50,6 +59,7 @@ function groupByCategory(list: DocumentSuggestion[]): Record<SuggestionCategory,
     punctuation: [],
     spacing: [],
     structure: [],
+    terminology: [],
   };
   return list.reduce((acc, s) => {
     acc[s.category].push(s);

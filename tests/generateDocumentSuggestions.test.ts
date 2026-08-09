@@ -411,3 +411,85 @@ describe("generateDocumentSuggestions — Mixed Script Category Correction", () 
     expect(yeh!.category).toBe("unicode");
   });
 });
+
+// Terminology Consistency Checker MVP (2026-08-09) — Unicode-form variant detection only
+describe("generateDocumentSuggestions — Terminology Consistency Checker (MVP)", () => {
+  test("flags a true Unicode variant: علي (Arabic Yeh) vs علی (Urdu Yeh), same word", () => {
+    const suggestions = generateDocumentSuggestions(
+      docWith([paragraph("علي ایک اچھا آدمی تھا۔ بعد میں علی نے یہ کام کیا۔")])
+    );
+    const term = suggestions.find((s) => s.type === "terminology-unicode-variant");
+    expect(term).toBeDefined();
+    expect(term!.category).toBe("terminology");
+    expect(term!.originalText).toContain("علي");
+    expect(term!.originalText).toContain("علی");
+  });
+
+  test("flags كتاب (Arabic Kaf) vs کتاب (Urdu Kaf), same word", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("كتاب پڑھی۔ پھر کتاب واپس رکھی۔")]));
+    expect(suggestions.some((s) => s.type === "terminology-unicode-variant" && s.originalText.includes("كتاب"))).toBe(
+      true
+    );
+  });
+
+  test("does NOT flag genuinely different words (different meaning, not a Unicode variant)", () => {
+    const suggestions = generateDocumentSuggestions(
+      docWith([paragraph("علی اور محمد دونوں اچھے ہیں۔ کتاب اور قلم میز پر ہیں۔")])
+    );
+    expect(suggestions.filter((s) => s.category === "terminology")).toHaveLength(0);
+  });
+
+  test("does not flag religious/classical text inside {{ }} protected markers", () => {
+    const suggestions = generateDocumentSuggestions(
+      docWith([paragraph("{{علي عليه السلام}} کے بارے میں لکھا، اور علی کے بارے میں بھی۔")])
+    );
+    // The protected "علي" inside {{ }} must not be counted as a variant
+    // against the unprotected "علی" outside it.
+    expect(suggestions.filter((s) => s.category === "terminology")).toHaveLength(0);
+  });
+
+  test("does not flag a document using only ONE consistent form throughout (no false positive)", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("علی نے علی سے بات کی۔ ہر جگہ علی۔")]));
+    expect(suggestions.filter((s) => s.category === "terminology")).toHaveLength(0);
+  });
+
+  test("a clean, ordinary document with common Urdu words produces no terminology suggestions", () => {
+    const suggestions = generateDocumentSuggestions(
+      docWith([
+        paragraph("یہ ایک لمبی دستاویز ہے جس میں بہت سے عام الفاظ ہیں جیسے کتاب، قلم، میز، کرسی، دروازہ اور کھڑکی۔"),
+      ])
+    );
+    expect(suggestions.filter((s) => s.category === "terminology")).toHaveLength(0);
+  });
+
+  test("mixed Urdu/Arabic text: only the genuinely repeated term is flagged, not every Arabic-form letter occurrence", () => {
+    const suggestions = generateDocumentSuggestions(
+      docWith([paragraph("هذا نص عربي۔ علي جاء إلى المدرسة۔ علی بھی وہاں تھا۔")])
+    );
+    const terms = suggestions.filter((s) => s.category === "terminology");
+    // Only "علي"/"علی" should form a variant group here — other Arabic
+    // words with no Urdu-form counterpart in this text must not be
+    // flagged as having "variants" (they'd just form harmless
+    // single-member groups internally, never surfaced as a suggestion).
+    expect(terms).toHaveLength(1);
+    expect(terms[0].originalText).toContain("علي");
+  });
+
+  test("suggestedText proposes a single consistent form but never auto-applies (preview only)", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("علي اور علی دونوں لکھا گیا۔")]));
+    const term = suggestions.find((s) => s.type === "terminology-unicode-variant");
+    expect(term).toBeDefined();
+    expect(term!.suggestedText).toContain("علی");
+    // Document-level advisory — no single findable position (same pattern as numeral/punctuation consistency).
+    expect(term!.contextBefore).toBe("");
+    expect(term!.contextAfter).toBe("");
+  });
+
+  test("caps the number of distinct terminology groups reported (MAX_EXAMPLES_PER_TYPE), consistent with other categories", () => {
+    // Build a document with many distinct Yeh-variant word pairs to exceed the cap.
+    const words = Array.from({ length: 8 }, (_, i) => `لفظي${i} لفظی${i}`).join(" ");
+    const suggestions = generateDocumentSuggestions(docWith([paragraph(words)]));
+    const terms = suggestions.filter((s) => s.category === "terminology");
+    expect(terms.length).toBeLessThanOrEqual(5);
+  });
+});

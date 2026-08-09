@@ -45,7 +45,7 @@ import {
   stripProtectedMarkers,
 } from "../../../utils/quality/sharedTextPatterns";
 
-export type SuggestionCategory = "unicode" | "typography" | "numeral" | "punctuation" | "spacing" | "structure";
+export type SuggestionCategory = "unicode" | "typography" | "numeral" | "punctuation" | "spacing" | "structure" | "terminology";
 export type SuggestionSeverity = "low" | "medium" | "high";
 
 export interface DocumentSuggestion {
@@ -452,6 +452,99 @@ function findMixedScriptSuggestions(text: string): DocumentSuggestion[] {
   return suggestions;
 }
 
+// L) Terminology Consistency Checker (MVP, 2026-08-09) — Unicode-form
+// variant detection ONLY. Reuses the exact same UNICODE_REPLACEMENT map
+// already established above (ي→ی, ك→ک, ه→ہ) for the Yeh/Kaf/Heh
+// suggestions — no new normalization logic invented here. Deliberately
+// NOT fuzzy/similarity matching: two words are only ever considered
+// "the same term" if they become byte-for-byte identical after this
+// exact character substitution — a narrower, safer bar than any kind of
+// semantic or edit-distance similarity, which is explicitly out of scope
+// for this MVP (and meaningfully harder to get right safely).
+//
+// Detects: the SAME exact term appearing in the document in more than
+// one Unicode form (e.g. "علي" in one place, "علی" in another). Document-
+// level advisory (like numeral/punctuation-consistency above) — a term
+// can appear in many places, so there's no single position to highlight,
+// only "this term has N different spellings somewhere in this document."
+//
+// FALSE-POSITIVE POSTURE (by design, not fully eliminated):
+// - {{ }}-protected classical quotations are exempt (stripProtectedMarkers),
+//   same reason as every other script-sensitive check in this file —
+//   a quotation's original spelling must never be treated as an error.
+// - Only EXACT post-normalization matches are grouped — two genuinely
+//   different words that happen to differ ONLY by ي/ك/ه substitution
+//   (and nothing else) could theoretically still collide and be wrongly
+//   flagged as "the same term" when they're not (e.g. two unrelated
+//   words that both contain "ك" in different roles). This residual risk
+//   is real but narrow — accepted for this MVP rather than attempting
+//   any part-of-speech or dictionary-based disambiguation, which would
+//   be a fuzzy/semantic step and out of scope.
+// - Leading/trailing punctuation is stripped before comparing words, so
+//   "علی؟" and "علی" are correctly treated as the same word — but this
+//   is still exact-token matching, not stemming: "علی" and "علی," count
+//   as the same term; "علی" and a genuinely different word never do.
+const WORD_BOUNDARY_PUNCTUATION = /^[.,!?;:،؛؟۔"'()[\]]+|[.,!?;:،؛؟۔"'()[\]]+$/g;
+
+function normalizeTermForComparison(word: string): string {
+  return word.replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/ه/g, "ہ");
+}
+
+interface TerminologyVariantGroup {
+  normalizedForm: string;
+  variants: string[];
+}
+
+function findTerminologyVariantGroups(text: string): TerminologyVariantGroup[] {
+  const stripped = stripProtectedMarkers(text);
+  const words = stripped.split(/\s+/);
+
+  const normalizedToVariants = new Map<string, Set<string>>();
+
+  for (const rawWord of words) {
+    const word = rawWord.replace(WORD_BOUNDARY_PUNCTUATION, "");
+    if (!word) continue;
+
+    // Every word is normalized and bucketed, not just ones containing an
+    // Arabic-form letter (ي/ك/ه) — a word ALREADY in Urdu form (e.g.
+    // "علی") contains none of those and would otherwise never land in
+    // the same bucket as its Arabic-form counterpart ("علي"), since
+    // normalizeTermForComparison is a no-op for words with none of the
+    // three tracked characters. Bucketing every word this way still only
+    // ever GROUPS a word with its own Arabic-form variant(s) — a word
+    // with no such variant anywhere simply forms a harmless group of
+    // size 1, which is never flagged below.
+    const normalized = normalizeTermForComparison(word);
+    if (!normalizedToVariants.has(normalized)) {
+      normalizedToVariants.set(normalized, new Set());
+    }
+    normalizedToVariants.get(normalized)!.add(word);
+  }
+
+  const groups: TerminologyVariantGroup[] = [];
+  for (const [normalizedForm, variantSet] of normalizedToVariants) {
+    if (variantSet.size > 1) {
+      groups.push({ normalizedForm, variants: Array.from(variantSet) });
+    }
+  }
+  return groups;
+}
+
+function findTerminologySuggestions(text: string): DocumentSuggestion[] {
+  const groups = findTerminologyVariantGroups(text).slice(0, MAX_EXAMPLES_PER_TYPE);
+
+  return groups.map((group) => ({
+    type: "terminology-unicode-variant",
+    category: "terminology",
+    severity: "medium",
+    originalText: group.variants.join(" / "),
+    suggestedText: `ایک ہی شکل مستقل طور پر استعمال کریں (تجویز: ${group.normalizedForm})`,
+    explanation: `یہ اصطلاح دستاویز میں مختلف رسم الخط کی شکلوں میں ملی: ${group.variants.join("، ")}۔ یکسانیت کے لیے ایک شکل منتخب کریں۔`,
+    contextBefore: "",
+    contextAfter: "",
+  }));
+}
+
 // K) Structure suggestions — reuses buildDocumentAuditReport.ts's own
 // exported counters directly rather than re-implementing DocNode
 // traversal here. Document-level advisories, same as numeral/punctuation
@@ -534,6 +627,7 @@ export function generateDocumentSuggestions(doc: DocNode, context?: DocumentAnal
     ...findPunctuationSuggestions(text),
     ...findQuoteSuggestions(text),
     ...findDuplicatedPunctuationSuggestions(text),
+    ...findTerminologySuggestions(text),
     ...structureSuggestions,
   ];
 }
