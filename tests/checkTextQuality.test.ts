@@ -67,3 +67,29 @@ describe("checkTextQuality — missing space after punctuation", () => {
     expect(result.typography.missingSpaceAfterPunctuation).toBe(0);
   });
 });
+
+describe("checkTextQuality — mixed Urdu/Arabic character forms (Advanced Quality Layer)", () => {
+  // Reuses the exact same 5 characters app/utils/unicode/
+  // standardizeUrduText.ts already normalizes (ي→ی, ى→ی, ك→ک, أ→ا, إ→ا) —
+  // this is detection only, not correction.
+  test("flags Arabic-form ي, ى, ك, أ, إ appearing in Urdu prose", () => {
+    const result = checkTextQuality("علي اور موسى نے كتاب أور إحسان کے بارے میں بات کی۔");
+    expect(result.textQuality.mixedUrduArabicForms).toBe(5);
+  });
+
+  test("does not flag ordinary Urdu forms (ی، ک، ا) of the same letters", () => {
+    const result = checkTextQuality("علی اور موسیٰ نے کتاب اور احسان کے بارے میں بات کی۔");
+    expect(result.textQuality.mixedUrduArabicForms).toBe(0);
+  });
+
+  test("does not flag Arabic-form letters inside {{ }} protected classical quotations", () => {
+    const result = checkTextQuality("متن سے پہلے {{قال ابن مسعود: العلم نور}} اور متن کے بعد");
+    expect(result.textQuality.mixedUrduArabicForms).toBe(0);
+  });
+
+  test("counts toward totalIssues", () => {
+    const clean = checkTextQuality("علی ایک اچھا آدمی ہے۔");
+    const withIssue = checkTextQuality("علي ایک اچھا آدمی ہے۔");
+    expect(withIssue.totalIssues).toBe(clean.totalIssues + 1);
+  });
+});
