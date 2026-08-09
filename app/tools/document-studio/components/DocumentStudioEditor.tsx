@@ -33,6 +33,18 @@ import { formatFileSize } from "../../../utils/formatFileSize";
 const DRAFT_STORAGE_KEY = "qalam-document-studio-draft";
 const AUTOSAVE_DEBOUNCE_MS = 1000;
 
+// Maintenance Batch (2026-08-09) — Health Report/Stats/Suggestions
+// analysis is real work (measured ~30ms combined on a ~500-paragraph
+// document during the Document Intelligence audit) and previously ran on
+// EVERY keystroke with no debounce. For small documents (the common
+// case) that's imperceptible and stays instant — only documents at or
+// above this rough size threshold get debounced, so normal short-
+// document editing is not delayed at all. ANALYSIS_DEBOUNCE_MS is
+// intentionally short (not the slower 1s autosave interval) so even
+// large-document typing still feels responsive, just coalesced.
+const LARGE_DOCUMENT_CHAR_THRESHOLD = 5000;
+const ANALYSIS_DEBOUNCE_MS = 300;
+
 function ToolbarButton({
   onClick,
   active,
@@ -205,6 +217,10 @@ export default function DocumentStudioEditor() {
 
   // Browser-safe timeout ref (avoids Node types dependency)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Maintenance Batch (2026-08-09) — separate debounce timer for the
+  // Stats/Health/Suggestions analysis specifically (independent of the
+  // autosave timer above, which has its own longer interval and purpose).
+  const analysisTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [initialContent] = useState(() => getInitialDraftContent());
 
   const editor = useEditor({
@@ -221,10 +237,30 @@ export default function DocumentStudioEditor() {
       }
       setAlreadyClean(false);
       setPdfSummary(null);
+
+      // Maintenance Batch (2026-08-09) — run the analysis immediately for
+      // small documents (preserves today's exact instant behavior, no
+      // delay), but debounce it for large ones so rapid typing doesn't
+      // trigger a full re-scan on every single keystroke. The cheap
+      // JSON-length check below is only an approximate size proxy —
+      // deliberately cheap so deciding whether to debounce doesn't itself
+      // add meaningful cost.
       const json = editor.getJSON();
-      setStats(buildDocumentStats(json));
-      setHealth(buildDocumentHealthReport(json));
-      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json)));
+      const runAnalysis = () => {
+        setStats(buildDocumentStats(json));
+        setHealth(buildDocumentHealthReport(json));
+        setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json)));
+      };
+
+      if (analysisTimerRef.current) clearTimeout(analysisTimerRef.current);
+
+      const approximateSize = JSON.stringify(json).length;
+      if (approximateSize < LARGE_DOCUMENT_CHAR_THRESHOLD) {
+        runAnalysis();
+      } else {
+        analysisTimerRef.current = setTimeout(runAnalysis, ANALYSIS_DEBOUNCE_MS);
+      }
+
       // Deliberately NOT clearing docxImportNotice here anymore (2026-08-08
       // requirement change): it must be a genuinely persistent, explicitly-
       // dismissed notice (the "Got it" button below), not one that quietly
@@ -249,6 +285,7 @@ export default function DocumentStudioEditor() {
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (analysisTimerRef.current) clearTimeout(analysisTimerRef.current);
     };
   }, []);
 

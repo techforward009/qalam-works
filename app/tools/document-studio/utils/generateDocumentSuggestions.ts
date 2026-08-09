@@ -1,23 +1,45 @@
-// Document Intelligence — Suggestion Layer (2026-08-09, extended
-// 2026-08-09 with context display + Typography/Structure categories).
-// Generates concrete, per-instance suggestions (original text →
-// suggested text) for a subset of already-detected issue categories.
-// Deliberately PREVIEW-ONLY: nothing here modifies the document, the
-// DocNode, or any export pipeline — it only produces data for display.
+// Document Intelligence — Suggestion Layer (2026-08-09, extended with
+// context display + Typography/Structure categories, Batch 1/2, and the
+// 2026-08-09 Maintenance Batch: shared patterns + duplicate-key fix +
+// thousands-separator false-positive fix). Generates concrete, per-
+// instance suggestions (original text → suggested text) for a subset of
+// already-detected issue categories. Deliberately PREVIEW-ONLY: nothing
+// here modifies the document, the DocNode, or any export pipeline — it
+// only produces data for display.
 //
-// Reuses the exact same character sets and regex patterns already
-// established in checkTextQuality.ts and standardizeUrduText.ts rather
-// than inventing new ones, so "what counts as an issue" stays consistent
-// across the whole app. Where a pattern is duplicated here (rather than
-// imported) it's because the source file only exposes COUNTS, not the
-// actual match positions/instances a suggestion needs — the patterns
-// themselves are copied verbatim and commented with their source, so
-// they can be kept in sync if the source ever changes. Structure
-// suggestions reuse buildDocumentAuditReport.ts's own exported counters
-// directly (no duplicated detection logic there).
+// Maintenance Batch (2026-08-09): regex/character-set patterns that were
+// previously duplicated here (verbatim copies of checkTextQuality.ts's
+// own patterns — 8 exact duplicates found during the Document
+// Intelligence audit) now come from the shared
+// app/utils/quality/sharedTextPatterns.ts module instead. IMPORTANT: any
+// pattern used in a stateful `.exec()` loop below is instantiated FRESH
+// via `freshRegex()` at each call, never used directly as the shared
+// module-level object — a shared `g`-flagged RegExp's `lastIndex`
+// persists across calls, and since this function runs on every editor
+// keystroke, reusing one directly caused a real, verified bug: after a
+// document with more matches than MAX_EXAMPLES_PER_TYPE left the shared
+// regex's lastIndex non-zero, the NEXT (unrelated) document's real match
+// was silently missed entirely. `.match()`/`.test()` usage (which never
+// carries state across calls) can safely use the shared object directly.
+// Structure suggestions reuse buildDocumentAuditReport.ts's own exported
+// counters directly (no duplicated detection logic there).
 
 import { getBlockTexts, type DocNode } from "./extractPlainText";
 import { countHeadingHierarchyIssues, countEmptyParagraphs, countLongParagraphs } from "./buildDocumentAuditReport";
+import {
+  PRESERVE_MARKER_REGEX,
+  MULTIPLE_SPACES_REGEX,
+  STRAIGHT_QUOTES_REGEX,
+  CURLY_QUOTE_OPEN_REGEX,
+  CURLY_QUOTE_CLOSE_REGEX,
+  DUPLICATED_PUNCTUATION_REGEX,
+  MISSING_SPACE_AFTER_PUNCTUATION_REGEX,
+  SPACE_BEFORE_PUNCTUATION_REGEX,
+  TATWEEL_REGEX,
+  ARABIC_FORM_LETTERS_REGEX,
+  LATIN_LETTERS_REGEX,
+  stripProtectedMarkers,
+} from "../../../utils/quality/sharedTextPatterns";
 
 export type SuggestionCategory = "unicode" | "typography" | "numeral" | "punctuation" | "spacing" | "structure";
 export type SuggestionSeverity = "low" | "medium" | "high";
@@ -35,16 +57,12 @@ export interface DocumentSuggestion {
   // Empty for document-level advisories (numeral/punctuation
   // consistency, structure) that describe a document-wide pattern
   // rather than one findable span — there is no single position to pull
-  // context from for those.
+  // context from for those. ALSO used (2026-08-09 Maintenance Batch) as
+  // part of suggestionKey()'s identity in suggestionReview.ts, so two
+  // identical issues in different parts of a document get distinct keys.
   contextBefore: string;
   contextAfter: string;
 }
-
-// Same {{ }} preserve-marker convention as checkTextQuality.ts and
-// standardizeUrduText.ts — protected classical Arabic quotations are
-// exempt from Unicode-form suggestions for the same reason they're exempt
-// from correction/detection everywhere else in the app.
-const PRESERVE_MARKER_REGEX = /\{\{([\s\S]*?)\}\}/g;
 
 // Caps how many concrete examples are generated per issue TYPE, so a
 // large document with hundreds of the same issue doesn't flood the
@@ -52,6 +70,13 @@ const PRESERVE_MARKER_REGEX = /\{\{([\s\S]*?)\}\}/g;
 // true total, only the example list is capped.
 const MAX_EXAMPLES_PER_TYPE = 5;
 const CONTEXT_RADIUS = 15;
+
+// Constructs a fresh RegExp from a shared pattern's source/flags — see
+// the file-level comment on why this matters for anything used in a
+// stateful `.exec()` loop.
+function freshRegex(pattern: RegExp): RegExp {
+  return new RegExp(pattern.source, pattern.flags);
+}
 
 interface Extraction {
   before: string;
@@ -76,8 +101,8 @@ function extractWithContext(text: string, index: number, matchLength: number, ra
 
 // A) Unicode normalization suggestions. Yeh/Kaf mappings are the exact
 // same two of the five characters checkTextQuality.ts's
-// mixedUrduArabicForms check (/[\u064A\u0649\u0643\u0623\u0625]/g) already
-// counts, and the exact same direction as standardizeUrduText.ts's
+// mixedUrduArabicForms check (ARABIC_FORM_LETTERS_REGEX, shared module)
+// already counts, and the exact same direction as standardizeUrduText.ts's
 // CHAR_NORMALIZATIONS (ي→ی, ك→ک). Heh (ه→ہ) is a NEW addition not
 // currently in either existing list — flagged here as detection/
 // suggestion only, at the same "medium" severity as Yeh/Kaf.
@@ -90,7 +115,7 @@ const UNICODE_REPLACEMENT: Record<string, string> = { ي: "ی", ك: "ک", ه: "�
 
 function findUnicodeSuggestions(text: string): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
-  const protectedStripped = text.replace(PRESERVE_MARKER_REGEX, (m) => " ".repeat(m.length));
+  const protectedStripped = stripProtectedMarkers(text);
 
   for (const rule of UNICODE_RULES) {
     const regex = new RegExp(rule.char, "g");
@@ -115,12 +140,11 @@ function findUnicodeSuggestions(text: string): DocumentSuggestion[] {
 }
 
 // B) Spacing suggestions. Same patterns as checkTextQuality.ts's
-// multipleSpaces (/[ \t]{2,}/g) and spaceBeforePunctuation
-// (/ [.,!?;:،؛؟۔]/g) checks.
+// multipleSpaces and spaceBeforePunctuation checks (shared module).
 function findSpacingSuggestions(text: string): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
 
-  const multiSpaceRegex = /[ \t]{2,}/g;
+  const multiSpaceRegex = freshRegex(MULTIPLE_SPACES_REGEX);
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = multiSpaceRegex.exec(text)) !== null) {
@@ -138,7 +162,7 @@ function findSpacingSuggestions(text: string): DocumentSuggestion[] {
     count++;
   }
 
-  const beforePunctRegex = / [.,!?;:،؛؟۔]/g;
+  const beforePunctRegex = freshRegex(SPACE_BEFORE_PUNCTUATION_REGEX);
   count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = beforePunctRegex.exec(text)) !== null) {
     const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
@@ -158,16 +182,12 @@ function findSpacingSuggestions(text: string): DocumentSuggestion[] {
   return suggestions;
 }
 
-// C) Typography suggestions — tatweel/kashida (U+0640), same character
-// checkTextQuality.ts's tatweelCount check already detects. Per-instance,
-// same style as Unicode/Spacing (a tatweel is a single removable
-// character with an exact position, unlike numeral/punctuation's
-// document-wide advisories below).
-const TATWEEL_CHAR = "\u0640";
-
+// C) Typography suggestions — tatweel/kashida, same character
+// checkTextQuality.ts's tatweelCount check already detects (shared
+// module). Per-instance, same style as Unicode/Spacing.
 function findTypographySuggestions(text: string): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
-  const regex = new RegExp(TATWEEL_CHAR, "g");
+  const regex = freshRegex(TATWEEL_REGEX);
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(text)) !== null) {
@@ -257,11 +277,10 @@ function findPunctuationSuggestions(text: string): DocumentSuggestion[] {
   return suggestions;
 }
 
-// G) Quote Correction (Batch 1, 2026-08-09). Reuses checkTextQuality.ts's
-// exact detection: straight quotes (/["']/g) and the open/close curly
-// count (\u201C/\u201D) used for its unmatched-pair check. Preview only —
-// never auto-applied (enforced by the existing Accept/Ignore/Apply
-// workflow, not by anything special here).
+// F) Quote Correction. Reuses checkTextQuality.ts's exact detection
+// (shared module): straight quotes and the open/close curly count used
+// for its unmatched-pair check. Preview only — never auto-applied
+// (enforced by the existing Accept/Ignore/Apply workflow).
 //
 // Direction for a straight-quote suggestion is a simple, standard
 // "smart quotes" heuristic (whitespace/start/opening-punctuation before
@@ -278,8 +297,7 @@ function quoteReplacement(quoteChar: string, precedingChar: string): string {
 function findQuoteSuggestions(text: string): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
 
-  // Straight quotes → curly, per instance.
-  const straightQuoteRegex = /["']/g;
+  const straightQuoteRegex = freshRegex(STRAIGHT_QUOTES_REGEX);
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = straightQuoteRegex.exec(text)) !== null) {
@@ -299,12 +317,10 @@ function findQuoteSuggestions(text: string): DocumentSuggestion[] {
     count++;
   }
 
-  // Unmatched curly double quotes — same \u201C/\u201D counting as
-  // checkTextQuality.ts. No single position to fix (the missing quote
-  // could belong anywhere), so this is ONE document-level advisory, same
-  // pattern as numeral/punctuation-consistency above.
-  const openCurly = (text.match(/\u201C/g) ?? []).length;
-  const closeCurly = (text.match(/\u201D/g) ?? []).length;
+  // Unmatched curly double quotes — .match() is stateless, safe to use
+  // the shared regex objects directly.
+  const openCurly = (text.match(CURLY_QUOTE_OPEN_REGEX) ?? []).length;
+  const closeCurly = (text.match(CURLY_QUOTE_CLOSE_REGEX) ?? []).length;
   if (openCurly !== closeCurly) {
     suggestions.push({
       type: "punctuation-unmatched-quotes",
@@ -321,12 +337,12 @@ function findQuoteSuggestions(text: string): DocumentSuggestion[] {
   return suggestions;
 }
 
-// H) Duplicated Punctuation (Batch 1). Exact same regex as
-// checkTextQuality.ts's duplicatedPunctuation check
-// (/([.,!?;:،؛؟۔])\1+/g) — per instance, suggests collapsing to one.
+// G) Duplicated Punctuation. Exact same regex as checkTextQuality.ts's
+// duplicatedPunctuation check (shared module) — per instance, suggests
+// collapsing to one.
 function findDuplicatedPunctuationSuggestions(text: string): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
-  const regex = /([.,!?;:،؛؟۔])\1+/g;
+  const regex = freshRegex(DUPLICATED_PUNCTUATION_REGEX);
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(text)) !== null) {
@@ -346,13 +362,13 @@ function findDuplicatedPunctuationSuggestions(text: string): DocumentSuggestion[
   return suggestions;
 }
 
-// I) Missing Space After Punctuation (Batch 1). Exact same (now
-// extended, see checkTextQuality.ts) regex —
-// /[)\]:,!?،؟۔][A-Za-z0-9\u0600-\u06FF]/g — per instance, suggests
-// inserting a space right after the punctuation mark.
+// H) Missing Space After Punctuation. Exact same (shared, and now fixed
+// to exclude thousands separators like "1,000") regex as
+// checkTextQuality.ts — per instance, suggests inserting a space right
+// after the punctuation mark.
 function findMissingSpaceSuggestions(text: string): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
-  const regex = /[)\]:,!?،؟۔][A-Za-z0-9\u0600-\u06FF]/g;
+  const regex = freshRegex(MISSING_SPACE_AFTER_PUNCTUATION_REGEX);
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(text)) !== null) {
@@ -372,13 +388,16 @@ function findMissingSpaceSuggestions(text: string): DocumentSuggestion[] {
   return suggestions;
 }
 
-// J) Repeated Words Detection (Batch 2). Same adjacent-word comparison
+// I) Repeated Words Detection. Same adjacent-word comparison
 // checkTextQuality.ts's repeatedWords check uses, on the same {{ }}-
 // stripped text (protected classical Arabic quotations may legitimately
-// repeat a word rhetorically — exempted here for the same reason).
+// repeat a word rhetorically — exempted here for the same reason). Note:
+// uses a negative lookahead (?!\S) rather than \b — JS's \b is ASCII-only
+// and silently fails to match at Urdu/Arabic word boundaries (found and
+// fixed during Batch 2's own real-text verification).
 function findRepeatedWordSuggestions(text: string): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
-  const stripped = text.replace(PRESERVE_MARKER_REGEX, (m) => " ".repeat(m.length));
+  const stripped = stripProtectedMarkers(text);
   const regex = /(\S+)(\s+)\1(?!\S)/g;
   let match: RegExpExecArray | null;
   let count = 0;
@@ -399,17 +418,16 @@ function findRepeatedWordSuggestions(text: string): DocumentSuggestion[] {
   return suggestions;
 }
 
-// K) Mixed Script Intelligence — ADVISORY ONLY (Batch 2). Same Latin-
-// letter-run detection as checkTextQuality.ts's mixedScript check
-// (/[a-zA-Z]+/g). Deliberately proposes NO replacement — suggestedText
-// equals originalText verbatim, so even if this is "Accepted" and
-// "Applied", applySuggestionToText's find/replace is a genuine no-op.
-// This is what makes it a pure advisory rather than a correction: there
-// is no way for this suggestion to ever change the document's text.
+// J) Mixed Script Intelligence — ADVISORY ONLY. Same Latin-letter-run
+// detection as checkTextQuality.ts's mixedScript check (shared module).
+// Deliberately proposes NO replacement — suggestedText equals
+// originalText verbatim, so even if this is "Accepted" and "Applied",
+// applySuggestionToText's find/replace is a genuine no-op. This is what
+// makes it a pure advisory rather than a correction.
 function findMixedScriptSuggestions(text: string): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
-  const stripped = text.replace(PRESERVE_MARKER_REGEX, (m) => " ".repeat(m.length));
-  const regex = /[a-zA-Z]+/g;
+  const stripped = stripProtectedMarkers(text);
+  const regex = freshRegex(LATIN_LETTERS_REGEX);
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(stripped)) !== null) {
@@ -429,13 +447,10 @@ function findMixedScriptSuggestions(text: string): DocumentSuggestion[] {
   return suggestions;
 }
 
-// F) Structure suggestions — reuses buildDocumentAuditReport.ts's own
-// exported counters directly (countHeadingHierarchyIssues,
-// countEmptyParagraphs, countLongParagraphs — the last added Batch 2)
-// rather than re-implementing DocNode traversal here. Document-level
-// advisories, same as numeral/punctuation — none of these has a single
-// "original text span" to highlight the way a Unicode/spacing/typography
-// issue does.
+// K) Structure suggestions — reuses buildDocumentAuditReport.ts's own
+// exported counters directly rather than re-implementing DocNode
+// traversal here. Document-level advisories, same as numeral/punctuation
+// — none of these has a single "original text span" to highlight.
 function findStructureSuggestions(doc: DocNode): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
 

@@ -224,3 +224,31 @@ describe("ignoreCategory (Batch Actions)", () => {
     expect(state.ignored).toEqual([s2]);
   });
 });
+
+describe("suggestionKey — duplicate-instance fix (Maintenance Batch, 2026-08-09)", () => {
+  test("two identical issue types with different surrounding context produce DISTINCT keys", () => {
+    const s1 = suggestion({ type: "typography-repeated-word", contextBefore: "پہلا پیراگراف: ", originalText: "یہ یہ", contextAfter: " ہے" });
+    const s2 = suggestion({ type: "typography-repeated-word", contextBefore: "دوسری جگہ، ", originalText: "یہ یہ", contextAfter: " دوبارہ" });
+    expect(suggestionKey(s1)).not.toBe(suggestionKey(s2));
+  });
+
+  test("two suggestions with genuinely identical context still produce the same key (expected, rare edge case)", () => {
+    const s1 = suggestion({ contextBefore: "same", originalText: "same", contextAfter: "same" });
+    const s2 = suggestion({ contextBefore: "same", originalText: "same", contextAfter: "same" });
+    expect(suggestionKey(s1)).toBe(suggestionKey(s2));
+  });
+
+  test("accepting one of two distinctly-keyed instances leaves the other pending", () => {
+    const s1 = suggestion({ originalText: "یہ یہ", contextBefore: "پہلا: ", contextAfter: "" });
+    const s2 = suggestion({ originalText: "یہ یہ", contextBefore: "دوسرا: ", contextAfter: "" });
+    let state = createReviewState([s1, s2]);
+    state = acceptSuggestion(state, suggestionKey(s1));
+    expect(state.pending).toEqual([s2]);
+    expect(state.accepted).toEqual([s1]);
+  });
+
+  test("document-level advisories (empty context) are unaffected by this change", () => {
+    const s1 = suggestion({ type: "numeral-mixed", category: "numeral", contextBefore: "", originalText: "2024 / ۱۲۳", contextAfter: "" });
+    expect(suggestionKey(s1)).toBe("numeral-mixed::::2024 / ۱۲۳::");
+  });
+});

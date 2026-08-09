@@ -1,3 +1,18 @@
+import {
+  PRESERVE_MARKER_REGEX,
+  MULTIPLE_SPACES_REGEX,
+  STRAIGHT_QUOTES_REGEX,
+  CURLY_QUOTE_OPEN_REGEX,
+  CURLY_QUOTE_CLOSE_REGEX,
+  DUPLICATED_PUNCTUATION_REGEX,
+  MISSING_SPACE_AFTER_PUNCTUATION_REGEX,
+  SPACE_BEFORE_PUNCTUATION_REGEX,
+  TATWEEL_REGEX,
+  ARABIC_FORM_LETTERS_REGEX,
+  LATIN_LETTERS_REGEX,
+  ASCII_PUNCTUATION_REGEX,
+} from "./sharedTextPatterns";
+
 export interface QualityReport {
   totalIssues: number;
   typography: {
@@ -23,13 +38,6 @@ export interface QualityReport {
   };
   badges: string[];
 }
-
-// Same {{ }} preserve-marker convention as the Unicode Standardizer.
-// Content inside is treated as a classical Arabic quotation — checks that
-// would false-positive on legitimate Arabic patterns (rhetorical word
-// repetition, Arabic punctuation, non-Latin script by definition) are
-// skipped for that content specifically.
-const PRESERVE_MARKER_REGEX = /\{\{([\s\S]*?)\}\}/g;
 
 interface PartialCounts {
   multipleSpaces: number;
@@ -64,7 +72,7 @@ function checkUniversal(
   // Multiple spaces — space/tab runs only, NOT newlines (newlines are
   // "Empty Lines", a separate issue; counting both from the same runs
   // double-reported the same whitespace before).
-  const spaceMatches = text.match(/[ \t]{2,}/g);
+  const spaceMatches = text.match(MULTIPLE_SPACES_REGEX);
   const multipleSpaces = spaceMatches ? spaceMatches.length : 0;
 
   // Empty lines — a blank line (possibly with stray whitespace) between
@@ -85,7 +93,7 @@ function checkUniversal(
 
   // Straight/ASCII quotation marks — typographically these should be
   // curly quotes in published text, regardless of script.
-  const quoteMatches = text.match(/["']/g);
+  const quoteMatches = text.match(STRAIGHT_QUOTES_REGEX);
   const straightQuotes = quoteMatches ? quoteMatches.length : 0;
 
   // Unmatched curly double quotes — e.g. a closing " with no opening "
@@ -96,8 +104,8 @@ function checkUniversal(
   // double curly pair only: the single curly pair (' ') is also the
   // ordinary typographic apostrophe (e.g. "don't"), so counting open/close
   // imbalance there would flag normal apostrophe use as a false positive.
-  const openCurly = (text.match(/\u201C/g) || []).length;
-  const closeCurly = (text.match(/\u201D/g) || []).length;
+  const openCurly = (text.match(CURLY_QUOTE_OPEN_REGEX) || []).length;
+  const closeCurly = (text.match(CURLY_QUOTE_CLOSE_REGEX) || []).length;
   const unmatchedCurlyQuotes = Math.abs(openCurly - closeCurly);
 
   const wrongQuotes = straightQuotes + unmatchedCurlyQuotes;
@@ -110,7 +118,7 @@ function checkUniversal(
   // they already have their own, more precise unmatched-pair check above;
   // counting them again under a generic "duplicated" rule would double-flag
   // the same underlying defect under two different names.
-  const duplicatedMatches = text.match(/([.,!?;:،؛؟۔])\1+/g);
+  const duplicatedMatches = text.match(DUPLICATED_PUNCTUATION_REGEX);
   const duplicatedPunctuation = duplicatedMatches ? duplicatedMatches.length : 0;
 
   // A closing bracket/paren/colon, or terminal punctuation (comma/
@@ -118,21 +126,18 @@ function checkUniversal(
   // followed by a letter or digit with no space (found 2026-08-07:
   // "(المتوفی:179ھ)نے" — missing space after both ":" and ")"; extended
   // 2026-08-09 per Batch 1 to also cover "لفظ,اگلا"/"لفظ؟اگلا"/
-  // "لفظ!اگلا"-style cases). { } and [ specifically excluded to avoid any
-  // interaction with the {{ }} preserve-marker syntax elsewhere.
-  const missingSpaceMatches = text.match(/[)\]:,!?،؟۔][A-Za-z0-9\u0600-\u06FF]/g);
+  // "لفظ!اگلا"-style cases; extended again 2026-08-09 Maintenance Batch
+  // to exclude a comma between two digits — "1,000"/"10,000" is a valid
+  // thousands separator, not a missing space).
+  const missingSpaceMatches = text.match(MISSING_SPACE_AFTER_PUNCTUATION_REGEX);
   const missingSpaceAfterPunctuation = missingSpaceMatches ? missingSpaceMatches.length : 0;
 
   // Advanced Typography Analyzer (2026-08-09) — a space immediately
   // BEFORE a terminal punctuation mark ("لفظ ،" instead of "لفظ،"). Urdu/
   // Arabic convention (like English) attaches terminal punctuation
   // directly to the preceding word with no space, so a preceding space is
-  // a formatting defect, not a style choice. Limited to the same
-  // comma/semicolon/question/full-stop marks already covered by the
-  // duplicated-punctuation check above, in both ASCII and Urdu/Arabic
-  // form, for the same reasons (colon/brackets excluded to avoid
-  // interaction with other conventions elsewhere in the codebase).
-  const spaceBeforeMatches = text.match(/ [.,!?;:،؛؟۔]/g);
+  // a formatting defect, not a style choice.
+  const spaceBeforeMatches = text.match(SPACE_BEFORE_PUNCTUATION_REGEX);
   const spaceBeforePunctuation = spaceBeforeMatches ? spaceBeforeMatches.length : 0;
 
   // Advanced Typography Analyzer (2026-08-09) — tatweel/kashida (ـ,
@@ -142,7 +147,7 @@ function checkUniversal(
   // pre-formatted Arabic text, not an intentional typographic choice —
   // flagged for review, not auto-removed (that's a correction, not
   // detection, and out of scope here).
-  const tatweelMatches = text.match(/\u0640/g);
+  const tatweelMatches = text.match(TATWEEL_REGEX);
   const tatweelCount = tatweelMatches ? tatweelMatches.length : 0;
 
   // Advanced Typography Analyzer (2026-08-09) — flags when a document
@@ -179,7 +184,7 @@ function checkUniversal(
 
 function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript" | "mixedUrduArabicForms"> {
   // ASCII comma/semicolon/question mark mixed into Urdu/Arabic text.
-  const englishPunctuation = text.match(/[;,?]/g);
+  const englishPunctuation = text.match(ASCII_PUNCTUATION_REGEX);
   const mixedPunctuation = englishPunctuation ? englishPunctuation.length : 0;
 
   // Repeated adjacent words — often an accidental typo, but can be
@@ -195,7 +200,7 @@ function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuati
 
   // Latin letters inside Arabic-script text — often a real typo, but can
   // be an intentional abbreviation, citation, or loanword.
-  const latinMatches = text.match(/[a-zA-Z]+/g);
+  const latinMatches = text.match(LATIN_LETTERS_REGEX);
   const mixedScript = latinMatches ? latinMatches.length : 0;
 
   // Arabic-form letters (ي ى ك أ إ) appearing in what should be Urdu
@@ -207,7 +212,7 @@ function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuati
   // the app. Skipped inside {{ }} markers for the same reason
   // standardizeUrduText.ts skips them there — protected classical Arabic
   // quotations correctly use these forms.
-  const arabicFormMatches = text.match(/[\u064A\u0649\u0643\u0623\u0625]/g);
+  const arabicFormMatches = text.match(ARABIC_FORM_LETTERS_REGEX);
   const mixedUrduArabicForms = arabicFormMatches ? arabicFormMatches.length : 0;
 
   return { mixedPunctuation, repeatedWords, mixedScript, mixedUrduArabicForms };

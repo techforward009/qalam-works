@@ -334,3 +334,30 @@ describe("generateDocumentSuggestions — Structure: long paragraphs", () => {
     expect(suggestions.filter((s) => s.type === "structure-long-paragraphs")).toHaveLength(0);
   });
 });
+
+// Maintenance Batch (2026-08-09): shared-regex lastIndex safety + thousands-separator fix
+describe("generateDocumentSuggestions — shared regex lastIndex safety across consecutive calls", () => {
+  test("a document with many matches (triggering the MAX_EXAMPLES_PER_TYPE cap) does not corrupt the next call's results", () => {
+    const manySpaces = Array.from({ length: 8 }, (_, i) => `لفظ${i}  اگلا`).join(" ");
+    const result1 = generateDocumentSuggestions(docWith([paragraph(manySpaces)]));
+    expect(result1.filter((s) => s.type === "spacing-multiple-spaces").length).toBe(5);
+
+    // Immediately after, a completely different, short document — its own
+    // real match must still be found (this previously failed with a
+    // shared module-level regex due to lastIndex leaking across calls).
+    const result2 = generateDocumentSuggestions(docWith([paragraph("یہ  ٹھیک ہے")]));
+    expect(result2.filter((s) => s.type === "spacing-multiple-spaces").length).toBe(1);
+  });
+});
+
+describe("generateDocumentSuggestions — thousands-separator false positive fix", () => {
+  test("does not flag 1,000 or 10,000 as missing-space issues", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("قیمت 1,000 اور 10,000 روپے ہے")]));
+    expect(suggestions.filter((s) => s.type === "spacing-missing-after-punctuation")).toHaveLength(0);
+  });
+
+  test("still flags a genuine missing space after a comma (not preceded by a digit)", () => {
+    const suggestions = generateDocumentSuggestions(docWith([paragraph("یہ لفظ,اگلا لفظ")]));
+    expect(suggestions.some((s) => s.type === "spacing-missing-after-punctuation")).toBe(true);
+  });
+});

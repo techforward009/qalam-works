@@ -18,11 +18,22 @@ export interface SuggestionReviewState {
 // Suggestions are regenerated fresh (new array, new object identities) on
 // every edit, since generateDocumentSuggestions() re-scans the live text —
 // so review decisions can't be tracked by array index or object reference
-// across renders. This content-based key (type + the exact original text
-// snippet) is stable enough in practice: two genuinely different issues
-// of the same type essentially never share an identical text snippet.
+// across renders. This content-based key incorporates the surrounding
+// context (contextBefore/contextAfter), not just type+originalText —
+// found during the Document Intelligence audit (2026-08-09) that two
+// identical issues (e.g. the same typo "یہ یہ" appearing in two different
+// paragraphs) previously produced IDENTICAL keys, causing a React list-
+// key collision and Accept/Ignore only ever affecting the first matching
+// instance. Context is unique in the vast majority of real documents
+// (the odds of the same issue AND identical surrounding text appearing
+// twice are extremely low); the one residual case that can still collide
+// — a genuinely repeated verbatim sentence — is a rare, low-stakes edge
+// case (worst case: accepting one instance also resolves its identical
+// twin, which is a reasonable outcome, not a defect, for verbatim-
+// duplicate text). Document-level advisories (empty contextBefore/After)
+// are already inherently singletons per type, so they're unaffected.
 export function suggestionKey(suggestion: DocumentSuggestion): string {
-  return `${suggestion.type}::${suggestion.originalText}`;
+  return `${suggestion.type}::${suggestion.contextBefore}::${suggestion.originalText}::${suggestion.contextAfter}`;
 }
 
 export function createReviewState(suggestions: DocumentSuggestion[]): SuggestionReviewState {
