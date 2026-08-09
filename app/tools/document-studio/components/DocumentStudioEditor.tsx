@@ -10,10 +10,12 @@ import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalize
 import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
 import { buildDocumentStats, type DocumentStats } from "../utils/buildDocumentStats";
 import { buildDocumentHealthReport, type DocumentHealthReport } from "../utils/buildDocumentHealthReport";
+import { generateDocumentSuggestions, type DocumentSuggestion } from "../utils/generateDocumentSuggestions";
 import { buildDocxBlob } from "../utils/buildDocxDocument";
 import { plainTextToDocNode, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
 import { QualityAuditPanel } from "./QualityAuditPanel";
 import { DocumentStatsBar } from "./DocumentStatsBar";
+import { SuggestionsPanel } from "./SuggestionsPanel";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import { formatFileSize } from "../../../utils/formatFileSize";
@@ -159,6 +161,7 @@ export default function DocumentStudioEditor() {
   const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
   const [stats, setStats] = useState<DocumentStats | null>(null);
   const [health, setHealth] = useState<DocumentHealthReport | null>(null);
+  const [suggestions, setSuggestions] = useState<DocumentSuggestion[]>([]);
   const [isAuditStale, setIsAuditStale] = useState(false);
   // Mirrors "auditReport !== null" but as a ref, so the onUpdate callback
   // below (captured once when the editor is created) can check it without
@@ -186,6 +189,7 @@ export default function DocumentStudioEditor() {
       const json = editor.getJSON();
       setStats(buildDocumentStats(json));
       setHealth(buildDocumentHealthReport(json));
+      setSuggestions(generateDocumentSuggestions(json));
       // Deliberately NOT clearing docxImportNotice here anymore (2026-08-08
       // requirement change): it must be a genuinely persistent, explicitly-
       // dismissed notice (the "Got it" button below), not one that quietly
@@ -221,6 +225,7 @@ export default function DocumentStudioEditor() {
       const json = editor.getJSON();
       setStats(buildDocumentStats(json));
       setHealth(buildDocumentHealthReport(json));
+      setSuggestions(generateDocumentSuggestions(json));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
@@ -712,6 +717,10 @@ export default function DocumentStudioEditor() {
 
         <div className="mt-4">
           <QualityAuditPanel report={auditReport} isStale={isAuditStale} />
+        </div>
+
+        <div className="mt-4">
+          <SuggestionsPanel suggestions={suggestions} />
         </div>
       </div>
 
