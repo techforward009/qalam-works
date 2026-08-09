@@ -93,3 +93,69 @@ describe("checkTextQuality — mixed Urdu/Arabic character forms (Advanced Quali
     expect(withIssue.totalIssues).toBe(clean.totalIssues + 1);
   });
 });
+
+describe("checkTextQuality — Advanced Typography Analyzer (space before punctuation)", () => {
+  test("flags a space immediately before Urdu/Arabic comma", () => {
+    const result = checkTextQuality("یہ ٹھیک ہے ، اور یہ بھی");
+    expect(result.typography.spaceBeforePunctuation).toBe(1);
+  });
+
+  test("flags a space immediately before ASCII punctuation too", () => {
+    const result = checkTextQuality("hello , world");
+    expect(result.typography.spaceBeforePunctuation).toBe(1);
+  });
+
+  test("does not flag correctly-attached punctuation (no space before)", () => {
+    const result = checkTextQuality("یہ ٹھیک ہے، اور یہ بھی۔");
+    expect(result.typography.spaceBeforePunctuation).toBe(0);
+  });
+});
+
+describe("checkTextQuality — Advanced Typography Analyzer (tatweel/kashida)", () => {
+  test("flags tatweel (U+0640) characters", () => {
+    const result = checkTextQuality("الحمـــد لله");
+    expect(result.typography.tatweelCount).toBe(3);
+  });
+
+  test("clean text with no tatweel reports zero", () => {
+    const result = checkTextQuality("الحمد لله");
+    expect(result.typography.tatweelCount).toBe(0);
+  });
+});
+
+describe("checkTextQuality — Advanced Typography Analyzer (inconsistent punctuation style)", () => {
+  test("flags when both ASCII and Urdu/Arabic comma are used in the same document", () => {
+    const result = checkTextQuality("یہ، اور یہ بھی, اور یہ");
+    expect(result.punctuation.inconsistentPunctuationStyle).toBe(true);
+  });
+
+  test("does not flag a document using only one comma style throughout", () => {
+    const result = checkTextQuality("یہ، اور یہ بھی، اور یہ");
+    expect(result.punctuation.inconsistentPunctuationStyle).toBe(false);
+  });
+
+  test("flags mixed question mark styles", () => {
+    const result = checkTextQuality("کیا یہ ٹھیک ہے؟ Is this ok?");
+    expect(result.punctuation.inconsistentPunctuationStyle).toBe(true);
+  });
+
+  test("a document with no punctuation at all is not flagged", () => {
+    const result = checkTextQuality("یہ ایک سادہ جملہ ہے");
+    expect(result.punctuation.inconsistentPunctuationStyle).toBe(false);
+  });
+});
+
+describe("checkTextQuality — Advanced Typography Analyzer (no false positives, totals)", () => {
+  test("a clean, standard sentence reports zero for all three new checks", () => {
+    const result = checkTextQuality("یہ ایک صاف ستھرا جملہ ہے۔");
+    expect(result.typography.spaceBeforePunctuation).toBe(0);
+    expect(result.typography.tatweelCount).toBe(0);
+    expect(result.punctuation.inconsistentPunctuationStyle).toBe(false);
+  });
+
+  test("new checks are included in totalIssues", () => {
+    const clean = checkTextQuality("یہ ایک صاف ستھرا جملہ ہے۔");
+    const withTatweel = checkTextQuality("یہ ایک صافـ ستھرا جملہ ہے۔");
+    expect(withTatweel.totalIssues).toBe(clean.totalIssues + 1);
+  });
+});
