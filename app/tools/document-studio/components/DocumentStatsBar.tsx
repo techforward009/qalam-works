@@ -1,8 +1,10 @@
 import React from "react";
 import type { DocumentStats } from "../utils/buildDocumentStats";
+import type { DocumentHealthReport, HealthStatus } from "../utils/buildDocumentHealthReport";
 
 interface DocumentStatsBarProps {
   stats: DocumentStats | null;
+  health: DocumentHealthReport | null;
 }
 
 const LANGUAGE_LABEL: Record<DocumentStats["language"]["dominant"], string> = {
@@ -12,21 +14,40 @@ const LANGUAGE_LABEL: Record<DocumentStats["language"]["dominant"], string> = {
   none: "—",
 };
 
+function HealthBadge({ label, status }: { label: string; status: HealthStatus }) {
+  const ok = status === "ok";
+  return (
+    <div
+      className={`p-2 rounded-lg border text-xs font-semibold text-center ${
+        ok ? "bg-emerald-50/60 border-emerald-200 text-emerald-700" : "bg-amber-50 border-amber-200 text-amber-800"
+      }`}
+    >
+      <div className="font-medium">{label}</div>
+      <div className="mt-0.5">{ok ? "✓ درست" : "⚠️ نظرِ ثانی درکار"}</div>
+    </div>
+  );
+}
+
 /**
- * Batch 1 (2026-08-09) — always-visible, live document statistics: word/
- * character/paragraph counts, Numeral Intelligence (which digit systems
- * are in use, flagged if mixed), and Language Intelligence (Arabic-script
- * vs Latin proportion). Analysis-only — never changes the document.
+ * Document Intelligence v2 (2026-08-09) — "Document Statistics" from
+ * Batch 1, now extended into a live Document Health assistant: word/
+ * character/paragraph counts, Numeral Intelligence, Language
+ * Intelligence, AND a live Document Health Report (Unicode consistency,
+ * typography issue count, numeral consistency, paragraph structure,
+ * heading hierarchy) — all computed live on every edit, no "Run Audit"
+ * click required, matching the goal of feeling like a continuous
+ * publishing assistant rather than an on-demand tool.
  *
- * Matches QualityAuditPanel.tsx's exact visual language (same card/grid/
- * badge styling) rather than introducing a new UI system.
+ * Analysis-only — never changes the document. Matches
+ * QualityAuditPanel.tsx's exact visual language (same card/grid/badge
+ * styling) rather than introducing a new UI system.
  */
-export const DocumentStatsBar: React.FC<DocumentStatsBarProps> = ({ stats }) => {
+export const DocumentStatsBar: React.FC<DocumentStatsBarProps> = ({ stats, health }) => {
   if (!stats) return null;
 
   return (
-    <div className="p-3 border border-slate-200 rounded-xl bg-white shadow-sm text-right text-xs" dir="rtl">
-      <div className="grid grid-cols-3 md:grid-cols-3 gap-2 text-center">
+    <div className="p-3 border border-slate-200 rounded-xl bg-white shadow-sm text-right text-xs space-y-3" dir="rtl">
+      <div className="grid grid-cols-3 gap-2 text-center">
         <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
           <div className="text-slate-500 font-medium">الفاظ (Words)</div>
           <div className="text-sm font-bold text-slate-700 mt-1">{stats.wordCount}</div>
@@ -41,7 +62,7 @@ export const DocumentStatsBar: React.FC<DocumentStatsBarProps> = ({ stats }) => 
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-100">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
         <div className="text-slate-500">
           زبان (Language): <span className="font-semibold text-slate-700">{LANGUAGE_LABEL[stats.language.dominant]}</span>
           {stats.language.dominant === "mixed" && (
@@ -58,6 +79,22 @@ export const DocumentStatsBar: React.FC<DocumentStatsBarProps> = ({ stats }) => 
           </div>
         )}
       </div>
+
+      {health && (
+        <div className="pt-2 border-t border-slate-100">
+          <h4 className="text-xs font-semibold text-slate-600 mb-2">دستاویز کی صحت (Document Health)</h4>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            <HealthBadge label="یونیکوڈ (Unicode)" status={health.unicodeConsistency} />
+            <HealthBadge label="ہندسے (Numerals)" status={health.numeralConsistency} />
+            <HealthBadge label="ساخت (Structure)" status={health.paragraphStructure} />
+            <HealthBadge label="عنوانات (Headings)" status={health.headingHierarchy} />
+            <div className="p-2 rounded-lg border border-slate-100 bg-slate-50 text-center">
+              <div className="font-medium text-slate-500">ٹائپوگرافی مسائل</div>
+              <div className="mt-0.5 font-bold text-slate-700">{health.typographyIssueCount}</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
