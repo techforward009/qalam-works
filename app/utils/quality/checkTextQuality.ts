@@ -5,11 +5,16 @@ export interface QualityReport {
     emptyLines: number;
     longParagraphs: number;
     missingSpaceAfterPunctuation: number;
+    // Advanced Typography Analyzer (2026-08-09):
+    spaceBeforePunctuation: number;
+    tatweelCount: number;
   };
   punctuation: {
     mixedPunctuation: number;
     wrongQuotes: number;
     duplicatedPunctuation: number;
+    // Advanced Typography Analyzer (2026-08-09):
+    inconsistentPunctuationStyle: boolean;
   };
   textQuality: {
     repeatedWords: number;
@@ -31,9 +36,12 @@ interface PartialCounts {
   emptyLines: number;
   longParagraphs: number;
   missingSpaceAfterPunctuation: number;
+  spaceBeforePunctuation: number;
+  tatweelCount: number;
   mixedPunctuation: number;
   wrongQuotes: number;
   duplicatedPunctuation: number;
+  inconsistentPunctuationStyle: boolean;
   repeatedWords: number;
   mixedScript: number;
   mixedUrduArabicForms: number;
@@ -43,7 +51,15 @@ function checkUniversal(
   text: string
 ): Pick<
   PartialCounts,
-  "multipleSpaces" | "emptyLines" | "longParagraphs" | "wrongQuotes" | "duplicatedPunctuation" | "missingSpaceAfterPunctuation"
+  | "multipleSpaces"
+  | "emptyLines"
+  | "longParagraphs"
+  | "wrongQuotes"
+  | "duplicatedPunctuation"
+  | "missingSpaceAfterPunctuation"
+  | "spaceBeforePunctuation"
+  | "tatweelCount"
+  | "inconsistentPunctuationStyle"
 > {
   // Multiple spaces — space/tab runs only, NOT newlines (newlines are
   // "Empty Lines", a separate issue; counting both from the same runs
@@ -105,7 +121,58 @@ function checkUniversal(
   const missingSpaceMatches = text.match(/[)\]:][A-Za-z0-9\u0600-\u06FF]/g);
   const missingSpaceAfterPunctuation = missingSpaceMatches ? missingSpaceMatches.length : 0;
 
-  return { multipleSpaces, emptyLines, longParagraphs, wrongQuotes, duplicatedPunctuation, missingSpaceAfterPunctuation };
+  // Advanced Typography Analyzer (2026-08-09) — a space immediately
+  // BEFORE a terminal punctuation mark ("لفظ ،" instead of "لفظ،"). Urdu/
+  // Arabic convention (like English) attaches terminal punctuation
+  // directly to the preceding word with no space, so a preceding space is
+  // a formatting defect, not a style choice. Limited to the same
+  // comma/semicolon/question/full-stop marks already covered by the
+  // duplicated-punctuation check above, in both ASCII and Urdu/Arabic
+  // form, for the same reasons (colon/brackets excluded to avoid
+  // interaction with other conventions elsewhere in the codebase).
+  const spaceBeforeMatches = text.match(/ [.,!?;:،؛؟۔]/g);
+  const spaceBeforePunctuation = spaceBeforeMatches ? spaceBeforeMatches.length : 0;
+
+  // Advanced Typography Analyzer (2026-08-09) — tatweel/kashida (ـ,
+  // U+0640), a decorative Arabic elongation character used for visual
+  // justification in calligraphy/typesetting. In ordinary digital prose
+  // it's almost always an accidental artifact from copy-pasting
+  // pre-formatted Arabic text, not an intentional typographic choice —
+  // flagged for review, not auto-removed (that's a correction, not
+  // detection, and out of scope here).
+  const tatweelMatches = text.match(/\u0640/g);
+  const tatweelCount = tatweelMatches ? tatweelMatches.length : 0;
+
+  // Advanced Typography Analyzer (2026-08-09) — flags when a document
+  // uses BOTH the ASCII and the Urdu/Arabic form of the same punctuation
+  // mark somewhere in it (e.g. both "," and "،" present) — a genuine
+  // style-consistency signal distinct from mixedPunctuation below (which
+  // just counts ASCII occurrences regardless of whether the Arabic form
+  // is ALSO present elsewhere). A document that consistently uses one
+  // convention throughout is not flagged, even if that convention is
+  // ASCII throughout.
+  const hasAsciiComma = /,/.test(text);
+  const hasArabicComma = /،/.test(text);
+  const hasAsciiSemicolon = /;/.test(text);
+  const hasArabicSemicolon = /؛/.test(text);
+  const hasAsciiQuestion = /\?/.test(text);
+  const hasArabicQuestion = /؟/.test(text);
+  const inconsistentPunctuationStyle =
+    (hasAsciiComma && hasArabicComma) ||
+    (hasAsciiSemicolon && hasArabicSemicolon) ||
+    (hasAsciiQuestion && hasArabicQuestion);
+
+  return {
+    multipleSpaces,
+    emptyLines,
+    longParagraphs,
+    wrongQuotes,
+    duplicatedPunctuation,
+    missingSpaceAfterPunctuation,
+    spaceBeforePunctuation,
+    tatweelCount,
+    inconsistentPunctuationStyle,
+  };
 }
 
 function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript" | "mixedUrduArabicForms"> {
@@ -163,6 +230,9 @@ export function checkTextQuality(input: string): QualityReport {
     universal.wrongQuotes +
     universal.duplicatedPunctuation +
     universal.missingSpaceAfterPunctuation +
+    universal.spaceBeforePunctuation +
+    universal.tatweelCount +
+    (universal.inconsistentPunctuationStyle ? 1 : 0) +
     scriptSensitive.mixedPunctuation +
     scriptSensitive.repeatedWords +
     scriptSensitive.mixedScript +
@@ -177,6 +247,9 @@ export function checkTextQuality(input: string): QualityReport {
     if (universal.wrongQuotes) badges.push("✓ Quote Formatting Issues");
     if (universal.duplicatedPunctuation) badges.push("✓ Duplicated Punctuation Found");
     if (universal.missingSpaceAfterPunctuation) badges.push("✓ Missing Space After Punctuation");
+    if (universal.spaceBeforePunctuation) badges.push("✓ Space Before Punctuation");
+    if (universal.tatweelCount) badges.push("✓ Tatweel (Kashida) Characters Found");
+    if (universal.inconsistentPunctuationStyle) badges.push("✓ Inconsistent Punctuation Style");
     if (universal.emptyLines) badges.push("✓ Layout Spacing Issues");
     if (scriptSensitive.repeatedWords) badges.push("✓ Repeated Words Found");
     if (scriptSensitive.mixedScript) badges.push("✓ Mixed Script Detected");
@@ -191,11 +264,14 @@ export function checkTextQuality(input: string): QualityReport {
       emptyLines: universal.emptyLines,
       longParagraphs: universal.longParagraphs,
       missingSpaceAfterPunctuation: universal.missingSpaceAfterPunctuation,
+      spaceBeforePunctuation: universal.spaceBeforePunctuation,
+      tatweelCount: universal.tatweelCount,
     },
     punctuation: {
       mixedPunctuation: scriptSensitive.mixedPunctuation,
       wrongQuotes: universal.wrongQuotes,
       duplicatedPunctuation: universal.duplicatedPunctuation,
+      inconsistentPunctuationStyle: universal.inconsistentPunctuationStyle,
     },
     textQuality: {
       repeatedWords: scriptSensitive.repeatedWords,
