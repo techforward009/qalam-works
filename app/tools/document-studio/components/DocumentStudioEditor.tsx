@@ -5,7 +5,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
-import { extractPlainText, type DocNode } from "../utils/extractPlainText";
+import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
 import { buildDocumentStats, type DocumentStats } from "../utils/buildDocumentStats";
@@ -246,10 +246,18 @@ export default function DocumentStudioEditor() {
       // deliberately cheap so deciding whether to debounce doesn't itself
       // add meaningful cost.
       const json = editor.getJSON();
+      // Shared Analysis Context (2026-08-09) — computed ONCE per
+      // analysis run (inside runAnalysis, so it's still properly
+      // debounced for large documents — computing it here, outside
+      // runAnalysis, would defeat the debounce entirely since context
+      // creation IS the expensive getBlockTexts traversal) and passed to
+      // all three analysis functions, replacing what was previously 8
+      // independent getBlockTexts(doc) calls with exactly 1.
       const runAnalysis = () => {
-        setStats(buildDocumentStats(json));
-        setHealth(buildDocumentHealthReport(json));
-        setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json)));
+        const context = createDocumentAnalysisContext(json);
+        setStats(buildDocumentStats(json, context));
+        setHealth(buildDocumentHealthReport(json, context));
+        setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, context)));
       };
 
       if (analysisTimerRef.current) clearTimeout(analysisTimerRef.current);
@@ -295,9 +303,10 @@ export default function DocumentStudioEditor() {
   useEffect(() => {
     if (editor) {
       const json = editor.getJSON();
-      setStats(buildDocumentStats(json));
-      setHealth(buildDocumentHealthReport(json));
-      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json)));
+      const context = createDocumentAnalysisContext(json);
+      setStats(buildDocumentStats(json, context));
+      setHealth(buildDocumentHealthReport(json, context));
+      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, context)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
@@ -512,9 +521,10 @@ export default function DocumentStudioEditor() {
     // guarantees stats/health reflect the truly-final document, and
     // accepted is cleared in the same update.
     const finalJson = editor.getJSON();
-    setStats(buildDocumentStats(finalJson));
-    setHealth(buildDocumentHealthReport(finalJson));
-    setReviewState((prev) => refreshPendingSuggestions({ ...prev, accepted: [] }, generateDocumentSuggestions(finalJson)));
+    const finalContext = createDocumentAnalysisContext(finalJson);
+    setStats(buildDocumentStats(finalJson, finalContext));
+    setHealth(buildDocumentHealthReport(finalJson, finalContext));
+    setReviewState((prev) => refreshPendingSuggestions({ ...prev, accepted: [] }, generateDocumentSuggestions(finalJson, finalContext)));
   };
 
   const handleCopy = async () => {

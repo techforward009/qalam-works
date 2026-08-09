@@ -1,6 +1,5 @@
 import { checkTextQuality, type QualityReport } from "../../../utils/quality/checkTextQuality";
-import { buildQualityInput } from "./buildQualityInput";
-import { getBlockTexts, type DocNode } from "./extractPlainText";
+import { getBlockTexts, type DocNode, type DocumentAnalysisContext } from "./extractPlainText";
 
 export interface QualityIssueCounts {
   mixedScript: number;
@@ -128,9 +127,15 @@ function toCounts(
 // re-derive them from whitespace at all. Count long paragraphs directly
 // against those real blocks, using the same threshold and whitespace-
 // collapse convention as checkTextQuality for consistency.
-export function countLongParagraphs(doc: DocNode): number {
+//
+// Shared Analysis Context (2026-08-09): accepts already-computed
+// `blocks` (from createDocumentAnalysisContext) to avoid a redundant
+// getBlockTexts(doc) traversal when the caller already has one — falls
+// back to computing it internally when not provided.
+export function countLongParagraphs(doc: DocNode, blocks?: readonly string[]): number {
   const LONG_PARAGRAPH_THRESHOLD = 250;
-  return getBlockTexts(doc).filter((block) => block.replace(/\s+/g, " ").trim().length > LONG_PARAGRAPH_THRESHOLD)
+  const source = blocks ?? getBlockTexts(doc);
+  return source.filter((block) => block.replace(/\s+/g, " ").trim().length > LONG_PARAGRAPH_THRESHOLD)
     .length;
 }
 
@@ -142,8 +147,12 @@ export function countLongParagraphs(doc: DocNode): number {
 // Enter presses), distinct from checkTextQuality's own "emptyLines" (which
 // looks for blank LINES inside already-flattened text, not real empty
 // block nodes in the document's own structure).
-export function countEmptyParagraphs(doc: DocNode): number {
-  return getBlockTexts(doc).filter((block) => block.trim().length === 0).length;
+//
+// Shared Analysis Context (2026-08-09): same optional `blocks` reuse as
+// countLongParagraphs above.
+export function countEmptyParagraphs(doc: DocNode, blocks?: readonly string[]): number {
+  const source = blocks ?? getBlockTexts(doc);
+  return source.filter((block) => block.trim().length === 0).length;
 }
 
 // Advanced Quality Layer (2026-08-09) — heading hierarchy issues. Only
@@ -205,8 +214,16 @@ function computeReadiness(counts: QualityIssueCounts): PublishingReadiness {
   };
 }
 
-export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
-  const input = buildQualityInput(doc);
+// Shared Analysis Context (2026-08-09) — accepts an optional context
+// from createDocumentAnalysisContext(doc) to avoid re-computing
+// getBlockTexts(doc) internally (this function alone previously did it
+// 3 times — once via buildQualityInput, once each via
+// countLongParagraphs/countEmptyParagraphs). When no context is given,
+// falls back to computing everything internally exactly as before — no
+// breaking change for existing (doc)-only callers.
+export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysisContext): QualityAuditReport {
+  const blocks = context?.blocks ?? getBlockTexts(doc);
+  const input = context?.joinedText ?? blocks.join("\n");
 
   if (!input || !input.trim()) {
     return createEmptyAuditReport();
@@ -215,9 +232,9 @@ export function buildDocumentAuditReport(doc: DocNode): QualityAuditReport {
   const report = checkTextQuality(input);
   const counts = toCounts(
     report,
-    countLongParagraphs(doc),
+    countLongParagraphs(doc, blocks),
     countHeadingHierarchyIssues(doc),
-    countEmptyParagraphs(doc)
+    countEmptyParagraphs(doc, blocks)
   );
 
   // Computed from the same counts shown in this report, so the two numbers

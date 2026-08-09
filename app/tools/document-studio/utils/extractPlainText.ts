@@ -121,3 +121,33 @@ export function getBlockTexts(doc: DocNode): string[] {
   (doc.content ?? []).forEach((node) => walkForBlocks(node, lines));
   return lines;
 }
+
+// Shared Analysis Context (2026-08-09) — reduces the 8 independent
+// getBlockTexts(doc) traversals measured per analysis cycle (across
+// buildDocumentStats, buildDocumentHealthReport→buildDocumentAuditReport,
+// and generateDocumentSuggestions) down to 1, by computing the block
+// list ONCE and letting each consumer accept it instead of re-walking
+// the DocNode itself. No caching, no memoization, no provider — this is
+// just a plain, immutable value object passed as a normal function
+// argument; a fresh one is created per analysis cycle, same as before,
+// just shared within that cycle instead of recomputed 8 times.
+//
+// `joinedText` uses "\n" as the separator, matching the convention
+// buildQualityInput.ts and generateDocumentSuggestions.ts already used
+// before this change. buildDocumentStats.ts joins blocks with " "
+// instead (its own established convention, for word/character
+// counting) — it uses `context.blocks` directly and does its own join,
+// rather than `context.joinedText`, so its behavior is byte-for-byte
+// unchanged.
+export interface DocumentAnalysisContext {
+  readonly blocks: readonly string[];
+  readonly joinedText: string;
+}
+
+export function createDocumentAnalysisContext(doc: DocNode): DocumentAnalysisContext {
+  const blocks = getBlockTexts(doc);
+  return Object.freeze({
+    blocks: Object.freeze(blocks),
+    joinedText: blocks.join("\n"),
+  });
+}

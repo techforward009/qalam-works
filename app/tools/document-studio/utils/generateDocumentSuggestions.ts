@@ -24,7 +24,7 @@
 // Structure suggestions reuse buildDocumentAuditReport.ts's own exported
 // counters directly (no duplicated detection logic there).
 
-import { getBlockTexts, type DocNode } from "./extractPlainText";
+import { getBlockTexts, type DocNode, type DocumentAnalysisContext } from "./extractPlainText";
 import { countHeadingHierarchyIssues, countEmptyParagraphs, countLongParagraphs } from "./buildDocumentAuditReport";
 import {
   PRESERVE_MARKER_REGEX,
@@ -456,7 +456,12 @@ function findMixedScriptSuggestions(text: string): DocumentSuggestion[] {
 // exported counters directly rather than re-implementing DocNode
 // traversal here. Document-level advisories, same as numeral/punctuation
 // — none of these has a single "original text span" to highlight.
-function findStructureSuggestions(doc: DocNode): DocumentSuggestion[] {
+//
+// Shared Analysis Context (2026-08-09): passes `blocks` through to the
+// two counters that need them (countEmptyParagraphs, countLongParagraphs
+// — countHeadingHierarchyIssues walks doc.content directly and never
+// needed getBlockTexts at all).
+function findStructureSuggestions(doc: DocNode, blocks?: readonly string[]): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
 
   if (countHeadingHierarchyIssues(doc) > 0) {
@@ -472,7 +477,7 @@ function findStructureSuggestions(doc: DocNode): DocumentSuggestion[] {
     });
   }
 
-  if (countEmptyParagraphs(doc) > 0) {
+  if (countEmptyParagraphs(doc, blocks) > 0) {
     suggestions.push({
       type: "structure-empty-paragraphs",
       category: "structure",
@@ -485,7 +490,7 @@ function findStructureSuggestions(doc: DocNode): DocumentSuggestion[] {
     });
   }
 
-  if (countLongParagraphs(doc) > 0) {
+  if (countLongParagraphs(doc, blocks) > 0) {
     suggestions.push({
       type: "structure-long-paragraphs",
       category: "structure",
@@ -504,10 +509,17 @@ function findStructureSuggestions(doc: DocNode): DocumentSuggestion[] {
 /**
  * Pure — generates preview-only suggestions from a document. Never
  * modifies anything; there is no "apply" path here at all yet.
+ *
+ * Shared Analysis Context (2026-08-09): accepts an optional context from
+ * createDocumentAnalysisContext(doc) to avoid a redundant
+ * getBlockTexts(doc) traversal (this function alone previously did it 3
+ * times — once directly, twice via the structure counters). Falls back
+ * to computing everything internally when not provided.
  */
-export function generateDocumentSuggestions(doc: DocNode): DocumentSuggestion[] {
-  const text = getBlockTexts(doc).join("\n");
-  const structureSuggestions = findStructureSuggestions(doc);
+export function generateDocumentSuggestions(doc: DocNode, context?: DocumentAnalysisContext): DocumentSuggestion[] {
+  const blocks = context?.blocks ?? getBlockTexts(doc);
+  const text = context?.joinedText ?? blocks.join("\n");
+  const structureSuggestions = findStructureSuggestions(doc, blocks);
 
   if (!text.trim()) return structureSuggestions;
 

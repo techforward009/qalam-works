@@ -7,7 +7,7 @@
 
 import { buildDocumentAuditReport } from "./buildDocumentAuditReport";
 import { buildDocumentStats } from "./buildDocumentStats";
-import type { DocNode } from "./extractPlainText";
+import type { DocNode, DocumentAnalysisContext } from "./extractPlainText";
 
 export type HealthStatus = "ok" | "needs_review";
 
@@ -30,10 +30,18 @@ export interface DocumentHealthReport {
  * report shaped for a document-health summary view. Each field maps
  * directly to an already-computed value; nothing here is recalculated
  * from raw text.
+ *
+ * Shared Analysis Context (2026-08-09): accepts an optional context and
+ * forwards it to BOTH sub-functions — necessary (even though this
+ * function isn't one of the three named in the optimization's scope) for
+ * DocumentStudioEditor.tsx to actually achieve a single getBlockTexts(doc)
+ * traversal per analysis cycle end-to-end, since this function is the one
+ * that internally calls both buildDocumentAuditReport and
+ * buildDocumentStats. Falls back to computing internally when omitted.
  */
-export function buildDocumentHealthReport(doc: DocNode): DocumentHealthReport {
-  const audit = buildDocumentAuditReport(doc);
-  const stats = buildDocumentStats(doc);
+export function buildDocumentHealthReport(doc: DocNode, context?: DocumentAnalysisContext): DocumentHealthReport {
+  const audit = buildDocumentAuditReport(doc, context);
+  const stats = buildDocumentStats(doc, context);
 
   return {
     unicodeConsistency: audit.readiness.unicodeConsistency,

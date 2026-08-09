@@ -11,9 +11,17 @@
 // the checker should see the actual authored text, not the export markers
 // extractPlainText.ts adds for Copy/Download.
 
-import { getBlockTexts, type DocNode } from "./extractPlainText";
+import { getBlockTexts, type DocNode, type DocumentAnalysisContext } from "./extractPlainText";
 
-/** Plain text for the Quality Checker, with paragraph boundaries preserved. */
-export function buildQualityInput(doc: DocNode): string {
+/**
+ * Plain text for the Quality Checker, with paragraph boundaries preserved.
+ * Accepts an optional shared DocumentAnalysisContext (2026-08-09) to avoid
+ * a redundant getBlockTexts(doc) traversal when the caller already has
+ * one from createDocumentAnalysisContext(doc) — falls back to computing
+ * it internally when not provided, so existing (doc)-only calls are
+ * unaffected.
+ */
+export function buildQualityInput(doc: DocNode, context?: DocumentAnalysisContext): string {
+  if (context) return context.joinedText;
   return getBlockTexts(doc).join("\n");
 }

@@ -15,7 +15,7 @@
 // no rewriting) — safer than a correction feature, and honest about what
 // it is ("Intelligence"/detection, not "Correction").
 
-import { getBlockTexts, type DocNode } from "./extractPlainText";
+import { getBlockTexts, type DocNode, type DocumentAnalysisContext } from "./extractPlainText";
 import {
   WESTERN_DIGIT_CHAR,
   ARABIC_INDIC_DIGIT_CHAR,
@@ -96,9 +96,17 @@ function countLanguage(text: string): LanguageIntelligence {
   return { arabicScriptChars, latinChars, arabicScriptPercent, latinPercent, dominant };
 }
 
-/** Analysis-only — computes statistics from the document, changes nothing. */
-export function buildDocumentStats(doc: DocNode): DocumentStats {
-  const blocks = getBlockTexts(doc);
+/**
+ * Analysis-only — computes statistics from the document, changes nothing.
+ * Accepts an optional shared DocumentAnalysisContext (2026-08-09) to
+ * avoid a redundant getBlockTexts(doc) traversal when the caller already
+ * has one — falls back to computing it internally when not provided.
+ * Uses `context.blocks` directly (not `context.joinedText`, which uses a
+ * "\n" separator) and does its own " "-joined fullText here, exactly as
+ * before, so word/character counting behavior is unchanged either way.
+ */
+export function buildDocumentStats(doc: DocNode, context?: DocumentAnalysisContext): DocumentStats {
+  const blocks = context?.blocks ?? getBlockTexts(doc);
   const fullText = blocks.join(" ");
   const trimmed = fullText.trim();
 
