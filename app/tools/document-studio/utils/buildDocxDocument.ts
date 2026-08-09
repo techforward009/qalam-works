@@ -361,14 +361,21 @@ function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, r
 // exists. No new parameter added to createDocxDocument's signature — the
 // title comes entirely from data already present in `doc`, so no other
 // file needs to change to supply it.
+// v1.4 (2026-08-09) — fixes a documented limitation from v1.3: title
+// detection only checked doc.content[0], so a document starting with a
+// plain paragraph (or anything other than an H1) always fell back to
+// "Qalam Works" even when a real H1 existed further down. Now searches
+// the entire top-level node list and uses the FIRST H1 found anywhere,
+// preserving the same "Qalam Works" fallback when none exists at all.
 function deriveDocumentTitle(doc: DocNode): string {
-  const firstNode = (doc.content ?? [])[0];
-  if (firstNode?.type === "heading" && firstNode.attrs?.level === 1) {
-    const text = (firstNode.content ?? [])
-      .filter((n) => n.type === "text" && typeof n.text === "string")
-      .map((n) => n.text)
-      .join("");
-    if (text.trim().length > 0) return text;
+  for (const node of doc.content ?? []) {
+    if (node.type === "heading" && node.attrs?.level === 1) {
+      const text = (node.content ?? [])
+        .filter((n) => n.type === "text" && typeof n.text === "string")
+        .map((n) => n.text)
+        .join("");
+      if (text.trim().length > 0) return text;
+    }
   }
   return "Qalam Works";
 }
