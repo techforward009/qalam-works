@@ -12,17 +12,20 @@ export const metadata: Metadata = {
 
 const faqs = [
   {
-    question: "یہ ٹول کیا کرتا ہے؟ / What does this tool do?",
+    questionUrdu: "یہ ٹول کیا کرتا ہے؟",
+    questionEn: "What does this tool do?",
     answer:
       "یہ آپ کے متن کو پبلیکیشن سے پہلے جانچتا ہے — اضافی خالی جگہیں، رموز اوقاف کی خرابیاں، دہرائے گئے الفاظ، اور رسم الخط کا غیر ضروری اختلاط پکڑتا ہے۔ یہ صرف نشاندہی کرتا ہے، خود کوئی تبدیلی نہیں کرتا۔",
   },
   {
-    question: "کیا یہ خود متن درست کر دیتا ہے؟ / Does it fix the text automatically?",
+    questionUrdu: "کیا یہ خود متن درست کر دیتا ہے؟",
+    questionEn: "Does it fix the text automatically?",
     answer:
       "نہیں، یہ صرف آڈٹ (جائزہ) کرتا ہے۔ اگر آپ چاہیں تو 'متن معیاری بنائیں اور دوبارہ جانچیں' بٹن سے Unicode Standardizer چلا کر پہلے اور بعد کا تقابل دیکھ سکتے ہیں۔",
   },
   {
-    question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟ / Is my text stored anywhere?",
+    questionUrdu: "کیا میرا متن کہیں محفوظ ہوتا ہے؟",
+    questionEn: "Is my text stored anywhere?",
     answer: "نہیں۔ یہ processing آپ کے براؤزر میں ہی ہوتی ہے — متن کسی سرور پر نہیں بھیجا جاتا۔",
   },
 ];
@@ -54,9 +57,10 @@ export default function QualityCheckerPage() {
         <h2 className="text-lg font-bold text-gray-900 mb-4 text-right">اکثر پوچھے گئے سوالات</h2>
         <div className="space-y-4">
           {faqs.map((faq) => (
-            <div key={faq.question} className="border border-gray-200 rounded-xl p-4" dir="rtl">
-              <p className="font-semibold text-amber-900 mb-1">{faq.question}</p>
-              <p className="text-sm text-gray-700">{faq.answer}</p>
+            <div key={faq.questionUrdu} className="border border-gray-200 rounded-xl p-4">
+              <p className="font-semibold text-amber-900 mb-0.5" dir="rtl">{faq.questionUrdu}</p>
+              <p className="font-semibold text-amber-700 text-sm mb-2" dir="ltr">{faq.questionEn}</p>
+              <p className="text-sm text-gray-700" dir="rtl">{faq.answer}</p>
             </div>
           ))}
         </div>

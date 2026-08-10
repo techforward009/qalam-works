@@ -12,16 +12,19 @@ export const metadata: Metadata = {
 
 const faqs = [
   {
-    question: "یہ ٹول کیا کرتا ہے؟ / What does this tool do?",
+    questionUrdu: "یہ ٹول کیا کرتا ہے؟",
+    questionEn: "What does this tool do?",
     answer:
       "یہ آپ کی .txt یا .docx فائل سے متن نکال کر خود بخود Unicode معیاری کاری کرتا ہے اور ایک مکمل Quality Report دیتا ہے، پھر آپ درست شدہ فائل ڈاؤن لوڈ کر سکتے ہیں۔",
   },
   {
-    question: "کیا میری فائل کہیں محفوظ ہوتی ہے؟ / Is my file stored anywhere?",
+    questionUrdu: "کیا میری فائل کہیں محفوظ ہوتی ہے؟",
+    questionEn: "Is my file stored anywhere?",
     answer: "نہیں۔ فائل صرف پروسیسنگ کے لیے استعمال ہوتی ہے، کہیں محفوظ نہیں کی جاتی۔",
   },
   {
-    question: "زیادہ سے زیادہ فائل سائز کیا ہے؟ / What's the maximum file size?",
+    questionUrdu: "زیادہ سے زیادہ فائل سائز کیا ہے؟",
+    questionEn: "What's the maximum file size?",
     answer: "فی الحال .txt اور .docx فائلیں 5MB تک سپورٹ کرتی ہیں۔",
   },
 ];
@@ -50,9 +53,10 @@ export default function DocumentCleanerPage() {
         <h2 className="text-lg font-bold text-gray-900 mb-4 text-right">اکثر پوچھے گئے سوالات</h2>
         <div className="space-y-4">
           {faqs.map((faq) => (
-            <div key={faq.question} className="border border-gray-200 rounded-xl p-4" dir="rtl">
-              <p className="font-semibold text-amber-900 mb-1">{faq.question}</p>
-              <p className="text-sm text-gray-700">{faq.answer}</p>
+            <div key={faq.questionUrdu} className="border border-gray-200 rounded-xl p-4">
+              <p className="font-semibold text-amber-900 mb-0.5" dir="rtl">{faq.questionUrdu}</p>
+              <p className="font-semibold text-amber-700 text-sm mb-2" dir="ltr">{faq.questionEn}</p>
+              <p className="text-sm text-gray-700" dir="rtl">{faq.answer}</p>
             </div>
           ))}
         </div>
