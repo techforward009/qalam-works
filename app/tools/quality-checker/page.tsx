@@ -54,7 +54,7 @@ export default function QualityCheckerPage() {
         <h2 className="text-lg font-bold text-gray-900 mb-4 text-right">اکثر پوچھے گئے سوالات</h2>
         <div className="space-y-4">
           {faqs.map((faq) => (
-            <div key={faq.question} className="border border-gray-200 rounded-xl p-4">
+            <div key={faq.question} className="border border-gray-200 rounded-xl p-4" dir="rtl">
               <p className="font-semibold text-amber-900 mb-1">{faq.question}</p>
               <p className="text-sm text-gray-700">{faq.answer}</p>
             </div>
