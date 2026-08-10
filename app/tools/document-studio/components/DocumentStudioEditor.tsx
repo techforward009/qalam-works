@@ -275,7 +275,16 @@ export default function DocumentStudioEditor() {
   const [reviewState, setReviewState] = useState<SuggestionReviewState>(createReviewState([]));
 
   // Phase 1 Professional Usability (2026-08-09) — Find & Replace state.
-  const [isFindReplaceOpen, setIsFindReplaceOpen] = useState(false);
+  // Document Studio Simplification (2026-08-10) — replaces the previous
+  // "everything stacked and visible at once" layout (Find & Replace,
+  // Outline, Stats, Quality Audit, Suggestions, Glossary, Settings all
+  // shown simultaneously) with a single-tab system: at most ONE
+  // secondary panel is visible at a time, and the editor itself stays
+  // the clean, unchanged default view. All existing state/handlers below
+  // are unchanged — this only reorganizes how they're rendered.
+  type StudioTab = "none" | "find" | "outline" | "quality" | "glossary" | "settings";
+  const [activeTab, setActiveTab] = useState<StudioTab>("none");
+  const toggleTab = (tab: StudioTab) => setActiveTab((prev) => (prev === tab ? "none" : tab));
   const [findQuery, setFindQuery] = useState("");
   const [replaceQuery, setReplaceQuery] = useState("");
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
@@ -287,7 +296,6 @@ export default function DocumentStudioEditor() {
   // localStorage on mount, same lazy-initializer pattern already used for
   // the draft content above (getInitialDraftContent).
   const [glossary, setGlossary] = useState<GlossaryEntry[]>(() => loadGlossary());
-  const [isGlossaryOpen, setIsGlossaryOpen] = useState(false);
   // Mirrors `glossary` state but as a ref, so the onUpdate callback below
   // (captured once when the editor is created — same reasoning as
   // hasAuditReportRef above) always reads the CURRENT glossary rather
@@ -642,7 +650,7 @@ export default function DocumentStudioEditor() {
   };
 
   const handleCloseFindReplace = () => {
-    setIsFindReplaceOpen(false);
+    setActiveTab("none");
     setFindQuery("");
     setReplaceQuery("");
     setCurrentMatchIndex(-1);
@@ -880,78 +888,30 @@ export default function DocumentStudioEditor() {
     }
   };
 
+  const TAB_DEFINITIONS: { id: "find" | "outline" | "quality" | "glossary" | "settings"; label: string }[] = [
+    { id: "find", label: "🔍 Find & Replace" },
+    { id: "outline", label: "📑 Outline" },
+    { id: "quality", label: "✓ Quality & Suggestions" },
+    { id: "glossary", label: `📖 Glossary${glossary.length > 0 ? ` (${glossary.length})` : ""}` },
+    { id: "settings", label: "⚙️ Settings" },
+  ];
+
   return (
     <div className="max-w-4xl mx-auto px-4">
+      {/* Document Studio Simplification (2026-08-10) — the editor card
+          below is now the ONLY thing shown by default: toolbar, the text
+          area itself, and export/save actions. Every analysis/utility
+          system (Find & Replace, Outline, Quality Audit + Suggestions,
+          Glossary, Ruler + Publishing Presets) moved into the tab bar
+          further down — at most one of those panels is ever visible at
+          once, and none of them show unless explicitly opened. */}
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
-        <div className="flex justify-between items-center mb-2">
+        <div className="flex justify-between items-center mb-3">
           <Toolbar editor={editor} dir={dir} setDir={setDir} />
-          <div className="flex items-center gap-2">
-            <PublishingPresetSelector selectedId={selectedPresetId} onChange={handlePresetChange} />
-            <button
-              type="button"
-              onClick={() => setIsFindReplaceOpen((prev) => !prev)}
-              className="px-2.5 py-1 rounded-md border border-slate-300 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition"
-            >
-              🔍 Find &amp; Replace
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsGlossaryOpen((prev) => !prev)}
-              className="px-2.5 py-1 rounded-md border border-slate-300 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition"
-            >
-              📖 Glossary{glossary.length > 0 ? ` (${glossary.length})` : ""}
-            </button>
-            <div className="text-xs text-stone-500 font-sans" dir="ltr">
-              {saveStatus === "saving" && "💾 Saving..."}
-              {saveStatus === "saved" && "✓ Saved to browser"}
-            </div>
+          <div className="text-xs text-stone-500 font-sans" dir="ltr">
+            {saveStatus === "saving" && "💾 Saving..."}
+            {saveStatus === "saved" && "✓ Saved to browser"}
           </div>
-        </div>
-
-        <div className="mb-2">
-          <WordRuler dir={dir} />
-        </div>
-
-        {isFindReplaceOpen && (
-          <div className="mb-3">
-            <FindReplacePanel
-              isOpen={isFindReplaceOpen}
-              searchQuery={findQuery}
-              replaceQuery={replaceQuery}
-              matchCount={currentMatches.length}
-              currentMatchIndex={currentMatchIndex}
-              onSearchChange={handleFindQueryChange}
-              onReplaceChange={setReplaceQuery}
-              onNext={handleFindNext}
-              onPrevious={handleFindPrevious}
-              onReplaceCurrent={handleReplaceCurrent}
-              onReplaceAll={handleReplaceAll}
-              onClose={handleCloseFindReplace}
-            />
-          </div>
-        )}
-
-        {isGlossaryOpen && (
-          <div className="mb-3">
-            <GlossaryPanel
-              entries={glossary}
-              onAdd={handleGlossaryAdd}
-              onUpdate={handleGlossaryUpdate}
-              onDelete={handleGlossaryDelete}
-              onExport={handleGlossaryExport}
-              onImport={handleGlossaryImport}
-            />
-          </div>
-        )}
-
-        {outline.length > 0 && (
-          <div className="mb-3">
-            <DocumentOutlinePanel outline={outline} onNavigate={handleOutlineNavigate} />
-          </div>
-        )}
-
-        <div className="mb-3">
-          <DocumentStatsBar stats={stats} health={health} />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 mb-3">
@@ -1096,82 +1056,153 @@ export default function DocumentStudioEditor() {
         )}
       </div>
 
-      <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md mt-4" dir="rtl">
-        <h2 className="text-sm font-bold text-amber-800 mb-3">قلم ٹولز / Qalam Tools</h2>
-
-        <div className="flex flex-wrap gap-2">
+      {/* Tab bar — at most one panel below is ever open. Clicking an
+          already-active tab closes it, returning to the clean editor-only
+          view. */}
+      <div className="flex flex-wrap gap-2 mt-4" dir="ltr">
+        {TAB_DEFINITIONS.map((tab) => (
           <button
+            key={tab.id}
             type="button"
-            onClick={handleStandardizeClick}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
+            onClick={() => toggleTab(tab.id)}
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition ${
+              activeTab === tab.id
+                ? "bg-amber-600 text-white border-amber-600"
+                : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
+            }`}
           >
-            معیاری بنائیں / Standardize Document
+            {tab.label}
           </button>
-          <button
-            type="button"
-            onClick={handleRunAudit}
-            className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
-          >
-            معیار جانچیں / Run Quality Audit
-          </button>
-        </div>
+        ))}
+      </div>
 
-        {alreadyClean && (
-          <p className="mt-3 text-sm text-green-700">
-            ✓ اس متن میں مزید کوئی خودکار اصلاح دستیاب نہیں / No further automatic corrections available for this text
-            {auditReport && auditReport.totalIssues > 0 && (
-              <span className="block text-amber-700 mt-1">
-                (نوٹ: Quality Audit ابھی بھی {auditReport.totalIssues} ایسا مسئلہ دکھا رہا ہے جسے دستی طور پر دیکھنا ہوگا — یہ خودکار اصلاح کی فہرست میں شامل نہیں / Note: Quality Audit still shows {auditReport.totalIssues} issue(s) needing manual review — these aren't part of automatic correction)
-              </span>
-            )}
-          </p>
-        )}
-
-        {preview && (
-          <div className="mt-4 border border-amber-300 rounded-lg p-4 bg-amber-50">
-            <p className="text-sm font-semibold text-gray-800 mb-2">تجویز کردہ تبدیلیاں / Proposed changes:</p>
-            <ul className="text-sm text-gray-700 space-y-1 mb-4">
-              <li>کل تصحیحات / Total corrections: {preview.report.totalCorrections}</li>
-              <li>رسم الخط / Script normalizations: {preview.report.scriptNormalizations}</li>
-              <li>خالی جگہ / Spacing fixes: {preview.report.spacingFixes}</li>
-              <li>رموز اوقاف / Punctuation fixes: {preview.report.punctuationFixes}</li>
-            </ul>
-            <div className="flex gap-2" dir="ltr">
-              <button
-                type="button"
-                onClick={handleConfirmStandardize}
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
-              >
-                تصدیق کریں / Confirm
-              </button>
-              <button
-                type="button"
-                onClick={handleCancelStandardize}
-                className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
-              >
-                منسوخ / Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-4">
-          <QualityAuditPanel report={auditReport} isStale={isAuditStale} />
-        </div>
-
-        <div className="mt-4">
-          <SuggestionsPanel
-            pending={reviewState.pending}
-            accepted={reviewState.accepted}
-            ignored={reviewState.ignored}
-            onAccept={handleAcceptSuggestion}
-            onIgnore={handleIgnoreSuggestion}
-            onApplyAccepted={handleApplyAccepted}
-            onAcceptCategory={handleAcceptCategory}
-            onIgnoreCategory={handleIgnoreCategory}
+      {activeTab === "find" && (
+        <div className="mt-3">
+          <FindReplacePanel
+            isOpen={true}
+            searchQuery={findQuery}
+            replaceQuery={replaceQuery}
+            matchCount={currentMatches.length}
+            currentMatchIndex={currentMatchIndex}
+            onSearchChange={handleFindQueryChange}
+            onReplaceChange={setReplaceQuery}
+            onNext={handleFindNext}
+            onPrevious={handleFindPrevious}
+            onReplaceCurrent={handleReplaceCurrent}
+            onReplaceAll={handleReplaceAll}
+            onClose={handleCloseFindReplace}
           />
         </div>
-      </div>
+      )}
+
+      {activeTab === "outline" && (
+        <div className="mt-3">
+          <DocumentOutlinePanel outline={outline} onNavigate={handleOutlineNavigate} />
+        </div>
+      )}
+
+      {activeTab === "settings" && (
+        <div className="mt-3 space-y-3">
+          <WordRuler dir={dir} />
+          <PublishingPresetSelector selectedId={selectedPresetId} onChange={handlePresetChange} />
+        </div>
+      )}
+
+      {activeTab === "glossary" && (
+        <div className="mt-3">
+          <GlossaryPanel
+            entries={glossary}
+            onAdd={handleGlossaryAdd}
+            onUpdate={handleGlossaryUpdate}
+            onDelete={handleGlossaryDelete}
+            onExport={handleGlossaryExport}
+            onImport={handleGlossaryImport}
+          />
+        </div>
+      )}
+
+      {activeTab === "quality" && (
+        <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md mt-3" dir="rtl">
+          <div className="mb-4">
+            <DocumentStatsBar stats={stats} health={health} />
+          </div>
+
+          <h2 className="text-sm font-bold text-amber-800 mb-3">قلم ٹولز / Qalam Tools</h2>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleStandardizeClick}
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
+            >
+              معیاری بنائیں / Standardize Document
+            </button>
+            <button
+              type="button"
+              onClick={handleRunAudit}
+              className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
+            >
+              معیار جانچیں / Run Quality Audit
+            </button>
+          </div>
+
+          {alreadyClean && (
+            <p className="mt-3 text-sm text-green-700">
+              ✓ اس متن میں مزید کوئی خودکار اصلاح دستیاب نہیں / No further automatic corrections available for this text
+              {auditReport && auditReport.totalIssues > 0 && (
+                <span className="block text-amber-700 mt-1">
+                  (نوٹ: Quality Audit ابھی بھی {auditReport.totalIssues} ایسا مسئلہ دکھا رہا ہے جسے دستی طور پر دیکھنا ہوگا — یہ خودکار اصلاح کی فہرست میں شامل نہیں / Note: Quality Audit still shows {auditReport.totalIssues} issue(s) needing manual review — these aren't part of automatic correction)
+                </span>
+              )}
+            </p>
+          )}
+
+          {preview && (
+            <div className="mt-4 border border-amber-300 rounded-lg p-4 bg-amber-50">
+              <p className="text-sm font-semibold text-gray-800 mb-2">تجویز کردہ تبدیلیاں / Proposed changes:</p>
+              <ul className="text-sm text-gray-700 space-y-1 mb-4">
+                <li>کل تصحیحات / Total corrections: {preview.report.totalCorrections}</li>
+                <li>رسم الخط / Script normalizations: {preview.report.scriptNormalizations}</li>
+                <li>خالی جگہ / Spacing fixes: {preview.report.spacingFixes}</li>
+                <li>رموز اوقاف / Punctuation fixes: {preview.report.punctuationFixes}</li>
+              </ul>
+              <div className="flex gap-2" dir="ltr">
+                <button
+                  type="button"
+                  onClick={handleConfirmStandardize}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
+                >
+                  تصدیق کریں / Confirm
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelStandardize}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+                >
+                  منسوخ / Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <QualityAuditPanel report={auditReport} isStale={isAuditStale} />
+          </div>
+
+          <div className="mt-4">
+            <SuggestionsPanel
+              pending={reviewState.pending}
+              accepted={reviewState.accepted}
+              ignored={reviewState.ignored}
+              onAccept={handleAcceptSuggestion}
+              onIgnore={handleIgnoreSuggestion}
+              onApplyAccepted={handleApplyAccepted}
+              onAcceptCategory={handleAcceptCategory}
+              onIgnoreCategory={handleIgnoreCategory}
+            />
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         .qalam-editor-content p {
