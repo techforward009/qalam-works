@@ -41,6 +41,9 @@ import { SuggestionsPanel } from "./SuggestionsPanel";
 import { FindReplacePanel } from "./FindReplacePanel";
 import { DocumentOutlinePanel } from "./DocumentOutlinePanel";
 import { GlossaryPanel } from "./GlossaryPanel";
+import { WordRuler } from "./WordRuler";
+import { PublishingPresetSelector } from "./PublishingPresetSelector";
+import { loadSelectedPresetId, saveSelectedPresetId, type PresetId } from "../utils/publishingPresets";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import { formatFileSize } from "../../../utils/formatFileSize";
@@ -249,6 +252,10 @@ function findBlockStartPosition(editor: Editor, blockIndex: number): number | nu
 
 export default function DocumentStudioEditor() {
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
+  // Publishing Preset Foundation — Phase 1 (2026-08-09). Persisted
+  // selection only; does not currently affect export or editor
+  // formatting (see publishingPresets.ts's own comment).
+  const [selectedPresetId, setSelectedPresetId] = useState<PresetId>(() => loadSelectedPresetId());
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
 
@@ -645,6 +652,13 @@ export default function DocumentStudioEditor() {
   // navigation. Moves the cursor to the clicked heading via TipTap's own
   // setTextSelection + scrollIntoView commands — a real, native cursor
   // move, not a custom scroll implementation.
+  // Publishing Preset Foundation — Phase 1 (2026-08-09). Persists the
+  // choice only — no export or editor-formatting side effect yet.
+  const handlePresetChange = (id: PresetId) => {
+    setSelectedPresetId(id);
+    saveSelectedPresetId(id);
+  };
+
   const handleOutlineNavigate = (blockIndex: number) => {
     if (!editor) return;
     const pos = findBlockStartPosition(editor, blockIndex);
@@ -872,6 +886,7 @@ export default function DocumentStudioEditor() {
         <div className="flex justify-between items-center mb-2">
           <Toolbar editor={editor} dir={dir} setDir={setDir} />
           <div className="flex items-center gap-2">
+            <PublishingPresetSelector selectedId={selectedPresetId} onChange={handlePresetChange} />
             <button
               type="button"
               onClick={() => setIsFindReplaceOpen((prev) => !prev)}
@@ -891,6 +906,10 @@ export default function DocumentStudioEditor() {
               {saveStatus === "saved" && "✓ Saved to browser"}
             </div>
           </div>
+        </div>
+
+        <div className="mb-2">
+          <WordRuler dir={dir} />
         </div>
 
         {isFindReplaceOpen && (
