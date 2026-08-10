@@ -1,249 +1,170 @@
 import Link from "next/link";
+import Hero from "./components/Hero";
 import InteractiveDemo from "./components/InteractiveDemo";
 import PublicationQualityChecker from "./components/PublicationQualityChecker";
 import DocumentUpload from "./components/DocumentUpload";
 
+// Homepage Redesign (2026-08-10). Design direction: Ink Navy (#151B2E /
+// #1D2440) + manuscript gold (#B8935A) — chosen specifically for this
+// product's world (illuminated-manuscript ink-and-gold-leaf palette)
+// rather than the generic warm-cream + amber/terracotta look the
+// previous version shared with countless other AI-assisted sites.
+// Signature element lives in Hero.tsx (live before/after transformation).
+// Sections alternate paper (#FAF9F6) and white to keep clear visual
+// separation without introducing a third color. All existing tool
+// components (InteractiveDemo, PublicationQualityChecker, DocumentUpload)
+// are reused unmodified — only their surrounding presentation changed.
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#121417] flex flex-col font-sans text-center" dir="rtl">
-      
-      {/* 1. Hero Section */}
-      <section className="max-w-5xl mx-auto px-4 pt-8 pb-6 text-center">
-        
-        {/* Target Audience Tag */}
-        <div className="inline-block bg-amber-100 text-amber-800 text-xs md:text-sm font-medium px-4 py-1.5 rounded-full mb-4 shadow-sm mx-auto" dir="ltr">
-          For Researchers • Translators • Publishers • Digital Scribes
+    <div className="min-h-screen bg-[#FAF9F6] text-[#151B2E] font-sans">
+      <Hero />
+
+      {/* Why Qalam Works — three pillars, reframed around what actually
+          differentiates the product from Word/Google Docs, stated in
+          plain, specific terms rather than marketing adjectives. */}
+      <section id="why-us" className="max-w-6xl mx-auto px-6 py-20">
+        <div className="text-center mb-14" dir="rtl">
+          <p className="text-xs font-semibold tracking-wide text-[#B8935A] mb-2" dir="ltr">
+            WHY QALAM WORKS
+          </p>
+          <h2 className="text-2xl md:text-3xl font-bold text-[#151B2E] mb-2">
+            Word processors weren&apos;t built for this script.
+          </h2>
+          <p className="font-nastaliq text-lg text-[#5B5748]">قلم ورکس اسی کے لیے بنایا گیا</p>
         </div>
 
-        {/* Main Title with Robust Mobile Line Break & Padding */}
-        <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight mb-2 font-nastaliq leading-relaxed text-center">
-          Qalam Works
-        </h1>
-        
-        <div className="text-lg md:text-2xl font-semibold text-amber-800 mb-4 leading-snug px-2 text-center" dir="ltr">
-          <span className="block sm:inline">Professional Publishing Tools</span>{" "}
-          <span className="block sm:inline text-base md:text-xl font-medium text-gray-700">for Urdu, Arabic & Persian</span>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            {
+              title: "Script-native rules",
+              titleUrdu: "خصوصی رسم الخط انجن",
+              body: "Detects mixed Arabic/Urdu character forms, missing diacritics, and RTL layout issues generic spell-checkers never see.",
+            },
+            {
+              title: "Minutes, not hours",
+              titleUrdu: "گھنٹوں کا کام منٹوں میں",
+              body: "One pass catches what would normally take a proofreader hours of manual character-by-character review.",
+            },
+            {
+              title: "Print-ready output",
+              titleUrdu: "اشاعت کے لیے تیار",
+              body: "Export to Word with correct typography, spacing, and structure — ready for academic journals and publishing houses.",
+            },
+          ].map((pillar) => (
+            <div
+              key={pillar.title}
+              className="bg-white p-6 rounded-2xl border border-[#151B2E]/[0.06] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+            >
+              <h3 className="text-base font-bold text-[#151B2E] mb-1" dir="ltr">
+                {pillar.title}
+              </h3>
+              <p className="font-nastaliq text-sm text-[#8B3A3A] mb-3">{pillar.titleUrdu}</p>
+              <p className="text-sm text-[#5B5748] leading-relaxed" dir="ltr">
+                {pillar.body}
+              </p>
+            </div>
+          ))}
         </div>
+      </section>
 
-        {/* Value Proposition */}
-        <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto mb-6 leading-relaxed text-center">
-          <span dir="ltr" className="block font-medium text-gray-800 mb-1">
-            Professional tools for Unicode normalization, Arabic-script typography, and publication-ready Urdu, Arabic & Persian documents.
-          </span>
-          <span className="text-xs md:text-sm text-gray-500 font-nastaliq block">
-            اردو، عربی اور فارسی متن کی اصلاح، یونی کوڈ معیاری کاری، خوبصورت ٹائپوگرافی اور اشاعتی تیاری کے لیے پیشہ ورانہ اوزار
-          </span>
+      {/* Live demo — moved up in the page order (was previously buried
+          near the bottom) since "see it work" is a stronger conversion
+          driver than more prose about the product. */}
+      <div id="demo" className="bg-white border-y border-[#151B2E]/[0.06]">
+        <InteractiveDemo />
+      </div>
+
+      {/* Document Studio — the flagship tool, now the primary CTA
+          section rather than a small card easy to scroll past. */}
+      <section className="max-w-5xl mx-auto px-6 py-20 text-center">
+        <div className="bg-[#151B2E] text-white rounded-3xl p-10 md:p-14 relative overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -left-10 -bottom-10 select-none font-nastaliq text-[14rem] leading-none text-[#B8935A]/[0.08]"
+          >
+            ک
+          </div>
+          <div className="relative">
+            <div
+              className="inline-block bg-[#B8935A]/15 text-[#E8C989] text-xs font-medium px-3 py-1 rounded-full mb-4"
+              dir="ltr"
+            >
+              Flagship workspace
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold mb-1" dir="ltr">
+              Document Studio
+            </h2>
+            <p className="font-nastaliq text-lg text-[#D8D2C4] mb-5">ڈاکومنٹ اسٹوڈیو</p>
+            <p className="text-sm md:text-base text-[#B9B4A8] max-w-xl mx-auto mb-8 leading-relaxed" dir="ltr">
+              A full writing workspace: rich-text editing, one-click standardization, a built-in quality
+              audit, terminology consistency, and publication-ready Word export — all in one place.
+            </p>
+            <Link
+              href="/tools/document-studio"
+              className="inline-block bg-[#B8935A] hover:bg-[#C9A46B] text-[#151B2E] font-semibold px-7 py-3 rounded-lg shadow-lg transition-all text-sm"
+            >
+              Open Document Studio
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Who it's for — condensed from 4 large cards to a single dense
+          row; the audience is one sentence each, not a mini value-prop
+          per card (that repeated the "Why" section above). */}
+      <section className="max-w-5xl mx-auto px-6 pb-20">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { role: "Researchers", roleUrdu: "محققین", body: "Clean academic text, precise references." },
+            { role: "Translators", roleUrdu: "مترجمین", body: "Standardize multilingual text consistently." },
+            { role: "Publishers", roleUrdu: "ناشرین", body: "Cut proofreading time, fix layout flaws." },
+            { role: "Digital Scribes", roleUrdu: "ڈیجیٹل کاتبین", body: "Turn raw text dumps into clean documents." },
+          ].map((a) => (
+            <div key={a.role} className="bg-white p-4 rounded-xl border border-[#151B2E]/[0.06]">
+              <h4 className="text-sm font-bold text-[#151B2E]" dir="ltr">
+                {a.role}
+              </h4>
+              <p className="font-nastaliq text-sm text-[#8B3A3A] mb-1">{a.roleUrdu}</p>
+              <p className="text-xs text-[#5B5748] leading-relaxed" dir="ltr">
+                {a.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Core engines — quality checker + upload pipeline, unchanged
+          internally, framed under one clear "more tools" heading rather
+          than appearing as disconnected page fragments. */}
+      <div className="bg-white border-y border-[#151B2E]/[0.06]">
+        <div className="max-w-6xl mx-auto px-6 pt-14 pb-2 text-center" dir="rtl">
+          <p className="text-xs font-semibold tracking-wide text-[#B8935A] mb-2" dir="ltr">
+            MORE TOOLS
+          </p>
+          <h2 className="text-2xl md:text-3xl font-bold text-[#151B2E]">Every stage of publishing, covered</h2>
+        </div>
+        <PublicationQualityChecker />
+        <DocumentUpload />
+      </div>
+
+      {/* Services — professional-services path, kept compact per
+          existing v1 scope decision (no pricing table, single CTA). */}
+      <section className="max-w-3xl mx-auto px-6 py-20 text-center">
+        <h2 className="text-xl md:text-2xl font-bold text-[#151B2E] mb-1" dir="ltr">
+          Translation &amp; Publishing Services
+        </h2>
+        <p className="font-nastaliq text-lg text-[#8B3A3A] mb-4">ترجمہ و اشاعتی خدمات</p>
+        <p className="text-sm text-[#5B5748] max-w-xl mx-auto mb-8 leading-relaxed" dir="ltr">
+          Need more than a tool? We provide professional translation, editing, proofreading, and
+          publication-preparation services for Urdu, Arabic, Persian, and English content.
         </p>
-
-        {/* Action Buttons with Refined CTA Hierarchy */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-3 w-full max-w-lg mx-auto">
-          <Link
-            href="#demo"
-            className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-all text-sm text-center"
-          >
-            Paste & Process Text / متن پیسٹ کریں
-          </Link>
-
-          <Link
-            href="#quality-checker"
-            className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 font-semibold px-5 py-2.5 rounded-lg shadow-sm transition-all text-sm text-center"
-          >
-            Quality Audit / کوالٹی چیک کریں
-          </Link>
-
-          <Link
-            href="#document-upload"
-            className="w-full sm:w-auto bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-semibold px-5 py-2.5 rounded-lg shadow-sm transition-all text-sm text-center"
-          >
-            Upload File / فائل اپ لوڈ
-          </Link>
-        </div>
+        <Link
+          href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Project%20Inquiry"
+          className="inline-block bg-[#151B2E] hover:bg-[#1D2440] text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-all text-sm"
+        >
+          Discuss Your Project
+        </Link>
       </section>
-
-      {/* 2. Why Qalam Works? (Value Section) */}
-      <section id="why-us" className="max-w-6xl mx-auto px-4 py-8 bg-amber-50/50 border-y border-amber-100/60 my-2 text-center">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold mb-1 text-amber-900" dir="ltr">
-            Why Qalam Works?
-          </h2>
-          <h3 className="text-xl md:text-2xl font-bold mb-3 font-nastaliq text-amber-800">
-            کیوں انتخاب کریں؟
-          </h3>
-          <p className="text-gray-600 text-xs md:text-sm max-w-2xl mx-auto" dir="ltr">
-            Traditional word processors and generic tools struggle with complex Arabic-script typography. Qalam Works is built specifically for these challenges.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-          
-          {/* Pillar 1: Script-Native Rules */}
-          <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm flex flex-col items-center">
-            <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">01 / Script-Native Rules</div>
-            <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">اردو، عربی و فارسی کے لیے خصوصی رسم الخط انجن</h3>
-            <p className="text-xs text-gray-600 leading-relaxed text-center" dir="ltr">
-              Generic tools often struggle with Urdu spellings and RTL formatting. Qalam Works is designed specifically for Arabic, Persian, and Urdu script rules, ligatures, and Unicode standards.
-            </p>
-          </div>
-
-          {/* Pillar 2: Massive Time Saver */}
-          <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm flex flex-col items-center">
-            <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">02 / Massive Time Saver</div>
-            <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">گھنٹوں کا کام سیکنڈوں میں</h3>
-            <p className="text-xs text-gray-600 leading-relaxed text-center" dir="ltr">
-              Manually fixing mixed character variants, spacing anomalies, and missing diacritics can take hours of manual effort. Our preflight engine automates layout and typography auditing efficiently.
-            </p>
-          </div>
-
-          {/* Pillar 3: Publication-Grade Output */}
-          <div className="bg-white p-5 rounded-xl border border-amber-200/60 shadow-sm flex flex-col items-center">
-            <div className="text-amber-600 font-bold text-lg mb-2" dir="ltr">03 / Publication-Grade Output</div>
-            <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">اشاعت کے لیے تیار معیار</h3>
-            <p className="text-xs text-gray-600 leading-relaxed text-center" dir="ltr">
-              Output documents are optimized for academic journals, publishing houses, and professional presses, reducing typography errors before going to print.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* 3. Who is Qalam Works for? (Target Audience Section) */}
-      <section id="who-is-it-for" className="max-w-6xl mx-auto px-4 py-8 text-center">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold mb-1 text-amber-900" dir="ltr">
-            Who is Qalam Works for?
-          </h2>
-          <h3 className="text-xl md:text-2xl font-bold mb-3 font-nastaliq text-amber-800">
-            یہ پلیٹ فارم کس کے لیے ہے؟
-          </h3>
-          <p className="text-gray-600 text-xs md:text-sm max-w-2xl mx-auto" dir="ltr">
-            Built for professionals working with Arabic-script text and high-volume publishing workflows.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-          
-          {/* Card 1: Researchers */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col items-center justify-between">
-            <div className="w-full">
-              <div className="text-amber-600 text-sm font-bold mb-1" dir="ltr">01</div>
-              <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">محققین (Researchers)</h3>
-              <p className="text-xs text-gray-600 leading-relaxed mt-2 text-center" dir="ltr">
-                Clean academic texts, precise references, and proper Arabic-script formatting for thesis and papers.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 2: Translators */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col items-center justify-between">
-            <div className="w-full">
-              <div className="text-amber-600 text-sm font-bold mb-1" dir="ltr">02</div>
-              <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">مترجمین (Translators)</h3>
-              <p className="text-xs text-gray-600 leading-relaxed mt-2 text-center" dir="ltr">
-                Standardize multilingual texts across Urdu, Arabic, and Persian to prepare publication-ready outputs.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 3: Publishers */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col items-center justify-between">
-            <div className="w-full">
-              <div className="text-amber-600 text-sm font-bold mb-1" dir="ltr">03</div>
-              <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">ناشرین (Publishers)</h3>
-              <p className="text-xs text-gray-600 leading-relaxed mt-2 text-center" dir="ltr">
-                Reduce proofreading turnaround time, eliminate layout flaws, and dramatically improve print quality.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 4: Digital Scribes */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col items-center justify-between">
-            <div className="w-full">
-              <div className="text-amber-600 text-sm font-bold mb-1" dir="ltr">04</div>
-              <h3 className="text-base font-bold text-gray-900 mb-1 font-nastaliq">ڈیجیٹل کاتبین (Digital Scribes)</h3>
-              <p className="text-xs text-gray-600 leading-relaxed mt-2 text-center" dir="ltr">
-                Convert messy raw text dumps into clean, structurally uniform documents ready for typesetting.
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* 4. Document Studio Callout — the flagship, most-complete tool
-          currently had no presence on the homepage at all (no card, no
-          link, unreachable except by knowing the URL directly). This
-          section follows the existing card visual pattern (bg-white,
-          rounded-xl border, amber accents, bilingual heading) rather than
-          introducing a new style, per the discoverability-first fix. */}
-      <section id="document-studio-callout" className="max-w-4xl mx-auto px-4 py-8 text-center">
-        <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
-          <div className="inline-block bg-amber-100 text-amber-800 text-xs font-medium px-3 py-1 rounded-full mb-3" dir="ltr">
-            Flagship / سب سے جامع ٹول
-          </div>
-          <h2 className="text-xl md:text-2xl font-bold mb-1 text-amber-900" dir="ltr">
-            Document Studio
-          </h2>
-          <h3 className="text-lg md:text-xl font-bold mb-3 font-nastaliq text-amber-800">
-            ڈاکومنٹ اسٹوڈیو
-          </h3>
-          <p className="text-sm text-gray-600 max-w-2xl mx-auto mb-2" dir="ltr">
-            A full writing workspace for Urdu, Arabic & Persian — rich-text editing,
-            one-click standardization, a built-in quality audit, and publication-ready
-            Word (.docx) export, all in one place.
-          </p>
-          <p className="text-xs md:text-sm text-gray-500 font-nastaliq mb-6">
-            لکھیں، معیاری بنائیں، معیار جانچیں، اور Word کے لیے تیار دستاویز حاصل کریں — ایک ہی جگہ
-          </p>
-          <Link
-            href="/tools/document-studio"
-            className="inline-block bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-sm"
-          >
-            Open Document Studio / ڈاکومنٹ اسٹوڈیو کھولیں
-          </Link>
-        </div>
-      </section>
-
-      {/* 5. Translation & Publishing Services — completes the "Tools +
-          Expertise" dual positioning: right after the visitor sees the
-          tools (self-serve), this offers the professional-services path
-          (done-for-you). Deliberately compact per spec — no pricing, no
-          long service list, no translator profiles; a single mailto CTA
-          for launch v1, matching the same visual card pattern as the
-          Document Studio callout above. */}
-      <section id="services" className="max-w-4xl mx-auto px-4 py-8 text-center">
-        <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
-          <h2 className="text-xl md:text-2xl font-bold mb-1 text-amber-900" dir="ltr">
-            Translation &amp; Publishing Services
-          </h2>
-          <h3 className="text-lg md:text-xl font-bold mb-4 font-nastaliq text-amber-800">
-            ترجمہ و اشاعتی خدمات
-          </h3>
-          <p className="text-sm text-gray-600 max-w-2xl mx-auto mb-2" dir="ltr">
-            Need more than a tool? We also provide professional translation,
-            editing, proofreading, standardization, and publication-preparation
-            services for Urdu, Arabic, Persian, and English content.
-          </p>
-          <p className="text-xs md:text-sm text-gray-500 font-nastaliq mb-6">
-            اگر آپ کو صرف ٹول نہیں بلکہ ماہر معاونت درکار ہو، تو ہم ترجمہ، ادارت، پروف ریڈنگ، معیاری کاری اور اشاعتی تیاری کی خدمات بھی فراہم کرتے ہیں۔
-          </p>
-          <Link
-            href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Project%20Inquiry"
-            className="inline-block bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-sm"
-          >
-            Discuss Your Project / اپنا منصوبہ زیرِ بحث لائیں
-          </Link>
-        </div>
-      </section>
-
-      {/* 6. Core Engines: Unicode Standardizer v1.0 */}
-      <InteractiveDemo />
-
-      {/* 7. Core Engines: Publication Quality Checker MVP */}
-      <PublicationQualityChecker />
-
-      {/* 8. Document Upload Pipeline */}
-      <DocumentUpload />
-
     </div>
   );
 }
