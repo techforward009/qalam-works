@@ -26,7 +26,7 @@ const faqs = [
 export default function InvoiceGeneratorPage() {
   return (
     <main className="py-10 md:py-14">
-      <section className="max-w-3xl mx-auto px-4 text-center mb-10">
+      <section className="max-w-[1100px] mx-auto px-6 text-center mb-10">
         <h1 className="text-2xl md:text-3xl font-bold text-amber-900 mb-2">Invoice Generator</h1>
         <p className="text-sm md:text-base text-gray-600">
           Create a professional invoice and save it as a PDF — free, no sign-up required.
@@ -37,7 +37,7 @@ export default function InvoiceGeneratorPage() {
         <InvoiceGeneratorTool />
       </div>
 
-      <section className="max-w-3xl mx-auto px-4" dir="rtl">
+      <section className="max-w-[1100px] mx-auto px-6" dir="rtl">
         <h2 className="text-lg font-bold text-gray-900 mb-4 text-right">اکثر پوچھے گئے سوالات</h2>
         <div className="space-y-4">
           {faqs.map((faq) => (

@@ -79,7 +79,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       title={label}
-      className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+      className={`h-[38px] px-3 rounded-md text-sm font-semibold border transition-all ${
         active
           ? "bg-[#1A3A2A] text-white border-[#1A3A2A]"
           : "bg-white text-gray-600 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
@@ -91,14 +91,14 @@ function ToolbarButton({
 }
 
 function ToolbarDivider() {
-  return <div className="w-px bg-gray-200 mx-1 self-stretch" />;
+  return <div className="w-px h-[26px] bg-gray-200 mx-1.5 self-center" />;
 }
 
 function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | "ltr"; setDir: (d: "rtl" | "ltr") => void }) {
   if (!editor) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-gray-200" dir="ltr">
+    <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-gray-100" dir="ltr">
       <ToolbarButton label="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
         B
       </ToolbarButton>
@@ -132,7 +132,7 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         Link
       </ToolbarButton>
 
-      <div className="w-px bg-gray-300 mx-1" />
+      <ToolbarDivider />
 
       <ToolbarButton label="Align Left" active={editor.isActive({ textAlign: "left" })} onClick={() => editor.chain().focus().setTextAlign("left").run()}>
         ⇤
@@ -147,7 +147,7 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         ☰
       </ToolbarButton>
 
-      <div className="w-px bg-gray-300 mx-1" />
+      <ToolbarDivider />
 
       <ToolbarButton label="Undo" onClick={() => editor.chain().focus().undo().run()}>
         ↶ Undo
@@ -156,7 +156,7 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         ↷ Redo
       </ToolbarButton>
 
-      <div className="w-px bg-gray-300 mx-1" />
+      <ToolbarDivider />
 
       <ToolbarButton label="Right-to-left (Urdu/Arabic/Persian)" active={dir === "rtl"} onClick={() => setDir("rtl")}>
         RTL
@@ -918,7 +918,7 @@ export default function DocumentStudioEditor() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 mb-3">
+        <div className="flex flex-wrap items-center gap-3 mb-4">
           <input
             type="file"
             accept=".txt,.docx"
@@ -933,10 +933,10 @@ export default function DocumentStudioEditor() {
           />
           <label
             htmlFor="document-studio-upload-input"
-            className={`px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition flex items-center gap-2 ${
+            className={`h-9 px-3.5 rounded-md text-sm font-medium border transition flex items-center gap-2 ${
               isImporting
-                ? "bg-amber-300 text-white cursor-not-allowed"
-                : "bg-amber-600 text-white hover:bg-amber-700 cursor-pointer"
+                ? "border-gray-200 text-gray-400 cursor-not-allowed"
+                : "border-gray-300 text-gray-600 hover:border-[#B8935A] hover:text-[#1A3A2A] cursor-pointer"
             }`}
           >
             {isImporting ? "درآمد ہو رہا ہے... / Importing..." : "فائل اپلوڈ کریں / Upload File (.txt, .docx)"}
@@ -984,46 +984,40 @@ export default function DocumentStudioEditor() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 mt-4" dir="ltr">
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-5" dir="ltr">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
               onClick={handleCopy}
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
+              className="h-10 px-4 rounded-lg text-sm font-semibold bg-[#B8935A] text-white hover:bg-[#C9A46B] shadow-sm transition"
             >
               {copied ? "✓ Copied" : "Copy Text"}
             </button>
             <button
               type="button"
-              onClick={handleDownload}
-              className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
-            >
-              Download .txt <span className="text-[10px] font-normal text-amber-500">(Plain Text)</span>
-            </button>
-            <button
-              type="button"
               onClick={handleDownloadDocx}
-              className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
+              className="h-10 px-4 rounded-lg text-sm font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] shadow-sm transition"
             >
-              Download .docx <span className="text-[10px] font-normal text-amber-500">(For Word / Publishing)</span>
+              Download .docx
             </button>
             <button
               type="button"
               onClick={handleDownloadPdf}
               disabled={isExportingPdf}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${
+              className={`h-10 px-4 rounded-lg text-sm font-semibold shadow-sm transition ${
                 isExportingPdf
-                  ? "border-amber-300 text-amber-400 cursor-not-allowed"
-                  : "border-amber-600 text-amber-700 hover:bg-amber-50"
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-[#1A3A2A] text-white hover:bg-[#204a35]"
               }`}
             >
-              {isExportingPdf ? "PDF بن رہی ہے... / Generating..." : (
-                <>
-                  Download PDF <span className="text-[10px] font-normal text-amber-500">
-                    (Visual/Print{pdfSummary ? ` — ${pdfSummary.fileSizeLabel}` : ""})
-                  </span>
-                </>
-              )}
+              {isExportingPdf ? "PDF بن رہی ہے... / Generating..." : `Download PDF${pdfSummary ? ` (${pdfSummary.fileSizeLabel})` : ""}`}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="h-10 px-3.5 rounded-md text-xs font-medium text-gray-500 hover:text-[#1A3A2A] transition"
+            >
+              .txt
             </button>
           </div>
 
@@ -1031,14 +1025,14 @@ export default function DocumentStudioEditor() {
             <button
               type="button"
               onClick={handleNewDocument}
-              className="px-3 py-1.5 rounded-md border border-stone-300 text-stone-700 hover:bg-stone-100 transition"
+              className="h-9 px-3 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
             >
               New Document / نیا مسودہ
             </button>
             <button
               type="button"
               onClick={handleClearDraft}
-              className="px-3 py-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50 transition"
+              className="h-9 px-3 rounded-md text-red-500 hover:bg-red-50 transition"
             >
               Clear Draft / ڈرافٹ صاف کریں
             </button>
@@ -1063,16 +1057,16 @@ export default function DocumentStudioEditor() {
       {/* Tab bar — at most one panel below is ever open. Clicking an
           already-active tab closes it, returning to the clean editor-only
           view. */}
-      <div className="flex flex-wrap gap-2 mt-4" dir="ltr">
+      <div className="flex flex-wrap justify-center gap-2 mt-5 bg-white rounded-xl border border-[#1A3A2A]/10 shadow-[0_2px_20px_rgba(26,58,42,0.06)] p-2" dir="ltr">
         {TAB_DEFINITIONS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => toggleTab(tab.id)}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition ${
+            className={`h-10 px-4 rounded-lg text-sm font-medium transition ${
               activeTab === tab.id
-                ? "bg-amber-600 text-white border-amber-600"
-                : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
+                ? "bg-[#1A3A2A] text-white"
+                : "text-slate-600 hover:bg-[#FAF7F0]"
             }`}
           >
             {tab.label}

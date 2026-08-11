@@ -73,7 +73,7 @@ export default function DocumentCleanerTool() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4">
+    <div className="max-w-[1100px] mx-auto px-6">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         <div
           onDragOver={(e) => e.preventDefault()}

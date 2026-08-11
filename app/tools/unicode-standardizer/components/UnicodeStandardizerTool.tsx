@@ -39,7 +39,7 @@ export default function UnicodeStandardizerTool() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4">
+    <div className="max-w-[1100px] mx-auto px-6">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         {/* Clarification note — not a translator */}
         <div
@@ -79,7 +79,7 @@ export default function UnicodeStandardizerTool() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="یہاں اپنا متن پیسٹ کریں..."
-              className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[180px] focus:outline-none focus:ring-2 focus:ring-amber-500 text-right"
+              className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[320px] text-base focus:outline-none focus:ring-2 focus:ring-amber-500 text-right"
               dir="rtl"
             />
           </div>
@@ -89,7 +89,7 @@ export default function UnicodeStandardizerTool() {
               Standardized Output / درست شدہ متن
             </label>
             <div
-              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[180px] overflow-y-auto text-right whitespace-pre-wrap"
+              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[320px] text-base overflow-y-auto text-right whitespace-pre-wrap"
               dir="rtl"
             >
               {hasInput ? (

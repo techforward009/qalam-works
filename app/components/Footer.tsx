@@ -6,7 +6,7 @@ import { translations } from "../lib/translations";
 
 function PenNibIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
       strokeLinejoin="round" aria-hidden="true" className="text-[#B8935A] shrink-0">
       <path d="M12 19l7-7 3 3-7 7-3-3z" />
@@ -32,7 +32,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-[#1A3A2A] border-t border-white/10 mt-16" dir={dir}>
-      <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="max-w-[1240px] mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>
           <div className="flex items-center gap-2.5 mb-3" dir={dir}>
             <PenNibIcon />

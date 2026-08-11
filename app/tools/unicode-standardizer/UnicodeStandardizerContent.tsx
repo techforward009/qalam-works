@@ -11,19 +11,19 @@ export default function UnicodeStandardizerContent() {
 
   return (
     <main className="py-10 md:py-14" dir={dir}>
-      <section className="max-w-[900px] mx-auto px-4 text-center mb-10">
-        <h1 className={`text-2xl md:text-3xl font-bold text-[#1A3A2A] mb-3 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+      <section className="max-w-[1100px] mx-auto px-4 text-center mb-10">
+        <h1 className={`text-3xl md:text-4xl font-bold text-[#1A3A2A] mb-4 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.title}
         </h1>
-        <p className={`text-sm md:text-base text-gray-600 max-w-xl mx-auto ${naskh}`}>{t.description}</p>
+        <p className={`text-base md:text-lg text-gray-600 max-w-xl mx-auto ${naskh}`}>{t.description}</p>
       </section>
 
       <div className="mb-14">
         <UnicodeStandardizerTool />
       </div>
 
-      <section className="max-w-[900px] mx-auto px-4 mb-14">
-        <h2 className={`text-lg font-bold text-gray-900 mb-4 ${naskh}`}>{t.examplesHeading}</h2>
+      <section className="max-w-[1100px] mx-auto px-4 mb-14">
+        <h2 className={`text-2xl font-bold text-gray-900 mb-5 mt-4 ${naskh}`}>{t.examplesHeading}</h2>
         <div className="space-y-3">
           {t.examples.map((ex) => (
             <div key={ex.label} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
@@ -41,8 +41,8 @@ export default function UnicodeStandardizerContent() {
         </div>
       </section>
 
-      <section className="max-w-[900px] mx-auto px-4">
-        <h2 className={`text-lg font-bold text-gray-900 mb-4 ${naskh}`}>{t.faqHeading}</h2>
+      <section className="max-w-[1100px] mx-auto px-4">
+        <h2 className={`text-2xl font-bold text-gray-900 mb-5 mt-4 ${naskh}`}>{t.faqHeading}</h2>
         <div className="space-y-4">
           {t.faqs.map((faq) => (
             <div key={faq.question} className="border border-gray-200 rounded-xl p-4">

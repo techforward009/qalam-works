@@ -57,3 +57,39 @@ body {
   border-color: #d97706;
   box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
 }
+
+/* ================================================
+   PRINT / PDF COLOR PRESERVATION
+   Root cause of colors disappearing when printed:
+   no print rules existed at all, so browsers fell
+   back to their own default (usually background-
+   stripping) print behavior. Force exact color
+   reproduction site-wide instead.
+   ================================================ */
+* {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+  color-adjust: exact !important;
+}
+
+@media print {
+  /* min-h-screen / 100vh sections collapse to the viewport height on
+     screen but must NOT force that same height on a print page — that
+     is what produced compressed/fragmented content and huge blank
+     print areas. */
+  .min-h-screen {
+    min-height: 0 !important;
+  }
+
+  /* Let sections/cards paginate naturally instead of being sliced
+     mid-card across a page boundary. */
+  section {
+    break-inside: avoid-page;
+  }
+
+  /* Sticky header would otherwise repeat/overlap awkwardly across pages. */
+  header {
+    position: static !important;
+  }
+}
+

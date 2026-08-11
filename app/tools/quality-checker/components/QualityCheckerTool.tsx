@@ -57,7 +57,7 @@ export default function QualityCheckerTool() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4">
+    <div className="max-w-[1100px] mx-auto px-6">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         {/* Clarification note about {{ }} markers */}
         <div
@@ -110,7 +110,7 @@ export default function QualityCheckerTool() {
             setStandardizedText(null);
           }}
           placeholder="یہاں متن پیسٹ کریں یا فائل اپ لوڈ کریں..."
-          className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[160px] focus:outline-none focus:ring-2 focus:ring-amber-500 text-right"
+          className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[320px] text-base focus:outline-none focus:ring-2 focus:ring-amber-500 text-right"
           dir="rtl"
         />
         <div dir="ltr" className="mt-1 text-xs">
@@ -159,7 +159,7 @@ export default function QualityCheckerTool() {
               Standardized Text / معیاری متن
             </label>
             <div
-              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[120px] overflow-y-auto text-right whitespace-pre-wrap mb-4"
+              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[200px] text-base overflow-y-auto text-right whitespace-pre-wrap mb-4"
               dir="rtl"
             >
               {standardizedText}
