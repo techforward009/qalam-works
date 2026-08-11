@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useLanguage } from "../../../lib/language-context";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
@@ -255,6 +256,8 @@ function findBlockStartPosition(editor: Editor, blockIndex: number): number | nu
 }
 
 export default function DocumentStudioEditor() {
+  const { language: uiLanguage } = useLanguage();
+  const isUr = uiLanguage === "ur";
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   // Publishing Preset Foundation — Phase 1 (2026-08-09). Persisted
   // selection only; does not currently affect export or editor
@@ -438,7 +441,7 @@ export default function DocumentStudioEditor() {
 
   const handleNewDocument = () => {
     if (!editor) return;
-    if (window.confirm("کیا آپ نیا مسودہ شروع کرنا چاہتے ہیں؟ غیر محفوظ شدہ تبدیلیاں ختم ہو جائیں گی۔ / Start new document?")) {
+    if (window.confirm(isUr ? "کیا آپ نیا مسودہ شروع کرنا چاہتے ہیں؟ غیر محفوظ شدہ تبدیلیاں ختم ہو جائیں گی۔" : "Start a new document? Unsaved changes will be lost.")) {
       editor.commands.setContent("<p></p>");
       try {
         localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -892,13 +895,21 @@ export default function DocumentStudioEditor() {
     }
   };
 
-  const TAB_DEFINITIONS: { id: "find" | "outline" | "quality" | "glossary" | "settings"; label: string }[] = [
-    { id: "find", label: "🔍 Find & Replace" },
-    { id: "outline", label: "📑 Outline" },
-    { id: "quality", label: "✓ Quality & Suggestions" },
-    { id: "glossary", label: `📖 Glossary${glossary.length > 0 ? ` (${glossary.length})` : ""}` },
-    { id: "settings", label: "⚙️ Settings" },
-  ];
+  const TAB_DEFINITIONS: { id: "find" | "outline" | "quality" | "glossary" | "settings"; label: string }[] = isUr
+    ? [
+        { id: "find", label: "🔍 تلاش اور تبدیلی" },
+        { id: "outline", label: "📑 خاکہ" },
+        { id: "quality", label: "✓ معیار اور تجاویز" },
+        { id: "glossary", label: `📖 اصطلاحات${glossary.length > 0 ? ` (${glossary.length})` : ""}` },
+        { id: "settings", label: "⚙️ ترتیبات" },
+      ]
+    : [
+        { id: "find", label: "🔍 Find & Replace" },
+        { id: "outline", label: "📑 Outline" },
+        { id: "quality", label: "✓ Quality & Suggestions" },
+        { id: "glossary", label: `📖 Glossary${glossary.length > 0 ? ` (${glossary.length})` : ""}` },
+        { id: "settings", label: "⚙️ Settings" },
+      ];
 
   return (
     <div className="max-w-[1200px] mx-auto px-4">
@@ -939,7 +950,7 @@ export default function DocumentStudioEditor() {
                 : "border-gray-300 text-gray-600 hover:border-[#B8935A] hover:text-[#1A3A2A] cursor-pointer"
             }`}
           >
-            {isImporting ? "درآمد ہو رہا ہے... / Importing..." : "فائل اپلوڈ کریں / Upload File (.txt, .docx)"}
+            {isImporting ? (isUr ? "درآمد ہو رہا ہے..." : "Importing...") : (isUr ? "فائل اپلوڈ کریں" : "Upload File (.txt, .docx)")}
           </label>
         </div>
 
@@ -1027,14 +1038,14 @@ export default function DocumentStudioEditor() {
               onClick={handleNewDocument}
               className="h-9 px-3 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
             >
-              New Document / نیا مسودہ
+              {isUr ? "نیا مسودہ" : "New Document"}
             </button>
             <button
               type="button"
               onClick={handleClearDraft}
               className="h-9 px-3 rounded-md text-red-500 hover:bg-red-50 transition"
             >
-              Clear Draft / ڈرافٹ صاف کریں
+              {isUr ? "ڈرافٹ صاف کریں" : "Clear Draft"}
             </button>
           </div>
         </div>

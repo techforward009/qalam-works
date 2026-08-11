@@ -21,11 +21,11 @@ function PenNibIcon({ size = 26 }: { size?: number }) {
   );
 }
 
-// Header (precision pass): a real 3-zone CSS grid (1fr | auto | 1fr) so
-// the center navigation is mathematically centered on the viewport,
-// never shifted by brand-width or language-switch-width differences —
-// ordinary flex justify-between cannot guarantee this when the two
-// outer zones have different content widths.
+// Header — true 3-zone grid (1fr | auto | 1fr): nav is mathematically
+// centered regardless of brand/language-switch width. Urdu nav uses
+// Naskh (readable UI face, not the more decorative brand Nastaliq) with
+// generous line-height/gap so words never visually touch. Active state
+// is a single gold underline, not a pill/border.
 export default function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -44,10 +44,10 @@ export default function Header() {
   const isActive = (href: string) => !href.startsWith("mailto:") && pathname === href;
 
   const brand = (
-    <Link href="/" className="flex items-center gap-2.5" dir={dir}>
+    <Link href="/" className="flex items-center gap-3" dir={dir}>
       <PenNibIcon />
       {language === "ur" ? (
-        <span className="font-naskh text-[26px] font-bold text-white leading-none">قلم ورکس</span>
+        <span className="font-nastaliq text-[27px] font-normal text-white leading-[1.9] pb-1">قلم ورکس</span>
       ) : (
         <span className="font-bold text-[24px] text-white tracking-tight leading-none">Qalam Works</span>
       )}
@@ -56,19 +56,22 @@ export default function Header() {
 
   return (
     <header className="bg-[#1A3A2A] border-b border-white/10 sticky top-0 z-50">
-      <div className="max-w-[1240px] mx-auto px-6 h-[80px] grid grid-cols-[1fr_auto_1fr] items-center" dir={dir}>
+      <div className="max-w-[1240px] mx-auto px-6 h-[84px] grid grid-cols-[1fr_auto_1fr] items-center" dir={dir}>
         <div className={dir === "rtl" ? "justify-self-end" : "justify-self-start"}>{brand}</div>
 
-        <nav className="hidden md:flex items-center gap-8" dir={dir}>
+        <nav className="hidden md:flex items-center gap-9" dir={dir}>
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`text-[16px] font-medium transition-colors whitespace-nowrap ${naskh} ${
+              className={`relative text-[17px] font-medium transition-colors whitespace-nowrap py-2 ${naskh} ${
                 isActive(link.href) ? "text-[#E8C989]" : "text-[#C7D6C7] hover:text-white"
               }`}
             >
               {link.label}
+              {isActive(link.href) && (
+                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[#B8935A] rounded-full" />
+              )}
             </Link>
           ))}
         </nav>
@@ -77,7 +80,7 @@ export default function Header() {
           <LanguageSwitch />
         </div>
 
-        <div className={`flex md:hidden items-center gap-3 col-start-3 justify-self-end`}>
+        <div className="flex md:hidden items-center gap-3 col-start-3 justify-self-end">
           <LanguageSwitch />
           <button type="button" onClick={() => setMobileOpen((o) => !o)} className="p-2 text-white" aria-label="Menu">
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
@@ -93,7 +96,7 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className={`py-3 text-[16px] font-medium border-b border-white/5 last:border-b-0 ${naskh} ${
+                className={`py-3.5 text-[17px] font-medium border-b border-white/5 last:border-b-0 ${naskh} ${
                   isActive(link.href) ? "text-[#E8C989]" : "text-[#C7D6C7]"
                 }`}
               >

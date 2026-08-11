@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "../../../lib/language-context";
 import { standardizeUrduText } from "../../../utils/unicode/standardizeUrduText";
 
 const SAMPLE_TEXT =
   "قال ابن مسعود رضي الله عنه : ليس العلم بكثرة الرواية ، إنما العلم نور يقذف في القلب";
 
 export default function UnicodeStandardizerTool() {
+  const { language } = useLanguage();
+  const isUr = language === "ur";
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -66,13 +69,13 @@ export default function UnicodeStandardizerTool() {
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-semibold text-gray-700" dir="ltr">
-                Input Text / اصل متن
+                {isUr ? "اصل متن" : "Input Text"}
               </label>
               <button
                 onClick={() => setInput(SAMPLE_TEXT)}
                 className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline"
               >
-                Try Example
+                {isUr ? "مثال دیکھیں" : "Try Example"}
               </button>
             </div>
             <textarea
@@ -86,7 +89,7 @@ export default function UnicodeStandardizerTool() {
 
           <div className="flex flex-col">
             <label className="block text-xs font-semibold text-amber-800 mb-1" dir="ltr">
-              Standardized Output / درست شدہ متن
+              {isUr ? "درست شدہ متن" : "Standardized Output"}
             </label>
             <div
               className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[320px] text-base overflow-y-auto text-right whitespace-pre-wrap"
@@ -108,7 +111,7 @@ export default function UnicodeStandardizerTool() {
             disabled={!hasInput}
             className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            {copied ? "✓ Copied" : "Copy Output"}
+            {copied ? (isUr ? "✓ کاپی ہو گیا" : "✓ Copied") : (isUr ? "کاپی کریں" : "Copy Output")}
           </button>
           <button
             onClick={handleDownload}
@@ -122,7 +125,7 @@ export default function UnicodeStandardizerTool() {
             disabled={!hasInput}
             className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            Clear
+            {isUr ? "صاف کریں" : "Clear"}
           </button>
         </div>
 
