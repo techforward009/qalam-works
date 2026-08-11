@@ -39,7 +39,7 @@ export default function Hero() {
               </Link>
             </div>
 
-            <p className={`text-[18px] font-medium text-[#7C8299] tracking-wide text-center ${dir === "rtl" ? "md:text-right leading-loose" : "md:text-left"} mt-4 ${naskh}`}>{t.trustLine}</p>
+            <p className={`text-[18px] font-medium text-[#7C8299] tracking-wide text-center mt-4 ${language === "ur" ? "font-naskh leading-loose" : ""}`}>{t.trustLine}</p>
           </div>
 
           <div dir="ltr">
