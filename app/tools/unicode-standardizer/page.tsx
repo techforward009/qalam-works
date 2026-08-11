@@ -4,7 +4,7 @@ import UnicodeStandardizerTool from "./components/UnicodeStandardizerTool";
 export const metadata: Metadata = {
   title: "Urdu & Arabic Unicode Standardizer | Qalam Works",
   description:
-    "Free tool to normalize Urdu, Arabic, and Persian text: fix mixed character variants (ي/ی, ك/ک), clean up spacing, and correct punctuation for publication-ready Unicode text.",
+    "Free tool to normalize Urdu text: fix mixed character variants (ي/ی, ك/ک), clean up spacing, and correct punctuation for publication-ready Unicode text.",
   alternates: {
     canonical: "/tools/unicode-standardizer",
   },
@@ -12,17 +12,19 @@ export const metadata: Metadata = {
 
 const faqs = [
   {
-    question: "یہ ٹول کیا کرتا ہے؟ / What does this tool do?",
+    questionUrdu: "یہ ٹول کیا کرتا ہے؟",
+    questionEn: "What does this tool do?",
     answer:
-      "یہ آپ کے اردو، عربی یا فارسی متن میں مختلف Unicode variants (جیسے ي بجائے ی، ك بجائے ک) کو معیاری بناتا ہے، اضافی خالی جگہیں ہٹاتا ہے، اور انگریزی punctuation (، ؛ ؟) کو اردو کے مطابق درست کرتا ہے۔",
+      "یہ آپ کے اردو متن میں مختلف Unicode variants (جیسے ي بجائے ی، ك بجائے ک) کو معیاری بناتا ہے، اضافی خالی جگہیں ہٹاتا ہے، اور انگریزی punctuation کو اردو کے مطابق درست کرتا ہے۔",
   },
   {
-    question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟ / Is my text stored anywhere?",
-    answer:
-      "نہیں۔ یہ processing آپ کے براؤزر میں ہی ہوتی ہے — متن کسی سرور پر نہیں بھیجا جاتا۔",
+    questionUrdu: "کیا میرا متن کہیں محفوظ ہوتا ہے؟",
+    questionEn: "Is my text stored anywhere?",
+    answer: "نہیں۔ یہ processing آپ کے براؤزر میں ہی ہوتی ہے — متن کسی سرور پر نہیں بھیجا جاتا۔",
   },
   {
-    question: "کن فائل فارمیٹس کے ساتھ کام کرتا ہے؟ / What formats does it support?",
+    questionUrdu: "کن فائل فارمیٹس کے ساتھ کام کرتا ہے؟",
+    questionEn: "What formats does it support?",
     answer:
       "فی الحال یہ plain text کے ساتھ کام کرتا ہے۔ DOCX اور PDF فائلوں کے لیے ہمارا Document Cleaner ٹول استعمال کریں۔",
   },
@@ -50,12 +52,12 @@ export default function UnicodeStandardizerPage() {
           یونیکوڈ سٹینڈرڈائزر
         </h1>
         <p className="text-lg md:text-xl font-semibold text-gray-800 mb-3">
-          Urdu &amp; Arabic Unicode Standardizer
+          Urdu Unicode Standardizer
         </p>
         <p className="text-sm md:text-base text-gray-600" dir="ltr">
-          Paste any Urdu, Arabic, or Persian text below to instantly normalize
-          mixed character variants, fix spacing, and correct punctuation —
-          free, and processed entirely in your browser.
+          Paste any Urdu text below to instantly normalize mixed character
+          variants, fix spacing, and correct punctuation — free, and
+          processed entirely in your browser.
         </p>
       </section>
 
@@ -94,9 +96,10 @@ export default function UnicodeStandardizerPage() {
         </h2>
         <div className="space-y-4">
           {faqs.map((faq) => (
-            <div key={faq.question} className="border border-gray-200 rounded-xl p-4">
-              <p className="font-semibold text-amber-900 mb-1">{faq.question}</p>
-              <p className="text-sm text-gray-700">{faq.answer}</p>
+            <div key={faq.questionUrdu} className="border border-gray-200 rounded-xl p-4">
+              <p className="font-semibold text-amber-900 mb-0.5" dir="rtl">{faq.questionUrdu}</p>
+              <p className="font-semibold text-amber-700 text-sm mb-2" dir="ltr">{faq.questionEn}</p>
+              <p className="text-sm text-gray-700" dir="rtl">{faq.answer}</p>
             </div>
           ))}
         </div>

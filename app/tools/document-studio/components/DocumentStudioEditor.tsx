@@ -897,7 +897,7 @@ export default function DocumentStudioEditor() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-4">
+    <div className="max-w-[1200px] mx-auto px-4">
       {/* Document Studio Simplification (2026-08-10) — the editor card
           below is now the ONLY thing shown by default: toolbar, the text
           area itself, and export/save actions. Every analysis/utility
@@ -968,7 +968,7 @@ export default function DocumentStudioEditor() {
         )}
 
         <div
-          className="border border-gray-300 rounded-lg p-4 min-h-[300px] focus-within:ring-2 focus-within:ring-amber-500 cursor-text"
+          className="border border-gray-300 rounded-lg p-4 min-h-[60vh] focus-within:ring-2 focus-within:ring-amber-500 cursor-text"
           dir={dir}
           onClick={handleWrapperClick}
         >

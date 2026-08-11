@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import DocumentCleanerTool from "./components/DocumentCleanerTool";
 
 export const metadata: Metadata = {
-  title: "Document Cleaner for Urdu, Arabic & Persian Files | Qalam Works",
+  title: "Document Cleaner for Urdu Files | Qalam Works",
   description:
-    "Upload .txt or .docx files for automated Unicode normalization and publication quality audit — free document cleaning for Urdu, Arabic, and Persian text.",
+    "Upload .txt or .docx files for automated Unicode normalization and publication quality audit — free document cleaning for Urdu text.",
   alternates: {
     canonical: "/tools/document-cleaner",
   },
@@ -41,7 +41,7 @@ export default function DocumentCleanerPage() {
         </p>
         <p className="text-sm md:text-base text-gray-600" dir="ltr">
           Upload a .txt or .docx file to automatically extract, normalize, and audit your
-          Urdu, Arabic, or Persian text — then download the cleaned result.
+          Urdu text — then download the cleaned result.
         </p>
       </section>
 

@@ -4,7 +4,7 @@ import QualityCheckerTool from "./components/QualityCheckerTool";
 export const metadata: Metadata = {
   title: "Publication Quality Checker for Urdu & Arabic | Qalam Works",
   description:
-    "Free tool to audit Urdu, Arabic, and Persian text before publication: detect extra spacing, mixed punctuation, repeated words, and mixed scripts.",
+    "Free tool to audit Urdu text before publication: detect extra spacing, mixed punctuation, repeated words, and mixed scripts.",
   alternates: {
     canonical: "/tools/quality-checker",
   },
@@ -42,7 +42,7 @@ export default function QualityCheckerPage() {
           Publication Quality Checker
         </p>
         <p className="text-sm md:text-base text-gray-600" dir="ltr">
-          Paste your Urdu, Arabic, or Persian text — or upload a .txt/.docx file — to audit
+          Paste your Urdu text — or upload a .txt/.docx file — to audit
           it for spacing, punctuation, and text-quality issues before publication.
         </p>
       </section>

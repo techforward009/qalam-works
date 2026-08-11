@@ -1,14 +1,20 @@
-import Link from "next/link";
+"use client";
 
-// Homepage Redesign v2 (2026-08-10) — premium hero, per approved wireframe.
-// The mockup is now a STATIC, calm "product window" (not the earlier
-// animated before/after toggle, which the client flagged as feeling
-// "technical and cold"). The actual before/after emotional moment now
-// lives in its own dedicated section further down the page — the Hero's
-// job is just to make the product feel real and premium at first glance.
+import Link from "next/link";
+import { useLanguage } from "../lib/language-context";
+import { translations } from "../lib/translations";
+
+// Positioning correction (2026-08-10): removed all "Arabic script"
+// framing — this is the Urdu-first hero. Mockup stays a calm, static
+// product window (not the earlier before/after toggle, which felt
+// "technical" per earlier feedback) — the emotional before/after moment
+// lives in its own dedicated section further down the page.
 export default function Hero() {
+  const { language, dir } = useLanguage();
+  const t = translations[language].hero;
+
   return (
-    <section className="relative overflow-hidden bg-[#12172A] text-[#F5F2EA]">
+    <section className="relative overflow-hidden bg-[#12172A] text-[#F5F2EA]" dir={dir}>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -left-32 -top-24 select-none font-nastaliq text-[26rem] leading-none text-[#B8935A]/[0.05]"
@@ -18,57 +24,51 @@ export default function Hero() {
 
       <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-28 md:pt-32 md:pb-36">
         <div className="grid md:grid-cols-2 gap-16 items-center">
-          {/* Left: narrative */}
-          <div className="text-center md:text-right" dir="rtl">
+          {/* Narrative */}
+          <div className={`text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"}`}>
             <div
               className="inline-flex items-center gap-2 rounded-full border border-[#B8935A]/30 bg-[#B8935A]/10 px-4 py-1.5 text-xs font-medium tracking-wide text-[#E8C989] mb-7"
               dir="ltr"
             >
-              BUILT FOR ARABIC SCRIPT
+              {t.eyebrow.toUpperCase()}
             </div>
 
-            <h1 className="text-4xl md:text-[3.25rem] font-bold leading-[1.15] text-white mb-5" dir="ltr">
-              Arabic script is not
-              <br />a second-class citizen.
+            <h1 className="text-4xl md:text-[3.25rem] font-bold leading-[1.2] text-white mb-5">
+              {t.headline}
             </h1>
 
-            <p className="text-[#B9B4A8] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-10" dir="ltr">
-              Qalam Works finds the inconsistencies, spacing errors, and terminology drift that Word
-              and Google Docs were never designed to catch — in Urdu, Arabic, and Persian.
+            <p className="text-[#B9B4A8] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-10">
+              {t.subheadline}
             </p>
 
-            <div className="flex flex-col sm:flex-row justify-center md:justify-end gap-3 mb-8">
+            <div className={`flex flex-col sm:flex-row justify-center gap-3 mb-8 ${dir === "rtl" ? "md:justify-end" : "md:justify-start"}`}>
               <Link
                 href="/tools/document-studio"
                 className="bg-[#B8935A] hover:bg-[#C9A46B] text-[#12172A] font-semibold px-7 py-3.5 rounded-lg shadow-lg shadow-[#B8935A]/20 transition-all text-sm text-center"
               >
-                Open Document Studio
+                {t.ctaPrimary}
               </Link>
               <Link
                 href="#before-after"
                 className="border border-white/15 hover:border-white/35 hover:bg-white/5 text-white font-semibold px-7 py-3.5 rounded-lg transition-all text-sm text-center"
               >
-                See real before &amp; after
+                {t.ctaSecondary}
               </Link>
             </div>
 
-            <p className="text-xs text-[#7C8299] tracking-wide" dir="ltr">
-              Researchers · Translators · Publishers · Academia
-            </p>
+            <p className="text-xs text-[#7C8299] tracking-wide">{t.trustLine}</p>
           </div>
 
-          {/* Right: realistic, static product window */}
+          {/* Static, realistic product window */}
           <div dir="ltr">
             <div className="rounded-xl border border-white/10 bg-[#1A2036] shadow-2xl shadow-black/40 overflow-hidden">
-              {/* Window chrome */}
               <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/10 bg-white/[0.02]">
                 <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
                 <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
                 <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
-                <span className="ml-3 text-[11px] text-[#7C8299] tracking-wide">Document Studio</span>
+                <span className="ml-3 text-[11px] text-[#7C8299] tracking-wide">{t.mockupLabel}</span>
               </div>
 
-              {/* Document body with real Urdu text + inline issue highlights */}
               <div className="p-6" dir="rtl">
                 <p className="font-nastaliq text-2xl leading-loose text-[#EDEAE1]">
                   <span className="relative">
@@ -84,22 +84,21 @@ export default function Hero() {
                 </p>
               </div>
 
-              {/* Issue panel */}
               <div className="border-t border-white/10 bg-[#151A2C] px-5 py-4 space-y-2.5">
                 <div className="flex items-start gap-2.5 text-xs" dir="ltr">
                   <span className="mt-0.5 text-amber-400">●</span>
                   <span className="text-[#C7C2B4]">
-                    Mixed Unicode form — <span className="font-nastaliq">"علي"</span> should be{" "}
+                    {t.mockupIssue1} — <span className="font-nastaliq">"علي"</span> {t.mockupIssue1Detail}{" "}
                     <span className="font-nastaliq">"علی"</span>
                   </span>
                 </div>
                 <div className="flex items-start gap-2.5 text-xs" dir="ltr">
                   <span className="mt-0.5 text-amber-400">●</span>
-                  <span className="text-[#C7C2B4]">Missing space after punctuation</span>
+                  <span className="text-[#C7C2B4]">{t.mockupIssue2}</span>
                 </div>
                 <div className="pt-2 flex items-center justify-between border-t border-white/5" dir="ltr">
-                  <span className="text-[11px] text-[#7C8299]">2 issues found</span>
-                  <span className="text-[11px] font-semibold text-emerald-400">Ready to fix</span>
+                  <span className="text-[11px] text-[#7C8299]">{t.mockupCount}</span>
+                  <span className="text-[11px] font-semibold text-emerald-400">{t.mockupStatus}</span>
                 </div>
               </div>
             </div>
