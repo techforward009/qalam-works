@@ -7,8 +7,14 @@ import { PipelineResult } from "../../../types/documentPipeline";
 import { downloadCleanedText } from "../../../utils/downloadCleanedText";
 import { buildDocxBlob } from "../../document-studio/utils/buildDocxDocument";
 import { plainTextToDocNode } from "../../document-studio/utils/plainTextToDocNode";
+import { useLanguage } from "../../../lib/language-context";
+import { translations } from "../../../lib/translations";
 
 export default function DocumentCleanerTool() {
+  const { language, dir } = useLanguage();
+  const dz = translations[language].cleanerTool.dropzone;
+  const naskh = language === "ur" ? "font-naskh" : "";
+
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [stepMessage, setStepMessage] = useState("");
@@ -22,7 +28,10 @@ export default function DocumentCleanerTool() {
 
     const validation = validateFile(selectedFile);
     if (!validation.valid) {
-      setError(validation.error || "فائل ناکام ہو گئی / File validation failed.");
+      const code = validation.errorCode;
+      if (code === "unsupported") setError(dz.errorUnsupported);
+      else if (code === "too_large") setError(dz.errorTooLarge);
+      else setError(dz.errorGeneric);
       return;
     }
 
@@ -44,7 +53,7 @@ export default function DocumentCleanerTool() {
     setLoading(false);
 
     if (!pipelineResult.success) {
-      setError(pipelineResult.error || "فائل پراسیس کرنے میں خرابی ہوئی / Processing error.");
+      setError(dz.errorGeneric);
       return;
     }
 
@@ -79,6 +88,7 @@ export default function DocumentCleanerTool() {
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           className="border-2 border-dashed border-amber-300 hover:border-amber-500 rounded-xl p-6 mb-6 bg-amber-50/30 transition-all flex flex-col items-center justify-center cursor-pointer"
+          dir={dir}
         >
           <input
             type="file"
@@ -92,17 +102,17 @@ export default function DocumentCleanerTool() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 11V7m0 0l-2 2m2-2l2 2" />
             </svg>
-            <span className="text-sm font-semibold text-amber-900 mb-1">
-              اپنی دستاویز یہاں ڈراپ کریں یا منتخب کریں
+            <span className={`text-sm font-semibold text-amber-900 mb-1 ${naskh}`}>
+              {dz.prompt}
             </span>
-            <span className="text-xs text-gray-500" dir="ltr">
-              Drop your document here or click to browse (.txt, .docx up to 5MB)
+            <span className={`text-xs text-gray-500 ${naskh}`}>
+              {dz.hint}
             </span>
           </label>
         </div>
 
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium">
+          <div className={`mb-4 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium ${naskh}`} dir={dir}>
             {error}
           </div>
         )}
@@ -110,7 +120,7 @@ export default function DocumentCleanerTool() {
         {loading && (
           <div className="py-8 flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700 mb-3"></div>
-            <p className="text-xs font-bold text-amber-900 mb-1">پراسیسنگ جاری ہے...</p>
+            <p className={`text-xs font-bold text-amber-900 mb-1 ${naskh}`}>{dz.processing}</p>
             <p className="text-[11px] text-amber-700 font-mono" dir="ltr">{stepMessage}</p>
           </div>
         )}

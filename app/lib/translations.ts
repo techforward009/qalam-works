@@ -129,6 +129,14 @@ export const translations = {
         { question: "Is my file stored anywhere?", answer: "No. Your file is used only for processing and is never stored." },
         { question: "What's the maximum file size?", answer: "Currently .txt and .docx files up to 5MB are supported." },
       ],
+      dropzone: {
+        prompt: "Drop your document here or click to browse",
+        hint: "(.txt, .docx — up to 5 MB)",
+        processing: "Processing…",
+        errorUnsupported: "Only .txt and .docx files are supported.",
+        errorTooLarge: "File size must be less than 5 MB.",
+        errorGeneric: "Processing error. Please try again.",
+      },
     },
     qualityTool: {
       title: "Publication Quality Checker",
@@ -272,6 +280,14 @@ export const translations = {
         { question: "کیا میری فائل کہیں محفوظ ہوتی ہے؟", answer: "نہیں۔ فائل صرف پروسیسنگ کے لیے استعمال ہوتی ہے، کبھی محفوظ نہیں کی جاتی۔" },
         { question: "زیادہ سے زیادہ فائل سائز کیا ہے؟", answer: "فی الحال .txt اور .docx فائلیں 5MB تک سپورٹ کرتی ہیں۔" },
       ],
+      dropzone: {
+        prompt: "اپنی دستاویز یہاں ڈراپ کریں یا فائل منتخب کریں",
+        hint: "(.txt، .docx — زیادہ سے زیادہ 5MB)",
+        processing: "پراسیسنگ جاری ہے…",
+        errorUnsupported: "صرف .txt اور .docx فائلیں سپورٹ کرتی ہیں۔",
+        errorTooLarge: "فائل کا سائز 5 MB سے کم ہونا چاہیے۔",
+        errorGeneric: "پراسیسنگ میں خرابی ہوئی۔ دوبارہ کوشش کریں۔",
+      },
     },
     qualityTool: {
       title: "پبلیکیشن کوالٹی چیکر",
