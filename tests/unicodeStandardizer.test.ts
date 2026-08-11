@@ -43,3 +43,20 @@ describe("Unicode Standardizer Engine Tests", () => {
     expect(result.output).toBe("اور حضرت امام مالک علیہ الرحمہ (المتوفی: 179ھ) نے فرمایا");
   });
 });
+
+describe("Marketing demo integrity (2026-08-10)", () => {
+  // Regression guard: the homepage's Before/After marketing example must
+  // always match what the REAL production standardizer actually outputs
+  // — it must correct Unicode forms/spacing/punctuation but must NEVER
+  // translate embedded English words (e.g. "Document" must stay
+  // "Document", not become "دستاویز"). This test pins that contract so
+  // any future engine change that would silently break the marketing
+  // claim is caught here.
+  test("homepage demo input produces the expected, truthful output", () => {
+    const before = "علي نے كتاب پڑھی  ، اور یہ Document بھی۔۔";
+    const result = standardizeUrduText(before);
+    expect(result.output).toBe("علی نے کتاب پڑھی، اور یہ Document بھی۔");
+    expect(result.output).toContain("Document");
+    expect(result.output).not.toContain("دستاویز");
+  });
+});

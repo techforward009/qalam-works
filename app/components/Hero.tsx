@@ -62,7 +62,7 @@ export default function Hero() {
                     ،
                     <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-red-400/70 rounded-full" />
                   </span>{" "}
-                  اور یہ دستاویز بھی۔
+                  اور یہ Document بھی۔
                 </p>
               </div>
 

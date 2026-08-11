@@ -45,24 +45,32 @@ export default function UnicodeStandardizerTool() {
     <div className="max-w-[1100px] mx-auto px-6">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         {/* Clarification note — not a translator */}
-        <div
-          className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900"
-          dir="rtl"
-        >
-          یہ ٹول متن کا مفہوم یا زبان تبدیل نہیں کرتا — یہ صرف رسم الخط کے مختلف Unicode
-          variants کو معیاری بناتا ہے (ترجمہ نہیں، صرف ٹائپوگرافی کی درستگی)۔
-        </div>
+        {isUr ? (
+          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900" dir="rtl">
+            یہ ٹول متن کا مفہوم یا زبان تبدیل نہیں کرتا — یہ صرف رسم الخط کی مختلف Unicode
+            شکلوں کو معیاری بناتا ہے (ترجمہ نہیں، صرف ٹائپوگرافی کی درستگی)۔
+          </div>
+        ) : (
+          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900" dir="ltr">
+            This tool does not change meaning or language — it only normalizes different Unicode
+            character forms (typography correction, not translation).
+          </div>
+        )}
 
         {/* Note about protecting Arabic quotations */}
-        <div
-          className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900"
-          dir="rtl"
-        >
-          اگر متن میں اصل عربی اقتباس (حدیث، آیت وغیرہ) شامل ہو جسے تبدیل نہیں ہونا چاہیے، تو اسے{" "}
-          <span dir="ltr" className="font-mono bg-white px-1 rounded">{"{{ }}"}</span>{" "}
-          کے درمیان لکھیں — مثلاً <span dir="ltr" className="font-mono">{"{{قال...}}"}</span> —
-          یہ حصہ بالکل جوں کا توں رہے گا۔
-        </div>
+        {isUr ? (
+          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900" dir="rtl">
+            اگر متن میں اصل عربی اقتباس (حدیث، آیت وغیرہ) شامل ہو جسے تبدیل نہیں ہونا چاہیے، تو اسے{" "}
+            <span dir="ltr" className="font-mono bg-white px-1 rounded">{"{{ }}"}</span>{" "}
+            کے درمیان لکھیں — یہ حصہ بالکل جوں کا توں رہے گا۔
+          </div>
+        ) : (
+          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900" dir="ltr">
+            If your text includes a genuine classical Arabic quotation that must not be altered,
+            wrap it in <span className="font-mono bg-white px-1 rounded">{"{{ }}"}</span> — that
+            section will be left exactly as-is.
+          </div>
+        )}
 
         {/* Editor */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -81,7 +89,7 @@ export default function UnicodeStandardizerTool() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="یہاں اپنا متن پیسٹ کریں..."
+              placeholder={isUr ? "یہاں اپنا متن پیسٹ کریں..." : "Paste your text here..."}
               className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[320px] text-base focus:outline-none focus:ring-2 focus:ring-amber-500 text-right"
               dir="rtl"
             />
@@ -98,7 +106,7 @@ export default function UnicodeStandardizerTool() {
               {hasInput ? (
                 output
               ) : (
-                <span className="text-gray-400 font-sans text-xs">نتائج یہاں ظاہر ہوں گے...</span>
+                <span className="text-gray-400 font-sans text-xs">{isUr ? "نتائج یہاں ظاہر ہوں گے..." : "Results will appear here..."}</span>
               )}
             </div>
           </div>
@@ -150,16 +158,16 @@ export default function UnicodeStandardizerTool() {
         {alreadyStandardized && (
           <div
             className="mb-4 bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800 font-medium text-center"
-            dir="rtl"
+            dir={isUr ? "rtl" : "ltr"}
           >
-            مبارک ہو! آپ کا متن پہلے ہی معیاری شکل میں موجود ہے۔
+            {isUr ? "مبارک ہو! آپ کا متن پہلے ہی معیاری شکل میں موجود ہے۔" : "Great news! Your text is already in standardized form."}
           </div>
         )}
 
         {/* Detailed breakdown — exactly what changed and how many times */}
         {hasInput && corrections.length > 0 && (
-          <div className="mb-4 bg-white border border-gray-200 rounded-xl p-3" dir="rtl">
-            <p className="text-sm font-bold text-gray-800 mb-2">کیا تبدیل ہوا؟</p>
+          <div className="mb-4 bg-white border border-gray-200 rounded-xl p-3" dir={isUr ? "rtl" : "ltr"}>
+            <p className="text-sm font-bold text-gray-800 mb-2">{isUr ? "کیا تبدیل ہوا؟" : "What changed?"}</p>
             <ul className="space-y-1">
               {corrections.map((c, i) => (
                 <li

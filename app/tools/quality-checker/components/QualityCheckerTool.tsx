@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useLanguage } from "../../../lib/language-context";
 import { checkTextQuality, QualityReport } from "../../../utils/quality/checkTextQuality";
 import { standardizeUrduText } from "../../../utils/unicode/standardizeUrduText";
 import { validateFile } from "../../../utils/fileValidation";
@@ -10,6 +11,8 @@ const SAMPLE_TEXT =
   "علي عليه السلام  کربلاء ؛ يحيى ؟ العلم العلم نور یقذف فی القلب";
 
 export default function QualityCheckerTool() {
+  const { language } = useLanguage();
+  const isUr = language === "ur";
   const [input, setInput] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -25,7 +28,7 @@ export default function QualityCheckerTool() {
     setFileError(null);
     const validation = validateFile(file);
     if (!validation.valid) {
-      setFileError(validation.error || "فائل قابلِ قبول نہیں ہے۔");
+      setFileError(validation.error || (isUr ? "فائل قابلِ قبول نہیں ہے۔" : "File is not acceptable."));
       return;
     }
     setIsProcessingFile(true);
@@ -36,7 +39,7 @@ export default function QualityCheckerTool() {
       setAfterReport(null);
       setStandardizedText(null);
     } catch {
-      setFileError("فائل پڑھنے میں خرابی ہوئی۔ / Failed to read file.");
+      setFileError(isUr ? "فائل پڑھنے میں خرابی ہوئی۔" : "Failed to read file.");
     } finally {
       setIsProcessingFile(false);
     }
@@ -60,34 +63,40 @@ export default function QualityCheckerTool() {
     <div className="max-w-[1100px] mx-auto px-6">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         {/* Clarification note about {{ }} markers */}
-        <div
-          className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900"
-          dir="rtl"
-        >
-          اگر متن میں اصل عربی اقتباس شامل ہو، تو اسے{" "}
-          <span dir="ltr" className="font-mono bg-white px-1 rounded">{"{{ }}"}</span>{" "}
-          کے درمیان لکھیں — اس صورت میں "Repeated Words"، "Mixed Punctuation" اور "Mixed
-          Script" کی جانچ اس حصے کے اندر نظر انداز ہو جائے گی (چونکہ یہ عربی متن میں جائز
-          ہو سکتے ہیں)۔
-        </div>
+        {isUr ? (
+          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900" dir="rtl">
+            اگر متن میں اصل عربی اقتباس شامل ہو، تو اسے{" "}
+            <span dir="ltr" className="font-mono bg-white px-1 rounded">{"{{ }}"}</span>{" "}
+            کے درمیان لکھیں — اس صورت میں دہرائے گئے الفاظ، مخلوط رموزِ اوقاف، اور مخلوط رسم
+            الخط کی جانچ اس حصے کے اندر نظر انداز ہو جائے گی (چونکہ یہ عربی متن میں جائز ہو
+            سکتے ہیں)۔
+          </div>
+        ) : (
+          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900" dir="ltr">
+            If your text includes a genuine classical Arabic quotation, wrap it in{" "}
+            <span className="font-mono bg-white px-1 rounded">{"{{ }}"}</span> — the Repeated
+            Words, Mixed Punctuation, and Mixed Script checks will be skipped inside that
+            section (since these are expected in classical Arabic text).
+          </div>
+        )}
 
         {/* Input + Upload */}
         <div className="flex items-center justify-between mb-1">
-          <label className="block text-xs font-semibold text-gray-700" dir="ltr">
-            Audit Input Text / متن پیسٹ کریں
+          <label className="block text-xs font-semibold text-gray-700">
+            {isUr ? "آڈٹ کے لیے متن" : "Audit Input Text"}
           </label>
           <div className="flex gap-3">
             <button
               onClick={() => setInput(SAMPLE_TEXT)}
               className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline"
             >
-              Try Example
+              {isUr ? "مثال دیکھیں" : "Try Example"}
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
               className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline"
             >
-              Upload .txt/.docx
+              {isUr ? "فائل اپلوڈ کریں (.txt/.docx)" : "Upload .txt/.docx"}
             </button>
           </div>
         </div>
@@ -109,14 +118,14 @@ export default function QualityCheckerTool() {
             setAfterReport(null);
             setStandardizedText(null);
           }}
-          placeholder="یہاں متن پیسٹ کریں یا فائل اپ لوڈ کریں..."
+          placeholder={isUr ? "یہاں متن پیسٹ کریں یا فائل اپلوڈ کریں..." : "Paste text here, or upload a file..."}
           className="w-full bg-gray-50 border border-gray-300 p-3 rounded-lg text-sm font-mono text-gray-800 min-h-[320px] text-base focus:outline-none focus:ring-2 focus:ring-amber-500 text-right"
           dir="rtl"
         />
         <div dir="ltr" className="mt-1 text-xs">
-          {isProcessingFile && <span className="text-gray-500">فائل پڑھی جا رہی ہے...</span>}
+          {isProcessingFile && <span className="text-gray-500">{isUr ? "فائل پڑھی جا رہی ہے..." : "Reading file..."}</span>}
           {fileName && !isProcessingFile && (
-            <span className="text-green-700">✓ فائل لوڈ ہو گئی: {fileName}</span>
+            <span className="text-green-700">{isUr ? `✓ فائل لوڈ ہو گئی: ${fileName}` : `✓ Loaded: ${fileName}`}</span>
           )}
           {fileError && <span className="text-red-600">{fileError}</span>}
         </div>
@@ -127,19 +136,19 @@ export default function QualityCheckerTool() {
             disabled={!hasInput}
             className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            متن معیاری بنائیں اور دوبارہ جانچیں
+            {isUr ? "متن معیاری بنائیں اور دوبارہ جانچیں" : "Standardize & Re-check"}
           </button>
           <button
             onClick={resetAll}
             disabled={!hasInput}
             className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            Clear
+            {isUr ? "صاف کریں" : "Clear"}
           </button>
         </div>
 
         {/* Before Report */}
-        <ReportPanel title="آڈٹ رپورٹ (اصل متن)" report={beforeReport} hasInput={hasInput} />
+        <ReportPanel title={isUr ? "آڈٹ رپورٹ (اصل متن)" : "Audit Report (Original Text)"} report={beforeReport} hasInput={hasInput} isUr={isUr} />
 
         {/* After Report + standardized text, shown only after button click */}
         {afterReport && standardizedText !== null && (
@@ -148,15 +157,16 @@ export default function QualityCheckerTool() {
               className="mb-3 bg-green-50 border border-green-200 rounded-lg p-3 text-xs text-green-900 flex flex-wrap items-center gap-3"
               dir="ltr"
             >
-              <span className="font-bold">تقابل:</span>
-              <span>پہلے: {beforeReport.totalIssues} مسائل</span>
-              <span>معیار بندی کے بعد: {afterReport.totalIssues} مسائل</span>
+              <span className="font-bold">{isUr ? "تقابل:" : "Comparison:"}</span>
+              <span>{isUr ? `پہلے: ${beforeReport.totalIssues} مسائل` : `Before: ${beforeReport.totalIssues} issues`}</span>
+              <span>{isUr ? `معیار بندی کے بعد: ${afterReport.totalIssues} مسائل` : `After: ${afterReport.totalIssues} issues`}</span>
               <span>
-                کم ہوئے: {Math.max(beforeReport.totalIssues - afterReport.totalIssues, 0)}
+                {isUr ? "کم ہوئے: " : "Reduced by: "}
+                {Math.max(beforeReport.totalIssues - afterReport.totalIssues, 0)}
               </span>
             </div>
-            <label className="block text-xs font-semibold text-amber-800 mb-1" dir="ltr">
-              Standardized Text / معیاری متن
+            <label className="block text-xs font-semibold text-amber-800 mb-1">
+              {isUr ? "معیاری متن" : "Standardized Text"}
             </label>
             <div
               className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[200px] text-base overflow-y-auto text-right whitespace-pre-wrap mb-4"
@@ -164,7 +174,7 @@ export default function QualityCheckerTool() {
             >
               {standardizedText}
             </div>
-            <ReportPanel title="آڈٹ رپورٹ (معیاری متن کے بعد)" report={afterReport} hasInput={true} />
+            <ReportPanel title={isUr ? "آڈٹ رپورٹ (معیاری متن کے بعد)" : "Audit Report (After Standardizing)"} report={afterReport} hasInput={true} isUr={isUr} />
           </div>
         )}
       </div>
@@ -176,15 +186,17 @@ function ReportPanel({
   title,
   report,
   hasInput,
+  isUr,
 }: {
   title: string;
   report: QualityReport;
   hasInput: boolean;
+  isUr: boolean;
 }) {
   if (!hasInput) {
     return (
       <div className="mb-4 bg-amber-50/80 border border-amber-200 rounded-xl p-4 text-xs text-gray-400 font-sans text-center">
-        متن پیسٹ کریں یا فائل اپ لوڈ کریں تاکہ آڈٹ رپورٹ بن سکے
+        {isUr ? "متن پیسٹ کریں یا فائل اپلوڈ کریں تاکہ آڈٹ رپورٹ بن سکے" : "Paste text or upload a file to generate an audit report"}
       </div>
     );
   }

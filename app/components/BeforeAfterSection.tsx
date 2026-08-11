@@ -2,9 +2,16 @@
 
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
+import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 
+// Demo integrity (2026-08-10): AFTER text is generated LIVE from the
+// real production standardizeUrduText() — the same function the actual
+// Unicode Standardizer tool uses — never a hand-written/hardcoded
+// "after" string. This guarantees the marketing example can never claim
+// a transformation the product doesn't actually perform, and stays
+// automatically correct if the standardizer's behavior ever changes.
 const BEFORE_TEXT = "علي نے كتاب پڑھی  ، اور یہ Document بھی۔۔";
-const AFTER_TEXT = "علی نے کتاب پڑھی، اور یہ دستاویز بھی۔";
+const AFTER_TEXT = standardizeUrduText(BEFORE_TEXT).output;
 
 function PenNibIcon() {
   return (
