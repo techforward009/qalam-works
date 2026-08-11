@@ -4,62 +4,44 @@ import Link from "next/link";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 
-// Positioning correction (2026-08-10): removed all "Arabic script"
-// framing — this is the Urdu-first hero. Mockup stays a calm, static
-// product window (not the earlier before/after toggle, which felt
-// "technical" per earlier feedback) — the emotional before/after moment
-// lives in its own dedicated section further down the page.
 export default function Hero() {
   const { language, dir } = useLanguage();
   const t = translations[language].hero;
+  const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
     <section className="relative overflow-hidden bg-[#12172A] text-[#F5F2EA]" dir={dir}>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-32 -top-24 select-none font-nastaliq text-[26rem] leading-none text-[#B8935A]/[0.05]"
-      >
+      <div aria-hidden="true" className="pointer-events-none absolute -left-32 -top-24 select-none font-nastaliq text-[26rem] leading-none text-[#B8935A]/[0.05]">
         ق
       </div>
 
-      <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-28 md:pt-32 md:pb-36">
+      <div className="relative max-w-[1240px] mx-auto px-6 pt-24 pb-28 md:pt-32 md:pb-36">
         <div className="grid md:grid-cols-2 gap-16 items-center">
-          {/* Narrative */}
           <div className={`text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"}`}>
-            <div
-              className="inline-flex items-center gap-2 rounded-full border border-[#B8935A]/30 bg-[#B8935A]/10 px-4 py-1.5 text-xs font-medium tracking-wide text-[#E8C989] mb-7"
-              dir="ltr"
-            >
-              {t.eyebrow.toUpperCase()}
+            <div className={`inline-flex items-center gap-2 rounded-full border border-[#B8935A]/30 bg-[#B8935A]/10 px-4 py-1.5 text-xs font-medium tracking-wide text-[#E8C989] mb-7 ${naskh}`}>
+              {t.eyebrow}
             </div>
 
-            <h1 className="text-4xl md:text-[3.25rem] font-bold leading-[1.2] text-white mb-5">
+            <h1 className={`text-4xl md:text-[3.4rem] font-bold leading-[1.25] text-white mb-5 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
               {t.headline}
             </h1>
 
-            <p className="text-[#B9B4A8] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-10">
+            <p className={`text-[#B9B4A8] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-10 ${naskh}`}>
               {t.subheadline}
             </p>
 
             <div className={`flex flex-col sm:flex-row justify-center gap-3 mb-8 ${dir === "rtl" ? "md:justify-end" : "md:justify-start"}`}>
-              <Link
-                href="/tools/document-studio"
-                className="bg-[#B8935A] hover:bg-[#C9A46B] text-[#12172A] font-semibold px-7 py-3.5 rounded-lg shadow-lg shadow-[#B8935A]/20 transition-all text-sm text-center"
-              >
+              <Link href="/tools/document-studio" className={`bg-[#B8935A] hover:bg-[#C9A46B] text-[#12172A] font-semibold px-7 py-3.5 rounded-lg shadow-lg shadow-[#B8935A]/20 transition-all text-sm text-center ${naskh}`}>
                 {t.ctaPrimary}
               </Link>
-              <Link
-                href="#before-after"
-                className="border border-white/15 hover:border-white/35 hover:bg-white/5 text-white font-semibold px-7 py-3.5 rounded-lg transition-all text-sm text-center"
-              >
+              <Link href="#before-after" className={`border border-white/15 hover:border-white/35 hover:bg-white/5 text-white font-semibold px-7 py-3.5 rounded-lg transition-all text-sm text-center ${naskh}`}>
                 {t.ctaSecondary}
               </Link>
             </div>
 
-            <p className="text-xs text-[#7C8299] tracking-wide">{t.trustLine}</p>
+            <p className={`text-xs text-[#7C8299] tracking-wide ${naskh}`}>{t.trustLine}</p>
           </div>
 
-          {/* Static, realistic product window */}
           <div dir="ltr">
             <div className="rounded-xl border border-white/10 bg-[#1A2036] shadow-2xl shadow-black/40 overflow-hidden">
               <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/10 bg-white/[0.02]">

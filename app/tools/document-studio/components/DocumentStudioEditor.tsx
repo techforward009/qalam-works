@@ -81,13 +81,17 @@ function ToolbarButton({
       title={label}
       className={`px-2.5 py-1.5 rounded-md text-xs font-semibold border transition-all ${
         active
-          ? "bg-amber-600 text-white border-amber-600"
-          : "bg-white text-gray-700 border-gray-300 hover:border-amber-400"
+          ? "bg-[#1A3A2A] text-white border-[#1A3A2A]"
+          : "bg-white text-gray-600 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
       }`}
     >
       {children}
     </button>
   );
+}
+
+function ToolbarDivider() {
+  return <div className="w-px bg-gray-200 mx-1 self-stretch" />;
 }
 
 function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | "ltr"; setDir: (d: "rtl" | "ltr") => void }) {
@@ -905,7 +909,7 @@ export default function DocumentStudioEditor() {
           Glossary, Ruler + Publishing Presets) moved into the tab bar
           further down — at most one of those panels is ever visible at
           once, and none of them show unless explicitly opened. */}
-      <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
+      <div className="bg-white p-6 md:p-8 rounded-2xl border border-[#1A3A2A]/10 shadow-[0_2px_20px_rgba(26,58,42,0.06)]">
         <div className="flex justify-between items-center mb-3">
           <Toolbar editor={editor} dir={dir} setDir={setDir} />
           <div className="text-xs text-stone-500 font-sans" dir="ltr">
@@ -1122,7 +1126,7 @@ export default function DocumentStudioEditor() {
       )}
 
       {activeTab === "quality" && (
-        <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md mt-3" dir="rtl">
+        <div className="bg-white p-6 rounded-2xl border border-[#1A3A2A]/10 shadow-[0_2px_20px_rgba(26,58,42,0.06)] mt-3" dir="rtl">
           <div className="mb-4">
             <DocumentStatsBar stats={stats} health={health} />
           </div>

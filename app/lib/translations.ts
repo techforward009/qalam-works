@@ -43,22 +43,22 @@ export const translations = {
       points: [
         {
           title: "Mixed Unicode forms",
-          example: "علي / علی",
+          example: "علي → علی",
           impact: "The same word looks different every time it's typed, breaking search and consistency.",
         },
         {
           title: "Invisible spacing issues",
-          example: "لفظ،اگلا",
+          example: "لفظ،اگلا → لفظ، اگلا",
           impact: "A missing space after punctuation slips past every normal spell-checker, silently.",
         },
         {
           title: "Wrong punctuation",
-          example: "یہ, وہ",
+          example: "یہ, وہ → یہ، وہ",
           impact: "English commas and marks creep into Urdu prose without anyone noticing.",
         },
         {
           title: "Terminology drift",
-          example: "استعمار / نوآبادیاتی نظام",
+          example: "استعمار → نوآبادیاتی نظام",
           impact: "The same term gets translated two different ways across a single document.",
         },
       ],
@@ -117,6 +117,41 @@ export const translations = {
       body: "Need more than a tool? We provide professional translation, editing, proofreading, and publication-preparation services in Urdu, English, Arabic, and Persian.",
       cta: "Discuss Your Project",
     },
+    cleanerTool: {
+      title: "Document Cleaner",
+      description: "Upload a .txt or .docx file to automatically extract, normalize, and audit your Urdu text — then download the cleaned result.",
+      faqHeading: "Frequently Asked Questions",
+      faqs: [
+        { question: "What does this tool do?", answer: "It extracts text from your .txt or .docx file, automatically normalizes Unicode, and gives a full quality report — then you can download the corrected file." },
+        { question: "Is my file stored anywhere?", answer: "No. Your file is used only for processing and is never stored." },
+        { question: "What's the maximum file size?", answer: "Currently .txt and .docx files up to 5MB are supported." },
+      ],
+    },
+    qualityTool: {
+      title: "Publication Quality Checker",
+      description: "Paste your Urdu text — or upload a .txt/.docx file — to audit it for spacing, punctuation, and text-quality issues before publication.",
+      faqHeading: "Frequently Asked Questions",
+      faqs: [
+        { question: "What does this tool do?", answer: "It audits your text before publication — catching extra spacing, punctuation errors, repeated words, and unnecessary script mixing. It only flags issues, it never changes your text automatically." },
+        { question: "Does it fix the text automatically?", answer: "No, this is an audit only. You can run the Unicode Standardizer separately to see a before/after comparison." },
+        { question: "Is my text stored anywhere?", answer: "No. Processing happens entirely in your browser — your text is never sent to a server." },
+      ],
+    },
+    unicodeTool: {
+      title: "Urdu Unicode Standardizer",
+      description: "Paste any Urdu text below to instantly normalize mixed character variants, fix spacing, and correct punctuation — free, processed entirely in your browser.",
+      examplesHeading: "Examples",
+      faqHeading: "Frequently Asked Questions",
+      faqs: [
+        { question: "What does this tool do?", answer: "It normalizes mixed Unicode variants in your Urdu text (like ي instead of ی, ك instead of ک), removes extra spaces, and corrects punctuation to match Urdu conventions." },
+        { question: "Is my text stored anywhere?", answer: "No. Processing happens entirely in your browser — your text is never sent to a server." },
+        { question: "What file formats does it support?", answer: "Currently plain text only. For DOCX and PDF files, use our Document Cleaner tool." },
+      ],
+      examples: [
+        { label: "Mixed character forms", before: "علي عليه السلام", after: "علی علیہ السلام" },
+        { label: "English-style punctuation", before: "العلم نور , والجهل ظلام", after: "العلم نور، والجهل ظلام" },
+      ],
+    },
   },
   ur: {
     nav: {
@@ -148,22 +183,22 @@ export const translations = {
       points: [
         {
           title: "مخلوط Unicode شکلیں",
-          example: "علي / علی",
+          example: "علي → علی",
           impact: "ایک ہی لفظ ہر بار مختلف نظر آتا ہے، جس سے تلاش اور یکسانیت متاثر ہوتی ہے۔",
         },
         {
           title: "پوشیدہ خالی جگہ کے مسائل",
-          example: "لفظ،اگلا",
+          example: "لفظ،اگلا → لفظ، اگلا",
           impact: "رمزِ اوقاف کے بعد غائب خالی جگہ ہر عام spell-checker سے بچ نکلتی ہے۔",
         },
         {
           title: "غلط رموزِ اوقاف",
-          example: "یہ, وہ",
+          example: "یہ, وہ → یہ، وہ",
           impact: "انگریزی کوما اور نشانات بغیر کسی کے متوجہ ہوئے اردو نثر میں شامل ہو جاتے ہیں۔",
         },
         {
           title: "اصطلاحی بے ترتیبی",
-          example: "استعمار / نوآبادیاتی نظام",
+          example: "استعمار → نوآبادیاتی نظام",
           impact: "ایک ہی اصطلاح ایک ہی دستاویز میں دو مختلف طریقوں سے لکھی جاتی ہے۔",
         },
       ],
@@ -221,6 +256,41 @@ export const translations = {
       heading: "ترجمہ و اشاعتی خدمات",
       body: "کیا آپ کو ٹول سے زیادہ کی ضرورت ہے؟ ہم اردو، انگریزی، عربی، اور فارسی میں پیشہ ورانہ ترجمہ، تدوین، proofreading، اور اشاعت کی تیاری کی خدمات فراہم کرتے ہیں۔",
       cta: "اپنے پروجیکٹ پر بات کریں",
+    },
+    cleanerTool: {
+      title: "ڈاکومنٹ کلینر",
+      description: ".txt یا .docx فائل اپلوڈ کریں تاکہ آپ کا اردو متن خودکار طور پر نکالا، معیاری بنایا، اور جانچا جا سکے — پھر درست شدہ فائل ڈاؤن لوڈ کریں۔",
+      faqHeading: "اکثر پوچھے گئے سوالات",
+      faqs: [
+        { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ آپ کی .txt یا .docx فائل سے متن نکال کر خودکار طور پر Unicode معیاری کاری کرتا ہے اور مکمل کوالٹی رپورٹ دیتا ہے — پھر آپ درست شدہ فائل ڈاؤن لوڈ کر سکتے ہیں۔" },
+        { question: "کیا میری فائل کہیں محفوظ ہوتی ہے؟", answer: "نہیں۔ فائل صرف پروسیسنگ کے لیے استعمال ہوتی ہے، کبھی محفوظ نہیں کی جاتی۔" },
+        { question: "زیادہ سے زیادہ فائل سائز کیا ہے؟", answer: "فی الحال .txt اور .docx فائلیں 5MB تک سپورٹ کرتی ہیں۔" },
+      ],
+    },
+    qualityTool: {
+      title: "پبلیکیشن کوالٹی چیکر",
+      description: "اپنا اردو متن پیسٹ کریں — یا .txt/.docx فائل اپلوڈ کریں — تاکہ اشاعت سے پہلے خالی جگہ، رموزِ اوقاف، اور متن کے معیار کے مسائل کا جائزہ لیا جا سکے۔",
+      faqHeading: "اکثر پوچھے گئے سوالات",
+      faqs: [
+        { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ آپ کے متن کو اشاعت سے پہلے جانچتا ہے — اضافی خالی جگہیں، رموزِ اوقاف کی خرابیاں، دہرائے گئے الفاظ، اور غیر ضروری رسم الخط کا اختلاط پکڑتا ہے۔ یہ صرف نشاندہی کرتا ہے، خود کوئی تبدیلی نہیں کرتا۔" },
+        { question: "کیا یہ خود متن درست کر دیتا ہے؟", answer: "نہیں، یہ صرف جائزہ لیتا ہے۔ آپ الگ سے یونیکوڈ اسٹینڈرڈائزر چلا کر پہلے اور بعد کا تقابل دیکھ سکتے ہیں۔" },
+        { question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟", answer: "نہیں۔ یہ عمل مکمل طور پر آپ کے براؤزر میں ہوتا ہے — متن کبھی کسی سرور پر نہیں بھیجا جاتا۔" },
+      ],
+    },
+    unicodeTool: {
+      title: "یونیکوڈ اسٹینڈرڈائزر",
+      description: "نیچے کوئی بھی اردو متن پیسٹ کریں تاکہ فوری طور پر مخلوط حروف کی شکلیں معیاری بنیں، خالی جگہ درست ہو، اور رموزِ اوقاف ٹھیک ہوں — مفت، اور مکمل طور پر آپ کے براؤزر میں پروسیس ہوتا ہے۔",
+      examplesHeading: "مثالیں",
+      faqHeading: "اکثر پوچھے گئے سوالات",
+      faqs: [
+        { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ آپ کے اردو متن میں مختلف Unicode شکلوں (جیسے ي بجائے ی، ك بجائے ک) کو معیاری بناتا ہے، اضافی خالی جگہیں ہٹاتا ہے، اور رموزِ اوقاف کو اردو کے مطابق درست کرتا ہے۔" },
+        { question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟", answer: "نہیں۔ یہ عمل مکمل طور پر آپ کے براؤزر میں ہوتا ہے — متن کبھی کسی سرور پر نہیں بھیجا جاتا۔" },
+        { question: "کن فائل فارمیٹس کے ساتھ کام کرتا ہے؟", answer: "فی الحال صرف plain text۔ DOCX اور PDF فائلوں کے لیے ہمارا ڈاکومنٹ کلینر ٹول استعمال کریں۔" },
+      ],
+      examples: [
+        { label: "مخلوط حروف کی شکلیں", before: "علي عليه السلام", after: "علی علیہ السلام" },
+        { label: "انگریزی طرز کے رموزِ اوقاف", before: "العلم نور , والجهل ظلام", after: "العلم نور، والجهل ظلام" },
+      ],
     },
   },
 } as const;

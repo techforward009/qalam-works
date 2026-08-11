@@ -10,6 +10,7 @@ module.exports = {
     extend: {
       fontFamily: {
         nastaliq: ["var(--font-nastaliq)", "serif"],
+        naskh: ["var(--font-naskh)", "serif"],
         sans: ["var(--font-inter)", "sans-serif"],
       },
     },
