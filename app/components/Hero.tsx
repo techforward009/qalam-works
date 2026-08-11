@@ -39,7 +39,7 @@ export default function Hero() {
               </Link>
             </div>
 
-            <p className={`text-xs text-[#7C8299] tracking-wide ${naskh}`}>{t.trustLine}</p>
+            <p className={`text-[15px] text-[#7C8299] tracking-wide ${naskh}`}>{t.trustLine}</p>
           </div>
 
           <div dir="ltr">

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import LanguageSwitch from "./LanguageSwitch";
@@ -28,17 +28,37 @@ function PenNibIcon({ size = 26 }: { size?: number }) {
 export default function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
   const { language, dir } = useLanguage();
   const t = translations[language].nav;
   const naskh = language === "ur" ? "font-naskh" : "";
 
-  const navLinks = [
+  // Close "More Tools" dropdown when clicking outside
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  const primaryLinks = [
     { label: t.home, href: "/" },
     { label: t.documentStudio, href: "/tools/document-studio" },
+    { label: t.documentCleaner, href: "/tools/document-cleaner" },
     { label: t.qualityChecker, href: "/tools/quality-checker" },
     { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
+  ];
+
+  const moreLinks = [
+    { label: t.invoiceStudio, href: "/tools/invoice-generator" },
     { label: t.services, href: "mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Service%20Inquiry" },
   ];
+
+  const allMobileLinks = [...primaryLinks, ...moreLinks];
 
   const isActive = (href: string) => !href.startsWith("mailto:") && pathname === href;
 
@@ -56,7 +76,7 @@ export default function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-9 flex-1 justify-center min-w-0" dir={dir}>
-          {navLinks.map((link) => (
+          {primaryLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -70,6 +90,36 @@ export default function Header() {
               )}
             </Link>
           ))}
+
+          {/* More Tools dropdown */}
+          <div ref={moreRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setMoreOpen((o) => !o)}
+              className={`flex items-center gap-1 text-[17px] font-medium transition-colors whitespace-nowrap py-2 ${naskh} ${
+                moreLinks.some((l) => isActive(l.href)) ? "text-[#E8C989]" : "text-[#C7D6C7] hover:text-white"
+              }`}
+            >
+              {t.moreTools}
+              <ChevronDown size={15} className={`transition-transform ${moreOpen ? "rotate-180" : ""}`} />
+            </button>
+            {moreOpen && (
+              <div className={`absolute top-full mt-1 bg-[#1A3A2A] border border-white/10 rounded-xl shadow-xl py-2 min-w-[180px] z-50 ${dir === "rtl" ? "right-0" : "left-0"}`}>
+                {moreLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMoreOpen(false)}
+                    className={`block px-4 py-2.5 text-[15px] transition-colors ${naskh} ${
+                      isActive(link.href) ? "text-[#E8C989]" : "text-[#C7D6C7] hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className={`hidden md:flex items-center shrink-0 ${dir === "rtl" ? "mr-14" : "ml-14"}`}>
@@ -87,7 +137,7 @@ export default function Header() {
       {mobileOpen && (
         <nav className="md:hidden border-t border-white/10 bg-[#153020]" dir={dir}>
           <div className="max-w-[1280px] mx-auto px-8 py-2 flex flex-col">
-            {navLinks.map((link) => (
+            {allMobileLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

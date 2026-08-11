@@ -669,6 +669,39 @@ describe("createDocxDocument — v1.3: header and footer", () => {
     const footerXml = await zip.file(footerFile!)!.async("text");
     expect(footerXml).toContain("NUMPAGES");
   });
+
+  // Regression (2026-08-11): the DOCX header paragraph must NOT inherit
+  // RTL/bidi formatting when the title text is pure Latin ("Qalam Works").
+  // Previously, bidirectional was always set to `dir === "rtl"`, causing
+  // Word to render the header with strange character spacing on RTL docs.
+  test("pure-Latin fallback header ('Qalam Works') is never bidirectional even in an RTL document", async () => {
+    const buffer = await Packer.toBuffer(
+      createDocxDocument(docWith([{ type: "paragraph", content: [{ type: "text", text: "اردو متن" }] }]), "rtl")
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    const headerFile = Object.keys(zip.files).find((f) => /word\/header\d+\.xml$/.test(f));
+    expect(headerFile).toBeDefined();
+    const headerXml = await zip.file(headerFile!)!.async("text");
+    // The header paragraph must NOT contain <w:bidi/> for a pure-Latin title.
+    // We assert on the paragraph-properties section (everything before the run).
+    const pPrMatch = headerXml.match(/<w:pPr>([\s\S]*?)<\/w:pPr>/);
+    expect(pPrMatch).toBeDefined();
+    expect(pPrMatch![1]).not.toContain("<w:bidi/>");
+  });
+
+  test("RTL document with an Urdu H1 header IS bidirectional", async () => {
+    const buffer = await Packer.toBuffer(
+      createDocxDocument(
+        docWith([{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "اردو تحقیق" }] }]),
+        "rtl"
+      )
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    const headerFile = Object.keys(zip.files).find((f) => /word\/header\d+\.xml$/.test(f));
+    expect(headerFile).toBeDefined();
+    const headerXml = await zip.file(headerFile!)!.async("text");
+    expect(headerXml).toContain("<w:bidi/>");
+  });
 });
 
 describe("createDocxDocument — v1.3: document metadata", () => {

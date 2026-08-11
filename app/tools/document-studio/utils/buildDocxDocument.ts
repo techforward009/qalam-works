@@ -94,6 +94,14 @@ function fontFor(dir: Direction): string {
   return dir === "rtl" ? FONT_RTL : FONT_LTR;
 }
 
+// Returns true when text contains only ASCII/Latin characters (no RTL codepoints).
+// Used to ensure that a pure-English header such as "Qalam Works" is always
+// rendered LTR regardless of the surrounding document direction, preventing
+// strange character spacing caused by inheriting RTL/Nastaliq bidi attributes.
+function isPureLatinText(text: string): boolean {
+  return /^[\u0000-\u024F\s]*$/.test(text);
+}
+
 // v1.1 Phase 1 — fixes a real bug found during the DOCX audit: any
 // heading level other than exactly 2 previously collapsed to HEADING_1,
 // silently mis-exporting H3/H4 (reachable today via TipTap's markdown
@@ -417,8 +425,11 @@ export function createDocxDocument(doc: DocNode, dir: Direction): Document {
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                bidirectional: dir === "rtl",
-                children: [new TextRun({ text: title, font: fontFor(dir), size: 18 })],
+                // Pure-Latin titles (e.g. "Qalam Works") must always render LTR with
+                // a standard Latin font, regardless of the document's own direction.
+                // Inheriting RTL bidi here caused strange character spacing in Word.
+                bidirectional: isPureLatinText(title) ? false : dir === "rtl",
+                children: [new TextRun({ text: title, font: isPureLatinText(title) ? FONT_LTR : fontFor(dir), size: 18 })],
               }),
             ],
           }),

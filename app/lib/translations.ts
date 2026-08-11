@@ -17,8 +17,11 @@ export const translations = {
     nav: {
       home: "Home",
       documentStudio: "Document Studio",
+      documentCleaner: "Document Cleaner",
       qualityChecker: "Quality Audit",
       unicodeStandardizer: "Unicode Standardizer",
+      invoiceStudio: "Invoice Studio",
+      moreTools: "More Tools",
       services: "Services",
       openStudio: "Open Studio",
     },
@@ -157,8 +160,11 @@ export const translations = {
     nav: {
       home: "ہوم",
       documentStudio: "ڈاکومنٹ اسٹوڈیو",
+      documentCleaner: "ڈاکومنٹ کلینر",
       qualityChecker: "کوالٹی آڈٹ",
       unicodeStandardizer: "یونیکوڈ اسٹینڈرڈائزر",
+      invoiceStudio: "انوائس اسٹوڈیو",
+      moreTools: "مزید ٹولز",
       services: "خدمات",
       openStudio: "اسٹوڈیو کھولیں",
     },

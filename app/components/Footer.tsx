@@ -22,6 +22,7 @@ const TOOL_ROUTES = [
   { key: "documentCleaner", href: "/tools/document-cleaner", labelEn: "Document Cleaner", labelUr: "ڈاکومنٹ کلینر" },
   { key: "qualityChecker", href: "/tools/quality-checker" },
   { key: "unicodeStandardizer", href: "/tools/unicode-standardizer" },
+  { key: "invoiceStudio", href: "/tools/invoice-generator", labelEn: "Invoice Studio", labelUr: "انوائس اسٹوڈیو" },
 ];
 
 export default function Footer() {
@@ -37,24 +38,24 @@ export default function Footer() {
           <div className="flex items-center gap-2.5 mb-3" dir={dir}>
             <PenNibIcon />
             {language === "ur" ? (
-              <span className="font-naskh text-xl font-bold text-white leading-none">قلم ورکس</span>
+              <span className="font-nastaliq text-xl font-normal text-white leading-none">قلم ورکس</span>
             ) : (
               <span className="font-bold text-white">Qalam Works</span>
             )}
           </div>
-          <p className={`text-[#8AAA8A] text-xs leading-relaxed ${naskh}`}>{t.footer.tagline}</p>
-          <p className={`text-[#8AAA8A] text-xs leading-relaxed mt-2 ${naskh}`}>{t.footer.servicesNote}</p>
+          <p className={`text-[#8AAA8A] text-sm leading-relaxed ${naskh}`}>{t.footer.tagline}</p>
+          <p className={`text-[#8AAA8A] text-sm leading-relaxed mt-2 ${naskh}`}>{t.footer.servicesNote}</p>
         </div>
 
         <div>
-          <div className={`text-[#B8935A] font-semibold text-xs uppercase tracking-wide mb-3 ${naskh}`}>
+          <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
             {t.footer.toolsHeading}
           </div>
           <ul className="space-y-2">
             {TOOL_ROUTES.map((tool) => (
               <li key={tool.href}>
-                <Link href={tool.href} className={`text-[#8AAA8A] hover:text-white text-xs transition-colors ${naskh}`}>
-                  {tool.key === "documentCleaner"
+                <Link href={tool.href} className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>
+                  {tool.labelEn
                     ? language === "ur" ? tool.labelUr : tool.labelEn
                     : t.nav[tool.key as keyof typeof t.nav]}
                 </Link>
@@ -64,21 +65,21 @@ export default function Footer() {
         </div>
 
         <div>
-          <div className={`text-[#B8935A] font-semibold text-xs uppercase tracking-wide mb-3 ${naskh}`}>
+          <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
             {t.footer.contactHeading}
           </div>
           <a
             href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Inquiry"
             dir="ltr"
-            className="text-[#8AAA8A] hover:text-white text-xs transition-colors block mb-2"
+            className="text-[#8AAA8A] hover:text-white text-sm transition-colors block mb-2"
           >
             qalamworks.services@gmail.com
           </a>
-          <p className={`text-[#8AAA8A] text-xs leading-relaxed ${naskh}`}>{t.footer.contactNote}</p>
+          <p className={`text-[#8AAA8A] text-sm leading-relaxed ${naskh}`}>{t.footer.contactNote}</p>
         </div>
       </div>
 
-      <div className="border-t border-white/5 py-4 text-center text-xs text-[#4A6A4A]" dir="ltr">
+      <div className="border-t border-white/5 py-4 text-center text-sm text-[#4A6A4A]" dir="ltr">
         © {year} Qalam Works. {t.footer.rights}
       </div>
     </footer>
