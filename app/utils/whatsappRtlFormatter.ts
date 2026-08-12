@@ -11,7 +11,7 @@
  * - `1)` / `2)` …  NOT specially transformed (WhatsApp renders them correctly)
  * - bullets `•` `*` `-`  NOT specially transformed
  * - Leading markers are peeled so they are NOT LRI-wrapped as LTR runs
- * - `1.` / `2.` … ONLY: candidate = digits + "." + LRM  (no nested LRI)
+ * - `1.` / `2.` … ONLY: candidate A = digits + LRM + "."  (no nested LRI)
  *
  * Never reverses or alters visible characters.
  */
@@ -25,13 +25,13 @@ const RLM = "\u200F";
 /**
  * Strip only controls this formatter inserts:
  * - LRI / RLI / PDI
- * - LRM immediately after a DOT-style numbered marker (1. / 2.)
+ * - LRM between digit and period in DOT-style markers (1\u200E.)
  * - Trailing final-line RLM anchor
  */
 function stripOwnBidiControls(text: string): string {
   let s = text.replace(/[\u2066\u2067\u2069]/g, "");
-  // Only dot-style marker LRMs we insert (not after ")")
-  s = s.replace(/(\d+\.)\u200E/g, "$1");
+  // digit + LRM + .  →  digit + .
+  s = s.replace(/(\d+)\u200E\./g, "$1.");
   s = s.replace(/(?:\r?\n)\u200F\s*$/g, "");
   return s;
 }
@@ -120,13 +120,14 @@ function isolateLtrRuns(text: string): string {
 }
 
 /**
- * Candidate helper ONLY for leading DOT-style markers: 1. 2. 3.
- * Sequence: digits + "." + LRM
- * No nested LRI on the marker (failed in real WhatsApp).
+ * Candidate A — ONLY for leading DOT-style markers: 1. 2. 3.
+ * Sequence: digits + LRM + "."
+ * Anchors the period as LTR-following the digit without nested LRI.
+ * Stripped visible text remains exactly "1."
  * Paren-style 1) and bullets are handled elsewhere with no extra marks.
  */
-function formatDotNumberedMarker(digitsAndDot: string): string {
-  return digitsAndDot + LRM;
+function formatDotNumberedMarker(digits: string, _dot: string): string {
+  return digits + LRM + ".";
 }
 
 function processLine(line: string): string {
@@ -134,11 +135,11 @@ function processLine(line: string): string {
   if (!lineHasRtl(line)) return line;
 
   // --- Dot-style numbered marker ONLY (1. 2. 3.) ---
-  const dot = line.match(/^(\d+\.)(\s*)(.*)$/);
+  const dot = line.match(/^(\d+)(\.)(\s*)(.*)$/);
   if (dot) {
-    const [, marker, spaces, rest] = dot;
+    const [, digits, _period, spaces, rest] = dot;
     const body = isolateLtrRuns(rest);
-    return isolateRtl(formatDotNumberedMarker(marker) + spaces + body);
+    return isolateRtl(formatDotNumberedMarker(digits, _period) + spaces + body);
   }
 
   // --- Paren-style 1) 2) 3): peel marker so it is NOT LRI-wrapped; no LRM ---

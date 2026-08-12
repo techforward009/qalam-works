@@ -10,7 +10,7 @@ const { LRI, RLI, PDI, LRM, RLM } = BIDI;
 function strip(text: string): string {
   return text
     .replace(/[\u2066\u2067\u2069]/g, "")
-    .replace(/(\d+\.)\u200E/g, "$1")
+    .replace(/(\d+)\u200E\./g, "$1.")
     .replace(/(?:\r?\n)\u200F\s*$/g, "");
 }
 
@@ -169,12 +169,13 @@ describe("formatForWhatsAppRTL", () => {
   // ========== Marker matrix (independent) ==========
 
   // A. Dot-style 1. — ONLY style that gets LRM candidate
-  it("A: dot-style 1. 2. 3. get LRM after marker; outer RLI; no LRI on marker", () => {
+  it("A: dot-style uses digit+LRM+period; outer RLI; no LRI on marker", () => {
     const text = "1. پہلا نکتہ\n2. دوسرا نکتہ\n3. تیسرا نکتہ";
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
-    for (const n of ["1.", "2.", "3."]) {
-      expect(result).toContain(n + LRM);
+    for (const n of ["1", "2", "3"]) {
+      // Candidate A: digit + LRM + "."
+      expect(result).toContain(n + LRM + ".");
       expect(result).not.toContain(LRI + n);
     }
     const rtlLines = result.split("\n").filter((l) => l.includes(RLI));
@@ -263,7 +264,7 @@ describe("formatForWhatsAppRTL", () => {
 - ڈیش`;
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
-    expect(result).toContain("1." + LRM);
+    expect(result).toContain("1" + LRM + ".");
     expect(result).not.toContain("1)" + LRM);
     expect(result).not.toContain("•" + LRM);
     expect(result).not.toContain("*" + LRM);
