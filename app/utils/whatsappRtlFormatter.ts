@@ -3,28 +3,29 @@
  * Pure TypeScript engine for preparing mixed Urdu/English plain text
  * so that it remains visually stable when pasted into WhatsApp.
  *
- * Optimised for Urdu (RTL) paragraphs that contain embedded LTR fragments
- * (English words, numbers, abbreviations, URLs, emails).
+ * Strategy (plain-text bidi, not CSS):
+ * - Lines that contain Urdu/Arabic script are wrapped in RLI … PDI so the
+ *   entire logical line is an RTL paragraph. That keeps list markers
+ *   (1. 2) • - *) on the RIGHT side in WhatsApp.
+ * - Inside that RTL isolate, genuine LTR tokens (English words, URLs,
+ *   emails, abbreviations, numbers) are wrapped in LRI … PDI so they
+ *   still read left-to-right.
+ * - Pure English / pure LTR lines are left completely untouched.
  *
- * Pure English / pure LTR text is left completely untouched.
- * Only modern Unicode bidirectional isolation controls (LRI + PDI)
- * are inserted, and only around meaningful LTR runs that sit inside
- * an RTL context.
- *
- * Numbered / bulleted list markers are deliberately left un-isolated
- * so they stay visually attached to their RTL list item.
+ * Never reverses, translates, renumbers or alters visible characters.
  */
 
 // Unicode Bidirectional Isolation Controls we intentionally insert
 const LRI = "\u2066"; // LEFT-TO-RIGHT ISOLATE
+const RLI = "\u2067"; // RIGHT-TO-LEFT ISOLATE
 const PDI = "\u2069"; // POP DIRECTIONAL ISOLATE
 
 /**
- * Strip only the isolation controls that *this* formatter inserts (LRI/PDI).
- * User-supplied directional marks (LRM, RLM, embeddings, etc.) are preserved.
+ * Strip only the isolation controls that *this* formatter inserts
+ * (LRI / RLI / PDI). User-supplied directional marks are preserved.
  */
 function stripOwnBidiControls(text: string): string {
-  return text.replace(/[\u2066\u2069]/g, "");
+  return text.replace(/[\u2066\u2067\u2069]/g, "");
 }
 
 /**
@@ -37,19 +38,16 @@ function isRtlChar(ch: string): boolean {
     (code >= 0x0750 && code <= 0x077f) || // Arabic Supplement
     (code >= 0x08a0 && code <= 0x08ff) || // Arabic Extended-A
     (code >= 0xfb50 && code <= 0xfdff) || // Arabic Presentation Forms-A
-    (code >= 0xfe70 && code <= 0xfeff)    // Arabic Presentation Forms-B
+    (code >= 0xfe70 && code <= 0xfeff) // Arabic Presentation Forms-B
   );
 }
 
 /**
  * Characters that may appear inside a single LTR token
  * (words, numbers, abbreviations, URLs, emails).
- * Connectors are allowed only inside a run so that
- * "https://qalamworks.com" or "user@email.com" stay atomic.
  */
 function isLtrTokenChar(ch: string): boolean {
   const code = ch.codePointAt(0)!;
-  // A-Z a-z 0-9
   if (
     (code >= 0x41 && code <= 0x5a) ||
     (code >= 0x61 && code <= 0x7a) ||
@@ -57,8 +55,8 @@ function isLtrTokenChar(ch: string): boolean {
   ) {
     return true;
   }
-  // Intra-token punctuation for URLs, emails, abbreviations, numbers
-  if ("@._\-:/?&=%+#,~".includes(ch)) {
+  // Include comma so amounts like 720,000 stay one LTR token
+  if ("@._\-:/?&=%+#,~,".includes(ch)) {
     return true;
   }
   return false;
@@ -73,24 +71,7 @@ function isMeaningfulLtrRun(segment: string): boolean {
 }
 
 /**
- * Detect a leading list marker that should stay attached to the RTL line
- * and must NOT be isolated.
- * Supports: 1.  2)  •  -  *
- */
-function matchLeadingListMarker(line: string): { prefix: string; rest: string } | null {
-  // Optional leading whitespace + marker + following whitespace
-  const m = line.match(/^(\s*(?:\d+[.)]|[•\-*])\s+)/);
-  if (!m) return null;
-  return { prefix: m[1], rest: line.slice(m[1].length) };
-}
-
-/**
  * Locate maximal meaningful LTR runs inside a string.
- * A run is a consecutive sequence of isLtrTokenChar that also
- * contains at least one letter or digit.
- *
- * This prioritises real tokens (URLs, emails, abbreviations, numbers)
- * while avoiding isolation of ordinary punctuation-only sequences.
  */
 function findLtrRuns(text: string): Array<{ start: number; end: number }> {
   const runs: Array<{ start: number; end: number }> = [];
@@ -116,7 +97,6 @@ function findLtrRuns(text: string): Array<{ start: number; end: number }> {
 
 /**
  * Does this line contain any RTL (Urdu/Arabic) character?
- * Pure LTR lines are left alone.
  */
 function lineHasRtl(line: string): boolean {
   for (const ch of line) {
@@ -125,24 +105,23 @@ function lineHasRtl(line: string): boolean {
   return false;
 }
 
-/**
- * Wrap a single LTR run with LRI … PDI.
- * Isolate (not embed) so the surrounding RTL direction is restored cleanly.
- */
 function isolateLtr(text: string): string {
   return LRI + text + PDI;
 }
 
+function isolateRtl(text: string): string {
+  return RLI + text + PDI;
+}
+
 /**
- * Apply isolation to the meaningful LTR runs of a string
- * (used on the content after any list marker).
+ * Isolate meaningful LTR runs inside a string (does not wrap the whole
+ * string in RLI — caller is responsible for the outer RTL isolate).
  */
 function isolateLtrRuns(text: string): string {
   const runs = findLtrRuns(text);
   if (runs.length === 0) return text;
 
   let result = text;
-  // Work from the end so earlier offsets stay valid
   for (let r = runs.length - 1; r >= 0; r--) {
     const { start, end } = runs[r];
     const before = result.slice(0, start);
@@ -155,33 +134,31 @@ function isolateLtrRuns(text: string): string {
 
 /**
  * Process one logical line.
- * - If the line has no RTL content → return unchanged (pure English stays pure).
- * - Leading list markers (1. 2) • - *) are left un-isolated so they stay
- *   visually attached to the RTL list item.
- * - Only the remaining content is scanned for meaningful LTR runs
- *   (URLs, emails, abbreviations, numbers, English words).
+ *
+ * RTL / mixed lines:
+ *   RLI + (line with internal LRI…PDI around LTR tokens) + PDI
+ * This forces the whole line — including leading list markers — into an
+ * RTL paragraph so markers stay on the right edge in WhatsApp.
+ *
+ * Pure LTR lines are returned unchanged.
  */
 function processLine(line: string): string {
   if (line.length === 0) return line;
-  if (!lineHasRtl(line)) return line; // pure LTR / English → no controls
+  if (!lineHasRtl(line)) return line;
 
-  const marker = matchLeadingListMarker(line);
-  if (marker) {
-    // Keep the marker itself free of isolation controls
-    return marker.prefix + isolateLtrRuns(marker.rest);
-  }
-
-  return isolateLtrRuns(line);
+  // Isolate LTR fragments first, then wrap the entire line as RTL.
+  // List markers (1. 2) • - *) remain inside the RLI so they participate
+  // in the RTL paragraph direction.
+  const withLtrIsolates = isolateLtrRuns(line);
+  return isolateRtl(withLtrIsolates);
 }
 
 /**
  * Main public API.
  *
- * - Idempotent: previous LRI/PDI are stripped, then re-applied.
+ * - Idempotent: previous LRI/RLI/PDI are stripped, then re-applied.
  * - Never alters visible characters, order, numbers, URLs, emails or wording.
- * - Only inserts LRI/PDI around meaningful LTR runs that appear inside RTL text.
  * - Pure English paragraphs receive zero control characters.
- * - Numbered / bulleted list markers are never isolated.
  */
 export function formatForWhatsAppRTL(input: string): string {
   if (typeof input !== "string") {
@@ -189,9 +166,6 @@ export function formatForWhatsAppRTL(input: string): string {
   }
 
   const cleaned = stripOwnBidiControls(input);
-
-  // Process each line independently so list markers stay attached
-  // and original line-break structure is preserved.
   const lines = cleaned.split(/\r?\n/);
   const processed = lines.map(processLine);
   return processed.join("\n");
@@ -203,7 +177,7 @@ export function formatForWhatsAppRTL(input: string): string {
 export function countBidiControls(text: string): number {
   let count = 0;
   for (const ch of text) {
-    if (ch === LRI || ch === PDI) count++;
+    if (ch === LRI || ch === RLI || ch === PDI) count++;
   }
   return count;
 }
@@ -211,4 +185,4 @@ export function countBidiControls(text: string): number {
 /**
  * Exposed for tests.
  */
-export const BIDI = { LRI, PDI } as const;
+export const BIDI = { LRI, RLI, PDI } as const;
