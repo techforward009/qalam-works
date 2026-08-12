@@ -23,6 +23,7 @@ const TOOL_ROUTES = [
   { key: "qualityChecker", href: "/tools/quality-checker" },
   { key: "unicodeStandardizer", href: "/tools/unicode-standardizer" },
   { key: "invoiceStudio", href: "/tools/invoice-generator", labelEn: "Invoice Studio", labelUr: "انوائس اسٹوڈیو" },
+  { key: "whatsappRtlFormatter", href: "/tools/whatsapp-rtl-formatter", labelEn: "WhatsApp RTL Formatter", labelUr: "واٹس ایپ آر ٹی ایل فارمیٹر" },
 ];
 
 export default function Footer() {

@@ -55,6 +55,7 @@ export default function Header() {
 
   const moreLinks = [
     { label: t.invoiceStudio, href: "/tools/invoice-generator" },
+    { label: t.whatsappRtlFormatter, href: "/tools/whatsapp-rtl-formatter" },
     { label: t.services, href: "/services" },
     { label: t.about, href: "/about" },
     { label: t.contact, href: "/contact" },
