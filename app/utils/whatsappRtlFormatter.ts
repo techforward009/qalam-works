@@ -1,18 +1,19 @@
 /**
  * WhatsApp RTL Formatter
  *
- * Strategy (plain-text bidi for WhatsApp):
- * - RTL/mixed lines: outer RLI … PDI (keeps markers on the RIGHT).
- * - Embedded LTR tokens (English, URLs, emails, amounts): LRI … PDI.
- * - Leading numbered markers (1. / 1)): NO nested LRI on the marker.
- *   WhatsApp still mis-renders nested-isolate markers as ".1".
- *   Candidate that survives better in practice:
- *     digits + punctuation + LRM
- *   i.e. visible "1." immediately followed by U+200E, all inside outer RLI.
- * - Bullets • - * are unchanged (no LRM).
- * - Final content line that is RTL gets trailing "\n" + RLM anchor.
+ * Restored baseline (dd591e6d + final RLM from 118bf9d4):
+ * - RTL/mixed lines → outer RLI … PDI
+ * - Embedded LTR tokens → LRI … PDI
+ * - Final RTL content → trailing "\n" + RLM (U+200F)
+ * - Pure English → untouched
  *
- * Never reverses, translates, or alters visible characters.
+ * Marker policy (from real WhatsApp testing):
+ * - `1)` / `2)` …  NOT specially transformed (WhatsApp renders them correctly)
+ * - bullets `•` `*` `-`  NOT specially transformed
+ * - Leading markers are peeled so they are NOT LRI-wrapped as LTR runs
+ * - `1.` / `2.` … ONLY: candidate = digits + "." + LRM  (no nested LRI)
+ *
+ * Never reverses or alters visible characters.
  */
 
 const LRI = "\u2066";
@@ -22,13 +23,15 @@ const LRM = "\u200E";
 const RLM = "\u200F";
 
 /**
- * Strip only controls this formatter inserts.
+ * Strip only controls this formatter inserts:
+ * - LRI / RLI / PDI
+ * - LRM immediately after a DOT-style numbered marker (1. / 2.)
+ * - Trailing final-line RLM anchor
  */
 function stripOwnBidiControls(text: string): string {
   let s = text.replace(/[\u2066\u2067\u2069]/g, "");
-  // LRM immediately after a numbered marker (1. / 1))
-  s = s.replace(/(\d+[.)])\u200E/g, "$1");
-  // Trailing final-line RLM anchor
+  // Only dot-style marker LRMs we insert (not after ")")
+  s = s.replace(/(\d+\.)\u200E/g, "$1");
   s = s.replace(/(?:\r?\n)\u200F\s*$/g, "");
   return s;
 }
@@ -53,10 +56,8 @@ function isLtrTokenChar(ch: string): boolean {
   ) {
     return true;
   }
+  // No ")" here — paren markers must not be absorbed into LTR runs
   if ("@._\-:/?&=%+#,~,".includes(ch)) {
-    return true;
-  }
-  if (ch === ")") {
     return true;
   }
   return false;
@@ -119,42 +120,49 @@ function isolateLtrRuns(text: string): string {
 }
 
 /**
- * Leading numbered-marker helper (WhatsApp-oriented candidate).
- *
- * Does NOT wrap the marker in LRI (nested isolates still render as ".1"
- * in real WhatsApp). Instead:
- *   digits + punctuation + LRM
- *
- * Example for "1.":
- *   "1." + U+200E
- *
- * Example for "1)":
- *   "1)" + U+200E
- *
- * Outer RLI on the whole line still places the marker on the RIGHT.
- * Stripping formatter controls restores exactly "1." / "1)".
+ * Candidate helper ONLY for leading DOT-style markers: 1. 2. 3.
+ * Sequence: digits + "." + LRM
+ * No nested LRI on the marker (failed in real WhatsApp).
+ * Paren-style 1) and bullets are handled elsewhere with no extra marks.
  */
-function formatLeadingNumberedMarker(digits: string, punct: string): string {
-  return digits + punct + LRM;
+function formatDotNumberedMarker(digitsAndDot: string): string {
+  return digitsAndDot + LRM;
 }
 
 function processLine(line: string): string {
   if (line.length === 0) return line;
   if (!lineHasRtl(line)) return line;
 
-  // Leading numbered list marker only (1. 2) 10. …)
-  const numbered = line.match(/^(\d+)([.)])(\s*)(.*)$/);
-  if (numbered) {
-    const [, digits, punct, spaces, rest] = numbered;
-    const marker = formatLeadingNumberedMarker(digits, punct);
+  // --- Dot-style numbered marker ONLY (1. 2. 3.) ---
+  const dot = line.match(/^(\d+\.)(\s*)(.*)$/);
+  if (dot) {
+    const [, marker, spaces, rest] = dot;
     const body = isolateLtrRuns(rest);
-    return isolateRtl(marker + spaces + body);
+    return isolateRtl(formatDotNumberedMarker(marker) + spaces + body);
   }
 
-  // Bullets and ordinary RTL/mixed lines
+  // --- Paren-style 1) 2) 3): peel marker so it is NOT LRI-wrapped; no LRM ---
+  const paren = line.match(/^(\d+\))(\s*)(.*)$/);
+  if (paren) {
+    const [, marker, spaces, rest] = paren;
+    return isolateRtl(marker + spaces + isolateLtrRuns(rest));
+  }
+
+  // --- Bullets • * -: peel marker; no LRM / no LRI on the marker itself ---
+  const bullet = line.match(/^([•\-*])(\s*)(.*)$/);
+  if (bullet) {
+    const [, marker, spaces, rest] = bullet;
+    return isolateRtl(marker + spaces + isolateLtrRuns(rest));
+  }
+
+  // Ordinary RTL / mixed line
   return isolateRtl(isolateLtrRuns(line));
 }
 
+/**
+ * Proven final-line fix (from 118bf9d4): after last RTL content,
+ * append newline + RLM so WhatsApp does not flip the last paragraph.
+ */
 function ensureFinalRtlStability(text: string): string {
   if (!text) return text;
   if (/(?:\r?\n)\u200F\s*$/.test(text)) {
