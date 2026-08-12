@@ -25,8 +25,32 @@ const naskh = Noto_Naskh_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: "Qalam Works — Professional Urdu Writing & Publishing Platform",
-  description: "Write, refine, and prepare professional Urdu documents. Translation services also available in Urdu, English, Arabic, and Persian.",
+  metadataBase: new URL("https://qalamworks.com"),
+  title: {
+    default: "Qalam Works — Professional Urdu Writing & Publishing Tools",
+    template: "%s — Qalam Works",
+  },
+  description:
+    "Qalam Works is a professional digital workspace for Urdu writing, editing, standardization, and publication preparation. Tools include Document Studio, Document Cleaner, Quality Audit, and Unicode Standardizer.",
+  openGraph: {
+    type: "website",
+    url: "https://qalamworks.com",
+    siteName: "Qalam Works",
+    title: "Qalam Works — Professional Urdu Writing & Publishing Tools",
+    description:
+      "A professional digital workspace for Urdu writing, editing, standardization, and publication preparation.",
+    locale: "ur_PK",
+    alternateLocale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Qalam Works — Professional Urdu Writing & Publishing Tools",
+    description:
+      "Professional tools for Urdu writing, editing, Unicode standardization, and document preparation.",
+  },
+  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  alternates: { canonical: "https://qalamworks.com" },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
@@ -35,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ur" dir="rtl">
+    <html lang="en" dir="ltr">
       <body className={`${inter.variable} ${nastaliq.variable} ${naskh.variable} antialiased`}>
         <LanguageProvider>
           <Header />

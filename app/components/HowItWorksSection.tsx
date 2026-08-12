@@ -23,10 +23,10 @@ export default function HowItWorksSection() {
             <Link
               key={tool.name}
               href={TOOL_HREFS[i]}
-              className="bg-[#FAF7F0] hover:bg-[#F1ECE0] hover:shadow-md p-6 rounded-2xl border border-[#151B2E]/[0.06] transition-all block text-right"
+              className="bg-[#FAF7F0] hover:bg-[#F1ECE0] hover:shadow-md p-7 rounded-2xl border border-[#151B2E]/[0.06] transition-all block"
             >
-              <h3 className={`text-base font-bold text-[#1A3A2A] mb-1.5 ${naskh}`}>{tool.name}</h3>
-              <p className={`text-sm text-[#5B5748] leading-relaxed ${naskh}`}>{tool.body}</p>
+              <h3 className={`text-[19px] font-bold text-[#1A3A2A] mb-2 ${naskh}`}>{tool.name}</h3>
+              <p className={`text-[16px] text-[#5B5748] leading-relaxed ${naskh}`}>{tool.body}</p>
             </Link>
           ))}
         </div>

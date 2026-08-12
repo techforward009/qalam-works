@@ -55,7 +55,9 @@ export default function Header() {
 
   const moreLinks = [
     { label: t.invoiceStudio, href: "/tools/invoice-generator" },
-    { label: t.services, href: "mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Service%20Inquiry" },
+    { label: t.services, href: "/services" },
+    { label: t.about, href: "/about" },
+    { label: t.contact, href: "/contact" },
   ];
 
   const allMobileLinks = [...primaryLinks, ...moreLinks];

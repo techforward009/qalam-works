@@ -15,11 +15,11 @@ export default function WhoItsForSection() {
           {t.headline}
         </h2>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-2 gap-6">
           {t.audiences.map((a) => (
-            <div key={a.role} className="bg-white rounded-xl p-5 border border-[#151B2E]/[0.06] shadow-sm">
-              <h3 className={`text-sm font-bold text-[#1A3A2A] mb-1 ${naskh}`}>{a.role}</h3>
-              <p className={`text-sm text-[#5B5748] ${naskh}`}>{a.body}</p>
+            <div key={a.role} className="bg-white rounded-xl p-6 border border-[#151B2E]/[0.06] shadow-sm">
+              <h3 className={`text-[19px] font-bold text-[#1A3A2A] mb-2 ${naskh}`}>{a.role}</h3>
+              <p className={`text-[16px] text-[#5B5748] leading-relaxed ${naskh}`}>{a.body}</p>
             </div>
           ))}
         </div>
