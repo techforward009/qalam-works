@@ -944,14 +944,22 @@ export default function DocumentStudioEditor() {
           />
           <label
             htmlFor="document-studio-upload-input"
-            className={`h-9 px-3.5 rounded-md text-sm font-medium border transition flex items-center gap-2 ${
+            className={`inline-flex items-center gap-2 h-9 px-4 rounded-md text-[15px] font-semibold border-2 transition-all ${
               isImporting
-                ? "border-gray-200 text-gray-400 cursor-not-allowed"
-                : "border-gray-300 text-gray-600 hover:border-[#B8935A] hover:text-[#1A3A2A] cursor-pointer"
+                ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                : "border-[#1A3A2A] bg-[#1A3A2A] text-white hover:bg-[#244E38] hover:border-[#244E38] cursor-pointer shadow-sm"
             }`}
           >
-            {isImporting ? (isUr ? "درآمد ہو رہا ہے..." : "Importing...") : (isUr ? "فائل اپلوڈ کریں" : "Upload File (.txt, .docx)")}
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span className={isUr ? "font-naskh" : ""}>
+              {isImporting ? (isUr ? "درآمد ہو رہا ہے..." : "Importing…") : (isUr ? "فائل اپلوڈ کریں" : "Upload File")}
+            </span>
           </label>
+          {!isImporting && (
+            <span className="text-[13px] text-gray-400 font-mono select-none" dir="ltr">TXT · DOCX</span>
+          )}
         </div>
 
         {uploadError && (

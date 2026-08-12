@@ -12,7 +12,8 @@ import { translations } from "../../../lib/translations";
 
 export default function DocumentCleanerTool() {
   const { language, dir } = useLanguage();
-  const dz = translations[language].cleanerTool.dropzone;
+  const ct = translations[language].cleanerTool;
+  const dz = ct.dropzone;
   const naskh = language === "ur" ? "font-naskh" : "";
 
   const [file, setFile] = useState<File | null>(null);
@@ -105,7 +106,7 @@ export default function DocumentCleanerTool() {
             <span className={`text-sm font-semibold text-amber-900 mb-1 ${naskh}`}>
               {dz.prompt}
             </span>
-            <span className={`text-xs text-gray-500 ${naskh}`}>
+            <span className="text-xs text-gray-500" dir="ltr">
               {dz.hint}
             </span>
           </label>
@@ -130,23 +131,23 @@ export default function DocumentCleanerTool() {
             <div className="flex border-b border-amber-200 mb-4">
               <button
                 onClick={() => setActiveTab("report")}
-                className={`py-2 px-4 text-xs font-bold transition-all border-b-2 ${
+                className={`py-2 px-4 text-sm font-bold transition-all border-b-2 ${
                   activeTab === "report"
                     ? "border-amber-700 text-amber-900 bg-amber-50/50"
                     : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                } ${naskh}`}
               >
-                Unified Qalam Report
+                {ct.reportTab}
               </button>
               <button
                 onClick={() => setActiveTab("preview")}
-                className={`py-2 px-4 text-xs font-bold transition-all border-b-2 ${
+                className={`py-2 px-4 text-sm font-bold transition-all border-b-2 ${
                   activeTab === "preview"
                     ? "border-amber-700 text-amber-900 bg-amber-50/50"
                     : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                } ${naskh}`}
               >
-                Extracted Text Preview
+                {ct.previewTab}
               </button>
             </div>
 
@@ -176,7 +177,7 @@ export default function DocumentCleanerTool() {
                   <span className="font-bold block text-sm text-amber-900 mb-2">Remaining Quality Issues (Audit v0.1)</span>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
                     <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">
-                      <span className="font-bold block mb-1">Typography:</span>
+                      <span className="font-bold block mb-1">ٹائپوگرافی:</span>
                       <div>• Multiple Spaces: {result.summary.remainingIssues.typography.multipleSpaces}</div>
                       <div>• Empty Lines: {result.summary.remainingIssues.typography.emptyLines}</div>
                       <div>• Long Paragraphs: {result.summary.remainingIssues.typography.longParagraphs}</div>
@@ -205,22 +206,20 @@ export default function DocumentCleanerTool() {
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <button
                 onClick={() => result.cleanedText && downloadCleanedText(result.cleanedText, result.summary!.fileName)}
-                className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-xs flex items-center gap-2"
-                dir="ltr"
+                className={`bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-[15px] flex items-center gap-2 ${naskh}`}
               >
-                <span>Download Cleaned File (.txt)</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span>{ct.downloadTxt}</span>
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
               </button>
               {result.summary.fileType === "DOCX" && (
                 <button
                   onClick={handleDownloadDocx}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-xs flex items-center gap-2"
-                  dir="ltr"
+                  className={`bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-[15px] flex items-center gap-2 ${naskh}`}
                 >
-                  <span>Download Cleaned File (.docx)</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <span>{ct.downloadDocx}</span>
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                 </button>

@@ -10,36 +10,36 @@ export default function Hero() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section className="relative overflow-hidden bg-[#12172A] text-[#F5F2EA]" dir={dir}>
-      <div aria-hidden="true" className="pointer-events-none absolute -left-32 -top-24 select-none font-nastaliq text-[26rem] leading-none text-[#B8935A]/[0.05]">
+    <section className="relative overflow-hidden bg-[#F7F5EF]" dir={dir}>
+      <div aria-hidden="true" className="pointer-events-none absolute -left-32 -top-24 select-none font-nastaliq text-[26rem] leading-none text-[#B8935A]/[0.06]">
         ق
       </div>
 
       <div className="relative max-w-[1240px] mx-auto px-6 pt-24 pb-28 md:pt-32 md:pb-36">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <div className={`text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"}`}>
-            <div className={`inline-flex items-center gap-2 rounded-full border border-[#B8935A]/30 bg-[#B8935A]/10 px-4 py-1.5 text-xs font-medium tracking-wide text-[#E8C989] mb-7 ${naskh}`}>
+            <div className={`inline-flex items-center gap-2 rounded-full border border-[#B8935A]/40 bg-[#B8935A]/10 px-4 py-1.5 text-xs font-medium tracking-wide text-[#9A6A30] mb-7 ${naskh}`}>
               {t.eyebrow}
             </div>
 
-            <h1 className={`text-4xl md:text-[3.4rem] font-bold leading-[1.25] text-white mb-5 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+            <h1 className={`text-4xl md:text-[3.4rem] font-bold leading-[1.25] text-[#1A3A2A] mb-5 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
               {t.headline}
             </h1>
 
-            <p className={`text-[#B9B4A8] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-10 ${naskh}`}>
+            <p className={`text-[#4A4840] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-10 ${naskh}`}>
               {t.subheadline}
             </p>
 
             <div className={`flex flex-col sm:flex-row justify-center gap-3 mb-8 ${dir === "rtl" ? "md:justify-end" : "md:justify-start"}`}>
-              <Link href="/tools/document-studio" className={`bg-[#B8935A] hover:bg-[#C9A46B] text-[#12172A] font-semibold px-7 py-3.5 rounded-lg shadow-lg shadow-[#B8935A]/20 transition-all text-sm text-center ${naskh}`}>
+              <Link href="/tools/document-studio" className={`bg-[#B8935A] hover:bg-[#C9A46B] text-white font-semibold px-7 py-3.5 rounded-lg shadow-lg shadow-[#B8935A]/20 transition-all text-[15px] text-center ${naskh}`}>
                 {t.ctaPrimary}
               </Link>
-              <Link href="#before-after" className={`border border-white/15 hover:border-white/35 hover:bg-white/5 text-white font-semibold px-7 py-3.5 rounded-lg transition-all text-sm text-center ${naskh}`}>
+              <Link href="#before-after" className={`border border-[#1A3A2A]/25 hover:border-[#1A3A2A]/50 hover:bg-[#1A3A2A]/5 text-[#1A3A2A] font-semibold px-7 py-3.5 rounded-lg transition-all text-[15px] text-center ${naskh}`}>
                 {t.ctaSecondary}
               </Link>
             </div>
 
-            <p className={`text-[18px] font-medium text-[#7C8299] tracking-wide text-center mt-4 ${language === "ur" ? "font-naskh leading-loose" : ""}`}>{t.trustLine}</p>
+            <p className={`text-[16px] font-medium text-[#7A7268] tracking-wide text-center mt-4 ${language === "ur" ? "font-naskh leading-loose" : ""}`}>{t.trustLine}</p>
           </div>
 
           <div dir="ltr">

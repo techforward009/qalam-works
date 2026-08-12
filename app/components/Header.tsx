@@ -30,9 +30,9 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
-  const { language, dir } = useLanguage();
-  const t = translations[language].nav;
-  const naskh = language === "ur" ? "font-naskh" : "";
+  const { language } = useLanguage();
+  // Header is always English + LTR regardless of body language mode.
+  const t = translations.en.nav;
 
   // Close "More Tools" dropdown when clicking outside
   useEffect(() => {
@@ -66,23 +66,19 @@ export default function Header() {
 
   return (
     <header className="bg-[#1A3A2A] border-b border-white/10 sticky top-0 z-50">
-      <div className="max-w-[1280px] mx-auto px-8 h-[84px] flex items-center justify-between" dir={dir}>
+      <div className="max-w-[1280px] mx-auto px-8 h-[84px] flex items-center justify-between" dir="ltr">
 
-        <Link href="/" className={`flex items-center gap-3 shrink-0 ${dir === "rtl" ? "ml-14" : "mr-14"}`} dir={dir}>
+        <Link href="/" className="flex items-center gap-3 shrink-0 mr-14" dir="ltr">
           <PenNibIcon />
-          {language === "ur" ? (
-            <span className="font-nastaliq text-[27px] font-normal text-white leading-[1.9] pb-1 whitespace-nowrap">قلم ورکس</span>
-          ) : (
-            <span className="font-bold text-[24px] text-white tracking-tight leading-none whitespace-nowrap">Qalam Works</span>
-          )}
+          <span className="font-bold text-[24px] text-white tracking-tight leading-none whitespace-nowrap">Qalam Works</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-9 flex-1 justify-center min-w-0" dir={dir}>
+        <nav className="hidden md:flex items-center gap-9 flex-1 justify-center min-w-0" dir="ltr">
           {primaryLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`relative text-[17px] font-medium transition-colors whitespace-nowrap py-2 ${naskh} ${
+              className={`relative text-[17px] font-medium transition-colors whitespace-nowrap py-2 ${
                 isActive(link.href) ? "text-[#E8C989]" : "text-[#C7D6C7] hover:text-white"
               }`}
             >
@@ -98,7 +94,7 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setMoreOpen((o) => !o)}
-              className={`flex items-center gap-1 text-[17px] font-medium transition-colors whitespace-nowrap py-2 ${naskh} ${
+              className={`flex items-center gap-1 text-[17px] font-medium transition-colors whitespace-nowrap py-2 ${
                 moreLinks.some((l) => isActive(l.href)) ? "text-[#E8C989]" : "text-[#C7D6C7] hover:text-white"
               }`}
             >
@@ -106,13 +102,13 @@ export default function Header() {
               <ChevronDown size={15} className={`transition-transform ${moreOpen ? "rotate-180" : ""}`} />
             </button>
             {moreOpen && (
-              <div className={`absolute top-full mt-1 bg-[#1A3A2A] border border-white/10 rounded-xl shadow-xl py-2 min-w-[180px] z-50 ${dir === "rtl" ? "right-0" : "left-0"}`}>
+              <div className={`absolute top-full mt-1 bg-[#1A3A2A] border border-white/10 rounded-xl shadow-xl py-2 min-w-[180px] z-50 left-0`}>
                 {moreLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={() => setMoreOpen(false)}
-                    className={`block px-4 py-2.5 text-[15px] transition-colors ${naskh} ${
+                    className={`block px-4 py-2.5 text-[15px] transition-colors ${
                       isActive(link.href) ? "text-[#E8C989]" : "text-[#C7D6C7] hover:text-white hover:bg-white/5"
                     }`}
                   >
@@ -124,7 +120,7 @@ export default function Header() {
           </div>
         </nav>
 
-        <div className={`hidden md:flex items-center shrink-0 ${dir === "rtl" ? "mr-14" : "ml-14"}`}>
+        <div className="hidden md:flex items-center shrink-0 ml-14">
           <LanguageSwitch />
         </div>
 
@@ -137,14 +133,14 @@ export default function Header() {
       </div>
 
       {mobileOpen && (
-        <nav className="md:hidden border-t border-white/10 bg-[#153020]" dir={dir}>
+        <nav className="md:hidden border-t border-white/10 bg-[#153020]" dir="ltr">
           <div className="max-w-[1280px] mx-auto px-8 py-2 flex flex-col">
             {allMobileLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className={`py-3.5 text-[17px] font-medium border-b border-white/5 last:border-b-0 ${naskh} ${
+                className={`py-3.5 text-[17px] font-medium border-b border-white/5 last:border-b-0 ${
                   isActive(link.href) ? "text-[#E8C989]" : "text-[#C7D6C7]"
                 }`}
               >

@@ -14,7 +14,7 @@ export default function DocumentStudioContent() {
         </h1>
         <p className="text-sm text-gray-500">
           {language === "ur"
-            ? "اردو کے لیے بنایا گیا لکھائی کا ماحول — معیار کی جانچ، Unicode معیاری کاری، اور DOCX/PDF export۔"
+            ? "اردو کے لیے بنایا گیا لکھائی کا ماحول — معیار کی جانچ، یونیکوڈ معیاری کاری، اور DOCX/PDF ایکسپورٹ۔"
             : "A writing workspace built for Urdu — quality checks, Unicode standardization, DOCX/PDF export."}
         </p>
       </div>
