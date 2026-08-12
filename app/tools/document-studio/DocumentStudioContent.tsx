@@ -8,7 +8,7 @@ export default function DocumentStudioContent() {
 
   return (
     <main className="py-6 md:py-8" dir={dir}>
-      <div className="max-w-[1200px] mx-auto px-4 mb-5 flex items-center justify-between flex-wrap gap-2">
+      <div className="site-container mb-5 flex items-center justify-between flex-wrap gap-2">
         <h1 className={`text-2xl md:text-3xl font-bold text-[#1A3A2A] ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {language === "ur" ? "ڈاکومنٹ اسٹوڈیو" : "Document Studio"}
         </h1>

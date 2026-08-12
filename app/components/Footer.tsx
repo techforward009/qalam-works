@@ -33,7 +33,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-[#1A3A2A] border-t border-white/10 mt-16" dir={dir}>
-      <div className="max-w-[1240px] mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="site-container py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Brand */}
         <div className="sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2.5 mb-3" dir={dir}>
@@ -90,14 +90,25 @@ export default function Footer() {
           <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-2 ${naskh}`}>
             {t.footer.contactHeading}
           </div>
-          <div style={{ unicodeBidi: "isolate" }}>
+          {/* Contact block composition (2026-08-12) — the block as a whole
+              must read naturally in RTL for Urdu (right-aligned, right-
+              anchored), while the email address itself stays LTR-ordered
+              characters. Only the email <a> gets dir="ltr"; the wrapping
+              div follows the page's own dir so paragraph flow/alignment is
+              correct instead of dragging the whole unit to the left. */}
+          <div className={`flex flex-col ${language === "ur" ? "items-end" : "items-start"}`}>
             <a
               href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Inquiry"
               dir="ltr"
-              className="text-[#8AAA8A] hover:text-white text-sm transition-colors inline-block"
+              className="text-[#8AAA8A] hover:text-white text-sm transition-colors inline-block mb-2"
             >
               qalamworks.services@gmail.com
             </a>
+            <p
+              className={`text-[#4A6A4A] text-xs leading-relaxed max-w-[220px] ${language === "ur" ? "text-right" : "text-left"} ${naskh}`}
+            >
+              {t.contactPage.responseNote}
+            </p>
           </div>
         </div>
       </div>

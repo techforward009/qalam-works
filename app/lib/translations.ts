@@ -200,8 +200,8 @@ export const translations = {
       description: "Upload a .txt or .docx file to automatically extract, normalize, and audit your Urdu text — then download the cleaned result.",
       reportTab: "Unified Qalam Report",
       previewTab: "Extracted Text Preview",
-      downloadTxt: "Download Cleaned File (.txt)",
-      downloadDocx: "Download Cleaned File (.docx)",
+      downloadTxt: "Download TXT File",
+      downloadDocx: "Download DOCX File",
       faqHeading: "Frequently Asked Questions",
       faqs: [
         { question: "What does this tool do?", answer: "It extracts text from your .txt or .docx file, automatically normalizes Unicode, and gives a full quality report — then you can download the corrected file." },
@@ -238,8 +238,18 @@ export const translations = {
         { question: "What file formats does it support?", answer: "Currently plain text only. For DOCX and PDF files, use our Document Cleaner tool." },
       ],
       examples: [
-        { label: "Mixed character forms (Arabic kaf/yeh)", before: "كتاب، علي، یحیی", after: "کتاب، علی، یحییٰ" },
-        { label: "English-style punctuation → Urdu", before: "لفظ, اگلا؟ یہ, وہ", after: "لفظ، اگلا؟ یہ، وہ" },
+        { label: "Arabic yeh (ي) → Urdu yeh (ی)", before: "علي", after: "علی" },
+        { label: "Arabic kaf (ك) → Urdu kaf (ک)", before: "كتاب", after: "کتاب" },
+        { label: "English comma → Urdu comma", before: "یہ, وہ", after: "یہ، وہ" },
+      ],
+    },
+    invoiceTool: {
+      title: "Invoice Generator",
+      description: "Create a professional invoice and save it as a PDF — free, no sign-up required.",
+      faqHeading: "Frequently Asked Questions",
+      faqs: [
+        { question: "What does this tool do?", answer: "It lets you build a clean, professional invoice right in your browser, then print it or save it as a PDF." },
+        { question: "Is my data saved anywhere?", answer: "No, this currently works only within your current browser session — your data isn't saved once you close the page." },
       ],
     },
   },
@@ -430,8 +440,8 @@ export const translations = {
       description: ".txt یا .docx فائل اپلوڈ کریں تاکہ آپ کا اردو متن خودکار طور پر نکالا، معیاری بنایا، اور جانچا جا سکے — پھر درست شدہ فائل ڈاؤن لوڈ کریں۔",
       reportTab: "قلم رپورٹ",
       previewTab: "متن کا جائزہ",
-      downloadTxt: "درست شدہ فائل ڈاؤن لوڈ کریں (.txt)",
-      downloadDocx: "درست شدہ فائل ڈاؤن لوڈ کریں (.docx)",
+      downloadTxt: "TXT فائل ڈاؤن لوڈ کریں",
+      downloadDocx: "DOCX فائل ڈاؤن لوڈ کریں",
       faqHeading: "اکثر پوچھے گئے سوالات",
       faqs: [
         { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ آپ کی .txt یا .docx فائل سے متن نکال کر خودکار طور پر Unicode معیاری کاری کرتا ہے اور مکمل کوالٹی رپورٹ دیتا ہے — پھر آپ درست شدہ فائل ڈاؤن لوڈ کر سکتے ہیں۔" },
@@ -468,8 +478,18 @@ export const translations = {
         { question: "کن فائل فارمیٹس کے ساتھ کام کرتا ہے؟", answer: "فی الحال صرف plain text۔ DOCX اور PDF فائلوں کے لیے ہمارا ڈاکومنٹ کلینر ٹول استعمال کریں۔" },
       ],
       examples: [
-        { label: "مخلوط حروف کی شکلیں (عربی کاف/یے)", before: "كتاب، علي، یحیی", after: "کتاب، علی، یحییٰ" },
-        { label: "انگریزی طرز کے رموزِ اوقاف ← اردو", before: "لفظ, اگلا؟ یہ, وہ", after: "لفظ، اگلا؟ یہ، وہ" },
+        { label: "عربی یے (ي) ← اردو یے (ی)", before: "علي", after: "علی" },
+        { label: "عربی کاف (ك) ← اردو کاف (ک)", before: "كتاب", after: "کتاب" },
+        { label: "انگریزی کوما ← اردو کوما", before: "یہ, وہ", after: "یہ، وہ" },
+      ],
+    },
+    invoiceTool: {
+      title: "انوائس جنریٹر",
+      description: "پیشہ ورانہ انوائس بنائیں اور پی ڈی ایف کے طور پر محفوظ کریں — مفت، بغیر سائن اپ کے",
+      faqHeading: "اکثر پوچھے گئے سوالات",
+      faqs: [
+        { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ آپ کو براؤزر میں ہی ایک صاف، پروفیشنل انوائس بنانے دیتا ہے اور آپ اسے پرنٹ/Save as PDF کر سکتے ہیں۔" },
+        { question: "کیا میرا ڈیٹا محفوظ ہوتا ہے؟", answer: "نہیں، فی الحال یہ صرف آپ کے موجودہ سیشن میں کام کرتا ہے — صفحہ بند کرنے پر ڈیٹا محفوظ نہیں رہتا۔" },
       ],
     },
   },

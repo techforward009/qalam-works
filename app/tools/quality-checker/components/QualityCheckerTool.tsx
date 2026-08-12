@@ -1,14 +1,19 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLanguage } from "../../../lib/language-context";
 import { checkTextQuality, QualityReport } from "../../../utils/quality/checkTextQuality";
 import { standardizeUrduText } from "../../../utils/unicode/standardizeUrduText";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 
+// Realistic example demonstrating what checkTextQuality() actually detects:
+// a double space (multiple spaces), ASCII "," and "?" mixed into Urdu
+// prose (mixed punctuation), the repeated word "لوگ لوگ", and Arabic-form
+// letters "ي" in "نہيں"/"کيونکہ" instead of Urdu "ی" (mixed Urdu/Arabic
+// character forms — the same substitution standardizeUrduText.ts corrects).
 const SAMPLE_TEXT =
-  "علي عليه السلام  کربلاء ؛ يحيى ؟ العلم العلم نور یقذف فی القلب";
+  "یہ  کتاب بہت اچھی ہے, مگر لوگ لوگ اسے نہيں پڑھتے کيونکہ وقت نہيں ملتا?";
 
 export default function QualityCheckerTool() {
   const { language } = useLanguage();
@@ -19,7 +24,9 @@ export default function QualityCheckerTool() {
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [afterReport, setAfterReport] = useState<QualityReport | null>(null);
   const [standardizedText, setStandardizedText] = useState<string | null>(null);
+  const [justStandardized, setJustStandardized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const hasInput = input.trim().length > 0;
   const beforeReport = checkTextQuality(input);
@@ -49,7 +56,20 @@ export default function QualityCheckerTool() {
     const result = standardizeUrduText(input);
     setStandardizedText(result.output);
     setAfterReport(checkTextQuality(result.output));
+    setJustStandardized(true);
   };
+
+  // Result Discoverability (2026-08-12) — after standardizing, the result
+  // panel renders further down the page and can easily go unnoticed above
+  // the fold. Scroll it smoothly into view and briefly highlight it instead
+  // of relying on an intrusive alert().
+  useEffect(() => {
+    if (justStandardized && standardizedText !== null) {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const timer = setTimeout(() => setJustStandardized(false), 1600);
+      return () => clearTimeout(timer);
+    }
+  }, [justStandardized, standardizedText]);
 
   const resetAll = () => {
     setInput("");
@@ -57,10 +77,11 @@ export default function QualityCheckerTool() {
     setFileError(null);
     setAfterReport(null);
     setStandardizedText(null);
+    setJustStandardized(false);
   };
 
   return (
-    <div className="max-w-[1100px] mx-auto px-6">
+    <div className="site-container">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         {/* Clarification note about {{ }} markers */}
         {isUr ? (
@@ -128,7 +149,7 @@ export default function QualityCheckerTool() {
           {fileError && <span className="text-red-600">{fileError}</span>}
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-3 mb-4" dir="ltr">
+        <div className="flex flex-wrap gap-2 mt-3 mb-1.5" dir="ltr">
           <button
             onClick={handleStandardizeAndRecheck}
             disabled={!hasInput}
@@ -139,18 +160,35 @@ export default function QualityCheckerTool() {
           <button
             onClick={resetAll}
             disabled={!hasInput}
-            className="px-5 py-2.5 rounded-lg text-[15px] font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-5 py-2.5 rounded-lg text-[15px] font-semibold border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {isUr ? "صاف کریں" : "Clear"}
           </button>
         </div>
+
+        {/* Result Discoverability (2026-08-12) — points the user at the
+            standardized-text panel further down, since it can otherwise go
+            unnoticed below the fold. */}
+        {afterReport && standardizedText !== null && (
+          <p
+            className={`mb-4 text-[14px] font-medium text-emerald-700 ${isUr ? "font-naskh text-right" : ""}`}
+            dir={isUr ? "rtl" : "ltr"}
+          >
+            {isUr ? "معیاری بنایا گیا متن نیچے موجود ہے۔" : "Standardized text is shown below."}
+          </p>
+        )}
 
         {/* Before Report */}
         <ReportPanel title={isUr ? "آڈٹ رپورٹ (اصل متن)" : "Audit Report (Original Text)"} report={beforeReport} hasInput={hasInput} isUr={isUr} />
 
         {/* After Report + standardized text, shown only after button click */}
         {afterReport && standardizedText !== null && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div
+            ref={resultRef}
+            className={`mt-6 pt-6 border-t border-gray-200 rounded-xl transition-all duration-700 ${
+              justStandardized ? "ring-2 ring-amber-400 bg-amber-50/40 -mx-3 px-3" : ""
+            }`}
+          >
             <div
               className="mb-3 bg-green-50 border border-green-200 rounded-lg p-3 text-xs text-green-900 flex flex-wrap items-center gap-3"
               dir="ltr"

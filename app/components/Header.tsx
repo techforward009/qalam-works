@@ -66,7 +66,7 @@ export default function Header() {
 
   return (
     <header className="bg-[#1A3A2A] border-b border-white/10 sticky top-0 z-50">
-      <div className="max-w-[1280px] mx-auto px-8 h-[84px] flex items-center justify-between" dir="ltr">
+      <div className="site-container h-[84px] flex items-center justify-between" dir="ltr">
 
         <Link href="/" className="flex items-center gap-3 shrink-0 mr-14" dir="ltr">
           <PenNibIcon />
@@ -134,7 +134,7 @@ export default function Header() {
 
       {mobileOpen && (
         <nav className="md:hidden border-t border-white/10 bg-[#153020]" dir="ltr">
-          <div className="max-w-[1280px] mx-auto px-8 py-2 flex flex-col">
+          <div className="site-container py-2 flex flex-col">
             {allMobileLinks.map((link) => (
               <Link
                 key={link.href}

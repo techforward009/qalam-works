@@ -15,7 +15,7 @@ export default function Hero() {
         ق
       </div>
 
-      <div className="relative max-w-[1240px] mx-auto px-6 pt-24 pb-28 md:pt-32 md:pb-36">
+      <div className="relative site-container pt-24 pb-28 md:pt-32 md:pb-36">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <div className={`text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"}`}>
             <div className={`inline-flex items-center gap-2 rounded-full border border-[#B8935A]/40 bg-[#B8935A]/10 px-4 py-1.5 text-xs font-medium tracking-wide text-[#9A6A30] mb-7 ${naskh}`}>

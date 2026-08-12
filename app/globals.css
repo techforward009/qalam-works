@@ -46,6 +46,35 @@ body {
   line-height: 1.9;
 }
 
+/*
+ * Site-wide content container (2026-08-12) — replaces the many arbitrary
+ * narrow max-w-[900px]/[1000px]/[1100px] wrappers that were scattered across
+ * pages. One consistent width keeps section backgrounds full-bleed while the
+ * actual reading content stays generously wide, with consistent gutters at
+ * every breakpoint.
+ */
+.site-container {
+  max-width: 1360px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .site-container {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .site-container {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}
+
 /* Custom UI Utilities */
 .card-clean {
   background-color: #ffffff;

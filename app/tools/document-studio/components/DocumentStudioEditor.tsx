@@ -912,7 +912,7 @@ export default function DocumentStudioEditor() {
       ];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4">
+    <div className="site-container">
       {/* Document Studio Simplification (2026-08-10) — the editor card
           below is now the ONLY thing shown by default: toolbar, the text
           area itself, and export/save actions. Every analysis/utility
@@ -1076,7 +1076,7 @@ export default function DocumentStudioEditor() {
       {/* Tab bar — at most one panel below is ever open. Clicking an
           already-active tab closes it, returning to the clean editor-only
           view. */}
-      <div className="flex flex-wrap justify-center gap-2 mt-5 bg-[#EEF4EF] rounded-xl border border-[#1A3A2A]/25 shadow-sm p-3" dir="ltr">
+      <div className="flex flex-wrap justify-center gap-2 mt-5 bg-[#D8EBDC] rounded-xl border border-[#1A3A2A]/20 shadow-md p-3" dir="ltr">
         {TAB_DEFINITIONS.map((tab) => (
           <button
             key={tab.id}
@@ -1085,7 +1085,7 @@ export default function DocumentStudioEditor() {
             className={`h-10 px-5 rounded-lg text-[15px] font-semibold transition-all ${
               activeTab === tab.id
                 ? "bg-[#1A3A2A] text-white shadow-sm"
-                : "text-[#1A3A2A]/80 hover:bg-[#C8DEC8] hover:text-[#1A3A2A]"
+                : "bg-white/80 text-[#1A3A2A]/80 border border-[#1A3A2A]/10 hover:bg-white hover:text-[#1A3A2A] hover:border-[#1A3A2A]/20"
             }`}
           >
             {tab.label}

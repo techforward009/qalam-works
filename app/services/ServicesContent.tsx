@@ -35,15 +35,17 @@ export default function ServicesContent() {
 
   return (
     <main className="bg-white min-h-screen" dir={dir}>
-      <div className="max-w-[900px] mx-auto px-6 py-16 md:py-24">
-        <h1
-          className={`text-3xl md:text-4xl font-bold text-[#1A3A2A] mb-4 ${
-            language === "ur" ? "font-nastaliq font-normal" : ""
-          }`}
-        >
-          {t.heading}
-        </h1>
-        <p className={`text-[17px] leading-relaxed text-[#5B5748] mb-12 ${naskh}`}>{t.intro}</p>
+      <div className="site-container py-16 md:py-24">
+        <div className="max-w-[900px] mx-auto">
+          <h1
+            className={`text-3xl md:text-4xl font-bold text-[#1A3A2A] mb-4 ${
+              language === "ur" ? "font-nastaliq font-normal" : ""
+            }`}
+          >
+            {t.heading}
+          </h1>
+          <p className={`text-[17px] leading-relaxed text-[#5B5748] mb-12 ${naskh}`}>{t.intro}</p>
+        </div>
 
         <div className="grid sm:grid-cols-2 gap-5 mb-14">
           <ServiceBlock heading={t.translationHeading} items={t.translationItems} naskh={naskh} />
@@ -52,7 +54,7 @@ export default function ServicesContent() {
           <ServiceBlock heading={t.formatHeading} items={t.formatItems} naskh={naskh} />
         </div>
 
-        <div className="border-t border-gray-100 pt-10">
+        <div className="max-w-[900px] mx-auto border-t border-gray-100 pt-10">
           <h2
             className={`text-xl md:text-2xl font-bold text-[#1A3A2A] mb-3 ${
               language === "ur" ? "font-nastaliq font-normal" : ""

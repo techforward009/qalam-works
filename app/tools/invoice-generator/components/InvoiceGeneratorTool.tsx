@@ -61,9 +61,10 @@ export default function InvoiceGeneratorTool() {
     clientName: isUr ? "موصول کنندہ کا نام" : "Client Name",
     lineItems: isUr ? "اشیاء" : "Line Items",
     description: isUr ? "تفصیل" : "Description",
-    qty: isUr ? "تعداد" : "Qty",
+    qty: isUr ? "مقدار" : "Qty",
     price: isUr ? "قیمت" : "Price",
-    addItem: isUr ? "+ نئی شے شامل کریں" : "+ Add Item",
+    amount: isUr ? "رقم" : "Amount",
+    addItem: isUr ? "+ نیا آئٹم شامل کریں" : "+ Add Item",
     notes: isUr ? "نوٹس" : "Notes",
     printSave: isUr ? "پرنٹ کریں / PDF محفوظ کریں" : "Print / Save as PDF",
     billTo: isUr ? "وصول کنندہ" : "BILL TO",
@@ -74,7 +75,7 @@ export default function InvoiceGeneratorTool() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4">
+    <div className="site-container">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Editor — hidden when printing */}
         <div className="print:hidden bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md space-y-5" dir="ltr">
@@ -164,26 +165,33 @@ export default function InvoiceGeneratorTool() {
             />
           </div>
 
-          {/* Line Items — always dir="ltr" so column order is stable: Description | Qty | Price | × */}
+          {/* Line Items — natural reading order: dir="ltr" renders columns
+              Description | Qty | Price | Amount left-to-right for English;
+              dir="rtl" renders the SAME semantic column order but mirrored
+              right-to-left for Urdu (Description on the right, Amount on
+              the far left) — CSS grid auto-flows in reading direction, so
+              no manual reordering of the underlying fields/state is
+              needed. Quantity/Price/Amount stay dir="ltr" internally since
+              digits are always written left-to-right. */}
           <div className="border-t border-gray-200 pt-4">
             <p className={`text-[13px] font-bold text-amber-900 mb-2 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
               {L.lineItems}
             </p>
-            {/* Column headers — dir="ltr" matches the data rows */}
-            <div className="grid grid-cols-12 gap-2 mb-1 text-[11px] font-semibold text-gray-500" dir="ltr">
-              <span className="col-span-6">{L.description}</span>
+            {/* Column headers — dir matches the data rows below */}
+            <div className="grid grid-cols-12 gap-2 mb-1 text-[11px] font-semibold text-gray-500" dir={isUr ? "rtl" : "ltr"}>
+              <span className="col-span-5">{L.description}</span>
               <span className="col-span-2 text-center">{L.qty}</span>
-              <span className="col-span-3 text-right">{L.price}</span>
+              <span className="col-span-2 text-right">{L.price}</span>
+              <span className="col-span-2 text-right">{L.amount}</span>
             </div>
             <div className="space-y-2">
               {invoice.items.map((it, idx) => (
-                /* dir="ltr" on every row so columns align with the header */
-                <div key={it.id} className="grid grid-cols-12 gap-2 items-center" dir="ltr">
+                <div key={it.id} className="grid grid-cols-12 gap-2 items-center" dir={isUr ? "rtl" : "ltr"}>
                   <input
                     value={it.description}
                     onChange={(e) => updateItem(idx, { description: e.target.value })}
                     placeholder={L.description}
-                    className={`col-span-6 border border-gray-300 p-2 rounded-lg text-xs ${isUr ? "text-right font-naskh" : ""}`}
+                    className={`col-span-5 border border-gray-300 p-2 rounded-lg text-xs ${isUr ? "text-right font-naskh" : ""}`}
                     dir={isUr ? "rtl" : "ltr"}
                   />
                   <input
@@ -199,11 +207,18 @@ export default function InvoiceGeneratorTool() {
                     type="number"
                     value={it.unitPrice}
                     onChange={(e) => updateItem(idx, { unitPrice: parseFloat(e.target.value) || 0 })}
-                    className="col-span-3 border border-gray-300 p-2 rounded-lg text-xs text-right"
+                    className="col-span-2 border border-gray-300 p-2 rounded-lg text-xs text-right"
                     dir="ltr"
                     step="0.01"
                     min="0"
                   />
+                  <div
+                    className="col-span-2 text-right text-xs text-gray-600 font-mono px-1 select-none"
+                    dir="ltr"
+                    title={L.amount}
+                  >
+                    {fromMinor(result.lineTotals[idx] || 0, 2)}
+                  </div>
                   <button
                     onClick={() => removeItem(idx)}
                     disabled={invoice.items.length <= 1}
