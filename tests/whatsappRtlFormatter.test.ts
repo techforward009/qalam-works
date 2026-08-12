@@ -168,20 +168,32 @@ describe("formatForWhatsAppRTL", () => {
 
   // ========== Marker matrix (independent) ==========
 
-  // A. Dot-style 1. — generic LTR isolation (LRI…PDI), NO LRM
-  // Same path that already succeeds for "### 1." in realistic Markdown.
-  it("A: dot-style uses LRI…PDI with NO LRM; outer RLI", () => {
+  // A. Dot-style 1. — peeled raw (NO LRI, NO LRM), outer RLI only
+  it("A: dot-style marker is raw inside RLI; no LRI/LRM on marker", () => {
     const text = "1. پہلا نکتہ\n2. دوسرا نکتہ\n3. تیسرا نکتہ";
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
     for (const n of ["1", "2", "3"]) {
-      // Generic path: whole "1." isolated as LTR run
-      expect(result).toContain(LRI + n + "." + PDI);
-      // No LRM between digit and period
+      // Marker must remain literal digits+period with no LRI around it
+      expect(result).not.toContain(LRI + n + ".");
       expect(result).not.toContain(n + LRM + ".");
+      expect(result).toContain(n + ".");
     }
+    const first = result.split("\n")[0];
+    expect(first.startsWith(RLI)).toBe(true);
+    // Marker appears immediately after RLI (raw)
+    expect(first.startsWith(RLI + "1.")).toBe(true);
     const rtlLines = result.split("\n").filter((l) => l.includes(RLI));
     expect(rtlLines.length).toBe(3);
+  });
+
+  it("A: dot-style body still isolates embedded LTR tokens", () => {
+    const text = "1. رپورٹ PDF میں محفوظ کریں";
+    const result = formatForWhatsAppRTL(text);
+    expect(strip(result)).toBe(text);
+    expect(result.startsWith(RLI + "1.")).toBe(true);
+    expect(result).not.toContain(LRI + "1.");
+    expect(result).toContain(LRI + "PDF" + PDI);
   });
 
   // B. Paren-style 1) — NO special marker controls
@@ -258,7 +270,7 @@ describe("formatForWhatsAppRTL", () => {
   });
 
   // Cross-type isolation: one type must not alter another
-  it("cross-type: 1. uses LRI with no LRM; 1) and bullets stay peeled", () => {
+  it("cross-type: 1. peeled raw; 1) and bullets stay peeled", () => {
     const text = `1. پہلا
 1) وضاحت
 • بلٹ
@@ -266,9 +278,10 @@ describe("formatForWhatsAppRTL", () => {
 - ڈیش`;
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
-    // Dot-style now uses generic LRI isolation, no LRM
-    expect(result).toContain(LRI + "1." + PDI);
+    // Dot-style: raw marker, no LRI/LRM
+    expect(result).not.toContain(LRI + "1.");
     expect(result).not.toContain("1" + LRM + ".");
+    expect(result).toContain(RLI + "1.");
     // Paren and bullets remain without LRM / without LRI on marker
     expect(result).not.toContain("1)" + LRM);
     expect(result).not.toContain(LRI + "1)");

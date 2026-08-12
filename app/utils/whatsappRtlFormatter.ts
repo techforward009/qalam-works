@@ -10,9 +10,9 @@
  * Marker policy (from real WhatsApp testing + forensic diagnosis):
  * - `1)` / `2)` …  peeled; NOT LRI-wrapped; no LRM
  * - bullets `•` `*` `-`  peeled; NOT LRI-wrapped; no LRM
- * - `1.` / `2.` …  treated as ordinary LTR runs (LRI…PDI), same path
- *   that already succeeds for `### 1.` in realistic Markdown documents.
- *   No special LRM insertion.
+ * - `1.` / `2.` …  peeled like `1)`; marker left raw (NO LRI, NO LRM);
+ *   only the body is LTR-isolated. Real WhatsApp still flipped nested
+ *   LRI around `1.`; raw marker inside outer RLI is the minimal test.
  *
  * Never reverses or alters visible characters.
  */
@@ -124,6 +124,15 @@ function processLine(line: string): string {
   if (line.length === 0) return line;
   if (!lineHasRtl(line)) return line;
 
+  // --- Dot-style 1. 2. 3.: peel marker (NO LRI, NO LRM); body only isolated ---
+  // Same structural treatment as 1) / bullets. Nested LRI around "1." still
+  // rendered as ".1" in real WhatsApp; leave marker characters fully raw.
+  const dot = line.match(/^(\d+\.)(\s*)(.*)$/);
+  if (dot) {
+    const [, marker, spaces, rest] = dot;
+    return isolateRtl(marker + spaces + isolateLtrRuns(rest));
+  }
+
   // --- Paren-style 1) 2) 3): peel marker so it is NOT LRI-wrapped; no LRM ---
   const paren = line.match(/^(\d+\))(\s*)(.*)$/);
   if (paren) {
@@ -138,10 +147,7 @@ function processLine(line: string): string {
     return isolateRtl(marker + spaces + isolateLtrRuns(rest));
   }
 
-  // Ordinary RTL / mixed line — including line-start "1." / "2." etc.
-  // "1." is handled by generic LTR isolation (LRI…PDI), the same path
-  // that already succeeds for "### 1." in realistic Markdown documents.
-  // No special LRM insertion.
+  // Ordinary RTL / mixed line
   return isolateRtl(isolateLtrRuns(line));
 }
 
