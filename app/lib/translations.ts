@@ -94,6 +94,10 @@ export const translations = {
           name: "Terminology Intelligence",
           body: "Keep every term consistent, document-wide — automatically.",
         },
+        {
+          name: "WhatsApp RTL Formatter",
+          body: "Fix mixed Urdu, English, numbers and lists for cleaner WhatsApp copy-paste.",
+        },
       ],
     },
     whoItsFor: {
@@ -334,6 +338,10 @@ export const translations = {
         {
           name: "اصطلاحی ذہانت",
           body: "ہر اصطلاح پوری دستاویز میں خودکار طور پر یکساں رکھیں۔",
+        },
+        {
+          name: "واٹس ایپ آر ٹی ایل فارمیٹر",
+          body: "اردو، انگریزی، نمبروں اور فہرستوں والے متن کو واٹس ایپ کے لیے درست سمت میں تیار کریں۔",
         },
       ],
     },

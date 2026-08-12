@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 
-const TOOL_HREFS = ["/tools/document-studio", "/tools/quality-checker", "/tools/unicode-standardizer", "/tools/document-studio"];
+const TOOL_HREFS = ["/tools/document-studio", "/tools/quality-checker", "/tools/unicode-standardizer", "/tools/document-studio", "/tools/whatsapp-rtl-formatter"];
 
 export default function HowItWorksSection() {
   const { language, dir } = useLanguage();
