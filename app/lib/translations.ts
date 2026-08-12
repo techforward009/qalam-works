@@ -98,6 +98,10 @@ export const translations = {
           name: "WhatsApp RTL Formatter",
           body: "Fix mixed Urdu, English, numbers and lists for cleaner WhatsApp copy-paste.",
         },
+        {
+          name: "Invoice Generator",
+          body: "Create clean, professional invoices and export them as PDF.",
+        },
       ],
     },
     whoItsFor: {
@@ -342,6 +346,10 @@ export const translations = {
         {
           name: "واٹس ایپ آر ٹی ایل فارمیٹر",
           body: "اردو، انگریزی، نمبروں اور فہرستوں والے متن کو واٹس ایپ کے لیے درست سمت میں تیار کریں۔",
+        },
+        {
+          name: "انوائس جنریٹر",
+          body: "صاف ستھری اور پیشہ ورانہ انوائس تیار کریں اور پی ڈی ایف میں محفوظ کریں۔",
         },
       ],
     },

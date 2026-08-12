@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 
-const TOOL_HREFS = ["/tools/document-studio", "/tools/quality-checker", "/tools/unicode-standardizer", "/tools/document-studio", "/tools/whatsapp-rtl-formatter"];
+const TOOL_HREFS = ["/tools/document-studio", "/tools/quality-checker", "/tools/unicode-standardizer", "/tools/document-studio", "/tools/whatsapp-rtl-formatter", "/tools/invoice-generator"];
 
 export default function HowItWorksSection() {
   const { language, dir } = useLanguage();
@@ -18,7 +18,7 @@ export default function HowItWorksSection() {
           {t.headline}
         </h2>
 
-        <div className="grid sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {t.tools.map((tool, i) => (
             <Link
               key={tool.name}
