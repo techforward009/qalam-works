@@ -1014,29 +1014,47 @@ export default function DocumentStudioEditor() {
             </button>
             <button
               type="button"
-              onClick={handleDownloadDocx}
-              className="h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] shadow-sm transition"
+              onClick={handleDownload}
+              className={`h-10 px-4 rounded-lg text-[15px] font-semibold border-2 border-[#1A3A2A] bg-white text-[#1A3A2A] hover:bg-[#F3F7F2] focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 shadow-sm transition ${isUr ? "font-naskh" : ""}`}
             >
-              Download .docx
+              {isUr ? (
+                <span dir="rtl">
+                  <span dir="ltr" className="inline-block">TXT</span>
+                  {" فائل ڈاؤن لوڈ کریں"}
+                </span>
+              ) : (
+                "Download TXT File"
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadDocx}
+              className={`h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 shadow-sm transition ${isUr ? "font-naskh" : ""}`}
+            >
+              {isUr ? (
+                <span dir="rtl">
+                  <span dir="ltr" className="inline-block">DOCX</span>
+                  {" فائل ڈاؤن لوڈ کریں"}
+                </span>
+              ) : (
+                "Download DOCX"
+              )}
             </button>
             <button
               type="button"
               onClick={handleDownloadPdf}
               disabled={isExportingPdf}
-              className={`h-10 px-4 rounded-lg text-[15px] font-semibold shadow-sm transition ${
+              className={`h-10 px-4 rounded-lg text-[15px] font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 ${
                 isExportingPdf
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                   : "bg-[#1A3A2A] text-white hover:bg-[#204a35]"
               }`}
             >
-              {isExportingPdf ? "PDF بن رہی ہے... / Generating..." : `Download PDF${pdfSummary ? ` (${pdfSummary.fileSizeLabel})` : ""}`}
-            </button>
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="h-10 px-3.5 rounded-md text-xs font-medium text-gray-500 hover:text-[#1A3A2A] transition"
-            >
-              .txt
+              {isExportingPdf
+                ? (isUr ? "PDF بن رہی ہے..." : "Generating…")
+                : isUr
+                  ? `PDF ڈاؤن لوڈ کریں${pdfSummary ? ` (${pdfSummary.fileSizeLabel})` : ""}`
+                  : `Download PDF${pdfSummary ? ` (${pdfSummary.fileSizeLabel})` : ""}`}
             </button>
           </div>
 
