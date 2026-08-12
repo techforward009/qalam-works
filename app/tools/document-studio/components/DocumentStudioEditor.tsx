@@ -1015,7 +1015,7 @@ export default function DocumentStudioEditor() {
             <button
               type="button"
               onClick={handleDownload}
-              className={`h-10 px-4 rounded-lg text-[15px] font-semibold border-2 border-[#1A3A2A] bg-white text-[#1A3A2A] hover:bg-[#F3F7F2] focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 shadow-sm transition ${isUr ? "font-naskh" : ""}`}
+              className={`h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 shadow-sm transition ${isUr ? "font-naskh" : ""}`}
             >
               {isUr ? (
                 <span dir="rtl">
