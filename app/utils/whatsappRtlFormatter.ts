@@ -7,11 +7,12 @@
  * - Final RTL content → trailing "\n" + RLM (U+200F)
  * - Pure English → untouched
  *
- * Marker policy (from real WhatsApp testing):
- * - `1)` / `2)` …  NOT specially transformed (WhatsApp renders them correctly)
- * - bullets `•` `*` `-`  NOT specially transformed
- * - Leading markers are peeled so they are NOT LRI-wrapped as LTR runs
- * - `1.` / `2.` … ONLY: candidate A = digits + LRM + "."  (no nested LRI)
+ * Marker policy (from real WhatsApp testing + forensic diagnosis):
+ * - `1)` / `2)` …  peeled; NOT LRI-wrapped; no LRM
+ * - bullets `•` `*` `-`  peeled; NOT LRI-wrapped; no LRM
+ * - `1.` / `2.` …  treated as ordinary LTR runs (LRI…PDI), same path
+ *   that already succeeds for `### 1.` in realistic Markdown documents.
+ *   No special LRM insertion.
  *
  * Never reverses or alters visible characters.
  */
@@ -25,12 +26,12 @@ const RLM = "\u200F";
 /**
  * Strip only controls this formatter inserts:
  * - LRI / RLI / PDI
- * - LRM between digit and period in DOT-style markers (1\u200E.)
+ * - Legacy LRM between digit and period (from earlier Candidate A experiments)
  * - Trailing final-line RLM anchor
  */
 function stripOwnBidiControls(text: string): string {
   let s = text.replace(/[\u2066\u2067\u2069]/g, "");
-  // digit + LRM + .  →  digit + .
+  // digit + LRM + .  →  digit + .  (legacy cleanup for idempotence)
   s = s.replace(/(\d+)\u200E\./g, "$1.");
   s = s.replace(/(?:\r?\n)\u200F\s*$/g, "");
   return s;
@@ -119,28 +120,9 @@ function isolateLtrRuns(text: string): string {
   return result;
 }
 
-/**
- * Candidate A — ONLY for leading DOT-style markers: 1. 2. 3.
- * Sequence: digits + LRM + "."
- * Anchors the period as LTR-following the digit without nested LRI.
- * Stripped visible text remains exactly "1."
- * Paren-style 1) and bullets are handled elsewhere with no extra marks.
- */
-function formatDotNumberedMarker(digits: string, _dot: string): string {
-  return digits + LRM + ".";
-}
-
 function processLine(line: string): string {
   if (line.length === 0) return line;
   if (!lineHasRtl(line)) return line;
-
-  // --- Dot-style numbered marker ONLY (1. 2. 3.) ---
-  const dot = line.match(/^(\d+)(\.)(\s*)(.*)$/);
-  if (dot) {
-    const [, digits, _period, spaces, rest] = dot;
-    const body = isolateLtrRuns(rest);
-    return isolateRtl(formatDotNumberedMarker(digits, _period) + spaces + body);
-  }
 
   // --- Paren-style 1) 2) 3): peel marker so it is NOT LRI-wrapped; no LRM ---
   const paren = line.match(/^(\d+\))(\s*)(.*)$/);
@@ -156,7 +138,10 @@ function processLine(line: string): string {
     return isolateRtl(marker + spaces + isolateLtrRuns(rest));
   }
 
-  // Ordinary RTL / mixed line
+  // Ordinary RTL / mixed line — including line-start "1." / "2." etc.
+  // "1." is handled by generic LTR isolation (LRI…PDI), the same path
+  // that already succeeds for "### 1." in realistic Markdown documents.
+  // No special LRM insertion.
   return isolateRtl(isolateLtrRuns(line));
 }
 

@@ -168,15 +168,17 @@ describe("formatForWhatsAppRTL", () => {
 
   // ========== Marker matrix (independent) ==========
 
-  // A. Dot-style 1. — ONLY style that gets LRM candidate
-  it("A: dot-style uses digit+LRM+period; outer RLI; no LRI on marker", () => {
+  // A. Dot-style 1. — generic LTR isolation (LRI…PDI), NO LRM
+  // Same path that already succeeds for "### 1." in realistic Markdown.
+  it("A: dot-style uses LRI…PDI with NO LRM; outer RLI", () => {
     const text = "1. پہلا نکتہ\n2. دوسرا نکتہ\n3. تیسرا نکتہ";
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
     for (const n of ["1", "2", "3"]) {
-      // Candidate A: digit + LRM + "."
-      expect(result).toContain(n + LRM + ".");
-      expect(result).not.toContain(LRI + n);
+      // Generic path: whole "1." isolated as LTR run
+      expect(result).toContain(LRI + n + "." + PDI);
+      // No LRM between digit and period
+      expect(result).not.toContain(n + LRM + ".");
     }
     const rtlLines = result.split("\n").filter((l) => l.includes(RLI));
     expect(rtlLines.length).toBe(3);
@@ -256,7 +258,7 @@ describe("formatForWhatsAppRTL", () => {
   });
 
   // Cross-type isolation: one type must not alter another
-  it("cross-type: 1. LRM does not appear on 1) or bullets in mixed list", () => {
+  it("cross-type: 1. uses LRI with no LRM; 1) and bullets stay peeled", () => {
     const text = `1. پہلا
 1) وضاحت
 • بلٹ
@@ -264,9 +266,14 @@ describe("formatForWhatsAppRTL", () => {
 - ڈیش`;
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
-    expect(result).toContain("1" + LRM + ".");
+    // Dot-style now uses generic LRI isolation, no LRM
+    expect(result).toContain(LRI + "1." + PDI);
+    expect(result).not.toContain("1" + LRM + ".");
+    // Paren and bullets remain without LRM / without LRI on marker
     expect(result).not.toContain("1)" + LRM);
+    expect(result).not.toContain(LRI + "1)");
     expect(result).not.toContain("•" + LRM);
+    expect(result).not.toContain(LRI + "•");
     expect(result).not.toContain("*" + LRM);
     expect(result).not.toContain("-" + LRM);
   });
