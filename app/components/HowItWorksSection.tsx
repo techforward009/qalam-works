@@ -12,7 +12,7 @@ export default function HowItWorksSection() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section className="bg-white py-24 md:py-28" dir={dir}>
+    <section className="bg-[#F3F7F2] py-24 md:py-28" dir={dir}>
       <div className="max-w-[1240px] mx-auto px-6 text-center">
         <h2 className={`text-2xl md:text-3xl font-bold text-[#151B2E] mb-16 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}
@@ -23,7 +23,7 @@ export default function HowItWorksSection() {
             <Link
               key={tool.name}
               href={TOOL_HREFS[i]}
-              className="bg-[#FAF7F0] hover:bg-[#F1ECE0] hover:shadow-md p-7 rounded-2xl border border-[#151B2E]/[0.06] transition-all block"
+              className="bg-white hover:bg-[#F1ECE0] hover:shadow-md p-7 rounded-2xl border border-[#151B2E]/[0.06] transition-all block"
             >
               <h3 className={`text-[19px] font-bold text-[#1A3A2A] mb-2 ${naskh}`}>{tool.name}</h3>
               <p className={`text-[16px] text-[#5B5748] leading-relaxed ${naskh}`}>{tool.body}</p>

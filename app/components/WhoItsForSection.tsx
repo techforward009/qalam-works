@@ -9,7 +9,7 @@ export default function WhoItsForSection() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section className="bg-[#FAF7F0] py-24 md:py-28" dir={dir}>
+    <section className="bg-[#F8FAF8] py-24 md:py-28" dir={dir}>
       <div className="max-w-[1240px] mx-auto px-6 text-center">
         <h2 className={`text-2xl md:text-3xl font-bold text-[#151B2E] mb-16 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}

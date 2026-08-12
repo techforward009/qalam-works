@@ -23,17 +23,23 @@ export default function UnicodeStandardizerContent() {
       </div>
 
       <section className="max-w-[1100px] mx-auto px-4 mb-14">
-        <h2 className={`text-2xl font-bold text-gray-900 mb-5 mt-4 ${naskh}`}>{t.examplesHeading}</h2>
+        <h2 className={`text-[28px] font-bold text-gray-900 mb-5 mt-4 ${naskh}`}>{t.examplesHeading}</h2>
         <div className="space-y-3">
           {t.examples.map((ex) => (
-            <div key={ex.label} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-              <p className={`text-xs font-semibold text-gray-500 mb-2 ${naskh}`}>{ex.label}</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div dir="rtl" className="bg-white border border-gray-200 rounded-lg p-3 text-right font-nastaliq text-base">
-                  {ex.before}
+            <div key={ex.label} className="border border-gray-200 rounded-xl p-5 bg-gray-50">
+              <p className={`text-[17px] font-semibold text-gray-700 mb-3 ${naskh}`}>{ex.label}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <span className="block text-[13px] font-semibold text-gray-400 mb-1" dir="ltr">Before</span>
+                  <div dir="rtl" className="bg-white border border-gray-200 rounded-lg p-3 text-right font-nastaliq text-[20px]">
+                    {ex.before}
+                  </div>
                 </div>
-                <div dir="rtl" className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-right font-nastaliq text-base">
-                  {ex.after}
+                <div>
+                  <span className="block text-[13px] font-semibold text-emerald-600 mb-1" dir="ltr">After</span>
+                  <div dir="rtl" className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-right font-nastaliq text-[20px]">
+                    {ex.after}
+                  </div>
                 </div>
               </div>
             </div>
@@ -42,12 +48,12 @@ export default function UnicodeStandardizerContent() {
       </section>
 
       <section className="max-w-[1100px] mx-auto px-4">
-        <h2 className={`text-2xl font-bold text-gray-900 mb-5 mt-4 ${naskh}`}>{t.faqHeading}</h2>
+        <h2 className={`text-[28px] font-bold text-gray-900 mb-5 mt-4 ${naskh}`}>{t.faqHeading}</h2>
         <div className="space-y-4">
           {t.faqs.map((faq) => (
-            <div key={faq.question} className="border border-gray-200 rounded-xl p-4">
-              <p className={`font-semibold text-[#1A3A2A] mb-1 ${naskh}`}>{faq.question}</p>
-              <p className={`text-sm text-gray-700 ${naskh}`}>{faq.answer}</p>
+            <div key={faq.question} className="border border-gray-200 rounded-xl p-5">
+              <p className={`text-[17px] font-semibold text-[#1A3A2A] mb-2 ${naskh}`}>{faq.question}</p>
+              <p className={`text-[15px] text-gray-700 leading-relaxed ${naskh}`}>{faq.answer}</p>
             </div>
           ))}
         </div>

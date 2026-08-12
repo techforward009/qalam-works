@@ -64,15 +64,13 @@ export default function QualityCheckerTool() {
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         {/* Clarification note about {{ }} markers */}
         {isUr ? (
-          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900" dir="rtl">
-            اگر متن میں اصل عربی اقتباس شامل ہو، تو اسے{" "}
+          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-4 text-[15px] text-purple-900 leading-relaxed" dir="rtl">
+            اگر متن میں اصل عربی اقتباس شامل ہو تو اسے{" "}
             <span dir="ltr" className="font-mono bg-white px-1 rounded">{"{{ }}"}</span>{" "}
-            کے درمیان لکھیں — اس صورت میں دہرائے گئے الفاظ، مخلوط رموزِ اوقاف، اور مخلوط رسم
-            الخط کی جانچ اس حصے کے اندر نظر انداز ہو جائے گی (چونکہ یہ عربی متن میں جائز ہو
-            سکتے ہیں)۔
+            کے درمیان لکھیں — اس صورت میں دہرائے گئے الفاظ، مخلوط رموزِ اوقاف، اور مخلوط رسم الخط کی جانچ اس حصے میں نظر انداز کر دی جائے گی (چونکہ یہ عربی متن میں فطری ہو سکتے ہیں)۔
           </div>
         ) : (
-          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900" dir="ltr">
+          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-4 text-[15px] text-purple-900 leading-relaxed" dir="ltr">
             If your text includes a genuine classical Arabic quotation, wrap it in{" "}
             <span className="font-mono bg-white px-1 rounded">{"{{ }}"}</span> — the Repeated
             Words, Mixed Punctuation, and Mixed Script checks will be skipped inside that
@@ -134,14 +132,14 @@ export default function QualityCheckerTool() {
           <button
             onClick={handleStandardizeAndRecheck}
             disabled={!hasInput}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-5 py-2.5 rounded-lg text-[15px] font-semibold bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {isUr ? "متن معیاری بنائیں اور دوبارہ جانچیں" : "Standardize & Re-check"}
           </button>
           <button
             onClick={resetAll}
             disabled={!hasInput}
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-5 py-2.5 rounded-lg text-[15px] font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {isUr ? "صاف کریں" : "Clear"}
           </button>

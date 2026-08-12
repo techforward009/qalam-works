@@ -238,8 +238,8 @@ export const translations = {
         { question: "What file formats does it support?", answer: "Currently plain text only. For DOCX and PDF files, use our Document Cleaner tool." },
       ],
       examples: [
-        { label: "Mixed character forms", before: "علي عليه السلام", after: "علی علیہ السلام" },
-        { label: "English-style punctuation", before: "العلم نور , والجهل ظلام", after: "العلم نور، والجهل ظلام" },
+        { label: "Mixed character forms (Arabic kaf/yeh)", before: "كتاب، علي، یحیی", after: "کتاب، علی، یحییٰ" },
+        { label: "English-style punctuation → Urdu", before: "لفظ, اگلا؟ یہ, وہ", after: "لفظ، اگلا؟ یہ، وہ" },
       ],
     },
   },
@@ -468,8 +468,8 @@ export const translations = {
         { question: "کن فائل فارمیٹس کے ساتھ کام کرتا ہے؟", answer: "فی الحال صرف plain text۔ DOCX اور PDF فائلوں کے لیے ہمارا ڈاکومنٹ کلینر ٹول استعمال کریں۔" },
       ],
       examples: [
-        { label: "مخلوط حروف کی شکلیں", before: "علي عليه السلام", after: "علی علیہ السلام" },
-        { label: "انگریزی طرز کے رموزِ اوقاف", before: "العلم نور , والجهل ظلام", after: "العلم نور، والجهل ظلام" },
+        { label: "مخلوط حروف کی شکلیں (عربی کاف/یے)", before: "كتاب، علي، یحیی", after: "کتاب، علی، یحییٰ" },
+        { label: "انگریزی طرز کے رموزِ اوقاف ← اردو", before: "لفظ, اگلا؟ یہ, وہ", after: "لفظ، اگلا؟ یہ، وہ" },
       ],
     },
   },

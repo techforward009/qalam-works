@@ -23,12 +23,12 @@ export default function QualityCheckerContent() {
       </div>
 
       <section className="max-w-[1100px] mx-auto px-4">
-        <h2 className={`text-2xl font-bold text-gray-900 mb-5 mt-4 ${naskh}`}>{t.faqHeading}</h2>
+        <h2 className={`text-[28px] font-bold text-gray-900 mb-5 mt-4 ${naskh}`}>{t.faqHeading}</h2>
         <div className="space-y-4">
           {t.faqs.map((faq) => (
-            <div key={faq.question} className="border border-gray-200 rounded-xl p-4">
-              <p className={`font-semibold text-[#1A3A2A] mb-1 ${naskh}`}>{faq.question}</p>
-              <p className={`text-sm text-gray-700 ${naskh}`}>{faq.answer}</p>
+            <div key={faq.question} className="border border-gray-200 rounded-xl p-5">
+              <p className={`text-[17px] font-semibold text-[#1A3A2A] mb-2 ${naskh}`}>{faq.question}</p>
+              <p className={`text-[15px] text-gray-700 leading-relaxed ${naskh}`}>{faq.answer}</p>
             </div>
           ))}
         </div>

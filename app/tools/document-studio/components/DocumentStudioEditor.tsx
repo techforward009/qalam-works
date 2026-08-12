@@ -1008,14 +1008,14 @@ export default function DocumentStudioEditor() {
             <button
               type="button"
               onClick={handleCopy}
-              className="h-10 px-4 rounded-lg text-sm font-semibold bg-[#B8935A] text-white hover:bg-[#C9A46B] shadow-sm transition"
+              className="h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#B8935A] text-white hover:bg-[#C9A46B] shadow-sm transition"
             >
               {copied ? "✓ Copied" : "Copy Text"}
             </button>
             <button
               type="button"
               onClick={handleDownloadDocx}
-              className="h-10 px-4 rounded-lg text-sm font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] shadow-sm transition"
+              className="h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] shadow-sm transition"
             >
               Download .docx
             </button>
@@ -1023,7 +1023,7 @@ export default function DocumentStudioEditor() {
               type="button"
               onClick={handleDownloadPdf}
               disabled={isExportingPdf}
-              className={`h-10 px-4 rounded-lg text-sm font-semibold shadow-sm transition ${
+              className={`h-10 px-4 rounded-lg text-[15px] font-semibold shadow-sm transition ${
                 isExportingPdf
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                   : "bg-[#1A3A2A] text-white hover:bg-[#204a35]"
@@ -1076,16 +1076,16 @@ export default function DocumentStudioEditor() {
       {/* Tab bar — at most one panel below is ever open. Clicking an
           already-active tab closes it, returning to the clean editor-only
           view. */}
-      <div className="flex flex-wrap justify-center gap-2 mt-5 bg-white rounded-xl border border-[#1A3A2A]/10 shadow-[0_2px_20px_rgba(26,58,42,0.06)] p-2" dir="ltr">
+      <div className="flex flex-wrap justify-center gap-2 mt-5 bg-[#EEF4EF] rounded-xl border border-[#1A3A2A]/25 shadow-sm p-3" dir="ltr">
         {TAB_DEFINITIONS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => toggleTab(tab.id)}
-            className={`h-10 px-4 rounded-lg text-sm font-medium transition ${
+            className={`h-10 px-5 rounded-lg text-[15px] font-semibold transition-all ${
               activeTab === tab.id
-                ? "bg-[#1A3A2A] text-white"
-                : "text-slate-600 hover:bg-[#FAF7F0]"
+                ? "bg-[#1A3A2A] text-white shadow-sm"
+                : "text-[#1A3A2A]/80 hover:bg-[#C8DEC8] hover:text-[#1A3A2A]"
             }`}
           >
             {tab.label}

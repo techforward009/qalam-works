@@ -46,12 +46,11 @@ export default function UnicodeStandardizerTool() {
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         {/* Clarification note — not a translator */}
         {isUr ? (
-          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900" dir="rtl">
-            یہ ٹول متن کا مفہوم یا زبان تبدیل نہیں کرتا — یہ صرف رسم الخط کی مختلف Unicode
-            شکلوں کو معیاری بناتا ہے (ترجمہ نہیں، صرف ٹائپوگرافی کی درستگی)۔
+          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-4 text-[15px] text-blue-900 leading-relaxed" dir="rtl">
+            یہ ٹول متن کا مفہوم یا زبان تبدیل نہیں کرتا؛ یہ صرف رسم الخط کی مختلف یونیکوڈ شکلوں کو معیاری بناتا ہے۔ یعنی یہ ترجمہ نہیں کرتا بلکہ متن کی تکنیکی اور ٹائپوگرافی کی یکسانیت بہتر کرتا ہے۔
           </div>
         ) : (
-          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900" dir="ltr">
+          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-4 text-[15px] text-blue-900 leading-relaxed" dir="ltr">
             This tool does not change meaning or language — it only normalizes different Unicode
             character forms (typography correction, not translation).
           </div>
@@ -59,13 +58,13 @@ export default function UnicodeStandardizerTool() {
 
         {/* Note about protecting Arabic quotations */}
         {isUr ? (
-          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900" dir="rtl">
-            اگر متن میں اصل عربی اقتباس (حدیث، آیت وغیرہ) شامل ہو جسے تبدیل نہیں ہونا چاہیے، تو اسے{" "}
+          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-4 text-[15px] text-purple-900 leading-relaxed" dir="rtl">
+            اگر متن میں کوئی اصل عربی اقتباس (حدیث، آیت وغیرہ) شامل ہو جسے تبدیل نہیں ہونا چاہیے، تو اسے{" "}
             <span dir="ltr" className="font-mono bg-white px-1 rounded">{"{{ }}"}</span>{" "}
             کے درمیان لکھیں — یہ حصہ بالکل جوں کا توں رہے گا۔
           </div>
         ) : (
-          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900" dir="ltr">
+          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-4 text-[15px] text-purple-900 leading-relaxed" dir="ltr">
             If your text includes a genuine classical Arabic quotation that must not be altered,
             wrap it in <span className="font-mono bg-white px-1 rounded">{"{{ }}"}</span> — that
             section will be left exactly as-is.
@@ -117,21 +116,21 @@ export default function UnicodeStandardizerTool() {
           <button
             onClick={handleCopy}
             disabled={!hasInput}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-5 py-2.5 rounded-lg text-[15px] font-semibold bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {copied ? (isUr ? "✓ کاپی ہو گیا" : "✓ Copied") : (isUr ? "کاپی کریں" : "Copy Output")}
           </button>
           <button
             onClick={handleDownload}
             disabled={!hasInput}
-            className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-5 py-2.5 rounded-lg text-[15px] font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             Download .txt
           </button>
           <button
             onClick={() => setInput("")}
             disabled={!hasInput}
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-5 py-2.5 rounded-lg text-[15px] font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {isUr ? "صاف کریں" : "Clear"}
           </button>

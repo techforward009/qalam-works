@@ -90,13 +90,15 @@ export default function Footer() {
           <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-2 ${naskh}`}>
             {t.footer.contactHeading}
           </div>
-          <a
-            href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Inquiry"
-            dir="ltr"
-            className="text-[#8AAA8A] hover:text-white text-sm transition-colors block mb-1"
-          >
-            qalamworks.services@gmail.com
-          </a>
+          <div style={{ unicodeBidi: "isolate" }}>
+            <a
+              href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Inquiry"
+              dir="ltr"
+              className="text-[#8AAA8A] hover:text-white text-sm transition-colors inline-block"
+            >
+              qalamworks.services@gmail.com
+            </a>
+          </div>
         </div>
       </div>
 

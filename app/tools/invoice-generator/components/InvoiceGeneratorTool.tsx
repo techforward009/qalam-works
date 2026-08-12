@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "../../../lib/language-context";
 import {
   calculateInvoice,
   fromMinor,
@@ -32,6 +33,10 @@ const DEFAULT_INVOICE: Invoice = {
 };
 
 export default function InvoiceGeneratorTool() {
+  const { language } = useLanguage();
+  const isUr = language === "ur";
+  const naskh = isUr ? "font-naskh" : "";
+
   const [invoice, setInvoice] = useState<Invoice>(DEFAULT_INVOICE);
   const result = calculateInvoice(invoice);
 
@@ -44,27 +49,51 @@ export default function InvoiceGeneratorTool() {
   const removeItem = (idx: number) =>
     setInvoice({ ...invoice, items: invoice.items.filter((_, i) => i !== idx) });
 
+  const L = {
+    invoiceNumber: isUr ? "انوائس نمبر" : "Invoice Number",
+    issueDate: isUr ? "تاریخ اجراء" : "Issue Date",
+    currency: isUr ? "کرنسی" : "Currency",
+    fromSeller: isUr ? "بھیجنے والا" : "From (Seller)",
+    toClient: isUr ? "موصول کنندہ" : "To (Client)",
+    name: isUr ? "نام یا ادارہ" : "Name or Business",
+    email: isUr ? "ای میل" : "Email",
+    phone: isUr ? "فون" : "Phone",
+    clientName: isUr ? "موصول کنندہ کا نام" : "Client Name",
+    lineItems: isUr ? "اشیاء" : "Line Items",
+    description: isUr ? "تفصیل" : "Description",
+    qty: isUr ? "تعداد" : "Qty",
+    price: isUr ? "قیمت" : "Price",
+    addItem: isUr ? "+ نئی شے شامل کریں" : "+ Add Item",
+    notes: isUr ? "نوٹس" : "Notes",
+    printSave: isUr ? "پرنٹ کریں / PDF محفوظ کریں" : "Print / Save as PDF",
+    billTo: isUr ? "وصول کنندہ" : "BILL TO",
+    subtotal: isUr ? "ذیلی کل" : "Subtotal",
+    total: isUr ? "کل" : "Total",
+    invoice: isUr ? "انوائس" : "INVOICE",
+    notesLabel: isUr ? "نوٹس" : "Notes",
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-4">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Editor — hidden when printing */}
-        <div className="print:hidden bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md space-y-5" dir="rtl">
+        <div className="print:hidden bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md space-y-5" dir="ltr">
           {/* Invoice meta */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1" dir="ltr">
-              Invoice Number / انوائس نمبر
+            <label className={`block text-[13px] font-semibold text-gray-700 mb-1 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+              {L.invoiceNumber}
             </label>
             <input
               value={invoice.number}
               onChange={(e) => setInvoice({ ...invoice, number: e.target.value })}
-              className="w-full border border-gray-300 p-2 rounded-lg text-sm text-right"
+              className="w-full border border-gray-300 p-2 rounded-lg text-sm"
               dir="ltr"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1" dir="ltr">
-                Issue Date / تاریخ
+              <label className={`block text-[13px] font-semibold text-gray-700 mb-1 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+                {L.issueDate}
               </label>
               <input
                 type="date"
@@ -75,8 +104,8 @@ export default function InvoiceGeneratorTool() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1" dir="ltr">
-                Currency / کرنسی
+              <label className={`block text-[13px] font-semibold text-gray-700 mb-1 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+                {L.currency}
               </label>
               <input
                 value={invoice.currency}
@@ -90,26 +119,26 @@ export default function InvoiceGeneratorTool() {
 
           {/* Seller */}
           <div className="border-t border-gray-200 pt-4">
-            <p className="text-sm font-bold text-amber-900 mb-2" dir="ltr">
-              From (Seller) / بھیجنے والا
+            <p className={`text-[13px] font-bold text-amber-900 mb-2 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+              {L.fromSeller}
             </p>
             <input
               value={invoice.seller.name}
               onChange={(e) => setInvoice({ ...invoice, seller: { ...invoice.seller, name: e.target.value } })}
-              placeholder="Your name or business / آپ کا نام یا کاروبار"
-              className="w-full border border-gray-300 p-2 rounded-lg text-sm mb-2 text-right"
+              placeholder={L.name}
+              className={`w-full border border-gray-300 p-2 rounded-lg text-sm mb-2 ${naskh}`}
             />
             <input
               value={invoice.seller.email || ""}
               onChange={(e) => setInvoice({ ...invoice, seller: { ...invoice.seller, email: e.target.value } })}
-              placeholder="Email"
+              placeholder={L.email}
               className="w-full border border-gray-300 p-2 rounded-lg text-sm mb-2"
               dir="ltr"
             />
             <input
               value={invoice.seller.phone || ""}
               onChange={(e) => setInvoice({ ...invoice, seller: { ...invoice.seller, phone: e.target.value } })}
-              placeholder="Phone"
+              placeholder={L.phone}
               className="w-full border border-gray-300 p-2 rounded-lg text-sm"
               dir="ltr"
             />
@@ -117,65 +146,68 @@ export default function InvoiceGeneratorTool() {
 
           {/* Client */}
           <div className="border-t border-gray-200 pt-4">
-            <p className="text-sm font-bold text-amber-900 mb-2" dir="ltr">
-              To (Client) / موصول کنندہ
+            <p className={`text-[13px] font-bold text-amber-900 mb-2 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+              {L.toClient}
             </p>
             <input
               value={invoice.client.name}
               onChange={(e) => setInvoice({ ...invoice, client: { ...invoice.client, name: e.target.value } })}
-              placeholder="Client name / موصول کنندہ کا نام"
-              className="w-full border border-gray-300 p-2 rounded-lg text-sm mb-2 text-right"
+              placeholder={L.clientName}
+              className={`w-full border border-gray-300 p-2 rounded-lg text-sm mb-2 ${naskh}`}
             />
             <input
               value={invoice.client.email || ""}
               onChange={(e) => setInvoice({ ...invoice, client: { ...invoice.client, email: e.target.value } })}
-              placeholder="Email"
+              placeholder={L.email}
               className="w-full border border-gray-300 p-2 rounded-lg text-sm"
               dir="ltr"
             />
           </div>
 
-          {/* Items */}
+          {/* Line Items — always dir="ltr" so column order is stable: Description | Qty | Price | × */}
           <div className="border-t border-gray-200 pt-4">
-            <p className="text-sm font-bold text-amber-900 mb-2" dir="ltr">
-              Line Items / اشیاء
+            <p className={`text-[13px] font-bold text-amber-900 mb-2 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+              {L.lineItems}
             </p>
-            <div className="grid grid-cols-12 gap-2 mb-1 text-[10px] text-gray-400" dir="ltr">
-              <span className="col-span-6 text-right">Description</span>
-              <span className="col-span-2 text-right">Qty</span>
-              <span className="col-span-3 text-right">Price</span>
+            {/* Column headers — dir="ltr" matches the data rows */}
+            <div className="grid grid-cols-12 gap-2 mb-1 text-[11px] font-semibold text-gray-500" dir="ltr">
+              <span className="col-span-6">{L.description}</span>
+              <span className="col-span-2 text-center">{L.qty}</span>
+              <span className="col-span-3 text-right">{L.price}</span>
             </div>
             <div className="space-y-2">
               {invoice.items.map((it, idx) => (
-                <div key={it.id} className="grid grid-cols-12 gap-2 items-center">
+                /* dir="ltr" on every row so columns align with the header */
+                <div key={it.id} className="grid grid-cols-12 gap-2 items-center" dir="ltr">
                   <input
                     value={it.description}
                     onChange={(e) => updateItem(idx, { description: e.target.value })}
-                    placeholder="Description / تفصیل"
-                    className="col-span-6 border border-gray-300 p-2 rounded-lg text-xs text-right"
+                    placeholder={L.description}
+                    className={`col-span-6 border border-gray-300 p-2 rounded-lg text-xs ${isUr ? "text-right font-naskh" : ""}`}
+                    dir={isUr ? "rtl" : "ltr"}
                   />
                   <input
                     type="number"
                     value={it.quantity}
                     onChange={(e) => updateItem(idx, { quantity: parseFloat(e.target.value) || 0 })}
-                    className="col-span-2 border border-gray-300 p-2 rounded-lg text-xs"
+                    className="col-span-2 border border-gray-300 p-2 rounded-lg text-xs text-center"
                     dir="ltr"
                     step="0.01"
-                    placeholder="Qty"
+                    min="0"
                   />
                   <input
                     type="number"
                     value={it.unitPrice}
                     onChange={(e) => updateItem(idx, { unitPrice: parseFloat(e.target.value) || 0 })}
-                    className="col-span-3 border border-gray-300 p-2 rounded-lg text-xs"
+                    className="col-span-3 border border-gray-300 p-2 rounded-lg text-xs text-right"
                     dir="ltr"
                     step="0.01"
-                    placeholder="Price"
+                    min="0"
                   />
                   <button
                     onClick={() => removeItem(idx)}
                     disabled={invoice.items.length <= 1}
-                    className="col-span-1 text-red-500 hover:text-red-700 disabled:opacity-30 text-xs"
+                    className="col-span-1 text-red-500 hover:text-red-700 disabled:opacity-30 text-xs text-center"
                   >
                     ✕
                   </button>
@@ -184,31 +216,31 @@ export default function InvoiceGeneratorTool() {
             </div>
             <button
               onClick={addItem}
-              className="mt-3 text-xs font-semibold text-amber-700 hover:text-amber-900 underline"
-              dir="ltr"
+              className={`mt-3 text-[13px] font-semibold text-amber-700 hover:text-amber-900 underline ${naskh}`}
+              dir={isUr ? "rtl" : "ltr"}
             >
-              + Add Item / نئی چیز شامل کریں
+              {L.addItem}
             </button>
           </div>
 
           {/* Notes */}
           <div className="border-t border-gray-200 pt-4">
-            <label className="block text-xs font-semibold text-gray-700 mb-1" dir="ltr">
-              Notes / نوٹس
+            <label className={`block text-[13px] font-semibold text-gray-700 mb-1 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+              {L.notes}
             </label>
             <textarea
               value={invoice.notes || ""}
               onChange={(e) => setInvoice({ ...invoice, notes: e.target.value })}
-              className="w-full border border-gray-300 p-2 rounded-lg text-sm min-h-[60px] text-right"
+              className={`w-full border border-gray-300 p-2 rounded-lg text-sm min-h-[60px] ${isUr ? "text-right font-naskh" : ""}`}
+              dir={isUr ? "rtl" : "ltr"}
             />
           </div>
 
           <button
             onClick={() => window.print()}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 rounded-lg shadow-md transition-all text-sm"
-            dir="ltr"
+            className={`w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 rounded-lg shadow-md transition-all text-[15px] ${naskh}`}
           >
-            Print / Save as PDF
+            {L.printSave}
           </button>
         </div>
 
@@ -223,14 +255,14 @@ export default function InvoiceGeneratorTool() {
               {invoice.seller.phone && <p className="text-xs text-gray-500">{invoice.seller.phone}</p>}
             </div>
             <div className="text-right">
-              <p className="text-lg font-bold text-gray-800">INVOICE</p>
+              <p className="text-lg font-bold text-gray-800">{L.invoice}</p>
               <p className="text-xs text-gray-500">{invoice.number}</p>
               <p className="text-xs text-gray-500">{invoice.issueDate}</p>
             </div>
           </div>
 
           <div className="mb-4">
-            <p className="text-xs font-semibold text-gray-500 mb-1">BILL TO</p>
+            <p className="text-xs font-semibold text-gray-500 mb-1">{L.billTo}</p>
             <p className="text-sm font-bold text-gray-800">{invoice.client.name || "Client Name"}</p>
             {invoice.client.email && <p className="text-xs text-gray-500">{invoice.client.email}</p>}
           </div>
@@ -238,9 +270,9 @@ export default function InvoiceGeneratorTool() {
           <table className="w-full text-xs mb-4">
             <thead>
               <tr className="border-b border-gray-300 text-gray-500">
-                <th className="text-left py-1.5">Description</th>
-                <th className="text-right py-1.5">Qty</th>
-                <th className="text-right py-1.5">Price</th>
+                <th className="text-left py-1.5">{L.description}</th>
+                <th className="text-right py-1.5">{L.qty}</th>
+                <th className="text-right py-1.5">{L.price}</th>
                 <th className="text-right py-1.5">Total</th>
               </tr>
             </thead>
@@ -261,11 +293,11 @@ export default function InvoiceGeneratorTool() {
           <div className="flex justify-end">
             <div className="w-48 space-y-1 text-xs">
               <div className="flex justify-between text-gray-600">
-                <span>Subtotal</span>
+                <span>{L.subtotal}</span>
                 <span>{fromMinor(result.subtotal, 2)} {invoice.currency}</span>
               </div>
               <div className="flex justify-between font-bold text-amber-900 text-sm border-t border-gray-200 pt-1 mt-1">
-                <span>Total</span>
+                <span>{L.total}</span>
                 <span>{fromMinor(result.total, 2)} {invoice.currency}</span>
               </div>
             </div>
@@ -273,7 +305,7 @@ export default function InvoiceGeneratorTool() {
 
           {invoice.notes && (
             <div className="mt-6 pt-4 border-t border-gray-200">
-              <p className="text-xs font-semibold text-gray-500 mb-1">Notes</p>
+              <p className="text-xs font-semibold text-gray-500 mb-1">{L.notesLabel}</p>
               <p className="text-xs text-gray-700 whitespace-pre-wrap">{invoice.notes}</p>
             </div>
           )}
