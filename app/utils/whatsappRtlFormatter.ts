@@ -1,41 +1,34 @@
 /**
  * WhatsApp RTL Formatter
- * Pure TypeScript engine for preparing mixed Urdu/English plain text
- * so that it remains visually stable when pasted into WhatsApp.
  *
- * Strategy (plain-text bidi, not CSS):
- * - Lines that contain Urdu/Arabic script are wrapped in RLI … PDI so the
- *   entire logical line is an RTL paragraph. That keeps list markers
- *   on the RIGHT side in WhatsApp.
- * - Inside that RTL isolate, genuine LTR tokens (English words, URLs,
- *   emails, abbreviations, numbers) are wrapped in LRI … PDI.
- * - Leading numbered markers use a targeted sequence inside one LTR isolate:
- *     LRI + digit(s) + LRM + "."|")" + PDI
- *   so WhatsApp renders "1." / "1)" rather than ".1" / ")1", while stripped
- *   visible text remains exactly "1." / "1)".
- * - Pure English lines are left untouched.
- * - When the last content line is RTL, an invisible trailing RLM line is
- *   appended so WhatsApp does not flip the final paragraph direction.
+ * Strategy (plain-text bidi for WhatsApp):
+ * - RTL/mixed lines: outer RLI … PDI (keeps markers on the RIGHT).
+ * - Embedded LTR tokens (English, URLs, emails, amounts): LRI … PDI.
+ * - Leading numbered markers (1. / 1)): NO nested LRI on the marker.
+ *   WhatsApp still mis-renders nested-isolate markers as ".1".
+ *   Candidate that survives better in practice:
+ *     digits + punctuation + LRM
+ *   i.e. visible "1." immediately followed by U+200E, all inside outer RLI.
+ * - Bullets • - * are unchanged (no LRM).
+ * - Final content line that is RTL gets trailing "\n" + RLM anchor.
  *
- * Never reverses, translates, renumbers or alters visible characters.
+ * Never reverses, translates, or alters visible characters.
  */
 
-const LRI = "\u2066"; // LEFT-TO-RIGHT ISOLATE
-const RLI = "\u2067"; // RIGHT-TO-LEFT ISOLATE
-const PDI = "\u2069"; // POP DIRECTIONAL ISOLATE
-const LRM = "\u200E"; // LEFT-TO-RIGHT MARK
-const RLM = "\u200F"; // RIGHT-TO-LEFT MARK
+const LRI = "\u2066";
+const RLI = "\u2067";
+const PDI = "\u2069";
+const LRM = "\u200E";
+const RLM = "\u200F";
 
 /**
- * Strip only controls this formatter inserts:
- * - LRI / RLI / PDI
- * - LRM between a numbered-marker digit and its punctuation (1\u200E. / 1\u200E))
- * - Trailing RLM-only final-line anchor
+ * Strip only controls this formatter inserts.
  */
 function stripOwnBidiControls(text: string): string {
   let s = text.replace(/[\u2066\u2067\u2069]/g, "");
-  // digit + LRM + .| )  →  digit + .| )
-  s = s.replace(/(\d+)\u200E([.)])/g, "$1$2");
+  // LRM immediately after a numbered marker (1. / 1))
+  s = s.replace(/(\d+[.)])\u200E/g, "$1");
+  // Trailing final-line RLM anchor
   s = s.replace(/(?:\r?\n)\u200F\s*$/g, "");
   return s;
 }
@@ -117,38 +110,39 @@ function isolateLtrRuns(text: string): string {
   let result = text;
   for (let r = runs.length - 1; r >= 0; r--) {
     const { start, end } = runs[r];
-    const before = result.slice(0, start);
-    const segment = result.slice(start, end);
-    const after = result.slice(end);
-    result = before + isolateLtr(segment) + after;
+    result =
+      result.slice(0, start) +
+      isolateLtr(result.slice(start, end)) +
+      result.slice(end);
   }
   return result;
 }
 
 /**
- * Leading numbered marker → LTR isolate with internal LRM between digit
- * and punctuation so the glyph order is "1." not ".1" inside outer RLI.
+ * Leading numbered-marker helper (WhatsApp-oriented candidate).
  *
- * Sequence for "1.":
- *   LRI + "1" + LRM + "." + PDI
+ * Does NOT wrap the marker in LRI (nested isolates still render as ".1"
+ * in real WhatsApp). Instead:
+ *   digits + punctuation + LRM
  *
- * Sequence for "1)":
- *   LRI + "1" + LRM + ")" + PDI
+ * Example for "1.":
+ *   "1." + U+200E
  *
- * Visible text after stripping controls is still exactly "1." / "1)".
+ * Example for "1)":
+ *   "1)" + U+200E
+ *
+ * Outer RLI on the whole line still places the marker on the RIGHT.
+ * Stripping formatter controls restores exactly "1." / "1)".
  */
-function formatLeadingNumberedMarker(
-  digits: string,
-  punct: string
-): string {
-  return LRI + digits + LRM + punct + PDI;
+function formatLeadingNumberedMarker(digits: string, punct: string): string {
+  return digits + punct + LRM;
 }
 
 function processLine(line: string): string {
   if (line.length === 0) return line;
   if (!lineHasRtl(line)) return line;
 
-  // Leading numbered list marker: 1.  2)  10.  etc.
+  // Leading numbered list marker only (1. 2) 10. …)
   const numbered = line.match(/^(\d+)([.)])(\s*)(.*)$/);
   if (numbered) {
     const [, digits, punct, spaces, rest] = numbered;
@@ -157,7 +151,7 @@ function processLine(line: string): string {
     return isolateRtl(marker + spaces + body);
   }
 
-  // Bullets and ordinary RTL/mixed lines — no marker special-case
+  // Bullets and ordinary RTL/mixed lines
   return isolateRtl(isolateLtrRuns(line));
 }
 
@@ -171,8 +165,7 @@ function ensureFinalRtlStability(text: string): string {
   while (lastIdx >= 0 && lines[lastIdx].trim() === "") lastIdx--;
   if (lastIdx < 0) return text;
 
-  const last = lines[lastIdx];
-  if (last.includes(RLI)) {
+  if (lines[lastIdx].includes(RLI)) {
     if (text.endsWith("\n")) return text + RLM;
     return text + "\n" + RLM;
   }
@@ -187,8 +180,7 @@ export function formatForWhatsAppRTL(input: string): string {
   const cleaned = stripOwnBidiControls(input);
   const lines = cleaned.split(/\r?\n/);
   const processed = lines.map(processLine);
-  const joined = processed.join("\n");
-  return ensureFinalRtlStability(joined);
+  return ensureFinalRtlStability(processed.join("\n"));
 }
 
 export function countBidiControls(text: string): number {
