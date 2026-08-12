@@ -27,14 +27,14 @@ const LABELS = {
     description:
       "Prepare mixed Urdu / English text so it stays visually stable when pasted into WhatsApp.",
     inputLabel: "Input",
-    outputLabel: "Output (read-only)",
+    outputLabel: "WhatsApp-ready output",
     format: "Format for WhatsApp",
     copy: "Copy for WhatsApp",
     copied: "Copied!",
     clear: "Clear",
     example: "Example",
-    workflow: "Workflow: PASTE → FORMAT → COPY → WHATSAPP",
-    note: "Invisible Unicode bidirectional isolation controls (LRI / PDI) are inserted only around meaningful LTR runs inside RTL text. Always verify the result on WhatsApp Web, Android and iOS.",
+    workflow: "Paste text → Format → Copy for WhatsApp",
+    note: "Invisible Unicode isolation controls (LRI / PDI) are added only around meaningful LTR runs inside RTL text. Always verify on WhatsApp Web, Android, and iOS.",
     placeholder: "Paste your Urdu + English text here…",
     errorFormat: "Formatting failed. Please try again.",
     errorClipboard: "Clipboard access denied. Please copy manually.",
@@ -47,13 +47,13 @@ const LABELS = {
     description:
       "مخلوط اردو / انگریزی متن کو اس طرح تیار کریں کہ واٹس ایپ میں پیسٹ کرنے پر بصری ترتیب درست رہے۔",
     inputLabel: "ان پٹ",
-    outputLabel: "آؤٹ پٹ (صرف پڑھنے کے لیے)",
+    outputLabel: "واٹس ایپ کے لیے تیار متن",
     format: "واٹس ایپ کے لیے درست کریں",
     copy: "واٹس ایپ کے لیے نقل کریں",
     copied: "کاپی ہو گیا!",
     clear: "صاف کریں",
     example: "مثال",
-    workflow: "طریقہ کار: پیسٹ، فارمیٹ، کاپی، واٹس ایپ",
+    workflow: "پیسٹ، فارمیٹ، کاپی، واٹس ایپ",
     note: "صرف معنی خیز LTR حصوں کے ارد گرد LRI / PDI کنٹرولز لگائے جاتے ہیں۔ نتیجہ ہمیشہ واٹس ایپ ویب، اینڈرائیڈ اور iOS پر چیک کریں۔",
     placeholder: "اپنا اردو + انگریزی متن یہاں پیسٹ کریں…",
     errorFormat: "فارمیٹنگ ناکام۔ دوبارہ کوشش کریں۔",
@@ -87,6 +87,8 @@ export default function WhatsAppRtlFormatter({
 }: WhatsAppRtlFormatterProps) {
   const t = LABELS[language] ?? LABELS.en;
   const isUrdu = language === "ur";
+  const urduFont = isUrdu ? "font-nastaliq" : "";
+  const naskh = isUrdu ? "font-naskh" : "";
 
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
@@ -136,113 +138,168 @@ export default function WhatsAppRtlFormatter({
 
   return (
     <div
-      className={`whatsapp-rtl-formatter ${className}`.trim()}
-      dir={isUrdu ? "rtl" : "ltr"}
+      className={`w-full ${className}`.trim()}
       lang={isUrdu ? "ur" : "en"}
     >
-      <header className="waf-header">
-        <h1 className="waf-title">{t.title}</h1>
-        <p className="waf-description">{t.description}</p>
-      </header>
-
-      <section className="waf-section">
-        <label htmlFor="waf-input" className="waf-label">
-          {t.inputLabel}
-        </label>
-        <textarea
-          id="waf-input"
-          className="waf-textarea"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={t.placeholder}
-          rows={12}
-          dir="auto"
-          spellCheck={false}
-        />
-      </section>
-
-      <div className="waf-actions">
-        <button
-          type="button"
-          className="waf-btn waf-btn-primary"
-          onClick={handleFormat}
-          disabled={!input.trim()}
+      {/* Title block — direction only on text, not on layout root */}
+      <div className="text-center mb-8 md:mb-10" dir={isUrdu ? "rtl" : "ltr"}>
+        <h1
+          className={`text-3xl md:text-4xl font-bold text-[#1A3A2A] mb-3 ${
+            isUrdu ? "font-nastaliq font-normal" : ""
+          }`}
         >
-          {t.format}
-        </button>
-        <button
-          type="button"
-          className="waf-btn waf-btn-secondary"
-          onClick={handleExample}
+          {t.title}
+        </h1>
+        <p
+          className={`text-base md:text-lg text-gray-600 max-w-2xl mx-auto ${naskh}`}
         >
-          {t.example}
-        </button>
-        <button
-          type="button"
-          className="waf-btn waf-btn-secondary"
-          onClick={handleClear}
-        >
-          {t.clear}
-        </button>
-      </div>
-
-      {error && (
-        <p className="waf-error" role="alert">
-          {error}
+          {t.description}
         </p>
-      )}
-
-      <section className="waf-section">
-        <label htmlFor="waf-output" className="waf-label">
-          {t.outputLabel}
-        </label>
-        <textarea
-          id="waf-output"
-          className="waf-textarea waf-textarea-output"
-          value={output}
-          readOnly
-          rows={12}
-          dir="auto"
-          spellCheck={false}
-        />
-      </section>
-
-      <div className="waf-actions">
-        <button
-          type="button"
-          className="waf-btn waf-btn-primary"
-          onClick={handleCopy}
-          disabled={!output}
+        <p
+          className={`mt-3 text-sm font-semibold text-[#B8935A] ${naskh}`}
+          dir="ltr"
         >
-          {copied ? t.copied : t.copy}
-        </button>
+          {t.workflow}
+        </p>
       </div>
 
-      {/* Optional Before / After preview */}
+      {/* Main card */}
+      <div className="bg-white p-5 sm:p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
+        {/* Input | Output side-by-side on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
+          <div className="min-w-0 flex flex-col">
+            <label
+              htmlFor="waf-input"
+              className={`block text-sm font-semibold text-gray-700 mb-2 ${naskh}`}
+              dir={isUrdu ? "rtl" : "ltr"}
+            >
+              {t.inputLabel}
+            </label>
+            <textarea
+              id="waf-input"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t.placeholder}
+              rows={14}
+              dir="auto"
+              spellCheck={false}
+              className={`w-full min-h-[280px] md:min-h-[320px] flex-1 box-border rounded-xl border border-gray-300 bg-white p-4 text-base leading-relaxed text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 focus:border-[#1A3A2A] resize-y ${urduFont}`}
+            />
+          </div>
+
+          <div className="min-w-0 flex flex-col">
+            <label
+              htmlFor="waf-output"
+              className={`block text-sm font-semibold text-gray-700 mb-2 ${naskh}`}
+              dir={isUrdu ? "rtl" : "ltr"}
+            >
+              {t.outputLabel}
+            </label>
+            <textarea
+              id="waf-output"
+              value={output}
+              readOnly
+              rows={14}
+              dir="auto"
+              spellCheck={false}
+              className={`w-full min-h-[280px] md:min-h-[320px] flex-1 box-border rounded-xl border border-gray-200 bg-gray-50 p-4 text-base leading-relaxed text-gray-900 focus:outline-none resize-y ${urduFont}`}
+            />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div
+          className="mt-5 md:mt-6 flex flex-wrap items-center gap-3"
+          dir={isUrdu ? "rtl" : "ltr"}
+        >
+          <button
+            type="button"
+            onClick={handleFormat}
+            disabled={!input.trim()}
+            className={`inline-flex items-center justify-center rounded-lg bg-[#1A3A2A] hover:bg-[#244E38] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-5 py-2.5 text-sm md:text-[15px] transition-colors ${naskh}`}
+          >
+            {t.format}
+          </button>
+          <button
+            type="button"
+            onClick={handleCopy}
+            disabled={!output}
+            className={`inline-flex items-center justify-center rounded-lg bg-[#B8935A] hover:bg-[#C9A46B] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-5 py-2.5 text-sm md:text-[15px] transition-colors ${naskh}`}
+          >
+            {copied ? t.copied : t.copy}
+          </button>
+          <button
+            type="button"
+            onClick={handleExample}
+            className={`inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-800 font-semibold px-4 py-2.5 text-sm md:text-[15px] transition-colors ${naskh}`}
+          >
+            {t.example}
+          </button>
+          <button
+            type="button"
+            onClick={handleClear}
+            className={`inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-800 font-semibold px-4 py-2.5 text-sm md:text-[15px] transition-colors ${naskh}`}
+          >
+            {t.clear}
+          </button>
+        </div>
+
+        {error && (
+          <p className="mt-3 text-sm text-red-700" role="alert" dir={isUrdu ? "rtl" : "ltr"}>
+            {error}
+          </p>
+        )}
+      </div>
+
+      {/* Optional Before / After — contained, no layout distortion */}
       {shouldShowPreview && (
-        <section className="waf-preview" aria-label={t.previewTitle}>
-          <h2 className="waf-preview-title">{t.previewTitle}</h2>
-          <div className="waf-preview-grid">
-            <div className="waf-preview-panel">
-              <h3 className="waf-preview-label">{t.previewOriginal}</h3>
-              <pre className="waf-preview-text" dir="auto">
+        <section
+          className="mt-8 md:mt-10"
+          aria-label={t.previewTitle}
+          dir={isUrdu ? "rtl" : "ltr"}
+        >
+          <h2
+            className={`text-xl font-bold text-gray-900 mb-4 ${
+              isUrdu ? "font-nastaliq font-normal" : ""
+            }`}
+          >
+            {t.previewTitle}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="min-w-0 rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <h3 className={`text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide ${naskh}`}>
+                {t.previewOriginal}
+              </h3>
+              <pre
+                className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-800 max-h-64 overflow-auto m-0 ${urduFont}`}
+                dir="auto"
+              >
                 {input}
               </pre>
             </div>
-            <div className="waf-preview-panel">
-              <h3 className="waf-preview-label">{t.previewReady}</h3>
-              <pre className="waf-preview-text" dir="auto">
-                {output}
+            <div className="min-w-0 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+              <h3 className={`text-xs font-semibold text-emerald-700 mb-2 uppercase tracking-wide ${naskh}`}>
+                {t.previewReady}
+              </h3>
+              {/* Show user-visible text only — strip isolation controls for display */}
+              <pre
+                className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-800 max-h-64 overflow-auto m-0 ${urduFont}`}
+                dir="auto"
+              >
+                {output.replace(/[\u2066\u2069]/g, "")}
               </pre>
             </div>
           </div>
         </section>
       )}
 
-      <footer className="waf-footer">
-        <p className="waf-workflow">{t.workflow}</p>
-        <p className="waf-note">{t.note}</p>
-      </footer>
+      {/* Short explanation */}
+      <p
+        className={`mt-8 md:mt-10 text-sm text-gray-500 max-w-3xl mx-auto text-center leading-relaxed ${naskh}`}
+        dir={isUrdu ? "rtl" : "ltr"}
+      >
+        {t.note}
+      </p>
     </div>
   );
 }
