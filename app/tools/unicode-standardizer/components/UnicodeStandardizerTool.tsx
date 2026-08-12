@@ -42,16 +42,15 @@ export default function UnicodeStandardizerTool() {
   };
 
   return (
-    <div className="max-w-[1100px] mx-auto px-6">
+    <div className="site-container">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         {/* Clarification note — not a translator */}
         {isUr ? (
-          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900" dir="rtl">
-            یہ ٹول متن کا مفہوم یا زبان تبدیل نہیں کرتا — یہ صرف رسم الخط کی مختلف Unicode
-            شکلوں کو معیاری بناتا ہے (ترجمہ نہیں، صرف ٹائپوگرافی کی درستگی)۔
+          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-4 text-[16px] leading-[1.7] text-blue-900" dir="rtl">
+            یہ ٹول متن کا مفہوم یا زبان تبدیل نہیں کرتا؛ یہ صرف رسم الخط کی مختلف یونیکوڈ شکلوں کو معیاری بناتا ہے۔ یعنی یہ ترجمہ نہیں کرتا بلکہ متن کی تکنیکی اور ٹائپوگرافی کی یکسانیت بہتر کرتا ہے۔
           </div>
         ) : (
-          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900" dir="ltr">
+          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-4 text-[16px] leading-[1.7] text-blue-900" dir="ltr">
             This tool does not change meaning or language — it only normalizes different Unicode
             character forms (typography correction, not translation).
           </div>
@@ -59,13 +58,13 @@ export default function UnicodeStandardizerTool() {
 
         {/* Note about protecting Arabic quotations */}
         {isUr ? (
-          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900" dir="rtl">
-            اگر متن میں اصل عربی اقتباس (حدیث، آیت وغیرہ) شامل ہو جسے تبدیل نہیں ہونا چاہیے، تو اسے{" "}
+          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-4 text-[16px] leading-[1.7] text-purple-900" dir="rtl">
+            اگر متن میں کوئی اصل عربی اقتباس (حدیث، آیت وغیرہ) شامل ہو جسے تبدیل نہیں ہونا چاہیے، تو اسے{" "}
             <span dir="ltr" className="font-mono bg-white px-1 rounded">{"{{ }}"}</span>{" "}
             کے درمیان لکھیں — یہ حصہ بالکل جوں کا توں رہے گا۔
           </div>
         ) : (
-          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-900" dir="ltr">
+          <div className="mb-4 bg-purple-50 border border-purple-200 rounded-lg p-4 text-[16px] leading-[1.7] text-purple-900" dir="ltr">
             If your text includes a genuine classical Arabic quotation that must not be altered,
             wrap it in <span className="font-mono bg-white px-1 rounded">{"{{ }}"}</span> — that
             section will be left exactly as-is.
@@ -75,13 +74,13 @@ export default function UnicodeStandardizerTool() {
         {/* Editor */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-semibold text-gray-700" dir="ltr">
                 {isUr ? "اصل متن" : "Input Text"}
               </label>
               <button
                 onClick={() => setInput(SAMPLE_TEXT)}
-                className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline"
+                className="px-4 py-2 rounded-lg text-[15px] font-semibold border border-amber-600 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"
               >
                 {isUr ? "مثال دیکھیں" : "Try Example"}
               </button>
@@ -117,21 +116,21 @@ export default function UnicodeStandardizerTool() {
           <button
             onClick={handleCopy}
             disabled={!hasInput}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-5 py-2.5 rounded-lg text-[15px] font-semibold bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {copied ? (isUr ? "✓ کاپی ہو گیا" : "✓ Copied") : (isUr ? "کاپی کریں" : "Copy Output")}
           </button>
           <button
             onClick={handleDownload}
             disabled={!hasInput}
-            className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-5 py-2.5 rounded-lg text-[15px] font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             Download .txt
           </button>
           <button
             onClick={() => setInput("")}
             disabled={!hasInput}
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-5 py-2.5 rounded-lg text-[15px] font-semibold border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {isUr ? "صاف کریں" : "Clear"}
           </button>

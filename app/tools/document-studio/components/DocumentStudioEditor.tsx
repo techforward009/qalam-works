@@ -912,7 +912,7 @@ export default function DocumentStudioEditor() {
       ];
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4">
+    <div className="site-container">
       {/* Document Studio Simplification (2026-08-10) — the editor card
           below is now the ONLY thing shown by default: toolbar, the text
           area itself, and export/save actions. Every analysis/utility
@@ -944,14 +944,22 @@ export default function DocumentStudioEditor() {
           />
           <label
             htmlFor="document-studio-upload-input"
-            className={`h-9 px-3.5 rounded-md text-sm font-medium border transition flex items-center gap-2 ${
+            className={`inline-flex items-center gap-2 h-9 px-4 rounded-md text-[15px] font-semibold border-2 transition-all ${
               isImporting
-                ? "border-gray-200 text-gray-400 cursor-not-allowed"
-                : "border-gray-300 text-gray-600 hover:border-[#B8935A] hover:text-[#1A3A2A] cursor-pointer"
+                ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                : "border-[#1A3A2A] bg-[#1A3A2A] text-white hover:bg-[#244E38] hover:border-[#244E38] cursor-pointer shadow-sm"
             }`}
           >
-            {isImporting ? (isUr ? "درآمد ہو رہا ہے..." : "Importing...") : (isUr ? "فائل اپلوڈ کریں" : "Upload File (.txt, .docx)")}
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span className={isUr ? "font-naskh" : ""}>
+              {isImporting ? (isUr ? "درآمد ہو رہا ہے..." : "Importing…") : (isUr ? "فائل اپلوڈ کریں" : "Upload File")}
+            </span>
           </label>
+          {!isImporting && (
+            <span className="text-[13px] text-gray-400 font-mono select-none" dir="ltr">TXT · DOCX</span>
+          )}
         </div>
 
         {uploadError && (
@@ -1000,35 +1008,53 @@ export default function DocumentStudioEditor() {
             <button
               type="button"
               onClick={handleCopy}
-              className="h-10 px-4 rounded-lg text-sm font-semibold bg-[#B8935A] text-white hover:bg-[#C9A46B] shadow-sm transition"
+              className="h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#B8935A] text-white hover:bg-[#C9A46B] shadow-sm transition"
             >
               {copied ? "✓ Copied" : "Copy Text"}
             </button>
             <button
               type="button"
-              onClick={handleDownloadDocx}
-              className="h-10 px-4 rounded-lg text-sm font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] shadow-sm transition"
+              onClick={handleDownload}
+              className={`h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 shadow-sm transition ${isUr ? "font-naskh" : ""}`}
             >
-              Download .docx
+              {isUr ? (
+                <span dir="rtl">
+                  <span dir="ltr" className="inline-block">TXT</span>
+                  {" فائل ڈاؤن لوڈ کریں"}
+                </span>
+              ) : (
+                "Download TXT File"
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadDocx}
+              className={`h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 shadow-sm transition ${isUr ? "font-naskh" : ""}`}
+            >
+              {isUr ? (
+                <span dir="rtl">
+                  <span dir="ltr" className="inline-block">DOCX</span>
+                  {" فائل ڈاؤن لوڈ کریں"}
+                </span>
+              ) : (
+                "Download DOCX"
+              )}
             </button>
             <button
               type="button"
               onClick={handleDownloadPdf}
               disabled={isExportingPdf}
-              className={`h-10 px-4 rounded-lg text-sm font-semibold shadow-sm transition ${
+              className={`h-10 px-4 rounded-lg text-[15px] font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 ${
                 isExportingPdf
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                   : "bg-[#1A3A2A] text-white hover:bg-[#204a35]"
               }`}
             >
-              {isExportingPdf ? "PDF بن رہی ہے... / Generating..." : `Download PDF${pdfSummary ? ` (${pdfSummary.fileSizeLabel})` : ""}`}
-            </button>
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="h-10 px-3.5 rounded-md text-xs font-medium text-gray-500 hover:text-[#1A3A2A] transition"
-            >
-              .txt
+              {isExportingPdf
+                ? (isUr ? "PDF بن رہی ہے..." : "Generating…")
+                : isUr
+                  ? `PDF ڈاؤن لوڈ کریں${pdfSummary ? ` (${pdfSummary.fileSizeLabel})` : ""}`
+                  : `Download PDF${pdfSummary ? ` (${pdfSummary.fileSizeLabel})` : ""}`}
             </button>
           </div>
 
@@ -1068,16 +1094,16 @@ export default function DocumentStudioEditor() {
       {/* Tab bar — at most one panel below is ever open. Clicking an
           already-active tab closes it, returning to the clean editor-only
           view. */}
-      <div className="flex flex-wrap justify-center gap-2 mt-5 bg-white rounded-xl border border-[#1A3A2A]/10 shadow-[0_2px_20px_rgba(26,58,42,0.06)] p-2" dir="ltr">
+      <div className="flex flex-wrap justify-center gap-2 mt-5 bg-[#D8EBDC] rounded-xl border border-[#1A3A2A]/20 shadow-md p-3" dir="ltr">
         {TAB_DEFINITIONS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => toggleTab(tab.id)}
-            className={`h-10 px-4 rounded-lg text-sm font-medium transition ${
+            className={`h-10 px-5 rounded-lg text-[15px] font-semibold transition-all ${
               activeTab === tab.id
-                ? "bg-[#1A3A2A] text-white"
-                : "text-slate-600 hover:bg-[#FAF7F0]"
+                ? "bg-[#1A3A2A] text-white shadow-sm"
+                : "bg-white/80 text-[#1A3A2A]/80 border border-[#1A3A2A]/10 hover:bg-white hover:text-[#1A3A2A] hover:border-[#1A3A2A]/20"
             }`}
           >
             {tab.label}

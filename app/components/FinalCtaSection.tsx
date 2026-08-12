@@ -10,13 +10,13 @@ export default function FinalCtaSection() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section className="bg-[#12172A] py-28 md:py-32" dir={dir}>
+    <section className="bg-[#EDF2EA] py-28 md:py-32" dir={dir}>
       <div className="max-w-2xl mx-auto px-6 text-center">
-        <h2 className={`text-2xl md:text-4xl font-bold text-white mb-4 leading-tight ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+        <h2 className={`text-2xl md:text-4xl font-bold text-[#1A3A2A] mb-4 leading-tight ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}
         </h2>
-        <p className={`text-[#B9B4A8] text-base md:text-lg mb-10 ${naskh}`}>{t.subline}</p>
-        <Link href="/tools/document-studio" className={`inline-block bg-[#B8935A] hover:bg-[#C9A46B] text-[#12172A] font-semibold px-8 py-4 rounded-lg shadow-lg shadow-[#B8935A]/20 transition-all text-sm ${naskh}`}>
+        <p className={`text-[#4A6040] text-base md:text-lg mb-10 ${naskh}`}>{t.subline}</p>
+        <Link href="/tools/document-studio" className={`inline-block bg-[#1A3A2A] hover:bg-[#244E38] text-white font-semibold px-8 py-4 rounded-lg shadow-lg transition-all text-[15px] ${naskh}`}>
           {t.cta}
         </Link>
       </div>

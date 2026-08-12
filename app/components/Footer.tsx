@@ -22,6 +22,8 @@ const TOOL_ROUTES = [
   { key: "documentCleaner", href: "/tools/document-cleaner", labelEn: "Document Cleaner", labelUr: "ڈاکومنٹ کلینر" },
   { key: "qualityChecker", href: "/tools/quality-checker" },
   { key: "unicodeStandardizer", href: "/tools/unicode-standardizer" },
+  { key: "invoiceStudio", href: "/tools/invoice-generator", labelEn: "Invoice Studio", labelUr: "انوائس اسٹوڈیو" },
+  { key: "whatsappRtlFormatter", href: "/tools/whatsapp-rtl-formatter", labelEn: "WhatsApp RTL Formatter", labelUr: "واٹس ایپ آر ٹی ایل فارمیٹر" },
 ];
 
 export default function Footer() {
@@ -32,29 +34,31 @@ export default function Footer() {
 
   return (
     <footer className="bg-[#1A3A2A] border-t border-white/10 mt-16" dir={dir}>
-      <div className="max-w-[1240px] mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div>
+      <div className="site-container py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Brand */}
+        <div className="sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2.5 mb-3" dir={dir}>
             <PenNibIcon />
             {language === "ur" ? (
-              <span className="font-naskh text-xl font-bold text-white leading-none">قلم ورکس</span>
+              <span className="font-nastaliq text-xl font-normal text-white leading-none">قلم ورکس</span>
             ) : (
               <span className="font-bold text-white">Qalam Works</span>
             )}
           </div>
-          <p className={`text-[#8AAA8A] text-xs leading-relaxed ${naskh}`}>{t.footer.tagline}</p>
-          <p className={`text-[#8AAA8A] text-xs leading-relaxed mt-2 ${naskh}`}>{t.footer.servicesNote}</p>
+          <p className={`text-[#8AAA8A] text-sm leading-relaxed ${naskh}`}>{t.footer.tagline}</p>
+          <p className={`text-[#8AAA8A] text-sm leading-relaxed mt-2 ${naskh}`}>{t.footer.servicesNote}</p>
         </div>
 
+        {/* Tools */}
         <div>
-          <div className={`text-[#B8935A] font-semibold text-xs uppercase tracking-wide mb-3 ${naskh}`}>
+          <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
             {t.footer.toolsHeading}
           </div>
           <ul className="space-y-2">
             {TOOL_ROUTES.map((tool) => (
               <li key={tool.href}>
-                <Link href={tool.href} className={`text-[#8AAA8A] hover:text-white text-xs transition-colors ${naskh}`}>
-                  {tool.key === "documentCleaner"
+                <Link href={tool.href} className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>
+                  {tool.labelEn
                     ? language === "ur" ? tool.labelUr : tool.labelEn
                     : t.nav[tool.key as keyof typeof t.nav]}
                 </Link>
@@ -63,24 +67,57 @@ export default function Footer() {
           </ul>
         </div>
 
+        {/* Company */}
         <div>
-          <div className={`text-[#B8935A] font-semibold text-xs uppercase tracking-wide mb-3 ${naskh}`}>
+          <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
+            {t.footer.companyHeading}
+          </div>
+          <ul className="space-y-2">
+            <li><Link href="/about" className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>{t.nav.about}</Link></li>
+            <li><Link href="/services" className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>{t.nav.services}</Link></li>
+            <li><Link href="/contact" className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>{t.nav.contact}</Link></li>
+          </ul>
+        </div>
+
+        {/* Legal + Contact */}
+        <div>
+          <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
+            {t.footer.legalHeading}
+          </div>
+          <ul className="space-y-2 mb-5">
+            <li><Link href="/privacy" className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>{language === "ur" ? "رازداری" : "Privacy"}</Link></li>
+            <li><Link href="/terms" className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>{language === "ur" ? "شرائط" : "Terms"}</Link></li>
+          </ul>
+          <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-2 ${naskh}`}>
             {t.footer.contactHeading}
           </div>
-          <a
-            href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Inquiry"
-            dir="ltr"
-            className="text-[#8AAA8A] hover:text-white text-xs transition-colors block mb-2"
-          >
-            qalamworks.services@gmail.com
-          </a>
-          <p className={`text-[#8AAA8A] text-xs leading-relaxed ${naskh}`}>{t.footer.contactNote}</p>
+          {/* Contact block composition (2026-08-12) — the block as a whole
+              must read naturally in RTL for Urdu (right-aligned, right-
+              anchored), while the email address itself stays LTR-ordered
+              characters. Only the email <a> gets dir="ltr"; the wrapping
+              div follows the page's own dir so paragraph flow/alignment is
+              correct instead of dragging the whole unit to the left. */}
+          <div className={`flex flex-col ${language === "ur" ? "items-end" : "items-start"}`}>
+            <a
+              href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Inquiry"
+              dir="ltr"
+              className="text-[#8AAA8A] hover:text-white text-sm transition-colors inline-block mb-2"
+            >
+              qalamworks.services@gmail.com
+            </a>
+            <p
+              className={`text-[#4A6A4A] text-xs leading-relaxed max-w-[220px] ${language === "ur" ? "text-right" : "text-left"} ${naskh}`}
+            >
+              {t.contactPage.responseNote}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="border-t border-white/5 py-4 text-center text-xs text-[#4A6A4A]" dir="ltr">
+      <div className="border-t border-white/5 py-4 text-center text-sm text-[#4A6A4A]" dir="ltr">
         © {year} Qalam Works. {t.footer.rights}
       </div>
     </footer>
   );
 }
+

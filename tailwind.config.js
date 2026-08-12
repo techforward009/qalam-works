@@ -9,9 +9,14 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        nastaliq: ["var(--font-nastaliq)", "serif"],
-        naskh: ["var(--font-naskh)", "serif"],
-        sans: ["var(--font-inter)", "sans-serif"],
+        // next/font populates --font-nastaliq at runtime (Noto Nastaliq Urdu from Google Fonts).
+        // Named fallbacks cover environments where the variable is not yet set (e.g. FOUT,
+        // pre-hydration) or where Google Fonts cannot be reached.
+        nastaliq: ["var(--font-nastaliq)", "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Urdu Typesetting", "serif"],
+        // next/font populates --font-naskh at runtime (Noto Naskh Arabic from Google Fonts).
+        // Named fallbacks give a readable Urdu/Arabic Naskh face on any system that has one.
+        naskh: ["var(--font-naskh)", "Noto Naskh Arabic", "Scheherazade New", "Traditional Arabic", "serif"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
     },
   },
