@@ -6,13 +6,14 @@
  * Strategy (plain-text bidi, not CSS):
  * - Lines that contain Urdu/Arabic script are wrapped in RLI … PDI so the
  *   entire logical line is an RTL paragraph. That keeps list markers
- *   (1. 2) • - *) on the RIGHT side in WhatsApp.
+ *   on the RIGHT side in WhatsApp.
  * - Inside that RTL isolate, genuine LTR tokens (English words, URLs,
- *   emails, abbreviations, numbers) are wrapped in LRI … PDI so they
- *   still read left-to-right.
- * - Numbered markers (1. / 1)) get an LRM after the marker so the
- *   number+punctuation visually reads as "1." not ".1" inside RTL.
- * - Pure English / pure LTR lines are left completely untouched.
+ *   emails, abbreviations, numbers) are wrapped in LRI … PDI.
+ * - Leading numbered markers use a targeted sequence inside one LTR isolate:
+ *     LRI + digit(s) + LRM + "."|")" + PDI
+ *   so WhatsApp renders "1." / "1)" rather than ".1" / ")1", while stripped
+ *   visible text remains exactly "1." / "1)".
+ * - Pure English lines are left untouched.
  * - When the last content line is RTL, an invisible trailing RLM line is
  *   appended so WhatsApp does not flip the final paragraph direction.
  *
@@ -22,19 +23,19 @@
 const LRI = "\u2066"; // LEFT-TO-RIGHT ISOLATE
 const RLI = "\u2067"; // RIGHT-TO-LEFT ISOLATE
 const PDI = "\u2069"; // POP DIRECTIONAL ISOLATE
-const LRM = "\u200E"; // LEFT-TO-RIGHT MARK (stabilises "1." inside RTL)
-const RLM = "\u200F"; // RIGHT-TO-LEFT MARK (final-line anchor)
+const LRM = "\u200E"; // LEFT-TO-RIGHT MARK
+const RLM = "\u200F"; // RIGHT-TO-LEFT MARK
 
 /**
  * Strip only controls this formatter inserts:
  * - LRI / RLI / PDI
- * - LRM immediately after a numbered marker (1. / 1))
- * - Trailing RLM-only lines (final-line anchor)
- * User-supplied directional marks elsewhere are preserved.
+ * - LRM between a numbered-marker digit and its punctuation (1\u200E. / 1\u200E))
+ * - Trailing RLM-only final-line anchor
  */
 function stripOwnBidiControls(text: string): string {
   let s = text.replace(/[\u2066\u2067\u2069]/g, "");
-  s = s.replace(/(\d+[.)])\u200E/g, "$1");
+  // digit + LRM + .| )  →  digit + .| )
+  s = s.replace(/(\d+)\u200E([.)])/g, "$1$2");
   s = s.replace(/(?:\r?\n)\u200F\s*$/g, "");
   return s;
 }
@@ -62,7 +63,6 @@ function isLtrTokenChar(ch: string): boolean {
   if ("@._\-:/?&=%+#,~,".includes(ch)) {
     return true;
   }
-  // Closing paren for numbered markers "1)"
   if (ch === ")") {
     return true;
   }
@@ -126,30 +126,41 @@ function isolateLtrRuns(text: string): string {
 }
 
 /**
- * Ensure a leading numbered marker is followed by LRM so number+punctuation
- * reads as "1." / "1)" inside the outer RLI (not ".1").
+ * Leading numbered marker → LTR isolate with internal LRM between digit
+ * and punctuation so the glyph order is "1." not ".1" inside outer RLI.
+ *
+ * Sequence for "1.":
+ *   LRI + "1" + LRM + "." + PDI
+ *
+ * Sequence for "1)":
+ *   LRI + "1" + LRM + ")" + PDI
+ *
+ * Visible text after stripping controls is still exactly "1." / "1)".
  */
-function stabilizeNumberedMarker(line: string): string {
-  return line.replace(
-    /^((?:\u2066)?\d+[.)](?:\u2069)?)(?!\u200E)/,
-    "$1" + LRM
-  );
+function formatLeadingNumberedMarker(
+  digits: string,
+  punct: string
+): string {
+  return LRI + digits + LRM + punct + PDI;
 }
 
 function processLine(line: string): string {
   if (line.length === 0) return line;
   if (!lineHasRtl(line)) return line;
 
-  let body = isolateLtrRuns(line);
-  body = stabilizeNumberedMarker(body);
-  return isolateRtl(body);
+  // Leading numbered list marker: 1.  2)  10.  etc.
+  const numbered = line.match(/^(\d+)([.)])(\s*)(.*)$/);
+  if (numbered) {
+    const [, digits, punct, spaces, rest] = numbered;
+    const marker = formatLeadingNumberedMarker(digits, punct);
+    const body = isolateLtrRuns(rest);
+    return isolateRtl(marker + spaces + body);
+  }
+
+  // Bullets and ordinary RTL/mixed lines — no marker special-case
+  return isolateRtl(isolateLtrRuns(line));
 }
 
-/**
- * If the last content line is RLI-wrapped, append an invisible trailing
- * line containing only RLM so WhatsApp does not flip the final paragraph.
- * No visible characters are added.
- */
 function ensureFinalRtlStability(text: string): string {
   if (!text) return text;
   if (/(?:\r?\n)\u200F\s*$/.test(text)) {

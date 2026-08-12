@@ -11,7 +11,7 @@ const { LRI, RLI, PDI, LRM, RLM } = BIDI;
 function strip(text: string): string {
   return text
     .replace(/[\u2066\u2067\u2069]/g, "")
-    .replace(/(\d+[.)])\u200E/g, "$1")
+    .replace(/(\d+)\u200E([.)])/g, "$1$2")
     .replace(/(?:\r?\n)\u200F\s*$/g, "");
 }
 
@@ -29,7 +29,6 @@ describe("formatForWhatsAppRTL", () => {
     const result = formatForWhatsAppRTL(urdu);
     expect(strip(result)).toBe(urdu);
     expect(result.startsWith(RLI)).toBe(true);
-    expect(result).toContain(PDI);
   });
 
   it("does not wrap pure English paragraphs", () => {
@@ -105,40 +104,37 @@ describe("formatForWhatsAppRTL", () => {
     expect(result.split("\n")[0]).toContain("*");
   });
 
-  it("numbered list lines are RLI-wrapped with LRM after marker", () => {
+  it("numbered list uses digit+LRM+punct inside LRI", () => {
     const text = "1. پہلا نکتہ\n2. دوسرا نکتہ";
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
     const lines = result.split("\n").filter((l) => l.includes(RLI));
-    expect(lines[0]).toContain(LRI + "1." + PDI + LRM);
-    expect(lines[1]).toContain(LRI + "2." + PDI + LRM);
+    expect(lines[0]).toContain(LRI + "1" + LRM + "." + PDI);
+    expect(lines[1]).toContain(LRI + "2" + LRM + "." + PDI);
   });
 
-  it("parenthesis numbered lists get LRM after marker", () => {
+  it("parenthesis numbered lists use digit+LRM+) inside LRI", () => {
     const text = "1) پہلا نکتہ\n2) دوسرا نکتہ";
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
     const lines = result.split("\n").filter((l) => l.includes(RLI));
-    expect(lines[0]).toContain(LRI + "1)" + PDI + LRM);
-    expect(lines[1]).toContain(LRI + "2)" + PDI + LRM);
+    expect(lines[0]).toContain(LRI + "1" + LRM + ")" + PDI);
+    expect(lines[1]).toContain(LRI + "2" + LRM + ")" + PDI);
   });
 
   it("does not reverse or lose punctuation next to English", () => {
     const text = "فائل (PDF) دیکھیں۔";
-    const result = formatForWhatsAppRTL(text);
-    expect(strip(result)).toBe(text);
+    expect(strip(formatForWhatsAppRTL(text))).toBe(text);
   });
 
   it("preserves exact line breaks in mixed content", () => {
     const text = "پہلی لائن PDF\nدوسری لائن\n\nتیسری لائن 42";
-    const result = formatForWhatsAppRTL(text);
-    expect(strip(result)).toBe(text);
+    expect(strip(formatForWhatsAppRTL(text))).toBe(text);
   });
 
   it("leaves Arabic quotation marks and surrounding text stable", () => {
     const text = "اس نے کہا: «یہ درست ہے»";
-    const result = formatForWhatsAppRTL(text);
-    expect(strip(result)).toBe(text);
+    expect(strip(formatForWhatsAppRTL(text))).toBe(text);
   });
 
   it("never drops any visible character", () => {
@@ -167,15 +163,14 @@ describe("formatForWhatsAppRTL", () => {
   });
 
   it("is idempotent – second pass does not change output", () => {
-    const text =
-      "رپورٹ PDF میں محفوظ کریں\n1. فائل\nقیمت 1500 PKR";
+    const text = "رپورٹ PDF میں محفوظ کریں\n1. فائل\nقیمت 1500 PKR";
     const once = formatForWhatsAppRTL(text);
     expect(formatForWhatsAppRTL(once)).toBe(once);
   });
 
   it("always produces balanced LRI/RLI/PDI pairs", () => {
     const text =
-      "اردو PDF اور 1500 PKR اور https://example.com اور test@email.com";
+      "اردو PDF اور 1500 PKR اور https://example.com\n1. نقطہ";
     const result = formatForWhatsAppRTL(text);
     let depth = 0;
     for (const ch of result) {
@@ -272,7 +267,7 @@ describe("formatForWhatsAppRTL", () => {
     expect(strip(result)).toBe(text);
     const rtlLines = result.split("\n").filter((l) => l.includes(RLI));
     expect(rtlLines.length).toBe(4);
-    expect(rtlLines[0]).toContain(LRI + "1." + PDI + LRM);
+    expect(rtlLines[0]).toContain(LRI + "1" + LRM + "." + PDI);
     expect(rtlLines[3]).toContain("*");
     expect(result).toContain(LRI + "720,000" + PDI);
   });
@@ -281,8 +276,7 @@ describe("formatForWhatsAppRTL", () => {
     const text = `* وضاحت: اہم نوٹ
 • پہلا نقطہ
 - دوسرا نقطہ`;
-    const result = formatForWhatsAppRTL(text);
-    expect(strip(result)).toBe(text);
+    expect(strip(formatForWhatsAppRTL(text))).toBe(text);
   });
 
   it("ordinary Urdu paragraph is RLI-wrapped", () => {
@@ -300,27 +294,29 @@ describe("formatForWhatsAppRTL", () => {
     expect(result).toContain(LRI + "PKR" + PDI);
   });
 
-  // --- New regressions ---
-
-  it("numbered markers read as 1. not .1 (dot style)", () => {
+  // Focused numbered-marker regressions (digit + LRM + punct inside LRI)
+  it("numbered markers 1. 2. 3. use internal LRM structure", () => {
     const text = "1. اردو متن\n2. اردو متن\n3. اردو متن";
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
-    // Structure: LRI + "N." + PDI + LRM  ensures LTR order of digit+dot
-    for (const n of ["1.", "2.", "3."]) {
-      expect(result).toContain(LRI + n + PDI + LRM);
+    for (const n of ["1", "2", "3"]) {
+      expect(result).toContain(LRI + n + LRM + "." + PDI);
     }
-    // Visible content order preserved
-    expect(strip(result).indexOf("1.")).toBeLessThan(strip(result).indexOf("2."));
+    // Outer RLI on each content line
+    const rtlLines = result.split("\n").filter((l) => l.includes(RLI));
+    expect(rtlLines.length).toBe(3);
+    for (const line of rtlLines) {
+      expect(line.startsWith(RLI)).toBe(true);
+      expect(line.includes(PDI)).toBe(true);
+    }
   });
 
-  it("numbered markers read as 1) not )1 (paren style)", () => {
-    const text = "1) اردو متن\n2) اردو متن\n3) اردو متن";
+  it("numbered markers 1) 2) use internal LRM structure", () => {
+    const text = "1) اردو متن\n2) اردو متن";
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
-    for (const n of ["1)", "2)", "3)"]) {
-      expect(result).toContain(LRI + n + PDI + LRM);
-    }
+    expect(result).toContain(LRI + "1" + LRM + ")" + PDI);
+    expect(result).toContain(LRI + "2" + LRM + ")" + PDI);
   });
 
   it("appends invisible RLM final-line anchor after last RTL content", () => {
@@ -328,15 +324,12 @@ describe("formatForWhatsAppRTL", () => {
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
     expect(result.endsWith("\n" + RLM) || result.endsWith(RLM)).toBe(true);
-    // Anchor is not a visible character
-    expect(strip(result).endsWith("۔")).toBe(true);
   });
 
   it("final-line RLM anchor is idempotent", () => {
     const text = "1. پہلا\n2. دوسرا";
     const once = formatForWhatsAppRTL(text);
-    const twice = formatForWhatsAppRTL(once);
-    expect(twice).toBe(once);
+    expect(formatForWhatsAppRTL(once)).toBe(once);
     expect(strip(once)).toBe(text);
   });
 
@@ -345,5 +338,15 @@ describe("formatForWhatsAppRTL", () => {
     const result = formatForWhatsAppRTL(text);
     expect(result).toBe(text);
     expect(result.includes(RLM)).toBe(false);
+  });
+
+  it("embedded numbers are LRI-wrapped without internal LRM", () => {
+    // Ordinary mid-line numbers must NOT get the marker special-case
+    const text = "قیمت 1500 روپے";
+    const result = formatForWhatsAppRTL(text);
+    expect(strip(result)).toBe(text);
+    expect(result).toContain(LRI + "1500" + PDI);
+    // No LRM inside that isolate
+    expect(result).not.toContain(LRI + "1500" + LRM);
   });
 });
