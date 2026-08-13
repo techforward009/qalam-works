@@ -7,12 +7,12 @@ export default function LanguageSwitch() {
   const { language, setLanguage } = useLanguage();
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-white/15 p-1 text-[14px]" dir="ltr">
+    <div className="flex items-center gap-0.5 rounded-full border border-white/15 p-0.5 text-[13px] xl:text-[14px] shrink-0" dir="ltr">
       <button
         type="button"
         onClick={() => setLanguage("ur")}
         aria-pressed={language === "ur"}
-        className={`px-3 py-1.5 rounded-full font-medium transition-colors ${
+        className={`px-2.5 py-1.5 xl:px-3 rounded-full font-medium transition-colors whitespace-nowrap ${
           language === "ur" ? "bg-[#B8935A] text-[#12172A]" : "text-[#B9C9B9] hover:text-white"
         }`}
       >
@@ -22,7 +22,7 @@ export default function LanguageSwitch() {
         type="button"
         onClick={() => setLanguage("en")}
         aria-pressed={language === "en"}
-        className={`px-3 py-1.5 rounded-full font-medium transition-colors ${
+        className={`px-2.5 py-1.5 xl:px-3 rounded-full font-medium transition-colors whitespace-nowrap ${
           language === "en" ? "bg-[#B8935A] text-[#12172A]" : "text-[#B9C9B9] hover:text-white"
         }`}
       >
