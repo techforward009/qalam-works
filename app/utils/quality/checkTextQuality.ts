@@ -12,6 +12,8 @@ import {
   LATIN_LETTERS_REGEX,
   ASCII_PUNCTUATION_REGEX,
 } from "./sharedTextPatterns";
+import type { ProcessingLanguage, ResolvedLanguage } from "../processing/types";
+import { resolveProcessingLanguage } from "../processing/detectLanguage";
 
 export interface QualityReport {
   totalIssues: number;
@@ -182,14 +184,19 @@ function checkUniversal(
   };
 }
 
-function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript" | "mixedUrduArabicForms"> {
-  // ASCII comma/semicolon/question mark mixed into Urdu/Arabic text.
-  const englishPunctuation = text.match(ASCII_PUNCTUATION_REGEX);
-  const mixedPunctuation = englishPunctuation ? englishPunctuation.length : 0;
+function checkScriptSensitive(
+  text: string,
+  mode: ResolvedLanguage
+): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript" | "mixedUrduArabicForms"> {
+  const hasArabicScript = /[\u0600-\u06FF]/.test(text);
 
-  // Repeated adjacent words — often an accidental typo, but can be
-  // intentional rhetorical repetition in genuine Arabic quotations (which
-  // is exactly why this check is skipped inside {{ }} markers).
+  // ASCII punctuation mixed into Arabic-script text only (not pure English).
+  let mixedPunctuation = 0;
+  if (mode === "ur" && hasArabicScript) {
+    const englishPunctuation = text.match(ASCII_PUNCTUATION_REGEX);
+    mixedPunctuation = englishPunctuation ? englishPunctuation.length : 0;
+  }
+
   let repeatedWords = 0;
   const words = text.split(/\s+/);
   for (let i = 1; i < words.length; i++) {
@@ -198,37 +205,34 @@ function checkScriptSensitive(text: string): Pick<PartialCounts, "mixedPunctuati
     }
   }
 
-  // Latin letters inside Arabic-script text — often a real typo, but can
-  // be an intentional abbreviation, citation, or loanword.
+  // mixedScript: Latin runs ONLY when Arabic-script is also present.
+  // Pure English must not be flagged as "mixed script".
+  // In English mode, never flag. In Arabic mode, Latin is informational (still counted for mixed docs).
   const latinMatches = text.match(LATIN_LETTERS_REGEX);
-  const mixedScript = latinMatches ? latinMatches.length : 0;
+  let mixedScript = 0;
+  if (mode !== "en" && hasArabicScript && latinMatches) {
+    mixedScript = latinMatches.length;
+  }
 
-  // Arabic-form letters (ي ى ك أ إ) appearing in what should be Urdu
-  // prose — the exact same five characters app/utils/unicode/
-  // standardizeUrduText.ts's CHAR_NORMALIZATIONS already corrects (ي→ی,
-  // ى→ی, ك→ک, أ→ا, إ→ا). This is detection only (no correction here);
-  // reuses that established mapping rather than inventing a new one, so
-  // "mixed Urdu/Arabic characters" means the same thing everywhere in
-  // the app. Skipped inside {{ }} markers for the same reason
-  // standardizeUrduText.ts skips them there — protected classical Arabic
-  // quotations correctly use these forms.
-  const arabicFormMatches = text.match(ARABIC_FORM_LETTERS_REGEX);
-  const mixedUrduArabicForms = arabicFormMatches ? arabicFormMatches.length : 0;
+  // Urdu/Arabic form mismatch only meaningful in Urdu mode.
+  let mixedUrduArabicForms = 0;
+  if (mode === "ur") {
+    const arabicFormMatches = text.match(ARABIC_FORM_LETTERS_REGEX);
+    mixedUrduArabicForms = arabicFormMatches ? arabicFormMatches.length : 0;
+  }
 
   return { mixedPunctuation, repeatedWords, mixedScript, mixedUrduArabicForms };
 }
 
-export function checkTextQuality(input: string): QualityReport {
-  // Split into protected ({{ }}) and normal segments. Universal checks run
-  // on the FULL original text (so line/paragraph structure across
-  // boundaries stays correct). Script-sensitive checks run only on the
-  // text with {{ }} content removed, then again on each {{ }} segment
-  // individually is skipped entirely — protected content is exempt from
-  // these three checks by design.
+export function checkTextQuality(
+  input: string,
+  mode: ProcessingLanguage = "ur"
+): QualityReport {
+  const resolved = resolveProcessingLanguage(mode, input);
   const universal = checkUniversal(input);
 
   const textWithoutProtected = input.replace(PRESERVE_MARKER_REGEX, " ");
-  const scriptSensitive = checkScriptSensitive(textWithoutProtected);
+  const scriptSensitive = checkScriptSensitive(textWithoutProtected, resolved);
 
   const totalIssues =
     universal.multipleSpaces +

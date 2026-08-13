@@ -13,6 +13,10 @@ export interface PipelineSummary {
     punctuationFixes: number;
   };
   remainingIssues: QualityReport;
+  /** Resolved processing language after auto-detect / explicit choice. */
+  resolvedLanguage?: "ur" | "en" | "ar";
+  /** Document direction for DOCX export. */
+  direction?: "rtl" | "ltr";
 }
 
 export interface PipelineResult {

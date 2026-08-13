@@ -1,33 +1,31 @@
 import { extractTextFromFile } from "../utils/documents/extractTextFromFile";
-import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
+import { processText } from "../utils/processing/processText";
 import { checkTextQuality } from "../utils/quality/checkTextQuality";
 import { formatFileSize } from "../utils/formatFileSize";
 import type { PipelineResult } from "../types/documentPipeline";
+import type { ProcessingLanguage } from "../utils/processing/types";
 
 /**
- * The full Document Cleaner pipeline: extract → standardize → audit →
- * assemble a PipelineResult (see app/types/documentPipeline.ts).
- *
- * REBUILT 2026-08-08 — the previous version had drifted completely from
- * this contract: it read .docx files with file.text() (which doesn't
- * decode a binary ZIP file correctly — .docx is a ZIP archive, not plain
- * text), built a malformed DocNode ({ text: fileText } with no `content`
- * array, which every adapter in app/tools/document-studio/utils/ requires
- * to find any text at all), and returned { auditReport, qualityReport }
- * instead of the { summary, cleanedText } shape DocumentCleanerTool.tsx
- * actually renders — so uploads silently produced an empty, all-zero
- * report with no visible error. Reconnected to the real, working engines
- * already used elsewhere in the app (extractTextFromFile, which properly
- * handles .docx via mammoth and .txt encoding detection;
- * standardizeUrduText for corrections; checkTextQuality for the
- * remaining-issues audit on the cleaned text).
+ * Document Cleaner pipeline: extract → language-aware process → audit.
  */
-export async function handleDocumentUpload(input: FormData | File): Promise<PipelineResult> {
+export async function handleDocumentUpload(
+  input: FormData | File,
+  processingLanguage: ProcessingLanguage = "auto"
+): Promise<PipelineResult> {
   try {
     let file: File | null = null;
 
     if (input instanceof FormData) {
       file = (input.get("file") as File) || (input.get("document") as File);
+      const langField = input.get("processingLanguage");
+      if (
+        langField === "auto" ||
+        langField === "ur" ||
+        langField === "en" ||
+        langField === "ar"
+      ) {
+        processingLanguage = langField;
+      }
     } else {
       file = input;
     }
@@ -40,23 +38,27 @@ export async function handleDocumentUpload(input: FormData | File): Promise<Pipe
     }
 
     const originalText = await extractTextFromFile(file);
-    const { output: cleanedText, summary: correctionsApplied } = standardizeUrduText(originalText);
-    const remainingIssues = checkTextQuality(cleanedText);
+    const processed = processText(originalText, processingLanguage);
+    const remainingIssues = checkTextQuality(processed.output, processed.resolvedLanguage);
 
-    const wordCount = cleanedText.trim() ? cleanedText.trim().split(/\s+/).length : 0;
+    const wordCount = processed.output.trim()
+      ? processed.output.trim().split(/\s+/).length
+      : 0;
 
     return {
       success: true,
       originalText,
-      cleanedText,
+      cleanedText: processed.output,
       summary: {
         fileName: file.name,
         fileType: file.name.toLowerCase().endsWith(".docx") ? "DOCX" : "TXT",
         fileSize: formatFileSize(file.size),
-        characterCount: cleanedText.length,
+        characterCount: processed.output.length,
         wordCount,
-        correctionsApplied,
+        correctionsApplied: processed.summary,
         remainingIssues,
+        resolvedLanguage: processed.resolvedLanguage,
+        direction: processed.direction,
       },
     };
   } catch (err: unknown) {

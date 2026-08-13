@@ -9,6 +9,7 @@ import { buildDocxBlob } from "../../document-studio/utils/buildDocxDocument";
 import { plainTextToDocNode } from "../../document-studio/utils/plainTextToDocNode";
 import { useLanguage } from "../../../lib/language-context";
 import { translations } from "../../../lib/translations";
+import type { ProcessingLanguage } from "../../../utils/processing/types";
 
 export default function DocumentCleanerTool() {
   const { language, dir } = useLanguage();
@@ -22,6 +23,7 @@ export default function DocumentCleanerTool() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PipelineResult | null>(null);
   const [activeTab, setActiveTab] = useState<"preview" | "report">("report");
+  const [processingLanguage, setProcessingLanguage] = useState<ProcessingLanguage>("auto");
 
   const handleFileChange = async (selectedFile: File) => {
     setError(null);
@@ -49,8 +51,9 @@ export default function DocumentCleanerTool() {
 
     const formData = new FormData();
     formData.append("file", selectedFile);
+    formData.append("processingLanguage", processingLanguage);
 
-    const pipelineResult = await handleDocumentUpload(formData);
+    const pipelineResult = await handleDocumentUpload(formData, processingLanguage);
     setLoading(false);
 
     if (!pipelineResult.success) {
@@ -70,7 +73,8 @@ export default function DocumentCleanerTool() {
 
   const handleDownloadDocx = async () => {
     if (!result?.cleanedText) return;
-    const blob = await buildDocxBlob(plainTextToDocNode(result.cleanedText), "rtl");
+    const docDir = result.summary?.direction === "ltr" ? "ltr" : "rtl";
+    const blob = await buildDocxBlob(plainTextToDocNode(result.cleanedText), docDir);
     const baseName = (result.summary?.fileName || "document").replace(/\.[^.]+$/, "");
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -85,6 +89,23 @@ export default function DocumentCleanerTool() {
   return (
     <div className="site-container">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
+        <div className={`mb-5 ${naskh}`} dir={dir}>
+          <label htmlFor="cleaner-lang" className="block text-sm font-semibold text-gray-800 mb-2">
+            {ct.languageLabel}
+          </label>
+          <select
+            id="cleaner-lang"
+            value={processingLanguage}
+            onChange={(e) => setProcessingLanguage(e.target.value as ProcessingLanguage)}
+            className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-[15px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30"
+          >
+            <option value="auto">{ct.langAuto}</option>
+            <option value="ur">{ct.langUrdu}</option>
+            <option value="en">{ct.langEnglish}</option>
+            <option value="ar">{ct.langArabic}</option>
+          </select>
+          <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">{ct.languageHint}</p>
+        </div>
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
