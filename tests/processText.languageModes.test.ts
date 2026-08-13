@@ -177,3 +177,61 @@ describe("checkTextQuality — language-aware", () => {
     expect(q.textQuality.mixedScript).toBe(0);
   });
 });
+
+describe("processText — default mode is safe Auto", () => {
+  it("omitted mode is non-destructive Auto for Arabic-script", () => {
+    const r = processText("علي كربلاء");
+    expect(r.resolvedLanguage).toBe("rtl-neutral");
+    expect(r.output).toBe("علي كربلاء");
+  });
+
+  it("standardizeUrduText still explicitly preserves historical Urdu behavior", () => {
+    expect(standardizeUrduText("علي كتاب").output).toBe("علی کتاب");
+  });
+});
+
+describe("Document Cleaner pipeline — mode switching", () => {
+  it("Auto then Urdu produces different outputs for the same text", async () => {
+    const { handleDocumentUpload } = await import("../app/actions/documentAction");
+    const text = "علي كربلاء";
+    const file = new File([text], "t.txt", { type: "text/plain" });
+
+    const autoFd = new FormData();
+    autoFd.append("file", file);
+    autoFd.append("processingLanguage", "auto");
+    const autoResult = await handleDocumentUpload(autoFd, "auto");
+    expect(autoResult.cleanedText).toBe("علي كربلاء");
+    expect(autoResult.summary?.resolvedLanguage).toBe("rtl-neutral");
+
+    const urFd = new FormData();
+    urFd.append("file", file);
+    urFd.append("processingLanguage", "ur");
+    const urResult = await handleDocumentUpload(urFd, "ur");
+    expect(urResult.cleanedText).toBe("علی کربلاء");
+    expect(urResult.summary?.resolvedLanguage).toBe("ur");
+
+    // Switching back to Auto must not leave Urdu output
+    const auto2 = await handleDocumentUpload(autoFd, "auto");
+    expect(auto2.cleanedText).toBe("علي كربلاء");
+    expect(auto2.summary?.resolvedLanguage).toBe("rtl-neutral");
+  });
+
+  it("same file can be processed twice under different modes", async () => {
+    const { handleDocumentUpload } = await import("../app/actions/documentAction");
+    const file = new File(["علي"], "same.txt", { type: "text/plain" });
+    const a = await handleDocumentUpload(file, "auto");
+    const b = await handleDocumentUpload(file, "ur");
+    expect(a.cleanedText).toBe("علي");
+    expect(b.cleanedText).toBe("علی");
+    expect(a.summary?.direction).toBe("rtl");
+    expect(b.summary?.direction).toBe("rtl");
+  });
+
+  it("download direction corresponds to latest mode (English LTR)", async () => {
+    const { handleDocumentUpload } = await import("../app/actions/documentAction");
+    const file = new File(["Hello, world."], "en.txt", { type: "text/plain" });
+    const r = await handleDocumentUpload(file, "en");
+    expect(r.summary?.resolvedLanguage).toBe("en");
+    expect(r.summary?.direction).toBe("ltr");
+  });
+});

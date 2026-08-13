@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { validateFile } from "../../../utils/fileValidation";
 import { handleDocumentUpload } from "../../../actions/documentAction";
 import { PipelineResult } from "../../../types/documentPipeline";
@@ -9,7 +9,19 @@ import { buildDocxBlob } from "../../document-studio/utils/buildDocxDocument";
 import { plainTextToDocNode } from "../../document-studio/utils/plainTextToDocNode";
 import { useLanguage } from "../../../lib/language-context";
 import { translations } from "../../../lib/translations";
-import type { ProcessingLanguage } from "../../../utils/processing/types";
+import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
+
+function selectedModeMatchesResult(
+  selected: ProcessingLanguage,
+  resolved: ResolvedLanguage | undefined
+): boolean {
+  if (!resolved) return false;
+  if (selected === "auto") {
+    // Auto may resolve to en | rtl-neutral (never ur/ar without explicit choice)
+    return resolved === "en" || resolved === "rtl-neutral";
+  }
+  return selected === resolved;
+}
 
 export default function DocumentCleanerTool() {
   const { language, dir } = useLanguage();
@@ -25,44 +37,72 @@ export default function DocumentCleanerTool() {
   const [activeTab, setActiveTab] = useState<"preview" | "report">("report");
   const [processingLanguage, setProcessingLanguage] = useState<ProcessingLanguage>("auto");
 
-  const handleFileChange = async (selectedFile: File) => {
-    setError(null);
-    setResult(null);
+  const runIdRef = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Skip the initial mount effect so we don't process with no file
+  const langInitRef = useRef(true);
 
-    const validation = validateFile(selectedFile);
-    if (!validation.valid) {
-      const code = validation.errorCode;
-      if (code === "unsupported") setError(dz.errorUnsupported);
-      else if (code === "too_large") setError(dz.errorTooLarge);
-      else setError(dz.errorGeneric);
-      return;
-    }
+  const processFile = useCallback(
+    async (selectedFile: File, mode: ProcessingLanguage) => {
+      const runId = ++runIdRef.current;
+      setError(null);
+      setResult(null);
+      setFile(selectedFile);
 
-    setFile(selectedFile);
-    setLoading(true);
+      const validation = validateFile(selectedFile);
+      if (!validation.valid) {
+        const code = validation.errorCode;
+        if (code === "unsupported") setError(dz.errorUnsupported);
+        else if (code === "too_large") setError(dz.errorTooLarge);
+        else setError(dz.errorGeneric);
+        return;
+      }
 
-    setStepMessage("Extracting text from document...");
-    await new Promise((r) => setTimeout(r, 400));
+      setLoading(true);
+      setStepMessage("Extracting text…");
+      await new Promise((r) => setTimeout(r, 200));
+      if (runId !== runIdRef.current) return;
 
-    setStepMessage("Normalizing Unicode & Spacing...");
-    await new Promise((r) => setTimeout(r, 400));
+      setStepMessage("Cleaning with selected language mode…");
+      await new Promise((r) => setTimeout(r, 200));
+      if (runId !== runIdRef.current) return;
 
-    setStepMessage("Running Quality Audit & Generating Qalam Report...");
+      setStepMessage("Running quality audit…");
 
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-    formData.append("processingLanguage", processingLanguage);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("processingLanguage", mode);
 
-    const pipelineResult = await handleDocumentUpload(formData, processingLanguage);
-    setLoading(false);
+      const pipelineResult = await handleDocumentUpload(formData, mode);
+      if (runId !== runIdRef.current) return;
 
-    if (!pipelineResult.success) {
-      setError(dz.errorGeneric);
-      return;
-    }
+      setLoading(false);
+      // Allow the same path to be chosen again
+      if (fileInputRef.current) fileInputRef.current.value = "";
 
-    setResult(pipelineResult);
+      if (!pipelineResult.success) {
+        setError(dz.errorGeneric);
+        return;
+      }
+      setResult(pipelineResult);
+    },
+    [dz.errorGeneric, dz.errorTooLarge, dz.errorUnsupported]
+  );
+
+  const handleFileChange = (selectedFile: File) => {
+    void processFile(selectedFile, processingLanguage);
   };
+
+  // Reprocess when language mode changes if a file is already loaded
+  useEffect(() => {
+    if (langInitRef.current) {
+      langInitRef.current = false;
+      return;
+    }
+    if (!file) return;
+    void processFile(file, processingLanguage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run on language change
+  }, [processingLanguage]);
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -71,11 +111,21 @@ export default function DocumentCleanerTool() {
     }
   };
 
+  const canDownload =
+    !!result?.cleanedText &&
+    !!result.summary &&
+    selectedModeMatchesResult(processingLanguage, result.summary.resolvedLanguage);
+
+  const handleDownloadTxt = () => {
+    if (!canDownload || !result?.cleanedText || !result.summary) return;
+    downloadCleanedText(result.cleanedText, result.summary.fileName);
+  };
+
   const handleDownloadDocx = async () => {
-    if (!result?.cleanedText) return;
-    const docDir = result.summary?.direction === "ltr" ? "ltr" : "rtl";
+    if (!canDownload || !result?.cleanedText || !result.summary) return;
+    const docDir = result.summary.direction === "ltr" ? "ltr" : "rtl";
     const blob = await buildDocxBlob(plainTextToDocNode(result.cleanedText), docDir);
-    const baseName = (result.summary?.fileName || "document").replace(/\.[^.]+$/, "");
+    const baseName = (result.summary.fileName || "document").replace(/\.[^.]+$/, "");
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -84,6 +134,14 @@ export default function DocumentCleanerTool() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const resolvedLabel = (resolved?: ResolvedLanguage) => {
+    if (!resolved) return "";
+    if (resolved === "ur") return ct.processedAsUrdu;
+    if (resolved === "en") return ct.processedAsEnglish;
+    if (resolved === "ar") return ct.processedAsArabic;
+    return ct.processedAsSafeRtl;
   };
 
   return (
@@ -113,6 +171,7 @@ export default function DocumentCleanerTool() {
           dir={dir}
         >
           <input
+            ref={fileInputRef}
             type="file"
             accept=".txt,.docx"
             onChange={(e) => e.target.files && e.target.files[0] && handleFileChange(e.target.files[0])}
@@ -143,7 +202,9 @@ export default function DocumentCleanerTool() {
           <div className="py-8 flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-700 mb-3"></div>
             <p className={`text-xs font-bold text-amber-900 mb-1 ${naskh}`}>{dz.processing}</p>
-            <p className="text-[11px] text-amber-700 font-mono" dir="ltr">{stepMessage}</p>
+            <p className="text-[11px] text-amber-700 font-mono" dir="ltr">
+              {stepMessage}
+            </p>
           </div>
         )}
 
@@ -152,8 +213,16 @@ export default function DocumentCleanerTool() {
             {ct.rtlNeutralStatus}
           </div>
         )}
-        {result && result.summary && (
+
+        {result && result.summary && !loading && (
           <div className="text-left" dir="ltr">
+            <div
+              className={`mb-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 ${naskh}`}
+              dir={dir}
+            >
+              {resolvedLabel(result.summary.resolvedLanguage)}
+            </div>
+
             <div className="flex border-b border-amber-200 mb-4">
               <button
                 onClick={() => setActiveTab("report")}
@@ -190,7 +259,7 @@ export default function DocumentCleanerTool() {
                 </div>
 
                 <div className="border-b border-amber-200 pb-3">
-                  <span className="font-bold block text-sm text-green-800 mb-2">Corrections Applied (Standardizer v1.0)</span>
+                  <span className="font-bold block text-sm text-green-800 mb-2">Corrections Applied</span>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px] text-green-900">
                     <div>• Total: {result.summary.correctionsApplied.totalCorrections}</div>
                     <div>• Normalizations: {result.summary.correctionsApplied.arabicNormalizations}</div>
@@ -200,10 +269,10 @@ export default function DocumentCleanerTool() {
                 </div>
 
                 <div>
-                  <span className="font-bold block text-sm text-amber-900 mb-2">Remaining Quality Issues (Audit v0.1)</span>
+                  <span className="font-bold block text-sm text-amber-900 mb-2">Remaining Quality Issues</span>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
                     <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">
-                      <span className="font-bold block mb-1">ٹائپوگرافی:</span>
+                      <span className="font-bold block mb-1">Typography:</span>
                       <div>• Multiple Spaces: {result.summary.remainingIssues.typography.multipleSpaces}</div>
                       <div>• Empty Lines: {result.summary.remainingIssues.typography.emptyLines}</div>
                       <div>• Long Paragraphs: {result.summary.remainingIssues.typography.longParagraphs}</div>
@@ -223,7 +292,10 @@ export default function DocumentCleanerTool() {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="bg-gray-50 border border-gray-300 p-4 rounded-xl text-xs font-mono text-gray-800 max-h-[300px] overflow-y-auto text-right" dir="rtl">
+                <div
+                  className="bg-gray-50 border border-gray-300 p-4 rounded-xl text-xs font-mono text-gray-800 max-h-[300px] overflow-y-auto text-right"
+                  dir="rtl"
+                >
                   {result.cleanedText}
                 </div>
               </div>
@@ -231,8 +303,14 @@ export default function DocumentCleanerTool() {
 
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <button
-                onClick={() => result.cleanedText && downloadCleanedText(result.cleanedText, result.summary!.fileName)}
-                className={`bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-[15px] flex items-center gap-2 ${naskh}`}
+                type="button"
+                onClick={handleDownloadTxt}
+                disabled={!canDownload}
+                className={`font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-[15px] flex items-center gap-2 ${naskh} ${
+                  canDownload
+                    ? "bg-amber-600 hover:bg-amber-700 text-white"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
               >
                 <span>{ct.downloadTxt}</span>
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,8 +319,14 @@ export default function DocumentCleanerTool() {
               </button>
               {result.summary.fileType === "DOCX" && (
                 <button
+                  type="button"
                   onClick={handleDownloadDocx}
-                  className={`bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-[15px] flex items-center gap-2 ${naskh}`}
+                  disabled={!canDownload}
+                  className={`font-semibold px-6 py-2.5 rounded-lg shadow-md transition-all text-[15px] flex items-center gap-2 ${naskh} ${
+                    canDownload
+                      ? "bg-amber-600 hover:bg-amber-700 text-white"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
                 >
                   <span>{ct.downloadDocx}</span>
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,6 +335,11 @@ export default function DocumentCleanerTool() {
                 </button>
               )}
             </div>
+            {!canDownload && (
+              <p className={`mt-2 text-center text-xs text-amber-800 ${naskh}`} dir={dir}>
+                {ct.staleResultHint}
+              </p>
+            )}
           </div>
         )}
       </div>

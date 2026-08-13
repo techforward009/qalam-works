@@ -19,7 +19,7 @@ function mergeMaps(...maps: Map<string, number>[]): Map<string, number> {
  */
 export function processText(
   input: string,
-  mode: ProcessingLanguage = "ur"
+  mode: ProcessingLanguage = "auto"
 ): ProcessTextResult {
   if (typeof input !== "string") {
     return {
