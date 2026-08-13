@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import { useLanguage } from "../../../lib/language-context";
 import {
   calculateInvoice,
@@ -33,6 +34,7 @@ const DEFAULT_INVOICE: Invoice = {
 };
 
 export default function InvoiceGeneratorTool() {
+  useEffect(() => { trackToolOpenOnce("invoice_generator"); }, []);
   const { language } = useLanguage();
   const isUr = language === "ur";
   const naskh = isUr ? "font-naskh" : "";
@@ -252,7 +254,7 @@ export default function InvoiceGeneratorTool() {
           </div>
 
           <button
-            onClick={() => window.print()}
+            onClick={() => { trackEvent("tool_download", { tool: "invoice_generator", export_format: "pdf", success: true }); window.print(); }}
             className={`w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 rounded-lg shadow-md transition-all text-[15px] ${naskh}`}
           >
             {L.printSave}

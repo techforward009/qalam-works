@@ -9,6 +9,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
+import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import { displayDirForPaste } from "../../../utils/processing/cleanTextPipeline";
 import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
 import { buildDocumentStats, type DocumentStats } from "../utils/buildDocumentStats";
@@ -263,6 +264,10 @@ export default function DocumentStudioEditor() {
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [processingLanguage, setProcessingLanguage] = useState<ProcessingLanguage>("auto");
   const [lastResolved, setLastResolved] = useState<ResolvedLanguage | null>(null);
+
+  useEffect(() => {
+    trackToolOpenOnce("document_studio");
+  }, []);
   // Publishing Preset Foundation — Phase 1 (2026-08-09). Persisted
   // selection only; does not currently affect export or editor
   // formatting (see publishingPresets.ts's own comment).
@@ -558,6 +563,7 @@ export default function DocumentStudioEditor() {
     if (!editor) return;
     const result = normalizeDocumentNodes(editor.getJSON() as DocNode, processingLanguage);
     setLastResolved(result.report.resolvedLanguage);
+    trackEvent("tool_process", { tool: "document_studio", mode: processingLanguage, resolved_mode: result.report.resolvedLanguage, success: true });
     // Align editor direction with resolved processing language
     setDir(result.report.direction);
     if (!result.changed) {
@@ -571,6 +577,7 @@ export default function DocumentStudioEditor() {
 
   const handleConfirmStandardize = () => {
     if (!editor || !preview) return;
+    trackEvent("preview_confirm", { tool: "document_studio", mode: processingLanguage, success: true });
 
     try {
       const { state, view } = editor;
@@ -594,6 +601,7 @@ export default function DocumentStudioEditor() {
   };
 
   const handleCancelStandardize = () => {
+    trackEvent("preview_cancel", { tool: "document_studio", mode: processingLanguage });
     setPreview(null);
   };
 
@@ -811,6 +819,7 @@ export default function DocumentStudioEditor() {
   };
 
   const handleDownload = () => {
+    trackEvent("tool_download", { tool: "document_studio", export_format: "txt", mode: processingLanguage, success: true });
     if (!editor) return;
     const text = editorToPlainText(editor, dir);
     // A leading BOM (U+FEFF) makes apps that guess a text file's encoding —
@@ -835,6 +844,7 @@ export default function DocumentStudioEditor() {
   // Async — unlike handleDownload above — because buildDocxBlob is async
   // (docx's Packer.toBlob() genuinely is; see PHASE-3C-DOCX-SPEC.md §3).
   const handleDownloadDocx = async () => {
+    trackEvent("tool_download", { tool: "document_studio", export_format: "docx", mode: processingLanguage, success: true });
     if (!editor) return;
     try {
       const blob = await buildDocxBlob(editor.getJSON() as DocNode, dir);
@@ -858,6 +868,7 @@ export default function DocumentStudioEditor() {
   // builds the actual HTML and renders it, keeping the request small and
   // the server's own template in full control of what markup ever exists.
   const handleDownloadPdf = async () => {
+    trackEvent("tool_download", { tool: "document_studio", export_format: "pdf", mode: processingLanguage, success: true });
     if (!editor) return;
     setPdfError(null);
     setPdfSummary(null);
@@ -1184,7 +1195,11 @@ export default function DocumentStudioEditor() {
             <select
               id="studio-proc-lang"
               value={processingLanguage}
-              onChange={(e) => setProcessingLanguage(e.target.value as ProcessingLanguage)}
+              onChange={(e) => {
+              const next = e.target.value as ProcessingLanguage;
+              setProcessingLanguage(next);
+              trackEvent("tool_mode_change", { tool: "document_studio", mode: next });
+            }}
               className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30"
             >
               <option value="auto">{isUr ? "آٹو" : "Auto"}</option>

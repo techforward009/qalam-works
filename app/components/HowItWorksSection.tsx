@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
+import { trackEvent, type ToolId } from "../lib/analytics";
 
 const TOOL_HREFS = [
   "/tools/document-studio",
@@ -11,6 +12,15 @@ const TOOL_HREFS = [
   "/tools/unicode-standardizer",
   "/tools/whatsapp-rtl-formatter",
   "/tools/invoice-generator",
+] as const;
+
+const TOOL_IDS: ToolId[] = [
+  "document_studio",
+  "document_cleaner",
+  "quality_audit",
+  "urdu_unicode_standardizer",
+  "whatsapp_rtl_formatter",
+  "invoice_generator",
 ];
 
 export default function HowItWorksSection() {
@@ -30,6 +40,13 @@ export default function HowItWorksSection() {
             <Link
               key={tool.name}
               href={TOOL_HREFS[i]}
+              onClick={() =>
+                trackEvent("nav_click", {
+                  tool: "home",
+                  target_tool: TOOL_IDS[i],
+                  nav_source: "homepage_card",
+                })
+              }
               className="bg-white hover:bg-[#F1ECE0] hover:shadow-md p-7 rounded-2xl border border-[#151B2E]/[0.06] transition-all block"
             >
               <h3 className={`text-[19px] font-bold text-[#1A3A2A] mb-2 ${naskh}`}>{tool.name}</h3>

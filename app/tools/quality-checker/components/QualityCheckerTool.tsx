@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useLanguage } from "../../../lib/language-context";
 import { checkTextQuality, type QualityReport } from "../../../utils/quality/checkTextQuality";
@@ -9,6 +9,7 @@ import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/proces
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import { displayDirForPaste } from "../../../utils/processing/cleanTextPipeline";
+import { trackEvent, trackToolOpenOnce, toCountBucket } from "../../../lib/analytics";
 
 const SAMPLE_UR =
   "یہ  کتاب بہت اچھی ہے, مگر لوگ لوگ اسے نہيں پڑھتے کيونکہ وقت نہيں ملتا?";
@@ -26,6 +27,10 @@ export default function QualityCheckerTool() {
   const [resolved, setResolved] = useState<ResolvedLanguage | null>(null);
   const [hasRun, setHasRun] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    trackToolOpenOnce("quality_audit");
+  }, []);
 
   const hasInput = input.trim().length > 0;
   const displayDir = displayDirForPaste(processingLanguage, input);
@@ -57,8 +62,16 @@ export default function QualityCheckerTool() {
     const mode = processingLanguage;
     const r = resolveProcessingLanguage(mode, input);
     setResolved(r);
-    setReport(checkTextQuality(input, mode));
+    const rep = checkTextQuality(input, mode);
+    setReport(rep);
     setHasRun(true);
+    trackEvent("tool_process", {
+      tool: "quality_audit",
+      mode,
+      resolved_mode: r,
+      success: true,
+      count_bucket: toCountBucket(rep.totalIssues),
+    });
   };
 
   const resetAll = () => {
@@ -94,7 +107,9 @@ export default function QualityCheckerTool() {
             id="qa-lang"
             value={processingLanguage}
             onChange={(e) => {
-              setProcessingLanguage(e.target.value as ProcessingLanguage);
+              const next = e.target.value as ProcessingLanguage;
+              setProcessingLanguage(next);
+              trackEvent("tool_mode_change", { tool: "quality_audit", mode: next });
               setReport(null);
               setResolved(null);
               setHasRun(false);
@@ -211,11 +226,11 @@ export default function QualityCheckerTool() {
               {isUr ? (
                 <>
                   مسائل ٹھیک کرنے کے لیے{" "}
-                  <Link href="/tools/document-cleaner" className="text-amber-800 font-semibold underline">
+                  <Link href="/tools/document-cleaner" onClick={() => trackEvent("nav_click", { tool: "quality_audit", target_tool: "document_cleaner", nav_source: "cross_link" })} className="text-amber-800 font-semibold underline">
                     ڈاکومنٹ کلینر
                   </Link>{" "}
                   یا{" "}
-                  <Link href="/tools/document-studio" className="text-amber-800 font-semibold underline">
+                  <Link href="/tools/document-studio" onClick={() => trackEvent("nav_click", { tool: "quality_audit", target_tool: "document_studio", nav_source: "cross_link" })} className="text-amber-800 font-semibold underline">
                     ڈاکومنٹ اسٹوڈیو
                   </Link>{" "}
                   استعمال کریں۔

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { formatForWhatsAppRTL } from "../../../utils/whatsappRtlFormatter";
+import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 
 export type FormatterLanguage = "en" | "ur";
 
@@ -75,6 +76,7 @@ export default function WhatsAppRtlFormatter({
   className = "",
   showPreview = true,
 }: WhatsAppRtlFormatterProps) {
+  useEffect(() => { trackToolOpenOnce("whatsapp_rtl_formatter"); }, []);
   const t = LABELS[language] ?? LABELS.en;
   const isUrdu = language === "ur";
   const urduFont = isUrdu ? "font-nastaliq" : "";
@@ -90,7 +92,9 @@ export default function WhatsAppRtlFormatter({
     setCopied(false);
     try {
       setOutput(formatForWhatsAppRTL(input));
+      trackEvent("tool_process", { tool: "whatsapp_rtl_formatter", success: true });
     } catch (e) {
+      trackEvent("tool_error", { tool: "whatsapp_rtl_formatter", error_code: "processing_failed", success: false });
       setError(t.errorFormat);
       console.error(e);
     }
@@ -102,6 +106,7 @@ export default function WhatsAppRtlFormatter({
     try {
       // Copy exact formatter output INCLUDING invisible bidi controls
       await navigator.clipboard.writeText(output);
+      trackEvent("tool_copy", { tool: "whatsapp_rtl_formatter", export_format: "copy", success: true });
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch (e) {

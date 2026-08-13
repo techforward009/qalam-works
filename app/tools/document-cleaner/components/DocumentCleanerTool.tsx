@@ -10,6 +10,7 @@ import { plainTextToDocNode } from "../../document-studio/utils/plainTextToDocNo
 import { useLanguage } from "../../../lib/language-context";
 import { translations } from "../../../lib/translations";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
+import { trackEvent, trackToolOpenOnce, toCountBucket } from "../../../lib/analytics";
 import {
   cleanTextPipeline,
   displayDirForPaste,
@@ -57,6 +58,10 @@ export default function DocumentCleanerTool() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const langInitRef = useRef(true);
 
+  useEffect(() => {
+    trackToolOpenOnce("document_cleaner");
+  }, []);
+
   const processFile = useCallback(
     async (selectedFile: File, mode: ProcessingLanguage) => {
       const runId = ++runIdRef.current;
@@ -90,9 +95,23 @@ export default function DocumentCleanerTool() {
 
       if (!pipelineResult.success) {
         setFileError(dz.errorGeneric);
+        trackEvent("tool_error", {
+          tool: "document_cleaner",
+          mode,
+          error_code: "processing_failed",
+          success: false,
+        });
         return;
       }
       setFileResult(pipelineResult);
+      trackEvent("tool_process", {
+        tool: "document_cleaner",
+        mode,
+        resolved_mode: pipelineResult.summary?.resolvedLanguage,
+        input_method: "upload",
+        success: true,
+        count_bucket: toCountBucket(pipelineResult.cleanedText?.length || 0),
+      });
     },
     [dz.errorGeneric, dz.errorTooLarge, dz.errorUnsupported]
   );
@@ -133,6 +152,14 @@ export default function DocumentCleanerTool() {
     }
     setPasteResult(r);
     setPasteStale(false);
+    trackEvent("tool_process", {
+      tool: "document_cleaner",
+      mode: processingLanguage,
+      resolved_mode: r.resolvedLanguage,
+      input_method: "paste",
+      success: true,
+      count_bucket: toCountBucket(r.cleanedText.length),
+    });
   };
 
   const handleClearPaste = () => {
@@ -147,6 +174,7 @@ export default function DocumentCleanerTool() {
     if (!pasteResult || pasteStale) return;
     try {
       await navigator.clipboard.writeText(pasteResult.cleanedText);
+      trackEvent("tool_copy", { tool: "document_cleaner", export_format: "copy", mode: processingLanguage, success: true });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -175,10 +203,22 @@ export default function DocumentCleanerTool() {
 
   const handleDownloadTxt = (text: string, name: string) => {
     downloadCleanedText(text, name);
+    trackEvent("tool_download", {
+      tool: "document_cleaner",
+      export_format: "txt",
+      mode: processingLanguage,
+      success: true,
+    });
   };
 
   const handleDownloadDocx = async (text: string, name: string, direction: "rtl" | "ltr") => {
     const blob = await buildDocxBlob(plainTextToDocNode(text), direction);
+    trackEvent("tool_download", {
+      tool: "document_cleaner",
+      export_format: "docx",
+      mode: processingLanguage,
+      success: true,
+    });
     const baseName = name.replace(/\.[^.]+$/, "") || "qalam-cleaned";
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -260,7 +300,11 @@ export default function DocumentCleanerTool() {
           <select
             id="cleaner-lang"
             value={processingLanguage}
-            onChange={(e) => setProcessingLanguage(e.target.value as ProcessingLanguage)}
+            onChange={(e) => {
+              const next = e.target.value as ProcessingLanguage;
+              setProcessingLanguage(next);
+              trackEvent("tool_mode_change", { tool: "document_cleaner", mode: next });
+            }}
             className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-[15px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30"
           >
             <option value="auto">{ct.langAuto}</option>

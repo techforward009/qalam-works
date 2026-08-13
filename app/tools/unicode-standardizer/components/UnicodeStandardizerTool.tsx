@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "../../../lib/language-context";
+import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import { standardizeUrduText } from "../../../utils/unicode/standardizeUrduText";
 
 const SAMPLE_TEXT =
@@ -14,6 +15,7 @@ export default function UnicodeStandardizerTool() {
   const [copied, setCopied] = useState(false);
 
   const { output, badges, summary, corrections } = standardizeUrduText(input);
+    trackEvent("tool_process", { tool: "urdu_unicode_standardizer", mode: "ur", success: true });
   const hasInput = input.trim().length > 0;
   const alreadyStandardized = hasInput && summary.totalCorrections === 0;
 

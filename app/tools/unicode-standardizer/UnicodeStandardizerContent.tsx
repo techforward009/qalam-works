@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "../../lib/language-context";
 import { translations } from "../../lib/translations";
 import UnicodeStandardizerTool from "./components/UnicodeStandardizerTool";
+import { trackEvent } from "../../lib/analytics";
 
 export default function UnicodeStandardizerContent() {
   const { language, dir } = useLanguage();
@@ -31,7 +32,7 @@ export default function UnicodeStandardizerContent() {
             {isUr ? (
               <>
                 <Link
-                  href="/tools/document-cleaner"
+                  href="/tools/document-cleaner" onClick={() => trackEvent("nav_click", { tool: "urdu_unicode_standardizer", target_tool: "document_cleaner", nav_source: "cross_link" })}
                   className="font-semibold text-[#1A3A2A] underline decoration-[#B8935A]/70 underline-offset-2 hover:text-[#B8935A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 rounded-sm"
                 >
                   ڈاکومنٹ کلینر
@@ -42,7 +43,7 @@ export default function UnicodeStandardizerContent() {
               <>
                 Use{" "}
                 <Link
-                  href="/tools/document-cleaner"
+                  href="/tools/document-cleaner" onClick={() => trackEvent("nav_click", { tool: "urdu_unicode_standardizer", target_tool: "document_cleaner", nav_source: "cross_link" })}
                   className="font-semibold text-[#1A3A2A] underline decoration-[#B8935A]/70 underline-offset-2 hover:text-[#B8935A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 rounded-sm"
                 >
                   Document Cleaner
