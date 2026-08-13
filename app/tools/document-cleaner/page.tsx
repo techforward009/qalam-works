@@ -2,12 +2,10 @@ import type { Metadata } from "next";
 import DocumentCleanerContent from "./DocumentCleanerContent";
 
 export const metadata: Metadata = {
-  title: "Document Cleaner | Qalam Works",
+  title: "Document Cleaner — Urdu, English & Arabic Text Cleanup | Qalam Works",
   description:
-    "Clean Urdu, English, or Arabic text from a file or by pasting. Language-aware spacing and Unicode cleanup runs in your browser.",
-  alternates: {
-    canonical: "/tools/document-cleaner",
-  },
+    "Paste text or upload .txt/.docx for language-aware cleanup: Urdu normalization, English-safe spacing, Arabic orthography preservation, and safe Auto mode. Runs in your browser.",
+  alternates: { canonical: "/tools/document-cleaner" },
 };
 
 export default function DocumentCleanerPage() {

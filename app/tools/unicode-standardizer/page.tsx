@@ -4,10 +4,8 @@ import UnicodeStandardizerContent from "./UnicodeStandardizerContent";
 export const metadata: Metadata = {
   title: "Urdu Unicode Standardizer | Qalam Works",
   description:
-    "Free tool to normalize Urdu text: fix mixed character variants (ي/ی, ك/ک), clean up spacing, and correct punctuation for publication-ready Unicode text.",
-  alternates: {
-    canonical: "/tools/unicode-standardizer",
-  },
+    "Normalize Urdu letter forms (Arabic yeh→Urdu yeh, Arabic kaf→Urdu kaf), spacing, and punctuation. Urdu-specific — for Arabic or English cleanup use Document Cleaner.",
+  alternates: { canonical: "/tools/unicode-standardizer" },
 };
 
 export default function UnicodeStandardizerPage() {

@@ -19,8 +19,8 @@ export const translations = {
       documentStudio: "Document Studio",
       documentCleaner: "Document Cleaner",
       qualityChecker: "Quality Audit",
-      unicodeStandardizer: "Unicode Standardizer",
-      invoiceStudio: "Invoice Studio",
+      unicodeStandardizer: "Urdu Unicode Standardizer",
+      invoiceStudio: "Invoice Generator",
       whatsappRtlFormatter: "WhatsApp RTL Formatter",
       moreTools: "More Tools",
       services: "Services",
@@ -80,23 +80,23 @@ export const translations = {
       tools: [
         {
           name: "Document Studio",
-          body: "Write, standardize, and export — all in one place, with live quality feedback as you type.",
+          body: "Write, edit, clean, review, and export in one workspace — with language-aware processing.",
+        },
+        {
+          name: "Document Cleaner",
+          body: "Paste or upload text for quick language-aware cleanup (Urdu, English, Arabic, or safe Auto).",
         },
         {
           name: "Quality Audit",
-          body: "Catch every inconsistency before it reaches print, in a single pass.",
+          body: "Inspect spacing, punctuation, and script issues without changing your text.",
         },
         {
-          name: "Unicode Standardizer",
-          body: "Fix mixed character forms across a whole document in one click.",
-        },
-        {
-          name: "Terminology Intelligence",
-          body: "Keep every term consistent, document-wide — automatically.",
+          name: "Urdu Unicode Standardizer",
+          body: "Normalize Urdu letter forms, spacing, and punctuation in plain text.",
         },
         {
           name: "WhatsApp RTL Formatter",
-          body: "Fix mixed Urdu, English, numbers and lists for cleaner WhatsApp copy-paste.",
+          body: "Prepare mixed Urdu/Arabic + English text for stable WhatsApp direction.",
         },
         {
           name: "Invoice Generator",
@@ -255,13 +255,13 @@ export const translations = {
       },
     },
     qualityTool: {
-      title: "Publication Quality Checker",
-      description: "Paste your Urdu text — or upload a .txt/.docx file — to audit it for spacing, punctuation, and text-quality issues before publication.",
+      title: "Quality Audit",
+      description: "Inspect spacing, punctuation, and script observations without changing your text. Choose Urdu, English, Arabic, or safe Auto mode.",
       faqHeading: "Frequently Asked Questions",
       faqs: [
-        { question: "What does this tool do?", answer: "It audits your text before publication — catching extra spacing, punctuation errors, repeated words, and unnecessary script mixing. It only flags issues, it never changes your text automatically." },
-        { question: "Does it fix the text automatically?", answer: "No, this is an audit only. You can run the Unicode Standardizer separately to see a before/after comparison." },
-        { question: "Is my text stored anywhere?", answer: "No. Processing happens entirely in your browser — your text is never sent to a server." },
+        { question: "What does this tool do?", answer: "It audits text for spacing, punctuation, repeated words, and script observations. It never changes your text automatically." },
+        { question: "Does it fix the text automatically?", answer: "No — this is inspection only. Use Document Cleaner or Document Studio to apply language-aware cleanup." },
+        { question: "Is my text stored anywhere?", answer: "No. Quality Audit runs in your browser — your text is not uploaded for analysis." },
       ],
     },
     unicodeTool: {
@@ -296,8 +296,8 @@ export const translations = {
       documentStudio: "ڈاکومنٹ اسٹوڈیو",
       documentCleaner: "ڈاکومنٹ کلینر",
       qualityChecker: "کوالٹی آڈٹ",
-      unicodeStandardizer: "یونیکوڈ اسٹینڈرڈائزر",
-      invoiceStudio: "انوائس اسٹوڈیو",
+      unicodeStandardizer: "اردو یونیکوڈ اسٹینڈرڈائزر",
+      invoiceStudio: "انوائس جنریٹر",
       whatsappRtlFormatter: "واٹس ایپ آر ٹی ایل فارمیٹر",
       moreTools: "مزید ٹولز",
       services: "خدمات",
@@ -357,23 +357,23 @@ export const translations = {
       tools: [
         {
           name: "ڈاکومنٹ اسٹوڈیو",
-          body: "لکھیں، معیاری بنائیں، اور export کریں — ایک ہی جگہ پر، لکھتے ہوئے فوری معیار کی رائے کے ساتھ۔",
+          body: "لکھیں، صفائی کریں، جائزہ لیں اور ایک ہی جگہ سے ایکسپورٹ کریں — زبان کے مطابق پروسیسنگ کے ساتھ۔",
+        },
+        {
+          name: "ڈاکومنٹ کلینر",
+          body: "متن پیسٹ کریں یا فائل اپلوڈ کریں — اردو، انگریزی، عربی، یا محفوظ آٹو صفائی۔",
         },
         {
           name: "کوالٹی آڈٹ",
-          body: "اشاعت سے پہلے، ایک ہی مرحلے میں ہر خرابی پکڑیں۔",
+          body: "متن کو بدلے بغیر فاصلہ، رموز اوقاف اور رسم الخط کے مسائل چیک کریں۔",
         },
         {
-          name: "یونیکوڈ اسٹینڈرڈائزر",
-          body: "پوری دستاویز میں مخلوط حروف کی شکلیں ایک کلک میں درست کریں۔",
-        },
-        {
-          name: "اصطلاحی ذہانت",
-          body: "ہر اصطلاح پوری دستاویز میں خودکار طور پر یکساں رکھیں۔",
+          name: "اردو یونیکوڈ اسٹینڈرڈائزر",
+          body: "اردو حروف کی شکلیں، فاصلہ اور رموز اوقاف معیاری بنائیں۔",
         },
         {
           name: "واٹس ایپ آر ٹی ایل فارمیٹر",
-          body: "اردو، انگریزی، نمبروں اور فہرستوں والے متن کو واٹس ایپ کے لیے درست سمت میں تیار کریں۔",
+          body: "مخلوط اردو/عربی اور انگریزی متن کو واٹس ایپ کے لیے مستحکم سمت میں تیار کریں۔",
         },
         {
           name: "انوائس جنریٹر",
@@ -542,7 +542,7 @@ export const translations = {
       ],
     },
     unicodeTool: {
-      title: "یونیکوڈ اسٹینڈرڈائزر",
+      title: "اردو یونیکوڈ اسٹینڈرڈائزر",
       description: "نیچے کوئی بھی اردو متن پیسٹ کریں تاکہ فوری طور پر مخلوط حروف کی شکلیں معیاری بنیں، خالی جگہ درست ہو، اور رموزِ اوقاف ٹھیک ہوں — مفت، اور مکمل طور پر آپ کے براؤزر میں پروسیس ہوتا ہے۔",
       examplesHeading: "مثالیں",
       faqHeading: "اکثر پوچھے گئے سوالات",

@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 
-const TOOL_HREFS = ["/tools/document-studio", "/tools/quality-checker", "/tools/unicode-standardizer", "/tools/document-studio", "/tools/whatsapp-rtl-formatter", "/tools/invoice-generator"];
+const TOOL_HREFS = [
+  "/tools/document-studio",
+  "/tools/document-cleaner",
+  "/tools/quality-checker",
+  "/tools/unicode-standardizer",
+  "/tools/whatsapp-rtl-formatter",
+  "/tools/invoice-generator",
+];
 
 export default function HowItWorksSection() {
   const { language, dir } = useLanguage();

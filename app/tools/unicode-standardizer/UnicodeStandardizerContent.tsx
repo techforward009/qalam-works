@@ -16,6 +16,13 @@ export default function UnicodeStandardizerContent() {
           {t.title}
         </h1>
         <p className={`text-base md:text-lg text-gray-600 max-w-xl mx-auto ${naskh}`}>{t.description}</p>
+        <p className={`text-sm text-gray-500 mt-3 max-w-xl mx-auto ${naskh}`}>
+          {language === "ur" ? (
+            <>عربی یا انگریزی صفائی کے لیے <a href="/tools/document-cleaner" className="text-amber-800 font-semibold underline">ڈاکومنٹ کلینر</a> استعمال کریں۔</>
+          ) : (
+            <>For Arabic or English cleanup, use <a href="/tools/document-cleaner" className="text-amber-800 font-semibold underline">Document Cleaner</a>.</>
+          )}
+        </p>
       </section>
 
       <div className="mb-14">
