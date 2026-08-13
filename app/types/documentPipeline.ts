@@ -14,7 +14,7 @@ export interface PipelineSummary {
   };
   remainingIssues: QualityReport;
   /** Resolved processing language after auto-detect / explicit choice. */
-  resolvedLanguage?: "ur" | "en" | "ar";
+  resolvedLanguage?: "ur" | "en" | "ar" | "rtl-neutral";
   /** Document direction for DOCX export. */
   direction?: "rtl" | "ltr";
 }

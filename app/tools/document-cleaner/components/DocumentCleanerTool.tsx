@@ -147,6 +147,11 @@ export default function DocumentCleanerTool() {
           </div>
         )}
 
+        {result?.summary?.resolvedLanguage === "rtl-neutral" && (
+          <div className={`mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950 ${naskh}`} dir={dir}>
+            {ct.rtlNeutralStatus}
+          </div>
+        )}
         {result && result.summary && (
           <div className="text-left" dir="ltr">
             <div className="flex border-b border-amber-200 mb-4">

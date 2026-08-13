@@ -34,7 +34,7 @@ describe("processText — Arabic mode", () => {
     const r = processText(input, "ar");
     expect(r.output).toContain("ي");
     expect(r.output).toContain("ك");
-    expect(r.output).not.toMatch(/ی/); // must not force Urdu yeh
+    expect(r.output).not.toMatch(/ی/);
     expect(r.output).not.toMatch(/ک/);
     expect(r.resolvedLanguage).toBe("ar");
     expect(r.direction).toBe("rtl");
@@ -62,6 +62,53 @@ describe("processText — Urdu mode regression", () => {
   });
 });
 
+describe("processText — Auto is non-destructive for Arabic-script", () => {
+  it("pure Arabic does not resolve to Urdu", () => {
+    const r = processText("علي عليه السلام، كربلاء", "auto");
+    expect(r.resolvedLanguage).toBe("rtl-neutral");
+    expect(r.direction).toBe("rtl");
+  });
+
+  it("Arabic ي and ك remain unchanged in Auto", () => {
+    const input = "علي كربلاء";
+    const r = processText(input, "auto");
+    expect(r.output).toContain("ي");
+    expect(r.output).toContain("ك");
+    expect(r.output).not.toContain("ی");
+    expect(r.output).not.toContain("ک");
+  });
+
+  it("Persian-like Arabic-script is not destructively normalized in Auto", () => {
+    const input = "علي در تهران زندگي مي‌كند";
+    const r = processText(input, "auto");
+    expect(r.resolvedLanguage).toBe("rtl-neutral");
+    // Must not apply Urdu maps to ي/ك
+    expect(r.output).toContain("ي");
+    expect(r.output).toContain("ك");
+  });
+
+  it("Urdu-looking text in Auto is not destructively normalized", () => {
+    // Without explicit Urdu, Auto must not rewrite orthography
+    const r = processText("علي كتاب", "auto");
+    expect(r.resolvedLanguage).toBe("rtl-neutral");
+    expect(r.output).toBe("علي كتاب");
+  });
+
+  it("English Auto remains English", () => {
+    const r = processText("Hello world, this is English only.", "auto");
+    expect(r.resolvedLanguage).toBe("en");
+    expect(r.direction).toBe("ltr");
+    expect(r.output).toContain(",");
+    expect(r.output).not.toContain("،");
+  });
+
+  it("rtl-neutral DOCX direction is RTL", () => {
+    const r = processText("نص عربي", "auto");
+    expect(r.resolvedLanguage).toBe("rtl-neutral");
+    expect(r.direction).toBe("rtl");
+  });
+});
+
 describe("processText — mixed content", () => {
   it("Urdu mode keeps Latin words intact", () => {
     const input = "یہ Qalam Works کا professional tool ہے۔";
@@ -82,14 +129,14 @@ describe("detectProcessingLanguage", () => {
     expect(detectProcessingLanguage("Hello world, this is English only.")).toBe("en");
   });
 
-  it("does not auto-pick ar for Arabic-script", () => {
-    // Conservative: Arabic-script → ur product default; user must opt into ar
-    expect(detectProcessingLanguage("علي عليه السلام")).toBe("ur");
+  it("Arabic-script resolves to rtl-neutral not ur", () => {
+    expect(detectProcessingLanguage("علي عليه السلام")).toBe("rtl-neutral");
   });
 
   it("explicit mode overrides auto", () => {
     expect(resolveProcessingLanguage("ar", "علي")).toBe("ar");
     expect(resolveProcessingLanguage("en", "علي")).toBe("en");
+    expect(resolveProcessingLanguage("ur", "علي")).toBe("ur");
   });
 });
 
@@ -110,6 +157,11 @@ describe("checkTextQuality — language-aware", () => {
     expect(q.textQuality.mixedUrduArabicForms).toBe(0);
   });
 
+  it("rtl-neutral quality does not flag valid Arabic forms", () => {
+    const q = checkTextQuality("علي عليه السلام، كربلاء", "auto");
+    expect(q.textQuality.mixedUrduArabicForms).toBe(0);
+  });
+
   it("Urdu mode still flags Arabic forms", () => {
     const q = checkTextQuality("علي كتاب", "ur");
     expect(q.textQuality.mixedUrduArabicForms).toBeGreaterThan(0);
@@ -118,5 +170,10 @@ describe("checkTextQuality — language-aware", () => {
   it("intentional mixed Urdu+English still countable in ur mode but not pure English", () => {
     const q = checkTextQuality("یہ Qalam Works کا tool ہے۔", "ur");
     expect(q.textQuality.mixedScript).toBeGreaterThan(0);
+  });
+
+  it("rtl-neutral does not treat Latin as mixedScript defect", () => {
+    const q = checkTextQuality("هذا Qalam tool", "auto");
+    expect(q.textQuality.mixedScript).toBe(0);
   });
 });

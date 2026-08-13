@@ -205,12 +205,12 @@ function checkScriptSensitive(
     }
   }
 
-  // mixedScript: Latin runs ONLY when Arabic-script is also present.
-  // Pure English must not be flagged as "mixed script".
-  // In English mode, never flag. In Arabic mode, Latin is informational (still counted for mixed docs).
+  // mixedScript: only in explicit Urdu mode, and only when Arabic-script
+  // is also present. Pure English, Arabic mode, and rtl-neutral never
+  // treat Latin as a publication defect (intentional mixed content).
   const latinMatches = text.match(LATIN_LETTERS_REGEX);
   let mixedScript = 0;
-  if (mode !== "en" && hasArabicScript && latinMatches) {
+  if (mode === "ur" && hasArabicScript && latinMatches) {
     mixedScript = latinMatches.length;
   }
 
@@ -226,9 +226,14 @@ function checkScriptSensitive(
 
 export function checkTextQuality(
   input: string,
-  mode: ProcessingLanguage = "ur"
+  mode: ProcessingLanguage | ResolvedLanguage = "ur"
 ): QualityReport {
-  const resolved = resolveProcessingLanguage(mode, input);
+  // Accept either explicit ProcessingLanguage or an already-resolved mode
+  // (e.g. "rtl-neutral" from processText).
+  const resolved: ResolvedLanguage =
+    mode === "ur" || mode === "en" || mode === "ar" || mode === "rtl-neutral"
+      ? mode
+      : resolveProcessingLanguage(mode, input);
   const universal = checkUniversal(input);
 
   const textWithoutProtected = input.replace(PRESERVE_MARKER_REGEX, " ");

@@ -56,7 +56,7 @@ export function processText(
     punctuationFixes = e.punctuationFixes;
     corrections = mergeMaps(n.corrections, e.corrections);
   } else {
-    // Arabic: neutral + Arabic-safe spacing only — never Urdu letter maps
+    // "ar" and "rtl-neutral": neutral + Arabic-safe spacing only — never Urdu letter maps
     const n = neutralCleanup(input);
     const a = arabicSafeCleanup(n.text);
     output = a.text;
@@ -75,6 +75,7 @@ export function processText(
     if (punctuationFixes > 0) badges.push("✓ Punctuation Corrected");
     if (resolved === "ur") badges.push("✓ RTL Optimized");
     else if (resolved === "en") badges.push("✓ English-safe cleanup");
+    else if (resolved === "rtl-neutral") badges.push("✓ Safe RTL cleanup (no language-specific maps)");
     else badges.push("✓ Arabic-safe cleanup");
   }
 

@@ -6,20 +6,13 @@ const LATIN_LETTER = /[A-Za-z]/;
 /**
  * Conservative local script detection — no network, no AI.
  *
- * LIMITATIONS (documented intentionally):
+ * LIMITATIONS:
  * - Unicode Arabic block is shared by Urdu, Arabic, Persian, etc.
- * - We NEVER auto-select "ur" vs "ar" from script alone.
- * - Arabic-script-only text defaults to "ur" only when the user chose
- *   Auto and the product’s historical default is Urdu-first — BUT
- *   destructive Urdu letter maps are only applied when resolved === "ur".
- *   For pure Arabic-script with Auto we still resolve to "ur" for
- *   backward-compatible Cleaner defaults; users who need Arabic
- *   preservation must pick Arabic explicitly (or wrap classical quotes
- *   in {{ }} under Urdu mode).
- * - Predominantly Latin → "en".
- * - Mixed Latin + Arabic-script → "ur" (Urdu+English is the common
- *   intentional mix on this product); English letter/punct maps are not
- *   applied to the Arabic-script portions via letter maps only in ur mode.
+ * - We NEVER auto-select "ur" or "ar" from script alone.
+ * - Arabic-script (or mixed Latin + Arabic-script) with uncertain
+ *   language → "rtl-neutral" (safe spacing only, no Urdu orthography maps).
+ * - Predominantly / pure Latin → "en".
+ * - Explicit user choice always overrides this function.
  */
 export function detectProcessingLanguage(text: string): ResolvedLanguage {
   const sample = text.slice(0, 8000);
@@ -30,12 +23,18 @@ export function detectProcessingLanguage(text: string): ResolvedLanguage {
     else if (LATIN_LETTER.test(ch)) latin++;
   }
   const total = arabic + latin;
-  if (total === 0) return "en"; // digits/punct only — treat as neutral English-safe
+  if (total === 0) return "en"; // digits/punct only — English-safe neutral path
+
   const latinRatio = latin / total;
-  const arabicRatio = arabic / total;
-  if (latinRatio >= 0.85 && arabic === 0) return "en";
-  if (latinRatio >= 0.9) return "en";
-  if (arabicRatio >= 0.15) return "ur"; // Arabic-script present → Urdu-first product default
+
+  // Obvious Latin-only or overwhelmingly Latin with no Arabic script
+  if (arabic === 0) return "en";
+  if (latinRatio >= 0.95 && arabic < 3) return "en";
+
+  // Any meaningful Arabic-script presence without explicit language choice
+  // → non-destructive RTL path (never assume Urdu)
+  if (arabic > 0) return "rtl-neutral";
+
   return "en";
 }
 
