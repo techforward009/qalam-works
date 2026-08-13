@@ -1,4 +1,5 @@
 import { checkTextQuality, type QualityReport } from "../../../utils/quality/checkTextQuality";
+import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { getBlockTexts, type DocNode, type DocumentAnalysisContext } from "./extractPlainText";
 
 export interface QualityIssueCounts {
@@ -221,7 +222,7 @@ function computeReadiness(counts: QualityIssueCounts): PublishingReadiness {
 // countLongParagraphs/countEmptyParagraphs). When no context is given,
 // falls back to computing everything internally exactly as before — no
 // breaking change for existing (doc)-only callers.
-export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysisContext): QualityAuditReport {
+export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysisContext, mode: ProcessingLanguage = "ur"): QualityAuditReport {
   const blocks = context?.blocks ?? getBlockTexts(doc);
   const input = context?.joinedText ?? blocks.join("\n");
 
@@ -229,7 +230,7 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
     return createEmptyAuditReport();
   }
 
-  const report = checkTextQuality(input);
+  const report = checkTextQuality(input, mode);
   const counts = toCounts(
     report,
     countLongParagraphs(doc, blocks),

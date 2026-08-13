@@ -3,25 +3,21 @@
 // what changed. Never mutates the document that's passed in, and never
 // touches node type/marks/attrs — only the `text` field of `text` nodes.
 //
-// NOTE (for whoever picks up 3B.2): standardizeUrduText() runs its whitespace
-// cleanup (trim + collapse repeated spaces) independently on EACH text node.
-// For a paragraph that's a single text node this is exactly right. For a
-// paragraph split into several inline text nodes by marks — e.g. plain
-// "hello " followed by a bold "world" — trimming the first node's trailing
-// space could visually join them ("helloworld"). None of the current
-// Document Studio content produces that pattern yet, but a node-boundary-
-// aware whitespace pass (only trim at the very start/end of a block, not at
-// every inline mark boundary) would be a good hardening step before wiring
-// this into a visible "Standardize Document" button.
+// Language-aware: uses processText(mode) so Studio shares Document Cleaner's
+// safety contract (auto → rtl-neutral, never silent Urdu maps).
 
-import { standardizeUrduText } from "../../../utils/unicode/standardizeUrduText";
+import { processText } from "../../../utils/processing/processText";
+import type { ProcessingLanguage, ResolvedLanguage, DocumentDirection } from "../../../utils/processing/types";
 import type { DocNode } from "./extractPlainText";
+import { extractPlainText } from "./extractPlainText";
 
 export interface NormalizeReport {
   totalCorrections: number;
   scriptNormalizations: number;
   spacingFixes: number;
   punctuationFixes: number;
+  resolvedLanguage: ResolvedLanguage;
+  direction: DocumentDirection;
 }
 
 export interface NormalizeDocumentResult {
@@ -38,16 +34,21 @@ export type TextNormalizer = (text: string) => {
   punctuationFixes: number;
 };
 
-/** Default normalizer — wraps the existing Unicode Standardizer engine. */
-export const defaultTextNormalizer: TextNormalizer = (text) => {
-  const result = standardizeUrduText(text);
-  return {
-    output: result.output,
-    scriptNormalizations: result.summary.arabicNormalizations,
-    spacingFixes: result.summary.spacingFixes,
-    punctuationFixes: result.summary.punctuationFixes,
+/** Mode-aware normalizer — shared processText engine. */
+export function createModeNormalizer(mode: ProcessingLanguage): TextNormalizer {
+  return (text) => {
+    const result = processText(text, mode);
+    return {
+      output: result.output,
+      scriptNormalizations: result.summary.arabicNormalizations,
+      spacingFixes: result.summary.spacingFixes,
+      punctuationFixes: result.summary.punctuationFixes,
+    };
   };
-};
+}
+
+/** Default normalizer — historical Urdu path (explicit "ur"). */
+export const defaultTextNormalizer: TextNormalizer = createModeNormalizer("ur");
 
 interface Accumulator {
   scriptNormalizations: number;
@@ -85,17 +86,20 @@ function normalizeNode(node: DocNode, normalizeText: TextNormalizer, acc: Accumu
 }
 
 /**
- * Immutably normalizes every text node in a TipTap JSON document. Node
- * type, marks, attrs, links, list structure, and direction are untouched —
- * only the literal text inside `text` nodes changes. The input document is
- * never mutated; a fully new document tree is returned.
+ * Immutably normalizes every text node in a TipTap JSON document.
+ * @param mode Processing language (default "ur" preserves historical callers/tests).
  */
 export function normalizeDocumentNodes(
   doc: DocNode,
-  normalizeText: TextNormalizer = defaultTextNormalizer
+  mode: ProcessingLanguage = "ur",
+  normalizeText: TextNormalizer = createModeNormalizer(mode)
 ): NormalizeDocumentResult {
   const acc: Accumulator = { scriptNormalizations: 0, spacingFixes: 0, punctuationFixes: 0, changed: false };
   const normalized = normalizeNode(doc, normalizeText, acc);
+
+  // Resolve language/direction from full document text under the selected mode
+  const plain = extractPlainText(doc, "rtl");
+  const resolved = processText(plain || " ", mode);
 
   return {
     document: normalized,
@@ -104,6 +108,8 @@ export function normalizeDocumentNodes(
       scriptNormalizations: acc.scriptNormalizations,
       spacingFixes: acc.spacingFixes,
       punctuationFixes: acc.punctuationFixes,
+      resolvedLanguage: resolved.resolvedLanguage,
+      direction: resolved.direction,
     },
     changed: acc.changed,
   };

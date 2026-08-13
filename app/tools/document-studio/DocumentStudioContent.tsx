@@ -12,10 +12,10 @@ export default function DocumentStudioContent() {
         <h1 className={`text-2xl md:text-3xl font-bold text-[#1A3A2A] ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {language === "ur" ? "ڈاکومنٹ اسٹوڈیو" : "Document Studio"}
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 max-w-xl">
           {language === "ur"
-            ? "اردو کے لیے بنایا گیا لکھائی کا ماحول — معیار کی جانچ، یونیکوڈ معیاری کاری، اور DOCX/PDF ایکسپورٹ۔"
-            : "A writing workspace built for Urdu — quality checks, Unicode standardization, DOCX/PDF export."}
+            ? "لکھائی، صفائی اور معیار کی جانچ — اردو، انگریزی، عربی، اور محفوظ آٹو موڈ۔ DOCX/PDF ایکسپورٹ۔"
+            : "Write, clean, and audit text with Urdu, English, Arabic, or safe Auto processing — plus DOCX/PDF export."}
         </p>
       </div>
       <DocumentStudioEditor />

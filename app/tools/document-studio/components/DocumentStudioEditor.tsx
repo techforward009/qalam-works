@@ -8,6 +8,8 @@ import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
+import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
+import { displayDirForPaste } from "../../../utils/processing/cleanTextPipeline";
 import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
 import { buildDocumentStats, type DocumentStats } from "../utils/buildDocumentStats";
 import { buildDocumentHealthReport, type DocumentHealthReport } from "../utils/buildDocumentHealthReport";
@@ -259,6 +261,8 @@ export default function DocumentStudioEditor() {
   const { language: uiLanguage } = useLanguage();
   const isUr = uiLanguage === "ur";
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
+  const [processingLanguage, setProcessingLanguage] = useState<ProcessingLanguage>("auto");
+  const [lastResolved, setLastResolved] = useState<ResolvedLanguage | null>(null);
   // Publishing Preset Foundation — Phase 1 (2026-08-09). Persisted
   // selection only; does not currently affect export or editor
   // formatting (see publishingPresets.ts's own comment).
@@ -539,17 +543,26 @@ export default function DocumentStudioEditor() {
     }
   };
 
+
+  // Mode change: never present a preview generated under a different language
+  useEffect(() => {
+    setPreview(null);
+    setAlreadyClean(false);
+    setLastResolved(null);
+    if (processingLanguage === "en") setDir("ltr");
+    else if (processingLanguage === "ur" || processingLanguage === "ar") setDir("rtl");
+    // Auto: display dir stays user-controlled until process runs
+  }, [processingLanguage]);
+
   const handleStandardizeClick = () => {
     if (!editor) return;
-    const result = normalizeDocumentNodes(editor.getJSON() as DocNode);
+    const result = normalizeDocumentNodes(editor.getJSON() as DocNode, processingLanguage);
+    setLastResolved(result.report.resolvedLanguage);
+    // Align editor direction with resolved processing language
+    setDir(result.report.direction);
     if (!result.changed) {
-      // No auto-dismiss timer here: this message can include a manual-review
-      // note (see the alreadyClean block in the JSX below) that's genuinely
-      // useful to keep visible, not a fleeting confirmation toast — a fixed
-      // timeout previously made it vanish before it could be fully read.
-      // It clears naturally on the next Standardize click, text edit, or
-      // New Document instead.
       setAlreadyClean(true);
+      setPreview(null);
       return;
     }
     setAlreadyClean(false);
@@ -586,7 +599,7 @@ export default function DocumentStudioEditor() {
 
   const handleRunAudit = () => {
     if (!editor) return;
-    const report = buildDocumentAuditReport(editor.getJSON() as DocNode);
+    const report = buildDocumentAuditReport(editor.getJSON() as DocNode, undefined, processingLanguage);
     setAuditReport(report);
     hasAuditReportRef.current = true;
     setIsAuditStale(false);
@@ -1164,6 +1177,46 @@ export default function DocumentStudioEditor() {
 
           <h2 className="text-sm font-bold text-amber-800 mb-3">قلم ٹولز / Qalam Tools</h2>
 
+          <div className="mb-4" dir="ltr">
+            <label htmlFor="studio-proc-lang" className="block text-xs font-semibold text-gray-700 mb-1">
+              {isUr ? "متن کی زبان" : "Text language"}
+            </label>
+            <select
+              id="studio-proc-lang"
+              value={processingLanguage}
+              onChange={(e) => setProcessingLanguage(e.target.value as ProcessingLanguage)}
+              className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30"
+            >
+              <option value="auto">{isUr ? "آٹو" : "Auto"}</option>
+              <option value="ur">{isUr ? "اردو" : "Urdu"}</option>
+              <option value="en">{isUr ? "انگریزی" : "English"}</option>
+              <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
+            </select>
+            <p className="mt-1 text-[11px] text-gray-500 leading-snug max-w-xl">
+              {isUr
+                ? "آٹو غیر یقینی عربی رسم الخط پر صرف محفوظ صفائی کرتا ہے۔ مخصوص اصلاح کے لیے اردو یا عربی منتخب کریں۔"
+                : "Auto safely detects English or uses non-destructive RTL cleanup when the script is uncertain. Choose Urdu or Arabic for language-specific normalization."}
+            </p>
+            {lastResolved && (
+              <p className="mt-2 text-xs font-medium text-gray-800">
+                {lastResolved === "ur"
+                  ? (isUr ? "عمل کی زبان: اردو" : "Processed as: Urdu")
+                  : lastResolved === "en"
+                    ? (isUr ? "عمل کی زبان: انگریزی" : "Processed as: English")
+                    : lastResolved === "ar"
+                      ? (isUr ? "عمل کی زبان: عربی" : "Processed as: Arabic")
+                      : (isUr ? "عمل کی نوعیت: محفوظ آر ٹی ایل" : "Processed as: Safe RTL")}
+              </p>
+            )}
+            {lastResolved === "rtl-neutral" && (
+              <p className="mt-1 text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
+                {isUr
+                  ? "عربی رسم الخط کا متن پایا گیا — صرف محفوظ عمومی صفائی۔ مخصوص اصلاح کے لیے اردو یا عربی منتخب کریں۔"
+                  : "Arabic-script text detected — safe cleanup only. Choose Urdu or Arabic for language-specific processing."}
+              </p>
+            )}
+          </div>
+
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -1200,6 +1253,7 @@ export default function DocumentStudioEditor() {
                 <li>رسم الخط / Script normalizations: {preview.report.scriptNormalizations}</li>
                 <li>خالی جگہ / Spacing fixes: {preview.report.spacingFixes}</li>
                 <li>رموز اوقاف / Punctuation fixes: {preview.report.punctuationFixes}</li>
+                <li>Mode: {preview.report.resolvedLanguage} · Direction: {preview.report.direction}</li>
               </ul>
               <div className="flex gap-2" dir="ltr">
                 <button
