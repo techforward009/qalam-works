@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import DocumentCleanerContent from "./DocumentCleanerContent";
 
 export const metadata: Metadata = {
-  title: "Document Cleaner for Urdu Files | Qalam Works",
+  title: "Document Cleaner | Qalam Works",
   description:
-    "Upload .txt or .docx files for automated Unicode normalization and publication quality audit — free document cleaning for Urdu text.",
+    "Clean Urdu, English, or Arabic text from a file or by pasting. Language-aware spacing and Unicode cleanup runs in your browser.",
   alternates: {
     canonical: "/tools/document-cleaner",
   },

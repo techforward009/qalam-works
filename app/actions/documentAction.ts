@@ -1,12 +1,12 @@
 import { extractTextFromFile } from "../utils/documents/extractTextFromFile";
-import { processText } from "../utils/processing/processText";
-import { checkTextQuality } from "../utils/quality/checkTextQuality";
+import { cleanTextPipeline } from "../utils/processing/cleanTextPipeline";
 import { formatFileSize } from "../utils/formatFileSize";
 import type { PipelineResult } from "../types/documentPipeline";
 import type { ProcessingLanguage } from "../utils/processing/types";
 
 /**
- * Document Cleaner pipeline: extract → language-aware process → audit.
+ * Document Cleaner file pipeline: extract → shared cleanTextPipeline.
+ * Not a server action — imported by client components and runs locally.
  */
 export async function handleDocumentUpload(
   input: FormData | File,
@@ -38,27 +38,29 @@ export async function handleDocumentUpload(
     }
 
     const originalText = await extractTextFromFile(file);
-    const processed = processText(originalText, processingLanguage);
-    const remainingIssues = checkTextQuality(processed.output, processed.resolvedLanguage);
+    const cleaned = cleanTextPipeline(originalText, processingLanguage);
+    if (!cleaned.success) {
+      return { success: false, error: cleaned.error };
+    }
 
-    const wordCount = processed.output.trim()
-      ? processed.output.trim().split(/\s+/).length
+    const wordCount = cleaned.cleanedText.trim()
+      ? cleaned.cleanedText.trim().split(/\s+/).length
       : 0;
 
     return {
       success: true,
-      originalText,
-      cleanedText: processed.output,
+      originalText: cleaned.originalText,
+      cleanedText: cleaned.cleanedText,
       summary: {
         fileName: file.name,
         fileType: file.name.toLowerCase().endsWith(".docx") ? "DOCX" : "TXT",
         fileSize: formatFileSize(file.size),
-        characterCount: processed.output.length,
+        characterCount: cleaned.cleanedText.length,
         wordCount,
-        correctionsApplied: processed.summary,
-        remainingIssues,
-        resolvedLanguage: processed.resolvedLanguage,
-        direction: processed.direction,
+        correctionsApplied: cleaned.correctionsApplied,
+        remainingIssues: cleaned.remainingIssues,
+        resolvedLanguage: cleaned.resolvedLanguage,
+        direction: cleaned.direction,
       },
     };
   } catch (err: unknown) {
