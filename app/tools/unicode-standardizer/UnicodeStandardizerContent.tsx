@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useLanguage } from "../../lib/language-context";
 import { translations } from "../../lib/translations";
 import UnicodeStandardizerTool from "./components/UnicodeStandardizerTool";
@@ -8,6 +9,7 @@ export default function UnicodeStandardizerContent() {
   const { language, dir } = useLanguage();
   const t = translations[language].unicodeTool;
   const naskh = language === "ur" ? "font-naskh" : "";
+  const isUr = language === "ur";
 
   return (
     <main className="py-10 md:py-14" dir={dir}>
@@ -16,13 +18,40 @@ export default function UnicodeStandardizerContent() {
           {t.title}
         </h1>
         <p className={`text-base md:text-lg text-gray-600 max-w-xl mx-auto ${naskh}`}>{t.description}</p>
-        <p className={`text-sm text-gray-500 mt-3 max-w-xl mx-auto ${naskh}`}>
-          {language === "ur" ? (
-            <>عربی یا انگریزی صفائی کے لیے <a href="/tools/document-cleaner" className="text-amber-800 font-semibold underline">ڈاکومنٹ کلینر</a> استعمال کریں۔</>
-          ) : (
-            <>For Arabic or English cleanup, use <a href="/tools/document-cleaner" className="text-amber-800 font-semibold underline">Document Cleaner</a>.</>
-          )}
-        </p>
+
+        {/* Secondary routing callout — noticeable but not competing with primary tool */}
+        <div
+          className={`mt-5 mx-auto max-w-xl rounded-xl border border-[#1A3A2A]/12 bg-[#F3F7F2] px-4 py-3 text-start ${naskh}`}
+          dir={dir}
+        >
+          <p className="text-[15px] font-medium text-[#1A3A2A] leading-snug">
+            {isUr ? "عربی یا انگریزی متن صاف کرنا ہے؟" : "Cleaning Arabic or English text?"}
+          </p>
+          <p className="mt-1.5 text-[14px] text-[#3D5A45] leading-snug">
+            {isUr ? (
+              <>
+                <Link
+                  href="/tools/document-cleaner"
+                  className="font-semibold text-[#1A3A2A] underline decoration-[#B8935A]/70 underline-offset-2 hover:text-[#B8935A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 rounded-sm"
+                >
+                  ڈاکومنٹ کلینر
+                </Link>{" "}
+                استعمال کریں
+              </>
+            ) : (
+              <>
+                Use{" "}
+                <Link
+                  href="/tools/document-cleaner"
+                  className="font-semibold text-[#1A3A2A] underline decoration-[#B8935A]/70 underline-offset-2 hover:text-[#B8935A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 rounded-sm"
+                >
+                  Document Cleaner
+                </Link>
+                <span aria-hidden="true"> →</span>
+              </>
+            )}
+          </p>
+        </div>
       </section>
 
       <div className="mb-14">
@@ -37,13 +66,17 @@ export default function UnicodeStandardizerContent() {
               <p className={`text-[17px] font-semibold text-gray-700 mb-3 ${naskh}`}>{ex.label}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <span className="block text-[13px] font-semibold text-gray-400 mb-1" dir="ltr">Before</span>
+                  <span className="block text-[13px] font-semibold text-gray-400 mb-1" dir="ltr">
+                    Before
+                  </span>
                   <div dir="rtl" className="bg-white border border-gray-200 rounded-lg p-3 text-right font-nastaliq text-[20px]">
                     {ex.before}
                   </div>
                 </div>
                 <div>
-                  <span className="block text-[13px] font-semibold text-emerald-600 mb-1" dir="ltr">After</span>
+                  <span className="block text-[13px] font-semibold text-emerald-600 mb-1" dir="ltr">
+                    After
+                  </span>
                   <div dir="rtl" className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-right font-nastaliq text-[20px]">
                     {ex.after}
                   </div>
