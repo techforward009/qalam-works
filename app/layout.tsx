@@ -26,10 +26,7 @@ const naskh = Noto_Naskh_Arabic({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://qalamworks.com"),
-  title: {
-    default: "Qalam Works — Professional Urdu Writing & Publishing Tools",
-    template: "%s — Qalam Works",
-  },
+  title: "Qalam Works — Professional Urdu Writing & Publishing Tools",
   description:
     "Qalam Works is a professional digital workspace for Urdu writing, editing, standardization, and publication preparation. Tools include Document Studio, Document Cleaner, Quality Audit, and Unicode Standardizer.",
   openGraph: {
