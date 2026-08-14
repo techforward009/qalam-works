@@ -5,7 +5,7 @@ import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 import MixedDirectionText from "./MixedDirectionText";
 
 export default function InteractiveDemo() {
-  const [input, setInput] = useState("قال الامام علي عليه السلام: العلم نور ، والجهل ظلام");
+  const [input, setInput] = useState("يہ  ایک sample document ہے ,جس ميں\ndifferent languages اور spacing issues ہیں۔");
   const { output, badges, summary } = standardizeUrduText(input);
 
   return (
@@ -16,7 +16,7 @@ export default function InteractiveDemo() {
             لائیو ڈیمو / Interactive Demo
           </h2>
           <p className="text-xs md:text-sm text-gray-600" dir="ltr">
-            Type or paste your raw Arabic-script text below to see instant normalization.
+            Type or paste mixed Urdu/English text to see spacing, punctuation, and letter-form cleanup.
           </p>
         </div>
 

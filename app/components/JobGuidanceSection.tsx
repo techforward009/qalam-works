@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eraser, Type, FilePenLine, MessageCircle, ChevronRight } from "lucide-react";
+import { Eraser, Type, FilePenLine, MessageCircle, SearchCheck, ChevronRight } from "lucide-react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { trackEvent, type ToolId } from "../lib/analytics";
@@ -11,6 +11,7 @@ const HREF_TO_TOOL: Record<string, ToolId> = {
   "/tools/unicode-standardizer": "urdu_unicode_standardizer",
   "/tools/document-studio": "document_studio",
   "/tools/whatsapp-rtl-formatter": "whatsapp_rtl_formatter",
+  "/tools/quality-checker": "quality_audit",
 };
 
 const CARD_META: Record<
@@ -44,6 +45,13 @@ const CARD_META: Record<
     iconBg: "bg-teal-50",
     iconColor: "text-teal-700",
     borderHover: "hover:shadow-md hover:shadow-teal-900/5",
+  },
+  "/tools/quality-checker": {
+    Icon: SearchCheck,
+    accent: "border-[#1A3A2A]/15 hover:border-amber-500/40",
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-700",
+    borderHover: "hover:shadow-md hover:shadow-amber-900/5",
   },
 };
 

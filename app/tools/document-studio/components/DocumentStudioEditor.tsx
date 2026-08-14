@@ -1206,6 +1206,11 @@ export default function DocumentStudioEditor() {
                 <option value="en">{isUr ? "انگریزی" : "English"}</option>
                 <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
               </select>
+              <p className={`mt-1 text-[11px] text-gray-500 leading-snug max-w-xs ${isUr ? "font-naskh" : ""}`}>
+                {isUr
+                  ? "Auto mode مخلوط زبان کے متن کو محفوظ طریقے سے process کرتا ہے اور زبان کے مطابق مناسب handling منتخب کرتا ہے۔"
+                  : "Auto processes mixed-language text safely and chooses appropriate handling for each language."}
+              </p>
             </div>
             <button
               ref={standardizeButtonRef}

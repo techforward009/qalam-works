@@ -225,11 +225,11 @@ export default function QualityCheckerTool() {
             <p className={`text-sm text-gray-600 ${isUr ? "font-naskh" : ""}`} dir={isUr ? "rtl" : "ltr"}>
               {isUr ? (
                 <>
-                  مسائل ٹھیک کرنے کے لیے{" "}
+                  آڈٹ صرف مسائل دکھاتا ہے — متن خود نہیں بدلتا۔ فارمیٹنگ ٹھیک کرنے کے لیے{" "}
                   <Link href="/tools/document-cleaner" onClick={() => trackEvent("nav_click", { tool: "quality_audit", target_tool: "document_cleaner", nav_source: "cross_link" })} className="text-amber-800 font-semibold underline">
                     ڈاکومنٹ کلینر
-                  </Link>{" "}
-                  یا{" "}
+                  </Link>
+                  ؛ حتمی دستاویز تیار کرنے کے لیے{" "}
                   <Link href="/tools/document-studio" onClick={() => trackEvent("nav_click", { tool: "quality_audit", target_tool: "document_studio", nav_source: "cross_link" })} className="text-amber-800 font-semibold underline">
                     ڈاکومنٹ اسٹوڈیو
                   </Link>{" "}
@@ -237,15 +237,15 @@ export default function QualityCheckerTool() {
                 </>
               ) : (
                 <>
-                  To fix issues, use{" "}
-                  <Link href="/tools/document-cleaner" className="text-amber-800 font-semibold underline">
+                  Audit finds issues — it does not change your text. Use{" "}
+                  <Link href="/tools/document-cleaner" onClick={() => trackEvent("nav_click", { tool: "quality_audit", target_tool: "document_cleaner", nav_source: "cross_link" })} className="text-amber-800 font-semibold underline">
                     Document Cleaner
                   </Link>{" "}
-                  or{" "}
-                  <Link href="/tools/document-studio" className="text-amber-800 font-semibold underline">
+                  to fix formatting, or{" "}
+                  <Link href="/tools/document-studio" onClick={() => trackEvent("nav_click", { tool: "quality_audit", target_tool: "document_studio", nav_source: "cross_link" })} className="text-amber-800 font-semibold underline">
                     Document Studio
-                  </Link>
-                  .
+                  </Link>{" "}
+                  to prepare the final document.
                 </>
               )}
             </p>

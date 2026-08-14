@@ -14,8 +14,8 @@ export default function DocumentStudioContent() {
         </h1>
         <p className="text-sm text-gray-500 max-w-xl">
           {language === "ur"
-            ? "لکھائی، صفائی اور معیار کی جانچ — اردو، انگریزی، عربی، اور محفوظ آٹو موڈ۔ DOCX/PDF ایکسپورٹ۔"
-            : "Write, clean, and audit text with Urdu, English, Arabic, or safe Auto processing — plus DOCX/PDF export."}
+            ? "مکمل workspace: مسودہ → معیاری بنائیں → کوالٹی چیک → ایکسپورٹ۔ صرف صفائی نہیں — پورا اشاعتی سفر۔"
+            : "Full workspace: Draft → Standardize → Quality Check → Export. Not only a cleaner — a complete publishing path."}
         </p>
       </div>
       <DocumentStudioEditor />
