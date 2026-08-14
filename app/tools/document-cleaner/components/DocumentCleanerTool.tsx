@@ -58,6 +58,7 @@ export default function DocumentCleanerTool() {
   const [pasteResult, setPasteResult] = useState<PasteResult | null>(null);
   const [pasteStale, setPasteStale] = useState(false);
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const [exampleLoaded, setExampleLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const runIdRef = useRef(0);
@@ -147,6 +148,7 @@ export default function DocumentCleanerTool() {
   };
 
   const handleCleanPaste = () => {
+    setExampleLoaded(false);
     setPasteError(null);
     setCopied(false);
     const r = cleanTextPipeline(pasteText, processingLanguage);
@@ -169,6 +171,7 @@ export default function DocumentCleanerTool() {
   };
 
   const handleClearPaste = () => {
+    setExampleLoaded(false);
     setPasteText("");
     setPasteResult(null);
     setPasteStale(false);
@@ -508,6 +511,7 @@ export default function DocumentCleanerTool() {
                   setPasteStale(false);
                   setPasteError(null);
                   setCopied(false);
+                  setExampleLoaded(true);
                   trackEvent("tool_example", { tool: "document_cleaner" });
                 }}
                 className={`text-xs font-semibold text-amber-800 hover:text-amber-950 underline underline-offset-2 ${naskh}`}
@@ -520,6 +524,7 @@ export default function DocumentCleanerTool() {
               value={pasteText}
               onChange={(e) => {
                 setPasteText(e.target.value);
+                setExampleLoaded(false);
                 if (pasteResult) setPasteStale(true);
               }}
               placeholder={ct.pastePlaceholder}
@@ -530,11 +535,15 @@ export default function DocumentCleanerTool() {
               }`}
             />
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            {exampleLoaded && (
+              <p className={`mt-3 text-sm text-[#1A3A2A] font-medium ${naskh}`}>{ct.exampleNextHint}</p>
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-2 items-center">
               <button
                 type="button"
                 onClick={handleCleanPaste}
-                className={`h-10 px-5 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] ${naskh}`}
+                className={`h-11 px-6 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] shadow-md shadow-[#1A3A2A]/25 ring-2 ring-[#1A3A2A]/10 ${naskh}`}
               >
                 {ct.cleanText}
               </button>

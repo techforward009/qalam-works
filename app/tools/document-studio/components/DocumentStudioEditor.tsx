@@ -270,6 +270,7 @@ export default function DocumentStudioEditor() {
   }, []);
 
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
+  const [exampleJustLoaded, setExampleJustLoaded] = useState(false);
 
   // Publishing Preset Foundation — Phase 1 (2026-08-09). Persisted
   // selection only; does not currently affect export or editor
@@ -424,7 +425,11 @@ export default function DocumentStudioEditor() {
 
   useEffect(() => {
     if (!editor) return;
-    const syncEmpty = () => setIsEditorEmpty(editor.isEmpty);
+    const syncEmpty = () => {
+      const empty = editor.isEmpty;
+      setIsEditorEmpty(empty);
+      if (empty) setExampleJustLoaded(false);
+    };
     syncEmpty();
     editor.on("update", syncEmpty);
     editor.on("create", syncEmpty);
@@ -439,6 +444,7 @@ export default function DocumentStudioEditor() {
     const html =
       "<p>علي كتاب</p><p>This is a test ,with bad spacing.</p><p>علي كربلاء</p>";
     editor.chain().focus().setContent(html).run();
+    setExampleJustLoaded(true);
     trackEvent("tool_example", { tool: "document_studio" });
   };
 
@@ -588,6 +594,7 @@ export default function DocumentStudioEditor() {
   }, [processingLanguage]);
 
   const handleStandardizeClick = () => {
+    setExampleJustLoaded(false);
     if (!editor) return;
     const result = normalizeDocumentNodes(editor.getJSON() as DocNode, processingLanguage);
     setLastResolved(result.report.resolvedLanguage);
@@ -1308,18 +1315,26 @@ export default function DocumentStudioEditor() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          {exampleJustLoaded && (
+            <p className={`mb-3 text-sm text-[#1A3A2A] font-medium ${isUr ? "font-naskh" : ""}`} dir={dir}>
+              {isUr
+                ? "مثال لوڈ ہوگئی۔ ترمیم کریں، پھر «معیاری بنائیں» دبائیں، یا ایکسپورٹ کریں۔"
+                : "Example loaded. Edit if needed, then click Standardize Document — or export when ready."}
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-2 items-center">
             <button
               type="button"
               onClick={handleStandardizeClick}
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 transition"
+              className="h-11 px-5 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-md shadow-amber-900/20 ring-2 ring-amber-600/20 transition"
             >
               معیاری بنائیں / Standardize Document
             </button>
             <button
               type="button"
               onClick={handleRunAudit}
-              className="px-4 py-2 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
+              className="h-10 px-4 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
             >
               معیار جانچیں / Run Quality Audit
             </button>
