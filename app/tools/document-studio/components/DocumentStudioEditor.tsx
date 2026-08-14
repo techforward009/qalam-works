@@ -271,6 +271,7 @@ export default function DocumentStudioEditor() {
 
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
   const [exampleJustLoaded, setExampleJustLoaded] = useState(false);
+  const standardizeButtonRef = useRef<HTMLButtonElement>(null);
 
   // Publishing Preset Foundation — Phase 1 (2026-08-09). Persisted
   // selection only; does not currently affect export or editor
@@ -446,6 +447,9 @@ export default function DocumentStudioEditor() {
     editor.chain().focus().setContent(html).run();
     setExampleJustLoaded(true);
     trackEvent("tool_example", { tool: "document_studio" });
+    requestAnimationFrame(() => {
+      standardizeButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   };
 
   const handleFocusPaste = () => {
@@ -1104,6 +1108,75 @@ export default function DocumentStudioEditor() {
           />
         </div>
 
+        {/* Primary processing actions — directly under editor (mobile + desktop) */}
+        <div className="mt-4 space-y-3" dir={dir}>
+          {exampleJustLoaded && (
+            <p
+              className={`rounded-lg border border-[#1A3A2A]/15 bg-[#F3F7F2] px-3 py-2.5 text-sm font-medium text-[#1A3A2A] ${isUr ? "font-naskh" : ""}`}
+              role="status"
+            >
+              {isUr
+                ? "مثال لوڈ ہوگئی۔ ضرورت ہو تو ترمیم کریں، پھر «معیاری بنائیں» دبائیں۔"
+                : "Example loaded. Edit if needed, then click Standardize Document."}
+            </p>
+          )}
+
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-center">
+            <button
+              ref={standardizeButtonRef}
+              type="button"
+              onClick={handleStandardizeClick}
+              className={`w-full sm:w-auto min-h-[48px] h-12 px-6 rounded-lg text-[15px] font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-md shadow-amber-900/20 ${isUr ? "font-naskh" : ""}`}
+            >
+              {isUr ? "معیاری بنائیں" : "Standardize Document"}
+            </button>
+            <button
+              type="button"
+              onClick={handleRunAudit}
+              className={`w-full sm:w-auto min-h-[44px] h-11 px-4 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 ${isUr ? "font-naskh" : ""}`}
+            >
+              {isUr ? "معیار جانچیں" : "Run Quality Audit"}
+            </button>
+          </div>
+
+          {preview && (
+            <div className="border border-amber-300 rounded-lg p-4 bg-amber-50">
+              <p className={`text-sm font-semibold text-gray-800 mb-2 ${isUr ? "font-naskh" : ""}`}>
+                {isUr ? "تجویز کردہ تبدیلیاں" : "Proposed changes"}
+              </p>
+              <ul className="text-sm text-gray-700 space-y-1 mb-4" dir="ltr">
+                <li>Total corrections: {preview.report.totalCorrections}</li>
+                <li>Script normalizations: {preview.report.scriptNormalizations}</li>
+                <li>Spacing fixes: {preview.report.spacingFixes}</li>
+                <li>Punctuation fixes: {preview.report.punctuationFixes}</li>
+                <li>Mode: {preview.report.resolvedLanguage} · Direction: {preview.report.direction}</li>
+              </ul>
+              <div className="flex flex-wrap gap-2" dir="ltr">
+                <button
+                  type="button"
+                  onClick={handleConfirmStandardize}
+                  className="min-h-[44px] px-4 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
+                >
+                  {isUr ? "تصدیق کریں" : "Confirm"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelStandardize}
+                  className="min-h-[44px] px-4 py-2 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+                >
+                  {isUr ? "منسوخ" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {alreadyClean && (
+            <p className="text-sm text-green-700">
+              ✓ {isUr ? "اس متن میں مزید کوئی خودکار اصلاح دستیاب نہیں" : "No further automatic corrections available for this text"}
+            </p>
+          )}
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3 mt-5" dir="ltr">
           <div className="flex flex-wrap items-center gap-2.5">
             <button
@@ -1314,71 +1387,6 @@ export default function DocumentStudioEditor() {
               </p>
             )}
           </div>
-
-          {exampleJustLoaded && (
-            <p className={`mb-3 text-sm text-[#1A3A2A] font-medium ${isUr ? "font-naskh" : ""}`} dir={dir}>
-              {isUr
-                ? "مثال لوڈ ہوگئی۔ ترمیم کریں، پھر «معیاری بنائیں» دبائیں، یا ایکسپورٹ کریں۔"
-                : "Example loaded. Edit if needed, then click Standardize Document — or export when ready."}
-            </p>
-          )}
-
-          <div className="flex flex-wrap gap-2 items-center">
-            <button
-              type="button"
-              onClick={handleStandardizeClick}
-              className="h-11 px-5 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-md shadow-amber-900/20 ring-2 ring-amber-600/20 transition"
-            >
-              معیاری بنائیں / Standardize Document
-            </button>
-            <button
-              type="button"
-              onClick={handleRunAudit}
-              className="h-10 px-4 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 transition"
-            >
-              معیار جانچیں / Run Quality Audit
-            </button>
-          </div>
-
-          {alreadyClean && (
-            <p className="mt-3 text-sm text-green-700">
-              ✓ اس متن میں مزید کوئی خودکار اصلاح دستیاب نہیں / No further automatic corrections available for this text
-              {auditReport && auditReport.totalIssues > 0 && (
-                <span className="block text-amber-700 mt-1">
-                  (نوٹ: Quality Audit ابھی بھی {auditReport.totalIssues} ایسا مسئلہ دکھا رہا ہے جسے دستی طور پر دیکھنا ہوگا — یہ خودکار اصلاح کی فہرست میں شامل نہیں / Note: Quality Audit still shows {auditReport.totalIssues} issue(s) needing manual review — these aren't part of automatic correction)
-                </span>
-              )}
-            </p>
-          )}
-
-          {preview && (
-            <div className="mt-4 border border-amber-300 rounded-lg p-4 bg-amber-50">
-              <p className="text-sm font-semibold text-gray-800 mb-2">تجویز کردہ تبدیلیاں / Proposed changes:</p>
-              <ul className="text-sm text-gray-700 space-y-1 mb-4">
-                <li>کل تصحیحات / Total corrections: {preview.report.totalCorrections}</li>
-                <li>رسم الخط / Script normalizations: {preview.report.scriptNormalizations}</li>
-                <li>خالی جگہ / Spacing fixes: {preview.report.spacingFixes}</li>
-                <li>رموز اوقاف / Punctuation fixes: {preview.report.punctuationFixes}</li>
-                <li>Mode: {preview.report.resolvedLanguage} · Direction: {preview.report.direction}</li>
-              </ul>
-              <div className="flex gap-2" dir="ltr">
-                <button
-                  type="button"
-                  onClick={handleConfirmStandardize}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
-                >
-                  تصدیق کریں / Confirm
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelStandardize}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
-                >
-                  منسوخ / Cancel
-                </button>
-              </div>
-            </div>
-          )}
 
           <div className="mt-4">
             <QualityAuditPanel report={auditReport} isStale={isAuditStale} />
