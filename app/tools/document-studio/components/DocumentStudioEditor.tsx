@@ -1170,6 +1170,12 @@ export default function DocumentStudioEditor() {
           </div>
         </div>
 
+        <p className={`mt-2 text-[12px] text-gray-500 leading-relaxed ${isUr ? "font-naskh" : ""}`} dir={dir}>
+          {isUr
+            ? "تدوین آپ کے براؤزر میں ہوتی ہے۔ PDF ایکسپورٹ صرف فائل بنانے کے لیے سرور استعمال کرتا ہے — دستاویز محفوظ نہیں کی جاتی。"
+            : "Editing stays in your browser. PDF export uses the server only to generate your file — documents are not stored."}
+        </p>
+
         {pdfSummary && (
           <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs" dir="ltr">
             <div className="font-semibold text-amber-800 mb-1.5">✓ PDF Export Complete</div>

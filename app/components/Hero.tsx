@@ -33,7 +33,7 @@ export default function Hero() {
               {t.multilingualLine}
             </p>
 
-            <div className={`flex flex-col sm:flex-row justify-center gap-3 mb-8 ${dir === "rtl" ? "md:justify-end" : "md:justify-start"}`}>
+            <div className={`flex flex-col sm:flex-row justify-center gap-3 mb-4 ${dir === "rtl" ? "md:justify-end" : "md:justify-start"}`}>
               <Link href="/tools/document-studio" className={`bg-[#B8935A] hover:bg-[#C9A46B] text-white font-semibold px-7 py-3.5 rounded-lg shadow-lg shadow-[#B8935A]/20 transition-all text-[15px] text-center ${naskh}`}>
                 {t.ctaPrimary}
               </Link>
@@ -41,6 +41,16 @@ export default function Hero() {
                 {t.ctaSecondary}
               </Link>
             </div>
+
+            <p className={`text-[14px] text-[#5B5748] mb-8 text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"} ${naskh}`}>
+              {t.quickCleanupPrompt}{" "}
+              <Link
+                href="/tools/document-cleaner"
+                className="font-semibold text-[#1A3A2A] underline decoration-[#B8935A]/60 underline-offset-2 hover:text-[#B8935A]"
+              >
+                {t.quickCleanupLink}
+              </Link>
+            </p>
 
             <p className={`text-[16px] font-medium text-[#7A7268] tracking-wide text-center mt-4 ${language === "ur" ? "font-naskh leading-loose" : ""}`}>{t.trustLine}</p>
           </div>
