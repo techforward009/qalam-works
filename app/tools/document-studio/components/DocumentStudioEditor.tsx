@@ -447,7 +447,7 @@ export default function DocumentStudioEditor() {
   const handleLoadExample = () => {
     if (!editor) return;
     const html =
-      "<p>علي كتاب</p><p>This is a test ,with bad spacing.</p><p>علي كربلاء</p>";
+      "<p>مسودہ: یہ  ایک  نمونہ دستاویز ہے ,جس میں غیر ضروری spaces ہیں۔</p><p>Draft notes: Review spacing and punctuation, then standardize and run Quality Audit before export.</p><p>آخری مرحلہ: تصدیق کے بعد TXT، DOCX یا PDF ایکسپورٹ کریں۔</p>";
     editor.chain().focus().setContent(html).run();
     setExampleJustLoaded(true);
     trackEvent("tool_example", { tool: "document_studio" });

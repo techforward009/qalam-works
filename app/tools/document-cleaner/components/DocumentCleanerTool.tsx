@@ -22,9 +22,8 @@ import MixedDirectionText from "../../../components/MixedDirectionText";
 
 type InputMode = "file" | "paste";
 
-const PASTE_EXAMPLE = `علي كتاب
-This is a test ,with bad spacing.
-علي كربلاء`;
+const PASTE_EXAMPLE = `یہ  ایک  نمونہ تحریر ہے ,جس میں
+غیر ضروری spaces  اور غلط punctuation ہیں۔`;
 
 type PasteResult = CleanTextPipelineResult;
 

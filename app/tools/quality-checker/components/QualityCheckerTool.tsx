@@ -12,7 +12,7 @@ import { displayDirForPaste } from "../../../utils/processing/cleanTextPipeline"
 import { trackEvent, trackToolOpenOnce, toCountBucket } from "../../../lib/analytics";
 
 const SAMPLE_UR =
-  "یہ  کتاب بہت اچھی ہے, مگر لوگ لوگ اسے نہيں پڑھتے کيونکہ وقت نہيں ملتا?";
+  "یہ  ایک  نمونہ تحریر ہے ,جس میں spacing کا مسئلہ ہے۔";
 const SAMPLE_EN = "This is normal English text with  extra spaces.";
 
 export default function QualityCheckerTool() {

@@ -6,7 +6,7 @@ import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import { standardizeUrduText } from "../../../utils/unicode/standardizeUrduText";
 
 const SAMPLE_TEXT =
-  "قال ابن مسعود رضي الله عنه : ليس العلم بكثرة الرواية ، إنما العلم نور يقذف في القلب";
+  "يہ ايك نمونہ تحرير ہے";
 
 export default function UnicodeStandardizerTool() {
   const { language } = useLanguage();

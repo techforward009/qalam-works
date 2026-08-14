@@ -64,12 +64,9 @@ const LABELS = {
 } as const;
 
 /** Realistic mixed example — demonstrates 1., bullets, English, numbers, domain, email, final RTL line. */
-const EXAMPLE_TEXT = `1. پہلی رپورٹ PDF میں محفوظ کریں
-2. قیمت 1500 PKR ہے
-3. فائل qalamworks.com پر اپلوڈ کریں
-• اردو متن کے ساتھ English الفاظ
-* ای میل qalamworks.services@gmail.com پر بھیجیں
-آخری اردو سطر`;
+const EXAMPLE_TEXT = `السلام علیکم
+Meeting tomorrow at 5 PM
+براہ کرم جواب دیں`;
 
 export default function WhatsAppRtlFormatter({
   language = "en",
