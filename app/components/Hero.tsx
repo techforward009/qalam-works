@@ -65,7 +65,7 @@ export default function Hero() {
               </div>
 
               <div className="p-6" dir="rtl">
-                <p className="font-nastaliq text-xl md:text-2xl leading-loose text-[#EDEAE1] whitespace-pre-line">
+                <p className="font-nastaliq text-xl md:text-2xl leading-loose text-[#EDEAE1]">
                   <span className="relative">
                     يہ
                     <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-red-400/70 rounded-full" />
@@ -75,13 +75,12 @@ export default function Hero() {
                     {" ,"}
                     <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-red-400/70 rounded-full" />
                   </span>
-                  جس{" "}
+                  {" "}جس{" "}
                   <span className="relative">
                     ميں
                     <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-red-400/70 rounded-full" />
                   </span>
-                  {"
-"}different languages اور spacing issues ہیں۔
+                  {" "}different languages اور spacing issues ہیں۔
                 </p>
               </div>
 
