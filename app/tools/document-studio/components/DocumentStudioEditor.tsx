@@ -610,8 +610,9 @@ export default function DocumentStudioEditor() {
         resolved_mode: result.report.resolvedLanguage,
         success: true,
       });
-      // Align editor direction with resolved processing language
-      setDir(result.report.direction);
+      // Do not force a single editor dir from document-level resolve —
+      // mixed Urdu/English docs must keep readable mixed alignment.
+      // Explicit mode still sets dir via the processingLanguage effect.
 
       if (!result.changed) {
         setAlreadyClean(true);
@@ -1143,8 +1144,8 @@ export default function DocumentStudioEditor() {
               role="status"
             >
               {isUr
-                ? "مثال لوڈ ہوگئی۔ ضرورت ہو تو ترمیم کریں، پھر «معیاری بنائیں» دبائیں۔"
-                : "Example loaded. Edit if needed, then click Standardize Document."}
+                ? "مثال لوڈ ہوگئی۔ اردو حروف کی اصلاح کے لیے Standardize سے پہلے اردو موڈ منتخب کریں۔ مخلوط متن کے لیے Auto محفوظ صفائی کرتا ہے۔"
+                : "Example loaded. For Urdu letter normalization, choose Urdu mode before Standardize. Auto performs safe mixed-language cleanup."}
             </p>
           )}
 
@@ -1243,14 +1244,14 @@ export default function DocumentStudioEditor() {
             <div className={`rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm text-green-900 ${isUr ? "font-naskh" : ""}`}>
               <p>
                 ✓ {isUr
-                  ? "اس موڈ میں مزید خودکار اصلاح دستیاب نہیں۔"
-                  : "No further automatic corrections in this mode."}
+                  ? "معیاری بنانا مکمل۔ کچھ زبان مخصوص اصلاحات کے لیے مماثل موڈ منتخب کریں۔"
+                  : "Standardization complete. Some language-specific corrections require selecting the matching mode."}
               </p>
               {processingLanguage === "auto" && lastResolved === "rtl-neutral" && (
                 <p className="mt-1 text-amber-900">
                   {isUr
-                    ? "آٹو نے محفوظ آر ٹی ایل صفائی کی۔ اردو حروف کی تبدیلی کے لیے زبان «اردو» منتخب کریں۔"
-                    : "Auto applied safe RTL cleanup only. Choose language mode “Urdu” for Urdu character normalization."}
+                    ? "آٹو محفوظ مخلوط صفائی کرتا ہے۔ اردو حروف کی تبدیلی کے لیے «اردو» موڈ منتخب کریں۔"
+                    : "Auto performs safe mixed-language cleanup. Choose “Urdu” mode for Urdu letter normalization."}
                 </p>
               )}
             </div>
