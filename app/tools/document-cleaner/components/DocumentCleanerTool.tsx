@@ -63,6 +63,7 @@ export default function DocumentCleanerTool() {
 
   const runIdRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cleanButtonRef = useRef<HTMLButtonElement>(null);
   const langInitRef = useRef(true);
 
   useEffect(() => {
@@ -171,12 +172,13 @@ export default function DocumentCleanerTool() {
   };
 
   const handleClearPaste = () => {
-    setExampleLoaded(false);
+    // Full paste-workflow reset → empty initial state
     setPasteText("");
     setPasteResult(null);
     setPasteStale(false);
     setPasteError(null);
     setCopied(false);
+    setExampleLoaded(false);
   };
 
   const handleCopy = async () => {
@@ -198,6 +200,8 @@ export default function DocumentCleanerTool() {
       setPasteResult(null);
       setPasteStale(false);
       setCopied(false);
+      setExampleLoaded(false);
+      setPasteError(null);
     } else {
       setFileResult(null);
     }
@@ -513,6 +517,10 @@ export default function DocumentCleanerTool() {
                   setCopied(false);
                   setExampleLoaded(true);
                   trackEvent("tool_example", { tool: "document_cleaner" });
+                  // Bring primary action into view on mobile
+                  requestAnimationFrame(() => {
+                    cleanButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  });
                 }}
                 className={`text-xs font-semibold text-amber-800 hover:text-amber-950 underline underline-offset-2 ${naskh}`}
               >
@@ -535,22 +543,29 @@ export default function DocumentCleanerTool() {
               }`}
             />
 
+            {/* Mobile-first action order: Input → Clean Text → Clear → results below */}
             {exampleLoaded && (
-              <p className={`mt-3 text-sm text-[#1A3A2A] font-medium ${naskh}`}>{ct.exampleNextHint}</p>
+              <p
+                className={`mt-3 rounded-lg border border-[#1A3A2A]/15 bg-[#F3F7F2] px-3 py-2 text-sm font-medium text-[#1A3A2A] ${naskh}`}
+                role="status"
+              >
+                {ct.exampleNextHint}
+              </p>
             )}
 
-            <div className="mt-4 flex flex-wrap gap-2 items-center">
+            <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:items-center">
               <button
+                ref={cleanButtonRef}
                 type="button"
                 onClick={handleCleanPaste}
-                className={`h-11 px-6 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] shadow-md shadow-[#1A3A2A]/25 ring-2 ring-[#1A3A2A]/10 ${naskh}`}
+                className={`w-full sm:w-auto min-h-[48px] h-12 px-6 rounded-lg text-[16px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] shadow-md shadow-[#1A3A2A]/25 ${naskh}`}
               >
                 {ct.cleanText}
               </button>
               <button
                 type="button"
                 onClick={handleClearPaste}
-                className={`h-10 px-4 rounded-lg text-[15px] font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 ${naskh}`}
+                className={`w-full sm:w-auto min-h-[44px] h-11 px-4 rounded-lg text-[15px] font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 ${naskh}`}
               >
                 {ct.clear}
               </button>
@@ -640,6 +655,13 @@ export default function DocumentCleanerTool() {
                     }`}
                   >
                     {ct.downloadDocx}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearPaste}
+                    className={`h-10 px-5 rounded-lg text-[15px] font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 ${naskh}`}
+                  >
+                    {ct.clear}
                   </button>
                 </div>
               </div>
