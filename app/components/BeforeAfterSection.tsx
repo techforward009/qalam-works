@@ -10,7 +10,8 @@ import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 // "after" string. This guarantees the marketing example can never claim
 // a transformation the product doesn't actually perform, and stays
 // automatically correct if the standardizer's behavior ever changes.
-const BEFORE_TEXT = "علي نے كتاب پڑھی  ، اور یہ Document بھی۔۔";
+const BEFORE_TEXT =
+  "يہ  ایک sample document ہے ,جس ميں\ndifferent languages اور spacing issues ہیں۔";
 const AFTER_TEXT = standardizeUrduText(BEFORE_TEXT).output;
 
 function PenNibIcon() {
