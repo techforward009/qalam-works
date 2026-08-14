@@ -53,12 +53,12 @@ export const translations = {
       points: [
         {
           title: "Mixed Unicode forms",
-          example: "علي → علی",
+          example: "يہ → یہ",
           impact: "The same word looks different every time it's typed, breaking search and consistency.",
         },
         {
           title: "Invisible spacing issues",
-          example: "لفظ،اگلا → لفظ، اگلا",
+          example: "ہے ,جس → ہے، جس",
           impact: "A missing space after punctuation slips past every normal spell-checker, silently.",
         },
         {
@@ -374,12 +374,12 @@ export const translations = {
       points: [
         {
           title: "مخلوط یونیکوڈ شکلیں",
-          example: "علي → علی",
+          example: "يہ → یہ",
           impact: "ایک ہی لفظ ہر بار مختلف نظر آتا ہے، جس سے تلاش اور یکسانیت متاثر ہوتی ہے۔",
         },
         {
           title: "پوشیدہ خالی جگہ کے مسائل",
-          example: "لفظ،اگلا → لفظ، اگلا",
+          example: "ہے ,جس → ہے، جس",
           impact: "رمزِ اوقاف کے بعد غائب خالی جگہ ہر عام تصحیحی نظام سے بچ نکلتی ہے۔",
         },
         {
