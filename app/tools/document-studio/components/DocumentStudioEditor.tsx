@@ -280,7 +280,11 @@ export default function DocumentStudioEditor() {
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
 
-  const [preview, setPreview] = useState<{ document: DocNode; report: NormalizeReport } | null>(null);
+  const [preview, setPreview] = useState<{
+    document: DocNode;
+    report: NormalizeReport;
+    beforePlain: string;
+  } | null>(null);
   const [alreadyClean, setAlreadyClean] = useState(false);
 
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -597,11 +601,38 @@ export default function DocumentStudioEditor() {
     // Auto: display dir stays user-controlled until process runs
   }, [processingLanguage]);
 
+  /** Write normalized TipTap JSON into the live editor (with undo history). */
+  const applyNormalizedDocument = (normalized: DocNode): boolean => {
+    if (!editor) return false;
+    try {
+      const { state, view } = editor;
+      const normalizedDoc = state.schema.nodeFromJSON(normalized);
+      if (normalizedDoc.type.name !== state.doc.type.name) {
+        console.error("Invalid doc type during normalization application");
+        return false;
+      }
+      const tr = state.tr.replaceWith(0, state.doc.content.size, normalizedDoc.content);
+      tr.setMeta("addToHistory", true);
+      view.dispatch(tr);
+      return true;
+    } catch (err) {
+      console.error("Failed to apply standardization transaction:", err);
+      try {
+        editor.commands.setContent(normalized);
+        return true;
+      } catch (err2) {
+        console.error("Fallback setContent also failed:", err2);
+        return false;
+      }
+    }
+  };
+
   const handleStandardizeClick = () => {
     setExampleJustLoaded(false);
     if (!editor) return;
     try {
       const currentJson = editor.getJSON() as DocNode;
+      const beforePlain = extractPlainText(currentJson, dir === "ltr" ? "ltr" : "rtl");
       const result = normalizeDocumentNodes(currentJson, processingLanguage);
       setLastResolved(result.report.resolvedLanguage);
       trackEvent("tool_process", {
@@ -610,22 +641,33 @@ export default function DocumentStudioEditor() {
         resolved_mode: result.report.resolvedLanguage,
         success: true,
       });
-      // Do not force a single editor dir from document-level resolve —
-      // mixed Urdu/English docs must keep readable mixed alignment.
-      // Explicit mode still sets dir via the processingLanguage effect.
+      // Do not force a single editor dir from document-level resolve.
 
       if (!result.changed) {
         setAlreadyClean(true);
         setPreview(null);
-        // Keep feedback visible even when no edits are needed
         requestAnimationFrame(() => {
           standardizeButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
         });
         return;
       }
 
+      // Apply into TipTap immediately so the editor shows normalized text
+      // (preview/confirm alone left the editor looking "unchanged").
+      const applied = applyNormalizedDocument(result.document);
+      if (applied) {
+        trackEvent("preview_confirm", {
+          tool: "document_studio",
+          mode: processingLanguage,
+          success: true,
+        });
+      }
       setAlreadyClean(false);
-      setPreview({ document: result.document, report: result.report });
+      setPreview({
+        document: result.document,
+        report: result.report,
+        beforePlain,
+      });
       requestAnimationFrame(() => {
         standardizeButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       });
@@ -637,34 +679,10 @@ export default function DocumentStudioEditor() {
   };
 
   const handleConfirmStandardize = () => {
-    if (!editor || !preview) return;
+    // Changes are applied on Standardize; Confirm only dismisses the summary.
+    if (!preview) return;
     trackEvent("preview_confirm", { tool: "document_studio", mode: processingLanguage, success: true });
-
-    try {
-      const { state, view } = editor;
-      const normalizedDoc = state.schema.nodeFromJSON(preview.document);
-
-      if (normalizedDoc.type.name !== state.doc.type.name) {
-        console.error("Invalid doc type during normalization application");
-        setPreview(null);
-        return;
-      }
-
-      const tr = state.tr.replaceWith(0, state.doc.content.size, normalizedDoc.content);
-      tr.setMeta("addToHistory", true);
-      view.dispatch(tr);
-      setAlreadyClean(false);
-    } catch (err) {
-      console.error("Failed to apply standardization transaction safely:", err);
-      // Fallback: setContent preserves a usable result if the transaction path fails
-      try {
-        editor.commands.setContent(preview.document);
-      } catch (err2) {
-        console.error("Fallback setContent also failed:", err2);
-      }
-    } finally {
-      setPreview(null);
-    }
+    setPreview(null);
   };
 
   const handleCancelStandardize = () => {
@@ -1190,7 +1208,7 @@ export default function DocumentStudioEditor() {
           {preview && editor && (
             <div className="border border-amber-300 rounded-lg p-4 bg-amber-50 space-y-3">
               <p className={`text-sm font-semibold text-gray-800 ${isUr ? "font-naskh" : ""}`}>
-                {isUr ? "تجویز کردہ تبدیلیاں — تصدیق کریں تاکہ ایڈیٹر میں لگے" : "Proposed changes — confirm to apply them in the editor"}
+                {isUr ? "تبدیلیاں ایڈیٹر میں لگ گئی ہیں (Undo سے واپس)" : "Changes applied in the editor (use Undo to revert)"}
               </p>
               <ul className="text-sm text-gray-700 space-y-1" dir="ltr">
                 <li>Total corrections: {preview.report.totalCorrections}</li>
@@ -1206,7 +1224,7 @@ export default function DocumentStudioEditor() {
                     className="rounded-md border border-gray-200 bg-white p-2 text-sm whitespace-pre-wrap break-words max-h-40 overflow-y-auto"
                     dir={dir}
                   >
-                    {extractPlainText(editor.getJSON() as DocNode, dir)}
+                    {preview.beforePlain}
                   </div>
                 </div>
                 <div>
@@ -1227,14 +1245,7 @@ export default function DocumentStudioEditor() {
                   onClick={handleConfirmStandardize}
                   className="min-h-[44px] px-5 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
                 >
-                  {isUr ? "تصدیق کریں" : "Confirm"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelStandardize}
-                  className="min-h-[44px] px-4 py-2 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
-                >
-                  {isUr ? "منسوخ" : "Cancel"}
+                  {isUr ? "ٹھیک ہے" : "Dismiss"}
                 </button>
               </div>
             </div>

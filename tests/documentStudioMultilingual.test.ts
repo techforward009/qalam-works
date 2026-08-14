@@ -136,3 +136,32 @@ describe("normalizeDocumentNodes — Auto mixed example shape", () => {
     expect(document.content![0].content![0].text).toBe("علي كربلاء");
   });
 });
+
+describe("normalizeDocumentNodes — exact Studio UI example case", () => {
+  it("Auto normalizes the Load Example document shape", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "علي كتاب" }] },
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "This is a test ,with bad spacing." }],
+        },
+        { type: "paragraph", content: [{ type: "text", text: "علي كربلاء" }] },
+      ],
+    };
+    const { document, changed, report } = normalizeDocumentNodes(doc as any, "auto");
+    expect(changed).toBe(true);
+    const texts = document.content!.map((p: any) => p.content?.[0]?.text);
+    expect(texts[0]).toBe("علی کتاب");
+    expect(texts[1]).toBe("This is a test, with bad spacing.");
+    expect(texts[2]).toBe("علی کربلاء");
+    expect(report.scriptNormalizations).toBeGreaterThan(0);
+  });
+
+  it("Auto normalizes exact multiline string with blank lines", () => {
+    const input = "علي كتاب\n\nThis is a test, with bad spacing\n\nعلي كربلاء";
+    const r = processText(input, "auto");
+    expect(r.output).toBe("علی کتاب\n\nThis is a test, with bad spacing\n\nعلی کربلاء");
+  });
+});
