@@ -600,18 +600,39 @@ export default function DocumentStudioEditor() {
   const handleStandardizeClick = () => {
     setExampleJustLoaded(false);
     if (!editor) return;
-    const result = normalizeDocumentNodes(editor.getJSON() as DocNode, processingLanguage);
-    setLastResolved(result.report.resolvedLanguage);
-    trackEvent("tool_process", { tool: "document_studio", mode: processingLanguage, resolved_mode: result.report.resolvedLanguage, success: true });
-    // Align editor direction with resolved processing language
-    setDir(result.report.direction);
-    if (!result.changed) {
-      setAlreadyClean(true);
+    try {
+      const currentJson = editor.getJSON() as DocNode;
+      const result = normalizeDocumentNodes(currentJson, processingLanguage);
+      setLastResolved(result.report.resolvedLanguage);
+      trackEvent("tool_process", {
+        tool: "document_studio",
+        mode: processingLanguage,
+        resolved_mode: result.report.resolvedLanguage,
+        success: true,
+      });
+      // Align editor direction with resolved processing language
+      setDir(result.report.direction);
+
+      if (!result.changed) {
+        setAlreadyClean(true);
+        setPreview(null);
+        // Keep feedback visible even when no edits are needed
+        requestAnimationFrame(() => {
+          standardizeButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+        return;
+      }
+
+      setAlreadyClean(false);
+      setPreview({ document: result.document, report: result.report });
+      requestAnimationFrame(() => {
+        standardizeButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    } catch (err) {
+      console.error("Standardize failed:", err);
+      setAlreadyClean(false);
       setPreview(null);
-      return;
     }
-    setAlreadyClean(false);
-    setPreview({ document: result.document, report: result.report });
   };
 
   const handleConfirmStandardize = () => {
@@ -622,7 +643,7 @@ export default function DocumentStudioEditor() {
       const { state, view } = editor;
       const normalizedDoc = state.schema.nodeFromJSON(preview.document);
 
-      if (normalizedDoc.type !== state.doc.type) {
+      if (normalizedDoc.type.name !== state.doc.type.name) {
         console.error("Invalid doc type during normalization application");
         setPreview(null);
         return;
@@ -630,10 +651,16 @@ export default function DocumentStudioEditor() {
 
       const tr = state.tr.replaceWith(0, state.doc.content.size, normalizedDoc.content);
       tr.setMeta("addToHistory", true);
-
       view.dispatch(tr);
+      setAlreadyClean(false);
     } catch (err) {
       console.error("Failed to apply standardization transaction safely:", err);
+      // Fallback: setContent preserves a usable result if the transaction path fails
+      try {
+        editor.commands.setContent(preview.document);
+      } catch (err2) {
+        console.error("Fallback setContent also failed:", err2);
+      }
     } finally {
       setPreview(null);
     }
@@ -1121,7 +1148,27 @@ export default function DocumentStudioEditor() {
             </p>
           )}
 
-          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-center">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-end">
+            <div className="w-full sm:w-auto">
+              <label htmlFor="studio-proc-lang-main" className={`block text-xs font-semibold text-gray-700 mb-1 ${isUr ? "font-naskh" : ""}`}>
+                {isUr ? "متن کی زبان" : "Text language"}
+              </label>
+              <select
+                id="studio-proc-lang-main"
+                value={processingLanguage}
+                onChange={(e) => {
+                  const next = e.target.value as ProcessingLanguage;
+                  setProcessingLanguage(next);
+                  trackEvent("tool_mode_change", { tool: "document_studio", mode: next });
+                }}
+                className="w-full sm:w-44 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30"
+              >
+                <option value="auto">{isUr ? "آٹو" : "Auto"}</option>
+                <option value="ur">{isUr ? "اردو" : "Urdu"}</option>
+                <option value="en">{isUr ? "انگریزی" : "English"}</option>
+                <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
+              </select>
+            </div>
             <button
               ref={standardizeButtonRef}
               type="button"
@@ -1139,23 +1186,45 @@ export default function DocumentStudioEditor() {
             </button>
           </div>
 
-          {preview && (
-            <div className="border border-amber-300 rounded-lg p-4 bg-amber-50">
-              <p className={`text-sm font-semibold text-gray-800 mb-2 ${isUr ? "font-naskh" : ""}`}>
-                {isUr ? "تجویز کردہ تبدیلیاں" : "Proposed changes"}
+          {preview && editor && (
+            <div className="border border-amber-300 rounded-lg p-4 bg-amber-50 space-y-3">
+              <p className={`text-sm font-semibold text-gray-800 ${isUr ? "font-naskh" : ""}`}>
+                {isUr ? "تجویز کردہ تبدیلیاں — تصدیق کریں تاکہ ایڈیٹر میں لگے" : "Proposed changes — confirm to apply them in the editor"}
               </p>
-              <ul className="text-sm text-gray-700 space-y-1 mb-4" dir="ltr">
+              <ul className="text-sm text-gray-700 space-y-1" dir="ltr">
                 <li>Total corrections: {preview.report.totalCorrections}</li>
-                <li>Script normalizations: {preview.report.scriptNormalizations}</li>
-                <li>Spacing fixes: {preview.report.spacingFixes}</li>
-                <li>Punctuation fixes: {preview.report.punctuationFixes}</li>
+                <li>Script: {preview.report.scriptNormalizations} · Spacing: {preview.report.spacingFixes} · Punctuation: {preview.report.punctuationFixes}</li>
                 <li>Mode: {preview.report.resolvedLanguage} · Direction: {preview.report.direction}</li>
               </ul>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <p className={`text-xs font-semibold text-gray-600 mb-1 ${isUr ? "font-naskh" : ""}`}>
+                    {isUr ? "قبل" : "Before"}
+                  </p>
+                  <div
+                    className="rounded-md border border-gray-200 bg-white p-2 text-sm whitespace-pre-wrap break-words max-h-40 overflow-y-auto"
+                    dir={dir}
+                  >
+                    {extractPlainText(editor.getJSON() as DocNode, dir)}
+                  </div>
+                </div>
+                <div>
+                  <p className={`text-xs font-semibold text-gray-600 mb-1 ${isUr ? "font-naskh" : ""}`}>
+                    {isUr ? "بعد" : "After"}
+                  </p>
+                  <div
+                    className="rounded-md border border-green-200 bg-green-50/50 p-2 text-sm whitespace-pre-wrap break-words max-h-40 overflow-y-auto"
+                    dir={preview.report.direction}
+                  >
+                    {extractPlainText(preview.document, preview.report.direction)}
+                  </div>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-2" dir="ltr">
                 <button
                   type="button"
                   onClick={handleConfirmStandardize}
-                  className="min-h-[44px] px-4 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
+                  className="min-h-[44px] px-5 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
                 >
                   {isUr ? "تصدیق کریں" : "Confirm"}
                 </button>
@@ -1170,10 +1239,21 @@ export default function DocumentStudioEditor() {
             </div>
           )}
 
-          {alreadyClean && (
-            <p className="text-sm text-green-700">
-              ✓ {isUr ? "اس متن میں مزید کوئی خودکار اصلاح دستیاب نہیں" : "No further automatic corrections available for this text"}
-            </p>
+          {alreadyClean && !preview && (
+            <div className={`rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm text-green-900 ${isUr ? "font-naskh" : ""}`}>
+              <p>
+                ✓ {isUr
+                  ? "اس موڈ میں مزید خودکار اصلاح دستیاب نہیں۔"
+                  : "No further automatic corrections in this mode."}
+              </p>
+              {processingLanguage === "auto" && lastResolved === "rtl-neutral" && (
+                <p className="mt-1 text-amber-900">
+                  {isUr
+                    ? "آٹو نے محفوظ آر ٹی ایل صفائی کی۔ اردو حروف کی تبدیلی کے لیے زبان «اردو» منتخب کریں۔"
+                    : "Auto applied safe RTL cleanup only. Choose language mode “Urdu” for Urdu character normalization."}
+                </p>
+              )}
+            </div>
           )}
         </div>
 
