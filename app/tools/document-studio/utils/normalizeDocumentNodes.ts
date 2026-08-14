@@ -12,6 +12,7 @@
 // applies only to a whole single-node block, or to logical block edges.
 
 import { processText } from "../../../utils/processing/processText";
+import { analyzeScriptContext } from "../../../utils/processing/scriptContext";
 import type { ProcessingLanguage, ResolvedLanguage, DocumentDirection } from "../../../utils/processing/types";
 import type { DocNode } from "./extractPlainText";
 import { extractPlainText } from "./extractPlainText";
@@ -40,9 +41,12 @@ export type TextNormalizer = (text: string) => {
 };
 
 /** Mode-aware normalizer — shared processText engine (full trim). */
-export function createModeNormalizer(mode: ProcessingLanguage): TextNormalizer {
+export function createModeNormalizer(
+  mode: ProcessingLanguage,
+  documentContext?: ReturnType<typeof analyzeScriptContext>
+): TextNormalizer {
   return (text) => {
-    const result = processText(text, mode);
+    const result = processText(text, mode, mode === "auto" ? documentContext : undefined);
     return {
       output: result.output,
       scriptNormalizations: result.summary.arabicNormalizations,
@@ -80,7 +84,8 @@ function cloneNode(node: DocNode): DocNode {
  */
 function processTextPreserveEdgeWhitespace(
   text: string,
-  mode: ProcessingLanguage
+  mode: ProcessingLanguage,
+  documentContext?: ReturnType<typeof analyzeScriptContext>
 ): { output: string; scriptNormalizations: number; spacingFixes: number; punctuationFixes: number } {
   const leadMatch = text.match(/^\s*/);
   const trailMatch = text.match(/\s*$/);
@@ -97,7 +102,7 @@ function processTextPreserveEdgeWhitespace(
     return { output: text, scriptNormalizations: 0, spacingFixes: 0, punctuationFixes: 0 };
   }
 
-  const result = processText(core, mode);
+  const result = processText(core, mode, mode === "auto" ? documentContext : undefined);
   const outLead = lead ? (/[\n\r]/.test(lead) ? lead : " ") : "";
   const outTrail = trail ? (/[\n\r]/.test(trail) ? trail : " ") : "";
   return {
@@ -138,7 +143,8 @@ function normalizeInlineContent(
   content: DocNode[],
   mode: ProcessingLanguage,
   normalizeText: TextNormalizer,
-  acc: Accumulator
+  acc: Accumulator,
+  documentContext?: ReturnType<typeof analyzeScriptContext>
 ): DocNode[] {
   const out: DocNode[] = [];
   let i = 0;
@@ -163,7 +169,7 @@ function normalizeInlineContent(
         for (const textNode of run) {
           const text = typeof textNode.text === "string" ? textNode.text : "";
           if (text.length > 0) {
-            const result = processTextPreserveEdgeWhitespace(text, mode);
+            const result = processTextPreserveEdgeWhitespace(text, mode, documentContext);
             out.push(applyResult(textNode, result, acc));
           } else {
             out.push(cloneNode(textNode));
@@ -180,7 +186,7 @@ function normalizeInlineContent(
     }
 
     // Nested structures (e.g. unexpected nodes) — recurse
-    out.push(normalizeNode(node, mode, normalizeText, acc));
+    out.push(normalizeNode(node, mode, normalizeText, acc, documentContext));
     i++;
   }
   return out;
@@ -190,7 +196,8 @@ function normalizeNode(
   node: DocNode,
   mode: ProcessingLanguage,
   normalizeText: TextNormalizer,
-  acc: Accumulator
+  acc: Accumulator,
+  documentContext?: ReturnType<typeof analyzeScriptContext>
 ): DocNode {
   const cloned = cloneNode(node);
 
@@ -203,7 +210,13 @@ function normalizeNode(
   }
 
   if (node.content) {
-    cloned.content = normalizeInlineContent(node.content, mode, normalizeText, acc);
+    cloned.content = normalizeInlineContent(
+      node.content,
+      mode,
+      normalizeText,
+      acc,
+      documentContext
+    );
   }
   return cloned;
 }
@@ -216,18 +229,23 @@ function normalizeNode(
 export function normalizeDocumentNodes(
   doc: DocNode,
   mode: ProcessingLanguage = "ur",
-  normalizeText: TextNormalizer = createModeNormalizer(mode)
+  normalizeText?: TextNormalizer
 ): NormalizeDocumentResult {
+  const plain = extractPlainText(doc, "rtl");
+  const documentContext =
+    mode === "auto" ? analyzeScriptContext(plain || " ") : undefined;
+  const effectiveNormalizer =
+    normalizeText ?? createModeNormalizer(mode, documentContext);
+
   const acc: Accumulator = {
     scriptNormalizations: 0,
     spacingFixes: 0,
     punctuationFixes: 0,
     changed: false,
   };
-  const normalized = normalizeNode(doc, mode, normalizeText, acc);
+  const normalized = normalizeNode(doc, mode, effectiveNormalizer, acc, documentContext);
 
-  const plain = extractPlainText(doc, "rtl");
-  const resolved = processText(plain || " ", mode);
+  const resolved = processText(plain || " ", mode, documentContext);
 
   return {
     document: normalized,

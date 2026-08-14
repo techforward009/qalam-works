@@ -235,3 +235,42 @@ describe("Document Cleaner pipeline — mode switching", () => {
     expect(r.summary?.direction).toBe("ltr");
   });
 });
+
+describe("processText — Auto mixed-language intelligence", () => {
+  it("Urdu mixed with English: normalizes Urdu and fixes English spacing", () => {
+    const input = "علي كتاب\nThis is a test ,with bad spacing.";
+    const r = processText(input, "auto");
+    expect(r.output).toContain("علی");
+    expect(r.output).toContain("کتاب");
+    expect(r.output).toContain("This is a test, with bad spacing.");
+  });
+
+  it("Arabic mixed with English: preserves Arabic, fixes English", () => {
+    // Protected religious phrase should not be Urdu-mapped
+    const input = "علي عليه السلام\nThis is a test ,with bad spacing.";
+    const r = processText(input, "auto");
+    expect(r.output).toContain("علي عليه السلام");
+    expect(r.output).toMatch(/ي/); // Arabic yeh preserved in protected line
+    expect(r.output).toContain("This is a test, with bad spacing.");
+  });
+
+  it("pure Arabic remains rtl-neutral (no Urdu maps)", () => {
+    const r = processText("علي كربلاء", "auto");
+    expect(r.resolvedLanguage).toBe("rtl-neutral");
+    expect(r.output).toBe("علي كربلاء");
+  });
+
+  it("Urdu + Arabic religious quotation: preserves protected phrase", () => {
+    const input = "علی کتاب\nعلي عليه السلام\nHello world";
+    const r = processText(input, "auto");
+    expect(r.output).toContain("علي عليه السلام");
+    // English line untouched or cleaned
+    expect(r.output).toContain("Hello world");
+  });
+
+  it("English punctuation cleanup in mixed Auto", () => {
+    const input = "یہ ایک ٹیسٹ ہے۔\nHello ,world";
+    const r = processText(input, "auto");
+    expect(r.output).toMatch(/Hello, world/);
+  });
+});

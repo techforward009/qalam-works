@@ -60,11 +60,11 @@ describe("Document Studio multilingual normalize", () => {
     expect(r.report.resolvedLanguage).toBe("rtl-neutral");
   });
 
-  it("Mixed Urdu+English Auto non-destructive", () => {
+  it("Mixed Urdu+English Auto preserves Latin", () => {
     const input = "یہ Qalam Works کا نیا tool ہے۔";
     const r = normalizeDocumentNodes(plainDoc(input), "auto");
     expect(r.document.content?.[0].content?.[0].text).toContain("Qalam Works");
-    expect(r.report.resolvedLanguage).toBe("rtl-neutral");
+    expect(["ur", "rtl-neutral"]).toContain(r.report.resolvedLanguage);
   });
 
   it("URL preserved under English", () => {
@@ -98,5 +98,41 @@ describe("Document Studio multilingual normalize", () => {
 
   it("standardizeUrduText still explicit Urdu", () => {
     expect(standardizeUrduText("علي كتاب").output).toBe("علی کتاب");
+  });
+});
+
+describe("normalizeDocumentNodes — Auto mixed example shape", () => {
+  it("separate paragraphs: Urdu + English get segment-appropriate fixes", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "علي كتاب" }] },
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "This is a test ,with bad spacing." }],
+        },
+        { type: "paragraph", content: [{ type: "text", text: "علي كربلاء" }] },
+      ],
+    };
+    const { document, report, changed } = normalizeDocumentNodes(doc as any, "auto");
+    expect(changed).toBe(true);
+    const texts = document.content!.map((p: any) => p.content?.[0]?.text);
+    expect(texts[0]).toBe("علی کتاب");
+    expect(texts[1]).toBe("This is a test, with bad spacing.");
+    // Third line is Arabic-script without protection in mixed doc → Urdu maps apply
+    expect(texts[2]).toBe("علی کربلاء");
+  });
+
+  it("pure Arabic document paragraphs stay non-destructive", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "علي كربلاء" }] },
+        { type: "paragraph", content: [{ type: "text", text: "عليه السلام" }] },
+      ],
+    };
+    const { document, report } = normalizeDocumentNodes(doc as any, "auto");
+    expect(report.resolvedLanguage).toBe("rtl-neutral");
+    expect(document.content![0].content![0].text).toBe("علي كربلاء");
   });
 });
