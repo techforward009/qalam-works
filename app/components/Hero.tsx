@@ -26,8 +26,11 @@ export default function Hero() {
               {t.headline}
             </h1>
 
-            <p className={`text-[#4A4840] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-10 ${naskh}`}>
+            <p className={`text-[#4A4840] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-3 ${naskh}`}>
               {t.subheadline}
+            </p>
+            <p className={`text-[#5B5748] text-sm md:text-[15px] leading-relaxed max-w-lg mx-auto md:mx-0 mb-10 ${naskh}`}>
+              {t.multilingualLine}
             </p>
 
             <div className={`flex flex-col sm:flex-row justify-center gap-3 mb-8 ${dir === "rtl" ? "md:justify-end" : "md:justify-start"}`}>

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { validateFile } from "../../../utils/fileValidation";
 import { handleDocumentUpload } from "../../../actions/documentAction";
@@ -18,6 +20,10 @@ import {
 } from "../../../utils/processing/cleanTextPipeline";
 
 type InputMode = "file" | "paste";
+
+const PASTE_EXAMPLE = `علي كتاب
+This is a test ,with bad spacing.
+علي كربلاء`;
 
 type PasteResult = CleanTextPipelineResult;
 
@@ -490,9 +496,25 @@ export default function DocumentCleanerTool() {
         {/* PASTE MODE */}
         {inputMode === "paste" && (
           <div dir={dir}>
-            <label htmlFor="cleaner-paste" className={`block text-sm font-semibold text-gray-800 mb-2 ${naskh}`}>
-              {ct.pasteLabel}
-            </label>
+            <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+              <label htmlFor="cleaner-paste" className={`block text-sm font-semibold text-gray-800 ${naskh}`}>
+                {ct.pasteLabel}
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setPasteText(PASTE_EXAMPLE);
+                  setPasteResult(null);
+                  setPasteStale(false);
+                  setPasteError(null);
+                  setCopied(false);
+                  trackEvent("tool_example", { tool: "document_cleaner" });
+                }}
+                className={`text-xs font-semibold text-amber-800 hover:text-amber-950 underline underline-offset-2 ${naskh}`}
+              >
+                {ct.tryExample}
+              </button>
+            </div>
             <textarea
               id="cleaner-paste"
               value={pasteText}
@@ -613,6 +635,31 @@ export default function DocumentCleanerTool() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {(pasteCanExport || fileCanDownload) && (
+          <div
+            className={`mt-6 rounded-xl border border-[#1A3A2A]/12 bg-[#F3F7F2] px-4 py-3 ${naskh}`}
+            dir={dir}
+          >
+            <p className="text-[15px] font-medium text-[#1A3A2A] leading-snug">{ct.studioCalloutTitle}</p>
+            <p className="mt-1.5 text-[14px] text-[#3D5A45] leading-snug">
+              <Link
+                href="/tools/document-studio"
+                onClick={() =>
+                  trackEvent("nav_click", {
+                    tool: "document_cleaner",
+                    target_tool: "document_studio",
+                    nav_source: "cross_link",
+                  })
+                }
+                className="font-semibold text-[#1A3A2A] underline decoration-[#B8935A]/70 underline-offset-2 hover:text-[#B8935A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 rounded-sm"
+              >
+                {ct.studioCalloutLink}
+              </Link>
+              {language !== "ur" ? <span aria-hidden="true"> →</span> : null}
+            </p>
           </div>
         )}
       </div>

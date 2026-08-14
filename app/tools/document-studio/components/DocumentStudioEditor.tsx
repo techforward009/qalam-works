@@ -268,6 +268,9 @@ export default function DocumentStudioEditor() {
   useEffect(() => {
     trackToolOpenOnce("document_studio");
   }, []);
+
+  const [isEditorEmpty, setIsEditorEmpty] = useState(true);
+
   // Publishing Preset Foundation — Phase 1 (2026-08-09). Persisted
   // selection only; does not currently affect export or editor
   // formatting (see publishingPresets.ts's own comment).
@@ -418,6 +421,31 @@ export default function DocumentStudioEditor() {
       }, AUTOSAVE_DEBOUNCE_MS);
     },
   });
+
+  useEffect(() => {
+    if (!editor) return;
+    const syncEmpty = () => setIsEditorEmpty(editor.isEmpty);
+    syncEmpty();
+    editor.on("update", syncEmpty);
+    editor.on("create", syncEmpty);
+    return () => {
+      editor.off("update", syncEmpty);
+      editor.off("create", syncEmpty);
+    };
+  }, [editor]);
+
+  const handleLoadExample = () => {
+    if (!editor) return;
+    const html =
+      "<p>علي كتاب</p><p>This is a test ,with bad spacing.</p><p>علي كربلاء</p>";
+    editor.chain().focus().setContent(html).run();
+    trackEvent("tool_example", { tool: "document_studio" });
+  };
+
+  const handleFocusPaste = () => {
+    editor?.chain().focus().run();
+  };
+
 
   useEffect(() => {
     return () => {
@@ -1015,10 +1043,52 @@ export default function DocumentStudioEditor() {
         )}
 
         <div
-          className="border border-gray-300 rounded-lg p-4 min-h-[60vh] focus-within:ring-2 focus-within:ring-amber-500 cursor-text"
+          className="relative border border-gray-300 rounded-lg p-4 min-h-[60vh] focus-within:ring-2 focus-within:ring-amber-500 cursor-text"
           dir={dir}
           onClick={handleWrapperClick}
         >
+          {isEditorEmpty && editor && (
+            <div
+              className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center p-6 md:p-10"
+              aria-hidden={false}
+            >
+              <div
+                className={`pointer-events-auto mt-8 max-w-md rounded-xl border border-[#1A3A2A]/12 bg-white/95 shadow-sm px-5 py-4 text-center ${isUr ? "font-naskh" : ""}`}
+                dir={dir}
+              >
+                <p className={`text-base font-semibold text-[#1A3A2A] mb-1 ${isUr ? "font-nastaliq font-normal text-lg" : ""}`}>
+                  {isUr ? "ڈاکومنٹ اسٹوڈیو" : "Document Studio"}
+                </p>
+                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                  {isUr
+                    ? "مخلوط زبان کے دستاویز لکھیں، معیاری بنائیں اور تیار کریں۔"
+                    : "Edit, standardize and prepare multilingual documents."}
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLoadExample();
+                    }}
+                    className="h-9 px-4 rounded-lg text-sm font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35]"
+                  >
+                    {isUr ? "مثال لوڈ کریں" : "Load Example"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFocusPaste();
+                    }}
+                    className="h-9 px-4 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    {isUr ? "متن پیسٹ کریں" : "Paste Text"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <EditorContent
             editor={editor}
             className={`qalam-editor-content focus:outline-none ${

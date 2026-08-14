@@ -36,6 +36,8 @@ export const translations = {
       ctaPrimary: "Open Document Studio",
       ctaSecondary: "See real before & after",
       trustLine: "Researchers · Translators · Publishers · Academia",
+      multilingualLine:
+        "Language-aware text processing for Urdu, Arabic, English, and mixed-language content.",
       mockupLabel: "Document Studio",
       mockupIssue1: "Mixed Unicode form",
       mockupIssue1Detail: "should be",
@@ -101,6 +103,26 @@ export const translations = {
         {
           name: "Invoice Generator",
           body: "Create clean, professional invoices and export them as PDF.",
+        },
+      ],
+    },
+    jobGuidance: {
+      headline: "What do you need?",
+      items: [
+        {
+          label: "Quick cleanup",
+          href: "/tools/document-cleaner",
+          description: "Document Cleaner",
+        },
+        {
+          label: "Urdu character normalization",
+          href: "/tools/unicode-standardizer",
+          description: "Urdu Unicode Standardizer",
+        },
+        {
+          label: "Full editing and publishing workflow",
+          href: "/tools/document-studio",
+          description: "Document Studio",
         },
       ],
     },
@@ -235,6 +257,9 @@ export const translations = {
       correctionsHeading: "Corrections applied",
       remainingHeading: "Remaining observations",
       emptyPasteError: "Please paste or type some text first.",
+      tryExample: "Try Example",
+      studioCalloutTitle: "Need a full editing workspace?",
+      studioCalloutLink: "Open Document Studio",
       reportTab: "Unified Qalam Report",
       previewTab: "Extracted Text Preview",
       downloadTxt: "Download TXT File",
@@ -313,6 +338,8 @@ export const translations = {
       ctaPrimary: "ڈاکومنٹ اسٹوڈیو کھولیں",
       ctaSecondary: "حقیقی پہلے اور بعد دیکھیں",
       trustLine: "محققین · مترجمین · ناشرین · تعلیمی ادارے",
+      multilingualLine:
+        "اردو، عربی، انگریزی اور مخلوط متن کے لیے زبان کے مطابق صفائی اور اشاعتی اوزار۔",
       mockupLabel: "ڈاکومنٹ اسٹوڈیو",
       mockupIssue1: "مخلوط یونیکوڈ شکل",
       mockupIssue1Detail: "ہونا چاہیے",
@@ -378,6 +405,26 @@ export const translations = {
         {
           name: "انوائس جنریٹر",
           body: "صاف ستھری اور پیشہ ورانہ انوائس تیار کریں اور پی ڈی ایف میں محفوظ کریں۔",
+        },
+      ],
+    },
+    jobGuidance: {
+      headline: "آپ کو کیا چاہیے؟",
+      items: [
+        {
+          label: "فوری صفائی",
+          href: "/tools/document-cleaner",
+          description: "ڈاکومنٹ کلینر",
+        },
+        {
+          label: "اردو حروف کی معیاری شکل",
+          href: "/tools/unicode-standardizer",
+          description: "اردو یونیکوڈ اسٹینڈرڈائزر",
+        },
+        {
+          label: "مکمل تدوین اور اشاعتی ورک فلو",
+          href: "/tools/document-studio",
+          description: "ڈاکومنٹ اسٹوڈیو",
         },
       ],
     },
@@ -512,6 +559,9 @@ export const translations = {
       correctionsHeading: "لگائی گئی اصلاحات",
       remainingHeading: "باقی مشاہدات",
       emptyPasteError: "براہ کرم پہلے کچھ متن پیسٹ کریں یا لکھیں۔",
+      tryExample: "مثال دیکھیں",
+      studioCalloutTitle: "مکمل تدوین کے لیے:",
+      studioCalloutLink: "ڈاکومنٹ اسٹوڈیو کھولیں",
       reportTab: "قلم رپورٹ",
       previewTab: "متن کا جائزہ",
       downloadTxt: "TXT فائل ڈاؤن لوڈ کریں",

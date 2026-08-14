@@ -2,6 +2,7 @@ import Hero from "./components/Hero";
 import ProblemSection from "./components/ProblemSection";
 import BeforeAfterSection from "./components/BeforeAfterSection";
 import HowItWorksSection from "./components/HowItWorksSection";
+import JobGuidanceSection from "./components/JobGuidanceSection";
 import WhoItsForSection from "./components/WhoItsForSection";
 import FinalCtaSection from "./components/FinalCtaSection";
 
@@ -18,6 +19,7 @@ export default function Home() {
   return (
     <div className="text-[#151B2E] font-sans">
       <Hero />
+      <JobGuidanceSection />
       <ProblemSection />
       <BeforeAfterSection />
       <HowItWorksSection />
