@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Noto_Nastaliq_Urdu, Noto_Naskh_Arabic, Inter } from "next/font/google";
+import { Noto_Nastaliq_Urdu, Noto_Naskh_Arabic, Inter, Amiri, Vazirmatn } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -24,6 +24,18 @@ const naskh = Noto_Naskh_Arabic({
   weight: ["400", "500", "600", "700"],
   variable: "--font-naskh",
 });
+
+const amiri = Amiri({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  variable: "--font-amiri",
+});
+
+const vazirmatn = Vazirmatn({
+  subsets: ["arabic", "latin"],
+  variable: "--font-vazirmatn",
+});
+
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://qalamworks.com"),
@@ -58,7 +70,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" dir="ltr">
-      <body className={`${inter.variable} ${nastaliq.variable} ${naskh.variable} antialiased`}>
+      <body className={`${inter.variable} ${nastaliq.variable} ${naskh.variable} ${amiri.variable} ${vazirmatn.variable} antialiased`}>
         <LanguageProvider>
           <Header />
           {children}

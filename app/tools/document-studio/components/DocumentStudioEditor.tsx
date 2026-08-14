@@ -6,6 +6,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
+import { TextStyle, FontFamily } from "@tiptap/extension-text-style";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
@@ -98,11 +99,49 @@ function ToolbarDivider() {
   return <div className="w-px h-[26px] bg-gray-200 mx-1.5 self-center" />;
 }
 
+const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
+  { label: "Default", value: "" },
+  { label: "Jameel Noori Nastaleeq", value: "Jameel Noori Nastaleeq" },
+  { label: "Noto Nastaliq Urdu", value: "Noto Nastaliq Urdu" },
+  { label: "Amiri", value: "Amiri" },
+  { label: "Noto Naskh Arabic", value: "Noto Naskh Arabic" },
+  { label: "Vazirmatn", value: "Vazirmatn" },
+  { label: "Sahel", value: "Sahel" },
+  { label: "Inter", value: "Inter" },
+];
+
 function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | "ltr"; setDir: (d: "rtl" | "ltr") => void }) {
   if (!editor) return null;
 
+  const currentFont =
+    (editor.getAttributes("textStyle").fontFamily as string | undefined) || "";
+
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-gray-100" dir="ltr">
+      <label className="sr-only" htmlFor="studio-font-family">
+        Font family
+      </label>
+      <select
+        id="studio-font-family"
+        value={currentFont}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (!v) {
+            editor.chain().focus().unsetFontFamily().run();
+          } else {
+            editor.chain().focus().setFontFamily(v).run();
+          }
+        }}
+        className="h-[38px] max-w-[11rem] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
+        title="Font family"
+      >
+        {STUDIO_FONT_OPTIONS.map((opt) => (
+          <option key={opt.label} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      <ToolbarDivider />
       <ToolbarButton label="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
         B
       </ToolbarButton>
@@ -358,6 +397,8 @@ export default function DocumentStudioEditor() {
       StarterKit,
       Link.configure({ openOnClick: false }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TextStyle,
+      FontFamily,
     ],
     content: initialContent,
     immediatelyRender: false,

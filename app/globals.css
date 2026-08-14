@@ -138,3 +138,28 @@ body {
   }
 }
 
+
+
+/* Document Studio typography font stacks */
+.qalam-editor-content [style*="Jameel Noori Nastaleeq"],
+.qalam-editor-content span[style*="Jameel Noori Nastaleeq"] {
+  font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
+}
+.qalam-editor-content [style*="Noto Nastaliq Urdu"] {
+  font-family: var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
+}
+.qalam-editor-content [style*="Amiri"] {
+  font-family: var(--font-amiri), Amiri, serif;
+}
+.qalam-editor-content [style*="Noto Naskh Arabic"] {
+  font-family: var(--font-naskh), "Noto Naskh Arabic", serif;
+}
+.qalam-editor-content [style*="Vazirmatn"] {
+  font-family: var(--font-vazirmatn), Vazirmatn, sans-serif;
+}
+.qalam-editor-content [style*="Sahel"] {
+  font-family: Sahel, Tahoma, "Segoe UI", sans-serif;
+}
+.qalam-editor-content [style*="Inter"] {
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+}
