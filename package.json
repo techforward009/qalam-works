@@ -12,7 +12,6 @@
   "dependencies": {
     "@fontsource/noto-nastaliq-urdu": "^5.3.0",
     "@sparticuz/chromium": "^149.0.0",
-    "@tiptap/extension-font-family": "^3.29.2",
     "@tiptap/extension-link": "^3.29.2",
     "@tiptap/extension-text-align": "^3.29.2",
     "@tiptap/extension-text-style": "^3.29.2",
