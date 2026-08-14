@@ -1101,7 +1101,6 @@ export default function DocumentStudioEditor() {
 
         <div
           className="relative border border-gray-300 rounded-lg p-4 min-h-[60vh] focus-within:ring-2 focus-within:ring-amber-500 cursor-text"
-          dir={dir}
           onClick={handleWrapperClick}
         >
           {isEditorEmpty && editor && (
@@ -1149,7 +1148,7 @@ export default function DocumentStudioEditor() {
           <EditorContent
             editor={editor}
             className={`qalam-editor-content focus:outline-none ${
-              dir === "rtl" ? "font-nastaliq text-right" : "text-left"
+              dir === "rtl" ? "font-nastaliq" : ""
             }`}
           />
         </div>
@@ -1500,6 +1499,19 @@ export default function DocumentStudioEditor() {
       )}
 
       <style jsx global>{`
+        /* Mixed RTL/LTR: per-paragraph base direction from content (CSS plaintext).
+           Do not force a single text-align on the whole editor. */
+        .qalam-editor-content .ProseMirror {
+          min-height: 260px;
+          text-align: start;
+        }
+        .qalam-editor-content .ProseMirror p,
+        .qalam-editor-content .ProseMirror h1,
+        .qalam-editor-content .ProseMirror h2,
+        .qalam-editor-content .ProseMirror h3 {
+          unicode-bidi: plaintext;
+          text-align: start;
+        }
         .qalam-editor-content p {
           margin: 0.35rem 0;
         }
@@ -1530,6 +1542,8 @@ export default function DocumentStudioEditor() {
         }
         .qalam-editor-content li {
           margin: 0.15rem 0;
+          unicode-bidi: plaintext;
+          text-align: start;
         }
         .qalam-editor-content blockquote {
           border-inline-start: 3px solid #d97706;
@@ -1537,13 +1551,12 @@ export default function DocumentStudioEditor() {
           color: #57534e;
           font-style: italic;
           margin: 0.5rem 0;
+          unicode-bidi: plaintext;
+          text-align: start;
         }
         .qalam-editor-content a {
           color: #b45309;
           text-decoration: underline;
-        }
-        .qalam-editor-content .ProseMirror {
-          min-height: 260px;
         }
       `}</style>
     </div>
