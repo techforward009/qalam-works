@@ -65,22 +65,15 @@ export default function Hero() {
               </div>
 
               <div className="p-6" dir="rtl">
-                <p className="font-nastaliq text-xl md:text-2xl leading-loose text-[#EDEAE1]">
+                <p className="font-nastaliq text-base md:text-lg leading-loose text-[#EDEAE1]">
+                  اردو{"   "}متن{"   "}کو{"   "}مختلف{"   "}ویب{"   "}سائٹس{"   "}اور
+                  {" "}فائلوں{"   "}سے{"   "}نقل{"   "}کرتے{"   "}وقت{"   "}اکثر{"   "}اضافی
+                  {" "}خالی{"   "}جگہیں{"   "}اور{"   "}غیرضروری{"   "}رموز{"   "}شامل
+                  {" "}ہو{"   "}جاتے{"   "}ہیں
                   <span className="relative">
-                    يہ
+                    !!
                     <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-red-400/70 rounded-full" />
                   </span>
-                  {"  "}ایک sample document ہے
-                  <span className="relative">
-                    {" ,"}
-                    <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-red-400/70 rounded-full" />
-                  </span>
-                  {" "}جس{" "}
-                  <span className="relative">
-                    ميں
-                    <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-red-400/70 rounded-full" />
-                  </span>
-                  {" "}different languages اور spacing issues ہیں۔
                 </p>
               </div>
 
@@ -88,8 +81,7 @@ export default function Hero() {
                 <div className="flex items-start gap-2.5 text-xs" dir="ltr">
                   <span className="mt-0.5 text-amber-400">●</span>
                   <span className="text-[#C7C2B4]">
-                    {t.mockupIssue1} — <span className="font-nastaliq">"يہ / ميں"</span> {t.mockupIssue1Detail}{" "}
-                    <span className="font-nastaliq">"یہ / میں"</span>
+                    {t.mockupIssue1} — extra spaces between words
                   </span>
                 </div>
                 <div className="flex items-start gap-2.5 text-xs" dir="ltr">

@@ -5,7 +5,9 @@ import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 import MixedDirectionText from "./MixedDirectionText";
 
 export default function InteractiveDemo() {
-  const [input, setInput] = useState("يہ  ایک sample document ہے ,جس ميں\ndifferent languages اور spacing issues ہیں۔");
+  const [input, setInput] = useState(
+    "آج  کے  دور  میں  علم  اور  تحقیق  کے  میدان  میں\nڈیجیٹل  مواد  کی  اہمیت  بہت  زیادہ  بڑھ  گئی  ہے ۔\nلیکن  مختلف  ذرائع  سے  نقل  کیا  گیا  متن  اکثر\nغلط  spacing ، بےترتیب  رموز  اور  خراب  formatting\nکی وجہ سے پڑھنے میں مشکل ہو جاتا ہے۔"
+  );
   const { output, badges, summary } = standardizeUrduText(input);
 
   return (

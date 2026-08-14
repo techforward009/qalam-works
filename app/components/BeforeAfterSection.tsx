@@ -11,7 +11,8 @@ import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 // a transformation the product doesn't actually perform, and stays
 // automatically correct if the standardizer's behavior ever changes.
 const BEFORE_TEXT =
-  "يہ  ایک sample document ہے ,جس ميں\ndifferent languages اور spacing issues ہیں۔";
+  "یہ  ایک  digital  document  ہے  جس  میں\nUrdu  اور  English  متن  ایک  ساتھ  موجود  ہے ,\nلیکن  formatting  درست  نہیں  ہے !!";
+
 const AFTER_TEXT = standardizeUrduText(BEFORE_TEXT).output;
 
 function PenNibIcon() {
