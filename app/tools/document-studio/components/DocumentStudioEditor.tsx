@@ -117,7 +117,7 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
     (editor.getAttributes("textStyle").fontFamily as string | undefined) || "";
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-gray-100" dir="ltr">
+    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4 pb-3 sm:pb-4 border-b border-gray-100 overflow-x-auto" dir="ltr">
       <label className="sr-only" htmlFor="studio-font-family">
         Font family
       </label>
@@ -526,8 +526,10 @@ export default function DocumentStudioEditor() {
 
   const handleWrapperClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!editor) return;
-    if (e.target === e.currentTarget && !editor.isFocused) {
-      editor.commands.focus("end");
+    const target = e.target as HTMLElement;
+    if (target.closest("button, a, input, select, textarea")) return;
+    if (!editor.isFocused) {
+      editor.commands.focus(editor.isEmpty ? "start" : "end");
     }
   };
 
@@ -1160,58 +1162,47 @@ export default function DocumentStudioEditor() {
           </div>
         )}
 
-        <div
-          className="relative border border-gray-300 rounded-lg p-4 min-h-[60vh] focus-within:ring-2 focus-within:ring-amber-500 cursor-text"
-          onClick={handleWrapperClick}
-        >
-          {isEditorEmpty && editor && (
-            <div
-              className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center p-6 md:p-10"
-              aria-hidden={false}
-            >
+        {/* A4-style document canvas */}
+        <div className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-4 sm:py-6 md:px-8 md:py-8">
+          <div
+            className="relative mx-auto w-full max-w-[794px] min-h-[70vh] sm:min-h-[75vh] cursor-text rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
+            onClick={handleWrapperClick}
+            role="textbox"
+            aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
+          >
+            {isEditorEmpty && editor && (
               <div
-                className={`pointer-events-auto mt-8 max-w-md rounded-xl border border-[#1A3A2A]/12 bg-white/95 shadow-sm px-5 py-4 text-center ${isUr ? "font-naskh" : ""}`}
-                dir={dir}
+                className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 py-10"
+                aria-hidden={false}
               >
-                <p className={`text-base font-semibold text-[#1A3A2A] mb-1 ${isUr ? "font-nastaliq font-normal text-lg" : ""}`}>
-                  {isUr ? "ڈاکومنٹ اسٹوڈیو" : "Document Studio"}
+                <p className="mb-2 text-3xl text-[#B8935A]/80 select-none" aria-hidden>
+                  ✎
                 </p>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                  {isUr
-                    ? "مخلوط زبان کے دستاویز لکھیں، معیاری بنائیں اور تیار کریں۔"
-                    : "Edit, standardize and prepare multilingual documents."}
+                <p
+                  className={`mb-5 text-sm sm:text-base text-gray-500 ${isUr ? "font-naskh" : ""}`}
+                  dir={dir}
+                >
+                  {isUr ? "یہاں لکھنا شروع کریں…" : "Start writing here…"}
                 </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLoadExample();
-                    }}
-                    className="h-9 px-4 rounded-lg text-sm font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35]"
-                  >
-                    {isUr ? "مثال لوڈ کریں" : "Load Example"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFocusPaste();
-                    }}
-                    className="h-9 px-4 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50"
-                  >
-                    {isUr ? "متن پیسٹ کریں" : "Paste Text"}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLoadExample();
+                  }}
+                  className={`pointer-events-auto h-10 px-5 rounded-lg text-sm font-semibold border border-[#1A3A2A]/20 bg-white text-[#1A3A2A] hover:bg-[#F7F5EF] shadow-sm ${isUr ? "font-naskh" : ""}`}
+                >
+                  {isUr ? "مثال لوڈ کریں" : "Load Example"}
+                </button>
               </div>
-            </div>
-          )}
-          <EditorContent
-            editor={editor}
-            className={`qalam-editor-content focus:outline-none ${
-              dir === "rtl" ? "font-nastaliq" : ""
-            }`}
-          />
+            )}
+            <EditorContent
+              editor={editor}
+              className={`qalam-editor-content qalam-doc-page focus:outline-none ${
+                dir === "rtl" ? "font-nastaliq" : ""
+              }`}
+            />
+          </div>
         </div>
 
         {/* Primary processing actions — directly under editor (mobile + desktop) */}
@@ -1581,12 +1572,24 @@ export default function DocumentStudioEditor() {
       )}
 
       <style jsx global>{`
-        /* Mixed RTL/LTR: per-paragraph base direction from content (CSS plaintext).
-           Do not force a single text-align on the whole editor. */
-        .qalam-editor-content .ProseMirror {
-          min-height: 260px;
+        /* Document page canvas: Word/Docs-like reading surface */
+        .qalam-editor-content.qalam-doc-page .ProseMirror {
+          min-height: 70vh;
+          padding: 1.75rem 1.25rem 2.5rem;
+          outline: none;
           text-align: start;
+          font-size: 1.05rem;
+          line-height: 1.85;
+          color: #1a1a1a;
         }
+        @media (min-width: 640px) {
+          .qalam-editor-content.qalam-doc-page .ProseMirror {
+            padding: 2.5rem 3rem 3rem;
+            font-size: 1.1rem;
+            line-height: 1.9;
+          }
+        }
+        /* Mixed RTL/LTR: per-paragraph base direction from content (CSS plaintext). */
         .qalam-editor-content .ProseMirror p,
         .qalam-editor-content .ProseMirror h1,
         .qalam-editor-content .ProseMirror h2,
@@ -1594,23 +1597,32 @@ export default function DocumentStudioEditor() {
           unicode-bidi: plaintext;
           text-align: start;
         }
+        /* Urdu/Arabic readability: generous paragraph spacing */
         .qalam-editor-content p {
-          margin: 0.35rem 0;
+          margin: 0.55rem 0;
+          line-height: 1.95;
+        }
+        /* Latin-leaning paragraphs still readable; plaintext keeps direction */
+        .qalam-editor-content p:lang(en) {
+          line-height: 1.7;
         }
         .qalam-editor-content h1 {
-          font-size: 1.5rem;
+          font-size: 1.55rem;
           font-weight: 700;
-          margin: 0.75rem 0 0.5rem;
+          margin: 1rem 0 0.55rem;
+          line-height: 1.45;
         }
         .qalam-editor-content h2 {
-          font-size: 1.25rem;
+          font-size: 1.28rem;
           font-weight: 700;
-          margin: 0.65rem 0 0.4rem;
+          margin: 0.85rem 0 0.45rem;
+          line-height: 1.45;
         }
         .qalam-editor-content h3 {
-          font-size: 1.1rem;
+          font-size: 1.12rem;
           font-weight: 700;
-          margin: 0.55rem 0 0.35rem;
+          margin: 0.7rem 0 0.4rem;
+          line-height: 1.45;
         }
         .qalam-editor-content ul {
           list-style: disc;
