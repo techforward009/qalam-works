@@ -62,10 +62,10 @@ export default function JobGuidanceSection() {
   const isUr = language === "ur";
 
   return (
-    <section className="bg-white py-12 md:py-16" dir={dir}>
+    <section className="bg-white py-10 md:py-12" dir={dir}>
       <div className="site-container max-w-3xl mx-auto">
         <h2
-          className={`text-xl md:text-2xl font-bold text-[#1A3A2A] text-center mb-8 ${
+          className={`text-xl md:text-2xl font-bold text-[#1A3A2A] text-center mb-5 ${
             isUr ? "font-nastaliq font-normal" : ""
           }`}
         >

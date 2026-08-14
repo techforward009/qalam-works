@@ -34,9 +34,9 @@ export default function BeforeAfterSection() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section id="before-after" className="bg-[#EAF0E7] py-28 md:py-36" dir={dir}>
+    <section id="before-after" className="bg-[#EAF0E7] py-14 md:py-16" dir={dir}>
       <div className="max-w-[1240px] mx-auto px-6 text-center">
-        <h2 className={`text-2xl md:text-3xl font-bold text-[#1A3A2A] mb-16 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+        <h2 className={`text-2xl md:text-3xl font-bold text-[#1A3A2A] mb-8 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}
         </h2>
 

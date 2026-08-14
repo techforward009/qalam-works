@@ -15,10 +15,10 @@ export default function Hero() {
         ق
       </div>
 
-      <div className="relative site-container pt-24 pb-28 md:pt-32 md:pb-36">
-        <div className="grid md:grid-cols-2 gap-16 items-center">
+      <div className="relative site-container pt-14 pb-16 md:pt-20 md:pb-20">
+        <div className="grid md:grid-cols-2 gap-10 md:gap-12 items-center">
           <div className={`text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"}`}>
-            <div className={`inline-flex items-center gap-2 rounded-full border border-[#B8935A]/40 bg-[#B8935A]/10 px-4 py-1.5 text-xs font-medium tracking-wide text-[#9A6A30] mb-7 ${naskh}`}>
+            <div className={`inline-flex items-center gap-2 rounded-full border border-[#B8935A]/40 bg-[#B8935A]/10 px-4 py-1.5 text-xs font-medium tracking-wide text-[#9A6A30] mb-4 ${naskh}`}>
               {t.eyebrow}
             </div>
 
@@ -29,7 +29,7 @@ export default function Hero() {
             <p className={`text-[#4A4840] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-3 ${naskh}`}>
               {t.subheadline}
             </p>
-            <p className={`text-[#5B5748] text-sm md:text-[15px] leading-relaxed max-w-lg mx-auto md:mx-0 mb-10 ${naskh}`}>
+            <p className={`text-[#5B5748] text-sm md:text-[15px] leading-relaxed max-w-lg mx-auto md:mx-0 mb-6 ${naskh}`}>
               {t.multilingualLine}
             </p>
 
@@ -42,7 +42,7 @@ export default function Hero() {
               </Link>
             </div>
 
-            <p className={`text-[14px] text-[#5B5748] mb-8 text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"} ${naskh}`}>
+            <p className={`text-[14px] text-[#5B5748] mb-5 text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"} ${naskh}`}>
               {t.quickCleanupPrompt}{" "}
               <Link
                 href="/tools/document-cleaner"

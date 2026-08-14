@@ -9,12 +9,12 @@ export default function ProblemSection() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section className="bg-[#FAF7F0] py-24 md:py-28" dir={dir}>
+    <section className="bg-[#FAF7F0] py-14 md:py-16" dir={dir}>
       <div className="max-w-[1240px] mx-auto px-6 text-center">
         <h2 className={`text-2xl md:text-3xl font-bold text-[#151B2E] mb-3 max-w-2xl mx-auto leading-snug ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}
         </h2>
-        <p className={`text-[#5B5748] text-sm md:text-base max-w-xl mx-auto mb-16 ${naskh}`}>{t.supporting}</p>
+        <p className={`text-[#5B5748] text-sm md:text-base max-w-xl mx-auto mb-8 ${naskh}`}>{t.supporting}</p>
 
         <div className="grid sm:grid-cols-2 gap-6 max-w-[900px] mx-auto">
           {t.points.map((point) => (
