@@ -11,7 +11,7 @@ import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 // a transformation the product doesn't actually perform, and stays
 // automatically correct if the standardizer's behavior ever changes.
 const BEFORE_TEXT =
-  "یہ  ایک  digital  document  ہے  جس  میں\nUrdu  اور  English  متن  ایک  ساتھ  موجود  ہے ,\nلیکن  formatting  درست  نہیں  ہے !!";
+  "تحقیق :  یہ  ایک  علمی  مضمون  ہے ,جس ميں\nاردو اور English متن  ايك  ساتھ موجود  ہے۔\nمصنف  نے  کہا  : \"یہ مواد اشاعت کے لئے تیار ہے\" !!";
 
 const AFTER_TEXT = standardizeUrduText(BEFORE_TEXT).output;
 
