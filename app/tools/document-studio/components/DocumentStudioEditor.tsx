@@ -502,6 +502,8 @@ export default function DocumentStudioEditor() {
       setSaveStatus("idle");
       setPreview(null);
       setAlreadyClean(false);
+      setExampleJustLoaded(false);
+      setLastResolved(null);
       setDocxImportNotice(false);
       setAuditReport(null);
       hasAuditReportRef.current = false;
@@ -518,6 +520,24 @@ export default function DocumentStudioEditor() {
         console.error("Failed to remove draft", e);
       }
     }
+  };
+
+  /** Clear TipTap content + related UI state (parallel to Quality Checker Clear). */
+  const handleClearText = () => {
+    if (!editor) return;
+    editor.commands.clearContent(true);
+    setExampleJustLoaded(false);
+    setPreview(null);
+    setAlreadyClean(false);
+    setLastResolved(null);
+    setDocxImportNotice(false);
+    setAuditReport(null);
+    hasAuditReportRef.current = false;
+    setIsAuditStale(false);
+    setUploadError(null);
+    setPdfError(null);
+    setPdfSummary(null);
+    setCopied(false);
   };
 
   // v1 file import (Option A, per Sajjad's 2026-08-08 decision): both .txt
@@ -1202,6 +1222,14 @@ export default function DocumentStudioEditor() {
             >
               {isUr ? "معیار جانچیں" : "Run Quality Audit"}
             </button>
+            <button
+              type="button"
+              onClick={handleClearText}
+              disabled={isEditorEmpty}
+              className={`w-full sm:w-auto min-h-[44px] h-11 px-4 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed ${isUr ? "font-naskh" : ""}`}
+            >
+              {isUr ? "متن صاف کریں" : "Clear Text"}
+            </button>
           </div>
 
           {preview && editor && (
@@ -1324,6 +1352,14 @@ export default function DocumentStudioEditor() {
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs items-center">
+            <button
+              type="button"
+              onClick={handleClearText}
+              disabled={isEditorEmpty}
+              className="h-9 px-3 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isUr ? "متن صاف کریں" : "Clear Text"}
+            </button>
             <button
               type="button"
               onClick={handleNewDocument}
