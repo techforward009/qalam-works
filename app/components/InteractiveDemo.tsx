@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
+import MixedDirectionText from "./MixedDirectionText";
 
 export default function InteractiveDemo() {
   const [input, setInput] = useState("قال الامام علي عليه السلام: العلم نور ، والجهل ظلام");
@@ -37,14 +38,11 @@ export default function InteractiveDemo() {
             <label className="block text-xs font-semibold text-amber-800 mb-1 text-center w-full" dir="ltr">
               Processed Output (Qalam Works):
             </label>
-            <div
-              className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[100px] overflow-x-auto flex items-center justify-center text-center whitespace-pre-wrap"
-              dir="rtl"
-            >
+            <div className="w-full bg-amber-50/60 border border-amber-200 p-3 rounded-lg text-sm font-mono text-amber-950 font-medium min-h-[100px] overflow-x-auto">
               {input.trim() ? (
-                output
+                <MixedDirectionText text={output} fallbackDir="rtl" />
               ) : (
-                <span className="text-gray-400 font-sans text-xs">نتائج یہاں ظاہر ہوں گے...</span>
+                <span className="text-gray-400 font-sans text-xs text-center block">نتائج یہاں ظاہر ہوں گے...</span>
               )}
             </div>
           </div>

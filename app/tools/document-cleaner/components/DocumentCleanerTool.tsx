@@ -18,6 +18,7 @@ import {
   displayDirForPaste,
   type CleanTextPipelineResult,
 } from "../../../utils/processing/cleanTextPipeline";
+import MixedDirectionText from "../../../components/MixedDirectionText";
 
 type InputMode = "file" | "paste";
 
@@ -448,11 +449,11 @@ export default function DocumentCleanerTool() {
                     </div>
                   </div>
                 ) : (
-                  <div
-                    className="bg-gray-50 border border-gray-300 p-4 rounded-xl text-xs font-mono max-h-[300px] overflow-y-auto break-words"
-                    dir={resultContentDir(fileResult.summary.direction)}
-                  >
-                    {fileResult.cleanedText}
+                  <div className="bg-gray-50 border border-gray-300 p-4 rounded-xl text-xs font-mono max-h-[300px] overflow-y-auto break-words">
+                    <MixedDirectionText
+                      text={fileResult.cleanedText || ""}
+                      fallbackDir={resultContentDir(fileResult.summary.direction)}
+                    />
                   </div>
                 )}
 
@@ -593,20 +594,20 @@ export default function DocumentCleanerTool() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <h3 className={`text-sm font-bold text-gray-700 mb-2 ${naskh}`}>{ct.originalLabel}</h3>
-                    <div
-                      className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm whitespace-pre-wrap break-words max-h-[280px] overflow-y-auto"
-                      dir={pasteDisplayDir}
-                    >
-                      {pasteResult.originalText}
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm max-h-[280px] overflow-y-auto">
+                      <MixedDirectionText
+                        text={pasteResult.originalText}
+                        fallbackDir={pasteDisplayDir === "ltr" ? "ltr" : "rtl"}
+                      />
                     </div>
                   </div>
                   <div>
                     <h3 className={`text-sm font-bold text-gray-700 mb-2 ${naskh}`}>{ct.cleanedLabel}</h3>
-                    <div
-                      className="bg-green-50/50 border border-green-200 rounded-xl p-3 text-sm whitespace-pre-wrap break-words max-h-[280px] overflow-y-auto"
-                      dir={resultContentDir(pasteResult.direction)}
-                    >
-                      {pasteResult.cleanedText}
+                    <div className="bg-green-50/50 border border-green-200 rounded-xl p-3 text-sm max-h-[280px] overflow-y-auto">
+                      <MixedDirectionText
+                        text={pasteResult.cleanedText}
+                        fallbackDir={resultContentDir(pasteResult.direction)}
+                      />
                     </div>
                   </div>
                 </div>
