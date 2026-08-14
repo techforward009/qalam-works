@@ -402,6 +402,12 @@ export default function DocumentStudioEditor() {
     ],
     content: initialContent,
     immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        dir: "rtl",
+        class: "focus:outline-none",
+      },
+    },
     onUpdate: ({ editor }) => {
       if (hasAuditReportRef.current) {
         setIsAuditStale(true);
@@ -484,6 +490,15 @@ export default function DocumentStudioEditor() {
       editor.off("create", syncEmpty);
     };
   }, [editor]);
+
+  // Editor direction: set on the contenteditable root so empty/new paragraphs
+  // place the caret on the correct side (RTL → right, LTR → left).
+  useEffect(() => {
+    if (!editor) return;
+    const dom = editor.view.dom as HTMLElement;
+    dom.setAttribute("dir", dir);
+    dom.style.direction = dir;
+  }, [editor, dir]);
 
   const handleLoadExample = () => {
     if (!editor) return;
@@ -1166,6 +1181,7 @@ export default function DocumentStudioEditor() {
         <div className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-4 sm:py-6 md:px-8 md:py-8">
           <div
             className="relative mx-auto w-full max-w-[794px] min-h-[70vh] sm:min-h-[75vh] cursor-text rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
+            dir={dir}
             onClick={handleWrapperClick}
             role="textbox"
             aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
@@ -1581,6 +1597,13 @@ export default function DocumentStudioEditor() {
           font-size: 1.05rem;
           line-height: 1.85;
           color: #1a1a1a;
+        }
+        /* Root direction from toolbar RTL/LTR — controls empty caret side */
+        .qalam-editor-content .ProseMirror[dir="rtl"] {
+          direction: rtl;
+        }
+        .qalam-editor-content .ProseMirror[dir="ltr"] {
+          direction: ltr;
         }
         @media (min-width: 640px) {
           .qalam-editor-content.qalam-doc-page .ProseMirror {
