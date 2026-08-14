@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../../lib/language-context";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Paragraph from "@tiptap/extension-paragraph";
+import Heading from "@tiptap/extension-heading";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle, FontFamily } from "@tiptap/extension-text-style";
@@ -97,6 +99,68 @@ function ToolbarButton({
 
 function ToolbarDivider() {
   return <div className="w-px h-[26px] bg-gray-200 mx-1.5 self-center" />;
+}
+
+
+/** Persist writing direction on textblocks so empty RTL paragraphs place the caret on the right. */
+const ParagraphWithDir = Paragraph.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      dir: {
+        default: "rtl",
+        parseHTML: (element) => {
+          const d = element.getAttribute("dir");
+          return d === "rtl" || d === "ltr" ? d : "rtl";
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.dir) return { dir: "rtl" };
+          return { dir: attributes.dir };
+        },
+      },
+    };
+  },
+});
+
+const HeadingWithDir = Heading.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      dir: {
+        default: "rtl",
+        parseHTML: (element) => {
+          const d = element.getAttribute("dir");
+          return d === "rtl" || d === "ltr" ? d : null;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.dir) return {};
+          return { dir: attributes.dir };
+        },
+      },
+    };
+  },
+});
+
+/** Apply toolbar direction to every textblock so caret side persists across empty/new paragraphs. */
+function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr") {
+  const { state } = editor;
+  let tr = state.tr;
+  let changed = false;
+  state.doc.descendants((node, pos) => {
+    if (!node.isTextblock) return;
+    if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
+    if (node.attrs.dir === nextDir) return;
+    tr = tr.setNodeMarkup(pos, undefined, { ...node.attrs, dir: nextDir });
+    changed = true;
+  });
+  if (changed) {
+    // Avoid adding to history noise for pure direction sync from toolbar
+    tr.setMeta("addToHistory", false);
+    editor.view.dispatch(tr);
+  }
+  const dom = editor.view.dom as HTMLElement;
+  dom.setAttribute("dir", nextDir);
+  dom.style.direction = nextDir;
 }
 
 const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
@@ -394,7 +458,12 @@ export default function DocumentStudioEditor() {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        paragraph: false,
+        heading: false,
+      }),
+      ParagraphWithDir,
+      HeadingWithDir,
       Link.configure({ openOnClick: false }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TextStyle,
@@ -491,13 +560,11 @@ export default function DocumentStudioEditor() {
     };
   }, [editor]);
 
-  // Editor direction: set on the contenteditable root so empty/new paragraphs
-  // place the caret on the correct side (RTL → right, LTR → left).
+  // Persist direction on root + every paragraph/heading so empty RTL
+  // documents place the caret on the right and new blocks inherit RTL.
   useEffect(() => {
     if (!editor) return;
-    const dom = editor.view.dom as HTMLElement;
-    dom.setAttribute("dir", dir);
-    dom.style.direction = dir;
+    applyDocumentDirection(editor, dir);
   }, [editor, dir]);
 
   const handleLoadExample = () => {
@@ -505,6 +572,7 @@ export default function DocumentStudioEditor() {
     const html =
       "<p>مسودہ: یہ  ایک  نمونہ دستاویز ہے ,جس میں غیر ضروری spaces ہیں۔</p><p>Draft notes: Review spacing and punctuation, then standardize and run Quality Audit before export.</p><p>آخری مرحلہ: تصدیق کے بعد TXT، DOCX یا PDF ایکسپورٹ کریں۔</p>";
     editor.chain().focus().setContent(html).run();
+    applyDocumentDirection(editor, dir);
     setExampleJustLoaded(true);
     trackEvent("tool_example", { tool: "document_studio" });
     requestAnimationFrame(() => {
@@ -551,7 +619,8 @@ export default function DocumentStudioEditor() {
   const handleNewDocument = () => {
     if (!editor) return;
     if (window.confirm(isUr ? "کیا آپ نیا مسودہ شروع کرنا چاہتے ہیں؟ غیر محفوظ شدہ تبدیلیاں ختم ہو جائیں گی۔" : "Start a new document? Unsaved changes will be lost.")) {
-      editor.commands.setContent("<p></p>");
+      editor.commands.setContent({ type: "doc", content: [{ type: "paragraph", attrs: { dir }, content: [] }] });
+      applyDocumentDirection(editor, dir);
       try {
         localStorage.removeItem(DRAFT_STORAGE_KEY);
       } catch (e) {
@@ -1612,11 +1681,28 @@ export default function DocumentStudioEditor() {
             line-height: 1.9;
           }
         }
-        /* Mixed RTL/LTR: per-paragraph base direction from content (CSS plaintext). */
-        .qalam-editor-content .ProseMirror p,
-        .qalam-editor-content .ProseMirror h1,
-        .qalam-editor-content .ProseMirror h2,
-        .qalam-editor-content .ProseMirror h3 {
+        /* Explicit block direction (from paragraph attrs) controls caret side. */
+        .qalam-editor-content .ProseMirror p[dir="rtl"],
+        .qalam-editor-content .ProseMirror h1[dir="rtl"],
+        .qalam-editor-content .ProseMirror h2[dir="rtl"],
+        .qalam-editor-content .ProseMirror h3[dir="rtl"] {
+          direction: rtl;
+          unicode-bidi: isolate;
+          text-align: start;
+        }
+        .qalam-editor-content .ProseMirror p[dir="ltr"],
+        .qalam-editor-content .ProseMirror h1[dir="ltr"],
+        .qalam-editor-content .ProseMirror h2[dir="ltr"],
+        .qalam-editor-content .ProseMirror h3[dir="ltr"] {
+          direction: ltr;
+          unicode-bidi: isolate;
+          text-align: start;
+        }
+        /* Blocks without dir: content-based mixed rendering */
+        .qalam-editor-content .ProseMirror p:not([dir]),
+        .qalam-editor-content .ProseMirror h1:not([dir]),
+        .qalam-editor-content .ProseMirror h2:not([dir]),
+        .qalam-editor-content .ProseMirror h3:not([dir]) {
           unicode-bidi: plaintext;
           text-align: start;
         }
