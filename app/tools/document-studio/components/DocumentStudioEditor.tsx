@@ -14,6 +14,7 @@ import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalize
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import { displayDirForPaste } from "../../../utils/processing/cleanTextPipeline";
+import { listEditorFonts } from "../utils/fontRegistry";
 import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
 import { buildDocumentStats, type DocumentStats } from "../utils/buildDocumentStats";
 import { buildDocumentHealthReport, type DocumentHealthReport } from "../utils/buildDocumentHealthReport";
@@ -165,13 +166,10 @@ function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr") {
 
 const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
   { label: "Default", value: "" },
-  { label: "Jameel Noori Nastaleeq", value: "Jameel Noori Nastaleeq" },
-  { label: "Noto Nastaliq Urdu", value: "Noto Nastaliq Urdu" },
-  { label: "Amiri", value: "Amiri" },
-  { label: "Noto Naskh Arabic", value: "Noto Naskh Arabic" },
-  { label: "Vazirmatn", value: "Vazirmatn" },
-  { label: "Sahel", value: "Sahel" },
-  { label: "Inter", value: "Inter" },
+  ...listEditorFonts().map((f) => ({
+    label: f.availability === "local-preview-only" ? `${f.label} — Local` : f.label,
+    value: f.editorFamily,
+  })),
 ];
 
 function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | "ltr"; setDir: (d: "rtl" | "ltr") => void }) {
@@ -395,7 +393,12 @@ export default function DocumentStudioEditor() {
   const [isImporting, setIsImporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
-  const [pdfSummary, setPdfSummary] = useState<{ pages: number; fileSizeLabel: string; fontsUsed: string[] } | null>(null);
+  const [pdfSummary, setPdfSummary] = useState<{
+    pages: number;
+    fileSizeLabel: string;
+    fontsUsed: string[];
+    fontFallbacks: Array<{ requested: string; used: string }>;
+  } | null>(null);
 
   const [auditReport, setAuditReport] = useState<QualityAuditReport | null>(null);
   const [stats, setStats] = useState<DocumentStats | null>(null);
@@ -1119,6 +1122,7 @@ export default function DocumentStudioEditor() {
       const pageCountHeader = response.headers.get("X-Pdf-Page-Count");
       const fileSizeHeader = response.headers.get("X-Pdf-File-Size-Bytes");
       const fontsUsedHeader = response.headers.get("X-Pdf-Fonts-Used");
+      const fontFallbacksHeader = response.headers.get("X-Pdf-Font-Fallbacks");
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -1132,15 +1136,22 @@ export default function DocumentStudioEditor() {
 
       if (pageCountHeader && fileSizeHeader) {
         let fontsUsed: string[] = [];
+        let fontFallbacks: Array<{ requested: string; used: string }> = [];
         try {
           fontsUsed = fontsUsedHeader ? JSON.parse(fontsUsedHeader) : [];
         } catch {
           fontsUsed = [];
         }
+        try {
+          fontFallbacks = fontFallbacksHeader ? JSON.parse(fontFallbacksHeader) : [];
+        } catch {
+          fontFallbacks = [];
+        }
         setPdfSummary({
           pages: parseInt(pageCountHeader, 10),
           fileSizeLabel: formatFileSize(parseInt(fileSizeHeader, 10)),
           fontsUsed,
+          fontFallbacks,
         });
       }
     } catch (err) {
@@ -1513,6 +1524,15 @@ export default function DocumentStudioEditor() {
               <div>File Size: {pdfSummary.fileSizeLabel}</div>
               {pdfSummary.fontsUsed.length > 0 && (
                 <div>Fonts Used: {pdfSummary.fontsUsed.map((f) => `✓ ${f}`).join("  ")}</div>
+              )}
+              {pdfSummary.fontFallbacks.length > 0 && (
+                <div className="text-amber-800 mt-1">
+                  {pdfSummary.fontFallbacks.map((f) =>
+                    isUr
+                      ? `${f.requested} مقامی ایڈیٹر میں دستیاب ہے۔ PDF میں ${f.used} استعمال کیا گیا ہے۔`
+                      : `${f.requested} is available as a local editor preview. PDF export used ${f.used}.`
+                  ).join(" ")}
+                </div>
               )}
               <div>Format: Visual / Print PDF</div>
             </div>

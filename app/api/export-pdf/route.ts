@@ -1,54 +1,69 @@
-// Document Studio's PDF Export v1 endpoint — visual/print quality only.
-// See docs/KNOWN-LIMITATIONS.md's "PDF Export" section for the full
-// investigation behind this decision: five independently-tested PDF
-// engines (Chromium, WeasyPrint, LibreOffice, Typst, XeLaTeX) all failed
-// at producing searchable/copyable Urdu/Arabic text; a follow-up hybrid
-// invisible-text-layer approach only worked in one of five real
-// extraction tools. v1 deliberately does not attempt a searchable text
-// layer — this route renders and returns a plain visual PDF.
-//
-// Must run on the Node.js runtime (not Edge) — puppeteer-core and
-// @sparticuz/chromium require a native binary the Edge runtime can't run.
 export const runtime = "nodejs";
-// Longer than the 10s default on some Vercel plans — Chromium cold start
-// + render can approach that. See docs/KNOWN-LIMITATIONS.md for the
-// Vercel "Large Functions" deployment assumption this endpoint requires
-// (VERCEL_SUPPORT_LARGE_FUNCTIONS=1), needed because @sparticuz/chromium
-// itself is ~67MB, over the standard function bundle limit.
 export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from "next/server";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import path from "path";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { PDFDocument } from "pdf-lib";
-import { buildPdfHtml, type PdfFonts } from "../../tools/document-studio/utils/buildPdfHtml";
+import {
+  buildPdfHtml,
+  requiredPdfEmbedFonts,
+  type PdfFonts,
+  type PdfFontFace,
+} from "../../tools/document-studio/utils/buildPdfHtml";
 import type { DocNode, Direction } from "../../tools/document-studio/utils/extractPlainText";
+import { STUDIO_FONTS } from "../../tools/document-studio/utils/fontRegistry";
 
-// The ONLY font actually embedded (base64, in buildPdfHtml.ts's own
-// @font-face rules) — reported honestly, not a fixed marketing list.
-// buildPdfHtml.ts's LTR branch uses a plain CSS font-family fallback
-// stack ("Calibri", "Segoe UI", sans-serif) with NO embedded font file —
-// none of those names are guaranteed to exist in the headless Chromium
-// environment, so LTR documents report an empty fonts-used list rather
-// than claiming a specific font that isn't actually embedded anywhere.
-// If this ever changes (e.g. an LTR font gets embedded the same way),
-// update this constant AND buildPdfHtml.ts together — this is the single
-// source of truth for "what's really embedded," not a separate guess.
-const RTL_EMBEDDED_FONTS = ["Noto Nastaliq Urdu"];
+let cachedFaces: Map<string, PdfFontFace> | null = null;
 
-// Read once per cold start, not per request — these are small (a few
-// hundred KB each) and never change at runtime.
-let cachedFonts: PdfFonts | null = null;
-function loadFonts(): PdfFonts {
-  if (cachedFonts) return cachedFonts;
-  const base = path.join(process.cwd(), "node_modules", "@fontsource", "noto-nastaliq-urdu", "files");
-  cachedFonts = {
-    nastaliqRegularBase64: readFileSync(path.join(base, "noto-nastaliq-urdu-arabic-400-normal.woff2")).toString("base64"),
-    nastaliqBoldBase64: readFileSync(path.join(base, "noto-nastaliq-urdu-arabic-700-normal.woff2")).toString("base64"),
-  };
-  return cachedFonts;
+function readBase64(relPath: string): string | null {
+  const full = path.join(process.cwd(), "node_modules", relPath);
+  if (!existsSync(full)) {
+    console.warn("PDF font missing:", relPath);
+    return null;
+  }
+  return readFileSync(full).toString("base64");
+}
+
+function loadAllBundledFaces(): Map<string, PdfFontFace> {
+  if (cachedFaces) return cachedFaces;
+  const map = new Map<string, PdfFontFace>();
+  for (const def of STUDIO_FONTS) {
+    if (!def.pdf.embedded || !def.pdf.familyName || !def.pdf.regularFiles?.length) continue;
+    const regular = readBase64(def.pdf.regularFiles[0]);
+    if (!regular) continue;
+    const bold = def.pdf.boldFiles?.[0] ? readBase64(def.pdf.boldFiles[0]) : undefined;
+    map.set(def.pdf.familyName, {
+      familyName: def.pdf.familyName,
+      regularBase64: regular,
+      boldBase64: bold ?? undefined,
+    });
+  }
+  cachedFaces = map;
+  return map;
+}
+
+function fontsForDocument(doc: DocNode, dir: Direction): PdfFonts {
+  const all = loadAllBundledFaces();
+  const needed = requiredPdfEmbedFonts(doc, dir);
+  const faces: PdfFontFace[] = [];
+  const seen = new Set<string>();
+  for (const def of needed) {
+    const name = def.pdf.familyName;
+    if (!name || seen.has(name)) continue;
+    const face = all.get(name);
+    if (face) {
+      faces.push(face);
+      seen.add(name);
+    }
+  }
+  const fallbackName = dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu";
+  if (!seen.has(fallbackName) && all.has(fallbackName)) {
+    faces.push(all.get(fallbackName)!);
+  }
+  return { faces };
 }
 
 interface ExportPdfRequestBody {
@@ -85,16 +100,11 @@ export async function POST(request: NextRequest) {
   }
 
   const { doc, dir } = body;
-
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+
   try {
-    const fonts = loadFonts();
-    // buildPdfHtml only ever emits tags/attributes from our own fixed set
-    // (p/h1/h2/ul/ol/li/blockquote/strong/em/a/br) built from structured
-    // DocNode JSON, not raw client-supplied HTML — this bounds what can
-    // ever appear in the rendered page considerably before Puppeteer is
-    // even involved.
-    const html = buildPdfHtml(doc, dir, fonts);
+    const fonts = fontsForDocument(doc, dir);
+    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, fonts);
 
     const executablePath = await chromium.executablePath();
     browser = await puppeteer.launch({
@@ -104,18 +114,17 @@ export async function POST(request: NextRequest) {
     });
 
     const page = await browser.newPage();
-
-    // Defense in depth: block every network request during rendering.
-    // Nothing in buildPdfHtml's output ever needs one (the font is
-    // embedded as a base64 data URI, there's no external stylesheet,
-    // script, or image) — blocking outright means a maliciously crafted
-    // href or any future markup change can never turn this into an SSRF
-    // vector, rather than relying solely on "we don't currently emit
-    // fetchable tags."
     await page.setRequestInterception(true);
-    page.on("request", (req) => req.abort());
+    page.on("request", (req) => {
+      if (req.url().startsWith("data:")) req.continue();
+      else req.abort();
+    });
 
     await page.setContent(html, { waitUntil: "load" });
+    await page.evaluate(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (document as any).fonts?.ready;
+    });
 
     const pdfUint8Array = await page.pdf({
       format: "A4",
@@ -123,26 +132,13 @@ export async function POST(request: NextRequest) {
       margin: { top: "20mm", bottom: "20mm", left: "15mm", right: "15mm" },
     });
 
-    // Post-processing (separate from rendering above — page.pdf()'s own
-    // output is untouched visually; pdf-lib only edits the Info
-    // dictionary and re-serializes the container). Confirmed
-    // pixel-identical visual output before/after this step via
-    // pdftoppm diffing.
     const pdfDoc = await PDFDocument.load(pdfUint8Array);
     pdfDoc.setTitle("Qalam Works Document");
     pdfDoc.setCreator("Qalam Works");
     pdfDoc.setProducer("Qalam Works PDF Export");
-    // fontsUsed reflects buildPdfHtml.ts's ACTUAL @font-face rules, not an
-    // assumed/marketing list — RTL_EMBEDDED_FONTS is the one font really
-    // embedded (for RTL); LTR documents embed nothing, so report nothing.
-    const fontsUsed = dir === "rtl" ? RTL_EMBEDDED_FONTS : [];
     if (fontsUsed.length > 0) pdfDoc.setKeywords(fontsUsed);
     const pageCount = pdfDoc.getPageCount();
     const finalBytes = await pdfDoc.save();
-
-    // page.pdf() and pdf-lib's save() both return Uint8Array; Buffer is a
-    // type NextResponse's BodyInit accepts directly (safe — this route
-    // explicitly runs on the Node.js runtime, not Edge).
     const pdfBuffer = Buffer.from(finalBytes);
 
     return new NextResponse(pdfBuffer, {
@@ -153,6 +149,7 @@ export async function POST(request: NextRequest) {
         "X-Pdf-Page-Count": String(pageCount),
         "X-Pdf-File-Size-Bytes": String(pdfBuffer.length),
         "X-Pdf-Fonts-Used": JSON.stringify(fontsUsed),
+        "X-Pdf-Font-Fallbacks": JSON.stringify(fontFallbacks),
       },
     });
   } catch (err) {
@@ -162,8 +159,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   } finally {
-    if (browser) {
-      await browser.close();
-    }
+    if (browser) await browser.close();
   }
 }

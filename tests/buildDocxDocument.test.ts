@@ -354,7 +354,7 @@ describe("createDocxDocument — v1.1 Phase 1: heading hierarchy fix", () => {
 });
 
 describe("createDocxDocument — v1.1 Phase 1: fonts unchanged (explicit regression guard)", () => {
-  test("RTL still uses Noto Nastaliq Urdu, LTR still uses Calibri", async () => {
+  test("RTL still uses Noto Nastaliq Urdu, LTR uses Inter", async () => {
     const rtlXml = await extractDocumentXml(
       docWith([{ type: "paragraph", content: [{ type: "text", text: "متن" }] }]),
       "rtl"
@@ -364,7 +364,7 @@ describe("createDocxDocument — v1.1 Phase 1: fonts unchanged (explicit regress
       "ltr"
     );
     expect(rtlXml).toContain("Noto Nastaliq Urdu");
-    expect(ltrXml).toContain("Calibri");
+    expect(ltrXml).toContain("Inter");
   });
 });
 

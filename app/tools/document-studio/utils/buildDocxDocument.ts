@@ -25,6 +25,10 @@ import {
   type ParagraphChild,
 } from "docx";
 import type { DocNode, Direction } from "./extractPlainText";
+import {
+  directionForNode,
+  resolveEditorFontFamily,
+} from "./fontRegistry";
 
 // Matches app/layout.tsx's next/font Noto_Nastaliq_Urdu (the same family
 // the editor itself uses for RTL content via the `font-nastaliq` CSS
@@ -37,7 +41,7 @@ import type { DocNode, Direction } from "./extractPlainText";
 // pass after real Word compatibility testing. Do not edit these two
 // lines as part of page-layout/heading work.
 const FONT_RTL = "Noto Nastaliq Urdu";
-const FONT_LTR = "Calibri";
+const FONT_LTR = "Inter";
 
 // v1.1 Phase 1 — professional page layout. A4 and 1-inch margins in
 // twips (1440 twips = 1 inch; A4 = 210mm × 297mm ≈ 11906 × 16838 twips,
@@ -92,6 +96,11 @@ const BLOCKQUOTE_FONT_SIZE_HALF_POINTS = 20;
 
 function fontFor(dir: Direction): string {
   return dir === "rtl" ? FONT_RTL : FONT_LTR;
+}
+
+function runFont(node: DocNode, blockDir: Direction): string {
+  const styleMark = node.marks?.find((m) => m.type === "textStyle");
+  return resolveEditorFontFamily(styleMark?.attrs?.fontFamily, blockDir).docxFamily;
 }
 
 // Returns true when text contains only ASCII/Latin characters (no RTL codepoints).
@@ -212,7 +221,7 @@ function convertInline(
 
   for (const node of nodes) {
     if (node.type === "hardBreak") {
-      runs.push(new TextRun({ text: "", break: 1, font: fontFor(dir), size: overrides?.size }));
+      runs.push(new TextRun({ text: "", break: 1, font: runFont(node, dir), size: overrides?.size }));
       continue;
     }
     if (node.type !== "text" || typeof node.text !== "string" || node.text.length === 0) {
@@ -229,12 +238,12 @@ function convertInline(
         new ExternalHyperlink({
           link: href,
           children: [
-            new TextRun({ text: node.text, bold, italics, style: "Hyperlink", font: fontFor(dir), size: overrides?.size }),
+            new TextRun({ text: node.text, bold, italics, style: "Hyperlink", font: runFont(node, dir), size: overrides?.size }),
           ],
         })
       );
     } else {
-      runs.push(new TextRun({ text: node.text, bold, italics, font: fontFor(dir), size: overrides?.size }));
+      runs.push(new TextRun({ text: node.text, bold, italics, font: runFont(node, dir), size: overrides?.size }));
     }
   }
 
@@ -244,26 +253,28 @@ function convertInline(
 function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listRef?: { reference: string }): Paragraph[] {
   switch (node.type) {
     case "paragraph": {
+      const blockDir = directionForNode(node, dir);
       return [
         new Paragraph({
-          bidirectional: dir === "rtl",
+          bidirectional: blockDir === "rtl",
           alignment: alignmentFor(node),
           spacing: PARAGRAPH_SPACING,
           numbering: listRef ? { reference: listRef.reference, level: 0 } : undefined,
-          children: convertInline(node.content, dir),
+          children: convertInline(node.content, blockDir),
         }),
       ];
     }
     case "heading": {
+      const blockDir = directionForNode(node, dir);
       const level = node.attrs?.level;
       const heading = headingLevelFor(level);
       return [
         new Paragraph({
           heading,
-          bidirectional: dir === "rtl",
+          bidirectional: blockDir === "rtl",
           alignment: alignmentFor(node),
           spacing: headingSpacingFor(level),
-          children: convertInline(node.content, dir),
+          children: convertInline(node.content, blockDir),
         }),
       ];
     }
