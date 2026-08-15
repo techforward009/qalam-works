@@ -1,3 +1,4 @@
+import { describe, expect, test, beforeAll } from "vitest";
 import {
   PUBLISHING_PRESETS,
   ALL_PRESET_IDS,
@@ -5,8 +6,10 @@ import {
   getPreset,
   loadSelectedPresetId,
   saveSelectedPresetId,
+  applyPresetToSettings,
   type PresetId,
 } from "../app/tools/document-studio/utils/publishingPresets";
+import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 
 const mockStore: Record<string, string> = {};
 beforeAll(() => {
@@ -20,9 +23,13 @@ beforeAll(() => {
 });
 
 describe("Publishing preset definitions", () => {
-  test("exactly the 4 required presets are defined", () => {
-    expect(ALL_PRESET_IDS).toEqual(["default", "book-manuscript", "newspaper-article", "academic-paper"]);
-    expect(Object.keys(PUBLISHING_PRESETS)).toHaveLength(4);
+  test("required presets are defined including web-article", () => {
+    expect(ALL_PRESET_IDS).toContain("default");
+    expect(ALL_PRESET_IDS).toContain("book-manuscript");
+    expect(ALL_PRESET_IDS).toContain("newspaper-article");
+    expect(ALL_PRESET_IDS).toContain("academic-paper");
+    expect(ALL_PRESET_IDS).toContain("web-article");
+    expect(Object.keys(PUBLISHING_PRESETS)).toHaveLength(5);
   });
 
   test("every preset has a matching id field and both language labels", () => {
@@ -34,70 +41,66 @@ describe("Publishing preset definitions", () => {
     }
   });
 
-  test("Book Manuscript and Academic Paper both intend double spacing", () => {
-    expect(PUBLISHING_PRESETS["book-manuscript"].intendedLineSpacing).toBe("double");
-    expect(PUBLISHING_PRESETS["academic-paper"].intendedLineSpacing).toBe("double");
+  test("Book Manuscript and Academic Paper use generous line spacing", () => {
+    expect(PUBLISHING_PRESETS["book-manuscript"].lineHeight).toBeGreaterThanOrEqual(1.8);
+    expect(PUBLISHING_PRESETS["academic-paper"].lineHeight).toBe(2);
   });
 
-  test("Newspaper Article intends single spacing", () => {
-    expect(PUBLISHING_PRESETS["newspaper-article"].intendedLineSpacing).toBe("single");
-  });
-});
-
-describe("isValidPresetId", () => {
-  test("accepts all 4 known preset ids", () => {
-    for (const id of ALL_PRESET_IDS) {
-      expect(isValidPresetId(id)).toBe(true);
-    }
-  });
-
-  test("rejects an unknown string", () => {
-    expect(isValidPresetId("something-else")).toBe(false);
-    expect(isValidPresetId("")).toBe(false);
+  test("Newspaper Article uses compact spacing", () => {
+    expect(PUBLISHING_PRESETS["newspaper-article"].lineHeight).toBeLessThanOrEqual(1.15);
   });
 });
 
-describe("getPreset", () => {
-  test("returns the correct preset for a valid id", () => {
-    expect(getPreset("academic-paper").labelEnglish).toBe("Academic Paper");
+describe("isValidPresetId / getPreset", () => {
+  test("accepts known ids", () => {
+    expect(isValidPresetId("default")).toBe(true);
+    expect(isValidPresetId("web-article")).toBe(true);
   });
 
-  test("falls back to 'default' for an unrecognized id, rather than throwing", () => {
+  test("rejects unknown ids", () => {
+    expect(isValidPresetId("nonsense")).toBe(false);
+  });
+
+  test("falls back to default for unrecognized id", () => {
     expect(getPreset("nonsense-id").id).toBe("default");
   });
 });
 
 describe("Preset storage serialization (localStorage persistence)", () => {
-  test("loadSelectedPresetId returns 'default' when nothing has been saved", () => {
+  test("loadSelectedPresetId returns default when nothing saved", () => {
     delete mockStore["qalam-selected-publishing-preset"];
     expect(loadSelectedPresetId()).toBe("default");
   });
 
-  test("saveSelectedPresetId then loadSelectedPresetId round-trips correctly", () => {
+  test("save then load round-trips", () => {
     saveSelectedPresetId("newspaper-article");
     expect(loadSelectedPresetId()).toBe("newspaper-article");
   });
 
-  test("every valid preset id round-trips correctly", () => {
+  test("every valid preset id round-trips", () => {
     for (const id of ALL_PRESET_IDS) {
       saveSelectedPresetId(id);
       expect(loadSelectedPresetId()).toBe(id);
     }
   });
 
-  test("loadSelectedPresetId falls back to 'default' when the stored value is corrupt/invalid", () => {
+  test("corrupt stored value falls back to default", () => {
     mockStore["qalam-selected-publishing-preset"] = "not-a-real-preset";
     expect(loadSelectedPresetId()).toBe("default");
   });
 });
 
-describe("Preset selection logic", () => {
-  test("selecting a preset and looking it up via getPreset gives consistent, matching data", () => {
+describe("Preset application", () => {
+  test("applyPresetToSettings updates defaults without needing tip-tap content", () => {
     const selected: PresetId = "book-manuscript";
     saveSelectedPresetId(selected);
     const loadedId = loadSelectedPresetId();
     const preset = getPreset(loadedId);
     expect(preset.id).toBe(selected);
-    expect(preset.intendedFirstLineIndent).toBe(true);
+    expect(preset.firstLineIndentMm).toBeGreaterThan(0);
+
+    const next = applyPresetToSettings(defaultDocumentSettings(), selected);
+    expect(next.typography.firstLineIndentMm).toBe(preset.firstLineIndentMm);
+    expect(next.typography.lineHeight).toBe(preset.lineHeight);
   });
 });

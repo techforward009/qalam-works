@@ -14,6 +14,12 @@ import {
   type PdfFontFace,
 } from "../../tools/document-studio/utils/buildPdfHtml";
 import type { DocNode, Direction } from "../../tools/document-studio/utils/extractPlainText";
+import {
+  defaultDocumentSettings,
+  parseDocumentSettings,
+  type DocumentStudioSettings,
+} from "../../tools/document-studio/utils/documentSettings";
+import { resolvePageLayout, puppeteerPaperFormat } from "../../tools/document-studio/utils/pageLayout";
 import { STUDIO_FONTS } from "../../tools/document-studio/utils/fontRegistry";
 
 let cachedFaces: Map<string, PdfFontFace> | null = null;
@@ -101,6 +107,7 @@ function fontsForDocument(doc: DocNode, dir: Direction): PdfFonts {
 interface ExportPdfRequestBody {
   doc: DocNode;
   dir: Direction;
+  settings?: DocumentStudioSettings;
 }
 
 function isValidRequestBody(body: unknown): body is ExportPdfRequestBody {
@@ -132,6 +139,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { doc, dir } = body;
+  const settings = parseDocumentSettings(body.settings);
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
 
   try {
@@ -158,10 +166,33 @@ export async function POST(request: NextRequest) {
       await (document as any).fonts?.ready;
     });
 
+    const layout = resolvePageLayout({
+      size: settings.page.size,
+      orientation: settings.page.orientation,
+      marginPreset: settings.page.margins.preset,
+      customMargins: settings.page.margins,
+    });
     const pdfUint8Array = await page.pdf({
-      format: "A4",
+      format: settings.page.orientation === "portrait" ? puppeteerPaperFormat(settings.page.size) : undefined,
+      width: settings.page.orientation === "landscape" ? `${layout.widthMm}mm` : undefined,
+      height: settings.page.orientation === "landscape" ? `${layout.heightMm}mm` : undefined,
       printBackground: true,
-      margin: { top: "20mm", bottom: "20mm", left: "15mm", right: "15mm" },
+      margin: {
+        top: `${layout.margins.topMm}mm`,
+        bottom: `${layout.margins.bottomMm}mm`,
+        left: `${layout.margins.startMm}mm`,
+        right: `${layout.margins.endMm}mm`,
+      },
+      displayHeaderFooter: settings.headerFooter.headerEnabled || settings.headerFooter.footerEnabled,
+      headerTemplate: settings.headerFooter.headerEnabled
+        ? `<div style="font-size:9px;width:100%;text-align:center;color:#444;padding:0 15mm;"></div>`
+        : "<div></div>",
+      footerTemplate:
+        settings.headerFooter.footerEnabled && settings.headerFooter.pageNumbers !== "none"
+          ? settings.headerFooter.pageNumbers === "current"
+            ? `<div style="font-size:9px;width:100%;text-align:center;color:#444;"><span class="pageNumber"></span></div>`
+            : `<div style="font-size:9px;width:100%;text-align:center;color:#444;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>`
+          : "<div></div>",
     });
 
     const pdfDoc = await PDFDocument.load(pdfUint8Array);

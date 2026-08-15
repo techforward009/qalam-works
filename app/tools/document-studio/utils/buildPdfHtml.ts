@@ -3,6 +3,7 @@
 // Effective CSS classes are chosen only from faces that fully loaded.
 
 import type { DocNode, Direction } from "./extractPlainText";
+import { resolveFontSizePt } from "./documentSettings";
 import {
   collectPdfEmbedFonts,
   directionForNode,
@@ -172,6 +173,7 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
     let inner = escapeHtml(node.text);
     const bold = node.marks?.some((m) => m.type === "bold") ?? false;
     const italics = node.marks?.some((m) => m.type === "italic") ?? false;
+    const underline = node.marks?.some((m) => m.type === "underline") ?? false;
     const linkMark = node.marks?.find((m) => m.type === "link");
     const href = linkMark?.attrs?.href;
     const styleMark = node.marks?.find((m) => m.type === "textStyle");
@@ -181,14 +183,17 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
       ctx.available
     );
     noteEffective(ctx, effective);
+    const sizePt = resolveFontSizePt(styleMark?.attrs?.fontSize);
+    const sizeStyle = sizePt ? `font-size:${sizePt}pt;` : "";
 
     if (bold) inner = `<strong>${inner}</strong>`;
     if (italics) inner = `<em>${inner}</em>`;
+    if (underline) inner = `<u>${inner}</u>`;
     if (typeof href === "string" && href.trim().length > 0) {
       inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
     }
     // Class always matches the effective (available) family
-    inner = `<span class="${effective.cssClass}">${inner}</span>`;
+    inner = `<span class="${effective.cssClass}"${sizeStyle ? ` style="${sizeStyle}"` : ""}>${inner}</span>`;
     html += inner;
   }
 
@@ -196,11 +201,13 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
 }
 
 function openAttrs(node: DocNode, blockDir: Direction): string {
+  const lh = typeof node.attrs?.lineHeight === "number" ? node.attrs.lineHeight : null;
   const styles = [
     `direction:${blockDir}`,
     "unicode-bidi:isolate",
     "text-align:start",
     alignStyleFor(node),
+    lh ? `line-height:${lh}` : "",
   ]
     .filter(Boolean)
     .join(";");

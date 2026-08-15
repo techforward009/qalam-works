@@ -25,6 +25,8 @@ import {
   type ParagraphChild,
 } from "docx";
 import type { DocNode, Direction } from "./extractPlainText";
+import { resolveFontSizePt, type DocumentStudioSettings, defaultDocumentSettings } from "./documentSettings";
+import { resolvePageLayout, mmToTwips, ptToHalfPoints } from "./pageLayout";
 import {
   directionForNode,
   resolveEditorFontFamily,
@@ -230,20 +232,41 @@ function convertInline(
 
     const bold = node.marks?.some((m) => m.type === "bold") ?? false;
     const italics = overrides?.forceItalic || (node.marks?.some((m) => m.type === "italic") ?? false);
+    const underline = node.marks?.some((m) => m.type === "underline") ?? false;
     const linkMark = node.marks?.find((m) => m.type === "link");
     const href = linkMark?.attrs?.href;
+    const styleMark = node.marks?.find((m) => m.type === "textStyle");
+    const sizePt = resolveFontSizePt(styleMark?.attrs?.fontSize);
+    const size = overrides?.size ?? (sizePt != null ? ptToHalfPoints(sizePt) : undefined);
 
     if (typeof href === "string" && href.trim().length > 0) {
       runs.push(
         new ExternalHyperlink({
           link: href,
           children: [
-            new TextRun({ text: node.text, bold, italics, style: "Hyperlink", font: runFont(node, dir), size: overrides?.size }),
+            new TextRun({
+              text: node.text,
+              bold,
+              italics,
+              underline: underline ? {} : undefined,
+              style: "Hyperlink",
+              font: runFont(node, dir),
+              size,
+            }),
           ],
         })
       );
     } else {
-      runs.push(new TextRun({ text: node.text, bold, italics, font: runFont(node, dir), size: overrides?.size }));
+      runs.push(
+        new TextRun({
+          text: node.text,
+          bold,
+          italics,
+          underline: underline ? {} : undefined,
+          font: runFont(node, dir),
+          size,
+        })
+      );
     }
   }
 
@@ -404,7 +427,7 @@ function deriveDocumentTitle(doc: DocNode): string {
  * Sync, pure mapping from a TipTap-shaped DocNode to a docx.Document.
  * No I/O — safe to call directly in tests and assert on the result.
  */
-export function createDocxDocument(doc: DocNode, dir: Direction): Document {
+export function createDocxDocument(doc: DocNode, dir: Direction, settings: DocumentStudioSettings = defaultDocumentSettings()): Document {
   const ctx: NumberingContext = { configs: [], counter: 0 };
   const children: Paragraph[] = [];
 
@@ -427,41 +450,91 @@ export function createDocxDocument(doc: DocNode, dir: Direction): Document {
     sections: [
       {
         properties: {
-          page: {
-            size: PAGE_SIZE_A4,
-            margin: PAGE_MARGIN,
-          },
+          page: (() => {
+            const layout = resolvePageLayout({
+              size: settings.page.size,
+              orientation: settings.page.orientation,
+              marginPreset: settings.page.margins.preset,
+              customMargins: settings.page.margins,
+            });
+            return {
+              size: {
+                width: mmToTwips(layout.widthMm),
+                height: mmToTwips(layout.heightMm),
+              },
+              margin: {
+                top: mmToTwips(layout.margins.topMm),
+                bottom: mmToTwips(layout.margins.bottomMm),
+                left: mmToTwips(layout.margins.startMm),
+                right: mmToTwips(layout.margins.endMm),
+              },
+            };
+          })(),
         },
-        headers: {
-          default: new Header({
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                // Pure-Latin titles (e.g. "Qalam Works") must always render LTR with
-                // a standard Latin font, regardless of the document's own direction.
-                // Inheriting RTL bidi here caused strange character spacing in Word.
-                bidirectional: isPureLatinText(title) ? false : dir === "rtl",
-                children: [new TextRun({ text: title, font: isPureLatinText(title) ? FONT_LTR : fontFor(dir), size: 18 })],
-              }),
-            ],
-          }),
-        },
-        footers: {
-          default: new Footer({
-            children: [
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
+        headers: settings.headerFooter.headerEnabled
+          ? {
+              default: new Header({
                 children: [
-                  new TextRun({
-                    children: [PageNumber.CURRENT, " / ", PageNumber.TOTAL_PAGES],
-                    font: fontFor(dir),
-                    size: 18,
+                  new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    bidirectional: isPureLatinText(
+                      settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
+                        ? settings.headerFooter.headerText
+                        : title
+                    )
+                      ? false
+                      : dir === "rtl",
+                    children: [
+                      new TextRun({
+                        text:
+                          settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
+                            ? settings.headerFooter.headerText
+                            : title,
+                        font: isPureLatinText(
+                          settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
+                            ? settings.headerFooter.headerText
+                            : title
+                        )
+                          ? FONT_LTR
+                          : fontFor(dir),
+                        size: 18,
+                      }),
+                    ],
                   }),
                 ],
               }),
-            ],
-          }),
-        },
+            }
+          : undefined,
+        footers: settings.headerFooter.footerEnabled
+          ? {
+              default: new Footer({
+                children: [
+                  new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [
+                      settings.headerFooter.pageNumbers === "none"
+                        ? new TextRun({
+                            text: settings.headerFooter.footerText || "",
+                            font: fontFor(dir),
+                            size: 18,
+                          })
+                        : settings.headerFooter.pageNumbers === "current"
+                          ? new TextRun({
+                              children: [PageNumber.CURRENT],
+                              font: fontFor(dir),
+                              size: 18,
+                            })
+                          : new TextRun({
+                              children: [PageNumber.CURRENT, " / ", PageNumber.TOTAL_PAGES],
+                              font: fontFor(dir),
+                              size: 18,
+                            }),
+                    ],
+                  }),
+                ],
+              }),
+            }
+          : undefined,
         children,
       },
     ],
@@ -474,6 +547,6 @@ export function createDocxDocument(doc: DocNode, dir: Direction): Document {
  * resolve to a Blob"; the real mapping coverage lives in
  * createDocxDocument's tests.
  */
-export async function buildDocxBlob(doc: DocNode, dir: Direction): Promise<Blob> {
-  return Packer.toBlob(createDocxDocument(doc, dir));
+export async function buildDocxBlob(doc: DocNode, dir: Direction, settings?: DocumentStudioSettings): Promise<Blob> {
+  return Packer.toBlob(createDocxDocument(doc, dir, settings ?? defaultDocumentSettings()));
 }

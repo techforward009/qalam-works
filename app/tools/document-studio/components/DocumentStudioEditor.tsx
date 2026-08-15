@@ -8,13 +8,33 @@ import Paragraph from "@tiptap/extension-paragraph";
 import Heading from "@tiptap/extension-heading";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
-import { TextStyle, FontFamily } from "@tiptap/extension-text-style";
+import { TextStyle, FontFamily, FontSize } from "@tiptap/extension-text-style";
+import Underline from "@tiptap/extension-underline";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import { displayDirForPaste } from "../../../utils/processing/cleanTextPipeline";
 import { listEditorFonts } from "../utils/fontRegistry";
+import {
+  defaultDocumentSettings,
+  loadDocumentSettings,
+  saveDocumentSettings,
+  clearDocumentSettings,
+  FONT_SIZE_OPTIONS_PT,
+  LINE_HEIGHT_OPTIONS,
+  resolveFontSizePt,
+  type DocumentStudioSettings,
+} from "../utils/documentSettings";
+import { resolvePageLayout, mmToPx } from "../utils/pageLayout";
+import { BLOCK_STYLES, BLOCK_STYLE_IDS, type BlockStyleId } from "../utils/documentStyles";
+import {
+  applyPresetToSettings,
+  getPreset,
+  loadSelectedPresetId,
+  saveSelectedPresetId,
+  type PresetId,
+} from "../utils/publishingPresets";
 import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
 import { buildDocumentStats, type DocumentStats } from "../utils/buildDocumentStats";
 import { buildDocumentHealthReport, type DocumentHealthReport } from "../utils/buildDocumentHealthReport";
@@ -51,7 +71,6 @@ import { DocumentOutlinePanel } from "./DocumentOutlinePanel";
 import { GlossaryPanel } from "./GlossaryPanel";
 import { WordRuler } from "./WordRuler";
 import { PublishingPresetSelector } from "./PublishingPresetSelector";
-import { loadSelectedPresetId, saveSelectedPresetId, type PresetId } from "../utils/publishingPresets";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import { formatFileSize } from "../../../utils/formatFileSize";
@@ -180,6 +199,61 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4 pb-3 sm:pb-4 border-b border-gray-100 overflow-x-auto" dir="ltr">
+      <label className="sr-only" htmlFor="studio-block-style">
+        Style
+      </label>
+      <select
+        id="studio-block-style"
+        value={
+          editor.isActive("heading", { level: 1 })
+            ? "heading-1"
+            : editor.isActive("heading", { level: 2 })
+              ? "heading-2"
+              : editor.isActive("heading", { level: 3 })
+                ? "heading-3"
+                : editor.isActive("heading", { level: 4 })
+                  ? "heading-4"
+                  : editor.isActive("blockquote")
+                    ? "quote"
+                    : (editor.getAttributes("paragraph").blockStyle as string) || "normal"
+        }
+        onChange={(e) => {
+          const id = e.target.value as BlockStyleId;
+          const style = BLOCK_STYLES[id];
+          if (!style) return;
+          const chain = editor.chain().focus();
+          if (style.kind === "heading" && style.headingLevel) {
+            chain.setHeading({ level: style.headingLevel }).run();
+          } else if (style.kind === "blockquote") {
+            chain.setBlockquote().run();
+          } else {
+            chain.setParagraph().run();
+            if (style.blockStyleAttr) {
+              chain.updateAttributes("paragraph", { blockStyle: style.blockStyleAttr }).run();
+            } else {
+              chain.updateAttributes("paragraph", { blockStyle: null }).run();
+            }
+            if (style.align) {
+              chain.setTextAlign(style.align).run();
+            }
+            if (style.defaultFontSizePt) {
+              chain.setFontSize(`${style.defaultFontSizePt}pt`).run();
+            }
+            if (style.bold) {
+              chain.setBold().run();
+            }
+          }
+        }}
+        className="h-[38px] max-w-[7.5rem] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
+        title="Paragraph style"
+      >
+        {BLOCK_STYLE_IDS.map((id) => (
+          <option key={id} value={id}>
+            {BLOCK_STYLES[id].label}
+          </option>
+        ))}
+      </select>
+      <ToolbarDivider />
       <label className="sr-only" htmlFor="studio-font-family">
         Font family
       </label>
@@ -203,12 +277,45 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
           </option>
         ))}
       </select>
+      <label className="sr-only" htmlFor="studio-font-size">
+        Font size
+      </label>
+      <select
+        id="studio-font-size"
+        value={
+          (() => {
+            const raw = editor.getAttributes("textStyle").fontSize as string | undefined;
+            const pt = resolveFontSizePt(raw);
+            return pt ? String(pt) : "";
+          })()
+        }
+        onChange={(e) => {
+          const v = e.target.value;
+          if (!v) {
+            editor.chain().focus().unsetFontSize().run();
+          } else {
+            editor.chain().focus().setFontSize(`${v}pt`).run();
+          }
+        }}
+        className="h-[38px] max-w-[4.5rem] rounded-md border border-gray-200 bg-white px-1.5 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
+        title="Font size"
+      >
+        <option value="">Default</option>
+        {FONT_SIZE_OPTIONS_PT.map((pt) => (
+          <option key={pt} value={pt}>
+            {pt}
+          </option>
+        ))}
+      </select>
       <ToolbarDivider />
       <ToolbarButton label="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
         B
       </ToolbarButton>
       <ToolbarButton label="Italic" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}>
         I
+      </ToolbarButton>
+      <ToolbarButton label="Underline" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+        U
       </ToolbarButton>
       <ToolbarButton label="Heading 1" active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
         H1
@@ -363,6 +470,13 @@ export default function DocumentStudioEditor() {
   const { language: uiLanguage } = useLanguage();
   const isUr = uiLanguage === "ur";
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
+  const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => loadDocumentSettings());
+
+  useEffect(() => {
+    saveDocumentSettings(documentSettings);
+  }, [documentSettings]);
+
+
   const [processingLanguage, setProcessingLanguage] = useState<ProcessingLanguage>("auto");
   const [lastResolved, setLastResolved] = useState<ResolvedLanguage | null>(null);
 
@@ -471,6 +585,7 @@ export default function DocumentStudioEditor() {
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TextStyle,
       FontFamily,
+      FontSize.configure({ types: ["textStyle"] }),
     ],
     content: initialContent,
     immediatelyRender: false,
@@ -928,6 +1043,13 @@ export default function DocumentStudioEditor() {
   const handlePresetChange = (id: PresetId) => {
     setSelectedPresetId(id);
     saveSelectedPresetId(id);
+    setDocumentSettings((prev) => {
+      const next = applyPresetToSettings(prev, id);
+      saveDocumentSettings(next);
+      return next;
+    });
+    setPdfSummary(null);
+    saveSelectedPresetId(id);
   };
 
   const handleOutlineNavigate = (blockIndex: number) => {
@@ -1082,7 +1204,7 @@ export default function DocumentStudioEditor() {
     trackEvent("tool_download", { tool: "document_studio", export_format: "docx", mode: processingLanguage, success: true });
     if (!editor) return;
     try {
-      const blob = await buildDocxBlob(editor.getJSON() as DocNode, dir);
+      const blob = await buildDocxBlob(editor.getJSON() as DocNode, dir, documentSettings);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -1112,7 +1234,7 @@ export default function DocumentStudioEditor() {
       const response = await fetch("/api/export-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc: editor.getJSON(), dir }),
+        body: JSON.stringify({ doc: editor.getJSON(), dir, settings: documentSettings }),
       });
 
       if (!response.ok) {
@@ -1260,7 +1382,26 @@ export default function DocumentStudioEditor() {
         {/* A4-style document canvas */}
         <div className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-4 sm:py-6 md:px-8 md:py-8">
           <div
-            className="relative mx-auto w-full max-w-[794px] min-h-[70vh] sm:min-h-[75vh] cursor-text rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
+            className="relative mx-auto w-full cursor-text rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
+            style={(() => {
+              const layout = resolvePageLayout({
+                size: documentSettings.page.size,
+                orientation: documentSettings.page.orientation,
+                marginPreset: documentSettings.page.margins.preset,
+                customMargins: documentSettings.page.margins,
+              });
+              const maxW = Math.min(layout.widthMm * 3.2, 900);
+              return {
+                maxWidth: `${maxW}px`,
+                minHeight: `${Math.max(420, layout.heightMm * 2.2)}px`,
+                paddingTop: `${Math.max(12, layout.margins.topMm * 1.5)}px`,
+                paddingBottom: `${Math.max(12, layout.margins.bottomMm * 1.5)}px`,
+                paddingLeft: `${Math.max(12, layout.margins.startMm * 1.5)}px`,
+                paddingRight: `${Math.max(12, layout.margins.endMm * 1.5)}px`,
+                fontSize: `${documentSettings.typography.bodyFontSizePt}pt`,
+                lineHeight: documentSettings.typography.lineHeight,
+              };
+            })()}
             dir={dir}
             onClick={handleWrapperClick}
             role="textbox"
@@ -1586,9 +1727,152 @@ export default function DocumentStudioEditor() {
       )}
 
       {activeTab === "settings" && (
-        <div className="mt-3 space-y-3">
+        <div className="mt-3 space-y-4 rounded-xl border border-[#1A3A2A]/10 bg-white p-4">
           <WordRuler dir={dir} />
-          <PublishingPresetSelector selectedId={selectedPresetId} onChange={handlePresetChange} />
+          <div>
+            <h3 className="text-sm font-semibold text-[#1A3A2A] mb-2">Document Style</h3>
+            <PublishingPresetSelector selectedId={selectedPresetId} onChange={handlePresetChange} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs font-medium text-gray-600">
+              Page size
+              <select
+                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
+                value={documentSettings.page.size}
+                onChange={(e) => {
+                  const size = e.target.value as "a4" | "a5" | "letter";
+                  setDocumentSettings((s) => ({ ...s, page: { ...s.page, size } }));
+                  setPdfSummary(null);
+                }}
+              >
+                <option value="a4">A4</option>
+                <option value="a5">A5</option>
+                <option value="letter">Letter</option>
+              </select>
+            </label>
+            <label className="text-xs font-medium text-gray-600">
+              Orientation
+              <select
+                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
+                value={documentSettings.page.orientation}
+                onChange={(e) => {
+                  const orientation = e.target.value as "portrait" | "landscape";
+                  setDocumentSettings((s) => ({ ...s, page: { ...s.page, orientation } }));
+                  setPdfSummary(null);
+                }}
+              >
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+              </select>
+            </label>
+            <label className="text-xs font-medium text-gray-600">
+              Margins
+              <select
+                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
+                value={documentSettings.page.margins.preset}
+                onChange={(e) => {
+                  const preset = e.target.value as "normal" | "narrow" | "wide" | "custom";
+                  setDocumentSettings((s) => ({
+                    ...s,
+                    page: { ...s.page, margins: { ...s.page.margins, preset } },
+                  }));
+                  setPdfSummary(null);
+                }}
+              >
+                <option value="normal">Normal</option>
+                <option value="narrow">Narrow</option>
+                <option value="wide">Wide</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <label className="text-xs font-medium text-gray-600">
+              Body size (pt)
+              <select
+                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
+                value={documentSettings.typography.bodyFontSizePt}
+                onChange={(e) => {
+                  const bodyFontSizePt = Number(e.target.value);
+                  setDocumentSettings((s) => ({
+                    ...s,
+                    typography: { ...s.typography, bodyFontSizePt },
+                  }));
+                }}
+              >
+                {FONT_SIZE_OPTIONS_PT.map((pt) => (
+                  <option key={pt} value={pt}>
+                    {pt} pt
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-gray-600">
+              Default line spacing
+              <select
+                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
+                value={documentSettings.typography.lineHeight}
+                onChange={(e) => {
+                  const lineHeight = Number(e.target.value);
+                  setDocumentSettings((s) => ({
+                    ...s,
+                    typography: { ...s.typography, lineHeight },
+                  }));
+                }}
+              >
+                {LINE_HEIGHT_OPTIONS.map((lh) => (
+                  <option key={lh} value={lh}>
+                    {lh}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-gray-600">
+              Page numbers
+              <select
+                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
+                value={documentSettings.headerFooter.pageNumbers}
+                onChange={(e) => {
+                  const pageNumbers = e.target.value as "none" | "current" | "current-total";
+                  setDocumentSettings((s) => ({
+                    ...s,
+                    headerFooter: { ...s.headerFooter, pageNumbers },
+                  }));
+                  setPdfSummary(null);
+                }}
+              >
+                <option value="none">None</option>
+                <option value="current">Current</option>
+                <option value="current-total">Current / Total</option>
+              </select>
+            </label>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={documentSettings.headerFooter.headerEnabled}
+                onChange={(e) =>
+                  setDocumentSettings((s) => ({
+                    ...s,
+                    headerFooter: { ...s.headerFooter, headerEnabled: e.target.checked },
+                  }))
+                }
+              />
+              Header
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={documentSettings.headerFooter.footerEnabled}
+                onChange={(e) =>
+                  setDocumentSettings((s) => ({
+                    ...s,
+                    headerFooter: { ...s.headerFooter, footerEnabled: e.target.checked },
+                  }))
+                }
+              />
+              Footer
+            </label>
+          </div>
         </div>
       )}
 
