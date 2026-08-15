@@ -25,11 +25,14 @@ import {
   type ParagraphChild,
 } from "docx";
 import type { DocNode, Direction } from "./extractPlainText";
-import { resolveFontSizePt, type DocumentStudioSettings, defaultDocumentSettings } from "./documentSettings";
+import { resolveFontSizePt, type DocumentStudioSettings, defaultDocumentSettings, validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
+import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
 import { resolvePageLayout, mmToTwips, ptToHalfPoints } from "./pageLayout";
 import {
   directionForNode,
   resolveEditorFontFamily,
+  getFontById,
+  type FontResolution,
 } from "./fontRegistry";
 
 // Matches app/layout.tsx's next/font Noto_Nastaliq_Urdu (the same family
@@ -80,13 +83,13 @@ function resolveParagraphSpacingAndIndent(
   const mmToTwips = (mm: number) => Math.round((mm / 25.4) * 1440);
   const ptToTwips = (pt: number) => Math.round(pt * 20);
 
-  const beforePt = typeof node.attrs?.spaceBeforePt === "number" ? node.attrs.spaceBeforePt : typography.paragraphBeforePt;
-  const afterPt = typeof node.attrs?.spaceAfterPt === "number" ? node.attrs.spaceAfterPt : typography.paragraphAfterPt;
-  const lineHeight = typeof node.attrs?.lineHeight === "number" ? node.attrs.lineHeight : typography.lineHeight;
+  const beforePt = (typeof node.attrs?.spaceBeforePt === "number" ? validateSpacingPt(node.attrs.spaceBeforePt) : null) ?? typography.paragraphBeforePt;
+  const afterPt = (typeof node.attrs?.spaceAfterPt === "number" ? validateSpacingPt(node.attrs.spaceAfterPt) : null) ?? typography.paragraphAfterPt;
+  const lineHeight = (typeof node.attrs?.lineHeight === "number" ? validateLineHeight(node.attrs.lineHeight) : null) ?? typography.lineHeight;
   const firstLineIndentMm =
-    typeof node.attrs?.firstLineIndentMm === "number" ? node.attrs.firstLineIndentMm : typography.firstLineIndentMm;
-  const indentStartMm = typeof node.attrs?.indentStartMm === "number" ? node.attrs.indentStartMm : null;
-  const indentEndMm = typeof node.attrs?.indentEndMm === "number" ? node.attrs.indentEndMm : null;
+    (typeof node.attrs?.firstLineIndentMm === "number" ? validateIndentMm(node.attrs.firstLineIndentMm) : null) ?? typography.firstLineIndentMm;
+  const indentStartMm = typeof node.attrs?.indentStartMm === "number" ? validateIndentMm(node.attrs.indentStartMm) : null;
+  const indentEndMm = typeof node.attrs?.indentEndMm === "number" ? validateIndentMm(node.attrs.indentEndMm) : null;
 
   const spacing = {
     before: ptToTwips(beforePt),
@@ -142,9 +145,37 @@ function fontFor(dir: Direction): string {
   return dir === "rtl" ? FONT_RTL : FONT_LTR;
 }
 
-function runFont(node: DocNode, blockDir: Direction): string {
+// Batch 16A correction — resolves a run's font family following EXPLICIT
+// FONTFAMILY MARK > DOCUMENT SETTINGS DEFAULT > SYSTEM FALLBACK, without
+// bypassing fontRegistry: when no explicit mark exists, this substitutes
+// the SETTINGS default font's own editorFamily string as the "requested"
+// value into the exact same resolveEditorFontFamily() the explicit-mark
+// path already uses — so unsupported/misconfigured default fonts still
+// fall back exactly the way an explicit but unsupported font choice
+// always has. Existing callers that don't pass typography see identical
+// behavior to before (falls through to resolveEditorFontFamily's own
+// hardcoded default).
+function resolveEffectiveFontFamily(
+  rawFontFamily: unknown,
+  blockDir: Direction,
+  typography?: DocumentStudioSettings["typography"]
+): FontResolution {
+  if (typeof rawFontFamily === "string" && rawFontFamily.trim().length > 0) {
+    return resolveEditorFontFamily(rawFontFamily, blockDir);
+  }
+  if (typography) {
+    const defaultId = blockDir === "rtl" ? typography.defaultRtlFontId : typography.defaultLtrFontId;
+    const def = getFontById(defaultId);
+    if (def?.editorFamily) {
+      return resolveEditorFontFamily(def.editorFamily, blockDir);
+    }
+  }
+  return resolveEditorFontFamily(null, blockDir);
+}
+
+function runFont(node: DocNode, blockDir: Direction, typography?: DocumentStudioSettings["typography"]): string {
   const styleMark = node.marks?.find((m) => m.type === "textStyle");
-  return resolveEditorFontFamily(styleMark?.attrs?.fontFamily, blockDir).docxFamily;
+  return resolveEffectiveFontFamily(styleMark?.attrs?.fontFamily, blockDir, typography).docxFamily;
 }
 
 // Returns true when text contains only ASCII/Latin characters (no RTL codepoints).
@@ -258,28 +289,39 @@ function ensureLevel(ctx: NumberingContext, reference: string, depth: number, ki
 function convertInline(
   nodes: DocNode[] | undefined,
   dir: Direction,
-  overrides?: { forceItalic?: boolean; size?: number }
+  typography: DocumentStudioSettings["typography"],
+  overrides?: { forceItalic?: boolean; size?: number },
+  blockDefaults?: { fontSizePt?: number; bold?: boolean }
 ): ParagraphChild[] {
   if (!nodes) return [];
   const runs: ParagraphChild[] = [];
+  // Batch 16A correction — EXPLICIT FONTSIZE MARK > BLOCK STYLE DEFAULT >
+  // SETTINGS DEFAULT > SYSTEM FALLBACK.
+  const blockDefaultSizeHalfPoints = blockDefaults?.fontSizePt ? ptToHalfPoints(blockDefaults.fontSizePt) : null;
+  const defaultSizeHalfPoints = blockDefaultSizeHalfPoints ?? ptToHalfPoints(typography.bodyFontSizePt);
 
   for (const node of nodes) {
     if (node.type === "hardBreak") {
-      runs.push(new TextRun({ text: "", break: 1, font: runFont(node, dir), size: overrides?.size }));
+      runs.push(new TextRun({ text: "", break: 1, font: runFont(node, dir, typography), size: overrides?.size ?? defaultSizeHalfPoints }));
       continue;
     }
     if (node.type !== "text" || typeof node.text !== "string" || node.text.length === 0) {
       continue;
     }
 
-    const bold = node.marks?.some((m) => m.type === "bold") ?? false;
+    // Block-style bold (e.g. Title) applies as a default for every run in
+    // the block — same ceiling the editor's own [data-block-style] CSS
+    // rule imposes (it also can't selectively un-bold one run within a
+    // Title paragraph, since presentation is applied at the block level
+    // in both places identically).
+    const bold = (node.marks?.some((m) => m.type === "bold") ?? false) || (blockDefaults?.bold ?? false);
     const italics = overrides?.forceItalic || (node.marks?.some((m) => m.type === "italic") ?? false);
     const underline = node.marks?.some((m) => m.type === "underline") ?? false;
     const linkMark = node.marks?.find((m) => m.type === "link");
     const href = linkMark?.attrs?.href;
     const styleMark = node.marks?.find((m) => m.type === "textStyle");
     const sizePt = resolveFontSizePt(styleMark?.attrs?.fontSize);
-    const size = overrides?.size ?? (sizePt != null ? ptToHalfPoints(sizePt) : undefined);
+    const size = overrides?.size ?? (sizePt != null ? ptToHalfPoints(sizePt) : defaultSizeHalfPoints);
 
     if (typeof href === "string" && href.trim().length > 0) {
       runs.push(
@@ -292,7 +334,7 @@ function convertInline(
               italics,
               underline: underline ? {} : undefined,
               style: "Hyperlink",
-              font: runFont(node, dir),
+              font: runFont(node, dir, typography),
               size,
             }),
           ],
@@ -305,7 +347,7 @@ function convertInline(
           bold,
           italics,
           underline: underline ? {} : undefined,
-          font: runFont(node, dir),
+          font: runFont(node, dir, typography),
           size,
         })
       );
@@ -326,14 +368,26 @@ function convertNode(
     case "paragraph": {
       const blockDir = directionForNode(node, dir);
       const { spacing, indent } = resolveParagraphSpacingAndIndent(node, typography);
+      // Batch 16A correction — canonical block-style presentation
+      // (Title/Subtitle/Caption), sourced from documentStyles.ts's
+      // BLOCK_STYLES (same single source of truth the editor CSS and PDF
+      // exporter both use). Applied as computed OUTPUT formatting for
+      // this export only — never written back into the source document
+      // as a stamped mark, so it stays a clean, non-destructive default
+      // exactly like the editor's own CSS-driven presentation.
+      const blockStyleId = typeof node.attrs?.blockStyle === "string" && isBlockStyleId(node.attrs.blockStyle) ? node.attrs.blockStyle : null;
+      const styleDef = blockStyleId ? BLOCK_STYLES[blockStyleId] : null;
       return [
         new Paragraph({
           bidirectional: blockDir === "rtl",
-          alignment: alignmentFor(node),
+          alignment: alignmentFor(node) ?? (styleDef?.align ? ALIGNMENT_MAP[styleDef.align] : undefined),
           spacing,
           indent,
           numbering: listRef ? { reference: listRef.reference, level: 0 } : undefined,
-          children: convertInline(node.content, blockDir),
+          children: convertInline(node.content, blockDir, typography, undefined, {
+            fontSizePt: styleDef?.defaultFontSizePt,
+            bold: styleDef?.bold,
+          }),
         }),
       ];
     }
@@ -347,7 +401,7 @@ function convertNode(
           bidirectional: blockDir === "rtl",
           alignment: alignmentFor(node),
           spacing: headingSpacingFor(level),
-          children: convertInline(node.content, blockDir),
+          children: convertInline(node.content, blockDir, typography),
         }),
       ];
     }
@@ -358,11 +412,18 @@ function convertNode(
       (node.content ?? []).forEach((child) => {
         if (child.type === "paragraph") {
           const blockDir = directionForNode(child, dir);
+          // Batch 16A correction — line-height/before/after now come from
+          // the shared resolver (explicit attr > typography default),
+          // same as ordinary paragraphs. BLOCKQUOTE_INDENT is kept as-is
+          // (the quote's own established visual indent, distinct from the
+          // new user-configurable indentStartMm/indentEndMm concept) —
+          // preserving existing quote styling exactly.
+          const { spacing: quoteSpacing } = resolveParagraphSpacingAndIndent(child, typography);
           out.push(
             new Paragraph({
               bidirectional: blockDir === "rtl",
               indent: { start: BLOCKQUOTE_INDENT },
-              spacing: PARAGRAPH_SPACING,
+              spacing: quoteSpacing,
               border: {
                 [blockDir === "rtl" ? "right" : "left"]: {
                   style: BorderStyle.SINGLE,
@@ -371,7 +432,7 @@ function convertNode(
                 },
               },
               shading: { fill: BLOCKQUOTE_SHADING_FILL },
-              children: convertInline(child.content, blockDir, {
+              children: convertInline(child.content, blockDir, typography, {
                 forceItalic: true,
                 size: BLOCKQUOTE_FONT_SIZE_HALF_POINTS,
               }),
@@ -423,12 +484,20 @@ function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, r
   (item.content ?? []).forEach((child, i) => {
     if (i === 0 && child.type === "paragraph") {
       const blockDir = directionForNode(child, dir);
+      // Batch 16A correction — list-item paragraphs previously used the
+      // hardcoded PARAGRAPH_SPACING unconditionally, silently ignoring
+      // both an explicit per-block lineHeight the editor can genuinely
+      // set on a list-item paragraph, and the document-wide typography
+      // defaults. Only spacing/line-height come from the shared
+      // resolver — the numbering indent stays list-numbering's own
+      // (untouched), matching "preserve existing list numbering styling."
+      const { spacing } = resolveParagraphSpacingAndIndent(child, typography);
       out.push(
         new Paragraph({
           bidirectional: blockDir === "rtl",
           numbering: { reference, level: depth },
-          spacing: PARAGRAPH_SPACING,
-          children: convertInline(child.content, blockDir),
+          spacing,
+          children: convertInline(child.content, blockDir, typography),
         })
       );
     } else if (child.type === "bulletList" || child.type === "orderedList") {

@@ -9,7 +9,11 @@ import Heading from "@tiptap/extension-heading";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle, FontFamily, FontSize } from "@tiptap/extension-text-style";
-import Underline from "@tiptap/extension-underline";
+// Batch 16A correction (item 7) — removed the direct `import Underline
+// from "@tiptap/extension-underline"`: StarterKit v3 (already configured
+// below) bundles its own Underline extension internally, so this import
+// was unused — toggleUnderline()/isActive("underline") work via
+// StarterKit's own copy, confirmed by inspecting the installed package.
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
@@ -24,10 +28,13 @@ import {
   FONT_SIZE_OPTIONS_PT,
   LINE_HEIGHT_OPTIONS,
   resolveFontSizePt,
+  validateLineHeight,
+  validateIndentMm,
+  validateSpacingPt,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
 import { resolvePageLayout, mmToPx } from "../utils/pageLayout";
-import { BLOCK_STYLES, BLOCK_STYLE_IDS, type BlockStyleId } from "../utils/documentStyles";
+import { BLOCK_STYLES, BLOCK_STYLE_IDS, isBlockStyleId, type BlockStyleId } from "../utils/documentStyles";
 import {
   applyPresetToSettings,
   getPreset,
@@ -141,7 +148,14 @@ function ToolbarDivider() {
 const PARAGRAPH_STYLE_ATTRS = {
   blockStyle: {
     default: null as string | null,
-    parseHTML: (element: HTMLElement) => element.getAttribute("data-block-style") || null,
+    parseHTML: (element: HTMLElement) => {
+      const v = element.getAttribute("data-block-style");
+      // Batch 16A correction (item 6) — validate against the canonical
+      // BlockStyleId set; an unrecognized/corrupted imported value falls
+      // back to null (plain paragraph) rather than flowing an arbitrary
+      // string into PDF/DOCX lookups downstream.
+      return v && isBlockStyleId(v) ? v : null;
+    },
     renderHTML: (attributes: Record<string, unknown>) =>
       attributes.blockStyle ? { "data-block-style": attributes.blockStyle } : {},
   },
@@ -150,7 +164,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     parseHTML: (element: HTMLElement) => {
       const v = element.style.lineHeight;
       const n = v ? parseFloat(v) : NaN;
-      return Number.isFinite(n) ? n : null;
+      return validateLineHeight(n);
     },
     renderHTML: (attributes: Record<string, unknown>) =>
       typeof attributes.lineHeight === "number" ? { style: `line-height:${attributes.lineHeight}` } : {},
@@ -160,7 +174,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     parseHTML: (element: HTMLElement) => {
       const v = element.getAttribute("data-first-line-indent-mm");
       const n = v ? parseFloat(v) : NaN;
-      return Number.isFinite(n) ? n : null;
+      return validateIndentMm(n);
     },
     renderHTML: (attributes: Record<string, unknown>) =>
       typeof attributes.firstLineIndentMm === "number"
@@ -172,7 +186,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     parseHTML: (element: HTMLElement) => {
       const v = element.getAttribute("data-indent-start-mm");
       const n = v ? parseFloat(v) : NaN;
-      return Number.isFinite(n) ? n : null;
+      return validateIndentMm(n);
     },
     renderHTML: (attributes: Record<string, unknown>) =>
       typeof attributes.indentStartMm === "number" ? { "data-indent-start-mm": String(attributes.indentStartMm) } : {},
@@ -182,7 +196,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     parseHTML: (element: HTMLElement) => {
       const v = element.getAttribute("data-indent-end-mm");
       const n = v ? parseFloat(v) : NaN;
-      return Number.isFinite(n) ? n : null;
+      return validateIndentMm(n);
     },
     renderHTML: (attributes: Record<string, unknown>) =>
       typeof attributes.indentEndMm === "number" ? { "data-indent-end-mm": String(attributes.indentEndMm) } : {},
@@ -192,7 +206,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     parseHTML: (element: HTMLElement) => {
       const v = element.getAttribute("data-space-before-pt");
       const n = v ? parseFloat(v) : NaN;
-      return Number.isFinite(n) ? n : null;
+      return validateSpacingPt(n);
     },
     renderHTML: (attributes: Record<string, unknown>) =>
       typeof attributes.spaceBeforePt === "number" ? { "data-space-before-pt": String(attributes.spaceBeforePt) } : {},
@@ -202,7 +216,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     parseHTML: (element: HTMLElement) => {
       const v = element.getAttribute("data-space-after-pt");
       const n = v ? parseFloat(v) : NaN;
-      return Number.isFinite(n) ? n : null;
+      return validateSpacingPt(n);
     },
     renderHTML: (attributes: Record<string, unknown>) =>
       typeof attributes.spaceAfterPt === "number" ? { "data-space-after-pt": String(attributes.spaceAfterPt) } : {},
@@ -616,9 +630,11 @@ export default function DocumentStudioEditor() {
   const [exampleJustLoaded, setExampleJustLoaded] = useState(false);
   const standardizeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Publishing Preset Foundation — Phase 1 (2026-08-09). Persisted
-  // selection only; does not currently affect export or editor
-  // formatting (see publishingPresets.ts's own comment).
+  // Publishing Preset Foundation — Phase 1 (2026-08-09). Batch 16A
+  // (2026-08-11) wired this through documentSettings.typography into the
+  // editor CSS variables, PDF body defaults, and DOCX paragraph/run
+  // defaults — no longer "selection only"; changing settings.typography
+  // genuinely changes rendered output across Editor/PDF/DOCX.
   const [selectedPresetId, setSelectedPresetId] = useState<PresetId>(() => loadSelectedPresetId());
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
@@ -2178,14 +2194,22 @@ export default function DocumentStudioEditor() {
           text-align: center;
           color: #666;
         }
-        /* Urdu/Arabic readability: generous paragraph spacing */
+        /* Batch 16A correction — these previously hardcoded 1.95/1.7
+           unconditionally, defeating --qalam-line-height for every
+           ordinary paragraph regardless of documentSettings. Now
+           inherits the document-wide variable; an explicit per-block
+           lineHeight attr still wins (it renders as a real inline
+           style on the element itself, which beats an inherited rule
+           via normal CSS cascade specificity — untouched by this). */
         .qalam-editor-content p {
           margin: 0.55rem 0;
-          line-height: 1.95;
+          line-height: inherit;
         }
-        /* Latin-leaning paragraphs still readable; plaintext keeps direction */
+        /* Latin-leaning paragraphs: only nudge if no document-wide
+           value has been explicitly set on the wrapper, so a genuine
+           documentSettings choice is never silently overridden. */
         .qalam-editor-content p:lang(en) {
-          line-height: 1.7;
+          line-height: inherit;
         }
         .qalam-editor-content h1 {
           font-size: 1.55rem;

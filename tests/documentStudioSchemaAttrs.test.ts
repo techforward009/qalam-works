@@ -13,7 +13,6 @@
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { TextStyle, FontFamily } from "@tiptap/extension-text-style";
-import Underline from "@tiptap/extension-underline";
 import { Node as PMNode } from "@tiptap/pm/model";
 import { ParagraphWithDir, HeadingWithDir } from "../app/tools/document-studio/components/DocumentStudioEditor";
 
@@ -23,7 +22,6 @@ const extensions = [
   HeadingWithDir,
   TextStyle,
   FontFamily,
-  Underline,
 ];
 const schema = getSchema(extensions);
 

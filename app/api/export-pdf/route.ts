@@ -82,9 +82,9 @@ function loadAllBundledFaces(): Map<string, PdfFontFace> {
   return map;
 }
 
-function fontsForDocument(doc: DocNode, dir: Direction): PdfFonts {
+function fontsForDocument(doc: DocNode, dir: Direction, typography?: DocumentStudioSettings["typography"]): PdfFonts {
   const all = loadAllBundledFaces();
-  const needed = requiredPdfEmbedFonts(doc, dir);
+  const needed = requiredPdfEmbedFonts(doc, dir, typography);
   const faces: PdfFontFace[] = [];
   const seen = new Set<string>();
   for (const def of needed) {
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
 
   try {
-    const fonts = fontsForDocument(doc, dir);
+    const fonts = fontsForDocument(doc, dir, settings.typography);
     const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, fonts, settings.typography);
 
     const executablePath = await chromium.executablePath();

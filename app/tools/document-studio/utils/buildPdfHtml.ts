@@ -3,7 +3,8 @@
 // Effective CSS classes are chosen only from faces that fully loaded.
 
 import type { DocNode, Direction } from "./extractPlainText";
-import { resolveFontSizePt, type DocumentStudioSettings } from "./documentSettings";
+import { resolveFontSizePt, type DocumentStudioSettings, validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
+import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
 import {
   collectPdfEmbedFonts,
   directionForNode,
@@ -87,9 +88,26 @@ interface WalkCtx {
 function resolveEffectivePdfFont(
   rawFamily: unknown,
   blockDir: Direction,
-  available: Map<string, PdfFontFace>
+  available: Map<string, PdfFontFace>,
+  typography?: DocumentStudioSettings["typography"]
 ): { family: string; cssClass: string; requestedLabel: string | null; fellBack: boolean } {
-  const base = resolveEditorFontFamily(rawFamily, blockDir);
+  // Batch 16A correction — EXPLICIT FONTFAMILY MARK > SETTINGS DEFAULT >
+  // SYSTEM FALLBACK, same pattern as buildDocxDocument.ts's
+  // resolveEffectiveFontFamily(): when no explicit mark exists, substitute
+  // the document's chosen default font id's own editorFamily as the
+  // "requested" value into the SAME resolveEditorFontFamily() the
+  // explicit-mark path already uses, rather than bypassing the registry.
+  const effectiveRawFamily = (() => {
+    if (typeof rawFamily === "string" && rawFamily.trim().length > 0) return rawFamily;
+    if (typography) {
+      const defaultId = blockDir === "rtl" ? typography.defaultRtlFontId : typography.defaultLtrFontId;
+      const def = getFontById(defaultId);
+      if (def?.editorFamily) return def.editorFamily;
+    }
+    return rawFamily;
+  })();
+
+  const base = resolveEditorFontFamily(effectiveRawFamily, blockDir);
   // Start from registry PDF family (already may have fallen back from Jameel etc.)
   let preferred = base.pdfFamily;
   let preferredClass = base.cssClass;
@@ -182,10 +200,11 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
     const effective = resolveEffectivePdfFont(
       styleMark?.attrs?.fontFamily,
       blockDir,
-      ctx.available
+      ctx.available,
+      ctx.typography
     );
     noteEffective(ctx, effective);
-    const sizePt = resolveFontSizePt(styleMark?.attrs?.fontSize);
+    const sizePt = resolveFontSizePt(styleMark?.attrs?.fontSize) ?? ctx.typography?.bodyFontSizePt ?? null;
     const sizeStyle = sizePt ? `font-size:${sizePt}pt;` : "";
 
     if (bold) inner = `<strong>${inner}</strong>`;
@@ -203,31 +222,41 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
 }
 
 function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
+  // Batch 16A correction — canonical block-style presentation
+  // (Title/Subtitle/Caption's font size/bold/alignment), sourced from
+  // documentStyles.ts's BLOCK_STYLES (the single source of truth also
+  // used by the editor's own CSS and the toolbar's style list) — never
+  // duplicated/redefined here. Only applies when the paragraph itself
+  // has no explicit conflicting attr; alignment specifically still
+  // respects an explicit textAlign attr first (alignStyleFor below).
+  const blockStyleId = typeof node.attrs?.blockStyle === "string" && isBlockStyleId(node.attrs.blockStyle) ? node.attrs.blockStyle : null;
+  const styleDef = blockStyleId ? BLOCK_STYLES[blockStyleId] : null;
+
   // Batch 16A — EXPLICIT TIPTAP FORMAT > DOCUMENT SETTINGS DEFAULT: a
   // per-block attr (set via the editor's real schema attrs) always wins;
   // only falls back to the document-wide typography default when the
   // block itself has no explicit override.
   const lh =
     typeof node.attrs?.lineHeight === "number"
-      ? node.attrs.lineHeight
+      ? validateLineHeight(node.attrs.lineHeight)
       : ctx.typography?.lineHeight ?? null;
   const firstLineIndentMm =
     typeof node.attrs?.firstLineIndentMm === "number"
-      ? node.attrs.firstLineIndentMm
+      ? validateIndentMm(node.attrs.firstLineIndentMm)
       : node.type === "paragraph"
         ? ctx.typography?.firstLineIndentMm ?? null
         : null;
-  const indentStartMm = typeof node.attrs?.indentStartMm === "number" ? node.attrs.indentStartMm : null;
-  const indentEndMm = typeof node.attrs?.indentEndMm === "number" ? node.attrs.indentEndMm : null;
+  const indentStartMm = typeof node.attrs?.indentStartMm === "number" ? validateIndentMm(node.attrs.indentStartMm) : null;
+  const indentEndMm = typeof node.attrs?.indentEndMm === "number" ? validateIndentMm(node.attrs.indentEndMm) : null;
   const spaceBeforePt =
     typeof node.attrs?.spaceBeforePt === "number"
-      ? node.attrs.spaceBeforePt
+      ? validateSpacingPt(node.attrs.spaceBeforePt)
       : node.type === "paragraph"
         ? ctx.typography?.paragraphBeforePt ?? null
         : null;
   const spaceAfterPt =
     typeof node.attrs?.spaceAfterPt === "number"
-      ? node.attrs.spaceAfterPt
+      ? validateSpacingPt(node.attrs.spaceAfterPt)
       : node.type === "paragraph"
         ? ctx.typography?.paragraphAfterPt ?? null
         : null;
@@ -236,7 +265,9 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
     `direction:${blockDir}`,
     "unicode-bidi:isolate",
     "text-align:start",
-    alignStyleFor(node),
+    alignStyleFor(node) || (styleDef?.align ? `text-align:${styleDef.align}` : ""),
+    styleDef?.defaultFontSizePt ? `font-size:${styleDef.defaultFontSizePt}pt` : "",
+    styleDef?.bold ? "font-weight:bold" : "",
     lh !== null ? `line-height:${lh}` : "",
     firstLineIndentMm !== null && firstLineIndentMm > 0 ? `text-indent:${firstLineIndentMm}mm` : "",
     indentStartMm !== null ? `margin-inline-start:${indentStartMm}mm` : "",
@@ -272,7 +303,7 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
     }
     case "bulletList": {
       const items = (node.content ?? [])
-        .map((item) => `<li dir="${blockDir}">${convertListItemInner(item, ctx, blockDir)}</li>`)
+        .map((item) => `<li dir="${blockDir}"${listItemStyleAttrs(item, blockDir, ctx)}>${convertListItemInner(item, ctx, blockDir)}</li>`)
         .join("");
       return `<ul dir="${blockDir}">${items}</ul>`;
     }
@@ -282,13 +313,28 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
           ? ` start="${node.attrs.start}"`
           : "";
       const items = (node.content ?? [])
-        .map((item) => `<li dir="${blockDir}">${convertListItemInner(item, ctx, blockDir)}</li>`)
+        .map((item) => `<li dir="${blockDir}"${listItemStyleAttrs(item, blockDir, ctx)}>${convertListItemInner(item, ctx, blockDir)}</li>`)
         .join("");
       return `<ol${startAttr} dir="${blockDir}">${items}</ol>`;
     }
     default:
       return (node.content ?? []).map((c) => convertNode(c, ctx)).join("");
   }
+}
+
+// Batch 16A correction — a list item's first paragraph previously had its
+// content converted via convertInline() directly, bypassing openAttrs()
+// entirely, so an explicit per-item lineHeight/spacing attr (or the
+// document-wide typography default) silently never reached the <li> at
+// all. Extracts just the `style="…"` portion openAttrs() would have
+// produced for that paragraph (dir is already set on the <li> itself).
+function listItemStyleAttrs(item: DocNode, parentDir: Direction, ctx: WalkCtx): string {
+  const firstChild = item.content?.[0];
+  if (!firstChild || firstChild.type !== "paragraph") return "";
+  const d = directionForNode(firstChild, parentDir);
+  const full = openAttrs(firstChild, d, ctx);
+  const match = full.match(/style="([^"]*)"/);
+  return match ? ` style="${match[1]}"` : "";
 }
 
 function convertListItemInner(item: DocNode, ctx: WalkCtx, parentDir: Direction): string {
@@ -362,7 +408,7 @@ export function buildPdfHtml(
   const bodyHtml = (doc.content ?? []).map((n) => convertNode(n, ctx)).join("\n");
 
   if (ctx.fontsUsed.size === 0) {
-    const effective = resolveEffectivePdfFont(null, dir, available);
+    const effective = resolveEffectivePdfFont(null, dir, available, typography);
     noteEffective(ctx, effective);
   }
 
@@ -430,16 +476,34 @@ ${bodyHtml}
 /** Helper for tests/route: which embed defs are needed for a document. */
 export function requiredPdfEmbedFonts(
   doc: DocNode,
-  dir: Direction
+  dir: Direction,
+  typography?: DocumentStudioSettings["typography"]
 ): StudioFontDefinition[] {
-  // Collect preferred families without availability constraint
+  // Batch 16A correction — without `typography`, a document with NO
+  // explicit font marks would only ever request embedding of the
+  // hardcoded system default (Inter/Noto Nastaliq Urdu) — meaning even
+  // if buildPdfHtml() correctly RESOLVED the settings-chosen default
+  // font in its HTML/CSS, the actual font FILE would never have been
+  // fetched/embedded, silently falling back to a system font in the
+  // rendered PDF regardless. This ensures the settings default is always
+  // among the fonts requested for embedding.
   const used = new Set<string>();
   const walk = (nodes: DocNode[] | undefined, blockDir: Direction) => {
     if (!nodes) return;
     for (const node of nodes) {
       if (node.type === "text") {
         const styleMark = node.marks?.find((m) => m.type === "textStyle");
-        const res = resolveEditorFontFamily(styleMark?.attrs?.fontFamily, blockDir);
+        const rawFamily = styleMark?.attrs?.fontFamily;
+        const effectiveFamily = (() => {
+          if (typeof rawFamily === "string" && rawFamily.trim().length > 0) return rawFamily;
+          if (typography) {
+            const defaultId = blockDir === "rtl" ? typography.defaultRtlFontId : typography.defaultLtrFontId;
+            const def = getFontById(defaultId);
+            if (def?.editorFamily) return def.editorFamily;
+          }
+          return rawFamily;
+        })();
+        const res = resolveEditorFontFamily(effectiveFamily, blockDir);
         used.add(res.pdfFamily);
       }
       const childDir = directionForNode(node, blockDir);
@@ -448,7 +512,13 @@ export function requiredPdfEmbedFonts(
   };
   walk(doc.content, dir);
   if (used.size === 0) {
-    used.add(resolveEditorFontFamily(null, dir).pdfFamily);
+    if (typography) {
+      const defaultId = dir === "rtl" ? typography.defaultRtlFontId : typography.defaultLtrFontId;
+      const def = getFontById(defaultId);
+      used.add(resolveEditorFontFamily(def?.editorFamily ?? null, dir).pdfFamily);
+    } else {
+      used.add(resolveEditorFontFamily(null, dir).pdfFamily);
+    }
   }
   // Always include direction default for fallback capacity
   used.add(dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu");

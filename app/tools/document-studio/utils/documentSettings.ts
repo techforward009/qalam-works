@@ -89,6 +89,39 @@ export function defaultDocumentSettings(): DocumentStudioSettings {
   };
 }
 
+// Batch 16A correction (item 6) — canonical validators for the new
+// paragraph/heading schema attrs, reused both in the TipTap schema's
+// parseHTML (so a corrupted/imported document can't inject an extreme
+// value) and anywhere else these attrs are read. An out-of-range or
+// non-finite value falls back to null (== "no override, use the
+// document default") rather than clamping to a boundary, since a
+// wildly-wrong stored value is more likely corrupt data than a genuine
+// intent to hit the extreme end of the range.
+export const LINE_HEIGHT_MIN = 0.5;
+export const LINE_HEIGHT_MAX = 4;
+export const INDENT_MM_MIN = 0;
+export const INDENT_MM_MAX = 100;
+export const SPACING_PT_MIN = 0;
+export const SPACING_PT_MAX = 200;
+
+export function validateLineHeight(raw: unknown): number | null {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return null;
+  if (raw < LINE_HEIGHT_MIN || raw > LINE_HEIGHT_MAX) return null;
+  return raw;
+}
+
+export function validateIndentMm(raw: unknown): number | null {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return null;
+  if (raw < INDENT_MM_MIN || raw > INDENT_MM_MAX) return null;
+  return raw;
+}
+
+export function validateSpacingPt(raw: unknown): number | null {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return null;
+  if (raw < SPACING_PT_MIN || raw > SPACING_PT_MAX) return null;
+  return raw;
+}
+
 export function resolveFontSizePt(raw: unknown): number | null {
   if (typeof raw === "number" && Number.isFinite(raw)) {
     const n = Math.round(raw * 10) / 10;
