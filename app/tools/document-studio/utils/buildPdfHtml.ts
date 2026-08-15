@@ -1,21 +1,34 @@
 // Document Studio PDF HTML adapter — pure/sync.
 // Fonts and direction resolve through the central font registry.
+// Effective CSS classes are chosen only from faces that fully loaded.
 
 import type { DocNode, Direction } from "./extractPlainText";
 import {
   collectPdfEmbedFonts,
   directionForNode,
+  getFontById,
   resolveEditorFontFamily,
+  resolvePdfFontId,
   type FontResolution,
   type StudioFontDefinition,
 } from "./fontRegistry";
 
 export interface PdfFontFace {
   familyName: string;
-  /** One or more woff2 subset payloads for regular weight */
+  /** Successfully loaded woff2 subset payloads for regular weight */
   regularSources: string[];
-  /** One or more woff2 subset payloads for bold weight */
+  /** Successfully loaded woff2 subset payloads for bold weight */
   boldSources?: string[];
+  /**
+   * True only when every declared regular (and bold, if declared)
+   * subset file for this family loaded successfully.
+   */
+  complete: boolean;
+  /** Declared subset path counts for diagnostics */
+  declaredRegular: number;
+  declaredBold: number;
+  loadedRegular: number;
+  loadedBold: number;
 }
 
 export interface PdfFonts {
@@ -57,14 +70,89 @@ function alignStyleFor(node: DocNode): string {
 
 interface WalkCtx {
   globalDir: Direction;
+  /** familyName → complete loaded face */
+  available: Map<string, PdfFontFace>;
   fontsUsed: Set<string>;
   fallbacks: Map<string, string>;
 }
 
-function noteResolution(ctx: WalkCtx, res: FontResolution) {
-  ctx.fontsUsed.add(res.pdfFamily);
-  if (res.fellBack && res.fallbackFrom) {
-    ctx.fallbacks.set(res.fallbackFrom, res.pdfFamily);
+/**
+ * Resolve the effective PDF family/class using only fully-loaded faces.
+ * If the preferred family is missing or incomplete, use the deterministic
+ * registry fallback (and record the mapping).
+ */
+function resolveEffectivePdfFont(
+  rawFamily: unknown,
+  blockDir: Direction,
+  available: Map<string, PdfFontFace>
+): { family: string; cssClass: string; requestedLabel: string | null; fellBack: boolean } {
+  const base = resolveEditorFontFamily(rawFamily, blockDir);
+  // Start from registry PDF family (already may have fallen back from Jameel etc.)
+  let preferred = base.pdfFamily;
+  let preferredClass = base.cssClass;
+  let requestedLabel = base.fallbackFrom ?? base.editorFamily ?? base.pdfFamily;
+
+  const preferComplete = (name: string): PdfFontFace | undefined => {
+    const face = available.get(name);
+    return face && face.complete ? face : undefined;
+  };
+
+  if (preferComplete(preferred)) {
+    // Registry may have already recorded a logical fallback (Jameel → Noto)
+    return {
+      family: preferred,
+      cssClass: preferredClass,
+      requestedLabel: base.fellBack ? requestedLabel : null,
+      fellBack: base.fellBack,
+    };
+  }
+
+  // Preferred face unavailable/incomplete → document-direction default fallback
+  const dirFallbackName = blockDir === "ltr" ? "Inter" : "Noto Nastaliq Urdu";
+  const dirFallbackClass = blockDir === "ltr" ? "qf-inter" : "qf-noto-nastaliq";
+
+  // Try registry fallbackFontId chain first if preferred came from a known font
+  const preferredId = resolvePdfFontId(preferred);
+  if (preferredId) {
+    const def = getFontById(preferredId);
+    if (def.fallbackFontId) {
+      const fb = getFontById(def.fallbackFontId);
+      if (fb.pdf.familyName && preferComplete(fb.pdf.familyName)) {
+        return {
+          family: fb.pdf.familyName,
+          cssClass: fb.cssClass,
+          requestedLabel: base.editorFamily ?? preferred,
+          fellBack: true,
+        };
+      }
+    }
+  }
+
+  if (preferComplete(dirFallbackName)) {
+    return {
+      family: dirFallbackName,
+      cssClass: dirFallbackClass,
+      requestedLabel: base.editorFamily ?? preferred,
+      fellBack: true,
+    };
+  }
+
+  // Last resort: still emit class for dir fallback so HTML is deterministic
+  return {
+    family: dirFallbackName,
+    cssClass: dirFallbackClass,
+    requestedLabel: base.editorFamily ?? preferred,
+    fellBack: true,
+  };
+}
+
+function noteEffective(
+  ctx: WalkCtx,
+  effective: ReturnType<typeof resolveEffectivePdfFont>
+) {
+  ctx.fontsUsed.add(effective.family);
+  if (effective.fellBack && effective.requestedLabel) {
+    ctx.fallbacks.set(effective.requestedLabel, effective.family);
   }
 }
 
@@ -87,15 +175,20 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
     const linkMark = node.marks?.find((m) => m.type === "link");
     const href = linkMark?.attrs?.href;
     const styleMark = node.marks?.find((m) => m.type === "textStyle");
-    const res = resolveEditorFontFamily(styleMark?.attrs?.fontFamily, blockDir);
-    noteResolution(ctx, res);
+    const effective = resolveEffectivePdfFont(
+      styleMark?.attrs?.fontFamily,
+      blockDir,
+      ctx.available
+    );
+    noteEffective(ctx, effective);
 
     if (bold) inner = `<strong>${inner}</strong>`;
     if (italics) inner = `<em>${inner}</em>`;
     if (typeof href === "string" && href.trim().length > 0) {
       inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
     }
-    inner = `<span class="${res.cssClass}">${inner}</span>`;
+    // Class always matches the effective (available) family
+    inner = `<span class="${effective.cssClass}">${inner}</span>`;
     html += inner;
   }
 
@@ -171,6 +264,7 @@ function convertListItemInner(item: DocNode, ctx: WalkCtx, parentDir: Direction)
 function fontFaceCss(faces: PdfFontFace[]): string {
   const rules: string[] = [];
   for (const f of faces) {
+    if (!f.complete) continue;
     for (const src of f.regularSources) {
       rules.push(
         `@font-face{font-family:"${f.familyName}";src:url(data:font/woff2;base64,${src}) format("woff2");font-weight:400;font-display:block;}`
@@ -198,9 +292,21 @@ function classRulesCss(): string {
 `;
 }
 
+/**
+ * Pure: DocNode + direction + pre-loaded font faces → self-contained HTML.
+ * CSS classes always match faces that are complete/available.
+ */
 export function buildPdfHtml(doc: DocNode, dir: Direction, fonts: PdfFonts): PdfHtmlResult {
+  const available = new Map<string, PdfFontFace>();
+  for (const face of fonts.faces) {
+    if (face.complete && face.regularSources.length > 0) {
+      available.set(face.familyName, face);
+    }
+  }
+
   const ctx: WalkCtx = {
     globalDir: dir,
+    available,
     fontsUsed: new Set(),
     fallbacks: new Map(),
   };
@@ -208,25 +314,16 @@ export function buildPdfHtml(doc: DocNode, dir: Direction, fonts: PdfFonts): Pdf
   const bodyHtml = (doc.content ?? []).map((n) => convertNode(n, ctx)).join("\n");
 
   if (ctx.fontsUsed.size === 0) {
-    const def = resolveEditorFontFamily(null, dir);
-    ctx.fontsUsed.add(def.pdfFamily);
+    const effective = resolveEffectivePdfFont(null, dir, available);
+    noteEffective(ctx, effective);
   }
 
-  const resolvedNames = [...ctx.fontsUsed];
-  const availableFaceNames = new Set(fonts.faces.map((f) => f.familyName));
-  // Truthful embed list: only fonts whose faces actually loaded
-  const embeddedNames: string[] = resolvedNames.filter((n) => availableFaceNames.has(n));
-  // If a resolved font has no face, record deterministic fallback honestly
-  for (const name of resolvedNames) {
-    if (!availableFaceNames.has(name)) {
-      const fb = dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu";
-      ctx.fallbacks.set(name, fb);
-      if (availableFaceNames.has(fb) && !embeddedNames.includes(fb)) {
-        embeddedNames.push(fb);
-      }
-    }
-  }
-  const faces = fonts.faces.filter((f) => embeddedNames.includes(f.familyName));
+  const embeddedNames = [...ctx.fontsUsed].filter((n) => available.has(n));
+  // Only emit @font-face for families actually used and complete
+  const faces = fonts.faces.filter(
+    (f) => f.complete && embeddedNames.includes(f.familyName)
+  );
+
   const defaultFamily =
     dir === "ltr" ? "Inter, system-ui, sans-serif" : '"Noto Nastaliq Urdu", serif';
 
@@ -245,7 +342,7 @@ ${classRulesCss()}
     padding: 0;
     color: #111;
   }
-  p, h1, h2, h3, li, blockquote { margin: 0.5em 0; }
+  p, h1, h2, h3, h4, li, blockquote { margin: 0.5em 0; }
   h1 { font-size: 1.6rem; }
   h2 { font-size: 1.3rem; }
   h3 { font-size: 1.15rem; }
@@ -265,7 +362,7 @@ ${bodyHtml}
 
   return {
     html,
-    fontsUsed: [...new Set(embeddedNames)].sort(),
+    fontsUsed: embeddedNames.sort(),
     fontFallbacks: [...ctx.fallbacks.entries()].map(([requested, used]) => ({
       requested,
       used,
@@ -273,18 +370,30 @@ ${bodyHtml}
   };
 }
 
+/** Helper for tests/route: which embed defs are needed for a document. */
 export function requiredPdfEmbedFonts(
   doc: DocNode,
   dir: Direction
 ): StudioFontDefinition[] {
-  const ctx: WalkCtx = {
-    globalDir: dir,
-    fontsUsed: new Set(),
-    fallbacks: new Map(),
+  // Collect preferred families without availability constraint
+  const used = new Set<string>();
+  const walk = (nodes: DocNode[] | undefined, blockDir: Direction) => {
+    if (!nodes) return;
+    for (const node of nodes) {
+      if (node.type === "text") {
+        const styleMark = node.marks?.find((m) => m.type === "textStyle");
+        const res = resolveEditorFontFamily(styleMark?.attrs?.fontFamily, blockDir);
+        used.add(res.pdfFamily);
+      }
+      const childDir = directionForNode(node, blockDir);
+      walk(node.content, childDir);
+    }
   };
-  (doc.content ?? []).forEach((n) => convertNode(n, ctx));
-  if (ctx.fontsUsed.size === 0) {
-    ctx.fontsUsed.add(resolveEditorFontFamily(null, dir).pdfFamily);
+  walk(doc.content, dir);
+  if (used.size === 0) {
+    used.add(resolveEditorFontFamily(null, dir).pdfFamily);
   }
-  return collectPdfEmbedFonts(ctx.fontsUsed);
+  // Always include direction default for fallback capacity
+  used.add(dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu");
+  return collectPdfEmbedFonts(used);
 }

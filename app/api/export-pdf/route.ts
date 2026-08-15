@@ -27,26 +27,49 @@ function readBase64(relPath: string): string | null {
   return readFileSync(full).toString("base64");
 }
 
+/**
+ * Load every declared subset. A family is `complete` only when ALL
+ * declared regular files (and bold files, if any were declared) load.
+ * Incomplete families are kept out of the available set so buildPdfHtml
+ * falls back deterministically instead of partial browser fallback.
+ */
 function loadAllBundledFaces(): Map<string, PdfFontFace> {
   if (cachedFaces) return cachedFaces;
   const map = new Map<string, PdfFontFace>();
   for (const def of STUDIO_FONTS) {
     if (!def.pdf.embedded || !def.pdf.familyName || !def.pdf.regularFiles?.length) continue;
+    const declaredRegular = def.pdf.regularFiles.length;
+    const declaredBold = def.pdf.boldFiles?.length ?? 0;
     const regularSources: string[] = [];
     for (const f of def.pdf.regularFiles) {
       const b = readBase64(f);
       if (b) regularSources.push(b);
     }
-    if (regularSources.length === 0) continue;
     const boldSources: string[] = [];
     for (const f of def.pdf.boldFiles ?? []) {
       const b = readBase64(f);
       if (b) boldSources.push(b);
     }
+    const complete =
+      regularSources.length === declaredRegular &&
+      (declaredBold === 0 || boldSources.length === declaredBold) &&
+      regularSources.length > 0;
+
+    if (!complete) {
+      console.warn(
+        `PDF font incomplete: ${def.pdf.familyName} regular ${regularSources.length}/${declaredRegular} bold ${boldSources.length}/${declaredBold}`
+      );
+    }
+
     map.set(def.pdf.familyName, {
       familyName: def.pdf.familyName,
       regularSources,
       boldSources: boldSources.length > 0 ? boldSources : undefined,
+      complete,
+      declaredRegular,
+      declaredBold,
+      loadedRegular: regularSources.length,
+      loadedBold: boldSources.length,
     });
   }
   cachedFaces = map;
@@ -67,6 +90,7 @@ function fontsForDocument(doc: DocNode, dir: Direction): PdfFonts {
       seen.add(name);
     }
   }
+  // Always include direction default for fallback capacity
   const fallbackName = dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu";
   if (!seen.has(fallbackName) && all.has(fallbackName)) {
     faces.push(all.get(fallbackName)!);

@@ -5,9 +5,31 @@ import {
   resolveEditorFontFamily,
   getFontById,
 } from "../app/tools/document-studio/utils/fontRegistry";
-import { buildPdfHtml, requiredPdfEmbedFonts } from "../app/tools/document-studio/utils/buildPdfHtml";
+import {
+  buildPdfHtml,
+  requiredPdfEmbedFonts,
+  type PdfFontFace,
+} from "../app/tools/document-studio/utils/buildPdfHtml";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 import { normalizeDocumentNodes } from "../app/tools/document-studio/utils/normalizeDocumentNodes";
+
+function face(
+  familyName: string,
+  opts: { complete?: boolean; regular?: number; declaredRegular?: number } = {}
+): PdfFontFace {
+  const loaded = opts.regular ?? 1;
+  const declared = opts.declaredRegular ?? loaded;
+  const complete = opts.complete ?? true;
+  return {
+    familyName,
+    regularSources: Array.from({ length: loaded }, (_, i) => `src${i}`),
+    complete,
+    declaredRegular: declared,
+    declaredBold: 0,
+    loadedRegular: loaded,
+    loadedBold: 0,
+  };
+}
 
 describe("fontRegistry", () => {
   test("known fonts resolve for PDF and DOCX", () => {
@@ -118,10 +140,10 @@ describe("buildPdfHtml typography", () => {
 
   test("emits safe font classes and per-block dir", () => {
     const faces = [
-      { familyName: "Noto Nastaliq Urdu", regularSources: ["YQ=="] },
-      { familyName: "Amiri", regularSources: ["YQ=="] },
-      { familyName: "Vazirmatn", regularSources: ["YQ=="] },
-      { familyName: "Inter", regularSources: ["YQ=="] },
+      face("Noto Nastaliq Urdu"),
+      face("Amiri"),
+      face("Vazirmatn"),
+      face("Inter"),
     ];
     const { html, fontsUsed, fontFallbacks } = buildPdfHtml(multi, "rtl", { faces });
     expect(html).toContain('dir="rtl"');
@@ -138,9 +160,11 @@ describe("buildPdfHtml typography", () => {
   });
 
   test("Jameel is not claimed as embedded", () => {
-    const { fontsUsed, fontFallbacks } = buildPdfHtml(multi, "rtl", { faces: [] });
+    const { fontsUsed, fontFallbacks } = buildPdfHtml(multi, "rtl", {
+      faces: [face("Noto Nastaliq Urdu")],
+    });
     expect(fontsUsed).not.toContain("Jameel Noori Nastaleeq");
-    expect(fontFallbacks[0].used).toBe("Noto Nastaliq Urdu");
+    expect(fontFallbacks.some((f) => f.requested === "Jameel Noori Nastaleeq")).toBe(true);
   });
 
   test("required embed list excludes Jameel", () => {
@@ -185,40 +209,54 @@ describe("normalize preserves typography marks and dir", () => {
   });
 });
 
-describe("PDF multi-subset and heading fidelity", () => {
-  test("Amiri mixed Arabic+English uses Amiri class for both runs", () => {
-    const doc: DocNode = {
-      type: "doc",
-      content: [
-        {
-          type: "paragraph",
-          attrs: { dir: "rtl" },
-          content: [
-            {
-              type: "text",
-              text: "سلام ",
-              marks: [{ type: "textStyle", attrs: { fontFamily: "Amiri" } }],
-            },
-            {
-              type: "text",
-              text: "Hello",
-              marks: [{ type: "textStyle", attrs: { fontFamily: "Amiri" } }],
-            },
-          ],
-        },
-      ],
-    };
-    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, "rtl", {
-      faces: [{ familyName: "Amiri", regularSources: ["dGVzdA=="] }],
+describe("PDF deterministic runtime fallbacks", () => {
+  const amiriDoc: DocNode = {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        attrs: { dir: "rtl" },
+        content: [
+          {
+            type: "text",
+            text: "سلام Hello",
+            marks: [{ type: "textStyle", attrs: { fontFamily: "Amiri" } }],
+          },
+        ],
+      },
+    ],
+  };
+
+  test("Amiri face entirely missing → class and metadata use Noto Nastaliq", () => {
+    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(amiriDoc, "rtl", {
+      faces: [face("Noto Nastaliq Urdu")],
     });
-    expect(html).toContain("qf-amiri");
-    expect(html).toContain("سلام");
-    expect(html).toContain("Hello");
-    expect(fontsUsed).toContain("Amiri");
-    expect(fontFallbacks.length).toBe(0);
+    expect(html).toContain('class="qf-noto-nastaliq"');
+    expect(html).not.toContain('class="qf-amiri"');
+    expect(fontsUsed).toEqual(["Noto Nastaliq Urdu"]);
+    expect(fontsUsed).not.toContain("Amiri");
+    expect(fontFallbacks).toContainEqual({
+      requested: "Amiri",
+      used: "Noto Nastaliq Urdu",
+    });
   });
 
-  test("Vazirmatn mixed Persian+English uses Vazirmatn class", () => {
+  test("Amiri incomplete subsets (latin missing) → treated unavailable, falls back", () => {
+    const incompleteAmiri = face("Amiri", {
+      complete: false,
+      regular: 1,
+      declaredRegular: 3,
+    });
+    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(amiriDoc, "rtl", {
+      faces: [incompleteAmiri, face("Noto Nastaliq Urdu")],
+    });
+    expect(html).toContain("qf-noto-nastaliq");
+    expect(html).not.toContain('class="qf-amiri"');
+    expect(fontsUsed).toEqual(["Noto Nastaliq Urdu"]);
+    expect(fontFallbacks.some((f) => f.requested === "Amiri")).toBe(true);
+  });
+
+  test("Vazirmatn Arabic subset missing → falls back deterministically", () => {
     const doc: DocNode = {
       type: "doc",
       content: [
@@ -228,20 +266,37 @@ describe("PDF multi-subset and heading fidelity", () => {
           content: [
             {
               type: "text",
-              text: "سلام ",
-              marks: [{ type: "textStyle", attrs: { fontFamily: "Vazirmatn" } }],
-            },
-            {
-              type: "text",
-              text: "World",
+              text: "فارسی",
               marks: [{ type: "textStyle", attrs: { fontFamily: "Vazirmatn" } }],
             },
           ],
         },
       ],
     };
-    const { html } = buildPdfHtml(doc, "rtl", { faces: [] });
-    expect(html).toContain("qf-vazirmatn");
+    const incomplete = face("Vazirmatn", {
+      complete: false,
+      regular: 2,
+      declaredRegular: 3,
+    });
+    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, "rtl", {
+      faces: [incomplete, face("Noto Nastaliq Urdu")],
+    });
+    expect(html).toContain("qf-noto-nastaliq");
+    expect(html).not.toContain('class="qf-vazirmatn"');
+    expect(fontsUsed).toEqual(["Noto Nastaliq Urdu"]);
+    expect(fontFallbacks).toContainEqual({
+      requested: "Vazirmatn",
+      used: "Noto Nastaliq Urdu",
+    });
+  });
+
+  test("complete Amiri face still emits qf-amiri", () => {
+    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(amiriDoc, "rtl", {
+      faces: [face("Amiri"), face("Noto Nastaliq Urdu")],
+    });
+    expect(html).toContain("qf-amiri");
+    expect(fontsUsed).toContain("Amiri");
+    expect(fontFallbacks.filter((f) => f.requested === "Amiri")).toHaveLength(0);
   });
 
   test("H4 is preserved in PDF HTML", () => {
@@ -255,30 +310,8 @@ describe("PDF multi-subset and heading fidelity", () => {
         },
       ],
     };
-    const { html } = buildPdfHtml(doc, "ltr", { faces: [] });
+    const { html } = buildPdfHtml(doc, "ltr", { faces: [face("Inter")] });
     expect(html).toContain("<h4");
     expect(html).not.toMatch(/<h1[^>]*>Deep heading/);
-  });
-
-  test("fontsUsed only includes faces that were provided", () => {
-    const doc: DocNode = {
-      type: "doc",
-      content: [
-        {
-          type: "paragraph",
-          content: [
-            {
-              type: "text",
-              text: "x",
-              marks: [{ type: "textStyle", attrs: { fontFamily: "Amiri" } }],
-            },
-          ],
-        },
-      ],
-    };
-    // No faces provided → Amiri cannot be claimed as embedded
-    const { fontsUsed, fontFallbacks } = buildPdfHtml(doc, "rtl", { faces: [] });
-    expect(fontsUsed).not.toContain("Amiri");
-    expect(fontFallbacks.some((f) => f.requested === "Amiri")).toBe(true);
   });
 });
