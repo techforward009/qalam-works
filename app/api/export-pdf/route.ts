@@ -32,13 +32,21 @@ function loadAllBundledFaces(): Map<string, PdfFontFace> {
   const map = new Map<string, PdfFontFace>();
   for (const def of STUDIO_FONTS) {
     if (!def.pdf.embedded || !def.pdf.familyName || !def.pdf.regularFiles?.length) continue;
-    const regular = readBase64(def.pdf.regularFiles[0]);
-    if (!regular) continue;
-    const bold = def.pdf.boldFiles?.[0] ? readBase64(def.pdf.boldFiles[0]) : undefined;
+    const regularSources: string[] = [];
+    for (const f of def.pdf.regularFiles) {
+      const b = readBase64(f);
+      if (b) regularSources.push(b);
+    }
+    if (regularSources.length === 0) continue;
+    const boldSources: string[] = [];
+    for (const f of def.pdf.boldFiles ?? []) {
+      const b = readBase64(f);
+      if (b) boldSources.push(b);
+    }
     map.set(def.pdf.familyName, {
       familyName: def.pdf.familyName,
-      regularBase64: regular,
-      boldBase64: bold ?? undefined,
+      regularSources,
+      boldSources: boldSources.length > 0 ? boldSources : undefined,
     });
   }
   cachedFaces = map;

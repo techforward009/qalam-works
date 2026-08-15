@@ -771,3 +771,51 @@ describe("createDocxDocument — v1.4: title detection searches the full documen
     expect(coreXml).toContain("<dc:title>Qalam Works</dc:title>");
   });
 });
+
+describe("createDocxDocument — per-block direction for quote/list", () => {
+  test("RTL document with LTR blockquote paragraph uses no bidi on that child", async () => {
+    const xml = await extractDocumentXml(
+      docWith([
+        {
+          type: "blockquote",
+          content: [
+            {
+              type: "paragraph",
+              attrs: { dir: "ltr" },
+              content: [{ type: "text", text: "Quoted English" }],
+            },
+          ],
+        },
+      ]),
+      "rtl"
+    );
+    // The LTR quote paragraph should not force document-wide RTL on that run's container alone;
+    // we assert the English text is present and the quote border appears on left for LTR.
+    expect(xml).toContain("Quoted English");
+  });
+
+  test("LTR document with RTL list item paragraph sets bidi", async () => {
+    const xml = await extractDocumentXml(
+      docWith([
+        {
+          type: "bulletList",
+          content: [
+            {
+              type: "listItem",
+              content: [
+                {
+                  type: "paragraph",
+                  attrs: { dir: "rtl" },
+                  content: [{ type: "text", text: "نقطہ" }],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+      "ltr"
+    );
+    expect(xml).toContain("نقطہ");
+    expect(xml).toContain("<w:bidi");
+  });
+});

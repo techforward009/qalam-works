@@ -279,29 +279,29 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
       ];
     }
     case "blockquote": {
-      // v1.2 Phase 2A: real border + shading (previously plain indent
-      // only — see the BLOCKQUOTE_* constants' comment for why the old
-      // "DOCX doesn't support this" assumption was incorrect). Border
-      // goes on the side text visually starts from — right for RTL,
-      // left for LTR — matching the editor's own `border-inline-start`
-      // CSS behavior rather than a fixed physical side.
+      // Border and bidi follow each child's resolved direction, not only
+      // the document-level dir — mixed RTL/LTR quotes export correctly.
       const out: Paragraph[] = [];
       (node.content ?? []).forEach((child) => {
         if (child.type === "paragraph") {
+          const blockDir = directionForNode(child, dir);
           out.push(
             new Paragraph({
-              bidirectional: dir === "rtl",
+              bidirectional: blockDir === "rtl",
               indent: { start: BLOCKQUOTE_INDENT },
               spacing: PARAGRAPH_SPACING,
               border: {
-                [dir === "rtl" ? "right" : "left"]: {
+                [blockDir === "rtl" ? "right" : "left"]: {
                   style: BorderStyle.SINGLE,
                   size: 12,
                   color: BLOCKQUOTE_BORDER_COLOR,
                 },
               },
               shading: { fill: BLOCKQUOTE_SHADING_FILL },
-              children: convertInline(child.content, dir, { forceItalic: true, size: BLOCKQUOTE_FONT_SIZE_HALF_POINTS }),
+              children: convertInline(child.content, blockDir, {
+                forceItalic: true,
+                size: BLOCKQUOTE_FONT_SIZE_HALF_POINTS,
+              }),
             })
           );
         } else {
@@ -349,12 +349,13 @@ function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, r
   const out: Paragraph[] = [];
   (item.content ?? []).forEach((child, i) => {
     if (i === 0 && child.type === "paragraph") {
+      const blockDir = directionForNode(child, dir);
       out.push(
         new Paragraph({
-          bidirectional: dir === "rtl",
+          bidirectional: blockDir === "rtl",
           numbering: { reference, level: depth },
           spacing: PARAGRAPH_SPACING,
-          children: convertInline(child.content, dir),
+          children: convertInline(child.content, blockDir),
         })
       );
     } else if (child.type === "bulletList" || child.type === "orderedList") {

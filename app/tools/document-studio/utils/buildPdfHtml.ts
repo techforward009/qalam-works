@@ -12,8 +12,10 @@ import {
 
 export interface PdfFontFace {
   familyName: string;
-  regularBase64: string;
-  boldBase64?: string;
+  /** One or more woff2 subset payloads for regular weight */
+  regularSources: string[];
+  /** One or more woff2 subset payloads for bold weight */
+  boldSources?: string[];
 }
 
 export interface PdfFonts {
@@ -119,7 +121,8 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
     case "paragraph":
       return `<p${openAttrs(node, blockDir)}>${convertInline(node.content, ctx, blockDir)}</p>`;
     case "heading": {
-      const level = node.attrs?.level === 2 ? 2 : node.attrs?.level === 3 ? 3 : 1;
+      const raw = typeof node.attrs?.level === "number" ? node.attrs.level : 1;
+      const level = Math.min(4, Math.max(1, raw));
       return `<h${level}${openAttrs(node, blockDir)}>${convertInline(node.content, ctx, blockDir)}</h${level}>`;
     }
     case "blockquote": {
@@ -166,15 +169,20 @@ function convertListItemInner(item: DocNode, ctx: WalkCtx, parentDir: Direction)
 }
 
 function fontFaceCss(faces: PdfFontFace[]): string {
-  return faces
-    .map((f) => {
-      let css = `@font-face{font-family:"${f.familyName}";src:url(data:font/woff2;base64,${f.regularBase64}) format("woff2");font-weight:400;font-display:block;}`;
-      if (f.boldBase64) {
-        css += `@font-face{font-family:"${f.familyName}";src:url(data:font/woff2;base64,${f.boldBase64}) format("woff2");font-weight:700;font-display:block;}`;
-      }
-      return css;
-    })
-    .join("\n");
+  const rules: string[] = [];
+  for (const f of faces) {
+    for (const src of f.regularSources) {
+      rules.push(
+        `@font-face{font-family:"${f.familyName}";src:url(data:font/woff2;base64,${src}) format("woff2");font-weight:400;font-display:block;}`
+      );
+    }
+    for (const src of f.boldSources ?? []) {
+      rules.push(
+        `@font-face{font-family:"${f.familyName}";src:url(data:font/woff2;base64,${src}) format("woff2");font-weight:700;font-display:block;}`
+      );
+    }
+  }
+  return rules.join("\n");
 }
 
 function classRulesCss(): string {
@@ -204,8 +212,21 @@ export function buildPdfHtml(doc: DocNode, dir: Direction, fonts: PdfFonts): Pdf
     ctx.fontsUsed.add(def.pdfFamily);
   }
 
-  const usedNames = [...ctx.fontsUsed];
-  const faces = fonts.faces.filter((f) => usedNames.includes(f.familyName));
+  const resolvedNames = [...ctx.fontsUsed];
+  const availableFaceNames = new Set(fonts.faces.map((f) => f.familyName));
+  // Truthful embed list: only fonts whose faces actually loaded
+  const embeddedNames: string[] = resolvedNames.filter((n) => availableFaceNames.has(n));
+  // If a resolved font has no face, record deterministic fallback honestly
+  for (const name of resolvedNames) {
+    if (!availableFaceNames.has(name)) {
+      const fb = dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu";
+      ctx.fallbacks.set(name, fb);
+      if (availableFaceNames.has(fb) && !embeddedNames.includes(fb)) {
+        embeddedNames.push(fb);
+      }
+    }
+  }
+  const faces = fonts.faces.filter((f) => embeddedNames.includes(f.familyName));
   const defaultFamily =
     dir === "ltr" ? "Inter, system-ui, sans-serif" : '"Noto Nastaliq Urdu", serif';
 
@@ -228,6 +249,7 @@ ${classRulesCss()}
   h1 { font-size: 1.6rem; }
   h2 { font-size: 1.3rem; }
   h3 { font-size: 1.15rem; }
+  h4 { font-size: 1.05rem; }
   blockquote {
     border-inline-start: 3px solid #d97706;
     padding-inline-start: 1rem;
@@ -243,7 +265,7 @@ ${bodyHtml}
 
   return {
     html,
-    fontsUsed: usedNames.sort(),
+    fontsUsed: [...new Set(embeddedNames)].sort(),
     fontFallbacks: [...ctx.fallbacks.entries()].map(([requested, used]) => ({
       requested,
       used,

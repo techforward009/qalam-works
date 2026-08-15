@@ -117,7 +117,13 @@ describe("buildPdfHtml typography", () => {
   };
 
   test("emits safe font classes and per-block dir", () => {
-    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(multi, "rtl", { faces: [] });
+    const faces = [
+      { familyName: "Noto Nastaliq Urdu", regularSources: ["YQ=="] },
+      { familyName: "Amiri", regularSources: ["YQ=="] },
+      { familyName: "Vazirmatn", regularSources: ["YQ=="] },
+      { familyName: "Inter", regularSources: ["YQ=="] },
+    ];
+    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(multi, "rtl", { faces });
     expect(html).toContain('dir="rtl"');
     expect(html).toContain('dir="ltr"');
     expect(html).toContain("qf-noto-nastaliq");
@@ -176,5 +182,103 @@ describe("normalize preserves typography marks and dir", () => {
     expect(text.marks?.some((m) => m.type === "italic")).toBe(true);
     const style = text.marks?.find((m) => m.type === "textStyle");
     expect(style?.attrs?.fontFamily).toBe("Amiri");
+  });
+});
+
+describe("PDF multi-subset and heading fidelity", () => {
+  test("Amiri mixed Arabic+English uses Amiri class for both runs", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          attrs: { dir: "rtl" },
+          content: [
+            {
+              type: "text",
+              text: "سلام ",
+              marks: [{ type: "textStyle", attrs: { fontFamily: "Amiri" } }],
+            },
+            {
+              type: "text",
+              text: "Hello",
+              marks: [{ type: "textStyle", attrs: { fontFamily: "Amiri" } }],
+            },
+          ],
+        },
+      ],
+    };
+    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, "rtl", {
+      faces: [{ familyName: "Amiri", regularSources: ["dGVzdA=="] }],
+    });
+    expect(html).toContain("qf-amiri");
+    expect(html).toContain("سلام");
+    expect(html).toContain("Hello");
+    expect(fontsUsed).toContain("Amiri");
+    expect(fontFallbacks.length).toBe(0);
+  });
+
+  test("Vazirmatn mixed Persian+English uses Vazirmatn class", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          attrs: { dir: "rtl" },
+          content: [
+            {
+              type: "text",
+              text: "سلام ",
+              marks: [{ type: "textStyle", attrs: { fontFamily: "Vazirmatn" } }],
+            },
+            {
+              type: "text",
+              text: "World",
+              marks: [{ type: "textStyle", attrs: { fontFamily: "Vazirmatn" } }],
+            },
+          ],
+        },
+      ],
+    };
+    const { html } = buildPdfHtml(doc, "rtl", { faces: [] });
+    expect(html).toContain("qf-vazirmatn");
+  });
+
+  test("H4 is preserved in PDF HTML", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: { level: 4, dir: "ltr" },
+          content: [{ type: "text", text: "Deep heading" }],
+        },
+      ],
+    };
+    const { html } = buildPdfHtml(doc, "ltr", { faces: [] });
+    expect(html).toContain("<h4");
+    expect(html).not.toMatch(/<h1[^>]*>Deep heading/);
+  });
+
+  test("fontsUsed only includes faces that were provided", () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "x",
+              marks: [{ type: "textStyle", attrs: { fontFamily: "Amiri" } }],
+            },
+          ],
+        },
+      ],
+    };
+    // No faces provided → Amiri cannot be claimed as embedded
+    const { fontsUsed, fontFallbacks } = buildPdfHtml(doc, "rtl", { faces: [] });
+    expect(fontsUsed).not.toContain("Amiri");
+    expect(fontFallbacks.some((f) => f.requested === "Amiri")).toBe(true);
   });
 });
