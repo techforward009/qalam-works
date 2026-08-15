@@ -3,7 +3,7 @@
 // Effective CSS classes are chosen only from faces that fully loaded.
 
 import type { DocNode, Direction } from "./extractPlainText";
-import { resolveFontSizePt } from "./documentSettings";
+import { resolveFontSizePt, type DocumentStudioSettings } from "./documentSettings";
 import {
   collectPdfEmbedFonts,
   directionForNode,
@@ -75,6 +75,8 @@ interface WalkCtx {
   available: Map<string, PdfFontFace>;
   fontsUsed: Set<string>;
   fallbacks: Map<string, string>;
+  /** Batch 16A — document-wide typography defaults, used by openAttrs() as the fallback layer below explicit per-block attrs. */
+  typography?: DocumentStudioSettings["typography"];
 }
 
 /**
@@ -200,14 +202,47 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
   return html;
 }
 
-function openAttrs(node: DocNode, blockDir: Direction): string {
-  const lh = typeof node.attrs?.lineHeight === "number" ? node.attrs.lineHeight : null;
+function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
+  // Batch 16A — EXPLICIT TIPTAP FORMAT > DOCUMENT SETTINGS DEFAULT: a
+  // per-block attr (set via the editor's real schema attrs) always wins;
+  // only falls back to the document-wide typography default when the
+  // block itself has no explicit override.
+  const lh =
+    typeof node.attrs?.lineHeight === "number"
+      ? node.attrs.lineHeight
+      : ctx.typography?.lineHeight ?? null;
+  const firstLineIndentMm =
+    typeof node.attrs?.firstLineIndentMm === "number"
+      ? node.attrs.firstLineIndentMm
+      : node.type === "paragraph"
+        ? ctx.typography?.firstLineIndentMm ?? null
+        : null;
+  const indentStartMm = typeof node.attrs?.indentStartMm === "number" ? node.attrs.indentStartMm : null;
+  const indentEndMm = typeof node.attrs?.indentEndMm === "number" ? node.attrs.indentEndMm : null;
+  const spaceBeforePt =
+    typeof node.attrs?.spaceBeforePt === "number"
+      ? node.attrs.spaceBeforePt
+      : node.type === "paragraph"
+        ? ctx.typography?.paragraphBeforePt ?? null
+        : null;
+  const spaceAfterPt =
+    typeof node.attrs?.spaceAfterPt === "number"
+      ? node.attrs.spaceAfterPt
+      : node.type === "paragraph"
+        ? ctx.typography?.paragraphAfterPt ?? null
+        : null;
+
   const styles = [
     `direction:${blockDir}`,
     "unicode-bidi:isolate",
     "text-align:start",
     alignStyleFor(node),
-    lh ? `line-height:${lh}` : "",
+    lh !== null ? `line-height:${lh}` : "",
+    firstLineIndentMm !== null && firstLineIndentMm > 0 ? `text-indent:${firstLineIndentMm}mm` : "",
+    indentStartMm !== null ? `margin-inline-start:${indentStartMm}mm` : "",
+    indentEndMm !== null ? `margin-inline-end:${indentEndMm}mm` : "",
+    spaceBeforePt !== null ? `margin-block-start:${spaceBeforePt}pt` : "",
+    spaceAfterPt !== null ? `margin-block-end:${spaceAfterPt}pt` : "",
   ]
     .filter(Boolean)
     .join(";");
@@ -219,17 +254,17 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
 
   switch (node.type) {
     case "paragraph":
-      return `<p${openAttrs(node, blockDir)}>${convertInline(node.content, ctx, blockDir)}</p>`;
+      return `<p${openAttrs(node, blockDir, ctx)}>${convertInline(node.content, ctx, blockDir)}</p>`;
     case "heading": {
       const raw = typeof node.attrs?.level === "number" ? node.attrs.level : 1;
       const level = Math.min(4, Math.max(1, raw));
-      return `<h${level}${openAttrs(node, blockDir)}>${convertInline(node.content, ctx, blockDir)}</h${level}>`;
+      return `<h${level}${openAttrs(node, blockDir, ctx)}>${convertInline(node.content, ctx, blockDir)}</h${level}>`;
     }
     case "blockquote": {
       const inner = (node.content ?? [])
         .map((child) =>
           child.type === "paragraph"
-            ? `<p${openAttrs(child, directionForNode(child, blockDir))}>${convertInline(child.content, ctx, directionForNode(child, blockDir))}</p>`
+            ? `<p${openAttrs(child, directionForNode(child, blockDir), ctx)}>${convertInline(child.content, ctx, directionForNode(child, blockDir))}</p>`
             : convertNode(child, ctx)
         )
         .join("");
@@ -303,7 +338,12 @@ function classRulesCss(): string {
  * Pure: DocNode + direction + pre-loaded font faces → self-contained HTML.
  * CSS classes always match faces that are complete/available.
  */
-export function buildPdfHtml(doc: DocNode, dir: Direction, fonts: PdfFonts): PdfHtmlResult {
+export function buildPdfHtml(
+  doc: DocNode,
+  dir: Direction,
+  fonts: PdfFonts,
+  typography?: DocumentStudioSettings["typography"]
+): PdfHtmlResult {
   const available = new Map<string, PdfFontFace>();
   for (const face of fonts.faces) {
     if (face.complete && face.regularSources.length > 0) {
@@ -316,6 +356,7 @@ export function buildPdfHtml(doc: DocNode, dir: Direction, fonts: PdfFonts): Pdf
     available,
     fontsUsed: new Set(),
     fallbacks: new Map(),
+    typography,
   };
 
   const bodyHtml = (doc.content ?? []).map((n) => convertNode(n, ctx)).join("\n");
@@ -333,6 +374,15 @@ export function buildPdfHtml(doc: DocNode, dir: Direction, fonts: PdfFonts): Pdf
 
   const defaultFamily =
     dir === "ltr" ? "Inter, system-ui, sans-serif" : '"Noto Nastaliq Urdu", serif';
+  // Batch 16A — document-wide body defaults now come from
+  // DocumentStudioSettings.typography (EXPLICIT TIPTAP FORMAT still wins:
+  // per-block overrides render inline in openAttrs()/convertInline()
+  // below, which sit closer to the element and win the CSS cascade over
+  // this body-level rule). Falls back to the previous hardcoded values
+  // when no settings are supplied, so existing callers that don't pass
+  // typography are unaffected.
+  const bodyFontSizePx = typography ? Math.round(typography.bodyFontSizePt * (96 / 72)) : 16;
+  const bodyLineHeight = typography ? typography.lineHeight : 2;
 
   const html = `<!DOCTYPE html>
 <html lang="${dir === "rtl" ? "ur" : "en"}" dir="${dir}">
@@ -343,8 +393,8 @@ ${fontFaceCss(faces)}
 ${classRulesCss()}
   body {
     font-family: ${defaultFamily};
-    font-size: 16px;
-    line-height: 2;
+    font-size: ${bodyFontSizePx}px;
+    line-height: ${bodyLineHeight};
     margin: 0;
     padding: 0;
     color: #111;

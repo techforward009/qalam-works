@@ -123,7 +123,93 @@ function ToolbarDivider() {
 
 
 /** Persist writing direction on textblocks so empty RTL paragraphs place the caret on the right. */
-const ParagraphWithDir = Paragraph.extend({
+// Batch 16A (2026-08-11) — real, persistent schema attrs. Previously
+// only `dir` was declared here; block-style/line-height/indent/spacing
+// attrs were being set via updateAttributes() WITHOUT being declared in
+// the schema, which TipTap does not persist through getJSON()/reload —
+// a real, verified bug (confirmed via round-trip test). `blockStyle`
+// renders as `data-block-style` (CSS-driven presentation — see the
+// editor's own <style jsx global> block below — never stamps inline
+// FontSize/Bold/TextAlign marks, so switching styles is always a clean,
+// symmetric reset with zero risk of leftover marks from a previous
+// style). `lineHeight` renders as a real inline style (matching what
+// buildPdfHtml.ts's openAttrs() already expected — that code was
+// correct and simply never reachable before now). The remaining spacing/
+// indent attrs render as data-* attributes: PDF/DOCX exporters read them
+// directly from node.attrs (not from parsed HTML), so their correctness
+// does not depend on live in-editor visual rendering.
+const PARAGRAPH_STYLE_ATTRS = {
+  blockStyle: {
+    default: null as string | null,
+    parseHTML: (element: HTMLElement) => element.getAttribute("data-block-style") || null,
+    renderHTML: (attributes: Record<string, unknown>) =>
+      attributes.blockStyle ? { "data-block-style": attributes.blockStyle } : {},
+  },
+  lineHeight: {
+    default: null as number | null,
+    parseHTML: (element: HTMLElement) => {
+      const v = element.style.lineHeight;
+      const n = v ? parseFloat(v) : NaN;
+      return Number.isFinite(n) ? n : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) =>
+      typeof attributes.lineHeight === "number" ? { style: `line-height:${attributes.lineHeight}` } : {},
+  },
+  firstLineIndentMm: {
+    default: null as number | null,
+    parseHTML: (element: HTMLElement) => {
+      const v = element.getAttribute("data-first-line-indent-mm");
+      const n = v ? parseFloat(v) : NaN;
+      return Number.isFinite(n) ? n : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) =>
+      typeof attributes.firstLineIndentMm === "number"
+        ? { "data-first-line-indent-mm": String(attributes.firstLineIndentMm) }
+        : {},
+  },
+  indentStartMm: {
+    default: null as number | null,
+    parseHTML: (element: HTMLElement) => {
+      const v = element.getAttribute("data-indent-start-mm");
+      const n = v ? parseFloat(v) : NaN;
+      return Number.isFinite(n) ? n : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) =>
+      typeof attributes.indentStartMm === "number" ? { "data-indent-start-mm": String(attributes.indentStartMm) } : {},
+  },
+  indentEndMm: {
+    default: null as number | null,
+    parseHTML: (element: HTMLElement) => {
+      const v = element.getAttribute("data-indent-end-mm");
+      const n = v ? parseFloat(v) : NaN;
+      return Number.isFinite(n) ? n : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) =>
+      typeof attributes.indentEndMm === "number" ? { "data-indent-end-mm": String(attributes.indentEndMm) } : {},
+  },
+  spaceBeforePt: {
+    default: null as number | null,
+    parseHTML: (element: HTMLElement) => {
+      const v = element.getAttribute("data-space-before-pt");
+      const n = v ? parseFloat(v) : NaN;
+      return Number.isFinite(n) ? n : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) =>
+      typeof attributes.spaceBeforePt === "number" ? { "data-space-before-pt": String(attributes.spaceBeforePt) } : {},
+  },
+  spaceAfterPt: {
+    default: null as number | null,
+    parseHTML: (element: HTMLElement) => {
+      const v = element.getAttribute("data-space-after-pt");
+      const n = v ? parseFloat(v) : NaN;
+      return Number.isFinite(n) ? n : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) =>
+      typeof attributes.spaceAfterPt === "number" ? { "data-space-after-pt": String(attributes.spaceAfterPt) } : {},
+  },
+};
+
+export const ParagraphWithDir = Paragraph.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -138,11 +224,12 @@ const ParagraphWithDir = Paragraph.extend({
           return { dir: attributes.dir };
         },
       },
+      ...PARAGRAPH_STYLE_ATTRS,
     };
   },
 });
 
-const HeadingWithDir = Heading.extend({
+export const HeadingWithDir = Heading.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -157,6 +244,13 @@ const HeadingWithDir = Heading.extend({
           return { dir: attributes.dir };
         },
       },
+      // Headings get line-height/spacing (real, persistent) but not
+      // blockStyle/indent — headings already have their own canonical
+      // per-level presentation (H1-H4), and paragraph-style indentation
+      // concepts don't apply to headings.
+      lineHeight: PARAGRAPH_STYLE_ATTRS.lineHeight,
+      spaceBeforePt: PARAGRAPH_STYLE_ATTRS.spaceBeforePt,
+      spaceAfterPt: PARAGRAPH_STYLE_ATTRS.spaceAfterPt,
     };
   },
 });
@@ -227,21 +321,21 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
           } else if (style.kind === "blockquote") {
             chain.setBlockquote().run();
           } else {
+            // Batch 16A fix: block-style presentation (font size, bold,
+            // alignment) now comes ENTIRELY from `blockStyle` driving CSS
+            // (see the editor's [data-block-style] rules below) — it no
+            // longer stamps real FontSize/Bold/TextAlign marks. Previously,
+            // applying "Title" stamped 28pt+bold as literal marks, so
+            // switching to "Normal" right after left them behind (the
+            // Normal branch never had anything to unset because it never
+            // needed to remove marks the OTHER branches shouldn't have
+            // stamped in the first place). Now every style switch — including
+            // Normal — is a single, symmetric attribute assignment with no
+            // leftover state, and a user's own genuinely manual formatting
+            // (applied via the separate Bold/Italic/Align toolbar buttons)
+            // is never touched by this control at all.
             chain.setParagraph().run();
-            if (style.blockStyleAttr) {
-              chain.updateAttributes("paragraph", { blockStyle: style.blockStyleAttr }).run();
-            } else {
-              chain.updateAttributes("paragraph", { blockStyle: null }).run();
-            }
-            if (style.align) {
-              chain.setTextAlign(style.align).run();
-            }
-            if (style.defaultFontSizePt) {
-              chain.setFontSize(`${style.defaultFontSizePt}pt`).run();
-            }
-            if (style.bold) {
-              chain.setBold().run();
-            }
+            chain.updateAttributes("paragraph", { blockStyle: style.blockStyleAttr ?? null }).run();
           }
         }}
         className="h-[38px] max-w-[7.5rem] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
@@ -250,6 +344,40 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         {BLOCK_STYLE_IDS.map((id) => (
           <option key={id} value={id}>
             {BLOCK_STYLES[id].label}
+          </option>
+        ))}
+      </select>
+      <ToolbarDivider />
+      <label className="sr-only" htmlFor="studio-line-height">
+        Line spacing
+      </label>
+      <select
+        id="studio-line-height"
+        // Batch 16A — real per-block line-spacing control. Reads/writes
+        // the genuine `lineHeight` schema attr added above (paragraph or
+        // heading, whichever is active) — "Default" means null (clears
+        // the block-level override, falling back to the document-wide
+        // --qalam-line-height CSS variable / documentSettings default).
+        value={
+          typeof editor.getAttributes("paragraph").lineHeight === "number"
+            ? String(editor.getAttributes("paragraph").lineHeight)
+            : typeof editor.getAttributes("heading").lineHeight === "number"
+              ? String(editor.getAttributes("heading").lineHeight)
+              : "default"
+        }
+        onChange={(e) => {
+          const raw = e.target.value;
+          const value = raw === "default" ? null : Number(raw);
+          const nodeType = editor.isActive("heading") ? "heading" : "paragraph";
+          editor.chain().focus().updateAttributes(nodeType, { lineHeight: value }).run();
+        }}
+        className="h-[38px] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
+        title="Line spacing"
+      >
+        <option value="default">Default</option>
+        {LINE_HEIGHT_OPTIONS.map((lh) => (
+          <option key={lh} value={lh}>
+            {lh}
           </option>
         ))}
       </select>
@@ -1438,6 +1566,18 @@ export default function DocumentStudioEditor() {
               className={`qalam-editor-content qalam-doc-page focus:outline-none ${
                 dir === "rtl" ? "font-nastaliq" : ""
               }`}
+              style={
+                {
+                  // Batch 16A — document-wide typography defaults, applied
+                  // as CSS variables the .ProseMirror rules above fall back
+                  // to. Explicit per-block attrs (rendered as real inline
+                  // styles, e.g. lineHeight) still win via normal CSS
+                  // cascade specificity — inline style on the block itself
+                  // beats an inherited custom-property-based rule.
+                  "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
+                  "--qalam-line-height": documentSettings.typography.lineHeight,
+                } as React.CSSProperties
+              }
             />
           </div>
         </div>
@@ -1961,14 +2101,21 @@ export default function DocumentStudioEditor() {
       )}
 
       <style jsx global>{`
-        /* Document page canvas: Word/Docs-like reading surface */
+        /* Document page canvas: Word/Docs-like reading surface.
+           Batch 16A: font-size/line-height now come from CSS variables
+           set on the wrapper element from documentSettings.typography
+           (see the inline style on .qalam-doc-page below) — the px/rem
+           values here are only the FALLBACK for when no variable is set,
+           never an override of a genuine document setting. Any per-block
+           inline style="line-height:…" (from the real lineHeight attr
+           above) naturally wins via normal CSS cascade specificity. */
         .qalam-editor-content.qalam-doc-page .ProseMirror {
           min-height: 70vh;
           padding: 1.75rem 1.25rem 2.5rem;
           outline: none;
           text-align: start;
-          font-size: 1.05rem;
-          line-height: 1.85;
+          font-size: var(--qalam-body-size, 1.05rem);
+          line-height: var(--qalam-line-height, 1.85);
           color: #1a1a1a;
         }
         /* Root direction from toolbar RTL/LTR — controls empty caret side */
@@ -1981,15 +2128,16 @@ export default function DocumentStudioEditor() {
         @media (min-width: 640px) {
           .qalam-editor-content.qalam-doc-page .ProseMirror {
             padding: 2.5rem 3rem 3rem;
-            font-size: 1.1rem;
-            line-height: 1.9;
+            font-size: var(--qalam-body-size, 1.1rem);
+            line-height: var(--qalam-line-height, 1.9);
           }
         }
         /* Explicit block direction (from paragraph attrs) controls caret side. */
         .qalam-editor-content .ProseMirror p[dir="rtl"],
         .qalam-editor-content .ProseMirror h1[dir="rtl"],
         .qalam-editor-content .ProseMirror h2[dir="rtl"],
-        .qalam-editor-content .ProseMirror h3[dir="rtl"] {
+        .qalam-editor-content .ProseMirror h3[dir="rtl"],
+        .qalam-editor-content .ProseMirror h4[dir="rtl"] {
           direction: rtl;
           unicode-bidi: isolate;
           text-align: start;
@@ -1997,7 +2145,8 @@ export default function DocumentStudioEditor() {
         .qalam-editor-content .ProseMirror p[dir="ltr"],
         .qalam-editor-content .ProseMirror h1[dir="ltr"],
         .qalam-editor-content .ProseMirror h2[dir="ltr"],
-        .qalam-editor-content .ProseMirror h3[dir="ltr"] {
+        .qalam-editor-content .ProseMirror h3[dir="ltr"],
+        .qalam-editor-content .ProseMirror h4[dir="ltr"] {
           direction: ltr;
           unicode-bidi: isolate;
           text-align: start;
@@ -2006,9 +2155,28 @@ export default function DocumentStudioEditor() {
         .qalam-editor-content .ProseMirror p:not([dir]),
         .qalam-editor-content .ProseMirror h1:not([dir]),
         .qalam-editor-content .ProseMirror h2:not([dir]),
-        .qalam-editor-content .ProseMirror h3:not([dir]) {
+        .qalam-editor-content .ProseMirror h3:not([dir]),
+        .qalam-editor-content .ProseMirror h4:not([dir]) {
           unicode-bidi: plaintext;
           text-align: start;
+        }
+        /* Batch 16A — block-style presentation, driven purely by the
+           data-block-style attribute (never inline marks). Title/
+           Subtitle/Caption visual hints from documentStyles.ts's own
+           BLOCK_STYLES definitions, applied here as CSS only. */
+        .qalam-editor-content .ProseMirror p[data-block-style="title"] {
+          font-size: 1.9rem;
+          font-weight: 700;
+          text-align: center;
+        }
+        .qalam-editor-content .ProseMirror p[data-block-style="subtitle"] {
+          font-size: 1.25rem;
+          text-align: center;
+        }
+        .qalam-editor-content .ProseMirror p[data-block-style="caption"] {
+          font-size: 0.7rem;
+          text-align: center;
+          color: #666;
         }
         /* Urdu/Arabic readability: generous paragraph spacing */
         .qalam-editor-content p {
@@ -2035,6 +2203,12 @@ export default function DocumentStudioEditor() {
           font-size: 1.12rem;
           font-weight: 700;
           margin: 0.7rem 0 0.4rem;
+          line-height: 1.45;
+        }
+        .qalam-editor-content h4 {
+          font-size: 1.02rem;
+          font-weight: 700;
+          margin: 0.6rem 0 0.35rem;
           line-height: 1.45;
         }
         .qalam-editor-content ul {

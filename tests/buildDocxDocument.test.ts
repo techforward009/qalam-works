@@ -8,6 +8,7 @@ import JSZip from "jszip";
 import { Packer } from "docx";
 import { createDocxDocument, buildDocxBlob } from "../app/tools/document-studio/utils/buildDocxDocument";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
+import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 
 async function extractDocumentXml(doc: DocNode, dir: "rtl" | "ltr"): Promise<string> {
   const buffer = await Packer.toBuffer(createDocxDocument(doc, dir));
@@ -571,12 +572,20 @@ describe("createDocxDocument — v1.3: heading-specific spacing", () => {
     expect(h4Xml).toContain('w:before="200"');
   });
 
-  test("plain paragraphs still use the unchanged, smaller PARAGRAPH_SPACING (regression guard)", async () => {
+  test("plain paragraphs use documentSettings.typography defaults when no per-block override exists (Batch 16A)", async () => {
+    // Updated for Batch 16A: body paragraph spacing now genuinely comes
+    // from DocumentStudioSettings.typography (paragraphBeforePt: 0,
+    // paragraphAfterPt: 6 in the defaults) rather than the old hardcoded
+    // PARAGRAPH_SPACING constant (before:120/after:120) — this is the
+    // intended, correct behavior change this batch implements, not a
+    // regression. 6pt × 20 = 120 twips (coincidentally matches the old
+    // "after" value); 0pt × 20 = 0 twips for "before" (genuinely different
+    // from the old hardcoded 120).
     const xml = await extractDocumentXml(
       docWith([{ type: "paragraph", content: [{ type: "text", text: "body text" }] }]),
       "ltr"
     );
-    expect(xml).toContain('w:before="120"');
+    expect(xml).toContain('w:before="0"');
     expect(xml).toContain('w:after="120"');
   });
 });
@@ -817,5 +826,69 @@ describe("createDocxDocument — per-block direction for quote/list", () => {
     );
     expect(xml).toContain("نقطہ");
     expect(xml).toContain("<w:bidi");
+  });
+});
+
+describe("Batch 16A — Book Manuscript preset produces real, distinct typography", () => {
+  test("Book Manuscript settings (13pt, 1.8 line height, 8mm first-line indent) actually reach the OOXML", async () => {
+    const bookManuscriptTypography = {
+      bodyFontSizePt: 13,
+      lineHeight: 1.8,
+      paragraphBeforePt: 0,
+      paragraphAfterPt: 0,
+      firstLineIndentMm: 8,
+      defaultRtlFontId: "noto-nastaliq-urdu" as const,
+      defaultLtrFontId: "inter" as const,
+    };
+    const settings = { ...defaultDocumentSettings(), typography: bookManuscriptTypography };
+    const doc: DocNode = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "body text" }] }] };
+    const buffer = await Packer.toBuffer(createDocxDocument(doc, "ltr", settings));
+    const zip = await JSZip.loadAsync(buffer);
+    const xml = await zip.file("word/document.xml")!.async("text");
+
+    // 1.8 line height × 240 = 432
+    expect(xml).toContain('w:line="432"');
+    // 8mm first-line indent → (8/25.4)*1440 ≈ 454 twips
+    expect(xml).toMatch(/w:firstLine="45[0-9]"/);
+  });
+
+  test("a manually-applied explicit run override (Amiri 20pt) survives switching document-wide preset/typography settings", async () => {
+    // Simulates: user sets Book Manuscript, manually makes one run Amiri
+    // 20pt, then switches to Academic. Since the manual run formatting is
+    // stored as REAL TipTap marks (fontFamily/fontSize) on the text node
+    // itself — not derived from documentSettings — it must be completely
+    // unaffected by which typography settings object is passed in.
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "manual override", marks: [{ type: "textStyle", attrs: { fontFamily: "Amiri", fontSize: "20pt" } }] }],
+        },
+      ],
+    };
+    const bookManuscript = { ...defaultDocumentSettings(), typography: { ...defaultDocumentSettings().typography, bodyFontSizePt: 13, lineHeight: 1.8 } };
+    const academic = { ...defaultDocumentSettings(), typography: { ...defaultDocumentSettings().typography, bodyFontSizePt: 12, lineHeight: 2 } };
+
+    const xmlBook = await (async () => {
+      const buffer = await Packer.toBuffer(createDocxDocument(doc, "ltr", bookManuscript));
+      const zip = await JSZip.loadAsync(buffer);
+      return zip.file("word/document.xml")!.async("text");
+    })();
+    const xmlAcademic = await (async () => {
+      const buffer = await Packer.toBuffer(createDocxDocument(doc, "ltr", academic));
+      const zip = await JSZip.loadAsync(buffer);
+      return zip.file("word/document.xml")!.async("text");
+    })();
+
+    // The explicit Amiri 20pt run formatting is identical regardless of
+    // which document-wide preset/typography was active.
+    for (const xml of [xmlBook, xmlAcademic]) {
+      expect(xml).toContain('w:ascii="Amiri"');
+      expect(xml).toContain('w:sz w:val="40"'); // 20pt in half-points
+    }
+    // But the document-wide line spacing genuinely DID change between presets.
+    expect(xmlBook).toContain('w:line="432"'); // 1.8 * 240
+    expect(xmlAcademic).toContain('w:line="480"'); // 2.0 * 240
   });
 });

@@ -61,6 +61,48 @@ const PAGE_MARGIN = { top: 1440, bottom: 1440, left: 1440, right: 1440 };
 // single, 480 = double); `before`/`after` are in twips.
 const PARAGRAPH_SPACING = { before: 120, after: 120, line: 360, lineRule: LineRuleType.AUTO };
 
+// Batch 16A — resolves a body PARAGRAPH's spacing/indent following
+// EXPLICIT TIPTAP FORMAT > DOCUMENT SETTINGS DEFAULT > SYSTEM FALLBACK:
+// an explicit per-block attr (set via the editor's real schema attrs)
+// always wins; otherwise falls back to documentSettings.typography;
+// otherwise the original PARAGRAPH_SPACING constant (so callers that
+// still pass the default settings object see identical output to
+// before this change). Headings keep their own canonical HEADING_SPACING
+// unaffected — this only applies to plain body paragraphs, matching the
+// brief's "Headings may still have canonical heading spacing."
+function resolveParagraphSpacingAndIndent(
+  node: DocNode,
+  typography: DocumentStudioSettings["typography"]
+): {
+  spacing: { before: number; after: number; line: number; lineRule: (typeof LineRuleType)[keyof typeof LineRuleType] };
+  indent?: { start?: number; end?: number; firstLine?: number };
+} {
+  const mmToTwips = (mm: number) => Math.round((mm / 25.4) * 1440);
+  const ptToTwips = (pt: number) => Math.round(pt * 20);
+
+  const beforePt = typeof node.attrs?.spaceBeforePt === "number" ? node.attrs.spaceBeforePt : typography.paragraphBeforePt;
+  const afterPt = typeof node.attrs?.spaceAfterPt === "number" ? node.attrs.spaceAfterPt : typography.paragraphAfterPt;
+  const lineHeight = typeof node.attrs?.lineHeight === "number" ? node.attrs.lineHeight : typography.lineHeight;
+  const firstLineIndentMm =
+    typeof node.attrs?.firstLineIndentMm === "number" ? node.attrs.firstLineIndentMm : typography.firstLineIndentMm;
+  const indentStartMm = typeof node.attrs?.indentStartMm === "number" ? node.attrs.indentStartMm : null;
+  const indentEndMm = typeof node.attrs?.indentEndMm === "number" ? node.attrs.indentEndMm : null;
+
+  const spacing = {
+    before: ptToTwips(beforePt),
+    after: ptToTwips(afterPt),
+    line: Math.round(lineHeight * 240),
+    lineRule: LineRuleType.AUTO,
+  };
+
+  const indent: { start?: number; end?: number; firstLine?: number } = {};
+  if (indentStartMm !== null) indent.start = mmToTwips(indentStartMm);
+  if (indentEndMm !== null) indent.end = mmToTwips(indentEndMm);
+  if (firstLineIndentMm > 0) indent.firstLine = mmToTwips(firstLineIndentMm);
+
+  return { spacing, indent: Object.keys(indent).length > 0 ? indent : undefined };
+}
+
 // v1.3 Phase — Professional Polish: heading-specific spacing, larger for
 // higher-level headings, tapering down for H3/H4, distinct from (and
 // larger than) plain PARAGRAPH_SPACING's before/after — `line`/lineRule
@@ -273,15 +315,23 @@ function convertInline(
   return runs;
 }
 
-function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listRef?: { reference: string }): Paragraph[] {
+function convertNode(
+  node: DocNode,
+  dir: Direction,
+  ctx: NumberingContext,
+  typography: DocumentStudioSettings["typography"],
+  listRef?: { reference: string }
+): Paragraph[] {
   switch (node.type) {
     case "paragraph": {
       const blockDir = directionForNode(node, dir);
+      const { spacing, indent } = resolveParagraphSpacingAndIndent(node, typography);
       return [
         new Paragraph({
           bidirectional: blockDir === "rtl",
           alignment: alignmentFor(node),
-          spacing: PARAGRAPH_SPACING,
+          spacing,
+          indent,
           numbering: listRef ? { reference: listRef.reference, level: 0 } : undefined,
           children: convertInline(node.content, blockDir),
         }),
@@ -328,7 +378,7 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
             })
           );
         } else {
-          out.push(...convertNode(child, dir, ctx));
+          out.push(...convertNode(child, dir, ctx, typography));
         }
       });
       return out;
@@ -337,7 +387,7 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
       const reference = registerList(ctx, "bullet");
       const out: Paragraph[] = [];
       (node.content ?? []).forEach((item) => {
-        out.push(...convertListItem(item, dir, ctx, reference, 0));
+        out.push(...convertListItem(item, dir, ctx, reference, 0, typography));
       });
       return out;
     }
@@ -345,7 +395,7 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
       const reference = registerList(ctx, "ordered");
       const out: Paragraph[] = [];
       (node.content ?? []).forEach((item) => {
-        out.push(...convertListItem(item, dir, ctx, reference, 0));
+        out.push(...convertListItem(item, dir, ctx, reference, 0, typography));
       });
       return out;
     }
@@ -354,7 +404,7 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
       // per the spec) — walk children defensively rather than throwing,
       // so an unexpected node doesn't fail the whole export.
       const out: Paragraph[] = [];
-      (node.content ?? []).forEach((child) => out.push(...convertNode(child, dir, ctx)));
+      (node.content ?? []).forEach((child) => out.push(...convertNode(child, dir, ctx, typography)));
       return out;
     }
   }
@@ -368,7 +418,7 @@ function convertNode(node: DocNode, dir: Direction, ctx: NumberingContext, listR
 // list's own reference and recurses at depth+1, so it visually nests
 // under its parent with proper indent, supporting mixed bullet/numbered
 // nesting too.
-function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, reference: string, depth: number): Paragraph[] {
+function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, reference: string, depth: number, typography: DocumentStudioSettings["typography"]): Paragraph[] {
   const out: Paragraph[] = [];
   (item.content ?? []).forEach((child, i) => {
     if (i === 0 && child.type === "paragraph") {
@@ -386,14 +436,14 @@ function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, r
       const nestedDepth = depth + 1;
       ensureLevel(ctx, reference, nestedDepth, nestedKind);
       (child.content ?? []).forEach((nestedItem) => {
-        out.push(...convertListItem(nestedItem, dir, ctx, reference, nestedDepth));
+        out.push(...convertListItem(nestedItem, dir, ctx, reference, nestedDepth, typography));
       });
     } else {
       // Any other extra content inside a list item (e.g. a second
       // paragraph that isn't a nested list) — out of v1 scope, same as
       // before; walk without a numbering reference rather than
       // silently dropping it.
-      out.push(...convertNode(child, dir, ctx));
+      out.push(...convertNode(child, dir, ctx, typography));
     }
   });
   return out;
@@ -432,7 +482,7 @@ export function createDocxDocument(doc: DocNode, dir: Direction, settings: Docum
   const children: Paragraph[] = [];
 
   (doc.content ?? []).forEach((node) => {
-    children.push(...convertNode(node, dir, ctx));
+    children.push(...convertNode(node, dir, ctx, settings.typography));
   });
 
   const title = deriveDocumentTitle(doc);

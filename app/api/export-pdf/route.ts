@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const fonts = fontsForDocument(doc, dir);
-    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, fonts);
+    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, fonts, settings.typography);
 
     const executablePath = await chromium.executablePath();
     browser = await puppeteer.launch({
