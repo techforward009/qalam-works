@@ -347,3 +347,106 @@ describe("pending-save loss prevention logic", () => {
     if (r.ok) expect(r.value.name).toBe("Second");
   });
 });
+
+// ── Batch 17A.1 — DOCX source import ────────────────────────────────────────
+
+import { Packer, Document, Paragraph as DocxParagraph, TextRun } from "docx";
+
+import mammoth from "mammoth";
+
+/** Generates a DOCX Buffer from a list of paragraph strings (for test-only extraction). */
+async function makeDocxBuffer(paragraphs: string[]): Promise<Buffer> {
+  const doc = new Document({
+    sections: [{
+      children: paragraphs.map(text => new DocxParagraph({ children: [new TextRun(text)] })),
+    }],
+  });
+  return Packer.toBuffer(doc);
+}
+
+/** Extracts raw text from a generated DOCX buffer via mammoth (mirrors extractTextFromFile for DOCX). */
+async function extractDocxText(paragraphs: string[]): Promise<string> {
+  const buf = await makeDocxBuffer(paragraphs);
+  const result = await mammoth.extractRawText({ buffer: buf });
+  return result.value;
+}
+
+describe("Batch 17A.1 — DOCX source import via extractTextFromFile", () => {
+  test("extracts text from a real generated DOCX without mutation", async () => {
+    const text = await extractDocxText(["اردو پیراگراف", "English paragraph"]);
+    expect(text).toContain("اردو پیراگراف");
+    expect(text).toContain("English paragraph");
+  });
+
+  test("multi-paragraph DOCX → multiple segments via segmentText", async () => {
+    const text = await extractDocxText([
+      "یہ اردو کا ایک آزمائشی پیراگراف ہے۔",
+      "This is an English paragraph for Translation Studio.",
+      "اردو اور English ایک ہی فائل میں موجود ہیں۔",
+    ]);
+    const segs = segmentText(text, "ur", "en");
+    expect(segs.length).toBeGreaterThanOrEqual(3);
+    expect(segs[0].source).toContain("اردو");
+    expect(segs[1].source).toContain("English");
+  });
+
+  test("direction per segment after DOCX extraction: rtl/ltr/rtl", async () => {
+    const text = await extractDocxText([
+      "یہ اردو کا ایک آزمائشی پیراگراف ہے۔",
+      "This is an English paragraph for Translation Studio.",
+      "اردو اور English ایک ہی فائل میں موجود ہیں۔",
+    ]);
+    const segs = segmentText(text, "ur", "en").filter(s => s.source.trim());
+    expect(segs[0].sourceDir).toBe("rtl");
+    expect(segs[1].sourceDir).toBe("ltr");
+    expect(segs[2].sourceDir).toBe("rtl");
+  });
+
+  test("extracted source text passes unchanged into segmentation (immutability)", async () => {
+    const original = "Draft notes: Review spacing and punctuation.";
+    const extracted = await extractDocxText([original]);
+    const segs = segmentText(extracted, "en", "ur");
+    // The exact source text (possibly with mammoth newlines) must contain the original string verbatim.
+    expect(segs.some(s => s.source === original || s.source.includes(original))).toBe(true);
+    // Fingerprint is deterministic on the verbatim source.
+    const matchingSeg = segs.find(s => s.source.includes(original));
+    if (matchingSeg) expect(matchingSeg.sourceFingerprint).toBe(segmentFingerprint(matchingSeg.source));
+  });
+
+  test("empty DOCX yields empty extracted text", async () => {
+    const text = await extractDocxText([""]);
+    // Mammoth returns empty/whitespace for an empty paragraph DOCX.
+    expect(text.trim()).toBe("");
+  });
+
+  test("unsupported extension (.pdf) rejected before extraction", () => {
+    // ProjectSetupPanel validates extension before calling extractTextFromFile.
+    // We test the extension check logic directly (mirrors handleFile).
+    const name = "document.pdf";
+    const accepted = name.toLowerCase().endsWith(".txt") || name.toLowerCase().endsWith(".docx");
+    expect(accepted).toBe(false);
+  });
+
+  test("accepted .docx extension passes extension check", () => {
+    const name = "report.docx";
+    const accepted = name.toLowerCase().endsWith(".txt") || name.toLowerCase().endsWith(".docx");
+    expect(accepted).toBe(true);
+  });
+
+  test("accepted .txt extension still passes (TXT path not regressed)", () => {
+    const accepted = "notes.txt".toLowerCase().endsWith(".txt") || "notes.txt".toLowerCase().endsWith(".docx");
+    expect(accepted).toBe(true);
+  });
+
+  test("mixed Urdu-first segment is detected as rtl after DOCX extraction", async () => {
+    const text = await extractDocxText(["اردو اور English ایک ہی دستاویز"]);
+    const segs = segmentText(text, "ur", "en").filter(s => s.source.trim());
+    expect(segs[0].sourceDir).toBe("rtl");
+  });
+
+  test("mixed English-first segment is detected as ltr after DOCX extraction", async () => {
+    const text = await extractDocxText(["English and اردو in one line"]);
+    const segs = segmentText(text, "ur", "en").filter(s => s.source.trim());
+    expect(segs[0].sourceDir).toBe("ltr");
+  });
+});

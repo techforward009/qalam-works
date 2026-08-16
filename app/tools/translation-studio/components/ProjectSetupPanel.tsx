@@ -3,6 +3,7 @@ import React, { useState, useRef } from "react";
 import type { TranslationLanguage, TranslationBrief } from "../utils/translationTypes";
 import { SUPPORTED_LANGUAGES, defaultBrief, BRIEF_INSTRUCTIONS_MAX } from "../utils/translationTypes";
 import { TRANSLATION_EXAMPLE_SOURCE, TRANSLATION_EXAMPLE_PROJECT_NAME } from "../utils/exampleProject";
+import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 
 interface ProjectSetupPanelProps {
   onCreateProject: (params: {
@@ -24,18 +25,24 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 512 * 1024) { setError("File too large (max 512 KB)"); return; }
-    if (!file.name.toLowerCase().endsWith(".txt")) { setError("Only .txt files supported"); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setSourceText((ev.target?.result as string) ?? "");
-      setError((prev) => (prev === "Source text is required" ? "" : prev));
-    };
-    reader.readAsText(file, "UTF-8");
     e.target.value = "";
+    const name = file.name.toLowerCase();
+    if (!name.endsWith(".txt") && !name.endsWith(".docx")) {
+      setError("Only .txt and .docx files are supported");
+      return;
+    }
+    if (file.size > 512 * 1024) { setError("File too large (max 512 KB)"); return; }
+    try {
+      const text = await extractTextFromFile(file);
+      if (!text.trim()) { setError("File contains no usable text"); return; }
+      setSourceText(text);
+      setError((prev) => (prev === "Source text is required" || prev === "File contains no usable text" ? "" : prev));
+    } catch {
+      setError("Could not extract text from file. Please try a different file.");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -112,11 +119,12 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
         <div>
           <label className={labelCls}>Source Text</label>
           <div className="flex gap-2 mb-2">
-            <input ref={fileRef} type="file" accept=".txt" className="hidden" onChange={handleFile} />
-            <button type="button" onClick={() => fileRef.current?.click()} className="h-8 px-3 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">Upload .txt</button>
+            <input ref={fileRef} type="file" accept=".txt,.docx" className="hidden" onChange={handleFile} />
+            <button type="button" onClick={() => fileRef.current?.click()} className="h-8 px-3 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">Upload TXT / DOCX</button>
             <button type="button" onClick={handleLoadExample} className="h-8 px-3 rounded-md border border-[#1A3A2A]/20 bg-[#F3F7F2] text-xs font-medium text-[#1A3A2A] hover:bg-[#E8F0E8]">Load Example</button>
           </div>
-          <textarea className={`${inputCls} resize-y`} rows={8} value={sourceText} onChange={e => { setSourceText(e.target.value); if (e.target.value.trim()) setError(prev => prev === "Source text is required" ? "" : prev); }} placeholder="Paste source text here, or upload a .txt file. One paragraph per segment." dir="auto" />
+          <textarea className={`${inputCls} resize-y`} rows={8} value={sourceText} onChange={e => { setSourceText(e.target.value); if (e.target.value.trim()) setError(prev => prev === "Source text is required" ? "" : prev); }} placeholder="Paste source text here, or upload a .txt or .docx file. One paragraph per segment." dir="auto" />
+          <p className="mt-1 text-xs text-gray-400">DOCX text is imported for translation; document formatting is not preserved.</p>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
