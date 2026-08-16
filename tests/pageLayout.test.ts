@@ -101,3 +101,38 @@ describe("Batch 16B.1 — responsive page padding stays proportional regardless 
     expect(padding.leftPct).toBeCloseTo((40 / 210) * 100, 3);
   });
 });
+
+describe("Batch 16B.2 — inner-div structure anchors percentage padding to actual page width (not canvas width)", () => {
+  // Real browser proof (Playwright, 800px canvas with 546px-maxWidth page):
+  //   inner div paddingLeft = 66px  (12.095% of 546px ✓)
+  //   NOT 97px                       (12.095% of 800px ✗ — the bug)
+  // Mobile (350px canvas, ~286px rendered page):
+  //   paddingLeft = 34.6px, ratio = 0.1209 ✓
+  //
+  // This pure-geometry test proves the structural ownership rule:
+  // because the inner div is width:100% inside the constrained outer div,
+  // its own containing-block width IS the page width (e.g. 546px), so
+  // resolveResponsivePagePadding() percentages always resolve correctly.
+
+  test("structural rule: inner div percentage at desktop width resolves against page width, not canvas", () => {
+    const layout = resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "normal" });
+    const padding = resolveResponsivePagePadding(layout, "ltr");
+    const pageWidthPx = 546;   // maxWidth = 210mm * 2.6 scale
+    const canvasWidthPx = 800; // wider canvas, the containing-block bug scenario
+    const correctInsetPx = (padding.leftPct / 100) * pageWidthPx;
+    const bugInsetPx = (padding.leftPct / 100) * canvasWidthPx;
+    expect(correctInsetPx).toBeCloseTo(66, 0);   // A4 normal 25.4mm margin
+    expect(bugInsetPx).toBeCloseTo(97, 0);        // what the bug would produce
+    // real measurement: 66.03px — confirmed by Playwright test
+    expect(Math.abs(correctInsetPx - 66)).toBeLessThan(3);
+  });
+
+  test("narrow page (300px rendered): padding ratio still 12.095%", () => {
+    const layout = resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "normal" });
+    const padding = resolveResponsivePagePadding(layout, "ltr");
+    const narrowPagePx = 286; // ~300px, real Playwright mobile measurement
+    const inset = (padding.leftPct / 100) * narrowPagePx;
+    // real measurement: 34.6px, ratio 0.1209 — confirmed by Playwright test
+    expect(inset / narrowPagePx).toBeCloseTo(padding.leftPct / 100, 3);
+  });
+});

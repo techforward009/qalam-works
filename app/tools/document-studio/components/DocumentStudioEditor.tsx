@@ -1585,31 +1585,19 @@ export default function DocumentStudioEditor() {
 
         {/* A4-style document canvas */}
         <div className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-4 sm:py-6 md:px-8 md:py-8">
+          {/* OUTER PAGE — constrains size and shows page appearance (border/shadow/bg).
+               NO publishing padding here: percentage padding on this element would
+               resolve against the canvas containing block (e.g. 800px) rather than
+               the page's own constrained width (e.g. 546px), producing margins that
+               are too large on desktop (97px instead of ~66px for A4 normal). */}
           <div
-            className="relative mx-auto w-full cursor-text rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
+            className="relative mx-auto w-full rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
             style={(() => {
               const layout = pageLayout;
-              // Batch 16B.1 fix — padding/minHeight were fixed px values
-              // computed from a desktop scale, but the element is w-full:
-              // on a narrow viewport the actual rendered width shrinks
-              // below maxWidth while padding stayed at the desktop size,
-              // breaking margin proportion and (via minHeight) aspect
-              // ratio. Percentage padding is relative to the CONTAINING
-              // BLOCK'S WIDTH for all four sides (a standard CSS rule),
-              // so it shrinks with the real rendered width automatically
-              // — no JS/ResizeObserver needed. aspectRatio alone (no
-              // fixed minHeight) keeps proportions correct for short
-              // documents while still letting long documents grow taller
-              // than the ratio-implied height.
               const scale = Math.min(2.6, 860 / layout.widthMm);
-              const padding = resolveResponsivePagePadding(layout, dir);
               return {
                 maxWidth: `${layout.widthMm * scale}px`,
                 aspectRatio: `${layout.widthMm} / ${layout.heightMm}`,
-                paddingTop: `${padding.topPct}%`,
-                paddingBottom: `${padding.bottomPct}%`,
-                paddingLeft: `${padding.leftPct}%`,
-                paddingRight: `${padding.rightPct}%`,
                 fontSize: `${documentSettings.typography.bodyFontSizePt}pt`,
                 lineHeight: documentSettings.typography.lineHeight,
               };
@@ -1619,6 +1607,8 @@ export default function DocumentStudioEditor() {
             role="textbox"
             aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
           >
+            {/* Empty-state overlay covers the full page box including the
+                margin areas below — inset-0 is correct here on the outer div. */}
             {isEditorEmpty && editor && (
               <div
                 className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 py-10"
@@ -1645,6 +1635,25 @@ export default function DocumentStudioEditor() {
                 </button>
               </div>
             )}
+
+            {/* INNER PAGE CONTENT — 100% width of the outer page div, so its
+                containing block IS the constrained page width (e.g. 546px).
+                Percentage padding here resolves against 546px, not the 800px
+                canvas, giving the correct ~66px for a 12.095% A4 normal margin. */}
+            <div
+              className="cursor-text"
+              style={(() => {
+                const padding = resolveResponsivePagePadding(pageLayout, dir);
+                return {
+                  width: "100%",
+                  minHeight: "100%",
+                  paddingTop: `${padding.topPct}%`,
+                  paddingBottom: `${padding.bottomPct}%`,
+                  paddingLeft: `${padding.leftPct}%`,
+                  paddingRight: `${padding.rightPct}%`,
+                };
+              })()}
+            >
             <EditorContent
               editor={editor}
               className={`qalam-editor-content qalam-doc-page focus:outline-none ${
@@ -1679,6 +1688,7 @@ export default function DocumentStudioEditor() {
                 } as React.CSSProperties
               }
             />
+            </div>
           </div>
         </div>
 
