@@ -196,10 +196,23 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
         filter={reviewFilter}
         summary={reviewSummary}
         totalSegments={project.segments.length}
-        visibleCount={visibleSegments.length}
         onFilterChange={handleFilterChange}
-        onNext={handleNext}
       />
+
+      {/* Sticky navigation row — must be a sibling of the segment list, NOT inside
+          ReviewFilterBar, so its containing block spans the full scroll area.
+          top-16 = site header height (h-16 on mobile). */}
+      <div className="sticky top-16 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm -mx-4 px-4 py-1.5 flex items-center justify-between gap-2 text-xs text-gray-500 mb-3">
+        <span>Showing {visibleSegments.length} of {project.segments.length}</span>
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={visibleSegments.length === 0}
+          className="h-7 px-3 rounded border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Next ↓
+        </button>
+      </div>
 
       {visibleSegments.length === 0 ? (
         <div className="text-center py-10 text-gray-400 space-y-3">
