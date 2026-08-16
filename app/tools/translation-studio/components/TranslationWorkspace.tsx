@@ -4,7 +4,9 @@ import type { TranslationProject, TranslationSegment, GlossaryEntry } from "../u
 import { resolveTargetDir, nextStatus } from "../utils/segmentation";
 import { saveProject, exportProjectBackup } from "../utils/projectStore";
 import { findTerminologyFindings, findExactMemorySuggestion, hasRepeatedSourceConflict } from "../utils/terminology";
+import { runSegmentQA, runProjectQA } from "../utils/translationQA";
 import GlossaryPanel from "./GlossaryPanel";
+import QASummaryStrip from "./QASummaryStrip";
 import SegmentRow from "./SegmentRow";
 import { generateProjectId } from "../utils/projectId";
 
@@ -109,6 +111,10 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
   const saveLabel = { saving: "Saving…", saved: "Saved on this device ✓", error: "Save failed", idle: "Saved on this device" }[saveState];
   const saveCls = saveState === "error" ? "text-red-500" : "text-gray-500";
 
+  // QA: derived state, never stored — recomputed each render
+  const conflictMap = new Map(project.segments.map(s => [s.id, hasRepeatedSourceConflict(s, project.segments)]));
+  const qaSummary = runProjectQA(project.segments, project.glossary, conflictMap);
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-4">
       <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -128,6 +134,8 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
         onDelete={handleDeleteGlossaryEntry}
       />
 
+      <QASummaryStrip summary={qaSummary} />
+
       <div className="space-y-3">
         {project.segments.map(seg => (
           <SegmentRow
@@ -135,8 +143,9 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
             segment={seg}
             targetLanguage={project.targetLanguage}
             terminologyFindings={findTerminologyFindings(seg.source, seg.target, project.glossary)}
+            qaIssues={runSegmentQA(seg, project.glossary, conflictMap.get(seg.id) ?? false)}
             memorySuggestion={findExactMemorySuggestion(seg, project.segments)}
-            hasRepeatedConflict={hasRepeatedSourceConflict(seg, project.segments)}
+            hasRepeatedConflict={conflictMap.get(seg.id) ?? false}
             onTargetChange={handleTargetChange}
             onSetFinal={handleSetFinal}
             onApplyMemory={handleApplyMemory}
