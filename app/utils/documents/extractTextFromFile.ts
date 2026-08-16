@@ -1,4 +1,8 @@
-import mammoth from "mammoth";
+// Using the explicit browser build of mammoth so the bundle never pulls in
+// Node-only modules (fs, path, etc.). { arrayBuffer } is the browser-safe
+// input — no Buffer, no environment detection.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const mammoth = require("mammoth/mammoth.browser") as typeof import("mammoth");
 
 /**
  * Decodes a text file's raw bytes, correctly handling the encodings actually
@@ -10,8 +14,7 @@ import mammoth from "mammoth";
  *
  * Takes a Uint8Array (not Node's Buffer) so this works correctly when
  * called from browser code — Buffer is a Node global and is NOT available
- * client-side. Uint8Array has the same .length/indexing/.subarray() used
- * here and TextDecoder.decode() accepts it directly.
+ * client-side.
  */
 function decodeTextBuffer(bytes: Uint8Array): string {
   if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
@@ -43,33 +46,17 @@ function decodeTextBuffer(bytes: Uint8Array): string {
 }
 
 /**
- * Extracts raw text from an uploaded .txt or .docx file. Shared by any
- * tool that needs a file's plain text content (Unicode Standardizer,
- * Quality Checker, Document Pipeline) — this function does ONLY
- * extraction, no standardization or quality checking, so each tool can
- * decide what to do with the raw text afterward.
- *
- * BUG FIX (2026-08-08): this used to build a Node.js Buffer via
- * Buffer.from() and pass it to mammoth as { buffer }. That's a Node-only
- * global — calling this from a "use client" component (which is how
- * QualityCheckerTool.tsx actually uses it) threw "Buffer is not defined"
- * in the real browser, caught by the caller's try/catch and shown as a
- * generic "Failed to read file" error. Fixed by using only Web-standard
- * APIs: mammoth's own type definitions confirm it accepts
- * { arrayBuffer: ArrayBuffer } as a valid browser input (no Buffer
- * needed), and plain-text decoding now works on a Uint8Array instead.
+ * Extracts raw text from an uploaded .txt or .docx file. Browser-only —
+ * uses Web APIs (file.arrayBuffer(), mammoth browser build) so it works
+ * correctly in client components. Does NOT normalize or clean the text;
+ * each caller decides what to do with the raw result.
  */
 export async function extractTextFromFile(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
 
   if (file.name.toLowerCase().endsWith(".docx")) {
-    const arrayBuffer = await file.arrayBuffer();
-    // mammoth's browser build accepts { arrayBuffer }; the Node build
-    // accepts { buffer }. Convert to a Node Buffer where Buffer is available
-    // (server-side extraction path), otherwise fall through to { arrayBuffer }.
-    const result = typeof Buffer !== "undefined"
-      ? await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) })
-      : await mammoth.extractRawText({ arrayBuffer } as never);
+    // mammoth/mammoth.browser accepts { arrayBuffer } — no Buffer, no Node globals.
+    const result = await mammoth.extractRawText({ arrayBuffer });
     return result.value;
   }
 
