@@ -19,7 +19,7 @@ import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalize
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import { displayDirForPaste } from "../../../utils/processing/cleanTextPipeline";
-import { listEditorFonts } from "../utils/fontRegistry";
+import { listEditorFonts, getFontById } from "../utils/fontRegistry";
 import {
   defaultDocumentSettings,
   loadDocumentSettings,
@@ -156,8 +156,17 @@ const PARAGRAPH_STYLE_ATTRS = {
       // string into PDF/DOCX lookups downstream.
       return v && isBlockStyleId(v) ? v : null;
     },
-    renderHTML: (attributes: Record<string, unknown>) =>
-      attributes.blockStyle ? { "data-block-style": attributes.blockStyle } : {},
+    renderHTML: (attributes: Record<string, unknown>) => {
+      // Batch 16A.1 correction (item 5) — parseHTML only runs for content
+      // parsed FROM the DOM/HTML; a document loaded directly from JSON
+      // (e.g. Editor content prop / setContent from localStorage) never
+      // goes through it, so a corrupted stored value could otherwise
+      // reach renderHTML — and from there, PDF/DOCX or the editor's own
+      // rendered style — unvalidated. Re-validate here as the JSON-safe
+      // choke point.
+      const v = isBlockStyleId(attributes.blockStyle) ? attributes.blockStyle : null;
+      return v ? { "data-block-style": v } : {};
+    },
   },
   lineHeight: {
     default: null as number | null,
@@ -166,8 +175,10 @@ const PARAGRAPH_STYLE_ATTRS = {
       const n = v ? parseFloat(v) : NaN;
       return validateLineHeight(n);
     },
-    renderHTML: (attributes: Record<string, unknown>) =>
-      typeof attributes.lineHeight === "number" ? { style: `line-height:${attributes.lineHeight}` } : {},
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const v = typeof attributes.lineHeight === "number" ? validateLineHeight(attributes.lineHeight) : null;
+      return v !== null ? { style: `line-height:${v}` } : {};
+    },
   },
   firstLineIndentMm: {
     default: null as number | null,
@@ -176,10 +187,10 @@ const PARAGRAPH_STYLE_ATTRS = {
       const n = v ? parseFloat(v) : NaN;
       return validateIndentMm(n);
     },
-    renderHTML: (attributes: Record<string, unknown>) =>
-      typeof attributes.firstLineIndentMm === "number"
-        ? { "data-first-line-indent-mm": String(attributes.firstLineIndentMm) }
-        : {},
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const v = typeof attributes.firstLineIndentMm === "number" ? validateIndentMm(attributes.firstLineIndentMm) : null;
+      return v !== null ? { "data-first-line-indent-mm": String(v) } : {};
+    },
   },
   indentStartMm: {
     default: null as number | null,
@@ -188,8 +199,10 @@ const PARAGRAPH_STYLE_ATTRS = {
       const n = v ? parseFloat(v) : NaN;
       return validateIndentMm(n);
     },
-    renderHTML: (attributes: Record<string, unknown>) =>
-      typeof attributes.indentStartMm === "number" ? { "data-indent-start-mm": String(attributes.indentStartMm) } : {},
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const v = typeof attributes.indentStartMm === "number" ? validateIndentMm(attributes.indentStartMm) : null;
+      return v !== null ? { "data-indent-start-mm": String(v) } : {};
+    },
   },
   indentEndMm: {
     default: null as number | null,
@@ -198,8 +211,10 @@ const PARAGRAPH_STYLE_ATTRS = {
       const n = v ? parseFloat(v) : NaN;
       return validateIndentMm(n);
     },
-    renderHTML: (attributes: Record<string, unknown>) =>
-      typeof attributes.indentEndMm === "number" ? { "data-indent-end-mm": String(attributes.indentEndMm) } : {},
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const v = typeof attributes.indentEndMm === "number" ? validateIndentMm(attributes.indentEndMm) : null;
+      return v !== null ? { "data-indent-end-mm": String(v) } : {};
+    },
   },
   spaceBeforePt: {
     default: null as number | null,
@@ -208,8 +223,10 @@ const PARAGRAPH_STYLE_ATTRS = {
       const n = v ? parseFloat(v) : NaN;
       return validateSpacingPt(n);
     },
-    renderHTML: (attributes: Record<string, unknown>) =>
-      typeof attributes.spaceBeforePt === "number" ? { "data-space-before-pt": String(attributes.spaceBeforePt) } : {},
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const v = typeof attributes.spaceBeforePt === "number" ? validateSpacingPt(attributes.spaceBeforePt) : null;
+      return v !== null ? { "data-space-before-pt": String(v) } : {};
+    },
   },
   spaceAfterPt: {
     default: null as number | null,
@@ -218,10 +235,34 @@ const PARAGRAPH_STYLE_ATTRS = {
       const n = v ? parseFloat(v) : NaN;
       return validateSpacingPt(n);
     },
-    renderHTML: (attributes: Record<string, unknown>) =>
-      typeof attributes.spaceAfterPt === "number" ? { "data-space-after-pt": String(attributes.spaceAfterPt) } : {},
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const v = typeof attributes.spaceAfterPt === "number" ? validateSpacingPt(attributes.spaceAfterPt) : null;
+      return v !== null ? { "data-space-after-pt": String(v) } : {};
+    },
   },
 };
+
+// Batch 16A.1 correction (item 2) — the editor's [data-block-style] CSS
+// previously hardcoded 1.9rem/1.25rem/0.7rem, diverging from
+// documentStyles.ts's canonical 28pt/18pt/10pt (the same values PDF and
+// DOCX both already use). Generated here directly from BLOCK_STYLES so
+// there is exactly one source of truth — pt values convert to rem at
+// the browser's standard 16px root (1pt = 1/12rem), matching how the
+// rest of this file already treats pt-to-rem conversions.
+export const BLOCK_STYLE_EDITOR_CSS = (Object.values(BLOCK_STYLES) as typeof BLOCK_STYLES[BlockStyleId][])
+  .filter((style) => style.blockStyleAttr)
+  .map((style) => {
+    const declarations = [
+      style.defaultFontSizePt ? `font-size:${style.defaultFontSizePt / 12}rem;` : "",
+      style.bold ? "font-weight:700;" : "",
+      style.align ? `text-align:${style.align};` : "",
+      style.blockStyleAttr === "caption" ? "color:#666;" : "",
+    ]
+      .filter(Boolean)
+      .join("");
+    return `.qalam-editor-content .ProseMirror p[data-block-style="${style.blockStyleAttr}"] { ${declarations} }`;
+  })
+  .join("\n");
 
 export const ParagraphWithDir = Paragraph.extend({
   addAttributes() {
@@ -372,13 +413,20 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         // heading, whichever is active) — "Default" means null (clears
         // the block-level override, falling back to the document-wide
         // --qalam-line-height CSS variable / documentSettings default).
-        value={
-          typeof editor.getAttributes("paragraph").lineHeight === "number"
-            ? String(editor.getAttributes("paragraph").lineHeight)
-            : typeof editor.getAttributes("heading").lineHeight === "number"
-              ? String(editor.getAttributes("heading").lineHeight)
-              : "default"
-        }
+        value={(() => {
+          // Batch 16A.1 correction (item 5) — editor.getAttributes() reads
+          // the RAW stored node attrs directly (bypasses renderHTML
+          // entirely), so a corrupted JSON-loaded value could otherwise
+          // reach this <select>'s value unvalidated (e.g. rendering an
+          // <option> that doesn't exist, or displaying "999" instead of
+          // falling back to Default).
+          const pAttr = editor.getAttributes("paragraph").lineHeight;
+          const hAttr = editor.getAttributes("heading").lineHeight;
+          const validated =
+            (typeof pAttr === "number" ? validateLineHeight(pAttr) : null) ??
+            (typeof hAttr === "number" ? validateLineHeight(hAttr) : null);
+          return validated !== null ? String(validated) : "default";
+        })()}
         onChange={(e) => {
           const raw = e.target.value;
           const value = raw === "default" ? null : Number(raw);
@@ -1592,6 +1640,14 @@ export default function DocumentStudioEditor() {
                   // beats an inherited custom-property-based rule.
                   "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
                   "--qalam-line-height": documentSettings.typography.lineHeight,
+                  // Batch 16A.1 (item 3) — direction-specific default font
+                  // stacks, resolved through fontRegistry (never bypassed).
+                  // An explicit textStyle.fontFamily mark still renders as
+                  // a real inline style on its own <span> via TipTap's
+                  // FontFamily extension, which wins over these inherited,
+                  // direction-scoped rules via normal CSS cascade.
+                  "--qalam-rtl-font": `"${getFontById(documentSettings.typography.defaultRtlFontId).editorFamily}"`,
+                  "--qalam-ltr-font": `"${getFontById(documentSettings.typography.defaultLtrFontId).editorFamily}"`,
                 } as React.CSSProperties
               }
             />
@@ -2157,6 +2213,10 @@ export default function DocumentStudioEditor() {
           direction: rtl;
           unicode-bidi: isolate;
           text-align: start;
+          /* Batch 16A.1 (item 3) — document default RTL font; an explicit
+             textStyle.fontFamily mark on a run still wins (its own inline
+             style on the span beats this inherited block-level rule). */
+          font-family: var(--qalam-rtl-font, "Noto Nastaliq Urdu");
         }
         .qalam-editor-content .ProseMirror p[dir="ltr"],
         .qalam-editor-content .ProseMirror h1[dir="ltr"],
@@ -2166,6 +2226,7 @@ export default function DocumentStudioEditor() {
           direction: ltr;
           unicode-bidi: isolate;
           text-align: start;
+          font-family: var(--qalam-ltr-font, "Inter");
         }
         /* Blocks without dir: content-based mixed rendering */
         .qalam-editor-content .ProseMirror p:not([dir]),
@@ -2176,24 +2237,9 @@ export default function DocumentStudioEditor() {
           unicode-bidi: plaintext;
           text-align: start;
         }
-        /* Batch 16A — block-style presentation, driven purely by the
-           data-block-style attribute (never inline marks). Title/
-           Subtitle/Caption visual hints from documentStyles.ts's own
-           BLOCK_STYLES definitions, applied here as CSS only. */
-        .qalam-editor-content .ProseMirror p[data-block-style="title"] {
-          font-size: 1.9rem;
-          font-weight: 700;
-          text-align: center;
-        }
-        .qalam-editor-content .ProseMirror p[data-block-style="subtitle"] {
-          font-size: 1.25rem;
-          text-align: center;
-        }
-        .qalam-editor-content .ProseMirror p[data-block-style="caption"] {
-          font-size: 0.7rem;
-          text-align: center;
-          color: #666;
-        }
+        /* Batch 16A.1 — canonical block-style rules generated from
+           BLOCK_STYLES above (single source of truth with PDF/DOCX). */
+        ${BLOCK_STYLE_EDITOR_CSS}
         /* Batch 16A correction — these previously hardcoded 1.95/1.7
            unconditionally, defeating --qalam-line-height for every
            ordinary paragraph regardless of documentSettings. Now

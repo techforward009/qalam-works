@@ -146,3 +146,56 @@ describe("Batch 16A — normalizeDocumentNodes (Standardize) preserves all forma
     expect(outParagraph.content![0].text).toContain("علی");
   });
 });
+
+describe("Batch 16A.1 — invalid JSON attr safety (renderHTML re-validates independent of parseHTML)", () => {
+  test("a corrupted lineHeight (999) loaded directly via Node.fromJSON does not render an extreme inline style", () => {
+    const paragraphNodeType = schema.nodes.paragraph;
+    // Node.create() mirrors what a direct JSON load (bypassing parseHTML)
+    // would produce if the schema didn't clamp — simulates a corrupted
+    // localStorage value reaching the node's actual attrs.
+    const node = paragraphNodeType.create({ lineHeight: 999 }, schema.text("x"));
+    const dom = paragraphNodeType.spec.toDOM?.(node) as unknown as [string, Record<string, string>, ...unknown[]];
+    // renderHTML must re-validate and refuse to emit the extreme value.
+    expect(dom[1].style).toBeUndefined();
+  });
+
+  test("a corrupted firstLineIndentMm (9999) does not render an extreme data attribute", () => {
+    const paragraphNodeType = schema.nodes.paragraph;
+    const node = paragraphNodeType.create({ firstLineIndentMm: 9999 }, schema.text("x"));
+    const dom = paragraphNodeType.spec.toDOM?.(node) as unknown as [string, Record<string, string>, ...unknown[]];
+    expect(dom[1]["data-first-line-indent-mm"]).toBeUndefined();
+  });
+
+  test("an unrecognized blockStyle string does not render data-block-style", () => {
+    const paragraphNodeType = schema.nodes.paragraph;
+    const node = paragraphNodeType.create({ blockStyle: "not-a-real-style" }, schema.text("x"));
+    const dom = paragraphNodeType.spec.toDOM?.(node) as unknown as [string, Record<string, string>, ...unknown[]];
+    expect(dom[1]["data-block-style"]).toBeUndefined();
+  });
+
+  test("a valid lineHeight (1.8) still renders correctly (validation doesn't reject legitimate values)", () => {
+    const paragraphNodeType = schema.nodes.paragraph;
+    const node = paragraphNodeType.create({ lineHeight: 1.8 }, schema.text("x"));
+    const dom = paragraphNodeType.spec.toDOM?.(node) as unknown as [string, Record<string, string>, ...unknown[]];
+    expect(dom[1].style).toBe("line-height:1.8");
+  });
+});
+
+describe("Batch 16A.1 — editor default RTL/LTR font resolution (through fontRegistry)", () => {
+  test("defaultRtlFontId/defaultLtrFontId resolve to real, distinct editorFamily values via fontRegistry", async () => {
+    const { getFontById } = await import("../app/tools/document-studio/utils/fontRegistry");
+    const { defaultDocumentSettings } = await import("../app/tools/document-studio/utils/documentSettings");
+    const settings = defaultDocumentSettings();
+    const rtlFamily = getFontById(settings.typography.defaultRtlFontId).editorFamily;
+    const ltrFamily = getFontById(settings.typography.defaultLtrFontId).editorFamily;
+    expect(rtlFamily).toBe("Noto Nastaliq Urdu");
+    expect(ltrFamily).toBe("Inter");
+    expect(rtlFamily).not.toBe(ltrFamily);
+  });
+
+  test("changing defaultRtlFontId to Amiri resolves to Amiri's real editorFamily (registry-driven, not hardcoded)", async () => {
+    const { getFontById } = await import("../app/tools/document-studio/utils/fontRegistry");
+    const amiriFamily = getFontById("amiri").editorFamily;
+    expect(amiriFamily).toBe("Amiri");
+  });
+});

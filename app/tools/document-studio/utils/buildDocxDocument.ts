@@ -118,9 +118,28 @@ const HEADING_SPACING: Record<number, { before: number; after: number }> = {
   4: { before: 200, after: 120 }, // H4 — smallest, closest to body text
 };
 
-function headingSpacingFor(level: unknown): { before: number; after: number; line: number; lineRule: (typeof LineRuleType)[keyof typeof LineRuleType] } {
-  const levels = typeof level === "number" && level in HEADING_SPACING ? HEADING_SPACING[level] : HEADING_SPACING[4];
-  return { ...levels, line: PARAGRAPH_SPACING.line, lineRule: PARAGRAPH_SPACING.lineRule };
+// Batch 16A.1 correction (item 4) — headings can now carry explicit
+// lineHeight/spaceBeforePt/spaceAfterPt (added to the schema in Batch
+// 16A), but this always ignored them in favor of the canonical
+// per-level HEADING_SPACING. Precedence is now: EXPLICIT HEADING ATTR >
+// CANONICAL HEADING DEFAULT > SYSTEM FALLBACK — canonical heading
+// spacing remains the default (document body paragraph spacing never
+// substitutes for it), but a genuine user override on that specific
+// heading is honored.
+function headingSpacingFor(
+  level: unknown,
+  node: DocNode
+): { before: number; after: number; line: number; lineRule: (typeof LineRuleType)[keyof typeof LineRuleType] } {
+  const canonical = typeof level === "number" && level in HEADING_SPACING ? HEADING_SPACING[level] : HEADING_SPACING[4];
+  const beforePt = typeof node.attrs?.spaceBeforePt === "number" ? validateSpacingPt(node.attrs.spaceBeforePt) : null;
+  const afterPt = typeof node.attrs?.spaceAfterPt === "number" ? validateSpacingPt(node.attrs.spaceAfterPt) : null;
+  const lineHeight = typeof node.attrs?.lineHeight === "number" ? validateLineHeight(node.attrs.lineHeight) : null;
+  return {
+    before: beforePt !== null ? Math.round(beforePt * 20) : canonical.before,
+    after: afterPt !== null ? Math.round(afterPt * 20) : canonical.after,
+    line: lineHeight !== null ? Math.round(lineHeight * 240) : PARAGRAPH_SPACING.line,
+    lineRule: PARAGRAPH_SPACING.lineRule,
+  };
 }
 
 // v1.2 Phase 2A — Enhanced Blockquote Styling. Matches the editor's own
@@ -400,7 +419,7 @@ function convertNode(
           heading,
           bidirectional: blockDir === "rtl",
           alignment: alignmentFor(node),
-          spacing: headingSpacingFor(level),
+          spacing: headingSpacingFor(level, node),
           children: convertInline(node.content, blockDir, typography),
         }),
       ];

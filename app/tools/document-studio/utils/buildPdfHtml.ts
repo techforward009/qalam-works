@@ -204,8 +204,19 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
       ctx.typography
     );
     noteEffective(ctx, effective);
-    const sizePt = resolveFontSizePt(styleMark?.attrs?.fontSize) ?? ctx.typography?.bodyFontSizePt ?? null;
-    const sizeStyle = sizePt ? `font-size:${sizePt}pt;` : "";
+    // Batch 16A.1 fix — EXPLICIT textStyle.fontSize > BLOCK STYLE default >
+    // DOCUMENT bodyFontSizePt > system fallback. Previously this always
+    // fell back to ctx.typography.bodyFontSizePt when no explicit mark
+    // existed, stamping an inline font-size on EVERY span — which then
+    // overrode a Title/Subtitle/Caption paragraph's own 28pt/18pt/10pt
+    // (set on the parent <p> by openAttrs()), since inline style on a
+    // child span always wins over an inherited parent style. Only emit an
+    // inline size here when there's a genuine explicit override; leaving
+    // it unset lets the span correctly INHERIT from its parent <p> —
+    // whether that parent's font-size came from a block style or (via
+    // the <body> rule) the document's own bodyFontSizePt default.
+    const explicitSizePt = resolveFontSizePt(styleMark?.attrs?.fontSize);
+    const sizeStyle = explicitSizePt ? `font-size:${explicitSizePt}pt;` : "";
 
     if (bold) inner = `<strong>${inner}</strong>`;
     if (italics) inner = `<em>${inner}</em>`;

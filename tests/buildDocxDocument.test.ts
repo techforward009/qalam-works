@@ -892,3 +892,31 @@ describe("Batch 16A — Book Manuscript preset produces real, distinct typograph
     expect(xmlAcademic).toContain('w:line="480"'); // 2.0 * 240
   });
 });
+
+describe("Batch 16A.1 — DOCX explicit heading spacing overrides canonical default", () => {
+  test("H2 with explicit lineHeight 2.0 uses w:line=480, not the canonical 360", async () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [{ type: "heading", attrs: { level: 2, lineHeight: 2.0 }, content: [{ type: "text", text: "H2" }] }],
+    };
+    const xml = await extractDocumentXml(doc, "ltr");
+    expect(xml).toContain('w:line="480"');
+  });
+
+  test("H2 with explicit spaceBeforePt/spaceAfterPt overrides the canonical H2 before/after, without affecting a sibling H2 that has no override", async () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [
+        { type: "heading", attrs: { level: 2, spaceBeforePt: 50, spaceAfterPt: 5 }, content: [{ type: "text", text: "Custom H2" }] },
+        { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "Default H2" }] },
+      ],
+    };
+    const xml = await extractDocumentXml(doc, "ltr");
+    // 50pt * 20 = 1000, 5pt * 20 = 100
+    expect(xml).toContain('w:before="1000"');
+    expect(xml).toContain('w:after="100"');
+    // The canonical H2 default (before=360, after=200) must still appear for the sibling.
+    expect(xml).toContain('w:before="360"');
+    expect(xml).toContain('w:after="200"');
+  });
+});
