@@ -641,6 +641,30 @@ function findAllRangesInEditor(editor: Editor, searchText: string): { from: numb
   return ranges;
 }
 
+/**
+ * Collects all match ranges in the document DESCENDING by position, so
+ * replacements from the end don't corrupt earlier offsets. Returns marks
+ * from the source text node so formatting can be preserved per-run.
+ * Computed ONCE — never re-searched after replacements begin, preventing
+ * loops when the replacement text contains the search query.
+ */
+function collectMatchesDescending(
+  editor: Editor,
+  searchText: string
+): { from: number; to: number; marks: import("@tiptap/pm/model").Mark[] }[] {
+  if (!searchText) return [];
+  const results: { from: number; to: number; marks: import("@tiptap/pm/model").Mark[] }[] = [];
+  editor.state.doc.descendants((node, pos) => {
+    if (node.isText && node.text) {
+      for (const match of findAllTextMatches(node.text, searchText)) {
+        results.push({ from: pos + match.index, to: pos + match.index + match.length, marks: [...node.marks] });
+      }
+    }
+    return true;
+  });
+  return results.sort((a, b) => b.from - a.from);
+}
+
 // Phase 1 Professional Usability (2026-08-09) — Document Outline
 // navigation. Maps a heading's position within doc.content (blockIndex,
 // from extractDocumentOutline) to its real starting ProseMirror position
@@ -1206,28 +1230,37 @@ export default function DocumentStudioEditor() {
   // transaction (insertContentAt), automatically undoable via TipTap's
   // built-in History extension, same as the Suggestion Review workflow's
   // own apply mechanism. Never touches any other match.
+  // Batch 16D — Replace Current: preserves source run's marks (bold/italic/
+  // fontFamily/fontSize/underline) by using a direct ProseMirror transaction
+  // instead of insertContentAt (which applies editor defaults, not source marks).
   const handleReplaceCurrent = () => {
     if (!editor || currentMatches.length === 0 || currentMatchIndex < 0) return;
     const range = currentMatches[currentMatchIndex];
-    editor.chain().focus().insertContentAt(range, replaceQuery).run();
-    // Matches shift after a replacement — recompute fresh rather than
-    // trusting the now-stale `currentMatches` array.
+    // Get source marks from the node at this position.
+    const node = editor.state.doc.nodeAt(range.from);
+    const marks = node?.isText ? [...node.marks] : [];
+    const { tr, schema } = editor.state;
+    const textNode = replaceQuery ? schema.text(replaceQuery, marks) : null;
+    tr.replaceWith(range.from, range.to, textNode ? [textNode] : []);
+    editor.view.dispatch(tr);
     const refreshed = findAllRangesInEditor(editor, findQuery);
     setCurrentMatchIndex(refreshed.length > 0 ? Math.min(currentMatchIndex, refreshed.length - 1) : -1);
   };
 
-  // Replaces every match, one targeted transaction at a time — never a
-  // single blind bulk operation. Recomputes matches fresh after each
-  // replacement (rather than trusting pre-computed positions), since
-  // earlier replacements can shift later matches' positions when the
-  // replacement text is a different length than the search text.
+  // Batch 16D — Replace All: terminates even when replacement contains the
+  // search query, by collecting ALL original matches ONCE (descending by
+  // position) and applying them in one transaction. Descending order prevents
+  // earlier replacements shifting later offsets. One transaction = one undo step.
   const handleReplaceAll = () => {
     if (!editor || !findQuery) return;
-    let remaining = findAllRangesInEditor(editor, findQuery);
-    while (remaining.length > 0) {
-      editor.chain().focus().insertContentAt(remaining[0], replaceQuery).run();
-      remaining = findAllRangesInEditor(editor, findQuery);
+    const matches = collectMatchesDescending(editor, findQuery);
+    if (matches.length === 0) return;
+    const { tr, schema } = editor.state;
+    for (const m of matches) {
+      const textNode = replaceQuery ? schema.text(replaceQuery, m.marks) : null;
+      tr.replaceWith(m.from, m.to, textNode ? [textNode] : []);
     }
+    editor.view.dispatch(tr);
     setCurrentMatchIndex(-1);
   };
 
@@ -1949,6 +1982,21 @@ export default function DocumentStudioEditor() {
             {tab.label}
           </button>
         ))}
+        {/* Compact Quality indicator — reads ONLY from already-computed
+            auditReport state; causes NO new analysis. Clicking opens the
+            existing Quality tab. Neutral state when no analysis available. */}
+        {auditReport && (
+          <button
+            type="button"
+            onClick={() => setActiveTab(activeTab === "quality" ? "none" : "quality")}
+            title={isAuditStale ? "Quality score may be outdated — re-run Quality audit" : "Quality score"}
+            className="h-10 px-4 rounded-lg text-xs font-semibold border border-[#1A3A2A]/20 bg-white/80 text-[#1A3A2A] hover:bg-white tabular-nums"
+          >
+            {isAuditStale ? "~" : ""}
+            {auditReport.score}
+            {auditReport.totalIssues > 0 ? ` · ${auditReport.totalIssues} ⚠` : " ✓"}
+          </button>
+        )}
       </div>
 
       {activeTab === "find" && (
