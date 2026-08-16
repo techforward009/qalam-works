@@ -116,7 +116,7 @@ describe("isDuplicateTerm", () => {
 // ── Exact TM suggestions ──────────────────────────────────────────────────────
 
 describe("findExactMemorySuggestion", () => {
-  test("A: Final seg suggests to empty same-source seg", () => {
+  test("A: Final seg suggests to empty same-source seg (earlier segment)", () => {
     const s1 = makeSeg({ id: "SEG-0001", order: 1, source: "Translation must remain faithful.", target: "ترجمہ اصل متن کے وفادار رہنا چاہیے۔", status: "final", targetDir: "rtl" });
     const s2 = makeSeg({ id: "SEG-0002", order: 2, source: "Translation must remain faithful." });
     const sug = findExactMemorySuggestion(s2, [s1, s2]);
@@ -125,9 +125,20 @@ describe("findExactMemorySuggestion", () => {
     expect(sug?.status).toBe("final");
   });
 
-  test("C: Final preferred over Draft", () => {
-    const draft = makeSeg({ id: "SEG-0001", order: 1, source: "Test.", target: "draft-tr", status: "draft" });
-    const final = makeSeg({ id: "SEG-0002", order: 2, source: "Test.", target: "final-tr", status: "final" });
+  test("B: nearest earlier Final wins over oldest Final", () => {
+    // SEG-0001 (Final A), SEG-0003 (Final B), SEG-0004 (current)
+    // Expected: SEG-0003 suggested, not SEG-0001
+    const s1 = makeSeg({ id: "SEG-0001", order: 1, source: "Test.", target: "A", status: "final" });
+    const s3 = makeSeg({ id: "SEG-0003", order: 3, source: "Test.", target: "B", status: "final" });
+    const cur = makeSeg({ id: "SEG-0004", order: 4, source: "Test." });
+    const sug = findExactMemorySuggestion(cur, [s1, s3, cur]);
+    expect(sug?.sourceSegmentId).toBe("SEG-0003");
+    expect(sug?.target).toBe("B");
+  });
+
+  test("C: Final preferred over nearer Draft", () => {
+    const draft = makeSeg({ id: "SEG-0002", order: 2, source: "Test.", target: "draft-tr", status: "draft" });
+    const final = makeSeg({ id: "SEG-0001", order: 1, source: "Test.", target: "final-tr", status: "final" });
     const query = makeSeg({ id: "SEG-0003", order: 3, source: "Test." });
     const sug = findExactMemorySuggestion(query, [draft, final, query]);
     expect(sug?.status).toBe("final");
@@ -140,11 +151,21 @@ describe("findExactMemorySuggestion", () => {
     expect(findExactMemorySuggestion(s2, [s1, s2])).toBeNull();
   });
 
-  test("no suggestion if target is already filled", () => {
+  test("E: future segment with same source is NEVER suggested", () => {
+    const cur = makeSeg({ id: "SEG-0004", order: 4, source: "Test." });
+    const future = makeSeg({ id: "SEG-0005", order: 5, source: "Test.", target: "future-tr", status: "final" });
+    expect(findExactMemorySuggestion(cur, [cur, future])).toBeNull();
+  });
+
+  test("F: no earlier eligible target → null", () => {
+    const s1 = makeSeg({ id: "SEG-0001", order: 1, source: "Match.", target: "", status: "untranslated" });
+    const s2 = makeSeg({ id: "SEG-0002", order: 2, source: "Match." });
+    expect(findExactMemorySuggestion(s2, [s1, s2])).toBeNull();
+  });
+
+  test("G: function returns suggestion even when target already filled (UI decides not to show)", () => {
     const s1 = makeSeg({ id: "SEG-0001", order: 1, source: "Same.", target: "A", status: "final" });
     const s2 = makeSeg({ id: "SEG-0002", order: 2, source: "Same.", target: "B", status: "draft" });
-    // suggestion exists but is not shown when target is already filled (UI rule)
-    // the function still returns it; the component decides not to show it
     expect(findExactMemorySuggestion(s2, [s1, s2])).not.toBeNull();
   });
 });

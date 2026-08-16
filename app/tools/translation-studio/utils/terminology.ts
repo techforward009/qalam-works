@@ -90,19 +90,20 @@ export interface MemorySuggestion {
 
 /**
  * Finds the best exact-match TM suggestion for a segment.
- * Looks at OTHER segments with the same source text. Prefers Final over Draft.
- * Among equal-status candidates, prefers the nearest earlier segment by order.
+ * Eligible: same source, different id, non-empty target, and EARLIER order
+ * than the current segment (future segments are never suggested).
+ * Preference: Final over Draft; within same status, nearest previous (highest order).
  */
 export function findExactMemorySuggestion(
   segment: TranslationSegment,
   allSegments: TranslationSegment[]
 ): MemorySuggestion | null {
   const candidates = allSegments
-    .filter((s) => s.id !== segment.id && s.source === segment.source && s.target.trim().length > 0)
+    .filter((s) => s.id !== segment.id && s.source === segment.source && s.target.trim().length > 0 && s.order < segment.order)
     .sort((a, b) => {
       if (a.status === "final" && b.status !== "final") return -1;
       if (b.status === "final" && a.status !== "final") return 1;
-      return a.order - b.order; // nearest earlier
+      return b.order - a.order; // nearest earlier = highest order first
     });
   if (candidates.length === 0) return null;
   const best = candidates[0];
