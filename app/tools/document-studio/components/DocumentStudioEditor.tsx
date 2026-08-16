@@ -33,7 +33,7 @@ import {
   validateSpacingPt,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
-import { resolvePageLayout, mmToPx, resolvePhysicalMargins, MARGIN_MIN_MM, MARGIN_MAX_MM, clampMarginMm } from "../utils/pageLayout";
+import { resolvePageLayout, mmToPx, resolvePhysicalMargins, resolveResponsivePagePadding, MARGIN_MIN_MM, MARGIN_MAX_MM, clampMarginMm } from "../utils/pageLayout";
 import { BLOCK_STYLES, BLOCK_STYLE_IDS, isBlockStyleId, type BlockStyleId } from "../utils/documentStyles";
 import {
   applyPresetToSettings,
@@ -1589,23 +1589,27 @@ export default function DocumentStudioEditor() {
             className="relative mx-auto w-full cursor-text rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
             style={(() => {
               const layout = pageLayout;
-              // Batch 16B fix — width and height previously used DIFFERENT
-              // px-per-mm scales (3.2 vs 2.2), distorting page proportions.
-              // One scale, capped so a landscape/A4-wide page doesn't
-              // overflow the available preview column.
+              // Batch 16B.1 fix — padding/minHeight were fixed px values
+              // computed from a desktop scale, but the element is w-full:
+              // on a narrow viewport the actual rendered width shrinks
+              // below maxWidth while padding stayed at the desktop size,
+              // breaking margin proportion and (via minHeight) aspect
+              // ratio. Percentage padding is relative to the CONTAINING
+              // BLOCK'S WIDTH for all four sides (a standard CSS rule),
+              // so it shrinks with the real rendered width automatically
+              // — no JS/ResizeObserver needed. aspectRatio alone (no
+              // fixed minHeight) keeps proportions correct for short
+              // documents while still letting long documents grow taller
+              // than the ratio-implied height.
               const scale = Math.min(2.6, 860 / layout.widthMm);
-              const physical = resolvePhysicalMargins(layout.margins, dir);
+              const padding = resolveResponsivePagePadding(layout, dir);
               return {
                 maxWidth: `${layout.widthMm * scale}px`,
                 aspectRatio: `${layout.widthMm} / ${layout.heightMm}`,
-                minHeight: `${Math.max(320, layout.heightMm * scale)}px`,
-                // Batch 16B — page wrapper owns publishing margins;
-                // ProseMirror itself only has minimal safety padding (see
-                // its own CSS rule) to avoid a double-margin effect.
-                paddingTop: `${physical.topMm * scale}px`,
-                paddingBottom: `${physical.bottomMm * scale}px`,
-                paddingLeft: `${physical.leftMm * scale}px`,
-                paddingRight: `${physical.rightMm * scale}px`,
+                paddingTop: `${padding.topPct}%`,
+                paddingBottom: `${padding.bottomPct}%`,
+                paddingLeft: `${padding.leftPct}%`,
+                paddingRight: `${padding.rightPct}%`,
                 fontSize: `${documentSettings.typography.bodyFontSizePt}pt`,
                 lineHeight: documentSettings.typography.lineHeight,
               };
@@ -1664,6 +1668,14 @@ export default function DocumentStudioEditor() {
                   // direction-scoped rules via normal CSS cascade.
                   "--qalam-rtl-font": `"${getFontById(documentSettings.typography.defaultRtlFontId).editorFamily}"`,
                   "--qalam-ltr-font": `"${getFontById(documentSettings.typography.defaultLtrFontId).editorFamily}"`,
+                  // Batch 16B.1 (item 2) — document-wide paragraph
+                  // defaults (indent/spacing), same precedence pattern:
+                  // an explicit per-block inline style (from
+                  // firstLineIndentMm/spaceBeforePt/spaceAfterPt)
+                  // overrides these via normal cascade.
+                  "--qalam-first-line-indent": `${documentSettings.typography.firstLineIndentMm}mm`,
+                  "--qalam-paragraph-before": `${documentSettings.typography.paragraphBeforePt}pt`,
+                  "--qalam-paragraph-after": `${documentSettings.typography.paragraphAfterPt}pt`,
                 } as React.CSSProperties
               }
             />
@@ -2292,7 +2304,9 @@ export default function DocumentStudioEditor() {
            style on the element itself, which beats an inherited rule
            via normal CSS cascade specificity — untouched by this). */
         .qalam-editor-content p {
-          margin: 0.55rem 0;
+          margin-block-start: var(--qalam-paragraph-before, 0);
+          margin-block-end: var(--qalam-paragraph-after, 0.55rem);
+          text-indent: var(--qalam-first-line-indent, 0);
           line-height: inherit;
         }
         /* Latin-leaning paragraphs: only nudge if no document-wide

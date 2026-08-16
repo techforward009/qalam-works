@@ -117,6 +117,29 @@ export function resolvePhysicalMargins(margins: PageMarginsMm, dir: "rtl" | "ltr
   };
 }
 
+export interface ResponsivePagePadding {
+  topPct: number;
+  bottomPct: number;
+  leftPct: number;
+  rightPct: number;
+}
+
+/**
+ * Batch 16B.1 — percentage padding (relative to element width, per the
+ * CSS spec, on all four sides) so page margins stay proportional as the
+ * rendered width shrinks below its max-width on narrow viewports,
+ * without any JS/ResizeObserver.
+ */
+export function resolveResponsivePagePadding(layout: ResolvedPageLayout, dir: "rtl" | "ltr"): ResponsivePagePadding {
+  const physical = resolvePhysicalMargins(layout.margins, dir);
+  return {
+    topPct: (physical.topMm / layout.widthMm) * 100,
+    bottomPct: (physical.bottomMm / layout.widthMm) * 100,
+    leftPct: (physical.leftMm / layout.widthMm) * 100,
+    rightPct: (physical.rightMm / layout.widthMm) * 100,
+  };
+}
+
 /** Puppeteer-compatible format string for common sizes (portrait only; landscape uses width/height). */
 export function puppeteerPaperFormat(size: PageSizeId): "A4" | "A5" | "Letter" {
   if (size === "a5") return "A5";

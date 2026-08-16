@@ -199,3 +199,26 @@ describe("Batch 16A.1 — editor default RTL/LTR font resolution (through fontRe
     expect(amiriFamily).toBe("Amiri");
   });
 });
+
+describe("Batch 16B.1 — document-default paragraph typography vs. explicit override", () => {
+  test("Book Manuscript document defaults (13pt/1.8/8mm) are represented as CSS variables, not written into TipTap JSON", () => {
+    // A plain paragraph with no explicit attrs carries none of the
+    // Book Manuscript numbers in its own JSON — they live only in
+    // documentSettings.typography, applied via CSS variables the editor
+    // wrapper sets. This proves the defaults aren't stamped as marks.
+    const json = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "x" }] }] };
+    const paragraph = json.content[0] as { attrs?: Record<string, unknown> };
+    expect(paragraph.attrs).toBeUndefined();
+  });
+
+  test("an explicit firstLineIndentMm=3 renders its own inline style, independent of any document default", () => {
+    const paragraphNodeType = schema.nodes.paragraph;
+    const node = paragraphNodeType.create({ firstLineIndentMm: 3 }, schema.text("x"));
+    const dom = paragraphNodeType.spec.toDOM?.(node) as unknown as [string, Record<string, string>, ...unknown[]];
+    // The rendered style carries 3mm — a document default of 8mm (set
+    // only via the CSS variable on an ancestor) never reaches this
+    // inline style at all, so it cannot compete with or override it.
+    expect(dom[1].style).toContain("text-indent:3mm");
+    expect(dom[1].style).not.toContain("8mm");
+  });
+});

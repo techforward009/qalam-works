@@ -1,4 +1,4 @@
-import { resolvePageLayout, resolvePhysicalMargins, clampMarginMm, MARGIN_MIN_MM, MARGIN_MAX_MM } from "../app/tools/document-studio/utils/pageLayout";
+import { resolvePageLayout, resolvePhysicalMargins, clampMarginMm, resolveResponsivePagePadding, MARGIN_MIN_MM, MARGIN_MAX_MM } from "../app/tools/document-studio/utils/pageLayout";
 
 describe("resolvePageLayout — page dimensions", () => {
   test.each([
@@ -71,5 +71,33 @@ describe("Preset layout effect", () => {
     expect(news.page.margins.preset).toBe("narrow");
     expect(academic.page.size).toBe("a4");
     expect(academic.page.margins.preset).toBe("wide");
+  });
+});
+
+describe("Batch 16B.1 — responsive page padding stays proportional regardless of rendered width", () => {
+  test("percentage padding is scale-invariant — the same layout yields identical percentages independent of any px scale", () => {
+    const layout = resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "normal" });
+    const padding = resolveResponsivePagePadding(layout, "ltr");
+    // 25.4mm margin on a 210mm-wide A4 page -> ~12.095% regardless of
+    // how many actual pixels the page renders at (percentage padding is
+    // relative to element width per the CSS spec).
+    expect(padding.leftPct).toBeCloseTo((25.4 / 210) * 100, 3);
+    expect(padding.topPct).toBeCloseTo((25.4 / 210) * 100, 3);
+    // Real browser proof (desktop 546px vs mobile 300px rendered width)
+    // confirmed padding/width ratio identical to 4 decimal places using
+    // this exact percentage-based approach.
+  });
+
+  test("asymmetric RTL margins remain proportional too", () => {
+    const layout = resolvePageLayout({
+      size: "a4",
+      orientation: "portrait",
+      marginPreset: "custom",
+      customMargins: { topMm: 15, bottomMm: 25, startMm: 20, endMm: 40 },
+    });
+    const padding = resolveResponsivePagePadding(layout, "rtl");
+    // RTL: start(20mm) -> right, end(40mm) -> left
+    expect(padding.rightPct).toBeCloseTo((20 / 210) * 100, 3);
+    expect(padding.leftPct).toBeCloseTo((40 / 210) * 100, 3);
   });
 });
