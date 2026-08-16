@@ -1,9 +1,10 @@
 "use client";
 import React, { useCallback, useRef, useState } from "react";
-import type { TranslationSegment, TranslationLanguage, GlossaryEntry } from "../utils/translationTypes";
+import type { TranslationSegment, TranslationLanguage } from "../utils/translationTypes";
 import { languageFontClass } from "../utils/translationTypes";
 import type { TerminologyFinding, MemorySuggestion } from "../utils/terminology";
 import type { QAIssue } from "../utils/translationQA";
+import { getReviewDisplayState, REVIEW_NOTE_MAX } from "../utils/reviewState";
 
 interface SegmentRowProps {
   segment: TranslationSegment;
@@ -15,6 +16,8 @@ interface SegmentRowProps {
   onTargetChange: (id: string, value: string) => void;
   onSetFinal: (id: string) => void;
   onApplyMemory: (id: string, target: string) => void;
+  onApprove: (id: string) => void;
+  onRequestChanges: (id: string, note: string) => void;
 }
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
@@ -24,9 +27,7 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
 };
 
 const SEV_CLS: Record<string, string> = {
-  critical: "text-red-700",
-  warning: "text-amber-700",
-  info: "text-blue-700",
+  critical: "text-red-700", warning: "text-amber-700", info: "text-blue-700",
 };
 
 function QAFindingsZone({ issues }: { issues: QAIssue[] }) {
@@ -40,41 +41,88 @@ function QAFindingsZone({ issues }: { issues: QAIssue[] }) {
   }
   return (
     <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-xs">
-      <button type="button" onClick={() => setExpanded(e => !e)}
-        className="font-semibold text-gray-600 flex items-center gap-1">
+      <button type="button" onClick={() => setExpanded(e => !e)} className="font-semibold text-gray-600 flex items-center gap-1">
         QA check · {issues.length} items <span className="text-gray-400">{expanded ? "▲" : "▼"}</span>
       </button>
-      {expanded && (
-        <div className="mt-1 space-y-0.5">
-          {issues.map((issue, i) => (
-            <p key={i} className={SEV_CLS[issue.severity] ?? "text-gray-700"}>{issue.message}</p>
-          ))}
-        </div>
-      )}
+      {expanded && <div className="mt-1 space-y-0.5">{issues.map((issue, i) => <p key={i} className={SEV_CLS[issue.severity]}>{issue.message}</p>)}</div>}
+    </div>
+  );
+}
+
+function RequestChangesForm({ onSubmit, onCancel }: { onSubmit: (note: string) => void; onCancel: () => void }) {
+  const [note, setNote] = useState("");
+  return (
+    <div className="p-2 space-y-1.5">
+      <textarea
+        className="w-full rounded border border-orange-300 px-2 py-1.5 text-xs resize-none focus:outline-none"
+        rows={3} maxLength={REVIEW_NOTE_MAX} value={note}
+        onChange={e => setNote(e.target.value)}
+        placeholder="Describe the required change (required)…"
+        autoFocus
+      />
+      <div className="flex gap-2">
+        <button type="button" disabled={!note.trim()} onClick={() => onSubmit(note)}
+          className="h-7 px-3 rounded bg-orange-600 text-white text-xs font-medium disabled:opacity-40">
+          Submit
+        </button>
+        <button type="button" onClick={onCancel} className="h-7 px-2 text-xs text-gray-500">Cancel</button>
+      </div>
     </div>
   );
 }
 
 export default function SegmentRow({
   segment, targetLanguage, terminologyFindings, qaIssues, memorySuggestion, hasRepeatedConflict,
-  onTargetChange, onSetFinal, onApplyMemory,
+  onTargetChange, onSetFinal, onApplyMemory, onApprove, onRequestChanges,
 }: SegmentRowProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showNote, setShowNote] = useState(false);
+
   const handleInput = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onTargetChange(segment.id, e.target.value);
     const el = e.target; el.style.height = "auto"; el.style.height = `${el.scrollHeight}px`;
   }, [segment.id, onTargetChange]);
 
+  const reviewState = getReviewDisplayState(segment);
   const targetFontClass = languageFontClass(targetLanguage);
   const { label, cls } = STATUS_LABEL[segment.status] ?? STATUS_LABEL.untranslated;
+
+  // Compact header label for changes-requested segments
+  const headerCls = reviewState === "changes-requested"
+    ? "bg-orange-50 border-b border-orange-200"
+    : "bg-[#F3F7F2] border-b border-[#1A3A2A]/8";
 
   return (
     <div className="border border-[#1A3A2A]/10 rounded-lg bg-white overflow-hidden">
       {/* Segment header */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#F3F7F2] border-b border-[#1A3A2A]/8 text-xs">
+      <div className={`flex items-center justify-between px-3 py-1.5 text-xs ${headerCls}`}>
         <span className="font-mono text-gray-500">{segment.id}</span>
-        <span className={cls}>{label}</span>
+        <span className="flex items-center gap-2">
+          {reviewState === "changes-requested" && <span className="font-semibold text-orange-700">Changes requested</span>}
+          {reviewState === "approved" && <span className="font-semibold text-green-700">Approved ✓</span>}
+          {reviewState === "ready" && <span className="text-blue-700">Ready for review</span>}
+          <span className={cls}>{label}</span>
+        </span>
       </div>
+
+      {/* Changes requested review note — prominent */}
+      {reviewState === "changes-requested" && segment.reviewNote && (
+        <div className="px-3 py-2 bg-orange-50 border-b border-orange-100 text-xs text-orange-800">
+          <p className="font-semibold mb-0.5">Reviewer note:</p>
+          <p>{segment.reviewNote}</p>
+        </div>
+      )}
+
+      {/* Previous note (after resubmission) — collapsed */}
+      {reviewState === "ready" && segment.reviewNote && (
+        <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-100 text-xs">
+          <button type="button" onClick={() => setShowNote(n => !n)} className="text-gray-500 hover:text-gray-700">
+            Previous review note {showNote ? "▲" : "▼"}
+          </button>
+          {showNote && <p className="mt-1 text-gray-600">{segment.reviewNote}</p>}
+        </div>
+      )}
 
       {/* Source / Target columns */}
       <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[#1A3A2A]/8">
@@ -100,31 +148,47 @@ export default function SegmentRow({
         </div>
       </div>
 
-      {/* 17B.1: Terminology warnings — unchanged, separate from QA */}
+      {/* 17C: Review actions for ready/approved segments */}
+      {reviewState === "ready" && !showRequestForm && (
+        <div className="border-t border-blue-100 bg-blue-50 px-3 py-2 text-xs flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-blue-800 shrink-0">Ready for review</span>
+          <button type="button" onClick={() => onApprove(segment.id)}
+            className="h-7 px-3 rounded bg-green-700 text-white font-medium hover:bg-green-800">Approve</button>
+          <button type="button" onClick={() => setShowRequestForm(true)}
+            className="h-7 px-3 rounded border border-orange-300 text-orange-700 font-medium hover:bg-orange-50">Request changes</button>
+        </div>
+      )}
+
+      {reviewState === "ready" && showRequestForm && (
+        <div className="border-t border-orange-200 bg-orange-50">
+          <RequestChangesForm
+            onSubmit={note => { onRequestChanges(segment.id, note); setShowRequestForm(false); }}
+            onCancel={() => setShowRequestForm(false)}
+          />
+        </div>
+      )}
+
+      {/* 17B.1: Terminology warnings */}
       {terminologyFindings.length > 0 && (
         <div className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-0.5">
           <p className="font-semibold">Terminology check{terminologyFindings.length > 1 ? ` (${terminologyFindings.length})` : ""}:</p>
           {terminologyFindings.map(f => (
-            <p key={f.entry.id}>
-              Approved term not found: <span className="font-medium">{f.entry.sourceTerm}</span> → <span dir="auto" className="font-medium">{f.entry.targetTerm}</span>
-            </p>
+            <p key={f.entry.id}>Approved term not found: <span className="font-medium">{f.entry.sourceTerm}</span> → <span dir="auto" className="font-medium">{f.entry.targetTerm}</span></p>
           ))}
         </div>
       )}
 
-      {/* 17B.1: Repeated-source conflict — unchanged, separate from QA */}
+      {/* 17B.1: Repeated-source conflict */}
       {hasRepeatedConflict && (
         <div className="border-t border-orange-100 bg-orange-50 px-3 py-2 text-xs text-orange-700">
           Repeated source has different translations
         </div>
       )}
 
-      {/* 17B.2: Translation QA findings — separate zone, collapsible when >1 */}
-      {qaIssues.length > 0 && (
-        <QAFindingsZone issues={qaIssues} />
-      )}
+      {/* 17B.2: QA findings */}
+      {qaIssues.length > 0 && <QAFindingsZone issues={qaIssues} />}
 
-      {/* 17B.1: Memory suggestion — unchanged */}
+      {/* 17B.1: Memory suggestion */}
       {memorySuggestion && !segment.target.trim() && (
         <div className="border-t border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800 flex items-center gap-2 flex-wrap">
           <span className="font-semibold shrink-0">Previously translated</span>

@@ -8,7 +8,9 @@ function seg(overrides: Partial<TranslationSegment> & { source: string }): Trans
   const { source, ...rest } = overrides;
   return {
     id: makeSegmentId(1), order: 1, source, target: "", sourceDir: "ltr", targetDir: "ltr",
-    status: "untranslated", sourceFingerprint: segmentFingerprint(source), ...rest,
+    status: "untranslated", sourceFingerprint: segmentFingerprint(source),
+    reviewStatus: "unreviewed" as const, reviewNote: "", reviewedTargetFingerprint: "",
+    ...rest,
   };
 }
 

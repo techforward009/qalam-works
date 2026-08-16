@@ -5,8 +5,13 @@ import { resolveTargetDir, nextStatus } from "../utils/segmentation";
 import { saveProject, exportProjectBackup } from "../utils/projectStore";
 import { findTerminologyFindings, findExactMemorySuggestion, hasRepeatedSourceConflict } from "../utils/terminology";
 import { runSegmentQA, runProjectQA } from "../utils/translationQA";
+import {
+  approveSegment, requestChanges, applyTargetEditReviewTransition,
+  applyMarkFinalReviewTransition, summarizeReviewState,
+} from "../utils/reviewState";
 import GlossaryPanel from "./GlossaryPanel";
 import QASummaryStrip from "./QASummaryStrip";
+import ReviewSummaryPanel from "./ReviewSummaryPanel";
 import SegmentRow from "./SegmentRow";
 import { generateProjectId } from "../utils/projectId";
 
@@ -67,10 +72,34 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
     const seg = project.segments.find(s => s.id === id);
     if (!seg) return;
     const event = value.trim() === "" ? "clear" : "edit";
-    updateSegment(id, { target: value, status: nextStatus(seg.status, event), targetDir: resolveTargetDir(value, project.targetLanguage) });
+    const reviewPatch = applyTargetEditReviewTransition(seg, value);
+    updateSegment(id, {
+      target: value,
+      status: nextStatus(seg.status, event),
+      targetDir: resolveTargetDir(value, project.targetLanguage),
+      ...reviewPatch,
+    });
   }, [project, updateSegment]);
 
-  const handleSetFinal = useCallback((id: string) => { updateSegment(id, { status: "final" }); }, [updateSegment]);
+  const handleSetFinal = useCallback((id: string) => {
+    const seg = project.segments.find(s => s.id === id);
+    if (!seg) return;
+    const reviewPatch = applyMarkFinalReviewTransition(seg);
+    updateSegment(id, { status: "final", ...reviewPatch });
+  }, [project, updateSegment]);
+
+  const handleApprove = useCallback((id: string) => {
+    const seg = project.segments.find(s => s.id === id);
+    if (!seg) return;
+    updateSegment(id, approveSegment(seg));
+  }, [project, updateSegment]);
+
+  const handleRequestChanges = useCallback((id: string, note: string) => {
+    const seg = project.segments.find(s => s.id === id);
+    if (!seg) return;
+    const updated = requestChanges(seg, note);
+    if (updated) updateSegment(id, updated);
+  }, [project, updateSegment]);
 
   const handleApplyMemory = useCallback((id: string, target: string) => {
     const seg = project.segments.find(s => s.id === id);
@@ -114,6 +143,7 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
   // QA: derived state, never stored — recomputed each render
   const conflictMap = new Map(project.segments.map(s => [s.id, hasRepeatedSourceConflict(s, project.segments)]));
   const qaSummary = runProjectQA(project.segments, project.sourceLanguage, project.targetLanguage);
+  const reviewSummary = summarizeReviewState(project.segments);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-4">
@@ -135,6 +165,7 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
       />
 
       <QASummaryStrip summary={qaSummary} sourceLanguage={project.sourceLanguage} targetLanguage={project.targetLanguage} />
+      <ReviewSummaryPanel summary={reviewSummary} />
 
       <div className="space-y-3">
         {project.segments.map(seg => (
@@ -149,6 +180,8 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
             onTargetChange={handleTargetChange}
             onSetFinal={handleSetFinal}
             onApplyMemory={handleApplyMemory}
+            onApprove={handleApprove}
+            onRequestChanges={handleRequestChanges}
           />
         ))}
       </div>

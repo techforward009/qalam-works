@@ -22,6 +22,9 @@ function makeSeg(overrides: Partial<TranslationSegment> & { source: string; id?:
     targetDir: "ltr",
     status: "untranslated",
     sourceFingerprint: segmentFingerprint(source),
+    reviewStatus: "unreviewed" as const,
+    reviewNote: "",
+    reviewedTargetFingerprint: "",
     ...rest,
   };
 }

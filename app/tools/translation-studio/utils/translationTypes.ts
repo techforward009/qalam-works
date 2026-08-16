@@ -3,6 +3,8 @@
 export type TranslationLanguage = "ur" | "en" | "ar" | "fa";
 export type TranslationSegmentStatus = "untranslated" | "draft" | "final";
 
+export type TranslationReviewStatus = "unreviewed" | "changes-requested" | "approved";
+
 export interface TranslationBrief {
   approach: "faithful" | "natural";
   audience: "general" | "academic-professional";
@@ -17,8 +19,13 @@ export interface TranslationSegment {
   sourceDir: "rtl" | "ltr";
   targetDir: "rtl" | "ltr";
   status: TranslationSegmentStatus;
-  /** SHA-1 of source used to detect upstream source changes. */
+  /** Deterministic 31-based hash for source change detection. */
   sourceFingerprint: string;
+  /** 17C additive review fields — old v1 projects default to unreviewed. */
+  reviewStatus: TranslationReviewStatus;
+  reviewNote: string;
+  /** segmentFingerprint(target) at time of approval — detects subsequent edits. */
+  reviewedTargetFingerprint: string;
 }
 
 export interface GlossaryEntry {
@@ -113,6 +120,10 @@ function isStatus(v: unknown): v is TranslationSegmentStatus {
   return v === "untranslated" || v === "draft" || v === "final";
 }
 
+function isReviewStatus(v: unknown): v is TranslationReviewStatus {
+  return v === "unreviewed" || v === "changes-requested" || v === "approved";
+}
+
 function parseSegment(raw: unknown): TranslationSegment | null {
   if (!raw || typeof raw !== "object") return null;
   const s = raw as Record<string, unknown>;
@@ -127,6 +138,10 @@ function parseSegment(raw: unknown): TranslationSegment | null {
     targetDir: isDir(s.targetDir) ? s.targetDir : "rtl",
     status: isStatus(s.status) ? s.status : "untranslated",
     sourceFingerprint: typeof s.sourceFingerprint === "string" ? s.sourceFingerprint : "",
+    // 17C: additive — older projects without these fields get safe defaults
+    reviewStatus: isReviewStatus(s.reviewStatus) ? s.reviewStatus : "unreviewed",
+    reviewNote: typeof s.reviewNote === "string" ? s.reviewNote : "",
+    reviewedTargetFingerprint: typeof s.reviewedTargetFingerprint === "string" ? s.reviewedTargetFingerprint : "",
   };
 }
 

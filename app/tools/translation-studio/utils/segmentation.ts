@@ -40,6 +40,9 @@ export function segmentText(
     targetDir: fallbackTargetDir,
     status: "untranslated" as const,
     sourceFingerprint: segmentFingerprint(line),
+    reviewStatus: "unreviewed" as const,
+    reviewNote: "",
+    reviewedTargetFingerprint: "",
   }));
 }
 
