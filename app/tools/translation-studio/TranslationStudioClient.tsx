@@ -35,6 +35,7 @@ export default function TranslationStudioClient() {
       sourceLanguage: params.sourceLanguage,
       targetLanguage: params.targetLanguage,
       brief: params.brief,
+      glossary: [],
       segments,
       createdAt: now,
       updatedAt: now,

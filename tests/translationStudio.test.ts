@@ -128,7 +128,8 @@ describe("parseProject", () => {
     sourceLanguage: "ur",
     targetLanguage: "en",
     brief: defaultBrief(),
-    segments: [],
+    glossary: [],
+      segments: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -154,7 +155,8 @@ describe("parseProject", () => {
   });
 
   test("missing segments field → null", () => {
-    const { segments: _, ...rest } = minimal;
+    const { glossary: [],
+      segments: _, ...rest } = minimal;
     expect(parseProject(rest)).toBeNull();
   });
 });
@@ -170,7 +172,8 @@ describe("exportProjectBackup / importProjectBackup", () => {
     sourceLanguage: "en",
     targetLanguage: "ur",
     brief: defaultBrief(),
-    segments: segs,
+    glossary: [],
+      segments: segs,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -243,6 +246,7 @@ describe("LocalStorageTranslationProjectStore adapter contract", () => {
       sourceLanguage: "ur",
       targetLanguage: "en",
       brief: defaultBrief(),
+      glossary: [],
       segments: segmentText("اردو سطر\nEnglish line", "ur", "en"),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -310,6 +314,7 @@ describe("pending-save loss prevention logic", () => {
       sourceLanguage: "en",
       targetLanguage: "ur",
       brief: defaultBrief(),
+      glossary: [],
       segments: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -337,6 +342,7 @@ describe("pending-save loss prevention logic", () => {
       sourceLanguage: "en",
       targetLanguage: "ur",
       brief: defaultBrief(),
+      glossary: [],
       segments: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

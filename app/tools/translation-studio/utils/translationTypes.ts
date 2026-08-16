@@ -21,6 +21,13 @@ export interface TranslationSegment {
   sourceFingerprint: string;
 }
 
+export interface GlossaryEntry {
+  id: string;
+  sourceTerm: string;
+  targetTerm: string;
+  note?: string;
+}
+
 export interface TranslationProject {
   schemaVersion: 1;
   id: string;
@@ -29,6 +36,8 @@ export interface TranslationProject {
   targetLanguage: TranslationLanguage;
   brief: TranslationBrief;
   segments: TranslationSegment[];
+  /** Additive field — older v1 projects without this field load as []. */
+  glossary: GlossaryEntry[];
   createdAt: string;
   updatedAt: string;
 }
@@ -76,6 +85,8 @@ export function parseProject(raw: unknown): TranslationProject | null {
   }
   const brief = parseBrief(p.brief);
   if (!brief) return null;
+  // glossary is additive — old v1 projects without the field load as []
+  const glossary: GlossaryEntry[] = parseGlossary(p.glossary);
   return {
     schemaVersion: 1,
     id: p.id as string,
@@ -84,6 +95,7 @@ export function parseProject(raw: unknown): TranslationProject | null {
     targetLanguage: p.targetLanguage as TranslationLanguage,
     brief,
     segments,
+    glossary,
     createdAt: typeof p.createdAt === "string" ? p.createdAt : new Date().toISOString(),
     updatedAt: typeof p.updatedAt === "string" ? p.updatedAt : new Date().toISOString(),
   };
@@ -130,3 +142,19 @@ function parseBrief(raw: unknown): TranslationBrief | null {
         : "",
   };
 }
+
+function parseGlossary(raw: unknown): GlossaryEntry[] {
+  if (!Array.isArray(raw)) return [];
+  const result: GlossaryEntry[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const e = item as Record<string, unknown>;
+    if (typeof e.id !== "string" || typeof e.sourceTerm !== "string" || typeof e.targetTerm !== "string") continue;
+    if (!e.sourceTerm.trim() || !e.targetTerm.trim()) continue;
+    result.push({ id: e.id, sourceTerm: e.sourceTerm, targetTerm: e.targetTerm, note: typeof e.note === "string" ? e.note : undefined });
+  }
+  return result;
+}
+
+export const GLOSSARY_TERM_MAX = 120;
+export const GLOSSARY_NOTE_MAX = 300;
