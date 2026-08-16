@@ -18,19 +18,44 @@ type SaveState = "saved" | "saving" | "error" | "idle";
 export default function TranslationWorkspace({ project, onProjectChange, onClose }: TranslationWorkspaceProps) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Holds the latest project state that has NOT yet been flushed to localStorage.
+  // Set immediately on every edit; cleared after a successful write.
+  const pendingProject = useRef<TranslationProject | null>(null);
+
+  /** Synchronously write whatever is pending — used on close and pagehide. */
+  const flushPending = useCallback(() => {
+    const p = pendingProject.current;
+    if (!p) return;
+    if (autosaveTimer.current) { clearTimeout(autosaveTimer.current); autosaveTimer.current = null; }
+    const result = saveProject({ ...p, updatedAt: new Date().toISOString() });
+    setSaveState(result.ok ? "saved" : "error");
+    if (result.ok) pendingProject.current = null;
+  }, []);
 
   const debouncedSave = useCallback((updated: TranslationProject) => {
+    pendingProject.current = updated; // always track latest, even before debounce fires
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     setSaveState("saving");
     autosaveTimer.current = setTimeout(() => {
-      const result = saveProject({ ...updated, updatedAt: new Date().toISOString() });
+      const p = pendingProject.current;
+      if (!p) return;
+      const result = saveProject({ ...p, updatedAt: new Date().toISOString() });
       setSaveState(result.ok ? "saved" : "error");
+      if (result.ok) pendingProject.current = null;
     }, AUTOSAVE_DEBOUNCE_MS);
   }, []);
 
   useEffect(() => {
-    return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); };
-  }, []);
+    // pagehide fires reliably on mobile (beforeunload does not). Best-effort
+    // synchronous flush — localStorage.setItem is synchronous so this works.
+    const onPageHide = () => { flushPending(); };
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      // Unmount: flush any pending unsaved state instead of discarding it.
+      flushPending();
+    };
+  }, [flushPending]);
 
   const updateSegment = useCallback((id: string, patch: Partial<TranslationSegment>) => {
     const segments = project.segments.map(s => s.id === id ? { ...s, ...patch } : s);
@@ -52,6 +77,11 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
     updateSegment(id, { status: "final" });
   }, [updateSegment]);
 
+  const handleClose = useCallback(() => {
+    flushPending(); // synchronous write before leaving the workspace
+    onClose();
+  }, [flushPending, onClose]);
+
   const handleExportBackup = () => {
     const json = exportProjectBackup(project);
     const blob = new Blob([json], { type: "application/json" });
@@ -72,9 +102,8 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-4">
-      {/* Workspace header */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <button onClick={onClose} className="text-sm text-[#1A3A2A] hover:underline">← Projects</button>
+        <button onClick={handleClose} className="text-sm text-[#1A3A2A] hover:underline">← Projects</button>
         <h2 className="font-bold text-[#1A3A2A] flex-1 min-w-0 truncate">{project.name}</h2>
         <span className="text-xs text-gray-500">
           {finalCount}/{total} final · {draftCount} draft
@@ -84,8 +113,6 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
           Export Backup
         </button>
       </div>
-
-      {/* Segments */}
       <div className="space-y-3">
         {project.segments.map(seg => (
           <SegmentRow

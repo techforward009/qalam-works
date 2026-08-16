@@ -10,7 +10,7 @@ export function makeSegmentId(order: number): string {
   return `SEG-${String(order).padStart(4, "0")}`;
 }
 
-/** Simple non-cryptographic fingerprint — SHA-ish using hash code. Deterministic. */
+/** Deterministic 31-based hash fingerprint for change detection. 8 hex chars. */
 export function segmentFingerprint(text: string): string {
   let h = 0;
   for (let i = 0; i < text.length; i++) {
