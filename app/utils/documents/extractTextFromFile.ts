@@ -63,7 +63,13 @@ export async function extractTextFromFile(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
 
   if (file.name.toLowerCase().endsWith(".docx")) {
-    const result = await mammoth.extractRawText({ arrayBuffer });
+    const arrayBuffer = await file.arrayBuffer();
+    // mammoth's browser build accepts { arrayBuffer }; the Node build
+    // accepts { buffer }. Convert to a Node Buffer where Buffer is available
+    // (server-side extraction path), otherwise fall through to { arrayBuffer }.
+    const result = typeof Buffer !== "undefined"
+      ? await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) })
+      : await mammoth.extractRawText({ arrayBuffer } as never);
     return result.value;
   }
 

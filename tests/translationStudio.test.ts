@@ -353,6 +353,7 @@ describe("pending-save loss prevention logic", () => {
 import { Packer, Document, Paragraph as DocxParagraph, TextRun } from "docx";
 
 import mammoth from "mammoth";
+import { extractTextFromFile } from "../app/utils/documents/extractTextFromFile";
 
 /** Generates a DOCX Buffer from a list of paragraph strings (for test-only extraction). */
 async function makeDocxBuffer(paragraphs: string[]): Promise<Buffer> {
@@ -372,6 +373,27 @@ async function extractDocxText(paragraphs: string[]): Promise<string> {
 }
 
 describe("Batch 17A.1 — DOCX source import via extractTextFromFile", () => {
+  // Core test exercises the REAL production extractTextFromFile path,
+  // not a direct-mammoth shortcut, using a File object with arrayBuffer().
+  test("real extractTextFromFile path: Urdu + English extracted, rtl/ltr/rtl directions", async () => {
+    const buf = await makeDocxBuffer([
+      "یہ اردو کا ایک آزمائشی پیراگراف ہے۔",
+      "This is an English paragraph for Translation Studio.",
+      "اردو اور English ایک ہی فائل میں موجود ہیں۔",
+    ]);
+    // Build a real File using the DOCX bytes — arrayBuffer() returns the real content.
+    const file = new File([new Uint8Array(buf)], "acceptance.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    const text = await extractTextFromFile(file);
+    expect(text).toContain("اردو");
+    expect(text).toContain("English paragraph");
+    const segs = segmentText(text, "ur", "en").filter(s => s.source.trim());
+    expect(segs[0].sourceDir).toBe("rtl");
+    expect(segs[1].sourceDir).toBe("ltr");
+    expect(segs[2].sourceDir).toBe("rtl");
+  });
+
   test("extracts text from a real generated DOCX without mutation", async () => {
     const text = await extractDocxText(["اردو پیراگراف", "English paragraph"]);
     expect(text).toContain("اردو پیراگراف");

@@ -39,7 +39,7 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
       const text = await extractTextFromFile(file);
       if (!text.trim()) { setError("File contains no usable text"); return; }
       setSourceText(text);
-      setError((prev) => (prev === "Source text is required" || prev === "File contains no usable text" ? "" : prev));
+      setError("");
     } catch {
       setError("Could not extract text from file. Please try a different file.");
     }
