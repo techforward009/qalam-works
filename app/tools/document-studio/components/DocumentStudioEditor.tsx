@@ -648,6 +648,39 @@ function findAllRangesInEditor(editor: Editor, searchText: string): { from: numb
  * Computed ONCE — never re-searched after replacements begin, preventing
  * loops when the replacement text contains the search query.
  */
+/**
+ * Pure helper exported for testing — builds the Replace All ProseMirror
+ * transaction without dispatching it. Takes a snapshot of the current
+ * document state, finds all matches ONCE (descending), and returns a
+ * transaction that replaces them all with the replacement text while
+ * preserving each source run's marks.
+ * Returns null if no matches found or search is empty.
+ */
+export function buildReplaceAllTransaction(
+  state: import("@tiptap/pm/state").EditorState,
+  searchText: string,
+  replaceText: string
+): import("@tiptap/pm/state").Transaction | null {
+  if (!searchText) return null;
+  const results: { from: number; to: number; marks: import("@tiptap/pm/model").Mark[] }[] = [];
+  state.doc.descendants((node, pos) => {
+    if (node.isText && node.text) {
+      for (const match of findAllTextMatches(node.text, searchText)) {
+        results.push({ from: pos + match.index, to: pos + match.index + match.length, marks: [...node.marks] });
+      }
+    }
+    return true;
+  });
+  if (results.length === 0) return null;
+  results.sort((a, b) => b.from - a.from); // descending
+  const tr = state.tr;
+  for (const m of results) {
+    const textNode = replaceText ? state.schema.text(replaceText, m.marks) : null;
+    tr.replaceWith(m.from, m.to, textNode ? [textNode] : []);
+  }
+  return tr;
+}
+
 function collectMatchesDescending(
   editor: Editor,
   searchText: string
