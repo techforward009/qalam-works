@@ -60,3 +60,30 @@ describe("explicit alignment is never overwritten by direction detection", () =>
     expect(["ltr", "rtl"]).toContain(dir);
   });
 });
+
+import { buildDocumentStudioExample } from "../app/tools/document-studio/components/DocumentStudioEditor";
+
+describe("buildDocumentStudioExample — Load Example per-block direction", () => {
+  test("Urdu paragraphs get rtl, English paragraph gets ltr", () => {
+    const doc = buildDocumentStudioExample("rtl");
+    const dirs = doc.content!.map((p) => p.attrs?.dir);
+    expect(dirs).toEqual(["rtl", "ltr", "rtl"]);
+  });
+
+  test("English 'Draft notes...' paragraph dir is ltr (period renders after 'export.')", () => {
+    const doc = buildDocumentStudioExample("rtl");
+    const english = doc.content!.find((p) => p.content?.[0]?.text?.startsWith("Draft notes:"));
+    expect(english?.attrs?.dir).toBe("ltr");
+  });
+
+  test("fallbackDir only affects neutral/empty paragraphs — content-detected dirs ignore it", () => {
+    const rtlDoc = buildDocumentStudioExample("rtl");
+    const ltrDoc = buildDocumentStudioExample("ltr");
+    // Urdu paragraphs are always rtl regardless of fallback
+    expect(rtlDoc.content![0].attrs?.dir).toBe("rtl");
+    expect(ltrDoc.content![0].attrs?.dir).toBe("rtl");
+    // English paragraph is always ltr regardless of fallback
+    expect(rtlDoc.content![1].attrs?.dir).toBe("ltr");
+    expect(ltrDoc.content![1].attrs?.dir).toBe("ltr");
+  });
+});

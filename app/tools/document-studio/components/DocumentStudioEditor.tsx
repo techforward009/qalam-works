@@ -339,6 +339,28 @@ function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr") {
   dom.style.direction = nextDir;
 }
 
+/**
+ * Pure — builds the Document Studio example DocNode with per-paragraph
+ * direction assigned via first-strong detection. Extracted so
+ * handleLoadExample and tests can both use the same function without
+ * duplicating the example content or the direction logic.
+ */
+export function buildDocumentStudioExample(fallbackDir: "rtl" | "ltr" = "rtl"): DocNode {
+  const paragraphs = [
+    "مسودہ: یہ  ایک  نمونہ دستاویز ہے ,جس میں غیر ضروری spaces ہیں۔",
+    "Draft notes: Review spacing and punctuation, then standardize and run Quality Audit before export.",
+    "آخری مرحلہ: تصدیق کے بعد TXT، DOCX یا PDF ایکسپورٹ کریں۔",
+  ];
+  return {
+    type: "doc",
+    content: paragraphs.map((text) => ({
+      type: "paragraph",
+      attrs: { dir: detectBlockDirection(text, fallbackDir) },
+      content: [{ type: "text", text }],
+    })),
+  };
+}
+
 const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
   { label: "Default", value: "" },
   ...listEditorFonts().map((f) => ({
@@ -973,10 +995,15 @@ export default function DocumentStudioEditor() {
 
   const handleLoadExample = () => {
     if (!editor) return;
-    const html =
-      "<p>مسودہ: یہ  ایک  نمونہ دستاویز ہے ,جس میں غیر ضروری spaces ہیں۔</p><p>Draft notes: Review spacing and punctuation, then standardize and run Quality Audit before export.</p><p>آخری مرحلہ: تصدیق کے بعد TXT، DOCX یا PDF ایکسپورٹ کریں۔</p>";
-    editor.chain().focus().setContent(html).run();
-    applyDocumentDirection(editor, dir);
+    const exampleDoc = buildDocumentStudioExample(dir);
+    editor.chain().focus().setContent(exampleDoc).run();
+    // NOTE: applyDocumentDirection is intentionally NOT called here.
+    // That function bulk-overwrites every block's dir with the document-
+    // level dir, which would destroy the per-block direction detection
+    // we just set. Only the editor DOM's own dir attribute needs updating.
+    const dom = editor.view.dom as HTMLElement;
+    dom.setAttribute("dir", dir);
+    dom.style.direction = dir;
     setExampleJustLoaded(true);
     trackEvent("tool_example", { tool: "document_studio" });
     requestAnimationFrame(() => {
