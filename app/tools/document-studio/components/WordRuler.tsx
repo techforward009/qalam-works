@@ -1,23 +1,21 @@
 import React, { useEffect, useRef, useState } from "react";
 import { calculateRulerMetrics, resolveVisualMarginOffsets, calculateInchTickPositions } from "../utils/rulerLayout";
+import type { ResolvedPageLayout } from "../utils/pageLayout";
 
 interface WordRulerProps {
   dir: "ltr" | "rtl";
+  layout: ResolvedPageLayout;
 }
 
 /**
- * Word-like Professional Editing Layer — Phase 1 (2026-08-09). A purely
- * VISUAL, read-only ruler above the editor, showing the A4 page width
- * and margins proportionally — matching the same page geometry the DOCX
- * export actually produces (see rulerLayout.ts's own comment on why the
- * constants are duplicated rather than imported).
+ * Purely VISUAL, read-only ruler above the editor, showing page width
+ * and margins proportionally from the resolved page layout (A4/A5/
+ * Letter, portrait/landscape, symmetric or asymmetric margins) — the
+ * same geometry PDF/DOCX actually produce.
  *
- * NOT interactive: no dragging, no click-to-set-indent, no state beyond
- * the container's own measured width (via ResizeObserver, a standard
- * browser API — no new dependency). Never touches editor content or
- * any formatting attribute.
+ * NOT interactive: no dragging, no click-to-set-indent.
  */
-export const WordRuler: React.FC<WordRulerProps> = ({ dir }) => {
+export const WordRuler: React.FC<WordRulerProps> = ({ dir, layout }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -32,7 +30,7 @@ export const WordRuler: React.FC<WordRulerProps> = ({ dir }) => {
     return () => observer.disconnect();
   }, []);
 
-  const metrics = calculateRulerMetrics(containerWidth);
+  const metrics = calculateRulerMetrics(containerWidth, layout, dir);
   const { startOffsetPx, endOffsetPx } = resolveVisualMarginOffsets(metrics, dir);
   const ticks = calculateInchTickPositions(metrics);
   const marginLeftPx = Math.min(startOffsetPx, endOffsetPx);

@@ -19,7 +19,7 @@ import {
   parseDocumentSettings,
   type DocumentStudioSettings,
 } from "../../tools/document-studio/utils/documentSettings";
-import { resolvePageLayout, puppeteerPaperFormat } from "../../tools/document-studio/utils/pageLayout";
+import { resolvePageLayout, puppeteerPaperFormat, resolvePhysicalMargins } from "../../tools/document-studio/utils/pageLayout";
 import { STUDIO_FONTS } from "../../tools/document-studio/utils/fontRegistry";
 
 let cachedFaces: Map<string, PdfFontFace> | null = null;
@@ -180,8 +180,9 @@ export async function POST(request: NextRequest) {
       margin: {
         top: `${layout.margins.topMm}mm`,
         bottom: `${layout.margins.bottomMm}mm`,
-        left: `${layout.margins.startMm}mm`,
-        right: `${layout.margins.endMm}mm`,
+        // Batch 16B — document-level direction only (not per-paragraph).
+        left: `${resolvePhysicalMargins(layout.margins, dir).leftMm}mm`,
+        right: `${resolvePhysicalMargins(layout.margins, dir).rightMm}mm`,
       },
       displayHeaderFooter: settings.headerFooter.headerEnabled || settings.headerFooter.footerEnabled,
       headerTemplate: settings.headerFooter.headerEnabled

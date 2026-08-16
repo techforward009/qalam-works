@@ -438,7 +438,7 @@ export function buildPdfHtml(
   // this body-level rule). Falls back to the previous hardcoded values
   // when no settings are supplied, so existing callers that don't pass
   // typography are unaffected.
-  const bodyFontSizePx = typography ? Math.round(typography.bodyFontSizePt * (96 / 72)) : 16;
+  const bodyFontSize = typography ? `${typography.bodyFontSizePt}pt` : "12pt";
   const bodyLineHeight = typography ? typography.lineHeight : 2;
 
   const html = `<!DOCTYPE html>
@@ -450,7 +450,7 @@ ${fontFaceCss(faces)}
 ${classRulesCss()}
   body {
     font-family: ${defaultFamily};
-    font-size: ${bodyFontSizePx}px;
+    font-size: ${bodyFontSize};
     line-height: ${bodyLineHeight};
     margin: 0;
     padding: 0;

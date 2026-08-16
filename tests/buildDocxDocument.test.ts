@@ -10,8 +10,12 @@ import { createDocxDocument, buildDocxBlob } from "../app/tools/document-studio/
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 
-async function extractDocumentXml(doc: DocNode, dir: "rtl" | "ltr"): Promise<string> {
-  const buffer = await Packer.toBuffer(createDocxDocument(doc, dir));
+async function extractDocumentXml(
+  doc: DocNode,
+  dir: "rtl" | "ltr",
+  settings?: import("../app/tools/document-studio/utils/documentSettings").DocumentStudioSettings
+): Promise<string> {
+  const buffer = await Packer.toBuffer(createDocxDocument(doc, dir, settings));
   const zip = await JSZip.loadAsync(buffer);
   const file = zip.file("word/document.xml");
   if (!file) throw new Error("word/document.xml missing from generated docx");
@@ -850,6 +854,8 @@ describe("Batch 16A — Book Manuscript preset produces real, distinct typograph
     expect(xml).toContain('w:line="432"');
     // 8mm first-line indent → (8/25.4)*1440 ≈ 454 twips
     expect(xml).toMatch(/w:firstLine="45[0-9]"/);
+    // 13pt body -> 26 half-points (Batch 16B — permanent assertion)
+    expect(xml).toContain('w:sz w:val="26"');
   });
 
   test("a manually-applied explicit run override (Amiri 20pt) survives switching document-wide preset/typography settings", async () => {
@@ -918,5 +924,54 @@ describe("Batch 16A.1 — DOCX explicit heading spacing overrides canonical defa
     // The canonical H2 default (before=360, after=200) must still appear for the sibling.
     expect(xml).toContain('w:before="360"');
     expect(xml).toContain('w:after="200"');
+  });
+});
+
+describe("Batch 16B — DOCX page geometry (size, orientation, physical margins)", () => {
+  test.each([
+    ["a4", "portrait" as const, 11906, 16838],
+    ["a5", "portrait" as const, 8391, 11906],
+    ["letter", "portrait" as const, 12240, 15840],
+    ["a4", "landscape" as const, 16838, 11906],
+  ] as const)("%s %s -> w:w=%s w:h=%s with matching w:orient", async (size, orientation, w, h) => {
+    const settings = { ...defaultDocumentSettings(), page: { ...defaultDocumentSettings().page, size, orientation } };
+    const doc: DocNode = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "x" }] }] };
+    const xml = await extractDocumentXml(doc, "ltr", settings);
+    expect(xml).toContain(`w:w="${w}"`);
+    expect(xml).toContain(`w:h="${h}"`);
+    expect(xml).toContain(`w:orient="${orientation}"`);
+  });
+
+  test("custom asymmetric RTL margins: start=20/end=40 -> physical right=20mm/left=40mm in OOXML twips", async () => {
+    const settings = {
+      ...defaultDocumentSettings(),
+      page: {
+        ...defaultDocumentSettings().page,
+        margins: { preset: "custom" as const, topMm: 15, bottomMm: 25, startMm: 20, endMm: 40 },
+      },
+    };
+    const doc: DocNode = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "x" }] }] };
+    const xml = await extractDocumentXml(doc, "rtl", settings);
+    // RTL: start(20mm) -> right, end(40mm) -> left
+    const rightTwips = Math.round((20 / 25.4) * 1440);
+    const leftTwips = Math.round((40 / 25.4) * 1440);
+    expect(xml).toContain(`w:right="${rightTwips}"`);
+    expect(xml).toContain(`w:left="${leftTwips}"`);
+  });
+
+  test("same custom margins in LTR map the opposite physical way", async () => {
+    const settings = {
+      ...defaultDocumentSettings(),
+      page: {
+        ...defaultDocumentSettings().page,
+        margins: { preset: "custom" as const, topMm: 15, bottomMm: 25, startMm: 20, endMm: 40 },
+      },
+    };
+    const doc: DocNode = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "x" }] }] };
+    const xml = await extractDocumentXml(doc, "ltr", settings);
+    const leftTwips = Math.round((20 / 25.4) * 1440);
+    const rightTwips = Math.round((40 / 25.4) * 1440);
+    expect(xml).toContain(`w:left="${leftTwips}"`);
+    expect(xml).toContain(`w:right="${rightTwips}"`);
   });
 });

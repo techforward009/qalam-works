@@ -33,7 +33,7 @@ import {
   validateSpacingPt,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
-import { resolvePageLayout, mmToPx } from "../utils/pageLayout";
+import { resolvePageLayout, mmToPx, resolvePhysicalMargins, MARGIN_MIN_MM, MARGIN_MAX_MM, clampMarginMm } from "../utils/pageLayout";
 import { BLOCK_STYLES, BLOCK_STYLE_IDS, isBlockStyleId, type BlockStyleId } from "../utils/documentStyles";
 import {
   applyPresetToSettings,
@@ -189,7 +189,11 @@ const PARAGRAPH_STYLE_ATTRS = {
     },
     renderHTML: (attributes: Record<string, unknown>) => {
       const v = typeof attributes.firstLineIndentMm === "number" ? validateIndentMm(attributes.firstLineIndentMm) : null;
-      return v !== null ? { "data-first-line-indent-mm": String(v) } : {};
+      // Batch 16B — visual preview via a real inline style (TipTap's
+      // mergeAttributes concatenates style fragments from multiple
+      // attrs, confirmed safe). Logical CSS property so it flips with
+      // the element's own dir automatically.
+      return v !== null && v > 0 ? { "data-first-line-indent-mm": String(v), style: `text-indent:${v}mm` } : {};
     },
   },
   indentStartMm: {
@@ -201,7 +205,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     },
     renderHTML: (attributes: Record<string, unknown>) => {
       const v = typeof attributes.indentStartMm === "number" ? validateIndentMm(attributes.indentStartMm) : null;
-      return v !== null ? { "data-indent-start-mm": String(v) } : {};
+      return v !== null ? { "data-indent-start-mm": String(v), style: `margin-inline-start:${v}mm` } : {};
     },
   },
   indentEndMm: {
@@ -213,7 +217,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     },
     renderHTML: (attributes: Record<string, unknown>) => {
       const v = typeof attributes.indentEndMm === "number" ? validateIndentMm(attributes.indentEndMm) : null;
-      return v !== null ? { "data-indent-end-mm": String(v) } : {};
+      return v !== null ? { "data-indent-end-mm": String(v), style: `margin-inline-end:${v}mm` } : {};
     },
   },
   spaceBeforePt: {
@@ -225,7 +229,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     },
     renderHTML: (attributes: Record<string, unknown>) => {
       const v = typeof attributes.spaceBeforePt === "number" ? validateSpacingPt(attributes.spaceBeforePt) : null;
-      return v !== null ? { "data-space-before-pt": String(v) } : {};
+      return v !== null ? { "data-space-before-pt": String(v), style: `margin-block-start:${v}pt` } : {};
     },
   },
   spaceAfterPt: {
@@ -237,7 +241,7 @@ const PARAGRAPH_STYLE_ATTRS = {
     },
     renderHTML: (attributes: Record<string, unknown>) => {
       const v = typeof attributes.spaceAfterPt === "number" ? validateSpacingPt(attributes.spaceAfterPt) : null;
-      return v !== null ? { "data-space-after-pt": String(v) } : {};
+      return v !== null ? { "data-space-after-pt": String(v), style: `margin-block-end:${v}pt` } : {};
     },
   },
 };
@@ -661,6 +665,14 @@ export default function DocumentStudioEditor() {
   const isUr = uiLanguage === "ur";
   const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
   const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => loadDocumentSettings());
+  // Batch 16B — computed once per render, shared by the page preview and
+  // the ruler so their boundaries always agree (single geometry source).
+  const pageLayout = resolvePageLayout({
+    size: documentSettings.page.size,
+    orientation: documentSettings.page.orientation,
+    marginPreset: documentSettings.page.margins.preset,
+    customMargins: documentSettings.page.margins,
+  });
 
   useEffect(() => {
     saveDocumentSettings(documentSettings);
@@ -1576,20 +1588,24 @@ export default function DocumentStudioEditor() {
           <div
             className="relative mx-auto w-full cursor-text rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
             style={(() => {
-              const layout = resolvePageLayout({
-                size: documentSettings.page.size,
-                orientation: documentSettings.page.orientation,
-                marginPreset: documentSettings.page.margins.preset,
-                customMargins: documentSettings.page.margins,
-              });
-              const maxW = Math.min(layout.widthMm * 3.2, 900);
+              const layout = pageLayout;
+              // Batch 16B fix — width and height previously used DIFFERENT
+              // px-per-mm scales (3.2 vs 2.2), distorting page proportions.
+              // One scale, capped so a landscape/A4-wide page doesn't
+              // overflow the available preview column.
+              const scale = Math.min(2.6, 860 / layout.widthMm);
+              const physical = resolvePhysicalMargins(layout.margins, dir);
               return {
-                maxWidth: `${maxW}px`,
-                minHeight: `${Math.max(420, layout.heightMm * 2.2)}px`,
-                paddingTop: `${Math.max(12, layout.margins.topMm * 1.5)}px`,
-                paddingBottom: `${Math.max(12, layout.margins.bottomMm * 1.5)}px`,
-                paddingLeft: `${Math.max(12, layout.margins.startMm * 1.5)}px`,
-                paddingRight: `${Math.max(12, layout.margins.endMm * 1.5)}px`,
+                maxWidth: `${layout.widthMm * scale}px`,
+                aspectRatio: `${layout.widthMm} / ${layout.heightMm}`,
+                minHeight: `${Math.max(320, layout.heightMm * scale)}px`,
+                // Batch 16B — page wrapper owns publishing margins;
+                // ProseMirror itself only has minimal safety padding (see
+                // its own CSS rule) to avoid a double-margin effect.
+                paddingTop: `${physical.topMm * scale}px`,
+                paddingBottom: `${physical.bottomMm * scale}px`,
+                paddingLeft: `${physical.leftMm * scale}px`,
+                paddingRight: `${physical.rightMm * scale}px`,
                 fontSize: `${documentSettings.typography.bodyFontSizePt}pt`,
                 lineHeight: documentSettings.typography.lineHeight,
               };
@@ -1940,7 +1956,7 @@ export default function DocumentStudioEditor() {
 
       {activeTab === "settings" && (
         <div className="mt-3 space-y-4 rounded-xl border border-[#1A3A2A]/10 bg-white p-4">
-          <WordRuler dir={dir} />
+          <WordRuler dir={dir} layout={pageLayout} />
           <div>
             <h3 className="text-sm font-semibold text-[#1A3A2A] mb-2">Document Style</h3>
             <PublishingPresetSelector selectedId={selectedPresetId} onChange={handlePresetChange} />
@@ -1997,6 +2013,31 @@ export default function DocumentStudioEditor() {
                 <option value="custom">Custom</option>
               </select>
             </label>
+            {documentSettings.page.margins.preset === "custom" && (
+              <div className="col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(["topMm", "bottomMm", "startMm", "endMm"] as const).map((key) => (
+                  <label key={key} className="text-xs font-medium text-gray-600">
+                    {key === "topMm" ? "Top" : key === "bottomMm" ? "Bottom" : key === "startMm" ? "Start" : "End"} (mm)
+                    <input
+                      type="number"
+                      min={MARGIN_MIN_MM}
+                      max={MARGIN_MAX_MM}
+                      className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
+                      value={documentSettings.page.margins[key]}
+                      onChange={(e) => {
+                        const raw = Number(e.target.value);
+                        const value = clampMarginMm(raw);
+                        setDocumentSettings((s) => ({
+                          ...s,
+                          page: { ...s.page, margins: { ...s.page.margins, [key]: value } },
+                        }));
+                        setPdfSummary(null);
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
             <label className="text-xs font-medium text-gray-600">
               Body size (pt)
               <select
@@ -2182,8 +2223,11 @@ export default function DocumentStudioEditor() {
            inline style="line-height:…" (from the real lineHeight attr
            above) naturally wins via normal CSS cascade specificity. */
         .qalam-editor-content.qalam-doc-page .ProseMirror {
-          min-height: 70vh;
-          padding: 1.75rem 1.25rem 2.5rem;
+          min-height: 60vh;
+          /* Batch 16B — page wrapper owns publishing margins (see its
+             inline style above); this is minimal caret/click safety
+             padding only, not a second publishing margin. */
+          padding: 0.5rem;
           outline: none;
           text-align: start;
           font-size: var(--qalam-body-size, 1.05rem);
@@ -2199,7 +2243,7 @@ export default function DocumentStudioEditor() {
         }
         @media (min-width: 640px) {
           .qalam-editor-content.qalam-doc-page .ProseMirror {
-            padding: 2.5rem 3rem 3rem;
+            padding: 0.75rem;
             font-size: var(--qalam-body-size, 1.1rem);
             line-height: var(--qalam-line-height, 1.9);
           }

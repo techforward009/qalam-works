@@ -100,6 +100,23 @@ export function resolvePageLayout(input: {
   };
 }
 
+export interface PhysicalMarginsMm {
+  topMm: number;
+  bottomMm: number;
+  leftMm: number;
+  rightMm: number;
+}
+
+/** Logical start/end → physical left/right. Single source of truth: editor preview, ruler, PDF, DOCX all call this. */
+export function resolvePhysicalMargins(margins: PageMarginsMm, dir: "rtl" | "ltr"): PhysicalMarginsMm {
+  return {
+    topMm: margins.topMm,
+    bottomMm: margins.bottomMm,
+    leftMm: dir === "rtl" ? margins.endMm : margins.startMm,
+    rightMm: dir === "rtl" ? margins.startMm : margins.endMm,
+  };
+}
+
 /** Puppeteer-compatible format string for common sizes (portrait only; landscape uses width/height). */
 export function puppeteerPaperFormat(size: PageSizeId): "A4" | "A5" | "Letter" {
   if (size === "a5") return "A5";

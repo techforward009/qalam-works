@@ -19,6 +19,7 @@ import {
   LevelFormat,
   LineRuleType,
   PageNumber,
+  PageOrientation,
   Packer,
   Paragraph,
   TextRun,
@@ -27,7 +28,7 @@ import {
 import type { DocNode, Direction } from "./extractPlainText";
 import { resolveFontSizePt, type DocumentStudioSettings, defaultDocumentSettings, validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
-import { resolvePageLayout, mmToTwips, ptToHalfPoints } from "./pageLayout";
+import { resolvePageLayout, resolvePageDimensions, mmToTwips, ptToHalfPoints, resolvePhysicalMargins } from "./pageLayout";
 import {
   directionForNode,
   resolveEditorFontFamily,
@@ -597,15 +598,26 @@ export function createDocxDocument(doc: DocNode, dir: Direction, settings: Docum
             });
             return {
               size: {
-                width: mmToTwips(layout.widthMm),
-                height: mmToTwips(layout.heightMm),
+                // Batch 16B — docx.js's own PageSize internally swaps
+                // width/height based on `orientation` (verified in its
+                // source: width uses height's value when orientation is
+                // landscape, and vice versa). Passing already-swapped
+                // dimensions here would double-swap. Always pass PORTRAIT
+                // base dimensions and let the library's real API do the
+                // swap for w:orient.
+                width: mmToTwips(resolvePageDimensions(layout.size, "portrait").widthMm),
+                height: mmToTwips(resolvePageDimensions(layout.size, "portrait").heightMm),
+                orientation: layout.orientation === "landscape" ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT,
               },
-              margin: {
-                top: mmToTwips(layout.margins.topMm),
-                bottom: mmToTwips(layout.margins.bottomMm),
-                left: mmToTwips(layout.margins.startMm),
-                right: mmToTwips(layout.margins.endMm),
-              },
+              margin: (() => {
+                const physical = resolvePhysicalMargins(layout.margins, dir);
+                return {
+                  top: mmToTwips(layout.margins.topMm),
+                  bottom: mmToTwips(layout.margins.bottomMm),
+                  left: mmToTwips(physical.leftMm),
+                  right: mmToTwips(physical.rightMm),
+                };
+              })(),
             };
           })(),
         },

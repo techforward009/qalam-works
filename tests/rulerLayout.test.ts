@@ -1,121 +1,97 @@
-import {
-  calculateRulerMetrics,
-  resolveVisualMarginOffsets,
-  calculateInchTickPositions,
-  twipsToInches,
-  PAGE_WIDTH_TWIPS,
-  PAGE_MARGIN_TWIPS,
-  TWIPS_PER_INCH,
-} from "../app/tools/document-studio/utils/rulerLayout";
+import { calculateRulerMetrics, resolveVisualMarginOffsets, calculateInchTickPositions, twipsToInches, TWIPS_PER_INCH } from "../app/tools/document-studio/utils/rulerLayout";
+import { resolvePageLayout, mmToTwips } from "../app/tools/document-studio/utils/pageLayout";
+
+const a4Normal = resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "normal" });
+const a5Narrow = resolvePageLayout({ size: "a5", orientation: "portrait", marginPreset: "narrow" });
+const a4Landscape = resolvePageLayout({ size: "a4", orientation: "landscape", marginPreset: "normal" });
+const customAsymmetric = resolvePageLayout({
+  size: "a4",
+  orientation: "portrait",
+  marginPreset: "custom",
+  customMargins: { topMm: 15, bottomMm: 25, startMm: 20, endMm: 40 },
+});
 
 describe("calculateRulerMetrics", () => {
-  test("computes a positive scale for a realistic container width", () => {
-    const metrics = calculateRulerMetrics(896);
-    expect(metrics.scale).toBeGreaterThan(0);
-    expect(metrics.pageWidthPx).toBe(896);
+  test("degenerate container width returns all-zero metrics", () => {
+    const m = calculateRulerMetrics(0, a4Normal, "ltr");
+    expect(m).toEqual({ scale: 0, pageWidthPx: 0, leftMarginPx: 0, rightMarginPx: 0, textAreaWidthPx: 0 });
   });
 
-  test("margin width scales proportionally to container width", () => {
-    const small = calculateRulerMetrics(896);
-    const large = calculateRulerMetrics(1792); // double the width
-    expect(large.marginWidthPx).toBeCloseTo(small.marginWidthPx * 2, 5);
+  test("A4 normal LTR: symmetric margins, positive text area", () => {
+    const m = calculateRulerMetrics(1000, a4Normal, "ltr");
+    expect(m.leftMarginPx).toBeCloseTo(m.rightMarginPx, 1);
+    expect(m.textAreaWidthPx).toBeGreaterThan(0);
+    expect(m.textAreaWidthPx).toBeCloseTo(1000 - m.leftMarginPx - m.rightMarginPx, 1);
   });
 
-  test("textAreaWidthPx equals pageWidthPx minus both margins", () => {
-    const metrics = calculateRulerMetrics(896);
-    expect(metrics.textAreaWidthPx).toBeCloseTo(metrics.pageWidthPx - metrics.marginWidthPx * 2, 5);
+  test("A5 narrow uses a smaller page width than A4", () => {
+    const mA4 = calculateRulerMetrics(1000, a4Normal, "ltr");
+    const mA5 = calculateRulerMetrics(1000, a5Narrow, "ltr");
+    // Same container width but A5's real page is narrower, so scale differs.
+    expect(mA5.scale).not.toBeCloseTo(mA4.scale, 5);
   });
 
-  test("returns all-zero metrics for a zero container width (no NaN/Infinity)", () => {
-    const metrics = calculateRulerMetrics(0);
-    expect(metrics).toEqual({ scale: 0, pageWidthPx: 0, marginWidthPx: 0, textAreaWidthPx: 0 });
-  });
-
-  test("returns all-zero metrics for a negative container width", () => {
-    const metrics = calculateRulerMetrics(-100);
-    expect(metrics.scale).toBe(0);
-  });
-
-  test("uses the real A4/margin constants by default", () => {
-    const metrics = calculateRulerMetrics(1000);
-    const expectedScale = 1000 / PAGE_WIDTH_TWIPS;
-    expect(metrics.scale).toBeCloseTo(expectedScale, 10);
-    expect(metrics.marginWidthPx).toBeCloseTo(PAGE_MARGIN_TWIPS * expectedScale, 5);
-  });
-
-  test("accepts custom page/margin dimensions", () => {
-    const metrics = calculateRulerMetrics(1000, 1000, 100);
-    expect(metrics.scale).toBe(1);
-    expect(metrics.marginWidthPx).toBe(100);
+  test("A4 landscape has a wider page (in mm) than portrait, reflected in a smaller scale for the same container", () => {
+    const mPortrait = calculateRulerMetrics(1000, a4Normal, "ltr");
+    const mLandscape = calculateRulerMetrics(1000, a4Landscape, "ltr");
+    expect(mLandscape.scale).toBeLessThan(mPortrait.scale);
   });
 });
 
-describe("resolveVisualMarginOffsets — RTL/LTR direction handling", () => {
-  test("LTR: start offset is the LEFT margin (smaller value)", () => {
-    const metrics = calculateRulerMetrics(896);
-    const offsets = resolveVisualMarginOffsets(metrics, "ltr");
-    expect(offsets.startOffsetPx).toBeCloseTo(metrics.marginWidthPx, 5);
-    expect(offsets.endOffsetPx).toBeCloseTo(metrics.pageWidthPx - metrics.marginWidthPx, 5);
+describe("asymmetric margins — LTR vs RTL physical mapping", () => {
+  test("LTR: start(20mm) -> left, end(40mm) -> right", () => {
+    const m = calculateRulerMetrics(1000, customAsymmetric, "ltr");
+    const expectedLeftPx = mmToTwips(20) * m.scale;
+    const expectedRightPx = mmToTwips(40) * m.scale;
+    expect(m.leftMarginPx).toBeCloseTo(expectedLeftPx, 1);
+    expect(m.rightMarginPx).toBeCloseTo(expectedRightPx, 1);
   });
 
-  test("RTL: start offset is the RIGHT margin (mirrored from LTR)", () => {
-    const metrics = calculateRulerMetrics(896);
-    const ltr = resolveVisualMarginOffsets(metrics, "ltr");
-    const rtl = resolveVisualMarginOffsets(metrics, "rtl");
-    expect(rtl.startOffsetPx).toBeCloseTo(ltr.endOffsetPx, 5);
-    expect(rtl.endOffsetPx).toBeCloseTo(ltr.startOffsetPx, 5);
-  });
-
-  test("with symmetric margins, LTR and RTL produce the same VISUAL positions (only the start/end labeling differs)", () => {
-    const metrics = calculateRulerMetrics(896);
-    const ltr = resolveVisualMarginOffsets(metrics, "ltr");
-    const rtl = resolveVisualMarginOffsets(metrics, "rtl");
-    const ltrPositions = [ltr.startOffsetPx, ltr.endOffsetPx].sort();
-    const rtlPositions = [rtl.startOffsetPx, rtl.endOffsetPx].sort();
-    expect(ltrPositions).toEqual(rtlPositions);
-  });
-
-  test("handles degenerate (zero) metrics without producing NaN", () => {
-    const metrics = calculateRulerMetrics(0);
-    const offsets = resolveVisualMarginOffsets(metrics, "ltr");
-    expect(offsets.startOffsetPx).toBe(0);
-    expect(offsets.endOffsetPx).toBe(0);
+  test("RTL: start(20mm) -> right, end(40mm) -> left (physically mirrored from LTR)", () => {
+    const m = calculateRulerMetrics(1000, customAsymmetric, "rtl");
+    const expectedLeftPx = mmToTwips(40) * m.scale;
+    const expectedRightPx = mmToTwips(20) * m.scale;
+    expect(m.leftMarginPx).toBeCloseTo(expectedLeftPx, 1);
+    expect(m.rightMarginPx).toBeCloseTo(expectedRightPx, 1);
   });
 });
 
-describe("twipsToInches", () => {
-  test("converts exactly 1440 twips to 1 inch", () => {
+describe("resolveVisualMarginOffsets", () => {
+  test("LTR: start offset is the left margin", () => {
+    const m = calculateRulerMetrics(1000, customAsymmetric, "ltr");
+    const offsets = resolveVisualMarginOffsets(m, "ltr");
+    expect(offsets.startOffsetPx).toBeCloseTo(m.leftMarginPx, 1);
+    expect(offsets.endOffsetPx).toBeCloseTo(m.pageWidthPx - m.rightMarginPx, 1);
+  });
+
+  test("RTL: start offset is on the right side of the ruler", () => {
+    const m = calculateRulerMetrics(1000, customAsymmetric, "rtl");
+    const offsets = resolveVisualMarginOffsets(m, "rtl");
+    expect(offsets.startOffsetPx).toBeCloseTo(m.pageWidthPx - m.rightMarginPx, 1);
+    expect(offsets.endOffsetPx).toBeCloseTo(m.leftMarginPx, 1);
+  });
+});
+
+describe("twipsToInches / calculateInchTickPositions", () => {
+  test("converts twips to inches", () => {
     expect(twipsToInches(TWIPS_PER_INCH)).toBe(1);
+    expect(twipsToInches(TWIPS_PER_INCH * 2)).toBe(2);
   });
 
-  test("A4 width in twips converts to approximately 8.27 inches", () => {
-    expect(twipsToInches(PAGE_WIDTH_TWIPS)).toBeCloseTo(8.268, 2);
+  test("zero-scale metrics produce no ticks", () => {
+    const m = calculateRulerMetrics(0, a4Normal, "ltr");
+    expect(calculateInchTickPositions(m)).toEqual([]);
   });
 
-  test("zero twips converts to zero inches", () => {
-    expect(twipsToInches(0)).toBe(0);
-  });
-});
-
-describe("calculateInchTickPositions", () => {
-  test("produces evenly-spaced ticks starting at zero", () => {
-    const metrics = calculateRulerMetrics(1440, 1440, 0); // 1 twip = 1px, page is exactly 1440 twips wide
-    const ticks = calculateInchTickPositions(metrics);
+  test("ticks are evenly spaced and start at 0", () => {
+    const m = calculateRulerMetrics(1000, a4Normal, "ltr");
+    const ticks = calculateInchTickPositions(m);
     expect(ticks[0]).toBe(0);
-    expect(ticks.length).toBeGreaterThan(0);
-  });
-
-  test("tick spacing equals one inch in pixels", () => {
-    const metrics = calculateRulerMetrics(2880, 2880, 0); // exactly 2 inches wide
-    const ticks = calculateInchTickPositions(metrics);
-    if (ticks.length >= 2) {
+    if (ticks.length > 1) {
       const spacing = ticks[1] - ticks[0];
-      expect(spacing).toBeCloseTo(TWIPS_PER_INCH * metrics.scale, 5);
+      for (let i = 2; i < ticks.length; i++) {
+        expect(ticks[i] - ticks[i - 1]).toBeCloseTo(spacing, 5);
+      }
     }
-  });
-
-  test("returns an empty array for degenerate (zero-scale) metrics, not a crash", () => {
-    const metrics = calculateRulerMetrics(0);
-    expect(calculateInchTickPositions(metrics)).toEqual([]);
   });
 });

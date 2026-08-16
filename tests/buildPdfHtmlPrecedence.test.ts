@@ -73,7 +73,7 @@ describe("Batch 16A.1 — PDF block-style size precedence", () => {
       content: [{ type: "paragraph", content: [{ type: "text", text: "Plain body text" }] }],
     };
     const { html } = buildPdfHtml(doc, "ltr", emptyFonts, settings.typography);
-    expect(html).toMatch(/font-size:\s*17px/); // 13pt -> 17px, on <body>
+    expect(html).toMatch(/font-size:\s*13pt/); // Batch 16B — canonical pt unit, not rounded px
     const spanMatch = html.match(/<span[^>]*>Plain body text<\/span>/);
     expect(spanMatch![0]).not.toMatch(/font-size/); // no per-span override needed
   });

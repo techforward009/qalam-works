@@ -140,3 +140,18 @@ describe("normalize preserves new marks", () => {
     expect(out.content![0].attrs?.lineHeight).toBe(1.8);
   });
 });
+
+describe("Batch 16B — settings persistence round-trip", () => {
+  test("A5 landscape with custom asymmetric margins survives JSON serialize/parse unchanged", () => {
+    const original = {
+      ...defaultDocumentSettings(),
+      page: {
+        size: "a5",
+        orientation: "landscape",
+        margins: { preset: "custom", topMm: 15, bottomMm: 25, startMm: 20, endMm: 40 },
+      },
+    };
+    const roundTripped = parseDocumentSettings(JSON.parse(JSON.stringify(original)));
+    expect(roundTripped.page).toEqual(original.page);
+  });
+});
