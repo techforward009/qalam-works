@@ -50,8 +50,8 @@ export default function ReviewFilterBar({
         })}
       </div>
 
-      {/* Navigation row */}
-      <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+      {/* Navigation row — sticky so Next remains reachable after scrolling */}
+      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm -mx-4 px-4 py-1.5 flex items-center justify-between gap-2 text-xs text-gray-500">
         <span>Showing {visibleCount} of {totalSegments}</span>
         <button
           type="button"
