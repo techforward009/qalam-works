@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../../lib/language-context";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { Slice, Fragment as pmFragment } from "@tiptap/pm/model";
+// Alias to avoid name collision with React Fragment
+const pmSlice = Slice;
 import StarterKit from "@tiptap/starter-kit";
 import Paragraph from "@tiptap/extension-paragraph";
 import Heading from "@tiptap/extension-heading";
@@ -69,7 +72,7 @@ import {
   type SuggestionReviewState,
 } from "../utils/suggestionReview";
 import { buildDocxBlob } from "../utils/buildDocxDocument";
-import { plainTextToDocNode, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
+import { plainTextToDocNode, plainTextToDocNodeWithDir, detectBlockDirection, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
 import { QualityAuditPanel } from "./QualityAuditPanel";
 import { DocumentStatsBar } from "./DocumentStatsBar";
 import { SuggestionsPanel } from "./SuggestionsPanel";
@@ -855,6 +858,15 @@ export default function DocumentStudioEditor() {
         dir: "rtl",
         class: "focus:outline-none",
       },
+      // Per-paragraph direction on paste: plain-text pastes (no HTML) come
+      // through clipboardTextParser. We convert to a DocNode where each
+      // paragraph carries its own `dir` via first-strong detection, then
+      // wrap it in a ProseMirror Slice so TipTap inserts it verbatim.
+      clipboardTextParser: (text, _$context, _plain, view) => {
+        const docNode = plainTextToDocNodeWithDir(text, dir);
+        const pmDoc = view.state.schema.nodeFromJSON(docNode);
+        return new pmSlice(pmFragment.from(pmDoc.content), 0, 0);
+      },
     },
     onUpdate: ({ editor }) => {
       if (hasAuditReportRef.current) {
@@ -1093,7 +1105,7 @@ export default function DocumentStudioEditor() {
       // basis. .txt files skip this entirely; their blank lines and
       // trailing newline (if any) are already meaningful as typed.
       const text = isDocxFile ? normalizeDocxParagraphBreaks(rawText) : rawText;
-      const docNode = plainTextToDocNode(text);
+      const docNode = plainTextToDocNodeWithDir(text, dir);
       editor?.commands.setContent(docNode);
 
       // Same full-state reset as New Document — the previous document's

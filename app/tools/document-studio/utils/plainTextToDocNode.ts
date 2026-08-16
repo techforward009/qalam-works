@@ -67,3 +67,52 @@ export function normalizeDocxParagraphBreaks(rawText: string): string {
   const collapsed = rawText.replace(/\n\n/g, "\n");
   return collapsed.replace(/\n$/, "");
 }
+
+/**
+ * Detects a single paragraph's base direction using the Unicode
+ * first-strong algorithm: the first character that is unambiguously RTL
+ * (Arabic/Hebrew script etc.) or unambiguously LTR (Latin/Greek etc.)
+ * determines the direction. Neutral characters (digits, punctuation,
+ * whitespace) are skipped. Returns fallbackDir when no strong character
+ * is found (e.g. a purely numeric or empty paragraph).
+ *
+ * This is the correct algorithm for per-paragraph direction assignment —
+ * it matches the HTML `dir="auto"` spec and avoids the character-count
+ * majority approach, which can mis-classify mixed paragraphs that begin
+ * with a short Latin phrase followed by lengthy Arabic/Urdu content.
+ */
+export function detectBlockDirection(
+  text: string,
+  fallbackDir: "rtl" | "ltr" = "rtl"
+): "rtl" | "ltr" {
+  // Unicode ranges for strongly RTL scripts (Arabic, Hebrew, Syriac, Thaana, etc.)
+  const RTL_STRONG = /[\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+  // Unicode ranges for strongly LTR scripts (Latin, Greek, Cyrillic, etc.)
+  const LTR_STRONG = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF]/;
+  for (const ch of text) {
+    if (RTL_STRONG.test(ch)) return "rtl";
+    if (LTR_STRONG.test(ch)) return "ltr";
+  }
+  return fallbackDir;
+}
+
+/**
+ * Like plainTextToDocNode but assigns per-paragraph `dir` using first-strong
+ * detection. Use this for paste/import contexts where each paragraph may
+ * belong to a different script. The document-level fallbackDir is used for
+ * empty/neutral paragraphs.
+ */
+export function plainTextToDocNodeWithDir(
+  text: string,
+  fallbackDir: "rtl" | "ltr" = "rtl"
+): import("./extractPlainText").DocNode {
+  const lines = text.split(/\r\n|\r|\n/);
+  return {
+    type: "doc",
+    content: lines.map((line) => ({
+      type: "paragraph",
+      attrs: { dir: detectBlockDirection(line, fallbackDir) },
+      content: line.length > 0 ? [{ type: "text", text: line }] : undefined,
+    })),
+  };
+}
