@@ -858,14 +858,27 @@ export default function DocumentStudioEditor() {
         dir: "rtl",
         class: "focus:outline-none",
       },
-      // Per-paragraph direction on paste: plain-text pastes (no HTML) come
-      // through clipboardTextParser. We convert to a DocNode where each
-      // paragraph carries its own `dir` via first-strong detection, then
-      // wrap it in a ProseMirror Slice so TipTap inserts it verbatim.
-      clipboardTextParser: (text, _$context, _plain, view) => {
-        const docNode = plainTextToDocNodeWithDir(text, dir);
-        const pmDoc = view.state.schema.nodeFromJSON(docNode);
-        return new pmSlice(pmFragment.from(pmDoc.content), 0, 0);
+      transformPasted: (slice) => {
+        if (!slice.content.size) return slice;
+
+        function assignDir(node: import("@tiptap/pm/model").Node): import("@tiptap/pm/model").Node {
+          if (!node.isTextblock) {
+            const mapped = node.content.content.map(assignDir);
+            return node.copy(pmFragment.from(mapped));
+          }
+          const text = node.textContent;
+          if (!text.trim()) return node;
+          // Always re-detect direction from content. The schema default is
+          // "rtl", so we cannot distinguish "user-explicitly-set" from
+          // "schema-default". Re-detecting for non-empty blocks is safe
+          // because: (1) direction is derivable from content, (2) explicit
+          // user textAlign is preserved separately (we only touch dir).
+          const detectedDir = detectBlockDirection(text, dir);
+          return node.type.create({ ...node.attrs, dir: detectedDir }, node.content, node.marks);
+        }
+
+        const nodes = slice.content.content.map(assignDir);
+        return new pmSlice(pmFragment.from(nodes), slice.openStart, slice.openEnd);
       },
     },
     onUpdate: ({ editor }) => {
