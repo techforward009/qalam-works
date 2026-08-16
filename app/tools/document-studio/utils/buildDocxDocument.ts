@@ -21,11 +21,14 @@ import {
   PageNumber,
   PageOrientation,
   Packer,
+  TabStopPosition,
+  TabStopType,
   Paragraph,
   TextRun,
   type ParagraphChild,
 } from "docx";
 import type { DocNode, Direction } from "./extractPlainText";
+import { deriveDocumentTitle } from "./extractPlainText";
 import { resolveFontSizePt, type DocumentStudioSettings, defaultDocumentSettings, validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
 import { resolvePageLayout, resolvePageDimensions, mmToTwips, ptToHalfPoints, resolvePhysicalMargins } from "./pageLayout";
@@ -549,23 +552,59 @@ function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, r
 // "Qalam Works" even when a real H1 existed further down. Now searches
 // the entire top-level node list and uses the FIRST H1 found anywhere,
 // preserving the same "Qalam Works" fallback when none exists at all.
-function deriveDocumentTitle(doc: DocNode): string {
-  for (const node of doc.content ?? []) {
-    if (node.type === "heading" && node.attrs?.level === 1) {
-      const text = (node.content ?? [])
-        .filter((n) => n.type === "text" && typeof n.text === "string")
-        .map((n) => n.text)
-        .join("");
-      if (text.trim().length > 0) return text;
-    }
-  }
-  return "Qalam Works";
-}
-
 /**
  * Sync, pure mapping from a TipTap-shaped DocNode to a docx.Document.
  * No I/O — safe to call directly in tests and assert on the result.
  */
+/** Resolves an effective DOCX font family through fontRegistry for header/footer text. */
+function resolveHFFont(text: string, docDir: Direction, typography: DocumentStudioSettings["typography"]): string {
+  const isLatin = isPureLatinText(text);
+  if (isLatin) return resolveEditorFontFamily(getFontById(typography.defaultLtrFontId).editorFamily, "ltr").docxFamily;
+  return resolveEditorFontFamily(getFontById(typography.defaultRtlFontId).editorFamily, docDir).docxFamily;
+}
+
+/** Builds the DOCX footer paragraph supporting footerText + pageNumbers together. */
+function buildDocxFooterParagraph(settings: DocumentStudioSettings, dir: Direction): Paragraph {
+  const { footerText, pageNumbers } = settings.headerFooter;
+  const hasText = footerText.trim().length > 0;
+  const hasNumbers = pageNumbers !== "none";
+  const font = resolveHFFont(footerText || "x", dir, settings.typography);
+  const SZ = 18;
+
+  if (!hasText && !hasNumbers) {
+    return new Paragraph({ children: [new TextRun({ text: "", font, size: SZ })] });
+  }
+  if (hasText && !hasNumbers) {
+    return new Paragraph({
+      alignment: AlignmentType.CENTER,
+      bidirectional: !isPureLatinText(footerText) && dir === "rtl",
+      children: [new TextRun({ text: footerText, font, size: SZ })],
+    });
+  }
+  // Footers with page numbers use tab layout: text at start side, number at end side.
+  const pageRun =
+    pageNumbers === "current"
+      ? new TextRun({ children: [PageNumber.CURRENT], font, size: SZ })
+      : new TextRun({ children: [PageNumber.CURRENT, " / ", PageNumber.TOTAL_PAGES], font, size: SZ });
+
+  if (!hasText) {
+    return new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [pageRun],
+    });
+  }
+  // Text + numbers: text flush start, number flush end via tab stop.
+  return new Paragraph({
+    bidirectional: !isPureLatinText(footerText) && dir === "rtl",
+    tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+    children: [
+      new TextRun({ text: footerText, font, size: SZ }),
+      new TextRun({ text: "\t", font, size: SZ }),
+      pageRun,
+    ],
+  });
+}
+
 export function createDocxDocument(doc: DocNode, dir: Direction, settings: DocumentStudioSettings = defaultDocumentSettings()): Document {
   const ctx: NumberingContext = { configs: [], counter: 0 };
   const children: Paragraph[] = [];
@@ -627,26 +666,24 @@ export function createDocxDocument(doc: DocNode, dir: Direction, settings: Docum
                 children: [
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
-                    bidirectional: isPureLatinText(
+                    bidirectional: !isPureLatinText(
                       settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
                         ? settings.headerFooter.headerText
                         : title
-                    )
-                      ? false
-                      : dir === "rtl",
+                    ) && dir === "rtl",
                     children: [
                       new TextRun({
                         text:
                           settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
                             ? settings.headerFooter.headerText
                             : title,
-                        font: isPureLatinText(
+                        font: resolveHFFont(
                           settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
                             ? settings.headerFooter.headerText
-                            : title
-                        )
-                          ? FONT_LTR
-                          : fontFor(dir),
+                            : title,
+                          dir,
+                          settings.typography
+                        ),
                         size: 18,
                       }),
                     ],
@@ -658,30 +695,7 @@ export function createDocxDocument(doc: DocNode, dir: Direction, settings: Docum
         footers: settings.headerFooter.footerEnabled
           ? {
               default: new Footer({
-                children: [
-                  new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                      settings.headerFooter.pageNumbers === "none"
-                        ? new TextRun({
-                            text: settings.headerFooter.footerText || "",
-                            font: fontFor(dir),
-                            size: 18,
-                          })
-                        : settings.headerFooter.pageNumbers === "current"
-                          ? new TextRun({
-                              children: [PageNumber.CURRENT],
-                              font: fontFor(dir),
-                              size: 18,
-                            })
-                          : new TextRun({
-                              children: [PageNumber.CURRENT, " / ", PageNumber.TOTAL_PAGES],
-                              font: fontFor(dir),
-                              size: 18,
-                            }),
-                    ],
-                  }),
-                ],
+                children: [buildDocxFooterParagraph(settings, dir)],
               }),
             }
           : undefined,

@@ -2100,53 +2100,92 @@ export default function DocumentStudioEditor() {
                 ))}
               </select>
             </label>
-            <label className="text-xs font-medium text-gray-600">
-              Page numbers
-              <select
-                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
-                value={documentSettings.headerFooter.pageNumbers}
-                onChange={(e) => {
-                  const pageNumbers = e.target.value as "none" | "current" | "current-total";
-                  setDocumentSettings((s) => ({
-                    ...s,
-                    headerFooter: { ...s.headerFooter, pageNumbers },
-                  }));
-                  setPdfSummary(null);
-                }}
-              >
-                <option value="none">None</option>
-                <option value="current">Current</option>
-                <option value="current-total">Current / Total</option>
-              </select>
-            </label>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={documentSettings.headerFooter.headerEnabled}
-                onChange={(e) =>
-                  setDocumentSettings((s) => ({
-                    ...s,
-                    headerFooter: { ...s.headerFooter, headerEnabled: e.target.checked },
-                  }))
-                }
-              />
-              Header
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={documentSettings.headerFooter.footerEnabled}
-                onChange={(e) =>
-                  setDocumentSettings((s) => ({
-                    ...s,
-                    headerFooter: { ...s.headerFooter, footerEnabled: e.target.checked },
-                  }))
-                }
-              />
-              Footer
-            </label>
+            {/* Header settings */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={documentSettings.headerFooter.headerEnabled}
+                  onChange={(e) => {
+                    setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, headerEnabled: e.target.checked } }));
+                    setPdfSummary(null);
+                  }}
+                />
+                {isUr ? "ہیڈر" : "Header"}
+              </label>
+              {documentSettings.headerFooter.headerEnabled && (
+                <>
+                  <select
+                    className="w-full h-9 rounded-md border border-gray-200 bg-white px-2 text-xs"
+                    value={documentSettings.headerFooter.headerMode}
+                    onChange={(e) => {
+                      setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, headerMode: e.target.value as "auto-title" | "custom" } }));
+                      setPdfSummary(null);
+                    }}
+                  >
+                    <option value="auto-title">{isUr ? "خودکار عنوان" : "Auto title"}</option>
+                    <option value="custom">{isUr ? "حسب ضرورت" : "Custom"}</option>
+                  </select>
+                  {documentSettings.headerFooter.headerMode === "custom" && (
+                    <input
+                      type="text"
+                      maxLength={120}
+                      placeholder={isUr ? "ہیڈر متن…" : "Header text…"}
+                      className="w-full h-9 rounded-md border border-gray-200 px-2 text-xs"
+                      value={documentSettings.headerFooter.headerText}
+                      onChange={(e) => {
+                        setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, headerText: e.target.value } }));
+                        setPdfSummary(null);
+                      }}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+            {/* Footer settings */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={documentSettings.headerFooter.footerEnabled}
+                  onChange={(e) => {
+                    setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, footerEnabled: e.target.checked } }));
+                    setPdfSummary(null);
+                  }}
+                />
+                {isUr ? "فوٹر" : "Footer"}
+              </label>
+              {documentSettings.headerFooter.footerEnabled && (
+                <>
+                  <input
+                    type="text"
+                    maxLength={120}
+                    placeholder={isUr ? "فوٹر متن…" : "Footer text…"}
+                    className="w-full h-9 rounded-md border border-gray-200 px-2 text-xs"
+                    value={documentSettings.headerFooter.footerText}
+                    onChange={(e) => {
+                      setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, footerText: e.target.value } }));
+                      setPdfSummary(null);
+                    }}
+                  />
+                  <select
+                    className="w-full h-9 rounded-md border border-gray-200 bg-white px-2 text-xs"
+                    value={documentSettings.headerFooter.pageNumbers}
+                    onChange={(e) => {
+                      const pageNumbers = e.target.value as "none" | "current" | "current-total";
+                      setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, pageNumbers } }));
+                      setPdfSummary(null);
+                    }}
+                  >
+                    <option value="none">{isUr ? "صفحہ نمبر نہیں" : "No page numbers"}</option>
+                    <option value="current">{isUr ? "موجودہ صفحہ" : "Current page"}</option>
+                    <option value="current-total">{isUr ? "موجودہ / کل" : "Current / Total"}</option>
+                  </select>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

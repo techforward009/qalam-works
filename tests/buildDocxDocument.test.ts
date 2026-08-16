@@ -975,3 +975,82 @@ describe("Batch 16B — DOCX page geometry (size, orientation, physical margins)
     expect(xml).toContain(`w:right="${rightTwips}"`);
   });
 });
+
+describe("Batch 16C — DOCX header/footer OOXML", () => {
+  async function extractHdrXml(doc: DocNode, dir: "ltr" | "rtl", settings: ReturnType<typeof defaultDocumentSettings>) {
+    const buffer = await Packer.toBuffer(createDocxDocument(doc, dir, settings));
+    const zip = await JSZip.loadAsync(buffer);
+    // Word stores header in word/header1.xml (or header2.xml), relationships tell us which
+    const hdr = zip.file("word/header1.xml") ?? zip.file("word/header2.xml");
+    const ftr = zip.file("word/footer1.xml") ?? zip.file("word/footer2.xml");
+    return { hdr: hdr ? await hdr.async("text") : null, ftr: ftr ? await ftr.async("text") : null };
+  }
+
+  const docWithH1: DocNode = {
+    type: "doc",
+    content: [{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "My Report" }] }],
+  };
+
+  test("no header when disabled: word/header*.xml absent", async () => {
+    const settings = { ...defaultDocumentSettings(), headerFooter: { ...defaultDocumentSettings().headerFooter, headerEnabled: false, footerEnabled: false } };
+    const buffer = await Packer.toBuffer(createDocxDocument(docWithH1, "ltr", settings));
+    const zip = await JSZip.loadAsync(buffer);
+    const hdr = zip.file("word/header1.xml");
+    expect(hdr).toBeNull();
+  });
+
+  test("auto-title header: derived H1 appears in header XML", async () => {
+    const settings = { ...defaultDocumentSettings(), headerFooter: { ...defaultDocumentSettings().headerFooter, headerEnabled: true, headerMode: "auto-title" as const } };
+    const { hdr } = await extractHdrXml(docWithH1, "ltr", settings);
+    expect(hdr).toContain("My Report");
+  });
+
+  test("custom header: custom text appears in header XML", async () => {
+    const settings = { ...defaultDocumentSettings(), headerFooter: { ...defaultDocumentSettings().headerFooter, headerEnabled: true, headerMode: "custom" as const, headerText: "Custom Header" } };
+    const { hdr } = await extractHdrXml(docWithH1, "ltr", settings);
+    expect(hdr).toContain("Custom Header");
+  });
+
+  test("RTL custom header: bidirectional paragraph", async () => {
+    const settings = { ...defaultDocumentSettings(), headerFooter: { ...defaultDocumentSettings().headerFooter, headerEnabled: true, headerMode: "custom" as const, headerText: "قلم ورکس" } };
+    const { hdr } = await extractHdrXml(docWithH1, "rtl", settings);
+    expect(hdr).toContain("قلم ورکس");
+    expect(hdr).toContain("w:bidi");
+  });
+
+  test("footer text only: text present, no PAGE field", async () => {
+    const settings = { ...defaultDocumentSettings(), headerFooter: { ...defaultDocumentSettings().headerFooter, footerEnabled: true, footerText: "Confidential", pageNumbers: "none" as const } };
+    const { ftr } = await extractHdrXml(docWithH1, "ltr", settings);
+    expect(ftr).toContain("Confidential");
+    expect(ftr).not.toContain("PAGE");
+  });
+
+  test("current page number: PAGE field present, NUMPAGES absent", async () => {
+    const settings = { ...defaultDocumentSettings(), headerFooter: { ...defaultDocumentSettings().headerFooter, footerEnabled: true, footerText: "", pageNumbers: "current" as const } };
+    const { ftr } = await extractHdrXml(docWithH1, "ltr", settings);
+    expect(ftr).toContain("PAGE");
+    expect(ftr).not.toContain("NUMPAGES");
+  });
+
+  test("current/total: both PAGE and NUMPAGES fields present", async () => {
+    const settings = { ...defaultDocumentSettings(), headerFooter: { ...defaultDocumentSettings().headerFooter, footerEnabled: true, footerText: "", pageNumbers: "current-total" as const } };
+    const { ftr } = await extractHdrXml(docWithH1, "ltr", settings);
+    expect(ftr).toContain("PAGE");
+    expect(ftr).toContain("NUMPAGES");
+  });
+
+  test("footer text + current/total: both text and page fields in same footer", async () => {
+    const settings = { ...defaultDocumentSettings(), headerFooter: { ...defaultDocumentSettings().headerFooter, footerEnabled: true, footerText: "Confidential", pageNumbers: "current-total" as const } };
+    const { ftr } = await extractHdrXml(docWithH1, "ltr", settings);
+    expect(ftr).toContain("Confidential");
+    expect(ftr).toContain("PAGE");
+    expect(ftr).toContain("NUMPAGES");
+  });
+
+  test("footer disabled: word/footer*.xml absent", async () => {
+    const settings = { ...defaultDocumentSettings(), headerFooter: { ...defaultDocumentSettings().headerFooter, headerEnabled: false, footerEnabled: false } };
+    const buffer = await Packer.toBuffer(createDocxDocument(docWithH1, "ltr", settings));
+    const zip = await JSZip.loadAsync(buffer);
+    expect(zip.file("word/footer1.xml")).toBeNull();
+  });
+});

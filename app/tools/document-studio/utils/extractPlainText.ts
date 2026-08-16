@@ -151,3 +151,20 @@ export function createDocumentAnalysisContext(doc: DocNode): DocumentAnalysisCon
     joinedText: blocks.join("\n"),
   });
 }
+
+/**
+ * Derives a document title from the first H1, falling back to "Qalam Works".
+ * Single canonical source used by both PDF route and DOCX builder.
+ */
+export function deriveDocumentTitle(doc: DocNode): string {
+  for (const node of doc.content ?? []) {
+    if (node.type === "heading" && node.attrs?.level === 1) {
+      const text = (node.content ?? [])
+        .filter((n) => n.type === "text" && typeof n.text === "string")
+        .map((n) => n.text as string)
+        .join("");
+      if (text.trim().length > 0) return text;
+    }
+  }
+  return "Qalam Works";
+}

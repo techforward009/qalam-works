@@ -14,6 +14,7 @@ import {
   type PdfFontFace,
 } from "../../tools/document-studio/utils/buildPdfHtml";
 import type { DocNode, Direction } from "../../tools/document-studio/utils/extractPlainText";
+import { deriveDocumentTitle } from "../../tools/document-studio/utils/extractPlainText";
 import {
   defaultDocumentSettings,
   parseDocumentSettings,
@@ -21,6 +22,59 @@ import {
 } from "../../tools/document-studio/utils/documentSettings";
 import { resolvePageLayout, puppeteerPaperFormat, resolvePhysicalMargins } from "../../tools/document-studio/utils/pageLayout";
 import { STUDIO_FONTS } from "../../tools/document-studio/utils/fontRegistry";
+
+// ── PDF header/footer template helpers ───────────────────────────────────────
+// Chromium header/footer templates run in a separate renderer context;
+// they do NOT automatically share page body styles or embedded fonts.
+// We use system-safe fonts (Arial/Tahoma for Arabic script, sans-serif
+// otherwise) and `dir="auto"` for direction. No remote resources are fetched.
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/** Deterministic safe direction: Latin-only text is always ltr. */
+function safeDir(text: string): string {
+  return /^[\x20-\x7E]*$/.test(text) ? "ltr" : "auto";
+}
+
+const HF_STYLE = "font-family:Arial,Tahoma,sans-serif;font-size:9px;color:#444;width:100%;padding:0 10mm;box-sizing:border-box;";
+
+export function buildPdfHeaderTemplate(settings: DocumentStudioSettings, doc: DocNode): string {
+  if (!settings.headerFooter.headerEnabled) return "<div></div>";
+  const text =
+    settings.headerFooter.headerMode === "custom" && settings.headerFooter.headerText
+      ? settings.headerFooter.headerText
+      : deriveDocumentTitle(doc);
+  const d = safeDir(text);
+  return `<div dir="${d}" style="${HF_STYLE}text-align:center;">${escapeHtml(text)}</div>`;
+}
+
+export function buildPdfFooterTemplate(settings: DocumentStudioSettings): string {
+  if (!settings.headerFooter.footerEnabled) return "<div></div>";
+  const { footerText, pageNumbers } = settings.headerFooter;
+  const hasText = footerText.trim().length > 0;
+  const hasNumbers = pageNumbers !== "none";
+  if (!hasText && !hasNumbers) return "<div></div>";
+
+  const pageSpan =
+    pageNumbers === "current"
+      ? `<span class="pageNumber"></span>`
+      : `<span class="pageNumber"></span> / <span class="totalPages"></span>`;
+
+  if (!hasText) {
+    return `<div style="${HF_STYLE}text-align:center;">${pageSpan}</div>`;
+  }
+  if (!hasNumbers) {
+    const d = safeDir(footerText);
+    return `<div dir="${d}" style="${HF_STYLE}text-align:center;">${escapeHtml(footerText)}</div>`;
+  }
+  // Text at one side, number at the other — use flex to keep them both visible.
+  const d = safeDir(footerText);
+  return `<div dir="${d}" style="${HF_STYLE}display:flex;justify-content:space-between;align-items:center;"><span>${escapeHtml(footerText)}</span><span>${pageSpan}</span></div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 let cachedFaces: Map<string, PdfFontFace> | null = null;
 
@@ -185,19 +239,12 @@ export async function POST(request: NextRequest) {
         right: `${resolvePhysicalMargins(layout.margins, dir).rightMm}mm`,
       },
       displayHeaderFooter: settings.headerFooter.headerEnabled || settings.headerFooter.footerEnabled,
-      headerTemplate: settings.headerFooter.headerEnabled
-        ? `<div style="font-size:9px;width:100%;text-align:center;color:#444;padding:0 15mm;"></div>`
-        : "<div></div>",
-      footerTemplate:
-        settings.headerFooter.footerEnabled && settings.headerFooter.pageNumbers !== "none"
-          ? settings.headerFooter.pageNumbers === "current"
-            ? `<div style="font-size:9px;width:100%;text-align:center;color:#444;"><span class="pageNumber"></span></div>`
-            : `<div style="font-size:9px;width:100%;text-align:center;color:#444;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>`
-          : "<div></div>",
+      headerTemplate: buildPdfHeaderTemplate(settings, doc),
+      footerTemplate: buildPdfFooterTemplate(settings),
     });
 
     const pdfDoc = await PDFDocument.load(pdfUint8Array);
-    pdfDoc.setTitle("Qalam Works Document");
+    pdfDoc.setTitle(deriveDocumentTitle(doc));
     pdfDoc.setCreator("Qalam Works");
     pdfDoc.setProducer("Qalam Works PDF Export");
     if (fontsUsed.length > 0) pdfDoc.setKeywords(fontsUsed);
