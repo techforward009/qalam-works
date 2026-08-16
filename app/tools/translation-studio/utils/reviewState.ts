@@ -2,9 +2,10 @@
 // No React, no side effects. All transitions return new segment copies.
 
 import type { TranslationSegment, TranslationReviewStatus } from "./translationTypes";
+import { REVIEW_NOTE_MAX } from "./translationTypes";
 import { segmentFingerprint } from "./segmentation";
 
-export const REVIEW_NOTE_MAX = 500;
+export { REVIEW_NOTE_MAX }; // re-export so consumers can import from one place
 
 // ── Effective approval ────────────────────────────────────────────────────────
 
@@ -32,28 +33,40 @@ export type ReviewDisplayState =
 export function getReviewDisplayState(segment: TranslationSegment): ReviewDisplayState {
   if (segment.reviewStatus === "changes-requested") return "changes-requested";
   if (isEffectivelyApproved(segment)) return "approved";
-  if (
-    segment.status === "final" &&
-    segment.target.trim().length > 0 &&
-    segment.reviewStatus === "unreviewed"
-  ) return "ready";
+  // Final + non-empty → ready, regardless of whether stored reviewStatus is
+  // "unreviewed" OR "approved" with a stale/empty fingerprint (isEffectivelyApproved
+  // already returned false above, so stale approval falls through to here).
+  if (segment.status === "final" && segment.target.trim().length > 0) return "ready";
   return "not-ready";
 }
 
 // ── Transitions ───────────────────────────────────────────────────────────────
 
-/** Mark segment as Approved. Only valid when segment is Final + non-empty + not already effectively approved. */
-export function approveSegment(segment: TranslationSegment): TranslationSegment {
+/**
+ * Approves a segment. Returns null if the segment is not eligible:
+ * must be Final, non-empty target, and display state "ready" (unreviewed / stale approval).
+ * QA findings do not affect eligibility — the human reviewer decides.
+ */
+export function approveSegment(segment: TranslationSegment): TranslationSegment | null {
+  if (segment.status !== "final") return null;
+  if (!segment.target.trim()) return null;
+  const display = getReviewDisplayState(segment);
+  if (display !== "ready") return null; // already approved, or changes-requested
   return {
     ...segment,
     reviewStatus: "approved",
     reviewedTargetFingerprint: segmentFingerprint(segment.target),
-    // retain existing reviewNote (context from prior correction cycle)
+    // retain existing reviewNote for context from prior correction cycle
   };
 }
 
-/** Request changes. Requires a non-empty note. Returns null if note invalid. */
+/**
+ * Requests changes on a segment. Returns null if the segment is not eligible
+ * (must be Final + non-empty) or if the note is empty/whitespace.
+ */
 export function requestChanges(segment: TranslationSegment, note: string): TranslationSegment | null {
+  if (segment.status !== "final") return null;
+  if (!segment.target.trim()) return null;
   if (!note.trim()) return null;
   return {
     ...segment,
@@ -70,22 +83,24 @@ export function applyTargetEditReviewTransition(
   newTarget: string
 ): Partial<TranslationSegment> {
   if (newTarget.trim() === "") {
-    // Cleared — reset to unreviewed (except keep note if changes-requested)
-    return {
-      reviewStatus: "unreviewed",
-      reviewedTargetFingerprint: "",
-      reviewNote: segment.reviewStatus === "changes-requested" ? segment.reviewNote : "",
-    };
-  }
-  if (segment.reviewStatus === "approved" || isEffectivelyApproved(segment)) {
-    // Editing an approved segment: full reset
+    // Target cleared.
+    // changes-requested: keep reviewStatus and reviewNote — the reviewer request
+    // remains active even when the translator starts over from scratch.
+    if (segment.reviewStatus === "changes-requested") {
+      return { reviewedTargetFingerprint: "" };
+    }
+    // approved or unreviewed: reset fully.
     return { reviewStatus: "unreviewed", reviewedTargetFingerprint: "", reviewNote: "" };
   }
-  // Changes-requested: note and status stay, fingerprint cleared
+  if (segment.reviewStatus === "approved" || isEffectivelyApproved(segment)) {
+    // Editing an approved segment: full reset of review cycle.
+    return { reviewStatus: "unreviewed", reviewedTargetFingerprint: "", reviewNote: "" };
+  }
+  // changes-requested: note and reviewStatus stay, fingerprint cleared.
   if (segment.reviewStatus === "changes-requested") {
     return { reviewedTargetFingerprint: "" };
   }
-  // Unreviewed: nothing to change
+  // Unreviewed: nothing to change.
   return {};
 }
 

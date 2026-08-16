@@ -140,7 +140,7 @@ function parseSegment(raw: unknown): TranslationSegment | null {
     sourceFingerprint: typeof s.sourceFingerprint === "string" ? s.sourceFingerprint : "",
     // 17C: additive — older projects without these fields get safe defaults
     reviewStatus: isReviewStatus(s.reviewStatus) ? s.reviewStatus : "unreviewed",
-    reviewNote: typeof s.reviewNote === "string" ? s.reviewNote : "",
+    reviewNote: typeof s.reviewNote === "string" ? s.reviewNote.slice(0, REVIEW_NOTE_MAX) : "",
     reviewedTargetFingerprint: typeof s.reviewedTargetFingerprint === "string" ? s.reviewedTargetFingerprint : "",
   };
 }
@@ -173,3 +173,5 @@ function parseGlossary(raw: unknown): GlossaryEntry[] {
 
 export const GLOSSARY_TERM_MAX = 120;
 export const GLOSSARY_NOTE_MAX = 300;
+/** Shared constant — avoids circular import between reviewState.ts and translationTypes.ts */
+export const REVIEW_NOTE_MAX = 500;

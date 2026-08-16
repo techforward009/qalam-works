@@ -90,9 +90,10 @@ describe("B: Approve transition", () => {
     const tgt = "ترجمہ اصل";
     const s = seg({ source: "Test.", target: tgt, status: "final" });
     const updated = approveSegment(s);
-    expect(updated.reviewStatus).toBe("approved");
-    expect(updated.reviewedTargetFingerprint).toBe(segmentFingerprint(tgt));
-    expect(isEffectivelyApproved(updated)).toBe(true);
+    expect(updated).not.toBeNull();
+    expect(updated!.reviewStatus).toBe("approved");
+    expect(updated!.reviewedTargetFingerprint).toBe(segmentFingerprint(tgt));
+    expect(isEffectivelyApproved(updated!)).toBe(true);
   });
 });
 
@@ -192,8 +193,9 @@ describe("J: Approve resubmitted segment (previous note retained)", () => {
     const tgt = "revised ترجمہ";
     const s = seg({ source: "Test.", target: tgt, status: "final", reviewStatus: "unreviewed", reviewNote: "Old note from previous cycle" });
     const updated = approveSegment(s);
-    expect(updated.reviewStatus).toBe("approved");
-    expect(updated.reviewNote).toBe("Old note from previous cycle");
+    expect(updated).not.toBeNull();
+    expect(updated!.reviewStatus).toBe("approved");
+    expect(updated!.reviewNote).toBe("Old note from previous cycle");
   });
 });
 
@@ -205,8 +207,9 @@ describe("QA does not block approval", () => {
     const s = seg({ source: "18 districts", target: tgt, status: "final" });
     // approveSegment has no awareness of QA — reviewer is in control
     const updated = approveSegment(s);
-    expect(updated.reviewStatus).toBe("approved");
-    expect(isEffectivelyApproved(updated)).toBe(true);
+    expect(updated).not.toBeNull();
+    expect(updated!.reviewStatus).toBe("approved");
+    expect(isEffectivelyApproved(updated!)).toBe(true);
   });
 });
 
@@ -273,5 +276,127 @@ describe("immutability of review helpers", () => {
     expect(original.reviewStatus).toBe(origCopy.reviewStatus);
     expect(original.reviewNote).toBe(origCopy.reviewNote);
     expect(original.reviewedTargetFingerprint).toBe(origCopy.reviewedTargetFingerprint);
+  });
+});
+
+// ── 17C.1.1 required new tests ────────────────────────────────────────────────
+
+describe("17C.1.1 — Fix 1: changes-requested clear keeps reviewStatus", () => {
+  test("clear target while changes-requested → reviewStatus stays changes-requested, note retained, fingerprint cleared", () => {
+    const s = seg({ source: "Test.", target: "existing", status: "draft", reviewStatus: "changes-requested", reviewNote: "Please revise this wording." });
+    const patch = applyTargetEditReviewTransition(s, "");
+    const updated = { ...s, target: "", ...patch };
+    expect(updated.reviewStatus).toBe("changes-requested");
+    expect(updated.reviewNote).toBe("Please revise this wording.");
+    expect(updated.reviewedTargetFingerprint).toBe("");
+  });
+});
+
+describe("17C.1.1 — Fix 2: stale approval display recovery", () => {
+  test("A: Final + approved + stale fingerprint → ready", () => {
+    const s = seg({ source: ".", target: "ترجمہ", status: "final", reviewStatus: "approved", reviewedTargetFingerprint: segmentFingerprint("something else") });
+    expect(getReviewDisplayState(s)).toBe("ready");
+  });
+  test("B: Final + approved + empty fingerprint → ready", () => {
+    const s = seg({ source: ".", target: "ترجمہ", status: "final", reviewStatus: "approved", reviewedTargetFingerprint: "" });
+    expect(getReviewDisplayState(s)).toBe("ready");
+  });
+  test("C: Draft + approved + stale fingerprint → not-ready", () => {
+    const s = seg({ source: ".", target: "ترجمہ", status: "draft", reviewStatus: "approved", reviewedTargetFingerprint: segmentFingerprint("other") });
+    expect(getReviewDisplayState(s)).toBe("not-ready");
+  });
+  test("D: Final + approved + valid fingerprint → approved", () => {
+    const tgt = "ترجمہ";
+    const s = seg({ source: ".", target: tgt, status: "final", reviewStatus: "approved", reviewedTargetFingerprint: segmentFingerprint(tgt) });
+    expect(getReviewDisplayState(s)).toBe("approved");
+  });
+  test("Summary: stale-approved Final counts as ready, not approved or notReady", () => {
+    const tgt = "ترجمہ";
+    const staleApproved = seg({ id: makeSegmentId(1), order: 1, source: ".", target: tgt, status: "final", reviewStatus: "approved", reviewedTargetFingerprint: segmentFingerprint("different") });
+    const summary = summarizeReviewState([staleApproved]);
+    expect(summary.ready).toBe(1);
+    expect(summary.approved).toBe(0);
+    expect(summary.notReady).toBe(0);
+  });
+});
+
+describe("17C.1.1 — Fix 3: hardened approveSegment", () => {
+  test("5: approveSegment(Draft) → null", () => {
+    const s = seg({ source: ".", target: "ترجمہ", status: "draft" });
+    expect(approveSegment(s)).toBeNull();
+  });
+  test("6: approveSegment(Final empty) → null", () => {
+    const s = seg({ source: ".", target: "", status: "final" });
+    expect(approveSegment(s)).toBeNull();
+  });
+  test("7: approveSegment(valid Ready) → Approved", () => {
+    const tgt = "ترجمہ";
+    const s = seg({ source: ".", target: tgt, status: "final" });
+    const updated = approveSegment(s);
+    expect(updated).not.toBeNull();
+    expect(updated!.reviewStatus).toBe("approved");
+    expect(isEffectivelyApproved(updated!)).toBe(true);
+  });
+  test("already approved → null (cannot double-approve)", () => {
+    const tgt = "ترجمہ";
+    const s = seg({ source: ".", target: tgt, status: "final", reviewStatus: "approved", reviewedTargetFingerprint: segmentFingerprint(tgt) });
+    expect(approveSegment(s)).toBeNull();
+  });
+  test("changes-requested (not resubmitted) → null", () => {
+    const s = seg({ source: ".", target: "ترجمہ", status: "draft", reviewStatus: "changes-requested", reviewNote: "note" });
+    expect(approveSegment(s)).toBeNull();
+  });
+});
+
+describe("17C.1.1 — Fix 4: hardened requestChanges", () => {
+  test("8: requestChanges(Draft) → null", () => {
+    const s = seg({ source: ".", target: "ترجمہ", status: "draft" });
+    expect(requestChanges(s, "note")).toBeNull();
+  });
+  test("9: requestChanges(Final empty) → null", () => {
+    const s = seg({ source: ".", target: "", status: "final" });
+    expect(requestChanges(s, "note")).toBeNull();
+  });
+  test("10: requestChanges(Final + blank note) → null", () => {
+    const s = seg({ source: ".", target: "ترجمہ", status: "final" });
+    expect(requestChanges(s, "   ")).toBeNull();
+  });
+});
+
+describe("17C.1.1 — Fix 5: reviewNote capped at parse time", () => {
+  test("11: 700-char stored reviewNote parsed to 500", () => {
+    const longNote = "x".repeat(700);
+    const raw = {
+      schemaVersion: 1,
+      id: "test-id",
+      name: "Test",
+      sourceLanguage: "en", targetLanguage: "ur",
+      brief: defaultBrief(),
+      segments: [{
+        id: "SEG-0001", order: 1, source: "Test.", target: "ترجمہ",
+        sourceDir: "ltr", targetDir: "rtl", status: "final",
+        sourceFingerprint: "abc",
+        reviewStatus: "changes-requested",
+        reviewNote: longNote,
+        reviewedTargetFingerprint: "",
+      }],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const p = parseProject(raw);
+    expect(p).not.toBeNull();
+    expect(p!.segments[0].reviewNote.length).toBe(REVIEW_NOTE_MAX);
+  });
+  test("valid note ≤500 chars unchanged", () => {
+    const note = "x".repeat(300);
+    const raw = {
+      schemaVersion: 1, id: "test-id", name: "Test",
+      sourceLanguage: "en", targetLanguage: "ur",
+      brief: defaultBrief(),
+      segments: [{ id: "SEG-0001", order: 1, source: "Test.", target: "ترجمہ", sourceDir: "ltr", targetDir: "rtl", status: "draft", sourceFingerprint: "abc", reviewNote: note, reviewStatus: "changes-requested", reviewedTargetFingerprint: "" }],
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+    const p = parseProject(raw);
+    expect(p!.segments[0].reviewNote.length).toBe(300);
   });
 });

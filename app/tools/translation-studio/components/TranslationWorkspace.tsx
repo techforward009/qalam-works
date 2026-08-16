@@ -91,7 +91,8 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
   const handleApprove = useCallback((id: string) => {
     const seg = project.segments.find(s => s.id === id);
     if (!seg) return;
-    updateSegment(id, approveSegment(seg));
+    const updated = approveSegment(seg);
+    if (updated) updateSegment(id, updated);
   }, [project, updateSegment]);
 
   const handleRequestChanges = useCallback((id: string, note: string) => {
