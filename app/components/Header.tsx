@@ -77,6 +77,7 @@ export default function Header() {
   const primaryLinks = [
     { label: t.home, href: "/" },
     { label: t.documentStudio, href: "/tools/document-studio" },
+    { label: t.translationStudio, href: "/tools/translation-studio" },
     { label: t.documentCleaner, href: "/tools/document-cleaner" },
     { label: t.qualityChecker, href: "/tools/quality-checker" },
     { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },

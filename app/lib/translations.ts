@@ -17,6 +17,7 @@ export const translations = {
     nav: {
       home: "Home",
       documentStudio: "Document Studio",
+      translationStudio: "Translation Studio",
       documentCleaner: "Document Cleaner",
       qualityChecker: "Quality Audit",
       unicodeStandardizer: "Urdu Unicode Standardizer",
@@ -338,6 +339,7 @@ export const translations = {
     nav: {
       home: "ہوم",
       documentStudio: "ڈاکومنٹ اسٹوڈیو",
+      translationStudio: "ترجمہ اسٹوڈیو",
       documentCleaner: "ڈاکومنٹ کلینر",
       qualityChecker: "کوالٹی آڈٹ",
       unicodeStandardizer: "اردو یونیکوڈ اسٹینڈرڈائزر",

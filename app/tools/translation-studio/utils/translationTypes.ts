@@ -1,0 +1,132 @@
+// Translation Studio core data model — Batch 17A.
+
+export type TranslationLanguage = "ur" | "en" | "ar" | "fa";
+export type TranslationSegmentStatus = "untranslated" | "draft" | "final";
+
+export interface TranslationBrief {
+  approach: "faithful" | "natural";
+  audience: "general" | "academic-professional";
+  additionalInstructions: string;
+}
+
+export interface TranslationSegment {
+  id: string;
+  order: number;
+  source: string;
+  target: string;
+  sourceDir: "rtl" | "ltr";
+  targetDir: "rtl" | "ltr";
+  status: TranslationSegmentStatus;
+  /** SHA-1 of source used to detect upstream source changes. */
+  sourceFingerprint: string;
+}
+
+export interface TranslationProject {
+  schemaVersion: 1;
+  id: string;
+  name: string;
+  sourceLanguage: TranslationLanguage;
+  targetLanguage: TranslationLanguage;
+  brief: TranslationBrief;
+  segments: TranslationSegment[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const SUPPORTED_LANGUAGES: { id: TranslationLanguage; label: string; dir: "rtl" | "ltr" }[] = [
+  { id: "ur", label: "Urdu — اردو", dir: "rtl" },
+  { id: "ar", label: "Arabic — عربي", dir: "rtl" },
+  { id: "fa", label: "Persian — فارسی", dir: "rtl" },
+  { id: "en", label: "English", dir: "ltr" },
+];
+
+export function languageDir(lang: TranslationLanguage): "rtl" | "ltr" {
+  const found = SUPPORTED_LANGUAGES.find((l) => l.id === lang);
+  return found?.dir ?? "rtl";
+}
+
+export function languageFontClass(lang: TranslationLanguage): string {
+  if (lang === "ur") return "font-nastaliq";
+  if (lang === "ar") return "font-amiri";
+  if (lang === "fa") return "font-vazirmatn";
+  return "font-sans";
+}
+
+export function defaultBrief(): TranslationBrief {
+  return { approach: "faithful", audience: "general", additionalInstructions: "" };
+}
+
+/** Max length for additionalInstructions */
+export const BRIEF_INSTRUCTIONS_MAX = 500;
+
+/** Validate / parse an untrusted project object. Returns null on failure. */
+export function parseProject(raw: unknown): TranslationProject | null {
+  if (!raw || typeof raw !== "object") return null;
+  const p = raw as Record<string, unknown>;
+  if (p.schemaVersion !== 1) return null;
+  if (typeof p.id !== "string" || !p.id) return null;
+  if (typeof p.name !== "string") return null;
+  if (!isTranslationLanguage(p.sourceLanguage) || !isTranslationLanguage(p.targetLanguage)) return null;
+  if (!Array.isArray(p.segments)) return null;
+  const segments: TranslationSegment[] = [];
+  for (const seg of p.segments) {
+    const s = parseSegment(seg);
+    if (!s) return null;
+    segments.push(s);
+  }
+  const brief = parseBrief(p.brief);
+  if (!brief) return null;
+  return {
+    schemaVersion: 1,
+    id: p.id as string,
+    name: p.name as string,
+    sourceLanguage: p.sourceLanguage as TranslationLanguage,
+    targetLanguage: p.targetLanguage as TranslationLanguage,
+    brief,
+    segments,
+    createdAt: typeof p.createdAt === "string" ? p.createdAt : new Date().toISOString(),
+    updatedAt: typeof p.updatedAt === "string" ? p.updatedAt : new Date().toISOString(),
+  };
+}
+
+function isTranslationLanguage(v: unknown): v is TranslationLanguage {
+  return v === "ur" || v === "en" || v === "ar" || v === "fa";
+}
+
+function isDir(v: unknown): v is "rtl" | "ltr" {
+  return v === "rtl" || v === "ltr";
+}
+
+function isStatus(v: unknown): v is TranslationSegmentStatus {
+  return v === "untranslated" || v === "draft" || v === "final";
+}
+
+function parseSegment(raw: unknown): TranslationSegment | null {
+  if (!raw || typeof raw !== "object") return null;
+  const s = raw as Record<string, unknown>;
+  if (typeof s.id !== "string" || typeof s.order !== "number") return null;
+  if (typeof s.source !== "string" || typeof s.target !== "string") return null;
+  return {
+    id: s.id,
+    order: s.order,
+    source: s.source,
+    target: typeof s.target === "string" ? s.target : "",
+    sourceDir: isDir(s.sourceDir) ? s.sourceDir : "rtl",
+    targetDir: isDir(s.targetDir) ? s.targetDir : "rtl",
+    status: isStatus(s.status) ? s.status : "untranslated",
+    sourceFingerprint: typeof s.sourceFingerprint === "string" ? s.sourceFingerprint : "",
+  };
+}
+
+function parseBrief(raw: unknown): TranslationBrief | null {
+  if (!raw || typeof raw !== "object") return defaultBrief();
+  const b = raw as Record<string, unknown>;
+  return {
+    approach: b.approach === "natural" ? "natural" : "faithful",
+    audience: b.audience === "academic-professional" ? "academic-professional" : "general",
+    additionalInstructions:
+      typeof b.additionalInstructions === "string"
+        ? b.additionalInstructions.slice(0, BRIEF_INSTRUCTIONS_MAX)
+        : "",
+  };
+}
