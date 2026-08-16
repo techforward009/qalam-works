@@ -113,7 +113,7 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
 
   // QA: derived state, never stored — recomputed each render
   const conflictMap = new Map(project.segments.map(s => [s.id, hasRepeatedSourceConflict(s, project.segments)]));
-  const qaSummary = runProjectQA(project.segments, project.glossary, conflictMap);
+  const qaSummary = runProjectQA(project.segments, project.sourceLanguage, project.targetLanguage);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-4">
@@ -134,7 +134,7 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
         onDelete={handleDeleteGlossaryEntry}
       />
 
-      <QASummaryStrip summary={qaSummary} />
+      <QASummaryStrip summary={qaSummary} sourceLanguage={project.sourceLanguage} targetLanguage={project.targetLanguage} />
 
       <div className="space-y-3">
         {project.segments.map(seg => (
@@ -143,7 +143,7 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
             segment={seg}
             targetLanguage={project.targetLanguage}
             terminologyFindings={findTerminologyFindings(seg.source, seg.target, project.glossary)}
-            qaIssues={runSegmentQA(seg, project.glossary, conflictMap.get(seg.id) ?? false)}
+            qaIssues={runSegmentQA(seg, project.sourceLanguage, project.targetLanguage)}
             memorySuggestion={findExactMemorySuggestion(seg, project.segments)}
             hasRepeatedConflict={conflictMap.get(seg.id) ?? false}
             onTargetChange={handleTargetChange}

@@ -1,52 +1,38 @@
 "use client";
-import React from "react";
-import type { QASummary, QAIssue } from "../utils/translationQA";
+import React, { useState } from "react";
+import type { QASummary } from "../utils/translationQA";
 
 interface QASummaryStripProps {
   summary: QASummary;
-}
-
-const SEV_CLS: Record<string, string> = {
-  critical: "bg-red-50 border-red-200 text-red-800",
-  warning: "bg-amber-50 border-amber-200 text-amber-800",
-  info: "bg-blue-50 border-blue-200 text-blue-800",
-};
-
-const SEV_BADGE: Record<string, string> = {
-  critical: "bg-red-600 text-white",
-  warning: "bg-amber-500 text-white",
-  info: "bg-blue-500 text-white",
-};
-
-export function QAIssuePill({ issue }: { issue: QAIssue }) {
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs rounded px-1.5 py-0.5 border ${SEV_CLS[issue.severity]}`}>
-      {issue.message}
-    </span>
-  );
+  sourceLanguage: string;
+  targetLanguage: string;
 }
 
 export default function QASummaryStrip({ summary }: QASummaryStripProps) {
-  if (summary.total === 0) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-xs text-green-800 mb-3">
-        <span className="font-semibold">QA ✓</span>
-        <span>No issues found</span>
-      </div>
-    );
-  }
+  const [open, setOpen] = useState(false);
+  const { total, critical, warning, info, untranslatedCount } = summary;
+
+  const headerLabel = total === 0
+    ? `No deterministic checks · ${untranslatedCount} untranslated`
+    : `${total} check${total > 1 ? "s" : ""} · ${untranslatedCount} untranslated`;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs mb-3">
-      <span className="font-semibold text-gray-700">QA</span>
-      {summary.critical > 0 && (
-        <span className={`rounded px-1.5 py-0.5 font-semibold ${SEV_BADGE.critical}`}>{summary.critical} critical</span>
-      )}
-      {summary.warning > 0 && (
-        <span className={`rounded px-1.5 py-0.5 font-semibold ${SEV_BADGE.warning}`}>{summary.warning} warning{summary.warning > 1 ? "s" : ""}</span>
-      )}
-      {summary.info > 0 && (
-        <span className={`rounded px-1.5 py-0.5 font-semibold ${SEV_BADGE.info}`}>{summary.info} info</span>
+    <div className="border border-gray-200 rounded-lg bg-white mb-3">
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-left">
+        <span className="font-semibold text-gray-700">Translation QA</span>
+        <span className="text-xs text-gray-500 ml-2 flex-1">{headerLabel}</span>
+        <span className="text-gray-400 text-xs ml-2">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-gray-100 px-3 py-2 text-xs text-gray-600 space-y-0.5">
+          {critical > 0 && <p className="text-red-700 font-medium">Critical: {critical}</p>}
+          {warning > 0 && <p className="text-amber-700">Warnings: {warning}</p>}
+          {info > 0 && <p className="text-blue-700">Info: {info}</p>}
+          {total === 0 && <p className="text-gray-400">No deterministic issues detected. Human review is still required for translation accuracy.</p>}
+          <p className="text-gray-400 pt-1">Untranslated segments: {untranslatedCount}</p>
+        </div>
       )}
     </div>
   );

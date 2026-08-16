@@ -4,7 +4,6 @@ import type { TranslationSegment, TranslationLanguage, GlossaryEntry } from "../
 import { languageFontClass } from "../utils/translationTypes";
 import type { TerminologyFinding, MemorySuggestion } from "../utils/terminology";
 import type { QAIssue } from "../utils/translationQA";
-import { QAIssuePill } from "./QASummaryStrip";
 
 interface SegmentRowProps {
   segment: TranslationSegment;
@@ -24,6 +23,12 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   final: { label: "Final ✓", cls: "text-green-700 font-semibold" },
 };
 
+const SEV_CLS: Record<string, string> = {
+  critical: "text-red-700",
+  warning: "text-amber-700",
+  info: "text-blue-700",
+};
+
 export default function SegmentRow({
   segment, targetLanguage, terminologyFindings, qaIssues, memorySuggestion, hasRepeatedConflict,
   onTargetChange, onSetFinal, onApplyMemory,
@@ -39,16 +44,17 @@ export default function SegmentRow({
 
   return (
     <div className="border border-[#1A3A2A]/10 rounded-lg bg-white overflow-hidden">
+      {/* Segment header */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-[#F3F7F2] border-b border-[#1A3A2A]/8 text-xs">
         <span className="font-mono text-gray-500">{segment.id}</span>
         <span className={cls}>{label}</span>
       </div>
 
+      {/* Source / Target columns */}
       <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[#1A3A2A]/8">
         <div className="p-3 text-sm leading-relaxed select-text" dir={segment.sourceDir}>
           <p className="text-gray-700">{segment.source}</p>
         </div>
-
         <div className="p-3 relative">
           <textarea
             ref={textareaRef}
@@ -68,25 +74,42 @@ export default function SegmentRow({
         </div>
       </div>
 
-      {/* QA issues — combines terminology, conflict, and all other checks */}
-      {qaIssues.length > 0 && (
-        <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 flex flex-wrap gap-1.5">
-          {qaIssues.map((issue, i) => <QAIssuePill key={i} issue={issue} />)}
+      {/* 17B.1: Terminology warnings — unchanged, separate from QA */}
+      {terminologyFindings.length > 0 && (
+        <div className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-0.5">
+          <p className="font-semibold">Terminology check{terminologyFindings.length > 1 ? ` (${terminologyFindings.length})` : ""}:</p>
+          {terminologyFindings.map(f => (
+            <p key={f.entry.id}>
+              Approved term not found: <span className="font-medium">{f.entry.sourceTerm}</span> → <span dir="auto" className="font-medium">{f.entry.targetTerm}</span>
+            </p>
+          ))}
         </div>
       )}
 
-      {/* Memory suggestion */}
+      {/* 17B.1: Repeated-source conflict — unchanged, separate from QA */}
+      {hasRepeatedConflict && (
+        <div className="border-t border-orange-100 bg-orange-50 px-3 py-2 text-xs text-orange-700">
+          Repeated source has different translations
+        </div>
+      )}
+
+      {/* 17B.2: Translation QA findings — separate zone */}
+      {qaIssues.length > 0 && (
+        <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-xs space-y-0.5">
+          <p className="font-semibold text-gray-600">QA check{qaIssues.length > 1 ? ` (${qaIssues.length})` : ""}:</p>
+          {qaIssues.map((issue, i) => (
+            <p key={i} className={SEV_CLS[issue.severity] ?? "text-gray-700"}>{issue.message}</p>
+          ))}
+        </div>
+      )}
+
+      {/* 17B.1: Memory suggestion — unchanged */}
       {memorySuggestion && !segment.target.trim() && (
         <div className="border-t border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800 flex items-center gap-2 flex-wrap">
           <span className="font-semibold shrink-0">Previously translated</span>
           <span dir="auto" className="flex-1 min-w-0 truncate text-blue-700">{memorySuggestion.target}</span>
-          <button
-            type="button"
-            onClick={() => onApplyMemory(segment.id, memorySuggestion.target)}
-            className="shrink-0 h-6 px-2 rounded bg-blue-700 text-white font-medium hover:bg-blue-800"
-          >
-            Apply
-          </button>
+          <button type="button" onClick={() => onApplyMemory(segment.id, memorySuggestion.target)}
+            className="shrink-0 h-6 px-2 rounded bg-blue-700 text-white font-medium hover:bg-blue-800">Apply</button>
         </div>
       )}
     </div>
