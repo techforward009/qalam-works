@@ -30,7 +30,10 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
     if (file.size > 512 * 1024) { setError("File too large (max 512 KB)"); return; }
     if (!file.name.toLowerCase().endsWith(".txt")) { setError("Only .txt files supported"); return; }
     const reader = new FileReader();
-    reader.onload = (ev) => setSourceText((ev.target?.result as string) ?? "");
+    reader.onload = (ev) => {
+      setSourceText((ev.target?.result as string) ?? "");
+      setError((prev) => (prev === "Source text is required" ? "" : prev));
+    };
     reader.readAsText(file, "UTF-8");
     e.target.value = "";
   };
@@ -49,6 +52,7 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
     setSourceText(TRANSLATION_EXAMPLE_SOURCE);
     setSourceLang("ur");
     setTargetLang("en");
+    setError("");
   };
 
   const inputCls = "w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25";
@@ -63,20 +67,20 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
         {/* Project name */}
         <div>
           <label className={labelCls}>Project Name</label>
-          <input type="text" className={inputCls} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Annual Report 2026" maxLength={120} />
+          <input type="text" className={inputCls} value={name} onChange={e => { setName(e.target.value); if (e.target.value.trim()) setError(prev => prev === "Project name is required" ? "" : prev); }} placeholder="e.g. Annual Report 2026" maxLength={120} />
         </div>
 
         {/* Language pair */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Source Language</label>
-            <select className={inputCls} value={sourceLang} onChange={e => setSourceLang(e.target.value as TranslationLanguage)}>
+            <select className={inputCls} value={sourceLang} onChange={e => { const v = e.target.value as TranslationLanguage; setSourceLang(v); if (v !== targetLang) setError(prev => prev === 'Source and target languages must differ' ? '' : prev); }}>
               {SUPPORTED_LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
             </select>
           </div>
           <div>
             <label className={labelCls}>Target Language</label>
-            <select className={inputCls} value={targetLang} onChange={e => setTargetLang(e.target.value as TranslationLanguage)}>
+            <select className={inputCls} value={targetLang} onChange={e => { const v = e.target.value as TranslationLanguage; setTargetLang(v); if (sourceLang !== v) setError(prev => prev === 'Source and target languages must differ' ? '' : prev); }}>
               {SUPPORTED_LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
             </select>
           </div>
@@ -112,7 +116,7 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
             <button type="button" onClick={() => fileRef.current?.click()} className="h-8 px-3 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">Upload .txt</button>
             <button type="button" onClick={handleLoadExample} className="h-8 px-3 rounded-md border border-[#1A3A2A]/20 bg-[#F3F7F2] text-xs font-medium text-[#1A3A2A] hover:bg-[#E8F0E8]">Load Example</button>
           </div>
-          <textarea className={`${inputCls} resize-y`} rows={8} value={sourceText} onChange={e => setSourceText(e.target.value)} placeholder="Paste source text here, or upload a .txt file. One paragraph per segment." dir="auto" />
+          <textarea className={`${inputCls} resize-y`} rows={8} value={sourceText} onChange={e => { setSourceText(e.target.value); if (e.target.value.trim()) setError(prev => prev === "Source text is required" ? "" : prev); }} placeholder="Paste source text here, or upload a .txt file. One paragraph per segment." dir="auto" />
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
