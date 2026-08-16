@@ -9,9 +9,13 @@ import {
   approveSegment, requestChanges, applyTargetEditReviewTransition,
   applyMarkFinalReviewTransition, summarizeReviewState,
 } from "../utils/reviewState";
+import {
+  filterSegmentsByReviewState, findNextVisibleSegment, type ReviewFilter,
+} from "../utils/reviewNavigation";
 import GlossaryPanel from "./GlossaryPanel";
 import QASummaryStrip from "./QASummaryStrip";
 import ReviewSummaryPanel from "./ReviewSummaryPanel";
+import ReviewFilterBar from "./ReviewFilterBar";
 import SegmentRow from "./SegmentRow";
 import { generateProjectId } from "../utils/projectId";
 
@@ -27,6 +31,10 @@ type SaveState = "saved" | "saving" | "error" | "idle";
 
 export default function TranslationWorkspace({ project, onProjectChange, onClose }: TranslationWorkspaceProps) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
+  /** Navigation cursor: order of last acted/navigated-to segment. 0 = before first. */
+  const [navCursor, setNavCursor] = useState(0);
+  const segmentRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingProject = useRef<TranslationProject | null>(null);
 
@@ -92,15 +100,29 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
     const seg = project.segments.find(s => s.id === id);
     if (!seg) return;
     const updated = approveSegment(seg);
-    if (updated) updateSegment(id, updated);
+    if (updated) { updateSegment(id, updated); setNavCursor(seg.order); }
   }, [project, updateSegment]);
 
   const handleRequestChanges = useCallback((id: string, note: string) => {
     const seg = project.segments.find(s => s.id === id);
     if (!seg) return;
     const updated = requestChanges(seg, note);
-    if (updated) updateSegment(id, updated);
+    if (updated) { updateSegment(id, updated); setNavCursor(seg.order); }
   }, [project, updateSegment]);
+
+  const handleFilterChange = useCallback((f: ReviewFilter) => {
+    setReviewFilter(f);
+    setNavCursor(0); // reset cursor on filter change
+  }, []);
+
+  const handleNext = useCallback(() => {
+    const visible = filterSegmentsByReviewState(project.segments, reviewFilter);
+    const next = findNextVisibleSegment(visible, navCursor);
+    if (!next) return;
+    setNavCursor(next.order);
+    const el = segmentRefs.current[next.id];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [project.segments, reviewFilter, navCursor]);
 
   const handleApplyMemory = useCallback((id: string, target: string) => {
     const seg = project.segments.find(s => s.id === id);
@@ -145,6 +167,8 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
   const conflictMap = new Map(project.segments.map(s => [s.id, hasRepeatedSourceConflict(s, project.segments)]));
   const qaSummary = runProjectQA(project.segments, project.sourceLanguage, project.targetLanguage);
   const reviewSummary = summarizeReviewState(project.segments);
+  // visibleSegments is ONLY for rendering — all business logic above uses project.segments
+  const visibleSegments = filterSegmentsByReviewState(project.segments, reviewFilter);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-4">
@@ -168,24 +192,44 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
       <QASummaryStrip summary={qaSummary} sourceLanguage={project.sourceLanguage} targetLanguage={project.targetLanguage} />
       <ReviewSummaryPanel summary={reviewSummary} />
 
-      <div className="space-y-3">
-        {project.segments.map(seg => (
-          <SegmentRow
-            key={seg.id}
-            segment={seg}
-            targetLanguage={project.targetLanguage}
-            terminologyFindings={findTerminologyFindings(seg.source, seg.target, project.glossary)}
-            qaIssues={runSegmentQA(seg, project.sourceLanguage, project.targetLanguage)}
-            memorySuggestion={findExactMemorySuggestion(seg, project.segments)}
-            hasRepeatedConflict={conflictMap.get(seg.id) ?? false}
-            onTargetChange={handleTargetChange}
-            onSetFinal={handleSetFinal}
-            onApplyMemory={handleApplyMemory}
-            onApprove={handleApprove}
-            onRequestChanges={handleRequestChanges}
-          />
-        ))}
-      </div>
+      <ReviewFilterBar
+        filter={reviewFilter}
+        summary={reviewSummary}
+        totalSegments={project.segments.length}
+        visibleCount={visibleSegments.length}
+        onFilterChange={handleFilterChange}
+        onNext={handleNext}
+      />
+
+      {visibleSegments.length === 0 ? (
+        <div className="text-center py-10 text-gray-400 space-y-3">
+          <p className="text-sm">No segments in this view.</p>
+          <button type="button" onClick={() => handleFilterChange("all")}
+            className="h-8 px-4 rounded border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
+            Show all
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {visibleSegments.map(seg => (
+            <div key={seg.id} ref={el => { segmentRefs.current[seg.id] = el; }}>
+              <SegmentRow
+                segment={seg}
+                targetLanguage={project.targetLanguage}
+                terminologyFindings={findTerminologyFindings(seg.source, seg.target, project.glossary)}
+                qaIssues={runSegmentQA(seg, project.sourceLanguage, project.targetLanguage)}
+                memorySuggestion={findExactMemorySuggestion(seg, project.segments)}
+                hasRepeatedConflict={conflictMap.get(seg.id) ?? false}
+                onTargetChange={handleTargetChange}
+                onSetFinal={handleSetFinal}
+                onApplyMemory={handleApplyMemory}
+                onApprove={handleApprove}
+                onRequestChanges={handleRequestChanges}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
