@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import type { TranslationSegment, TranslationLanguage, GlossaryEntry } from "../utils/translationTypes";
 import { languageFontClass } from "../utils/translationTypes";
 import type { TerminologyFinding, MemorySuggestion } from "../utils/terminology";
@@ -28,6 +28,32 @@ const SEV_CLS: Record<string, string> = {
   warning: "text-amber-700",
   info: "text-blue-700",
 };
+
+function QAFindingsZone({ issues }: { issues: QAIssue[] }) {
+  const [expanded, setExpanded] = useState(false);
+  if (issues.length === 1) {
+    return (
+      <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-xs">
+        <p className="font-semibold text-gray-600">QA check: <span className={SEV_CLS[issues[0].severity]}>{issues[0].message}</span></p>
+      </div>
+    );
+  }
+  return (
+    <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-xs">
+      <button type="button" onClick={() => setExpanded(e => !e)}
+        className="font-semibold text-gray-600 flex items-center gap-1">
+        QA check · {issues.length} items <span className="text-gray-400">{expanded ? "▲" : "▼"}</span>
+      </button>
+      {expanded && (
+        <div className="mt-1 space-y-0.5">
+          {issues.map((issue, i) => (
+            <p key={i} className={SEV_CLS[issue.severity] ?? "text-gray-700"}>{issue.message}</p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SegmentRow({
   segment, targetLanguage, terminologyFindings, qaIssues, memorySuggestion, hasRepeatedConflict,
@@ -93,14 +119,9 @@ export default function SegmentRow({
         </div>
       )}
 
-      {/* 17B.2: Translation QA findings — separate zone */}
+      {/* 17B.2: Translation QA findings — separate zone, collapsible when >1 */}
       {qaIssues.length > 0 && (
-        <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-xs space-y-0.5">
-          <p className="font-semibold text-gray-600">QA check{qaIssues.length > 1 ? ` (${qaIssues.length})` : ""}:</p>
-          {qaIssues.map((issue, i) => (
-            <p key={i} className={SEV_CLS[issue.severity] ?? "text-gray-700"}>{issue.message}</p>
-          ))}
-        </div>
+        <QAFindingsZone issues={qaIssues} />
       )}
 
       {/* 17B.1: Memory suggestion — unchanged */}

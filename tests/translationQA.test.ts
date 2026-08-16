@@ -55,20 +55,19 @@ describe("Unicode digit normalisation", () => {
     const issues = runSegmentQA(seg({ source: "Date 2026-08-16", target: "16/08/2026", status: "draft" }), "en", "ur");
     expect(issues.some(i => i.code === "NUMBER_MISMATCH")).toBe(false);
   });
-  test("H: date 2026-08-16 ↔ 16 اگست 2026 → NO mismatch (month as text; documented limitation per spec §8)", () => {
-    // Per spec §8: textual month-name replacement is out of scope.
-    // When the month number (08) is replaced by its name (اگست),
-    // the numeric comparison will note 08 is missing from the target.
-    // This is an accepted documented limitation; the spec says "textual
-    // month-name correctness is OUT OF SCOPE" so a false positive here
-    // is acknowledged. The test documents this behavior.
-    const issues = runSegmentQA(seg({ source: "Date 2026-08-16", target: "16 اگست 2026", status: "draft" }), "en", "ur");
-    // We document: this currently produces a number mismatch for the missing "08".
-    // Fixing this would require date-semantic awareness which is out of scope.
-    // Test G (all digits preserved) still passes correctly.
-    expect(issues.some(i => i.code === "PERCENTAGE_MISMATCH")).toBe(false);
-    expect(issues.some(i => i.code === "REFERENCE_MISMATCH")).toBe(false);
-    // NUMBER_MISMATCH for "08" is the documented limitation — not a bug
+  test("H: date 2026-08-16 ↔ 16 اگست 2026 (textual month) → NO number mismatch", () => {
+    // Per spec §8 fix: textual-month dates are masked so month→text swap
+    // does NOT produce a number mismatch.
+    const issues = runSegmentQA(seg({ source: "Date 2026-08-16", target: "تاریخ 16 اگست 2026", status: "draft" }), "en", "ur");
+    expect(issues.some(i => i.code === "NUMBER_MISMATCH")).toBe(false);
+  });
+  test("H-change-day: textual month but changed day → NUMBER_MISMATCH", () => {
+    const issues = runSegmentQA(seg({ source: "Date 2026-08-16", target: "17 اگست 2026", status: "draft" }), "en", "ur");
+    expect(issues.some(i => i.code === "NUMBER_MISMATCH")).toBe(true);
+  });
+  test("H-change-year: textual month but changed year → NUMBER_MISMATCH", () => {
+    const issues = runSegmentQA(seg({ source: "Date 2026-08-16", target: "16 اگست 2025", status: "draft" }), "en", "ur");
+    expect(issues.some(i => i.code === "NUMBER_MISMATCH")).toBe(true);
   });
 });
 
@@ -221,5 +220,46 @@ describe("Immutability", () => {
     expect(s.target).toBe(origTgt);
     expect(s.status).toBe("draft");
     expect(s.source).toBe(origSeg.source);
+  });
+});
+
+// ── New 17B.2.1 regressions ───────────────────────────────────────────────────
+
+describe("Reference does not also cause bracket-count finding", () => {
+  test("[12] missing from target → REFERENCE_MISMATCH only, not BRACKET_COUNT_DIFFERS", () => {
+    const issues = runSegmentQA(seg({ source: "See [12].", target: "حوالہ موجود نہیں۔", status: "draft" }), "en", "ur");
+    expect(issues.some(i => i.code === "REFERENCE_MISMATCH")).toBe(true);
+    expect(issues.some(i => i.code === "BRACKET_COUNT_DIFFERS")).toBe(false);
+  });
+});
+
+describe("Mixed quote-style → unbalanced", () => {
+  test('"text» → QUOTE_UNBALANCED (mismatched pair)', () => {
+    const issues = runSegmentQA(seg({ source: '"hello"', target: '"ہیلو»', status: "draft" }), "en", "ur");
+    expect(issues.some(i => i.code === "QUOTE_UNBALANCED")).toBe(true);
+  });
+  test('«text" → QUOTE_UNBALANCED', () => {
+    const issues = runSegmentQA(seg({ source: '"hello"', target: '«ہیلو"', status: "draft" }), "en", "ur");
+    expect(issues.some(i => i.code === "QUOTE_UNBALANCED")).toBe(true);
+  });
+  test('"text" → balanced (ASCII pair)', () => {
+    const issues = runSegmentQA(seg({ source: '"hello"', target: '"ہیلو"', status: "draft" }), "en", "ur");
+    expect(issues.some(i => i.code === "QUOTE_UNBALANCED")).toBe(false);
+  });
+  test('«text» → balanced (guillemet pair)', () => {
+    const issues = runSegmentQA(seg({ source: '"hello"', target: '«ہیلو»', status: "draft" }), "en", "ur");
+    expect(issues.some(i => i.code === "QUOTE_UNBALANCED")).toBe(false);
+  });
+});
+
+describe("Decimal percentages", () => {
+  test("3.5% ↔ ۳٫۵٪ → no mismatch", () => {
+    const issues = runSegmentQA(seg({ source: "Rate 3.5%", target: "شرح ۳٫۵٪", status: "draft" }), "en", "ur");
+    expect(issues.some(i => i.code === "PERCENTAGE_MISMATCH" || i.code === "NUMBER_MISMATCH")).toBe(false);
+  });
+  test("3.5% ↔ ۳٫۶٪ → PERCENTAGE_MISMATCH only (not NUMBER_MISMATCH)", () => {
+    const issues = runSegmentQA(seg({ source: "Rate 3.5%", target: "شرح ۳٫۶٪", status: "draft" }), "en", "ur");
+    expect(issues.some(i => i.code === "PERCENTAGE_MISMATCH")).toBe(true);
+    expect(issues.some(i => i.code === "NUMBER_MISMATCH")).toBe(false);
   });
 });

@@ -35,10 +35,8 @@ function normaliseDigits(s: string): string {
  *  that sit between digits; convert Arabic decimal separator ٫ to period. */
 function canonicalNumber(raw: string): string {
   let s = normaliseDigits(raw);
-  // Arabic thousands separator → remove (only between digits)
-  s = s.replace(/(\d)[٬,](\d)/g, "$1$2");
-  // Arabic decimal separator → period
-  s = s.replace(/(\d)٫(\d)/g, "$1.$2");
+  s = s.replace(/(\d)[٬,](\d)/g, "$1$2"); // thousands separator
+  s = s.replace(/(\d)[٫.](\d)/g, "$1.$2"); // Arabic OR ASCII decimal separator
   return s;
 }
 
@@ -47,16 +45,15 @@ function canonicalNumber(raw: string): string {
 const PCT_WORDS = /\s*(?:%|٪|percent|per\s+cent|فیصد|بالمئة|في\s+المئة|بالمائة|في\s+المائة|درصد)/gu;
 
 /** Returns the numeric value of each percentage expression in text.
- *  e.g. "75 فیصد" → ["75"], "۷۵٪" → ["75"]. */
+ *  Supports Arabic decimal ٫, Eastern digits, and written forms (case-insensitive). */
 function extractPercentageValues(text: string): string[] {
-  const re = /([٠-٩۰-۹\d][٬,.٠-٩۰-۹\d]*)\s*(?:%|٪|percent|per\s+cent|فیصد|بالمئة|في\s+المئة|بالمائة|في\s+المائة|درصد)/gu;
+  const re = /([٠-٩۰-۹\d][٬,.٠-٩۰-۹٫\d]*)\s*(?:%|٪|percent|per\s+cent|فیصد|بالمئة|في\s+المئة|بالمائة|في\s+المائة|درصد)/gui;
   return [...text.matchAll(re)].map(m => canonicalNumber(m[1]));
 }
 
-/** Mask all percentage expressions in text with a placeholder so they are
- *  not also counted as general numbers. */
+/** Mask all percentage expressions in text with a placeholder. */
 function maskPercentages(text: string): string {
-  const re = /[٠-٩۰-۹\d][٬,.٠-٩۰-۹\d]*\s*(?:%|٪|percent|per\s+cent|فیصد|بالمئة|في\s+المئة|بالمائة|في\s+المائة|درصد)/gu;
+  const re = /[٠-٩۰-۹\d][٬,.٠-٩۰-۹٫\d]*\s*(?:%|٪|percent|per\s+cent|فیصد|بالمئة|في\s+المئة|بالمائة|في\s+المائة|درصد)/gui;
   return text.replace(re, "PCT_MASKED");
 }
 
@@ -90,22 +87,95 @@ function maskRefs(text: string): string {
  *  and references to avoid double-reporting).
  *  Date-like patterns (YYYY-MM-DD, DD/MM/YYYY, DD.MM.YYYY) are extracted
  *  as their component values — allowing reordering, as per spec §8. */
-function extractNumbers(text: string): string[] {
-  const masked = maskRefs(maskPercentages(text));
-  const normed = normaliseDigits(masked)
-    .replace(/(\d)[٬,](\d)/g, "$1$2")  // thousands separator
-    .replace(/(\d)٫(\d)/g, "$1.$2");    // Arabic decimal
-  // Replace date-like patterns with individual components (space-separated)
-  // so 2026-08-16 and 16/08/2026 both yield {2026,08,16} regardless of format.
-  const withDatesExpanded = normed
-    .replace(/\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b/g, "$1 $2 $3")
-    .replace(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/g, "$1 $2 $3");
-  return [...withDatesExpanded.matchAll(/\d[\d.]*(?:\.\d+)?/g)]
-    .map(m => m[0].replace(/\.$/, ""))
-    .filter(n => n.length > 0);
+// extractNumbers is now split into a bilateral function used by runSegmentQA
+// ── Date-aware masking ────────────────────────────────────────────────────────
+//
+// Conservative approach: detect date-like spans in BOTH source and target,
+// then mask their numeric components before general number comparison.
+// This prevents false positives when a date is reformatted (e.g. 2026-08-16
+// → 16 اگست 2026) without adding any DATE_MISMATCH logic.
+//
+// Strategy:
+//  - Identify numeric date spans in the source (YYYY-MM-DD or DD/MM/YYYY etc.)
+//  - For each, find the corresponding date span in the target:
+//    either numeric (compare year+month+day) or textual-month (compare year+day,
+//    treat numeric month as represented by text — no month-name dictionary needed)
+//  - Mask matched components from general number extraction
+//
+// Changed day or changed year will still mismatch because those numerics won't
+// appear in the target's date span.
+
+interface DateSpan {
+  year: string;
+  month: string;   // empty if textual in target
+  day: string;
+  raw: string;     // matched text to replace
 }
 
-/** Compare two arrays as multisets: same values with same multiplicity. */
+const NUM_DATE_SRC = /\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b|\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/g;
+
+function extractNumericDates(normed: string): DateSpan[] {
+  const results: DateSpan[] = [];
+  for (const m of normed.matchAll(NUM_DATE_SRC)) {
+    if (m[1]) {
+      results.push({ year: m[1], month: m[2], day: m[3], raw: m[0] });
+    } else {
+      // DD/MM/YYYY or DD-MM-YYYY
+      results.push({ year: m[6], month: m[5], day: m[4], raw: m[0] });
+    }
+  }
+  return results;
+}
+
+// Match textual-month date: day + non-digit month word + year, or year + non-digit + day
+const TEXTUAL_DATE = /\b(\d{1,4})\s+[^\d\s،,،.]+\s+(\d{4})\b|\b(\d{4})\s+[^\d\s،,،.]+\s+(\d{1,2})\b/g;
+
+interface TextualDateMatch { day: string; year: string; raw: string }
+
+function extractTextualDates(text: string): TextualDateMatch[] {
+  const results: TextualDateMatch[] = [];
+  for (const m of text.matchAll(TEXTUAL_DATE)) {
+    if (m[1] && m[2]) {
+      results.push({ day: m[1], year: m[2], raw: m[0] }); // DD MONTH YYYY
+    } else if (m[3] && m[4]) {
+      results.push({ day: m[4], year: m[3], raw: m[0] }); // YYYY MONTH DD
+    }
+  }
+  return results;
+}
+
+/**
+ * Masks date components in both texts so they are skipped in general number
+ * comparison. Returns the two masked strings. This is purely for masking —
+ * no DATE_MISMATCH is ever emitted. Date value changes are still caught when
+ * both sides use purely numeric dates (the component numbers differ).
+ */
+function maskDates(srcNormed: string, tgtNormed: string): [string, string] {
+  const srcDates = extractNumericDates(srcNormed);
+  const tgtDates = extractNumericDates(tgtNormed);
+  const tgtTextDates = extractTextualDates(tgtNormed);
+
+  let maskedSrc = srcNormed;
+  let maskedTgt = tgtNormed;
+
+  for (const sd of srcDates) {
+    // Try to find a matching numeric date in target
+    const numMatch = tgtDates.find(td => td.year === sd.year && td.month === sd.month && td.day === sd.day);
+    if (numMatch) {
+      maskedSrc = maskedSrc.replace(sd.raw, "DATE_MASKED");
+      maskedTgt = maskedTgt.replace(numMatch.raw, "DATE_MASKED");
+      continue;
+    }
+    // Try a textual-month date: year and day must match; month is text
+    const txtMatch = tgtTextDates.find(td => td.year === sd.year && td.day === sd.day);
+    if (txtMatch) {
+      maskedSrc = maskedSrc.replace(sd.raw, "DATE_MASKED");
+      maskedTgt = maskedTgt.replace(txtMatch.raw, "DATE_MASKED");
+    }
+    // No match: leave unmasked so mismatch is detectable
+  }
+  return [maskedSrc, maskedTgt];
+}
 function multisetEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   const countA: Record<string, number> = {};
@@ -118,6 +188,18 @@ function multisetEqual(a: string[], b: string[]): boolean {
   return true;
 }
 
+function normaliseText(text: string): string {
+  return normaliseDigits(text)
+    .replace(/(\d)[٬,](\d)/g, "$1$2")
+    .replace(/(\d)٫(\d)/g, "$1.$2");
+}
+
+function extractNumbersFromNormed(text: string): string[] {
+  return [...text.matchAll(/\d[\d.]*(?:\.\d+)?/g)]
+    .map(m => m[0].replace(/\.$/, ""))
+    .filter(n => n.length > 0);
+}
+
 // ── Bracket structure ─────────────────────────────────────────────────────────
 
 const PAIRS: Record<string, string> = { "(": ")", "[": "]", "{": "}" };
@@ -126,10 +208,13 @@ const CLOSES = new Set([")", "]", "}"]);
 
 interface BracketResult { balanced: boolean; pairCount: number }
 
+/** Check bracket structure. To avoid double-reporting with REFERENCE_MISMATCH,
+ *  mask valid numeric reference markers before counting pairs. */
 function checkBrackets(text: string): BracketResult {
+  const maskedText = maskRefs(text); // exclude [N] and (N) from bracket counting
   const stack: string[] = [];
   let pairCount = 0;
-  for (const ch of text) {
+  for (const ch of maskedText) {
     if (OPENS.has(ch)) { stack.push(ch); continue; }
     if (CLOSES.has(ch)) {
       if (stack.length === 0 || PAIRS[stack[stack.length - 1]] !== ch) return { balanced: false, pairCount };
@@ -142,31 +227,41 @@ function checkBrackets(text: string): BracketResult {
 
 // ── Quote structure ───────────────────────────────────────────────────────────
 
-/** Count quoted spans using double-quote systems ("", "", «»). Ignores
- *  apostrophes and single-quote forms. Returns -1 if structurally malformed. */
+type QuoteClose = '"' | "\u201D" | "\u00BB";
+
+const QUOTE_PAIRS: Record<string, QuoteClose> = {
+  '"': '"',           // ASCII straight → straight (toggle)
+  "\u201C": "\u201D", // " → "
+  "\u00AB": "\u00BB", // « → »
+};
+const QUOTE_OPENS = new Set(['"', "\u201C", "\u00AB"]);
+const QUOTE_CLOSES = new Set(['"', "\u201D", "\u00BB"]);
+
+/** Count quoted spans tracking expected closing character per quote style.
+ *  Returns -1 on structural mismatch (mismatched open/close pair, unclosed span). */
 function countQuotedSpans(text: string): number {
-  // Normalise to a simple open/close token stream
-  let open = 0;
+  const stack: QuoteClose[] = [];
   let spans = 0;
-  let inSpan = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    // ASCII double quote toggles
-    if (ch === '"') {
-      if (!inSpan) { inSpan = true; open++; }
-      else { inSpan = false; spans++; }
+  for (const ch of text) {
+    if (QUOTE_OPENS.has(ch) && stack.length === 0) {
+      // ASCII " can also close an ASCII-opened span
+      if (ch === '"' && stack.length === 0) {
+        stack.push('"');
+        continue;
+      }
+      stack.push(QUOTE_PAIRS[ch] as QuoteClose);
       continue;
     }
-    // Curly open
-    if (ch === "\u201C") { inSpan = true; open++; continue; }
-    // Curly close
-    if (ch === "\u201D") { if (!inSpan) return -1; inSpan = false; spans++; continue; }
-    // Guillemet open «
-    if (ch === "\u00AB") { inSpan = true; open++; continue; }
-    // Guillemet close »
-    if (ch === "\u00BB") { if (!inSpan) return -1; inSpan = false; spans++; continue; }
+    if (QUOTE_CLOSES.has(ch)) {
+      if (stack.length === 0) return -1;
+      const expected = stack[stack.length - 1];
+      // ASCII " can close an ASCII span
+      if (expected === '"' && ch === '"') { stack.pop(); spans++; continue; }
+      if (ch === expected) { stack.pop(); spans++; continue; }
+      return -1; // mismatched pair
+    }
   }
-  if (inSpan) return -1; // unclosed span
+  if (stack.length > 0) return -1; // unclosed
   return spans;
 }
 
@@ -226,8 +321,14 @@ export function runSegmentQA(
   }
 
   // ── Numbers (after masking percentages + refs) ───────────────────────────────
-  const srcNums = extractNumbers(src);
-  const tgtNums = extractNumbers(tgt);
+  // ── Numbers (bilateral date masking + percentage + ref masking) ─────────────
+  const srcPreMasked = maskRefs(maskPercentages(src));
+  const tgtPreMasked = maskRefs(maskPercentages(tgt));
+  const srcNormBase = normaliseText(srcPreMasked);
+  const tgtNormBase = normaliseText(tgtPreMasked);
+  const [srcDateMasked, tgtDateMasked] = maskDates(srcNormBase, tgtNormBase);
+  const srcNums = extractNumbersFromNormed(srcDateMasked);
+  const tgtNums = extractNumbersFromNormed(tgtDateMasked);
   if (!multisetEqual(srcNums, tgtNums)) {
     issues.push({ code: "NUMBER_MISMATCH", severity: "warning", message: `Numeric values differ: source [${srcNums.join(", ")}], target [${tgtNums.join(", ")}]` });
   }
