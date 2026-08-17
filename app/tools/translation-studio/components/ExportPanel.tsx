@@ -8,6 +8,10 @@ import {
   buildDocxFromExportModel,
 } from "../utils/translationExport";
 import { exportProjectBackup, importProjectBackup } from "../utils/projectStore";
+import {
+  buildHandoff,
+  writeHandoff,
+} from "../utils/translationHandoff";
 
 interface ExportPanelProps {
   project: TranslationProject;
@@ -104,6 +108,14 @@ export default function ExportPanel({ project, onImportProject }: ExportPanelPro
     reader.readAsText(file, "UTF-8");
   };
 
+  const handleContinueInDocumentStudio = () => {
+    if (isEmpty) { showFeedback("Nothing to open — no translated segments."); return; }
+    const handoff = buildHandoff(model);
+    const ok = writeHandoff(handoff);
+    if (!ok) { showFeedback("Could not open Document Studio — please try again."); return; }
+    window.location.href = "/tools/document-studio";
+  };
+
   const btnCls = "h-9 px-4 rounded-md border text-xs font-medium transition-colors";
   const primaryCls = `${btnCls} bg-[#1A3A2A] text-white border-[#1A3A2A] hover:bg-[#12172A]`;
   const secondaryCls = `${btnCls} bg-white text-[#1A3A2A] border-[#1A3A2A]/20 hover:bg-[#F3F7F2]`;
@@ -118,6 +130,9 @@ export default function ExportPanel({ project, onImportProject }: ExportPanelPro
       </button>
       <button type="button" onClick={handleDownloadDocx} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
         Download DOCX
+      </button>
+      <button type="button" onClick={handleContinueInDocumentStudio} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
+        Continue in Document Studio →
       </button>
       {feedback && (
         <span className="text-xs text-gray-600 ml-1">{feedback}</span>

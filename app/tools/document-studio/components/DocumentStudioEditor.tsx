@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../../lib/language-context";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { Slice, Fragment as pmFragment } from "@tiptap/pm/model";
 // Alias to avoid name collision with React Fragment
 const pmSlice = Slice;
@@ -605,6 +606,17 @@ function editorToPlainText(editor: Editor, dir: "rtl" | "ltr"): string {
 
 function getInitialDraftContent(): DocNode | string {
   if (typeof window === "undefined") return "<p></p>";
+  try {
+    // Check for a one-time Translation Studio handoff in sessionStorage first.
+    // consumeHandoff() removes the key after reading, so this fires once per navigation.
+    // If no valid handoff exists, fall through to the regular localStorage draft.
+    const handoffDoc = consumeHandoff();
+    if (handoffDoc && typeof handoffDoc === "object" && (handoffDoc as DocNode).type === "doc") {
+      return handoffDoc as DocNode;
+    }
+  } catch {
+    // consumeHandoff failed — proceed to normal draft loading
+  }
   try {
     const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
     if (!saved) return "<p></p>";
