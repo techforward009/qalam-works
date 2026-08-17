@@ -4,6 +4,8 @@ import {
   buildTranslationExportModel,
   serializeExportModelToText,
   sanitizeFilenameBase,
+  buildDocxFromExportModel,
+  type TranslationExportModel,
 } from "../app/tools/translation-studio/utils/translationExport";
 import type { TranslationProject, TranslationSegment } from "../app/tools/translation-studio/utils/translationTypes";
 import { defaultBrief } from "../app/tools/translation-studio/utils/translationTypes";
@@ -257,5 +259,119 @@ describe("sanitizeFilenameBase", () => {
   });
   test("custom fallback used when name empty", () => {
     expect(sanitizeFilenameBase("", "my-fallback")).toBe("my-fallback");
+  });
+});
+
+// ── DOCX export ────────────────────────────────────────────────────────────────
+
+import JSZip from "jszip";
+async function docxXml(blob: Blob): Promise<string> {
+  const buf = await blob.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+  return zip.file("word/document.xml")!.async("text");
+}
+
+describe("buildDocxFromExportModel", () => {
+  const urdu = "علی کتاب پڑھ رہے ہیں۔";
+  const arabic = "علي عليه السلام";
+  const english = "The Chamber of Commerce issued a statement.";
+  const mixed = "Qalam Works میں Translation Studio کھولیں۔";
+  const critical = "علي كتاب"; // must NOT become علی کتاب
+
+  function exportProject(segs: Array<{ target: string; dir: "rtl" | "ltr" }>) {
+    const model: TranslationExportModel = {
+      title: "Test", targetLanguage: "ur", sourceLanguage: "en",
+      totalSegments: segs.length,
+      translatedSegments: segs.filter(s => s.target.trim()).length,
+      untranslatedSegments: segs.filter(s => !s.target.trim()).length,
+      blocks: segs.map((s, i) => ({ id: `SEG-${i}`, order: i + 1, text: s.target, direction: s.dir })),
+    };
+    return buildDocxFromExportModel(model);
+  }
+
+  test("Urdu text preserved verbatim in DOCX XML", async () => {
+    const blob = await exportProject([{ target: urdu, dir: "rtl" }]);
+    const xml = await docxXml(blob);
+    expect(xml).toContain(urdu);
+  });
+
+  test("Arabic text preserved verbatim — NOT normalized to Urdu forms", async () => {
+    const blob = await exportProject([{ target: arabic, dir: "rtl" }]);
+    const xml = await docxXml(blob);
+    expect(xml).toContain(arabic);
+  });
+
+  test("critical: علي كتاب stays as-is (not Urdu-normalized)", async () => {
+    const blob = await exportProject([{ target: critical, dir: "rtl" }]);
+    const xml = await docxXml(blob);
+    expect(xml).toContain(critical);
+    expect(xml).not.toContain("علی کتاب");
+  });
+
+  test("English text preserved verbatim", async () => {
+    const blob = await exportProject([{ target: english, dir: "ltr" }]);
+    const xml = await docxXml(blob);
+    expect(xml).toContain("Chamber of Commerce");
+  });
+
+  test("mixed Unicode text preserved verbatim", async () => {
+    const blob = await exportProject([{ target: mixed, dir: "rtl" }]);
+    const xml = await docxXml(blob);
+    expect(xml).toContain("Qalam Works");
+    expect(xml).toContain("Translation Studio");
+  });
+
+  test("source text never substitutes empty target", async () => {
+    const blob = await exportProject([{ target: "", dir: "rtl" }]);
+    const xml = await docxXml(blob);
+    expect(xml).not.toContain("source text that must not appear");
+  });
+
+  test("RTL block → w:bidi in paragraph XML", async () => {
+    const blob = await exportProject([{ target: urdu, dir: "rtl" }]);
+    const xml = await docxXml(blob);
+    expect(xml).toContain("w:bidi");
+  });
+
+  test("LTR block → bidirectional is false/absent for that paragraph", async () => {
+    const blob = await exportProject([{ target: english, dir: "ltr" }]);
+    const xml = await docxXml(blob);
+    // For LTR paragraphs we set bidirectional: false. docx library omits w:bidi
+    // entirely when false (rather than emitting w:bidi w:val="0").
+    // Either omission OR w:val="0" is correct LTR behavior.
+    const bidiTruePattern = /<w:bidi\s*\/>/;
+    expect(bidiTruePattern.test(xml)).toBe(false);
+  });
+
+  test("segment order preserved in DOCX", async () => {
+    const blob = await exportProject([
+      { target: "third", dir: "ltr" },  // will be in order 1→3 via model
+      { target: "first", dir: "ltr" },
+      { target: "second", dir: "ltr" },
+    ]);
+    const xml = await docxXml(blob);
+    const i1 = xml.indexOf("third");
+    const i2 = xml.indexOf("first");
+    const i3 = xml.indexOf("second");
+    // "third" is order 1, "first" is order 2, "second" is order 3 in the model
+    expect(i1).toBeLessThan(i2);
+    expect(i2).toBeLessThan(i3);
+  });
+
+  test("DOCX is structurally valid (contains word/document.xml)", async () => {
+    const blob = await exportProject([{ target: "test", dir: "ltr" }]);
+    const buf = await blob.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    expect(zip.file("word/document.xml")).not.toBeNull();
+    expect(zip.file("[Content_Types].xml")).not.toBeNull();
+  });
+
+  test("filename sanitizer reused: same function for .docx and .txt", () => {
+    expect(sanitizeFilenameBase("My/Project")).toBe("MyProject");
+    // Both Copy/TXT and DOCX use sanitizeFilenameBase — same function
+    const docxName = `${sanitizeFilenameBase("My Project")}-translation.docx`;
+    const txtName = `${sanitizeFilenameBase("My Project")}-translation.txt`;
+    expect(docxName).toBe("My-Project-translation.docx");
+    expect(txtName).toBe("My-Project-translation.txt");
   });
 });

@@ -5,6 +5,7 @@ import {
   buildTranslationExportModel,
   serializeExportModelToText,
   sanitizeFilenameBase,
+  buildDocxFromExportModel,
 } from "../utils/translationExport";
 
 interface ExportPanelProps {
@@ -53,6 +54,24 @@ export default function ExportPanel({ project }: ExportPanelProps) {
     }
   };
 
+  const handleDownloadDocx = async () => {
+    if (isEmpty) { showFeedback("Nothing to export — no translated segments."); return; }
+    try {
+      const blob = await buildDocxFromExportModel(model);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${sanitizeFilenameBase(project.name)}-translation.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      if (hasUntranslated) {
+        showFeedback(`Downloaded — ${model.untranslatedSegments} segment${model.untranslatedSegments === 1 ? "" : "s"} untranslated.`);
+      }
+    } catch {
+      showFeedback("DOCX export failed — please try again.");
+    }
+  };
+
   const btnCls = "h-9 px-4 rounded-md border text-xs font-medium transition-colors";
   const primaryCls = `${btnCls} bg-[#1A3A2A] text-white border-[#1A3A2A] hover:bg-[#12172A]`;
   const secondaryCls = `${btnCls} bg-white text-[#1A3A2A] border-[#1A3A2A]/20 hover:bg-[#F3F7F2]`;
@@ -64,6 +83,9 @@ export default function ExportPanel({ project }: ExportPanelProps) {
       </button>
       <button type="button" onClick={handleDownloadTxt} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
         Download TXT
+      </button>
+      <button type="button" onClick={handleDownloadDocx} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
+        Download DOCX
       </button>
       {feedback && (
         <span className="text-xs text-gray-600 ml-1">{feedback}</span>

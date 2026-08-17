@@ -99,6 +99,42 @@ export function serializeExportModelToText(model: TranslationExportModel): strin
 }
 
 /**
+ * Builds a DOCX Blob from a canonical export model.
+ * Each block becomes one paragraph with the exact verbatim target text.
+ * No text normalization, no Urdu/Arabic conversion, no source fallback.
+ *
+ * Direction is set per-paragraph from block.direction ("rtl" | "ltr"):
+ *  - RTL → bidi=true, alignment=right, font="Noto Naskh Arabic"
+ *  - LTR → bidi=false, alignment=left, font="Aptos"
+ *
+ * Empty blocks (untranslated) become empty paragraphs that preserve
+ * document position; source text is never substituted.
+ */
+export async function buildDocxFromExportModel(model: TranslationExportModel): Promise<Blob> {
+  const {
+    Document, Paragraph, TextRun, AlignmentType, Packer,
+  } = await import("docx") as typeof import("docx");
+
+  const paragraphs = model.blocks.map((block) => {
+    const isRtl = block.direction === "rtl";
+    return new Paragraph({
+      bidirectional: isRtl,
+      alignment: isRtl ? AlignmentType.RIGHT : AlignmentType.LEFT,
+      children: [
+        new TextRun({
+          text: block.text, // verbatim — no normalization
+          font: isRtl ? "Noto Naskh Arabic" : "Aptos",
+          size: 24, // 12pt
+        }),
+      ],
+    });
+  });
+
+  const doc = new Document({ sections: [{ children: paragraphs }] });
+  return Packer.toBlob(doc);
+}
+
+/**
  * Sanitizes a project name for use as a filename stem.
  * Removes / \ : * ? " < > | and null bytes; collapses internal whitespace
  * to hyphens; trims leading/trailing hyphens and whitespace.
