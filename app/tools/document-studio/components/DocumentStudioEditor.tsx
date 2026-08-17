@@ -1857,29 +1857,48 @@ export default function DocumentStudioEditor() {
             </p>
           )}
 
-          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-end">
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Primary action */}
             <button
               ref={standardizeButtonRef}
               type="button"
               onClick={handleStandardizeClick}
-              className={`w-full sm:w-auto min-h-[48px] h-12 px-6 rounded-lg text-[15px] font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-md shadow-amber-900/20 ${isUr ? "font-naskh" : ""}`}
+              className={`h-11 px-5 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-sm shadow-amber-900/20 ${isUr ? "font-naskh" : ""}`}
             >
               {isUr ? "معیاری بنائیں" : "Standardize Document"}
             </button>
+            {/* Strong secondary */}
             <button
               type="button"
               onClick={handleRunAudit}
-              className={`w-full sm:w-auto min-h-[44px] h-11 px-4 rounded-lg text-sm font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 ${isUr ? "font-naskh" : ""}`}
+              className={`h-11 px-4 rounded-lg text-sm font-semibold border-2 border-amber-600 text-amber-700 hover:bg-amber-50 ${isUr ? "font-naskh" : ""}`}
             >
               {isUr ? "معیار جانچیں" : "Run Quality Audit"}
             </button>
+            {/* Neutral secondary */}
+            <button
+              type="button"
+              onClick={handleNewDocument}
+              className={`h-11 px-4 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 ${isUr ? "font-naskh" : ""}`}
+            >
+              {isUr ? "نیا مسودہ" : "New Document"}
+            </button>
+            {/* Destructive outline */}
             <button
               type="button"
               onClick={handleClearText}
               disabled={isEditorEmpty}
-              className={`w-full sm:w-auto min-h-[44px] h-11 px-4 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed ${isUr ? "font-naskh" : ""}`}
+              className={`h-11 px-4 rounded-lg text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed ${isUr ? "font-naskh" : ""}`}
             >
               {isUr ? "متن صاف کریں" : "Clear Text"}
+            </button>
+            {/* Destructive outline */}
+            <button
+              type="button"
+              onClick={handleClearDraft}
+              className={`h-11 px-4 rounded-lg text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50 ${isUr ? "font-naskh" : ""}`}
+            >
+              {isUr ? "ڈرافٹ صاف کریں" : "Clear Draft"}
             </button>
           </div>
 
@@ -2002,30 +2021,8 @@ export default function DocumentStudioEditor() {
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-2 text-xs items-center">
-            <button
-              type="button"
-              onClick={handleClearText}
-              disabled={isEditorEmpty}
-              className="h-9 px-3 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {isUr ? "متن صاف کریں" : "Clear Text"}
-            </button>
-            <button
-              type="button"
-              onClick={handleNewDocument}
-              className="h-9 px-3 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
-            >
-              {isUr ? "نیا مسودہ" : "New Document"}
-            </button>
-            <button
-              type="button"
-              onClick={handleClearDraft}
-              className="h-9 px-3 rounded-md text-red-500 hover:bg-red-50 transition"
-            >
-              {isUr ? "ڈرافٹ صاف کریں" : "Clear Draft"}
-            </button>
-          </div>
+
+
         </div>
 
         <p className={`mt-2 text-[12px] text-gray-500 leading-relaxed ${isUr ? "font-naskh" : ""}`} dir={dir}>
