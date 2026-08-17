@@ -4,6 +4,7 @@ import type { TranslationSegment, TranslationLanguage } from "../utils/translati
 import { languageFontClass } from "../utils/translationTypes";
 import type { TerminologyFinding, MemorySuggestion } from "../utils/terminology";
 import type { QAIssue } from "../utils/translationQA";
+import { formatQAMessage } from "../utils/qaMessageFormatter";
 import { getReviewDisplayState, REVIEW_NOTE_MAX } from "../utils/reviewState";
 
 interface SegmentRowProps {
@@ -18,38 +19,39 @@ interface SegmentRowProps {
   onApplyMemory: (id: string, target: string) => void;
   onApprove: (id: string) => void;
   onRequestChanges: (id: string, note: string) => void;
+  isUr?: boolean;
 }
 
-const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  untranslated: { label: "—", cls: "text-gray-400" },
-  draft: { label: "Draft", cls: "text-amber-600" },
-  final: { label: "Final ✓", cls: "text-green-700 font-semibold" },
-};
+function getStatusLabel(status: string, isUr?: boolean): { label: string; cls: string } {
+  if (status === "untranslated") return { label: "—", cls: "text-gray-400" };
+  if (status === "draft") return { label: isUr ? "مسودہ" : "Draft", cls: "text-amber-600" };
+  return { label: isUr ? "حتمی ✓" : "Final ✓", cls: "text-green-700 font-semibold" };
+}
 
 const SEV_CLS: Record<string, string> = {
   critical: "text-red-700", warning: "text-amber-700", info: "text-blue-700",
 };
 
-function QAFindingsZone({ issues }: { issues: QAIssue[] }) {
+function QAFindingsZone({ issues, isUr }: { issues: QAIssue[]; isUr?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   if (issues.length === 1) {
     return (
       <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-xs">
-        <p className="font-semibold text-gray-600">QA check: <span className={SEV_CLS[issues[0].severity]}>{issues[0].message}</span></p>
+        <p className="font-semibold text-gray-600">{isUr ? "QA جانچ:" : "QA check:"} <span className={SEV_CLS[issues[0].severity]}>{formatQAMessage(issues[0], isUr)}</span></p>
       </div>
     );
   }
   return (
     <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-xs">
       <button type="button" onClick={() => setExpanded(e => !e)} className="font-semibold text-gray-600 flex items-center gap-1">
-        QA check · {issues.length} items <span className="text-gray-400">{expanded ? "▲" : "▼"}</span>
+        {isUr ? "QA جانچ" : "QA check"} · {issues.length} {isUr ? "نکات" : "items"} <span className="text-gray-400">{expanded ? "▲" : "▼"}</span>
       </button>
-      {expanded && <div className="mt-1 space-y-0.5">{issues.map((issue, i) => <p key={i} className={SEV_CLS[issue.severity]}>{issue.message}</p>)}</div>}
+      {expanded && <div className="mt-1 space-y-0.5">{issues.map((issue, i) => <p key={i} className={SEV_CLS[issue.severity]}>{formatQAMessage(issue, isUr)}</p>)}</div>}
     </div>
   );
 }
 
-function RequestChangesForm({ onSubmit, onCancel }: { onSubmit: (note: string) => void; onCancel: () => void }) {
+function RequestChangesForm({ onSubmit, onCancel, isUr }: { onSubmit: (note: string) => void; onCancel: () => void; isUr?: boolean }) {
   const [note, setNote] = useState("");
   return (
     <div className="p-2 space-y-1.5">
@@ -57,7 +59,7 @@ function RequestChangesForm({ onSubmit, onCancel }: { onSubmit: (note: string) =
         className="w-full rounded border border-orange-300 px-2 py-1.5 text-xs resize-none focus:outline-none"
         rows={3} maxLength={REVIEW_NOTE_MAX} value={note}
         onChange={e => setNote(e.target.value)}
-        placeholder="Describe the required change (required)…"
+        placeholder={isUr ? "مطلوبہ تبدیلی بیان کریں (ضروری)…" : "Describe the required change (required)…"}
         autoFocus
       />
       <div className="flex gap-2">
@@ -73,7 +75,7 @@ function RequestChangesForm({ onSubmit, onCancel }: { onSubmit: (note: string) =
 
 export default function SegmentRow({
   segment, targetLanguage, terminologyFindings, qaIssues, memorySuggestion, hasRepeatedConflict,
-  onTargetChange, onSetFinal, onApplyMemory, onApprove, onRequestChanges,
+  onTargetChange, onSetFinal, onApplyMemory, onApprove, onRequestChanges, isUr,
 }: SegmentRowProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showRequestForm, setShowRequestForm] = useState(false);
@@ -86,7 +88,7 @@ export default function SegmentRow({
 
   const reviewState = getReviewDisplayState(segment);
   const targetFontClass = languageFontClass(targetLanguage);
-  const { label, cls } = STATUS_LABEL[segment.status] ?? STATUS_LABEL.untranslated;
+  const { label, cls } = getStatusLabel(segment.status, isUr);
 
   // Compact header label for changes-requested segments
   const headerCls = reviewState === "changes-requested"
@@ -99,9 +101,9 @@ export default function SegmentRow({
       <div className={`flex items-center justify-between px-3 py-1.5 text-xs ${headerCls}`}>
         <span className="font-mono text-gray-500">{segment.id}</span>
         <span className="flex items-center gap-2">
-          {reviewState === "changes-requested" && <span className="font-semibold text-orange-700">Changes requested</span>}
-          {reviewState === "approved" && <span className="font-semibold text-green-700">Approved ✓</span>}
-          {reviewState === "ready" && <span className="text-blue-700">Ready for review</span>}
+          {reviewState === "changes-requested" && <span className="font-semibold text-orange-700">{isUr ? "تبدیلی درکار ہے" : "Changes requested"}</span>}
+          {reviewState === "approved" && <span className="font-semibold text-green-700">{isUr ? "منظور ✓" : "Approved ✓"}</span>}
+          {reviewState === "ready" && <span className="text-blue-700">{isUr ? "نظرثانی کے لیے تیار" : "Ready for review"}</span>}
           <span className={cls}>{label}</span>
         </span>
       </div>
@@ -136,7 +138,7 @@ export default function SegmentRow({
             dir={segment.targetDir}
             value={segment.target}
             onChange={handleInput}
-            placeholder="Type translation here…"
+            placeholder={isUr ? "ترجمہ یہاں لکھیں…" : "Type translation here…"}
             rows={Math.max(2, segment.source.split(" ").length > 10 ? 3 : 2)}
             aria-label={`Translation for ${segment.id}`}
           />
@@ -151,7 +153,7 @@ export default function SegmentRow({
       {/* 17C: Review actions for ready/approved segments */}
       {reviewState === "ready" && !showRequestForm && (
         <div className="border-t border-blue-100 bg-blue-50 px-3 py-2 text-xs flex items-center gap-2 flex-wrap">
-          <span className="font-semibold text-blue-800 shrink-0">Ready for review</span>
+          <span className="font-semibold text-blue-800 shrink-0">{isUr ? "نظرثانی کے لیے تیار" : "Ready for review"}</span>
           <button type="button" onClick={() => onApprove(segment.id)}
             className="h-7 px-3 rounded bg-green-700 text-white font-medium hover:bg-green-800">Approve</button>
           <button type="button" onClick={() => setShowRequestForm(true)}
@@ -164,6 +166,7 @@ export default function SegmentRow({
           <RequestChangesForm
             onSubmit={note => { onRequestChanges(segment.id, note); setShowRequestForm(false); }}
             onCancel={() => setShowRequestForm(false)}
+            isUr={isUr}
           />
         </div>
       )}
@@ -186,7 +189,7 @@ export default function SegmentRow({
       )}
 
       {/* 17B.2: QA findings */}
-      {qaIssues.length > 0 && <QAFindingsZone issues={qaIssues} />}
+      {qaIssues.length > 0 && <QAFindingsZone issues={qaIssues} isUr={isUr} />}
 
       {/* 17B.1: Memory suggestion */}
       {memorySuggestion && !segment.target.trim() && (

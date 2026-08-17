@@ -8,24 +8,25 @@ interface ReviewFilterBarProps {
   summary: ReviewSummary;
   totalSegments: number;
   onFilterChange: (filter: ReviewFilter) => void;
+  isUr?: boolean;
 }
 
-const FILTERS: { value: ReviewFilter; label: string; count: (s: ReviewSummary, total: number) => number }[] = [
-  { value: "all",               label: "All",       count: (_, total) => total },
-  { value: "ready",             label: "Ready",     count: s => s.ready },
-  { value: "changes-requested", label: "Changes",   count: s => s.changesRequested },
-  { value: "approved",          label: "Approved",  count: s => s.approved },
-  { value: "not-ready",         label: "Not ready", count: s => s.notReady },
+const FILTERS: { value: ReviewFilter; labelEn: string; labelUr: string; count: (s: ReviewSummary, total: number) => number }[] = [
+  { value: "all",               labelEn: "All",       labelUr: "سب",       count: (_, total) => total },
+  { value: "ready",             labelEn: "Ready",     labelUr: "تیار",     count: s => s.ready },
+  { value: "changes-requested", labelEn: "Changes",   labelUr: "تبدیلی",   count: s => s.changesRequested },
+  { value: "approved",          labelEn: "Approved",  labelUr: "منظور",    count: s => s.approved },
+  { value: "not-ready",         labelEn: "Not ready", labelUr: "تیار نہیں", count: s => s.notReady },
 ];
 
 export default function ReviewFilterBar({
-  filter, summary, totalSegments, onFilterChange,
+  filter, summary, totalSegments, onFilterChange, isUr,
 }: ReviewFilterBarProps) {
 
   return (
     <div className="mb-2">
       {/* Filter pills only — navigation row lives in Workspace as a sticky sibling */}
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter segments by review state">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={isUr ? "نظرثانی کی حالت سے فلٹر کریں" : "Filter segments by review state"}>
         {FILTERS.map(f => {
           const count = f.count(summary, totalSegments);
           const selected = filter === f.value;
@@ -41,7 +42,7 @@ export default function ReviewFilterBar({
                   : "bg-white text-gray-600 border-gray-200 hover:border-[#1A3A2A]/30 hover:text-[#1A3A2A]"
               }`}
             >
-              {f.label} {count}
+              {isUr ? f.labelUr : f.labelEn} {count}
             </button>
           );
         })}

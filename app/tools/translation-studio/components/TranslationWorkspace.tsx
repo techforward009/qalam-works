@@ -26,11 +26,12 @@ interface TranslationWorkspaceProps {
   project: TranslationProject;
   onProjectChange: (project: TranslationProject) => void;
   onClose: () => void;
+  isUr?: boolean;
 }
 
 type SaveState = "saved" | "saving" | "error" | "idle";
 
-export default function TranslationWorkspace({ project, onProjectChange, onClose }: TranslationWorkspaceProps) {
+export default function TranslationWorkspace({ project, onProjectChange, onClose, isUr }: TranslationWorkspaceProps) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
   /** Navigation cursor: order of last acted/navigated-to segment. 0 = before first. */
@@ -159,7 +160,12 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
   const finalCount = project.segments.filter(s => s.status === "final").length;
   const draftCount = project.segments.filter(s => s.status === "draft").length;
   const total = project.segments.length;
-  const saveLabel = { saving: "Saving…", saved: "Saved on this device ✓", error: "Save failed", idle: "Saved on this device" }[saveState];
+  const saveLabel = {
+    saving: isUr ? "محفوظ ہو رہا ہے…" : "Saving…",
+    saved: isUr ? "اس ڈیوائس پر محفوظ ✓" : "Saved on this device ✓",
+    error: isUr ? "محفوظ نہیں ہو سکا" : "Save failed",
+    idle: isUr ? "اس ڈیوائس پر محفوظ" : "Saved on this device",
+  }[saveState];
   const saveCls = saveState === "error" ? "text-red-500" : "text-gray-500";
 
   // QA: derived state, never stored — recomputed each render
@@ -170,11 +176,11 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
   const visibleSegments = filterSegmentsByReviewState(project.segments, reviewFilter);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-4">
+    <div className="max-w-5xl mx-auto px-4 py-4" dir={isUr ? "rtl" : "ltr"}>
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <button onClick={handleClose} className="text-sm text-[#1A3A2A] hover:underline">← Projects</button>
+        <button onClick={handleClose} className="text-sm text-[#1A3A2A] hover:underline">{isUr ? "→ پروجیکٹس" : "← Projects"}</button>
         <h2 className="font-bold text-[#1A3A2A] flex-1 min-w-0 truncate">{project.name}</h2>
-        <span className="text-xs text-gray-500">{finalCount}/{total} final · {draftCount} draft</span>
+        <span className="text-xs text-gray-500">{finalCount}/{total} {isUr ? "حتمی" : "final"} · {draftCount} {isUr ? "مسودہ" : "draft"}</span>
         <span className={`text-xs ${saveCls}`}>{saveLabel}</span>
       </div>
 
@@ -185,19 +191,21 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
         onAdd={handleAddGlossaryEntry}
         onUpdate={handleUpdateGlossaryEntry}
         onDelete={handleDeleteGlossaryEntry}
+        isUr={isUr}
       />
 
-      <QASummaryStrip summary={qaSummary} sourceLanguage={project.sourceLanguage} targetLanguage={project.targetLanguage} />
-      <ReviewSummaryPanel summary={reviewSummary} />
+      <QASummaryStrip summary={qaSummary} sourceLanguage={project.sourceLanguage} targetLanguage={project.targetLanguage} isUr={isUr} />
+      <ReviewSummaryPanel summary={reviewSummary} isUr={isUr} />
 
       <ReviewFilterBar
         filter={reviewFilter}
         summary={reviewSummary}
         totalSegments={project.segments.length}
         onFilterChange={handleFilterChange}
+        isUr={isUr}
       />
 
-      <ExportPanel project={project} onImportProject={handleImportProject} />
+      <ExportPanel project={project} onImportProject={handleImportProject} isUr={isUr} />
 
       {/* Sticky navigation row — must be a sibling of the segment list, NOT inside
           ReviewFilterBar, so its containing block spans the full scroll area.
@@ -216,10 +224,10 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
 
       {visibleSegments.length === 0 ? (
         <div className="text-center py-10 text-gray-400 space-y-3">
-          <p className="text-sm">No segments in this view.</p>
+          <p className="text-sm">{isUr ? "اس فلٹر میں کوئی سیگمنٹ نہیں۔" : "No segments in this view."}</p>
           <button type="button" onClick={() => handleFilterChange("all")}
             className="h-8 px-4 rounded border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
-            Show all
+            {isUr ? "سب دکھائیں" : "Show all"}
           </button>
         </div>
       ) : (
@@ -238,6 +246,7 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
                 onApplyMemory={handleApplyMemory}
                 onApprove={handleApprove}
                 onRequestChanges={handleRequestChanges}
+                isUr={isUr}
               />
             </div>
           ))}

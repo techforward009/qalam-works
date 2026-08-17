@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
+import { useLanguage } from "../../lib/language-context";
 import type { TranslationProject, TranslationLanguage, TranslationBrief } from "./utils/translationTypes";
 import { segmentText } from "./utils/segmentation";
 import { loadAllProjects, saveProject, deleteProject } from "./utils/projectStore";
@@ -11,6 +12,8 @@ import TranslationWorkspace from "./components/TranslationWorkspace";
 type View = "list" | "new" | "workspace";
 
 export default function TranslationStudioClient() {
+  const { language } = useLanguage();
+  const isUr = language === "ur";
   const [view, setView] = useState<View>("list");
   const [projects, setProjects] = useState<TranslationProject[]>([]);
   const [activeProject, setActiveProject] = useState<TranslationProject | null>(null);
@@ -42,7 +45,9 @@ export default function TranslationStudioClient() {
     };
     const result = saveProject(project);
     if (!result.ok) {
-      alert(result.error === "quota" ? "Storage is full. Please delete an old project first." : "Failed to save project. Please try again.");
+      alert(result.error === "quota"
+        ? (isUr ? "اسٹوریج بھری ہوئی ہے۔ پہلے ایک پرانا پروجیکٹ حذف کریں۔" : "Storage is full. Please delete an old project first.")
+        : (isUr ? "پروجیکٹ محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں۔" : "Failed to save project. Please try again."));
       return;
     }
     setProjects(loadAllProjects());
@@ -76,26 +81,30 @@ export default function TranslationStudioClient() {
         project={activeProject}
         onProjectChange={handleProjectChange}
         onClose={() => { setProjects(loadAllProjects()); setView("list"); }}
+        isUr={isUr}
       />
     );
   }
 
   if (view === "new") {
     return (
-      <div data-testid="translation-studio-setup">
-        <button onClick={() => setView("list")} className="mx-4 mt-4 text-sm text-[#1A3A2A] hover:underline">← Back</button>
-        <ProjectSetupPanel onCreateProject={handleCreateProject} />
+      <div data-testid="translation-studio-setup" dir={isUr ? "rtl" : "ltr"}>
+        <button onClick={() => setView("list")} className="mx-4 mt-4 text-sm text-[#1A3A2A] hover:underline">
+          {isUr ? "→ واپس" : "← Back"}
+        </button>
+        <ProjectSetupPanel onCreateProject={handleCreateProject} isUr={isUr} />
       </div>
     );
   }
 
   return (
-    <div data-testid="translation-studio-list">
+    <div data-testid="translation-studio-list" dir={isUr ? "rtl" : "ltr"}>
       <ProjectListPanel
         projects={projects}
         onOpen={handleOpenProject}
         onDelete={handleDeleteProject}
         onNew={() => setView("new")}
+        isUr={isUr}
       />
     </div>
   );

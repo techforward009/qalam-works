@@ -2,14 +2,14 @@
 import React, { useState } from "react";
 import type { ReviewSummary } from "../utils/reviewState";
 
-export default function ReviewSummaryPanel({ summary }: { summary: ReviewSummary }) {
+export default function ReviewSummaryPanel({ summary, isUr }: { summary: ReviewSummary; isUr?: boolean }) {
   const [open, setOpen] = useState(false);
   const parts: string[] = [];
   if (summary.ready > 0) parts.push(`${summary.ready} ready`);
   if (summary.approved > 0) parts.push(`${summary.approved} approved`);
   if (summary.changesRequested > 0) parts.push(`${summary.changesRequested} changes requested`);
   if (summary.notReady > 0) parts.push(`${summary.notReady} not ready`);
-  const headerLabel = parts.length > 0 ? parts.join(" · ") : "No segments ready for review";
+  const headerLabel = parts.length > 0 ? parts.join(" · ") : isUr ? "نظرثانی کے لیے کوئی سیگمنٹ نہیں" : "No segments ready for review";
 
   return (
     <div className="border border-gray-200 rounded-lg bg-white mb-3">
