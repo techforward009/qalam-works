@@ -16,6 +16,7 @@ import GlossaryPanel from "./GlossaryPanel";
 import QASummaryStrip from "./QASummaryStrip";
 import ReviewSummaryPanel from "./ReviewSummaryPanel";
 import ReviewFilterBar from "./ReviewFilterBar";
+import ExportPanel from "./ExportPanel";
 import SegmentRow from "./SegmentRow";
 import { generateProjectId } from "../utils/projectId";
 
@@ -198,6 +199,8 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
         totalSegments={project.segments.length}
         onFilterChange={handleFilterChange}
       />
+
+      <ExportPanel project={project} />
 
       {/* Sticky navigation row — must be a sibling of the segment list, NOT inside
           ReviewFilterBar, so its containing block spans the full scroll area.
