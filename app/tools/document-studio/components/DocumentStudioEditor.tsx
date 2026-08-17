@@ -370,16 +370,27 @@ const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
   })),
 ];
 
-function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | "ltr"; setDir: (d: "rtl" | "ltr") => void }) {
+function Toolbar({
+  editor, dir, setDir, processingLanguage, setProcessingLanguage, isUr,
+}: {
+  editor: Editor | null;
+  dir: "rtl" | "ltr";
+  setDir: (d: "rtl" | "ltr") => void;
+  processingLanguage: ProcessingLanguage;
+  setProcessingLanguage: (lang: ProcessingLanguage) => void;
+  isUr: boolean;
+}) {
   if (!editor) return null;
+
+  const labelCls = "text-[11px] font-semibold text-[#3D5A47] bg-[#EAF2EB] px-2 py-0.5 rounded whitespace-nowrap select-none";
 
   const currentFont =
     (editor.getAttributes("textStyle").fontFamily as string | undefined) || "";
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4 pb-3 sm:pb-4 border-b border-gray-100 overflow-x-auto" dir="ltr">
-      <label htmlFor="studio-block-style" className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">
-        Style
+      <label htmlFor="studio-block-style" className={labelCls}>
+        {isUr ? "انداز" : "Style"}
       </label>
       <select
         id="studio-block-style"
@@ -433,8 +444,8 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         ))}
       </select>
       <ToolbarDivider />
-      <label htmlFor="studio-line-height" className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">
-        Spacing
+      <label htmlFor="studio-line-height" className={labelCls}>
+        {isUr ? "فاصلہ" : "Spacing"}
       </label>
       <select
         id="studio-line-height"
@@ -474,8 +485,8 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         ))}
       </select>
       <ToolbarDivider />
-      <label htmlFor="studio-font-family" className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">
-        Font
+      <label htmlFor="studio-font-family" className={labelCls}>
+        {isUr ? "فونٹ" : "Font"}
       </label>
       <select
         id="studio-font-family"
@@ -497,8 +508,8 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
           </option>
         ))}
       </select>
-      <label htmlFor="studio-font-size" className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">
-        Size
+      <label htmlFor="studio-font-size" className={labelCls}>
+        {isUr ? "سائز" : "Size"}
       </label>
       <select
         id="studio-font-size"
@@ -517,7 +528,7 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
             editor.chain().focus().setFontSize(`${v}pt`).run();
           }
         }}
-        className="h-[38px] max-w-[4.5rem] rounded-md border border-gray-200 bg-white px-1.5 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
+        className="h-[38px] min-w-[6rem] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
         title="Font size"
       >
         <option value="">Default</option>
@@ -526,6 +537,22 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
             {pt}
           </option>
         ))}
+      </select>
+      <ToolbarDivider />
+      <label htmlFor="studio-proc-lang" className={`${labelCls} ${isUr ? "font-naskh" : ""}`}>
+        {isUr ? "متن کی زبان" : "Language"}
+      </label>
+      <select
+        id="studio-proc-lang"
+        value={processingLanguage}
+        onChange={(e) => { setProcessingLanguage(e.target.value as ProcessingLanguage); trackEvent("tool_mode_change", { tool: "document_studio", mode: e.target.value as ProcessingLanguage }); }}
+        className="h-[38px] min-w-[6.5rem] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
+        title="Text language"
+      >
+        <option value="auto">{isUr ? "آٹو" : "Auto"}</option>
+        <option value="ur">{isUr ? "اردو" : "Urdu"}</option>
+        <option value="en">{isUr ? "انگریزی" : "English"}</option>
+        <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
       </select>
       <ToolbarDivider />
       <ToolbarButton label="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
@@ -1654,7 +1681,7 @@ export default function DocumentStudioEditor() {
           once, and none of them show unless explicitly opened. */}
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-[#1A3A2A]/10 shadow-[0_2px_20px_rgba(26,58,42,0.06)]">
         <div className="flex justify-between items-center mb-3">
-          <Toolbar editor={editor} dir={dir} setDir={setDir} />
+          <Toolbar editor={editor} dir={dir} setDir={setDir} processingLanguage={processingLanguage} setProcessingLanguage={setProcessingLanguage} isUr={isUr} />
           <div className="text-xs text-stone-500 font-sans" dir="ltr">
             {saveStatus === "saving" && "💾 Saving..."}
             {saveStatus === "saved" && "✓ Saved to browser"}
@@ -1692,28 +1719,6 @@ export default function DocumentStudioEditor() {
           {!isImporting && (
             <span className="text-[13px] text-gray-400 font-mono select-none" dir="ltr">TXT · DOCX</span>
           )}
-
-          {/* Text language selector — inline label+select pair, same visual weight as toolbar labels */}
-          <div className="sm:border-l sm:border-gray-200 sm:pl-3 flex items-center gap-2">
-            <label htmlFor="studio-proc-lang-main" className={`text-[11px] font-semibold text-gray-600 whitespace-nowrap ${isUr ? "font-naskh" : ""}`}>
-              {isUr ? "متن کی زبان" : "Text language"}
-            </label>
-            <select
-              id="studio-proc-lang-main"
-              value={processingLanguage}
-              onChange={(e) => {
-                const next = e.target.value as ProcessingLanguage;
-                setProcessingLanguage(next);
-                trackEvent("tool_mode_change", { tool: "document_studio", mode: next });
-              }}
-              className="w-full sm:w-36 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30"
-            >
-              <option value="auto">{isUr ? "آٹو" : "Auto"}</option>
-              <option value="ur">{isUr ? "اردو" : "Urdu"}</option>
-              <option value="en">{isUr ? "انگریزی" : "English"}</option>
-              <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
-            </select>
-          </div>
         </div>
 
         {uploadError && (
