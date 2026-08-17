@@ -1618,21 +1618,30 @@ export default function DocumentStudioEditor() {
     }
   };
 
-  const TAB_DEFINITIONS: { id: "find" | "outline" | "quality" | "glossary" | "settings"; label: string }[] = isUr
-    ? [
-        { id: "find", label: "🔍 تلاش اور تبدیلی" },
-        { id: "outline", label: "📑 خاکہ" },
-        { id: "quality", label: "✓ معیار اور تجاویز" },
-        { id: "glossary", label: `📖 اصطلاحات${glossary.length > 0 ? ` (${glossary.length})` : ""}` },
-        { id: "settings", label: "⚙️ ترتیبات" },
-      ]
-    : [
-        { id: "find", label: "🔍 Find & Replace" },
-        { id: "outline", label: "📑 Outline" },
-        { id: "quality", label: "✓ Quality & Suggestions" },
-        { id: "glossary", label: `📖 Glossary${glossary.length > 0 ? ` (${glossary.length})` : ""}` },
-        { id: "settings", label: "⚙️ Settings" },
-      ];
+  const TAB_LABELS: Record<"find" | "outline" | "quality" | "glossary" | "settings", string> = isUr
+    ? {
+        find: "🔍 تلاش اور تبدیلی",
+        outline: "📑 خاکہ",
+        quality: "✓ معیار اور تجاویز",
+        glossary: `📖 اصطلاحات${glossary.length > 0 ? ` (${glossary.length})` : ""}`,
+        settings: "⚙️ ترتیبات",
+      }
+    : {
+        find: "🔍 Find & Replace",
+        outline: "📑 Outline",
+        quality: "✓ Quality & Suggestions",
+        glossary: `📖 Glossary${glossary.length > 0 ? ` (${glossary.length})` : ""}`,
+        settings: "⚙️ Settings",
+      };
+
+  // One semantic order for both languages; dir on the container handles visual flow.
+  const TAB_DEFINITIONS: { id: "find" | "outline" | "quality" | "glossary" | "settings"; label: string }[] = [
+    { id: "find", label: TAB_LABELS.find },
+    { id: "outline", label: TAB_LABELS.outline },
+    { id: "quality", label: TAB_LABELS.quality },
+    { id: "glossary", label: TAB_LABELS.glossary },
+    { id: "settings", label: TAB_LABELS.settings },
+  ];
 
   return (
     <div className="site-container">
@@ -1857,7 +1866,7 @@ export default function DocumentStudioEditor() {
             </p>
           )}
 
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center" dir={isUr ? "rtl" : "ltr"}>
             {/* Primary action */}
             <button
               ref={standardizeButtonRef}
@@ -1966,7 +1975,7 @@ export default function DocumentStudioEditor() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-5" dir="ltr">
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-5" dir={isUr ? "rtl" : "ltr"}>
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
@@ -2058,7 +2067,7 @@ export default function DocumentStudioEditor() {
       {/* Tab bar — at most one panel below is ever open. Clicking an
           already-active tab closes it, returning to the clean editor-only
           view. */}
-      <div className="flex flex-wrap justify-center gap-2 mt-5 bg-[#D8EBDC] rounded-xl border border-[#1A3A2A]/20 shadow-md p-3" dir="ltr">
+      <div className="flex flex-wrap justify-center gap-2 mt-5 bg-[#D8EBDC] rounded-xl border border-[#1A3A2A]/20 shadow-md p-3" dir={isUr ? "rtl" : "ltr"}>
         {TAB_DEFINITIONS.map((tab) => (
           <button
             key={tab.id}
