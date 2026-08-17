@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { TranslationProject, TranslationSegment, GlossaryEntry } from "../utils/translationTypes";
 import { resolveTargetDir, nextStatus } from "../utils/segmentation";
-import { saveProject, exportProjectBackup } from "../utils/projectStore";
+import { saveProject } from "../utils/projectStore";
 import { findTerminologyFindings, findExactMemorySuggestion, hasRepeatedSourceConflict } from "../utils/terminology";
 import { runSegmentQA, runProjectQA } from "../utils/translationQA";
 import {
@@ -155,16 +155,6 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
 
   const handleClose = useCallback(() => { flushPending(); onClose(); }, [flushPending, onClose]);
 
-  const handleExportBackup = () => {
-    const json = exportProjectBackup(project);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${project.name.replace(/\s+/g, "_")}_backup.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   const finalCount = project.segments.filter(s => s.status === "final").length;
   const draftCount = project.segments.filter(s => s.status === "draft").length;
@@ -186,7 +176,6 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
         <h2 className="font-bold text-[#1A3A2A] flex-1 min-w-0 truncate">{project.name}</h2>
         <span className="text-xs text-gray-500">{finalCount}/{total} final · {draftCount} draft</span>
         <span className={`text-xs ${saveCls}`}>{saveLabel}</span>
-        <button onClick={handleExportBackup} className="h-8 px-3 rounded-md border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50">Export Backup</button>
       </div>
 
       <GlossaryPanel
