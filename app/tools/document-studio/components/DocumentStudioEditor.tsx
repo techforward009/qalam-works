@@ -378,7 +378,7 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4 pb-3 sm:pb-4 border-b border-gray-100 overflow-x-auto" dir="ltr">
-      <label htmlFor="studio-block-style" className="text-[11px] font-medium text-gray-500 whitespace-nowrap">
+      <label htmlFor="studio-block-style" className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">
         Style
       </label>
       <select
@@ -433,7 +433,7 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         ))}
       </select>
       <ToolbarDivider />
-      <label htmlFor="studio-line-height" className="text-[11px] font-medium text-gray-500 whitespace-nowrap">
+      <label htmlFor="studio-line-height" className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">
         Spacing
       </label>
       <select
@@ -474,7 +474,7 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         ))}
       </select>
       <ToolbarDivider />
-      <label htmlFor="studio-font-family" className="text-[11px] font-medium text-gray-500 whitespace-nowrap">
+      <label htmlFor="studio-font-family" className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">
         Font
       </label>
       <select
@@ -497,7 +497,7 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
           </option>
         ))}
       </select>
-      <label htmlFor="studio-font-size" className="text-[11px] font-medium text-gray-500 whitespace-nowrap">
+      <label htmlFor="studio-font-size" className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">
         Size
       </label>
       <select
@@ -1693,9 +1693,9 @@ export default function DocumentStudioEditor() {
             <span className="text-[13px] text-gray-400 font-mono select-none" dir="ltr">TXT · DOCX</span>
           )}
 
-          {/* Text language selector — moved here so it's visible before editing begins */}
-          <div className="sm:border-l sm:border-gray-200 sm:pl-3">
-            <label htmlFor="studio-proc-lang-main" className={`block text-xs font-semibold text-gray-700 mb-1 ${isUr ? "font-naskh" : ""}`}>
+          {/* Text language selector — inline label+select pair, same visual weight as toolbar labels */}
+          <div className="sm:border-l sm:border-gray-200 sm:pl-3 flex items-center gap-2">
+            <label htmlFor="studio-proc-lang-main" className={`text-[11px] font-semibold text-gray-600 whitespace-nowrap ${isUr ? "font-naskh" : ""}`}>
               {isUr ? "متن کی زبان" : "Text language"}
             </label>
             <select
