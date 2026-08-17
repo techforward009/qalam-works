@@ -382,16 +382,19 @@ function Toolbar({
 }) {
   if (!editor) return null;
 
-  const labelCls = "text-[11px] font-semibold text-[#3D5A47] bg-[#EAF2EB] px-2 py-0.5 rounded whitespace-nowrap select-none";
+  const labelCls = "text-xs font-semibold text-[#3D5A47] bg-[#EAF2EB] px-2 py-0.5 rounded whitespace-nowrap select-none";
+  // Wrapper for each label+select pair: in Urdu the label reads from the right
+  const pairDir = isUr ? "rtl" : "ltr";
 
   const currentFont =
     (editor.getAttributes("textStyle").fontFamily as string | undefined) || "";
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4 pb-3 sm:pb-4 border-b border-gray-100 overflow-x-auto" dir="ltr">
-      <label htmlFor="studio-block-style" className={labelCls}>
-        {isUr ? "انداز" : "Style"}
-      </label>
+      <span dir={pairDir} className="inline-flex items-center gap-1.5">
+        <label htmlFor="studio-block-style" className={labelCls}>
+          {isUr ? "انداز" : "Style"}
+        </label>
       <select
         id="studio-block-style"
         value={
@@ -443,10 +446,12 @@ function Toolbar({
           </option>
         ))}
       </select>
+      </span>
       <ToolbarDivider />
-      <label htmlFor="studio-line-height" className={labelCls}>
-        {isUr ? "فاصلہ" : "Spacing"}
-      </label>
+      <span dir={pairDir} className="inline-flex items-center gap-1.5">
+        <label htmlFor="studio-line-height" className={labelCls}>
+          {isUr ? "فاصلہ" : "Spacing"}
+        </label>
       <select
         id="studio-line-height"
         // Batch 16A — real per-block line-spacing control. Reads/writes
@@ -484,10 +489,12 @@ function Toolbar({
           </option>
         ))}
       </select>
+      </span>
       <ToolbarDivider />
-      <label htmlFor="studio-font-family" className={labelCls}>
-        {isUr ? "فونٹ" : "Font"}
-      </label>
+      <span dir={pairDir} className="inline-flex items-center gap-1.5">
+        <label htmlFor="studio-font-family" className={labelCls}>
+          {isUr ? "فونٹ" : "Font"}
+        </label>
       <select
         id="studio-font-family"
         value={currentFont}
@@ -508,9 +515,11 @@ function Toolbar({
           </option>
         ))}
       </select>
-      <label htmlFor="studio-font-size" className={labelCls}>
-        {isUr ? "سائز" : "Size"}
-      </label>
+      </span>
+      <span dir={pairDir} className="inline-flex items-center gap-1.5">
+        <label htmlFor="studio-font-size" className={labelCls}>
+          {isUr ? "سائز" : "Size"}
+        </label>
       <select
         id="studio-font-size"
         value={
@@ -538,10 +547,12 @@ function Toolbar({
           </option>
         ))}
       </select>
+      </span>
       <ToolbarDivider />
-      <label htmlFor="studio-proc-lang" className={`${labelCls} ${isUr ? "font-naskh" : ""}`}>
-        {isUr ? "متن کی زبان" : "Language"}
-      </label>
+      <span dir={pairDir} className="inline-flex items-center gap-1.5">
+        <label htmlFor="studio-proc-lang" className={`${labelCls} ${isUr ? "font-naskh" : ""}`}>
+          {isUr ? "متن کی زبان" : "Language"}
+        </label>
       <select
         id="studio-proc-lang"
         value={processingLanguage}
@@ -554,6 +565,7 @@ function Toolbar({
         <option value="en">{isUr ? "انگریزی" : "English"}</option>
         <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
       </select>
+      </span>
       <ToolbarDivider />
       <ToolbarButton label="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
         B
