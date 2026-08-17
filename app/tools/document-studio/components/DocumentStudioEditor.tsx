@@ -378,7 +378,7 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4 pb-3 sm:pb-4 border-b border-gray-100 overflow-x-auto" dir="ltr">
-      <label className="sr-only" htmlFor="studio-block-style">
+      <label htmlFor="studio-block-style" className="text-[11px] font-medium text-gray-500 whitespace-nowrap">
         Style
       </label>
       <select
@@ -433,8 +433,8 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         ))}
       </select>
       <ToolbarDivider />
-      <label className="sr-only" htmlFor="studio-line-height">
-        Line spacing
+      <label htmlFor="studio-line-height" className="text-[11px] font-medium text-gray-500 whitespace-nowrap">
+        Spacing
       </label>
       <select
         id="studio-line-height"
@@ -474,8 +474,8 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
         ))}
       </select>
       <ToolbarDivider />
-      <label className="sr-only" htmlFor="studio-font-family">
-        Font family
+      <label htmlFor="studio-font-family" className="text-[11px] font-medium text-gray-500 whitespace-nowrap">
+        Font
       </label>
       <select
         id="studio-font-family"
@@ -497,8 +497,8 @@ function Toolbar({ editor, dir, setDir }: { editor: Editor | null; dir: "rtl" | 
           </option>
         ))}
       </select>
-      <label className="sr-only" htmlFor="studio-font-size">
-        Font size
+      <label htmlFor="studio-font-size" className="text-[11px] font-medium text-gray-500 whitespace-nowrap">
+        Size
       </label>
       <select
         id="studio-font-size"
@@ -1652,7 +1652,7 @@ export default function DocumentStudioEditor() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex flex-wrap items-end gap-3 mb-4">
           <input
             type="file"
             accept=".txt,.docx"
@@ -1683,6 +1683,28 @@ export default function DocumentStudioEditor() {
           {!isImporting && (
             <span className="text-[13px] text-gray-400 font-mono select-none" dir="ltr">TXT · DOCX</span>
           )}
+
+          {/* Text language selector — moved here so it's visible before editing begins */}
+          <div className="sm:border-l sm:border-gray-200 sm:pl-3">
+            <label htmlFor="studio-proc-lang-main" className={`block text-xs font-semibold text-gray-700 mb-1 ${isUr ? "font-naskh" : ""}`}>
+              {isUr ? "متن کی زبان" : "Text language"}
+            </label>
+            <select
+              id="studio-proc-lang-main"
+              value={processingLanguage}
+              onChange={(e) => {
+                const next = e.target.value as ProcessingLanguage;
+                setProcessingLanguage(next);
+                trackEvent("tool_mode_change", { tool: "document_studio", mode: next });
+              }}
+              className="w-full sm:w-36 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30"
+            >
+              <option value="auto">{isUr ? "آٹو" : "Auto"}</option>
+              <option value="ur">{isUr ? "اردو" : "Urdu"}</option>
+              <option value="en">{isUr ? "انگریزی" : "English"}</option>
+              <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
+            </select>
+          </div>
         </div>
 
         {uploadError && (
@@ -1836,31 +1858,6 @@ export default function DocumentStudioEditor() {
           )}
 
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-end">
-            <div className="w-full sm:w-auto">
-              <label htmlFor="studio-proc-lang-main" className={`block text-xs font-semibold text-gray-700 mb-1 ${isUr ? "font-naskh" : ""}`}>
-                {isUr ? "متن کی زبان" : "Text language"}
-              </label>
-              <select
-                id="studio-proc-lang-main"
-                value={processingLanguage}
-                onChange={(e) => {
-                  const next = e.target.value as ProcessingLanguage;
-                  setProcessingLanguage(next);
-                  trackEvent("tool_mode_change", { tool: "document_studio", mode: next });
-                }}
-                className="w-full sm:w-44 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30"
-              >
-                <option value="auto">{isUr ? "آٹو" : "Auto"}</option>
-                <option value="ur">{isUr ? "اردو" : "Urdu"}</option>
-                <option value="en">{isUr ? "انگریزی" : "English"}</option>
-                <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
-              </select>
-              <p className={`mt-1 text-[11px] text-gray-500 leading-snug max-w-xs ${isUr ? "font-naskh" : ""}`}>
-                {isUr
-                  ? "Auto mode مخلوط زبان کے متن کو محفوظ طریقے سے process کرتا ہے اور زبان کے مطابق مناسب handling منتخب کرتا ہے۔"
-                  : "Auto processes mixed-language text safely and chooses appropriate handling for each language."}
-              </p>
-            </div>
             <button
               ref={standardizeButtonRef}
               type="button"
