@@ -1,0 +1,1724 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Qalam Roman Urdu Benchmark Corpus — 300 realistic Pakistani Roman Urdu examples",
+    "totalExamples": 300,
+    "developmentCount": 200,
+    "holdoutCount": 100,
+    "categories": [
+      "everyday",
+      "spelling_variants",
+      "mixed",
+      "ambiguous",
+      "names_places",
+      "numbers_urls",
+      "noisy"
+    ],
+    "qualityGates": {
+      "top1AccuracyTarget": 0.90,
+      "top3AccuracyTarget": 0.97,
+      "protectedTokenIntegrity": 1.0,
+      "destructiveUnknownRate": 0.01
+    }
+  },
+  "examples": [
+    {
+      "id": "ru-001", "split": "development", "category": "everyday",
+      "input": "kal Zoom meeting 8 baje hai",
+      "expected": "کل Zoom meeting 8 بجے ہے",
+      "protectedTokens": ["Zoom", "meeting", "8"]
+    },
+    {
+      "id": "ru-002", "split": "development", "category": "everyday",
+      "input": "aaj bahut thak gaya",
+      "expected": "آج بہت تھک گیا"
+    },
+    {
+      "id": "ru-003", "split": "development", "category": "everyday",
+      "input": "ghar kab aaoge",
+      "expected": "گھر کب آؤگے"
+    },
+    {
+      "id": "ru-004", "split": "development", "category": "everyday",
+      "input": "khana kha liya",
+      "expected": "کھانا کھا لیا"
+    },
+    {
+      "id": "ru-005", "split": "development", "category": "everyday",
+      "input": "theek hai bhai",
+      "expected": "ٹھیک ہے بھائی"
+    },
+    {
+      "id": "ru-006", "split": "development", "category": "everyday",
+      "input": "abhi nahi aa sakta",
+      "expected": "ابھی نہیں آ سکتا"
+    },
+    {
+      "id": "ru-007", "split": "development", "category": "everyday",
+      "input": "pani lao please",
+      "expected": "پانی لاؤ please",
+      "protectedTokens": ["please"]
+    },
+    {
+      "id": "ru-008", "split": "development", "category": "everyday",
+      "input": "kya hal hai apka",
+      "expected": "کیا حال ہے آپ کا"
+    },
+    {
+      "id": "ru-009", "split": "development", "category": "everyday",
+      "input": "shukriya bohot",
+      "expected": "شکریہ بہت"
+    },
+    {
+      "id": "ru-010", "split": "development", "category": "everyday",
+      "input": "baad mein baat karte hain",
+      "expected": "بعد میں بات کرتے ہیں"
+    },
+    {
+      "id": "ru-011", "split": "development", "category": "everyday",
+      "input": "mujhe neend aa rahi hai",
+      "expected": "مجھے نیند آ رہی ہے"
+    },
+    {
+      "id": "ru-012", "split": "development", "category": "everyday",
+      "input": "raat ko milte hain",
+      "expected": "رات کو ملتے ہیں"
+    },
+    {
+      "id": "ru-013", "split": "development", "category": "everyday",
+      "input": "dua mein yaad rakhna",
+      "expected": "دعا میں یاد رکھنا"
+    },
+    {
+      "id": "ru-014", "split": "development", "category": "everyday",
+      "input": "subah se kaam kar raha hoon",
+      "expected": "صبح سے کام کر رہا ہوں"
+    },
+    {
+      "id": "ru-015", "split": "development", "category": "everyday",
+      "input": "bazar jane ka plan hai",
+      "expected": "بازار جانے کا plan ہے",
+      "protectedTokens": ["plan"]
+    },
+    {
+      "id": "ru-016", "split": "development", "category": "everyday",
+      "input": "apna khayal rakhna",
+      "expected": "اپنا خیال رکھنا"
+    },
+    {
+      "id": "ru-017", "split": "development", "category": "everyday",
+      "input": "koi baat nahi yaar",
+      "expected": "کوئی بات نہیں یار"
+    },
+    {
+      "id": "ru-018", "split": "development", "category": "everyday",
+      "input": "wahan pohonch gaya",
+      "expected": "وہاں پہنچ گیا"
+    },
+    {
+      "id": "ru-019", "split": "development", "category": "everyday",
+      "input": "zara check karo",
+      "expected": "ذرا check کرو",
+      "protectedTokens": ["check"]
+    },
+    {
+      "id": "ru-020", "split": "development", "category": "everyday",
+      "input": "chai pi lo pehle",
+      "expected": "چائے پی لو پہلے"
+    },
+    {
+      "id": "ru-021", "split": "development", "category": "everyday",
+      "input": "achha theek hai",
+      "expected": "اچھا ٹھیک ہے"
+    },
+    {
+      "id": "ru-022", "split": "development", "category": "everyday",
+      "input": "jaldi karo der ho rahi hai",
+      "expected": "جلدی کرو دیر ہو رہی ہے"
+    },
+    {
+      "id": "ru-023", "split": "development", "category": "everyday",
+      "input": "wo wahan baitha hai",
+      "expected": "وہ وہاں بیٹھا ہے"
+    },
+    {
+      "id": "ru-024", "split": "development", "category": "everyday",
+      "input": "kal milte hain inshaAllah",
+      "expected": "کل ملتے ہیں انشاءاللہ"
+    },
+    {
+      "id": "ru-025", "split": "development", "category": "everyday",
+      "input": "tasalli mat karo",
+      "expected": "تسلی مت کرو"
+    },
+    {
+      "id": "ru-026", "split": "development", "category": "spelling_variants",
+      "input": "bohot acha tha",
+      "expected": "بہت اچھا تھا",
+      "acceptableAlternatives": ["بہت اچھا تھا", "بوہت اچھا تھا"]
+    },
+    {
+      "id": "ru-027", "split": "development", "category": "spelling_variants",
+      "input": "kuch nhi hua",
+      "expected": "کچھ نہیں ہوا",
+      "acceptableAlternatives": ["کچھ نہیں ہوا"]
+    },
+    {
+      "id": "ru-028", "split": "development", "category": "spelling_variants",
+      "input": "ap kesy hain",
+      "expected": "آپ کیسے ہیں",
+      "acceptableAlternatives": ["آپ کیسے ہیں"]
+    },
+    {
+      "id": "ru-029", "split": "development", "category": "spelling_variants",
+      "input": "thnx yaar",
+      "expected": "thnx یار",
+      "protectedTokens": ["thnx"]
+    },
+    {
+      "id": "ru-030", "split": "development", "category": "spelling_variants",
+      "input": "khushi ki baat hai bhai",
+      "expected": "خوشی کی بات ہے بھائی"
+    },
+    {
+      "id": "ru-031", "split": "development", "category": "spelling_variants",
+      "input": "koi ni yar chill",
+      "expected": "کوئی نہیں یار chill",
+      "protectedTokens": ["chill"]
+    },
+    {
+      "id": "ru-032", "split": "development", "category": "spelling_variants",
+      "input": "waisy bhi theek tha",
+      "expected": "ویسے بھی ٹھیک تھا"
+    },
+    {
+      "id": "ru-033", "split": "development", "category": "spelling_variants",
+      "input": "samajh nahi ayi",
+      "expected": "سمجھ نہیں آئی"
+    },
+    {
+      "id": "ru-034", "split": "development", "category": "spelling_variants",
+      "input": "shukar hai Allah ka",
+      "expected": "شکر ہے اللہ کا"
+    },
+    {
+      "id": "ru-035", "split": "development", "category": "spelling_variants",
+      "input": "koi masla nhi hai",
+      "expected": "کوئی مسئلہ نہیں ہے"
+    },
+    {
+      "id": "ru-036", "split": "development", "category": "spelling_variants",
+      "input": "bhot busy tha aaj",
+      "expected": "بہت busy تھا آج",
+      "protectedTokens": ["busy"]
+    },
+    {
+      "id": "ru-037", "split": "development", "category": "spelling_variants",
+      "input": "uskay ghar jana hai",
+      "expected": "اس کے گھر جانا ہے"
+    },
+    {
+      "id": "ru-038", "split": "development", "category": "spelling_variants",
+      "input": "mery pass waqt nahi",
+      "expected": "میرے پاس وقت نہیں"
+    },
+    {
+      "id": "ru-039", "split": "development", "category": "spelling_variants",
+      "input": "likho jab fursat ho",
+      "expected": "لکھو جب فرصت ہو"
+    },
+    {
+      "id": "ru-040", "split": "development", "category": "spelling_variants",
+      "input": "subha uthna hai jaldi",
+      "expected": "صبح اٹھنا ہے جلدی"
+    },
+    {
+      "id": "ru-041", "split": "development", "category": "spelling_variants",
+      "input": "zindgi bohat mushkil hai",
+      "expected": "زندگی بہت مشکل ہے"
+    },
+    {
+      "id": "ru-042", "split": "development", "category": "spelling_variants",
+      "input": "ghussa mat karo please",
+      "expected": "غصہ مت کرو please",
+      "protectedTokens": ["please"]
+    },
+    {
+      "id": "ru-043", "split": "development", "category": "spelling_variants",
+      "input": "dosra option nahi hai",
+      "expected": "دوسرا option نہیں ہے",
+      "protectedTokens": ["option"]
+    },
+    {
+      "id": "ru-044", "split": "development", "category": "spelling_variants",
+      "input": "pareshan na ho",
+      "expected": "پریشان نہ ہو"
+    },
+    {
+      "id": "ru-045", "split": "development", "category": "spelling_variants",
+      "input": "asay nahi karo",
+      "expected": "ایسے نہیں کرو"
+    },
+    {
+      "id": "ru-046", "split": "development", "category": "spelling_variants",
+      "input": "phr milenge",
+      "expected": "پھر ملیں گے"
+    },
+    {
+      "id": "ru-047", "split": "development", "category": "spelling_variants",
+      "input": "aur suno",
+      "expected": "اور سنو"
+    },
+    {
+      "id": "ru-048", "split": "development", "category": "spelling_variants",
+      "input": "smjha karo thora",
+      "expected": "سمجھا کرو تھوڑا"
+    },
+    {
+      "id": "ru-049", "split": "development", "category": "spelling_variants",
+      "input": "hona tha kia",
+      "expected": "ہونا تھا کیا"
+    },
+    {
+      "id": "ru-050", "split": "development", "category": "spelling_variants",
+      "input": "dosron pe mat jao",
+      "expected": "دوسروں پر مت جاؤ"
+    },
+    {
+      "id": "ru-051", "split": "development", "category": "mixed",
+      "input": "mera laptop update ho raha hai",
+      "expected": "میرا laptop update ہو رہا ہے",
+      "protectedTokens": ["laptop", "update"]
+    },
+    {
+      "id": "ru-052", "split": "development", "category": "mixed",
+      "input": "office mein presentation deni hai kal",
+      "expected": "office میں presentation دینی ہے کل",
+      "protectedTokens": ["office", "presentation"]
+    },
+    {
+      "id": "ru-053", "split": "development", "category": "mixed",
+      "input": "WhatsApp pe message karo",
+      "expected": "WhatsApp پر message کرو",
+      "protectedTokens": ["WhatsApp", "message"]
+    },
+    {
+      "id": "ru-054", "split": "development", "category": "mixed",
+      "input": "interview kal hai 10 baje",
+      "expected": "interview کل ہے 10 بجے",
+      "protectedTokens": ["interview", "10"]
+    },
+    {
+      "id": "ru-055", "split": "development", "category": "mixed",
+      "input": "project ka deadline aaj hai",
+      "expected": "project کا deadline آج ہے",
+      "protectedTokens": ["project", "deadline"]
+    },
+    {
+      "id": "ru-056", "split": "development", "category": "mixed",
+      "input": "Google Maps pe location share karo",
+      "expected": "Google Maps پر location share کرو",
+      "protectedTokens": ["Google", "Maps", "location", "share"]
+    },
+    {
+      "id": "ru-057", "split": "development", "category": "mixed",
+      "input": "YouTube pe dekh lena",
+      "expected": "YouTube پر دیکھ لینا",
+      "protectedTokens": ["YouTube"]
+    },
+    {
+      "id": "ru-058", "split": "development", "category": "mixed",
+      "input": "call drop ho gayi sorry",
+      "expected": "call drop ہو گئی sorry",
+      "protectedTokens": ["call", "drop", "sorry"]
+    },
+    {
+      "id": "ru-059", "split": "development", "category": "mixed",
+      "input": "Excel file email karo",
+      "expected": "Excel file email کرو",
+      "protectedTokens": ["Excel", "file", "email"]
+    },
+    {
+      "id": "ru-060", "split": "development", "category": "mixed",
+      "input": "aaj gym nahi gaya",
+      "expected": "آج gym نہیں گیا",
+      "protectedTokens": ["gym"]
+    },
+    {
+      "id": "ru-061", "split": "development", "category": "mixed",
+      "input": "Netflix pe koi acha drama hai",
+      "expected": "Netflix پر کوئی اچھا drama ہے",
+      "protectedTokens": ["Netflix", "drama"]
+    },
+    {
+      "id": "ru-062", "split": "development", "category": "mixed",
+      "input": "online order kar liya",
+      "expected": "online order کر لیا",
+      "protectedTokens": ["online", "order"]
+    },
+    {
+      "id": "ru-063", "split": "development", "category": "mixed",
+      "input": "password bhool gaya email ka",
+      "expected": "password بھول گیا email کا",
+      "protectedTokens": ["password", "email"]
+    },
+    {
+      "id": "ru-064", "split": "development", "category": "mixed",
+      "input": "resume update karna hai",
+      "expected": "resume update کرنا ہے",
+      "protectedTokens": ["resume", "update"]
+    },
+    {
+      "id": "ru-065", "split": "development", "category": "mixed",
+      "input": "team mein naya banda hai",
+      "expected": "team میں نیا بندہ ہے",
+      "protectedTokens": ["team"]
+    },
+    {
+      "id": "ru-066", "split": "development", "category": "mixed",
+      "input": "signal thora weak hai",
+      "expected": "signal تھوڑا weak ہے",
+      "protectedTokens": ["signal", "weak"]
+    },
+    {
+      "id": "ru-067", "split": "development", "category": "mixed",
+      "input": "aaj koi event nahi hai",
+      "expected": "آج کوئی event نہیں ہے",
+      "protectedTokens": ["event"]
+    },
+    {
+      "id": "ru-068", "split": "development", "category": "mixed",
+      "input": "login nahi ho raha",
+      "expected": "login نہیں ہو رہا",
+      "protectedTokens": ["login"]
+    },
+    {
+      "id": "ru-069", "split": "development", "category": "mixed",
+      "input": "coffee peeni hai abhi",
+      "expected": "coffee پینی ہے ابھی",
+      "protectedTokens": ["coffee"]
+    },
+    {
+      "id": "ru-070", "split": "development", "category": "mixed",
+      "input": "meeting cancel ho gayi",
+      "expected": "meeting cancel ہو گئی",
+      "protectedTokens": ["meeting", "cancel"]
+    },
+    {
+      "id": "ru-071", "split": "development", "category": "mixed",
+      "input": "print nikal lo doc ka",
+      "expected": "print نکال لو doc کا",
+      "protectedTokens": ["print", "doc"]
+    },
+    {
+      "id": "ru-072", "split": "development", "category": "mixed",
+      "input": "mic mute karo please",
+      "expected": "mic mute کرو please",
+      "protectedTokens": ["mic", "mute", "please"]
+    },
+    {
+      "id": "ru-073", "split": "development", "category": "mixed",
+      "input": "screenshot bhejo",
+      "expected": "screenshot بھیجو",
+      "protectedTokens": ["screenshot"]
+    },
+    {
+      "id": "ru-074", "split": "development", "category": "mixed",
+      "input": "app crash ho gayi",
+      "expected": "app crash ہو گئی",
+      "protectedTokens": ["app", "crash"]
+    },
+    {
+      "id": "ru-075", "split": "development", "category": "mixed",
+      "input": "backup le lo data ka",
+      "expected": "backup لے لو data کا",
+      "protectedTokens": ["backup", "data"]
+    },
+    {
+      "id": "ru-076", "split": "development", "category": "ambiguous",
+      "input": "main wahan gaya",
+      "expected": "میں وہاں گیا",
+      "ambiguousTokens": ["main"],
+      "note": "main = میں (I) not مین"
+    },
+    {
+      "id": "ru-077", "split": "development", "category": "ambiguous",
+      "input": "yeh to hona hi tha",
+      "expected": "یہ تو ہونا ہی تھا",
+      "ambiguousTokens": ["to"],
+      "note": "to = تو (then/so), not English 'to'"
+    },
+    {
+      "id": "ru-078", "split": "development", "category": "ambiguous",
+      "input": "is mein kya rakhna hai",
+      "expected": "اس میں کیا رکھنا ہے",
+      "ambiguousTokens": ["is"],
+      "note": "is = اس (this/that), not English 'is'"
+    },
+    {
+      "id": "ru-079", "split": "development", "category": "ambiguous",
+      "input": "par tumhe kya pata",
+      "expected": "پر تمہیں کیا پتہ",
+      "ambiguousTokens": ["par"],
+      "note": "par = پر (but/on), context determines"
+    },
+    {
+      "id": "ru-080", "split": "development", "category": "ambiguous",
+      "input": "ho gaya na kaam",
+      "expected": "ہو گیا نہ کام",
+      "ambiguousTokens": ["na"],
+      "note": "na = نہ (right?), affirmative tag"
+    },
+    {
+      "id": "ru-081", "split": "development", "category": "ambiguous",
+      "input": "karo jo dil chahay",
+      "expected": "کرو جو دل چاہے",
+      "ambiguousTokens": ["jo"]
+    },
+    {
+      "id": "ru-082", "split": "development", "category": "ambiguous",
+      "input": "ab kya hoga",
+      "expected": "اب کیا ہوگا"
+    },
+    {
+      "id": "ru-083", "split": "development", "category": "ambiguous",
+      "input": "bhi woh nahi mana",
+      "expected": "بھی وہ نہیں مانا"
+    },
+    {
+      "id": "ru-084", "split": "development", "category": "ambiguous",
+      "input": "bus itna hi kaho",
+      "expected": "بس اتنا ہی کہو",
+      "ambiguousTokens": ["bus"],
+      "note": "bus = بس (just/enough), not گاڑی"
+    },
+    {
+      "id": "ru-085", "split": "development", "category": "ambiguous",
+      "input": "thodi der mein aata hoon",
+      "expected": "تھوڑی دیر میں آتا ہوں"
+    },
+    {
+      "id": "ru-086", "split": "development", "category": "ambiguous",
+      "input": "gal nahi karta wo",
+      "expected": "گل نہیں کرتا وہ",
+      "ambiguousTokens": ["gal"],
+      "note": "gal = گل/بات depending on dialect; گل preferred in Pakistani context"
+    },
+    {
+      "id": "ru-087", "split": "development", "category": "ambiguous",
+      "input": "yaar sun meri baat",
+      "expected": "یار سن میری بات"
+    },
+    {
+      "id": "ru-088", "split": "development", "category": "ambiguous",
+      "input": "baat teri samajh nahi aayi",
+      "expected": "بات تیری سمجھ نہیں آئی"
+    },
+    {
+      "id": "ru-089", "split": "development", "category": "ambiguous",
+      "input": "kal aa gaya tha main",
+      "expected": "کل آ گیا تھا میں",
+      "ambiguousTokens": ["main"]
+    },
+    {
+      "id": "ru-090", "split": "development", "category": "ambiguous",
+      "input": "kar lena baad mein",
+      "expected": "کر لینا بعد میں"
+    },
+    {
+      "id": "ru-091", "split": "development", "category": "ambiguous",
+      "input": "na karo yeh",
+      "expected": "نہ کرو یہ"
+    },
+    {
+      "id": "ru-092", "split": "development", "category": "ambiguous",
+      "input": "acha lagta hai is mein",
+      "expected": "اچھا لگتا ہے اس میں",
+      "ambiguousTokens": ["is"]
+    },
+    {
+      "id": "ru-093", "split": "development", "category": "ambiguous",
+      "input": "teri marzi yaar",
+      "expected": "تیری مرضی یار"
+    },
+    {
+      "id": "ru-094", "split": "development", "category": "ambiguous",
+      "input": "aaj to gaya",
+      "expected": "آج تو گیا",
+      "ambiguousTokens": ["to"]
+    },
+    {
+      "id": "ru-095", "split": "development", "category": "ambiguous",
+      "input": "kuch bhi ho sakta hai",
+      "expected": "کچھ بھی ہو سکتا ہے"
+    },
+    {
+      "id": "ru-096", "split": "development", "category": "ambiguous",
+      "input": "kia hua phir",
+      "expected": "کیا ہوا پھر"
+    },
+    {
+      "id": "ru-097", "split": "development", "category": "ambiguous",
+      "input": "par meri sunno bhi",
+      "expected": "پر میری سنو بھی",
+      "ambiguousTokens": ["par"]
+    },
+    {
+      "id": "ru-098", "split": "development", "category": "ambiguous",
+      "input": "teri maa ka khayal rakhna",
+      "expected": "تیری ماں کا خیال رکھنا"
+    },
+    {
+      "id": "ru-099", "split": "development", "category": "ambiguous",
+      "input": "uss ne kuch nahi kaha",
+      "expected": "اس نے کچھ نہیں کہا"
+    },
+    {
+      "id": "ru-100", "split": "development", "category": "ambiguous",
+      "input": "woh to pehle se jaanta tha",
+      "expected": "وہ تو پہلے سے جانتا تھا",
+      "ambiguousTokens": ["to"]
+    },
+    {
+      "id": "ru-101", "split": "development", "category": "names_places",
+      "input": "Karachi mein rehta hoon",
+      "expected": "Karachi میں رہتا ہوں",
+      "protectedTokens": ["Karachi"]
+    },
+    {
+      "id": "ru-102", "split": "development", "category": "names_places",
+      "input": "Lahore jane ka plan hai",
+      "expected": "Lahore جانے کا plan ہے",
+      "protectedTokens": ["Lahore", "plan"]
+    },
+    {
+      "id": "ru-103", "split": "development", "category": "names_places",
+      "input": "Ahmed bhai ne bataya",
+      "expected": "Ahmed بھائی نے بتایا",
+      "protectedTokens": ["Ahmed"]
+    },
+    {
+      "id": "ru-104", "split": "development", "category": "names_places",
+      "input": "Islamabad mein barish ho rahi hai",
+      "expected": "Islamabad میں بارش ہو رہی ہے",
+      "protectedTokens": ["Islamabad"]
+    },
+    {
+      "id": "ru-105", "split": "development", "category": "names_places",
+      "input": "Ramadan mein roza rakh raha hoon",
+      "expected": "Ramadan میں روزہ رکھ رہا ہوں",
+      "protectedTokens": ["Ramadan"]
+    },
+    {
+      "id": "ru-106", "split": "development", "category": "names_places",
+      "input": "Fatima ki shaadi hai kal",
+      "expected": "Fatima کی شادی ہے کل",
+      "protectedTokens": ["Fatima"]
+    },
+    {
+      "id": "ru-107", "split": "development", "category": "names_places",
+      "input": "Quran parh raha tha",
+      "expected": "Quran پڑھ رہا تھا",
+      "protectedTokens": ["Quran"]
+    },
+    {
+      "id": "ru-108", "split": "development", "category": "names_places",
+      "input": "Rawalpindi se Lahore kitna door hai",
+      "expected": "Rawalpindi سے Lahore کتنا دور ہے",
+      "protectedTokens": ["Rawalpindi", "Lahore"]
+    },
+    {
+      "id": "ru-109", "split": "development", "category": "names_places",
+      "input": "Eid Mubarak bhai",
+      "expected": "Eid Mubarak بھائی",
+      "protectedTokens": ["Eid", "Mubarak"]
+    },
+    {
+      "id": "ru-110", "split": "development", "category": "names_places",
+      "input": "Ali ki tabiyat theek nahi",
+      "expected": "Ali کی طبیعت ٹھیک نہیں",
+      "protectedTokens": ["Ali"]
+    },
+    {
+      "id": "ru-111", "split": "development", "category": "names_places",
+      "input": "Peshawar wale aye hain",
+      "expected": "Peshawar والے آئے ہیں",
+      "protectedTokens": ["Peshawar"]
+    },
+    {
+      "id": "ru-112", "split": "development", "category": "names_places",
+      "input": "Masjid mein jaana hai",
+      "expected": "Masjid میں جانا ہے",
+      "protectedTokens": ["Masjid"]
+    },
+    {
+      "id": "ru-113", "split": "development", "category": "names_places",
+      "input": "Usman bhai ka phone aaya",
+      "expected": "Usman بھائی کا phone آیا",
+      "protectedTokens": ["Usman", "phone"]
+    },
+    {
+      "id": "ru-114", "split": "development", "category": "names_places",
+      "input": "Pakistan ka future bright hai",
+      "expected": "Pakistan کا future bright ہے",
+      "protectedTokens": ["Pakistan", "future", "bright"]
+    },
+    {
+      "id": "ru-115", "split": "development", "category": "names_places",
+      "input": "Multan ki khajoor mashhoor hai",
+      "expected": "Multan کی کھجور مشہور ہے",
+      "protectedTokens": ["Multan"]
+    },
+    {
+      "id": "ru-116", "split": "development", "category": "names_places",
+      "input": "Zainab ki exam kal hai",
+      "expected": "Zainab کی exam کل ہے",
+      "protectedTokens": ["Zainab", "exam"]
+    },
+    {
+      "id": "ru-117", "split": "development", "category": "names_places",
+      "input": "Namaz ka waqt ho gaya",
+      "expected": "Namaz کا وقت ہو گیا",
+      "protectedTokens": ["Namaz"]
+    },
+    {
+      "id": "ru-118", "split": "development", "category": "names_places",
+      "input": "Faisalabad se order aya",
+      "expected": "Faisalabad سے order آیا",
+      "protectedTokens": ["Faisalabad", "order"]
+    },
+    {
+      "id": "ru-119", "split": "development", "category": "names_places",
+      "input": "Baba Farid ka mazar",
+      "expected": "Baba Farid کا مزار",
+      "protectedTokens": ["Baba", "Farid"]
+    },
+    {
+      "id": "ru-120", "split": "development", "category": "names_places",
+      "input": "Iqbal ka shair yaad hai",
+      "expected": "Iqbal کا شعر یاد ہے",
+      "protectedTokens": ["Iqbal"]
+    },
+    {
+      "id": "ru-121", "split": "development", "category": "numbers_urls",
+      "input": "mujhe 500 rupay chahiye",
+      "expected": "مجھے 500 روپے چاہیے",
+      "protectedTokens": ["500"]
+    },
+    {
+      "id": "ru-122", "split": "development", "category": "numbers_urls",
+      "input": "kal 14 August hai",
+      "expected": "کل 14 August ہے",
+      "protectedTokens": ["14", "August"]
+    },
+    {
+      "id": "ru-123", "split": "development", "category": "numbers_urls",
+      "input": "www.qalam.works pe jao",
+      "expected": "www.qalam.works پر جاؤ",
+      "protectedTokens": ["www.qalam.works"]
+    },
+    {
+      "id": "ru-124", "split": "development", "category": "numbers_urls",
+      "input": "mera number 0312-1234567 hai",
+      "expected": "میرا number 0312-1234567 ہے",
+      "protectedTokens": ["0312-1234567", "number"]
+    },
+    {
+      "id": "ru-125", "split": "development", "category": "numbers_urls",
+      "input": "email karo info@qalam.works pe",
+      "expected": "email کرو info@qalam.works پر",
+      "protectedTokens": ["info@qalam.works", "email"]
+    },
+    {
+      "id": "ru-126", "split": "development", "category": "numbers_urls",
+      "input": "#PakistanZindabad trend kar raha hai",
+      "expected": "#PakistanZindabad trend کر رہا ہے",
+      "protectedTokens": ["#PakistanZindabad", "trend"]
+    },
+    {
+      "id": "ru-127", "split": "development", "category": "numbers_urls",
+      "input": "@AhmadKhan ne reply nahi kiya",
+      "expected": "@AhmadKhan نے reply نہیں کیا",
+      "protectedTokens": ["@AhmadKhan", "reply"]
+    },
+    {
+      "id": "ru-128", "split": "development", "category": "numbers_urls",
+      "input": "3 baj ke 15 minute ho gaye",
+      "expected": "3 بج کے 15 minute ہو گئے",
+      "protectedTokens": ["3", "15", "minute"]
+    },
+    {
+      "id": "ru-129", "split": "development", "category": "numbers_urls",
+      "input": "2024 mein yeh hua tha",
+      "expected": "2024 میں یہ ہوا تھا",
+      "protectedTokens": ["2024"]
+    },
+    {
+      "id": "ru-130", "split": "development", "category": "numbers_urls",
+      "input": "https://docs.google.com ka link bhejo",
+      "expected": "https://docs.google.com کا link بھیجو",
+      "protectedTokens": ["https://docs.google.com", "link"]
+    },
+    {
+      "id": "ru-131", "split": "development", "category": "numbers_urls",
+      "input": "50% discount chal raha hai",
+      "expected": "50% discount چل رہا ہے",
+      "protectedTokens": ["50%", "discount"]
+    },
+    {
+      "id": "ru-132", "split": "development", "category": "numbers_urls",
+      "input": "saal 1947 mein azaadi mili",
+      "expected": "سال 1947 میں آزادی ملی",
+      "protectedTokens": ["1947"]
+    },
+    {
+      "id": "ru-133", "split": "development", "category": "numbers_urls",
+      "input": "200 banda aa gaya",
+      "expected": "200 بندہ آ گیا",
+      "protectedTokens": ["200"]
+    },
+    {
+      "id": "ru-134", "split": "development", "category": "numbers_urls",
+      "input": "#Urdu trending hai Twitter par",
+      "expected": "#Urdu trending ہے Twitter پر",
+      "protectedTokens": ["#Urdu", "trending", "Twitter"]
+    },
+    {
+      "id": "ru-135", "split": "development", "category": "numbers_urls",
+      "input": "Rs 1500 mein milega",
+      "expected": "Rs 1500 میں ملے گا",
+      "protectedTokens": ["Rs", "1500"]
+    },
+    {
+      "id": "ru-136", "split": "development", "category": "numbers_urls",
+      "input": "3rd floor pe office hai",
+      "expected": "3rd floor پر office ہے",
+      "protectedTokens": ["3rd", "floor", "office"]
+    },
+    {
+      "id": "ru-137", "split": "development", "category": "numbers_urls",
+      "input": "1 ghante mein wapas aata hoon",
+      "expected": "1 گھنٹے میں واپس آتا ہوں",
+      "protectedTokens": ["1"]
+    },
+    {
+      "id": "ru-138", "split": "development", "category": "numbers_urls",
+      "input": "poora 100 number aya mujhe",
+      "expected": "پورا 100 نمبر آیا مجھے",
+      "protectedTokens": ["100"]
+    },
+    {
+      "id": "ru-139", "split": "development", "category": "numbers_urls",
+      "input": "7 din mein deliver hoga",
+      "expected": "7 دن میں deliver ہوگا",
+      "protectedTokens": ["7", "deliver"]
+    },
+    {
+      "id": "ru-140", "split": "development", "category": "numbers_urls",
+      "input": "March 23 ko public holiday hai",
+      "expected": "March 23 کو public holiday ہے",
+      "protectedTokens": ["March", "23", "public", "holiday"]
+    },
+    {
+      "id": "ru-141", "split": "development", "category": "noisy",
+      "input": "hahahaha yaar kya tha",
+      "expected": "hahahaha یار کیا تھا",
+      "protectedTokens": ["hahahaha"]
+    },
+    {
+      "id": "ru-142", "split": "development", "category": "noisy",
+      "input": "aaaacha samajh gaya",
+      "expected": "اچھا سمجھ گیا"
+    },
+    {
+      "id": "ru-143", "split": "development", "category": "noisy",
+      "input": "lol yaar tu bhi na",
+      "expected": "lol یار تو بھی نہ",
+      "protectedTokens": ["lol"]
+    },
+    {
+      "id": "ru-144", "split": "development", "category": "noisy",
+      "input": "okk bhai",
+      "expected": "okk بھائی",
+      "protectedTokens": ["okk"]
+    },
+    {
+      "id": "ru-145", "split": "development", "category": "noisy",
+      "input": "hmm theek hai",
+      "expected": "hmm ٹھیک ہے",
+      "protectedTokens": ["hmm"]
+    },
+    {
+      "id": "ru-146", "split": "development", "category": "noisy",
+      "input": "yaar pleeeease",
+      "expected": "یار pleeeease",
+      "protectedTokens": ["pleeeease"]
+    },
+    {
+      "id": "ru-147", "split": "development", "category": "noisy",
+      "input": "BILKUL NAHI",
+      "expected": "BILKUL NAHI",
+      "note": "All-caps — preserve casing, low confidence"
+    },
+    {
+      "id": "ru-148", "split": "development", "category": "noisy",
+      "input": "k",
+      "expected": "k",
+      "note": "Single ambiguous character — preserve"
+    },
+    {
+      "id": "ru-149", "split": "development", "category": "noisy",
+      "input": "xyzblarg nahi mila",
+      "expected": "xyzblarg نہیں ملا",
+      "protectedTokens": ["xyzblarg"],
+      "note": "Unknown word — must not be destructively converted"
+    },
+    {
+      "id": "ru-150", "split": "development", "category": "noisy",
+      "input": "omg yaar seriously",
+      "expected": "omg یار seriously",
+      "protectedTokens": ["omg", "seriously"]
+    },
+    {
+      "id": "ru-151", "split": "development", "category": "noisy",
+      "input": "uffffff thak gaya",
+      "expected": "uffffff تھک گیا",
+      "protectedTokens": ["uffffff"]
+    },
+    {
+      "id": "ru-152", "split": "development", "category": "noisy",
+      "input": "jkjk mazza aa gaya",
+      "expected": "jkjk مزہ آ گیا",
+      "protectedTokens": ["jkjk"]
+    },
+    {
+      "id": "ru-153", "split": "development", "category": "noisy",
+      "input": "jee haan zaroor",
+      "expected": "جی ہاں ضرور"
+    },
+    {
+      "id": "ru-154", "split": "development", "category": "noisy",
+      "input": "nope nahi karoonga",
+      "expected": "nope نہیں کروں گا",
+      "protectedTokens": ["nope"]
+    },
+    {
+      "id": "ru-155", "split": "development", "category": "noisy",
+      "input": "brb 5 min",
+      "expected": "brb 5 min",
+      "protectedTokens": ["brb", "5", "min"]
+    },
+    {
+      "id": "ru-156", "split": "development", "category": "noisy",
+      "input": "yaar isko kuch bhi likh diya",
+      "expected": "یار اسکو کچھ بھی لکھ دیا"
+    },
+    {
+      "id": "ru-157", "split": "development", "category": "noisy",
+      "input": "😂😂😂 yaar tu nahi sudheray ga",
+      "expected": "😂😂😂 یار تو نہیں سدھرے گا",
+      "protectedTokens": ["😂😂😂"]
+    },
+    {
+      "id": "ru-158", "split": "development", "category": "noisy",
+      "input": "ugh kya yaar",
+      "expected": "ugh کیا یار",
+      "protectedTokens": ["ugh"]
+    },
+    {
+      "id": "ru-159", "split": "development", "category": "noisy",
+      "input": "tbh mujhe nahi pata",
+      "expected": "tbh مجھے نہیں پتہ",
+      "protectedTokens": ["tbh"]
+    },
+    {
+      "id": "ru-160", "split": "development", "category": "noisy",
+      "input": "lmao yaar kya scene hai",
+      "expected": "lmao یار کیا scene ہے",
+      "protectedTokens": ["lmao", "scene"]
+    },
+    {
+      "id": "ru-161", "split": "development", "category": "everyday",
+      "input": "wahan mat jao akele",
+      "expected": "وہاں مت جاؤ اکیلے"
+    },
+    {
+      "id": "ru-162", "split": "development", "category": "everyday",
+      "input": "sab theek ho jayega",
+      "expected": "سب ٹھیک ہو جائے گا"
+    },
+    {
+      "id": "ru-163", "split": "development", "category": "everyday",
+      "input": "mujhe neend aati nahi raat ko",
+      "expected": "مجھے نیند آتی نہیں رات کو"
+    },
+    {
+      "id": "ru-164", "split": "development", "category": "everyday",
+      "input": "teri pasand acha hai yaar",
+      "expected": "تیری پسند اچھی ہے یار"
+    },
+    {
+      "id": "ru-165", "split": "development", "category": "everyday",
+      "input": "kaam khatam ho gaya",
+      "expected": "کام ختم ہو گیا"
+    },
+    {
+      "id": "ru-166", "split": "development", "category": "everyday",
+      "input": "roz uthna mushkil lagta hai",
+      "expected": "روز اٹھنا مشکل لگتا ہے"
+    },
+    {
+      "id": "ru-167", "split": "development", "category": "everyday",
+      "input": "mujhe teri zaroorat hai",
+      "expected": "مجھے تیری ضرورت ہے"
+    },
+    {
+      "id": "ru-168", "split": "development", "category": "everyday",
+      "input": "bilkul theek farmate hain",
+      "expected": "بالکل ٹھیک فرماتے ہیں"
+    },
+    {
+      "id": "ru-169", "split": "development", "category": "everyday",
+      "input": "sardi bohat hai aaj",
+      "expected": "سردی بہت ہے آج"
+    },
+    {
+      "id": "ru-170", "split": "development", "category": "everyday",
+      "input": "garam pani piye karo",
+      "expected": "گرم پانی پیئے کرو"
+    },
+    {
+      "id": "ru-171", "split": "development", "category": "spelling_variants",
+      "input": "kal subha jana hai mujhe",
+      "expected": "کل صبح جانا ہے مجھے"
+    },
+    {
+      "id": "ru-172", "split": "development", "category": "spelling_variants",
+      "input": "yeh kaam main karta hoon",
+      "expected": "یہ کام میں کرتا ہوں",
+      "ambiguousTokens": ["main"]
+    },
+    {
+      "id": "ru-173", "split": "development", "category": "spelling_variants",
+      "input": "koi problem nahi hai",
+      "expected": "کوئی problem نہیں ہے",
+      "protectedTokens": ["problem"]
+    },
+    {
+      "id": "ru-174", "split": "development", "category": "spelling_variants",
+      "input": "woh aik acha insaan hai",
+      "expected": "وہ ایک اچھا انسان ہے"
+    },
+    {
+      "id": "ru-175", "split": "development", "category": "spelling_variants",
+      "input": "agay kya hoga pata nahi",
+      "expected": "آگے کیا ہوگا پتہ نہیں"
+    },
+    {
+      "id": "ru-176", "split": "development", "category": "mixed",
+      "input": "file share karo Google Drive pe",
+      "expected": "file share کرو Google Drive پر",
+      "protectedTokens": ["file", "share", "Google", "Drive"]
+    },
+    {
+      "id": "ru-177", "split": "development", "category": "mixed",
+      "input": "PDF print nikal lao",
+      "expected": "PDF print نکال لاؤ",
+      "protectedTokens": ["PDF", "print"]
+    },
+    {
+      "id": "ru-178", "split": "development", "category": "mixed",
+      "input": "HR ne approve kar diya",
+      "expected": "HR نے approve کر دیا",
+      "protectedTokens": ["HR", "approve"]
+    },
+    {
+      "id": "ru-179", "split": "development", "category": "mixed",
+      "input": "aaj mood nahi hai",
+      "expected": "آج mood نہیں ہے",
+      "protectedTokens": ["mood"]
+    },
+    {
+      "id": "ru-180", "split": "development", "category": "mixed",
+      "input": "boss ne reject kar diya proposal",
+      "expected": "boss نے reject کر دیا proposal",
+      "protectedTokens": ["boss", "reject", "proposal"]
+    },
+    {
+      "id": "ru-181", "split": "development", "category": "ambiguous",
+      "input": "wahan se nikalte hain",
+      "expected": "وہاں سے نکلتے ہیں"
+    },
+    {
+      "id": "ru-182", "split": "development", "category": "ambiguous",
+      "input": "kia tum aa rahe ho",
+      "expected": "کیا تم آ رہے ہو"
+    },
+    {
+      "id": "ru-183", "split": "development", "category": "ambiguous",
+      "input": "ajeeb banda hai woh",
+      "expected": "عجیب بندہ ہے وہ"
+    },
+    {
+      "id": "ru-184", "split": "development", "category": "names_places",
+      "input": "Sialkot ka Sara maal export hota hai",
+      "expected": "Sialkot کا سارا مال export ہوتا ہے",
+      "protectedTokens": ["Sialkot", "export"]
+    },
+    {
+      "id": "ru-185", "split": "development", "category": "names_places",
+      "input": "Hazrat Ali ka waqia",
+      "expected": "Hazrat Ali کا واقعہ",
+      "protectedTokens": ["Hazrat", "Ali"]
+    },
+    {
+      "id": "ru-186", "split": "development", "category": "numbers_urls",
+      "input": "sms karo 0333-xxxxxxx pe",
+      "expected": "sms کرو 0333-xxxxxxx پر",
+      "protectedTokens": ["sms", "0333-xxxxxxx"]
+    },
+    {
+      "id": "ru-187", "split": "development", "category": "numbers_urls",
+      "input": "PIN 1234 hai ATM ka",
+      "expected": "PIN 1234 ہے ATM کا",
+      "protectedTokens": ["PIN", "1234", "ATM"]
+    },
+    {
+      "id": "ru-188", "split": "development", "category": "noisy",
+      "input": "yaar yaar yaar kya karoon",
+      "expected": "یار یار یار کیا کروں"
+    },
+    {
+      "id": "ru-189", "split": "development", "category": "noisy",
+      "input": "haan haan theek hai",
+      "expected": "ہاں ہاں ٹھیک ہے"
+    },
+    {
+      "id": "ru-190", "split": "development", "category": "noisy",
+      "input": "nope nope nope",
+      "expected": "nope nope nope",
+      "protectedTokens": ["nope"]
+    },
+    {
+      "id": "ru-191", "split": "development", "category": "everyday",
+      "input": "mujhe bhook lagi hai",
+      "expected": "مجھے بھوک لگی ہے"
+    },
+    {
+      "id": "ru-192", "split": "development", "category": "everyday",
+      "input": "kapray dho diye",
+      "expected": "کپڑے دھو دیے"
+    },
+    {
+      "id": "ru-193", "split": "development", "category": "everyday",
+      "input": "bijli chali gayi phir",
+      "expected": "بجلی چلی گئی پھر"
+    },
+    {
+      "id": "ru-194", "split": "development", "category": "spelling_variants",
+      "input": "mujhy nahi pata tha",
+      "expected": "مجھے نہیں پتہ تھا"
+    },
+    {
+      "id": "ru-195", "split": "development", "category": "spelling_variants",
+      "input": "dekho na yaar",
+      "expected": "دیکھو نہ یار"
+    },
+    {
+      "id": "ru-196", "split": "development", "category": "mixed",
+      "input": "deadline extend ho gayi",
+      "expected": "deadline extend ہو گئی",
+      "protectedTokens": ["deadline", "extend"]
+    },
+    {
+      "id": "ru-197", "split": "development", "category": "names_places",
+      "input": "Gujranwala wale nahi aaye",
+      "expected": "Gujranwala والے نہیں آئے",
+      "protectedTokens": ["Gujranwala"]
+    },
+    {
+      "id": "ru-198", "split": "development", "category": "numbers_urls",
+      "input": "10 saal pehle ki baat hai",
+      "expected": "10 سال پہلے کی بات ہے",
+      "protectedTokens": ["10"]
+    },
+    {
+      "id": "ru-199", "split": "development", "category": "noisy",
+      "input": "idk yaar mujhe nahi pata",
+      "expected": "idk یار مجھے نہیں پتہ",
+      "protectedTokens": ["idk"]
+    },
+    {
+      "id": "ru-200", "split": "development", "category": "everyday",
+      "input": "kal phir sochu ga",
+      "expected": "کل پھر سوچوں گا"
+    },
+    {
+      "id": "ru-201", "split": "holdout", "category": "everyday",
+      "input": "safar mein dua karo",
+      "expected": "سفر میں دعا کرو"
+    },
+    {
+      "id": "ru-202", "split": "holdout", "category": "everyday",
+      "input": "waqt se pehle pohoncho",
+      "expected": "وقت سے پہلے پہنچو"
+    },
+    {
+      "id": "ru-203", "split": "holdout", "category": "everyday",
+      "input": "mujhse galti hui",
+      "expected": "مجھ سے غلطی ہوئی"
+    },
+    {
+      "id": "ru-204", "split": "holdout", "category": "everyday",
+      "input": "yeh mera kaam nahi",
+      "expected": "یہ میرا کام نہیں"
+    },
+    {
+      "id": "ru-205", "split": "holdout", "category": "everyday",
+      "input": "kal tak ho jayega",
+      "expected": "کل تک ہو جائے گا"
+    },
+    {
+      "id": "ru-206", "split": "holdout", "category": "everyday",
+      "input": "shukar hai sab theek hai",
+      "expected": "شکر ہے سب ٹھیک ہے"
+    },
+    {
+      "id": "ru-207", "split": "holdout", "category": "everyday",
+      "input": "apni parhai par dhyan do",
+      "expected": "اپنی پڑھائی پر دھیان دو"
+    },
+    {
+      "id": "ru-208", "split": "holdout", "category": "everyday",
+      "input": "dil nahi lag raha kaam mein",
+      "expected": "دل نہیں لگ رہا کام میں"
+    },
+    {
+      "id": "ru-209", "split": "holdout", "category": "everyday",
+      "input": "abbu ne poocha tha",
+      "expected": "ابو نے پوچھا تھا"
+    },
+    {
+      "id": "ru-210", "split": "holdout", "category": "everyday",
+      "input": "aama ki tabiyat theek nahi",
+      "expected": "اماں کی طبیعت ٹھیک نہیں"
+    },
+    {
+      "id": "ru-211", "split": "holdout", "category": "spelling_variants",
+      "input": "smbhalo apne aap ko",
+      "expected": "سنبھالو اپنے آپ کو"
+    },
+    {
+      "id": "ru-212", "split": "holdout", "category": "spelling_variants",
+      "input": "phir milenge kabhi",
+      "expected": "پھر ملیں گے کبھی"
+    },
+    {
+      "id": "ru-213", "split": "holdout", "category": "spelling_variants",
+      "input": "kuch hua nhi yaar",
+      "expected": "کچھ ہوا نہیں یار"
+    },
+    {
+      "id": "ru-214", "split": "holdout", "category": "spelling_variants",
+      "input": "toba hai yeh to kuch bhi",
+      "expected": "توبہ ہے یہ تو کچھ بھی",
+      "ambiguousTokens": ["to"]
+    },
+    {
+      "id": "ru-215", "split": "holdout", "category": "spelling_variants",
+      "input": "khyal rakhna apna",
+      "expected": "خیال رکھنا اپنا"
+    },
+    {
+      "id": "ru-216", "split": "holdout", "category": "spelling_variants",
+      "input": "dosri baar mat karna",
+      "expected": "دوسری بار مت کرنا"
+    },
+    {
+      "id": "ru-217", "split": "holdout", "category": "spelling_variants",
+      "input": "zra wait karo",
+      "expected": "ذرا wait کرو",
+      "protectedTokens": ["wait"]
+    },
+    {
+      "id": "ru-218", "split": "holdout", "category": "spelling_variants",
+      "input": "kuch naya seekha?",
+      "expected": "کچھ نیا سیکھا؟"
+    },
+    {
+      "id": "ru-219", "split": "holdout", "category": "spelling_variants",
+      "input": "theek se baat kiya karo",
+      "expected": "ٹھیک سے بات کیا کرو"
+    },
+    {
+      "id": "ru-220", "split": "holdout", "category": "spelling_variants",
+      "input": "samjho bhi yaar",
+      "expected": "سمجھو بھی یار"
+    },
+    {
+      "id": "ru-221", "split": "holdout", "category": "mixed",
+      "input": "Wifi password kya hai",
+      "expected": "Wifi password کیا ہے",
+      "protectedTokens": ["Wifi", "password"]
+    },
+    {
+      "id": "ru-222", "split": "holdout", "category": "mixed",
+      "input": "zoom call join karo",
+      "expected": "zoom call join کرو",
+      "protectedTokens": ["zoom", "call", "join"]
+    },
+    {
+      "id": "ru-223", "split": "holdout", "category": "mixed",
+      "input": "aaj Sunday hai chutti enjoy karo",
+      "expected": "آج Sunday ہے چھٹی enjoy کرو",
+      "protectedTokens": ["Sunday", "enjoy"]
+    },
+    {
+      "id": "ru-224", "split": "holdout", "category": "mixed",
+      "input": "naya mobile le liya",
+      "expected": "نیا mobile لے لیا",
+      "protectedTokens": ["mobile"]
+    },
+    {
+      "id": "ru-225", "split": "holdout", "category": "mixed",
+      "input": "office band hai aaj",
+      "expected": "office بند ہے آج",
+      "protectedTokens": ["office"]
+    },
+    {
+      "id": "ru-226", "split": "holdout", "category": "mixed",
+      "input": "battery low ho gayi",
+      "expected": "battery low ہو گئی",
+      "protectedTokens": ["battery", "low"]
+    },
+    {
+      "id": "ru-227", "split": "holdout", "category": "mixed",
+      "input": "aaj koi class nahi hai",
+      "expected": "آج کوئی class نہیں ہے",
+      "protectedTokens": ["class"]
+    },
+    {
+      "id": "ru-228", "split": "holdout", "category": "mixed",
+      "input": "plot book ho gaya",
+      "expected": "plot book ہو گیا",
+      "protectedTokens": ["plot", "book"]
+    },
+    {
+      "id": "ru-229", "split": "holdout", "category": "mixed",
+      "input": "itna tension mat lo",
+      "expected": "اتنا tension مت لو",
+      "protectedTokens": ["tension"]
+    },
+    {
+      "id": "ru-230", "split": "holdout", "category": "mixed",
+      "input": "salary late aa rahi hai",
+      "expected": "salary late آ رہی ہے",
+      "protectedTokens": ["salary", "late"]
+    },
+    {
+      "id": "ru-231", "split": "holdout", "category": "ambiguous",
+      "input": "is jagah raho",
+      "expected": "اس جگہ رہو",
+      "ambiguousTokens": ["is"]
+    },
+    {
+      "id": "ru-232", "split": "holdout", "category": "ambiguous",
+      "input": "main samjha nahi",
+      "expected": "میں سمجھا نہیں",
+      "ambiguousTokens": ["main"]
+    },
+    {
+      "id": "ru-233", "split": "holdout", "category": "ambiguous",
+      "input": "par kya hoga ab",
+      "expected": "پر کیا ہوگا اب",
+      "ambiguousTokens": ["par"]
+    },
+    {
+      "id": "ru-234", "split": "holdout", "category": "ambiguous",
+      "input": "woh to aana chahta tha",
+      "expected": "وہ تو آنا چاہتا تھا",
+      "ambiguousTokens": ["to"]
+    },
+    {
+      "id": "ru-235", "split": "holdout", "category": "ambiguous",
+      "input": "na jaao abhi",
+      "expected": "نہ جاؤ ابھی"
+    },
+    {
+      "id": "ru-236", "split": "holdout", "category": "ambiguous",
+      "input": "kuch bhi kar sakta hoon",
+      "expected": "کچھ بھی کر سکتا ہوں"
+    },
+    {
+      "id": "ru-237", "split": "holdout", "category": "ambiguous",
+      "input": "bus karo ab",
+      "expected": "بس کرو اب",
+      "ambiguousTokens": ["bus"]
+    },
+    {
+      "id": "ru-238", "split": "holdout", "category": "ambiguous",
+      "input": "yeh to mere saath hona tha",
+      "expected": "یہ تو میرے ساتھ ہونا تھا",
+      "ambiguousTokens": ["to"]
+    },
+    {
+      "id": "ru-239", "split": "holdout", "category": "ambiguous",
+      "input": "yaar woh is waqt nahi hai",
+      "expected": "یار وہ اس وقت نہیں ہے",
+      "ambiguousTokens": ["is"]
+    },
+    {
+      "id": "ru-240", "split": "holdout", "category": "ambiguous",
+      "input": "main apne ghar gaya",
+      "expected": "میں اپنے گھر گیا",
+      "ambiguousTokens": ["main"]
+    },
+    {
+      "id": "ru-241", "split": "holdout", "category": "names_places",
+      "input": "Hyderabad mein seli lag gayi",
+      "expected": "Hyderabad میں سیلی لگ گئی",
+      "protectedTokens": ["Hyderabad"]
+    },
+    {
+      "id": "ru-242", "split": "holdout", "category": "names_places",
+      "input": "Hazara wale aa rahe hain",
+      "expected": "Hazara والے آ رہے ہیں",
+      "protectedTokens": ["Hazara"]
+    },
+    {
+      "id": "ru-243", "split": "holdout", "category": "names_places",
+      "input": "Omar bhai ki dukan hai wahan",
+      "expected": "Omar بھائی کی دکان ہے وہاں",
+      "protectedTokens": ["Omar"]
+    },
+    {
+      "id": "ru-244", "split": "holdout", "category": "names_places",
+      "input": "Shab e Barat kal hai",
+      "expected": "Shab e Barat کل ہے",
+      "protectedTokens": ["Shab", "Barat"]
+    },
+    {
+      "id": "ru-245", "split": "holdout", "category": "names_places",
+      "input": "Takht Lahori parh lo",
+      "expected": "Takht Lahori پڑھ لو",
+      "protectedTokens": ["Takht", "Lahori"]
+    },
+    {
+      "id": "ru-246", "split": "holdout", "category": "names_places",
+      "input": "Sukkur bridge ke paas",
+      "expected": "Sukkur bridge کے پاس",
+      "protectedTokens": ["Sukkur", "bridge"]
+    },
+    {
+      "id": "ru-247", "split": "holdout", "category": "names_places",
+      "input": "Hassan uncle ne bataya",
+      "expected": "Hassan uncle نے بتایا",
+      "protectedTokens": ["Hassan", "uncle"]
+    },
+    {
+      "id": "ru-248", "split": "holdout", "category": "names_places",
+      "input": "Jinnah airport pe loag aye hain",
+      "expected": "Jinnah airport پر لوگ آئے ہیں",
+      "protectedTokens": ["Jinnah", "airport"]
+    },
+    {
+      "id": "ru-249", "split": "holdout", "category": "names_places",
+      "input": "Mardan ki chai mashhoor hai",
+      "expected": "Mardan کی چائے مشہور ہے",
+      "protectedTokens": ["Mardan"]
+    },
+    {
+      "id": "ru-250", "split": "holdout", "category": "names_places",
+      "input": "Mir Chakar Khan yaad karo",
+      "expected": "Mir Chakar Khan یاد کرو",
+      "protectedTokens": ["Mir", "Chakar", "Khan"]
+    },
+    {
+      "id": "ru-251", "split": "holdout", "category": "numbers_urls",
+      "input": "mera CNIC 35202-xxxxxxx-x hai",
+      "expected": "میرا CNIC 35202-xxxxxxx-x ہے",
+      "protectedTokens": ["CNIC", "35202-xxxxxxx-x"]
+    },
+    {
+      "id": "ru-252", "split": "holdout", "category": "numbers_urls",
+      "input": "4G speed bahut fast hai",
+      "expected": "4G speed بہت fast ہے",
+      "protectedTokens": ["4G", "speed", "fast"]
+    },
+    {
+      "id": "ru-253", "split": "holdout", "category": "numbers_urls",
+      "input": "instagram.com/qalamworks follow karo",
+      "expected": "instagram.com/qalamworks follow کرو",
+      "protectedTokens": ["instagram.com/qalamworks", "follow"]
+    },
+    {
+      "id": "ru-254", "split": "holdout", "category": "numbers_urls",
+      "input": "abhi 11:30 PM ho raha hai",
+      "expected": "ابھی 11:30 PM ہو رہا ہے",
+      "protectedTokens": ["11:30", "PM"]
+    },
+    {
+      "id": "ru-255", "split": "holdout", "category": "numbers_urls",
+      "input": "Rm 150 per page rate hai",
+      "expected": "Rm 150 per page rate ہے",
+      "protectedTokens": ["Rm", "150", "per", "page", "rate"]
+    },
+    {
+      "id": "ru-256", "split": "holdout", "category": "numbers_urls",
+      "input": "#EidMubarak2024 se greet karo",
+      "expected": "#EidMubarak2024 سے greet کرو",
+      "protectedTokens": ["#EidMubarak2024", "greet"]
+    },
+    {
+      "id": "ru-257", "split": "holdout", "category": "numbers_urls",
+      "input": "100 km door hai wahan",
+      "expected": "100 km دور ہے وہاں",
+      "protectedTokens": ["100", "km"]
+    },
+    {
+      "id": "ru-258", "split": "holdout", "category": "numbers_urls",
+      "input": "Sunday 9 December ko",
+      "expected": "Sunday 9 December کو",
+      "protectedTokens": ["Sunday", "9", "December"]
+    },
+    {
+      "id": "ru-259", "split": "holdout", "category": "numbers_urls",
+      "input": "00923001234567 pe WhatsApp karo",
+      "expected": "00923001234567 پر WhatsApp کرو",
+      "protectedTokens": ["00923001234567", "WhatsApp"]
+    },
+    {
+      "id": "ru-260", "split": "holdout", "category": "numbers_urls",
+      "input": "form 15-A bharna hai",
+      "expected": "form 15-A بھرنا ہے",
+      "protectedTokens": ["form", "15-A"]
+    },
+    {
+      "id": "ru-261", "split": "holdout", "category": "noisy",
+      "input": "argh phir se",
+      "expected": "argh پھر سے",
+      "protectedTokens": ["argh"]
+    },
+    {
+      "id": "ru-262", "split": "holdout", "category": "noisy",
+      "input": "lol kya scene tha",
+      "expected": "lol کیا scene تھا",
+      "protectedTokens": ["lol", "scene"]
+    },
+    {
+      "id": "ru-263", "split": "holdout", "category": "noisy",
+      "input": "hahaha yaar pagal hai tu",
+      "expected": "hahaha یار پاگل ہے تو",
+      "protectedTokens": ["hahaha"]
+    },
+    {
+      "id": "ru-264", "split": "holdout", "category": "noisy",
+      "input": "oops galti ho gayi",
+      "expected": "oops غلطی ہو گئی",
+      "protectedTokens": ["oops"]
+    },
+    {
+      "id": "ru-265", "split": "holdout", "category": "noisy",
+      "input": "smh yaar kya kar diya",
+      "expected": "smh یار کیا کر دیا",
+      "protectedTokens": ["smh"]
+    },
+    {
+      "id": "ru-266", "split": "holdout", "category": "noisy",
+      "input": "zzz neend aa rahi hai",
+      "expected": "zzz نیند آ رہی ہے",
+      "protectedTokens": ["zzz"]
+    },
+    {
+      "id": "ru-267", "split": "holdout", "category": "noisy",
+      "input": "wtf yaar yeh kya hua",
+      "expected": "wtf یار یہ کیا ہوا",
+      "protectedTokens": ["wtf"]
+    },
+    {
+      "id": "ru-268", "split": "holdout", "category": "noisy",
+      "input": "frnds ne plan banaya",
+      "expected": "friends نے plan بنایا",
+      "acceptableAlternatives": ["frnds نے plan بنایا", "friends نے plan بنایا"],
+      "protectedTokens": ["plan"]
+    },
+    {
+      "id": "ru-269", "split": "holdout", "category": "noisy",
+      "input": "omg omg omg",
+      "expected": "omg omg omg",
+      "protectedTokens": ["omg"]
+    },
+    {
+      "id": "ru-270", "split": "holdout", "category": "noisy",
+      "input": "qwerty keyboard pe likhna mushkil hai",
+      "expected": "qwerty keyboard پر لکھنا مشکل ہے",
+      "protectedTokens": ["qwerty", "keyboard"]
+    },
+    {
+      "id": "ru-271", "split": "holdout", "category": "everyday",
+      "input": "rishta aa gaya suna",
+      "expected": "رشتہ آ گیا سنا"
+    },
+    {
+      "id": "ru-272", "split": "holdout", "category": "everyday",
+      "input": "gaari nahi chal rahi",
+      "expected": "گاڑی نہیں چل رہی"
+    },
+    {
+      "id": "ru-273", "split": "holdout", "category": "everyday",
+      "input": "makan ka kiraya barh gaya",
+      "expected": "مکان کا کرایہ بڑھ گیا"
+    },
+    {
+      "id": "ru-274", "split": "holdout", "category": "everyday",
+      "input": "baazar se sabzi lao",
+      "expected": "بازار سے سبزی لاؤ"
+    },
+    {
+      "id": "ru-275", "split": "holdout", "category": "everyday",
+      "input": "school ki chutti hai aaj",
+      "expected": "school کی چھٹی ہے آج",
+      "protectedTokens": ["school"]
+    },
+    {
+      "id": "ru-276", "split": "holdout", "category": "spelling_variants",
+      "input": "yahan aa jao jaldi",
+      "expected": "یہاں آ جاؤ جلدی"
+    },
+    {
+      "id": "ru-277", "split": "holdout", "category": "spelling_variants",
+      "input": "agr waqt mile to aana",
+      "expected": "اگر وقت ملے تو آنا",
+      "ambiguousTokens": ["to"]
+    },
+    {
+      "id": "ru-278", "split": "holdout", "category": "spelling_variants",
+      "input": "ye bht mushkil hai",
+      "expected": "یہ بہت مشکل ہے"
+    },
+    {
+      "id": "ru-279", "split": "holdout", "category": "mixed",
+      "input": "aaj strike hai market mein",
+      "expected": "آج strike ہے market میں",
+      "protectedTokens": ["strike", "market"]
+    },
+    {
+      "id": "ru-280", "split": "holdout", "category": "mixed",
+      "input": "network problem hai dobara try karo",
+      "expected": "network problem ہے دوبارہ try کرو",
+      "protectedTokens": ["network", "problem", "try"]
+    },
+    {
+      "id": "ru-281", "split": "holdout", "category": "names_places",
+      "input": "Nankana Sahib jane ka plan hai",
+      "expected": "Nankana Sahib جانے کا plan ہے",
+      "protectedTokens": ["Nankana", "Sahib", "plan"]
+    },
+    {
+      "id": "ru-282", "split": "holdout", "category": "names_places",
+      "input": "Sindh mein barish zyada hoti hai",
+      "expected": "Sindh میں بارش زیادہ ہوتی ہے",
+      "protectedTokens": ["Sindh"]
+    },
+    {
+      "id": "ru-283", "split": "holdout", "category": "ambiguous",
+      "input": "jo hona tha ho gaya",
+      "expected": "جو ہونا تھا ہو گیا"
+    },
+    {
+      "id": "ru-284", "split": "holdout", "category": "ambiguous",
+      "input": "na is taraf na us taraf",
+      "expected": "نہ اس طرف نہ اس طرف",
+      "ambiguousTokens": ["is"]
+    },
+    {
+      "id": "ru-285", "split": "holdout", "category": "numbers_urls",
+      "input": "2nd January se kaam shuru hai",
+      "expected": "2nd January سے کام شروع ہے",
+      "protectedTokens": ["2nd", "January"]
+    },
+    {
+      "id": "ru-286", "split": "holdout", "category": "noisy",
+      "input": "kkk theek hai matlab",
+      "expected": "kkk ٹھیک ہے مطلب",
+      "protectedTokens": ["kkk"]
+    },
+    {
+      "id": "ru-287", "split": "holdout", "category": "noisy",
+      "input": "np yaar no problem",
+      "expected": "np یار no problem",
+      "protectedTokens": ["np", "no", "problem"]
+    },
+    {
+      "id": "ru-288", "split": "holdout", "category": "noisy",
+      "input": "gtg bhai baad mein",
+      "expected": "gtg بھائی بعد میں",
+      "protectedTokens": ["gtg"]
+    },
+    {
+      "id": "ru-289", "split": "holdout", "category": "everyday",
+      "input": "zid mat karo bachon ki tarah",
+      "expected": "ضد مت کرو بچوں کی طرح"
+    },
+    {
+      "id": "ru-290", "split": "holdout", "category": "everyday",
+      "input": "rishtedaar aa rahe hain kal",
+      "expected": "رشتہ دار آ رہے ہیں کل"
+    },
+    {
+      "id": "ru-291", "split": "holdout", "category": "spelling_variants",
+      "input": "mujay neend nahi aa rahi",
+      "expected": "مجھے نیند نہیں آ رہی"
+    },
+    {
+      "id": "ru-292", "split": "holdout", "category": "spelling_variants",
+      "input": "yeh zaroori nahi tha",
+      "expected": "یہ ضروری نہیں تھا"
+    },
+    {
+      "id": "ru-293", "split": "holdout", "category": "mixed",
+      "input": "charges bohat zyada hain",
+      "expected": "charges بہت زیادہ ہیں",
+      "protectedTokens": ["charges"]
+    },
+    {
+      "id": "ru-294", "split": "holdout", "category": "mixed",
+      "input": "doctor ne rest karne kaha",
+      "expected": "doctor نے rest کرنے کہا",
+      "protectedTokens": ["doctor", "rest"]
+    },
+    {
+      "id": "ru-295", "split": "holdout", "category": "names_places",
+      "input": "Attock mein nana ka ghar hai",
+      "expected": "Attock میں نانا کا گھر ہے",
+      "protectedTokens": ["Attock"]
+    },
+    {
+      "id": "ru-296", "split": "holdout", "category": "numbers_urls",
+      "input": "Ghanta No 15 pe utarna hai",
+      "expected": "گھنٹہ No 15 پر اترنا ہے",
+      "protectedTokens": ["No", "15"]
+    },
+    {
+      "id": "ru-297", "split": "holdout", "category": "noisy",
+      "input": "haha classic yaar",
+      "expected": "haha classic یار",
+      "protectedTokens": ["haha", "classic"]
+    },
+    {
+      "id": "ru-298", "split": "holdout", "category": "everyday",
+      "input": "saans lo aur aage baro",
+      "expected": "سانس لو اور آگے بڑھو"
+    },
+    {
+      "id": "ru-299", "split": "holdout", "category": "everyday",
+      "input": "mehnat ka nateeja milega zaroor",
+      "expected": "محنت کا نتیجہ ملے گا ضرور"
+    },
+    {
+      "id": "ru-300", "split": "holdout", "category": "everyday",
+      "input": "hum sab saath hain",
+      "expected": "ہم سب ساتھ ہیں"
+    }
+  ]
+}
