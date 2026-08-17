@@ -70,10 +70,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" dir="ltr">
-      <body className={`${inter.variable} ${nastaliq.variable} ${naskh.variable} ${amiri.variable} ${vazirmatn.variable} antialiased`}>
+      <body className={`${inter.variable} ${nastaliq.variable} ${naskh.variable} ${amiri.variable} ${vazirmatn.variable} antialiased min-h-screen flex flex-col`}>
         <LanguageProvider>
           <Header />
-          {children}
+          <div className="flex-grow">
+            {children}
+          </div>
           <Footer />
           <AnalyticsProviders />
         </LanguageProvider>

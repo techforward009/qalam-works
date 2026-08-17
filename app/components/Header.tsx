@@ -78,12 +78,12 @@ export default function Header() {
     { label: t.home, href: "/" },
     { label: t.documentStudio, href: "/tools/document-studio" },
     { label: t.translationStudio, href: "/tools/translation-studio" },
-    { label: t.documentCleaner, href: "/tools/document-cleaner" },
-    { label: t.qualityChecker, href: "/tools/quality-checker" },
-    { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
   ];
 
   const moreLinks = [
+    { label: t.documentCleaner, href: "/tools/document-cleaner" },
+    { label: t.qualityChecker, href: "/tools/quality-checker" },
+    { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
     { label: t.invoiceStudio, href: "/tools/invoice-generator" },
     { label: t.whatsappRtlFormatter, href: "/tools/whatsapp-rtl-formatter" },
     { label: t.services, href: "/services" },
