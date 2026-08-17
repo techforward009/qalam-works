@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eraser, Type, FilePenLine, MessageCircle, SearchCheck, ChevronRight } from "lucide-react";
+import { Eraser, Type, FilePenLine, MessageCircle, SearchCheck, Languages, ChevronRight } from "lucide-react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { trackEvent, type ToolId } from "../lib/analytics";
@@ -10,6 +10,7 @@ const HREF_TO_TOOL: Record<string, ToolId> = {
   "/tools/document-cleaner": "document_cleaner",
   "/tools/unicode-standardizer": "urdu_unicode_standardizer",
   "/tools/document-studio": "document_studio",
+  "/tools/translation-studio": "translation_studio",
   "/tools/whatsapp-rtl-formatter": "whatsapp_rtl_formatter",
   "/tools/quality-checker": "quality_audit",
 };
@@ -38,6 +39,13 @@ const CARD_META: Record<
     iconBg: "bg-[#B8935A]/10",
     iconColor: "text-[#9A6A30]",
     borderHover: "hover:shadow-md hover:shadow-[#B8935A]/10",
+  },
+  "/tools/translation-studio": {
+    Icon: Languages,
+    accent: "border-[#1A3A2A]/15 hover:border-violet-500/40",
+    iconBg: "bg-violet-50",
+    iconColor: "text-violet-700",
+    borderHover: "hover:shadow-md hover:shadow-violet-900/5",
   },
   "/tools/whatsapp-rtl-formatter": {
     Icon: MessageCircle,

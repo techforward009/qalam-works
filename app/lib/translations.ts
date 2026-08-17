@@ -88,6 +88,10 @@ export const translations = {
           body: "Write, edit, clean, review, and export in one workspace — with language-aware processing.",
         },
         {
+          name: "Translation Studio",
+          body: "Translate documents segment by segment, manage glossary and review, then continue in Document Studio.",
+        },
+        {
           name: "Document Cleaner",
           body: "Paste or upload text for quick language-aware cleanup (Urdu, English, Arabic, or safe Auto).",
         },
@@ -123,6 +127,12 @@ export const translations = {
           href: "/tools/unicode-standardizer",
           description: "Urdu Unicode Standardizer",
           body: "Improve Urdu letter forms and consistency.",
+        },
+        {
+          label: "I need to translate a document",
+          href: "/tools/translation-studio",
+          description: "Translation Studio",
+          body: "Translate documents with a focused source-and-target workflow.",
         },
         {
           label: "I need a complete document workflow",
@@ -410,6 +420,10 @@ export const translations = {
           body: "لکھیں، صفائی کریں، جائزہ لیں اور ایک ہی جگہ سے ایکسپورٹ کریں — زبان کے مطابق پروسیسنگ کے ساتھ۔",
         },
         {
+          name: "ترجمہ اسٹوڈیو",
+          body: "حصہ بہ حصہ ترجمہ کریں، اصطلاحی فہرست اور نظرثانی کا انتظام کریں، پھر ڈاکومنٹ اسٹوڈیو میں جاری رکھیں۔",
+        },
+        {
           name: "ڈاکومنٹ کلینر",
           body: "متن پیسٹ کریں یا فائل اپلوڈ کریں — اردو، انگریزی، عربی، یا محفوظ آٹو صفائی۔",
         },
@@ -445,6 +459,12 @@ export const translations = {
           href: "/tools/unicode-standardizer",
           description: "اردو یونیکوڈ اسٹینڈرڈائزر",
           body: "اردو حروف کی شکل اور consistency بہتر کریں۔",
+        },
+        {
+          label: "مجھے ایک دستاویز کا ترجمہ کرنا ہے",
+          href: "/tools/translation-studio",
+          description: "ٹرانسلیشن اسٹوڈیو",
+          body: "اصل متن اور ترجمے کو ساتھ رکھتے ہوئے منظم انداز میں ترجمہ کریں۔",
         },
         {
           label: "مجھے مکمل document تیار کرنا ہے",

@@ -19,6 +19,7 @@ function PenNibIcon() {
 
 const TOOL_ROUTES = [
   { key: "documentStudio", href: "/tools/document-studio" },
+  { key: "translationStudio", href: "/tools/translation-studio" },
   { key: "documentCleaner", href: "/tools/document-cleaner", labelEn: "Document Cleaner", labelUr: "ڈاکومنٹ کلینر" },
   { key: "qualityChecker", href: "/tools/quality-checker" },
   { key: "unicodeStandardizer", href: "/tools/unicode-standardizer" },

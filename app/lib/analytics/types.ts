@@ -10,6 +10,7 @@ export type ToolId =
   | "urdu_unicode_standardizer"
   | "whatsapp_rtl_formatter"
   | "invoice_generator"
+  | "translation_studio"
   | "home"
   | "unknown";
 

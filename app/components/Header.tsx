@@ -78,6 +78,7 @@ export default function Header() {
     { label: t.home, href: "/" },
     { label: t.documentStudio, href: "/tools/document-studio" },
     { label: t.translationStudio, href: "/tools/translation-studio" },
+    { label: "WhatsApp RTL", href: "/tools/whatsapp-rtl-formatter" },
   ];
 
   const moreLinks = [
@@ -85,7 +86,6 @@ export default function Header() {
     { label: t.qualityChecker, href: "/tools/quality-checker" },
     { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
     { label: t.invoiceStudio, href: "/tools/invoice-generator" },
-    { label: t.whatsappRtlFormatter, href: "/tools/whatsapp-rtl-formatter" },
     { label: t.services, href: "/services" },
     { label: t.about, href: "/about" },
     { label: t.contact, href: "/contact" },
@@ -117,7 +117,7 @@ export default function Header() {
 
         {/* Desktop / laptop nav — lg+ only */}
         <nav
-          className="hidden lg:flex items-center justify-center gap-3 xl:gap-5 2xl:gap-6 flex-1 min-w-0 overflow-visible"
+          className="hidden lg:flex items-center justify-center gap-2 xl:gap-4 2xl:gap-6 flex-1 min-w-0 overflow-visible"
           dir="ltr"
           aria-label="Primary"
         >
