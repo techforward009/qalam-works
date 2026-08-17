@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import type { TranslationProject } from "../utils/translationTypes";
 import {
   buildTranslationExportModel,
@@ -7,13 +7,16 @@ import {
   sanitizeFilenameBase,
   buildDocxFromExportModel,
 } from "../utils/translationExport";
+import { exportProjectBackup, importProjectBackup } from "../utils/projectStore";
 
 interface ExportPanelProps {
   project: TranslationProject;
+  onImportProject?: (updated: TranslationProject) => void;
 }
 
-export default function ExportPanel({ project }: ExportPanelProps) {
+export default function ExportPanel({ project, onImportProject }: ExportPanelProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const model = buildTranslationExportModel(project);
   const text = serializeExportModelToText(model);
@@ -72,6 +75,35 @@ export default function ExportPanel({ project }: ExportPanelProps) {
     }
   };
 
+  const handleDownloadBackup = () => {
+    const json = exportProjectBackup(project);
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${sanitizeFilenameBase(project.name)}.qalam-translation.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const json = ev.target?.result as string;
+      const result = importProjectBackup(json);
+      if (!result.ok) {
+        showFeedback("Import failed — invalid or unsupported backup file.");
+      } else {
+        onImportProject?.(result.value);
+        showFeedback("Project imported successfully.");
+      }
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
   const btnCls = "h-9 px-4 rounded-md border text-xs font-medium transition-colors";
   const primaryCls = `${btnCls} bg-[#1A3A2A] text-white border-[#1A3A2A] hover:bg-[#12172A]`;
   const secondaryCls = `${btnCls} bg-white text-[#1A3A2A] border-[#1A3A2A]/20 hover:bg-[#F3F7F2]`;
@@ -90,6 +122,17 @@ export default function ExportPanel({ project }: ExportPanelProps) {
       {feedback && (
         <span className="text-xs text-gray-600 ml-1">{feedback}</span>
       )}
+      <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImportFile} />
+      <div className="w-full flex flex-wrap gap-2 mt-1 border-t border-gray-100 pt-2">
+        <button type="button" onClick={handleDownloadBackup} className={secondaryCls}>
+          Download project backup
+        </button>
+        {onImportProject && (
+          <button type="button" onClick={() => fileRef.current?.click()} className={secondaryCls}>
+            Import project backup
+          </button>
+        )}
+      </div>
     </div>
   );
 }

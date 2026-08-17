@@ -111,9 +111,17 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
     if (updated) { updateSegment(id, updated); setNavCursor(seg.order); }
   }, [project, updateSegment]);
 
+  const handleImportProject = useCallback((restored: TranslationProject) => {
+    // Atomic: only called after full validation in importProjectBackup.
+    // Replace current project state and persist.
+    const withTimestamp = { ...restored, updatedAt: new Date().toISOString() };
+    onProjectChange(withTimestamp);
+    debouncedSave(withTimestamp);
+  }, [onProjectChange, debouncedSave]);
+
   const handleFilterChange = useCallback((f: ReviewFilter) => {
     setReviewFilter(f);
-    setNavCursor(0); // reset cursor on filter change
+    setNavCursor(0);
   }, []);
 
   const handleNext = useCallback(() => {
@@ -200,7 +208,7 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
         onFilterChange={handleFilterChange}
       />
 
-      <ExportPanel project={project} />
+      <ExportPanel project={project} onImportProject={handleImportProject} />
 
       {/* Sticky navigation row — must be a sibling of the segment list, NOT inside
           ReviewFilterBar, so its containing block spans the full scroll area.

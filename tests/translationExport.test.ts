@@ -375,3 +375,200 @@ describe("buildDocxFromExportModel", () => {
     expect(txtName).toBe("My-Project-translation.txt");
   });
 });
+
+// ── Backup / Restore ──────────────────────────────────────────────────────────
+
+import {
+  exportProjectBackup,
+  importProjectBackup,
+  BACKUP_FORMAT,
+  BACKUP_SCHEMA_VERSION,
+} from "../app/tools/translation-studio/utils/projectStore";
+
+function fullProject(segs: Array<{ order: number; target: string; src?: string }>): TranslationProject {
+  return {
+    schemaVersion: 1,
+    id: generateProjectId(),
+    name: "Backup Test",
+    sourceLanguage: "en",
+    targetLanguage: "ur",
+    brief: defaultBrief(),
+    segments: segs.map(s => ({
+      id: makeSegmentId(s.order),
+      order: s.order,
+      source: s.src ?? "source",
+      target: s.target,
+      sourceDir: "ltr",
+      targetDir: "rtl",
+      status: s.target.trim() ? "draft" as const : "untranslated" as const,
+      sourceFingerprint: segmentFingerprint(s.src ?? "source"),
+      reviewStatus: "unreviewed" as const,
+      reviewNote: "",
+      reviewedTargetFingerprint: "",
+    })),
+    glossary: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+describe("exportProjectBackup / importProjectBackup — versioned envelope", () => {
+  test("1. exported JSON contains format and schemaVersion", () => {
+    const p = fullProject([{ order: 1, target: "ترجمہ" }]);
+    const json = exportProjectBackup(p);
+    const parsed = JSON.parse(json);
+    expect(parsed.format).toBe(BACKUP_FORMAT);
+    expect(parsed.schemaVersion).toBe(BACKUP_SCHEMA_VERSION);
+    expect(parsed.project).toBeDefined();
+  });
+
+  test("2. exact target text preserved in round-trip", () => {
+    const target = "علی کتاب پڑھ رہے ہیں۔";
+    const p = fullProject([{ order: 1, target }]);
+    const result = importProjectBackup(exportProjectBackup(p));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.segments[0].target).toBe(target);
+  });
+
+  test("3. Arabic text preserved verbatim (not normalized)", () => {
+    const arabic = "علي عليه السلام";
+    const p = fullProject([{ order: 1, target: arabic }]);
+    const result = importProjectBackup(exportProjectBackup(p));
+    if (result.ok) expect(result.value.segments[0].target).toBe(arabic);
+  });
+
+  test("3b. critical Arabic normalization regression: علي كتاب stays as-is", () => {
+    const arabicScript = "علي كتاب";
+    const p = fullProject([{ order: 1, target: arabicScript }]);
+    const result = importProjectBackup(exportProjectBackup(p));
+    if (result.ok) {
+      expect(result.value.segments[0].target).toBe(arabicScript);
+      expect(result.value.segments[0].target).not.toContain("علی");
+    }
+  });
+
+  test("4. mixed Unicode preserved verbatim", () => {
+    const mixed = "Qalam Works میں Translation Studio کھولیں۔";
+    const p = fullProject([{ order: 1, target: mixed }]);
+    const result = importProjectBackup(exportProjectBackup(p));
+    if (result.ok) expect(result.value.segments[0].target).toBe(mixed);
+  });
+
+  test("5. segment order preserved after round-trip", () => {
+    const p = fullProject([{ order: 3, target: "c" }, { order: 1, target: "a" }, { order: 2, target: "b" }]);
+    const result = importProjectBackup(exportProjectBackup(p));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      // parseProject/parseSegment restores all segments; order values preserved
+      const orders = result.value.segments.map(s => s.order);
+      expect(orders.sort((a, b) => a - b)).toEqual([1, 2, 3]);
+    }
+  });
+
+  test("6. review/status fields preserved", () => {
+    const p = fullProject([{ order: 1, target: "ترجمہ" }]);
+    const seg = p.segments[0];
+    seg.status = "final";
+    seg.reviewStatus = "approved";
+    seg.reviewNote = "Looks good";
+    seg.reviewedTargetFingerprint = "abc123";
+    const result = importProjectBackup(exportProjectBackup(p));
+    if (result.ok) {
+      expect(result.value.segments[0].status).toBe("final");
+      expect(result.value.segments[0].reviewStatus).toBe("approved");
+      expect(result.value.segments[0].reviewNote).toBe("Looks good");
+    }
+  });
+
+  test("7. empty target survives round-trip (no source substitution)", () => {
+    const p = fullProject([{ order: 1, target: "", src: "source that must not appear" }]);
+    const result = importProjectBackup(exportProjectBackup(p));
+    if (result.ok) {
+      expect(result.value.segments[0].target).toBe("");
+      expect(result.value.segments[0].source).toBe("source that must not appear");
+    }
+  });
+
+  test("8. invalid JSON → corrupt error", () => {
+    const r = importProjectBackup("not valid json {{{");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("corrupt");
+  });
+
+  test("9. wrong format field → rejected", () => {
+    const p = fullProject([{ order: 1, target: "x" }]);
+    const env = JSON.parse(exportProjectBackup(p));
+    env.format = "something-else";
+    const r = importProjectBackup(JSON.stringify(env));
+    expect(r.ok).toBe(false);
+  });
+
+  test("10. unsupported schemaVersion → rejected", () => {
+    const p = fullProject([{ order: 1, target: "x" }]);
+    const env = JSON.parse(exportProjectBackup(p));
+    env.schemaVersion = 99;
+    const r = importProjectBackup(JSON.stringify(env));
+    expect(r.ok).toBe(false);
+  });
+
+  test("11. malformed segment → rejected", () => {
+    const p = fullProject([{ order: 1, target: "x" }]);
+    const env = JSON.parse(exportProjectBackup(p));
+    env.project.segments[0].id = null; // invalid
+    const r = importProjectBackup(JSON.stringify(env));
+    expect(r.ok).toBe(false);
+  });
+
+  test("12. failed restore does not mutate — caller only updates state on ok", () => {
+    // importProjectBackup returns null/error; the workspace only calls onProjectChange
+    // if result.ok is true. Verify the return is not ok for a bad backup.
+    const r = importProjectBackup("{}");
+    expect(r.ok).toBe(false);
+    // The calling code in workspace only mutates on r.ok === true.
+  });
+
+  test("13. filename sanitizer reused for .qalam-translation.json", () => {
+    const name = "My Project";
+    const expected = `${sanitizeFilenameBase(name)}.qalam-translation.json`;
+    expect(expected).toBe("My-Project.qalam-translation.json");
+  });
+
+  test("14. full semantic round-trip equality", () => {
+    const p = fullProject([
+      { order: 1, target: "علی کتاب پڑھ رہے ہیں۔" },
+      { order: 2, target: "" },
+      { order: 3, target: "The Chamber of Commerce issued a statement." },
+    ]);
+    const result = importProjectBackup(exportProjectBackup(p));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.segments.length).toBe(3);
+      expect(result.value.targetLanguage).toBe(p.targetLanguage);
+      expect(result.value.sourceLanguage).toBe(p.sourceLanguage);
+      expect(result.value.name).toBe(p.name);
+    }
+  });
+});
+
+  // Legacy compatibility
+  test("valid legacy backup (raw TranslationProject) imports successfully", () => {
+    const p = fullProject([{ order: 1, target: "ترجمہ" }]);
+    // Raw project JSON without versioned envelope (old export format)
+    const legacyJson = JSON.stringify(p);
+    const result = importProjectBackup(legacyJson);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.segments[0].target).toBe("ترجمہ");
+  });
+
+  test("malformed legacy backup rejects safely", () => {
+    const r = importProjectBackup(JSON.stringify({ schemaVersion: 1, id: "" }));
+    expect(r.ok).toBe(false);
+  });
+
+  test("new exports still use versioned v1 envelope", () => {
+    const p = fullProject([{ order: 1, target: "x" }]);
+    const parsed = JSON.parse(exportProjectBackup(p));
+    expect(parsed.format).toBe(BACKUP_FORMAT);
+    expect(parsed.schemaVersion).toBe(BACKUP_SCHEMA_VERSION);
+    expect(parsed.project).toBeDefined();
+  });

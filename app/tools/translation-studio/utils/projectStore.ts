@@ -108,13 +108,41 @@ export function loadAllProjects(): TranslationProject[] {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+export const BACKUP_FORMAT = "qalam-translation-project";
+export const BACKUP_SCHEMA_VERSION = 1;
+
+export interface TranslationBackupEnvelope {
+  format: typeof BACKUP_FORMAT;
+  schemaVersion: typeof BACKUP_SCHEMA_VERSION;
+  project: TranslationProject;
+}
+
+/** Serialises a project into the versioned backup JSON string.
+ *  No text processing — target values pass through verbatim. */
 export function exportProjectBackup(project: TranslationProject): string {
-  return JSON.stringify(project, null, 2);
+  const envelope: TranslationBackupEnvelope = {
+    format: BACKUP_FORMAT,
+    schemaVersion: BACKUP_SCHEMA_VERSION,
+    project,
+  };
+  return JSON.stringify(envelope, null, 2);
 }
 
 export function importProjectBackup(json: string): StoreResult<TranslationProject> {
   try {
     const parsed = JSON.parse(json);
+    if (!parsed || typeof parsed !== "object") return { ok: false, error: "corrupt" };
+
+    // Versioned envelope (current format)
+    if (parsed.format !== undefined) {
+      if (parsed.format !== BACKUP_FORMAT) return { ok: false, error: "corrupt" };
+      if (parsed.schemaVersion !== BACKUP_SCHEMA_VERSION) return { ok: false, error: "corrupt" };
+      const project = parseProject(parsed.project);
+      if (!project) return { ok: false, error: "corrupt" };
+      return { ok: true, value: project };
+    }
+
+    // Legacy format: raw TranslationProject (no envelope)
     const project = parseProject(parsed);
     if (!project) return { ok: false, error: "corrupt" };
     return { ok: true, value: project };
