@@ -122,16 +122,16 @@ export default function ExportPanel({ project, onImportProject }: ExportPanelPro
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
-      <button type="button" onClick={handleCopy} disabled={isEmpty} className={`${primaryCls} disabled:opacity-40`}>
+      <button type="button" data-testid="export-copy" onClick={handleCopy} disabled={isEmpty} className={`${primaryCls} disabled:opacity-40`}>
         Copy translation
       </button>
-      <button type="button" onClick={handleDownloadTxt} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
+      <button type="button" data-testid="export-txt" onClick={handleDownloadTxt} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
         Download TXT
       </button>
-      <button type="button" onClick={handleDownloadDocx} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
+      <button type="button" data-testid="export-docx" onClick={handleDownloadDocx} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
         Download DOCX
       </button>
-      <button type="button" onClick={handleContinueInDocumentStudio} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
+      <button type="button" data-testid="export-handoff" onClick={handleContinueInDocumentStudio} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
         Continue in Document Studio →
       </button>
       {feedback && (
@@ -139,11 +139,11 @@ export default function ExportPanel({ project, onImportProject }: ExportPanelPro
       )}
       <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImportFile} />
       <div className="w-full flex flex-wrap gap-2 mt-1 border-t border-gray-100 pt-2">
-        <button type="button" onClick={handleDownloadBackup} className={secondaryCls}>
+        <button type="button" data-testid="export-backup" onClick={handleDownloadBackup} className={secondaryCls}>
           Download project backup
         </button>
         {onImportProject && (
-          <button type="button" onClick={() => fileRef.current?.click()} className={secondaryCls}>
+          <button type="button" data-testid="export-import" onClick={() => fileRef.current?.click()} className={secondaryCls}>
             Import project backup
           </button>
         )}

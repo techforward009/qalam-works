@@ -82,7 +82,7 @@ export default function TranslationStudioClient() {
 
   if (view === "new") {
     return (
-      <div>
+      <div data-testid="translation-studio-setup">
         <button onClick={() => setView("list")} className="mx-4 mt-4 text-sm text-[#1A3A2A] hover:underline">← Back</button>
         <ProjectSetupPanel onCreateProject={handleCreateProject} />
       </div>
@@ -90,11 +90,13 @@ export default function TranslationStudioClient() {
   }
 
   return (
-    <ProjectListPanel
-      projects={projects}
-      onOpen={handleOpenProject}
-      onDelete={handleDeleteProject}
-      onNew={() => setView("new")}
-    />
+    <div data-testid="translation-studio-list">
+      <ProjectListPanel
+        projects={projects}
+        onOpen={handleOpenProject}
+        onDelete={handleDeleteProject}
+        onNew={() => setView("new")}
+      />
+    </div>
   );
 }

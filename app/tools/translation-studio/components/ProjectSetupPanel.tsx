@@ -74,7 +74,7 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
         {/* Project name */}
         <div>
           <label className={labelCls}>Project Name</label>
-          <input type="text" className={inputCls} value={name} onChange={e => { setName(e.target.value); if (e.target.value.trim()) setError(prev => prev === "Project name is required" ? "" : prev); }} placeholder="e.g. Annual Report 2026" maxLength={120} />
+          <input type="text" className={inputCls} value={name} onChange={e => { setName(e.target.value); if (e.target.value.trim()) setError(prev => prev === "Project name is required" ? "" : prev); }} data-testid="project-name-input" placeholder="e.g. Annual Report 2026" maxLength={120} />
         </div>
 
         {/* Language pair */}
@@ -123,13 +123,13 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
             <button type="button" onClick={() => fileRef.current?.click()} className="h-8 px-3 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">Upload TXT / DOCX</button>
             <button type="button" onClick={handleLoadExample} className="h-8 px-3 rounded-md border border-[#1A3A2A]/20 bg-[#F3F7F2] text-xs font-medium text-[#1A3A2A] hover:bg-[#E8F0E8]">Load Example</button>
           </div>
-          <textarea className={`${inputCls} resize-y`} rows={8} value={sourceText} onChange={e => { setSourceText(e.target.value); if (e.target.value.trim()) setError(prev => prev === "Source text is required" ? "" : prev); }} placeholder="Paste source text here, or upload a .txt or .docx file. One paragraph per segment." dir="auto" />
+          <textarea className={`${inputCls} resize-y`} rows={8} value={sourceText} onChange={e => { setSourceText(e.target.value); if (e.target.value.trim()) setError(prev => prev === "Source text is required" ? "" : prev); }} data-testid="source-text-input" placeholder="Paste source text here, or upload a .txt or .docx file. One paragraph per segment." dir="auto" />
           <p className="mt-1 text-xs text-gray-400">DOCX text is imported for translation; document formatting is not preserved.</p>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <button type="submit" className="w-full h-11 rounded-lg bg-[#1A3A2A] text-white font-semibold text-sm hover:bg-[#12172A] transition-colors">
+        <button data-testid="create-project-btn" type="submit" className="w-full h-11 rounded-lg bg-[#1A3A2A] text-white font-semibold text-sm hover:bg-[#12172A] transition-colors">
           Create Project →
         </button>
       </form>
