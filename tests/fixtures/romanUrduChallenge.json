@@ -1,0 +1,1195 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Qalam Roman Urdu Challenge Set — 120 fresh examples, evaluation-only split. Created before any engine evaluation. Engine V2 (c51776bb) must not be modified after this corpus is frozen.",
+    "totalExamples": 120,
+    "split": "challenge",
+    "categories": {
+      "everyday": 25,
+      "spelling_noisy": 20,
+      "mixed_english": 20,
+      "context_ambiguity": 20,
+      "names_cultural": 15,
+      "numbers_protected": 10,
+      "morphology_phrases": 10
+    },
+    "independencePolicy": "Created without inspecting engineV2.ts, lexicon.ts, phraseTable.ts, or engine test failures. Tests the product requirement, not the current implementation.",
+    "evaluationPolicy": "Engine V2 will be evaluated exactly once against this corpus. No modification to the engine is permitted after this corpus is frozen and before the evaluation is complete."
+  },
+  "examples": [
+    {
+      "id": "challenge-001",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "bhai kal subah uthna mushkil tha",
+      "expected": "بھائی کل صبح اٹھنا مشکل تھا"
+    },
+    {
+      "id": "challenge-002",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "mujhe pata hai wo nahi aayega",
+      "expected": "مجھے پتہ ہے وہ نہیں آئے گا"
+    },
+    {
+      "id": "challenge-003",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "ghar pe khana ready hai aa jao",
+      "expected": "گھر پر کھانا ready ہے آ جاؤ",
+      "protectedTokens": [
+        "ready"
+      ],
+      "ambiguousTokens": [
+        "pe"
+      ],
+      "note": "pe = پر (on/at) — postposition ambiguity"
+    },
+    {
+      "id": "challenge-004",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "kal raat neend bilkul nahi aayi",
+      "expected": "کل رات نیند بالکل نہیں آئی"
+    },
+    {
+      "id": "challenge-005",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "thori der mein pohonchta hoon",
+      "expected": "تھوڑی دیر میں پہنچتا ہوں",
+      "ambiguousTokens": [
+        "mein"
+      ],
+      "note": "mein = میں (I/in) — pronoun vs locative"
+    },
+    {
+      "id": "challenge-006",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "yaar yeh kitab kaafi achi hai",
+      "expected": "یار یہ کتاب کافی اچھی ہے"
+    },
+    {
+      "id": "challenge-007",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "woh log abhi tak nahi pohonche",
+      "expected": "وہ لوگ ابھی تک نہیں پہنچے"
+    },
+    {
+      "id": "challenge-008",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "khaana kha lo pehle phir baat karte hain",
+      "expected": "کھانا کھا لو پہلے پھر بات کرتے ہیں"
+    },
+    {
+      "id": "challenge-009",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "meri ammi ne kaha ghar jaldi aa",
+      "expected": "میری اماں نے کہا گھر جلدی آ"
+    },
+    {
+      "id": "challenge-010",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "aaj bahut zyada garam hai bahar",
+      "expected": "آج بہت زیادہ گرم ہے باہر"
+    },
+    {
+      "id": "challenge-011",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "teri baat sach hai yaar maan leta hoon",
+      "expected": "تیری بات سچ ہے یار مان لیتا ہوں"
+    },
+    {
+      "id": "challenge-012",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "subah se sar dard tha abhi better hai",
+      "expected": "صبح سے سر درد تھا ابھی better ہے",
+      "protectedTokens": [
+        "better"
+      ]
+    },
+    {
+      "id": "challenge-013",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "chalo bazar chalte hain sath",
+      "expected": "چلو بازار چلتے ہیں ساتھ"
+    },
+    {
+      "id": "challenge-014",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "wo aaj office nahi gaya chutti li hai",
+      "expected": "وہ آج office نہیں گیا چھٹی لی ہے",
+      "protectedTokens": [
+        "office"
+      ]
+    },
+    {
+      "id": "challenge-015",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "dua karo sab theek ho jaye",
+      "expected": "دعا کرو سب ٹھیک ہو جائے"
+    },
+    {
+      "id": "challenge-016",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "itni jaldi kya hai bhai",
+      "expected": "اتنی جلدی کیا ہے بھائی"
+    },
+    {
+      "id": "challenge-017",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "rishta aya hai Fatima ke liye sunna hai",
+      "expected": "رشتہ آیا ہے Fatima کے لیے سننا ہے",
+      "protectedTokens": [
+        "Fatima"
+      ]
+    },
+    {
+      "id": "challenge-018",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "neend aa rahi hai bilkul so jaunga",
+      "expected": "نیند آ رہی ہے بالکل سو جاؤں گا"
+    },
+    {
+      "id": "challenge-019",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "mujhe pani lao please",
+      "expected": "مجھے پانی لاؤ please",
+      "protectedTokens": [
+        "please"
+      ]
+    },
+    {
+      "id": "challenge-020",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "wo bahut thakka hua lagta hai",
+      "expected": "وہ بہت تھکا ہوا لگتا ہے"
+    },
+    {
+      "id": "challenge-021",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "aaj koi kaam nahi karna dil nahi kar raha",
+      "expected": "آج کوئی کام نہیں کرنا دل نہیں کر رہا"
+    },
+    {
+      "id": "challenge-022",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "ghar wale pareshan hain meri wajah se",
+      "expected": "گھر والے پریشان ہیں میری وجہ سے"
+    },
+    {
+      "id": "challenge-023",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "parhai chor ke kahan ja raha hai",
+      "expected": "پڑھائی چھوڑ کے کہاں جا رہا ہے"
+    },
+    {
+      "id": "challenge-024",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "raat ko uthna parega kaam zyada hai",
+      "expected": "رات کو اٹھنا پڑے گا کام زیادہ ہے"
+    },
+    {
+      "id": "challenge-025",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "mehman kal aa rahe hain ghar saaf karna hai",
+      "expected": "مہمان کل آ رہے ہیں گھر صاف کرنا ہے",
+      "ambiguousTokens": [
+        "kal"
+      ],
+      "note": "kal = کل (yesterday/tomorrow) — temporal ambiguity"
+    },
+    {
+      "id": "challenge-026",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "yar bhot mushkl tha kaam",
+      "expected": "یار بہت مشکل تھا کام"
+    },
+    {
+      "id": "challenge-027",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "koi ni yaar sb theek ho jata hai",
+      "expected": "کوئی نہیں یار سب ٹھیک ہو جاتا ہے"
+    },
+    {
+      "id": "challenge-028",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "uff yaar hahaha ye bhi koi baat hai",
+      "expected": "اف یار hahaha یہ بھی کوئی بات ہے",
+      "protectedTokens": [
+        "hahaha"
+      ]
+    },
+    {
+      "id": "challenge-029",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "mujhy smjh nhi ayi kuch bhi",
+      "expected": "مجھے سمجھ نہیں آئی کچھ بھی"
+    },
+    {
+      "id": "challenge-030",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "okay bhai kr lena baad mn",
+      "expected": "okay بھائی کر لینا بعد میں",
+      "protectedTokens": [
+        "okay"
+      ]
+    },
+    {
+      "id": "challenge-031",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "lmaooo yaar ye to kamaal hai",
+      "expected": "lmaooo یار یہ تو کمال ہے",
+      "protectedTokens": [
+        "lmaooo"
+      ]
+    },
+    {
+      "id": "challenge-032",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "woh kaam bohot mushkil tha fr bhi kar liya",
+      "expected": "وہ کام بہت مشکل تھا پھر بھی کر لیا"
+    },
+    {
+      "id": "challenge-033",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "bhai mry pass paise nh hain",
+      "expected": "بھائی میرے پاس پیسے نہیں ہیں"
+    },
+    {
+      "id": "challenge-034",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "kya hua nhi btaya tune",
+      "expected": "کیا ہوا نہیں بتایا تو نے"
+    },
+    {
+      "id": "challenge-035",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "smjho bhai smjho ye waqt ki baat hai",
+      "expected": "سمجھو بھائی سمجھو یہ وقت کی بات ہے"
+    },
+    {
+      "id": "challenge-036",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "thk hua hoon kaam se ab so jaonga",
+      "expected": "تھک گیا ہوں کام سے اب سو جاؤں گا",
+      "acceptableAlternatives": [
+        "تھک ہوا ہوں کام سے اب سو جاؤں گا"
+      ]
+    },
+    {
+      "id": "challenge-037",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "yar kab milenge phir kabhi bhi nahi milte",
+      "expected": "یار کب ملیں گے پھر کبھی بھی نہیں ملتے"
+    },
+    {
+      "id": "challenge-038",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "haaaan yaar bilkuuul sahi kaha tune",
+      "expected": "ہاں یار بالکل صحیح کہا تو نے"
+    },
+    {
+      "id": "challenge-039",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "bhai gtg talk later",
+      "expected": "بھائی gtg talk later",
+      "protectedTokens": [
+        "gtg",
+        "talk",
+        "later"
+      ]
+    },
+    {
+      "id": "challenge-040",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "ajeeb qism ka banda hai wo bilkul",
+      "expected": "عجیب قسم کا بندہ ہے وہ بالکل"
+    },
+    {
+      "id": "challenge-041",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "koi mashla nai hai chill karo yaar",
+      "expected": "کوئی مسئلہ نہیں ہے chill کرو یار",
+      "protectedTokens": [
+        "chill"
+      ]
+    },
+    {
+      "id": "challenge-042",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "xyzfoo ka naam suna hai tu ne",
+      "expected": "xyzfoo کا نام سنا ہے تو نے",
+      "unknownTokens": [
+        "xyzfoo"
+      ]
+    },
+    {
+      "id": "challenge-043",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "thaaaanks yaar bht help ki tumne",
+      "expected": "thaaaanks یار بہت help کی تم نے",
+      "protectedTokens": [
+        "thaaaanks",
+        "help"
+      ]
+    },
+    {
+      "id": "challenge-044",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "dkho bhaii ek baar aur sochlo",
+      "expected": "دیکھو بھائی ایک بار اور سوچ لو"
+    },
+    {
+      "id": "challenge-045",
+      "split": "challenge",
+      "category": "spelling_noisy",
+      "input": "woh blarg naam ki cheez kya hoti hai",
+      "expected": "وہ blarg نام کی چیز کیا ہوتی ہے",
+      "unknownTokens": [
+        "blarg"
+      ]
+    },
+    {
+      "id": "challenge-046",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "meri presentation kal ki meeting mein hai",
+      "expected": "میری presentation کل کی meeting میں ہے",
+      "protectedTokens": [
+        "presentation",
+        "meeting"
+      ]
+    },
+    {
+      "id": "challenge-047",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "Instagram pe story daal di hai dekho",
+      "expected": "Instagram پر story ڈال دی ہے دیکھو",
+      "protectedTokens": [
+        "Instagram",
+        "story"
+      ]
+    },
+    {
+      "id": "challenge-048",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "boss ne kal deadline extend ki hai",
+      "expected": "boss نے کل deadline extend کی ہے",
+      "protectedTokens": [
+        "boss",
+        "deadline",
+        "extend"
+      ]
+    },
+    {
+      "id": "challenge-049",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "meri salary ka credit aa gaya account mein",
+      "expected": "میری salary کا credit آ گیا account میں",
+      "protectedTokens": [
+        "salary",
+        "credit",
+        "account"
+      ]
+    },
+    {
+      "id": "challenge-050",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "aaj gym nahi jaunga rest karunga",
+      "expected": "آج gym نہیں جاؤں گا rest کروں گا",
+      "protectedTokens": [
+        "gym",
+        "rest"
+      ]
+    },
+    {
+      "id": "challenge-051",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "Discord pe server join kar lo",
+      "expected": "Discord پر server join کر لو",
+      "protectedTokens": [
+        "Discord",
+        "server",
+        "join"
+      ]
+    },
+    {
+      "id": "challenge-052",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "mera internet slow hai video buffering ho rahi hai",
+      "expected": "میرا internet slow ہے video buffering ہو رہی ہے",
+      "protectedTokens": [
+        "internet",
+        "slow",
+        "video",
+        "buffering"
+      ]
+    },
+    {
+      "id": "challenge-053",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "trip ke liye hotel book karna hai",
+      "expected": "trip کے لیے hotel book کرنا ہے",
+      "protectedTokens": [
+        "trip",
+        "hotel",
+        "book"
+      ]
+    },
+    {
+      "id": "challenge-054",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "project ki report submit karo aaj",
+      "expected": "project کی report submit کرو آج",
+      "protectedTokens": [
+        "project",
+        "report",
+        "submit"
+      ]
+    },
+    {
+      "id": "challenge-055",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "Telegram group mein add kar diya",
+      "expected": "Telegram group میں add کر دیا",
+      "protectedTokens": [
+        "Telegram",
+        "group",
+        "add"
+      ]
+    },
+    {
+      "id": "challenge-056",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "naya laptop acha hai speed bhi bohot fast hai",
+      "expected": "نیا laptop اچھا ہے speed بھی بہت fast ہے",
+      "protectedTokens": [
+        "laptop",
+        "speed",
+        "fast"
+      ]
+    },
+    {
+      "id": "challenge-057",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "form fill out karo aur submit kar do",
+      "expected": "form fill out کرو اور submit کر دو",
+      "protectedTokens": [
+        "form",
+        "fill",
+        "out",
+        "submit"
+      ]
+    },
+    {
+      "id": "challenge-058",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "Spotify pe playlist share karo",
+      "expected": "Spotify پر playlist share کرو",
+      "protectedTokens": [
+        "Spotify",
+        "playlist",
+        "share"
+      ]
+    },
+    {
+      "id": "challenge-059",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "aaj koi event nahi hai office closed hai",
+      "expected": "آج کوئی event نہیں ہے office closed ہے",
+      "protectedTokens": [
+        "event",
+        "office",
+        "closed"
+      ]
+    },
+    {
+      "id": "challenge-060",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "call drop ho gayi dobara call karo",
+      "expected": "call drop ہو گئی دوبارہ call کرو",
+      "protectedTokens": [
+        "call",
+        "drop"
+      ]
+    },
+    {
+      "id": "challenge-061",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "design file send karo email pe",
+      "expected": "design file send کرو email پر",
+      "protectedTokens": [
+        "design",
+        "file",
+        "send",
+        "email"
+      ]
+    },
+    {
+      "id": "challenge-062",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "ticket book ho gaya Pakistan se Dubai",
+      "expected": "ticket book ہو گیا Pakistan سے Dubai",
+      "protectedTokens": [
+        "ticket",
+        "book",
+        "Pakistan",
+        "Dubai"
+      ]
+    },
+    {
+      "id": "challenge-063",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "Amazon pe order karo kal tak aa jayega",
+      "expected": "Amazon پر order کرو کل تک آ جائے گا",
+      "protectedTokens": [
+        "Amazon",
+        "order"
+      ]
+    },
+    {
+      "id": "challenge-064",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "video call pe milo kal subah",
+      "expected": "video call پر ملو کل صبح",
+      "protectedTokens": [
+        "video",
+        "call"
+      ]
+    },
+    {
+      "id": "challenge-065",
+      "split": "challenge",
+      "category": "mixed_english",
+      "input": "password reset karo aur login karo dobara",
+      "expected": "password reset کرو اور login کرو دوبارہ",
+      "protectedTokens": [
+        "password",
+        "reset",
+        "login"
+      ]
+    },
+    {
+      "id": "challenge-066",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "main road pe khara tha",
+      "expected": "main road پر کھڑا تھا",
+      "ambiguousTokens": [
+        "main"
+      ],
+      "note": "main = main road (proper noun phrase, stays English)"
+    },
+    {
+      "id": "challenge-067",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "to kya karein ab",
+      "expected": "تو کیا کریں اب",
+      "ambiguousTokens": [
+        "to"
+      ]
+    },
+    {
+      "id": "challenge-068",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "bus karo yaar kitna bologe",
+      "expected": "بس کرو یار کتنا بولو گے",
+      "ambiguousTokens": [
+        "bus"
+      ]
+    },
+    {
+      "id": "challenge-069",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "is cheez ko wahaan rakh do",
+      "expected": "اس چیز کو وہاں رکھ دو",
+      "ambiguousTokens": [
+        "is"
+      ]
+    },
+    {
+      "id": "challenge-070",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "na main gaya na tum aaye",
+      "expected": "نہ میں گیا نہ تم آئے",
+      "ambiguousTokens": [
+        "na",
+        "main"
+      ]
+    },
+    {
+      "id": "challenge-071",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "par woh kab sunta hai kisi ki",
+      "expected": "پر وہ کب سنتا ہے کسی کی",
+      "ambiguousTokens": [
+        "par"
+      ]
+    },
+    {
+      "id": "challenge-072",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "kya kal Sunday hai",
+      "expected": "کیا کل Sunday ہے",
+      "ambiguousTokens": [
+        "kal"
+      ],
+      "protectedTokens": [
+        "Sunday"
+      ]
+    },
+    {
+      "id": "challenge-073",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "mein kuch nahi keh raha tha",
+      "expected": "میں کچھ نہیں کہہ رہا تھا",
+      "ambiguousTokens": [
+        "mein"
+      ]
+    },
+    {
+      "id": "challenge-074",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "roz wahi galti karta hai",
+      "expected": "روز وہی غلطی کرتا ہے"
+    },
+    {
+      "id": "challenge-075",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "bhai tu to kamaal hai yaar",
+      "expected": "بھائی تو کمال ہے یار",
+      "ambiguousTokens": [
+        "to",
+        "tu"
+      ]
+    },
+    {
+      "id": "challenge-076",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "kal phone karo when free ho",
+      "expected": "کل phone کرو when free ہو",
+      "ambiguousTokens": [
+        "kal"
+      ],
+      "protectedTokens": [
+        "phone",
+        "when",
+        "free"
+      ]
+    },
+    {
+      "id": "challenge-077",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "log kya kahenge is baat par",
+      "expected": "لوگ کیا کہیں گے اس بات پر",
+      "ambiguousTokens": [
+        "is",
+        "par"
+      ]
+    },
+    {
+      "id": "challenge-078",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "nahi chahiye mujhe yeh",
+      "expected": "نہیں چاہیے مجھے یہ"
+    },
+    {
+      "id": "challenge-079",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "school bus aa gayi hai",
+      "expected": "school bus آ گئی ہے",
+      "ambiguousTokens": [
+        "bus"
+      ],
+      "protectedTokens": [
+        "school",
+        "bus"
+      ],
+      "note": "bus = vehicle here, not بس (enough)"
+    },
+    {
+      "id": "challenge-080",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "yeh cheez is jagah nahi rakhni",
+      "expected": "یہ چیز اس جگہ نہیں رکھنی",
+      "ambiguousTokens": [
+        "is"
+      ]
+    },
+    {
+      "id": "challenge-081",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "abhi to aya hi hoon",
+      "expected": "ابھی تو آیا ہی ہوں",
+      "ambiguousTokens": [
+        "to"
+      ]
+    },
+    {
+      "id": "challenge-082",
+      "split": "challenge",
+      "category": "everyday",
+      "input": "uska chehra yaad aa raha hai",
+      "expected": "اس کا چہرہ یاد آ رہا ہے"
+    },
+    {
+      "id": "challenge-083",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "mujhe na kuch samajh nahi aata",
+      "expected": "مجھے نہ کچھ سمجھ نہیں آتا",
+      "ambiguousTokens": [
+        "na"
+      ]
+    },
+    {
+      "id": "challenge-084",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "par main ne to kuch nahi kiya",
+      "expected": "پر میں نے تو کچھ نہیں کیا",
+      "ambiguousTokens": [
+        "par",
+        "to",
+        "main"
+      ]
+    },
+    {
+      "id": "challenge-085",
+      "split": "challenge",
+      "category": "context_ambiguity",
+      "input": "kehne wali baat hai yeh par koi nahi kehta",
+      "expected": "کہنے والی بات ہے یہ پر کوئی نہیں کہتا",
+      "ambiguousTokens": [
+        "par"
+      ]
+    },
+    {
+      "id": "challenge-086",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Bilal bhai ne aaj khaana banaya",
+      "expected": "Bilal بھائی نے آج کھانا بنایا",
+      "protectedTokens": [
+        "Bilal"
+      ]
+    },
+    {
+      "id": "challenge-087",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Lahore ki barish mein bheegna maza aata hai",
+      "expected": "Lahore کی بارش میں بھیگنا مزہ آتا ہے",
+      "protectedTokens": [
+        "Lahore"
+      ]
+    },
+    {
+      "id": "challenge-088",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Muharram ka mahina shuru ho gaya",
+      "expected": "Muharram کا مہینہ شروع ہو گیا",
+      "protectedTokens": [
+        "Muharram"
+      ]
+    },
+    {
+      "id": "challenge-089",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Nadia ki shaadi mein jana hai",
+      "expected": "Nadia کی شادی میں جانا ہے",
+      "protectedTokens": [
+        "Nadia"
+      ]
+    },
+    {
+      "id": "challenge-090",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Imam sahab ne bahut acha bayan kiya",
+      "expected": "Imam صاحب نے بہت اچھا بیان کیا",
+      "protectedTokens": [
+        "Imam"
+      ]
+    },
+    {
+      "id": "challenge-091",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Peshawar se chappal lao wahan se sasti milti hain",
+      "expected": "Peshawar سے چپل لاؤ وہاں سے سستی ملتی ہیں",
+      "protectedTokens": [
+        "Peshawar"
+      ]
+    },
+    {
+      "id": "challenge-092",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Shab e Miraj kal hai",
+      "expected": "Shab e Miraj کل ہے",
+      "protectedTokens": [
+        "Shab",
+        "Miraj"
+      ]
+    },
+    {
+      "id": "challenge-093",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Ayesha ki tabiyat theek nahi thi",
+      "expected": "Ayesha کی طبیعت ٹھیک نہیں تھی",
+      "protectedTokens": [
+        "Ayesha"
+      ]
+    },
+    {
+      "id": "challenge-094",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Quetta mein barfbaari ho rahi hai",
+      "expected": "Quetta میں برف باری ہو رہی ہے",
+      "protectedTokens": [
+        "Quetta"
+      ]
+    },
+    {
+      "id": "challenge-095",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Hafiz sahab ka dars kal hai",
+      "expected": "Hafiz صاحب کا درس کل ہے",
+      "protectedTokens": [
+        "Hafiz"
+      ]
+    },
+    {
+      "id": "challenge-096",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Dera Ghazi Khan bahut door hai",
+      "expected": "Dera Ghazi Khan بہت دور ہے",
+      "protectedTokens": [
+        "Dera",
+        "Ghazi",
+        "Khan"
+      ]
+    },
+    {
+      "id": "challenge-097",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Arfa Karim Pakistan ki pehli child prodigy thi",
+      "expected": "Arfa Karim Pakistan کی پہلی child prodigy تھی",
+      "protectedTokens": [
+        "Arfa",
+        "Karim",
+        "Pakistan",
+        "child",
+        "prodigy"
+      ]
+    },
+    {
+      "id": "challenge-098",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Sehri mein uthna hai kal se",
+      "expected": "Sehri میں اٹھنا ہے کل سے",
+      "protectedTokens": [
+        "Sehri"
+      ]
+    },
+    {
+      "id": "challenge-099",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Sahiwal se dost aa raha hai milne",
+      "expected": "Sahiwal سے دوست آ رہا ہے ملنے",
+      "protectedTokens": [
+        "Sahiwal"
+      ]
+    },
+    {
+      "id": "challenge-100",
+      "split": "challenge",
+      "category": "names_cultural",
+      "input": "Wajahat bhai ka family bura waqt guzaar raha hai",
+      "expected": "Wajahat بھائی کا family برا وقت گزار رہا ہے",
+      "protectedTokens": [
+        "Wajahat",
+        "family"
+      ]
+    },
+    {
+      "id": "challenge-101",
+      "split": "challenge",
+      "category": "numbers_protected",
+      "input": "mera contact 0321-9876543 hai save karo",
+      "expected": "میرا contact 0321-9876543 ہے save کرو",
+      "protectedTokens": [
+        "0321-9876543",
+        "contact",
+        "save"
+      ]
+    },
+    {
+      "id": "challenge-102",
+      "split": "challenge",
+      "category": "numbers_protected",
+      "input": "https://app.qalam.works pe jao aur sign up karo",
+      "expected": "https://app.qalam.works پر جاؤ اور sign up کرو",
+      "protectedTokens": [
+        "https://app.qalam.works",
+        "sign",
+        "up"
+      ]
+    },
+    {
+      "id": "challenge-103",
+      "split": "challenge",
+      "category": "numbers_protected",
+      "input": "Rs 2500 mein milega koi discount nahi",
+      "expected": "Rs 2500 میں ملے گا کوئی discount نہیں",
+      "protectedTokens": [
+        "Rs",
+        "2500",
+        "discount"
+      ]
+    },
+    {
+      "id": "challenge-104",
+      "split": "challenge",
+      "category": "numbers_protected",
+      "input": "#YouthForum2025 mein register kar lo",
+      "expected": "#YouthForum2025 میں register کر لو",
+      "protectedTokens": [
+        "#YouthForum2025",
+        "register"
+      ]
+    },
+    {
+      "id": "challenge-105",
+      "split": "challenge",
+      "category": "numbers_protected",
+      "input": "3 January ko interview hai tayyar raho",
+      "expected": "3 January کو interview ہے تیار رہو",
+      "protectedTokens": [
+        "3",
+        "January",
+        "interview"
+      ]
+    },
+    {
+      "id": "challenge-106",
+      "split": "challenge",
+      "category": "numbers_protected",
+      "input": "@ZainabOfficial ne story dali hai dekho",
+      "expected": "@ZainabOfficial نے story ڈالی ہے دیکھو",
+      "protectedTokens": [
+        "@ZainabOfficial",
+        "story"
+      ]
+    },
+    {
+      "id": "challenge-107",
+      "split": "challenge",
+      "category": "numbers_protected",
+      "input": "payment karo UBL account 0123456789 mein",
+      "expected": "payment کرو UBL account 0123456789 میں",
+      "protectedTokens": [
+        "payment",
+        "UBL",
+        "account",
+        "0123456789"
+      ]
+    },
+    {
+      "id": "challenge-108",
+      "split": "challenge",
+      "category": "numbers_protected",
+      "input": "invoice@company.pk pe receipt bhejo",
+      "expected": "invoice@company.pk پر receipt بھیجو",
+      "protectedTokens": [
+        "invoice@company.pk",
+        "receipt"
+      ]
+    },
+    {
+      "id": "challenge-109",
+      "split": "challenge",
+      "category": "numbers_protected",
+      "input": "yeh 5th attempt hai pass karna hai",
+      "expected": "یہ 5th attempt ہے pass کرنا ہے",
+      "protectedTokens": [
+        "5th",
+        "attempt",
+        "pass"
+      ]
+    },
+    {
+      "id": "challenge-110",
+      "split": "challenge",
+      "category": "numbers_protected",
+      "input": "2026 mein kya plan hai tumhara",
+      "expected": "2026 میں کیا plan ہے تمہارا",
+      "protectedTokens": [
+        "2026",
+        "plan"
+      ]
+    },
+    {
+      "id": "challenge-111",
+      "split": "challenge",
+      "category": "morphology_phrases",
+      "input": "woh kaam karte karte thak gaya tha",
+      "expected": "وہ کام کرتے کرتے تھک گیا تھا"
+    },
+    {
+      "id": "challenge-112",
+      "split": "challenge",
+      "category": "morphology_phrases",
+      "input": "roz subah uthke exercise karo",
+      "expected": "روز صبح اٹھ کے exercise کرو",
+      "protectedTokens": [
+        "exercise"
+      ]
+    },
+    {
+      "id": "challenge-113",
+      "split": "challenge",
+      "category": "morphology_phrases",
+      "input": "baat karte karte samajh aa gayi mujhe",
+      "expected": "بات کرتے کرتے سمجھ آ گئی مجھے"
+    },
+    {
+      "id": "challenge-114",
+      "split": "challenge",
+      "category": "morphology_phrases",
+      "input": "socha tha kar lunga par nahi ho saka",
+      "expected": "سوچا تھا کر لوں گا پر نہیں ہو سکا",
+      "ambiguousTokens": [
+        "par"
+      ]
+    },
+    {
+      "id": "challenge-115",
+      "split": "challenge",
+      "category": "morphology_phrases",
+      "input": "dono milke kaam karte hain",
+      "expected": "دونوں مل کے کام کرتے ہیں"
+    },
+    {
+      "id": "challenge-116",
+      "split": "challenge",
+      "category": "morphology_phrases",
+      "input": "padhte padhte so gaya",
+      "expected": "پڑھتے پڑھتے سو گیا"
+    },
+    {
+      "id": "challenge-117",
+      "split": "challenge",
+      "category": "morphology_phrases",
+      "input": "kaam karo nahi to pichhe rah jao ge",
+      "expected": "کام کرو نہیں تو پیچھے رہ جاؤ گے",
+      "ambiguousTokens": [
+        "to"
+      ]
+    },
+    {
+      "id": "challenge-118",
+      "split": "challenge",
+      "category": "morphology_phrases",
+      "input": "bhaag ke aa gaya warna der ho jati",
+      "expected": "بھاگ کے آ گیا ورنہ دیر ہو جاتی"
+    },
+    {
+      "id": "challenge-119",
+      "split": "challenge",
+      "category": "morphology_phrases",
+      "input": "aankhon aankhon mein baat ho gayi",
+      "expected": "آنکھوں آنکھوں میں بات ہو گئی"
+    },
+    {
+      "id": "challenge-120",
+      "split": "challenge",
+      "category": "morphology_phrases",
+      "input": "dhoondh dhoondh ke thak gaye hain",
+      "expected": "ڈھونڈ ڈھونڈ کے تھک گئے ہیں"
+    }
+  ]
+}
