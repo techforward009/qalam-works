@@ -1,5 +1,7 @@
 "use client";
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState, useEffect, useCallback, useRef, useMemo,
+} from "react";
 import { useLanguage } from "../../lib/language-context";
 import { convertRomanUrdu, applyTokenChoices } from "./utils/writerEngine";
 import type {
@@ -12,118 +14,88 @@ import type {
 
 type WritingMode = "roman" | "urdu";
 
+// ── Token is reviewable when the user may benefit from seeing it ──────────────
+
+function isReviewable(tok: WriterToken): boolean {
+  // Show only tokens that genuinely need attention:
+  //   • has alternative choices the user can pick
+  //   • OR was left unchanged because confidence was too low
+  // EXCLUDE:
+  //   • protected syntax (URL, number, email, hashtag)
+  //   • known intentional English (Zoom, meeting, office…)
+  //   • high-confidence lexicon conversions with no alternatives
+  //   • phrase-head/phrase-part tokens (already combined)
+  if (tok.isPhrasePart) return false;
+  if (tok.isProtected)  return false;
+  if (tok.isEnglish)    return false;
+  if (tok.hasAlternatives) return true;
+  if (tok.isPassthrough)   return true;
+  if (tok.confidence === "low") return true;
+  return false;
+}
+
 // ── i18n ──────────────────────────────────────────────────────────────────────
 
 const UI = {
   en: {
-    heading: "Urdu Writer",
-    sub: "Write Roman Urdu and see Urdu script instantly — or write Urdu directly.",
-    modeRoman: "Roman Urdu",
-    modeUrdu: "اردو",
+    heading:    "Qalam Urdu Writer",
+    sub:        "Write Urdu easily from Roman Urdu, with control over uncertain words.",
+    modeRoman:  "Roman Urdu",
+    modeUrdu:   "اردو",
     modeRomanLabel: "Switch to Roman Urdu mode",
-    modeUrduLabel: "Switch to direct Urdu writing mode",
-    inputLabel: "Roman Urdu input",
-    outputLabel: "Urdu script output",
-    urduWritingLabel: "Direct Urdu writing",
+    modeUrduLabel:  "Switch to direct Urdu writing mode",
+    inputLabel:     "Roman Urdu",
+    outputLabel:    "Urdu",
+    urduWritingLabel: "Urdu",
     inputPlaceholder: "aaj ka din kaafi acha tha, main khush hoon…",
-    urduPlaceholder: "یہاں اردو لکھیں…",
+    urduPlaceholder:  "یہاں اردو لکھیں…",
     outputPlaceholder: "Urdu script will appear here",
-    clear: "Clear",
-    charCount: (n: number) => `${n} chars`,
-    tokenPanelToggle: "Word-by-word",
-    altSentences: "Alternatives",
-    alternatives: "Alternatives:",
-    resetToken: "Reset",
-    noInput: "Start typing above to see the conversion.",
-    rtlNote: "Right-to-left Urdu script",
-    source: {
-      protected: "Protected",
-      english: "English",
-      phrase: "Phrase",
-      context: "Context",
-      lexicon: "Lexicon",
-      morphology: "Variant",
-      passthrough: "Unknown",
-      suggestion: "Suggested",
-    } as Record<WriterToken["source"], string>,
-    confidence: {
-      high: "✓",
-      medium: "~",
-      low: "?",
-    } as Record<WriterToken["confidence"], string>,
-    confidenceFull: {
-      high: "High confidence",
-      medium: "Medium confidence",
-      low: "Preserved as typed",
-    } as Record<WriterToken["confidence"], string>,
-    choiceBtnLabel: (cand: string, source: string) => `Select ${cand} (${source})`,
-    resetBtnLabel: "Reset to engine default",
+    clear:       "Clear",
+    charCount:   (n: number) => `${n} chars`,
+    reviewNone:  "No words need review.",
+    reviewCount: (n: number) => `Review ${n} word${n === 1 ? "" : "s"}`,
+    reviewLabel: "Review words",
+    chooseAnother: "Choose another form",
+    unchanged:  "Left unchanged — Qalam was unsure.",
+    resetLabel: "Reset",
+    noInput:    "Start typing Roman Urdu above.",
+    rtlNote:    "Right-to-left Urdu script",
+    altVersions: "Alternative version",
+    choiceBtnLabel: (cand: string) => `Select ${cand}`,
+    resetBtnLabel:  "Reset to Qalam's suggestion",
+    reviewToggleLabel: (n: number, open: boolean) =>
+      `${open ? "Hide" : "Show"} ${n} word${n === 1 ? "" : "s"} to review`,
   },
   ur: {
-    heading: "اردو رائٹر",
-    sub: "رومن اردو لکھیں — اردو رسم الخط فوری پائیں، یا براہ راست اردو لکھیں۔",
-    modeRoman: "Roman Urdu",
-    modeUrdu: "اردو",
+    heading:    "قلم اردو رائٹر",
+    sub:        "رومن اردو سے آسانی سے اردو لکھیں، اور جہاں ضرورت ہو لفظ خود منتخب کریں۔",
+    modeRoman:  "Roman Urdu",
+    modeUrdu:   "اردو",
     modeRomanLabel: "رومن اردو موڈ",
-    modeUrduLabel: "براہ راست اردو لکھیں",
-    inputLabel: "رومن اردو",
-    outputLabel: "اردو رسم الخط",
+    modeUrduLabel:  "براہ راست اردو لکھیں",
+    inputLabel:     "رومن اردو",
+    outputLabel:    "اردو",
     urduWritingLabel: "اردو",
     inputPlaceholder: "آج کا دن کافی اچھا تھا، میں خوش ہوں…",
-    urduPlaceholder: "یہاں اردو لکھیں…",
+    urduPlaceholder:  "یہاں اردو لکھیں…",
     outputPlaceholder: "اردو رسم الخط یہاں نظر آئے گا",
-    clear: "صاف کریں",
-    charCount: (n: number) => `${n} حروف`,
-    tokenPanelToggle: "لفظ بہ لفظ",
-    altSentences: "متبادل جملے",
-    alternatives: "متبادل:",
-    resetToken: "پہلے جیسا",
-    noInput: "اوپر ٹائپ کریں تو اردو تبدیلی نظر آئے گی۔",
-    rtlNote: "دائیں سے بائیں اردو رسم الخط",
-    source: {
-      protected: "محفوظ",
-      english: "انگریزی",
-      phrase: "فقرہ",
-      context: "سیاق",
-      lexicon: "لغت",
-      morphology: "صرفی",
-      passthrough: "نامعلوم",
-      suggestion: "تجویز",
-    } as Record<WriterToken["source"], string>,
-    confidence: {
-      high: "✓",
-      medium: "~",
-      low: "?",
-    } as Record<WriterToken["confidence"], string>,
-    confidenceFull: {
-      high: "اعلی درستگی",
-      medium: "متوسط درستگی",
-      low: "جیسا ٹائپ کیا",
-    } as Record<WriterToken["confidence"], string>,
-    choiceBtnLabel: (cand: string, source: string) => `${cand} (${source})`,
-    resetBtnLabel: "پہلی ڈیفالٹ",
+    clear:       "صاف کریں",
+    charCount:   (n: number) => `${n} حروف`,
+    reviewNone:  "کسی لفظ کے جائزے کی ضرورت نہیں۔",
+    reviewCount: (n: number) => `${n} الفاظ کا جائزہ`,
+    reviewLabel: "الفاظ کا جائزہ",
+    chooseAnother: "دوسرا لفظ منتخب کریں",
+    unchanged:  "یقین نہ ہونے کی وجہ سے یہ لفظ تبدیل نہیں کیا گیا۔",
+    resetLabel: "اصل انتخاب",
+    noInput:    "اوپر رومن اردو لکھیں۔",
+    rtlNote:    "دائیں سے بائیں اردو رسم الخط",
+    altVersions: "متبادل",
+    choiceBtnLabel: (cand: string) => `${cand}`,
+    resetBtnLabel:  "قلم کی تجویز پر واپس",
+    reviewToggleLabel: (n: number, open: boolean) =>
+      `${open ? "چھپائیں" : "دکھائیں"} — ${n} الفاظ`,
   },
 };
-
-// ── Styling helpers (direction-neutral) ───────────────────────────────────────
-
-function sourceClass(source: WriterToken["source"]): string {
-  const map: Record<WriterToken["source"], string> = {
-    protected: "bg-sky-100 text-sky-800",
-    english: "bg-violet-100 text-violet-800",
-    phrase: "bg-teal-100 text-teal-800",
-    context: "bg-emerald-100 text-emerald-800",
-    lexicon: "bg-[#1A3A2A]/10 text-[#1A3A2A]",
-    morphology: "bg-amber-100 text-amber-800",
-    passthrough: "bg-gray-100 text-gray-500",
-    suggestion: "bg-pink-100 text-pink-700",
-  };
-  return map[source] ?? "bg-gray-100 text-gray-500";
-}
-
-function confidenceClass(c: WriterToken["confidence"]): string {
-  return { high: "bg-[#1A3A2A]/10 text-[#1A3A2A]", medium: "bg-amber-100 text-amber-700", low: "bg-gray-100 text-gray-400" }[c];
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -132,64 +104,85 @@ export default function RomanUrduWriterClient() {
   const isUr = language === "ur";
   const ui = isUr ? UI.ur : UI.en;
 
-  // Mode state — default: Roman Urdu
+  // Mode — default Roman Urdu
   const [mode, setMode] = useState<WritingMode>("roman");
 
   // Separate drafts — never destroyed on mode switch
   const [romanInput, setRomanInput] = useState("");
-  const [urduInput, setUrduInput]   = useState("");
+  const [urduInput,  setUrduInput]  = useState("");
 
-  // Roman-mode conversion state
-  const [result, setResult]               = useState<WriterConversionResult | null>(null);
-  const [choices, setChoices]             = useState<TokenChoice[]>([]);
+  // Conversion state
+  const [result, setResult] = useState<WriterConversionResult | null>(null);
+  const [choices, setChoices] = useState<TokenChoice[]>([]);
   const [activeSentenceIdx, setActiveSentenceIdx] = useState<number>(0);
 
-  // UI state
-  const [showTokens, setShowTokens] = useState(false);
+  // Review panel open/closed
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const romanRef = useRef<HTMLTextAreaElement>(null);
   const urduRef  = useRef<HTMLTextAreaElement>(null);
 
-  // ── Conversion (Roman mode only) ──────────────────────────────────────────
+  // ── Conversion (Roman mode only, debounced 120ms) ─────────────────────────
 
   useEffect(() => {
     if (mode !== "roman") return;
     if (!romanInput.trim()) {
-      setResult(null); setChoices([]); setActiveSentenceIdx(0); return;
+      setResult(null); setChoices([]); setActiveSentenceIdx(0); setReviewOpen(false);
+      return;
     }
-    const timer = setTimeout(() => {
+    const t = setTimeout(() => {
       const r = convertRomanUrdu(romanInput);
-      setResult(r); setChoices([]); setActiveSentenceIdx(0);
+      setResult(r);
+      setChoices([]);
+      setActiveSentenceIdx(0);
+      // Auto-close review when text changes so stale choices don't confuse
+      setReviewOpen(false);
     }, 120);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(t);
   }, [romanInput, mode]);
 
-  // ── Derived final output ──────────────────────────────────────────────────
+  // ── Derived output ────────────────────────────────────────────────────────
 
   const finalOutput = useMemo(() => {
     if (!result) return "";
     if (choices.length > 0) return applyTokenChoices(result, choices).output;
-    return result.candidates[activeSentenceIdx]?.output ?? result.output;
+    return result.candidates[activeSentenceIdx >= 0 ? activeSentenceIdx : 0]?.output
+      ?? result.output;
   }, [result, choices, activeSentenceIdx]);
+
+  // ── Reviewable tokens (memoized) ──────────────────────────────────────────
+
+  const reviewableTokens = useMemo(() => {
+    if (!result) return [];
+    return result.tokens
+      .map((tok, idx) => ({ tok, idx }))
+      .filter(({ tok }) => isReviewable(tok));
+  }, [result]);
+
+  // Choice map: tokenIndex → candidateIndex
+  const activeChoiceMap = useMemo(
+    () => Object.fromEntries(choices.map(c => [c.tokenIndex, c.candidateIndex])),
+    [choices]
+  );
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
+  const handleModeSwitch = useCallback((next: WritingMode) => {
+    setMode(next);
+    requestAnimationFrame(() => {
+      if (next === "roman") romanRef.current?.focus();
+      else urduRef.current?.focus();
+    });
+  }, []);
+
   const handleClearRoman = useCallback(() => {
-    setRomanInput(""); setResult(null); setChoices([]); setActiveSentenceIdx(0);
+    setRomanInput(""); setResult(null); setChoices([]);
+    setActiveSentenceIdx(0); setReviewOpen(false);
     romanRef.current?.focus();
   }, []);
 
   const handleClearUrdu = useCallback(() => {
     setUrduInput(""); urduRef.current?.focus();
-  }, []);
-
-  const handleModeSwitch = useCallback((next: WritingMode) => {
-    setMode(next);
-    // Focus the relevant textarea on next tick
-    requestAnimationFrame(() => {
-      if (next === "roman") romanRef.current?.focus();
-      else urduRef.current?.focus();
-    });
   }, []);
 
   const handleTokenChoice = useCallback((tokenIndex: number, candidateIndex: number) => {
@@ -201,110 +194,76 @@ export default function RomanUrduWriterClient() {
   }, []);
 
   const handleSentenceSelect = useCallback((idx: number) => {
-    setActiveSentenceIdx(idx); setChoices([]);
+    setActiveSentenceIdx(idx);
+    setChoices([]);
   }, []);
-
-  // ── Stable token helpers ──────────────────────────────────────────────────
-
-  const tokenIndexMap = useMemo(() => {
-    if (!result) return new Map<WriterToken, number>();
-    return new Map(result.tokens.map((tok, i) => [tok, i]));
-  }, [result]);
-
-  const activeChoiceMap = useMemo(
-    () => Object.fromEntries(choices.map(c => [c.tokenIndex, c.candidateIndex])),
-    [choices]
-  );
-
-  const visibleTokens = useMemo(
-    () => result?.tokens.filter(tok => !/^\s+$/.test(tok.roman) && !tok.isPhrasePart) ?? [],
-    [result]
-  );
-
-  const hasOutput = !!finalOutput;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  const hasOutput = !!finalOutput;
+  const reviewCount = reviewableTokens.length;
+  const hasSentenceAlts = result && result.candidates.length > 1;
+
   return (
-    // Root is always LTR at layout level — individual elements set their own dir.
+    // Root always LTR — individual elements set own dir
     <div className="min-h-screen bg-[#F7F6F2] flex flex-col">
 
       {/* ── Header ── */}
       <header className="bg-[#151B2E] text-white px-4 py-6 md:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight"
-                  dir={isUr ? "rtl" : "ltr"} lang={isUr ? "ur" : "en"}>
-                {ui.heading}
-              </h1>
-              <p className="mt-1 text-[#C7D6C7] text-sm"
-                 dir={isUr ? "rtl" : "ltr"} lang={isUr ? "ur" : "en"}>
-                {ui.sub}
-              </p>
-            </div>
+        <div className="max-w-3xl mx-auto">
+          <h1
+            className="text-2xl md:text-3xl font-bold tracking-tight"
+            dir={isUr ? "rtl" : "ltr"}
+            lang={isUr ? "ur" : "en"}
+          >
+            {ui.heading}
+          </h1>
+          <p
+            className="mt-1 text-[#C7D6C7] text-sm"
+            dir={isUr ? "rtl" : "ltr"}
+            lang={isUr ? "ur" : "en"}
+          >
+            {ui.sub}
+          </p>
 
-            {/* Mode selector — only visible in Roman mode */}
-            {mode === "roman" && (
-              <button
-                onClick={() => setShowTokens(v => !v)}
-                className={`mt-1 text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                  showTokens
-                    ? "bg-[#B8935A] text-white border-[#B8935A]"
-                    : "border-[#4A5568] text-[#C7D6C7] hover:border-[#B8935A] hover:text-[#B8935A]"
-                }`}
-                aria-pressed={showTokens}
-                lang={isUr ? "ur" : "en"}
-              >
-                {ui.tokenPanelToggle}
-              </button>
-            )}
-          </div>
-
-          {/* ── Mode tabs ── */}
+          {/* Mode tabs */}
           <div className="mt-5 flex gap-1" role="tablist" aria-label="Writing mode">
-            <button
-              role="tab"
-              aria-selected={mode === "roman"}
-              aria-label={ui.modeRomanLabel}
-              onClick={() => handleModeSwitch("roman")}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                mode === "roman"
-                  ? "bg-[#F7F6F2] text-[#151B2E]"
-                  : "text-[#9CA3AF] hover:text-white"
-              }`}
-            >
-              {ui.modeRoman}
-            </button>
-            <button
-              role="tab"
-              aria-selected={mode === "urdu"}
-              aria-label={ui.modeUrduLabel}
-              onClick={() => handleModeSwitch("urdu")}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors font-urdu ${
-                mode === "urdu"
-                  ? "bg-[#F7F6F2] text-[#151B2E]"
-                  : "text-[#9CA3AF] hover:text-white"
-              }`}
-              lang="ur"
-            >
-              {ui.modeUrdu}
-            </button>
+            {(["roman", "urdu"] as WritingMode[]).map((m, i) => (
+              <button
+                key={m}
+                role="tab"
+                aria-selected={mode === m}
+                aria-label={m === "roman" ? ui.modeRomanLabel : ui.modeUrduLabel}
+                onClick={() => handleModeSwitch(m)}
+                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                  m === "urdu" ? "font-urdu" : ""
+                } ${
+                  mode === m
+                    ? "bg-[#F7F6F2] text-[#151B2E]"
+                    : "text-[#9CA3AF] hover:text-white"
+                }`}
+                lang={m === "urdu" ? "ur" : undefined}
+              >
+                {m === "roman" ? ui.modeRoman : ui.modeUrdu}
+              </button>
+            ))}
           </div>
         </div>
       </header>
 
-      {/* ── Main workspace ── */}
+      {/* ── Main ── */}
       <main className="flex-1 px-4 py-6 md:px-8">
-        <div className="max-w-4xl mx-auto space-y-5">
+        <div className="max-w-3xl mx-auto space-y-5">
 
           {/* ════ ROMAN URDU MODE ════ */}
           {mode === "roman" && (
             <>
               {/* Roman input */}
               <section aria-labelledby="roman-input-label">
-                <label id="roman-input-label"
-                  className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2">
+                <label
+                  id="roman-input-label"
+                  className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2"
+                >
                   {ui.inputLabel}
                 </label>
                 <div className="relative">
@@ -331,17 +290,14 @@ export default function RomanUrduWriterClient() {
                     </button>
                   )}
                 </div>
-                {romanInput && (
-                  <p className="mt-1 text-xs text-[#9CA3AF] text-right" aria-live="off">
-                    {ui.charCount(romanInput.length)}
-                  </p>
-                )}
               </section>
 
               {/* Generated Urdu output */}
               <section aria-labelledby="urdu-output-label">
-                <label id="urdu-output-label"
-                  className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2">
+                <label
+                  id="urdu-output-label"
+                  className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2"
+                >
                   {ui.outputLabel}
                 </label>
                 <div
@@ -359,37 +315,37 @@ export default function RomanUrduWriterClient() {
                   {hasOutput ? (
                     finalOutput
                   ) : (
-                    <span className="text-sm" lang={isUr ? "ur" : "en"}>
+                    <span className="text-sm font-sans" lang={isUr ? "ur" : "en"}>
                       {romanInput ? "…" : ui.outputPlaceholder}
                     </span>
                   )}
                 </div>
-                {hasOutput && (
-                  <p className="mt-1 text-xs text-[#9CA3AF] text-left" dir="ltr">
-                    {ui.rtlNote}
-                  </p>
-                )}
               </section>
 
-              {/* Sentence candidates */}
-              {result && result.candidates.length > 1 && (
-                <section aria-label={ui.altSentences}>
+              {/* Sentence alternative (compact, only when >1 and useful) */}
+              {hasSentenceAlts && reviewCount === 0 && (
+                <section aria-label={ui.altVersions}>
                   <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden shadow-sm">
-                    <div className="px-4 py-2 border-b border-[#E5E7EB] text-xs font-semibold text-[#4A5568] uppercase tracking-wider"
-                         lang={isUr ? "ur" : "en"}>
-                      {ui.altSentences}
+                    <div
+                      className="px-4 py-2 border-b border-[#E5E7EB] text-xs font-semibold text-[#4A5568] uppercase tracking-wider"
+                      lang={isUr ? "ur" : "en"}
+                    >
+                      {ui.altVersions}
                     </div>
-                    <ul role="listbox" aria-label={ui.altSentences}>
-                      {result.candidates.map((cand, ci) => {
+                    <ul role="listbox" aria-label={ui.altVersions}>
+                      {result!.candidates.map((cand, ci) => {
                         const isSelected = choices.length === 0 && activeSentenceIdx === ci;
                         return (
                           <li key={ci} role="option" aria-selected={isSelected}>
                             <button
                               onClick={() => handleSentenceSelect(ci)}
                               className={`w-full text-right px-4 py-3 font-urdu text-base leading-loose transition-colors ${
-                                isSelected ? "bg-[#B8935A]/8 text-[#151B2E] font-medium" : "text-[#374151] hover:bg-[#F9FAFB]"
+                                isSelected
+                                  ? "bg-[#B8935A]/10 text-[#151B2E] font-medium"
+                                  : "text-[#374151] hover:bg-[#F9FAFB]"
                               }`}
-                              dir="rtl" lang="ur"
+                              dir="rtl"
+                              lang="ur"
                             >
                               {cand.output}
                             </button>
@@ -401,91 +357,160 @@ export default function RomanUrduWriterClient() {
                 </section>
               )}
 
-              {/* Token breakdown panel */}
-              {showTokens && result && (
-                <section aria-label={ui.tokenPanelToggle}>
-                  <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm overflow-hidden">
-                    <div className="px-4 py-2 border-b border-[#E5E7EB] text-xs font-semibold text-[#4A5568] uppercase tracking-wider"
-                         lang={isUr ? "ur" : "en"}>
-                      {ui.tokenPanelToggle}
-                    </div>
-                    {visibleTokens.length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-[#9CA3AF]" lang={isUr ? "ur" : "en"}>{ui.noInput}</p>
-                    ) : (
-                      <div className="divide-y divide-[#F3F4F6]">
-                        {visibleTokens.map((tok, rawIdx) => {
-                          const tokenIndex = tokenIndexMap.get(tok) ?? -1;
-                          const chosenCandIdx = activeChoiceMap[tokenIndex] ?? 0;
-                          const chosenCand = tok.candidates[chosenCandIdx] ?? tok.candidates[0];
-                          return (
-                            <div key={rawIdx} className={`px-4 py-3 ${tok.isPassthrough ? "opacity-55" : ""}`}>
-                              {/* Token row — explicit LTR layout, never inheriting dir */}
-                              <div className="flex items-center gap-3 flex-wrap justify-between">
-                                <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                                  <span className="text-sm font-mono text-[#4A5568] bg-[#F3F4F6] px-2 py-0.5 rounded shrink-0"
-                                        dir="ltr" lang="ur-Latn">
+              {/* ── Review words section ── */}
+              {hasOutput && (
+                <section aria-label={ui.reviewLabel}>
+                  {reviewCount === 0 ? (
+                    /* No review needed — calm confirmation */
+                    <p
+                      className="text-sm text-[#6B7280] text-center py-1"
+                      lang={isUr ? "ur" : "en"}
+                    >
+                      {ui.reviewNone}
+                    </p>
+                  ) : (
+                    /* Review toggle + cards */
+                    <div>
+                      {/* Toggle */}
+                      <button
+                        onClick={() => setReviewOpen(v => !v)}
+                        className={`flex items-center gap-2 text-sm font-medium rounded-lg px-3 py-2 transition-colors ${
+                          reviewOpen
+                            ? "bg-[#B8935A]/10 text-[#7A5C2E]"
+                            : "text-[#4A5568] hover:bg-[#E5E7EB]"
+                        }`}
+                        aria-expanded={reviewOpen}
+                        aria-controls="review-panel"
+                        aria-label={ui.reviewToggleLabel(reviewCount, reviewOpen)}
+                        lang={isUr ? "ur" : "en"}
+                      >
+                        <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${
+                          reviewOpen ? "bg-[#B8935A] text-white" : "bg-[#E5E7EB] text-[#4A5568]"
+                        }`}>
+                          {reviewCount}
+                        </span>
+                        <span>{ui.reviewCount(reviewCount)}</span>
+                        <span className="text-xs text-[#9CA3AF] ml-1" aria-hidden="true">
+                          {reviewOpen ? "▲" : "▼"}
+                        </span>
+                      </button>
+
+                      {/* Review cards */}
+                      {reviewOpen && (
+                        <div
+                          id="review-panel"
+                          className="mt-3 space-y-3"
+                          role="group"
+                          aria-label={ui.reviewLabel}
+                        >
+                          {reviewableTokens.map(({ tok, idx: tokenIndex }) => {
+                            const chosenCandIdx = activeChoiceMap[tokenIndex] ?? 0;
+                            const chosenText = tok.candidates[chosenCandIdx]?.text ?? tok.roman;
+                            const isOverridden = (activeChoiceMap[tokenIndex] ?? 0) !== 0;
+
+                            return (
+                              <div
+                                key={tokenIndex}
+                                className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm overflow-hidden"
+                              >
+                                {/* Card header: Roman token → current Urdu */}
+                                <div className="px-4 py-3 flex items-center gap-3 flex-wrap justify-between border-b border-[#F3F4F6]">
+                                  {/* Roman source — always LTR */}
+                                  <span
+                                    className="text-sm font-mono text-[#4A5568] bg-[#F3F4F6] px-2 py-0.5 rounded shrink-0"
+                                    dir="ltr"
+                                    lang="ur-Latn"
+                                  >
                                     {tok.roman}
                                   </span>
-                                  <span className="text-[#D1D5DB] select-none" aria-hidden="true">›</span>
-                                  <span className="font-urdu text-base text-[#151B2E]" dir="rtl" lang="ur">
-                                    {chosenCand?.text || tok.roman}
+                                  <span className="text-[#D1D5DB] text-sm select-none" aria-hidden="true">›</span>
+                                  {/* Current Urdu form — always RTL */}
+                                  <span
+                                    className="font-urdu text-base text-[#151B2E] font-medium"
+                                    dir="rtl"
+                                    lang="ur"
+                                  >
+                                    {chosenText}
                                   </span>
-                                </div>
-                                <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sourceClass(tok.source)}`}
-                                        title={ui.source[tok.source]}>
-                                    {ui.source[tok.source]}
-                                  </span>
-                                  <span className={`text-xs w-5 h-5 flex items-center justify-center rounded-full font-medium ${confidenceClass(tok.confidence)}`}
-                                        title={ui.confidenceFull[tok.confidence]}
-                                        aria-label={ui.confidenceFull[tok.confidence]}>
-                                    {ui.confidence[tok.confidence]}
-                                  </span>
-                                </div>
-                              </div>
-                              {/* Alternative picker */}
-                              {tok.hasAlternatives && tok.candidates.length > 1 && (
-                                <div className="mt-2 flex items-center gap-2 flex-wrap" dir="ltr">
-                                  <span className="text-xs text-[#9CA3AF]" lang={isUr ? "ur" : "en"}>{ui.alternatives}</span>
-                                  {tok.candidates.map((cand, ci) => (
-                                    <button
-                                      key={ci}
-                                      onClick={() => handleTokenChoice(tokenIndex, ci)}
-                                      className={`font-urdu text-sm px-2 py-0.5 rounded-lg border transition-colors ${
-                                        chosenCandIdx === ci
-                                          ? "bg-[#151B2E] text-white border-[#151B2E]"
-                                          : "border-[#D1D5DB] text-[#374151] hover:border-[#B8935A]"
-                                      }`}
-                                      dir="rtl" lang="ur"
-                                      aria-pressed={chosenCandIdx === ci}
-                                      aria-label={ui.choiceBtnLabel(cand.text, ui.source[cand.source])}
-                                    >
-                                      {cand.text}
-                                    </button>
-                                  ))}
-                                  {chosenCandIdx !== 0 && (
+                                  {/* Reset if overridden */}
+                                  {isOverridden && (
                                     <button
                                       onClick={() => handleTokenChoice(tokenIndex, 0)}
-                                      className="text-xs text-[#9CA3AF] hover:text-[#4A5568] px-1 transition-colors"
+                                      className="text-xs text-[#9CA3AF] hover:text-[#4A5568] transition-colors ml-auto"
                                       aria-label={ui.resetBtnLabel}
+                                      lang={isUr ? "ur" : "en"}
                                     >
-                                      {ui.resetToken}
+                                      {ui.resetLabel}
                                     </button>
                                   )}
                                 </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+
+                                {/* Passthrough: calm explanation */}
+                                {tok.isPassthrough && tok.candidates.length <= 1 && (
+                                  <p
+                                    className="px-4 py-2 text-xs text-[#9CA3AF]"
+                                    lang={isUr ? "ur" : "en"}
+                                    dir={isUr ? "rtl" : "ltr"}
+                                  >
+                                    {ui.unchanged}
+                                  </p>
+                                )}
+
+                                {/* Alternatives: when hasAlternatives */}
+                                {tok.hasAlternatives && tok.candidates.length > 1 && (
+                                  <div className="px-4 py-3">
+                                    <p
+                                      className="text-xs text-[#6B7280] mb-2"
+                                      lang={isUr ? "ur" : "en"}
+                                    >
+                                      {ui.chooseAnother}
+                                    </p>
+                                    {/* Candidate buttons — flex-wrap for mobile */}
+                                    <div
+                                      className="flex flex-wrap gap-2"
+                                      role="group"
+                                      aria-label={ui.chooseAnother}
+                                    >
+                                      {tok.candidates.map((cand, ci) => {
+                                        if (!cand.text) return null;
+                                        const isChosen = chosenCandIdx === ci;
+                                        return (
+                                          <button
+                                            key={ci}
+                                            onClick={() => handleTokenChoice(tokenIndex, ci)}
+                                            className={`font-urdu text-sm px-3 py-1.5 rounded-lg border transition-colors min-w-[44px] min-h-[36px] ${
+                                              isChosen
+                                                ? "bg-[#151B2E] text-white border-[#151B2E]"
+                                                : "bg-white border-[#D1D5DB] text-[#374151] hover:border-[#B8935A] hover:text-[#7A5C2E]"
+                                            }`}
+                                            dir="rtl"
+                                            lang="ur"
+                                            aria-pressed={isChosen}
+                                            aria-label={ui.choiceBtnLabel(cand.text)}
+                                          >
+                                            {cand.text}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </section>
               )}
 
-              {/* Roman empty state */}
+              {/* Empty state */}
               {!romanInput && (
-                <div className="text-center py-10 text-[#9CA3AF] text-sm" lang={isUr ? "ur" : "en"}>
+                <div
+                  className="text-center py-10 text-[#9CA3AF] text-sm"
+                  lang={isUr ? "ur" : "en"}
+                >
                   {ui.noInput}
                 </div>
               )}
@@ -495,9 +520,11 @@ export default function RomanUrduWriterClient() {
           {/* ════ DIRECT URDU MODE ════ */}
           {mode === "urdu" && (
             <section aria-labelledby="urdu-writing-label">
-              <label id="urdu-writing-label"
+              <label
+                id="urdu-writing-label"
                 className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2"
-                lang={isUr ? "ur" : "en"}>
+                lang={isUr ? "ur" : "en"}
+              >
                 {ui.urduWritingLabel}
               </label>
               <div className="relative">
