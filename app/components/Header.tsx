@@ -78,6 +78,7 @@ export default function Header() {
     { label: t.home, href: "/" },
     { label: t.documentStudio, href: "/tools/document-studio" },
     { label: t.translationStudio, href: "/tools/translation-studio" },
+    { label: t.urduWriter, href: "/tools/roman-urdu-writer" },
     { label: "WhatsApp RTL", href: "/tools/whatsapp-rtl-formatter" },
   ];
 
