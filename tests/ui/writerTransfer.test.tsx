@@ -32,14 +32,14 @@ const output     = () => screen.getByRole("status") as HTMLElement;
 const tabs       = () => screen.getAllByRole("tab");
 const romanTab   = () => tabs()[0];
 const urduTab    = () => tabs()[1];
-const continueBtn = () => screen.queryByRole("button", { name: /continue editing/i });
+const continueBtn = () => screen.queryByTestId("writer-continue-editing");
 
 async function typeAndWait(text: string) {
   await act(async () => { fireEvent.change(romanInput(), { target: { value: text } }); });
   await act(async () => { await new Promise(r => setTimeout(r, 250)); });
 }
 
-afterEach(() => { cleanup(); mockLanguage = "en"; vi.clearAllMocks(); });
+afterEach(() => { cleanup(); mockLanguage = "en"; vi.clearAllMocks(); localStorage.clear(); });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. Transfer action hidden when output is empty

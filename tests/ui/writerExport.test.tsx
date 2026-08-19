@@ -49,7 +49,7 @@ beforeEach(() => {
     value: { writeText },
   });
 });
-afterEach(() => { cleanup(); mockLanguage = "en"; vi.clearAllMocks(); });
+afterEach(() => { cleanup(); mockLanguage = "en"; vi.clearAllMocks(); localStorage.clear(); });
 
 test("1. Copy hidden/disabled when Roman active text empty", async () => {
   await renderWriter();

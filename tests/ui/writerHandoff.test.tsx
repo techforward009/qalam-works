@@ -64,7 +64,7 @@ beforeEach(() => {
     value: { ...loc, href: "http://localhost/tools/roman-urdu-writer" },
   });
 });
-afterEach(() => { cleanup(); mockLanguage = "en"; vi.clearAllMocks(); sessionStorage.clear(); });
+afterEach(() => { cleanup(); mockLanguage = "en"; vi.clearAllMocks(); sessionStorage.clear(); localStorage.clear(); });
 
 test("1. handoff action unavailable when Roman active text empty", async () => {
   await renderWriter();
@@ -193,7 +193,7 @@ test("23-25. Copy unformatted, WhatsApp formatted remain distinct from handoff",
 test("26. Continue editing then Document Studio sends manual Urdu", async () => {
   await renderWriter();
   await typeRoman("aaj theek hai");
-  await act(async () => { fireEvent.click(screen.getByRole("button", { name: /continue editing/i })); });
+  await act(async () => { fireEvent.click(screen.getByTestId("writer-continue-editing")); });
   const edited = "دستی ترمیم";
   await act(async () => { fireEvent.change(urduInputEl(), { target: { value: edited } }); });
   await act(async () => { fireEvent.click(studioBtn()!); });

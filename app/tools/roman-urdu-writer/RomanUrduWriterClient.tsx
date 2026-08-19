@@ -17,6 +17,11 @@ import {
   writeWriterHandoff,
   DOCUMENT_STUDIO_ROUTE,
 } from "./utils/writerExport";
+import { loadWriterDraft, saveWriterDraft, clearWriterDraft } from "./utils/writerDraft";
+import {
+  createTextHistory, pushTextHistory, undoTextHistory, redoTextHistory,
+  canUndo, canRedo, resetTextHistory, type TextHistoryState,
+} from "./utils/writerHistory";
 
 // ── Writing mode ──────────────────────────────────────────────────────────────
 
@@ -96,6 +101,17 @@ const UI = {
     continueStudio: "Continue in Document Studio",
     continueStudioLabel: "Open current Urdu text in Document Studio",
     continueStudioFailed: "Could not open Document Studio.",
+    undo: "Undo",
+    redo: "Redo",
+    undoLabel: "Undo last edit",
+    redoLabel: "Redo last edit",
+    clearDraft: "Clear draft",
+    clearDraftLabel: "Clear Roman and Urdu drafts",
+    clearConfirmTitle: "Clear this draft?",
+    clearConfirmBody: "This will remove both Roman and Urdu text from this Writer.",
+    clearConfirmAction: "Clear draft",
+    clearConfirmCancel: "Cancel",
+    draftSaveFailed: "Draft could not be saved locally.",
   },
   ur: {
     heading:    "قلم اردو رائٹر",
@@ -148,8 +164,20 @@ const UI = {
     continueStudio: "ڈاکومنٹ اسٹوڈیو میں جاری رکھیں",
     continueStudioLabel: "موجودہ اردو متن ڈاکومنٹ اسٹوڈیو میں کھولیں",
     continueStudioFailed: "ڈاکومنٹ اسٹوڈیو نہیں کھولا جا سکا۔",
+    undo: "واپس کریں",
+    redo: "دوبارہ کریں",
+    undoLabel: "آخری ترمیم واپس کریں",
+    redoLabel: "آخری ترمیم دوبارہ کریں",
+    clearDraft: "ڈرافٹ صاف کریں",
+    clearDraftLabel: "رومن اور اردو ڈرافٹ صاف کریں",
+    clearConfirmTitle: "کیا یہ ڈرافٹ صاف کرنا ہے؟",
+    clearConfirmBody: "اس سے رومن اردو اور اردو دونوں متن اس رائٹر سے حذف ہو جائیں گے۔",
+    clearConfirmAction: "ڈرافٹ صاف کریں",
+    clearConfirmCancel: "منسوخ کریں",
+    draftSaveFailed: "ڈرافٹ مقامی طور پر محفوظ نہیں ہو سکا۔",
   },
 };
+
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -160,10 +188,13 @@ export default function RomanUrduWriterClient() {
 
   // Mode — default Roman Urdu
   const [mode, setMode] = useState<WritingMode>("roman");
-
-  // Separate drafts — never destroyed on mode switch
   const [romanInput, setRomanInput] = useState("");
   const [urduInput,  setUrduInput]  = useState("");
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [draftSaveFailed, setDraftSaveFailed] = useState(false);
+  const [romanHistory, setRomanHistory] = useState<TextHistoryState>(() => createTextHistory(""));
+  const [urduHistory, setUrduHistory] = useState<TextHistoryState>(() => createTextHistory(""));
 
   // Conversion state
   const [result, setResult] = useState<WriterConversionResult | null>(null);
@@ -185,6 +216,100 @@ export default function RomanUrduWriterClient() {
   const continueEditingRef = useRef<HTMLButtonElement>(null);
   const copyFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const waCopyFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipHistoryRef = useRef(false);
+
+  useEffect(() => {
+    const draft = loadWriterDraft();
+    if (draft) {
+      skipHistoryRef.current = true;
+      setRomanInput(draft.romanInput);
+      setUrduInput(draft.urduInput);
+      setMode(draft.mode);
+      setRomanHistory(resetTextHistory(draft.romanInput));
+      setUrduHistory(resetTextHistory(draft.urduInput));
+      skipHistoryRef.current = false;
+    }
+    setDraftHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!draftHydrated) return;
+    if (!romanInput && !urduInput && mode === "roman") {
+      clearWriterDraft();
+      return;
+    }
+    if (!saveWriterDraft({ romanInput, urduInput, mode }).ok) setDraftSaveFailed(true);
+  }, [romanInput, urduInput, mode, draftHydrated]);
+
+  const applyRomanText = useCallback((next: string, recordHistory: boolean) => {
+    if (recordHistory && !skipHistoryRef.current) setRomanHistory(h => pushTextHistory(h, next));
+    setRomanInput(next);
+    setWhatsappPreview(null);
+  }, []);
+  const applyUrduText = useCallback((next: string, recordHistory: boolean) => {
+    if (recordHistory && !skipHistoryRef.current) setUrduHistory(h => pushTextHistory(h, next));
+    setUrduInput(next);
+    setWhatsappPreview(null);
+  }, []);
+  const handleUndo = useCallback(() => {
+    if (mode === "roman") {
+      setRomanHistory(h => {
+        if (!canUndo(h)) return h;
+        const n = undoTextHistory(h);
+        setRomanInput(n.present);
+        setWhatsappPreview(null);
+        return n;
+      });
+    } else {
+      setUrduHistory(h => {
+        if (!canUndo(h)) return h;
+        const n = undoTextHistory(h);
+        setUrduInput(n.present);
+        setWhatsappPreview(null);
+        return n;
+      });
+    }
+  }, [mode]);
+  const handleRedo = useCallback(() => {
+    if (mode === "roman") {
+      setRomanHistory(h => {
+        if (!canRedo(h)) return h;
+        const n = redoTextHistory(h);
+        setRomanInput(n.present);
+        setWhatsappPreview(null);
+        return n;
+      });
+    } else {
+      setUrduHistory(h => {
+        if (!canRedo(h)) return h;
+        const n = redoTextHistory(h);
+        setUrduInput(n.present);
+        setWhatsappPreview(null);
+        return n;
+      });
+    }
+  }, [mode]);
+  const handleConfirmClearDraft = useCallback(() => {
+    skipHistoryRef.current = true;
+    setRomanInput(""); setUrduInput("");
+    setRomanHistory(resetTextHistory("")); setUrduHistory(resetTextHistory(""));
+    setResult(null); setChoices([]); setActiveSentenceIdx(0); setReviewOpen(false);
+    setWhatsappPreview(null); setShowTransferConfirm(false); setShowClearConfirm(false);
+    setCopyFeedback("idle"); setWaCopyFeedback("idle"); setHandoffError(false);
+    clearWriterDraft();
+    skipHistoryRef.current = false;
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const id = (e.target as HTMLElement | null)?.id;
+      if (id !== "roman-input" && id !== "urdu-input") return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === "z" && !e.shiftKey) { e.preventDefault(); handleUndo(); }
+      else if (e.key === "y" || (e.key === "z" && e.shiftKey)) { e.preventDefault(); handleRedo(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleUndo, handleRedo]);
 
   // ── Conversion (Roman mode only, debounced 120ms) ─────────────────────────
 
@@ -249,14 +374,14 @@ export default function RomanUrduWriterClient() {
   }, []);
 
   const handleClearRoman = useCallback(() => {
-    setRomanInput(""); setResult(null); setChoices([]);
+    applyRomanText("", true); setResult(null); setChoices([]);
     setActiveSentenceIdx(0); setReviewOpen(false);
     romanRef.current?.focus();
-  }, []);
+  }, [applyRomanText]);
 
   const handleClearUrdu = useCallback(() => {
-    setUrduInput(""); urduRef.current?.focus();
-  }, []);
+    applyUrduText("", true); urduRef.current?.focus();
+  }, [applyUrduText]);
 
   const handleTokenChoice = useCallback((tokenIndex: number, candidateIndex: number) => {
     setActiveSentenceIdx(-1);
@@ -277,7 +402,7 @@ export default function RomanUrduWriterClient() {
     setShowTransferConfirm(false);
     // No existing Urdu draft → transfer immediately
     if (!urduInput.trim() || urduInput === finalOutput) {
-      setUrduInput(finalOutput);
+      applyUrduText(finalOutput, true);
       setMode("urdu");
       requestAnimationFrame(() => urduRef.current?.focus());
       return;
@@ -287,7 +412,7 @@ export default function RomanUrduWriterClient() {
   }, [finalOutput, urduInput]);
 
   const handleTransferReplace = useCallback(() => {
-    setUrduInput(finalOutput);
+    applyUrduText(finalOutput, true);
     setShowTransferConfirm(false);
     setMode("urdu");
     requestAnimationFrame(() => urduRef.current?.focus());
@@ -415,6 +540,7 @@ export default function RomanUrduWriterClient() {
             <button
               type="button"
               ref={continueEditingRef}
+              data-testid="writer-continue-editing"
               onClick={handleContinueEditing}
               className={primaryActionBtnClass}
               aria-label={ui.continueEditingUrduLabel}
@@ -599,6 +725,24 @@ export default function RomanUrduWriterClient() {
       <main className="flex-1 px-4 py-6 md:px-8">
         <div className="max-w-5xl mx-auto space-y-5">
 
+          <div className="flex flex-wrap items-center gap-2" data-testid="writer-utility-bar" dir={isUr ? "rtl" : "ltr"} lang={isUr ? "ur" : "en"}>
+            <button type="button" data-testid="writer-undo" onClick={handleUndo} disabled={mode === "roman" ? !canUndo(romanHistory) : !canUndo(urduHistory)} aria-label={ui.undoLabel} className="text-sm font-medium px-3 py-1.5 min-h-[36px] rounded-lg border border-[#D1D5DB] text-[#374151] bg-white hover:bg-[#F9FAFB] transition-colors disabled:opacity-40 disabled:pointer-events-none">{ui.undo}</button>
+            <button type="button" data-testid="writer-redo" onClick={handleRedo} disabled={mode === "roman" ? !canRedo(romanHistory) : !canRedo(urduHistory)} aria-label={ui.redoLabel} className="text-sm font-medium px-3 py-1.5 min-h-[36px] rounded-lg border border-[#D1D5DB] text-[#374151] bg-white hover:bg-[#F9FAFB] transition-colors disabled:opacity-40 disabled:pointer-events-none">{ui.redo}</button>
+            <button type="button" data-testid="writer-clear-draft" onClick={() => setShowClearConfirm(true)} aria-label={ui.clearDraftLabel} className="text-sm font-medium px-3 py-1.5 min-h-[36px] rounded-lg border border-[#D1D5DB] text-[#6B7280] bg-white hover:bg-[#F9FAFB] transition-colors">{ui.clearDraft}</button>
+            {draftSaveFailed && <span className="text-xs text-[#9B2C2C]" aria-live="polite" data-testid="writer-draft-save-failed">{ui.draftSaveFailed}</span>}
+          </div>
+          {showClearConfirm && (
+            <div className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm p-4 space-y-3" role="alertdialog" aria-modal="true" aria-label={ui.clearConfirmTitle} data-testid="writer-clear-confirm" dir={isUr ? "rtl" : "ltr"} lang={isUr ? "ur" : "en"}>
+              <p className="text-sm font-medium text-[#151B2E]">{ui.clearConfirmTitle}</p>
+              <p className="text-sm text-[#4A5568]">{ui.clearConfirmBody}</p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" data-testid="writer-clear-confirm-action" onClick={handleConfirmClearDraft} className="text-sm font-medium px-4 py-2 min-h-[40px] rounded-lg bg-[#151B2E] text-white hover:bg-[#1A2540] transition-colors">{ui.clearConfirmAction}</button>
+                <button type="button" data-testid="writer-clear-confirm-cancel" onClick={() => setShowClearConfirm(false)} className="text-sm font-medium px-4 py-2 min-h-[40px] rounded-lg border border-[#D1D5DB] text-[#374151] hover:bg-[#F9FAFB] transition-colors">{ui.clearConfirmCancel}</button>
+              </div>
+            </div>
+          )}
+
+
           {/* ════ ROMAN URDU MODE ════ */}
           {mode === "roman" && (
             <>
@@ -620,7 +764,7 @@ export default function RomanUrduWriterClient() {
                       id="roman-input"
                       ref={romanRef}
                       value={romanInput}
-                      onChange={e => setRomanInput(e.target.value)}
+                      onChange={e => applyRomanText(e.target.value, true)}
                       placeholder={ui.inputPlaceholder}
                       rows={6}
                       dir="ltr"
@@ -935,7 +1079,7 @@ export default function RomanUrduWriterClient() {
                       id="roman-input"
                       ref={romanRef}
                       value={romanInput}
-                      onChange={e => setRomanInput(e.target.value)}
+                      onChange={e => applyRomanText(e.target.value, true)}
                       placeholder={ui.inputPlaceholder}
                       rows={6}
                       dir="ltr"
@@ -959,7 +1103,7 @@ export default function RomanUrduWriterClient() {
                       id="urdu-input"
                       ref={urduRef}
                       value={urduInput}
-                      onChange={e => setUrduInput(e.target.value)}
+                      onChange={e => applyUrduText(e.target.value, true)}
                       placeholder={ui.urduPlaceholder}
                       rows={6}
                       dir="rtl"

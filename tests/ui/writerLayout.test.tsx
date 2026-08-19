@@ -15,7 +15,7 @@ vi.mock("../../app/lib/language-context", () => ({
   }),
 }));
 
-afterEach(() => { cleanup(); mockLanguage = "en"; });
+afterEach(() => { cleanup(); mockLanguage = "en"; localStorage.clear(); });
 
 async function renderWriter() {
   const Writer = (await import("../../app/tools/roman-urdu-writer/RomanUrduWriterClient")).default;

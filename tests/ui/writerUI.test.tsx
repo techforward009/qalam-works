@@ -45,7 +45,7 @@ const tabs       = () => screen.getAllByRole("tab");
 const romanTab   = () => tabs()[0];
 const urduTab    = () => tabs()[1];
 
-afterEach(() => { cleanup(); mockLanguage = "en"; vi.clearAllMocks(); });
+afterEach(() => { cleanup(); mockLanguage = "en"; vi.clearAllMocks(); localStorage.clear(); });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. No review control when there are no reviewable tokens
