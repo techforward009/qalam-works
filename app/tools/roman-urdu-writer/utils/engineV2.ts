@@ -16,6 +16,7 @@
 import type { RomanUrduEngine, EngineResult } from "./benchmarkScorer";
 import { segmentInput, isProtectedToken, type TokenSegment } from "./protectedTokens";
 import { lookupNormalized, lookupToken } from "./lexicon";
+import { generateCandidates } from "./graphemeGenerator";
 import { PHRASE_TABLE, normPhrase } from "./phraseTable";
 
 // ── Proper-name soft protection ───────────────────────────────────────────────
@@ -42,8 +43,8 @@ const KEEP_ENGLISH = new Set([
   "ok","okay","please","sorry","thanks","hello","bye","yes","no",
   "number","no",  // "number" must stay English; نمبر is the Urdu but corpus expects English
   "problem","issue","update","install","login","password","email","link",
-  "call","text","message","video","photo","file","data","app","chat",
-  "online","offline","busy","free","plan","meeting","class","office",
+  "call","text","message","photo","file","data","app","chat","story","design","location","help","boss","extend","open","join","start","starts","closed","today","tomorrow",
+  "online","offline","busy","free","plan","class",
   "team","project","resume","backup","download","upload","print","share",
   "cancel","confirm","submit","save","delete","copy","paste","search",
   "gym","coffee","mood","signal","wifi","battery","mode","status","type",
@@ -65,7 +66,7 @@ const COMMON_SENTENCE_INITIAL = new Set([
   "aaj","kal","kya","kia","ab","abhi","phir","phr","lekin","magar",
   "wahan","yahan","sab","kuch","haan","nahi","bilkul","zaroor",
   "bohot","bohat","bhot","theek","thek","achha","acha","jaldi",
-  "shukriya","shukria","zaroor","subah","raat","din","ghar","kaam",
+  "shukriya","shukria","zaroor","subah","raat","din","ghar","kaam","dilon",
 ]);
 
 /**
@@ -73,6 +74,81 @@ const COMMON_SENTENCE_INITIAL = new Set([
  * product name that should be preserved rather than guessed.
  * Conservative: errs toward preservation for genuine ambiguity.
  */
+
+export const LOANWORD_URDU: Record<string, string> = {
+  "meeting": "میٹنگ", "office": "آفس", "video": "ویڈیو", "group": "گروپ",
+};
+const URDU_CONTEXT_CUES = new Set([
+  "aaj","kal","kya","kia","ab","abhi","phir","mein","main","mai","hai","hain",
+  "tha","thi","the","hoon","hon","houn","nahi","nahin","bohot","bohat","theek",
+  "acha","achha","ghar","kaam","jana","ana","aana","bhejo","karo","kar","ko",
+  "se","par","pe","ki","ka","ke","ne","aur","lekin","magar","kyun","kyon",
+  "wahan","yahan","sab","kuch","haan","bilkul","zaroor","jaldi","subah","raat",
+  "mujhe","mujh","aap","dil","dilon","reh","rehm","farma","ata","khuloos",
+  "muhabbat","saadgi","tabiyat","samajh","likh","parhna","milna","rehna",
+  "cancel","ho","gayi","gaya","hoga","hogi",
+]);
+const ENGLISH_FUNCTION_WORDS = new Set([
+  "the","is","are","was","were","a","an","to","of","in","on","for","with","and","or","but",
+  "not","this","that","it","be","have","has","had","do","does","did","will","would","can",
+  "could","should","may","might","must","from","by","at","as","if","than","then","so","such",
+  "into","over","after","before","between","under","again","further","once","here","there",
+  "when","where","why","how","all","each","few","more","most","other","some","no","nor",
+  "only","own","same","too","very","just","because","while","during","about","please",
+  "send","closed","today","starts","start","pm","am","me","my","your","you","we","they",
+  "he","she","him","her","his","their","our","us","them","what","which","who","whom",
+  "i","want","join","open","file","meet","tomorrow","now","group","will",
+]);
+export function sentenceHasUrduContext(segments: { text: string; protected?: boolean }[], loanLower = ""): boolean {
+  for (const seg of segments) {
+    if (/^\s+$/.test(seg.text) || seg.protected) continue;
+    const core = seg.text.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "").toLowerCase();
+    if (!core || core === loanLower) continue;
+    if (LOANWORD_URDU[core] || KEEP_ENGLISH.has(core) || ENGLISH_FUNCTION_WORDS.has(core)) continue;
+    if (URDU_CONTEXT_CUES.has(core)) return true;
+    const lex = lookupNormalized(core);
+    if (lex && lex[0] && /[\u0600-\u06FF]/.test(lex[0])) return true;
+  }
+  return false;
+}
+function collapseRepeats(token: string): string {
+  return token.toLowerCase().replace(/(.)\1{2,}/g, "$1");
+}
+function looksLikeEnglish(token: string): boolean {
+  const lower = token.toLowerCase();
+  const collapsed = collapseRepeats(token);
+  if (KEEP_ENGLISH.has(lower) || KEEP_ENGLISH.has(collapsed)) return true;
+  if (ENGLISH_FUNCTION_WORDS.has(lower) || ENGLISH_FUNCTION_WORDS.has(collapsed)) return true;
+  if (/(tion|sion|ture|ment|ness|able|ally|ity|ful|less|ous|ive)$/.test(lower)) return true;
+  return false;
+}
+function phoneticFallback(token: string): string[] {
+  if (!/^[A-Za-z]+$/.test(token) || token.length < 2) return [];
+  if (looksLikeEnglish(token)) return [];
+  const lower = token.toLowerCase();
+  if (LOANWORD_URDU[lower]) return [LOANWORD_URDU[lower]];
+  const cands = generateCandidates(token);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const c of cands) {
+    if (!c.text || c.text === token) continue;
+    if (!/[\u0600-\u06FF]/.test(c.text)) continue;
+    if (seen.has(c.text)) continue;
+    seen.add(c.text);
+    out.push(c.text);
+    if (out.length >= 3) break;
+  }
+  return out;
+}
+function peelPunctuation(token: string): { lead: string; core: string; trail: string } {
+  const m = token.match(/^([^A-Za-z0-9]*)([A-Za-z0-9]+)([^A-Za-z0-9]*)$/);
+  if (!m) return { lead: "", core: token, trail: "" };
+  return { lead: m[1], core: m[2], trail: m[3] };
+}
+function reattach(lead: string, urdu: string, trail: string): string {
+  return lead + urdu + trail;
+}
+
 function isSoftProtected(token: string): boolean {
   const lower = token.toLowerCase();
   // Pure function words in CONVERT_DESPITE_CAPS → always convert
@@ -251,6 +327,7 @@ interface ConvertedSegment {
 function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
   const result: ConvertedSegment[] = [];
   let i = 0;
+  const sentenceUrduContext = sentenceHasUrduContext(segments, "");
 
   while (i < segments.length) {
     const seg = segments[i];
@@ -269,11 +346,28 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
       continue;
     }
 
-    // Keep-English words (lower-case)
-    if (KEEP_ENGLISH.has(seg.text.toLowerCase())) {
-      result.push({ text: seg.text, candidates: [seg.text], protected: true });
-      i++;
-      continue;
+    {
+      const low = seg.text.toLowerCase();
+      const collapsed = low.replace(/(.)\1{2,}/g, "$1");
+      if (KEEP_ENGLISH.has(low) || KEEP_ENGLISH.has(collapsed)) {
+        result.push({ text: seg.text, candidates: [seg.text], protected: true });
+        i++;
+        continue;
+      }
+    }
+    {
+      const { lead, core, trail } = peelPunctuation(seg.text);
+      const lower = (core || seg.text).toLowerCase();
+      const loan = LOANWORD_URDU[lower];
+      if (loan) {
+        if (sentenceHasUrduContext(segments, lower)) {
+          result.push({ text: seg.text, candidates: [reattach(lead, loan, trail)], protected: false });
+        } else {
+          result.push({ text: seg.text, candidates: [seg.text], protected: true });
+        }
+        i++;
+        continue;
+      }
     }
 
     // Soft-protected (proper noun / unknown Title Case)
@@ -350,23 +444,38 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
       return "";
     })();
 
-    // Try context first (ambiguous tokens)
-    const ctxResult = rankWithContext(token, prevUrdu, nextRoman);
-    if (ctxResult) {
-      result.push({ text: token, candidates: [ctxResult], protected: false });
+    const { lead, core, trail } = peelPunctuation(token);
+    const workToken = core || token;
+    if (sentenceUrduContext) {
+      const ctxResult = rankWithContext(workToken, prevUrdu, nextRoman);
+      if (ctxResult) {
+        result.push({ text: token, candidates: [reattach(lead, ctxResult, trail)], protected: false });
+        i++;
+        continue;
+      }
+    }
+    if (!sentenceUrduContext && ENGLISH_FUNCTION_WORDS.has(workToken.toLowerCase())) {
+      result.push({ text: token, candidates: [token], protected: true });
       i++;
       continue;
     }
-
-    // Morphological expansion (includes lexicon lookup)
-    const morphCandidates = morphExpand(token);
+    const morphCandidates = morphExpand(workToken);
     if (morphCandidates.length > 0) {
-      result.push({ text: token, candidates: morphCandidates, protected: false });
+      const mapped = morphCandidates.map(c => c && c !== workToken ? reattach(lead, c, trail) : token);
+      result.push({ text: token, candidates: mapped, protected: false });
       i++;
       continue;
     }
-
-    // Unknown — preserve Roman verbatim
+    const letterTokens = segments.filter(seg2 => seg2.text.replace(/[^A-Za-z]/g, "").length >= 2);
+    const isolatedUnknown = letterTokens.length === 1;
+    if (sentenceUrduContext || isolatedUnknown) {
+      const phonetic = phoneticFallback(workToken);
+      if (phonetic.length > 0) {
+        result.push({ text: token, candidates: phonetic.map(c => reattach(lead, c, trail)), protected: false });
+        i++;
+        continue;
+      }
+    }
     result.push({ text: token, candidates: [token], protected: false });
     i++;
   }

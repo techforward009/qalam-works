@@ -18,6 +18,7 @@ export type TokenSource =
   | "context"      // resolved via context-sensitive rule (main→میں, to→تو, etc.)
   | "lexicon"      // exact match in Roman→Urdu lexicon
   | "morphology"   // morphological rule / spelling variant
+  | "phonetic"     // pronunciation-based Urdu-script fallback
   | "passthrough"  // unknown or low-confidence → original Roman preserved
   | "suggestion";  // speculative candidate (V3 or alternative) — never primary
 

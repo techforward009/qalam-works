@@ -26,7 +26,9 @@ import {
   type TokenChoice,
 } from "./writerTypes";
 
-import { engineV2 } from "./engineV2";
+import { engineV2, LOANWORD_URDU } from "./engineV2";
+function isUrduScript(text: string): boolean { return /[\u0600-\u06FF]/.test(text); }
+
 import { segmentInput, isProtectedToken } from "./protectedTokens";
 import { lookupNormalized, lookupToken } from "./lexicon";
 import { PHRASE_TABLE, normPhrase } from "./phraseTable";
@@ -58,8 +60,8 @@ const COMMON_SENTENCE_INITIAL = new Set([
 const KEEP_ENGLISH_SAMPLE = new Set([
   "ok","okay","please","sorry","thanks","hello","bye","yes","no",
   "problem","issue","update","install","login","logout","password","email","link",
-  "call","text","message","video","photo","file","data","app","chat",
-  "online","offline","busy","free","plan","meeting","class","office",
+  "call","text","message","photo","file","data","app","chat",
+  "online","offline","busy","free","plan","class",
   "team","project","resume","backup","download","upload","print","share",
   "cancel","confirm","submit","save","delete","copy","paste","search",
   "gym","coffee","mood","signal","wifi","battery","mode","status","type",
@@ -118,8 +120,15 @@ function classifyToken(
   if (v2Output === roman && isKnownEnglish(roman)) {
     return { source: "english", confidence: "high" };
   }
+  if (v2Output !== roman && isUrduScript(v2Output)) {
+    const core = roman.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "");
+    const lower = core.toLowerCase();
+    if (LOANWORD_URDU[lower]) return { source: "lexicon", confidence: "high" };
+    const lex = lookupNormalized(lower);
+    if (lex && lex[0] && v2Output.includes(lex[0])) return { source: "lexicon", confidence: "high" };
+    return { source: "phonetic", confidence: "medium" };
+  }
   if (v2Output === roman) {
-    // Preserved by V2, but no positive English evidence → passthrough (unknown/low-confidence)
     return { source: "passthrough", confidence: "low" };
   }
   if (AMBIGUOUS_DEFAULTS.has(lower)) {
@@ -234,8 +243,22 @@ function buildInternalSegments(input: string): InternalSegment[] {
     }
     if (phraseMatched) continue;
 
-    // Single token: get V2's output for this token alone
-    const v2TokOut = engineV2.convert(seg.text).output;
+    let v2TokOut = engineV2.convert(seg.text).output;
+    const core = seg.text.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "");
+    const lower = core.toLowerCase();
+    if (LOANWORD_URDU[lower]) {
+      const hasCue = segs.some(x => {
+        const c = x.text.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "").toLowerCase();
+        return !!c && c !== lower && !LOANWORD_URDU[c] &&
+          ["mein","main","hai","hain","kal","aaj","jana","ana","aana","bhejo","kar","ko","se","par","ki","ka","ke","nahi","ho","gayi","gaya","cancel"].includes(c);
+      });
+      if (hasCue) {
+        const idx = core ? seg.text.toLowerCase().indexOf(lower) : -1;
+        const lead = idx >= 0 ? seg.text.slice(0, idx) : "";
+        const trail = idx >= 0 ? seg.text.slice(idx + core.length) : "";
+        v2TokOut = lead + LOANWORD_URDU[lower] + trail;
+      }
+    }
     result.push({ roman: seg.text, primary: v2TokOut, isPhraseHead: false, isPhrasePart: false, startOffset: start, endOffset: end });
     offset = end; i++;
   }

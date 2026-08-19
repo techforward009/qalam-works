@@ -30,6 +30,7 @@ export const GRAPHEME_MAP: Record<string, WeightedCandidate[]> = {
   "ch": [{ text: "چ", weight: 0.95 }, { text: "چھ", weight: 0.3 }],
   "ph": [{ text: "ف", weight: 0.8 }, { text: "پھ", weight: 0.5 }],
   "bh": [{ text: "بھ", weight: 0.9 }],
+  "hm": [{ text: "حم", weight: 0.75 }, { text: "ہم", weight: 0.55 }],
   "th": [{ text: "ٹھ", weight: 0.7 }, { text: "تھ", weight: 0.7 }, { text: "ث", weight: 0.3 }],
   "dh": [{ text: "دھ", weight: 0.85 }, { text: "ڈھ", weight: 0.5 }],
   "zh": [{ text: "ژ", weight: 0.7 }, { text: "ز", weight: 0.5 }],

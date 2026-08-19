@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "examples": [
+    {
+      "id": "rl-01",
+      "input": "Dilon mein rehm, tabiyat mein saadgi, khuloos mein muhabbat ata farma."
+    },
+    {
+      "id": "rl-02",
+      "input": "kal meeting mein ana"
+    },
+    {
+      "id": "rl-03",
+      "input": "office jana hai"
+    },
+    {
+      "id": "rl-04",
+      "input": "video bhejo"
+    },
+    {
+      "id": "rl-05",
+      "input": "group mein bhejo"
+    },
+    {
+      "id": "rl-06",
+      "input": "WhatsApp group mein bhejo"
+    },
+    {
+      "id": "rl-07",
+      "input": "meeting starts at 5 pm"
+    },
+    {
+      "id": "rl-08",
+      "input": "please send the video"
+    },
+    {
+      "id": "rl-09",
+      "input": "https://example.com/khuloos"
+    },
+    {
+      "id": "rl-10",
+      "input": "muhabbat@example.com"
+    },
+    {
+      "id": "rl-11",
+      "input": "meeting.pdf"
+    },
+    {
+      "id": "rl-12",
+      "input": "zarmook"
+    },
+    {
+      "id": "rl-13",
+      "input": "main ghar jana chahta hon"
+    },
+    {
+      "id": "rl-14",
+      "input": "office is closed today"
+    },
+    {
+      "id": "rl-15",
+      "input": "Zoom meeting starts now"
+    },
+    {
+      "id": "rl-16",
+      "input": "the group will meet tomorrow"
+    },
+    {
+      "id": "rl-17",
+      "input": "I want to join the meeting"
+    },
+    {
+      "id": "rl-18",
+      "input": "please open the file"
+    },
+    {
+      "id": "rl-19",
+      "input": "video.mp4"
+    },
+    {
+      "id": "rl-20",
+      "input": "user@zarmook.com"
+    },
+    {
+      "id": "rl-21",
+      "input": "office@example.com"
+    },
+    {
+      "id": "rl-22",
+      "input": "aaj subah office jana hai"
+    },
+    {
+      "id": "rl-23",
+      "input": "dilon mein muhabbat hai"
+    },
+    {
+      "id": "rl-24",
+      "input": "tabiyat theek nahi"
+    },
+    {
+      "id": "rl-25",
+      "input": "khuloos se kaam karo"
+    },
+    {
+      "id": "rl-26",
+      "input": "ata farma ya Allah"
+    },
+    {
+      "id": "rl-27",
+      "input": "saadgi achi cheez hai"
+    },
+    {
+      "id": "rl-28",
+      "input": "main ana chahta hon"
+    },
+    {
+      "id": "rl-29",
+      "input": "aana hai kal"
+    },
+    {
+      "id": "rl-30",
+      "input": "bhejo video mujhe"
+    },
+    {
+      "id": "rl-31",
+      "input": "group mein message bhejo"
+    },
+    {
+      "id": "rl-32",
+      "input": "main meeting mein nahi aa sakta"
+    },
+    {
+      "id": "rl-33",
+      "input": "office se ghar jana hai"
+    },
+    {
+      "id": "rl-34",
+      "input": "mujhe aap se kuch kehna hai"
+    },
+    {
+      "id": "rl-35",
+      "input": "kal ghar par milna"
+    },
+    {
+      "id": "rl-36",
+      "input": "ye baat likh lo"
+    },
+    {
+      "id": "rl-37",
+      "input": "kitab parhna hai"
+    },
+    {
+      "id": "rl-38",
+      "input": "dua mein yaad rakhna"
+    },
+    {
+      "id": "rl-39",
+      "input": "aap kahan rehte hain"
+    },
+    {
+      "id": "rl-40",
+      "input": "main ye kaam karna chahta hon"
+    },
+    {
+      "id": "rl-41",
+      "input": "Allah hum sab par rehm farma"
+    },
+    {
+      "id": "rl-42",
+      "input": "dil mein muhabbat paida farma"
+    },
+    {
+      "id": "rl-43",
+      "input": "mujhe samajh nahi aa rahi"
+    },
+    {
+      "id": "rl-44",
+      "input": "Zoom meeting kal hai"
+    },
+    {
+      "id": "rl-45",
+      "input": "farma."
+    },
+    {
+      "id": "rl-46",
+      "input": "mein rehm,"
+    }
+  ]
+}

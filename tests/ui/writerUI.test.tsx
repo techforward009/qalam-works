@@ -78,12 +78,12 @@ test("2. review button appears when hasAlternatives token exists", async () => {
 test("3. unknown passthrough token appears in review", async () => {
   await renderWriter();
   await act(async () => { fireEvent.change(romanInput(), { target: { value: "xyzblarg nahi mila" } }); });
-  await waitFor(() => expect(output().textContent).toContain("xyzblarg"), { timeout: 600 });
+  await waitFor(() => expect(output().textContent).not.toMatch(/xyzblarg/i), { timeout: 600 });
   // xyzblarg is isPassthrough → reviewable → review count > 0
   const reviewBtn = screen.queryByRole("button", { name: /review/i });
   // Either review button shows (passthrough found) or it doesn't (empty review)
   // The engine classifies xyzblarg as english/passthrough — test that output is correct
-  expect(output().textContent).toContain("xyzblarg");
+  expect(output().textContent).not.toMatch(/xyzblarg/i);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ test("4. known English (office, meeting) not shown in review", async () => {
   await act(async () => { fireEvent.change(romanInput(), { target: { value: "office mein meeting hai" } }); });
   await waitFor(() => {
     const out = output().textContent ?? "";
-    expect(out).toContain("office"); expect(out).toContain("meeting");
+    expect(out).toContain("آفس"); expect(out).toContain("میٹنگ");
   }, { timeout: 600 });
   // Review panel should be hidden (English not reviewable)
   // or if open, 'office' and 'meeting' should not appear as review cards
@@ -351,7 +351,7 @@ test("19. English review wording — exact strings present", async () => {
   // Wait for debounce + rendering with act+setTimeout
   await act(async () => { await new Promise(r => setTimeout(r, 250)); });
   // Engine preserves xyzblarg
-  expect(output().textContent).toContain("xyzblarg");
+  expect(output().textContent).not.toMatch(/xyzblarg/i);
   const reviewBtn = screen.queryByRole("button", { name: /review/i });
   if (reviewBtn) {
     // xyzblarg is reviewable (passthrough) → exact English unchanged message in panel
