@@ -9,6 +9,7 @@ import type {
   WriterToken,
   TokenChoice,
 } from "./utils/writerTypes";
+import { normalizeUrduProsePunctuation } from "./utils/normalizeUrduProsePunctuation";
 import {
   getActiveUrduText,
   hasExportableUrduText,
@@ -341,10 +342,15 @@ export default function RomanUrduWriterClient() {
       ?? result.output;
   }, [result, choices, activeSentenceIdx]);
 
-  const activeUrduText = useMemo(
-    () => getActiveUrduText(mode, finalOutput, urduInput),
-    [mode, finalOutput, urduInput]
+  const displayUrduOutput = useMemo(
+    () => normalizeUrduProsePunctuation(finalOutput),
+    [finalOutput]
   );
+
+  const activeUrduText = useMemo(() => {
+    const raw = getActiveUrduText(mode, finalOutput, urduInput);
+    return normalizeUrduProsePunctuation(raw);
+  }, [mode, finalOutput, urduInput]);
   const canExport = hasExportableUrduText(activeUrduText);
 
   // ── Reviewable tokens (memoized) ──────────────────────────────────────────
@@ -373,16 +379,6 @@ export default function RomanUrduWriterClient() {
     });
   }, []);
 
-  const handleClearRoman = useCallback(() => {
-    applyRomanText("", true); setResult(null); setChoices([]);
-    setActiveSentenceIdx(0); setReviewOpen(false);
-    romanRef.current?.focus();
-  }, [applyRomanText]);
-
-  const handleClearUrdu = useCallback(() => {
-    applyUrduText("", true); urduRef.current?.focus();
-  }, [applyUrduText]);
-
   const handleTokenChoice = useCallback((tokenIndex: number, candidateIndex: number) => {
     setActiveSentenceIdx(-1);
     setChoices(prev => {
@@ -398,25 +394,23 @@ export default function RomanUrduWriterClient() {
   // ── Continue editing in Urdu ─────────────────────────────────────────────
 
   const handleContinueEditing = useCallback(() => {
-    if (!finalOutput.trim()) return; // no output yet — should not be reachable
+    if (!displayUrduOutput.trim()) return;
     setShowTransferConfirm(false);
-    // No existing Urdu draft → transfer immediately
-    if (!urduInput.trim() || urduInput === finalOutput) {
-      applyUrduText(finalOutput, true);
+    if (!urduInput.trim() || urduInput === displayUrduOutput) {
+      applyUrduText(displayUrduOutput, true);
       setMode("urdu");
       requestAnimationFrame(() => urduRef.current?.focus());
       return;
     }
-    // Existing non-identical Urdu draft → ask first
     setShowTransferConfirm(true);
-  }, [finalOutput, urduInput]);
+  }, [displayUrduOutput, urduInput]);
 
   const handleTransferReplace = useCallback(() => {
-    applyUrduText(finalOutput, true);
+    applyUrduText(displayUrduOutput, true);
     setShowTransferConfirm(false);
     setMode("urdu");
     requestAnimationFrame(() => urduRef.current?.focus());
-  }, [finalOutput]);
+  }, [displayUrduOutput]);
 
   const handleTransferKeep = useCallback(() => {
     // Keep existing draft — switch to Urdu mode so user sees their existing text
@@ -696,20 +690,24 @@ export default function RomanUrduWriterClient() {
             {ui.sub}
           </p>
 
-          {/* Mode tabs */}
-          <div className="mt-5 flex gap-1" role="tablist" aria-label="Writing mode">
-            {(["roman", "urdu"] as WritingMode[]).map((m, i) => (
+          {/* Mode segmented control */}
+          <div
+            className="mt-5 inline-flex p-1 rounded-xl bg-[#0F1424] border border-white/10 shadow-inner"
+            role="tablist"
+            aria-label="Writing mode"
+          >
+            {(["roman", "urdu"] as WritingMode[]).map((m) => (
               <button
                 key={m}
                 role="tab"
                 aria-selected={mode === m}
                 aria-label={m === "roman" ? ui.modeRomanLabel : ui.modeUrduLabel}
                 onClick={() => handleModeSwitch(m)}
-                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                  m === "urdu" ? "font-urdu" : ""
+                className={`min-h-[40px] px-4 md:px-5 text-sm font-medium rounded-lg transition-colors ${
+                  m === "urdu" ? "font-nastaliq" : ""
                 } ${
                   mode === m
-                    ? "bg-[#F7F6F2] text-[#151B2E]"
+                    ? "bg-[#F7F6F2] text-[#151B2E] shadow-sm"
                     : "text-[#9CA3AF] hover:text-white"
                 }`}
                 lang={m === "urdu" ? "ur" : undefined}
@@ -773,15 +771,6 @@ export default function RomanUrduWriterClient() {
                       aria-label={ui.inputLabel}
                       autoFocus
                     />
-                    {romanInput && (
-                      <button
-                        onClick={handleClearRoman}
-                        className="absolute top-3 right-3 text-xs text-[#9CA3AF] hover:text-[#4A5568] transition-colors"
-                        aria-label={ui.clear}
-                      >
-                        {ui.clear}
-                      </button>
-                    )}
                   </div>
                 </section>
 
@@ -796,7 +785,7 @@ export default function RomanUrduWriterClient() {
                   <div
                     dir="rtl"
                     lang="ur"
-                    className={`w-full min-h-[160px] md:min-h-[240px] rounded-xl border px-4 py-3 font-urdu text-lg leading-loose transition ${
+                    className={`w-full min-h-[160px] md:min-h-[240px] rounded-xl border px-4 py-3.5 md:px-5 md:py-4 font-nastaliq text-xl md:text-[1.375rem] leading-[2] text-right whitespace-pre-wrap break-words [overflow-wrap:anywhere] transition ${
                       hasOutput
                         ? "bg-white border-[#D1D5DB] text-[#151B2E] shadow-sm"
                         : "bg-[#F0EFEB] border-[#E5E7EB] text-[#9CA3AF]"
@@ -806,7 +795,7 @@ export default function RomanUrduWriterClient() {
                     aria-label={ui.outputLabel}
                   >
                     {hasOutput ? (
-                      finalOutput
+                      displayUrduOutput
                     ) : (
                       <span className="text-sm font-sans" lang={isUr ? "ur" : "en"}>
                         {romanInput ? "…" : ui.outputPlaceholder}
@@ -833,7 +822,7 @@ export default function RomanUrduWriterClient() {
                           <li key={ci} role="option" aria-selected={isSelected}>
                             <button
                               onClick={() => handleSentenceSelect(ci)}
-                              className={`w-full text-right px-4 py-3 font-urdu text-base leading-loose transition-colors ${
+                              className={`w-full text-right px-4 py-3 font-nastaliq text-base md:text-lg leading-[2] transition-colors ${
                                 isSelected
                                   ? "bg-[#B8935A]/10 text-[#151B2E] font-medium"
                                   : "text-[#374151] hover:bg-[#F9FAFB]"
@@ -841,7 +830,7 @@ export default function RomanUrduWriterClient() {
                               dir="rtl"
                               lang="ur"
                             >
-                              {cand.output}
+                              {normalizeUrduProsePunctuation(cand.output)}
                             </button>
                           </li>
                         );
@@ -1108,19 +1097,10 @@ export default function RomanUrduWriterClient() {
                       rows={6}
                       dir="rtl"
                       lang="ur"
-                      className="w-full min-h-[160px] md:min-h-[240px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 font-urdu text-lg text-[#151B2E] leading-loose placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition text-right"
+                      className="w-full min-h-[160px] md:min-h-[240px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3.5 md:px-5 md:py-4 font-nastaliq text-xl md:text-[1.375rem] text-[#151B2E] leading-[2] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition text-right whitespace-pre-wrap"
                       aria-label={ui.urduWritingLabel}
                       autoFocus
                     />
-                    {urduInput && (
-                      <button
-                        onClick={handleClearUrdu}
-                        className="absolute top-3 left-3 text-xs text-[#9CA3AF] hover:text-[#4A5568] transition-colors"
-                        aria-label={ui.clear}
-                      >
-                        {ui.clear}
-                      </button>
-                    )}
                   </div>
                   {urduInput && (
                     <p className="mt-1 text-xs text-[#9CA3AF] text-right" aria-live="off">

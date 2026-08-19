@@ -195,7 +195,7 @@ test("10. punctuation preserved in output", async () => {
   await act(async () => { fireEvent.change(romanInput(), { target: { value: "theek? haan!" } }); });
   // Engine preserves punctuation verbatim. Allow debounce (120ms) + React render to settle.
   await act(async () => { await new Promise(r => setTimeout(r, 250)); });
-  expect(output().textContent).toContain("?");
+  expect(output().textContent ?? "").toMatch(/[?؟]/);
   expect(output().textContent).toContain("!");
 });
 

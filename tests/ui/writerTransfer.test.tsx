@@ -274,35 +274,20 @@ test("15. manual Urdu edits survive mode switching", async () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 16. Roman Clear does not clear Urdu draft
-// ─────────────────────────────────────────────────────────────────────────────
-test("16. Roman Clear leaves Urdu draft intact", async () => {
+// 16–17. Pane-level Clear removed — global Clear draft only
+test("16. pane-level Clear is not present in Roman mode", async () => {
   await renderWriter();
-  const urduDraft = "یہ اردو ہے";
-  await act(async () => { fireEvent.click(urduTab()); });
-  await act(async () => { fireEvent.change(urduInput(), { target: { value: urduDraft } }); });
-  await act(async () => { fireEvent.click(romanTab()); });
-  await typeAndWait("aaj theek hai");
-  const clearBtn = screen.queryByRole("button", { name: /^clear$/i });
-  expect(clearBtn).not.toBeNull();
-  await act(async () => { fireEvent.click(clearBtn!); });
-  expect(romanInput().value).toBe("");
-  await act(async () => { fireEvent.click(urduTab()); });
-  expect(urduInput().value).toBe(urduDraft);
+  await typeAndWait("main theek hoon");
+  expect(screen.queryByRole("button", { name: /^clear$/i })).toBeNull();
+  expect(screen.getByTestId("writer-clear-draft")).toBeTruthy();
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 17. Urdu Clear does not clear Roman draft
-// ─────────────────────────────────────────────────────────────────────────────
-test("17. Urdu Clear leaves Roman draft intact", async () => {
+test("17. pane-level Clear is not present in Urdu mode", async () => {
   await renderWriter();
-  await typeAndWait("aaj theek hai");
   await act(async () => { fireEvent.click(urduTab()); });
-  await act(async () => { fireEvent.change(urduInput(), { target: { value: "یہ اردو ہے" } }); });
-  const clearBtn = screen.queryByRole("button", { name: /^clear$|^صاف کریں$/i });
-  if (clearBtn) await act(async () => { fireEvent.click(clearBtn); });
-  await act(async () => { fireEvent.click(romanTab()); });
-  expect(romanInput().value).toBe("aaj theek hai");
+  await act(async () => { fireEvent.change(urduInput(), { target: { value: "اردو متن" } }); });
+  expect(screen.queryByRole("button", { name: /^clear$|^صاف کریں$/i })).toBeNull();
+  expect(screen.getByTestId("writer-clear-draft")).toBeTruthy();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
