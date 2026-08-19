@@ -1,5 +1,5 @@
 /**
- * Phase 19A.4b — Writer dual-pane layout
+ * Phase 19A.4b/c — Writer dual-pane layout + action bar
  * @vitest-environment happy-dom
  */
 /// <reference types="vitest/globals" />
@@ -81,5 +81,49 @@ test("equal min-height classes on both panes in roman mode", async () => {
   const roman = document.querySelector("#roman-input") as HTMLElement;
   const out = screen.getByRole("status");
   expect(roman.className).toMatch(/min-h-\[160px\]/);
+  expect(roman.className).toMatch(/md:min-h-\[240px\]/);
   expect(out.className).toMatch(/min-h-\[160px\]/);
+  expect(out.className).toMatch(/md:min-h-\[240px\]/);
+});
+
+test("action area groups continuation and export actions", async () => {
+  await renderWriter();
+  await act(async () => {
+    fireEvent.change(document.querySelector("#roman-input")!, {
+      target: { value: "aaj theek hai" },
+    });
+  });
+  await act(async () => { await new Promise((r) => setTimeout(r, 250)); });
+  const area = screen.getByTestId("writer-action-area");
+  const bar = screen.getByTestId("writer-action-bar");
+  expect(area).toBeTruthy();
+  expect(bar).toBeTruthy();
+  expect(screen.getByTestId("writer-action-group-continue")).toBeTruthy();
+  expect(screen.getByTestId("writer-action-group-export")).toBeTruthy();
+  expect(screen.getByTestId("writer-copy")).toBeTruthy();
+  expect(screen.getByTestId("writer-download-txt")).toBeTruthy();
+  expect(screen.getByTestId("writer-whatsapp-ready")).toBeTruthy();
+  expect(screen.getByTestId("writer-document-studio")).toBeTruthy();
+  const dual = screen.getByTestId("writer-dual-pane");
+  expect(dual.contains(area)).toBe(false);
+});
+
+test("whatsapp preview appears below action bar", async () => {
+  await renderWriter();
+  await act(async () => {
+    fireEvent.change(document.querySelector("#roman-input")!, {
+      target: { value: "aaj theek hai" },
+    });
+  });
+  await act(async () => { await new Promise((r) => setTimeout(r, 250)); });
+  await act(async () => {
+    fireEvent.click(screen.getByTestId("writer-whatsapp-ready"));
+  });
+  const preview = screen.getByTestId("writer-whatsapp-preview");
+  const area = screen.getByTestId("writer-action-area");
+  expect(area.contains(preview)).toBe(true);
+  const bar = screen.getByTestId("writer-action-bar");
+  expect(
+    bar.compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
 });

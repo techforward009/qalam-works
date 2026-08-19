@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("19A.4b Writer dual-pane layout", () => {
+test.describe("19A.4b/c Writer dual-pane layout", () => {
   test("desktop side-by-side dual pane", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/tools/roman-urdu-writer");
@@ -28,6 +28,25 @@ test.describe("19A.4b Writer dual-pane layout", () => {
     const sw = await page.evaluate(() => document.body.scrollWidth);
     const cw = await page.evaluate(() => document.body.clientWidth);
     expect(sw).toBeLessThanOrEqual(cw + 5);
+  });
+
+  test("desktop panes are substantially taller", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/tools/roman-urdu-writer");
+    const roman = page.locator("#roman-input");
+    const box = await roman.boundingBox();
+    expect(box).toBeTruthy();
+    expect(box!.height).toBeGreaterThanOrEqual(220);
+  });
+
+  test("action bar groups are present", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/tools/roman-urdu-writer");
+    await page.locator("#roman-input").fill("aaj theek hai");
+    await page.waitForTimeout(300);
+    await expect(page.getByTestId("writer-action-bar")).toBeVisible();
+    await expect(page.getByTestId("writer-action-group-continue")).toBeVisible();
+    await expect(page.getByTestId("writer-action-group-export")).toBeVisible();
   });
 
   test("roman conversion and actions usable", async ({ page }) => {

@@ -392,71 +392,106 @@ export default function RomanUrduWriterClient() {
   const actionBtnClass =
     "text-sm font-medium px-4 py-2 min-h-[40px] rounded-lg border border-[#1A3A2A]/30 text-[#1A3A2A] bg-white hover:bg-[#1A3A2A]/5 transition-colors disabled:opacity-40 disabled:pointer-events-none disabled:hover:bg-white";
 
-  const exportBlock = (
-    <div className="space-y-3">
+  const primaryActionBtnClass =
+    "text-sm font-medium px-4 py-2 min-h-[40px] rounded-lg border border-[#1A3A2A]/40 text-[#1A3A2A] bg-[#1A3A2A]/5 hover:bg-[#1A3A2A]/10 transition-colors disabled:opacity-40 disabled:pointer-events-none";
+
+  /**
+   * Unified action area (19A.4c):
+   * Group A — writing continuation (Continue editing / Document Studio)
+   * Group B — export/share (Copy / TXT / WhatsApp)
+   * Max two intentional rows on desktop via flex-wrap; related actions cluster.
+   */
+  const renderActionArea = (opts?: { showContinueEditing?: boolean }) => (
+    <div className="space-y-3" data-testid="writer-action-area">
       <div
-        className="flex flex-wrap gap-2 items-center"
+        className="flex flex-wrap items-center gap-x-2 gap-y-2 md:gap-x-3"
         dir={isUr ? "rtl" : "ltr"}
         lang={isUr ? "ur" : "en"}
+        data-testid="writer-action-bar"
       >
-        <button
-          type="button"
-          data-testid="writer-copy"
-          onClick={handleCopy}
-          disabled={!canExport}
-          aria-label={ui.copyLabel}
-          aria-disabled={!canExport}
-          className={actionBtnClass}
-        >
-          {copyFeedback === "copied" ? ui.copied : ui.copy}
-        </button>
-        <button
-          type="button"
-          data-testid="writer-download-txt"
-          onClick={handleDownloadTxt}
-          disabled={!canExport}
-          aria-label={ui.downloadTxtLabel}
-          aria-disabled={!canExport}
-          className={actionBtnClass}
-        >
-          {ui.downloadTxt}
-        </button>
-        <button
-          type="button"
-          data-testid="writer-whatsapp-ready"
-          onClick={handleWhatsAppReady}
-          disabled={!canExport}
-          aria-label={ui.whatsappReadyLabel}
-          aria-disabled={!canExport}
-          className={actionBtnClass}
-        >
-          {ui.whatsappReady}
-        </button>
+        {/* Writing continuation group */}
+        <div className="flex flex-wrap items-center gap-2" data-testid="writer-action-group-continue">
+          {opts?.showContinueEditing && (
+            <button
+              type="button"
+              ref={continueEditingRef}
+              onClick={handleContinueEditing}
+              className={primaryActionBtnClass}
+              aria-label={ui.continueEditingUrduLabel}
+              lang={isUr ? "ur" : "en"}
+            >
+              {ui.continueEditingUrdu}
+            </button>
+          )}
+          <button
+            type="button"
+            data-testid="writer-document-studio"
+            onClick={handleContinueInDocumentStudio}
+            disabled={!canExport}
+            aria-label={ui.continueStudioLabel}
+            aria-disabled={!canExport}
+            className={actionBtnClass}
+          >
+            {ui.continueStudio}
+          </button>
+        </div>
+
+        {/* Visual separator on wider screens */}
+        <span
+          className="hidden md:inline-block w-px h-6 bg-[#E5E7EB] mx-1 shrink-0"
+          aria-hidden="true"
+        />
+
+        {/* Export / share group */}
+        <div className="flex flex-wrap items-center gap-2" data-testid="writer-action-group-export">
+          <button
+            type="button"
+            data-testid="writer-copy"
+            onClick={handleCopy}
+            disabled={!canExport}
+            aria-label={ui.copyLabel}
+            aria-disabled={!canExport}
+            className={actionBtnClass}
+          >
+            {copyFeedback === "copied" ? ui.copied : ui.copy}
+          </button>
+          <button
+            type="button"
+            data-testid="writer-download-txt"
+            onClick={handleDownloadTxt}
+            disabled={!canExport}
+            aria-label={ui.downloadTxtLabel}
+            aria-disabled={!canExport}
+            className={actionBtnClass}
+          >
+            {ui.downloadTxt}
+          </button>
+          <button
+            type="button"
+            data-testid="writer-whatsapp-ready"
+            onClick={handleWhatsAppReady}
+            disabled={!canExport}
+            aria-label={ui.whatsappReadyLabel}
+            aria-disabled={!canExport}
+            className={actionBtnClass}
+          >
+            {ui.whatsappReady}
+          </button>
+        </div>
+
         <span className="sr-only" aria-live="polite" data-testid="writer-copy-feedback">
           {copyFeedback === "copied" ? ui.copied : copyFeedback === "failed" ? ui.copyFailed : ""}
         </span>
-      </div>
-      <div dir={isUr ? "rtl" : "ltr"} lang={isUr ? "ur" : "en"}>
-        <button
-          type="button"
-          data-testid="writer-document-studio"
-          onClick={handleContinueInDocumentStudio}
-          disabled={!canExport}
-          aria-label={ui.continueStudioLabel}
-          aria-disabled={!canExport}
-          className={actionBtnClass}
-        >
-          {ui.continueStudio}
-        </button>
         <span className="sr-only" aria-live="polite" data-testid="writer-handoff-feedback">
           {handoffError ? ui.continueStudioFailed : ""}
         </span>
-        {handoffError && (
-          <p className="mt-2 text-sm text-[#9B2C2C]" role="alert">
-            {ui.continueStudioFailed}
-          </p>
-        )}
       </div>
+
+      {handoffError && (
+        <p className="text-sm text-[#9B2C2C]" role="alert" dir={isUr ? "rtl" : "ltr"} lang={isUr ? "ur" : "en"}>
+          {ui.continueStudioFailed}
+        </p>
+      )}
 
       {whatsappPreview !== null && (
         <section
@@ -590,7 +625,7 @@ export default function RomanUrduWriterClient() {
                       rows={6}
                       dir="ltr"
                       lang="ur-Latn"
-                      className="w-full min-h-[160px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 text-base text-[#151B2E] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition"
+                      className="w-full min-h-[160px] md:min-h-[240px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 text-base text-[#151B2E] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition"
                       aria-label={ui.inputLabel}
                       autoFocus
                     />
@@ -617,7 +652,7 @@ export default function RomanUrduWriterClient() {
                   <div
                     dir="rtl"
                     lang="ur"
-                    className={`w-full min-h-[160px] rounded-xl border px-4 py-3 font-urdu text-lg leading-loose transition ${
+                    className={`w-full min-h-[160px] md:min-h-[240px] rounded-xl border px-4 py-3 font-urdu text-lg leading-loose transition ${
                       hasOutput
                         ? "bg-white border-[#D1D5DB] text-[#151B2E] shadow-sm"
                         : "bg-[#F0EFEB] border-[#E5E7EB] text-[#9CA3AF]"
@@ -820,21 +855,10 @@ export default function RomanUrduWriterClient() {
                 </section>
               )}
 
-              {/* ── Continue editing / Transfer confirmation ── */}
+              {/* ── Action area (continuation + export) below Review ── */}
               {hasOutput && !showTransferConfirm && (
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-start">
-                    <button
-                      ref={continueEditingRef}
-                      onClick={handleContinueEditing}
-                      className="text-sm font-medium px-4 py-2 rounded-lg border border-[#1A3A2A]/30 text-[#1A3A2A] bg-white hover:bg-[#1A3A2A]/5 transition-colors"
-                      aria-label={ui.continueEditingUrduLabel}
-                      lang={isUr ? "ur" : "en"}
-                    >
-                      {ui.continueEditingUrdu}
-                    </button>
-                  </div>
-                  {exportBlock}
+                <div className="pt-1">
+                  {renderActionArea({ showContinueEditing: true })}
                 </div>
               )}
 
@@ -916,7 +940,7 @@ export default function RomanUrduWriterClient() {
                       rows={6}
                       dir="ltr"
                       lang="ur-Latn"
-                      className="w-full min-h-[160px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 text-base text-[#151B2E] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition"
+                      className="w-full min-h-[160px] md:min-h-[240px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 text-base text-[#151B2E] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition"
                       aria-label={ui.inputLabel}
                     />
                   </div>
@@ -940,7 +964,7 @@ export default function RomanUrduWriterClient() {
                       rows={6}
                       dir="rtl"
                       lang="ur"
-                      className="w-full min-h-[160px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 font-urdu text-lg text-[#151B2E] leading-loose placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition text-right"
+                      className="w-full min-h-[160px] md:min-h-[240px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 font-urdu text-lg text-[#151B2E] leading-loose placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition text-right"
                       aria-label={ui.urduWritingLabel}
                       autoFocus
                     />
@@ -962,7 +986,7 @@ export default function RomanUrduWriterClient() {
                 </section>
               </div>
               <div className="mt-1">
-                {exportBlock}
+                {renderActionArea()}
               </div>
             </>
           )}
