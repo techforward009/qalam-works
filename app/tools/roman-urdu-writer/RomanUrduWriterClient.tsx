@@ -519,7 +519,7 @@ export default function RomanUrduWriterClient() {
 
       {/* ── Header ── */}
       <header className="bg-[#151B2E] text-white px-4 py-6 md:px-8">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <h1
             className="text-2xl md:text-3xl font-bold tracking-tight"
             dir={isUr ? "rtl" : "ltr"}
@@ -562,74 +562,80 @@ export default function RomanUrduWriterClient() {
 
       {/* ── Main ── */}
       <main className="flex-1 px-4 py-6 md:px-8">
-        <div className="max-w-3xl mx-auto space-y-5">
+        <div className="max-w-5xl mx-auto space-y-5">
 
           {/* ════ ROMAN URDU MODE ════ */}
           {mode === "roman" && (
             <>
-              {/* Roman input */}
-              <section aria-labelledby="roman-input-label">
-                <label
-                  id="roman-input-label"
-                  className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2"
-                >
-                  {ui.inputLabel}
-                </label>
-                <div className="relative">
-                  <textarea
-                    id="roman-input"
-                    ref={romanRef}
-                    value={romanInput}
-                    onChange={e => setRomanInput(e.target.value)}
-                    placeholder={ui.inputPlaceholder}
-                    rows={4}
-                    dir="ltr"
-                    lang="ur-Latn"
-                    className="w-full rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 text-base text-[#151B2E] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition"
-                    aria-label={ui.inputLabel}
-                    autoFocus
-                  />
-                  {romanInput && (
-                    <button
-                      onClick={handleClearRoman}
-                      className="absolute top-3 right-3 text-xs text-[#9CA3AF] hover:text-[#4A5568] transition-colors"
-                      aria-label={ui.clear}
-                    >
-                      {ui.clear}
-                    </button>
-                  )}
-                </div>
-              </section>
+              {/* Input + output: stacked on mobile, side-by-side from md up */}
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 items-start"
+                data-testid="writer-dual-pane"
+              >
+                {/* Roman input */}
+                <section aria-labelledby="roman-input-label" className="min-w-0">
+                  <label
+                    id="roman-input-label"
+                    className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2"
+                  >
+                    {ui.inputLabel}
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      id="roman-input"
+                      ref={romanRef}
+                      value={romanInput}
+                      onChange={e => setRomanInput(e.target.value)}
+                      placeholder={ui.inputPlaceholder}
+                      rows={6}
+                      dir="ltr"
+                      lang="ur-Latn"
+                      className="w-full min-h-[160px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 text-base text-[#151B2E] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition"
+                      aria-label={ui.inputLabel}
+                      autoFocus
+                    />
+                    {romanInput && (
+                      <button
+                        onClick={handleClearRoman}
+                        className="absolute top-3 right-3 text-xs text-[#9CA3AF] hover:text-[#4A5568] transition-colors"
+                        aria-label={ui.clear}
+                      >
+                        {ui.clear}
+                      </button>
+                    )}
+                  </div>
+                </section>
 
-              {/* Generated Urdu output */}
-              <section aria-labelledby="urdu-output-label">
-                <label
-                  id="urdu-output-label"
-                  className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2"
-                >
-                  {ui.outputLabel}
-                </label>
-                <div
-                  dir="rtl"
-                  lang="ur"
-                  className={`w-full rounded-xl border min-h-[120px] px-4 py-3 font-urdu text-lg leading-loose transition ${
-                    hasOutput
-                      ? "bg-white border-[#D1D5DB] text-[#151B2E] shadow-sm"
-                      : "bg-[#F0EFEB] border-[#E5E7EB] text-[#9CA3AF]"
-                  }`}
-                  role="status"
-                  aria-live="polite"
-                  aria-label={ui.outputLabel}
-                >
-                  {hasOutput ? (
-                    finalOutput
-                  ) : (
-                    <span className="text-sm font-sans" lang={isUr ? "ur" : "en"}>
-                      {romanInput ? "…" : ui.outputPlaceholder}
-                    </span>
-                  )}
-                </div>
-              </section>
+                {/* Generated Urdu output */}
+                <section aria-labelledby="urdu-output-label" className="min-w-0">
+                  <label
+                    id="urdu-output-label"
+                    className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2"
+                  >
+                    {ui.outputLabel}
+                  </label>
+                  <div
+                    dir="rtl"
+                    lang="ur"
+                    className={`w-full min-h-[160px] rounded-xl border px-4 py-3 font-urdu text-lg leading-loose transition ${
+                      hasOutput
+                        ? "bg-white border-[#D1D5DB] text-[#151B2E] shadow-sm"
+                        : "bg-[#F0EFEB] border-[#E5E7EB] text-[#9CA3AF]"
+                    }`}
+                    role="status"
+                    aria-live="polite"
+                    aria-label={ui.outputLabel}
+                  >
+                    {hasOutput ? (
+                      finalOutput
+                    ) : (
+                      <span className="text-sm font-sans" lang={isUr ? "ur" : "en"}>
+                        {romanInput ? "…" : ui.outputPlaceholder}
+                      </span>
+                    )}
+                  </div>
+                </section>
+              </div>
 
               {/* Sentence alternative (compact, only when >1 and useful) */}
               {hasSentenceAlts && reviewCount === 0 && (
@@ -887,47 +893,78 @@ export default function RomanUrduWriterClient() {
 
           {/* ════ DIRECT URDU MODE ════ */}
           {mode === "urdu" && (
-            <section aria-labelledby="urdu-writing-label">
-              <label
-                id="urdu-writing-label"
-                className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2"
-                lang={isUr ? "ur" : "en"}
+            <>
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 items-start"
+                data-testid="writer-dual-pane"
               >
-                {ui.urduWritingLabel}
-              </label>
-              <div className="relative">
-                <textarea
-                  id="urdu-input"
-                  ref={urduRef}
-                  value={urduInput}
-                  onChange={e => setUrduInput(e.target.value)}
-                  placeholder={ui.urduPlaceholder}
-                  rows={8}
-                  dir="rtl"
-                  lang="ur"
-                  className="w-full rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 font-urdu text-lg text-[#151B2E] leading-loose placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition text-right"
-                  aria-label={ui.urduWritingLabel}
-                  autoFocus
-                />
-                {urduInput && (
-                  <button
-                    onClick={handleClearUrdu}
-                    className="absolute top-3 left-3 text-xs text-[#9CA3AF] hover:text-[#4A5568] transition-colors"
-                    aria-label={ui.clear}
+                {/* Roman draft remains visible for dual-view continuity */}
+                <section aria-labelledby="roman-input-label-urdu-mode" className="min-w-0">
+                  <label
+                    id="roman-input-label-urdu-mode"
+                    className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2"
                   >
-                    {ui.clear}
-                  </button>
-                )}
+                    {ui.inputLabel}
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      id="roman-input"
+                      ref={romanRef}
+                      value={romanInput}
+                      onChange={e => setRomanInput(e.target.value)}
+                      placeholder={ui.inputPlaceholder}
+                      rows={6}
+                      dir="ltr"
+                      lang="ur-Latn"
+                      className="w-full min-h-[160px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 text-base text-[#151B2E] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition"
+                      aria-label={ui.inputLabel}
+                    />
+                  </div>
+                </section>
+
+                <section aria-labelledby="urdu-writing-label" className="min-w-0">
+                  <label
+                    id="urdu-writing-label"
+                    className="block text-xs font-semibold text-[#4A5568] uppercase tracking-wider mb-2"
+                    lang={isUr ? "ur" : "en"}
+                  >
+                    {ui.urduWritingLabel}
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      id="urdu-input"
+                      ref={urduRef}
+                      value={urduInput}
+                      onChange={e => setUrduInput(e.target.value)}
+                      placeholder={ui.urduPlaceholder}
+                      rows={6}
+                      dir="rtl"
+                      lang="ur"
+                      className="w-full min-h-[160px] rounded-xl border border-[#D1D5DB] bg-white px-4 py-3 font-urdu text-lg text-[#151B2E] leading-loose placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#B8935A] focus:border-transparent resize-none shadow-sm transition text-right"
+                      aria-label={ui.urduWritingLabel}
+                      autoFocus
+                    />
+                    {urduInput && (
+                      <button
+                        onClick={handleClearUrdu}
+                        className="absolute top-3 left-3 text-xs text-[#9CA3AF] hover:text-[#4A5568] transition-colors"
+                        aria-label={ui.clear}
+                      >
+                        {ui.clear}
+                      </button>
+                    )}
+                  </div>
+                  {urduInput && (
+                    <p className="mt-1 text-xs text-[#9CA3AF] text-right" aria-live="off">
+                      {ui.charCount(urduInput.length)}
+                    </p>
+                  )}
+                </section>
               </div>
-              {urduInput && (
-                <p className="mt-1 text-xs text-[#9CA3AF] text-right" aria-live="off">
-                  {ui.charCount(urduInput.length)}
-                </p>
-              )}
-              <div className="mt-3">
+              <div className="mt-1">
                 {exportBlock}
               </div>
-            </section>
+            </>
           )}
 
         </div>
