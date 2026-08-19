@@ -3,12 +3,20 @@
  * Runs at desktop (1280×800) and mobile (393×851) viewports.
  */
 
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Download } from "@playwright/test";
+import { readFileSync } from "fs";
 
 const URL = "/tools/roman-urdu-writer";
 
 async function waitForOutput(page: Page, text: string) {
   await expect(page.locator('[role="status"]')).toContainText(text, { timeout: 5000 });
+}
+
+async function readDownloadedTxt(download: Download): Promise<string> {
+  const p = await download.path();
+  const buf = readFileSync(p!);
+  expect(buf.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))).toBe(true);
+  return buf.toString("utf8").replace(/^\uFEFF/, "");
 }
 
 test.describe("Desktop Roman mode (1280×800)", () => {
@@ -70,12 +78,35 @@ test.describe("Desktop Roman mode (1280×800)", () => {
     }
   });
 
-  test("no Copy button", async ({ page }) => {
+  test("Copy and TXT export the visible Urdu result", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto(URL);
     await page.locator("#roman-input").fill("aaj theek hai");
     await waitForOutput(page, "آج");
-    const copyBtn = page.locator("button", { hasText: /^copy$/i });
-    await expect(copyBtn).toHaveCount(0);
+    const visible = (await page.locator('[role="status"]').innerText()).trim();
+
+    const reviewBtn = page.locator("button", { hasText: /review/i }).first();
+    if (await reviewBtn.isVisible().catch(() => false)) {
+      await reviewBtn.click();
+      const alt = page.locator("#review-panel button[aria-pressed='false']").first();
+      if (await alt.count()) {
+        await alt.click();
+      }
+    }
+    const afterChoice = (await page.locator('[role="status"]').innerText()).trim();
+
+    await page.getByTestId("writer-copy").click();
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboard).toBe(afterChoice);
+    expect(clipboard).not.toBe("aaj theek hai");
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByTestId("writer-download-txt").click(),
+    ]);
+    expect(download.suggestedFilename()).toBe("qalam-urdu-writer.txt");
+    expect(await readDownloadedTxt(download)).toBe(afterChoice);
+    expect(visible.length).toBeGreaterThan(0);
   });
 
   test("mixed English preserved in output", async ({ page }) => {
@@ -162,6 +193,28 @@ test.describe("Mobile direct Urdu mode (393×851)", () => {
 
     // Draft preserved after typing
     expect(await page.locator("#urdu-input").inputValue()).toBe("یہ اردو متن ہے");
+  });
+
+  test("mobile Copy and TXT use exact Urdu draft", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.goto(URL);
+    await page.locator('[role="tab"]:last-child').click();
+    const exact = "یہ اردو متن ہے";
+    await page.locator("#urdu-input").fill(exact);
+    await page.getByTestId("writer-copy").click();
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboard).toBe(exact);
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByTestId("writer-download-txt").click(),
+    ]);
+    expect(download.suggestedFilename()).toBe("qalam-urdu-writer.txt");
+    expect(await readDownloadedTxt(download)).toBe(exact);
+
+    const sw = await page.evaluate(() => document.body.scrollWidth);
+    const cw = await page.evaluate(() => document.body.clientWidth);
+    expect(sw).toBeLessThanOrEqual(cw + 5);
   });
 
   test("switching back to Roman preserves Urdu draft", async ({ page }) => {
@@ -255,6 +308,23 @@ test.describe("19A.2c Transfer — Mobile (393×851)", () => {
     await page.locator('[role="tab"]:last-child').click();
     // Manual edit preserved
     expect(await page.locator("#urdu-input").inputValue()).toBe(urduResult + " ترمیم");
+  });
+
+  test("Mobile: Copy/TXT after transfer uses manual Urdu edit", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.goto(URL);
+    await page.locator("#roman-input").fill("aaj kaam tha");
+    await waitForOutput(page, "آج");
+    await page.locator("button", { hasText: /Continue editing/i }).click();
+    const edited = (await page.locator("#urdu-input").inputValue()) + " ترمیم";
+    await page.locator("#urdu-input").fill(edited);
+    await page.getByTestId("writer-copy").click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(edited);
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByTestId("writer-download-txt").click(),
+    ]);
+    expect(await readDownloadedTxt(download)).toBe(edited);
   });
 
   test("Mobile: confirmation wraps properly", async ({ page }) => {

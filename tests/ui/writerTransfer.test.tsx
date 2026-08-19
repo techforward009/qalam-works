@@ -406,14 +406,15 @@ test("25. writerEngine module exports no experimental symbols", async () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 26. No Copy/export controls
+// 26. Copy/export available after transfer (19A.3a)
 // ─────────────────────────────────────────────────────────────────────────────
-test("26. no Copy/export buttons", async () => {
+test("26. Copy exports transferred Urdu draft", async () => {
   await renderWriter();
   await typeAndWait("aaj theek hai");
   await act(async () => { fireEvent.click(continueBtn()!); });
-  // In Urdu mode after transfer
-  expect(screen.queryByRole("button", { name: /copy|کاپی/i })).toBeNull();
+  const copy = screen.getByTestId("writer-copy");
+  expect(copy).toBeTruthy();
+  expect((copy as HTMLButtonElement).disabled).toBe(false);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

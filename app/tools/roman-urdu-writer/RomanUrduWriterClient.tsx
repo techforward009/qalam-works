@@ -9,6 +9,11 @@ import type {
   WriterToken,
   TokenChoice,
 } from "./utils/writerTypes";
+import {
+  getActiveUrduText,
+  hasExportableUrduText,
+  downloadWriterTxt,
+} from "./utils/writerExport";
 
 // ── Writing mode ──────────────────────────────────────────────────────────────
 
@@ -70,6 +75,12 @@ const UI = {
     confirmReplaceMsg: "You already have Urdu text here. Replace it with the converted result?",
     confirmReplace: "Replace",
     confirmKeep: "Keep current text",
+    copy: "Copy",
+    copied: "Copied",
+    copyFailed: "Copy failed",
+    copyLabel: "Copy Urdu text",
+    downloadTxt: "Download TXT",
+    downloadTxtLabel: "Download Urdu text as a TXT file",
   },
   ur: {
     heading:    "قلم اردو رائٹر",
@@ -104,6 +115,12 @@ const UI = {
     confirmReplaceMsg: "یہاں پہلے سے اردو متن موجود ہے۔ کیا اسے تبدیل کیا جائے؟",
     confirmReplace: "تبدیل کریں",
     confirmKeep: "موجودہ متن رکھیں",
+    copy: "کاپی کریں",
+    copied: "کاپی ہوگیا",
+    copyFailed: "کاپی ناکام",
+    copyLabel: "اردو متن کاپی کریں",
+    downloadTxt: "TXT ڈاؤنلوڈ کریں",
+    downloadTxtLabel: "اردو متن TXT فائل کے طور پر ڈاؤنلوڈ کریں",
   },
 };
 
@@ -131,10 +148,12 @@ export default function RomanUrduWriterClient() {
 
   // Transfer confirmation: null = no confirmation; true = confirm dialog showing
   const [showTransferConfirm, setShowTransferConfirm] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<"idle" | "copied" | "failed">("idle");
 
   const romanRef = useRef<HTMLTextAreaElement>(null);
   const urduRef  = useRef<HTMLTextAreaElement>(null);
   const continueEditingRef = useRef<HTMLButtonElement>(null);
+  const copyFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Conversion (Roman mode only, debounced 120ms) ─────────────────────────
 
@@ -165,6 +184,12 @@ export default function RomanUrduWriterClient() {
     return result.candidates[activeSentenceIdx >= 0 ? activeSentenceIdx : 0]?.output
       ?? result.output;
   }, [result, choices, activeSentenceIdx]);
+
+  const activeUrduText = useMemo(
+    () => getActiveUrduText(mode, finalOutput, urduInput),
+    [mode, finalOutput, urduInput]
+  );
+  const canExport = hasExportableUrduText(activeUrduText);
 
   // ── Reviewable tokens (memoized) ──────────────────────────────────────────
 
@@ -249,6 +274,37 @@ export default function RomanUrduWriterClient() {
     // Stay in Roman mode
   }, []);
 
+  const flashCopyFeedback = useCallback((state: "copied" | "failed") => {
+    setCopyFeedback(state);
+    if (copyFeedbackTimer.current) clearTimeout(copyFeedbackTimer.current);
+    copyFeedbackTimer.current = setTimeout(() => setCopyFeedback("idle"), 2000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (copyFeedbackTimer.current) clearTimeout(copyFeedbackTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    setCopyFeedback("idle");
+  }, [mode, activeUrduText]);
+
+  const handleCopy = useCallback(async () => {
+    if (!hasExportableUrduText(activeUrduText)) return;
+    try {
+      await navigator.clipboard.writeText(activeUrduText);
+      flashCopyFeedback("copied");
+    } catch {
+      flashCopyFeedback("failed");
+    }
+  }, [activeUrduText, flashCopyFeedback]);
+
+  const handleDownloadTxt = useCallback(() => {
+    if (!hasExportableUrduText(activeUrduText)) return;
+    downloadWriterTxt(activeUrduText);
+  }, [activeUrduText]);
+
 
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -256,6 +312,40 @@ export default function RomanUrduWriterClient() {
   const hasOutput = !!finalOutput;
   const reviewCount = reviewableTokens.length;
   const hasSentenceAlts = result && result.candidates.length > 1;
+
+  const exportRow = (
+    <div
+      className="flex flex-wrap gap-2 items-center"
+      dir={isUr ? "rtl" : "ltr"}
+      lang={isUr ? "ur" : "en"}
+    >
+      <button
+        type="button"
+        data-testid="writer-copy"
+        onClick={handleCopy}
+        disabled={!canExport}
+        aria-label={ui.copyLabel}
+        aria-disabled={!canExport}
+        className="text-sm font-medium px-4 py-2 min-h-[40px] rounded-lg border border-[#1A3A2A]/30 text-[#1A3A2A] bg-white hover:bg-[#1A3A2A]/5 transition-colors disabled:opacity-40 disabled:pointer-events-none disabled:hover:bg-white"
+      >
+        {copyFeedback === "copied" ? ui.copied : ui.copy}
+      </button>
+      <button
+        type="button"
+        data-testid="writer-download-txt"
+        onClick={handleDownloadTxt}
+        disabled={!canExport}
+        aria-label={ui.downloadTxtLabel}
+        aria-disabled={!canExport}
+        className="text-sm font-medium px-4 py-2 min-h-[40px] rounded-lg border border-[#1A3A2A]/30 text-[#1A3A2A] bg-white hover:bg-[#1A3A2A]/5 transition-colors disabled:opacity-40 disabled:pointer-events-none disabled:hover:bg-white"
+      >
+        {ui.downloadTxt}
+      </button>
+      <span className="sr-only" aria-live="polite" data-testid="writer-copy-feedback">
+        {copyFeedback === "copied" ? ui.copied : copyFeedback === "failed" ? ui.copyFailed : ""}
+      </span>
+    </div>
+  );
 
   return (
     // Root always LTR — individual elements set own dir
@@ -560,16 +650,19 @@ export default function RomanUrduWriterClient() {
 
               {/* ── Continue editing / Transfer confirmation ── */}
               {hasOutput && !showTransferConfirm && (
-                <div className="flex justify-start">
-                  <button
-                    ref={continueEditingRef}
-                    onClick={handleContinueEditing}
-                    className="text-sm font-medium px-4 py-2 rounded-lg border border-[#1A3A2A]/30 text-[#1A3A2A] bg-white hover:bg-[#1A3A2A]/5 transition-colors"
-                    aria-label={ui.continueEditingUrduLabel}
-                    lang={isUr ? "ur" : "en"}
-                  >
-                    {ui.continueEditingUrdu}
-                  </button>
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-start">
+                    <button
+                      ref={continueEditingRef}
+                      onClick={handleContinueEditing}
+                      className="text-sm font-medium px-4 py-2 rounded-lg border border-[#1A3A2A]/30 text-[#1A3A2A] bg-white hover:bg-[#1A3A2A]/5 transition-colors"
+                      aria-label={ui.continueEditingUrduLabel}
+                      lang={isUr ? "ur" : "en"}
+                    >
+                      {ui.continueEditingUrdu}
+                    </button>
+                  </div>
+                  {exportRow}
                 </div>
               )}
 
@@ -665,6 +758,9 @@ export default function RomanUrduWriterClient() {
                   {ui.charCount(urduInput.length)}
                 </p>
               )}
+              <div className="mt-3">
+                {exportRow}
+              </div>
             </section>
           )}
 

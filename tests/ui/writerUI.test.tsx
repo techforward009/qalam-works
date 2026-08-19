@@ -413,13 +413,15 @@ test("22. writerEngine has no experimental symbols", async () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 23. No Copy/export controls
+// 23. Copy/export controls appear after conversion (19A.3a)
 // ─────────────────────────────────────────────────────────────────────────────
-test("23. no clipboard Copy button", async () => {
+test("23. Copy appears after conversion, not on empty state", async () => {
   await renderWriter();
+  expect(screen.queryByTestId("writer-copy")).toBeNull();
   await act(async () => { fireEvent.change(romanInput(), { target: { value: "aaj theek hai" } }); });
   await waitFor(() => expect(/[\u0600-\u06FF]/.test(output().textContent ?? "")).toBe(true), { timeout: 600 });
-  expect(screen.queryByRole("button", { name: /copy|کاپی/i })).toBeNull();
+  expect(screen.getByTestId("writer-copy")).toBeTruthy();
+  expect(screen.getByTestId("writer-download-txt")).toBeTruthy();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
