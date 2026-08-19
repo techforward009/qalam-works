@@ -23,6 +23,7 @@ export const translations = {
       unicodeStandardizer: "Urdu Unicode Standardizer",
       invoiceStudio: "Invoice Generator",
       whatsappRtlFormatter: "WhatsApp RTL Formatter",
+      urduWriter: "Urdu Writer",
       moreTools: "More Tools",
       services: "Services",
       about: "About",
@@ -88,6 +89,10 @@ export const translations = {
           body: "Write, edit, clean, review, and export in one workspace — with language-aware processing.",
         },
         {
+          name: "Qalam Urdu Writer",
+          body: "Write Urdu easily from Roman Urdu, with control over uncertain words.",
+        },
+        {
           name: "Translation Studio",
           body: "Translate documents segment by segment, manage glossary and review, then continue in Document Studio.",
         },
@@ -127,6 +132,12 @@ export const translations = {
           href: "/tools/unicode-standardizer",
           description: "Urdu Unicode Standardizer",
           body: "Improve Urdu letter forms and consistency.",
+        },
+        {
+          label: "I want to write Urdu from Roman",
+          href: "/tools/roman-urdu-writer",
+          description: "Qalam Urdu Writer",
+          body: "Write Urdu easily from Roman Urdu, with control over uncertain words.",
         },
         {
           label: "I need to translate a document",
@@ -355,6 +366,7 @@ export const translations = {
       unicodeStandardizer: "اردو یونیکوڈ اسٹینڈرڈائزر",
       invoiceStudio: "انوائس جنریٹر",
       whatsappRtlFormatter: "واٹس ایپ آر ٹی ایل فارمیٹر",
+      urduWriter: "قلم اردو رائٹر",
       moreTools: "مزید ٹولز",
       services: "خدمات",
       about: "ہمارے بارے میں",
@@ -420,6 +432,10 @@ export const translations = {
           body: "لکھیں، صفائی کریں، جائزہ لیں اور ایک ہی جگہ سے ایکسپورٹ کریں — زبان کے مطابق پروسیسنگ کے ساتھ۔",
         },
         {
+          name: "قلم اردو رائٹر",
+          body: "رومن اردو سے آسانی سے اردو لکھیں، اور جہاں ضرورت ہو لفظ خود منتخب کریں۔",
+        },
+        {
           name: "ترجمہ اسٹوڈیو",
           body: "حصہ بہ حصہ ترجمہ کریں، اصطلاحی فہرست اور نظرثانی کا انتظام کریں، پھر ڈاکومنٹ اسٹوڈیو میں جاری رکھیں۔",
         },
@@ -459,6 +475,12 @@ export const translations = {
           href: "/tools/unicode-standardizer",
           description: "اردو یونیکوڈ اسٹینڈرڈائزر",
           body: "اردو حروف کی شکل اور consistency بہتر کریں۔",
+        },
+        {
+          label: "رومن اردو سے اردو لکھنا ہے",
+          href: "/tools/roman-urdu-writer",
+          description: "قلم اردو رائٹر",
+          body: "رومن اردو سے آسانی سے اردو لکھیں، اور جہاں ضرورت ہو لفظ خود منتخب کریں۔",
         },
         {
           label: "مجھے ایک دستاویز کا ترجمہ کرنا ہے",

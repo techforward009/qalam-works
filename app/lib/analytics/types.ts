@@ -11,6 +11,7 @@ export type ToolId =
   | "whatsapp_rtl_formatter"
   | "invoice_generator"
   | "translation_studio"
+  | "urdu_writer"
   | "home"
   | "unknown";
 

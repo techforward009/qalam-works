@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import RomanUrduWriterClient from "./RomanUrduWriterClient";
 
 export const metadata: Metadata = {
-  title: "Urdu Writer — Roman to Urdu Script | Qalam Works",
+  title: "Qalam Urdu Writer — Write Urdu from Roman | Qalam Works",
   description:
-    "Type naturally in Roman Urdu and see the Urdu script instantly. Preserves URLs, numbers, English words, and names. Copy the result in one click.",
+    "Write Urdu easily from Roman Urdu, with control over uncertain words. Review suggestions, copy, export TXT, WhatsApp-ready text, or continue in Document Studio.",
   alternates: { canonical: "/tools/roman-urdu-writer" },
 };
 

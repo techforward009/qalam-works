@@ -7,6 +7,7 @@ import { trackEvent, type ToolId } from "../lib/analytics";
 
 const TOOL_HREFS = [
   "/tools/document-studio",
+  "/tools/roman-urdu-writer",
   "/tools/translation-studio",
   "/tools/document-cleaner",
   "/tools/quality-checker",
@@ -17,6 +18,7 @@ const TOOL_HREFS = [
 
 const TOOL_IDS: ToolId[] = [
   "document_studio",
+  "urdu_writer",
   "translation_studio",
   "document_cleaner",
   "quality_audit",
