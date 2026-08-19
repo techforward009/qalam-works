@@ -94,7 +94,8 @@ describe("no engine coupling", () => {
       "utf8"
     );
     expect(src).not.toMatch(/from ["'].*engineV3|from ["'].*writerEngine|from ["'].*engineV2|from ["'].*engineDirC/);
-    expect(src).not.toMatch(/document-studio|processText/);
+    expect(src).not.toMatch(/processText/);
     expect(src).toMatch(/whatsappRtlFormatter/);
+    expect(src).toMatch(/translationHandoff/);
   });
 });

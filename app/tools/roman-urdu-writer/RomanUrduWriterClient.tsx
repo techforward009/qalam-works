@@ -14,6 +14,8 @@ import {
   hasExportableUrduText,
   downloadWriterTxt,
   formatActiveTextForWhatsApp,
+  writeWriterHandoff,
+  DOCUMENT_STUDIO_ROUTE,
 } from "./utils/writerExport";
 
 // ── Writing mode ──────────────────────────────────────────────────────────────
@@ -91,6 +93,9 @@ const UI = {
     copyWhatsAppLabel: "Copy WhatsApp-ready text",
     hidePreview: "Hide",
     hidePreviewLabel: "Hide WhatsApp-ready preview",
+    continueStudio: "Continue in Document Studio",
+    continueStudioLabel: "Open current Urdu text in Document Studio",
+    continueStudioFailed: "Could not open Document Studio.",
   },
   ur: {
     heading:    "قلم اردو رائٹر",
@@ -140,6 +145,9 @@ const UI = {
     copyWhatsAppLabel: "واٹس ایپ کے لیے تیار متن کاپی کریں",
     hidePreview: "چھپائیں",
     hidePreviewLabel: "واٹس ایپ پیش نظارہ چھپائیں",
+    continueStudio: "ڈاکومنٹ اسٹوڈیو میں جاری رکھیں",
+    continueStudioLabel: "موجودہ اردو متن ڈاکومنٹ اسٹوڈیو میں کھولیں",
+    continueStudioFailed: "ڈاکومنٹ اسٹوڈیو نہیں کھولا جا سکا۔",
   },
 };
 
@@ -170,6 +178,7 @@ export default function RomanUrduWriterClient() {
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "copied" | "failed">("idle");
   const [whatsappPreview, setWhatsappPreview] = useState<string | null>(null);
   const [waCopyFeedback, setWaCopyFeedback] = useState<"idle" | "copied" | "failed">("idle");
+  const [handoffError, setHandoffError] = useState(false);
 
   const romanRef = useRef<HTMLTextAreaElement>(null);
   const urduRef  = useRef<HTMLTextAreaElement>(null);
@@ -322,6 +331,7 @@ export default function RomanUrduWriterClient() {
   useEffect(() => {
     setWhatsappPreview(null);
     setWaCopyFeedback("idle");
+    setHandoffError(false);
   }, [romanInput, urduInput, mode, choices, activeSentenceIdx]);
 
   const handleCopy = useCallback(async () => {
@@ -359,6 +369,17 @@ export default function RomanUrduWriterClient() {
     setWhatsappPreview(null);
     setWaCopyFeedback("idle");
   }, []);
+
+  const handleContinueInDocumentStudio = useCallback(() => {
+    if (!hasExportableUrduText(activeUrduText)) return;
+    setHandoffError(false);
+    const ok = writeWriterHandoff(activeUrduText);
+    if (!ok) {
+      setHandoffError(true);
+      return;
+    }
+    window.location.href = DOCUMENT_STUDIO_ROUTE;
+  }, [activeUrduText]);
 
 
 
@@ -414,6 +435,27 @@ export default function RomanUrduWriterClient() {
         <span className="sr-only" aria-live="polite" data-testid="writer-copy-feedback">
           {copyFeedback === "copied" ? ui.copied : copyFeedback === "failed" ? ui.copyFailed : ""}
         </span>
+      </div>
+      <div dir={isUr ? "rtl" : "ltr"} lang={isUr ? "ur" : "en"}>
+        <button
+          type="button"
+          data-testid="writer-document-studio"
+          onClick={handleContinueInDocumentStudio}
+          disabled={!canExport}
+          aria-label={ui.continueStudioLabel}
+          aria-disabled={!canExport}
+          className={actionBtnClass}
+        >
+          {ui.continueStudio}
+        </button>
+        <span className="sr-only" aria-live="polite" data-testid="writer-handoff-feedback">
+          {handoffError ? ui.continueStudioFailed : ""}
+        </span>
+        {handoffError && (
+          <p className="mt-2 text-sm text-[#9B2C2C]" role="alert">
+            {ui.continueStudioFailed}
+          </p>
+        )}
       </div>
 
       {whatsappPreview !== null && (

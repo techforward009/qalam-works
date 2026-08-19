@@ -195,12 +195,9 @@ test("24. Copy is keyboard-focusable and activatable", async () => {
   expect(writeText).toHaveBeenCalled();
 });
 
-test("25. no Document Studio controls", async () => {
+test("25. no WhatsApp deep-link controls", async () => {
   await renderWriter();
   await typeRoman("aaj theek hai");
-  const body = document.body.textContent ?? "";
-  expect(body).not.toMatch(/Document Studio/i);
-  expect(body).not.toMatch(/Continue in Document Studio/i);
   expect(document.body.innerHTML).not.toMatch(/wa\.me/);
 });
 

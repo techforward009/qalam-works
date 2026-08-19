@@ -413,3 +413,82 @@ test.describe("19A.3b WhatsApp Ready — Mobile (390×844)", () => {
   });
 });
 
+// ── 19A.3c: Document Studio handoff ──────────────────────────────────────────
+
+test.describe("19A.3c Document Studio handoff — Desktop (1280×900)", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("Roman result opens Document Studio with exact visible Urdu", async ({ page }) => {
+    await page.goto(URL);
+    await page.locator("#roman-input").fill("aaj theek hai");
+    await waitForOutput(page, "آج");
+    const visible = (await page.locator('[role="status"]').evaluate((el) => el.textContent ?? "")).trim();
+    await page.getByTestId("writer-document-studio").click();
+    await expect(page).toHaveURL(/\/tools\/document-studio/, { timeout: 15000 });
+    await page.waitForTimeout(1500);
+    const editor = page.locator('[contenteditable="true"]').first();
+    await expect(editor).toBeVisible({ timeout: 10000 });
+    const editorText = (await editor.textContent()) ?? "";
+    expect(editorText).toContain("آج");
+    expect(editorText).not.toContain("aaj theek hai");
+    expect(editorText.replace(/\s+/g, "")).toContain(visible.replace(/\s+/g, "").slice(0, 8));
+    const leftover = await page.evaluate(() => sessionStorage.getItem("qalam-translation-handoff"));
+    expect(leftover).toBeNull();
+  });
+
+  test("direct Urdu manual text is imported exactly", async ({ page }) => {
+    await page.goto(URL);
+    await page.locator('[role="tab"]:last-child').click();
+    const exact = "یہ دستی اردو متن ہے۔";
+    await page.locator("#urdu-input").fill(exact);
+    await page.getByTestId("writer-document-studio").click();
+    await expect(page).toHaveURL(/\/tools\/document-studio/, { timeout: 15000 });
+    await page.waitForTimeout(1500);
+    const editorText = (await page.locator('[contenteditable="true"]').first().textContent()) ?? "";
+    expect(editorText).toContain("یہ دستی اردو متن ہے");
+  });
+
+  test("one-time: handoff key is consumed and stays gone after reload", async ({ page }) => {
+    await page.goto(URL);
+    await page.locator('[role="tab"]:last-child').click();
+    await page.locator("#urdu-input").fill("پہلا ہینڈآف");
+    await page.getByTestId("writer-document-studio").click();
+    await expect(page).toHaveURL(/\/tools\/document-studio/, { timeout: 15000 });
+    await page.waitForTimeout(1500);
+    let key = await page.evaluate(() => sessionStorage.getItem("qalam-translation-handoff"));
+    expect(key).toBeNull();
+    await page.reload();
+    await page.waitForTimeout(1000);
+    key = await page.evaluate(() => sessionStorage.getItem("qalam-translation-handoff"));
+    expect(key).toBeNull();
+  });
+
+  test("WhatsApp preview is not sent to Document Studio", async ({ page }) => {
+    await page.goto(URL);
+    await page.locator("#roman-input").fill("aaj theek hai");
+    await waitForOutput(page, "آج");
+    await page.getByTestId("writer-whatsapp-ready").click();
+    await expect(page.getByTestId("writer-whatsapp-preview")).toBeVisible();
+    await page.getByTestId("writer-document-studio").click();
+    await expect(page).toHaveURL(/\/tools\/document-studio/, { timeout: 15000 });
+    await page.waitForTimeout(1500);
+    const editorText = (await page.locator('[contenteditable="true"]').first().textContent()) ?? "";
+    expect(editorText).toContain("آج");
+    expect(editorText).not.toMatch(/\u2067/);
+  });
+});
+
+test.describe("19A.3c Document Studio handoff — Mobile (390×844)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true });
+
+  test("action row wraps with WhatsApp preview open", async ({ page }) => {
+    await page.goto(URL);
+    await page.locator("#roman-input").fill("aaj theek hai");
+    await waitForOutput(page, "آج");
+    await page.getByTestId("writer-whatsapp-ready").click();
+    await expect(page.getByTestId("writer-document-studio")).toBeVisible();
+    const sw = await page.evaluate(() => document.body.scrollWidth);
+    const cw = await page.evaluate(() => document.body.clientWidth);
+    expect(sw).toBeLessThanOrEqual(cw + 5);
+  });
+});

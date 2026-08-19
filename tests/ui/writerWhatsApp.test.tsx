@@ -273,10 +273,10 @@ test("27. no WhatsApp deep-link behavior", async () => {
   expect(screen.queryByRole("link", { name: /whatsapp/i })).toBeNull();
 });
 
-test("28. no Document Studio feature added", async () => {
+test("28. no WhatsApp deep-link", async () => {
   await renderWriter();
   await typeRoman("aaj theek hai");
-  expect(document.body.textContent).not.toMatch(/Document Studio/);
+  expect(document.body.innerHTML).not.toMatch(/wa\.me/);
 });
 
 test("29. no experimental engine imports in Writer client", async () => {
@@ -287,7 +287,6 @@ test("29. no experimental engine imports in Writer client", async () => {
     "utf8"
   );
   expect(src).not.toMatch(/engineV3|engineDirC|ngram/);
-  expect(src).not.toMatch(/document-studio/);
 });
 
 test("30. existing Copy still copies unformatted after WhatsApp preview", async () => {
