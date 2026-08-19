@@ -175,3 +175,101 @@ test.describe("Mobile direct Urdu mode (393×851)", () => {
     expect(await page.locator("#urdu-input").inputValue()).toBe("یہ اردو ہے");
   });
 });
+
+// ── 19A.2c: Transfer workflow ─────────────────────────────────────────────────
+
+test.describe("19A.2c Transfer — Desktop (1280×900)", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("Continue editing seeds Urdu draft and switches mode", async ({ page }) => {
+    await page.goto(URL);
+    await page.locator("#roman-input").fill("aaj theek hai");
+    await waitForOutput(page, "آج");
+    const urduResult = await page.locator('[role="status"]').innerText();
+    await page.locator("button", { hasText: /Continue editing/i }).click();
+    // Mode must be Urdu
+    await expect(page.locator("#urdu-input")).toBeVisible();
+    // Draft equals result
+    expect(await page.locator("#urdu-input").inputValue()).toBe(urduResult.trim());
+    // Screenshot
+    await page.screenshot({ path: "/tmp/desktop-transfer.png" });
+  });
+
+  test("Roman draft unchanged after transfer", async ({ page }) => {
+    await page.goto(URL);
+    const roman = "aaj theek hai";
+    await page.locator("#roman-input").fill(roman);
+    await waitForOutput(page, "آج");
+    await page.locator("button", { hasText: /Continue editing/i }).click();
+    await page.locator('[role="tab"]:first-child').click();
+    expect(await page.locator("#roman-input").inputValue()).toBe(roman);
+  });
+
+  test("Existing Urdu draft: Keep preserves it", async ({ page }) => {
+    await page.goto(URL);
+    // Create existing Urdu draft
+    await page.locator('[role="tab"]:last-child').click();
+    await page.locator("#urdu-input").fill("یہ پرانا متن ہے");
+    await page.locator('[role="tab"]:first-child').click();
+    await page.locator("#roman-input").fill("aaj theek hai");
+    await waitForOutput(page, "آج");
+    await page.locator("button", { hasText: /Continue editing/i }).click();
+    // Confirmation appears
+    await expect(page.locator('[role="alertdialog"]')).toBeVisible();
+    // Click Keep
+    await page.locator("button", { hasText: /Keep current/i }).click();
+    // Urdu draft preserved
+    expect(await page.locator("#urdu-input").inputValue()).toBe("یہ پرانا متن ہے");
+    await page.screenshot({ path: "/tmp/desktop-confirm.png" });
+  });
+
+  test("Existing Urdu draft: Replace uses converted result", async ({ page }) => {
+    await page.goto(URL);
+    await page.locator('[role="tab"]:last-child').click();
+    await page.locator("#urdu-input").fill("یہ پرانا متن ہے");
+    await page.locator('[role="tab"]:first-child').click();
+    await page.locator("#roman-input").fill("aaj theek hai");
+    await waitForOutput(page, "آج");
+    const urduResult = (await page.locator('[role="status"]').innerText()).trim();
+    await page.locator("button", { hasText: /Continue editing/i }).click();
+    await page.locator("button", { hasText: /^Replace$/i }).click();
+    expect(await page.locator("#urdu-input").inputValue()).toBe(urduResult);
+  });
+});
+
+test.describe("19A.2c Transfer — Mobile (393×851)", () => {
+  test.use({ viewport: { width: 393, height: 851 }, isMobile: true });
+
+  test("Mobile: full transfer workflow", async ({ page }) => {
+    await page.goto(URL);
+    await page.locator("#roman-input").fill("aaj kaam tha");
+    await waitForOutput(page, "آج");
+    const urduResult = (await page.locator('[role="status"]').innerText()).trim();
+    await page.locator("button", { hasText: /Continue editing/i }).click();
+    expect(await page.locator("#urdu-input").inputValue()).toBe(urduResult);
+    // Edit in Urdu
+    await page.locator("#urdu-input").fill(urduResult + " ترمیم");
+    await page.screenshot({ path: "/tmp/mobile-transfer.png" });
+    // Switch Roman and back
+    await page.locator('[role="tab"]:first-child').click();
+    await page.locator('[role="tab"]:last-child').click();
+    // Manual edit preserved
+    expect(await page.locator("#urdu-input").inputValue()).toBe(urduResult + " ترمیم");
+  });
+
+  test("Mobile: confirmation wraps properly", async ({ page }) => {
+    await page.goto(URL);
+    await page.locator('[role="tab"]:last-child').click();
+    await page.locator("#urdu-input").fill("یہ پرانا متن ہے");
+    await page.locator('[role="tab"]:first-child').click();
+    await page.locator("#roman-input").fill("aaj theek hai");
+    await waitForOutput(page, "آج");
+    await page.locator("button", { hasText: /Continue editing/i }).click();
+    await expect(page.locator('[role="alertdialog"]')).toBeVisible();
+    // No overflow
+    const sw = await page.evaluate(() => document.body.scrollWidth);
+    const cw = await page.evaluate(() => document.body.clientWidth);
+    expect(sw).toBeLessThanOrEqual(cw + 5);
+    await page.screenshot({ path: "/tmp/mobile-confirm.png" });
+  });
+});

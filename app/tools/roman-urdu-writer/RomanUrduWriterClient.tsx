@@ -65,6 +65,11 @@ const UI = {
     resetBtnLabel:  "Reset to Qalam's suggestion",
     reviewToggleLabel: (n: number, open: boolean) =>
       `${open ? "Hide" : "Show"} ${n} word${n === 1 ? "" : "s"} to review`,
+    continueEditingUrdu: "Continue editing in Urdu",
+    continueEditingUrduLabel: "Continue editing the Urdu result in direct Urdu mode",
+    confirmReplaceMsg: "You already have Urdu text here. Replace it with the converted result?",
+    confirmReplace: "Replace",
+    confirmKeep: "Keep current text",
   },
   ur: {
     heading:    "قلم اردو رائٹر",
@@ -94,6 +99,11 @@ const UI = {
     resetBtnLabel:  "قلم کی تجویز پر واپس",
     reviewToggleLabel: (n: number, open: boolean) =>
       `${open ? "چھپائیں" : "دکھائیں"} — ${n} الفاظ`,
+    continueEditingUrdu: "اردو میں ترمیم جاری رکھیں",
+    continueEditingUrduLabel: "اردو نتیجے کو براہ راست اردو موڈ میں ترمیم کریں",
+    confirmReplaceMsg: "یہاں پہلے سے اردو متن موجود ہے۔ کیا اسے تبدیل کیا جائے؟",
+    confirmReplace: "تبدیل کریں",
+    confirmKeep: "موجودہ متن رکھیں",
   },
 };
 
@@ -119,8 +129,12 @@ export default function RomanUrduWriterClient() {
   // Review panel open/closed
   const [reviewOpen, setReviewOpen] = useState(false);
 
+  // Transfer confirmation: null = no confirmation; true = confirm dialog showing
+  const [showTransferConfirm, setShowTransferConfirm] = useState(false);
+
   const romanRef = useRef<HTMLTextAreaElement>(null);
   const urduRef  = useRef<HTMLTextAreaElement>(null);
+  const continueEditingRef = useRef<HTMLButtonElement>(null);
 
   // ── Conversion (Roman mode only, debounced 120ms) ─────────────────────────
 
@@ -137,6 +151,8 @@ export default function RomanUrduWriterClient() {
       setActiveSentenceIdx(0);
       // Auto-close review when text changes so stale choices don't confuse
       setReviewOpen(false);
+      // Cancel any pending transfer confirmation
+      setShowTransferConfirm(false);
     }, 120);
     return () => clearTimeout(t);
   }, [romanInput, mode]);
@@ -169,6 +185,7 @@ export default function RomanUrduWriterClient() {
 
   const handleModeSwitch = useCallback((next: WritingMode) => {
     setMode(next);
+    setShowTransferConfirm(false); // always dismiss confirm on explicit mode switch
     requestAnimationFrame(() => {
       if (next === "roman") romanRef.current?.focus();
       else urduRef.current?.focus();
@@ -197,6 +214,42 @@ export default function RomanUrduWriterClient() {
     setActiveSentenceIdx(idx);
     setChoices([]);
   }, []);
+  // ── Continue editing in Urdu ─────────────────────────────────────────────
+
+  const handleContinueEditing = useCallback(() => {
+    if (!finalOutput.trim()) return; // no output yet — should not be reachable
+    setShowTransferConfirm(false);
+    // No existing Urdu draft → transfer immediately
+    if (!urduInput.trim() || urduInput === finalOutput) {
+      setUrduInput(finalOutput);
+      setMode("urdu");
+      requestAnimationFrame(() => urduRef.current?.focus());
+      return;
+    }
+    // Existing non-identical Urdu draft → ask first
+    setShowTransferConfirm(true);
+  }, [finalOutput, urduInput]);
+
+  const handleTransferReplace = useCallback(() => {
+    setUrduInput(finalOutput);
+    setShowTransferConfirm(false);
+    setMode("urdu");
+    requestAnimationFrame(() => urduRef.current?.focus());
+  }, [finalOutput]);
+
+  const handleTransferKeep = useCallback(() => {
+    // Keep existing draft — switch to Urdu mode so user sees their existing text
+    setShowTransferConfirm(false);
+    setMode("urdu");
+    requestAnimationFrame(() => urduRef.current?.focus());
+  }, []);
+
+  const handleTransferCancel = useCallback(() => {
+    setShowTransferConfirm(false);
+    // Stay in Roman mode
+  }, []);
+
+
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -505,7 +558,63 @@ export default function RomanUrduWriterClient() {
                 </section>
               )}
 
-              {/* Empty state */}
+              {/* ── Continue editing / Transfer confirmation ── */}
+              {hasOutput && !showTransferConfirm && (
+                <div className="flex justify-start">
+                  <button
+                    ref={continueEditingRef}
+                    onClick={handleContinueEditing}
+                    className="text-sm font-medium px-4 py-2 rounded-lg border border-[#1A3A2A]/30 text-[#1A3A2A] bg-white hover:bg-[#1A3A2A]/5 transition-colors"
+                    aria-label={ui.continueEditingUrduLabel}
+                    lang={isUr ? "ur" : "en"}
+                  >
+                    {ui.continueEditingUrdu}
+                  </button>
+                </div>
+              )}
+
+              {/* Inline replacement confirmation */}
+              {showTransferConfirm && (
+                <div
+                  className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm p-4 space-y-3"
+                  role="alertdialog"
+                  aria-modal="false"
+                  aria-label={ui.confirmReplaceMsg}
+                >
+                  <p
+                    className="text-sm text-[#374151]"
+                    dir={isUr ? "rtl" : "ltr"}
+                    lang={isUr ? "ur" : "en"}
+                  >
+                    {ui.confirmReplaceMsg}
+                  </p>
+                  <div className="flex gap-3 flex-wrap">
+                    <button
+                      onClick={handleTransferReplace}
+                      className="text-sm font-medium px-4 py-2 rounded-lg bg-[#151B2E] text-white hover:bg-[#1A2540] transition-colors min-h-[40px]"
+                      lang={isUr ? "ur" : "en"}
+                    >
+                      {ui.confirmReplace}
+                    </button>
+                    <button
+                      onClick={handleTransferKeep}
+                      className="text-sm font-medium px-4 py-2 rounded-lg border border-[#D1D5DB] text-[#374151] hover:bg-[#F9FAFB] transition-colors min-h-[40px]"
+                      lang={isUr ? "ur" : "en"}
+                    >
+                      {ui.confirmKeep}
+                    </button>
+                    <button
+                      onClick={handleTransferCancel}
+                      className="text-sm text-[#9CA3AF] hover:text-[#4A5568] px-2 transition-colors"
+                      aria-label={isUr ? "منسوخ کریں" : "Cancel"}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
+                            {/* Empty state */}
               {!romanInput && (
                 <div
                   className="text-center py-10 text-[#9CA3AF] text-sm"
