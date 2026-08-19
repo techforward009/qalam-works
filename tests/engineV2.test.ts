@@ -310,3 +310,21 @@ describe("19A.0d: Top-3 sentence-level candidates", () => {
     expect(r1).toBe(r2);
   });
 });
+
+describe("19A.4a production accuracy — kehna/chahta/hon", () => {
+  test("aaj mein kuch kehna chahta hon", () => {
+    const r = engineV2.convert("aaj mein kuch kehna chahta hon");
+    expect(r.output).toBe("آج میں کچھ کہنا چاہتا ہوں");
+  });
+
+  test.each([
+    ["kehna", "کہنا"],
+    ["chahta", "چاہتا"],
+    ["chahti", "چاہتی"],
+    ["chahte", "چاہتے"],
+    ["chahna", "چاہنا"],
+    ["hon", "ہوں"],
+  ] as const)("%s → %s", (roman, urdu) => {
+    expect(engineV2.convert(roman).output).toBe(urdu);
+  });
+});

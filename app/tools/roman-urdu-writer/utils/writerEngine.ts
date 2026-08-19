@@ -167,18 +167,9 @@ function buildTokenCandidates(
     if (alts.length > 0) return [primary, ...alts];
   }
 
-  // For ambiguous context tokens: expose the alternative Roman form as medium suggestion
-  const lower = roman.toLowerCase();
-  if (AMBIGUOUS_DEFAULTS.has(lower) && source === "context") {
-    // Offer Roman passthrough as explicit alternative so user can override
-    const passAlt: TokenCandidate = {
-      text: roman,
-      source: "suggestion",
-      confidence: "low",
-    };
-    return [primary, passAlt];
-  }
-
+  // High-confidence context defaults (e.g. mein → میں) do not expose the
+  // original Roman spelling as a "useful alternative". That falsely inflated
+  // Review counts. Genuine multi-Urdu lexicon alternatives are already handled above.
   return [primary];
 }
 

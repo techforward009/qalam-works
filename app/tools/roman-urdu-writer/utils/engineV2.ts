@@ -136,7 +136,9 @@ function morphExpand(token: string): string[] {
 
   // Verb form generation
   const verbStems: Record<string, string[]> = {
-    "hoon": ["ہوں"], "houn": ["ہوں"],
+    "hoon": ["ہوں"], "houn": ["ہوں"], "hon": ["ہوں"],
+    "kehna": ["کہنا"], "kehne": ["کہنے"],
+    "chahta": ["چاہتا"], "chahti": ["چاہتی"], "chahte": ["چاہتے"], "chahna": ["چاہنا"],
     "raha": ["رہا"], "rahi": ["رہی"], "rahe": ["رہے"],
     "sakta": ["سکتا"], "sakti": ["سکتی"], "sakte": ["سکتے"],
     "tha": ["تھا"], "thi": ["تھی"], "they": ["تھے"],

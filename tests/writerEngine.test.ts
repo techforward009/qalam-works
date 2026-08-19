@@ -563,3 +563,54 @@ describe("Performance", () => {
     expect((performance.now() - start) / 5).toBeLessThan(25);
   });
 });
+
+describe("19A.4a production accuracy correction", () => {
+  test("full sentence matches V2 and expected Urdu", () => {
+    const input = "aaj mein kuch kehna chahta hon";
+    const expected = "آج میں کچھ کہنا چاہتا ہوں";
+    const w = convertRomanUrdu(input);
+    expect(w.output).toBe(expected);
+    expect(w.output).toBe(engineV2.convert(input).output);
+  });
+
+  test.each([
+    ["kehna", "کہنا"],
+    ["chahta", "چاہتا"],
+    ["chahti", "چاہتی"],
+    ["chahte", "چاہتے"],
+    ["chahna", "چاہنا"],
+    ["hon", "ہوں"],
+  ] as const)("%s → %s", (roman, urdu) => {
+    const w = convertRomanUrdu(roman);
+    expect(w.output).toBe(urdu);
+    expect(w.output).toBe(engineV2.convert(roman).output);
+  });
+
+  test("mein is high-confidence with no false Roman alternative", () => {
+    const w = convertRomanUrdu("mein");
+    const tok = w.tokens.find(t => t.roman.toLowerCase() === "mein")!;
+    expect(tok.primary).toBe("میں");
+    expect(tok.hasAlternatives).toBe(false);
+    expect(tok.candidates.every(c => c.text !== "mein")).toBe(true);
+  });
+
+  test("full sentence produces zero reviewable content tokens", () => {
+    const w = convertRomanUrdu("aaj mein kuch kehna chahta hon");
+    const reviewable = w.tokens.filter(t => {
+      if (!t.roman.trim()) return false;
+      if (t.isPhrasePart || t.isProtected || t.isEnglish) return false;
+      if (t.hasAlternatives) return true;
+      if (t.isPassthrough) return true;
+      if (t.confidence === "low") return true;
+      return false;
+    });
+    expect(reviewable).toHaveLength(0);
+  });
+
+  test("unknown Roman still reviewable/passthrough", () => {
+    const w = convertRomanUrdu("xyzblarg");
+    const tok = w.tokens.find(t => t.roman === "xyzblarg")!;
+    expect(tok.isPassthrough).toBe(true);
+    expect(tok.primary).toBe("xyzblarg");
+  });
+});

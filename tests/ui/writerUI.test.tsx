@@ -472,3 +472,18 @@ test("25. choice/reset cycle is deterministic", async () => {
   }
   expect(true).toBe(true);
 });
+
+test("19A.4a: aaj mein kuch kehna chahta hon produces 0 review words", async () => {
+  await renderWriter();
+  await act(async () => {
+    fireEvent.change(romanInput(), { target: { value: "aaj mein kuch kehna chahta hon" } });
+  });
+  await act(async () => { await new Promise((r) => setTimeout(r, 250)); });
+  const status = output();
+  expect(status.textContent).toContain("آج");
+  expect(status.textContent).toContain("کہنا");
+  expect(status.textContent).toContain("چاہتا");
+  expect(status.textContent).toContain("ہوں");
+  expect(status.textContent).not.toMatch(/kehna|chahta|\bhon\b/);
+  expect(screen.queryByRole("button", { name: /review/i })).toBeNull();
+});
