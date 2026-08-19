@@ -343,3 +343,73 @@ test.describe("19A.2c Transfer — Mobile (393×851)", () => {
     await page.screenshot({ path: "/tmp/mobile-confirm.png" });
   });
 });
+
+// ── 19A.3b: WhatsApp Ready ───────────────────────────────────────────────────
+
+test.describe("19A.3b WhatsApp Ready — Desktop (1280×900)", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("preview + Copy for WhatsApp vs ordinary Copy", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.goto(URL);
+    await page.locator("#roman-input").fill("aaj theek hai office mein");
+    await waitForOutput(page, "آج");
+    const visible = await page.locator('[role="status"]').evaluate((el) => el.textContent ?? "");
+
+    await page.getByTestId("writer-whatsapp-ready").click();
+    await expect(page.getByTestId("writer-whatsapp-preview")).toBeVisible();
+    const preview = await page.getByTestId("writer-whatsapp-preview-text").evaluate((el) => el.textContent ?? "");
+    expect(preview).not.toBe(visible);
+    expect(preview.replace(/[\u2066\u2067\u2069\u200E\u200F]/g, "")).toContain("office");
+
+    await page.getByTestId("writer-whatsapp-copy").click();
+    const waClip = await page.evaluate(() => navigator.clipboard.readText());
+    expect(waClip).toBe(preview);
+
+    await page.getByTestId("writer-copy").click();
+    const plainClip = await page.evaluate(() => navigator.clipboard.readText());
+    expect(plainClip).toBe(visible);
+    expect(plainClip).not.toBe(waClip);
+    await page.screenshot({ path: "/workspace/screenshots/writer-desktop-whatsapp.png", fullPage: true });
+  });
+
+  test("stale preview clears then regenerates", async ({ page }) => {
+    await page.goto(URL);
+    await page.locator("#roman-input").fill("aaj theek hai");
+    await waitForOutput(page, "آج");
+    await page.getByTestId("writer-whatsapp-ready").click();
+    await expect(page.getByTestId("writer-whatsapp-preview")).toBeVisible();
+    await page.locator("#roman-input").fill("aaj kaam tha");
+    await expect(page.getByTestId("writer-whatsapp-preview")).toHaveCount(0);
+    await waitForOutput(page, "آج");
+    await page.getByTestId("writer-whatsapp-ready").click();
+    await expect(page.getByTestId("writer-whatsapp-preview")).toBeVisible();
+    const preview = await page.getByTestId("writer-whatsapp-preview-text").evaluate((el) => el.textContent ?? "");
+    const visible = await page.locator('[role="status"]').evaluate((el) => el.textContent ?? "");
+    expect(preview.replace(/[\u2066\u2067\u2069\u200E\u200F]/g, "")).toContain(visible.replace(/\s+/g, visible.includes("کام") ? "کام" : "").slice(0, 1) || "آج");
+    expect(preview).toContain("آج");
+  });
+});
+
+test.describe("19A.3b WhatsApp Ready — Mobile (390×844)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true });
+
+  test("mixed Urdu + English + URL preview has no overflow", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.goto(URL);
+    await page.locator('[role="tab"]:last-child').click();
+    const exact = "یہ Qalam Works ہے\nwww.qalamworks.com 03001234567";
+    await page.locator("#urdu-input").fill(exact);
+    await page.getByTestId("writer-whatsapp-ready").click();
+    await expect(page.getByTestId("writer-whatsapp-preview")).toBeVisible();
+    const sw = await page.evaluate(() => document.body.scrollWidth);
+    const cw = await page.evaluate(() => document.body.clientWidth);
+    expect(sw).toBeLessThanOrEqual(cw + 5);
+    await page.getByTestId("writer-whatsapp-copy").click();
+    const clip = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clip.replace(/[\u2066\u2067\u2069\u200E\u200F]/g, "")).toContain("www.qalamworks.com");
+    expect(clip).not.toBe(exact);
+    await page.screenshot({ path: "/workspace/screenshots/writer-mobile-whatsapp.png", fullPage: true });
+  });
+});
+

@@ -3,9 +3,11 @@ import {
   UTF8_BOM,
   WRITER_TXT_FILENAME,
   buildWriterTxtContents,
+  formatActiveTextForWhatsApp,
   getActiveUrduText,
   hasExportableUrduText,
 } from "../app/tools/roman-urdu-writer/utils/writerExport";
+import { formatForWhatsAppRTL } from "../app/utils/whatsappRtlFormatter";
 
 describe("getActiveUrduText", () => {
   test("Roman mode uses finalOutput, not urduInput", () => {
@@ -67,8 +69,24 @@ describe("downloadWriterTxt", () => {
   });
 });
 
+describe("WhatsApp transport wrapper", () => {
+  test("delegates to formatForWhatsAppRTL exactly", () => {
+    const text = "آج office میں meeting ہے\nwww.qalam.works";
+    expect(formatActiveTextForWhatsApp(text)).toBe(formatForWhatsAppRTL(text));
+  });
+
+  test("does not alter visible letters when controls are stripped", () => {
+    const text = "علی کتاب۔ office 03001234567";
+    const formatted = formatActiveTextForWhatsApp(text);
+    const visible = formatted.replace(/[\u2066\u2067\u2069\u200E\u200F]/g, "");
+    expect(visible.replace(/\n+$/g, "")).toContain("office");
+    expect(visible).toContain("03001234567");
+    expect(visible).toContain("علی");
+  });
+});
+
 describe("no engine coupling", () => {
-  test("writerExport does not import experimental engines", async () => {
+  test("writerExport does not import experimental engines or Studio", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     const src = readFileSync(
@@ -76,6 +94,7 @@ describe("no engine coupling", () => {
       "utf8"
     );
     expect(src).not.toMatch(/from ["'].*engineV3|from ["'].*writerEngine|from ["'].*engineV2|from ["'].*engineDirC/);
-    expect(src).not.toMatch(/whatsapp|document-studio|processText/);
+    expect(src).not.toMatch(/document-studio|processText/);
+    expect(src).toMatch(/whatsappRtlFormatter/);
   });
 });

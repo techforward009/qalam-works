@@ -1,9 +1,12 @@
 /**
- * Urdu Writer export helpers — Phase 19A.3a.
+ * Urdu Writer export helpers — Phase 19A.3a / 19A.3b.
  *
  * Transport only. Never normalizes, standardizes, or re-runs the engine.
  * Copy uses the raw string; TXT prepends UTF-8 BOM (Qalam convention).
+ * WhatsApp Ready reuses the existing pure formatter — no duplicate BiDi logic.
  */
+
+import { formatForWhatsAppRTL } from "../../../utils/whatsappRtlFormatter";
 
 export type WriterExportMode = "roman" | "urdu";
 
@@ -14,7 +17,7 @@ export const WRITER_TXT_FILENAME = "qalam-urdu-writer.txt";
 export const UTF8_BOM = "\uFEFF";
 
 /**
- * Active Urdu document for Copy/TXT:
+ * Active Urdu document for Copy/TXT/WhatsApp:
  *   Roman mode → current visible finalOutput (choices/sentence alt applied)
  *   Urdu mode  → current urduInput (manual edits, no conversion)
  */
@@ -51,4 +54,12 @@ export function downloadWriterTxt(text: string): void {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/**
+ * WhatsApp transport formatting of the active Urdu text.
+ * Delegates entirely to the frozen WhatsApp RTL formatter.
+ */
+export function formatActiveTextForWhatsApp(text: string): string {
+  return formatForWhatsAppRTL(text);
 }

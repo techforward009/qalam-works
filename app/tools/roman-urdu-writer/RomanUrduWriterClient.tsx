@@ -13,6 +13,7 @@ import {
   getActiveUrduText,
   hasExportableUrduText,
   downloadWriterTxt,
+  formatActiveTextForWhatsApp,
 } from "./utils/writerExport";
 
 // ── Writing mode ──────────────────────────────────────────────────────────────
@@ -81,6 +82,15 @@ const UI = {
     copyLabel: "Copy Urdu text",
     downloadTxt: "Download TXT",
     downloadTxtLabel: "Download Urdu text as a TXT file",
+    whatsappReady: "WhatsApp Ready",
+    whatsappReadyLabel: "Prepare current Urdu text for WhatsApp",
+    whatsappPreview: "WhatsApp-ready text",
+    copyWhatsApp: "Copy for WhatsApp",
+    copiedWhatsApp: "Copied for WhatsApp",
+    copyWhatsAppFailed: "Copy failed",
+    copyWhatsAppLabel: "Copy WhatsApp-ready text",
+    hidePreview: "Hide",
+    hidePreviewLabel: "Hide WhatsApp-ready preview",
   },
   ur: {
     heading:    "قلم اردو رائٹر",
@@ -121,6 +131,15 @@ const UI = {
     copyLabel: "اردو متن کاپی کریں",
     downloadTxt: "TXT ڈاؤنلوڈ کریں",
     downloadTxtLabel: "اردو متن TXT فائل کے طور پر ڈاؤنلوڈ کریں",
+    whatsappReady: "واٹس ایپ کے لیے تیار کریں",
+    whatsappReadyLabel: "موجودہ اردو متن کو واٹس ایپ کے لیے تیار کریں",
+    whatsappPreview: "واٹس ایپ کے لیے تیار متن",
+    copyWhatsApp: "واٹس ایپ کے لیے کاپی کریں",
+    copiedWhatsApp: "واٹس ایپ کے لیے کاپی ہوگیا",
+    copyWhatsAppFailed: "کاپی ناکام",
+    copyWhatsAppLabel: "واٹس ایپ کے لیے تیار متن کاپی کریں",
+    hidePreview: "چھپائیں",
+    hidePreviewLabel: "واٹس ایپ پیش نظارہ چھپائیں",
   },
 };
 
@@ -149,11 +168,14 @@ export default function RomanUrduWriterClient() {
   // Transfer confirmation: null = no confirmation; true = confirm dialog showing
   const [showTransferConfirm, setShowTransferConfirm] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "copied" | "failed">("idle");
+  const [whatsappPreview, setWhatsappPreview] = useState<string | null>(null);
+  const [waCopyFeedback, setWaCopyFeedback] = useState<"idle" | "copied" | "failed">("idle");
 
   const romanRef = useRef<HTMLTextAreaElement>(null);
   const urduRef  = useRef<HTMLTextAreaElement>(null);
   const continueEditingRef = useRef<HTMLButtonElement>(null);
   const copyFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const waCopyFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Conversion (Roman mode only, debounced 120ms) ─────────────────────────
 
@@ -280,15 +302,27 @@ export default function RomanUrduWriterClient() {
     copyFeedbackTimer.current = setTimeout(() => setCopyFeedback("idle"), 2000);
   }, []);
 
+  const flashWaCopyFeedback = useCallback((state: "copied" | "failed") => {
+    setWaCopyFeedback(state);
+    if (waCopyFeedbackTimer.current) clearTimeout(waCopyFeedbackTimer.current);
+    waCopyFeedbackTimer.current = setTimeout(() => setWaCopyFeedback("idle"), 2000);
+  }, []);
+
   useEffect(() => {
     return () => {
       if (copyFeedbackTimer.current) clearTimeout(copyFeedbackTimer.current);
+      if (waCopyFeedbackTimer.current) clearTimeout(waCopyFeedbackTimer.current);
     };
   }, []);
 
   useEffect(() => {
     setCopyFeedback("idle");
   }, [mode, activeUrduText]);
+
+  useEffect(() => {
+    setWhatsappPreview(null);
+    setWaCopyFeedback("idle");
+  }, [romanInput, urduInput, mode, choices, activeSentenceIdx]);
 
   const handleCopy = useCallback(async () => {
     if (!hasExportableUrduText(activeUrduText)) return;
@@ -305,6 +339,27 @@ export default function RomanUrduWriterClient() {
     downloadWriterTxt(activeUrduText);
   }, [activeUrduText]);
 
+  const handleWhatsAppReady = useCallback(() => {
+    if (!hasExportableUrduText(activeUrduText)) return;
+    setWhatsappPreview(formatActiveTextForWhatsApp(activeUrduText));
+    setWaCopyFeedback("idle");
+  }, [activeUrduText]);
+
+  const handleCopyWhatsApp = useCallback(async () => {
+    if (whatsappPreview === null || !hasExportableUrduText(whatsappPreview)) return;
+    try {
+      await navigator.clipboard.writeText(whatsappPreview);
+      flashWaCopyFeedback("copied");
+    } catch {
+      flashWaCopyFeedback("failed");
+    }
+  }, [whatsappPreview, flashWaCopyFeedback]);
+
+  const handleHideWhatsAppPreview = useCallback(() => {
+    setWhatsappPreview(null);
+    setWaCopyFeedback("idle");
+  }, []);
+
 
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -313,37 +368,106 @@ export default function RomanUrduWriterClient() {
   const reviewCount = reviewableTokens.length;
   const hasSentenceAlts = result && result.candidates.length > 1;
 
-  const exportRow = (
-    <div
-      className="flex flex-wrap gap-2 items-center"
-      dir={isUr ? "rtl" : "ltr"}
-      lang={isUr ? "ur" : "en"}
-    >
-      <button
-        type="button"
-        data-testid="writer-copy"
-        onClick={handleCopy}
-        disabled={!canExport}
-        aria-label={ui.copyLabel}
-        aria-disabled={!canExport}
-        className="text-sm font-medium px-4 py-2 min-h-[40px] rounded-lg border border-[#1A3A2A]/30 text-[#1A3A2A] bg-white hover:bg-[#1A3A2A]/5 transition-colors disabled:opacity-40 disabled:pointer-events-none disabled:hover:bg-white"
+  const actionBtnClass =
+    "text-sm font-medium px-4 py-2 min-h-[40px] rounded-lg border border-[#1A3A2A]/30 text-[#1A3A2A] bg-white hover:bg-[#1A3A2A]/5 transition-colors disabled:opacity-40 disabled:pointer-events-none disabled:hover:bg-white";
+
+  const exportBlock = (
+    <div className="space-y-3">
+      <div
+        className="flex flex-wrap gap-2 items-center"
+        dir={isUr ? "rtl" : "ltr"}
+        lang={isUr ? "ur" : "en"}
       >
-        {copyFeedback === "copied" ? ui.copied : ui.copy}
-      </button>
-      <button
-        type="button"
-        data-testid="writer-download-txt"
-        onClick={handleDownloadTxt}
-        disabled={!canExport}
-        aria-label={ui.downloadTxtLabel}
-        aria-disabled={!canExport}
-        className="text-sm font-medium px-4 py-2 min-h-[40px] rounded-lg border border-[#1A3A2A]/30 text-[#1A3A2A] bg-white hover:bg-[#1A3A2A]/5 transition-colors disabled:opacity-40 disabled:pointer-events-none disabled:hover:bg-white"
-      >
-        {ui.downloadTxt}
-      </button>
-      <span className="sr-only" aria-live="polite" data-testid="writer-copy-feedback">
-        {copyFeedback === "copied" ? ui.copied : copyFeedback === "failed" ? ui.copyFailed : ""}
-      </span>
+        <button
+          type="button"
+          data-testid="writer-copy"
+          onClick={handleCopy}
+          disabled={!canExport}
+          aria-label={ui.copyLabel}
+          aria-disabled={!canExport}
+          className={actionBtnClass}
+        >
+          {copyFeedback === "copied" ? ui.copied : ui.copy}
+        </button>
+        <button
+          type="button"
+          data-testid="writer-download-txt"
+          onClick={handleDownloadTxt}
+          disabled={!canExport}
+          aria-label={ui.downloadTxtLabel}
+          aria-disabled={!canExport}
+          className={actionBtnClass}
+        >
+          {ui.downloadTxt}
+        </button>
+        <button
+          type="button"
+          data-testid="writer-whatsapp-ready"
+          onClick={handleWhatsAppReady}
+          disabled={!canExport}
+          aria-label={ui.whatsappReadyLabel}
+          aria-disabled={!canExport}
+          className={actionBtnClass}
+        >
+          {ui.whatsappReady}
+        </button>
+        <span className="sr-only" aria-live="polite" data-testid="writer-copy-feedback">
+          {copyFeedback === "copied" ? ui.copied : copyFeedback === "failed" ? ui.copyFailed : ""}
+        </span>
+      </div>
+
+      {whatsappPreview !== null && (
+        <section
+          data-testid="writer-whatsapp-preview"
+          aria-label={ui.whatsappPreview}
+          className="bg-white rounded-xl border border-[#E5E7EB] shadow-sm p-4 space-y-3"
+        >
+          <div
+            className="flex items-center justify-between gap-3 flex-wrap"
+            dir={isUr ? "rtl" : "ltr"}
+            lang={isUr ? "ur" : "en"}
+          >
+            <h2 className="text-xs font-semibold text-[#4A5568] uppercase tracking-wider">
+              {ui.whatsappPreview}
+            </h2>
+            <button
+              type="button"
+              data-testid="writer-whatsapp-hide"
+              onClick={handleHideWhatsAppPreview}
+              className="text-xs text-[#9CA3AF] hover:text-[#4A5568] transition-colors min-h-[32px] px-1"
+              aria-label={ui.hidePreviewLabel}
+            >
+              {ui.hidePreview}
+            </button>
+          </div>
+          <div
+            data-testid="writer-whatsapp-preview-text"
+            dir="rtl"
+            lang="ur"
+            className="font-urdu text-lg leading-loose text-[#151B2E] whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+          >
+            {whatsappPreview}
+          </div>
+          <div dir={isUr ? "rtl" : "ltr"} lang={isUr ? "ur" : "en"}>
+            <button
+              type="button"
+              data-testid="writer-whatsapp-copy"
+              onClick={handleCopyWhatsApp}
+              aria-label={ui.copyWhatsAppLabel}
+              className="text-sm font-medium px-4 py-2 min-h-[40px] rounded-lg bg-[#151B2E] text-white hover:bg-[#1A2540] transition-colors"
+            >
+              {waCopyFeedback === "copied" ? ui.copiedWhatsApp : ui.copyWhatsApp}
+            </button>
+            <span className="sr-only" aria-live="polite" data-testid="writer-whatsapp-copy-feedback">
+              {waCopyFeedback === "copied"
+                ? ui.copiedWhatsApp
+                : waCopyFeedback === "failed"
+                  ? ui.copyWhatsAppFailed
+                  : ""}
+            </span>
+          </div>
+        </section>
+      )}
     </div>
   );
 
@@ -662,7 +786,7 @@ export default function RomanUrduWriterClient() {
                       {ui.continueEditingUrdu}
                     </button>
                   </div>
-                  {exportRow}
+                  {exportBlock}
                 </div>
               )}
 
@@ -759,7 +883,7 @@ export default function RomanUrduWriterClient() {
                 </p>
               )}
               <div className="mt-3">
-                {exportRow}
+                {exportBlock}
               </div>
             </section>
           )}
