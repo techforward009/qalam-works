@@ -36,19 +36,19 @@ describe("Hard protected tokens", () => {
   test("https URL preserved", () => expect(cv("https://docs.google.com ka link").output).toContain("https://docs.google.com"));
   test("percentage preserved", () => expect(cv("50% discount chal raha hai").output).toContain("50%"));
   test("phone number preserved", () => expect(cv("mera number 0312-1234567 hai").output).toContain("0312-1234567"));
-  test("all-caps acronym preserved", () => expect(cv("HR ne approve kar diya").output).toContain("HR"));
+  test("HR converts in Urdu context when loan form known", () => expect(cv("HR ne update bheja").output).toMatch(/ایچ آر/));
   test("PDF preserved", () => expect(cv("PDF print nikal lao").output).toContain("PDF"));
 });
 
 // ── English word protection ───────────────────────────────────────────────────
 describe("English word soft protection", () => {
-  test("'problem' stays English", () => expect(cv("koi problem nahi hai").output).toContain("problem"));
+  test("'problem' converts in Urdu context", () => expect(cv("koi problem nahi hai").output).not.toMatch(/\bproblem\b/i));
   test("'Zoom' preserved (brand)", () => expect(cv("kal Zoom meeting hai").output).toContain("Zoom"));
   test("'WhatsApp' preserved", () => expect(cv("WhatsApp pe message karo").output).toContain("WhatsApp"));
   test("'Netflix' preserved", () => expect(cv("Netflix pe drama hai").output).toContain("Netflix"));
-  test("'laptop' stays English", () => expect(cv("mera laptop update ho raha hai").output).toContain("laptop"));
+  test("'laptop' converts in Urdu context", () => expect(cv("mera laptop update ho raha hai").output).not.toMatch(/\blaptop\b/i));
   test("'meeting' becomes میٹنگ in Urdu context", () => expect(cv("meeting cancel ho gayi").output).toContain("میٹنگ"));
-  test("'ok' stays English", () => expect(cv("ok theek hai").output).toContain("ok"));
+  test("'ok' converts in Urdu context", () => expect(cv("ok theek hai").output).not.toMatch(/ok/i));
 });
 
 // ── Unknown-word safety ───────────────────────────────────────────────────────
@@ -130,7 +130,7 @@ describe("Mixed English handling", () => {
   test("office mein → آفس میں", () => {
     const out = cv("office mein presentation deni hai kal").output;
     expect(out).toContain("آفس");
-    expect(out).toContain("presentation");
+    expect(out).not.toMatch(/\bpresentation\b/i);
     expect(out).toContain("میں");
   });
   test("YouTube pe → YouTube پر", () => {
@@ -141,8 +141,8 @@ describe("Mixed English handling", () => {
   test("Google Maps pe location", () => {
     const out = cv("Google Maps pe location share karo").output;
     expect(out).toContain("Google");
-    expect(out).toContain("Maps");
-    expect(out).toContain("location");
+    expect(out).not.toMatch(/\bMaps\b/);
+    expect(out).not.toMatch(/\blocation\b/i);
   });
 });
 
@@ -201,19 +201,20 @@ describe("Development benchmark quality gates", () => {
 
 // ── 19A.0d: PT collision fixes ────────────────────────────────────────────────
 describe("19A.0d: Previously failing PT tokens", () => {
-  test("Eid preserved (soft-protected Title Case)", () => {
+  test("Eid converts in Urdu context (no Latin leakage)", () => {
     const r = engineV2.convert("Eid Mubarak bhai");
-    expect(r.output).toContain("Eid");
-    expect(r.output).toContain("Mubarak");
+    expect(r.output).not.toMatch(/\bEid\b/);
   });
 
-  test("Namaz preserved (soft-protected Title Case)", () => {
+  test("Namaz converts in Urdu context (no Latin leakage)", () => {
     const r = engineV2.convert("Namaz ka waqt ho gaya");
-    expect(r.output).toContain("Namaz");
+    expect(r.output).not.toMatch(/\bNamaz\b/);
   });
 
-  test("'number' stays English (KEEP_ENGLISH)", () => {
-    expect(engineV2.convert("mera number 0312-1234567 hai").output).toContain("number");
+  test("'number' converts in Urdu context; phone preserved", () => {
+    const o = engineV2.convert("mera number 0312-1234567 hai").output;
+    expect(o).toContain("0312-1234567");
+    expect(o).not.toMatch(/\bnumber\b/i);
   });
 
   test("lowercase 'eid' converts to عید", () => {
@@ -231,8 +232,8 @@ describe("19A.0d: Previously failing PT tokens", () => {
 });
 
 describe("19A.0d: Case-aware proper-name handling", () => {
-  test("Sara (Title Case) preserved — could be a name", () => {
-    expect(engineV2.convert("Sara ne kaha").output).toContain("Sara");
+  test("Sara (Title Case) converts in Urdu context (no Latin leakage)", () => {
+    expect(engineV2.convert("Sara ne kaha").output).not.toMatch(/\bSara\b/);
   });
 
   test("ahmed (lowercase) converts to احمد", () => {
@@ -260,8 +261,10 @@ describe("19A.0d: Case-aware proper-name handling", () => {
     expect(r.output).toContain("8");
   });
 
-  test("morphology cannot override KEEP_ENGLISH token", () => {
-    expect(engineV2.convert("office mein problem hai").output).toContain("problem");
+  test("KEEP_ENGLISH yields Urdu script in Urdu context", () => {
+    const o = engineV2.convert("office mein problem hai").output;
+    expect(o).not.toMatch(/\bproblem\b/i);
+    expect(o).toContain("آفس");
   });
 });
 

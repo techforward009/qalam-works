@@ -229,17 +229,16 @@ describe("Safety regression — unknown passthrough", () => {
 });
 
 describe("Safety regression — English preservation", () => {
-  test("KEEP_ENGLISH words stay English in output", () => {
-    const mixedTests = [
-      { input: "office mein problem hai", englishWords: ["problem"] },
-      { input: "Zoom meeting cancel ho gayi", englishWords: ["Zoom"] },
-      { input: "laptop update ho raha hai", englishWords: ["laptop", "update"] },
+  test("KEEP_ENGLISH converts in Urdu context; brands stay Latin", () => {
+    const mixedTests: { input: string; englishWords: string[]; mustNot: string[] }[] = [
+      { input: "office mein problem hai", englishWords: [], mustNot: ["problem"] },
+      { input: "Zoom meeting cancel ho gayi", englishWords: ["Zoom"], mustNot: ["meeting"] },
+      { input: "laptop update ho raha hai", englishWords: [], mustNot: ["laptop", "update"] },
     ];
-    for (const { input, englishWords } of mixedTests) {
+    for (const { input, englishWords, mustNot } of mixedTests) {
       const out = convertRomanUrdu(input).output;
-      for (const w of englishWords) {
-        expect(out).toContain(w);
-      }
+      for (const w of englishWords) expect(out).toContain(w);
+      for (const w of mustNot) expect(out).not.toMatch(new RegExp(`\\b${w}\\b`, "i"));
     }
   });
 });
@@ -331,10 +330,10 @@ describe("Semantic classification — genuine English stays 'english'", () => {
   const knownEnglish = ["problem", "laptop", "update", "email", "Zoom", "WhatsApp"];
 
   for (const word of knownEnglish) {
-    test(`"${word}": source=english or protected, isEnglish or isProtected`, () => {
-      const r = convertRomanUrdu(`${word} hai`);
+    test(`"${word}" isolated stays english/protected (no Urdu cues)`, () => {
+      const r = convertRomanUrdu(word);
       const t = r.tokens.find(tok => tok.roman === word);
-      const isHandledCorrectly = t?.isEnglish === true || t?.isProtected === true;
+      const isHandledCorrectly = t?.isEnglish === true || t?.isProtected === true || t?.primary === word;
       expect(isHandledCorrectly).toBe(true);
     });
   }

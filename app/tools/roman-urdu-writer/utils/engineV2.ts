@@ -76,7 +76,21 @@ const COMMON_SENTENCE_INITIAL = new Set([
  */
 
 export const LOANWORD_URDU: Record<string, string> = {
-  "meeting": "میٹنگ", "office": "آفس", "video": "ویڈیو", "group": "گروپ",
+  "meeting": "میٹنگ",
+  "office": "آفس",
+  "video": "ویڈیو",
+  "group": "گروپ",
+  "policy": "پالیسی",
+  "policies": "پالیسیز",
+  "company": "کمپنی",
+  "inflation": "انفلیشن",
+  "document": "ڈاکومنٹ",
+  "documents": "ڈاکومنٹس",
+  "investigation": "انویسٹی گیشن",
+  "verification": "ویریفیکیشن",
+  "update": "اپ ڈیٹ",
+  "updates": "اپ ڈیٹس",
+  "hr": "ایچ آر",
 };
 const URDU_CONTEXT_CUES = new Set([
   "aaj","kal","kya","kia","ab","abhi","phir","mein","main","mai","hai","hain",
@@ -122,11 +136,11 @@ function looksLikeEnglish(token: string): boolean {
   if (/(tion|sion|ture|ment|ness|able|ally|ity|ful|less|ous|ive)$/.test(lower)) return true;
   return false;
 }
-function phoneticFallback(token: string): string[] {
+function phoneticFallback(token: string, opts?: { force?: boolean }): string[] {
   if (!/^[A-Za-z]+$/.test(token) || token.length < 2) return [];
-  if (looksLikeEnglish(token)) return [];
   const lower = token.toLowerCase();
   if (LOANWORD_URDU[lower]) return [LOANWORD_URDU[lower]];
+  if (!opts?.force && looksLikeEnglish(token)) return [];
   const cands = generateCandidates(token);
   const seen = new Set<string>();
   const out: string[] = [];
@@ -139,6 +153,23 @@ function phoneticFallback(token: string): string[] {
     if (out.length >= 3) break;
   }
   return out;
+}
+
+function convertHyphenatedCompound(token: string, force: boolean): string | null {
+  if (!token.includes("-")) return null;
+  const parts = token.split("-");
+  if (parts.length < 2 || parts.some(part => !/^[A-Za-z]+$/.test(part))) return null;
+  const render = (part: string): string => {
+    const low = part.toLowerCase();
+    if (LOANWORD_URDU[low]) return LOANWORD_URDU[low];
+    if (low === "o" || low === "wa") return "و";
+    const morph = morphExpand(part);
+    if (morph.length && morph[0] !== part && /[\u0600-\u06FF]/.test(morph[0])) return morph[0];
+    const ph = phoneticFallback(part, { force });
+    if (ph.length) return ph[0];
+    return part;
+  };
+  return parts.map(render).join(" ").replace(/\s+/g, " ").trim();
 }
 function peelPunctuation(token: string): { lead: string; core: string; trail: string } {
   const m = token.match(/^([^A-Za-z0-9]*)([A-Za-z0-9]+)([^A-Za-z0-9]*)$/);
@@ -339,14 +370,24 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
       continue;
     }
 
-    // Hard-protected token
+    // Hard-protected token (URLs, emails, filenames, numbers, brands…)
     if (seg.protected || isProtectedToken(seg.text)) {
+      if (sentenceUrduContext) {
+        const low = seg.text.toLowerCase();
+        const loan = LOANWORD_URDU[low];
+        if (loan && /^[A-Za-z]{1,5}$/.test(seg.text)) {
+          result.push({ text: seg.text, candidates: [loan], protected: false });
+          i++;
+          continue;
+        }
+      }
       result.push({ text: seg.text, candidates: [seg.text], protected: true });
       i++;
       continue;
     }
 
-    {
+    // KEEP_ENGLISH only outside Roman-Urdu context
+    if (!sentenceUrduContext) {
       const low = seg.text.toLowerCase();
       const collapsed = low.replace(/(.)\1{2,}/g, "$1");
       if (KEEP_ENGLISH.has(low) || KEEP_ENGLISH.has(collapsed)) {
@@ -372,16 +413,33 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
 
     // Soft-protected (proper noun / unknown Title Case)
     if (isSoftProtected(seg.text)) {
-      // Check if lowercase version is in lexicon — if so, convert it
-      // (e.g. "Allah" → اللہ because it's a well-known transliteration)
-      const lowerCands = lookupNormalized(seg.text.toLowerCase());
+      const lower = seg.text.toLowerCase();
+      if (KNOWN_BRANDS.has(lower) || /^[A-Z][a-z]+[A-Z]/.test(seg.text)) {
+        result.push({ text: seg.text, candidates: [seg.text], protected: true });
+        i++;
+        continue;
+      }
+      const lowerCands = lookupNormalized(lower);
       if (lowerCands && lowerCands.length > 0) {
-        // Only auto-convert if the lowercase is a well-known religious/cultural term
-        // and NOT a common English-looking word
-        const lower = seg.text.toLowerCase();
         const isReligiousTerm = /^(allah|alhamdulillah|mashallah|inshaallah|subhanallah)$/.test(lower);
-        if (isReligiousTerm) {
+        if (isReligiousTerm || sentenceUrduContext) {
           result.push({ text: seg.text, candidates: [lowerCands[0]], protected: false });
+          i++;
+          continue;
+        }
+      }
+      if (sentenceUrduContext) {
+        const { lead, core, trail } = peelPunctuation(seg.text);
+        const work = core || seg.text;
+        const loan = LOANWORD_URDU[work.toLowerCase()];
+        if (loan) {
+          result.push({ text: seg.text, candidates: [reattach(lead, loan, trail)], protected: false });
+          i++;
+          continue;
+        }
+        const phonetic = phoneticFallback(work, { force: true });
+        if (phonetic.length > 0) {
+          result.push({ text: seg.text, candidates: phonetic.map(c => reattach(lead, c, trail)), protected: false });
           i++;
           continue;
         }
@@ -459,6 +517,15 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
       i++;
       continue;
     }
+    if (workToken.includes("-")) {
+      const compound = convertHyphenatedCompound(workToken, sentenceUrduContext);
+      if (compound && compound !== workToken && /[\u0600-\u06FF]/.test(compound)) {
+        result.push({ text: token, candidates: [reattach(lead, compound, trail)], protected: false });
+        i++;
+        continue;
+      }
+    }
+
     const morphCandidates = morphExpand(workToken);
     if (morphCandidates.length > 0) {
       const mapped = morphCandidates.map(c => c && c !== workToken ? reattach(lead, c, trail) : token);
@@ -469,7 +536,7 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
     const letterTokens = segments.filter(seg2 => seg2.text.replace(/[^A-Za-z]/g, "").length >= 2);
     const isolatedUnknown = letterTokens.length === 1;
     if (sentenceUrduContext || isolatedUnknown) {
-      const phonetic = phoneticFallback(workToken);
+      const phonetic = phoneticFallback(workToken, { force: sentenceUrduContext });
       if (phonetic.length > 0) {
         result.push({ text: token, candidates: phonetic.map(c => reattach(lead, c, trail)), protected: false });
         i++;
