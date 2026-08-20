@@ -79,6 +79,7 @@ export const GRAPHEME_MAP: Record<string, WeightedCandidate[]> = {
   "u": [{ text: "ا", weight: 0.55 }, { text: "و", weight: 0.55 }],
   "e": [{ text: "ے", weight: 0.65 }, { text: "ا", weight: 0.45 }],
   "o": [{ text: "و", weight: 0.75 }, { text: "اُو", weight: 0.4 }],
+  "3": [{ text: "ع", weight: 0.98 }],
 };
 
 // Ordered list of digraphs to check first (longest first)

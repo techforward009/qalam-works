@@ -17,6 +17,8 @@ import type { RomanUrduEngine, EngineResult } from "./benchmarkScorer";
 import { segmentInput, isProtectedToken, type TokenSegment } from "./protectedTokens";
 import { lookupNormalized, lookupToken } from "./lexicon";
 import { generateCandidates } from "./graphemeGenerator";
+import { normalizeRomanUrduToken, romanNormalizationCandidates, morphologyFitScore, formalStemConvert } from "./romanUrduNormalize";
+import { reRankCandidates, plausibilityScore } from "./candidateRanker";
 import { PHRASE_TABLE, normPhrase } from "./phraseTable";
 
 // ── Proper-name soft protection ───────────────────────────────────────────────
@@ -91,6 +93,8 @@ export const LOANWORD_URDU: Record<string, string> = {
   "update": "اپ ڈیٹ",
   "updates": "اپ ڈیٹس",
   "hr": "ایچ آر",
+  "social": "سوشل",
+  "media": "میڈیا",
 };
 const URDU_CONTEXT_CUES = new Set([
   "aaj","kal","kya","kia","ab","abhi","phir","mein","main","mai","hai","hain",
@@ -137,16 +141,40 @@ function looksLikeEnglish(token: string): boolean {
   return false;
 }
 function phoneticFallback(token: string, opts?: { force?: boolean }): string[] {
-  if (!/^[A-Za-z]+$/.test(token) || token.length < 2) return [];
-  const lower = token.toLowerCase();
-  if (LOANWORD_URDU[lower]) return [LOANWORD_URDU[lower]];
-  if (!opts?.force && looksLikeEnglish(token)) return [];
-  const cands = generateCandidates(token);
+  const raw = token.trim();
+  if (raw.length < 2) return [];
+  const norms = romanNormalizationCandidates(raw);
+  for (const n of norms) {
+    const key = n.replace(/3/g, "");
+    if (LOANWORD_URDU[n] || LOANWORD_URDU[key]) {
+      return [LOANWORD_URDU[n] || LOANWORD_URDU[key]];
+    }
+  }
+  if (!opts?.force && looksLikeEnglish(raw.replace(/'/g, ""))) return [];
+
+  const pool: { text: string; score: number }[] = [];
+  for (const norm of norms) {
+    if (!/^[A-Za-z0-9'3\-]+$/.test(norm) && !/^[A-Za-z3\-]+$/.test(norm)) continue;
+    const cands = generateCandidates(norm);
+    for (const c of cands) {
+      if (!c.text || !/[\u0600-\u06FF]/.test(c.text)) continue;
+      pool.push({ text: c.text, score: c.score });
+    }
+  }
+  if (pool.length === 0) return [];
+
+  const ranked = reRankCandidates(pool as any, 0.55);
+  ranked.sort((a, b) => {
+    const ma = morphologyFitScore(norms[0] || raw, a.text);
+    const mb = morphologyFitScore(norms[0] || raw, b.text);
+    const ca = (a as any).combined + ma + plausibilityScore(a.text) * 0.15;
+    const cb = (b as any).combined + mb + plausibilityScore(b.text) * 0.15;
+    return cb - ca || a.text.localeCompare(b.text);
+  });
+
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const c of cands) {
-    if (!c.text || c.text === token) continue;
-    if (!/[\u0600-\u06FF]/.test(c.text)) continue;
+  for (const c of ranked) {
     if (seen.has(c.text)) continue;
     seen.add(c.text);
     out.push(c.text);
@@ -158,21 +186,32 @@ function phoneticFallback(token: string, opts?: { force?: boolean }): string[] {
 function convertHyphenatedCompound(token: string, force: boolean): string | null {
   if (!token.includes("-")) return null;
   const parts = token.split("-");
-  if (parts.length < 2 || parts.some(part => !/^[A-Za-z]+$/.test(part))) return null;
+  if (parts.length < 2) return null;
+  if (parts.some(part => !/^[A-Za-z']+$/.test(part))) return null;
+
   const render = (part: string): string => {
-    const low = part.toLowerCase();
-    if (LOANWORD_URDU[low]) return LOANWORD_URDU[low];
+    const stem = formalStemConvert(part);
+    if (stem) return stem;
+    const low = normalizeRomanUrduToken(part).replace(/3/g, "") || part.toLowerCase();
+    if (LOANWORD_URDU[low] || LOANWORD_URDU[part.toLowerCase()]) {
+      return LOANWORD_URDU[low] || LOANWORD_URDU[part.toLowerCase()];
+    }
     if (low === "o" || low === "wa") return "و";
-    const morph = morphExpand(part);
+    if (low === "ghair" || low === "ghayr") return "غیر";
+    if (low === "bilaa" || low === "bila") return "بلا";
+    if (low === "amal") return "عمل";
+    if (low === "daramad" || low === "darmad") return "درآمد";
+    const morph = morphExpand(low);
     if (morph.length && morph[0] !== part && /[\u0600-\u06FF]/.test(morph[0])) return morph[0];
     const ph = phoneticFallback(part, { force });
     if (ph.length) return ph[0];
     return part;
   };
+
   return parts.map(render).join(" ").replace(/\s+/g, " ").trim();
 }
 function peelPunctuation(token: string): { lead: string; core: string; trail: string } {
-  const m = token.match(/^([^A-Za-z0-9]*)([A-Za-z0-9]+)([^A-Za-z0-9]*)$/);
+  const m = token.match(/^([^A-Za-z0-9']*)([A-Za-z0-9']+)([^A-Za-z0-9']*)$/);
   if (!m) return { lead: "", core: token, trail: "" };
   return { lead: m[1], core: m[2], trail: m[3] };
 }
@@ -437,6 +476,12 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
           i++;
           continue;
         }
+        const stemHit = formalStemConvert(work);
+        if (stemHit) {
+          result.push({ text: seg.text, candidates: [reattach(lead, stemHit, trail)], protected: false });
+          i++;
+          continue;
+        }
         const phonetic = phoneticFallback(work, { force: true });
         if (phonetic.length > 0) {
           result.push({ text: seg.text, candidates: phonetic.map(c => reattach(lead, c, trail)), protected: false });
@@ -536,6 +581,12 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
     const letterTokens = segments.filter(seg2 => seg2.text.replace(/[^A-Za-z]/g, "").length >= 2);
     const isolatedUnknown = letterTokens.length === 1;
     if (sentenceUrduContext || isolatedUnknown) {
+      const stemHit = formalStemConvert(workToken);
+      if (stemHit) {
+        result.push({ text: token, candidates: [reattach(lead, stemHit, trail)], protected: false });
+        i++;
+        continue;
+      }
       const phonetic = phoneticFallback(workToken, { force: sentenceUrduContext });
       if (phonetic.length > 0) {
         result.push({ text: token, candidates: phonetic.map(c => reattach(lead, c, trail)), protected: false });
