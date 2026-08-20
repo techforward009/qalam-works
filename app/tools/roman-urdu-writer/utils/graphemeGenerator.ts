@@ -26,6 +26,11 @@ export const GRAPHEME_MAP: Record<string, WeightedCandidate[]> = {
   // ── Digraphs (must be checked before single chars) ────────────────────────
   "kh": [{ text: "خ", weight: 0.9 }, { text: "کھ", weight: 0.5 }],
   "gh": [{ text: "غ", weight: 0.8 }, { text: "گھ", weight: 0.5 }],
+  "mh": [{ text: "مح", weight: 0.88 }, { text: "مہ", weight: 0.45 }],
+  "hr": [{ text: "حر", weight: 0.7 }, { text: "ھر", weight: 0.35 }],
+  "hq": [{ text: "حق", weight: 0.9 }],
+  "nya": [{ text: "نیا", weight: 0.9 }],
+  "ao": [{ text: "اؤ", weight: 0.75 }, { text: "او", weight: 0.55 }],
   "sh": [{ text: "ش", weight: 0.95 }],
   "ch": [{ text: "چ", weight: 0.95 }, { text: "چھ", weight: 0.3 }],
   "ph": [{ text: "ف", weight: 0.8 }, { text: "پھ", weight: 0.5 }],
@@ -37,7 +42,7 @@ export const GRAPHEME_MAP: Record<string, WeightedCandidate[]> = {
   "wh": [{ text: "و", weight: 0.8 }],
   "ny": [{ text: "نی", weight: 0.7 }, { text: "نے", weight: 0.6 }],
   "ng": [{ text: "نگ", weight: 0.8 }],
-  "aa": [{ text: "آ", weight: 0.85 }, { text: "ا", weight: 0.5 }],
+  "aa": [{ text: "آ", weight: 0.7 }, { text: "ا", weight: 0.75 }],
   "ee": [{ text: "ی", weight: 0.9 }, { text: "ے", weight: 0.7 }, { text: "ئی", weight: 0.4 }],
   "ii": [{ text: "ی", weight: 0.85 }, { text: "ئی", weight: 0.4 }],
   "oo": [{ text: "و", weight: 0.85 }, { text: "اُو", weight: 0.3 }],
@@ -52,11 +57,11 @@ export const GRAPHEME_MAP: Record<string, WeightedCandidate[]> = {
 
   // ── Single consonants ─────────────────────────────────────────────────────
   "k": [{ text: "ک", weight: 0.85 }, { text: "ق", weight: 0.35 }],
-  "q": [{ text: "ق", weight: 0.9 }, { text: "ک", weight: 0.5 }],
+  "q": [{ text: "ق", weight: 0.95 }, { text: "ک", weight: 0.35 }],
   "g": [{ text: "گ", weight: 0.9 }, { text: "غ", weight: 0.3 }],
   "j": [{ text: "ج", weight: 0.9 }],
   "z": [{ text: "ز", weight: 0.7 }, { text: "ذ", weight: 0.4 }, { text: "ض", weight: 0.3 }, { text: "ظ", weight: 0.2 }],
-  "s": [{ text: "س", weight: 0.75 }, { text: "ص", weight: 0.35 }, { text: "ث", weight: 0.2 }],
+  "s": [{ text: "س", weight: 0.65 }, { text: "ص", weight: 0.5 }, { text: "ث", weight: 0.2 }],
   "t": [{ text: "ت", weight: 0.7 }, { text: "ٹ", weight: 0.6 }, { text: "ط", weight: 0.2 }],
   "d": [{ text: "د", weight: 0.75 }, { text: "ڈ", weight: 0.55 }],
   "r": [{ text: "ر", weight: 0.8 }, { text: "ڑ", weight: 0.4 }],
@@ -68,17 +73,17 @@ export const GRAPHEME_MAP: Record<string, WeightedCandidate[]> = {
   "f": [{ text: "ف", weight: 0.9 }],
   "v": [{ text: "و", weight: 0.7 }, { text: "ب", weight: 0.3 }],
   "w": [{ text: "و", weight: 0.85 }],
-  "h": [{ text: "ہ", weight: 0.75 }, { text: "ح", weight: 0.35 }, { text: "ھ", weight: 0.3 }],
+  "h": [{ text: "ہ", weight: 0.55 }, { text: "ح", weight: 0.55 }, { text: "ھ", weight: 0.25 }],
   "x": [{ text: "کس", weight: 0.6 }, { text: "ز", weight: 0.3 }],
   "y": [{ text: "ی", weight: 0.85 }, { text: "ے", weight: 0.4 }],
   "c": [{ text: "ک", weight: 0.7 }, { text: "س", weight: 0.4 }],
 
   // ── Vowel initials ────────────────────────────────────────────────────────
-  "a": [{ text: "ا", weight: 0.7 }, { text: "", weight: 0.5 }], // 'a' may be a schwa (no vowel marker)
-  "i": [{ text: "ا", weight: 0.6 }, { text: "ی", weight: 0.5 }],
-  "u": [{ text: "ا", weight: 0.55 }, { text: "و", weight: 0.55 }],
+  "a": [{ text: "ا", weight: 0.55 }, { text: "", weight: 0.7 }], // schwa omission preferred slightly
+  "i": [{ text: "ی", weight: 0.55 }, { text: "", weight: 0.5 }, { text: "ا", weight: 0.35 }],
+  "u": [{ text: "و", weight: 0.55 }, { text: "", weight: 0.55 }, { text: "ا", weight: 0.35 }],
   "e": [{ text: "ے", weight: 0.65 }, { text: "ا", weight: 0.45 }],
-  "o": [{ text: "و", weight: 0.75 }, { text: "اُو", weight: 0.4 }],
+  "o": [{ text: "و", weight: 0.7 }, { text: "ؤ", weight: 0.45 }, { text: "اُو", weight: 0.3 }],
   "3": [{ text: "ع", weight: 0.98 }],
 };
 
@@ -103,8 +108,15 @@ export function segmentGraphemes(token: string): GraphemeUnit[] {
   let i = 0;
   while (i < lower.length) {
     let matched = false;
-    // Try digraph first
-    if (i + 1 < lower.length) {
+    if (i + 2 < lower.length) {
+      const tri = lower[i] + lower[i + 1] + lower[i + 2];
+      if (GRAPHEME_MAP[tri]) {
+        units.push({ roman: tri, candidates: GRAPHEME_MAP[tri] });
+        i += 3;
+        matched = true;
+      }
+    }
+    if (!matched && i + 1 < lower.length) {
       const bigram = lower[i] + lower[i + 1];
       if (GRAPHEME_MAP[bigram]) {
         units.push({ roman: bigram, candidates: GRAPHEME_MAP[bigram] });
@@ -124,7 +136,7 @@ export function segmentGraphemes(token: string): GraphemeUnit[] {
 
 // ── Bounded beam search ───────────────────────────────────────────────────────
 
-export const BEAM_WIDTH = 4; // configurable
+export const BEAM_WIDTH = 8; // configurable
 
 export interface BeamCandidate {
   text: string;
@@ -147,9 +159,7 @@ export function generateCandidates(token: string): BeamCandidate[] {
     const next: BeamCandidate[] = [];
     for (const prev of beam) {
       // Take top candidates for this unit (by weight)
-      const topCands = unit.candidates
-        .filter(c => c.text !== "") // skip null/empty expansion for now
-        .slice(0, 2); // limit expansions per unit
+      const topCands = unit.candidates.slice(0, 4); // limit expansions per unit
       for (const cand of topCands) {
         next.push({
           text: prev.text + cand.text,

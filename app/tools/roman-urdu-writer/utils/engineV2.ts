@@ -19,7 +19,8 @@ import { lookupNormalized, lookupToken } from "./lexicon";
 import { generateCandidates } from "./graphemeGenerator";
 import { normalizeRomanUrduToken, romanNormalizationCandidates, morphologyFitScore, formalStemConvert } from "./romanUrduNormalize";
 import { lookupRomanUrduLexicon } from "./romanUrduLexicon";
-import { reRankCandidates, plausibilityScore } from "./candidateRanker";
+import { rankUrduCandidates } from "./candidateRanker";
+import { ngramScore } from "./urduNgramScorer";
 import { PHRASE_TABLE, normPhrase } from "./phraseTable";
 
 // ── Proper-name soft protection ───────────────────────────────────────────────
@@ -168,24 +169,7 @@ function phoneticFallback(token: string, opts?: { force?: boolean }): string[] {
   }
   if (pool.length === 0) return [];
 
-  const ranked = reRankCandidates(pool as any, 0.55);
-  ranked.sort((a, b) => {
-    const ma = morphologyFitScore(norms[0] || raw, a.text);
-    const mb = morphologyFitScore(norms[0] || raw, b.text);
-    const ca = (a as any).combined + ma + plausibilityScore(a.text) * 0.15;
-    const cb = (b as any).combined + mb + plausibilityScore(b.text) * 0.15;
-    return cb - ca || a.text.localeCompare(b.text);
-  });
-
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const c of ranked) {
-    if (seen.has(c.text)) continue;
-    seen.add(c.text);
-    out.push(c.text);
-    if (out.length >= 3) break;
-  }
-  return out;
+  return rankUrduCandidates(norms[0] || raw, pool, ngramScore);
 }
 
 function convertHyphenatedCompound(token: string, force: boolean): string | null {
