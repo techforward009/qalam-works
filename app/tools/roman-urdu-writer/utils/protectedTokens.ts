@@ -19,6 +19,7 @@ const PROTECTED_PATTERNS: RegExp[] = [
   /^\d+(st|nd|rd|th)$/i,                    // ordinals
   /^[+]?\d{7,}$/,                           // phone numbers
   /^[a-z0-9\-]+\.[a-z]{2,}(\/\S*)?$/i,     // domain / file paths
+  /^[a-z0-9._-]+\.(?:pdf|docx?|xlsx?|pptx?|mp4|png|jpe?g|gif|txt|csv|zip)$/i, // filenames with digits in ext
 ];
 
 /** Emoji run — preserve entire run. */

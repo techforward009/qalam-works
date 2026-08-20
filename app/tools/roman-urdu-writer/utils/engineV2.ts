@@ -18,6 +18,7 @@ import { segmentInput, isProtectedToken, type TokenSegment } from "./protectedTo
 import { lookupNormalized, lookupToken } from "./lexicon";
 import { generateCandidates } from "./graphemeGenerator";
 import { normalizeRomanUrduToken, romanNormalizationCandidates, morphologyFitScore, formalStemConvert } from "./romanUrduNormalize";
+import { lookupRomanUrduLexicon } from "./romanUrduLexicon";
 import { reRankCandidates, plausibilityScore } from "./candidateRanker";
 import { PHRASE_TABLE, normPhrase } from "./phraseTable";
 
@@ -144,7 +145,11 @@ function phoneticFallback(token: string, opts?: { force?: boolean }): string[] {
   const raw = token.trim();
   if (raw.length < 2) return [];
   const norms = romanNormalizationCandidates(raw);
+  const lexDirect = lookupRomanUrduLexicon(raw);
+  if (lexDirect) return [lexDirect];
   for (const n of norms) {
+    const lexN = lookupRomanUrduLexicon(n);
+    if (lexN) return [lexN];
     const key = n.replace(/3/g, "");
     if (LOANWORD_URDU[n] || LOANWORD_URDU[key]) {
       return [LOANWORD_URDU[n] || LOANWORD_URDU[key]];
@@ -190,6 +195,8 @@ function convertHyphenatedCompound(token: string, force: boolean): string | null
   if (parts.some(part => !/^[A-Za-z']+$/.test(part))) return null;
 
   const render = (part: string): string => {
+    const lex = lookupRomanUrduLexicon(part);
+    if (lex) return lex;
     const stem = formalStemConvert(part);
     if (stem) return stem;
     const low = normalizeRomanUrduToken(part).replace(/3/g, "") || part.toLowerCase();
@@ -476,6 +483,12 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
           i++;
           continue;
         }
+        const lexHit = lookupRomanUrduLexicon(work);
+        if (lexHit) {
+          result.push({ text: seg.text, candidates: [reattach(lead, lexHit, trail)], protected: false });
+          i++;
+          continue;
+        }
         const stemHit = formalStemConvert(work);
         if (stemHit) {
           result.push({ text: seg.text, candidates: [reattach(lead, stemHit, trail)], protected: false });
@@ -581,6 +594,12 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
     const letterTokens = segments.filter(seg2 => seg2.text.replace(/[^A-Za-z]/g, "").length >= 2);
     const isolatedUnknown = letterTokens.length === 1;
     if (sentenceUrduContext || isolatedUnknown) {
+      const lexHit = lookupRomanUrduLexicon(workToken);
+      if (lexHit) {
+        result.push({ text: token, candidates: [reattach(lead, lexHit, trail)], protected: false });
+        i++;
+        continue;
+      }
       const stemHit = formalStemConvert(workToken);
       if (stemHit) {
         result.push({ text: token, candidates: [reattach(lead, stemHit, trail)], protected: false });
