@@ -22,7 +22,7 @@ const FREQ_PRIOR = new Set([
   "محروم", "حقوق", "قانونی", "غیر", "ضروری", "مشکل", "مشکلات", "معاشرے", "شدید",
   "فلاح", "بہبود", "انصاف", "صبر", "علم", "عبادت", "حکمت", "استقامت",
   "جاری", "قائم", "عدالت", "نوٹس", "کمیٹی", "ریاست", "قدم", "خلاف", "آج", "کل", "اب", "پھر",
-  "چاہیے", "گیا", "گئے", "کرنا", "ہونا", "جانا", "آنا", "دینا", "لینا", "کہنا", "سمجھ", "رہا", "رہی", "رہے",
+  "پیش", "بڑھنا", "جھوٹ", "جدید", "دور", "انسان", "زندگی", "کہ", "چاہیے", "گیا", "گئے", "کرنا", "ہونا", "جانا", "آنا", "دینا", "لینا", "کہنا", "سمجھ", "رہا", "رہی", "رہے",
 ]);
 
 const URDU_COMMON_ENDINGS = [
@@ -114,6 +114,12 @@ export function romanFitScore(roman: string, urdu: string): number {
   if (/^kis[ei]?$/.test(r) && urdu === "کسی") score += 6;
   if (/^shakh?s$/.test(r) && urdu === "شخص") score += 8;
   if (/^mahr?oo?m$|^mharoom$|^mehrum$/.test(r) && urdu === "محروم") score += 8;
+  // Feminine -i / -ti endings prefer ی
+  if (/i$/.test(r) && urdu.endsWith("ی") && !urdu.endsWith("ئی")) score += 3;
+  if (/i$/.test(r) && !urdu.endsWith("ی") && urdu.endsWith("ٹ")) score -= 4;
+  if (/pesh$/.test(r) && urdu === "پیش") score += 8;
+  if (/^(barh|badh)/.test(r) && urdu.includes("بڑھ")) score += 6;
+  if (/^jhoot/.test(r) && urdu.startsWith("جھوٹ")) score += 5;
   return score;
 }
 
@@ -202,6 +208,13 @@ export function seedMorphologicalCandidates(roman: string): string[] {
   if (/^detail$/.test(r)) out.push("تفصیل");
   if (/^clear$/.test(r)) out.push("واضح");
   if (/^report$/.test(r)) out.push("رپورٹ");
+  if (/^submit$/.test(r)) out.push("جمع");
+  if (/^system$/.test(r)) out.push("سسٹم");
+  if (/^wait$/.test(r)) out.push("انتظار");
+  if (/^check$/.test(r)) out.push("چیک");
+  if (/^aaoge$|^aaoge$/.test(r)) out.push("آؤ گے");
+  if (/^m$/.test(r)) out.push("میں");  // severe-noise particle abbreviation
+
   if (/^btao$|^batao$/.test(r)) out.push("بتاؤ");
   if (/^leta$/.test(r)) out.push("لیتا");
   if (/^pdta$|^parhta$|^parta$/.test(r)) out.push("پڑتا");
@@ -209,6 +222,20 @@ export function seedMorphologicalCandidates(roman: string): string[] {
   if (/^mshkilat$|^mushkilat$/.test(r)) out.push("مشکلات");
   if (/^shadeed$|^mshdeed$/.test(r)) out.push("شدید");
   if (/^muashry$|^muashre$|^muaashre$/.test(r)) out.push("معاشرے");
+  // Orthographic confusion classes
+  if (/^sakta$/.test(r)) out.push("سکتا");
+  if (/^sakti$/.test(r)) out.push("سکتی");
+  if (/^sakte$/.test(r)) out.push("سکتے");
+  if (/^pesh$/.test(r)) out.push("پیش");
+  if (/^barhna$|^badhna$|^barhana$|^badhana$/.test(r)) out.push("بڑھنا");
+  if (/^barh$|^badh$/.test(r)) out.push("بڑھ");
+  if (/^jhoot$|^jhut$|^jhooth$/.test(r)) out.push("جھوٹ");
+  if (/^jhooti$|^jhuti$/.test(r)) out.push("جھوٹی");
+  if (/^jhootis$/.test(r)) out.push("جھوٹیں");
+  if (/^jadeed$|^jadid$/.test(r)) out.push("جدید");
+  if (/^daur$|^dor$/.test(r)) out.push("دور");
+  if (/^insan$|^insaan$/.test(r)) out.push("انسان");
+  if (/^zindagi$|^zindagee$/.test(r)) out.push("زندگی");
   return [...new Set(out)];
 }
 

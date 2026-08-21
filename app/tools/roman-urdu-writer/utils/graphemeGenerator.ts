@@ -39,6 +39,13 @@ export const GRAPHEME_MAP: Record<string, WeightedCandidate[]> = {
   "khab": [{ text: "خبر", weight: 0.9 }, { text: "خاب", weight: 0.35 }],
   "aag": [{ text: "آگ", weight: 0.9 }, { text: "اگ", weight: 0.35 }],
   "phel": [{ text: "پھیل", weight: 0.9 }, { text: "فیل", weight: 0.35 }],
+  "pesh": [{ text: "پیش", weight: 0.95 }, { text: "پاش", weight: 0.2 }],
+  "barh": [{ text: "بڑھ", weight: 0.9 }, { text: "برح", weight: 0.25 }],
+  "badh": [{ text: "بڑھ", weight: 0.85 }, { text: "بدھ", weight: 0.35 }],
+  "jhooti": [{ text: "جھوٹی", weight: 0.95 }, { text: "جھوٹ", weight: 0.3 }],
+  "jhoot": [{ text: "جھوٹ", weight: 0.95 }, { text: "جھوت", weight: 0.25 }],
+  "jhut": [{ text: "جھوٹ", weight: 0.9 }, { text: "جھت", weight: 0.2 }],
+  "jh": [{ text: "جھ", weight: 0.85 }, { text: "جہ", weight: 0.3 }],
   "bin": [{ text: "بن", weight: 0.85 }, { text: "بین", weight: 0.45 }],
   "waj": [{ text: "وج", weight: 0.8 }, { text: "واج", weight: 0.35 }],
 

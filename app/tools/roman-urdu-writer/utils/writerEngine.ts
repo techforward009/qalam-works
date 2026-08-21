@@ -153,6 +153,12 @@ function classifyToken(
   return { source: "passthrough", confidence: "low" };
 }
 
+const CLOSED_REVIEW_PARTICLES = new Set([
+  "na", "nahi", "nahin", "is", "us", "ke", "ka", "ki", "ko", "se", "par", "pe",
+  "to", "bhi", "hi", "aur", "ya", "jo", "jab", "tab", "mein", "main", "mai",
+  "ne", "e", "o", "ye", "woh", "wo", "hai", "hain", "ho",
+]);
+
 function buildTokenCandidates(
   roman: string,
   primaryOutput: string,
@@ -163,6 +169,12 @@ function buildTokenCandidates(
 
   // For passthrough tokens: only one candidate (preserve Roman)
   if (source === "passthrough" || source === "protected" || source === "english") {
+    return [primary];
+  }
+
+  // Closed particles with confident conversion: do not invent noisy Review choices
+  const romanCore = roman.toLowerCase().replace(/[^a-z]/g, "");
+  if (CLOSED_REVIEW_PARTICLES.has(romanCore) && confidence === "high") {
     return [primary];
   }
 

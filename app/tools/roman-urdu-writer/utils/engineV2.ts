@@ -109,7 +109,7 @@ const URDU_CONTEXT_CUES = new Set([
   "cancel","ho","gayi","gaya","hoga","hogi",
 ]);
 const ENGLISH_FUNCTION_WORDS = new Set([
-  "the","is","are","was","were","a","an","to","of","in","on","for","with","and","or","but",
+  "the","is","are","was","were","a","an","to","of","in","on","for","with","and","or","but","science","technology","engineering",
   "not","this","that","it","be","have","has","had","do","does","did","will","would","can",
   "could","should","may","might","must","from","by","at","as","if","than","then","so","such",
   "into","over","after","before","between","under","again","further","once","here","there",
@@ -355,6 +355,12 @@ function morphExpand(token: string): string[] {
 
 // ── Context-sensitive disambiguation ─────────────────────────────────────────
 
+const COMPLEMENTIZER_PREV = new Set([
+  "chahiye", "chaiye", "hua", "hui", "hue", "kaha", "kahi", "bola", "boli",
+  "socha", "sochi", "laga", "lagi", "dekha", "suna", "jaanta", "maalum",
+  "mumkin", "zaruri", "zaroori", "zrori", "possible",
+]);
+
 const AMBIGUOUS_DEFAULTS: Record<string, string> = {
   "main": "میں", "mein": "میں", "mai": "میں",
   "to":   "تو",
@@ -429,11 +435,17 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
       continue;
     }
 
-    // KEEP_ENGLISH only outside Roman-Urdu context
-    if (!sentenceUrduContext) {
+    // KEEP_ENGLISH outside Roman-Urdu context; technical terms stay Latin even in mixed Urdu
+    {
       const low = seg.text.toLowerCase();
       const collapsed = low.replace(/(.)\1{2,}/g, "$1");
-      if (KEEP_ENGLISH.has(low) || KEEP_ENGLISH.has(collapsed)) {
+      const technicalLatin = new Set(["science", "technology", "engineering"]);
+      if (!sentenceUrduContext && (KEEP_ENGLISH.has(low) || KEEP_ENGLISH.has(collapsed))) {
+        result.push({ text: seg.text, candidates: [seg.text], protected: true });
+        i++;
+        continue;
+      }
+      if (sentenceUrduContext && technicalLatin.has(low)) {
         result.push({ text: seg.text, candidates: [seg.text], protected: true });
         i++;
         continue;
@@ -565,6 +577,21 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
 
     const { lead, core, trail } = peelPunctuation(token);
     const workToken = core || token;
+    // Complementizer: "ke" after reporting/modal predicate → کہ (not کے)
+    if (sentenceUrduContext && /^(ke|keh)$/i.test(workToken)) {
+      let prevRoman = "";
+      for (let k = i - 1; k >= 0; k--) {
+        if (!/^\s+$/.test(segments[k].text) && !segments[k].protected) {
+          prevRoman = peelPunctuation(segments[k].text).core || segments[k].text;
+          break;
+        }
+      }
+      if (COMPLEMENTIZER_PREV.has(prevRoman.toLowerCase())) {
+        result.push({ text: token, candidates: [reattach(lead, "کہ", trail)], protected: false });
+        i++;
+        continue;
+      }
+    }
     if (sentenceUrduContext) {
       const ctxResult = rankWithContext(workToken, prevUrdu, nextRoman);
       if (ctxResult) {
@@ -709,9 +736,14 @@ function reconstructFromConverted(
   converted: ConvertedSegment[],
   overrides: Record<number, string>
 ): string {
+  // Apply overrides by ORIGINAL segment index before dropping empty phrase parts.
+  // Filtering first would shift indices and corrupt beam overrides (e.g. sakta ← ja).
   return converted
-    .filter(s => s.candidates[0] !== "")
-    .map((s, i) => overrides[i] ?? s.candidates[0] ?? s.text)
+    .map((s, i) => {
+      if (s.candidates[0] === "") return "";
+      return overrides[i] ?? s.candidates[0] ?? s.text;
+    })
+    .filter(part => part !== "")
     .join("");
 }
 

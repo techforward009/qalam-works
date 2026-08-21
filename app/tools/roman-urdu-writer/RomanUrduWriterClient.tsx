@@ -31,17 +31,18 @@ type WritingMode = "roman" | "urdu";
 // ── Token is reviewable when the user may benefit from seeing it ──────────────
 
 function isReviewable(tok: WriterToken): boolean {
-  // Show only tokens that genuinely need attention:
-  //   • has alternative choices the user can pick
-  //   • OR was left unchanged because confidence was too low
-  // EXCLUDE:
-  //   • protected syntax (URL, number, email, hashtag)
-  //   • known intentional English (Zoom, meeting, office…)
-  //   • high-confidence lexicon conversions with no alternatives
-  //   • phrase-head/phrase-part tokens (already combined)
+  // Show only tokens that genuinely need attention.
   if (tok.isPhrasePart) return false;
   if (tok.isProtected)  return false;
   if (tok.isEnglish)    return false;
+  const core = tok.roman.toLowerCase().replace(/[^a-z]/g, "");
+  const closed = new Set([
+    "na", "nahi", "nahin", "is", "us", "ke", "ka", "ki", "ko", "se", "par", "pe",
+    "to", "bhi", "hi", "aur", "ya", "jo", "jab", "tab", "mein", "main", "mai",
+    "ne", "hai", "hain", "ho",
+  ]);
+  // Ordinary particles already converted confidently are not review material
+  if (closed.has(core) && tok.confidence !== "low" && !tok.isPassthrough) return false;
   if (tok.hasAlternatives) return true;
   if (tok.isPassthrough)   return true;
   if (tok.confidence === "low") return true;
