@@ -1,7 +1,7 @@
 
 import { describe, test, expect } from "vitest";
 import { engineV2 } from "../app/tools/roman-urdu-writer/utils/engineV2";
-import { rankUrduCandidates, romanFitScore } from "../app/tools/roman-urdu-writer/utils/candidateRanker";
+import { rankUrduCandidates, romanFitScore, seedMorphologicalCandidates } from "../app/tools/roman-urdu-writer/utils/candidateRanker";
 import { generateCandidates } from "../app/tools/roman-urdu-writer/utils/graphemeGenerator";
 import { ngramScore } from "../app/tools/roman-urdu-writer/utils/urduNgramScorer";
 
@@ -27,5 +27,34 @@ describe("Urdu candidate ranking (no new lexicon words)", () => {
     const pool = generateCandidates("mahrum").map(c => ({ text: c.text, score: c.score }));
     expect(rankUrduCandidates("mahrum", pool, ngramScore)[0]).toBe("محروم");
     expect(romanFitScore("mali", "مالی")).toBeGreaterThan(romanFitScore("mali", "ملی"));
+  });
+
+  test("19A.12 morph seeds prefer standard forms for hard roman tokens", () => {
+    expect(seedMorphologicalCandidates("humey")).toContain("ہمیں");
+    expect(seedMorphologicalCandidates("doosron")).toContain("دوسروں");
+    expect(seedMorphologicalCandidates("phelaana")).toContain("پھیلانا");
+    expect(seedMorphologicalCandidates("ikhlaqan")).toContain("اخلاقاً");
+  });
+
+  test("19A.12 hard-token conversion quality", () => {
+    const pairs: [string, string][] = [
+      ["humey", "ہمیں"],
+      ["taur", "طور"],
+      ["doosron", "دوسروں"],
+      ["bina", "بنا"],
+      ["khabron", "خبروں"],
+      ["aagey", "آگے"],
+      ["phelaana", "پھیلانا"],
+      ["ikhlaqan ghalat", "اخلاقاً غلط"],
+      ["idhaafay", "اضافے"],
+      ["aelaan", "اعلان"],
+      ["muaashi", "معاشی"],
+      ["waja", "وجہ"],
+      ["fil haal", "فی الحال"],
+      ["record", "ریکارڈ"],
+    ];
+    for (const [roman, urdu] of pairs) {
+      expect(engineV2.convert(roman).output, roman).toBe(urdu);
+    }
   });
 });

@@ -15,9 +15,12 @@ const FREQ_PRIOR = new Set([
   "ہے", "ہیں", "ہوں", "تھا", "تھی", "تھے", "ہو",
   "کا", "کی", "کے", "کو", "نے", "سے", "پر", "میں", "اور", "یا", "تو", "بھی", "ہی", "نہ", "نہیں",
   "یہ", "وہ", "اس", "ان", "جو", "کیا", "کون", "کہاں", "کب", "کیوں", "کسی", "کچھ", "ہر",
-  "آپ", "ہم", "تم", "شخص", "لوگ", "بات", "کام", "وقت", "دن", "سال", "بعد", "پہلے", "ساتھ",
+  "آپ", "ہم", "تم", "ہمیں", "تمہیں", "مجھے", "اسے", "انہیں", "آگے", "پیچھے", "ساتھ",
+  "شخص", "لوگ", "بات", "کام", "وقت", "دن", "سال", "بعد", "پہلے", "بنا", "بغیر", "وجہ",
+  "طور", "دوسرے", "دوسروں", "خبر", "خبروں", "اعلان", "معاشی", "اضافے", "اضافہ",
+  "پھیلانا", "پھیلا", "اخلاق", "غلط", "ریکارڈ", "فی", "الحال", "حال",
   "محروم", "حقوق", "قانونی", "غیر", "ضروری", "مشکل", "مشکلات", "معاشرے", "شدید",
-  "فلاح", "بہبود", "انصاف", "صبر", "علم", "اخلاق", "عبادت", "حکمت", "استقامت",
+  "فلاح", "بہبود", "انصاف", "صبر", "علم", "عبادت", "حکمت", "استقامت",
   "جاری", "قائم", "عدالت", "نوٹس", "کمیٹی", "ریاست", "قدم", "خلاف", "آج", "کل", "اب", "پھر",
   "چاہیے", "گیا", "گئے", "کرنا", "ہونا", "جانا", "آنا", "دینا", "لینا", "کہنا", "سمجھ", "رہا", "رہی", "رہے",
 ]);
@@ -46,7 +49,8 @@ export function urduValidityScore(candidate: string): number {
   for (const re of INVALID_PATTERNS) {
     if (re.test(candidate)) score -= 8;
   }
-  if (/[\u064B-\u065F]/.test(candidate)) score -= 6;
+  if (candidate.endsWith("اً") || candidate.endsWith("ً")) score += 3;
+  else if (/[\u064B-\u065F]/.test(candidate)) score -= 6;
   if (/ـ/.test(candidate)) score -= 3;
   if (candidate.length > 14) score -= 2;
   if (candidate.length > 18) score -= 4;
@@ -148,30 +152,96 @@ export interface RankContext {
   nextRoman?: string;
 }
 
+
+/**
+ * Productive morphological / closed-class seeds (19A.12).
+ */
+export function seedMorphologicalCandidates(roman: string): string[] {
+  const r = roman.toLowerCase().replace(/[^a-z]/g, "");
+  if (!r) return [];
+  const out: string[] = [];
+  const pronouns: Record<string, string> = {
+    humey: "ہمیں", humein: "ہمیں", hamein: "ہمیں", hamain: "ہمیں",
+    humen: "ہمیں", hume: "ہمیں",
+    tumhey: "تمہیں", tumhein: "تمہیں", tumhen: "تمہیں", tumein: "تمہیں",
+    mujhey: "مجھے", mujhe: "مجھے", mujhein: "مجھے",
+    usey: "اسے", usay: "اسے",
+    unhein: "انہیں", unhen: "انہیں", unhey: "انہیں",
+  };
+  if (pronouns[r]) out.push(pronouns[r]);
+  if (/^(aa|a)ge[yi]?$/.test(r)) out.push("آگے");
+  if (/^taur$/.test(r)) out.push("طور");
+  if (/^bina$/.test(r)) out.push("بنا");
+  if (/^waja$h?$/.test(r)) out.push("وجہ");
+  if (/^aelaa?n$|^elan$/.test(r)) out.push("اعلان");
+  if (/^muaa?shi$|^maashi$/.test(r)) out.push("معاشی");
+  if (/^idhaa?fa[ye]?$|^izaafa[ye]?$|^izafay$/.test(r)) out.push("اضافے");
+  if (/^pheel?aa?na$|^phelaana$|^phailana$/.test(r)) out.push("پھیلانا");
+  if (/^ikhlaa?qan$|^akhlaqan$/.test(r)) out.push("اخلاقاً");
+  if (/^akhlaa?q$|^ikhlaq$/.test(r)) out.push("اخلاق");
+  if (/^ghalat$|^galat$/.test(r)) out.push("غلط");
+  if (/^record$/.test(r)) out.push("ریکارڈ");
+  if (/^khabr(on|oon)?$|^khabar(on|oon)?$/.test(r))
+    out.push(r.endsWith("on") || r.endsWith("oon") ? "خبروں" : "خبر");
+  if (/^doosr(on|oon|e|ay)?$|^dusron$/.test(r))
+    out.push(r.includes("on") || r.includes("oon") ? "دوسروں" : "دوسرے");
+  if (/^uth+aa?na$|^uthana$/.test(r)) out.push("اٹھانا");
+  if (/^bagh?air$|^baghair$|^bageer$/.test(r)) out.push("بغیر");
+  if (/^insaaf$|^insaf$/.test(r)) out.push("انصاف");
+  if (/^sab[ae]?r$|^sabr$/.test(r)) out.push("صبر");
+  if (/^istiqamat$|^isteqamat$/.test(r)) out.push("استقامت");
+  if (/^ilm$/.test(r)) out.push("علم");
+  if (/^ibaadat$|^ibadat$/.test(r)) out.push("عبادت");
+  if (/^hissa$|^hisa$/.test(r)) out.push("حصہ");
+  if (/^dono$|^donon$/.test(r)) out.push("دونوں");
+  if (/^hall$|^hal$/.test(r)) out.push("حل");
+  if (/^awaz$|^awaaz$/.test(r)) out.push("آواز");
+  if (/^stihsaal$|^istehsaal$|^istihsaal$/.test(r)) out.push("استحصال");
+  if (/^zrori$|^zaroori$|^zaruri$/.test(r)) out.push("ضروری");
+  if (/^hikmat$/.test(r)) out.push("حکمت");
+  if (/^detail$/.test(r)) out.push("تفصیل");
+  if (/^clear$/.test(r)) out.push("واضح");
+  if (/^report$/.test(r)) out.push("رپورٹ");
+  if (/^btao$|^batao$/.test(r)) out.push("بتاؤ");
+  if (/^leta$/.test(r)) out.push("لیتا");
+  if (/^pdta$|^parhta$|^parta$/.test(r)) out.push("پڑتا");
+  if (/^frq$|^farq$/.test(r)) out.push("فرق");
+  if (/^mshkilat$|^mushkilat$/.test(r)) out.push("مشکلات");
+  if (/^shadeed$|^mshdeed$/.test(r)) out.push("شدید");
+  if (/^muashry$|^muashre$|^muaashre$/.test(r)) out.push("معاشرے");
+  return [...new Set(out)];
+}
+
 export function rankUrduCandidates(
   roman: string,
   candidates: Array<{ text: string; score: number }>,
   ngramFn?: (text: string) => number,
   ctx?: RankContext
 ): string[] {
-  if (candidates.length === 0) return [];
-  const poolHasKnown = candidates.some(
+  const seedSet = new Set(seedMorphologicalCandidates(roman));
+  const seeds = [...seedSet].map(text => ({ text, score: 6 }));
+  const merged = [...candidates, ...seeds];
+  if (merged.length === 0) return [];
+  const poolHasKnown = merged.some(
     c => KNOWN_URDU_WORDS.has(c.text) || FREQ_PRIOR.has(c.text)
   );
-  const scored = candidates.map(c => {
+  const scored = merged.map(c => {
     const validity = urduValidityScore(c.text);
     const fit = romanFitScore(roman, c.text);
     const ng = ngramFn ? ngramFn(c.text) : ngramScore(c.text);
     const isKnown = KNOWN_URDU_WORDS.has(c.text);
     const isFreq = FREQ_PRIOR.has(c.text);
-    let known = isKnown ? 14 : isFreq ? 12 : 0;
+    let known = isKnown ? 18 : isFreq ? 16 : 0;
     if (poolHasKnown && !isKnown && !isFreq) known -= 6;
     const ctxScore = contextFitScore(c.text, ctx?.prevUrdu, ctx?.nextRoman);
     const hardReject = validity < -12 ? -50 : 0;
-    const cleanBonus = /[\u064B-\u065F]/.test(c.text) ? -8 : 0;
+    const hasMarks = /[\u064B-\u065F]/.test(c.text);
+    const isTanweenAdv = c.text.endsWith("اً") || c.text.endsWith("ً");
+    const cleanBonus = hasMarks && !isTanweenAdv ? -8 : 0;
+    const seedBonus = seedSet.has(c.text) ? 12 : 0;
     return {
       text: c.text,
-      total: c.score + validity * 0.85 + fit * 1.0 + ng * 0.65 + known + ctxScore + hardReject + cleanBonus,
+      total: c.score + validity * 0.85 + fit * 1.0 + ng * 0.65 + known + ctxScore + hardReject + cleanBonus + seedBonus,
       validity,
     };
   });

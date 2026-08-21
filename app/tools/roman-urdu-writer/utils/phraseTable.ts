@@ -76,7 +76,15 @@ export const PHRASE_TABLE: Record<string, string> = {
   "se zyada":        "سے زیادہ",
   "mein se":         "میں سے",
   "ke bina":         "کے بغیر",
+  "ke baghair":      "کے بغیر",
+  "ke bagair":       "کے بغیر",
   "ke taur par":     "کے طور پر",
+  "fil haal":        "فی الحال",
+  "fi haal":         "فی الحال",
+  "fal haal":        "فی الحال",
+  "filhaal":         "فی الحال",
+  "ikhlaqan ghalat": "اخلاقاً غلط",
+  "akhlaqan ghalat": "اخلاقاً غلط",
 
   // ── Common conversational constructions ───────────────────────────────────
   "kya hal hai":     "کیا حال ہے",
