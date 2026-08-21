@@ -388,7 +388,16 @@ interface ConvertedSegment {
 function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
   const result: ConvertedSegment[] = [];
   let i = 0;
-  const sentenceUrduContext = sentenceHasUrduContext(segments, "");
+  const hasLexiconSignal = segments.some(seg => {
+    if (/^\s+$/.test(seg.text) || seg.protected) return false;
+    const core = (peelPunctuation(seg.text).core || seg.text);
+    const low = core.toLowerCase();
+    if (low.length < 3) return false;
+    if (KEEP_ENGLISH.has(low) || LOANWORD_URDU[low]) return false;
+    if (ENGLISH_FUNCTION_WORDS.has(low)) return false;
+    return !!lookupRomanUrduLexicon(core);
+  });
+  const sentenceUrduContext = sentenceHasUrduContext(segments, "") || hasLexiconSignal;
 
   while (i < segments.length) {
     const seg = segments[i];
@@ -550,6 +559,14 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
       const ctxResult = rankWithContext(workToken, prevUrdu, nextRoman);
       if (ctxResult) {
         result.push({ text: token, candidates: [reattach(lead, ctxResult, trail)], protected: false });
+        i++;
+        continue;
+      }
+    }
+    {
+      const lexEarly = lookupRomanUrduLexicon(workToken);
+      if (lexEarly && sentenceUrduContext) {
+        result.push({ text: token, candidates: [reattach(lead, lexEarly, trail)], protected: false });
         i++;
         continue;
       }

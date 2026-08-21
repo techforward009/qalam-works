@@ -3,6 +3,15 @@
  */
 
 const SPELLING_CANON: Record<string, string> = {
+  sy: "se",
+  say: "se",
+  k: "ke",
+  ky: "ke",
+  mien: "mein",
+  me: "mein",
+  ghyr: "ghair",
+  ghayr: "ghair",
+  guftgo: "guftagu",
   chahye: "chahiye",
   chahyeh: "chahiye",
   daryafth: "daryaft",
@@ -199,3 +208,5 @@ export function morphologyFitScore(roman: string, urdu: string): number {
   if (/muaml|mu3aaml/.test(roman.toLowerCase()) && urdu.includes("معامل")) score += 5;
   return score;
 }
+
+export { phoneticKey } from "./romanUrduLexicon";

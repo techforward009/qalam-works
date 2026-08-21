@@ -1,14 +1,12 @@
 /**
- * Roman Urdu lexical intelligence — Phase 19A.8
+ * Roman Urdu lexical intelligence — Phase 19A.8 + 19A.9
  *
  * Word-level Roman → correct Urdu orthography map.
- * Priority: dictionary hit > morphology > phonetic guess.
- * No sentence-specific phrases.
+ * Priority: exact > variant > phonetic skeleton > strict fuzzy > morphology > phonetic guess.
+ * No sentence-specific phrases. No large dictionary dump.
  */
 
-/** Canonical Roman key → Urdu form. Keys are normalized lowercase without apostrophes. */
 const LEXICON: Record<string, string> = {
-  // employment / finance
   mulaazmeen: "ملازمین",
   mulazmeen: "ملازمین",
   mulaazmin: "ملازمین",
@@ -34,8 +32,6 @@ const LEXICON: Record<string, string> = {
   pension: "پینشن",
   bank: "بینک",
   account: "اکاؤنٹ",
-
-  // legal / civic
   qanooni: "قانونی",
   kanooni: "قانونی",
   qanoon: "قانون",
@@ -67,8 +63,6 @@ const LEXICON: Record<string, string> = {
   qaaim: "قائم",
   ziyadati: "زیادتی",
   zyadati: "زیادتی",
-
-  // society / discourse
   muashra: "معاشرہ",
   muaashra: "معاشرہ",
   muashray: "معاشرے",
@@ -156,43 +150,174 @@ const LEXICON: Record<string, string> = {
   verification: "ویریفیکیشن",
   update: "اپ ڈیٹ",
   hr: "ایچ آر",
+  shakhs: "شخص",
+  mahrum: "محروم",
+  huqooq: "حقوق",
+  huquq: "حقوق",
+  bunyadi: "بنیادی",
+  bunyad: "بنیاد",
+  wajah: "وجہ",
+  mali: "مالی",
+  dabao: "دباؤ",
+  qadam: "قدم",
+  khilaf: "خلاف",
+  jari: "جاری",
+  us: "اس",
+  ke: "کے",
+  se: "سے",
+  ki: "کی",
+  ka: "کا",
+  ko: "کو",
+  ne: "نے",
+  mein: "میں",
+  me: "میں",
+  hai: "ہے",
+  hain: "ہیں",
+  sy: "سے",
+  say: "سے",
+  k: "کے",
+
 };
 
 /** Normalize a Roman token to lexicon lookup key. */
 export function lexiconKey(token: string): string {
   return token
     .toLowerCase()
-    .replace(/['’]/g, "")
+    .replace(/[''\u2019]/g, "")
     .replace(/3/g, "")
     .replace(/[^a-z\-]/g, "")
     .replace(/-/g, "");
 }
 
 /**
- * Exact / variation dictionary lookup.
- * Returns Urdu form or null.
+ * Phonetic skeleton for noisy Roman Urdu matching.
+ * shakhs/shaakhs, mahrum/mharoom/mehrum share keys.
  */
-export function lookupRomanUrduLexicon(token: string): string | null {
-  if (!token || token.length < 2) return null;
+export function phoneticKey(token: string): string {
+  let t = lexiconKey(token);
+  if (!t) return "";
+  t = t.replace(/aa+/g, "a").replace(/ee+/g, "i").replace(/ii+/g, "i");
+  t = t.replace(/oo+/g, "u").replace(/uu+/g, "u").replace(/ay+/g, "e").replace(/ey+/g, "e");
+  t = t.replace(/kh/g, "x").replace(/gh/g, "g").replace(/sh/g, "s").replace(/ch/g, "c");
+  t = t.replace(/zh/g, "z").replace(/ph/g, "f").replace(/th/g, "t").replace(/dh/g, "d");
+  t = t.replace(/hr/g, "hr").replace(/ny/g, "ny").replace(/qu/g, "q");
+  t = t.replace(/[aeiou]/g, "");
+  t = t.replace(/(.)\1+/g, "$1");
+  return t;
+}
+
+function editDistance(a: string, b: string, max = 2): number {
+  if (a === b) return 0;
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  const m = a.length;
+  const n = b.length;
+  let prev = new Array(n + 1);
+  let cur = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    cur[0] = i;
+    let rowMin = cur[0];
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+      if (cur[j] < rowMin) rowMin = cur[j];
+    }
+    if (rowMin > max) return max + 1;
+    const tmp = prev;
+    prev = cur;
+    cur = tmp;
+  }
+  return prev[n];
+}
+
+export type LexiconMatchKind = "exact" | "variant" | "phonetic" | "fuzzy";
+
+export interface LexiconMatch {
+  urdu: string;
+  kind: LexiconMatchKind;
+  score: number;
+}
+
+const LEXICON_KEYS = Object.keys(LEXICON);
+
+const PARTICLE_URDU = new Set(["کے", "سے", "کی", "کا", "کو", "نے", "میں", "ہے", "ہیں", "اس", "اور", "تو", "پر"]);
+const PARTICLE_KEYS = new Set(["k", "ke", "ki", "ka", "ko", "ne", "se", "sy", "say", "me", "mein", "hai", "hain", "us", "to", "par", "pe"]);
+
+const PHONETIC_INDEX: Map<string, string> = (() => {
+  const map = new Map<string, string>();
+  const byLen = [...LEXICON_KEYS].sort((a, b) => b.length - a.length);
+  for (const k of byLen) {
+    const pk = phoneticKey(k);
+    if (pk.length >= 2 && !map.has(pk)) map.set(pk, LEXICON[k]);
+  }
+  return map;
+})();
+
+export function lookupRomanUrduLexiconDetailed(token: string): LexiconMatch | null {
+  if (!token || token.length < 1) return null;
   const key = lexiconKey(token);
   if (!key) return null;
-  if (LEXICON[key]) return LEXICON[key];
-  // try without doubled letters collapse
+
+  if (LEXICON[key]) return { urdu: LEXICON[key], kind: "exact", score: 1 };
+
+  // triple+ collapse only (never see→se)
   const collapsed = key.replace(/(.)\1{2,}/g, "$1");
-  if (LEXICON[collapsed]) return LEXICON[collapsed];
-  // q/k swap for qaf words
-  if (key.startsWith("k") && LEXICON["q" + key.slice(1)]) return LEXICON["q" + key.slice(1)];
-  if (key.startsWith("q") && LEXICON["k" + key.slice(1)]) return LEXICON["k" + key.slice(1)];
-  // zimmedar / zimedar family
+  if (collapsed !== key && LEXICON[collapsed]) {
+    return { urdu: LEXICON[collapsed], kind: "variant", score: 0.95 };
+  }
+  const consCollapse = key.replace(/([bcdfghjklmnpqrstvwxyz])\1+/g, "$1");
+  if (consCollapse !== key && LEXICON[consCollapse]) {
+    return { urdu: LEXICON[consCollapse], kind: "variant", score: 0.93 };
+  }
+
+  if (key.startsWith("k") && LEXICON["q" + key.slice(1)]) {
+    return { urdu: LEXICON["q" + key.slice(1)], kind: "variant", score: 0.92 };
+  }
+  if (key.startsWith("q") && LEXICON["k" + key.slice(1)]) {
+    return { urdu: LEXICON["k" + key.slice(1)], kind: "variant", score: 0.92 };
+  }
   if (key.includes("zimedar")) {
     const alt = key.replace(/zimedar/g, "zimmedar");
-    if (LEXICON[alt]) return LEXICON[alt];
+    if (LEXICON[alt]) return { urdu: LEXICON[alt], kind: "variant", score: 0.92 };
   }
   if (key.includes("zimmedar")) {
     const alt = key.replace(/zimmedar/g, "zimedar");
-    if (LEXICON[alt]) return LEXICON[alt];
+    if (LEXICON[alt]) return { urdu: LEXICON[alt], kind: "variant", score: 0.9 };
   }
+
+  const pk = phoneticKey(key);
+  if (pk.length >= 3 && PHONETIC_INDEX.has(pk)) {
+    const urdu = PHONETIC_INDEX.get(pk)!;
+    if (!(PARTICLE_URDU.has(urdu) && key.length > 2 && !PARTICLE_KEYS.has(key))) {
+      return { urdu, kind: "phonetic", score: 0.85 };
+    }
+  }
+
+  if (key.length >= 5) {
+    let best: { urdu: string; dist: number; klen: number } | null = null;
+    for (const lk of LEXICON_KEYS) {
+      if (PARTICLE_KEYS.has(lk)) continue;
+      if (PARTICLE_URDU.has(LEXICON[lk])) continue;
+      if (lk[0] !== key[0]) continue;
+      if (Math.abs(lk.length - key.length) > 1) continue;
+      const d = editDistance(key, lk, 1);
+      if (d > 1) continue;
+      const pDiff = Math.abs(phoneticKey(lk).length - pk.length);
+      if (pk.length >= 2 && pDiff > 1) continue;
+      if (!best || d < best.dist || (d === best.dist && lk.length > best.klen)) {
+        best = { urdu: LEXICON[lk], dist: d, klen: lk.length };
+      }
+    }
+    if (best) {
+      return { urdu: best.urdu, kind: "fuzzy", score: best.dist === 1 ? 0.78 : 1 };
+    }
+  }
+
   return null;
+}
+
+export function lookupRomanUrduLexicon(token: string): string | null {
+  return lookupRomanUrduLexiconDetailed(token)?.urdu ?? null;
 }
 
 export const ROMAN_URDU_LEXICON_SIZE = Object.keys(LEXICON).length;
