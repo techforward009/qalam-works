@@ -1,0 +1,242 @@
+[
+  {
+    "id": "GS-001",
+    "category": "chat",
+    "difficulty": "easy",
+    "input": "kya haal h ap ka",
+    "expected_output": "کیا حال ہے آپ کا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["short_forms", "particles", "missing_vowels"]
+    }
+  },
+  {
+    "id": "GS-002",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "kal milna h mujy smjh nhi aa rha",
+    "expected_output": "کل ملنا ہے مجھے سمجھ نہیں آ رہا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["short_forms", "missing_vowels", "casual_spelling"]
+    }
+  },
+  {
+    "id": "GS-003",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "ap kahan ho abhi tak reply nahi dia",
+    "expected_output": "آپ کہاں ہو ابھی تک جواب نہیں دیا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["particles", "casual_spelling", "chat_flow"]
+    }
+  },
+  {
+    "id": "GS-004",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "yr ye scene clear nahi h thora detail btao",
+    "expected_output": "یار یہ سین واضح نہیں ہے تھوڑا تفصیل بتاؤ",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["short_forms", "missing_vowels", "informal_tone"]
+    }
+  },
+  {
+    "id": "GS-005",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "mje lga tm aaj nahi aaoge is liye wait nahi kia",
+    "expected_output": "مجھے لگا تم آج نہیں آؤ گے اس لیے انتظار نہیں کیا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["short_forms", "missing_vowels", "verb_forms"]
+    }
+  },
+  {
+    "id": "GS-006",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "theek h phir kal baat krte hain subah",
+    "expected_output": "ٹھیک ہے پھر کل بات کرتے ہیں صبح",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["particles", "casual_spelling", "chat_flow"]
+    }
+  },
+  {
+    "id": "GS-007",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "us k bnyadi hqooq sy mahrum kia gaya",
+    "expected_output": "اس کے بنیادی حقوق سے محروم کیا گیا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["fuzzy_matching", "short_forms", "formal_vocab"]
+    }
+  },
+  {
+    "id": "GS-008",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "ghair-qanooni qadam uthana riyasat ki zimmedari k khilaf h",
+    "expected_output": "غیر قانونی قدم اٹھانا ریاست کی ذمہ داری کے خلاف ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["hyphen_compounds", "formal_vocab", "particles"]
+    }
+  },
+  {
+    "id": "GS-009",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "insaaf ke baghair falah-o-behbood mumkin nahi",
+    "expected_output": "انصاف کے بغیر فلاح و بہبود ممکن نہیں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["formal_vocab", "hyphen_compounds", "orthography"]
+    }
+  },
+  {
+    "id": "GS-010",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "tahqeeq ke baghair koi faisla qanooni nahi mana ja sakta",
+    "expected_output": "تحقیق کے بغیر کوئی فیصلہ قانونی نہیں مانا جا سکتا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["formal_vocab", "spelling_variants", "orthography"]
+    }
+  },
+  {
+    "id": "GS-011",
+    "category": "formal",
+    "difficulty": "medium",
+    "input": "adalat ne notice jari kia aur committee qaim ki",
+    "expected_output": "عدالت نے نوٹس جاری کیا اور کمیٹی قائم کی",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["formal_vocab", "loanword_urdu_script", "particles"]
+    }
+  },
+  {
+    "id": "GS-012",
+    "category": "mixed",
+    "difficulty": "medium",
+    "input": "kal meeting mein report submit karni hai",
+    "expected_output": "کل میٹنگ میں رپورٹ جمع کرنی ہے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": ["loanword_urdu_script", "particles", "mixed_policy"]
+    }
+  },
+  {
+    "id": "GS-013",
+    "category": "mixed",
+    "difficulty": "medium",
+    "input": "system update ke baad policy documents tayyar karo",
+    "expected_output": "سسٹم اپ ڈیٹ کے بعد پالیسی ڈاکومنٹس تیار کرو",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": ["loanword_urdu_script", "mixed_policy"]
+    }
+  },
+  {
+    "id": "GS-014",
+    "category": "mixed",
+    "difficulty": "hard",
+    "input": "WhatsApp par Google drive link bhej dena file report.pdf hai",
+    "expected_output": "WhatsApp پر Google drive link بھیج دینا file report.pdf ہے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": ["protected_brands", "protected_filename", "mixed_policy"]
+    }
+  },
+  {
+    "id": "GS-015",
+    "category": "mixed",
+    "difficulty": "hard",
+    "input": "support@qalamworks.com par email bhejo aur https://qalamworks.com check karo",
+    "expected_output": "support@qalamworks.com پر email بھیجو اور https://qalamworks.com چیک کرو",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": ["protected_email", "protected_url", "mixed_policy"]
+    }
+  },
+  {
+    "id": "GS-016",
+    "category": "religious_academic",
+    "difficulty": "medium",
+    "input": "sabar aur istiqamat se kaam lena chahiye",
+    "expected_output": "صبر اور استقامت سے کام لینا چاہیے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["arabic_persian_vocab", "orthography"]
+    }
+  },
+  {
+    "id": "GS-017",
+    "category": "religious_academic",
+    "difficulty": "medium",
+    "input": "ilm aur akhlaq dono ibadat ka hissa hain",
+    "expected_output": "علم اور اخلاق دونوں عبادت کا حصہ ہیں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["arabic_persian_vocab", "orthography"]
+    }
+  },
+  {
+    "id": "GS-018",
+    "category": "religious_academic",
+    "difficulty": "hard",
+    "input": "hikmat wala banda har mushkil ka hall soch leta hai",
+    "expected_output": "حکمت والا بندہ ہر مشکل کا حل سوچ لیتا ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["arabic_persian_vocab", "natural_prose"]
+    }
+  },
+  {
+    "id": "GS-019",
+    "category": "severe_noise",
+    "difficulty": "hard",
+    "input": "stihsaal k khilaf awaz uthana zrori h",
+    "expected_output": "استحصال کے خلاف آواز اٹھانا ضروری ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["missing_vowels", "short_forms", "noisy_recovery", "fuzzy_matching"]
+    }
+  },
+  {
+    "id": "GS-020",
+    "category": "severe_noise",
+    "difficulty": "hard",
+    "input": "muashry m shadeed mshkilat hn koi frq nahi pdta",
+    "expected_output": "معاشرے میں شدید مشکلات ہیں کوئی فرق نہیں پڑتا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": ["missing_vowels", "compressed_writing", "noisy_recovery", "fuzzy_matching"]
+    }
+  }
+]
