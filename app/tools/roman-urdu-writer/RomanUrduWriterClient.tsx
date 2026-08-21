@@ -10,6 +10,7 @@ import type {
   TokenChoice,
 } from "./utils/writerTypes";
 import { normalizeUrduProsePunctuation } from "./utils/normalizeUrduProsePunctuation";
+import { transformPKRAmount, splitBidiSegments } from "./utils/writerCurrency";
 import {
   getActiveUrduText,
   hasExportableUrduText,
@@ -30,11 +31,18 @@ type WritingMode = "roman" | "urdu";
 
 // ── Token is reviewable when the user may benefit from seeing it ──────────────
 
+// Patterns that are NEVER reviewable regardless of engine classification
+const NON_REVIEWABLE_RE = /^[\d,]+(?:\.\d+)?%?$|^\d[\d,]*(?:[-/]\d+)+$|^(?:RS\.|Rs\.|rs\.|PKR)\s*[\d,]+/i;
+
 function isReviewable(tok: WriterToken): boolean {
   // Show only tokens that genuinely need attention.
   if (tok.isPhrasePart) return false;
   if (tok.isProtected)  return false;
   if (tok.isEnglish)    return false;
+
+  // Numbers, ranges, percentages, monetary markers — never reviewable
+  if (NON_REVIEWABLE_RE.test(tok.roman.trim())) return false;
+
   const core = tok.roman.toLowerCase().replace(/[^a-z]/g, "");
   const closed = new Set([
     "na", "nahi", "nahin", "is", "us", "ke", "ka", "ki", "ko", "se", "par", "pe",
@@ -43,8 +51,17 @@ function isReviewable(tok: WriterToken): boolean {
   ]);
   // Ordinary particles already converted confidently are not review material
   if (closed.has(core) && tok.confidence !== "low" && !tok.isPassthrough) return false;
-  if (tok.hasAlternatives) return true;
-  if (tok.isPassthrough)   return true;
+
+  // Single-candidate tokens: only show if genuinely unconverted (passthrough)
+  if (!tok.hasAlternatives && !tok.isPassthrough && tok.confidence !== "low") return false;
+
+  if (tok.hasAlternatives && tok.candidates.length >= 2) {
+    // Require at least 2 distinct, non-empty candidates
+    const distinct = new Set(tok.candidates.map(c => c.text).filter(t => !!t));
+    if (distinct.size < 2) return false;
+    return true;
+  }
+  if (tok.isPassthrough) return true;
   if (tok.confidence === "low") return true;
   return false;
 }
@@ -343,14 +360,23 @@ export default function RomanUrduWriterClient() {
       ?? result.output;
   }, [result, choices, activeSentenceIdx]);
 
-  const displayUrduOutput = useMemo(
-    () => normalizeUrduProsePunctuation(finalOutput),
-    [finalOutput]
+  const displayUrduOutput = useMemo(() => {
+    // Currency transform runs FIRST (before punctuation normalization)
+    // so "RS. 75,000" is converted before "." becomes "۔"
+    const withCurrency = transformPKRAmount(finalOutput);
+    return normalizeUrduProsePunctuation(withCurrency);
+  }, [finalOutput]);
+
+  // Bidi-segmented for rendering — LTR islands get <bdi dir="ltr">
+  const displayUrduSegments = useMemo(
+    () => splitBidiSegments(displayUrduOutput),
+    [displayUrduOutput]
   );
 
   const activeUrduText = useMemo(() => {
     const raw = getActiveUrduText(mode, finalOutput, urduInput);
-    return normalizeUrduProsePunctuation(raw);
+    // Currency first, then prose normalization — same order as display
+    return normalizeUrduProsePunctuation(transformPKRAmount(raw));
   }, [mode, finalOutput, urduInput]);
   const canExport = hasExportableUrduText(activeUrduText);
 
@@ -796,7 +822,11 @@ export default function RomanUrduWriterClient() {
                     aria-label={ui.outputLabel}
                   >
                     {hasOutput ? (
-                      displayUrduOutput
+                      displayUrduSegments.map((seg, i) =>
+                        seg.kind === "ltr"
+                          ? <bdi key={i} dir="ltr">{seg.text}</bdi>
+                          : <React.Fragment key={i}>{seg.text}</React.Fragment>
+                      )
                     ) : (
                       <span className="text-sm font-sans" lang={isUr ? "ur" : "en"}>
                         {romanInput ? "…" : ui.outputPlaceholder}
@@ -929,8 +959,8 @@ export default function RomanUrduWriterClient() {
                                   )}
                                 </div>
 
-                                {/* Passthrough: calm explanation */}
-                                {tok.isPassthrough && tok.candidates.length <= 1 && (
+                                {/* Passthrough: calm explanation — only when truly unchanged */}
+                                {tok.isPassthrough && tok.candidates.length <= 1 && tok.primary === tok.roman && (
                                   <p
                                     className="px-4 py-2 text-xs text-[#9CA3AF]"
                                     lang={isUr ? "ur" : "en"}
