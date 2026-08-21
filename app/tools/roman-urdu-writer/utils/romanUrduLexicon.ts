@@ -176,6 +176,39 @@ const LEXICON: Record<string, string> = {
   sy: "سے",
   say: "سے",
   k: "کے",
+  h: "ہے",
+  nahi: "نہیں",
+  mujhe: "مجھے",
+  aap: "آپ",
+  tum: "تم",
+  yaar: "یار",
+  samajh: "سمجھ",
+  raha: "رہا",
+  rahi: "رہی",
+  rahe: "رہے",
+  karte: "کرتے",
+  kiya: "کیا",
+  gaya: "گیا",
+  thoda: "تھوڑا",
+  farq: "فرق",
+  padta: "پڑتا",
+  kya: "کیا",
+  haal: "حال",
+  kahan: "کہاں",
+  kehna: "کہنا",
+  abhi: "ابھی",
+  tak: "تک",
+  theek: "ٹھیک",
+  phir: "پھر",
+  baat: "بات",
+  subah: "صبح",
+  aaj: "آج",
+  kal: "کل",
+  milna: "ملنا",
+  detail: "تفصیل",
+  reply: "جواب",
+  wait: "انتظار",
+  scene: "سین",
 
 };
 
@@ -243,20 +276,44 @@ const LEXICON_KEYS = Object.keys(LEXICON);
 const PARTICLE_URDU = new Set(["کے", "سے", "کی", "کا", "کو", "نے", "میں", "ہے", "ہیں", "اس", "اور", "تو", "پر"]);
 const PARTICLE_KEYS = new Set(["k", "ke", "ki", "ka", "ko", "ne", "se", "sy", "say", "me", "mein", "hai", "hain", "us", "to", "par", "pe"]);
 
-const PHONETIC_INDEX: Map<string, string> = (() => {
-  const map = new Map<string, string>();
-  const byLen = [...LEXICON_KEYS].sort((a, b) => b.length - a.length);
-  for (const k of byLen) {
+const PHONETIC_INDEX: Map<string, Array<{ rk: string; urdu: string }>> = (() => {
+  const map = new Map<string, Array<{ rk: string; urdu: string }>>();
+  for (const k of LEXICON_KEYS) {
     const pk = phoneticKey(k);
-    if (pk.length >= 2 && !map.has(pk)) map.set(pk, LEXICON[k]);
+    if (pk.length < 2) continue;
+    const arr = map.get(pk) || [];
+    arr.push({ rk: k, urdu: LEXICON[k] });
+    map.set(pk, arr);
   }
   return map;
 })();
 
+function bestPhoneticHit(key: string, pk: string): string | null {
+  const arr = PHONETIC_INDEX.get(pk);
+  if (!arr || !arr.length) return null;
+  if (arr.length === 1) return arr[0].urdu;
+  let best: { urdu: string; d: number; len: number } | null = null;
+  for (const { rk, urdu } of arr) {
+    const d = editDistance(key, rk, 3);
+    if (!best || d < best.d || (d === best.d && rk.length > best.len)) {
+      best = { urdu, d, len: rk.length };
+    }
+  }
+  return best?.urdu ?? null;
+}
+
+const CHAT_ALIAS: Record<string, string> = {
+  nhi: "nahi", nahin: "nahi", mujy: "mujhe", mje: "mujhe", smjh: "samajh",
+  rha: "raha", rhi: "rahi", rhe: "rahe", krte: "karte", kia: "kiya",
+  ap: "aap", tm: "tum", yr: "yaar", thora: "thoda", zrori: "zaroori",
+  frq: "farq", pdta: "padta", hn: "hain",
+};
+
 export function lookupRomanUrduLexiconDetailed(token: string): LexiconMatch | null {
   if (!token || token.length < 1) return null;
-  const key = lexiconKey(token);
+  let key = lexiconKey(token);
   if (!key) return null;
+  if (CHAT_ALIAS[key]) key = CHAT_ALIAS[key];
 
   if (LEXICON[key]) return { urdu: LEXICON[key], kind: "exact", score: 1 };
 
@@ -287,8 +344,8 @@ export function lookupRomanUrduLexiconDetailed(token: string): LexiconMatch | nu
 
   const pk = phoneticKey(key);
   if (pk.length >= 3 && PHONETIC_INDEX.has(pk)) {
-    const urdu = PHONETIC_INDEX.get(pk)!;
-    if (!(PARTICLE_URDU.has(urdu) && key.length > 2 && !PARTICLE_KEYS.has(key))) {
+    const urdu = bestPhoneticHit(key, pk);
+    if (urdu && !(PARTICLE_URDU.has(urdu) && key.length > 2 && !PARTICLE_KEYS.has(key))) {
       return { urdu, kind: "phonetic", score: 0.85 };
     }
   }

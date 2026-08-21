@@ -186,5 +186,6 @@ export function generateCandidates(token: string): BeamCandidate[] {
     return true;
   });
 
-  return unique.slice(0, BEAM_WIDTH);
+  const cleaned = unique.filter(c => !/[\u064B-\u065F]/.test(c.text));
+  return (cleaned.length ? cleaned : unique).slice(0, BEAM_WIDTH);
 }

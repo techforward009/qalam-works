@@ -142,7 +142,7 @@ function looksLikeEnglish(token: string): boolean {
   if (/(tion|sion|ture|ment|ness|able|ally|ity|ful|less|ous|ive)$/.test(lower)) return true;
   return false;
 }
-function phoneticFallback(token: string, opts?: { force?: boolean }): string[] {
+function phoneticFallback(token: string, opts?: { force?: boolean; prevUrdu?: string; nextRoman?: string }): string[] {
   const raw = token.trim();
   if (raw.length < 2) return [];
   const norms = romanNormalizationCandidates(raw);
@@ -169,7 +169,7 @@ function phoneticFallback(token: string, opts?: { force?: boolean }): string[] {
   }
   if (pool.length === 0) return [];
 
-  return rankUrduCandidates(norms[0] || raw, pool, ngramScore);
+  return rankUrduCandidates(norms[0] || raw, pool, ngramScore, { prevUrdu: opts?.prevUrdu, nextRoman: opts?.nextRoman });
 }
 
 function convertHyphenatedCompound(token: string, force: boolean): string | null {
@@ -188,10 +188,14 @@ function convertHyphenatedCompound(token: string, force: boolean): string | null
       return LOANWORD_URDU[low] || LOANWORD_URDU[part.toLowerCase()];
     }
     if (low === "o" || low === "wa") return "و";
-    if (low === "ghair" || low === "ghayr") return "غیر";
+    if (low === "ghair" || low === "ghayr" || low === "ghyr") return "غیر";
     if (low === "bilaa" || low === "bila") return "بلا";
     if (low === "amal") return "عمل";
     if (low === "daramad" || low === "darmad") return "درآمد";
+    if (low === "falah") return "فلاح";
+    if (low === "behbood" || low === "behboud") return "بہبود";
+    if (low === "qanooni" || low === "kanooni") return "قانونی";
+    if (low === "qanoon" || low === "kanoon") return "قانون";
     const morph = morphExpand(low);
     if (morph.length && morph[0] !== part && /[\u0600-\u06FF]/.test(morph[0])) return morph[0];
     const ph = phoneticFallback(part, { force });
@@ -488,7 +492,13 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
           i++;
           continue;
         }
-        const phonetic = phoneticFallback(work, { force: true });
+        const nextSoft = (() => {
+          for (let k = i + 1; k < segments.length; k++) {
+            if (!/^\s+$/.test(segments[k].text)) return segments[k].text;
+          }
+          return undefined;
+        })();
+        const phonetic = phoneticFallback(work, { force: true, nextRoman: nextSoft });
         if (phonetic.length > 0) {
           result.push({ text: seg.text, candidates: phonetic.map(c => reattach(lead, c, trail)), protected: false });
           i++;
@@ -607,7 +617,18 @@ function convertSegments(segments: TokenSegment[]): ConvertedSegment[] {
         i++;
         continue;
       }
-      const phonetic = phoneticFallback(workToken, { force: sentenceUrduContext });
+      const prevChosen = (() => {
+        for (let k = result.length - 1; k >= 0; k--) {
+          const c0 = result[k].candidates[0];
+          if (c0 && /[\u0600-\u06FF]/.test(c0)) return c0;
+        }
+        return undefined;
+      })();
+      const phonetic = phoneticFallback(workToken, {
+        force: sentenceUrduContext,
+        prevUrdu: prevChosen,
+        nextRoman,
+      });
       if (phonetic.length > 0) {
         result.push({ text: token, candidates: phonetic.map(c => reattach(lead, c, trail)), protected: false });
         i++;

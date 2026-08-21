@@ -9,6 +9,24 @@ const SPELLING_CANON: Record<string, string> = {
   ky: "ke",
   mien: "mein",
   me: "mein",
+  nhi: "nahi",
+  nahin: "nahi",
+  mujy: "mujhe",
+  mje: "mujhe",
+  smjh: "samajh",
+  rha: "raha",
+  rhi: "rahi",
+  rhe: "rahe",
+  krte: "karte",
+  kia: "kiya",
+  ap: "aap",
+  tm: "tum",
+  yr: "yaar",
+  thora: "thoda",
+  zrori: "zaroori",
+  frq: "farq",
+  pdta: "padta",
+  hn: "hain",
   ghyr: "ghair",
   ghayr: "ghair",
   guftgo: "guftagu",
@@ -57,6 +75,7 @@ const SPELLING_CANON: Record<string, string> = {
   qavanin: "qawaneen",
   mahana: "mahana",
   maahana: "mahana",
+
 };
 
 const FORMAL_STEMS: [string, string][] = [
