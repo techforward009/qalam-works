@@ -1,38 +1,56 @@
 import type { Metadata } from "next";
-import { Noto_Nastaliq_Urdu, Noto_Naskh_Arabic, Inter, Amiri, Vazirmatn } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { LanguageProvider } from "./lib/language-context";
 import AnalyticsProviders from "./components/AnalyticsProviders";
 
-const inter = Inter({ 
-  subsets: ["latin"],
-  variable: "--font-inter"
+// Fonts are served from public/fonts/ (copied from @fontsource at build time).
+// next/font/local resolves paths relative to the source file (app/layout.tsx),
+// so "../public/fonts/" points to the project-level public directory.
+const inter = localFont({
+  src: [
+    { path: "../public/fonts/inter-latin-400.woff2", weight: "400" },
+    { path: "../public/fonts/inter-latin-500.woff2", weight: "500" },
+    { path: "../public/fonts/inter-latin-600.woff2", weight: "600" },
+    { path: "../public/fonts/inter-latin-700.woff2", weight: "700" },
+  ],
+  variable: "--font-inter",
 });
 
-// Nastaliq: hero/section headings only (calligraphic, not legible at small sizes).
-const nastaliq = Noto_Nastaliq_Urdu({
-  subsets: ["arabic"],
-  weight: ["400", "700"],
+const nastaliq = localFont({
+  src: [
+    { path: "../public/fonts/nastaliq-400.woff2", weight: "400" },
+    { path: "../public/fonts/nastaliq-700.woff2", weight: "700" },
+  ],
   variable: "--font-nastaliq",
 });
 
-// Naskh: UI body/buttons/labels/forms — highly readable at small sizes, avoids the "mechanical" look of using Nastaliq for everything.
-const naskh = Noto_Naskh_Arabic({
-  subsets: ["arabic"],
-  weight: ["400", "500", "600", "700"],
+const naskh = localFont({
+  src: [
+    { path: "../public/fonts/naskh-400.woff2", weight: "400" },
+    { path: "../public/fonts/naskh-500.woff2", weight: "500" },
+    { path: "../public/fonts/naskh-600.woff2", weight: "600" },
+    { path: "../public/fonts/naskh-700.woff2", weight: "700" },
+  ],
   variable: "--font-naskh",
 });
 
-const amiri = Amiri({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "700"],
+const amiri = localFont({
+  src: [
+    { path: "../public/fonts/amiri-400.woff2", weight: "400" },
+    { path: "../public/fonts/amiri-700.woff2", weight: "700" },
+  ],
   variable: "--font-amiri",
 });
 
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic", "latin"],
+const vazirmatn = localFont({
+  src: [
+    { path: "../public/fonts/vazirmatn-400.woff2", weight: "400" },
+    { path: "../public/fonts/vazirmatn-500.woff2", weight: "500" },
+    { path: "../public/fonts/vazirmatn-700.woff2", weight: "700" },
+  ],
   variable: "--font-vazirmatn",
 });
 
