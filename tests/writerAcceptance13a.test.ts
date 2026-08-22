@@ -4,18 +4,15 @@
  */
 
 import { convertRomanUrdu } from "../app/tools/roman-urdu-writer/utils/writerEngine";
-import { transformPKRAmount, cleanParentheticals } from "../app/tools/roman-urdu-writer/utils/writerCurrency";
+import { fixFormalOutput, transformPKRAmount, cleanParentheticals } from "../app/tools/roman-urdu-writer/utils/writerCurrency";
 import { normalizeUrduProsePunctuation } from "../app/tools/roman-urdu-writer/utils/normalizeUrduProsePunctuation";
 
 const NON_REVIEWABLE_RE =
   /^[\d,]+(?:\.\d+)?%?$|^\d[\d,]*(?:[-/]\d+)+$|^(?:RS\.?|Rs\.?|rs\.?|PKR)(?:\s*[\d,]+)?$/i;
 
 function pipe(t: string): string {
-  return normalizeUrduProsePunctuation(
-    cleanParentheticals(
-      transformPKRAmount(convertRomanUrdu(t).output)
-    )
-  );
+  const p1 = fixFormalOutput(convertRomanUrdu(t).output);
+  return normalizeUrduProsePunctuation(cleanParentheticals(transformPKRAmount(p1)));
 }
 
 function reviewCards(t: string): string[] {
@@ -24,14 +21,17 @@ function reviewCards(t: string): string[] {
     .filter((tok: any) => {
       if (tok.isPhrasePart || /^\s+$/.test(tok.roman)) return false;
       if (tok.isProtected || tok.isEnglish) return false;
+      // Urdu-script tokens inserted by compound resolver are always correct
+      if (/[\u0600-\u06FF]/.test(tok.roman)) return false;
       if (NON_REVIEWABLE_RE.test(tok.roman.trim())) return false;
       const core = tok.roman.toLowerCase().replace(/[^a-z]/g, "");
+      // Closed particles: ALWAYS suppress — no confidence/passthrough gate
       const closed = new Set([
         "na","nahi","nahin","is","us","ke","ka","ki","ko","se","par","pe",
-        "to","bhi","hi","aur","ya","jo","jab","tab","mein","main","mai",
+        "to","toh","bhi","hi","aur","ya","jo","jab","tab","mein","main","mai",
         "ne","hai","hain","ho",
       ]);
-      if (closed.has(core) && tok.confidence !== "low" && !tok.isPassthrough) return false;
+      if (closed.has(core)) return false;
       if (!tok.hasAlternatives && !tok.isPassthrough && tok.confidence !== "low") return false;
       if (tok.hasAlternatives && tok.candidates.length >= 2) {
         const distinct = new Set(tok.candidates.map((c: any) => c.text).filter((x: string) => !!x));
@@ -74,6 +74,30 @@ describe("Review filter", () => {
     expect(cards).not.toContain("2025-26");
     // Specific assertion: should be 0 Review cards for this paragraph
     expect(cards.length).toBe(0);
+  });
+
+  // ── is/us/toh particle Review regression ────────────────────────────────────
+  test("'is' never produces Review card even when per-token metadata is passthrough", () => {
+    // Root cause: engineV2.convert("is") in isolation keeps it Latin → passthrough.
+    // Production output correctly converts is → اس, but stale token metadata caused
+    // a junk Review card. Fix: closed particles are ALWAYS suppressed, no gate on passthrough.
+    const P3 = "Jadeed daur ke ism-o-ma'ani ke is bahraan mein, insani nafsiyat aur digital iblaagh ka baahami taluq nihayat uljhaao ka shikar ho chuka hai.";
+    const cards = reviewCards(P3);
+    expect(cards).not.toContain("is");
+    expect(cards).not.toContain("Is");
+  });
+
+  test("'toh' particle never creates Review card", () => {
+    const cards = reviewCards("Agar aap ka record update nahi hai, toh fawri taur par rabta karein.");
+    expect(cards).not.toContain("toh");
+  });
+
+  test("closed particles never Review regardless of sentence complexity", () => {
+    const P = "Is soorathaal mein, us ke baad, yeh us ka nahi balkay is ka hai.";
+    const cards = reviewCards(P);
+    for (const particle of ["is", "us", "ke", "ka", "nahi", "balkay"]) {
+      expect(cards).not.toContain(particle);
+    }
   });
 });
 

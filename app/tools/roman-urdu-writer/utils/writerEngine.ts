@@ -33,6 +33,7 @@ import { segmentInput, isProtectedToken } from "./protectedTokens";
 import { lookupNormalized, lookupToken } from "./lexicon";
 import { PHRASE_TABLE, normPhrase } from "./phraseTable";
 import { formalStemConvert } from "./romanUrduNormalize";
+import { resolveCompounds } from "./romanUrduCompoundResolver";
 
 /**
  * Extended loanword map: English words → Urdu-SCRIPT TRANSLITERATIONS only.
@@ -158,6 +159,25 @@ const EXTRA_LOANWORDS: Record<string, string> = {
   quantum: "کوانٹم",
   framework: "فریم ورک",
   zoom: "زوم",
+  // ── Apostrophe/ain clusters (Phase 19A.19) ───────────────────────────────
+  // Keys use the raw apostrophized forms as they appear in inputSegs.
+  // This ensures the per-token safety pass corrects them even when token
+  // counts mismatch and the string-level pass cannot find the original form.
+  "sho'oor":     "شعور",
+  "shu'oor":     "شعور",
+  "baa'is":      "باعث",
+  "ba'is":       "باعث",
+  "ijtima'ai":   "اجتماعی",
+  "ijtima'ee":   "اجتماعی",
+  "ma'ani":      "معانی",
+  "mu'aashra":   "معاشرہ",
+  "mu'aashray":  "معاشرے",
+  "mu'aashre":   "معاشرے",
+  "mu'aashrati": "معاشرتی",
+  "mu'aashi":    "معاشی",
+  "in'aam":      "انعام",
+  "jaa'iz":      "جائز",
+  "ja'iz":       "جائز",
   // ── Brands (converted in Urdu context) ────────────────────────────────────
   // Note: WhatsApp/Google/YouTube/Zoom are in KNOWN_BRANDS → protected at engine level.
   // They are handled in the presentation layer by transformAcronymsAndBrands.
@@ -426,14 +446,19 @@ function buildInternalSegments(input: string): InternalSegment[] {
  * All safety, protection, and passthrough behavior is inherited from V2.
  */
 export function convertRomanUrdu(input: string): WriterConversionResult {
+  // 0. Pre-tokenization structural compound resolver
+  //    Converts X-e-Y izafat chains, X-o-Y coordination, and known lexical
+  //    compounds into space-separated forms the engine handles correctly.
+  const resolved = resolveCompounds(input);
+
   // 1. Get authoritative V2 output (this is the production result)
-  const v2Result = engineV2.convert(input);
+  const v2Result = engineV2.convert(resolved);
   let v2Output = v2Result.output;
 
   // 1b. Smart loanword safety pass: fix V2 phonetic garbage using EXTRA_LOANWORDS mappings,
   //     or preserve Latin when no established Urdu script form exists.
   {
-    const inputSegs = input.split(/(\s+)/);
+    const inputSegs = resolved.split(/(\s+)/);
     // Check if sentence has Urdu context cues (needed for loanword conversion)
     const hasUrduCue = inputSegs.some(s => {
       const c = s.trim().toLowerCase();
@@ -471,7 +496,7 @@ export function convertRomanUrdu(input: string): WriterConversionResult {
     }
   }
   // 2. Build per-token metadata
-  const segments = buildInternalSegments(input);
+  const segments = buildInternalSegments(resolved);
 
   const tokens: WriterToken[] = [];
   for (const seg of segments) {

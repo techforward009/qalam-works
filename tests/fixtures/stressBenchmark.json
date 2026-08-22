@@ -1,0 +1,47 @@
+[
+  {
+    "id": "STRESS-01",
+    "category": "formal_philosophical",
+    "label": "Existentialism & Social Harmony",
+    "input": "\"Wujoodiyat-pasandana fikr ke mutabiq fard ki takhleeq: azaad roaydaadein basa auqaat samajik jabriyat aur riwayati iqdaar ke mabain shadeed tasaadum ka baa'is banti hain. Jab koi shakhs fikri tadabbur ke bighaar jazbaati hayajaan mein aakar mubham nazriyaat ki tanweeq karta hai, toh wo na sirf ijtima'ai sho'oor ko majrooh karta hai balkay mu'aashrati ham-aahanggi ke naazuk tawaazun ko bhi darham-barham kar deta hai. Lehaza, iblaaghi abtari se bachne ke liye naqd-o-nazar ka sciency aur istidlaali usloob ikhtiyaar karna waqt ki aham zaroorat hai.\"",
+    "expected_output": "\"وجودیت پسندانہ فکر کے مطابق فرد کی تخلیق: آزاد روائیدادیں بسا اوقات سماجی جبریت اور روایتی اقدار کے مابین شدید تصادم کا باعث بنتی ہیں۔ جب کوئی شخص فکری تدبر کے بغیر جذباتی ہیجان میں آ کر مبہم نظریات کی ترویج کرتا ہے، تو وہ نہ صرف اجتماعی شعور کو مجروح کرتا ہے بلکہ معاشرتی ہم آہنگی کے نازک توازن کو بھی درہم برہم کر دیتا ہے۔ لہٰذا، ابلاغی ابتری سے بچنے کے لیے نقد و نظر کا سائنسی اور استدلالی اسلوب اختیار کرنا وقت کی اہم ضرورت ہے۔\"",
+    "known_failures": [
+      "roaydaadein → روائیدادیں (noisy Roman recovery)",
+      "bighaar → بغیر (lexical miss — بغار ≠ بغیر)",
+      "tanweeq → ترویج (phonetic recovery fails for rare vocabulary)",
+      "ijtima'ai → اجتماعی (apostrophe handling)",
+      "sciency → سائنسی (English transliteration via EXTRA_LOANWORDS)",
+      "istidlaali → استدلالی (noisy Roman, complex cluster)"
+    ]
+  },
+  {
+    "id": "STRESS-02",
+    "category": "formal_legal_political",
+    "label": "Freedom of Expression vs Public Order",
+    "input": "\"Aazaadi-e-izhaar-e-raaye aur awaami amn-o-amaan ki baqa ke mabain tawazun qaim rakhna har jadeed jamhoori riyasat ka bunyadi aaini challenge hai. Agarche haq-e-tanqeed aain ki rooh hai, taaham ghair-tadeeq-shuda afwaahon ki tarseei, niji zindagi ki hurmat ki pamaali, aur tafriqa-angeez bayaniye ka farogh mahaz ikhlaqi inhinraf nahi balkay sareehan qanoon-shikni ke zumray mein aata hai. Is liye, idaaron ko chahiye ke wo jaza-o-saza ke sakht qawaneen ke nafaaz ke saath saath awaam mein fikri pukhtagii aur zimmedaarana iblaagh ki saqafat ko bedaar karein.\"",
+    "expected_output": "\"آزادیِ اظہارِ رائے اور عوامی امن و امان کی بقاء کے مابین توازن قائم رکھنا ہر جدید جمہوری ریاست کا بنیادی آئینی چیلنج ہے۔ اگرچہ حقِ تنقید آئین کی روح ہے، تاہم غیر تصدیق شدہ افواہوں کی ترسیل، نجی زندگی کی حرمت کی پامالی، اور تفریق انگیز بیانیے کا فروغ محض اخلاقی انحراف نہیں بلکہ صریحاً قانون شکنی کے زمرے میں آتا ہے۔ اس لیے، اداروں کو چاہیے کہ وہ جزا و سزا کے سخت قوانین کے نفاذ کے ساتھ ساتھ عوام میں فکری پختگی اور ذمہ دارانہ ابلاغ کی ثقافت کو بیدار کریں۔\"",
+    "known_failures": [
+      "Aazaadi-e-izhaar-e-raaye → آزادیِ اظہارِ رائے (compound-hyphen idafa chain)",
+      "haq-e-tanqeed → حقِ تنقید (idafa compound)",
+      "tarseei → ترسیل (phonetic near-miss for rare vocabulary)",
+      "inhinraf → انحراف (noisy Roman recovery)",
+      "sareehan → صریحاً (adverbial nunation form)",
+      "zumray → زمرے (noisy Roman recovery)",
+      "pukhtagii → پختگی (doubled-i noise)",
+      "challenge → چیلنج (English transliteration needed)"
+    ]
+  },
+  {
+    "id": "STRESS-03",
+    "category": "social_analytical",
+    "label": "Digital Age and Social Fabric",
+    "input": "\"Jadeed daur ke ism-o-ma'ani ke is bahraan mein, insani nafsiyat aur digital iblaagh ka baahami taluq nihayat uljhaao ka shikar ho chuka hai. Ghair-sanjida guftagu aur bila-tahqeeq shaye hone wali khabrein sirf ikhlaqi zawaal ka sabab nahi bantin, balkay mu'aashray mein fikri anarchism ko janam deti hain. Is soorathaal mein, tanqeedi sho'oor aur doosron ke nazriyaat ke ihtiraam ke bina ek mutawazin aur tahzeeb-yafta mu'aashray ka qayaam ek na-mumkin khwaab ban kar reh jata hai.\"",
+    "expected_output": "\"جدید دور کے اسم و معانی کے اس بحران میں، انسانی نفسیات اور ڈیجیٹل ابلاغ کا باہمی تعلق نہایت اُلجھاؤ کا شکار ہو چکا ہے۔ غیر سنجیدہ گفتگو اور بلا تحقیق شائع ہونے والی خبریں صرف اخلاقی زوال کا سبب نہیں بنتیں، بلکہ معاشرے میں فکری انارکیزم کو جنم دیتی ہیں۔ اس صورتِ حال میں، تنقیدی شعور اور دوسروں کے نظریات کے احترام کے بغیر ایک متوازن اور تہذیب یافتہ معاشرے کا قیام ایک ناممکن خواب بن کر رہ جاتا ہے۔\"",
+    "known_failures": [
+      "ism-o-ma'ani → اسم و معانی (apostrophe compound, philosophical term)",
+      "soorathaal → صورتِ حال (compound formal term — engine produces سوراتھال)",
+      "anarchism → انارکیزم (English transliteration)",
+      "na-mumkin → ناممکن (hyphenated compound should merge)"
+    ]
+  }
+]

@@ -259,6 +259,60 @@ const FORMAL_STEMS: [string, string][] = [
   ["adalat aliya", "عدالتِ عالیہ"],
   ["adalat", "عدالت"],
   ["aliya", "عالیہ"],
+  // ── Izafat chain components (Phase 19A.18) ─────────────────────────────────
+  ["haq", "حق"],
+  ["tanqeed", "تنقید"],
+  ["tanqid", "تنقید"],
+  ["raaye", "رائے"],
+  ["raai", "رائے"],
+  ["raai", "رائے"],
+  ["aazaadi", "آزادی"],
+  ["azaadi", "آزادی"],
+  ["izhaar", "اظہار"],
+  ["ikhtilaaf", "اختلاف"],
+  ["mustaqbil", "مستقبل"],
+  ["qareeb", "قریب"],
+  ["ijtimaa", "اجتماع"],
+  ["falah", "فلاح"],
+  ["behbood", "بہبود"],
+  ["hikmat", "حکمت"],
+  ["ilm", "علم"],
+  ["ism", "اسم"],
+  ["maani", "معانی"],
+  ["naqd", "نقد"],
+  ["nazar", "نظر"],
+  ["amaan", "امان"],
+  ["tanweeq", "تنظیم"],   // organizational coordination (not ترویج)
+  ["zawaal", "زوال"],
+  ["zumra", "زمرہ"],
+  ["zumray", "زمرے"],
+  ["sareehan", "صریحاً"],
+  ["pukhta", "پختہ"],
+  ["pukhtagii", "پختگی"],
+  // ── Apostrophe/ain cluster recovery (Phase 19A.19) ────────────────────────
+  // These are the ain-encoded forms produced by encodeAinApostrophes.
+  // Format: encoded_roman → correct Urdu
+  ["ba3is",      "باعث"],    // baa'is → باعث (cause/reason)
+  ["baa3is",     "باعث"],
+  ["baais",      "باعث"],
+  ["ijtim3ai",   "اجتماعی"], // ijtima'ai → اجتماعی (social/collective adj.)
+  ["ijtima3i",   "اجتماعی"],
+  ["sho3or",     "شعور"],    // sho'oor → شعور (consciousness)
+  ["shu3or",     "شعور"],
+  ["sho3oor",    "شعور"],
+  ["shu3oor",    "شعور"],
+  ["m3ani",      "معانی"],   // ma'ani → معانی (meanings)
+  ["ma3ani",     "معانی"],
+  ["mu3ashra",   "معاشرہ"],  // mu'aashra → معاشرہ (society)
+  ["mu3ashray",  "معاشرے"],  // mu'aashray → معاشرے (of society)
+  ["mu3ashrati", "معاشرتی"], // mu'aashrati → معاشرتی (societal adj.)
+  ["mu3ashi",    "معاشی"],   // mu'aashi → معاشی (economic)
+  ["in3am",      "انعام"],   // in'aam → انعام (reward/prize)
+  ["in3aam",     "انعام"],
+  ["ja3iz",      "جائز"],    // jaa'iz → جائز (permissible)
+  ["jaa3iz",     "جائز"],
+  ["t3assub",    "تعصب"],    // ta'assub → تعصب (bigotry) — already works via V2
+  ["ta3assub",   "تعصب"],
 
 
 ];
@@ -276,6 +330,19 @@ export function encodeAinApostrophes(roman: string): string {
   s = s.replace(/i'a/gi, "i3a");
   s = s.replace(/a'i/gi, "3i");
   s = s.replace(/a'/gi, "3");
+  // ── Phase 19A.19 additions ────────────────────────────────────────────────
+  // o'o pattern: sho'oor → sho3or (shعoor → شعور)
+  s = s.replace(/o'oo/gi, "o3o");
+  s = s.replace(/o'o/gi,  "o3o");
+  s = s.replace(/u'oo/gi, "u3o");
+  s = s.replace(/u'o/gi,  "u3o");
+  // n'a pattern: in'aam → in3aam (انعام)
+  s = s.replace(/n'aa/gi, "n3a");
+  s = s.replace(/n'a/gi,  "n3a");
+  // m'a pattern: im'aa → im3a
+  s = s.replace(/m'aa/gi, "m3a");
+  s = s.replace(/m'a/gi,  "m3a");
+  // ─────────────────────────────────────────────────────────────────────────
   s = s.replace(/'/g, "");
   return s;
 }

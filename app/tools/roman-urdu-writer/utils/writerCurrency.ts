@@ -247,7 +247,7 @@ export function transformAcronymsAndBrands(text: string): string {
   return out;
 }
 
-// ── Parenthetical cleanup ────────────────────────────────────────────────────
+import { resolveIzafatInOutput } from "./romanUrduCompoundResolver";
 
 /**
  * Auto-gloss map — intentionally empty per Phase 19A.13+ policy.
@@ -386,7 +386,8 @@ const OUTPUT_CORRECTIONS: [RegExp, string][] = [
   [/\b(?:دوانکد|ایدوانکد|دواینکد|ایدوانسڈ)\b/g, "ایڈوانسڈ"],
   [/\bقنتم\b/g, "کوانٹم"],
   [/فراماوورک|فریماورک|فریموورک/g, "فریم ورک"],
-  [/\bzoom\b/g, "زوم"],
+  // معشر- (V2 drops alef after ع) → correct: معاشر-
+  [/معشر(?=ہ|ے|ی|ت|وں|اتی|ات)/g, "معاشر"],
 ];
 
 /**
@@ -394,7 +395,9 @@ const OUTPUT_CORRECTIONS: [RegExp, string][] = [
  * Called inside the display pipeline BEFORE cleanParentheticals.
  */
 export function fixFormalOutput(text: string): string {
-  let out = text;
+  // 0. Resolve izafat placeholders inserted by compound resolver
+  //    "حق _IZ_ تنقید" → "حقِ تنقید"
+  let out = resolveIzafatInOutput(text);
   for (const [pattern, replacement] of OUTPUT_CORRECTIONS) {
     out = out.replace(pattern, replacement);
   }

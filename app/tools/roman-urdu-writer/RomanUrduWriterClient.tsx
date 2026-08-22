@@ -42,17 +42,24 @@ function isReviewable(tok: WriterToken): boolean {
   if (tok.isProtected)  return false;
   if (tok.isEnglish)    return false;
 
+  // Tokens whose Roman form is already Urdu script were inserted by the compound
+  // resolver (LEXICAL_COMPOUNDS) — they are deterministically correct and never reviewable.
+  if (/[\u0600-\u06FF]/.test(tok.roman)) return false;
+
   // Numbers, ranges, percentages, monetary markers — never reviewable
   if (NON_REVIEWABLE_RE.test(tok.roman.trim())) return false;
 
   const core = tok.roman.toLowerCase().replace(/[^a-z]/g, "");
   const closed = new Set([
     "na", "nahi", "nahin", "is", "us", "ke", "ka", "ki", "ko", "se", "par", "pe",
-    "to", "bhi", "hi", "aur", "ya", "jo", "jab", "tab", "mein", "main", "mai",
+    "to", "toh", "bhi", "hi", "aur", "ya", "jo", "jab", "tab", "mein", "main", "mai",
     "ne", "hai", "hain", "ho",
   ]);
-  // Ordinary particles already converted confidently are not review material
-  if (closed.has(core) && tok.confidence !== "low" && !tok.isPassthrough) return false;
+  // Closed-class particles are ALWAYS deterministic — never reviewable.
+  // Per-token metadata may mark them as passthrough when engineV2 processes them
+  // individually (no Urdu context), but the sentence-level output always resolves
+  // them correctly. Do NOT gate this check on confidence or passthrough state.
+  if (closed.has(core)) return false;
 
   // Single-candidate tokens: only show if genuinely unconverted (passthrough)
   if (!tok.hasAlternatives && !tok.isPassthrough && tok.confidence !== "low") return false;
