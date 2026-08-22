@@ -1,0 +1,1386 @@
+[
+  {
+    "id": "GS-021",
+    "category": "chat",
+    "difficulty": "easy",
+    "input": "thk h ap",
+    "expected_output": "ٹھیک ہے آپ",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "short_forms",
+        "missing_vowels"
+      ]
+    }
+  },
+  {
+    "id": "GS-022",
+    "category": "chat",
+    "difficulty": "easy",
+    "input": "haan bilkul",
+    "expected_output": "ہاں بالکل",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "affirmations"
+      ]
+    }
+  },
+  {
+    "id": "GS-023",
+    "category": "chat",
+    "difficulty": "easy",
+    "input": "koi bt nhi",
+    "expected_output": "کوئی بات نہیں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "short_forms",
+        "missing_vowels"
+      ]
+    }
+  },
+  {
+    "id": "GS-024",
+    "category": "chat",
+    "difficulty": "easy",
+    "input": "shukriya bhai",
+    "expected_output": "شکریہ بھائی",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "gratitude",
+        "particles"
+      ]
+    }
+  },
+  {
+    "id": "GS-025",
+    "category": "chat",
+    "difficulty": "easy",
+    "input": "kal milte hain",
+    "expected_output": "کل ملتے ہیں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "verb_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-026",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "yr tmhara number kya h",
+    "expected_output": "یار تمہارا نمبر کیا ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "short_forms",
+        "question",
+        "missing_vowels"
+      ]
+    }
+  },
+  {
+    "id": "GS-027",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "bht acha kaam kia apne",
+    "expected_output": "بہت اچھا کام کیا آپ نے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "praise",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-028",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "kl rat ko aana na bhoolna",
+    "expected_output": "کل رات کو آنا نہ بھولنا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "reminder",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-029",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "mujhe bohat bhook lagi h",
+    "expected_output": "مجھے بہت بھوک لگی ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "feelings",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-030",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "ap ne kia kaha tha",
+    "expected_output": "آپ نے کیا کہا تھا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "question",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-031",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "thoda time do mujhe sochne ka",
+    "expected_output": "تھوڑا وقت دو مجھے سوچنے کا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "request",
+        "casual"
+      ]
+    }
+  },
+  {
+    "id": "GS-032",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "wo log wahan hain na",
+    "expected_output": "وہ لوگ وہاں ہیں نہ",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "confirmation",
+        "particles"
+      ]
+    }
+  },
+  {
+    "id": "GS-033",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "dekho main theek keh rha hoon",
+    "expected_output": "دیکھو میں ٹھیک کہہ رہا ہوں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "assertion",
+        "casual"
+      ]
+    }
+  },
+  {
+    "id": "GS-034",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "kuch pta nhi kya hoga",
+    "expected_output": "کچھ پتا نہیں کیا ہوگا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "uncertainty",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-035",
+    "category": "chat",
+    "difficulty": "medium",
+    "input": "chlo koi bt nahi agla waqt sahi hoga",
+    "expected_output": "چلو کوئی بات نہیں اگلا وقت صحیح ہوگا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "consolation",
+        "casual"
+      ]
+    }
+  },
+  {
+    "id": "GS-036",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "smjh nahi aa rha yr kya kroon",
+    "expected_output": "سمجھ نہیں آ رہا یار کیا کروں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "short_forms",
+        "missing_vowels",
+        "question"
+      ]
+    }
+  },
+  {
+    "id": "GS-037",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "bhai ne btaya k wo nahi aa ska",
+    "expected_output": "بھائی نے بتایا کہ وہ نہیں آ سکا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "reported_speech",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-038",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "mje lgta h tm serious nhi ho",
+    "expected_output": "مجھے لگتا ہے تم سیریس نہیں ہو",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": [
+        "short_forms",
+        "missing_vowels",
+        "loanword"
+      ]
+    }
+  },
+  {
+    "id": "GS-039",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "yr ye masla kab se chal rha h",
+    "expected_output": "یار یہ مسئلہ کب سے چل رہا ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "short_forms",
+        "question",
+        "time"
+      ]
+    }
+  },
+  {
+    "id": "GS-040",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "ap ny kia socha tha is k bary mein",
+    "expected_output": "آپ نے کیا سوچا تھا اس کے بارے میں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "short_forms",
+        "missing_vowels",
+        "question"
+      ]
+    }
+  },
+  {
+    "id": "GS-041",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "pta nahi kyun mujy aisa lgta h",
+    "expected_output": "پتا نہیں کیوں مجھے ایسا لگتا ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "feelings",
+        "short_forms",
+        "missing_vowels"
+      ]
+    }
+  },
+  {
+    "id": "GS-042",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "aik baar btao kya hua tha",
+    "expected_output": "ایک بار بتاؤ کیا ہوا تھا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "request",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-043",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "wo to bhool hi gaya tha bilkul",
+    "expected_output": "وہ تو بھول ہی گیا تھا بالکل",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "assertion",
+        "casual"
+      ]
+    }
+  },
+  {
+    "id": "GS-044",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "subah se bhookha hoon kuch nahi khaya",
+    "expected_output": "صبح سے بھوکا ہوں کچھ نہیں کھایا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "feelings",
+        "casual"
+      ]
+    }
+  },
+  {
+    "id": "GS-045",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "yar ghabrao mat sab theek ho jayega",
+    "expected_output": "یار گھبراؤ مت سب ٹھیک ہو جائے گا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "reassurance",
+        "casual"
+      ]
+    }
+  },
+  {
+    "id": "GS-046",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "kia ap ny mera message parha",
+    "expected_output": "کیا آپ نے میرا پیغام پڑھا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "short_forms",
+        "question"
+      ]
+    }
+  },
+  {
+    "id": "GS-047",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "bohat dinon baad mila hun tumse",
+    "expected_output": "بہت دنوں بعد ملا ہوں تم سے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "sentiment",
+        "casual"
+      ]
+    }
+  },
+  {
+    "id": "GS-048",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "nahi nahi aisa nahi h bilkul",
+    "expected_output": "نہیں نہیں ایسا نہیں ہے بالکل",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "negation",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-049",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "jaldi karo please time nahi h",
+    "expected_output": "جلدی کرو please وقت نہیں ہے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": [
+        "urgency",
+        "short_forms",
+        "loanword"
+      ]
+    }
+  },
+  {
+    "id": "GS-050",
+    "category": "chat",
+    "difficulty": "hard",
+    "input": "agar ap chahtay hain to bata dain",
+    "expected_output": "اگر آپ چاہتے ہیں تو بتا دیں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "conditional",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-051",
+    "category": "formal",
+    "difficulty": "medium",
+    "input": "darkhwast hai ke meri application par ghour kiya jaye",
+    "expected_output": "درخواست ہے کہ میری درخواست پر غور کیا جائے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "administrative",
+        "polite_request"
+      ]
+    }
+  },
+  {
+    "id": "GS-052",
+    "category": "formal",
+    "difficulty": "medium",
+    "input": "janab wala maharbani farmaein",
+    "expected_output": "جناب والا مہربانی فرمائیں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "salutation",
+        "formal"
+      ]
+    }
+  },
+  {
+    "id": "GS-053",
+    "category": "formal",
+    "difficulty": "medium",
+    "input": "hazir kirdeh dastaveez mulaahiza farmaaein",
+    "expected_output": "حاضر کردہ دستاویز ملاحظہ فرمائیں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "legal",
+        "formal"
+      ]
+    }
+  },
+  {
+    "id": "GS-054",
+    "category": "formal",
+    "difficulty": "medium",
+    "input": "upar bayan karda waqiyaat sahih hain",
+    "expected_output": "اوپر بیان کردہ واقعات صحیح ہیں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "declaration",
+        "formal"
+      ]
+    }
+  },
+  {
+    "id": "GS-055",
+    "category": "formal",
+    "difficulty": "medium",
+    "input": "hukm ka intizaar rahega",
+    "expected_output": "حکم کا انتظار رہے گا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "administrative",
+        "deference"
+      ]
+    }
+  },
+  {
+    "id": "GS-056",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "mahkama umoor khaarija ki tashreeh ke mutabiq",
+    "expected_output": "محکمہ امور خارجہ کی تشریح کے مطابق",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "official",
+        "department"
+      ]
+    }
+  },
+  {
+    "id": "GS-057",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "qaanoon ke tahat koi bhi shakhsh yeh haq nahi rakhta",
+    "expected_output": "قانون کے تحت کوئی بھی شخص یہ حق نہیں رکھتا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "legal",
+        "rights"
+      ]
+    }
+  },
+  {
+    "id": "GS-058",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "muddat muqarrar se pehle jama karwana lazim hai",
+    "expected_output": "مدت مقررہ سے پہلے جمع کروانا لازم ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "deadline",
+        "administrative"
+      ]
+    }
+  },
+  {
+    "id": "GS-059",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "idara tamam taraf se mukammal dasta kaar hai",
+    "expected_output": "ادارہ تمام طرف سے مکمل دستہ کار ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "institutional",
+        "formal"
+      ]
+    }
+  },
+  {
+    "id": "GS-060",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "wifaqi hukumat ne qadam uthaya aur naya qanoon nafa kiya",
+    "expected_output": "وفاقی حکومت نے قدم اٹھایا اور نیا قانون نافذ کیا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "governance",
+        "policy"
+      ]
+    }
+  },
+  {
+    "id": "GS-061",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "suba'i assembly ne bill paas kiya",
+    "expected_output": "صوبائی اسمبلی نے بل پاس کیا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "legislative",
+        "formal"
+      ]
+    }
+  },
+  {
+    "id": "GS-062",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "tafseel ke liye masnuhi qismat ki taraf rujuu karein",
+    "expected_output": "تفصیل کے لیے متعلقہ قسمت کی طرف رجوع کریں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "administrative",
+        "reference"
+      ]
+    }
+  },
+  {
+    "id": "GS-063",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "mulk ki dakhli salaamati ko yakeenan baraaye rakhna hoga",
+    "expected_output": "ملک کی داخلی سلامتی کو یقیناً برقرار رکھنا ہوگا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "security",
+        "formal"
+      ]
+    }
+  },
+  {
+    "id": "GS-064",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "nifaz ki tasdeeq baad mein ki jayegi",
+    "expected_output": "نفاذ کی تصدیق بعد میں کی جائے گی",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "administrative",
+        "confirmation"
+      ]
+    }
+  },
+  {
+    "id": "GS-065",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "is masley ka hal fawri taur par zaroor kiya jaye",
+    "expected_output": "اس مسئلے کا حل فوری طور پر ضرور کیا جائے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "directive",
+        "formal"
+      ]
+    }
+  },
+  {
+    "id": "GS-066",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "sarkari awamul nas ko is baat ki itta'la karna zaroor hai",
+    "expected_output": "سرکاری عوام الناس کو اس بات کی اطلاع کرنا ضروری ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "announcement",
+        "formal"
+      ]
+    }
+  },
+  {
+    "id": "GS-067",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "mahkama sehat ne do naye aspatal kholne ka aelaan kiya",
+    "expected_output": "محکمہ صحت نے دو نئے ہسپتال کھولنے کا اعلان کیا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "health",
+        "announcement"
+      ]
+    }
+  },
+  {
+    "id": "GS-068",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "muqarrara waqt par pesh na hona saza ke qabil hoga",
+    "expected_output": "مقررہ وقت پر پیش نہ ہونا سزا کے قابل ہوگا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "legal",
+        "warning"
+      ]
+    }
+  },
+  {
+    "id": "GS-069",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "tamam mohtamim afrad ijtima mein haazir rahein",
+    "expected_output": "تمام مہتمم افراد اجتماع میں حاضر رہیں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "directive",
+        "formal"
+      ]
+    }
+  },
+  {
+    "id": "GS-070",
+    "category": "formal",
+    "difficulty": "hard",
+    "input": "jo koi bhi is hukm ki khilaf warzi karega usey jawabdeh hona hoga",
+    "expected_output": "جو کوئی بھی اس حکم کی خلاف ورزی کرے گا اسے جوابدہ ہونا ہوگا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "legal",
+        "accountability"
+      ]
+    }
+  },
+  {
+    "id": "GS-071",
+    "category": "mixed_english",
+    "difficulty": "medium",
+    "input": "mera email check nahi hua abhi",
+    "expected_output": "میرا email check نہیں ہوا ابھی",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": [
+        "loanword",
+        "email"
+      ]
+    }
+  },
+  {
+    "id": "GS-072",
+    "category": "mixed_english",
+    "difficulty": "medium",
+    "input": "zoom meeting hai aaj shaam ko",
+    "expected_output": "زوم میٹنگ ہے آج شام کو",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "protected_token",
+        "meeting"
+      ]
+    }
+  },
+  {
+    "id": "GS-073",
+    "category": "mixed_english",
+    "difficulty": "medium",
+    "input": "website update karo foran",
+    "expected_output": "ویب سائٹ اپ ڈیٹ کرو فوراً",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "technology",
+        "loanword"
+      ]
+    }
+  },
+  {
+    "id": "GS-074",
+    "category": "mixed_english",
+    "difficulty": "medium",
+    "input": "software install karna hai laptop mein",
+    "expected_output": "سافٹ وئیر install کرنا ہے laptop میں",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "technology",
+        "loanword"
+      ]
+    }
+  },
+  {
+    "id": "GS-075",
+    "category": "mixed_english",
+    "difficulty": "medium",
+    "input": "WhatsApp par message karo",
+    "expected_output": "واٹس ایپ پر میسج کرو",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "protected_token",
+        "messaging"
+      ]
+    }
+  },
+  {
+    "id": "GS-076",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "manager ne deadline extend ki hai",
+    "expected_output": "مینیجر نے ڈیڈ لائن extend کی ہے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "loanword",
+        "workplace"
+      ]
+    }
+  },
+  {
+    "id": "GS-077",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "project ka budget approval pending hai",
+    "expected_output": "پروجیکٹ کا بجٹ اپروول پینڈنگ ہے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "loanword",
+        "administrative"
+      ]
+    }
+  },
+  {
+    "id": "GS-078",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "HR department ne policy change ki hai",
+    "expected_output": "ایچ آر ڈیپارٹمنٹ نے پالیسی چینج کی ہے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": [
+        "loanword",
+        "workplace"
+      ]
+    }
+  },
+  {
+    "id": "GS-079",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "online application form bharna hai",
+    "expected_output": "آن لائن ایپلیکیشن فارم بھرنا ہے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "technology",
+        "loanword"
+      ]
+    }
+  },
+  {
+    "id": "GS-080",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "monthly report file karo deadline se pehle",
+    "expected_output": "منتھلی رپورٹ فائل کرو ڈیڈ لائن سے پہلے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "loanword",
+        "workplace"
+      ]
+    }
+  },
+  {
+    "id": "GS-081",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "network connection slow hai kuch karo",
+    "expected_output": "نیٹ ورک کنکشن سلو ہے کچھ کرو",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "technology",
+        "loanword"
+      ]
+    }
+  },
+  {
+    "id": "GS-082",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "digital payment system start kiya gaya",
+    "expected_output": "ڈیجیٹل پیمنٹ سسٹم اسٹارٹ کیا گیا",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "technology",
+        "policy"
+      ]
+    }
+  },
+  {
+    "id": "GS-083",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "inflation ki wajah se market mein prices barh gayi hain",
+    "expected_output": "انفلیشن کی وجہ سے مارکیٹ میں قیمتیں بڑھ گئی ہیں",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": [
+        "loanword",
+        "economics"
+      ]
+    }
+  },
+  {
+    "id": "GS-084",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "media report ke mutabiq economy mein sudhar aa raha hai",
+    "expected_output": "میڈیا رپورٹ کے مطابق اکانومی میں سدھار آ رہا ہے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "loanword",
+        "news"
+      ]
+    }
+  },
+  {
+    "id": "GS-085",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "company ka revenue is saal kafi barha hai",
+    "expected_output": "کمپنی کا ریونیو اس سال کافی بڑھا ہے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "loanword",
+        "business"
+      ]
+    }
+  },
+  {
+    "id": "GS-086",
+    "category": "religious_academic",
+    "difficulty": "medium",
+    "input": "alhamdulillah sab theek hai",
+    "expected_output": "الحمدللہ سب ٹھیک ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "arabic",
+        "religious"
+      ]
+    }
+  },
+  {
+    "id": "GS-087",
+    "category": "religious_academic",
+    "difficulty": "medium",
+    "input": "inshallah kal milenge",
+    "expected_output": "انشاءاللہ کل ملیں گے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "arabic",
+        "religious"
+      ]
+    }
+  },
+  {
+    "id": "GS-088",
+    "category": "religious_academic",
+    "difficulty": "medium",
+    "input": "bismillah kaam shuru karte hain",
+    "expected_output": "بسم اللہ کام شروع کرتے ہیں",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "arabic",
+        "religious"
+      ]
+    }
+  },
+  {
+    "id": "GS-089",
+    "category": "religious_academic",
+    "difficulty": "hard",
+    "input": "quran ki taleem se roshan hoti hai zindagi",
+    "expected_output": "قرآن کی تعلیم سے روشن ہوتی ہے زندگی",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "religious",
+        "formal"
+      ]
+    }
+  },
+  {
+    "id": "GS-090",
+    "category": "religious_academic",
+    "difficulty": "hard",
+    "input": "ulama ne fatwa jaari kiya is masle par",
+    "expected_output": "علما نے فتویٰ جاری کیا اس مسئلے پر",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "religious",
+        "legal"
+      ]
+    }
+  },
+  {
+    "id": "GS-091",
+    "category": "religious_academic",
+    "difficulty": "hard",
+    "input": "tarikh e islaam mein ye waqia bohat ahem hai",
+    "expected_output": "تاریخِ اسلام میں یہ واقعہ بہت اہم ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "academic",
+        "historical"
+      ]
+    }
+  },
+  {
+    "id": "GS-092",
+    "category": "religious_academic",
+    "difficulty": "hard",
+    "input": "falsafa e akhlaaq par maqala likha gaya",
+    "expected_output": "فلسفۂ اخلاق پر مقالہ لکھا گیا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "academic",
+        "philosophy"
+      ]
+    }
+  },
+  {
+    "id": "GS-093",
+    "category": "religious_academic",
+    "difficulty": "hard",
+    "input": "ilm ul iqtisaad ki roshni mein tajziya karo",
+    "expected_output": "علم الاقتصاد کی روشنی میں تجزیہ کرو",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "academic",
+        "economics"
+      ]
+    }
+  },
+  {
+    "id": "GS-094",
+    "category": "religious_academic",
+    "difficulty": "hard",
+    "input": "mashriqi saqaafat mein adab ki ehamiyat",
+    "expected_output": "مشرقی ثقافت میں ادب کی اہمیت",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "academic",
+        "culture"
+      ]
+    }
+  },
+  {
+    "id": "GS-095",
+    "category": "religious_academic",
+    "difficulty": "hard",
+    "input": "sanad yafta ustaad hi sahi raahnumai kar sakta hai",
+    "expected_output": "سند یافتہ استاد ہی صحیح رہنمائی کر سکتا ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "academic",
+        "education"
+      ]
+    }
+  },
+  {
+    "id": "GS-096",
+    "category": "severe_noise",
+    "difficulty": "hard",
+    "input": "mje smjh nhi aaya yr wo kia keh rha thaa",
+    "expected_output": "مجھے سمجھ نہیں آیا یار وہ کیا کہہ رہا تھا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "extreme_missing_vowels",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-097",
+    "category": "severe_noise",
+    "difficulty": "hard",
+    "input": "kl raat ko whan jaana thaa pr nahi gya",
+    "expected_output": "کل رات کو وہاں جانا تھا پر نہیں گیا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "extreme_missing_vowels",
+        "ambiguous"
+      ]
+    }
+  },
+  {
+    "id": "GS-098",
+    "category": "severe_noise",
+    "difficulty": "hard",
+    "input": "tmhry pas koi kaam nhi kya itna time h",
+    "expected_output": "تمہارے پاس کوئی کام نہیں کیا اتنا وقت ہے",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "extreme_missing_vowels",
+        "short_forms"
+      ]
+    }
+  },
+  {
+    "id": "GS-099",
+    "category": "severe_noise",
+    "difficulty": "hard",
+    "input": "aik baar phir sy btao samjh nhai aaya",
+    "expected_output": "ایک بار پھر سے بتاؤ سمجھ نہیں آیا",
+    "tags": {
+      "contains_english": false,
+      "has_protected_tokens": false,
+      "tests": [
+        "extreme_missing_vowels",
+        "typo"
+      ]
+    }
+  },
+  {
+    "id": "GS-100",
+    "category": "severe_noise",
+    "difficulty": "hard",
+    "input": "sbbbb theek hhy na plzz btao",
+    "expected_output": "سب ٹھیک ہیں نہ please بتاؤ",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": [
+        "repeated_letters",
+        "extreme_noise"
+      ]
+    }
+  },
+  {
+    "id": "GS-101",
+    "category": "mixed_english",
+    "difficulty": "medium",
+    "input": "digital payment system kiya gaya",
+    "expected_output": "ڈیجیٹل پیمنٹ سسٹم کیا گیا",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": [
+        "loanword_to_urdu",
+        "multi_word_compound"
+      ]
+    }
+  },
+  {
+    "id": "GS-102",
+    "category": "mixed_english",
+    "difficulty": "medium",
+    "input": "monthly report bhejo",
+    "expected_output": "منتھلی رپورٹ بھیجو",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": [
+        "loanword_to_urdu"
+      ]
+    }
+  },
+  {
+    "id": "GS-103",
+    "category": "mixed_english",
+    "difficulty": "medium",
+    "input": "Google Drive link share karo",
+    "expected_output": "گوگل ڈرائیو لنک شیئر کرو",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "brand_preserve",
+        "unknown_preserve"
+      ]
+    }
+  },
+  {
+    "id": "GS-104",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "API endpoint configure karo",
+    "expected_output": "اے پی آئی اینڈ پوائنٹ کنفگر کرو",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": true,
+      "tests": [
+        "tech_term_preserve",
+        "unknown_preserve"
+      ]
+    }
+  },
+  {
+    "id": "GS-105",
+    "category": "mixed_english",
+    "difficulty": "hard",
+    "input": "advanced quantum framework hai",
+    "expected_output": "ایڈوانسڈ کوانٹم فریم ورک ہے",
+    "tags": {
+      "contains_english": true,
+      "has_protected_tokens": false,
+      "tests": [
+        "unknown_compound_preserve",
+        "no_phonetic_garbage"
+      ]
+    }
+  },
+  {
+    "id": "GS-106",
+    "category": "mixed_english",
+    "input": "bank ne 7% interest rate barha di hai",
+    "expected_output": "بینک نے 7 فیصد انٹرسٹ ریٹ بڑھا دی ہے",
+    "notes": "% → فیصد; bank/interest/rate via EXTRA_LOANWORDS"
+  },
+  {
+    "id": "GS-107",
+    "category": "mixed_english",
+    "input": "performance 50 percent better ho gayi hai",
+    "expected_output": "پرفارمنس 50 پرسنٹ بیٹر ہو گئی ہے",
+    "notes": "English word 'percent' → پرسنٹ (NOT فیصد); performance→پرفارمنس; better→بیٹر"
+  },
+  {
+    "id": "GS-108",
+    "category": "mixed_english",
+    "input": "salary mein 15% izaafa hua hai",
+    "expected_output": "سیلری میں 15 فیصد اضافہ ہوا ہے",
+    "notes": "salary→سیلری; 15% → 15 فیصد"
+  },
+  {
+    "id": "GS-109",
+    "category": "mixed_english",
+    "input": "office mein meeting hai kal subah",
+    "expected_output": "آفس میں میٹنگ ہے کل صبح",
+    "notes": "office→آفس; meeting→میٹنگ via EXTRA_LOANWORDS"
+  },
+  {
+    "id": "GS-110",
+    "category": "mixed_english",
+    "input": "verification process complete ho gayi",
+    "expected_output": "ویریفیکیشن پروسس کمپلیٹ ہو گئی",
+    "notes": "verification→ویریفیکیشن; process/complete via engine"
+  },
+  {
+    "id": "GS-111",
+    "category": "mixed_english",
+    "input": "PDF report send kar di hai, please file review kar lein",
+    "expected_output": "پی ڈی ایف رپورٹ سینڈ کر دی ہے، پلیز فائل ریویو کر لیں",
+    "notes": "PDF→پی ڈی ایف; report→رپورٹ; send→سینڈ; please→پلیز; file→فائل; review→ریویو"
+  },
+  {
+    "id": "GS-112",
+    "category": "mixed_english",
+    "input": "HR department se salary aur bonus ka record maango",
+    "expected_output": "ایچ آر ڈیپارٹمنٹ سے سیلری اور بونس کا ریکارڈ مانگو",
+    "notes": "HR→ایچ آر; department→ڈیپارٹمنٹ; salary→سیلری; bonus→بونس"
+  },
+  {
+    "id": "GS-113",
+    "category": "mixed_english",
+    "input": "OTP SMS par aayega, please check karo",
+    "expected_output": "او ٹی پی ایس ایم ایس پر آئے گا، پلیز چیک کرو",
+    "notes": "OTP→او ٹی پی; SMS→ایس ایم ایس; please→پلیز; check→چیک"
+  },
+  {
+    "id": "GS-114",
+    "category": "mixed_english",
+    "input": "Rs. 50,000 ki transaction failure show ho rahi hai",
+    "expected_output": "50,000 (پچاس ہزار) روپے کی ٹرانزیکشن فیلئر شو ہو رہی ہے",
+    "notes": "Rs. 50,000 → currency; transaction→ٹرانزیکشن; failure→فیلئر; show→شو"
+  },
+  {
+    "id": "GS-115",
+    "category": "mixed_english",
+    "input": "report.pdf bhejo aur link share karo",
+    "expected_output": "report.pdf بھیجو اور لنک شیئر کرو",
+    "notes": "report.pdf protected (filename); link→لنک; share→شیئر"
+  },
+  {
+    "id": "GS-116",
+    "category": "mixed_english",
+    "input": "WhatsApp par message karo ya email bhejo",
+    "expected_output": "واٹس ایپ پر میسج کرو یا ای میل بھیجو",
+    "notes": "WhatsApp→واٹس ایپ; message→میسج; email→ای میل"
+  },
+  {
+    "id": "GS-117",
+    "category": "mixed_english",
+    "input": "behtar option yeh hai ke verification complete karo",
+    "expected_output": "بہتر آپشن یہ ہے کہ ویریفیکیشن کمپلیٹ کرو",
+    "notes": "behtar(Roman Urdu)→بہتر; verification(English)→ویریفیکیشن"
+  },
+  {
+    "id": "GS-118",
+    "category": "mixed_english",
+    "input": "mobile mein software update karo network slow hai",
+    "expected_output": "موبائل میں سافٹ وئیر اپ ڈیٹ کرو نیٹ ورک سلو ہے",
+    "notes": "mobile→موبائل; software→سافٹ وئیر; update→اپ ڈیٹ; network→نیٹ ورک; slow→سلو"
+  },
+  {
+    "id": "GS-119",
+    "category": "mixed_english",
+    "input": "company ki policy mein change aayi hai department ko update karo",
+    "expected_output": "کمپنی کی پالیسی میں چینج آئی ہے ڈیپارٹمنٹ کو اپ ڈیٹ کرو",
+    "notes": "company→کمپنی; policy→پالیسی; change→چینج; department→ڈیپارٹمنٹ; update→اپ ڈیٹ"
+  },
+  {
+    "id": "GS-120",
+    "category": "mixed_english",
+    "input": "bank account ki tasdeeq kar lo payment transfer ho jaye gi",
+    "expected_output": "بینک اکاؤنٹ کی تصدیق کر لو پیمنٹ ٹرانسفر ہو جائے گی",
+    "notes": "bank→بینک; account→اکاؤنٹ; tasdeeq(Roman Urdu)→تصدیق; payment→پیمنٹ; transfer→ٹرانسفر"
+  }
+]

@@ -3,7 +3,7 @@
  */
 import { test, expect } from "@playwright/test";
 
-const URL = "http://localhost:3201/tools/roman-urdu-writer";
+const URL = "http://localhost:3400/tools/roman-urdu-writer";
 const ACCEPT_PARA =
   "Mulaazmeen ki mahana tankhwah aur pension ki adaiyagi ke liye bank account ki tasdeeq (verification) nihayat zaroori hai. Company ne 2025-26 ke maali saal ke liye 15% idhaafay ka aelaan kiya tha. Agar aap ka record update nahi hai, toh fawri taur par HR department se rabta karein taake RS. 75,000 tak ki maali rukawat se bacha jaa sakay.";
 
@@ -25,8 +25,8 @@ test.describe("19A.13 Desktop", () => {
     // 2025-26 must appear somewhere in output (may be in bdi element)
     await expect(output).toContainText("2025-26");
 
-    // 15% must appear
-    await expect(output).toContainText("15%");
+    // 15% → 15 فیصد (policy: % symbol → فیصد in Urdu output)
+    await expect(output).toContainText("15 فیصد");
 
     // RS. 75,000 must be transformed to Urdu prose
     await expect(output).toContainText("75,000");

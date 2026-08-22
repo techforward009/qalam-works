@@ -9,7 +9,8 @@ const PROTECTED_PATTERNS: RegExp[] = [
   /^https?:\/\//i,                          // URLs
   /^www\.[a-z0-9-]+\.[a-z]{2,}/i,           // bare www. URLs
   /^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/i, // email
-  /^#[a-z0-9_]+$/i,                         // hashtags
+  /^#[a-z0-9_]+$/i,                         // hash
+  /^(?:RS\.?|Rs\.?|PKR)$/,                  // Pakistani currency markerstags
   /^@[a-z0-9_.]+$/i,                        // mentions
   /^\d+(\.\d+)?(%|px|pt|em|rem|km|kg|mb|gb|hz|rpm)?$/i, // numbers + units
   /^\d{1,2}:\d{2}(:\d{2})?\s*(AM|PM)?$/i,  // times
@@ -18,6 +19,7 @@ const PROTECTED_PATTERNS: RegExp[] = [
   /^[A-Z][a-z]+[A-Z]/,                      // CamelCase product names
   /^\d+(st|nd|rd|th)$/i,                    // ordinals
   /^[+]?\d{7,}$/,                           // phone numbers
+  /^v\d+(\.\d+)*(-[a-z0-9]+)?$/i,           // version strings: v2.1, v1.0.0, v3.2-beta
   /^[a-z0-9\-]+\.[a-z]{2,}(\/\S*)?$/i,     // domain / file paths
   /^[a-z0-9._-]+\.(?:pdf|docx?|xlsx?|pptx?|mp4|png|jpe?g|gif|txt|csv|zip)$/i, // filenames with digits in ext
 ];

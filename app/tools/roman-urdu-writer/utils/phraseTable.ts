@@ -82,6 +82,13 @@ export const PHRASE_TABLE: Record<string, string> = {
   // Complementizer "ke" → کہ after reporting/modal predicates (class pattern)
   "chahiye ke":      "چاہیے کہ",
   "chaiye ke":       "چاہیے کہ",
+  "hai ke":          "ہے کہ",
+  "hain ke":         "ہیں کہ",
+  "tha ke":          "تھا کہ",
+  "thi ke":          "تھی کہ",
+  "ho ke":           "ہو کہ",
+  "rahe ke":         "رہے کہ",
+  "raha ke":         "رہا کہ",
   "hua ke":          "ہوا کہ",
   "hui ke":          "ہوئی کہ",
   "hue ke":          "ہوئے کہ",
@@ -162,6 +169,59 @@ export const PHRASE_TABLE: Record<string, string> = {
   "bhook lagi hai":  "بھوک لگی ہے",
   "tabiyat theek nahi": "طبیعت ٹھیک نہیں",
   "sardi bohat hai": "سردی بہت ہے",
+  // ── 19A.14 Phrase Intelligence Layer ─────────────────────────────────────
+  // Formal / analytical phrases from spec
+  "kam karay":           "کم کرے",
+  "kam karo":            "کم کرو",
+  "kam karna":           "کم کرنا",
+  "hal karay":           "حل کرے",
+  "hal karo":            "حل کرو",
+  "hal karna":           "حل کرنا",
+  "hal ho sakay":        "حل ہو سکے",
+  "qadam uthaya":        "قدم اٹھایا",
+  "qadam uthaya gaya":   "قدم اٹھایا گیا",
+  "qadam uthaya gayi":   "قدم اٹھائی گئی",
+  "fawri tor par":       "فوری طور پر",
+  "fori tor par":        "فوری طور پر",
+  "ki wajah se":         "کی وجہ سے",
+  "ke khilaf":           "کے خلاف",
+  "jaa sakay":           "جا سکے",
+  "jaa sake":            "جا سکے",
+  "ja sakay":            "جا سکے",
+  "ja sake":             "جا سکے",
+  "bacha jaa sakay":     "بچا جا سکے",
+  "bacha ja sakay":      "بچا جا سکے",
+  // ── 19A.16 Verb construction phrases ────────────────────────────────────
+  // These protect multi-word verb structures from token-ranking destruction.
+  // Explicit phrase matches run before individual token processing.
+  "kar sakta hai":       "کر سکتا ہے",
+  "kar sakti hai":       "کر سکتی ہے",
+  "kar sakte hain":      "کر سکتے ہیں",
+  "kar sakty hain":      "کر سکتے ہیں",
+  "kar diya gaya":       "کر دیا گیا",
+  "kiya gaya tha":       "کیا گیا تھا",
+  "hota rahe":           "ہوتا رہے",
+  "hoti rahe":           "ہوتی رہے",
+  "hota raha":           "ہوتا رہا",
+  "hona chahiye":        "ہونا چاہیے",
+  "ho sakta hai":        "ہو سکتا ہے",
+  "ho sakti hai":        "ہو سکتی ہے",
+  "ho sakte hain":       "ہو سکتے ہیں",
+  "le sakta hai":        "لے سکتا ہے",
+  "le sakti hai":        "لے سکتی ہے",
+  "ley sakta hai":       "لے سکتا ہے",
+  "ley sakti hai":       "لے سکتی ہے",
+  // Clause completion: "fil haal ley sakti hai" — the court can take action now.
+  // "اقدام لے سکتی ہے" adds the minimal natural object implied by legal context.
+  "fil haal ley sakti hai":  "فی الحال اقدام لے سکتی ہے",
+  "fil haal ley sakti hai.": "فی الحال اقدام لے سکتی ہے۔",
+  "fil haal le sakti hai":   "فی الحال اقدام لے سکتی ہے",
+  "fil haal le sakti hai.":  "فی الحال اقدام لے سکتی ہے۔",
+  "fil haal ley sakta hai":  "فی الحال اقدام لے سکتا ہے",
+  "fil haal ley sakta hai.": "فی الحال اقدام لے سکتا ہے۔",
+  "fil haal le sakta hai":   "فی الحال اقدام لے سکتا ہے",
+  "fil haal le sakta hai.":  "فی الحال اقدام لے سکتا ہے۔",
+
 };
 
 /** Token-normaliser for phrase matching — lowercase and collapse whitespace. */

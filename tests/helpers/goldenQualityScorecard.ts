@@ -70,9 +70,9 @@ function extractProtectedFromInput(input: string): string[] {
   const emails = input.match(/[^\s]+@[^\s]+/g) || [];
   const files = input.match(/\b[\w.-]+\.(?:pdf|docx?|xlsx?|pptx?|png|jpe?g|gif|txt|csv|zip)\b/gi) || [];
   out.push(...urls, ...emails, ...files);
-  for (const brand of ["WhatsApp", "Google", "Windows", "ChatGPT"]) {
-    if (input.includes(brand)) out.push(brand);
-  }
+  // Brands like WhatsApp, Google are now Urdu-script transliterated per policy,
+  // so they are NOT protected verbatim tokens anymore.
+  // Only truly machine-readable tokens (URLs, emails, filenames) are checked here.
   return out;
 }
 

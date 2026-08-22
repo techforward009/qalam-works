@@ -10,7 +10,7 @@ import type {
   TokenChoice,
 } from "./utils/writerTypes";
 import { normalizeUrduProsePunctuation } from "./utils/normalizeUrduProsePunctuation";
-import { transformPKRAmount, splitBidiSegments } from "./utils/writerCurrency";
+import { transformPKRAmount, transformPercentage, transformAcronymsAndBrands, splitBidiSegments, cleanParentheticals, fixFormalOutput } from "./utils/writerCurrency";
 import {
   getActiveUrduText,
   hasExportableUrduText,
@@ -32,7 +32,9 @@ type WritingMode = "roman" | "urdu";
 // ── Token is reviewable when the user may benefit from seeing it ──────────────
 
 // Patterns that are NEVER reviewable regardless of engine classification
-const NON_REVIEWABLE_RE = /^[\d,]+(?:\.\d+)?%?$|^\d[\d,]*(?:[-/]\d+)+$|^(?:RS\.|Rs\.|rs\.|PKR)\s*[\d,]+/i;
+// Includes bare currency markers (RS., PKR etc.) which transformPKRAmount already handles
+const NON_REVIEWABLE_RE =
+  /^[\d,]+(?:\.\d+)?%?$|^\d[\d,]*(?:[-/]\d+)+$|^(?:RS\.?|Rs\.?|rs\.?|PKR)(?:\s*[\d,]+)?$/i;
 
 function isReviewable(tok: WriterToken): boolean {
   // Show only tokens that genuinely need attention.
@@ -361,10 +363,19 @@ export default function RomanUrduWriterClient() {
   }, [result, choices, activeSentenceIdx]);
 
   const displayUrduOutput = useMemo(() => {
-    // Currency transform runs FIRST (before punctuation normalization)
-    // so "RS. 75,000" is converted before "." becomes "۔"
-    const withCurrency = transformPKRAmount(finalOutput);
-    return normalizeUrduProsePunctuation(withCurrency);
+    // Full presentation pipeline — ORDER IS CRITICAL:
+    // 1. fixFormalOutput         — correct known V2 phonetic mis-rankings
+    // 2. transformPKRAmount      — RS./PKR → Urdu words (BEFORE punctuation so RS. is not RS۔)
+    // 3. transformPercentage     — 15% → 15 فیصد
+    // 4. transformAcronymsAndBrands — HR→ایچ آر, AI→اے آئی, WhatsApp→واٹس ایپ
+    // 5. cleanParentheticals     — strip redundant English parentheticals
+    // 6. normalizeUrduProsePunctuation — , ; ? . → ، ؛ ؟ ۔
+    const withFixes     = fixFormalOutput(finalOutput);
+    const withCurrency  = transformPKRAmount(withFixes);
+    const withPct       = transformPercentage(withCurrency);
+    const withAcr       = transformAcronymsAndBrands(withPct);
+    const withParens    = cleanParentheticals(withAcr);
+    return normalizeUrduProsePunctuation(withParens);
   }, [finalOutput]);
 
   // Bidi-segmented for rendering — LTR islands get <bdi dir="ltr">
@@ -375,8 +386,13 @@ export default function RomanUrduWriterClient() {
 
   const activeUrduText = useMemo(() => {
     const raw = getActiveUrduText(mode, finalOutput, urduInput);
-    // Currency first, then prose normalization — same order as display
-    return normalizeUrduProsePunctuation(transformPKRAmount(raw));
+    // Same pipeline as displayUrduOutput — exports get identical clean text (no bidi tags)
+    const p1 = fixFormalOutput(raw);
+    const p2 = transformPKRAmount(p1);
+    const p3 = transformPercentage(p2);
+    const p4 = transformAcronymsAndBrands(p3);
+    const p5 = cleanParentheticals(p4);
+    return normalizeUrduProsePunctuation(p5);
   }, [mode, finalOutput, urduInput]);
   const canExport = hasExportableUrduText(activeUrduText);
 

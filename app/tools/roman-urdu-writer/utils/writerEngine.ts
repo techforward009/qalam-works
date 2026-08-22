@@ -32,6 +32,136 @@ function isUrduScript(text: string): boolean { return /[\u0600-\u06FF]/.test(tex
 import { segmentInput, isProtectedToken } from "./protectedTokens";
 import { lookupNormalized, lookupToken } from "./lexicon";
 import { PHRASE_TABLE, normPhrase } from "./phraseTable";
+import { formalStemConvert } from "./romanUrduNormalize";
+
+/**
+ * Extended loanword map: English words → Urdu-SCRIPT TRANSLITERATIONS only.
+ * Policy (Phase 19A.13+): NO translations — only phonetic Urdu-script rendering.
+ *   correct:  meeting → میٹنگ
+ *   WRONG:    monthly → ماہانہ (that is a translation, not transliteration)
+ * Conversion triggers when the sentence has Urdu context cues.
+ */
+const EXTRA_LOANWORDS: Record<string, string> = {
+  // ── Core tech/business ────────────────────────────────────────────────────
+  film: "فلم",
+  films: "فلمیں",
+  industry: "انڈسٹری",
+  industries: "انڈسٹریاں",
+  digital: "ڈیجیٹل",
+  internet: "انٹرنیٹ",
+  network: "نیٹ ورک",
+  connection: "کنکشن",
+  budget: "بجٹ",
+  manager: "مینیجر",
+  management: "مینجمنٹ",
+  payment: "پیمنٹ",
+  payments: "پیمنٹس",
+  revenue: "ریونیو",
+  report: "رپورٹ",
+  reports: "رپورٹس",
+  website: "ویب سائٹ",
+  software: "سافٹ وئیر",
+  hardware: "ہارڈ وئیر",
+  technology: "ٹیکنالوجی",
+  application: "ایپلیکیشن",
+  applications: "ایپلیکیشنز",
+  project: "پروجیکٹ",
+  projects: "پروجیکٹس",
+  platform: "پلیٹ فارم",
+  system: "سسٹم",
+  systems: "سسٹمز",
+  service: "سروس",
+  services: "سروسز",
+  server: "سرور",
+  database: "ڈیٹا بیس",
+  security: "سیکیورٹی",
+  privacy: "پرائیویسی",
+  market: "مارکیٹ",
+  markets: "مارکیٹس",
+  deadline: "ڈیڈ لائن",
+  feature: "فیچر",
+  features: "فیچرز",
+  launch: "لانچ",
+  portal: "پورٹل",
+  dashboard: "ڈیش بورڈ",
+  module: "ماڈیول",
+  online: "آن لائن",
+  offline: "آف لائن",
+  admin: "ایڈمن",
+  form: "فارم",
+  // ── Corrected (were translations — now transliterations) ──────────────────
+  economy: "اکانومی",       // was: معیشت (translation)
+  monthly: "منتھلی",        // was: ماہانہ (translation)
+  approval: "اپروول",       // was: منظوری (translation)
+  pending: "پینڈنگ",        // was: زیرِ التوا (translation)
+  available: "ایویلیبل",    // was: دستیاب (translation)
+  access: "ایکسس",          // was: رسائی (translation)
+  staff: "اسٹاف",           // was: عملہ (translation)
+  // ── Policy seed list additions ────────────────────────────────────────────
+  department: "ڈیپارٹمنٹ",
+  departments: "ڈیپارٹمنٹس",
+  verification: "ویریفیکیشن",
+  performance: "پرفارمنس",   // V2 may produce پارفورمنس — see OUTPUT_CORRECTIONS in writerCurrency.ts
+  better: "بیٹر",           // English adj; Roman Urdu behtar → بہتر (lexicon)
+  show: "شو",
+  amount: "اماؤنٹ",
+  transfer: "ٹرانسفر",
+  please: "پلیز",
+  slow: "سلو",
+  office: "آفس",
+  meeting: "میٹنگ",
+  meetings: "میٹنگز",
+  send: "سینڈ",
+  review: "ریویو",
+  file: "فائل",             // file.pdf stays protected by isProtectedToken
+  files: "فائلز",
+  update: "اپ ڈیٹ",
+  updates: "اپ ڈیٹس",
+  percent: "پرسنٹ",         // English word; symbol % → فیصد via transformPercentage
+  mobile: "موبائل",
+  message: "میسج",
+  messages: "میسجز",
+  laptop: "لیپ ٹاپ",
+  transaction: "ٹرانزیکشن",
+  transactions: "ٹرانزیکشنز",
+  failure: "فیلئر",
+  salary: "سیلری",
+  bonus: "بونس",
+  bonuses: "بونسز",
+  email: "ای میل",
+  install: "انسٹال",
+  start: "اسٹارٹ",
+  check: "چیک",
+  share: "شیئر",
+  link: "لنک",
+  links: "لنکس",
+  drive: "ڈرائیو",
+  change: "چینج",
+  extend: "ایکسٹینڈ",
+  inflation: "انفلیشن",
+  pension: "پینشن",
+  bank: "بینک",
+  company: "کمپنی",
+  companies: "کمپنیاں",
+  policy: "پالیسی",
+  policies: "پالیسیاں",
+  document: "ڈاکومنٹ",
+  documents: "ڈاکومنٹس",
+  account: "اکاؤنٹ",
+  accounts: "اکاؤنٹس",
+  submit: "سبمٹ",
+  rate: "ریٹ",
+  interest: "انٹرسٹ",
+  endpoint: "اینڈ پوائنٹ",
+  configure: "کنفگر",
+  advanced: "ایڈوانسڈ",
+  quantum: "کوانٹم",
+  framework: "فریم ورک",
+  zoom: "زوم",
+  // ── Brands (converted in Urdu context) ────────────────────────────────────
+  // Note: WhatsApp/Google/YouTube/Zoom are in KNOWN_BRANDS → protected at engine level.
+  // They are handled in the presentation layer by transformAcronymsAndBrands.
+};
 
 // ── Internal classification (re-implements V2 logic for metadata) ─────────────
 
@@ -94,6 +224,8 @@ function isKnownEnglish(token: string): boolean {
   const collapsed = lower.replace(/(.)\1{2,}/g, "$1");
   if (KEEP_ENGLISH_SAMPLE.has(lower) || KEEP_ENGLISH_SAMPLE.has(collapsed)) return true;
   if (KNOWN_BRANDS.has(lower)) return true;
+  // Words in EXTRA_LOANWORDS or LOANWORD_URDU are known English (we have a mapping for them)
+  if (EXTRA_LOANWORDS[lower] || LOANWORD_URDU[lower]) return true;
   if (/^[A-Z][a-z]+[A-Z]/.test(token)) return true; // CamelCase brand
   return false;
 }
@@ -258,17 +390,24 @@ function buildInternalSegments(input: string): InternalSegment[] {
     let v2TokOut = engineV2.convert(seg.text).output;
     const core = seg.text.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "");
     const lower = core.toLowerCase();
-    if (LOANWORD_URDU[lower]) {
+
+    // formalStemConvert override: use deterministic stem result when available
+    const stemHit = formalStemConvert(seg.text);
+
+    if (stemHit) {
+      v2TokOut = stemHit;
+    } else if (LOANWORD_URDU[lower] || EXTRA_LOANWORDS[lower]) {
       const hasCue = segs.some(x => {
         const c = x.text.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "").toLowerCase();
-        return !!c && c !== lower && !LOANWORD_URDU[c] &&
-          ["mein","main","hai","hain","kal","aaj","jana","ana","aana","bhejo","kar","ko","se","par","ki","ka","ke","nahi","ho","gayi","gaya","cancel"].includes(c);
+        return !!c && c !== lower && !LOANWORD_URDU[c] && !EXTRA_LOANWORDS[c] &&
+          ["mein","main","hai","hain","kal","aaj","jana","ana","aana","bhejo","kar","ko","se","par","ki","ka","ke","nahi","ho","gayi","gaya","cancel","karo","karein","kiya","hua","hui","hue","raha","rahe"].includes(c);
       });
       if (hasCue) {
         const idx = core ? seg.text.toLowerCase().indexOf(lower) : -1;
         const lead = idx >= 0 ? seg.text.slice(0, idx) : "";
         const trail = idx >= 0 ? seg.text.slice(idx + core.length) : "";
-        v2TokOut = lead + LOANWORD_URDU[lower] + trail;
+        const loanTarget = LOANWORD_URDU[lower] ?? EXTRA_LOANWORDS[lower];
+        v2TokOut = lead + loanTarget + trail;
       }
     }
     result.push({ roman: seg.text, primary: v2TokOut, isPhraseHead: false, isPhrasePart: false, startOffset: start, endOffset: end });
@@ -289,8 +428,48 @@ function buildInternalSegments(input: string): InternalSegment[] {
 export function convertRomanUrdu(input: string): WriterConversionResult {
   // 1. Get authoritative V2 output (this is the production result)
   const v2Result = engineV2.convert(input);
-  const v2Output = v2Result.output;
+  let v2Output = v2Result.output;
 
+  // 1b. Smart loanword safety pass: fix V2 phonetic garbage using EXTRA_LOANWORDS mappings,
+  //     or preserve Latin when no established Urdu script form exists.
+  {
+    const inputSegs = input.split(/(\s+)/);
+    // Check if sentence has Urdu context cues (needed for loanword conversion)
+    const hasUrduCue = inputSegs.some(s => {
+      const c = s.trim().toLowerCase();
+      return /^(?:mein|main|hai|hain|ka|ki|ke|ko|se|par|ne|aur|ya|nahi|nhi|tha|thi|hoga|hogi|raha|rahe|karo|karein|kiya|hua|hui|hue|bhejo|bheja|bhejna|dijiye|lao|laao)$/.test(c);
+    });
+    if (hasUrduCue) {
+      // Step 1: String-level EXTRA_LOANWORDS pass — applies even when phrase compression
+      // changes token counts. Replaces English words with established Urdu loanword forms.
+      for (const [eng, urdu] of Object.entries(EXTRA_LOANWORDS)) {
+        const re = new RegExp(`(^|\s)${eng}(\s|$)`, "gi");
+        v2Output = v2Output.replace(re, (m, pre, post) => pre + urdu + post);
+      }
+      // Step 2: Per-token alignment pass — only when token counts match.
+      // Handles edge cases where string-level pass missed something.
+      const outputToks = v2Output.split(/(\s+)/);
+      if (inputSegs.length === outputToks.length) {
+        const fixed = outputToks.map((tok, i) => {
+          if (/^\s+$/.test(tok)) return tok;
+          const src = inputSegs[i]?.trim() ?? "";
+          const srcLower = src.toLowerCase();
+          if (!src || isProtectedToken(src)) return tok;
+          if (isKnownEnglish(srcLower)) {
+            // Apply EXTRA_LOANWORDS mapping if available (overrides V2's phonetic)
+            const extraHit = EXTRA_LOANWORDS[srcLower];
+            if (extraHit) return extraHit;
+            // If it's already in LOANWORD_URDU, V2 converted it correctly → keep tok
+            if (LOANWORD_URDU[srcLower]) return tok;
+            // No mapping in either table → preserve Latin (avoid phonetic garbage)
+            if (isUrduScript(tok)) return src;
+          }
+          return tok;
+        });
+        v2Output = fixed.join("");
+      }
+    }
+  }
   // 2. Build per-token metadata
   const segments = buildInternalSegments(input);
 
