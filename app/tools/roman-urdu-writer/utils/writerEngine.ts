@@ -33,7 +33,7 @@ import { segmentInput, isProtectedToken } from "./protectedTokens";
 import { lookupNormalized, lookupToken } from "./lexicon";
 import { PHRASE_TABLE, normPhrase } from "./phraseTable";
 import { formalStemConvert } from "./romanUrduNormalize";
-import { resolveCompounds } from "./romanUrduCompoundResolver";
+import { resolveCompounds, resolveIzafatInOutput } from "./romanUrduCompoundResolver";
 
 /**
  * Extended loanword map: English words → Urdu-SCRIPT TRANSLITERATIONS only.
@@ -576,6 +576,16 @@ export function convertRomanUrdu(input: string): WriterConversionResult {
     }
     if (sentenceCandidates.length >= 3) break;
   }
+
+  // Phase 19A.18+: Resolve izafat placeholder from ALL candidate outputs.
+  // _IZ_ is an internal compound-resolver marker. It must NEVER reach any
+  // user-facing surface — primary output, Alternative Versions, exports,
+  // Review text, or handoff. Applying here ensures complete coverage
+  // regardless of which pipeline path each surface uses downstream.
+  for (const cand of sentenceCandidates) {
+    cand.output = resolveIzafatInOutput(cand.output);
+  }
+  v2Output = sentenceCandidates[0].output; // keep primary field in sync
 
   return {
     input,
