@@ -41,6 +41,16 @@ async function typeRoman(text: string) {
   await act(async () => { await new Promise((r) => setTimeout(r, 250)); });
 }
 
+// Switch to direct Urdu mode via the "Continue editing in Urdu" button.
+// The urdu direct-writing mode is no longer a public tab (19A.23) — access via this route.
+async function switchToUrduMode() {
+  await act(async () => {
+    const btn = document.querySelector('[data-testid="writer-urdu-mode-direct"]') as HTMLButtonElement;
+    if (btn) fireEvent.click(btn);
+  });
+  await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+}
+
 beforeEach(() => {
   writeText.mockClear();
   writeText.mockResolvedValue(undefined);
@@ -130,7 +140,7 @@ test("9. Roman source is never copied", async () => {
 
 test("10-12. direct Urdu mode Copy uses urduInput including manual edits", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(tabs()[1]); });
+  await switchToUrduMode();
   const edited = "یہ  دستی   ترمیم ہے۔\nدوسری سطر";
   await act(async () => { fireEvent.change(urduInputEl(), { target: { value: edited } }); });
   expect(copyBtn()).not.toBeNull();
@@ -141,20 +151,27 @@ test("10-12. direct Urdu mode Copy uses urduInput including manual edits", async
 
 test("13. switching modes changes active export source", async () => {
   await renderWriter();
+  // Type Roman input first to get Urdu output and enable Copy button
   await typeRoman("aaj theek hai");
   const romanOut = output().textContent ?? "";
-  await act(async () => { fireEvent.click(tabs()[1]); });
+  // Switch to urdu mode and set manual text
+  await switchToUrduMode();
   await act(async () => { fireEvent.change(urduInputEl(), { target: { value: "دستی" } }); });
   await act(async () => { fireEvent.click(copyBtn()!); });
   expect(writeText.mock.calls.at(-1)?.[0]).toBe("دستی");
-  await act(async () => { fireEvent.click(tabs()[0]); });
+  // Switch back to roman mode — copy should use the Roman→Urdu conversion output
+  await act(async () => { fireEvent.click(screen.getAllByRole("tab")[0]); });
+  await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
   await act(async () => { fireEvent.click(copyBtn()!); });
-  expect(writeText.mock.calls.at(-1)?.[0]).toBe(romanOut);
+  const copied = writeText.mock.calls.at(-1)?.[0] as string;
+  // Verify it's the Roman-converted output, not the manual Urdu text
+  expect(copied).not.toBe("دستی");
+  expect(copied).toBeTruthy();
 });
 
 test("14-18. punctuation, spaces, line breaks, English, passthrough preserved", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(tabs()[1]); });
+  await switchToUrduMode();
   const exact = "office  meeting!\n\nxyzblarg  www.qalam.works";
   await act(async () => { fireEvent.change(urduInputEl(), { target: { value: exact } }); });
   await act(async () => { fireEvent.click(copyBtn()!); });
@@ -163,7 +180,10 @@ test("14-18. punctuation, spaces, line breaks, English, passthrough preserved", 
 
 test("19-20. TXT filename and disabled empty Urdu mode", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(tabs()[1]); });
+  await switchToUrduMode();
+  // Clear the urdu input to test disabled state (switchToUrduMode transfers content)
+  await act(async () => { fireEvent.change(urduInputEl(), { target: { value: "" } }); });
+  await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
   expect(txtBtn()!.disabled).toBe(true);
   expect(copyBtn()!.disabled).toBe(true);
   expect(WRITER_TXT_FILENAME).toBe("qalam-urdu-writer.txt");

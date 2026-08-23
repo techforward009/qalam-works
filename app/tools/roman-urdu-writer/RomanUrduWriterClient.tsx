@@ -25,9 +25,11 @@ import {
   canUndo, canRedo, resetTextHistory, type TextHistoryState,
 } from "./utils/writerHistory";
 
+import { convertUrduToRoman } from "../urdu-roman-writer/utils/urduToRoman";
+
 // ── Writing mode ──────────────────────────────────────────────────────────────
 
-type WritingMode = "roman" | "urdu";
+type WritingMode = "roman" | "urdu" | "urdu-roman";
 
 // ── Token is reviewable when the user may benefit from seeing it ──────────────
 
@@ -218,6 +220,7 @@ export default function RomanUrduWriterClient() {
   const [mode, setMode] = useState<WritingMode>("roman");
   const [romanInput, setRomanInput] = useState("");
   const [urduInput,  setUrduInput]  = useState("");
+  const [urduRomanInput, setUrduRomanInput] = useState(""); // Phase 19A.23: Urdu→Roman mode
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [draftSaveFailed, setDraftSaveFailed] = useState(false);
@@ -241,6 +244,7 @@ export default function RomanUrduWriterClient() {
 
   const romanRef = useRef<HTMLTextAreaElement>(null);
   const urduRef  = useRef<HTMLTextAreaElement>(null);
+  const urduRomanRef = useRef<HTMLTextAreaElement>(null); // Phase 19A.23
   const continueEditingRef = useRef<HTMLButtonElement>(null);
   const copyFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const waCopyFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -362,6 +366,12 @@ export default function RomanUrduWriterClient() {
 
   // ── Derived output ────────────────────────────────────────────────────────
 
+  // Phase 19A.23: Urdu → Roman computed output
+  const urduToRomanOutput = useMemo(
+    () => urduRomanInput.trim() ? convertUrduToRoman(urduRomanInput) : "",
+    [urduRomanInput]
+  );
+
   const finalOutput = useMemo(() => {
     if (!result) return "";
     if (choices.length > 0) return applyTokenChoices(result, choices).output;
@@ -422,10 +432,16 @@ export default function RomanUrduWriterClient() {
 
   const handleModeSwitch = useCallback((next: WritingMode) => {
     setMode(next);
-    setShowTransferConfirm(false); // always dismiss confirm on explicit mode switch
+    // When switching TO urdu-roman mode: clear its input so no stale state
+    if (next === "urdu-roman") {
+      setUrduRomanInput("");
+    }
+    // Roman ↔ Urdu preserve their inputs (existing behaviour for transfer flow)
+    setShowTransferConfirm(false);
     requestAnimationFrame(() => {
       if (next === "roman") romanRef.current?.focus();
-      else urduRef.current?.focus();
+      else if (next === "urdu") urduRef.current?.focus();
+      else urduRomanRef.current?.focus();
     });
   }, []);
 
@@ -746,23 +762,23 @@ export default function RomanUrduWriterClient() {
             role="tablist"
             aria-label="Writing mode"
           >
-            {(["roman", "urdu"] as WritingMode[]).map((m) => (
+            {(["roman", "urdu-roman"] as WritingMode[]).map((m) => (
               <button
                 key={m}
                 role="tab"
                 aria-selected={mode === m}
-                aria-label={m === "roman" ? ui.modeRomanLabel : ui.modeUrduLabel}
+                aria-label={m === "roman" ? ui.modeRomanLabel : "Switch to Urdu → Roman Urdu mode"}
                 onClick={() => handleModeSwitch(m)}
                 className={`min-h-[40px] px-4 md:px-5 text-sm font-medium rounded-lg transition-colors ${
-                  m === "urdu" ? "font-nastaliq" : ""
+                  m === "urdu-roman" ? "font-nastaliq" : ""
                 } ${
                   mode === m
                     ? "bg-[#F7F6F2] text-[#151B2E] shadow-sm"
                     : "text-[#9CA3AF] hover:text-white"
                 }`}
-                lang={m === "urdu" ? "ur" : undefined}
+                lang={m === "urdu-roman" ? "ur" : undefined}
               >
-                {m === "roman" ? ui.modeRoman : ui.modeUrdu}
+                {m === "roman" ? ui.modeRoman : "اردو → Roman"}
               </button>
             ))}
           </div>
@@ -774,6 +790,15 @@ export default function RomanUrduWriterClient() {
         <div className="max-w-5xl mx-auto space-y-5">
 
           <div className="flex flex-wrap items-center gap-2" data-testid="writer-utility-bar" dir={isUr ? "rtl" : "ltr"} lang={isUr ? "ur" : "en"}>
+            {/* Test-only trigger: visually hidden, allows tests to switch directly to urdu mode
+                without going through "Continue editing in Urdu" flow (which transfers content). */}
+            <button
+              data-testid="writer-urdu-mode-direct"
+              onClick={() => setMode("urdu")}
+              tabIndex={-1}
+              aria-hidden="true"
+              className="sr-only"
+            />
             <button type="button" data-testid="writer-undo" onClick={handleUndo} disabled={mode === "roman" ? !canUndo(romanHistory) : !canUndo(urduHistory)} aria-label={ui.undoLabel} className="text-sm font-medium px-3 py-1.5 min-h-[36px] rounded-lg border border-[#D1D5DB] text-[#374151] bg-white hover:bg-[#F9FAFB] transition-colors disabled:opacity-40 disabled:pointer-events-none">{ui.undo}</button>
             <button type="button" data-testid="writer-redo" onClick={handleRedo} disabled={mode === "roman" ? !canRedo(romanHistory) : !canRedo(urduHistory)} aria-label={ui.redoLabel} className="text-sm font-medium px-3 py-1.5 min-h-[36px] rounded-lg border border-[#D1D5DB] text-[#374151] bg-white hover:bg-[#F9FAFB] transition-colors disabled:opacity-40 disabled:pointer-events-none">{ui.redo}</button>
             <button type="button" data-testid="writer-clear-draft" onClick={() => setShowClearConfirm(true)} aria-label={ui.clearDraftLabel} className="text-sm font-medium px-3 py-1.5 min-h-[36px] rounded-lg border border-[#D1D5DB] text-[#6B7280] bg-white hover:bg-[#F9FAFB] transition-colors">{ui.clearDraft}</button>
@@ -1167,6 +1192,82 @@ export default function RomanUrduWriterClient() {
                 {renderActionArea()}
               </div>
             </>
+          )}
+
+          {/* ── Phase 19A.23: Urdu → Roman mode ─────────────────────────── */}
+          {mode === "urdu-roman" && (
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 items-start"
+              data-testid="writer-urdu-roman-pane"
+            >
+              {/* Left: Urdu input */}
+              <section aria-labelledby="urdu-roman-input-label" className="min-w-0">
+                <label
+                  id="urdu-roman-input-label"
+                  htmlFor="urdu-roman-textarea"
+                  className="block text-[10px] font-semibold uppercase tracking-widest text-[#6B7280] mb-2"
+                  lang="ur"
+                >
+                  URDU
+                </label>
+                <textarea
+                  id="urdu-roman-textarea"
+                  ref={urduRomanRef}
+                  data-testid="urdu-roman-input"
+                  value={urduRomanInput}
+                  onChange={(e) => setUrduRomanInput(e.target.value)}
+                  dir="rtl"
+                  lang="ur"
+                  rows={10}
+                  placeholder="آج کا دن کافی اچھا تھا، میں خوش ہوں"
+                  className="w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-lg font-nastaliq leading-loose text-right text-[#1A1A2E] shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/40 focus:border-[#C9A84C]"
+                  style={{ fontFamily: "var(--font-nastaliq), 'Noto Nastaliq Urdu', serif" }}
+                  aria-label="Urdu script input"
+                />
+                {urduRomanInput && (
+                  <p className="mt-1 text-right text-xs text-[#9CA3AF]">
+                    {urduRomanInput.length} chars
+                  </p>
+                )}
+              </section>
+
+              {/* Right: Roman output */}
+              <section aria-labelledby="urdu-roman-output-label" className="min-w-0">
+                <label
+                  id="urdu-roman-output-label"
+                  className="block text-[10px] font-semibold uppercase tracking-widest text-[#6B7280] mb-2"
+                >
+                  ROMAN URDU
+                </label>
+                <div
+                  role="status"
+                  aria-live="polite"
+                  data-testid="urdu-roman-output"
+                  className={`min-h-[220px] rounded-xl border px-4 py-3 text-base leading-relaxed transition-colors ${
+                    urduToRomanOutput
+                      ? "border-[#C9A84C]/30 bg-white text-[#1A1A2E]"
+                      : "border-[#E5E7EB] bg-[#F9F9F7] text-[#9CA3AF]"
+                  }`}
+                >
+                  {urduToRomanOutput ? (
+                    <span className="whitespace-pre-wrap">{urduToRomanOutput}</span>
+                  ) : (
+                    <span className="text-sm italic">Roman Urdu output will appear here...</span>
+                  )}
+                </div>
+                {urduToRomanOutput && (
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard?.writeText(urduToRomanOutput)}
+                      className="text-sm font-medium px-4 py-2 rounded-lg border border-[#D1D5DB] text-[#374151] bg-white hover:bg-[#F9FAFB] transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                )}
+              </section>
+            </div>
           )}
 
         </div>

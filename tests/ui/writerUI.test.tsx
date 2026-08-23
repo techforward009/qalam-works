@@ -42,6 +42,17 @@ const romanInput = () => document.querySelector("#roman-input") as HTMLTextAreaE
 const urduInput  = () => document.querySelector("#urdu-input")  as HTMLTextAreaElement;
 const output     = () => screen.getByRole("status") as HTMLElement;
 const tabs       = () => screen.getAllByRole("tab");
+
+// switchToDirectUrduMode: urdu tab removed from public tabs in 19A.23.
+// Access direct-writing mode via "Continue editing in Urdu" button.
+async function switchToDirectUrduMode() {
+  // Click the hidden test-only trigger that sets mode to "urdu" directly.
+  await act(async () => {
+    const btn = document.querySelector('[data-testid="writer-urdu-mode-direct"]') as HTMLButtonElement;
+    if (btn) fireEvent.click(btn);
+  });
+  await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+}
 const romanTab   = () => tabs()[0];
 const urduTab    = () => tabs()[1];
 
@@ -268,7 +279,7 @@ test("13. token choice deactivates sentence selection", async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test("14. no review panel in direct Urdu mode", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   expect(screen.queryByRole("button", { name: /review/i })).toBeNull();
   expect(screen.queryByRole("status")).toBeNull();
   expect(document.querySelector("#review-panel")).toBeNull();
@@ -282,11 +293,11 @@ test("15. both drafts survive mode round-trips", async () => {
   const rText = "aaj theek hai";
   const uText = "یہ اردو متن ہے";
   await act(async () => { fireEvent.change(romanInput(), { target: { value: rText } }); });
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   await act(async () => { fireEvent.change(urduInput(), { target: { value: uText } }); });
   await act(async () => { fireEvent.click(romanTab()); });
   expect(romanInput().value).toBe(rText);
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   expect(urduInput().value).toBe(uText);
 });
 

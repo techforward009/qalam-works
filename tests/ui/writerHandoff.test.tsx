@@ -36,6 +36,18 @@ const romanInput = () => document.querySelector("#roman-input") as HTMLTextAreaE
 const urduInputEl = () => document.querySelector("#urdu-input") as HTMLTextAreaElement;
 const output = () => screen.getByRole("status") as HTMLElement;
 const tabs = () => screen.getAllByRole("tab");
+
+// Switch to direct Urdu mode via "Continue editing in Urdu" button.
+// The urdu tab was removed from public tabs in 19A.23 (now urdu-roman tab).
+// Urdu direct-writing mode is still used internally via this button.
+async function switchToDirectUrduMode() {
+  // Click the hidden test-only trigger that sets mode to "urdu" directly.
+  await act(async () => {
+    const btn = document.querySelector('[data-testid="writer-urdu-mode-direct"]') as HTMLButtonElement;
+    if (btn) fireEvent.click(btn);
+  });
+  await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+}
 const studioBtn = () => screen.queryByTestId("writer-document-studio") as HTMLButtonElement | null;
 const copyBtn = () => screen.queryByTestId("writer-copy") as HTMLButtonElement | null;
 
@@ -117,7 +129,7 @@ test("5. Roman source is never sent directly", async () => {
 
 test("6-12. direct Urdu mode sends exact urduInput including punctuation/spaces/breaks/English/passthrough", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(tabs()[1]); });
+  await switchToDirectUrduMode();
   const exact = "hello  world!\nxyzblarg  www.qalam.works";
   await act(async () => { fireEvent.change(urduInputEl(), { target: { value: exact } }); });
   await act(async () => { fireEvent.click(studioBtn()!); });

@@ -22,6 +22,18 @@ async function renderWriter() {
   return render(React.createElement(Writer));
 }
 
+// Switch to direct Urdu mode via "Continue editing in Urdu" button.
+// The urdu tab was removed from public tabs in 19A.23 (now urdu-roman tab).
+// Urdu direct-writing mode is still used internally via this button.
+async function switchToDirectUrduMode() {
+  // Click the hidden test-only trigger that sets mode to "urdu" directly.
+  await act(async () => {
+    const btn = document.querySelector('[data-testid="writer-urdu-mode-direct"]') as HTMLButtonElement;
+    if (btn) fireEvent.click(btn);
+  });
+  await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+}
+
 test("roman mode exposes dual-pane grid with roman input and urdu output", async () => {
   await renderWriter();
   const pane = screen.getByTestId("writer-dual-pane");
@@ -63,8 +75,8 @@ test("roman conversion still works in dual layout", async () => {
 
 test("urdu mode keeps dual-pane and editable urdu textarea", async () => {
   await renderWriter();
-  const urduTab = screen.getAllByRole("tab")[1];
-  await act(async () => { fireEvent.click(urduTab); });
+  // urduTab is no longer a public tab (19A.23). Switch via switchToDirectUrduMode()
+  await switchToDirectUrduMode();
   const pane = screen.getByTestId("writer-dual-pane");
   expect(pane.className).toMatch(/md:grid-cols-2/);
   const urdu = document.querySelector("#urdu-input") as HTMLTextAreaElement;

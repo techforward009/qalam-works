@@ -3,7 +3,7 @@
  */
 import { test, expect } from "@playwright/test";
 
-const URL = "http://localhost:4700/tools/roman-urdu-writer";
+const URL = "http://localhost:4800/tools/roman-urdu-writer";
 const ACCEPT_PARA =
   "Mulaazmeen ki mahana tankhwah aur pension ki adaiyagi ke liye bank account ki tasdeeq (verification) nihayat zaroori hai. Company ne 2025-26 ke maali saal ke liye 15% idhaafay ka aelaan kiya tha. Agar aap ka record update nahi hai, toh fawri taur par HR department se rabta karein taake RS. 75,000 tak ki maali rukawat se bacha jaa sakay.";
 
@@ -100,5 +100,56 @@ test.describe("19A.13 Mobile", () => {
     const clientWidth = await page.evaluate(() => document.body.clientWidth);
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 5);
     await page.screenshot({ path: "/tmp/19A13-mobile-acceptance.png" });
+  });
+});
+
+// ── Phase 19A.23: Urdu → Roman mode tab regression ───────────────────────────
+test.describe("19A.23 Urdu→Roman mode", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("switching to اردو → Roman tab shows correct labels and converter", async ({ page }) => {
+    await page.goto(URL);
+
+    // Now only 2 tabs: [Roman Urdu → اردو] [اردو → Roman]
+    const tabs = page.locator('[role="tab"]');
+    await expect(tabs).toHaveCount(2);
+    await tabs.nth(1).click();
+
+    // Wait for urdu-roman pane
+    const pane = page.locator('[data-testid="writer-urdu-roman-pane"]');
+    await expect(pane).toBeVisible();
+
+    // Input label must say URDU
+    await expect(page.locator('#urdu-roman-input-label')).toContainText('URDU');
+
+    // Output label must say ROMAN URDU
+    await expect(page.locator('#urdu-roman-output-label')).toContainText('ROMAN URDU');
+
+    // Placeholder must show the Urdu example
+    const input = page.locator('[data-testid="urdu-roman-input"]');
+    await expect(input).toBeVisible();
+    await expect(input).toHaveAttribute('placeholder', /آج کا دن/);
+
+    // Type Urdu and verify Roman output
+    await input.fill('میرا نام علی ہے');
+    const output = page.locator('[data-testid="urdu-roman-output"]');
+    await expect(output).toContainText('naam');
+    await expect(output).toContainText('Ali');
+    await expect(output).toContainText('hai');
+  });
+
+  test("switching back to Roman Urdu mode shows roman input", async ({ page }) => {
+    await page.goto(URL);
+    const tabs = page.locator('[role="tab"]');
+
+    // Go to urdu-roman tab
+    await tabs.nth(1).click();
+    const urduInput = page.locator('[data-testid="urdu-roman-input"]');
+    await urduInput.fill('میرا نام');
+
+    // Switch back to roman mode
+    await tabs.nth(0).click();
+    const romanInput = page.locator('[data-testid="roman-input"]');
+    await expect(romanInput).toBeVisible();
   });
 });

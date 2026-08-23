@@ -1,7 +1,7 @@
 /** Qalam Urdu Writer — local draft persistence (19A.4e) */
 export const WRITER_DRAFT_KEY = "qalam-urdu-writer-draft";
 export const WRITER_DRAFT_VERSION = 1 as const;
-export type WriterDraftMode = "roman" | "urdu";
+export type WriterDraftMode = "roman" | "urdu" | "urdu-roman";
 export interface WriterDraftV1 {
   version: typeof WRITER_DRAFT_VERSION;
   romanInput: string;

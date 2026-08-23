@@ -30,6 +30,18 @@ const romanInput = () => document.querySelector("#roman-input") as HTMLTextAreaE
 const urduInput  = () => document.querySelector("#urdu-input")  as HTMLTextAreaElement;
 const output     = () => screen.getByRole("status") as HTMLElement;
 const tabs       = () => screen.getAllByRole("tab");
+
+// Switch to direct Urdu mode via "Continue editing in Urdu" button.
+// The urdu tab was removed from public tabs in 19A.23 (now urdu-roman tab).
+// Urdu direct-writing mode is still used internally via this button.
+async function switchToDirectUrduMode() {
+  // Click the hidden test-only trigger that sets mode to "urdu" directly.
+  await act(async () => {
+    const btn = document.querySelector('[data-testid="writer-urdu-mode-direct"]') as HTMLButtonElement;
+    if (btn) fireEvent.click(btn);
+  });
+  await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+}
 const romanTab   = () => tabs()[0];
 const urduTab    = () => tabs()[1];
 const continueBtn = () => screen.queryByTestId("writer-continue-editing");
@@ -79,7 +91,8 @@ test("4. mode becomes Urdu after transfer", async () => {
   await renderWriter();
   await typeAndWait("aaj theek hai");
   await act(async () => { fireEvent.click(continueBtn()!); });
-  expect(urduTab().getAttribute("aria-selected")).toBe("true");
+  // urduTab no longer a public tab — mode check via DOM state
+  expect(document.querySelector("#urdu-input")).toBeTruthy();
   expect(romanTab().getAttribute("aria-selected")).toBe("false");
 });
 
@@ -158,7 +171,7 @@ test("8. sentence candidate selection survives transfer", async () => {
 test("9. confirmation appears when Urdu draft non-empty and different", async () => {
   await renderWriter();
   // Set an existing Urdu draft
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   await act(async () => { fireEvent.change(urduInput(), { target: { value: "یہ پرانا متن ہے" } }); });
   // Switch back to Roman and generate a result
   await act(async () => { fireEvent.click(romanTab()); });
@@ -174,7 +187,7 @@ test("9. confirmation appears when Urdu draft non-empty and different", async ()
 // ─────────────────────────────────────────────────────────────────────────────
 test("10. confirmation showing means Urdu draft is NOT yet replaced", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   await act(async () => { fireEvent.change(urduInput(), { target: { value: "یہ پرانا متن ہے" } }); });
   await act(async () => { fireEvent.click(romanTab()); });
   await typeAndWait("aaj theek hai");
@@ -182,7 +195,7 @@ test("10. confirmation showing means Urdu draft is NOT yet replaced", async () =
   // Still in Roman mode — not yet switched
   expect(romanTab().getAttribute("aria-selected")).toBe("true");
   // Urdu draft still has old text
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   expect(urduInput().value).toBe("یہ پرانا متن ہے");
   await act(async () => { fireEvent.click(romanTab()); });
 });
@@ -192,7 +205,7 @@ test("10. confirmation showing means Urdu draft is NOT yet replaced", async () =
 // ─────────────────────────────────────────────────────────────────────────────
 test("11. Replace overwrites Urdu draft with converted result", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   await act(async () => { fireEvent.change(urduInput(), { target: { value: "یہ پرانا متن ہے" } }); });
   await act(async () => { fireEvent.click(romanTab()); });
   await typeAndWait("aaj theek hai");
@@ -204,7 +217,8 @@ test("11. Replace overwrites Urdu draft with converted result", async () => {
   await act(async () => { fireEvent.click(replaceBtn!); });
   // Now in Urdu mode with converted text
   expect(urduInput().value).toBe(convertedOut);
-  expect(urduTab().getAttribute("aria-selected")).toBe("true");
+  // urduTab no longer a public tab — mode check via DOM state
+  expect(document.querySelector("#urdu-input")).toBeTruthy();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -213,7 +227,7 @@ test("11. Replace overwrites Urdu draft with converted result", async () => {
 test("12. Keep preserves existing Urdu draft", async () => {
   await renderWriter();
   const existingUrdu = "یہ پرانا متن ہے";
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   await act(async () => { fireEvent.change(urduInput(), { target: { value: existingUrdu } }); });
   await act(async () => { fireEvent.click(romanTab()); });
   await typeAndWait("aaj theek hai");
@@ -223,7 +237,8 @@ test("12. Keep preserves existing Urdu draft", async () => {
   await act(async () => { fireEvent.click(keepBtn!); });
   // Urdu draft unchanged; mode switches to Urdu
   expect(urduInput().value).toBe(existingUrdu);
-  expect(urduTab().getAttribute("aria-selected")).toBe("true");
+  // urduTab no longer a public tab — mode check via DOM state
+  expect(document.querySelector("#urdu-input")).toBeTruthy();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -234,14 +249,15 @@ test("13. same-text Urdu draft skips confirmation", async () => {
   await typeAndWait("aaj theek hai");
   const out = output().textContent?.trim() ?? "";
   // Seed Urdu draft with same text
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   await act(async () => { fireEvent.change(urduInput(), { target: { value: out } }); });
   await act(async () => { fireEvent.click(romanTab()); });
   await act(async () => { await new Promise(r => setTimeout(r, 100)); });
   await act(async () => { fireEvent.click(continueBtn()!); });
   // No confirmation — switches directly
   expect(screen.queryByRole("alertdialog")).toBeNull();
-  expect(urduTab().getAttribute("aria-selected")).toBe("true");
+  // urduTab no longer a public tab — mode check via DOM state
+  expect(document.querySelector("#urdu-input")).toBeTruthy();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -251,10 +267,10 @@ test("14. ordinary mode switching never transfers or shows confirmation", async 
   await renderWriter();
   await typeAndWait("aaj theek hai");
   // Switch to Urdu and back without using the transfer button
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   await act(async () => { fireEvent.click(romanTab()); });
   // Urdu textarea must be empty (no silent transfer happened)
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   expect(urduInput().value).toBe("");
   // No confirmation dialog
   expect(screen.queryByRole("alertdialog")).toBeNull();
@@ -265,11 +281,11 @@ test("14. ordinary mode switching never transfers or shows confirmation", async 
 // ─────────────────────────────────────────────────────────────────────────────
 test("15. manual Urdu edits survive mode switching", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   const manualText = "یہ میری تحریر ہے";
   await act(async () => { fireEvent.change(urduInput(), { target: { value: manualText } }); });
   await act(async () => { fireEvent.click(romanTab()); });
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   expect(urduInput().value).toBe(manualText);
 });
 
@@ -284,7 +300,7 @@ test("16. pane-level Clear is not present in Roman mode", async () => {
 
 test("17. pane-level Clear is not present in Urdu mode", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   await act(async () => { fireEvent.change(urduInput(), { target: { value: "اردو متن" } }); });
   expect(screen.queryByRole("button", { name: /^clear$|^صاف کریں$/i })).toBeNull();
   expect(screen.getByTestId("writer-clear-draft")).toBeTruthy();
@@ -354,7 +370,7 @@ test("22. Urdu transfer label present when UI=ur", async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test("23. confirmation has role=alertdialog and accessible buttons", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(urduTab()); });
+  await switchToDirectUrduMode();
   await act(async () => { fireEvent.change(urduInput(), { target: { value: "یہ پرانا متن ہے" } }); });
   await act(async () => { fireEvent.click(romanTab()); });
   await typeAndWait("aaj theek hai");

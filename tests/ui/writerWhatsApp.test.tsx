@@ -29,6 +29,17 @@ const romanInput = () => document.querySelector("#roman-input") as HTMLTextAreaE
 const urduInputEl = () => document.querySelector("#urdu-input") as HTMLTextAreaElement;
 const output = () => screen.getByRole("status") as HTMLElement;
 const tabs = () => screen.getAllByRole("tab");
+
+// switchToDirectUrduMode: urdu tab removed from public tabs in 19A.23.
+// Access direct-writing mode via "Continue editing in Urdu" button.
+async function switchToDirectUrduMode() {
+  // Click the hidden test-only trigger that sets mode to "urdu" directly.
+  await act(async () => {
+    const btn = document.querySelector('[data-testid="writer-urdu-mode-direct"]') as HTMLButtonElement;
+    if (btn) fireEvent.click(btn);
+  });
+  await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+}
 const waBtn = () => screen.queryByTestId("writer-whatsapp-ready") as HTMLButtonElement | null;
 const copyBtn = () => screen.queryByTestId("writer-copy") as HTMLButtonElement | null;
 const preview = () => screen.queryByTestId("writer-whatsapp-preview");
@@ -107,7 +118,7 @@ test("5. Roman source is never used directly", async () => {
 
 test("6-7. direct Urdu mode uses current urduInput including manual edits", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(tabs()[1]); });
+  await switchToDirectUrduMode(); // was: fireEvent.click(urduTab())
   const edited = "یہ دستی متن ہے۔ office";
   await act(async () => { fireEvent.change(urduInputEl(), { target: { value: edited } }); });
   await act(async () => { fireEvent.click(waBtn()!); });
@@ -153,7 +164,7 @@ test("11. WhatsApp formatting does not mutate Writer text", async () => {
 
 test("12-16. punctuation, line breaks, English, URL, numbers preserved semantically", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(tabs()[1]); });
+  await switchToDirectUrduMode(); // was: fireEvent.click(urduTab())
   const exact = "آج meeting ہے!\nwww.qalam.works 03001234567";
   await act(async () => { fireEvent.change(urduInputEl(), { target: { value: exact } }); });
   await act(async () => { fireEvent.click(waBtn()!); });
@@ -210,7 +221,7 @@ test("20. stale preview clears on sentence choice", async () => {
 
 test("21. stale preview clears on Urdu edit", async () => {
   await renderWriter();
-  await act(async () => { fireEvent.click(tabs()[1]); });
+  await switchToDirectUrduMode(); // was: fireEvent.click(urduTab())
   await act(async () => { fireEvent.change(urduInputEl(), { target: { value: "پہلا" } }); });
   await act(async () => { fireEvent.click(waBtn()!); });
   expect(preview()).not.toBeNull();
@@ -223,7 +234,7 @@ test("22. stale preview clears on mode change", async () => {
   await typeRoman("aaj theek hai");
   await act(async () => { fireEvent.click(waBtn()!); });
   expect(preview()).not.toBeNull();
-  await act(async () => { fireEvent.click(tabs()[1]); });
+  await switchToDirectUrduMode(); // was: fireEvent.click(urduTab())
   expect(preview()).toBeNull();
 });
 

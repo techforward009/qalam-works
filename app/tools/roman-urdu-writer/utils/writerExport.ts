@@ -15,7 +15,7 @@ import {
   type TranslationDocumentHandoff,
 } from "../../translation-studio/utils/translationHandoff";
 
-export type WriterExportMode = "roman" | "urdu";
+export type WriterExportMode = "roman" | "urdu" | "urdu-roman";
 
 /** Canonical TXT filename for this tool. */
 export const WRITER_TXT_FILENAME = "qalam-urdu-writer.txt";
