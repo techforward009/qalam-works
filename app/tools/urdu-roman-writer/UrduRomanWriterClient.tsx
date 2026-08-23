@@ -1,18 +1,20 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useMemo } from "react";
-import { convertUrduToRoman } from "./utils/urduToRoman";
+import { convertUrduToRoman, applyStyle, STYLE_OPTIONS } from "./utils/urduToRoman";
+import type { UrduRomanStyle } from "./utils/urduToRoman";
 
 const MAX_INPUT = 3000;
 
 export default function UrduRomanWriterClient() {
   const [urduInput, setUrduInput] = useState("");
+  const [style, setStyle] = useState<UrduRomanStyle>("simple");
   const [copied, setCopied] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const romanOutput = useMemo(
-    () => (urduInput.trim() ? convertUrduToRoman(urduInput) : ""),
-    [urduInput]
+    () => urduInput.trim() ? applyStyle(convertUrduToRoman(urduInput), style) : "",
+    [urduInput, style]
   );
 
   const handleCopy = useCallback(async () => {
@@ -128,6 +130,34 @@ export default function UrduRomanWriterClient() {
                 </p>
               )}
             </section>
+          </div>
+
+          {/* Style selector */}
+          <div className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#374151] mb-2">
+              Roman Style
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {STYLE_OPTIONS.map((opt) => (
+                <label key={opt.value} className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="radio"
+                    name="roman-style"
+                    value={opt.value}
+                    checked={style === opt.value}
+                    onChange={() => setStyle(opt.value)}
+                    className="accent-[#C9A84C]"
+                    data-testid={`style-${opt.value}`}
+                  />
+                  <span className="text-sm text-[#374151] group-hover:text-[#1A1A2E] transition-colors">
+                    {opt.label}
+                  </span>
+                  <span className="text-xs text-[#9CA3AF] hidden md:inline">
+                    — {opt.description}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Quick examples */}

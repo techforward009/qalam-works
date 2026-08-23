@@ -11,7 +11,9 @@
  * Policy: TRANSLITERATION ONLY. No semantic translation.
  */
 
-import { PHRASE_LEXICON, WORD_LEXICON } from "./urduRomanLexicon";
+import { PHRASE_LEXICON, WORD_LEXICON, NAME_LEXICON } from "./urduRomanLexicon";
+export { applyStyle, STYLE_OPTIONS } from "./urduRomanStyles";
+export type { UrduRomanStyle } from "./urduRomanStyles";
 
 // ── Urdu character map ────────────────────────────────────────────────────────
 
@@ -324,6 +326,10 @@ export function convertUrduToRoman(input: string): string {
 
     if (WORD_LEXICON[stripped]) {
       parts.push(WORD_LEXICON[stripped]);
+      if (trailing) parts.push(normalizeOutput(trailing));
+    } else if (NAME_LEXICON[stripped]) {
+      // Priority name dictionary — proper nouns with conventional spellings
+      parts.push(NAME_LEXICON[stripped]);
       if (trailing) parts.push(normalizeOutput(trailing));
     } else if (stripped) {
       parts.push(transliterateWord(stripped));

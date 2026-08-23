@@ -298,5 +298,355 @@
     "cat": "punct",
     "input": "واہ! کیا بات ہے!",
     "expected": "Wah! Kya baat hai!"
+  },
+  {
+    "id": "UR-051",
+    "cat": "names",
+    "style": "simple",
+    "input": "محمد احمد",
+    "expected": "Muhammad Ahmad"
+  },
+  {
+    "id": "UR-052",
+    "cat": "names",
+    "style": "simple",
+    "input": "فاطمہ زہرا علی",
+    "expected": "Fatimah Zahra Ali"
+  },
+  {
+    "id": "UR-053",
+    "cat": "names",
+    "style": "simple",
+    "input": "حسن عسکری",
+    "expected": "Hasan Askari"
+  },
+  {
+    "id": "UR-054",
+    "cat": "names",
+    "style": "simple",
+    "input": "امام حسین علیہ السلام",
+    "expected": "Imam Hussain Alayhis Salam"
+  },
+  {
+    "id": "UR-055",
+    "cat": "names",
+    "style": "simple",
+    "input": "سجاد علی",
+    "expected": "Sajjad Ali"
+  },
+  {
+    "id": "UR-056",
+    "cat": "names",
+    "style": "simple",
+    "input": "عائشہ نادیہ",
+    "expected": "Aisha Nadia"
+  },
+  {
+    "id": "UR-057",
+    "cat": "names",
+    "style": "simple",
+    "input": "ابراہیم خالد",
+    "expected": "Ibrahim Khalid"
+  },
+  {
+    "id": "UR-058",
+    "cat": "names",
+    "style": "simple",
+    "input": "عمران خان",
+    "expected": "Imran Khan"
+  },
+  {
+    "id": "UR-059",
+    "cat": "names",
+    "style": "simple",
+    "input": "ریحان احمد",
+    "expected": "Rehan Ahmad"
+  },
+  {
+    "id": "UR-060",
+    "cat": "names",
+    "style": "simple",
+    "input": "سمیرا طاہر",
+    "expected": "Samira Tahir"
+  },
+  {
+    "id": "UR-061",
+    "cat": "islamic",
+    "style": "simple",
+    "input": "بسم اللہ الرحمن الرحیم",
+    "expected": "Bismillah ir Rahman ir Raheem"
+  },
+  {
+    "id": "UR-062",
+    "cat": "islamic",
+    "style": "academic",
+    "input": "ان شاء اللہ",
+    "expected": "In shāʾ Allāh"
+  },
+  {
+    "id": "UR-063",
+    "cat": "islamic",
+    "style": "academic",
+    "input": "الحمد للہ",
+    "expected": "al-Ḥamdulillāh"
+  },
+  {
+    "id": "UR-064",
+    "cat": "islamic",
+    "style": "chat",
+    "input": "السلام علیکم",
+    "expected": "AOA"
+  },
+  {
+    "id": "UR-065",
+    "cat": "islamic",
+    "style": "chat",
+    "input": "وعلیکم السلام",
+    "expected": "WOAS"
+  },
+  {
+    "id": "UR-066",
+    "cat": "islamic",
+    "style": "simple",
+    "input": "ماشاء اللہ کتنا اچھا ہے",
+    "expected": "MashaAllah kitna achha hai."
+  },
+  {
+    "id": "UR-067",
+    "cat": "islamic",
+    "style": "simple",
+    "input": "جزاک اللہ خیر",
+    "expected": "JazakAllah Khair"
+  },
+  {
+    "id": "UR-068",
+    "cat": "islamic",
+    "style": "academic",
+    "input": "اللہ اکبر",
+    "expected": "Allāhu Akbar"
+  },
+  {
+    "id": "UR-069",
+    "cat": "islamic",
+    "style": "simple",
+    "input": "سبحان اللہ یہ منظر",
+    "expected": "SubhanAllah yeh manzar"
+  },
+  {
+    "id": "UR-070",
+    "cat": "islamic",
+    "style": "chat",
+    "input": "جزاک اللہ خیر",
+    "expected": "Jzk"
+  },
+  {
+    "id": "UR-071",
+    "cat": "daily",
+    "style": "simple",
+    "input": "آج بہت اچھا دن ہے۔",
+    "expected": "Aaj bohot achha din hai."
+  },
+  {
+    "id": "UR-072",
+    "cat": "daily",
+    "style": "simple",
+    "input": "کھانا کھا لو۔",
+    "expected": "Khana kha lo."
+  },
+  {
+    "id": "UR-073",
+    "cat": "daily",
+    "style": "simple",
+    "input": "جلدی کرو وقت نہیں ہے۔",
+    "expected": "Jaldi karo waqt nahi hai."
+  },
+  {
+    "id": "UR-074",
+    "cat": "daily",
+    "style": "simple",
+    "input": "میں لاہور جا رہا ہوں۔",
+    "expected": "Mein Lahore ja raha hoon."
+  },
+  {
+    "id": "UR-075",
+    "cat": "daily",
+    "style": "simple",
+    "input": "بہت شکریہ بھائی۔",
+    "expected": "Bohot shukriya bhai."
+  },
+  {
+    "id": "UR-076",
+    "cat": "daily",
+    "style": "simple",
+    "input": "ٹھیک ہے کوئی بات نہیں۔",
+    "expected": "Theek hai koi baat nahi."
+  },
+  {
+    "id": "UR-077",
+    "cat": "daily",
+    "style": "simple",
+    "input": "گھر آ جاؤ یار۔",
+    "expected": "Ghar aa jao yaar."
+  },
+  {
+    "id": "UR-078",
+    "cat": "daily",
+    "style": "simple",
+    "input": "پانی لاؤ۔",
+    "expected": "Paani lao."
+  },
+  {
+    "id": "UR-079",
+    "cat": "daily",
+    "style": "simple",
+    "input": "دروازہ بند کرو۔",
+    "expected": "Darwaza band karo."
+  },
+  {
+    "id": "UR-080",
+    "cat": "daily",
+    "style": "simple",
+    "input": "کل ملیں گے انشاءاللہ۔",
+    "expected": "Kal milain ge InshaAllah."
+  },
+  {
+    "id": "UR-081",
+    "cat": "mixed",
+    "style": "simple",
+    "input": "میری PDF رپورٹ تیار ہے۔",
+    "expected": "Meri PDF report tayyar hai."
+  },
+  {
+    "id": "UR-082",
+    "cat": "mixed",
+    "style": "simple",
+    "input": "WhatsApp پر بھیج دو۔",
+    "expected": "WhatsApp par bhej do."
+  },
+  {
+    "id": "UR-083",
+    "cat": "mixed",
+    "style": "simple",
+    "input": "AI سے مدد لو۔",
+    "expected": "AI se madad lo."
+  },
+  {
+    "id": "UR-084",
+    "cat": "mixed",
+    "style": "simple",
+    "input": "Website بہت اچھی ہے۔",
+    "expected": "Website bohot achhi hai."
+  },
+  {
+    "id": "UR-085",
+    "cat": "mixed",
+    "style": "simple",
+    "input": "Email آ گئی ہے۔",
+    "expected": "Email aa gayi hai."
+  },
+  {
+    "id": "UR-086",
+    "cat": "numbers",
+    "style": "simple",
+    "input": "میرے پاس 100 روپے ہیں۔",
+    "expected": "Meray paas 100 rupay hain."
+  },
+  {
+    "id": "UR-087",
+    "cat": "numbers",
+    "style": "simple",
+    "input": "آج 15 دسمبر ہے۔",
+    "expected": "Aaj 15 December hai."
+  },
+  {
+    "id": "UR-088",
+    "cat": "numbers",
+    "style": "simple",
+    "input": "5 منٹ میں آتا ہوں۔",
+    "expected": "5 minute mein aata hoon."
+  },
+  {
+    "id": "UR-089",
+    "cat": "numbers",
+    "style": "simple",
+    "input": "25 سال پہلے کی بات ہے۔",
+    "expected": "25 saal pehle ki baat hai."
+  },
+  {
+    "id": "UR-090",
+    "cat": "numbers",
+    "style": "simple",
+    "input": "صرف 3 لوگ آئے۔",
+    "expected": "Sirf 3 log aaye."
+  },
+  {
+    "id": "UR-091",
+    "cat": "style",
+    "style": "simple",
+    "input": "محمد علی",
+    "expected": "Muhammad Ali"
+  },
+  {
+    "id": "UR-092",
+    "cat": "style",
+    "style": "academic",
+    "input": "محمد علی",
+    "expected": "Muḥammad ʿAlī"
+  },
+  {
+    "id": "UR-093",
+    "cat": "style",
+    "style": "simple",
+    "input": "الحمد للہ",
+    "expected": "Alhamdulillah"
+  },
+  {
+    "id": "UR-094",
+    "cat": "style",
+    "style": "academic",
+    "input": "الحمد للہ",
+    "expected": "al-Ḥamdulillāh"
+  },
+  {
+    "id": "UR-095",
+    "cat": "style",
+    "style": "chat",
+    "input": "الحمد للہ",
+    "expected": "Alhumdulillah"
+  },
+  {
+    "id": "UR-096",
+    "cat": "punct",
+    "style": "simple",
+    "input": "کیا آپ ٹھیک ہیں؟",
+    "expected": "Kya aap theek hain?"
+  },
+  {
+    "id": "UR-097",
+    "cat": "punct",
+    "style": "simple",
+    "input": "واہ! کیا بات ہے!",
+    "expected": "Wah! Kya baat hai!"
+  },
+  {
+    "id": "UR-098",
+    "cat": "punct",
+    "style": "simple",
+    "input": "میں نے کہا، آ جاؤ۔",
+    "expected": "Mein ne kaha, aa jao."
+  },
+  {
+    "id": "UR-099",
+    "cat": "punct",
+    "style": "simple",
+    "input": "پہلا، دوسرا، تیسرا۔",
+    "expected": "Pehla, doosra, teesra."
+  },
+  {
+    "id": "UR-100",
+    "cat": "punct",
+    "style": "simple",
+    "input": "\"یہ بات سچ ہے\"",
+    "expected": "\"Yeh baat sach hai\""
   }
 ]

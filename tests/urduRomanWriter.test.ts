@@ -6,7 +6,7 @@
 import { describe, test, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { convertUrduToRoman, transliterateWord } from "../app/tools/urdu-roman-writer/utils/urduToRoman";
+import { convertUrduToRoman, applyStyle, STYLE_OPTIONS, transliterateWord } from "../app/tools/urdu-roman-writer/utils/urduToRoman";
 
 const urBenchmark = JSON.parse(
   readFileSync(join(__dirname, "fixtures/urBenchmark.json"), "utf8")
@@ -152,14 +152,11 @@ describe("Key acceptance sentences", () => {
   });
 });
 
-// ── UR-001..050 Benchmark scorecard ──────────────────────────────────────────
+// ── UR-001..100 Benchmark scorecard ──────────────────────────────────────────
 
-describe("UR-001..050 Benchmark", () => {
-  function urduWords(s: string): string[] {
-    return s.toLowerCase().replace(/[^\u0600-\u06FFa-z\s]/g, " ").trim().split(/\s+/).filter(Boolean);
-  }
+describe("UR-001..100 Benchmark", () => {
   function romanWords(s: string): string[] {
-    return s.toLowerCase().replace(/[^a-z\s]/g, " ").trim().split(/\s+/).filter(Boolean);
+    return s.toLowerCase().replace(/[^a-z\u00C0-\u024F\s]/g, " ").trim().split(/\s+/).filter(Boolean);
   }
   function wcr(received: string, expected: string): number {
     const exp = romanWords(expected);
@@ -168,36 +165,174 @@ describe("UR-001..050 Benchmark", () => {
     return exp.filter(w => recSet.has(w)).length / exp.length;
   }
 
-  test("UR scorecard: all 50 sentences produce non-empty output", () => {
+  test("UR scorecard: all 100 sentences produce non-empty output (≥50% WCR)", () => {
     let pass = 0;
     const failures: string[] = [];
+
     for (const f of urBenchmark) {
-      const out = convertUrduToRoman(f.input);
+      const base = convertUrduToRoman(f.input);
+      const out = applyStyle(base, (f.style as import("../app/tools/urdu-roman-writer/utils/urduToRoman").UrduRomanStyle) ?? "simple");
       const score = wcr(out, f.expected);
       if (out.trim().length > 0 && score >= 0.5) {
         pass++;
       } else {
-        failures.push(`${f.id} (WCR=${(score*100).toFixed(0)}%): IN:${f.input} | OUT:${out}`);
+        failures.push(`${f.id} [${f.style}] WCR=${(score*100).toFixed(0)}%: ${out}`);
       }
     }
 
-    // Log full scorecard
-    console.log(`\nUR BENCHMARK: ${pass}/50 pass (WCR≥50%)`);
+    // Log scorecard
     const bycat: Record<string, { pass: number; total: number }> = {};
     for (const f of urBenchmark) {
-      const out = convertUrduToRoman(f.input);
+      const base = convertUrduToRoman(f.input);
+      const out = applyStyle(base, (f.style as any) ?? "simple");
       const score = wcr(out, f.expected);
       const cat = f.cat;
       if (!bycat[cat]) bycat[cat] = { pass: 0, total: 0 };
       bycat[cat].total++;
       if (score >= 0.5) bycat[cat].pass++;
-      if (score < 0.5) console.log(`  FAIL ${f.id} [${cat}] WCR=${(score*100).toFixed(0)}%: ${out}`);
     }
+    console.log(`\nUR BENCHMARK: ${pass}/100 pass (WCR≥50%)`);
     for (const [cat, d] of Object.entries(bycat)) {
-      console.log(`  ${cat.padEnd(12)} ${d.pass}/${d.total}`);
+      console.log(`  ${cat.padEnd(14)} ${d.pass}/${d.total}`);
     }
+    for (const f of failures) console.log(`  FAIL: ${f}`);
 
-    expect(pass).toBeGreaterThanOrEqual(35); // ≥70% pass rate
-    expect(failures.length).toBeLessThan(15);
+    expect(pass).toBeGreaterThanOrEqual(70); // ≥70% pass across all 100
+    expect(failures.length).toBeLessThan(30);
+  });
+
+  // UR-001..050 must not regress from Phase 19A.23
+  test("UR-001..050 unchanged (simple style)", () => {
+    const first50 = urBenchmark.filter((f: any) => parseInt(f.id.replace("UR-","")) <= 50);
+    let pass = 0;
+    for (const f of first50) {
+      const out = applyStyle(convertUrduToRoman(f.input), "simple");
+      if (out.trim().length > 0 && wcr(out, f.expected) >= 0.5) pass++;
+    }
+    expect(pass).toBeGreaterThanOrEqual(44); // ≥88% pass on UR-001..050 (same as before)
+  });
+});
+
+// ── Style system tests ────────────────────────────────────────────────────────
+
+describe("applyStyle — three output styles", () => {
+  describe("simple style (default — no change)", () => {
+    test("Muhammad Ali stays Muhammad Ali", () => {
+      const base = convertUrduToRoman("محمد علی");
+      expect(applyStyle(base, "simple")).toContain("Muhammad");
+      expect(applyStyle(base, "simple")).toContain("Ali");
+    });
+    test("InshaAllah stays InshaAllah", () => {
+      const base = convertUrduToRoman("ان شاء اللہ");
+      expect(applyStyle(base, "simple")).toContain("InshaAllah");
+    });
+    test("Alhamdulillah stays Alhamdulillah", () => {
+      const base = convertUrduToRoman("الحمد للہ");
+      expect(applyStyle(base, "simple")).toContain("Alhamdulillah");
+    });
+  });
+
+  describe("academic style — diacritics", () => {
+    test("Muhammad → Muḥammad", () => {
+      const base = convertUrduToRoman("محمد");
+      const acad = applyStyle(base, "academic");
+      expect(acad).toContain("Muḥammad");
+    });
+    test("Ali → ʿAlī", () => {
+      const base = convertUrduToRoman("علی");
+      const acad = applyStyle(base, "academic");
+      expect(acad).toContain("ʿAlī");
+    });
+    test("InshaAllah → In shāʾ Allāh", () => {
+      const base = convertUrduToRoman("ان شاء اللہ");
+      const acad = applyStyle(base, "academic");
+      expect(acad).toContain("In shāʾ Allāh");
+    });
+    test("Alhamdulillah → al-Ḥamdulillāh", () => {
+      const base = convertUrduToRoman("الحمد للہ");
+      const acad = applyStyle(base, "academic");
+      expect(acad).toContain("al-Ḥamdulillāh");
+    });
+    test("Bismillah → scholarly form", () => {
+      const base = convertUrduToRoman("بسم اللہ الرحمن الرحیم");
+      const acad = applyStyle(base, "academic");
+      expect(acad).toContain("Bismi-llāhi");
+    });
+  });
+
+  describe("chat style — short forms", () => {
+    test("AssalamuAlaikum → AOA", () => {
+      const base = convertUrduToRoman("السلام علیکم");
+      const chat = applyStyle(base, "chat");
+      expect(chat).toContain("AOA");
+    });
+    test("WaAlaikumAssalam → WOAS", () => {
+      const base = convertUrduToRoman("وعلیکم السلام");
+      const chat = applyStyle(base, "chat");
+      expect(chat).toContain("WOAS");
+    });
+    test("JazakAllah Khair → Jzk", () => {
+      const base = convertUrduToRoman("جزاک اللہ خیر");
+      const chat = applyStyle(base, "chat");
+      expect(chat).toContain("Jzk");
+    });
+    test("Bismillah ir Rahman ir Raheem → Bismillah", () => {
+      const base = convertUrduToRoman("بسم اللہ الرحمن الرحیم");
+      const chat = applyStyle(base, "chat");
+      expect(chat).toBe("Bismillah");
+    });
+    test("Alhamdulillah → Alhumdulillah", () => {
+      const base = convertUrduToRoman("الحمد للہ");
+      const chat = applyStyle(base, "chat");
+      expect(chat).toContain("Alhumdulillah");
+    });
+  });
+
+  describe("STYLE_OPTIONS metadata", () => {
+    test("has 3 options: simple, academic, chat", () => {
+      expect(STYLE_OPTIONS).toHaveLength(3);
+      expect(STYLE_OPTIONS.map(o => o.value)).toEqual(["simple", "academic", "chat"]);
+    });
+    test("each option has label and description", () => {
+      for (const opt of STYLE_OPTIONS) {
+        expect(opt.label).toBeTruthy();
+        expect(opt.description).toBeTruthy();
+      }
+    });
+  });
+});
+
+// ── Priority name dictionary tests ────────────────────────────────────────────
+
+describe("Priority name dictionary (Phase 19A.24)", () => {
+  const NAME_CASES: [string, string][] = [
+    ["محمد", "Muhammad"],
+    ["احمد", "Ahmad"],
+    ["علی", "Ali"],
+    ["حسن", "Hasan"],
+    ["حسین", "Hussain"],
+    ["فاطمہ", "Fatimah"],
+    ["زہرا", "Zahra"],
+    ["مریم", "Maryam"],
+    ["ابراہیم", "Ibrahim"],
+    ["یوسف", "Yusuf"],
+  ];
+  for (const [urdu, expected] of NAME_CASES) {
+    test(`${urdu} → ${expected}`, () => {
+      const out = convertUrduToRoman(urdu);
+      expect(out).toContain(expected);
+    });
+  }
+
+  test("محمد احمد → Muhammad Ahmad", () => {
+    const out = convertUrduToRoman("محمد احمد");
+    expect(out).toContain("Muhammad");
+    expect(out).toContain("Ahmad");
+  });
+
+  test("فاطمہ زہرا → Fatimah Zahra", () => {
+    const out = convertUrduToRoman("فاطمہ زہرا");
+    expect(out).toContain("Fatimah");
+    expect(out).toContain("Zahra");
   });
 });

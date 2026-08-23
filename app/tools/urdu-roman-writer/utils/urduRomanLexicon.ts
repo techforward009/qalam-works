@@ -453,5 +453,52 @@ export const WORD_LEXICON: Record<string, string> = {
   "؛": ";",
 };
 
+// ── Phase 19A.24: Priority name dictionary ───────────────────────────────────
+// These override character-level transliteration for proper nouns.
+// Sorted longest-first for prefix matching.
+export const NAME_LEXICON: Record<string, string> = {
+  // Prophet names
+  "محمد":    "Muhammad",
+  "احمد":    "Ahmad",
+  "مصطفیٰ":  "Mustafa",
+  "مصطفی":   "Mustafa",
+  // Imams / religious figures
+  "علی":     "Ali",
+  "حسن":     "Hasan",
+  "حسین":    "Hussain",
+  "فاطمہ":   "Fatimah",
+  "زہرا":    "Zahra",
+  "زینب":    "Zainab",
+  "عباس":    "Abbas",
+  "ابراہیم": "Ibrahim",
+  "موسیٰ":   "Musa",
+  "موسی":    "Musa",
+  "عیسیٰ":   "Isa",
+  "عیسی":    "Isa",
+  "یوسف":    "Yusuf",
+  "یحییٰ":   "Yahya",
+  "عائشہ":   "Aisha",
+  "خدیجہ":   "Khadijah",
+  "مریم":    "Maryam",
+  "حمزہ":    "Hamza",
+  "عمر":     "Umar",
+  "عثمان":   "Usman",
+  // Common Pakistani names
+  "رانا":    "Rana",
+  "طاہر":    "Tahir",
+  "آصف":     "Asif",
+  "سجاد":    "Sajjad",
+  "آفتاب":   "Aftab",
+  "خالد":    "Khalid",
+  "ریحان":   "Rehan",
+  "نوید":    "Naveed",
+  "عمران":   "Imran",
+  "کامران":  "Kamran",
+  "صفیہ":    "Safia",
+  "سمیرا":   "Samira",
+  "نادیہ":   "Nadia",
+};
+
+
 // Sort phrase lexicon by length descending (longest match first)
 PHRASE_LEXICON.sort((a, b) => b[0].length - a[0].length);

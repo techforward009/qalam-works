@@ -835,6 +835,7 @@ export default function RomanUrduWriterClient() {
                   <div className="relative">
                     <textarea
                       id="roman-input"
+                      data-testid="roman-input"
                       ref={romanRef}
                       value={romanInput}
                       onChange={e => applyRomanText(e.target.value, true)}
