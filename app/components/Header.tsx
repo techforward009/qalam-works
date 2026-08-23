@@ -83,6 +83,7 @@ export default function Header() {
 
   const moreLinks = [
     { label: t.urduWriter, href: "/tools/roman-urdu-writer" },
+    { label: "Urdu → Roman", href: "/tools/urdu-roman-writer" },
     { label: t.documentCleaner, href: "/tools/document-cleaner" },
     { label: t.qualityChecker, href: "/tools/quality-checker" },
     { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },

@@ -1,0 +1,302 @@
+[
+  {
+    "id": "UR-001",
+    "cat": "daily",
+    "input": "میرا نام علی ہے۔",
+    "expected": "Mera naam Ali hai."
+  },
+  {
+    "id": "UR-002",
+    "cat": "daily",
+    "input": "پاکستان ایک خوبصورت ملک ہے۔",
+    "expected": "Pakistan aik khoobsurat mulk hai."
+  },
+  {
+    "id": "UR-003",
+    "cat": "daily",
+    "input": "آج موسم بہت اچھا ہے۔",
+    "expected": "Aaj mausam bohot achha hai."
+  },
+  {
+    "id": "UR-004",
+    "cat": "daily",
+    "input": "کیا آپ ٹھیک ہیں؟",
+    "expected": "Kya aap theek hain?"
+  },
+  {
+    "id": "UR-005",
+    "cat": "daily",
+    "input": "میں لاہور میں رہتا ہوں۔",
+    "expected": "Mein Lahore mein rehta hoon."
+  },
+  {
+    "id": "UR-006",
+    "cat": "daily",
+    "input": "آج کل بہت گرمی ہے۔",
+    "expected": "Aaj kal bohot garmi hai."
+  },
+  {
+    "id": "UR-007",
+    "cat": "daily",
+    "input": "گھر جاؤ اور آرام کرو۔",
+    "expected": "Ghar jao aur aaram karo."
+  },
+  {
+    "id": "UR-008",
+    "cat": "daily",
+    "input": "کھانا تیار ہے۔",
+    "expected": "Khana tayyar hai."
+  },
+  {
+    "id": "UR-009",
+    "cat": "daily",
+    "input": "کل ملیں گے۔",
+    "expected": "Kal milain ge."
+  },
+  {
+    "id": "UR-010",
+    "cat": "daily",
+    "input": "بہت شکریہ!",
+    "expected": "Bohot shukriya!"
+  },
+  {
+    "id": "UR-011",
+    "cat": "daily",
+    "input": "میرے پاس وقت نہیں ہے۔",
+    "expected": "Meray paas waqt nahi hai."
+  },
+  {
+    "id": "UR-012",
+    "cat": "daily",
+    "input": "یہ کتاب بہت اچھی ہے۔",
+    "expected": "Yeh kitab bohot achhi hai."
+  },
+  {
+    "id": "UR-013",
+    "cat": "daily",
+    "input": "کل اتوار ہے۔",
+    "expected": "Kal itwar hai."
+  },
+  {
+    "id": "UR-014",
+    "cat": "daily",
+    "input": "بچے اسکول گئے۔",
+    "expected": "Bachay school gaye."
+  },
+  {
+    "id": "UR-015",
+    "cat": "daily",
+    "input": "دوست آ رہا ہے۔",
+    "expected": "Dost aa raha hai."
+  },
+  {
+    "id": "UR-016",
+    "cat": "daily",
+    "input": "پانی لاؤ۔",
+    "expected": "Paani lao."
+  },
+  {
+    "id": "UR-017",
+    "cat": "daily",
+    "input": "دروازہ بند کرو۔",
+    "expected": "Darwaza band karo."
+  },
+  {
+    "id": "UR-018",
+    "cat": "daily",
+    "input": "ٹھنڈا پانی ملے گا؟",
+    "expected": "Thanda paani milay ga?"
+  },
+  {
+    "id": "UR-019",
+    "cat": "daily",
+    "input": "آج کا اخبار لاؤ۔",
+    "expected": "Aaj ka akhbaar lao."
+  },
+  {
+    "id": "UR-020",
+    "cat": "daily",
+    "input": "جلدی کرو، دیر ہو رہی ہے۔",
+    "expected": "Jaldi karo, der ho rahi hai."
+  },
+  {
+    "id": "UR-021",
+    "cat": "names",
+    "input": "محمد علی",
+    "expected": "Muhammad Ali"
+  },
+  {
+    "id": "UR-022",
+    "cat": "names",
+    "input": "فاطمہ زہرا",
+    "expected": "Fatimah Zahra"
+  },
+  {
+    "id": "UR-023",
+    "cat": "names",
+    "input": "حسن عسکری",
+    "expected": "Hasan Askari"
+  },
+  {
+    "id": "UR-024",
+    "cat": "names",
+    "input": "حسین کا نام معروف ہے۔",
+    "expected": "Hussain ka naam maaroof hai."
+  },
+  {
+    "id": "UR-025",
+    "cat": "names",
+    "input": "احمد کراچی میں رہتا ہے۔",
+    "expected": "Ahmad Karachi mein rehta hai."
+  },
+  {
+    "id": "UR-026",
+    "cat": "names",
+    "input": "زہرا لاہور سے ہیں۔",
+    "expected": "Zahra Lahore se hain."
+  },
+  {
+    "id": "UR-027",
+    "cat": "names",
+    "input": "مریم اسلام آباد میں پڑھتی ہے۔",
+    "expected": "Maryam Islamabad mein parhti hai."
+  },
+  {
+    "id": "UR-028",
+    "cat": "names",
+    "input": "عائشہ ایک اچھی طالب علم ہے۔",
+    "expected": "Aisha aik achhi talib ilm hai."
+  },
+  {
+    "id": "UR-029",
+    "cat": "names",
+    "input": "ابراہیم کا گھر قریب ہے۔",
+    "expected": "Ibrahim ka ghar qareeb hai."
+  },
+  {
+    "id": "UR-030",
+    "cat": "names",
+    "input": "یوسف کی کہانی",
+    "expected": "Yusuf ki kahani"
+  },
+  {
+    "id": "UR-031",
+    "cat": "islamic",
+    "input": "بسم اللہ الرحمن الرحیم",
+    "expected": "Bismillah ir Rahman ir Raheem"
+  },
+  {
+    "id": "UR-032",
+    "cat": "islamic",
+    "input": "الحمد للہ",
+    "expected": "Alhamdulillah"
+  },
+  {
+    "id": "UR-033",
+    "cat": "islamic",
+    "input": "ان شاء اللہ",
+    "expected": "InshaAllah"
+  },
+  {
+    "id": "UR-034",
+    "cat": "islamic",
+    "input": "ماشاء اللہ",
+    "expected": "MashaAllah"
+  },
+  {
+    "id": "UR-035",
+    "cat": "islamic",
+    "input": "جزاک اللہ خیر",
+    "expected": "JazakAllah Khair"
+  },
+  {
+    "id": "UR-036",
+    "cat": "islamic",
+    "input": "السلام علیکم",
+    "expected": "Assalamu Alaikum"
+  },
+  {
+    "id": "UR-037",
+    "cat": "islamic",
+    "input": "وعلیکم السلام",
+    "expected": "Wa Alaikum Assalam"
+  },
+  {
+    "id": "UR-038",
+    "cat": "islamic",
+    "input": "اللہ اکبر",
+    "expected": "Allah Akbar"
+  },
+  {
+    "id": "UR-039",
+    "cat": "islamic",
+    "input": "سبحان اللہ",
+    "expected": "SubhanAllah"
+  },
+  {
+    "id": "UR-040",
+    "cat": "islamic",
+    "input": "استغفراللہ",
+    "expected": "Astaghfirullah"
+  },
+  {
+    "id": "UR-041",
+    "cat": "mixed",
+    "input": "میری PDF رپورٹ تیار ہے۔",
+    "expected": "Meri PDF report tayyar hai."
+  },
+  {
+    "id": "UR-042",
+    "cat": "mixed",
+    "input": "WhatsApp پر میسج کریں۔",
+    "expected": "WhatsApp par message karein."
+  },
+  {
+    "id": "UR-043",
+    "cat": "mixed",
+    "input": "AI سے مدد لو۔",
+    "expected": "AI se madad lo."
+  },
+  {
+    "id": "UR-044",
+    "cat": "mixed",
+    "input": "Email بھیج دو۔",
+    "expected": "Email bhej do."
+  },
+  {
+    "id": "UR-045",
+    "cat": "mixed",
+    "input": "یہ website بہت اچھی ہے۔",
+    "expected": "Yeh website bohot achhi hai."
+  },
+  {
+    "id": "UR-046",
+    "cat": "numbers",
+    "input": "میرے پاس 25 کتابیں ہیں۔",
+    "expected": "Meray paas 25 kitaben hain."
+  },
+  {
+    "id": "UR-047",
+    "cat": "numbers",
+    "input": "آج 15 دسمبر ہے۔",
+    "expected": "Aaj 15 December hai."
+  },
+  {
+    "id": "UR-048",
+    "cat": "numbers",
+    "input": "100 روپے دو۔",
+    "expected": "100 rupay do."
+  },
+  {
+    "id": "UR-049",
+    "cat": "punct",
+    "input": "کیا تم آؤ گے؟",
+    "expected": "Kya tum aao ge?"
+  },
+  {
+    "id": "UR-050",
+    "cat": "punct",
+    "input": "واہ! کیا بات ہے!",
+    "expected": "Wah! Kya baat hai!"
+  }
+]
