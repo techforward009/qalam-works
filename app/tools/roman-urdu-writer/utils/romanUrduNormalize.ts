@@ -335,6 +335,15 @@ const FORMAL_STEMS: [string, string][] = [
   ["pehlay",     "پہلے"],
   ["mazay",      "مزے"],
   ["maza",       "مزہ"],
+  // ── Phase 19A.22 — kh cluster ─────────────────────────────────────────────
+  ["kharhi",     "کھڑی"],
+  ["khara",      "کھڑا"],
+  ["khare",      "کھڑے"],
+  ["khula",      "کھلا"],
+  ["khuli",      "کھلی"],
+  ["khule",      "کھلے"],
+  ["khud",       "خود"],
+  ["khalo",      "کھا لو"],
   // ── Phase 19A.20 — Noisy Roman vocabulary ─────────────────────────────────
   ["samajik",    "سماجی"],
   ["hayajaan",   "ہیجان"],

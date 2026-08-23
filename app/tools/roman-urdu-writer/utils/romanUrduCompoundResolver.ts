@@ -381,6 +381,27 @@ const NOISY_ROMAN_DIRECT: Record<string, string> = {
   "doston":         "دوستوں",    // V2: دوسٹوں
   "dosto":          "دوستوں",
   "zaroorat":       "ضرورت",     // V2 sometimes garbles
+  // ── Phase 19A.21a — Loanword hotfix ──────────────────────────────────────
+  "endless":        "اینڈلیس",   // V2: اندلیسس (phonetic garble)
+  "endles":         "اینڈلیس",   // alternate spelling
+  // ── Phase 19A.22 — kh cluster morphology ─────────────────────────────────
+  // کھڑا/کھڑی/کھڑے — "standing" — V2 garbles all variants
+  "kharhi":         "کھڑی",
+  "kharhay":        "کھڑے",
+  "kharhe":         "کھڑے",
+  "khara":          "کھڑا",     // V2: خار (thorn!) — CRITICAL
+  "khare":          "کھڑے",     // V2: کرے (do it!) — CRITICAL
+  // کھلا/کھلی/کھلے — "open" — V2 produces خدا (God!) — CRITICAL
+  "khula":          "کھلا",
+  "khuli":          "کھلی",
+  "khule":          "کھلے",
+  // خود — "self" — V2+OUTPUT_CORRECTIONS produces خدا (God!) — CRITICAL
+  "khud":           "خود",
+  // کھا لو — "eat (it)" split form
+  "khalo":          "کھا لو",
+  "khalen":         "کھائیں",
+  // ── Bonus fix from collision audit ───────────────────────────────────────
+  "sust":           "سست",   // V2: سوست (extra و) — unambiguous: always سست (lazy/slow)
 };
 
 function resolveNoisyRoman(s: string): string {
