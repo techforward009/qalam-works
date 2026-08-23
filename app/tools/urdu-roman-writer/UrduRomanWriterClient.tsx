@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { convertUrduToRoman, applyStyle, STYLE_OPTIONS } from "./utils/urduToRoman";
 import type { UrduRomanStyle } from "./utils/urduToRoman";
+import { loadUrDraft, saveUrDraft, clearUrDraft } from "./utils/urDraft";
 
 const MAX_INPUT = 3000;
 
@@ -11,7 +12,27 @@ export default function UrduRomanWriterClient() {
   const [urduInput, setUrduInput] = useState("");
   const [style, setStyle] = useState<UrduRomanStyle>("simple");
   const [copied, setCopied] = useState(false);
+  const [draftHydrated, setDraftHydrated] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // ── Draft hydration (runs once on mount, client-side only) ────────────────
+  useEffect(() => {
+    const draft = loadUrDraft();
+    if (draft) {
+      setUrduInput(draft.urduInput);
+      setStyle(draft.style);
+    }
+    setDraftHydrated(true);
+  }, []);
+
+  // ── Draft persistence (debounced via useEffect) ───────────────────────────
+  useEffect(() => {
+    if (!draftHydrated) return;
+    const timer = setTimeout(() => {
+      saveUrDraft({ urduInput, style });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [urduInput, style, draftHydrated]);
 
   const romanOutput = useMemo(
     () => urduInput.trim() ? applyStyle(convertUrduToRoman(urduInput), style) : "",
@@ -27,6 +48,7 @@ export default function UrduRomanWriterClient() {
 
   const handleClear = useCallback(() => {
     setUrduInput("");
+    clearUrDraft();
     inputRef.current?.focus();
   }, []);
 

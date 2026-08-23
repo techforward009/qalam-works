@@ -336,3 +336,75 @@ describe("Priority name dictionary (Phase 19A.24)", () => {
     expect(out).toContain("Zahra");
   });
 });
+
+// ── Draft persistence tests (Phase 19A.25) ───────────────────────────────────
+
+describe("Draft persistence — urDraft.ts", () => {
+  // Use vitest's localStorage mock via happy-dom (available in jsdom-like envs)
+  // We test the persistence functions directly, not via full component render.
+
+  beforeEach(() => {
+    if (typeof localStorage !== "undefined") localStorage.clear();
+  });
+
+  test("saveUrDraft + loadUrDraft round-trip", async () => {
+    // localStorage only available in browser-env (happy-dom). Skip in node.
+    if (typeof localStorage === "undefined") return;
+    const { saveUrDraft, loadUrDraft } = await import("../app/tools/urdu-roman-writer/utils/urDraft");
+    saveUrDraft({ urduInput: "جزاک اللہ خیر", style: "chat" });
+    const restored = loadUrDraft();
+    expect(restored).not.toBeNull();
+    expect(restored?.urduInput).toBe("جزاک اللہ خیر");
+    expect(restored?.style).toBe("chat");
+    expect(restored?.version).toBe(1);
+  });
+
+  test("clearUrDraft removes stored draft", async () => {
+    if (typeof localStorage === "undefined") return;
+    const { saveUrDraft, loadUrDraft, clearUrDraft } = await import("../app/tools/urdu-roman-writer/utils/urDraft");
+    saveUrDraft({ urduInput: "میرا نام", style: "simple" });
+    clearUrDraft();
+    expect(loadUrDraft()).toBeNull();
+  });
+
+  test("loadUrDraft returns null when nothing stored", async () => {
+    if (typeof localStorage === "undefined") return;
+    const { loadUrDraft } = await import("../app/tools/urdu-roman-writer/utils/urDraft");
+    expect(loadUrDraft()).toBeNull();
+  });
+
+  test("loadUrDraft rejects invalid/corrupted draft", async () => {
+    if (typeof localStorage === "undefined") return;
+    const { loadUrDraft } = await import("../app/tools/urdu-roman-writer/utils/urDraft");
+    localStorage.setItem("qalam-urdu-roman-draft", JSON.stringify({ version: 1, urduInput: 42, style: "simple" }));
+    expect(loadUrDraft()).toBeNull();
+  });
+
+  test("all three styles persist correctly", async () => {
+    if (typeof localStorage === "undefined") return;
+    const { saveUrDraft, loadUrDraft } = await import("../app/tools/urdu-roman-writer/utils/urDraft");
+    for (const style of ["simple", "academic", "chat"] as const) {
+      saveUrDraft({ urduInput: "test", style });
+      expect(loadUrDraft()?.style).toBe(style);
+    }
+  });
+
+  test("draft key is separate from Roman Urdu Writer", async () => {
+    const { UR_DRAFT_KEY } = await import("../app/tools/urdu-roman-writer/utils/urDraft");
+    const { WRITER_DRAFT_KEY } = await import("../app/tools/roman-urdu-writer/utils/writerDraft");
+    expect(UR_DRAFT_KEY).not.toBe(WRITER_DRAFT_KEY);
+  });
+
+  test("output recomputes from restored urduInput: جزاک اللہ خیر → Jzk (chat)", () => {
+    // Simulate: restore input and style, then compute output
+    const urduInput = "جزاک اللہ خیر";
+    const style = "chat" as const;
+    const output = applyStyle(convertUrduToRoman(urduInput), style);
+    expect(output).toBe("Jzk");
+  });
+
+  test("output recomputes from restored urduInput: simple style", () => {
+    const output = applyStyle(convertUrduToRoman("جزاک اللہ خیر"), "simple");
+    expect(output).toContain("JazakAllah");
+  });
+});
