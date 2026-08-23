@@ -212,6 +212,7 @@ const ACRONYM_TRANSLIT: Record<string, string> = {
   ATM: "اے ٹی ایم",
   MRI: "ایم آر آئی",
   CNG: "سی این جی",
+  TV:  "ٹی وی",
 };
 
 const BRAND_TRANSLIT: Record<string, string> = {

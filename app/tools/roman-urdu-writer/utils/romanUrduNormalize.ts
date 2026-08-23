@@ -313,6 +313,40 @@ const FORMAL_STEMS: [string, string][] = [
   ["jaa3iz",     "جائز"],
   ["t3assub",    "تعصب"],    // ta'assub → تعصب (bigotry) — already works via V2
   ["ta3assub",   "تعصب"],
+  // ── Phase 19A.21 — Everyday Urdu fixes ────────────────────────────────────
+  ["sasta",      "سستا"],    // V2: سست (lazy) → سستا (cheap)
+  ["raste",      "راستے"],   // V2: ریاست (state) → راستے (paths)
+  ["raaste",     "راستے"],
+  ["rasta",      "راستہ"],
+  ["karni",      "کرنی"],    // V2: قرآن → کرنی
+  ["karna",      "کرنا"],
+  ["hun",        "ہوں"],     // V2: حان → ہوں
+  ["hoon",       "ہوں"],
+  ["aayega",     "آئے گا"],  // V2: آیاگا → آئے گا
+  ["aayegi",     "آئے گی"],
+  ["aayenge",    "آئیں گے"],
+  ["aayengay",   "آئیں گے"],
+  ["kaun",       "کون"],     // V2: قاوں → کون
+  ["biryani",    "بریانی"],  // V2: برینی → بریانی
+  ["salam",      "سلام"],    // V2: سالم → سلام
+  ["lag",        "لگ"],      // V2: لاگ → لگ
+  ["purana",     "پرانا"],
+  ["pehle",      "پہلے"],
+  ["pehlay",     "پہلے"],
+  ["mazay",      "مزے"],
+  ["maza",       "مزہ"],
+  // ── Phase 19A.20 — Noisy Roman vocabulary ─────────────────────────────────
+  ["samajik",    "سماجی"],
+  ["hayajaan",   "ہیجان"],
+  ["hayajan",    "ہیجان"],
+  ["majrooh",    "مجروح"],
+  ["majruh",     "مجروح"],
+  ["mubham",     "مبہم"],
+  ["tawaazun",   "توازن"],
+  ["tawazun",    "توازن"],
+  ["soorathaal", "صورتِ حال"],
+  ["inhinraf",   "انحراف"],
+  ["inhiraaf",   "انحراف"],
 
 
 ];

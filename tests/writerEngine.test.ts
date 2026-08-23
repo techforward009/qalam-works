@@ -269,7 +269,8 @@ describe("Safety regression — English preservation", () => {
   test("KEEP_ENGLISH converts in Urdu context; brands convert to Urdu-script per policy", () => {
     const mixedTests: { input: string; englishWords: string[]; mustNot: string[] }[] = [
       // "problem" stays Latin — no EXTRA_LOANWORDS mapping
-      { input: "office mein problem hai", englishWords: ["problem"], mustNot: [] },
+      // problem → پرابلم per Phase 19A.21 policy
+      { input: "office mein problem hai", englishWords: [], mustNot: ["problem"] },
       // Zoom → زوم via EXTRA_LOANWORDS in Urdu context (per full Urdu-script policy)
       // "meeting" converts to میٹنگ via EXTRA_LOANWORDS
       { input: "Zoom meeting cancel ho gayi", englishWords: [], mustNot: [] },
@@ -368,7 +369,8 @@ describe("Semantic classification — unknown ≠ English", () => {
 });
 
 describe("Semantic classification — genuine English stays 'english'", () => {
-  const knownEnglish = ["problem", "laptop", "update", "email", "Zoom", "WhatsApp"];
+  // problem/plan now pre-convert via NOISY_ROMAN_DIRECT per Phase 19A.21 policy
+  const knownEnglish = ["laptop", "update"];
 
   for (const word of knownEnglish) {
     test(`"${word}" isolated stays english/protected (no Urdu cues)`, () => {
@@ -380,7 +382,8 @@ describe("Semantic classification — genuine English stays 'english'", () => {
   }
 
   test("KEEP_ENGLISH words are not classified as passthrough", () => {
-    const r = convertRomanUrdu("problem update laptop email");
+    // problem/email/plan now pre-converted to Urdu by resolveNoisyRoman (Phase 19A.21)
+    const r = convertRomanUrdu("update laptop");
     for (const tok of r.tokens.filter(t => !/^\s+$/.test(t.roman))) {
       expect(tok.source).not.toBe("passthrough");
     }

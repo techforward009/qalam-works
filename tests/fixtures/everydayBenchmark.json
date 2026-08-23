@@ -1,0 +1,866 @@
+[
+  {
+    "id": "EVERYDAY-001",
+    "cat": "chat",
+    "input": "aaj kya plan hai?",
+    "expected": "آج کیا پلان ہے؟",
+    "engine": "آج کیا پلان ہے؟",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-002",
+    "cat": "chat",
+    "input": "kal milte hain, theek hai?",
+    "expected": "کل ملتے ہیں، ٹھیک ہے؟",
+    "engine": "کل معاملات ہیں، ٹھیک ہے؟",
+    "status": "FAIL",
+    "failure": "milte→معاملات (verb garble)"
+  },
+  {
+    "id": "EVERYDAY-003",
+    "cat": "chat",
+    "input": "bhai kahan ho?",
+    "expected": "بھائی کہاں ہو؟",
+    "engine": "بھائی کہاں ہو؟",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-004",
+    "cat": "chat",
+    "input": "ghar aa jao yaar",
+    "expected": "گھر آ جاو یار",
+    "engine": "گھر آ جاؤ یار",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-005",
+    "cat": "chat",
+    "input": "thoda late ho sakta hun",
+    "expected": "تھوڑا لیٹ ہو سکتا ہوں",
+    "engine": "تھوڑا لاتے ہو سکتا حان",
+    "status": "FAIL",
+    "failure": "late→لاتے; hun→حان"
+  },
+  {
+    "id": "EVERYDAY-006",
+    "cat": "chat",
+    "input": "koi baat nahi, sab theek ho jayega",
+    "expected": "کوئی بات نہیں، سب ٹھیک ہو جائے گا",
+    "engine": "کوئی بات نہیں، سب ٹھیک ہو جائے گا",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-007",
+    "cat": "chat",
+    "input": "aaj bohot thaka hua hun",
+    "expected": "آج بہت تھکا ہوا ہوں",
+    "engine": "آج بہت تھکا ہوا حان",
+    "status": "FAIL",
+    "failure": "hun→حان"
+  },
+  {
+    "id": "EVERYDAY-008",
+    "cat": "chat",
+    "input": "khana kha liya?",
+    "expected": "کھانا کھا لیا؟",
+    "engine": "کھانا کھا لیا؟",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-009",
+    "cat": "chat",
+    "input": "abhi aa raha hun",
+    "expected": "ابھی آ رہا ہوں",
+    "engine": "ابھی آ رہا حان",
+    "status": "FAIL",
+    "failure": "hun→حان"
+  },
+  {
+    "id": "EVERYDAY-010",
+    "cat": "chat",
+    "input": "raat ko call karo",
+    "expected": "رات کو کال کرو",
+    "engine": "رات کو call کرو",
+    "status": "FAIL",
+    "failure": "call→LATIN"
+  },
+  {
+    "id": "EVERYDAY-011",
+    "cat": "numbers",
+    "input": "mere paas 100 rupay hain",
+    "expected": "میرے پاس 100 روپے ہیں",
+    "engine": "میرے پاس 100 روپے ہیں",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-012",
+    "cat": "numbers",
+    "input": "woh 10 minute mein aayega",
+    "expected": "وہ 10 منٹ میں آئے گا",
+    "engine": "وہ 10 minute میں آیاگا",
+    "status": "FAIL",
+    "failure": "minute→LATIN; aayega→آیاگا"
+  },
+  {
+    "id": "EVERYDAY-013",
+    "cat": "numbers",
+    "input": "yeh 5 sal purani baat hai",
+    "expected": "یہ 5 سال پرانی بات ہے",
+    "engine": "یہ 5 سال پرنی بات ہے",
+    "status": "FAIL",
+    "failure": "purani→پرنی (vowel drop)"
+  },
+  {
+    "id": "EVERYDAY-014",
+    "cat": "numbers",
+    "input": "aaj 25 taarikh hai",
+    "expected": "آج 25 تاریخ ہے",
+    "engine": "آج 25 تاریخ ہے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-015",
+    "cat": "numbers",
+    "input": "woh 3 baj ke aaya",
+    "expected": "وہ 3 بجے آیا",
+    "engine": "وہ 3 بج کے آیا",
+    "status": "PARTIAL",
+    "failure": "baj ke → بج کے (natural: بجے)"
+  },
+  {
+    "id": "EVERYDAY-016",
+    "cat": "loanword",
+    "input": "mera mobile kho gaya",
+    "expected": "میرا موبائل کھو گیا",
+    "engine": "میرا موبائل کھو گیا",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-017",
+    "cat": "loanword",
+    "input": "office mein problem aa gayi",
+    "expected": "آفس میں پرابلم آ گئی",
+    "engine": "آفس میں problem آ گئی",
+    "status": "FAIL",
+    "failure": "problem→LATIN"
+  },
+  {
+    "id": "EVERYDAY-018",
+    "cat": "loanword",
+    "input": "yeh file kahan hai?",
+    "expected": "یہ فائل کہاں ہے؟",
+    "engine": "یہ فیلے کہاں ہے؟",
+    "status": "FAIL",
+    "failure": "file→فیلے (should be فائل)"
+  },
+  {
+    "id": "EVERYDAY-019",
+    "cat": "loanword",
+    "input": "game khelna hai?",
+    "expected": "گیم کھیلنا ہے؟",
+    "engine": "گاما خالنا ہے؟",
+    "status": "FAIL",
+    "failure": "game→گاما; khelna→خالنا"
+  },
+  {
+    "id": "EVERYDAY-020",
+    "cat": "loanword",
+    "input": "update kar lo apna phone",
+    "expected": "اپ ڈیٹ کر لو اپنا فون",
+    "engine": "اپ ڈیٹ کر لو اپنا phone",
+    "status": "FAIL",
+    "failure": "phone→LATIN"
+  },
+  {
+    "id": "EVERYDAY-021",
+    "cat": "loanword",
+    "input": "kya idea hai!",
+    "expected": "کیا آئیڈیا ہے!",
+    "engine": "کیا یدے ا ہے!",
+    "status": "FAIL",
+    "failure": "idea→یدے ا (garbled)"
+  },
+  {
+    "id": "EVERYDAY-022",
+    "cat": "loanword",
+    "input": "plan change ho gaya",
+    "expected": "پلان چینج ہو گیا",
+    "engine": "پلان چنگا ہو گیا",
+    "status": "FAIL",
+    "failure": "change→چنگا (WRONG MEANING — good/well-off)"
+  },
+  {
+    "id": "EVERYDAY-023",
+    "cat": "loanword",
+    "input": "result kal aayega",
+    "expected": "رزلٹ کل آئے گا",
+    "engine": "رے سولت کل آیاگا",
+    "status": "FAIL",
+    "failure": "result→رے سولت; aayega→آیاگا"
+  },
+  {
+    "id": "EVERYDAY-024",
+    "cat": "loanword",
+    "input": "time waste mat karo",
+    "expected": "ٹائم ویسٹ مت کرو",
+    "engine": "وقت واستے مت کرو",
+    "status": "FAIL",
+    "failure": "time→وقت (semantic sub!); waste→واستے (wrong)"
+  },
+  {
+    "id": "EVERYDAY-025",
+    "cat": "loanword",
+    "input": "meeting hai kal subah",
+    "expected": "میٹنگ ہے کل صبح",
+    "engine": "میٹنگ ہے کل صبح",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-026",
+    "cat": "islamic",
+    "input": "mashallah kitna sundar manzar hai",
+    "expected": "ماشاءاللہ کتنا سندر منظر ہے",
+    "engine": "مشللح کتنا سندار منزار ہے",
+    "status": "FAIL",
+    "failure": "mashallah→مشللح; manzar→منزار"
+  },
+  {
+    "id": "EVERYDAY-027",
+    "cat": "islamic",
+    "input": "subhanallah yeh duniya kitni haseen hai",
+    "expected": "سبحان اللہ یہ دنیا کتنی حسین ہے",
+    "engine": "سبھاناللہ یہ دنیا کتنی حاسین ہے",
+    "status": "FAIL",
+    "failure": "subhanallah→سبھاناللہ; haseen→حاسین"
+  },
+  {
+    "id": "EVERYDAY-028",
+    "cat": "islamic",
+    "input": "jazakallah khair bhai",
+    "expected": "جزاک اللہ خیر بھائی",
+    "engine": "جزکللح خائیر بھائی",
+    "status": "FAIL",
+    "failure": "jazakallah→جزکللح (garbled)"
+  },
+  {
+    "id": "EVERYDAY-029",
+    "cat": "islamic",
+    "input": "alhamdulillah sab theek hai",
+    "expected": "الحمدللہ سب ٹھیک ہے",
+    "engine": "الحمدللہ سب ٹھیک ہے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-030",
+    "cat": "islamic",
+    "input": "inshaAllah kal milenge",
+    "expected": "انشاءاللہ کل ملیں گے",
+    "engine": "انشاءاللہ کل ملیں گے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-031",
+    "cat": "family",
+    "input": "ammi ne khana banaya",
+    "expected": "امی نے کھانا بنایا",
+    "engine": "امی نے کھانا بنایا",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-032",
+    "cat": "family",
+    "input": "abbu kal wapis aayenge",
+    "expected": "ابو کل واپس آئیں گے",
+    "engine": "ابو کل واپیس آیانگے",
+    "status": "FAIL",
+    "failure": "aayenge→آیانگے; wapis→واپیس"
+  },
+  {
+    "id": "EVERYDAY-033",
+    "cat": "family",
+    "input": "bhai ki shaadi hai aglay mahine",
+    "expected": "بھائی کی شادی ہے اگلے مہینے",
+    "engine": "بھائی کی شادی ہے اگلے ماہانہ",
+    "status": "FAIL",
+    "failure": "mahine→ماہانہ (wrong — monthly not month!)"
+  },
+  {
+    "id": "EVERYDAY-034",
+    "cat": "family",
+    "input": "bachay school gaye hain",
+    "expected": "بچے اسکول گئے ہیں",
+    "engine": "بچاؤ school گئے ہیں",
+    "status": "FAIL",
+    "failure": "bachay→بچاؤ; school→LATIN"
+  },
+  {
+    "id": "EVERYDAY-035",
+    "cat": "family",
+    "input": "ghar par sab theek hain",
+    "expected": "گھر پر سب ٹھیک ہیں",
+    "engine": "گھر پر سب ٹھیک ہیں",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-036",
+    "cat": "professional",
+    "input": "report submit kar di hai",
+    "expected": "رپورٹ سبمٹ کر دی ہے",
+    "engine": "رپورٹ سبمٹ کر دی ہے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-037",
+    "cat": "professional",
+    "input": "email bhej do",
+    "expected": "ای میل بھیج دو",
+    "engine": "email bhej do",
+    "status": "FAIL",
+    "failure": "no Urdu cue word — full pass-through failure"
+  },
+  {
+    "id": "EVERYDAY-038",
+    "cat": "professional",
+    "input": "meeting cancel ho gayi",
+    "expected": "میٹنگ کینسل ہو گئی",
+    "engine": "میٹنگ کنکال ہو گئی",
+    "status": "FAIL",
+    "failure": "cancel→کنکال (CRITICAL: means skeleton!)"
+  },
+  {
+    "id": "EVERYDAY-039",
+    "cat": "professional",
+    "input": "presentation ready hai",
+    "expected": "پریزینٹیشن ریڈی ہے",
+    "engine": "presentation ready ہے",
+    "status": "FAIL",
+    "failure": "presentation→LATIN; ready→LATIN"
+  },
+  {
+    "id": "EVERYDAY-040",
+    "cat": "professional",
+    "input": "deadline kal hai",
+    "expected": "ڈیڈ لائن کل ہے",
+    "engine": "ڈیڈ لائن کل ہے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-041",
+    "cat": "shopping",
+    "input": "yeh kitna ka hai?",
+    "expected": "یہ کتنا کا ہے؟",
+    "engine": "یہ کتنا کا ہے؟",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-042",
+    "cat": "shopping",
+    "input": "thoda sasta kar do",
+    "expected": "تھوڑا سستا کر دو",
+    "engine": "تھوڑا سست کر دو",
+    "status": "FAIL",
+    "failure": "sasta→سست (CRITICAL: lazy not cheap!)"
+  },
+  {
+    "id": "EVERYDAY-043",
+    "cat": "shopping",
+    "input": "quality achhi nahi hai",
+    "expected": "کوالٹی اچھی نہیں ہے",
+    "engine": "قولیتی چہی نہیں ہے",
+    "status": "FAIL",
+    "failure": "quality→قولیتی; achhi→چہی"
+  },
+  {
+    "id": "EVERYDAY-044",
+    "cat": "shopping",
+    "input": "koi aur color hai?",
+    "expected": "کوئی اور کلر ہے؟",
+    "engine": "کوئی اور کولوڑ ہے؟",
+    "status": "FAIL",
+    "failure": "color→کولوڑ (garbled)"
+  },
+  {
+    "id": "EVERYDAY-045",
+    "cat": "shopping",
+    "input": "yeh lena hai mujhe",
+    "expected": "یہ لینا ہے مجھے",
+    "engine": "یہ لینا ہے مجھے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-046",
+    "cat": "food",
+    "input": "biryani khani hai",
+    "expected": "بریانی کھانی ہے",
+    "engine": "برینی خانی ہے",
+    "status": "FAIL",
+    "failure": "biryani→برینی; khani→خانی"
+  },
+  {
+    "id": "EVERYDAY-047",
+    "cat": "food",
+    "input": "chai pi lo",
+    "expected": "چائے پی لو",
+    "engine": "چائے پی لو",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-048",
+    "cat": "food",
+    "input": "khana tayar hai",
+    "expected": "کھانا تیار ہے",
+    "engine": "کھانا تیار ہے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-049",
+    "cat": "food",
+    "input": "restaurant kahan hai?",
+    "expected": "ریسٹورنٹ کہاں ہے؟",
+    "engine": "رے سطورانت کہاں ہے؟",
+    "status": "FAIL",
+    "failure": "restaurant→رے سطورانت (garbled)"
+  },
+  {
+    "id": "EVERYDAY-050",
+    "cat": "food",
+    "input": "order kar do",
+    "expected": "آرڈر کر دو",
+    "engine": "وردار کر دو",
+    "status": "FAIL",
+    "failure": "order→وردار (CRITICAL: completely wrong)"
+  },
+  {
+    "id": "EVERYDAY-051",
+    "cat": "transport",
+    "input": "rickshaw nahi mil rahi",
+    "expected": "رکشہ نہیں مل رہی",
+    "engine": "رک کشاو نہیں مل رہی",
+    "status": "FAIL",
+    "failure": "rickshaw→رک کشاو (garbled)"
+  },
+  {
+    "id": "EVERYDAY-052",
+    "cat": "transport",
+    "input": "bus nikal gayi",
+    "expected": "بس نکل گئی",
+    "engine": "بس نکال گئی",
+    "status": "PARTIAL",
+    "failure": "nikal→نکال (nkl vs nikāl)"
+  },
+  {
+    "id": "EVERYDAY-053",
+    "cat": "transport",
+    "input": "pani hoga kya raste mein",
+    "expected": "پانی ہوگا کیا راستے میں",
+    "engine": "پانی ہوگا کیا ریاست میں",
+    "status": "FAIL",
+    "failure": "raste→ریاست (CRITICAL: path vs state)"
+  },
+  {
+    "id": "EVERYDAY-054",
+    "cat": "transport",
+    "input": "kitni door hai woh jagah?",
+    "expected": "کتنی دور ہے وہ جگہ؟",
+    "engine": "کتنی دور ہے وہ جگہ؟",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-055",
+    "cat": "transport",
+    "input": "uber book kar lo",
+    "expected": "اوبر بک کر لو",
+    "engine": "uber بوک کر لو",
+    "status": "FAIL",
+    "failure": "uber→LATIN"
+  },
+  {
+    "id": "EVERYDAY-056",
+    "cat": "tech",
+    "input": "internet slow hai",
+    "expected": "انٹرنیٹ سلو ہے",
+    "engine": "انٹرنیٹ سلو ہے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-057",
+    "cat": "tech",
+    "input": "battery khatam ho gayi",
+    "expected": "بیٹری ختم ہو گئی",
+    "engine": "باتتے ری ختم ہو گئی",
+    "status": "FAIL",
+    "failure": "battery→باتتے ری (garbled)"
+  },
+  {
+    "id": "EVERYDAY-058",
+    "cat": "tech",
+    "input": "charger kahan rakh diya?",
+    "expected": "چارجر کہاں رکھ دیا؟",
+    "engine": "چارگار کہاں رکھ دیا؟",
+    "status": "FAIL",
+    "failure": "charger→چارگار"
+  },
+  {
+    "id": "EVERYDAY-059",
+    "cat": "tech",
+    "input": "wifi password kya hai?",
+    "expected": "وائی فائی پاسورڈ کیا ہے؟",
+    "engine": "wifi پاسسوورد کیا ہے؟",
+    "status": "FAIL",
+    "failure": "wifi→LATIN; password→پاسسوورد"
+  },
+  {
+    "id": "EVERYDAY-060",
+    "cat": "tech",
+    "input": "screen crack ho gayi",
+    "expected": "اسکرین کریک ہو گئی",
+    "engine": "سکڑین کراکک ہو گئی",
+    "status": "FAIL",
+    "failure": "screen→سکڑین; crack→کراکک"
+  },
+  {
+    "id": "EVERYDAY-061",
+    "cat": "emotion",
+    "input": "yaar bohot bura hua",
+    "expected": "یار بہت برا ہوا",
+    "engine": "یار بہت برا ہوا",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-062",
+    "cat": "emotion",
+    "input": "khushi hui sun ke",
+    "expected": "خوشی ہوئی سن کے",
+    "engine": "خوشی ہوئی سن کے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-063",
+    "cat": "emotion",
+    "input": "ghabrao mat sab theek hoga",
+    "expected": "گھبراو مت سب ٹھیک ہوگا",
+    "engine": "غبراؤ مت سب ٹھیک ہوگا",
+    "status": "PARTIAL",
+    "failure": "ghabrao→غبراؤ (gh missing aspirate)"
+  },
+  {
+    "id": "EVERYDAY-064",
+    "cat": "emotion",
+    "input": "bas ho gaya ab",
+    "expected": "بس ہو گیا اب",
+    "engine": "باس ہو گیا اب",
+    "status": "FAIL",
+    "failure": "bas→باس (should be بس)"
+  },
+  {
+    "id": "EVERYDAY-065",
+    "cat": "emotion",
+    "input": "mazay ki baat hai",
+    "expected": "مزے کی بات ہے",
+    "engine": "مازے کی بات ہے",
+    "status": "FAIL",
+    "failure": "mazay→مازے (extra ا)"
+  },
+  {
+    "id": "EVERYDAY-066",
+    "cat": "particles",
+    "input": "mujhe pata nahi k kya karna hai",
+    "expected": "مجھے پتہ نہیں کہ کیا کرنا ہے",
+    "engine": "مجھے پتہ نہیں کے کیا کرنا ہے",
+    "status": "PARTIAL",
+    "failure": "k→کے (should be کہ in this context)"
+  },
+  {
+    "id": "EVERYDAY-067",
+    "cat": "particles",
+    "input": "us k baad kya hua?",
+    "expected": "اس کے بعد کیا ہوا؟",
+    "engine": "اس کے بعد کیا ہوا؟",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-068",
+    "cat": "particles",
+    "input": "yeh toh hona hi tha",
+    "expected": "یہ تو ہونا ہی تھا",
+    "engine": "یہ تو ہونا ہی تھا",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-069",
+    "cat": "particles",
+    "input": "jo hona tha so ho gaya",
+    "expected": "جو ہونا تھا سو ہو گیا",
+    "engine": "جو ہونا تھا سو ہو گیا",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-070",
+    "cat": "particles",
+    "input": "aur kya chahiye?",
+    "expected": "اور کیا چاہیے؟",
+    "engine": "اور کیا چاہیے؟",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-071",
+    "cat": "spelling",
+    "input": "aik din aayega zaroor",
+    "expected": "ایک دن آئے گا ضرور",
+    "engine": "ایک دن آیاگا ضروری",
+    "status": "FAIL",
+    "failure": "aayega→آیاگا; zaroor→ضروری"
+  },
+  {
+    "id": "EVERYDAY-072",
+    "cat": "spelling",
+    "input": "sirf aik baat bolni hai",
+    "expected": "صرف ایک بات بولنی ہے",
+    "engine": "صرف ایک بات بولنی ہے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-073",
+    "cat": "spelling",
+    "input": "aik kaam karo pehle",
+    "expected": "ایک کام کرو پہلے",
+    "engine": "ایک کام کرو پہلی",
+    "status": "FAIL",
+    "failure": "pehle→پہلی (wrong gender)"
+  },
+  {
+    "id": "EVERYDAY-074",
+    "cat": "spelling",
+    "input": "aik ghante mein wapas aata hun",
+    "expected": "ایک گھنٹے میں واپس آتا ہوں",
+    "engine": "ایک گھنٹے میں واپس آتا حان",
+    "status": "FAIL",
+    "failure": "hun→حان"
+  },
+  {
+    "id": "EVERYDAY-075",
+    "cat": "spelling",
+    "input": "aik baar aur try karo",
+    "expected": "ایک بار اور ٹرائی کرو",
+    "engine": "ایک بار اور طری کرو",
+    "status": "FAIL",
+    "failure": "try→طری (garbled)"
+  },
+  {
+    "id": "EVERYDAY-076",
+    "cat": "particles",
+    "input": "phir se aana parta hai",
+    "expected": "پھر سے آنا پڑتا ہے",
+    "engine": "پھر سے آنا پڑتا ہے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-077",
+    "cat": "particles",
+    "input": "phir kya hua?",
+    "expected": "پھر کیا ہوا؟",
+    "engine": "پھر کیا ہوا؟",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-078",
+    "cat": "particles",
+    "input": "agar nahi mana toh phir kya",
+    "expected": "اگر نہیں مانا تو پھر کیا",
+    "engine": "اگر نہیں مانا تو پھر کیا",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-079",
+    "cat": "particles",
+    "input": "phir milenge inshaAllah",
+    "expected": "پھر ملیں گے انشاءاللہ",
+    "engine": "پھر ملیں گے انشاءاللہ",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-080",
+    "cat": "particles",
+    "input": "ab phir wahi masla",
+    "expected": "اب پھر وہی مسئلہ",
+    "engine": "اب پھر وہی مسئلہ",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-081",
+    "cat": "longer",
+    "input": "yaar yeh naya mobile lena chahiye tha, purana to bohot kharab ho gaya hai",
+    "expected": "یار یہ نیا موبائل لینا چاہیے تھا، پرانا تو بہت خراب ہو گیا ہے",
+    "engine": "یار یہ نیا موبائل لینا چاہیے تھا، پورانا تو بہت خراب ہو گئی ہے",
+    "status": "PARTIAL",
+    "failure": "purana→پورانا (extra و); gaya→گئی (wrong gender)"
+  },
+  {
+    "id": "EVERYDAY-082",
+    "cat": "longer",
+    "input": "office mein aaj koi problem nahi thi, sab kuch smooth gaya",
+    "expected": "آفس میں آج کوئی پرابلم نہیں تھی، سب کچھ سموتھ گیا",
+    "engine": "آفس میں آج کوئی problem نہیں تھی، سب کچھ سموتھ گیا",
+    "status": "FAIL",
+    "failure": "problem→LATIN"
+  },
+  {
+    "id": "EVERYDAY-083",
+    "cat": "longer",
+    "input": "bhai kal game khelne aana, sab doston ko bhi bolo",
+    "expected": "بھائی کل گیم کھیلنے آنا، سب دوستوں کو بھی بولو",
+    "engine": "بھائی کل game خالنے آنا، سب دوسٹوں کو بھی بولو",
+    "status": "FAIL",
+    "failure": "game→LATIN; khelne→خالنے"
+  },
+  {
+    "id": "EVERYDAY-084",
+    "cat": "longer",
+    "input": "meri file kahan hai, bohot zaroori hai aaj",
+    "expected": "میری فائل کہاں ہے، بہت ضروری ہے آج",
+    "engine": "میری فائل کہاں ہے، بہت ضروری ہے آج",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-085",
+    "cat": "longer",
+    "input": "beta abhi so jao, subah school jana hai",
+    "expected": "بیٹا ابھی سو جاو، صبح اسکول جانا ہے",
+    "engine": "بیٹا ابھی سو جاؤ، صبح school جانا ہے",
+    "status": "FAIL",
+    "failure": "school→LATIN"
+  },
+  {
+    "id": "EVERYDAY-086",
+    "cat": "longer",
+    "input": "aaj ka khana bohot maza aaya, ammi ne biryani banai thi",
+    "expected": "آج کا کھانا بہت مزہ آیا، امی نے بریانی بنائی تھی",
+    "engine": "آج کا کھانا بہت ماز آیا، امی نے برینی بانای تھی",
+    "status": "FAIL",
+    "failure": "maza→ماز; biryani→برینی; banai→بانای"
+  },
+  {
+    "id": "EVERYDAY-087",
+    "cat": "longer",
+    "input": "report mein kuch mistakes hain, dobara check karo please",
+    "expected": "رپورٹ میں کچھ غلطیاں ہیں، دوبارہ چیک کرو پلیز",
+    "engine": "رپورٹ میں کچھ میسٹکے ہیں، دوبارہ چیک کرو پلیز",
+    "status": "FAIL",
+    "failure": "mistakes→میسٹکے (garbled)"
+  },
+  {
+    "id": "EVERYDAY-088",
+    "cat": "longer",
+    "input": "mujhe lag raha hai k woh nahi aayega",
+    "expected": "مجھے لگ رہا ہے کہ وہ نہیں آئے گا",
+    "engine": "مجھے لاگ رہا ہے کے وہ نہیں آیاگا",
+    "status": "FAIL",
+    "failure": "lag→لاگ; aayega→آیاگا"
+  },
+  {
+    "id": "EVERYDAY-089",
+    "cat": "longer",
+    "input": "is saal result bohot achha aaya alhamdulillah",
+    "expected": "اس سال رزلٹ بہت اچھا آیا الحمدللہ",
+    "engine": "اس سال رے سولت بہت اچھا آیا الحمدللہ",
+    "status": "FAIL",
+    "failure": "result→رے سولت"
+  },
+  {
+    "id": "EVERYDAY-090",
+    "cat": "longer",
+    "input": "thodi der mein nikalne ka plan hai, tayar ho jao",
+    "expected": "تھوڑی دیر میں نکلنے کا پلان ہے، تیار ہو جاو",
+    "engine": "تھوڑی دیر میں نکالنے کا plan ہے، تیار ہو جاؤ",
+    "status": "FAIL",
+    "failure": "plan→LATIN"
+  },
+  {
+    "id": "EVERYDAY-091",
+    "cat": "group",
+    "input": "sab ko salam, aaj mehfil hai 8 baje",
+    "expected": "سب کو سلام، آج محفل ہے 8 بجے",
+    "engine": "سب کو سالم، آج ماحفیل ہے 8 بجے",
+    "status": "FAIL",
+    "failure": "salam→سالم; mehfil→ماحفیل"
+  },
+  {
+    "id": "EVERYDAY-092",
+    "cat": "group",
+    "input": "kaun kaun aa raha hai bolo",
+    "expected": "کون کون آ رہا ہے بولو",
+    "engine": "قاوں قاوں آ رہا ہے بولو",
+    "status": "FAIL",
+    "failure": "kaun→قاوں (garbled)"
+  },
+  {
+    "id": "EVERYDAY-093",
+    "cat": "group",
+    "input": "gari kahan kharhi karni hai?",
+    "expected": "گاڑی کہاں کھڑی کرنی ہے؟",
+    "engine": "گاری کہاں خرہی قرآن ہے؟",
+    "status": "FAIL",
+    "failure": "kharhi→خرہی; karni→قرآن (CRITICAL!)"
+  },
+  {
+    "id": "EVERYDAY-094",
+    "cat": "group",
+    "input": "haan bhai zaroor aayenge",
+    "expected": "ہاں بھائی ضرور آئیں گے",
+    "engine": "ہاں بھائی ضروری آیانگے",
+    "status": "FAIL",
+    "failure": "zaroor→ضروری; aayenge→آیانگے"
+  },
+  {
+    "id": "EVERYDAY-095",
+    "cat": "group",
+    "input": "bhai khana ghar se laana hai ya bahar khayenge?",
+    "expected": "بھائی کھانا گھر سے لانا ہے یا باہر کھائیں گے؟",
+    "engine": "بھائی کھانا گھر سے لانا ہے یا باہر کھے انگے؟",
+    "status": "FAIL",
+    "failure": "khayenge→کھے انگے"
+  },
+  {
+    "id": "EVERYDAY-096",
+    "cat": "chat",
+    "input": "aaj kuch naya try karna hai",
+    "expected": "آج کچھ نیا ٹرائی کرنا ہے",
+    "engine": "آج کچھ نیا طری کرنا ہے",
+    "status": "FAIL",
+    "failure": "try→طری"
+  },
+  {
+    "id": "EVERYDAY-097",
+    "cat": "chat",
+    "input": "yeh kaam mujhse nahi hoga",
+    "expected": "یہ کام مجھ سے نہیں ہوگا",
+    "engine": "یہ کام مجھے نہیں ہوگا",
+    "status": "PARTIAL",
+    "failure": "mujhse→مجھے (erases 'se')"
+  },
+  {
+    "id": "EVERYDAY-098",
+    "cat": "chat",
+    "input": "bohot achha laga sun ke",
+    "expected": "بہت اچھا لگا سن کے",
+    "engine": "بہت اچھا لگا سن کے",
+    "status": "PASS"
+  },
+  {
+    "id": "EVERYDAY-099",
+    "cat": "chat",
+    "input": "jaldi karo warna der ho jayegi",
+    "expected": "جلدی کرو ورنہ دیر ہو جائے گی",
+    "engine": "جلدی کرو ورنا دیر ہو جے اگی",
+    "status": "FAIL",
+    "failure": "warna→ورنا; jayegi→جے اگی"
+  },
+  {
+    "id": "EVERYDAY-100",
+    "cat": "chat",
+    "input": "yaar bohot mushkil hai yeh kaam",
+    "expected": "یار بہت مشکل ہے یہ کام",
+    "engine": "یار بہت مشکل ہے یہ کام",
+    "status": "PASS"
+  }
+]

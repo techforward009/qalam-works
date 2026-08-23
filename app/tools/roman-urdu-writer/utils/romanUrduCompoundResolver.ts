@@ -146,6 +146,8 @@ const LEXICAL_COMPOUNDS: Record<string, string> = {
   "ilm-o-hikmat":  "علم و حکمت",
   "ilm-o-amal":    "علم و عمل",
   "khoon-o-aansoo": "خون و آنسو",
+  // Phase 19A.20 — compound with non-e/o hyphen
+  "wujoodiyat-pasandana": "وجودیت پسندانہ",
 };
 
 function resolveLexicalCompounds(raw: string): string {
@@ -235,6 +237,166 @@ function resolveApostropheClusters(s: string): string {
   return s;
 }
 
+// ── High-confidence noisy Roman recovery (Phase 19A.20) ──────────────────────
+
+/**
+ * Deterministic mappings for high-confidence noisy Roman Urdu forms that V2
+ * cannot recover phonetically. Applied BEFORE the engine sees the input,
+ * same mechanism as resolveApostropheClusters.
+ *
+ * These are human-reviewed and locked. Every entry must be:
+ *   - unambiguous (this Roman form has exactly one intended Urdu)
+ *   - attested in real production paragraphs
+ *   - NOT a semantic rewrite (script recovery only)
+ *
+ * EXCLUDED intentionally (see phase spec):
+ *   roaydaadein, tanweeq, tarseei — too ambiguous or context-dependent
+ */
+const NOISY_ROMAN_DIRECT: Record<string, string> = {
+  // Exact target → must not change
+  "samajik":        "سماجی",
+  "hayajaan":       "ہیجان",
+  "hayajan":        "ہیجان",
+  "majrooh":        "مجروح",
+  "majruh":         "مجروح",
+  "mubham":         "مبہم",
+  "tawaazun":       "توازن",
+  "tawazun":        "توازن",
+  "soorathaal":     "صورتِ حال",
+  "soot-e-haal":    "صورتِ حال",
+  "inhinraf":       "انحراف",
+  "inhiraaf":       "انحراف",
+  "pukhtagii":      "پختگی",  // also in FORMAL_STEMS; belt-and-suspenders
+  "wujoodiyat":     "وجودیت",  // also in FORMAL_STEMS; belt-and-suspenders
+  // ── Priority 1: Critical semantic errors ─────────────────────────────────
+  // V2 maps these to wrong words with incompatible meaning
+  "cancel":         "کینسل",   // V2: کنکال (skeleton!) → کینسل
+  "cancelled":      "کینسل",
+  "order":          "آرڈر",    // V2: وردار (garble) → آرڈر
+  "orders":         "آرڈرز",
+  "ordered":        "آرڈر",
+  "karni":          "کرنی",    // V2: قرآن (Quran!) → کرنی
+  "karna":          "کرنا",    // same family — V2 may garble
+  "sasta":          "سستا",    // V2: سست (lazy) → سستا (cheap)
+  "raste":          "راستے",   // V2: ریاست (state) → راستے (paths)
+  "raaste":         "راستے",
+  "rasta":          "راستہ",
+  "raasta":         "راستہ",
+  // ── Priority 2: Common verb forms ────────────────────────────────────────
+  "hun":            "ہوں",     // V2: حان → ہوں
+  "hoon":           "ہوں",
+  "aayega":         "آئے گا",  // V2: آیاگا → آئے گا
+  "aayegi":         "آئے گی",
+  "aayenge":        "آئیں گے", // V2: آیانگے → آئیں گے
+  "aayengay":       "آئیں گے",
+  "aaungi":         "آؤں گی",
+  "aaonga":         "آؤں گا",
+  // ── Priority 3: Islamic expressions ──────────────────────────────────────
+  // Fixed phrases: always the same in Pakistani Urdu usage
+  "mashallah":      "ماشاء اللہ",
+  "mashaallah":     "ماشاء اللہ",
+  "masha'allah":    "ماشاء اللہ",
+  "subhanallah":    "سبحان اللہ",
+  "subhanaallah":   "سبحان اللہ",
+  "jazakallah":     "جزاک اللہ",
+  "jazakallahkhair":"جزاک اللہ خیر",
+  "inshallah":      "انشاء اللہ",
+  "inshaallah":     "انشاء اللہ",
+  "alhumdullilah":  "الحمدللہ",
+  "alhumdulillah":  "الحمدللہ",
+  // ── Priority 4 + bonus: common loanwords V2 garbles ─────────────────────
+  "call":           "کال",
+  "calls":          "کالز",
+  "phone":          "فون",
+  "phones":         "فونز",
+  "school":         "اسکول",
+  "schools":        "اسکول",
+  "result":         "رزلٹ",
+  "results":        "رزلٹ",
+  "idea":           "آئیڈیا",
+  "ideas":          "آئیڈیاز",
+  "game":           "گیم",
+  "games":          "گیمز",
+  "battery":        "بیٹری",
+  "charger":        "چارجر",
+  "wifi":           "وائی فائی",
+  "uber":           "اوبر",
+  "ready":          "ریڈی",
+  "minute":         "منٹ",
+  "minutes":        "منٹ",
+  "presentation":   "پریزینٹیشن",
+  // Common Urdu words V2 garbles in isolation
+  "kaun":           "کون",    // V2: قاوں → کون
+  "biryani":        "بریانی", // V2: برینی → بریانی
+  "salam":          "سلام",   // V2: سالم → سلام
+  "restaurant":     "ریسٹورنٹ",
+  "email":          "ای میل",    // in EXTRA_LOANWORDS but hasCue fails for 2-word sentences
+  // ── High-frequency morphology (missed without hasCue) ─────────────────────
+  "zaroor":         "ضرور",      // V2: ضروری (wrong adjectival suffix)
+  "zarur":          "ضرور",
+  "late":           "لیٹ",       // V2: لاتے (present tense confusion)
+  "change":         "چینج",      // V2: چنگا (WRONG meaning: 'good'!)
+  "wapis":          "واپس",      // V2: واپیس (extra vowel)
+  "waapis":         "واپس",
+  "mahine":         "مہینے",     // V2: ماہانہ (translation: monthly)
+  "mahinay":        "مہینے",
+  "mahina":         "مہینہ",
+  "bachay":         "بچے",       // V2: بچاؤ (imperative confusion)
+  "bacha":          "بچہ",
+  "achhi":          "اچھی",      // V2: چہی (drops first syllable)
+  "achha":          "اچھا",
+  "achhe":          "اچھے",
+  "bhej":           "بھیج",      // stays Latin without cue
+  "bhejna":         "بھیجنا",
+  "bhejdo":         "بھیج دو",
+  "nikal":          "نکل",       // V2: نکال (long vowel insertion)
+  "nikla":          "نکلا",
+  "nikli":          "نکلی",
+  "nikle":          "نکلے",
+  "milte":          "ملتے",      // V2: معاملات (CRITICAL: completely wrong word!)
+  "milta":          "ملتا",
+  "milti":          "ملتی",
+  "milein":         "ملیں",
+  "khelna":         "کھیلنا",    // V2: خالنا (kh→خ not کھ)
+  "khelne":         "کھیلنے",
+  "khelo":          "کھیلو",
+  "khela":          "کھیلا",
+  "khayenge":       "کھائیں گے",
+  "khayen":         "کھائیں",
+  "problem":        "پرابلم",    // stays Latin (not in EXTRA_LOANWORDS or hasCue fails)
+  "plan":           "پلان",      // stays Latin in short sentences
+  "plans":          "پلانز",
+  "file":           "فائل",      // V2: فیلے (phonetic garble)
+  "bas":            "بس",        // V2: باس (boss confusion)
+  "password":       "پاسورڈ",   // V2: پاسسوورد (doubled consonants)
+  "rickshaw":       "رکشہ",      // V2: رک کشاو (splits incorrectly)
+  "warna":          "ورنہ",      // V2: ورنا (ہ vs ا)
+  "jayegi":         "جائے گی",   // V2: جے اگی (splits future tense)
+  "jayenge":        "جائیں گے",
+  "jayega":         "جائے گا",
+  "aao":            "آؤ",        // V2: آوو or keeps Latin
+  "aaoo":           "آؤ",
+  "manzar":         "منظر",      // V2: منزار (ظ/ز confusion)
+  "khair":          "خیر",       // V2: خائیر
+  "doston":         "دوستوں",    // V2: دوسٹوں
+  "dosto":          "دوستوں",
+  "zaroorat":       "ضرورت",     // V2 sometimes garbles
+};
+
+function resolveNoisyRoman(s: string): string {
+  const keys = Object.keys(NOISY_ROMAN_DIRECT).sort((a, b) => b.length - a.length);
+  for (const key of keys) {
+    const urdu = NOISY_ROMAN_DIRECT[key];
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(`(?<![a-zA-Z])${escaped}(?![a-zA-Z])`, "gi");
+    s = s.replace(re, (match) => {
+      if (isProtectedFromResolver(match)) return match;
+      return urdu;
+    });
+  }
+  return s;
+}
+
 // ── Main entry point ──────────────────────────────────────────────────────────
 
 /**
@@ -258,5 +420,6 @@ export function resolveCompounds(input: string): string {
   s = resolveIzafatChain(s);          // X-e-Y chains
   s = resolveCoordination(s);         // Remaining X-o-Y
   s = resolveApostropheClusters(s);   // Known apostrophe clusters → Urdu directly
+  s = resolveNoisyRoman(s);           // Phase 19A.20: high-confidence noisy Roman forms
   return s;
 }
