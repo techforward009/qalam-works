@@ -15,6 +15,12 @@ vi.mock("../../app/lib/language-context", () => ({
   }),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  usePathname: () => "/tools/roman-urdu-writer",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 afterEach(() => { cleanup(); mockLanguage = "en"; localStorage.clear(); });
 
 async function renderWriter() {

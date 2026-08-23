@@ -2,6 +2,7 @@
 import React, {
   useState, useEffect, useCallback, useRef, useMemo,
 } from "react";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "../../lib/language-context";
 import { convertRomanUrdu, applyTokenChoices } from "./utils/writerEngine";
 import type {
@@ -215,6 +216,7 @@ export default function RomanUrduWriterClient() {
   const { language } = useLanguage();
   const isUr = language === "ur";
   const ui = isUr ? UI.ur : UI.en;
+  const router = useRouter();
 
   // Mode — default Roman Urdu
   const [mode, setMode] = useState<WritingMode>("roman");
@@ -431,19 +433,21 @@ export default function RomanUrduWriterClient() {
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleModeSwitch = useCallback((next: WritingMode) => {
-    setMode(next);
-    // When switching TO urdu-roman mode: clear its input so no stale state
+    // urdu-roman is a completely separate tool — navigate to its own page
+    // rather than trying to embed state inside this complex component.
+    // This guarantees clean input/output UI on all devices.
     if (next === "urdu-roman") {
-      setUrduRomanInput("");
+      router.push("/tools/urdu-roman-writer");
+      return;
     }
+    setMode(next);
     // Roman ↔ Urdu preserve their inputs (existing behaviour for transfer flow)
     setShowTransferConfirm(false);
     requestAnimationFrame(() => {
       if (next === "roman") romanRef.current?.focus();
-      else if (next === "urdu") urduRef.current?.focus();
-      else urduRomanRef.current?.focus();
+      else urduRef.current?.focus();
     });
-  }, []);
+  }, [router]);
 
   const handleTokenChoice = useCallback((tokenIndex: number, candidateIndex: number) => {
     setActiveSentenceIdx(-1);

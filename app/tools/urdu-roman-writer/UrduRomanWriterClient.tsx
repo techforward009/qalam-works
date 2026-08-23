@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useMemo } from "react";
+import Link from "next/link";
 import { convertUrduToRoman, applyStyle, STYLE_OPTIONS } from "./utils/urduToRoman";
 import type { UrduRomanStyle } from "./utils/urduToRoman";
 
@@ -38,11 +39,37 @@ export default function UrduRomanWriterClient() {
       <header className="bg-[#0F1424] text-white px-4 py-6 md:px-8">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-2xl font-bold tracking-tight">
-            Qalam Urdu → Roman Converter
+            Qalam Urdu Writer
           </h1>
-          <p className="mt-1 text-sm text-[#9CA3AF]">
-            Convert Urdu script to readable Roman Urdu — no translation, only transliteration.
+          <p className="mt-1 text-[#C7D6C7] text-sm">
+            Write Urdu easily from Roman Urdu, with control over uncertain words.
           </p>
+
+          {/* Mode tabs — tab 1 links back to Roman Urdu Writer, tab 2 is this page */}
+          <div
+            className="mt-5 inline-flex p-1 rounded-xl bg-[#0F1424] border border-white/10 shadow-inner"
+            role="tablist"
+            aria-label="Writing mode"
+          >
+            <Link
+              href="/tools/roman-urdu-writer"
+              role="tab"
+              aria-selected={false}
+              data-testid="tab-roman"
+              className="min-h-[40px] px-4 md:px-5 text-sm font-medium rounded-lg transition-colors text-[#9CA3AF] hover:text-white"
+            >
+              Roman Urdu → اردو
+            </Link>
+            <button
+              role="tab"
+              aria-selected={true}
+              data-testid="tab-urdu-roman"
+              className="min-h-[40px] px-4 md:px-5 text-sm font-medium rounded-lg transition-colors bg-[#F7F6F2] text-[#151B2E] shadow-sm font-nastaliq"
+              lang="ur"
+            >
+              اردو → Roman
+            </button>
+          </div>
         </div>
       </header>
 
@@ -51,16 +78,17 @@ export default function UrduRomanWriterClient() {
         <div className="max-w-5xl mx-auto space-y-5">
 
           {/* Input / Output grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5" data-testid="writer-urdu-roman-pane">
 
             {/* Urdu input */}
             <section>
               <div className="flex items-center justify-between mb-2">
                 <label
-                  htmlFor="urdu-input"
-                  className="text-xs font-semibold uppercase tracking-widest text-[#374151]"
+                  htmlFor="urdu-roman-input"
+                  className="text-[10px] font-semibold uppercase tracking-widest text-[#6B7280]"
+                  id="urdu-roman-input-label"
                 >
-                  اردو
+                  URDU
                 </label>
                 {urduInput && (
                   <button
@@ -73,14 +101,16 @@ export default function UrduRomanWriterClient() {
                 )}
               </div>
               <textarea
-                id="urdu-input"
+                id="urdu-roman-input"
                 ref={inputRef}
+                data-testid="urdu-roman-input"
                 value={urduInput}
                 onChange={(e) => setUrduInput(e.target.value.slice(0, MAX_INPUT))}
-                placeholder="اردو میں لکھیں..."
+                placeholder="آج کا دن کافی اچھا تھا، میں خوش ہوں"
                 dir="rtl"
                 lang="ur"
                 rows={10}
+                autoFocus
                 className="w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-lg font-nastaliq leading-loose text-right text-[#1A1A2E] shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/40 focus:border-[#C9A84C]"
                 style={{ fontFamily: "var(--font-nastaliq), 'Noto Nastaliq Urdu', serif" }}
                 aria-label="Urdu script input"
@@ -93,8 +123,11 @@ export default function UrduRomanWriterClient() {
             {/* Roman output */}
             <section>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold uppercase tracking-widest text-[#374151]">
-                  Roman Urdu
+                <label
+                  className="text-[10px] font-semibold uppercase tracking-widest text-[#6B7280]"
+                  id="urdu-roman-output-label"
+                >
+                  ROMAN URDU
                 </label>
                 {hasOutput && (
                   <button
@@ -109,7 +142,8 @@ export default function UrduRomanWriterClient() {
               <div
                 role="status"
                 aria-live="polite"
-                aria-label="Roman Urdu output"
+                data-testid="urdu-roman-output"
+                aria-labelledby="urdu-roman-output-label"
                 className={`min-h-[220px] rounded-xl border px-4 py-3 text-base leading-relaxed transition-colors ${
                   hasOutput
                     ? "border-[#C9A84C]/30 bg-white text-[#1A1A2E]"
@@ -119,9 +153,7 @@ export default function UrduRomanWriterClient() {
                 {hasOutput ? (
                   <span className="whitespace-pre-wrap">{romanOutput}</span>
                 ) : (
-                  <span className="text-sm italic">
-                    Roman Urdu output will appear here...
-                  </span>
+                  <span className="text-sm italic">Roman Urdu output will appear here...</span>
                 )}
               </div>
               {hasOutput && (

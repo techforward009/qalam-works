@@ -17,6 +17,12 @@ vi.mock("../../app/lib/language-context", () => ({
   useLanguage: () => ({ language: mockLanguage, setLanguage: () => {}, dir: "ltr" }),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  usePathname: () => "/tools/roman-urdu-writer",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 async function importWriter() {
   const m = await import("../../app/tools/roman-urdu-writer/RomanUrduWriterClient");
   return m.default;

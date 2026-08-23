@@ -3,7 +3,7 @@
  */
 import { test, expect } from "@playwright/test";
 
-const URL = "http://localhost:5100/tools/roman-urdu-writer";
+const URL = "http://localhost:5200/tools/roman-urdu-writer";
 const ACCEPT_PARA =
   "Mulaazmeen ki mahana tankhwah aur pension ki adaiyagi ke liye bank account ki tasdeeq (verification) nihayat zaroori hai. Company ne 2025-26 ke maali saal ke liye 15% idhaafay ka aelaan kiya tha. Agar aap ka record update nahi hai, toh fawri taur par HR department se rabta karein taake RS. 75,000 tak ki maali rukawat se bacha jaa sakay.";
 
@@ -107,15 +107,19 @@ test.describe("19A.13 Mobile", () => {
 test.describe("19A.23 Urdu→Roman mode", () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test("switching to اردو → Roman tab shows correct labels and converter", async ({ page }) => {
+  test("clicking اردو → Roman tab navigates to /tools/urdu-roman-writer", async ({ page }) => {
     await page.goto(URL);
 
-    // Now only 2 tabs: [Roman Urdu → اردو] [اردو → Roman]
+    // Click the second tab (اردو → Roman) — navigates to standalone page
     const tabs = page.locator('[role="tab"]');
     await expect(tabs).toHaveCount(2);
     await tabs.nth(1).click();
 
-    // Wait for urdu-roman pane
+    // Should navigate to urdu-roman-writer page
+    await page.waitForURL("**/tools/urdu-roman-writer", { timeout: 5000 });
+    expect(page.url()).toContain("/tools/urdu-roman-writer");
+
+    // Verify the correct UI is shown
     const pane = page.locator('[data-testid="writer-urdu-roman-pane"]');
     await expect(pane).toBeVisible();
 
@@ -125,12 +129,12 @@ test.describe("19A.23 Urdu→Roman mode", () => {
     // Output label must say ROMAN URDU
     await expect(page.locator('#urdu-roman-output-label')).toContainText('ROMAN URDU');
 
-    // Placeholder must show the Urdu example
+    // Placeholder must show Urdu example
     const input = page.locator('[data-testid="urdu-roman-input"]');
     await expect(input).toBeVisible();
     await expect(input).toHaveAttribute('placeholder', /آج کا دن/);
 
-    // Type Urdu and verify Roman output
+    // Type Urdu text and verify Roman output
     await input.fill('میرا نام علی ہے');
     const output = page.locator('[data-testid="urdu-roman-output"]');
     await expect(output).toContainText('naam');
@@ -138,18 +142,31 @@ test.describe("19A.23 Urdu→Roman mode", () => {
     await expect(output).toContainText('hai');
   });
 
-  test("switching back to Roman Urdu mode shows roman input", async ({ page }) => {
-    await page.goto(URL);
+  test("urdu-roman-writer page has back-tab linking to roman-urdu-writer", async ({ page }) => {
+    await page.goto(URL.replace("roman-urdu-writer", "urdu-roman-writer"));
+
+    // Should show 2 tabs with first tab linking back
     const tabs = page.locator('[role="tab"]');
+    await expect(tabs).toHaveCount(2);
 
-    // Go to urdu-roman tab
-    await tabs.nth(1).click();
-    const urduInput = page.locator('[data-testid="urdu-roman-input"]');
-    await urduInput.fill('میرا نام');
+    // Second tab (اردو → Roman) should be selected
+    await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
 
-    // Switch back to roman mode
-    await tabs.nth(0).click();
-    const romanInput = page.locator('[data-testid="roman-input"]');
-    await expect(romanInput).toBeVisible();
+    // First tab links back to roman-urdu-writer
+    const backTab = page.locator('[data-testid="tab-roman"]');
+    await expect(backTab).toBeVisible();
+    await backTab.click();
+    await page.waitForURL("**/tools/roman-urdu-writer", { timeout: 5000 });
+    expect(page.url()).toContain("/tools/roman-urdu-writer");
+  });
+
+  test("full acceptance: type میرا نام علی ہے → get mera naam Ali hai", async ({ page }) => {
+    await page.goto(URL.replace("roman-urdu-writer", "urdu-roman-writer"));
+    const input = page.locator('[data-testid="urdu-roman-input"]');
+    await input.fill('میرا نام علی ہے');
+    const output = page.locator('[data-testid="urdu-roman-output"]');
+    await expect(output).toContainText('naam');
+    await expect(output).toContainText('Ali');
+    await expect(output).toContainText('hai');
   });
 });
