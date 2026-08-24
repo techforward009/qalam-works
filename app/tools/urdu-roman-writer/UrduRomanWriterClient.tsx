@@ -157,7 +157,7 @@ export default function UrduRomanWriterClient() {
                     className="text-xs text-[#6B7280] hover:text-[#374151] transition-colors"
                     aria-label="Copy Roman output"
                   >
-                    {copied ? "Copied!" : "Copy"}
+                    {copied ? "✓" : "Copy"}
                   </button>
                 )}
               </div>

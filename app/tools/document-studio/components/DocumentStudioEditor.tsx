@@ -1695,8 +1695,8 @@ export default function DocumentStudioEditor() {
         <div className="flex justify-between items-center mb-3">
           <Toolbar editor={editor} dir={dir} setDir={setDir} processingLanguage={processingLanguage} setProcessingLanguage={setProcessingLanguage} isUr={isUr} />
           <div className="text-xs text-stone-500 font-sans" dir="ltr">
-            {saveStatus === "saving" && "💾 Saving..."}
-            {saveStatus === "saved" && "✓ Saved to browser"}
+            {saveStatus === "saving" && (isUr ? "💾 محفوظ ہو رہا ہے…" : "💾 Saving...")}
+            {saveStatus === "saved" && (isUr ? "✓ براؤزر میں محفوظ" : "✓ Saved to browser")}
           </div>
         </div>
 
@@ -1999,7 +1999,7 @@ export default function DocumentStudioEditor() {
               onClick={handleCopy}
               className="h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#B8935A] text-white hover:bg-[#C9A46B] shadow-sm transition"
             >
-              {copied ? "✓ Copied" : "Copy Text"}
+              {copied ? (isUr ? "✓ نقل ہو گیا" : "✓ Copied") : (isUr ? "متن نقل کریں" : "Copy Text")}
             </button>
             <button
               type="button"
