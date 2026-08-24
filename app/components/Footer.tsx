@@ -20,6 +20,7 @@ function PenNibIcon() {
 const TOOL_ROUTES = [
   { key: "documentStudio", href: "/tools/document-studio" },
   { key: "urduWriter", href: "/tools/roman-urdu-writer" },
+  { key: "urduRomanWriter", href: "/tools/urdu-roman-writer", labelEn: "Urdu → Roman", labelUr: "اردو → رومن" },
   { key: "translationStudio", href: "/tools/translation-studio" },
   { key: "documentCleaner", href: "/tools/document-cleaner", labelEn: "Document Cleaner", labelUr: "ڈاکومنٹ کلینر" },
   { key: "qualityChecker", href: "/tools/quality-checker" },

@@ -4,6 +4,7 @@ import { PUBLISHING_PRESETS, ALL_PRESET_IDS, type PresetId } from "../utils/publ
 interface PublishingPresetSelectorProps {
   selectedId: PresetId;
   onChange: (id: PresetId) => void;
+  isUr?: boolean;
 }
 
 /**
@@ -14,11 +15,11 @@ interface PublishingPresetSelectorProps {
  * a real, usable entry point; a later phase would read the selected
  * preset to actually configure export output.
  */
-export const PublishingPresetSelector: React.FC<PublishingPresetSelectorProps> = ({ selectedId, onChange }) => {
+export const PublishingPresetSelector: React.FC<PublishingPresetSelectorProps> = ({ selectedId, onChange, isUr = false }) => {
   return (
-    <div className="flex items-center gap-2 text-xs" dir="rtl" title="اشاعتی انداز — فی الحال صرف ترجیح محفوظ ہوتی ہے">
+    <div className="flex items-center gap-2 text-xs" dir={isUr ? "rtl" : "ltr"} title={isUr ? "اشاعتی انداز — فی الحال صرف ترجیح محفوظ ہوتی ہے" : "Publishing Style — preference saved only"}>
       <label htmlFor="publishing-preset-select" className="text-slate-500 whitespace-nowrap">
-        اشاعتی انداز:
+        {isUr ? "اشاعتی انداز:" : "Style:"}
       </label>
       <select
         id="publishing-preset-select"
@@ -28,7 +29,7 @@ export const PublishingPresetSelector: React.FC<PublishingPresetSelectorProps> =
       >
         {ALL_PRESET_IDS.map((id) => (
           <option key={id} value={id}>
-            {PUBLISHING_PRESETS[id].labelUrdu} ({PUBLISHING_PRESETS[id].labelEnglish})
+            {isUr ? PUBLISHING_PRESETS[id].labelUrdu : PUBLISHING_PRESETS[id].labelEnglish}
           </option>
         ))}
       </select>

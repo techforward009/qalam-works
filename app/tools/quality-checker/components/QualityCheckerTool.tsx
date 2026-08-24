@@ -306,13 +306,13 @@ function ReportPanel({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">
             <span className="font-bold block text-amber-900 mb-1">{isUr ? "مسائل" : "Issues"}</span>
-            <div>• Multiple spaces: {report.typography.multipleSpaces}</div>
-            <div>• Empty lines: {report.typography.emptyLines}</div>
-            <div>• Space before/after punctuation: {report.typography.spaceBeforePunctuation + report.typography.missingSpaceAfterPunctuation}</div>
-            <div>• Mixed / wrong punctuation: {report.punctuation.mixedPunctuation + report.punctuation.wrongQuotes + report.punctuation.duplicatedPunctuation}</div>
-            <div>• Repeated words: {report.textQuality.repeatedWords}</div>
+            <div>• {isUr ? "اضافی خالی جگہیں" : "Multiple spaces"}: {report.typography.multipleSpaces}</div>
+            <div>• {isUr ? "خالی سطریں" : "Empty lines"}: {report.typography.emptyLines}</div>
+            <div>• {isUr ? "رموزِ اوقاف کے آگے/پیچھے خالی جگہ" : "Space before/after punctuation"}: {report.typography.spaceBeforePunctuation + report.typography.missingSpaceAfterPunctuation}</div>
+            <div>• {isUr ? "مخلوط/غلط رموزِ اوقاف" : "Mixed / wrong punctuation"}: {report.punctuation.mixedPunctuation + report.punctuation.wrongQuotes + report.punctuation.duplicatedPunctuation}</div>
+            <div>• {isUr ? "دہرائے گئے الفاظ" : "Repeated words"}: {report.textQuality.repeatedWords}</div>
             {resolved === "ur" && (
-              <div>• Mixed Urdu/Arabic letter forms: {report.textQuality.mixedUrduArabicForms}</div>
+              <div>• {isUr ? "مخلوط اردو/عربی حروف" : "Mixed Urdu/Arabic letter forms"}: {report.textQuality.mixedUrduArabicForms}</div>
             )}
           </div>
           <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">
@@ -321,8 +321,8 @@ function ReportPanel({
               • {isUr ? "مخلوط رسم الخط کا متن" : "Mixed-script content detected"}:{" "}
               {report.textQuality.mixedScript}
             </div>
-            <div>• Long paragraphs: {report.typography.longParagraphs}</div>
-            <div>• Tatweel (ـ): {report.typography.tatweelCount}</div>
+            <div>• {isUr ? "طویل پیراگراف" : "Long paragraphs"}: {report.typography.longParagraphs}</div>
+            <div>• {isUr ? "تطویل (ـ)" : "Tatweel (ـ)"}: {report.typography.tatweelCount}</div>
           </div>
         </div>
       </div>

@@ -312,6 +312,8 @@ export const translations = {
         { question: "Is my file stored anywhere?", answer: "No. Your file is used only for processing and is never stored." },
         { question: "What's the maximum file size?", answer: "Currently .txt and .docx files up to 5MB are supported." },
       ],
+      extractingText: "Extracting text…",
+      cleaningText: "Cleaning with selected language mode…",
       dropzone: {
         prompt: "Drop your document here or click to browse",
         hint: "(.txt, .docx — up to 5 MB)",
@@ -656,6 +658,8 @@ export const translations = {
         { question: "کیا میری فائل کہیں محفوظ ہوتی ہے؟", answer: "نہیں۔ فائل صرف پروسیسنگ کے لیے استعمال ہوتی ہے، کبھی محفوظ نہیں کی جاتی۔" },
         { question: "زیادہ سے زیادہ فائل سائز کیا ہے؟", answer: "فی الحال .txt اور .docx فائلیں 5MB تک سپورٹ کرتی ہیں۔" },
       ],
+      extractingText: "متن نکالا جا رہا ہے…",
+      cleaningText: "منتخب زبان موڈ میں صفائی جاری ہے…",
       dropzone: {
         prompt: "اپنی دستاویز یہاں ڈراپ کریں یا فائل منتخب کریں",
         hint: "(.txt، .docx — زیادہ سے زیادہ 5MB)",

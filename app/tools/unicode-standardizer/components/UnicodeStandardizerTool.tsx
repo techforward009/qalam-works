@@ -5,6 +5,26 @@ import { useLanguage } from "../../../lib/language-context";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import { standardizeUrduText } from "../../../utils/unicode/standardizeUrduText";
 
+// Presentation-layer mapping for engine-generated badge strings (processText.ts).
+// The engine is locked; localization happens here only.
+const BADGE_LABELS_UR: Record<string, string> = {
+  "✓ Text Already Standardized":              "✓ متن پہلے ہی معیاری",
+  "✓ Arabic Letters Normalized":              "✓ عربی حروف معیاری کیے گئے",
+  "✓ Extra Spaces Removed":                   "✓ اضافی خالی جگہیں ہٹائی گئیں",
+  "✓ Punctuation Corrected":                  "✓ رموزِ اوقاف درست کیے گئے",
+  "✓ RTL Optimized":                          "✓ RTL موافق",
+  "✓ RTL Compatible":                         "✓ RTL موافق",
+  "✓ Mixed Auto (Urdu-context segments)":     "✓ خودکار (اردو سیاق)",
+  "✓ English-safe cleanup":                   "✓ انگریزی محفوظ صفائی",
+  "✓ Safe RTL cleanup (no language-specific maps)": "✓ محفوظ RTL صفائی",
+  "✓ Arabic-safe cleanup":                    "✓ عربی محفوظ صفائی",
+};
+
+function localiseBadge(badge: string, isUr: boolean): string {
+  if (!isUr) return badge;
+  return BADGE_LABELS_UR[badge] ?? badge;
+}
+
 const SAMPLE_TEXT =
   "يہ ايك نمونہ تحرير ہے";
 
@@ -127,7 +147,7 @@ export default function UnicodeStandardizerTool() {
             disabled={!hasInput}
             className="px-5 py-2.5 rounded-lg text-[15px] font-semibold border border-amber-600 text-amber-700 hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            Download .txt
+            {isUr ? "ڈاؤن لوڈ .txt" : "Download .txt"}
           </button>
           <button
             onClick={() => setInput("")}
@@ -142,15 +162,15 @@ export default function UnicodeStandardizerTool() {
         <div className="mb-4 bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 font-mono" dir="ltr">
           {hasInput ? (
             <div className="flex flex-col md:flex-row flex-wrap items-center gap-2 md:gap-4">
-              <span className="font-bold text-amber-950">Qalam Report:</span>
-              <span>Total Corrections: {summary.totalCorrections}</span>
-              <span>Script Normalizations: {summary.arabicNormalizations}</span>
-              <span>Spacing Fixes: {summary.spacingFixes}</span>
-              <span>Punctuation Fixes: {summary.punctuationFixes}</span>
+              <span className="font-bold text-amber-950">{isUr ? "قلم رپورٹ:" : "Qalam Report:"}</span>
+              <span>{isUr ? "کل اصلاحات" : "Total Corrections"}: {summary.totalCorrections}</span>
+              <span>{isUr ? "رسم الخط اصلاحات" : "Script Normalizations"}: {summary.arabicNormalizations}</span>
+              <span>{isUr ? "فاصلہ اصلاحات" : "Spacing Fixes"}: {summary.spacingFixes}</span>
+              <span>{isUr ? "رموزِ اوقاف اصلاحات" : "Punctuation Fixes"}: {summary.punctuationFixes}</span>
             </div>
           ) : (
             <span className="text-gray-400 font-sans text-xs">
-              Paste text above to generate a Qalam Report
+              {isUr ? "قلم رپورٹ بنانے کے لیے اوپر متن پیسٹ کریں" : "Paste text above to generate a Qalam Report"}
             </span>
           )}
         </div>
@@ -189,7 +209,10 @@ export default function UnicodeStandardizerTool() {
         <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex flex-wrap items-center gap-2 md:gap-3 text-xs font-medium text-green-700" dir="ltr">
           {hasInput ? (
             badges.map((badge, index) => {
-              const displayBadge = badge === "✓ RTL Optimized" ? "✓ RTL Compatible" : badge;
+              const displayBadge = localiseBadge(
+                badge === "✓ RTL Optimized" ? "✓ RTL Compatible" : badge,
+                isUr
+              );
               return (
                 <span key={index} className="flex items-center">
                   {displayBadge}
@@ -198,7 +221,9 @@ export default function UnicodeStandardizerTool() {
               );
             })
           ) : (
-            <span className="text-gray-400 font-sans text-xs">Awaiting input text...</span>
+            <span className="text-gray-400 font-sans text-xs">
+              {isUr ? "متن درج کریں..." : "Awaiting input text..."}
+            </span>
           )}
         </div>
       </div>

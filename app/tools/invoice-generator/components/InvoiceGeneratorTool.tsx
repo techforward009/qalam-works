@@ -262,11 +262,11 @@ export default function InvoiceGeneratorTool() {
         </div>
 
         {/* Preview — this is what prints */}
-        <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md print:shadow-none print:border-0" dir="ltr">
+        <div className="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md print:shadow-none print:border-0" dir={isUr ? "rtl" : "ltr"}>
           <div className="flex justify-between items-start border-b-2 border-amber-600 pb-4 mb-4">
             <div>
               <h2 className="text-xl font-bold text-amber-900">
-                {invoice.seller.name || "Your Business Name"}
+                {invoice.seller.name || (isUr ? "آپ کا کاروباری نام" : "Your Business Name")}
               </h2>
               {invoice.seller.email && <p className="text-xs text-gray-500">{invoice.seller.email}</p>}
               {invoice.seller.phone && <p className="text-xs text-gray-500">{invoice.seller.phone}</p>}
@@ -280,7 +280,7 @@ export default function InvoiceGeneratorTool() {
 
           <div className="mb-4">
             <p className="text-xs font-semibold text-gray-500 mb-1">{L.billTo}</p>
-            <p className="text-sm font-bold text-gray-800">{invoice.client.name || "Client Name"}</p>
+            <p className="text-sm font-bold text-gray-800">{invoice.client.name || (isUr ? "موصول کنندہ کا نام" : "Client Name")}</p>
             {invoice.client.email && <p className="text-xs text-gray-500">{invoice.client.email}</p>}
           </div>
 

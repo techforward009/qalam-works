@@ -87,11 +87,11 @@ export default function DocumentCleanerTool() {
       }
 
       setFileLoading(true);
-      setStepMessage("Extracting text…");
+      setStepMessage(ct.extractingText);
       await new Promise((r) => setTimeout(r, 150));
       if (runId !== runIdRef.current) return;
 
-      setStepMessage("Cleaning with selected language mode…");
+      setStepMessage(ct.cleaningText);
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("processingLanguage", mode);
@@ -265,10 +265,10 @@ export default function DocumentCleanerTool() {
     }
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[12px] text-green-900">
-        <div>• Total: {c.totalCorrections}</div>
-        <div>• Character: {c.arabicNormalizations}</div>
-        <div>• Spacing: {c.spacingFixes}</div>
-        <div>• Punctuation: {c.punctuationFixes}</div>
+        <div>• {language === "ur" ? "کل" : "Total"}: {c.totalCorrections}</div>
+        <div>• {language === "ur" ? "حروف" : "Character"}: {c.arabicNormalizations}</div>
+        <div>• {language === "ur" ? "فاصلہ" : "Spacing"}: {c.spacingFixes}</div>
+        <div>• {language === "ur" ? "رموزِ اوقاف" : "Punctuation"}: {c.punctuationFixes}</div>
       </div>
     );
   };
@@ -281,19 +281,19 @@ export default function DocumentCleanerTool() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
         <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">
-          <span className="font-bold block mb-1">Typography</span>
-          <div>• Multiple spaces: {issues.typography.multipleSpaces}</div>
-          <div>• Empty lines: {issues.typography.emptyLines}</div>
-          <div>• Long paragraphs: {issues.typography.longParagraphs}</div>
+          <span className="font-bold block mb-1">{language === "ur" ? "ٹائپوگرافی" : "Typography"}</span>
+          <div>• {language === "ur" ? "اضافی خالی جگہیں" : "Multiple spaces"}: {issues.typography.multipleSpaces}</div>
+          <div>• {language === "ur" ? "خالی سطریں" : "Empty lines"}: {issues.typography.emptyLines}</div>
+          <div>• {language === "ur" ? "طویل پیراگراف" : "Long paragraphs"}: {issues.typography.longParagraphs}</div>
         </div>
         <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">
-          <span className="font-bold block mb-1">Punctuation</span>
-          <div>• Mixed punctuation: {issues.punctuation.mixedPunctuation}</div>
-          <div>• Quotes: {issues.punctuation.wrongQuotes}</div>
+          <span className="font-bold block mb-1">{language === "ur" ? "رموزِ اوقاف" : "Punctuation"}</span>
+          <div>• {language === "ur" ? "مخلوط رموزِ اوقاف" : "Mixed punctuation"}: {issues.punctuation.mixedPunctuation}</div>
+          <div>• {language === "ur" ? "اقتباسات" : "Quotes"}: {issues.punctuation.wrongQuotes}</div>
         </div>
         <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">
           <span className="font-bold block mb-1">Text</span>
-          <div>• Repeated words: {issues.textQuality.repeatedWords}</div>
+          <div>• {language === "ur" ? "دہرائے گئے الفاظ" : "Repeated words"}: {issues.textQuality.repeatedWords}</div>
           <div>
             • {ct.mixedScriptLabel}: {issues.textQuality.mixedScript}
           </div>

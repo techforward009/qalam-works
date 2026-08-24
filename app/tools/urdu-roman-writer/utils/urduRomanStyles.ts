@@ -153,20 +153,26 @@ function escapeRe(s: string): string {
 
 // ── Style metadata ────────────────────────────────────────────────────────────
 
-export const STYLE_OPTIONS: { value: UrduRomanStyle; label: string; description: string }[] = [
+export const STYLE_OPTIONS: { value: UrduRomanStyle; label: string; labelUr: string; description: string; descriptionUr: string }[] = [
   {
     value: "simple",
     label: "Simple",
+    labelUr: "سادہ",
     description: "Standard Pakistani Roman Urdu",
+    descriptionUr: "معیاری پاکستانی رومن اردو",
   },
   {
     value: "academic",
     label: "Academic",
+    labelUr: "علمی",
     description: "Scholarly diacritics (ALA-LC style)",
+    descriptionUr: "علمی اعراب (ALA-LC انداز)",
   },
   {
     value: "chat",
     label: "Chat / Social",
+    labelUr: "چیٹ / سوشل",
     description: "Short casual forms for WhatsApp & social media",
+    descriptionUr: "واٹس ایپ اور سوشل میڈیا کے لیے مختصر غیر رسمی اشکال",
   },
 ];

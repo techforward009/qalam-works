@@ -24,6 +24,7 @@ export interface QualityRecommendation {
   titleUrdu: string;
   titleEnglish: string;
   descriptionUrdu: string;
+  descriptionEnglish: string;
 }
 
 // Advanced Quality Layer (2026-08-09) — a categorical, non-numeric
@@ -273,6 +274,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Script Normalization",
       descriptionUrdu:
         "متن میں عربی/فارسی اور اردو حروف کا غیر معیاری امتزاج موجود ہے۔ معیاری بنائیں بٹن استعمال کریں۔",
+      descriptionEnglish:
+        "Text contains non-standard mixing of Arabic/Persian and Urdu characters. Use the Standardize button.",
     });
   }
 
@@ -284,6 +287,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Urdu/Arabic Character Consistency",
       descriptionUrdu:
         "متن میں عربی رسم الخط کے حروف (ي، ى، ك، أ، إ) اردو تحریر میں شامل ہیں۔ یونیکوڈ اسٹینڈرڈائزر سے درست کریں۔",
+      descriptionEnglish:
+        "Text contains Arabic-form letters (ي، ى، ك، أ، إ) in an Urdu document. Fix with the Unicode Standardizer.",
     });
   }
 
@@ -295,6 +300,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Punctuation Standardisation",
       descriptionUrdu:
         "انگریزی رموزِ اوقاف یا غیر مناسب نشانات کو اردو طرز پر تبدیل کریں۔",
+      descriptionEnglish:
+        "Replace English punctuation or incorrect marks with their Urdu equivalents.",
     });
   }
 
@@ -306,6 +313,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Spacing Standardization",
       descriptionUrdu:
         "متن میں دہرے اسپیسز یا الگ تھلگ الفاظ کے درمیان فاصلہ درست کریں۔",
+      descriptionEnglish:
+        "Fix double spaces or inconsistent word spacing in the text.",
     });
   }
 
@@ -317,6 +326,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Space Before Punctuation",
       descriptionUrdu:
         "کچھ رموزِ اوقاف (، ؛ ؟ ۔) سے پہلے غیر ضروری خالی جگہ موجود ہے۔ انہیں پچھلے لفظ سے متصل کریں۔",
+      descriptionEnglish:
+        "Some punctuation marks (، ؛ ؟ ۔) have unnecessary spaces before them. Remove them.",
     });
   }
 
@@ -328,6 +339,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Tatweel/Kashida Characters",
       descriptionUrdu:
         "متن میں تطویل (ـ) حروف موجود ہیں، جو عام طور پر کاپی پیسٹ سے آ جاتے ہیں اور عام تحریر میں غیر ضروری ہیں۔",
+      descriptionEnglish:
+        "Text contains tatweel/kashida characters (ـ), usually from copy-paste. These are unnecessary in normal prose.",
     });
   }
 
@@ -339,6 +352,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Inconsistent Punctuation Style",
       descriptionUrdu:
         "دستاویز میں ایک ہی نشان (جیسے کوما) کی انگریزی اور اردو دونوں شکلیں استعمال ہوئی ہیں۔ ایک ہی انداز اپنائیں۔",
+      descriptionEnglish:
+        "Both English and Urdu forms of the same punctuation mark appear in the document. Use one style consistently.",
     });
   }
 
@@ -350,6 +365,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Paragraph Structure",
       descriptionUrdu:
         "کچھ پیراگراف بہت طویل ہیں۔ پڑھنے میں آسانی کے لیے انہیں چھوٹے حصوں میں تقسیم کریں۔",
+      descriptionEnglish:
+        "Some paragraphs are very long. Consider splitting them for better readability.",
     });
   }
 
@@ -361,6 +378,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Heading Hierarchy",
       descriptionUrdu:
         "عنوانات کی سطحیں (H1، H2، H3...) ترتیب سے نہیں ہیں — کوئی سطح چھوڑی گئی ہے یا دستاویز H1 سے شروع نہیں ہوتی۔",
+      descriptionEnglish:
+        "Heading levels (H1, H2, H3...) are out of order — a level is skipped or the document does not start with H1.",
     });
   }
 
@@ -372,6 +391,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Empty Paragraphs",
       descriptionUrdu:
         "دستاویز میں خالی پیراگراف موجود ہیں (غالباً غیر ارادی طور پر Enter دبانے سے)۔ انہیں ہٹا دیں۔",
+      descriptionEnglish:
+        "Empty paragraphs exist in the document (likely from accidental Enter key presses). Remove them.",
     });
   }
 
@@ -383,6 +404,8 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       titleEnglish: "Repeated Words",
       descriptionUrdu:
         "کچھ الفاظ لگاتار دو مرتبہ آ گئے ہیں، جو عموماً ٹائپنگ کی غلطی ہوتی ہے۔ جائزہ لیں۔",
+      descriptionEnglish:
+        "Some words appear twice in a row, likely a typing error. Please review.",
     });
   }
 

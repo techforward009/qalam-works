@@ -8,6 +8,7 @@ interface GlossaryPanelProps {
   onDelete: (id: string) => void;
   onExport: () => void;
   onImport: (jsonText: string) => string | null;
+  isUr?: boolean;
 }
 
 /**
@@ -19,7 +20,7 @@ interface GlossaryPanelProps {
  * intent upward through its callback props and displays any returned
  * error message.
  */
-export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ entries, onAdd, onUpdate, onDelete, onExport, onImport }) => {
+export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ entries, onAdd, onUpdate, onDelete, onExport, onImport, isUr = false }) => {
   const [incorrectTerm, setIncorrectTerm] = useState("");
   const [correctTerm, setCorrectTerm] = useState("");
   const [note, setNote] = useState("");
@@ -67,23 +68,23 @@ export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ entries, onAdd, on
   };
 
   return (
-    <div className="p-3 border border-slate-200 rounded-xl bg-white shadow-sm space-y-3 text-xs" dir="rtl">
+    <div className="p-3 border border-slate-200 rounded-xl bg-white shadow-sm space-y-3 text-xs" dir={isUr ? "rtl" : "ltr"}>
       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-        <h4 className="text-slate-700 font-semibold">اصطلاحی فہرست (Terminology Glossary)</h4>
+        <h4 className="text-slate-700 font-semibold">{isUr ? "اصطلاحی فہرست" : "Terminology Glossary"}</h4>
         <div className="flex gap-2" dir="ltr">
           <button
             type="button"
             onClick={onExport}
             className="px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-50"
           >
-            Export
+            {isUr ? "برآمد کریں" : "Export"}
           </button>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             className="px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-50"
           >
-            Import
+            {isUr ? "درآمد کریں" : "Import"}
           </button>
           <input
             ref={fileInputRef}
@@ -108,14 +109,14 @@ export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ entries, onAdd, on
             type="text"
             value={incorrectTerm}
             onChange={(e) => setIncorrectTerm(e.target.value)}
-            placeholder="غلط اصطلاح"
+            placeholder={isUr ? "غلط اصطلاح" : "Incorrect term"}
             className="flex-1 border border-slate-300 rounded-md px-2 py-1"
           />
           <input
             type="text"
             value={correctTerm}
             onChange={(e) => setCorrectTerm(e.target.value)}
-            placeholder="درست اصطلاح"
+            placeholder={isUr ? "درست اصطلاح" : "Correct term"}
             className="flex-1 border border-slate-300 rounded-md px-2 py-1"
           />
         </div>
@@ -123,7 +124,7 @@ export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ entries, onAdd, on
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="نوٹ (اختیاری)"
+          placeholder={isUr ? "نوٹ (اختیاری)" : "Note (optional)"}
           className="w-full border border-slate-300 rounded-md px-2 py-1"
         />
         {formError && <p className="text-red-600">{formError}</p>}
@@ -133,11 +134,11 @@ export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ entries, onAdd, on
             onClick={handleSubmit}
             className="px-3 py-1 rounded-md bg-amber-600 text-white font-semibold hover:bg-amber-700"
           >
-            {editingId ? "Update" : "Add"}
+            {editingId ? (isUr ? "تازہ کریں" : "Update") : (isUr ? "شامل کریں" : "Add")}
           </button>
           {editingId && (
             <button type="button" onClick={resetForm} className="px-3 py-1 rounded-md border border-slate-300 text-slate-600">
-              Cancel
+              {isUr ? "منسوخ" : "Cancel"}
             </button>
           )}
         </div>
@@ -145,7 +146,7 @@ export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ entries, onAdd, on
 
       {/* Entry list */}
       {entries.length === 0 ? (
-        <p className="text-slate-400">کوئی اصطلاح شامل نہیں کی گئی۔</p>
+        <p className="text-slate-400">{isUr ? "کوئی اصطلاح شامل نہیں کی گئی۔" : "No terms added yet."}</p>
       ) : (
         <ul className="space-y-1">
           {entries.map((entry) => (
@@ -162,14 +163,14 @@ export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ entries, onAdd, on
                   onClick={() => handleEditClick(entry)}
                   className="px-2 py-0.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-50"
                 >
-                  Edit
+                  {isUr ? "ترمیم" : "Edit"}
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete(entry.id)}
                   className="px-2 py-0.5 rounded border border-red-300 text-red-600 hover:bg-red-50"
                 >
-                  Delete
+                  {isUr ? "حذف کریں" : "Delete"}
                 </button>
               </div>
             </li>

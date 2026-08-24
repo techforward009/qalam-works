@@ -147,8 +147,8 @@ const UI = {
   ur: {
     heading:    "قلم اردو رائٹر",
     sub:        "رومن اردو سے آسانی سے اردو لکھیں، اور جہاں ضرورت ہو لفظ خود منتخب کریں۔",
-    modeRoman:  "Roman Urdu → اردو",
-    modeUrdu:   "اردو → Roman Urdu",
+    modeRoman:  "رومن اردو → اردو",
+    modeUrdu:   "اردو → رومن اردو",
     modeRomanLabel: "رومن اردو → اردو موڈ",
     modeUrduLabel:  "اردو → رومن اردو موڈ",
     inputLabel:     "رومن اردو",
@@ -771,7 +771,7 @@ export default function RomanUrduWriterClient() {
                 key={m}
                 role="tab"
                 aria-selected={mode === m}
-                aria-label={m === "roman" ? ui.modeRomanLabel : "Switch to Urdu → Roman Urdu mode"}
+                aria-label={m === "roman" ? ui.modeRomanLabel : (isUr ? "اردو → رومن اردو موڈ" : "Switch to Urdu → Roman Urdu mode")}
                 onClick={() => handleModeSwitch(m)}
                 className={`min-h-[40px] px-4 md:px-5 text-sm font-medium rounded-lg transition-colors ${
                   m === "urdu-roman" ? "font-nastaliq" : ""
@@ -782,7 +782,7 @@ export default function RomanUrduWriterClient() {
                 }`}
                 lang={m === "urdu-roman" ? "ur" : undefined}
               >
-                {m === "roman" ? ui.modeRoman : "اردو → Roman"}
+                {m === "roman" ? ui.modeRoman : ui.modeUrdu}
               </button>
             ))}
           </div>

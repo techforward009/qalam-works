@@ -5,6 +5,7 @@ import type { DocumentHealthReport, HealthStatus } from "../utils/buildDocumentH
 interface DocumentStatsBarProps {
   stats: DocumentStats | null;
   health: DocumentHealthReport | null;
+  isUr?: boolean;
 }
 
 const LANGUAGE_LABEL: Record<DocumentStats["language"]["dominant"], string> = {
@@ -14,7 +15,7 @@ const LANGUAGE_LABEL: Record<DocumentStats["language"]["dominant"], string> = {
   none: "—",
 };
 
-function HealthBadge({ label, status }: { label: string; status: HealthStatus }) {
+function HealthBadge({ label, status, isUr }: { label: string; status: HealthStatus; isUr?: boolean }) {
   const ok = status === "ok";
   return (
     <div
@@ -23,7 +24,7 @@ function HealthBadge({ label, status }: { label: string; status: HealthStatus })
       }`}
     >
       <div className="font-medium">{label}</div>
-      <div className="mt-0.5">{ok ? "✓ درست" : "⚠️ نظرِ ثانی درکار"}</div>
+      <div className="mt-0.5">{ok ? (isUr ? "✓ درست" : "✓ OK") : (isUr ? "⚠️ نظرِ ثانی درکار" : "⚠️ Review")}</div>
     </div>
   );
 }
@@ -42,29 +43,29 @@ function HealthBadge({ label, status }: { label: string; status: HealthStatus })
  * QualityAuditPanel.tsx's exact visual language (same card/grid/badge
  * styling) rather than introducing a new UI system.
  */
-export const DocumentStatsBar: React.FC<DocumentStatsBarProps> = ({ stats, health }) => {
+export const DocumentStatsBar: React.FC<DocumentStatsBarProps> = ({ stats, health, isUr = false }) => {
   if (!stats) return null;
 
   return (
-    <div className="p-3 border border-slate-200 rounded-xl bg-white shadow-sm text-right text-xs space-y-3" dir="rtl">
+    <div className={`p-3 border border-slate-200 rounded-xl bg-white shadow-sm text-xs space-y-3 ${isUr ? "text-right" : "text-left"}`} dir={isUr ? "rtl" : "ltr"}>
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">الفاظ (Words)</div>
+          <div className="text-slate-500 font-medium">{isUr ? "الفاظ" : "Words"}</div>
           <div className="text-sm font-bold text-slate-700 mt-1">{stats.wordCount}</div>
         </div>
         <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">حروف (Characters)</div>
+          <div className="text-slate-500 font-medium">{isUr ? "حروف" : "Characters"}</div>
           <div className="text-sm font-bold text-slate-700 mt-1">{stats.characterCount}</div>
         </div>
         <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">پیراگراف (Paragraphs)</div>
+          <div className="text-slate-500 font-medium">{isUr ? "پیراگراف" : "Paragraphs"}</div>
           <div className="text-sm font-bold text-slate-700 mt-1">{stats.paragraphCount}</div>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
         <div className="text-slate-500">
-          زبان (Language): <span className="font-semibold text-slate-700">{LANGUAGE_LABEL[stats.language.dominant]}</span>
+          {isUr ? "زبان" : "Language"}: <span className="font-semibold text-slate-700">{LANGUAGE_LABEL[stats.language.dominant]}</span>
           {stats.language.dominant === "mixed" && (
             <span className="text-slate-400">
               {" "}
@@ -75,21 +76,21 @@ export const DocumentStatsBar: React.FC<DocumentStatsBarProps> = ({ stats, healt
 
         {stats.numerals.isMixed && (
           <div className="px-2 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-800 font-medium">
-            ⚠️ مخلوط ہندسے (Mixed Numerals)
+            {isUr ? "⚠️ مخلوط ہندسے" : "⚠️ Mixed Numerals"}
           </div>
         )}
       </div>
 
       {health && (
         <div className="pt-2 border-t border-slate-100">
-          <h4 className="text-xs font-semibold text-slate-600 mb-2">دستاویز کی صحت (Document Health)</h4>
+          <h4 className="text-xs font-semibold text-slate-600 mb-2">{isUr ? "دستاویز کی صحت" : "Document Health"}</h4>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            <HealthBadge label="یونیکوڈ (Unicode)" status={health.unicodeConsistency} />
-            <HealthBadge label="ہندسے (Numerals)" status={health.numeralConsistency} />
-            <HealthBadge label="ساخت (Structure)" status={health.paragraphStructure} />
-            <HealthBadge label="عنوانات (Headings)" status={health.headingHierarchy} />
+            <HealthBadge label={isUr ? "یونیکوڈ" : "Unicode"} status={health.unicodeConsistency} isUr={isUr} />
+            <HealthBadge label={isUr ? "ہندسے" : "Numerals"} status={health.numeralConsistency} isUr={isUr} />
+            <HealthBadge label={isUr ? "ساخت" : "Structure"} status={health.paragraphStructure} isUr={isUr} />
+            <HealthBadge label={isUr ? "عنوانات" : "Headings"} status={health.headingHierarchy} isUr={isUr} />
             <div className="p-2 rounded-lg border border-slate-100 bg-slate-50 text-center">
-              <div className="font-medium text-slate-500">ٹائپوگرافی مسائل</div>
+              <div className="font-medium text-slate-500">{isUr ? "ٹائپوگرافی مسائل" : "Typography Issues"}</div>
               <div className="mt-0.5 font-bold text-slate-700">{health.typographyIssueCount}</div>
             </div>
           </div>

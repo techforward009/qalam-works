@@ -11,6 +11,7 @@ interface SuggestionsPanelProps {
   onApplyAccepted: () => void;
   onAcceptCategory: (category: SuggestionCategory) => void;
   onIgnoreCategory: (category: SuggestionCategory) => void;
+  isUr?: boolean;
 }
 
 const CATEGORY_LABEL: Record<SuggestionCategory, string> = {
@@ -87,6 +88,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
   onApplyAccepted,
   onAcceptCategory,
   onIgnoreCategory,
+  isUr = false,
 }) => {
   const [categoryFilter, setCategoryFilter] = useState<SuggestionCategory | "all">("all");
   const [severityFilter, setSeverityFilter] = useState<SuggestionSeverity | "all">("all");
@@ -136,7 +138,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
             categoryFilter === "all" ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-600 border-slate-300"
           }`}
         >
-          All
+          {isUr ? "سب" : "All"}
         </button>
         {categoriesPresent.map((cat) => (
           <button
@@ -161,7 +163,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
             severityFilter === "all" ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-600 border-slate-300"
           }`}
         >
-          All Severities
+          {isUr ? "تمام سنگینیاں" : "All Severities"}
         </button>
         {SEVERITY_ORDER.map((sev) => (
           <button
@@ -195,14 +197,14 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
                     onClick={() => onAcceptCategory(cat)}
                     className="px-2 py-0.5 rounded border border-emerald-300 text-emerald-700 text-[10px] font-semibold hover:bg-emerald-50 transition"
                   >
-                    Accept All
+                    {isUr ? "سب منظور" : "Accept All"}
                   </button>
                   <button
                     type="button"
                     onClick={() => onIgnoreCategory(cat)}
                     className="px-2 py-0.5 rounded border border-slate-300 text-slate-500 text-[10px] font-semibold hover:bg-slate-50 transition"
                   >
-                    Ignore All
+                    {isUr ? "سب نظرانداز" : "Ignore All"}
                   </button>
                 </div>
               </div>
@@ -236,14 +238,14 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
                           onClick={() => onAccept(key)}
                           className="px-3 py-1 rounded-md bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 transition"
                         >
-                          Accept
+                          {isUr ? "منظور" : "Accept"}
                         </button>
                         <button
                           type="button"
                           onClick={() => onIgnore(key)}
                           className="px-3 py-1 rounded-md border border-slate-300 text-slate-600 text-[11px] font-semibold hover:bg-slate-100 transition"
                         >
-                          Ignore
+                          {isUr ? "نظرانداز" : "Ignore"}
                         </button>
                       </div>
                     </li>
@@ -261,9 +263,9 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
             onClick={onApplyAccepted}
             className="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition"
           >
-            منظور شدہ تجاویز لاگو کریں ({accepted.length}) / Apply Accepted
+{isUr ? `منظور شدہ تجاویز لاگو کریں (${accepted.length})` : `Apply Accepted (${accepted.length})`}
           </button>
-          <span className="text-[11px] text-slate-400">صرف منظور شدہ آئٹمز لاگو ہوں گے — Ctrl+Z سے واپس لایا جا سکتا ہے</span>
+          <span className="text-[11px] text-slate-400">{isUr ? "صرف منظور شدہ آئٹمز لاگو ہوں گے — Ctrl+Z سے واپس لایا جا سکتا ہے" : "Only accepted items will be applied — use Ctrl+Z to undo"}</span>
         </div>
       )}
     </div>

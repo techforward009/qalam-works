@@ -81,7 +81,7 @@ export default function Hero() {
                 <div className="flex items-start gap-2.5 text-xs" dir="ltr">
                   <span className="mt-0.5 text-amber-400">●</span>
                   <span className="text-[#C7C2B4]">
-                    {t.mockupIssue1} — extra spaces between words
+                    {t.mockupIssue1}
                   </span>
                 </div>
                 <div className="flex items-start gap-2.5 text-xs" dir="ltr">

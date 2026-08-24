@@ -1934,9 +1934,9 @@ export default function DocumentStudioEditor() {
                 {isUr ? "تبدیلیاں ایڈیٹر میں لگ گئی ہیں (Undo سے واپس)" : "Changes applied in the editor (use Undo to revert)"}
               </p>
               <ul className="text-sm text-gray-700 space-y-1" dir="ltr">
-                <li>Total corrections: {preview.report.totalCorrections}</li>
-                <li>Script: {preview.report.scriptNormalizations} · Spacing: {preview.report.spacingFixes} · Punctuation: {preview.report.punctuationFixes}</li>
-                <li>Mode: {preview.report.resolvedLanguage} · Direction: {preview.report.direction}</li>
+                <li>{isUr ? "کل اصلاحات" : "Total corrections"}: {preview.report.totalCorrections}</li>
+                <li>{isUr ? "رسم الخط" : "Script"}: {preview.report.scriptNormalizations} · {isUr ? "فاصلہ" : "Spacing"}: {preview.report.spacingFixes} · {isUr ? "رموزِ اوقاف" : "Punctuation"}: {preview.report.punctuationFixes}</li>
+                <li>{isUr ? "موڈ" : "Mode"}: {preview.report.resolvedLanguage} · {isUr ? "سمت" : "Direction"}: {preview.report.direction}</li>
               </ul>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -2059,12 +2059,12 @@ export default function DocumentStudioEditor() {
 
         {pdfSummary && (
           <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs" dir="ltr">
-            <div className="font-semibold text-amber-800 mb-1.5">✓ PDF Export Complete</div>
+            <div className="font-semibold text-amber-800 mb-1.5">{isUr ? "✓ PDF برآمد مکمل" : "✓ PDF Export Complete"}</div>
             <div className="text-stone-700 space-y-0.5">
-              <div>Pages: {pdfSummary.pages}</div>
-              <div>File Size: {pdfSummary.fileSizeLabel}</div>
+              <div>{isUr ? "صفحات" : "Pages"}: {pdfSummary.pages}</div>
+              <div>{isUr ? "فائل سائز" : "File Size"}: {pdfSummary.fileSizeLabel}</div>
               {pdfSummary.fontsUsed.length > 0 && (
-                <div>Fonts Used: {pdfSummary.fontsUsed.map((f) => `✓ ${f}`).join("  ")}</div>
+                <div>{isUr ? "استعمال شدہ فونٹس" : "Fonts Used"}: {pdfSummary.fontsUsed.map((f) => `✓ ${f}`).join("  ")}</div>
               )}
               {pdfSummary.fontFallbacks.length > 0 && (
                 <div className="text-amber-800 mt-1">
@@ -2075,7 +2075,7 @@ export default function DocumentStudioEditor() {
                   ).join(" ")}
                 </div>
               )}
-              <div>Format: Visual / Print PDF</div>
+              <div>{isUr ? "فارمیٹ: بصری / پرنٹ PDF" : "Format: Visual / Print PDF"}</div>
             </div>
           </div>
         )}
@@ -2106,7 +2106,7 @@ export default function DocumentStudioEditor() {
           <button
             type="button"
             onClick={() => setActiveTab(activeTab === "quality" ? "none" : "quality")}
-            title={isAuditStale ? "Quality score may be outdated — re-run Quality audit" : "Quality score"}
+            title={isAuditStale ? (isUr ? "کوالٹی اسکور پرانا ہو سکتا ہے — دوبارہ آڈٹ چلائیں" : "Quality score may be outdated — re-run Quality audit") : (isUr ? "کوالٹی اسکور" : "Quality score")}
             className="h-10 px-4 rounded-lg text-xs font-semibold border border-[#1A3A2A]/20 bg-white/80 text-[#1A3A2A] hover:bg-white tabular-nums"
           >
             {isAuditStale ? "~" : ""}
@@ -2131,13 +2131,14 @@ export default function DocumentStudioEditor() {
             onReplaceCurrent={handleReplaceCurrent}
             onReplaceAll={handleReplaceAll}
             onClose={handleCloseFindReplace}
+            isUr={isUr}
           />
         </div>
       )}
 
       {activeTab === "outline" && (
         <div className="mt-3">
-          <DocumentOutlinePanel outline={outline} onNavigate={handleOutlineNavigate} />
+          <DocumentOutlinePanel outline={outline} onNavigate={handleOutlineNavigate} isUr={isUr} />
         </div>
       )}
 
@@ -2146,7 +2147,7 @@ export default function DocumentStudioEditor() {
           <WordRuler dir={dir} layout={pageLayout} />
           <div>
             <h3 className="text-sm font-semibold text-[#1A3A2A] mb-2">Document Style</h3>
-            <PublishingPresetSelector selectedId={selectedPresetId} onChange={handlePresetChange} />
+            <PublishingPresetSelector selectedId={selectedPresetId} onChange={handlePresetChange} isUr={isUr} />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs font-medium text-gray-600">
@@ -2176,8 +2177,8 @@ export default function DocumentStudioEditor() {
                   setPdfSummary(null);
                 }}
               >
-                <option value="portrait">Portrait</option>
-                <option value="landscape">Landscape</option>
+                <option value="portrait">{isUr ? "عمودی" : "Portrait"}</option>
+                <option value="landscape">{isUr ? "افقی" : "Landscape"}</option>
               </select>
             </label>
             <label className="text-xs font-medium text-gray-600">
@@ -2194,17 +2195,17 @@ export default function DocumentStudioEditor() {
                   setPdfSummary(null);
                 }}
               >
-                <option value="normal">Normal</option>
-                <option value="narrow">Narrow</option>
-                <option value="wide">Wide</option>
-                <option value="custom">Custom</option>
+                <option value="normal">{isUr ? "عام" : "Normal"}</option>
+                <option value="narrow">{isUr ? "تنگ" : "Narrow"}</option>
+                <option value="wide">{isUr ? "چوڑا" : "Wide"}</option>
+                <option value="custom">{isUr ? "خصوصی" : "Custom"}</option>
               </select>
             </label>
             {documentSettings.page.margins.preset === "custom" && (
               <div className="col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {(["topMm", "bottomMm", "startMm", "endMm"] as const).map((key) => (
                   <label key={key} className="text-xs font-medium text-gray-600">
-                    {key === "topMm" ? "Top" : key === "bottomMm" ? "Bottom" : key === "startMm" ? "Start" : "End"} (mm)
+                    {isUr ? (key === "topMm" ? "اوپر" : key === "bottomMm" ? "نیچے" : key === "startMm" ? "آغاز" : "اختتام") : (key === "topMm" ? "Top" : key === "bottomMm" ? "Bottom" : key === "startMm" ? "Start" : "End")} (mm)
                     <input
                       type="number"
                       min={MARGIN_MIN_MM}
@@ -2364,6 +2365,7 @@ export default function DocumentStudioEditor() {
             onDelete={handleGlossaryDelete}
             onExport={handleGlossaryExport}
             onImport={handleGlossaryImport}
+            isUr={isUr}
           />
         </div>
       )}
@@ -2371,7 +2373,7 @@ export default function DocumentStudioEditor() {
       {activeTab === "quality" && (
         <div className="bg-white p-6 rounded-2xl border border-[#1A3A2A]/10 shadow-[0_2px_20px_rgba(26,58,42,0.06)] mt-3" dir="rtl">
           <div className="mb-4">
-            <DocumentStatsBar stats={stats} health={health} />
+            <DocumentStatsBar stats={stats} health={health} isUr={isUr} />
           </div>
 
           <h2 className="text-sm font-bold text-amber-800 mb-3">قلم ٹولز / Qalam Tools</h2>
@@ -2421,7 +2423,7 @@ export default function DocumentStudioEditor() {
           </div>
 
           <div className="mt-4">
-            <QualityAuditPanel report={auditReport} isStale={isAuditStale} />
+            <QualityAuditPanel report={auditReport} isStale={isAuditStale} isUr={isUr} />
           </div>
 
           <div className="mt-4">
@@ -2434,6 +2436,7 @@ export default function DocumentStudioEditor() {
               onApplyAccepted={handleApplyAccepted}
               onAcceptCategory={handleAcceptCategory}
               onIgnoreCategory={handleIgnoreCategory}
+              isUr={isUr}
             />
           </div>
         </div>

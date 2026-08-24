@@ -65,9 +65,9 @@ function RequestChangesForm({ onSubmit, onCancel, isUr }: { onSubmit: (note: str
       <div className="flex gap-2">
         <button type="button" disabled={!note.trim()} onClick={() => onSubmit(note)}
           className="h-7 px-3 rounded bg-orange-600 text-white text-xs font-medium disabled:opacity-40">
-          Submit
+          {isUr ? "جمع کریں" : "Submit"}
         </button>
-        <button type="button" onClick={onCancel} className="h-7 px-2 text-xs text-gray-500">Cancel</button>
+        <button type="button" onClick={onCancel} className="h-7 px-2 text-xs text-gray-500">{isUr ? "منسوخ" : "Cancel"}</button>
       </div>
     </div>
   );
@@ -111,7 +111,7 @@ export default function SegmentRow({
       {/* Changes requested review note — prominent */}
       {reviewState === "changes-requested" && segment.reviewNote && (
         <div className="px-3 py-2 bg-orange-50 border-b border-orange-100 text-xs text-orange-800">
-          <p className="font-semibold mb-0.5">Reviewer note:</p>
+          <p className="font-semibold mb-0.5">{isUr ? "جائزہ کار کا نوٹ:" : "Reviewer note:"}</p>
           <p>{segment.reviewNote}</p>
         </div>
       )}
@@ -120,7 +120,7 @@ export default function SegmentRow({
       {(reviewState === "ready" || reviewState === "approved") && segment.reviewNote && (
         <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-100 text-xs">
           <button type="button" onClick={() => setShowNote(n => !n)} className="text-gray-500 hover:text-gray-700">
-            Previous review note {showNote ? "▲" : "▼"}
+            {isUr ? `پچھلا جائزہ نوٹ ${showNote ? "▲" : "▼"}` : `Previous review note ${showNote ? "▲" : "▼"}`}
           </button>
           {showNote && <p className="mt-1 text-gray-600">{segment.reviewNote}</p>}
         </div>
@@ -144,7 +144,7 @@ export default function SegmentRow({
           />
           {segment.target.trim().length > 0 && segment.status !== "final" && (
             <button type="button" onClick={() => onSetFinal(segment.id)} className="mt-1 text-xs text-green-700 hover:text-green-900 font-medium">
-              Mark Final
+              {isUr ? "حتمی کریں" : "Mark Final"}
             </button>
           )}
         </div>
@@ -155,9 +155,9 @@ export default function SegmentRow({
         <div className="border-t border-blue-100 bg-blue-50 px-3 py-2 text-xs flex items-center gap-2 flex-wrap">
           <span className="font-semibold text-blue-800 shrink-0">{isUr ? "نظرثانی کے لیے تیار" : "Ready for review"}</span>
           <button type="button" onClick={() => onApprove(segment.id)}
-            className="h-7 px-3 rounded bg-green-700 text-white font-medium hover:bg-green-800">Approve</button>
+            className="h-7 px-3 rounded bg-green-700 text-white font-medium hover:bg-green-800">{isUr ? "منظور" : "Approve"}</button>
           <button type="button" onClick={() => setShowRequestForm(true)}
-            className="h-7 px-3 rounded border border-orange-300 text-orange-700 font-medium hover:bg-orange-50">Request changes</button>
+            className="h-7 px-3 rounded border border-orange-300 text-orange-700 font-medium hover:bg-orange-50">{isUr ? "تبدیلی مانگیں" : "Request changes"}</button>
         </div>
       )}
 
@@ -174,9 +174,9 @@ export default function SegmentRow({
       {/* 17B.1: Terminology warnings */}
       {terminologyFindings.length > 0 && (
         <div className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-0.5">
-          <p className="font-semibold">Terminology check{terminologyFindings.length > 1 ? ` (${terminologyFindings.length})` : ""}:</p>
+          <p className="font-semibold">{isUr ? "اصطلاحی جانچ" : "Terminology check"}{terminologyFindings.length > 1 ? ` (${terminologyFindings.length})` : ""}:</p>
           {terminologyFindings.map(f => (
-            <p key={f.entry.id}>Approved term not found: <span className="font-medium">{f.entry.sourceTerm}</span> → <span dir="auto" className="font-medium">{f.entry.targetTerm}</span></p>
+            <p key={f.entry.id}>{isUr ? "منظور شدہ اصطلاح نہیں ملی:" : "Approved term not found:"} <span className="font-medium">{f.entry.sourceTerm}</span> → <span dir="auto" className="font-medium">{f.entry.targetTerm}</span></p>
           ))}
         </div>
       )}
@@ -184,7 +184,7 @@ export default function SegmentRow({
       {/* 17B.1: Repeated-source conflict */}
       {hasRepeatedConflict && (
         <div className="border-t border-orange-100 bg-orange-50 px-3 py-2 text-xs text-orange-700">
-          Repeated source has different translations
+{isUr ? "ایک جیسے ماخذ کے مختلف ترجمے" : "Repeated source has different translations"}
         </div>
       )}
 
@@ -194,10 +194,10 @@ export default function SegmentRow({
       {/* 17B.1: Memory suggestion */}
       {memorySuggestion && !segment.target.trim() && (
         <div className="border-t border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800 flex items-center gap-2 flex-wrap">
-          <span className="font-semibold shrink-0">Previously translated</span>
+          <span className="font-semibold shrink-0">{isUr ? "پہلے ترجمہ شدہ" : "Previously translated"}</span>
           <span dir="auto" className="flex-1 min-w-0 truncate text-blue-700">{memorySuggestion.target}</span>
           <button type="button" onClick={() => onApplyMemory(segment.id, memorySuggestion.target)}
-            className="shrink-0 h-6 px-2 rounded bg-blue-700 text-white font-medium hover:bg-blue-800">Apply</button>
+            className="shrink-0 h-6 px-2 rounded bg-blue-700 text-white font-medium hover:bg-blue-800">{isUr ? "لگائیں" : "Apply"}</button>
         </div>
       )}
     </div>

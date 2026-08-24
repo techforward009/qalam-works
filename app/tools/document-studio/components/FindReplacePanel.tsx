@@ -13,6 +13,7 @@ interface FindReplacePanelProps {
   onReplaceCurrent: () => void;
   onReplaceAll: () => void;
   onClose: () => void;
+  isUr?: boolean;
 }
 
 /**
@@ -35,6 +36,7 @@ export const FindReplacePanel: React.FC<FindReplacePanelProps> = ({
   onReplaceCurrent,
   onReplaceAll,
   onClose,
+  isUr = false,
 }) => {
   if (!isOpen) return null;
 
@@ -45,9 +47,9 @@ export const FindReplacePanel: React.FC<FindReplacePanelProps> = ({
           type="text"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Find... / تلاش کریں"
+          placeholder={isUr ? "تلاش کریں..." : "Find..."}
           className="flex-1 border border-slate-300 rounded-md px-2 py-1.5 text-xs"
-          dir="rtl"
+          dir="auto"
         />
         <span className="text-slate-500 whitespace-nowrap px-1">
           {matchCount > 0 ? `${currentMatchIndex + 1} / ${matchCount}` : "0 / 0"}
@@ -58,7 +60,7 @@ export const FindReplacePanel: React.FC<FindReplacePanelProps> = ({
           disabled={matchCount === 0}
           className="px-2 py-1 rounded border border-slate-300 text-slate-600 disabled:opacity-40 hover:bg-slate-50"
         >
-          ↑ Prev
+          {isUr ? "↑ پچھلا" : "↑ Prev"}
         </button>
         <button
           type="button"
@@ -66,7 +68,7 @@ export const FindReplacePanel: React.FC<FindReplacePanelProps> = ({
           disabled={matchCount === 0}
           className="px-2 py-1 rounded border border-slate-300 text-slate-600 disabled:opacity-40 hover:bg-slate-50"
         >
-          ↓ Next
+          {isUr ? "↓ اگلا" : "↓ Next"}
         </button>
         <button type="button" onClick={onClose} className="px-2 py-1 rounded text-slate-400 hover:bg-slate-100">
           ✕
@@ -78,9 +80,9 @@ export const FindReplacePanel: React.FC<FindReplacePanelProps> = ({
           type="text"
           value={replaceQuery}
           onChange={(e) => onReplaceChange(e.target.value)}
-          placeholder="Replace with... / تبدیل کریں"
+          placeholder={isUr ? "تبدیل کریں..." : "Replace with..."}
           className="flex-1 border border-slate-300 rounded-md px-2 py-1.5 text-xs"
-          dir="rtl"
+          dir="auto"
         />
         <button
           type="button"
@@ -88,7 +90,7 @@ export const FindReplacePanel: React.FC<FindReplacePanelProps> = ({
           disabled={matchCount === 0}
           className="px-3 py-1 rounded-md bg-amber-600 text-white font-semibold disabled:opacity-40 hover:bg-amber-700 whitespace-nowrap"
         >
-          Replace
+          {isUr ? "تبدیل کریں" : "Replace"}
         </button>
         <button
           type="button"
@@ -96,7 +98,7 @@ export const FindReplacePanel: React.FC<FindReplacePanelProps> = ({
           disabled={matchCount === 0}
           className="px-3 py-1 rounded-md border border-amber-600 text-amber-700 font-semibold disabled:opacity-40 hover:bg-amber-50 whitespace-nowrap"
         >
-          Replace All
+          {isUr ? "سب تبدیل کریں" : "Replace All"}
         </button>
       </div>
     </div>
