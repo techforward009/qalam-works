@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { formatForWhatsAppRTL } from "../../../utils/whatsappRtlFormatter";
+import { convertMarkdownForWhatsApp } from "../utils/whatsappMarkdownCompat";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 
 export type FormatterLanguage = "en" | "ur";
@@ -88,7 +89,7 @@ export default function WhatsAppRtlFormatter({
     setError(null);
     setCopied(false);
     try {
-      setOutput(formatForWhatsAppRTL(input));
+      setOutput(formatForWhatsAppRTL(convertMarkdownForWhatsApp(input)));
       trackEvent("tool_process", { tool: "whatsapp_rtl_formatter", success: true });
     } catch (e) {
       trackEvent("tool_error", { tool: "whatsapp_rtl_formatter", error_code: "processing_failed", success: false });
