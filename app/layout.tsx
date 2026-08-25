@@ -5,6 +5,8 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { LanguageProvider } from "./lib/language-context";
 import AnalyticsProviders from "./components/AnalyticsProviders";
+import { ThemeProvider } from "./components/ThemeProvider";
+import { ThemeToggle } from "./components/ThemeToggle";
 
 // Fonts are served from public/fonts/ (copied from @fontsource at build time).
 // next/font/local resolves paths relative to the source file (app/layout.tsx),
@@ -87,13 +89,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" dir="ltr">
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <body className={`${inter.variable} ${nastaliq.variable} ${naskh.variable} ${amiri.variable} ${vazirmatn.variable} antialiased min-h-screen flex flex-col`}>
         <LanguageProvider>
           <Header />
-          <div className="flex-grow">
-            {children}
-          </div>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            storageKey="qalam-theme"
+            disableTransitionOnChange
+          >
+            <div className="flex-grow">
+              {children}
+            </div>
+            <ThemeToggle />
+          </ThemeProvider>
           <Footer />
           <AnalyticsProviders />
         </LanguageProvider>

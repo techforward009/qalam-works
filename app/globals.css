@@ -1,9 +1,27 @@
 @import "tailwindcss";
 
-/* Global Base Styles */
+/* ── Tailwind v4: enable dark: utilities via .dark class on <html> ─────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Semantic colour tokens ─────────────────────────────────────────────────── */
 :root {
-  --background: #faf9f6;
-  --foreground: #0f172a;
+  /* Light (current values — unchanged) */
+  --background:      #faf9f6;
+  --foreground:      #0f172a;
+  --surface:         #ffffff;
+  --surface-muted:   #f3f4f0;
+  --border:          #e2e8f0;
+  --muted-foreground:#6b7280;
+}
+
+html.dark {
+  /* Dark — Qalam deep charcoal-green identity; no pure black */
+  --background:      #0e1c15;   /* deepest page background */
+  --foreground:      #e8ede9;   /* soft off-white primary text */
+  --surface:         #162a1e;   /* cards / panels */
+  --surface-muted:   #1e3527;   /* muted surface */
+  --border:          #2a3d30;   /* subtle border */
+  --muted-foreground:#8faa93;   /* secondary text */
 }
 
 body {
@@ -135,6 +153,18 @@ body {
   /* Sticky header would otherwise repeat/overlap awkwardly across pages. */
   header {
     position: static !important;
+  }
+
+  /* Phase 1 theme safeguard: always print in light mode regardless of
+     stored theme preference. The tool content controls its own print colors
+     via the existing print-color-adjust: exact rules above. */
+  html.dark {
+    --background:      #ffffff;
+    --foreground:      #000000;
+    --surface:         #ffffff;
+    --surface-muted:   #f8f8f8;
+    --border:          #e2e8f0;
+    --muted-foreground:#6b7280;
   }
 }
 
