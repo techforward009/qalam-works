@@ -36,16 +36,16 @@ export default function BeforeAfterSection() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section id="before-after" className="bg-[#EAF0E7] py-14 md:py-16" dir={dir}>
+    <section id="before-after" className="bg-[#EAF0E7] dark:bg-[#102018] py-14 md:py-16" dir={dir}>
       <div className="max-w-[1240px] mx-auto px-6 text-center">
-        <h2 className={`text-2xl md:text-3xl font-bold text-[#1A3A2A] mb-8 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+        <h2 className={`text-2xl md:text-3xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-8 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}
         </h2>
 
         <div className="flex flex-col md:flex-row items-stretch gap-0 md:gap-0 max-w-4xl mx-auto">
           <div className="flex-1 text-right" dir="rtl">
             <div className="text-xs font-semibold tracking-wide text-red-600 mb-3" dir="ltr">{t.before}</div>
-            <div className="bg-white border border-red-300/50 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm">
+            <div className="bg-white dark:bg-[#1e2a20] border border-red-300/50 dark:border-red-900/40 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm">
               <p className="font-nastaliq text-2xl md:text-3xl leading-loose text-[#2A1A1A] w-full">
                 <span className="bg-red-100 rounded px-0.5">{BEFORE_TEXT}</span>
               </p>
@@ -60,13 +60,13 @@ export default function BeforeAfterSection() {
 
           <div className="flex-1 text-right" dir="rtl">
             <div className="text-xs font-semibold tracking-wide text-emerald-700 mb-3" dir="ltr">{t.after}</div>
-            <div className="bg-white border border-emerald-300/50 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm">
+            <div className="bg-white dark:bg-[#162a1e] border border-emerald-300/50 dark:border-emerald-900/40 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm">
               <p className="font-nastaliq text-2xl md:text-3xl leading-loose text-[#1A2A1A] w-full">{AFTER_TEXT}</p>
             </div>
           </div>
         </div>
 
-        <p className={`text-[15px] text-[#4A6A4A] mt-10 ${naskh}`}>{t.note}</p>
+        <p className={`text-[15px] text-[#4A6A4A] dark:text-[#8faa93] mt-10 ${naskh}`}>{t.note}</p>
       </div>
     </section>
   );

@@ -78,10 +78,10 @@ export default function JobGuidanceSection() {
   const isUr = language === "ur";
 
   return (
-    <section className="bg-white py-10 md:py-12" dir={dir}>
+    <section className="bg-white dark:bg-[#0e1c15] py-10 md:py-12" dir={dir}>
       <div className="site-container max-w-3xl mx-auto">
         <h2
-          className={`text-xl md:text-2xl font-bold text-[#1A3A2A] text-center mb-5 ${
+          className={`text-xl md:text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] text-center mb-5 ${
             isUr ? "font-nastaliq font-normal" : ""
           }`}
         >
@@ -104,7 +104,7 @@ export default function JobGuidanceSection() {
                       nav_source: "homepage_card",
                     })
                   }
-                  className={`group flex items-center gap-3.5 sm:gap-4 rounded-2xl border bg-[#F7F5EF] px-4 py-4 sm:px-5 sm:py-4.5 min-h-[72px] transition-all ${meta.accent} ${meta.borderHover} hover:bg-[#F1ECE0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 ${naskh}`}
+                  className={`group flex items-center gap-3.5 sm:gap-4 rounded-2xl border bg-[#F7F5EF] dark:bg-[#162a1e] px-4 py-4 sm:px-5 sm:py-4.5 min-h-[72px] transition-all ${meta.accent} ${meta.borderHover} hover:bg-[#F1ECE0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 ${naskh}`}
                 >
                   <span
                     className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl ${meta.iconBg} ${meta.iconColor}`}
@@ -114,13 +114,13 @@ export default function JobGuidanceSection() {
                   </span>
 
                   <span className="min-w-0 flex-1 text-start">
-                    <span className="block text-[13px] sm:text-[14px] font-medium text-[#6B6560] leading-snug">
+                    <span className="block text-[13px] sm:text-[14px] font-medium text-[#6B6560] dark:text-[#8faa93] leading-snug">
                       {item.label}
                     </span>
-                    <span className="mt-0.5 block text-[16px] sm:text-[17px] font-bold text-[#1A3A2A] leading-snug">
+                    <span className="mt-0.5 block text-[16px] sm:text-[17px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] leading-snug">
                       {item.description}
                     </span>
-                    <span className="mt-1 block text-[13px] sm:text-[14px] text-[#5B5748] leading-relaxed">
+                    <span className="mt-1 block text-[13px] sm:text-[14px] text-[#5B5748] dark:text-[#8faa93] leading-relaxed">
                       {item.body}
                     </span>
                   </span>

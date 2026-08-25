@@ -33,9 +33,9 @@ export default function HowItWorksSection() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section className="bg-[#F3F7F2] py-14 md:py-16" dir={dir}>
+    <section className="bg-[#F3F7F2] dark:bg-[#0e1c15] py-14 md:py-16" dir={dir}>
       <div className="max-w-[1240px] mx-auto px-6 text-center">
-        <h2 className={`text-2xl md:text-3xl font-bold text-[#151B2E] mb-16 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+        <h2 className={`text-2xl md:text-3xl font-bold text-[#151B2E] dark:text-[#e8ede9] mb-16 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}
         </h2>
 
@@ -51,10 +51,10 @@ export default function HowItWorksSection() {
                   nav_source: "homepage_card",
                 })
               }
-              className="bg-white hover:bg-[#F1ECE0] hover:shadow-md p-7 rounded-2xl border border-[#151B2E]/[0.06] transition-all block"
+              className="bg-white dark:bg-[#162a1e] hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] hover:shadow-md p-7 rounded-2xl border border-[#151B2E]/[0.06] dark:border-white/[0.08] transition-all block"
             >
-              <h3 className={`text-[19px] font-bold text-[#1A3A2A] mb-2 ${naskh}`}>{tool.name}</h3>
-              <p className={`text-[16px] text-[#5B5748] leading-relaxed ${naskh}`}>{tool.body}</p>
+              <h3 className={`text-[19px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${naskh}`}>{tool.name}</h3>
+              <p className={`text-[16px] text-[#5B5748] dark:text-[#8faa93] leading-relaxed ${naskh}`}>{tool.body}</p>
             </Link>
           ))}
         </div>

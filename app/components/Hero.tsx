@@ -10,7 +10,7 @@ export default function Hero() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section className="relative overflow-hidden bg-[#F7F5EF]" dir={dir}>
+    <section className="relative overflow-hidden bg-[#F7F5EF] dark:bg-[#0e1c15]" dir={dir}>
       <div aria-hidden="true" className="pointer-events-none absolute -left-32 -top-24 select-none font-nastaliq text-[26rem] leading-none text-[#B8935A]/[0.06]">
         ق
       </div>
@@ -18,18 +18,18 @@ export default function Hero() {
       <div className="relative site-container pt-14 pb-16 md:pt-20 md:pb-20">
         <div className="grid md:grid-cols-2 gap-10 md:gap-12 items-center">
           <div className={`text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"}`}>
-            <div className={`inline-flex items-center gap-2 rounded-full border border-[#B8935A]/40 bg-[#B8935A]/10 px-4 py-1.5 text-xs font-medium tracking-wide text-[#9A6A30] mb-4 ${naskh}`}>
+            <div className={`inline-flex items-center gap-2 rounded-full border border-[#B8935A]/40 bg-[#B8935A]/10 dark:bg-[#B8935A]/15 px-4 py-1.5 text-xs font-medium tracking-wide text-[#9A6A30] dark:text-[#C9A46B] mb-4 ${naskh}`}>
               {t.eyebrow}
             </div>
 
-            <h1 className={`text-4xl md:text-[3.4rem] font-bold leading-[1.25] text-[#1A3A2A] mb-5 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+            <h1 className={`text-4xl md:text-[3.4rem] font-bold leading-[1.25] text-[#1A3A2A] dark:text-[#e8ede9] mb-5 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
               {t.headline}
             </h1>
 
-            <p className={`text-[#4A4840] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-3 ${naskh}`}>
+            <p className={`text-[#4A4840] dark:text-[#8faa93] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-3 ${naskh}`}>
               {t.subheadline}
             </p>
-            <p className={`text-[#5B5748] text-sm md:text-[15px] leading-relaxed max-w-lg mx-auto md:mx-0 mb-6 ${naskh}`}>
+            <p className={`text-[#5B5748] dark:text-[#8faa93] text-sm md:text-[15px] leading-relaxed max-w-lg mx-auto md:mx-0 mb-6 ${naskh}`}>
               {t.multilingualLine}
             </p>
 
@@ -37,12 +37,12 @@ export default function Hero() {
               <Link href="/tools/document-studio" className={`bg-[#B8935A] hover:bg-[#C9A46B] text-white font-semibold px-7 py-3.5 rounded-lg shadow-lg shadow-[#B8935A]/20 transition-all text-[15px] text-center ${naskh}`}>
                 {t.ctaPrimary}
               </Link>
-              <Link href="#before-after" className={`border border-[#1A3A2A]/25 hover:border-[#1A3A2A]/50 hover:bg-[#1A3A2A]/5 text-[#1A3A2A] font-semibold px-7 py-3.5 rounded-lg transition-all text-[15px] text-center ${naskh}`}>
+              <Link href="#before-after" className={`border border-[#1A3A2A]/25 dark:border-white/20 hover:border-[#1A3A2A]/50 dark:hover:border-white/40 hover:bg-[#1A3A2A]/5 dark:hover:bg-white/5 text-[#1A3A2A] dark:text-[#e8ede9] font-semibold px-7 py-3.5 rounded-lg transition-all text-[15px] text-center ${naskh}`}>
                 {t.ctaSecondary}
               </Link>
             </div>
 
-            <p className={`text-[14px] text-[#5B5748] mb-5 text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"} ${naskh}`}>
+            <p className={`text-[14px] text-[#5B5748] dark:text-[#8faa93] mb-5 text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"} ${naskh}`}>
               {t.quickCleanupPrompt}{" "}
               <Link
                 href="/tools/document-cleaner"

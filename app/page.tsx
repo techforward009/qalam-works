@@ -17,7 +17,7 @@ import FinalCtaSection from "./components/FinalCtaSection";
 // approved spec, which explicitly caps the page at these 7 sections).
 export default function Home() {
   return (
-    <div className="text-[#151B2E] font-sans">
+    <div className="text-[#151B2E] dark:text-[#e8ede9] font-sans">
       <Hero />
       <JobGuidanceSection />
       <ProblemSection />
