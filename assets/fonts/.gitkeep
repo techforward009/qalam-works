@@ -1,0 +1,6 @@
+# This directory holds server-only licensed font assets for PDF generation.
+# Files here are NOT publicly served (unlike public/).
+# Place licensed WOFF2 font files here and register them in:
+#   app/tools/document-studio/utils/fontRegistry.ts
+# with paths prefixed: "assets/fonts/<filename>.woff2"
+# Do NOT add unlicensed or unverified font files.

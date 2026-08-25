@@ -78,8 +78,49 @@ export function buildPdfFooterTemplate(settings: DocumentStudioSettings): string
 
 let cachedFaces: Map<string, PdfFontFace> | null = null;
 
+/**
+ * Resolve a font registry path to an absolute filesystem path.
+ *
+ * Two approved roots are permitted — no others:
+ *   1. "@fontsource/..." or any bare relative path  → node_modules/<relPath>
+ *   2. "assets/fonts/..."                           → <cwd>/assets/fonts/<filename>
+ *
+ * Path traversal is blocked: any ".." after normalization causes a null return.
+ *
+ * The `assets/fonts/` root is for future server-only licensed font assets
+ * (e.g. Jameel Noori Nastaleeq when a licensed WOFF2 is supplied).
+ * It is intentionally NOT under `public/` so the files are never publicly served.
+ */
+function resolveFontPath(relPath: string): string | null {
+  const cwd = process.cwd();
+  let full: string;
+
+  if (relPath.startsWith("assets/fonts/")) {
+    // Server-only licensed font root.  Only the filename portion is used —
+    // no subdirectory traversal beyond assets/fonts/ is allowed.
+    const filename = path.basename(relPath.slice("assets/fonts/".length));
+    if (!filename || filename.includes("..")) return null;
+    full = path.join(cwd, "assets", "fonts", filename);
+  } else {
+    // Default: node_modules — used by all @fontsource entries.
+    full = path.join(cwd, "node_modules", relPath);
+  }
+
+  // Traversal guard: resolved path must remain inside its approved root.
+  const approvedRoot = relPath.startsWith("assets/fonts/")
+    ? path.join(cwd, "assets", "fonts")
+    : path.join(cwd, "node_modules");
+  if (!full.startsWith(approvedRoot + path.sep) && full !== approvedRoot) {
+    console.warn("PDF font path outside approved root, skipping:", relPath);
+    return null;
+  }
+
+  return full;
+}
+
 function readBase64(relPath: string): string | null {
-  const full = path.join(process.cwd(), "node_modules", relPath);
+  const full = resolveFontPath(relPath);
+  if (!full) return null;
   if (!existsSync(full)) {
     console.warn("PDF font missing:", relPath);
     return null;
