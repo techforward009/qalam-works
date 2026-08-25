@@ -386,7 +386,7 @@ function classRulesCss(): string {
   .qf-noto-naskh { font-family: "Noto Naskh Arabic", serif; }
   .qf-vazirmatn { font-family: Vazirmatn, sans-serif; }
   .qf-inter { font-family: Inter, system-ui, sans-serif; }
-  .qf-jameel { font-family: "Noto Nastaliq Urdu", serif; }
+  .qf-jameel { font-family: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif; }
   .qf-sahel { font-family: Vazirmatn, sans-serif; }
 `;
 }
