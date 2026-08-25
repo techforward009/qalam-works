@@ -105,7 +105,7 @@ function walk(node: Node, ctx: { olCounter: number[] }): string {
           if (text) items.push(`- ${text}`);
         }
       }
-      return items.length ? items.join(sep) + "\n" : "";
+      return items.length ? items.join(sep) + sep : "";
     }
     case "ol": {
       const BLOCK_TAGS = new Set(["p", "div", "blockquote", "pre", "h1", "h2", "h3", "h4", "h5", "h6"]);
@@ -125,7 +125,7 @@ function walk(node: Node, ctx: { olCounter: number[] }): string {
           }
         }
       }
-      return items.length ? items.join(sep) + "\n" : "";
+      return items.length ? items.join(sep) + sep : "";
     }
     case "table":
       // Flatten table to plain text rows separated by newlines

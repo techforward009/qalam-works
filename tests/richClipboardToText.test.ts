@@ -197,3 +197,42 @@ describe("list spacing — tight vs loose", () => {
     expect(result).toMatch(/\*\* والدین کی وفات\n\n- \*\*/);
   });
 });
+
+// ── Trailing separator after final list item ──────────────────────────────────
+
+describe("list trailing separator — blank line after final item", () => {
+  // Loose UL: blank line after last bullet before following paragraph
+  it("loose UL: blank line after final bullet before following content", () => {
+    const html = [
+      "<ul>",
+      "<li><p><strong>بے اولاد بہن کا معاملہ:</strong> متن</p></li>",
+      "</ul>",
+      "<p><strong>خلاصہ:</strong></p>",
+    ].join("");
+    const result = htmlToPlainText(html)!;
+    // Blank line must separate the bullet from the heading
+    expect(result).toMatch(/متن\n\n\*\*خلاصہ/);
+  });
+
+  // Loose OL: blank line after last numbered item before following paragraph
+  it("loose OL: blank line after final item before following content", () => {
+    const html = [
+      "<ol>",
+      "<li><p>پہلا نکتہ</p></li>",
+      "</ol>",
+      "<p>نتیجہ</p>",
+    ].join("");
+    const result = htmlToPlainText(html)!;
+    expect(result).toMatch(/پہلا نکتہ\n\nنتیجہ/);
+  });
+
+  // Tight list: only one newline before following content (no blank line)
+  it("tight UL: single newline before following content (no extra blank line)", () => {
+    const html = "<ul><li>پہلا</li><li>دوسرا</li></ul><p>نتیجہ</p>";
+    const result = htmlToPlainText(html)!;
+    // Single \n after last bullet into next paragraph is acceptable;
+    // must NOT have double-blank (\n\n\n) between bullet and paragraph
+    expect(result).not.toMatch(/دوسرا\n\n\n/);
+    expect(result).toContain("نتیجہ");
+  });
+});
