@@ -86,6 +86,34 @@ export default function WhatsAppRtlFormatter({
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Draft persistence ────────────────────────────────────────────────────
+  const DRAFT_KEY = "qalam-whatsapp-rtl-draft-v1";
+
+  // draftHydrated guards against the initial empty useState("") overwriting
+  // a saved draft before the mount effect has run.
+  const [draftHydrated, setDraftHydrated] = useState(false);
+
+  // Restore saved draft on mount (client-side only)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) setInput(saved);
+    } catch { /* storage blocked — continue normally */ }
+    setDraftHydrated(true);
+  }, []);
+
+  // Persist input whenever it changes — only after hydration is complete
+  useEffect(() => {
+    if (!draftHydrated) return;
+    try {
+      if (input) {
+        localStorage.setItem(DRAFT_KEY, input);
+      } else {
+        localStorage.removeItem(DRAFT_KEY);
+      }
+    } catch { /* storage blocked — continue normally */ }
+  }, [input, draftHydrated]);
+
   const handlePaste = useCallback(
     (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
       const html = e.clipboardData.getData("text/html");
@@ -149,7 +177,8 @@ export default function WhatsAppRtlFormatter({
     setOutput("");
     setCopied(false);
     setError(null);
-  }, []);
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+  }, [DRAFT_KEY]);
 
   const handleExample = useCallback(() => {
     setInput(EXAMPLE_TEXT);
