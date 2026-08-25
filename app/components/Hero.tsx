@@ -46,13 +46,13 @@ export default function Hero() {
               {t.quickCleanupPrompt}{" "}
               <Link
                 href="/tools/document-cleaner"
-                className="font-semibold text-[#1A3A2A] underline decoration-[#B8935A]/60 underline-offset-2 hover:text-[#B8935A]"
+                className="font-semibold text-[#1A3A2A] dark:text-[#e8ede9] underline decoration-[#B8935A]/60 underline-offset-2 hover:text-[#B8935A] dark:hover:text-[#C9A46B]"
               >
                 {t.quickCleanupLink}
               </Link>
             </p>
 
-            <p className={`text-[16px] font-medium text-[#7A7268] tracking-wide text-center mt-4 ${language === "ur" ? "font-naskh leading-loose" : ""}`}>{t.trustLine}</p>
+            <p className={`text-[16px] font-medium text-[#7A7268] dark:text-[#a8b9ac] tracking-wide text-center mt-4 ${language === "ur" ? "font-naskh leading-loose" : ""}`}>{t.trustLine}</p>
           </div>
 
           <div dir="ltr">
