@@ -23,7 +23,42 @@ const nextConfig: NextConfig = {
   //    read via runtime fs calls the tracer can't see on its own.
   serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
   outputFileTracingIncludes: {
-    "/api/export-pdf/route": ["./node_modules/@sparticuz/chromium/bin/**/*"],
+    "/api/export-pdf/route": [
+      // Chromium binary — see comment above
+      "./node_modules/@sparticuz/chromium/bin/**/*",
+      // @fontsource WOFF2 files read at runtime by fontRegistry.ts via fs.
+      // Next.js's static tracer cannot follow runtime fs lookups, so every
+      // font file referenced in fontRegistry.ts is listed explicitly here.
+      // Noto Nastaliq Urdu
+      "./node_modules/@fontsource/noto-nastaliq-urdu/files/noto-nastaliq-urdu-arabic-400-normal.woff2",
+      "./node_modules/@fontsource/noto-nastaliq-urdu/files/noto-nastaliq-urdu-latin-400-normal.woff2",
+      "./node_modules/@fontsource/noto-nastaliq-urdu/files/noto-nastaliq-urdu-arabic-700-normal.woff2",
+      "./node_modules/@fontsource/noto-nastaliq-urdu/files/noto-nastaliq-urdu-latin-700-normal.woff2",
+      // Amiri
+      "./node_modules/@fontsource/amiri/files/amiri-arabic-400-normal.woff2",
+      "./node_modules/@fontsource/amiri/files/amiri-latin-400-normal.woff2",
+      "./node_modules/@fontsource/amiri/files/amiri-latin-ext-400-normal.woff2",
+      "./node_modules/@fontsource/amiri/files/amiri-arabic-700-normal.woff2",
+      "./node_modules/@fontsource/amiri/files/amiri-latin-700-normal.woff2",
+      "./node_modules/@fontsource/amiri/files/amiri-latin-ext-700-normal.woff2",
+      // Noto Naskh Arabic
+      "./node_modules/@fontsource/noto-naskh-arabic/files/noto-naskh-arabic-arabic-400-normal.woff2",
+      "./node_modules/@fontsource/noto-naskh-arabic/files/noto-naskh-arabic-latin-400-normal.woff2",
+      "./node_modules/@fontsource/noto-naskh-arabic/files/noto-naskh-arabic-latin-ext-400-normal.woff2",
+      "./node_modules/@fontsource/noto-naskh-arabic/files/noto-naskh-arabic-arabic-700-normal.woff2",
+      // Vazirmatn
+      "./node_modules/@fontsource/vazirmatn/files/vazirmatn-arabic-400-normal.woff2",
+      "./node_modules/@fontsource/vazirmatn/files/vazirmatn-latin-400-normal.woff2",
+      "./node_modules/@fontsource/vazirmatn/files/vazirmatn-latin-ext-400-normal.woff2",
+      "./node_modules/@fontsource/vazirmatn/files/vazirmatn-arabic-700-normal.woff2",
+      "./node_modules/@fontsource/vazirmatn/files/vazirmatn-latin-700-normal.woff2",
+      "./node_modules/@fontsource/vazirmatn/files/vazirmatn-latin-ext-700-normal.woff2",
+      // Inter
+      "./node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2",
+      "./node_modules/@fontsource/inter/files/inter-latin-ext-400-normal.woff2",
+      "./node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2",
+      "./node_modules/@fontsource/inter/files/inter-latin-ext-700-normal.woff2",
+    ],
   },
 };
 
