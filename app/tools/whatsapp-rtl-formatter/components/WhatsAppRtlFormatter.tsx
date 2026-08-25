@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { formatForWhatsAppRTL } from "../../../utils/whatsappRtlFormatter";
 import { convertMarkdownForWhatsApp } from "../utils/whatsappMarkdownCompat";
+import { htmlToPlainText, hasMeaningfulHtml } from "../utils/richClipboardToText";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 
 export type FormatterLanguage = "en" | "ur";
@@ -84,6 +85,36 @@ export default function WhatsAppRtlFormatter({
   const [output, setOutput] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const html = e.clipboardData.getData("text/html");
+
+      // Only intercept if there is meaningful HTML to convert
+      if (!hasMeaningfulHtml(html)) return; // browser handles plain-text paste normally
+
+      const converted = htmlToPlainText(html);
+      if (!converted) return; // conversion failed → let browser paste plain text
+
+      e.preventDefault();
+
+      const ta = e.currentTarget;
+      const start = ta.selectionStart ?? 0;
+      const end   = ta.selectionEnd   ?? 0;
+      const before = input.slice(0, start);
+      const after  = input.slice(end);
+      const next   = before + converted + after;
+
+      setInput(next);
+
+      // Restore caret after the inserted text
+      requestAnimationFrame(() => {
+        ta.selectionStart = start + converted.length;
+        ta.selectionEnd   = start + converted.length;
+      });
+    },
+    [input],
+  );
 
   const handleFormat = useCallback(() => {
     setError(null);
@@ -167,6 +198,7 @@ export default function WhatsAppRtlFormatter({
               id="waf-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onPaste={handlePaste}
               placeholder={t.placeholder}
               rows={16}
               dir="auto"
