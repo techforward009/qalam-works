@@ -51,15 +51,21 @@ describe("fontRegistry", () => {
     expect(resolveEditorFontFamily(null, "ltr").pdfFamily).toBe("Inter");
   });
 
-  test("Jameel is local-preview-only and PDF falls back to Noto Nastaliq", () => {
+  test("Jameel is bundled with PDF support (WOFF2 embedded)", () => {
     const j = getFontById("jameel-noori-nastaleeq");
-    expect(j.availability).toBe("local-preview-only");
-    expect(j.pdf.supported).toBe(false);
-    expect(j.pdf.embedded).toBe(false);
-    const r = resolveEditorFontFamily("Jameel Noori Nastaleeq", "rtl");
-    expect(r.fellBack).toBe(true);
-    expect(r.pdfFamily).toBe("Noto Nastaliq Urdu");
-    expect(r.docxFamily).toBe("Jameel Noori Nastaleeq");
+    expect(j.availability).toBe("bundled");
+    expect(j.pdf.supported).toBe(true);
+    expect(j.pdf.embedded).toBe(true);
+    expect(j.pdf.familyName).toBe("Jameel Noori Nastaleeq");
+    expect(j.pdf.regularFiles).toEqual([
+      "private-blob:jameel-noori-nastaleeq-400.woff2",
+    ]);
+    // No boldFiles — Regular 400 only
+    expect(j.pdf.boldFiles ?? []).toHaveLength(0);
+    // DOCX still preserves the family name
+    expect(j.docx.familyName).toBe("Jameel Noori Nastaleeq");
+    // fallbackFontId retained as emergency fallback
+    expect(j.fallbackFontId).toBe("noto-nastaliq-urdu");
   });
 
   test("editor list includes main fonts", () => {
@@ -159,18 +165,18 @@ describe("buildPdfHtml typography", () => {
     expect(fontFallbacks.some((f) => f.requested === "Jameel Noori Nastaleeq")).toBe(true);
   });
 
-  test("Jameel is not claimed as embedded", () => {
+  test("Jameel is now embedded: fontsUsed contains Jameel when face is supplied", () => {
     const { fontsUsed, fontFallbacks } = buildPdfHtml(multi, "rtl", {
-      faces: [face("Noto Nastaliq Urdu")],
+      faces: [face("Jameel Noori Nastaleeq"), face("Noto Nastaliq Urdu")],
     });
-    expect(fontsUsed).not.toContain("Jameel Noori Nastaleeq");
-    expect(fontFallbacks.some((f) => f.requested === "Jameel Noori Nastaleeq")).toBe(true);
+    expect(fontsUsed).toContain("Jameel Noori Nastaleeq");
+    expect(fontFallbacks.some((f) => f.requested === "Jameel Noori Nastaleeq")).toBe(false);
   });
 
-  test("required embed list excludes Jameel", () => {
+  test("required embed list now includes Jameel", () => {
     const defs = requiredPdfEmbedFonts(multi, "rtl");
     const names = defs.map((d) => d.pdf.familyName);
-    expect(names).not.toContain("Jameel Noori Nastaleeq");
+    expect(names).toContain("Jameel Noori Nastaleeq");
     expect(names).toContain("Amiri");
   });
 });

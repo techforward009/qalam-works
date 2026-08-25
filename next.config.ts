@@ -58,11 +58,8 @@ const nextConfig: NextConfig = {
       "./node_modules/@fontsource/inter/files/inter-latin-ext-400-normal.woff2",
       "./node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2",
       "./node_modules/@fontsource/inter/files/inter-latin-ext-700-normal.woff2",
-      // Server-only licensed fonts (assets/fonts/ — NOT under public/).
-      // This directory is empty until a licensed font asset is supplied and
-      // enabled in fontRegistry.ts. The glob is added now so the trace
-      // machinery is in place; an empty match is harmless.
-      "./assets/fonts/*.woff2",
+      // Note: Jameel Noori Nastaleeq is NOT traced here.
+      // It is loaded at runtime from private Vercel Blob via JAMEEL_FONT_BLOB_URL.
     ],
   },
 };

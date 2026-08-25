@@ -1,0 +1,5 @@
+
+# Licensed font binaries are delivered via private Vercel Blob, not deployments
+assets/fonts/*.woff2
+assets/fonts/*.ttf
+assets/fonts/*.otf

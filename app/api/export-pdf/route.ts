@@ -4,6 +4,7 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
+import { createHash } from "crypto";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { PDFDocument } from "pdf-lib";
@@ -78,79 +79,199 @@ export function buildPdfFooterTemplate(settings: DocumentStudioSettings): string
 
 let cachedFaces: Map<string, PdfFontFace> | null = null;
 
+// ── Private-blob integrity constants ─────────────────────────────────────────
+
 /**
- * Resolve a font registry path to an absolute filesystem path.
- *
- * Two approved roots are permitted — no others:
- *   1. "@fontsource/..." or any bare relative path  → node_modules/<relPath>
- *   2. "assets/fonts/..."                           → <cwd>/assets/fonts/<filename>
- *
- * Path traversal is blocked: any ".." after normalization causes a null return.
- *
- * The `assets/fonts/` root is for future server-only licensed font assets
- * (e.g. Jameel Noori Nastaleeq when a licensed WOFF2 is supplied).
- * It is intentionally NOT under `public/` so the files are never publicly served.
+ * SHA-256 of the approved Jameel Noori Nastaleeq WOFF2 binary.
+ * Computed at conversion time from the licensed TTF source.
+ * Neither the font binary nor this hash constitutes a secret — it is an
+ * integrity fingerprint only, verifying that whatever was fetched is the
+ * exact approved file and has not been tampered with.
  */
-function resolveFontPath(relPath: string): string | null {
+const JAMEEL_APPROVED_SHA256 =
+  "33cee1c07578d371ff9f74665b4745a3821a0ca1b78929fd2d745b99869a9ca6";
+
+/** Reasonable upper-bound for a downloaded private font (8 MB). */
+const PRIVATE_BLOB_MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+
+// ── Approved path roots ───────────────────────────────────────────────────────
+
+/**
+ * Resolve a @fontsource (node_modules) or assets/fonts path to an absolute
+ * filesystem path, with traversal protection.
+ * Returns null if the path would escape its approved root.
+ */
+function resolveLocalFontPath(relPath: string): string | null {
   const cwd = process.cwd();
   let full: string;
 
   if (relPath.startsWith("assets/fonts/")) {
-    // Server-only licensed font root.  Only the filename portion is used —
-    // no subdirectory traversal beyond assets/fonts/ is allowed.
     const filename = path.basename(relPath.slice("assets/fonts/".length));
     if (!filename || filename.includes("..")) return null;
     full = path.join(cwd, "assets", "fonts", filename);
+    const root = path.join(cwd, "assets", "fonts");
+    if (!full.startsWith(root + path.sep) && full !== root) return null;
   } else {
-    // Default: node_modules — used by all @fontsource entries.
     full = path.join(cwd, "node_modules", relPath);
+    const root = path.join(cwd, "node_modules");
+    if (!full.startsWith(root + path.sep) && full !== root) {
+      console.warn("[pdf-font] Path outside approved root, skipping:", relPath);
+      return null;
+    }
   }
-
-  // Traversal guard: resolved path must remain inside its approved root.
-  const approvedRoot = relPath.startsWith("assets/fonts/")
-    ? path.join(cwd, "assets", "fonts")
-    : path.join(cwd, "node_modules");
-  if (!full.startsWith(approvedRoot + path.sep) && full !== approvedRoot) {
-    console.warn("PDF font path outside approved root, skipping:", relPath);
-    return null;
-  }
-
   return full;
 }
 
-function readBase64(relPath: string): string | null {
-  const full = resolveFontPath(relPath);
+function sha256hex(buf: Buffer): string {
+  return createHash("sha256").update(buf).digest("hex");
+}
+
+/**
+ * Read a local or @fontsource font file as base64.
+ * Returns null if the file is missing or the path is disallowed.
+ */
+function readBase64Sync(relPath: string): string | null {
+  const full = resolveLocalFontPath(relPath);
   if (!full) return null;
   if (!existsSync(full)) {
-    console.warn("PDF font missing:", relPath);
+    console.warn("[pdf-font] Font file missing:", relPath);
     return null;
   }
   return readFileSync(full).toString("base64");
 }
 
 /**
- * Load every declared subset. A family is `complete` only when ALL
- * declared regular files (and bold files, if any were declared) load.
- * Incomplete families are kept out of the available set so buildPdfHtml
- * falls back deterministically instead of partial browser fallback.
+ * Load a `private-blob:<filename>` font source.
+ *
+ * Loading order:
+ *   1. Local dev override — assets/fonts/<filename> if it exists on disk.
+ *      Allows local testing without uploading to Blob.
+ *   2. Production private Blob — fetched via JAMEEL_FONT_BLOB_URL +
+ *      Authorization: Bearer <BLOB_READ_WRITE_TOKEN>.
+ *
+ * In both cases SHA-256 is verified against the approved fingerprint
+ * before the bytes are returned.  Returns null on any failure so the
+ * Noto Nastaliq fallback can take over gracefully.
  */
-function loadAllBundledFaces(): Map<string, PdfFontFace> {
+async function loadPrivateBlob(filename: string): Promise<string | null> {
+  const cwd = process.cwd();
+
+  // ── A: Local dev override ─────────────────────────────────────────────────
+  const localPath = path.join(cwd, "assets", "fonts", path.basename(filename));
+  if (existsSync(localPath)) {
+    const buf = readFileSync(localPath);
+    const hash = sha256hex(buf);
+    if (hash !== JAMEEL_APPROVED_SHA256) {
+      console.warn("[pdf-font] Integrity mismatch (local):", filename);
+      return null;
+    }
+    return buf.toString("base64");
+  }
+
+  // ── B: Production private Blob ────────────────────────────────────────────
+  const blobUrl = process.env.JAMEEL_FONT_BLOB_URL;
+  const token   = process.env.BLOB_READ_WRITE_TOKEN;
+
+  if (!blobUrl || !token) {
+    // Silently degrade — Noto fallback will be used
+    return null;
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(blobUrl);
+  } catch {
+    console.warn("[pdf-font] JAMEEL_FONT_BLOB_URL is not a valid URL");
+    return null;
+  }
+
+  if (parsedUrl.protocol !== "https:") {
+    console.warn("[pdf-font] JAMEEL_FONT_BLOB_URL must use https");
+    return null;
+  }
+
+  if (!parsedUrl.hostname.endsWith(".private.blob.vercel-storage.com")) {
+    console.warn("[pdf-font] JAMEEL_FONT_BLOB_URL hostname not allowed");
+    return null;
+  }
+
+  let arrayBuf: ArrayBuffer;
+  try {
+    const res = await fetch(blobUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      console.warn("[pdf-font] Blob fetch failed:", res.status);
+      return null;
+    }
+    // Size guard before buffering
+    const contentLen = res.headers.get("content-length");
+    if (contentLen && parseInt(contentLen, 10) > PRIVATE_BLOB_MAX_BYTES) {
+      console.warn("[pdf-font] Blob response too large, rejecting");
+      return null;
+    }
+    arrayBuf = await res.arrayBuffer();
+  } catch {
+    console.warn("[pdf-font] Blob fetch error");
+    return null;
+  }
+
+  const buf = Buffer.from(arrayBuf);
+  if (buf.byteLength > PRIVATE_BLOB_MAX_BYTES) {
+    console.warn("[pdf-font] Downloaded font exceeds size cap, rejecting");
+    return null;
+  }
+
+  const hash = sha256hex(buf);
+  if (hash !== JAMEEL_APPROVED_SHA256) {
+    console.warn("[pdf-font] Integrity mismatch (blob):", filename);
+    return null;
+  }
+
+  return buf.toString("base64");
+}
+
+/**
+ * Load every declared font subset asynchronously.
+ *
+ * @fontsource paths are read synchronously (local node_modules files).
+ * private-blob: paths are fetched asynchronously (local dev override or Blob).
+ *
+ * A family is `complete` only when ALL declared regular files load successfully.
+ * Incomplete families are excluded so buildPdfHtml falls back deterministically.
+ *
+ * The result is cached on warm Lambda instances.  Private-blob failures are
+ * NOT cached — a later request is allowed to retry.
+ */
+async function loadAllBundledFaces(): Promise<Map<string, PdfFontFace>> {
   if (cachedFaces) return cachedFaces;
+
   const map = new Map<string, PdfFontFace>();
+
   for (const def of STUDIO_FONTS) {
     if (!def.pdf.embedded || !def.pdf.familyName || !def.pdf.regularFiles?.length) continue;
+
     const declaredRegular = def.pdf.regularFiles.length;
-    const declaredBold = def.pdf.boldFiles?.length ?? 0;
+    const declaredBold    = def.pdf.boldFiles?.length ?? 0;
+    const isPrivateBlob   = def.pdf.regularFiles.some(f => f.startsWith("private-blob:"));
+
     const regularSources: string[] = [];
     for (const f of def.pdf.regularFiles) {
-      const b = readBase64(f);
+      const b = f.startsWith("private-blob:")
+        ? await loadPrivateBlob(f.slice("private-blob:".length))
+        : readBase64Sync(f);
       if (b) regularSources.push(b);
     }
+
     const boldSources: string[] = [];
     for (const f of def.pdf.boldFiles ?? []) {
-      const b = readBase64(f);
+      const b = f.startsWith("private-blob:")
+        ? await loadPrivateBlob(f.slice("private-blob:".length))
+        : readBase64Sync(f);
       if (b) boldSources.push(b);
     }
+
     const complete =
       regularSources.length === declaredRegular &&
       (declaredBold === 0 || boldSources.length === declaredBold) &&
@@ -158,27 +279,40 @@ function loadAllBundledFaces(): Map<string, PdfFontFace> {
 
     if (!complete) {
       console.warn(
-        `PDF font incomplete: ${def.pdf.familyName} regular ${regularSources.length}/${declaredRegular} bold ${boldSources.length}/${declaredBold}`
+        `[pdf-font] Incomplete: ${def.pdf.familyName}` +
+        ` regular ${regularSources.length}/${declaredRegular}` +
+        ` bold ${boldSources.length}/${declaredBold}` +
+        (isPrivateBlob ? " (private-blob source)" : ""),
       );
     }
 
     map.set(def.pdf.familyName, {
-      familyName: def.pdf.familyName,
+      familyName:     def.pdf.familyName,
       regularSources,
-      boldSources: boldSources.length > 0 ? boldSources : undefined,
+      boldSources:    boldSources.length > 0 ? boldSources : undefined,
       complete,
       declaredRegular,
       declaredBold,
-      loadedRegular: regularSources.length,
-      loadedBold: boldSources.length,
+      loadedRegular:  regularSources.length,
+      loadedBold:     boldSources.length,
     });
   }
-  cachedFaces = map;
+
+  // Only cache when no private-blob failures occurred — retry is allowed
+  const anyPrivateBlobFailed = STUDIO_FONTS
+    .filter(d => d.pdf.embedded && d.pdf.regularFiles?.some(f => f.startsWith("private-blob:")))
+    .some(d => {
+      const face = map.get(d.pdf.familyName ?? "");
+      return face && !face.complete;
+    });
+
+  if (!anyPrivateBlobFailed) cachedFaces = map;
+
   return map;
 }
 
-function fontsForDocument(doc: DocNode, dir: Direction, typography?: DocumentStudioSettings["typography"]): PdfFonts {
-  const all = loadAllBundledFaces();
+async function fontsForDocument(doc: DocNode, dir: Direction, typography?: DocumentStudioSettings["typography"]): Promise<PdfFonts> {
+  const all = await loadAllBundledFaces();
   const needed = requiredPdfEmbedFonts(doc, dir, typography);
   const faces: PdfFontFace[] = [];
   const seen = new Set<string>();
@@ -238,7 +372,7 @@ export async function POST(request: NextRequest) {
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
 
   try {
-    const fonts = fontsForDocument(doc, dir, settings.typography);
+    const fonts = await fontsForDocument(doc, dir, settings.typography);
     const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, fonts, settings.typography);
 
     const executablePath = await chromium.executablePath();

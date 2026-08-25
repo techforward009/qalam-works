@@ -3,3 +3,9 @@ node_modules
 
 # Local Netlify folder
 .netlify
+
+# Licensed server-only font binaries — never commit to public repo.
+# Place in Vercel private Blob for production; local files are for dev only.
+assets/fonts/*.woff2
+assets/fonts/*.ttf
+assets/fonts/*.otf

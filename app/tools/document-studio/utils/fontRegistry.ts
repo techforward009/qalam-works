@@ -72,12 +72,20 @@ export const STUDIO_FONTS: StudioFontDefinition[] = [
     scripts: ["arabic"],
     cssStack: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif',
     cssClass: "qf-jameel",
-    pdf: { supported: false, embedded: false },
+    pdf: {
+      supported: true,
+      embedded: true,
+      familyName: "Jameel Noori Nastaleeq",
+      regularFiles: [
+        "private-blob:jameel-noori-nastaleeq-400.woff2",
+      ],
+      // No bold file — Jameel Noori Nastaleeq is distributed as Regular only.
+    },
     docx: { supported: true, embedded: false, familyName: "Jameel Noori Nastaleeq" },
     fallbackFontId: "noto-nastaliq-urdu",
-    availability: "local-preview-only",
+    availability: "bundled",
     notes:
-      "Local editor preview when installed. Not bundled for server PDF. DOCX preserves family name for Word local install.",
+      "WOFF2 embedded at assets/fonts/jameel-noori-nastaleeq-400.woff2 (Regular 400 only; no bold variant). DOCX preserves family name for Word local install.",
   },
   {
     id: "noto-nastaliq-urdu",
