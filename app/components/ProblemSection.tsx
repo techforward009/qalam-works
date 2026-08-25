@@ -14,7 +14,7 @@ export default function ProblemSection() {
         <h2 className={`text-2xl md:text-3xl font-bold text-[#151B2E] dark:text-[#e8ede9] mb-3 max-w-2xl mx-auto leading-snug ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}
         </h2>
-        <p className={`text-[#5B5748] dark:text-[#8faa93] text-sm md:text-base max-w-xl mx-auto mb-8 ${naskh}`}>{t.supporting}</p>
+        <p className={`text-[#5B5748] dark:text-[#a8b9ac] text-sm md:text-base max-w-xl mx-auto mb-8 ${naskh}`}>{t.supporting}</p>
 
         <div className="grid sm:grid-cols-2 gap-6 max-w-[900px] mx-auto">
           {t.points.map((point) => (
@@ -23,7 +23,7 @@ export default function ProblemSection() {
               <div className="bg-[#FAF7F0] dark:bg-[#0e1c15] rounded-lg py-4 mb-4 border border-[#151B2E]/[0.05] dark:border-white/[0.05]">
                 <p dir="rtl" className="font-nastaliq text-xl text-[#8B3A3A]">{point.example}</p>
               </div>
-              <p className={`text-sm text-[#5B5748] dark:text-[#8faa93] leading-relaxed ${naskh}`}>{point.impact}</p>
+              <p className={`text-sm text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed ${naskh}`}>{point.impact}</p>
             </div>
           ))}
         </div>

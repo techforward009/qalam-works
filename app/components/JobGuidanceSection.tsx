@@ -114,13 +114,13 @@ export default function JobGuidanceSection() {
                   </span>
 
                   <span className="min-w-0 flex-1 text-start">
-                    <span className="block text-[13px] sm:text-[14px] font-medium text-[#6B6560] dark:text-[#8faa93] leading-snug">
+                    <span className="block text-[13px] sm:text-[14px] font-medium text-[#6B6560] dark:text-[#a8b9ac] leading-snug">
                       {item.label}
                     </span>
                     <span className="mt-0.5 block text-[16px] sm:text-[17px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] leading-snug">
                       {item.description}
                     </span>
-                    <span className="mt-1 block text-[13px] sm:text-[14px] text-[#5B5748] dark:text-[#8faa93] leading-relaxed">
+                    <span className="mt-1 block text-[13px] sm:text-[14px] text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed">
                       {item.body}
                     </span>
                   </span>

@@ -26,10 +26,10 @@ export default function Hero() {
               {t.headline}
             </h1>
 
-            <p className={`text-[#4A4840] dark:text-[#8faa93] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-3 ${naskh}`}>
+            <p className={`text-[#4A4840] dark:text-[#a8b9ac] text-base md:text-lg leading-relaxed max-w-lg mx-auto md:mx-0 mb-3 ${naskh}`}>
               {t.subheadline}
             </p>
-            <p className={`text-[#5B5748] dark:text-[#8faa93] text-sm md:text-[15px] leading-relaxed max-w-lg mx-auto md:mx-0 mb-6 ${naskh}`}>
+            <p className={`text-[#5B5748] dark:text-[#a8b9ac] text-sm md:text-[15px] leading-relaxed max-w-lg mx-auto md:mx-0 mb-6 ${naskh}`}>
               {t.multilingualLine}
             </p>
 
@@ -42,7 +42,7 @@ export default function Hero() {
               </Link>
             </div>
 
-            <p className={`text-[14px] text-[#5B5748] dark:text-[#8faa93] mb-5 text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"} ${naskh}`}>
+            <p className={`text-[14px] text-[#5B5748] dark:text-[#a8b9ac] mb-5 text-center ${dir === "rtl" ? "md:text-right" : "md:text-left"} ${naskh}`}>
               {t.quickCleanupPrompt}{" "}
               <Link
                 href="/tools/document-cleaner"

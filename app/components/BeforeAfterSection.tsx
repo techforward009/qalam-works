@@ -46,7 +46,7 @@ export default function BeforeAfterSection() {
           <div className="flex-1 text-right" dir="rtl">
             <div className="text-xs font-semibold tracking-wide text-red-600 mb-3" dir="ltr">{t.before}</div>
             <div className="bg-white dark:bg-[#1e2a20] border border-red-300/50 dark:border-red-900/40 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm">
-              <p className="font-nastaliq text-2xl md:text-3xl leading-loose text-[#2A1A1A] w-full">
+              <p className="font-nastaliq text-2xl md:text-3xl leading-loose text-[#2A1A1A] dark:text-[#c8a0a0] w-full">
                 <span className="bg-red-100 rounded px-0.5">{BEFORE_TEXT}</span>
               </p>
             </div>
@@ -61,12 +61,12 @@ export default function BeforeAfterSection() {
           <div className="flex-1 text-right" dir="rtl">
             <div className="text-xs font-semibold tracking-wide text-emerald-700 mb-3" dir="ltr">{t.after}</div>
             <div className="bg-white dark:bg-[#162a1e] border border-emerald-300/50 dark:border-emerald-900/40 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm">
-              <p className="font-nastaliq text-2xl md:text-3xl leading-loose text-[#1A2A1A] w-full">{AFTER_TEXT}</p>
+              <p className="font-nastaliq text-2xl md:text-3xl leading-loose text-[#1A2A1A] dark:text-[#e8ede9] w-full">{AFTER_TEXT}</p>
             </div>
           </div>
         </div>
 
-        <p className={`text-[15px] text-[#4A6A4A] dark:text-[#8faa93] mt-10 ${naskh}`}>{t.note}</p>
+        <p className={`text-[15px] text-[#4A6A4A] dark:text-[#a8b9ac] mt-10 ${naskh}`}>{t.note}</p>
       </div>
     </section>
   );
