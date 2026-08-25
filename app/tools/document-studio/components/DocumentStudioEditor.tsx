@@ -796,7 +796,7 @@ function findBlockStartPosition(editor: Editor, blockIndex: number): number | nu
 export default function DocumentStudioEditor() {
   const { language: uiLanguage } = useLanguage();
   const isUr = uiLanguage === "ur";
-  const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
+  const [dir, setDir] = useState<"rtl" | "ltr">(isUr ? "rtl" : "ltr");
   const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => loadDocumentSettings());
   // Batch 16B — computed once per render, shared by the page preview and
   // the ruler so their boundaries always agree (single geometry source).
@@ -928,7 +928,7 @@ export default function DocumentStudioEditor() {
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        dir: "rtl",
+        dir,
         class: "focus:outline-none",
       },
       transformPasted: (slice) => {
