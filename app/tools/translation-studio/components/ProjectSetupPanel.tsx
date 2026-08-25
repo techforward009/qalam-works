@@ -96,13 +96,13 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
     setError("");
   };
 
-  const inputCls = "w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25";
-  const labelCls = "block text-xs font-semibold text-gray-600 mb-1";
+  const inputCls = "w-full rounded-md border border-gray-200 dark:border-[#2a3d30] px-3 py-2 text-sm bg-white dark:bg-[#162a1e] text-gray-800 dark:text-[#e8ede9] placeholder:text-gray-400 dark:placeholder:text-[#8faa93] focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25 dark:focus:ring-[#B8935A]/30";
+  const labelCls = "block text-xs font-semibold text-gray-600 dark:text-[#a8b9ac] mb-1";
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-[#1A3A2A] mb-1">{t.title}</h1>
-      <p className="text-sm text-gray-500 mb-6">{t.subtitle}</p>
+      <h1 className="text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-1">{t.title}</h1>
+      <p className="text-sm text-gray-500 dark:text-[#a8b9ac] mb-6">{t.subtitle}</p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Project name */}
@@ -145,7 +145,7 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
           </div>
         </div>
         <div>
-          <label className={labelCls}>{t.additionalInstructions} <span className="font-normal text-gray-400">{t.charsMax(BRIEF_INSTRUCTIONS_MAX)}</span></label>
+          <label className={labelCls}>{t.additionalInstructions} <span className="font-normal text-gray-400 dark:text-[#8faa93]">{t.charsMax(BRIEF_INSTRUCTIONS_MAX)}</span></label>
           <textarea className={`${inputCls} resize-none`} rows={2} maxLength={BRIEF_INSTRUCTIONS_MAX} value={brief.additionalInstructions} onChange={e => setBrief(b => ({ ...b, additionalInstructions: e.target.value }))} placeholder={t.additionalInstructionsPlaceholder} />
         </div>
 
@@ -154,11 +154,11 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
           <label className={labelCls}>{t.sourceText}</label>
           <div className="flex gap-2 mb-2">
             <input ref={fileRef} type="file" accept=".txt,.docx" className="hidden" onChange={handleFile} />
-            <button type="button" onClick={() => fileRef.current?.click()} className="h-8 px-3 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50">{t.uploadBtn}</button>
-            <button type="button" onClick={handleLoadExample} className="h-8 px-3 rounded-md border border-[#1A3A2A]/20 bg-[#F3F7F2] text-xs font-medium text-[#1A3A2A] hover:bg-[#E8F0E8]">{t.loadExample}</button>
+            <button type="button" onClick={() => fileRef.current?.click()} className="h-8 px-3 rounded-md border border-gray-200 dark:border-[#2a3d30] bg-white dark:bg-[#162a1e] text-xs font-medium text-gray-700 dark:text-[#e8ede9] hover:bg-gray-50 dark:hover:bg-[#1e3527]">{t.uploadBtn}</button>
+            <button type="button" onClick={handleLoadExample} className="h-8 px-3 rounded-md border border-[#1A3A2A]/20 dark:border-[#B8935A]/30 bg-[#F3F7F2] dark:bg-[#162a1e] text-xs font-medium text-[#1A3A2A] dark:text-[#C9A46B] hover:bg-[#E8F0E8] dark:hover:bg-[#1e3527]">{t.loadExample}</button>
           </div>
           <textarea className={`${inputCls} resize-y`} rows={8} value={sourceText} onChange={e => { setSourceText(e.target.value); if (e.target.value.trim()) setError(prev => prev === t.errSourceRequired ? "" : prev); }} data-testid="source-text-input" placeholder={t.sourceTextPlaceholder} dir="auto" />
-          <p className="mt-1 text-xs text-gray-400">{t.docxNote}</p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-[#8faa93]">{t.docxNote}</p>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
