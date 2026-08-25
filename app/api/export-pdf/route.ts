@@ -89,7 +89,7 @@ let cachedFaces: Map<string, PdfFontFace> | null = null;
  * exact approved file and has not been tampered with.
  */
 const JAMEEL_APPROVED_SHA256 =
-  "33cee1c07578d371ff9f74665b4745a3821a0ca1b78929fd2d745b99869a9ca6";
+  "d12978f4398f1f788d65fa7ccb872cf0e1c43aef89166816243e94487d9cee27";
 
 /** Reasonable upper-bound for a downloaded private font (8 MB). */
 const PRIVATE_BLOB_MAX_BYTES = 8 * 1024 * 1024; // 8 MB
