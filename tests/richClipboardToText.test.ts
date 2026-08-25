@@ -137,3 +137,63 @@ describe("htmlToPlainText", () => {
     expect(result).not.toMatch(/<[a-z]/i);
   });
 });
+
+// ── List spacing: tight vs loose ─────────────────────────────────────────────
+
+describe("list spacing — tight vs loose", () => {
+  // 1. Tight UL stays single-spaced
+  it("tight UL: plain-text <li> items → single newline between bullets", () => {
+    const html = "<ul><li>پہلا</li><li>دوسرا</li><li>تیسرا</li></ul>";
+    const result = htmlToPlainText(html)!;
+    const lines = result.split("\n").filter(l => l.trim() !== "");
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toBe("- پہلا");
+    expect(lines[1]).toBe("- دوسرا");
+    expect(lines[2]).toBe("- تیسرا");
+    // No blank line between items
+    expect(result).not.toMatch(/- پہلا\n\n/);
+  });
+
+  // 2. Loose UL with <p> items preserves blank lines
+  it("loose UL: <li><p>…</p></li> items → blank line between bullets", () => {
+    const html = "<ul><li><p>پہلا</p></li><li><p>دوسرا</p></li></ul>";
+    const result = htmlToPlainText(html)!;
+    expect(result).toContain("- پہلا");
+    expect(result).toContain("- دوسرا");
+    // Blank line between the two bullets
+    expect(result).toMatch(/- پہلا\n\n- دوسرا/);
+  });
+
+  // 3. Tight OL stays single-spaced
+  it("tight OL: plain-text <li> items → single newline between items", () => {
+    const html = "<ol><li>پہلا</li><li>دوسرا</li></ol>";
+    const result = htmlToPlainText(html)!;
+    const lines = result.split("\n").filter(l => l.trim() !== "");
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toBe("1. پہلا");
+    expect(lines[1]).toBe("2. دوسرا");
+    expect(result).not.toMatch(/1\. پہلا\n\n/);
+  });
+
+  // 4. Loose OL preserves blank lines
+  it("loose OL: <li><p>…</p></li> items → blank line between items", () => {
+    const html = "<ol><li><p>پہلا</p></li><li><p>دوسرا</p></li></ol>";
+    const result = htmlToPlainText(html)!;
+    expect(result).toMatch(/1\. پہلا\n\n2\. دوسرا/);
+  });
+
+  // 5. Bold inside loose bullet remains intact
+  it("bold content inside loose <li><p> remains **wrapped**", () => {
+    const html = [
+      "<ul>",
+      "<li><p><strong>حقِ وراثت کا قیام:</strong> والدین کی وفات</p></li>",
+      "<li><p><strong>بچوں کا حق:</strong> مرحومہ بہن</p></li>",
+      "</ul>",
+    ].join("");
+    const result = htmlToPlainText(html)!;
+    expect(result).toContain("- **حقِ وراثت کا قیام:** والدین کی وفات");
+    expect(result).toContain("- **بچوں کا حق:** مرحومہ بہن");
+    // Blank line between loose items
+    expect(result).toMatch(/\*\* والدین کی وفات\n\n- \*\*/);
+  });
+});

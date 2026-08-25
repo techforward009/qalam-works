@@ -90,6 +90,14 @@ function walk(node: Node, ctx: { olCounter: number[] }): string {
       return walkChildren(el, ctx).trim();
     }
     case "ul": {
+      // Loose list = any <li> has a direct block child (<p>, <div>, …).
+      // Tight list = plain text children only. Use sep to set line spacing.
+      const BLOCK_TAGS = new Set(["p", "div", "blockquote", "pre", "h1", "h2", "h3", "h4", "h5", "h6"]);
+      const isLoose = Array.from(el.children).some(
+        (li) => li.tagName.toLowerCase() === "li" &&
+          Array.from(li.children).some((c) => BLOCK_TAGS.has(c.tagName.toLowerCase()))
+      );
+      const sep = isLoose ? "\n\n" : "\n";
       const items: string[] = [];
       for (const child of el.children) {
         if (child.tagName.toLowerCase() === "li") {
@@ -97,9 +105,15 @@ function walk(node: Node, ctx: { olCounter: number[] }): string {
           if (text) items.push(`- ${text}`);
         }
       }
-      return items.length ? items.join("\n") + "\n" : "";
+      return items.length ? items.join(sep) + "\n" : "";
     }
     case "ol": {
+      const BLOCK_TAGS = new Set(["p", "div", "blockquote", "pre", "h1", "h2", "h3", "h4", "h5", "h6"]);
+      const isLoose = Array.from(el.children).some(
+        (li) => li.tagName.toLowerCase() === "li" &&
+          Array.from(li.children).some((c) => BLOCK_TAGS.has(c.tagName.toLowerCase()))
+      );
+      const sep = isLoose ? "\n\n" : "\n";
       const items: string[] = [];
       let counter = 1;
       for (const child of el.children) {
@@ -111,7 +125,7 @@ function walk(node: Node, ctx: { olCounter: number[] }): string {
           }
         }
       }
-      return items.length ? items.join("\n") + "\n" : "";
+      return items.length ? items.join(sep) + "\n" : "";
     }
     case "table":
       // Flatten table to plain text rows separated by newlines
