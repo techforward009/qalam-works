@@ -2,7 +2,7 @@
  * WhatsApp RTL Formatter
  *
  * Restored baseline (dd591e6d + final RLM from 118bf9d4):
- * - RTL/mixed lines → outer RLM … RLM (cross-platform; avoids Android RLI break)
+ * - RTL/mixed lines → no outer wrap (Variant B experiment); inner LRI…PDI only
  * - Embedded LTR tokens → LRI … PDI
  * - Final RTL content → trailing "\n" + RLM (U+200F)
  * - Pure English → untouched
@@ -103,7 +103,8 @@ function isolateLtr(text: string): string {
 }
 
 function isolateRtl(text: string): string {
-  return RLM + text + RLM;
+  // Variant B: no outer RLM/RLI — only inner LRI…PDI on LTR runs
+  return text;
 }
 
 function isolateLtrRuns(text: string): string {
@@ -166,7 +167,7 @@ function ensureFinalRtlStability(text: string): string {
   while (lastIdx >= 0 && lines[lastIdx].trim() === "") lastIdx--;
   if (lastIdx < 0) return text;
 
-  if (lines[lastIdx].includes(RLM)) {
+  if (lineHasRtl(lines[lastIdx])) {
     if (text.endsWith("\n")) return text + RLM;
     return text + "\n" + RLM;
   }

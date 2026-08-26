@@ -24,11 +24,11 @@ describe("formatForWhatsAppRTL", () => {
     expect(formatForWhatsAppRTL("   \n  \t")).toBe("   \n  \t");
   });
 
-  it("wraps pure Urdu lines in RLM…RLM", () => {
+  it("leaves pure Urdu without outer RLM/RLI (Variant B)", () => {
     const urdu = "یہ ایک سادہ اردو جملہ ہے۔";
     const result = formatForWhatsAppRTL(urdu);
     expect(strip(result)).toBe(urdu);
-    expect(result.startsWith(RLM)).toBe(true);
+    expect(result.startsWith(RLM)).toBe(false);
   });
 
   it("does not wrap pure English paragraphs", () => {
@@ -40,11 +40,11 @@ describe("formatForWhatsAppRTL", () => {
     expect(formatForWhatsAppRTL(eng)).toBe(eng);
   });
 
-  it("wraps mixed line in RLM and isolates English with LRI", () => {
+  it("isolates English with LRI without outer RLM (Variant B)", () => {
     const mixed = "یہ PDF فائل ہے";
     const result = formatForWhatsAppRTL(mixed);
     expect(strip(result)).toBe(mixed);
-    expect(result.startsWith(RLM)).toBe(true);
+    expect(result.startsWith(RLM)).toBe(false);
     expect(result).toContain(LRI + "PDF" + PDI);
   });
 
@@ -125,7 +125,7 @@ describe("formatForWhatsAppRTL", () => {
       "رپورٹ PDF میں محفوظ کریں۔ فائل qalamworks.com پر اپلوڈ کریں۔ قیمت 1500 PKR ہے۔";
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
-    expect(result.startsWith(RLM)).toBe(true);
+    expect(result.startsWith(RLM)).toBe(false);
   });
 
   it("returns empty string for non-string input", () => {
@@ -170,7 +170,7 @@ describe("formatForWhatsAppRTL", () => {
   // ========== Marker matrix (independent) ==========
 
   // A. Dot-style 1. — peeled raw (NO LRI, NO LRM on marker), outer RLM only
-  it("A: dot-style marker is raw inside RLM; no LRI/LRM on marker", () => {
+  it("A: dot-style marker is raw; no outer RLM; no LRI/LRM on marker", () => {
     const text = "1. پہلا نکتہ\n2. دوسرا نکتہ\n3. تیسرا نکتہ";
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
@@ -181,20 +181,20 @@ describe("formatForWhatsAppRTL", () => {
       expect(result).toContain(n + ".");
     }
     const first = result.split("\n")[0];
-    expect(first.startsWith(RLM)).toBe(true);
+    expect(first.startsWith(RLM)).toBe(false);
     // Marker appears immediately after RLM (raw)
-    expect(first.startsWith(RLM + "1.")).toBe(true);
-    const rtlLines = result
-      .split("\n")
-      .filter((l) => l.includes(RLM) && l.replace(/\u200F/g, "").trim() !== "");
-    expect(rtlLines.length).toBe(3);
+    expect(first.startsWith("1.")).toBe(true);
+    // Variant B: no per-line outer RLM; markers remain raw
+    expect(result).toContain("1.");
+    expect(result).toContain("2.");
+    expect(result).toContain("3.");
   });
 
   it("A: dot-style body still isolates embedded LTR tokens", () => {
     const text = "1. رپورٹ PDF میں محفوظ کریں";
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
-    expect(result.startsWith(RLM + "1.")).toBe(true);
+    expect(result.startsWith("1.")).toBe(true);
     expect(result).not.toContain(LRI + "1.");
     expect(result).toContain(LRI + "PDF" + PDI);
   });
@@ -210,8 +210,8 @@ describe("formatForWhatsAppRTL", () => {
     expect(result).not.toContain("3)" + LRM);
     // Marker not LRI-wrapped
     expect(result).not.toContain(LRI + "1)");
-    // Line still RLM-wrapped
-    expect(result.split("\n")[0].startsWith(RLM)).toBe(true);
+    // Line has no outer RLM (Variant B)
+    expect(result.split("\n")[0].startsWith(RLM)).toBe(false);
   });
 
   // C. Bullet •
@@ -221,7 +221,7 @@ describe("formatForWhatsAppRTL", () => {
     expect(strip(result)).toBe(text);
     expect(result).not.toContain("•" + LRM);
     expect(result).not.toContain(LRI + "•");
-    expect(result.split("\n")[0].startsWith(RLM)).toBe(true);
+    expect(result.split("\n")[0].startsWith(RLM)).toBe(false);
   });
 
   // D. Bullet *
@@ -230,7 +230,7 @@ describe("formatForWhatsAppRTL", () => {
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
     expect(result).not.toContain("*" + LRM);
-    expect(result.split("\n")[0].startsWith(RLM)).toBe(true);
+    expect(result.split("\n")[0].startsWith(RLM)).toBe(false);
   });
 
   // E. Bullet -
@@ -239,7 +239,7 @@ describe("formatForWhatsAppRTL", () => {
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
     expect(result).not.toContain("-" + LRM);
-    expect(result.split("\n")[0].startsWith(RLM)).toBe(true);
+    expect(result.split("\n")[0].startsWith(RLM)).toBe(false);
   });
 
   // F. Final line RLM
@@ -248,7 +248,7 @@ describe("formatForWhatsAppRTL", () => {
     const result = formatForWhatsAppRTL(text);
     expect(strip(result)).toBe(text);
     expect(result.endsWith("\n" + RLM)).toBe(true);
-    expect(result.startsWith(RLM)).toBe(true);
+    expect(result.startsWith(RLM)).toBe(false);
   });
 
   it("F: final RLM survives complete formatting (idempotent + present)", () => {
@@ -284,7 +284,7 @@ describe("formatForWhatsAppRTL", () => {
     // Dot-style: raw marker, no LRI/LRM
     expect(result).not.toContain(LRI + "1.");
     expect(result).not.toContain("1" + LRM + ".");
-    expect(result).toContain(RLM + "1.");
+    expect(result).toContain("1.");
     // Paren and bullets remain without LRM / without LRI on marker
     expect(result).not.toContain("1)" + LRM);
     expect(result).not.toContain(LRI + "1)");
@@ -346,22 +346,22 @@ describe("formatForWhatsAppRTL", () => {
     expect(result).not.toContain(LRI + "**");
   });
 
-  it("fiqhi: bold headings are inside RLM…RLM with ** intact", () => {
+  it("fiqhi: bold headings keep ** intact without outer RLM", () => {
     const result = formatForWhatsAppRTL(FIQHI_SAMPLE);
-    expect(result).toContain(RLM + "**مختصر جواب:**" + RLM);
-    expect(result).toContain(RLM + "**تفصیلی احکام:**" + RLM);
-    expect(result).toContain(RLM + "**خلاصہ:**" + RLM);
+    expect(result).toContain("**مختصر جواب:**");
+    expect(result).toContain("**تفصیلی احکام:**");
+    expect(result).toContain("**خلاصہ:**");
   });
 
-  it("fiqhi: bullet lines start with RLM + '- **' (marker and bold intact)", () => {
+  it("fiqhi: bullet lines keep '- **' intact without outer RLM", () => {
     const result = formatForWhatsAppRTL(FIQHI_SAMPLE);
     const lines = result.split("\n");
     // Lines 6-9 are the four bullet lines (0-indexed)
-    for (const bulletLine of lines.filter(l => l.startsWith(RLM + "- **"))) {
-      expect(bulletLine.startsWith(RLM + "- **")).toBe(true);
+    for (const bulletLine of lines.filter(l => l.includes("- **"))) {
+      expect(bulletLine.includes("- **")).toBe(true);
     }
     // Exactly 4 bullet lines
-    const bulletCount = lines.filter(l => l.startsWith(RLM + "- **")).length;
+    const bulletCount = lines.filter(l => l.includes("- **")).length;
     expect(bulletCount).toBe(4);
   });
 
