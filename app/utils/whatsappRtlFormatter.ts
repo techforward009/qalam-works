@@ -2,7 +2,7 @@
  * WhatsApp RTL Formatter
  *
  * Restored baseline (dd591e6d + final RLM from 118bf9d4):
- * - RTL/mixed lines → outer RLI … PDI
+ * - RTL/mixed lines → outer RLM … RLM (cross-platform; avoids Android RLI break)
  * - Embedded LTR tokens → LRI … PDI
  * - Final RTL content → trailing "\n" + RLM (U+200F)
  * - Pure English → untouched
@@ -30,10 +30,11 @@ const RLM = "\u200F";
  * - Trailing final-line RLM anchor
  */
 function stripOwnBidiControls(text: string): string {
-  let s = text.replace(/[\u2066\u2067\u2069]/g, "");
+  // Final stability anchor first (newline + RLM), then isolates + outer RLM marks
+  let s = text.replace(/(?:\r?\n)\u200F\s*$/g, "");
+  s = s.replace(/[\u2066\u2067\u2069\u200F]/g, "");
   // digit + LRM + .  →  digit + .  (legacy cleanup for idempotence)
   s = s.replace(/(\d+)\u200E\./g, "$1.");
-  s = s.replace(/(?:\r?\n)\u200F\s*$/g, "");
   return s;
 }
 
@@ -102,7 +103,7 @@ function isolateLtr(text: string): string {
 }
 
 function isolateRtl(text: string): string {
-  return RLI + text + PDI;
+  return RLM + text + RLM;
 }
 
 function isolateLtrRuns(text: string): string {
@@ -165,7 +166,7 @@ function ensureFinalRtlStability(text: string): string {
   while (lastIdx >= 0 && lines[lastIdx].trim() === "") lastIdx--;
   if (lastIdx < 0) return text;
 
-  if (lines[lastIdx].includes(RLI)) {
+  if (lines[lastIdx].includes(RLM)) {
     if (text.endsWith("\n")) return text + RLM;
     return text + "\n" + RLM;
   }
