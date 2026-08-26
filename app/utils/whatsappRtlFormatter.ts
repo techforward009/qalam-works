@@ -1,11 +1,11 @@
 /**
- * WhatsApp RTL Formatter — EXPERIMENTAL Variant M
+ * WhatsApp RTL Formatter — EXPERIMENTAL Variant N
  *
  * - No body bidi controls (no RLI/LRI/PDI/LRM).
  * - Numbered: "1." → "1)"
- * - Unordered: • ▪ - ◆ — ◦ → "◆ " with consistent spacing
- * - Continuation lines under a bullet are indented to align under text
- * - End-of-document invisible stabilizer: trailing "\n" + RLM only
+ * - Unordered: • ▪ - ◆ — ◦ → consistent "◆ item"
+ * - Continuation lines (already indented) align under text after ◆
+ * - End-of-document invisible stabilizer: trailing "\n" + RLM only (same as M)
  */
 
 const LRI = "\u2066";
@@ -15,9 +15,13 @@ const LRM = "\u200E";
 const RLM = "\u200F";
 
 const BULLET_MARKER = "◆";
-/** Spaces after ◆ so body text is indented; continuation lines use same width. */
-const BULLET_GAP = " ";
-const CONTINUATION_INDENT = "  "; // width of "◆ "
+/** Exactly one space after ◆ / after "1)" for consistent layout. */
+const MARKER_GAP = " ";
+/**
+ * Indent for wrapped/continuation lines under bullet body text.
+ * Matches visual width of "◆ " (marker + gap).
+ */
+const CONTINUATION_INDENT = "  ";
 
 function stripOwnBidiControls(text: string): string {
   let s = text.replace(/(?:\r?\n)\u200F\s*$/g, "");
@@ -44,10 +48,7 @@ function lineHasRtl(line: string): boolean {
   return false;
 }
 
-/**
- * Final document stabilizer only (no paragraph wrappers).
- * Appends newline + RLM after last RTL content.
- */
+/** Final document stabilizer only — identical to Variant M. */
 function ensureFinalRtlStability(text: string): string {
   if (!text) return text;
   if (/(?:\r?\n)\u200F\s*$/.test(text)) return text;
@@ -75,37 +76,42 @@ function normalizeLines(lines: string[]): string[] {
       continue;
     }
 
-    // Numbered: 1. → 1)
-    const dot = line.match(/^(\s*)(\d+)\.(\s+)(.*)$/);
+    // Numbered: 1. → 1) with single gap
+    const dot = line.match(/^(\s*)(\d+)\.(\s*)(.*)$/);
     if (dot) {
       const [, lead, num, , rest] = dot;
       inBulletBlock = false;
-      out.push(lead + num + ")" + BULLET_GAP + rest);
+      const body = rest.trimStart();
+      out.push(lead + num + ")" + (body ? MARKER_GAP + body : ""));
       continue;
     }
 
-    // Already paren-numbered
-    if (/^\s*\d+\)\s/.test(line)) {
+    // Already paren-numbered — normalize gap only
+    const paren = line.match(/^(\s*)(\d+\))(\s*)(.*)$/);
+    if (paren) {
+      const [, lead, marker, , rest] = paren;
       inBulletBlock = false;
-      out.push(line);
+      const body = rest.trimStart();
+      out.push(lead + marker + (body ? MARKER_GAP + body : ""));
       continue;
     }
 
-    // Unordered bullets → ◆ with consistent gap
-    const bullet = line.match(/^(\s*)[•▪\-◆—◦](\s+)(.*)$/);
+    // Unordered bullets → ◆ + exactly one space + body
+    const bullet = line.match(/^(\s*)[•▪\-◆—◦](\s*)(.*)$/);
     if (bullet) {
       const [, lead, , rest] = bullet;
       inBulletBlock = true;
-      out.push(lead + BULLET_MARKER + BULLET_GAP + rest);
+      const body = rest.trimStart();
+      out.push(lead + BULLET_MARKER + (body ? MARKER_GAP + body : ""));
       continue;
     }
 
-    // Continuation under bullet: only if already indented; else end block
+    // Continuation under bullet: only if already indented
     if (inBulletBlock && /^\s+\S/.test(line)) {
-      const body = line.trimStart();
-      out.push(CONTINUATION_INDENT + body);
+      out.push(CONTINUATION_INDENT + line.trimStart());
       continue;
     }
+
     inBulletBlock = false;
     out.push(line);
   }
