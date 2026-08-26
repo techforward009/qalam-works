@@ -6,9 +6,9 @@
  * - Direct paste of plain Urdu/mixed text is more reliable than wrappers.
  * - Only normalize list markers for WhatsApp-friendly display:
  *     leading "1." / "2." …  →  "1)" / "2)" …
- *     leading "•" / "▪"     →  "-"
- * - Leave normal Urdu, English, URLs, emails, numbers unchanged.
- * - Idempotent: stripping own controls then re-format yields same text.
+ *     unordered bullets (• ▪ - ◆ — ◦) → "◆" (Variant L experiment)
+ * - No bidi controls. Leave normal Urdu/English/URLs/emails unchanged.
+ * EXPERIMENTAL Variant L — temporary branch only.
  */
 
 const LRI = "\u2066";
@@ -30,10 +30,10 @@ function stripOwnBidiControls(text: string): string {
 }
 
 /**
- * Line-level list marker normalization only.
+ * Line-level list marker normalization (Variant L).
  * - "1. item" → "1) item"
- * - "• item" / "▪ item" → "- item"
- * Existing "1)" and "-" lines are left as-is.
+ * - unordered • ▪ - ◆ — ◦ → "◆ item"
+ * No bidi controls.
  */
 function normalizeListMarkers(line: string): string {
   const dot = line.match(/^(\s*)(\d+)\.(\s+)(.*)$/);
@@ -42,10 +42,11 @@ function normalizeListMarkers(line: string): string {
     return lead + num + ")" + spaces + rest;
   }
 
-  const bullet = line.match(/^(\s*)[•▪](\s+)(.*)$/);
+  // Unordered bullets → diamond marker (RTL-visible experiment)
+  const bullet = line.match(/^(\s*)[•▪\-◆—◦](\s+)(.*)$/);
   if (bullet) {
     const [, lead, spaces, rest] = bullet;
-    return lead + "-" + spaces + rest;
+    return lead + "◆" + spaces + rest;
   }
 
   return line;
