@@ -6,9 +6,10 @@
  * - Direct paste of plain Urdu/mixed text is more reliable than wrappers.
  * - Only normalize list markers for WhatsApp-friendly display:
  *     leading "1." / "2." …  →  "1)" / "2)" …
- *     leading "•" / "▪"     →  "-"
+ *     leading "•" / "▪" / "-" unordered bullets → sequential "1)" "2)" …
  * - Leave normal Urdu, English, URLs, emails, numbers unchanged.
- * - Idempotent: stripping own controls then re-format yields same text.
+ * - No bidi controls injected.
+ * EXPERIMENTAL Variant K — temporary branch only.
  */
 
 const LRI = "\u2066";
@@ -30,25 +31,32 @@ function stripOwnBidiControls(text: string): string {
 }
 
 /**
- * Line-level list marker normalization only.
+ * Line-level list marker normalization (Variant K).
  * - "1. item" → "1) item"
- * - "• item" / "▪ item" → "- item"
- * Existing "1)" and "-" lines are left as-is.
+ * - unordered "•" / "▪" / "-" lines → sequential "1)" "2)" "3)" …
+ * Existing paren-numbered lines left as-is.
+ * No bidi controls.
  */
-function normalizeListMarkers(line: string): string {
-  const dot = line.match(/^(\s*)(\d+)\.(\s+)(.*)$/);
-  if (dot) {
-    const [, lead, num, spaces, rest] = dot;
-    return lead + num + ")" + spaces + rest;
-  }
-
-  const bullet = line.match(/^(\s*)[•▪](\s+)(.*)$/);
-  if (bullet) {
-    const [, lead, spaces, rest] = bullet;
-    return lead + "-" + spaces + rest;
-  }
-
-  return line;
+function normalizeListMarkers(lines: string[]): string[] {
+  let bulletCount = 0;
+  return lines.map((line) => {
+    const dot = line.match(/^(\s*)(\d+)\.(\s+)(.*)$/);
+    if (dot) {
+      const [, lead, num, spaces, rest] = dot;
+      return lead + num + ")" + spaces + rest;
+    }
+    // already paren-numbered
+    if (/^\s*\d+\)\s/.test(line)) {
+      return line;
+    }
+    const bullet = line.match(/^(\s*)[•▪\-](\s+)(.*)$/);
+    if (bullet) {
+      const [, lead, spaces, rest] = bullet;
+      bulletCount += 1;
+      return lead + bulletCount + ")" + spaces + rest;
+    }
+    return line;
+  });
 }
 
 export function formatForWhatsAppRTL(input: string): string {
@@ -57,10 +65,7 @@ export function formatForWhatsAppRTL(input: string): string {
   }
 
   const cleaned = stripOwnBidiControls(input);
-  return cleaned
-    .split(/\r?\n/)
-    .map(normalizeListMarkers)
-    .join("\n");
+  return normalizeListMarkers(cleaned.split(/\r?\n/)).join("\n");
 }
 
 export function countBidiControls(text: string): number {

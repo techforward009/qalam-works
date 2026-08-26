@@ -61,20 +61,20 @@ describe("formatForWhatsAppRTL — plain text + list normalization", () => {
     expect(formatForWhatsAppRTL(input)).toBe(input);
   });
 
-  it("converts bullet • to -", () => {
+  it("converts bullet • to sequential 1) 2)", () => {
     const input = "• پہلا بلٹ\n• دوسرا بلٹ";
-    const expected = "- پہلا بلٹ\n- دوسرا بلٹ";
+    const expected = "1) پہلا بلٹ\n2) دوسرا بلٹ";
     expect(formatForWhatsAppRTL(input)).toBe(expected);
   });
 
-  it("converts bullet ▪ to -", () => {
+  it("converts bullet ▪ to sequential numbers", () => {
     const input = "▪ پہلا بلٹ\n▪ دوسرا بلٹ";
-    expect(formatForWhatsAppRTL(input)).toBe("- پہلا بلٹ\n- دوسرا بلٹ");
+    expect(formatForWhatsAppRTL(input)).toBe("1) پہلا بلٹ\n2) دوسرا بلٹ");
   });
 
-  it("leaves existing - bullets unchanged", () => {
+  it("converts existing - bullets to sequential numbers", () => {
     const input = "- پہلا بلٹ\n- دوسرا بلٹ";
-    expect(formatForWhatsAppRTL(input)).toBe(input);
+    expect(formatForWhatsAppRTL(input)).toBe("1) پہلا بلٹ\n2) دوسرا بلٹ");
   });
 
   it("does not alter * as a non-bullet mid-line character", () => {
@@ -108,7 +108,7 @@ describe("formatForWhatsAppRTL — plain text + list normalization", () => {
 
   it("preserves blank lines and exact line breaks", () => {
     const input = "1. پہلا\n\n• بلٹ\n\nآخری سطر";
-    const expected = "1) پہلا\n\n- بلٹ\n\nآخری سطر";
+    const expected = "1) پہلا\n\n1) بلٹ\n\nآخری سطر";
     expect(formatForWhatsAppRTL(input)).toBe(expected);
   });
 
@@ -117,7 +117,7 @@ describe("formatForWhatsAppRTL — plain text + list normalization", () => {
 • پہلا بلٹ
 یہ Qalam Works کا ٹول ہے۔`;
     const expected = `1) پہلا نکتہ
-- پہلا بلٹ
+1) پہلا بلٹ
 یہ Qalam Works کا ٹول ہے۔`;
     const result = formatForWhatsAppRTL(input);
     expect(result).toBe(expected);
