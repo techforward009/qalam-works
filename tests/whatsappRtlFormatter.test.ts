@@ -45,12 +45,12 @@ describe("formatForWhatsAppRTL — Variant M", () => {
 
   it("converts bullets to ◆ with gap", () => {
     const input = "• پہلا بلٹ\n• دوسرا بلٹ";
-    expect(stripFinal(formatForWhatsAppRTL(input))).toBe("◆ پہلا بلٹ\n◆ دوسرا بلٹ");
+    expect(stripFinal(formatForWhatsAppRTL(input))).toBe(RLM + "◆ پہلا بلٹ\n" + RLM + "◆ دوسرا بلٹ");
   });
 
   it("indents continuation lines under bullet text", () => {
     const input = "• پہلا بلٹ\n  جاری متن";
-    expect(stripFinal(formatForWhatsAppRTL(input))).toBe("◆ پہلا بلٹ\n  جاری متن");
+    expect(stripFinal(formatForWhatsAppRTL(input))).toBe(RLM + "◆ پہلا بلٹ\n  جاری متن");
   });
 
   it("does not inject body RLI/LRI/PDI/LRM", () => {

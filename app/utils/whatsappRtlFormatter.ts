@@ -1,9 +1,9 @@
 /**
- * WhatsApp RTL Formatter — EXPERIMENTAL Variant N
+ * WhatsApp RTL Formatter — EXPERIMENTAL Variant O
  *
  * - No body bidi controls (no RLI/LRI/PDI/LRM).
  * - Numbered: "1." → "1)"
- * - Unordered: • ▪ - ◆ — ◦ → consistent "◆ item"
+ * - Unordered: • ▪ - ◆ — ◦ → RLM + "◆ item" (leading RLM on bullet lines only)
  * - Continuation lines (already indented) align under text after ◆
  * - End-of-document invisible stabilizer: trailing "\n" + RLM only (same as M)
  */
@@ -102,7 +102,7 @@ function normalizeLines(lines: string[]): string[] {
       const [, lead, , rest] = bullet;
       inBulletBlock = true;
       const body = rest.trimStart();
-      out.push(lead + BULLET_MARKER + (body ? MARKER_GAP + body : ""));
+      out.push(lead + RLM + BULLET_MARKER + (body ? MARKER_GAP + body : ""));
       continue;
     }
 
