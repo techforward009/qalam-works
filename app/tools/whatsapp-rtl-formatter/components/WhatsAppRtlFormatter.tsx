@@ -191,7 +191,7 @@ export default function WhatsAppRtlFormatter({
         >
           {t.title}
         </h1>
-        <p className={`text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed ${naskh}`}>
+        <p className={`text-base md:text-lg text-gray-600 dark:text-white max-w-2xl mx-auto leading-relaxed ${naskh}`}>
           {t.description}
         </p>
         <p
@@ -314,10 +314,10 @@ export default function WhatsAppRtlFormatter({
         <h2 className={`text-[17px] md:text-[18px] font-semibold text-[#1A3A2A] dark:text-[#e8ede9] mb-3 ${naskh}`}>
           {t.faqTitle}
         </h2>
-        <p className={`text-[15px] md:text-[16px] text-gray-600 leading-relaxed mb-3 ${naskh}`}>
+        <p className={`text-[15px] md:text-[16px] text-gray-600 dark:text-white leading-relaxed mb-3 ${naskh}`}>
           {t.faqBody}
         </p>
-        <p className={`text-[15px] md:text-[16px] text-gray-500 leading-relaxed ${naskh}`}>
+        <p className={`text-[15px] md:text-[16px] text-gray-500 dark:text-white leading-relaxed ${naskh}`}>
           {t.faqPreserve}
         </p>
       </section>

@@ -32,8 +32,8 @@ export default function ProjectListPanel({ projects, onOpen, onDelete, onNew, is
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A3A2A]">{t.title}</h1>
-          <p className="text-sm text-gray-500">{t.savedOnDevice}</p>
+          <h1 className="text-2xl font-bold text-[#1A3A2A] dark:text-white">{t.title}</h1>
+          <p className="text-sm text-gray-500 dark:text-white">{t.savedOnDevice}</p>
         </div>
         <button onClick={onNew} className="h-10 px-4 rounded-lg bg-[#1A3A2A] text-white text-sm font-semibold hover:bg-[#12172A]">
           {t.newProject}
