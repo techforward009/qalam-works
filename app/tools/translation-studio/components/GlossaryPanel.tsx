@@ -65,7 +65,7 @@ export default function GlossaryPanel({ entries, sourceLanguage, targetLanguage,
 
   return (
     <div className="border border-[#1A3A2A]/10 rounded-lg bg-[#F9FAF7] mb-4">
-      <button type="button" onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold text-[#1A3A2A]">
+      <button type="button" onClick={() => setOpen(o => !o)} className={`w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold text-[#1A3A2A] ${isUr ? "font-nastaliq font-normal" : ""}`}>
         <span>{t.heading} {entries.length > 0 && <span className="ml-1 text-xs font-normal text-gray-500">{entries.length} {entries.length === 1 ? t.term : t.terms}</span>}</span>
         <span className="text-gray-400 text-xs">{open ? "▲" : "▼"}</span>
       </button>

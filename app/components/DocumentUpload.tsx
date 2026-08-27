@@ -60,8 +60,9 @@ export default function DocumentUpload() {
     <section id="document-upload" className="max-w-4xl mx-auto px-4 py-8 text-center">
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         <div className="text-center mb-6">
-          <h2 className="text-xl md:text-2xl font-bold mb-1 font-naskh text-amber-900">
-            ڈاکومنٹ پائپ لائن / Document Pipeline
+          <h2 className="text-xl md:text-2xl font-bold mb-1 text-amber-900">
+            <span className="font-nastaliq font-normal">ڈاکومنٹ پائپ لائن</span>
+            {" / Document Pipeline"}
           </h2>
           <p className="text-xs md:text-sm text-gray-600" dir="ltr">
             Upload .txt or .docx files for automated extraction, Unicode normalization, and quality audit.

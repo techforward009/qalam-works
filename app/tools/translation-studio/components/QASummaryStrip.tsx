@@ -41,7 +41,7 @@ export default function QASummaryStrip({ summary, isUr }: QASummaryStripProps) {
     <div className="border border-gray-200 rounded-lg bg-white mb-3">
       <button type="button" onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-left">
-        <span className="font-semibold text-gray-700">{t.heading}</span>
+        <span className={`font-semibold text-gray-700 ${isUr ? "font-nastaliq font-normal" : ""}`}>{t.heading}</span>
         <span className="text-xs text-gray-500 ml-2 flex-1">{headerLabel}</span>
         <span className="text-gray-400 text-xs ml-2">{open ? "▲" : "▼"}</span>
       </button>

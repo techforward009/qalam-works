@@ -33,7 +33,7 @@ export default function InvoiceGeneratorContent() {
         <div className="space-y-4">
           {t.faqs.map((faq) => (
             <div key={faq.question} className="border border-gray-200 rounded-xl p-4">
-              <p className={`font-semibold text-amber-900 dark:text-white mb-1 ${naskh}`}>{faq.question}</p>
+              <p className={`font-semibold text-amber-900 dark:text-white mb-1 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>{faq.question}</p>
               <p className={`text-sm text-gray-700 dark:text-white ${naskh}`}>{faq.answer}</p>
             </div>
           ))}

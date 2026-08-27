@@ -311,7 +311,7 @@ export default function WhatsAppRtlFormatter({
         className="mt-10 md:mt-12 max-w-3xl mx-auto"
         dir={isUrdu ? "rtl" : "ltr"}
       >
-        <h2 className={`text-[17px] md:text-[18px] font-semibold text-[#1A3A2A] dark:text-[#e8ede9] mb-3 ${naskh}`}>
+        <h2 className={`text-[17px] md:text-[18px] font-semibold text-[#1A3A2A] dark:text-[#e8ede9] mb-3 ${isUrdu ? "font-nastaliq font-normal" : ""}`}>
           {t.faqTitle}
         </h2>
         <p className={`text-[15px] md:text-[16px] text-gray-600 dark:text-white leading-relaxed mb-3 ${naskh}`}>

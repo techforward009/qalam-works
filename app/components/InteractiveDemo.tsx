@@ -16,8 +16,9 @@ export default function InteractiveDemo() {
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-[#B8935A]/35 shadow-lg shadow-[#B8935A]/10">
         <div className="text-center mb-5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9A6A30] mb-1">Live proof</p>
-          <h2 className="text-xl md:text-2xl font-bold mb-1 font-naskh text-[#1A3A2A]">
-            لائیو ڈیمو / Interactive Demo
+          <h2 className="text-xl md:text-2xl font-bold mb-1 text-[#1A3A2A]">
+            <span className="font-nastaliq font-normal">لائیو ڈیمو</span>
+            {" / Interactive Demo"}
           </h2>
           <p className="text-xs md:text-sm text-gray-600" dir="ltr">
             Type or paste mixed Urdu/English text to see spacing, punctuation, and letter-form cleanup.

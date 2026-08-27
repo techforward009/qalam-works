@@ -108,7 +108,7 @@ export default function UrduRomanWriterClient() {
       {/* Header */}
       <header className="bg-[#0F1424] text-white px-4 py-6 md:px-8">
         <div className="max-w-5xl mx-auto">
-          <h1 className={`text-2xl font-bold tracking-tight ${isUr ? "font-nastaliq text-right" : ""}`}>
+          <h1 className={`text-2xl font-bold tracking-tight ${isUr ? "font-nastaliq font-normal text-right" : ""}`}>
             {ui.heading}
           </h1>
           <p className={`mt-1 text-[#C7D6C7] text-sm ${isUr ? "font-naskh text-right" : ""}`}>
@@ -238,7 +238,7 @@ export default function UrduRomanWriterClient() {
 
           {/* Style selector */}
           <div className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-3" dir={isUr ? "rtl" : "ltr"}>
-            <p className={`text-xs font-semibold uppercase tracking-widest text-[#374151] mb-2 ${isUr ? "font-naskh" : ""}`}>
+            <p className={`text-xs font-semibold uppercase tracking-widest text-[#374151] mb-2 ${isUr ? "font-nastaliq font-normal" : ""}`}>
               {ui.styleHeading}
             </p>
             <div className="flex flex-wrap gap-3">
@@ -266,7 +266,7 @@ export default function UrduRomanWriterClient() {
 
           {/* Quick examples */}
           <div className="rounded-xl border border-[#E5E7EB] bg-white p-4" dir={isUr ? "rtl" : "ltr"}>
-            <p className={`text-xs font-semibold uppercase tracking-widest text-[#374151] mb-3 ${isUr ? "font-naskh" : ""}`}>
+            <p className={`text-xs font-semibold uppercase tracking-widest text-[#374151] mb-3 ${isUr ? "font-nastaliq font-normal" : ""}`}>
               {ui.examplesHeading}
             </p>
             <div className="flex flex-wrap gap-2">

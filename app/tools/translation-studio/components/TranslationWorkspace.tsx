@@ -179,7 +179,7 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
     <div className="max-w-5xl mx-auto px-4 py-4" dir={isUr ? "rtl" : "ltr"}>
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <button onClick={handleClose} className="text-sm text-[#1A3A2A] hover:underline">{isUr ? "→ پروجیکٹس" : "← Projects"}</button>
-        <h2 className="font-bold text-[#1A3A2A] flex-1 min-w-0 truncate">{project.name}</h2>
+        <h2 className={`font-bold text-[#1A3A2A] flex-1 min-w-0 truncate ${isUr ? "font-nastaliq font-normal" : ""}`}>{project.name}</h2>
         <span className="text-xs text-gray-500">{finalCount}/{total} {isUr ? "حتمی" : "final"} · {draftCount} {isUr ? "مسودہ" : "draft"}</span>
         <span className={`text-xs ${saveCls}`}>{saveLabel}</span>
       </div>

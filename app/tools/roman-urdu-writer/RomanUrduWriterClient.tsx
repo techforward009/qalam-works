@@ -746,7 +746,7 @@ export default function RomanUrduWriterClient() {
       <header className="bg-[#151B2E] text-white px-4 py-6 md:px-8">
         <div className="max-w-5xl mx-auto">
           <h1
-            className="text-2xl md:text-3xl font-bold tracking-tight"
+            className={`text-2xl md:text-3xl font-bold tracking-tight ${isUr ? "font-nastaliq font-normal" : ""}`}
             dir={isUr ? "rtl" : "ltr"}
             lang={isUr ? "ur" : "en"}
           >

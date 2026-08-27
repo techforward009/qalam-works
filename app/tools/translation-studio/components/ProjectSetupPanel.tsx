@@ -101,7 +101,7 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-1">{t.title}</h1>
+      <h1 className={`text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-1 ${isUr ? "font-nastaliq font-normal" : ""}`}>{t.title}</h1>
       <p className="text-sm text-gray-500 dark:text-[#a8b9ac] mb-6">{t.subtitle}</p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
