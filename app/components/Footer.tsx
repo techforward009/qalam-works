@@ -48,19 +48,19 @@ export default function Footer() {
               <span className="font-bold text-white">Qalam Works</span>
             )}
           </div>
-          <p className={`text-[#8AAA8A] text-sm leading-relaxed ${naskh}`}>{t.footer.tagline}</p>
-          <p className={`text-[#8AAA8A] text-sm leading-relaxed mt-2 ${naskh}`}>{t.footer.servicesNote}</p>
+          <p className={`text-white text-sm leading-relaxed ${naskh}`}>{t.footer.tagline}</p>
+          <p className={`text-white text-sm leading-relaxed mt-2 ${naskh}`}>{t.footer.servicesNote}</p>
         </div>
 
         {/* Tools */}
         <div>
-          <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
+          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
             {t.footer.toolsHeading}
           </div>
           <ul className="space-y-2">
             {TOOL_ROUTES.map((tool) => (
               <li key={tool.href}>
-                <Link href={tool.href} className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>
+                <Link href={tool.href} className={`text-white hover:text-white text-sm transition-colors ${naskh}`}>
                   {tool.labelEn
                     ? language === "ur" ? tool.labelUr : tool.labelEn
                     : t.nav[tool.key as keyof typeof t.nav]}
@@ -72,26 +72,26 @@ export default function Footer() {
 
         {/* Company */}
         <div>
-          <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
+          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
             {t.footer.companyHeading}
           </div>
           <ul className="space-y-2">
-            <li><Link href="/about" className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>{t.nav.about}</Link></li>
-            <li><Link href="/services" className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>{t.nav.services}</Link></li>
-            <li><Link href="/contact" className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>{t.nav.contact}</Link></li>
+            <li><Link href="/about" className={`text-white hover:text-white text-sm transition-colors ${naskh}`}>{t.nav.about}</Link></li>
+            <li><Link href="/services" className={`text-white hover:text-white text-sm transition-colors ${naskh}`}>{t.nav.services}</Link></li>
+            <li><Link href="/contact" className={`text-white hover:text-white text-sm transition-colors ${naskh}`}>{t.nav.contact}</Link></li>
           </ul>
         </div>
 
         {/* Legal + Contact */}
         <div>
-          <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
+          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3 ${naskh}`}>
             {t.footer.legalHeading}
           </div>
           <ul className="space-y-2 mb-5">
-            <li><Link href="/privacy" className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>{language === "ur" ? "رازداری" : "Privacy"}</Link></li>
-            <li><Link href="/terms" className={`text-[#8AAA8A] hover:text-white text-sm transition-colors ${naskh}`}>{language === "ur" ? "شرائط" : "Terms"}</Link></li>
+            <li><Link href="/privacy" className={`text-white hover:text-white text-sm transition-colors ${naskh}`}>{language === "ur" ? "رازداری" : "Privacy"}</Link></li>
+            <li><Link href="/terms" className={`text-white hover:text-white text-sm transition-colors ${naskh}`}>{language === "ur" ? "شرائط" : "Terms"}</Link></li>
           </ul>
-          <div className={`text-[#B8935A] font-semibold text-sm uppercase tracking-wide mb-2 ${naskh}`}>
+          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-2 ${naskh}`}>
             {t.footer.contactHeading}
           </div>
           {/* Contact block composition (2026-08-12) — the block as a whole
@@ -104,12 +104,12 @@ export default function Footer() {
             <a
               href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Inquiry"
               dir="ltr"
-              className="text-[#8AAA8A] hover:text-white text-sm transition-colors inline-block mb-2"
+              className="text-white hover:text-white text-sm transition-colors inline-block mb-2"
             >
               qalamworks.services@gmail.com
             </a>
             <p
-              className={`text-[#4A6A4A] text-xs leading-relaxed max-w-[220px] ${language === "ur" ? "text-right" : "text-left"} ${naskh}`}
+              className={`text-white text-xs leading-relaxed max-w-[220px] ${language === "ur" ? "text-right" : "text-left"} ${naskh}`}
             >
               {t.contactPage.responseNote}
             </p>
@@ -117,7 +117,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-white/5 py-4 text-center text-sm text-[#4A6A4A]" dir="ltr">
+      <div className="border-t border-white/5 py-4 text-center text-sm text-white" dir="ltr">
         © {year} Qalam Works. {t.footer.rights}
       </div>
     </footer>

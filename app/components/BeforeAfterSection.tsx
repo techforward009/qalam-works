@@ -47,7 +47,7 @@ export default function BeforeAfterSection() {
             <div className="text-xs font-semibold tracking-wide text-red-600 mb-3" dir="ltr">{t.before}</div>
             <div className="bg-white dark:bg-[#1e2a20] border border-red-300/50 dark:border-red-900/40 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm">
               <p className="font-nastaliq text-2xl md:text-3xl leading-loose text-[#2A1A1A] dark:text-[#c8a0a0] w-full">
-                <span className="bg-red-100 rounded px-0.5">{BEFORE_TEXT}</span>
+                {BEFORE_TEXT}
               </p>
             </div>
           </div>

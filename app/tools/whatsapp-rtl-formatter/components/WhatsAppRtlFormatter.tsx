@@ -11,7 +11,6 @@ export type FormatterLanguage = "en" | "ur";
 export interface WhatsAppRtlFormatterProps {
   language?: FormatterLanguage;
   className?: string;
-  showPreview?: boolean;
 }
 
 const LABELS = {
@@ -30,9 +29,6 @@ const LABELS = {
     placeholder: "Paste your Urdu and mixed text here…",
     errorFormat: "Formatting failed. Please try again.",
     errorClipboard: "Clipboard access denied. Please copy manually.",
-    previewTitle: "Before / After",
-    previewOriginal: "Original",
-    previewReady: "WhatsApp-ready",
     faqTitle: "What does this tool do?",
     faqBody:
       "It prepares Urdu and mixed RTL/LTR plain text for more stable display when pasted into WhatsApp. It helps keep numbered lists, bullets, English words, numbers, links and Urdu text in their intended reading direction.",
@@ -54,9 +50,6 @@ const LABELS = {
     placeholder: "اپنا اردو اور مخلوط متن یہاں پیسٹ کریں…",
     errorFormat: "فارمیٹنگ ناکام رہی۔ دوبارہ کوشش کریں۔",
     errorClipboard: "کلپ بورڈ تک رسائی نہیں ملی۔ براہ کرم دستی طور پر کاپی کریں۔",
-    previewTitle: "پہلے / بعد",
-    previewOriginal: "اصل متن",
-    previewReady: "واٹس ایپ کے لیے تیار",
     faqTitle: "یہ ٹول کیا کرتا ہے؟",
     faqBody:
       "یہ ٹول اردو اور مخلوط اردو و انگریزی متن کو واٹس ایپ میں بہتر اور درست سمت میں دکھانے کے لیے تیار کرتا ہے۔ یہ نمبروں، بلٹس، انگریزی الفاظ، لنکس اور اردو عبارت کی سمت کو مستحکم رکھنے میں مدد دیتا ہے۔",
@@ -73,7 +66,6 @@ Meeting tomorrow at 5 PM
 export default function WhatsAppRtlFormatter({
   language = "en",
   className = "",
-  showPreview = true,
 }: WhatsAppRtlFormatterProps) {
   useEffect(() => { trackToolOpenOnce("whatsapp_rtl_formatter"); }, []);
   const t = LABELS[language] ?? LABELS.en;
@@ -187,14 +179,13 @@ export default function WhatsAppRtlFormatter({
     setError(null);
   }, []);
 
-  const shouldShowPreview = showPreview && Boolean(input && output);
 
   return (
     <div className={`w-full min-w-0 ${className}`.trim()} lang={isUrdu ? "ur" : "en"}>
       {/* Title */}
       <div className="text-center mb-8 md:mb-10" dir={isUrdu ? "rtl" : "ltr"}>
         <h1
-          className={`text-3xl md:text-4xl font-bold text-[#1A3A2A] mb-3 ${
+          className={`text-3xl md:text-4xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-3 ${
             isUrdu ? "font-nastaliq font-normal" : ""
           }`}
         >
@@ -315,49 +306,12 @@ export default function WhatsAppRtlFormatter({
         )}
       </div>
 
-      {/* Optional Before / After preview (display only — strip controls for readability) */}
-      {shouldShowPreview && (
-        <section
-          className="mt-8 md:mt-10"
-          aria-label={t.previewTitle}
-          dir={isUrdu ? "rtl" : "ltr"}
-        >
-          <h2 className={`text-lg font-semibold text-[#1A3A2A] mb-4 text-center ${naskh}`}>
-            {t.previewTitle}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-4">
-              <h3 className={`text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide ${naskh}`}>
-                {t.previewOriginal}
-              </h3>
-              <pre
-                className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-800 max-h-64 overflow-auto m-0 ${urduFont}`}
-                dir="auto"
-              >
-                {input}
-              </pre>
-            </div>
-            <div className="min-w-0 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
-              <h3 className={`text-xs font-semibold text-emerald-700 mb-2 uppercase tracking-wide ${naskh}`}>
-                {t.previewReady}
-              </h3>
-              <pre
-                className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-800 max-h-64 overflow-auto m-0 ${urduFont}`}
-                dir="auto"
-              >
-                {output.replace(/[\u2066\u2067\u2069\u200E\u200F]/g, "")}
-              </pre>
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* FAQ / explanation */}
       <section
         className="mt-10 md:mt-12 max-w-3xl mx-auto"
         dir={isUrdu ? "rtl" : "ltr"}
       >
-        <h2 className={`text-[17px] md:text-[18px] font-semibold text-[#1A3A2A] mb-3 ${naskh}`}>
+        <h2 className={`text-[17px] md:text-[18px] font-semibold text-[#1A3A2A] dark:text-[#e8ede9] mb-3 ${naskh}`}>
           {t.faqTitle}
         </h2>
         <p className={`text-[15px] md:text-[16px] text-gray-600 leading-relaxed mb-3 ${naskh}`}>

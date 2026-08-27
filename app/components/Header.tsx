@@ -98,9 +98,7 @@ export default function Header() {
   const isActive = (href: string) => !href.startsWith("mailto:") && pathname === href;
 
   const linkClass = (href: string) =>
-    `relative font-medium transition-colors whitespace-nowrap py-2 text-[14px] xl:text-[15px] 2xl:text-[16px] ${
-      isActive(href) ? "text-[#E8C989]" : "text-[#C7D6C7] hover:text-white"
-    }`;
+    `relative font-medium transition-colors whitespace-nowrap py-2 text-[14px] xl:text-[15px] 2xl:text-[16px] text-white hover:text-white`;
 
   return (
     <header className="bg-[#1A3A2A] border-b border-white/10 sticky top-0 z-50">
@@ -138,11 +136,7 @@ export default function Header() {
               onClick={() => setMoreOpen((o) => !o)}
               aria-expanded={moreOpen}
               aria-haspopup="menu"
-              className={`flex items-center gap-0.5 font-medium transition-colors whitespace-nowrap py-2 text-[14px] xl:text-[15px] 2xl:text-[16px] ${
-                moreLinks.some((l) => isActive(l.href))
-                  ? "text-[#E8C989]"
-                  : "text-[#C7D6C7] hover:text-white"
-              }`}
+              className="flex items-center gap-0.5 font-medium transition-colors whitespace-nowrap py-2 text-[14px] xl:text-[15px] 2xl:text-[16px] text-white hover:text-white"
             >
               {t.moreTools}
               <ChevronDown
@@ -161,11 +155,7 @@ export default function Header() {
                     href={link.href}
                     role="menuitem"
                     onClick={() => setMoreOpen(false)}
-                    className={`block px-4 py-2.5 text-[15px] transition-colors ${
-                      isActive(link.href)
-                        ? "text-[#E8C989]"
-                        : "text-[#C7D6C7] hover:text-white hover:bg-white/5"
-                    }`}
+                    className="block px-4 py-2.5 text-[15px] transition-colors text-white hover:text-white hover:bg-white/5"
                   >
                     {link.label}
                   </Link>
@@ -210,9 +200,7 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className={`py-3.5 text-[16px] font-medium border-b border-white/5 last:border-b-0 ${
-                  isActive(link.href) ? "text-[#E8C989]" : "text-[#C7D6C7]"
-                }`}
+                className="py-3.5 text-[16px] font-medium border-b border-white/5 last:border-b-0 text-white"
               >
                 {link.label}
               </Link>

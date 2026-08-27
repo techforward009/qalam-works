@@ -10,11 +10,11 @@ export default function AboutContent() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <main className="bg-white min-h-screen" dir={dir}>
+    <main className="bg-white dark:bg-transparent min-h-screen" dir={dir}>
       <div className="site-container py-16 md:py-24">
         <div className="max-w-[820px] mx-auto">
           <h1
-            className={`text-3xl md:text-4xl font-bold text-[#1A3A2A] mb-4 ${
+            className={`text-3xl md:text-4xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-4 ${
               language === "ur" ? "font-nastaliq font-normal" : ""
             }`}
           >
@@ -31,7 +31,7 @@ export default function AboutContent() {
 
           <div className="mt-12 pt-10 border-t border-gray-100">
             <h2
-              className={`text-xl md:text-2xl font-bold text-[#1A3A2A] mb-4 ${
+              className={`text-xl md:text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-4 ${
                 language === "ur" ? "font-nastaliq font-normal" : ""
               }`}
             >
