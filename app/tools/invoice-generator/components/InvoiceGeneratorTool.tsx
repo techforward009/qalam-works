@@ -275,22 +275,23 @@ export default function InvoiceGeneratorTool() {
 
   // ── Invoice preview labels (invoiceLang-aware) ─────────────────────────────
   const IV = {
-    invoice:    invoiceLang === "ur" ? "انوائس"         : "INVOICE",
-    billTo:     invoiceLang === "ur" ? "وصول کنندہ"     : "BILL TO",
-    desc:       invoiceLang === "ur" ? "تفصیل"          : "Description",
-    qty:        invoiceLang === "ur" ? "مقدار"          : "Qty",
-    price:      invoiceLang === "ur" ? "قیمت"           : "Unit Price",
-    amount:     invoiceLang === "ur" ? "رقم"            : "Amount",
-    subtotal:   invoiceLang === "ur" ? "ذیلی کل"        : "Subtotal",
-    discount:   invoiceLang === "ur" ? "چھوٹ"           : "Discount",
-    tax:        invoiceLang === "ur" ? "ٹیکس"           : "Tax",
-    total:      invoiceLang === "ur" ? "کل"             : "Total",
-    notes:      invoiceLang === "ur" ? "نوٹس"           : "Notes",
-    terms:      invoiceLang === "ur" ? "شرائط و ضوابط"  : "Terms & Conditions",
-    date:       invoiceLang === "ur" ? "تاریخ"          : "Date",
-    due:        invoiceLang === "ur" ? "آخری تاریخ"     : "Due Date",
-    authSig:    invoiceLang === "ur" ? "مجاز دستخط"     : "Authorized Signature",
-    stampLabel: invoiceLang === "ur" ? "مہر / ٹھپہ"     : "Company Stamp",
+    invoice:    invoiceLang === "ur" ? "انوائس"                : "INVOICE",
+    billTo:     invoiceLang === "ur" ? "بل وصول کنندہ"         : "BILL TO",
+    desc:       invoiceLang === "ur" ? "تفصیل"                 : "Description",
+    qty:        invoiceLang === "ur" ? "مقدار"                 : "Qty",
+    price:      invoiceLang === "ur" ? "فی یونٹ قیمت"          : "Unit Price",
+    amount:     invoiceLang === "ur" ? "رقم"                   : "Amount",
+    subtotal:   invoiceLang === "ur" ? "ذیلی کل"               : "Subtotal",
+    discount:   invoiceLang === "ur" ? "چھوٹ"                  : "Discount",
+    tax:        invoiceLang === "ur" ? "ٹیکس"                  : "Tax",
+    total:      invoiceLang === "ur" ? "کل"                    : "Total",
+    notes:      invoiceLang === "ur" ? "نوٹس"                  : "Notes",
+    terms:      invoiceLang === "ur" ? "شرائط و ضوابط"         : "Terms & Conditions",
+    date:       invoiceLang === "ur" ? "تاریخ"                 : "Date",
+    due:        invoiceLang === "ur" ? "آخری تاریخ"            : "Due Date",
+    authSig:    invoiceLang === "ur" ? "دستخط"                 : "Authorized Signature",
+    stampLabel: invoiceLang === "ur" ? "مہر / ٹھپہ"            : "Company Stamp",
+    payterms:   invoiceLang === "ur" ? "ادائیگی کی شرائط"      : "Payment Terms",
   };
 
   // ── Logo renderer (shared across all non-classic templates) ───────────────
@@ -351,14 +352,14 @@ export default function InvoiceGeneratorTool() {
       `}</style>
 
       <div className="site-container">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
 
           {/* ── EDITOR PANEL ───────────────────────────────────────────── */}
           <div className="print:hidden bg-white rounded-2xl border border-amber-200/80 shadow-md overflow-hidden" style={{ color: "#1F2937" }}>
             <div className={`flex border-b border-amber-100 overflow-x-auto ${isUr ? "flex-row-reverse" : ""}`}>
               {sections.map(s => (
                 <button key={s.id} onClick={() => setActiveSection(s.id)}
-                  className={`flex-1 min-w-max px-4 py-3 text-[13px] font-semibold transition-colors whitespace-nowrap ${naskh}
+                  className={`flex-1 min-w-max px-3 py-2 sm:px-4 sm:py-3 text-[12px] sm:text-[13px] font-semibold transition-colors whitespace-nowrap ${naskh}
                     ${activeSection === s.id
                       ? "bg-amber-50 text-amber-900 border-b-2 border-amber-600"
                       : "text-gray-500 hover:text-amber-800 hover:bg-amber-50/50"}`}>
@@ -367,7 +368,7 @@ export default function InvoiceGeneratorTool() {
               ))}
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
 
               {/* ── BUSINESS INFO ─────────────────────────────────────── */}
               {activeSection === "business" && (
@@ -689,7 +690,7 @@ export default function InvoiceGeneratorTool() {
               <span className="text-[11px] text-gray-400">{invoiceLang === "ur" ? "اردو" : "English"} · {isUr ? TEMPLATES[template].labelUr : TEMPLATES[template].label}</span>
             </div>
 
-            <div className="p-6 sm:p-8" style={{ fontFamily: invoiceLang === "ur" ? "var(--font-naskh),'Noto Naskh Arabic',sans-serif" : "inherit", background: "#ffffff", color: "#111827" }}>
+            <div className="p-4 sm:p-6 md:p-8" style={{ fontFamily: invoiceLang === "ur" ? "var(--font-naskh),'Noto Naskh Arabic',sans-serif" : "inherit", background: "#ffffff", color: "#111827" }}>
 
               {/* ── CLASSIC TEMPLATE ─────────────────────────────────── */}
               {template === "classic" ? (
@@ -946,7 +947,7 @@ export default function InvoiceGeneratorTool() {
                   )}
 
                   {/* Signature */}
-                  <div className="mt-10 pt-5 border-t border-gray-100">
+                  <div className="mt-6 sm:mt-10 pt-4 sm:pt-5 border-t border-gray-100">
                     <SigBlock accentColor={T.accent} />
                   </div>
                 </div>

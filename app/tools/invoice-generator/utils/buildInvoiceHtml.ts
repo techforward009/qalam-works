@@ -94,20 +94,20 @@ function fmt(minor: number, currency: string, lang: InvoiceLanguage): string {
 function iv(key: string, lang: InvoiceLanguage): string {
   const map: Record<string, [string, string]> = {
     invoice:  ["INVOICE",        "انوائس"],
-    billTo:   ["BILL TO",        "وصول کنندہ"],
+    billTo:   ["BILL TO",        "بل وصول کنندہ"],
     date:     ["Date",           "تاریخ"],
     due:      ["Due Date",       "آخری تاریخ"],
     inv_num:  ["Invoice #",      "انوائس نمبر"],
     desc:     ["Description",    "تفصیل"],
     qty:      ["Qty",            "مقدار"],
-    price:    ["Unit Price",     "قیمت"],
+    price:    ["Unit Price",     "فی یونٹ قیمت"],
     amount:   ["Amount",         "رقم"],
     subtotal: ["Subtotal",       "ذیلی کل"],
     discount: ["Discount",       "چھوٹ"],
     total:    ["Total",          "کل"],
     notes:    ["Notes",          "نوٹس"],
     terms:    ["Terms & Conditions", "شرائط و ضوابط"],
-    authSig:  ["Authorized Signature", "مجاز دستخط"],
+    authSig:  ["Authorized Signature", "دستخط"],
     stamp:    ["STAMP",          "مہر"],
     note:     ["Note:",          "نوٹ:"],
     termsLbl: ["Terms:",         "شرائط:"],
@@ -118,7 +118,7 @@ function iv(key: string, lang: InvoiceLanguage): string {
     rate:     ["Rate",           "نرخ"],
     total_cls:["TOTAL",          "کل رقم"],
     payterms: ["Payment Terms",  "ادائیگی کی شرائط"],
-    authSigCls:["Authorized Signature", "دستخط / مجاز دستخط"],
+    authSigCls:["Authorized Signature", "دستخط"],
   };
   const [en, ur] = map[key] ?? [key, key];
   return lang === "ur" ? ur : en;
