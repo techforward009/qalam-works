@@ -12,7 +12,7 @@ import {
 } from "../utils/invoiceEngine";
 
 // ── Types ────────────────────────────────────────────────────────────────────
-type Template = "modern" | "minimal" | "corporate";
+type Template = "modern" | "minimal" | "corporate" | "classic";
 type InvoiceLanguage = "en" | "ur";
 interface Signature {
   name: string;
@@ -55,6 +55,7 @@ const TEMPLATES: Record<Template, { accent: string; accentText: string; headerBg
   modern:    { accent: "#B45309", accentText: "#92400E", headerBg: "#FFFBEB", headerText: "#78350F", label: "Modern",    labelUr: "جدید" },
   minimal:   { accent: "#374151", accentText: "#1F2937", headerBg: "#F9FAFB", headerText: "#111827", label: "Minimal",   labelUr: "سادہ" },
   corporate: { accent: "#1E3A5F", accentText: "#1E3A5F", headerBg: "#EFF6FF", headerText: "#1E3A5F", label: "Corporate", labelUr: "کارپوریٹ" },
+  classic:   { accent: "#111827", accentText: "#111827", headerBg: "#ffffff", headerText: "#111827", label: "Classic",   labelUr: "روایتی" },
 };
 
 // ── Currency format ────────────────────────────────────────────────────────
@@ -510,8 +511,150 @@ export default function InvoiceGeneratorTool() {
 
           <div className="p-7" style={{ fontFamily: invoiceLang === "ur" ? "var(--font-naskh), 'Noto Naskh Arabic', sans-serif" : "inherit", background: "#ffffff", color: "#111827" }}>
 
+            {/* ── CLASSIC TEMPLATE ──────────────────────────────────── */}
+            {template === "classic" ? (
+              <div style={{ fontFamily: invoiceLang === "ur" ? "var(--font-naskh),'Noto Naskh Arabic',sans-serif" : "inherit", direction: invDir }}>
+                {/* Header: logo + business name centred */}
+                <div style={{ textAlign: "center", marginBottom: 16, borderBottom: "2px solid #111827", paddingBottom: 12 }}>
+                  {logo && <img src={logo} alt="logo" style={{ height: 48, objectFit: "contain", margin: "0 auto 6px" }} />}
+                  <h2 style={{ fontSize: 18, fontWeight: 800, color: "#111827", margin: 0 }}>
+                    {invoice.seller.name || (invoiceLang === "ur" ? "آپ کا کاروباری نام" : "Your Business Name")}
+                  </h2>
+                  {invoice.seller.address && <p style={{ fontSize: 11, color: "#374151", margin: "2px 0 0" }} className={invNaskh}>{invoice.seller.address}</p>}
+                  <p style={{ fontSize: 11, color: "#374151", margin: "2px 0 0" }} dir="ltr">
+                    {[invoice.seller.phone, invoice.seller.email, invoice.seller.website].filter(Boolean).join("  |  ")}
+                  </p>
+                </div>
+
+                {/* Centred INVOICE title */}
+                <p style={{ textAlign: "center", fontSize: 15, fontWeight: 900, letterSpacing: "0.15em", color: "#111827", margin: "10px 0 14px" }} className={invNaskh}>
+                  {invoiceLang === "ur" ? "انوائس" : "INVOICE"}
+                </p>
+
+                {/* To + Date row */}
+                <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14, fontSize: 12 }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ border: "1px solid #111827", padding: "5px 8px", fontWeight: 700, width: "14%", whiteSpace: "nowrap" }} className={invNaskh}>
+                        {invoiceLang === "ur" ? "بنام" : "To"}
+                      </td>
+                      <td style={{ border: "1px solid #111827", padding: "5px 8px", width: "44%" }} className={invNaskh}>
+                        {invoice.client.name || (invoiceLang === "ur" ? "موصول کنندہ" : "Client Name")}
+                        {invoice.client.address && <span style={{ color: "#6B7280", fontSize: 10 }} className={invNaskh}>{" — "}{invoice.client.address}</span>}
+                      </td>
+                      <td style={{ border: "1px solid #111827", padding: "5px 8px", fontWeight: 700, width: "14%", whiteSpace: "nowrap" }} className={invNaskh}>
+                        {invoiceLang === "ur" ? "تاریخ" : "Date"}
+                      </td>
+                      <td style={{ border: "1px solid #111827", padding: "5px 8px" }} dir="ltr">
+                        {invoice.issueDate}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ border: "1px solid #111827", padding: "5px 8px", fontWeight: 700 }} className={invNaskh}>
+                        {invoiceLang === "ur" ? "انوائس نمبر" : "Invoice #"}
+                      </td>
+                      <td style={{ border: "1px solid #111827", padding: "5px 8px" }} dir="ltr">{invoice.number}</td>
+                      {invoice.dueDate ? (
+                        <>
+                          <td style={{ border: "1px solid #111827", padding: "5px 8px", fontWeight: 700 }} className={invNaskh}>
+                            {invoiceLang === "ur" ? "آخری تاریخ" : "Due Date"}
+                          </td>
+                          <td style={{ border: "1px solid #111827", padding: "5px 8px" }} dir="ltr">{invoice.dueDate}</td>
+                        </>
+                      ) : (
+                        <><td style={{ border: "1px solid #111827", padding: "5px 8px" }} /><td style={{ border: "1px solid #111827", padding: "5px 8px" }} /></>
+                      )}
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Main items table */}
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 0 }}>
+                  <thead>
+                    <tr style={{ background: "#F3F4F6" }}>
+                      <th style={{ border: "1px solid #111827", padding: "6px 8px", width: "7%", textAlign: "center", fontWeight: 700 }} className={invNaskh}>
+                        {invoiceLang === "ur" ? "نمبر" : "S. No."}
+                      </th>
+                      <th style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: invDir === "rtl" ? "right" : "left", fontWeight: 700 }} className={invNaskh}>
+                        {invoiceLang === "ur" ? "تفصیل" : "Particulars"}
+                      </th>
+                      <th style={{ border: "1px solid #111827", padding: "6px 8px", width: "9%", textAlign: "center", fontWeight: 700 }} className={invNaskh}>
+                        {invoiceLang === "ur" ? "مقدار" : "Qty"}
+                      </th>
+                      <th style={{ border: "1px solid #111827", padding: "6px 8px", width: "14%", textAlign: "right", fontWeight: 700 }} className={invNaskh}>
+                        {invoiceLang === "ur" ? "نرخ" : "Rate"}
+                      </th>
+                      <th style={{ border: "1px solid #111827", padding: "6px 8px", width: "16%", textAlign: "right", fontWeight: 700 }} className={invNaskh}>
+                        {invoiceLang === "ur" ? "رقم" : "Amount"}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoice.items.map((it, i) => (
+                      <tr key={it.id}>
+                        <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "center", color: "#374151" }} dir="ltr">{i + 1}</td>
+                        <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: invDir === "rtl" ? "right" : "left", color: "#111827" }} className={invNaskh}>
+                          {it.description || "—"}
+                        </td>
+                        <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "center", color: "#374151" }} dir="ltr">{it.quantity}</td>
+                        <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", color: "#374151" }} dir="ltr">{it.unitPrice.toFixed(2)}</td>
+                        <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", fontWeight: 600, color: "#111827" }} dir="ltr">
+                          {fromMinor(result.lineTotals[i] || 0, 2)}
+                        </td>
+                      </tr>
+                    ))}
+                    {/* Blank filler rows for print aesthetics */}
+                    {invoice.items.length < 5 && Array.from({ length: 5 - invoice.items.length }).map((_, i) => (
+                      <tr key={`blank-${i}`}>
+                        <td style={{ border: "1px solid #111827", padding: "6px 8px" }}>&nbsp;</td>
+                        <td style={{ border: "1px solid #111827", padding: "6px 8px" }}>&nbsp;</td>
+                        <td style={{ border: "1px solid #111827", padding: "6px 8px" }}>&nbsp;</td>
+                        <td style={{ border: "1px solid #111827", padding: "6px 8px" }}>&nbsp;</td>
+                        <td style={{ border: "1px solid #111827", padding: "6px 8px" }}>&nbsp;</td>
+                      </tr>
+                    ))}
+                    {/* Total row */}
+                    <tr style={{ background: "#F3F4F6" }}>
+                      <td colSpan={4} style={{ border: "1px solid #111827", padding: "7px 8px", textAlign: invDir === "rtl" ? "left" : "right", fontWeight: 800, fontSize: 13 }} className={invNaskh}>
+                        {invoiceLang === "ur" ? "کل رقم" : "TOTAL"}
+                      </td>
+                      <td style={{ border: "1px solid #111827", padding: "7px 8px", textAlign: "right", fontWeight: 800, fontSize: 13, color: "#111827" }} dir="ltr">
+                        {fmt(result.total, invoice.currency, invoiceLang)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Notes / Terms */}
+                {(invoice.notes || invoice.terms) && (
+                  <div style={{ marginTop: 12, fontSize: 11, color: "#374151" }}>
+                    {invoice.notes && <p className={invNaskh}><strong>{invoiceLang === "ur" ? "نوٹ:" : "Note:"}</strong> {invoice.notes}</p>}
+                    {invoice.terms && <p className={invNaskh} style={{ marginTop: 4 }}><strong>{invoiceLang === "ur" ? "شرائط:" : "Terms:"}</strong> {invoice.terms}</p>}
+                  </div>
+                )}
+
+                {/* Signature */}
+                <div style={{ marginTop: 32, display: "flex", justifyContent: invDir === "rtl" ? "flex-end" : "flex-start" }}>
+                  <div style={{ textAlign: invDir === "rtl" ? "right" : "left", minWidth: 180 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, marginBottom: 28, color: "#374151" }} className={invNaskh}>
+                      {invoiceLang === "ur" ? "دستخط / مجاز دستخط" : "Authorized Signature"}
+                    </p>
+                    <div style={{ borderBottom: "2px solid #374151", marginBottom: 4, width: 160 }} />
+                    {sig.name && <p style={{ fontSize: 11, fontWeight: 700, color: "#111827" }} className={invNaskh}>{sig.name}</p>}
+                    {sig.designation && <p style={{ fontSize: 10, color: "#6B7280" }} className={invNaskh}>{sig.designation}</p>}
+                    {invoice.seller.name && !sig.name && <p style={{ fontSize: 10, color: "#9CA3AF" }} className={invNaskh}>{invoice.seller.name}</p>}
+                    {sig.companyStamp && (
+                      <div style={{ width: 64, height: 64, borderRadius: "50%", border: "2px dashed #D1D5DB", display: "flex", alignItems: "center", justifyContent: "center", marginTop: 8 }}>
+                        <span style={{ fontSize: 9, color: "#D1D5DB" }} className={invNaskh}>{invoiceLang === "ur" ? "مہر" : "STAMP"}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div>
             {/* Invoice header */}
-            <div className={`flex justify-between items-start mb-7 pb-5 border-b-2`}
+            <div className="flex justify-between items-start mb-7 pb-5 border-b-2"
               style={{ borderColor: T.accent, flexDirection: invDir === "rtl" ? "row-reverse" : "row" }}>
               <div>
                 {logo && <img src={logo} alt="logo" className="h-14 object-contain mb-2" style={{ float: invDir === "rtl" ? "right" : "left" }} />}
@@ -659,6 +802,9 @@ export default function InvoiceGeneratorTool() {
                 )}
               </div>
             </div>
+
+              </div>
+            )}
 
           </div>
         </div>
