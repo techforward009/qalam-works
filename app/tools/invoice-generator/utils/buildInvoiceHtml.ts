@@ -45,8 +45,8 @@ const PALETTES: Record<Template, { accent: string; headerBg: string; headerText:
   classic:   { accent: "#111827", headerBg: "#ffffff", headerText: "#111827" },
 };
 
-const LOGO_H: Record<SizeOption, number> = { small: 40, medium: 60, large: 90 };
-const SIG_H:  Record<SizeOption, number> = { small: 60, medium: 100, large: 150 };
+const LOGO_H: Record<SizeOption, number>     = { small: 36, medium: 52, large: 72 };
+const SIG_H:  Record<SizeOption, number>     = { small: 50, medium: 90, large: 140 };
 
 // ── Font loader ───────────────────────────────────────────────────────────────
 function loadFontBase64(relPath: string): string | null {
@@ -58,6 +58,24 @@ function loadFontBase64(relPath: string): string | null {
 function fontFaceBlock(familyName: string, weight: number, b64: string | null): string {
   if (!b64) return "";
   return `@font-face{font-family:"${familyName}";src:url(data:font/woff2;base64,${b64}) format("woff2");font-weight:${weight};font-display:block;}`;
+}
+
+// ── Number formatters ─────────────────────────────────────────────────────────
+/** Format a plain quantity with thousands separator */
+function fmtNum(n: number, lang: InvoiceLanguage): string {
+  try {
+    return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", {
+      minimumFractionDigits: 0, maximumFractionDigits: 2,
+    }).format(n);
+  } catch { return n.toString(); }
+}
+/** Format a unit price as plain decimal with thousands separator */
+function fmtPrice(n: number, lang: InvoiceLanguage): string {
+  try {
+    return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", {
+      minimumFractionDigits: 2, maximumFractionDigits: 2,
+    }).format(n);
+  } catch { return n.toFixed(2); }
 }
 
 // ── Currency formatter ────────────────────────────────────────────────────────
@@ -111,8 +129,8 @@ function logoHtml(logo: LogoState): string {
   if (!logo.src) return "";
   const h = LOGO_H[logo.size];
   const jm: Record<Alignment, string> = { left: "flex-start", center: "center", right: "flex-end" };
-  return `<div style="display:flex;justify-content:${jm[logo.align]};margin-bottom:10px;">
-    <img src="${logo.src}" alt="logo" style="height:${h}px;max-width:100%;object-fit:contain;" />
+  return `<div style="display:flex;justify-content:${jm[logo.align]};margin-bottom:6px;">
+    <img src="${logo.src}" alt="logo" style="height:${h}px;max-width:180px;object-fit:contain;" />
   </div>`;
 }
 
@@ -122,9 +140,10 @@ function sigHtml(sig: SigState, accent: string, lang: InvoiceLanguage, invNaskh:
   const jm: Record<Alignment, string>  = { left: "flex-start", center: "center", right: "flex-end" };
   const ta: Record<Alignment, string>  = { left: "left", center: "center", right: "right" };
   const imgPart = sig.image
-    ? `<div style="display:flex;justify-content:${jm[sig.align]};margin-bottom:6px;">
-        <img src="${sig.image}" alt="signature" style="height:${h}px;max-width:220px;object-fit:contain;" /></div>`
-    : `<div style="height:${h * 0.4}px;"></div>`;
+    ? `<div style="display:flex;justify-content:${jm[sig.align]};margin-bottom:4px;">
+        <img src="${sig.image}" alt="signature"
+          style="height:${h}px;max-width:180px;max-height:${h}px;object-fit:contain;object-position:bottom;display:block;" /></div>`
+    : `<div style="height:${Math.round(h * 0.35)}px;"></div>`;
   const stampPart = sig.companyStamp
     ? `<div style="width:56px;height:56px;border-radius:50%;border:2px dashed #D1D5DB;display:inline-flex;align-items:center;justify-content:center;margin-top:8px;">
         <span style="font-size:9px;color:#D1D5DB;${invNaskh}">${iv("stamp", lang)}</span></div>`
@@ -214,9 +233,12 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
           </tr>
           <tr>
             <td style="border:1px solid #111827;padding:5px 8px;font-weight:700;${naskhStyle}">${iv("inv_num", invoiceLang)}</td>
-            <td style="border:1px solid #111827;padding:5px 8px;" dir="ltr">${invoice.number}</td>
-            <td style="border:1px solid #111827;padding:5px 8px;font-weight:700;${naskhStyle}">${invoice.dueDate ? iv("due", invoiceLang) : ""}</td>
-            <td style="border:1px solid #111827;padding:5px 8px;" dir="ltr">${invoice.dueDate || ""}</td>
+            ${invoice.dueDate
+              ? `<td style="border:1px solid #111827;padding:5px 8px;" dir="ltr">${invoice.number}</td>
+                 <td style="border:1px solid #111827;padding:5px 8px;font-weight:700;${naskhStyle}">${iv("due", invoiceLang)}</td>
+                 <td style="border:1px solid #111827;padding:5px 8px;" dir="ltr">${invoice.dueDate}</td>`
+              : `<td colspan="3" style="border:1px solid #111827;padding:5px 8px;" dir="ltr">${invoice.number}</td>`
+            }
           </tr>
         </tbody>
       </table>
@@ -231,9 +253,9 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
             <tr>
               <td style="border:1px solid #111827;padding:6px 8px;text-align:center;" dir="ltr">${i + 1}</td>
               <td style="border:1px solid #111827;padding:6px 8px;text-align:${dir === "rtl" ? "right" : "left"};${naskhStyle}">${it.description || "—"}</td>
-              <td style="border:1px solid #111827;padding:6px 8px;text-align:center;" dir="ltr">${it.quantity}</td>
-              <td style="border:1px solid #111827;padding:6px 8px;text-align:right;" dir="ltr">${it.unitPrice.toFixed(2)}</td>
-              <td style="border:1px solid #111827;padding:6px 8px;text-align:right;font-weight:600;" dir="ltr">${fromMinor(result.lineTotals[i] || 0, 2)}</td>
+              <td style="border:1px solid #111827;padding:6px 8px;text-align:center;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
+              <td style="border:1px solid #111827;padding:6px 8px;text-align:right;" dir="ltr">${fmtPrice(it.unitPrice, invoiceLang)}</td>
+              <td style="border:1px solid #111827;padding:6px 8px;text-align:right;font-weight:600;" dir="ltr">${fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
             </tr>`).join("")}
           ${blankRows}
           <tr style="background:#F3F4F6;">
@@ -260,8 +282,8 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
 
   // ── MODERN / MINIMAL / CORPORATE ────────────────────────────────────────────
   const logoAlignJs: Record<Alignment, string> = { left: "flex-start", center: "center", right: "flex-end" };
-  const logoH = logo.src ? `<div style="display:flex;justify-content:${logoAlignJs[logo.align]};margin-bottom:10px;">
-    <img src="${logo.src}" alt="logo" style="height:${LOGO_H[logo.size]}px;max-width:100%;object-fit:contain;" /></div>` : "";
+  const logoH = logo.src ? `<div style="display:flex;justify-content:${logoAlignJs[logo.align]};margin-bottom:6px;">
+    <img src="${logo.src}" alt="logo" style="height:${LOGO_H[logo.size]}px;max-width:180px;object-fit:contain;" /></div>` : "";
 
   const headerFlexDir = dir === "rtl" ? "row-reverse" : "row";
   const docTextAlign  = dir === "rtl" ? "left" : "right";
@@ -320,9 +342,9 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
         ${invoice.items.map((it, i) => `
           <tr style="border-bottom:1px solid #F3F4F6;">
             <td style="padding:7px 4px;color:#374151;text-align:${dir === "rtl" ? "right" : "left"};${naskhStyle}">${it.description || "—"}</td>
-            <td style="padding:7px 4px;color:#6B7280;text-align:right;" dir="ltr">${it.quantity}</td>
-            <td style="padding:7px 4px;color:#6B7280;text-align:right;" dir="ltr">${it.unitPrice.toFixed(2)}</td>
-            <td style="padding:7px 4px;font-weight:600;color:#111827;text-align:right;" dir="ltr">${fromMinor(result.lineTotals[i] || 0, 2)}</td>
+            <td style="padding:7px 4px;color:#6B7280;text-align:right;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
+            <td style="padding:7px 4px;color:#6B7280;text-align:right;" dir="ltr">${fmtPrice(it.unitPrice, invoiceLang)}</td>
+            <td style="padding:7px 4px;font-weight:600;color:#111827;text-align:right;" dir="ltr">${fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
           </tr>`).join("")}
       </tbody>
     </table>

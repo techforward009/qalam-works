@@ -32,8 +32,8 @@ interface LogoState {
   size:  SizeOption;
 }
 
-const LOGO_SIZE_MAP: Record<SizeOption, number> = { small: 40, medium: 60, large: 90 };
-const SIG_SIZE_MAP:  Record<SizeOption, number> = { small: 60, medium: 100, large: 150 };
+const LOGO_SIZE_MAP: Record<SizeOption, number> = { small: 36, medium: 52, large: 72 };
+const SIG_SIZE_MAP:  Record<SizeOption, number> = { small: 50, medium: 90, large: 140 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function newItem(): LineItem {
@@ -110,6 +110,18 @@ function SizePicker({ value, onChange, labels }: { value: SizeOption; onChange: 
       ))}
     </div>
   );
+}
+
+
+/** Format quantity with thousands separator */
+function fmtNum(n: number, lang: InvoiceLanguage): string {
+  try { return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n); }
+  catch { return n.toString(); }
+}
+/** Format unit price with thousands separator, no symbol */
+function fmtPrice(n: number, lang: InvoiceLanguage): string {
+  try { return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
+  catch { return n.toFixed(2); }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -517,7 +529,7 @@ export default function InvoiceGeneratorTool() {
                         dir="ltr" step="0.1" min="0" max="100" />
                       <div className="col-span-2 flex items-center justify-between">
                         <span className="text-xs font-mono text-gray-700" dir="ltr">
-                          {fromMinor(result.lineTotals[idx] || 0, 2)}
+                          {fmtPrice(parseFloat(fromMinor(result.lineTotals[idx] || 0, 2)), invoiceLang)}
                         </span>
                         <button onClick={() => removeItem(idx)} disabled={invoice.items.length <= 1}
                           className="text-red-400 hover:text-red-600 disabled:opacity-20 text-xs ml-1">✕</button>
@@ -746,9 +758,9 @@ export default function InvoiceGeneratorTool() {
                         <tr key={it.id}>
                           <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "center" }} dir="ltr">{i + 1}</td>
                           <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: invDir === "rtl" ? "right" : "left" }} className={invNaskh}>{it.description || "—"}</td>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "center" }} dir="ltr">{it.quantity}</td>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right" }} dir="ltr">{it.unitPrice.toFixed(2)}</td>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", fontWeight: 600 }} dir="ltr">{fromMinor(result.lineTotals[i] || 0, 2)}</td>
+                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "center" }} dir="ltr">{fmtNum(it.quantity, invoiceLang)}</td>
+                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right" }} dir="ltr">{fmtPrice(it.unitPrice, invoiceLang)}</td>
+                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", fontWeight: 600 }} dir="ltr">{fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
                         </tr>
                       ))}
                       {invoice.items.length < 5 && Array.from({ length: 5 - invoice.items.length }).map((_, i) => (
@@ -884,9 +896,9 @@ export default function InvoiceGeneratorTool() {
                             style={{ textAlign: invDir === "rtl" ? "right" : "left", paddingLeft: invDir === "ltr" ? 4 : 0, paddingRight: invDir === "rtl" ? 4 : 0 }}>
                             {it.description || "—"}
                           </td>
-                          <td className="py-2 text-right text-gray-600" dir="ltr">{it.quantity}</td>
-                          <td className="py-2 text-right text-gray-600" dir="ltr">{it.unitPrice.toFixed(2)}</td>
-                          <td className="py-2 text-right font-semibold text-gray-800" dir="ltr">{fromMinor(result.lineTotals[i] || 0, 2)}</td>
+                          <td className="py-2 text-right text-gray-600" dir="ltr">{fmtNum(it.quantity, invoiceLang)}</td>
+                          <td className="py-2 text-right text-gray-600" dir="ltr">{fmtPrice(it.unitPrice, invoiceLang)}</td>
+                          <td className="py-2 text-right font-semibold text-gray-800" dir="ltr">{fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
                         </tr>
                       ))}
                     </tbody>
