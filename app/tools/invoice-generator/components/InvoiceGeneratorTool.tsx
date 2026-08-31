@@ -133,7 +133,7 @@ export default function InvoiceGeneratorTool() {
 
   const [invoice, setInvoice]         = useState<Invoice>(DEFAULT_INVOICE);
   const [template, setTemplate]       = useState<Template>("modern");
-  const [invoiceLang, setInvoiceLang] = useState<InvoiceLanguage>("en");
+  const [invoiceLang, setInvoiceLang] = useState<InvoiceLanguage>(isUr ? "ur" : "en");
   const [logo, setLogo]               = useState<LogoState>({ src: null, align: "left", size: "medium" });
   const [sig, setSig]                 = useState<SigState>({ name: "", designation: "", image: null, stampImage: null, align: "left", size: "medium" });
   const [activeSection, setActiveSection] = useState<"business" | "client" | "items" | "settings">("business");
