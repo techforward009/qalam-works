@@ -133,7 +133,9 @@ export default function InvoiceGeneratorTool() {
 
   const [invoice, setInvoice]         = useState<Invoice>(DEFAULT_INVOICE);
   const [template, setTemplate]       = useState<Template>("modern");
-  const [invoiceLang, setInvoiceLang] = useState<InvoiceLanguage>(isUr ? "ur" : "en");
+  // invoiceLang is derived directly from the site language.
+  // The global EN/UR switch is the single source of truth — no independent state.
+  const invoiceLang: InvoiceLanguage = isUr ? "ur" : "en";
   const [logo, setLogo]               = useState<LogoState>({ src: null, align: "left", size: "medium" });
   const [sig, setSig]                 = useState<SigState>({ name: "", designation: "", image: null, stampImage: null, align: "left", size: "medium" });
   const [activeSection, setActiveSection] = useState<"business" | "client" | "items" | "settings">("business");
@@ -585,20 +587,6 @@ export default function InvoiceGeneratorTool() {
                       ))}
                     </div>
                   </div>
-                  {/* Invoice language */}
-                  <div>
-                    <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.invoiceLang}</label>
-                    <div className="flex gap-2">
-                      {(["en", "ur"] as InvoiceLanguage[]).map(l => (
-                        <button key={l} onClick={() => setInvoiceLang(l)}
-                          className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
-                            ${invoiceLang === l ? "border-amber-600 bg-amber-50 text-amber-900" : "border-gray-200 text-gray-600 hover:border-amber-300"}`}>
-                          {l === "en" ? L.english : L.urdu}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* Signature section */}
                   <div className="rounded-xl border border-amber-100 bg-amber-50/40 p-3 space-y-3">
                     <p className={`text-[11px] font-black uppercase tracking-widest text-amber-800 ${naskh}`}>{L.sigSection}</p>
