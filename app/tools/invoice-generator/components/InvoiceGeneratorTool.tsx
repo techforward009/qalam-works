@@ -18,12 +18,12 @@ type Alignment     = "left" | "center" | "right";
 type SizeOption    = "small" | "medium" | "large";
 
 interface SigState {
-  name:       string;
+  name:        string;
   designation: string;
-  companyStamp: boolean;
-  image:      string | null;   // base64 signature image
-  align:      Alignment;
-  size:       SizeOption;
+  image:       string | null;   // base64 signature image
+  stampImage:  string | null;   // base64 company stamp image
+  align:       Alignment;
+  size:        SizeOption;
 }
 
 interface LogoState {
@@ -135,11 +135,12 @@ export default function InvoiceGeneratorTool() {
   const [template, setTemplate]       = useState<Template>("modern");
   const [invoiceLang, setInvoiceLang] = useState<InvoiceLanguage>("en");
   const [logo, setLogo]               = useState<LogoState>({ src: null, align: "left", size: "medium" });
-  const [sig, setSig]                 = useState<SigState>({ name: "", designation: "", companyStamp: false, image: null, align: "left", size: "medium" });
+  const [sig, setSig]                 = useState<SigState>({ name: "", designation: "", image: null, stampImage: null, align: "left", size: "medium" });
   const [activeSection, setActiveSection] = useState<"business" | "client" | "items" | "settings">("business");
 
   const logoRef  = useRef<HTMLInputElement>(null);
-  const sigImgRef = useRef<HTMLInputElement>(null);
+  const sigImgRef   = useRef<HTMLInputElement>(null);
+  const stampImgRef = useRef<HTMLInputElement>(null);
 
   const result   = calculateInvoice(invoice);
   const T        = TEMPLATES[template];
@@ -222,6 +223,14 @@ export default function InvoiceGeneratorTool() {
     if (!file) return;
     const r = new FileReader();
     r.onload = ev => setSig(s => ({ ...s, image: ev.target?.result as string }));
+    r.readAsDataURL(file);
+  }, []);
+
+  const handleStampImg = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = ev => setSig(s => ({ ...s, stampImage: ev.target?.result as string }));
     r.readAsDataURL(file);
   }, []);
 
@@ -321,17 +330,17 @@ export default function InvoiceGeneratorTool() {
           {sig.image && (
             <div style={{ marginBottom: 6, display: "flex", justifyContent: justMap[sig.align] }}>
               <img src={sig.image} alt="signature"
-                style={{ height: h, maxWidth: 220, objectFit: "contain", display: "block" }} />
+                style={{ height: h, maxWidth: 200, maxHeight: h, objectFit: "contain", display: "block" }} />
             </div>
           )}
           <div style={{ borderBottom: "1.5px solid #374151", marginBottom: 5, width: "100%", maxWidth: 180 }} />
           {sig.name && <p className={`text-xs font-bold text-gray-800 ${invNaskh}`}>{sig.name}</p>}
           {sig.designation && <p className={`text-xs text-gray-500 ${invNaskh}`}>{sig.designation}</p>}
           {!sig.name && invoice.seller.name && <p className={`text-xs text-gray-400 ${invNaskh}`}>{invoice.seller.name}</p>}
-          {sig.companyStamp && (
-            <div style={{ width: 56, height: 56, borderRadius: "50%", border: "2px dashed #D1D5DB",
-              display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 8 }}>
-              <span className={`text-[9px] text-gray-300 ${invNaskh}`}>{invoiceLang === "ur" ? "مہر" : "STAMP"}</span>
+          {sig.stampImage && (
+            <div style={{ marginTop: 8, display: "flex", justifyContent: justMap[sig.align] }}>
+              <img src={sig.stampImage} alt="stamp"
+                style={{ height: 60, maxWidth: 80, objectFit: "contain", display: "block", opacity: 0.85 }} />
             </div>
           )}
         </div>
@@ -639,17 +648,41 @@ export default function InvoiceGeneratorTool() {
                           dir={isUr ? "rtl" : "ltr"} />
                       </div>
                       <div>
-                        <label className={`block text-[11px] font-semibold text-gray-400 mb-1 ${naskh}`}>{L.designation}</label>
+                        <label className={`block text-[11px] font-semibold text-gray-400 mb-1 ${naskh}`}>
+                          {L.designation} <span className="font-normal text-gray-300">({isUr ? "اختیاری" : "optional"})</span>
+                        </label>
                         <input value={sig.designation} onChange={e => setSig(s => ({ ...s, designation: e.target.value }))}
                           className={`w-full border border-gray-200 rounded-lg px-3 py-2 text-sm ${naskh}`}
                           dir={isUr ? "rtl" : "ltr"} />
                       </div>
-                      <label className={`flex items-center gap-2 cursor-pointer ${isUr ? "flex-row-reverse" : ""}`}>
-                        <input type="checkbox" checked={sig.companyStamp}
-                          onChange={e => setSig(s => ({ ...s, companyStamp: e.target.checked }))}
-                          className="rounded accent-amber-600" />
-                        <span className={`text-sm text-gray-600 ${naskh}`}>{L.stamp}</span>
-                      </label>
+                    </div>
+                    {/* Company stamp image */}
+                    <div className="pt-2 border-t border-amber-100 space-y-2">
+                      <p className={`text-[11px] font-semibold text-gray-500 ${naskh}`}>
+                        {IV.stampLabel} <span className="font-normal text-gray-300">({isUr ? "اختیاری" : "optional"})</span>
+                      </p>
+                      <div className={`flex items-center gap-3 ${isUr ? "flex-row-reverse" : ""}`}>
+                        {sig.stampImage ? (
+                          <img src={sig.stampImage} alt="stamp"
+                            className="h-10 w-10 object-contain rounded border border-gray-200 bg-white" />
+                        ) : (
+                          <div className="h-10 w-10 rounded border-2 border-dashed border-amber-100 flex items-center justify-center text-amber-200 cursor-pointer text-xs"
+                            onClick={() => stampImgRef.current?.click()}>⬆</div>
+                        )}
+                        <div className={`flex gap-2 flex-wrap ${isUr ? "flex-row-reverse" : ""}`}>
+                          <button onClick={() => stampImgRef.current?.click()}
+                            className={`text-xs font-semibold text-amber-700 hover:text-amber-900 underline ${naskh}`}>
+                            {sig.stampImage ? (isUr ? "تبدیل کریں" : "Replace Stamp") : (isUr ? "مہر اپ لوڈ کریں" : "Upload Stamp")}
+                          </button>
+                          {sig.stampImage && (
+                            <button onClick={() => { setSig(s => ({ ...s, stampImage: null })); if (stampImgRef.current) stampImgRef.current.value = ""; }}
+                              className={`text-xs font-semibold text-red-500 hover:text-red-700 underline ${naskh}`}>
+                              {isUr ? "ہٹائیں" : "Remove"}
+                            </button>
+                          )}
+                        </div>
+                        <input ref={stampImgRef} type="file" accept="image/*" className="hidden" onChange={handleStampImg} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -802,9 +835,10 @@ export default function InvoiceGeneratorTool() {
                       {sig.name && <p style={{ fontSize: 11, fontWeight: 700, color: "#111827" }} className={invNaskh}>{sig.name}</p>}
                       {sig.designation && <p style={{ fontSize: 10, color: "#6B7280" }} className={invNaskh}>{sig.designation}</p>}
                       {!sig.name && invoice.seller.name && <p style={{ fontSize: 10, color: "#9CA3AF" }} className={invNaskh}>{invoice.seller.name}</p>}
-                      {sig.companyStamp && (
-                        <div style={{ width: 56, height: 56, borderRadius: "50%", border: "2px dashed #D1D5DB", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 8 }}>
-                          <span style={{ fontSize: 9, color: "#D1D5DB" }} className={invNaskh}>{invoiceLang === "ur" ? "مہر" : "STAMP"}</span>
+                      {sig.stampImage && (
+                        <div style={{ marginTop: 8 }}>
+                          <img src={sig.stampImage} alt="stamp"
+                            style={{ height: 60, maxWidth: 80, objectFit: "contain", opacity: 0.85 }} />
                         </div>
                       )}
                     </div>

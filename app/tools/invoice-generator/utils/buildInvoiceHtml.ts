@@ -24,8 +24,8 @@ export interface LogoState {
 export interface SigState {
   name:        string;
   designation: string;
-  companyStamp: boolean;
   image:       string | null;
+  stampImage:  string | null;
   align:       Alignment;
   size:        SizeOption;
 }
@@ -144,9 +144,8 @@ function sigHtml(sig: SigState, accent: string, lang: InvoiceLanguage, invNaskh:
         <img src="${sig.image}" alt="signature"
           style="height:${h}px;max-width:180px;max-height:${h}px;object-fit:contain;object-position:bottom;display:block;" /></div>`
     : `<div style="height:${Math.round(h * 0.35)}px;"></div>`;
-  const stampPart = sig.companyStamp
-    ? `<div style="width:56px;height:56px;border-radius:50%;border:2px dashed #D1D5DB;display:inline-flex;align-items:center;justify-content:center;margin-top:8px;">
-        <span style="font-size:9px;color:#D1D5DB;${invNaskh}">${iv("stamp", lang)}</span></div>`
+  const stampPart = sig.stampImage
+    ? `<div style="margin-top:8px;"><img src="${sig.stampImage}" alt="stamp" style="height:60px;max-width:80px;object-fit:contain;opacity:0.85;display:block;" /></div>`
     : "";
   return `
   <div style="display:flex;justify-content:${jm[sig.align]};">
