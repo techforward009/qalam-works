@@ -336,7 +336,6 @@ export default function InvoiceGeneratorTool() {
           <div style={{ borderBottom: "1.5px solid #374151", marginBottom: 5, width: "100%", maxWidth: 180 }} />
           {sig.name && <p className={`text-xs font-bold text-gray-800 ${invNaskh}`}>{sig.name}</p>}
           {sig.designation && <p className={`text-xs text-gray-500 ${invNaskh}`}>{sig.designation}</p>}
-          {!sig.name && invoice.seller.name && <p className={`text-xs text-gray-400 ${invNaskh}`}>{invoice.seller.name}</p>}
           {sig.stampImage && (
             <div style={{ marginTop: 8, display: "flex", justifyContent: justMap[sig.align] }}>
               <img src={sig.stampImage} alt="stamp"
@@ -365,7 +364,8 @@ export default function InvoiceGeneratorTool() {
 
           {/* ── EDITOR PANEL ───────────────────────────────────────────── */}
           <div className="print:hidden bg-white rounded-2xl border border-amber-200/80 shadow-md overflow-hidden" style={{ color: "#1F2937" }}>
-            <div className={`flex border-b border-amber-100 overflow-x-auto ${isUr ? "flex-row-reverse" : ""}`}>
+            {/* Tab order: dir attribute handles RTL layout; no array reversal needed */}
+            <div className="flex border-b border-amber-100 overflow-x-auto" dir={isUr ? "rtl" : "ltr"}>
               {sections.map(s => (
                 <button key={s.id} onClick={() => setActiveSection(s.id)}
                   className={`flex-1 min-w-max px-3 py-2 sm:px-4 sm:py-3 text-[12px] sm:text-[13px] font-semibold transition-colors whitespace-nowrap ${naskh}
@@ -834,7 +834,6 @@ export default function InvoiceGeneratorTool() {
                       <div style={{ borderBottom: "2px solid #374151", marginBottom: 4, width: 160 }} />
                       {sig.name && <p style={{ fontSize: 11, fontWeight: 700, color: "#111827" }} className={invNaskh}>{sig.name}</p>}
                       {sig.designation && <p style={{ fontSize: 10, color: "#6B7280" }} className={invNaskh}>{sig.designation}</p>}
-                      {!sig.name && invoice.seller.name && <p style={{ fontSize: 10, color: "#9CA3AF" }} className={invNaskh}>{invoice.seller.name}</p>}
                       {sig.stampImage && (
                         <div style={{ marginTop: 8 }}>
                           <img src={sig.stampImage} alt="stamp"
@@ -904,7 +903,7 @@ export default function InvoiceGeneratorTool() {
                     {invoice.terms && (
                       <div>
                         <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: T.accent, marginBottom: 4 }}>
-                          {invoiceLang === "ur" ? "ادائیگی کی شرائط" : "Payment Terms"}
+                          {IV.payterms}
                         </p>
                         <p className={`text-xs text-gray-600 ${invNaskh}`}>{invoice.terms}</p>
                       </div>
