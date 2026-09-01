@@ -19,6 +19,7 @@ import {
   type DateParts,
   type ConversionResult,
 } from "./utils/dateEngine";
+import { COUNTRY_CALENDARS, COUNTRY_MAP, methodLabel } from "./utils/countryCalendars";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const L = {
@@ -45,6 +46,11 @@ const L = {
     invalidDate:  "Invalid date",
     enterDate:    "Enter a date above to see conversions.",
     selectMonth:  "Month",
+    countryLabel: "Regional Context",
+    countryHint:  "Select a country to see how Hijri dates are determined locally.",
+    countryNone:  "Select a country…",
+    countryMethod: "Method",
+    countryOfficial: "Official calendar note",
   },
   ur: {
     title:        "تاریخ کنورٹر",
@@ -69,6 +75,11 @@ const L = {
     invalidDate:  "غلط تاریخ",
     enterDate:    "تبدیلی دیکھنے کے لیے اوپر تاریخ درج کریں۔",
     selectMonth:  "مہینہ",
+    countryLabel: "علاقائی تناظر",
+    countryHint:  "اپنا ملک منتخب کریں تاکہ آپ کے خطے میں ہجری تاریخ کا تعین کیسے ہوتا ہے، یہ جان سکیں۔",
+    countryNone:  "ملک منتخب کریں…",
+    countryMethod: "طریقہ",
+    countryOfficial: "سرکاری تقویم نوٹ",
   },
 };
 
@@ -118,6 +129,7 @@ export default function DateConverterContent() {
   const [year,        setYear]        = useState("");
   const [copied,      setCopied]      = useState<CalendarType | null>(null);
   const [linkCopied,  setLinkCopied]  = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
 
   // ── Shareable URL ───────────────────────────────────────────────────────────
   // Write the URL synchronously with the new values passed directly — avoids
@@ -398,6 +410,66 @@ export default function DateConverterContent() {
             })}
           </div>
         )}
+        {/* Regional Context — country selector and Hijri variation notice */}
+        <div className="mt-6 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
+          <p className={`text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-1 ${naskh}`}>
+            {t.countryLabel}
+          </p>
+          <p className={`text-[13px] text-[#4a7a5a] dark:text-[#8faa93] mb-3 ${naskh}`}>
+            {t.countryHint}
+          </p>
+
+          {/* Country selector */}
+          <select
+            value={selectedCountry}
+            onChange={e => setSelectedCountry(e.target.value)}
+            className={`w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a] ${naskh}`}
+            dir={isUr ? "rtl" : "ltr"}
+          >
+            <option value="">{t.countryNone}</option>
+            {COUNTRY_CALENDARS.map(c => (
+              <option key={c.id} value={c.id}>{c.name[lang]}</option>
+            ))}
+          </select>
+
+          {/* Country-specific notes rendered when a country is selected */}
+          {selectedCountry && (() => {
+            const country = COUNTRY_MAP.get(selectedCountry);
+            if (!country) return null;
+            return (
+              <div className="mt-4 space-y-3">
+                {/* Hijri method badge */}
+                <div className={`flex items-center gap-2 ${isUr ? "flex-row-reverse" : ""}`}>
+                  <span className={`text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                    {t.countryMethod}:
+                  </span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#1A3A2A]/8 dark:bg-white/[0.06] text-[#1A3A2A] dark:text-[#a8c8b0]">
+                    {methodLabel(country.hijriMethod, lang)}
+                  </span>
+                </div>
+
+                {/* Hijri variation note */}
+                <div className={`rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 px-4 py-3 ${isUr ? "text-right" : ""}`}>
+                  <p className={`text-[13px] text-amber-800 dark:text-amber-300 leading-relaxed ${naskh}`}>
+                    {country.hijriNote[lang]}
+                  </p>
+                </div>
+
+                {/* Official calendar note where relevant */}
+                {country.officialNote && (
+                  <div className={`rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] border border-[#1A3A2A]/10 dark:border-white/[0.08] px-4 py-3 ${isUr ? "text-right" : ""}`}>
+                    <p className={`text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>
+                      {t.countryOfficial}
+                    </p>
+                    <p className={`text-[13px] text-[#4a6a4a] dark:text-[#9fbfa8] leading-relaxed ${naskh}`}>
+                      {country.officialNote[lang]}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
       </div>
     </div>
   );
