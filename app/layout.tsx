@@ -61,14 +61,14 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://qalamworks.com"),
   title: "Qalam Works — Professional Urdu Writing & Publishing Tools",
   description:
-    "Qalam Works is a professional digital workspace for Urdu writing, editing, standardization, and publication preparation. Tools include Document Studio, Document Cleaner, Quality Audit, and Unicode Standardizer.",
+    "Professional Urdu writing tools: an Urdu text cleaner, Urdu proofreading support, a Roman Urdu converter, and an Urdu Unicode fixer with punctuation correction — plus Document Studio for publication-ready work.",
   openGraph: {
     type: "website",
     url: "https://qalamworks.com",
     siteName: "Qalam Works",
     title: "Qalam Works — Professional Urdu Writing & Publishing Tools",
     description:
-      "A professional digital workspace for Urdu writing, editing, standardization, and publication preparation.",
+      "Urdu writing tools for text cleanup, proofreading, Roman Urdu conversion, Unicode correction, and publication preparation.",
     locale: "ur_PK",
     alternateLocale: "en_US",
   },
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Qalam Works — Professional Urdu Writing & Publishing Tools",
     description:
-      "Professional tools for Urdu writing, editing, Unicode standardization, and document preparation.",
+      "Clean Urdu text, proofread punctuation, convert Roman Urdu, and fix Unicode — professional writing tools from Qalam Works.",
   },
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
   alternates: { canonical: "https://qalamworks.com" },

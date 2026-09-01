@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import QualityCheckerContent from "./QualityCheckerContent";
 
 export const metadata: Metadata = {
-  title: "Quality Audit — Text Quality Checker | Qalam Works",
+  title: "Urdu Proofreading — Quality Audit | Qalam Works",
   description:
-    "Inspect text for spacing, punctuation, and script issues without changing it. Supports Urdu, English, Arabic, and safe Auto audit modes.",
+    "Urdu proofreading support that checks punctuation and text quality without changing your document. Inspect spacing, punctuation, and script issues in Urdu, English, or Arabic, including safe Auto mode.",
   alternates: { canonical: "/tools/quality-checker" },
 };
 
