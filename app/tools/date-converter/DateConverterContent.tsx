@@ -39,6 +39,7 @@ const L = {
     hijri:        "Hijri",
     solar:        "Solar Hijri",
     hijriNote:    "Hijri dates may differ by one day depending on local moon sighting.",
+    solarNote:    "Solar Hijri conversion uses an arithmetic 33-year cycle. Dates near Nowruz may differ by one day from astronomical calendars.",
     invalidDate:  "Invalid date",
     enterDate:    "Enter a date above to see conversions.",
     selectMonth:  "Month",
@@ -59,6 +60,7 @@ const L = {
     hijri:        "ہجری قمری",
     solar:        "ہجری شمسی",
     hijriNote:    "مقامی رویتِ ہلال کے لحاظ سے ہجری تاریخ میں ایک دن کا فرق ممکن ہے۔",
+    solarNote:    "ہجری شمسی تبدیلی 33 سالہ حسابی دور پر مبنی ہے۔ نوروز کے قریب فلکیاتی تقویم سے ایک دن کا فرق ممکن ہے۔",
     invalidDate:  "غلط تاریخ",
     enterDate:    "تبدیلی دیکھنے کے لیے اوپر تاریخ درج کریں۔",
     selectMonth:  "مہینہ",
@@ -265,12 +267,17 @@ export default function DateConverterContent() {
                       {isCopied ? t.copied : t.copy}
                     </button>
                   </div>
+                  {/* Per-calendar method notes — only shown on the relevant card */}
+                  {cal === "hijri" && (
+                    <p className={`text-[11px] text-[#4A6A4A]/55 dark:text-[#8faa93]/55 mt-2 ${naskh}`}>{t.hijriNote}</p>
+                  )}
+                  {cal === "solar" && (
+                    <p className={`text-[11px] text-[#4A6A4A]/55 dark:text-[#8faa93]/55 mt-2 ${naskh}`}>{t.solarNote}</p>
+                  )}
                 </div>
               );
             })}
 
-            {/* Hijri caveat */}
-            <p className={`text-xs text-[#4A6A4A]/60 dark:text-[#8faa93]/60 text-center pt-1 ${naskh}`}>{t.hijriNote}</p>
           </div>
         )}
       </div>

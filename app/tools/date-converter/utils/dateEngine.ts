@@ -7,7 +7,9 @@
  *      The tabular calendar is used because it is deterministic and reproducible.
  *      It agrees with observational calendars within ±1 day; that ±1-day caveat
  *      is surfaced to the user in the UI.
- *   3. Solar Hijri / Persian (Algorithmic Solar Hijri calendar, Borkowski 1996)
+ *   3. Solar Hijri / Persian (Simple arithmetic Solar Hijri calendar using a
+ *      repeating 33-year leap cycle: ((year * 8) + 29) % 33 < 8.
+ *      Dates near Nowruz may differ by ±1 day from astronomical calendars.)
  *
  * All conversions route through Julian Day Number (JDN) as the neutral
  * intermediate representation. No Date objects are used so there are no
@@ -69,7 +71,9 @@ function jdnToGregorian(jdn: number): DateParts {
 }
 
 // ── Hijri (Tabular Islamic calendar) ─────────────────────────────────────────
-// Epoch: 1 Muharram 1 AH = Julian Day 1948439 (Friday 16 July 622 CE Gregorian)
+// Epoch: 1 Muharram 1 AH = JDN 1948439
+//   Julian calendar:          Friday, 15 July 622 CE
+//   Proleptic Gregorian:      Friday, 18 July 622 CE
 const HIJRI_EPOCH_JDN = 1948439;
 
 /**
@@ -133,27 +137,32 @@ function jdnToHijri(jdn: number): DateParts {
 }
 
 // ── Solar Hijri (Persian / Jalali) ───────────────────────────────────────────
-// Epoch: 1 Farvardin 1 SH = Julian Day 1948320 (Gregorian 22 March 622 CE)
-// Algorithm: Borkowski (1996) as described in the "Calendrical Calculations" approach.
+// Epoch: 1 Farvardin 1 SH = JDN 1948320
+//   Proleptic Gregorian: 21 March 622 CE
+//
+// Leap-year rule: simple 33-year arithmetic cycle.
+//   A Solar Hijri year y is a leap year when ((y * 8) + 29) % 33 < 8.
+//   This yields 8 leap years per 33-year period (years 1,5,9,13,17,22,26,30
+//   within each 33-year block) and is accurate over the supported range.
+//
+// Implementation note: the code uses a 2820-year chunk size (1029983 days) to
+// handle very large year values. Within the supported Gregorian range 1900–2100
+// (≈ SH 1279–1479), the chunk index is always 0 and has no effect on output.
 
 const SOLAR_EPOCH_JDN = 1948320; // 1 Farvardin 1 SH
 
 function solarToJDN(y: number, m: number, d: number): number {
-  // Cycles of 2820 years + 4 extra years prefix (total leap-cycle 2820 years)
+  // Split into 2820-year chunks (chunk index is 0 for all supported dates).
   const ep = y - 1;
   const cyc = Math.floor(ep / 2820);
   const yr  = ep % 2820;
 
-  // Days in 2820-year grand cycle = 2820*365 + 683 = 1029983
-  // Days in 4-year section = 365*4 + 1 = 1461 (same as Gregorian 4-year)
-  // But Persian uses a 2820-year cycle with 683 leap years
-  // Simplified leap: year is leap if mod 4 == 1 (for years 1,5,9…) but with a
-  // correction that fits the 2820 cycle. We use: leap if (year*8+29)%33<8.
+  // Leap rule: 33-year arithmetic cycle.
   function isLeap(y: number): boolean {
     return ((y * 8) + 29) % 33 < 8;
   }
 
-  // Count leap years from 1 to yr (within the 2820-year span)
+  // Count leap years in years 1..yr of this chunk (33-year cycle rule).
   let leaps = 0;
   for (let i = 1; i <= yr; i++) { if (isLeap(i)) leaps++; }
 

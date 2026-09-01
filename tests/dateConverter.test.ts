@@ -284,3 +284,78 @@ describe("isoDate helper", () => {
     expect(isoDate({ year: 2026, month: 12, day: 31 })).toBe("2026-12-31");
   });
 });
+
+// ── Solar Hijri arithmetic-calendar regression fixtures ───────────────────────
+//
+// The engine uses a 33-year arithmetic cycle, NOT an astronomical equinox
+// algorithm. Near Nowruz, the arithmetic result can differ by 1 day from the
+// actual vernal equinox (e.g. 2025-03-20 is the astronomical Nowruz 1404 in
+// Tehran, but the 33-year cycle places it on 1403-12-30).
+//
+// These fixtures document the deterministic CONTRACT of the current engine.
+// They are NOT errors — they are expected arithmetic-calendar results.
+// A separate astronomical implementation would give different values for these
+// edge dates, which is acceptable for the stated caveat in the UI.
+//
+// Expected values were derived from independent arithmetic verification of the
+// 33-year cycle formula, not from running the engine itself.
+
+describe("Solar Hijri arithmetic calendar — Nowruz boundary regression", () => {
+  test("2025-03-20 → 1403-12-30 (arithmetic cycle; astronomical Nowruz 1404 is this day)", () => {
+    // 1403 SH is a leap year (isSolarLeap(1403) = true), so Esfand has 30 days.
+    // The 33-year cycle places 1404-01-01 on 2025-03-21, one day after the equinox.
+    const r = convert("gregorian", { year: 2025, month: 3, day: 20 });
+    expect(r.solar).toEqual({ year: 1403, month: 12, day: 30 });
+  });
+
+  test("2025-03-21 → 1404-01-01 (arithmetic Nowruz 1404)", () => {
+    const r = convert("gregorian", { year: 2025, month: 3, day: 21 });
+    expect(r.solar).toEqual({ year: 1404, month: 1, day: 1 });
+  });
+
+  test("1403 SH is a leap year", () => {
+    expect(isSolarLeap(1403)).toBe(true);
+  });
+
+  test("1404 SH is not a leap year", () => {
+    expect(isSolarLeap(1404)).toBe(false);
+  });
+
+  test("Esfand 30 of 1403 SH is consecutive with 1404-01-01", () => {
+    // In the arithmetic calendar, the day after 1403-12-30 must be 1404-01-01.
+    const esfand30 = convert("solar", { year: 1403, month: 12, day: 30 });
+    const nowruz   = convert("solar", { year: 1404, month: 1,  day: 1  });
+    const gregDiff =
+      gregorianToJDNRef(nowruz.gregorian) - gregorianToJDNRef(esfand30.gregorian);
+    expect(gregDiff).toBe(1);
+  });
+});
+
+// ── Hijri 1500 regression (non-leap year, valid last day) ─────────────────────
+
+describe("Hijri year 1500 — non-leap boundary", () => {
+  test("year 1500 is at cycle position 30 — not in leap set", () => {
+    // Cycle position: ((1500-1) % 30) + 1 = 30. Leap set = {2,5,7,10,13,15,18,21,24,26,29}.
+    // Position 30 is NOT in the set, so month 12 has 29 days (not 30).
+    const err = validateDate("hijri", { year: 1500, month: 12, day: 30 });
+    expect(err?.field).toBe("day");
+  });
+
+  test("1500-12-29 round-trip (valid last day of non-leap year 1500)", () => {
+    const start = { year: 1500, month: 12, day: 29 };
+    const via   = convert("hijri", start);
+    const back  = convert("hijri", via.hijri);
+    expect(back.hijri).toEqual(start);
+  });
+});
+
+// ── Helper used only in this test file ───────────────────────────────────────
+// Independent JDN helper to verify consecutive-day tests without relying on
+// the engine's own gregorianToJDN (which would circularise the test).
+function gregorianToJDNRef(p: { year: number; month: number; day: number }): number {
+  let { year: y, month: m, day: d } = p;
+  if (m <= 2) { y -= 1; m += 12; }
+  const A = Math.floor(y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524;
+}
