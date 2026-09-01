@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useLanguage } from "../../lib/language-context";
 import { trackEvent, trackToolOpenOnce } from "../../lib/analytics";
-import { useEffect } from "react";
 import {
   convert,
   validateDate,
@@ -34,10 +33,13 @@ const L = {
     clear:        "Clear",
     copy:         "Copy",
     copied:       "Copied!",
-    results:      "Results",
+    copyLink:     "Copy Link",
+    linkCopied:   "Link copied!",
     gregorian:    "Gregorian",
     hijri:        "Hijri",
     solar:        "Solar Hijri",
+    methodHijri:  "Tabular · Civil",
+    methodSolar:  "Arithmetic · 33-year cycle",
     hijriNote:    "Hijri dates may differ by one day depending on local moon sighting.",
     solarNote:    "Solar Hijri conversion uses an arithmetic 33-year cycle. Dates near Nowruz may differ by one day from astronomical calendars.",
     invalidDate:  "Invalid date",
@@ -55,10 +57,13 @@ const L = {
     clear:        "صاف کریں",
     copy:         "نقل",
     copied:       "نقل ہو گیا!",
-    results:      "نتائج",
+    copyLink:     "لنک کاپی کریں",
+    linkCopied:   "لنک کاپی ہوگیا!",
     gregorian:    "عیسوی",
     hijri:        "ہجری قمری",
     solar:        "ہجری شمسی",
+    methodHijri:  "حسابی · مدنی",
+    methodSolar:  "حسابی · 33 سالہ دور",
     hijriNote:    "مقامی رویتِ ہلال کے لحاظ سے ہجری تاریخ میں ایک دن کا فرق ممکن ہے۔",
     solarNote:    "ہجری شمسی تبدیلی 33 سالہ حسابی دور پر مبنی ہے۔ نوروز کے قریب فلکیاتی تقویم سے ایک دن کا فرق ممکن ہے۔",
     invalidDate:  "غلط تاریخ",
@@ -71,7 +76,7 @@ const L = {
 const WEEKDAYS_EN = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 const WEEKDAYS_UR = ["پیر","منگل","بدھ","جمعرات","جمعہ","ہفتہ","اتوار"];
 
-/** Compute weekday index from a Gregorian date without importing the full engine. */
+/** Weekday from Gregorian date via JDN (same formula as dateEngine, inlined). */
 function weekdayFromGregorian(p: DateParts): number {
   let { year: y, month: m, day: d } = p;
   if (m <= 2) { y--; m += 12; }
@@ -82,6 +87,7 @@ function weekdayFromGregorian(p: DateParts): number {
 }
 
 const CAL_ORDER: CalendarType[] = ["gregorian", "hijri", "solar"];
+const VALID_CALS = new Set<string>(["gregorian", "hijri", "solar"]);
 
 function calLabel(cal: CalendarType, lang: "en" | "ur"): string {
   const t = L[lang];
@@ -106,13 +112,49 @@ export default function DateConverterContent() {
   const isUr   = lang === "ur";
   const naskh  = isUr ? "font-naskh" : "";
 
-  const [calendar, setCalendar] = useState<CalendarType>("gregorian");
-  const [day,   setDay]   = useState("");
-  const [month, setMonth] = useState("");
-  const [year,  setYear]  = useState("");
-  const [copied, setCopied] = useState<CalendarType | null>(null);
+  const [calendar,    setCalendar]    = useState<CalendarType>("gregorian");
+  const [day,         setDay]         = useState("");
+  const [month,       setMonth]       = useState("");
+  const [year,        setYear]        = useState("");
+  const [copied,      setCopied]      = useState<CalendarType | null>(null);
+  const [linkCopied,  setLinkCopied]  = useState(false);
 
-  // Derive result reactively
+  // ── Shareable URL ───────────────────────────────────────────────────────────
+  // Flag so the URL-write effect skips on the very first render (before the
+  // URL-read effect has had a chance to restore state from params).
+  const didInitRef = useRef(false);
+
+  // On mount: restore calendar + date from ?calendar=&day=&month=&year= params.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search);
+    const cal = p.get("calendar") ?? "";
+    const d   = p.get("day")      ?? "";
+    const mo  = p.get("month")    ?? "";
+    const yr  = p.get("year")     ?? "";
+    if (VALID_CALS.has(cal)) setCalendar(cal as CalendarType);
+    if (d)  setDay(d);
+    if (mo) setMonth(mo);
+    if (yr) setYear(yr);
+    didInitRef.current = true;
+  }, []);
+
+  // Whenever state changes, push updated params (skips before mount init).
+  useEffect(() => {
+    if (!didInitRef.current || typeof window === "undefined") return;
+    if (!day && !month && !year) {
+      window.history.replaceState(null, "", window.location.pathname);
+      return;
+    }
+    const p = new URLSearchParams();
+    p.set("calendar", calendar);
+    if (day)   p.set("day",   day);
+    if (month) p.set("month", month);
+    if (year)  p.set("year",  year);
+    window.history.replaceState(null, "", "?" + p.toString());
+  }, [calendar, day, month, year]);
+
+  // ── Derived result ──────────────────────────────────────────────────────────
   const dayN   = parseInt(day,   10);
   const monthN = parseInt(month, 10);
   const yearN  = parseInt(year,  10);
@@ -131,12 +173,13 @@ export default function DateConverterContent() {
     }
   }
 
-  // Weekday is the same for all result calendars (same JDN); compute once.
-  const weekdayIdx    = result ? weekdayFromGregorian(result.gregorian) : -1;
-  const weekdayName   = weekdayIdx >= 0
+  // Weekday — same JDN for all calendars; compute once from Gregorian result.
+  const weekdayIdx  = result ? weekdayFromGregorian(result.gregorian) : -1;
+  const weekdayName = weekdayIdx >= 0
     ? (isUr ? WEEKDAYS_UR[weekdayIdx] : WEEKDAYS_EN[weekdayIdx])
     : "";
 
+  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleToday = useCallback(() => {
     const today = todayGregorian();
     setCalendar("gregorian");
@@ -148,7 +191,7 @@ export default function DateConverterContent() {
 
   const handleClear = useCallback(() => {
     setDay(""); setMonth(""); setYear("");
-    setCopied(null);
+    setCopied(null); setLinkCopied(false);
   }, []);
 
   const handleCopy = useCallback((cal: CalendarType, text: string) => {
@@ -158,11 +201,17 @@ export default function DateConverterContent() {
     trackEvent("tool_copy", { tool: "date_converter" });
   }, []);
 
-  const months = monthOptions(calendar, lang);
+  const handleCopyLink = useCallback(() => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    navigator.clipboard.writeText(url).catch(() => {});
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 1800);
+  }, []);
 
-  // Only show the TWO converted calendars — hide the source calendar card.
+  const months    = monthOptions(calendar, lang);
   const resultCals = CAL_ORDER.filter(cal => cal !== calendar);
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="site-container" dir={dir}>
       <div className="max-w-2xl mx-auto py-6 sm:py-10">
@@ -230,8 +279,8 @@ export default function DateConverterContent() {
             </div>
           </div>
 
-          {/* Today / Clear */}
-          <div className={`flex gap-3 ${isUr ? "flex-row-reverse" : ""}`}>
+          {/* Today / Clear / Copy Link */}
+          <div className={`flex gap-3 flex-wrap ${isUr ? "flex-row-reverse" : ""}`}>
             <button onClick={handleToday}
               className={`px-4 py-2 rounded-lg text-sm font-semibold bg-[#1A3A2A]/8 dark:bg-[#2a3d30] text-[#1A3A2A] dark:text-[#e8ede9] hover:bg-[#1A3A2A]/15 dark:hover:bg-[#3a5a45] transition-colors ${naskh}`}>
               {t.today}
@@ -240,6 +289,15 @@ export default function DateConverterContent() {
               <button onClick={handleClear}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] hover:text-red-600 dark:hover:text-red-400 transition-colors ${naskh}`}>
                 {t.clear}
+              </button>
+            )}
+            {result && (
+              <button onClick={handleCopyLink}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
+                  ${linkCopied
+                    ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400"
+                    : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#b8d4bc] hover:border-amber-400 dark:hover:border-amber-600"}`}>
+                {linkCopied ? t.linkCopied : t.copyLink}
               </button>
             )}
           </div>
@@ -257,7 +315,7 @@ export default function DateConverterContent() {
           <p className={`text-center text-[#4A6A4A]/70 dark:text-[#a8c8b0]/70 text-sm py-4 ${naskh}`}>{t.enterDate}</p>
         )}
 
-        {/* Result cards — source calendar excluded */}
+        {/* Result cards — source calendar excluded; exactly 2 shown */}
         {result && (
           <div className="space-y-3">
             {resultCals.map(cal => {
@@ -266,23 +324,33 @@ export default function DateConverterContent() {
               const iso      = isoDate(parts);
               const copyText = `${weekdayName}  ${long}\n${iso}`;
               const isCopied = copied === cal;
+              const methodBadge = cal === "hijri" ? t.methodHijri
+                                : cal === "solar" ? t.methodSolar
+                                : null;
               return (
                 <div key={cal}
                   className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-xl px-5 py-4 shadow-sm">
                   <div className={`flex items-start justify-between gap-3 ${isUr ? "flex-row-reverse" : ""}`}>
-                    <div>
-                      {/* Calendar system label */}
-                      <p className={`text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0] mb-1 ${naskh}`}>
-                        {calLabel(cal, lang)}
-                      </p>
-                      {/* Weekday — prominent */}
-                      <p className={`text-sm font-semibold text-[#1A3A2A] dark:text-[#c8e4cc] mb-0.5 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+                    <div className="min-w-0">
+                      {/* Calendar system label + method badge on same row */}
+                      <div className={`flex items-center gap-2 mb-1 flex-wrap ${isUr ? "flex-row-reverse" : ""}`}>
+                        <p className={`text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0] ${naskh}`}>
+                          {calLabel(cal, lang)}
+                        </p>
+                        {methodBadge && (
+                          <span className={`text-[10px] font-semibold text-amber-600/75 dark:text-amber-400/65 ${naskh}`}>
+                            {methodBadge}
+                          </span>
+                        )}
+                      </div>
+                      {/* Weekday — amber accent, smaller than main date */}
+                      <p className={`text-sm font-semibold text-amber-700 dark:text-amber-400 mb-0.5 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
                         {weekdayName}
                       </p>
-                      {/* Human-readable date */}
+                      {/* Human-readable date — largest, primary */}
                       <p className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{long}</p>
-                      {/* ISO / numeric date */}
-                      <p className="text-xs text-[#3a6a4a] dark:text-[#8faa93] mt-0.5 font-mono" dir="ltr">{iso}</p>
+                      {/* ISO / numeric date — secondary */}
+                      <p className="text-xs text-[#4a7a5a] dark:text-[#9fbfa8] mt-0.5 font-mono" dir="ltr">{iso}</p>
                     </div>
                     <button onClick={() => handleCopy(cal, copyText)}
                       className={`shrink-0 mt-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${naskh}
@@ -292,12 +360,12 @@ export default function DateConverterContent() {
                       {isCopied ? t.copied : t.copy}
                     </button>
                   </div>
-                  {/* Per-calendar method notes — only shown on the relevant card */}
+                  {/* Per-calendar method caveat — improved contrast */}
                   {cal === "hijri" && (
-                    <p className={`text-[11px] text-[#3a6a4a]/80 dark:text-[#a8c8b0]/80 mt-2 ${naskh}`}>{t.hijriNote}</p>
+                    <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.hijriNote}</p>
                   )}
                   {cal === "solar" && (
-                    <p className={`text-[11px] text-[#3a6a4a]/80 dark:text-[#a8c8b0]/80 mt-2 ${naskh}`}>{t.solarNote}</p>
+                    <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.solarNote}</p>
                   )}
                 </div>
               );
