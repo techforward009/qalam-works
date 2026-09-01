@@ -209,8 +209,9 @@ export default function TranslationWorkspace({ project, onProjectChange, onClose
 
       {/* Sticky navigation row — must be a sibling of the segment list, NOT inside
           ReviewFilterBar, so its containing block spans the full scroll area.
-          top-16 = site header height (h-16 on mobile). */}
-      <div className="sticky top-16 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm -mx-4 px-4 py-1.5 flex items-center justify-between gap-2 text-xs text-gray-500 mb-3">
+          top-[97px] = 33px utility bar + 64px main header (mobile);
+          lg:top-[105px] = 33px + 72px; xl:top-[113px] = 33px + 80px. */}
+      <div className="sticky top-[97px] lg:top-[105px] xl:top-[113px] z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm -mx-4 px-4 py-1.5 flex items-center justify-between gap-2 text-xs text-gray-500 mb-3">
         <span>{isUr ? `${visibleSegments.length} / ${project.segments.length} دکھایا جا رہا ہے` : `Showing ${visibleSegments.length} of ${project.segments.length}`}</span>
         <button
           type="button"
