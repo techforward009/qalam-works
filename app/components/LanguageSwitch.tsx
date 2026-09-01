@@ -26,7 +26,7 @@ export default function LanguageSwitch() {
           language === "en" ? "bg-[#B8935A] text-white" : "text-white hover:text-white"
         }`}
       >
-        English
+        ENG
       </button>
     </div>
   );

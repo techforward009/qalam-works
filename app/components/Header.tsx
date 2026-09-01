@@ -205,7 +205,7 @@ export default function Header() {
       {/* ── Utility bar ─────────────────────────────────────────────────────── */}
       {/* Light sage in dark mode — visually separates from the dark main header */}
       <div
-        className="bg-[#122a1c] dark:bg-[#E7EFE8] border-b border-white/[0.07] dark:border-[#1A3A2A]/10 h-[33px] flex items-center"
+        className="bg-[#E7EFE8] border-b border-[#1A3A2A]/10 h-[33px] flex items-center"
         dir="ltr"
       >
         <div className="site-container flex items-center justify-end gap-5">
@@ -219,8 +219,8 @@ export default function Header() {
               href={href}
               className={`text-[12px] transition-colors whitespace-nowrap ${
                 isActive(href)
-                  ? "text-white/95 dark:text-[#1A3A2A] font-medium"
-                  : "text-white/55 dark:text-[#1A3A2A]/60 hover:text-white/85 dark:hover:text-[#1A3A2A]"
+                  ? "text-[#1A3A2A] font-medium"
+                  : "text-[#1A3A2A]/55 hover:text-[#1A3A2A]"
               }`}
             >
               {label}
