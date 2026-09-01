@@ -55,15 +55,15 @@ const L = {
     year:         "سال",
     today:        "آج کی تاریخ",
     clear:        "صاف کریں",
-    copy:         "کاپی",
+    copy:         "کاپی کریں",
     copied:       "کاپی ہوگیا!",
     copyLink:     "لنک کاپی کریں",
     linkCopied:   "لنک کاپی ہوگیا!",
     gregorian:    "عیسوی",
     hijri:        "ہجری قمری",
     solar:        "ہجری شمسی",
-    methodHijri:  "حسابی · مدنی",
-    methodSolar:  "حسابی · 33 سالہ دور",
+    methodHijri:  "حسابی قمری طریقہ",
+    methodSolar:  "33 سالہ حسابی طریقہ",
     hijriNote:    "مقامی رویتِ ہلال کے لحاظ سے ہجری تاریخ میں ایک دن کا فرق ممکن ہے۔",
     solarNote:    "ہجری شمسی تبدیلی 33 سالہ حسابی دور پر مبنی ہے۔ نوروز کے قریب فلکیاتی تقویم سے ایک دن کا فرق ممکن ہے۔",
     invalidDate:  "غلط تاریخ",
@@ -342,17 +342,32 @@ export default function DateConverterContent() {
                       and Copy button on the left — no flex-row-reverse needed here. */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      {/* Calendar label + method badge: RTL parent puts calLabel on right, badge to its left */}
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <p className={`text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0] ${naskh}`}>
-                          {calLabel(cal, lang)}
-                        </p>
-                        {methodBadge && (
-                          <span className={`text-[10px] font-medium text-[#3a6a4a]/60 dark:text-[#8faa93]/60 ${naskh}`}>
-                            {methodBadge}
-                          </span>
-                        )}
-                      </div>
+                      {isUr ? (
+                        <>
+                          {/* Urdu heading: larger, bold, high contrast — functions as clear card title */}
+                          <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-0.5 ${naskh}`}>
+                            {calLabel(cal, lang)}
+                          </p>
+                          {/* Method label: own line, readable secondary — does not compete with amber weekday */}
+                          {methodBadge && (
+                            <p className={`text-[11px] font-medium text-[#4a7a5a] dark:text-[#8faa93] mb-1 ${naskh}`}>
+                              {methodBadge}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        /* EN: compact inline row — calendar label + optional method badge */
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <p className="text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0]">
+                            {calLabel(cal, lang)}
+                          </p>
+                          {methodBadge && (
+                            <span className="text-[10px] font-medium text-[#3a6a4a]/60 dark:text-[#8faa93]/60">
+                              {methodBadge}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {/* Weekday — amber accent, smaller than main date */}
                       <p className={`text-sm font-semibold text-amber-700 dark:text-amber-400 mb-0.5 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
                         {weekdayName}
