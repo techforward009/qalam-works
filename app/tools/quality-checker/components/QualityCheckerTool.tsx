@@ -293,7 +293,7 @@ function ReportPanel({
           </span>
           {noSignificant ? (
             <span className="bg-green-100 px-2 py-0.5 rounded text-green-800 font-semibold">
-              {isUr ? "کوئی قابلِ توجہ مسئلہ نہیں ملا" : "No significant issues detected"}
+              {isUr ? "جانچے گئے قواعد میں کوئی قابلِ توجہ مسئلہ نہیں ملا" : "No significant issues detected"}
             </span>
           ) : (
             <span className="bg-amber-200/60 px-2 py-0.5 rounded text-amber-900 font-semibold">
@@ -302,6 +302,11 @@ function ReportPanel({
             </span>
           )}
         </div>
+        {noSignificant && (
+          <p className="text-[11px] text-amber-800/70 mt-1.5 pb-2 border-b border-amber-200">
+            {isUr ? "املا اور معنوی درستی کی مکمل جانچ شامل نہیں۔" : "Spelling and semantic accuracy are not checked."}
+          </p>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white/60 p-2.5 rounded-lg border border-amber-100">

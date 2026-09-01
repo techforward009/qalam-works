@@ -19,6 +19,11 @@ export default function FinalCtaSection() {
         <Link href="/tools/document-studio" className={`inline-block bg-[#B8935A] hover:bg-[#C9A46B] text-white font-semibold px-8 py-4 rounded-lg shadow-lg shadow-black/20 transition-all text-[15px] ${naskh}`}>
           {t.cta}
         </Link>
+        <p className="mt-4">
+          <Link href="/tools" className={`text-[14px] text-[#b8d4bc] hover:text-white underline underline-offset-2 decoration-white/30 transition-colors ${naskh}`}>
+            {t.exploreTools}
+          </Link>
+        </p>
       </div>
     </section>
   );

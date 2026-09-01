@@ -26,7 +26,7 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
   const fileRef = useRef<HTMLInputElement>(null);
 
   const t = {
-    title: isUr ? "ٹرانسلیشن اسٹوڈیو" : "Translation Studio",
+    title: isUr ? "ترجمہ اسٹوڈیو" : "Translation Studio",
     subtitle: isUr ? "نیا ترجمہ پروجیکٹ" : "New Translation Project",
     projectName: isUr ? "پروجیکٹ کا نام" : "Project Name",
     projectNamePlaceholder: isUr ? "مثلاً سالانہ رپورٹ 2026" : "e.g. Annual Report 2026",
@@ -45,8 +45,8 @@ export default function ProjectSetupPanel({ onCreateProject, isUr }: ProjectSetu
     charsMax: (n: number) => isUr ? `(زیادہ سے زیادہ ${n} حروف)` : `(${n} chars max)`,
     sourceText: isUr ? "اصل متن" : "Source Text",
     sourceTextPlaceholder: isUr
-      ? "اصل متن یہاں پیسٹ کریں، یا TXT / DOCX فائل اپ لوڈ کریں۔ ہر پیراگراف ایک الگ سیگمنٹ ہوگا۔"
-      : "Paste source text here, or upload a .txt or .docx file. One paragraph per segment.",
+      ? "اصل متن یہاں پیسٹ کریں، یا TXT / DOCX فائل اپ لوڈ کریں۔ ہر غیر خالی سطر ترجمے کا ایک الگ حصہ بنتی ہے۔"
+      : "Paste source text here, or upload a .txt or .docx file. Each non-empty line becomes one translation segment.",
     uploadBtn: isUr ? "TXT / DOCX اپ لوڈ کریں" : "Upload TXT / DOCX",
     loadExample: isUr ? "مثال لوڈ کریں" : "Load Example",
     docxNote: isUr

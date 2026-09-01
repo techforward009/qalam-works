@@ -19,10 +19,11 @@ export const translations = {
       documentStudio: "Document Studio",
       translationStudio: "Translation Studio",
       documentCleaner: "Urdu Text Cleaner",
-      qualityChecker: "Urdu Proofreading",
+      qualityChecker: "Urdu Text Check",
       unicodeStandardizer: "Urdu Unicode Fixer",
       invoiceStudio: "Invoice Generator",
       dateConverter: "Date Converter",
+      allTools:      "All Tools",
       whatsappRtlFormatter: "WhatsApp Urdu Formatter",
       urduWriter: "Roman Urdu → Urdu",
       urduRomanWriter: "Urdu → Roman",
@@ -54,11 +55,11 @@ export const translations = {
       mockupReady: "Ready to fix",
     },
     taskChips: {
-      clean:     "Clean",
-      write:     "Write",
-      translate: "Translate",
-      review:    "Review",
-      publish:   "Publish",
+      clean:     "Clean Text",
+      write:     "Roman Urdu → Urdu",
+      translate: "Translation Project",
+      review:    "Check Text",
+      publish:   "Prepare Document",
     },
     problem: {
       headline: "Word processors still treat Urdu as an afterthought.",
@@ -113,8 +114,8 @@ export const translations = {
           body: "An Urdu text cleaner for safe cleanup, normalization, and formatting — with English-safe and Arabic-safe modes.",
         },
         {
-          name: "Urdu Proofreading",
-          body: "Urdu proofreading support: inspect punctuation, spacing, and script issues without changing your text.",
+          name: "Urdu Text Check",
+          body: "Inspect punctuation, spacing, and script issues in Urdu text — without changing a single character.",
         },
         {
           name: "Urdu Unicode Fixer",
@@ -166,8 +167,8 @@ export const translations = {
         {
           label: "Check before publishing",
           href: "/tools/quality-checker",
-          description: "Urdu Proofreading",
-          body: "Urdu proofreading: check punctuation and text quality before publishing.",
+          description: "Urdu Text Check",
+          body: "Inspect punctuation, spacing, and script issues before publishing.",
         },
         {
           label: "Urdu and English must look right on WhatsApp",
@@ -196,6 +197,7 @@ export const translations = {
       headline: "Stop fixing the same errors by hand.",
       subline: "Start publishing with the confidence your work deserves.",
       cta: "Start in Document Studio",
+      exploreTools: "Explore all tools",
     },
     footer: {
       tagline: "A professional writing and publishing environment built for Urdu.",
@@ -284,7 +286,7 @@ export const translations = {
       ],
     },
     cleanerTool: {
-      title: "Document Cleaner",
+      title: "Urdu Text Cleaner",
       description: "An Urdu text cleaner for safe cleanup, normalization, and formatting. Language-aware spacing and punctuation, English-safe cleanup, and Arabic preservation. Paste or upload .txt/.docx — processing stays in your browser.",
       languageLabel: "Text language",
       languageHint: "Auto processes mixed-language text safely and chooses appropriate handling for each language. Choose Urdu or Arabic for language-specific letter fixes. English mode never converts punctuation to Arabic forms.",
@@ -341,8 +343,8 @@ export const translations = {
       },
     },
     qualityTool: {
-      title: "Quality Audit",
-      description: "Urdu proofreading support that checks punctuation and text quality without changing your document. Inspect spacing, punctuation, and script issues in Urdu, English, or Arabic, including safe Auto mode.",
+      title: "Urdu Text Check",
+      description: "Check spacing, punctuation, and script issues without changing your text. Works in Urdu, English, Arabic, and mixed-language content. Inspection only — does not fix text automatically.",
       faqHeading: "Frequently Asked Questions",
       faqs: [
         { question: "What does this tool do?", answer: "It audits text for spacing, punctuation, repeated words, and script observations. It never changes your text automatically." },
@@ -382,10 +384,11 @@ export const translations = {
       documentStudio: "ڈاکومنٹ اسٹوڈیو",
       translationStudio: "ترجمہ اسٹوڈیو",
       documentCleaner: "اردو ٹیکسٹ کلینر",
-      qualityChecker: "اردو پروف ریڈنگ",
+      qualityChecker: "اردو متن کی جانچ",
       unicodeStandardizer: "اردو یونیکوڈ فکسر",
       invoiceStudio: "انوائس جنریٹر",
       dateConverter: "تاریخ کنورٹر",
+      allTools:      "تمام ٹولز",
       whatsappRtlFormatter: "واٹس ایپ اردو فارمیٹر",
       urduWriter: "رومن اردو سے اردو",
       urduRomanWriter: "اردو → رومن",
@@ -417,11 +420,11 @@ export const translations = {
       mockupReady: "درست کرنے کے لیے تیار",
     },
     taskChips: {
-      clean:     "صاف کریں",
-      write:     "لکھیں",
-      translate: "ترجمہ",
-      review:    "جائزہ",
-      publish:   "اشاعت",
+      clean:     "متن صاف کریں",
+      write:     "رومن سے اردو",
+      translate: "ترجمہ پروجیکٹ",
+      review:    "متن جانچیں",
+      publish:   "دستاویز تیار کریں",
     },
     problem: {
       headline: "ورڈ پروسیسرز اب بھی اردو کو ثانوی درجہ دیتے ہیں۔",
@@ -476,8 +479,8 @@ export const translations = {
           body: "اردو متن کی صفائی: محفوظ صفائی، معیاری کاری اور فارمیٹنگ — انگریزی اور عربی محفوظ موڈ کے ساتھ۔",
         },
         {
-          name: "اردو پروف ریڈنگ",
-          body: "اردو پروف ریڈنگ: رموزِ اوقاف، فاصلہ اور رسم الخط کے مسائل متن بدلے بغیر چیک کریں۔",
+          name: "اردو متن کی جانچ",
+          body: "فاصلہ، رموزِ اوقاف اور رسم الخط کے مسائل متن بدلے بغیر چیک کریں۔",
         },
         {
           name: "اردو یونیکوڈ فکسر",
@@ -517,7 +520,7 @@ export const translations = {
         {
           label: "مجھے ایک دستاویز کا ترجمہ کرنا ہے",
           href: "/tools/translation-studio",
-          description: "ٹرانسلیشن اسٹوڈیو",
+          description: "ترجمہ اسٹوڈیو",
           body: "اصل متن اور ترجمے کو ساتھ رکھتے ہوئے منظم انداز میں ترجمہ کریں۔",
         },
         {
@@ -529,8 +532,8 @@ export const translations = {
         {
           label: "اشاعت سے پہلے جانچ چاہیے",
           href: "/tools/quality-checker",
-          description: "اردو پروف ریڈنگ",
-          body: "اشاعت سے پہلے اردو پروف ریڈنگ: رموزِ اوقاف اور معیار چیک کریں۔",
+          description: "اردو متن کی جانچ",
+          body: "اشاعت سے پہلے فاصلہ، رموزِ اوقاف اور رسم الخط چیک کریں۔",
         },
         {
           label: "WhatsApp پر اردو اور English درست چاہیے",
@@ -559,6 +562,7 @@ export const translations = {
       headline: "ایک جیسی غلطیاں ہاتھ سے ٹھیک کرنا بند کریں۔",
       subline: "اپنے کام کے شایانِ شان اعتماد کے ساتھ شائع کرنا شروع کریں۔",
       cta: "ڈاکومنٹ اسٹوڈیو سے شروع کریں",
+      exploreTools: "تمام ٹولز دیکھیں",
     },
     footer: {
       tagline: "اردو کے لیے بنایا گیا ایک پیشہ ورانہ لکھائی اور اشاعتی ماحول۔",
@@ -647,8 +651,8 @@ export const translations = {
       ],
     },
     cleanerTool: {
-      title: "ڈاکومنٹ کلینر",
-      description: "اردو متن کی صفائی: محفوظ صفائی، معیاری کاری اور فارمیٹنگ۔ زبان کے مطابق فاصلہ اور رموزِ اوقاف، انگریزی محفوظ صفائی، عربی تحفظ۔ فائل اپلوڈ کریں یا متن پیسٹ کریں — کارروائی براؤزر میں رہتی ہے۔",
+      title: "اردو ٹیکسٹ کلینر",
+      description: "اردو متن میں اضافی فاصلوں، غلط رموزِ اوقاف اور عام یونیکوڈ مسائل کو محفوظ طریقے سے درست کریں۔ متن پیسٹ کریں یا فائل اپلوڈ کریں۔",
       languageLabel: "متن کی زبان",
       languageHint: "Auto mode مخلوط زبان کے متن کو محفوظ طریقے سے process کرتا ہے اور زبان کے مطابق مناسب handling منتخب کرتا ہے۔ مخصوص اصلاح کے لیے اردو یا عربی منتخب کریں۔ انگریزی موڈ رموز اوقاف کو عربی شکل میں نہیں بدلتا۔",
       langAuto: "آٹو",
@@ -704,8 +708,8 @@ export const translations = {
       },
     },
     qualityTool: {
-      title: "کوالٹی آڈٹ",
-      description: "اردو پروف ریڈنگ: رموزِ اوقاف اور متن کے معیار کی جانچ، دستاویز بدلے بغیر۔ اردو، انگریزی، عربی یا محفوظ آٹو موڈ میں فاصلہ، رموز اور رسم الخط چیک کریں۔",
+      title: "اردو متن کی جانچ",
+      description: "فاصلہ، رموزِ اوقاف اور رسم الخط کے مسائل متن بدلے بغیر چیک کریں۔ اردو، انگریزی، عربی اور مخلوط متن کے لیے۔",
       faqHeading: "اکثر پوچھے گئے سوالات",
       faqs: [
         { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ متن کے فاصلہ، رموز اوقاف، دہرائے الفاظ اور رسم الخط کے مشاہدات چیک کرتا ہے۔ متن خود بخود تبدیل نہیں ہوتا۔" },

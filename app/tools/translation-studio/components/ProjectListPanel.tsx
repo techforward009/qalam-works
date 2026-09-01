@@ -17,10 +17,10 @@ function langLabel(id: string) {
 
 export default function ProjectListPanel({ projects, onOpen, onDelete, onNew, isUr }: ProjectListPanelProps) {
   const t = {
-    title: isUr ? "ٹرانسلیشن اسٹوڈیو" : "Translation Studio",
+    title: isUr ? "ترجمہ اسٹوڈیو" : "Translation Studio",
     savedOnDevice: isUr ? "اس ڈیوائس پر محفوظ" : "Saved on this device",
     newProject: isUr ? "+ نیا پروجیکٹ" : "+ New Project",
-    noProjects: isUr ? "ابھی کوئی پروجیکٹ نہیں۔ شروع کرنے کے لیے ایک بنائیں۔" : "No projects yet. Create one to get started.",
+    noProjects: isUr ? "ابھی کوئی پروجیکٹ نہیں۔ شروع کرنے کے لیے اوپر «نیا پروجیکٹ» بٹن پر کلک کریں۔" : "No projects yet. Create one to get started.",
     segments: isUr ? "سیگمنٹ" : "segments",
     final: isUr ? "حتمی" : "final",
     draft: isUr ? "مسودہ" : "draft",

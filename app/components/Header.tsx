@@ -82,6 +82,7 @@ export default function Header() {
   ];
 
   const moreLinks = [
+    { label: t.allTools, href: "/tools" },
     { label: t.urduWriter, href: "/tools/roman-urdu-writer" },
     { label: t.urduRomanWriter, href: "/tools/urdu-roman-writer" },
     { label: t.documentCleaner, href: "/tools/document-cleaner" },
