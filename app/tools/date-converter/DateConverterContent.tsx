@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useLanguage } from "../../lib/language-context";
 import { trackEvent, trackToolOpenOnce } from "../../lib/analytics";
 import {
@@ -120,11 +120,25 @@ export default function DateConverterContent() {
   const [linkCopied,  setLinkCopied]  = useState(false);
 
   // ── Shareable URL ───────────────────────────────────────────────────────────
-  // Flag so the URL-write effect skips on the very first render (before the
-  // URL-read effect has had a chance to restore state from params).
-  const didInitRef = useRef(false);
+  // Write the URL synchronously with the new values passed directly — avoids
+  // any stale-closure / async-state-update timing issue that a useEffect would
+  // have (effect sees the previous render's state, not the incoming value).
+  function pushURL(cal: CalendarType, d: string, mo: string, yr: string) {
+    if (typeof window === "undefined") return;
+    if (!d && !mo && !yr) {
+      window.history.replaceState(null, "", window.location.pathname);
+      return;
+    }
+    const p = new URLSearchParams();
+    p.set("calendar", cal);
+    if (d)  p.set("day",   d);
+    if (mo) p.set("month", mo);
+    if (yr) p.set("year",  yr);
+    window.history.replaceState(null, "", "?" + p.toString());
+  }
 
   // On mount: restore calendar + date from ?calendar=&day=&month=&year= params.
+  // This is the ONLY useEffect needed for URL — reading on load.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const p = new URLSearchParams(window.location.search);
@@ -136,23 +150,8 @@ export default function DateConverterContent() {
     if (d)  setDay(d);
     if (mo) setMonth(mo);
     if (yr) setYear(yr);
-    didInitRef.current = true;
+    // No URL write here — the URL already has the correct params we just read.
   }, []);
-
-  // Whenever state changes, push updated params (skips before mount init).
-  useEffect(() => {
-    if (!didInitRef.current || typeof window === "undefined") return;
-    if (!day && !month && !year) {
-      window.history.replaceState(null, "", window.location.pathname);
-      return;
-    }
-    const p = new URLSearchParams();
-    p.set("calendar", calendar);
-    if (day)   p.set("day",   day);
-    if (month) p.set("month", month);
-    if (year)  p.set("year",  year);
-    window.history.replaceState(null, "", "?" + p.toString());
-  }, [calendar, day, month, year]);
 
   // ── Derived result ──────────────────────────────────────────────────────────
   const dayN   = parseInt(day,   10);
@@ -182,17 +181,23 @@ export default function DateConverterContent() {
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleToday = useCallback(() => {
     const today = todayGregorian();
-    setCalendar("gregorian");
-    setDay(String(today.day));
-    setMonth(String(today.month));
-    setYear(String(today.year));
+    const cal: CalendarType = "gregorian";
+    const d  = String(today.day);
+    const mo = String(today.month);
+    const yr = String(today.year);
+    setCalendar(cal);
+    setDay(d);
+    setMonth(mo);
+    setYear(yr);
+    pushURL(cal, d, mo, yr);
     trackEvent("tool_process", { tool: "date_converter" });
   }, []);
 
   const handleClear = useCallback(() => {
     setDay(""); setMonth(""); setYear("");
     setCopied(null); setLinkCopied(false);
-  }, []);
+    pushURL("gregorian", "", "", "");
+  }, [calendar]);
 
   const handleCopy = useCallback((cal: CalendarType, text: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -233,7 +238,10 @@ export default function DateConverterContent() {
           </label>
           <div className="flex gap-2 flex-wrap mb-5">
             {CAL_ORDER.map(c => (
-              <button key={c} onClick={() => { setCalendar(c); setMonth(""); setDay(""); }}
+              <button key={c} onClick={() => {
+                setCalendar(c); setMonth(""); setDay("");
+                pushURL(c, "", "", year);
+              }}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
                   ${calendar === c
                     ? "bg-[#1A3A2A] dark:bg-[#2a5a3a] text-white border-transparent"
@@ -249,7 +257,7 @@ export default function DateConverterContent() {
               <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.day}</label>
               <input
                 type="number" min={1} max={31} value={day}
-                onChange={e => setDay(e.target.value)}
+                onChange={e => { const v = e.target.value; setDay(v); pushURL(calendar, v, month, year); }}
                 placeholder="1"
                 className="w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm text-center focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]"
                 dir="ltr"
@@ -259,7 +267,7 @@ export default function DateConverterContent() {
               <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.month}</label>
               <select
                 value={month}
-                onChange={e => setMonth(e.target.value)}
+                onChange={e => { const v = e.target.value; setMonth(v); pushURL(calendar, day, v, year); }}
                 className={`w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a] ${naskh}`}>
                 <option value="">{t.selectMonth}</option>
                 {months.map((m, i) => (
@@ -271,7 +279,7 @@ export default function DateConverterContent() {
               <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.year}</label>
               <input
                 type="number" value={year}
-                onChange={e => setYear(e.target.value)}
+                onChange={e => { const v = e.target.value; setYear(v); pushURL(calendar, day, month, v); }}
                 placeholder={calendar === "gregorian" ? "2026" : calendar === "hijri" ? "1447" : "1405"}
                 className="w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm text-center focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]"
                 dir="ltr"
@@ -338,7 +346,7 @@ export default function DateConverterContent() {
                           {calLabel(cal, lang)}
                         </p>
                         {methodBadge && (
-                          <span className={`text-[10px] font-semibold text-amber-600/75 dark:text-amber-400/65 ${naskh}`}>
+                          <span className={`text-[10px] font-medium text-[#3a6a4a]/60 dark:text-[#8faa93]/60 ${naskh}`}>
                             {methodBadge}
                           </span>
                         )}
