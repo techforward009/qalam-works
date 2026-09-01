@@ -51,7 +51,7 @@ export default function HowItWorksSection() {
                   nav_source: "homepage_card",
                 })
               }
-              className="bg-white dark:bg-[#162a1e] hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] hover:shadow-md p-7 rounded-2xl border border-[#151B2E]/[0.06] dark:border-white/[0.08] transition-all block"
+              className="bg-white dark:bg-[#162a1e] hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] hover:shadow-lg hover:border-[#1A3A2A]/[0.12] dark:hover:border-white/[0.14] p-7 rounded-2xl border border-[#151B2E]/[0.06] dark:border-white/[0.08] transition-all duration-200 motion-safe:hover:-translate-y-[3px] motion-safe:hover:scale-[1.01] block"
             >
               <h3 className={`text-[19px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${naskh}`}>{tool.name}</h3>
               <p className={`text-[16px] text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed ${naskh}`}>{tool.body}</p>

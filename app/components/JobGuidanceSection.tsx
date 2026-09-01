@@ -112,7 +112,7 @@ export default function JobGuidanceSection() {
                       nav_source: "homepage_card",
                     })
                   }
-                  className={`group flex items-center gap-3.5 sm:gap-4 rounded-2xl border bg-[#F7F5EF] dark:bg-[#162a1e] px-4 py-4 sm:px-5 sm:py-4.5 min-h-[72px] transition-all ${meta.accent} ${meta.borderHover} hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 ${naskh}`}
+                  className={`group flex items-center gap-3.5 sm:gap-4 rounded-2xl border bg-[#F7F5EF] dark:bg-[#162a1e] px-4 py-4 sm:px-5 sm:py-4.5 min-h-[72px] transition-all duration-200 motion-safe:hover:-translate-y-[2px] motion-safe:hover:scale-[1.008] ${meta.accent} ${meta.borderHover} hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 ${naskh}`}
                 >
                   <span
                     className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl ${meta.iconBg} ${meta.iconColor}`}

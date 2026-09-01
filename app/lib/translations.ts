@@ -18,13 +18,13 @@ export const translations = {
       home: "Home",
       documentStudio: "Document Studio",
       translationStudio: "Translation Studio",
-      documentCleaner: "Document Cleaner",
-      qualityChecker: "Quality Audit",
-      unicodeStandardizer: "Urdu Unicode Standardizer",
+      documentCleaner: "Urdu Text Cleaner",
+      qualityChecker: "Urdu Proofreading",
+      unicodeStandardizer: "Urdu Unicode Fixer",
       invoiceStudio: "Invoice Generator",
       dateConverter: "Date Converter",
-      whatsappRtlFormatter: "WhatsApp RTL Formatter",
-      urduWriter: "Urdu Writer",
+      whatsappRtlFormatter: "WhatsApp Urdu Formatter",
+      urduWriter: "Roman Urdu → Urdu",
       urduRomanWriter: "Urdu → Roman",
       moreTools: "More Tools",
       services: "Services",
@@ -91,7 +91,7 @@ export const translations = {
           body: "Write, edit, clean, and export Urdu documents in one workspace — including punctuation correction and language-aware processing.",
         },
         {
-          name: "Qalam Urdu Writer",
+          name: "Roman Urdu → Urdu",
           body: "A Roman Urdu converter and writing assistant: type in Roman Urdu, review uncertain words, and copy Urdu script.",
         },
         {
@@ -99,19 +99,19 @@ export const translations = {
           body: "Translate documents segment by segment, manage glossary and review, then continue in Document Studio.",
         },
         {
-          name: "Document Cleaner",
+          name: "Urdu Text Cleaner",
           body: "An Urdu text cleaner for safe cleanup, normalization, and formatting — with English-safe and Arabic-safe modes.",
         },
         {
-          name: "Quality Audit",
+          name: "Urdu Proofreading",
           body: "Urdu proofreading support: inspect punctuation, spacing, and script issues without changing your text.",
         },
         {
-          name: "Urdu Unicode Standardizer",
+          name: "Urdu Unicode Fixer",
           body: "An Urdu Unicode fixer for letter-form correction, spacing, and punctuation in plain text.",
         },
         {
-          name: "WhatsApp RTL Formatter",
+          name: "WhatsApp Urdu Formatter",
           body: "Prepare mixed Urdu/Arabic + English text for stable WhatsApp direction.",
         },
         {
@@ -126,19 +126,19 @@ export const translations = {
         {
           label: "My copied text looks broken",
           href: "/tools/document-cleaner",
-          description: "Document Cleaner",
+          description: "Urdu Text Cleaner",
           body: "Use the Urdu text cleaner for spacing, punctuation, and formatting from PDFs, web, or other sources.",
         },
         {
           label: "Urdu letters appear in mixed forms",
           href: "/tools/unicode-standardizer",
-          description: "Urdu Unicode Standardizer",
+          description: "Urdu Unicode Fixer",
           body: "Fix mixed Urdu Unicode letter forms, spacing, and punctuation.",
         },
         {
           label: "I want to write Urdu from Roman",
           href: "/tools/roman-urdu-writer",
-          description: "Qalam Urdu Writer",
+          description: "Roman Urdu → Urdu",
           body: "Convert Roman Urdu to Urdu script, with control over uncertain words.",
         },
         {
@@ -156,13 +156,13 @@ export const translations = {
         {
           label: "Check before publishing",
           href: "/tools/quality-checker",
-          description: "Quality Audit",
+          description: "Urdu Proofreading",
           body: "Urdu proofreading: check punctuation and text quality before publishing.",
         },
         {
           label: "Urdu and English must look right on WhatsApp",
           href: "/tools/whatsapp-rtl-formatter",
-          description: "WhatsApp RTL Formatter",
+          description: "WhatsApp Urdu Formatter",
           body: "Prepare mixed messages for stable WhatsApp direction.",
         },
         {
@@ -371,13 +371,13 @@ export const translations = {
       home: "ہوم",
       documentStudio: "ڈاکومنٹ اسٹوڈیو",
       translationStudio: "ترجمہ اسٹوڈیو",
-      documentCleaner: "ڈاکومنٹ کلینر",
-      qualityChecker: "کوالٹی آڈٹ",
-      unicodeStandardizer: "اردو یونیکوڈ اسٹینڈرڈائزر",
+      documentCleaner: "اردو ٹیکسٹ کلینر",
+      qualityChecker: "اردو پروف ریڈنگ",
+      unicodeStandardizer: "اردو یونیکوڈ فکسر",
       invoiceStudio: "انوائس جنریٹر",
       dateConverter: "تاریخ کنورٹر",
-      whatsappRtlFormatter: "واٹس ایپ آر ٹی ایل فارمیٹر",
-      urduWriter: "قلم اردو رائٹر",
+      whatsappRtlFormatter: "واٹس ایپ اردو فارمیٹر",
+      urduWriter: "رومن اردو سے اردو",
       urduRomanWriter: "اردو → رومن",
       moreTools: "مزید ٹولز",
       services: "خدمات",
@@ -444,7 +444,7 @@ export const translations = {
           body: "اردو دستاویزات لکھیں، صاف کریں اور ایکسپورٹ کریں — رموزِ اوقاف کی اصلاح اور زبان کے مطابق پروسیسنگ کے ساتھ۔",
         },
         {
-          name: "قلم اردو رائٹر",
+          name: "رومن اردو سے اردو",
           body: "رومن اردو سے اردو لکھنے کا معاون: رومن اردو لکھیں، مشکوک الفاظ کا جائزہ لیں، اور اردو رسم الخط حاصل کریں۔",
         },
         {
@@ -452,19 +452,19 @@ export const translations = {
           body: "حصہ بہ حصہ ترجمہ کریں، اصطلاحی فہرست اور نظرثانی کا انتظام کریں، پھر ڈاکومنٹ اسٹوڈیو میں جاری رکھیں۔",
         },
         {
-          name: "ڈاکومنٹ کلینر",
+          name: "اردو ٹیکسٹ کلینر",
           body: "اردو متن کی صفائی: محفوظ صفائی، معیاری کاری اور فارمیٹنگ — انگریزی اور عربی محفوظ موڈ کے ساتھ۔",
         },
         {
-          name: "کوالٹی آڈٹ",
+          name: "اردو پروف ریڈنگ",
           body: "اردو پروف ریڈنگ: رموزِ اوقاف، فاصلہ اور رسم الخط کے مسائل متن بدلے بغیر چیک کریں۔",
         },
         {
-          name: "اردو یونیکوڈ اسٹینڈرڈائزر",
+          name: "اردو یونیکوڈ فکسر",
           body: "اردو یونیکوڈ اصلاح: حروف کی شکلیں، فاصلہ اور رموزِ اوقاف درست کریں۔",
         },
         {
-          name: "واٹس ایپ آر ٹی ایل فارمیٹر",
+          name: "واٹس ایپ اردو فارمیٹر",
           body: "مخلوط اردو/عربی اور انگریزی متن کو واٹس ایپ کے لیے مستحکم سمت میں تیار کریں۔",
         },
         {
@@ -479,19 +479,19 @@ export const translations = {
         {
           label: "میرا copy کیا ہوا متن خراب ہے",
           href: "/tools/document-cleaner",
-          description: "ڈاکومنٹ کلینر",
+          description: "اردو ٹیکسٹ کلینر",
           body: "اردو متن کی صفائی سے فاصلہ، رموزِ اوقاف اور فارمیٹنگ درست کریں۔",
         },
         {
           label: "اردو حروف مختلف شکلوں میں آ رہے ہیں",
           href: "/tools/unicode-standardizer",
-          description: "اردو یونیکوڈ اسٹینڈرڈائزر",
+          description: "اردو یونیکوڈ فکسر",
           body: "مخلوط اردو یونیکوڈ حروف، فاصلہ اور رموزِ اوقاف درست کریں۔",
         },
         {
           label: "رومن اردو سے اردو لکھنا ہے",
           href: "/tools/roman-urdu-writer",
-          description: "قلم اردو رائٹر",
+          description: "رومن اردو سے اردو",
           body: "رومن اردو کو اردو رسم الخط میں تبدیل کریں، مشکوک الفاظ پر کنٹرول کے ساتھ۔",
         },
         {
@@ -509,13 +509,13 @@ export const translations = {
         {
           label: "اشاعت سے پہلے جانچ چاہیے",
           href: "/tools/quality-checker",
-          description: "کوالٹی آڈٹ",
+          description: "اردو پروف ریڈنگ",
           body: "اشاعت سے پہلے اردو پروف ریڈنگ: رموزِ اوقاف اور معیار چیک کریں۔",
         },
         {
           label: "WhatsApp پر اردو اور English درست چاہیے",
           href: "/tools/whatsapp-rtl-formatter",
-          description: "واٹس ایپ آر ٹی ایل فارمیٹر",
+          description: "واٹس ایپ اردو فارمیٹر",
           body: "مخلوط پیغامات کو مستحکم سمت میں تیار کریں۔",
         },
         {
