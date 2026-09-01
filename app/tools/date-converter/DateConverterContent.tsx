@@ -288,7 +288,7 @@ export default function DateConverterContent() {
           </div>
 
           {/* Today / Clear / Copy Link */}
-          <div className={`flex gap-3 flex-wrap ${isUr ? "flex-row-reverse" : ""}`}>
+          <div className="flex gap-3 flex-wrap">
             <button onClick={handleToday}
               className={`px-4 py-2 rounded-lg text-sm font-semibold bg-[#1A3A2A]/8 dark:bg-[#2a3d30] text-[#1A3A2A] dark:text-[#e8ede9] hover:bg-[#1A3A2A]/15 dark:hover:bg-[#3a5a45] transition-colors ${naskh}`}>
               {t.today}
