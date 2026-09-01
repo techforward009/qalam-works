@@ -53,10 +53,10 @@ const L = {
     day:          "دن",
     month:        "مہینہ",
     year:         "سال",
-    today:        "آج",
+    today:        "آج کی تاریخ",
     clear:        "صاف کریں",
-    copy:         "نقل",
-    copied:       "نقل ہو گیا!",
+    copy:         "کاپی",
+    copied:       "کاپی ہوگیا!",
     copyLink:     "لنک کاپی کریں",
     linkCopied:   "لنک کاپی ہوگیا!",
     gregorian:    "عیسوی",
@@ -338,10 +338,12 @@ export default function DateConverterContent() {
               return (
                 <div key={cal}
                   className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-xl px-5 py-4 shadow-sm">
-                  <div className={`flex items-start justify-between gap-3 ${isUr ? "flex-row-reverse" : ""}`}>
+                  {/* In RTL (Urdu), dir="rtl" from parent already places content on the right
+                      and Copy button on the left — no flex-row-reverse needed here. */}
+                  <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      {/* Calendar system label + method badge on same row */}
-                      <div className={`flex items-center gap-2 mb-1 flex-wrap ${isUr ? "flex-row-reverse" : ""}`}>
+                      {/* Calendar label + method badge: RTL parent puts calLabel on right, badge to its left */}
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <p className={`text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0] ${naskh}`}>
                           {calLabel(cal, lang)}
                         </p>
@@ -357,8 +359,9 @@ export default function DateConverterContent() {
                       </p>
                       {/* Human-readable date — largest, primary */}
                       <p className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{long}</p>
-                      {/* ISO / numeric date — secondary */}
-                      <p className="text-xs text-[#4a7a5a] dark:text-[#9fbfa8] mt-0.5 font-mono" dir="ltr">{iso}</p>
+                      {/* ISO / numeric date — dir=ltr keeps numbers machine-readable;
+                          text-right anchors it visually to the right in Urdu layout */}
+                      <p className={`text-xs text-[#4a7a5a] dark:text-[#9fbfa8] mt-0.5 font-mono ${isUr ? "text-right" : ""}`} dir="ltr">{iso}</p>
                     </div>
                     <button onClick={() => handleCopy(cal, copyText)}
                       className={`shrink-0 mt-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${naskh}
