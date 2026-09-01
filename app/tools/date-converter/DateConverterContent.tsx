@@ -67,6 +67,20 @@ const L = {
   },
 };
 
+// Weekday names keyed to JDN % 7 → 0=Mon … 6=Sun
+const WEEKDAYS_EN = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const WEEKDAYS_UR = ["پیر","منگل","بدھ","جمعرات","جمعہ","ہفتہ","اتوار"];
+
+/** Compute weekday index from a Gregorian date without importing the full engine. */
+function weekdayFromGregorian(p: DateParts): number {
+  let { year: y, month: m, day: d } = p;
+  if (m <= 2) { y--; m += 12; }
+  const A = Math.floor(y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  const jdn = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524;
+  return jdn % 7; // 0=Mon … 6=Sun
+}
+
 const CAL_ORDER: CalendarType[] = ["gregorian", "hijri", "solar"];
 
 function calLabel(cal: CalendarType, lang: "en" | "ur"): string {
@@ -117,6 +131,12 @@ export default function DateConverterContent() {
     }
   }
 
+  // Weekday is the same for all result calendars (same JDN); compute once.
+  const weekdayIdx    = result ? weekdayFromGregorian(result.gregorian) : -1;
+  const weekdayName   = weekdayIdx >= 0
+    ? (isUr ? WEEKDAYS_UR[weekdayIdx] : WEEKDAYS_EN[weekdayIdx])
+    : "";
+
   const handleToday = useCallback(() => {
     const today = todayGregorian();
     setCalendar("gregorian");
@@ -140,6 +160,9 @@ export default function DateConverterContent() {
 
   const months = monthOptions(calendar, lang);
 
+  // Only show the TWO converted calendars — hide the source calendar card.
+  const resultCals = CAL_ORDER.filter(cal => cal !== calendar);
+
   return (
     <div className="site-container" dir={dir}>
       <div className="max-w-2xl mx-auto py-6 sm:py-10">
@@ -149,14 +172,14 @@ export default function DateConverterContent() {
           <h1 className={`text-2xl sm:text-3xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${isUr ? "font-nastaliq font-normal" : ""}`}>
             {t.title}
           </h1>
-          <p className={`text-[15px] text-[#4A6A4A] dark:text-[#8faa93] ${naskh}`}>{t.desc}</p>
+          <p className={`text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`}>{t.desc}</p>
         </div>
 
         {/* Input card */}
         <div className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6 mb-5">
 
           {/* Calendar selector */}
-          <label className={`block text-[12px] font-bold text-[#4A6A4A] dark:text-[#8faa93] uppercase tracking-wide mb-2 ${naskh}`}>
+          <label className={`block text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-2 ${naskh}`}>
             {t.sourceLabel}
           </label>
           <div className="flex gap-2 flex-wrap mb-5">
@@ -165,7 +188,7 @@ export default function DateConverterContent() {
                 className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
                   ${calendar === c
                     ? "bg-[#1A3A2A] dark:bg-[#2a5a3a] text-white border-transparent"
-                    : "border-[#1A3A2A]/15 dark:border-[#2a3d30] text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#1A3A2A]/40 dark:hover:border-[#4a7a5a]"}`}>
+                    : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#1A3A2A]/40 dark:hover:border-[#4a7a5a]"}`}>
                 {calLabel(c, lang)}
               </button>
             ))}
@@ -174,7 +197,7 @@ export default function DateConverterContent() {
           {/* Day / Month / Year inputs */}
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div>
-              <label className={`block text-[11px] font-semibold text-[#4A6A4A] dark:text-[#8faa93] mb-1 ${naskh}`}>{t.day}</label>
+              <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.day}</label>
               <input
                 type="number" min={1} max={31} value={day}
                 onChange={e => setDay(e.target.value)}
@@ -184,7 +207,7 @@ export default function DateConverterContent() {
               />
             </div>
             <div>
-              <label className={`block text-[11px] font-semibold text-[#4A6A4A] dark:text-[#8faa93] mb-1 ${naskh}`}>{t.month}</label>
+              <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.month}</label>
               <select
                 value={month}
                 onChange={e => setMonth(e.target.value)}
@@ -196,7 +219,7 @@ export default function DateConverterContent() {
               </select>
             </div>
             <div>
-              <label className={`block text-[11px] font-semibold text-[#4A6A4A] dark:text-[#8faa93] mb-1 ${naskh}`}>{t.year}</label>
+              <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.year}</label>
               <input
                 type="number" value={year}
                 onChange={e => setYear(e.target.value)}
@@ -215,7 +238,7 @@ export default function DateConverterContent() {
             </button>
             {(day || month || year) && (
               <button onClick={handleClear}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold text-[#4A6A4A] dark:text-[#8faa93] hover:text-red-600 dark:hover:text-red-400 transition-colors ${naskh}`}>
+                className={`px-4 py-2 rounded-lg text-sm font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] hover:text-red-600 dark:hover:text-red-400 transition-colors ${naskh}`}>
                 {t.clear}
               </button>
             )}
@@ -231,53 +254,54 @@ export default function DateConverterContent() {
 
         {/* Empty state */}
         {!hasInput && !errMsg && (
-          <p className={`text-center text-[#4A6A4A]/60 dark:text-[#8faa93]/60 text-sm py-4 ${naskh}`}>{t.enterDate}</p>
+          <p className={`text-center text-[#4A6A4A]/70 dark:text-[#a8c8b0]/70 text-sm py-4 ${naskh}`}>{t.enterDate}</p>
         )}
 
-        {/* Result cards */}
+        {/* Result cards — source calendar excluded */}
         {result && (
           <div className="space-y-3">
-            {CAL_ORDER.map(cal => {
-              const parts = result![cal];
-              const long  = formatDate(parts, cal, lang);
-              const iso   = isoDate(parts);
-              const copyText = `${long}\n${iso}`;
+            {resultCals.map(cal => {
+              const parts    = result![cal];
+              const long     = formatDate(parts, cal, lang);
+              const iso      = isoDate(parts);
+              const copyText = `${weekdayName}  ${long}\n${iso}`;
               const isCopied = copied === cal;
-              const isSource = cal === calendar;
               return (
                 <div key={cal}
-                  className={`bg-white dark:bg-[#162a1e] border rounded-xl px-5 py-4 shadow-sm transition-all
-                    ${isSource
-                      ? "border-[#1A3A2A]/30 dark:border-[#4a7a5a]/60 shadow-[#1A3A2A]/5"
-                      : "border-[#1A3A2A]/10 dark:border-[#2a3d30]"}`}>
+                  className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-xl px-5 py-4 shadow-sm">
                   <div className={`flex items-start justify-between gap-3 ${isUr ? "flex-row-reverse" : ""}`}>
                     <div>
-                      <p className={`text-[11px] font-black uppercase tracking-widest text-[#1A3A2A]/50 dark:text-[#8faa93] mb-1 ${naskh}`}>
+                      {/* Calendar system label */}
+                      <p className={`text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0] mb-1 ${naskh}`}>
                         {calLabel(cal, lang)}
-                        {isSource && <span className="ml-2 mr-2 text-[9px] font-semibold bg-[#1A3A2A]/8 dark:bg-[#2a3d30] text-[#1A3A2A]/60 dark:text-[#8faa93] px-1.5 py-0.5 rounded">↑</span>}
                       </p>
+                      {/* Weekday — prominent */}
+                      <p className={`text-sm font-semibold text-[#1A3A2A] dark:text-[#c8e4cc] mb-0.5 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+                        {weekdayName}
+                      </p>
+                      {/* Human-readable date */}
                       <p className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{long}</p>
-                      <p className="text-xs text-[#4A6A4A]/70 dark:text-[#8faa93]/70 mt-0.5 font-mono" dir="ltr">{iso}</p>
+                      {/* ISO / numeric date */}
+                      <p className="text-xs text-[#3a6a4a] dark:text-[#8faa93] mt-0.5 font-mono" dir="ltr">{iso}</p>
                     </div>
                     <button onClick={() => handleCopy(cal, copyText)}
                       className={`shrink-0 mt-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${naskh}
                         ${isCopied
                           ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
-                          : "border-[#1A3A2A]/15 dark:border-[#2a3d30] text-[#4A6A4A] dark:text-[#8faa93] hover:border-[#1A3A2A]/40 dark:hover:border-[#4a7a5a]"}`}>
+                          : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#a8c8b0] hover:border-[#1A3A2A]/40 dark:hover:border-[#4a7a5a]"}`}>
                       {isCopied ? t.copied : t.copy}
                     </button>
                   </div>
                   {/* Per-calendar method notes — only shown on the relevant card */}
                   {cal === "hijri" && (
-                    <p className={`text-[11px] text-[#4A6A4A]/55 dark:text-[#8faa93]/55 mt-2 ${naskh}`}>{t.hijriNote}</p>
+                    <p className={`text-[11px] text-[#3a6a4a]/80 dark:text-[#a8c8b0]/80 mt-2 ${naskh}`}>{t.hijriNote}</p>
                   )}
                   {cal === "solar" && (
-                    <p className={`text-[11px] text-[#4A6A4A]/55 dark:text-[#8faa93]/55 mt-2 ${naskh}`}>{t.solarNote}</p>
+                    <p className={`text-[11px] text-[#3a6a4a]/80 dark:text-[#a8c8b0]/80 mt-2 ${naskh}`}>{t.solarNote}</p>
                   )}
                 </div>
               );
             })}
-
           </div>
         )}
       </div>
