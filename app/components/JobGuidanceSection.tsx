@@ -6,6 +6,22 @@ import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { trackEvent, type ToolId } from "../lib/analytics";
 
+// Task chips — compact workflow shortcuts above the card list
+const CHIP_LINKS = [
+  { key: "clean",     href: "/tools/document-cleaner" },
+  { key: "write",     href: "/tools/roman-urdu-writer" },
+  { key: "translate", href: "/tools/translation-studio" },
+  { key: "review",    href: "/tools/quality-checker" },
+  { key: "publish",   href: "/tools/document-studio" },
+] as const;
+
+// Tiny visual examples — only where genuinely illustrative
+const CARD_EXAMPLE: Record<string, string> = {
+  "/tools/document-cleaner":    "يہ , متن !! → یہ، متن!",
+  "/tools/unicode-standardizer": "ي / ك → ی / ک",
+  "/tools/roman-urdu-writer":   "mera naam → میرا نام",
+};
+
 const HREF_TO_TOOL: Record<string, ToolId> = {
   "/tools/document-cleaner": "document_cleaner",
   "/tools/unicode-standardizer": "urdu_unicode_standardizer",
@@ -82,12 +98,28 @@ const CARD_META: Record<
 export default function JobGuidanceSection() {
   const { language, dir } = useLanguage();
   const t = translations[language].jobGuidance;
+  const tc = translations[language].taskChips;
   const naskh = language === "ur" ? "font-naskh" : "";
   const isUr = language === "ur";
 
   return (
     <section className="bg-white dark:bg-[#0e1c15] py-10 md:py-12" dir={dir}>
       <div className="site-container max-w-3xl mx-auto">
+
+        {/* Task chips — compact workflow shortcuts */}
+        <div className="flex gap-2 flex-wrap justify-center mb-6">
+          {CHIP_LINKS.map(({ key, href }) => (
+            <Link
+              key={key}
+              href={href}
+              onClick={() => trackEvent("nav_click", { tool: "home", target_tool: HREF_TO_TOOL[href] ?? "unknown", nav_source: "homepage_card" })}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold border border-[#1A3A2A]/15 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/50 hover:bg-[#B8935A]/8 dark:hover:bg-[#B8935A]/10 hover:text-[#9A6A30] dark:hover:text-[#C9A46B] transition-all duration-150 ${naskh}`}
+            >
+              {(tc as Record<string, string>)[key]}
+            </Link>
+          ))}
+        </div>
+
         <h2
           className={`text-xl md:text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] text-center mb-5 ${
             isUr ? "font-nastaliq font-normal" : ""
@@ -100,6 +132,7 @@ export default function JobGuidanceSection() {
           {t.items.map((item) => {
             const meta = CARD_META[item.href] ?? CARD_META["/tools/document-cleaner"];
             const { Icon } = meta;
+            const example = CARD_EXAMPLE[item.href];
 
             return (
               <li key={item.href}>
@@ -131,6 +164,13 @@ export default function JobGuidanceSection() {
                     <span className="mt-1 block text-[13px] sm:text-[14px] text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed">
                       {item.body}
                     </span>
+                    {example && (
+                      <span className="mt-1.5 inline-flex items-center gap-1 font-mono text-[11px] bg-[#1A3A2A]/6 dark:bg-white/[0.06] text-[#1A3A2A]/70 dark:text-[#a8b9ac] px-2 py-0.5 rounded" dir="ltr">
+                        <bdi dir="auto">{example.split("→")[0]?.trim()}</bdi>
+                        <span aria-hidden="true">→</span>
+                        <bdi dir="auto">{example.split("→")[1]?.trim()}</bdi>
+                      </span>
+                    )}
                   </span>
 
                   {/* Logical arrow: flips correctly in RTL without bidi issues */}

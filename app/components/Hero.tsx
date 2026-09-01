@@ -77,20 +77,18 @@ export default function Hero() {
                 </p>
               </div>
 
-              <div className="border-t border-white/10 bg-[#151A2C] px-5 py-4 space-y-2.5">
-                <div className="flex items-start gap-2.5 text-xs" dir="ltr">
-                  <span className="mt-0.5 text-amber-400">●</span>
-                  <span className="text-[#C7C2B4]">
-                    {t.mockupIssue1}
-                  </span>
+            <div className="border-t border-white/10 bg-[#0e1520] px-5 py-4 space-y-2">
+                <div className="flex items-center gap-2.5 text-xs" dir="ltr">
+                  <span className="text-emerald-400">✓</span>
+                  <span className="text-[#C7C2B4]">{t.mockupFixed1}</span>
                 </div>
-                <div className="flex items-start gap-2.5 text-xs" dir="ltr">
-                  <span className="mt-0.5 text-amber-400">●</span>
-                  <span className="text-[#C7C2B4]">{t.mockupIssue2}</span>
+                <div className="flex items-center gap-2.5 text-xs" dir="ltr">
+                  <span className="text-amber-400">●</span>
+                  <span className="text-[#C7C2B4]">{t.mockupFixed2}</span>
                 </div>
                 <div className="pt-2 flex items-center justify-between border-t border-white/5" dir="ltr">
                   <span className="text-[11px] text-[#7C8299]">{t.mockupCount}</span>
-                  <span className="text-[11px] font-semibold text-emerald-400">{t.mockupStatus}</span>
+                  <span className="text-[11px] font-semibold tracking-wide bg-[#B8935A]/20 text-[#C9A46B] px-2 py-0.5 rounded-full">{t.mockupReady}</span>
                 </div>
               </div>
             </div>

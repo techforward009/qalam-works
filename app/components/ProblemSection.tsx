@@ -18,10 +18,10 @@ export default function ProblemSection() {
 
         <div className="grid sm:grid-cols-2 gap-6 max-w-[900px] mx-auto">
           {t.points.map((point) => (
-            <div key={point.title} className="bg-white dark:bg-[#162a1e] p-7 rounded-2xl border border-[#151B2E]/[0.07] dark:border-white/[0.08] text-center shadow-sm">
+            <div key={point.title} className="bg-white dark:bg-[#162a1e] p-7 rounded-2xl border border-[#151B2E]/[0.07] dark:border-white/[0.08] text-center shadow-sm hover:shadow-md transition-shadow duration-200">
               <h3 className={`text-base font-bold text-[#151B2E] dark:text-[#e8ede9] mb-3 ${naskh}`}>{point.title}</h3>
-              <div className="bg-[#FAF7F0] dark:bg-[#0e1c15] rounded-lg py-4 mb-4 border border-[#151B2E]/[0.05] dark:border-white/[0.05]">
-                <p dir="rtl" className="font-nastaliq text-xl text-[#8B3A3A]">{point.example}</p>
+              <div className="bg-[#FEF2F2] dark:bg-[#2a1a1a] rounded-lg py-4 mb-4 border border-red-200/60 dark:border-red-900/30 ring-1 ring-red-100/50 dark:ring-red-900/10">
+                <p dir="rtl" className="font-nastaliq text-xl text-[#8B3A3A] dark:text-[#c8a0a0]">{point.example}</p>
               </div>
               <p className={`text-sm text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed ${naskh}`}>{point.impact}</p>
             </div>

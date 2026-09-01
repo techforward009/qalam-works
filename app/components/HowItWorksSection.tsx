@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BookOpen, PenLine, Languages, Eraser, SearchCheck, Type, MessageCircle, FilePenLine } from "lucide-react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { trackEvent, type ToolId } from "../lib/analytics";
@@ -27,6 +28,18 @@ const TOOL_IDS: ToolId[] = [
   "invoice_generator",
 ];
 
+// Icon and accent per tool (same order as TOOL_HREFS)
+const TOOL_META = [
+  { Icon: BookOpen,      iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50", iconColor: "text-[#1A3A2A] dark:text-[#8faa93]", example: null },
+  { Icon: PenLine,       iconBg: "bg-amber-50  dark:bg-amber-950/30",   iconColor: "text-amber-700 dark:text-amber-400",  example: "mera naam → میرا نام" },
+  { Icon: Languages,     iconBg: "bg-sky-50     dark:bg-sky-950/30",     iconColor: "text-sky-700   dark:text-sky-400",    example: null },
+  { Icon: Eraser,        iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50", iconColor: "text-[#1A3A2A] dark:text-[#8faa93]", example: "يہ , → یہ،" },
+  { Icon: SearchCheck,   iconBg: "bg-amber-50  dark:bg-amber-950/30",   iconColor: "text-amber-700 dark:text-amber-400",  example: null },
+  { Icon: Type,          iconBg: "bg-violet-50  dark:bg-violet-950/30",  iconColor: "text-violet-700 dark:text-violet-400",example: "ي → ی" },
+  { Icon: MessageCircle, iconBg: "bg-emerald-50 dark:bg-emerald-950/30", iconColor: "text-emerald-700 dark:text-emerald-400", example: null },
+  { Icon: FilePenLine,   iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50", iconColor: "text-[#1A3A2A] dark:text-[#8faa93]", example: null },
+];
+
 export default function HowItWorksSection() {
   const { language, dir } = useLanguage();
   const t = translations[language].howItWorks;
@@ -40,23 +53,42 @@ export default function HowItWorksSection() {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {t.tools.map((tool, i) => (
-            <Link
-              key={tool.name}
-              href={TOOL_HREFS[i]}
-              onClick={() =>
-                trackEvent("nav_click", {
-                  tool: "home",
-                  target_tool: TOOL_IDS[i],
-                  nav_source: "homepage_card",
-                })
-              }
-              className="bg-white dark:bg-[#162a1e] hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] hover:shadow-lg hover:border-[#1A3A2A]/[0.12] dark:hover:border-white/[0.14] p-7 rounded-2xl border border-[#151B2E]/[0.06] dark:border-white/[0.08] transition-all duration-200 motion-safe:hover:-translate-y-[3px] motion-safe:hover:scale-[1.01] block"
-            >
-              <h3 className={`text-[19px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${naskh}`}>{tool.name}</h3>
-              <p className={`text-[16px] text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed ${naskh}`}>{tool.body}</p>
-            </Link>
-          ))}
+          {t.tools.map((tool, i) => {
+            const meta = TOOL_META[i];
+            const { Icon } = meta;
+            return (
+              <Link
+                key={tool.name}
+                href={TOOL_HREFS[i]}
+                onClick={() =>
+                  trackEvent("nav_click", {
+                    tool: "home",
+                    target_tool: TOOL_IDS[i],
+                    nav_source: "homepage_card",
+                  })
+                }
+                className="group bg-white dark:bg-[#162a1e] hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] hover:shadow-lg hover:border-[#1A3A2A]/[0.12] dark:hover:border-white/[0.14] p-6 rounded-2xl border border-[#151B2E]/[0.06] dark:border-white/[0.08] transition-all duration-200 motion-safe:hover:-translate-y-[3px] motion-safe:hover:scale-[1.01] block text-start"
+              >
+                {/* Icon badge */}
+                <span className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${meta.iconBg} ${meta.iconColor} mb-3`}>
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden="true" />
+                </span>
+
+                <h3 className={`text-[17px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-1.5 ${naskh}`}>{tool.name}</h3>
+                <p className={`text-[14px] text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed ${naskh}`}>{tool.body}</p>
+
+                {/* Tiny visual example: outer dir=ltr keeps source→result flow left-to-right;
+                    each token uses bdi dir="auto" so Urdu/Arabic script shapes correctly */}
+                {meta.example && (
+                  <span className="mt-2.5 inline-flex items-center gap-1 font-mono text-[11px] bg-[#1A3A2A]/6 dark:bg-white/[0.06] text-[#1A3A2A]/65 dark:text-[#8faa93] px-2 py-0.5 rounded" dir="ltr">
+                    <bdi dir="auto">{meta.example.split("→")[0]?.trim()}</bdi>
+                    <span aria-hidden="true">→</span>
+                    <bdi dir="auto">{meta.example.split("→")[1]?.trim()}</bdi>
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -43,24 +43,30 @@ export default function BeforeAfterSection() {
         </h2>
 
         <div className="flex flex-col md:flex-row items-stretch gap-0 md:gap-0 max-w-4xl mx-auto">
+          {/* BEFORE */}
           <div className="flex-1 text-right" dir="rtl">
-            <div className="text-xs font-semibold tracking-wide text-red-600 mb-3" dir="ltr">{t.before}</div>
-            <div className="bg-white dark:bg-[#1e2a20] border border-red-300/50 dark:border-red-900/40 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm">
+            <div className="text-xs font-semibold tracking-widest uppercase text-red-500/80 dark:text-red-400/80 mb-3" dir="ltr">{t.before}</div>
+            <div className="bg-white dark:bg-[#1e2a20] border border-red-300/50 dark:border-red-900/40 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm ring-1 ring-red-200/30 dark:ring-red-900/20">
               <p className="font-nastaliq text-2xl md:text-3xl leading-loose text-[#2A1A1A] dark:text-[#c8a0a0] w-full">
                 {BEFORE_TEXT}
               </p>
             </div>
           </div>
 
+          {/* Connector — pen icon */}
           <div className="flex md:flex-col items-center justify-center px-4 py-4 md:py-0 shrink-0">
             <div className="bg-[#B8935A] rounded-full p-3 shadow-lg shadow-[#B8935A]/30 text-white">
               <PenNibIcon />
             </div>
           </div>
 
+          {/* AFTER */}
           <div className="flex-1 text-right" dir="rtl">
-            <div className="text-xs font-semibold tracking-wide text-emerald-700 dark:text-[#e8ede9] mb-3" dir="ltr">{t.after}</div>
-            <div className="bg-white dark:bg-[#162a1e] border border-emerald-300/50 dark:border-emerald-900/40 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm">
+            <div className="flex items-center justify-between mb-3" dir="ltr">
+              <span className="text-xs font-semibold tracking-widest uppercase text-emerald-600 dark:text-emerald-400">{t.after}</span>
+              <span className="text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full tracking-wide">{t.afterStatus}</span>
+            </div>
+            <div className="bg-white dark:bg-[#162a1e] border border-emerald-300/50 dark:border-emerald-900/40 rounded-2xl p-8 min-h-[150px] flex items-center shadow-sm ring-1 ring-emerald-200/30 dark:ring-emerald-900/20">
               <p className="font-nastaliq text-2xl md:text-3xl leading-loose text-[#1A2A1A] dark:text-[#e8ede9] w-full">{AFTER_TEXT}</p>
             </div>
           </div>
