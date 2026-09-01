@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eraser, Type, FilePenLine, MessageCircle, SearchCheck, Languages, PenLine, ChevronRight } from "lucide-react";
+import { Eraser, Type, FilePenLine, MessageCircle, SearchCheck, Languages, PenLine, CalendarDays, ChevronRight } from "lucide-react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { trackEvent, type ToolId } from "../lib/analytics";
@@ -14,6 +14,7 @@ const HREF_TO_TOOL: Record<string, ToolId> = {
   "/tools/translation-studio": "translation_studio",
   "/tools/whatsapp-rtl-formatter": "whatsapp_rtl_formatter",
   "/tools/quality-checker": "quality_audit",
+  "/tools/date-converter":  "date_converter",
 };
 
 const CARD_META: Record<
@@ -68,6 +69,13 @@ const CARD_META: Record<
     iconBg: "bg-amber-50",
     iconColor: "text-amber-700",
     borderHover: "hover:shadow-md hover:shadow-amber-900/5",
+  },
+  "/tools/date-converter": {
+    Icon: CalendarDays,
+    accent: "border-[#1A3A2A]/15 hover:border-rose-500/40",
+    iconBg: "bg-rose-50",
+    iconColor: "text-rose-700",
+    borderHover: "hover:shadow-md hover:shadow-rose-900/5",
   },
 };
 

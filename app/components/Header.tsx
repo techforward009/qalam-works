@@ -88,6 +88,7 @@ export default function Header() {
     { label: t.qualityChecker, href: "/tools/quality-checker" },
     { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
     { label: t.invoiceStudio, href: "/tools/invoice-generator" },
+    { label: t.dateConverter, href: "/tools/date-converter" },
     { label: t.services, href: "/services" },
     { label: t.about, href: "/about" },
     { label: t.contact, href: "/contact" },

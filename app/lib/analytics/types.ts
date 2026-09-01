@@ -12,6 +12,7 @@ export type ToolId =
   | "invoice_generator"
   | "translation_studio"
   | "urdu_writer"
+  | "date_converter"
   | "home"
   | "unknown";
 
@@ -82,6 +83,7 @@ export const TOOL_IDS: readonly ToolId[] = [
   "urdu_unicode_standardizer",
   "whatsapp_rtl_formatter",
   "invoice_generator",
+  "date_converter",
   "home",
   "unknown",
 ] as const;
