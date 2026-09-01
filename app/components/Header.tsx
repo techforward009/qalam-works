@@ -136,8 +136,66 @@ export default function Header() {
     setOpenGroup(prev => (prev === id ? null : id));
   }
 
-  // ── Tools dropdown content — shared by desktop and mobile ─────────────────
-  function ToolGroupItems({ inMobile = false }: { inMobile?: boolean }) {
+  // ── Desktop: two-panel side flyout ──────────────────────────────────────────
+  // Main panel lists group labels only; clicking a group opens a side flyout.
+  // The flyout appears to the RIGHT — no accordion expansion inside the main panel.
+  function DesktopToolsDropdown() {
+    return (
+      <div className="flex" role="menu">
+        {/* ── Main panel: group labels ── */}
+        <div className="bg-[#1A3A2A] border border-white/10 rounded-xl shadow-xl py-1.5 w-[185px] shrink-0">
+          {toolGroups.map(group => (
+            <button
+              key={group.id}
+              type="button"
+              onClick={() => setOpenGroup(prev => prev === group.id ? null : group.id)}
+              aria-expanded={openGroup === group.id}
+              className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] font-semibold transition-colors ${
+                openGroup === group.id
+                  ? "text-white bg-white/[0.09]"
+                  : "text-white/80 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <span>{group.label}</span>
+              <ChevronRight
+                size={13}
+                className={`shrink-0 transition-transform ${openGroup === group.id ? "rotate-90 text-white" : ""}`}
+              />
+            </button>
+          ))}
+          <div className="my-1 border-t border-white/10" />
+          <Link
+            href="/tools"
+            role="menuitem"
+            onClick={() => { setToolsOpen(false); setOpenGroup(null); }}
+            className="block px-4 py-2.5 text-[14px] font-semibold text-[#C9A46B] hover:text-[#E0BA85] hover:bg-white/5 transition-colors"
+          >
+            {t.allTools}
+          </Link>
+        </div>
+
+        {/* ── Side flyout: current group links ── */}
+        {openGroup && (
+          <div className="ml-1 bg-[#1A3A2A] border border-white/10 rounded-xl shadow-xl py-1.5 w-[210px] shrink-0">
+            {toolGroups.find(g => g.id === openGroup)?.links.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                role="menuitem"
+                onClick={() => { setToolsOpen(false); setOpenGroup(null); }}
+                className="block px-4 py-2.5 text-[14px] text-white/85 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Mobile: vertical accordion (unchanged behavior) ───────────────────────
+  function MobileToolsAccordion() {
     return (
       <>
         {toolGroups.map(group => {
@@ -146,9 +204,9 @@ export default function Header() {
             <div key={group.id}>
               <button
                 type="button"
-                onClick={() => toggleGroup(group.id)}
+                onClick={() => setOpenGroup(prev => prev === group.id ? null : group.id)}
                 aria-expanded={isOpen}
-                className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] font-semibold text-white/80 hover:text-white hover:bg-white/5 transition-colors ${inMobile ? "py-3 text-[14px]" : ""}`}
+                className="w-full flex items-center justify-between px-4 py-3 text-[14px] font-semibold text-white/80 hover:text-white hover:bg-white/5 transition-colors"
               >
                 <span>{group.label}</span>
                 <ChevronRight
@@ -162,8 +220,8 @@ export default function Header() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      onClick={() => { setToolsOpen(false); setOpenGroup(null); setMobileOpen(false); }}
-                      className={`block pl-7 pr-4 py-2 text-[14px] text-white/85 hover:text-white hover:bg-white/5 transition-colors ${inMobile ? "py-2.5" : ""}`}
+                      onClick={() => { setOpenGroup(null); setMobileOpen(false); }}
+                      className="block pl-7 pr-4 py-2.5 text-[14px] text-white/85 hover:text-white hover:bg-white/5 transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -173,13 +231,11 @@ export default function Header() {
             </div>
           );
         })}
-
-        {/* Divider + All Tools */}
         <div className="my-1 border-t border-white/10" />
         <Link
           href="/tools"
-          onClick={() => { setToolsOpen(false); setOpenGroup(null); setMobileOpen(false); }}
-          className={`block px-4 py-2.5 text-[14px] font-semibold text-[#C9A46B] hover:text-[#E0BA85] hover:bg-white/5 transition-colors ${inMobile ? "py-3" : ""}`}
+          onClick={() => { setOpenGroup(null); setMobileOpen(false); }}
+          className="block px-4 py-3 text-[14px] font-semibold text-[#C9A46B] hover:text-[#E0BA85] hover:bg-white/5 transition-colors"
         >
           {t.allTools}
         </Link>
@@ -269,9 +325,9 @@ export default function Header() {
               {toolsOpen && (
                 <div
                   role="menu"
-                  className="absolute top-full mt-1 bg-[#1A3A2A] border border-white/10 rounded-xl shadow-xl py-1.5 w-[220px] z-50 left-0 overflow-hidden"
+                  className="absolute top-full mt-1 z-50 left-0"
                 >
-                  <ToolGroupItems />
+                  <DesktopToolsDropdown />
                 </div>
               )}
             </div>
@@ -330,7 +386,7 @@ export default function Header() {
 
             {/* Grouped tool accordion */}
             <div className="border border-white/10 rounded-xl overflow-hidden mb-2">
-              <ToolGroupItems inMobile />
+              <MobileToolsAccordion />
             </div>
 
           </div>

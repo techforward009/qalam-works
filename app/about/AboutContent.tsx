@@ -20,16 +20,16 @@ export default function AboutContent() {
           >
             {t.heading}
           </h1>
-          <p className={`text-lg md:text-xl text-[#5B5748] mb-10 leading-relaxed ${naskh}`}>
+          <p className={`text-lg md:text-xl text-[#5B5748] dark:text-[#b7c5ba] mb-10 leading-relaxed ${naskh}`}>
             {t.tagline}
           </p>
 
-          <div className={`space-y-5 text-[17px] leading-relaxed text-[#3A3530] ${naskh}`}>
+          <div className={`space-y-5 text-[17px] leading-relaxed text-[#3A3530] dark:text-[#cbd5ce] ${naskh}`}>
             <p>{t.body1}</p>
             <p>{t.body2}</p>
           </div>
 
-          <div className="mt-12 pt-10 border-t border-gray-100">
+          <div className="mt-12 pt-10 border-t border-gray-100 dark:border-white/10">
             <h2
               className={`text-xl md:text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-4 ${
                 language === "ur" ? "font-nastaliq font-normal" : ""
@@ -37,7 +37,7 @@ export default function AboutContent() {
             >
               {t.servicesHeading}
             </h2>
-            <p className={`text-[17px] leading-relaxed text-[#3A3530] mb-6 ${naskh}`}>
+            <p className={`text-[17px] leading-relaxed text-[#3A3530] dark:text-[#cbd5ce] mb-6 ${naskh}`}>
               {t.servicesBody}
             </p>
             <Link
