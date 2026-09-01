@@ -36,10 +36,10 @@ export const translations = {
       headline: "Urdu writing deserves better tools.",
       subheadline:
         "Write, refine, and prepare professional Urdu documents — without fighting software built primarily for English.",
-      ctaPrimary: "Open Document Studio",
-      ctaSecondary: "See real before & after",
+      ctaPrimary: "Start in Document Studio",
+      ctaSecondary: "See Urdu text cleanup",
       quickCleanupPrompt: "Need quick cleanup?",
-      quickCleanupLink: "Open Document Cleaner",
+      quickCleanupLink: "Open Urdu text cleaner",
       trustLine: "Researchers · Translators · Publishers · Academia",
       multilingualLine:
         "Language-aware text processing for Urdu, Arabic, English, and mixed-language content.",
@@ -87,11 +87,11 @@ export const translations = {
       tools: [
         {
           name: "Document Studio",
-          body: "Write, edit, clean, review, and export in one workspace — with language-aware processing.",
+          body: "Write, edit, clean, and export Urdu documents in one workspace — including punctuation correction and language-aware processing.",
         },
         {
           name: "Qalam Urdu Writer",
-          body: "Write Urdu easily from Roman Urdu, with control over uncertain words.",
+          body: "A Roman Urdu converter and writing assistant: type in Roman Urdu, review uncertain words, and copy Urdu script.",
         },
         {
           name: "Translation Studio",
@@ -99,15 +99,15 @@ export const translations = {
         },
         {
           name: "Document Cleaner",
-          body: "Paste or upload text for quick language-aware cleanup (Urdu, English, Arabic, or safe Auto).",
+          body: "An Urdu text cleaner for safe cleanup, normalization, and formatting — with English-safe and Arabic-safe modes.",
         },
         {
           name: "Quality Audit",
-          body: "Inspect spacing, punctuation, and script issues without changing your text.",
+          body: "Urdu proofreading support: inspect punctuation, spacing, and script issues without changing your text.",
         },
         {
           name: "Urdu Unicode Standardizer",
-          body: "Normalize Urdu letter forms, spacing, and punctuation in plain text.",
+          body: "An Urdu Unicode fixer for letter-form correction, spacing, and punctuation in plain text.",
         },
         {
           name: "WhatsApp RTL Formatter",
@@ -126,19 +126,19 @@ export const translations = {
           label: "My copied text looks broken",
           href: "/tools/document-cleaner",
           description: "Document Cleaner",
-          body: "Clean spacing and formatting from PDFs, web, or other sources.",
+          body: "Use the Urdu text cleaner for spacing, punctuation, and formatting from PDFs, web, or other sources.",
         },
         {
           label: "Urdu letters appear in mixed forms",
           href: "/tools/unicode-standardizer",
           description: "Urdu Unicode Standardizer",
-          body: "Improve Urdu letter forms and consistency.",
+          body: "Fix mixed Urdu Unicode letter forms, spacing, and punctuation.",
         },
         {
           label: "I want to write Urdu from Roman",
           href: "/tools/roman-urdu-writer",
           description: "Qalam Urdu Writer",
-          body: "Write Urdu easily from Roman Urdu, with control over uncertain words.",
+          body: "Convert Roman Urdu to Urdu script, with control over uncertain words.",
         },
         {
           label: "I need to translate a document",
@@ -156,7 +156,7 @@ export const translations = {
           label: "Check before publishing",
           href: "/tools/quality-checker",
           description: "Quality Audit",
-          body: "Find issues and choose the next improvement step.",
+          body: "Urdu proofreading: check punctuation and text quality before publishing.",
         },
         {
           label: "Urdu and English must look right on WhatsApp",
@@ -178,7 +178,7 @@ export const translations = {
     finalCta: {
       headline: "Stop fixing the same errors by hand.",
       subline: "Start publishing with the confidence your work deserves.",
-      cta: "Open Document Studio",
+      cta: "Start in Document Studio",
     },
     footer: {
       tagline: "A professional writing and publishing environment built for Urdu.",
@@ -268,7 +268,7 @@ export const translations = {
     },
     cleanerTool: {
       title: "Document Cleaner",
-      description: "Upload a file or paste text to clean spacing and apply language-aware normalization — Urdu, English, or Arabic-safe. Processing stays in your browser.",
+      description: "An Urdu text cleaner for safe cleanup, normalization, and formatting. Language-aware spacing and punctuation, English-safe cleanup, and Arabic preservation. Paste or upload .txt/.docx — processing stays in your browser.",
       languageLabel: "Text language",
       languageHint: "Auto processes mixed-language text safely and chooses appropriate handling for each language. Choose Urdu or Arabic for language-specific letter fixes. English mode never converts punctuation to Arabic forms.",
       langAuto: "Auto",
@@ -325,7 +325,7 @@ export const translations = {
     },
     qualityTool: {
       title: "Quality Audit",
-      description: "Inspect spacing, punctuation, and script observations without changing your text. Choose Urdu, English, Arabic, or safe Auto mode.",
+      description: "Urdu proofreading support that checks punctuation and text quality without changing your document. Inspect spacing, punctuation, and script issues in Urdu, English, or Arabic, including safe Auto mode.",
       faqHeading: "Frequently Asked Questions",
       faqs: [
         { question: "What does this tool do?", answer: "It audits text for spacing, punctuation, repeated words, and script observations. It never changes your text automatically." },
@@ -335,7 +335,7 @@ export const translations = {
     },
     unicodeTool: {
       title: "Urdu Unicode Standardizer",
-      description: "Paste any Urdu text below to instantly normalize mixed character variants, fix spacing, and correct punctuation — free, processed entirely in your browser.",
+      description: "An Urdu Unicode fixer for letter-form correction, spacing, and punctuation. Paste Urdu text to normalize mixed character variants — free, processed entirely in your browser.",
       examplesHeading: "Examples",
       faqHeading: "Frequently Asked Questions",
       faqs: [
@@ -382,10 +382,10 @@ export const translations = {
       headline: "اردو تحریر بہتر اوزار کی مستحق ہے۔",
       subheadline:
         "لکھنے سے لے کر متن کی اصلاح اور اشاعت تک — اردو کے لیے بنایا گیا ایک جدید، پیشہ ورانہ ماحول۔",
-      ctaPrimary: "ڈاکومنٹ اسٹوڈیو کھولیں",
-      ctaSecondary: "حقیقی پہلے اور بعد دیکھیں",
+      ctaPrimary: "ڈاکومنٹ اسٹوڈیو سے شروع کریں",
+      ctaSecondary: "اردو صفائی کا پہلے اور بعد دیکھیں",
       quickCleanupPrompt: "فوری صفائی چاہیے؟",
-      quickCleanupLink: "ڈاکومنٹ کلینر کھولیں",
+      quickCleanupLink: "اردو متن صاف کریں",
       trustLine: "محققین · مترجمین · ناشرین · تعلیمی ادارے",
       multilingualLine:
         "اردو، عربی، انگریزی اور مخلوط متن کے لیے زبان کے مطابق صفائی اور اشاعتی اوزار۔",
@@ -433,11 +433,11 @@ export const translations = {
       tools: [
         {
           name: "ڈاکومنٹ اسٹوڈیو",
-          body: "لکھیں، صفائی کریں، جائزہ لیں اور ایک ہی جگہ سے ایکسپورٹ کریں — زبان کے مطابق پروسیسنگ کے ساتھ۔",
+          body: "اردو دستاویزات لکھیں، صاف کریں اور ایکسپورٹ کریں — رموزِ اوقاف کی اصلاح اور زبان کے مطابق پروسیسنگ کے ساتھ۔",
         },
         {
           name: "قلم اردو رائٹر",
-          body: "رومن اردو سے آسانی سے اردو لکھیں، اور جہاں ضرورت ہو لفظ خود منتخب کریں۔",
+          body: "رومن اردو سے اردو لکھنے کا معاون: رومن اردو لکھیں، مشکوک الفاظ کا جائزہ لیں، اور اردو رسم الخط حاصل کریں۔",
         },
         {
           name: "ترجمہ اسٹوڈیو",
@@ -445,15 +445,15 @@ export const translations = {
         },
         {
           name: "ڈاکومنٹ کلینر",
-          body: "متن پیسٹ کریں یا فائل اپلوڈ کریں — اردو، انگریزی، عربی، یا محفوظ آٹو صفائی۔",
+          body: "اردو متن کی صفائی: محفوظ صفائی، معیاری کاری اور فارمیٹنگ — انگریزی اور عربی محفوظ موڈ کے ساتھ۔",
         },
         {
           name: "کوالٹی آڈٹ",
-          body: "متن کو بدلے بغیر فاصلہ، رموز اوقاف اور رسم الخط کے مسائل چیک کریں۔",
+          body: "اردو پروف ریڈنگ: رموزِ اوقاف، فاصلہ اور رسم الخط کے مسائل متن بدلے بغیر چیک کریں۔",
         },
         {
           name: "اردو یونیکوڈ اسٹینڈرڈائزر",
-          body: "اردو حروف کی شکلیں، فاصلہ اور رموز اوقاف معیاری بنائیں۔",
+          body: "اردو یونیکوڈ اصلاح: حروف کی شکلیں، فاصلہ اور رموزِ اوقاف درست کریں۔",
         },
         {
           name: "واٹس ایپ آر ٹی ایل فارمیٹر",
@@ -472,19 +472,19 @@ export const translations = {
           label: "میرا copy کیا ہوا متن خراب ہے",
           href: "/tools/document-cleaner",
           description: "ڈاکومنٹ کلینر",
-          body: "Spacing اور formatting صاف کریں۔",
+          body: "اردو متن کی صفائی سے فاصلہ، رموزِ اوقاف اور فارمیٹنگ درست کریں۔",
         },
         {
           label: "اردو حروف مختلف شکلوں میں آ رہے ہیں",
           href: "/tools/unicode-standardizer",
           description: "اردو یونیکوڈ اسٹینڈرڈائزر",
-          body: "اردو حروف کی شکل اور consistency بہتر کریں۔",
+          body: "مخلوط اردو یونیکوڈ حروف، فاصلہ اور رموزِ اوقاف درست کریں۔",
         },
         {
           label: "رومن اردو سے اردو لکھنا ہے",
           href: "/tools/roman-urdu-writer",
           description: "قلم اردو رائٹر",
-          body: "رومن اردو سے آسانی سے اردو لکھیں، اور جہاں ضرورت ہو لفظ خود منتخب کریں۔",
+          body: "رومن اردو کو اردو رسم الخط میں تبدیل کریں، مشکوک الفاظ پر کنٹرول کے ساتھ۔",
         },
         {
           label: "مجھے ایک دستاویز کا ترجمہ کرنا ہے",
@@ -502,7 +502,7 @@ export const translations = {
           label: "اشاعت سے پہلے جانچ چاہیے",
           href: "/tools/quality-checker",
           description: "کوالٹی آڈٹ",
-          body: "مسائل تلاش کریں اور اگلا قدم طے کریں۔",
+          body: "اشاعت سے پہلے اردو پروف ریڈنگ: رموزِ اوقاف اور معیار چیک کریں۔",
         },
         {
           label: "WhatsApp پر اردو اور English درست چاہیے",
@@ -524,7 +524,7 @@ export const translations = {
     finalCta: {
       headline: "ایک جیسی غلطیاں ہاتھ سے ٹھیک کرنا بند کریں۔",
       subline: "اپنے کام کے شایانِ شان اعتماد کے ساتھ شائع کرنا شروع کریں۔",
-      cta: "ڈاکومنٹ اسٹوڈیو کھولیں",
+      cta: "ڈاکومنٹ اسٹوڈیو سے شروع کریں",
     },
     footer: {
       tagline: "اردو کے لیے بنایا گیا ایک پیشہ ورانہ لکھائی اور اشاعتی ماحول۔",
@@ -614,7 +614,7 @@ export const translations = {
     },
     cleanerTool: {
       title: "ڈاکومنٹ کلینر",
-      description: "فائل اپلوڈ کریں یا متن پیسٹ کریں۔ زبان کے مطابق صفائی — اردو، انگریزی، یا عربی محفوظ موڈ۔ تمام کارروائی براؤزر میں ہوتی ہے۔",
+      description: "اردو متن کی صفائی: محفوظ صفائی، معیاری کاری اور فارمیٹنگ۔ زبان کے مطابق فاصلہ اور رموزِ اوقاف، انگریزی محفوظ صفائی، عربی تحفظ۔ فائل اپلوڈ کریں یا متن پیسٹ کریں — کارروائی براؤزر میں رہتی ہے۔",
       languageLabel: "متن کی زبان",
       languageHint: "Auto mode مخلوط زبان کے متن کو محفوظ طریقے سے process کرتا ہے اور زبان کے مطابق مناسب handling منتخب کرتا ہے۔ مخصوص اصلاح کے لیے اردو یا عربی منتخب کریں۔ انگریزی موڈ رموز اوقاف کو عربی شکل میں نہیں بدلتا۔",
       langAuto: "آٹو",
@@ -671,7 +671,7 @@ export const translations = {
     },
     qualityTool: {
       title: "کوالٹی آڈٹ",
-      description: "متن بدلے بغیر فاصلہ، رموز اوقاف اور رسم الخط کے مشاہدات دیکھیں۔ اردو، انگریزی، عربی، یا محفوظ آٹو موڈ منتخب کریں۔",
+      description: "اردو پروف ریڈنگ: رموزِ اوقاف اور متن کے معیار کی جانچ، دستاویز بدلے بغیر۔ اردو، انگریزی، عربی یا محفوظ آٹو موڈ میں فاصلہ، رموز اور رسم الخط چیک کریں۔",
       faqHeading: "اکثر پوچھے گئے سوالات",
       faqs: [
         { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ متن کے فاصلہ، رموز اوقاف، دہرائے الفاظ اور رسم الخط کے مشاہدات چیک کرتا ہے۔ متن خود بخود تبدیل نہیں ہوتا۔" },
@@ -681,7 +681,7 @@ export const translations = {
     },
     unicodeTool: {
       title: "اردو یونیکوڈ اسٹینڈرڈائزر",
-      description: "نیچے کوئی بھی اردو متن پیسٹ کریں تاکہ فوری طور پر مخلوط حروف کی شکلیں معیاری بنیں، خالی جگہ درست ہو، اور رموزِ اوقاف ٹھیک ہوں — مفت، اور مکمل طور پر آپ کے براؤزر میں پروسیس ہوتا ہے۔",
+      description: "اردو یونیکوڈ اصلاح: حروف کی شکلیں، فاصلہ اور رموزِ اوقاف درست کریں۔ مخلوط شکلیں معیاری بنائیں — مفت، مکمل طور پر آپ کے براؤزر میں۔",
       examplesHeading: "مثالیں",
       faqHeading: "اکثر پوچھے گئے سوالات",
       faqs: [
