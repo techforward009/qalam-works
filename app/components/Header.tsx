@@ -219,8 +219,8 @@ export default function Header() {
               href={href}
               className={`text-[12px] transition-colors whitespace-nowrap ${
                 isActive(href)
-                  ? "text-[#1A3A2A] font-medium"
-                  : "text-[#1A3A2A]/55 hover:text-[#1A3A2A]"
+                  ? "text-[#111111] font-semibold"
+                  : "text-[#111111]/85 font-medium hover:text-[#1A3A2A]"
               }`}
             >
               {label}
