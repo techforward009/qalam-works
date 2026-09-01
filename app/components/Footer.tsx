@@ -103,11 +103,11 @@ export default function Footer() {
               correct instead of dragging the whole unit to the left. */}
           <div className={`flex flex-col ${language === "ur" ? "items-end" : "items-start"}`}>
             <a
-              href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Inquiry"
+              href="mailto:info@qalamworks.com?subject=Qalam%20Works%20Inquiry"
               dir="ltr"
               className="text-white hover:text-white text-sm transition-colors inline-block mb-2"
             >
-              qalamworks.services@gmail.com
+              info@qalamworks.com
             </a>
             <p
               className={`text-white text-xs leading-relaxed max-w-[220px] ${language === "ur" ? "text-right" : "text-left"} ${naskh}`}

@@ -129,6 +129,10 @@ export const translations = {
           name: "Invoice Generator",
           body: "Create clean, professional invoices and export them as PDF.",
         },
+        {
+          name: "Date Converter",
+          body: "Convert dates between Gregorian, Hijri, and Solar Hijri calendars with weekday and calculation-method details.",
+        },
       ],
     },
     jobGuidance: {
@@ -493,6 +497,10 @@ export const translations = {
         {
           name: "انوائس جنریٹر",
           body: "صاف ستھری اور پیشہ ورانہ انوائس تیار کریں اور پی ڈی ایف میں محفوظ کریں۔",
+        },
+        {
+          name: "تاریخ کنورٹر",
+          body: "عیسوی، ہجری قمری اور ہجری شمسی تاریخوں کو باہم تبدیل کریں، ہفتے کے دن اور حسابی طریقے کی وضاحت کے ساتھ۔",
         },
       ],
     },

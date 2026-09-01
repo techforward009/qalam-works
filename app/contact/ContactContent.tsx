@@ -26,11 +26,11 @@ export default function ContactContent() {
               {t.emailLabel}
             </div>
             <a
-              href="mailto:qalamworks.services@gmail.com?subject=Qalam%20Works%20Inquiry"
+              href="mailto:info@qalamworks.com?subject=Qalam%20Works%20Inquiry"
               dir="ltr"
               className="text-[#1A3A2A] dark:text-[#e8ede9] hover:text-[#B8935A] dark:hover:text-[#C9A46B] text-lg font-medium transition-colors block mb-4"
             >
-              qalamworks.services@gmail.com
+              info@qalamworks.com
             </a>
             <p className={`text-[15px] text-[#5B5748] dark:text-[#b7c5ba] ${naskh}`}>{t.responseNote}</p>
           </div>

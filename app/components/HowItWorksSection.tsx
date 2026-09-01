@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, PenLine, Languages, Eraser, SearchCheck, Type, MessageCircle, FilePenLine } from "lucide-react";
+import { BookOpen, PenLine, Languages, Eraser, SearchCheck, Type, MessageCircle, FilePenLine, CalendarDays } from "lucide-react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { trackEvent, type ToolId } from "../lib/analytics";
@@ -15,6 +15,7 @@ const TOOL_HREFS = [
   "/tools/unicode-standardizer",
   "/tools/whatsapp-rtl-formatter",
   "/tools/invoice-generator",
+  "/tools/date-converter",
 ] as const;
 
 const TOOL_IDS: ToolId[] = [
@@ -26,6 +27,7 @@ const TOOL_IDS: ToolId[] = [
   "urdu_unicode_standardizer",
   "whatsapp_rtl_formatter",
   "invoice_generator",
+  "date_converter",
 ];
 
 // Icon and accent per tool (same order as TOOL_HREFS)
@@ -38,6 +40,7 @@ const TOOL_META = [
   { Icon: Type,          iconBg: "bg-violet-50  dark:bg-violet-950/30",  iconColor: "text-violet-700 dark:text-violet-400",example: "ي → ی" },
   { Icon: MessageCircle, iconBg: "bg-emerald-50 dark:bg-emerald-950/30", iconColor: "text-emerald-700 dark:text-emerald-400", example: null },
   { Icon: FilePenLine,   iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50", iconColor: "text-[#1A3A2A] dark:text-[#8faa93]", example: null },
+  { Icon: CalendarDays,  iconBg: "bg-rose-50     dark:bg-rose-950/30",   iconColor: "text-rose-700  dark:text-rose-400",   example: null },
 ];
 
 export default function HowItWorksSection() {
