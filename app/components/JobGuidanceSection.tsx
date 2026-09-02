@@ -5,6 +5,7 @@ import { Eraser, Type, FilePenLine, MessageCircle, SearchCheck, Languages, PenLi
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { trackEvent, type ToolId } from "../lib/analytics";
+import { getHomepageToolAccent } from "../lib/homepage-tool-accents";
 
 // Task chips — compact workflow shortcuts above the card list
 const CHIP_LINKS = [
@@ -33,66 +34,15 @@ const HREF_TO_TOOL: Record<string, ToolId> = {
   "/tools/date-converter":  "date_converter",
 };
 
-const CARD_META: Record<
-  string,
-  { Icon: typeof Eraser; accent: string; iconBg: string; iconColor: string; borderHover: string }
-> = {
-  "/tools/document-cleaner": {
-    Icon: Eraser,
-    accent: "border-[#1A3A2A]/15 hover:border-emerald-500/40",
-    iconBg: "bg-emerald-50",
-    iconColor: "text-emerald-700",
-    borderHover: "hover:shadow-md hover:shadow-emerald-900/5",
-  },
-  "/tools/unicode-standardizer": {
-    Icon: Type,
-    accent: "border-[#1A3A2A]/15 hover:border-sky-500/40",
-    iconBg: "bg-sky-50",
-    iconColor: "text-sky-700",
-    borderHover: "hover:shadow-md hover:shadow-sky-900/5",
-  },
-  "/tools/document-studio": {
-    Icon: FilePenLine,
-    accent: "border-[#1A3A2A]/15 hover:border-[#B8935A]/50",
-    iconBg: "bg-[#B8935A]/10",
-    iconColor: "text-[#9A6A30]",
-    borderHover: "hover:shadow-md hover:shadow-[#B8935A]/10",
-  },
-  "/tools/roman-urdu-writer": {
-    Icon: PenLine,
-    accent: "border-[#1A3A2A]/15 hover:border-indigo-500/40",
-    iconBg: "bg-indigo-50",
-    iconColor: "text-indigo-700",
-    borderHover: "hover:shadow-md hover:shadow-indigo-900/5",
-  },
-  "/tools/translation-studio": {
-    Icon: Languages,
-    accent: "border-[#1A3A2A]/15 hover:border-violet-500/40",
-    iconBg: "bg-violet-50",
-    iconColor: "text-violet-700",
-    borderHover: "hover:shadow-md hover:shadow-violet-900/5",
-  },
-  "/tools/whatsapp-rtl-formatter": {
-    Icon: MessageCircle,
-    accent: "border-[#1A3A2A]/15 hover:border-teal-500/40",
-    iconBg: "bg-teal-50",
-    iconColor: "text-teal-700",
-    borderHover: "hover:shadow-md hover:shadow-teal-900/5",
-  },
-  "/tools/quality-checker": {
-    Icon: SearchCheck,
-    accent: "border-[#1A3A2A]/15 hover:border-amber-500/40",
-    iconBg: "bg-amber-50",
-    iconColor: "text-amber-700",
-    borderHover: "hover:shadow-md hover:shadow-amber-900/5",
-  },
-  "/tools/date-converter": {
-    Icon: CalendarDays,
-    accent: "border-[#1A3A2A]/15 hover:border-rose-500/40",
-    iconBg: "bg-rose-50",
-    iconColor: "text-rose-700",
-    borderHover: "hover:shadow-md hover:shadow-rose-900/5",
-  },
+const CARD_ICONS: Record<string, typeof Eraser> = {
+  "/tools/document-cleaner": Eraser,
+  "/tools/unicode-standardizer": Type,
+  "/tools/document-studio": FilePenLine,
+  "/tools/roman-urdu-writer": PenLine,
+  "/tools/translation-studio": Languages,
+  "/tools/whatsapp-rtl-formatter": MessageCircle,
+  "/tools/quality-checker": SearchCheck,
+  "/tools/date-converter": CalendarDays,
 };
 
 export default function JobGuidanceSection() {
@@ -130,8 +80,8 @@ export default function JobGuidanceSection() {
 
         <ul className="space-y-3.5">
           {t.items.map((item) => {
-            const meta = CARD_META[item.href] ?? CARD_META["/tools/document-cleaner"];
-            const { Icon } = meta;
+            const Icon = CARD_ICONS[item.href] ?? Eraser;
+            const accent = getHomepageToolAccent(item.href);
             const example = CARD_EXAMPLE[item.href];
 
             return (
@@ -145,10 +95,10 @@ export default function JobGuidanceSection() {
                       nav_source: "homepage_card",
                     })
                   }
-                  className={`group flex items-center gap-3.5 sm:gap-4 rounded-2xl border bg-[#F7F5EF] dark:bg-[#162a1e] px-4 py-4 sm:px-5 sm:py-4.5 min-h-[72px] transition-all duration-200 motion-safe:hover:-translate-y-[2px] motion-safe:hover:scale-[1.008] ${meta.accent} ${meta.borderHover} hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 ${naskh}`}
+                  className={`group flex items-center gap-3.5 sm:gap-4 rounded-2xl border bg-[#F7F5EF] dark:bg-[#162a1e] px-4 py-4 sm:px-5 sm:py-4.5 min-h-[72px] transition-all duration-200 motion-safe:hover:-translate-y-[2px] motion-safe:hover:scale-[1.008] ${accent.borderAccent} ${accent.hoverShadow} hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 ${naskh}`}
                 >
                   <span
-                    className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl ${meta.iconBg} ${meta.iconColor}`}
+                    className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl ${accent.iconBg} ${accent.iconColor}`}
                     aria-hidden="true"
                   >
                     <Icon className="h-5 w-5 sm:h-[22px] sm:w-[22px]" strokeWidth={2} />

@@ -5,6 +5,7 @@ import { BookOpen, PenLine, Languages, Eraser, SearchCheck, Type, MessageCircle,
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { trackEvent, type ToolId } from "../lib/analytics";
+import { getHomepageToolAccent } from "../lib/homepage-tool-accents";
 
 const TOOL_HREFS = [
   "/tools/document-studio",
@@ -30,17 +31,18 @@ const TOOL_IDS: ToolId[] = [
   "date_converter",
 ];
 
-// Icon and accent per tool (same order as TOOL_HREFS)
+// Icon and example per tool (same order as TOOL_HREFS).
+// Accent treatment is shared with JobGuidanceSection.
 const TOOL_META = [
-  { Icon: BookOpen,      iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50", iconColor: "text-[#1A3A2A] dark:text-[#8faa93]", example: null },
-  { Icon: PenLine,       iconBg: "bg-amber-50  dark:bg-amber-950/30",   iconColor: "text-amber-700 dark:text-amber-400",  example: "mera naam → میرا نام" },
-  { Icon: Languages,     iconBg: "bg-sky-50     dark:bg-sky-950/30",     iconColor: "text-sky-700   dark:text-sky-400",    example: null },
-  { Icon: Eraser,        iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50", iconColor: "text-[#1A3A2A] dark:text-[#8faa93]", example: "يہ , → یہ،" },
-  { Icon: SearchCheck,   iconBg: "bg-amber-50  dark:bg-amber-950/30",   iconColor: "text-amber-700 dark:text-amber-400",  example: null },
-  { Icon: Type,          iconBg: "bg-violet-50  dark:bg-violet-950/30",  iconColor: "text-violet-700 dark:text-violet-400",example: "ي → ی" },
-  { Icon: MessageCircle, iconBg: "bg-emerald-50 dark:bg-emerald-950/30", iconColor: "text-emerald-700 dark:text-emerald-400", example: null },
-  { Icon: FilePenLine,   iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50", iconColor: "text-[#1A3A2A] dark:text-[#8faa93]", example: null },
-  { Icon: CalendarDays,  iconBg: "bg-rose-50     dark:bg-rose-950/30",   iconColor: "text-rose-700  dark:text-rose-400",   example: null },
+  { Icon: BookOpen, example: null },
+  { Icon: PenLine, example: "mera naam → میرا نام" },
+  { Icon: Languages, example: null },
+  { Icon: Eraser, example: "يہ , → یہ،" },
+  { Icon: SearchCheck, example: null },
+  { Icon: Type, example: "ي → ی" },
+  { Icon: MessageCircle, example: null },
+  { Icon: FilePenLine, example: null },
+  { Icon: CalendarDays, example: null },
 ];
 
 export default function HowItWorksSection() {
@@ -51,7 +53,7 @@ export default function HowItWorksSection() {
   return (
     <section className="bg-[#F3F7F2] dark:bg-[#0e1c15] py-14 md:py-16" dir={dir}>
       <div className="max-w-[1240px] mx-auto px-6 text-center">
-        <h2 className={`text-2xl md:text-3xl font-bold text-[#151B2E] dark:text-[#e8ede9] mb-16 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+        <h2 className={`text-2xl md:text-3xl font-bold text-[#151B2E] dark:text-[#e8ede9] mb-10 md:mb-12 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}
         </h2>
 
@@ -59,6 +61,7 @@ export default function HowItWorksSection() {
           {t.tools.map((tool, i) => {
             const meta = TOOL_META[i];
             const { Icon } = meta;
+            const accent = getHomepageToolAccent(TOOL_HREFS[i]);
             return (
               <Link
                 key={tool.name}
@@ -73,7 +76,7 @@ export default function HowItWorksSection() {
                 className="group bg-white dark:bg-[#162a1e] hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] hover:shadow-lg hover:border-[#1A3A2A]/[0.12] dark:hover:border-white/[0.14] p-6 rounded-2xl border border-[#151B2E]/[0.06] dark:border-white/[0.08] transition-all duration-200 motion-safe:hover:-translate-y-[3px] motion-safe:hover:scale-[1.01] block text-start"
               >
                 {/* Icon badge */}
-                <span className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${meta.iconBg} ${meta.iconColor} mb-3`}>
+                <span className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${accent.iconBg} ${accent.iconColor} mb-3`}>
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden="true" />
                 </span>
 

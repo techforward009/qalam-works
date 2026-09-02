@@ -22,7 +22,7 @@ export default function Hero() {
               {t.eyebrow}
             </div>
 
-            <h1 className={`text-4xl md:text-[3.4rem] font-bold leading-[1.25] text-[#1A3A2A] dark:text-[#e8ede9] mb-5 ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+            <h1 className={`text-4xl md:text-[3.4rem] font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-5 ${language === "ur" ? "font-nastaliq font-normal leading-[1.5]" : "leading-[1.25]"}`}>
               {t.headline}
             </h1>
 
