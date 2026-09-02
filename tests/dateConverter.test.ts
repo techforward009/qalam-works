@@ -349,7 +349,87 @@ describe("Hijri year 1500 — non-leap boundary", () => {
   });
 });
 
-// ── Helper used only in this test file ───────────────────────────────────────
+// ── Regional Hijri date evidence resolver ─────────────────────────────────────
+//
+// These tests validate the resolveRegionalHijriReference() pure resolver.
+// Expected values are derived from the documented evidence records,
+// NOT from the dateEngine under test.
+//
+// Benchmark: 4 Ramadan 1368 AH
+//   Qalam Works engine (tabular, Friday epoch): 29 June 1949
+//   Regional evidence varies by country (see regionalDateEvidence.ts).
+
+import {
+  resolveRegionalHijriReference,
+} from "../app/tools/date-converter/utils/regionalDateEvidence";
+
+describe("Regional Hijri date evidence resolver — 4 Ramadan 1368", () => {
+  const date1368Ram4 = { year: 1368, month: 9, day: 4 };
+
+  test("Pakistan: 4 Ramadan 1368 → 30 June 1949, medium confidence", () => {
+    const r = resolveRegionalHijriReference("pk", date1368Ram4);
+    expect(r).not.toBeNull();
+    expect(r!.gregorianDate).toEqual({ year: 1949, month: 6, day: 30 });
+    expect(r!.confidence).toBe("medium");
+    expect(r!.sourceType).toBe("secondary-calendar-reference");
+  });
+
+  test("India: 4 Ramadan 1368 → 30 June 1949, medium confidence", () => {
+    const r = resolveRegionalHijriReference("in", date1368Ram4);
+    expect(r).not.toBeNull();
+    expect(r!.gregorianDate).toEqual({ year: 1949, month: 6, day: 30 });
+    expect(r!.confidence).toBe("medium");
+    expect(r!.sourceType).toBe("secondary-calendar-reference");
+  });
+
+  test("Iran: 4 Ramadan 1368 → 30 June 1949, medium confidence", () => {
+    const r = resolveRegionalHijriReference("ir", date1368Ram4);
+    expect(r).not.toBeNull();
+    expect(r!.gregorianDate).toEqual({ year: 1949, month: 6, day: 30 });
+    expect(r!.confidence).toBe("medium");
+    expect(r!.sourceType).toBe("secondary-calendar-reference");
+  });
+
+  test("Saudi Arabia: 4 Ramadan 1368 → 29 June 1949, high confidence", () => {
+    const r = resolveRegionalHijriReference("sa", date1368Ram4);
+    expect(r).not.toBeNull();
+    expect(r!.gregorianDate).toEqual({ year: 1949, month: 6, day: 29 });
+    expect(r!.confidence).toBe("high");
+    expect(r!.sourceType).toBe("primary-historical");
+  });
+
+  test("Afghanistan: 4 Ramadan 1368 → no regional reference (null)", () => {
+    const r = resolveRegionalHijriReference("af", date1368Ram4);
+    expect(r).toBeNull();
+  });
+
+  test("Tajikistan: 4 Ramadan 1368 → no regional reference (null)", () => {
+    const r = resolveRegionalHijriReference("tj", date1368Ram4);
+    expect(r).toBeNull();
+  });
+
+  test("Unsupported year: Ramadan 1400 → null (outside evidence coverage)", () => {
+    const r = resolveRegionalHijriReference("pk", { year: 1400, month: 9, day: 4 });
+    expect(r).toBeNull();
+  });
+
+  test("Unsupported month: Muharram 1368 → null (evidence covers Ramadan only)", () => {
+    const r = resolveRegionalHijriReference("pk", { year: 1368, month: 1, day: 4 });
+    expect(r).toBeNull();
+  });
+
+  test("Unknown country → null", () => {
+    const r = resolveRegionalHijriReference("xx", date1368Ram4);
+    expect(r).toBeNull();
+  });
+});
+
+describe("Confirm dateEngine.ts result is unaffected — 4 Ramadan 1368", () => {
+  test("Base engine still gives 29 June 1949", () => {
+    const r = convert("hijri", { year: 1368, month: 9, day: 4 });
+    expect(r.gregorian).toEqual({ year: 1949, month: 6, day: 29 });
+  });
+});
 // Independent JDN helper to verify consecutive-day tests without relying on
 // the engine's own gregorianToJDN (which would circularise the test).
 function gregorianToJDNRef(p: { year: number; month: number; day: number }): number {

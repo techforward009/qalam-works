@@ -20,6 +20,10 @@ import {
   type ConversionResult,
 } from "./utils/dateEngine";
 import { COUNTRY_CALENDARS, COUNTRY_MAP, methodLabel } from "./utils/countryCalendars";
+import {
+  resolveRegionalHijriReference,
+  type RegionalReference,
+} from "./utils/regionalDateEvidence";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const L = {
@@ -51,6 +55,14 @@ const L = {
     countryNone:  "Select a country…",
     countryMethod: "Method",
     countryOfficial: "Official calendar note",
+    regionalRef:  "Regional reference",
+    calculatedResult: "Calculated result",
+    noEvidence:   "No verified regional historical reference is available for this date. The calculated result is unchanged.",
+    confidenceHigh:   "Confidence: High",
+    confidenceMedium: "Confidence: Medium",
+    sourceHistorical: "Primary historical",
+    sourceSecondary:  "Secondary calendar reference",
+    refDisclaimer: "The regional reference does not replace the deterministic calculated result. It reflects documented or published calendar evidence for this country.",
   },
   ur: {
     title:        "تاریخ کنورٹر",
@@ -80,6 +92,14 @@ const L = {
     countryNone:  "ملک منتخب کریں…",
     countryMethod: "طریقہ",
     countryOfficial: "سرکاری تقویم نوٹ",
+    regionalRef:  "علاقائی حوالہ",
+    calculatedResult: "حسابی نتیجہ",
+    noEvidence:   "اس تاریخ کے لیے کوئی تصدیق شدہ علاقائی تاریخی حوالہ دستیاب نہیں۔ حسابی نتیجہ بدستور قائم ہے۔",
+    confidenceHigh:   "اعتماد: زیادہ",
+    confidenceMedium: "اعتماد: درمیانہ",
+    sourceHistorical: "بنیادی تاریخی",
+    sourceSecondary:  "ثانوی کیلنڈر حوالہ",
+    refDisclaimer: "علاقائی حوالہ حسابی نتیجے کی جگہ نہیں لیتا۔ یہ اس ملک کے لیے دستاویز شدہ یا شائع شدہ کیلنڈر شواہد کی عکاسی کرتا ہے۔",
   },
 };
 
@@ -410,7 +430,7 @@ export default function DateConverterContent() {
             })}
           </div>
         )}
-        {/* Regional Context — country selector and Hijri variation notice */}
+        {/* Regional Context — country selector, method note, and evidence panel */}
         <div className="mt-6 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
           <p className={`text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-1 ${naskh}`}>
             {t.countryLabel}
@@ -432,10 +452,30 @@ export default function DateConverterContent() {
             ))}
           </select>
 
-          {/* Country-specific notes rendered when a country is selected */}
+          {/* Country-specific content */}
           {selectedCountry && (() => {
             const country = COUNTRY_MAP.get(selectedCountry);
             if (!country) return null;
+
+            // Resolve regional evidence when source = Hijri and a valid result exists.
+            const hijriInput =
+              calendar === "hijri" && result
+                ? { year: parseInt(year, 10), month: parseInt(month, 10), day: parseInt(day, 10) }
+                : null;
+
+            const evidence: RegionalReference | null =
+              hijriInput ? resolveRegionalHijriReference(selectedCountry, hijriInput) : null;
+
+            function fmtGregorian(g: { year: number; month: number; day: number }) {
+              const months = isUr ? GREGORIAN_MONTHS_UR : GREGORIAN_MONTHS_EN;
+              return `${g.day} ${months[g.month - 1]} ${g.year}`;
+            }
+
+            const confidenceLabel = evidence?.confidence === "high"
+              ? t.confidenceHigh : t.confidenceMedium;
+            const sourceLabel = evidence?.sourceType === "primary-historical"
+              ? t.sourceHistorical : t.sourceSecondary;
+
             return (
               <div className="mt-4 space-y-3">
                 {/* Hijri method badge */}
@@ -448,7 +488,79 @@ export default function DateConverterContent() {
                   </span>
                 </div>
 
-                {/* Hijri variation note */}
+                {/* Regional evidence panel — only when source is Hijri and result exists */}
+                {hijriInput && result && (
+                  evidence ? (
+                    <div className={`rounded-xl border ${
+                      evidence.confidence === "high"
+                        ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40"
+                        : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40"
+                    } px-4 py-4 space-y-3 ${isUr ? "text-right" : ""}`}>
+
+                      {/* Calculated vs Regional side-by-side */}
+                      <div className={`grid grid-cols-2 gap-3`}>
+                        <div className={isUr ? "text-right" : ""}>
+                          <p className={`text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-0.5 ${naskh}`}>
+                            {t.calculatedResult}
+                          </p>
+                          <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                            {fmtGregorian(result.gregorian)}
+                          </p>
+                        </div>
+                        <div className={isUr ? "text-right" : ""}>
+                          <p className={`text-[11px] font-semibold mb-0.5 ${
+                            evidence.confidence === "high"
+                              ? "text-emerald-700 dark:text-emerald-400"
+                              : "text-amber-700 dark:text-amber-400"
+                          } ${naskh}`}>
+                            {t.regionalRef} — {country.name[lang]}
+                          </p>
+                          <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                            {fmtGregorian(evidence.gregorianDate)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Confidence + source type badges */}
+                      <div className={`flex flex-wrap gap-2 ${isUr ? "flex-row-reverse" : ""}`}>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                          evidence.confidence === "high"
+                            ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
+                            : "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300"
+                        } ${naskh}`}>
+                          {confidenceLabel}
+                        </span>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#1A3A2A]/8 dark:bg-white/[0.06] text-[#3a6a4a] dark:text-[#a8c8b0] ${naskh}`}>
+                          {sourceLabel}
+                        </span>
+                      </div>
+
+                      {/* Source label */}
+                      <p className={`text-[12px] font-semibold text-[#3a6a4a] dark:text-[#8faa93] ${naskh}`}>
+                        {evidence.sourceLabel[lang]}
+                      </p>
+
+                      {/* Explanation */}
+                      <p className={`text-[13px] text-[#4a6a4a] dark:text-[#9fbfa8] leading-relaxed ${naskh}`}>
+                        {evidence.explanation[lang]}
+                      </p>
+
+                      {/* Disclaimer */}
+                      <p className={`text-[11px] text-[#4a7a5a]/70 dark:text-[#8faa93]/70 border-t border-[#1A3A2A]/10 pt-2 leading-relaxed ${naskh}`}>
+                        {t.refDisclaimer}
+                      </p>
+                    </div>
+                  ) : (
+                    /* No evidence for this country + date */
+                    <div className={`rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] border border-[#1A3A2A]/10 dark:border-white/[0.08] px-4 py-3 ${isUr ? "text-right" : ""}`}>
+                      <p className={`text-[13px] text-[#4a6a4a] dark:text-[#9fbfa8] leading-relaxed ${naskh}`}>
+                        {t.noEvidence}
+                      </p>
+                    </div>
+                  )
+                )}
+
+                {/* Hijri variation note (always shown) */}
                 <div className={`rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 px-4 py-3 ${isUr ? "text-right" : ""}`}>
                   <p className={`text-[13px] text-amber-800 dark:text-amber-300 leading-relaxed ${naskh}`}>
                     {country.hijriNote[lang]}
