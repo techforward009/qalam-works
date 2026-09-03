@@ -8,14 +8,18 @@ import {
   recordMicrophoneClip,
 } from "./recorder";
 import {
+  DEFAULT_WHISPER_MODEL_KEY,
   MAX_RECORDING_MS,
-  WHISPER_MODEL_ID,
+  TRANSCRIBE_WATCHDOG_MS,
   detectWebGpuAvailable,
   getLoadedPipelineInfo,
   loadWhisperPipeline,
+  resolveWhisperModel,
+  shouldAcceptTranscriptionResult,
   transcribeUrduLocally,
   type LoadedPipelineInfo,
   type ModelStatus,
+  type WhisperModelKey,
 } from "./whisperLocal";
 
 const COPY = {
@@ -40,6 +44,12 @@ const COPY = {
     statusDone: "Transcription complete",
     statusError: "Error",
     preview: "Recorded audio preview",
+    model: "Model",
+    tinyHint: "Tiny — faster / baseline",
+    baseHint: "Base — larger / accuracy test",
+    reloadToSwitch: "Reload page to change loaded model",
+    testHint: "Test passage (do not expect the model to receive this as a prompt): آج موسم بہت اچھا ہے۔ میں صبح جلدی اٹھا اور چائے پی۔ پھر میں نے اپنا کام شروع کیا۔",
+    timeout: "Transcription timed out after 120 seconds. The underlying inference may still be running in the browser.",
   },
   ur: {
     title: "مقامی وسپر ڈکٹیشن (لیبز)",
@@ -62,6 +72,12 @@ const COPY = {
     statusDone: "تحریر مکمل ہوگئی",
     statusError: "خرابی",
     preview: "ریکارڈ شدہ آڈیو سنیں",
+    model: "ماڈل",
+    tinyHint: "Tiny — ہلکا / بنیادی تجربہ",
+    baseHint: "Base — بڑا / درستگی کا تجربہ",
+    reloadToSwitch: "ماڈل بدلنے کے لیے صفحہ دوبارہ لوڈ کریں",
+    testHint: "تجرباتی عبارت (یہ ماڈل کو پرامپٹ کے طور پر نہیں بھیجی جاتی): آج موسم بہت اچھا ہے۔ میں صبح جلدی اٹھا اور چائے پی۔ پھر میں نے اپنا کام شروع کیا۔",
+    timeout: "تحریر 120 سیکنڈ بعد رک گئی۔ براؤزر میں انفرنس اب بھی چل رہی ہو سکتی ہے۔",
   },
 } as const;
 
@@ -100,6 +116,9 @@ export default function LocalDictationClient() {
   const [pcmCount, setPcmCount] = useState<number | null>(null);
   const [pcmRate, setPcmRate] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [modelKey, setModelKey] = useState<WhisperModelKey>(DEFAULT_WHISPER_MODEL_KEY);
+  const [modelLocked, setModelLocked] = useState(false);
+  const [outcome, setOutcome] = useState<"success" | "error" | "timeout" | "">("");
   const [webgpuAvailable] = useState(() => detectWebGpuAvailable());
 
   const samplesRef = useRef<Float32Array | null>(null);
@@ -108,6 +127,9 @@ export default function LocalDictationClient() {
   const mountedRef = useRef(true);
   const stopReasonRef = useRef<"user" | "unmount" | null>(null);
   const previewUrlRef = useRef("");
+  const runIdRef = useRef(0);
+  const timedOutRef = useRef(false);
+  const watchdogRef = useRef<number | null>(null);
 
   const revokePreview = () => {
     if (previewUrlRef.current) {
@@ -134,6 +156,12 @@ export default function LocalDictationClient() {
     return () => {
       mountedRef.current = false;
       stopReasonRef.current = "unmount";
+      runIdRef.current += 1;
+      timedOutRef.current = true;
+      if (watchdogRef.current != null) {
+        window.clearTimeout(watchdogRef.current);
+        watchdogRef.current = null;
+      }
       if (previewUrlRef.current) {
         try { URL.revokeObjectURL(previewUrlRef.current); } catch { /* ignore */ }
         previewUrlRef.current = "";
@@ -160,9 +188,10 @@ export default function LocalDictationClient() {
         const pct = typeof report.progress === "number" ? ` ${Math.round(report.progress)}%` : "";
         const file = report.file ? ` ${report.file}` : "";
         setProgress(`${report.status}${file}${pct}`.trim());
-      });
+      }, modelKey);
       if (!mountedRef.current) return;
       setInfo(loaded);
+      setModelLocked(true);
       setProgress("");
       setBusyStatus("ready", "ready");
     } catch (err) {
@@ -170,7 +199,7 @@ export default function LocalDictationClient() {
       setError(err instanceof Error ? err.message : String(err));
       setBusyStatus("error", "error");
     }
-  }, []);
+  }, [modelKey]);
 
   const startRecord = useCallback(async () => {
     if (busyRef.current) return;
@@ -190,6 +219,14 @@ export default function LocalDictationClient() {
     setPcmRate(null);
     samplesRef.current = null;
     revokePreview();
+    runIdRef.current += 1;
+    timedOutRef.current = false;
+    setOutcome("");
+    setTranscribeMs(null);
+    if (watchdogRef.current != null) {
+      window.clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
     stopReasonRef.current = null;
     const abort = new AbortController();
     abortRef.current = abort;
@@ -252,20 +289,47 @@ export default function LocalDictationClient() {
       return;
     }
     setError("");
+    setOutcome("");
     setBusyStatus("transcribing", "transcribing");
     const started = performance.now();
-    try {
-      const text = await transcribeUrduLocally(samplesRef.current);
+    const runId = runIdRef.current + 1;
+    runIdRef.current = runId;
+    timedOutRef.current = false;
+    if (watchdogRef.current != null) window.clearTimeout(watchdogRef.current);
+    watchdogRef.current = window.setTimeout(() => {
+      if (runIdRef.current !== runId) return;
+      timedOutRef.current = true;
       if (!mountedRef.current) return;
       setTranscribeMs(Math.round(performance.now() - started));
+      setOutcome("timeout");
+      setError(t.timeout);
+      setBusyStatus("error", "error");
+    }, TRANSCRIBE_WATCHDOG_MS);
+    try {
+      const text = await transcribeUrduLocally(samplesRef.current);
+      if (!shouldAcceptTranscriptionResult(runId, runIdRef.current, timedOutRef.current)) return;
+      if (!mountedRef.current) return;
+      if (watchdogRef.current != null) {
+        window.clearTimeout(watchdogRef.current);
+        watchdogRef.current = null;
+      }
+      setTranscribeMs(Math.round(performance.now() - started));
       setTranscript(text);
+      setOutcome("success");
       setBusyStatus("ready", "done");
     } catch (err) {
+      if (!shouldAcceptTranscriptionResult(runId, runIdRef.current, timedOutRef.current)) return;
       if (!mountedRef.current) return;
+      if (watchdogRef.current != null) {
+        window.clearTimeout(watchdogRef.current);
+        watchdogRef.current = null;
+      }
+      setTranscribeMs(Math.round(performance.now() - started));
+      setOutcome("error");
       setError(err instanceof Error ? err.message : String(err));
       setBusyStatus("error", "error");
     }
-  }, [info]);
+  }, [info, t.timeout]);
 
   const clearAll = useCallback(() => {
     if (status === "recording" || flow === "recording") {
@@ -273,6 +337,13 @@ export default function LocalDictationClient() {
     }
     samplesRef.current = null;
     revokePreview();
+    runIdRef.current += 1;
+    timedOutRef.current = true;
+    if (watchdogRef.current != null) {
+      window.clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
+    setOutcome("");
     setTranscript("");
     setAudioDurationSec(null);
     setTranscribeMs(null);
@@ -315,7 +386,36 @@ export default function LocalDictationClient() {
       <h1 className={`text-2xl text-[#1A3A2A] dark:text-white ${heading}`}>{t.title}</h1>
       <p className="mt-2 text-sm text-gray-700 dark:text-[#e8ede9]">{t.intro}</p>
       <p className="mt-2 text-sm text-gray-700 dark:text-[#e8ede9]">{t.privacy}</p>
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-6">
+        <p className="mb-1 text-sm font-medium">{t.model}</p>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <label className="inline-flex items-center gap-1">
+            <input
+              type="radio"
+              name="whisper-model"
+              value="tiny"
+              checked={modelKey === "tiny"}
+              disabled={modelLocked || busy}
+              onChange={() => setModelKey("tiny")}
+            />
+            {t.tinyHint}
+          </label>
+          <label className="inline-flex items-center gap-1">
+            <input
+              type="radio"
+              name="whisper-model"
+              value="base"
+              checked={modelKey === "base"}
+              disabled={modelLocked || busy}
+              onChange={() => setModelKey("base")}
+            />
+            {t.baseHint}
+          </label>
+        </div>
+        {modelLocked ? <p className="mt-1 text-xs text-gray-600">{t.reloadToSwitch}</p> : null}
+        <p className="mt-2 text-xs text-gray-600">{t.testHint}</p>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={loadModel} disabled={busy} className={btnPrimary}>{t.load}</button>
         <button type="button" onClick={startRecord} disabled={!modelReady || busy} className={btnOutline}>{t.record}</button>
         <button type="button" onClick={stopRecord} disabled={flow !== "recording"} className={btnOutline}>{t.stop}</button>
@@ -342,8 +442,10 @@ export default function LocalDictationClient() {
       <h2 className={`mt-6 text-lg ${heading}`}>{t.diagnostics}</h2>
       <dl className="mt-2 grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
         <div>Status: {status}</div>
-        <div>Model: {WHISPER_MODEL_ID}</div>
-        <div>dtype: {info?.dtype ?? "—"}</div>
+        <div>Selected model: {resolveWhisperModel(modelKey).label}</div>
+        <div>Model ID: {info?.modelId ?? resolveWhisperModel(modelKey).id}</div>
+        <div>Requested dtype: {info?.requestedDtype ?? "q8"}</div>
+        <div>Actual dtype: {info?.dtype ?? "—"}</div>
         <div>Backend used: {info?.backend ?? "—"}</div>
         <div>WebGPU available: {webgpuAvailable ? "yes" : "no"}</div>
         <div>WebGPU init error: {info?.webgpuError ?? "—"}</div>
@@ -357,7 +459,9 @@ export default function LocalDictationClient() {
         <div>Decoded duration: {audioDurationSec != null ? `${audioDurationSec} s` : "—"}</div>
         <div>PCM sample count: {pcmCount != null ? pcmCount : "—"}</div>
         <div>Target sample rate: {pcmRate != null ? pcmRate : 16000}</div>
-        <div>Transcription time: {transcribeMs != null ? `${transcribeMs} ms` : "—"}</div>
+        <div>Transcription elapsed: {transcribeMs != null ? `${transcribeMs} ms` : "—"}</div>
+        <div>Transcription outcome: {outcome || "—"}</div>
+        <div>Watchdog threshold: {TRANSCRIBE_WATCHDOG_MS} ms</div>
       </dl>
     </main>
   );

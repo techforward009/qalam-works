@@ -1,6 +1,32 @@
-export const WHISPER_MODEL_ID = "onnx-community/whisper-tiny";
 export const MAX_RECORDING_MS = 30_000;
 export const TARGET_SAMPLE_RATE = 16_000;
+export const TRANSCRIBE_WATCHDOG_MS = 120_000;
+export const REQUESTED_DTYPE = "q8";
+export const URDU_TRANSCRIBE_OPTIONS = {
+  language: "urdu",
+  task: "transcribe",
+} as const;
+
+export type WhisperModelKey = "tiny" | "base";
+
+export const WHISPER_MODELS = {
+  tiny: {
+    key: "tiny" as const,
+    id: "onnx-community/whisper-tiny",
+    label: "Whisper Tiny",
+  },
+  base: {
+    key: "base" as const,
+    id: "onnx-community/whisper-base",
+    label: "Whisper Base",
+  },
+};
+
+export const DEFAULT_WHISPER_MODEL_KEY: WhisperModelKey = "tiny";
+export const WHISPER_MODEL_ID = WHISPER_MODELS.tiny.id;
+
+export const MODEL_SWITCH_MESSAGE =
+  "A different Whisper model is already loaded. Reload the page before changing models.";
 
 export type WhisperBackend = "webgpu" | "wasm";
 export type ModelStatus =
@@ -18,7 +44,9 @@ export interface LoadProgress {
 }
 
 export interface LoadedPipelineInfo {
+  modelKey: WhisperModelKey;
   modelId: string;
+  requestedDtype: string;
   dtype: string;
   backend: WhisperBackend;
   webgpuAvailable: boolean;
@@ -33,6 +61,10 @@ type AsrPipeline = (audio: Float32Array, options?: Record<string, unknown>) => P
 let pipelineRef: AsrPipeline | null = null;
 let loadedInfo: LoadedPipelineInfo | null = null;
 let loadInFlight: Promise<LoadedPipelineInfo> | null = null;
+
+export function resolveWhisperModel(key: WhisperModelKey = DEFAULT_WHISPER_MODEL_KEY) {
+  return WHISPER_MODELS[key] ?? WHISPER_MODELS.tiny;
+}
 
 export function detectWebGpuAvailable(): boolean {
   return typeof navigator !== "undefined" && "gpu" in navigator && navigator.gpu != null;
@@ -51,6 +83,14 @@ export function clampRecordingMs(ms: number, max = MAX_RECORDING_MS): number {
   return Math.min(ms, max);
 }
 
+export function shouldAcceptTranscriptionResult(
+  startedRunId: number,
+  currentRunId: number,
+  timedOut: boolean,
+): boolean {
+  return currentRunId === startedRunId && !timedOut;
+}
+
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message || err.name;
   return String(err);
@@ -58,8 +98,14 @@ function formatError(err: unknown): string {
 
 export async function loadWhisperPipeline(
   onProgress?: (info: LoadProgress) => void,
+  modelKey: WhisperModelKey = DEFAULT_WHISPER_MODEL_KEY,
 ): Promise<LoadedPipelineInfo> {
+  const selected = resolveWhisperModel(modelKey);
+
   if (loadedInfo && pipelineRef) {
+    if (loadedInfo.modelKey !== selected.key) {
+      throw new Error(MODEL_SWITCH_MESSAGE);
+    }
     return { ...loadedInfo, reusedInMemory: true };
   }
   if (loadInFlight) return loadInFlight;
@@ -78,13 +124,17 @@ export async function loadWhisperPipeline(
     let availableDtypes: string[] = [];
     try {
       if (typeof registry.get_available_dtypes === "function") {
-        availableDtypes = await registry.get_available_dtypes(WHISPER_MODEL_ID);
+        availableDtypes = await registry.get_available_dtypes(selected.id);
       }
     } catch {
       availableDtypes = [];
     }
     if (availableDtypes.length === 0) availableDtypes = ["q8", "int8", "fp32"];
-    let dtype = choosePreferredDtype(availableDtypes);
+
+    const requestedDtype = REQUESTED_DTYPE;
+    let dtype = availableDtypes.includes(requestedDtype)
+      ? requestedDtype
+      : choosePreferredDtype(availableDtypes);
 
     const progress_callback = (report: { status?: string; file?: string; progress?: number }) => {
       onProgress?.({
@@ -95,7 +145,7 @@ export async function loadWhisperPipeline(
     };
 
     async function createPipeline(device: WhisperBackend, useDtype: string): Promise<AsrPipeline> {
-      return pipeline("automatic-speech-recognition", WHISPER_MODEL_ID, {
+      return pipeline("automatic-speech-recognition", selected.id, {
         device,
         dtype: useDtype as "q8" | "int8" | "uint8" | "q4" | "fp16" | "fp32",
         progress_callback,
@@ -131,7 +181,9 @@ export async function loadWhisperPipeline(
     }
 
     loadedInfo = {
-      modelId: WHISPER_MODEL_ID,
+      modelKey: selected.key,
+      modelId: selected.id,
+      requestedDtype,
       dtype,
       backend,
       webgpuAvailable,
@@ -156,6 +208,12 @@ export function getLoadedPipelineInfo(): LoadedPipelineInfo | null {
 
 export async function transcribeUrduLocally(samples: Float32Array): Promise<string> {
   if (!pipelineRef) throw new Error("Model is not loaded.");
-  const result = await pipelineRef(samples, { language: "urdu", task: "transcribe" });
+  const result = await pipelineRef(samples, { ...URDU_TRANSCRIBE_OPTIONS });
   return (result?.text ?? "").trim();
+}
+
+export function resetWhisperPipelineForTests(): void {
+  pipelineRef = null;
+  loadedInfo = null;
+  loadInFlight = null;
 }
