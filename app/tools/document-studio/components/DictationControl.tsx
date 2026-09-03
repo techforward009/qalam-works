@@ -1,89 +1,100 @@
 "use client";
 
 /**
- * DictationControl — Phase 1 Voice Dictation MVP
+ * DictationControl — Phase 1 Voice Dictation (zero-cost browser implementation)
  *
- * Press-to-record / stop / transcribe workflow.
- * No realtime streaming. No audio storage. No auto-start.
+ * Uses the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition).
+ * No audio is sent to Qalam Works servers. No API key required.
+ * The server route at /api/document-studio/transcribe is retained for a future
+ * optional high-accuracy provider but is NOT called in this implementation.
  *
- * Insertion strategy: captures the editor selection position when recording
- * BEGINS. When transcription returns, bounds-checks the saved position and
- * inserts at that location. Paragraph-break sequences create new ProseMirror
- * paragraph nodes with per-block direction detection.
+ * Workflow:
+ *   User clicks mic → recognition.start() → browser asks mic permission →
+ *   onresult accumulates final speech segments →
+ *   User clicks Stop (or timeout) → recognition.stop() →
+ *   onend fires → processVoiceTranscript() → insertContentAt(savedPos)
  *
- * Privacy: first-use tooltip informs user that audio is sent for transcription.
+ * Insertion strategy (unchanged from original):
+ *   Cursor position captured synchronously when dictation starts.
+ *   Bounds-checked and inserted via editor.chain().insertContentAt() on completion.
  */
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { Editor } from "@tiptap/react";
 import { trackEvent } from "../../../lib/analytics";
-import { processVoiceTranscript, splitTranscriptIntoSegments, type DictationLanguage } from "../utils/voiceDictation";
+import {
+  processVoiceTranscript,
+  splitTranscriptIntoSegments,
+  type DictationLanguage,
+} from "../utils/voiceDictation";
 import { detectBlockDirection } from "../utils/plainTextToDocNode";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type DictationState = "idle" | "requesting" | "recording" | "transcribing" | "error";
+type DictationState = "idle" | "recording" | "error";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Browser capability detection ─────────────────────────────────────────────
 
-/** Maximum recording length in milliseconds. */
-const MAX_RECORDING_MS = 2 * 60 * 1000; // 2 minutes
-
-/** Preferred MIME types in order of preference. */
-const PREFERRED_MIME_TYPES = [
-  "audio/webm;codecs=opus",
-  "audio/webm",
-  "audio/ogg;codecs=opus",
-  "audio/ogg",
-  "audio/mp4",
-];
-
-function getSupportedMimeType(): string | null {
-  if (typeof window === "undefined" || typeof MediaRecorder === "undefined") return null;
-  for (const t of PREFERRED_MIME_TYPES) {
-    if (MediaRecorder.isTypeSupported(t)) return t;
-  }
-  return null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSpeechRecognitionCtor(): (new () => any) | null {
+  if (typeof window === "undefined") return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
+
+// ── Language → BCP-47 map ─────────────────────────────────────────────────────
+//
+// Web Speech API only accepts one language at a time; "mixed" mode is inherently
+// limited. We use ur-PK for mixed and surface this limitation to the user.
+
+const SPEECH_LANG: Record<DictationLanguage, string> = {
+  ur:    "ur-PK",
+  en:    "en-US",
+  mixed: "ur-PK", // browser limitation — labeled "experimental" in the UI
+};
+
+/** Maximum continuous recognition duration in ms before auto-stop. */
+const MAX_DICTATION_MS = 2 * 60 * 1000; // 2 minutes
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 
 const LABELS = {
   en: {
-    dictate:      "Dictate",
-    listening:    "Listening…",
-    transcribing: "Transcribing…",
-    stop:         "Stop",
-    errorLabel:   "Mic error",
-    dismiss:      "Dismiss",
-    langLabel:    "Dictation language",
-    langUr:       "Urdu",
-    langEn:       "English",
-    langMixed:    "Urdu + English",
-    privacyNote:  "Audio is sent to a transcription service for processing. No audio is stored.",
-    unsupported:  "Voice dictation is not supported in this browser.",
-    permDenied:   "Microphone permission denied. Please allow microphone access and try again.",
-    emptyResult:  "No speech detected. Please try again.",
-    serverError:  "Transcription failed. Please try again.",
-    tooLong:      "Recording limit reached. Processing now…",
+    dictate:          "Dictate",
+    listening:        "Listening…",
+    stop:             "Stop",
+    errorLabel:       "Mic error",
+    dismiss:          "Dismiss",
+    langLabel:        "Dictation language",
+    langUr:           "Urdu",
+    langEn:           "English",
+    langMixed:        "Urdu + English ⚠",
+    speechNote:       "Qalam Works does not receive or store your audio. Speech recognition is handled by your browser and may use the browser provider's online speech service.",
+    mixedNote:        "Urdu + English mode uses Urdu recognition (ur-PK). English words may be recognized with variable accuracy — this is a browser limitation.",
+    unsupported:      "Voice dictation requires a browser with Web Speech API support (Chrome, Edge, or Safari).",
+    permDenied:       "Microphone permission denied. Please allow microphone access and try again.",
+    emptyResult:      "No speech detected. Please try again.",
+    recognitionError: "Speech recognition failed. Please try again.",
+    tooLong:          "Maximum dictation time reached. Inserting now…",
   },
   ur: {
-    dictate:      "بولیں",
-    listening:    "سن رہا ہے…",
-    transcribing: "تحریر ہو رہا ہے…",
-    stop:         "رکیں",
-    errorLabel:   "مائک کی خرابی",
-    dismiss:      "بند کریں",
-    langLabel:    "ڈکٹیشن کی زبان",
-    langUr:       "اردو",
-    langEn:       "انگریزی",
-    langMixed:    "اردو + انگریزی",
-    privacyNote:  "آڈیو ٹرانسکرپشن کے لیے سرور کو بھیجی جاتی ہے۔ کوئی آڈیو محفوظ نہیں ہوتی۔",
-    unsupported:  "یہ براؤزر ڈکٹیشن کی سہولت نہیں دیتا۔",
-    permDenied:   "مائک کی اجازت نہیں ملی۔ اجازت دے کر دوبارہ کوشش کریں۔",
-    emptyResult:  "کوئی آواز نہیں پکڑی گئی۔ دوبارہ کوشش کریں۔",
-    serverError:  "تحریر ناکام ہوئی۔ دوبارہ کوشش کریں۔",
-    tooLong:      "ریکارڈنگ کی حد پوری ہو گئی۔ اب پروسیس ہو رہا ہے…",
+    dictate:          "بولیں",
+    listening:        "سن رہا ہے…",
+    stop:             "رکیں",
+    errorLabel:       "مائک کی خرابی",
+    dismiss:          "بند کریں",
+    langLabel:        "ڈکٹیشن کی زبان",
+    langUr:           "اردو",
+    langEn:           "انگریزی",
+    langMixed:        "اردو + انگریزی ⚠",
+    speechNote:       "قلم ورکس آپ کی آڈیو وصول یا محفوظ نہیں کرتا۔ آواز کی شناخت آپ کا براؤزر کرتا ہے اور اس کے لیے براؤزر فراہم کنندہ کی آن لائن سروس استعمال ہو سکتی ہے۔",
+    mixedNote:        "اردو + انگریزی موڈ اردو پہچان (ur-PK) استعمال کرتا ہے۔ انگریزی الفاظ کی پہچان متغیر ہو سکتی ہے — یہ براؤزر کی حد ہے۔",
+    unsupported:      "اس براؤزر میں Web Speech API نہیں ہے۔ Chrome، Edge یا Safari استعمال کریں۔",
+    permDenied:       "مائک کی اجازت نہیں ملی۔ اجازت دے کر دوبارہ کوشش کریں۔",
+    emptyResult:      "کوئی آواز نہیں پکڑی گئی۔ دوبارہ کوشش کریں۔",
+    recognitionError: "آواز کی پہچان ناکام ہوئی۔ دوبارہ کوشش کریں۔",
+    tooLong:          "زیادہ سے زیادہ وقت ختم ہو گیا۔ اب متن شامل کیا جا رہا ہے…",
   },
 } as const;
 
@@ -91,7 +102,6 @@ const LABELS = {
 
 export interface DictationControlProps {
   editor: Editor | null;
-  /** Current document direction (used as fallback for new paragraphs). */
   docDir: "rtl" | "ltr";
   isUr: boolean;
 }
@@ -103,38 +113,38 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
   const t = LABELS[lang];
   const naskh = isUr ? "font-naskh" : "";
 
-  const [state,        setState]       = useState<DictationState>("idle");
-  const [errorMsg,     setErrorMsg]    = useState<string>("");
-  const [dictLang,     setDictLang]    = useState<DictationLanguage>("mixed");
-  const [showPrivacy,  setShowPrivacy] = useState(false);
+  const [state,       setState]      = useState<DictationState>("idle");
+  const [errorMsg,    setErrorMsg]   = useState<string>("");
+  const [dictLang,    setDictLang]   = useState<DictationLanguage>("mixed");
+  const [showTooltip, setShowTooltip] = useState(false);
 
-  // Refs that survive across renders/state transitions
-  const mediaStreamRef    = useRef<MediaStream | null>(null);
-  const recorderRef       = useRef<MediaRecorder | null>(null);
-  const chunksRef         = useRef<BlobPart[]>([]);
-  const mimeTypeRef       = useRef<string>("audio/webm");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef    = useRef<any>(null);
+  const transcriptBufRef  = useRef<string>("");
   const maxTimerRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** ProseMirror anchor position captured when recording begins. */
+  /** ProseMirror anchor position captured when dictation starts. */
   const savedPosRef       = useRef<number | null>(null);
 
-  // ── Cleanup helper ────────────────────────────────────────────────────────
+  // ── Cleanup ───────────────────────────────────────────────────────────────
 
-  const cleanupStream = useCallback(() => {
+  const cleanupRecognition = useCallback(() => {
     if (maxTimerRef.current) {
       clearTimeout(maxTimerRef.current);
       maxTimerRef.current = null;
     }
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(t => t.stop());
-      mediaStreamRef.current = null;
+    if (recognitionRef.current) {
+      recognitionRef.current.onresult  = null;
+      recognitionRef.current.onend     = null;
+      recognitionRef.current.onerror   = null;
+      try { recognitionRef.current.abort(); } catch { /* ignore */ }
+      recognitionRef.current = null;
     }
-    recorderRef.current = null;
-    chunksRef.current   = [];
+    transcriptBufRef.current = "";
   }, []);
 
-  useEffect(() => () => cleanupStream(), [cleanupStream]);
+  useEffect(() => () => cleanupRecognition(), [cleanupRecognition]);
 
-  // ── Insert transcript at saved cursor ─────────────────────────────────────
+  // ── Insert at saved cursor (unchanged from original) ─────────────────────
 
   const insertAtSavedPosition = useCallback(
     (rawTranscript: string) => {
@@ -144,33 +154,26 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       if (!processed.trim()) {
         setErrorMsg(t.emptyResult);
         setState("error");
-        trackEvent("tool_error", { tool: "document_studio", ...(dictLang !== "mixed" ? { mode: dictLang } : {}) });
+        trackEvent("tool_error", {
+          tool: "document_studio",
+          ...(dictLang !== "mixed" ? { mode: dictLang } : {}),
+        });
         return;
       }
 
       const segments = splitTranscriptIntoSegments(processed);
       const docSize  = editor.state.doc.content.size;
-      // Bounds-check the saved position; fall back to current anchor.
       const insertPos = (() => {
         const s = savedPosRef.current;
         if (s !== null && s >= 0 && s <= docSize) return s;
         return editor.state.selection.anchor;
       })();
 
-      // Build TipTap insertable content from segments.
-      // Single-paragraph: plain string (TipTap handles inline).
-      // Multi-paragraph: array of paragraph nodes with per-block dir.
       if (segments.length === 1 && !segments[0].isParagraphBreak) {
-        editor
-          .chain()
-          .focus()
-          .insertContentAt(insertPos, segments[0].text)
-          .run();
+        editor.chain().focus().insertContentAt(insertPos, segments[0].text).run();
       } else {
-        // Build paragraph nodes
-        const nodes = [];
+        const nodes: object[] = [];
         let currentText = "";
-
         for (const seg of segments) {
           if (seg.isParagraphBreak) {
             if (currentText) {
@@ -192,169 +195,154 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
             content: [{ type: "text", text: currentText }],
           });
         }
-
         if (nodes.length > 0) {
           editor.chain().focus().insertContentAt(insertPos, nodes).run();
         }
       }
 
       savedPosRef.current = null;
-      trackEvent("tool_process", { tool: "document_studio", ...(dictLang !== "mixed" ? { mode: dictLang } : {}) });
+      trackEvent("tool_process", {
+        tool: "document_studio",
+        ...(dictLang !== "mixed" ? { mode: dictLang } : {}),
+      });
     },
     [editor, dictLang, docDir, t]
   );
 
-  // ── Transcription ─────────────────────────────────────────────────────────
+  // ── Stop dictation ────────────────────────────────────────────────────────
 
-  const transcribe = useCallback(
-    async (blob: Blob, mimeType: string) => {
-      setState("transcribing");
-
-      const form = new FormData();
-      form.append("audio", blob, `recording.${mimeType.split("/")[1]?.split(";")[0] ?? "webm"}`);
-      form.append("language", dictLang === "mixed" ? "mixed" : dictLang);
-
-      try {
-        const resp = await fetch("/api/document-studio/transcribe", {
-          method: "POST",
-          body: form,
-        });
-        const data = await resp.json();
-
-        if (!resp.ok || typeof data.text !== "string") {
-          throw new Error(data.error ?? "Transcription failed");
-        }
-
-        insertAtSavedPosition(data.text);
-        setState("idle");
-        trackEvent("tool_copy", { tool: "document_studio" }); // dictation_completed maps to tool_copy per analytics schema
-      } catch (e) {
-        console.error("[DictationControl] transcription error:", (e as Error).message);
-        setErrorMsg(t.serverError);
-        setState("error");
-        trackEvent("tool_error", { tool: "document_studio", ...(dictLang !== "mixed" ? { mode: dictLang } : {}) });
-      }
-    },
-    [dictLang, insertAtSavedPosition, t]
-  );
-
-  // ── Stop recording ────────────────────────────────────────────────────────
-
-  const stopRecording = useCallback(() => {
-    const recorder = recorderRef.current;
-    if (!recorder || recorder.state === "inactive") return;
-    recorder.stop(); // triggers onstop → transcription
+  const stopDictation = useCallback(() => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* ignore */ }
+    }
+    // onend will fire and handle insertion + state reset
   }, []);
 
-  // ── Start recording ───────────────────────────────────────────────────────
+  // ── Start dictation ───────────────────────────────────────────────────────
 
-  const startRecording = useCallback(async () => {
+  const startDictation = useCallback(() => {
     if (!editor) return;
 
-    // ── Check browser support ─────────────────────────────────────────────
-    if (typeof navigator === "undefined" ||
-        typeof navigator.mediaDevices?.getUserMedia !== "function") {
+    // ── Capability check ──────────────────────────────────────────────────
+    const SpeechRecognitionCtor = getSpeechRecognitionCtor();
+    if (!SpeechRecognitionCtor) {
       setErrorMsg(t.unsupported);
       setState("error");
+      trackEvent("tool_error", { tool: "document_studio" });
       return;
     }
-    const mimeType = getSupportedMimeType();
-    if (!mimeType) {
-      setErrorMsg(t.unsupported);
-      setState("error");
-      return;
-    }
-    mimeTypeRef.current = mimeType;
 
-    // Capture cursor before anything async changes focus
+    // Capture cursor position synchronously before anything can shift focus.
     savedPosRef.current = editor.state.selection.anchor;
+    transcriptBufRef.current = "";
 
-    setState("requesting");
-    trackEvent("tool_open", { tool: "document_studio" }); // dictation_started
+    trackEvent("tool_open", { tool: "document_studio" });
 
-    // ── Request microphone ────────────────────────────────────────────────
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    } catch (e) {
-      const name = (e as { name?: string }).name ?? "";
-      setErrorMsg(name === "NotAllowedError" || name === "PermissionDeniedError"
-        ? t.permDenied
-        : t.unsupported);
-      setState("error");
+    // ── Create and configure SpeechRecognition ────────────────────────────
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognition: any = new SpeechRecognitionCtor();
+    recognitionRef.current = recognition;
+
+    recognition.lang            = SPEECH_LANG[dictLang];
+    recognition.continuous      = true;  // keep listening until stop()
+    recognition.interimResults  = false; // final segments only — more accurate
+
+    // Accumulate all final speech segments into the buffer.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          const seg = event.results[i][0].transcript ?? "";
+          if (seg.trim()) {
+            transcriptBufRef.current +=
+              (transcriptBufRef.current ? " " : "") + seg.trim();
+          }
+        }
+      }
+    };
+
+    // onend fires after stop() or on browser-side silence timeout.
+    recognition.onend = () => {
+      if (maxTimerRef.current) {
+        clearTimeout(maxTimerRef.current);
+        maxTimerRef.current = null;
+      }
+      recognitionRef.current = null;
+      const raw = transcriptBufRef.current;
+      transcriptBufRef.current = "";
+      setState("idle");
+      if (raw.trim()) {
+        insertAtSavedPosition(raw);
+      }
+      // If raw is empty, we silently no-op (onend from abort on error
+      // already set the error state before calling abort).
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onerror = (event: any) => {
+      const code = event.error;
+      let msg: string = t.recognitionError;
+      if (code === "not-allowed" || code === "service-not-allowed") {
+        msg = t.permDenied;
+      } else if (code === "no-speech") {
+        msg = t.emptyResult;
+      }
+      // Nullify handlers to prevent onend from trying to insert empty buffer
+      recognition.onresult = null;
+      recognition.onend = null;
+      cleanupRecognition();
       savedPosRef.current = null;
-      trackEvent("tool_error", { tool: "document_studio", ...(dictLang !== "mixed" ? { mode: dictLang } : {}) });
-      return;
-    }
-
-    mediaStreamRef.current = stream;
-    chunksRef.current = [];
-
-    // ── Create MediaRecorder ──────────────────────────────────────────────
-    const recorder = new MediaRecorder(stream, { mimeType });
-    recorderRef.current = recorder;
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
-
-    recorder.onstop = () => {
-      cleanupStream();
-      const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
-      chunksRef.current = [];
-      if (blob.size === 0) {
-        setErrorMsg(t.emptyResult);
-        setState("error");
-        return;
-      }
-      transcribe(blob, mimeTypeRef.current);
-    };
-
-    recorder.onerror = () => {
-      cleanupStream();
-      setErrorMsg(t.serverError);
+      setErrorMsg(msg);
       setState("error");
-      trackEvent("tool_error", { tool: "document_studio", ...(dictLang !== "mixed" ? { mode: dictLang } : {}) });
+      trackEvent("tool_error", {
+        tool: "document_studio",
+        ...(dictLang !== "mixed" ? { mode: dictLang } : {}),
+      });
     };
 
-    // ── Max duration enforcer ─────────────────────────────────────────────
+    // Max duration guard — stop after 2 minutes
     maxTimerRef.current = setTimeout(() => {
-      if (recorderRef.current?.state === "recording") {
-        recorderRef.current.stop();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
       }
-    }, MAX_RECORDING_MS);
+    }, MAX_DICTATION_MS);
 
-    recorder.start(1000); // collect chunks every second
-    setState("recording");
-  }, [editor, cleanupStream, transcribe, t, dictLang]);
+    try {
+      recognition.start();
+      setState("recording");
+    } catch {
+      cleanupRecognition();
+      savedPosRef.current = null;
+      setErrorMsg(t.recognitionError);
+      setState("error");
+    }
+  }, [editor, dictLang, insertAtSavedPosition, cleanupRecognition, t]);
 
   // ── Dismiss error ─────────────────────────────────────────────────────────
-  const dismissError = () => {
+
+  const dismissError = useCallback(() => {
     setErrorMsg("");
     setState("idle");
-    cleanupStream();
-  };
+    cleanupRecognition();
+    savedPosRef.current = null;
+  }, [cleanupRecognition]);
 
-  // ── Derived ───────────────────────────────────────────────────────────────
-  const isRecording     = state === "recording";
-  const isBusy          = state !== "idle" && state !== "error";
-  const btnLabel = state === "recording"
-    ? t.stop
-    : state === "requesting"
-    ? "…"
-    : state === "transcribing"
-    ? t.transcribing
-    : t.dictate;
+  // ── Derived UI state ──────────────────────────────────────────────────────
 
-  const btnTitle = showPrivacy
-    ? ""
-    : `${t.dictate} — ${t.privacyNote}`;
+  const isRecording = state === "recording";
+
+  const btnLabel =
+    state === "recording" ? t.stop : t.dictate;
+
+  const tooltipText =
+    dictLang === "mixed" ? t.mixedNote : t.speechNote;
 
   // ── Render ────────────────────────────────────────────────────────────────
-  return (
-    <div className="flex items-center gap-1" dir="ltr">
 
-      {/* Dictation language selector — only when idle */}
+  return (
+    <div className="relative flex items-center gap-1" dir="ltr">
+
+      {/* Language selector — hidden while recording */}
       {state === "idle" && (
         <select
           value={dictLang}
@@ -368,32 +356,27 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         </select>
       )}
 
-      {/* Primary mic button */}
+      {/* Mic button */}
       <button
         type="button"
-        onClick={isRecording ? stopRecording : state === "idle" ? startRecording : undefined}
-        disabled={isBusy && !isRecording}
-        title={btnTitle}
-        onMouseEnter={() => setShowPrivacy(true)}
-        onMouseLeave={() => setShowPrivacy(false)}
+        onClick={isRecording ? stopDictation : state === "idle" ? startDictation : undefined}
+        disabled={state !== "idle" && !isRecording}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        aria-label={btnLabel}
         className={`h-[38px] px-3 rounded-md text-sm font-semibold border transition-all flex items-center gap-1.5 ${
           isRecording
             ? "bg-red-50 text-red-700 border-red-300 hover:border-red-400 animate-pulse"
-            : state === "transcribing" || state === "requesting"
-            ? "bg-amber-50 text-amber-700 border-amber-200 cursor-wait"
             : state === "error"
             ? "bg-red-50 text-red-600 border-red-200"
             : "bg-white text-gray-700 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
         } ${naskh}`}
       >
-        {/* Icon */}
-        <span aria-hidden="true">
-          {isRecording ? "⏹" : state === "transcribing" ? "⏳" : "🎙"}
-        </span>
-        <span>{btnLabel}</span>
+        <span aria-hidden="true">{isRecording ? "⏹" : "🎙"}</span>
+        <span>{isRecording ? t.stop : t.dictate}</span>
       </button>
 
-      {/* Error state */}
+      {/* Error message */}
       {state === "error" && (
         <div className={`flex items-center gap-1.5 text-[12px] text-red-600 max-w-[220px] ${naskh}`}>
           <span>{errorMsg || t.errorLabel}</span>
@@ -407,13 +390,13 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         </div>
       )}
 
-      {/* Privacy tooltip on hover (first-use awareness) */}
-      {showPrivacy && state === "idle" && (
+      {/* Tooltip — speech note or mixed-mode warning */}
+      {showTooltip && state === "idle" && (
         <div
-          className={`absolute mt-12 z-50 bg-[#1A3A2A] text-white text-[11px] rounded-lg px-3 py-2 max-w-[260px] leading-snug pointer-events-none shadow-lg ${naskh}`}
           role="tooltip"
+          className={`absolute top-full mt-1 z-50 bg-[#1A3A2A] text-white text-[11px] rounded-lg px-3 py-2 max-w-[280px] leading-snug pointer-events-none shadow-lg ${naskh}`}
         >
-          {t.privacyNote}
+          {tooltipText}
         </div>
       )}
     </div>
