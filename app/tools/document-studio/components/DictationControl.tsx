@@ -13,15 +13,40 @@
  *
  * Camera-access policy is enforced at the HTTP header level
  * (Permissions-Policy: camera=(), microphone=(self) in next.config.ts).
- * This component adds no further camera handling.
  *
- * Preserved from original:
- *   - Urdu / English / Mixed language modes and mixed-mode warning
- *   - saved TipTap cursor insertion (position captured at dictation start)
- *   - deterministic voiceDictation.ts punctuation processing
- *   - 2-minute max duration guard
- *   - permission-denied recovery UI (error kind + inline instructions)
- *   - RTL / LTR direction detection via detectBlockDirection
+ * ── Session model ───────────────────────────────────────────────────────────
+ *
+ * A LOGICAL SESSION spans from the user clicking Dictate until finalisation.
+ * Inside a logical session, the browser's SpeechRecognition instance may end
+ * multiple times (e.g. Chrome auto-stops after a short silence). When that
+ * happens we restart recognition automatically rather than finalising.
+ *
+ * Timers:
+ *   maxTimerRef      — 2-minute hard limit on the logical session
+ *   silenceTimerRef  — 12-second inactivity grace; resets on each new final
+ *                      speech result; fires → finalise
+ *   restartTimerRef  — 150ms delay before restarting browser recognition after
+ *                      a browser auto-end, to avoid rapid-restart loops
+ *
+ * Key refs:
+ *   sessionActiveRef — true while the logical session is running
+ *   manualStopRef    — true when the user presses Stop (do not restart)
+ *   finalizeSessionRef — ref to the finalise fn so stopDictation can call it
+ *                        even when browser recognition is not currently running
+ *
+ * "no-speech" error during an active session is treated as soft silence
+ * (allow the grace period / restart), NOT as a fatal error.
+ *
+ * Fatal errors (end the session immediately):
+ *   not-allowed, service-not-allowed, audio-capture, network,
+ *   language-not-supported, language-unavailable
+ *
+ * ── Direction fix ───────────────────────────────────────────────────────────
+ *
+ * Single-segment dictation now calls detectBlockDirection on the dictated text
+ * and updates the containing block's dir attribute, so Urdu text dictated into
+ * an empty or existing paragraph gets RTL direction persisted in the ProseMirror
+ * document (same as multi-paragraph dictation already did).
  */
 
 import { useState, useRef, useCallback, useEffect } from "react";
@@ -65,8 +90,6 @@ function isSupportedBrowser(): boolean {
 }
 
 // ── Language → BCP-47 ─────────────────────────────────────────────────────────
-// Mixed mode uses ur-PK — one language at a time is a browser constraint,
-// surfaced to the user via the ⚠ label and mixedNote tooltip.
 
 const SPEECH_LANG: Record<DictationLanguage, string> = {
   ur:    "ur-PK",
@@ -74,14 +97,15 @@ const SPEECH_LANG: Record<DictationLanguage, string> = {
   mixed: "ur-PK",
 };
 
-const MAX_DICTATION_MS = 2 * 60 * 1000; // 2 minutes
+const MAX_DICTATION_MS  = 2 * 60 * 1000; // 2 minutes — absolute session limit
+const SILENCE_GRACE_MS  = 12_000;         // 12 s inactivity before auto-finalise
+const RESTART_DELAY_MS  = 150;            // ms delay before restarting browser recognition
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 
 const LABELS = {
   en: {
     dictate:            "Dictate",
-    listening:          "Listening…",
     stop:               "Stop",
     errorLabel:         "Mic error",
     dismiss:            "Dismiss",
@@ -89,10 +113,8 @@ const LABELS = {
     langUr:             "Urdu",
     langEn:             "English",
     langMixed:          "Urdu + English ⚠",
-    // Privacy / capability notes — shown as native title attributes
     speechNote:         "Qalam Works does not receive or store your audio. Speech recognition is handled by your browser and may use the browser provider's online speech service.",
     mixedNote:          "Urdu + English mode uses Urdu recognition (ur-PK). English words may be recognized with variable accuracy — this is a browser limitation.",
-    // Error messages — keyed by SpeechRecognition error code
     permDenied:         "Microphone access is blocked.",
     serviceNotAllowed:  "Your browser's speech recognition service is unavailable or blocked. Try a current version of Chrome, Edge, or Safari.",
     permHelp:           "How to allow microphone access",
@@ -108,7 +130,6 @@ const LABELS = {
   },
   ur: {
     dictate:            "بولیں",
-    listening:          "سن رہا ہے…",
     stop:               "رکیں",
     errorLabel:         "مائک کی خرابی",
     dismiss:            "بند کریں",
@@ -148,25 +169,37 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
   const t     = LABELS[lang];
   const naskh = isUr ? "font-naskh" : "";
 
-  const [state,        setState]       = useState<DictationState>("idle");
-  const [errorMsg,     setErrorMsg]    = useState<string>("");
-  const [errorKind,    setErrorKind]   = useState<"permission" | "other">("other");
+  const [state,        setState]      = useState<DictationState>("idle");
+  const [errorMsg,     setErrorMsg]   = useState<string>("");
+  const [errorKind,    setErrorKind]  = useState<"permission" | "other">("other");
   const [showPermHelp, setShowPermHelp] = useState(false);
-  const [dictLang,     setDictLang]    = useState<DictationLanguage>("mixed");
+  const [dictLang,     setDictLang]   = useState<DictationLanguage>("mixed");
 
+  // ── Session lifecycle refs ────────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef   = useRef<any>(null);
-  const transcriptBufRef = useRef<string>("");
-  const maxTimerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** ProseMirror anchor captured synchronously when dictation starts. */
-  const savedPosRef      = useRef<number | null>(null);
+  const recognitionRef     = useRef<any>(null);
+  const transcriptBufRef   = useRef<string>("");
+  const savedPosRef        = useRef<number | null>(null);
 
-  // ── Cleanup ───────────────────────────────────────────────────────────────
+  // Session-level control refs
+  const sessionActiveRef   = useRef<boolean>(false);
+  const manualStopRef      = useRef<boolean>(false);
+  const finalizeSessionRef = useRef<(() => void) | null>(null);
 
-  const cleanupRecognition = useCallback(() => {
-    if (maxTimerRef.current) {
-      clearTimeout(maxTimerRef.current);
-      maxTimerRef.current = null;
+  // Timer refs
+  const maxTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const silenceTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const restartTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Full cleanup (unmount / dismiss) ─────────────────────────────────────
+
+  const cleanupAll = useCallback(() => {
+    sessionActiveRef.current   = false;
+    manualStopRef.current      = false;
+    finalizeSessionRef.current = null;
+
+    for (const r of [maxTimerRef, silenceTimerRef, restartTimerRef] as const) {
+      if (r.current) { clearTimeout(r.current); r.current = null; }
     }
     if (recognitionRef.current) {
       recognitionRef.current.onresult = null;
@@ -178,9 +211,15 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
     transcriptBufRef.current = "";
   }, []);
 
-  useEffect(() => () => cleanupRecognition(), [cleanupRecognition]);
+  useEffect(() => () => cleanupAll(), [cleanupAll]);
 
   // ── Insert at saved cursor (TipTap) ───────────────────────────────────────
+  //
+  // Single-segment: inserts the text, then updates the containing block's
+  // dir attribute using detectBlockDirection on the dictated text so that
+  // Urdu text in an empty paragraph gets RTL persisted (Issue 2 fix).
+  //
+  // Multi-segment: each paragraph node already gets a per-block dir attr.
 
   const insertAtSavedPosition = useCallback(
     (rawTranscript: string) => {
@@ -198,8 +237,8 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         return;
       }
 
-      const segments  = splitTranscriptIntoSegments(processed);
-      const docSize   = editor.state.doc.content.size;
+      const segments = splitTranscriptIntoSegments(processed);
+      const docSize  = editor.state.doc.content.size;
       const insertPos = (() => {
         const s = savedPosRef.current;
         if (s !== null && s >= 0 && s <= docSize) return s;
@@ -207,10 +246,60 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       })();
 
       if (segments.length === 1 && !segments[0].isParagraphBreak) {
-        editor.chain().focus().insertContentAt(insertPos, segments[0].text).run();
+        // ── Single inline segment ─────────────────────────────────────────
+        const newText = segments[0].text;
+
+        // Step 1: insert the text at the saved position.
+        editor.chain().focus().insertContentAt(insertPos, newText).run();
+
+        // Step 2: determine direction from the FULL resulting block content
+        // and persist it with a position-targeted ProseMirror transaction.
+        //
+        // We use setNodeMarkup so we can target the exact node by position
+        // rather than relying on the current selection (which updateAttributes
+        // depends on and which focus() may shift unpredictably).
+        try {
+          const postState = editor.state;
+          // Cursor after insertion; clamp to valid range.
+          const anchor = Math.min(
+            postState.selection.anchor,
+            postState.doc.content.size - 1
+          );
+          const $pos = postState.doc.resolve(anchor);
+
+          // Walk up to find the innermost block node (paragraph / heading).
+          for (let d = $pos.depth; d >= 0; d--) {
+            const node = $pos.node(d);
+            if (
+              node.type.isBlock &&
+              (node.type.name === "paragraph" || node.type.name === "heading")
+            ) {
+              // Full textContent of the block after insertion.
+              const fullText = node.textContent;
+              const newDir   = detectBlockDirection(fullText, docDir);
+
+              if (node.attrs.dir !== newDir) {
+                // $pos.before(d) = position of the node's opening token.
+                const nodePos = $pos.before(d);
+                const tr = postState.tr.setNodeMarkup(
+                  nodePos,
+                  undefined,                          // same node type
+                  { ...node.attrs, dir: newDir },     // updated dir, all other attrs preserved
+                  node.marks
+                );
+                editor.view.dispatch(tr);
+              }
+              break;
+            }
+          }
+        } catch {
+          // Non-fatal: direction update is best-effort.
+        }
       } else {
+        // ── Multi-paragraph segments ──────────────────────────────────────
         const nodes: object[] = [];
         let currentText = "";
+
         for (const seg of segments) {
           if (seg.isParagraphBreak) {
             if (currentText) {
@@ -246,20 +335,30 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
     [editor, dictLang, docDir, t]
   );
 
-  // ── Stop dictation ────────────────────────────────────────────────────────
+  // ── Stop dictation (user-initiated) ──────────────────────────────────────
 
   const stopDictation = useCallback(() => {
+    manualStopRef.current = true;
+
     if (recognitionRef.current) {
+      // Recognition is running → stop it → onend fires → sees manualStopRef
+      // → finalises immediately.
       try { recognitionRef.current.stop(); } catch { /* ignore */ }
+    } else if (sessionActiveRef.current) {
+      // In restart-delay window: cancel pending restart, finalise now.
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
+      finalizeSessionRef.current?.();
     }
   }, []);
 
-  // ── Start dictation ───────────────────────────────────────────────────────
+  // ── Start dictation (user-initiated) ─────────────────────────────────────
 
   const startDictation = useCallback(() => {
     if (!editor) return;
 
-    // ── Capability check ──────────────────────────────────────────────────
     const SpeechRecognitionCtor = getSpeechRecognitionCtor();
     if (!SpeechRecognitionCtor) {
       setErrorMsg(t.unsupported);
@@ -268,8 +367,6 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       trackEvent("tool_error", { tool: "document_studio" });
       return;
     }
-
-    // ── Browser allowlist check ───────────────────────────────────────────
     if (!isSupportedBrowser()) {
       setErrorMsg(t.unsupportedBrowser);
       setErrorKind("other");
@@ -278,82 +375,71 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       return;
     }
 
-    // Capture cursor synchronously before anything can shift focus.
-    savedPosRef.current       = editor.state.selection.anchor;
-    transcriptBufRef.current  = "";
+    // Capture cursor synchronously before any async work shifts focus.
+    savedPosRef.current      = editor.state.selection.anchor;
+    transcriptBufRef.current = "";
+    sessionActiveRef.current = true;
+    manualStopRef.current    = false;
 
     trackEvent("tool_open", { tool: "document_studio" });
 
-    // ── Configure SpeechRecognition ───────────────────────────────────────
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const recognition: any = new SpeechRecognitionCtor();
-    recognitionRef.current = recognition;
+    // ── Helpers defined in this closure so they share the same ctor/lang ──
 
-    recognition.lang           = SPEECH_LANG[dictLang];
-    recognition.continuous     = true;
-    recognition.interimResults = false;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = (event: any) => {
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          const seg = event.results[i][0].transcript ?? "";
-          if (seg.trim()) {
-            transcriptBufRef.current +=
-              (transcriptBufRef.current ? " " : "") + seg.trim();
-          }
-        }
+    function clearSilenceTimer() {
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
       }
-    };
+    }
 
-    recognition.onend = () => {
-      if (maxTimerRef.current) {
-        clearTimeout(maxTimerRef.current);
-        maxTimerRef.current = null;
+    /**
+     * Finalise the logical session: stop all timers, insert the accumulated
+     * transcript, and return to idle. Idempotent.
+     */
+    function finalizeSession() {
+      if (!sessionActiveRef.current) return; // already finalised
+      sessionActiveRef.current   = false;
+      manualStopRef.current      = false;
+      finalizeSessionRef.current = null;
+
+      clearSilenceTimer();
+      for (const r of [maxTimerRef, restartTimerRef] as const) {
+        if (r.current) { clearTimeout(r.current); r.current = null; }
       }
-      recognitionRef.current = null;
+      if (recognitionRef.current) {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onend    = null;
+        recognitionRef.current.onerror  = null;
+        try { recognitionRef.current.abort(); } catch { /* ignore */ }
+        recognitionRef.current = null;
+      }
+
       const raw = transcriptBufRef.current;
       transcriptBufRef.current = "";
       setState("idle");
       if (raw.trim()) insertAtSavedPosition(raw);
-      // Silent no-op when raw is empty (e.g. onend after abort in onerror path).
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onerror = (event: any) => {
-      const code = event.error as string;
-
-      // "aborted" fires when recognition.abort() is called intentionally
-      // (e.g. cleanupRecognition on unmount or error). Do not show an error.
-      if (code === "aborted") return;
-
-      let msg: string  = t.recognitionError;
-      let kind: "permission" | "other" = "other";
-
-      if (code === "not-allowed") {
-        // Microphone access denied by the user or browser policy.
-        msg  = t.permDenied;
-        kind = "permission";
-      } else if (code === "service-not-allowed") {
-        // Speech recognition service blocked/unavailable — NOT a mic permission issue.
-        // Do not show the permission recovery UI; it would mislead the user.
-        msg  = t.serviceNotAllowed;
-        kind = "other";
-      } else if (code === "no-speech") {
-        msg = t.noSpeech;
-      } else if (code === "audio-capture") {
-        msg = t.audioCapture;
-      } else if (code === "network") {
-        msg = t.networkError;
-      } else if (code === "language-not-supported" || code === "language-unavailable") {
-        msg = t.langUnavailable;
-      }
-      // All other codes fall through to t.recognitionError (generic).
-
-      recognition.onresult = null;
-      recognition.onend    = null;
-      cleanupRecognition();
       savedPosRef.current = null;
+    }
+
+    // Store so stopDictation can call it during restart-delay windows.
+    finalizeSessionRef.current = finalizeSession;
+
+    /**
+     * End the session with a fatal error (not-allowed etc.).
+     * Shows the appropriate localised error UI.
+     */
+    function endWithError(msg: string, kind: "permission" | "other") {
+      sessionActiveRef.current   = false;
+      finalizeSessionRef.current = null;
+
+      clearSilenceTimer();
+      for (const r of [maxTimerRef, restartTimerRef] as const) {
+        if (r.current) { clearTimeout(r.current); r.current = null; }
+      }
+      recognitionRef.current   = null;
+      transcriptBufRef.current = "";
+      savedPosRef.current      = null;
+
       setErrorMsg(msg);
       setErrorKind(kind);
       setShowPermHelp(false);
@@ -362,24 +448,148 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         tool: "document_studio",
         ...(dictLang !== "mixed" ? { mode: dictLang } : {}),
       });
-    };
+    }
 
-    // 2-minute max duration guard
+    /**
+     * Start (or restart) the browser-level SpeechRecognition instance.
+     * Called once at session start and again on each browser auto-end.
+     */
+    function startBrowserRecognition() {
+      if (!sessionActiveRef.current) return;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognition: any = new SpeechRecognitionCtor!();
+      recognitionRef.current = recognition;
+
+      recognition.lang           = SPEECH_LANG[dictLang];
+      recognition.continuous     = true;
+      recognition.interimResults = false;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onresult = (event: any) => {
+        // New speech received → cancel any pending silence timer.
+        clearSilenceTimer();
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            const seg = event.results[i][0].transcript ?? "";
+            if (seg.trim()) {
+              transcriptBufRef.current +=
+                (transcriptBufRef.current ? " " : "") + seg.trim();
+            }
+          }
+        }
+      };
+
+      recognition.onend = () => {
+        recognitionRef.current = null;
+        if (!sessionActiveRef.current) return; // session already ended
+
+        if (manualStopRef.current) {
+          // User pressed Stop → finalise immediately.
+          finalizeSession();
+          return;
+        }
+
+        // Browser auto-ended (short silence) → restart after a brief delay.
+        //
+        // CRITICAL: only start the 12-second inactivity timer if one is NOT
+        // already running. Repeated auto-end events during the same silence
+        // period must NOT reset/extend the deadline — that would prevent
+        // finalization. The timer is only cleared by a new final speech result
+        // in onresult, which allows a fresh 12s window after the next auto-end.
+        if (!silenceTimerRef.current) {
+          silenceTimerRef.current = setTimeout(() => {
+            silenceTimerRef.current = null;
+            if (sessionActiveRef.current) finalizeSession();
+          }, SILENCE_GRACE_MS);
+        }
+
+        restartTimerRef.current = setTimeout(() => {
+          restartTimerRef.current = null;
+          if (sessionActiveRef.current && !manualStopRef.current) {
+            startBrowserRecognition();
+          }
+        }, RESTART_DELAY_MS);
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onerror = (event: any) => {
+        const code = event.error as string;
+
+        // Intentional abort — no visible error.
+        if (code === "aborted") return;
+
+        // "no-speech" during an active session is a soft silence event.
+        // Allow the grace-period / restart path rather than showing an error.
+        if (code === "no-speech" && sessionActiveRef.current) {
+          recognition.onresult = null;
+          recognition.onend    = null;
+          recognitionRef.current = null;
+
+          // Same guard as onend: don't extend the deadline if a timer is running.
+          if (!silenceTimerRef.current) {
+            silenceTimerRef.current = setTimeout(() => {
+              silenceTimerRef.current = null;
+              if (sessionActiveRef.current) finalizeSession();
+            }, SILENCE_GRACE_MS);
+          }
+
+          restartTimerRef.current = setTimeout(() => {
+            restartTimerRef.current = null;
+            if (sessionActiveRef.current && !manualStopRef.current) {
+              startBrowserRecognition();
+            }
+          }, RESTART_DELAY_MS);
+          return;
+        }
+
+        // Fatal errors — end the session with the appropriate message.
+        recognition.onresult = null;
+        recognition.onend    = null;
+
+        let msg: string = t.recognitionError;
+        let kind: "permission" | "other" = "other";
+
+        if (code === "not-allowed") {
+          msg  = t.permDenied;
+          kind = "permission";
+        } else if (code === "service-not-allowed") {
+          msg = t.serviceNotAllowed;
+        } else if (code === "audio-capture") {
+          msg = t.audioCapture;
+        } else if (code === "network") {
+          msg = t.networkError;
+        } else if (code === "language-not-supported" || code === "language-unavailable") {
+          msg = t.langUnavailable;
+        }
+        // All remaining codes → generic t.recognitionError.
+
+        endWithError(msg, kind);
+      };
+
+      try {
+        recognition.start();
+      } catch {
+        // start() threw synchronously — treat like a browser auto-end.
+        recognitionRef.current = null;
+        if (sessionActiveRef.current && !manualStopRef.current) {
+          restartTimerRef.current = setTimeout(() => {
+            restartTimerRef.current = null;
+            if (sessionActiveRef.current) startBrowserRecognition();
+          }, RESTART_DELAY_MS);
+        }
+      }
+    }
+
+    // 2-minute absolute session limit.
     maxTimerRef.current = setTimeout(() => {
-      if (recognitionRef.current) recognitionRef.current.stop();
+      maxTimerRef.current = null;
+      if (sessionActiveRef.current) finalizeSession();
     }, MAX_DICTATION_MS);
 
-    try {
-      recognition.start();
-      setState("recording");
-    } catch {
-      cleanupRecognition();
-      savedPosRef.current = null;
-      setErrorMsg(t.recognitionError);
-      setErrorKind("other");
-      setState("error");
-    }
-  }, [editor, dictLang, insertAtSavedPosition, cleanupRecognition, t]);
+    startBrowserRecognition();
+    setState("recording");
+  }, [editor, dictLang, insertAtSavedPosition, t]);
 
   // ── Dismiss error ─────────────────────────────────────────────────────────
 
@@ -388,14 +598,13 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
     setErrorKind("other");
     setShowPermHelp(false);
     setState("idle");
-    cleanupRecognition();
-    savedPosRef.current = null;
-  }, [cleanupRecognition]);
+    cleanupAll();
+  }, [cleanupAll]);
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
-  const isRecording  = state === "recording";
-  const tooltipText  = dictLang === "mixed" ? t.mixedNote : t.speechNote;
+  const isRecording = state === "recording";
+  const tooltipText = dictLang === "mixed" ? t.mixedNote : t.speechNote;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -417,7 +626,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         </select>
       )}
 
-      {/* Mic button — native title for discoverability, no layout-disrupting tooltip */}
+      {/* Mic button */}
       <button
         type="button"
         onClick={isRecording ? stopDictation : state === "idle" ? startDictation : undefined}
@@ -436,7 +645,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         <span>{isRecording ? t.stop : t.dictate}</span>
       </button>
 
-      {/* Error — permission-denied branch with recovery path */}
+      {/* Permission-denied error — with recovery path */}
       {state === "error" && errorKind === "permission" ? (
         <div
           className={`flex flex-col gap-1.5 text-[12px] max-w-[260px] ${naskh}`}
@@ -473,7 +682,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
           )}
         </div>
       ) : state === "error" ? (
-        /* Generic error — message + dismiss */
+        /* Generic error */
         <div className={`flex items-center gap-1.5 text-[12px] text-red-600 max-w-[220px] ${naskh}`}>
           <span>{errorMsg || t.errorLabel}</span>
           <button
