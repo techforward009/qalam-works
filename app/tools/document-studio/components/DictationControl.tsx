@@ -23,10 +23,8 @@
  *
  * Timers:
  *   maxTimerRef      — 2-minute hard limit on the logical session
- *   silenceTimerRef  — 12-second inactivity grace; resets on each new final
- *                      speech result; fires → finalise
- *   restartTimerRef  — 150ms delay before restarting browser recognition after
- *                      a browser auto-end, to avoid rapid-restart loops
+ *   restartTimerRef  — 150–300ms delay before restarting browser recognition
+ *                      after a browser auto-end (never after user Stop / max / fatal)
  *
  * Key refs:
  *   sessionActiveRef — true while the logical session is running
@@ -34,8 +32,14 @@
  *   finalizeSessionRef — ref to the finalise fn so stopDictation can call it
  *                        even when browser recognition is not currently running
  *
- * "no-speech" error during an active session is treated as soft silence
- * (allow the grace period / restart), NOT as a fatal error.
+ * "no-speech" error during an active session is treated as a soft event
+ * (preserve pending speech, allow internal restart), NOT as a fatal error.
+ *
+ * Result handling:
+ *   interimResults = true
+ *   Per-instance result-index map stores the latest interim hypothesis.
+ *   Final results are committed once. Orphan interims are harvested once
+ *   when a browser instance ends before promoting them to final.
  *
  * Fatal errors (end the session immediately):
  *   not-allowed, service-not-allowed, audio-capture, network,
@@ -57,6 +61,13 @@ import {
   splitTranscriptIntoSegments,
   type DictationLanguage,
 } from "../utils/voiceDictation";
+import {
+  appendTranscriptChunks,
+  applyRecognitionResults,
+  createInstanceRecognitionState,
+  takeOrphanInterims,
+  type InstanceRecognitionState,
+} from "../utils/voiceRecognitionBuffer";
 import { detectBlockDirection } from "../utils/plainTextToDocNode";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -97,9 +108,10 @@ const SPEECH_LANG: Record<DictationLanguage, string> = {
   mixed: "ur-PK",
 };
 
-const MAX_DICTATION_MS  = 2 * 60 * 1000; // 2 minutes — absolute session limit
-const SILENCE_GRACE_MS  = 12_000;         // 12 s inactivity before auto-finalise
-const RESTART_DELAY_MS  = 150;            // ms delay before restarting browser recognition
+const MAX_DICTATION_MS     = 2 * 60 * 1000; // 2 minutes — absolute session limit
+const RESTART_DELAY_MS     = 250;            // delay before restarting browser recognition
+const RESTART_BACKOFF_MS   = 1000;           // used after repeated empty auto-ends
+const MAX_EMPTY_RESTARTS   = 20;             // avoid rapid-restart loops
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 
@@ -173,7 +185,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
   const [errorMsg,     setErrorMsg]   = useState<string>("");
   const [errorKind,    setErrorKind]  = useState<"permission" | "other">("other");
   const [showPermHelp, setShowPermHelp] = useState(false);
-  const [dictLang,     setDictLang]   = useState<DictationLanguage>("mixed");
+  const [dictLang,     setDictLang]   = useState<DictationLanguage>(isUr ? "ur" : "en");
 
   // ── Session lifecycle refs ────────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -188,8 +200,10 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
 
   // Timer refs
   const maxTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const silenceTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const restartTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const instanceStateRef   = useRef<InstanceRecognitionState>(createInstanceRecognitionState());
+  const recognizingRef     = useRef<boolean>(false);
+  const emptyRestartRef    = useRef<number>(0);
 
   // ── Full cleanup (unmount / dismiss) ─────────────────────────────────────
 
@@ -197,8 +211,11 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
     sessionActiveRef.current   = false;
     manualStopRef.current      = false;
     finalizeSessionRef.current = null;
+    recognizingRef.current     = false;
+    emptyRestartRef.current    = 0;
+    instanceStateRef.current   = createInstanceRecognitionState();
 
-    for (const r of [maxTimerRef, silenceTimerRef, restartTimerRef] as const) {
+    for (const r of [maxTimerRef, restartTimerRef] as const) {
       if (r.current) { clearTimeout(r.current); r.current = null; }
     }
     if (recognitionRef.current) {
@@ -341,8 +358,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
     manualStopRef.current = true;
 
     if (recognitionRef.current) {
-      // Recognition is running → stop it → onend fires → sees manualStopRef
-      // → finalises immediately.
+      // Graceful stop so the current instance can deliver finals / last interim.
       try { recognitionRef.current.stop(); } catch { /* ignore */ }
     } else if (sessionActiveRef.current) {
       // In restart-delay window: cancel pending restart, finalise now.
@@ -380,42 +396,60 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
     transcriptBufRef.current = "";
     sessionActiveRef.current = true;
     manualStopRef.current    = false;
+    recognizingRef.current   = false;
+    emptyRestartRef.current  = 0;
+    instanceStateRef.current = createInstanceRecognitionState();
 
     trackEvent("tool_open", { tool: "document_studio" });
 
     // ── Helpers defined in this closure so they share the same ctor/lang ──
 
-    function clearSilenceTimer() {
-      if (silenceTimerRef.current) {
-        clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = null;
+    function harvestOrphans() {
+      const orphans = takeOrphanInterims(instanceStateRef.current);
+      if (orphans.length > 0) {
+        transcriptBufRef.current = appendTranscriptChunks(
+          transcriptBufRef.current,
+          orphans,
+        );
       }
+    }
+
+    function detachRecognition() {
+      recognizingRef.current = false;
+      if (!recognitionRef.current) return;
+      recognitionRef.current.onresult = null;
+      recognitionRef.current.onend    = null;
+      recognitionRef.current.onerror  = null;
     }
 
     /**
      * Finalise the logical session: stop all timers, insert the accumulated
      * transcript, and return to idle. Idempotent.
+     *
+     * Handlers are detached before abort() so a synchronous late onresult
+     * cannot commit the same phrase a second time.
      */
     function finalizeSession() {
       if (!sessionActiveRef.current) return; // already finalised
       sessionActiveRef.current   = false;
       manualStopRef.current      = false;
       finalizeSessionRef.current = null;
+      recognizingRef.current     = false;
 
-      clearSilenceTimer();
       for (const r of [maxTimerRef, restartTimerRef] as const) {
         if (r.current) { clearTimeout(r.current); r.current = null; }
       }
+
+      detachRecognition();
+      harvestOrphans();
       if (recognitionRef.current) {
-        recognitionRef.current.onresult = null;
-        recognitionRef.current.onend    = null;
-        recognitionRef.current.onerror  = null;
         try { recognitionRef.current.abort(); } catch { /* ignore */ }
         recognitionRef.current = null;
       }
 
       const raw = transcriptBufRef.current;
       transcriptBufRef.current = "";
+      instanceStateRef.current = createInstanceRecognitionState();
       setState("idle");
       if (raw.trim()) insertAtSavedPosition(raw);
       savedPosRef.current = null;
@@ -431,12 +465,17 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
     function endWithError(msg: string, kind: "permission" | "other") {
       sessionActiveRef.current   = false;
       finalizeSessionRef.current = null;
+      recognizingRef.current     = false;
+      instanceStateRef.current   = createInstanceRecognitionState();
 
-      clearSilenceTimer();
       for (const r of [maxTimerRef, restartTimerRef] as const) {
         if (r.current) { clearTimeout(r.current); r.current = null; }
       }
-      recognitionRef.current   = null;
+      detachRecognition();
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch { /* ignore */ }
+        recognitionRef.current = null;
+      }
       transcriptBufRef.current = "";
       savedPosRef.current      = null;
 
@@ -450,100 +489,91 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       });
     }
 
+    function scheduleRestart() {
+      if (!sessionActiveRef.current || manualStopRef.current) return;
+      if (restartTimerRef.current) return;
+      if (emptyRestartRef.current >= MAX_EMPTY_RESTARTS) {
+        emptyRestartRef.current = 0;
+      }
+      const delay = emptyRestartRef.current >= 8 ? RESTART_BACKOFF_MS : RESTART_DELAY_MS;
+      restartTimerRef.current = setTimeout(() => {
+        restartTimerRef.current = null;
+        if (sessionActiveRef.current && !manualStopRef.current) {
+          startBrowserRecognition();
+        }
+      }, delay);
+    }
+
     /**
      * Start (or restart) the browser-level SpeechRecognition instance.
      * Called once at session start and again on each browser auto-end.
      */
     function startBrowserRecognition() {
-      if (!sessionActiveRef.current) return;
+      if (!sessionActiveRef.current || manualStopRef.current) return;
+      if (recognizingRef.current) return;
+
+      instanceStateRef.current = createInstanceRecognitionState();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const recognition: any = new SpeechRecognitionCtor!();
+      const recognition: any = new SpeechRecognitionCtor!();
       recognitionRef.current = recognition;
+      recognizingRef.current = true;
 
       recognition.lang           = SPEECH_LANG[dictLang];
       recognition.continuous     = true;
-      recognition.interimResults = false;
+      recognition.interimResults = true;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recognition.onresult = (event: any) => {
-        // New speech received → cancel any pending silence timer.
-        clearSilenceTimer();
+        emptyRestartRef.current = 0;
+        const batch: Array<{ index: number; isFinal: boolean; transcript: string }> = [];
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            const seg = event.results[i][0].transcript ?? "";
-            if (seg.trim()) {
-              transcriptBufRef.current +=
-                (transcriptBufRef.current ? " " : "") + seg.trim();
-            }
-          }
+          batch.push({
+            index: i,
+            isFinal: !!event.results[i].isFinal,
+            transcript: event.results[i][0]?.transcript ?? "",
+          });
+        }
+        const committed = applyRecognitionResults(instanceStateRef.current, batch);
+        if (committed.length > 0) {
+          transcriptBufRef.current = appendTranscriptChunks(
+            transcriptBufRef.current,
+            committed,
+          );
         }
       };
 
       recognition.onend = () => {
-        recognitionRef.current = null;
-        if (!sessionActiveRef.current) return; // session already ended
+        if (recognitionRef.current === recognition) {
+          recognitionRef.current = null;
+        }
+        recognizingRef.current = false;
+        harvestOrphans();
+        if (!sessionActiveRef.current) return;
 
         if (manualStopRef.current) {
-          // User pressed Stop → finalise immediately.
           finalizeSession();
           return;
         }
 
-        // Browser auto-ended (short silence) → restart after a brief delay.
-        //
-        // CRITICAL: only start the 12-second inactivity timer if one is NOT
-        // already running. Repeated auto-end events during the same silence
-        // period must NOT reset/extend the deadline — that would prevent
-        // finalization. The timer is only cleared by a new final speech result
-        // in onresult, which allows a fresh 12s window after the next auto-end.
-        if (!silenceTimerRef.current) {
-          silenceTimerRef.current = setTimeout(() => {
-            silenceTimerRef.current = null;
-            if (sessionActiveRef.current) finalizeSession();
-          }, SILENCE_GRACE_MS);
-        }
-
-        restartTimerRef.current = setTimeout(() => {
-          restartTimerRef.current = null;
-          if (sessionActiveRef.current && !manualStopRef.current) {
-            startBrowserRecognition();
-          }
-        }, RESTART_DELAY_MS);
+        emptyRestartRef.current += 1;
+        scheduleRestart();
       };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recognition.onerror = (event: any) => {
         const code = event.error as string;
 
-        // Intentional abort — no visible error.
         if (code === "aborted") return;
 
-        // "no-speech" during an active session is a soft silence event.
-        // Allow the grace-period / restart path rather than showing an error.
         if (code === "no-speech" && sessionActiveRef.current) {
-          recognition.onresult = null;
-          recognition.onend    = null;
+          harvestOrphans();
+          detachRecognition();
           recognitionRef.current = null;
-
-          // Same guard as onend: don't extend the deadline if a timer is running.
-          if (!silenceTimerRef.current) {
-            silenceTimerRef.current = setTimeout(() => {
-              silenceTimerRef.current = null;
-              if (sessionActiveRef.current) finalizeSession();
-            }, SILENCE_GRACE_MS);
-          }
-
-          restartTimerRef.current = setTimeout(() => {
-            restartTimerRef.current = null;
-            if (sessionActiveRef.current && !manualStopRef.current) {
-              startBrowserRecognition();
-            }
-          }, RESTART_DELAY_MS);
+          if (!manualStopRef.current) scheduleRestart();
           return;
         }
 
-        // Fatal errors — end the session with the appropriate message.
         recognition.onresult = null;
         recognition.onend    = null;
 
@@ -562,7 +592,6 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         } else if (code === "language-not-supported" || code === "language-unavailable") {
           msg = t.langUnavailable;
         }
-        // All remaining codes → generic t.recognitionError.
 
         endWithError(msg, kind);
       };
@@ -570,13 +599,12 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       try {
         recognition.start();
       } catch {
-        // start() threw synchronously — treat like a browser auto-end.
+        harvestOrphans();
+        detachRecognition();
         recognitionRef.current = null;
+        emptyRestartRef.current += 1;
         if (sessionActiveRef.current && !manualStopRef.current) {
-          restartTimerRef.current = setTimeout(() => {
-            restartTimerRef.current = null;
-            if (sessionActiveRef.current) startBrowserRecognition();
-          }, RESTART_DELAY_MS);
+          scheduleRestart();
         }
       }
     }
