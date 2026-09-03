@@ -62,11 +62,15 @@ import {
   type DictationLanguage,
 } from "../utils/voiceDictation";
 import {
-  appendTranscriptChunks,
+  applyFinalChunks,
   applyRecognitionResults,
+  captureLatestProvisional,
   createInstanceRecognitionState,
-  takeOrphanInterims,
+  createSessionTranscriptState,
+  finalizeSessionTranscript,
+  replaceProvisionalTail,
   type InstanceRecognitionState,
+  type SessionTranscriptState,
 } from "../utils/voiceRecognitionBuffer";
 import { detectBlockDirection } from "../utils/plainTextToDocNode";
 
@@ -202,6 +206,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
   const maxTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
   const restartTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const instanceStateRef   = useRef<InstanceRecognitionState>(createInstanceRecognitionState());
+  const sessionTranscriptRef = useRef<SessionTranscriptState>(createSessionTranscriptState());
   const recognizingRef     = useRef<boolean>(false);
   const emptyRestartRef    = useRef<number>(0);
 
@@ -213,7 +218,8 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
     finalizeSessionRef.current = null;
     recognizingRef.current     = false;
     emptyRestartRef.current    = 0;
-    instanceStateRef.current   = createInstanceRecognitionState();
+    instanceStateRef.current     = createInstanceRecognitionState();
+    sessionTranscriptRef.current = createSessionTranscriptState();
 
     for (const r of [maxTimerRef, restartTimerRef] as const) {
       if (r.current) { clearTimeout(r.current); r.current = null; }
@@ -398,20 +404,16 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
     manualStopRef.current    = false;
     recognizingRef.current   = false;
     emptyRestartRef.current  = 0;
-    instanceStateRef.current = createInstanceRecognitionState();
+    instanceStateRef.current     = createInstanceRecognitionState();
+    sessionTranscriptRef.current = createSessionTranscriptState();
 
     trackEvent("tool_open", { tool: "document_studio" });
 
     // ── Helpers defined in this closure so they share the same ctor/lang ──
 
-    function harvestOrphans() {
-      const orphans = takeOrphanInterims(instanceStateRef.current);
-      if (orphans.length > 0) {
-        transcriptBufRef.current = appendTranscriptChunks(
-          transcriptBufRef.current,
-          orphans,
-        );
-      }
+    function captureProvisionalFromInstance() {
+      const tail = captureLatestProvisional(instanceStateRef.current);
+      if (tail) replaceProvisionalTail(sessionTranscriptRef.current, tail);
     }
 
     function detachRecognition() {
@@ -441,15 +443,16 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       }
 
       detachRecognition();
-      harvestOrphans();
+      captureProvisionalFromInstance();
       if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch { /* ignore */ }
         recognitionRef.current = null;
       }
 
-      const raw = transcriptBufRef.current;
+      const raw = finalizeSessionTranscript(sessionTranscriptRef.current);
       transcriptBufRef.current = "";
       instanceStateRef.current = createInstanceRecognitionState();
+      sessionTranscriptRef.current = createSessionTranscriptState();
       setState("idle");
       if (raw.trim()) insertAtSavedPosition(raw);
       savedPosRef.current = null;
@@ -536,10 +539,8 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         }
         const committed = applyRecognitionResults(instanceStateRef.current, batch);
         if (committed.length > 0) {
-          transcriptBufRef.current = appendTranscriptChunks(
-            transcriptBufRef.current,
-            committed,
-          );
+          applyFinalChunks(sessionTranscriptRef.current, committed);
+          transcriptBufRef.current = sessionTranscriptRef.current.committed;
         }
       };
 
@@ -548,7 +549,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
           recognitionRef.current = null;
         }
         recognizingRef.current = false;
-        harvestOrphans();
+        captureProvisionalFromInstance();
         if (!sessionActiveRef.current) return;
 
         if (manualStopRef.current) {
@@ -567,7 +568,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         if (code === "aborted") return;
 
         if (code === "no-speech" && sessionActiveRef.current) {
-          harvestOrphans();
+          captureProvisionalFromInstance();
           detachRecognition();
           recognitionRef.current = null;
           if (!manualStopRef.current) scheduleRestart();
@@ -599,7 +600,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       try {
         recognition.start();
       } catch {
-        harvestOrphans();
+        captureProvisionalFromInstance();
         detachRecognition();
         recognitionRef.current = null;
         emptyRestartRef.current += 1;

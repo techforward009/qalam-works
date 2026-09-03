@@ -1,17 +1,26 @@
 /**
- * Per-SpeechRecognition-instance result-index reconciliation.
+ * Per-SpeechRecognition-instance result-index reconciliation
+ * plus session-level final vs provisional-tail tracking.
  *
- * Indexes reset to 0 on every new browser recognition instance, so callers
- * must create a fresh state for each instance.
+ * Browser result indexes reset to 0 on every new recognition instance.
+ * Growing interim hypotheses across auto-end/restart must NOT be appended
+ * as separate permanent phrases.
  *
- * Interim hypotheses replace the previous value at the same index.
- * Final results are committed exactly once. Orphan interims (never finalized
- * before the instance ended) can be harvested once.
+ * Tail lifecycle:
+ * - replace: a newer unfinalized interim overwrites provisionalTail
+ * - discard: any real final means speech has moved on; drop the tail
+ * - promote: only on logical session end, and only if still unresolved
  */
 
 export interface InstanceRecognitionState {
   pending: Map<number, string>;
   committedIndexes: Set<number>;
+}
+
+export interface SessionTranscriptState {
+  committed: string;
+  lastCommitted: string;
+  provisionalTail: string;
 }
 
 export function createInstanceRecognitionState(): InstanceRecognitionState {
@@ -21,14 +30,18 @@ export function createInstanceRecognitionState(): InstanceRecognitionState {
   };
 }
 
+export function createSessionTranscriptState(): SessionTranscriptState {
+  return {
+    committed: "",
+    lastCommitted: "",
+    provisionalTail: "",
+  };
+}
+
 function normalizeChunk(text: string | undefined | null): string {
   return (text ?? "").trim();
 }
 
-/**
- * Apply one onresult batch. Returns newly committed FINAL chunks in index order.
- * Interim values replace the pending hypothesis for that index and are not returned.
- */
 export function applyRecognitionResults(
   state: InstanceRecognitionState,
   results: Array<{ index: number; isFinal: boolean; transcript: string }>,
@@ -55,10 +68,6 @@ export function applyRecognitionResults(
   return newlyCommitted;
 }
 
-/**
- * Take pending interims that never became final, in index order, once.
- * Clears pending tracking. Already-committed indexes are skipped.
- */
 export function takeOrphanInterims(state: InstanceRecognitionState): string[] {
   const indexes = [...state.pending.keys()].sort((a, b) => a - b);
   const orphans: string[] = [];
@@ -71,6 +80,13 @@ export function takeOrphanInterims(state: InstanceRecognitionState): string[] {
   return orphans;
 }
 
+/** Latest unfinalized interim only — auto-end carryover, not a list of prefixes. */
+export function captureLatestProvisional(state: InstanceRecognitionState): string {
+  const orphans = takeOrphanInterims(state);
+  if (orphans.length === 0) return "";
+  return orphans[orphans.length - 1];
+}
+
 export function appendTranscriptChunks(existing: string, chunks: string[]): string {
   let out = existing;
   for (const chunk of chunks) {
@@ -79,4 +95,77 @@ export function appendTranscriptChunks(existing: string, chunks: string[]): stri
     out += (out ? " " : "") + text;
   }
   return out;
+}
+
+function isGrowingHypothesis(previous: string, next: string): boolean {
+  const a = normalizeChunk(previous);
+  const b = normalizeChunk(next);
+  if (!a || !b) return false;
+  if (b === a) return true;
+  if (b.startsWith(a + " ") || b.startsWith(a)) return true;
+  if (a.startsWith(b + " ") || a.startsWith(b)) return true;
+  return false;
+}
+
+export function replaceProvisionalTail(
+  session: SessionTranscriptState,
+  tail: string,
+): void {
+  const text = normalizeChunk(tail);
+  if (!text) return;
+  session.provisionalTail = text;
+}
+
+export function applyFinalChunks(
+  session: SessionTranscriptState,
+  chunks: string[],
+): void {
+  for (const chunk of chunks) {
+    const text = normalizeChunk(chunk);
+    if (!text) continue;
+
+    // Any final discards the unfinished tail (same utterance or a new one).
+    session.provisionalTail = "";
+
+    if (session.lastCommitted && isGrowingHypothesis(session.lastCommitted, text)) {
+      if (text === session.lastCommitted) continue;
+      if (session.committed === session.lastCommitted) {
+        session.committed = text;
+      } else if (session.committed.endsWith(session.lastCommitted)) {
+        session.committed =
+          session.committed.slice(0, session.committed.length - session.lastCommitted.length).trimEnd();
+        session.committed = appendTranscriptChunks(session.committed, [text]);
+      } else {
+        session.committed = appendTranscriptChunks(session.committed, [text]);
+      }
+      session.lastCommitted = text;
+      continue;
+    }
+
+    session.committed = appendTranscriptChunks(session.committed, [text]);
+    session.lastCommitted = text;
+  }
+}
+
+export function finalizeSessionTranscript(session: SessionTranscriptState): string {
+  const tail = normalizeChunk(session.provisionalTail);
+  session.provisionalTail = "";
+  if (!tail) return session.committed;
+
+  if (session.lastCommitted && isGrowingHypothesis(session.lastCommitted, tail)) {
+    if (tail === session.lastCommitted) return session.committed;
+    if (session.committed === session.lastCommitted) {
+      session.committed = tail;
+    } else if (session.committed.endsWith(session.lastCommitted)) {
+      session.committed =
+        session.committed.slice(0, session.committed.length - session.lastCommitted.length).trimEnd();
+      session.committed = appendTranscriptChunks(session.committed, [tail]);
+    }
+    session.lastCommitted = tail;
+    return session.committed;
+  }
+
+  session.committed = appendTranscriptChunks(session.committed, [tail]);
+  session.lastCommitted = tail;
+  return session.committed;
 }
