@@ -73,7 +73,10 @@ const LABELS = {
     speechNote:       "Qalam Works does not receive or store your audio. Speech recognition is handled by your browser and may use the browser provider's online speech service.",
     mixedNote:        "Urdu + English mode uses Urdu recognition (ur-PK). English words may be recognized with variable accuracy — this is a browser limitation.",
     unsupported:      "Voice dictation requires a browser with Web Speech API support (Chrome, Edge, or Safari).",
-    permDenied:       "Microphone permission denied. Please allow microphone access and try again.",
+    permDenied:       "Microphone access is blocked.",
+    permHelp:         "How to allow microphone access",
+    permInstructions: "Open this site's permissions in your browser, set Microphone to Allow, then reload the page.",
+    permRetry:        "Try again",
     emptyResult:      "No speech detected. Please try again.",
     recognitionError: "Speech recognition failed. Please try again.",
     tooLong:          "Maximum dictation time reached. Inserting now…",
@@ -91,7 +94,10 @@ const LABELS = {
     speechNote:       "قلم ورکس آپ کی آڈیو وصول یا محفوظ نہیں کرتا۔ آواز کی شناخت آپ کا براؤزر کرتا ہے اور اس کے لیے براؤزر فراہم کنندہ کی آن لائن سروس استعمال ہو سکتی ہے۔",
     mixedNote:        "اردو + انگریزی موڈ اردو پہچان (ur-PK) استعمال کرتا ہے۔ انگریزی الفاظ کی پہچان متغیر ہو سکتی ہے — یہ براؤزر کی حد ہے۔",
     unsupported:      "اس براؤزر میں Web Speech API نہیں ہے۔ Chrome، Edge یا Safari استعمال کریں۔",
-    permDenied:       "مائک کی اجازت نہیں ملی۔ اجازت دے کر دوبارہ کوشش کریں۔",
+    permDenied:       "مائک کی اجازت نہیں ملی۔",
+    permHelp:         "اجازت کیسے دیں؟",
+    permInstructions: "براؤزر میں Qalam Works کی سائٹ کی اجازتیں (Site permissions) کھولیں، Microphone کو Allow کریں، پھر صفحہ دوبارہ لوڈ کریں۔",
+    permRetry:        "دوبارہ کوشش کریں",
     emptyResult:      "کوئی آواز نہیں پکڑی گئی۔ دوبارہ کوشش کریں۔",
     recognitionError: "آواز کی پہچان ناکام ہوئی۔ دوبارہ کوشش کریں۔",
     tooLong:          "زیادہ سے زیادہ وقت ختم ہو گیا۔ اب متن شامل کیا جا رہا ہے…",
@@ -115,6 +121,9 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
 
   const [state,       setState]      = useState<DictationState>("idle");
   const [errorMsg,    setErrorMsg]   = useState<string>("");
+  /** "permission" for not-allowed errors; "other" for everything else. */
+  const [errorKind,   setErrorKind]  = useState<"permission" | "other">("other");
+  const [showPermHelp, setShowPermHelp] = useState(false);
   const [dictLang,    setDictLang]   = useState<DictationLanguage>("mixed");
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -282,8 +291,10 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
     recognition.onerror = (event: any) => {
       const code = event.error;
       let msg: string = t.recognitionError;
+      let kind: "permission" | "other" = "other";
       if (code === "not-allowed" || code === "service-not-allowed") {
         msg = t.permDenied;
+        kind = "permission";
       } else if (code === "no-speech") {
         msg = t.emptyResult;
       }
@@ -293,6 +304,8 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       cleanupRecognition();
       savedPosRef.current = null;
       setErrorMsg(msg);
+      setErrorKind(kind);
+      setShowPermHelp(false);
       setState("error");
       trackEvent("tool_error", {
         tool: "document_studio",
@@ -322,6 +335,8 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
 
   const dismissError = useCallback(() => {
     setErrorMsg("");
+    setErrorKind("other");
+    setShowPermHelp(false);
     setState("idle");
     cleanupRecognition();
     savedPosRef.current = null;
@@ -377,7 +392,41 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       </button>
 
       {/* Error message */}
-      {state === "error" && (
+      {state === "error" && errorKind === "permission" ? (
+        /* Permission-denied: show actionable recovery path */
+        <div className={`flex flex-col gap-1.5 text-[12px] max-w-[260px] ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+          <span className="text-red-600 font-medium">{errorMsg}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowPermHelp(v => !v)}
+              className="text-[#1A3A2A] underline underline-offset-2 hover:text-[#B8935A] shrink-0"
+            >
+              {t.permHelp}
+            </button>
+            <button
+              type="button"
+              onClick={() => { dismissError(); startDictation(); }}
+              className="bg-[#1A3A2A] text-white rounded px-2 py-0.5 hover:bg-[#244E38] transition-colors shrink-0"
+            >
+              {t.permRetry}
+            </button>
+            <button
+              type="button"
+              onClick={dismissError}
+              className="text-gray-400 hover:text-gray-600 underline shrink-0"
+            >
+              {t.dismiss}
+            </button>
+          </div>
+          {showPermHelp && (
+            <p className="text-[11px] text-[#4a6a4a] dark:text-[#9fbfa8] leading-relaxed bg-[#F7F5EF] dark:bg-[#162a1e] border border-[#1A3A2A]/10 rounded px-2 py-1.5">
+              {t.permInstructions}
+            </p>
+          )}
+        </div>
+      ) : state === "error" ? (
+        /* Generic error: message + dismiss only */
         <div className={`flex items-center gap-1.5 text-[12px] text-red-600 max-w-[220px] ${naskh}`}>
           <span>{errorMsg || t.errorLabel}</span>
           <button
@@ -388,7 +437,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
             {t.dismiss}
           </button>
         </div>
-      )}
+      ) : null}
 
       {/* Tooltip — speech note or mixed-mode warning */}
       {showTooltip && state === "idle" && (
