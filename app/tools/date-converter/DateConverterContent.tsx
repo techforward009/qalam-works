@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import Link from "next/link";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useLanguage } from "../../lib/language-context";
 import { trackEvent, trackToolOpenOnce } from "../../lib/analytics";
 import {
@@ -19,6 +20,10 @@ import {
   type DateParts,
   type ConversionResult,
 } from "./utils/dateEngine";
+import {
+  findHijriDateInGregorianYear,
+  getRichDateIntelligence,
+} from "./utils/dateIntelligence";
 import { COUNTRY_CALENDARS, COUNTRY_MAP, methodLabel } from "./utils/countryCalendars";
 import {
   resolveRegionalHijriReference,
@@ -30,6 +35,8 @@ const L = {
   en: {
     title:        "Date Converter",
     desc:         "Convert dates between Gregorian, Hijri, and Solar Hijri calendars.",
+    convertTab:   "Convert Date",
+    findTab:      "Find Date",
     sourceLabel:  "Source Calendar",
     day:          "Day",
     month:        "Month",
@@ -63,10 +70,37 @@ const L = {
     sourceHistorical: "Primary historical",
     sourceSecondary:  "Secondary calendar reference",
     refDisclaimer: "The regional reference does not replace the deterministic calculated result. It reflects documented or published calendar evidence for this country.",
+    moreInfo: "More date information",
+    weekday: "Weekday",
+    leapYear: "Leap year",
+    yes: "Yes",
+    no: "No",
+    dayOfYear: "Day of year",
+    weekNumber: "Week number",
+    julianDay: "Julian Day",
+    age: "Age",
+    daysElapsed: "Days elapsed",
+    daysUntil: "Days until",
+    years: "years",
+    months: "months",
+    days: "days",
+    futureDate: "Future date",
+    inDays: (days: number) => `In ${days} days`,
+    calendarMaker: "Create an annual calendar",
+    findIntro: "Know the Hijri day and month, but not the Hijri year? Search the selected Gregorian year using the same deterministic Qalam Works engine.",
+    hijriDay: "Hijri day",
+    hijriMonth: "Hijri month",
+    gregorianYear: "Gregorian year",
+    findPrompt: "Enter Hijri day, Hijri month, and Gregorian year.",
+    matches: "Calculated matches",
+    noMatches: "No calculated match was found in this Gregorian year.",
+    searchCaveat: "These are calculated tabular-Hijri matches. Regional historical evidence, where available, remains supplementary and does not replace them.",
   },
   ur: {
     title:        "تاریخ کنورٹر",
     desc:         "عیسوی، ہجری قمری اور ہجری شمسی تاریخوں کو باہم تبدیل کریں۔",
+    convertTab:   "تاریخ تبدیل کریں",
+    findTab:      "تاریخ تلاش کریں",
     sourceLabel:  "ماخذ تقویم",
     day:          "دن",
     month:        "مہینہ",
@@ -100,25 +134,39 @@ const L = {
     sourceHistorical: "بنیادی تاریخی",
     sourceSecondary:  "ثانوی کیلنڈر حوالہ",
     refDisclaimer: "علاقائی حوالہ حسابی نتیجے کی جگہ نہیں لیتا۔ یہ اس ملک کے لیے دستاویز شدہ یا شائع شدہ کیلنڈر شواہد کی عکاسی کرتا ہے۔",
+    moreInfo: "مزید تاریخی معلومات",
+    weekday: "ہفتے کا دن",
+    leapYear: "لیپ سال",
+    yes: "ہاں",
+    no: "نہیں",
+    dayOfYear: "سال کا دن",
+    weekNumber: "ہفتہ نمبر",
+    julianDay: "جولین دن",
+    age: "عمر",
+    daysElapsed: "گزرے ہوئے دن",
+    daysUntil: "تاریخ تک",
+    years: "سال",
+    months: "ماہ",
+    days: "دن",
+    futureDate: "آئندہ تاریخ",
+    inDays: (days: number) => `${days} دن بعد`,
+    calendarMaker: "سالانہ تقویم بنائیں",
+    findIntro: "اگر ہجری دن اور مہینہ معلوم ہو لیکن ہجری سال معلوم نہ ہو تو اسی قلم ورکس حسابی انجن سے منتخب عیسوی سال میں تاریخ تلاش کریں۔",
+    hijriDay: "ہجری دن",
+    hijriMonth: "ہجری مہینہ",
+    gregorianYear: "عیسوی سال",
+    findPrompt: "ہجری دن، ہجری مہینہ اور عیسوی سال درج کریں۔",
+    matches: "حسابی نتائج",
+    noMatches: "اس عیسوی سال میں کوئی حسابی مطابقت نہیں ملی۔",
+    searchCaveat: "یہ حسابی ہجری نتائج ہیں۔ دستیاب علاقائی تاریخی شواہد ضمنی رہتے ہیں اور ان حسابی نتائج کی جگہ نہیں لیتے۔",
   },
 };
 
-// Weekday names keyed to JDN % 7 → 0=Mon … 6=Sun
 const WEEKDAYS_EN = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 const WEEKDAYS_UR = ["پیر","منگل","بدھ","جمعرات","جمعہ","ہفتہ","اتوار"];
-
-/** Weekday from Gregorian date via JDN (same formula as dateEngine, inlined). */
-function weekdayFromGregorian(p: DateParts): number {
-  let { year: y, month: m, day: d } = p;
-  if (m <= 2) { y--; m += 12; }
-  const A = Math.floor(y / 100);
-  const B = 2 - A + Math.floor(A / 4);
-  const jdn = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524;
-  return jdn % 7; // 0=Mon … 6=Sun
-}
-
 const CAL_ORDER: CalendarType[] = ["gregorian", "hijri", "solar"];
 const VALID_CALS = new Set<string>(["gregorian", "hijri", "solar"]);
+type ToolMode = "convert" | "find";
 
 function calLabel(cal: CalendarType, lang: "en" | "ur"): string {
   const t = L[lang];
@@ -133,7 +181,6 @@ function monthOptions(cal: CalendarType, lang: "en" | "ur") {
   return lang === "ur" ? SOLAR_MONTHS_UR : SOLAR_MONTHS_EN;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
 export default function DateConverterContent() {
   useEffect(() => { trackToolOpenOnce("date_converter"); }, []);
 
@@ -143,6 +190,7 @@ export default function DateConverterContent() {
   const isUr   = lang === "ur";
   const naskh  = isUr ? "font-naskh" : "";
 
+  const [mode, setMode] = useState<ToolMode>("convert");
   const [calendar,    setCalendar]    = useState<CalendarType>("gregorian");
   const [day,         setDay]         = useState("");
   const [month,       setMonth]       = useState("");
@@ -150,11 +198,11 @@ export default function DateConverterContent() {
   const [copied,      setCopied]      = useState<CalendarType | null>(null);
   const [linkCopied,  setLinkCopied]  = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [findDay, setFindDay] = useState("");
+  const [findMonth, setFindMonth] = useState("");
+  const [findYear, setFindYear] = useState("");
 
   // ── Shareable URL ───────────────────────────────────────────────────────────
-  // Write the URL synchronously with the new values passed directly — avoids
-  // any stale-closure / async-state-update timing issue that a useEffect would
-  // have (effect sees the previous render's state, not the incoming value).
   function pushURL(cal: CalendarType, d: string, mo: string, yr: string) {
     if (typeof window === "undefined") return;
     if (!d && !mo && !yr) {
@@ -169,8 +217,6 @@ export default function DateConverterContent() {
     window.history.replaceState(null, "", "?" + p.toString());
   }
 
-  // On mount: restore calendar + date from ?calendar=&day=&month=&year= params.
-  // This is the ONLY useEffect needed for URL — reading on load.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const p = new URLSearchParams(window.location.search);
@@ -182,33 +228,45 @@ export default function DateConverterContent() {
     if (d)  setDay(d);
     if (mo) setMonth(mo);
     if (yr) setYear(yr);
-    // No URL write here — the URL already has the correct params we just read.
   }, []);
 
-  // ── Derived result ──────────────────────────────────────────────────────────
+  // ── Derived conversion result ───────────────────────────────────────────────
   const dayN   = parseInt(day,   10);
   const monthN = parseInt(month, 10);
   const yearN  = parseInt(year,  10);
-
   const hasInput = day !== "" && month !== "" && year !== "" && year.length >= 3;
-  let result:  ConversionResult | null = null;
-  let errMsg:  string | null = null;
+  let result: ConversionResult | null = null;
+  let errMsg: string | null = null;
 
   if (hasInput) {
     const parts: DateParts = { year: yearN, month: monthN, day: dayN };
     const err = validateDate(calendar, parts);
-    if (err) {
-      errMsg = `${t.invalidDate}: ${err.message}`;
-    } else {
-      result = convert(calendar, parts);
-    }
+    if (err) errMsg = `${t.invalidDate}: ${err.message}`;
+    else result = convert(calendar, parts);
   }
 
-  // Weekday — same JDN for all calendars; compute once from Gregorian result.
-  const weekdayIdx  = result ? weekdayFromGregorian(result.gregorian) : -1;
-  const weekdayName = weekdayIdx >= 0
-    ? (isUr ? WEEKDAYS_UR[weekdayIdx] : WEEKDAYS_EN[weekdayIdx])
+  const intelligence = result ? getRichDateIntelligence(result.gregorian) : null;
+  const weekdayName = intelligence
+    ? (isUr ? WEEKDAYS_UR[intelligence.weekdayIndex] : WEEKDAYS_EN[intelligence.weekdayIndex])
     : "";
+
+  // ── Unknown-Hijri-year search ──────────────────────────────────────────────
+  const findDayN = parseInt(findDay, 10);
+  const findMonthN = parseInt(findMonth, 10);
+  const findYearN = parseInt(findYear, 10);
+  const hasFindInput = findDay !== "" && findMonth !== "" && findYear !== "" && findYear.length >= 4;
+  const findValid = hasFindInput &&
+    findDayN >= 1 && findDayN <= 30 &&
+    findMonthN >= 1 && findMonthN <= 12 &&
+    findYearN >= 1900 && findYearN <= 2100;
+  const findMatches = useMemo(() => {
+    if (!findValid) return [];
+    return findHijriDateInGregorianYear({
+      hijriDay: findDayN,
+      hijriMonth: findMonthN,
+      gregorianYear: findYearN,
+    });
+  }, [findValid, findDayN, findMonthN, findYearN]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleToday = useCallback(() => {
@@ -245,15 +303,13 @@ export default function DateConverterContent() {
     setTimeout(() => setLinkCopied(false), 1800);
   }, []);
 
-  const months    = monthOptions(calendar, lang);
+  const months = monthOptions(calendar, lang);
   const resultCals = CAL_ORDER.filter(cal => cal !== calendar);
+  const inputClass = "w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]";
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="site-container" dir={dir}>
       <div className="max-w-2xl mx-auto py-6 sm:py-10">
-
-        {/* Header */}
         <div className="text-center mb-7">
           <h1 className={`text-2xl sm:text-3xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${isUr ? "font-nastaliq font-normal" : ""}`}>
             {t.title}
@@ -261,328 +317,452 @@ export default function DateConverterContent() {
           <p className={`text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`}>{t.desc}</p>
         </div>
 
-        {/* Input card */}
-        <div className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6 mb-5">
-
-          {/* Calendar selector */}
-          <label className={`block text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-2 ${naskh}`}>
-            {t.sourceLabel}
-          </label>
-          <div className="flex gap-2 flex-wrap mb-5">
-            {CAL_ORDER.map(c => (
-              <button key={c} onClick={() => {
-                setCalendar(c); setMonth(""); setDay("");
-                pushURL(c, "", "", year);
-              }}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
-                  ${calendar === c
-                    ? "bg-[#1A3A2A] dark:bg-[#2a5a3a] text-white border-transparent"
-                    : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#1A3A2A]/40 dark:hover:border-[#4a7a5a]"}`}>
-                {calLabel(c, lang)}
-              </button>
-            ))}
-          </div>
-
-          {/* Day / Month / Year inputs */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div>
-              <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.day}</label>
-              <input
-                type="number" min={1} max={31} value={day}
-                onChange={e => { const v = e.target.value; setDay(v); pushURL(calendar, v, month, year); }}
-                placeholder="1"
-                className="w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm text-center focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]"
-                dir="ltr"
-              />
-            </div>
-            <div>
-              <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.month}</label>
-              <select
-                value={month}
-                onChange={e => { const v = e.target.value; setMonth(v); pushURL(calendar, day, v, year); }}
-                className={`w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a] ${naskh}`}>
-                <option value="">{t.selectMonth}</option>
-                {months.map((m, i) => (
-                  <option key={i + 1} value={String(i + 1)}>{m}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.year}</label>
-              <input
-                type="number" value={year}
-                onChange={e => { const v = e.target.value; setYear(v); pushURL(calendar, day, month, v); }}
-                placeholder={calendar === "gregorian" ? "2026" : calendar === "hijri" ? "1447" : "1405"}
-                className="w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm text-center focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]"
-                dir="ltr"
-              />
-            </div>
-          </div>
-
-          {/* Today / Clear / Copy Link */}
-          <div className="flex gap-3 flex-wrap">
-            <button onClick={handleToday}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold bg-[#1A3A2A]/8 dark:bg-[#2a3d30] text-[#1A3A2A] dark:text-[#e8ede9] hover:bg-[#1A3A2A]/15 dark:hover:bg-[#3a5a45] transition-colors ${naskh}`}>
-              {t.today}
+        {/* Expansion tabs are additive; the accepted Convert Date UI below is preserved. */}
+        <div className="grid grid-cols-2 gap-2 mb-5 rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] p-1">
+          {(["convert", "find"] as ToolMode[]).map(item => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setMode(item)}
+              className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${naskh} ${
+                mode === item
+                  ? "bg-white dark:bg-[#162a1e] text-[#1A3A2A] dark:text-[#e8ede9] shadow-sm"
+                  : "text-[#4a6a4a] dark:text-[#a8c8b0] hover:text-[#1A3A2A] dark:hover:text-[#e8ede9]"
+              }`}
+            >
+              {item === "convert" ? t.convertTab : t.findTab}
             </button>
-            {(day || month || year) && (
-              <button onClick={handleClear}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] hover:text-red-600 dark:hover:text-red-400 transition-colors ${naskh}`}>
-                {t.clear}
-              </button>
-            )}
-            {result && (
-              <button onClick={handleCopyLink}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
-                  ${linkCopied
-                    ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400"
-                    : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#b8d4bc] hover:border-amber-400 dark:hover:border-amber-600"}`}>
-                {linkCopied ? t.linkCopied : t.copyLink}
-              </button>
-            )}
-          </div>
+          ))}
         </div>
 
-        {/* Error */}
-        {errMsg && (
-          <div className={`rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400 mb-5 ${naskh}`} dir={dir}>
-            {errMsg}
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!hasInput && !errMsg && (
-          <p className={`text-center text-[#4A6A4A]/70 dark:text-[#a8c8b0]/70 text-sm py-4 ${naskh}`}>{t.enterDate}</p>
-        )}
-
-        {/* Result cards — source calendar excluded; exactly 2 shown */}
-        {result && (
-          <div className="space-y-3">
-            {resultCals.map(cal => {
-              const parts    = result![cal];
-              const long     = formatDate(parts, cal, lang);
-              const iso      = isoDate(parts);
-              const copyText = `${weekdayName}  ${long}\n${iso}`;
-              const isCopied = copied === cal;
-              const methodBadge = cal === "hijri" ? t.methodHijri
-                                : cal === "solar" ? t.methodSolar
-                                : null;
-              return (
-                <div key={cal}
-                  className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-xl px-5 py-4 shadow-sm">
-                  {/* In RTL (Urdu), dir="rtl" from parent already places content on the right
-                      and Copy button on the left — no flex-row-reverse needed here. */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      {isUr ? (
-                        <>
-                          {/* Urdu heading: larger, bold, high contrast — functions as clear card title */}
-                          <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-0.5 ${naskh}`}>
-                            {calLabel(cal, lang)}
-                          </p>
-                          {/* Method label: own line, readable secondary — does not compete with amber weekday */}
-                          {methodBadge && (
-                            <p className={`text-[11px] font-medium text-[#4a7a5a] dark:text-[#8faa93] mb-1 ${naskh}`}>
-                              {methodBadge}
-                            </p>
-                          )}
-                        </>
-                      ) : (
-                        /* EN: compact inline row — calendar label + optional method badge */
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <p className="text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0]">
-                            {calLabel(cal, lang)}
-                          </p>
-                          {methodBadge && (
-                            <span className="text-[10px] font-medium text-[#3a6a4a]/60 dark:text-[#8faa93]/60">
-                              {methodBadge}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {/* Weekday — amber accent, smaller than main date */}
-                      <p className={`text-sm font-semibold text-amber-700 dark:text-amber-400 mb-0.5 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
-                        {weekdayName}
-                      </p>
-                      {/* Human-readable date — largest, primary */}
-                      <p className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{long}</p>
-                      {/* ISO / numeric date — dir=ltr keeps numbers machine-readable;
-                          text-right anchors it visually to the right in Urdu layout */}
-                      <p className={`text-xs text-[#4a7a5a] dark:text-[#9fbfa8] mt-0.5 font-mono ${isUr ? "text-right" : ""}`} dir="ltr">{iso}</p>
-                    </div>
-                    <button onClick={() => handleCopy(cal, copyText)}
-                      className={`shrink-0 mt-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${naskh}
-                        ${isCopied
-                          ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
-                          : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#a8c8b0] hover:border-[#1A3A2A]/40 dark:hover:border-[#4a7a5a]"}`}>
-                      {isCopied ? t.copied : t.copy}
-                    </button>
-                  </div>
-                  {/* Per-calendar method caveat — improved contrast */}
-                  {cal === "hijri" && (
-                    <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.hijriNote}</p>
-                  )}
-                  {cal === "solar" && (
-                    <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.solarNote}</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        {/* Regional Context — country selector, method note, and evidence panel */}
-        <div className="mt-6 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
-          <p className={`text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-1 ${naskh}`}>
-            {t.countryLabel}
-          </p>
-          <p className={`text-[13px] text-[#4a7a5a] dark:text-[#8faa93] mb-3 ${naskh}`}>
-            {t.countryHint}
-          </p>
-
-          {/* Country selector */}
-          <select
-            value={selectedCountry}
-            onChange={e => setSelectedCountry(e.target.value)}
-            className={`w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a] ${naskh}`}
-            dir={isUr ? "rtl" : "ltr"}
+        <div className={`mb-5 ${isUr ? "text-left" : "text-right"}`}>
+          <Link
+            href="/tools/calendar-maker"
+            className={`text-sm font-semibold text-[#3a6a4a] dark:text-[#a8c8b0] hover:text-[#1A3A2A] dark:hover:text-[#e8ede9] transition-colors ${naskh}`}
           >
-            <option value="">{t.countryNone}</option>
-            {COUNTRY_CALENDARS.map(c => (
-              <option key={c.id} value={c.id}>{c.name[lang]}</option>
-            ))}
-          </select>
+            {t.calendarMaker} →
+          </Link>
+        </div>
 
-          {/* Country-specific content */}
-          {selectedCountry && (() => {
-            const country = COUNTRY_MAP.get(selectedCountry);
-            if (!country) return null;
+        {mode === "convert" ? (
+          <>
+            {/* Input card — accepted Date Converter presentation preserved */}
+            <div className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6 mb-5">
+              <label className={`block text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-2 ${naskh}`}>
+                {t.sourceLabel}
+              </label>
+              <div className="flex gap-2 flex-wrap mb-5">
+                {CAL_ORDER.map(c => (
+                  <button key={c} onClick={() => {
+                    setCalendar(c); setMonth(""); setDay("");
+                    pushURL(c, "", "", year);
+                  }}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
+                      ${calendar === c
+                        ? "bg-[#1A3A2A] dark:bg-[#2a5a3a] text-white border-transparent"
+                        : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#1A3A2A]/40 dark:hover:border-[#4a7a5a]"}`}>
+                    {calLabel(c, lang)}
+                  </button>
+                ))}
+              </div>
 
-            // Resolve regional evidence when source = Hijri and a valid result exists.
-            const hijriInput =
-              calendar === "hijri" && result
-                ? { year: parseInt(year, 10), month: parseInt(month, 10), day: parseInt(day, 10) }
-                : null;
-
-            const evidence: RegionalReference | null =
-              hijriInput ? resolveRegionalHijriReference(selectedCountry, hijriInput) : null;
-
-            function fmtGregorian(g: { year: number; month: number; day: number }) {
-              const months = isUr ? GREGORIAN_MONTHS_UR : GREGORIAN_MONTHS_EN;
-              return `${g.day} ${months[g.month - 1]} ${g.year}`;
-            }
-
-            const confidenceLabel = evidence?.confidence === "high"
-              ? t.confidenceHigh : t.confidenceMedium;
-            const sourceLabel = evidence?.sourceType === "primary-historical"
-              ? t.sourceHistorical : t.sourceSecondary;
-
-            return (
-              <div className="mt-4 space-y-3">
-                {/* Hijri method badge */}
-                <div className={`flex items-center gap-2 ${isUr ? "flex-row-reverse" : ""}`}>
-                  <span className={`text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
-                    {t.countryMethod}:
-                  </span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#1A3A2A]/8 dark:bg-white/[0.06] text-[#1A3A2A] dark:text-[#a8c8b0]">
-                    {methodLabel(country.hijriMethod, lang)}
-                  </span>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div>
+                  <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.day}</label>
+                  <input
+                    type="number" min={1} max={31} value={day}
+                    onChange={e => { const v = e.target.value; setDay(v); pushURL(calendar, v, month, year); }}
+                    placeholder="1"
+                    className="w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm text-center focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]"
+                    dir="ltr"
+                  />
                 </div>
+                <div>
+                  <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.month}</label>
+                  <select
+                    value={month}
+                    onChange={e => { const v = e.target.value; setMonth(v); pushURL(calendar, day, v, year); }}
+                    className={`w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a] ${naskh}`}>
+                    <option value="">{t.selectMonth}</option>
+                    {months.map((m, i) => (
+                      <option key={i + 1} value={String(i + 1)}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.year}</label>
+                  <input
+                    type="number" value={year}
+                    onChange={e => { const v = e.target.value; setYear(v); pushURL(calendar, day, month, v); }}
+                    placeholder={calendar === "gregorian" ? "2026" : calendar === "hijri" ? "1447" : "1405"}
+                    className="w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm text-center focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
 
-                {/* Regional evidence panel — only when source is Hijri and result exists */}
-                {hijriInput && result && (
-                  evidence ? (
-                    <div className={`rounded-xl border ${
-                      evidence.confidence === "high"
-                        ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40"
-                        : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40"
-                    } px-4 py-4 space-y-3 ${isUr ? "text-right" : ""}`}>
-
-                      {/* Calculated vs Regional side-by-side */}
-                      <div className={`grid grid-cols-2 gap-3`}>
-                        <div className={isUr ? "text-right" : ""}>
-                          <p className={`text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-0.5 ${naskh}`}>
-                            {t.calculatedResult}
-                          </p>
-                          <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
-                            {fmtGregorian(result.gregorian)}
-                          </p>
-                        </div>
-                        <div className={isUr ? "text-right" : ""}>
-                          <p className={`text-[11px] font-semibold mb-0.5 ${
-                            evidence.confidence === "high"
-                              ? "text-emerald-700 dark:text-emerald-400"
-                              : "text-amber-700 dark:text-amber-400"
-                          } ${naskh}`}>
-                            {t.regionalRef} — {country.name[lang]}
-                          </p>
-                          <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
-                            {fmtGregorian(evidence.gregorianDate)}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Confidence + source type badges */}
-                      <div className={`flex flex-wrap gap-2 ${isUr ? "flex-row-reverse" : ""}`}>
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                          evidence.confidence === "high"
-                            ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
-                            : "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300"
-                        } ${naskh}`}>
-                          {confidenceLabel}
-                        </span>
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#1A3A2A]/8 dark:bg-white/[0.06] text-[#3a6a4a] dark:text-[#a8c8b0] ${naskh}`}>
-                          {sourceLabel}
-                        </span>
-                      </div>
-
-                      {/* Source label */}
-                      <p className={`text-[12px] font-semibold text-[#3a6a4a] dark:text-[#8faa93] ${naskh}`}>
-                        {evidence.sourceLabel[lang]}
-                      </p>
-
-                      {/* Explanation */}
-                      <p className={`text-[13px] text-[#4a6a4a] dark:text-[#9fbfa8] leading-relaxed ${naskh}`}>
-                        {evidence.explanation[lang]}
-                      </p>
-
-                      {/* Disclaimer */}
-                      <p className={`text-[11px] text-[#4a7a5a]/70 dark:text-[#8faa93]/70 border-t border-[#1A3A2A]/10 pt-2 leading-relaxed ${naskh}`}>
-                        {t.refDisclaimer}
-                      </p>
-                    </div>
-                  ) : (
-                    /* No evidence for this country + date */
-                    <div className={`rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] border border-[#1A3A2A]/10 dark:border-white/[0.08] px-4 py-3 ${isUr ? "text-right" : ""}`}>
-                      <p className={`text-[13px] text-[#4a6a4a] dark:text-[#9fbfa8] leading-relaxed ${naskh}`}>
-                        {t.noEvidence}
-                      </p>
-                    </div>
-                  )
+              <div className="flex gap-3 flex-wrap">
+                <button onClick={handleToday}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold bg-[#1A3A2A]/8 dark:bg-[#2a3d30] text-[#1A3A2A] dark:text-[#e8ede9] hover:bg-[#1A3A2A]/15 dark:hover:bg-[#3a5a45] transition-colors ${naskh}`}>
+                  {t.today}
+                </button>
+                {(day || month || year) && (
+                  <button onClick={handleClear}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] hover:text-red-600 dark:hover:text-red-400 transition-colors ${naskh}`}>
+                    {t.clear}
+                  </button>
                 )}
-
-                {/* Hijri variation note (always shown) */}
-                <div className={`rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 px-4 py-3 ${isUr ? "text-right" : ""}`}>
-                  <p className={`text-[13px] text-amber-800 dark:text-amber-300 leading-relaxed ${naskh}`}>
-                    {country.hijriNote[lang]}
-                  </p>
-                </div>
-
-                {/* Official calendar note where relevant */}
-                {country.officialNote && (
-                  <div className={`rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] border border-[#1A3A2A]/10 dark:border-white/[0.08] px-4 py-3 ${isUr ? "text-right" : ""}`}>
-                    <p className={`text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>
-                      {t.countryOfficial}
-                    </p>
-                    <p className={`text-[13px] text-[#4a6a4a] dark:text-[#9fbfa8] leading-relaxed ${naskh}`}>
-                      {country.officialNote[lang]}
-                    </p>
-                  </div>
+                {result && (
+                  <button onClick={handleCopyLink}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
+                      ${linkCopied
+                        ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400"
+                        : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#b8d4bc] hover:border-amber-400 dark:hover:border-amber-600"}`}>
+                    {linkCopied ? t.linkCopied : t.copyLink}
+                  </button>
                 )}
               </div>
-            );
-          })()}
-        </div>
+            </div>
+
+            {errMsg && (
+              <div className={`rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400 mb-5 ${naskh}`} dir={dir}>
+                {errMsg}
+              </div>
+            )}
+
+            {!hasInput && !errMsg && (
+              <p className={`text-center text-[#4A6A4A]/70 dark:text-[#a8c8b0]/70 text-sm py-4 ${naskh}`}>{t.enterDate}</p>
+            )}
+
+            {/* Result cards — preserve accepted EN/UR hierarchy exactly */}
+            {result && (
+              <div className="space-y-3">
+                {resultCals.map(cal => {
+                  const parts    = result![cal];
+                  const long     = formatDate(parts, cal, lang);
+                  const iso      = isoDate(parts);
+                  const copyText = `${weekdayName}  ${long}\n${iso}`;
+                  const isCopied = copied === cal;
+                  const methodBadge = cal === "hijri" ? t.methodHijri
+                                    : cal === "solar" ? t.methodSolar
+                                    : null;
+                  return (
+                    <div key={cal}
+                      className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-xl px-5 py-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          {isUr ? (
+                            <>
+                              <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-0.5 ${naskh}`}>
+                                {calLabel(cal, lang)}
+                              </p>
+                              {methodBadge && (
+                                <p className={`text-[11px] font-medium text-[#4a7a5a] dark:text-[#8faa93] mb-1 ${naskh}`}>
+                                  {methodBadge}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <p className="text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0]">
+                                {calLabel(cal, lang)}
+                              </p>
+                              {methodBadge && (
+                                <span className="text-[10px] font-medium text-[#3a6a4a]/60 dark:text-[#8faa93]/60">
+                                  {methodBadge}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <p className={`text-sm font-semibold text-amber-700 dark:text-amber-400 mb-0.5 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
+                            {weekdayName}
+                          </p>
+                          <p className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{long}</p>
+                          <p className={`text-xs text-[#4a7a5a] dark:text-[#9fbfa8] mt-0.5 font-mono ${isUr ? "text-right" : ""}`} dir="ltr">{iso}</p>
+                        </div>
+                        <button onClick={() => handleCopy(cal, copyText)}
+                          className={`shrink-0 mt-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${naskh}
+                            ${isCopied
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
+                              : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#a8c8b0] hover:border-[#1A3A2A]/40 dark:hover:border-[#4a7a5a]"}`}>
+                          {isCopied ? t.copied : t.copy}
+                        </button>
+                      </div>
+                      {cal === "hijri" && (
+                        <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.hijriNote}</p>
+                      )}
+                      {cal === "solar" && (
+                        <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.solarNote}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Additive rich intelligence; numeric-only values use LTR, Urdu phrases do not. */}
+            {intelligence && (() => {
+              const ageValue = intelligence.age
+                ? (isUr
+                    ? `${intelligence.age.years} ${t.years}، ${intelligence.age.months} ${t.months}، ${intelligence.age.days} ${t.days}`
+                    : `${intelligence.age.years} ${t.years}, ${intelligence.age.months} ${t.months}, ${intelligence.age.days} ${t.days}`)
+                : t.futureDate;
+              const rows: Array<{ label: string; value: string; numeric?: boolean }> = [
+                { label: t.weekday, value: weekdayName },
+                { label: t.leapYear, value: intelligence.leapYear ? t.yes : t.no },
+                { label: t.dayOfYear, value: String(intelligence.dayOfYear), numeric: true },
+                { label: t.weekNumber, value: `${intelligence.isoWeek}${intelligence.isoWeekYear !== intelligence.gregorian.year ? ` · ${intelligence.isoWeekYear}` : ""}`, numeric: true },
+                { label: t.julianDay, value: String(intelligence.julianDayNumber), numeric: true },
+                { label: t.age, value: ageValue },
+                {
+                  label: intelligence.relation === "future" ? t.daysUntil : t.daysElapsed,
+                  value: intelligence.relation === "future"
+                    ? (isUr ? t.inDays(intelligence.wholeDayDistance) : String(intelligence.wholeDayDistance))
+                    : String(intelligence.wholeDayDistance),
+                  numeric: intelligence.relation === "future" ? !isUr : true,
+                },
+              ];
+              return (
+                <section className="mt-5 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
+                  <h2 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-4 ${naskh}`}>{t.moreInfo}</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-4">
+                    {rows.map(row => (
+                      <div key={row.label}>
+                        <p className={`text-[11px] font-semibold text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{row.label}</p>
+                        <p
+                          className={`mt-0.5 text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}
+                          dir={row.numeric ? "ltr" : (isUr ? "rtl" : undefined)}
+                        >
+                          {row.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            })()}
+
+            <RegionalContext
+              selectedCountry={selectedCountry}
+              setSelectedCountry={setSelectedCountry}
+              calendar={calendar}
+              result={result}
+              day={day}
+              month={month}
+              year={year}
+              lang={lang}
+              isUr={isUr}
+              naskh={naskh}
+            />
+          </>
+        ) : (
+          <section className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
+            <p className={`text-[13px] text-[#4a6a4a] dark:text-[#a8c8b0] leading-relaxed mb-5 ${naskh}`}>{t.findIntro}</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.hijriDay}</label>
+                <input type="number" min={1} max={30} value={findDay} onChange={(e) => setFindDay(e.target.value)} className={`${inputClass} text-center`} dir="ltr" />
+              </div>
+              <div>
+                <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.hijriMonth}</label>
+                <select value={findMonth} onChange={(e) => setFindMonth(e.target.value)} className={`${inputClass} ${naskh}`}>
+                  <option value="">{t.selectMonth}</option>
+                  {(isUr ? HIJRI_MONTHS_UR : HIJRI_MONTHS_EN).map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.gregorianYear}</label>
+                <input type="number" min={1900} max={2100} value={findYear} onChange={(e) => setFindYear(e.target.value)} placeholder="1976" className={`${inputClass} text-center`} dir="ltr" />
+              </div>
+            </div>
+
+            {!hasFindInput && <p className={`mt-5 text-center text-sm text-[#4a6a4a]/70 dark:text-[#a8c8b0]/70 ${naskh}`}>{t.findPrompt}</p>}
+            {hasFindInput && !findValid && <p className={`mt-5 text-sm text-red-600 dark:text-red-400 ${naskh}`}>{t.invalidDate}</p>}
+            {findValid && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h2 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.matches}</h2>
+                  <span className="text-xs font-semibold text-[#4a7a5a] dark:text-[#8faa93]" dir="ltr">{findMatches.length}</span>
+                </div>
+                {findMatches.length === 0 ? (
+                  <p className={`rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] px-4 py-3 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.noMatches}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {findMatches.map(match => {
+                      const wd = isUr ? WEEKDAYS_UR[match.weekdayIndex] : WEEKDAYS_EN[match.weekdayIndex];
+                      return (
+                        <article key={isoDate(match.gregorian)} className="rounded-xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] p-4">
+                          <p className={`text-sm font-semibold text-amber-700 dark:text-amber-400 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>{wd}</p>
+                          <p className={`mt-0.5 text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{formatDate(match.gregorian, "gregorian", lang)}</p>
+                          <p className="text-xs text-[#4a7a5a] dark:text-[#9fbfa8] font-mono" dir="ltr">{isoDate(match.gregorian)}</p>
+                          <div className="mt-2 grid sm:grid-cols-2 gap-1 text-sm">
+                            <p className={naskh}>{formatDate(match.hijri, "hijri", lang)}</p>
+                            <p className={naskh}>{formatDate(match.solar, "solar", lang)}</p>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+                <p className={`mt-4 text-[11px] leading-relaxed text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{t.searchCaveat}</p>
+              </div>
+            )}
+          </section>
+        )}
       </div>
+    </div>
+  );
+}
+
+function RegionalContext({ selectedCountry, setSelectedCountry, calendar, result, day, month, year, lang, isUr, naskh }: {
+  selectedCountry: string;
+  setSelectedCountry: (value: string) => void;
+  calendar: CalendarType;
+  result: ConversionResult | null;
+  day: string;
+  month: string;
+  year: string;
+  lang: "en" | "ur";
+  isUr: boolean;
+  naskh: string;
+}) {
+  const t = L[lang];
+
+  return (
+    <div className="mt-6 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
+      <p className={`text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-1 ${naskh}`}>
+        {t.countryLabel}
+      </p>
+      <p className={`text-[13px] text-[#4a7a5a] dark:text-[#8faa93] mb-3 ${naskh}`}>
+        {t.countryHint}
+      </p>
+
+      <select
+        value={selectedCountry}
+        onChange={e => setSelectedCountry(e.target.value)}
+        className={`w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a] ${naskh}`}
+        dir={isUr ? "rtl" : "ltr"}
+      >
+        <option value="">{t.countryNone}</option>
+        {COUNTRY_CALENDARS.map(c => (
+          <option key={c.id} value={c.id}>{c.name[lang]}</option>
+        ))}
+      </select>
+
+      {selectedCountry && (() => {
+        const country = COUNTRY_MAP.get(selectedCountry);
+        if (!country) return null;
+
+        const hijriInput =
+          calendar === "hijri" && result
+            ? { year: parseInt(year, 10), month: parseInt(month, 10), day: parseInt(day, 10) }
+            : null;
+
+        const evidence: RegionalReference | null =
+          hijriInput ? resolveRegionalHijriReference(selectedCountry, hijriInput) : null;
+
+        function fmtGregorian(g: { year: number; month: number; day: number }) {
+          const months = isUr ? GREGORIAN_MONTHS_UR : GREGORIAN_MONTHS_EN;
+          return `${g.day} ${months[g.month - 1]} ${g.year}`;
+        }
+
+        const confidenceLabel = evidence?.confidence === "high"
+          ? t.confidenceHigh : t.confidenceMedium;
+        const sourceLabel = evidence?.sourceType === "primary-historical"
+          ? t.sourceHistorical : t.sourceSecondary;
+
+        return (
+          <div className="mt-4 space-y-3">
+            <div className={`flex items-center gap-2 ${isUr ? "flex-row-reverse" : ""}`}>
+              <span className={`text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                {t.countryMethod}:
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#1A3A2A]/8 dark:bg-white/[0.06] text-[#1A3A2A] dark:text-[#a8c8b0]">
+                {methodLabel(country.hijriMethod, lang)}
+              </span>
+            </div>
+
+            {hijriInput && result && (
+              evidence ? (
+                <div className={`rounded-xl border ${
+                  evidence.confidence === "high"
+                    ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/40"
+                    : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40"
+                } px-4 py-4 space-y-3 ${isUr ? "text-right" : ""}`}>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className={isUr ? "text-right" : ""}>
+                      <p className={`text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-0.5 ${naskh}`}>
+                        {t.calculatedResult}
+                      </p>
+                      <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                        {fmtGregorian(result.gregorian)}
+                      </p>
+                    </div>
+                    <div className={isUr ? "text-right" : ""}>
+                      <p className={`text-[11px] font-semibold mb-0.5 ${
+                        evidence.confidence === "high"
+                          ? "text-emerald-700 dark:text-emerald-400"
+                          : "text-amber-700 dark:text-amber-400"
+                      } ${naskh}`}>
+                        {t.regionalRef} — {country.name[lang]}
+                      </p>
+                      <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                        {fmtGregorian(evidence.gregorianDate)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={`flex flex-wrap gap-2 ${isUr ? "flex-row-reverse" : ""}`}>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                      evidence.confidence === "high"
+                        ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300"
+                        : "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300"
+                    } ${naskh}`}>
+                      {confidenceLabel}
+                    </span>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#1A3A2A]/8 dark:bg-white/[0.06] text-[#3a6a4a] dark:text-[#a8c8b0] ${naskh}`}>
+                      {sourceLabel}
+                    </span>
+                  </div>
+
+                  <p className={`text-[12px] font-semibold text-[#3a6a4a] dark:text-[#8faa93] ${naskh}`}>
+                    {evidence.sourceLabel[lang]}
+                  </p>
+                  <p className={`text-[13px] text-[#4a6a4a] dark:text-[#9fbfa8] leading-relaxed ${naskh}`}>
+                    {evidence.explanation[lang]}
+                  </p>
+                  <p className={`text-[11px] text-[#4a7a5a]/70 dark:text-[#8faa93]/70 border-t border-[#1A3A2A]/10 pt-2 leading-relaxed ${naskh}`}>
+                    {t.refDisclaimer}
+                  </p>
+                </div>
+              ) : (
+                <div className={`rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] border border-[#1A3A2A]/10 dark:border-white/[0.08] px-4 py-3 ${isUr ? "text-right" : ""}`}>
+                  <p className={`text-[13px] text-[#4a6a4a] dark:text-[#9fbfa8] leading-relaxed ${naskh}`}>
+                    {t.noEvidence}
+                  </p>
+                </div>
+              )
+            )}
+
+            <div className={`rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 px-4 py-3 ${isUr ? "text-right" : ""}`}>
+              <p className={`text-[13px] text-amber-800 dark:text-amber-300 leading-relaxed ${naskh}`}>
+                {country.hijriNote[lang]}
+              </p>
+            </div>
+
+            {country.officialNote && (
+              <div className={`rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] border border-[#1A3A2A]/10 dark:border-white/[0.08] px-4 py-3 ${isUr ? "text-right" : ""}`}>
+                <p className={`text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>
+                  {t.countryOfficial}
+                </p>
+                <p className={`text-[13px] text-[#4a6a4a] dark:text-[#9fbfa8] leading-relaxed ${naskh}`}>
+                  {country.officialNote[lang]}
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

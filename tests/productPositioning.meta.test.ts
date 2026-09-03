@@ -15,7 +15,7 @@ describe("Product positioning metadata", () => {
   });
 
   it("Unicode Standardizer title includes Urdu", () => {
-    expect(read("app/tools/unicode-standardizer/page.tsx")).toMatch(/Urdu Unicode Standardizer/);
+    expect(read("app/tools/unicode-standardizer/page.tsx")).toMatch(/Urdu Unicode Fixer/);
   });
 
   it("Document Cleaner does not claim PDF upload", () => {

@@ -345,4 +345,36 @@ export const TOOL_CATALOG: ToolEntry[] = [
       ur: "جو کوئی عیسوی، اسلامی یا فارسی تقویموں کے درمیان کام کرتا ہو۔",
     },
   },
+
+  // ── 11. Calendar Maker ──────────────────────────────────────────────────────
+  {
+    id: "calendar_maker",
+    route: "/tools/calendar-maker",
+    Icon: CalendarDays,
+    iconBg: "bg-teal-50 dark:bg-teal-950/30",
+    iconColor: "text-teal-700 dark:text-teal-400",
+    name:  { en: "Calendar Maker", ur: "تقویم ساز" },
+    short: {
+      en: "Build a printable annual Gregorian calendar with an optional calculated Hijri date overlay.",
+      ur: "سالانہ قابلِ طباعت عیسوی تقویم بنائیں، چاہیں تو حسابی ہجری تاریخیں بھی شامل کریں۔",
+    },
+    whatItDoes: {
+      en: "Creates a 12-month annual calendar with correct weekday placement, Sunday or Monday week start, English or Urdu labels, optional calculated Hijri dates, and A4 portrait or landscape PDF export.",
+      ur: "درست ہفتہ وار ترتیب کے ساتھ 12 ماہ کی سالانہ تقویم بناتا ہے۔ اتوار یا پیر سے ہفتہ شروع کریں، اردو یا انگریزی منتخب کریں، حسابی ہجری تاریخیں شامل کریں، اور A4 عمودی یا افقی PDF حاصل کریں۔",
+    },
+    input:  { en: "Choose Gregorian year, calendar content, language, week start, and A4 page orientation.", ur: "عیسوی سال، تقویم کا مواد، زبان، ہفتے کا آغاز، اور A4 صفحے کی سمت منتخب کریں۔" },
+    output: { en: "A live 12-month preview and downloadable annual PDF calendar.", ur: "12 ماہ کا زندہ پیش منظر اور ڈاؤن لوڈ کے قابل سالانہ PDF تقویم۔" },
+    doesNotDo: {
+      en: "Does not use astronomical Hijri calculation, prayer times, event databases, location services, or custom calendar artwork.",
+      ur: "فلکیاتی ہجری حساب، نماز کے اوقات، تقریبات کا ڈیٹابیس، مقام کی خدمات، یا حسبِ خواہش کیلنڈر آرٹ ورک شامل نہیں کرتا۔",
+    },
+    bestFor: {
+      en: "Anyone who needs a clean printable yearly calendar with optional Qalam Works calculated Hijri dates.",
+      ur: "جو کوئی صاف قابلِ طباعت سالانہ تقویم چاہتا ہو، اختیاری قلم ورکس حسابی ہجری تاریخوں کے ساتھ۔",
+    },
+    importantNote: {
+      en: "Hijri dates use the same deterministic tabular engine as Date Converter and may differ from local moon sighting.",
+      ur: "ہجری تاریخیں تاریخ کنورٹر کے اسی حسابی قمری انجن سے بنتی ہیں اور مقامی رویتِ ہلال سے مختلف ہو سکتی ہیں۔",
+    },
+  },
 ];

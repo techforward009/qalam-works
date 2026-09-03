@@ -48,7 +48,7 @@ export interface ValidationError {
  * Gregorian date → Julian Day Number.
  * Algorithm: Jean Meeus, "Astronomical Algorithms" §7.
  */
-function gregorianToJDN(y: number, m: number, d: number): number {
+export function gregorianToJDN(y: number, m: number, d: number): number {
   // Proleptic Gregorian
   if (m <= 2) { y -= 1; m += 12; }
   const A = Math.floor(y / 100);
@@ -56,7 +56,7 @@ function gregorianToJDN(y: number, m: number, d: number): number {
   return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524;
 }
 
-function jdnToGregorian(jdn: number): DateParts {
+export function jdnToGregorian(jdn: number): DateParts {
   const z = jdn;
   const a = Math.floor((z - 1867216.25) / 36524.25);
   const b = z + 1 + a - Math.floor(a / 4);
