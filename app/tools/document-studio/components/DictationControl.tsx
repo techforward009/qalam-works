@@ -94,6 +94,7 @@ const LABELS = {
     mixedNote:          "Urdu + English mode uses Urdu recognition (ur-PK). English words may be recognized with variable accuracy — this is a browser limitation.",
     // Error messages — keyed by SpeechRecognition error code
     permDenied:         "Microphone access is blocked.",
+    serviceNotAllowed:  "Your browser's speech recognition service is unavailable or blocked. Try a current version of Chrome, Edge, or Safari.",
     permHelp:           "How to allow microphone access",
     permInstructions:   "Open this site's permissions in your browser, set Microphone to Allow, then reload the page.",
     permRetry:          "Try again",
@@ -118,6 +119,7 @@ const LABELS = {
     speechNote:         "قلم ورکس آپ کی آڈیو وصول یا محفوظ نہیں کرتا۔ آواز کی شناخت آپ کا براؤزر کرتا ہے اور اس کے لیے براؤزر فراہم کنندہ کی آن لائن سروس استعمال ہو سکتی ہے۔",
     mixedNote:          "اردو + انگریزی موڈ اردو پہچان (ur-PK) استعمال کرتا ہے۔ انگریزی الفاظ کی پہچان متغیر ہو سکتی ہے — یہ براؤزر کی حد ہے۔",
     permDenied:         "مائک کی اجازت نہیں ملی۔",
+    serviceNotAllowed:  "آپ کے براؤزر کی آواز پہچاننے والی سروس دستیاب نہیں یا بلاک ہے۔ Chrome، Edge یا Safari کا موجودہ ورژن استعمال کریں۔",
     permHelp:           "اجازت کیسے دیں؟",
     permInstructions:   "براؤزر میں Qalam Works کی سائٹ کی اجازتیں (Site permissions) کھولیں، Microphone کو Allow کریں، پھر صفحہ دوبارہ لوڈ کریں۔",
     permRetry:          "دوبارہ کوشش کریں",
@@ -328,9 +330,15 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       let msg: string  = t.recognitionError;
       let kind: "permission" | "other" = "other";
 
-      if (code === "not-allowed" || code === "service-not-allowed") {
+      if (code === "not-allowed") {
+        // Microphone access denied by the user or browser policy.
         msg  = t.permDenied;
         kind = "permission";
+      } else if (code === "service-not-allowed") {
+        // Speech recognition service blocked/unavailable — NOT a mic permission issue.
+        // Do not show the permission recovery UI; it would mislead the user.
+        msg  = t.serviceNotAllowed;
+        kind = "other";
       } else if (code === "no-speech") {
         msg = t.noSpeech;
       } else if (code === "audio-capture") {
