@@ -39,6 +39,7 @@ const COPY = {
     statusTranscribing: "Transcribing locally…",
     statusDone: "Transcription complete",
     statusError: "Error",
+    preview: "Recorded audio preview",
   },
   ur: {
     title: "مقامی وسپر ڈکٹیشن (لیبز)",
@@ -60,6 +61,7 @@ const COPY = {
     statusTranscribing: "مقامی طور پر تحریر بن رہی ہے…",
     statusDone: "تحریر مکمل ہوگئی",
     statusError: "خرابی",
+    preview: "ریکارڈ شدہ آڈیو سنیں",
   },
 } as const;
 
@@ -97,6 +99,7 @@ export default function LocalDictationClient() {
   const [rawDurationMs, setRawDurationMs] = useState<number | null>(null);
   const [pcmCount, setPcmCount] = useState<number | null>(null);
   const [pcmRate, setPcmRate] = useState<number | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [webgpuAvailable] = useState(() => detectWebGpuAvailable());
 
   const samplesRef = useRef<Float32Array | null>(null);
@@ -104,6 +107,15 @@ export default function LocalDictationClient() {
   const busyRef = useRef(false);
   const mountedRef = useRef(true);
   const stopReasonRef = useRef<"user" | "unmount" | null>(null);
+  const previewUrlRef = useRef("");
+
+  const revokePreview = () => {
+    if (previewUrlRef.current) {
+      try { URL.revokeObjectURL(previewUrlRef.current); } catch { /* ignore */ }
+      previewUrlRef.current = "";
+    }
+    if (mountedRef.current) setPreviewUrl("");
+  };
 
   const setBusyStatus = (next: ModelStatus, nextFlow?: FlowPhase) => {
     if (!mountedRef.current) return;
@@ -122,6 +134,10 @@ export default function LocalDictationClient() {
     return () => {
       mountedRef.current = false;
       stopReasonRef.current = "unmount";
+      if (previewUrlRef.current) {
+        try { URL.revokeObjectURL(previewUrlRef.current); } catch { /* ignore */ }
+        previewUrlRef.current = "";
+      }
       const controller = abortRef.current;
       abortRef.current = null;
       busyRef.current = false;
@@ -173,6 +189,7 @@ export default function LocalDictationClient() {
     setPcmCount(null);
     setPcmRate(null);
     samplesRef.current = null;
+    revokePreview();
     stopReasonRef.current = null;
     const abort = new AbortController();
     abortRef.current = abort;
@@ -187,6 +204,9 @@ export default function LocalDictationClient() {
       if (clip.byteSize === 0) {
         throw new Error("Recording produced no audio data.");
       }
+      const objectUrl = URL.createObjectURL(clip.blob);
+      previewUrlRef.current = objectUrl;
+      setPreviewUrl(objectUrl);
       const pcm = await decodeToWhisperPcm(clip.blob);
       if (!mountedRef.current || stopReasonRef.current === "unmount") return;
       samplesRef.current = pcm.samples;
@@ -252,6 +272,7 @@ export default function LocalDictationClient() {
       try { abortRef.current?.abort(); } catch { /* ignore */ }
     }
     samplesRef.current = null;
+    revokePreview();
     setTranscript("");
     setAudioDurationSec(null);
     setTranscribeMs(null);
@@ -304,6 +325,12 @@ export default function LocalDictationClient() {
       <p className="mt-3 text-sm font-medium text-[#1A3A2A] dark:text-white">{flowLabel}</p>
       {progress ? <p className="mt-1 text-sm text-gray-600">{progress}</p> : null}
       {error ? <p className="mt-2 whitespace-pre-wrap text-sm text-red-700">{error}</p> : null}
+      {previewUrl ? (
+        <div className="mt-4">
+          <p className="mb-1 text-sm font-medium">{t.preview}</p>
+          <audio controls src={previewUrl} preload="metadata" className="w-full" />
+        </div>
+      ) : null}
       <label className="mt-6 block text-sm font-medium">{t.transcript}</label>
       <textarea
         value={transcript}
