@@ -82,6 +82,7 @@ import { DocumentOutlinePanel } from "./DocumentOutlinePanel";
 import { GlossaryPanel } from "./GlossaryPanel";
 import { WordRuler } from "./WordRuler";
 import { PublishingPresetSelector } from "./PublishingPresetSelector";
+import { DictationControl } from "./DictationControl";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import { formatFileSize } from "../../../utils/formatFileSize";
@@ -635,6 +636,11 @@ function Toolbar({
       <ToolbarButton label="Left-to-right (English)" active={dir === "ltr"} onClick={() => setDir("ltr")}>
         LTR
       </ToolbarButton>
+
+      <ToolbarDivider />
+
+      {/* Phase 1 voice dictation — inserts at saved cursor position */}
+      <DictationControl editor={editor} docDir={dir} isUr={isUr} />
     </div>
   );
 }
