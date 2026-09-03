@@ -385,3 +385,63 @@ into. Any further investigation (e.g. Unicode directional isolates —
 LRI/RLI/FSI/PDI, not yet tried) is deferred to a separate, isolated
 research spike outside the production editor/exporter, rather than more
 trial-and-error against `buildDocxDocument.ts` directly.
+
+---
+
+## Decision: Local Whisper Dictation — Concluded, Not Adopted
+
+**Date:** 2026-09-03
+**Status:** Concluded — Not adopted for production
+
+**Decision:**
+Local Whisper will not be integrated into production Document Studio.
+Document Studio's existing Web Speech dictation remains the current
+production path. The Local Whisper Labs experiment is frozen, with no
+additional Whisper-specific production work planned from this
+experiment.
+
+Larger browser-local Whisper variants are not being pursued at this
+stage because they would increase download size, memory requirements,
+GPU requirements, and latency without evidence from the completed tests
+that the additional cost would produce acceptable Urdu accuracy.
+
+**Evidence and result:**
+A browser-local feasibility experiment was conducted on real Android
+Chrome mobile hardware without uploading audio and without server-side
+transcription dependencies.
+
+The experiment tested:
+- `onnx-community/whisper-tiny`
+- `onnx-community/whisper-base`
+- requested and evaluated dtype: `q8`
+- `webgpu` backend
+- language/task: `urdu` / `transcribe`
+- microphone capture with recorded-audio preview
+- mono 16 kHz PCM conversion
+- a 30-second recording cap
+
+The recording infrastructure itself was successful. Recorded-audio
+playback verified that complete spoken test material had been captured,
+and the Blob/decode/resample pipeline produced valid mono 16 kHz PCM.
+Local Whisper inference also executed through mobile WebGPU.
+
+Tiny q8 produced materially unreliable Urdu transcription across the
+real-device tests, including missing spoken content, phonetic recognition
+errors, inconsistent results between runs, and severe hallucinated
+repetition on one run.
+
+Base q8 loaded with the intended model, q8 dtype, and WebGPU backend, but
+its Urdu transcription also contained substantial recognition errors and
+did not demonstrate sufficient improvement over Tiny for production use.
+Within the tested mobile setup, model accuracy therefore remained
+inadequate after the recording pipeline and relevant model/backend
+configuration had been verified.
+
+**Re-evaluation:**
+If higher-accuracy Urdu dictation becomes necessary in the future, it
+should be evaluated as a new feasibility question rather than assumed to
+be a continuation of this implementation. No external transcription
+provider has been selected.
+
+Current product policy remains to avoid paid dependencies for core
+features until revenue begins.
