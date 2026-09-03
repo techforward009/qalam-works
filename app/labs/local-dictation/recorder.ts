@@ -4,6 +4,7 @@ export interface RecordedAudio {
   blob: Blob;
   mimeType: string;
   durationMs: number;
+  byteSize: number;
 }
 
 function pickMimeType(): string {
@@ -53,11 +54,27 @@ export async function recordMicrophoneClip(
       const blob = new Blob(chunks, { type: usedType });
       settled = true;
       stopTracks();
-      resolve({ blob, mimeType: usedType, durationMs: clampRecordingMs(Date.now() - startedAt, maxMs) });
+      resolve({
+        blob,
+        mimeType: usedType,
+        durationMs: clampRecordingMs(Date.now() - startedAt, maxMs),
+        byteSize: blob.size,
+      });
+    };
+
+    const requestFinalData = () => {
+      try {
+        if (typeof recorder.requestData === "function" && recorder.state === "recording") {
+          recorder.requestData();
+        }
+      } catch {
+        /* ignore */
+      }
     };
 
     const timer = setTimeout(() => {
       if (recorder.state === "recording") {
+        requestFinalData();
         try { recorder.stop(); } catch { /* already inactive */ }
       }
     }, maxMs);
@@ -65,6 +82,7 @@ export async function recordMicrophoneClip(
     const onAbort = () => {
       clearTimeout(timer);
       if (recorder.state === "recording") {
+        requestFinalData();
         try { recorder.stop(); } catch { /* already inactive */ }
       } else {
         stopTracks();
@@ -110,7 +128,15 @@ function resampleLinear(input: Float32Array, fromRate: number, toRate: number): 
   return out;
 }
 
-export async function decodeToWhisperPcm(blob: Blob): Promise<{ samples: Float32Array; durationSec: number }> {
+export async function decodeToWhisperPcm(blob: Blob): Promise<{
+  samples: Float32Array;
+  durationSec: number;
+  sampleCount: number;
+  sampleRate: number;
+}> {
+  if (blob.size === 0) {
+    throw new Error("Recording produced no audio data.");
+  }
   const arrayBuffer = await blob.arrayBuffer();
   const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
   if (!AudioCtx) throw new Error("Web Audio is not available.");
@@ -118,7 +144,15 @@ export async function decodeToWhisperPcm(blob: Blob): Promise<{ samples: Float32
   try {
     const decoded = await ctx.decodeAudioData(arrayBuffer.slice(0));
     const samples = resampleLinear(mixToMono(decoded), decoded.sampleRate, TARGET_SAMPLE_RATE);
-    return { samples, durationSec: samples.length / TARGET_SAMPLE_RATE };
+    if (samples.length === 0) {
+      throw new Error("Recorded audio could not be decoded into samples.");
+    }
+    return {
+      samples,
+      durationSec: samples.length / TARGET_SAMPLE_RATE,
+      sampleCount: samples.length,
+      sampleRate: TARGET_SAMPLE_RATE,
+    };
   } finally {
     try { await ctx.close(); } catch { /* ignore */ }
   }

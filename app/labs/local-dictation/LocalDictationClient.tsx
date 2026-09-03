@@ -30,6 +30,15 @@ const COPY = {
     clear: "Clear / Retry",
     transcript: "Transcript",
     diagnostics: "Diagnostics",
+    statusNotLoaded: "Model not loaded",
+    statusLoading: "Loading model…",
+    statusReady: "Model ready",
+    statusRecording: "Recording…",
+    statusProcessing: "Processing recorded audio…",
+    statusAudioReady: "Audio ready",
+    statusTranscribing: "Transcribing locally…",
+    statusDone: "Transcription complete",
+    statusError: "Error",
   },
   ur: {
     title: "مقامی وسپر ڈکٹیشن (لیبز)",
@@ -42,8 +51,33 @@ const COPY = {
     clear: "صاف / دوبارہ",
     transcript: "تحریر",
     diagnostics: "تشخیصی معلومات",
+    statusNotLoaded: "ماڈل لوڈ نہیں ہوا",
+    statusLoading: "ماڈل لوڈ ہو رہا ہے…",
+    statusReady: "ماڈل تیار ہے",
+    statusRecording: "ریکارڈنگ جاری ہے…",
+    statusProcessing: "ریکارڈ شدہ آڈیو پروسیس ہو رہی ہے…",
+    statusAudioReady: "آڈیو تیار ہے",
+    statusTranscribing: "مقامی طور پر تحریر بن رہی ہے…",
+    statusDone: "تحریر مکمل ہوگئی",
+    statusError: "خرابی",
   },
 } as const;
+
+type FlowPhase =
+  | "not-loaded"
+  | "loading"
+  | "ready"
+  | "recording"
+  | "processing"
+  | "audio-ready"
+  | "transcribing"
+  | "done"
+  | "error";
+
+const btnBase = "rounded-md px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40";
+const btnPrimary = `${btnBase} bg-[#1A3A2A] text-white disabled:bg-gray-400`;
+const btnGold = `${btnBase} bg-[#C4A35A] text-[#1A3A2A] disabled:bg-gray-200 disabled:text-gray-500`;
+const btnOutline = `${btnBase} border border-gray-300 bg-white disabled:bg-gray-100 disabled:text-gray-400`;
 
 export default function LocalDictationClient() {
   const { language } = useLanguage();
@@ -51,29 +85,43 @@ export default function LocalDictationClient() {
   const t = COPY[isUr ? "ur" : "en"];
 
   const [status, setStatus] = useState<ModelStatus>("not-loaded");
+  const [flow, setFlow] = useState<FlowPhase>("not-loaded");
   const [error, setError] = useState("");
   const [progress, setProgress] = useState("");
   const [info, setInfo] = useState<LoadedPipelineInfo | null>(null);
   const [transcript, setTranscript] = useState("");
   const [audioDurationSec, setAudioDurationSec] = useState<number | null>(null);
   const [transcribeMs, setTranscribeMs] = useState<number | null>(null);
+  const [blobBytes, setBlobBytes] = useState<number | null>(null);
+  const [blobMime, setBlobMime] = useState("");
+  const [rawDurationMs, setRawDurationMs] = useState<number | null>(null);
+  const [pcmCount, setPcmCount] = useState<number | null>(null);
+  const [pcmRate, setPcmRate] = useState<number | null>(null);
   const [webgpuAvailable] = useState(() => detectWebGpuAvailable());
 
   const samplesRef = useRef<Float32Array | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const busyRef = useRef(false);
   const mountedRef = useRef(true);
+  const stopReasonRef = useRef<"user" | "unmount" | null>(null);
 
-  const setBusyStatus = (next: ModelStatus) => {
+  const setBusyStatus = (next: ModelStatus, nextFlow?: FlowPhase) => {
     if (!mountedRef.current) return;
     setStatus(next);
-    busyRef.current = next === "loading" || next === "recording" || next === "transcribing";
+    if (nextFlow) setFlow(nextFlow);
+    busyRef.current =
+      next === "loading" ||
+      next === "recording" ||
+      next === "transcribing" ||
+      nextFlow === "processing" ||
+      nextFlow === "recording";
   };
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      stopReasonRef.current = "unmount";
       const controller = abortRef.current;
       abortRef.current = null;
       busyRef.current = false;
@@ -89,7 +137,7 @@ export default function LocalDictationClient() {
     if (busyRef.current) return;
     setError("");
     setProgress("");
-    setBusyStatus("loading");
+    setBusyStatus("loading", "loading");
     try {
       const loaded = await loadWhisperPipeline(report => {
         if (!mountedRef.current) return;
@@ -100,11 +148,11 @@ export default function LocalDictationClient() {
       if (!mountedRef.current) return;
       setInfo(loaded);
       setProgress("");
-      setBusyStatus("ready");
+      setBusyStatus("ready", "ready");
     } catch (err) {
       if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : String(err));
-      setBusyStatus("error");
+      setBusyStatus("error", "error");
     }
   }, []);
 
@@ -112,50 +160,66 @@ export default function LocalDictationClient() {
     if (busyRef.current) return;
     if (!isMediaRecorderAvailable()) {
       setError("MediaRecorder is not available in this browser.");
-      setBusyStatus("error");
+      setBusyStatus("error", "error");
       return;
     }
     setError("");
     setTranscript("");
     setAudioDurationSec(null);
     setTranscribeMs(null);
+    setBlobBytes(null);
+    setBlobMime("");
+    setRawDurationMs(null);
+    setPcmCount(null);
+    setPcmRate(null);
     samplesRef.current = null;
+    stopReasonRef.current = null;
     const abort = new AbortController();
     abortRef.current = abort;
-    setBusyStatus("recording");
+    setBusyStatus("recording", "recording");
     try {
       const clip = await recordMicrophoneClip(MAX_RECORDING_MS, abort.signal);
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || stopReasonRef.current === "unmount") return;
+      if (mountedRef.current) setFlow("processing");
+      setBlobBytes(clip.byteSize);
+      setBlobMime(clip.mimeType);
+      setRawDurationMs(clip.durationMs);
+      if (clip.byteSize === 0) {
+        throw new Error("Recording produced no audio data.");
+      }
       const pcm = await decodeToWhisperPcm(clip.blob);
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || stopReasonRef.current === "unmount") return;
       samplesRef.current = pcm.samples;
       setAudioDurationSec(Number(pcm.durationSec.toFixed(2)));
-      setBusyStatus("ready");
+      setPcmCount(pcm.sampleCount);
+      setPcmRate(pcm.sampleRate);
+      setBusyStatus("ready", "audio-ready");
     } catch (err) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || stopReasonRef.current === "unmount") return;
       const name = err instanceof Error ? err.name : "";
       const message = err instanceof Error ? err.message : String(err);
       if (name === "NotAllowedError" || /permission|denied/i.test(message)) {
         setError("Microphone permission denied.");
-      } else if (name === "AbortError") {
-        setBusyStatus(getLoadedPipelineInfo() ? "ready" : "not-loaded");
-        return;
       } else {
         setError(message);
       }
-      setBusyStatus("error");
+      setBusyStatus("error", "error");
     } finally {
       if (abortRef.current === abort) abortRef.current = null;
     }
   }, []);
 
   const stopRecord = useCallback(() => {
+    if (flow !== "recording") return;
+    stopReasonRef.current = "user";
+    setFlow("processing");
+    busyRef.current = true;
     try {
       abortRef.current?.abort();
     } catch {
       /* already inactive */
     }
-  }, []);
+  }, [flow]);
 
   const transcribe = useCallback(async () => {
     if (busyRef.current) return;
@@ -168,23 +232,23 @@ export default function LocalDictationClient() {
       return;
     }
     setError("");
-    setBusyStatus("transcribing");
+    setBusyStatus("transcribing", "transcribing");
     const started = performance.now();
     try {
       const text = await transcribeUrduLocally(samplesRef.current);
       if (!mountedRef.current) return;
       setTranscribeMs(Math.round(performance.now() - started));
       setTranscript(text);
-      setBusyStatus("ready");
+      setBusyStatus("ready", "done");
     } catch (err) {
       if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : String(err));
-      setBusyStatus("error");
+      setBusyStatus("error", "error");
     }
   }, [info]);
 
   const clearAll = useCallback(() => {
-    if (status === "recording") {
+    if (status === "recording" || flow === "recording") {
       try { abortRef.current?.abort(); } catch { /* ignore */ }
     }
     samplesRef.current = null;
@@ -193,12 +257,34 @@ export default function LocalDictationClient() {
     setTranscribeMs(null);
     setError("");
     setProgress("");
-    setStatus(getLoadedPipelineInfo() ? "ready" : "not-loaded");
+    const ready = Boolean(getLoadedPipelineInfo());
+    setStatus(ready ? "ready" : "not-loaded");
+    setFlow(ready ? "ready" : "not-loaded");
+    setBlobBytes(null);
+    setBlobMime("");
+    setRawDurationMs(null);
+    setPcmCount(null);
+    setPcmRate(null);
     busyRef.current = false;
-  }, [status]);
+  }, [status, flow]);
 
   const modelReady = Boolean(getLoadedPipelineInfo() || info);
-  const hasAudio = Boolean(samplesRef.current && samplesRef.current.length > 0);
+  const hasAudio = (pcmCount ?? 0) > 0;
+  const busy = flow === "loading" || flow === "recording" || flow === "processing" || flow === "transcribing";
+  const flowLabel = (() => {
+    switch (flow) {
+      case "loading": return t.statusLoading;
+      case "ready": return t.statusReady;
+      case "recording": return t.statusRecording;
+      case "processing": return t.statusProcessing;
+      case "audio-ready":
+        return `${t.statusAudioReady}${audioDurationSec != null ? `: ${audioDurationSec} s` : ""}`;
+      case "transcribing": return t.statusTranscribing;
+      case "done": return t.statusDone;
+      case "error": return t.statusError;
+      default: return t.statusNotLoaded;
+    }
+  })();
   const naskh = isUr ? "font-naskh" : "";
   const heading = isUr ? "font-nastaliq font-normal" : "";
 
@@ -209,14 +295,15 @@ export default function LocalDictationClient() {
       <p className="mt-2 text-sm text-gray-700 dark:text-[#e8ede9]">{t.intro}</p>
       <p className="mt-2 text-sm text-gray-700 dark:text-[#e8ede9]">{t.privacy}</p>
       <div className="mt-6 flex flex-wrap gap-2">
-        <button type="button" onClick={loadModel} disabled={status === "loading"} className="rounded-md bg-[#1A3A2A] px-3 py-2 text-sm text-white">{t.load}</button>
-        <button type="button" onClick={startRecord} disabled={status === "recording"} className="rounded-md border border-gray-300 px-3 py-2 text-sm">{t.record}</button>
-        <button type="button" onClick={stopRecord} disabled={status !== "recording"} className="rounded-md border border-gray-300 px-3 py-2 text-sm">{t.stop}</button>
-        <button type="button" onClick={transcribe} disabled={!modelReady || !hasAudio || status === "transcribing"} className="rounded-md bg-[#C4A35A] px-3 py-2 text-sm text-[#1A3A2A]">{t.transcribe}</button>
-        <button type="button" onClick={clearAll} className="rounded-md border border-gray-300 px-3 py-2 text-sm">{t.clear}</button>
+        <button type="button" onClick={loadModel} disabled={busy} className={btnPrimary}>{t.load}</button>
+        <button type="button" onClick={startRecord} disabled={!modelReady || busy} className={btnOutline}>{t.record}</button>
+        <button type="button" onClick={stopRecord} disabled={flow !== "recording"} className={btnOutline}>{t.stop}</button>
+        <button type="button" onClick={transcribe} disabled={!modelReady || !hasAudio || busy} className={btnGold}>{t.transcribe}</button>
+        <button type="button" onClick={clearAll} className={btnOutline}>{t.clear}</button>
       </div>
-      {progress ? <p className="mt-3 text-sm text-gray-600">{progress}</p> : null}
-      {error ? <p className="mt-3 whitespace-pre-wrap text-sm text-red-700">{error}</p> : null}
+      <p className="mt-3 text-sm font-medium text-[#1A3A2A] dark:text-white">{flowLabel}</p>
+      {progress ? <p className="mt-1 text-sm text-gray-600">{progress}</p> : null}
+      {error ? <p className="mt-2 whitespace-pre-wrap text-sm text-red-700">{error}</p> : null}
       <label className="mt-6 block text-sm font-medium">{t.transcript}</label>
       <textarea
         value={transcript}
@@ -236,7 +323,13 @@ export default function LocalDictationClient() {
         <div>Model load time: {info ? `${info.loadMs} ms` : "—"}</div>
         <div>Pipeline reused in memory: {info?.reusedInMemory ? "yes" : info ? "no (first load this page)" : "—"}</div>
         <div>Available dtypes: {info?.availableDtypes.join(", ") ?? "—"}</div>
-        <div>Audio duration: {audioDurationSec != null ? `${audioDurationSec} s` : "—"}</div>
+        <div>Flow: {flow}</div>
+        <div>Blob size: {blobBytes != null ? `${blobBytes} bytes` : "—"}</div>
+        <div>MIME type: {blobMime || "—"}</div>
+        <div>Raw recording duration: {rawDurationMs != null ? `${rawDurationMs} ms` : "—"}</div>
+        <div>Decoded duration: {audioDurationSec != null ? `${audioDurationSec} s` : "—"}</div>
+        <div>PCM sample count: {pcmCount != null ? pcmCount : "—"}</div>
+        <div>Target sample rate: {pcmRate != null ? pcmRate : 16000}</div>
         <div>Transcription time: {transcribeMs != null ? `${transcribeMs} ms` : "—"}</div>
       </dl>
     </main>
