@@ -320,14 +320,59 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
       }
     }, MAX_DICTATION_MS);
 
-    try {
-      recognition.start();
-      setState("recording");
-    } catch {
-      cleanupRecognition();
-      savedPosRef.current = null;
-      setErrorMsg(t.recognitionError);
-      setState("error");
+    // ── Microphone-only permission preflight ──────────────────────────────
+    // Explicitly request audio:true, video:false to ensure the browser shows
+    // a microphone-only permission prompt — never camera. On success, every
+    // returned track is stopped immediately; no audio is recorded or retained.
+    // If getUserMedia is unavailable (older Safari), fall through directly to
+    // SpeechRecognition.start() which handles its own permission prompt.
+    const runRecognition = () => {
+      try {
+        recognition.start();
+        setState("recording");
+      } catch {
+        cleanupRecognition();
+        savedPosRef.current = null;
+        setErrorMsg(t.recognitionError);
+        setState("error");
+      }
+    };
+
+    if (
+      typeof navigator !== "undefined" &&
+      typeof navigator.mediaDevices?.getUserMedia === "function"
+    ) {
+      navigator.mediaDevices
+        .getUserMedia({ audio: true, video: false })
+        .then((stream) => {
+          // Permission granted — discard the stream immediately.
+          // We do NOT record from this stream; it served only to trigger
+          // the browser's microphone-only permission prompt explicitly.
+          stream.getTracks().forEach((track) => track.stop());
+          runRecognition();
+        })
+        .catch((err: unknown) => {
+          cleanupRecognition();
+          savedPosRef.current = null;
+          const name = (err as { name?: string }).name ?? "";
+          const isPermission =
+            name === "NotAllowedError" ||
+            name === "SecurityError" ||
+            name === "PermissionDeniedError";
+          setErrorMsg(isPermission ? t.permDenied : t.recognitionError);
+          setErrorKind(isPermission ? "permission" : "other");
+          setShowPermHelp(false);
+          setState("error");
+          trackEvent("tool_error", {
+            tool: "document_studio",
+            ...(dictLang !== "mixed" ? { mode: dictLang } : {}),
+          });
+        });
+    } else {
+      // getUserMedia unavailable (some older or restricted browsers).
+      // Fall through to SpeechRecognition directly; it will handle
+      // its own permission prompt.
+      runRecognition();
     }
   }, [editor, dictLang, insertAtSavedPosition, cleanupRecognition, t]);
 

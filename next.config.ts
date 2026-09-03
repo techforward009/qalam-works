@@ -1,6 +1,25 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Permissions-Policy: explicitly disable camera for all responses;
+  // allow first-party microphone (needed for Document Studio dictation).
+  // camera=() — no page or iframe may access the camera.
+  // microphone=(self) — only first-party pages (qalamworks.com itself)
+  //   may request microphone; no third-party iframes get implicit access.
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(self)",
+          },
+        ],
+      },
+    ];
+  },
+
   // Deployment fix (2026-08-08): @sparticuz/chromium ships its Chromium
   // binary as data files (bin/*.br) that it reads at runtime via fs, not
   // via a static `require()`/`import`. Next.js's bundler and its separate
