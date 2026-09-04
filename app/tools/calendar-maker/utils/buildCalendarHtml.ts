@@ -190,7 +190,7 @@ body{
   grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
   align-items:center;
   gap:1.1mm;
-  padding:1.05mm 1.15mm;
+  padding:1.15mm 1.15mm;
   background:var(--calendar-header);
   border-bottom:.65px solid var(--calendar-grid-strong);
   overflow:hidden;
@@ -202,8 +202,13 @@ body{
   text-align:center;
   color:var(--calendar-month-title);
   font-weight:900;
-  font-size:${metrics.landscape ? "9.8px" : "10.7px"};
-  line-height:1;
+  font-size:${metrics.monthTitleFont};
+  line-height:1.18;
+  padding-top:.35mm;
+  padding-bottom:.1mm;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   overflow:hidden;
   text-overflow:ellipsis;
 }
@@ -231,16 +236,20 @@ body{
 }
 .slash{font-size:5.3px;color:var(--calendar-hijri-context);opacity:.7;font-weight:700}
 .weekdays,.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
-.weekdays{background:var(--calendar-weekday);border-bottom:.65px solid var(--calendar-grid-strong)}
+.weekdays{min-height:${metrics.weekdayStripMm}mm;background:var(--calendar-weekday);border-bottom:.65px solid var(--calendar-grid-strong);align-items:stretch}
 .weekdays>div{
   min-width:0;
-  padding:.52mm 0;
+  min-height:${metrics.weekdayStripMm}mm;
+  padding:.75mm 0;
   border-inline-end:.5px solid var(--calendar-weekday-grid);
+  display:flex;
+  align-items:center;
+  justify-content:center;
   text-align:center;
   font-size:${metrics.landscape ? "5.5px" : "5.9px"};
   font-weight:900;
   color:var(--calendar-text);
-  line-height:1;
+  line-height:1.15;
   overflow:hidden;
 }
 .weekdays .sun{color:var(--calendar-month-title)}
@@ -257,7 +266,7 @@ body{
   display:grid;
   grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   grid-template-rows:minmax(0,1fr) minmax(0,1fr);
-  padding:.55mm .7mm .18mm;
+  padding:.55mm .28mm .18mm .7mm;
 }
 .filler{background:var(--calendar-filler)}
 .greg-day{
@@ -265,6 +274,7 @@ body{
   grid-row:1;
   align-self:start;
   justify-self:start;
+  text-align:left;
   max-width:100%;
   white-space:nowrap;
   overflow:hidden;
@@ -281,6 +291,7 @@ body{
   grid-row:2;
   align-self:end;
   justify-self:end;
+  text-align:right;
   max-width:100%;
   white-space:nowrap;
   overflow:hidden;

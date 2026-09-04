@@ -39,12 +39,12 @@ export function CalendarDayCell({
 
     return (
       <div
-        className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-0.5 px-1.5 pt-1.5 pb-0.5"
+        className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-0.5 ps-1.5 pe-0.5 pt-1.5 pb-[2px]"
         dir="ltr"
       >
         <span
           data-role="gregorian-day"
-          className={`col-start-1 row-start-1 min-w-0 self-start justify-self-start whitespace-nowrap font-black leading-none ${
+          className={`col-start-1 row-start-1 min-w-0 self-start justify-self-start whitespace-nowrap text-left font-black leading-none ${
             sunday ? "text-[var(--calendar-month-title)]" : "text-[var(--calendar-text)]"
           }`}
           style={{ fontSize: cellSpec.gregorianFont }}
@@ -55,8 +55,8 @@ export function CalendarDayCell({
         {hijriDay && (
           <span
             data-role="hijri-day"
-            className={`col-start-2 row-start-2 min-w-0 self-end justify-self-end whitespace-nowrap font-bold leading-none text-[var(--calendar-hijri-day)] ${
-              isUr ? "text-right font-naskh" : ""
+            className={`col-start-2 row-start-2 min-w-0 self-end justify-self-end whitespace-nowrap text-right font-bold leading-none text-[var(--calendar-hijri-day)] ${
+              isUr ? "font-naskh" : ""
             }`}
             dir={isUr ? "rtl" : "ltr"}
             style={{ fontSize: cellSpec.hijriFont }}

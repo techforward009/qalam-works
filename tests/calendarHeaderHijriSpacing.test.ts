@@ -8,10 +8,10 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 
 describe("Calendar header and Hijri digit spacing", () => {
   it("gives month headers more vertical room while retaining centered context alignment", () => {
-    expect(CALENDAR_VISUAL_SPEC.web.compact.monthHeaderMinPx).toBe(62);
-    expect(CALENDAR_VISUAL_SPEC.web.detail.monthHeaderMinPx).toBe(82);
-    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderPortraitMm).toBe(11.2);
-    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderLandscapeMm).toBe(10.4);
+    expect(CALENDAR_VISUAL_SPEC.web.compact.monthHeaderMinPx).toBe(68);
+    expect(CALENDAR_VISUAL_SPEC.web.detail.monthHeaderMinPx).toBe(90);
+    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderPortraitMm).toBe(13.8);
+    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderLandscapeMm).toBe(13.0);
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
     expect(pdf).toMatch(/\.month-head\{[\s\S]*?align-items:center/);
@@ -25,7 +25,7 @@ describe("Calendar header and Hijri digit spacing", () => {
 
     const cell = read("app/components/date-studio/CalendarDayCell.tsx");
     expect(cell).toMatch(/grid-cols-2 grid-rows-2/);
-    expect(cell).toMatch(/pb-0\.5/);
+    expect(cell).toMatch(/pb-\[2px\]/);
     expect(cell).toMatch(/col-start-2 row-start-2/);
     expect(cell).toMatch(/self-end justify-self-end/);
   });
@@ -35,7 +35,7 @@ describe("Calendar header and Hijri digit spacing", () => {
     expect(CALENDAR_VISUAL_SPEC.print.hijriFontLandscape).toBe("clamp(5.2px, .62vw, 5.7px)");
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(pdf).toMatch(/padding:\.55mm \.7mm \.18mm/);
+    expect(pdf).toMatch(/padding:\.55mm \.28mm \.18mm \.7mm/);
     expect(pdf).toMatch(/\.hijri-day\{[\s\S]*?grid-column:2;[\s\S]*?grid-row:2;[\s\S]*?align-self:end;[\s\S]*?justify-self:end/);
   });
 });
