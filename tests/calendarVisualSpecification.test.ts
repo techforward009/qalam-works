@@ -11,21 +11,26 @@ import {
   toUrduDigits,
 } from "../app/tools/calendar-maker/utils/calendarPresentation";
 import { buildCalendarHtml } from "../app/tools/calendar-maker/utils/buildCalendarHtml";
+import {
+  CALENDAR_ANNUAL_GRID_CLASS,
+  CALENDAR_REFERENCE_WEEKDAYS,
+  CALENDAR_VISUAL_SPEC,
+} from "../app/tools/calendar-maker/utils/calendarVisualSpec";
 
 const root = join(__dirname, "..");
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 
 describe("Final annual calendar visual specification", () => {
-  it("uses a 1/2/3 responsive annual structure and 3x4 PDF grid", () => {
+  it("uses a shared 1/2/3 responsive annual structure and 3x4 PDF grid", () => {
     const explorer = read("app/components/date-studio/CalendarExplorer.tsx");
     const maker = read("app/tools/calendar-maker/CalendarMakerContent.tsx");
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
 
-    for (const source of [explorer, maker]) {
-      expect(source).toMatch(/grid-cols-1/);
-      expect(source).toMatch(/md:grid-cols-2/);
-      expect(source).toMatch(/xl:grid-cols-3/);
-    }
+    expect(CALENDAR_ANNUAL_GRID_CLASS).toContain("grid-cols-1");
+    expect(CALENDAR_ANNUAL_GRID_CLASS).toContain("md:grid-cols-2");
+    expect(CALENDAR_ANNUAL_GRID_CLASS).toContain("xl:grid-cols-3");
+    expect(explorer).toMatch(/CALENDAR_ANNUAL_GRID_CLASS/);
+    expect(maker).toMatch(/CALENDAR_ANNUAL_GRID_CLASS/);
     expect(pdf).toMatch(/grid-template-columns:repeat\(3/);
     expect(pdf).toMatch(/grid-template-rows:repeat\(4/);
   });
@@ -89,22 +94,25 @@ describe("Final annual calendar visual specification", () => {
     expect(toUrduDigits(1447)).toBe("۱۴۴۷");
   });
 
-  it("uses the same month component structure for English and Urdu with RTL alignment only", () => {
+  it("uses one shared month-panel structure for English and Urdu", () => {
     const month = read("app/components/date-studio/MonthCalendar.tsx");
     const cell = read("app/components/date-studio/CalendarDayCell.tsx");
 
     expect(month).toMatch(/language = "en"/);
     expect(month).toMatch(/dir=\{isUr \? "rtl" : "ltr"\}/);
     expect(month).toMatch(/deriveHijriMonthContexts/);
-    expect(cell).toMatch(/isUr \? "items-end text-right" : "items-start text-left"/);
+    expect(month).toMatch(/CALENDAR_REFERENCE_WEEKDAYS/);
+    expect(cell).toMatch(/grid-cols-2 grid-rows-2/);
     expect(cell).toMatch(/dir="ltr"/);
   });
 
-  it("keeps Monday-to-Sunday Urdu alignment and a distinct Sunday strip accent", () => {
+  it("keeps the Monday-to-Sunday reference strip with restrained Sunday red", () => {
     const month = read("app/components/date-studio/MonthCalendar.tsx");
     const model = read("app/tools/calendar-maker/utils/calendarModel.ts");
     expect(model).toMatch(/"پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ", "اتوار"/);
-    expect(month).toMatch(/day === "Sun" \|\| day === "اتوار"/);
+    expect(CALENDAR_REFERENCE_WEEKDAYS).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
+    expect(month).toMatch(/day === "Sun"/);
+    expect(CALENDAR_VISUAL_SPEC.colors.monthTitle).toBe("#EF2B2F");
   });
 
   it("custom Hijri offset changes displayed day values and at least one month boundary context", () => {
@@ -146,16 +154,17 @@ describe("Final annual calendar visual specification", () => {
     expect(html).toContain(contexts[0].label);
     expect(html).toContain(toUrduDigits(contexts[0].year));
     expect(html).toMatch(/class="hijri-day">[۰-۹]+<\/div>/);
-    expect(read("app/tools/calendar-maker/CalendarMakerContent.tsx")).toMatch(/hijriOffset=\{hijriOffset\}/);
+    expect(read("app/tools/calendar-maker/CalendarMakerContent.tsx")).toMatch(/hijriOffset=\{effectiveHijriOffset\}/);
   });
 
-  it("uses prominent Gregorian day structure and secondary Hijri day structure", () => {
+  it("uses resilient grid-anchored Gregorian and Hijri day typography", () => {
     const cell = read("app/components/date-studio/CalendarDayCell.tsx");
     expect(cell).toMatch(/data-role="gregorian-day"/);
-    expect(cell).toMatch(/font-black/);
-    expect(cell).toMatch(/text-\[17px\]/);
-    expect(cell).toMatch(/text-2xl/);
+    expect(cell).toMatch(/grid-cols-2 grid-rows-2/);
+    expect(cell).toMatch(/cellSpec\.gregorianFont/);
     expect(cell).toMatch(/data-role="hijri-day"/);
-    expect(cell).toMatch(/text-\[11px\]/);
+    expect(cell).toMatch(/cellSpec\.hijriFont/);
+    expect(CALENDAR_VISUAL_SPEC.web.compact.gregorianFont).toMatch(/^clamp\(/);
+    expect(CALENDAR_VISUAL_SPEC.web.detail.hijriFont).toMatch(/^clamp\(/);
   });
 });

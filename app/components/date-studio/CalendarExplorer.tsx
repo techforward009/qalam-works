@@ -1,7 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useLanguage } from "@/app/lib/language-context";
+import {
+  CALENDAR_ANNUAL_GRID_CLASS,
+  calendarCssVariables,
+} from "@/app/tools/calendar-maker/utils/calendarVisualSpec";
 import {
   GREGORIAN_MONTH_LABELS,
   buildCalendarYearModel,
@@ -54,19 +58,35 @@ export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {displayModel.months.map((month) => (
-          <MonthCalendar
-            key={month.month}
-            month={month}
-            title={`${GREGORIAN_MONTH_LABELS[lang][month.month - 1]} ${displayModel.year}`}
-            titleHref={`/calendar/${displayModel.year}/${month.month}`}
-            language={lang}
-            weekStart="monday"
-            compact
-          />
-        ))}
-      </div>
+      <section className="overflow-hidden border-[3px] border-[var(--calendar-frame)] bg-[var(--calendar-paper)]" style={calendarCssVariables() as CSSProperties}>
+        <header className="grid min-h-[64px] grid-cols-[1fr_auto_1fr] items-center gap-3 border-b-2 border-[var(--calendar-gold)] bg-[var(--calendar-frame)] px-4 py-2 text-white">
+          <span className="justify-self-start text-sm font-black tracking-wide" dir="ltr">Qalam Works</span>
+          <div className="min-w-[220px] rounded-full border-2 border-[var(--calendar-gold)] bg-[var(--calendar-title-capsule)] px-6 py-2 text-center text-[var(--calendar-frame)]">
+            <span className={`text-xl font-black ${lang === "ur" ? "font-naskh" : ""}`}>
+              <span dir="ltr">{displayModel.year}</span>{" "}{lang === "ur" ? "سالانہ تقویم" : "Annual Calendar"}
+            </span>
+          </div>
+          <span className={`justify-self-end text-sm font-bold ${lang === "ur" ? "font-naskh" : ""}`}>
+            {mode === "gregorian-hijri"
+              ? (lang === "ur" ? "عیسوی + ہجری" : "Gregorian + Hijri")
+              : (lang === "ur" ? "عیسوی" : "Gregorian")}
+          </span>
+        </header>
+
+        <div className={CALENDAR_ANNUAL_GRID_CLASS} dir={lang === "ur" ? "rtl" : "ltr"}>
+          {displayModel.months.map((month) => (
+            <MonthCalendar
+              key={month.month}
+              month={month}
+              title={`${GREGORIAN_MONTH_LABELS[lang][month.month - 1]} ${displayModel.year}`}
+              titleHref={`/calendar/${displayModel.year}/${month.month}`}
+              language={lang}
+              weekStart="monday"
+              compact
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

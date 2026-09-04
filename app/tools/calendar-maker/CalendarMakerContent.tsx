@@ -1,9 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useLanguage } from "../../lib/language-context";
 import { BackToDateStudioLink } from "../../components/date-studio/DateStudioRouteNav";
 import { MonthCalendar } from "../../components/date-studio/MonthCalendar";
+import {
+  CALENDAR_ANNUAL_GRID_CLASS,
+  calendarCssVariables,
+} from "./utils/calendarVisualSpec";
 import {
   GREGORIAN_MONTH_LABELS,
   MAX_GREGORIAN_YEAR,
@@ -41,6 +45,8 @@ const L = {
     portrait: "A4 Portrait",
     landscape: "A4 Landscape",
     preview: "Annual preview",
+    annualTitle: "Annual Calendar",
+    mixedLabel: "Gregorian + Hijri",
     download: "Download PDF",
     downloading: "Preparing PDF…",
     failed: "PDF generation failed. Please try again.",
@@ -70,6 +76,8 @@ const L = {
     portrait: "A4 عمودی",
     landscape: "A4 افقی",
     preview: "سالانہ پیش منظر",
+    annualTitle: "سالانہ تقویم",
+    mixedLabel: "عیسوی + ہجری",
     download: "PDF ڈاؤن لوڈ کریں",
     downloading: "PDF تیار ہو رہی ہے…",
     failed: "PDF تیار نہیں ہو سکی۔ دوبارہ کوشش کریں۔",
@@ -99,6 +107,10 @@ export default function CalendarMakerContent() {
   const validYear = useMemo(() => parseCalendarYearInput(yearInput), [yearInput]);
   const effectiveWeekStart: WeekStart = calendarLanguage === "ur" ? "monday" : weekStart;
   const effectiveHijriOffset = content === "gregorian-hijri" ? hijriOffset : 0;
+  const calendarAnnualTitle = calendarLanguage === "ur" ? "سالانہ تقویم" : "Annual Calendar";
+  const calendarMixedLabel = content === "gregorian-hijri"
+    ? (calendarLanguage === "ur" ? "عیسوی + ہجری" : "Gregorian + Hijri")
+    : (calendarLanguage === "ur" ? "عیسوی" : "Gregorian");
 
   const model = useMemo(() => {
     if (validYear === null) return null;
@@ -273,19 +285,34 @@ export default function CalendarMakerContent() {
         </div>
 
         {model && validYear !== null ? (
-          <div className="mx-auto max-w-7xl rounded-2xl border border-[#1A3A2A]/10 bg-[#FBF8F1] p-3 dark:border-[#2a3d30] dark:bg-[#0e1c15] sm:p-5">
-            <div className="mb-3 flex items-center justify-between gap-3 border-b border-[#B8935A]/50 pb-2" dir="ltr">
-              <span className="text-xs font-bold tracking-wide text-[#1A3A2A] dark:text-[#e8ede9]">Qalam Works</span>
-              <span className="text-xs font-semibold text-[#4a6a4a] dark:text-[#a8c8b0]">{validYear}</span>
-            </div>
+          <div
+            className="mx-auto max-w-7xl overflow-hidden border-[3px] border-[var(--calendar-frame)] bg-[var(--calendar-paper)] shadow-sm"
+            dir={calendarLanguage === "ur" ? "rtl" : "ltr"}
+            style={calendarCssVariables() as CSSProperties}
+          >
+            <header className="relative grid min-h-[70px] grid-cols-[1fr_auto_1fr] items-center gap-3 border-b-2 border-[var(--calendar-gold)] bg-[var(--calendar-frame)] px-4 py-2 text-white">
+              <div className="justify-self-start text-start">
+                <span className="text-sm font-black tracking-wide" dir="ltr">Qalam Works</span>
+              </div>
+
+              <div className="min-w-[250px] rounded-full border-2 border-[var(--calendar-gold)] bg-[var(--calendar-title-capsule)] px-7 py-2 text-center text-[var(--calendar-frame)] shadow-inner">
+                <div className={`text-xl font-black leading-tight sm:text-2xl ${calendarLanguage === "ur" ? "font-naskh" : ""}`}>
+                  <span dir="ltr">{validYear}</span>{" "}{calendarAnnualTitle}
+                </div>
+              </div>
+
+              <div className={`justify-self-end text-end text-sm font-bold ${calendarLanguage === "ur" ? "font-naskh" : ""}`}>
+                {calendarMixedLabel}
+              </div>
+            </header>
 
             {effectiveHijriOffset !== 0 && researchNote.trim() && (
-              <p className={`mb-3 rounded-lg border border-[#B8935A]/30 bg-white/70 px-3 py-2 text-[11px] text-[#6F5B3E] dark:bg-[#162a1e] dark:text-[#D3B274] ${naskh}`}>
+              <p className={`border-b border-[var(--calendar-gold)]/50 bg-[#FFF7E9] px-3 py-1.5 text-[11px] text-[var(--calendar-research-text)] ${naskh}`}>
                 {researchNote.trim()}
               </p>
             )}
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className={CALENDAR_ANNUAL_GRID_CLASS}>
               {model.months.map((month) => (
                 <MonthCalendar
                   key={month.month}
@@ -293,12 +320,17 @@ export default function CalendarMakerContent() {
                   title={`${GREGORIAN_MONTH_LABELS[calendarLanguage][month.month - 1]} ${validYear}`}
                   language={calendarLanguage}
                   weekStart={effectiveWeekStart}
-                  hijriOffset={hijriOffset}
+                  hijriOffset={effectiveHijriOffset}
                   interactive={false}
                   compact
                 />
               ))}
             </div>
+
+            <footer className="flex items-center justify-between border-t border-[var(--calendar-frame)]/30 px-2 py-1 text-[9px] text-[var(--calendar-footer-text)]" dir="ltr">
+              <span>qalamworks.com</span>
+              <span>{calendarMixedLabel}</span>
+            </footer>
           </div>
         ) : (
           <div className={`rounded-2xl border border-dashed border-[#1A3A2A]/15 bg-[#fdfcf9] px-5 py-10 text-center text-sm text-[#4a6a4a] dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#a8c8b0] ${naskh}`}>

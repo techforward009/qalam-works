@@ -1,35 +1,66 @@
 import {
   deriveHijriMonthContexts,
   formatHijriContextYear,
+  isSunday,
   toUrduDigits,
 } from "./calendarPresentation";
 import {
+  CALENDAR_REFERENCE_WEEKDAYS,
+  calendarPdfMonthVariables,
+  calendarPdfRootVariables,
+  calendarPrintMetrics,
+} from "./calendarVisualSpec";
+import {
   GREGORIAN_MONTH_LABELS,
-  weekdayLabels,
   type CalendarYearModel,
 } from "./calendarModel";
 
+export interface EmbeddedNaskhFonts {
+  regularBase64: string;
+  boldBase64: string;
+}
+
 export interface CalendarHtmlOptions {
-  naskhFontBase64?: string;
+  naskhFonts?: EmbeddedNaskhFonts;
   researchNote?: string;
 }
 
 function escapeHtml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtmlOptions = {}): string {
   const isUr = model.language === "ur";
-  const landscape = model.page === "a4-landscape";
+  const metrics = calendarPrintMetrics(model.page);
   const monthLabels = GREGORIAN_MONTH_LABELS[model.language];
-  const dayLabels = weekdayLabels(model.language, isUr ? "monday" : model.weekStart);
-  const title = isUr ? `${model.year} سالانہ تقویم` : `${model.year} Annual Calendar`;
-  const subtitle = model.content === "gregorian-hijri"
+  const dayLabels = !isUr && model.weekStart === "sunday"
+    ? (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const)
+    : CALENDAR_REFERENCE_WEEKDAYS;
+  const title = isUr ? `${model.year} سالانہ تقویم` : `Annual Calendar ${model.year}`;
+  const mixedLabel = model.content === "gregorian-hijri"
     ? (isUr ? "عیسوی + ہجری" : "Gregorian + Hijri")
     : (isUr ? "عیسوی" : "Gregorian");
-  const fontFace = isUr && options.naskhFontBase64
-    ? `@font-face{font-family:'QalamNaskh';src:url(data:font/woff2;base64,${options.naskhFontBase64}) format('woff2');font-weight:400;font-style:normal;}`
+
+  const fontFace = isUr && options.naskhFonts
+    ? `
+@font-face{
+  font-family:'QalamNaskh';
+  src:url(data:font/woff2;base64,${options.naskhFonts.regularBase64}) format('woff2');
+  font-weight:400;
+  font-style:normal;
+}
+@font-face{
+  font-family:'QalamNaskh';
+  src:url(data:font/woff2;base64,${options.naskhFonts.boldBase64}) format('woff2');
+  font-weight:700 900;
+  font-style:normal;
+}`
     : "";
+
   const researchNote = options.researchNote?.trim() ?? "";
   const researchNoteHtml = researchNote
     ? `<div data-research-note="true" class="research-note">${escapeHtml(researchNote)}</div>`
@@ -42,25 +73,38 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
     const contexts = deriveHijriMonthContexts(month, model.language, model.hijriOffset);
     const first = contexts.slice(0, 1);
     const rest = contexts.slice(1);
+
     const contextHtml = (items: typeof contexts) => items.map((context, index) => `
-      <span class="ctx-item">${index ? '<span class="slash">/</span>' : ''}<span class="ctx-name">${escapeHtml(context.label)}</span><span class="ctx-year">${escapeHtml(formatHijriContextYear(context, model.language))}</span></span>
+      <span class="ctx-item">
+        ${index ? '<span class="slash">/</span>' : ""}
+        <span class="ctx-stack">
+          <span class="ctx-name">${escapeHtml(context.label)}</span>
+          <span class="ctx-year">${escapeHtml(formatHijriContextYear(context, model.language))}</span>
+        </span>
+      </span>
     `).join("");
 
     const cells = month.weeks.flatMap((week) => week.cells).map((cell) => {
-      if (!cell.inCurrentMonth) return `<div class="day filler" aria-hidden="true"></div>`;
+      if (!cell.inCurrentMonth) {
+        return `<div class="day filler" aria-hidden="true"></div>`;
+      }
+
       const hijri = cell.hijri
         ? `<div class="hijri-day">${escapeHtml(isUr ? toUrduDigits(cell.hijri.day) : String(cell.hijri.day))}</div>`
         : "";
-      return `<div class="day current"><div class="greg-day">${cell.gregorian.day}</div>${hijri}</div>`;
+
+      return `<div class="day current${isSunday(cell.gregorian) ? " sunday" : ""}"><div class="greg-day">${cell.gregorian.day}</div>${hijri}</div>`;
     }).join("");
 
-    return `<section class="month">
+    return `<section class="month" style="${calendarPdfMonthVariables(month.month)}">
       <header class="month-head" dir="${isUr ? "rtl" : "ltr"}">
-        <div class="ctx start">${contextHtml(first)}</div>
+        <div class="ctx ctx-start">${contextHtml(first)}</div>
         <h2>${escapeHtml(monthLabels[month.month - 1])} ${model.year}</h2>
-        <div class="ctx end">${contextHtml(rest)}</div>
+        <div class="ctx ctx-end">${contextHtml(rest)}</div>
       </header>
-      <div class="weekdays" dir="${isUr ? "rtl" : "ltr"}">${dayLabels.map((label) => `<div class="${label === "Sun" || label === "اتوار" ? "sun" : ""}">${escapeHtml(label)}</div>`).join("")}</div>
+      <div class="weekdays" dir="${isUr ? "rtl" : "ltr"}">
+        ${dayLabels.map((label) => `<div class="${label === "Sun" ? "sun" : ""}">${label}</div>`).join("")}
+      </div>
       <div class="days" dir="${isUr ? "rtl" : "ltr"}">${cells}</div>
     </section>`;
   }).join("");
@@ -72,26 +116,205 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
 <title>${escapeHtml(title)} — Qalam Works</title>
 <style>
 ${fontFace}
-@page { size: A4 ${landscape ? "landscape" : "portrait"}; margin: 7mm; }
-*{box-sizing:border-box} html,body{margin:0;padding:0;background:#fff;color:#17251d}
-body{font-family:${isUr ? "'QalamNaskh',Tahoma,Arial,sans-serif" : "Arial,Helvetica,sans-serif"}}
-.page{width:100%;height:${landscape ? "190mm" : "277mm"};display:flex;flex-direction:column}
-.brand{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #b8935a;padding-bottom:4px;margin-bottom:5px}
-.brand-name{font-weight:700;color:#1a3a2a;font-size:11px;direction:ltr}.title-wrap{text-align:${isUr ? "right" : "left"}}
-h1{margin:0;font-size:${landscape ? "16px" : "15px"};color:#1a3a2a}.subtitle{font-size:7.5px;color:#526b5a}.research-note{margin-top:1px;font-size:6.2px;color:#7a674c}.research-note-footer{max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.year-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:${landscape ? "3.2mm" : "3mm"}}
-.month{min-height:0;display:flex;flex-direction:column;border:1px solid #cbd8cf;border-radius:4px;overflow:hidden;background:#fff}
-.month-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(24mm,1.15fr) minmax(0,1fr);align-items:center;gap:2px;background-color:#1a3a2a;border-bottom:1.5px solid #b8935a;padding:3px 4px;color:#fff}
-.month-head h2{margin:0;text-align:center;font-size:${landscape ? "9.5px" : "10px"};line-height:1.05}
-.ctx{min-width:0;font-size:${landscape ? "5.5px" : "5.8px"};color:#f1dec0}.ctx.start{text-align:start}.ctx.end{text-align:end}
-.ctx-item{display:inline-flex;gap:1px;align-items:baseline;white-space:nowrap}.ctx-year{display:block;color:rgba(255,255,255,.62);font-size:4.9px}.slash{color:rgba(255,255,255,.4);margin:0 1px}
-.weekdays,.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}.days{flex:1;min-height:0;grid-auto-rows:1fr}
-.weekdays{background:#e8efe8;border-bottom:1px solid #d6e1d9}.weekdays>div{text-align:center;padding:1px 0;font-size:5.5px;font-weight:700;color:#31533d}.weekdays .sun{color:#9a4d3a}
-.day{min-height:0;border-right:1px solid #e9eeea;border-bottom:1px solid #e9eeea;padding:1.5px 2px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
-.greg-day{font-size:${landscape ? "9.8px" : "10.5px"};font-weight:800;line-height:1;color:#17251d;text-align:${isUr ? "right" : "left"};direction:ltr}
-.hijri-day{font-size:${landscape ? "6.3px" : "6.7px"};font-weight:700;line-height:1;color:#496c52;text-align:${isUr ? "right" : "left"}}
-.filler{background:#faf8f3}.footer{margin-top:3px;display:flex;justify-content:space-between;font-size:5.8px;color:#7b877f;direction:ltr}
+:root{${calendarPdfRootVariables()}}
+@page { size: A4 ${metrics.landscape ? "landscape" : "portrait"}; margin: ${metrics.safeMarginMm}mm; }
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff;color:var(--calendar-text);width:100%;height:100%}
+body{
+  font-family:${isUr ? "'QalamNaskh',serif" : "Arial,Helvetica,sans-serif"};
+  font-synthesis:none;
+}
+.page{
+  width:100%;
+  height:${metrics.contentHeightMm}mm;
+  display:flex;
+  flex-direction:column;
+  padding:${metrics.innerFramePaddingMm}mm;
+  border:2.2px solid var(--calendar-frame);
+  background:var(--calendar-paper);
+  overflow:hidden;
+}
+.poster-head{
+  min-height:${metrics.landscape ? "13.6mm" : "14.6mm"};
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:3mm;
+  background:var(--calendar-frame);
+  border-bottom:1.3px solid var(--calendar-gold);
+  padding:1.35mm 3mm;
+  color:#fff;
+}
+.brand-name{font-weight:800;font-size:${metrics.landscape ? "7.6px" : "8.2px"};direction:ltr;justify-self:start}
+.poster-title{
+  min-width:${metrics.landscape ? "60mm" : "68mm"};
+  text-align:center;
+  border:1.4px solid var(--calendar-gold);
+  border-radius:999px;
+  background:var(--calendar-title-capsule);
+  color:var(--calendar-frame);
+  padding:1mm 5mm;
+  font-weight:900;
+  font-size:${metrics.landscape ? "13.6px" : "14.6px"};
+  line-height:1.05;
+}
+.poster-mode{justify-self:end;text-align:end;font-size:${metrics.landscape ? "6.8px" : "7.4px"};font-weight:700}
+.research-note{
+  padding:.7mm 2mm;
+  border-bottom:.5px solid var(--calendar-gold);
+  background:#fff7e9;
+  color:var(--calendar-research-text);
+  font-size:5.4px;
+}
+.year-grid{
+  flex:1;
+  min-height:0;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-rows:repeat(4,minmax(0,1fr));
+  gap:${metrics.monthGapMm}mm;
+  padding:1.25mm;
+  direction:${isUr ? "rtl" : "ltr"};
+}
+.month{
+  min-width:0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  border:.65px solid var(--calendar-grid-strong);
+  overflow:hidden;
+}
+.month-head{
+  min-height:${metrics.monthHeaderMm}mm;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;
+  gap:1.1mm;
+  padding:1.05mm 1.15mm;
+  background:var(--calendar-header);
+  border-bottom:.65px solid var(--calendar-grid-strong);
+  overflow:hidden;
+}
+.month-head h2{
+  margin:0;
+  min-width:0;
+  white-space:nowrap;
+  text-align:center;
+  color:var(--calendar-month-title);
+  font-weight:900;
+  font-size:${metrics.landscape ? "9.8px" : "10.7px"};
+  line-height:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ctx{min-width:0;height:100%;display:flex;align-items:center;gap:.55mm;color:var(--calendar-hijri-context);overflow:hidden}
+.ctx-start{justify-content:flex-start;text-align:start}
+.ctx-end{justify-content:flex-end;text-align:end}
+.ctx-item{display:inline-flex;align-items:center;gap:.45mm;min-width:0;line-height:1}
+.ctx-stack{display:inline-flex;min-width:0;height:100%;flex-direction:column;justify-content:center;align-items:stretch;line-height:1}
+.ctx-name{
+  max-width:100%;
+  font-size:${metrics.landscape ? "5.8px" : "6.3px"};
+  font-weight:700;
+  line-height:1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ctx-year{
+  margin-top:.25mm;
+  font-size:${metrics.landscape ? "4.6px" : "5px"};
+  font-weight:700;
+  color:var(--calendar-context-year);
+  line-height:1;
+  white-space:nowrap;
+}
+.slash{font-size:5.3px;color:var(--calendar-hijri-context);opacity:.7;font-weight:700}
+.weekdays,.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.weekdays{background:var(--calendar-weekday);border-bottom:.65px solid var(--calendar-grid-strong)}
+.weekdays>div{
+  min-width:0;
+  padding:.52mm 0;
+  border-inline-end:.5px solid var(--calendar-weekday-grid);
+  text-align:center;
+  font-size:${metrics.landscape ? "5.5px" : "5.9px"};
+  font-weight:900;
+  color:var(--calendar-text);
+  line-height:1;
+  overflow:hidden;
+}
+.weekdays .sun{color:var(--calendar-month-title)}
+.days{flex:1;min-height:0;grid-auto-rows:1fr}
+.day{
+  min-width:0;
+  min-height:0;
+  border-inline-end:.5px solid var(--calendar-grid);
+  border-bottom:.5px solid var(--calendar-grid);
+  background:var(--calendar-cell);
+  overflow:hidden;
+}
+.day.current{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr) minmax(0,1fr);
+  padding:.55mm .7mm .18mm;
+}
+.filler{background:var(--calendar-filler)}
+.greg-day{
+  grid-column:1;
+  grid-row:1;
+  align-self:start;
+  justify-self:start;
+  max-width:100%;
+  white-space:nowrap;
+  overflow:hidden;
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:${metrics.gregorianFont};
+  font-weight:900;
+  line-height:1;
+  color:var(--calendar-text);
+  direction:ltr;
+}
+.day.sunday .greg-day{color:var(--calendar-month-title)}
+.hijri-day{
+  grid-column:2;
+  grid-row:2;
+  align-self:end;
+  justify-self:end;
+  max-width:100%;
+  white-space:nowrap;
+  overflow:hidden;
+  font-size:${metrics.hijriFont};
+  font-weight:700;
+  line-height:1;
+  color:var(--calendar-hijri-day);
+}
+.footer{
+  min-height:3.1mm;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:2mm;
+  padding:.4mm 1.4mm;
+  border-top:.4px solid var(--calendar-frame);
+  color:var(--calendar-footer-text);
+  font-size:4.4px;
+  direction:ltr;
+}
+.research-note-footer{max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--calendar-research-text)}
 </style>
 </head>
-<body><main class="page"><header class="brand"><div class="title-wrap"><h1>${escapeHtml(title)}</h1><div class="subtitle">${escapeHtml(subtitle)}</div>${researchNoteHtml}</div><div class="brand-name">Qalam Works</div></header><div class="year-grid">${monthsHtml}</div><div class="footer"><span>qalamworks.com</span>${researchNoteFooterHtml}<span>${escapeHtml(isUr ? "ہجری تبدیلی صرف اس تقویم پر لاگو ہوتی ہے۔" : "Hijri adjustment applies to this calendar only.")}</span></div></main></body></html>`;
+<body>
+<main class="page">
+  <header class="poster-head">
+    <div class="brand-name">Qalam Works</div>
+    <div class="poster-title"><span dir="ltr">${model.year}</span> ${escapeHtml(isUr ? "سالانہ تقویم" : "Annual Calendar")}</div>
+    <div class="poster-mode">${escapeHtml(mixedLabel)}</div>
+  </header>
+  ${researchNoteHtml}
+  <div class="year-grid">${monthsHtml}</div>
+  <footer class="footer"><span>qalamworks.com</span>${researchNoteFooterHtml}<span>${escapeHtml(mixedLabel)}</span></footer>
+</main>
+</body>
+</html>`;
 }

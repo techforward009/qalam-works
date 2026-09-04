@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import {
   deriveHijriMonthContexts,
@@ -5,55 +6,61 @@ import {
   type HijriMonthContext,
 } from "@/app/tools/calendar-maker/utils/calendarPresentation";
 import {
-  weekdayLabels,
+  CALENDAR_REFERENCE_WEEKDAYS,
+  CALENDAR_VISUAL_SPEC,
+  calendarCssVariables,
+} from "@/app/tools/calendar-maker/utils/calendarVisualSpec";
+import {
   type CalendarLanguage,
   type CalendarMonth,
   type WeekStart,
 } from "@/app/tools/calendar-maker/utils/calendarModel";
 import { CalendarDayCell } from "./CalendarDayCell";
 
-const premiumPattern = {
-  backgroundColor: "#1A3A2A",
-  backgroundImage:
-    "linear-gradient(30deg, rgba(184,147,90,.10) 12%, transparent 12.5%, transparent 87%, rgba(184,147,90,.10) 87.5%), linear-gradient(150deg, rgba(184,147,90,.06) 12%, transparent 12.5%, transparent 87%, rgba(184,147,90,.06) 87.5%)",
-  backgroundSize: "34px 20px",
-};
-
 function HijriContextBlock({
   contexts,
   language,
-  align,
+  side,
   compact,
 }: {
   contexts: HijriMonthContext[];
   language: CalendarLanguage;
-  align: "start" | "end";
+  side: "start" | "end";
   compact: boolean;
 }) {
-  if (!contexts.length) return <div />;
+  if (!contexts.length) return <div aria-hidden="true" />;
 
   return (
-    <div className={`${align === "start" ? "text-start" : "text-end"} min-w-0`}>
-      <div className={`flex flex-wrap items-baseline gap-x-1 ${align === "end" ? "justify-end" : "justify-start"}`}>
-        {contexts.map((context, index) => (
-          <span key={`${context.year}-${context.month}`} className="inline-flex items-baseline gap-1">
-            {index > 0 && <span className="text-white/45">/</span>}
-            <span className={`${compact ? "text-[10px] sm:text-[11px]" : "text-xs sm:text-sm"} font-bold text-[#F3E6CF]`}>
+    <div
+      className={`flex min-w-0 items-center gap-1 ${
+        side === "end" ? "justify-end text-end" : "justify-start text-start"
+      }`}
+    >
+      {contexts.map((context, index) => (
+        <span key={`${context.year}-${context.month}`} className="inline-flex min-w-0 items-center gap-1">
+          {index > 0 && (
+            <span className={`${compact ? "text-[10px]" : "text-xs"} font-bold text-[var(--calendar-hijri-context)] opacity-70`}>
+              /
+            </span>
+          )}
+          <span className="inline-flex min-w-0 flex-col">
+            <span
+              className={`${compact ? "text-[11px] sm:text-xs" : "text-sm sm:text-base"} truncate font-bold leading-tight text-[var(--calendar-hijri-context)] ${
+                language === "ur" ? "font-naskh" : ""
+              }`}
+            >
               {context.label}
             </span>
-          </span>
-        ))}
-      </div>
-      <div className={`mt-0.5 flex flex-wrap gap-x-1 ${align === "end" ? "justify-end" : "justify-start"}`}>
-        {contexts.map((context, index) => (
-          <span key={`year-${context.year}-${context.month}`} className="inline-flex items-baseline gap-1">
-            {index > 0 && <span className="text-white/30">/</span>}
-            <span className={`${compact ? "text-[8px]" : "text-[10px]"} text-white/65`}>
+            <span
+              className={`${compact ? "text-[8px] sm:text-[9px]" : "text-[10px] sm:text-xs"} mt-0.5 font-semibold leading-none text-[var(--calendar-context-year)] ${
+                language === "ur" ? "font-naskh" : ""
+              }`}
+            >
               {formatHijriContextYear(context, language)}
             </span>
           </span>
-        ))}
-      </div>
+        </span>
+      ))}
     </div>
   );
 }
@@ -79,50 +86,66 @@ export function MonthCalendar({
 }) {
   const isUr = language === "ur";
   const effectiveWeekStart: WeekStart = isUr ? "monday" : weekStart;
-  const labels = weekdayLabels(language, effectiveWeekStart);
+  const referenceWeekdays =
+    effectiveWeekStart === "monday"
+      ? CALENDAR_REFERENCE_WEEKDAYS
+      : (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const);
   const contexts = deriveHijriMonthContexts(month, language, hijriOffset);
   const startContexts = contexts.slice(0, 1);
   const endContexts = contexts.slice(1);
+  const style = calendarCssVariables(month.month) as CSSProperties;
+  const webSpec = compact ? CALENDAR_VISUAL_SPEC.web.compact : CALENDAR_VISUAL_SPEC.web.detail;
+
+  const titleStyle: CSSProperties = {
+    fontSize: compact ? "clamp(16px, 2vw, 18px)" : "clamp(22px, 3vw, 28px)",
+  };
+
+  const titleClass = `whitespace-nowrap text-center font-black leading-none text-[var(--calendar-month-title)] ${
+    isUr ? "font-naskh" : ""
+  }`;
 
   const titleNode = titleHref ? (
-    <Link
-      href={titleHref}
-      className={`block truncate text-center font-black text-white transition-colors hover:text-[#F1DEC0] ${
-        compact ? "text-sm sm:text-[15px]" : "text-lg sm:text-xl"
-      } ${isUr ? "font-naskh" : ""}`}
-    >
+    <Link href={titleHref} className={`${titleClass} transition-opacity hover:opacity-80`} style={titleStyle}>
       {title}
     </Link>
   ) : (
-    <h2 className={`truncate text-center font-black text-white ${compact ? "text-sm sm:text-[15px]" : "text-lg sm:text-xl"} ${isUr ? "font-naskh" : ""}`}>
+    <h2 className={titleClass} style={titleStyle}>
       {title}
     </h2>
   );
 
   return (
     <section
-      className="overflow-hidden rounded-xl border border-[#1A3A2A]/15 bg-[#FFFDF8] shadow-sm dark:border-[#2a3d30] dark:bg-[#162a1e]"
+      className="overflow-hidden rounded-[2px] border border-[var(--calendar-grid-strong)] bg-[var(--calendar-cell)] shadow-none"
       dir={isUr ? "rtl" : "ltr"}
+      style={style}
+      data-calendar-month={month.month}
     >
       {title && (
-        <div className="border-b-2 border-[#B8935A] px-3 py-3" style={premiumPattern}>
-          <div className="grid grid-cols-[minmax(0,1fr)_minmax(7rem,1.15fr)_minmax(0,1fr)] items-center gap-2">
-            <HijriContextBlock contexts={startContexts} language={language} align="start" compact={compact} />
+        <header
+          className="border-b border-[var(--calendar-grid-strong)] bg-[var(--calendar-header)] px-2 py-2 sm:px-3"
+          style={{ minHeight: `${webSpec.monthHeaderMinPx}px` }}
+        >
+          <div className="grid h-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+            <HijriContextBlock contexts={startContexts} language={language} side="start" compact={compact} />
             {titleNode}
-            <HijriContextBlock contexts={endContexts} language={language} align="end" compact={compact} />
+            <HijriContextBlock contexts={endContexts} language={language} side="end" compact={compact} />
           </div>
-        </div>
+        </header>
       )}
 
-      <div className="grid grid-cols-7 border-b border-[#1A3A2A]/10 bg-[#E8EFE8] dark:border-[#2a3d30] dark:bg-[#0e1c15]" dir={isUr ? "rtl" : "ltr"}>
-        {labels.map((day) => {
-          const sunday = day === "Sun" || day === "اتوار";
+      <div
+        className="grid grid-cols-7 border-b border-[var(--calendar-grid-strong)] bg-[var(--calendar-weekday)]"
+        dir={isUr ? "rtl" : "ltr"}
+      >
+        {referenceWeekdays.map((day) => {
+          const sunday = day === "Sun";
           return (
             <div
               key={day}
-              className={`${compact ? "py-1.5 text-[10px]" : "py-2.5 text-xs sm:text-sm"} text-center font-bold ${
-                sunday ? "text-[#9A4D3A] dark:text-[#D88A76]" : "text-[#31533d] dark:text-[#b8d4bc]"
-              } ${isUr ? "font-naskh" : ""}`}
+              className={`${compact ? "py-1.5 text-[11px] sm:text-xs" : "py-2.5 text-sm sm:text-base"} border-e border-[var(--calendar-weekday-grid)] text-center font-black ${
+                sunday ? "text-[var(--calendar-month-title)]" : "text-[var(--calendar-text)]"
+              }`}
             >
               {day}
             </div>

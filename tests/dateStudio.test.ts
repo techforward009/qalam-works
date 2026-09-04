@@ -310,7 +310,7 @@ describe("calendar PDF HTML builder", () => {
       page: "a4-landscape",
     });
     const html = buildCalendarHtml(model);
-    expect(html).toContain("2027 Annual Calendar");
+    expect(html).toContain("Annual Calendar 2027");
     expect(html).toContain("Gregorian + Hijri");
     for (const name of ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]) {
       expect(html).toContain(name);

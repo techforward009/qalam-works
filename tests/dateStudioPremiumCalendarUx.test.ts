@@ -8,6 +8,10 @@ import {
   weekdayLabels,
 } from "../app/tools/calendar-maker/utils/calendarModel";
 import { buildCalendarHtml } from "../app/tools/calendar-maker/utils/buildCalendarHtml";
+import {
+  CALENDAR_ANNUAL_GRID_CLASS,
+  CALENDAR_VISUAL_SPEC,
+} from "../app/tools/calendar-maker/utils/calendarVisualSpec";
 
 const root = join(__dirname, "..");
 const read = (path: string) => readFileSync(join(root, path), "utf8");
@@ -105,11 +109,12 @@ describe("Premium Calendar UX", () => {
     }
   });
 
-  it("keeps annual explorer dense across responsive breakpoints", () => {
+  it("keeps annual explorer dense across responsive breakpoints through the shared layout contract", () => {
     const source = read("app/components/date-studio/CalendarExplorer.tsx");
-    expect(source).toMatch(/grid-cols-1/);
-    expect(source).toMatch(/md:grid-cols-2/);
-    expect(source).toMatch(/xl:grid-cols-3/);
+    expect(CALENDAR_ANNUAL_GRID_CLASS).toContain("grid-cols-1");
+    expect(CALENDAR_ANNUAL_GRID_CLASS).toContain("md:grid-cols-2");
+    expect(CALENDAR_ANNUAL_GRID_CLASS).toContain("xl:grid-cols-3");
+    expect(source).toMatch(/CALENDAR_ANNUAL_GRID_CLASS/);
     expect(source).toMatch(/<MonthCalendar[\s\S]*?compact/);
   });
 
@@ -127,13 +132,13 @@ describe("Premium Calendar UX", () => {
     expect(source).toMatch(/\/hijri\//);
   });
 
-  it("uses premium local/CSS-only month header styling", () => {
+  it("uses the shared local/CSS-only calendar visual specification", () => {
     const web = read("app/components/date-studio/MonthCalendar.tsx");
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(web).toMatch(/backgroundColor: "#1A3A2A"/);
-    expect(web).toMatch(/backgroundImage/);
-    expect(pdf).toMatch(/background-color:#1a3a2a/);
-    expect(pdf).toMatch(/border-bottom:1\.5px solid #b8935a/);
+    expect(CALENDAR_VISUAL_SPEC.colors.frame).toBe("#0B5136");
+    expect(CALENDAR_VISUAL_SPEC.colors.gold).toBe("#C99547");
+    expect(web).toMatch(/calendarCssVariables/);
+    expect(pdf).toMatch(/calendarPdfRootVariables/);
     expect(pdf).not.toMatch(/https?:\/\//);
   });
 });

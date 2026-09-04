@@ -1,6 +1,8 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import type { CalendarCell, CalendarLanguage } from "@/app/tools/calendar-maker/utils/calendarModel";
 import { isSunday, toUrduDigits } from "@/app/tools/calendar-maker/utils/calendarPresentation";
+import { CALENDAR_VISUAL_SPEC } from "@/app/tools/calendar-maker/utils/calendarVisualSpec";
 
 export function CalendarDayCell({
   cell,
@@ -14,13 +16,15 @@ export function CalendarDayCell({
   compact?: boolean;
 }) {
   const isUr = language === "ur";
-  const minHeight = compact ? "min-h-[54px]" : "min-h-[96px] sm:min-h-[108px]";
+  const cellSpec = compact ? CALENDAR_VISUAL_SPEC.web.compact : CALENDAR_VISUAL_SPEC.web.detail;
+  const cellStyle: CSSProperties = { minHeight: `${cellSpec.cellMinPx}px` };
 
   if (!cell.inCurrentMonth) {
     return (
       <div
         aria-hidden="true"
-        className={`${minHeight} border-b border-e border-[#1A3A2A]/10 bg-[#F7F5EF]/55 dark:border-[#2a3d30] dark:bg-white/[0.015]`}
+        className="border-b border-e border-[var(--calendar-grid)] bg-[var(--calendar-filler)]"
+        style={cellStyle}
       />
     );
   }
@@ -35,15 +39,15 @@ export function CalendarDayCell({
 
     return (
       <div
-        dir={isUr ? "rtl" : "ltr"}
-        className={`flex h-full flex-col justify-between ${isUr ? "items-end text-right" : "items-start text-left"}`}
+        className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-0.5 px-1.5 pt-1.5 pb-0.5"
+        dir="ltr"
       >
         <span
           data-role="gregorian-day"
-          className={`${compact ? "text-[17px] sm:text-lg" : "text-2xl sm:text-[28px]"} block font-black leading-none ${
-            sunday ? "text-[#9A4D3A] dark:text-[#D88A76]" : "text-[#17251d] dark:text-[#f2f5f2]"
-          } ${isUr ? "self-end text-right" : ""}`}
-          dir="ltr"
+          className={`col-start-1 row-start-1 min-w-0 self-start justify-self-start whitespace-nowrap font-black leading-none ${
+            sunday ? "text-[var(--calendar-month-title)]" : "text-[var(--calendar-text)]"
+          }`}
+          style={{ fontSize: cellSpec.gregorianFont }}
         >
           {gregorianDay}
         </span>
@@ -51,10 +55,11 @@ export function CalendarDayCell({
         {hijriDay && (
           <span
             data-role="hijri-day"
-            className={`${compact ? "text-[11px]" : "text-sm"} mt-2 block font-bold leading-none text-[#496C52] dark:text-[#9FC5A7] ${
-              isUr ? "self-end text-right font-naskh" : ""
+            className={`col-start-2 row-start-2 min-w-0 self-end justify-self-end whitespace-nowrap font-bold leading-none text-[var(--calendar-hijri-day)] ${
+              isUr ? "text-right font-naskh" : ""
             }`}
             dir={isUr ? "rtl" : "ltr"}
+            style={{ fontSize: cellSpec.hijriFont }}
           >
             {hijriDay}
           </span>
@@ -63,18 +68,21 @@ export function CalendarDayCell({
     );
   })();
 
-  const className = `${minHeight} block border-b border-e border-[#1A3A2A]/10 bg-[#FFFDF8] p-2.5 transition-colors dark:border-[#2a3d30] dark:bg-[#162a1e] ${
-    isUr ? "text-right" : "text-left"
-  }`;
+  const className =
+    "relative block overflow-hidden border-b border-e border-[var(--calendar-grid)] bg-[var(--calendar-cell)] p-0 transition-colors";
 
   return interactive ? (
     <Link
       href={`/date/${cell.gregorianIso}`}
-      className={`${className} hover:bg-[#F7F5EF] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#B8935A] dark:hover:bg-[#1e3527]`}
+      className={`${className} hover:brightness-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--calendar-frame)]`}
+      style={cellStyle}
+      aria-label={cell.gregorianIso}
     >
       {content}
     </Link>
   ) : (
-    <div className={className}>{content}</div>
+    <div className={className} style={cellStyle}>
+      {content}
+    </div>
   );
 }
