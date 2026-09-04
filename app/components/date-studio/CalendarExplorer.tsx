@@ -82,6 +82,7 @@ export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
               titleHref={`/calendar/${displayModel.year}/${month.month}`}
               language={lang}
               weekStart="monday"
+              showHijri={mode === "gregorian-hijri"}
               compact
             />
           ))}

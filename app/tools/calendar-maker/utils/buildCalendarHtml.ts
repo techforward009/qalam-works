@@ -70,7 +70,9 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
     : "";
 
   const monthsHtml = model.months.map((month) => {
-    const contexts = deriveHijriMonthContexts(month, model.language, model.hijriOffset);
+    const contexts = model.content === "gregorian-hijri"
+      ? deriveHijriMonthContexts(month, model.language, model.hijriOffset)
+      : [];
     const first = contexts.slice(0, 1);
     const rest = contexts.slice(1);
 

@@ -72,6 +72,7 @@ export function MonthCalendar({
   language = "en",
   weekStart = "monday",
   hijriOffset = 0,
+  showHijri = true,
   interactive = true,
   compact = false,
 }: {
@@ -81,6 +82,7 @@ export function MonthCalendar({
   language?: CalendarLanguage;
   weekStart?: WeekStart;
   hijriOffset?: number;
+  showHijri?: boolean;
   interactive?: boolean;
   compact?: boolean;
 }) {
@@ -90,7 +92,13 @@ export function MonthCalendar({
     effectiveWeekStart === "monday"
       ? CALENDAR_REFERENCE_WEEKDAYS
       : (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const);
-  const contexts = deriveHijriMonthContexts(month, language, hijriOffset);
+  const hasHijriData = month.weeks
+    .flatMap((week) => week.cells)
+    .some((cell) => cell.inCurrentMonth && cell.hijri !== null);
+  const hijriEnabled = showHijri && hasHijriData;
+  const contexts = hijriEnabled
+    ? deriveHijriMonthContexts(month, language, hijriOffset)
+    : [];
   const startContexts = contexts.slice(0, 1);
   const endContexts = contexts.slice(1);
   const style = calendarCssVariables(month.month) as CSSProperties;

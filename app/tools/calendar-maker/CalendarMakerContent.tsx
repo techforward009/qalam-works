@@ -321,6 +321,7 @@ export default function CalendarMakerContent() {
                   language={calendarLanguage}
                   weekStart={effectiveWeekStart}
                   hijriOffset={effectiveHijriOffset}
+                  showHijri={content === "gregorian-hijri"}
                   interactive={false}
                   compact
                 />
