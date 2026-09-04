@@ -126,8 +126,8 @@ export async function POST(request: NextRequest) {
       const weekdayRowStyle = getComputedStyle(weekdayRow);
       const weekdayStyle = getComputedStyle(weekday);
 
-      if (parseFloat(monthTitleStyle.fontSize) < 27.5) {
-        throw new Error(`Calendar PDF month title is not enlarged: size=${monthTitleStyle.fontSize}, lineHeight=${monthTitleStyle.lineHeight}`);
+      if (parseFloat(monthTitleStyle.fontSize) < 12.5) {
+        throw new Error(`Calendar PDF month title is not readable: size=${monthTitleStyle.fontSize}, lineHeight=${monthTitleStyle.lineHeight}`);
       }
       const titleDisplay = monthTitleStyle.display;
       if (
@@ -152,6 +152,14 @@ export async function POST(request: NextRequest) {
       if (Math.abs(nameCenterY - yearCenterY) > 1.5) {
         throw new Error(`Calendar PDF month title vertical centers diverged: month=${nameCenterY}, year=${yearCenterY}`);
       }
+      const monthCard = monthTitle.closest<HTMLElement>(".month");
+      if (monthCard) {
+        const monthRect = monthCard.getBoundingClientRect();
+        const titleRect = monthTitle.getBoundingClientRect();
+        if (titleRect.right > monthRect.right + 1) {
+          throw new Error(`Calendar PDF month title overflows card: titleRight=${titleRect.right}, cardRight=${monthRect.right}`);
+        }
+      }
       if (mustVerifyNaskh) {
         const leftRect = leftHijriContext.getBoundingClientRect();
         const rightRect = rightHijriContext.getBoundingClientRect();
@@ -162,39 +170,60 @@ export async function POST(request: NextRequest) {
           throw new Error(`Calendar PDF Hijri chronological role mapping invalid: right=${rightHijriContext.dataset.hijriRole}, left=${leftHijriContext.dataset.hijriRole}`);
         }
       }
-      if (parseFloat(monthHeaderStyle.height) < 59.5) {
+      if (leftHijriContext.getBoundingClientRect().width < 36 || rightHijriContext.getBoundingClientRect().width < 36) {
+        throw new Error("Calendar PDF Hijri context columns were squeezed out of the header");
+      }
+      if (parseFloat(monthHeaderStyle.height) < 29) {
         throw new Error(`Calendar PDF month header is too short: ${monthHeaderStyle.height}`);
       }
-      if (parseFloat(weekdayRowStyle.height) < 35.5 || parseFloat(weekdayStyle.height) < 35.5) {
+      if (parseFloat(weekdayRowStyle.height) < 14.5 || parseFloat(weekdayStyle.height) < 14.5) {
         throw new Error(`Calendar PDF weekday strip is too short: row=${weekdayRowStyle.height}, cell=${weekdayStyle.height}`);
       }
-      if (mustVerifyNaskh && parseFloat(weekdayStyle.fontSize) < 15.5) {
+      if (mustVerifyNaskh && parseFloat(weekdayStyle.fontSize) < 7.5) {
         throw new Error(`Calendar PDF Urdu weekday font is too small: ${weekdayStyle.fontSize}`);
       }
       if (mustVerifyNaskh && hijriContextYear) {
         const hijriContextYearStyle = getComputedStyle(hijriContextYear);
-        if (parseFloat(hijriContextYearStyle.fontSize) < 13) {
+        if (parseFloat(hijriContextYearStyle.fontSize) < 6) {
           throw new Error(`Calendar PDF Hijri context year font is too small: ${hijriContextYearStyle.fontSize}`);
         }
       }
 
       if (gregorianDay) {
         const gregorianStyle = getComputedStyle(gregorianDay);
-        if (parseFloat(gregorianStyle.fontSize) < 19.5) {
+        if (parseFloat(gregorianStyle.fontSize) < 11) {
           throw new Error(`Calendar PDF Gregorian font is too small: ${gregorianStyle.fontSize}`);
         }
       }
 
       if (hijriDay) {
         const hijriStyle = getComputedStyle(hijriDay);
-        if (parseFloat(hijriStyle.fontSize) < 15.5) {
+        if (parseFloat(hijriStyle.fontSize) < 8) {
           throw new Error(`Calendar PDF Hijri font is too small: ${hijriStyle.fontSize}`);
         }
         if (hijriStyle.position !== "absolute" || hijriStyle.display === "none") {
           throw new Error(`Calendar PDF Hijri positioning/display invalid: position=${hijriStyle.position}, display=${hijriStyle.display}`);
         }
-        if (Math.abs(parseFloat(hijriStyle.bottom) - 8) > 0.5 || Math.abs(parseFloat(hijriStyle.right) - 6) > 0.5) {
+        if (Math.abs(parseFloat(hijriStyle.bottom) - 2) > 0.5 || Math.abs(parseFloat(hijriStyle.right) - 2) > 0.5) {
           throw new Error(`Calendar PDF Hijri anchor drifted: bottom=${hijriStyle.bottom}, right=${hijriStyle.right}`);
+        }
+      }
+
+      if (gregorianDay && hijriDay) {
+        const dayBox = gregorianDay.closest<HTMLElement>(".day");
+        if (dayBox) {
+          const dayRect = dayBox.getBoundingClientRect();
+          const gregRect = gregorianDay.getBoundingClientRect();
+          const hijriRect = hijriDay.getBoundingClientRect();
+          if (gregRect.bottom > dayRect.bottom + 1 || gregRect.top < dayRect.top - 1) {
+            throw new Error(`Calendar PDF Gregorian digit clipped: gregBottom=${gregRect.bottom}, cellBottom=${dayRect.bottom}`);
+          }
+          if (hijriRect.bottom > dayRect.bottom + 1 || hijriRect.top < dayRect.top - 1) {
+            throw new Error(`Calendar PDF Hijri digit clipped: hijriBottom=${hijriRect.bottom}, cellBottom=${dayRect.bottom}`);
+          }
+          if (gregRect.bottom > hijriRect.top + 1) {
+            throw new Error(`Calendar PDF primary/secondary digits overlap: gregBottom=${gregRect.bottom}, hijriTop=${hijriRect.top}`);
+          }
         }
       }
     }, body.language === "ur");

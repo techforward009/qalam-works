@@ -10,8 +10,8 @@ describe("Calendar header and Hijri digit spacing", () => {
   it("gives month headers more vertical room while retaining centered context alignment", () => {
     expect(CALENDAR_VISUAL_SPEC.web.compact.monthHeaderMinPx).toBe(68);
     expect(CALENDAR_VISUAL_SPEC.web.detail.monthHeaderMinPx).toBe(90);
-    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderPortraitMm).toBe(16.5);
-    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderLandscapeMm).toBe(16.0);
+    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderPortraitMm).toBe(9.0);
+    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderLandscapeMm).toBe(8.5);
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
     expect(pdf).toMatch(/\.month-head\{[\s\S]*?align-items:center/);
@@ -30,12 +30,12 @@ describe("Calendar header and Hijri digit spacing", () => {
     expect(cell).toMatch(/self-end justify-self-end/);
   });
 
-  it("increases Hijri PDF typography and reduces bottom inset without changing grid anchoring", () => {
-    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("16px");
-    expect(CALENDAR_VISUAL_SPEC.print.hijriFontLandscape).toBe("16px");
+  it("keeps Hijri PDF typography secondary and anchored in the bottom-right", () => {
+    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("9px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriFontLandscape).toBe("9px");
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(pdf).toMatch(/padding:4px 6px !important/);
-    expect(pdf).toMatch(/\.hijri-day\{[\s\S]*?right:6px !important;[\s\S]*?bottom:8px !important/);
+    expect(pdf).toMatch(/padding:2px 3px !important/);
+    expect(pdf).toMatch(/\.hijri-day\{[\s\S]*?right:2px !important;[\s\S]*?bottom:2px !important/);
   });
 });

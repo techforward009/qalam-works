@@ -97,17 +97,17 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
       }
 
       const hijri = cell.hijri
-        ? `<span class="hijri-day" data-pdf-hijri-day="true" style="position:absolute !important;bottom:8px !important;right:6px !important;color:#15803d !important;font-size:16px !important;font-weight:bold !important;display:block !important;line-height:1 !important;">${escapeHtml(isUr ? toUrduDigits(cell.hijri.day) : String(cell.hijri.day))}</span>`
+        ? `<span class="hijri-day" data-pdf-hijri-day="true" style="position:absolute !important;bottom:2px !important;right:2px !important;color:#15803d !important;font-size:${metrics.hijriFont} !important;font-weight:bold !important;display:block !important;line-height:1 !important;z-index:2 !important;">${escapeHtml(isUr ? toUrduDigits(cell.hijri.day) : String(cell.hijri.day))}</span>`
         : "";
 
-      return `<div class="day current${isSunday(cell.gregorian) ? " sunday" : ""}" style="position:relative !important;"><div class="greg-day" data-pdf-gregorian-day="true" style="position:absolute !important;top:4px !important;left:6px !important;font-size:20px !important;font-weight:bold !important;line-height:1 !important;display:block !important;">${cell.gregorian.day}</div>${hijri}</div>`;
+      return `<div class="day current${isSunday(cell.gregorian) ? " sunday" : ""}" style="position:relative !important;overflow:visible !important;"><div class="greg-day" data-pdf-gregorian-day="true" style="position:absolute !important;top:2px !important;left:2px !important;font-size:${metrics.gregorianFont} !important;font-weight:bold !important;line-height:1 !important;display:block !important;z-index:1 !important;">${cell.gregorian.day}</div>${hijri}</div>`;
     }).join("");
 
     return `<section class="month" style="${calendarPdfMonthVariables(month.month)}">
-      <header class="month-head" dir="ltr" style="height:${metrics.monthHeaderHeightPx}px !important;min-height:${metrics.monthHeaderHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:18px !important;overflow:visible !important;padding:0 15px !important;">
-        <div class="ctx ctx-left" data-hijri-side="left" data-hijri-role="${isUr ? "end" : "start"}" dir="${isUr ? "rtl" : "ltr"}" style="flex:1 1 0 !important;min-width:0 !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:center !important;margin:0 8px 0 0 !important;">${contextHtml(leftHijriContexts)}</div>
-        <h2 data-pdf-month-title="true" dir="ltr" style="flex:0 0 auto !important;height:100% !important;font-size:${metrics.monthTitleFont} !important;font-weight:900 !important;line-height:1 !important;padding:0 !important;margin:0 12px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:8px !important;flex-direction:${isUr ? "row-reverse" : "row"} !important;vertical-align:middle !important;overflow:visible !important;white-space:nowrap !important;"><span class="month-title-name" dir="${isUr ? "rtl" : "ltr"}" style="display:inline-flex !important;height:100% !important;align-items:center !important;justify-content:center !important;line-height:1 !important;vertical-align:middle !important;">${escapeHtml(monthLabels[month.month - 1])}</span><span class="month-title-year" dir="ltr" style="display:inline-flex !important;height:100% !important;align-items:center !important;justify-content:center !important;line-height:1 !important;vertical-align:middle !important;">${model.year}</span></h2>
-        <div class="ctx ctx-right" data-hijri-side="right" data-hijri-role="${isUr ? "start" : "end"}" dir="${isUr ? "rtl" : "ltr"}" style="flex:1 1 0 !important;min-width:0 !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:center !important;margin:0 0 0 8px !important;">${contextHtml(rightHijriContexts)}</div>
+      <header class="month-head" dir="ltr" style="height:${metrics.monthHeaderHeightPx}px !important;min-height:${metrics.monthHeaderHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:6px !important;overflow:hidden !important;padding:0 4px !important;">
+        <div class="ctx ctx-left" data-hijri-side="left" data-hijri-role="${isUr ? "end" : "start"}" dir="${isUr ? "rtl" : "ltr"}" style="flex:1 1 0 !important;min-width:48px !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:center !important;margin:0 4px 0 0 !important;">${contextHtml(leftHijriContexts)}</div>
+        <h2 data-pdf-month-title="true" dir="ltr" style="flex:0 1 auto !important;height:100% !important;font-size:${metrics.monthTitleFont} !important;font-weight:900 !important;line-height:1 !important;padding:0 !important;margin:0 4px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:4px !important;flex-direction:${isUr ? "row-reverse" : "row"} !important;vertical-align:middle !important;overflow:hidden !important;white-space:nowrap !important;"><span class="month-title-name" dir="${isUr ? "rtl" : "ltr"}" style="display:inline-flex !important;height:100% !important;align-items:center !important;justify-content:center !important;line-height:1 !important;vertical-align:middle !important;">${escapeHtml(monthLabels[month.month - 1])}</span><span class="month-title-year" dir="ltr" style="display:inline-flex !important;height:100% !important;align-items:center !important;justify-content:center !important;line-height:1 !important;vertical-align:middle !important;">${model.year}</span></h2>
+        <div class="ctx ctx-right" data-hijri-side="right" data-hijri-role="${isUr ? "start" : "end"}" dir="${isUr ? "rtl" : "ltr"}" style="flex:1 1 0 !important;min-width:48px !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:center !important;margin:0 0 0 4px !important;">${contextHtml(rightHijriContexts)}</div>
       </header>
       <div class="weekdays" data-pdf-weekday-row="true" dir="${isUr ? "rtl" : "ltr"}" style="height:${metrics.weekdayHeightPx}px !important;min-height:${metrics.weekdayHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:center !important;overflow:hidden !important;">
         ${dayLabels.map((label) => `<div data-pdf-weekday="true" class="${label === "Sun" || label === "اتوار" ? "sun" : ""}" style="height:${metrics.weekdayHeightPx}px !important;min-height:${metrics.weekdayHeightPx}px !important;flex:1 1 0 !important;display:flex !important;align-items:center !important;justify-content:center !important;line-height:1 !important;padding:0 !important;font-size:${metrics.weekdayFont} !important;font-weight:700 !important;${isUr ? "font-family:'QalamNaskh',serif !important;" : ""}">${label}</div>`).join("")}
@@ -197,8 +197,8 @@ body{
   display:flex !important;
   align-items:center !important;
   justify-content:space-between !important;
-  gap:16px !important;
-  padding:0 15px !important;
+  gap:6px !important;
+  padding:0 4px !important;
   background:var(--calendar-header);
   border-bottom:.65px solid var(--calendar-grid-strong);
   overflow:hidden;
@@ -212,19 +212,19 @@ body{
   font-weight:bold !important;
   font-size:${metrics.monthTitleFont} !important;
   line-height:1 !important;
-  padding:4px 0 !important;
+  padding:0 !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
-  gap:8px !important;
+  gap:4px !important;
   vertical-align:middle !important;
-  overflow:visible !important;
+  overflow:hidden !important;
   text-overflow:clip !important;
 }
-.ctx{min-width:0;height:100%;display:flex;align-items:center;gap:.55mm;color:var(--calendar-hijri-context);overflow:hidden}
+.ctx{min-width:48px;height:100%;display:flex;align-items:center;gap:.35mm;color:var(--calendar-hijri-context);overflow:hidden}
 .ctx-left,.ctx-right{flex:1 1 0;justify-content:center !important;text-align:center !important}
-.ctx-left{margin-right:6px}
-.ctx-right{margin-left:6px}
+.ctx-left{margin-right:2px}
+.ctx-right{margin-left:2px}
 .ctx-item{display:inline-flex;align-items:center;gap:.45mm;min-width:0;line-height:1}
 .ctx-stack{display:flex !important;min-width:0;width:100% !important;height:100% !important;flex-direction:column !important;justify-content:center !important;align-items:center !important;text-align:center !important;line-height:1;transform:none !important;}
 .ctx-name{
@@ -279,15 +279,16 @@ body{
   border-inline-end:.5px solid var(--calendar-grid);
   border-bottom:.5px solid var(--calendar-grid);
   background:var(--calendar-cell);
-  overflow:hidden;
+  overflow:visible;
 }
 .day.current{
   display:grid;
   grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   grid-template-rows:minmax(0,1fr) minmax(0,1fr);
-  padding:4px 6px !important;
+  padding:2px 3px !important;
+  overflow:visible !important;
 }
-.filler{background:var(--calendar-filler)}
+.filler{background:var(--calendar-filler);overflow:hidden}
 .greg-day{
   grid-column:1;
   grid-row:1;
@@ -296,9 +297,9 @@ body{
   text-align:left;
   max-width:100%;
   white-space:nowrap;
-  overflow:hidden;
+  overflow:visible;
   font-family:Arial,Helvetica,sans-serif;
-  font-size:20px !important;
+  font-size:${metrics.gregorianFont} !important;
   font-weight:900;
   line-height:1;
   color:var(--calendar-text);
@@ -307,12 +308,12 @@ body{
 .day.sunday .greg-day{color:var(--calendar-month-title)}
 .hijri-day{
   position:absolute !important;
-  right:6px !important;
-  bottom:8px !important;
+  right:2px !important;
+  bottom:2px !important;
   max-width:100%;
   white-space:nowrap;
   overflow:visible !important;
-  font-size:16px !important;
+  font-size:${metrics.hijriFont} !important;
   font-weight:bold !important;
   display:block !important;
   line-height:1 !important;

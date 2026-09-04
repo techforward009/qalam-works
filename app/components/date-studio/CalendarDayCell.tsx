@@ -69,7 +69,7 @@ export function CalendarDayCell({
   })();
 
   const className =
-    "relative block overflow-hidden border-b border-e border-[var(--calendar-grid)] bg-[var(--calendar-cell)] p-0 transition-colors";
+    "relative block overflow-visible border-b border-e border-[var(--calendar-grid)] bg-[var(--calendar-cell)] p-0 transition-colors";
 
   return interactive ? (
     <Link
