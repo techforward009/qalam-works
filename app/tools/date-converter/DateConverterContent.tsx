@@ -89,8 +89,9 @@ const L = {
     calendarMaker: "Create an annual calendar",
     studioTitle: "Date Studio",
     studioDesc: "Convert, find, explore and print Gregorian, Hijri and Solar Hijri dates.",
-    gregorianExplorer: "Gregorian Calendar Explorer",
+    gregorianExplorer: "Explore Calendars",
     hijriExplorer: "Hijri Calendar Explorer",
+    calendarMakerAction: "Calendar Maker",
     findIntro: "Know the Hijri day and month, but not the Hijri year? Search the selected Gregorian year using the same deterministic Qalam Works engine.",
     hijriDay: "Hijri day",
     hijriMonth: "Hijri month",
@@ -157,8 +158,9 @@ const L = {
     calendarMaker: "سالانہ تقویم بنائیں",
     studioTitle: "ڈیٹ اسٹوڈیو",
     studioDesc: "عیسوی، ہجری قمری اور ہجری شمسی تاریخیں تبدیل کریں، تلاش کریں، دیکھیں اور قابلِ طباعت تقویم بنائیں۔",
-    gregorianExplorer: "عیسوی تقویم دیکھیں",
-    hijriExplorer: "ہجری تقویم دیکھیں",
+    gregorianExplorer: "تقویم دیکھیں",
+    hijriExplorer: "ہجری کیلنڈر ایکسپلورر",
+    calendarMakerAction: "تقویم ساز",
     findIntro: "اگر ہجری دن اور مہینہ معلوم ہو لیکن ہجری سال معلوم نہ ہو تو اسی قلم ورکس حسابی انجن سے منتخب عیسوی سال میں تاریخ تلاش کریں۔",
     hijriDay: "ہجری دن",
     hijriMonth: "ہجری مہینہ",
@@ -329,35 +331,33 @@ export default function DateConverterContent() {
           <p className={`text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`}>{t.desc}</p>
         </div>
 
-        {/* Expansion tabs are additive; the accepted Convert Date UI below is preserved. */}
-        <div className="grid grid-cols-2 gap-2 mb-5 rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] p-1">
-          {(["convert", "find"] as ToolMode[]).map(item => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setMode(item)}
-              className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${naskh} ${
-                mode === item
-                  ? "bg-white dark:bg-[#162a1e] text-[#1A3A2A] dark:text-[#e8ede9] shadow-sm"
-                  : "text-[#4a6a4a] dark:text-[#a8c8b0] hover:text-[#1A3A2A] dark:hover:text-[#e8ede9]"
-              }`}
-            >
-              {item === "convert" ? t.convertTab : t.findTab}
-            </button>
-          ))}
-        </div>
-
-        <section id="date-studio" className="mb-6 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] p-4 sm:p-5">
-          <div className="mb-3 text-start">
-            <h2 className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.studioTitle}</h2>
+        <section id="date-studio" className="mb-7 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] p-4 sm:p-5">
+          <div className="mb-4 text-start">
+            <h2 className={`text-xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.studioTitle}</h2>
             <p className={`mt-1 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.studioDesc}</p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <button type="button" onClick={() => setMode("convert")} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3 text-start text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.convertTab}</button>
-            <button type="button" onClick={() => setMode("find")} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3 text-start text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.findTab}</button>
-            <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3 text-start text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.calendarMaker}</Link>
-            <Link href={`/calendar/${studioToday.year}`} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3 text-start text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
-            <Link href={`/hijri/${studioHijri.year}`} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3 text-start text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors sm:col-span-2 ${naskh}`}>{t.hijriExplorer}</Link>
+          <div className="space-y-2.5">
+            <button
+              type="button"
+              onClick={() => setMode("convert")}
+              aria-pressed={mode === "convert"}
+              className={`w-full rounded-xl bg-[#1A3A2A] dark:bg-[#2a5a3a] px-5 py-4 text-start text-base font-bold text-white shadow-sm hover:bg-[#244E38] dark:hover:bg-[#3a7a4a] transition-colors ${naskh}`}
+            >
+              {t.convertTab}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("find")}
+              aria-pressed={mode === "find"}
+              className={`w-full rounded-xl border-2 border-[#1A3A2A]/20 dark:border-[#4a7a5a] bg-white dark:bg-[#0e1c15] px-5 py-4 text-start text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/70 transition-colors ${naskh}`}
+            >
+              {t.findTab}
+            </button>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <Link href={`/calendar/${studioToday.year}`} className={`rounded-xl border border-[#B8935A]/55 bg-[#B8935A]/8 px-4 py-3.5 text-start text-sm font-bold text-[#6F4E25] dark:text-[#E0C18D] hover:bg-[#B8935A]/14 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
+              <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3.5 text-start text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.calendarMakerAction}</Link>
+              <Link href={`/hijri/${studioHijri.year}`} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3.5 text-start text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors sm:col-span-2 ${naskh}`}>{t.hijriExplorer}</Link>
+            </div>
           </div>
         </section>
 

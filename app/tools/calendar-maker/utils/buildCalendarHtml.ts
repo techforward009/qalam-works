@@ -5,7 +5,6 @@ import {
   type CalendarYearModel,
 } from "./calendarModel";
 
-
 export interface CalendarHtmlOptions {
   naskhFontBase64?: string;
 }
@@ -27,7 +26,7 @@ export function buildCalendarHtml(
   const columns = landscape ? 4 : 3;
   const rows = landscape ? 3 : 4;
   const monthLabels = GREGORIAN_MONTH_LABELS[model.language];
-  const dayLabels = weekdayLabels(model.language, model.weekStart);
+  const dayLabels = weekdayLabels(model.language, isUr ? "monday" : model.weekStart);
   const hijriMonthLabels = HIJRI_MONTH_SHORT_LABELS[model.language];
   const title = isUr ? `${model.year} سالانہ تقویم` : `${model.year} Annual Calendar`;
   const subtitle = model.content === "gregorian-hijri"
@@ -39,17 +38,17 @@ export function buildCalendarHtml(
 
   const monthsHtml = model.months.map((month) => {
     const cells = month.weeks.flatMap((week) => week.cells).map((cell) => {
-      const classes = cell.inCurrentMonth ? "day current" : "day filler";
+      if (!cell.inCurrentMonth) return `<div class="day filler" aria-hidden="true"></div>`;
       const hijri = cell.hijri
         ? `<div class="hijri" dir="${isUr ? "rtl" : "ltr"}"><span class="hijri-day" dir="ltr">${cell.hijri.day}</span> ${escapeHtml(hijriMonthLabels[cell.hijri.month - 1])}</div>`
         : "";
-      return `<div class="${classes}"><div class="greg" dir="ltr">${cell.gregorian.day}</div>${hijri}</div>`;
+      return `<div class="day current"><div class="greg" dir="ltr">${cell.gregorian.day}</div>${hijri}</div>`;
     }).join("");
 
     return `<section class="month">
       <h2>${escapeHtml(monthLabels[month.month - 1])}</h2>
-      <div class="weekdays" dir="ltr">${dayLabels.map((label) => `<div>${escapeHtml(label)}</div>`).join("")}</div>
-      <div class="days" dir="ltr">${cells}</div>
+      <div class="weekdays" dir="${isUr ? "rtl" : "ltr"}">${dayLabels.map((label) => `<div>${escapeHtml(label)}</div>`).join("")}</div>
+      <div class="days" dir="${isUr ? "rtl" : "ltr"}">${cells}</div>
     </section>`;
   }).join("");
 
@@ -72,17 +71,16 @@ h1 { margin:0; font-size:${landscape ? "18px" : "17px"}; line-height:1.2; color:
 .subtitle { margin-top:2px; font-size:8.5px; color:#526b5a; }
 .year-grid { flex:1; min-height:0; display:grid; grid-template-columns:repeat(${columns}, minmax(0,1fr)); grid-template-rows:repeat(${rows}, minmax(0,1fr)); gap:${landscape ? "4.5mm" : "4mm"}; }
 .month { min-height:0; display:flex; flex-direction:column; border:1px solid #ccd8d0; border-radius:5px; overflow:hidden; break-inside:avoid; background:#fff; }
-.month h2 { flex:0 0 auto; margin:0; padding:3px 4px; text-align:center; background:#edf2ee; color:#1a3a2a; font-size:${landscape ? "11px" : "11.5px"}; line-height:1.2; }
+.month h2 { flex:0 0 auto; margin:0; padding:4px; text-align:center; color:#fff; font-size:${landscape ? "11px" : "11.5px"}; line-height:1.2; border-bottom:1.5px solid #b8935a; background-color:#1a3a2a; background-image:linear-gradient(30deg,rgba(184,147,90,.13) 12%,transparent 12.5%,transparent 87%,rgba(184,147,90,.13) 87.5%),linear-gradient(150deg,rgba(184,147,90,.08) 12%,transparent 12.5%,transparent 87%,rgba(184,147,90,.08) 87.5%); background-size:24px 14px; }
 .weekdays, .days { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); }
 .days { flex:1; min-height:0; grid-auto-rows:1fr; }
-.weekdays { background:#f7f5ef; border-top:1px solid #e0e7e2; border-bottom:1px solid #e0e7e2; }
-.weekdays > div { text-align:center; padding:1.5px 0; font-size:${landscape ? "6.3px" : "6.6px"}; font-weight:700; color:#486353; white-space:nowrap; }
+.weekdays { background:#e7efe8; border-bottom:1px solid #d6e1d9; }
+.weekdays > div { text-align:center; padding:1.5px 0; font-size:${landscape ? "6.3px" : "6.6px"}; font-weight:700; color:#31533d; white-space:nowrap; }
 .day { min-height:0; border-right:1px solid #edf0ee; border-bottom:1px solid #edf0ee; padding:1.5px 2px; overflow:hidden; }
 .day:nth-child(7n) { border-right:0; }
 .greg { font-size:${landscape ? "8.2px" : "8.7px"}; font-weight:700; color:#17251d; text-align:${isUr ? "right" : "left"}; }
 .hijri { font-size:${landscape ? "6.0px" : "6.3px"}; color:#8a6c3e; margin-top:0; text-align:${isUr ? "right" : "left"}; }
 .filler { background:#fafafa; }
-.filler .greg, .filler .hijri { color:#b7c0ba; }
 .footer { flex:0 0 auto; margin-top:4px; display:flex; justify-content:space-between; gap:8px; font-size:6.5px; color:#7b877f; direction:ltr; }
 </style>
 </head>

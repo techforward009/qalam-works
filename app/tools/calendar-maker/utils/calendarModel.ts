@@ -91,6 +91,7 @@ const WEEKDAY_LABELS_MONDAY = {
 
 export function weekdayLabels(language: CalendarLanguage, weekStart: WeekStart): readonly string[] {
   const labels = [...WEEKDAY_LABELS_MONDAY[language]];
+  if (language === "ur") return labels;
   if (weekStart === "sunday") labels.unshift(labels.pop()!);
   return labels;
 }
@@ -163,11 +164,14 @@ export function buildCalendarYearModel(options: BuildCalendarYearOptions): Calen
     throw new RangeError(`Gregorian year must be between ${MIN_GREGORIAN_YEAR} and ${MAX_GREGORIAN_YEAR}.`);
   }
 
+  const effectiveWeekStart: WeekStart = options.language === "ur" ? "monday" : options.weekStart;
+
   return {
     ...options,
     year,
+    weekStart: effectiveWeekStart,
     months: Array.from({ length: 12 }, (_, index) =>
-      buildCalendarMonth(year, index + 1, options.content, options.weekStart),
+      buildCalendarMonth(year, index + 1, options.content, effectiveWeekStart),
     ),
   };
 }

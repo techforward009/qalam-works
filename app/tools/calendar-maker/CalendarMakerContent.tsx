@@ -2,14 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useLanguage } from "../../lib/language-context";
+import { BackToDateStudioLink } from "../../components/date-studio/DateStudioRouteNav";
+import { MonthCalendar } from "../../components/date-studio/MonthCalendar";
 import {
   GREGORIAN_MONTH_LABELS,
-  HIJRI_MONTH_SHORT_LABELS,
   MAX_GREGORIAN_YEAR,
   MIN_GREGORIAN_YEAR,
   buildCalendarYearModel,
   parseCalendarYearInput,
-  weekdayLabels,
   type CalendarContentMode,
   type CalendarLanguage,
   type CalendarPage,
@@ -84,16 +84,17 @@ export default function CalendarMakerContent() {
   const [error, setError] = useState("");
 
   const validYear = useMemo(() => parseCalendarYearInput(yearInput), [yearInput]);
+  const effectiveWeekStart: WeekStart = calendarLanguage === "ur" ? "monday" : weekStart;
   const model = useMemo(() => {
     if (validYear === null) return null;
     return buildCalendarYearModel({
       year: validYear,
       content,
       language: calendarLanguage,
-      weekStart,
+      weekStart: effectiveWeekStart,
       page,
     });
-  }, [validYear, content, calendarLanguage, weekStart, page]);
+  }, [validYear, content, calendarLanguage, effectiveWeekStart, page]);
 
   async function downloadPdf() {
     if (validYear === null || model === null) return;
@@ -103,7 +104,7 @@ export default function CalendarMakerContent() {
       const response = await fetch("/api/export-calendar-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ year: validYear, content, language: calendarLanguage, weekStart, page }),
+        body: JSON.stringify({ year: validYear, content, language: calendarLanguage, weekStart: effectiveWeekStart, page }),
       });
       if (!response.ok) throw new Error("pdf");
       const blob = await response.blob();
@@ -127,6 +128,9 @@ export default function CalendarMakerContent() {
 
   return (
     <div className="site-container py-7 sm:py-10" dir={dir}>
+      <div className="mb-5">
+        <BackToDateStudioLink />
+      </div>
       <div className="text-center mb-7">
         <h1 className={`text-2xl sm:text-3xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${isUr ? "font-nastaliq font-normal" : ""}`}>{t.title}</h1>
         <p className={`text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] max-w-2xl mx-auto ${naskh}`}>{t.desc}</p>
@@ -162,14 +166,18 @@ export default function CalendarMakerContent() {
           </div>
           <div>
             <label className={labelClass}>{t.language}</label>
-            <select value={calendarLanguage} onChange={(e) => setCalendarLanguage(e.target.value as CalendarLanguage)} className={selectClass}>
+            <select value={calendarLanguage} onChange={(e) => {
+              const nextLanguage = e.target.value as CalendarLanguage;
+              setCalendarLanguage(nextLanguage);
+              if (nextLanguage === "ur") setWeekStart("monday");
+            }} className={selectClass}>
               <option value="en">{t.english}</option>
               <option value="ur">{t.urdu}</option>
             </select>
           </div>
           <div>
             <label className={labelClass}>{t.weekStarts}</label>
-            <select value={weekStart} onChange={(e) => setWeekStart(e.target.value as WeekStart)} className={selectClass}>
+            <select value={effectiveWeekStart} disabled={calendarLanguage === "ur"} onChange={(e) => setWeekStart(e.target.value as WeekStart)} className={`${selectClass} disabled:cursor-not-allowed disabled:opacity-70`}>
               <option value="sunday">{t.sunday}</option>
               <option value="monday">{t.monday}</option>
             </select>
@@ -211,30 +219,15 @@ export default function CalendarMakerContent() {
             <div className={`grid grid-cols-1 sm:grid-cols-2 ${page === "a4-landscape" ? "xl:grid-cols-4" : "xl:grid-cols-3"} gap-3`}>
               {model.months.map((month) => {
                 const monthNames = GREGORIAN_MONTH_LABELS[calendarLanguage];
-                const labels = weekdayLabels(calendarLanguage, weekStart);
-                const outputUr = calendarLanguage === "ur";
                 return (
-                  <article key={month.month} className={`overflow-hidden rounded-xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-white dark:bg-[#162a1e] ${outputUr ? "font-naskh" : ""}`} dir={outputUr ? "rtl" : "ltr"}>
-                    <h3 className="px-3 py-2 text-center text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] bg-[#1A3A2A]/5 dark:bg-white/[0.04]">{monthNames[month.month - 1]}</h3>
-                    <div className="grid grid-cols-7 border-y border-[#1A3A2A]/8 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#0e1c15]" dir="ltr">
-                      {labels.map((label) => <div key={label} className="py-1 text-center text-[10px] font-semibold text-[#4a6a4a] dark:text-[#a8c8b0]">{label}</div>)}
-                    </div>
-                    <div className="grid grid-cols-7" dir="ltr">
-                      {month.weeks.flatMap((week) => week.cells).map((cell) => (
-                        <div key={cell.gregorianIso} className={`min-h-[43px] border-b border-e border-[#1A3A2A]/6 dark:border-[#2a3d30] p-1 ${cell.inCurrentMonth ? "bg-white dark:bg-[#162a1e]" : "bg-gray-50/80 dark:bg-white/[0.02]"}`}>
-                          <div className={`text-[11px] font-bold ${cell.inCurrentMonth ? "text-[#1A3A2A] dark:text-[#e8ede9]" : "text-gray-300 dark:text-[#50665a]"}`} dir="ltr">{cell.gregorian.day}</div>
-                          {cell.hijri && (
-                            <div
-                              className={`text-[9px] mt-0.5 ${cell.inCurrentMonth ? "text-amber-700 dark:text-amber-400" : "text-gray-300 dark:text-[#50665a]"}`}
-                              dir={outputUr ? "rtl" : "ltr"}
-                            >
-                              <span dir="ltr">{cell.hijri.day}</span> {HIJRI_MONTH_SHORT_LABELS[calendarLanguage][cell.hijri.month - 1]}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </article>
+                  <MonthCalendar
+                    key={month.month}
+                    month={month}
+                    title={monthNames[month.month - 1]}
+                    language={calendarLanguage}
+                    interactive={false}
+                    compact
+                  />
                 );
               })}
             </div>

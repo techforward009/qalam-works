@@ -30,7 +30,7 @@ export default async function HijriMonthPage({params}:{params:Promise<{year:stri
 
  return (
   <main className="p-6">
-   <DateStudioRouteNav previousHref={`/hijri/${previousMonth.year}/${previousMonth.month}`} nextHref={`/hijri/${nextMonth.year}/${nextMonth.month}`} counterpartHref={`/calendar/${gregorianStart.year}/${gregorianStart.month}`} counterpartLabel={{en:"Explore Gregorian month",ur:"عیسوی مہینہ دیکھیں"}} />
+   <DateStudioRouteNav previousHref={`/hijri/${previousMonth.year}/${previousMonth.month}`} nextHref={`/hijri/${nextMonth.year}/${nextMonth.month}`} periodLabel={`Hijri ${m}/${y}`} counterpartHref={`/calendar/${gregorianStart.year}/${gregorianStart.month}`} counterpartLabel={{en:"Explore Gregorian month",ur:"عیسوی مہینہ دیکھیں"}} />
    <h1 className="text-2xl font-bold">Hijri {m}/{y}</h1>
    {days.map(day=>{
     const date=convert("hijri",{year:y,month:m,day}).gregorian;
