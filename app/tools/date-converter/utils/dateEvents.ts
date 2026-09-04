@@ -12,6 +12,9 @@ export type DateEvent = {
   year?: number;
   title: DateEventLocaleText;
   description?: DateEventLocaleText;
+  category?: string;
+  importance?: "low" | "medium" | "high";
+  tags?: string[];
   source?: {
     type: "reference" | "archive" | "publication";
     label?: string;
@@ -22,32 +25,13 @@ const dateEvents: DateEvent[] = [
   {
     id: "sample-independent-event",
     date: { month: 1, day: 1 },
-    title: {
-      en: "New year historical marker",
-      ur: "نئے سال کا تاریخی نشان",
-    },
-    description: {
-      en: "Internal seed event for UI verification.",
-      ur: "اندرونی جانچ کے لیے نمونہ واقعہ۔",
-    },
-    source: {
-      type: "reference",
-      label: "Internal reference",
-    },
-  },
-  {
-    id: "sample-year-event",
-    date: { month: 5, day: 5 },
-    year: 2026,
-    title: {
-      en: "Year specific sample event",
-      ur: "مخصوص سال کا نمونہ واقعہ",
-    },
-    source: {
-      type: "archive",
-      label: "Archive placeholder",
-    },
-  },
+    title: { en: "New year historical marker", ur: "نئے سال کا تاریخی نشان" },
+    description: { en: "Internal seed event.", ur: "اندرونی نمونہ واقعہ۔" },
+    category: "cultural",
+    importance: "medium",
+    tags: ["calendar", "sample"],
+    source: { type: "reference", label: "Internal reference" }
+  }
 ];
 
 export function getDateEvents(date: { year: number; month: number; day: number }): DateEvent[] {
