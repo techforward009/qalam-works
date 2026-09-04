@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { convert } from "@/app/tools/date-converter/utils/dateEngine";
+import { DateStudioRouteNav } from "@/app/components/date-studio/DateStudioRouteNav";
 
 function getHijriMonthDays(year:number, month:number) {
  const days:number[]=[];
@@ -23,8 +24,13 @@ export default async function HijriMonthPage({params}:{params:Promise<{year:stri
  const days=getHijriMonthDays(y,m);
  if(!days.length) notFound();
 
+ const previousMonth = m === 1 ? {year:y-1,month:12} : {year:y,month:m-1};
+ const nextMonth = m === 12 ? {year:y+1,month:1} : {year:y,month:m+1};
+ const gregorianStart = convert("hijri",{year:y,month:m,day:1}).gregorian;
+
  return (
   <main className="p-6">
+   <DateStudioRouteNav previousHref={`/hijri/${previousMonth.year}/${previousMonth.month}`} nextHref={`/hijri/${nextMonth.year}/${nextMonth.month}`} counterpartHref={`/calendar/${gregorianStart.year}/${gregorianStart.month}`} counterpartLabel={{en:"Explore Gregorian month",ur:"عیسوی مہینہ دیکھیں"}} />
    <h1 className="text-2xl font-bold">Hijri {m}/{y}</h1>
    {days.map(day=>{
     const date=convert("hijri",{year:y,month:m,day}).gregorian;

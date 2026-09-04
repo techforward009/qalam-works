@@ -64,8 +64,11 @@ export default function Header() {
   // Mobile accordion — which section is expanded
   const [mobileGroup,  setMobileGroup] = useState<MenuId | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
-  useLanguage();
-  const t = translations.en.nav;
+  const { language } = useLanguage();
+  const t = {
+    ...translations.en.nav,
+    dateStudio: translations[language].nav.dateStudio,
+  };
 
   // ── Menu definitions ────────────────────────────────────────────────────────
   const cleanerLinks = [
@@ -82,7 +85,7 @@ export default function Header() {
 
   const utilitiesLinks = [
     { label: t.invoiceStudio, href: "/tools/invoice-generator" },
-    { label: t.dateConverter,  href: "/tools/date-converter" },
+    { label: t.dateStudio, href: "/tools/date-converter" },
   ];
 
   // ── Primary flat links (desktop + mobile) ───────────────────────────────────

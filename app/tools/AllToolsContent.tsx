@@ -5,7 +5,8 @@ import { useState } from "react";
 import { useLanguage } from "../lib/language-context";
 import { trackEvent } from "../lib/analytics";
 import { TOOL_CATALOG, type ToolEntry } from "../lib/toolCatalog";
-import { ChevronDown, ChevronUp, ExternalLink, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, AlertTriangle, CalendarDays } from "lucide-react";
+import { convert, todayGregorian } from "./date-converter/utils/dateEngine";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const L = {
@@ -21,6 +22,13 @@ const L = {
     showMore:    "Details",
     showLess:    "Less",
     noteLabel:   "Note",
+    dateStudioTitle: "Date Studio",
+    dateStudioDesc: "Convert, find, explore and print Gregorian, Hijri and Solar Hijri dates.",
+    convertDate: "Convert a Date",
+    findDate: "Find Date",
+    makeCalendar: "Make a Calendar",
+    gregorianExplorer: "Gregorian Calendar Explorer",
+    hijriExplorer: "Hijri Calendar Explorer",
   },
   ur: {
     title:       "قلم ورکس کے تمام ٹولز",
@@ -34,6 +42,13 @@ const L = {
     showMore:    "تفصیل",
     showLess:    "کم",
     noteLabel:   "نوٹ",
+    dateStudioTitle: "ڈیٹ اسٹوڈیو",
+    dateStudioDesc: "عیسوی، ہجری قمری اور ہجری شمسی تاریخیں تبدیل کریں، تلاش کریں، دیکھیں اور قابلِ طباعت تقویم بنائیں۔",
+    convertDate: "تاریخ تبدیل کریں",
+    findDate: "تاریخ تلاش کریں",
+    makeCalendar: "تقویم بنائیں",
+    gregorianExplorer: "عیسوی تقویم دیکھیں",
+    hijriExplorer: "ہجری تقویم دیکھیں",
   },
 };
 
@@ -138,6 +153,8 @@ export default function AllToolsContent() {
   const isUr  = lang === "ur";
   const t     = L[lang];
   const naskh = isUr ? "font-naskh" : "";
+  const studioToday = todayGregorian();
+  const studioHijri = convert("gregorian", studioToday).hijri;
 
   return (
     <div className="min-h-screen bg-[#F7F5EF] dark:bg-[#0e1c15]" dir={dir}>
@@ -152,6 +169,25 @@ export default function AllToolsContent() {
             {t.intro}
           </p>
         </div>
+
+        <section className="mb-8 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-white dark:bg-[#162a1e] p-5 sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400" aria-hidden="true">
+              <CalendarDays className="h-5 w-5" />
+            </span>
+            <div className="text-start">
+              <h2 className={`text-xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.dateStudioTitle}</h2>
+              <p className={`mt-1 text-sm leading-relaxed text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.dateStudioDesc}</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <Link href="/tools/date-converter" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.convertDate}</Link>
+            <Link href="/tools/date-converter?mode=find#date-studio" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.findDate}</Link>
+            <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.makeCalendar}</Link>
+            <Link href={`/calendar/${studioToday.year}`} className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
+            <Link href={`/hijri/${studioHijri.year}`} className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors sm:col-span-2 ${naskh}`}>{t.hijriExplorer}</Link>
+          </div>
+        </section>
 
         {/* Tool cards */}
         <div className="space-y-4">

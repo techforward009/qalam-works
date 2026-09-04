@@ -87,6 +87,10 @@ const L = {
     futureDate: "Future date",
     inDays: (days: number) => `In ${days} days`,
     calendarMaker: "Create an annual calendar",
+    studioTitle: "Date Studio",
+    studioDesc: "Convert, find, explore and print Gregorian, Hijri and Solar Hijri dates.",
+    gregorianExplorer: "Gregorian Calendar Explorer",
+    hijriExplorer: "Hijri Calendar Explorer",
     findIntro: "Know the Hijri day and month, but not the Hijri year? Search the selected Gregorian year using the same deterministic Qalam Works engine.",
     hijriDay: "Hijri day",
     hijriMonth: "Hijri month",
@@ -151,6 +155,10 @@ const L = {
     futureDate: "آئندہ تاریخ",
     inDays: (days: number) => `${days} دن بعد`,
     calendarMaker: "سالانہ تقویم بنائیں",
+    studioTitle: "ڈیٹ اسٹوڈیو",
+    studioDesc: "عیسوی، ہجری قمری اور ہجری شمسی تاریخیں تبدیل کریں، تلاش کریں، دیکھیں اور قابلِ طباعت تقویم بنائیں۔",
+    gregorianExplorer: "عیسوی تقویم دیکھیں",
+    hijriExplorer: "ہجری تقویم دیکھیں",
     findIntro: "اگر ہجری دن اور مہینہ معلوم ہو لیکن ہجری سال معلوم نہ ہو تو اسی قلم ورکس حسابی انجن سے منتخب عیسوی سال میں تاریخ تلاش کریں۔",
     hijriDay: "ہجری دن",
     hijriMonth: "ہجری مہینہ",
@@ -224,6 +232,8 @@ export default function DateConverterContent() {
     const d   = p.get("day")      ?? "";
     const mo  = p.get("month")    ?? "";
     const yr  = p.get("year")     ?? "";
+    const requestedMode = p.get("mode");
+    if (requestedMode === "find" || requestedMode === "convert") setMode(requestedMode);
     if (VALID_CALS.has(cal)) setCalendar(cal as CalendarType);
     if (d)  setDay(d);
     if (mo) setMonth(mo);
@@ -306,6 +316,8 @@ export default function DateConverterContent() {
   const months = monthOptions(calendar, lang);
   const resultCals = CAL_ORDER.filter(cal => cal !== calendar);
   const inputClass = "w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]";
+  const studioToday = todayGregorian();
+  const studioHijri = convert("gregorian", studioToday).hijri;
 
   return (
     <div className="site-container" dir={dir}>
@@ -335,14 +347,19 @@ export default function DateConverterContent() {
           ))}
         </div>
 
-        <div className={`mb-5 ${isUr ? "text-left" : "text-right"}`}>
-          <Link
-            href="/tools/calendar-maker"
-            className={`text-sm font-semibold text-[#3a6a4a] dark:text-[#a8c8b0] hover:text-[#1A3A2A] dark:hover:text-[#e8ede9] transition-colors ${naskh}`}
-          >
-            {t.calendarMaker} →
-          </Link>
-        </div>
+        <section id="date-studio" className="mb-6 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] p-4 sm:p-5">
+          <div className="mb-3 text-start">
+            <h2 className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.studioTitle}</h2>
+            <p className={`mt-1 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.studioDesc}</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button type="button" onClick={() => setMode("convert")} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3 text-start text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.convertTab}</button>
+            <button type="button" onClick={() => setMode("find")} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3 text-start text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.findTab}</button>
+            <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3 text-start text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.calendarMaker}</Link>
+            <Link href={`/calendar/${studioToday.year}`} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3 text-start text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
+            <Link href={`/hijri/${studioHijri.year}`} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3 text-start text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors sm:col-span-2 ${naskh}`}>{t.hijriExplorer}</Link>
+          </div>
+        </section>
 
         {mode === "convert" ? (
           <>

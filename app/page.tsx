@@ -5,6 +5,7 @@ import HowItWorksSection from "./components/HowItWorksSection";
 import JobGuidanceSection from "./components/JobGuidanceSection";
 import WhoItsForSection from "./components/WhoItsForSection";
 import FinalCtaSection from "./components/FinalCtaSection";
+import DateStudioDiscoverySection from "./components/DateStudioDiscoverySection";
 
 // Homepage Redesign v2 (2026-08-10) — rebuilt to the client's approved
 // wireframe: exactly 7 sections (Nav is in layout.tsx's <Header/>),
@@ -20,6 +21,7 @@ export default function Home() {
     <div className="text-[#151B2E] dark:text-[#e8ede9] font-sans">
       <Hero />
       <JobGuidanceSection />
+      <DateStudioDiscoverySection />
       <ProblemSection />
       <BeforeAfterSection />
       <HowItWorksSection />
