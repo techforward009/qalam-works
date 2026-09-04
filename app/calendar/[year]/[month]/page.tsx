@@ -21,11 +21,14 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
   const hijriStart = convert("gregorian", { year: y, month: m, day: 1 }).hijri;
 
   return (
-    <main className="mx-auto max-w-4xl p-4 sm:p-6">
+    <main className="mx-auto max-w-5xl p-4 sm:p-6">
       <DateStudioRouteNav
         previousHref={`/calendar/${previousMonth.year}/${previousMonth.month}`}
         nextHref={`/calendar/${nextMonth.year}/${nextMonth.month}`}
-        periodLabel={`${GREGORIAN_MONTH_LABELS.en[m - 1]} ${y}`}
+        periodLabel={{
+          en: `${GREGORIAN_MONTH_LABELS.en[m - 1]} ${y}`,
+          ur: `${GREGORIAN_MONTH_LABELS.ur[m - 1]} ${y}`,
+        }}
         counterpartHref={`/hijri/${hijriStart.year}/${hijriStart.month}`}
         counterpartLabel={{ en: "Explore Hijri month", ur: "ہجری مہینہ دیکھیں" }}
       />

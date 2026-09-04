@@ -34,13 +34,13 @@ export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
   );
 
   return (
-    <div className="space-y-6" dir={dir}>
-      <div className="flex flex-wrap items-center gap-2">
+    <div dir={dir}>
+      <div className="mb-4 inline-flex rounded-lg border border-[#1A3A2A]/15 bg-white p-1 dark:border-[#35513d] dark:bg-[#0e1c15]">
         <button
           type="button"
           onClick={() => setMode("gregorian")}
           aria-pressed={mode === "gregorian"}
-          className={`rounded-lg px-4 py-2 text-sm font-semibold border transition-colors ${mode === "gregorian" ? "bg-[#1A3A2A] text-white border-[#1A3A2A]" : "border-[#1A3A2A]/15 text-[#1A3A2A] dark:text-[#e8ede9]"} ${lang === "ur" ? "font-naskh" : ""}`}
+          className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${mode === "gregorian" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] dark:text-[#e8ede9]"} ${lang === "ur" ? "font-naskh" : ""}`}
         >
           {t.gregorian}
         </button>
@@ -48,7 +48,7 @@ export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
           type="button"
           onClick={() => setMode("gregorian-hijri")}
           aria-pressed={mode === "gregorian-hijri"}
-          className={`rounded-lg px-4 py-2 text-sm font-semibold border transition-colors ${mode === "gregorian-hijri" ? "bg-[#1A3A2A] text-white border-[#1A3A2A]" : "border-[#1A3A2A]/15 text-[#1A3A2A] dark:text-[#e8ede9]"} ${lang === "ur" ? "font-naskh" : ""}`}
+          className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${mode === "gregorian-hijri" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] dark:text-[#e8ede9]"} ${lang === "ur" ? "font-naskh" : ""}`}
         >
           {t.combined}
         </button>

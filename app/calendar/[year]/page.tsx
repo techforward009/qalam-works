@@ -27,8 +27,8 @@ export default async function CalendarYearPage({ params }: { params: Promise<{ y
         counterpartHref={`/hijri/${hijriStart.year}`}
         counterpartLabel={{ en: "Explore Hijri year", ur: "ہجری سال دیکھیں" }}
       />
-      <p className="mb-4 text-sm text-[#4a6a4a] dark:text-[#a8c8b0]">{isGregorianLeap(parsed) ? "Leap year" : "Common year"}</p>
       <CalendarExplorer model={model} />
+      <p className="mt-5 text-sm text-[#4a6a4a] dark:text-[#a8c8b0]">{isGregorianLeap(parsed) ? "Leap year" : "Common year"}</p>
     </main>
   );
 }

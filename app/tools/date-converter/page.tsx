@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/tools/date-converter" },
 };
 
-export default function DateConverterPage() {
-  return <DateConverterContent />;
+export default async function DateConverterPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ mode?: string }>;
+}) {
+  const requestedMode = searchParams ? (await searchParams)?.mode : undefined;
+  const initialMode = requestedMode === "find" ? "find" : "convert";
+  return <DateConverterContent initialMode={initialMode} />;
 }

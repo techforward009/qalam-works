@@ -191,7 +191,7 @@ function monthOptions(cal: CalendarType, lang: "en" | "ur") {
   return lang === "ur" ? SOLAR_MONTHS_UR : SOLAR_MONTHS_EN;
 }
 
-export default function DateConverterContent() {
+export default function DateConverterContent({ initialMode = "convert" }: { initialMode?: ToolMode }) {
   useEffect(() => { trackToolOpenOnce("date_converter"); }, []);
 
   const { language, dir } = useLanguage();
@@ -200,7 +200,7 @@ export default function DateConverterContent() {
   const isUr   = lang === "ur";
   const naskh  = isUr ? "font-naskh" : "";
 
-  const [mode, setMode] = useState<ToolMode>("convert");
+  const [mode, setMode] = useState<ToolMode>(initialMode);
   const [calendar,    setCalendar]    = useState<CalendarType>("gregorian");
   const [day,         setDay]         = useState("");
   const [month,       setMonth]       = useState("");
@@ -215,31 +215,69 @@ export default function DateConverterContent() {
   // ── Shareable URL ───────────────────────────────────────────────────────────
   function pushURL(cal: CalendarType, d: string, mo: string, yr: string) {
     if (typeof window === "undefined") return;
-    if (!d && !mo && !yr) {
-      window.history.replaceState(null, "", window.location.pathname);
-      return;
-    }
-    const p = new URLSearchParams();
+
+    const p = new URLSearchParams(window.location.search);
+    if (mode === "find" || mode === "convert") p.set("mode", mode);
     p.set("calendar", cal);
-    if (d)  p.set("day",   d);
+
+    if (d) p.set("day", d);
+    else p.delete("day");
+
     if (mo) p.set("month", mo);
-    if (yr) p.set("year",  yr);
-    window.history.replaceState(null, "", "?" + p.toString());
+    else p.delete("month");
+
+    if (yr) p.set("year", yr);
+    else p.delete("year");
+
+    const query = p.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
+    );
+  }
+
+  function setToolMode(nextMode: ToolMode) {
+    setMode(nextMode);
+    if (typeof window === "undefined") return;
+
+    const p = new URLSearchParams(window.location.search);
+    p.set("mode", nextMode);
+    const query = p.toString();
+
+    window.history.pushState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
+    );
   }
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const p = new URLSearchParams(window.location.search);
-    const cal = p.get("calendar") ?? "";
-    const d   = p.get("day")      ?? "";
-    const mo  = p.get("month")    ?? "";
-    const yr  = p.get("year")     ?? "";
-    const requestedMode = p.get("mode");
-    if (requestedMode === "find" || requestedMode === "convert") setMode(requestedMode);
-    if (VALID_CALS.has(cal)) setCalendar(cal as CalendarType);
-    if (d)  setDay(d);
-    if (mo) setMonth(mo);
-    if (yr) setYear(yr);
+
+    const syncFromUrl = () => {
+      const p = new URLSearchParams(window.location.search);
+      const cal = p.get("calendar") ?? "";
+      const d   = p.get("day")      ?? "";
+      const mo  = p.get("month")    ?? "";
+      const yr  = p.get("year")     ?? "";
+      const requestedMode = p.get("mode");
+
+      if (requestedMode === "find" || requestedMode === "convert") {
+        setMode(requestedMode);
+      } else {
+        setMode("convert");
+      }
+
+      if (VALID_CALS.has(cal)) setCalendar(cal as CalendarType);
+      if (d)  setDay(d);
+      if (mo) setMonth(mo);
+      if (yr) setYear(yr);
+    };
+
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
 
   // ── Derived conversion result ───────────────────────────────────────────────
@@ -293,13 +331,13 @@ export default function DateConverterContent() {
     setYear(yr);
     pushURL(cal, d, mo, yr);
     trackEvent("tool_process", { tool: "date_converter" });
-  }, []);
+  }, [mode]);
 
   const handleClear = useCallback(() => {
     setDay(""); setMonth(""); setYear("");
     setCopied(null); setLinkCopied(false);
     pushURL("gregorian", "", "", "");
-  }, [calendar]);
+  }, [calendar, mode]);
 
   const handleCopy = useCallback((cal: CalendarType, text: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -336,23 +374,40 @@ export default function DateConverterContent() {
             <h2 className={`text-xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.studioTitle}</h2>
             <p className={`mt-1 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.studioDesc}</p>
           </div>
+
           <div className="space-y-2.5">
             <button
               type="button"
-              onClick={() => setMode("convert")}
+              onClick={() => {
+                setMode("convert");
+                setToolMode("convert");
+              }}
               aria-pressed={mode === "convert"}
-              className={`w-full rounded-xl bg-[#1A3A2A] dark:bg-[#2a5a3a] px-5 py-4 text-start text-base font-bold text-white shadow-sm hover:bg-[#244E38] dark:hover:bg-[#3a7a4a] transition-colors ${naskh}`}
+              className={`w-full rounded-xl border-2 px-5 py-4 text-start text-base font-bold transition-colors ${naskh} ${
+                mode === "convert"
+                  ? "border-[#1A3A2A] bg-[#1A3A2A] text-white shadow-sm dark:border-[#2a5a3a] dark:bg-[#2a5a3a]"
+                  : "border-[#1A3A2A]/15 bg-white text-[#1A3A2A] hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9]"
+              }`}
             >
               {t.convertTab}
             </button>
+
             <button
               type="button"
-              onClick={() => setMode("find")}
+              onClick={() => {
+                setMode("find");
+                setToolMode("find");
+              }}
               aria-pressed={mode === "find"}
-              className={`w-full rounded-xl border-2 border-[#1A3A2A]/20 dark:border-[#4a7a5a] bg-white dark:bg-[#0e1c15] px-5 py-4 text-start text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/70 transition-colors ${naskh}`}
+              className={`w-full rounded-xl border-2 px-5 py-4 text-start text-base font-bold transition-colors ${naskh} ${
+                mode === "find"
+                  ? "border-[#1A3A2A] bg-[#1A3A2A] text-white shadow-sm dark:border-[#2a5a3a] dark:bg-[#2a5a3a]"
+                  : "border-[#1A3A2A]/15 bg-white text-[#1A3A2A] hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9]"
+              }`}
             >
               {t.findTab}
             </button>
+
             <div className="grid gap-2.5 sm:grid-cols-2">
               <Link href={`/calendar/${studioToday.year}`} className={`rounded-xl border border-[#B8935A]/55 bg-[#B8935A]/8 px-4 py-3.5 text-start text-sm font-bold text-[#6F4E25] dark:text-[#E0C18D] hover:bg-[#B8935A]/14 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
               <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3.5 text-start text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.calendarMakerAction}</Link>
@@ -368,6 +423,7 @@ export default function DateConverterContent() {
               <label className={`block text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-2 ${naskh}`}>
                 {t.sourceLabel}
               </label>
+
               <div className="flex gap-2 flex-wrap mb-5">
                 {CAL_ORDER.map(c => (
                   <button key={c} onClick={() => {
@@ -539,6 +595,7 @@ export default function DateConverterContent() {
                   numeric: intelligence.relation === "future" ? !isUr : true,
                 },
               ];
+
               return (
                 <section className="mt-5 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
                   <h2 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-4 ${naskh}`}>{t.moreInfo}</h2>
@@ -575,6 +632,7 @@ export default function DateConverterContent() {
         ) : (
           <section className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
             <p className={`text-[13px] text-[#4a6a4a] dark:text-[#a8c8b0] leading-relaxed mb-5 ${naskh}`}>{t.findIntro}</p>
+
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.hijriDay}</label>
@@ -595,12 +653,14 @@ export default function DateConverterContent() {
 
             {!hasFindInput && <p className={`mt-5 text-center text-sm text-[#4a6a4a]/70 dark:text-[#a8c8b0]/70 ${naskh}`}>{t.findPrompt}</p>}
             {hasFindInput && !findValid && <p className={`mt-5 text-sm text-red-600 dark:text-red-400 ${naskh}`}>{t.invalidDate}</p>}
+
             {findValid && (
               <div className="mt-6">
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <h2 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.matches}</h2>
                   <span className="text-xs font-semibold text-[#4a7a5a] dark:text-[#8faa93]" dir="ltr">{findMatches.length}</span>
                 </div>
+
                 {findMatches.length === 0 ? (
                   <p className={`rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] px-4 py-3 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.noMatches}</p>
                 ) : (
@@ -621,6 +681,7 @@ export default function DateConverterContent() {
                     })}
                   </div>
                 )}
+
                 <p className={`mt-4 text-[11px] leading-relaxed text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{t.searchCaveat}</p>
               </div>
             )}
@@ -630,6 +691,7 @@ export default function DateConverterContent() {
     </div>
   );
 }
+
 
 function RegionalContext({ selectedCountry, setSelectedCountry, calendar, result, day, month, year, lang, isUr, naskh }: {
   selectedCountry: string;
