@@ -11,7 +11,7 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
   if (!y || !Number.isInteger(m) || m < 1 || m > 12) notFound();
 
   try {
-    buildCalendarMonth(y, m, "gregorian", "sunday");
+    buildCalendarMonth(y, m, "gregorian", "monday");
   } catch {
     notFound();
   }
@@ -29,6 +29,7 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
           en: `${GREGORIAN_MONTH_LABELS.en[m - 1]} ${y}`,
           ur: `${GREGORIAN_MONTH_LABELS.ur[m - 1]} ${y}`,
         }}
+        currentCalendar="gregorian"
         counterpartHref={`/hijri/${hijriStart.year}/${hijriStart.month}`}
         counterpartLabel={{ en: "Explore Hijri month", ur: "ہجری مہینہ دیکھیں" }}
       />

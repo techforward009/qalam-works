@@ -21,7 +21,7 @@ export function CalendarMonthExplorer({ year, month }: { year: number; month: nu
   const [mode, setMode] = useState<CalendarContentMode>("gregorian");
 
   const displayMonth = useMemo(
-    () => buildCalendarMonth(year, month, mode, lang === "ur" ? "monday" : "sunday"),
+    () => buildCalendarMonth(year, month, mode, "monday"),
     [year, month, mode, lang],
   );
 
@@ -31,7 +31,7 @@ export function CalendarMonthExplorer({ year, month }: { year: number; month: nu
         <button type="button" onClick={() => setMode("gregorian")} aria-pressed={mode === "gregorian"} className={`rounded-md px-3 py-1.5 text-sm font-semibold ${mode === "gregorian" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] dark:text-[#e8ede9]"} ${lang === "ur" ? "font-naskh" : ""}`}>{t.gregorian}</button>
         <button type="button" onClick={() => setMode("gregorian-hijri")} aria-pressed={mode === "gregorian-hijri"} className={`rounded-md px-3 py-1.5 text-sm font-semibold ${mode === "gregorian-hijri" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] dark:text-[#e8ede9]"} ${lang === "ur" ? "font-naskh" : ""}`}>{t.combined}</button>
       </div>
-      <MonthCalendar month={displayMonth} title={`${GREGORIAN_MONTH_LABELS[lang][month - 1]} ${year}`} language={lang} />
+      <MonthCalendar month={displayMonth} title={`${GREGORIAN_MONTH_LABELS[lang][month - 1]} ${year}`} language={lang} weekStart="monday" />
     </div>
   );
 }

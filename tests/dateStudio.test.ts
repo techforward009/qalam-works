@@ -7,6 +7,8 @@ import {
   gregorianToJDN,
   isGregorianLeap,
   jdnToGregorian,
+  HIJRI_MONTHS_EN,
+  HIJRI_MONTHS_UR,
 } from "../app/tools/date-converter/utils/dateEngine";
 import {
   exactCalendarAge,
@@ -309,7 +311,7 @@ describe("calendar PDF HTML builder", () => {
     });
     const html = buildCalendarHtml(model);
     expect(html).toContain("2027 Annual Calendar");
-    expect(html).toContain("Gregorian + calculated Hijri");
+    expect(html).toContain("Gregorian + Hijri");
     for (const name of ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]) {
       expect(html).toContain(name);
     }
@@ -317,7 +319,7 @@ describe("calendar PDF HTML builder", () => {
     expect(html).toContain("A4 landscape");
   });
 
-  test("PDF HTML uses deliberate Hijri short labels without ambiguous truncation", () => {
+  test("PDF HTML uses full Hijri month names without ambiguous truncation", () => {
     const enModel = buildCalendarYearModel({
       year: 2027,
       content: "gregorian-hijri",
@@ -326,7 +328,7 @@ describe("calendar PDF HTML builder", () => {
       page: "a4-landscape",
     });
     const enHtml = buildCalendarHtml(enModel);
-    for (const label of ["Rb1", "Rb2", "Jm1", "Jm2", "Shb", "Shw", "DQ", "DH"]) {
+    for (const label of HIJRI_MONTHS_EN) {
       expect(enHtml).toContain(label);
     }
 
@@ -338,7 +340,7 @@ describe("calendar PDF HTML builder", () => {
       page: "a4-landscape",
     });
     const urHtml = buildCalendarHtml(urModel);
-    for (const label of HIJRI_MONTH_SHORT_LABELS.ur) expect(urHtml).toContain(label);
+    for (const label of HIJRI_MONTHS_UR) expect(urHtml).toContain(label);
     expect(urHtml).not.toContain("جمادی ا...");
     expect(urHtml).not.toContain("جمادی الثا...");
     expect(urHtml).not.toContain("…");

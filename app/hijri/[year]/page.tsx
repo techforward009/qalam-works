@@ -41,6 +41,7 @@ export default async function HijriYearPage({ params }: { params: Promise<{ year
         previousHref={`/hijri/${y - 1}`}
         nextHref={`/hijri/${y + 1}`}
         periodLabel={{ en: `${y} AH`, ur: `${y} ھ` }}
+        currentCalendar="hijri"
         counterpartHref={`/calendar/${gregorianStart.year}`}
         counterpartLabel={{ en: "Explore Gregorian year", ur: "عیسوی سال دیکھیں" }}
       />

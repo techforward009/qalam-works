@@ -27,7 +27,7 @@ export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
         year: model.year,
         content: mode,
         language: lang,
-        weekStart: lang === "ur" ? "monday" : "sunday",
+        weekStart: "monday",
         page: model.page,
       }),
     [model.year, model.page, mode, lang],
@@ -62,6 +62,7 @@ export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
             title={`${GREGORIAN_MONTH_LABELS[lang][month.month - 1]} ${displayModel.year}`}
             titleHref={`/calendar/${displayModel.year}/${month.month}`}
             language={lang}
+            weekStart="monday"
             compact
           />
         ))}

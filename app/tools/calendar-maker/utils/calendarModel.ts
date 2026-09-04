@@ -7,7 +7,6 @@ import {
   type DateParts,
 } from "../../date-converter/utils/dateEngine";
 
-
 function addDaysToGregorian(base: DateParts, days: number): DateParts {
   return jdnToGregorian(gregorianToJDN(base.year, base.month, base.day) + days);
 }
@@ -36,7 +35,6 @@ export interface CalendarCell {
   gregorian: DateParts;
   gregorianIso: string;
   inCurrentMonth: boolean;
-  /** True only inside the Date Converter engine's documented Gregorian range. */
   conversionSupported: boolean;
   hijri: DateParts | null;
 }
@@ -57,6 +55,7 @@ export interface CalendarYearModel {
   language: CalendarLanguage;
   weekStart: WeekStart;
   page: CalendarPage;
+  hijriOffset: number;
   months: CalendarMonth[];
 }
 
@@ -66,6 +65,7 @@ export interface BuildCalendarYearOptions {
   language: CalendarLanguage;
   weekStart: WeekStart;
   page: CalendarPage;
+  hijriOffset?: number;
 }
 
 export const GREGORIAN_MONTH_LABELS = {
@@ -96,7 +96,6 @@ export function weekdayLabels(language: CalendarLanguage, weekStart: WeekStart):
   return labels;
 }
 
-/** Column index in a 7-column grid for a Gregorian date. */
 export function calendarWeekdayColumn(date: DateParts, weekStart: WeekStart): number {
   const mondayIndex = weekdayIndexFromGregorian(date);
   return weekStart === "monday" ? mondayIndex : (mondayIndex + 1) % 7;
@@ -106,21 +105,26 @@ export function isSupportedGregorianDate(date: DateParts): boolean {
   return date.year >= MIN_GREGORIAN_YEAR && date.year <= MAX_GREGORIAN_YEAR;
 }
 
-/**
- * Boundary filler policy:
- * Adjacent Gregorian filler dates may be shown for grid continuity even when
- * they fall just outside 1900..2100. Such cells are explicitly marked as not
- * conversion-supported and never receive a Hijri overlay. Current-month dates
- * always remain inside the selected supported year.
- */
-function cellFor(date: DateParts, currentMonth: number, includeHijri: boolean): CalendarCell {
+function cellFor(
+  date: DateParts,
+  currentMonth: number,
+  includeHijri: boolean,
+  hijriOffset: number,
+): CalendarCell {
   const conversionSupported = isSupportedGregorianDate(date);
+  const shifted = hijriOffset
+    ? addDaysToGregorian(date, hijriOffset)
+    : date;
+
   return {
     gregorian: date,
     gregorianIso: isoDate(date),
     inCurrentMonth: date.month === currentMonth,
     conversionSupported,
-    hijri: includeHijri && conversionSupported ? convert("gregorian", date).hijri : null,
+    hijri:
+      includeHijri && conversionSupported && isSupportedGregorianDate(shifted)
+        ? convert("gregorian", shifted).hijri
+        : null,
   };
 }
 
@@ -129,6 +133,7 @@ export function buildCalendarMonth(
   month: number,
   content: CalendarContentMode,
   weekStart: WeekStart,
+  hijriOffset = 0,
 ): CalendarMonth {
   if (!Number.isInteger(year) || year < MIN_GREGORIAN_YEAR || year > MAX_GREGORIAN_YEAR) {
     throw new RangeError(`Gregorian year must be between ${MIN_GREGORIAN_YEAR} and ${MAX_GREGORIAN_YEAR}.`);
@@ -147,7 +152,7 @@ export function buildCalendarMonth(
   const cells: CalendarCell[] = [];
   for (let offset = -leading; offset < daysInMonth + trailing; offset++) {
     const date = addDaysToGregorian(first, offset);
-    cells.push(cellFor(date, month, includeHijri));
+    cells.push(cellFor(date, month, includeHijri, hijriOffset));
   }
 
   const weeks: CalendarWeek[] = [];
@@ -165,13 +170,15 @@ export function buildCalendarYearModel(options: BuildCalendarYearOptions): Calen
   }
 
   const effectiveWeekStart: WeekStart = options.language === "ur" ? "monday" : options.weekStart;
+  const hijriOffset = Number.isInteger(options.hijriOffset) ? Number(options.hijriOffset) : 0;
 
   return {
     ...options,
     year,
     weekStart: effectiveWeekStart,
+    hijriOffset,
     months: Array.from({ length: 12 }, (_, index) =>
-      buildCalendarMonth(year, index + 1, options.content, effectiveWeekStart),
+      buildCalendarMonth(year, index + 1, options.content, effectiveWeekStart, hijriOffset),
     ),
   };
 }

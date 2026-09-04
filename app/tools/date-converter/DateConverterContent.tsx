@@ -378,10 +378,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
           <div className="space-y-2.5">
             <button
               type="button"
-              onClick={() => {
-                setMode("convert");
-                setToolMode("convert");
-              }}
+              onClick={() => { setMode("convert"); setToolMode("convert"); }}
               aria-pressed={mode === "convert"}
               className={`w-full rounded-xl border-2 px-5 py-4 text-start text-base font-bold transition-colors ${naskh} ${
                 mode === "convert"
@@ -394,10 +391,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
 
             <button
               type="button"
-              onClick={() => {
-                setMode("find");
-                setToolMode("find");
-              }}
+              onClick={() => { setMode("find"); setToolMode("find"); }}
               aria-pressed={mode === "find"}
               className={`w-full rounded-xl border-2 px-5 py-4 text-start text-base font-bold transition-colors ${naskh} ${
                 mode === "find"

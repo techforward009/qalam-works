@@ -19,7 +19,7 @@ import {
 const L = {
   en: {
     title: "Calendar Maker",
-    desc: "Create a clean annual Gregorian calendar, with an optional calculated Hijri date in every day cell.",
+    desc: "Create a professionally typeset annual Gregorian calendar with optional Hijri day numbers and local-sighting adjustment.",
     year: "Gregorian year",
     yearInvalid: "Enter a Gregorian year from 1900 to 2100.",
     content: "Calendar content",
@@ -31,6 +31,12 @@ const L = {
     weekStarts: "Week starts",
     sunday: "Sunday",
     monday: "Monday",
+    hijriAdjustment: "Hijri adjustment",
+    researchNote: "Research / local sighting note",
+    researchNotePlaceholder: "Local moon-sighting record",
+    calculated: "Calculated (0)",
+    offsetDay: "day",
+    offsetDays: "days",
     page: "Page",
     portrait: "A4 Portrait",
     landscape: "A4 Landscape",
@@ -38,11 +44,11 @@ const L = {
     download: "Download PDF",
     downloading: "Preparing PDF…",
     failed: "PDF generation failed. Please try again.",
-    hijriNote: "Hijri dates use the same deterministic tabular calculation as Date Converter and may differ from local moon sighting.",
+    hijriNote: "Hijri values use the same deterministic Qalam Works engine. Adjustment changes only this calendar preview/PDF for local-sighting presentation.",
   },
   ur: {
     title: "تقویم ساز",
-    desc: "صاف ستھری سالانہ عیسوی تقویم بنائیں، اور چاہیں تو ہر دن کے ساتھ حسابی ہجری تاریخ بھی دکھائیں۔",
+    desc: "پیشہ ورانہ انداز کی سالانہ عیسوی تقویم بنائیں، ہجری دن اور مقامی رویت کے مطابق اختیاری تبدیلی کے ساتھ۔",
     year: "عیسوی سال",
     yearInvalid: "1900 سے 2100 تک درست عیسوی سال درج کریں۔",
     content: "تقویم کا مواد",
@@ -54,6 +60,12 @@ const L = {
     weekStarts: "ہفتہ شروع ہو",
     sunday: "اتوار",
     monday: "پیر",
+    hijriAdjustment: "ہجری دن کی تبدیلی",
+    researchNote: "تحقیق / مقامی رؤیت کا حوالہ",
+    researchNotePlaceholder: "مقامی رؤیتِ ہلال کا ریکارڈ",
+    calculated: "حسابی (0)",
+    offsetDay: "دن",
+    offsetDays: "دن",
     page: "صفحہ",
     portrait: "A4 عمودی",
     landscape: "A4 افقی",
@@ -61,10 +73,9 @@ const L = {
     download: "PDF ڈاؤن لوڈ کریں",
     downloading: "PDF تیار ہو رہی ہے…",
     failed: "PDF تیار نہیں ہو سکی۔ دوبارہ کوشش کریں۔",
-    hijriNote: "ہجری تاریخیں اسی حسابی قمری طریقے سے بنتی ہیں جو تاریخ کنورٹر میں استعمال ہوتا ہے؛ مقامی رویتِ ہلال سے فرق ممکن ہے۔",
+    hijriNote: "ہجری قدریں قلم ورکس کے اسی حسابی انجن سے آتی ہیں۔ تبدیلی صرف اس تقویم کے پیش منظر اور PDF پر لاگو ہوتی ہے۔",
   },
 } as const;
-
 
 export default function CalendarMakerContent() {
   const { language: siteLanguage, dir } = useLanguage();
@@ -78,13 +89,17 @@ export default function CalendarMakerContent() {
   const [yearInput, setYearInput] = useState(String(initialYear));
   const [content, setContent] = useState<CalendarContentMode>("gregorian-hijri");
   const [calendarLanguage, setCalendarLanguage] = useState<CalendarLanguage>(uiLang);
-  const [weekStart, setWeekStart] = useState<WeekStart>("sunday");
+  const [weekStart, setWeekStart] = useState<WeekStart>("monday");
+  const [hijriOffset, setHijriOffset] = useState(0);
+  const [researchNote, setResearchNote] = useState("");
   const [page, setPage] = useState<CalendarPage>("a4-portrait");
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
 
   const validYear = useMemo(() => parseCalendarYearInput(yearInput), [yearInput]);
   const effectiveWeekStart: WeekStart = calendarLanguage === "ur" ? "monday" : weekStart;
+  const effectiveHijriOffset = content === "gregorian-hijri" ? hijriOffset : 0;
+
   const model = useMemo(() => {
     if (validYear === null) return null;
     return buildCalendarYearModel({
@@ -93,8 +108,9 @@ export default function CalendarMakerContent() {
       language: calendarLanguage,
       weekStart: effectiveWeekStart,
       page,
+      hijriOffset: effectiveHijriOffset,
     });
-  }, [validYear, content, calendarLanguage, effectiveWeekStart, page]);
+  }, [validYear, content, calendarLanguage, effectiveWeekStart, page, effectiveHijriOffset]);
 
   async function downloadPdf() {
     if (validYear === null || model === null) return;
@@ -104,7 +120,15 @@ export default function CalendarMakerContent() {
       const response = await fetch("/api/export-calendar-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ year: validYear, content, language: calendarLanguage, weekStart: effectiveWeekStart, page }),
+        body: JSON.stringify({
+          year: validYear,
+          content,
+          language: calendarLanguage,
+          weekStart: effectiveWeekStart,
+          page,
+          hijriOffset: effectiveHijriOffset,
+          researchNote: effectiveHijriOffset !== 0 ? researchNote.trim() : "",
+        }),
       });
       if (!response.ok) throw new Error("pdf");
       const blob = await response.blob();
@@ -128,16 +152,15 @@ export default function CalendarMakerContent() {
 
   return (
     <div className="site-container py-7 sm:py-10" dir={dir}>
-      <div className="mb-5">
-        <BackToDateStudioLink />
-      </div>
-      <div className="text-center mb-7">
-        <h1 className={`text-2xl sm:text-3xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${isUr ? "font-nastaliq font-normal" : ""}`}>{t.title}</h1>
-        <p className={`text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] max-w-2xl mx-auto ${naskh}`}>{t.desc}</p>
+      <div className="mb-5"><BackToDateStudioLink /></div>
+
+      <div className="mb-7 text-center">
+        <h1 className={`mb-2 text-2xl font-bold text-[#1A3A2A] sm:text-3xl dark:text-[#e8ede9] ${isUr ? "font-nastaliq font-normal" : ""}`}>{t.title}</h1>
+        <p className={`mx-auto max-w-2xl text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`}>{t.desc}</p>
       </div>
 
-      <section className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6 mb-6">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <section className="mb-6 rounded-2xl border border-[#1A3A2A]/10 bg-white p-5 shadow-sm dark:border-[#2a3d30] dark:bg-[#162a1e] sm:p-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div>
             <label className={labelClass}>{t.year}</label>
             <input
@@ -146,17 +169,12 @@ export default function CalendarMakerContent() {
               max={MAX_GREGORIAN_YEAR}
               value={yearInput}
               onChange={(e) => setYearInput(e.target.value)}
-              className={`${selectClass} ${validYear === null ? "border-red-300 dark:border-red-800 focus:border-red-400 dark:focus:border-red-700" : ""}`}
-              aria-invalid={validYear === null}
-              aria-describedby={validYear === null ? "calendar-year-error" : undefined}
+              className={`${selectClass} ${validYear === null ? "border-red-300 dark:border-red-800" : ""}`}
               dir="ltr"
             />
-            {validYear === null && (
-              <p id="calendar-year-error" className={`mt-1.5 text-[12px] text-red-600 dark:text-red-400 ${naskh}`}>
-                {t.yearInvalid}
-              </p>
-            )}
+            {validYear === null && <p className={`mt-1.5 text-[12px] text-red-600 dark:text-red-400 ${naskh}`}>{t.yearInvalid}</p>}
           </div>
+
           <div>
             <label className={labelClass}>{t.content}</label>
             <select value={content} onChange={(e) => setContent(e.target.value as CalendarContentMode)} className={selectClass}>
@@ -164,24 +182,53 @@ export default function CalendarMakerContent() {
               <option value="gregorian-hijri">{t.gregHijri}</option>
             </select>
           </div>
+
           <div>
             <label className={labelClass}>{t.language}</label>
-            <select value={calendarLanguage} onChange={(e) => {
-              const nextLanguage = e.target.value as CalendarLanguage;
-              setCalendarLanguage(nextLanguage);
-              if (nextLanguage === "ur") setWeekStart("monday");
-            }} className={selectClass}>
+            <select
+              value={calendarLanguage}
+              onChange={(e) => {
+                const next = e.target.value as CalendarLanguage;
+                setCalendarLanguage(next);
+                if (next === "ur") setWeekStart("monday");
+              }}
+              className={selectClass}
+            >
               <option value="en">{t.english}</option>
               <option value="ur">{t.urdu}</option>
             </select>
           </div>
+
           <div>
             <label className={labelClass}>{t.weekStarts}</label>
-            <select value={effectiveWeekStart} disabled={calendarLanguage === "ur"} onChange={(e) => setWeekStart(e.target.value as WeekStart)} className={`${selectClass} disabled:cursor-not-allowed disabled:opacity-70`}>
-              <option value="sunday">{t.sunday}</option>
+            <select
+              value={effectiveWeekStart}
+              disabled={calendarLanguage === "ur"}
+              onChange={(e) => setWeekStart(e.target.value as WeekStart)}
+              className={`${selectClass} disabled:cursor-not-allowed disabled:opacity-70`}
+            >
               <option value="monday">{t.monday}</option>
+              <option value="sunday">{t.sunday}</option>
             </select>
           </div>
+
+          <div>
+            <label className={labelClass}>{t.hijriAdjustment}</label>
+            <select
+              value={hijriOffset}
+              onChange={(e) => setHijriOffset(Number(e.target.value))}
+              className={selectClass}
+              disabled={content !== "gregorian-hijri"}
+            >
+              <option value={0}>{t.calculated}</option>
+              {[-2, -1, 1, 2].map((offset) => (
+                <option key={offset} value={offset}>
+                  {offset > 0 ? "+" : ""}{offset} {Math.abs(offset) === 1 ? t.offsetDay : t.offsetDays}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className={labelClass}>{t.page}</label>
             <select value={page} onChange={(e) => setPage(e.target.value as CalendarPage)} className={selectClass}>
@@ -190,13 +237,28 @@ export default function CalendarMakerContent() {
             </select>
           </div>
         </div>
-        <div className={`mt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${naskh}`}>
-          <p className="text-[12px] text-[#4a6a4a] dark:text-[#9fbfa8] max-w-2xl">{t.hijriNote}</p>
+
+        {effectiveHijriOffset !== 0 && (
+          <div className="mt-4">
+            <label className={labelClass}>{t.researchNote}</label>
+            <input
+              type="text"
+              value={researchNote}
+              maxLength={240}
+              onChange={(e) => setResearchNote(e.target.value)}
+              placeholder={t.researchNotePlaceholder}
+              className={selectClass}
+            />
+          </div>
+        )}
+
+        <div className={`mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center ${naskh}`}>
+          <p className="max-w-2xl text-[12px] text-[#4a6a4a] dark:text-[#9fbfa8]">{t.hijriNote}</p>
           <button
             type="button"
             disabled={downloading || validYear === null}
             onClick={downloadPdf}
-            className="shrink-0 rounded-lg bg-[#1A3A2A] dark:bg-[#2a5a3a] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#244E38] disabled:cursor-not-allowed disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-[#1A3A2A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#244E38] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#2a5a3a]"
           >
             {downloading ? t.downloading : t.download}
           </button>
@@ -205,35 +267,41 @@ export default function CalendarMakerContent() {
       </section>
 
       <section>
-        <div className="flex items-end justify-between gap-3 mb-3">
+        <div className="mb-3 flex items-end justify-between gap-3">
           <h2 className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.preview}</h2>
           {validYear !== null && <span className="text-sm font-semibold text-[#4a6a4a] dark:text-[#a8c8b0]" dir="ltr">{validYear}</span>}
         </div>
 
         {model && validYear !== null ? (
-          <div className={`rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#fdfcf9] dark:bg-[#0e1c15] p-3 sm:p-5 ${page === "a4-landscape" ? "max-w-7xl" : "max-w-5xl"} mx-auto`}>
+          <div className="mx-auto max-w-7xl rounded-2xl border border-[#1A3A2A]/10 bg-[#FBF8F1] p-3 dark:border-[#2a3d30] dark:bg-[#0e1c15] sm:p-5">
             <div className="mb-3 flex items-center justify-between gap-3 border-b border-[#B8935A]/50 pb-2" dir="ltr">
               <span className="text-xs font-bold tracking-wide text-[#1A3A2A] dark:text-[#e8ede9]">Qalam Works</span>
               <span className="text-xs font-semibold text-[#4a6a4a] dark:text-[#a8c8b0]">{validYear}</span>
             </div>
-            <div className={`grid grid-cols-1 sm:grid-cols-2 ${page === "a4-landscape" ? "xl:grid-cols-4" : "xl:grid-cols-3"} gap-3`}>
-              {model.months.map((month) => {
-                const monthNames = GREGORIAN_MONTH_LABELS[calendarLanguage];
-                return (
-                  <MonthCalendar
-                    key={month.month}
-                    month={month}
-                    title={monthNames[month.month - 1]}
-                    language={calendarLanguage}
-                    interactive={false}
-                    compact
-                  />
-                );
-              })}
+
+            {effectiveHijriOffset !== 0 && researchNote.trim() && (
+              <p className={`mb-3 rounded-lg border border-[#B8935A]/30 bg-white/70 px-3 py-2 text-[11px] text-[#6F5B3E] dark:bg-[#162a1e] dark:text-[#D3B274] ${naskh}`}>
+                {researchNote.trim()}
+              </p>
+            )}
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {model.months.map((month) => (
+                <MonthCalendar
+                  key={month.month}
+                  month={month}
+                  title={`${GREGORIAN_MONTH_LABELS[calendarLanguage][month.month - 1]} ${validYear}`}
+                  language={calendarLanguage}
+                  weekStart={effectiveWeekStart}
+                  hijriOffset={hijriOffset}
+                  interactive={false}
+                  compact
+                />
+              ))}
             </div>
           </div>
         ) : (
-          <div className={`rounded-2xl border border-dashed border-[#1A3A2A]/15 dark:border-[#2a3d30] bg-[#fdfcf9] dark:bg-[#0e1c15] px-5 py-10 text-center text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>
+          <div className={`rounded-2xl border border-dashed border-[#1A3A2A]/15 bg-[#fdfcf9] px-5 py-10 text-center text-sm text-[#4a6a4a] dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#a8c8b0] ${naskh}`}>
             {t.yearInvalid}
           </div>
         )}

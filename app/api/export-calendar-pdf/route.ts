@@ -22,6 +22,8 @@ interface CalendarPdfRequest {
   language: CalendarLanguage;
   weekStart: WeekStart;
   page: CalendarPage;
+  hijriOffset?: number;
+  researchNote?: string;
 }
 
 function isCalendarPdfRequest(value: unknown): value is CalendarPdfRequest {
@@ -32,7 +34,9 @@ function isCalendarPdfRequest(value: unknown): value is CalendarPdfRequest {
     (body.content === "gregorian" || body.content === "gregorian-hijri") &&
     (body.language === "en" || body.language === "ur") &&
     (body.weekStart === "sunday" || body.weekStart === "monday") &&
-    (body.page === "a4-portrait" || body.page === "a4-landscape")
+    (body.page === "a4-portrait" || body.page === "a4-landscape") &&
+    (body.hijriOffset === undefined || (Number.isInteger(body.hijriOffset) && Number(body.hijriOffset) >= -2 && Number(body.hijriOffset) <= 2)) &&
+    (body.researchNote === undefined || (typeof body.researchNote === "string" && body.researchNote.length <= 240))
   );
 }
 
@@ -46,11 +50,8 @@ export async function POST(request: NextRequest) {
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
   try {
     let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-    }
+    try { body = await request.json(); }
+    catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
 
     if (!isCalendarPdfRequest(body)) {
       return NextResponse.json({ error: "Invalid calendar options" }, { status: 400 });
@@ -59,34 +60,23 @@ export async function POST(request: NextRequest) {
     const model = buildCalendarYearModel(body as BuildCalendarYearOptions);
     const html = buildCalendarHtml(model, {
       naskhFontBase64: body.language === "ur" ? localNaskhFontBase64() : undefined,
+      researchNote: body.researchNote?.trim() || undefined,
     });
 
     const executablePath = await chromium.executablePath();
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath,
-      headless: true,
-    });
-
+    browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true });
     const page = await browser.newPage();
     await page.setRequestInterception(true);
-    page.on("request", (req) => {
-      if (req.url().startsWith("data:")) req.continue();
-      else req.abort();
-    });
-
+    page.on("request", (req) => { if (req.url().startsWith("data:")) req.continue(); else req.abort(); });
     await page.setContent(html, { waitUntil: "load" });
-    await page.evaluate(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (document as any).fonts?.ready;
-    });
+    await page.evaluate(async () => { await (document as any).fonts?.ready; });
 
     const pdfBytes = await page.pdf({
       format: "A4",
       landscape: body.page === "a4-landscape",
       printBackground: true,
       displayHeaderFooter: false,
-      margin: { top: "8mm", right: "8mm", bottom: "8mm", left: "8mm" },
+      margin: { top: "7mm", right: "7mm", bottom: "7mm", left: "7mm" },
     });
 
     await browser.close();
@@ -104,8 +94,6 @@ export async function POST(request: NextRequest) {
     console.error("[export-calendar-pdf]", error);
     return NextResponse.json({ error: "PDF generation failed" }, { status: 500 });
   } finally {
-    if (browser) {
-      try { await browser.close(); } catch { /* ignore */ }
-    }
+    if (browser) { try { await browser.close(); } catch {} }
   }
 }

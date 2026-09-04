@@ -45,13 +45,16 @@ describe("Date Studio product presentation", () => {
     expect(source).toMatch(/HIJRI_MONTHS_UR/);
   });
 
-  it("combined month detail uses full Hijri labels while year cards remain compact", () => {
+  it("Gregorian month headers carry full Hijri context while day cells stay number-only", () => {
     const cell = read("app/components/date-studio/CalendarDayCell.tsx");
-    const explorer = read("app/components/date-studio/CalendarExplorer.tsx");
-    expect(cell).toMatch(/HIJRI_MONTH_SHORT_LABELS/);
-    expect(cell).toMatch(/HIJRI_MONTHS_EN/);
-    expect(cell).toMatch(/HIJRI_MONTHS_UR/);
-    expect(explorer).toMatch(/compact/);
+    const month = read("app/components/date-studio/MonthCalendar.tsx");
+    const presentation = read("app/tools/calendar-maker/utils/calendarPresentation.ts");
+    expect(cell).not.toMatch(/HIJRI_MONTH_SHORT_LABELS/);
+    expect(cell).not.toMatch(/HIJRI_MONTHS_EN/);
+    expect(cell).not.toMatch(/HIJRI_MONTHS_UR/);
+    expect(month).toMatch(/deriveHijriMonthContexts/);
+    expect(presentation).toMatch(/HIJRI_MONTHS_EN/);
+    expect(presentation).toMatch(/HIJRI_MONTHS_UR/);
   });
 
   it("Urdu calendar cells explicitly right-align content", () => {

@@ -13,7 +13,7 @@ export default async function CalendarYearPage({ params }: { params: Promise<{ y
     year: parsed,
     content: "gregorian",
     language: "en",
-    weekStart: "sunday",
+    weekStart: "monday",
     page: "a4-portrait",
   });
   const hijriStart = convert("gregorian", { year: parsed, month: 1, day: 1 }).hijri;
@@ -24,6 +24,7 @@ export default async function CalendarYearPage({ params }: { params: Promise<{ y
         previousHref={`/calendar/${parsed - 1}`}
         nextHref={`/calendar/${parsed + 1}`}
         periodLabel={String(parsed)}
+        currentCalendar="gregorian"
         counterpartHref={`/hijri/${hijriStart.year}`}
         counterpartLabel={{ en: "Explore Hijri year", ur: "ہجری سال دیکھیں" }}
       />

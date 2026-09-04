@@ -32,6 +32,7 @@ export default async function HijriMonthPage({ params }: { params: Promise<{ yea
         previousHref={`/hijri/${previousMonth.year}/${previousMonth.month}`}
         nextHref={`/hijri/${nextMonth.year}/${nextMonth.month}`}
         periodLabel={{ en: `${HIJRI_MONTHS_EN[m - 1]} ${y}`, ur: `${HIJRI_MONTHS_UR[m - 1]} ${y}` }}
+        currentCalendar="hijri"
         counterpartHref={`/calendar/${gregorianStart.year}/${gregorianStart.month}`}
         counterpartLabel={{ en: "Explore Gregorian month", ur: "عیسوی مہینہ دیکھیں" }}
       />
