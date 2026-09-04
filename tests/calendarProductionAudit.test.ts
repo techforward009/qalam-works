@@ -48,11 +48,10 @@ describe("Calendar production audit contracts", () => {
     expect(CALENDAR_VISUAL_SPEC.web.compact.gregorianFont).toMatch(/^clamp\(/);
     expect(CALENDAR_VISUAL_SPEC.web.detail.hijriFont).toMatch(/^clamp\(/);
 
-    expect(pdf).toMatch(/grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/);
-    expect(pdf).toMatch(/grid-column:1/);
-    expect(pdf).toMatch(/grid-column:2/);
-    expect(CALENDAR_VISUAL_SPEC.print.gregorianFontPortrait).toMatch(/^clamp\(/);
-    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toMatch(/^clamp\(/);
+    expect(pdf).toMatch(/top:4px !important;left:6px !important/);
+    expect(pdf).toMatch(/bottom:8px !important;right:6px !important/);
+    expect(CALENDAR_VISUAL_SPEC.print.gregorianFontPortrait).toBe("20px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("16px");
   });
 
   it("fails closed unless bundled Urdu PDF fonts are present and loaded", () => {

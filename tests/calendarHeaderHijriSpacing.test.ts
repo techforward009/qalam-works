@@ -10,13 +10,13 @@ describe("Calendar header and Hijri digit spacing", () => {
   it("gives month headers more vertical room while retaining centered context alignment", () => {
     expect(CALENDAR_VISUAL_SPEC.web.compact.monthHeaderMinPx).toBe(68);
     expect(CALENDAR_VISUAL_SPEC.web.detail.monthHeaderMinPx).toBe(90);
-    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderPortraitMm).toBe(13.8);
-    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderLandscapeMm).toBe(13.0);
+    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderPortraitMm).toBe(16.5);
+    expect(CALENDAR_VISUAL_SPEC.print.monthHeaderLandscapeMm).toBe(16.0);
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
     expect(pdf).toMatch(/\.month-head\{[\s\S]*?align-items:center/);
     expect(pdf).toMatch(/\.ctx\{[^}]*height:100%;display:flex;align-items:center/);
-    expect(pdf).toMatch(/\.ctx-stack\{[^}]*height:100%;[^}]*justify-content:center/);
+    expect(pdf).toMatch(/\.ctx-stack\{[^}]*height:100%[^}]*justify-content:center/);
   });
 
   it("increases Hijri day typography and anchors it lower in web cells", () => {
@@ -31,11 +31,11 @@ describe("Calendar header and Hijri digit spacing", () => {
   });
 
   it("increases Hijri PDF typography and reduces bottom inset without changing grid anchoring", () => {
-    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("clamp(5.5px, .68vw, 6.1px)");
-    expect(CALENDAR_VISUAL_SPEC.print.hijriFontLandscape).toBe("clamp(5.2px, .62vw, 5.7px)");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("16px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriFontLandscape).toBe("16px");
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(pdf).toMatch(/padding:\.55mm \.28mm \.18mm \.7mm/);
-    expect(pdf).toMatch(/\.hijri-day\{[\s\S]*?grid-column:2;[\s\S]*?grid-row:2;[\s\S]*?align-self:end;[\s\S]*?justify-self:end/);
+    expect(pdf).toMatch(/padding:4px 6px !important/);
+    expect(pdf).toMatch(/\.hijri-day\{[\s\S]*?right:6px !important;[\s\S]*?bottom:8px !important/);
   });
 });

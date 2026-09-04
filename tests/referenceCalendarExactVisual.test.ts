@@ -57,9 +57,8 @@ describe("Reference calendar exact visual contract", () => {
     expect(cell).toMatch(/grid-cols-2 grid-rows-2/);
     expect(cell).toMatch(/col-start-1 row-start-1/);
     expect(cell).toMatch(/col-start-2 row-start-2/);
-    expect(pdf).toMatch(/grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/);
-    expect(pdf).toMatch(/grid-column:1/);
-    expect(pdf).toMatch(/grid-column:2/);
+    expect(pdf).toMatch(/top:4px !important;left:6px !important/);
+    expect(pdf).toMatch(/bottom:8px !important;right:6px !important/);
   });
 
   it("keeps outside-month cells blank before all active-cell reads", () => {

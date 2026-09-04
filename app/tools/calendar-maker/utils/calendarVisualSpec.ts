@@ -1,6 +1,7 @@
 import type { CalendarPage } from "./calendarModel";
 
 export const CALENDAR_REFERENCE_WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+export const CALENDAR_URDU_WEEKDAYS = ["پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ", "اتوار"] as const;
 
 export const CALENDAR_ANNUAL_GRID_CLASS =
   "grid grid-cols-1 gap-2 bg-[var(--calendar-paper)] p-2 md:grid-cols-2 xl:grid-cols-3";
@@ -69,16 +70,26 @@ export const CALENDAR_VISUAL_SPEC = {
     landscapeContentHeightMm: 195,
     monthGapPortraitMm: 1.25,
     monthGapLandscapeMm: 1.05,
-    monthHeaderPortraitMm: 13.8,
-    monthHeaderLandscapeMm: 13.0,
-    gregorianFontPortrait: "clamp(7.8px, 1.05vw, 9px)",
-    gregorianFontLandscape: "clamp(7.2px, 0.95vw, 8.4px)",
-    hijriFontPortrait: "clamp(5.5px, .68vw, 6.1px)",
-    hijriFontLandscape: "clamp(5.2px, .62vw, 5.7px)",
-    weekdayStripPortraitMm: 5.1,
-    weekdayStripLandscapeMm: 4.8,
-    monthTitleFontPortrait: "clamp(19px, 2.2vw, 21.5px)",
-    monthTitleFontLandscape: "clamp(18px, 2vw, 20px)",
+    monthHeaderPortraitMm: 16.5,
+    monthHeaderLandscapeMm: 16.0,
+    gregorianFontPortrait: "20px",
+    gregorianFontLandscape: "20px",
+    hijriFontPortrait: "16px",
+    hijriFontLandscape: "16px",
+    weekdayStripPortraitMm: 7.9,
+    weekdayStripLandscapeMm: 7.4,
+    weekdayFontPortrait: "17px",
+    weekdayFontLandscape: "17px",
+    hijriContextMonthFontPortrait: "19px",
+    hijriContextMonthFontLandscape: "19px",
+    hijriContextYearFontPortrait: "15px",
+    hijriContextYearFontLandscape: "15px",
+    monthTitleFontPortrait: "30px",
+    monthTitleFontLandscape: "28px",
+    weekdayHeightPortraitPx: 38,
+    weekdayHeightLandscapePx: 36,
+    monthHeaderHeightPortraitPx: 62,
+    monthHeaderHeightLandscapePx: 60,
   },
 } as const;
 
@@ -136,7 +147,12 @@ export function calendarPrintMetrics(page: CalendarPage) {
     monthGapMm: landscape ? print.monthGapLandscapeMm : print.monthGapPortraitMm,
     monthHeaderMm: landscape ? print.monthHeaderLandscapeMm : print.monthHeaderPortraitMm,
     weekdayStripMm: landscape ? print.weekdayStripLandscapeMm : print.weekdayStripPortraitMm,
+    weekdayFont: landscape ? print.weekdayFontLandscape : print.weekdayFontPortrait,
+    hijriContextMonthFont: landscape ? print.hijriContextMonthFontLandscape : print.hijriContextMonthFontPortrait,
+    hijriContextYearFont: landscape ? print.hijriContextYearFontLandscape : print.hijriContextYearFontPortrait,
     monthTitleFont: landscape ? print.monthTitleFontLandscape : print.monthTitleFontPortrait,
+    weekdayHeightPx: landscape ? print.weekdayHeightLandscapePx : print.weekdayHeightPortraitPx,
+    monthHeaderHeightPx: landscape ? print.monthHeaderHeightLandscapePx : print.monthHeaderHeightPortraitPx,
     gregorianFont: landscape ? print.gregorianFontLandscape : print.gregorianFontPortrait,
     hijriFont: landscape ? print.hijriFontLandscape : print.hijriFontPortrait,
     innerFramePaddingMm: print.innerFramePaddingMm,

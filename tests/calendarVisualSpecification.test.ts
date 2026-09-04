@@ -153,7 +153,7 @@ describe("Final annual calendar visual specification", () => {
     expect(contexts.length).toBeGreaterThan(0);
     expect(html).toContain(contexts[0].label);
     expect(html).toContain(toUrduDigits(contexts[0].year));
-    expect(html).toMatch(/class="hijri-day">[۰-۹]+<\/div>/);
+    expect(html).toMatch(/class="hijri-day"[^>]*>[۰-۹]+<\/span>/);
     expect(read("app/tools/calendar-maker/CalendarMakerContent.tsx")).toMatch(/hijriOffset=\{effectiveHijriOffset\}/);
   });
 

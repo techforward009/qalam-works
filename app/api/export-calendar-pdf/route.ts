@@ -98,13 +98,99 @@ export async function POST(request: NextRequest) {
       else req.abort();
     });
 
-    await page.emulateMediaType("print");
+    await page.emulateMediaType("screen");
     await page.setContent(html, { waitUntil: "load" });
 
     await page.evaluate(async (mustVerifyNaskh) => {
       await (document as any).fonts?.ready;
       if (mustVerifyNaskh && !(document as any).fonts?.check('16px "QalamNaskh"')) {
         throw new Error("Embedded QalamNaskh font did not load");
+      }
+
+      const monthTitle = document.querySelector<HTMLElement>('[data-pdf-month-title="true"]');
+      const monthHeader = monthTitle?.closest<HTMLElement>(".month-head") ?? null;
+      const weekdayRow = document.querySelector<HTMLElement>('[data-pdf-weekday-row="true"]');
+      const weekday = document.querySelector<HTMLElement>('[data-pdf-weekday="true"]');
+      const hijriContextYear = document.querySelector<HTMLElement>(".ctx-year");
+      const leftHijriContext = document.querySelector<HTMLElement>('[data-hijri-side="left"]');
+      const rightHijriContext = document.querySelector<HTMLElement>('[data-hijri-side="right"]');
+      const hijriDay = document.querySelector<HTMLElement>('[data-pdf-hijri-day="true"]');
+      const gregorianDay = document.querySelector<HTMLElement>('[data-pdf-gregorian-day="true"]');
+
+      if (!monthTitle || !monthHeader || !weekdayRow || !weekday || !leftHijriContext || !rightHijriContext) {
+        throw new Error("Calendar PDF typography/context verification nodes are missing");
+      }
+
+      const monthTitleStyle = getComputedStyle(monthTitle);
+      const monthHeaderStyle = getComputedStyle(monthHeader);
+      const weekdayRowStyle = getComputedStyle(weekdayRow);
+      const weekdayStyle = getComputedStyle(weekday);
+
+      if (parseFloat(monthTitleStyle.fontSize) < 27.5 || parseFloat(monthTitleStyle.lineHeight) < 32) {
+        throw new Error(`Calendar PDF month title is not enlarged: size=${monthTitleStyle.fontSize}, lineHeight=${monthTitleStyle.lineHeight}`);
+      }
+      if (monthTitleStyle.display !== "inline-flex" || monthTitleStyle.alignItems !== "center" || monthTitleStyle.justifyContent !== "center") {
+        throw new Error(`Calendar PDF month title alignment invalid: display=${monthTitleStyle.display}, alignItems=${monthTitleStyle.alignItems}, justifyContent=${monthTitleStyle.justifyContent}`);
+      }
+      if (mustVerifyNaskh && monthTitleStyle.flexDirection !== "row-reverse") {
+        throw new Error(`Calendar PDF Urdu month title order invalid: ${monthTitleStyle.flexDirection}`);
+      }
+      const monthTitleName = monthTitle.querySelector<HTMLElement>(".month-title-name");
+      const monthTitleYear = monthTitle.querySelector<HTMLElement>(".month-title-year");
+      if (!monthTitleName || !monthTitleYear) {
+        throw new Error("Calendar PDF month title/year split alignment nodes are missing");
+      }
+      const nameRect = monthTitleName.getBoundingClientRect();
+      const yearRect = monthTitleYear.getBoundingClientRect();
+      const nameCenterY = nameRect.top + nameRect.height / 2;
+      const yearCenterY = yearRect.top + yearRect.height / 2;
+      if (Math.abs(nameCenterY - yearCenterY) > 1.5) {
+        throw new Error(`Calendar PDF month title vertical centers diverged: month=${nameCenterY}, year=${yearCenterY}`);
+      }
+      if (mustVerifyNaskh) {
+        const leftRect = leftHijriContext.getBoundingClientRect();
+        const rightRect = rightHijriContext.getBoundingClientRect();
+        if (rightRect.left <= leftRect.left) {
+          throw new Error(`Calendar PDF Hijri physical side order invalid: left=${leftRect.left}, right=${rightRect.left}`);
+        }
+        if (rightHijriContext.dataset.hijriRole !== "start" || leftHijriContext.dataset.hijriRole !== "end") {
+          throw new Error(`Calendar PDF Hijri chronological role mapping invalid: right=${rightHijriContext.dataset.hijriRole}, left=${leftHijriContext.dataset.hijriRole}`);
+        }
+      }
+      if (parseFloat(monthHeaderStyle.height) < 59.5) {
+        throw new Error(`Calendar PDF month header is too short: ${monthHeaderStyle.height}`);
+      }
+      if (parseFloat(weekdayRowStyle.height) < 35.5 || parseFloat(weekdayStyle.height) < 35.5) {
+        throw new Error(`Calendar PDF weekday strip is too short: row=${weekdayRowStyle.height}, cell=${weekdayStyle.height}`);
+      }
+      if (mustVerifyNaskh && parseFloat(weekdayStyle.fontSize) < 15.5) {
+        throw new Error(`Calendar PDF Urdu weekday font is too small: ${weekdayStyle.fontSize}`);
+      }
+      if (mustVerifyNaskh && hijriContextYear) {
+        const hijriContextYearStyle = getComputedStyle(hijriContextYear);
+        if (parseFloat(hijriContextYearStyle.fontSize) < 13) {
+          throw new Error(`Calendar PDF Hijri context year font is too small: ${hijriContextYearStyle.fontSize}`);
+        }
+      }
+
+      if (gregorianDay) {
+        const gregorianStyle = getComputedStyle(gregorianDay);
+        if (parseFloat(gregorianStyle.fontSize) < 19.5) {
+          throw new Error(`Calendar PDF Gregorian font is too small: ${gregorianStyle.fontSize}`);
+        }
+      }
+
+      if (hijriDay) {
+        const hijriStyle = getComputedStyle(hijriDay);
+        if (parseFloat(hijriStyle.fontSize) < 15.5) {
+          throw new Error(`Calendar PDF Hijri font is too small: ${hijriStyle.fontSize}`);
+        }
+        if (hijriStyle.position !== "absolute" || hijriStyle.display === "none") {
+          throw new Error(`Calendar PDF Hijri positioning/display invalid: position=${hijriStyle.position}, display=${hijriStyle.display}`);
+        }
+        if (Math.abs(parseFloat(hijriStyle.bottom) - 8) > 0.5 || Math.abs(parseFloat(hijriStyle.right) - 6) > 0.5) {
+          throw new Error(`Calendar PDF Hijri anchor drifted: bottom=${hijriStyle.bottom}, right=${hijriStyle.right}`);
+        }
       }
     }, body.language === "ur");
 
@@ -114,6 +200,7 @@ export async function POST(request: NextRequest) {
       printBackground: true,
       displayHeaderFooter: false,
       preferCSSPageSize: true,
+      scale: 1,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });
 
