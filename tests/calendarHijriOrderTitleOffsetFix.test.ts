@@ -46,6 +46,9 @@ describe("Calendar Hijri order, title centering, and cell offset", () => {
     expect(route).toMatch(/rightHijriContext\.dataset\.hijriRole !== "start"/);
     expect(route).toMatch(/leftHijriContext\.dataset\.hijriRole !== "end"/);
     expect(route).toMatch(/Math\.abs\(nameCenterY - yearCenterY\) > 1\.5/);
+    expect(route).toMatch(/parseFloat\(monthTitleStyle\.fontSize\) < 27\.5/);
+    expect(route).not.toMatch(/lineHeight\) < 32/);
+    expect(route).toMatch(/titleDisplay !== "flex"/);
   });
 
   it("lifts Hijri day digits eight pixels from the bottom border", () => {

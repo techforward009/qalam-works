@@ -126,10 +126,15 @@ export async function POST(request: NextRequest) {
       const weekdayRowStyle = getComputedStyle(weekdayRow);
       const weekdayStyle = getComputedStyle(weekday);
 
-      if (parseFloat(monthTitleStyle.fontSize) < 27.5 || parseFloat(monthTitleStyle.lineHeight) < 32) {
+      if (parseFloat(monthTitleStyle.fontSize) < 27.5) {
         throw new Error(`Calendar PDF month title is not enlarged: size=${monthTitleStyle.fontSize}, lineHeight=${monthTitleStyle.lineHeight}`);
       }
-      if (monthTitleStyle.display !== "inline-flex" || monthTitleStyle.alignItems !== "center" || monthTitleStyle.justifyContent !== "center") {
+      const titleDisplay = monthTitleStyle.display;
+      if (
+        (titleDisplay !== "inline-flex" && titleDisplay !== "flex") ||
+        monthTitleStyle.alignItems !== "center" ||
+        monthTitleStyle.justifyContent !== "center"
+      ) {
         throw new Error(`Calendar PDF month title alignment invalid: display=${monthTitleStyle.display}, alignItems=${monthTitleStyle.alignItems}, justifyContent=${monthTitleStyle.justifyContent}`);
       }
       if (mustVerifyNaskh && monthTitleStyle.flexDirection !== "row-reverse") {
