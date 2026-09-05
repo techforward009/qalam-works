@@ -7,16 +7,20 @@ const root = join(__dirname, "..");
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 
 describe("Calendar header and Hijri digit spacing", () => {
-  it("gives month headers more vertical room while retaining centered context alignment", () => {
+  it("gives month headers more vertical room and pins Hijri context to the corners", () => {
     expect(CALENDAR_VISUAL_SPEC.web.compact.monthHeaderMinPx).toBe(68);
     expect(CALENDAR_VISUAL_SPEC.web.detail.monthHeaderMinPx).toBe(90);
     expect(CALENDAR_VISUAL_SPEC.print.monthHeaderPortraitMm).toBe(9.0);
     expect(CALENDAR_VISUAL_SPEC.print.monthHeaderLandscapeMm).toBe(8.5);
+    expect(CALENDAR_VISUAL_SPEC.print.hijriContextMonthFontPortrait).toBe("9.5px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriContextYearFontPortrait).toBe("8px");
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
     expect(pdf).toMatch(/\.month-head\{[\s\S]*?align-items:center/);
     expect(pdf).toMatch(/\.ctx\{[^}]*height:100%;display:flex;align-items:center/);
     expect(pdf).toMatch(/\.ctx-stack\{[^}]*height:100%[^}]*justify-content:center/);
+    expect(pdf).toMatch(/\.ctx-left\{[^}]*justify-content:left/);
+    expect(pdf).toMatch(/\.ctx-right\{[^}]*justify-content:right/);
   });
 
   it("increases Hijri day typography and anchors it lower in web cells", () => {

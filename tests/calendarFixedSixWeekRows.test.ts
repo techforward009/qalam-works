@@ -54,4 +54,15 @@ describe("Fixed 6 week rows per month card", () => {
     expect(route).toMatch(/month week rows are not fixed at 6/);
     expect(route).toMatch(/count !== 42/);
   });
+
+  it("draws a single 1px table line on every shared edge and skips the outer frame edge", () => {
+    const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
+    expect(pdf).toMatch(/border:1px solid var\(--calendar-grid-strong\)/);
+    expect(pdf).toMatch(/\.day\{[\s\S]*?border-inline-end:1px solid var\(--calendar-grid\)/);
+    expect(pdf).toMatch(/\.day:nth-child\(7n\)\{border-inline-end:none\}/);
+    expect(pdf).toMatch(/\.day:nth-child\(n\+36\)\{border-bottom:none\}/);
+    expect(pdf).toMatch(/\.weekdays>div:last-child\{border-inline-end:none\}/);
+    expect(pdf).not.toMatch(/border-inline-end:\.5px/);
+    expect(pdf).not.toMatch(/gap:\.5px/);
+  });
 });
