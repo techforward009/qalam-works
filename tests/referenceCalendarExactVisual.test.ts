@@ -54,11 +54,11 @@ describe("Reference calendar exact visual contract", () => {
     const cell = read("app/components/date-studio/CalendarDayCell.tsx");
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
 
-    expect(cell).toMatch(/flex flex-col justify-between/);
-    expect(cell).toMatch(/self-start/);
-    expect(cell).toMatch(/self-end/);
-    expect(pdf).toMatch(/align-self:flex-start !important/);
-    expect(pdf).toMatch(/align-self:flex-end !important/);
+    expect(cell).toMatch(/grid-cols-2 grid-rows-2/);
+    expect(cell).toMatch(/col-start-1 row-start-1/);
+    expect(cell).toMatch(/col-start-2 row-start-2/);
+    expect(pdf).toMatch(/grid-column:1 !important;grid-row:1 !important/);
+    expect(pdf).toMatch(/grid-column:2 !important;grid-row:2 !important/);
   });
 
   it("keeps outside-month cells blank before all active-cell reads", () => {

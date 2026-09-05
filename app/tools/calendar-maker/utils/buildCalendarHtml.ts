@@ -103,10 +103,10 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
       }
 
       const hijri = cell.hijri
-        ? `<span class="hijri-day" data-pdf-hijri-day="true" style="align-self:flex-end !important;color:#15803d !important;font-size:${metrics.hijriFont} !important;font-weight:700 !important;line-height:1 !important;">${escapeHtml(isUr ? toUrduDigits(cell.hijri.day) : String(cell.hijri.day))}</span>`
+        ? `<span class="hijri-day" data-pdf-hijri-day="true" style="grid-column:2 !important;grid-row:2 !important;align-self:end !important;justify-self:end !important;color:#15803d !important;font-size:${metrics.hijriFont} !important;font-weight:bold !important;line-height:1 !important;">${escapeHtml(isUr ? toUrduDigits(cell.hijri.day) : String(cell.hijri.day))}</span>`
         : "";
 
-      return `<div class="day current${isSunday(cell.gregorian) ? " sunday" : ""}" dir="ltr" style="position:relative !important;display:flex !important;flex-direction:column !important;justify-content:space-between !important;overflow:hidden !important;padding:2px 3px !important;"><div class="greg-day" data-pdf-gregorian-day="true" style="align-self:flex-start !important;font-size:${metrics.gregorianFont} !important;font-weight:700 !important;line-height:1 !important;color:#161a17 !important;">${cell.gregorian.day}</div>${hijri}</div>`;
+      return `<div class="day current${isSunday(cell.gregorian) ? " sunday" : ""}" dir="ltr" style="position:relative !important;display:grid !important;grid-template-columns:1fr 1fr !important;grid-template-rows:1fr 1fr !important;overflow:hidden !important;"><div class="greg-day" data-pdf-gregorian-day="true" style="grid-column:1 !important;grid-row:1 !important;align-self:start !important;justify-self:start !important;font-size:${metrics.gregorianFont} !important;font-weight:900 !important;line-height:1 !important;color:#161a17 !important;">${cell.gregorian.day}</div>${hijri}</div>`;
     });
     while (cellHtml.length < CALENDAR_MONTH_DAY_CELLS) {
       cellHtml.push(`<div class="day filler" aria-hidden="true"></div>`);
@@ -260,16 +260,15 @@ body{
   white-space:nowrap;
 }
 .slash{font-size:5.3px;color:var(--calendar-hijri-context);opacity:.7;font-weight:700}
-.weekdays{display:flex !important;gap:.5px;background:var(--calendar-weekday-grid)}.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(${CALENDAR_MONTH_WEEK_ROWS},minmax(0,1fr));gap:.5px;background:var(--calendar-grid-strong)}
-.weekdays{height:${metrics.weekdayHeightPx}px !important;min-height:${metrics.weekdayHeightPx}px !important;background:var(--calendar-weekday-grid);border-bottom:.5px solid var(--calendar-weekday-grid);align-items:stretch}
+.weekdays{display:flex !important}.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(${CALENDAR_MONTH_WEEK_ROWS},minmax(0,1fr))}
+.weekdays{height:${metrics.weekdayHeightPx}px !important;min-height:${metrics.weekdayHeightPx}px !important;background:var(--calendar-weekday);border-bottom:.65px solid var(--calendar-grid-strong);align-items:stretch}
 .weekdays>div{
   min-width:0;
   height:${metrics.weekdayHeightPx}px !important;
   min-height:${metrics.weekdayHeightPx}px !important;
   flex:1 1 0 !important;
   padding:0 !important;
-  border:none;
-  background:var(--calendar-weekday);
+  border-inline-end:.5px solid var(--calendar-weekday-grid);
   display:flex !important;
   align-items:center !important;
   justify-content:center !important;
@@ -286,40 +285,47 @@ body{
   position:relative !important;
   min-width:0;
   min-height:0;
-  border:none;
+  border-inline-end:.5px solid var(--calendar-grid);
+  border-bottom:.5px solid var(--calendar-grid);
   background:var(--calendar-cell);
   overflow:hidden;
 }
 .day.current{
-  display:flex !important;
-  flex-direction:column !important;
-  justify-content:space-between !important;
-  padding:2px 3px !important;
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  grid-template-rows:minmax(0,1fr) minmax(0,1fr) !important;
+  padding:1px 2px !important;
   overflow:hidden !important;
 }
 .filler{background:var(--calendar-filler);overflow:hidden}
 .greg-day{
-  align-self:flex-start;
+  grid-column:1;
+  grid-row:1;
+  align-self:start;
+  justify-self:start;
   text-align:left;
   max-width:100%;
   white-space:nowrap;
   overflow:visible;
   font-family:Arial,Helvetica,sans-serif;
   font-size:${metrics.gregorianFont} !important;
-  font-weight:700;
+  font-weight:900;
   line-height:1;
   color:#161a17;
   direction:ltr;
 }
 .day.sunday .greg-day{color:var(--calendar-month-title) !important}
 .hijri-day{
-  align-self:flex-end;
+  grid-column:2;
+  grid-row:2;
+  align-self:end;
+  justify-self:end;
   text-align:right;
   max-width:100%;
   white-space:nowrap;
   overflow:visible;
   font-size:${metrics.hijriFont} !important;
-  font-weight:700 !important;
+  font-weight:bold !important;
   line-height:1 !important;
   color:#15803d !important;
 }

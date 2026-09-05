@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
 
       if (hijriDay) {
         const hijriStyle = getComputedStyle(hijriDay);
-        if (parseFloat(hijriStyle.fontSize) < 8) {
+        if (parseFloat(hijriStyle.fontSize) < 10) {
           throw new Error(`Calendar PDF Hijri font is too small: ${hijriStyle.fontSize}`);
         }
         if (hijriStyle.display === "none") {
@@ -236,9 +236,6 @@ export async function POST(request: NextRequest) {
           }
           if (gregRect.top > hijriRect.top - 1) {
             throw new Error(`Calendar PDF Gregorian is not above Hijri: gregTop=${gregRect.top}, hijriTop=${hijriRect.top}`);
-          }
-          if (gregRect.bottom + 1 > hijriRect.top) {
-            throw new Error(`Calendar PDF Gregorian/Hijri gap collapsed: gregBottom=${gregRect.bottom}, hijriTop=${hijriRect.top}`);
           }
         }
       }

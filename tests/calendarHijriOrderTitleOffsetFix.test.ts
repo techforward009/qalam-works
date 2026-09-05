@@ -53,7 +53,7 @@ describe("Calendar Hijri order, title centering, and cell offset", () => {
 
   it("anchors Hijri day digits in the bottom-right corner", () => {
     const html = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(html).toMatch(/align-self:flex-end !important/);
+    expect(html).toMatch(/grid-column:2 !important;grid-row:2 !important/);
     expect(html).toMatch(/color:#15803d !important/);
   });
 });
