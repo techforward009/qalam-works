@@ -55,7 +55,7 @@ body {
  * that next/font injects at runtime (see layout.tsx).
  */
 .font-nastaliq {
-  font-family: var(--font-nastaliq), 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif;
+  font-family: var(--font-nastaliq), var(--font-nastaliq-latin), 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif;
   line-height: 2.2;
 }
 

@@ -12,8 +12,8 @@ describe("Calendar header and Hijri digit spacing", () => {
     expect(CALENDAR_VISUAL_SPEC.web.detail.monthHeaderMinPx).toBe(90);
     expect(CALENDAR_VISUAL_SPEC.print.monthHeaderPortraitMm).toBe(9.0);
     expect(CALENDAR_VISUAL_SPEC.print.monthHeaderLandscapeMm).toBe(8.5);
-    expect(CALENDAR_VISUAL_SPEC.print.hijriContextMonthFontPortrait).toBe("9.5px");
-    expect(CALENDAR_VISUAL_SPEC.print.hijriContextYearFontPortrait).toBe("8px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriContextMonthFontPortrait).toBe("10.5px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriContextYearFontPortrait).toBe("9px");
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
     expect(pdf).toMatch(/\.month-head\{[\s\S]*?align-items:center/);

@@ -110,9 +110,7 @@ export function MonthCalendar({
     fontSize: compact ? "clamp(16px, 2vw, 18px)" : "clamp(22px, 3vw, 28px)",
   };
 
-  const titleClass = `whitespace-nowrap text-center font-black leading-snug text-[var(--calendar-month-title)] ${
-    isUr ? "font-naskh" : ""
-  }`;
+  const titleClass = `whitespace-nowrap text-center font-black leading-snug font-nastaliq text-[var(--calendar-month-title)]`;
 
   const titleNode = titleHref ? (
     <Link href={titleHref} className={`${titleClass} transition-opacity hover:opacity-80`} style={titleStyle}>
@@ -133,10 +131,10 @@ export function MonthCalendar({
     >
       {title && (
         <header
-          className="border-b border-[var(--calendar-grid-strong)] bg-[var(--calendar-header)] px-2 py-2 sm:px-3"
+          className="flex items-center border-b border-[var(--calendar-grid-strong)] bg-[var(--calendar-header)] px-2 py-2 sm:px-3"
           style={{ minHeight: `${webSpec.monthHeaderMinPx}px` }}
         >
-          <div className="grid h-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+          <div className="grid h-full w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
             <HijriContextBlock contexts={startContexts} language={language} side="start" compact={compact} />
             {titleNode}
             <HijriContextBlock contexts={endContexts} language={language} side="end" compact={compact} />

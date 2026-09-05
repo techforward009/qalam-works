@@ -36,6 +36,7 @@ interface CalendarPdfRequest {
   logoScale?: number;
   titleFontPx?: number;
   titleWidthMm?: number;
+  titlePadYMm?: number;
   sideFontPx?: number;
 }
 
@@ -52,13 +53,13 @@ function isOffsetList(value: unknown): value is number[] {
 }
 
 function isBannerText(value: unknown): boolean {
-  return value === undefined || (typeof value === "string" && value.length <= 80);
+  return value === undefined || (typeof value === "string" && value.length <= 160);
 }
 
 function isBannerLogo(value: unknown): boolean {
   return value === undefined ||
     (typeof value === "string" &&
-      value.length <= 420000 &&
+      value.length <= 800000 &&
       /^data:image\/(png|jpeg);base64,/i.test(value));
 }
 
@@ -88,6 +89,7 @@ function isCalendarPdfRequest(value: unknown): value is CalendarPdfRequest {
     isSizeNumber(body.logoScale, 60, 180) &&
     isSizeNumber(body.titleFontPx, 10, 22) &&
     isSizeNumber(body.titleWidthMm, 48, 130) &&
+    isSizeNumber(body.titlePadYMm, 0.6, 4.5) &&
     isSizeNumber(body.sideFontPx, 6, 16)
   );
 }
@@ -100,12 +102,22 @@ function requireFontBase64(filename: string): string {
   return readFileSync(fontPath).toString("base64");
 }
 
-function requireLocalNaskhFontsBase64(): EmbeddedNaskhFonts {
+function requireLocalCalendarFontsBase64(): EmbeddedNaskhFonts {
   const regularBase64 = requireFontBase64("naskh-400.woff2");
   const boldPath = path.join(process.cwd(), "public", "fonts", "naskh-700.woff2");
+  const nastaliqRegular = requireFontBase64("nastaliq-400.woff2");
+  const nastaliqBoldPath = path.join(process.cwd(), "public", "fonts", "nastaliq-700.woff2");
+  const nastaliqLatinRegular = requireFontBase64("nastaliq-latin-400.woff2");
+  const nastaliqLatinBoldPath = path.join(process.cwd(), "public", "fonts", "nastaliq-latin-700.woff2");
   return {
     regularBase64,
     boldBase64: existsSync(boldPath) ? readFileSync(boldPath).toString("base64") : regularBase64,
+    nastaliqRegularBase64: nastaliqRegular,
+    nastaliqBoldBase64: existsSync(nastaliqBoldPath) ? readFileSync(nastaliqBoldPath).toString("base64") : nastaliqRegular,
+    nastaliqLatinRegularBase64: nastaliqLatinRegular,
+    nastaliqLatinBoldBase64: existsSync(nastaliqLatinBoldPath)
+      ? readFileSync(nastaliqLatinBoldPath).toString("base64")
+      : nastaliqLatinRegular,
   };
 }
 
@@ -125,7 +137,7 @@ export async function POST(request: NextRequest) {
     }
 
     const model = buildCalendarYearModel(body as BuildCalendarYearOptions);
-    const naskhFonts = body.language === "ur" ? requireLocalNaskhFontsBase64() : undefined;
+    const naskhFonts = requireLocalCalendarFontsBase64();
     const html = buildCalendarHtml(model, {
       naskhFonts,
       researchNote: body.researchNote?.trim() || undefined,
@@ -136,6 +148,7 @@ export async function POST(request: NextRequest) {
       logoScale: body.logoScale,
       titleFontPx: body.titleFontPx,
       titleWidthMm: body.titleWidthMm,
+      titlePadYMm: body.titlePadYMm,
       sideFontPx: body.sideFontPx,
     });
 
@@ -160,6 +173,9 @@ export async function POST(request: NextRequest) {
       await (document as any).fonts?.ready;
       if (mustVerifyNaskh && !(document as any).fonts?.check('16px "QalamNaskh"')) {
         throw new Error("Embedded QalamNaskh font did not load");
+      }
+      if (!(document as any).fonts?.check('16px "QalamNastaliq"')) {
+        throw new Error("Embedded QalamNastaliq font did not load");
       }
 
       const monthTitle = document.querySelector<HTMLElement>('[data-pdf-month-title="true"]');

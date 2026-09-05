@@ -22,6 +22,10 @@ import {
 export interface EmbeddedNaskhFonts {
   regularBase64: string;
   boldBase64: string;
+  nastaliqRegularBase64?: string;
+  nastaliqBoldBase64?: string;
+  nastaliqLatinRegularBase64?: string;
+  nastaliqLatinBoldBase64?: string;
 }
 
 export interface CalendarHtmlOptions {
@@ -34,6 +38,7 @@ export interface CalendarHtmlOptions {
   logoScale?: number;
   titleFontPx?: number;
   titleWidthMm?: number;
+  titlePadYMm?: number;
   sideFontPx?: number;
 }
 
@@ -43,14 +48,21 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
   return Math.min(max, Math.max(min, parsed));
 }
 
-function safeBannerText(value: string | undefined, fallback: string, maxLength: number): string {
-  const trimmed = value?.replace(/\s+/g, " ").trim() ?? "";
+function safeBannerText(value: string | undefined, fallback: string, maxLength: number, multiline = false): string {
+  const source = value ?? "";
+  const trimmed = multiline
+    ? source.replace(/\r\n/g, "\n").replace(/[^\S\n]+/g, " ").replace(/\n{3,}/g, "\n\n").trim()
+    : source.replace(/\s+/g, " ").trim();
   if (!trimmed) return fallback;
   return trimmed.slice(0, maxLength);
 }
 
+function formatBannerMultiline(value: string): string {
+  return escapeHtml(value).replace(/\n/g, "<br>");
+}
+
 function safeBannerLogo(value: string | undefined): string | null {
-  if (!value || value.length > 420000) return null;
+  if (!value || value.length > 800000) return null;
   if (!/^data:image\/(png|jpeg);base64,/i.test(value)) return null;
   return value;
 }
@@ -77,30 +89,55 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
     ? (isUr ? "عیسوی + ہجری" : "Gregorian + Hijri")
     : (isUr ? "عیسوی" : "Gregorian");
   const title = safeBannerText(options.bannerTitle, defaultTitle, 80);
-  const brandName = safeBannerText(options.bannerName, "", 80);
+  const brandName = safeBannerText(options.bannerName, "", 160, true);
   const brandLogo = safeBannerLogo(options.bannerLogo);
   const sideText = options.bannerSideText === undefined
     ? defaultSide
-    : safeBannerText(options.bannerSideText, "", 80);
+    : safeBannerText(options.bannerSideText, "", 160, true);
   const logoScale = clampNumber(options.logoScale, 60, 180, 100);
   const titleFontPx = clampNumber(options.titleFontPx, 10, 22, metrics.landscape ? 13.6 : 14.6);
   const titleWidthMm = clampNumber(options.titleWidthMm, 48, 130, metrics.landscape ? 68 : 78);
+  const titlePadYMm = clampNumber(options.titlePadYMm, 0.6, 4.5, 1.1);
   const sideFontPx = clampNumber(options.sideFontPx, 6, 16, metrics.landscape ? 6.8 : 7.4);
 
-  const fontFace = isUr && options.naskhFonts
+  const fontFace = options.naskhFonts
     ? `
-@font-face{
+${options.naskhFonts.regularBase64 ? `@font-face{
   font-family:'QalamNaskh';
   src:url(data:font/woff2;base64,${options.naskhFonts.regularBase64}) format('woff2');
   font-weight:400;
   font-style:normal;
-}
-@font-face{
+}` : ""}
+${options.naskhFonts.boldBase64 ? `@font-face{
   font-family:'QalamNaskh';
   src:url(data:font/woff2;base64,${options.naskhFonts.boldBase64}) format('woff2');
   font-weight:700 900;
   font-style:normal;
-}`
+}` : ""}
+${options.naskhFonts.nastaliqRegularBase64 ? `@font-face{
+  font-family:'QalamNastaliq';
+  src:url(data:font/woff2;base64,${options.naskhFonts.nastaliqRegularBase64}) format('woff2');
+  font-weight:400;
+  font-style:normal;
+}` : ""}
+${options.naskhFonts.nastaliqBoldBase64 ? `@font-face{
+  font-family:'QalamNastaliq';
+  src:url(data:font/woff2;base64,${options.naskhFonts.nastaliqBoldBase64}) format('woff2');
+  font-weight:700 900;
+  font-style:normal;
+}` : ""}
+${options.naskhFonts.nastaliqLatinRegularBase64 ? `@font-face{
+  font-family:'QalamNastaliq';
+  src:url(data:font/woff2;base64,${options.naskhFonts.nastaliqLatinRegularBase64}) format('woff2');
+  font-weight:400;
+  font-style:normal;
+}` : ""}
+${options.naskhFonts.nastaliqLatinBoldBase64 ? `@font-face{
+  font-family:'QalamNastaliq';
+  src:url(data:font/woff2;base64,${options.naskhFonts.nastaliqLatinBoldBase64}) format('woff2');
+  font-weight:700 900;
+  font-style:normal;
+}` : ""}`
     : "";
 
   const researchNote = options.researchNote?.trim() ?? "";
@@ -138,11 +175,12 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
         return `<div class="day filler" aria-hidden="true"></div>`;
       }
 
+      const sunday = isSunday(cell.gregorian);
       const hijri = cell.hijri
         ? `<span class="hijri-day" data-pdf-hijri-day="true" style="grid-column:2 !important;grid-row:2 !important;align-self:end !important;justify-self:end !important;color:#15803d !important;font-size:${metrics.hijriFont} !important;font-weight:bold !important;line-height:1 !important;">${escapeHtml(isUr ? toUrduDigits(cell.hijri.day) : String(cell.hijri.day))}</span>`
         : "";
 
-      return `<div class="day current${isSunday(cell.gregorian) ? " sunday" : ""}" dir="ltr" style="position:relative !important;display:grid !important;grid-template-columns:1fr 1fr !important;grid-template-rows:1fr 1fr !important;overflow:hidden !important;"><div class="greg-day" data-pdf-gregorian-day="true" style="grid-column:1 !important;grid-row:1 !important;align-self:start !important;justify-self:start !important;font-size:${metrics.gregorianFont} !important;font-weight:900 !important;line-height:1 !important;color:#161a17 !important;">${cell.gregorian.day}</div>${hijri}</div>`;
+      return `<div class="day current${sunday ? " sunday" : ""}" dir="ltr" style="position:relative !important;display:grid !important;grid-template-columns:1fr 1fr !important;grid-template-rows:1fr 1fr !important;overflow:hidden !important;"><div class="greg-day" data-pdf-gregorian-day="true" style="grid-column:1 !important;grid-row:1 !important;align-self:start !important;justify-self:start !important;font-size:${metrics.gregorianFont} !important;font-weight:900 !important;line-height:1 !important;color:${sunday ? "#EF2B2F" : "#161a17"} !important;">${cell.gregorian.day}</div>${hijri}</div>`;
     });
     while (cellHtml.length < CALENDAR_MONTH_DAY_CELLS) {
       cellHtml.push(`<div class="day filler" aria-hidden="true"></div>`);
@@ -150,9 +188,9 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
     const cells = cellHtml.slice(0, CALENDAR_MONTH_DAY_CELLS).join("");
 
     return `<section class="month" style="${calendarPdfMonthVariables(month.month)}">
-      <header class="month-head" dir="ltr" style="height:${metrics.monthHeaderHeightPx}px !important;min-height:${metrics.monthHeaderHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:4px !important;overflow:visible !important;padding:2px 5px 4px !important;">
+      <header class="month-head" dir="ltr" style="height:${metrics.monthHeaderHeightPx}px !important;min-height:${metrics.monthHeaderHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:4px !important;overflow:visible !important;padding:0 6px !important;">
         <div class="ctx ctx-left" data-hijri-side="left" data-hijri-role="${isUr ? "end" : "start"}" dir="ltr" style="flex:1 1 0 !important;min-width:0 !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:left !important;margin:0 !important;">${contextHtml(leftHijriContexts)}</div>
-        <h2 data-pdf-month-title="true" dir="ltr" style="flex:0 0 auto !important;height:auto !important;font-size:${metrics.monthTitleFont} !important;font-weight:900 !important;line-height:1.45 !important;padding:2px 0 4px !important;margin:0 3px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:3px !important;flex-direction:${isUr ? "row-reverse" : "row"} !important;vertical-align:middle !important;overflow:visible !important;white-space:nowrap !important;"><span class="month-title-name" dir="${isUr ? "rtl" : "ltr"}" style="display:inline-block !important;line-height:1.45 !important;padding-bottom:0.2em !important;overflow:visible !important;">${escapeHtml(monthLabels[month.month - 1])}</span><span class="month-title-year" dir="ltr" style="display:inline-block !important;line-height:1.45 !important;padding-bottom:0.2em !important;overflow:visible !important;">${model.year}</span></h2>
+        <h2 data-pdf-month-title="true" dir="ltr" style="flex:0 0 auto !important;height:auto !important;font-family:'QalamNastaliq','QalamNaskh',serif !important;font-size:${metrics.monthTitleFont} !important;font-weight:700 !important;line-height:1.5 !important;padding:0 !important;margin:0 4px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:3px !important;flex-direction:${isUr ? "row-reverse" : "row"} !important;vertical-align:middle !important;overflow:visible !important;white-space:nowrap !important;"><span class="month-title-name" dir="${isUr ? "rtl" : "ltr"}" style="display:inline-block !important;line-height:1.5 !important;padding-bottom:0.12em !important;overflow:visible !important;">${escapeHtml(monthLabels[month.month - 1])}</span><span class="month-title-year" dir="ltr" style="display:inline-block !important;line-height:1.5 !important;padding-bottom:0.12em !important;overflow:visible !important;">${model.year}</span></h2>
         <div class="ctx ctx-right" data-hijri-side="right" data-hijri-role="${isUr ? "start" : "end"}" dir="ltr" style="flex:1 1 0 !important;min-width:0 !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:right !important;margin:0 !important;">${contextHtml(rightHijriContexts)}</div>
       </header>
       <div class="days" data-pdf-week-rows="${CALENDAR_MONTH_WEEK_ROWS}" dir="${isUr ? "rtl" : "ltr"}">
@@ -204,19 +242,30 @@ body{
   justify-self:start;
   display:flex;
   align-items:center;
-  gap:1.5mm;
+  gap:1.6mm;
   min-width:0;
   max-width:100%;
+  padding-inline-start:3.2mm;
 }
 .brand-logo{
   height:${(metrics.landscape ? 8.6 : 9.2) * (logoScale / 100)}mm;
   width:auto;
-  max-width:${22 * (logoScale / 100)}mm;
-  max-height:${12 * (logoScale / 100)}mm;
+  max-width:${24 * (logoScale / 100)}mm;
+  max-height:${13 * (logoScale / 100)}mm;
   object-fit:contain;
   flex:0 0 auto;
+  image-rendering:auto;
 }
-.brand-name{font-weight:800;font-size:${metrics.landscape ? "7.6px" : "8.2px"};direction:ltr;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brand-name{
+  font-family:'QalamNastaliq','QalamNaskh',serif;
+  font-weight:700;
+  font-size:${metrics.landscape ? "7.4px" : "8px"};
+  direction:${isUr ? "rtl" : "ltr"};
+  min-width:0;
+  text-align:center;
+  line-height:1.3;
+  overflow:visible;
+}
 .poster-title{
   min-width:${titleWidthMm}mm;
   max-width:${Math.min(130, titleWidthMm + 18)}mm;
@@ -225,15 +274,26 @@ body{
   border-radius:999px;
   background:var(--calendar-title-capsule);
   color:var(--calendar-frame);
-  padding:1.1mm 5mm;
-  font-weight:900;
+  padding:${titlePadYMm}mm 5mm;
+  font-family:'QalamNastaliq','QalamNaskh',serif;
+  font-weight:700;
   font-size:${titleFontPx}px;
-  line-height:1.15;
+  line-height:1.35;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
-.poster-mode{justify-self:end;text-align:end;font-size:${sideFontPx}px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.poster-mode{
+  justify-self:end;
+  text-align:center;
+  font-family:'QalamNastaliq','QalamNaskh',serif;
+  font-size:${sideFontPx}px;
+  font-weight:700;
+  max-width:100%;
+  line-height:1.3;
+  padding-inline-end:3.2mm;
+  overflow:visible;
+}
 .research-note{
   padding:.7mm 2mm;
   border-bottom:.5px solid var(--calendar-gold);
@@ -266,7 +326,7 @@ body{
   align-items:center !important;
   justify-content:space-between !important;
   gap:4px !important;
-  padding:2px 5px 4px !important;
+  padding:0 6px !important;
   background:var(--calendar-header);
   border-bottom:1px solid var(--calendar-grid-strong);
   overflow:visible;
@@ -277,10 +337,11 @@ body{
   white-space:nowrap;
   text-align:center;
   color:var(--calendar-month-title);
-  font-weight:bold !important;
+  font-family:'QalamNastaliq','QalamNaskh',serif !important;
+  font-weight:700 !important;
   font-size:${metrics.monthTitleFont} !important;
-  line-height:1.45 !important;
-  padding:2px 0 4px !important;
+  line-height:1.5 !important;
+  padding:0 !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
@@ -289,8 +350,8 @@ body{
   overflow:visible !important;
 }
 .ctx{min-width:0;height:100%;display:flex;align-items:center;gap:.25mm;color:var(--calendar-hijri-context);overflow:hidden}
-.ctx-left{flex:1 1 0;justify-content:left !important;text-align:left !important}
-.ctx-right{flex:1 1 0;justify-content:right !important;text-align:right !important}
+.ctx-left{flex:1 1 0;justify-content:left !important;text-align:left !important;padding-inline-end:1mm}
+.ctx-right{flex:1 1 0;justify-content:right !important;text-align:right !important;padding-inline-start:1mm}
 .ctx-item{display:inline-flex;align-items:center;gap:.45mm;min-width:0;line-height:1}
 .ctx-stack{display:flex !important;min-width:0;width:auto !important;height:100% !important;flex-direction:column !important;justify-content:center !important;align-items:center !important;text-align:center !important;line-height:1;transform:none !important;}
 .ctx-left .ctx-stack,.ctx-right .ctx-stack{align-items:center !important;text-align:center !important}
@@ -410,10 +471,10 @@ body{
   <header class="poster-head">
     <div class="brand">
       ${brandLogo ? `<img class="brand-logo" alt="" src="${brandLogo}" />` : ""}
-      ${brandName ? `<div class="brand-name">${escapeHtml(brandName)}</div>` : ""}
+      ${brandName ? `<div class="brand-name">${formatBannerMultiline(brandName)}</div>` : ""}
     </div>
     <div class="poster-title">${escapeHtml(title)}</div>
-    <div class="poster-mode">${sideText ? escapeHtml(sideText) : ""}</div>
+    <div class="poster-mode">${sideText ? formatBannerMultiline(sideText) : ""}</div>
   </header>
   ${researchNoteHtml}
   <div class="year-grid">${monthsHtml}</div>

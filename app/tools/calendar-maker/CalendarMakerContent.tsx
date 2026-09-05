@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import { useLanguage } from "../../lib/language-context";
 import { BackToDateStudioLink } from "../../components/date-studio/DateStudioRouteNav";
 import { MonthCalendar } from "../../components/date-studio/MonthCalendar";
@@ -19,6 +19,12 @@ import {
   type CalendarPage,
   type WeekStart,
 } from "./utils/calendarModel";
+import {
+  listSightingProfiles,
+  readStoredSightingProfiles,
+  writeStoredSightingProfiles,
+  type HijriSightingProfile,
+} from "./utils/hijriSightingArchive";
 
 const L = {
   en: {
@@ -61,8 +67,16 @@ const L = {
     logoSize: "Logo size",
     titleSize: "Title size",
     titleWidth: "Title capsule width",
+    titleHeight: "Title capsule height",
     sideSize: "Right-side text size",
-    bannerHint: "Edit the top strip only. Empty name stays empty. The calendar grid below does not move.",
+    bannerHint: "Edit the top strip only. Empty name stays empty. Use a new line for a second row; both lines stay centered on each other.",
+    sightingArchive: "Hijri sighting archive",
+    sightingCalculated: "Calculated engine",
+    sightingSave: "Save current months",
+    sightingUpdate: "Update selected",
+    sightingDelete: "Delete",
+    sightingNamePlaceholder: "Archive name, e.g. Pakistan 2027",
+    sightingHelp: "Save this year's month offsets as an archive. Open it later, or edit it here if the sighting is later confirmed differently.",
     preview: "Annual preview",
     annualTitle: "Annual Calendar",
     mixedLabel: "Gregorian + Hijri",
@@ -111,8 +125,16 @@ const L = {
     logoSize: "لوگو کا سائز",
     titleSize: "عنوان کا سائز",
     titleWidth: "عنوان کی پٹی کی چوڑائی",
+    titleHeight: "عنوان کی پٹی کی لمبائی",
     sideSize: "دائیں متن کا سائز",
-    bannerHint: "صرف اوپر والی پٹی ایڈٹ ہوتی ہے۔ خالی نام خالی ہی رہتا ہے۔ نیچے کیلنڈر گرڈ نہیں ہلتا۔",
+    bannerHint: "صرف اوپر والی پٹی ایڈٹ ہوتی ہے۔ خالی نام خالی رہتا ہے۔ دوسری سطر کے لیے نئی لائن لکھیں؛ دونوں لائنیں ایک دوسرے کے سینٹر میں رہیں گی۔",
+    sightingArchive: "رؤیتِ ہلال آرکائیو",
+    sightingCalculated: "حسابی انجن",
+    sightingSave: "موجودہ مہینے محفوظ کریں",
+    sightingUpdate: "منتخب کو اپ ڈیٹ کریں",
+    sightingDelete: "حذف",
+    sightingNamePlaceholder: "آرکائیو کا نام، مثلاً پاکستان ۲۰۲۷",
+    sightingHelp: "اس سال کے مہینہ وار آفسیٹ ایک آرکائیو میں محفوظ کریں۔ بعد میں کھولیں، یا اگر رؤیت بدل جائے تو یہیں درست کریں۔",
     preview: "سالانہ پیش منظر",
     annualTitle: "سالانہ تقویم",
     mixedLabel: "عیسوی + ہجری",
@@ -146,7 +168,11 @@ export default function CalendarMakerContent() {
   const [logoScale, setLogoScale] = useState(100);
   const [titleFontPx, setTitleFontPx] = useState(15);
   const [titleWidthMm, setTitleWidthMm] = useState(78);
+  const [titlePadYMm, setTitlePadYMm] = useState(1.1);
   const [sideFontPx, setSideFontPx] = useState(8);
+  const [customSightings, setCustomSightings] = useState<HijriSightingProfile[]>([]);
+  const [selectedSightingId, setSelectedSightingId] = useState("calculated");
+  const [sightingName, setSightingName] = useState("");
   const [page, setPage] = useState<CalendarPage>("a4-portrait");
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
@@ -198,6 +224,7 @@ export default function CalendarMakerContent() {
           logoScale,
           titleFontPx,
           titleWidthMm,
+          titlePadYMm,
           sideFontPx,
         }),
       });
@@ -222,6 +249,26 @@ export default function CalendarMakerContent() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || !/^image\/(png|jpeg)$/.test(file.type)) return;
+
+    const readAsDataUrl = (blob: Blob) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("logo"));
+      reader.readAsDataURL(blob);
+    });
+
+    if (file.size <= 520000) {
+      try {
+        const original = await readAsDataUrl(file);
+        if (original.startsWith("data:image/") && original.length <= 750000) {
+          setBannerLogo(original);
+          return;
+        }
+      } catch {
+        // Fall through to a high-quality resample.
+      }
+    }
+
     const url = URL.createObjectURL(file);
     try {
       const image = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -230,8 +277,8 @@ export default function CalendarMakerContent() {
         element.onerror = () => reject(new Error("logo"));
         element.src = url;
       });
-      const maxWidth = 480;
-      const maxHeight = 220;
+      const maxWidth = 1600;
+      const maxHeight = 700;
       const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(image.width * scale));
@@ -242,13 +289,81 @@ export default function CalendarMakerContent() {
       context.imageSmoothingQuality = "high";
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       let dataUrl = canvas.toDataURL("image/png");
-      if (dataUrl.length > 400000) dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      if (dataUrl.length > 750000) dataUrl = canvas.toDataURL("image/jpeg", 0.97);
+      if (dataUrl.length > 750000) dataUrl = canvas.toDataURL("image/jpeg", 0.9);
       setBannerLogo(dataUrl);
     } catch {
       setBannerLogo("");
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+
+  useEffect(() => {
+    setCustomSightings(readStoredSightingProfiles());
+  }, []);
+
+  const allSightings = useMemo(
+    () => listSightingProfiles(customSightings),
+    [customSightings],
+  );
+
+  function applySighting(id: string) {
+    setSelectedSightingId(id);
+    if (id === "calculated") {
+      setHijriOffset(0);
+      setHijriOffsets(Array(12).fill(0));
+      return;
+    }
+    const profile = listSightingProfiles(customSightings).find((item) => item.id === id);
+    if (!profile) return;
+    setHijriOffsets([...profile.offsets]);
+    const same = profile.offsets.every((offset) => offset === profile.offsets[0]);
+    setHijriOffset(same ? profile.offsets[0] : 0);
+    if (profile.note) setResearchNote(profile.note);
+    setYearInput(String(profile.year));
+  }
+
+  function saveSighting() {
+    const name = sightingName.trim();
+    if (!name || validYear === null) return;
+    const profile: HijriSightingProfile = {
+      id: `custom-${Date.now()}`,
+      name,
+      nameUr: name,
+      year: validYear,
+      offsets: [...hijriOffsets],
+      note: researchNote.trim(),
+    };
+    const next = [...customSightings.filter((item) => item.id !== profile.id), profile];
+    setCustomSightings(next);
+    writeStoredSightingProfiles(next);
+    setSelectedSightingId(profile.id);
+    setSightingName("");
+  }
+
+  function updateSelectedSighting() {
+    if (validYear === null || selectedSightingId === "calculated") return;
+    const selected = allSightings.find((item) => item.id === selectedSightingId);
+    if (!selected) return;
+    const profile: HijriSightingProfile = {
+      id: selected.id,
+      name: selected.name,
+      nameUr: selected.nameUr,
+      year: validYear,
+      offsets: [...hijriOffsets],
+      note: researchNote.trim(),
+    };
+    const next = [...customSightings.filter((item) => item.id !== selected.id), profile];
+    setCustomSightings(next);
+    writeStoredSightingProfiles(next);
+  }
+
+  function deleteSelectedSighting() {
+    const next = customSightings.filter((item) => item.id !== selectedSightingId);
+    setCustomSightings(next);
+    writeStoredSightingProfiles(next);
+    setSelectedSightingId("calculated");
   }
 
   const selectClass = `w-full rounded-lg border border-[#1A3A2A]/15 dark:border-[#2a3d30] bg-white dark:bg-[#0e1c15] px-3 py-2.5 text-sm text-[#1A3A2A] dark:text-[#e8ede9] focus:outline-none focus:border-[#1A3A2A]/45 dark:focus:border-[#4a7a5a] ${naskh}`;
@@ -390,16 +505,67 @@ export default function CalendarMakerContent() {
           </div>
         )}
 
+        {content === "gregorian-hijri" && (
+          <div className="mt-4 rounded-xl border border-[#1A3A2A]/10 p-3 dark:border-[#2a3d30]">
+            <label className={labelClass}>{t.sightingArchive}</label>
+            <p className={`mb-2 text-[12px] text-[#4a6a4a] dark:text-[#9fbfa8] ${naskh}`}>{t.sightingHelp}</p>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <select
+                value={selectedSightingId}
+                onChange={(e) => applySighting(e.target.value)}
+                className={selectClass}
+              >
+                <option value="calculated">{t.sightingCalculated}</option>
+                {allSightings.map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    {isUr ? profile.nameUr : profile.name} ({profile.year})
+                  </option>
+                ))}
+              </select>
+              {selectedSightingId !== "calculated" && (
+                <div className="flex gap-2">
+                  <button type="button" onClick={updateSelectedSighting} className={`rounded-lg border border-[#1A3A2A]/20 px-3 py-2 text-[12px] font-semibold ${naskh}`}>
+                    {t.sightingUpdate}
+                  </button>
+                  {customSightings.some((profile) => profile.id === selectedSightingId) && (
+                    <button type="button" onClick={deleteSelectedSighting} className={`rounded-lg px-3 py-2 text-[12px] font-semibold text-[#8a3a3a] ${naskh}`}>
+                      {t.sightingDelete}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                type="text"
+                value={sightingName}
+                maxLength={80}
+                onChange={(e) => setSightingName(e.target.value)}
+                placeholder={t.sightingNamePlaceholder}
+                className={selectClass}
+              />
+              <button
+                type="button"
+                onClick={saveSighting}
+                disabled={!sightingName.trim() || validYear === null}
+                className={`shrink-0 rounded-lg bg-[#1A3A2A] px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-50 ${naskh}`}
+              >
+                {t.sightingSave}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mt-5 border-t border-[#1A3A2A]/10 pt-5 dark:border-[#2a3d30]">
           <p className={`mb-3 text-[13px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.bannerSection}</p>
           <p className={`mb-4 text-[12px] text-[#4a6a4a] dark:text-[#9fbfa8] ${naskh}`}>{t.bannerHint}</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <label className={labelClass}>{t.bannerName}</label>
-              <input
-                type="text"
+              <textarea
+                rows={2}
                 value={bannerName}
-                maxLength={80}
+                maxLength={160}
                 onChange={(e) => setBannerName(e.target.value)}
                 placeholder={t.bannerNamePlaceholder}
                 className={selectClass}
@@ -418,10 +584,10 @@ export default function CalendarMakerContent() {
             </div>
             <div>
               <label className={labelClass}>{t.bannerSide}</label>
-              <input
-                type="text"
+              <textarea
+                rows={2}
                 value={bannerSideText}
-                maxLength={80}
+                maxLength={160}
                 onChange={(e) => setBannerSideText(e.target.value)}
                 placeholder={t.bannerSidePlaceholder}
                 className={selectClass}
@@ -454,6 +620,10 @@ export default function CalendarMakerContent() {
             <div>
               <label className={labelClass}>{t.titleWidth} ({titleWidthMm}mm)</label>
               <input type="range" min={48} max={130} value={titleWidthMm} onChange={(e) => setTitleWidthMm(Number(e.target.value))} className="w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>{t.titleHeight} ({titlePadYMm.toFixed(1)}mm)</label>
+              <input type="range" min={0.6} max={4.5} step={0.1} value={titlePadYMm} onChange={(e) => setTitlePadYMm(Number(e.target.value))} className="w-full" />
             </div>
             <div>
               <label className={labelClass}>{t.sideSize} ({sideFontPx}px)</label>
@@ -489,30 +659,32 @@ export default function CalendarMakerContent() {
             style={calendarCssVariables() as CSSProperties}
           >
             <header className="relative grid min-h-[70px] grid-cols-[1fr_auto_1fr] items-center gap-3 border-b-2 border-[var(--calendar-gold)] bg-[var(--calendar-frame)] px-4 py-2 text-white">
-              <div className="flex min-w-0 items-center gap-2 justify-self-start text-start">
+              <div className="flex min-w-0 items-center gap-2 justify-self-start ps-2 text-center">
                 {bannerLogo && (
                   <img
                     src={bannerLogo}
                     alt=""
                     className="w-auto object-contain"
-                    style={{ height: `${Math.round(36 * logoScale / 100)}px`, maxWidth: `${Math.round(120 * logoScale / 100)}px` }}
+                    style={{ height: `${Math.round(36 * logoScale / 100)}px`, maxWidth: `${Math.round(140 * logoScale / 100)}px` }}
                   />
                 )}
                 {bannerName.trim() ? (
-                  <span className="truncate text-sm font-black tracking-wide" dir="ltr">{bannerName.trim()}</span>
+                  <span className="whitespace-pre-line text-center font-nastaliq font-black leading-snug tracking-wide" dir={calendarLanguage === "ur" ? "rtl" : "ltr"}>
+                    {bannerName.trim()}
+                  </span>
                 ) : null}
               </div>
 
               <div
-                className="rounded-full border-2 border-[var(--calendar-gold)] bg-[var(--calendar-title-capsule)] text-center text-[var(--calendar-frame)] shadow-inner"
-                style={{ minWidth: `${Math.round(titleWidthMm * 3.2)}px`, padding: "8px 28px" }}
+                className={`rounded-full border-2 border-[var(--calendar-gold)] bg-[var(--calendar-title-capsule)] text-center font-nastaliq text-[var(--calendar-frame)] shadow-inner`}
+                style={{ minWidth: `${Math.round(titleWidthMm * 3.2)}px`, padding: `${Math.round(titlePadYMm * 4)}px 28px` }}
               >
-                <div className={`truncate font-black leading-tight ${calendarLanguage === "ur" ? "font-naskh" : ""}`} style={{ fontSize: `${titleFontPx + 6}px` }}>
+                <div className="truncate font-black leading-snug" style={{ fontSize: `${titleFontPx + 6}px` }}>
                   {previewBannerTitle}
                 </div>
               </div>
 
-              <div className={`justify-self-end truncate text-end font-bold ${calendarLanguage === "ur" ? "font-naskh" : ""}`} style={{ fontSize: `${sideFontPx + 4}px` }}>
+              <div className={`justify-self-end whitespace-pre-line pe-2 text-center font-nastaliq font-bold leading-snug`} style={{ fontSize: `${sideFontPx + 4}px` }} dir={calendarLanguage === "ur" ? "rtl" : "ltr"}>
                 {previewSideText}
               </div>
             </header>

@@ -60,8 +60,11 @@ describe("Calendar production audit contracts", () => {
 
     expect(route).toMatch(/naskh-400\.woff2/);
     expect(route).toMatch(/naskh-700\.woff2/);
+    expect(route).toMatch(/nastaliq-400\.woff2/);
+    expect(route).toMatch(/nastaliq-latin-400\.woff2/);
     expect(route).toMatch(/Required bundled calendar PDF font is missing/);
     expect(route).toMatch(/fonts\?\.check\('16px "QalamNaskh"'\)/);
+    expect(route).toMatch(/fonts\?\.check\('16px "QalamNastaliq"'\)/);
     expect(html).toMatch(/data:font\/woff2;base64/);
     expect(html).toMatch(/font-family:'QalamNaskh'/);
     expect(html).toMatch(/font-weight:400/);

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { buildCalendarYearModel } from "../app/tools/calendar-maker/utils/calendarModel";
 import { buildCalendarHtml } from "../app/tools/calendar-maker/utils/buildCalendarHtml";
+import {
+  BUILTIN_SIGHTING_PROFILES,
+  isSightingProfile,
+  listSightingProfiles,
+} from "../app/tools/calendar-maker/utils/hijriSightingArchive";
 import { CALENDAR_PDF_HIJRI_SHORT_EN } from "../app/tools/calendar-maker/utils/calendarVisualSpec";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -33,9 +38,9 @@ describe("Calendar banner, Jamadi labels, and per-month Hijri offset", () => {
 
   it("gives English month titles room for descenders like j", () => {
     const pdf = source("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(pdf).toMatch(/month-title-name[\s\S]*?line-height:1\.45/);
+    expect(pdf).toMatch(/month-title-name[\s\S]*?line-height:1\.5/);
     expect(pdf).toMatch(/overflow:visible !important/);
-    expect(pdf).toMatch(/padding-bottom:0\.2em/);
+    expect(pdf).toMatch(/padding-bottom:0\.12em/);
   });
 
   it("keeps Hijri days consecutive when adjacent months have different moon-sighting offsets", () => {
@@ -117,5 +122,77 @@ describe("Calendar banner, Jamadi labels, and per-month Hijri offset", () => {
     expect(html).toContain('class="brand-logo"');
     expect(html).toContain("year-grid");
     expect(html).not.toContain("javascript:");
+  });
+
+  it("paints Sunday Gregorian dates in the same red as the Sunday header", () => {
+    const html = buildCalendarHtml(buildCalendarYearModel({
+      year: 2027,
+      content: "gregorian-hijri",
+      language: "ur",
+      weekStart: "monday",
+      page: "a4-portrait",
+    }));
+    expect(html).toContain('class="weekday sun"');
+    expect(html).toContain("اتوار");
+    expect(html).toMatch(/class="day current sunday"[\s\S]*?color:#EF2B2F/);
+    expect(html).toMatch(/color:#EF2B2F !important;">3</);
+  });
+
+  it("sets Noto Nastaliq as the default banner and month-title face", () => {
+    const pdf = source("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
+    const html = buildCalendarHtml(buildCalendarYearModel({
+      year: 2027,
+      content: "gregorian-hijri",
+      language: "en",
+      weekStart: "monday",
+      page: "a4-portrait",
+    }), {
+      titlePadYMm: 2.4,
+      bannerName: "Line one\nLine two",
+      bannerSideText: "Right one\nRight two",
+      naskhFonts: {
+        regularBase64: "naskhReg",
+        boldBase64: "naskhBold",
+        nastaliqRegularBase64: "nastArReg",
+        nastaliqBoldBase64: "nastArBold",
+        nastaliqLatinRegularBase64: "nastLatReg",
+        nastaliqLatinBoldBase64: "nastLatBold",
+      },
+    });
+    expect(pdf).toMatch(/font-family:'QalamNastaliq'/);
+    expect(pdf).toMatch(/nastaliqLatinRegularBase64/);
+    expect(html).toContain("base64,nastLatReg");
+    expect(html).toContain("January");
+    expect(html).toMatch(/poster-title[\s\S]*QalamNastaliq/);
+    expect(html).toContain("padding:2.4mm 5mm");
+    expect(html).toContain("Line one<br>Line two");
+    expect(html).toContain("Right one<br>Right two");
+    expect(html).toMatch(/\.brand-name\{[\s\S]*text-align:center/);
+    expect(html).toMatch(/\.poster-mode\{[\s\S]*text-align:center/);
+  });
+
+  it("keeps Pakistan 2027 moon-sighting as an editable archive", () => {
+    const profile = BUILTIN_SIGHTING_PROFILES[0];
+    expect(profile.id).toBe("pk-2027-provisional");
+    expect(profile.year).toBe(2027);
+    expect(profile.offsets).toEqual([-1, -2, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1]);
+    expect(isSightingProfile(profile)).toBe(true);
+
+    const overridden = listSightingProfiles([{
+      ...profile,
+      builtin: false,
+      offsets: [-1, -2, -2, -1, -1, 0, 0, 0, 0, 0, 0, 0],
+      note: "Corrected after confirmation",
+    }]);
+    expect(overridden[0].offsets[5]).toBe(0);
+    expect(overridden[0].note).toBe("Corrected after confirmation");
+    expect(overridden[0].builtin).toBe(true);
+
+    const restored = listSightingProfiles([]);
+    expect(restored[0].offsets).toEqual(profile.offsets);
+
+    const maker = source("app/tools/calendar-maker/CalendarMakerContent.tsx");
+    expect(maker).toContain("sightingArchive");
+    expect(maker).toContain("listSightingProfiles");
   });
 });
