@@ -128,6 +128,23 @@ export async function POST(request: NextRequest) {
         throw new Error(`Calendar PDF month week rows are not fixed at 6: ${dayCounts.join(",")}`);
       }
 
+      const firstMonth = document.querySelector(".month");
+      if (firstMonth) {
+        const monthDays = [...firstMonth.querySelectorAll(".day")];
+        const widths = monthDays.map((day) => day.getBoundingClientRect().width);
+        const heights = monthDays.map((day) => day.getBoundingClientRect().height);
+        if (Math.max(...widths) - Math.min(...widths) > 0.6) {
+          throw new Error(`Calendar PDF day cells are not equal width: ${Math.min(...widths)}-${Math.max(...widths)}`);
+        }
+        if (Math.max(...heights) - Math.min(...heights) > 0.6) {
+          throw new Error(`Calendar PDF day cells are not equal height: ${Math.min(...heights)}-${Math.max(...heights)}`);
+        }
+        const columnLefts = [0, 7, 14, 21, 28, 35].map((index) => monthDays[index].getBoundingClientRect().left);
+        if (Math.max(...columnLefts) - Math.min(...columnLefts) > 0.6) {
+          throw new Error(`Calendar PDF vertical grid lines are not aligned: ${columnLefts.join(",")}`);
+        }
+      }
+
       const monthTitleStyle = getComputedStyle(monthTitle);
       const monthHeaderStyle = getComputedStyle(monthHeader);
       const weekdayRowStyle = getComputedStyle(weekdayRow);

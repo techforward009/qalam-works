@@ -119,10 +119,10 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
         <h2 data-pdf-month-title="true" dir="ltr" style="flex:0 0 auto !important;height:100% !important;font-size:${metrics.monthTitleFont} !important;font-weight:900 !important;line-height:1 !important;padding:0 !important;margin:0 3px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:3px !important;flex-direction:${isUr ? "row-reverse" : "row"} !important;vertical-align:middle !important;overflow:visible !important;white-space:nowrap !important;"><span class="month-title-name" dir="${isUr ? "rtl" : "ltr"}" style="display:inline-flex !important;height:100% !important;align-items:center !important;justify-content:center !important;line-height:1 !important;vertical-align:middle !important;">${escapeHtml(monthLabels[month.month - 1])}</span><span class="month-title-year" dir="ltr" style="display:inline-flex !important;height:100% !important;align-items:center !important;justify-content:center !important;line-height:1 !important;vertical-align:middle !important;">${model.year}</span></h2>
         <div class="ctx ctx-right" data-hijri-side="right" data-hijri-role="${isUr ? "start" : "end"}" dir="ltr" style="flex:1 1 0 !important;min-width:0 !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:right !important;margin:0 !important;">${contextHtml(rightHijriContexts)}</div>
       </header>
-      <div class="weekdays" data-pdf-weekday-row="true" dir="${isUr ? "rtl" : "ltr"}" style="height:${metrics.weekdayHeightPx}px !important;min-height:${metrics.weekdayHeightPx}px !important;display:grid !important;grid-template-columns:repeat(7,minmax(0,1fr)) !important;align-items:stretch !important;overflow:hidden !important;">
-        ${dayLabels.map((label) => `<div data-pdf-weekday="true" class="${label === "Sun" || label === "اتوار" ? "sun" : ""}" style="height:${metrics.weekdayHeightPx}px !important;min-height:${metrics.weekdayHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:center !important;line-height:1 !important;padding:0 !important;font-size:${metrics.weekdayFont} !important;font-weight:700 !important;${isUr ? "font-family:'QalamNaskh',serif !important;" : ""}">${label}</div>`).join("")}
+      <div class="days" data-pdf-week-rows="${CALENDAR_MONTH_WEEK_ROWS}" dir="${isUr ? "rtl" : "ltr"}">
+        ${dayLabels.map((label, index) => `<div data-pdf-weekday="true"${index === 0 ? ' data-pdf-weekday-row="true"' : ""} class="weekday${label === "Sun" || label === "اتوار" ? " sun" : ""}" style="display:flex !important;align-items:center !important;justify-content:center !important;line-height:1 !important;padding:0 !important;font-size:${metrics.weekdayFont} !important;font-weight:700 !important;${isUr ? "font-family:'QalamNaskh',serif !important;" : ""}">${label}</div>`).join("")}
+        ${cells}
       </div>
-      <div class="days" data-pdf-week-rows="${CALENDAR_MONTH_WEEK_ROWS}" dir="${isUr ? "rtl" : "ltr"}">${cells}</div>
     </section>`;
   }).join("");
 
@@ -263,15 +263,20 @@ body{
   white-space:nowrap;
 }
 .slash{font-size:5.3px;color:var(--calendar-hijri-context);opacity:.7;font-weight:700}
-.weekdays{display:grid !important;grid-template-columns:repeat(7,minmax(0,1fr)) !important;align-items:stretch}
-.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(${CALENDAR_MONTH_WEEK_ROWS},minmax(0,1fr))}
-.weekdays{height:${metrics.weekdayHeightPx}px !important;min-height:${metrics.weekdayHeightPx}px !important;background:var(--calendar-weekday);border-bottom:1px solid var(--calendar-grid-strong)}
-.weekdays>div{
+.days{
+  flex:1;
+  min-height:0;
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  grid-template-rows:${metrics.weekdayHeightPx}px repeat(${CALENDAR_MONTH_WEEK_ROWS},minmax(0,1fr));
+  gap:1px;
+  background:var(--calendar-grid-strong);
+}
+.weekday{
   min-width:0;
-  height:${metrics.weekdayHeightPx}px !important;
-  min-height:${metrics.weekdayHeightPx}px !important;
-  padding:0 !important;
-  border-inline-end:1px solid var(--calendar-weekday-grid);
+  min-height:${metrics.weekdayHeightPx}px;
+  border:none;
+  background:var(--calendar-weekday);
   display:flex !important;
   align-items:center !important;
   justify-content:center !important;
@@ -282,20 +287,15 @@ body{
   line-height:1.15 !important;
   overflow:hidden;
 }
-.weekdays>div:last-child{border-inline-end:none}
-.weekdays .sun{color:var(--calendar-month-title)}
-.days{flex:1;min-height:0;grid-template-rows:repeat(${CALENDAR_MONTH_WEEK_ROWS},minmax(0,1fr))}
+.weekday.sun{color:var(--calendar-month-title)}
 .day{
   position:relative !important;
   min-width:0;
   min-height:0;
-  border-inline-end:1px solid var(--calendar-grid);
-  border-bottom:1px solid var(--calendar-grid);
+  border:none;
   background:var(--calendar-cell);
   overflow:hidden;
 }
-.day:nth-child(7n){border-inline-end:none}
-.day:nth-child(n+36){border-bottom:none}
 .day.current{
   display:grid !important;
   grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
