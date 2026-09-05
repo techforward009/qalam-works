@@ -22,15 +22,15 @@ describe("Calendar layout positioning fix", () => {
 
   it("centers weekday text inside a taller strip", () => {
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(CALENDAR_VISUAL_SPEC.print.weekdayStripPortraitMm).toBe(4.2);
-    expect(CALENDAR_VISUAL_SPEC.print.weekdayStripLandscapeMm).toBe(4.0);
+    expect(CALENDAR_VISUAL_SPEC.print.weekdayStripPortraitMm).toBe(3.8);
+    expect(CALENDAR_VISUAL_SPEC.print.weekdayStripLandscapeMm).toBe(3.6);
     expect(pdf).toMatch(/min-height:\$\{metrics\.weekdayHeightPx\}px/);
     expect(pdf).toMatch(/display:flex;[\s\S]*?align-items:center;[\s\S]*?justify-content:center/);
   });
 
   it("keeps the central month title readable without clipping the year", () => {
-    expect(CALENDAR_VISUAL_SPEC.print.monthTitleFontPortrait).toBe("14px");
-    expect(CALENDAR_VISUAL_SPEC.print.monthTitleFontLandscape).toBe("13px");
+    expect(CALENDAR_VISUAL_SPEC.print.monthTitleFontPortrait).toBe("13px");
+    expect(CALENDAR_VISUAL_SPEC.print.monthTitleFontLandscape).toBe("12px");
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
     expect(pdf).toMatch(/font-size:\$\{metrics\.monthTitleFont\}/);

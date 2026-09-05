@@ -7,7 +7,6 @@ import {
   gregorianToJDN,
   isGregorianLeap,
   jdnToGregorian,
-  HIJRI_MONTHS_EN,
   HIJRI_MONTHS_UR,
 } from "../app/tools/date-converter/utils/dateEngine";
 import {
@@ -25,6 +24,7 @@ import {
   HIJRI_MONTH_SHORT_LABELS,
   parseCalendarYearInput,
 } from "../app/tools/calendar-maker/utils/calendarModel";
+import { CALENDAR_PDF_HIJRI_SHORT_EN } from "../app/tools/calendar-maker/utils/calendarVisualSpec";
 import { buildCalendarHtml } from "../app/tools/calendar-maker/utils/buildCalendarHtml";
 import { resolveRegionalHijriReference } from "../app/tools/date-converter/utils/regionalDateEvidence";
 
@@ -319,7 +319,7 @@ describe("calendar PDF HTML builder", () => {
     expect(html).toContain("A4 landscape");
   });
 
-  test("PDF HTML uses full Hijri month names without ambiguous truncation", () => {
+  test("PDF HTML uses short English Hijri headers and full Urdu Hijri names", () => {
     const enModel = buildCalendarYearModel({
       year: 2027,
       content: "gregorian-hijri",
@@ -328,9 +328,16 @@ describe("calendar PDF HTML builder", () => {
       page: "a4-landscape",
     });
     const enHtml = buildCalendarHtml(enModel);
-    for (const label of HIJRI_MONTHS_EN) {
+    for (const label of CALENDAR_PDF_HIJRI_SHORT_EN) {
       expect(enHtml).toContain(label);
     }
+    expect(enHtml).not.toContain("Rabi al-Awwal");
+    expect(enHtml).not.toContain("Rabi al-Thani");
+    expect(enHtml).not.toContain("Jumada al-Awwal");
+    expect(enHtml).not.toContain("Jumada al-Thani");
+    expect(enHtml).not.toContain("Dhu al-Qadah");
+    expect(enHtml).not.toContain("Dhu al-Hijjah");
+    expect(enHtml).not.toContain("…");
 
     const urModel = buildCalendarYearModel({
       year: 2027,

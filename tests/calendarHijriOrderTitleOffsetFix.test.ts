@@ -46,14 +46,14 @@ describe("Calendar Hijri order, title centering, and cell offset", () => {
     expect(route).toMatch(/rightHijriContext\.dataset\.hijriRole !== "start"/);
     expect(route).toMatch(/leftHijriContext\.dataset\.hijriRole !== "end"/);
     expect(route).toMatch(/Math\.abs\(nameCenterY - yearCenterY\) > 1\.5/);
-    expect(route).toMatch(/parseFloat\(monthTitleStyle\.fontSize\) < 12\.5/);
+    expect(route).toMatch(/parseFloat\(monthTitleStyle\.fontSize\) < 11\.5/);
     expect(route).not.toMatch(/lineHeight\) < 32/);
     expect(route).toMatch(/titleDisplay !== "flex"/);
   });
 
   it("anchors Hijri day digits in the bottom-right corner", () => {
     const html = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(html).toMatch(/bottom:2px !important;right:2px !important/);
+    expect(html).toMatch(/grid-column:2 !important;grid-row:2 !important/);
     expect(html).toMatch(/color:#15803d !important/);
   });
 });

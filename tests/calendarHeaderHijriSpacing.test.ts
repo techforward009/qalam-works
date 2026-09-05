@@ -31,11 +31,11 @@ describe("Calendar header and Hijri digit spacing", () => {
   });
 
   it("keeps Hijri PDF typography secondary and anchored in the bottom-right", () => {
-    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("9px");
-    expect(CALENDAR_VISUAL_SPEC.print.hijriFontLandscape).toBe("9px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("11px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriFontLandscape).toBe("11px");
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(pdf).toMatch(/padding:2px 3px !important/);
-    expect(pdf).toMatch(/\.hijri-day\{[\s\S]*?right:2px !important;[\s\S]*?bottom:2px !important/);
+    expect(pdf).toMatch(/grid-column:2 !important;grid-row:2 !important/);
+    expect(pdf).toMatch(/color:#15803d !important/);
   });
 });

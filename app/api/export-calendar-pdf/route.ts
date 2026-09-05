@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       const weekdayRowStyle = getComputedStyle(weekdayRow);
       const weekdayStyle = getComputedStyle(weekday);
 
-      if (parseFloat(monthTitleStyle.fontSize) < 12.5) {
+      if (parseFloat(monthTitleStyle.fontSize) < 11.5) {
         throw new Error(`Calendar PDF month title is not readable: size=${monthTitleStyle.fontSize}, lineHeight=${monthTitleStyle.lineHeight}`);
       }
       const titleDisplay = monthTitleStyle.display;
@@ -170,13 +170,13 @@ export async function POST(request: NextRequest) {
           throw new Error(`Calendar PDF Hijri chronological role mapping invalid: right=${rightHijriContext.dataset.hijriRole}, left=${leftHijriContext.dataset.hijriRole}`);
         }
       }
-      if (leftHijriContext.getBoundingClientRect().width < 36 || rightHijriContext.getBoundingClientRect().width < 36) {
+      if (leftHijriContext.getBoundingClientRect().width < 24 || rightHijriContext.getBoundingClientRect().width < 24) {
         throw new Error("Calendar PDF Hijri context columns were squeezed out of the header");
       }
-      if (parseFloat(monthHeaderStyle.height) < 29) {
+      if (parseFloat(monthHeaderStyle.height) < 27) {
         throw new Error(`Calendar PDF month header is too short: ${monthHeaderStyle.height}`);
       }
-      if (parseFloat(weekdayRowStyle.height) < 14.5 || parseFloat(weekdayStyle.height) < 14.5) {
+      if (parseFloat(weekdayRowStyle.height) < 12.5 || parseFloat(weekdayStyle.height) < 12.5) {
         throw new Error(`Calendar PDF weekday strip is too short: row=${weekdayRowStyle.height}, cell=${weekdayStyle.height}`);
       }
       if (mustVerifyNaskh && parseFloat(weekdayStyle.fontSize) < 7.5) {
@@ -191,21 +191,18 @@ export async function POST(request: NextRequest) {
 
       if (gregorianDay) {
         const gregorianStyle = getComputedStyle(gregorianDay);
-        if (parseFloat(gregorianStyle.fontSize) < 11) {
+        if (parseFloat(gregorianStyle.fontSize) < 13) {
           throw new Error(`Calendar PDF Gregorian font is too small: ${gregorianStyle.fontSize}`);
         }
       }
 
       if (hijriDay) {
         const hijriStyle = getComputedStyle(hijriDay);
-        if (parseFloat(hijriStyle.fontSize) < 8) {
+        if (parseFloat(hijriStyle.fontSize) < 10) {
           throw new Error(`Calendar PDF Hijri font is too small: ${hijriStyle.fontSize}`);
         }
-        if (hijriStyle.position !== "absolute" || hijriStyle.display === "none") {
+        if (hijriStyle.display === "none") {
           throw new Error(`Calendar PDF Hijri positioning/display invalid: position=${hijriStyle.position}, display=${hijriStyle.display}`);
-        }
-        if (Math.abs(parseFloat(hijriStyle.bottom) - 2) > 0.5 || Math.abs(parseFloat(hijriStyle.right) - 2) > 0.5) {
-          throw new Error(`Calendar PDF Hijri anchor drifted: bottom=${hijriStyle.bottom}, right=${hijriStyle.right}`);
         }
       }
 
@@ -215,14 +212,23 @@ export async function POST(request: NextRequest) {
           const dayRect = dayBox.getBoundingClientRect();
           const gregRect = gregorianDay.getBoundingClientRect();
           const hijriRect = hijriDay.getBoundingClientRect();
+          if (gregRect.width < 2 || gregRect.height < 2) {
+            throw new Error("Calendar PDF Gregorian digit did not paint");
+          }
+          if (hijriRect.width < 2 || hijriRect.height < 2) {
+            throw new Error("Calendar PDF Hijri digit did not paint");
+          }
           if (gregRect.bottom > dayRect.bottom + 1 || gregRect.top < dayRect.top - 1) {
             throw new Error(`Calendar PDF Gregorian digit clipped: gregBottom=${gregRect.bottom}, cellBottom=${dayRect.bottom}`);
           }
           if (hijriRect.bottom > dayRect.bottom + 1 || hijriRect.top < dayRect.top - 1) {
             throw new Error(`Calendar PDF Hijri digit clipped: hijriBottom=${hijriRect.bottom}, cellBottom=${dayRect.bottom}`);
           }
-          if (gregRect.bottom > hijriRect.top + 1) {
-            throw new Error(`Calendar PDF primary/secondary digits overlap: gregBottom=${gregRect.bottom}, hijriTop=${hijriRect.top}`);
+          if (gregRect.left > hijriRect.left - 1) {
+            throw new Error(`Calendar PDF Gregorian is not left of Hijri: gregLeft=${gregRect.left}, hijriLeft=${hijriRect.left}`);
+          }
+          if (gregRect.top > hijriRect.top - 1) {
+            throw new Error(`Calendar PDF Gregorian is not above Hijri: gregTop=${gregRect.top}, hijriTop=${hijriRect.top}`);
           }
         }
       }

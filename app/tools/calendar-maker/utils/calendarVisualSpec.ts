@@ -2,6 +2,20 @@ import type { CalendarPage } from "./calendarModel";
 
 export const CALENDAR_REFERENCE_WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 export const CALENDAR_URDU_WEEKDAYS = ["پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ", "اتوار"] as const;
+export const CALENDAR_PDF_HIJRI_SHORT_EN = [
+  "Muharram",
+  "Safar",
+  "Rabi I",
+  "Rabi II",
+  "Jumada I",
+  "Jumada II",
+  "Rajab",
+  "Sha'ban",
+  "Ramadan",
+  "Shawwal",
+  "Dhu Qadah",
+  "Dhu Hijjah",
+] as const;
 
 export const CALENDAR_ANNUAL_GRID_CLASS =
   "grid grid-cols-1 gap-2 bg-[var(--calendar-paper)] p-2 md:grid-cols-2 xl:grid-cols-3";
@@ -72,24 +86,24 @@ export const CALENDAR_VISUAL_SPEC = {
     monthGapLandscapeMm: 1.05,
     monthHeaderPortraitMm: 9.0,
     monthHeaderLandscapeMm: 8.5,
-    gregorianFontPortrait: "12px",
-    gregorianFontLandscape: "12px",
-    hijriFontPortrait: "9px",
-    hijriFontLandscape: "9px",
-    weekdayStripPortraitMm: 4.2,
-    weekdayStripLandscapeMm: 4.0,
+    gregorianFontPortrait: "14px",
+    gregorianFontLandscape: "14px",
+    hijriFontPortrait: "11px",
+    hijriFontLandscape: "11px",
+    weekdayStripPortraitMm: 3.8,
+    weekdayStripLandscapeMm: 3.6,
     weekdayFontPortrait: "8px",
     weekdayFontLandscape: "8px",
-    hijriContextMonthFontPortrait: "8.5px",
-    hijriContextMonthFontLandscape: "8px",
-    hijriContextYearFontPortrait: "7px",
-    hijriContextYearFontLandscape: "6.5px",
-    monthTitleFontPortrait: "14px",
-    monthTitleFontLandscape: "13px",
-    weekdayHeightPortraitPx: 16,
-    weekdayHeightLandscapePx: 15,
-    monthHeaderHeightPortraitPx: 32,
-    monthHeaderHeightLandscapePx: 30,
+    hijriContextMonthFontPortrait: "7.5px",
+    hijriContextMonthFontLandscape: "7px",
+    hijriContextYearFontPortrait: "6.5px",
+    hijriContextYearFontLandscape: "6px",
+    monthTitleFontPortrait: "13px",
+    monthTitleFontLandscape: "12px",
+    weekdayHeightPortraitPx: 14,
+    weekdayHeightLandscapePx: 13,
+    monthHeaderHeightPortraitPx: 30,
+    monthHeaderHeightLandscapePx: 28,
   },
 } as const;
 
