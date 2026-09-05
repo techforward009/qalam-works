@@ -6,7 +6,9 @@ import { useLanguage } from "../../../lib/language-context";
 import { useEffect } from "react";
 import {
   calculateInvoice,
+  combinedDiscount,
   fromMinor,
+  lineDiscountLabel,
   type Invoice,
   type LineItem,
 } from "../utils/invoiceEngine";
@@ -239,7 +241,8 @@ export default function InvoiceGeneratorTool() {
   const [exporting, setExporting]     = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  const hasDiscount = result.discount > 0;
+  const shownDiscount = combinedDiscount(result);
+  const hasDiscount = shownDiscount > 0;
 
   const handleExport = useCallback(async () => {
     setExporting(true);
@@ -291,9 +294,10 @@ export default function InvoiceGeneratorTool() {
     desc:       invoiceLang === "ur" ? "تفصیل"                 : "Description",
     qty:        invoiceLang === "ur" ? "مقدار"                 : "Qty",
     price:      invoiceLang === "ur" ? "فی یونٹ قیمت"          : "Unit Price",
+    disc:       invoiceLang === "ur" ? "چھوٹ"                  : "Disc",
     amount:     invoiceLang === "ur" ? "رقم"                   : "Amount",
     subtotal:   invoiceLang === "ur" ? "ذیلی کل"               : "Subtotal",
-    discount:   invoiceLang === "ur" ? "چھوٹ"                  : "Discount",
+    discount:   invoiceLang === "ur" ? "دی گئی چھوٹ"           : "Discount Given",
     tax:        invoiceLang === "ur" ? "ٹیکس"                  : "Tax",
     total:      invoiceLang === "ur" ? "کل"                    : "Total",
     notes:      invoiceLang === "ur" ? "نوٹس"                  : "Notes",
@@ -767,9 +771,10 @@ export default function InvoiceGeneratorTool() {
                         {[
                           [invoiceLang === "ur" ? "نمبر" : "S. No.", "7%", "center"],
                           [invoiceLang === "ur" ? "تفصیل" : "Particulars", "", invDir === "rtl" ? "right" : "left"],
-                          [invoiceLang === "ur" ? "مقدار" : "Qty", "9%", "center"],
-                          [invoiceLang === "ur" ? "نرخ" : "Rate", "13%", "right"],
-                          [invoiceLang === "ur" ? "رقم" : "Amount", "15%", "right"],
+                          [invoiceLang === "ur" ? "مقدار" : "Qty", "8%", "center"],
+                          [invoiceLang === "ur" ? "نرخ" : "Rate", "12%", "right"],
+                          [invoiceLang === "ur" ? "چھوٹ" : "Disc", "10%", "right"],
+                          [invoiceLang === "ur" ? "رقم" : "Amount", "14%", "right"],
                         ].map(([h, w, a]) => (
                           <th key={h as string} style={{ border: "1px solid #111827", padding: "6px 8px", width: w as string || undefined, textAlign: a as "left" | "center" | "right", fontWeight: 700 }} className={invNaskh}>{h}</th>
                         ))}
@@ -782,18 +787,39 @@ export default function InvoiceGeneratorTool() {
                           <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: invDir === "rtl" ? "right" : "left" }} className={invNaskh}>{it.description || "—"}</td>
                           <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "center" }} dir="ltr">{fmtNum(it.quantity, invoiceLang)}</td>
                           <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right" }} dir="ltr">{fmtPrice(it.unitPrice, invoiceLang)}</td>
+                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", color: lineDiscountLabel(it) === "—" ? "#6B7280" : "#DC2626" }} dir="ltr">{lineDiscountLabel(it)}</td>
                           <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", fontWeight: 600 }} dir="ltr">{fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
                         </tr>
                       ))}
                       {invoice.items.length < 5 && Array.from({ length: 5 - invoice.items.length }).map((_, i) => (
                         <tr key={`blank-${i}`}>
-                          {Array.from({ length: 5 }).map((__, j) => (
+                          {Array.from({ length: 6 }).map((__, j) => (
                             <td key={j} style={{ border: "1px solid #111827", padding: "6px 8px" }}>&nbsp;</td>
                           ))}
                         </tr>
                       ))}
+                      {hasDiscount && (
+                        <tr>
+                          <td colSpan={5} style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: invDir === "rtl" ? "left" : "right", fontWeight: 700, fontSize: 12 }} className={invNaskh}>
+                            {IV.discount}
+                          </td>
+                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#DC2626" }} dir="ltr">
+                            −{fmt(shownDiscount, invoice.currency, invoiceLang)}
+                          </td>
+                        </tr>
+                      )}
+                      {result.taxes.filter(t => t.amount !== 0).map(t => (
+                        <tr key={t.name}>
+                          <td colSpan={5} style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: invDir === "rtl" ? "left" : "right", fontWeight: 700, fontSize: 12 }} className={invNaskh}>
+                            {t.name}
+                          </td>
+                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", fontWeight: 700, fontSize: 12 }} dir="ltr">
+                            {fmt(t.amount, invoice.currency, invoiceLang)}
+                          </td>
+                        </tr>
+                      ))}
                       <tr style={{ background: "#F3F4F6" }}>
-                        <td colSpan={4} style={{ border: "1px solid #111827", padding: "7px 8px", textAlign: invDir === "rtl" ? "left" : "right", fontWeight: 800, fontSize: 13 }} className={invNaskh}>
+                        <td colSpan={5} style={{ border: "1px solid #111827", padding: "7px 8px", textAlign: invDir === "rtl" ? "left" : "right", fontWeight: 800, fontSize: 13 }} className={invNaskh}>
                           {invoiceLang === "ur" ? "کل رقم" : "TOTAL"}
                         </td>
                         <td style={{ border: "1px solid #111827", padding: "7px 8px", textAlign: "right", fontWeight: 800, fontSize: 13 }} dir="ltr">
@@ -908,6 +934,7 @@ export default function InvoiceGeneratorTool() {
                         </th>
                         <th className="py-2 font-bold text-gray-700 text-right" style={{ width: 40 }}>{IV.qty}</th>
                         <th className="py-2 font-bold text-gray-700 text-right" style={{ width: 70 }}>{IV.price}</th>
+                        <th className="py-2 font-bold text-gray-700 text-right" style={{ width: 56 }}>{IV.disc}</th>
                         <th className="py-2 font-bold text-gray-700 text-right" style={{ width: 80 }}>{IV.amount}</th>
                       </tr>
                     </thead>
@@ -920,6 +947,7 @@ export default function InvoiceGeneratorTool() {
                           </td>
                           <td className="py-2 text-right text-gray-600" dir="ltr">{fmtNum(it.quantity, invoiceLang)}</td>
                           <td className="py-2 text-right text-gray-600" dir="ltr">{fmtPrice(it.unitPrice, invoiceLang)}</td>
+                          <td className={`py-2 text-right ${lineDiscountLabel(it) === "—" ? "text-gray-400" : "text-red-600"}`} dir="ltr">{lineDiscountLabel(it)}</td>
                           <td className="py-2 text-right font-semibold text-gray-800" dir="ltr">{fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
                         </tr>
                       ))}
@@ -931,12 +959,12 @@ export default function InvoiceGeneratorTool() {
                     <div className="w-52 space-y-1.5 text-xs">
                       <div className="flex justify-between text-gray-600">
                         <span className={invNaskh}>{IV.subtotal}</span>
-                        <span dir="ltr">{fmt(result.subtotal, invoice.currency, invoiceLang)}</span>
+                        <span dir="ltr">{fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</span>
                       </div>
                       {hasDiscount && (
                         <div className="flex justify-between text-gray-600">
                           <span className={invNaskh}>{IV.discount}</span>
-                          <span dir="ltr" className="text-red-600">−{fmt(result.discount, invoice.currency, invoiceLang)}</span>
+                          <span dir="ltr" className="text-red-600">−{fmt(shownDiscount, invoice.currency, invoiceLang)}</span>
                         </div>
                       )}
                       {result.taxes.filter(t => t.amount !== 0).map(t => (

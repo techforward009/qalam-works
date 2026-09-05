@@ -8,7 +8,7 @@
  */
 import path from "path";
 import { readFileSync, existsSync } from "fs";
-import { calculateInvoice, fromMinor, type Invoice } from "./invoiceEngine";
+import { calculateInvoice, combinedDiscount, fromMinor, lineDiscountLabel, type Invoice } from "./invoiceEngine";
 
 // ── Types (mirrored from component) ──────────────────────────────────────────
 export type Template       = "modern" | "minimal" | "corporate" | "classic";
@@ -102,8 +102,9 @@ function iv(key: string, lang: InvoiceLanguage): string {
     qty:      ["Qty",            "مقدار"],
     price:    ["Unit Price",     "فی یونٹ قیمت"],
     amount:   ["Amount",         "رقم"],
+    disc:     ["Disc",           "چھوٹ"],
     subtotal: ["Subtotal",       "ذیلی کل"],
-    discount: ["Discount",       "چھوٹ"],
+    discount: ["Discount Given", "دی گئی چھوٹ"],
     total:    ["Total",          "کل"],
     notes:    ["Notes",          "نوٹس"],
     terms:    ["Terms & Conditions", "شرائط و ضوابط"],
@@ -188,16 +189,18 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
     ? "'Noto Nastaliq Urdu', serif"
     : "Inter, system-ui, sans-serif";
 
-  const hasDiscount = result.discount > 0;
+  const shownDiscount = combinedDiscount(result);
+  const hasDiscount = shownDiscount > 0;
 
   // ── CLASSIC template ────────────────────────────────────────────────────────
   if (template === "classic") {
     const cols = [
       { h: iv("sno", invoiceLang),    w: "7%",  a: "center" },
       { h: iv("partic", invoiceLang), w: "",     a: dir === "rtl" ? "right" : "left" },
-      { h: iv("qty", invoiceLang),    w: "9%",  a: "center" },
-      { h: iv("rate", invoiceLang),   w: "13%", a: "right" },
-      { h: iv("amount", invoiceLang), w: "15%", a: "right" },
+      { h: iv("qty", invoiceLang),    w: "8%",  a: "center" },
+      { h: iv("rate", invoiceLang),   w: "12%", a: "right" },
+      { h: iv("disc", invoiceLang),   w: "10%", a: "right" },
+      { h: iv("amount", invoiceLang), w: "14%", a: "right" },
     ];
     const blankRows = invoice.items.length < 5
       ? Array.from({ length: 5 - invoice.items.length }).map(() =>
@@ -254,11 +257,30 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
               <td style="border:1px solid #111827;padding:6px 8px;text-align:${dir === "rtl" ? "right" : "left"};${naskhStyle}">${it.description || "—"}</td>
               <td style="border:1px solid #111827;padding:6px 8px;text-align:center;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
               <td style="border:1px solid #111827;padding:6px 8px;text-align:right;" dir="ltr">${fmtPrice(it.unitPrice, invoiceLang)}</td>
+              <td style="border:1px solid #111827;padding:6px 8px;text-align:right;${lineDiscountLabel(it) === "—" ? "color:#6B7280;" : "color:#DC2626;"}" dir="ltr">${lineDiscountLabel(it)}</td>
               <td style="border:1px solid #111827;padding:6px 8px;text-align:right;font-weight:600;" dir="ltr">${fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
             </tr>`).join("")}
           ${blankRows}
+          ${hasDiscount ? `
+          <tr>
+            <td colspan="5" style="border:1px solid #111827;padding:6px 8px;text-align:${dir === "rtl" ? "left" : "right"};font-weight:700;font-size:12px;${naskhStyle}">
+              ${iv("discount", invoiceLang)}
+            </td>
+            <td style="border:1px solid #111827;padding:6px 8px;text-align:right;font-weight:700;font-size:12px;color:#DC2626;" dir="ltr">
+              −${fmt(shownDiscount, invoice.currency, invoiceLang)}
+            </td>
+          </tr>` : ""}
+          ${result.taxes.filter(t => t.amount !== 0).map(t => `
+          <tr>
+            <td colspan="5" style="border:1px solid #111827;padding:6px 8px;text-align:${dir === "rtl" ? "left" : "right"};font-weight:700;font-size:12px;${naskhStyle}">
+              ${t.name}
+            </td>
+            <td style="border:1px solid #111827;padding:6px 8px;text-align:right;font-weight:700;font-size:12px;" dir="ltr">
+              ${fmt(t.amount, invoice.currency, invoiceLang)}
+            </td>
+          </tr>`).join("")}
           <tr style="background:#F3F4F6;">
-            <td colspan="4" style="border:1px solid #111827;padding:7px 8px;text-align:${dir === "rtl" ? "left" : "right"};font-weight:800;font-size:13px;${naskhStyle}">
+            <td colspan="5" style="border:1px solid #111827;padding:7px 8px;text-align:${dir === "rtl" ? "left" : "right"};font-weight:800;font-size:13px;${naskhStyle}">
               ${iv("total_cls", invoiceLang)}
             </td>
             <td style="border:1px solid #111827;padding:7px 8px;text-align:right;font-weight:800;font-size:13px;" dir="ltr">
@@ -334,6 +356,7 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
           <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:${dir === "rtl" ? "right" : "left"};${naskhStyle}">${iv("desc", invoiceLang)}</th>
           <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:right;width:40px;">${iv("qty", invoiceLang)}</th>
           <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:right;width:70px;">${iv("price", invoiceLang)}</th>
+          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:right;width:56px;">${iv("disc", invoiceLang)}</th>
           <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:right;width:80px;">${iv("amount", invoiceLang)}</th>
         </tr>
       </thead>
@@ -343,6 +366,7 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
             <td style="padding:7px 4px;color:#374151;text-align:${dir === "rtl" ? "right" : "left"};${naskhStyle}">${it.description || "—"}</td>
             <td style="padding:7px 4px;color:#6B7280;text-align:right;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
             <td style="padding:7px 4px;color:#6B7280;text-align:right;" dir="ltr">${fmtPrice(it.unitPrice, invoiceLang)}</td>
+            <td style="padding:7px 4px;text-align:right;${lineDiscountLabel(it) === "—" ? "color:#9CA3AF;" : "color:#DC2626;"}" dir="ltr">${lineDiscountLabel(it)}</td>
             <td style="padding:7px 4px;font-weight:600;color:#111827;text-align:right;" dir="ltr">${fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
           </tr>`).join("")}
       </tbody>
@@ -352,12 +376,12 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
       <div style="width:210px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7280;margin-bottom:4px;">
           <span style="${naskhStyle}">${iv("subtotal", invoiceLang)}</span>
-          <span dir="ltr">${fmt(result.subtotal, invoice.currency, invoiceLang)}</span>
+          <span dir="ltr">${fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</span>
         </div>
         ${hasDiscount ? `
         <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7280;margin-bottom:4px;">
           <span style="${naskhStyle}">${iv("discount", invoiceLang)}</span>
-          <span dir="ltr" style="color:#DC2626;">−${fmt(result.discount, invoice.currency, invoiceLang)}</span>
+          <span dir="ltr" style="color:#DC2626;">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</span>
         </div>` : ""}
         ${result.taxes.filter(t => t.amount !== 0).map(t => `
         <div style="display:flex;justify-content:space-between;font-size:12px;color:#6B7280;margin-bottom:4px;">

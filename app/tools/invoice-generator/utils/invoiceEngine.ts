@@ -50,11 +50,14 @@ export type Invoice = {
 };
 
 export type InvoiceResult = {
-  lineTotals: number[]; // minor units
+  lineTotals: number[]; // minor units after line discount
+  lineDiscounts: number[]; // minor units of discount per line
+  grossSubtotal: number; // minor units before any discounts
+  lineDiscountTotal: number;
   subtotal: number;
   taxes: { name: string; amount: number }[];
   shipping: number;
-  discount: number;
+  discount: number; // invoice-level discount, minor units
   total: number;
   amountPaid?: number;
   balanceDue?: number;
@@ -79,7 +82,9 @@ export function calculateInvoice(inv: Invoice): InvoiceResult {
   const precision = precisionForCurrency(inv.currency || "USD");
 
   const lineTotals: number[] = [];
+  const lineDiscounts: number[] = [];
   let subtotalMinor = 0;
+  let grossSubtotalMinor = 0;
   const taxMap = new Map<string, number>();
 
   // compute line totals
@@ -87,6 +92,7 @@ export function calculateInvoice(inv: Invoice): InvoiceResult {
     const unitPriceMinor = toMinor(it.unitPrice || 0, precision);
     const quantity = Number(it.quantity || 0);
     const rawLine = Math.round(unitPriceMinor * quantity);
+    grossSubtotalMinor += rawLine;
 
     // apply fixed discount on line if present
     const lineDiscountFixed = toMinor(it.discountFixed || 0, precision);
@@ -118,6 +124,7 @@ export function calculateInvoice(inv: Invoice): InvoiceResult {
     }
 
     lineTotals.push(lineAfterDiscount);
+    lineDiscounts.push(discountTotal);
     subtotalMinor += lineAfterDiscount;
   }
 
@@ -167,6 +174,9 @@ export function calculateInvoice(inv: Invoice): InvoiceResult {
 
   return {
     lineTotals,
+    lineDiscounts,
+    grossSubtotal: grossSubtotalMinor,
+    lineDiscountTotal: lineDiscounts.reduce((sum, amount) => sum + amount, 0),
     subtotal: subtotalMinor,
     taxes,
     shipping: shippingMinor,
@@ -175,6 +185,23 @@ export function calculateInvoice(inv: Invoice): InvoiceResult {
     amountPaid: amountPaidMinor,
     balanceDue,
   };
+}
+
+export function combinedDiscount(result: InvoiceResult): number {
+  return Math.max(0, (result.lineDiscountTotal || 0) + (result.discount || 0));
+}
+
+export function lineDiscountLabel(item: LineItem): string {
+  const percent = Number(item.discountPercent || 0);
+  const fixed = Number(item.discountFixed || 0);
+  if (percent <= 0 && fixed <= 0) return "—";
+  const parts: string[] = [];
+  if (percent > 0) {
+    const shown = Number.isInteger(percent) ? String(percent) : String(percent);
+    parts.push(`${shown}%`);
+  }
+  if (fixed > 0) parts.push(fixed.toFixed(2));
+  return parts.join(" + ");
 }
 
 export default calculateInvoice;
