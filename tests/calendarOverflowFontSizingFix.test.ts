@@ -32,7 +32,7 @@ describe("Calendar overflow and font sizing", () => {
     expect(pdf).toMatch(/flex:0 0 auto !important/);
     expect(pdf).toMatch(/CALENDAR_PDF_HIJRI_SHORT_EN/);
     expect(CALENDAR_PDF_HIJRI_SHORT_EN).toContain("Rabi I");
-    expect(CALENDAR_PDF_HIJRI_SHORT_EN).toContain("Jumada II");
+    expect(CALENDAR_PDF_HIJRI_SHORT_EN).toContain("Jamadi-II");
     expect(CALENDAR_PDF_HIJRI_SHORT_EN).toContain("Dhu Qadah");
   });
 

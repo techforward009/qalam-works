@@ -56,6 +56,7 @@ export interface CalendarYearModel {
   weekStart: WeekStart;
   page: CalendarPage;
   hijriOffset: number;
+  hijriOffsetMonths: number[];
   months: CalendarMonth[];
 }
 
@@ -66,6 +67,7 @@ export interface BuildCalendarYearOptions {
   weekStart: WeekStart;
   page: CalendarPage;
   hijriOffset?: number;
+  hijriOffsetMonths?: number[];
 }
 
 export const GREGORIAN_MONTH_LABELS = {
@@ -171,14 +173,20 @@ export function buildCalendarYearModel(options: BuildCalendarYearOptions): Calen
 
   const effectiveWeekStart: WeekStart = options.language === "ur" ? "monday" : options.weekStart;
   const hijriOffset = Number.isInteger(options.hijriOffset) ? Number(options.hijriOffset) : 0;
+  const hijriOffsetMonths = Array.isArray(options.hijriOffsetMonths)
+    ? [...new Set(options.hijriOffsetMonths.filter((month) => Number.isInteger(month) && month >= 1 && month <= 12))]
+    : [];
 
   return {
     ...options,
     year,
     weekStart: effectiveWeekStart,
     hijriOffset,
-    months: Array.from({ length: 12 }, (_, index) =>
-      buildCalendarMonth(year, index + 1, options.content, effectiveWeekStart, hijriOffset),
-    ),
+    hijriOffsetMonths,
+    months: Array.from({ length: 12 }, (_, index) => {
+      const month = index + 1;
+      const applyOffset = hijriOffsetMonths.length === 0 || hijriOffsetMonths.includes(month);
+      return buildCalendarMonth(year, month, options.content, effectiveWeekStart, applyOffset ? hijriOffset : 0);
+    }),
   };
 }

@@ -27,6 +27,21 @@ export interface EmbeddedNaskhFonts {
 export interface CalendarHtmlOptions {
   naskhFonts?: EmbeddedNaskhFonts;
   researchNote?: string;
+  bannerName?: string;
+  bannerTitle?: string;
+  bannerLogo?: string;
+}
+
+function safeBannerText(value: string | undefined, fallback: string, maxLength: number): string {
+  const trimmed = value?.replace(/\s+/g, " ").trim() ?? "";
+  if (!trimmed) return fallback;
+  return trimmed.slice(0, maxLength);
+}
+
+function safeBannerLogo(value: string | undefined): string | null {
+  if (!value || value.length > 140000) return null;
+  if (!/^data:image\/(png|jpeg);base64,/i.test(value)) return null;
+  return value;
 }
 
 function escapeHtml(value: string): string {
@@ -46,7 +61,10 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
     : model.weekStart === "sunday"
       ? (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const)
       : CALENDAR_REFERENCE_WEEKDAYS;
-  const title = isUr ? `${model.year} سالانہ تقویم` : `Annual Calendar ${model.year}`;
+  const defaultTitle = isUr ? `${model.year} سالانہ تقویم` : `Annual Calendar ${model.year}`;
+  const title = safeBannerText(options.bannerTitle, defaultTitle, 80);
+  const brandName = safeBannerText(options.bannerName, "Qalam Works", 80);
+  const brandLogo = safeBannerLogo(options.bannerLogo);
   const mixedLabel = model.content === "gregorian-hijri"
     ? (isUr ? "عیسوی + ہجری" : "Gregorian + Hijri")
     : (isUr ? "عیسوی" : "Gregorian");
@@ -116,7 +134,7 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
     return `<section class="month" style="${calendarPdfMonthVariables(month.month)}">
       <header class="month-head" dir="ltr" style="height:${metrics.monthHeaderHeightPx}px !important;min-height:${metrics.monthHeaderHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:4px !important;overflow:hidden !important;padding:0 5px !important;">
         <div class="ctx ctx-left" data-hijri-side="left" data-hijri-role="${isUr ? "end" : "start"}" dir="ltr" style="flex:1 1 0 !important;min-width:0 !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:left !important;margin:0 !important;">${contextHtml(leftHijriContexts)}</div>
-        <h2 data-pdf-month-title="true" dir="ltr" style="flex:0 0 auto !important;height:100% !important;font-size:${metrics.monthTitleFont} !important;font-weight:900 !important;line-height:1 !important;padding:0 !important;margin:0 3px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:3px !important;flex-direction:${isUr ? "row-reverse" : "row"} !important;vertical-align:middle !important;overflow:visible !important;white-space:nowrap !important;"><span class="month-title-name" dir="${isUr ? "rtl" : "ltr"}" style="display:inline-flex !important;height:100% !important;align-items:center !important;justify-content:center !important;line-height:1 !important;vertical-align:middle !important;">${escapeHtml(monthLabels[month.month - 1])}</span><span class="month-title-year" dir="ltr" style="display:inline-flex !important;height:100% !important;align-items:center !important;justify-content:center !important;line-height:1 !important;vertical-align:middle !important;">${model.year}</span></h2>
+        <h2 data-pdf-month-title="true" dir="ltr" style="flex:0 0 auto !important;height:auto !important;font-size:${metrics.monthTitleFont} !important;font-weight:900 !important;line-height:1.25 !important;padding:1px 0 !important;margin:0 3px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:3px !important;flex-direction:${isUr ? "row-reverse" : "row"} !important;vertical-align:middle !important;overflow:visible !important;white-space:nowrap !important;"><span class="month-title-name" dir="${isUr ? "rtl" : "ltr"}" style="display:inline-flex !important;align-items:center !important;justify-content:center !important;line-height:1.25 !important;vertical-align:middle !important;overflow:visible !important;">${escapeHtml(monthLabels[month.month - 1])}</span><span class="month-title-year" dir="ltr" style="display:inline-flex !important;align-items:center !important;justify-content:center !important;line-height:1.25 !important;vertical-align:middle !important;">${model.year}</span></h2>
         <div class="ctx ctx-right" data-hijri-side="right" data-hijri-role="${isUr ? "start" : "end"}" dir="ltr" style="flex:1 1 0 !important;min-width:0 !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:right !important;margin:0 !important;">${contextHtml(rightHijriContexts)}</div>
       </header>
       <div class="days" data-pdf-week-rows="${CALENDAR_MONTH_WEEK_ROWS}" dir="${isUr ? "rtl" : "ltr"}">
@@ -164,7 +182,22 @@ body{
   padding:1.35mm 3mm;
   color:#fff;
 }
-.brand-name{font-weight:800;font-size:${metrics.landscape ? "7.6px" : "8.2px"};direction:ltr;justify-self:start}
+.brand{
+  justify-self:start;
+  display:flex;
+  align-items:center;
+  gap:1.5mm;
+  min-width:0;
+  max-width:100%;
+}
+.brand-logo{
+  height:${metrics.landscape ? "8.6mm" : "9.2mm"};
+  width:auto;
+  max-width:22mm;
+  object-fit:contain;
+  flex:0 0 auto;
+}
+.brand-name{font-weight:800;font-size:${metrics.landscape ? "7.6px" : "8.2px"};direction:ltr;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .poster-title{
   min-width:${metrics.landscape ? "60mm" : "68mm"};
   text-align:center;
@@ -223,8 +256,8 @@ body{
   color:var(--calendar-month-title);
   font-weight:bold !important;
   font-size:${metrics.monthTitleFont} !important;
-  line-height:1 !important;
-  padding:0 !important;
+  line-height:1.25 !important;
+  padding:1px 0 !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
@@ -236,28 +269,27 @@ body{
 .ctx-left{flex:1 1 0;justify-content:left !important;text-align:left !important}
 .ctx-right{flex:1 1 0;justify-content:right !important;text-align:right !important}
 .ctx-item{display:inline-flex;align-items:center;gap:.45mm;min-width:0;line-height:1}
-.ctx-stack{display:flex !important;min-width:0;width:auto !important;height:100% !important;flex-direction:column !important;justify-content:center !important;line-height:1;transform:none !important;}
-.ctx-left .ctx-stack{align-items:flex-start !important;text-align:left !important}
-.ctx-right .ctx-stack{align-items:flex-end !important;text-align:right !important}
+.ctx-stack{display:flex !important;min-width:0;width:auto !important;height:100% !important;flex-direction:column !important;justify-content:center !important;align-items:center !important;text-align:center !important;line-height:1;transform:none !important;}
+.ctx-left .ctx-stack,.ctx-right .ctx-stack{align-items:center !important;text-align:center !important}
 .ctx-name{
   display:block !important;
-  width:auto !important;
+  width:100% !important;
   max-width:100%;
   font-size:${metrics.hijriContextMonthFont} !important;
   font-weight:700 !important;
   line-height:1 !important;
+  text-align:center !important;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
-.ctx-left .ctx-name,.ctx-left .ctx-year{text-align:left !important}
-.ctx-right .ctx-name,.ctx-right .ctx-year{text-align:right !important}
 .ctx-year{
   display:block !important;
-  width:auto !important;
+  width:100% !important;
   margin-top:.25mm;
   font-size:${metrics.hijriContextYearFont} !important;
   font-weight:700 !important;
+  text-align:center !important;
   color:var(--calendar-context-year);
   line-height:1.1 !important;
   white-space:nowrap;
@@ -353,8 +385,11 @@ body{
 <body>
 <main class="page">
   <header class="poster-head">
-    <div class="brand-name">Qalam Works</div>
-    <div class="poster-title"><span dir="ltr">${model.year}</span> ${escapeHtml(isUr ? "سالانہ تقویم" : "Annual Calendar")}</div>
+    <div class="brand">
+      ${brandLogo ? `<img class="brand-logo" alt="" src="${brandLogo}" />` : ""}
+      <div class="brand-name">${escapeHtml(brandName)}</div>
+    </div>
+    <div class="poster-title">${escapeHtml(title)}</div>
     <div class="poster-mode">${escapeHtml(mixedLabel)}</div>
   </header>
   ${researchNoteHtml}

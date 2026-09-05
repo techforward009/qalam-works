@@ -45,7 +45,7 @@ function HijriContextBlock({
               /
             </span>
           )}
-          <span className="inline-flex min-w-0 flex-col">
+          <span className="inline-flex min-w-0 flex-col items-center text-center">
             <span
               className={`${compact ? "text-[11px] sm:text-xs" : "text-sm sm:text-base"} truncate font-bold leading-tight text-[var(--calendar-hijri-context)] ${
                 language === "ur" ? "font-naskh" : ""
@@ -110,7 +110,7 @@ export function MonthCalendar({
     fontSize: compact ? "clamp(16px, 2vw, 18px)" : "clamp(22px, 3vw, 28px)",
   };
 
-  const titleClass = `whitespace-nowrap text-center font-black leading-none text-[var(--calendar-month-title)] ${
+  const titleClass = `whitespace-nowrap text-center font-black leading-snug text-[var(--calendar-month-title)] ${
     isUr ? "font-naskh" : ""
   }`;
 

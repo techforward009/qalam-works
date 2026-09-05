@@ -26,7 +26,28 @@ interface CalendarPdfRequest {
   weekStart: WeekStart;
   page: CalendarPage;
   hijriOffset?: number;
+  hijriOffsetMonths?: number[];
   researchNote?: string;
+  bannerName?: string;
+  bannerTitle?: string;
+  bannerLogo?: string;
+}
+
+function isMonthList(value: unknown): value is number[] {
+  return Array.isArray(value) &&
+    value.length <= 12 &&
+    value.every((month) => Number.isInteger(month) && month >= 1 && month <= 12);
+}
+
+function isBannerText(value: unknown): boolean {
+  return value === undefined || (typeof value === "string" && value.length <= 80);
+}
+
+function isBannerLogo(value: unknown): boolean {
+  return value === undefined ||
+    (typeof value === "string" &&
+      value.length <= 140000 &&
+      /^data:image\/(png|jpeg);base64,/i.test(value));
 }
 
 function isCalendarPdfRequest(value: unknown): value is CalendarPdfRequest {
@@ -40,8 +61,12 @@ function isCalendarPdfRequest(value: unknown): value is CalendarPdfRequest {
     (body.page === "a4-portrait" || body.page === "a4-landscape") &&
     (body.hijriOffset === undefined ||
       (Number.isInteger(body.hijriOffset) && Number(body.hijriOffset) >= -2 && Number(body.hijriOffset) <= 2)) &&
+    (body.hijriOffsetMonths === undefined || isMonthList(body.hijriOffsetMonths)) &&
     (body.researchNote === undefined ||
-      (typeof body.researchNote === "string" && body.researchNote.length <= 240))
+      (typeof body.researchNote === "string" && body.researchNote.length <= 240)) &&
+    isBannerText(body.bannerName) &&
+    isBannerText(body.bannerTitle) &&
+    isBannerLogo(body.bannerLogo)
   );
 }
 
@@ -82,6 +107,9 @@ export async function POST(request: NextRequest) {
     const html = buildCalendarHtml(model, {
       naskhFonts,
       researchNote: body.researchNote?.trim() || undefined,
+      bannerName: body.bannerName,
+      bannerTitle: body.bannerTitle,
+      bannerLogo: body.bannerLogo,
     });
 
     const executablePath = await chromium.executablePath();

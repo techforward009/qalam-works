@@ -126,9 +126,10 @@ describe("Final annual calendar visual specification", () => {
     outer:
     for (let year = 2020; year <= 2035; year++) {
       for (let monthNumber = 1; monthNumber <= 12; monthNumber++) {
-        const month = buildCalendarMonth(year, monthNumber, "gregorian-hijri", "monday");
-        const zero = deriveHijriMonthContexts(month, "en", 0).map((c) => `${c.year}-${c.month}`).join(",");
-        const shifted = deriveHijriMonthContexts(month, "en", 1).map((c) => `${c.year}-${c.month}`).join(",");
+        const zeroMonth = buildCalendarMonth(year, monthNumber, "gregorian-hijri", "monday", 0);
+        const shiftedMonth = buildCalendarMonth(year, monthNumber, "gregorian-hijri", "monday", 1);
+        const zero = deriveHijriMonthContexts(zeroMonth, "en", 0).map((c) => `${c.year}-${c.month}`).join(",");
+        const shifted = deriveHijriMonthContexts(shiftedMonth, "en", 1).map((c) => `${c.year}-${c.month}`).join(",");
         if (zero !== shifted) {
           boundaryChanged = true;
           break outer;

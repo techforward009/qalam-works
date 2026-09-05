@@ -41,7 +41,8 @@ export function deriveHijriMonthContexts(
 
   for (const cell of month.weeks.flatMap((week) => week.cells)) {
     if (!cell.inCurrentMonth) continue;
-    const hijri = adjustedHijriForGregorian(cell.gregorian, hijriOffset);
+    const hijri = cell.hijri ?? adjustedHijriForGregorian(cell.gregorian, hijriOffset);
+    if (!hijri) continue;
     const previous = contexts[contexts.length - 1];
     if (previous?.month === hijri.month && previous.year === hijri.year) continue;
     contexts.push({
