@@ -33,12 +33,28 @@ describe("Calendar banner, Jamadi labels, and per-month Hijri offset", () => {
 
   it("gives English month titles room for descenders like j", () => {
     const pdf = source("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(pdf).toMatch(/month-title-name[\s\S]*?line-height:1\.25/);
+    expect(pdf).toMatch(/month-title-name[\s\S]*?line-height:1\.45/);
     expect(pdf).toMatch(/overflow:visible !important/);
+    expect(pdf).toMatch(/padding-bottom:0\.2em/);
   });
 
-  it("applies Hijri offset to one Gregorian month only when requested", () => {
-    const all = buildCalendarYearModel({
+  it("applies independent Hijri offsets to several Gregorian months", () => {
+    const mixed = buildCalendarYearModel({
+      year: 2027,
+      content: "gregorian-hijri",
+      language: "en",
+      weekStart: "monday",
+      page: "a4-portrait",
+      hijriOffsets: [1, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    });
+    const baseline = buildCalendarYearModel({
+      year: 2027,
+      content: "gregorian-hijri",
+      language: "en",
+      weekStart: "monday",
+      page: "a4-portrait",
+    });
+    const plusOne = buildCalendarYearModel({
       year: 2027,
       content: "gregorian-hijri",
       language: "en",
@@ -46,29 +62,31 @@ describe("Calendar banner, Jamadi labels, and per-month Hijri offset", () => {
       page: "a4-portrait",
       hijriOffset: 1,
     });
-    const januaryOnly = buildCalendarYearModel({
-      year: 2027,
-      content: "gregorian-hijri",
-      language: "en",
-      weekStart: "monday",
-      page: "a4-portrait",
-      hijriOffset: 1,
-      hijriOffsetMonths: [1],
-    });
-    const janAll = all.months[0].weeks.flatMap((week) => week.cells).find((cell) => cell.inCurrentMonth && cell.gregorian.day === 1);
-    const janScoped = januaryOnly.months[0].weeks.flatMap((week) => week.cells).find((cell) => cell.inCurrentMonth && cell.gregorian.day === 1);
-    const febScoped = januaryOnly.months[1].weeks.flatMap((week) => week.cells).find((cell) => cell.inCurrentMonth && cell.gregorian.day === 1);
-    const febZero = buildCalendarYearModel({
-      year: 2027,
-      content: "gregorian-hijri",
-      language: "en",
-      weekStart: "monday",
-      page: "a4-portrait",
-    }).months[1].weeks.flatMap((week) => week.cells).find((cell) => cell.inCurrentMonth && cell.gregorian.day === 1);
+    const day = (model: ReturnType<typeof buildCalendarYearModel>, month: number) =>
+      model.months[month - 1].weeks.flatMap((week) => week.cells).find((cell) => cell.inCurrentMonth && cell.gregorian.day === 1);
 
-    expect(janScoped?.hijri).toEqual(janAll?.hijri);
-    expect(febScoped?.hijri).toEqual(febZero?.hijri);
-    expect(febScoped?.hijri).not.toEqual(janScoped?.hijri);
+    expect(day(mixed, 1)?.hijri).toEqual(day(plusOne, 1)?.hijri);
+    expect(day(mixed, 2)?.hijri).toEqual(day(baseline, 2)?.hijri);
+    expect(day(mixed, 3)?.hijri).not.toEqual(day(baseline, 3)?.hijri);
+  });
+
+  it("keeps an empty banner name empty and omits Gregorian+Hijri from the footer", () => {
+    const html = buildCalendarHtml(buildCalendarYearModel({
+      year: 2027,
+      content: "gregorian-hijri",
+      language: "en",
+      weekStart: "monday",
+      page: "a4-portrait",
+    }), {
+      bannerName: "",
+      bannerTitle: "School Calendar 2027",
+      bannerSideText: "City Campus",
+    });
+    expect(html).not.toMatch(/class="brand-name">Qalam Works/);
+    expect(html).toContain("School Calendar 2027");
+    expect(html).toContain("City Campus");
+    expect(html).toContain("qalamworks.com");
+    expect(html).not.toMatch(/<footer class="footer">[\s\S]*Gregorian \+ Hijri/);
   });
 
   it("embeds a custom banner without touching the year grid", () => {

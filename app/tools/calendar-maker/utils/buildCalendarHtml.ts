@@ -30,6 +30,17 @@ export interface CalendarHtmlOptions {
   bannerName?: string;
   bannerTitle?: string;
   bannerLogo?: string;
+  bannerSideText?: string;
+  logoScale?: number;
+  titleFontPx?: number;
+  titleWidthMm?: number;
+  sideFontPx?: number;
+}
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
 }
 
 function safeBannerText(value: string | undefined, fallback: string, maxLength: number): string {
@@ -39,7 +50,7 @@ function safeBannerText(value: string | undefined, fallback: string, maxLength: 
 }
 
 function safeBannerLogo(value: string | undefined): string | null {
-  if (!value || value.length > 140000) return null;
+  if (!value || value.length > 420000) return null;
   if (!/^data:image\/(png|jpeg);base64,/i.test(value)) return null;
   return value;
 }
@@ -62,12 +73,19 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
       ? (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const)
       : CALENDAR_REFERENCE_WEEKDAYS;
   const defaultTitle = isUr ? `${model.year} سالانہ تقویم` : `Annual Calendar ${model.year}`;
-  const title = safeBannerText(options.bannerTitle, defaultTitle, 80);
-  const brandName = safeBannerText(options.bannerName, "Qalam Works", 80);
-  const brandLogo = safeBannerLogo(options.bannerLogo);
-  const mixedLabel = model.content === "gregorian-hijri"
+  const defaultSide = model.content === "gregorian-hijri"
     ? (isUr ? "عیسوی + ہجری" : "Gregorian + Hijri")
     : (isUr ? "عیسوی" : "Gregorian");
+  const title = safeBannerText(options.bannerTitle, defaultTitle, 80);
+  const brandName = safeBannerText(options.bannerName, "", 80);
+  const brandLogo = safeBannerLogo(options.bannerLogo);
+  const sideText = options.bannerSideText === undefined
+    ? defaultSide
+    : safeBannerText(options.bannerSideText, "", 80);
+  const logoScale = clampNumber(options.logoScale, 60, 180, 100);
+  const titleFontPx = clampNumber(options.titleFontPx, 10, 22, metrics.landscape ? 13.6 : 14.6);
+  const titleWidthMm = clampNumber(options.titleWidthMm, 48, 130, metrics.landscape ? 68 : 78);
+  const sideFontPx = clampNumber(options.sideFontPx, 6, 16, metrics.landscape ? 6.8 : 7.4);
 
   const fontFace = isUr && options.naskhFonts
     ? `
@@ -132,9 +150,9 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
     const cells = cellHtml.slice(0, CALENDAR_MONTH_DAY_CELLS).join("");
 
     return `<section class="month" style="${calendarPdfMonthVariables(month.month)}">
-      <header class="month-head" dir="ltr" style="height:${metrics.monthHeaderHeightPx}px !important;min-height:${metrics.monthHeaderHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:4px !important;overflow:hidden !important;padding:0 5px !important;">
+      <header class="month-head" dir="ltr" style="height:${metrics.monthHeaderHeightPx}px !important;min-height:${metrics.monthHeaderHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:4px !important;overflow:visible !important;padding:2px 5px 4px !important;">
         <div class="ctx ctx-left" data-hijri-side="left" data-hijri-role="${isUr ? "end" : "start"}" dir="ltr" style="flex:1 1 0 !important;min-width:0 !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:left !important;margin:0 !important;">${contextHtml(leftHijriContexts)}</div>
-        <h2 data-pdf-month-title="true" dir="ltr" style="flex:0 0 auto !important;height:auto !important;font-size:${metrics.monthTitleFont} !important;font-weight:900 !important;line-height:1.25 !important;padding:1px 0 !important;margin:0 3px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:3px !important;flex-direction:${isUr ? "row-reverse" : "row"} !important;vertical-align:middle !important;overflow:visible !important;white-space:nowrap !important;"><span class="month-title-name" dir="${isUr ? "rtl" : "ltr"}" style="display:inline-flex !important;align-items:center !important;justify-content:center !important;line-height:1.25 !important;vertical-align:middle !important;overflow:visible !important;">${escapeHtml(monthLabels[month.month - 1])}</span><span class="month-title-year" dir="ltr" style="display:inline-flex !important;align-items:center !important;justify-content:center !important;line-height:1.25 !important;vertical-align:middle !important;">${model.year}</span></h2>
+        <h2 data-pdf-month-title="true" dir="ltr" style="flex:0 0 auto !important;height:auto !important;font-size:${metrics.monthTitleFont} !important;font-weight:900 !important;line-height:1.45 !important;padding:2px 0 4px !important;margin:0 3px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:3px !important;flex-direction:${isUr ? "row-reverse" : "row"} !important;vertical-align:middle !important;overflow:visible !important;white-space:nowrap !important;"><span class="month-title-name" dir="${isUr ? "rtl" : "ltr"}" style="display:inline-block !important;line-height:1.45 !important;padding-bottom:0.2em !important;overflow:visible !important;">${escapeHtml(monthLabels[month.month - 1])}</span><span class="month-title-year" dir="ltr" style="display:inline-block !important;line-height:1.45 !important;padding-bottom:0.2em !important;overflow:visible !important;">${model.year}</span></h2>
         <div class="ctx ctx-right" data-hijri-side="right" data-hijri-role="${isUr ? "start" : "end"}" dir="ltr" style="flex:1 1 0 !important;min-width:0 !important;height:100% !important;display:flex !important;align-items:center !important;justify-content:right !important;margin:0 !important;">${contextHtml(rightHijriContexts)}</div>
       </header>
       <div class="days" data-pdf-week-rows="${CALENDAR_MONTH_WEEK_ROWS}" dir="${isUr ? "rtl" : "ltr"}">
@@ -191,26 +209,31 @@ body{
   max-width:100%;
 }
 .brand-logo{
-  height:${metrics.landscape ? "8.6mm" : "9.2mm"};
+  height:${(metrics.landscape ? 8.6 : 9.2) * (logoScale / 100)}mm;
   width:auto;
-  max-width:22mm;
+  max-width:${22 * (logoScale / 100)}mm;
+  max-height:${12 * (logoScale / 100)}mm;
   object-fit:contain;
   flex:0 0 auto;
 }
 .brand-name{font-weight:800;font-size:${metrics.landscape ? "7.6px" : "8.2px"};direction:ltr;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .poster-title{
-  min-width:${metrics.landscape ? "60mm" : "68mm"};
+  min-width:${titleWidthMm}mm;
+  max-width:${Math.min(130, titleWidthMm + 18)}mm;
   text-align:center;
   border:1.4px solid var(--calendar-gold);
   border-radius:999px;
   background:var(--calendar-title-capsule);
   color:var(--calendar-frame);
-  padding:1mm 5mm;
+  padding:1.1mm 5mm;
   font-weight:900;
-  font-size:${metrics.landscape ? "13.6px" : "14.6px"};
-  line-height:1.05;
+  font-size:${titleFontPx}px;
+  line-height:1.15;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
-.poster-mode{justify-self:end;text-align:end;font-size:${metrics.landscape ? "6.8px" : "7.4px"};font-weight:700}
+.poster-mode{justify-self:end;text-align:end;font-size:${sideFontPx}px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .research-note{
   padding:.7mm 2mm;
   border-bottom:.5px solid var(--calendar-gold);
@@ -243,10 +266,10 @@ body{
   align-items:center !important;
   justify-content:space-between !important;
   gap:4px !important;
-  padding:0 5px !important;
+  padding:2px 5px 4px !important;
   background:var(--calendar-header);
   border-bottom:1px solid var(--calendar-grid-strong);
-  overflow:hidden;
+  overflow:visible;
 }
 .month-head h2{
   margin:0;
@@ -256,8 +279,8 @@ body{
   color:var(--calendar-month-title);
   font-weight:bold !important;
   font-size:${metrics.monthTitleFont} !important;
-  line-height:1.25 !important;
-  padding:1px 0 !important;
+  line-height:1.45 !important;
+  padding:2px 0 4px !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
@@ -387,14 +410,14 @@ body{
   <header class="poster-head">
     <div class="brand">
       ${brandLogo ? `<img class="brand-logo" alt="" src="${brandLogo}" />` : ""}
-      <div class="brand-name">${escapeHtml(brandName)}</div>
+      ${brandName ? `<div class="brand-name">${escapeHtml(brandName)}</div>` : ""}
     </div>
     <div class="poster-title">${escapeHtml(title)}</div>
-    <div class="poster-mode">${escapeHtml(mixedLabel)}</div>
+    <div class="poster-mode">${sideText ? escapeHtml(sideText) : ""}</div>
   </header>
   ${researchNoteHtml}
   <div class="year-grid">${monthsHtml}</div>
-  <footer class="footer"><span>qalamworks.com</span>${researchNoteFooterHtml}<span>${escapeHtml(mixedLabel)}</span></footer>
+  <footer class="footer"><span>qalamworks.com</span>${researchNoteFooterHtml}</footer>
 </main>
 </body>
 </html>`;

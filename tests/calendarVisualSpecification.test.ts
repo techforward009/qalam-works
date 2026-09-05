@@ -155,7 +155,7 @@ describe("Final annual calendar visual specification", () => {
     expect(html).toContain(contexts[0].label);
     expect(html).toContain(toUrduDigits(contexts[0].year));
     expect(html).toMatch(/class="hijri-day"[^>]*>[۰-۹]+<\/span>/);
-    expect(read("app/tools/calendar-maker/CalendarMakerContent.tsx")).toMatch(/hijriOffset=\{effectiveHijriOffset\}/);
+    expect(read("app/tools/calendar-maker/CalendarMakerContent.tsx")).toMatch(/hijriOffset=\{model\.hijriOffsets\[month\.month - 1\] \?\? 0\}/);
   });
 
   it("uses resilient grid-anchored Gregorian and Hijri day typography", () => {

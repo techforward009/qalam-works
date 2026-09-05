@@ -57,6 +57,7 @@ export interface CalendarYearModel {
   page: CalendarPage;
   hijriOffset: number;
   hijriOffsetMonths: number[];
+  hijriOffsets: number[];
   months: CalendarMonth[];
 }
 
@@ -68,6 +69,30 @@ export interface BuildCalendarYearOptions {
   page: CalendarPage;
   hijriOffset?: number;
   hijriOffsetMonths?: number[];
+  hijriOffsets?: number[];
+}
+
+export function clampHijriOffset(value: unknown): number {
+  const offset = Number(value);
+  if (!Number.isInteger(offset) || offset < -2 || offset > 2) return 0;
+  return offset;
+}
+
+export function normalizeHijriOffsets(options: {
+  hijriOffset?: number;
+  hijriOffsetMonths?: number[];
+  hijriOffsets?: number[];
+}): number[] {
+  if (Array.isArray(options.hijriOffsets) && options.hijriOffsets.length === 12) {
+    return options.hijriOffsets.map((value) => clampHijriOffset(value));
+  }
+  const base = clampHijriOffset(options.hijriOffset);
+  const months = Array.isArray(options.hijriOffsetMonths)
+    ? [...new Set(options.hijriOffsetMonths.filter((month) => Number.isInteger(month) && month >= 1 && month <= 12))]
+    : [];
+  return Array.from({ length: 12 }, (_, index) => (
+    months.length === 0 || months.includes(index + 1) ? base : 0
+  ));
 }
 
 export const GREGORIAN_MONTH_LABELS = {
@@ -172,7 +197,8 @@ export function buildCalendarYearModel(options: BuildCalendarYearOptions): Calen
   }
 
   const effectiveWeekStart: WeekStart = options.language === "ur" ? "monday" : options.weekStart;
-  const hijriOffset = Number.isInteger(options.hijriOffset) ? Number(options.hijriOffset) : 0;
+  const hijriOffsets = normalizeHijriOffsets(options);
+  const hijriOffset = clampHijriOffset(options.hijriOffset);
   const hijriOffsetMonths = Array.isArray(options.hijriOffsetMonths)
     ? [...new Set(options.hijriOffsetMonths.filter((month) => Number.isInteger(month) && month >= 1 && month <= 12))]
     : [];
@@ -183,10 +209,9 @@ export function buildCalendarYearModel(options: BuildCalendarYearOptions): Calen
     weekStart: effectiveWeekStart,
     hijriOffset,
     hijriOffsetMonths,
-    months: Array.from({ length: 12 }, (_, index) => {
-      const month = index + 1;
-      const applyOffset = hijriOffsetMonths.length === 0 || hijriOffsetMonths.includes(month);
-      return buildCalendarMonth(year, month, options.content, effectiveWeekStart, applyOffset ? hijriOffset : 0);
-    }),
+    hijriOffsets,
+    months: Array.from({ length: 12 }, (_, index) =>
+      buildCalendarMonth(year, index + 1, options.content, effectiveWeekStart, hijriOffsets[index] ?? 0),
+    ),
   };
 }

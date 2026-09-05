@@ -46,14 +46,13 @@ describe("Calendar pre-audit completion", () => {
     }
   });
 
-  it("adds an optional research/local sighting note only for non-zero adjustment", () => {
+  it("adds an optional research/local sighting note that can print under the banner", () => {
     const maker = read("app/tools/calendar-maker/CalendarMakerContent.tsx");
-    expect(maker).toMatch(/Research \/ local sighting note/);
-    expect(maker).toMatch(/تحقیق \/ مقامی رؤیت کا حوالہ/);
-    expect(maker).toMatch(/effectiveHijriOffset !== 0 &&/);
+    expect(maker).toMatch(/Printed sighting note \(optional\)/);
+    expect(maker).toMatch(/چھاپی جانے والی نوٹ \(اختیاری\)/);
     expect(maker).toMatch(/useState\(""\)/);
     expect(maker).toMatch(/maxLength=\{240\}/);
-    expect(maker).toMatch(/researchNote: effectiveHijriOffset !== 0 \? researchNote\.trim\(\) : ""/);
+    expect(maker).toMatch(/researchNote: researchNote\.trim\(\)/);
   });
 
   it("escapes research note safely in PDF HTML", () => {

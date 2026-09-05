@@ -36,24 +36,33 @@ const L = {
     sunday: "Sunday",
     monday: "Monday",
     hijriAdjustment: "Hijri adjustment",
-    hijriApplyTo: "Apply to",
-    entireCalendar: "Entire calendar",
-    hijriMonthHint: "The engine is calculated. Use ±1/±2 if local moon sighting differs — for the whole year, or one Gregorian month only.",
-    researchNote: "Research / local sighting note",
-    researchNotePlaceholder: "Local moon-sighting record",
+    hijriApplyTo: "Months to adjust",
+    entireCalendar: "All months",
+    hijriMonthHint: "Each Gregorian month can have its own moon-sighting shift. Calculated (0) keeps the engine date; +1/−1 moves only that month.",
+    researchNote: "Printed sighting note (optional)",
+    researchNotePlaceholder: "e.g. Karachi: Ramadan moon sighted 1 day later",
+    researchNoteHelp: "This optional sentence prints as a thin gold bar under the top banner, so readers know why some Hijri dates were moved. Leave it empty if you do not want any note on the PDF.",
     calculated: "Calculated (0)",
     offsetDay: "day",
     offsetDays: "days",
+    setAllMonths: "Set all months",
     page: "Page",
     portrait: "A4 Portrait",
     landscape: "A4 Landscape",
     bannerSection: "Top banner",
     bannerName: "Name / organization",
+    bannerNamePlaceholder: "Leave empty if the logo already has the name",
     bannerTitle: "Header title",
     bannerTitlePlaceholder: "Annual Calendar 2027",
+    bannerSide: "Right-side text",
+    bannerSidePlaceholder: "Gregorian + Hijri",
     bannerLogo: "Logo (optional)",
     bannerLogoClear: "Remove logo",
-    bannerHint: "This strip is yours: name, title, optional logo. The calendar grid below does not move.",
+    logoSize: "Logo size",
+    titleSize: "Title size",
+    titleWidth: "Title capsule width",
+    sideSize: "Right-side text size",
+    bannerHint: "Edit the top strip only. Empty name stays empty. The calendar grid below does not move.",
     preview: "Annual preview",
     annualTitle: "Annual Calendar",
     mixedLabel: "Gregorian + Hijri",
@@ -77,24 +86,33 @@ const L = {
     sunday: "اتوار",
     monday: "پیر",
     hijriAdjustment: "ہجری دن کی تبدیلی",
-    hijriApplyTo: "لاگو ہو",
-    entireCalendar: "پوری تقویم",
-    hijriMonthHint: "حسابی انجن وہی رہتا ہے۔ اگر مقامی رؤیتِ ہلال مختلف ہو تو ±1/±2 منتخب کریں — پورے سال کے لیے، یا صرف ایک عیسوی مہینے کے لیے۔",
-    researchNote: "تحقیق / مقامی رؤیت کا حوالہ",
-    researchNotePlaceholder: "مقامی رؤیتِ ہلال کا ریکارڈ",
+    hijriApplyTo: "جن مہینوں پر لاگو ہو",
+    entireCalendar: "تمام مہینے",
+    hijriMonthHint: "ہر عیسوی مہینے کی الگ رؤیت ہو سکتی ہے۔ حسابی (0) انجن کی تاریخ رکھتا ہے؛ +1/−1 صرف اسی مہینے کو ہلاتا ہے۔",
+    researchNote: "چھاپی جانے والی نوٹ (اختیاری)",
+    researchNotePlaceholder: "مثلاً کراچی: رمضان کا چاند ایک دن بعد نظر آیا",
+    researchNoteHelp: "یہ اختیاری جملہ اوپر والی پٹی کے نیچے ایک پتلی سونے رنگ کی لائن میں چھپتا ہے، تاکہ پڑھنے والا جانے کہ ہجری تاریخ کیوں بدلی گئی۔ خالی چھوڑیں تو PDF پر نوٹ نہیں آئے گا۔",
     calculated: "حسابی (0)",
     offsetDay: "دن",
     offsetDays: "دن",
+    setAllMonths: "تمام مہینے",
     page: "صفحہ",
     portrait: "A4 عمودی",
     landscape: "A4 افقی",
     bannerSection: "اوپر والی پٹی",
     bannerName: "نام / ادارہ",
+    bannerNamePlaceholder: "اگر لوگو میں نام پہلے سے ہے تو خالی رکھیں",
     bannerTitle: "ہیڈر کا عنوان",
     bannerTitlePlaceholder: "سالانہ تقویم 2027",
+    bannerSide: "دائیں جانب کا متن",
+    bannerSidePlaceholder: "عیسوی + ہجری",
     bannerLogo: "لوگو (اختیاری)",
     bannerLogoClear: "لوگو ہٹائیں",
-    bannerHint: "یہ پٹی آپ کی ہے: نام، عنوان، اختیاری لوگو۔ نیچے کیلنڈر گرڈ اپنی جگہ رہتا ہے۔",
+    logoSize: "لوگو کا سائز",
+    titleSize: "عنوان کا سائز",
+    titleWidth: "عنوان کی پٹی کی چوڑائی",
+    sideSize: "دائیں متن کا سائز",
+    bannerHint: "صرف اوپر والی پٹی ایڈٹ ہوتی ہے۔ خالی نام خالی ہی رہتا ہے۔ نیچے کیلنڈر گرڈ نہیں ہلتا۔",
     preview: "سالانہ پیش منظر",
     annualTitle: "سالانہ تقویم",
     mixedLabel: "عیسوی + ہجری",
@@ -119,11 +137,16 @@ export default function CalendarMakerContent() {
   const [calendarLanguage, setCalendarLanguage] = useState<CalendarLanguage>(uiLang);
   const [weekStart, setWeekStart] = useState<WeekStart>("monday");
   const [hijriOffset, setHijriOffset] = useState(0);
-  const [hijriOffsetMonth, setHijriOffsetMonth] = useState(0);
+  const [hijriOffsets, setHijriOffsets] = useState<number[]>(() => Array(12).fill(0));
   const [researchNote, setResearchNote] = useState("");
   const [bannerName, setBannerName] = useState("Qalam Works");
   const [bannerTitle, setBannerTitle] = useState("");
+  const [bannerSideText, setBannerSideText] = useState("");
   const [bannerLogo, setBannerLogo] = useState("");
+  const [logoScale, setLogoScale] = useState(100);
+  const [titleFontPx, setTitleFontPx] = useState(15);
+  const [titleWidthMm, setTitleWidthMm] = useState(78);
+  const [sideFontPx, setSideFontPx] = useState(8);
   const [page, setPage] = useState<CalendarPage>("a4-portrait");
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
@@ -131,14 +154,12 @@ export default function CalendarMakerContent() {
   const validYear = useMemo(() => parseCalendarYearInput(yearInput), [yearInput]);
   const effectiveWeekStart: WeekStart = calendarLanguage === "ur" ? "monday" : weekStart;
   const effectiveHijriOffset = content === "gregorian-hijri" ? hijriOffset : 0;
-  const effectiveHijriOffsetMonths = effectiveHijriOffset !== 0 && hijriOffsetMonth >= 1 && hijriOffsetMonth <= 12
-    ? [hijriOffsetMonth]
-    : [];
   const calendarAnnualTitle = calendarLanguage === "ur" ? "سالانہ تقویم" : "Annual Calendar";
-  const previewBannerTitle = bannerTitle.trim() || `${validYear ?? ""} ${calendarAnnualTitle}`.trim();
+  const previewBannerTitle = bannerTitle.trim() || `${calendarAnnualTitle} ${validYear ?? ""}`.trim();
   const calendarMixedLabel = content === "gregorian-hijri"
     ? (calendarLanguage === "ur" ? "عیسوی + ہجری" : "Gregorian + Hijri")
     : (calendarLanguage === "ur" ? "عیسوی" : "Gregorian");
+  const previewSideText = bannerSideText.trim() || calendarMixedLabel;
 
   const model = useMemo(() => {
     if (validYear === null) return null;
@@ -149,9 +170,9 @@ export default function CalendarMakerContent() {
       weekStart: effectiveWeekStart,
       page,
       hijriOffset: effectiveHijriOffset,
-      hijriOffsetMonths: effectiveHijriOffsetMonths,
+      hijriOffsets,
     });
-  }, [validYear, content, calendarLanguage, effectiveWeekStart, page, effectiveHijriOffset, effectiveHijriOffsetMonths]);
+  }, [validYear, content, calendarLanguage, effectiveWeekStart, page, effectiveHijriOffset, hijriOffsets]);
 
   async function downloadPdf() {
     if (validYear === null || model === null) return;
@@ -168,11 +189,16 @@ export default function CalendarMakerContent() {
           weekStart: effectiveWeekStart,
           page,
           hijriOffset: effectiveHijriOffset,
-          hijriOffsetMonths: effectiveHijriOffsetMonths,
-          researchNote: effectiveHijriOffset !== 0 ? researchNote.trim() : "",
-          bannerName: bannerName.trim() || "Qalam Works",
+          hijriOffsets,
+          researchNote: researchNote.trim(),
+          bannerName: bannerName.trim(),
           bannerTitle: bannerTitle.trim(),
+          bannerSideText: bannerSideText.trim(),
           bannerLogo: bannerLogo || undefined,
+          logoScale,
+          titleFontPx,
+          titleWidthMm,
+          sideFontPx,
         }),
       });
       if (!response.ok) throw new Error("pdf");
@@ -204,16 +230,20 @@ export default function CalendarMakerContent() {
         element.onerror = () => reject(new Error("logo"));
         element.src = url;
       });
-      const maxWidth = 160;
-      const maxHeight = 64;
+      const maxWidth = 480;
+      const maxHeight = 220;
       const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(image.width * scale));
       canvas.height = Math.max(1, Math.round(image.height * scale));
       const context = canvas.getContext("2d");
       if (!context) return;
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      setBannerLogo(canvas.toDataURL("image/png"));
+      let dataUrl = canvas.toDataURL("image/png");
+      if (dataUrl.length > 400000) dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      setBannerLogo(dataUrl);
     } catch {
       setBannerLogo("");
     } finally {
@@ -290,7 +320,11 @@ export default function CalendarMakerContent() {
             <label className={labelClass}>{t.hijriAdjustment}</label>
             <select
               value={hijriOffset}
-              onChange={(e) => setHijriOffset(Number(e.target.value))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                setHijriOffset(value);
+                setHijriOffsets(Array(12).fill(value));
+              }}
               className={selectClass}
               disabled={content !== "gregorian-hijri"}
             >
@@ -304,21 +338,6 @@ export default function CalendarMakerContent() {
           </div>
 
           <div>
-            <label className={labelClass}>{t.hijriApplyTo}</label>
-            <select
-              value={hijriOffsetMonth}
-              onChange={(e) => setHijriOffsetMonth(Number(e.target.value))}
-              className={selectClass}
-              disabled={content !== "gregorian-hijri" || effectiveHijriOffset === 0}
-            >
-              <option value={0}>{t.entireCalendar}</option>
-              {GREGORIAN_MONTH_LABELS[calendarLanguage].map((label, index) => (
-                <option key={label} value={index + 1}>{label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
             <label className={labelClass}>{t.page}</label>
             <select value={page} onChange={(e) => setPage(e.target.value as CalendarPage)} className={selectClass}>
               <option value="a4-portrait">{t.portrait}</option>
@@ -327,20 +346,47 @@ export default function CalendarMakerContent() {
           </div>
         </div>
 
-        {effectiveHijriOffset !== 0 && (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className={labelClass}>{t.researchNote}</label>
-              <input
-                type="text"
-                value={researchNote}
-                maxLength={240}
-                onChange={(e) => setResearchNote(e.target.value)}
-                placeholder={t.researchNotePlaceholder}
-                className={selectClass}
-              />
+        {content === "gregorian-hijri" && (
+          <div className="mt-4">
+            <label className={labelClass}>{t.hijriApplyTo}</label>
+            <p className={`mb-2 text-[12px] text-[#4a6a4a] dark:text-[#9fbfa8] ${naskh}`}>{t.hijriMonthHint}</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              {GREGORIAN_MONTH_LABELS[calendarLanguage].map((label, index) => (
+                <label key={label} className={`flex items-center gap-2 rounded-lg border border-[#1A3A2A]/10 px-2 py-1.5 dark:border-[#2a3d30] ${naskh}`}>
+                  <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[#1A3A2A] dark:text-[#e8ede9]">{label}</span>
+                  <select
+                    value={hijriOffsets[index] ?? 0}
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+                      setHijriOffsets((current) => current.map((offset, monthIndex) => (monthIndex === index ? value : offset)));
+                    }}
+                    className="rounded border border-[#1A3A2A]/15 bg-white px-1.5 py-1 text-[12px] dark:border-[#2a3d30] dark:bg-[#0e1c15]"
+                    dir="ltr"
+                  >
+                    <option value={0}>0</option>
+                    <option value={1}>+1</option>
+                    <option value={-1}>-1</option>
+                    <option value={2}>+2</option>
+                    <option value={-2}>-2</option>
+                  </select>
+                </label>
+              ))}
             </div>
-            <p className={`self-end text-[12px] text-[#4a6a4a] dark:text-[#9fbfa8] ${naskh}`}>{t.hijriMonthHint}</p>
+          </div>
+        )}
+
+        {content === "gregorian-hijri" && (
+          <div className="mt-4">
+            <label className={labelClass}>{t.researchNote}</label>
+            <input
+              type="text"
+              value={researchNote}
+              maxLength={240}
+              onChange={(e) => setResearchNote(e.target.value)}
+              placeholder={t.researchNotePlaceholder}
+              className={selectClass}
+            />
+            <p className={`mt-1.5 text-[12px] text-[#4a6a4a] dark:text-[#9fbfa8] ${naskh}`}>{t.researchNoteHelp}</p>
           </div>
         )}
 
@@ -355,6 +401,7 @@ export default function CalendarMakerContent() {
                 value={bannerName}
                 maxLength={80}
                 onChange={(e) => setBannerName(e.target.value)}
+                placeholder={t.bannerNamePlaceholder}
                 className={selectClass}
               />
             </div>
@@ -366,6 +413,17 @@ export default function CalendarMakerContent() {
                 maxLength={80}
                 onChange={(e) => setBannerTitle(e.target.value)}
                 placeholder={t.bannerTitlePlaceholder}
+                className={selectClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>{t.bannerSide}</label>
+              <input
+                type="text"
+                value={bannerSideText}
+                maxLength={80}
+                onChange={(e) => setBannerSideText(e.target.value)}
+                placeholder={t.bannerSidePlaceholder}
                 className={selectClass}
               />
             </div>
@@ -384,6 +442,22 @@ export default function CalendarMakerContent() {
                   </button>
                 )}
               </div>
+            </div>
+            <div>
+              <label className={labelClass}>{t.logoSize} ({logoScale}%)</label>
+              <input type="range" min={60} max={180} value={logoScale} onChange={(e) => setLogoScale(Number(e.target.value))} className="w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>{t.titleSize} ({titleFontPx}px)</label>
+              <input type="range" min={10} max={22} value={titleFontPx} onChange={(e) => setTitleFontPx(Number(e.target.value))} className="w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>{t.titleWidth} ({titleWidthMm}mm)</label>
+              <input type="range" min={48} max={130} value={titleWidthMm} onChange={(e) => setTitleWidthMm(Number(e.target.value))} className="w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>{t.sideSize} ({sideFontPx}px)</label>
+              <input type="range" min={6} max={16} value={sideFontPx} onChange={(e) => setSideFontPx(Number(e.target.value))} className="w-full" />
             </div>
           </div>
         </div>
@@ -416,22 +490,34 @@ export default function CalendarMakerContent() {
           >
             <header className="relative grid min-h-[70px] grid-cols-[1fr_auto_1fr] items-center gap-3 border-b-2 border-[var(--calendar-gold)] bg-[var(--calendar-frame)] px-4 py-2 text-white">
               <div className="flex min-w-0 items-center gap-2 justify-self-start text-start">
-                {bannerLogo && <img src={bannerLogo} alt="" className="h-9 w-auto max-w-[96px] object-contain" />}
-                <span className="truncate text-sm font-black tracking-wide" dir="ltr">{bannerName.trim() || "Qalam Works"}</span>
+                {bannerLogo && (
+                  <img
+                    src={bannerLogo}
+                    alt=""
+                    className="w-auto object-contain"
+                    style={{ height: `${Math.round(36 * logoScale / 100)}px`, maxWidth: `${Math.round(120 * logoScale / 100)}px` }}
+                  />
+                )}
+                {bannerName.trim() ? (
+                  <span className="truncate text-sm font-black tracking-wide" dir="ltr">{bannerName.trim()}</span>
+                ) : null}
               </div>
 
-              <div className="min-w-[250px] max-w-[420px] rounded-full border-2 border-[var(--calendar-gold)] bg-[var(--calendar-title-capsule)] px-7 py-2 text-center text-[var(--calendar-frame)] shadow-inner">
-                <div className={`truncate text-xl font-black leading-tight sm:text-2xl ${calendarLanguage === "ur" ? "font-naskh" : ""}`}>
+              <div
+                className="rounded-full border-2 border-[var(--calendar-gold)] bg-[var(--calendar-title-capsule)] text-center text-[var(--calendar-frame)] shadow-inner"
+                style={{ minWidth: `${Math.round(titleWidthMm * 3.2)}px`, padding: "8px 28px" }}
+              >
+                <div className={`truncate font-black leading-tight ${calendarLanguage === "ur" ? "font-naskh" : ""}`} style={{ fontSize: `${titleFontPx + 6}px` }}>
                   {previewBannerTitle}
                 </div>
               </div>
 
-              <div className={`justify-self-end text-end text-sm font-bold ${calendarLanguage === "ur" ? "font-naskh" : ""}`}>
-                {calendarMixedLabel}
+              <div className={`justify-self-end truncate text-end font-bold ${calendarLanguage === "ur" ? "font-naskh" : ""}`} style={{ fontSize: `${sideFontPx + 4}px` }}>
+                {previewSideText}
               </div>
             </header>
 
-            {effectiveHijriOffset !== 0 && researchNote.trim() && (
+            {researchNote.trim() && (
               <p className={`border-b border-[var(--calendar-gold)]/50 bg-[#FFF7E9] px-3 py-1.5 text-[11px] text-[var(--calendar-research-text)] ${naskh}`}>
                 {researchNote.trim()}
               </p>
@@ -445,7 +531,7 @@ export default function CalendarMakerContent() {
                   title={`${GREGORIAN_MONTH_LABELS[calendarLanguage][month.month - 1]} ${validYear}`}
                   language={calendarLanguage}
                   weekStart={effectiveWeekStart}
-                  hijriOffset={effectiveHijriOffset}
+                  hijriOffset={model.hijriOffsets[month.month - 1] ?? 0}
                   showHijri={content === "gregorian-hijri"}
                   interactive={false}
                   compact
@@ -455,7 +541,7 @@ export default function CalendarMakerContent() {
 
             <footer className="flex items-center justify-between border-t border-[var(--calendar-frame)]/30 px-2 py-1 text-[9px] text-[var(--calendar-footer-text)]" dir="ltr">
               <span>qalamworks.com</span>
-              <span>{calendarMixedLabel}</span>
+              {researchNote.trim() ? <span>{researchNote.trim()}</span> : <span />}
             </footer>
           </div>
         ) : (
