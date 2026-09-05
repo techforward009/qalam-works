@@ -102,7 +102,7 @@ describe("Final annual calendar visual specification", () => {
     expect(month).toMatch(/dir=\{isUr \? "rtl" : "ltr"\}/);
     expect(month).toMatch(/deriveHijriMonthContexts/);
     expect(month).toMatch(/CALENDAR_REFERENCE_WEEKDAYS/);
-    expect(cell).toMatch(/grid-cols-2 grid-rows-2/);
+    expect(cell).toMatch(/flex flex-col justify-between/);
     expect(cell).toMatch(/dir="ltr"/);
   });
 
@@ -160,7 +160,7 @@ describe("Final annual calendar visual specification", () => {
   it("uses resilient grid-anchored Gregorian and Hijri day typography", () => {
     const cell = read("app/components/date-studio/CalendarDayCell.tsx");
     expect(cell).toMatch(/data-role="gregorian-day"/);
-    expect(cell).toMatch(/grid-cols-2 grid-rows-2/);
+    expect(cell).toMatch(/flex flex-col justify-between/);
     expect(cell).toMatch(/cellSpec\.gregorianFont/);
     expect(cell).toMatch(/data-role="hijri-day"/);
     expect(cell).toMatch(/cellSpec\.hijriFont/);

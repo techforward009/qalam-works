@@ -10,18 +10,19 @@ const root = join(__dirname, "..");
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 
 describe("Calendar overflow and font sizing", () => {
-  it("uses readable dual-date type that still fits a 2x2 cell", () => {
+  it("uses readable dual-date type that still fits a stacked cell", () => {
     expect(parseFloat(CALENDAR_VISUAL_SPEC.print.gregorianFontPortrait)).toBe(14);
-    expect(parseFloat(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait)).toBe(11);
+    expect(parseFloat(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait)).toBe(9);
     expect(parseFloat(CALENDAR_VISUAL_SPEC.print.monthTitleFontPortrait)).toBe(13);
     expect(parseFloat(CALENDAR_VISUAL_SPEC.print.weekdayFontPortrait)).toBeLessThanOrEqual(9);
   });
 
-  it("places Gregorian and Hijri on a physical LTR 2x2 grid instead of overlapping absolutes", () => {
+  it("stacks Gregorian above Hijri with space-between instead of overlapping absolutes", () => {
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(pdf).toMatch(/dir="ltr" style="position:relative !important;display:grid/);
-    expect(pdf).toMatch(/grid-column:1 !important;grid-row:1 !important/);
-    expect(pdf).toMatch(/grid-column:2 !important;grid-row:2 !important/);
+    expect(pdf).toMatch(/dir="ltr" style="position:relative !important;display:flex/);
+    expect(pdf).toMatch(/flex-direction:column !important;justify-content:space-between/);
+    expect(pdf).toMatch(/align-self:flex-start !important/);
+    expect(pdf).toMatch(/align-self:flex-end !important/);
     expect(pdf).toMatch(/color:#15803d !important/);
     expect(pdf).not.toMatch(/position:absolute !important;top:/);
     expect(pdf).not.toMatch(/position:absolute !important;bottom:/);
@@ -42,6 +43,6 @@ describe("Calendar overflow and font sizing", () => {
     expect(route).toMatch(/Hijri digit did not paint/);
     expect(route).toMatch(/Gregorian is not left of Hijri/);
     expect(route).toMatch(/Gregorian is not above Hijri/);
-    expect(route).not.toMatch(/position !== "absolute"/);
+    expect(route).toMatch(/Gregorian\/Hijri gap collapsed/);
   });
 });

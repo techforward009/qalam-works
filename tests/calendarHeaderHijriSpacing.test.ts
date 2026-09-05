@@ -24,18 +24,17 @@ describe("Calendar header and Hijri digit spacing", () => {
     expect(CALENDAR_VISUAL_SPEC.web.detail.hijriFont).toBe("clamp(13px, 1.9vw, 16px)");
 
     const cell = read("app/components/date-studio/CalendarDayCell.tsx");
-    expect(cell).toMatch(/grid-cols-2 grid-rows-2/);
-    expect(cell).toMatch(/pb-\[2px\]/);
-    expect(cell).toMatch(/col-start-2 row-start-2/);
-    expect(cell).toMatch(/self-end justify-self-end/);
+    expect(cell).toMatch(/flex flex-col justify-between/);
+    expect(cell).toMatch(/pb-\[3px\]/);
+    expect(cell).toMatch(/self-end/);
   });
 
   it("keeps Hijri PDF typography secondary and anchored in the bottom-right", () => {
-    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("11px");
-    expect(CALENDAR_VISUAL_SPEC.print.hijriFontLandscape).toBe("11px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("9px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriFontLandscape).toBe("9px");
 
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(pdf).toMatch(/grid-column:2 !important;grid-row:2 !important/);
+    expect(pdf).toMatch(/align-self:flex-end !important/);
     expect(pdf).toMatch(/color:#15803d !important/);
   });
 });

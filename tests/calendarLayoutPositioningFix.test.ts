@@ -11,19 +11,17 @@ describe("Calendar layout positioning fix", () => {
     expect(CALENDAR_VISUAL_SPEC.colors.hijriDay).toBe("#15803D");
 
     const cell = read("app/components/date-studio/CalendarDayCell.tsx");
-    expect(cell).toMatch(/col-start-1 row-start-1/);
-    expect(cell).toMatch(/self-start justify-self-start/);
+    expect(cell).toMatch(/self-start/);
     expect(cell).toMatch(/text-left/);
-    expect(cell).toMatch(/col-start-2 row-start-2/);
-    expect(cell).toMatch(/self-end justify-self-end/);
+    expect(cell).toMatch(/self-end/);
     expect(cell).toMatch(/text-right/);
-    expect(cell).toMatch(/pb-\[2px\]/);
+    expect(cell).toMatch(/pb-\[3px\]/);
   });
 
   it("centers weekday text inside a taller strip", () => {
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
-    expect(CALENDAR_VISUAL_SPEC.print.weekdayStripPortraitMm).toBe(3.8);
-    expect(CALENDAR_VISUAL_SPEC.print.weekdayStripLandscapeMm).toBe(3.6);
+    expect(CALENDAR_VISUAL_SPEC.print.weekdayStripPortraitMm).toBe(4.2);
+    expect(CALENDAR_VISUAL_SPEC.print.weekdayStripLandscapeMm).toBe(4.0);
     expect(pdf).toMatch(/min-height:\$\{metrics\.weekdayHeightPx\}px/);
     expect(pdf).toMatch(/display:flex;[\s\S]*?align-items:center;[\s\S]*?justify-content:center/);
   });

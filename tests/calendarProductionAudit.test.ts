@@ -42,16 +42,17 @@ describe("Calendar production audit contracts", () => {
     const cell = read("app/components/date-studio/CalendarDayCell.tsx");
     const pdf = read("app/tools/calendar-maker/utils/buildCalendarHtml.ts");
 
-    expect(cell).toMatch(/grid-cols-2 grid-rows-2/);
-    expect(cell).toMatch(/col-start-1 row-start-1/);
-    expect(cell).toMatch(/col-start-2 row-start-2/);
+    expect(cell).toMatch(/flex flex-col justify-between/);
+    expect(cell).toMatch(/self-start/);
+    expect(cell).toMatch(/self-end/);
     expect(CALENDAR_VISUAL_SPEC.web.compact.gregorianFont).toMatch(/^clamp\(/);
     expect(CALENDAR_VISUAL_SPEC.web.detail.hijriFont).toMatch(/^clamp\(/);
 
-    expect(pdf).toMatch(/grid-column:1 !important;grid-row:1 !important/);
-    expect(pdf).toMatch(/grid-column:2 !important;grid-row:2 !important/);
+    expect(pdf).toMatch(/flex-direction:column !important;justify-content:space-between/);
+    expect(pdf).toMatch(/align-self:flex-start !important/);
+    expect(pdf).toMatch(/align-self:flex-end !important/);
     expect(CALENDAR_VISUAL_SPEC.print.gregorianFontPortrait).toBe("14px");
-    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("11px");
+    expect(CALENDAR_VISUAL_SPEC.print.hijriFontPortrait).toBe("9px");
   });
 
   it("fails closed unless bundled Urdu PDF fonts are present and loaded", () => {
