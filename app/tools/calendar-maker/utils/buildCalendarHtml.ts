@@ -8,6 +8,8 @@ import {
   CALENDAR_REFERENCE_WEEKDAYS,
   CALENDAR_URDU_WEEKDAYS,
   CALENDAR_PDF_HIJRI_SHORT_EN,
+  CALENDAR_MONTH_DAY_CELLS,
+  CALENDAR_MONTH_WEEK_ROWS,
   calendarPdfMonthVariables,
   calendarPdfRootVariables,
   calendarPrintMetrics,
@@ -95,7 +97,7 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
     `;
     }).join("");
 
-    const cells = month.weeks.flatMap((week) => week.cells).map((cell) => {
+    const cellHtml = month.weeks.flatMap((week) => week.cells).map((cell) => {
       if (!cell.inCurrentMonth) {
         return `<div class="day filler" aria-hidden="true"></div>`;
       }
@@ -105,7 +107,11 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
         : "";
 
       return `<div class="day current${isSunday(cell.gregorian) ? " sunday" : ""}" dir="ltr" style="position:relative !important;display:grid !important;grid-template-columns:1fr 1fr !important;grid-template-rows:1fr 1fr !important;overflow:hidden !important;"><div class="greg-day" data-pdf-gregorian-day="true" style="grid-column:1 !important;grid-row:1 !important;align-self:start !important;justify-self:start !important;font-size:${metrics.gregorianFont} !important;font-weight:900 !important;line-height:1 !important;color:#161a17 !important;">${cell.gregorian.day}</div>${hijri}</div>`;
-    }).join("");
+    });
+    while (cellHtml.length < CALENDAR_MONTH_DAY_CELLS) {
+      cellHtml.push(`<div class="day filler" aria-hidden="true"></div>`);
+    }
+    const cells = cellHtml.slice(0, CALENDAR_MONTH_DAY_CELLS).join("");
 
     return `<section class="month" style="${calendarPdfMonthVariables(month.month)}">
       <header class="month-head" dir="ltr" style="height:${metrics.monthHeaderHeightPx}px !important;min-height:${metrics.monthHeaderHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:4px !important;overflow:hidden !important;padding:0 3px !important;">
@@ -116,7 +122,7 @@ export function buildCalendarHtml(model: CalendarYearModel, options: CalendarHtm
       <div class="weekdays" data-pdf-weekday-row="true" dir="${isUr ? "rtl" : "ltr"}" style="height:${metrics.weekdayHeightPx}px !important;min-height:${metrics.weekdayHeightPx}px !important;display:flex !important;align-items:center !important;justify-content:center !important;overflow:hidden !important;">
         ${dayLabels.map((label) => `<div data-pdf-weekday="true" class="${label === "Sun" || label === "اتوار" ? "sun" : ""}" style="height:${metrics.weekdayHeightPx}px !important;min-height:${metrics.weekdayHeightPx}px !important;flex:1 1 0 !important;display:flex !important;align-items:center !important;justify-content:center !important;line-height:1 !important;padding:0 !important;font-size:${metrics.weekdayFont} !important;font-weight:700 !important;${isUr ? "font-family:'QalamNaskh',serif !important;" : ""}">${label}</div>`).join("")}
       </div>
-      <div class="days" dir="${isUr ? "rtl" : "ltr"}">${cells}</div>
+      <div class="days" data-pdf-week-rows="${CALENDAR_MONTH_WEEK_ROWS}" dir="${isUr ? "rtl" : "ltr"}">${cells}</div>
     </section>`;
   }).join("");
 
@@ -254,7 +260,7 @@ body{
   white-space:nowrap;
 }
 .slash{font-size:5.3px;color:var(--calendar-hijri-context);opacity:.7;font-weight:700}
-.weekdays{display:flex !important}.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.weekdays{display:flex !important}.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(${CALENDAR_MONTH_WEEK_ROWS},minmax(0,1fr))}
 .weekdays{height:${metrics.weekdayHeightPx}px !important;min-height:${metrics.weekdayHeightPx}px !important;background:var(--calendar-weekday);border-bottom:.65px solid var(--calendar-grid-strong);align-items:stretch}
 .weekdays>div{
   min-width:0;
@@ -274,7 +280,7 @@ body{
   overflow:hidden;
 }
 .weekdays .sun{color:var(--calendar-month-title)}
-.days{flex:1;min-height:0;grid-auto-rows:minmax(0,1fr)}
+.days{flex:1;min-height:0;grid-template-rows:repeat(${CALENDAR_MONTH_WEEK_ROWS},minmax(0,1fr))}
 .day{
   position:relative !important;
   min-width:0;

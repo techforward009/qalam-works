@@ -8,6 +8,8 @@ import {
 import {
   CALENDAR_REFERENCE_WEEKDAYS,
   CALENDAR_VISUAL_SPEC,
+  CALENDAR_MONTH_DAY_CELLS,
+  CALENDAR_MONTH_WEEK_ROWS,
   calendarCssVariables,
 } from "@/app/tools/calendar-maker/utils/calendarVisualSpec";
 import {
@@ -161,7 +163,12 @@ export function MonthCalendar({
         })}
       </div>
 
-      <div className="grid grid-cols-7" dir={isUr ? "rtl" : "ltr"}>
+      <div
+        className="grid grid-cols-7"
+        dir={isUr ? "rtl" : "ltr"}
+        data-week-rows={CALENDAR_MONTH_WEEK_ROWS}
+        style={{ gridTemplateRows: `repeat(${CALENDAR_MONTH_WEEK_ROWS}, minmax(0, 1fr))` }}
+      >
         {month.weeks.flatMap((week) =>
           week.cells.map((cell) => (
             <CalendarDayCell
@@ -173,6 +180,14 @@ export function MonthCalendar({
             />
           )),
         )}
+        {Array.from({ length: Math.max(0, CALENDAR_MONTH_DAY_CELLS - month.weeks.reduce((count, week) => count + week.cells.length, 0)) }, (_, index) => (
+          <div
+            key={`empty-week-slot-${index}`}
+            aria-hidden="true"
+            className="border-b border-e border-[var(--calendar-grid)] bg-[var(--calendar-filler)]"
+            style={{ minHeight: `${webSpec.cellMinPx}px` }}
+          />
+        ))}
       </div>
     </section>
   );

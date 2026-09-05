@@ -121,6 +121,13 @@ export async function POST(request: NextRequest) {
         throw new Error("Calendar PDF typography/context verification nodes are missing");
       }
 
+      const dayCounts = [...document.querySelectorAll(".month")].map(
+        (month) => month.querySelectorAll(".day").length,
+      );
+      if (dayCounts.length !== 12 || dayCounts.some((count) => count !== 42)) {
+        throw new Error(`Calendar PDF month week rows are not fixed at 6: ${dayCounts.join(",")}`);
+      }
+
       const monthTitleStyle = getComputedStyle(monthTitle);
       const monthHeaderStyle = getComputedStyle(monthHeader);
       const weekdayRowStyle = getComputedStyle(weekdayRow);

@@ -20,6 +20,10 @@ export const CALENDAR_PDF_HIJRI_SHORT_EN = [
 export const CALENDAR_ANNUAL_GRID_CLASS =
   "grid grid-cols-1 gap-2 bg-[var(--calendar-paper)] p-2 md:grid-cols-2 xl:grid-cols-3";
 
+/** Every month card always has 6 week rows so 4/5/6-week months share one cell height. */
+export const CALENDAR_MONTH_WEEK_ROWS = 6;
+export const CALENDAR_MONTH_DAY_CELLS = CALENDAR_MONTH_WEEK_ROWS * 7;
+
 export const CALENDAR_VISUAL_SPEC = {
   colors: {
     frame: "#0B5136",
