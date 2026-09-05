@@ -38,36 +38,47 @@ describe("Calendar banner, Jamadi labels, and per-month Hijri offset", () => {
     expect(pdf).toMatch(/padding-bottom:0\.2em/);
   });
 
-  it("applies independent Hijri offsets to several Gregorian months", () => {
-    const mixed = buildCalendarYearModel({
+  it("keeps Hijri days consecutive when adjacent months have different moon-sighting offsets", () => {
+    const model = buildCalendarYearModel({
       year: 2027,
       content: "gregorian-hijri",
-      language: "en",
+      language: "ur",
       weekStart: "monday",
       page: "a4-portrait",
-      hijriOffsets: [1, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      hijriOffsets: [-1, -2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     });
-    const baseline = buildCalendarYearModel({
-      year: 2027,
-      content: "gregorian-hijri",
-      language: "en",
-      weekStart: "monday",
-      page: "a4-portrait",
-    });
-    const plusOne = buildCalendarYearModel({
-      year: 2027,
-      content: "gregorian-hijri",
-      language: "en",
-      weekStart: "monday",
-      page: "a4-portrait",
-      hijriOffset: 1,
-    });
-    const day = (model: ReturnType<typeof buildCalendarYearModel>, month: number) =>
-      model.months[month - 1].weeks.flatMap((week) => week.cells).find((cell) => cell.inCurrentMonth && cell.gregorian.day === 1);
+    const day = (month: number, gregorianDay: number) =>
+      model.months[month - 1].weeks.flatMap((week) => week.cells).find((cell) => cell.inCurrentMonth && cell.gregorian.day === gregorianDay)?.hijri;
 
-    expect(day(mixed, 1)?.hijri).toEqual(day(plusOne, 1)?.hijri);
-    expect(day(mixed, 2)?.hijri).toEqual(day(baseline, 2)?.hijri);
-    expect(day(mixed, 3)?.hijri).not.toEqual(day(baseline, 3)?.hijri);
+    expect(day(1, 31)).toMatchObject({ month: 8, day: 22 });
+    expect(day(2, 1)).toMatchObject({ month: 8, day: 23 });
+    expect(day(2, 8)).toMatchObject({ month: 8, day: 30 });
+    expect(day(2, 9)).toMatchObject({ month: 9, day: 1 });
+
+    const sequence = model.months.flatMap((month) =>
+      month.weeks.flatMap((week) => week.cells).filter((cell) => cell.inCurrentMonth && cell.hijri),
+    );
+    for (let index = 1; index < sequence.length; index++) {
+      const previous = sequence[index - 1].hijri!;
+      const current = sequence[index].hijri!;
+      const sameDay = previous.year === current.year && previous.month === current.month && previous.day === current.day;
+      expect(sameDay).toBe(false);
+      expect(current.day).toBeGreaterThanOrEqual(1);
+      expect(current.day).toBeLessThanOrEqual(30);
+    }
+  });
+
+  it("does not change calculated Hijri dates when every month stays at offset 0", () => {
+    const model = buildCalendarYearModel({
+      year: 2027,
+      content: "gregorian-hijri",
+      language: "en",
+      weekStart: "monday",
+      page: "a4-portrait",
+    });
+    expect(model.months[0].weeks.flatMap((week) => week.cells).find((cell) => cell.inCurrentMonth && cell.gregorian.day === 1)?.hijri).toMatchObject({ month: 7, day: 23 });
+    expect(model.months[1].weeks.flatMap((week) => week.cells).find((cell) => cell.inCurrentMonth && cell.gregorian.day === 1)?.hijri).toMatchObject({ month: 8, day: 24 });
+    expect(model.months[1].weeks.flatMap((week) => week.cells).find((cell) => cell.inCurrentMonth && cell.gregorian.day === 9)?.hijri).toMatchObject({ month: 9, day: 3 });
   });
 
   it("keeps an empty banner name empty and omits Gregorian+Hijri from the footer", () => {

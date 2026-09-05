@@ -190,6 +190,41 @@ export function buildCalendarMonth(
   return { year, month, weeks };
 }
 
+function nextHijriMonthStart(current: DateParts): DateParts {
+  if (current.month === 12) return { year: current.year + 1, month: 1, day: 1 };
+  return { year: current.year, month: current.month + 1, day: 1 };
+}
+
+function hijriMonthIsLater(candidate: DateParts, current: DateParts): boolean {
+  return candidate.year > current.year || (candidate.year === current.year && candidate.month > current.month);
+}
+
+function stitchHijriContinuity(months: CalendarMonth[]): void {
+  const cells = months
+    .flatMap((month) => month.weeks.flatMap((week) => week.cells))
+    .filter((cell) => cell.inCurrentMonth && cell.hijri)
+    .sort((left, right) =>
+      gregorianToJDN(left.gregorian.year, left.gregorian.month, left.gregorian.day) -
+      gregorianToJDN(right.gregorian.year, right.gregorian.month, right.gregorian.day),
+    );
+
+  let running: DateParts | null = null;
+  for (const cell of cells) {
+    const raw = cell.hijri;
+    if (!raw) continue;
+    if (!running) {
+      running = { ...raw };
+    } else if (hijriMonthIsLater(raw, running)) {
+      running = nextHijriMonthStart(running);
+    } else if (running.day >= 30) {
+      running = nextHijriMonthStart(running);
+    } else {
+      running = { year: running.year, month: running.month, day: running.day + 1 };
+    }
+    cell.hijri = { ...running };
+  }
+}
+
 export function buildCalendarYearModel(options: BuildCalendarYearOptions): CalendarYearModel {
   const year = options.year;
   if (!Number.isInteger(year) || year < MIN_GREGORIAN_YEAR || year > MAX_GREGORIAN_YEAR) {
@@ -203,6 +238,11 @@ export function buildCalendarYearModel(options: BuildCalendarYearOptions): Calen
     ? [...new Set(options.hijriOffsetMonths.filter((month) => Number.isInteger(month) && month >= 1 && month <= 12))]
     : [];
 
+  const months = Array.from({ length: 12 }, (_, index) =>
+    buildCalendarMonth(year, index + 1, options.content, effectiveWeekStart, hijriOffsets[index] ?? 0),
+  );
+  if (options.content === "gregorian-hijri") stitchHijriContinuity(months);
+
   return {
     ...options,
     year,
@@ -210,8 +250,6 @@ export function buildCalendarYearModel(options: BuildCalendarYearOptions): Calen
     hijriOffset,
     hijriOffsetMonths,
     hijriOffsets,
-    months: Array.from({ length: 12 }, (_, index) =>
-      buildCalendarMonth(year, index + 1, options.content, effectiveWeekStart, hijriOffsets[index] ?? 0),
-    ),
+    months,
   };
 }
