@@ -119,24 +119,28 @@ ${options.naskhFonts.nastaliqRegularBase64 ? `@font-face{
   src:url(data:font/woff2;base64,${options.naskhFonts.nastaliqRegularBase64}) format('woff2');
   font-weight:400;
   font-style:normal;
+  unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF;
 }` : ""}
 ${options.naskhFonts.nastaliqBoldBase64 ? `@font-face{
   font-family:'QalamNastaliq';
   src:url(data:font/woff2;base64,${options.naskhFonts.nastaliqBoldBase64}) format('woff2');
   font-weight:700 900;
   font-style:normal;
+  unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF;
 }` : ""}
 ${options.naskhFonts.nastaliqLatinRegularBase64 ? `@font-face{
   font-family:'QalamNastaliq';
   src:url(data:font/woff2;base64,${options.naskhFonts.nastaliqLatinRegularBase64}) format('woff2');
   font-weight:400;
   font-style:normal;
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2212,U+2215,U+FEFF,U+FFFD;
 }` : ""}
 ${options.naskhFonts.nastaliqLatinBoldBase64 ? `@font-face{
   font-family:'QalamNastaliq';
   src:url(data:font/woff2;base64,${options.naskhFonts.nastaliqLatinBoldBase64}) format('woff2');
   font-weight:700 900;
   font-style:normal;
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2212,U+2215,U+FEFF,U+FFFD;
 }` : ""}`
     : "";
 

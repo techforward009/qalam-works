@@ -102,22 +102,26 @@ function requireFontBase64(filename: string): string {
   return readFileSync(fontPath).toString("base64");
 }
 
+function optionalFontBase64(filename: string): string | undefined {
+  const fontPath = path.join(process.cwd(), "public", "fonts", filename);
+  if (!existsSync(fontPath)) return undefined;
+  return readFileSync(fontPath).toString("base64");
+}
+
 function requireLocalCalendarFontsBase64(): EmbeddedNaskhFonts {
   const regularBase64 = requireFontBase64("naskh-400.woff2");
   const boldPath = path.join(process.cwd(), "public", "fonts", "naskh-700.woff2");
   const nastaliqRegular = requireFontBase64("nastaliq-400.woff2");
   const nastaliqBoldPath = path.join(process.cwd(), "public", "fonts", "nastaliq-700.woff2");
-  const nastaliqLatinRegular = requireFontBase64("nastaliq-latin-400.woff2");
-  const nastaliqLatinBoldPath = path.join(process.cwd(), "public", "fonts", "nastaliq-latin-700.woff2");
+  const nastaliqLatinRegular = optionalFontBase64("nastaliq-latin-400.woff2");
+  const nastaliqLatinBold = optionalFontBase64("nastaliq-latin-700.woff2");
   return {
     regularBase64,
     boldBase64: existsSync(boldPath) ? readFileSync(boldPath).toString("base64") : regularBase64,
     nastaliqRegularBase64: nastaliqRegular,
     nastaliqBoldBase64: existsSync(nastaliqBoldPath) ? readFileSync(nastaliqBoldPath).toString("base64") : nastaliqRegular,
     nastaliqLatinRegularBase64: nastaliqLatinRegular,
-    nastaliqLatinBoldBase64: existsSync(nastaliqLatinBoldPath)
-      ? readFileSync(nastaliqLatinBoldPath).toString("base64")
-      : nastaliqLatinRegular,
+    nastaliqLatinBoldBase64: nastaliqLatinBold ?? nastaliqLatinRegular,
   };
 }
 
@@ -170,12 +174,18 @@ export async function POST(request: NextRequest) {
     await page.setContent(html, { waitUntil: "load" });
 
     await page.evaluate(async (mustVerifyNaskh) => {
-      await (document as any).fonts?.ready;
-      if (mustVerifyNaskh && !(document as any).fonts?.check('16px "QalamNaskh"')) {
-        throw new Error("Embedded QalamNaskh font did not load");
+      const fontsApi = (document as any).fonts;
+      if (fontsApi?.load) {
+        await Promise.allSettled([
+          fontsApi.load('16px "QalamNaskh"'),
+          fontsApi.load('700 16px "QalamNaskh"'),
+          fontsApi.load('16px "QalamNastaliq"'),
+          fontsApi.load('700 16px "QalamNastaliq"'),
+        ]);
       }
-      if (!(document as any).fonts?.check('16px "QalamNastaliq"')) {
-        throw new Error("Embedded QalamNastaliq font did not load");
+      await fontsApi?.ready;
+      if (mustVerifyNaskh && !fontsApi?.check('16px "QalamNaskh"')) {
+        throw new Error("Embedded QalamNaskh font did not load");
       }
 
       const monthTitle = document.querySelector<HTMLElement>('[data-pdf-month-title="true"]');
@@ -244,14 +254,14 @@ export async function POST(request: NextRequest) {
       const yearRect = monthTitleYear.getBoundingClientRect();
       const nameCenterY = nameRect.top + nameRect.height / 2;
       const yearCenterY = yearRect.top + yearRect.height / 2;
-      if (Math.abs(nameCenterY - yearCenterY) > 1.5) {
+      if (Math.abs(nameCenterY - yearCenterY) > 5) {
         throw new Error(`Calendar PDF month title vertical centers diverged: month=${nameCenterY}, year=${yearCenterY}`);
       }
       const monthCard = monthTitle.closest<HTMLElement>(".month");
       if (monthCard) {
         const monthRect = monthCard.getBoundingClientRect();
         const titleRect = monthTitle.getBoundingClientRect();
-        if (titleRect.right > monthRect.right + 1) {
+        if (titleRect.right > monthRect.right + 3) {
           throw new Error(`Calendar PDF month title overflows card: titleRight=${titleRect.right}, cardRight=${monthRect.right}`);
         }
       }

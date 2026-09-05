@@ -6,13 +6,13 @@ import {
   type HijriMonthContext,
 } from "@/app/tools/calendar-maker/utils/calendarPresentation";
 import {
-  CALENDAR_REFERENCE_WEEKDAYS,
   CALENDAR_VISUAL_SPEC,
   CALENDAR_MONTH_DAY_CELLS,
   CALENDAR_MONTH_WEEK_ROWS,
   calendarCssVariables,
 } from "@/app/tools/calendar-maker/utils/calendarVisualSpec";
 import {
+  weekdayLabels,
   type CalendarLanguage,
   type CalendarMonth,
   type WeekStart,
@@ -90,10 +90,7 @@ export function MonthCalendar({
 }) {
   const isUr = language === "ur";
   const effectiveWeekStart: WeekStart = isUr ? "monday" : weekStart;
-  const referenceWeekdays =
-    effectiveWeekStart === "monday"
-      ? CALENDAR_REFERENCE_WEEKDAYS
-      : (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const);
+  const labels = weekdayLabels(language, effectiveWeekStart);
   const hasHijriData = month.weeks
     .flatMap((week) => week.cells)
     .some((cell) => cell.inCurrentMonth && cell.hijri !== null);
@@ -146,12 +143,14 @@ export function MonthCalendar({
         className="grid grid-cols-7 border-b border-[var(--calendar-grid-strong)] bg-[var(--calendar-weekday)]"
         dir={isUr ? "rtl" : "ltr"}
       >
-        {referenceWeekdays.map((day) => {
-          const sunday = day === "Sun";
+        {labels.map((day) => {
+          const sunday = day === "Sun" || day === "اتوار";
           return (
             <div
               key={day}
               className={`${compact ? "py-1.5 text-[11px] sm:text-xs" : "py-2.5 text-sm sm:text-base"} border-e border-[var(--calendar-weekday-grid)] text-center font-black ${
+                isUr ? "font-naskh" : ""
+              } ${
                 sunday ? "text-[var(--calendar-month-title)]" : "text-[var(--calendar-text)]"
               }`}
             >

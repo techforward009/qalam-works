@@ -101,7 +101,7 @@ describe("Final annual calendar visual specification", () => {
     expect(month).toMatch(/language = "en"/);
     expect(month).toMatch(/dir=\{isUr \? "rtl" : "ltr"\}/);
     expect(month).toMatch(/deriveHijriMonthContexts/);
-    expect(month).toMatch(/CALENDAR_REFERENCE_WEEKDAYS/);
+    expect(month).toMatch(/weekdayLabels/);
     expect(cell).toMatch(/grid-cols-2 grid-rows-2/);
     expect(cell).toMatch(/dir="ltr"/);
   });
@@ -112,6 +112,7 @@ describe("Final annual calendar visual specification", () => {
     expect(model).toMatch(/"پیر", "منگل", "بدھ", "جمعرات", "جمعہ", "ہفتہ", "اتوار"/);
     expect(CALENDAR_REFERENCE_WEEKDAYS).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
     expect(month).toMatch(/day === "Sun"/);
+    expect(month).toMatch(/day === "اتوار"/);
     expect(CALENDAR_VISUAL_SPEC.colors.monthTitle).toBe("#EF2B2F");
   });
 

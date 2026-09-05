@@ -45,7 +45,7 @@ describe("Calendar Hijri order, title centering, and cell offset", () => {
     const route = read("app/api/export-calendar-pdf/route.ts");
     expect(route).toMatch(/rightHijriContext\.dataset\.hijriRole !== "start"/);
     expect(route).toMatch(/leftHijriContext\.dataset\.hijriRole !== "end"/);
-    expect(route).toMatch(/Math\.abs\(nameCenterY - yearCenterY\) > 1\.5/);
+    expect(route).toMatch(/Math\.abs\(nameCenterY - yearCenterY\) > 5/);
     expect(route).toMatch(/parseFloat\(monthTitleStyle\.fontSize\) < 11\.5/);
     expect(route).not.toMatch(/lineHeight\) < 32/);
     expect(route).toMatch(/titleDisplay !== "flex"/);

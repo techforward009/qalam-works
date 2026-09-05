@@ -195,4 +195,20 @@ describe("Calendar banner, Jamadi labels, and per-month Hijri offset", () => {
     expect(maker).toContain("sightingArchive");
     expect(maker).toContain("listSightingProfiles");
   });
+
+  it("prints Urdu weekday names on the Urdu calendar", () => {
+    const html = buildCalendarHtml(buildCalendarYearModel({
+      year: 2027,
+      content: "gregorian-hijri",
+      language: "ur",
+      weekStart: "monday",
+      page: "a4-portrait",
+    }));
+    expect(html).toContain("پیر");
+    expect(html).toContain("اتوار");
+    expect(html).not.toMatch(/>Mon</);
+    const preview = source("app/components/date-studio/MonthCalendar.tsx");
+    expect(preview).toMatch(/weekdayLabels/);
+    expect(preview).toContain("اتوار");
+  });
 });
