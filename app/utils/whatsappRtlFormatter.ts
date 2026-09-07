@@ -5,6 +5,8 @@
  * - Unordered: • ▪ - ◆ — ◦ → RLM + "◆ item" (leading RLM on bullet lines only)
  * - Continuation lines (already indented) align under text after ◆
  * - RTL paragraphs with Latin: leading RLM + LRI/PDI around Latin runs
+ * - Leading numbering+English lines get a real Arabic seed letter (ا) so
+ *   mobile WhatsApp still picks RTL after it strips RLM/LRI
  * - End-of-document invisible stabilizer: trailing "\n" + RLM only (same as M)
  */
 
@@ -13,6 +15,8 @@ const RLI = "\u2067";
 const PDI = "\u2069";
 const LRM = "\u200E";
 const RLM = "\u200F";
+/** Visible-but-tiny RTL first-strong that survives mobile WhatsApp bidi stripping. */
+const RTL_SEED = "ا";
 
 const BULLET_MARKER = "◆";
 /** Exactly one space after ◆ / after "1)" for consistent layout. */
@@ -24,18 +28,34 @@ const MARKER_GAP = " ";
 const CONTINUATION_INDENT = "  ";
 
 const BIDI_ISOLATE_RE = /[\u2066\u2067\u2069]/;
+const BIDI_MARK_RE = /[\u2066\u2067\u2069\u200E\u200F\u061C]/g;
 /**
  * Leading numbering + contiguous Latin (or URL/email) + attached punctuation.
  * Spaces between Latin words stay inside the run so "Carbo vegetabilis —" is one isolate.
  */
 const LATIN_RUN_RE =
   /(?:^|(?<=\s))(?:\d+[).]\s*)?(?:https?:\/\/[^\s]+|www\.[^\s]+|[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}|[A-Za-z][A-Za-z'’\-]*(?:[ \t]+[A-Za-z][A-Za-z'’\-]*)*)(?:[ \t]*[)\].,;:!?…\-—–]+)?/g;
+/** Numbering/Latin at the start of a line — first strong would otherwise be L. */
+const LEADING_LATIN_RE = /^(?:\d+[).]\s*)?[A-Za-z]/;
 
 function stripOwnBidiControls(text: string): string {
   let s = text.replace(/(?:\r?\n)\u200F\s*$/g, "");
   s = s.replace(/[\u2066\u2067\u2069\u200E\u200F\u061C]/g, "");
   s = s.replace(/(\d+)\u200E\./g, "$1.");
   return s;
+}
+
+/** Remove our leading ا seed so re-format does not stack اا. */
+function stripRtlSeeds(text: string): string {
+  return text.split("\n").map((line) => {
+    const m = line.match(/^(\s*)/);
+    const indent = m ? m[0] : "";
+    const rest = line.slice(indent.length);
+    if (rest.startsWith(RTL_SEED) && LEADING_LATIN_RE.test(rest.slice(RTL_SEED.length))) {
+      return indent + rest.slice(RTL_SEED.length);
+    }
+    return line;
+  }).join("\n");
 }
 
 function isRtlChar(ch: string): boolean {
@@ -146,15 +166,35 @@ function wrapLatinRunsInRtlText(text: string): string {
   return RLM + wrapped;
 }
 
+/**
+ * Mobile WhatsApp strips RLM/LRI. A real Arabic letter at the start of a
+ * numbering+English (or English-first) line forces RTL first-strong.
+ */
+function seedRtlOnLeadingLatinLines(text: string): string {
+  if (!text || !lineHasRtl(text)) return text;
+
+  return text.split("\n").map((line) => {
+    const m = line.match(/^(\u200F*)(\s*)/);
+    const prefix = m ? m[0] : "";
+    const rest = line.slice(prefix.length);
+    const visible = rest.replace(BIDI_MARK_RE, "");
+    if (!LEADING_LATIN_RE.test(visible)) return line;
+    if (visible.startsWith(RTL_SEED)) return line;
+    if (rest.startsWith(RTL_SEED)) return line;
+    return prefix + RTL_SEED + rest;
+  }).join("\n");
+}
+
 export function formatForWhatsAppRTL(input: string): string {
   if (typeof input !== "string") {
     return "";
   }
 
-  const cleaned = stripOwnBidiControls(input);
+  const cleaned = stripRtlSeeds(stripOwnBidiControls(input));
   const normalized = normalizeLines(cleaned.split(/\r?\n/)).join("\n");
   const mixed = wrapLatinRunsInRtlText(normalized);
-  return ensureFinalRtlStability(mixed);
+  const seeded = seedRtlOnLeadingLatinLines(mixed);
+  return ensureFinalRtlStability(seeded);
 }
 
 export function countBidiControls(text: string): number {
@@ -167,4 +207,4 @@ export function countBidiControls(text: string): number {
   return count;
 }
 
-export const BIDI = { LRI, RLI, PDI, LRM, RLM } as const;
+export const BIDI = { LRI, RLI, PDI, LRM, RLM, RTL_SEED } as const;

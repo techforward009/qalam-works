@@ -5,7 +5,7 @@ import {
   BIDI,
 } from "../app/utils/whatsappRtlFormatter";
 
-const { RLM, LRI, PDI } = BIDI;
+const { RLM, LRI, PDI, RTL_SEED } = BIDI;
 const BODY_BIDI_RE = /[\u200E\u2066\u2067\u2069\u061C]/;
 
 function stripFinal(s: string): string {
@@ -14,6 +14,10 @@ function stripFinal(s: string): string {
 
 function stripBidi(s: string): string {
   return s.replace(/[\u2066\u2067\u2069\u200E\u200F\u061C]/g, "");
+}
+
+function stripDecorations(s: string): string {
+  return stripBidi(s).replace(/(^|\n)ا(?=(?:\d+[).]\s*)?[A-Za-z])/g, "$1");
 }
 
 describe("formatForWhatsAppRTL — Variant M", () => {
@@ -35,7 +39,7 @@ describe("formatForWhatsAppRTL — Variant M", () => {
 
   it("wraps Latin runs in mixed Urdu + English", () => {
     const mixed = "یہ Qalam Works کا ٹول ہے۔";
-    expect(stripBidi(stripFinal(formatForWhatsAppRTL(mixed)))).toBe(mixed);
+    expect(stripDecorations(stripFinal(formatForWhatsAppRTL(mixed)))).toBe(mixed);
     expect(stripFinal(formatForWhatsAppRTL(mixed))).toBe(
       RLM + "یہ " + LRI + "Qalam Works" + PDI + " کا ٹول ہے۔",
     );
@@ -43,7 +47,7 @@ describe("formatForWhatsAppRTL — Variant M", () => {
 
   it("wraps URLs as a single Latin run", () => {
     const text = "سائٹ https://qalamworks.com دیکھیں";
-    expect(stripBidi(stripFinal(formatForWhatsAppRTL(text)))).toBe(text);
+    expect(stripDecorations(stripFinal(formatForWhatsAppRTL(text)))).toBe(text);
     expect(stripFinal(formatForWhatsAppRTL(text))).toContain(
       LRI + "https://qalamworks.com" + PDI,
     );
@@ -82,7 +86,7 @@ describe("formatForWhatsAppRTL — mixed-script bidi", () => {
     const result = stripFinal(formatForWhatsAppRTL(input));
     expect(result.startsWith(RLM)).toBe(true);
     expect(result).toContain(LRI + "1) Lachesis —" + PDI);
-    expect(stripBidi(result)).toBe(input);
+    expect(stripDecorations(result)).toBe(input);
   });
 
   it("keeps 2) Spigelia — attached at the start of an RTL paragraph", () => {
@@ -90,7 +94,7 @@ describe("formatForWhatsAppRTL — mixed-script bidi", () => {
     const result = stripFinal(formatForWhatsAppRTL(input));
     expect(result.startsWith(RLM)).toBe(true);
     expect(result).toContain(LRI + "2) Spigelia —" + PDI);
-    expect(stripBidi(result)).toBe(input);
+    expect(stripDecorations(result)).toBe(input);
   });
 
   it("keeps 3) Carbo vegetabilis — as one Latin run", () => {
@@ -98,7 +102,7 @@ describe("formatForWhatsAppRTL — mixed-script bidi", () => {
     const result = stripFinal(formatForWhatsAppRTL(input));
     expect(result.startsWith(RLM)).toBe(true);
     expect(result).toContain(LRI + "3) Carbo vegetabilis —" + PDI);
-    expect(stripBidi(result)).toBe(input);
+    expect(stripDecorations(result)).toBe(input);
   });
 
   it("wraps inline Latin in an Urdu sentence", () => {
@@ -107,6 +111,7 @@ describe("formatForWhatsAppRTL — mixed-script bidi", () => {
     expect(result).toBe(
       RLM + "یہ دوا " + LRI + "Spigelia" + PDI + " پہلے بھی کام کرتی رہی ہے۔",
     );
+    expect(result).not.toContain(RTL_SEED + LRI);
   });
 
   it("does not alter a pure Urdu/Arabic paragraph", () => {
@@ -122,5 +127,43 @@ describe("formatForWhatsAppRTL — mixed-script bidi", () => {
     expect((once.match(/\u2066/g) || []).length).toBe(1);
     expect((once.match(/\u2069/g) || []).length).toBe(1);
     expect(countBidiControls(twice)).toBe(countBidiControls(once));
+  });
+});
+
+describe("formatForWhatsAppRTL — leading Arabic seed for mobile", () => {
+  it("puts ا before numbering + English so stripped mobile text is still RTL-first", () => {
+    const input = "1) Lachesis —\nمناسبت: بائیں طرف کا مکمل غلبہ";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(result).toContain(RTL_SEED + LRI + "1) Lachesis —" + PDI);
+    const mobile = stripBidi(result);
+    expect(mobile.startsWith(RTL_SEED)).toBe(true);
+    expect(mobile).toContain(RTL_SEED + "1) Lachesis —");
+  });
+
+  it("seeds each numbered English heading, not the following Urdu line", () => {
+    const input =
+      "1) Lachesis —\nمناسبت: بائیں طرف\n2) Spigelia —\nدل کی طرف درد\n3) Carbo vegetabilis —\nخون کی کمی";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(result).toContain(RTL_SEED + LRI + "1) Lachesis —" + PDI);
+    expect(result).toContain(RTL_SEED + LRI + "2) Spigelia —" + PDI);
+    expect(result).toContain(RTL_SEED + LRI + "3) Carbo vegetabilis —" + PDI);
+    expect(result).not.toContain(RTL_SEED + "مناسبت");
+    expect(result).not.toContain(RTL_SEED + "دل");
+    expect((stripBidi(result).match(/^ا/gm) || []).length).toBe(3);
+  });
+
+  it("does not seed inline English after Urdu", () => {
+    const input = "یہ دوا Spigelia پہلے بھی کام کرتی رہی ہے۔";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(stripBidi(result).startsWith(RTL_SEED)).toBe(false);
+    expect(result).toContain(LRI + "Spigelia" + PDI);
+  });
+
+  it("does not stack ا on re-format", () => {
+    const input = "1) Lachesis —\nمناسبت: بائیں طرف";
+    const once = stripFinal(formatForWhatsAppRTL(input));
+    const twice = stripFinal(formatForWhatsAppRTL(once));
+    expect(twice).toBe(once);
+    expect((stripBidi(once).match(/^ا/gm) || []).length).toBe(1);
   });
 });
