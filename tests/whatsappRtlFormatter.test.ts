@@ -5,11 +5,15 @@ import {
   BIDI,
 } from "../app/utils/whatsappRtlFormatter";
 
-const { RLM } = BIDI;
+const { RLM, LRI, PDI } = BIDI;
 const BODY_BIDI_RE = /[\u200E\u2066\u2067\u2069\u061C]/;
 
 function stripFinal(s: string): string {
   return s.replace(/(?:\r?\n)\u200F\s*$/g, "");
+}
+
+function stripBidi(s: string): string {
+  return s.replace(/[\u2066\u2067\u2069\u200E\u200F\u061C]/g, "");
 }
 
 describe("formatForWhatsAppRTL — Variant M", () => {
@@ -29,14 +33,20 @@ describe("formatForWhatsAppRTL — Variant M", () => {
     expect(formatForWhatsAppRTL("Hello world.")).toBe("Hello world.");
   });
 
-  it("leaves mixed Urdu + English body unchanged", () => {
+  it("wraps Latin runs in mixed Urdu + English", () => {
     const mixed = "یہ Qalam Works کا ٹول ہے۔";
-    expect(stripFinal(formatForWhatsAppRTL(mixed))).toBe(mixed);
+    expect(stripBidi(stripFinal(formatForWhatsAppRTL(mixed)))).toBe(mixed);
+    expect(stripFinal(formatForWhatsAppRTL(mixed))).toBe(
+      RLM + "یہ " + LRI + "Qalam Works" + PDI + " کا ٹول ہے۔",
+    );
   });
 
-  it("leaves URLs unchanged", () => {
+  it("wraps URLs as a single Latin run", () => {
     const text = "سائٹ https://qalamworks.com دیکھیں";
-    expect(stripFinal(formatForWhatsAppRTL(text))).toBe(text);
+    expect(stripBidi(stripFinal(formatForWhatsAppRTL(text)))).toBe(text);
+    expect(stripFinal(formatForWhatsAppRTL(text))).toContain(
+      LRI + "https://qalamworks.com" + PDI,
+    );
   });
 
   it("converts 1. to 1)", () => {
@@ -53,9 +63,9 @@ describe("formatForWhatsAppRTL — Variant M", () => {
     expect(stripFinal(formatForWhatsAppRTL(input))).toBe(RLM + "◆ پہلا بلٹ\n  جاری متن");
   });
 
-  it("does not inject body RLI/LRI/PDI/LRM", () => {
+  it("does not inject RLI or LRM", () => {
     const result = formatForWhatsAppRTL("• بلٹ\nیہ PDF ہے\nhttps://x.com");
-    expect(BODY_BIDI_RE.test(result)).toBe(false);
+    expect(result).not.toMatch(/[\u200E\u2067]/);
   });
 
   it("is idempotent after stripping final stabilizer", () => {
@@ -63,5 +73,54 @@ describe("formatForWhatsAppRTL — Variant M", () => {
     const once = stripFinal(formatForWhatsAppRTL(input));
     const twice = stripFinal(formatForWhatsAppRTL(once));
     expect(twice).toBe(once);
+  });
+});
+
+describe("formatForWhatsAppRTL — mixed-script bidi", () => {
+  it("keeps 1) Lachesis — attached at the start of an RTL paragraph", () => {
+    const input = "1) Lachesis —\nمناسبت: بائیں طرف کا مکمل غلبہ";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(result.startsWith(RLM)).toBe(true);
+    expect(result).toContain(LRI + "1) Lachesis —" + PDI);
+    expect(stripBidi(result)).toBe(input);
+  });
+
+  it("keeps 2) Spigelia — attached at the start of an RTL paragraph", () => {
+    const input = "2) Spigelia —\nدل کی طرف درد";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(result.startsWith(RLM)).toBe(true);
+    expect(result).toContain(LRI + "2) Spigelia —" + PDI);
+    expect(stripBidi(result)).toBe(input);
+  });
+
+  it("keeps 3) Carbo vegetabilis — as one Latin run", () => {
+    const input = "3) Carbo vegetabilis —\nخون کی کمی";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(result.startsWith(RLM)).toBe(true);
+    expect(result).toContain(LRI + "3) Carbo vegetabilis —" + PDI);
+    expect(stripBidi(result)).toBe(input);
+  });
+
+  it("wraps inline Latin in an Urdu sentence", () => {
+    const input = "یہ دوا Spigelia پہلے بھی کام کرتی رہی ہے۔";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(result).toBe(
+      RLM + "یہ دوا " + LRI + "Spigelia" + PDI + " پہلے بھی کام کرتی رہی ہے۔",
+    );
+  });
+
+  it("does not alter a pure Urdu/Arabic paragraph", () => {
+    const urdu = "مناسبت: بائیں طرف کا مکمل غلبہ۔";
+    expect(stripFinal(formatForWhatsAppRTL(urdu))).toBe(urdu);
+  });
+
+  it("does not double-wrap text that already contains bidi isolates", () => {
+    const input = "1) Lachesis —\nمناسبت: بائیں طرف";
+    const once = formatForWhatsAppRTL(input);
+    const twice = formatForWhatsAppRTL(once);
+    expect(twice).toBe(once);
+    expect((once.match(/\u2066/g) || []).length).toBe(1);
+    expect((once.match(/\u2069/g) || []).length).toBe(1);
+    expect(countBidiControls(twice)).toBe(countBidiControls(once));
   });
 });

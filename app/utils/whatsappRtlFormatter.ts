@@ -1,10 +1,10 @@
 /**
  * WhatsApp RTL Formatter — Variant O (production)
  *
- * - No body bidi controls (no RLI/LRI/PDI/LRM).
  * - Numbered: "1." → "1)"
  * - Unordered: • ▪ - ◆ — ◦ → RLM + "◆ item" (leading RLM on bullet lines only)
  * - Continuation lines (already indented) align under text after ◆
+ * - RTL paragraphs with Latin: leading RLM + LRI/PDI around Latin runs
  * - End-of-document invisible stabilizer: trailing "\n" + RLM only (same as M)
  */
 
@@ -22,6 +22,14 @@ const MARKER_GAP = " ";
  * Matches visual width of "◆ " (marker + gap).
  */
 const CONTINUATION_INDENT = "  ";
+
+const BIDI_ISOLATE_RE = /[\u2066\u2067\u2069]/;
+/**
+ * Leading numbering + contiguous Latin (or URL/email) + attached punctuation.
+ * Spaces between Latin words stay inside the run so "Carbo vegetabilis —" is one isolate.
+ */
+const LATIN_RUN_RE =
+  /(?:^|(?<=\s))(?:\d+[).]\s*)?(?:https?:\/\/[^\s]+|www\.[^\s]+|[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}|[A-Za-z][A-Za-z'’\-]*(?:[ \t]+[A-Za-z][A-Za-z'’\-]*)*)(?:[ \t]*[)\].,;:!?…\-—–]+)?/g;
 
 function stripOwnBidiControls(text: string): string {
   let s = text.replace(/(?:\r?\n)\u200F\s*$/g, "");
@@ -119,6 +127,25 @@ function normalizeLines(lines: string[]): string[] {
   return out;
 }
 
+/**
+ * RTL text that contains Latin: prefix RLM and wrap each Latin run in LRI/PDI
+ * so WhatsApp keeps numbering + English + attached punctuation in visual LTR order.
+ * Pure Urdu/Arabic is left unchanged. Existing isolates are not wrapped again.
+ */
+function wrapLatinRunsInRtlText(text: string): string {
+  if (!text || !lineHasRtl(text)) return text;
+  if (BIDI_ISOLATE_RE.test(text)) return text;
+
+  const wrapped = text.replace(LATIN_RUN_RE, (run) => {
+    if (BIDI_ISOLATE_RE.test(run)) return run;
+    return LRI + run + PDI;
+  });
+
+  if (wrapped === text) return text;
+  if (wrapped.startsWith(RLM)) return wrapped;
+  return RLM + wrapped;
+}
+
 export function formatForWhatsAppRTL(input: string): string {
   if (typeof input !== "string") {
     return "";
@@ -126,7 +153,8 @@ export function formatForWhatsAppRTL(input: string): string {
 
   const cleaned = stripOwnBidiControls(input);
   const normalized = normalizeLines(cleaned.split(/\r?\n/)).join("\n");
-  return ensureFinalRtlStability(normalized);
+  const mixed = wrapLatinRunsInRtlText(normalized);
+  return ensureFinalRtlStability(mixed);
 }
 
 export function countBidiControls(text: string): number {
