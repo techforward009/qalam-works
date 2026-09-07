@@ -61,7 +61,7 @@ describe("explicit alignment is never overwritten by direction detection", () =>
   });
 });
 
-import { buildDocumentStudioExample } from "../app/tools/document-studio/components/DocumentStudioEditor";
+import { buildDocumentStudioExample } from "../app/tools/document-studio/utils/documentCommands";
 
 describe("buildDocumentStudioExample — Load Example per-block direction", () => {
   test("Urdu paragraphs get rtl, English paragraph gets ltr", () => {

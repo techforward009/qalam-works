@@ -4,7 +4,7 @@
 
 import { buildPdfHtml } from "../app/tools/document-studio/utils/buildPdfHtml";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
-import { BLOCK_STYLE_EDITOR_CSS } from "../app/tools/document-studio/components/DocumentStudioEditor";
+import { BLOCK_STYLE_EDITOR_CSS } from "../app/tools/document-studio/utils/documentSchema";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
 const emptyFonts = { faces: [] } as never;

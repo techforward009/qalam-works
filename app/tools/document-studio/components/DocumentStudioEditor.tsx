@@ -2,46 +2,20 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../../lib/language-context";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { useEditor } from "@tiptap/react";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
-import { Slice, Fragment as pmFragment } from "@tiptap/pm/model";
-// Alias to avoid name collision with React Fragment
-const pmSlice = Slice;
-import StarterKit from "@tiptap/starter-kit";
-import Paragraph from "@tiptap/extension-paragraph";
-import Heading from "@tiptap/extension-heading";
-import Link from "@tiptap/extension-link";
-import TextAlign from "@tiptap/extension-text-align";
-import { TextStyle, FontFamily, FontSize } from "@tiptap/extension-text-style";
-// Batch 16A correction (item 7) — removed the direct `import Underline
-// from "@tiptap/extension-underline"`: StarterKit v3 (already configured
-// below) bundles its own Underline extension internally, so this import
-// was unused — toggleUnderline()/isActive("underline") work via
-// StarterKit's own copy, confirmed by inspecting the installed package.
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
-import { displayDirForPaste } from "../../../utils/processing/cleanTextPipeline";
-import { listEditorFonts, getFontById } from "../utils/fontRegistry";
 import {
-  defaultDocumentSettings,
   loadDocumentSettings,
   saveDocumentSettings,
-  clearDocumentSettings,
-  FONT_SIZE_OPTIONS_PT,
-  LINE_HEIGHT_OPTIONS,
-  resolveFontSizePt,
-  validateLineHeight,
-  validateIndentMm,
-  validateSpacingPt,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
-import { resolvePageLayout, mmToPx, resolvePhysicalMargins, resolveResponsivePagePadding, MARGIN_MIN_MM, MARGIN_MAX_MM, clampMarginMm } from "../utils/pageLayout";
-import { BLOCK_STYLES, BLOCK_STYLE_IDS, isBlockStyleId, type BlockStyleId } from "../utils/documentStyles";
+import { resolvePageLayout } from "../utils/pageLayout";
 import {
   applyPresetToSettings,
-  getPreset,
   loadSelectedPresetId,
   saveSelectedPresetId,
   type PresetId,
@@ -50,7 +24,6 @@ import { buildDocumentAuditReport, type QualityAuditReport } from "../utils/buil
 import { buildDocumentStats, type DocumentStats } from "../utils/buildDocumentStats";
 import { buildDocumentHealthReport, type DocumentHealthReport } from "../utils/buildDocumentHealthReport";
 import { generateDocumentSuggestions, type DocumentSuggestion } from "../utils/generateDocumentSuggestions";
-import { findAllTextMatches } from "../utils/findReplace";
 import { extractDocumentOutline, type OutlineEntry } from "../utils/documentOutline";
 import {
   addGlossaryEntry,
@@ -69,592 +42,46 @@ import {
   acceptCategory,
   ignoreCategory,
   refreshPendingSuggestions,
-  suggestionKey,
   type SuggestionReviewState,
 } from "../utils/suggestionReview";
 import { buildDocxBlob } from "../utils/buildDocxDocument";
-import { plainTextToDocNode, plainTextToDocNodeWithDir, detectBlockDirection, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
-import { QualityAuditPanel } from "./QualityAuditPanel";
-import { DocumentStatsBar } from "./DocumentStatsBar";
-import { SuggestionsPanel } from "./SuggestionsPanel";
-import { FindReplacePanel } from "./FindReplacePanel";
-import { DocumentOutlinePanel } from "./DocumentOutlinePanel";
-import { GlossaryPanel } from "./GlossaryPanel";
-import { WordRuler } from "./WordRuler";
-import { PublishingPresetSelector } from "./PublishingPresetSelector";
-import { DictationControl } from "./DictationControl";
+import { plainTextToDocNodeWithDir, normalizeDocxParagraphBreaks } from "../utils/plainTextToDocNode";
 import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import { formatFileSize } from "../../../utils/formatFileSize";
+import {
+  ParagraphWithDir,
+  HeadingWithDir,
+  BLOCK_STYLE_EDITOR_CSS,
+  createDocumentStudioExtensions,
+} from "../utils/documentSchema";
+import {
+  applyDocumentDirection,
+  buildDocumentStudioExample,
+  buildReplaceAllTransaction,
+  editorToPlainText,
+  findAllRangesInEditor,
+  findBlockStartPosition,
+  findSuggestionRange,
+  replaceAll,
+  transformPastedSlice,
+} from "../utils/documentCommands";
+import DocumentToolbar from "./DocumentToolbar";
+import DocumentCanvas from "./DocumentCanvas";
+import DocumentStudioPanels, { type StudioTab } from "./DocumentStudioPanels";
+
+/** Compatibility re-exports — existing tests may still import from this file. */
+export { ParagraphWithDir, HeadingWithDir, BLOCK_STYLE_EDITOR_CSS };
+export { buildDocumentStudioExample, buildReplaceAllTransaction };
 
 const DRAFT_STORAGE_KEY = "qalam-document-studio-draft";
 const AUTOSAVE_DEBOUNCE_MS = 1000;
-
-// Maintenance Batch (2026-08-09) — Health Report/Stats/Suggestions
-// analysis is real work (measured ~30ms combined on a ~500-paragraph
-// document during the Document Intelligence audit) and previously ran on
-// EVERY keystroke with no debounce. For small documents (the common
-// case) that's imperceptible and stays instant — only documents at or
-// above this rough size threshold get debounced, so normal short-
-// document editing is not delayed at all. ANALYSIS_DEBOUNCE_MS is
-// intentionally short (not the slower 1s autosave interval) so even
-// large-document typing still feels responsive, just coalesced.
 const LARGE_DOCUMENT_CHAR_THRESHOLD = 5000;
 const ANALYSIS_DEBOUNCE_MS = 300;
-
-function ToolbarButton({
-  onClick,
-  active,
-  children,
-  label,
-}: {
-  onClick: () => void;
-  active?: boolean;
-  children: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={label}
-      className={`h-[38px] px-3 rounded-md text-sm font-semibold border transition-all ${
-        active
-          ? "bg-[#1A3A2A] text-white border-[#1A3A2A]"
-          : "bg-white text-gray-600 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function ToolbarDivider() {
-  return <div className="w-px h-[26px] bg-gray-200 mx-1.5 self-center" />;
-}
-
-
-/** Persist writing direction on textblocks so empty RTL paragraphs place the caret on the right. */
-// Batch 16A (2026-08-11) — real, persistent schema attrs. Previously
-// only `dir` was declared here; block-style/line-height/indent/spacing
-// attrs were being set via updateAttributes() WITHOUT being declared in
-// the schema, which TipTap does not persist through getJSON()/reload —
-// a real, verified bug (confirmed via round-trip test). `blockStyle`
-// renders as `data-block-style` (CSS-driven presentation — see the
-// editor's own <style jsx global> block below — never stamps inline
-// FontSize/Bold/TextAlign marks, so switching styles is always a clean,
-// symmetric reset with zero risk of leftover marks from a previous
-// style). `lineHeight` renders as a real inline style (matching what
-// buildPdfHtml.ts's openAttrs() already expected — that code was
-// correct and simply never reachable before now). The remaining spacing/
-// indent attrs render as data-* attributes: PDF/DOCX exporters read them
-// directly from node.attrs (not from parsed HTML), so their correctness
-// does not depend on live in-editor visual rendering.
-const PARAGRAPH_STYLE_ATTRS = {
-  blockStyle: {
-    default: null as string | null,
-    parseHTML: (element: HTMLElement) => {
-      const v = element.getAttribute("data-block-style");
-      // Batch 16A correction (item 6) — validate against the canonical
-      // BlockStyleId set; an unrecognized/corrupted imported value falls
-      // back to null (plain paragraph) rather than flowing an arbitrary
-      // string into PDF/DOCX lookups downstream.
-      return v && isBlockStyleId(v) ? v : null;
-    },
-    renderHTML: (attributes: Record<string, unknown>) => {
-      // Batch 16A.1 correction (item 5) — parseHTML only runs for content
-      // parsed FROM the DOM/HTML; a document loaded directly from JSON
-      // (e.g. Editor content prop / setContent from localStorage) never
-      // goes through it, so a corrupted stored value could otherwise
-      // reach renderHTML — and from there, PDF/DOCX or the editor's own
-      // rendered style — unvalidated. Re-validate here as the JSON-safe
-      // choke point.
-      const v = isBlockStyleId(attributes.blockStyle) ? attributes.blockStyle : null;
-      return v ? { "data-block-style": v } : {};
-    },
-  },
-  lineHeight: {
-    default: null as number | null,
-    parseHTML: (element: HTMLElement) => {
-      const v = element.style.lineHeight;
-      const n = v ? parseFloat(v) : NaN;
-      return validateLineHeight(n);
-    },
-    renderHTML: (attributes: Record<string, unknown>) => {
-      const v = typeof attributes.lineHeight === "number" ? validateLineHeight(attributes.lineHeight) : null;
-      return v !== null ? { style: `line-height:${v}` } : {};
-    },
-  },
-  firstLineIndentMm: {
-    default: null as number | null,
-    parseHTML: (element: HTMLElement) => {
-      const v = element.getAttribute("data-first-line-indent-mm");
-      const n = v ? parseFloat(v) : NaN;
-      return validateIndentMm(n);
-    },
-    renderHTML: (attributes: Record<string, unknown>) => {
-      const v = typeof attributes.firstLineIndentMm === "number" ? validateIndentMm(attributes.firstLineIndentMm) : null;
-      // Batch 16B — visual preview via a real inline style (TipTap's
-      // mergeAttributes concatenates style fragments from multiple
-      // attrs, confirmed safe). Logical CSS property so it flips with
-      // the element's own dir automatically.
-      return v !== null && v > 0 ? { "data-first-line-indent-mm": String(v), style: `text-indent:${v}mm` } : {};
-    },
-  },
-  indentStartMm: {
-    default: null as number | null,
-    parseHTML: (element: HTMLElement) => {
-      const v = element.getAttribute("data-indent-start-mm");
-      const n = v ? parseFloat(v) : NaN;
-      return validateIndentMm(n);
-    },
-    renderHTML: (attributes: Record<string, unknown>) => {
-      const v = typeof attributes.indentStartMm === "number" ? validateIndentMm(attributes.indentStartMm) : null;
-      return v !== null ? { "data-indent-start-mm": String(v), style: `margin-inline-start:${v}mm` } : {};
-    },
-  },
-  indentEndMm: {
-    default: null as number | null,
-    parseHTML: (element: HTMLElement) => {
-      const v = element.getAttribute("data-indent-end-mm");
-      const n = v ? parseFloat(v) : NaN;
-      return validateIndentMm(n);
-    },
-    renderHTML: (attributes: Record<string, unknown>) => {
-      const v = typeof attributes.indentEndMm === "number" ? validateIndentMm(attributes.indentEndMm) : null;
-      return v !== null ? { "data-indent-end-mm": String(v), style: `margin-inline-end:${v}mm` } : {};
-    },
-  },
-  spaceBeforePt: {
-    default: null as number | null,
-    parseHTML: (element: HTMLElement) => {
-      const v = element.getAttribute("data-space-before-pt");
-      const n = v ? parseFloat(v) : NaN;
-      return validateSpacingPt(n);
-    },
-    renderHTML: (attributes: Record<string, unknown>) => {
-      const v = typeof attributes.spaceBeforePt === "number" ? validateSpacingPt(attributes.spaceBeforePt) : null;
-      return v !== null ? { "data-space-before-pt": String(v), style: `margin-block-start:${v}pt` } : {};
-    },
-  },
-  spaceAfterPt: {
-    default: null as number | null,
-    parseHTML: (element: HTMLElement) => {
-      const v = element.getAttribute("data-space-after-pt");
-      const n = v ? parseFloat(v) : NaN;
-      return validateSpacingPt(n);
-    },
-    renderHTML: (attributes: Record<string, unknown>) => {
-      const v = typeof attributes.spaceAfterPt === "number" ? validateSpacingPt(attributes.spaceAfterPt) : null;
-      return v !== null ? { "data-space-after-pt": String(v), style: `margin-block-end:${v}pt` } : {};
-    },
-  },
-};
-
-// Batch 16A.1 correction (item 2) — the editor's [data-block-style] CSS
-// previously hardcoded 1.9rem/1.25rem/0.7rem, diverging from
-// documentStyles.ts's canonical 28pt/18pt/10pt (the same values PDF and
-// DOCX both already use). Generated here directly from BLOCK_STYLES so
-// there is exactly one source of truth — pt values convert to rem at
-// the browser's standard 16px root (1pt = 1/12rem), matching how the
-// rest of this file already treats pt-to-rem conversions.
-export const BLOCK_STYLE_EDITOR_CSS = (Object.values(BLOCK_STYLES) as typeof BLOCK_STYLES[BlockStyleId][])
-  .filter((style) => style.blockStyleAttr)
-  .map((style) => {
-    const declarations = [
-      style.defaultFontSizePt ? `font-size:${style.defaultFontSizePt / 12}rem;` : "",
-      style.bold ? "font-weight:700;" : "",
-      style.align ? `text-align:${style.align};` : "",
-      style.blockStyleAttr === "caption" ? "color:#666;" : "",
-    ]
-      .filter(Boolean)
-      .join("");
-    return `.qalam-editor-content .ProseMirror p[data-block-style="${style.blockStyleAttr}"] { ${declarations} }`;
-  })
-  .join("\n");
-
-export const ParagraphWithDir = Paragraph.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      dir: {
-        default: "rtl",
-        parseHTML: (element) => {
-          const d = element.getAttribute("dir");
-          return d === "rtl" || d === "ltr" ? d : "rtl";
-        },
-        renderHTML: (attributes) => {
-          if (!attributes.dir) return { dir: "rtl" };
-          return { dir: attributes.dir };
-        },
-      },
-      ...PARAGRAPH_STYLE_ATTRS,
-    };
-  },
-});
-
-export const HeadingWithDir = Heading.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      dir: {
-        default: "rtl",
-        parseHTML: (element) => {
-          const d = element.getAttribute("dir");
-          return d === "rtl" || d === "ltr" ? d : null;
-        },
-        renderHTML: (attributes) => {
-          if (!attributes.dir) return {};
-          return { dir: attributes.dir };
-        },
-      },
-      // Headings get line-height/spacing (real, persistent) but not
-      // blockStyle/indent — headings already have their own canonical
-      // per-level presentation (H1-H4), and paragraph-style indentation
-      // concepts don't apply to headings.
-      lineHeight: PARAGRAPH_STYLE_ATTRS.lineHeight,
-      spaceBeforePt: PARAGRAPH_STYLE_ATTRS.spaceBeforePt,
-      spaceAfterPt: PARAGRAPH_STYLE_ATTRS.spaceAfterPt,
-    };
-  },
-});
-
-/** Apply toolbar direction to every textblock so caret side persists across empty/new paragraphs. */
-function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr") {
-  const { state } = editor;
-  let tr = state.tr;
-  let changed = false;
-  state.doc.descendants((node, pos) => {
-    if (!node.isTextblock) return;
-    if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
-    if (node.attrs.dir === nextDir) return;
-    tr = tr.setNodeMarkup(pos, undefined, { ...node.attrs, dir: nextDir });
-    changed = true;
-  });
-  if (changed) {
-    // Avoid adding to history noise for pure direction sync from toolbar
-    tr.setMeta("addToHistory", false);
-    editor.view.dispatch(tr);
-  }
-  const dom = editor.view.dom as HTMLElement;
-  dom.setAttribute("dir", nextDir);
-  dom.style.direction = nextDir;
-}
-
-/**
- * Pure — builds the Document Studio example DocNode with per-paragraph
- * direction assigned via first-strong detection. Extracted so
- * handleLoadExample and tests can both use the same function without
- * duplicating the example content or the direction logic.
- */
-export function buildDocumentStudioExample(fallbackDir: "rtl" | "ltr" = "rtl"): DocNode {
-  const paragraphs = [
-    "مسودہ: یہ  ایک  نمونہ دستاویز ہے ,جس میں غیر ضروری spaces ہیں۔",
-    "Draft notes: Review spacing and punctuation, then standardize and run Quality Audit before export.",
-    "آخری مرحلہ: تصدیق کے بعد TXT، DOCX یا PDF ایکسپورٹ کریں۔",
-  ];
-  return {
-    type: "doc",
-    content: paragraphs.map((text) => ({
-      type: "paragraph",
-      attrs: { dir: detectBlockDirection(text, fallbackDir) },
-      content: [{ type: "text", text }],
-    })),
-  };
-}
-
-const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
-  { label: "Default", value: "" },
-  ...listEditorFonts().map((f) => ({
-    label: f.availability === "local-preview-only" ? `${f.label} — Local` : f.label,
-    value: f.editorFamily,
-  })),
-];
-
-function Toolbar({
-  editor, dir, setDir, processingLanguage, setProcessingLanguage, isUr,
-}: {
-  editor: Editor | null;
-  dir: "rtl" | "ltr";
-  setDir: (d: "rtl" | "ltr") => void;
-  processingLanguage: ProcessingLanguage;
-  setProcessingLanguage: (lang: ProcessingLanguage) => void;
-  isUr: boolean;
-}) {
-  if (!editor) return null;
-
-  const labelCls = "text-xs font-semibold text-[#3D5A47] bg-[#EAF2EB] px-2 py-0.5 rounded whitespace-nowrap select-none";
-  // Wrapper for each label+select pair: in Urdu the label reads from the right
-  const pairDir = isUr ? "rtl" : "ltr";
-
-  const currentFont =
-    (editor.getAttributes("textStyle").fontFamily as string | undefined) || "";
-
-  return (
-    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4 pb-3 sm:pb-4 border-b border-gray-100 overflow-x-auto" dir="ltr">
-      <span dir={pairDir} className="inline-flex items-center gap-1.5">
-        <label htmlFor="studio-block-style" className={labelCls}>
-          {isUr ? "انداز" : "Style"}
-        </label>
-      <select
-        id="studio-block-style"
-        value={
-          editor.isActive("heading", { level: 1 })
-            ? "heading-1"
-            : editor.isActive("heading", { level: 2 })
-              ? "heading-2"
-              : editor.isActive("heading", { level: 3 })
-                ? "heading-3"
-                : editor.isActive("heading", { level: 4 })
-                  ? "heading-4"
-                  : editor.isActive("blockquote")
-                    ? "quote"
-                    : (editor.getAttributes("paragraph").blockStyle as string) || "normal"
-        }
-        onChange={(e) => {
-          const id = e.target.value as BlockStyleId;
-          const style = BLOCK_STYLES[id];
-          if (!style) return;
-          const chain = editor.chain().focus();
-          if (style.kind === "heading" && style.headingLevel) {
-            chain.setHeading({ level: style.headingLevel }).run();
-          } else if (style.kind === "blockquote") {
-            chain.setBlockquote().run();
-          } else {
-            // Batch 16A fix: block-style presentation (font size, bold,
-            // alignment) now comes ENTIRELY from `blockStyle` driving CSS
-            // (see the editor's [data-block-style] rules below) — it no
-            // longer stamps real FontSize/Bold/TextAlign marks. Previously,
-            // applying "Title" stamped 28pt+bold as literal marks, so
-            // switching to "Normal" right after left them behind (the
-            // Normal branch never had anything to unset because it never
-            // needed to remove marks the OTHER branches shouldn't have
-            // stamped in the first place). Now every style switch — including
-            // Normal — is a single, symmetric attribute assignment with no
-            // leftover state, and a user's own genuinely manual formatting
-            // (applied via the separate Bold/Italic/Align toolbar buttons)
-            // is never touched by this control at all.
-            chain.setParagraph().run();
-            chain.updateAttributes("paragraph", { blockStyle: style.blockStyleAttr ?? null }).run();
-          }
-        }}
-        className="h-[38px] max-w-[7.5rem] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
-        title="Paragraph style"
-      >
-        {BLOCK_STYLE_IDS.map((id) => (
-          <option key={id} value={id}>
-            {BLOCK_STYLES[id].label}
-          </option>
-        ))}
-      </select>
-      </span>
-      <ToolbarDivider />
-      <span dir={pairDir} className="inline-flex items-center gap-1.5">
-        <label htmlFor="studio-line-height" className={labelCls}>
-          {isUr ? "فاصلہ" : "Spacing"}
-        </label>
-      <select
-        id="studio-line-height"
-        // Batch 16A — real per-block line-spacing control. Reads/writes
-        // the genuine `lineHeight` schema attr added above (paragraph or
-        // heading, whichever is active) — "Default" means null (clears
-        // the block-level override, falling back to the document-wide
-        // --qalam-line-height CSS variable / documentSettings default).
-        value={(() => {
-          // Batch 16A.1 correction (item 5) — editor.getAttributes() reads
-          // the RAW stored node attrs directly (bypasses renderHTML
-          // entirely), so a corrupted JSON-loaded value could otherwise
-          // reach this <select>'s value unvalidated (e.g. rendering an
-          // <option> that doesn't exist, or displaying "999" instead of
-          // falling back to Default).
-          const pAttr = editor.getAttributes("paragraph").lineHeight;
-          const hAttr = editor.getAttributes("heading").lineHeight;
-          const validated =
-            (typeof pAttr === "number" ? validateLineHeight(pAttr) : null) ??
-            (typeof hAttr === "number" ? validateLineHeight(hAttr) : null);
-          return validated !== null ? String(validated) : "default";
-        })()}
-        onChange={(e) => {
-          const raw = e.target.value;
-          const value = raw === "default" ? null : Number(raw);
-          const nodeType = editor.isActive("heading") ? "heading" : "paragraph";
-          editor.chain().focus().updateAttributes(nodeType, { lineHeight: value }).run();
-        }}
-        className="h-[38px] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
-        title="Line spacing"
-      >
-        <option value="default">Default</option>
-        {LINE_HEIGHT_OPTIONS.map((lh) => (
-          <option key={lh} value={lh}>
-            {lh}
-          </option>
-        ))}
-      </select>
-      </span>
-      <ToolbarDivider />
-      <span dir={pairDir} className="inline-flex items-center gap-1.5">
-        <label htmlFor="studio-font-family" className={labelCls}>
-          {isUr ? "فونٹ" : "Font"}
-        </label>
-      <select
-        id="studio-font-family"
-        value={currentFont}
-        onChange={(e) => {
-          const v = e.target.value;
-          if (!v) {
-            editor.chain().focus().unsetFontFamily().run();
-          } else {
-            editor.chain().focus().setFontFamily(v).run();
-          }
-        }}
-        className="h-[38px] max-w-[11rem] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
-        title="Font family"
-      >
-        {STUDIO_FONT_OPTIONS.map((opt) => (
-          <option key={opt.label} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-      </span>
-      <span dir={pairDir} className="inline-flex items-center gap-1.5">
-        <label htmlFor="studio-font-size" className={labelCls}>
-          {isUr ? "سائز" : "Size"}
-        </label>
-      <select
-        id="studio-font-size"
-        value={
-          (() => {
-            const raw = editor.getAttributes("textStyle").fontSize as string | undefined;
-            const pt = resolveFontSizePt(raw);
-            return pt ? String(pt) : "";
-          })()
-        }
-        onChange={(e) => {
-          const v = e.target.value;
-          if (!v) {
-            editor.chain().focus().unsetFontSize().run();
-          } else {
-            editor.chain().focus().setFontSize(`${v}pt`).run();
-          }
-        }}
-        className="h-[38px] min-w-[6rem] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
-        title="Font size"
-      >
-        <option value="">Default</option>
-        {FONT_SIZE_OPTIONS_PT.map((pt) => (
-          <option key={pt} value={pt}>
-            {pt}
-          </option>
-        ))}
-      </select>
-      </span>
-      <ToolbarDivider />
-      <span dir={pairDir} className="inline-flex items-center gap-1.5">
-        <label htmlFor="studio-proc-lang" className={`${labelCls} ${isUr ? "font-naskh" : ""}`}>
-          {isUr ? "متن کی زبان" : "Language"}
-        </label>
-      <select
-        id="studio-proc-lang"
-        value={processingLanguage}
-        onChange={(e) => { setProcessingLanguage(e.target.value as ProcessingLanguage); trackEvent("tool_mode_change", { tool: "document_studio", mode: e.target.value as ProcessingLanguage }); }}
-        className="h-[38px] min-w-[6.5rem] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25"
-        title="Text language"
-      >
-        <option value="auto">{isUr ? "آٹو" : "Auto"}</option>
-        <option value="ur">{isUr ? "اردو" : "Urdu"}</option>
-        <option value="en">{isUr ? "انگریزی" : "English"}</option>
-        <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
-      </select>
-      </span>
-      <ToolbarDivider />
-      <ToolbarButton label="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
-        B
-      </ToolbarButton>
-      <ToolbarButton label="Italic" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}>
-        I
-      </ToolbarButton>
-      <ToolbarButton label="Underline" active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()}>
-        U
-      </ToolbarButton>
-      <ToolbarButton label="Heading 1" active={editor.isActive("heading", { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
-        H1
-      </ToolbarButton>
-      <ToolbarButton label="Heading 2" active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
-        H2
-      </ToolbarButton>
-      <ToolbarButton label="Bullet List" active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()}>
-        • List
-      </ToolbarButton>
-      <ToolbarButton label="Numbered List" active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
-        1. List
-      </ToolbarButton>
-      <ToolbarButton label="Blockquote" active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()}>
-        " Quote
-      </ToolbarButton>
-      <ToolbarButton
-        label="Link"
-        active={editor.isActive("link")}
-        onClick={() => {
-          const url = window.prompt("URL:");
-          if (url) editor.chain().focus().setLink({ href: url }).run();
-          else editor.chain().focus().unsetLink().run();
-        }}
-      >
-        Link
-      </ToolbarButton>
-
-      <ToolbarDivider />
-
-      <ToolbarButton label="Align Left" active={editor.isActive({ textAlign: "left" })} onClick={() => editor.chain().focus().setTextAlign("left").run()}>
-        ⇤
-      </ToolbarButton>
-      <ToolbarButton label="Align Center" active={editor.isActive({ textAlign: "center" })} onClick={() => editor.chain().focus().setTextAlign("center").run()}>
-        ⇔
-      </ToolbarButton>
-      <ToolbarButton label="Align Right" active={editor.isActive({ textAlign: "right" })} onClick={() => editor.chain().focus().setTextAlign("right").run()}>
-        ⇥
-      </ToolbarButton>
-      <ToolbarButton label="Justify" active={editor.isActive({ textAlign: "justify" })} onClick={() => editor.chain().focus().setTextAlign("justify").run()}>
-        ☰
-      </ToolbarButton>
-
-      <ToolbarDivider />
-
-      <ToolbarButton label="Undo" onClick={() => editor.chain().focus().undo().run()}>
-        ↶ Undo
-      </ToolbarButton>
-      <ToolbarButton label="Redo" onClick={() => editor.chain().focus().redo().run()}>
-        ↷ Redo
-      </ToolbarButton>
-
-      <ToolbarDivider />
-
-      <ToolbarButton label="Right-to-left (Urdu/Arabic/Persian)" active={dir === "rtl"} onClick={() => setDir("rtl")}>
-        RTL
-      </ToolbarButton>
-      <ToolbarButton label="Left-to-right (English)" active={dir === "ltr"} onClick={() => setDir("ltr")}>
-        LTR
-      </ToolbarButton>
-
-      <ToolbarDivider />
-
-      {/* Phase 1 voice dictation — inserts at saved cursor position */}
-      <DictationControl editor={editor} docDir={dir} isUr={isUr} />
-    </div>
-  );
-}
-
-function editorToPlainText(editor: Editor, dir: "rtl" | "ltr"): string {
-  return extractPlainText(editor.getJSON() as DocNode, dir);
-}
 
 function getInitialDraftContent(): DocNode | string {
   if (typeof window === "undefined") return "<p></p>";
   try {
-    // Check for a one-time Translation Studio handoff in sessionStorage first.
-    // consumeHandoff() removes the key after reading, so this fires once per navigation.
-    // If no valid handoff exists, fall through to the regular localStorage draft.
     const handoffDoc = consumeHandoff();
     if (handoffDoc && typeof handoffDoc === "object" && (handoffDoc as DocNode).type === "doc") {
       return handoffDoc as DocNode;
@@ -673,130 +100,6 @@ function getInitialDraftContent(): DocNode | string {
     console.error("Failed to parse initial draft from localStorage:", err);
   }
   return "<p></p>";
-}
-
-// Suggestion Review Workflow (2026-08-09) — finds a suggestion's real
-// position in the LIVE ProseMirror document by searching individual text
-// nodes for the first verbatim occurrence of its originalText. Limited
-// to matches within a single text node (won't find text split across
-// separately-marked runs, e.g. half-bold half-plain) — an accepted,
-// documented limitation for v1, since the vast majority of flagged
-// issues (typos, spacing, stray characters) occur in plain, unformatted
-// text anyway. Returns null (stale-safe) if no longer found, e.g. the
-// user already edited that text some other way.
-function findSuggestionRange(editor: Editor, searchText: string): { from: number; to: number } | null {
-  let result: { from: number; to: number } | null = null;
-  editor.state.doc.descendants((node, pos) => {
-    if (result) return false;
-    if (node.isText && node.text) {
-      const idx = node.text.indexOf(searchText);
-      if (idx !== -1) {
-        result = { from: pos + idx, to: pos + idx + searchText.length };
-        return false;
-      }
-    }
-    return true;
-  });
-  return result;
-}
-
-// Phase 1 Professional Usability (2026-08-09) — Find & Replace. Walks
-// every text node in the live document collecting ALL occurrences of
-// `searchText` (not just the first, unlike findSuggestionRange above),
-// using the exact same non-overlapping match logic as the pure
-// findAllTextMatches() (app/tools/document-studio/utils/findReplace.ts)
-// applied per text node. Same documented limitation as
-// findSuggestionRange: won't find a match split across two differently-
-// marked runs (e.g. half-bold half-plain) — the common case (plain
-// prose) is unaffected.
-function findAllRangesInEditor(editor: Editor, searchText: string): { from: number; to: number }[] {
-  if (!searchText) return [];
-  const ranges: { from: number; to: number }[] = [];
-  editor.state.doc.descendants((node, pos) => {
-    if (node.isText && node.text) {
-      for (const match of findAllTextMatches(node.text, searchText)) {
-        ranges.push({ from: pos + match.index, to: pos + match.index + match.length });
-      }
-    }
-    return true;
-  });
-  return ranges;
-}
-
-/**
- * Collects all match ranges in the document DESCENDING by position, so
- * replacements from the end don't corrupt earlier offsets. Returns marks
- * from the source text node so formatting can be preserved per-run.
- * Computed ONCE — never re-searched after replacements begin, preventing
- * loops when the replacement text contains the search query.
- */
-/**
- * Pure helper exported for testing — builds the Replace All ProseMirror
- * transaction without dispatching it. Takes a snapshot of the current
- * document state, finds all matches ONCE (descending), and returns a
- * transaction that replaces them all with the replacement text while
- * preserving each source run's marks.
- * Returns null if no matches found or search is empty.
- */
-export function buildReplaceAllTransaction(
-  state: import("@tiptap/pm/state").EditorState,
-  searchText: string,
-  replaceText: string
-): import("@tiptap/pm/state").Transaction | null {
-  if (!searchText) return null;
-  const results: { from: number; to: number; marks: import("@tiptap/pm/model").Mark[] }[] = [];
-  state.doc.descendants((node, pos) => {
-    if (node.isText && node.text) {
-      for (const match of findAllTextMatches(node.text, searchText)) {
-        results.push({ from: pos + match.index, to: pos + match.index + match.length, marks: [...node.marks] });
-      }
-    }
-    return true;
-  });
-  if (results.length === 0) return null;
-  results.sort((a, b) => b.from - a.from); // descending
-  const tr = state.tr;
-  for (const m of results) {
-    const textNode = replaceText ? state.schema.text(replaceText, m.marks) : null;
-    tr.replaceWith(m.from, m.to, textNode ? [textNode] : []);
-  }
-  return tr;
-}
-
-function collectMatchesDescending(
-  editor: Editor,
-  searchText: string
-): { from: number; to: number; marks: import("@tiptap/pm/model").Mark[] }[] {
-  if (!searchText) return [];
-  const results: { from: number; to: number; marks: import("@tiptap/pm/model").Mark[] }[] = [];
-  editor.state.doc.descendants((node, pos) => {
-    if (node.isText && node.text) {
-      for (const match of findAllTextMatches(node.text, searchText)) {
-        results.push({ from: pos + match.index, to: pos + match.index + match.length, marks: [...node.marks] });
-      }
-    }
-    return true;
-  });
-  return results.sort((a, b) => b.from - a.from);
-}
-
-// Phase 1 Professional Usability (2026-08-09) — Document Outline
-// navigation. Maps a heading's position within doc.content (blockIndex,
-// from extractDocumentOutline) to its real starting ProseMirror position
-// in the live editor, by counting top-level nodes the same way
-// doc.content is indexed — headings are always top-level siblings (see
-// documentOutline.ts's own comment), so this stays in sync with
-// extractDocumentOutline's indexing by construction.
-function findBlockStartPosition(editor: Editor, blockIndex: number): number | null {
-  let currentIndex = 0;
-  let foundPos: number | null = null;
-  editor.state.doc.forEach((node, offset) => {
-    if (currentIndex === blockIndex) {
-      foundPos = offset + 1; // +1: move past the block node's own opening boundary, into its text content
-    }
-    currentIndex++;
-  });
-  return foundPos;
 }
 
 export default function DocumentStudioEditor() {
@@ -870,9 +173,8 @@ export default function DocumentStudioEditor() {
   // secondary panel is visible at a time, and the editor itself stays
   // the clean, unchanged default view. All existing state/handlers below
   // are unchanged — this only reorganizes how they're rendered.
-  type StudioTab = "none" | "find" | "outline" | "quality" | "glossary" | "settings";
   const [activeTab, setActiveTab] = useState<StudioTab>("none");
-  const toggleTab = (tab: StudioTab) => setActiveTab((prev) => (prev === tab ? "none" : tab));
+  const toggleTab = (tab: Exclude<StudioTab, "none">) => setActiveTab((prev) => (prev === tab ? "none" : tab));
   const [findQuery, setFindQuery] = useState("");
   const [replaceQuery, setReplaceQuery] = useState("");
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
@@ -917,19 +219,7 @@ export default function DocumentStudioEditor() {
   const [initialContent] = useState(() => getInitialDraftContent());
 
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        paragraph: false,
-        heading: false,
-      }),
-      ParagraphWithDir,
-      HeadingWithDir,
-      Link.configure({ openOnClick: false }),
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      TextStyle,
-      FontFamily,
-      FontSize.configure({ types: ["textStyle"] }),
-    ],
+    extensions: createDocumentStudioExtensions(),
     content: initialContent,
     immediatelyRender: false,
     editorProps: {
@@ -937,28 +227,7 @@ export default function DocumentStudioEditor() {
         dir,
         class: "focus:outline-none",
       },
-      transformPasted: (slice) => {
-        if (!slice.content.size) return slice;
-
-        function assignDir(node: import("@tiptap/pm/model").Node): import("@tiptap/pm/model").Node {
-          if (!node.isTextblock) {
-            const mapped = node.content.content.map(assignDir);
-            return node.copy(pmFragment.from(mapped));
-          }
-          const text = node.textContent;
-          if (!text.trim()) return node;
-          // Always re-detect direction from content. The schema default is
-          // "rtl", so we cannot distinguish "user-explicitly-set" from
-          // "schema-default". Re-detecting for non-empty blocks is safe
-          // because: (1) direction is derivable from content, (2) explicit
-          // user textAlign is preserved separately (we only touch dir).
-          const detectedDir = detectBlockDirection(text, dir);
-          return node.type.create({ ...node.attrs, dir: detectedDir }, node.content, node.marks);
-        }
-
-        const nodes = slice.content.content.map(assignDir);
-        return new pmSlice(pmFragment.from(nodes), slice.openStart, slice.openEnd);
-      },
+      transformPasted: (slice) => transformPastedSlice(slice, dir),
     },
     onUpdate: ({ editor }) => {
       if (hasAuditReportRef.current) {
@@ -1395,14 +664,7 @@ export default function DocumentStudioEditor() {
   // earlier replacements shifting later offsets. One transaction = one undo step.
   const handleReplaceAll = () => {
     if (!editor || !findQuery) return;
-    const matches = collectMatchesDescending(editor, findQuery);
-    if (matches.length === 0) return;
-    const { tr, schema } = editor.state;
-    for (const m of matches) {
-      const textNode = replaceQuery ? schema.text(replaceQuery, m.marks) : null;
-      tr.replaceWith(m.from, m.to, textNode ? [textNode] : []);
-    }
-    editor.view.dispatch(tr);
+    replaceAll(editor, findQuery, replaceQuery);
     setCurrentMatchIndex(-1);
   };
 
@@ -1663,31 +925,6 @@ export default function DocumentStudioEditor() {
     }
   };
 
-  const TAB_LABELS: Record<"find" | "outline" | "quality" | "glossary" | "settings", string> = isUr
-    ? {
-        find: "🔍 تلاش اور تبدیلی",
-        outline: "📑 خاکہ",
-        quality: "✓ معیار اور تجاویز",
-        glossary: `📖 اصطلاحات${glossary.length > 0 ? ` (${glossary.length})` : ""}`,
-        settings: "⚙️ ترتیبات",
-      }
-    : {
-        find: "🔍 Find & Replace",
-        outline: "📑 Outline",
-        quality: "✓ Quality & Suggestions",
-        glossary: `📖 Glossary${glossary.length > 0 ? ` (${glossary.length})` : ""}`,
-        settings: "⚙️ Settings",
-      };
-
-  // One semantic order for both languages; dir on the container handles visual flow.
-  const TAB_DEFINITIONS: { id: "find" | "outline" | "quality" | "glossary" | "settings"; label: string }[] = [
-    { id: "find", label: TAB_LABELS.find },
-    { id: "outline", label: TAB_LABELS.outline },
-    { id: "quality", label: TAB_LABELS.quality },
-    { id: "glossary", label: TAB_LABELS.glossary },
-    { id: "settings", label: TAB_LABELS.settings },
-  ];
-
   return (
     <div className="site-container">
       {/* Document Studio Simplification (2026-08-10) — the editor card
@@ -1699,7 +936,7 @@ export default function DocumentStudioEditor() {
           once, and none of them show unless explicitly opened. */}
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-[#1A3A2A]/10 shadow-[0_2px_20px_rgba(26,58,42,0.06)]">
         <div className="flex justify-between items-center mb-3">
-          <Toolbar editor={editor} dir={dir} setDir={setDir} processingLanguage={processingLanguage} setProcessingLanguage={setProcessingLanguage} isUr={isUr} />
+          <DocumentToolbar editor={editor} dir={dir} setDir={setDir} processingLanguage={processingLanguage} setProcessingLanguage={setProcessingLanguage} isUr={isUr} />
           <div className="text-xs text-stone-500 font-sans" dir="ltr">
             {saveStatus === "saving" && (isUr ? "💾 محفوظ ہو رہا ہے…" : "💾 Saving...")}
             {saveStatus === "saved" && (isUr ? "✓ براؤزر میں محفوظ" : "✓ Saved to browser")}
@@ -1767,114 +1004,16 @@ export default function DocumentStudioEditor() {
           </div>
         )}
 
-        {/* A4-style document canvas */}
-        <div className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-4 sm:py-6 md:px-8 md:py-8">
-          {/* OUTER PAGE — constrains size and shows page appearance (border/shadow/bg).
-               NO publishing padding here: percentage padding on this element would
-               resolve against the canvas containing block (e.g. 800px) rather than
-               the page's own constrained width (e.g. 546px), producing margins that
-               are too large on desktop (97px instead of ~66px for A4 normal). */}
-          <div
-            className="relative mx-auto w-full rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
-            style={(() => {
-              const layout = pageLayout;
-              const scale = Math.min(2.6, 860 / layout.widthMm);
-              return {
-                maxWidth: `${layout.widthMm * scale}px`,
-                aspectRatio: `${layout.widthMm} / ${layout.heightMm}`,
-                fontSize: `${documentSettings.typography.bodyFontSizePt}pt`,
-                lineHeight: documentSettings.typography.lineHeight,
-              };
-            })()}
-            dir={dir}
-            onClick={handleWrapperClick}
-            role="textbox"
-            aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
-          >
-            {/* Empty-state overlay covers the full page box including the
-                margin areas below — inset-0 is correct here on the outer div. */}
-            {isEditorEmpty && editor && (
-              <div
-                className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 py-10"
-                aria-hidden={false}
-              >
-                <p className="mb-2 text-3xl text-[#B8935A]/80 select-none" aria-hidden>
-                  ✎
-                </p>
-                <p
-                  className={`mb-5 text-sm sm:text-base text-gray-500 ${isUr ? "font-naskh" : ""}`}
-                  dir={dir}
-                >
-                  {isUr ? "یہاں لکھنا شروع کریں…" : "Start writing here…"}
-                </p>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLoadExample();
-                  }}
-                  className={`pointer-events-auto h-10 px-5 rounded-lg text-sm font-semibold border border-[#1A3A2A]/20 bg-white text-[#1A3A2A] hover:bg-[#F7F5EF] shadow-sm ${isUr ? "font-naskh" : ""}`}
-                >
-                  {isUr ? "مثال لوڈ کریں" : "Load Example"}
-                </button>
-              </div>
-            )}
-
-            {/* INNER PAGE CONTENT — 100% width of the outer page div, so its
-                containing block IS the constrained page width (e.g. 546px).
-                Percentage padding here resolves against 546px, not the 800px
-                canvas, giving the correct ~66px for a 12.095% A4 normal margin. */}
-            <div
-              className="cursor-text"
-              style={(() => {
-                const padding = resolveResponsivePagePadding(pageLayout, dir);
-                return {
-                  width: "100%",
-                  minHeight: "100%",
-                  paddingTop: `${padding.topPct}%`,
-                  paddingBottom: `${padding.bottomPct}%`,
-                  paddingLeft: `${padding.leftPct}%`,
-                  paddingRight: `${padding.rightPct}%`,
-                };
-              })()}
-            >
-            <EditorContent
-              editor={editor}
-              className={`qalam-editor-content qalam-doc-page focus:outline-none ${
-                dir === "rtl" ? "font-nastaliq" : ""
-              }`}
-              style={
-                {
-                  // Batch 16A — document-wide typography defaults, applied
-                  // as CSS variables the .ProseMirror rules above fall back
-                  // to. Explicit per-block attrs (rendered as real inline
-                  // styles, e.g. lineHeight) still win via normal CSS
-                  // cascade specificity — inline style on the block itself
-                  // beats an inherited custom-property-based rule.
-                  "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
-                  "--qalam-line-height": documentSettings.typography.lineHeight,
-                  // Batch 16A.1 (item 3) — direction-specific default font
-                  // stacks, resolved through fontRegistry (never bypassed).
-                  // An explicit textStyle.fontFamily mark still renders as
-                  // a real inline style on its own <span> via TipTap's
-                  // FontFamily extension, which wins over these inherited,
-                  // direction-scoped rules via normal CSS cascade.
-                  "--qalam-rtl-font": `"${getFontById(documentSettings.typography.defaultRtlFontId).editorFamily}"`,
-                  "--qalam-ltr-font": `"${getFontById(documentSettings.typography.defaultLtrFontId).editorFamily}"`,
-                  // Batch 16B.1 (item 2) — document-wide paragraph
-                  // defaults (indent/spacing), same precedence pattern:
-                  // an explicit per-block inline style (from
-                  // firstLineIndentMm/spaceBeforePt/spaceAfterPt)
-                  // overrides these via normal cascade.
-                  "--qalam-first-line-indent": `${documentSettings.typography.firstLineIndentMm}mm`,
-                  "--qalam-paragraph-before": `${documentSettings.typography.paragraphBeforePt}pt`,
-                  "--qalam-paragraph-after": `${documentSettings.typography.paragraphAfterPt}pt`,
-                } as React.CSSProperties
-              }
-            />
-            </div>
-          </div>
-        </div>
+        <DocumentCanvas
+          editor={editor}
+          dir={dir}
+          isUr={isUr}
+          isEditorEmpty={isEditorEmpty}
+          documentSettings={documentSettings}
+          pageLayout={pageLayout}
+          onLoadExample={handleLoadExample}
+          onWrapperClick={handleWrapperClick}
+        />
 
         {/* Primary processing actions — directly under editor (mobile + desktop) */}
         <div className="mt-4 space-y-3" dir={dir}>
@@ -2087,510 +1226,62 @@ export default function DocumentStudioEditor() {
         )}
       </div>
 
-      {/* Tab bar — at most one panel below is ever open. Clicking an
-          already-active tab closes it, returning to the clean editor-only
-          view. */}
-      <div className="flex flex-wrap justify-center gap-2 mt-5 bg-[#D8EBDC] rounded-xl border border-[#1A3A2A]/20 shadow-md p-3" dir={isUr ? "rtl" : "ltr"}>
-        {TAB_DEFINITIONS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => toggleTab(tab.id)}
-            className={`h-10 px-5 rounded-lg text-[15px] font-semibold transition-all ${
-              activeTab === tab.id
-                ? "bg-[#1A3A2A] text-white shadow-sm"
-                : "bg-white/80 text-[#1A3A2A]/80 border border-[#1A3A2A]/10 hover:bg-white hover:text-[#1A3A2A] hover:border-[#1A3A2A]/20"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-        {/* Compact Quality indicator — reads ONLY from already-computed
-            auditReport state; causes NO new analysis. Clicking opens the
-            existing Quality tab. Neutral state when no analysis available. */}
-        {auditReport && (
-          <button
-            type="button"
-            onClick={() => setActiveTab(activeTab === "quality" ? "none" : "quality")}
-            title={isAuditStale ? (isUr ? "کوالٹی اسکور پرانا ہو سکتا ہے — دوبارہ آڈٹ چلائیں" : "Quality score may be outdated — re-run Quality audit") : (isUr ? "کوالٹی اسکور" : "Quality score")}
-            className="h-10 px-4 rounded-lg text-xs font-semibold border border-[#1A3A2A]/20 bg-white/80 text-[#1A3A2A] hover:bg-white tabular-nums"
-          >
-            {isAuditStale ? "~" : ""}
-            {auditReport.score}
-            {auditReport.totalIssues > 0 ? ` · ${auditReport.totalIssues} ⚠` : " ✓"}
-          </button>
-        )}
-      </div>
-
-      {activeTab === "find" && (
-        <div className="mt-3">
-          <FindReplacePanel
-            isOpen={true}
-            searchQuery={findQuery}
-            replaceQuery={replaceQuery}
-            matchCount={currentMatches.length}
-            currentMatchIndex={currentMatchIndex}
-            onSearchChange={handleFindQueryChange}
-            onReplaceChange={setReplaceQuery}
-            onNext={handleFindNext}
-            onPrevious={handleFindPrevious}
-            onReplaceCurrent={handleReplaceCurrent}
-            onReplaceAll={handleReplaceAll}
-            onClose={handleCloseFindReplace}
-            isUr={isUr}
-          />
-        </div>
-      )}
-
-      {activeTab === "outline" && (
-        <div className="mt-3">
-          <DocumentOutlinePanel outline={outline} onNavigate={handleOutlineNavigate} isUr={isUr} />
-        </div>
-      )}
-
-      {activeTab === "settings" && (
-        <div className="mt-3 space-y-4 rounded-xl border border-[#1A3A2A]/10 bg-white p-4">
-          <WordRuler dir={dir} layout={pageLayout} />
-          <div>
-            <h3 className="text-sm font-semibold text-[#1A3A2A] mb-2">Document Style</h3>
-            <PublishingPresetSelector selectedId={selectedPresetId} onChange={handlePresetChange} isUr={isUr} />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-xs font-medium text-gray-600">
-              Page size
-              <select
-                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
-                value={documentSettings.page.size}
-                onChange={(e) => {
-                  const size = e.target.value as "a4" | "a5" | "letter";
-                  setDocumentSettings((s) => ({ ...s, page: { ...s.page, size } }));
-                  setPdfSummary(null);
-                }}
-              >
-                <option value="a4">A4</option>
-                <option value="a5">A5</option>
-                <option value="letter">Letter</option>
-              </select>
-            </label>
-            <label className="text-xs font-medium text-gray-600">
-              Orientation
-              <select
-                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
-                value={documentSettings.page.orientation}
-                onChange={(e) => {
-                  const orientation = e.target.value as "portrait" | "landscape";
-                  setDocumentSettings((s) => ({ ...s, page: { ...s.page, orientation } }));
-                  setPdfSummary(null);
-                }}
-              >
-                <option value="portrait">{isUr ? "عمودی" : "Portrait"}</option>
-                <option value="landscape">{isUr ? "افقی" : "Landscape"}</option>
-              </select>
-            </label>
-            <label className="text-xs font-medium text-gray-600">
-              Margins
-              <select
-                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
-                value={documentSettings.page.margins.preset}
-                onChange={(e) => {
-                  const preset = e.target.value as "normal" | "narrow" | "wide" | "custom";
-                  setDocumentSettings((s) => ({
-                    ...s,
-                    page: { ...s.page, margins: { ...s.page.margins, preset } },
-                  }));
-                  setPdfSummary(null);
-                }}
-              >
-                <option value="normal">{isUr ? "عام" : "Normal"}</option>
-                <option value="narrow">{isUr ? "تنگ" : "Narrow"}</option>
-                <option value="wide">{isUr ? "چوڑا" : "Wide"}</option>
-                <option value="custom">{isUr ? "خصوصی" : "Custom"}</option>
-              </select>
-            </label>
-            {documentSettings.page.margins.preset === "custom" && (
-              <div className="col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {(["topMm", "bottomMm", "startMm", "endMm"] as const).map((key) => (
-                  <label key={key} className="text-xs font-medium text-gray-600">
-                    {isUr ? (key === "topMm" ? "اوپر" : key === "bottomMm" ? "نیچے" : key === "startMm" ? "آغاز" : "اختتام") : (key === "topMm" ? "Top" : key === "bottomMm" ? "Bottom" : key === "startMm" ? "Start" : "End")} (mm)
-                    <input
-                      type="number"
-                      min={MARGIN_MIN_MM}
-                      max={MARGIN_MAX_MM}
-                      className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
-                      value={documentSettings.page.margins[key]}
-                      onChange={(e) => {
-                        const raw = Number(e.target.value);
-                        const value = clampMarginMm(raw);
-                        setDocumentSettings((s) => ({
-                          ...s,
-                          page: { ...s.page, margins: { ...s.page.margins, [key]: value } },
-                        }));
-                        setPdfSummary(null);
-                      }}
-                    />
-                  </label>
-                ))}
-              </div>
-            )}
-            <label className="text-xs font-medium text-gray-600">
-              Body size (pt)
-              <select
-                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
-                value={documentSettings.typography.bodyFontSizePt}
-                onChange={(e) => {
-                  const bodyFontSizePt = Number(e.target.value);
-                  setDocumentSettings((s) => ({
-                    ...s,
-                    typography: { ...s.typography, bodyFontSizePt },
-                  }));
-                }}
-              >
-                {FONT_SIZE_OPTIONS_PT.map((pt) => (
-                  <option key={pt} value={pt}>
-                    {pt} pt
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-xs font-medium text-gray-600">
-              Default line spacing
-              <select
-                className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
-                value={documentSettings.typography.lineHeight}
-                onChange={(e) => {
-                  const lineHeight = Number(e.target.value);
-                  setDocumentSettings((s) => ({
-                    ...s,
-                    typography: { ...s.typography, lineHeight },
-                  }));
-                }}
-              >
-                {LINE_HEIGHT_OPTIONS.map((lh) => (
-                  <option key={lh} value={lh}>
-                    {lh}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {/* Header settings */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={documentSettings.headerFooter.headerEnabled}
-                  onChange={(e) => {
-                    setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, headerEnabled: e.target.checked } }));
-                    setPdfSummary(null);
-                  }}
-                />
-                {isUr ? "ہیڈر" : "Header"}
-              </label>
-              {documentSettings.headerFooter.headerEnabled && (
-                <>
-                  <select
-                    className="w-full h-9 rounded-md border border-gray-200 bg-white px-2 text-xs"
-                    value={documentSettings.headerFooter.headerMode}
-                    onChange={(e) => {
-                      setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, headerMode: e.target.value as "auto-title" | "custom" } }));
-                      setPdfSummary(null);
-                    }}
-                  >
-                    <option value="auto-title">{isUr ? "خودکار عنوان" : "Auto title"}</option>
-                    <option value="custom">{isUr ? "حسب ضرورت" : "Custom"}</option>
-                  </select>
-                  {documentSettings.headerFooter.headerMode === "custom" && (
-                    <input
-                      type="text"
-                      maxLength={120}
-                      placeholder={isUr ? "ہیڈر متن…" : "Header text…"}
-                      className="w-full h-9 rounded-md border border-gray-200 px-2 text-xs"
-                      value={documentSettings.headerFooter.headerText}
-                      onChange={(e) => {
-                        setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, headerText: e.target.value } }));
-                        setPdfSummary(null);
-                      }}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-            {/* Footer settings */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={documentSettings.headerFooter.footerEnabled}
-                  onChange={(e) => {
-                    setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, footerEnabled: e.target.checked } }));
-                    setPdfSummary(null);
-                  }}
-                />
-                {isUr ? "فوٹر" : "Footer"}
-              </label>
-              {documentSettings.headerFooter.footerEnabled && (
-                <>
-                  <input
-                    type="text"
-                    maxLength={120}
-                    placeholder={isUr ? "فوٹر متن…" : "Footer text…"}
-                    className="w-full h-9 rounded-md border border-gray-200 px-2 text-xs"
-                    value={documentSettings.headerFooter.footerText}
-                    onChange={(e) => {
-                      setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, footerText: e.target.value } }));
-                      setPdfSummary(null);
-                    }}
-                  />
-                  <select
-                    className="w-full h-9 rounded-md border border-gray-200 bg-white px-2 text-xs"
-                    value={documentSettings.headerFooter.pageNumbers}
-                    onChange={(e) => {
-                      const pageNumbers = e.target.value as "none" | "current" | "current-total";
-                      setDocumentSettings((s) => ({ ...s, headerFooter: { ...s.headerFooter, pageNumbers } }));
-                      setPdfSummary(null);
-                    }}
-                  >
-                    <option value="none">{isUr ? "صفحہ نمبر نہیں" : "No page numbers"}</option>
-                    <option value="current">{isUr ? "موجودہ صفحہ" : "Current page"}</option>
-                    <option value="current-total">{isUr ? "موجودہ / کل" : "Current / Total"}</option>
-                  </select>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "glossary" && (
-        <div className="mt-3">
-          <GlossaryPanel
-            entries={glossary}
-            onAdd={handleGlossaryAdd}
-            onUpdate={handleGlossaryUpdate}
-            onDelete={handleGlossaryDelete}
-            onExport={handleGlossaryExport}
-            onImport={handleGlossaryImport}
-            isUr={isUr}
-          />
-        </div>
-      )}
-
-      {activeTab === "quality" && (
-        <div className="bg-white p-6 rounded-2xl border border-[#1A3A2A]/10 shadow-[0_2px_20px_rgba(26,58,42,0.06)] mt-3" dir="rtl">
-          <div className="mb-4">
-            <DocumentStatsBar stats={stats} health={health} isUr={isUr} />
-          </div>
-
-          <h2 className="text-sm font-bold text-amber-800 mb-3">قلم ٹولز / Qalam Tools</h2>
-
-          <div className="mb-4" dir="ltr">
-            <label htmlFor="studio-proc-lang" className="block text-xs font-semibold text-gray-700 mb-1">
-              {isUr ? "متن کی زبان" : "Text language"}
-            </label>
-            <select
-              id="studio-proc-lang"
-              value={processingLanguage}
-              onChange={(e) => {
-              const next = e.target.value as ProcessingLanguage;
-              setProcessingLanguage(next);
-              trackEvent("tool_mode_change", { tool: "document_studio", mode: next });
-            }}
-              className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30"
-            >
-              <option value="auto">{isUr ? "آٹو" : "Auto"}</option>
-              <option value="ur">{isUr ? "اردو" : "Urdu"}</option>
-              <option value="en">{isUr ? "انگریزی" : "English"}</option>
-              <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
-            </select>
-            <p className="mt-1 text-[11px] text-gray-500 leading-snug max-w-xl">
-              {isUr
-                ? "آٹو غیر یقینی عربی رسم الخط پر صرف محفوظ صفائی کرتا ہے۔ مخصوص اصلاح کے لیے اردو یا عربی منتخب کریں۔"
-                : "Auto safely detects English or uses non-destructive RTL cleanup when the script is uncertain. Choose Urdu or Arabic for language-specific normalization."}
-            </p>
-            {lastResolved && (
-              <p className="mt-2 text-xs font-medium text-gray-800">
-                {lastResolved === "ur"
-                  ? (isUr ? "عمل کی زبان: اردو" : "Processed as: Urdu")
-                  : lastResolved === "en"
-                    ? (isUr ? "عمل کی زبان: انگریزی" : "Processed as: English")
-                    : lastResolved === "ar"
-                      ? (isUr ? "عمل کی زبان: عربی" : "Processed as: Arabic")
-                      : (isUr ? "عمل کی نوعیت: محفوظ آر ٹی ایل" : "Processed as: Safe RTL")}
-              </p>
-            )}
-            {lastResolved === "rtl-neutral" && (
-              <p className="mt-1 text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
-                {isUr
-                  ? "عربی رسم الخط کا متن پایا گیا — صرف محفوظ عمومی صفائی۔ مخصوص اصلاح کے لیے اردو یا عربی منتخب کریں۔"
-                  : "Arabic-script text detected — safe cleanup only. Choose Urdu or Arabic for language-specific processing."}
-              </p>
-            )}
-          </div>
-
-          <div className="mt-4">
-            <QualityAuditPanel report={auditReport} isStale={isAuditStale} isUr={isUr} />
-          </div>
-
-          <div className="mt-4">
-            <SuggestionsPanel
-              pending={reviewState.pending}
-              accepted={reviewState.accepted}
-              ignored={reviewState.ignored}
-              onAccept={handleAcceptSuggestion}
-              onIgnore={handleIgnoreSuggestion}
-              onApplyAccepted={handleApplyAccepted}
-              onAcceptCategory={handleAcceptCategory}
-              onIgnoreCategory={handleIgnoreCategory}
-              isUr={isUr}
-            />
-          </div>
-        </div>
-      )}
-
-      <style jsx global>{`
-        /* Document page canvas: Word/Docs-like reading surface.
-           Batch 16A: font-size/line-height now come from CSS variables
-           set on the wrapper element from documentSettings.typography
-           (see the inline style on .qalam-doc-page below) — the px/rem
-           values here are only the FALLBACK for when no variable is set,
-           never an override of a genuine document setting. Any per-block
-           inline style="line-height:…" (from the real lineHeight attr
-           above) naturally wins via normal CSS cascade specificity. */
-        .qalam-editor-content.qalam-doc-page .ProseMirror {
-          min-height: 60vh;
-          /* Batch 16B — page wrapper owns publishing margins (see its
-             inline style above); this is minimal caret/click safety
-             padding only, not a second publishing margin. */
-          padding: 0.5rem;
-          outline: none;
-          text-align: start;
-          font-size: var(--qalam-body-size, 1.05rem);
-          line-height: var(--qalam-line-height, 1.85);
-          color: #1a1a1a;
-        }
-        /* Root direction from toolbar RTL/LTR — controls empty caret side */
-        .qalam-editor-content .ProseMirror[dir="rtl"] {
-          direction: rtl;
-        }
-        .qalam-editor-content .ProseMirror[dir="ltr"] {
-          direction: ltr;
-        }
-        @media (min-width: 640px) {
-          .qalam-editor-content.qalam-doc-page .ProseMirror {
-            padding: 0.75rem;
-            font-size: var(--qalam-body-size, 1.1rem);
-            line-height: var(--qalam-line-height, 1.9);
-          }
-        }
-        /* Explicit block direction (from paragraph attrs) controls caret side. */
-        .qalam-editor-content .ProseMirror p[dir="rtl"],
-        .qalam-editor-content .ProseMirror h1[dir="rtl"],
-        .qalam-editor-content .ProseMirror h2[dir="rtl"],
-        .qalam-editor-content .ProseMirror h3[dir="rtl"],
-        .qalam-editor-content .ProseMirror h4[dir="rtl"] {
-          direction: rtl;
-          unicode-bidi: isolate;
-          text-align: start;
-          /* Batch 16A.1 (item 3) — document default RTL font; an explicit
-             textStyle.fontFamily mark on a run still wins (its own inline
-             style on the span beats this inherited block-level rule). */
-          font-family: var(--qalam-rtl-font, "Noto Nastaliq Urdu");
-        }
-        .qalam-editor-content .ProseMirror p[dir="ltr"],
-        .qalam-editor-content .ProseMirror h1[dir="ltr"],
-        .qalam-editor-content .ProseMirror h2[dir="ltr"],
-        .qalam-editor-content .ProseMirror h3[dir="ltr"],
-        .qalam-editor-content .ProseMirror h4[dir="ltr"] {
-          direction: ltr;
-          unicode-bidi: isolate;
-          text-align: start;
-          font-family: var(--qalam-ltr-font, "Inter");
-        }
-        /* Blocks without dir: content-based mixed rendering */
-        .qalam-editor-content .ProseMirror p:not([dir]),
-        .qalam-editor-content .ProseMirror h1:not([dir]),
-        .qalam-editor-content .ProseMirror h2:not([dir]),
-        .qalam-editor-content .ProseMirror h3:not([dir]),
-        .qalam-editor-content .ProseMirror h4:not([dir]) {
-          unicode-bidi: plaintext;
-          text-align: start;
-        }
-        /* Batch 16A.1 — canonical block-style rules generated from
-           BLOCK_STYLES above (single source of truth with PDF/DOCX). */
-        ${BLOCK_STYLE_EDITOR_CSS}
-        /* Batch 16A correction — these previously hardcoded 1.95/1.7
-           unconditionally, defeating --qalam-line-height for every
-           ordinary paragraph regardless of documentSettings. Now
-           inherits the document-wide variable; an explicit per-block
-           lineHeight attr still wins (it renders as a real inline
-           style on the element itself, which beats an inherited rule
-           via normal CSS cascade specificity — untouched by this). */
-        .qalam-editor-content p {
-          margin-block-start: var(--qalam-paragraph-before, 0);
-          margin-block-end: var(--qalam-paragraph-after, 0.55rem);
-          text-indent: var(--qalam-first-line-indent, 0);
-          line-height: inherit;
-        }
-        /* Latin-leaning paragraphs: only nudge if no document-wide
-           value has been explicitly set on the wrapper, so a genuine
-           documentSettings choice is never silently overridden. */
-        .qalam-editor-content p:lang(en) {
-          line-height: inherit;
-        }
-        .qalam-editor-content h1 {
-          font-size: 1.55rem;
-          font-weight: 700;
-          margin: 1rem 0 0.55rem;
-          line-height: 1.45;
-        }
-        .qalam-editor-content h2 {
-          font-size: 1.28rem;
-          font-weight: 700;
-          margin: 0.85rem 0 0.45rem;
-          line-height: 1.45;
-        }
-        .qalam-editor-content h3 {
-          font-size: 1.12rem;
-          font-weight: 700;
-          margin: 0.7rem 0 0.4rem;
-          line-height: 1.45;
-        }
-        .qalam-editor-content h4 {
-          font-size: 1.02rem;
-          font-weight: 700;
-          margin: 0.6rem 0 0.35rem;
-          line-height: 1.45;
-        }
-        .qalam-editor-content ul {
-          list-style: disc;
-          padding-inline-start: 1.5rem;
-          margin: 0.35rem 0;
-        }
-        .qalam-editor-content ol {
-          list-style: decimal;
-          padding-inline-start: 1.5rem;
-          margin: 0.35rem 0;
-        }
-        .qalam-editor-content li {
-          margin: 0.15rem 0;
-          unicode-bidi: plaintext;
-          text-align: start;
-        }
-        .qalam-editor-content blockquote {
-          border-inline-start: 3px solid #d97706;
-          padding-inline-start: 1rem;
-          color: #57534e;
-          font-style: italic;
-          margin: 0.5rem 0;
-          unicode-bidi: plaintext;
-          text-align: start;
-        }
-        .qalam-editor-content a {
-          color: #b45309;
-          text-decoration: underline;
-        }
-      `}</style>
+      <DocumentStudioPanels
+        isUr={isUr}
+        dir={dir}
+        activeTab={activeTab}
+        onToggleTab={toggleTab}
+        setActiveTab={setActiveTab}
+        glossaryCount={glossary.length}
+        auditReport={auditReport}
+        isAuditStale={isAuditStale}
+        find={{
+          query: findQuery,
+          replaceQuery,
+          matchCount: currentMatches.length,
+          currentMatchIndex,
+          onSearchChange: handleFindQueryChange,
+          onReplaceChange: setReplaceQuery,
+          onNext: handleFindNext,
+          onPrevious: handleFindPrevious,
+          onReplaceCurrent: handleReplaceCurrent,
+          onReplaceAll: handleReplaceAll,
+          onClose: handleCloseFindReplace,
+        }}
+        outline={{
+          entries: outline,
+          onNavigate: handleOutlineNavigate,
+        }}
+        quality={{
+          stats,
+          health,
+          processingLanguage,
+          setProcessingLanguage,
+          lastResolved,
+          reviewState,
+          onAccept: handleAcceptSuggestion,
+          onIgnore: handleIgnoreSuggestion,
+          onApplyAccepted: handleApplyAccepted,
+          onAcceptCategory: handleAcceptCategory,
+          onIgnoreCategory: handleIgnoreCategory,
+        }}
+        glossary={{
+          entries: glossary,
+          onAdd: handleGlossaryAdd,
+          onUpdate: handleGlossaryUpdate,
+          onDelete: handleGlossaryDelete,
+          onExport: handleGlossaryExport,
+          onImport: handleGlossaryImport,
+        }}
+        settings={{
+          pageLayout,
+          documentSettings,
+          setDocumentSettings,
+          selectedPresetId,
+          onPresetChange: handlePresetChange,
+          onPageChange: () => setPdfSummary(null),
+        }}
+      />
     </div>
   );
 }

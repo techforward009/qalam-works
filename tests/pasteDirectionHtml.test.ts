@@ -9,8 +9,8 @@ import { EditorState } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import { TextStyle, FontFamily, FontSize } from "@tiptap/extension-text-style";
 import TextAlign from "@tiptap/extension-text-align";
-import { ParagraphWithDir, HeadingWithDir } from "../app/tools/document-studio/components/DocumentStudioEditor";
-import { detectBlockDirection } from "../app/tools/document-studio/utils/plainTextToDocNode";
+import { ParagraphWithDir, HeadingWithDir } from "../app/tools/document-studio/utils/documentSchema";
+import { transformPastedSlice } from "../app/tools/document-studio/utils/documentCommands";
 
 const extensions = [
   StarterKit.configure({ paragraph: false, heading: false }),
@@ -23,25 +23,7 @@ const extensions = [
 ];
 const schema = getSchema(extensions);
 
-// The same transformPasted logic extracted for testing (mirrors the editor's
-// implementation exactly, so if the editor changes, tests will catch it).
-function applyDirectionTransform(slice: Slice, fallbackDir: "rtl" | "ltr"): Slice {
-  if (!slice.content.size) return slice;
-  function assignDir(node: import("@tiptap/pm/model").Node): import("@tiptap/pm/model").Node {
-    if (!node.isTextblock) {
-      const mapped = node.content.content.map(assignDir);
-      return node.copy(Fragment.from(mapped));
-    }
-    const text = node.textContent;
-    if (!text.trim()) return node;
-    // Always re-detect: schema default is "rtl", so we can't distinguish
-    // user-set from default. Re-detecting from content is safe and correct.
-    const detectedDir = detectBlockDirection(text, fallbackDir);
-    return node.type.create({ ...node.attrs, dir: detectedDir }, node.content, node.marks);
-  }
-  const nodes = slice.content.content.map(assignDir);
-  return new Slice(Fragment.from(nodes), slice.openStart, slice.openEnd);
-}
+const applyDirectionTransform = transformPastedSlice;
 
 // Build a Slice from a JSON doc (simulates what ProseMirror parses from HTML)
 function sliceFromParas(paras: { text: string; attrs?: Record<string, unknown> }[]): Slice {

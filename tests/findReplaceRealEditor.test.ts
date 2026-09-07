@@ -11,8 +11,8 @@ import { Node as PMNode } from "@tiptap/pm/model";
 import {
   ParagraphWithDir,
   HeadingWithDir,
-  buildReplaceAllTransaction,
-} from "../app/tools/document-studio/components/DocumentStudioEditor";
+} from "../app/tools/document-studio/utils/documentSchema";
+import { buildReplaceAllTransaction } from "../app/tools/document-studio/utils/documentCommands";
 
 // Same extensions as production editor
 const extensions = [

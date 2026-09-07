@@ -14,7 +14,7 @@ import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { TextStyle, FontFamily } from "@tiptap/extension-text-style";
 import { Node as PMNode } from "@tiptap/pm/model";
-import { ParagraphWithDir, HeadingWithDir } from "../app/tools/document-studio/components/DocumentStudioEditor";
+import { ParagraphWithDir, HeadingWithDir } from "../app/tools/document-studio/utils/documentSchema";
 
 const extensions = [
   StarterKit.configure({ paragraph: false, heading: false }),
