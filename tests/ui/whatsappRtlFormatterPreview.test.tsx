@@ -37,12 +37,13 @@ describe("WhatsApp RTL preview rendering", () => {
       "1) Lachesis —\nمناسبت: بائیں طرف\n2) Spigelia —\nدل کی طرف درد\n3) Carbo vegetabilis —\nخون کی کمی";
     const el = formatPreview(input);
     const shown = el.textContent ?? "";
+    const visible = shown.replace(/[\u2066\u2067\u2069\u200E\u200F\u061C]/g, "");
     expect(shown).toBe(formatForWhatsAppRTL(input));
-    expect(shown).toContain("1) Lachesis —");
-    expect(shown).toContain("2) Spigelia —");
-    expect(shown).toContain("3) Carbo vegetabilis —");
-    expect(shown.indexOf("1) Lachesis —")).toBeLessThan(shown.indexOf("مناسبت"));
-    expect(shown.indexOf("2) Spigelia —")).toBeLessThan(shown.indexOf("دل کی طرف درد"));
+    expect(visible).toContain("1) Lachesis —");
+    expect(visible).toContain("2) Spigelia —");
+    expect(visible).toContain("3) Carbo vegetabilis —");
+    expect(visible.indexOf("1) Lachesis —")).toBeLessThan(visible.indexOf("مناسبت"));
+    expect(visible.indexOf("2) Spigelia —")).toBeLessThan(visible.indexOf("دل کی طرف درد"));
   });
 
   it("preserves pure Urdu as RTL plaintext", () => {
