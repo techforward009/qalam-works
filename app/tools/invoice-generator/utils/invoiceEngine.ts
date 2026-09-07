@@ -45,6 +45,7 @@ export type Invoice = {
   reference?: string;
   customFields?: Array<{ key: string; value: string }>;
   footer?: string;
+  amountInWords?: string;
   paymentLink?: string;
   signature?: string; // dataURL for signature image
 };

@@ -4,20 +4,20 @@ import { useState, useRef, useCallback } from "react";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import { useLanguage } from "../../../lib/language-context";
 import { useEffect } from "react";
+import { calculateInvoice, fromMinor, type Invoice, type LineItem } from "../utils/invoiceEngine";
+import InvoiceDocumentPreview from "./InvoiceDocumentPreview";
 import {
-  calculateInvoice,
-  combinedDiscount,
-  fromMinor,
-  lineDiscountLabel,
-  type Invoice,
-  type LineItem,
-} from "../utils/invoiceEngine";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-type Template      = "modern" | "minimal" | "corporate" | "classic";
-type InvoiceLanguage = "en" | "ur";
-type Alignment     = "left" | "center" | "right";
-type SizeOption    = "small" | "medium" | "large";
+  BODY_GAP_MAX_MM,
+  BODY_GAP_MIN_MM,
+  DEFAULT_INVOICE_PRINT,
+  WESTERN_SKINS,
+  clampBodyGapMm,
+  invoiceChrome,
+  type InvoicePrintSettings,
+  type WesternSkin,
+  type Alignment,
+  type SizeOption,
+} from "../utils/invoiceLayout";
 
 interface SigState {
   name:        string;
@@ -33,9 +33,6 @@ interface LogoState {
   align: Alignment;
   size:  SizeOption;
 }
-
-const LOGO_SIZE_MAP: Record<SizeOption, number> = { small: 36, medium: 52, large: 72 };
-const SIG_SIZE_MAP:  Record<SizeOption, number> = { small: 50, medium: 90, large: 140 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function newItem(): LineItem {
@@ -63,27 +60,9 @@ const DEFAULT_INVOICE: Invoice = {
   currency: "USD",
   notes:    "",
   terms:    "",
+  footer:   "",
+  amountInWords: "",
 };
-
-// ── Template palettes ─────────────────────────────────────────────────────────
-const TEMPLATES: Record<Template, { accent: string; accentText: string; headerBg: string; headerText: string; label: string; labelUr: string }> = {
-  modern:    { accent: "#B45309", accentText: "#92400E", headerBg: "#FFFBEB", headerText: "#78350F", label: "Modern",    labelUr: "جدید" },
-  minimal:   { accent: "#374151", accentText: "#1F2937", headerBg: "#F9FAFB", headerText: "#111827", label: "Minimal",   labelUr: "سادہ" },
-  corporate: { accent: "#1E3A5F", accentText: "#1E3A5F", headerBg: "#EFF6FF", headerText: "#1E3A5F", label: "Corporate", labelUr: "کارپوریٹ" },
-  classic:   { accent: "#111827", accentText: "#111827", headerBg: "#ffffff", headerText: "#111827", label: "Classic",   labelUr: "روایتی" },
-};
-
-// ── Currency format ───────────────────────────────────────────────────────────
-function fmt(minor: number, currency: string, invoiceLang: InvoiceLanguage): string {
-  const major = minor / 100;
-  try {
-    return new Intl.NumberFormat(invoiceLang === "ur" ? "ur-PK" : "en-US", {
-      style: "currency", currency: currency || "USD", minimumFractionDigits: 2,
-    }).format(major);
-  } catch {
-    return `${fromMinor(minor, 2)} ${currency}`;
-  }
-}
 
 // ── Small reusable editor atoms ───────────────────────────────────────────────
 function AlignPicker({ value, onChange, labels }: { value: Alignment; onChange: (v: Alignment) => void; labels: [string, string, string] }) {
@@ -116,12 +95,12 @@ function SizePicker({ value, onChange, labels }: { value: SizeOption; onChange: 
 
 
 /** Format quantity with thousands separator */
-function fmtNum(n: number, lang: InvoiceLanguage): string {
+function fmtNum(n: number, lang: "en" | "ur"): string {
   try { return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n); }
   catch { return n.toString(); }
 }
 /** Format unit price with thousands separator, no symbol */
-function fmtPrice(n: number, lang: InvoiceLanguage): string {
+function fmtPrice(n: number, lang: "en" | "ur"): string {
   try { return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
   catch { return n.toFixed(2); }
 }
@@ -134,10 +113,10 @@ export default function InvoiceGeneratorTool() {
   const naskh = isUr ? "font-naskh" : "";
 
   const [invoice, setInvoice]         = useState<Invoice>(DEFAULT_INVOICE);
-  const [template, setTemplate]       = useState<Template>("modern");
+  const [print, setPrint]             = useState<InvoicePrintSettings>(DEFAULT_INVOICE_PRINT);
   // invoiceLang is derived directly from the site language.
   // The global EN/UR switch is the single source of truth — no independent state.
-  const invoiceLang: InvoiceLanguage = isUr ? "ur" : "en";
+  const invoiceLang: "en" | "ur" = isUr ? "ur" : "en";
   const [logo, setLogo]               = useState<LogoState>({ src: null, align: "left", size: "medium" });
   const [sig, setSig]                 = useState<SigState>({ name: "", designation: "", image: null, stampImage: null, align: "left", size: "medium" });
   const [activeSection, setActiveSection] = useState<"business" | "client" | "items" | "settings">("business");
@@ -147,9 +126,7 @@ export default function InvoiceGeneratorTool() {
   const stampImgRef = useRef<HTMLInputElement>(null);
 
   const result   = calculateInvoice(invoice);
-  const T        = TEMPLATES[template];
-  const invDir   = invoiceLang === "ur" ? "rtl" : "ltr";
-  const invNaskh = invoiceLang === "ur" ? "font-naskh" : "";
+  const T        = invoiceChrome(print);
 
   // ── UI labels ──────────────────────────────────────────────────────────────
   const L = {
@@ -186,6 +163,18 @@ export default function InvoiceGeneratorTool() {
     logoAlign:       isUr ? "لوگو سیدھ" : "Alignment",
     logoSize:        isUr ? "لوگو سائز" : "Size",
     template:        isUr ? "ٹیمپلیٹ" : "Template",
+    invoiceStyle:    isUr ? "انوائس سٹائل" : "Invoice Style",
+    western:         isUr ? "مغربی" : "Western",
+    pakistani:       isUr ? "پاکستانی" : "Pakistani",
+    pageSize:        isUr ? "صفحہ سائز" : "Page size",
+    orientation:     isUr ? "رخ" : "Orientation",
+    portrait:        isUr ? "عمودی" : "Portrait",
+    landscape:       isUr ? "افقی" : "Landscape",
+    bodyGap:         isUr ? "درمیانی گیپ" : "Middle gap",
+    gapManual:       isUr ? "دستی گیپ" : "Manual gap",
+    fillPage:        isUr ? "صفحہ بھریں" : "Fill page",
+    amountInWords:   isUr ? "رقم الفاظ میں" : "Amount in words",
+    footer:          isUr ? "فوٹر" : "Footer",
     invoiceLang:     isUr ? "انوائس کی زبان" : "Invoice Language",
     english:         isUr ? "انگریزی" : "English",
     urdu:            isUr ? "اردو" : "Urdu",
@@ -241,15 +230,12 @@ export default function InvoiceGeneratorTool() {
   const [exporting, setExporting]     = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  const shownDiscount = combinedDiscount(result);
-  const hasDiscount = shownDiscount > 0;
-
   const handleExport = useCallback(async () => {
     setExporting(true);
     setExportError(null);
     try {
       trackEvent("tool_download", { tool: "invoice_generator", export_format: "pdf", success: true });
-      const payload = { invoice, template, invoiceLang, logo, sig };
+      const payload = { invoice, invoiceLang, logo, sig, print };
       const res = await fetch("/api/export-invoice-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -278,7 +264,7 @@ export default function InvoiceGeneratorTool() {
     } finally {
       setExporting(false);
     }
-  }, [invoice, template, invoiceLang, logo, sig, isUr]);
+  }, [invoice, invoiceLang, logo, sig, print, isUr]);
 
   const sections = [
     { id: "business" as const, label: L.businessInfo },
@@ -287,84 +273,10 @@ export default function InvoiceGeneratorTool() {
     { id: "settings" as const, label: L.settings },
   ];
 
-  // ── Invoice preview labels (invoiceLang-aware) ─────────────────────────────
-  const IV = {
-    invoice:    invoiceLang === "ur" ? "انوائس"                : "INVOICE",
-    billTo:     invoiceLang === "ur" ? "بل وصول کنندہ"         : "BILL TO",
-    desc:       invoiceLang === "ur" ? "تفصیل"                 : "Description",
-    qty:        invoiceLang === "ur" ? "مقدار"                 : "Qty",
-    price:      invoiceLang === "ur" ? "فی یونٹ قیمت"          : "Unit Price",
-    disc:       invoiceLang === "ur" ? "چھوٹ"                  : "Disc",
-    amount:     invoiceLang === "ur" ? "رقم"                   : "Amount",
-    subtotal:   invoiceLang === "ur" ? "ذیلی کل"               : "Subtotal",
-    discount:   invoiceLang === "ur" ? "دی گئی چھوٹ"           : "Discount Given",
-    tax:        invoiceLang === "ur" ? "ٹیکس"                  : "Tax",
-    total:      invoiceLang === "ur" ? "کل"                    : "Total",
-    notes:      invoiceLang === "ur" ? "نوٹس"                  : "Notes",
-    terms:      invoiceLang === "ur" ? "شرائط و ضوابط"         : "Terms & Conditions",
-    date:       invoiceLang === "ur" ? "تاریخ"                 : "Date",
-    due:        invoiceLang === "ur" ? "آخری تاریخ"            : "Due Date",
-    authSig:    invoiceLang === "ur" ? "دستخط"                 : "Authorized Signature",
-    stampLabel: invoiceLang === "ur" ? "مہر / ٹھپہ"            : "Company Stamp",
-    payterms:   invoiceLang === "ur" ? "ادائیگی کی شرائط"      : "Payment Terms",
-  };
-
-  // ── Logo renderer (shared across all non-classic templates) ───────────────
-  function LogoImg({ inHeader = false }: { inHeader?: boolean }) {
-    if (!logo.src) return null;
-    const h = LOGO_SIZE_MAP[logo.size];
-    const justMap: Record<Alignment, string> = { left: "flex-start", center: "center", right: "flex-end" };
-    return (
-      <div style={{ display: "flex", justifyContent: justMap[logo.align], marginBottom: inHeader ? 10 : 0 }}>
-        <img src={logo.src} alt="logo"
-          style={{ height: h, maxWidth: "100%", objectFit: "contain", display: "block" }} />
-      </div>
-    );
-  }
-
-  // ── Signature renderer (shared) ────────────────────────────────────────────
-  function SigBlock({ accentColor }: { accentColor: string }) {
-    const h = SIG_SIZE_MAP[sig.size];
-    const justMap: Record<Alignment, string> = { left: "flex-start", center: "center", right: "flex-end" };
-    const txAlign: Record<Alignment, "left" | "center" | "right"> = { left: "left", center: "center", right: "right" };
-    return (
-      <div style={{ display: "flex", justifyContent: justMap[sig.align] }}>
-        <div style={{ textAlign: txAlign[sig.align], minWidth: 180 }}>
-          <p className={`text-[10px] font-black uppercase tracking-widest mb-5 ${invNaskh}`} style={{ color: accentColor }}>
-            {IV.authSig}
-          </p>
-          {sig.image && (
-            <div style={{ marginBottom: 6, display: "flex", justifyContent: justMap[sig.align] }}>
-              <img src={sig.image} alt="signature"
-                style={{ height: h, maxWidth: 200, maxHeight: h, objectFit: "contain", display: "block" }} />
-            </div>
-          )}
-          <div style={{ borderBottom: "1.5px solid #374151", marginBottom: 5, width: "100%", maxWidth: 180 }} />
-          {sig.name && <p className={`text-xs font-bold text-gray-800 ${invNaskh}`}>{sig.name}</p>}
-          {sig.designation && <p className={`text-xs text-gray-500 ${invNaskh}`}>{sig.designation}</p>}
-          {sig.stampImage && (
-            <div style={{ marginTop: 8, display: "flex", justifyContent: justMap[sig.align] }}>
-              <img src={sig.stampImage} alt="stamp"
-                style={{ height: 60, maxWidth: 80, objectFit: "contain", display: "block", opacity: 0.85 }} />
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  const stampLabel = invoiceLang === "ur" ? "مہر / ٹھپہ" : "Company Stamp";
 
   return (
     <>
-      {/* ── PRINT-ONLY STYLE: isolate invoice from site chrome ──────────── */}
-      <style>{`
-        @media print {
-          body > * { display: none !important; }
-          #invoice-print-root { display: block !important; }
-          #invoice-print-root * { display: revert !important; }
-          @page { margin: 12mm; size: A4 portrait; }
-        }
-      `}</style>
-
       <div className="site-container">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
 
@@ -578,18 +490,95 @@ export default function InvoiceGeneratorTool() {
               {/* ── SETTINGS ──────────────────────────────────────────── */}
               {activeSection === "settings" && (
                 <div className="space-y-4" dir={isUr ? "rtl" : "ltr"}>
-                  {/* Template */}
+                  {/* Style + page */}
                   <div>
-                    <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.template}</label>
+                    <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.invoiceStyle}</label>
                     <div className="flex gap-2 flex-wrap">
-                      {(Object.keys(TEMPLATES) as Template[]).map(t => (
-                        <button key={t} onClick={() => setTemplate(t)}
+                      {(["western", "pakistani"] as const).map(style => (
+                        <button key={style} onClick={() => setPrint(p => ({ ...p, style }))}
                           className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
-                            ${template === t ? "border-amber-600 bg-amber-50 text-amber-900" : "border-gray-200 text-gray-600 hover:border-amber-300"}`}>
-                          {isUr ? TEMPLATES[t].labelUr : TEMPLATES[t].label}
+                            ${print.style === style ? "border-amber-600 bg-amber-50 text-amber-900" : "border-gray-200 text-gray-600 hover:border-amber-300"}`}>
+                          {style === "western" ? L.western : L.pakistani}
                         </button>
                       ))}
                     </div>
+                  </div>
+                  {print.style === "western" && (
+                    <div>
+                      <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.template}</label>
+                      <div className="flex gap-2 flex-wrap">
+                        {(Object.keys(WESTERN_SKINS) as WesternSkin[]).map(skin => (
+                          <button key={skin} onClick={() => setPrint(p => ({ ...p, skin }))}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
+                              ${print.skin === skin ? "border-amber-600 bg-amber-50 text-amber-900" : "border-gray-200 text-gray-600 hover:border-amber-300"}`}>
+                            {isUr ? WESTERN_SKINS[skin].labelUr : WESTERN_SKINS[skin].label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.pageSize}</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {(["a4", "a5"] as const).map(size => (
+                        <button key={size} onClick={() => setPrint(p => ({ ...p, pageSize: size }))}
+                          className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all
+                            ${print.pageSize === size ? "border-amber-600 bg-amber-50 text-amber-900" : "border-gray-200 text-gray-600 hover:border-amber-300"}`}>
+                          {size.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.orientation}</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {(["portrait", "landscape"] as const).map(o => (
+                        <button key={o} onClick={() => setPrint(p => ({ ...p, pageOrientation: o }))}
+                          className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
+                            ${print.pageOrientation === o ? "border-amber-600 bg-amber-50 text-amber-900" : "border-gray-200 text-gray-600 hover:border-amber-300"}`}>
+                          {o === "portrait" ? L.portrait : L.landscape}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.bodyGap}</label>
+                    <div className="flex gap-2 flex-wrap mb-2">
+                      <button onClick={() => setPrint(p => ({ ...p, bodyGapMode: "manual" }))}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
+                          ${print.bodyGapMode === "manual" ? "border-amber-600 bg-amber-50 text-amber-900" : "border-gray-200 text-gray-600 hover:border-amber-300"}`}>
+                        {L.gapManual}
+                      </button>
+                      <button onClick={() => setPrint(p => ({ ...p, bodyGapMode: "fill" }))}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
+                          ${print.bodyGapMode === "fill" ? "border-amber-600 bg-amber-50 text-amber-900" : "border-gray-200 text-gray-600 hover:border-amber-300"}`}>
+                        {L.fillPage}
+                      </button>
+                    </div>
+                    <div className={`flex items-center gap-3 ${print.bodyGapMode === "fill" ? "opacity-40 pointer-events-none" : ""}`}>
+                      <input type="range" min={BODY_GAP_MIN_MM} max={BODY_GAP_MAX_MM} step={1}
+                        value={print.bodyGapMm}
+                        disabled={print.bodyGapMode === "fill"}
+                        onChange={e => setPrint(p => ({ ...p, bodyGapMm: clampBodyGapMm(Number(e.target.value)) }))}
+                        className="flex-1 accent-amber-700" />
+                      <span className="text-xs font-mono text-gray-600 w-12" dir="ltr">{print.bodyGapMm}mm</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={`block text-[12px] font-semibold text-gray-500 mb-1 ${naskh}`}>{L.amountInWords}</label>
+                    <textarea value={invoice.amountInWords || ""}
+                      onChange={e => setInvoice(inv => ({ ...inv, amountInWords: e.target.value }))}
+                      rows={2} dir={isUr ? "rtl" : "ltr"}
+                      placeholder={isUr ? "مثلاً: دو سو سولہ روپے صرف" : "e.g. Two hundred sixteen only"}
+                      className={`w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none ${naskh}`} />
+                  </div>
+                  <div>
+                    <label className={`block text-[12px] font-semibold text-gray-500 mb-1 ${naskh}`}>{L.footer}</label>
+                    <textarea value={invoice.footer || ""}
+                      onChange={e => setInvoice(inv => ({ ...inv, footer: e.target.value }))}
+                      rows={2} dir={isUr ? "rtl" : "ltr"}
+                      placeholder={isUr ? "مثلاً: E. & O.E. · NTN: …" : "e.g. E. & O.E. · NTN: …"}
+                      className={`w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none ${naskh}`} />
                   </div>
                   {/* Signature section */}
                   <div className="rounded-xl border border-amber-100 bg-amber-50/40 p-3 space-y-3">
@@ -651,7 +640,7 @@ export default function InvoiceGeneratorTool() {
                     {/* Company stamp image */}
                     <div className="pt-2 border-t border-amber-100 space-y-2">
                       <p className={`text-[11px] font-semibold text-gray-500 ${naskh}`}>
-                        {IV.stampLabel} <span className="font-normal text-gray-300">({isUr ? "اختیاری" : "optional"})</span>
+                        {stampLabel} <span className="font-normal text-gray-300">({isUr ? "اختیاری" : "optional"})</span>
                       </p>
                       <div className={`flex items-center gap-3 ${isUr ? "flex-row-reverse" : ""}`}>
                         {sig.stampImage ? (
@@ -704,304 +693,28 @@ export default function InvoiceGeneratorTool() {
 
           {/* ── PREVIEW PANEL ──────────────────────────────────────────── */}
           <div id="invoice-print-root"
-            className="rounded-2xl shadow-md overflow-hidden print:shadow-none print:border-0 print:rounded-none print:fixed print:inset-0 print:z-[9999] print:overflow-visible"
-            style={{ colorScheme: "light", background: "#ffffff", color: "#111827", border: "1px solid #FDE68A" }}
-            dir={invDir}>
-
-            {/* Badge strip — hidden on print */}
-            <div className="print:hidden px-4 py-2 border-b flex items-center justify-between"
+            className="rounded-2xl shadow-md overflow-hidden"
+            style={{ colorScheme: "light", background: "#ffffff", color: "#111827", border: "1px solid #FDE68A" }}>
+            <div className="px-4 py-2 border-b flex items-center justify-between"
               style={{ borderColor: "#FEF3C7", background: "#FFFBEB" }}>
               <span className={`text-[11px] font-bold text-gray-400 uppercase tracking-widest ${naskh}`}>{L.preview}</span>
-              <span className="text-[11px] text-gray-400">{invoiceLang === "ur" ? "اردو" : "English"} · {isUr ? TEMPLATES[template].labelUr : TEMPLATES[template].label}</span>
+              <span className="text-[11px] text-gray-400" dir="ltr">
+                {invoiceLang === "ur" ? "اردو" : "English"}
+                {" · "}
+                {print.style === "pakistani" ? (isUr ? "پاکستانی" : "Pakistani") : (isUr ? WESTERN_SKINS[print.skin].labelUr : WESTERN_SKINS[print.skin].label)}
+                {" · "}
+                {print.pageSize.toUpperCase()}
+                {" "}
+                {print.pageOrientation === "landscape" ? (isUr ? "افقی" : "Landscape") : (isUr ? "عمودی" : "Portrait")}
+              </span>
             </div>
-
-            <div className="p-4 sm:p-6 md:p-8" style={{ fontFamily: invoiceLang === "ur" ? "var(--font-naskh),'Noto Naskh Arabic',sans-serif" : "inherit", background: "#ffffff", color: "#111827" }}>
-
-              {/* ── CLASSIC TEMPLATE ─────────────────────────────────── */}
-              {template === "classic" ? (
-                <div style={{ direction: invDir, fontFamily: invoiceLang === "ur" ? "var(--font-naskh),'Noto Naskh Arabic',sans-serif" : "inherit" }}>
-                  {/* Header */}
-                  <div style={{ textAlign: "center", marginBottom: 16, borderBottom: "2px solid #111827", paddingBottom: 12 }}>
-                    {logo.src && (
-                      <div style={{ display: "flex", justifyContent: logo.align === "left" ? "flex-start" : logo.align === "right" ? "flex-end" : "center", marginBottom: 8 }}>
-                        <img src={logo.src} alt="logo" style={{ height: LOGO_SIZE_MAP[logo.size], objectFit: "contain" }} />
-                      </div>
-                    )}
-                    <h2 style={{ fontSize: 17, fontWeight: 800, color: "#111827", margin: 0 }}>
-                      {invoice.seller.name || (invoiceLang === "ur" ? "آپ کا کاروباری نام" : "Your Business Name")}
-                    </h2>
-                    {invoice.seller.address && <p style={{ fontSize: 11, color: "#374151", margin: "2px 0 0" }} className={invNaskh}>{invoice.seller.address}</p>}
-                    <p style={{ fontSize: 11, color: "#374151", margin: "2px 0 0" }} dir="ltr">
-                      {[invoice.seller.phone, invoice.seller.email, invoice.seller.website].filter(Boolean).join("  |  ")}
-                    </p>
-                  </div>
-                  <p style={{ textAlign: "center", fontSize: 15, fontWeight: 900, letterSpacing: "0.15em", color: "#111827", margin: "10px 0 14px" }} className={invNaskh}>
-                    {invoiceLang === "ur" ? "انوائس" : "INVOICE"}
-                  </p>
-                  {/* Meta table */}
-                  <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14, fontSize: 12 }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ border: "1px solid #111827", padding: "5px 8px", fontWeight: 700, width: "14%", whiteSpace: "nowrap" }} className={invNaskh}>{invoiceLang === "ur" ? "بنام" : "To"}</td>
-                        <td style={{ border: "1px solid #111827", padding: "5px 8px", width: "44%" }} className={invNaskh}>
-                          {invoice.client.name || (invoiceLang === "ur" ? "موصول کنندہ" : "Client Name")}
-                          {invoice.client.address && <span style={{ color: "#6B7280", fontSize: 10 }}>{" — "}{invoice.client.address}</span>}
-                        </td>
-                        <td style={{ border: "1px solid #111827", padding: "5px 8px", fontWeight: 700, width: "14%", whiteSpace: "nowrap" }} className={invNaskh}>{invoiceLang === "ur" ? "تاریخ" : "Date"}</td>
-                        <td style={{ border: "1px solid #111827", padding: "5px 8px" }} dir="ltr">{invoice.issueDate}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ border: "1px solid #111827", padding: "5px 8px", fontWeight: 700 }} className={invNaskh}>{invoiceLang === "ur" ? "انوائس نمبر" : "Invoice #"}</td>
-                        <td style={{ border: "1px solid #111827", padding: "5px 8px" }} dir="ltr">{invoice.number}</td>
-                        {invoice.dueDate ? (
-                          <>
-                            <td style={{ border: "1px solid #111827", padding: "5px 8px", fontWeight: 700 }} className={invNaskh}>{invoiceLang === "ur" ? "آخری تاریخ" : "Due Date"}</td>
-                            <td style={{ border: "1px solid #111827", padding: "5px 8px" }} dir="ltr">{invoice.dueDate}</td>
-                          </>
-                        ) : (
-                          <><td style={{ border: "1px solid #111827", padding: "5px 8px" }} /><td style={{ border: "1px solid #111827", padding: "5px 8px" }} /></>
-                        )}
-                      </tr>
-                    </tbody>
-                  </table>
-                  {/* Items */}
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                    <thead>
-                      <tr style={{ background: "#F3F4F6" }}>
-                        {[
-                          [invoiceLang === "ur" ? "نمبر" : "S. No.", "7%", "center"],
-                          [invoiceLang === "ur" ? "تفصیل" : "Particulars", "", invDir === "rtl" ? "right" : "left"],
-                          [invoiceLang === "ur" ? "مقدار" : "Qty", "8%", "center"],
-                          [invoiceLang === "ur" ? "نرخ" : "Rate", "12%", "right"],
-                          [invoiceLang === "ur" ? "چھوٹ" : "Disc", "10%", "right"],
-                          [invoiceLang === "ur" ? "رقم" : "Amount", "14%", "right"],
-                        ].map(([h, w, a]) => (
-                          <th key={h as string} style={{ border: "1px solid #111827", padding: "6px 8px", width: w as string || undefined, textAlign: a as "left" | "center" | "right", fontWeight: 700 }} className={invNaskh}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invoice.items.map((it, i) => (
-                        <tr key={it.id}>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "center" }} dir="ltr">{i + 1}</td>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: invDir === "rtl" ? "right" : "left" }} className={invNaskh}>{it.description || "—"}</td>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "center" }} dir="ltr">{fmtNum(it.quantity, invoiceLang)}</td>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right" }} dir="ltr">{fmtPrice(it.unitPrice, invoiceLang)}</td>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", color: lineDiscountLabel(it) === "—" ? "#6B7280" : "#DC2626" }} dir="ltr">{lineDiscountLabel(it)}</td>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", fontWeight: 600 }} dir="ltr">{fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
-                        </tr>
-                      ))}
-                      {invoice.items.length < 5 && Array.from({ length: 5 - invoice.items.length }).map((_, i) => (
-                        <tr key={`blank-${i}`}>
-                          {Array.from({ length: 6 }).map((__, j) => (
-                            <td key={j} style={{ border: "1px solid #111827", padding: "6px 8px" }}>&nbsp;</td>
-                          ))}
-                        </tr>
-                      ))}
-                      {hasDiscount && (
-                        <tr>
-                          <td colSpan={5} style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: invDir === "rtl" ? "left" : "right", fontWeight: 700, fontSize: 12 }} className={invNaskh}>
-                            {IV.discount}
-                          </td>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#DC2626" }} dir="ltr">
-                            −{fmt(shownDiscount, invoice.currency, invoiceLang)}
-                          </td>
-                        </tr>
-                      )}
-                      {result.taxes.filter(t => t.amount !== 0).map(t => (
-                        <tr key={t.name}>
-                          <td colSpan={5} style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: invDir === "rtl" ? "left" : "right", fontWeight: 700, fontSize: 12 }} className={invNaskh}>
-                            {t.name}
-                          </td>
-                          <td style={{ border: "1px solid #111827", padding: "6px 8px", textAlign: "right", fontWeight: 700, fontSize: 12 }} dir="ltr">
-                            {fmt(t.amount, invoice.currency, invoiceLang)}
-                          </td>
-                        </tr>
-                      ))}
-                      <tr style={{ background: "#F3F4F6" }}>
-                        <td colSpan={5} style={{ border: "1px solid #111827", padding: "7px 8px", textAlign: invDir === "rtl" ? "left" : "right", fontWeight: 800, fontSize: 13 }} className={invNaskh}>
-                          {invoiceLang === "ur" ? "کل رقم" : "TOTAL"}
-                        </td>
-                        <td style={{ border: "1px solid #111827", padding: "7px 8px", textAlign: "right", fontWeight: 800, fontSize: 13 }} dir="ltr">
-                          {fmt(result.total, invoice.currency, invoiceLang)}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  {(invoice.notes || invoice.terms) && (
-                    <div style={{ marginTop: 10, fontSize: 11, color: "#374151" }}>
-                      {invoice.notes && <p className={invNaskh}><strong>{invoiceLang === "ur" ? "نوٹ:" : "Note:"}</strong> {invoice.notes}</p>}
-                      {invoice.terms && <p className={invNaskh} style={{ marginTop: 3 }}><strong>{invoiceLang === "ur" ? "شرائط:" : "Terms:"}</strong> {invoice.terms}</p>}
-                    </div>
-                  )}
-                  {/* Classic signature */}
-                  <div style={{ marginTop: 28, display: "flex", justifyContent: sig.align === "left" ? "flex-start" : sig.align === "right" ? "flex-end" : "center" }}>
-                    <div style={{ textAlign: sig.align, minWidth: 180 }}>
-                      <p style={{ fontSize: 11, fontWeight: 700, marginBottom: sig.image ? 8 : 28, color: "#374151" }} className={invNaskh}>
-                        {invoiceLang === "ur" ? "دستخط / مجاز دستخط" : "Authorized Signature"}
-                      </p>
-                      {sig.image && (
-                        <div style={{ marginBottom: 6 }}>
-                          <img src={sig.image} alt="signature" style={{ height: SIG_SIZE_MAP[sig.size], maxWidth: 200, objectFit: "contain" }} />
-                        </div>
-                      )}
-                      <div style={{ borderBottom: "2px solid #374151", marginBottom: 4, width: 160 }} />
-                      {sig.name && <p style={{ fontSize: 11, fontWeight: 700, color: "#111827" }} className={invNaskh}>{sig.name}</p>}
-                      {sig.designation && <p style={{ fontSize: 10, color: "#6B7280" }} className={invNaskh}>{sig.designation}</p>}
-                      {sig.stampImage && (
-                        <div style={{ marginTop: 8 }}>
-                          <img src={sig.stampImage} alt="stamp"
-                            style={{ height: 60, maxWidth: 80, objectFit: "contain", opacity: 0.85 }} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-              ) : (
-
-                /* ── MODERN / MINIMAL / CORPORATE ─────────────────────── */
-                <div>
-                  {/* Header band */}
-                  <div style={{ background: T.headerBg, borderBottom: `3px solid ${T.accent}`, margin: "-24px -32px 24px", padding: "20px 32px 18px" }}>
-                    <LogoImg inHeader />
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }} dir={invDir}>
-                      {/* Brand */}
-                      <div style={{ flex: 1 }}>
-                        <h2 style={{ fontSize: 18, fontWeight: 800, color: T.headerText, margin: "0 0 4px" }} className={invNaskh}>
-                          {invoice.seller.name || (invoiceLang === "ur" ? "آپ کا کاروباری نام" : "Your Business Name")}
-                        </h2>
-                        {invoice.seller.address && (
-                          <p style={{ fontSize: 11, color: "#6B7280", margin: "0 0 2px", whiteSpace: "pre-wrap" }} className={invNaskh}>
-                            {invoice.seller.address}
-                          </p>
-                        )}
-                        <p style={{ fontSize: 11, color: "#9CA3AF" }} dir="ltr">
-                          {[invoice.seller.phone, invoice.seller.email].filter(Boolean).join("  ·  ")}
-                        </p>
-                        {invoice.seller.website && <p style={{ fontSize: 10, color: "#9CA3AF" }} dir="ltr">{invoice.seller.website}</p>}
-                        {invoice.seller.taxNumber && <p style={{ fontSize: 10, color: "#9CA3AF" }} dir="ltr">{invoice.seller.taxNumber}</p>}
-                      </div>
-                      {/* Document area */}
-                      <div style={{ textAlign: invDir === "rtl" ? "left" : "right", flexShrink: 0, paddingLeft: invDir === "ltr" ? 24 : 0, paddingRight: invDir === "rtl" ? 24 : 0 }}>
-                        <p style={{ fontSize: 24, fontWeight: 900, letterSpacing: "-0.02em", color: T.accent, margin: "0 0 4px" }} className={invNaskh}>
-                          {IV.invoice}
-                        </p>
-                        <p style={{ fontSize: 12, fontWeight: 600, color: "#374151", margin: "0 0 4px" }} dir="ltr">{invoice.number}</p>
-                        <p style={{ fontSize: 11, color: "#6B7280" }}>
-                          <span className={invNaskh} style={{ fontWeight: 600 }}>{IV.date}: </span>
-                          <span dir="ltr">{invoice.issueDate}</span>
-                        </p>
-                        {invoice.dueDate && (
-                          <p style={{ fontSize: 11, color: "#6B7280" }}>
-                            <span className={invNaskh} style={{ fontWeight: 600 }}>{IV.due}: </span>
-                            <span dir="ltr">{invoice.dueDate}</span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bill-to + Terms */}
-                  <div className="grid grid-cols-2 gap-5 mb-6" dir={invDir}>
-                    <div>
-                      <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: T.accent, marginBottom: 4 }}>
-                        {IV.billTo}
-                      </p>
-                      <p className={`text-sm font-bold text-gray-800 ${invNaskh}`}>{invoice.client.name || (invoiceLang === "ur" ? "موصول کنندہ" : "Client Name")}</p>
-                      {invoice.client.contactPerson && <p className={`text-xs text-gray-600 ${invNaskh}`}>{invoice.client.contactPerson}</p>}
-                      {invoice.client.address && <p className={`text-xs text-gray-500 whitespace-pre-wrap ${invNaskh}`}>{invoice.client.address}</p>}
-                      {invoice.client.email && <p className="text-xs text-gray-500" dir="ltr">{invoice.client.email}</p>}
-                      {invoice.client.phone && <p className="text-xs text-gray-500" dir="ltr">{invoice.client.phone}</p>}
-                    </div>
-                    {invoice.terms && (
-                      <div>
-                        <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: T.accent, marginBottom: 4 }}>
-                          {IV.payterms}
-                        </p>
-                        <p className={`text-xs text-gray-600 ${invNaskh}`}>{invoice.terms}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Items table */}
-                  <table className="w-full text-xs mb-5" style={{ borderCollapse: "collapse", direction: invDir }}>
-                    <thead>
-                      <tr style={{ borderBottom: `2px solid ${T.accent}` }}>
-                        <th className={`py-2 font-bold text-gray-700 ${invNaskh}`}
-                          style={{ textAlign: invDir === "rtl" ? "right" : "left", paddingLeft: invDir === "ltr" ? 4 : 0, paddingRight: invDir === "rtl" ? 4 : 0 }}>
-                          {IV.desc}
-                        </th>
-                        <th className="py-2 font-bold text-gray-700 text-right" style={{ width: 40 }}>{IV.qty}</th>
-                        <th className="py-2 font-bold text-gray-700 text-right" style={{ width: 70 }}>{IV.price}</th>
-                        <th className="py-2 font-bold text-gray-700 text-right" style={{ width: 56 }}>{IV.disc}</th>
-                        <th className="py-2 font-bold text-gray-700 text-right" style={{ width: 80 }}>{IV.amount}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invoice.items.map((it, i) => (
-                        <tr key={it.id} style={{ borderBottom: "1px solid #F3F4F6" }}>
-                          <td className={`py-2 text-gray-700 ${invNaskh}`}
-                            style={{ textAlign: invDir === "rtl" ? "right" : "left", paddingLeft: invDir === "ltr" ? 4 : 0, paddingRight: invDir === "rtl" ? 4 : 0 }}>
-                            {it.description || "—"}
-                          </td>
-                          <td className="py-2 text-right text-gray-600" dir="ltr">{fmtNum(it.quantity, invoiceLang)}</td>
-                          <td className="py-2 text-right text-gray-600" dir="ltr">{fmtPrice(it.unitPrice, invoiceLang)}</td>
-                          <td className={`py-2 text-right ${lineDiscountLabel(it) === "—" ? "text-gray-400" : "text-red-600"}`} dir="ltr">{lineDiscountLabel(it)}</td>
-                          <td className="py-2 text-right font-semibold text-gray-800" dir="ltr">{fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  {/* Totals */}
-                  <div className="flex" style={{ justifyContent: invDir === "rtl" ? "flex-start" : "flex-end" }}>
-                    <div className="w-52 space-y-1.5 text-xs">
-                      <div className="flex justify-between text-gray-600">
-                        <span className={invNaskh}>{IV.subtotal}</span>
-                        <span dir="ltr">{fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</span>
-                      </div>
-                      {hasDiscount && (
-                        <div className="flex justify-between text-gray-600">
-                          <span className={invNaskh}>{IV.discount}</span>
-                          <span dir="ltr" className="text-red-600">−{fmt(shownDiscount, invoice.currency, invoiceLang)}</span>
-                        </div>
-                      )}
-                      {result.taxes.filter(t => t.amount !== 0).map(t => (
-                        <div key={t.name} className="flex justify-between text-gray-600">
-                          <span className={invNaskh}>{t.name}</span>
-                          <span dir="ltr">{fmt(t.amount, invoice.currency, invoiceLang)}</span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between font-black text-sm border-t-2 pt-2 mt-1"
-                        style={{ borderColor: T.accent, color: T.accentText }}>
-                        <span className={invNaskh}>{IV.total}</span>
-                        <span dir="ltr">{fmt(result.total, invoice.currency, invoiceLang)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Notes / Terms */}
-                  {invoice.notes && (
-                    <div className="mt-6 pt-4 border-t border-gray-100">
-                      <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${invNaskh}`} style={{ color: T.accent }}>{IV.notes}</p>
-                      <p className={`text-xs text-gray-600 whitespace-pre-wrap ${invNaskh}`}>{invoice.notes}</p>
-                    </div>
-                  )}
-                  {invoice.terms && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${invNaskh}`} style={{ color: T.accent }}>{IV.terms}</p>
-                      <p className={`text-xs text-gray-500 ${invNaskh}`}>{invoice.terms}</p>
-                    </div>
-                  )}
-
-                  {/* Signature */}
-                  <div className="mt-6 sm:mt-10 pt-4 sm:pt-5 border-t border-gray-100">
-                    <SigBlock accentColor={T.accent} />
-                  </div>
-                </div>
-              )}
-            </div>
+            <InvoiceDocumentPreview
+              invoice={invoice}
+              invoiceLang={invoiceLang}
+              logo={logo}
+              sig={sig}
+              print={print}
+            />
           </div>
         </div>
       </div>

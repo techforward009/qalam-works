@@ -5,8 +5,7 @@
  * Returns a PDF blob containing ONLY the customer invoice.
  * No browser headers/footers, no Qalam Works branding.
  *
- * Reuses the same Puppeteer/Chromium infrastructure as the Document Studio
- * export, with displayHeaderFooter: false to suppress browser-added metadata.
+ * Page size / orientation come from the payload so preview and PDF match.
  */
 export const runtime     = "nodejs";
 export const maxDuration = 60;
@@ -15,11 +14,17 @@ import { NextRequest, NextResponse } from "next/server";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { buildInvoiceHtml, type InvoiceExportPayload } from "../../tools/invoice-generator/utils/buildInvoiceHtml";
+import { resolveInvoicePageBox, resolveInvoicePrintSettings } from "../../tools/invoice-generator/utils/invoiceLayout";
 
 export async function POST(req: NextRequest) {
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
   try {
     const payload: InvoiceExportPayload = await req.json();
+    const print = resolveInvoicePrintSettings({
+      ...payload.print,
+      template: payload.template,
+    });
+    const box = resolveInvoicePageBox(print);
 
     const html = buildInvoiceHtml(payload);
 
@@ -32,7 +37,6 @@ export async function POST(req: NextRequest) {
 
     const page = await browser.newPage();
 
-    // Block all network requests — fonts are embedded as base64 data URIs
     await page.setRequestInterception(true);
     page.on("request", (r) => {
       if (r.url().startsWith("data:")) r.continue();
@@ -46,10 +50,12 @@ export async function POST(req: NextRequest) {
     });
 
     const pdfBytes = await page.pdf({
-      format:              "A4",
+      preferCSSPageSize:   true,
+      width:               `${box.widthMm}mm`,
+      height:              `${box.heightMm}mm`,
       printBackground:     true,
-      displayHeaderFooter: false,   // ← key: suppresses browser title/URL/date
-      margin: { top: "12mm", right: "12mm", bottom: "12mm", left: "12mm" },
+      displayHeaderFooter: false,
+      margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });
 
     await browser.close();
