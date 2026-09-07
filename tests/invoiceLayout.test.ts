@@ -1,38 +1,27 @@
 import { describe, expect, it } from "vitest";
 import {
-  BODY_GAP_DEFAULT_MM,
-  BODY_GAP_MAX_MM,
-  clampBodyGapMm,
+  EXTRA_LINES_DEFAULT,
+  EXTRA_LINES_MAX,
+  HEADER_SCALE_DEFAULT,
+  WESTERN_EXTRA_LINE_MM,
+  clampExtraLines,
+  clampHeaderScale,
   displayTaxName,
-  estimateUsedHeightMm,
-  resolveBodyGap,
+  resolveExtraLines,
   resolveInvoicePageBox,
   resolveInvoicePrintSettings,
-  type FillPageInput,
 } from "../app/tools/invoice-generator/utils/invoiceLayout";
 
-const sampleFill = (overrides: Partial<FillPageInput> = {}): FillPageInput => ({
-  itemCount: 1,
-  hasDiscount: true,
-  taxCount: 1,
-  hasNotes: false,
-  hasTerms: false,
-  hasAmountInWords: false,
-  hasFooter: false,
-  hasSignatureImage: false,
-  ...overrides,
-});
-
 describe("resolveInvoicePrintSettings", () => {
-  it("defaults to western A4 portrait with 12mm manual gap", () => {
+  it("defaults to western A4 portrait with extra lines and compact header", () => {
     const print = resolveInvoicePrintSettings();
     expect(print).toEqual({
       style: "western",
       skin: "modern",
       pageSize: "a4",
       pageOrientation: "portrait",
-      bodyGapMode: "manual",
-      bodyGapMm: BODY_GAP_DEFAULT_MM,
+      extraLines: EXTRA_LINES_DEFAULT,
+      headerScale: HEADER_SCALE_DEFAULT,
     });
   });
 
@@ -52,6 +41,12 @@ describe("resolveInvoicePrintSettings", () => {
     expect(print.style).toBe("western");
     expect(print.skin).toBe("minimal");
   });
+
+  it("ignores deprecated fill-page payloads", () => {
+    const print = resolveInvoicePrintSettings({ bodyGapMode: "fill", bodyGapMm: 40 });
+    expect(print.extraLines).toBe(EXTRA_LINES_DEFAULT);
+    expect(print).not.toHaveProperty("bodyGapMode");
+  });
 });
 
 describe("page geometry", () => {
@@ -67,43 +62,31 @@ describe("page geometry", () => {
   });
 });
 
-describe("body gap modes are mutually exclusive", () => {
-  it("manual mode uses the slider and never emits blank rows", () => {
-    const print = resolveInvoicePrintSettings({ style: "pakistani", bodyGapMode: "manual", bodyGapMm: 40 });
-    const box = resolveInvoicePageBox(print);
-    const gap = resolveBodyGap(print, box, sampleFill());
-    expect(gap.mode).toBe("manual");
-    expect(gap.spacerMm).toBe(40);
-    expect(gap.blankRowCount).toBe(0);
+describe("extra lines are user-controlled, not fill-page", () => {
+  it("clamps extra lines to 0–15", () => {
+    expect(clampExtraLines(-4)).toBe(0);
+    expect(clampExtraLines(3)).toBe(3);
+    expect(clampExtraLines(99)).toBe(EXTRA_LINES_MAX);
   });
 
-  it("clamps manual gap to 0–60mm", () => {
-    expect(clampBodyGapMm(-4)).toBe(0);
-    expect(clampBodyGapMm(12)).toBe(12);
-    expect(clampBodyGapMm(99)).toBe(BODY_GAP_MAX_MM);
+  it("western extra lines are invisible spacer only", () => {
+    const print = resolveInvoicePrintSettings({ style: "western", extraLines: 5 });
+    const extra = resolveExtraLines(print);
+    expect(extra.blankRowCount).toBe(0);
+    expect(extra.spacerMm).toBe(5 * WESTERN_EXTRA_LINE_MM);
   });
 
-  it("western fill uses leftover spacer and zero blank rows", () => {
-    const print = resolveInvoicePrintSettings({ style: "western", bodyGapMode: "fill" });
-    const box = resolveInvoicePageBox(print);
-    const gap = resolveBodyGap(print, box, sampleFill());
-    expect(gap.blankRowCount).toBe(0);
-    expect(gap.spacerMm).toBe(gap.leftoverMm);
-    expect(gap.leftoverMm).toBeGreaterThan(40);
+  it("pakistani extra lines are blank bordered rows", () => {
+    const print = resolveInvoicePrintSettings({ style: "pakistani", extraLines: 4 });
+    const extra = resolveExtraLines(print);
+    expect(extra.blankRowCount).toBe(4);
+    expect(extra.spacerMm).toBe(0);
   });
 
-  it("pakistani fill emits bordered blank rows from leftover height", () => {
-    const print = resolveInvoicePrintSettings({ style: "pakistani", bodyGapMode: "fill" });
-    const a4 = resolveInvoicePageBox(print);
-    const a5l = resolveInvoicePageBox({ ...print, pageSize: "a5", pageOrientation: "landscape" });
-    const fill = sampleFill();
-    const a4Gap = resolveBodyGap(print, a4, fill);
-    const a5Gap = resolveBodyGap(print, a5l, fill);
-    expect(a4Gap.blankRowCount).toBeGreaterThanOrEqual(8);
-    expect(a5Gap.blankRowCount).toBeLessThan(a4Gap.blankRowCount);
-    expect(a4Gap.spacerMm).toBe(0);
-    const used = estimateUsedHeightMm("pakistani", fill);
-    expect(a4Gap.leftoverMm).toBe(a4.contentHeightMm - used);
+  it("header scale clamps to 65%–100%", () => {
+    expect(clampHeaderScale(0.2)).toBe(0.65);
+    expect(clampHeaderScale(0.8)).toBe(0.8);
+    expect(clampHeaderScale(1.4)).toBe(1);
   });
 });
 

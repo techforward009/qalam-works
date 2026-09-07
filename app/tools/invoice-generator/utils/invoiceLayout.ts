@@ -15,7 +15,6 @@ export type InvoiceStyle = "western" | "pakistani";
 export type WesternSkin = "modern" | "minimal" | "corporate";
 export type InvoicePageSize = "a4" | "a5";
 export type InvoicePageOrientation = "portrait" | "landscape";
-export type BodyGapMode = "manual" | "fill";
 export type InvoiceLanguage = "en" | "ur";
 export type Alignment = "left" | "center" | "right";
 export type SizeOption = "small" | "medium" | "large";
@@ -25,8 +24,8 @@ export interface InvoicePrintSettings {
   skin: WesternSkin;
   pageSize: InvoicePageSize;
   pageOrientation: InvoicePageOrientation;
-  bodyGapMode: BodyGapMode;
-  bodyGapMm: number;
+  extraLines: number;
+  headerScale: number;
 }
 
 export interface InvoicePageBox {
@@ -39,86 +38,47 @@ export interface InvoicePageBox {
   orientation: InvoicePageOrientation;
 }
 
-export interface FillPageInput {
-  itemCount: number;
-  hasDiscount: boolean;
-  taxCount: number;
-  hasNotes: boolean;
-  hasTerms: boolean;
-  hasAmountInWords: boolean;
-  hasFooter: boolean;
-  hasSignatureImage: boolean;
-}
-
-export interface BodyGapResult {
-  mode: BodyGapMode;
+export interface ExtraLinesResult {
+  extraLines: number;
   spacerMm: number;
   blankRowCount: number;
   blankRowMm: number;
-  lastBlankRowMm: number;
-  leftoverMm: number;
 }
 
 export const INVOICE_PAGE_MARGIN_MM = 12;
 export const INVOICE_SAFE_BOTTOM_INSET_MM = 4;
-export const BODY_GAP_MIN_MM = 0;
-export const BODY_GAP_MAX_MM = 60;
-export const BODY_GAP_DEFAULT_MM = 12;
+export const EXTRA_LINES_MIN = 0;
+export const EXTRA_LINES_MAX = 15;
+export const EXTRA_LINES_DEFAULT = 3;
+export const HEADER_SCALE_MIN = 0.65;
+export const HEADER_SCALE_MAX = 1;
+export const HEADER_SCALE_DEFAULT = 0.8;
 export const PAKISTANI_BLANK_ROW_MM = 8;
+export const WESTERN_EXTRA_LINE_MM = 7.5;
 
 export const DEFAULT_INVOICE_PRINT: InvoicePrintSettings = {
   style: "western",
   skin: "modern",
   pageSize: "a4",
   pageOrientation: "portrait",
-  bodyGapMode: "manual",
-  bodyGapMm: BODY_GAP_DEFAULT_MM,
+  extraLines: EXTRA_LINES_DEFAULT,
+  headerScale: HEADER_SCALE_DEFAULT,
 };
 
 /** Western item-table tracks — totals use the same definition. */
 export const WESTERN_COL = {
   qtyPx: 40,
   pricePx: 70,
-  discPx: 56,
-  amountPx: 80,
+  discPx: 48,
+  amountPx: 110,
 } as const;
 
 export const PAKISTANI_COL = {
   sno: "7%",
   qty: "8%",
   rate: "12%",
-  disc: "10%",
-  amount: "14%",
-} as const;
-
-/** Deterministic used-height estimates (mm). Gap / blank rows are NOT included. */
-export const USED_HEIGHT_MM = {
-  western: {
-    header: 30,
-    billTo: 22,
-    tableHeader: 8,
-    itemRow: 7.5,
-    totalsRow: 6,
-    amountInWords: 8,
-    notes: 14,
-    terms: 12,
-    signature: 26,
-    signatureWithImage: 34,
-    footer: 10,
-  },
-  pakistani: {
-    header: 28,
-    meta: 14,
-    tableHeader: 7,
-    itemRow: 7,
-    totalsRow: 6.5,
-    amountInWords: 8,
-    notes: 12,
-    terms: 10,
-    signature: 26,
-    signatureWithImage: 34,
-    footer: 10,
-  },
+  disc: "9%",
+  amount: "18%",
 } as const;
 
 export interface InvoiceChrome {
@@ -149,9 +109,15 @@ export function invoiceChrome(print: InvoicePrintSettings): InvoiceChrome {
   return print.style === "pakistani" ? PAKISTANI_CHROME : WESTERN_SKINS[print.skin];
 }
 
-export function clampBodyGapMm(value: number): number {
-  if (!Number.isFinite(value)) return BODY_GAP_DEFAULT_MM;
-  return Math.min(BODY_GAP_MAX_MM, Math.max(BODY_GAP_MIN_MM, Math.round(value)));
+export function clampExtraLines(value: number): number {
+  if (!Number.isFinite(value)) return EXTRA_LINES_DEFAULT;
+  return Math.min(EXTRA_LINES_MAX, Math.max(EXTRA_LINES_MIN, Math.round(value)));
+}
+
+export function clampHeaderScale(value: number): number {
+  if (!Number.isFinite(value)) return HEADER_SCALE_DEFAULT;
+  const rounded = Math.round(value * 100) / 100;
+  return Math.min(HEADER_SCALE_MAX, Math.max(HEADER_SCALE_MIN, rounded));
 }
 
 export function isWesternSkin(value: string): value is WesternSkin {
@@ -159,7 +125,7 @@ export function isWesternSkin(value: string): value is WesternSkin {
 }
 
 export function resolveInvoicePrintSettings(
-  input?: Partial<InvoicePrintSettings> & { template?: string },
+  input?: Partial<InvoicePrintSettings> & { template?: string; bodyGapMode?: string; bodyGapMm?: number },
 ): InvoicePrintSettings {
   const template = input?.template;
   let style: InvoiceStyle = input?.style === "pakistani" ? "pakistani" : "western";
@@ -171,15 +137,14 @@ export function resolveInvoicePrintSettings(
   const pageSize: InvoicePageSize = input?.pageSize === "a5" ? "a5" : "a4";
   const pageOrientation: InvoicePageOrientation =
     input?.pageOrientation === "landscape" ? "landscape" : "portrait";
-  const bodyGapMode: BodyGapMode = input?.bodyGapMode === "fill" ? "fill" : "manual";
 
   return {
     style,
     skin,
     pageSize,
     pageOrientation,
-    bodyGapMode,
-    bodyGapMm: clampBodyGapMm(input?.bodyGapMm ?? BODY_GAP_DEFAULT_MM),
+    extraLines: clampExtraLines(input?.extraLines ?? EXTRA_LINES_DEFAULT),
+    headerScale: clampHeaderScale(input?.headerScale ?? HEADER_SCALE_DEFAULT),
   };
 }
 
@@ -208,83 +173,21 @@ export function westernColumnTemplate(): string {
   return `minmax(0,1fr) ${WESTERN_COL.qtyPx}px ${WESTERN_COL.pricePx}px ${WESTERN_COL.discPx}px ${WESTERN_COL.amountPx}px`;
 }
 
-export function westernTotalsRowCount(input: Pick<FillPageInput, "hasDiscount" | "taxCount">): number {
-  return 1 + (input.hasDiscount ? 1 : 0) + input.taxCount + 1;
-}
-
-export function pakistaniTotalsRowCount(input: Pick<FillPageInput, "hasDiscount" | "taxCount">): number {
-  return (input.hasDiscount ? 1 : 0) + input.taxCount + 1;
-}
-
-export function estimateUsedHeightMm(style: InvoiceStyle, input: FillPageInput): number {
-  const H = USED_HEIGHT_MM[style];
-  const sig = input.hasSignatureImage ? H.signatureWithImage : H.signature;
-  let used = H.tableHeader
-    + input.itemCount * H.itemRow
-    + (style === "western" ? westernTotalsRowCount(input) : pakistaniTotalsRowCount(input)) * H.totalsRow
-    + (input.hasAmountInWords ? H.amountInWords : 0)
-    + (input.hasNotes ? H.notes : 0)
-    + (input.hasTerms ? H.terms : 0)
-    + sig
-    + (input.hasFooter ? H.footer : 0)
-    + INVOICE_SAFE_BOTTOM_INSET_MM;
-
-  if (style === "western") used += USED_HEIGHT_MM.western.header + USED_HEIGHT_MM.western.billTo;
-  else used += USED_HEIGHT_MM.pakistani.header + USED_HEIGHT_MM.pakistani.meta;
-
-  return used;
-}
-
-export function resolveBodyGap(
-  print: InvoicePrintSettings,
-  box: InvoicePageBox,
-  input: FillPageInput,
-): BodyGapResult {
-  if (print.bodyGapMode === "manual") {
+export function resolveExtraLines(print: InvoicePrintSettings): ExtraLinesResult {
+  const extraLines = clampExtraLines(print.extraLines);
+  if (print.style === "pakistani") {
     return {
-      mode: "manual",
-      spacerMm: clampBodyGapMm(print.bodyGapMm),
-      blankRowCount: 0,
-      blankRowMm: PAKISTANI_BLANK_ROW_MM,
-      lastBlankRowMm: 0,
-      leftoverMm: 0,
-    };
-  }
-
-  const used = estimateUsedHeightMm(print.style, input);
-  const leftoverMm = Math.max(0, box.contentHeightMm - used);
-
-  if (print.style === "western") {
-    return {
-      mode: "fill",
-      spacerMm: leftoverMm,
-      blankRowCount: 0,
-      blankRowMm: PAKISTANI_BLANK_ROW_MM,
-      lastBlankRowMm: 0,
-      leftoverMm,
-    };
-  }
-
-  if (leftoverMm < 1) {
-    return {
-      mode: "fill",
+      extraLines,
       spacerMm: 0,
-      blankRowCount: 0,
+      blankRowCount: extraLines,
       blankRowMm: PAKISTANI_BLANK_ROW_MM,
-      lastBlankRowMm: 0,
-      leftoverMm,
     };
   }
-
-  const count = Math.max(1, Math.floor(leftoverMm / PAKISTANI_BLANK_ROW_MM));
-  const lastBlankRowMm = leftoverMm - (count - 1) * PAKISTANI_BLANK_ROW_MM;
   return {
-    mode: "fill",
-    spacerMm: 0,
-    blankRowCount: count,
+    extraLines,
+    spacerMm: extraLines * WESTERN_EXTRA_LINE_MM,
+    blankRowCount: 0,
     blankRowMm: PAKISTANI_BLANK_ROW_MM,
-    lastBlankRowMm,
-    leftoverMm,
   };
 }
 
@@ -315,17 +218,23 @@ export function invoiceVocab(lang: InvoiceLanguage) {
     terms: ur ? "شرائط و ضوابط" : "Terms & Conditions",
     date: ur ? "تاریخ" : "Date",
     due: ur ? "آخری تاریخ" : "Due Date",
+    dDate: ur ? "آخری تاریخ" : "D. Date",
     authSig: ur ? "دستخط" : "Authorized Signature",
+    recvSig: ur ? "وصول کنندہ کے دستخط" : "Receiver Signature",
+    companySig: ur ? "کمپنی کے دستخط" : "Authorized Signature",
     stamp: ur ? "مہر" : "STAMP",
     noteLbl: ur ? "نوٹ:" : "Note:",
     termsLbl: ur ? "شرائط:" : "Terms:",
     payterms: ur ? "ادائیگی کی شرائط" : "Payment Terms",
     to: ur ? "بنام" : "To",
+    ms: ur ? "بنام" : "M/s.",
     sno: ur ? "نمبر" : "S. No.",
     partic: ur ? "تفصیل" : "Particulars",
     rate: ur ? "نرخ" : "Rate",
     invNum: ur ? "انوائس نمبر" : "Invoice #",
     amountInWords: ur ? "رقم الفاظ میں" : "Amount in words",
+    advance: ur ? "ایڈوانس" : "Advance",
+    balance: ur ? "بقایا" : "Balance",
     businessFallback: ur ? "آپ کا کاروباری نام" : "Your Business Name",
     clientFallback: ur ? "موصول کنندہ" : "Client Name",
   };

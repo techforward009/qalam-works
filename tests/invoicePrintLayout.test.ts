@@ -47,8 +47,9 @@ describe("western vs pakistani rendering", () => {
     expect(built).toContain('data-invoice-style="western"');
     expect(built).toContain('data-totals="column-aligned"');
     expect(built).toContain('data-col="amount"');
-    expect(built).toContain("width:80px");
+    expect(built).toContain("width:110px");
     expect(built).toContain("text-align:end");
+    expect(built).toContain("font-variant-numeric:tabular-nums");
     expect(built).not.toContain('data-invoice-table="pakistani"');
   });
 
@@ -95,30 +96,31 @@ describe("page size and orientation", () => {
   });
 });
 
-describe("manual gap vs fill page", () => {
-  it("manual 0mm and 40mm appear as spacers with no blank rows", () => {
-    const zero = doc({ style: "western", bodyGapMode: "manual", bodyGapMm: 0 });
-    expect(zero.pageHtml).toContain('data-body-gap-mode="manual"');
-    expect(zero.pageHtml).toContain('data-gap-mm="0"');
+describe("extra lines replace fill page", () => {
+  it("does not emit fill-page mode", () => {
+    const built = html({ style: "pakistani", extraLines: 4 });
+    expect(built).not.toContain("Fill page");
+    expect(built).not.toContain('data-body-gap-mode="fill"');
+    expect(built).not.toContain("overflow:hidden");
+  });
+
+  it("western extra lines are invisible spacing", () => {
+    const zero = doc({ style: "western", extraLines: 0 });
+    expect(zero.pageHtml).toContain('data-extra-lines="0"');
     expect(zero.pageHtml).toContain("height:0mm");
     expect(zero.pageHtml).toContain('data-blank-rows="0"');
 
-    const wide = doc({ style: "western", bodyGapMode: "manual", bodyGapMm: 40 });
-    expect(wide.pageHtml).toContain('data-gap-mm="40"');
-    expect(wide.pageHtml).toContain("height:40mm");
-    expect(wide.gap.blankRowCount).toBe(0);
+    const five = doc({ style: "western", extraLines: 5 });
+    expect(five.pageHtml).toContain('data-extra-lines="5"');
+    expect(five.extra.blankRowCount).toBe(0);
+    expect(five.pageHtml).not.toContain('data-blank-row="true"');
   });
 
-  it("pakistani fill page inserts blank rows; western fill does not", () => {
-    const pk = doc({ style: "pakistani", bodyGapMode: "fill" });
-    expect(pk.gap.blankRowCount).toBeGreaterThan(0);
-    expect(pk.pageHtml).toContain(`data-blank-rows="${pk.gap.blankRowCount}"`);
+  it("pakistani extra lines insert bordered blank rows", () => {
+    const pk = doc({ style: "pakistani", extraLines: 4 });
+    expect(pk.extra.blankRowCount).toBe(4);
+    expect(pk.pageHtml).toContain('data-blank-rows="4"');
     expect(pk.pageHtml).toContain('data-blank-row="true"');
-
-    const west = doc({ style: "western", bodyGapMode: "fill" });
-    expect(west.gap.blankRowCount).toBe(0);
-    expect(west.pageHtml).not.toContain('data-blank-row="true"');
-    expect(west.pageHtml).toContain(`data-gap-mm="${west.gap.spacerMm}"`);
   });
 });
 
@@ -127,11 +129,76 @@ describe("signature caption is below the line", () => {
     const built = html({ style: "western" });
     expect(built).toContain('data-sig-caption="below-line"');
     const captionAt = built.indexOf('data-sig-caption-text="true"');
-    const lineAt = built.lastIndexOf("border-bottom:1.5px solid #374151", captionAt);
+    const lineAt = built.lastIndexOf("data-sig-line", captionAt);
     const nameAt = built.indexOf("Haider Ali", captionAt);
     expect(lineAt).toBeGreaterThan(0);
     expect(captionAt).toBeGreaterThan(lineAt);
     expect(nameAt).toBeGreaterThan(captionAt);
+    expect(built).toContain("width:160px");
+  });
+
+  it("pakistani has receiver and authorized blocks", () => {
+    const built = html({ style: "pakistani" });
+    expect(built).toContain('data-sig-pair="true"');
+    expect(built).toContain('data-sig-block="receiver"');
+    expect(built).toContain('data-sig-block="authorized"');
+    expect(built).toContain("Receiver Signature");
+  });
+});
+
+describe("pakistani meta, labels, and advance", () => {
+  it("puts invoice number/date above M/s. customer", () => {
+    const built = html({ style: "pakistani" });
+    const invAt = built.indexOf("Invoice #");
+    const msAt = built.indexOf("M/s.");
+    const clientAt = built.indexOf("Haider Ali");
+    expect(invAt).toBeGreaterThan(0);
+    expect(msAt).toBeGreaterThan(invAt);
+    expect(clientAt).toBeGreaterThan(msAt);
+    expect(built).toContain("D. Date");
+    expect(built).toContain('data-col="particulars"');
+    expect(built).toContain("text-align:center;vertical-align:middle");
+  });
+
+  it("uses بنام in Urdu pakistani customer label", () => {
+    const built = html({ style: "pakistani" }, sampleInvoice(), "ur");
+    expect(built).toContain("بنام");
+    expect(built).not.toContain("M/s.");
+  });
+
+  it("western still uses BILL TO / Due Date", () => {
+    const built = html({ style: "western" });
+    expect(built).toContain("BILL TO");
+    expect(built).toContain("Due Date");
+    expect(built).not.toContain("M/s.");
+    expect(built).not.toContain("D. Date");
+  });
+
+  it("shows advance and balance only when advance is set", () => {
+    const none = html({ style: "pakistani" });
+    expect(none).not.toContain('data-totals-row="advance"');
+    expect(none).not.toContain('data-totals-row="balance"');
+
+    const paid = html({ style: "pakistani" }, sampleInvoice({ amountPaid: 50 }));
+    expect(paid).toContain('data-totals-row="advance"');
+    expect(paid).toContain('data-totals-row="balance"');
+    expect(paid).toContain("Advance");
+    expect(paid).toContain("Balance");
+    const advAt = paid.indexOf('data-totals-row="advance"');
+    const balAt = paid.indexOf('data-totals-row="balance"');
+    const totAt = paid.indexOf('data-totals-row="total"');
+    expect(advAt).toBeGreaterThan(0);
+    expect(balAt).toBeGreaterThan(advAt);
+    expect(totAt).toBeGreaterThan(balAt);
+  });
+});
+
+describe("header scale", () => {
+  it("writes the compact default and a custom scale on both styles", () => {
+    const west = html({ style: "western" });
+    expect(west).toContain('data-header-scale="0.8"');
+    const pk = html({ style: "pakistani", headerScale: 0.65 });
+    expect(pk).toContain('data-header-scale="0.65"');
   });
 });
 

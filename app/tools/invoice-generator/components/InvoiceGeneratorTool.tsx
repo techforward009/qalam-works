@@ -7,11 +7,14 @@ import { useEffect } from "react";
 import { calculateInvoice, fromMinor, type Invoice, type LineItem } from "../utils/invoiceEngine";
 import InvoiceDocumentPreview from "./InvoiceDocumentPreview";
 import {
-  BODY_GAP_MAX_MM,
-  BODY_GAP_MIN_MM,
   DEFAULT_INVOICE_PRINT,
+  EXTRA_LINES_MAX,
+  EXTRA_LINES_MIN,
+  HEADER_SCALE_MAX,
+  HEADER_SCALE_MIN,
   WESTERN_SKINS,
-  clampBodyGapMm,
+  clampExtraLines,
+  clampHeaderScale,
   invoiceChrome,
   type InvoicePrintSettings,
   type WesternSkin,
@@ -62,6 +65,7 @@ const DEFAULT_INVOICE: Invoice = {
   terms:    "",
   footer:   "",
   amountInWords: "",
+  amountPaid: 0,
 };
 
 // ── Small reusable editor atoms ───────────────────────────────────────────────
@@ -170,10 +174,10 @@ export default function InvoiceGeneratorTool() {
     orientation:     isUr ? "رخ" : "Orientation",
     portrait:        isUr ? "عمودی" : "Portrait",
     landscape:       isUr ? "افقی" : "Landscape",
-    bodyGap:         isUr ? "درمیانی گیپ" : "Middle gap",
-    gapManual:       isUr ? "دستی گیپ" : "Manual gap",
-    fillPage:        isUr ? "صفحہ بھریں" : "Fill page",
+    extraLines:      isUr ? "اضافی لائنیں" : "Extra lines",
+    headerSize:      isUr ? "ہیڈر سائز" : "Header size",
     amountInWords:   isUr ? "رقم الفاظ میں" : "Amount in words",
+    advance:         isUr ? "ایڈوانس" : "Advance",
     footer:          isUr ? "فوٹر" : "Footer",
     invoiceLang:     isUr ? "انوائس کی زبان" : "Invoice Language",
     english:         isUr ? "انگریزی" : "English",
@@ -468,6 +472,15 @@ export default function InvoiceGeneratorTool() {
                     className={`text-[13px] font-semibold text-amber-700 hover:text-amber-900 underline mt-1 ${naskh}`}>
                     {L.addItem}
                   </button>
+                  {print.style === "pakistani" && (
+                    <div>
+                      <label className={`block text-[12px] font-semibold text-gray-500 mb-1 ${naskh}`}>{L.advance}</label>
+                      <input type="number" min="0" step="0.01" dir="ltr"
+                        value={invoice.amountPaid || 0}
+                        onChange={e => setInvoice(inv => ({ ...inv, amountPaid: parseFloat(e.target.value) || 0 }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                  )}
                   <div className="border-t border-gray-100 pt-3 space-y-2">
                     <div>
                       <label className={`block text-[12px] font-semibold text-gray-500 mb-1 ${naskh}`}>{L.notes}</label>
@@ -542,26 +555,23 @@ export default function InvoiceGeneratorTool() {
                     </div>
                   </div>
                   <div>
-                    <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.bodyGap}</label>
-                    <div className="flex gap-2 flex-wrap mb-2">
-                      <button onClick={() => setPrint(p => ({ ...p, bodyGapMode: "manual" }))}
-                        className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
-                          ${print.bodyGapMode === "manual" ? "border-amber-600 bg-amber-50 text-amber-900" : "border-gray-200 text-gray-600 hover:border-amber-300"}`}>
-                        {L.gapManual}
-                      </button>
-                      <button onClick={() => setPrint(p => ({ ...p, bodyGapMode: "fill" }))}
-                        className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
-                          ${print.bodyGapMode === "fill" ? "border-amber-600 bg-amber-50 text-amber-900" : "border-gray-200 text-gray-600 hover:border-amber-300"}`}>
-                        {L.fillPage}
-                      </button>
-                    </div>
-                    <div className={`flex items-center gap-3 ${print.bodyGapMode === "fill" ? "opacity-40 pointer-events-none" : ""}`}>
-                      <input type="range" min={BODY_GAP_MIN_MM} max={BODY_GAP_MAX_MM} step={1}
-                        value={print.bodyGapMm}
-                        disabled={print.bodyGapMode === "fill"}
-                        onChange={e => setPrint(p => ({ ...p, bodyGapMm: clampBodyGapMm(Number(e.target.value)) }))}
+                    <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.extraLines}</label>
+                    <div className="flex items-center gap-3">
+                      <input type="range" min={EXTRA_LINES_MIN} max={EXTRA_LINES_MAX} step={1}
+                        value={print.extraLines}
+                        onChange={e => setPrint(p => ({ ...p, extraLines: clampExtraLines(Number(e.target.value)) }))}
                         className="flex-1 accent-amber-700" />
-                      <span className="text-xs font-mono text-gray-600 w-12" dir="ltr">{print.bodyGapMm}mm</span>
+                      <span className="text-xs font-mono text-gray-600 w-8" dir="ltr">{print.extraLines}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.headerSize}</label>
+                    <div className="flex items-center gap-3">
+                      <input type="range" min={Math.round(HEADER_SCALE_MIN * 100)} max={Math.round(HEADER_SCALE_MAX * 100)} step={1}
+                        value={Math.round(print.headerScale * 100)}
+                        onChange={e => setPrint(p => ({ ...p, headerScale: clampHeaderScale(Number(e.target.value) / 100) }))}
+                        className="flex-1 accent-amber-700" />
+                      <span className="text-xs font-mono text-gray-600 w-10" dir="ltr">{Math.round(print.headerScale * 100)}%</span>
                     </div>
                   </div>
                   <div>
