@@ -228,23 +228,30 @@ export default function WhatsAppRtlFormatter({
           </div>
 
           <div className="min-w-0 flex flex-col">
-            <label
-              htmlFor="waf-output"
+            <div
+              id="waf-output-label"
               className={`block text-[15px] font-semibold text-gray-800 mb-2 ${naskh}`}
               dir={isUrdu ? "rtl" : "ltr"}
             >
               {t.outputLabel}
-            </label>
-            <textarea
+            </div>
+            {/*
+              Preview must not be a textarea with dir=auto.
+              Form controls apply CSS direction from first-strong and often ignore
+              LRI/PDI, so mixed lines like "1) Lachesis —" look reversed here even
+              when WhatsApp Web (div UBA) shows them correctly.
+              plaintext + a real HTML box honors per-line UBA and existing isolates.
+            */}
+            <pre
               id="waf-output"
-              value={output}
-              readOnly
-              rows={16}
+              data-testid="waf-output"
+              role="region"
+              aria-labelledby="waf-output-label"
               dir="auto"
               spellCheck={false}
-              aria-readonly="true"
-              className={`w-full min-w-0 min-h-[300px] md:min-h-[360px] flex-1 box-border rounded-xl border border-gray-200 bg-gray-50 p-4 text-[16px] leading-[1.75] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#B8935A]/30 resize-y ${urduFont}`}
-            />
+              style={{ unicodeBidi: "plaintext", fontFamily: "inherit" }}
+              className={`w-full min-w-0 min-h-[300px] md:min-h-[360px] flex-1 box-border rounded-xl border border-gray-200 bg-gray-50 p-4 text-[16px] leading-[1.75] text-gray-900 overflow-auto whitespace-pre-wrap ${urduFont}`}
+            >{output}</pre>
           </div>
         </div>
 
