@@ -63,20 +63,10 @@ import {
   findAllRangesInEditor,
   findBlockStartPosition,
   findSuggestionRange,
-  redo,
   replaceAll,
-  selectAll,
-  setAlign,
   setLinkHref,
-  toggleBlockquote,
-  toggleBold,
-  toggleBulletList,
-  toggleHeading,
-  toggleItalic,
-  toggleOrderedList,
-  toggleUnderline,
   transformPastedSlice,
-  undo,
+  activeBlockStyleId,
 } from "../utils/documentCommands";
 import {
   defaultDocumentTitle,
@@ -92,6 +82,13 @@ import {
   type RightPanelId,
 } from "../utils/documentShell";
 import type { MenuActionId } from "../utils/documentMenus";
+import {
+  dispatchDocumentMenuAction,
+  focusExistingDictationControl,
+  toggleStudioFullscreen,
+  type HelpDialogMode,
+} from "../utils/documentMenuActions";
+import { validateLineHeight } from "../utils/documentSettings";
 import DocumentToolbar from "./DocumentToolbar";
 import DocumentCanvas from "./DocumentCanvas";
 import DocumentStudioPanels from "./DocumentStudioPanels";
@@ -224,7 +221,7 @@ export default function DocumentStudioEditor() {
   const [findOpen, setFindOpen] = useState(false);
   const [leftPanel, setLeftPanel] = useState<LeftPanelId>("none");
   const [rightPanel, setRightPanel] = useState<RightPanelId>("none");
-  const [helpOpen, setHelpOpen] = useState<null | "about" | "shortcuts">(null);
+  const [helpOpen, setHelpOpen] = useState<HelpDialogMode | null>(null);
   const [findQuery, setFindQuery] = useState("");
   const [replaceQuery, setReplaceQuery] = useState("");
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
@@ -1002,135 +999,57 @@ export default function DocumentStudioEditor() {
   };
 
   const handleMenuAction = (id: MenuActionId) => {
-    switch (id) {
-      case "file.new":
-        handleNewDocument();
-        break;
-      case "file.upload":
-        fileInputRef.current?.click();
-        break;
-      case "file.copy":
-        void handleCopy();
-        break;
-      case "file.downloadTxt":
-        handleDownload();
-        break;
-      case "file.downloadDocx":
+    dispatchDocumentMenuAction(id, editor, {
+      newDocument: handleNewDocument,
+      upload: () => fileInputRef.current?.click(),
+      downloadTxt: handleDownload,
+      downloadDocx: () => {
         void handleDownloadDocx();
-        break;
-      case "file.downloadPdf":
+      },
+      downloadPdf: () => {
         void handleDownloadPdf();
-        break;
-      case "file.clearText":
-        handleClearText();
-        break;
-      case "file.clearDraft":
-        handleClearDraft();
-        break;
-      case "edit.undo":
-        if (editor) undo(editor);
-        break;
-      case "edit.redo":
-        if (editor) redo(editor);
-        break;
-      case "edit.selectAll":
-        if (editor) selectAll(editor);
-        break;
-      case "edit.find":
-        setFindOpen(true);
-        break;
-      case "view.outline":
-        setLeftPanel((p) => toggleLeftPanel(p, "outline"));
-        break;
-      case "view.quality":
-        setRightPanel((p) => toggleRightPanel(p, "quality"));
-        break;
-      case "view.glossary":
-        setRightPanel((p) => toggleRightPanel(p, "glossary"));
-        break;
-      case "view.settings":
-        setRightPanel((p) => toggleRightPanel(p, "settings"));
-        break;
-      case "insert.link":
-        promptLink();
-        break;
-      case "insert.example":
-        handleLoadExample();
-        break;
-      case "format.bold":
-        if (editor) toggleBold(editor);
-        break;
-      case "format.italic":
-        if (editor) toggleItalic(editor);
-        break;
-      case "format.underline":
-        if (editor) toggleUnderline(editor);
-        break;
-      case "format.h1":
-        if (editor) toggleHeading(editor, 1);
-        break;
-      case "format.h2":
-        if (editor) toggleHeading(editor, 2);
-        break;
-      case "format.bullet":
-        if (editor) toggleBulletList(editor);
-        break;
-      case "format.ordered":
-        if (editor) toggleOrderedList(editor);
-        break;
-      case "format.quote":
-        if (editor) toggleBlockquote(editor);
-        break;
-      case "format.alignLeft":
-        if (editor) setAlign(editor, "left");
-        break;
-      case "format.alignCenter":
-        if (editor) setAlign(editor, "center");
-        break;
-      case "format.alignRight":
-        if (editor) setAlign(editor, "right");
-        break;
-      case "format.alignJustify":
-        if (editor) setAlign(editor, "justify");
-        break;
-      case "format.rtl":
-        setDir("rtl");
-        break;
-      case "format.ltr":
-        setDir("ltr");
-        break;
-      case "tools.standardize":
-        handleStandardizeClick();
-        break;
-      case "tools.audit":
-        handleRunAudit();
-        break;
-      case "tools.glossary":
-        setRightPanel((p) => toggleRightPanel(p, "glossary"));
-        break;
-      case "help.about":
-        setHelpOpen("about");
-        break;
-      case "help.shortcuts":
-        setHelpOpen("shortcuts");
-        break;
-    }
+      },
+      find: () => setFindOpen(true),
+      toggleOutline: () => setLeftPanel((p) => toggleLeftPanel(p, "outline")),
+      toggleQuality: () => setRightPanel((p) => toggleRightPanel(p, "quality")),
+      toggleGlossary: () => setRightPanel((p) => toggleRightPanel(p, "glossary")),
+      toggleSettings: () => setRightPanel((p) => toggleRightPanel(p, "settings")),
+      toggleFullscreen: toggleStudioFullscreen,
+      loadExample: handleLoadExample,
+      promptLink,
+      setDir,
+      standardize: handleStandardizeClick,
+      audit: handleRunAudit,
+      showStats: () => setRightPanel("quality"),
+      startDictation: focusExistingDictationControl,
+      openHelp: setHelpOpen,
+    });
   };
 
   const disabledIds = new Set<MenuActionId>();
-  if (isEditorEmpty) disabledIds.add("file.clearText");
   if (isExportingPdf) disabledIds.add("file.downloadPdf");
   if (isImporting) disabledIds.add("file.upload");
+  if (typeof document !== "undefined" && !document.fullscreenEnabled) {
+    disabledIds.add("view.fullscreen");
+  }
 
   const checkedIds = new Set<MenuActionId>();
   if (editor?.isActive("bold")) checkedIds.add("format.bold");
   if (editor?.isActive("italic")) checkedIds.add("format.italic");
   if (editor?.isActive("underline")) checkedIds.add("format.underline");
-  if (editor?.isActive("heading", { level: 1 })) checkedIds.add("format.h1");
-  if (editor?.isActive("heading", { level: 2 })) checkedIds.add("format.h2");
+  if (editor) {
+    const styleId = activeBlockStyleId(editor);
+    checkedIds.add(`format.style.${styleId}` as MenuActionId);
+    const pAttr = editor.getAttributes("paragraph").lineHeight;
+    const hAttr = editor.getAttributes("heading").lineHeight;
+    const lh =
+      (typeof pAttr === "number" ? validateLineHeight(pAttr) : null) ??
+      (typeof hAttr === "number" ? validateLineHeight(hAttr) : null);
+    if (lh === null) checkedIds.add("format.lh.default");
+    else checkedIds.add(`format.lh.${lh}` as MenuActionId);
+  }
   if (editor?.isActive("bulletList")) checkedIds.add("format.bullet");
   if (editor?.isActive("orderedList")) checkedIds.add("format.ordered");
-  if (editor?.isActive("blockquote")) checkedIds.add("format.quote");
   if (editor?.isActive({ textAlign: "left" })) checkedIds.add("format.alignLeft");
   if (editor?.isActive({ textAlign: "center" })) checkedIds.add("format.alignCenter");
   if (editor?.isActive({ textAlign: "right" })) checkedIds.add("format.alignRight");
@@ -1141,6 +1060,9 @@ export default function DocumentStudioEditor() {
   if (rightPanel === "quality") checkedIds.add("view.quality");
   if (rightPanel === "glossary") checkedIds.add("view.glossary");
   if (rightPanel === "settings") checkedIds.add("view.settings");
+  if (typeof document !== "undefined" && document.fullscreenElement) {
+    checkedIds.add("view.fullscreen");
+  }
 
   const qualityProps = {
     stats,

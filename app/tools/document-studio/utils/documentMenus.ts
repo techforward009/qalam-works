@@ -4,15 +4,14 @@
  * never shown as working items.
  */
 
+export type MenuId = "file" | "edit" | "view" | "insert" | "format" | "tools" | "help";
+
 export type MenuActionId =
   | "file.new"
   | "file.upload"
-  | "file.copy"
   | "file.downloadTxt"
   | "file.downloadDocx"
   | "file.downloadPdf"
-  | "file.clearText"
-  | "file.clearDraft"
   | "edit.undo"
   | "edit.redo"
   | "edit.selectAll"
@@ -21,38 +20,85 @@ export type MenuActionId =
   | "view.quality"
   | "view.glossary"
   | "view.settings"
+  | "view.fullscreen"
   | "insert.link"
   | "insert.example"
   | "format.bold"
   | "format.italic"
   | "format.underline"
-  | "format.h1"
-  | "format.h2"
-  | "format.bullet"
-  | "format.ordered"
-  | "format.quote"
+  | "format.style.normal"
+  | "format.style.title"
+  | "format.style.subtitle"
+  | "format.style.heading-1"
+  | "format.style.heading-2"
+  | "format.style.heading-3"
+  | "format.style.heading-4"
+  | "format.style.quote"
+  | "format.style.caption"
   | "format.alignLeft"
   | "format.alignCenter"
   | "format.alignRight"
   | "format.alignJustify"
   | "format.rtl"
   | "format.ltr"
+  | "format.bullet"
+  | "format.ordered"
+  | "format.lh.default"
+  | "format.lh.1"
+  | "format.lh.1.15"
+  | "format.lh.1.5"
+  | "format.lh.1.8"
+  | "format.lh.2"
+  | "format.lh.2.2"
   | "tools.standardize"
   | "tools.audit"
+  | "tools.stats"
+  | "tools.dictation"
   | "tools.glossary"
   | "help.about"
-  | "help.shortcuts";
+  | "help.shortcuts"
+  | "help.rtl"
+  | "help.voice";
 
-export type MenuItem =
+export type MenuNode =
   | { type: "action"; id: MenuActionId; labelEn: string; labelUr: string; shortcut?: string }
-  | { type: "separator" };
+  | { type: "separator" }
+  | { type: "submenu"; id: string; labelEn: string; labelUr: string; items: MenuNode[] };
 
 export type MenuDefinition = {
-  id: "file" | "edit" | "view" | "insert" | "format" | "tools" | "help";
+  id: MenuId;
   labelEn: string;
   labelUr: string;
-  items: MenuItem[];
+  items: MenuNode[];
 };
+
+export type MenuOpenState = {
+  menuId: MenuId | null;
+  submenuId: string | null;
+};
+
+export const CLOSED_MENU_STATE: MenuOpenState = { menuId: null, submenuId: null };
+
+export function nextOpenMenu(state: MenuOpenState, clicked: MenuId): MenuOpenState {
+  if (state.menuId === clicked) return CLOSED_MENU_STATE;
+  return { menuId: clicked, submenuId: null };
+}
+
+export function nextOpenSubmenu(state: MenuOpenState, clicked: string): MenuOpenState {
+  if (!state.menuId) return state;
+  if (state.submenuId === clicked) return { ...state, submenuId: null };
+  return { ...state, submenuId: clicked };
+}
+
+export function setOpenSubmenu(state: MenuOpenState, submenuId: string): MenuOpenState {
+  if (!state.menuId) return state;
+  return { ...state, submenuId };
+}
+
+export function applyMenuEscape(state: MenuOpenState): MenuOpenState {
+  if (state.submenuId) return { ...state, submenuId: null };
+  return CLOSED_MENU_STATE;
+}
 
 export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
   {
@@ -61,15 +107,19 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     labelUr: "فائل",
     items: [
       { type: "action", id: "file.new", labelEn: "New document", labelUr: "نیا مسودہ" },
-      { type: "action", id: "file.upload", labelEn: "Upload…", labelUr: "اپلوڈ…" },
+      { type: "action", id: "file.upload", labelEn: "Upload file", labelUr: "فائل اپلوڈ" },
       { type: "separator" },
-      { type: "action", id: "file.copy", labelEn: "Copy text", labelUr: "متن نقل کریں" },
-      { type: "action", id: "file.downloadTxt", labelEn: "Download TXT", labelUr: "TXT ڈاؤن لوڈ" },
-      { type: "action", id: "file.downloadDocx", labelEn: "Download DOCX", labelUr: "DOCX ڈاؤن لوڈ" },
-      { type: "action", id: "file.downloadPdf", labelEn: "Download PDF", labelUr: "PDF ڈاؤن لوڈ" },
-      { type: "separator" },
-      { type: "action", id: "file.clearText", labelEn: "Clear text", labelUr: "متن صاف کریں" },
-      { type: "action", id: "file.clearDraft", labelEn: "Clear saved draft", labelUr: "محفوظ ڈرافٹ صاف کریں" },
+      {
+        type: "submenu",
+        id: "file.download",
+        labelEn: "Download",
+        labelUr: "ڈاؤن لوڈ",
+        items: [
+          { type: "action", id: "file.downloadTxt", labelEn: "TXT", labelUr: "TXT" },
+          { type: "action", id: "file.downloadDocx", labelEn: "DOCX", labelUr: "DOCX" },
+          { type: "action", id: "file.downloadPdf", labelEn: "PDF", labelUr: "PDF" },
+        ],
+      },
     ],
   },
   {
@@ -78,9 +128,10 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     labelUr: "ترمیم",
     items: [
       { type: "action", id: "edit.undo", labelEn: "Undo", labelUr: "کالعدم", shortcut: "Ctrl+Z" },
-      { type: "action", id: "edit.redo", labelEn: "Redo", labelUr: "دہرائیں", shortcut: "Ctrl+Y" },
+      { type: "action", id: "edit.redo", labelEn: "Redo", labelUr: "دہرائیں", shortcut: "Ctrl+Shift+Z" },
       { type: "separator" },
       { type: "action", id: "edit.selectAll", labelEn: "Select all", labelUr: "سب منتخب کریں", shortcut: "Ctrl+A" },
+      { type: "separator" },
       { type: "action", id: "edit.find", labelEn: "Find and replace", labelUr: "تلاش اور تبدیلی", shortcut: "Ctrl+F" },
     ],
   },
@@ -92,7 +143,9 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
       { type: "action", id: "view.outline", labelEn: "Outline", labelUr: "خاکہ" },
       { type: "action", id: "view.quality", labelEn: "Quality and suggestions", labelUr: "معیار اور تجاویز" },
       { type: "action", id: "view.glossary", labelEn: "Glossary", labelUr: "اصطلاحات" },
-      { type: "action", id: "view.settings", labelEn: "Page and style settings", labelUr: "صفحہ اور انداز" },
+      { type: "action", id: "view.settings", labelEn: "Settings", labelUr: "ترتیبات" },
+      { type: "separator" },
+      { type: "action", id: "view.fullscreen", labelEn: "Full screen", labelUr: "پوری اسکرین" },
     ],
   },
   {
@@ -109,23 +162,74 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     labelEn: "Format",
     labelUr: "فارمیٹ",
     items: [
-      { type: "action", id: "format.bold", labelEn: "Bold", labelUr: "موٹا", shortcut: "Ctrl+B" },
-      { type: "action", id: "format.italic", labelEn: "Italic", labelUr: "ترچھا", shortcut: "Ctrl+I" },
-      { type: "action", id: "format.underline", labelEn: "Underline", labelUr: "خط کشیدہ", shortcut: "Ctrl+U" },
-      { type: "separator" },
-      { type: "action", id: "format.h1", labelEn: "Heading 1", labelUr: "عنوان 1" },
-      { type: "action", id: "format.h2", labelEn: "Heading 2", labelUr: "عنوان 2" },
-      { type: "action", id: "format.bullet", labelEn: "Bullet list", labelUr: "فہرست" },
-      { type: "action", id: "format.ordered", labelEn: "Numbered list", labelUr: "نمبر شدہ فہرست" },
-      { type: "action", id: "format.quote", labelEn: "Quote", labelUr: "اقتباس" },
-      { type: "separator" },
-      { type: "action", id: "format.alignLeft", labelEn: "Align left", labelUr: "بائیں سیدھ" },
-      { type: "action", id: "format.alignCenter", labelEn: "Align center", labelUr: "درمیان" },
-      { type: "action", id: "format.alignRight", labelEn: "Align right", labelUr: "دائیں سیدھ" },
-      { type: "action", id: "format.alignJustify", labelEn: "Justify", labelUr: "برابر" },
-      { type: "separator" },
-      { type: "action", id: "format.rtl", labelEn: "Right to left", labelUr: "دائیں سے بائیں" },
-      { type: "action", id: "format.ltr", labelEn: "Left to right", labelUr: "بائیں سے دائیں" },
+      {
+        type: "submenu",
+        id: "format.text",
+        labelEn: "Text",
+        labelUr: "متن",
+        items: [
+          { type: "action", id: "format.bold", labelEn: "Bold", labelUr: "موٹا", shortcut: "Ctrl+B" },
+          { type: "action", id: "format.italic", labelEn: "Italic", labelUr: "ترچھا", shortcut: "Ctrl+I" },
+          { type: "action", id: "format.underline", labelEn: "Underline", labelUr: "خط کشیدہ", shortcut: "Ctrl+U" },
+        ],
+      },
+      {
+        type: "submenu",
+        id: "format.style",
+        labelEn: "Paragraph style",
+        labelUr: "پیراگراف انداز",
+        items: [
+          { type: "action", id: "format.style.normal", labelEn: "Normal", labelUr: "عام" },
+          { type: "action", id: "format.style.title", labelEn: "Title", labelUr: "عنوان" },
+          { type: "action", id: "format.style.subtitle", labelEn: "Subtitle", labelUr: "ذیلی عنوان" },
+          { type: "action", id: "format.style.heading-1", labelEn: "Heading 1", labelUr: "سرخی 1" },
+          { type: "action", id: "format.style.heading-2", labelEn: "Heading 2", labelUr: "سرخی 2" },
+          { type: "action", id: "format.style.heading-3", labelEn: "Heading 3", labelUr: "سرخی 3" },
+          { type: "action", id: "format.style.heading-4", labelEn: "Heading 4", labelUr: "سرخی 4" },
+          { type: "action", id: "format.style.quote", labelEn: "Quote", labelUr: "اقتباس" },
+          { type: "action", id: "format.style.caption", labelEn: "Caption", labelUr: "کیپشن" },
+        ],
+      },
+      {
+        type: "submenu",
+        id: "format.align",
+        labelEn: "Align and direction",
+        labelUr: "سیدھ اور سمت",
+        items: [
+          { type: "action", id: "format.alignLeft", labelEn: "Align left", labelUr: "بائیں سیدھ" },
+          { type: "action", id: "format.alignCenter", labelEn: "Align center", labelUr: "درمیان" },
+          { type: "action", id: "format.alignRight", labelEn: "Align right", labelUr: "دائیں سیدھ" },
+          { type: "action", id: "format.alignJustify", labelEn: "Justify", labelUr: "برابر" },
+          { type: "separator" },
+          { type: "action", id: "format.rtl", labelEn: "Right to left", labelUr: "دائیں سے بائیں" },
+          { type: "action", id: "format.ltr", labelEn: "Left to right", labelUr: "بائیں سے دائیں" },
+        ],
+      },
+      {
+        type: "submenu",
+        id: "format.lists",
+        labelEn: "Lists",
+        labelUr: "فہرستیں",
+        items: [
+          { type: "action", id: "format.bullet", labelEn: "Bulleted list", labelUr: "نقطہ دار فہرست" },
+          { type: "action", id: "format.ordered", labelEn: "Numbered list", labelUr: "نمبر شدہ فہرست" },
+        ],
+      },
+      {
+        type: "submenu",
+        id: "format.spacing",
+        labelEn: "Line spacing",
+        labelUr: "سطری فاصلہ",
+        items: [
+          { type: "action", id: "format.lh.default", labelEn: "Default", labelUr: "طے شدہ" },
+          { type: "action", id: "format.lh.1", labelEn: "1.0", labelUr: "1.0" },
+          { type: "action", id: "format.lh.1.15", labelEn: "1.15", labelUr: "1.15" },
+          { type: "action", id: "format.lh.1.5", labelEn: "1.5", labelUr: "1.5" },
+          { type: "action", id: "format.lh.1.8", labelEn: "1.8", labelUr: "1.8" },
+          { type: "action", id: "format.lh.2", labelEn: "2.0", labelUr: "2.0" },
+          { type: "action", id: "format.lh.2.2", labelEn: "2.2", labelUr: "2.2" },
+        ],
+      },
     ],
   },
   {
@@ -133,8 +237,10 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     labelEn: "Tools",
     labelUr: "آلات",
     items: [
-      { type: "action", id: "tools.standardize", labelEn: "Standardize document", labelUr: "معیاری بنائیں" },
-      { type: "action", id: "tools.audit", labelEn: "Run quality audit", labelUr: "معیار جانچیں" },
+      { type: "action", id: "tools.standardize", labelEn: "Standardize", labelUr: "معیاری بنائیں" },
+      { type: "action", id: "tools.audit", labelEn: "Quality audit", labelUr: "کوالٹی آڈٹ" },
+      { type: "action", id: "tools.stats", labelEn: "Word count", labelUr: "الفاظ کی تعداد" },
+      { type: "action", id: "tools.dictation", labelEn: "Voice dictation", labelUr: "آواز سے لکھیں" },
       { type: "action", id: "tools.glossary", labelEn: "Glossary", labelUr: "اصطلاحات" },
     ],
   },
@@ -143,8 +249,10 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     labelEn: "Help",
     labelUr: "مدد",
     items: [
-      { type: "action", id: "help.about", labelEn: "About Document Studio", labelUr: "ڈاکومنٹ اسٹوڈیو کے بارے میں" },
+      { type: "action", id: "help.about", labelEn: "Document Studio help", labelUr: "ڈاکومنٹ اسٹوڈیو مدد" },
       { type: "action", id: "help.shortcuts", labelEn: "Keyboard shortcuts", labelUr: "کی بورڈ شارٹ کٹس" },
+      { type: "action", id: "help.rtl", labelEn: "Urdu / RTL help", labelUr: "اردو / دائیں-بائیں مدد" },
+      { type: "action", id: "help.voice", labelEn: "Voice dictation help", labelUr: "آواز سے لکھنے کی مدد" },
     ],
   },
 ];
@@ -161,18 +269,27 @@ export const OMITTED_FUTURE_ACTIONS = [
   "text-color",
   "highlight",
   "checklist",
+  "print",
+  "ruler",
 ] as const;
 
 export function menuLabel(item: { labelEn: string; labelUr: string }, isUr: boolean): string {
   return isUr ? item.labelUr : item.labelEn;
 }
 
-export function allMenuActionIds(): MenuActionId[] {
+export function collectMenuActionIds(nodes: MenuNode[]): MenuActionId[] {
   const ids: MenuActionId[] = [];
-  for (const menu of DOCUMENT_MENU_BAR) {
-    for (const item of menu.items) {
-      if (item.type === "action") ids.push(item.id);
-    }
+  for (const node of nodes) {
+    if (node.type === "action") ids.push(node.id);
+    if (node.type === "submenu") ids.push(...collectMenuActionIds(node.items));
   }
   return ids;
+}
+
+export function allMenuActionIds(): MenuActionId[] {
+  return DOCUMENT_MENU_BAR.flatMap((menu) => collectMenuActionIds(menu.items));
+}
+
+export function menuCatalogText(): string {
+  return JSON.stringify(DOCUMENT_MENU_BAR).toLowerCase();
 }

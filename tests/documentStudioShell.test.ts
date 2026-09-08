@@ -13,9 +13,55 @@ import {
 } from "../app/tools/document-studio/utils/documentShell";
 import {
   allMenuActionIds,
+  applyMenuEscape,
+  CLOSED_MENU_STATE,
+  collectMenuActionIds,
   DOCUMENT_MENU_BAR,
+  menuCatalogText,
+  nextOpenMenu,
+  nextOpenSubmenu,
   OMITTED_FUTURE_ACTIONS,
+  setOpenSubmenu,
 } from "../app/tools/document-studio/utils/documentMenus";
+import {
+  dispatchDocumentMenuAction,
+  lineHeightFromMenuAction,
+  type DocumentMenuHandlers,
+} from "../app/tools/document-studio/utils/documentMenuActions";
+
+function mockHandlers(extra: Partial<DocumentMenuHandlers> = {}): DocumentMenuHandlers & { calls: string[] } {
+  const calls: string[] = [];
+  const track = (name: string) => () => {
+    calls.push(name);
+  };
+  return {
+    calls,
+    newDocument: track("new"),
+    upload: track("upload"),
+    downloadTxt: track("txt"),
+    downloadDocx: track("docx"),
+    downloadPdf: track("pdf"),
+    find: track("find"),
+    toggleOutline: track("outline"),
+    toggleQuality: track("quality"),
+    toggleGlossary: track("glossary"),
+    toggleSettings: track("settings"),
+    toggleFullscreen: track("fullscreen"),
+    loadExample: track("example"),
+    promptLink: track("link"),
+    setDir: (dir) => {
+      calls.push(`dir:${dir}`);
+    },
+    standardize: track("standardize"),
+    audit: track("audit"),
+    showStats: track("stats"),
+    startDictation: track("dictation"),
+    openHelp: (mode) => {
+      calls.push(`help:${mode}`);
+    },
+    ...extra,
+  };
+}
 
 describe("documentTitle", () => {
   it("sanitizes whitespace, newlines, and length", () => {
@@ -73,14 +119,126 @@ describe("document menus", () => {
     ]);
   });
 
-  it("wires only real actions and omits future cloud/table/image items", () => {
+  it("opens only one top-level menu at a time", () => {
+    let state = nextOpenMenu(CLOSED_MENU_STATE, "file");
+    expect(state).toEqual({ menuId: "file", submenuId: null });
+    state = nextOpenMenu(state, "edit");
+    expect(state.menuId).toBe("edit");
+    expect(state.submenuId).toBeNull();
+    state = nextOpenMenu(state, "edit");
+    expect(state).toEqual(CLOSED_MENU_STATE);
+  });
+
+  it("closes on Escape, submenu first", () => {
+    let state = setOpenSubmenu(nextOpenMenu(CLOSED_MENU_STATE, "format"), "format.text");
+    state = applyMenuEscape(state);
+    expect(state).toEqual({ menuId: "format", submenuId: null });
+    state = applyMenuEscape(state);
+    expect(state).toEqual(CLOSED_MENU_STATE);
+  });
+
+  it("toggles one submenu inside the open menu", () => {
+    const open = nextOpenMenu(CLOSED_MENU_STATE, "file");
+    const download = nextOpenSubmenu(open, "file.download");
+    expect(download.submenuId).toBe("file.download");
+    expect(nextOpenSubmenu(download, "file.download").submenuId).toBeNull();
+  });
+
+  it("wires File / Edit / View / Insert / Tools / Help to real handlers", () => {
+    const h = mockHandlers();
+    dispatchDocumentMenuAction("file.new", null, h);
+    dispatchDocumentMenuAction("file.upload", null, h);
+    dispatchDocumentMenuAction("file.downloadTxt", null, h);
+    dispatchDocumentMenuAction("file.downloadDocx", null, h);
+    dispatchDocumentMenuAction("file.downloadPdf", null, h);
+    dispatchDocumentMenuAction("edit.find", null, h);
+    dispatchDocumentMenuAction("view.outline", null, h);
+    dispatchDocumentMenuAction("view.settings", null, h);
+    dispatchDocumentMenuAction("view.fullscreen", null, h);
+    dispatchDocumentMenuAction("insert.link", null, h);
+    dispatchDocumentMenuAction("insert.example", null, h);
+    dispatchDocumentMenuAction("tools.standardize", null, h);
+    dispatchDocumentMenuAction("tools.audit", null, h);
+    dispatchDocumentMenuAction("tools.stats", null, h);
+    dispatchDocumentMenuAction("tools.dictation", null, h);
+    dispatchDocumentMenuAction("help.rtl", null, h);
+    expect(h.calls).toEqual([
+      "new",
+      "upload",
+      "txt",
+      "docx",
+      "pdf",
+      "find",
+      "outline",
+      "settings",
+      "fullscreen",
+      "link",
+      "example",
+      "standardize",
+      "audit",
+      "stats",
+      "dictation",
+      "help:rtl",
+    ]);
+  });
+
+  it("wires Format commands through documentCommands", () => {
+    const calls: string[] = [];
+    const chain: {
+      focus: () => typeof chain;
+      toggleBold: () => typeof chain;
+      setTextAlign: (align: string) => typeof chain;
+      setHeading: (opts: { level: number }) => typeof chain;
+      updateAttributes: (node: string, attrs: { lineHeight: number | null }) => typeof chain;
+      run: () => boolean;
+    } = {
+      focus: () => chain,
+      toggleBold: () => {
+        calls.push("bold");
+        return chain;
+      },
+      setTextAlign: (align) => {
+        calls.push(`align:${align}`);
+        return chain;
+      },
+      setHeading: (opts) => {
+        calls.push(`h${opts.level}`);
+        return chain;
+      },
+      updateAttributes: (_node, attrs) => {
+        calls.push(`lh:${attrs.lineHeight}`);
+        return chain;
+      },
+      run: () => true,
+    };
+    const editor = { chain: () => chain, isActive: () => false } as never;
+    const h = mockHandlers();
+    dispatchDocumentMenuAction("format.bold", editor, h);
+    dispatchDocumentMenuAction("format.alignCenter", editor, h);
+    dispatchDocumentMenuAction("format.style.heading-1", editor, h);
+    dispatchDocumentMenuAction("format.lh.1.5", editor, h);
+    dispatchDocumentMenuAction("format.rtl", editor, h);
+    expect(calls).toEqual(["bold", "align:center", "h1", "lh:1.5"]);
+    expect(h.calls).toEqual(["dir:rtl"]);
+  });
+
+  it("parses line-spacing menu ids", () => {
+    expect(lineHeightFromMenuAction("format.lh.default")).toBeNull();
+    expect(lineHeightFromMenuAction("format.lh.1.15")).toBe(1.15);
+    expect(lineHeightFromMenuAction("format.bold")).toBeUndefined();
+  });
+
+  it("wires only real actions and omits future cloud/table/image/print items", () => {
     const ids = allMenuActionIds();
     expect(ids).toContain("file.downloadPdf");
     expect(ids).toContain("tools.standardize");
     expect(ids).toContain("edit.find");
     expect(ids).toContain("insert.link");
+    expect(ids).toContain("format.style.title");
+    expect(ids).toContain("tools.stats");
     expect(ids).not.toContain("share" as never);
-    const blob = JSON.stringify(DOCUMENT_MENU_BAR).toLowerCase();
+    expect(ids).not.toContain("file.print" as never);
+    const blob = menuCatalogText();
     for (const future of OMITTED_FUTURE_ACTIONS) {
       expect(blob.includes(future)).toBe(false);
     }
@@ -88,9 +246,14 @@ describe("document menus", () => {
 
   it("keeps Insert limited to currently implemented actions", () => {
     const insert = DOCUMENT_MENU_BAR.find((m) => m.id === "insert");
-    const actions = (insert?.items ?? [])
-      .filter((item) => item.type === "action")
+    expect(collectMenuActionIds(insert?.items ?? [])).toEqual(["insert.link", "insert.example"]);
+  });
+
+  it("groups Format into real submenus", () => {
+    const format = DOCUMENT_MENU_BAR.find((m) => m.id === "format");
+    const subIds = (format?.items ?? [])
+      .filter((item) => item.type === "submenu")
       .map((item) => item.id);
-    expect(actions).toEqual(["insert.link", "insert.example"]);
+    expect(subIds).toEqual(["format.text", "format.style", "format.align", "format.lists", "format.spacing"]);
   });
 });

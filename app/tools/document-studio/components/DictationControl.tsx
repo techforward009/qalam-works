@@ -662,6 +662,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         disabled={state !== "idle" && !isRecording}
         title={tooltipText}
         aria-label={isRecording ? t.stop : t.dictate}
+        data-studio-dictation="true"
         className={`h-[38px] px-3 rounded-md text-sm font-semibold border transition-all flex items-center gap-1.5 ${
           isRecording
             ? "bg-red-50 text-red-700 border-red-300 hover:border-red-400 animate-pulse"
