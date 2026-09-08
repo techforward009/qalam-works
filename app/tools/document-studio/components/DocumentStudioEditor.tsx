@@ -63,12 +63,46 @@ import {
   findAllRangesInEditor,
   findBlockStartPosition,
   findSuggestionRange,
+  redo,
   replaceAll,
+  selectAll,
+  setAlign,
+  setLinkHref,
+  toggleBlockquote,
+  toggleBold,
+  toggleBulletList,
+  toggleHeading,
+  toggleItalic,
+  toggleOrderedList,
+  toggleUnderline,
   transformPastedSlice,
+  undo,
 } from "../utils/documentCommands";
+import {
+  defaultDocumentTitle,
+  loadDocumentTitle,
+  saveDocumentTitle,
+  sanitizeDocumentTitle,
+} from "../utils/documentTitle";
+import {
+  isFindOpenShortcut,
+  toggleLeftPanel,
+  toggleRightPanel,
+  type LeftPanelId,
+  type RightPanelId,
+} from "../utils/documentShell";
+import type { MenuActionId } from "../utils/documentMenus";
 import DocumentToolbar from "./DocumentToolbar";
 import DocumentCanvas from "./DocumentCanvas";
-import DocumentStudioPanels, { type StudioTab } from "./DocumentStudioPanels";
+import DocumentStudioPanels from "./DocumentStudioPanels";
+import DocumentStudioShell from "./DocumentStudioShell";
+import DocumentTopBar from "./DocumentTopBar";
+import DocumentMenuBar from "./DocumentMenuBar";
+import DocumentStatusBar from "./DocumentStatusBar";
+import DocumentLeftSidebar from "./DocumentLeftSidebar";
+import DocumentRightSidebar from "./DocumentRightSidebar";
+import DocumentHelpDialog from "./DocumentHelpDialog";
+import { FindReplacePanel } from "./FindReplacePanel";
 
 /** Compatibility re-exports — existing tests may still import from this file. */
 export { ParagraphWithDir, HeadingWithDir, BLOCK_STYLE_EDITOR_CSS };
@@ -128,9 +162,20 @@ export default function DocumentStudioEditor() {
     trackToolOpenOnce("document_studio");
   }, []);
 
+  useEffect(() => {
+    const syncOnline = () => setOnline(typeof navigator === "undefined" ? true : navigator.onLine);
+    syncOnline();
+    window.addEventListener("online", syncOnline);
+    window.addEventListener("offline", syncOnline);
+    return () => {
+      window.removeEventListener("online", syncOnline);
+      window.removeEventListener("offline", syncOnline);
+    };
+  }, []);
+
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
   const [exampleJustLoaded, setExampleJustLoaded] = useState(false);
-  const standardizeButtonRef = useRef<HTMLButtonElement>(null);
+  const standardizeButtonRef = useRef<HTMLDivElement>(null);
 
   // Publishing Preset Foundation — Phase 1 (2026-08-09). Batch 16A
   // (2026-08-11) wired this through documentSettings.typography into the
@@ -139,7 +184,10 @@ export default function DocumentStudioEditor() {
   // genuinely changes rendered output across Editor/PDF/DOCX.
   const [selectedPresetId, setSelectedPresetId] = useState<PresetId>(() => loadSelectedPresetId());
   const [copied, setCopied] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle" | "error">("idle");
+  const [online, setOnline] = useState(true);
+  const [documentTitle, setDocumentTitle] = useState(() => loadDocumentTitle(isUr));
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<{
     document: DocNode;
@@ -173,8 +221,10 @@ export default function DocumentStudioEditor() {
   // secondary panel is visible at a time, and the editor itself stays
   // the clean, unchanged default view. All existing state/handlers below
   // are unchanged — this only reorganizes how they're rendered.
-  const [activeTab, setActiveTab] = useState<StudioTab>("none");
-  const toggleTab = (tab: Exclude<StudioTab, "none">) => setActiveTab((prev) => (prev === tab ? "none" : tab));
+  const [findOpen, setFindOpen] = useState(false);
+  const [leftPanel, setLeftPanel] = useState<LeftPanelId>("none");
+  const [rightPanel, setRightPanel] = useState<RightPanelId>("none");
+  const [helpOpen, setHelpOpen] = useState<null | "about" | "shortcuts">(null);
   const [findQuery, setFindQuery] = useState("");
   const [replaceQuery, setReplaceQuery] = useState("");
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
@@ -290,7 +340,7 @@ export default function DocumentStudioEditor() {
           setSaveStatus("saved");
         } catch (err) {
           console.error("Autosave error:", err);
-          setSaveStatus("idle");
+          setSaveStatus("error");
         }
       }, AUTOSAVE_DEBOUNCE_MS);
     },
@@ -392,6 +442,9 @@ export default function DocumentStudioEditor() {
       setAuditReport(null);
       hasAuditReportRef.current = false;
       setIsAuditStale(false);
+      const nextTitle = defaultDocumentTitle(isUr);
+      setDocumentTitle(nextTitle);
+      saveDocumentTitle(nextTitle);
     }
   };
 
@@ -600,6 +653,7 @@ export default function DocumentStudioEditor() {
     setAuditReport(report);
     hasAuditReportRef.current = true;
     setIsAuditStale(false);
+    setRightPanel("quality");
   };
 
   // Phase 1 Professional Usability (2026-08-09) — Find & Replace.
@@ -669,7 +723,7 @@ export default function DocumentStudioEditor() {
   };
 
   const handleCloseFindReplace = () => {
-    setActiveTab("none");
+    setFindOpen(false);
     setFindQuery("");
     setReplaceQuery("");
     setCurrentMatchIndex(-1);
@@ -925,363 +979,442 @@ export default function DocumentStudioEditor() {
     }
   };
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!isFindOpenShortcut(e)) return;
+      e.preventDefault();
+      setFindOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const commitDocumentTitle = () => {
+    const next = sanitizeDocumentTitle(documentTitle) || defaultDocumentTitle(isUr);
+    setDocumentTitle(next);
+    saveDocumentTitle(next);
+  };
+
+  const promptLink = () => {
+    if (!editor) return;
+    const url = window.prompt("URL:");
+    setLinkHref(editor, url);
+  };
+
+  const handleMenuAction = (id: MenuActionId) => {
+    switch (id) {
+      case "file.new":
+        handleNewDocument();
+        break;
+      case "file.upload":
+        fileInputRef.current?.click();
+        break;
+      case "file.copy":
+        void handleCopy();
+        break;
+      case "file.downloadTxt":
+        handleDownload();
+        break;
+      case "file.downloadDocx":
+        void handleDownloadDocx();
+        break;
+      case "file.downloadPdf":
+        void handleDownloadPdf();
+        break;
+      case "file.clearText":
+        handleClearText();
+        break;
+      case "file.clearDraft":
+        handleClearDraft();
+        break;
+      case "edit.undo":
+        if (editor) undo(editor);
+        break;
+      case "edit.redo":
+        if (editor) redo(editor);
+        break;
+      case "edit.selectAll":
+        if (editor) selectAll(editor);
+        break;
+      case "edit.find":
+        setFindOpen(true);
+        break;
+      case "view.outline":
+        setLeftPanel((p) => toggleLeftPanel(p, "outline"));
+        break;
+      case "view.quality":
+        setRightPanel((p) => toggleRightPanel(p, "quality"));
+        break;
+      case "view.glossary":
+        setRightPanel((p) => toggleRightPanel(p, "glossary"));
+        break;
+      case "view.settings":
+        setRightPanel((p) => toggleRightPanel(p, "settings"));
+        break;
+      case "insert.link":
+        promptLink();
+        break;
+      case "insert.example":
+        handleLoadExample();
+        break;
+      case "format.bold":
+        if (editor) toggleBold(editor);
+        break;
+      case "format.italic":
+        if (editor) toggleItalic(editor);
+        break;
+      case "format.underline":
+        if (editor) toggleUnderline(editor);
+        break;
+      case "format.h1":
+        if (editor) toggleHeading(editor, 1);
+        break;
+      case "format.h2":
+        if (editor) toggleHeading(editor, 2);
+        break;
+      case "format.bullet":
+        if (editor) toggleBulletList(editor);
+        break;
+      case "format.ordered":
+        if (editor) toggleOrderedList(editor);
+        break;
+      case "format.quote":
+        if (editor) toggleBlockquote(editor);
+        break;
+      case "format.alignLeft":
+        if (editor) setAlign(editor, "left");
+        break;
+      case "format.alignCenter":
+        if (editor) setAlign(editor, "center");
+        break;
+      case "format.alignRight":
+        if (editor) setAlign(editor, "right");
+        break;
+      case "format.alignJustify":
+        if (editor) setAlign(editor, "justify");
+        break;
+      case "format.rtl":
+        setDir("rtl");
+        break;
+      case "format.ltr":
+        setDir("ltr");
+        break;
+      case "tools.standardize":
+        handleStandardizeClick();
+        break;
+      case "tools.audit":
+        handleRunAudit();
+        break;
+      case "tools.glossary":
+        setRightPanel((p) => toggleRightPanel(p, "glossary"));
+        break;
+      case "help.about":
+        setHelpOpen("about");
+        break;
+      case "help.shortcuts":
+        setHelpOpen("shortcuts");
+        break;
+    }
+  };
+
+  const disabledIds = new Set<MenuActionId>();
+  if (isEditorEmpty) disabledIds.add("file.clearText");
+  if (isExportingPdf) disabledIds.add("file.downloadPdf");
+  if (isImporting) disabledIds.add("file.upload");
+
+  const checkedIds = new Set<MenuActionId>();
+  if (editor?.isActive("bold")) checkedIds.add("format.bold");
+  if (editor?.isActive("italic")) checkedIds.add("format.italic");
+  if (editor?.isActive("underline")) checkedIds.add("format.underline");
+  if (editor?.isActive("heading", { level: 1 })) checkedIds.add("format.h1");
+  if (editor?.isActive("heading", { level: 2 })) checkedIds.add("format.h2");
+  if (editor?.isActive("bulletList")) checkedIds.add("format.bullet");
+  if (editor?.isActive("orderedList")) checkedIds.add("format.ordered");
+  if (editor?.isActive("blockquote")) checkedIds.add("format.quote");
+  if (editor?.isActive({ textAlign: "left" })) checkedIds.add("format.alignLeft");
+  if (editor?.isActive({ textAlign: "center" })) checkedIds.add("format.alignCenter");
+  if (editor?.isActive({ textAlign: "right" })) checkedIds.add("format.alignRight");
+  if (editor?.isActive({ textAlign: "justify" })) checkedIds.add("format.alignJustify");
+  if (dir === "rtl") checkedIds.add("format.rtl");
+  if (dir === "ltr") checkedIds.add("format.ltr");
+  if (leftPanel === "outline") checkedIds.add("view.outline");
+  if (rightPanel === "quality") checkedIds.add("view.quality");
+  if (rightPanel === "glossary") checkedIds.add("view.glossary");
+  if (rightPanel === "settings") checkedIds.add("view.settings");
+
+  const qualityProps = {
+    stats,
+    health,
+    processingLanguage,
+    setProcessingLanguage,
+    lastResolved,
+    reviewState,
+    onAccept: handleAcceptSuggestion,
+    onIgnore: handleIgnoreSuggestion,
+    onApplyAccepted: handleApplyAccepted,
+    onAcceptCategory: handleAcceptCategory,
+    onIgnoreCategory: handleIgnoreCategory,
+  };
+  const glossaryProps = {
+    entries: glossary,
+    onAdd: handleGlossaryAdd,
+    onUpdate: handleGlossaryUpdate,
+    onDelete: handleGlossaryDelete,
+    onExport: handleGlossaryExport,
+    onImport: handleGlossaryImport,
+  };
+  const settingsProps = {
+    pageLayout,
+    documentSettings,
+    setDocumentSettings,
+    selectedPresetId,
+    onPresetChange: handlePresetChange,
+    onPageChange: () => setPdfSummary(null),
+  };
+
   return (
     <div className="site-container">
-      {/* Document Studio Simplification (2026-08-10) — the editor card
-          below is now the ONLY thing shown by default: toolbar, the text
-          area itself, and export/save actions. Every analysis/utility
-          system (Find & Replace, Outline, Quality Audit + Suggestions,
-          Glossary, Ruler + Publishing Presets) moved into the tab bar
-          further down — at most one of those panels is ever visible at
-          once, and none of them show unless explicitly opened. */}
-      <div className="bg-white p-6 md:p-8 rounded-2xl border border-[#1A3A2A]/10 shadow-[0_2px_20px_rgba(26,58,42,0.06)]">
-        <div className="flex justify-between items-center mb-3">
-          <DocumentToolbar editor={editor} dir={dir} setDir={setDir} processingLanguage={processingLanguage} setProcessingLanguage={setProcessingLanguage} isUr={isUr} />
-          <div className="text-xs text-stone-500 font-sans" dir="ltr">
-            {saveStatus === "saving" && (isUr ? "💾 محفوظ ہو رہا ہے…" : "💾 Saving...")}
-            {saveStatus === "saved" && (isUr ? "✓ براؤزر میں محفوظ" : "✓ Saved to browser")}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-end gap-3 mb-4">
-          <input
-            type="file"
-            accept=".txt,.docx"
-            onChange={(e) => {
-              const f = e.target.files && e.target.files[0];
-              if (f) handleUploadFile(f);
-              e.target.value = ""; // allow re-selecting the same file later
-            }}
-            className="hidden"
-            id="document-studio-upload-input"
-            disabled={isImporting}
-          />
-          <label
-            htmlFor="document-studio-upload-input"
-            className={`inline-flex items-center gap-2 h-9 px-4 rounded-md text-[15px] font-semibold border-2 transition-all ${
-              isImporting
-                ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
-                : "border-[#1A3A2A] bg-[#1A3A2A] text-white hover:bg-[#244E38] hover:border-[#244E38] cursor-pointer shadow-sm"
-            }`}
-          >
-            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <span className={isUr ? "font-naskh" : ""}>
-              {isImporting ? (isUr ? "درآمد ہو رہا ہے..." : "Importing…") : (isUr ? "فائل اپلوڈ کریں" : "Upload File")}
-            </span>
-          </label>
-          {!isImporting && (
-            <span className="text-[13px] text-gray-400 font-mono select-none" dir="ltr">TXT · DOCX</span>
-          )}
-        </div>
-
-        {uploadError && (
-          <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
-            {uploadError}
-          </div>
-        )}
-
-        {pdfError && (
-          <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
-            {pdfError}
-          </div>
-        )}
-
-        {docxImportNotice && (
-          <div className="mb-3 bg-amber-50 border-2 border-amber-400 text-amber-900 p-3 rounded-lg text-xs flex items-start justify-between gap-3" dir="rtl">
-            <span>
-              ⚠️ .docx فائل صرف خام متن کے طور پر درآمد ہوئی ہے — اصل فارمیٹنگ (headings، bold، lists، ترتیب) محفوظ نہیں رہی۔ / The .docx file was imported as plain text only — original formatting (headings, bold, lists, layout) was not preserved.
-            </span>
-            <button
-              type="button"
-              onClick={() => setDocxImportNotice(false)}
-              className="shrink-0 px-2 py-1 rounded-md border border-amber-400 text-amber-800 hover:bg-amber-100 transition text-xs font-semibold"
-              dir="ltr"
-            >
-              سمجھ گیا / Got it
-            </button>
-          </div>
-        )}
-
-        <DocumentCanvas
-          editor={editor}
-          dir={dir}
-          isUr={isUr}
-          isEditorEmpty={isEditorEmpty}
-          documentSettings={documentSettings}
-          pageLayout={pageLayout}
-          onLoadExample={handleLoadExample}
-          onWrapperClick={handleWrapperClick}
-        />
-
-        {/* Primary processing actions — directly under editor (mobile + desktop) */}
-        <div className="mt-4 space-y-3" dir={dir}>
-          {exampleJustLoaded && (
-            <p
-              className={`rounded-lg border border-[#1A3A2A]/15 bg-[#F3F7F2] px-3 py-2.5 text-sm font-medium text-[#1A3A2A] ${isUr ? "font-naskh" : ""}`}
-              role="status"
-            >
-              {isUr
-                ? "مثال لوڈ ہوگئی۔ اردو حروف کی اصلاح کے لیے Standardize سے پہلے اردو موڈ منتخب کریں۔ مخلوط متن کے لیے Auto محفوظ صفائی کرتا ہے۔"
-                : "Example loaded. For Urdu letter normalization, choose Urdu mode before Standardize. Auto performs safe mixed-language cleanup."}
-            </p>
-          )}
-
-          <div className="flex flex-wrap gap-2 items-center" dir={isUr ? "rtl" : "ltr"}>
-            {/* Primary action */}
-            <button
-              ref={standardizeButtonRef}
-              type="button"
-              onClick={handleStandardizeClick}
-              className={`h-11 px-5 rounded-lg text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-sm shadow-amber-900/20 ${isUr ? "font-naskh" : ""}`}
-            >
-              {isUr ? "معیاری بنائیں" : "Standardize Document"}
-            </button>
-            {/* Strong secondary */}
-            <button
-              type="button"
-              onClick={handleRunAudit}
-              className={`h-11 px-4 rounded-lg text-sm font-semibold border-2 border-amber-600 text-amber-700 hover:bg-amber-50 ${isUr ? "font-naskh" : ""}`}
-            >
-              {isUr ? "معیار جانچیں" : "Run Quality Audit"}
-            </button>
-            {/* Neutral secondary */}
-            <button
-              type="button"
-              onClick={handleNewDocument}
-              className={`h-11 px-4 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 ${isUr ? "font-naskh" : ""}`}
-            >
-              {isUr ? "نیا مسودہ" : "New Document"}
-            </button>
-            {/* Destructive outline */}
-            <button
-              type="button"
-              onClick={handleClearText}
-              disabled={isEditorEmpty}
-              className={`h-11 px-4 rounded-lg text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed ${isUr ? "font-naskh" : ""}`}
-            >
-              {isUr ? "متن صاف کریں" : "Clear Text"}
-            </button>
-            {/* Destructive outline */}
-            <button
-              type="button"
-              onClick={handleClearDraft}
-              className={`h-11 px-4 rounded-lg text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50 ${isUr ? "font-naskh" : ""}`}
-            >
-              {isUr ? "ڈرافٹ صاف کریں" : "Clear Draft"}
-            </button>
-          </div>
-
-          {preview && editor && (
-            <div className="border border-amber-300 rounded-lg p-4 bg-amber-50 space-y-3">
-              <p className={`text-sm font-semibold text-gray-800 ${isUr ? "font-naskh" : ""}`}>
-                {isUr ? "تبدیلیاں ایڈیٹر میں لگ گئی ہیں (Undo سے واپس)" : "Changes applied in the editor (use Undo to revert)"}
-              </p>
-              <ul className="text-sm text-gray-700 space-y-1" dir="ltr">
-                <li>{isUr ? "کل اصلاحات" : "Total corrections"}: {preview.report.totalCorrections}</li>
-                <li>{isUr ? "رسم الخط" : "Script"}: {preview.report.scriptNormalizations} · {isUr ? "فاصلہ" : "Spacing"}: {preview.report.spacingFixes} · {isUr ? "رموزِ اوقاف" : "Punctuation"}: {preview.report.punctuationFixes}</li>
-                <li>{isUr ? "موڈ" : "Mode"}: {preview.report.resolvedLanguage} · {isUr ? "سمت" : "Direction"}: {preview.report.direction}</li>
-              </ul>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <p className={`text-xs font-semibold text-gray-600 mb-1 ${isUr ? "font-naskh" : ""}`}>
-                    {isUr ? "قبل" : "Before"}
-                  </p>
-                  <div
-                    className="rounded-md border border-gray-200 bg-white p-2 text-sm whitespace-pre-wrap break-words max-h-40 overflow-y-auto"
-                    dir={dir}
-                  >
-                    {preview.beforePlain}
-                  </div>
-                </div>
-                <div>
-                  <p className={`text-xs font-semibold text-gray-600 mb-1 ${isUr ? "font-naskh" : ""}`}>
-                    {isUr ? "بعد" : "After"}
-                  </p>
-                  <div
-                    className="rounded-md border border-green-200 bg-green-50/50 p-2 text-sm whitespace-pre-wrap break-words max-h-40 overflow-y-auto"
-                    dir={preview.report.direction}
-                  >
-                    {extractPlainText(preview.document, preview.report.direction)}
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2" dir="ltr">
-                <button
-                  type="button"
-                  onClick={handleConfirmStandardize}
-                  className="min-h-[44px] px-5 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
-                >
-                  {isUr ? "ٹھیک ہے" : "Dismiss"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {alreadyClean && !preview && (
-            <div className={`rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm text-green-900 ${isUr ? "font-naskh" : ""}`}>
-              <p>
-                ✓ {isUr
-                  ? "معیاری بنانا مکمل۔ کچھ زبان مخصوص اصلاحات کے لیے مماثل موڈ منتخب کریں۔"
-                  : "Standardization complete. Some language-specific corrections require selecting the matching mode."}
-              </p>
-              {processingLanguage === "auto" && lastResolved === "rtl-neutral" && (
-                <p className="mt-1 text-amber-900">
-                  {isUr
-                    ? "آٹو محفوظ مخلوط صفائی کرتا ہے۔ اردو حروف کی تبدیلی کے لیے «اردو» موڈ منتخب کریں۔"
-                    : "Auto performs safe mixed-language cleanup. Choose “Urdu” mode for Urdu letter normalization."}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-5" dir={isUr ? "rtl" : "ltr"}>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#B8935A] text-white hover:bg-[#C9A46B] shadow-sm transition"
-            >
-              {copied ? (isUr ? "✓ نقل ہو گیا" : "✓ Copied") : (isUr ? "متن نقل کریں" : "Copy Text")}
-            </button>
-            <button
-              type="button"
-              onClick={handleDownload}
-              className={`h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 shadow-sm transition ${isUr ? "font-naskh" : ""}`}
-            >
-              {isUr ? (
-                <span dir="rtl">
-                  <span dir="ltr" className="inline-block">TXT</span>
-                  {" فائل ڈاؤن لوڈ کریں"}
-                </span>
-              ) : (
-                "Download TXT File"
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadDocx}
-              className={`h-10 px-4 rounded-lg text-[15px] font-semibold bg-[#1A3A2A] text-white hover:bg-[#204a35] focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 shadow-sm transition ${isUr ? "font-naskh" : ""}`}
-            >
-              {isUr ? (
-                <span dir="rtl">
-                  <span dir="ltr" className="inline-block">DOCX</span>
-                  {" فائل ڈاؤن لوڈ کریں"}
-                </span>
-              ) : (
-                "Download DOCX"
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              disabled={isExportingPdf}
-              className={`h-10 px-4 rounded-lg text-[15px] font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/30 ${
-                isExportingPdf
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-[#1A3A2A] text-white hover:bg-[#204a35]"
-              }`}
-            >
-              {isExportingPdf
-                ? (isUr ? "PDF بن رہی ہے..." : "Generating…")
-                : isUr
-                  ? `PDF ڈاؤن لوڈ کریں${pdfSummary ? ` (${pdfSummary.fileSizeLabel})` : ""}`
-                  : `Download PDF${pdfSummary ? ` (${pdfSummary.fileSizeLabel})` : ""}`}
-            </button>
-          </div>
-
-
-
-        </div>
-
-        <p className={`mt-2 text-[12px] text-gray-500 leading-relaxed ${isUr ? "font-naskh" : ""}`} dir={dir}>
-          {isUr
-            ? "تدوین آپ کے براؤزر میں ہوتی ہے۔ PDF ایکسپورٹ صرف فائل بنانے کے لیے سرور استعمال کرتا ہے — دستاویز محفوظ نہیں کی جاتی。"
-            : "Editing stays in your browser. PDF export uses the server only to generate your file — documents are not stored."}
-        </p>
-
-        {pdfSummary && (
-          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs" dir="ltr">
-            <div className="font-semibold text-amber-800 mb-1.5">{isUr ? "✓ PDF برآمد مکمل" : "✓ PDF Export Complete"}</div>
-            <div className="text-stone-700 space-y-0.5">
-              <div>{isUr ? "صفحات" : "Pages"}: {pdfSummary.pages}</div>
-              <div>{isUr ? "فائل سائز" : "File Size"}: {pdfSummary.fileSizeLabel}</div>
-              {pdfSummary.fontsUsed.length > 0 && (
-                <div>{isUr ? "استعمال شدہ فونٹس" : "Fonts Used"}: {pdfSummary.fontsUsed.map((f) => `✓ ${f}`).join("  ")}</div>
-              )}
-              {pdfSummary.fontFallbacks.length > 0 && (
-                <div className="text-amber-800 mt-1">
-                  {pdfSummary.fontFallbacks.map((f) =>
-                    isUr
-                      ? `${f.requested} مقامی ایڈیٹر میں دستیاب ہے۔ PDF میں ${f.used} استعمال کیا گیا ہے۔`
-                      : `${f.requested} is available as a local editor preview. PDF export used ${f.used}.`
-                  ).join(" ")}
-                </div>
-              )}
-              <div>{isUr ? "فارمیٹ: بصری / پرنٹ PDF" : "Format: Visual / Print PDF"}</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <DocumentStudioPanels
-        isUr={isUr}
-        dir={dir}
-        activeTab={activeTab}
-        onToggleTab={toggleTab}
-        setActiveTab={setActiveTab}
-        glossaryCount={glossary.length}
-        auditReport={auditReport}
-        isAuditStale={isAuditStale}
-        find={{
-          query: findQuery,
-          replaceQuery,
-          matchCount: currentMatches.length,
-          currentMatchIndex,
-          onSearchChange: handleFindQueryChange,
-          onReplaceChange: setReplaceQuery,
-          onNext: handleFindNext,
-          onPrevious: handleFindPrevious,
-          onReplaceCurrent: handleReplaceCurrent,
-          onReplaceAll: handleReplaceAll,
-          onClose: handleCloseFindReplace,
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt,.docx"
+        onChange={(e) => {
+          const f = e.target.files && e.target.files[0];
+          if (f) handleUploadFile(f);
+          e.target.value = "";
         }}
-        outline={{
-          entries: outline,
-          onNavigate: handleOutlineNavigate,
-        }}
-        quality={{
-          stats,
-          health,
-          processingLanguage,
-          setProcessingLanguage,
-          lastResolved,
-          reviewState,
-          onAccept: handleAcceptSuggestion,
-          onIgnore: handleIgnoreSuggestion,
-          onApplyAccepted: handleApplyAccepted,
-          onAcceptCategory: handleAcceptCategory,
-          onIgnoreCategory: handleIgnoreCategory,
-        }}
-        glossary={{
-          entries: glossary,
-          onAdd: handleGlossaryAdd,
-          onUpdate: handleGlossaryUpdate,
-          onDelete: handleGlossaryDelete,
-          onExport: handleGlossaryExport,
-          onImport: handleGlossaryImport,
-        }}
-        settings={{
-          pageLayout,
-          documentSettings,
-          setDocumentSettings,
-          selectedPresetId,
-          onPresetChange: handlePresetChange,
-          onPageChange: () => setPdfSummary(null),
-        }}
+        className="hidden"
+        id="document-studio-upload-input"
+        disabled={isImporting}
       />
+
+      <DocumentStudioShell
+        isUr={isUr}
+        topBar={
+          <DocumentTopBar
+            isUr={isUr}
+            title={documentTitle}
+            onTitleChange={setDocumentTitle}
+            onTitleCommit={commitDocumentTitle}
+            saveStatus={saveStatus}
+            online={online}
+            isImporting={isImporting}
+            onNewDocument={handleNewDocument}
+            onUploadClick={() => fileInputRef.current?.click()}
+            onStandardize={handleStandardizeClick}
+            onAudit={handleRunAudit}
+          />
+        }
+        menuBar={
+          <DocumentMenuBar
+            isUr={isUr}
+            onAction={handleMenuAction}
+            disabledIds={disabledIds}
+            checkedIds={checkedIds}
+          />
+        }
+        toolbar={
+          <DocumentToolbar
+            editor={editor}
+            dir={dir}
+            setDir={setDir}
+            processingLanguage={processingLanguage}
+            setProcessingLanguage={setProcessingLanguage}
+            isUr={isUr}
+          />
+        }
+        findBar={
+          findOpen ? (
+            <FindReplacePanel
+              isOpen={true}
+              searchQuery={findQuery}
+              replaceQuery={replaceQuery}
+              matchCount={currentMatches.length}
+              currentMatchIndex={currentMatchIndex}
+              onSearchChange={handleFindQueryChange}
+              onReplaceChange={setReplaceQuery}
+              onNext={handleFindNext}
+              onPrevious={handleFindPrevious}
+              onReplaceCurrent={handleReplaceCurrent}
+              onReplaceAll={handleReplaceAll}
+              onClose={handleCloseFindReplace}
+              isUr={isUr}
+            />
+          ) : null
+        }
+        leftSidebar={
+          leftPanel === "outline" ? (
+            <DocumentLeftSidebar
+              isUr={isUr}
+              outline={outline}
+              onNavigate={handleOutlineNavigate}
+              onClose={() => setLeftPanel("none")}
+            />
+          ) : null
+        }
+        rightSidebar={
+          rightPanel !== "none" ? (
+            <DocumentRightSidebar isUr={isUr} panel={rightPanel} onClose={() => setRightPanel("none")}>
+              <DocumentStudioPanels
+                isUr={isUr}
+                dir={dir}
+                panel={rightPanel}
+                glossaryCount={glossary.length}
+                auditReport={auditReport}
+                isAuditStale={isAuditStale}
+                quality={qualityProps}
+                glossary={glossaryProps}
+                settings={settingsProps}
+              />
+            </DocumentRightSidebar>
+          ) : null
+        }
+        statusBar={
+          <DocumentStatusBar
+            isUr={isUr}
+            dir={dir}
+            stats={stats}
+            saveStatus={saveStatus}
+            online={online}
+            auditScore={auditReport?.score ?? null}
+            auditStale={isAuditStale}
+          />
+        }
+      >
+        <div className="p-3 sm:p-4 md:p-6">
+          {uploadError && (
+            <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
+              {uploadError}
+            </div>
+          )}
+          {pdfError && (
+            <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
+              {pdfError}
+            </div>
+          )}
+          {docxImportNotice && (
+            <div className="mb-3 bg-amber-50 border-2 border-amber-400 text-amber-900 p-3 rounded-lg text-xs flex items-start justify-between gap-3" dir="rtl">
+              <span>
+                ⚠️ .docx فائل صرف خام متن کے طور پر درآمد ہوئی ہے — اصل فارمیٹنگ (headings، bold، lists، ترتیب) محفوظ نہیں رہی۔ / The .docx file was imported as plain text only — original formatting (headings, bold, lists, layout) was not preserved.
+              </span>
+              <button
+                type="button"
+                onClick={() => setDocxImportNotice(false)}
+                className="shrink-0 px-2 py-1 rounded-md border border-amber-400 text-amber-800 hover:bg-amber-100 transition text-xs font-semibold"
+                dir="ltr"
+              >
+                سمجھ گیا / Got it
+              </button>
+            </div>
+          )}
+
+          <DocumentCanvas
+            editor={editor}
+            dir={dir}
+            isUr={isUr}
+            isEditorEmpty={isEditorEmpty}
+            documentSettings={documentSettings}
+            pageLayout={pageLayout}
+            onLoadExample={handleLoadExample}
+            onWrapperClick={handleWrapperClick}
+          />
+
+          <div className="mt-3 space-y-3" dir={dir} ref={standardizeButtonRef}>
+            {exampleJustLoaded && (
+              <p
+                className={`rounded-lg border border-[#1A3A2A]/15 bg-[#F3F7F2] px-3 py-2.5 text-sm font-medium text-[#1A3A2A] ${isUr ? "font-naskh" : ""}`}
+                role="status"
+              >
+                {isUr
+                  ? "مثال لوڈ ہوگئی۔ اردو حروف کی اصلاح کے لیے Standardize سے پہلے اردو موڈ منتخب کریں۔ مخلوط متن کے لیے Auto محفوظ صفائی کرتا ہے۔"
+                  : "Example loaded. For Urdu letter normalization, choose Urdu mode before Standardize. Auto performs safe mixed-language cleanup."}
+              </p>
+            )}
+
+            {preview && editor && (
+              <div className="border border-amber-300 rounded-lg p-4 bg-amber-50 space-y-3">
+                <p className={`text-sm font-semibold text-gray-800 ${isUr ? "font-naskh" : ""}`}>
+                  {isUr ? "تبدیلیاں ایڈیٹر میں لگ گئی ہیں (Undo سے واپس)" : "Changes applied in the editor (use Undo to revert)"}
+                </p>
+                <ul className="text-sm text-gray-700 space-y-1" dir="ltr">
+                  <li>{isUr ? "کل اصلاحات" : "Total corrections"}: {preview.report.totalCorrections}</li>
+                  <li>{isUr ? "رسم الخط" : "Script"}: {preview.report.scriptNormalizations} · {isUr ? "فاصلہ" : "Spacing"}: {preview.report.spacingFixes} · {isUr ? "رموزِ اوقاف" : "Punctuation"}: {preview.report.punctuationFixes}</li>
+                  <li>{isUr ? "موڈ" : "Mode"}: {preview.report.resolvedLanguage} · {isUr ? "سمت" : "Direction"}: {preview.report.direction}</li>
+                </ul>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <p className={`text-xs font-semibold text-gray-600 mb-1 ${isUr ? "font-naskh" : ""}`}>
+                      {isUr ? "قبل" : "Before"}
+                    </p>
+                    <div className="rounded-md border border-gray-200 bg-white p-2 text-sm whitespace-pre-wrap break-words max-h-40 overflow-y-auto" dir={dir}>
+                      {preview.beforePlain}
+                    </div>
+                  </div>
+                  <div>
+                    <p className={`text-xs font-semibold text-gray-600 mb-1 ${isUr ? "font-naskh" : ""}`}>
+                      {isUr ? "بعد" : "After"}
+                    </p>
+                    <div className="rounded-md border border-green-200 bg-green-50/50 p-2 text-sm whitespace-pre-wrap break-words max-h-40 overflow-y-auto" dir={preview.report.direction}>
+                      {extractPlainText(preview.document, preview.report.direction)}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2" dir="ltr">
+                  <button
+                    type="button"
+                    onClick={handleConfirmStandardize}
+                    className="min-h-[44px] px-5 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition"
+                  >
+                    {isUr ? "ٹھیک ہے" : "Dismiss"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {alreadyClean && !preview && (
+              <div className={`rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm text-green-900 ${isUr ? "font-naskh" : ""}`}>
+                <p>
+                  ✓ {isUr
+                    ? "معیاری بنانا مکمل۔ کچھ زبان مخصوص اصلاحات کے لیے مماثل موڈ منتخب کریں۔"
+                    : "Standardization complete. Some language-specific corrections require selecting the matching mode."}
+                </p>
+                {processingLanguage === "auto" && lastResolved === "rtl-neutral" && (
+                  <p className="mt-1 text-amber-900">
+                    {isUr
+                      ? "آٹو محفوظ مخلوط صفائی کرتا ہے۔ اردو حروف کی تبدیلی کے لیے «اردو» موڈ منتخب کریں۔"
+                      : "Auto performs safe mixed-language cleanup. Choose “Urdu” mode for Urdu letter normalization."}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {pdfSummary && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs" dir="ltr">
+                <div className="font-semibold text-amber-800 mb-1.5">{isUr ? "✓ PDF برآمد مکمل" : "✓ PDF Export Complete"}</div>
+                <div className="text-stone-700 space-y-0.5">
+                  <div>{isUr ? "صفحات" : "Pages"}: {pdfSummary.pages}</div>
+                  <div>{isUr ? "فائل سائز" : "File Size"}: {pdfSummary.fileSizeLabel}</div>
+                  {pdfSummary.fontsUsed.length > 0 && (
+                    <div>{isUr ? "استعمال شدہ فونٹس" : "Fonts Used"}: {pdfSummary.fontsUsed.map((f) => `✓ ${f}`).join("  ")}</div>
+                  )}
+                  {pdfSummary.fontFallbacks.length > 0 && (
+                    <div className="text-amber-800 mt-1">
+                      {pdfSummary.fontFallbacks.map((f) =>
+                        isUr
+                          ? `${f.requested} مقامی ایڈیٹر میں دستیاب ہے۔ PDF میں ${f.used} استعمال کیا گیا ہے۔`
+                          : `${f.requested} is available as a local editor preview. PDF export used ${f.used}.`
+                      ).join(" ")}
+                    </div>
+                  )}
+                  <div>{isUr ? "فارمیٹ: بصری / پرنٹ PDF" : "Format: Visual / Print PDF"}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </DocumentStudioShell>
+
+      {helpOpen && <DocumentHelpDialog isUr={isUr} mode={helpOpen} onClose={() => setHelpOpen(null)} />}
     </div>
   );
 }

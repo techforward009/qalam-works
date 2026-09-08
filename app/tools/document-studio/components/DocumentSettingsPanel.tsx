@@ -35,7 +35,7 @@ export default function DocumentSettingsPanel({
   onPageChange: () => void;
 }) {
   return (
-    <div className="mt-3 space-y-4 rounded-xl border border-[#1A3A2A]/10 bg-white p-4">
+    <div className="space-y-4 rounded-xl border border-[#1A3A2A]/10 bg-white p-3">
       <WordRuler dir={dir} layout={pageLayout} />
       <div>
         <h3 className="text-sm font-semibold text-[#1A3A2A] mb-2">Document Style</h3>

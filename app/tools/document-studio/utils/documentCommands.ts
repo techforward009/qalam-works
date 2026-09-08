@@ -111,6 +111,9 @@ export function undo(editor: Editor): void {
 export function redo(editor: Editor): void {
   editor.chain().focus().redo().run();
 }
+export function selectAll(editor: Editor): void {
+  editor.chain().focus().selectAll().run();
+}
 
 export function editorToPlainText(editor: Editor, dir: "rtl" | "ltr"): string {
   return extractPlainText(editor.getJSON() as DocNode, dir);
