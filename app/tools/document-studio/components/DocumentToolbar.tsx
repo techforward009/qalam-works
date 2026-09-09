@@ -4,16 +4,15 @@ import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { listEditorFonts } from "../utils/fontRegistry";
-import { FONT_SIZE_OPTIONS_PT, LINE_HEIGHT_OPTIONS, resolveFontSizePt, validateLineHeight } from "../utils/documentSettings";
+import { FONT_SIZE_OPTIONS_PT, LINE_HEIGHT_OPTIONS, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
 import { BLOCK_STYLES, BLOCK_STYLE_IDS, type BlockStyleId } from "../utils/documentStyles";
 import { DictationControl } from "./DictationControl";
 import type { DocumentZoom } from "../utils/documentView";
 import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
+import { MIXED_TOOLBAR_VALUE, resolveActiveToolbarFormatting } from "../utils/activeToolbarFormatting";
 import {
-  activeBlockStyleId,
   applyBlockStyle,
   applyFontFamily,
-  activeToolbarFontFamily,
   applyFontSize,
   applyLineHeight,
   redo,
@@ -78,6 +77,7 @@ export default function DocumentToolbar({
   isUr,
   zoom = 100,
   onZoomChange,
+  documentSettings,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -87,37 +87,25 @@ export default function DocumentToolbar({
   isUr: boolean;
   zoom?: DocumentZoom;
   onZoomChange?: (zoom: DocumentZoom) => void;
+  documentSettings?: DocumentStudioSettings;
 }) {
+  const settings = documentSettings ?? defaultDocumentSettings();
   const ui = useEditorState({
     editor,
-    selector: ({ editor: current }) => {
-      if (!current) return null;
-      const rawSize = current.getAttributes("textStyle").fontSize as string | undefined;
-      const pAttr = current.getAttributes("paragraph").lineHeight;
-      const hAttr = current.getAttributes("heading").lineHeight;
-      const validated =
-        (typeof pAttr === "number" ? validateLineHeight(pAttr) : null) ??
-        (typeof hAttr === "number" ? validateLineHeight(hAttr) : null);
-      return {
-        fontFamily: activeToolbarFontFamily(current),
-        fontSize: resolveFontSizePt(rawSize) ? String(resolveFontSizePt(rawSize)) : "",
-        lineHeight: validated !== null ? String(validated) : "default",
-        bold: current.isActive("bold"),
-        italic: current.isActive("italic"),
-        underline: current.isActive("underline"),
-        blockStyle: activeBlockStyleId(current),
-        alignLeft: current.isActive({ textAlign: "left" }),
-        alignCenter: current.isActive({ textAlign: "center" }),
-        alignRight: current.isActive({ textAlign: "right" }),
-        alignJustify: current.isActive({ textAlign: "justify" }),
-        bullet: current.isActive("bulletList"),
-        ordered: current.isActive("orderedList"),
-      };
-    },
+    selector: ({ editor: current }) =>
+      current ? resolveActiveToolbarFormatting(current, settings, dir) : null,
   });
   if (!editor || !ui) return null;
 
-  const currentFont = ui.fontFamily;
+  const currentFont = ui.mixed.fontFamily ? MIXED_TOOLBAR_VALUE : ui.fontFamily;
+  const currentSize = ui.mixed.fontSize ? MIXED_TOOLBAR_VALUE : String(ui.fontSizePt ?? settings.typography.bodyFontSizePt);
+  const currentLine = ui.mixed.lineHeight ? MIXED_TOOLBAR_VALUE : String(ui.lineHeight ?? settings.typography.lineHeight);
+  const sizeOptions = FONT_SIZE_OPTIONS_PT.includes((ui.fontSizePt ?? settings.typography.bodyFontSizePt) as typeof FONT_SIZE_OPTIONS_PT[number])
+    ? FONT_SIZE_OPTIONS_PT
+    : [...FONT_SIZE_OPTIONS_PT, ui.fontSizePt as number].filter((n): n is number => typeof n === "number").sort((a, b) => a - b);
+  const lineOptions = LINE_HEIGHT_OPTIONS.includes((ui.lineHeight ?? settings.typography.lineHeight) as typeof LINE_HEIGHT_OPTIONS[number])
+    ? LINE_HEIGHT_OPTIONS
+    : [...LINE_HEIGHT_OPTIONS, ui.lineHeight as number].filter((n): n is number => typeof n === "number").sort((a, b) => a - b);
 
   return (
     <div
@@ -176,12 +164,20 @@ export default function DocumentToolbar({
         id="studio-font-family"
         data-studio-font-family="true"
         value={currentFont}
-        onChange={(e) => applyFontFamily(editor, e.target.value)}
+        onChange={(e) => {
+          if (e.target.value === MIXED_TOOLBAR_VALUE) return;
+          applyFontFamily(editor, e.target.value);
+        }}
         className={`${selectCls} max-w-[9.5rem]`}
         title={isUr ? "فونٹ" : "Font family"}
         aria-label={isUr ? "فونٹ" : "Font"}
       >
-        {STUDIO_FONT_OPTIONS.map((opt) => (
+        {ui.mixed.fontFamily && (
+          <option value={MIXED_TOOLBAR_VALUE} disabled>
+            {isUr ? "مخلوط" : "Mixed"}
+          </option>
+        )}
+        {STUDIO_FONT_OPTIONS.filter((opt) => opt.value).map((opt) => (
           <option key={opt.label} value={opt.value}>
             {opt.label}
           </option>
@@ -189,14 +185,22 @@ export default function DocumentToolbar({
       </select>
       <select
         id="studio-font-size"
-        value={ui.fontSize}
-        onChange={(e) => applyFontSize(editor, e.target.value)}
+        data-studio-font-size="true"
+        value={currentSize}
+        onChange={(e) => {
+          if (e.target.value === MIXED_TOOLBAR_VALUE) return;
+          applyFontSize(editor, e.target.value);
+        }}
         className={`${selectCls} min-w-[4.25rem]`}
         title={isUr ? "سائز" : "Font size"}
         aria-label={isUr ? "سائز" : "Size"}
       >
-        <option value="">Default</option>
-        {FONT_SIZE_OPTIONS_PT.map((pt) => (
+        {ui.mixed.fontSize && (
+          <option value={MIXED_TOOLBAR_VALUE} disabled>
+            {isUr ? "مخلوط" : "Mixed"}
+          </option>
+        )}
+        {sizeOptions.map((pt) => (
           <option key={pt} value={pt}>
             {pt}
           </option>
@@ -213,16 +217,16 @@ export default function DocumentToolbar({
         U
       </ToolbarButton>
       <ToolbarDivider />
-      <ToolbarButton label="Align Left" active={ui.alignLeft} onClick={() => setAlign(editor, "left")}>
+      <ToolbarButton label="Align Left" active={ui.textAlign === "left"} onClick={() => setAlign(editor, "left")}>
         ⇤
       </ToolbarButton>
-      <ToolbarButton label="Align Center" active={ui.alignCenter} onClick={() => setAlign(editor, "center")}>
+      <ToolbarButton label="Align Center" active={ui.textAlign === "center"} onClick={() => setAlign(editor, "center")}>
         ⇔
       </ToolbarButton>
-      <ToolbarButton label="Align Right" active={ui.alignRight} onClick={() => setAlign(editor, "right")}>
+      <ToolbarButton label="Align Right" active={ui.textAlign === "right"} onClick={() => setAlign(editor, "right")}>
         ⇥
       </ToolbarButton>
-      <ToolbarButton label="Justify" active={ui.alignJustify} onClick={() => setAlign(editor, "justify")}>
+      <ToolbarButton label="Justify" active={ui.textAlign === "justify"} onClick={() => setAlign(editor, "justify")}>
         ☰
       </ToolbarButton>
       <ToolbarDivider />
@@ -241,17 +245,23 @@ export default function DocumentToolbar({
       </ToolbarButton>
       <select
         id="studio-line-height"
-        value={ui.lineHeight}
+        data-studio-line-height="true"
+        value={currentLine}
         onChange={(e) => {
           const raw = e.target.value;
-          applyLineHeight(editor, raw === "default" ? null : Number(raw));
+          if (raw === MIXED_TOOLBAR_VALUE) return;
+          applyLineHeight(editor, Number(raw));
         }}
         className={selectCls}
         title={isUr ? "فاصلہ" : "Line spacing"}
         aria-label={isUr ? "فاصلہ" : "Line spacing"}
       >
-        <option value="default">Spacing</option>
-        {LINE_HEIGHT_OPTIONS.map((lh) => (
+        {ui.mixed.lineHeight && (
+          <option value={MIXED_TOOLBAR_VALUE} disabled>
+            {isUr ? "مخلوط" : "Mixed"}
+          </option>
+        )}
+        {lineOptions.map((lh) => (
           <option key={lh} value={lh}>
             {lh}
           </option>

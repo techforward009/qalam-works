@@ -1436,6 +1436,7 @@ export default function DocumentStudioEditor() {
             isUr={isUr}
             zoom={zoom}
             onZoomChange={setZoom}
+            documentSettings={documentSettings}
           />
         }
         findBar={

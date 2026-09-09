@@ -157,15 +157,44 @@ export function zoomFromMenuAction(id: string): DocumentZoom | null {
 }
 
 export function printDocumentStudio(): void {
+  void printDocumentStudioAsync();
+}
+
+export async function waitForPrintFonts(portal: HTMLElement | null): Promise<boolean> {
+  if (typeof document === "undefined") return false;
+  const fonts = document.fonts;
+  if (fonts?.ready) {
+    try {
+      await fonts.ready;
+    } catch {
+      /* continue */
+    }
+  }
+  const needsJameel = Boolean(portal?.innerHTML.includes("Jameel Noori Nastaleeq"));
+  if (needsJameel && fonts?.load) {
+    try {
+      await fonts.load('16px "Jameel Noori Nastaleeq"');
+    } catch {
+      /* fallback remains Noto */
+    }
+  }
+  const jameelReady = needsJameel ? Boolean(fonts?.check?.('16px "Jameel Noori Nastaleeq"')) : true;
+  portal?.setAttribute("data-print-waited-fonts", "true");
+  portal?.setAttribute("data-print-jameel-ready", jameelReady ? "true" : "false");
+  return jameelReady;
+}
+
+export async function printDocumentStudioAsync(): Promise<void> {
   if (typeof window === "undefined") return;
   const portal = mountDocumentPrintPortal();
   if (!portal) {
     window.print();
     return;
   }
+  await waitForPrintFonts(portal);
   const cleanup = () => unmountDocumentPrintPortal();
   window.addEventListener("afterprint", cleanup, { once: true });
-  window.setTimeout(() => window.print(), 0);
+  window.print();
 }
 
 export function unmountDocumentPrintPortal(): void {

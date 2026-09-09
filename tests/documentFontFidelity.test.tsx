@@ -8,8 +8,10 @@ import { applyFontFamily, activeToolbarFontFamily } from "../app/tools/document-
 import { createMemoryDocumentLibrary } from "../app/tools/document-studio/utils/documentLibrary";
 import { normalizeEditorFontFamily, studioJameelFontFaceCss, JAMEEL_EDITOR_FONT_URL } from "../app/tools/document-studio/utils/fontRegistry";
 import { requiredPdfEmbedFonts, buildPdfHtml, type PdfFontFace } from "../app/tools/document-studio/utils/buildPdfHtml";
-import { mountDocumentPrintPortal, unmountDocumentPrintPortal } from "../app/tools/document-studio/utils/documentView";
+import { mountDocumentPrintPortal, unmountDocumentPrintPortal, waitForPrintFonts } from "../app/tools/document-studio/utils/documentView";
 import DocumentToolbar from "../app/tools/document-studio/components/DocumentToolbar";
+import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
+import { resolveActiveToolbarFormatting } from "../app/tools/document-studio/utils/activeToolbarFormatting";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
 afterEach(() => {
@@ -91,14 +93,17 @@ describe("toolbar font selection sync", () => {
   it("shows Jameel at the Jameel cursor and Default in unformatted text", () => {
     const editor = createEditor();
     editor.commands.setTextSelection(2);
-    expect(activeToolbarFontFamily(editor)).toBe("Jameel Noori Nastaleeq");
-    render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr />);
+    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").fontFamily).toBe("Jameel Noori Nastaleeq");
+    render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr documentSettings={defaultDocumentSettings()} />);
     expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Jameel Noori Nastaleeq");
     editor.commands.setTextSelection(editor.state.doc.content.size - 2);
     expect(activeToolbarFontFamily(editor)).toBe("");
+    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").fontFamily).toBe("Noto Nastaliq Urdu");
     cleanup();
-    render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr />);
-    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("");
+    render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr documentSettings={defaultDocumentSettings()} />);
+    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Noto Nastaliq Urdu");
+    expect((document.querySelector("[data-studio-font-size]") as HTMLSelectElement).value).toBe("12");
+    expect((document.querySelector("[data-studio-line-height]") as HTMLSelectElement).value).toBe("1.5");
     editor.destroy();
   });
 
@@ -112,7 +117,7 @@ describe("toolbar font selection sync", () => {
 });
 
 describe("print portal Jameel identity", () => {
-  it("preserves Jameel inline style and shared font-face URL", () => {
+  it("preserves Jameel inline style and shared font-face URL", async () => {
     document.body.innerHTML = `
       <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-dir="rtl">
         <div data-studio-print-surface>
@@ -124,6 +129,8 @@ describe("print portal Jameel identity", () => {
     expect(portal?.innerHTML).toContain("Jameel Noori Nastaleeq");
     expect(portal?.querySelector("style")?.textContent).toContain(JAMEEL_EDITOR_FONT_URL);
     expect(studioJameelFontFaceCss()).toContain(JAMEEL_EDITOR_FONT_URL);
+    await waitForPrintFonts(portal);
+    expect(portal?.getAttribute("data-print-waited-fonts")).toBe("true");
     expect(normalizeEditorFontFamily('"Jameel Noori Nastaleeq", serif')).toBe("Jameel Noori Nastaleeq");
   });
 });
