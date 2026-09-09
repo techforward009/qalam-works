@@ -30,7 +30,7 @@ export default function DocumentCanvas({
   const padding = resolveResponsivePagePadding(pageLayout, dir);
 
   return (
-    <div className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-4 sm:py-6 md:px-8 md:py-8">
+    <div className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-3 sm:py-5 lg:px-6 lg:py-6">
       <div
         className="relative mx-auto w-full rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
         style={{

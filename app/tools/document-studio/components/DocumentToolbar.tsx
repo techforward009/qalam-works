@@ -106,7 +106,7 @@ export default function DocumentToolbar({
 
   return (
     <div
-      className="flex flex-nowrap items-center gap-1 overflow-x-auto px-2 py-1.5"
+      className="flex flex-wrap items-center gap-1 px-2 py-1.5"
       dir="ltr"
       data-studio-toolbar="true"
     >

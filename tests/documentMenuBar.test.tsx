@@ -65,4 +65,20 @@ describe("DocumentMenuBar", () => {
     expect(container.contains(dropdown)).toBe(false);
     expect(document.body.contains(dropdown)).toBe(true);
   });
+
+  it("portals nested Download actions outside the parent menu", () => {
+    const onAction = vi.fn();
+    render(<DocumentMenuBar isUr={false} onAction={onAction} />);
+    fireEvent.click(screen.getByRole("menuitem", { name: "File" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Download" }));
+    const parent = document.querySelector('[data-menu-dropdown="file"]');
+    const flyout = document.querySelector('[data-menu-flyout="file.download"]');
+    expect(parent).toBeTruthy();
+    expect(flyout).toBeTruthy();
+    expect(flyout?.getAttribute("data-menu-portaled")).toBe("true");
+    expect(parent?.contains(flyout)).toBe(false);
+    fireEvent.click(screen.getByRole("menuitem", { name: "PDF" }));
+    expect(onAction).toHaveBeenCalledWith("file.downloadPdf");
+    expect(document.querySelector('[data-menu-dropdown="file"]')).toBeNull();
+  });
 });

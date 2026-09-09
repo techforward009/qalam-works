@@ -293,3 +293,45 @@ export function allMenuActionIds(): MenuActionId[] {
 export function menuCatalogText(): string {
   return JSON.stringify(DOCUMENT_MENU_BAR).toLowerCase();
 }
+
+export const TOP_MENU_WIDTH_PX = 248;
+export const SUBMENU_WIDTH_PX = 184;
+
+export function findSubmenuItems(nodes: MenuNode[], submenuId: string): MenuNode[] | null {
+  for (const node of nodes) {
+    if (node.type === "submenu" && node.id === submenuId) return node.items;
+    if (node.type === "submenu") {
+      const nested = findSubmenuItems(node.items, submenuId);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+export function placeFloatingSubmenu(opts: {
+  triggerRect: { top: number; left: number; right: number; bottom: number };
+  parentRect: { left: number; right: number };
+  viewportWidth: number;
+  viewportHeight: number;
+  submenuWidth?: number;
+  isUr: boolean;
+}): { top: number; left: number } {
+  const pad = 8;
+  const width = opts.submenuWidth ?? SUBMENU_WIDTH_PX;
+  const spaceRight = opts.viewportWidth - opts.parentRect.right - pad;
+  const spaceLeft = opts.parentRect.left - pad;
+  let left: number;
+  if (opts.isUr) {
+    if (spaceLeft >= width) left = opts.parentRect.left - width;
+    else if (spaceRight >= width) left = opts.parentRect.right;
+    else left = pad;
+  } else if (spaceRight >= width) {
+    left = opts.parentRect.right;
+  } else if (spaceLeft >= width) {
+    left = opts.parentRect.left - width;
+  } else {
+    left = Math.max(pad, opts.viewportWidth - width - pad);
+  }
+  const maxTop = Math.max(pad, opts.viewportHeight - pad - 48);
+  return { top: Math.min(Math.max(pad, opts.triggerRect.top), maxTop), left };
+}

@@ -1095,7 +1095,7 @@ export default function DocumentStudioEditor() {
   };
 
   return (
-    <div className="site-container">
+    <div className="mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4">
       <input
         ref={fileInputRef}
         type="file"

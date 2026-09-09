@@ -14,14 +14,24 @@ interface SuggestionsPanelProps {
   isUr?: boolean;
 }
 
-const CATEGORY_LABEL: Record<SuggestionCategory, string> = {
-  unicode: "یونیکوڈ (Unicode)",
-  typography: "ٹائپوگرافی (Typography)",
-  numeral: "ہندسے (Numerals)",
-  punctuation: "رموزِ اوقاف (Punctuation)",
-  spacing: "خالی جگہ (Spacing)",
-  structure: "ساخت (Structure)",
-  terminology: "اصطلاحی یکسانیت (Terminology)",
+const CATEGORY_LABEL_EN: Record<SuggestionCategory, string> = {
+  unicode: "Unicode",
+  typography: "Typography",
+  numeral: "Numerals",
+  punctuation: "Punctuation",
+  spacing: "Spacing",
+  structure: "Structure",
+  terminology: "Terminology",
+};
+
+const CATEGORY_LABEL_UR: Record<SuggestionCategory, string> = {
+  unicode: "یونیکوڈ",
+  typography: "ٹائپوگرافی",
+  numeral: "ہندسے",
+  punctuation: "رموزِ اوقاف",
+  spacing: "خالی جگہ",
+  structure: "ساخت",
+  terminology: "اصطلاحات",
 };
 
 const ALL_CATEGORIES: SuggestionCategory[] = [
@@ -34,14 +44,16 @@ const ALL_CATEGORIES: SuggestionCategory[] = [
   "terminology",
 ];
 
-// Severity Hierarchy (2026-08-09): clear Error/Warning/Suggestion
-// labeling on top of the existing high/medium/low values — the
-// underlying severity values are unchanged (still tested/relied on
-// elsewhere), this is purely a clearer display layer.
-const SEVERITY_LABEL: Record<SuggestionSeverity, string> = {
-  high: "خرابی (Error)",
-  medium: "تنبیہ (Warning)",
-  low: "تجویز (Suggestion)",
+const SEVERITY_LABEL_EN: Record<SuggestionSeverity, string> = {
+  high: "Error",
+  medium: "Warning",
+  low: "Suggestion",
+};
+
+const SEVERITY_LABEL_UR: Record<SuggestionSeverity, string> = {
+  high: "خرابی",
+  medium: "تنبیہ",
+  low: "تجویز",
 };
 
 const SEVERITY_STYLE: Record<SuggestionSeverity, string> = {
@@ -51,6 +63,14 @@ const SEVERITY_STYLE: Record<SuggestionSeverity, string> = {
 };
 
 const SEVERITY_ORDER: SuggestionSeverity[] = ["high", "medium", "low"];
+
+function categoryLabel(cat: SuggestionCategory, isUr: boolean): string {
+  return isUr ? CATEGORY_LABEL_UR[cat] : CATEGORY_LABEL_EN[cat];
+}
+
+function severityLabel(sev: SuggestionSeverity, isUr: boolean): string {
+  return isUr ? SEVERITY_LABEL_UR[sev] : SEVERITY_LABEL_EN[sev];
+}
 
 function groupByCategory(list: DocumentSuggestion[]): Record<SuggestionCategory, DocumentSuggestion[]> {
   const base: Record<SuggestionCategory, DocumentSuggestion[]> = {
@@ -72,12 +92,7 @@ function groupByCategory(list: DocumentSuggestion[]): Record<SuggestionCategory,
  * Document Intelligence — Suggestion Review Workflow. Shows PENDING
  * suggestions with surrounding context, Error/Warning/Suggestion
  * severity, category badges + filtering, per-suggestion Accept/Ignore,
- * and safe per-category batch actions (Accept/Ignore all PENDING items
- * in one category — never a global "Fix All", and never touches
- * accepted/ignored items). No text changes happen here at all — only
- * "Apply Accepted Suggestions" (separately, per suggestion) ever
- * modifies the document. Matches QualityAuditPanel.tsx's visual
- * language.
+ * and safe per-category batch actions. Chrome follows site language.
  */
 export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
   pending,
@@ -92,6 +107,8 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
 }) => {
   const [categoryFilter, setCategoryFilter] = useState<SuggestionCategory | "all">("all");
   const [severityFilter, setSeverityFilter] = useState<SuggestionSeverity | "all">("all");
+  const dir = isUr ? "rtl" : "ltr";
+  const naskh = isUr ? "font-naskh" : "";
 
   const total = pending.length + accepted.length + ignored.length;
 
@@ -103,8 +120,8 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
 
   if (total === 0) {
     return (
-      <div className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm text-right text-xs text-emerald-700" dir="rtl">
-        ✓ فی الحال کوئی تجویز موجود نہیں — متن صاف نظر آتا ہے۔
+      <div className={`rounded-xl border border-slate-200 bg-white p-3 text-xs text-emerald-700 ${naskh}`} dir={dir} data-studio-suggestions="true">
+        {isUr ? "✓ فی الحال کوئی تجویز موجود نہیں — متن صاف نظر آتا ہے۔" : "✓ No suggestions right now — the text looks clean."}
       </div>
     );
   }
@@ -113,29 +130,28 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
   const categoriesPresent = ALL_CATEGORIES.filter((c) => pending.some((s) => s.category === c));
 
   return (
-    <div className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm space-y-4 text-right" dir="rtl">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-        <div className="flex gap-2">
-          <div className="px-3 py-1 rounded-full text-sm font-bold border border-slate-200 bg-slate-50 text-slate-700">
-            زیرِ جائزہ: {pending.length}
+    <div className={`min-w-0 space-y-3 overflow-x-hidden rounded-xl border border-slate-200 bg-white p-3 ${naskh}`} dir={dir} data-studio-suggestions="true">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+        <h3 className="text-sm font-bold text-slate-800">{isUr ? "تجاویز" : "Suggestions"}</h3>
+        <div className="flex min-w-0 flex-wrap gap-1.5">
+          <div className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
+            {isUr ? "زیرِ جائزہ" : "Pending"}: {pending.length}
           </div>
-          <div className="px-3 py-1 rounded-full text-sm font-bold border border-emerald-200 bg-emerald-50 text-emerald-700">
-            منظور شدہ: {accepted.length}
+          <div className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+            {isUr ? "منظور شدہ" : "Accepted"}: {accepted.length}
           </div>
-          <div className="px-3 py-1 rounded-full text-sm font-bold border border-slate-200 bg-slate-50 text-slate-400">
-            نظرانداز: {ignored.length}
+          <div className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-400">
+            {isUr ? "نظرانداز" : "Ignored"}: {ignored.length}
           </div>
         </div>
-        <h3 className="text-base font-bold text-slate-800">تجاویز (Suggestions)</h3>
       </div>
 
-      {/* Category Filters */}
-      <div className="flex flex-wrap gap-1.5" dir="ltr">
+      <div className="flex flex-wrap gap-1.5">
         <button
           type="button"
           onClick={() => setCategoryFilter("all")}
-          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
-            categoryFilter === "all" ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-600 border-slate-300"
+          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+            categoryFilter === "all" ? "border-slate-700 bg-slate-700 text-white" : "border-slate-300 bg-white text-slate-600"
           }`}
         >
           {isUr ? "سب" : "All"}
@@ -145,66 +161,64 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
             key={cat}
             type="button"
             onClick={() => setCategoryFilter(cat)}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
-              categoryFilter === cat ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-600 border-slate-300"
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+              categoryFilter === cat ? "border-slate-700 bg-slate-700 text-white" : "border-slate-300 bg-white text-slate-600"
             }`}
           >
-            {CATEGORY_LABEL[cat]}
+            {categoryLabel(cat, isUr)}
           </button>
         ))}
       </div>
 
-      {/* Severity Filters */}
-      <div className="flex flex-wrap gap-1.5" dir="ltr">
+      <div className="flex flex-wrap gap-1.5">
         <button
           type="button"
           onClick={() => setSeverityFilter("all")}
-          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
-            severityFilter === "all" ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-600 border-slate-300"
+          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+            severityFilter === "all" ? "border-slate-700 bg-slate-700 text-white" : "border-slate-300 bg-white text-slate-600"
           }`}
         >
-          {isUr ? "تمام سنگینیاں" : "All Severities"}
+          {isUr ? "تمام سنگینیاں" : "All severities"}
         </button>
         {SEVERITY_ORDER.map((sev) => (
           <button
             key={sev}
             type="button"
             onClick={() => setSeverityFilter(sev)}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
-              severityFilter === sev ? "bg-slate-700 text-white border-slate-700" : SEVERITY_STYLE[sev]
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+              severityFilter === sev ? "border-slate-700 bg-slate-700 text-white" : SEVERITY_STYLE[sev]
             }`}
           >
-            {SEVERITY_LABEL[sev]}
+            {severityLabel(sev, isUr)}
           </button>
         ))}
       </div>
 
       {filteredPending.length === 0 ? (
-        <p className="text-xs text-slate-500">اس فلٹر کے مطابق کوئی تجویز موجود نہیں۔</p>
+        <p className="text-xs text-slate-500">{isUr ? "اس فلٹر کے مطابق کوئی تجویز موجود نہیں۔" : "No suggestions match this filter."}</p>
       ) : (
         (Object.keys(grouped) as SuggestionCategory[])
           .filter((cat) => grouped[cat].length > 0)
           .map((cat) => (
-            <div key={cat} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-slate-600">
-                  {CATEGORY_LABEL[cat]} ({grouped[cat].length})
+            <div key={cat} className="min-w-0 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="min-w-0 text-xs font-semibold text-slate-600">
+                  {categoryLabel(cat, isUr)} ({grouped[cat].length})
                 </h4>
-                {/* Batch Actions — only affect PENDING items in this category */}
-                <div className="flex gap-1.5" dir="ltr">
+                <div className="flex gap-1.5">
                   <button
                     type="button"
                     onClick={() => onAcceptCategory(cat)}
-                    className="px-2 py-0.5 rounded border border-emerald-300 text-emerald-700 text-[10px] font-semibold hover:bg-emerald-50 transition"
+                    className="rounded border border-emerald-300 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50"
                   >
-                    {isUr ? "سب منظور" : "Accept All"}
+                    {isUr ? "سب منظور" : "Accept all"}
                   </button>
                   <button
                     type="button"
                     onClick={() => onIgnoreCategory(cat)}
-                    className="px-2 py-0.5 rounded border border-slate-300 text-slate-500 text-[10px] font-semibold hover:bg-slate-50 transition"
+                    className="rounded border border-slate-300 px-2 py-0.5 text-[10px] font-semibold text-slate-500 hover:bg-slate-50"
                   >
-                    {isUr ? "سب نظرانداز" : "Ignore All"}
+                    {isUr ? "سب نظرانداز" : "Ignore all"}
                   </button>
                 </div>
               </div>
@@ -212,38 +226,37 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
                 {grouped[cat].map((s) => {
                   const key = suggestionKey(s);
                   return (
-                    <li key={key} className={`p-3 rounded-lg border text-xs space-y-2 ${SEVERITY_STYLE[s.severity]}`}>
-                      <div className="flex flex-wrap gap-2 items-center">
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold border border-current">
-                          {SEVERITY_LABEL[s.severity]}
+                    <li key={key} className={`min-w-0 space-y-2 rounded-lg border p-3 text-xs ${SEVERITY_STYLE[s.severity]}`}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded border border-current px-1.5 py-0.5 text-[10px] font-bold">
+                          {severityLabel(s.severity, isUr)}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white/60 border border-current">
-                          {CATEGORY_LABEL[s.category]}
+                        <span className="rounded border border-current bg-white/60 px-1.5 py-0.5 text-[10px] font-semibold">
+                          {categoryLabel(s.category, isUr)}
                         </span>
                       </div>
 
-                      {/* Suggestion Context Display: surrounding text with the issue highlighted */}
-                      <div className="flex flex-wrap gap-1 items-center text-slate-700 leading-relaxed" dir="rtl">
+                      <div className="flex flex-wrap items-center gap-1 break-words leading-relaxed text-slate-700" dir="auto">
                         {s.contextBefore && <span className="text-slate-400">…{s.contextBefore}</span>}
-                        <span className="line-through decoration-red-400 bg-red-50 px-1 rounded">{s.originalText}</span>
+                        <span className="rounded bg-red-50 px-1 line-through decoration-red-400">{s.originalText}</span>
                         <span aria-hidden="true">→</span>
-                        <span className="font-semibold text-emerald-700 bg-emerald-50 px-1 rounded">{s.suggestedText}</span>
+                        <span className="rounded bg-emerald-50 px-1 font-semibold text-emerald-700">{s.suggestedText}</span>
                         {s.contextAfter && <span className="text-slate-400">{s.contextAfter}…</span>}
                       </div>
 
-                      <p className="text-slate-500 leading-relaxed">{s.explanation}</p>
-                      <div className="flex gap-2 pt-1" dir="ltr">
+                      <p className="leading-relaxed break-words text-slate-500">{s.explanation}</p>
+                      <div className="flex gap-2 pt-1">
                         <button
                           type="button"
                           onClick={() => onAccept(key)}
-                          className="px-3 py-1 rounded-md bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 transition"
+                          className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700"
                         >
                           {isUr ? "منظور" : "Accept"}
                         </button>
                         <button
                           type="button"
                           onClick={() => onIgnore(key)}
-                          className="px-3 py-1 rounded-md border border-slate-300 text-slate-600 text-[11px] font-semibold hover:bg-slate-100 transition"
+                          className="rounded-md border border-slate-300 px-3 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100"
                         >
                           {isUr ? "نظرانداز" : "Ignore"}
                         </button>
@@ -257,15 +270,17 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
       )}
 
       {accepted.length > 0 && (
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
             onClick={onApplyAccepted}
-            className="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition"
+            className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700"
           >
-{isUr ? `منظور شدہ تجاویز لاگو کریں (${accepted.length})` : `Apply Accepted (${accepted.length})`}
+            {isUr ? `منظور شدہ تجاویز لاگو کریں (${accepted.length})` : `Apply accepted (${accepted.length})`}
           </button>
-          <span className="text-[11px] text-slate-400">{isUr ? "صرف منظور شدہ آئٹمز لاگو ہوں گے — Ctrl+Z سے واپس لایا جا سکتا ہے" : "Only accepted items will be applied — use Ctrl+Z to undo"}</span>
+          <span className="text-[11px] leading-snug text-slate-400">
+            {isUr ? "صرف منظور شدہ آئٹمز لاگو ہوں گے — Ctrl+Z سے واپس لایا جا سکتا ہے" : "Only accepted items will be applied — use Ctrl+Z to undo"}
+          </span>
         </div>
       )}
     </div>

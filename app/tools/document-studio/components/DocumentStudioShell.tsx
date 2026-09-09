@@ -42,7 +42,7 @@ export default function DocumentStudioShell({
       <div className="relative flex min-h-0 min-w-0 flex-1">
         {leftOpen && (
           <div
-            className="absolute inset-y-0 z-20 w-[min(100%,18rem)] border-[#1A3A2A]/10 bg-white shadow-md md:static md:z-0 md:w-64 md:shrink-0 md:shadow-none"
+            className="absolute inset-y-0 z-20 w-[min(100%,18rem)] border-[#1A3A2A]/10 bg-white shadow-md lg:static lg:z-0 lg:w-56 lg:shrink-0 lg:shadow-none"
             style={{ [isUr ? "right" : "left"]: 0, borderInlineEndWidth: 1 }}
             data-studio-left-sidebar="true"
           >
@@ -54,7 +54,7 @@ export default function DocumentStudioShell({
 
         {rightOpen && (
           <div
-            className="absolute inset-y-0 z-20 w-[min(100%,22rem)] overflow-y-auto border-[#1A3A2A]/10 bg-white shadow-md md:static md:z-0 md:w-80 md:shrink-0 md:shadow-none"
+            className="absolute inset-y-0 z-20 w-[min(100%,24rem)] min-w-0 overflow-x-hidden overflow-y-auto border-[#1A3A2A]/10 bg-white shadow-md lg:static lg:z-0 lg:w-[24rem] lg:max-w-[28rem] lg:shrink-0 lg:shadow-none xl:w-[26rem]"
             style={{ [isUr ? "left" : "right"]: 0, borderInlineStartWidth: 1 }}
             data-studio-right-sidebar="true"
           >

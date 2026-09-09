@@ -98,7 +98,7 @@ export default function DocumentStudioPanels({
   }
 
   return (
-    <div className="space-y-3" dir={isUr ? "rtl" : "ltr"}>
+    <div className="min-w-0 space-y-4 overflow-x-hidden" dir={isUr ? "rtl" : "ltr"}>
       <DocumentStatsBar stats={quality.stats} health={quality.health} isUr={isUr} />
 
       <div dir="ltr">

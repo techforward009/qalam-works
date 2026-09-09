@@ -21,6 +21,7 @@ import {
   nextOpenMenu,
   nextOpenSubmenu,
   OMITTED_FUTURE_ACTIONS,
+  placeFloatingSubmenu,
   setOpenSubmenu,
 } from "../app/tools/document-studio/utils/documentMenus";
 import {
@@ -255,5 +256,24 @@ describe("document menus", () => {
       .filter((item) => item.type === "submenu")
       .map((item) => item.id);
     expect(subIds).toEqual(["format.text", "format.style", "format.align", "format.lists", "format.spacing"]);
+  });
+
+  it("places nested submenus beside the parent and flips when space is tight", () => {
+    const room = placeFloatingSubmenu({
+      triggerRect: { top: 80, left: 40, right: 288, bottom: 104 },
+      parentRect: { left: 40, right: 288 },
+      viewportWidth: 1200,
+      viewportHeight: 800,
+      isUr: false,
+    });
+    expect(room.left).toBe(288);
+    const flip = placeFloatingSubmenu({
+      triggerRect: { top: 80, left: 980, right: 1228, bottom: 104 },
+      parentRect: { left: 980, right: 1228 },
+      viewportWidth: 1280,
+      viewportHeight: 800,
+      isUr: false,
+    });
+    expect(flip.left).toBe(980 - 184);
   });
 });

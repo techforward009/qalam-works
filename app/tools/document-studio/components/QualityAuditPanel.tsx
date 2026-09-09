@@ -8,6 +8,13 @@ interface QualityAuditPanelProps {
   isUr?: boolean;
 }
 
+const READINESS_LABELS = {
+  typography: { en: "Typography", ur: "ٹائپوگرافی" },
+  unicodeConsistency: { en: "Unicode", ur: "یونیکوڈ یکسانیت" },
+  structure: { en: "Structure", ur: "ساخت" },
+  rtlLtr: { en: "RTL/LTR", ur: "RTL/LTR" },
+} as const;
+
 export const QualityAuditPanel: React.FC<QualityAuditPanelProps> = ({
   report,
   isLoading = false,
@@ -15,168 +22,112 @@ export const QualityAuditPanel: React.FC<QualityAuditPanelProps> = ({
   isUr = false,
 }) => {
   const dir = isUr ? "rtl" : "ltr";
-  // 1. Loading State
+  const naskh = isUr ? "font-naskh" : "";
+
   if (isLoading) {
     return (
-      <div
-        className="p-4 border border-slate-200 rounded-xl bg-slate-50 animate-pulse text-right"
-        dir={dir}
-      >
-        <div className="h-5 bg-slate-200 rounded w-1/3 mb-4 ms-auto" />
-        <div className="h-12 bg-slate-200 rounded mb-2" />
-        <div className="h-12 bg-slate-200 rounded" />
+      <div className={`animate-pulse rounded-xl border border-slate-200 bg-slate-50 p-3 ${isUr ? "text-right" : "text-left"}`} dir={dir}>
+        <div className="mb-4 h-5 w-1/3 rounded bg-slate-200" />
+        <div className="mb-2 h-12 rounded bg-slate-200" />
+        <div className="h-12 rounded bg-slate-200" />
       </div>
     );
   }
 
-  // 2. Empty / Initial State
   if (!report) {
     return (
-      <div
-        className="p-4 border border-slate-200 rounded-xl bg-slate-50 text-right text-slate-500 text-xs"
-        dir={dir}
-      >
-        متن کی کوالٹی آڈٹ دیکھنے کے لیے ایڈیٹر میں متن درج کریں یا آڈٹ کا بٹن دبائیں۔
+      <div className={`rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500 ${naskh}`} dir={dir} data-studio-audit="true">
+        {isUr
+          ? "متن کی کوالٹی آڈٹ دیکھنے کے لیے ایڈیٹر میں متن درج کریں یا آڈٹ کا بٹن دبائیں۔"
+          : "Enter text in the editor or run Quality Audit to see results."}
       </div>
     );
   }
 
-  // 3. Main Presentational UI
   return (
-    <div
-      className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm space-y-4 text-right"
-      dir={dir}
-    >
-      {/* Stale Text Warning Banner */}
+    <div className={`min-w-0 space-y-4 overflow-x-hidden rounded-xl border border-slate-200 bg-white p-3 ${naskh}`} dir={dir} data-studio-audit="true">
       {isStale && (
-        <div className="p-2.5 rounded-lg border border-amber-200 bg-amber-50 text-xs text-amber-800 font-medium">
-          {isUr ? "⚠️ متن میں تبدیلی کی گئی ہے۔ تازہ نتائج کے لیے دوبارہ آڈٹ چلائیں۔" : "⚠️ Text has changed. Re-run Quality Audit for fresh results."}
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-medium text-amber-800">
+          {isUr ? "متن میں تبدیلی کی گئی ہے۔ تازہ نتائج کے لیے دوبارہ آڈٹ چلائیں۔" : "Text has changed. Re-run Quality Audit for fresh results."}
         </div>
       )}
 
-      {/* Header & Total Issues Display. A numeric "score" used to be shown
-          here too, but that 100/90/80...-style formula was never reviewed
-          or approved as a business rule (see buildDocumentAuditReport.ts,
-          2026-08-07 note) — showing it prominently implied a certainty it
-          doesn't have. Total issues + the category breakdown below are the
-          real, directly-measured numbers. */}
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div className="px-3 py-1 rounded-full text-lg font-bold border border-slate-200 bg-slate-50 text-slate-700">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <h3 className="text-sm font-bold text-slate-800">{isUr ? "متن کی معیار جانچ" : "Quality Audit"}</h3>
+        <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-bold text-slate-700">
           {isUr ? "کل مسائل" : "Issues"}: {report.totalIssues}
         </div>
-        <h3 className="text-base font-bold text-slate-800">
-          {isUr ? "متن کی معیار جانچ" : "Quality Audit"}
-        </h3>
       </div>
 
-      {/* Issues Breakdown Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center text-xs">
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">{isUr ? "رسم الخط" : "Script"}</div>
-          <div className="text-sm font-bold text-slate-700 mt-1">
-            {report.counts.mixedScript}
-          </div>
+      <div className="grid grid-cols-2 gap-2 text-center text-xs">
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+          <div className="font-medium text-slate-500">{isUr ? "رسم الخط" : "Script"}</div>
+          <div className="mt-1 text-sm font-bold text-slate-700">{report.counts.mixedScript}</div>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">{isUr ? "رموزِ اوقاف" : "Punctuation"}</div>
-          <div className="text-sm font-bold text-slate-700 mt-1">
-            {report.counts.punctuation}
-          </div>
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+          <div className="font-medium text-slate-500">{isUr ? "رموزِ اوقاف" : "Punctuation"}</div>
+          <div className="mt-1 text-sm font-bold text-slate-700">{report.counts.punctuation}</div>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">{isUr ? "خالی جگہ" : "Spacing"}</div>
-          <div className="text-sm font-bold text-slate-700 mt-1">
-            {report.counts.spacing}
-          </div>
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+          <div className="font-medium text-slate-500">{isUr ? "خالی جگہ" : "Spacing"}</div>
+          <div className="mt-1 text-sm font-bold text-slate-700">{report.counts.spacing}</div>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">{isUr ? "طویل پیراگراف" : "Long Paragraphs"}</div>
-          <div className="text-sm font-bold text-slate-700 mt-1">
-            {report.counts.longParagraphs}
-          </div>
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+          <div className="font-medium text-slate-500">{isUr ? "طویل پیراگراف" : "Long paragraphs"}</div>
+          <div className="mt-1 text-sm font-bold text-slate-700">{report.counts.longParagraphs}</div>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">{isUr ? "تکرارِ الفاظ" : "Repeated Words"}</div>
-          <div className="text-sm font-bold text-slate-700 mt-1">
-            {report.counts.repeatedWords}
-          </div>
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+          <div className="font-medium text-slate-500">{isUr ? "تکرارِ الفاظ" : "Repeated words"}</div>
+          <div className="mt-1 text-sm font-bold text-slate-700">{report.counts.repeatedWords}</div>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">{isUr ? "اردو/عربی حروف" : "Char Forms"}</div>
-          <div className="text-sm font-bold text-slate-700 mt-1">
-            {report.counts.mixedUrduArabicForms}
-          </div>
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+          <div className="font-medium text-slate-500">{isUr ? "اردو/عربی حروف" : "Character forms"}</div>
+          <div className="mt-1 text-sm font-bold text-slate-700">{report.counts.mixedUrduArabicForms}</div>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">{isUr ? "عنوانات کی ترتیب" : "Heading Order"}</div>
-          <div className="text-sm font-bold text-slate-700 mt-1">
-            {report.counts.headingHierarchy}
-          </div>
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+          <div className="font-medium text-slate-500">{isUr ? "عنوانات کی ترتیب" : "Heading order"}</div>
+          <div className="mt-1 text-sm font-bold text-slate-700">{report.counts.headingHierarchy}</div>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-          <div className="text-slate-500 font-medium">{isUr ? "خالی پیراگراف" : "Empty Paras"}</div>
-          <div className="text-sm font-bold text-slate-700 mt-1">
-            {report.counts.emptyParagraphs}
-          </div>
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+          <div className="font-medium text-slate-500">{isUr ? "خالی پیراگراف" : "Empty paragraphs"}</div>
+          <div className="mt-1 text-sm font-bold text-slate-700">{report.counts.emptyParagraphs}</div>
         </div>
       </div>
 
-      {/* Publishing Readiness — categorical (OK / Needs Review), not a raw
-          score. Matches the same small-badge visual language used above,
-          not a new UI system. */}
-      <div className="space-y-2 pt-1 border-t border-slate-100">
-        <h4 className="text-xs font-semibold text-slate-600 pt-2">
-{isUr ? "اشاعتی تیاری" : "Publishing Readiness"}
-        </h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs">
-          {(
-            [
-              ["typography", "ٹائپوگرافی (Typography)"],
-              ["unicodeConsistency", "یونیکوڈ یکسانیت (Unicode)"],
-              ["structure", "ساخت (Structure)"],
-              ["rtlLtr", "RTL/LTR"],
-            ] as const
-          ).map(([key, label]) => {
+      <div className="space-y-2 border-t border-slate-100 pt-3">
+        <h4 className="text-xs font-semibold text-slate-600">{isUr ? "اشاعتی تیاری" : "Publishing readiness"}</h4>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs">
+          {(Object.keys(READINESS_LABELS) as Array<keyof typeof READINESS_LABELS>).map((key) => {
             const ok = report.readiness[key] === "ok";
             return (
               <div
                 key={key}
-                className={`p-2.5 rounded-lg border text-xs font-semibold ${
-                  ok
-                    ? "bg-emerald-50/60 border-emerald-200 text-emerald-700"
-                    : "bg-amber-50 border-amber-200 text-amber-800"
+                className={`rounded-lg border p-2.5 text-xs font-semibold ${
+                  ok ? "border-emerald-200 bg-emerald-50/60 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-800"
                 }`}
               >
-                <div className="font-medium">{label}</div>
-                <div className="mt-1">{ok ? (isUr ? "✓ درست" : "✓ OK") : (isUr ? "⚠️ نظرِ ثانی درکار" : "⚠️ Needs Review")}</div>
+                <div className="font-medium">{isUr ? READINESS_LABELS[key].ur : READINESS_LABELS[key].en}</div>
+                <div className="mt-1">{ok ? (isUr ? "✓ درست" : "✓ OK") : isUr ? "⚠️ نظرِ ثانی درکار" : "⚠️ Needs review"}</div>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Recommendations List (Display Only) */}
       <div className="space-y-2 pt-1">
         <h4 className="text-xs font-semibold text-slate-600">
-{isUr ? "تجویز کردہ اصلاحات" : "Recommendations"} ({report.recommendations.length})
+          {isUr ? "تجویز کردہ اصلاحات" : "Recommendations"} ({report.recommendations.length})
         </h4>
         {report.recommendations.length === 0 ? (
-          <p className="text-xs text-emerald-700 bg-emerald-50/60 p-3 rounded-lg border border-emerald-200">
-{isUr ? "✓ متن میں کوئی قابلِ ذکر نقص نہیں ملا۔" : "✓ No significant issues found in this document."}
+          <p className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 text-xs text-emerald-700">
+            {isUr ? "✓ متن میں کوئی قابلِ ذکر نقص نہیں ملا۔" : "✓ No significant issues found in this document."}
           </p>
         ) : (
           <ul className="space-y-2">
             {report.recommendations.map((rec) => (
-              <li
-                key={rec.id}
-                className="p-3 rounded-lg bg-slate-50 border border-slate-200/80 text-xs space-y-1"
-              >
-                <div className="font-bold text-slate-800">
-                  {isUr ? rec.titleUrdu : rec.titleEnglish}
-                </div>
-                <p className="text-slate-600 leading-relaxed">
-                  {isUr ? rec.descriptionUrdu : rec.descriptionEnglish}
-                </p>
+              <li key={rec.id} className="min-w-0 space-y-1 rounded-lg border border-slate-200/80 bg-slate-50 p-3 text-xs">
+                <div className="font-bold break-words text-slate-800">{isUr ? rec.titleUrdu : rec.titleEnglish}</div>
+                <p className="leading-relaxed break-words text-slate-600">{isUr ? rec.descriptionUrdu : rec.descriptionEnglish}</p>
               </li>
             ))}
           </ul>
