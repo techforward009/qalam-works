@@ -122,16 +122,6 @@ export function maskProtectedLatinTokens(text: string): string {
     .replace(freshRegex(TECHNICAL_ACRONYM_REGEX), maskMatch);
 }
 
-export function countLatinRunsInArabicContext(text: string): number {
-  let count = 0;
-  for (const paragraph of splitParagraphs(text)) {
-    if (!isArabicScriptContext(scriptContextForText(paragraph))) continue;
-    const matches = maskProtectedLatinTokens(paragraph).match(freshRegex(LATIN_LETTERS_REGEX));
-    if (matches) count += matches.length;
-  }
-  return count;
-}
-
 export function countAsciiPunctuationInArabicContext(text: string): number {
   let count = 0;
   for (const paragraph of splitParagraphs(text)) {

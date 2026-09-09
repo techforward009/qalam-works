@@ -39,17 +39,14 @@ import {
   SPACE_BEFORE_PUNCTUATION_REGEX,
   TATWEEL_REGEX,
   ARABIC_FORM_LETTERS_REGEX,
-  LATIN_LETTERS_REGEX,
   WESTERN_DIGIT_CHAR,
   ARABIC_INDIC_DIGIT_CHAR,
   URDU_INDIC_DIGIT_CHAR,
   freshRegex,
   stripProtectedMarkers,
   arabicContextText,
-  isArabicScriptContext,
-  scriptContextForText,
-  maskProtectedLatinTokens,
 } from "../../../utils/quality/sharedTextPatterns";
+import { analyzeDocumentRuns, latinIntrusionRuns, type DocumentRunAnalysis } from "../../../utils/quality/analyzeLanguageRuns";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
 import { resolveProcessingLanguage } from "../../../utils/processing/detectLanguage";
 
@@ -437,30 +434,27 @@ function findRepeatedWordSuggestions(text: string): DocumentSuggestion[] {
 // Yeh/Kaf/Heh "unicode" category suggestions are — it never belonged
 // under "unicode" semantically, even though it shared that category's
 // broad "script-related" theme.
-function findMixedScriptSuggestions(blocks: readonly string[]): DocumentSuggestion[] {
+function findMixedScriptSuggestions(blocks: readonly string[], runAnalysis?: DocumentRunAnalysis): DocumentSuggestion[] {
+  const analysis = runAnalysis ?? analyzeDocumentRuns(blocks);
   const suggestions: DocumentSuggestion[] = [];
   let count = 0;
-  for (const block of blocks) {
+  for (const intrusion of latinIntrusionRuns(analysis)) {
     if (count >= MAX_EXAMPLES_PER_TYPE) break;
-    const stripped = maskProtectedLatinTokens(block);
-    if (!isArabicScriptContext(scriptContextForText(stripProtectedMarkers(block)))) continue;
-    const regex = freshRegex(LATIN_LETTERS_REGEX);
-    let match: RegExpExecArray | null;
-    while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(stripped)) !== null) {
-      if (!match[0].trim()) continue;
-      const { before, match: exact, after } = extractWithContext(block, match.index, match[0].length);
-      suggestions.push({
-        type: "unicode-mixed-script-advisory",
-        category: "typography",
-        severity: "low",
-        originalText: exact,
-        suggestedText: exact,
-        explanation: "Latin letters appear inside Urdu/Arabic text. This may be intentional.",
-        contextBefore: before,
-        contextAfter: after,
-      });
-      count++;
-    }
+    const { paragraph, start, end } = intrusion;
+    const exact = paragraph.text.slice(start, end);
+    if (!exact.trim()) continue;
+    const { before, match, after } = extractWithContext(paragraph.text, start, exact.length);
+    suggestions.push({
+      type: "unicode-mixed-script-advisory",
+      category: "typography",
+      severity: "low",
+      originalText: match,
+      suggestedText: match,
+      explanation: "Latin letters appear inside Urdu/Arabic text. This may be intentional.",
+      contextBefore: before,
+      contextAfter: after,
+    });
+    count++;
   }
   return suggestions;
 }
@@ -768,7 +762,7 @@ export function generateDocumentSuggestions(
 
   return [
     ...(urMode ? findUnicodeSuggestions(text) : []),
-    ...(urMode ? findMixedScriptSuggestions(blocks) : []),
+    ...(urMode ? findMixedScriptSuggestions(blocks, context?.runAnalysis) : []),
     ...findTypographySuggestions(text),
     ...findRepeatedWordSuggestions(text),
     ...findSpacingSuggestions(text),

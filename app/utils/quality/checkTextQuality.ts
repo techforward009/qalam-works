@@ -10,10 +10,10 @@ import {
   TATWEEL_REGEX,
   ARABIC_FORM_LETTERS_REGEX,
   arabicContextText,
-  countLatinRunsInArabicContext,
   countAsciiPunctuationInArabicContext,
   hasInconsistentPunctuationStyle,
 } from "./sharedTextPatterns";
+import { countLatinIntrusions } from "./analyzeLanguageRuns";
 import type { ProcessingLanguage, ResolvedLanguage } from "../processing/types";
 import { resolveProcessingLanguage } from "../processing/detectLanguage";
 
@@ -173,7 +173,7 @@ function checkScriptSensitive(
   let mixedScript = 0;
   if (mode === "ur") {
     mixedPunctuation = countAsciiPunctuationInArabicContext(text);
-    mixedScript = countLatinRunsInArabicContext(text);
+    mixedScript = countLatinIntrusions(text);
   }
 
   let repeatedWords = 0;

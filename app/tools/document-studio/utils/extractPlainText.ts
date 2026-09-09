@@ -8,6 +8,9 @@
 // not imported from @tiptap/core — this file has zero package dependencies
 // so it can be tested and reused without pulling in TipTap or React. The
 // real editor.getJSON() return value (type JSONContent) satisfies this shape.
+import type { DocumentRunAnalysis } from "../../../utils/quality/analyzeLanguageRuns";
+import { analyzeDocumentRuns } from "../../../utils/quality/analyzeLanguageRuns";
+
 export interface DocNode {
   type?: string;
   attrs?: Record<string, unknown>;
@@ -144,6 +147,8 @@ export interface DocumentAnalysisContext {
   readonly joinedText: string;
   /** Same processing language used by Audit, Health, and Suggestions. */
   readonly processingLanguage: "auto" | "ur" | "en" | "ar";
+  /** LI-1 run-level analysis, computed once per cycle. */
+  readonly runAnalysis: DocumentRunAnalysis;
 }
 
 export function createDocumentAnalysisContext(
@@ -155,6 +160,7 @@ export function createDocumentAnalysisContext(
     blocks: Object.freeze(blocks),
     joinedText: blocks.join("\n"),
     processingLanguage,
+    runAnalysis: Object.freeze(analyzeDocumentRuns(blocks)),
   });
 }
 

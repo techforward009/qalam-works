@@ -29,8 +29,12 @@ describe("mixed-document Quality Audit / Suggestions alignment", () => {
 
   it("still detects a genuine Latin intrusion inside an Urdu paragraph", () => {
     const doc = docWith([paragraph("یہ Document Studio ہے")]);
-    expect(generateDocumentSuggestions(doc).some((s) => s.type === "unicode-mixed-script-advisory")).toBe(true);
-    expect(buildDocumentAuditReport(doc).counts.mixedScript).toBeGreaterThan(0);
+    const context = createDocumentAnalysisContext(doc, "ur");
+    const advisories = generateDocumentSuggestions(doc, context).filter((s) => s.type === "unicode-mixed-script-advisory");
+    expect(advisories).toHaveLength(1);
+    expect(advisories[0].originalText).toBe("Document Studio");
+    expect(buildDocumentAuditReport(doc, context).counts.mixedScript).toBe(1);
+    expect(buildDocumentHealthReport(doc, context).typographyIssueCount).toBe(1);
   });
 
   it("keeps punctuation counts consistent across audit and suggestions for bilingual paragraphs", () => {
@@ -86,6 +90,18 @@ describe("same processing language reaches Audit / Health / Suggestions", () => 
     expect(urHealth.typographyIssueCount).toBe(urAudit.counts.mixedScript);
     expect(urSuggestions.length).toBeGreaterThan(0);
     expect(urSuggestions.length).toBeLessThanOrEqual(urAudit.counts.mixedScript);
+  });
+
+  it("Audit / Health / Suggestions share the same run-analysis mixed-script count", () => {
+    const doc = docWith([paragraph("یہ Document Studio اور Qalam Works مفید ہیں")]);
+    const context = createDocumentAnalysisContext(doc, "ur");
+    const audit = buildDocumentAuditReport(doc, context);
+    const health = buildDocumentHealthReport(doc, context);
+    const advisories = generateDocumentSuggestions(doc, context).filter((s) => s.type === "unicode-mixed-script-advisory");
+    expect(audit.counts.mixedScript).toBe(2);
+    expect(health.typographyIssueCount).toBe(2);
+    expect(advisories.map((s) => s.originalText)).toEqual(["Document Studio", "Qalam Works"]);
+    expect(context.runAnalysis.paragraphs).toHaveLength(1);
   });
 });
 
