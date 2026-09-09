@@ -51,4 +51,18 @@ describe("DocumentMenuBar", () => {
     expect(file.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("menu")).toBeTruthy();
   });
+
+  it("portals the dropdown so overflow parents cannot clip it", () => {
+    const { container } = render(
+      <div style={{ overflow: "hidden", height: 32 }}>
+        <DocumentMenuBar isUr={false} onAction={vi.fn()} />
+      </div>,
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "File" }));
+    const dropdown = document.querySelector('[data-menu-dropdown="file"]');
+    expect(dropdown).toBeTruthy();
+    expect(dropdown?.getAttribute("data-menu-portaled")).toBe("true");
+    expect(container.contains(dropdown)).toBe(false);
+    expect(document.body.contains(dropdown)).toBe(true);
+  });
 });

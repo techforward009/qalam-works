@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   applyMenuEscape,
   CLOSED_MENU_STATE,
@@ -15,12 +16,35 @@ import {
   type MenuOpenState,
 } from "../utils/documentMenus";
 
+function dropdownPosition(anchor: HTMLElement | null, isUr: boolean): React.CSSProperties {
+  if (!anchor || typeof window === "undefined") {
+    return { position: "fixed", top: 0, left: 0, visibility: "hidden" };
+  }
+  const rect = anchor.getBoundingClientRect();
+  const width = 232;
+  const pad = 8;
+  const maxLeft = Math.max(pad, window.innerWidth - width - pad);
+  const left = Math.min(Math.max(pad, isUr ? rect.right - width : rect.left), maxLeft);
+  const top = rect.bottom + 2;
+  const maxHeight = Math.max(120, window.innerHeight - top - pad);
+  return {
+    position: "fixed",
+    top,
+    left,
+    zIndex: 80,
+    minWidth: width,
+    maxHeight,
+    overflowY: "auto",
+  };
+}
+
 function MenuItems({
   items,
   isUr,
   disabledIds,
   checkedIds,
   openSubmenuId,
+  inlineSubmenus,
   onOpenSubmenu,
   onToggleSubmenu,
   onAction,
@@ -30,6 +54,7 @@ function MenuItems({
   disabledIds?: ReadonlySet<MenuActionId>;
   checkedIds?: ReadonlySet<MenuActionId>;
   openSubmenuId: string | null;
+  inlineSubmenus: boolean;
   onOpenSubmenu: (id: string) => void;
   onToggleSubmenu: (id: string) => void;
   onAction: (id: MenuActionId) => void;
@@ -46,7 +71,9 @@ function MenuItems({
             <div
               key={item.id}
               className="relative"
-              onMouseEnter={() => onOpenSubmenu(item.id)}
+              onPointerEnter={(e) => {
+                if (e.pointerType === "mouse") onOpenSubmenu(item.id);
+              }}
             >
               <button
                 type="button"
@@ -65,10 +92,25 @@ function MenuItems({
               >
                 <span>{menuLabel(item, isUr)}</span>
                 <span aria-hidden="true" className="text-[11px] text-[#3D5A47]">
-                  {isUr ? "‹" : "›"}
+                  {inlineSubmenus ? (open ? "▾" : "▸") : isUr ? "‹" : "›"}
                 </span>
               </button>
-              {open && (
+              {open && inlineSubmenus && (
+                <div role="menu" data-menu-flyout={item.id} className="border-y border-[#1A3A2A]/10 bg-[#FAF8F3] py-1">
+                  <MenuItems
+                    items={item.items}
+                    isUr={isUr}
+                    disabledIds={disabledIds}
+                    checkedIds={checkedIds}
+                    openSubmenuId={null}
+                    inlineSubmenus={inlineSubmenus}
+                    onOpenSubmenu={onOpenSubmenu}
+                    onToggleSubmenu={onToggleSubmenu}
+                    onAction={onAction}
+                  />
+                </div>
+              )}
+              {open && !inlineSubmenus && (
                 <div
                   role="menu"
                   data-menu-flyout={item.id}
@@ -81,6 +123,7 @@ function MenuItems({
                     disabledIds={disabledIds}
                     checkedIds={checkedIds}
                     openSubmenuId={null}
+                    inlineSubmenus={inlineSubmenus}
                     onOpenSubmenu={onOpenSubmenu}
                     onToggleSubmenu={onToggleSubmenu}
                     onAction={onAction}
@@ -139,12 +182,37 @@ export default function DocumentMenuBar({
   checkedIds?: ReadonlySet<MenuActionId>;
 }) {
   const [openState, setOpenState] = useState<MenuOpenState>(CLOSED_MENU_STATE);
+  const [inlineSubmenus, setInlineSubmenus] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const rootRef = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
+  const triggerRefs = useRef<Partial<Record<MenuId, HTMLButtonElement | null>>>({});
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(max-width: 639px)");
+    const apply = () => setInlineSubmenus(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  const updatePosition = () => {
+    const id = openState.menuId;
+    if (!id) return;
+    setMenuStyle(dropdownPosition(triggerRefs.current[id] ?? null, isUr));
+  };
+
+  useLayoutEffect(() => {
+    updatePosition();
+  }, [openState.menuId, isUr]);
 
   useEffect(() => {
     if (!openState.menuId) return;
     const onPointer = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpenState(CLOSED_MENU_STATE);
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target) || portalRef.current?.contains(target)) return;
+      setOpenState(CLOSED_MENU_STATE);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -152,13 +220,49 @@ export default function DocumentMenuBar({
         setOpenState((prev) => applyMenuEscape(prev));
       }
     };
+    const onReposition = () => updatePosition();
     document.addEventListener("mousedown", onPointer);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onReposition);
+    window.addEventListener("scroll", onReposition, true);
     return () => {
       document.removeEventListener("mousedown", onPointer);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", onReposition, true);
     };
-  }, [openState.menuId]);
+  }, [openState.menuId, isUr]);
+
+  const openMenu = DOCUMENT_MENU_BAR.find((menu) => menu.id === openState.menuId) ?? null;
+  const dropdown =
+    openMenu && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={portalRef}
+            role="menu"
+            data-menu-dropdown={openMenu.id}
+            data-menu-portaled="true"
+            className="rounded-md border border-[#1A3A2A]/15 bg-white py-1 shadow-md"
+            style={menuStyle}
+          >
+            <MenuItems
+              items={openMenu.items}
+              isUr={isUr}
+              disabledIds={disabledIds}
+              checkedIds={checkedIds}
+              openSubmenuId={openState.submenuId}
+              inlineSubmenus={inlineSubmenus}
+              onOpenSubmenu={(id) => setOpenState((prev) => setOpenSubmenu(prev, id))}
+              onToggleSubmenu={(id) => setOpenState((prev) => nextOpenSubmenu(prev, id))}
+              onAction={(id) => {
+                onAction(id);
+                setOpenState(CLOSED_MENU_STATE);
+              }}
+            />
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div
@@ -179,41 +283,24 @@ export default function DocumentMenuBar({
               aria-haspopup="true"
               aria-expanded={open}
               data-menu-root={menu.id}
+              ref={(el) => {
+                triggerRefs.current[menu.id] = el;
+              }}
               className={`h-7 rounded px-2.5 text-[13px] font-medium ${
                 open ? "bg-[#EAF2EB] text-[#1A3A2A]" : "text-[#1A3A2A]/80 hover:bg-[#F3F7F2]"
               } ${isUr ? "font-naskh" : ""}`}
               onClick={() => setOpenState((prev) => nextOpenMenu(prev, menu.id))}
-              onMouseEnter={() => {
-                if (openState.menuId) setOpenState({ menuId: menu.id as MenuId, submenuId: null });
+              onPointerEnter={(e) => {
+                if (e.pointerType !== "mouse") return;
+                if (openState.menuId) setOpenState({ menuId: menu.id, submenuId: null });
               }}
             >
               {menuLabel(menu, isUr)}
             </button>
-            {open && (
-              <div
-                role="menu"
-                data-menu-dropdown={menu.id}
-                className="absolute top-full z-30 mt-0.5 min-w-[14.5rem] rounded-md border border-[#1A3A2A]/15 bg-white py-1 shadow-md"
-                style={{ insetInlineStart: 0 }}
-              >
-                <MenuItems
-                  items={menu.items}
-                  isUr={isUr}
-                  disabledIds={disabledIds}
-                  checkedIds={checkedIds}
-                  openSubmenuId={openState.submenuId}
-                  onOpenSubmenu={(id) => setOpenState((prev) => setOpenSubmenu(prev, id))}
-                  onToggleSubmenu={(id) => setOpenState((prev) => nextOpenSubmenu(prev, id))}
-                  onAction={(id) => {
-                    onAction(id);
-                    setOpenState(CLOSED_MENU_STATE);
-                  }}
-                />
-              </div>
-            )}
           </div>
         );
       })}
+      {dropdown}
     </div>
   );
 }
