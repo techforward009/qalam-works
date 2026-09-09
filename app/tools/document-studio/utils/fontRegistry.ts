@@ -321,7 +321,7 @@ export const JAMEEL_EDITOR_FONT_URL = "/api/studio-font/jameel";
 
 /** Shared @font-face for editor + browser print. Same identity as PDF embedding. */
 export function studioJameelFontFaceCss(): string {
-  return `@font-face{font-family:"Jameel Noori Nastaleeq";src:url("${JAMEEL_EDITOR_FONT_URL}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
+  return `@font-face{font-family:"Jameel Noori Nastaleeq";src:local("Jameel Noori Nastaleeq"),url("${JAMEEL_EDITOR_FONT_URL}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
 }
 
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */

@@ -30,14 +30,19 @@ export default function DocumentStudioShell({
 
   return (
     <div
-      className="flex min-h-[78vh] flex-col overflow-hidden rounded-2xl border border-[#1A3A2A]/10 bg-[#F4F1EA] shadow-[0_2px_20px_rgba(26,58,42,0.06)]"
+      className="flex h-[calc(100dvh-97px)] min-h-[24rem] flex-col overflow-hidden rounded-2xl border border-[#1A3A2A]/10 bg-[#F4F1EA] shadow-[0_2px_20px_rgba(26,58,42,0.06)] lg:h-[calc(100dvh-105px)] xl:h-[calc(100dvh-113px)]"
       data-studio-shell="true"
       dir={isUr ? "rtl" : "ltr"}
     >
-      <div className="studio-no-print shrink-0 border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="top">{topBar}</div>
-      <div className="studio-no-print shrink-0 border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="menu">{menuBar}</div>
-      <div className="studio-no-print shrink-0 border-b border-[#1A3A2A]/10 bg-[#FAF8F3]" data-studio-chrome="toolbar">{toolbar}</div>
-      {findBar ? <div className="studio-no-print shrink-0 border-b border-[#1A3A2A]/10 bg-white px-3 py-2">{findBar}</div> : null}
+      <div
+        className="studio-no-print sticky top-0 z-30 shrink-0 bg-white shadow-[0_1px_0_rgba(26,58,42,0.12)]"
+        data-studio-sticky-chrome="true"
+      >
+        <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="top">{topBar}</div>
+        <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="menu">{menuBar}</div>
+        <div className="border-b border-[#1A3A2A]/10 bg-[#FAF8F3]" data-studio-chrome="toolbar">{toolbar}</div>
+        {findBar ? <div className="border-b border-[#1A3A2A]/10 bg-white px-3 py-2">{findBar}</div> : null}
+      </div>
 
       <div className="relative flex min-h-0 min-w-0 flex-1" data-studio-workspace-wrap="true">
         {leftOpen && (
@@ -67,6 +72,7 @@ export default function DocumentStudioShell({
       <style jsx global>{`
         @media print {
           .studio-no-print,
+          [data-studio-sticky-chrome],
           [data-studio-left-sidebar],
           [data-studio-right-sidebar],
           [data-studio-chrome],

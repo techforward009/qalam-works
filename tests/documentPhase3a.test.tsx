@@ -102,6 +102,16 @@ describe("Phase 3A editor parity", () => {
     expect(css).toContain("@media print");
     expect(css).toContain("studio-no-print");
     expect(document.querySelector("[data-studio-chrome='toolbar']")).toBeTruthy();
+    expect(document.querySelector("[data-studio-sticky-chrome]")).toBeTruthy();
+    expect(document.querySelector("[data-studio-sticky-chrome] [data-studio-chrome='top']")).toBeTruthy();
+    expect(document.querySelector("[data-studio-sticky-chrome] [data-studio-chrome='menu']")).toBeTruthy();
+    expect(document.querySelector("[data-studio-sticky-chrome] [data-studio-chrome='toolbar']")).toBeTruthy();
+    expect(document.querySelectorAll("[data-studio-chrome='toolbar']")).toHaveLength(1);
+    const sticky = document.querySelector("[data-studio-sticky-chrome]") as HTMLElement;
+    expect(sticky.className).toContain("sticky");
+    expect(sticky.className).toContain("z-30");
+    expect(css).toContain("[data-studio-sticky-chrome]");
+    expect(document.querySelector("[data-studio-print-root='true']")).toBeTruthy();
     expect(documentPrintCss(210, 297)).toContain("body > *:not([data-studio-print-portal])");
   });
 

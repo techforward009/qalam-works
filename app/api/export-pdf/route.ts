@@ -8,6 +8,7 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { PDFDocument } from "pdf-lib";
 import { loadPrivateJameelWoff2Base64 } from "../../lib/privateJameelFont";
+import { waitForPdfDocumentFonts } from "../../tools/document-studio/utils/pdfFontReady";
 import {
   buildPdfHtml,
   requiredPdfEmbedFonts,
@@ -222,6 +223,27 @@ async function fontsForDocument(doc: DocNode, dir: Direction, typography?: Docum
   if (!seen.has(fallbackName) && all.has(fallbackName)) {
     faces.push(all.get(fallbackName)!);
   }
+  const jameelName = "Jameel Noori Nastaleeq";
+  if (needed.some((def) => def.pdf.familyName === jameelName)) {
+    const current = faces.find((face) => face.familyName === jameelName);
+    if (!current?.complete) {
+      const b64 = await loadPrivateJameelWoff2Base64();
+      if (b64) {
+        const completeFace: PdfFontFace = {
+          familyName: jameelName,
+          regularSources: [b64],
+          complete: true,
+          declaredRegular: 1,
+          declaredBold: 0,
+          loadedRegular: 1,
+          loadedBold: 0,
+        };
+        const index = faces.findIndex((face) => face.familyName === jameelName);
+        if (index >= 0) faces[index] = completeFace;
+        else faces.push(completeFace);
+      }
+    }
+  }
   return { faces };
 }
 
@@ -282,10 +304,7 @@ export async function POST(request: NextRequest) {
     });
 
     await page.setContent(html, { waitUntil: "load" });
-    await page.evaluate(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (document as any).fonts?.ready;
-    });
+    await page.evaluate(waitForPdfDocumentFonts, fontsUsed);
 
     const layout = resolvePageLayout({
       size: settings.page.size,

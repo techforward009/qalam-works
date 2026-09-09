@@ -9,6 +9,13 @@ const JAMEEL_APPROVED_SHA256 =
 const PRIVATE_BLOB_MAX_BYTES = 8 * 1024 * 1024;
 const JAMEEL_FILENAME = "jameel-noori-nastaleeq-400.woff2";
 
+export function isAllowedJameelBlobHost(hostname: string): boolean {
+  return (
+    hostname.endsWith(".private.blob.vercel-storage.com") ||
+    hostname.endsWith(".blob.vercel-storage.com")
+  );
+}
+
 export type JameelFontLoadReason =
   | "loaded-local"
   | "loaded-blob"
@@ -48,24 +55,28 @@ export async function loadPrivateJameelWoff2(): Promise<JameelFontLoadResult> {
   } catch {
     return { ok: false, reason: "unavailable" };
   }
-  if (parsedUrl.protocol !== "https:" || !parsedUrl.hostname.endsWith(".private.blob.vercel-storage.com")) {
+  if (parsedUrl.protocol !== "https:" || !isAllowedJameelBlobHost(parsedUrl.hostname)) {
     return { ok: false, reason: "unavailable" };
   }
 
   try {
-    const res = await fetch(blobUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    if (!res.ok) return { ok: false, reason: "fetch-failed" };
-    const contentLen = res.headers.get("content-length");
-    if (contentLen && parseInt(contentLen, 10) > PRIVATE_BLOB_MAX_BYTES) {
-      return { ok: false, reason: "unavailable" };
+    const attempts: Array<HeadersInit | undefined> = [
+      { Authorization: `Bearer ${token}` },
+      undefined,
+    ];
+    for (const headers of attempts) {
+      const res = await fetch(blobUrl, { headers, cache: "no-store" });
+      if (!res.ok) continue;
+      const contentLen = res.headers.get("content-length");
+      if (contentLen && parseInt(contentLen, 10) > PRIVATE_BLOB_MAX_BYTES) {
+        return { ok: false, reason: "unavailable" };
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.byteLength > PRIVATE_BLOB_MAX_BYTES) return { ok: false, reason: "unavailable" };
+      if (sha256hex(buf) !== JAMEEL_APPROVED_SHA256) return { ok: false, reason: "integrity-failed" };
+      return { ok: true, buffer: buf, reason: "loaded-blob" };
     }
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.byteLength > PRIVATE_BLOB_MAX_BYTES) return { ok: false, reason: "unavailable" };
-    if (sha256hex(buf) !== JAMEEL_APPROVED_SHA256) return { ok: false, reason: "integrity-failed" };
-    return { ok: true, buffer: buf, reason: "loaded-blob" };
+    return { ok: false, reason: "fetch-failed" };
   } catch {
     return { ok: false, reason: "fetch-failed" };
   }
