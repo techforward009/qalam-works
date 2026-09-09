@@ -47,6 +47,7 @@ import {
   arabicContextText,
 } from "../../../utils/quality/sharedTextPatterns";
 import { analyzeDocumentRuns, latinIntrusionRuns, type DocumentRunAnalysis } from "../../../utils/quality/analyzeLanguageRuns";
+import { findProtectedTokens, maskProtectedTokens, protectedIndexMask, rangeIsProtected } from "../../../utils/quality/protectedTokens";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
 import { resolveProcessingLanguage } from "../../../utils/processing/detectLanguage";
 
@@ -106,6 +107,10 @@ function extractWithContext(text: string, index: number, matchLength: number, ra
   };
 }
 
+function isProtectedMatch(flags: boolean[] | undefined, index: number, length: number): boolean {
+  return Boolean(flags && rangeIsProtected(flags, index, length));
+}
+
 // A) Unicode normalization suggestions. Yeh/Kaf mappings are the exact
 // same two of the five characters checkTextQuality.ts's
 // mixedUrduArabicForms check (ARABIC_FORM_LETTERS_REGEX, shared module)
@@ -148,13 +153,14 @@ function findUnicodeSuggestions(text: string): DocumentSuggestion[] {
 
 // B) Spacing suggestions. Same patterns as checkTextQuality.ts's
 // multipleSpaces and spaceBeforePunctuation checks (shared module).
-function findSpacingSuggestions(text: string): DocumentSuggestion[] {
+function findSpacingSuggestions(text: string, protectedFlags?: boolean[]): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
 
   const multiSpaceRegex = freshRegex(MULTIPLE_SPACES_REGEX);
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = multiSpaceRegex.exec(text)) !== null) {
+    if (isProtectedMatch(protectedFlags, match.index, match[0].length)) continue;
     const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
     suggestions.push({
       type: "spacing-multiple-spaces",
@@ -172,6 +178,7 @@ function findSpacingSuggestions(text: string): DocumentSuggestion[] {
   const beforePunctRegex = freshRegex(SPACE_BEFORE_PUNCTUATION_REGEX);
   count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = beforePunctRegex.exec(text)) !== null) {
+    if (isProtectedMatch(protectedFlags, match.index, match[0].length)) continue;
     const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
     suggestions.push({
       type: "spacing-before-punctuation",
@@ -297,13 +304,14 @@ function quoteReplacement(quoteChar: string, precedingChar: string): string {
   return isOpening ? "\u2018" : "\u2019";
 }
 
-function findQuoteSuggestions(text: string): DocumentSuggestion[] {
+function findQuoteSuggestions(text: string, protectedFlags?: boolean[]): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
 
   const straightQuoteRegex = freshRegex(STRAIGHT_QUOTES_REGEX);
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = straightQuoteRegex.exec(text)) !== null) {
+    if (isProtectedMatch(protectedFlags, match.index, match[0].length)) continue;
     const precedingChar = match.index > 0 ? text[match.index - 1] : "";
     const replacement = quoteReplacement(match[0], precedingChar);
     const { before, match: exact, after } = extractWithContext(text, match.index, 1);
@@ -343,12 +351,13 @@ function findQuoteSuggestions(text: string): DocumentSuggestion[] {
 // G) Duplicated Punctuation. Exact same regex as checkTextQuality.ts's
 // duplicatedPunctuation check (shared module) — per instance, suggests
 // collapsing to one.
-function findDuplicatedPunctuationSuggestions(text: string): DocumentSuggestion[] {
+function findDuplicatedPunctuationSuggestions(text: string, protectedFlags?: boolean[]): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
   const regex = freshRegex(DUPLICATED_PUNCTUATION_REGEX);
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(text)) !== null) {
+    if (isProtectedMatch(protectedFlags, match.index, match[0].length)) continue;
     const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
     suggestions.push({
       type: "punctuation-duplicated",
@@ -369,12 +378,13 @@ function findDuplicatedPunctuationSuggestions(text: string): DocumentSuggestion[
 // to exclude thousands separators like "1,000") regex as
 // checkTextQuality.ts — per instance, suggests inserting a space right
 // after the punctuation mark.
-function findMissingSpaceSuggestions(text: string): DocumentSuggestion[] {
+function findMissingSpaceSuggestions(text: string, protectedFlags?: boolean[]): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
   const regex = freshRegex(MISSING_SPACE_AFTER_PUNCTUATION_REGEX);
   let match: RegExpExecArray | null;
   let count = 0;
   while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(text)) !== null) {
+    if (isProtectedMatch(protectedFlags, match.index, match[0].length)) continue;
     const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
     suggestions.push({
       type: "spacing-missing-after-punctuation",
@@ -754,6 +764,9 @@ export function generateDocumentSuggestions(
 ): DocumentSuggestion[] {
   const blocks = context?.blocks ?? getBlockTexts(doc);
   const text = context?.joinedText ?? blocks.join("\n");
+  const tokens = findProtectedTokens(text);
+  const protectedFlags = protectedIndexMask(text, tokens);
+  const masked = maskProtectedTokens(text, tokens);
   const mode = resolveAnalysisLanguage(context?.processingLanguage, text);
   const urMode = mode === "ur";
   const structureSuggestions = findStructureSuggestions(doc, blocks);
@@ -765,12 +778,12 @@ export function generateDocumentSuggestions(
     ...(urMode ? findMixedScriptSuggestions(blocks, context?.runAnalysis) : []),
     ...findTypographySuggestions(text),
     ...findRepeatedWordSuggestions(text),
-    ...findSpacingSuggestions(text),
-    ...findMissingSpaceSuggestions(text),
+    ...findSpacingSuggestions(text, protectedFlags),
+    ...findMissingSpaceSuggestions(text, protectedFlags),
     ...findNumeralSuggestions(text),
-    ...(urMode ? findPunctuationSuggestions(arabicContextText(text)) : []),
-    ...findQuoteSuggestions(text),
-    ...findDuplicatedPunctuationSuggestions(text),
+    ...(urMode ? findPunctuationSuggestions(arabicContextText(masked)) : []),
+    ...findQuoteSuggestions(text, protectedFlags),
+    ...findDuplicatedPunctuationSuggestions(text, protectedFlags),
     ...(urMode ? findTerminologySuggestions(text) : []),
     ...findGlossarySuggestions(text, glossary),
     ...structureSuggestions,

@@ -10,10 +10,15 @@
 // Pure constants and pure helper functions only — no DocNode, no React,
 // no I/O. Both consumer files import from here instead of redefining.
 
-// Same {{ }} preserve-marker convention used throughout the app —
-// content inside is treated as a protected classical Arabic quotation,
-// exempt from the script-sensitive checks that use this.
-export const PRESERVE_MARKER_REGEX = /\{\{([\s\S]*?)\}\}/g;
+import { maskProtectedTokens, PRESERVE_MARKER_REGEX } from "./protectedTokens";
+
+export {
+  PRESERVE_MARKER_REGEX,
+  URL_LIKE_REGEX,
+  EMAIL_LIKE_REGEX,
+  FILENAME_LIKE_REGEX,
+  TECHNICAL_ACRONYM_REGEX,
+} from "./protectedTokens";
 
 // Space/tab runs of 2 or more.
 export const MULTIPLE_SPACES_REGEX = /[ \t]{2,}/g;
@@ -104,22 +109,9 @@ export function hasInconsistentPunctuationStyle(text: string): boolean {
   );
 }
 
-export const TECHNICAL_ACRONYM_REGEX = /\b(?:TXT|DOCX|DOC|PDF)\b/g;
-export const URL_LIKE_REGEX = /https?:\/\/[^\s]+/gi;
-export const EMAIL_LIKE_REGEX = /\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/g;
-export const FILENAME_LIKE_REGEX = /\b[\w.-]+\.(?:txt|docx?|pdf|xlsx?|pptx?|csv|json|zip)\b/gi;
-
-function maskMatch(match: string): string {
-  return " ".repeat(match.length);
-}
-
-/** Mask URLs, emails, filenames, {{ }} markers, and file-format acronyms without shifting offsets. */
+/** Length-preserving mask via the shared Protected Token Engine. */
 export function maskProtectedLatinTokens(text: string): string {
-  return stripProtectedMarkers(text)
-    .replace(freshRegex(URL_LIKE_REGEX), maskMatch)
-    .replace(freshRegex(EMAIL_LIKE_REGEX), maskMatch)
-    .replace(freshRegex(FILENAME_LIKE_REGEX), maskMatch)
-    .replace(freshRegex(TECHNICAL_ACRONYM_REGEX), maskMatch);
+  return maskProtectedTokens(text);
 }
 
 export function countAsciiPunctuationInArabicContext(text: string): number {

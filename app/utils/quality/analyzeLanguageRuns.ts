@@ -5,17 +5,12 @@
  */
 
 import {
-  EMAIL_LIKE_REGEX,
-  FILENAME_LIKE_REGEX,
-  PRESERVE_MARKER_REGEX,
-  TECHNICAL_ACRONYM_REGEX,
-  URL_LIKE_REGEX,
-  freshRegex,
   isArabicScriptContext,
   scriptContextForText,
   splitParagraphs,
   type ParagraphScriptContext,
 } from "./sharedTextPatterns";
+import { protectedIndexMask } from "./protectedTokens";
 
 export type ScriptRunKind = "arabic" | "latin" | "numeric" | "neutral" | "protected";
 
@@ -49,24 +44,6 @@ function classifyChar(ch: string): Exclude<ScriptRunKind, "protected"> {
   if (code >= 0x0600 && code <= 0x06ff) return "arabic";
   if ((code >= 65 && code <= 90) || (code >= 97 && code <= 122)) return "latin";
   return "neutral";
-}
-
-function markProtected(text: string): boolean[] {
-  const flags = new Array<boolean>(text.length).fill(false);
-  const mark = (pattern: RegExp) => {
-    const regex = freshRegex(pattern);
-    let match: RegExpExecArray | null;
-    while ((match = regex.exec(text)) !== null) {
-      const end = match.index + match[0].length;
-      for (let i = match.index; i < end; i++) flags[i] = true;
-    }
-  };
-  mark(PRESERVE_MARKER_REGEX);
-  mark(URL_LIKE_REGEX);
-  mark(EMAIL_LIKE_REGEX);
-  mark(FILENAME_LIKE_REGEX);
-  mark(TECHNICAL_ACRONYM_REGEX);
-  return flags;
 }
 
 function mergeAdjacent(runs: ScriptRun[]): ScriptRun[] {
@@ -106,7 +83,7 @@ function absorbWhitespaceGaps(runs: ScriptRun[]): ScriptRun[] {
 
 export function analyzeScriptRuns(text: string): ScriptRun[] {
   if (!text) return [];
-  const protectedAt = markProtected(text);
+  const protectedAt = protectedIndexMask(text);
   const raw: ScriptRun[] = [];
   let i = 0;
   while (i < text.length) {

@@ -1,5 +1,4 @@
 import {
-  PRESERVE_MARKER_REGEX,
   MULTIPLE_SPACES_REGEX,
   STRAIGHT_QUOTES_REGEX,
   CURLY_QUOTE_OPEN_REGEX,
@@ -14,6 +13,7 @@ import {
   hasInconsistentPunctuationStyle,
 } from "./sharedTextPatterns";
 import { countLatinIntrusions } from "./analyzeLanguageRuns";
+import { maskProtectedTokens } from "./protectedTokens";
 import type { ProcessingLanguage, ResolvedLanguage } from "../processing/types";
 import { resolveProcessingLanguage } from "../processing/detectLanguage";
 
@@ -60,7 +60,8 @@ interface PartialCounts {
 }
 
 function checkUniversal(
-  text: string
+  text: string,
+  masked: string,
 ): Pick<
   PartialCounts,
   | "multipleSpaces"
@@ -96,51 +97,22 @@ function checkUniversal(
 
   // Straight/ASCII quotation marks — typographically these should be
   // curly quotes in published text, regardless of script.
-  const quoteMatches = text.match(STRAIGHT_QUOTES_REGEX);
+  const quoteMatches = masked.match(STRAIGHT_QUOTES_REGEX);
   const straightQuotes = quoteMatches ? quoteMatches.length : 0;
 
-  // Unmatched curly double quotes — e.g. a closing " with no opening "
-  // anywhere before it (found 2026-08-07: a document missing its opening
-  // quote read as "0 punctuation issues", because straight-quote counting
-  // alone doesn't see curly quotes at all, correct or not — it was never
-  // checking whether they're actually paired). Deliberately limited to the
-  // double curly pair only: the single curly pair (' ') is also the
-  // ordinary typographic apostrophe (e.g. "don't"), so counting open/close
-  // imbalance there would flag normal apostrophe use as a false positive.
-  const openCurly = (text.match(CURLY_QUOTE_OPEN_REGEX) || []).length;
-  const closeCurly = (text.match(CURLY_QUOTE_CLOSE_REGEX) || []).length;
+  const openCurly = (masked.match(CURLY_QUOTE_OPEN_REGEX) || []).length;
+  const closeCurly = (masked.match(CURLY_QUOTE_CLOSE_REGEX) || []).length;
   const unmatchedCurlyQuotes = Math.abs(openCurly - closeCurly);
 
   const wrongQuotes = straightQuotes + unmatchedCurlyQuotes;
 
-  // Any single punctuation mark repeated 2+ times in a row — "؟؟", "!!",
-  // "۔۔", "،،", ".." — almost always an accidental double keystroke, in any
-  // script. Deliberately not script-sensitive (unlike mixedPunctuation
-  // below) since a doubled mark is a mistake regardless of which script's
-  // punctuation it is. Quote characters are intentionally excluded here —
-  // they already have their own, more precise unmatched-pair check above;
-  // counting them again under a generic "duplicated" rule would double-flag
-  // the same underlying defect under two different names.
-  const duplicatedMatches = text.match(DUPLICATED_PUNCTUATION_REGEX);
+  const duplicatedMatches = masked.match(DUPLICATED_PUNCTUATION_REGEX);
   const duplicatedPunctuation = duplicatedMatches ? duplicatedMatches.length : 0;
 
-  // A closing bracket/paren/colon, or terminal punctuation (comma/
-  // exclamation/question mark, ASCII or Urdu-Arabic form) immediately
-  // followed by a letter or digit with no space (found 2026-08-07:
-  // "(المتوفی:179ھ)نے" — missing space after both ":" and ")"; extended
-  // 2026-08-09 per Batch 1 to also cover "لفظ,اگلا"/"لفظ؟اگلا"/
-  // "لفظ!اگلا"-style cases; extended again 2026-08-09 Maintenance Batch
-  // to exclude a comma between two digits — "1,000"/"10,000" is a valid
-  // thousands separator, not a missing space).
-  const missingSpaceMatches = text.match(MISSING_SPACE_AFTER_PUNCTUATION_REGEX);
+  const missingSpaceMatches = masked.match(MISSING_SPACE_AFTER_PUNCTUATION_REGEX);
   const missingSpaceAfterPunctuation = missingSpaceMatches ? missingSpaceMatches.length : 0;
 
-  // Advanced Typography Analyzer (2026-08-09) — a space immediately
-  // BEFORE a terminal punctuation mark ("لفظ ،" instead of "لفظ،"). Urdu/
-  // Arabic convention (like English) attaches terminal punctuation
-  // directly to the preceding word with no space, so a preceding space is
-  // a formatting defect, not a style choice.
-  const spaceBeforeMatches = text.match(SPACE_BEFORE_PUNCTUATION_REGEX);
+  const spaceBeforeMatches = masked.match(SPACE_BEFORE_PUNCTUATION_REGEX);
   const spaceBeforePunctuation = spaceBeforeMatches ? spaceBeforeMatches.length : 0;
 
   // Advanced Typography Analyzer (2026-08-09) — tatweel/kashida (ـ,
@@ -167,12 +139,13 @@ function checkUniversal(
 
 function checkScriptSensitive(
   text: string,
+  masked: string,
   mode: ResolvedLanguage
 ): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript" | "mixedUrduArabicForms" | "inconsistentPunctuationStyle"> {
   let mixedPunctuation = 0;
   let mixedScript = 0;
   if (mode === "ur") {
-    mixedPunctuation = countAsciiPunctuationInArabicContext(text);
+    mixedPunctuation = countAsciiPunctuationInArabicContext(masked);
     mixedScript = countLatinIntrusions(text);
   }
 
@@ -186,11 +159,11 @@ function checkScriptSensitive(
 
   let mixedUrduArabicForms = 0;
   if (mode === "ur") {
-    const arabicFormMatches = text.match(ARABIC_FORM_LETTERS_REGEX);
+    const arabicFormMatches = masked.match(ARABIC_FORM_LETTERS_REGEX);
     mixedUrduArabicForms = arabicFormMatches ? arabicFormMatches.length : 0;
   }
 
-  const inconsistentPunctuationStyle = hasInconsistentPunctuationStyle(arabicContextText(text));
+  const inconsistentPunctuationStyle = hasInconsistentPunctuationStyle(arabicContextText(masked));
 
   return { mixedPunctuation, repeatedWords, mixedScript, mixedUrduArabicForms, inconsistentPunctuationStyle };
 }
@@ -205,10 +178,9 @@ export function checkTextQuality(
     mode === "ur" || mode === "en" || mode === "ar" || mode === "rtl-neutral"
       ? mode
       : resolveProcessingLanguage(mode, input);
-  const universal = checkUniversal(input);
-
-  const textWithoutProtected = input.replace(PRESERVE_MARKER_REGEX, " ");
-  const scriptSensitive = checkScriptSensitive(textWithoutProtected, resolved);
+  const masked = maskProtectedTokens(input);
+  const universal = checkUniversal(input, masked);
+  const scriptSensitive = checkScriptSensitive(input, masked, resolved);
 
   const totalIssues =
     universal.multipleSpaces +

@@ -43,7 +43,7 @@ describe("buildDocumentAuditReport", () => {
   });
 
   test("detects mixed-script issues (Latin letters in Arabic-script text)", () => {
-    const report = buildDocumentAuditReport(docWithText("یہ ABC ٹیسٹ ہے"));
+    const report = buildDocumentAuditReport(docWithText("یہ Document ٹیسٹ ہے"));
     expect(report.counts.mixedScript).toBeGreaterThan(0);
     expect(report.recommendations.some((r) => r.type === "mixedScript")).toBe(true);
   });
