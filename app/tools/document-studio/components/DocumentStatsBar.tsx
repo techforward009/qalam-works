@@ -82,6 +82,9 @@ export const DocumentStatsBar: React.FC<DocumentStatsBarProps> = ({ stats, healt
             <div className="col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-2 text-center">
               <div className="font-medium text-slate-500">{isUr ? "ٹائپوگرافی مسائل" : "Typography issues"}</div>
               <div className="mt-0.5 font-bold text-slate-700">{health.typographyIssueCount}</div>
+              <div className="mt-0.5 text-[10px] text-slate-400">
+                {isUr ? "مخلوط رسم الخط، تطویل، دہرائے الفاظ" : "Mixed script, tatweel, repeated words"}
+              </div>
             </div>
           </div>
         </div>

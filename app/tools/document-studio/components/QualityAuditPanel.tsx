@@ -67,6 +67,9 @@ export const QualityAuditPanel: React.FC<QualityAuditPanelProps> = ({
         <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
           <div className="font-medium text-slate-500">{isUr ? "رموزِ اوقاف" : "Punctuation"}</div>
           <div className="mt-1 text-sm font-bold text-slate-700">{report.counts.punctuation}</div>
+          <div className="mt-0.5 text-[10px] leading-tight text-slate-400">
+            {isUr ? "وقوعات، بشمول انداز" : "Occurrences, including style"}
+          </div>
         </div>
         <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
           <div className="font-medium text-slate-500">{isUr ? "خالی جگہ" : "Spacing"}</div>

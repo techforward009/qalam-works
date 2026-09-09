@@ -1,4 +1,5 @@
 import { buildDocumentHealthReport } from "../app/tools/document-studio/utils/buildDocumentHealthReport";
+import { buildDocumentAuditReport } from "../app/tools/document-studio/utils/buildDocumentAuditReport";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
 function heading(level: number, text: string): DocNode {
@@ -38,10 +39,10 @@ describe("buildDocumentHealthReport — unicodeConsistency", () => {
   });
 });
 
-describe("buildDocumentHealthReport — typographyIssueCount reflects Advanced Typography checks", () => {
-  test("a space before punctuation is counted", () => {
+describe("buildDocumentHealthReport — typographyIssueCount matches suggestion typography occurrences", () => {
+  test("a space before punctuation is a spacing issue, not a typography occurrence", () => {
     const report = buildDocumentHealthReport(docWith([paragraph("یہ ٹھیک ہے ، بالکل۔")]));
-    expect(report.typographyIssueCount).toBeGreaterThan(0);
+    expect(report.typographyIssueCount).toBe(0);
   });
 
   test("tatweel characters are counted", () => {
@@ -49,8 +50,16 @@ describe("buildDocumentHealthReport — typographyIssueCount reflects Advanced T
     expect(report.typographyIssueCount).toBeGreaterThan(0);
   });
 
-  test("inconsistent punctuation style is counted", () => {
-    const report = buildDocumentHealthReport(docWith([paragraph("یہ، اور یہ بھی, اور یہ")]));
+  test("inconsistent punctuation style is counted as punctuation, not typography", () => {
+    const doc = docWith([paragraph("یہ، اور یہ بھی, اور یہ")]);
+    const health = buildDocumentHealthReport(doc);
+    const audit = buildDocumentAuditReport(doc);
+    expect(audit.counts.punctuation).toBeGreaterThan(0);
+    expect(health.typographyIssueCount).toBe(0);
+  });
+
+  test("repeated words count as typography occurrences", () => {
+    const report = buildDocumentHealthReport(docWith([paragraph("یہ یہ ایک غلطی ہے")]));
     expect(report.typographyIssueCount).toBeGreaterThan(0);
   });
 });

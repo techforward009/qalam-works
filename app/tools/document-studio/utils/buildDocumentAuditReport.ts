@@ -96,7 +96,11 @@ function toCounts(
 ): QualityIssueCounts {
   return {
     mixedScript: report.textQuality.mixedScript,
-    punctuation: report.punctuation.mixedPunctuation + report.punctuation.wrongQuotes + report.punctuation.duplicatedPunctuation,
+    punctuation:
+      report.punctuation.mixedPunctuation +
+      report.punctuation.wrongQuotes +
+      report.punctuation.duplicatedPunctuation +
+      (report.punctuation.inconsistentPunctuationStyle ? 1 : 0),
     spacing: report.typography.multipleSpaces + report.typography.emptyLines + report.typography.missingSpaceAfterPunctuation,
     longParagraphs,
     repeatedWords: report.textQuality.repeatedWords,
@@ -251,8 +255,7 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
     counts.headingHierarchy +
     counts.emptyParagraphs +
     counts.spaceBeforePunctuation +
-    counts.tatweelCount +
-    counts.inconsistentPunctuationStyle;
+    counts.tatweelCount;
 
   // NOTE (2026-08-07, per Sajjad): this 100/90/80.../50-floor formula is a
   // placeholder, not an approved business rule — it hasn't been reviewed or

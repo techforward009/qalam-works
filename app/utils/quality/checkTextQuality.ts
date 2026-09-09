@@ -9,8 +9,10 @@ import {
   SPACE_BEFORE_PUNCTUATION_REGEX,
   TATWEEL_REGEX,
   ARABIC_FORM_LETTERS_REGEX,
-  LATIN_LETTERS_REGEX,
-  ASCII_PUNCTUATION_REGEX,
+  arabicContextText,
+  countLatinRunsInArabicContext,
+  countAsciiPunctuationInArabicContext,
+  hasInconsistentPunctuationStyle,
 } from "./sharedTextPatterns";
 import type { ProcessingLanguage, ResolvedLanguage } from "../processing/types";
 import { resolveProcessingLanguage } from "../processing/detectLanguage";
@@ -69,7 +71,6 @@ function checkUniversal(
   | "missingSpaceAfterPunctuation"
   | "spaceBeforePunctuation"
   | "tatweelCount"
-  | "inconsistentPunctuationStyle"
 > {
   // Multiple spaces — space/tab runs only, NOT newlines (newlines are
   // "Empty Lines", a separate issue; counting both from the same runs
@@ -152,25 +153,6 @@ function checkUniversal(
   const tatweelMatches = text.match(TATWEEL_REGEX);
   const tatweelCount = tatweelMatches ? tatweelMatches.length : 0;
 
-  // Advanced Typography Analyzer (2026-08-09) — flags when a document
-  // uses BOTH the ASCII and the Urdu/Arabic form of the same punctuation
-  // mark somewhere in it (e.g. both "," and "،" present) — a genuine
-  // style-consistency signal distinct from mixedPunctuation below (which
-  // just counts ASCII occurrences regardless of whether the Arabic form
-  // is ALSO present elsewhere). A document that consistently uses one
-  // convention throughout is not flagged, even if that convention is
-  // ASCII throughout.
-  const hasAsciiComma = /,/.test(text);
-  const hasArabicComma = /،/.test(text);
-  const hasAsciiSemicolon = /;/.test(text);
-  const hasArabicSemicolon = /؛/.test(text);
-  const hasAsciiQuestion = /\?/.test(text);
-  const hasArabicQuestion = /؟/.test(text);
-  const inconsistentPunctuationStyle =
-    (hasAsciiComma && hasArabicComma) ||
-    (hasAsciiSemicolon && hasArabicSemicolon) ||
-    (hasAsciiQuestion && hasArabicQuestion);
-
   return {
     multipleSpaces,
     emptyLines,
@@ -180,21 +162,18 @@ function checkUniversal(
     missingSpaceAfterPunctuation,
     spaceBeforePunctuation,
     tatweelCount,
-    inconsistentPunctuationStyle,
   };
 }
 
 function checkScriptSensitive(
   text: string,
   mode: ResolvedLanguage
-): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript" | "mixedUrduArabicForms"> {
-  const hasArabicScript = /[\u0600-\u06FF]/.test(text);
-
-  // ASCII punctuation mixed into Arabic-script text only (not pure English).
+): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript" | "mixedUrduArabicForms" | "inconsistentPunctuationStyle"> {
   let mixedPunctuation = 0;
-  if (mode === "ur" && hasArabicScript) {
-    const englishPunctuation = text.match(ASCII_PUNCTUATION_REGEX);
-    mixedPunctuation = englishPunctuation ? englishPunctuation.length : 0;
+  let mixedScript = 0;
+  if (mode === "ur") {
+    mixedPunctuation = countAsciiPunctuationInArabicContext(text);
+    mixedScript = countLatinRunsInArabicContext(text);
   }
 
   let repeatedWords = 0;
@@ -205,23 +184,15 @@ function checkScriptSensitive(
     }
   }
 
-  // mixedScript: only in explicit Urdu mode, and only when Arabic-script
-  // is also present. Pure English, Arabic mode, and rtl-neutral never
-  // treat Latin as a publication defect (intentional mixed content).
-  const latinMatches = text.match(LATIN_LETTERS_REGEX);
-  let mixedScript = 0;
-  if (mode === "ur" && hasArabicScript && latinMatches) {
-    mixedScript = latinMatches.length;
-  }
-
-  // Urdu/Arabic form mismatch only meaningful in Urdu mode.
   let mixedUrduArabicForms = 0;
   if (mode === "ur") {
     const arabicFormMatches = text.match(ARABIC_FORM_LETTERS_REGEX);
     mixedUrduArabicForms = arabicFormMatches ? arabicFormMatches.length : 0;
   }
 
-  return { mixedPunctuation, repeatedWords, mixedScript, mixedUrduArabicForms };
+  const inconsistentPunctuationStyle = hasInconsistentPunctuationStyle(arabicContextText(text));
+
+  return { mixedPunctuation, repeatedWords, mixedScript, mixedUrduArabicForms, inconsistentPunctuationStyle };
 }
 
 export function checkTextQuality(
@@ -248,7 +219,7 @@ export function checkTextQuality(
     universal.missingSpaceAfterPunctuation +
     universal.spaceBeforePunctuation +
     universal.tatweelCount +
-    (universal.inconsistentPunctuationStyle ? 1 : 0) +
+    (scriptSensitive.inconsistentPunctuationStyle ? 1 : 0) +
     scriptSensitive.mixedPunctuation +
     scriptSensitive.repeatedWords +
     scriptSensitive.mixedScript +
@@ -265,7 +236,7 @@ export function checkTextQuality(
     if (universal.missingSpaceAfterPunctuation) badges.push("✓ Missing Space After Punctuation");
     if (universal.spaceBeforePunctuation) badges.push("✓ Space Before Punctuation");
     if (universal.tatweelCount) badges.push("✓ Tatweel (Kashida) Characters Found");
-    if (universal.inconsistentPunctuationStyle) badges.push("✓ Inconsistent Punctuation Style");
+    if (scriptSensitive.inconsistentPunctuationStyle) badges.push("✓ Inconsistent Punctuation Style");
     if (universal.emptyLines) badges.push("✓ Layout Spacing Issues");
     if (scriptSensitive.repeatedWords) badges.push("✓ Repeated Words Found");
     if (scriptSensitive.mixedScript) badges.push("✓ Mixed Script Detected");
@@ -287,7 +258,7 @@ export function checkTextQuality(
       mixedPunctuation: scriptSensitive.mixedPunctuation,
       wrongQuotes: universal.wrongQuotes,
       duplicatedPunctuation: universal.duplicatedPunctuation,
-      inconsistentPunctuationStyle: universal.inconsistentPunctuationStyle,
+      inconsistentPunctuationStyle: scriptSensitive.inconsistentPunctuationStyle,
     },
     textQuality: {
       repeatedWords: scriptSensitive.repeatedWords,

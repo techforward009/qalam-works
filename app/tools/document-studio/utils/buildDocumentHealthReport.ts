@@ -46,11 +46,7 @@ export function buildDocumentHealthReport(doc: DocNode, context?: DocumentAnalys
   return {
     unicodeConsistency: audit.readiness.unicodeConsistency,
     typographyIssueCount:
-      audit.counts.spacing +
-      audit.counts.longParagraphs +
-      audit.counts.spaceBeforePunctuation +
-      audit.counts.tatweelCount +
-      audit.counts.inconsistentPunctuationStyle,
+      audit.counts.mixedScript + audit.counts.tatweelCount + audit.counts.repeatedWords,
     numeralConsistency: stats.numerals.isMixed ? "needs_review" : "ok",
     languageDistribution: {
       arabicScriptPercent: stats.language.arabicScriptPercent,

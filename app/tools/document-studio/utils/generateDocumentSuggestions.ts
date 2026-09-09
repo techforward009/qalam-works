@@ -45,6 +45,9 @@ import {
   URDU_INDIC_DIGIT_CHAR,
   freshRegex,
   stripProtectedMarkers,
+  arabicContextText,
+  isArabicScriptContext,
+  scriptContextForText,
 } from "../../../utils/quality/sharedTextPatterns";
 
 export type SuggestionCategory = "unicode" | "typography" | "numeral" | "punctuation" | "spacing" | "structure" | "terminology";
@@ -431,25 +434,29 @@ function findRepeatedWordSuggestions(text: string): DocumentSuggestion[] {
 // Yeh/Kaf/Heh "unicode" category suggestions are — it never belonged
 // under "unicode" semantically, even though it shared that category's
 // broad "script-related" theme.
-function findMixedScriptSuggestions(text: string): DocumentSuggestion[] {
+function findMixedScriptSuggestions(blocks: readonly string[]): DocumentSuggestion[] {
   const suggestions: DocumentSuggestion[] = [];
-  const stripped = stripProtectedMarkers(text);
-  const regex = freshRegex(LATIN_LETTERS_REGEX);
-  let match: RegExpExecArray | null;
   let count = 0;
-  while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(stripped)) !== null) {
-    const { before, match: exact, after } = extractWithContext(text, match.index, match[0].length);
-    suggestions.push({
-      type: "unicode-mixed-script-advisory",
-      category: "typography",
-      severity: "low",
-      originalText: exact,
-      suggestedText: exact, // advisory only — never proposes a change
-      explanation: "Check mixed script usage — لاطینی حروف اردو/عربی متن میں شامل ہیں۔ یہ جان بوجھ کر (حوالہ، مخفف) ہو سکتا ہے۔",
-      contextBefore: before,
-      contextAfter: after,
-    });
-    count++;
+  for (const block of blocks) {
+    if (count >= MAX_EXAMPLES_PER_TYPE) break;
+    const stripped = stripProtectedMarkers(block);
+    if (!isArabicScriptContext(scriptContextForText(stripped))) continue;
+    const regex = freshRegex(LATIN_LETTERS_REGEX);
+    let match: RegExpExecArray | null;
+    while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(stripped)) !== null) {
+      const { before, match: exact, after } = extractWithContext(block, match.index, match[0].length);
+      suggestions.push({
+        type: "unicode-mixed-script-advisory",
+        category: "typography",
+        severity: "low",
+        originalText: exact,
+        suggestedText: exact,
+        explanation: "Check mixed script usage — لاطینی حروف اردو/عربی متن میں شامل ہیں۔ یہ جان بوجھ کر (حوالہ، مخفف) ہو سکتا ہے۔",
+        contextBefore: before,
+        contextAfter: after,
+      });
+      count++;
+    }
   }
   return suggestions;
 }
@@ -674,13 +681,13 @@ export function generateDocumentSuggestions(
 
   return [
     ...findUnicodeSuggestions(text),
-    ...findMixedScriptSuggestions(text),
+    ...findMixedScriptSuggestions(blocks),
     ...findTypographySuggestions(text),
     ...findRepeatedWordSuggestions(text),
     ...findSpacingSuggestions(text),
     ...findMissingSpaceSuggestions(text),
     ...findNumeralSuggestions(text),
-    ...findPunctuationSuggestions(text),
+    ...findPunctuationSuggestions(arabicContextText(text)),
     ...findQuoteSuggestions(text),
     ...findDuplicatedPunctuationSuggestions(text),
     ...findTerminologySuggestions(text),

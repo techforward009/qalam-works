@@ -55,6 +55,75 @@ export const ARABIC_FORM_LETTERS_REGEX = /[\u064A\u0649\u0643\u0623\u0625]/g;
 // generateDocumentSuggestions.ts, for the mixed-script advisory.
 export const LATIN_LETTERS_REGEX = /[a-zA-Z]+/g;
 
+export const ARABIC_SCRIPT_CHAR = /[\u0600-\u06FF]/g;
+export const LATIN_CHAR = /[a-zA-Z]/g;
+
+/** Same 90% threshold Document Studio language stats use. */
+export const SCRIPT_DOMINANT_PERCENT = 90;
+
+export type ParagraphScriptContext = "arabic" | "latin" | "mixed" | "none";
+
+export function scriptContextForText(text: string): ParagraphScriptContext {
+  const arabic = (text.match(ARABIC_SCRIPT_CHAR) ?? []).length;
+  const latin = (text.match(LATIN_CHAR) ?? []).length;
+  const total = arabic + latin;
+  if (total === 0) return "none";
+  const latinPercent = (latin / total) * 100;
+  const arabicPercent = (arabic / total) * 100;
+  if (latinPercent >= SCRIPT_DOMINANT_PERCENT) return "latin";
+  if (arabicPercent >= SCRIPT_DOMINANT_PERCENT) return "arabic";
+  return "mixed";
+}
+
+export function isArabicScriptContext(context: ParagraphScriptContext): boolean {
+  return context === "arabic" || context === "mixed";
+}
+
+/** Paragraphs whose Latin letters may be treated as mixed-script. */
+export function splitParagraphs(text: string): string[] {
+  return text.split(/\n/);
+}
+
+export function arabicContextText(text: string): string {
+  return splitParagraphs(text)
+    .filter((paragraph) => isArabicScriptContext(scriptContextForText(paragraph)))
+    .join("\n");
+}
+
+export function hasInconsistentPunctuationStyle(text: string): boolean {
+  const hasAsciiComma = /,/.test(text);
+  const hasArabicComma = /،/.test(text);
+  const hasAsciiSemicolon = /;/.test(text);
+  const hasArabicSemicolon = /؛/.test(text);
+  const hasAsciiQuestion = /\?/.test(text);
+  const hasArabicQuestion = /؟/.test(text);
+  return (
+    (hasAsciiComma && hasArabicComma) ||
+    (hasAsciiSemicolon && hasArabicSemicolon) ||
+    (hasAsciiQuestion && hasArabicQuestion)
+  );
+}
+
+export function countLatinRunsInArabicContext(text: string): number {
+  let count = 0;
+  for (const paragraph of splitParagraphs(text)) {
+    if (!isArabicScriptContext(scriptContextForText(paragraph))) continue;
+    const matches = paragraph.match(freshRegex(LATIN_LETTERS_REGEX));
+    if (matches) count += matches.length;
+  }
+  return count;
+}
+
+export function countAsciiPunctuationInArabicContext(text: string): number {
+  let count = 0;
+  for (const paragraph of splitParagraphs(text)) {
+    if (!isArabicScriptContext(scriptContextForText(paragraph))) continue;
+    const matches = paragraph.match(freshRegex(ASCII_PUNCTUATION_REGEX));
+    if (matches) count += matches.length;
+  }
+  return count;
+}
+
 // ASCII comma/semicolon/question-mark mixed into Urdu/Arabic text.
 export const ASCII_PUNCTUATION_REGEX = /[;,?]/g;
 
