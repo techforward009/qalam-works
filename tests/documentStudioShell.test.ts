@@ -38,6 +38,7 @@ function mockHandlers(extra: Partial<DocumentMenuHandlers> = {}): DocumentMenuHa
   return {
     calls,
     newDocument: track("new"),
+    openLibrary: track("open"),
     upload: track("upload"),
     downloadTxt: track("txt"),
     downloadDocx: track("docx"),
@@ -151,6 +152,7 @@ describe("document menus", () => {
   it("wires File / Edit / View / Insert / Tools / Help to real handlers", () => {
     const h = mockHandlers();
     dispatchDocumentMenuAction("file.new", null, h);
+    dispatchDocumentMenuAction("file.open", null, h);
     dispatchDocumentMenuAction("file.upload", null, h);
     dispatchDocumentMenuAction("file.downloadTxt", null, h);
     dispatchDocumentMenuAction("file.downloadDocx", null, h);
@@ -170,6 +172,7 @@ describe("document menus", () => {
     dispatchDocumentMenuAction("help.rtl", null, h);
     expect(h.calls).toEqual([
       "new",
+      "open",
       "upload",
       "txt",
       "docx",

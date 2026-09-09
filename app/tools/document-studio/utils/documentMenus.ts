@@ -8,6 +8,7 @@ export type MenuId = "file" | "edit" | "view" | "insert" | "format" | "tools" | 
 
 export type MenuActionId =
   | "file.new"
+  | "file.open"
   | "file.upload"
   | "file.downloadTxt"
   | "file.downloadDocx"
@@ -109,6 +110,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     labelUr: "فائل",
     items: [
       { type: "action", id: "file.new", labelEn: "New document", labelUr: "نیا مسودہ" },
+      { type: "action", id: "file.open", labelEn: "Open document…", labelUr: "دستاویز کھولیں…" },
       { type: "action", id: "file.upload", labelEn: "Upload file", labelUr: "فائل اپلوڈ" },
       { type: "separator" },
       {

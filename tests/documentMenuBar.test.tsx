@@ -40,6 +40,14 @@ describe("DocumentMenuBar", () => {
     expect(document.querySelector('[data-menu-dropdown="file"]')).toBeNull();
   });
 
+  it("wires Open document in the File menu", () => {
+    const onAction = vi.fn();
+    render(<DocumentMenuBar isUr={false} onAction={onAction} />);
+    fireEvent.click(screen.getByRole("menuitem", { name: "File" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Open document…" }));
+    expect(onAction).toHaveBeenCalledWith("file.open");
+  });
+
   it("exposes menubar accessibility basics", () => {
     render(<DocumentMenuBar isUr={false} onAction={vi.fn()} />);
     const bar = screen.getByRole("menubar", { name: "Document menu" });

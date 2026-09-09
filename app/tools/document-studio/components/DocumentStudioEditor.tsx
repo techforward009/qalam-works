@@ -11,6 +11,7 @@ import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import {
   loadDocumentSettings,
   saveDocumentSettings,
+  defaultDocumentSettings,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
 import { resolvePageLayout } from "../utils/pageLayout";
@@ -70,8 +71,6 @@ import {
 } from "../utils/documentCommands";
 import {
   defaultDocumentTitle,
-  loadDocumentTitle,
-  saveDocumentTitle,
   sanitizeDocumentTitle,
 } from "../utils/documentTitle";
 import {
@@ -106,12 +105,22 @@ import DocumentLeftSidebar from "./DocumentLeftSidebar";
 import DocumentRightSidebar from "./DocumentRightSidebar";
 import DocumentHelpDialog from "./DocumentHelpDialog";
 import { FindReplacePanel } from "./FindReplacePanel";
+import DocumentLibraryDialog from "./DocumentLibraryDialog";
+import {
+  getDocumentLibrary,
+  migrateLegacyDraftIfNeeded,
+  loadActiveDocumentId,
+  saveActiveDocumentId,
+  emptyDocumentContent,
+  type DocumentLibrary,
+  type DocumentListItem,
+  type DocumentRecord,
+} from "../utils/documentLibrary";
 
 /** Compatibility re-exports — existing tests may still import from this file. */
 export { ParagraphWithDir, HeadingWithDir, BLOCK_STYLE_EDITOR_CSS };
 export { buildDocumentStudioExample, buildReplaceAllTransaction };
 
-const DRAFT_STORAGE_KEY = "qalam-document-studio-draft";
 const AUTOSAVE_DEBOUNCE_MS = 1000;
 const LARGE_DOCUMENT_CHAR_THRESHOLD = 5000;
 const ANALYSIS_DEBOUNCE_MS = 300;
@@ -124,17 +133,7 @@ function getInitialDraftContent(): DocNode | string {
       return handoffDoc as DocNode;
     }
   } catch {
-    // consumeHandoff failed — proceed to normal draft loading
-  }
-  try {
-    const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
-    if (!saved) return "<p></p>";
-    const parsed = JSON.parse(saved);
-    if (parsed && typeof parsed === "object" && parsed.type === "doc") {
-      return parsed as DocNode;
-    }
-  } catch (err) {
-    console.error("Failed to parse initial draft from localStorage:", err);
+    // consumeHandoff failed — proceed to library bootstrap
   }
   return "<p></p>";
 }
@@ -155,6 +154,14 @@ export default function DocumentStudioEditor() {
 
   useEffect(() => {
     saveDocumentSettings(documentSettings);
+    documentSettingsRef.current = documentSettings;
+    const library = libraryRef.current;
+    const id = activeDocumentIdRef.current;
+    if (!libraryReadyRef.current || !library || !id) return;
+    void library.updateDocument(id, { documentSettings }).catch((err) => {
+      console.error("Failed to save document settings:", err);
+      setSaveStatus("error");
+    });
   }, [documentSettings]);
 
 
@@ -193,7 +200,23 @@ export default function DocumentStudioEditor() {
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle" | "error">("idle");
   const [online, setOnline] = useState(true);
-  const [documentTitle, setDocumentTitle] = useState(() => loadDocumentTitle(isUr));
+  const [documentTitle, setDocumentTitle] = useState(() => defaultDocumentTitle(isUr));
+  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
+  const [libraryItems, setLibraryItems] = useState<DocumentListItem[]>([]);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const libraryRef = useRef<DocumentLibrary | null>(null);
+  const activeDocumentIdRef = useRef<string | null>(null);
+  const libraryReadyRef = useRef(false);
+  const documentTitleRef = useRef(documentTitle);
+  const documentSettingsRef = useRef(documentSettings);
+  const isUrRef = useRef(isUr);
+  useEffect(() => {
+    isUrRef.current = isUr;
+  }, [isUr]);
+  useEffect(() => {
+    documentTitleRef.current = documentTitle;
+  }, [documentTitle]);
+  const saveChainRef = useRef(Promise.resolve());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<{
@@ -343,14 +366,24 @@ export default function DocumentStudioEditor() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
       saveTimerRef.current = setTimeout(() => {
-        try {
-          const json = editor.getJSON();
-          localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(json));
-          setSaveStatus("saved");
-        } catch (err) {
-          console.error("Autosave error:", err);
-          setSaveStatus("error");
-        }
+        saveChainRef.current = saveChainRef.current.then(async () => {
+          const library = libraryRef.current;
+          const id = activeDocumentIdRef.current;
+          if (!library || !id || !libraryReadyRef.current) return;
+          try {
+            await library.updateDocument(id, {
+              content: editor.getJSON() as DocNode,
+              title: sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current),
+              documentSettings: documentSettingsRef.current,
+            });
+            const items = await library.listDocuments();
+            setLibraryItems(items);
+            setSaveStatus("saved");
+          } catch (err) {
+            console.error("Autosave error:", err);
+            setSaveStatus("error");
+          }
+        });
       }, AUTOSAVE_DEBOUNCE_MS);
     },
   });
@@ -439,40 +472,186 @@ export default function DocumentStudioEditor() {
   };
 
   const handleNewDocument = () => {
-    if (!editor) return;
-    if (window.confirm(isUr ? "کیا آپ نیا مسودہ شروع کرنا چاہتے ہیں؟ غیر محفوظ شدہ تبدیلیاں ختم ہو جائیں گی۔" : "Start a new document? Unsaved changes will be lost.")) {
-      editor.commands.setContent({ type: "doc", content: [{ type: "paragraph", attrs: { dir }, content: [] }] });
-      applyDocumentDirection(editor, dir);
-      try {
-        localStorage.removeItem(DRAFT_STORAGE_KEY);
-      } catch (e) {
-        console.error("Failed to clear localStorage", e);
-      }
-      setSaveStatus("idle");
-      setPreview(null);
-      setAlreadyClean(false);
-      setExampleJustLoaded(false);
-      setLastResolved(null);
-      setDocxImportNotice(false);
-      setAuditReport(null);
-      hasAuditReportRef.current = false;
-      setIsAuditStale(false);
-      const nextTitle = defaultDocumentTitle(isUr);
-      setDocumentTitle(nextTitle);
-      saveDocumentTitle(nextTitle);
-    }
+    void createAndOpenDocument();
   };
 
   const handleClearDraft = () => {
-    if (window.confirm("کیا آپ محفوظ شدہ ڈرافٹ کو حذف کرنا چاہتے ہیں؟ / Clear saved draft from browser storage?")) {
-      try {
-        localStorage.removeItem(DRAFT_STORAGE_KEY);
-        setSaveStatus("idle");
-      } catch (e) {
-        console.error("Failed to remove draft", e);
-      }
+    if (window.confirm(isUr ? "کیا آپ موجودہ دستاویز کو خالی کرنا چاہتے ہیں؟" : "Clear the current document text?")) {
+      if (!editor) return;
+      editor.commands.setContent(emptyDocumentContent(dir));
     }
   };
+
+  const refreshLibraryList = async (library: DocumentLibrary) => {
+    setLibraryItems(await library.listDocuments());
+  };
+
+  const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean }) => {
+    activeDocumentIdRef.current = record.id;
+    setActiveDocumentId(record.id);
+    saveActiveDocumentId(record.id);
+    setDocumentTitle(record.title);
+    documentTitleRef.current = record.title;
+    setDocumentSettings(record.documentSettings);
+    documentSettingsRef.current = record.documentSettings;
+    if (!options?.skipContent && editor) {
+      editor.commands.setContent(record.content);
+    }
+    setSaveStatus("saved");
+    setPreview(null);
+    setAlreadyClean(false);
+    setExampleJustLoaded(false);
+    setLastResolved(null);
+    setAuditReport(null);
+    hasAuditReportRef.current = false;
+    setIsAuditStale(false);
+  };
+
+  const persistActiveNow = async () => {
+    const library = libraryRef.current;
+    const id = activeDocumentIdRef.current;
+    if (!library || !id || !editor) return;
+    await library.updateDocument(id, {
+      content: editor.getJSON() as DocNode,
+      title: sanitizeDocumentTitle(documentTitleRef.current) || defaultDocumentTitle(isUrRef.current),
+      documentSettings: documentSettingsRef.current,
+    });
+  };
+
+  const createAndOpenDocument = async (input?: { title?: string; content?: DocNode; skipContent?: boolean }) => {
+    const library = libraryRef.current;
+    if (!library) return;
+    try {
+      if (activeDocumentIdRef.current && editor) {
+        await persistActiveNow();
+      }
+      const record = await library.createDocument({
+        title: input?.title ?? defaultDocumentTitle(isUrRef.current),
+        content: input?.content ?? emptyDocumentContent(dir),
+        documentSettings: defaultDocumentSettings(),
+      });
+      applyRecordToEditor(record, { skipContent: input?.skipContent });
+      await refreshLibraryList(library);
+    } catch (err) {
+      console.error("Failed to create document:", err);
+      setSaveStatus("error");
+    }
+  };
+
+  const openLibraryDocument = async (id: string) => {
+    const library = libraryRef.current;
+    if (!library || !editor) return;
+    try {
+      if (activeDocumentIdRef.current && activeDocumentIdRef.current !== id) {
+        await persistActiveNow();
+      }
+      const record = await library.getDocument(id);
+      if (!record) return;
+      applyRecordToEditor(record);
+      setLibraryOpen(false);
+      await refreshLibraryList(library);
+    } catch (err) {
+      console.error("Failed to open document:", err);
+      setSaveStatus("error");
+    }
+  };
+
+  const renameLibraryDocument = async (id: string) => {
+    const library = libraryRef.current;
+    if (!library) return;
+    const current = libraryItems.find((item) => item.id === id);
+    const next = window.prompt(isUr ? "نیا عنوان:" : "Rename document:", current?.title ?? "");
+    if (next == null) return;
+    const title = sanitizeDocumentTitle(next) || defaultDocumentTitle(isUr);
+    try {
+      await library.renameDocument(id, title);
+      if (id === activeDocumentIdRef.current) {
+        setDocumentTitle(title);
+        documentTitleRef.current = title;
+      }
+      await refreshLibraryList(library);
+    } catch (err) {
+      console.error("Failed to rename document:", err);
+      setSaveStatus("error");
+    }
+  };
+
+  const deleteLibraryDocument = async (id: string) => {
+    const library = libraryRef.current;
+    if (!library) return;
+    const current = libraryItems.find((item) => item.id === id);
+    const ok = window.confirm(
+      isUr
+        ? `کیا آپ “${current?.title ?? ""}” حذف کرنا چاہتے ہیں؟`
+        : `Delete “${current?.title ?? ""}”? This cannot be undone.`,
+    );
+    if (!ok) return;
+    try {
+      const deletingActive = id === activeDocumentIdRef.current;
+      await library.deleteDocument(id);
+      const remaining = await library.listDocuments();
+      setLibraryItems(remaining);
+      if (!deletingActive) return;
+      activeDocumentIdRef.current = null;
+      saveActiveDocumentId(null);
+      if (remaining[0]) {
+        const record = await library.getDocument(remaining[0].id);
+        if (record) applyRecordToEditor(record);
+      } else {
+        await createAndOpenDocument();
+      }
+    } catch (err) {
+      console.error("Failed to delete document:", err);
+      setSaveStatus("error");
+    }
+  };
+
+  useEffect(() => {
+    if (!editor) return;
+    let cancelled = false;
+    const bootstrap = async () => {
+      try {
+        const library = await getDocumentLibrary();
+        if (cancelled) return;
+        libraryRef.current = library;
+        const migrated = await migrateLegacyDraftIfNeeded(library, window.localStorage, {
+          defaultTitle: defaultDocumentTitle(isUrRef.current),
+          settings: documentSettingsRef.current,
+        });
+        if (cancelled) return;
+        const initialWasHandoff =
+          typeof initialContent === "object" && initialContent !== null && (initialContent as DocNode).type === "doc";
+        if (initialWasHandoff) {
+          await createAndOpenDocument({
+            content: initialContent as DocNode,
+            skipContent: true,
+          });
+        } else {
+          const activeId = loadActiveDocumentId();
+          const existing = (activeId && (await library.getDocument(activeId))) || migrated || null;
+          const list = await library.listDocuments();
+          const fallback = existing ?? (list[0] ? await library.getDocument(list[0].id) : null);
+          if (fallback) {
+            applyRecordToEditor(fallback);
+          } else {
+            await createAndOpenDocument();
+          }
+        }
+        if (cancelled) return;
+        await refreshLibraryList(library);
+        libraryReadyRef.current = true;
+      } catch (err) {
+        console.error("Document library bootstrap failed:", err);
+        libraryReadyRef.current = false;
+        setSaveStatus("error");
+      }
+    };
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]);
 
   /** Clear TipTap content + related UI state (parallel to Quality Checker Clear). */
   const handleClearText = () => {
@@ -1009,7 +1188,15 @@ export default function DocumentStudioEditor() {
   const commitDocumentTitle = () => {
     const next = sanitizeDocumentTitle(documentTitle) || defaultDocumentTitle(isUr);
     setDocumentTitle(next);
-    saveDocumentTitle(next);
+    documentTitleRef.current = next;
+    const library = libraryRef.current;
+    const id = activeDocumentIdRef.current;
+    if (library && id) {
+      void library.renameDocument(id, next).then(() => refreshLibraryList(library)).catch((err) => {
+        console.error("Failed to save title:", err);
+        setSaveStatus("error");
+      });
+    }
   };
 
   const setViewMode = (mode: DocumentViewMode) => {
@@ -1026,6 +1213,7 @@ export default function DocumentStudioEditor() {
   const handleMenuAction = (id: MenuActionId) => {
     dispatchDocumentMenuAction(id, editor, {
       newDocument: handleNewDocument,
+      openLibrary: () => setLibraryOpen(true),
       upload: () => fileInputRef.current?.click(),
       downloadTxt: handleDownload,
       downloadDocx: () => {
@@ -1138,6 +1326,28 @@ export default function DocumentStudioEditor() {
         id="document-studio-upload-input"
         disabled={isImporting}
       />
+
+      {libraryOpen ? (
+        <DocumentLibraryDialog
+          isUr={isUr}
+          documents={libraryItems}
+          activeId={activeDocumentId}
+          onOpen={(id) => {
+            void openLibraryDocument(id);
+          }}
+          onNew={() => {
+            setLibraryOpen(false);
+            void createAndOpenDocument();
+          }}
+          onRename={(id) => {
+            void renameLibraryDocument(id);
+          }}
+          onDelete={(id) => {
+            void deleteLibraryDocument(id);
+          }}
+          onClose={() => setLibraryOpen(false)}
+        />
+      ) : null}
 
       <DocumentStudioShell
         isUr={isUr}

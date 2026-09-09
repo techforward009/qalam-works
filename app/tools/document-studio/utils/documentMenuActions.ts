@@ -26,6 +26,7 @@ export type HelpDialogMode = "about" | "shortcuts" | "rtl" | "voice";
 
 export type DocumentMenuHandlers = {
   newDocument: () => void;
+  openLibrary: () => void;
   upload: () => void;
   downloadTxt: () => void;
   downloadDocx: () => void;
@@ -85,6 +86,9 @@ export function dispatchDocumentMenuAction(
   switch (id) {
     case "file.new":
       handlers.newDocument();
+      return;
+    case "file.open":
+      handlers.openLibrary();
       return;
     case "file.upload":
       handlers.upload();

@@ -41,8 +41,8 @@ export default function DocumentHelpDialog({
           <div className={`space-y-2 text-sm text-[#1A3A2A]/80 ${isUr ? "font-naskh" : ""}`}>
             <p>
               {isUr
-                ? "مکمل workspace: مسودہ → معیاری بنائیں → کوالٹی چیک → ایکسپورٹ۔ تدوین آپ کے براؤزر میں رہتی ہے۔"
-                : "Full workspace: Draft → Standardize → Quality Check → Export. Editing stays in your browser."}
+                ? "مکمل workspace: مسودہ → معیاری بنائیں → کوالٹی چیک → ایکسپورٹ۔ دستاویزات اسی براؤزر میں محفوظ رہتی ہیں۔"
+                : "Full workspace: Draft → Standardize → Quality Check → Export. Documents are stored in this browser."}
             </p>
             <p>
               {isUr
