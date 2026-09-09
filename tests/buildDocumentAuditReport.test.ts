@@ -1,4 +1,4 @@
-import { buildDocumentAuditReport } from "../app/tools/document-studio/utils/buildDocumentAuditReport";
+import { buildDocumentAuditReport, PUBLISHING_READINESS_LABELS } from "../app/tools/document-studio/utils/buildDocumentAuditReport";
 import { checkTextQuality } from "../app/utils/quality/checkTextQuality";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
@@ -258,5 +258,16 @@ describe("buildDocumentAuditReport — Publishing Readiness (categorical, not nu
       structure: "ok",
       rtlLtr: "ok",
     });
+  });
+
+  test("a spacing issue marks Typography & Spacing as needs_review", () => {
+    const report = buildDocumentAuditReport(docWithText("ہے،جس"));
+    expect(report.counts.spacing).toBeGreaterThan(0);
+    expect(report.readiness.typography).toBe("needs_review");
+  });
+
+  test("readiness labels name typography and spacing together", () => {
+    expect(PUBLISHING_READINESS_LABELS.typography.en).toBe("Typography & Spacing");
+    expect(PUBLISHING_READINESS_LABELS.typography.ur).toBe("حروف نگاری اور فاصلہ بندی");
   });
 });

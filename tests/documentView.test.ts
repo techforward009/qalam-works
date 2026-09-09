@@ -6,6 +6,7 @@ import {
   parseStoredViewMode,
   pagesSheetMetrics,
   visualPageCount,
+  visualPageCountWithGaps,
 } from "../app/tools/document-studio/utils/documentView";
 import {
   DOCUMENT_MENU_BAR,
@@ -44,6 +45,14 @@ describe("document view mode", () => {
     expect(visualPageCount(10, 100)).toBe(1);
     expect(visualPageCount(100, 100)).toBe(1);
     expect(visualPageCount(101, 100)).toBe(2);
+  });
+
+  it("does not invent a trailing empty page in Pages mode", () => {
+    expect(visualPageCountWithGaps(0, 100, 12)).toBe(1);
+    expect(visualPageCountWithGaps(40, 100, 12)).toBe(1);
+    expect(visualPageCountWithGaps(100, 100, 12)).toBe(1);
+    expect(visualPageCountWithGaps(101, 100, 12)).toBe(2);
+    expect(visualPageCountWithGaps(212, 100, 12)).toBe(2);
   });
 
   it("keeps Pageless as a max reading width, not a paper height", () => {

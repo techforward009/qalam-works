@@ -39,6 +39,8 @@ describe("DocumentCanvas view modes", () => {
     expect(document.querySelector("[data-studio-pages-stack]")).toBeTruthy();
     expect(document.querySelector("[data-studio-pageless]")).toBeNull();
     expect(document.querySelector("[data-studio-page-sheet]")).toBeTruthy();
+    expect(root?.getAttribute("data-page-count")).toBe("1");
+    expect(document.querySelectorAll("[data-studio-page-sheet]").length).toBe(1);
   });
 
   it("renders Pageless without fixed page sheets", () => {

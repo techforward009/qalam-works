@@ -49,6 +49,13 @@ export interface PublishingReadiness {
   rtlLtr: "ok" | "needs_review";
 }
 
+export const PUBLISHING_READINESS_LABELS = {
+  typography: { en: "Typography & Spacing", ur: "حروف نگاری اور فاصلہ بندی" },
+  unicodeConsistency: { en: "Unicode", ur: "یونیکوڈ یکسانیت" },
+  structure: { en: "Structure", ur: "ساخت" },
+  rtlLtr: { en: "RTL/LTR", ur: "RTL/LTR" },
+} as const;
+
 export interface QualityAuditReport {
   score: number;
   totalIssues: number;

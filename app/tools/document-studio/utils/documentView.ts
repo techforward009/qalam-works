@@ -44,15 +44,17 @@ export function visualPageCount(contentHeightPx: number, pageHeightPx: number): 
   return Math.max(1, Math.ceil(Math.max(0, contentHeightPx) / pageHeightPx));
 }
 
-/** Page count when 12px gaps are already included in the measured height. */
+/** Page count for measured editor content. Do not add a phantom extra page. */
 export function visualPageCountWithGaps(
   spacedHeightPx: number,
   pageHeightPx: number,
   gapPx: number,
 ): number {
   if (!(pageHeightPx > 0)) return 1;
+  const height = Math.max(0, spacedHeightPx);
+  if (height <= pageHeightPx) return 1;
   const stride = pageHeightPx + Math.max(0, gapPx);
-  return Math.max(1, Math.ceil((Math.max(0, spacedHeightPx) + Math.max(0, gapPx)) / stride));
+  return Math.max(2, Math.ceil((height + Math.max(0, gapPx)) / stride));
 }
 
 export function pagesSheetMetrics(layout: ResolvedPageLayout, availableWidthPx: number) {

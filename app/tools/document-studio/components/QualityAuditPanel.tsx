@@ -1,19 +1,11 @@
 import React from "react";
-import type { QualityAuditReport } from "../utils/buildDocumentAuditReport";
-
+import { PUBLISHING_READINESS_LABELS, type QualityAuditReport } from "../utils/buildDocumentAuditReport";
 interface QualityAuditPanelProps {
   report: QualityAuditReport | null;
   isLoading?: boolean;
   isStale?: boolean;
   isUr?: boolean;
 }
-
-const READINESS_LABELS = {
-  typography: { en: "Typography", ur: "ٹائپوگرافی" },
-  unicodeConsistency: { en: "Unicode", ur: "یونیکوڈ یکسانیت" },
-  structure: { en: "Structure", ur: "ساخت" },
-  rtlLtr: { en: "RTL/LTR", ur: "RTL/LTR" },
-} as const;
 
 export const QualityAuditPanel: React.FC<QualityAuditPanelProps> = ({
   report,
@@ -100,7 +92,7 @@ export const QualityAuditPanel: React.FC<QualityAuditPanelProps> = ({
       <div className="space-y-2 border-t border-slate-100 pt-3">
         <h4 className="text-xs font-semibold text-slate-600">{isUr ? "اشاعتی تیاری" : "Publishing readiness"}</h4>
         <div className="grid grid-cols-2 gap-2 text-center text-xs">
-          {(Object.keys(READINESS_LABELS) as Array<keyof typeof READINESS_LABELS>).map((key) => {
+          {(Object.keys(PUBLISHING_READINESS_LABELS) as Array<keyof typeof PUBLISHING_READINESS_LABELS>).map((key) => {
             const ok = report.readiness[key] === "ok";
             return (
               <div
@@ -109,7 +101,7 @@ export const QualityAuditPanel: React.FC<QualityAuditPanelProps> = ({
                   ok ? "border-emerald-200 bg-emerald-50/60 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-800"
                 }`}
               >
-                <div className="font-medium">{isUr ? READINESS_LABELS[key].ur : READINESS_LABELS[key].en}</div>
+                <div className="font-medium">{isUr ? PUBLISHING_READINESS_LABELS[key].ur : PUBLISHING_READINESS_LABELS[key].en}</div>
                 <div className="mt-1">{ok ? (isUr ? "✓ درست" : "✓ OK") : isUr ? "⚠️ نظرِ ثانی درکار" : "⚠️ Needs review"}</div>
               </div>
             );

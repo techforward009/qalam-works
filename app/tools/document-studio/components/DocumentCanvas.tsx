@@ -61,10 +61,11 @@ export default function DocumentCanvas({
     const ro = new ResizeObserver((entries) => {
       const target = entries[0]?.target as HTMLElement | undefined;
       const pm = target?.querySelector?.(".ProseMirror") as HTMLElement | null;
-      setContentHeight(pm?.scrollHeight || target?.scrollHeight || 0);
+      setContentHeight(pm?.scrollHeight ?? 0);
     });
     ro.observe(el);
-    setContentHeight(el.scrollHeight || el.clientHeight);
+    const pm = el.querySelector(".ProseMirror") as HTMLElement | null;
+    setContentHeight(pm?.scrollHeight ?? 0);
     return () => ro.disconnect();
   }, [isPages, pageLayout.widthMm, pageLayout.heightMm]);
 
@@ -94,7 +95,7 @@ export default function DocumentCanvas({
     "--qalam-first-line-indent": `${documentSettings.typography.firstLineIndentMm}mm`,
     "--qalam-paragraph-before": `${documentSettings.typography.paragraphBeforePt}pt`,
     "--qalam-paragraph-after": `${documentSettings.typography.paragraphAfterPt}pt`,
-    "--qalam-page-min-height": isPages ? `${sheet.heightPx}px` : "60vh",
+    "--qalam-page-min-height": isPages ? "0px" : "60vh",
   } as React.CSSProperties;
 
   const emptyState = isEditorEmpty && editor && (

@@ -111,7 +111,7 @@ describe("Quality/Suggestions chrome language", () => {
     cleanup();
     render(<QualityAuditPanel report={report} isUr={false} />);
     const audit = document.querySelector("[data-studio-audit]");
-    expect(screen.getByText("Typography")).toBeTruthy();
+    expect(screen.getByText("Typography & Spacing")).toBeTruthy();
     expect(screen.getByText("Publishing readiness")).toBeTruthy();
     expect(audit?.textContent).not.toMatch(ARABIC);
 
@@ -140,6 +140,9 @@ describe("Quality/Suggestions chrome language", () => {
     expect(screen.getAllByText("خرابی").length).toBeGreaterThan(0);
     expect(screen.queryByText("Suggestions")).toBeNull();
 
+    cleanup();
+    render(<QualityAuditPanel report={report} isUr={true} />);
+    expect(screen.getByText("حروف نگاری اور فاصلہ بندی")).toBeTruthy();
     cleanup();
     render(<QualityAuditPanel report={null} isUr={true} />);
     expect(screen.getByText(/کوالٹی آڈٹ/)).toBeTruthy();
