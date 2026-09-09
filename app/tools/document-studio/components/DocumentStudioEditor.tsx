@@ -1620,9 +1620,13 @@ export default function DocumentStudioEditor() {
                   {pdfSummary.fontFallbacks.length > 0 && (
                     <div className="text-amber-800 mt-1">
                       {pdfSummary.fontFallbacks.map((f) =>
-                        isUr
-                          ? `${f.requested} مقامی ایڈیٹر میں دستیاب ہے۔ PDF میں ${f.used} استعمال کیا گیا ہے۔`
-                          : `${f.requested} is available as a local editor preview. PDF export used ${f.used}.`
+                        /jameel/i.test(f.requested)
+                          ? (isUr
+                            ? "پی ڈی ایف میں جمیل نوری نستعلیق دستیاب نہ تھا، اس لیے نوٹو نستعلیق اردو استعمال ہوا۔"
+                            : "Jameel Noori Nastaleeq was unavailable in PDF export; Noto Nastaliq Urdu was used.")
+                          : (isUr
+                            ? `${f.requested} مقامی ایڈیٹر میں دستیاب ہے۔ PDF میں ${f.used} استعمال کیا گیا ہے۔`
+                            : `${f.requested} is available as a local editor preview. PDF export used ${f.used}.`)
                       ).join(" ")}
                     </div>
                   )}

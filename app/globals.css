@@ -171,9 +171,16 @@ body {
 
 
 /* Document Studio typography font stacks */
+@font-face {
+  font-family: "Jameel Noori Nastaleeq";
+  src: url("/api/studio-font/jameel") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 .qalam-editor-content [style*="Jameel Noori Nastaleeq"],
 .qalam-editor-content span[style*="Jameel Noori Nastaleeq"] {
-  font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
+  font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
 }
 .qalam-editor-content [style*="Noto Nastaliq Urdu"] {
   font-family: var(--font-nastaliq), "Noto Nastaliq Urdu", serif;

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Editor } from "@tiptap/react";
+import { useEditorState } from "@tiptap/react";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { listEditorFonts } from "../utils/fontRegistry";
 import { FONT_SIZE_OPTIONS_PT, LINE_HEIGHT_OPTIONS, resolveFontSizePt, validateLineHeight } from "../utils/documentSettings";
@@ -12,6 +13,7 @@ import {
   activeBlockStyleId,
   applyBlockStyle,
   applyFontFamily,
+  activeToolbarFontFamily,
   applyFontSize,
   applyLineHeight,
   redo,
@@ -86,23 +88,36 @@ export default function DocumentToolbar({
   zoom?: DocumentZoom;
   onZoomChange?: (zoom: DocumentZoom) => void;
 }) {
-  if (!editor) return null;
+  const ui = useEditorState({
+    editor,
+    selector: ({ editor: current }) => {
+      if (!current) return null;
+      const rawSize = current.getAttributes("textStyle").fontSize as string | undefined;
+      const pAttr = current.getAttributes("paragraph").lineHeight;
+      const hAttr = current.getAttributes("heading").lineHeight;
+      const validated =
+        (typeof pAttr === "number" ? validateLineHeight(pAttr) : null) ??
+        (typeof hAttr === "number" ? validateLineHeight(hAttr) : null);
+      return {
+        fontFamily: activeToolbarFontFamily(current),
+        fontSize: resolveFontSizePt(rawSize) ? String(resolveFontSizePt(rawSize)) : "",
+        lineHeight: validated !== null ? String(validated) : "default",
+        bold: current.isActive("bold"),
+        italic: current.isActive("italic"),
+        underline: current.isActive("underline"),
+        blockStyle: activeBlockStyleId(current),
+        alignLeft: current.isActive({ textAlign: "left" }),
+        alignCenter: current.isActive({ textAlign: "center" }),
+        alignRight: current.isActive({ textAlign: "right" }),
+        alignJustify: current.isActive({ textAlign: "justify" }),
+        bullet: current.isActive("bulletList"),
+        ordered: current.isActive("orderedList"),
+      };
+    },
+  });
+  if (!editor || !ui) return null;
 
-  const currentFont =
-    (editor.getAttributes("textStyle").fontFamily as string | undefined) || "";
-  const lineHeightValue = (() => {
-    const pAttr = editor.getAttributes("paragraph").lineHeight;
-    const hAttr = editor.getAttributes("heading").lineHeight;
-    const validated =
-      (typeof pAttr === "number" ? validateLineHeight(pAttr) : null) ??
-      (typeof hAttr === "number" ? validateLineHeight(hAttr) : null);
-    return validated !== null ? String(validated) : "default";
-  })();
-  const fontSizeValue = (() => {
-    const raw = editor.getAttributes("textStyle").fontSize as string | undefined;
-    const pt = resolveFontSizePt(raw);
-    return pt ? String(pt) : "";
-  })();
+  const currentFont = ui.fontFamily;
 
   return (
     <div
@@ -144,7 +159,7 @@ export default function DocumentToolbar({
       <ToolbarDivider />
       <select
         id="studio-block-style"
-        value={activeBlockStyleId(editor)}
+        value={ui.blockStyle}
         onChange={(e) => applyBlockStyle(editor, e.target.value as BlockStyleId)}
         className={`${selectCls} max-w-[7.25rem]`}
         title={isUr ? "انداز" : "Paragraph style"}
@@ -159,6 +174,7 @@ export default function DocumentToolbar({
       </select>
       <select
         id="studio-font-family"
+        data-studio-font-family="true"
         value={currentFont}
         onChange={(e) => applyFontFamily(editor, e.target.value)}
         className={`${selectCls} max-w-[9.5rem]`}
@@ -173,7 +189,7 @@ export default function DocumentToolbar({
       </select>
       <select
         id="studio-font-size"
-        value={fontSizeValue}
+        value={ui.fontSize}
         onChange={(e) => applyFontSize(editor, e.target.value)}
         className={`${selectCls} min-w-[4.25rem]`}
         title={isUr ? "سائز" : "Font size"}
@@ -187,33 +203,33 @@ export default function DocumentToolbar({
         ))}
       </select>
       <ToolbarDivider />
-      <ToolbarButton label="Bold" active={editor.isActive("bold")} onClick={() => toggleBold(editor)}>
+      <ToolbarButton label="Bold" active={ui.bold} onClick={() => toggleBold(editor)}>
         B
       </ToolbarButton>
-      <ToolbarButton label="Italic" active={editor.isActive("italic")} onClick={() => toggleItalic(editor)}>
+      <ToolbarButton label="Italic" active={ui.italic} onClick={() => toggleItalic(editor)}>
         I
       </ToolbarButton>
-      <ToolbarButton label="Underline" active={editor.isActive("underline")} onClick={() => toggleUnderline(editor)}>
+      <ToolbarButton label="Underline" active={ui.underline} onClick={() => toggleUnderline(editor)}>
         U
       </ToolbarButton>
       <ToolbarDivider />
-      <ToolbarButton label="Align Left" active={editor.isActive({ textAlign: "left" })} onClick={() => setAlign(editor, "left")}>
+      <ToolbarButton label="Align Left" active={ui.alignLeft} onClick={() => setAlign(editor, "left")}>
         ⇤
       </ToolbarButton>
-      <ToolbarButton label="Align Center" active={editor.isActive({ textAlign: "center" })} onClick={() => setAlign(editor, "center")}>
+      <ToolbarButton label="Align Center" active={ui.alignCenter} onClick={() => setAlign(editor, "center")}>
         ⇔
       </ToolbarButton>
-      <ToolbarButton label="Align Right" active={editor.isActive({ textAlign: "right" })} onClick={() => setAlign(editor, "right")}>
+      <ToolbarButton label="Align Right" active={ui.alignRight} onClick={() => setAlign(editor, "right")}>
         ⇥
       </ToolbarButton>
-      <ToolbarButton label="Justify" active={editor.isActive({ textAlign: "justify" })} onClick={() => setAlign(editor, "justify")}>
+      <ToolbarButton label="Justify" active={ui.alignJustify} onClick={() => setAlign(editor, "justify")}>
         ☰
       </ToolbarButton>
       <ToolbarDivider />
-      <ToolbarButton label="Bullet List" active={editor.isActive("bulletList")} onClick={() => toggleBulletList(editor)}>
+      <ToolbarButton label="Bullet List" active={ui.bullet} onClick={() => toggleBulletList(editor)}>
         •
       </ToolbarButton>
-      <ToolbarButton label="Numbered List" active={editor.isActive("orderedList")} onClick={() => toggleOrderedList(editor)}>
+      <ToolbarButton label="Numbered List" active={ui.ordered} onClick={() => toggleOrderedList(editor)}>
         1.
       </ToolbarButton>
       <ToolbarDivider />
@@ -225,7 +241,7 @@ export default function DocumentToolbar({
       </ToolbarButton>
       <select
         id="studio-line-height"
-        value={lineHeightValue}
+        value={ui.lineHeight}
         onChange={(e) => {
           const raw = e.target.value;
           applyLineHeight(editor, raw === "default" ? null : Number(raw));

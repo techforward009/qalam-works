@@ -4,10 +4,10 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
-import { createHash } from "crypto";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { PDFDocument } from "pdf-lib";
+import { loadPrivateJameelWoff2Base64 } from "../../lib/privateJameelFont";
 import {
   buildPdfHtml,
   requiredPdfEmbedFonts,
@@ -79,22 +79,10 @@ export function buildPdfFooterTemplate(settings: DocumentStudioSettings): string
 
 let cachedFaces: Map<string, PdfFontFace> | null = null;
 
-// ── Private-blob integrity constants ─────────────────────────────────────────
-
-/**
- * SHA-256 of the approved Jameel Noori Nastaleeq WOFF2 binary.
- * Computed at conversion time from the licensed TTF source.
- * Neither the font binary nor this hash constitutes a secret — it is an
- * integrity fingerprint only, verifying that whatever was fetched is the
- * exact approved file and has not been tampered with.
- */
-const JAMEEL_APPROVED_SHA256 =
-  "d12978f4398f1f788d65fa7ccb872cf0e1c43aef89166816243e94487d9cee27";
-
-/** Reasonable upper-bound for a downloaded private font (8 MB). */
-const PRIVATE_BLOB_MAX_BYTES = 8 * 1024 * 1024; // 8 MB
-
-// ── Approved path roots ───────────────────────────────────────────────────────
+async function loadPrivateBlob(filename: string): Promise<string | null> {
+  if (!filename.toLowerCase().includes("jameel")) return null;
+  return loadPrivateJameelWoff2Base64();
+}
 
 /**
  * Resolve a @fontsource (node_modules) or assets/fonts path to an absolute
@@ -122,10 +110,6 @@ function resolveLocalFontPath(relPath: string): string | null {
   return full;
 }
 
-function sha256hex(buf: Buffer): string {
-  return createHash("sha256").update(buf).digest("hex");
-}
-
 /**
  * Read a local or @fontsource font file as base64.
  * Returns null if the file is missing or the path is disallowed.
@@ -138,98 +122,6 @@ function readBase64Sync(relPath: string): string | null {
     return null;
   }
   return readFileSync(full).toString("base64");
-}
-
-/**
- * Load a `private-blob:<filename>` font source.
- *
- * Loading order:
- *   1. Local dev override — assets/fonts/<filename> if it exists on disk.
- *      Allows local testing without uploading to Blob.
- *   2. Production private Blob — fetched via JAMEEL_FONT_BLOB_URL +
- *      Authorization: Bearer <BLOB_READ_WRITE_TOKEN>.
- *
- * In both cases SHA-256 is verified against the approved fingerprint
- * before the bytes are returned.  Returns null on any failure so the
- * Noto Nastaliq fallback can take over gracefully.
- */
-async function loadPrivateBlob(filename: string): Promise<string | null> {
-  const cwd = process.cwd();
-
-  // ── A: Local dev override ─────────────────────────────────────────────────
-  const localPath = path.join(cwd, "assets", "fonts", path.basename(filename));
-  if (existsSync(localPath)) {
-    const buf = readFileSync(localPath);
-    const hash = sha256hex(buf);
-    if (hash !== JAMEEL_APPROVED_SHA256) {
-      console.warn("[pdf-font] Integrity mismatch (local):", filename);
-      return null;
-    }
-    return buf.toString("base64");
-  }
-
-  // ── B: Production private Blob ────────────────────────────────────────────
-  const blobUrl = process.env.JAMEEL_FONT_BLOB_URL;
-  const token   = process.env.BLOB_READ_WRITE_TOKEN;
-
-  if (!blobUrl || !token) {
-    // Silently degrade — Noto fallback will be used
-    return null;
-  }
-
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(blobUrl);
-  } catch {
-    console.warn("[pdf-font] JAMEEL_FONT_BLOB_URL is not a valid URL");
-    return null;
-  }
-
-  if (parsedUrl.protocol !== "https:") {
-    console.warn("[pdf-font] JAMEEL_FONT_BLOB_URL must use https");
-    return null;
-  }
-
-  if (!parsedUrl.hostname.endsWith(".private.blob.vercel-storage.com")) {
-    console.warn("[pdf-font] JAMEEL_FONT_BLOB_URL hostname not allowed");
-    return null;
-  }
-
-  let arrayBuf: ArrayBuffer;
-  try {
-    const res = await fetch(blobUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      console.warn("[pdf-font] Blob fetch failed:", res.status);
-      return null;
-    }
-    // Size guard before buffering
-    const contentLen = res.headers.get("content-length");
-    if (contentLen && parseInt(contentLen, 10) > PRIVATE_BLOB_MAX_BYTES) {
-      console.warn("[pdf-font] Blob response too large, rejecting");
-      return null;
-    }
-    arrayBuf = await res.arrayBuffer();
-  } catch {
-    console.warn("[pdf-font] Blob fetch error");
-    return null;
-  }
-
-  const buf = Buffer.from(arrayBuf);
-  if (buf.byteLength > PRIVATE_BLOB_MAX_BYTES) {
-    console.warn("[pdf-font] Downloaded font exceeds size cap, rejecting");
-    return null;
-  }
-
-  const hash = sha256hex(buf);
-  if (hash !== JAMEEL_APPROVED_SHA256) {
-    console.warn("[pdf-font] Integrity mismatch (blob):", filename);
-    return null;
-  }
-
-  return buf.toString("base64");
 }
 
 /**

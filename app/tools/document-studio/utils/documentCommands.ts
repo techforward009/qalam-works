@@ -11,6 +11,7 @@ import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyle
 import { findAllTextMatches } from "./findReplace";
 import { extractPlainText, type DocNode } from "./extractPlainText";
 import { detectBlockDirection } from "./plainTextToDocNode";
+import { normalizeEditorFontFamily } from "./fontRegistry";
 
 export function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr"): void {
   const { state } = editor;
@@ -67,6 +68,10 @@ export function applyFontFamily(editor: Editor, family: string): void {
   } else {
     editor.chain().focus().setFontFamily(family).run();
   }
+}
+
+export function activeToolbarFontFamily(editor: Editor): string {
+  return normalizeEditorFontFamily(editor.getAttributes("textStyle").fontFamily);
 }
 
 export function applyFontSize(editor: Editor, pt: string): void {
