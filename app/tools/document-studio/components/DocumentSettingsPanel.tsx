@@ -7,7 +7,7 @@ import {
   LINE_HEIGHT_OPTIONS,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
-import { applyPhysicalPageMargin, clampMarginMm, type ResolvedPageLayout } from "../utils/pageLayout";
+import { commitPhysicalMarginDrag, clampMarginMm, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { PresetId } from "../utils/publishingPresets";
 import type { DocumentViewMode, RulerUnit } from "../utils/documentView";
 import { displayUnitToMm, formatMarginDisplay } from "../utils/rulerLayout";
@@ -48,7 +48,7 @@ export default function DocumentSettingsPanel({
             ...s,
             page: {
               ...s.page,
-              margins: { preset: "custom", ...applyPhysicalPageMargin(s.page.margins, dir, edge, mm) },
+              margins: commitPhysicalMarginDrag(s.page.margins, dir, edge, mm),
             },
           }));
           onPageChange();

@@ -52,6 +52,10 @@ describe("DocumentCanvas view modes", () => {
     expect(root?.getAttribute("data-print-page-width-mm")).toBe(String(layout.widthMm));
     expect(document.querySelector("[data-print-sheet-last='true']")).toBeTruthy();
     expect(root?.getAttribute("data-studio-zoom")).toBe("100");
+    expect(root?.querySelector("[data-ruler-gutter]")?.getAttribute("data-ruler-gutter")).toBe("8");
+    expect(document.querySelector("[data-ruler-page-gap='horizontal']")).toBeTruthy();
+    expect(document.querySelector("[data-ruler-page-gap='vertical']")).toBeTruthy();
+    expect(root?.getAttribute("data-print-dir")).toBe("ltr");
   });
 
   it("renders Pageless without fixed page sheets", () => {

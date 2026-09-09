@@ -14,6 +14,7 @@ export const VIEW_MODE_STORAGE_KEY = "qalam-document-studio-view-mode-v1";
 /** Comfortable pageless reading width (~65–75ch), not a paper size. */
 export const PAGELESS_MAX_WIDTH_PX = 720;
 export const PAGE_STACK_GAP_PX = 12;
+export const RULER_PAGE_GUTTER_PX = 8;
 /** Browser-native spellcheck only. Not a Qalam grammar engine. */
 export const EDITOR_SPELLCHECK_ATTR = "true";
 
@@ -156,13 +157,65 @@ export function zoomFromMenuAction(id: string): DocumentZoom | null {
 
 export function printDocumentStudio(): void {
   if (typeof window === "undefined") return;
-  window.print();
+  const portal = mountDocumentPrintPortal();
+  if (!portal) {
+    window.print();
+    return;
+  }
+  const cleanup = () => unmountDocumentPrintPortal();
+  window.addEventListener("afterprint", cleanup, { once: true });
+  window.setTimeout(() => window.print(), 0);
 }
 
-/** Print CSS uses physical page mm, never screen zoom. */
+export function unmountDocumentPrintPortal(): void {
+  if (typeof document === "undefined") return;
+  document.querySelectorAll("[data-studio-print-portal]").forEach((node) => node.remove());
+}
+
+export function mountDocumentPrintPortal(): HTMLElement | null {
+  if (typeof document === "undefined") return null;
+  unmountDocumentPrintPortal();
+  const root = document.querySelector("[data-studio-print-root]");
+  const surface = document.querySelector("[data-studio-print-surface]");
+  if (!root || !surface) return null;
+  const widthMm = Number(root.getAttribute("data-print-page-width-mm") || 210);
+  const heightMm = Number(root.getAttribute("data-print-page-height-mm") || 297);
+  const topMm = Number(root.getAttribute("data-print-margin-top-mm") || 0);
+  const bottomMm = Number(root.getAttribute("data-print-margin-bottom-mm") || 0);
+  const leftMm = Number(root.getAttribute("data-print-margin-left-mm") || 0);
+  const rightMm = Number(root.getAttribute("data-print-margin-right-mm") || 0);
+  const dir = root.getAttribute("data-print-dir") === "rtl" ? "rtl" : "ltr";
+  const source = surface.querySelector(".qalam-editor-content") ?? surface;
+  const portal = document.createElement("div");
+  portal.setAttribute("data-studio-print-portal", "true");
+  portal.setAttribute("data-print-page-width-mm", String(widthMm));
+  portal.setAttribute("data-print-page-height-mm", String(heightMm));
+  portal.setAttribute("data-print-ignores-zoom", "true");
+  const page = document.createElement("div");
+  page.setAttribute("data-studio-print-page", "true");
+  page.setAttribute("dir", dir);
+  page.className = source.className;
+  page.innerHTML = source.innerHTML;
+  page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:${topMm}mm ${rightMm}mm ${bottomMm}mm ${leftMm}mm;background:#fff;min-height:0;`;
+  const style = document.createElement("style");
+  style.textContent = documentPrintCss(widthMm, heightMm);
+  portal.append(style, page);
+  document.body.appendChild(portal);
+  return portal;
+}
+
+/** Print CSS uses physical page mm and hides the whole app except the body-level portal. */
 export function documentPrintCss(widthMm: number, heightMm: number): string {
   return `
 @page { size: ${widthMm}mm ${heightMm}mm; margin: 0; }
+@media screen {
+  [data-studio-print-portal] {
+    position: absolute !important;
+    left: -99999px !important;
+    top: 0 !important;
+    width: ${widthMm}mm !important;
+  }
+}
 @media print {
   html, body {
     margin: 0 !important;
@@ -172,52 +225,31 @@ export function documentPrintCss(widthMm: number, heightMm: number): string {
     height: auto !important;
     min-height: 0 !important;
   }
-  [data-studio-print-root] {
+  body > *:not([data-studio-print-portal]) { display: none !important; }
+  header, footer, nav, [data-studio-chrome], [data-studio-ruler], [data-studio-ruler-frame], [data-studio-vertical-ruler] {
+    display: none !important;
+  }
+  [data-studio-print-portal] {
+    display: block !important;
     position: static !important;
+    left: auto !important;
     inset: auto !important;
-    background: #fff !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
     width: ${widthMm}mm !important;
     max-width: ${widthMm}mm !important;
-    height: auto !important;
-    min-height: 0 !important;
-  }
-  [data-studio-ruler-frame],
-  [data-studio-ruler],
-  [data-studio-vertical-ruler] { display: none !important; }
-  [data-studio-pages-stack],
-  [data-studio-zoom-surface],
-  [data-studio-print-surface] {
+    background: #fff !important;
     transform: none !important;
     scale: none !important;
+  }
+  [data-studio-print-page] {
     width: ${widthMm}mm !important;
     max-width: ${widthMm}mm !important;
-    height: auto !important;
-    min-height: 0 !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-  }
-  [data-studio-page-sheet] {
+    box-sizing: border-box !important;
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
-    background: #fff !important;
-    width: ${widthMm}mm !important;
-    height: ${heightMm}mm !important;
-    break-after: page;
-    break-inside: avoid;
-  }
-  [data-studio-page-sheet]:last-of-type { break-after: auto !important; }
-  .qalam-page-gap { display: none !important; height: 0 !important; margin: 0 !important; }
-  .qalam-editor-content .ProseMirror,
-  .qalam-editor-content.qalam-doc-page .ProseMirror,
-  .qalam-editor-content.qalam-view-pageless .ProseMirror {
+    break-after: auto !important;
     min-height: 0 !important;
-    padding: 0 !important;
+    transform: none !important;
   }
 }
 `.trim();

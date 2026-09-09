@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { listEditorFonts } from "../utils/fontRegistry";
 import { FONT_SIZE_OPTIONS_PT, LINE_HEIGHT_OPTIONS, resolveFontSizePt, validateLineHeight } from "../utils/documentSettings";
 import { BLOCK_STYLES, BLOCK_STYLE_IDS, type BlockStyleId } from "../utils/documentStyles";
-import { trackEvent } from "../../../lib/analytics";
 import { DictationControl } from "./DictationControl";
 import type { DocumentZoom } from "../utils/documentView";
 import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
@@ -18,11 +16,8 @@ import {
   applyLineHeight,
   redo,
   setAlign,
-  setLinkHref,
-  toggleBlockquote,
   toggleBold,
   toggleBulletList,
-  toggleHeading,
   toggleItalic,
   toggleOrderedList,
   toggleUnderline,
@@ -72,12 +67,12 @@ const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
 const selectCls =
   "h-8 rounded-md border border-gray-200 bg-white px-1.5 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25";
 
+export const DOCUMENT_TOOLBAR_LEADING = ["undo", "redo", "zoom", "style"] as const;
+
 export default function DocumentToolbar({
   editor,
   dir,
   setDir,
-  processingLanguage,
-  setProcessingLanguage,
   isUr,
   zoom = 100,
   onZoomChange,
@@ -85,13 +80,12 @@ export default function DocumentToolbar({
   editor: Editor | null;
   dir: "rtl" | "ltr";
   setDir: (d: "rtl" | "ltr") => void;
-  processingLanguage: ProcessingLanguage;
-  setProcessingLanguage: (lang: ProcessingLanguage) => void;
+  processingLanguage?: ProcessingLanguage;
+  setProcessingLanguage?: (lang: ProcessingLanguage) => void;
   isUr: boolean;
   zoom?: DocumentZoom;
   onZoomChange?: (zoom: DocumentZoom) => void;
 }) {
-  const [moreOpen, setMoreOpen] = useState(false);
   if (!editor) return null;
 
   const currentFont =
@@ -115,6 +109,7 @@ export default function DocumentToolbar({
       className="flex flex-wrap items-center gap-1 px-2 py-1.5"
       dir="ltr"
       data-studio-toolbar="true"
+      data-studio-toolbar-leading={DOCUMENT_TOOLBAR_LEADING.join(",")}
     >
       <ToolbarButton label={isUr ? "کالعدم" : "Undo"} onClick={() => undo(editor)}>
         ↶
@@ -122,6 +117,30 @@ export default function DocumentToolbar({
       <ToolbarButton label={isUr ? "دہرائیں" : "Redo"} onClick={() => redo(editor)}>
         ↷
       </ToolbarButton>
+      {onZoomChange && (
+        <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
+          <span className="sr-only">{isUr ? "زوم" : "Zoom"}</span>
+          <select
+            className={selectCls}
+            aria-label={isUr ? "زوم" : "Zoom"}
+            data-studio-zoom-control="true"
+            value={String(zoom)}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "fit-width" || raw === "fit-page") onZoomChange(raw);
+              else onZoomChange(Number(raw) as DocumentZoom);
+            }}
+          >
+            {DOCUMENT_ZOOM_PRESETS.map((value) => (
+              <option key={value} value={value}>
+                {value}%
+              </option>
+            ))}
+            <option value="fit-width">{isUr ? "چوڑائی" : "Fit width"}</option>
+            <option value="fit-page">{isUr ? "صفحہ" : "Fit page"}</option>
+          </select>
+        </label>
+      )}
       <ToolbarDivider />
       <select
         id="studio-block-style"
@@ -130,6 +149,7 @@ export default function DocumentToolbar({
         className={`${selectCls} max-w-[7.25rem]`}
         title={isUr ? "انداز" : "Paragraph style"}
         aria-label={isUr ? "انداز" : "Style"}
+        data-studio-style-control="true"
       >
         {BLOCK_STYLE_IDS.map((id) => (
           <option key={id} value={id}>
@@ -221,83 +241,9 @@ export default function DocumentToolbar({
           </option>
         ))}
       </select>
-      <div className="shrink-0">
+      <div className="shrink-0" data-studio-dictation="true">
         <DictationControl editor={editor} docDir={dir} isUr={isUr} />
       </div>
-      <div className="relative shrink-0">
-        <ToolbarButton label={isUr ? "مزید" : "More"} active={moreOpen} onClick={() => setMoreOpen((v) => !v)}>
-          ⋯
-        </ToolbarButton>
-        {moreOpen && (
-          <div className="absolute top-full right-0 z-20 mt-1 flex min-w-[12rem] flex-col gap-1 rounded-md border border-gray-200 bg-white p-2 shadow-md">
-            <select
-              id="studio-proc-lang"
-              value={processingLanguage}
-              onChange={(e) => {
-                setProcessingLanguage(e.target.value as ProcessingLanguage);
-                trackEvent("tool_mode_change", { tool: "document_studio", mode: e.target.value as ProcessingLanguage });
-              }}
-              className={selectCls}
-              title={isUr ? "متن کی زبان" : "Text language"}
-              aria-label={isUr ? "متن کی زبان" : "Language"}
-            >
-              <option value="auto">{isUr ? "آٹو" : "Auto"}</option>
-              <option value="ur">{isUr ? "اردو" : "Urdu"}</option>
-              <option value="en">{isUr ? "انگریزی" : "English"}</option>
-              <option value="ar">{isUr ? "عربی" : "Arabic"}</option>
-            </select>
-            <div className="flex flex-wrap gap-1">
-              <ToolbarButton label="Heading 1" active={editor.isActive("heading", { level: 1 })} onClick={() => toggleHeading(editor, 1)}>
-                H1
-              </ToolbarButton>
-              <ToolbarButton label="Heading 2" active={editor.isActive("heading", { level: 2 })} onClick={() => toggleHeading(editor, 2)}>
-                H2
-              </ToolbarButton>
-              <ToolbarButton label="Blockquote" active={editor.isActive("blockquote")} onClick={() => toggleBlockquote(editor)}>
-                “
-              </ToolbarButton>
-              <ToolbarButton
-                label="Link"
-                active={editor.isActive("link")}
-                onClick={() => {
-                  const url = window.prompt("URL:");
-                  setLinkHref(editor, url);
-                  setMoreOpen(false);
-                }}
-              >
-                Link
-              </ToolbarButton>
-            </div>
-          </div>
-        )}
-      </div>
-      {onZoomChange && (
-        <>
-          <ToolbarDivider />
-          <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
-            <span className="sr-only">{isUr ? "زوم" : "Zoom"}</span>
-            <select
-              className={selectCls}
-              aria-label={isUr ? "زوم" : "Zoom"}
-              data-studio-zoom-control="true"
-              value={String(zoom)}
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (raw === "fit-width" || raw === "fit-page") onZoomChange(raw);
-                else onZoomChange(Number(raw) as DocumentZoom);
-              }}
-            >
-              {DOCUMENT_ZOOM_PRESETS.map((value) => (
-                <option key={value} value={value}>
-                  {value}%
-                </option>
-              ))}
-              <option value="fit-width">{isUr ? "چوڑائی" : "Fit width"}</option>
-              <option value="fit-page">{isUr ? "صفحہ" : "Fit page"}</option>
-            </select>
-          </label>
-        </>
-      )}
     </div>
   );
 }

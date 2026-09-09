@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
 import { getFontById } from "../utils/fontRegistry";
-import { resolveResponsivePagePadding, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
+import { resolvePhysicalMargins, resolveResponsivePagePadding, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { BLOCK_STYLE_EDITOR_CSS } from "../utils/documentSchema";
 import {
   PAGE_STACK_GAP_PX,
   PAGELESS_MAX_WIDTH_PX,
+  RULER_PAGE_GUTTER_PX,
   pagesSheetMetrics,
   resolveZoomFactor,
   visualPageCountWithGaps,
@@ -121,6 +122,7 @@ export default function DocumentCanvas({
     "--qalam-page-min-height": isPages ? "0px" : "60vh",
   } as React.CSSProperties;
 
+  const printMargins = resolvePhysicalMargins(pageLayout.margins, dir);
   const emptyState = isEditorEmpty && editor && (
     <div
       className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 py-10"
@@ -155,26 +157,38 @@ export default function DocumentCanvas({
       data-page-height-mm={pageLayout.heightMm}
       data-print-page-width-mm={pageLayout.widthMm}
       data-print-page-height-mm={pageLayout.heightMm}
+      data-print-margin-top-mm={printMargins.topMm}
+      data-print-margin-bottom-mm={printMargins.bottomMm}
+      data-print-margin-left-mm={printMargins.leftMm}
+      data-print-margin-right-mm={printMargins.rightMm}
+      data-print-dir={dir}
       data-print-ignores-zoom="true"
       data-page-count={isPages ? pageCount : undefined}
       data-studio-zoom={String(zoom)}
       data-studio-zoom-factor={String(zoomFactor)}
     >
-      <div className={`relative mx-auto ${showRuler ? "flex flex-col" : ""}`} style={{ width: "100%", maxWidth: `${visualWidth + (showRuler ? 24 : 0)}px` }}>
+      <div
+        className={`relative mx-auto ${showRuler ? "flex flex-col" : ""}`}
+        style={{ width: "100%", maxWidth: `${visualWidth + (showRuler ? 24 + RULER_PAGE_GUTTER_PX : 0)}px` }}
+        data-ruler-gutter={showRuler ? String(RULER_PAGE_GUTTER_PX) : undefined}
+      >
         {showRuler && (
           <div className="flex studio-no-print" data-studio-ruler-frame="true">
             <div className="h-6 w-6 shrink-0 border-b border-r border-slate-300 bg-[#dfe4dc]" data-ruler-corner="true" />
+            <div className="shrink-0 studio-no-print" style={{ width: RULER_PAGE_GUTTER_PX }} aria-hidden />
             <div className="min-w-0 flex-1">
               <WordRuler dir={dir} layout={pageLayout} axis="horizontal" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
             </div>
           </div>
         )}
+        {showRuler && <div className="studio-no-print" style={{ height: RULER_PAGE_GUTTER_PX }} data-ruler-page-gap="horizontal" aria-hidden />}
         <div className={showRuler ? "flex" : undefined}>
           {showRuler && (
             <div className="studio-no-print w-6 shrink-0" style={{ height: visualPageHeight }}>
               <WordRuler dir={dir} layout={pageLayout} axis="vertical" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
             </div>
           )}
+          {showRuler && <div className="studio-no-print shrink-0" style={{ width: RULER_PAGE_GUTTER_PX }} data-ruler-page-gap="vertical" aria-hidden />}
       <div
         className={`relative min-w-0 flex-1 ${isPages ? "" : "rounded-lg bg-white shadow-[0_4px_18px_rgba(26,58,42,0.06)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"}`}
         style={{ width: showRuler ? undefined : "100%", maxWidth: showRuler ? undefined : `${visualWidth}px`, height: visualHeight }}

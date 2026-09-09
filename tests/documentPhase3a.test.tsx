@@ -16,6 +16,7 @@ import {
 import { allMenuActionIds, DOCUMENT_MENU_BAR } from "../app/tools/document-studio/utils/documentMenus";
 import { dispatchDocumentMenuAction, type DocumentMenuHandlers } from "../app/tools/document-studio/utils/documentMenuActions";
 import DocumentStudioShell from "../app/tools/document-studio/components/DocumentStudioShell";
+import { DOCUMENT_TOOLBAR_LEADING } from "../app/tools/document-studio/components/DocumentToolbar";
 
 afterEach(() => {
   cleanup();
@@ -52,6 +53,7 @@ describe("Phase 3A editor parity", () => {
     const calls: string[] = [];
     const handlers = {
       print: () => calls.push("print"),
+      openPageSetup: () => calls.push("pageSetup"),
       setZoom: (zoom: string | number) => calls.push(`zoom:${zoom}`),
       toggleRuler: () => calls.push("ruler"),
       standardize: () => calls.push("standardize"),
@@ -61,6 +63,7 @@ describe("Phase 3A editor parity", () => {
       toggleGlossary: () => calls.push("glossary"),
     } as unknown as DocumentMenuHandlers;
     dispatchDocumentMenuAction("file.print", null, handlers);
+    dispatchDocumentMenuAction("file.pageSetup", null, handlers);
     dispatchDocumentMenuAction("view.zoom.75", null, handlers);
     dispatchDocumentMenuAction("view.ruler", null, handlers);
     dispatchDocumentMenuAction("tools.standardize", null, handlers);
@@ -68,7 +71,10 @@ describe("Phase 3A editor parity", () => {
     dispatchDocumentMenuAction("tools.stats", null, handlers);
     dispatchDocumentMenuAction("tools.dictation", null, handlers);
     dispatchDocumentMenuAction("tools.glossary", null, handlers);
-    expect(calls).toEqual(["print", "zoom:75", "ruler", "standardize", "audit", "stats", "dictation", "glossary"]);
+    expect(calls).toEqual(["print", "pageSetup", "zoom:75", "ruler", "standardize", "audit", "stats", "dictation", "glossary"]);
+    expect(allMenuActionIds()).toContain("insert.link");
+    expect(allMenuActionIds()).not.toContain("toolbar.more");
+    expect(DOCUMENT_TOOLBAR_LEADING).toEqual(["undo", "redo", "zoom", "style"]);
     const tools = DOCUMENT_MENU_BAR.find((menu) => menu.id === "tools");
     expect(tools?.items.filter((item) => item.type === "action").map((item) => item.id)).toEqual([
       "tools.standardize",
@@ -96,7 +102,7 @@ describe("Phase 3A editor parity", () => {
     expect(css).toContain("@media print");
     expect(css).toContain("studio-no-print");
     expect(document.querySelector("[data-studio-chrome='toolbar']")).toBeTruthy();
-    expect(documentPrintCss(210, 297)).toContain("[data-studio-print-root]");
+    expect(documentPrintCss(210, 297)).toContain("body > *:not([data-studio-print-portal])");
   });
 
   it("print CSS uses physical page geometry and cannot inherit screen zoom", () => {
@@ -105,12 +111,14 @@ describe("Phase 3A editor parity", () => {
     expect(css).toContain("transform: none");
     expect(css).toContain("scale: none");
     expect(css).toContain("break-after: auto");
-    expect(css).toContain("[data-studio-ruler]");
+    expect(css).toContain("body > *:not([data-studio-print-portal])");
     expect(css).toContain("box-shadow: none");
     expect(css).toContain("border-radius: 0");
     expect(css).toContain("min-height: 0");
-    expect(css).toContain(".qalam-page-gap");
+    expect(css).toContain("header");
+    expect(css).toContain("footer");
     expect(css).not.toContain("inset: 0");
+    expect(css).not.toContain("fit-width");
     const zoomed = documentPrintCss(210, 297);
     expect(zoomed).toBe(css);
   });

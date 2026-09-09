@@ -126,13 +126,30 @@ export function applyPhysicalPageMargin(
   edge: PhysicalMarginEdge,
   mm: number,
 ): PageMarginsMm {
+  const next: PageMarginsMm = {
+    topMm: margins.topMm,
+    bottomMm: margins.bottomMm,
+    startMm: margins.startMm,
+    endMm: margins.endMm,
+  };
   const value = clampMarginMm(mm);
-  if (edge === "top") return { ...margins, topMm: value };
-  if (edge === "bottom") return { ...margins, bottomMm: value };
-  if (edge === "left") {
-    return dir === "rtl" ? { ...margins, endMm: value } : { ...margins, startMm: value };
-  }
-  return dir === "rtl" ? { ...margins, startMm: value } : { ...margins, endMm: value };
+  if (edge === "top") next.topMm = value;
+  else if (edge === "bottom") next.bottomMm = value;
+  else if (edge === "left") {
+    if (dir === "rtl") next.endMm = value;
+    else next.startMm = value;
+  } else if (dir === "rtl") next.startMm = value;
+  else next.endMm = value;
+  return next;
+}
+
+export function commitPhysicalMarginDrag(
+  margins: PageMarginsMm & { preset?: MarginPresetId },
+  dir: "rtl" | "ltr",
+  edge: PhysicalMarginEdge,
+  mm: number,
+): PageMarginsMm & { preset: "custom" } {
+  return { ...applyPhysicalPageMargin(margins, dir, edge, mm), preset: "custom" };
 }
 
 export interface ResponsivePagePadding {

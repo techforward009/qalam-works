@@ -6,9 +6,9 @@ import { useState } from "react";
 import { WordRuler } from "../app/tools/document-studio/components/WordRuler";
 import DocumentCanvas from "../app/tools/document-studio/components/DocumentCanvas";
 import DocumentSettingsPanel from "../app/tools/document-studio/components/DocumentSettingsPanel";
-import { applyPhysicalPageMargin, clampMarginMm, MARGIN_MAX_MM, MARGIN_MIN_MM, resolvePageLayout } from "../app/tools/document-studio/utils/pageLayout";
+import { applyPhysicalPageMargin, clampMarginMm, commitPhysicalMarginDrag, MARGIN_MAX_MM, MARGIN_MIN_MM, resolvePageLayout } from "../app/tools/document-studio/utils/pageLayout";
 import { defaultDocumentSettings, type DocumentStudioSettings } from "../app/tools/document-studio/utils/documentSettings";
-import { documentPrintCss, DEFAULT_RULER_UNIT, parseStoredRulerUnit } from "../app/tools/document-studio/utils/documentView";
+import { documentPrintCss, DEFAULT_RULER_UNIT, parseStoredRulerUnit, mountDocumentPrintPortal, unmountDocumentPrintPortal, RULER_PAGE_GUTTER_PX } from "../app/tools/document-studio/utils/documentView";
 import { displayUnitToMm, formatMarginDisplay, marginMmFromPointer, pointerOffsetToMm } from "../app/tools/document-studio/utils/rulerLayout";
 
 afterEach(() => cleanup());
@@ -34,18 +34,24 @@ function mockRect(el: Element, box: { left: number; top: number; width: number; 
 }
 
 function Harness({ axis }: { axis: "horizontal" | "vertical" }) {
-  const [margins, setMargins] = useState(base);
+  const [margins, setMargins] = useState({ ...base, preset: "normal" as "normal" | "custom" });
   const layout = layoutFrom(margins);
   return (
     <div>
-      <span data-margin-start={margins.startMm} data-margin-end={margins.endMm} data-margin-top={margins.topMm} data-margin-bottom={margins.bottomMm} />
+      <span
+        data-margin-start={margins.startMm}
+        data-margin-end={margins.endMm}
+        data-margin-top={margins.topMm}
+        data-margin-bottom={margins.bottomMm}
+        data-margin-preset={margins.preset}
+      />
       <WordRuler
         dir="ltr"
         layout={layout}
         axis={axis}
         unit="cm"
         onPhysicalMarginChange={(edge, mm) => {
-          setMargins((current) => applyPhysicalPageMargin(current, "ltr", edge, mm));
+          setMargins((current) => commitPhysicalMarginDrag(current, "ltr", edge, mm));
         }}
       />
     </div>
@@ -53,6 +59,23 @@ function Harness({ axis }: { axis: "horizontal" | "vertical" }) {
 }
 
 describe("physical margin mapping and units", () => {
+  it("drag from Normal preset materializes Custom and changes the margin", () => {
+    const normal = defaultDocumentSettings().page.margins;
+    expect(normal.preset).toBe("normal");
+    const next = commitPhysicalMarginDrag(normal, "ltr", "left", 40);
+    expect(next.preset).toBe("custom");
+    expect(next.startMm).toBe(40);
+    expect(next.topMm).toBe(normal.topMm);
+    const layout = resolvePageLayout({
+      size: "a4",
+      orientation: "portrait",
+      marginPreset: next.preset,
+      customMargins: next,
+    });
+    expect(layout.margins.startMm).toBe(40);
+    expect(layout.contentWidthMm).toBeCloseTo(210 - 40 - next.endMm);
+  });
+
   it("clamps and converts zoom-independent pointer offsets to mm", () => {
     expect(applyPhysicalPageMargin(base, "ltr", "left", 0).startMm).toBe(MARGIN_MIN_MM);
     expect(applyPhysicalPageMargin(base, "ltr", "right", 999).endMm).toBe(MARGIN_MAX_MM);
@@ -81,6 +104,7 @@ describe("interactive WordRuler drag updates actual settings", () => {
     fireEvent.pointerMove(window, { clientX: 40, pointerId: 1 });
     fireEvent.pointerUp(window, { pointerId: 1 });
     expect(Number(container.querySelector("[data-margin-start]")?.getAttribute("data-margin-start"))).toBe(40);
+    expect(container.querySelector("[data-margin-preset]")?.getAttribute("data-margin-preset")).toBe("custom");
   });
 
   it("right handle changes endMm", () => {
@@ -181,5 +205,37 @@ describe("Pageless has no physical margin drag rulers", () => {
     );
     expect(document.querySelector("[data-ruler-handle]")).toBeNull();
     expect(document.querySelector("[data-studio-ruler]")).toBeNull();
+  });
+});
+
+describe("print portal isolation", () => {
+  it("mounts a body-level document-only print surface using physical mm", () => {
+    document.body.innerHTML = `
+      <header>site header</header>
+      <footer>site footer</footer>
+      <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-margin-top-mm="25.4" data-print-margin-bottom-mm="25.4" data-print-margin-left-mm="25.4" data-print-margin-right-mm="25.4" data-print-dir="rtl">
+        <div data-studio-print-surface><div class="qalam-editor-content" dir="rtl">یہ متن</div></div>
+      </div>
+    `;
+    const portal = mountDocumentPrintPortal();
+    expect(portal?.parentElement).toBe(document.body);
+    expect(portal?.getAttribute("data-print-page-width-mm")).toBe("210");
+    expect(portal?.getAttribute("data-print-ignores-zoom")).toBe("true");
+    expect(portal?.querySelector("[data-studio-print-page]")?.getAttribute("dir")).toBe("rtl");
+    expect(portal?.innerHTML).toContain("یہ متن");
+    expect(portal?.querySelector("style")?.textContent).toContain("body > *:not([data-studio-print-portal])");
+    expect(portal?.querySelector("style")?.textContent).toContain("break-after: auto");
+    unmountDocumentPrintPortal();
+    expect(document.querySelector("[data-studio-print-portal]")).toBeNull();
+  });
+});
+
+describe("ruler gutter", () => {
+  it("is presentation-only and does not change physical page millimetres", () => {
+    expect(RULER_PAGE_GUTTER_PX).toBeGreaterThanOrEqual(6);
+    expect(RULER_PAGE_GUTTER_PX).toBeLessThanOrEqual(8);
+    const layout = layoutFrom(base);
+    expect(layout.widthMm).toBe(210);
+    expect(layout.heightMm).toBe(297);
   });
 });

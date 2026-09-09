@@ -14,7 +14,7 @@ import {
   defaultDocumentSettings,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
-import { resolvePageLayout, applyPhysicalPageMargin, type PhysicalMarginEdge } from "../utils/pageLayout";
+import { resolvePageLayout, commitPhysicalMarginDrag, type PhysicalMarginEdge } from "../utils/pageLayout";
 import {
   applyPresetToSettings,
   loadSelectedPresetId,
@@ -1241,10 +1241,7 @@ export default function DocumentStudioEditor() {
       ...current,
       page: {
         ...current.page,
-        margins: {
-          preset: "custom",
-          ...applyPhysicalPageMargin(current.page.margins, dir, edge, mm),
-        },
+        margins: commitPhysicalMarginDrag(current.page.margins, dir, edge, mm),
       },
     }));
   };
