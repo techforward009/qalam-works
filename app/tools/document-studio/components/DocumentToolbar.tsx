@@ -8,6 +8,8 @@ import { FONT_SIZE_OPTIONS_PT, LINE_HEIGHT_OPTIONS, resolveFontSizePt, validateL
 import { BLOCK_STYLES, BLOCK_STYLE_IDS, type BlockStyleId } from "../utils/documentStyles";
 import { trackEvent } from "../../../lib/analytics";
 import { DictationControl } from "./DictationControl";
+import type { DocumentZoom } from "../utils/documentView";
+import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
 import {
   activeBlockStyleId,
   applyBlockStyle,
@@ -77,6 +79,8 @@ export default function DocumentToolbar({
   processingLanguage,
   setProcessingLanguage,
   isUr,
+  zoom = 100,
+  onZoomChange,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -84,6 +88,8 @@ export default function DocumentToolbar({
   processingLanguage: ProcessingLanguage;
   setProcessingLanguage: (lang: ProcessingLanguage) => void;
   isUr: boolean;
+  zoom?: DocumentZoom;
+  onZoomChange?: (zoom: DocumentZoom) => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   if (!editor) return null;
@@ -265,6 +271,33 @@ export default function DocumentToolbar({
           </div>
         )}
       </div>
+      {onZoomChange && (
+        <>
+          <ToolbarDivider />
+          <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
+            <span className="sr-only">{isUr ? "زوم" : "Zoom"}</span>
+            <select
+              className={selectCls}
+              aria-label={isUr ? "زوم" : "Zoom"}
+              data-studio-zoom-control="true"
+              value={String(zoom)}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === "fit-width" || raw === "fit-page") onZoomChange(raw);
+                else onZoomChange(Number(raw) as DocumentZoom);
+              }}
+            >
+              {DOCUMENT_ZOOM_PRESETS.map((value) => (
+                <option key={value} value={value}>
+                  {value}%
+                </option>
+              ))}
+              <option value="fit-width">{isUr ? "چوڑائی" : "Fit width"}</option>
+              <option value="fit-page">{isUr ? "صفحہ" : "Fit page"}</option>
+            </select>
+          </label>
+        </>
+      )}
     </div>
   );
 }

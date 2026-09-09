@@ -43,6 +43,7 @@ function mockHandlers(extra: Partial<DocumentMenuHandlers> = {}): DocumentMenuHa
     downloadTxt: track("txt"),
     downloadDocx: track("docx"),
     downloadPdf: track("pdf"),
+    print: track("print"),
     find: track("find"),
     toggleOutline: track("outline"),
     toggleQuality: track("quality"),
@@ -52,6 +53,10 @@ function mockHandlers(extra: Partial<DocumentMenuHandlers> = {}): DocumentMenuHa
     setViewMode: (mode) => {
       calls.push(`view:${mode}`);
     },
+    setZoom: (zoom) => {
+      calls.push(`zoom:${zoom}`);
+    },
+    toggleRuler: track("ruler"),
     loadExample: track("example"),
     promptLink: track("link"),
     setDir: (dir) => {
@@ -157,6 +162,7 @@ describe("document menus", () => {
     dispatchDocumentMenuAction("file.downloadTxt", null, h);
     dispatchDocumentMenuAction("file.downloadDocx", null, h);
     dispatchDocumentMenuAction("file.downloadPdf", null, h);
+    dispatchDocumentMenuAction("file.print", null, h);
     dispatchDocumentMenuAction("edit.find", null, h);
     dispatchDocumentMenuAction("view.outline", null, h);
     dispatchDocumentMenuAction("view.pages", null, h);
@@ -177,6 +183,7 @@ describe("document menus", () => {
       "txt",
       "docx",
       "pdf",
+      "print",
       "find",
       "outline",
       "view:pages",
@@ -241,14 +248,15 @@ describe("document menus", () => {
 
   it("wires only real actions and omits future cloud/table/image/print items", () => {
     const ids = allMenuActionIds();
-    expect(ids).toContain("file.downloadPdf");
+    expect(ids).toContain("file.print");
+    expect(ids).toContain("view.ruler");
+    expect(ids).toContain("view.zoom.100");
     expect(ids).toContain("tools.standardize");
     expect(ids).toContain("edit.find");
     expect(ids).toContain("insert.link");
     expect(ids).toContain("format.style.title");
     expect(ids).toContain("tools.stats");
     expect(ids).not.toContain("share" as never);
-    expect(ids).not.toContain("file.print" as never);
     const blob = menuCatalogText();
     for (const future of OMITTED_FUTURE_ACTIONS) {
       expect(blob.includes(future)).toBe(false);

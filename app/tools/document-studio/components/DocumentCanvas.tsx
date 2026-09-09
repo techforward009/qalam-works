@@ -11,10 +11,13 @@ import {
   PAGE_STACK_GAP_PX,
   PAGELESS_MAX_WIDTH_PX,
   pagesSheetMetrics,
+  resolveZoomFactor,
   visualPageCountWithGaps,
   type DocumentViewMode,
+  type DocumentZoom,
 } from "../utils/documentView";
 import { applyPageGapGeometry } from "../utils/pageGapDecorations";
+import { WordRuler } from "./WordRuler";
 
 export default function DocumentCanvas({
   editor,
@@ -24,6 +27,8 @@ export default function DocumentCanvas({
   documentSettings,
   pageLayout,
   viewMode,
+  zoom = 100,
+  rulerVisible = true,
   onLoadExample,
   onWrapperClick,
 }: {
@@ -34,6 +39,8 @@ export default function DocumentCanvas({
   documentSettings: DocumentStudioSettings;
   pageLayout: ResolvedPageLayout;
   viewMode: DocumentViewMode;
+  zoom?: DocumentZoom;
+  rulerVisible?: boolean;
   onLoadExample: () => void;
   onWrapperClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }) {
@@ -41,6 +48,7 @@ export default function DocumentCanvas({
   const workspaceRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [availableWidth, setAvailableWidth] = useState(0);
+  const [availableHeight, setAvailableHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
 
   useEffect(() => {
@@ -48,10 +56,13 @@ export default function DocumentCanvas({
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
       const width = entries[0]?.contentRect.width ?? 0;
+      const height = entries[0]?.contentRect.height ?? 0;
       setAvailableWidth(width);
+      setAvailableHeight(height);
     });
     ro.observe(el);
     setAvailableWidth(el.clientWidth);
+    setAvailableHeight(el.clientHeight);
     return () => ro.disconnect();
   }, []);
 
@@ -75,6 +86,14 @@ export default function DocumentCanvas({
   const pageCount = isPages
     ? visualPageCountWithGaps(contentHeight, sheet.heightPx, PAGE_STACK_GAP_PX)
     : 1;
+  const stackHeight = isPages
+    ? pageCount * sheet.heightPx + Math.max(0, pageCount - 1) * PAGE_STACK_GAP_PX
+    : undefined;
+  const baseWidth = isPages ? sheet.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, fitWidth || PAGELESS_MAX_WIDTH_PX);
+  const zoomFactor = resolveZoomFactor(zoom, baseWidth, sheet.heightPx, fitWidth || baseWidth, Math.max(0, availableHeight - 32));
+  const visualWidth = baseWidth * zoomFactor;
+  const visualHeight = stackHeight ? stackHeight * zoomFactor : undefined;
+  const showRuler = isPages && rulerVisible;
 
   useEffect(() => {
     applyPageGapGeometry(editor, {
@@ -83,9 +102,6 @@ export default function DocumentCanvas({
       gapPx: PAGE_STACK_GAP_PX,
     });
   }, [editor, isPages, sheet.heightPx]);
-  const stackHeight = isPages
-    ? pageCount * sheet.heightPx + Math.max(0, pageCount - 1) * PAGE_STACK_GAP_PX
-    : undefined;
 
   const typeVars = {
     "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
@@ -127,20 +143,33 @@ export default function DocumentCanvas({
       ref={workspaceRef}
       className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-3 sm:py-5 lg:px-6 lg:py-6"
       data-studio-view={viewMode}
+      data-studio-print-root="true"
       data-page-width-mm={pageLayout.widthMm}
       data-page-height-mm={pageLayout.heightMm}
       data-page-count={isPages ? pageCount : undefined}
+      data-studio-zoom={String(zoom)}
+      data-studio-zoom-factor={String(zoomFactor)}
     >
+      {showRuler && (
+        <div className="relative mx-auto mb-1" style={{ width: "100%", maxWidth: `${visualWidth}px` }}>
+          <WordRuler dir={dir} layout={pageLayout} />
+        </div>
+      )}
       <div
         className={`relative mx-auto ${isPages ? "" : "rounded-lg bg-white shadow-[0_4px_18px_rgba(26,58,42,0.06)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"}`}
-        style={
-          isPages
-            ? { width: "100%", maxWidth: `${sheet.widthPx}px` }
-            : { width: "100%", maxWidth: `${PAGELESS_MAX_WIDTH_PX}px` }
-        }
+        style={{ width: "100%", maxWidth: `${visualWidth}px`, height: visualHeight }}
         data-studio-pages-stack={isPages ? "true" : undefined}
         data-studio-pageless={isPages ? undefined : "true"}
       >
+        <div
+          data-studio-zoom-surface="true"
+          style={{
+            width: baseWidth,
+            height: stackHeight,
+            transform: `scale(${zoomFactor})`,
+            transformOrigin: "top left",
+          }}
+        >
         {isPages && (
           <div className="pointer-events-none absolute inset-x-0 top-0 z-0" style={{ height: stackHeight }} aria-hidden>
             {Array.from({ length: pageCount }, (_, index) => (
@@ -186,6 +215,7 @@ export default function DocumentCanvas({
               style={typeVars}
             />
           </div>
+        </div>
         </div>
       </div>
       <style jsx global>{`
@@ -311,6 +341,11 @@ export default function DocumentCanvas({
           user-select: none;
           line-height: 0;
           background: transparent;
+        }
+      `}</style>
+      <style jsx global>{`
+        @media print {
+          @page { size: ${pageLayout.widthMm}mm ${pageLayout.heightMm}mm; }
         }
       `}</style>
     </div>

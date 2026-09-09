@@ -41,6 +41,9 @@ export const WordRuler: React.FC<WordRulerProps> = ({ dir, layout }) => {
       ref={containerRef}
       className="relative h-6 border-b border-slate-200 select-none"
       aria-hidden="true"
+      data-studio-ruler="true"
+      data-ruler-page-width-mm={layout.widthMm}
+      data-ruler-page-height-mm={layout.heightMm}
       title="Page ruler — visual guide only"
     >
       {/* Full page width background */}

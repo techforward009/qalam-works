@@ -11,6 +11,15 @@ export const VIEW_MODE_STORAGE_KEY = "qalam-document-studio-view-mode-v1";
 /** Comfortable pageless reading width (~65–75ch), not a paper size. */
 export const PAGELESS_MAX_WIDTH_PX = 720;
 export const PAGE_STACK_GAP_PX = 12;
+/** Browser-native spellcheck only. Not a Qalam grammar engine. */
+export const EDITOR_SPELLCHECK_ATTR = "true";
+
+export type DocumentZoom = 50 | 75 | 100 | 125 | 150 | "fit-width" | "fit-page";
+export const DOCUMENT_ZOOM_PRESETS = [50, 75, 100, 125, 150] as const;
+export const DEFAULT_DOCUMENT_ZOOM: DocumentZoom = 100;
+export const ZOOM_STORAGE_KEY = "qalam-document-studio-zoom-v1";
+export const RULER_STORAGE_KEY = "qalam-document-studio-ruler-v1";
+export const DEFAULT_RULER_VISIBLE = true;
 
 export function isDocumentViewMode(value: unknown): value is DocumentViewMode {
   return value === "pages" || value === "pageless";
@@ -37,6 +46,90 @@ export function saveDocumentViewMode(mode: DocumentViewMode): void {
   } catch {
     /* ignore quota / private mode */
   }
+}
+
+export function isDocumentZoom(value: unknown): value is DocumentZoom {
+  return value === "fit-width" || value === "fit-page" || DOCUMENT_ZOOM_PRESETS.includes(value as 50);
+}
+
+export function parseStoredZoom(raw: string | null | undefined): DocumentZoom {
+  if (raw === "fit-width" || raw === "fit-page") return raw;
+  const numeric = Number(raw);
+  if (DOCUMENT_ZOOM_PRESETS.includes(numeric as 50)) return numeric as DocumentZoom;
+  return DEFAULT_DOCUMENT_ZOOM;
+}
+
+export function loadDocumentZoom(): DocumentZoom {
+  if (typeof window === "undefined") return DEFAULT_DOCUMENT_ZOOM;
+  try {
+    return parseStoredZoom(window.localStorage.getItem(ZOOM_STORAGE_KEY));
+  } catch {
+    return DEFAULT_DOCUMENT_ZOOM;
+  }
+}
+
+export function saveDocumentZoom(zoom: DocumentZoom): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(ZOOM_STORAGE_KEY, String(zoom));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function loadRulerVisible(): boolean {
+  if (typeof window === "undefined") return DEFAULT_RULER_VISIBLE;
+  try {
+    const raw = window.localStorage.getItem(RULER_STORAGE_KEY);
+    if (raw === "0" || raw === "false") return false;
+    if (raw === "1" || raw === "true") return true;
+    return DEFAULT_RULER_VISIBLE;
+  } catch {
+    return DEFAULT_RULER_VISIBLE;
+  }
+}
+
+export function saveRulerVisible(visible: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(RULER_STORAGE_KEY, visible ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function resolveZoomFactor(
+  zoom: DocumentZoom,
+  sheetWidthPx: number,
+  sheetHeightPx: number,
+  availableWidthPx: number,
+  availableHeightPx: number,
+): number {
+  if (zoom === "fit-width") {
+    if (!(sheetWidthPx > 0) || !(availableWidthPx > 0)) return 1;
+    return availableWidthPx / sheetWidthPx;
+  }
+  if (zoom === "fit-page") {
+    if (!(sheetWidthPx > 0) || !(sheetHeightPx > 0)) return 1;
+    const widthFactor = availableWidthPx > 0 ? availableWidthPx / sheetWidthPx : 1;
+    const heightFactor = availableHeightPx > 0 ? availableHeightPx / sheetHeightPx : widthFactor;
+    return Math.min(widthFactor, heightFactor);
+  }
+  return zoom / 100;
+}
+
+export function zoomMenuAction(zoom: DocumentZoom): `view.zoom.${50 | 75 | 100 | 125 | 150 | "fit-width" | "fit-page"}` {
+  return `view.zoom.${zoom}`;
+}
+
+export function zoomFromMenuAction(id: string): DocumentZoom | null {
+  if (!id.startsWith("view.zoom.")) return null;
+  return parseStoredZoom(id.slice("view.zoom.".length));
+}
+
+export function printDocumentStudio(): void {
+  if (typeof window === "undefined") return;
+  window.print();
 }
 
 export function visualPageCount(contentHeightPx: number, pageHeightPx: number): number {

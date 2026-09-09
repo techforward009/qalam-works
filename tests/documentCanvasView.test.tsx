@@ -41,6 +41,9 @@ describe("DocumentCanvas view modes", () => {
     expect(document.querySelector("[data-studio-page-sheet]")).toBeTruthy();
     expect(root?.getAttribute("data-page-count")).toBe("1");
     expect(document.querySelectorAll("[data-studio-page-sheet]").length).toBe(1);
+    expect(document.querySelector("[data-studio-ruler]")).toBeTruthy();
+    expect(document.querySelector("[data-studio-ruler]")?.getAttribute("data-ruler-page-width-mm")).toBe(String(layout.widthMm));
+    expect(root?.getAttribute("data-studio-zoom")).toBe("100");
   });
 
   it("renders Pageless without fixed page sheets", () => {
@@ -49,5 +52,47 @@ describe("DocumentCanvas view modes", () => {
     expect(document.querySelector("[data-studio-pageless]")).toBeTruthy();
     expect(document.querySelector("[data-studio-pages-stack]")).toBeNull();
     expect(document.querySelector("[data-studio-page-sheet]")).toBeNull();
+    expect(document.querySelector("[data-studio-ruler]")).toBeNull();
+  });
+
+  it("hides the ruler when toggled off in Pages mode", () => {
+    render(
+      <DocumentCanvas
+        editor={null}
+        dir="ltr"
+        isUr={false}
+        isEditorEmpty={false}
+        documentSettings={settings}
+        pageLayout={layout}
+        viewMode="pages"
+        rulerVisible={false}
+        onLoadExample={vi.fn()}
+        onWrapperClick={vi.fn()}
+      />,
+    );
+    expect(document.querySelector("[data-studio-ruler]")).toBeNull();
+    expect(document.querySelector("[data-studio-page-sheet]")).toBeTruthy();
+  });
+
+  it("applies visual zoom without adding extra pages", () => {
+    render(
+      <DocumentCanvas
+        editor={null}
+        dir="ltr"
+        isUr={false}
+        isEditorEmpty={false}
+        documentSettings={settings}
+        pageLayout={layout}
+        viewMode="pages"
+        zoom={150}
+        onLoadExample={vi.fn()}
+        onWrapperClick={vi.fn()}
+      />,
+    );
+    const root = document.querySelector("[data-studio-view='pages']");
+    expect(root?.getAttribute("data-studio-zoom")).toBe("150");
+    expect(root?.getAttribute("data-page-count")).toBe("1");
+    const surface = document.querySelector("[data-studio-zoom-surface]") as HTMLElement | null;
+    expect(surface?.style.transform).toContain("1.5");
   });
 });

@@ -13,6 +13,7 @@ export type MenuActionId =
   | "file.downloadTxt"
   | "file.downloadDocx"
   | "file.downloadPdf"
+  | "file.print"
   | "edit.undo"
   | "edit.redo"
   | "edit.selectAll"
@@ -23,6 +24,14 @@ export type MenuActionId =
   | "view.settings"
   | "view.pages"
   | "view.pageless"
+  | "view.zoom.50"
+  | "view.zoom.75"
+  | "view.zoom.100"
+  | "view.zoom.125"
+  | "view.zoom.150"
+  | "view.zoom.fit-width"
+  | "view.zoom.fit-page"
+  | "view.ruler"
   | "view.fullscreen"
   | "insert.link"
   | "insert.example"
@@ -124,6 +133,8 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
           { type: "action", id: "file.downloadPdf", labelEn: "PDF", labelUr: "PDF" },
         ],
       },
+      { type: "separator" },
+      { type: "action", id: "file.print", labelEn: "Print…", labelUr: "پرنٹ…", shortcut: "Ctrl+P" },
     ],
   },
   {
@@ -146,6 +157,23 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     items: [
       { type: "action", id: "view.pages", labelEn: "Pages", labelUr: "صفحات" },
       { type: "action", id: "view.pageless", labelEn: "Pageless", labelUr: "بغیر صفحات" },
+      {
+        type: "submenu",
+        id: "view.zoom",
+        labelEn: "Zoom",
+        labelUr: "زوم",
+        items: [
+          { type: "action", id: "view.zoom.50", labelEn: "50%", labelUr: "50%" },
+          { type: "action", id: "view.zoom.75", labelEn: "75%", labelUr: "75%" },
+          { type: "action", id: "view.zoom.100", labelEn: "100%", labelUr: "100%" },
+          { type: "action", id: "view.zoom.125", labelEn: "125%", labelUr: "125%" },
+          { type: "action", id: "view.zoom.150", labelEn: "150%", labelUr: "150%" },
+          { type: "separator" },
+          { type: "action", id: "view.zoom.fit-width", labelEn: "Fit width", labelUr: "چوڑائی کے مطابق" },
+          { type: "action", id: "view.zoom.fit-page", labelEn: "Fit page", labelUr: "صفحہ کے مطابق" },
+        ],
+      },
+      { type: "action", id: "view.ruler", labelEn: "Ruler", labelUr: "رولر" },
       { type: "separator" },
       { type: "action", id: "view.outline", labelEn: "Outline", labelUr: "خاکہ" },
       { type: "action", id: "view.quality", labelEn: "Quality and suggestions", labelUr: "معیار اور تجاویز" },
@@ -276,8 +304,8 @@ export const OMITTED_FUTURE_ACTIONS = [
   "text-color",
   "highlight",
   "checklist",
-  "print",
-  "ruler",
+  "spellcheck",
+  "grammar",
 ] as const;
 
 export function menuLabel(item: { labelEn: string; labelUr: string }, isUr: boolean): string {

@@ -91,7 +91,14 @@ import { validateLineHeight } from "../utils/documentSettings";
 import {
   loadDocumentViewMode,
   saveDocumentViewMode,
+  loadDocumentZoom,
+  saveDocumentZoom,
+  loadRulerVisible,
+  saveRulerVisible,
+  printDocumentStudio,
+  EDITOR_SPELLCHECK_ATTR,
   type DocumentViewMode,
+  type DocumentZoom,
 } from "../utils/documentView";
 import { PageGapExtension } from "../utils/pageGapDecorations";
 import DocumentToolbar from "./DocumentToolbar";
@@ -256,6 +263,8 @@ export default function DocumentStudioEditor() {
   const [rightPanel, setRightPanel] = useState<RightPanelId>("none");
   const [helpOpen, setHelpOpen] = useState<HelpDialogMode | null>(null);
   const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
+  const [zoom, setZoomState] = useState<DocumentZoom>(() => loadDocumentZoom());
+  const [rulerVisible, setRulerVisibleState] = useState(() => loadRulerVisible());
   const [findQuery, setFindQuery] = useState("");
   const [replaceQuery, setReplaceQuery] = useState("");
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
@@ -308,6 +317,7 @@ export default function DocumentStudioEditor() {
       attributes: {
         dir,
         class: "focus:outline-none",
+        spellcheck: EDITOR_SPELLCHECK_ATTR,
       },
       transformPasted: (slice) => transformPastedSlice(slice, dir),
     },
@@ -1204,6 +1214,19 @@ export default function DocumentStudioEditor() {
     saveDocumentViewMode(mode);
   };
 
+  const setZoom = (next: DocumentZoom) => {
+    setZoomState(next);
+    saveDocumentZoom(next);
+  };
+
+  const toggleRuler = () => {
+    setRulerVisibleState((visible) => {
+      const next = !visible;
+      saveRulerVisible(next);
+      return next;
+    });
+  };
+
   const promptLink = () => {
     if (!editor) return;
     const url = window.prompt("URL:");
@@ -1222,6 +1245,7 @@ export default function DocumentStudioEditor() {
       downloadPdf: () => {
         void handleDownloadPdf();
       },
+      print: printDocumentStudio,
       find: () => setFindOpen(true),
       toggleOutline: () => setLeftPanel((p) => toggleLeftPanel(p, "outline")),
       toggleQuality: () => setRightPanel((p) => toggleRightPanel(p, "quality")),
@@ -1229,6 +1253,8 @@ export default function DocumentStudioEditor() {
       toggleSettings: () => setRightPanel((p) => toggleRightPanel(p, "settings")),
       toggleFullscreen: toggleStudioFullscreen,
       setViewMode,
+      setZoom,
+      toggleRuler,
       loadExample: handleLoadExample,
       promptLink,
       setDir,
@@ -1276,6 +1302,8 @@ export default function DocumentStudioEditor() {
   if (rightPanel === "settings") checkedIds.add("view.settings");
   if (viewMode === "pages") checkedIds.add("view.pages");
   if (viewMode === "pageless") checkedIds.add("view.pageless");
+  checkedIds.add(`view.zoom.${zoom}` as MenuActionId);
+  if (rulerVisible) checkedIds.add("view.ruler");
   if (typeof document !== "undefined" && document.fullscreenElement) {
     checkedIds.add("view.fullscreen");
   }
@@ -1382,6 +1410,8 @@ export default function DocumentStudioEditor() {
             processingLanguage={processingLanguage}
             setProcessingLanguage={setProcessingLanguage}
             isUr={isUr}
+            zoom={zoom}
+            onZoomChange={setZoom}
           />
         }
         findBar={
@@ -1477,6 +1507,8 @@ export default function DocumentStudioEditor() {
             documentSettings={documentSettings}
             pageLayout={pageLayout}
             viewMode={viewMode}
+            zoom={zoom}
+            rulerVisible={rulerVisible}
             onLoadExample={handleLoadExample}
             onWrapperClick={handleWrapperClick}
           />

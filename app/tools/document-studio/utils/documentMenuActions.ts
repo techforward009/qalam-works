@@ -20,7 +20,8 @@ import {
 import type { MenuActionId } from "./documentMenus";
 import type { BlockStyleId } from "./documentStyles";
 import { validateLineHeight } from "./documentSettings";
-import type { DocumentViewMode } from "./documentView";
+import type { DocumentViewMode, DocumentZoom } from "./documentView";
+import { zoomFromMenuAction } from "./documentView";
 
 export type HelpDialogMode = "about" | "shortcuts" | "rtl" | "voice";
 
@@ -31,6 +32,7 @@ export type DocumentMenuHandlers = {
   downloadTxt: () => void;
   downloadDocx: () => void;
   downloadPdf: () => void;
+  print: () => void;
   find: () => void;
   toggleOutline: () => void;
   toggleQuality: () => void;
@@ -38,6 +40,8 @@ export type DocumentMenuHandlers = {
   toggleSettings: () => void;
   toggleFullscreen: () => void;
   setViewMode: (mode: DocumentViewMode) => void;
+  setZoom: (zoom: DocumentZoom) => void;
+  toggleRuler: () => void;
   loadExample: () => void;
   promptLink: () => void;
   setDir: (dir: "rtl" | "ltr") => void;
@@ -77,6 +81,11 @@ export function dispatchDocumentMenuAction(
     if (editor) applyBlockStyle(editor, style);
     return;
   }
+  const zoom = zoomFromMenuAction(id);
+  if (zoom) {
+    handlers.setZoom(zoom);
+    return;
+  }
   const lineHeight = lineHeightFromMenuAction(id);
   if (lineHeight !== undefined) {
     if (editor) applyLineHeight(editor, lineHeight);
@@ -101,6 +110,9 @@ export function dispatchDocumentMenuAction(
       return;
     case "file.downloadPdf":
       handlers.downloadPdf();
+      return;
+    case "file.print":
+      handlers.print();
       return;
     case "edit.undo":
       if (editor) undo(editor);
@@ -134,6 +146,9 @@ export function dispatchDocumentMenuAction(
       return;
     case "view.pageless":
       handlers.setViewMode("pageless");
+      return;
+    case "view.ruler":
+      handlers.toggleRuler();
       return;
     case "insert.link":
       handlers.promptLink();

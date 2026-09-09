@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import { resolvePageLayout, mmToPx } from "../app/tools/document-studio/utils/pageLayout";
 import {
   DEFAULT_DOCUMENT_VIEW_MODE,
+  DEFAULT_DOCUMENT_ZOOM,
   PAGELESS_MAX_WIDTH_PX,
   parseStoredViewMode,
+  parseStoredZoom,
   pagesSheetMetrics,
+  resolveZoomFactor,
   visualPageCount,
   visualPageCountWithGaps,
 } from "../app/tools/document-studio/utils/documentView";
@@ -58,6 +61,17 @@ describe("document view mode", () => {
   it("keeps Pageless as a max reading width, not a paper height", () => {
     expect(PAGELESS_MAX_WIDTH_PX).toBeGreaterThan(600);
     expect(PAGELESS_MAX_WIDTH_PX).toBeLessThan(900);
+  });
+
+  it("defaults zoom to 100% and scales without changing page geometry math", () => {
+    expect(DEFAULT_DOCUMENT_ZOOM).toBe(100);
+    expect(parseStoredZoom(null)).toBe(100);
+    expect(parseStoredZoom("150")).toBe(150);
+    expect(parseStoredZoom("fit-width")).toBe("fit-width");
+    expect(resolveZoomFactor(100, 400, 600, 800, 900)).toBe(1);
+    expect(resolveZoomFactor(50, 400, 600, 800, 900)).toBe(0.5);
+    expect(resolveZoomFactor("fit-width", 400, 600, 800, 900)).toBe(2);
+    expect(resolveZoomFactor("fit-page", 400, 800, 400, 400)).toBe(0.5);
   });
 });
 
