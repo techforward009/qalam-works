@@ -227,15 +227,16 @@ function computeReadiness(counts: QualityIssueCounts): PublishingReadiness {
 // countLongParagraphs/countEmptyParagraphs). When no context is given,
 // falls back to computing everything internally exactly as before — no
 // breaking change for existing (doc)-only callers.
-export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysisContext, mode: ProcessingLanguage = "ur"): QualityAuditReport {
+export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysisContext, mode?: ProcessingLanguage): QualityAuditReport {
   const blocks = context?.blocks ?? getBlockTexts(doc);
   const input = context?.joinedText ?? blocks.join("\n");
+  const resolvedMode = mode ?? context?.processingLanguage ?? "ur";
 
   if (!input || !input.trim()) {
     return createEmptyAuditReport();
   }
 
-  const report = checkTextQuality(input, mode);
+  const report = checkTextQuality(input, resolvedMode);
   const counts = toCounts(
     report,
     countLongParagraphs(doc, blocks),

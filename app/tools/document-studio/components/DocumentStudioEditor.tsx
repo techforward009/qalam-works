@@ -159,6 +159,10 @@ export default function DocumentStudioEditor() {
 
 
   const [processingLanguage, setProcessingLanguage] = useState<ProcessingLanguage>("auto");
+  const processingLanguageRef = useRef<ProcessingLanguage>(processingLanguage);
+  useEffect(() => {
+    processingLanguageRef.current = processingLanguage;
+  }, [processingLanguage]);
   const [lastResolved, setLastResolved] = useState<ResolvedLanguage | null>(null);
 
   useEffect(() => {
@@ -254,7 +258,8 @@ export default function DocumentStudioEditor() {
     // document edit, which would feel like the glossary "didn't work".
     if (editor) {
       const json = editor.getJSON();
-      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, undefined, glossary)));
+      const context = createDocumentAnalysisContext(json, processingLanguageRef.current);
+      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, context, glossary)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [glossary]);
@@ -314,7 +319,7 @@ export default function DocumentStudioEditor() {
       // all three analysis functions, replacing what was previously 8
       // independent getBlockTexts(doc) calls with exactly 1.
       const runAnalysis = () => {
-        const context = createDocumentAnalysisContext(json);
+        const context = createDocumentAnalysisContext(json, processingLanguageRef.current);
         setStats(buildDocumentStats(json, context));
         setHealth(buildDocumentHealthReport(json, context));
         setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, context, glossaryRef.current)));
@@ -408,15 +413,21 @@ export default function DocumentStudioEditor() {
   // edits, not on the editor's own first mount.
   useEffect(() => {
     if (editor) {
-      const json = editor.getJSON();
-      setOutline(extractDocumentOutline(json));
-      const context = createDocumentAnalysisContext(json);
-      setStats(buildDocumentStats(json, context));
-      setHealth(buildDocumentHealthReport(json, context));
-      setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, context, glossaryRef.current)));
+      setOutline(extractDocumentOutline(editor.getJSON()));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const json = editor.getJSON();
+    const context = createDocumentAnalysisContext(json, processingLanguage);
+    setStats(buildDocumentStats(json, context));
+    setHealth(buildDocumentHealthReport(json, context));
+    setReviewState((prev) => refreshPendingSuggestions(prev, generateDocumentSuggestions(json, context, glossaryRef.current)));
+    if (hasAuditReportRef.current) {
+      setAuditReport(buildDocumentAuditReport(json as DocNode, context, processingLanguage));
+    }
+  }, [processingLanguage, editor]);
 
   const handleWrapperClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!editor) return;
@@ -653,7 +664,9 @@ export default function DocumentStudioEditor() {
 
   const handleRunAudit = () => {
     if (!editor) return;
-    const report = buildDocumentAuditReport(editor.getJSON() as DocNode, undefined, processingLanguage);
+    const json = editor.getJSON() as DocNode;
+    const context = createDocumentAnalysisContext(json, processingLanguage);
+    const report = buildDocumentAuditReport(json, context, processingLanguage);
     setAuditReport(report);
     hasAuditReportRef.current = true;
     setIsAuditStale(false);
@@ -857,7 +870,7 @@ export default function DocumentStudioEditor() {
     // guarantees stats/health reflect the truly-final document, and
     // accepted is cleared in the same update.
     const finalJson = editor.getJSON();
-    const finalContext = createDocumentAnalysisContext(finalJson);
+    const finalContext = createDocumentAnalysisContext(finalJson, processingLanguage);
     setStats(buildDocumentStats(finalJson, finalContext));
     setHealth(buildDocumentHealthReport(finalJson, finalContext));
     setReviewState((prev) => refreshPendingSuggestions({ ...prev, accepted: [] }, generateDocumentSuggestions(finalJson, finalContext, glossaryRef.current)));

@@ -48,7 +48,10 @@ import {
   arabicContextText,
   isArabicScriptContext,
   scriptContextForText,
+  maskProtectedLatinTokens,
 } from "../../../utils/quality/sharedTextPatterns";
+import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
+import { resolveProcessingLanguage } from "../../../utils/processing/detectLanguage";
 
 export type SuggestionCategory = "unicode" | "typography" | "numeral" | "punctuation" | "spacing" | "structure" | "terminology";
 export type SuggestionSeverity = "low" | "medium" | "high";
@@ -439,11 +442,12 @@ function findMixedScriptSuggestions(blocks: readonly string[]): DocumentSuggesti
   let count = 0;
   for (const block of blocks) {
     if (count >= MAX_EXAMPLES_PER_TYPE) break;
-    const stripped = stripProtectedMarkers(block);
-    if (!isArabicScriptContext(scriptContextForText(stripped))) continue;
+    const stripped = maskProtectedLatinTokens(block);
+    if (!isArabicScriptContext(scriptContextForText(stripProtectedMarkers(block)))) continue;
     const regex = freshRegex(LATIN_LETTERS_REGEX);
     let match: RegExpExecArray | null;
     while (count < MAX_EXAMPLES_PER_TYPE && (match = regex.exec(stripped)) !== null) {
+      if (!match[0].trim()) continue;
       const { before, match: exact, after } = extractWithContext(block, match.index, match[0].length);
       suggestions.push({
         type: "unicode-mixed-script-advisory",
@@ -451,7 +455,7 @@ function findMixedScriptSuggestions(blocks: readonly string[]): DocumentSuggesti
         severity: "low",
         originalText: exact,
         suggestedText: exact,
-        explanation: "Check mixed script usage — لاطینی حروف اردو/عربی متن میں شامل ہیں۔ یہ جان بوجھ کر (حوالہ، مخفف) ہو سکتا ہے۔",
+        explanation: "Latin letters appear inside Urdu/Arabic text. This may be intentional.",
         contextBefore: before,
         contextAfter: after,
       });
@@ -668,29 +672,112 @@ function findStructureSuggestions(doc: DocNode, blocks?: readonly string[]): Doc
  * every existing (doc)/(doc, context) call site continues to work
  * unchanged with no glossary suggestions generated at all.
  */
+function resolveAnalysisLanguage(
+  mode: ProcessingLanguage | undefined,
+  text: string,
+): ResolvedLanguage {
+  const raw = mode ?? "ur";
+  if (raw === "ur" || raw === "en" || raw === "ar") return raw;
+  return resolveProcessingLanguage(raw, text || " ");
+}
+
+export function localizedSuggestionExplanation(suggestion: DocumentSuggestion, isUr: boolean): string {
+  switch (suggestion.type) {
+    case "unicode-mixed-script-advisory":
+      return isUr
+        ? "لاطینی حروف اردو/عربی متن میں شامل ہیں۔ یہ جان بوجھ کر (حوالہ یا مخفف) ہو سکتا ہے۔"
+        : "Latin letters appear inside Urdu/Arabic text. This may be intentional (a reference or abbreviation).";
+    case "unicode-arabic-yeh":
+      return isUr ? "عربی ي کو اردو ی سے تبدیل کرنے کی تجویز۔" : "Replace Arabic Yeh (ي) with Urdu Yeh (ی).";
+    case "unicode-arabic-kaf":
+      return isUr ? "عربی ك کو اردو ک سے تبدیل کرنے کی تجویز۔" : "Replace Arabic Kaf (ك) with Urdu Kaf (ک).";
+    case "unicode-arabic-heh":
+      return isUr ? "عربی ه کو اردو ہ سے تبدیل کرنے کی تجویز۔" : "Replace Arabic Heh (ه) with Urdu Heh (ہ).";
+    case "spacing-multiple-spaces":
+      return isUr ? "دہری خالی جگہ کو ایک خالی جگہ سے تبدیل کرنے کی تجویز" : "Replace repeated spaces with a single space.";
+    case "spacing-before-punctuation":
+      return isUr ? "رمزِ اوقاف سے پہلے خالی جگہ ہٹانے کی تجویز" : "Remove the space before the punctuation mark.";
+    case "spacing-missing-after-punctuation":
+      return isUr ? "رمزِ اوقاف کے بعد خالی جگہ درکار ہے۔" : "Add a space after the punctuation mark.";
+    case "typography-tatweel":
+      return isUr
+        ? "تطویل (کشیدہ) حروف عام طور پر کاپی پیسٹ سے آتے ہیں اور غیر ضروری ہیں — ہٹانے کی تجویز"
+        : "Tatweel/kashida characters are usually copy-paste artifacts and can be removed.";
+    case "typography-repeated-word":
+      return isUr
+        ? "لفظ لگاتار دو مرتبہ آ گیا ہے — عموماً ٹائپنگ کی غلطی۔ اگر شاعرانہ تکرار ارادی ہے تو نظرانداز کریں۔"
+        : "The same word is repeated. This is often a typing error.";
+    case "punctuation-inconsistent":
+      return isUr
+        ? "ایک ہی رمزِ اوقاف کی انگریزی اور اردو شکلیں دونوں استعمال ہوئی ہیں۔ یکساں انداز تجویز کیا جاتا ہے۔"
+        : "Both English and Urdu forms of the same punctuation mark are used. Pick one style.";
+    case "punctuation-straight-quote":
+      return isUr
+        ? "سیدھے quote کو مناسب گھمے ہوئے (curly) quote سے تبدیل کرنے کی تجویز"
+        : "Replace the straight quote with a curly quote.";
+    case "punctuation-unmatched-quotes":
+      return isUr
+        ? "دستاویز میں گھمے ہوئے quotes کی تعداد برابر نہیں — کوئی quote بے جوڑ ہو سکتا ہے۔"
+        : "Opening and closing curly quotes are unbalanced.";
+    case "punctuation-duplicated":
+      return isUr
+        ? "دہرایا گیا رمزِ اوقاف — عام طور پر ٹائپنگ کی غلطی، ایک نشان کافی ہے۔"
+        : "Duplicated punctuation is usually a typing error; one mark is enough.";
+    case "structure-heading-hierarchy":
+      return isUr ? "دستاویز کی عنوان کی سطحیں ترتیب سے نہیں ہیں۔" : "Heading levels are out of order.";
+    case "structure-empty-paragraphs":
+      return isUr
+        ? "دستاویز میں خالی پیراگراف موجود ہیں، غالباً غیر ارادی طور پر۔"
+        : "Empty paragraphs are present, likely unintentionally.";
+    case "structure-long-paragraphs":
+      return isUr ? "طویل پیراگراف پڑھنے میں مشکل بنا سکتے ہیں۔" : "Long paragraphs can be harder to read.";
+    case "numeral-mixed":
+      return isUr
+        ? "دستاویز میں ایک سے زیادہ ہندسوں کے نظام ملے — یکسانیت تجویز کی جاتی ہے۔"
+        : "More than one numeral system is used. Consistency is recommended.";
+    case "terminology-glossary":
+      return isUr
+        ? suggestion.explanation
+        : suggestion.explanation.includes("glossary")
+          ? suggestion.explanation
+          : `Glossary: prefer “${suggestion.suggestedText}” instead of “${suggestion.originalText}”.`;
+    default:
+      if (!isUr) {
+        if (/[\u0600-\u06FF]/.test(suggestion.explanation) && !/[A-Za-z]/.test(suggestion.explanation)) {
+          return suggestion.originalText
+            ? `Review “${suggestion.originalText}”.`
+            : "Review this suggestion.";
+        }
+      }
+      return suggestion.explanation;
+  }
+}
+
 export function generateDocumentSuggestions(
   doc: DocNode,
   context?: DocumentAnalysisContext,
-  glossary: readonly GlossaryEntry[] = []
+  glossary: readonly GlossaryEntry[] = [],
 ): DocumentSuggestion[] {
   const blocks = context?.blocks ?? getBlockTexts(doc);
   const text = context?.joinedText ?? blocks.join("\n");
+  const mode = resolveAnalysisLanguage(context?.processingLanguage, text);
+  const urMode = mode === "ur";
   const structureSuggestions = findStructureSuggestions(doc, blocks);
 
   if (!text.trim()) return structureSuggestions;
 
   return [
-    ...findUnicodeSuggestions(text),
-    ...findMixedScriptSuggestions(blocks),
+    ...(urMode ? findUnicodeSuggestions(text) : []),
+    ...(urMode ? findMixedScriptSuggestions(blocks) : []),
     ...findTypographySuggestions(text),
     ...findRepeatedWordSuggestions(text),
     ...findSpacingSuggestions(text),
     ...findMissingSpaceSuggestions(text),
     ...findNumeralSuggestions(text),
-    ...findPunctuationSuggestions(arabicContextText(text)),
+    ...(urMode ? findPunctuationSuggestions(arabicContextText(text)) : []),
     ...findQuoteSuggestions(text),
     ...findDuplicatedPunctuationSuggestions(text),
-    ...findTerminologySuggestions(text),
+    ...(urMode ? findTerminologySuggestions(text) : []),
     ...findGlossarySuggestions(text, glossary),
     ...structureSuggestions,
   ];

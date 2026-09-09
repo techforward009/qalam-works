@@ -8,6 +8,7 @@
 import { buildDocumentAuditReport } from "./buildDocumentAuditReport";
 import { buildDocumentStats } from "./buildDocumentStats";
 import type { DocNode, DocumentAnalysisContext } from "./extractPlainText";
+import type { ProcessingLanguage } from "../../../utils/processing/types";
 
 export type HealthStatus = "ok" | "needs_review";
 
@@ -39,8 +40,12 @@ export interface DocumentHealthReport {
  * that internally calls both buildDocumentAuditReport and
  * buildDocumentStats. Falls back to computing internally when omitted.
  */
-export function buildDocumentHealthReport(doc: DocNode, context?: DocumentAnalysisContext): DocumentHealthReport {
-  const audit = buildDocumentAuditReport(doc, context);
+export function buildDocumentHealthReport(
+  doc: DocNode,
+  context?: DocumentAnalysisContext,
+  mode?: ProcessingLanguage,
+): DocumentHealthReport {
+  const audit = buildDocumentAuditReport(doc, context, mode ?? context?.processingLanguage);
   const stats = buildDocumentStats(doc, context);
 
   return {

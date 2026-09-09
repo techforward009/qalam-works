@@ -142,13 +142,19 @@ export function getBlockTexts(doc: DocNode): string[] {
 export interface DocumentAnalysisContext {
   readonly blocks: readonly string[];
   readonly joinedText: string;
+  /** Same processing language used by Audit, Health, and Suggestions. */
+  readonly processingLanguage: "auto" | "ur" | "en" | "ar";
 }
 
-export function createDocumentAnalysisContext(doc: DocNode): DocumentAnalysisContext {
+export function createDocumentAnalysisContext(
+  doc: DocNode,
+  processingLanguage: "auto" | "ur" | "en" | "ar" = "ur",
+): DocumentAnalysisContext {
   const blocks = getBlockTexts(doc);
   return Object.freeze({
     blocks: Object.freeze(blocks),
     joinedText: blocks.join("\n"),
+    processingLanguage,
   });
 }
 

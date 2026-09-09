@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import type { DocumentSuggestion, SuggestionCategory, SuggestionSeverity } from "../utils/generateDocumentSuggestions";
+import { localizedSuggestionExplanation } from "../utils/generateDocumentSuggestions";
 import { suggestionKey } from "../utils/suggestionReview";
 
 interface SuggestionsPanelProps {
@@ -244,7 +245,7 @@ export const SuggestionsPanel: React.FC<SuggestionsPanelProps> = ({
                         {s.contextAfter && <span className="text-slate-400">{s.contextAfter}…</span>}
                       </div>
 
-                      <p className="leading-relaxed break-words text-slate-500">{s.explanation}</p>
+                      <p className="leading-relaxed break-words text-slate-500">{localizedSuggestionExplanation(s, isUr)}</p>
                       <div className="flex gap-2 pt-1">
                         <button
                           type="button"

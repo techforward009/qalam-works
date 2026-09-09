@@ -104,11 +104,29 @@ export function hasInconsistentPunctuationStyle(text: string): boolean {
   );
 }
 
+export const TECHNICAL_ACRONYM_REGEX = /\b(?:TXT|DOCX|DOC|PDF)\b/g;
+export const URL_LIKE_REGEX = /https?:\/\/[^\s]+/gi;
+export const EMAIL_LIKE_REGEX = /\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/g;
+export const FILENAME_LIKE_REGEX = /\b[\w.-]+\.(?:txt|docx?|pdf|xlsx?|pptx?|csv|json|zip)\b/gi;
+
+function maskMatch(match: string): string {
+  return " ".repeat(match.length);
+}
+
+/** Mask URLs, emails, filenames, {{ }} markers, and file-format acronyms without shifting offsets. */
+export function maskProtectedLatinTokens(text: string): string {
+  return stripProtectedMarkers(text)
+    .replace(freshRegex(URL_LIKE_REGEX), maskMatch)
+    .replace(freshRegex(EMAIL_LIKE_REGEX), maskMatch)
+    .replace(freshRegex(FILENAME_LIKE_REGEX), maskMatch)
+    .replace(freshRegex(TECHNICAL_ACRONYM_REGEX), maskMatch);
+}
+
 export function countLatinRunsInArabicContext(text: string): number {
   let count = 0;
   for (const paragraph of splitParagraphs(text)) {
     if (!isArabicScriptContext(scriptContextForText(paragraph))) continue;
-    const matches = paragraph.match(freshRegex(LATIN_LETTERS_REGEX));
+    const matches = maskProtectedLatinTokens(paragraph).match(freshRegex(LATIN_LETTERS_REGEX));
     if (matches) count += matches.length;
   }
   return count;

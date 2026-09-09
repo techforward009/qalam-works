@@ -144,4 +144,49 @@ describe("Quality/Suggestions chrome language", () => {
     render(<QualityAuditPanel report={null} isUr={true} />);
     expect(screen.getByText(/کوالٹی آڈٹ/)).toBeTruthy();
   });
+
+  it("renders mixed-script explanations in site language only", () => {
+    const mixed: DocumentSuggestion = {
+      type: "unicode-mixed-script-advisory",
+      category: "typography",
+      severity: "low",
+      originalText: "Document",
+      suggestedText: "Document",
+      explanation: "Latin letters appear inside Urdu/Arabic text. This may be intentional.",
+      contextBefore: "یہ ",
+      contextAfter: " ہے",
+    };
+    render(
+      <SuggestionsPanel
+        pending={[mixed]}
+        accepted={[]}
+        ignored={[]}
+        onAccept={vi.fn()}
+        onIgnore={vi.fn()}
+        onApplyAccepted={vi.fn()}
+        onAcceptCategory={vi.fn()}
+        onIgnoreCategory={vi.fn()}
+        isUr={false}
+      />,
+    );
+    expect(screen.getByText(/Latin letters appear/i)).toBeTruthy();
+    expect(screen.queryByText(/لاطینی/)).toBeNull();
+
+    cleanup();
+    render(
+      <SuggestionsPanel
+        pending={[mixed]}
+        accepted={[]}
+        ignored={[]}
+        onAccept={vi.fn()}
+        onIgnore={vi.fn()}
+        onApplyAccepted={vi.fn()}
+        onAcceptCategory={vi.fn()}
+        onIgnoreCategory={vi.fn()}
+        isUr={true}
+      />,
+    );
+    expect(screen.getByText(/لاطینی حروف/)).toBeTruthy();
+    expect(screen.queryByText(/Latin letters appear/i)).toBeNull();
+  });
 });
