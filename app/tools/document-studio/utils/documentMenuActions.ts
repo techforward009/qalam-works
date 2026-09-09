@@ -20,7 +20,7 @@ import {
 import type { MenuActionId } from "./documentMenus";
 import type { BlockStyleId } from "./documentStyles";
 import { validateLineHeight } from "./documentSettings";
-import type { DocumentViewMode, DocumentZoom } from "./documentView";
+import type { DocumentViewMode, DocumentZoom, RulerUnit } from "./documentView";
 import { zoomFromMenuAction } from "./documentView";
 
 export type HelpDialogMode = "about" | "shortcuts" | "rtl" | "voice";
@@ -33,6 +33,7 @@ export type DocumentMenuHandlers = {
   downloadDocx: () => void;
   downloadPdf: () => void;
   print: () => void;
+  openPageSetup: () => void;
   find: () => void;
   toggleOutline: () => void;
   toggleQuality: () => void;
@@ -41,6 +42,7 @@ export type DocumentMenuHandlers = {
   toggleFullscreen: () => void;
   setViewMode: (mode: DocumentViewMode) => void;
   setZoom: (zoom: DocumentZoom) => void;
+  setRulerUnit: (unit: RulerUnit) => void;
   toggleRuler: () => void;
   loadExample: () => void;
   promptLink: () => void;
@@ -114,6 +116,9 @@ export function dispatchDocumentMenuAction(
     case "file.print":
       handlers.print();
       return;
+    case "file.pageSetup":
+      handlers.openPageSetup();
+      return;
     case "edit.undo":
       if (editor) undo(editor);
       return;
@@ -149,6 +154,12 @@ export function dispatchDocumentMenuAction(
       return;
     case "view.ruler":
       handlers.toggleRuler();
+      return;
+    case "view.rulerUnit.cm":
+      handlers.setRulerUnit("cm");
+      return;
+    case "view.rulerUnit.in":
+      handlers.setRulerUnit("in");
       return;
     case "insert.link":
       handlers.promptLink();

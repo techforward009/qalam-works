@@ -14,6 +14,7 @@ export type MenuActionId =
   | "file.downloadDocx"
   | "file.downloadPdf"
   | "file.print"
+  | "file.pageSetup"
   | "edit.undo"
   | "edit.redo"
   | "edit.selectAll"
@@ -32,6 +33,8 @@ export type MenuActionId =
   | "view.zoom.fit-width"
   | "view.zoom.fit-page"
   | "view.ruler"
+  | "view.rulerUnit.cm"
+  | "view.rulerUnit.in"
   | "view.fullscreen"
   | "insert.link"
   | "insert.example"
@@ -135,6 +138,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
       },
       { type: "separator" },
       { type: "action", id: "file.print", labelEn: "Print…", labelUr: "پرنٹ…", shortcut: "Ctrl+P" },
+      { type: "action", id: "file.pageSetup", labelEn: "Page setup…", labelUr: "صفحہ کی ترتیب…" },
     ],
   },
   {
@@ -174,6 +178,16 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
         ],
       },
       { type: "action", id: "view.ruler", labelEn: "Ruler", labelUr: "رولر" },
+      {
+        type: "submenu",
+        id: "view.rulerUnit",
+        labelEn: "Ruler units",
+        labelUr: "رولر اکائیاں",
+        items: [
+          { type: "action", id: "view.rulerUnit.cm", labelEn: "Centimeters", labelUr: "سینٹی میٹر" },
+          { type: "action", id: "view.rulerUnit.in", labelEn: "Inches", labelUr: "انچ" },
+        ],
+      },
       { type: "separator" },
       { type: "action", id: "view.outline", labelEn: "Outline", labelUr: "خاکہ" },
       { type: "action", id: "view.quality", labelEn: "Quality and suggestions", labelUr: "معیار اور تجاویز" },

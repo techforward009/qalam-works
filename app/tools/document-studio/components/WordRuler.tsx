@@ -4,7 +4,7 @@ import {
   calculateRulerTicks,
   calculateVerticalRulerMetrics,
   marginMmFromPointer,
-  rulerUnitForPage,
+  type RulerUnit,
 } from "../utils/rulerLayout";
 import type { PhysicalMarginEdge, ResolvedPageLayout } from "../utils/pageLayout";
 
@@ -12,17 +12,27 @@ interface WordRulerProps {
   dir: "ltr" | "rtl";
   layout: ResolvedPageLayout;
   axis?: "horizontal" | "vertical";
+  unit?: RulerUnit;
   onPhysicalMarginChange?: (edge: PhysicalMarginEdge, mm: number) => void;
 }
 
-const MAJOR = 10;
-const MINOR = 6;
+const TICK_SIZE = { major: 12, minor: 8, micro: 4 };
 
-export const WordRuler: React.FC<WordRulerProps> = ({ dir, layout, axis = "horizontal", onPhysicalMarginChange }) => {
+export const WordRuler: React.FC<WordRulerProps> = ({
+  dir,
+  layout,
+  axis = "horizontal",
+  unit = "cm",
+  onPhysicalMarginChange,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState(0);
   const vertical = axis === "vertical";
   const dragRef = useRef<PhysicalMarginEdge | null>(null);
+  const layoutRef = useRef(layout);
+  const callbackRef = useRef(onPhysicalMarginChange);
+  layoutRef.current = layout;
+  callbackRef.current = onPhysicalMarginChange;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -36,7 +46,42 @@ export const WordRuler: React.FC<WordRulerProps> = ({ dir, layout, axis = "horiz
     return () => observer.disconnect();
   }, [vertical]);
 
-  const unit = rulerUnitForPage(layout.size);
+  const emitFromPointer = (edge: PhysicalMarginEdge, client: number) => {
+    const el = containerRef.current;
+    const callback = callbackRef.current;
+    if (!el || !callback) return;
+    const rect = el.getBoundingClientRect();
+    const current = layoutRef.current;
+    const origin = vertical ? rect.top : rect.left;
+    const lengthPx = vertical ? rect.height : rect.width;
+    if (!(lengthPx > 0)) return;
+    const pageMm = vertical ? current.heightMm : current.widthMm;
+    const fromEnd = edge === "right" || edge === "bottom";
+    callback(edge, marginMmFromPointer({ client, origin, lengthPx, pageMm, fromEnd }));
+  };
+
+  useEffect(() => {
+    const onMove = (event: PointerEvent) => {
+      const edge = dragRef.current;
+      if (!edge) return;
+      event.preventDefault();
+      emitFromPointer(edge, vertical ? event.clientY : event.clientX);
+    };
+    const onUp = () => {
+      if (!dragRef.current) return;
+      dragRef.current = null;
+      document.body.style.removeProperty("user-select");
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [vertical]);
+
   const lengthMm = vertical ? layout.heightMm : layout.widthMm;
   const measured = size || lengthMm;
   const ticks = calculateRulerTicks(measured, lengthMm, unit);
@@ -45,49 +90,31 @@ export const WordRuler: React.FC<WordRulerProps> = ({ dir, layout, axis = "horiz
   const startZone = vertical ? vMetrics?.topMarginPx ?? 0 : hMetrics?.leftMarginPx ?? 0;
   const endZone = vertical ? vMetrics?.bottomMarginPx ?? 0 : hMetrics?.rightMarginPx ?? 0;
 
-  const emitFromPointer = (edge: PhysicalMarginEdge, client: number) => {
-    const el = containerRef.current;
-    if (!el || !onPhysicalMarginChange) return;
-    const rect = el.getBoundingClientRect();
-    const origin = vertical ? rect.top : rect.left;
-    const lengthPx = vertical ? rect.height : rect.width;
-    const pageMm = vertical ? layout.heightMm : layout.widthMm;
-    const fromEnd = edge === "right" || edge === "bottom";
-    onPhysicalMarginChange(edge, marginMmFromPointer({ client, origin, lengthPx, pageMm, fromEnd }));
-  };
-
-  const onHandlePointerDown = (edge: PhysicalMarginEdge) => (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (!onPhysicalMarginChange) return;
+  const onHandlePointerDown = (edge: PhysicalMarginEdge) => (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!callbackRef.current) return;
     event.preventDefault();
     event.stopPropagation();
     dragRef.current = edge;
+    document.body.style.userSelect = "none";
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
     } catch {
-      /* jsdom / older browsers */
+      /* ignore */
     }
     emitFromPointer(edge, vertical ? event.clientY : event.clientX);
-  };
-
-  const onHandlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
-    const edge = dragRef.current;
-    if (!edge) return;
-    event.preventDefault();
-    emitFromPointer(edge, vertical ? event.clientY : event.clientX);
-  };
-
-  const onHandlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (dragRef.current) {
-      event.preventDefault();
-      dragRef.current = null;
-    }
   };
 
   const handleStyle = (edge: PhysicalMarginEdge): React.CSSProperties => {
-    if (edge === "left") return { left: `${startZone}px`, top: 0, bottom: 0, width: 8, marginLeft: -4, cursor: "ew-resize" };
-    if (edge === "right") return { right: `${endZone}px`, top: 0, bottom: 0, width: 8, marginRight: -4, cursor: "ew-resize" };
-    if (edge === "top") return { top: `${startZone}px`, left: 0, right: 0, height: 8, marginTop: -4, cursor: "ns-resize" };
-    return { bottom: `${endZone}px`, left: 0, right: 0, height: 8, marginBottom: -4, cursor: "ns-resize" };
+    if (edge === "left") {
+      return { left: `${startZone}px`, top: 0, bottom: 0, width: 18, marginLeft: -9, cursor: "ew-resize" };
+    }
+    if (edge === "right") {
+      return { right: `${endZone}px`, top: 0, bottom: 0, width: 18, marginRight: -9, cursor: "ew-resize" };
+    }
+    if (edge === "top") {
+      return { top: `${startZone}px`, left: 0, right: 0, height: 18, marginTop: -9, cursor: "ns-resize" };
+    }
+    return { bottom: `${endZone}px`, left: 0, right: 0, height: 18, marginBottom: -9, cursor: "ns-resize" };
   };
 
   const handles: PhysicalMarginEdge[] = vertical ? ["top", "bottom"] : ["left", "right"];
@@ -95,11 +122,11 @@ export const WordRuler: React.FC<WordRulerProps> = ({ dir, layout, axis = "horiz
   return (
     <div
       ref={containerRef}
-      className={`relative select-none overflow-hidden bg-[#e8ece6] ${vertical ? "w-6 h-full border-r border-slate-300" : "h-6 w-full border-b border-slate-300"}`}
-      aria-hidden={!onPhysicalMarginChange}
+      className={`relative select-none bg-[#e8ece6] ${vertical ? "w-6 h-full border-r border-slate-300" : "h-6 w-full border-b border-slate-300"}`}
       data-studio-ruler={vertical ? undefined : "true"}
       data-studio-vertical-ruler={vertical ? "true" : undefined}
       data-ruler-axis={axis}
+      data-ruler-unit={unit}
       data-ruler-page-width-mm={layout.widthMm}
       data-ruler-page-height-mm={layout.heightMm}
       data-ruler-orientation={layout.orientation}
@@ -141,17 +168,17 @@ export const WordRuler: React.FC<WordRulerProps> = ({ dir, layout, axis = "horiz
         <div
           key={`${tick.kind}-${i}`}
           data-ruler-tick={tick.kind}
-          className="absolute bg-slate-500 pointer-events-none"
+          className="absolute bg-slate-600 pointer-events-none"
           style={
             vertical
-              ? { top: `${tick.offsetPx}px`, right: 0, width: tick.kind === "major" ? MAJOR : MINOR, height: 1 }
-              : { left: `${tick.offsetPx}px`, bottom: 0, height: tick.kind === "major" ? MAJOR : MINOR, width: 1 }
+              ? { top: `${tick.offsetPx}px`, right: 0, width: TICK_SIZE[tick.kind], height: 1 }
+              : { left: `${tick.offsetPx}px`, bottom: 0, height: TICK_SIZE[tick.kind], width: 1 }
           }
         >
           {tick.label ? (
             <span
               className="absolute text-[8px] leading-none text-slate-600"
-              style={vertical ? { right: 11, top: 1 } : { left: 2, top: 1 }}
+              style={vertical ? { right: 13, top: 1 } : { left: 2, top: 1 }}
             >
               {tick.label}
             </span>
@@ -160,18 +187,25 @@ export const WordRuler: React.FC<WordRulerProps> = ({ dir, layout, axis = "horiz
       ))}
       {onPhysicalMarginChange
         ? handles.map((edge) => (
-            <button
+            <div
               key={edge}
-              type="button"
+              role="slider"
+              tabIndex={0}
               data-ruler-handle={edge}
               aria-label={`${edge} margin`}
-              className="absolute z-10 border-0 bg-[#1A3A2A] p-0"
+              className="absolute z-20 bg-transparent hover:bg-[#1A3A2A]/15"
               style={handleStyle(edge)}
               onPointerDown={onHandlePointerDown(edge)}
-              onPointerMove={onHandlePointerMove}
-              onPointerUp={onHandlePointerUp}
-              onPointerCancel={onHandlePointerUp}
-            />
+            >
+              <span
+                className="pointer-events-none absolute bg-[#1A3A2A]"
+                style={
+                  vertical
+                    ? { left: 2, right: 2, top: 8, height: 2 }
+                    : { top: 2, bottom: 2, left: 8, width: 2 }
+                }
+              />
+            </div>
           ))
         : null}
     </div>

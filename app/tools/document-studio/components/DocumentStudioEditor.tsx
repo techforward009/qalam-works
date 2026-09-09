@@ -95,10 +95,13 @@ import {
   saveDocumentZoom,
   loadRulerVisible,
   saveRulerVisible,
+  loadRulerUnit,
+  saveRulerUnit,
   printDocumentStudio,
   EDITOR_SPELLCHECK_ATTR,
   type DocumentViewMode,
   type DocumentZoom,
+  type RulerUnit,
 } from "../utils/documentView";
 import { PageGapExtension } from "../utils/pageGapDecorations";
 import DocumentToolbar from "./DocumentToolbar";
@@ -265,6 +268,7 @@ export default function DocumentStudioEditor() {
   const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
   const [zoom, setZoomState] = useState<DocumentZoom>(() => loadDocumentZoom());
   const [rulerVisible, setRulerVisibleState] = useState(() => loadRulerVisible());
+  const [rulerUnit, setRulerUnitState] = useState<RulerUnit>(() => loadRulerUnit());
   const [findQuery, setFindQuery] = useState("");
   const [replaceQuery, setReplaceQuery] = useState("");
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
@@ -1227,6 +1231,11 @@ export default function DocumentStudioEditor() {
     });
   };
 
+  const setRulerUnit = (unit: RulerUnit) => {
+    setRulerUnitState(unit);
+    saveRulerUnit(unit);
+  };
+
   const handlePhysicalMarginChange = (edge: PhysicalMarginEdge, mm: number) => {
     setDocumentSettings((current) => ({
       ...current,
@@ -1259,6 +1268,7 @@ export default function DocumentStudioEditor() {
         void handleDownloadPdf();
       },
       print: printDocumentStudio,
+      openPageSetup: () => setRightPanel("settings"),
       find: () => setFindOpen(true),
       toggleOutline: () => setLeftPanel((p) => toggleLeftPanel(p, "outline")),
       toggleQuality: () => setRightPanel((p) => toggleRightPanel(p, "quality")),
@@ -1267,6 +1277,7 @@ export default function DocumentStudioEditor() {
       toggleFullscreen: toggleStudioFullscreen,
       setViewMode,
       setZoom,
+      setRulerUnit,
       toggleRuler,
       loadExample: handleLoadExample,
       promptLink,
@@ -1317,6 +1328,7 @@ export default function DocumentStudioEditor() {
   if (viewMode === "pageless") checkedIds.add("view.pageless");
   checkedIds.add(`view.zoom.${zoom}` as MenuActionId);
   if (rulerVisible) checkedIds.add("view.ruler");
+  checkedIds.add(`view.rulerUnit.${rulerUnit}` as MenuActionId);
   if (typeof document !== "undefined" && document.fullscreenElement) {
     checkedIds.add("view.fullscreen");
   }
@@ -1350,6 +1362,8 @@ export default function DocumentStudioEditor() {
     onPresetChange: handlePresetChange,
     onPageChange: () => setPdfSummary(null),
     viewMode,
+    rulerUnit,
+    setRulerUnit,
   };
 
   return (
@@ -1522,6 +1536,7 @@ export default function DocumentStudioEditor() {
             viewMode={viewMode}
             zoom={zoom}
             rulerVisible={rulerVisible}
+            rulerUnit={rulerUnit}
             onPhysicalMarginChange={handlePhysicalMarginChange}
             onLoadExample={handleLoadExample}
             onWrapperClick={handleWrapperClick}

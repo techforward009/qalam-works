@@ -88,7 +88,7 @@ export function calculateInchTickPositions(metrics: RulerMetrics): number[] {
   return ticks;
 }
 
-export type RulerTickKind = "major" | "minor";
+export type RulerTickKind = "major" | "minor" | "micro";
 
 export interface RulerTick {
   offsetPx: number;
@@ -98,8 +98,24 @@ export interface RulerTick {
 
 export type RulerUnit = "cm" | "in";
 
-export function rulerUnitForPage(size: ResolvedPageLayout["size"]): RulerUnit {
-  return size === "letter" ? "in" : "cm";
+export const MM_PER_INCH = 25.4;
+
+export function mmToDisplayUnit(mm: number, unit: RulerUnit): number {
+  return unit === "in" ? mm / MM_PER_INCH : mm / 10;
+}
+
+export function displayUnitToMm(value: number, unit: RulerUnit): number {
+  return unit === "in" ? value * MM_PER_INCH : value * 10;
+}
+
+export function formatMarginDisplay(mm: number, unit: RulerUnit): string {
+  const value = mmToDisplayUnit(mm, unit);
+  if (unit === "in") {
+    const rounded = Math.round(value * 100) / 100;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+  }
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
 /** Physical ticks from the page origin (left/top). Never mirrored for RTL. */
@@ -108,31 +124,32 @@ export function calculateRulerTicks(lengthPx: number, lengthMm: number, unit: Ru
   const pxPerMm = lengthPx / lengthMm;
   const ticks: RulerTick[] = [];
   if (unit === "in") {
-    const pxPerInch = pxPerMm * 25.4;
-    const eighths = Math.floor((lengthMm / 25.4) * 8 + 0.01);
+    const pxPerInch = pxPerMm * MM_PER_INCH;
+    const eighths = Math.floor((lengthMm / MM_PER_INCH) * 8 + 0.01);
     for (let i = 0; i <= eighths; i++) {
       const offsetPx = (i / 8) * pxPerInch;
       if (offsetPx > lengthPx + 0.5) break;
       const major = i % 8 === 0;
+      const half = i % 4 === 0;
       ticks.push({
         offsetPx,
-        kind: major ? "major" : "minor",
+        kind: major ? "major" : half ? "minor" : "micro",
         label: major ? String(i / 8) : undefined,
       });
     }
     return ticks;
   }
-  const steps = Math.floor(lengthMm / 5 + 0.01);
-  for (let i = 0; i <= steps; i++) {
-    const mm = i * 5;
+  const steps = Math.floor(lengthMm + 0.01);
+  for (let mm = 0; mm <= steps; mm++) {
     const offsetPx = mm * pxPerMm;
     if (offsetPx > lengthPx + 0.5) break;
-    const major = mm % 10 === 0;
-    ticks.push({
-      offsetPx,
-      kind: major ? "major" : "minor",
-      label: major ? String(mm / 10) : undefined,
-    });
+    if (mm % 10 === 0) {
+      ticks.push({ offsetPx, kind: "major", label: String(mm / 10) });
+    } else if (mm % 5 === 0) {
+      ticks.push({ offsetPx, kind: "minor" });
+    } else if (pxPerMm >= 2.4) {
+      ticks.push({ offsetPx, kind: "micro" });
+    }
   }
   return ticks;
 }

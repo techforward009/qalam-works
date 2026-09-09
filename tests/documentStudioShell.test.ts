@@ -44,6 +44,7 @@ function mockHandlers(extra: Partial<DocumentMenuHandlers> = {}): DocumentMenuHa
     downloadDocx: track("docx"),
     downloadPdf: track("pdf"),
     print: track("print"),
+    openPageSetup: track("pageSetup"),
     find: track("find"),
     toggleOutline: track("outline"),
     toggleQuality: track("quality"),
@@ -57,6 +58,9 @@ function mockHandlers(extra: Partial<DocumentMenuHandlers> = {}): DocumentMenuHa
       calls.push(`zoom:${zoom}`);
     },
     toggleRuler: track("ruler"),
+    setRulerUnit: (unit) => {
+      calls.push(`unit:${unit}`);
+    },
     loadExample: track("example"),
     promptLink: track("link"),
     setDir: (dir) => {

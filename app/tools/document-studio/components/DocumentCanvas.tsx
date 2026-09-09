@@ -18,6 +18,7 @@ import {
   type DocumentZoom,
 } from "../utils/documentView";
 import { applyPageGapGeometry } from "../utils/pageGapDecorations";
+import type { RulerUnit } from "../utils/rulerLayout";
 import { WordRuler } from "./WordRuler";
 
 export default function DocumentCanvas({
@@ -30,6 +31,7 @@ export default function DocumentCanvas({
   viewMode,
   zoom = 100,
   rulerVisible = true,
+  rulerUnit = "cm",
   onPhysicalMarginChange,
   onLoadExample,
   onWrapperClick,
@@ -43,6 +45,7 @@ export default function DocumentCanvas({
   viewMode: DocumentViewMode;
   zoom?: DocumentZoom;
   rulerVisible?: boolean;
+  rulerUnit?: RulerUnit;
   onPhysicalMarginChange?: (edge: PhysicalMarginEdge, mm: number) => void;
   onLoadExample: () => void;
   onWrapperClick: (e: React.MouseEvent<HTMLDivElement>) => void;
@@ -162,14 +165,14 @@ export default function DocumentCanvas({
           <div className="flex studio-no-print" data-studio-ruler-frame="true">
             <div className="h-6 w-6 shrink-0 border-b border-r border-slate-300 bg-[#dfe4dc]" data-ruler-corner="true" />
             <div className="min-w-0 flex-1">
-              <WordRuler dir={dir} layout={pageLayout} axis="horizontal" onPhysicalMarginChange={onPhysicalMarginChange} />
+              <WordRuler dir={dir} layout={pageLayout} axis="horizontal" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
             </div>
           </div>
         )}
         <div className={showRuler ? "flex" : undefined}>
           {showRuler && (
             <div className="studio-no-print w-6 shrink-0" style={{ height: visualPageHeight }}>
-              <WordRuler dir={dir} layout={pageLayout} axis="vertical" onPhysicalMarginChange={onPhysicalMarginChange} />
+              <WordRuler dir={dir} layout={pageLayout} axis="vertical" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
             </div>
           )}
       <div

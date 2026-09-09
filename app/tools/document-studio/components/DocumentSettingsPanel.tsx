@@ -7,15 +7,10 @@ import {
   LINE_HEIGHT_OPTIONS,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
-import {
-  MARGIN_MIN_MM,
-  MARGIN_MAX_MM,
-  applyPhysicalPageMargin,
-  clampMarginMm,
-  type ResolvedPageLayout,
-} from "../utils/pageLayout";
+import { applyPhysicalPageMargin, clampMarginMm, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { PresetId } from "../utils/publishingPresets";
-import type { DocumentViewMode } from "../utils/documentView";
+import type { DocumentViewMode, RulerUnit } from "../utils/documentView";
+import { displayUnitToMm, formatMarginDisplay } from "../utils/rulerLayout";
 
 export default function DocumentSettingsPanel({
   dir,
@@ -27,6 +22,8 @@ export default function DocumentSettingsPanel({
   onPresetChange,
   onPageChange,
   viewMode = "pages",
+  rulerUnit = "cm",
+  setRulerUnit,
 }: {
   dir: "rtl" | "ltr";
   isUr: boolean;
@@ -37,12 +34,15 @@ export default function DocumentSettingsPanel({
   onPresetChange: (id: PresetId) => void;
   onPageChange: () => void;
   viewMode?: DocumentViewMode;
+  rulerUnit?: RulerUnit;
+  setRulerUnit?: (unit: RulerUnit) => void;
 }) {
   return (
     <div className="space-y-4 rounded-xl border border-[#1A3A2A]/10 bg-white p-3">
       <WordRuler
         dir={dir}
         layout={pageLayout}
+        unit={rulerUnit}
         onPhysicalMarginChange={(edge, mm) => {
           setDocumentSettings((s) => ({
             ...s,
@@ -98,7 +98,18 @@ export default function DocumentSettingsPanel({
           </select>
         </label>
         <label className="text-xs font-medium text-gray-600">
-          Margins
+          {isUr ? "پیمائش" : "Measurement units"}
+          <select
+            className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
+            value={rulerUnit}
+            data-page-setup-unit="true"
+            onChange={(e) => setRulerUnit?.(e.target.value === "in" ? "in" : "cm")}
+          >
+            <option value="cm">{isUr ? "سینٹی میٹر" : "Centimeters"}</option>
+            <option value="in">{isUr ? "انچ" : "Inches"}</option>
+          </select>
+        </label>
+        <label className="text-xs font-medium text-gray-600">
           <select
             className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
             value={documentSettings.page.margins.preset}
@@ -117,23 +128,21 @@ export default function DocumentSettingsPanel({
             <option value="custom">{isUr ? "خصوصی" : "Custom"}</option>
           </select>
         </label>
-        {documentSettings.page.margins.preset === "custom" && (
-          <div className="col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2" data-page-setup-margins="true">
             {(["topMm", "bottomMm", "startMm", "endMm"] as const).map((key) => (
               <label key={key} className="text-xs font-medium text-gray-600">
-                {isUr ? (key === "topMm" ? "اوپر" : key === "bottomMm" ? "نیچے" : key === "startMm" ? "آغاز" : "اختتام") : (key === "topMm" ? "Top" : key === "bottomMm" ? "Bottom" : key === "startMm" ? "Start" : "End")} (mm)
+                {isUr ? (key === "topMm" ? "اوپر" : key === "bottomMm" ? "نیچے" : key === "startMm" ? "آغاز" : "اختتام") : (key === "topMm" ? "Top" : key === "bottomMm" ? "Bottom" : key === "startMm" ? "Start" : "End")} ({rulerUnit})
                 <input
                   type="number"
-                  min={MARGIN_MIN_MM}
-                  max={MARGIN_MAX_MM}
+                  step={rulerUnit === "in" ? "0.05" : "0.1"}
                   className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
-                  value={documentSettings.page.margins[key]}
+                  data-margin-field={key}
+                  value={formatMarginDisplay(documentSettings.page.margins[key], rulerUnit)}
                   onChange={(e) => {
-                    const raw = Number(e.target.value);
-                    const value = clampMarginMm(raw);
+                    const mm = clampMarginMm(displayUnitToMm(Number(e.target.value), rulerUnit));
                     setDocumentSettings((s) => ({
                       ...s,
-                      page: { ...s.page, margins: { ...s.page.margins, [key]: value } },
+                      page: { ...s.page, margins: { ...s.page.margins, preset: "custom", [key]: mm } },
                     }));
                     onPageChange();
                   }}
@@ -141,7 +150,6 @@ export default function DocumentSettingsPanel({
               </label>
             ))}
           </div>
-        )}
         <label className="text-xs font-medium text-gray-600">
           Body size (pt)
           <select

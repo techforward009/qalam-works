@@ -1,4 +1,4 @@
-import { calculateRulerMetrics, resolveVisualMarginOffsets, calculateInchTickPositions, twipsToInches, TWIPS_PER_INCH, calculateRulerTicks, calculateVerticalRulerMetrics, rulerUnitForPage } from "../app/tools/document-studio/utils/rulerLayout";
+import { calculateRulerMetrics, resolveVisualMarginOffsets, calculateInchTickPositions, twipsToInches, TWIPS_PER_INCH, calculateRulerTicks, calculateVerticalRulerMetrics, displayUnitToMm, formatMarginDisplay, mmToDisplayUnit } from "../app/tools/document-studio/utils/rulerLayout";
 import { resolvePageLayout, mmToTwips } from "../app/tools/document-studio/utils/pageLayout";
 
 const a4Normal = resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "normal" });
@@ -97,13 +97,16 @@ describe("twipsToInches / calculateInchTickPositions", () => {
 });
 
 describe("professional metric/inch ticks and vertical geometry", () => {
-  test("A4 uses cm; Letter uses inches", () => {
-    expect(rulerUnitForPage("a4")).toBe("cm");
-    expect(rulerUnitForPage("a5")).toBe("cm");
-    expect(rulerUnitForPage("letter")).toBe("in");
+  test("cm and inch display convert without changing stored millimetres", () => {
+    expect(mmToDisplayUnit(25.4, "cm")).toBeCloseTo(2.54);
+    expect(mmToDisplayUnit(25.4, "in")).toBeCloseTo(1);
+    expect(displayUnitToMm(2.54, "cm")).toBeCloseTo(25.4);
+    expect(displayUnitToMm(1, "in")).toBeCloseTo(25.4);
+    expect(formatMarginDisplay(25.4, "in")).toBe("1");
+    expect(formatMarginDisplay(25, "cm")).toBe("2.5");
   });
 
-  test("horizontal ticks include major and minor marks from page width", () => {
+  test("centimeter ticks have 1cm majors and 0.5cm minors", () => {
     const ticks = calculateRulerTicks(210, a4Normal.widthMm, "cm");
     const majors = ticks.filter((tick) => tick.kind === "major");
     const minors = ticks.filter((tick) => tick.kind === "minor");
@@ -111,6 +114,13 @@ describe("professional metric/inch ticks and vertical geometry", () => {
     expect(minors.length).toBeGreaterThan(2);
     expect(ticks[0]?.offsetPx).toBe(0);
     expect(majors.some((tick) => tick.label === "1")).toBe(true);
+  });
+
+  test("inch ticks have 1 inch majors and fractional minors", () => {
+    const ticks = calculateRulerTicks(1000, a4Normal.widthMm, "in");
+    expect(ticks.filter((tick) => tick.kind === "major").length).toBeGreaterThan(2);
+    expect(ticks.filter((tick) => tick.kind === "minor" || tick.kind === "micro").length).toBeGreaterThan(4);
+    expect(ticks.find((tick) => tick.kind === "major")?.label).toBe("0");
   });
 
   test("vertical metrics follow page height and top/bottom margins", () => {

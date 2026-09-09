@@ -3,6 +3,9 @@
  * It must not live in the document JSON schema.
  */
 import { scaleLayoutToWidth, type ResolvedPageLayout } from "./pageLayout";
+import type { RulerUnit } from "./rulerLayout";
+
+export type { RulerUnit };
 
 export type DocumentViewMode = "pages" | "pageless";
 
@@ -19,7 +22,9 @@ export const DOCUMENT_ZOOM_PRESETS = [50, 75, 100, 125, 150] as const;
 export const DEFAULT_DOCUMENT_ZOOM: DocumentZoom = 100;
 export const ZOOM_STORAGE_KEY = "qalam-document-studio-zoom-v1";
 export const RULER_STORAGE_KEY = "qalam-document-studio-ruler-v1";
+export const RULER_UNIT_STORAGE_KEY = "qalam-document-studio-ruler-unit-v1";
 export const DEFAULT_RULER_VISIBLE = true;
+export const DEFAULT_RULER_UNIT: RulerUnit = "cm";
 
 export function isDocumentViewMode(value: unknown): value is DocumentViewMode {
   return value === "pages" || value === "pageless";
@@ -93,6 +98,28 @@ export function saveRulerVisible(visible: boolean): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(RULER_STORAGE_KEY, visible ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function parseStoredRulerUnit(raw: string | null | undefined): RulerUnit {
+  return raw === "in" ? "in" : DEFAULT_RULER_UNIT;
+}
+
+export function loadRulerUnit(): RulerUnit {
+  if (typeof window === "undefined") return DEFAULT_RULER_UNIT;
+  try {
+    return parseStoredRulerUnit(window.localStorage.getItem(RULER_UNIT_STORAGE_KEY));
+  } catch {
+    return DEFAULT_RULER_UNIT;
+  }
+}
+
+export function saveRulerUnit(unit: RulerUnit): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(RULER_UNIT_STORAGE_KEY, unit);
   } catch {
     /* ignore */
   }

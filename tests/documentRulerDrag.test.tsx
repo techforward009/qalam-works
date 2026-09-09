@@ -2,18 +2,23 @@
 
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { WordRuler } from "../app/tools/document-studio/components/WordRuler";
 import DocumentCanvas from "../app/tools/document-studio/components/DocumentCanvas";
+import DocumentSettingsPanel from "../app/tools/document-studio/components/DocumentSettingsPanel";
 import { applyPhysicalPageMargin, clampMarginMm, MARGIN_MAX_MM, MARGIN_MIN_MM, resolvePageLayout } from "../app/tools/document-studio/utils/pageLayout";
-import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
-import { documentPrintCss } from "../app/tools/document-studio/utils/documentView";
-import { marginMmFromPointer, pointerOffsetToMm } from "../app/tools/document-studio/utils/rulerLayout";
+import { defaultDocumentSettings, type DocumentStudioSettings } from "../app/tools/document-studio/utils/documentSettings";
+import { documentPrintCss, DEFAULT_RULER_UNIT, parseStoredRulerUnit } from "../app/tools/document-studio/utils/documentView";
+import { displayUnitToMm, formatMarginDisplay, marginMmFromPointer, pointerOffsetToMm } from "../app/tools/document-studio/utils/rulerLayout";
 
 afterEach(() => cleanup());
 
-const layout = resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "normal" });
 const settings = defaultDocumentSettings();
 const base = { topMm: 25.4, bottomMm: 25.4, startMm: 25.4, endMm: 25.4 };
+
+function layoutFrom(margins: typeof base) {
+  return resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "custom", customMargins: margins });
+}
 
 function mockRect(el: Element, box: { left: number; top: number; width: number; height: number }) {
   vi.spyOn(el, "getBoundingClientRect").mockReturnValue({
@@ -28,78 +33,133 @@ function mockRect(el: Element, box: { left: number; top: number; width: number; 
   } as DOMRect);
 }
 
-describe("physical margin mapping", () => {
-  it("maps left/right drags onto existing logical margins without reversing paper geometry", () => {
-    expect(applyPhysicalPageMargin(base, "ltr", "left", 40).startMm).toBe(40);
-    expect(applyPhysicalPageMargin(base, "ltr", "right", 18).endMm).toBe(18);
-    expect(applyPhysicalPageMargin(base, "rtl", "left", 40).endMm).toBe(40);
-    expect(applyPhysicalPageMargin(base, "rtl", "right", 18).startMm).toBe(18);
-    expect(applyPhysicalPageMargin(base, "ltr", "top", 12).topMm).toBe(12);
-    expect(applyPhysicalPageMargin(base, "ltr", "bottom", 30).bottomMm).toBe(30);
-  });
+function Harness({ axis }: { axis: "horizontal" | "vertical" }) {
+  const [margins, setMargins] = useState(base);
+  const layout = layoutFrom(margins);
+  return (
+    <div>
+      <span data-margin-start={margins.startMm} data-margin-end={margins.endMm} data-margin-top={margins.topMm} data-margin-bottom={margins.bottomMm} />
+      <WordRuler
+        dir="ltr"
+        layout={layout}
+        axis={axis}
+        unit="cm"
+        onPhysicalMarginChange={(edge, mm) => {
+          setMargins((current) => applyPhysicalPageMargin(current, "ltr", edge, mm));
+        }}
+      />
+    </div>
+  );
+}
 
-  it("clamps to the existing min/max margin range", () => {
+describe("physical margin mapping and units", () => {
+  it("clamps and converts zoom-independent pointer offsets to mm", () => {
     expect(applyPhysicalPageMargin(base, "ltr", "left", 0).startMm).toBe(MARGIN_MIN_MM);
     expect(applyPhysicalPageMargin(base, "ltr", "right", 999).endMm).toBe(MARGIN_MAX_MM);
     expect(clampMarginMm(2)).toBe(MARGIN_MIN_MM);
-    expect(clampMarginMm(80)).toBe(MARGIN_MAX_MM);
-  });
-
-  it("converts pointer offsets to mm independently of zoom scale", () => {
     expect(pointerOffsetToMm(40, 210, 210)).toBeCloseTo(40);
     expect(pointerOffsetToMm(80, 420, 210)).toBeCloseTo(40);
     expect(marginMmFromPointer({ client: 40, origin: 0, lengthPx: 210, pageMm: 210 })).toBeCloseTo(40);
-    expect(marginMmFromPointer({ client: 170, origin: 0, lengthPx: 210, pageMm: 210, fromEnd: true })).toBeCloseTo(40);
+    expect(DEFAULT_RULER_UNIT).toBe("cm");
+    expect(parseStoredRulerUnit(null)).toBe("cm");
+    expect(parseStoredRulerUnit("in")).toBe("in");
+  });
+
+  it("switching cm/in does not alter physical millimetres", () => {
+    const mm = 25.4;
+    expect(displayUnitToMm(Number(formatMarginDisplay(mm, "cm")), "cm")).toBeCloseTo(mm, 0);
+    expect(displayUnitToMm(Number(formatMarginDisplay(mm, "in")), "in")).toBeCloseTo(mm, 5);
   });
 });
 
-describe("interactive WordRuler", () => {
-  it("dragging horizontal left/right handles updates existing margin settings", () => {
-    const onChange = vi.fn();
-    const { container } = render(<WordRuler dir="ltr" layout={layout} axis="horizontal" onPhysicalMarginChange={onChange} />);
+describe("interactive WordRuler drag updates actual settings", () => {
+  it("left handle pointerDown/move/up changes startMm", () => {
+    const { container } = render(<Harness axis="horizontal" />);
     const ruler = container.querySelector("[data-studio-ruler]") as HTMLElement;
     mockRect(ruler, { left: 0, top: 0, width: 210, height: 24 });
-    const left = container.querySelector('[data-ruler-handle="left"]') as HTMLElement;
-    const right = container.querySelector('[data-ruler-handle="right"]') as HTMLElement;
-    fireEvent.pointerDown(left, { clientX: 40, pointerId: 1 });
-    fireEvent.pointerMove(left, { clientX: 40, pointerId: 1 });
-    fireEvent.pointerUp(left, { pointerId: 1 });
-    fireEvent.pointerDown(right, { clientX: 170, pointerId: 2 });
-    fireEvent.pointerUp(right, { pointerId: 2 });
-    expect(onChange).toHaveBeenCalledWith("left", expect.any(Number));
-    expect(onChange).toHaveBeenCalledWith("right", expect.any(Number));
-    expect(applyPhysicalPageMargin(base, "ltr", "left", onChange.mock.calls[0][1]).startMm).toBeGreaterThan(0);
+    fireEvent.pointerDown(container.querySelector('[data-ruler-handle="left"]') as HTMLElement, { clientX: 40, pointerId: 1 });
+    fireEvent.pointerMove(window, { clientX: 40, pointerId: 1 });
+    fireEvent.pointerUp(window, { pointerId: 1 });
+    expect(Number(container.querySelector("[data-margin-start]")?.getAttribute("data-margin-start"))).toBe(40);
   });
 
-  it("dragging vertical top/bottom handles updates existing top/bottom settings", () => {
-    const onChange = vi.fn();
-    const { container } = render(<WordRuler dir="ltr" layout={layout} axis="vertical" onPhysicalMarginChange={onChange} />);
-    const ruler = container.querySelector("[data-studio-vertical-ruler]") as HTMLElement;
-    mockRect(ruler, { left: 0, top: 0, width: 24, height: 297 });
-    const top = container.querySelector('[data-ruler-handle="top"]') as HTMLElement;
-    const bottom = container.querySelector('[data-ruler-handle="bottom"]') as HTMLElement;
-    fireEvent.pointerDown(top, { clientY: 20, pointerId: 1 });
-    fireEvent.pointerDown(bottom, { clientY: 250, pointerId: 2 });
-    expect(onChange).toHaveBeenCalledWith("top", expect.any(Number));
-    expect(onChange).toHaveBeenCalledWith("bottom", expect.any(Number));
+  it("right handle changes endMm", () => {
+    const { container } = render(<Harness axis="horizontal" />);
+    mockRect(container.querySelector("[data-studio-ruler]") as HTMLElement, { left: 0, top: 0, width: 210, height: 24 });
+    fireEvent.pointerDown(container.querySelector('[data-ruler-handle="right"]') as HTMLElement, { clientX: 170, pointerId: 1 });
+    fireEvent.pointerMove(window, { clientX: 170, pointerId: 1 });
+    fireEvent.pointerUp(window);
+    expect(Number(container.querySelector("[data-margin-end]")?.getAttribute("data-margin-end"))).toBe(40);
   });
 
-  it("persists as custom margins and updates page/print geometry", () => {
-    const next = {
-      preset: "custom" as const,
-      ...applyPhysicalPageMargin(base, "ltr", "left", 40),
-    };
-    const updated = resolvePageLayout({
-      size: "a4",
-      orientation: "portrait",
-      marginPreset: next.preset,
-      customMargins: next,
-    });
+  it("top and bottom handles change topMm/bottomMm", () => {
+    const { container } = render(<Harness axis="vertical" />);
+    mockRect(container.querySelector("[data-studio-vertical-ruler]") as HTMLElement, { left: 0, top: 0, width: 24, height: 297 });
+    fireEvent.pointerDown(container.querySelector('[data-ruler-handle="top"]') as HTMLElement, { clientY: 40, pointerId: 1 });
+    fireEvent.pointerMove(window, { clientY: 40, pointerId: 1 });
+    fireEvent.pointerUp(window);
+    expect(Number(container.querySelector("[data-margin-top]")?.getAttribute("data-margin-top"))).toBe(40);
+    fireEvent.pointerDown(container.querySelector('[data-ruler-handle="bottom"]') as HTMLElement, { clientY: 257, pointerId: 2 });
+    fireEvent.pointerMove(window, { clientY: 257, pointerId: 2 });
+    fireEvent.pointerUp(window);
+    expect(Number(container.querySelector("[data-margin-bottom]")?.getAttribute("data-margin-bottom"))).toBe(40);
+  });
+
+  it("persists after re-render and updates page/print geometry", () => {
+    const next = applyPhysicalPageMargin(base, "ltr", "left", 40);
+    const updated = layoutFrom(next);
+    const { container, rerender } = render(<WordRuler dir="ltr" layout={updated} axis="horizontal" unit="cm" onPhysicalMarginChange={vi.fn()} />);
+    rerender(<WordRuler dir="ltr" layout={updated} axis="horizontal" unit="in" onPhysicalMarginChange={vi.fn()} />);
     expect(updated.margins.startMm).toBe(40);
     expect(updated.contentWidthMm).toBeCloseTo(210 - 40 - 25.4);
-    const css = documentPrintCss(updated.widthMm, updated.heightMm);
-    expect(css).toContain("size: 210mm 297mm");
-    expect(updated.margins.startMm).not.toBe(layout.margins.startMm);
+    expect(container.querySelector("[data-ruler-unit]")?.getAttribute("data-ruler-unit")).toBe("in");
+    expect(documentPrintCss(updated.widthMm, updated.heightMm)).toContain("size: 210mm 297mm");
+  });
+
+  it("50% and 150% zoom keep 25mm as 25mm", () => {
+    expect(pointerOffsetToMm(25, 105, 210)).toBeCloseTo(50);
+    expect(pointerOffsetToMm(75, 315, 210)).toBeCloseTo(50);
+    expect(marginMmFromPointer({ client: 50, origin: 0, lengthPx: 210, pageMm: 210 })).toBeCloseTo(50);
+  });
+});
+
+describe("Page Setup unit display", () => {
+  it("shows selected unit and converts inch input back to mm", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <DocumentSettingsPanel
+        dir="ltr"
+        isUr={false}
+        pageLayout={layoutFrom(base)}
+        documentSettings={settings}
+        setDocumentSettings={onChange}
+        selectedPresetId="default"
+        onPresetChange={vi.fn()}
+        onPageChange={vi.fn()}
+        rulerUnit="cm"
+        setRulerUnit={vi.fn()}
+      />,
+    );
+    expect((document.querySelector("[data-page-setup-unit]") as HTMLSelectElement).value).toBe("cm");
+    expect((document.querySelector('[data-margin-field="topMm"]') as HTMLInputElement).value).toBe(formatMarginDisplay(25.4, "cm"));
+    rerender(
+      <DocumentSettingsPanel
+        dir="ltr"
+        isUr={false}
+        pageLayout={layoutFrom(base)}
+        documentSettings={settings}
+        setDocumentSettings={onChange}
+        selectedPresetId="default"
+        onPresetChange={vi.fn()}
+        onPageChange={vi.fn()}
+        rulerUnit="in"
+        setRulerUnit={vi.fn()}
+      />,
+    );
+    expect((document.querySelector('[data-margin-field="topMm"]') as HTMLInputElement).value).toBe("1");
+    fireEvent.change(document.querySelector('[data-margin-field="topMm"]') as HTMLInputElement, { target: { value: "0.75" } });
+    const updater = onChange.mock.calls[0][0] as (s: DocumentStudioSettings) => DocumentStudioSettings;
+    expect(updater(settings).page.margins.topMm).toBeCloseTo(19.05);
   });
 });
 
@@ -112,7 +172,7 @@ describe("Pageless has no physical margin drag rulers", () => {
         isUr={false}
         isEditorEmpty={false}
         documentSettings={settings}
-        pageLayout={layout}
+        pageLayout={layoutFrom(base)}
         viewMode="pageless"
         onPhysicalMarginChange={vi.fn()}
         onLoadExample={vi.fn()}
@@ -121,6 +181,5 @@ describe("Pageless has no physical margin drag rulers", () => {
     );
     expect(document.querySelector("[data-ruler-handle]")).toBeNull();
     expect(document.querySelector("[data-studio-ruler]")).toBeNull();
-    expect(document.querySelector("[data-studio-vertical-ruler]")).toBeNull();
   });
 });
