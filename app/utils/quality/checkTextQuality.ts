@@ -9,11 +9,12 @@ import {
   TATWEEL_REGEX,
   ARABIC_FORM_LETTERS_REGEX,
   arabicContextText,
-  countAsciiPunctuationInArabicContext,
   hasInconsistentPunctuationStyle,
+  splitParagraphs,
 } from "./sharedTextPatterns";
-import { countLatinIntrusions } from "./analyzeLanguageRuns";
+import { analyzeDocumentRuns, countLatinIntrusions } from "./analyzeLanguageRuns";
 import { maskProtectedTokens } from "./protectedTokens";
+import { analyzeContextualPunctuation, countContextualPunctuationIssues } from "./analyzeContextualPunctuation";
 import type { ProcessingLanguage, ResolvedLanguage } from "../processing/types";
 import { resolveProcessingLanguage } from "../processing/detectLanguage";
 
@@ -144,8 +145,10 @@ function checkScriptSensitive(
 ): Pick<PartialCounts, "mixedPunctuation" | "repeatedWords" | "mixedScript" | "mixedUrduArabicForms" | "inconsistentPunctuationStyle"> {
   let mixedPunctuation = 0;
   let mixedScript = 0;
-  if (mode === "ur") {
-    mixedPunctuation = countAsciiPunctuationInArabicContext(masked);
+  if (mode === "ur" || mode === "ar") {
+    mixedPunctuation = countContextualPunctuationIssues(
+      analyzeContextualPunctuation(analyzeDocumentRuns(splitParagraphs(text)), mode),
+    );
     mixedScript = countLatinIntrusions(text);
   }
 

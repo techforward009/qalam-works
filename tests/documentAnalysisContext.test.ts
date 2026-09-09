@@ -142,9 +142,8 @@ describe("Shared context — large document performance improvement", () => {
       createDocumentAnalysisContext(doc);
       return performance.now() - t0;
     })();
-    // createDocumentAnalysisContext does exactly one getBlockTexts call
-    // plus a cheap join — its cost should be in the same order of
-    // magnitude as a single getBlockTexts call, not 8x it.
-    expect(contextTime).toBeLessThan(Math.max(singleCallTime * 5, 5));
+    // createDocumentAnalysisContext does one getBlockTexts call, then
+    // linear LI-1 run analysis + LI-3 punctuation analysis.
+    expect(contextTime).toBeLessThan(Math.max(singleCallTime * 12, 15));
   });
 });

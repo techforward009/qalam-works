@@ -47,6 +47,7 @@ import {
   arabicContextText,
 } from "../../../utils/quality/sharedTextPatterns";
 import { analyzeDocumentRuns, latinIntrusionRuns, type DocumentRunAnalysis } from "../../../utils/quality/analyzeLanguageRuns";
+import { analyzeContextualPunctuation, type DocumentPunctuationAnalysis } from "../../../utils/quality/analyzeContextualPunctuation";
 import { findProtectedTokens, maskProtectedTokens, protectedIndexMask, rangeIsProtected } from "../../../utils/quality/protectedTokens";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
 import { resolveProcessingLanguage } from "../../../utils/processing/detectLanguage";
@@ -285,6 +286,28 @@ function findPunctuationSuggestions(text: string): DocumentSuggestion[] {
     }
   }
   return suggestions;
+}
+
+function findContextualPunctuationSuggestions(
+  text: string,
+  analysis: DocumentPunctuationAnalysis | undefined,
+  runAnalysis: DocumentRunAnalysis | undefined,
+  mode: ProcessingLanguage | ResolvedLanguage,
+): DocumentSuggestion[] {
+  const issues = (analysis ?? analyzeContextualPunctuation(runAnalysis ?? analyzeDocumentRuns(text.split("\n")), mode)).issues;
+  return issues.map((issue) => {
+    const { before, match: exact, after } = extractWithContext(text, issue.start, issue.end - issue.start);
+    return {
+      type: `punctuation-${issue.type}`,
+      category: "punctuation" as const,
+      severity: "medium" as const,
+      originalText: exact,
+      suggestedText: issue.suggestedText,
+      explanation: "اس اردو متن کے سیاق میں اردو رموزِ اوقاف استعمال کریں۔",
+      contextBefore: before,
+      contextAfter: after,
+    };
+  });
 }
 
 // F) Quote Correction. Reuses checkTextQuality.ts's exact detection
@@ -711,6 +734,13 @@ export function localizedSuggestionExplanation(suggestion: DocumentSuggestion, i
       return isUr
         ? "لفظ لگاتار دو مرتبہ آ گیا ہے — عموماً ٹائپنگ کی غلطی۔ اگر شاعرانہ تکرار ارادی ہے تو نظرانداز کریں۔"
         : "The same word is repeated. This is often a typing error.";
+    case "punctuation-comma-style":
+    case "punctuation-semicolon-style":
+    case "punctuation-question-mark-style":
+    case "punctuation-sentence-ending-style":
+      return isUr
+        ? "اس اردو متن کے سیاق میں اردو رموزِ اوقاف استعمال کریں۔"
+        : "Use Urdu punctuation in this Urdu text context.";
     case "punctuation-inconsistent":
       return isUr
         ? "ایک ہی رمزِ اوقاف کی انگریزی اور اردو شکلیں دونوں استعمال ہوئی ہیں۔ یکساں انداز تجویز کیا جاتا ہے۔"
@@ -782,6 +812,7 @@ export function generateDocumentSuggestions(
     ...findMissingSpaceSuggestions(text, protectedFlags),
     ...findNumeralSuggestions(text),
     ...(urMode ? findPunctuationSuggestions(arabicContextText(masked)) : []),
+    ...findContextualPunctuationSuggestions(text, context?.punctuationAnalysis, context?.runAnalysis, mode),
     ...findQuoteSuggestions(text, protectedFlags),
     ...findDuplicatedPunctuationSuggestions(text, protectedFlags),
     ...(urMode ? findTerminologySuggestions(text) : []),

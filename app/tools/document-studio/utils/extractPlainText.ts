@@ -10,6 +10,8 @@
 // real editor.getJSON() return value (type JSONContent) satisfies this shape.
 import type { DocumentRunAnalysis } from "../../../utils/quality/analyzeLanguageRuns";
 import { analyzeDocumentRuns } from "../../../utils/quality/analyzeLanguageRuns";
+import type { DocumentPunctuationAnalysis } from "../../../utils/quality/analyzeContextualPunctuation";
+import { analyzeContextualPunctuation } from "../../../utils/quality/analyzeContextualPunctuation";
 
 export interface DocNode {
   type?: string;
@@ -149,6 +151,8 @@ export interface DocumentAnalysisContext {
   readonly processingLanguage: "auto" | "ur" | "en" | "ar";
   /** LI-1 run-level analysis, computed once per cycle. */
   readonly runAnalysis: DocumentRunAnalysis;
+  /** LI-3 contextual punctuation, computed once from the same runs. */
+  readonly punctuationAnalysis: DocumentPunctuationAnalysis;
 }
 
 export function createDocumentAnalysisContext(
@@ -156,11 +160,13 @@ export function createDocumentAnalysisContext(
   processingLanguage: "auto" | "ur" | "en" | "ar" = "ur",
 ): DocumentAnalysisContext {
   const blocks = getBlockTexts(doc);
+  const runAnalysis = Object.freeze(analyzeDocumentRuns(blocks));
   return Object.freeze({
     blocks: Object.freeze(blocks),
     joinedText: blocks.join("\n"),
     processingLanguage,
-    runAnalysis: Object.freeze(analyzeDocumentRuns(blocks)),
+    runAnalysis,
+    punctuationAnalysis: Object.freeze(analyzeContextualPunctuation(runAnalysis, processingLanguage)),
   });
 }
 
