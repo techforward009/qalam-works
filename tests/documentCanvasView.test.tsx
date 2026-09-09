@@ -43,6 +43,14 @@ describe("DocumentCanvas view modes", () => {
     expect(document.querySelectorAll("[data-studio-page-sheet]").length).toBe(1);
     expect(document.querySelector("[data-studio-ruler]")).toBeTruthy();
     expect(document.querySelector("[data-studio-ruler]")?.getAttribute("data-ruler-page-width-mm")).toBe(String(layout.widthMm));
+    expect(document.querySelector("[data-studio-vertical-ruler]")).toBeTruthy();
+    expect(document.querySelector("[data-studio-vertical-ruler]")?.getAttribute("data-ruler-page-height-mm")).toBe(String(layout.heightMm));
+    expect(Number(document.querySelector("[data-studio-ruler]")?.getAttribute("data-ruler-major-ticks"))).toBeGreaterThan(1);
+    expect(Number(document.querySelector("[data-studio-ruler]")?.getAttribute("data-ruler-minor-ticks"))).toBeGreaterThan(1);
+    expect(document.querySelector("[data-ruler-margin='start']")).toBeTruthy();
+    expect(root?.getAttribute("data-print-ignores-zoom")).toBe("true");
+    expect(root?.getAttribute("data-print-page-width-mm")).toBe(String(layout.widthMm));
+    expect(document.querySelector("[data-print-sheet-last='true']")).toBeTruthy();
     expect(root?.getAttribute("data-studio-zoom")).toBe("100");
   });
 
@@ -53,6 +61,7 @@ describe("DocumentCanvas view modes", () => {
     expect(document.querySelector("[data-studio-pages-stack]")).toBeNull();
     expect(document.querySelector("[data-studio-page-sheet]")).toBeNull();
     expect(document.querySelector("[data-studio-ruler]")).toBeNull();
+    expect(document.querySelector("[data-studio-vertical-ruler]")).toBeNull();
   });
 
   it("hides the ruler when toggled off in Pages mode", () => {
@@ -71,6 +80,7 @@ describe("DocumentCanvas view modes", () => {
       />,
     );
     expect(document.querySelector("[data-studio-ruler]")).toBeNull();
+    expect(document.querySelector("[data-studio-vertical-ruler]")).toBeNull();
     expect(document.querySelector("[data-studio-page-sheet]")).toBeTruthy();
   });
 
@@ -94,5 +104,36 @@ describe("DocumentCanvas view modes", () => {
     expect(root?.getAttribute("data-page-count")).toBe("1");
     const surface = document.querySelector("[data-studio-zoom-surface]") as HTMLElement | null;
     expect(surface?.style.transform).toContain("1.5");
+    expect(document.querySelector("[data-studio-print-root]")?.getAttribute("data-print-page-width-mm")).toBe(
+      String(layout.widthMm),
+    );
+    expect(document.querySelector("[data-studio-print-root]")?.getAttribute("data-print-page-height-mm")).toBe(
+      String(layout.heightMm),
+    );
+  });
+
+  it("updates ruler geometry when page size/orientation change", () => {
+    const landscape = resolvePageLayout({ size: "a5", orientation: "landscape", marginPreset: "narrow" });
+    render(
+      <DocumentCanvas
+        editor={null}
+        dir="ltr"
+        isUr={false}
+        isEditorEmpty={false}
+        documentSettings={settings}
+        pageLayout={landscape}
+        viewMode="pages"
+        onLoadExample={vi.fn()}
+        onWrapperClick={vi.fn()}
+      />,
+    );
+    const h = document.querySelector("[data-studio-ruler]");
+    const v = document.querySelector("[data-studio-vertical-ruler]");
+    expect(h?.getAttribute("data-ruler-orientation")).toBe("landscape");
+    expect(h?.getAttribute("data-ruler-page-size")).toBe("a5");
+    expect(h?.getAttribute("data-ruler-page-width-mm")).toBe(String(landscape.widthMm));
+    expect(v?.getAttribute("data-ruler-page-height-mm")).toBe(String(landscape.heightMm));
+    expect(Number(v?.getAttribute("data-ruler-major-ticks"))).toBeGreaterThan(1);
+    expect(Number(v?.getAttribute("data-ruler-minor-ticks"))).toBeGreaterThan(1);
   });
 });

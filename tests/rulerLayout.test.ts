@@ -1,4 +1,4 @@
-import { calculateRulerMetrics, resolveVisualMarginOffsets, calculateInchTickPositions, twipsToInches, TWIPS_PER_INCH } from "../app/tools/document-studio/utils/rulerLayout";
+import { calculateRulerMetrics, resolveVisualMarginOffsets, calculateInchTickPositions, twipsToInches, TWIPS_PER_INCH, calculateRulerTicks, calculateVerticalRulerMetrics, rulerUnitForPage } from "../app/tools/document-studio/utils/rulerLayout";
 import { resolvePageLayout, mmToTwips } from "../app/tools/document-studio/utils/pageLayout";
 
 const a4Normal = resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "normal" });
@@ -93,5 +93,40 @@ describe("twipsToInches / calculateInchTickPositions", () => {
         expect(ticks[i] - ticks[i - 1]).toBeCloseTo(spacing, 5);
       }
     }
+  });
+});
+
+describe("professional metric/inch ticks and vertical geometry", () => {
+  test("A4 uses cm; Letter uses inches", () => {
+    expect(rulerUnitForPage("a4")).toBe("cm");
+    expect(rulerUnitForPage("a5")).toBe("cm");
+    expect(rulerUnitForPage("letter")).toBe("in");
+  });
+
+  test("horizontal ticks include major and minor marks from page width", () => {
+    const ticks = calculateRulerTicks(210, a4Normal.widthMm, "cm");
+    const majors = ticks.filter((tick) => tick.kind === "major");
+    const minors = ticks.filter((tick) => tick.kind === "minor");
+    expect(majors.length).toBeGreaterThan(2);
+    expect(minors.length).toBeGreaterThan(2);
+    expect(ticks[0]?.offsetPx).toBe(0);
+    expect(majors.some((tick) => tick.label === "1")).toBe(true);
+  });
+
+  test("vertical metrics follow page height and top/bottom margins", () => {
+    const v = calculateVerticalRulerMetrics(1000, a4Normal);
+    expect(v.pageHeightPx).toBe(1000);
+    expect(v.topMarginPx).toBeCloseTo(v.bottomMarginPx, 1);
+    expect(v.textAreaHeightPx).toBeCloseTo(1000 - v.topMarginPx - v.bottomMarginPx, 1);
+    const landscape = calculateVerticalRulerMetrics(1000, a4Landscape);
+    expect(landscape.scale).toBeGreaterThan(v.scale);
+  });
+
+  test("landscape A4 width ticks differ from portrait", () => {
+    const portrait = calculateRulerTicks(1000, a4Normal.widthMm, "cm");
+    const landscape = calculateRulerTicks(1000, a4Landscape.widthMm, "cm");
+    expect(landscape.filter((tick) => tick.kind === "major").length).toBeGreaterThan(
+      portrait.filter((tick) => tick.kind === "major").length,
+    );
   });
 });

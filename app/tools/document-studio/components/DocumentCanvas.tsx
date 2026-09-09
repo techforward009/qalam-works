@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
 import { getFontById } from "../utils/fontRegistry";
-import { resolveResponsivePagePadding, type ResolvedPageLayout } from "../utils/pageLayout";
+import { resolveResponsivePagePadding, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { BLOCK_STYLE_EDITOR_CSS } from "../utils/documentSchema";
 import {
@@ -13,6 +13,7 @@ import {
   pagesSheetMetrics,
   resolveZoomFactor,
   visualPageCountWithGaps,
+  documentPrintCss,
   type DocumentViewMode,
   type DocumentZoom,
 } from "../utils/documentView";
@@ -29,6 +30,7 @@ export default function DocumentCanvas({
   viewMode,
   zoom = 100,
   rulerVisible = true,
+  onPhysicalMarginChange,
   onLoadExample,
   onWrapperClick,
 }: {
@@ -41,6 +43,7 @@ export default function DocumentCanvas({
   viewMode: DocumentViewMode;
   zoom?: DocumentZoom;
   rulerVisible?: boolean;
+  onPhysicalMarginChange?: (edge: PhysicalMarginEdge, mm: number) => void;
   onLoadExample: () => void;
   onWrapperClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }) {
@@ -93,6 +96,7 @@ export default function DocumentCanvas({
   const zoomFactor = resolveZoomFactor(zoom, baseWidth, sheet.heightPx, fitWidth || baseWidth, Math.max(0, availableHeight - 32));
   const visualWidth = baseWidth * zoomFactor;
   const visualHeight = stackHeight ? stackHeight * zoomFactor : undefined;
+  const visualPageHeight = sheet.heightPx * zoomFactor;
   const showRuler = isPages && rulerVisible;
 
   useEffect(() => {
@@ -146,20 +150,34 @@ export default function DocumentCanvas({
       data-studio-print-root="true"
       data-page-width-mm={pageLayout.widthMm}
       data-page-height-mm={pageLayout.heightMm}
+      data-print-page-width-mm={pageLayout.widthMm}
+      data-print-page-height-mm={pageLayout.heightMm}
+      data-print-ignores-zoom="true"
       data-page-count={isPages ? pageCount : undefined}
       data-studio-zoom={String(zoom)}
       data-studio-zoom-factor={String(zoomFactor)}
     >
-      {showRuler && (
-        <div className="relative mx-auto mb-1" style={{ width: "100%", maxWidth: `${visualWidth}px` }}>
-          <WordRuler dir={dir} layout={pageLayout} />
-        </div>
-      )}
+      <div className={`relative mx-auto ${showRuler ? "flex flex-col" : ""}`} style={{ width: "100%", maxWidth: `${visualWidth + (showRuler ? 24 : 0)}px` }}>
+        {showRuler && (
+          <div className="flex studio-no-print" data-studio-ruler-frame="true">
+            <div className="h-6 w-6 shrink-0 border-b border-r border-slate-300 bg-[#dfe4dc]" data-ruler-corner="true" />
+            <div className="min-w-0 flex-1">
+              <WordRuler dir={dir} layout={pageLayout} axis="horizontal" onPhysicalMarginChange={onPhysicalMarginChange} />
+            </div>
+          </div>
+        )}
+        <div className={showRuler ? "flex" : undefined}>
+          {showRuler && (
+            <div className="studio-no-print w-6 shrink-0" style={{ height: visualPageHeight }}>
+              <WordRuler dir={dir} layout={pageLayout} axis="vertical" onPhysicalMarginChange={onPhysicalMarginChange} />
+            </div>
+          )}
       <div
-        className={`relative mx-auto ${isPages ? "" : "rounded-lg bg-white shadow-[0_4px_18px_rgba(26,58,42,0.06)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"}`}
-        style={{ width: "100%", maxWidth: `${visualWidth}px`, height: visualHeight }}
+        className={`relative min-w-0 flex-1 ${isPages ? "" : "rounded-lg bg-white shadow-[0_4px_18px_rgba(26,58,42,0.06)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"}`}
+        style={{ width: showRuler ? undefined : "100%", maxWidth: showRuler ? undefined : `${visualWidth}px`, height: visualHeight }}
         data-studio-pages-stack={isPages ? "true" : undefined}
         data-studio-pageless={isPages ? undefined : "true"}
+        data-studio-print-surface="true"
       >
         <div
           data-studio-zoom-surface="true"
@@ -176,6 +194,7 @@ export default function DocumentCanvas({
               <div
                 key={index}
                 data-studio-page-sheet={index + 1}
+                data-print-sheet-last={index === pageCount - 1 ? "true" : undefined}
                 className="absolute inset-x-0 rounded-sm border border-[#1A3A2A]/12 bg-white shadow-[0_8px_24px_rgba(26,58,42,0.10)]"
                 style={{
                   top: index * (sheet.heightPx + PAGE_STACK_GAP_PX),
@@ -216,6 +235,8 @@ export default function DocumentCanvas({
             />
           </div>
         </div>
+        </div>
+      </div>
         </div>
       </div>
       <style jsx global>{`
@@ -344,9 +365,7 @@ export default function DocumentCanvas({
         }
       `}</style>
       <style jsx global>{`
-        @media print {
-          @page { size: ${pageLayout.widthMm}mm ${pageLayout.heightMm}mm; }
-        }
+        ${documentPrintCss(pageLayout.widthMm, pageLayout.heightMm)}
       `}</style>
     </div>
   );

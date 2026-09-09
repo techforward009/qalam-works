@@ -10,6 +10,7 @@ import {
 import {
   MARGIN_MIN_MM,
   MARGIN_MAX_MM,
+  applyPhysicalPageMargin,
   clampMarginMm,
   type ResolvedPageLayout,
 } from "../utils/pageLayout";
@@ -39,7 +40,20 @@ export default function DocumentSettingsPanel({
 }) {
   return (
     <div className="space-y-4 rounded-xl border border-[#1A3A2A]/10 bg-white p-3">
-      <WordRuler dir={dir} layout={pageLayout} />
+      <WordRuler
+        dir={dir}
+        layout={pageLayout}
+        onPhysicalMarginChange={(edge, mm) => {
+          setDocumentSettings((s) => ({
+            ...s,
+            page: {
+              ...s.page,
+              margins: { preset: "custom", ...applyPhysicalPageMargin(s.page.margins, dir, edge, mm) },
+            },
+          }));
+          onPageChange();
+        }}
+      />
       <div>
         <h3 className="text-sm font-semibold text-[#1A3A2A] mb-2">Document Style</h3>
         <PublishingPresetSelector selectedId={selectedPresetId} onChange={onPresetChange} isUr={isUr} />

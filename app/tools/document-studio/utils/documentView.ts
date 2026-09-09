@@ -132,6 +132,70 @@ export function printDocumentStudio(): void {
   window.print();
 }
 
+/** Print CSS uses physical page mm, never screen zoom. */
+export function documentPrintCss(widthMm: number, heightMm: number): string {
+  return `
+@page { size: ${widthMm}mm ${heightMm}mm; margin: 0; }
+@media print {
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    width: ${widthMm}mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  [data-studio-print-root] {
+    position: static !important;
+    inset: auto !important;
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    width: ${widthMm}mm !important;
+    max-width: ${widthMm}mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  [data-studio-ruler-frame],
+  [data-studio-ruler],
+  [data-studio-vertical-ruler] { display: none !important; }
+  [data-studio-pages-stack],
+  [data-studio-zoom-surface],
+  [data-studio-print-surface] {
+    transform: none !important;
+    scale: none !important;
+    width: ${widthMm}mm !important;
+    max-width: ${widthMm}mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  [data-studio-page-sheet] {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    width: ${widthMm}mm !important;
+    height: ${heightMm}mm !important;
+    break-after: page;
+    break-inside: avoid;
+  }
+  [data-studio-page-sheet]:last-of-type { break-after: auto !important; }
+  .qalam-page-gap { display: none !important; height: 0 !important; margin: 0 !important; }
+  .qalam-editor-content .ProseMirror,
+  .qalam-editor-content.qalam-doc-page .ProseMirror,
+  .qalam-editor-content.qalam-view-pageless .ProseMirror {
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+}
+`.trim();
+}
+
 export function visualPageCount(contentHeightPx: number, pageHeightPx: number): number {
   if (!(pageHeightPx > 0)) return 1;
   return Math.max(1, Math.ceil(Math.max(0, contentHeightPx) / pageHeightPx));

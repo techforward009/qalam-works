@@ -117,6 +117,24 @@ export function resolvePhysicalMargins(margins: PageMarginsMm, dir: "rtl" | "ltr
   };
 }
 
+export type PhysicalMarginEdge = "left" | "right" | "top" | "bottom";
+
+/** Map a physical paper-edge margin back onto logical start/end/top/bottom. */
+export function applyPhysicalPageMargin(
+  margins: PageMarginsMm,
+  dir: "rtl" | "ltr",
+  edge: PhysicalMarginEdge,
+  mm: number,
+): PageMarginsMm {
+  const value = clampMarginMm(mm);
+  if (edge === "top") return { ...margins, topMm: value };
+  if (edge === "bottom") return { ...margins, bottomMm: value };
+  if (edge === "left") {
+    return dir === "rtl" ? { ...margins, endMm: value } : { ...margins, startMm: value };
+  }
+  return dir === "rtl" ? { ...margins, startMm: value } : { ...margins, endMm: value };
+}
+
 export interface ResponsivePagePadding {
   topPct: number;
   bottomPct: number;

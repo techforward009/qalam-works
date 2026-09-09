@@ -87,3 +87,97 @@ export function calculateInchTickPositions(metrics: RulerMetrics): number[] {
   }
   return ticks;
 }
+
+export type RulerTickKind = "major" | "minor";
+
+export interface RulerTick {
+  offsetPx: number;
+  kind: RulerTickKind;
+  label?: string;
+}
+
+export type RulerUnit = "cm" | "in";
+
+export function rulerUnitForPage(size: ResolvedPageLayout["size"]): RulerUnit {
+  return size === "letter" ? "in" : "cm";
+}
+
+/** Physical ticks from the page origin (left/top). Never mirrored for RTL. */
+export function calculateRulerTicks(lengthPx: number, lengthMm: number, unit: RulerUnit): RulerTick[] {
+  if (!(lengthPx > 0) || !(lengthMm > 0)) return [];
+  const pxPerMm = lengthPx / lengthMm;
+  const ticks: RulerTick[] = [];
+  if (unit === "in") {
+    const pxPerInch = pxPerMm * 25.4;
+    const eighths = Math.floor((lengthMm / 25.4) * 8 + 0.01);
+    for (let i = 0; i <= eighths; i++) {
+      const offsetPx = (i / 8) * pxPerInch;
+      if (offsetPx > lengthPx + 0.5) break;
+      const major = i % 8 === 0;
+      ticks.push({
+        offsetPx,
+        kind: major ? "major" : "minor",
+        label: major ? String(i / 8) : undefined,
+      });
+    }
+    return ticks;
+  }
+  const steps = Math.floor(lengthMm / 5 + 0.01);
+  for (let i = 0; i <= steps; i++) {
+    const mm = i * 5;
+    const offsetPx = mm * pxPerMm;
+    if (offsetPx > lengthPx + 0.5) break;
+    const major = mm % 10 === 0;
+    ticks.push({
+      offsetPx,
+      kind: major ? "major" : "minor",
+      label: major ? String(mm / 10) : undefined,
+    });
+  }
+  return ticks;
+}
+
+export interface VerticalRulerMetrics {
+  scale: number;
+  pageHeightPx: number;
+  topMarginPx: number;
+  bottomMarginPx: number;
+  textAreaHeightPx: number;
+}
+
+export function calculateVerticalRulerMetrics(
+  containerHeightPx: number,
+  layout: ResolvedPageLayout,
+): VerticalRulerMetrics {
+  const pageHeightTwips = mmToTwips(layout.heightMm);
+  if (containerHeightPx <= 0 || pageHeightTwips <= 0) {
+    return { scale: 0, pageHeightPx: 0, topMarginPx: 0, bottomMarginPx: 0, textAreaHeightPx: 0 };
+  }
+  const scale = containerHeightPx / pageHeightTwips;
+  const topMarginPx = mmToTwips(layout.margins.topMm) * scale;
+  const bottomMarginPx = mmToTwips(layout.margins.bottomMm) * scale;
+  return {
+    scale,
+    pageHeightPx: containerHeightPx,
+    topMarginPx,
+    bottomMarginPx,
+    textAreaHeightPx: Math.max(0, containerHeightPx - topMarginPx - bottomMarginPx),
+  };
+}
+
+/** Convert a pointer offset along a displayed ruler into millimetres of the physical page. */
+export function pointerOffsetToMm(offsetPx: number, lengthPx: number, pageMm: number): number {
+  if (!(lengthPx > 0) || !(pageMm > 0) || !Number.isFinite(offsetPx)) return 0;
+  return (offsetPx / lengthPx) * pageMm;
+}
+
+export function marginMmFromPointer(args: {
+  client: number;
+  origin: number;
+  lengthPx: number;
+  pageMm: number;
+  fromEnd?: boolean;
+}): number {
+  const offset = args.fromEnd ? args.origin + args.lengthPx - args.client : args.client - args.origin;
+  return pointerOffsetToMm(offset, args.lengthPx, args.pageMm);
+}

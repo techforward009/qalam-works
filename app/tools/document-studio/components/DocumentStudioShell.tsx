@@ -66,31 +66,13 @@ export default function DocumentStudioShell({
       <div className="studio-no-print shrink-0 border-t border-[#1A3A2A]/10 bg-white" data-studio-chrome="status">{statusBar}</div>
       <style jsx global>{`
         @media print {
-          body * { visibility: hidden; }
-          [data-studio-print-root],
-          [data-studio-print-root] * { visibility: visible; }
-          [data-studio-print-root] {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            background: white;
-            box-shadow: none;
-            padding: 0;
-          }
           .studio-no-print,
           [data-studio-left-sidebar],
           [data-studio-right-sidebar],
+          [data-studio-chrome],
+          [data-studio-ruler-frame],
           [data-studio-ruler],
-          [data-studio-chrome] { display: none !important; }
-          [data-studio-zoom-surface] {
-            transform: none !important;
-            width: 100% !important;
-            height: auto !important;
-          }
-          [data-studio-page-sheet] {
-            box-shadow: none !important;
-            break-after: page;
-          }
+          [data-studio-vertical-ruler] { display: none !important; }
         }
       `}</style>
     </div>

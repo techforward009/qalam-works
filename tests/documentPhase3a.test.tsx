@@ -11,6 +11,7 @@ import {
   saveDocumentZoom,
   saveRulerVisible,
   loadRulerVisible,
+  documentPrintCss,
 } from "../app/tools/document-studio/utils/documentView";
 import { allMenuActionIds, DOCUMENT_MENU_BAR } from "../app/tools/document-studio/utils/documentMenus";
 import { dispatchDocumentMenuAction, type DocumentMenuHandlers } from "../app/tools/document-studio/utils/documentMenuActions";
@@ -94,7 +95,23 @@ describe("Phase 3A editor parity", () => {
     const css = Array.from(container.querySelectorAll("style")).map((node) => node.textContent ?? "").join("\n");
     expect(css).toContain("@media print");
     expect(css).toContain("studio-no-print");
-    expect(css).toContain("[data-studio-print-root]");
     expect(document.querySelector("[data-studio-chrome='toolbar']")).toBeTruthy();
+    expect(documentPrintCss(210, 297)).toContain("[data-studio-print-root]");
+  });
+
+  it("print CSS uses physical page geometry and cannot inherit screen zoom", () => {
+    const css = documentPrintCss(210, 297);
+    expect(css).toContain("@page { size: 210mm 297mm; margin: 0; }");
+    expect(css).toContain("transform: none");
+    expect(css).toContain("scale: none");
+    expect(css).toContain("break-after: auto");
+    expect(css).toContain("[data-studio-ruler]");
+    expect(css).toContain("box-shadow: none");
+    expect(css).toContain("border-radius: 0");
+    expect(css).toContain("min-height: 0");
+    expect(css).toContain(".qalam-page-gap");
+    expect(css).not.toContain("inset: 0");
+    const zoomed = documentPrintCss(210, 297);
+    expect(zoomed).toBe(css);
   });
 });

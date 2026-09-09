@@ -14,7 +14,7 @@ import {
   defaultDocumentSettings,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
-import { resolvePageLayout } from "../utils/pageLayout";
+import { resolvePageLayout, applyPhysicalPageMargin, type PhysicalMarginEdge } from "../utils/pageLayout";
 import {
   applyPresetToSettings,
   loadSelectedPresetId,
@@ -1227,6 +1227,19 @@ export default function DocumentStudioEditor() {
     });
   };
 
+  const handlePhysicalMarginChange = (edge: PhysicalMarginEdge, mm: number) => {
+    setDocumentSettings((current) => ({
+      ...current,
+      page: {
+        ...current.page,
+        margins: {
+          preset: "custom",
+          ...applyPhysicalPageMargin(current.page.margins, dir, edge, mm),
+        },
+      },
+    }));
+  };
+
   const promptLink = () => {
     if (!editor) return;
     const url = window.prompt("URL:");
@@ -1509,6 +1522,7 @@ export default function DocumentStudioEditor() {
             viewMode={viewMode}
             zoom={zoom}
             rulerVisible={rulerVisible}
+            onPhysicalMarginChange={handlePhysicalMarginChange}
             onLoadExample={handleLoadExample}
             onWrapperClick={handleWrapperClick}
           />
