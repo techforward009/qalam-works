@@ -20,6 +20,8 @@ export type MenuActionId =
   | "view.quality"
   | "view.glossary"
   | "view.settings"
+  | "view.pages"
+  | "view.pageless"
   | "view.fullscreen"
   | "insert.link"
   | "insert.example"
@@ -140,6 +142,9 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     labelEn: "View",
     labelUr: "منظر",
     items: [
+      { type: "action", id: "view.pages", labelEn: "Pages", labelUr: "صفحات" },
+      { type: "action", id: "view.pageless", labelEn: "Pageless", labelUr: "بغیر صفحات" },
+      { type: "separator" },
       { type: "action", id: "view.outline", labelEn: "Outline", labelUr: "خاکہ" },
       { type: "action", id: "view.quality", labelEn: "Quality and suggestions", labelUr: "معیار اور تجاویز" },
       { type: "action", id: "view.glossary", labelEn: "Glossary", labelUr: "اصطلاحات" },

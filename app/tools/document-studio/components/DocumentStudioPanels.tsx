@@ -17,6 +17,7 @@ import type { DocumentStudioSettings } from "../utils/documentSettings";
 import type { ResolvedPageLayout } from "../utils/pageLayout";
 import type { PresetId } from "../utils/publishingPresets";
 import type { RightPanelId } from "../utils/documentShell";
+import type { DocumentViewMode } from "../utils/documentView";
 
 /** @deprecated Phase 0 tab id — kept so older imports type-check. */
 export type StudioTab = "none" | "find" | "outline" | "quality" | "glossary" | "settings";
@@ -66,6 +67,7 @@ export default function DocumentStudioPanels({
     selectedPresetId: PresetId;
     onPresetChange: (id: PresetId) => void;
     onPageChange: () => void;
+    viewMode: DocumentViewMode;
   };
 }) {
   if (panel === "settings") {
@@ -79,6 +81,7 @@ export default function DocumentStudioPanels({
         selectedPresetId={settings.selectedPresetId}
         onPresetChange={settings.onPresetChange}
         onPageChange={settings.onPageChange}
+        viewMode={settings.viewMode}
       />
     );
   }

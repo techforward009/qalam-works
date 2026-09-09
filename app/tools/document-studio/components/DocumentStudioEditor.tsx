@@ -89,6 +89,12 @@ import {
   type HelpDialogMode,
 } from "../utils/documentMenuActions";
 import { validateLineHeight } from "../utils/documentSettings";
+import {
+  loadDocumentViewMode,
+  saveDocumentViewMode,
+  type DocumentViewMode,
+} from "../utils/documentView";
+import { PageGapExtension } from "../utils/pageGapDecorations";
 import DocumentToolbar from "./DocumentToolbar";
 import DocumentCanvas from "./DocumentCanvas";
 import DocumentStudioPanels from "./DocumentStudioPanels";
@@ -222,6 +228,7 @@ export default function DocumentStudioEditor() {
   const [leftPanel, setLeftPanel] = useState<LeftPanelId>("none");
   const [rightPanel, setRightPanel] = useState<RightPanelId>("none");
   const [helpOpen, setHelpOpen] = useState<HelpDialogMode | null>(null);
+  const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
   const [findQuery, setFindQuery] = useState("");
   const [replaceQuery, setReplaceQuery] = useState("");
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
@@ -266,7 +273,7 @@ export default function DocumentStudioEditor() {
   const [initialContent] = useState(() => getInitialDraftContent());
 
   const editor = useEditor({
-    extensions: createDocumentStudioExtensions(),
+    extensions: [...createDocumentStudioExtensions(), PageGapExtension],
     content: initialContent,
     immediatelyRender: false,
     editorProps: {
@@ -992,6 +999,11 @@ export default function DocumentStudioEditor() {
     saveDocumentTitle(next);
   };
 
+  const setViewMode = (mode: DocumentViewMode) => {
+    setViewModeState(mode);
+    saveDocumentViewMode(mode);
+  };
+
   const promptLink = () => {
     if (!editor) return;
     const url = window.prompt("URL:");
@@ -1015,6 +1027,7 @@ export default function DocumentStudioEditor() {
       toggleGlossary: () => setRightPanel((p) => toggleRightPanel(p, "glossary")),
       toggleSettings: () => setRightPanel((p) => toggleRightPanel(p, "settings")),
       toggleFullscreen: toggleStudioFullscreen,
+      setViewMode,
       loadExample: handleLoadExample,
       promptLink,
       setDir,
@@ -1060,6 +1073,8 @@ export default function DocumentStudioEditor() {
   if (rightPanel === "quality") checkedIds.add("view.quality");
   if (rightPanel === "glossary") checkedIds.add("view.glossary");
   if (rightPanel === "settings") checkedIds.add("view.settings");
+  if (viewMode === "pages") checkedIds.add("view.pages");
+  if (viewMode === "pageless") checkedIds.add("view.pageless");
   if (typeof document !== "undefined" && document.fullscreenElement) {
     checkedIds.add("view.fullscreen");
   }
@@ -1092,6 +1107,7 @@ export default function DocumentStudioEditor() {
     selectedPresetId,
     onPresetChange: handlePresetChange,
     onPageChange: () => setPdfSummary(null),
+    viewMode,
   };
 
   return (
@@ -1237,6 +1253,7 @@ export default function DocumentStudioEditor() {
             isEditorEmpty={isEditorEmpty}
             documentSettings={documentSettings}
             pageLayout={pageLayout}
+            viewMode={viewMode}
             onLoadExample={handleLoadExample}
             onWrapperClick={handleWrapperClick}
           />

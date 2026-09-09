@@ -20,6 +20,7 @@ import {
 import type { MenuActionId } from "./documentMenus";
 import type { BlockStyleId } from "./documentStyles";
 import { validateLineHeight } from "./documentSettings";
+import type { DocumentViewMode } from "./documentView";
 
 export type HelpDialogMode = "about" | "shortcuts" | "rtl" | "voice";
 
@@ -35,6 +36,7 @@ export type DocumentMenuHandlers = {
   toggleGlossary: () => void;
   toggleSettings: () => void;
   toggleFullscreen: () => void;
+  setViewMode: (mode: DocumentViewMode) => void;
   loadExample: () => void;
   promptLink: () => void;
   setDir: (dir: "rtl" | "ltr") => void;
@@ -122,6 +124,12 @@ export function dispatchDocumentMenuAction(
       return;
     case "view.fullscreen":
       handlers.toggleFullscreen();
+      return;
+    case "view.pages":
+      handlers.setViewMode("pages");
+      return;
+    case "view.pageless":
+      handlers.setViewMode("pageless");
       return;
     case "insert.link":
       handlers.promptLink();

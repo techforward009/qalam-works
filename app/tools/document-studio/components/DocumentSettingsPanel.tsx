@@ -14,6 +14,7 @@ import {
   type ResolvedPageLayout,
 } from "../utils/pageLayout";
 import type { PresetId } from "../utils/publishingPresets";
+import type { DocumentViewMode } from "../utils/documentView";
 
 export default function DocumentSettingsPanel({
   dir,
@@ -24,6 +25,7 @@ export default function DocumentSettingsPanel({
   selectedPresetId,
   onPresetChange,
   onPageChange,
+  viewMode = "pages",
 }: {
   dir: "rtl" | "ltr";
   isUr: boolean;
@@ -33,6 +35,7 @@ export default function DocumentSettingsPanel({
   selectedPresetId: PresetId;
   onPresetChange: (id: PresetId) => void;
   onPageChange: () => void;
+  viewMode?: DocumentViewMode;
 }) {
   return (
     <div className="space-y-4 rounded-xl border border-[#1A3A2A]/10 bg-white p-3">
@@ -41,6 +44,13 @@ export default function DocumentSettingsPanel({
         <h3 className="text-sm font-semibold text-[#1A3A2A] mb-2">Document Style</h3>
         <PublishingPresetSelector selectedId={selectedPresetId} onChange={onPresetChange} isUr={isUr} />
       </div>
+      {viewMode === "pageless" && (
+        <p className={`text-[11px] leading-snug text-slate-500 ${isUr ? "font-naskh" : ""}`}>
+          {isUr
+            ? "یہ صفحہ ترتیبات صفحات والے منظر اور ایکسپورٹ پر لاگو رہتی ہیں۔"
+            : "These page settings still apply to Pages view and to export."}
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-xs font-medium text-gray-600">
           Page size

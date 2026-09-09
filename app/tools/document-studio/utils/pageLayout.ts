@@ -146,3 +146,25 @@ export function puppeteerPaperFormat(size: PageSizeId): "A4" | "A5" | "Letter" {
   if (size === "letter") return "Letter";
   return "A4";
 }
+
+/** Natural CSS pixel size of a page at the given DPI (default 96). */
+export function layoutNaturalSizePx(
+  layout: Pick<ResolvedPageLayout, "widthMm" | "heightMm">,
+  dpi = 96,
+): { widthPx: number; heightPx: number } {
+  return { widthPx: mmToPx(layout.widthMm, dpi), heightPx: mmToPx(layout.heightMm, dpi) };
+}
+
+/** Fit a page into an available CSS width without upscaling past 1×. */
+export function scaleLayoutToWidth(
+  layout: Pick<ResolvedPageLayout, "widthMm" | "heightMm">,
+  availableWidthPx: number,
+  dpi = 96,
+): { widthPx: number; heightPx: number; scale: number } {
+  const natural = layoutNaturalSizePx(layout, dpi);
+  if (!(natural.widthPx > 0) || !(availableWidthPx > 0)) {
+    return { widthPx: natural.widthPx, heightPx: natural.heightPx, scale: 1 };
+  }
+  const scale = Math.min(1, availableWidthPx / natural.widthPx);
+  return { widthPx: natural.widthPx * scale, heightPx: natural.heightPx * scale, scale };
+}

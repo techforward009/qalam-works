@@ -48,6 +48,9 @@ function mockHandlers(extra: Partial<DocumentMenuHandlers> = {}): DocumentMenuHa
     toggleGlossary: track("glossary"),
     toggleSettings: track("settings"),
     toggleFullscreen: track("fullscreen"),
+    setViewMode: (mode) => {
+      calls.push(`view:${mode}`);
+    },
     loadExample: track("example"),
     promptLink: track("link"),
     setDir: (dir) => {
@@ -154,6 +157,8 @@ describe("document menus", () => {
     dispatchDocumentMenuAction("file.downloadPdf", null, h);
     dispatchDocumentMenuAction("edit.find", null, h);
     dispatchDocumentMenuAction("view.outline", null, h);
+    dispatchDocumentMenuAction("view.pages", null, h);
+    dispatchDocumentMenuAction("view.pageless", null, h);
     dispatchDocumentMenuAction("view.settings", null, h);
     dispatchDocumentMenuAction("view.fullscreen", null, h);
     dispatchDocumentMenuAction("insert.link", null, h);
@@ -171,6 +176,8 @@ describe("document menus", () => {
       "pdf",
       "find",
       "outline",
+      "view:pages",
+      "view:pageless",
       "settings",
       "fullscreen",
       "link",

@@ -1,11 +1,20 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
 import { getFontById } from "../utils/fontRegistry";
 import { resolveResponsivePagePadding, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { BLOCK_STYLE_EDITOR_CSS } from "../utils/documentSchema";
+import {
+  PAGE_STACK_GAP_PX,
+  PAGELESS_MAX_WIDTH_PX,
+  pagesSheetMetrics,
+  visualPageCountWithGaps,
+  type DocumentViewMode,
+} from "../utils/documentView";
+import { applyPageGapGeometry } from "../utils/pageGapDecorations";
 
 export default function DocumentCanvas({
   editor,
@@ -14,6 +23,7 @@ export default function DocumentCanvas({
   isEditorEmpty,
   documentSettings,
   pageLayout,
+  viewMode,
   onLoadExample,
   onWrapperClick,
 }: {
@@ -23,93 +33,171 @@ export default function DocumentCanvas({
   isEditorEmpty: boolean;
   documentSettings: DocumentStudioSettings;
   pageLayout: ResolvedPageLayout;
+  viewMode: DocumentViewMode;
   onLoadExample: () => void;
   onWrapperClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }) {
-  const scale = Math.min(2.6, 860 / pageLayout.widthMm);
+  const isPages = viewMode === "pages";
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  useEffect(() => {
+    const el = workspaceRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      setAvailableWidth(width);
+    });
+    ro.observe(el);
+    setAvailableWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const el = measureRef.current;
+    if (!el || !isPages || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const target = entries[0]?.target as HTMLElement | undefined;
+      const pm = target?.querySelector?.(".ProseMirror") as HTMLElement | null;
+      setContentHeight(pm?.scrollHeight || target?.scrollHeight || 0);
+    });
+    ro.observe(el);
+    setContentHeight(el.scrollHeight || el.clientHeight);
+    return () => ro.disconnect();
+  }, [isPages, pageLayout.widthMm, pageLayout.heightMm]);
+
   const padding = resolveResponsivePagePadding(pageLayout, dir);
+  const fitWidth = Math.max(0, availableWidth - 24);
+  const sheet = pagesSheetMetrics(pageLayout, fitWidth || 800);
+  const pageCount = isPages
+    ? visualPageCountWithGaps(contentHeight, sheet.heightPx, PAGE_STACK_GAP_PX)
+    : 1;
+
+  useEffect(() => {
+    applyPageGapGeometry(editor, {
+      enabled: isPages,
+      pageHeightPx: Math.round(sheet.heightPx),
+      gapPx: PAGE_STACK_GAP_PX,
+    });
+  }, [editor, isPages, sheet.heightPx]);
+  const stackHeight = isPages
+    ? pageCount * sheet.heightPx + Math.max(0, pageCount - 1) * PAGE_STACK_GAP_PX
+    : undefined;
+
+  const typeVars = {
+    "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
+    "--qalam-line-height": documentSettings.typography.lineHeight,
+    "--qalam-rtl-font": `"${getFontById(documentSettings.typography.defaultRtlFontId).editorFamily}"`,
+    "--qalam-ltr-font": `"${getFontById(documentSettings.typography.defaultLtrFontId).editorFamily}"`,
+    "--qalam-first-line-indent": `${documentSettings.typography.firstLineIndentMm}mm`,
+    "--qalam-paragraph-before": `${documentSettings.typography.paragraphBeforePt}pt`,
+    "--qalam-paragraph-after": `${documentSettings.typography.paragraphAfterPt}pt`,
+    "--qalam-page-min-height": isPages ? `${sheet.heightPx}px` : "60vh",
+  } as React.CSSProperties;
+
+  const emptyState = isEditorEmpty && editor && (
+    <div
+      className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 py-10"
+      aria-hidden={false}
+    >
+      <p className="mb-2 text-3xl text-[#B8935A]/80 select-none" aria-hidden>
+        ✎
+      </p>
+      <p className={`mb-5 text-sm sm:text-base text-gray-500 ${isUr ? "font-naskh" : ""}`} dir={dir}>
+        {isUr ? "یہاں لکھنا شروع کریں…" : "Start writing here…"}
+      </p>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onLoadExample();
+        }}
+        className={`pointer-events-auto h-10 px-5 rounded-lg text-sm font-semibold border border-[#1A3A2A]/20 bg-white text-[#1A3A2A] hover:bg-[#F7F5EF] shadow-sm ${isUr ? "font-naskh" : ""}`}
+      >
+        {isUr ? "مثال لوڈ کریں" : "Load Example"}
+      </button>
+    </div>
+  );
 
   return (
-    <div className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-3 sm:py-5 lg:px-6 lg:py-6">
+    <div
+      ref={workspaceRef}
+      className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-3 sm:py-5 lg:px-6 lg:py-6"
+      data-studio-view={viewMode}
+      data-page-width-mm={pageLayout.widthMm}
+      data-page-height-mm={pageLayout.heightMm}
+      data-page-count={isPages ? pageCount : undefined}
+    >
       <div
-        className="relative mx-auto w-full rounded-lg border border-[#1A3A2A]/8 bg-white shadow-[0_8px_30px_rgba(26,58,42,0.10)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"
-        style={{
-          maxWidth: `${pageLayout.widthMm * scale}px`,
-          aspectRatio: `${pageLayout.widthMm} / ${pageLayout.heightMm}`,
-          fontSize: `${documentSettings.typography.bodyFontSizePt}pt`,
-          lineHeight: documentSettings.typography.lineHeight,
-        }}
-        dir={dir}
-        onClick={onWrapperClick}
-        role="textbox"
-        aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
+        className={`relative mx-auto ${isPages ? "" : "rounded-lg bg-white shadow-[0_4px_18px_rgba(26,58,42,0.06)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"}`}
+        style={
+          isPages
+            ? { width: "100%", maxWidth: `${sheet.widthPx}px` }
+            : { width: "100%", maxWidth: `${PAGELESS_MAX_WIDTH_PX}px` }
+        }
+        data-studio-pages-stack={isPages ? "true" : undefined}
+        data-studio-pageless={isPages ? undefined : "true"}
       >
-        {isEditorEmpty && editor && (
-          <div
-            className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 py-10"
-            aria-hidden={false}
-          >
-            <p className="mb-2 text-3xl text-[#B8935A]/80 select-none" aria-hidden>
-              ✎
-            </p>
-            <p
-              className={`mb-5 text-sm sm:text-base text-gray-500 ${isUr ? "font-naskh" : ""}`}
-              dir={dir}
-            >
-              {isUr ? "یہاں لکھنا شروع کریں…" : "Start writing here…"}
-            </p>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onLoadExample();
-              }}
-              className={`pointer-events-auto h-10 px-5 rounded-lg text-sm font-semibold border border-[#1A3A2A]/20 bg-white text-[#1A3A2A] hover:bg-[#F7F5EF] shadow-sm ${isUr ? "font-naskh" : ""}`}
-            >
-              {isUr ? "مثال لوڈ کریں" : "Load Example"}
-            </button>
+        {isPages && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-0" style={{ height: stackHeight }} aria-hidden>
+            {Array.from({ length: pageCount }, (_, index) => (
+              <div
+                key={index}
+                data-studio-page-sheet={index + 1}
+                className="absolute inset-x-0 rounded-sm border border-[#1A3A2A]/12 bg-white shadow-[0_8px_24px_rgba(26,58,42,0.10)]"
+                style={{
+                  top: index * (sheet.heightPx + PAGE_STACK_GAP_PX),
+                  height: sheet.heightPx,
+                }}
+              />
+            ))}
           </div>
         )}
-
         <div
-          className="cursor-text"
-          style={{
-            width: "100%",
-            minHeight: "100%",
-            paddingTop: `${padding.topPct}%`,
-            paddingBottom: `${padding.bottomPct}%`,
-            paddingLeft: `${padding.leftPct}%`,
-            paddingRight: `${padding.rightPct}%`,
-          }}
+          ref={measureRef}
+          className="relative z-[1] cursor-text"
+          style={
+            isPages
+              ? {
+                  width: "100%",
+                  minHeight: stackHeight,
+                  paddingTop: `${padding.topPct}%`,
+                  paddingBottom: `${padding.bottomPct}%`,
+                  paddingLeft: `${padding.leftPct}%`,
+                  paddingRight: `${padding.rightPct}%`,
+                }
+              : { width: "100%", minHeight: "60vh", padding: undefined }
+          }
+          dir={dir}
+          onClick={onWrapperClick}
+          role="textbox"
+          aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
         >
-          <EditorContent
-            editor={editor}
-            className={`qalam-editor-content qalam-doc-page focus:outline-none ${
-              dir === "rtl" ? "font-nastaliq" : ""
-            }`}
-            style={
-              {
-                "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
-                "--qalam-line-height": documentSettings.typography.lineHeight,
-                "--qalam-rtl-font": `"${getFontById(documentSettings.typography.defaultRtlFontId).editorFamily}"`,
-                "--qalam-ltr-font": `"${getFontById(documentSettings.typography.defaultLtrFontId).editorFamily}"`,
-                "--qalam-first-line-indent": `${documentSettings.typography.firstLineIndentMm}mm`,
-                "--qalam-paragraph-before": `${documentSettings.typography.paragraphBeforePt}pt`,
-                "--qalam-paragraph-after": `${documentSettings.typography.paragraphAfterPt}pt`,
-              } as React.CSSProperties
-            }
-          />
+          {emptyState}
+          <div className={isPages ? undefined : "px-5 py-6 sm:px-8 sm:py-8"}>
+            <EditorContent
+              editor={editor}
+              className={`qalam-editor-content focus:outline-none ${isPages ? "qalam-doc-page qalam-view-pages" : "qalam-view-pageless"} ${
+                dir === "rtl" ? "font-nastaliq" : ""
+              }`}
+              style={typeVars}
+            />
+          </div>
         </div>
       </div>
       <style jsx global>{`
-        .qalam-editor-content.qalam-doc-page .ProseMirror {
-          min-height: 60vh;
+        .qalam-editor-content.qalam-doc-page .ProseMirror,
+        .qalam-editor-content.qalam-view-pageless .ProseMirror {
+          min-height: var(--qalam-page-min-height, 60vh);
           padding: 0.5rem;
           outline: none;
           text-align: start;
           font-size: var(--qalam-body-size, 1.05rem);
           line-height: var(--qalam-line-height, 1.85);
           color: #1a1a1a;
+          background: transparent;
         }
         .qalam-editor-content .ProseMirror[dir="rtl"] {
           direction: rtl;
@@ -118,7 +206,8 @@ export default function DocumentCanvas({
           direction: ltr;
         }
         @media (min-width: 640px) {
-          .qalam-editor-content.qalam-doc-page .ProseMirror {
+          .qalam-editor-content.qalam-doc-page .ProseMirror,
+          .qalam-editor-content.qalam-view-pageless .ProseMirror {
             padding: 0.75rem;
             font-size: var(--qalam-body-size, 1.1rem);
             line-height: var(--qalam-line-height, 1.9);
@@ -213,6 +302,14 @@ export default function DocumentCanvas({
         .qalam-editor-content a {
           color: #b45309;
           text-decoration: underline;
+        }
+        .qalam-page-gap {
+          display: block;
+          width: 100%;
+          pointer-events: none;
+          user-select: none;
+          line-height: 0;
+          background: transparent;
         }
       `}</style>
     </div>
