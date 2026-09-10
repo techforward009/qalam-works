@@ -66,13 +66,13 @@ const vazirmatn = localFont({
 
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://qalamworks.com"),
+  metadataBase: new URL("https://www.qalamworks.com"),
   title: "Qalam Works — Professional Urdu Writing & Publishing Tools",
   description:
     "Professional Urdu writing tools: an Urdu text cleaner, Urdu proofreading support, a Roman Urdu converter, and an Urdu Unicode fixer with punctuation correction — plus Document Studio for publication-ready work.",
   openGraph: {
     type: "website",
-    url: "https://qalamworks.com",
+    url: "https://www.qalamworks.com",
     siteName: "Qalam Works",
     title: "Qalam Works — Professional Urdu Writing & Publishing Tools",
     description:
@@ -87,7 +87,7 @@ export const metadata: Metadata = {
       "Clean Urdu text, proofread punctuation, convert Roman Urdu, and fix Unicode — professional writing tools from Qalam Works.",
   },
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
-  alternates: { canonical: "https://qalamworks.com" },
+  alternates: { canonical: "https://www.qalamworks.com" },
   robots: { index: true, follow: true },
 };
 

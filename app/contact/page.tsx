@@ -4,7 +4,7 @@ import ContactContent from "./ContactContent";
 export const metadata: Metadata = {
   title: "Contact — Qalam Works",
   description: "Contact Qalam Works for translation, editing, proofreading, or publishing services.",
-  alternates: { canonical: "https://qalamworks.com/contact" },
+  alternates: { canonical: "https://www.qalamworks.com/contact" },
 };
 
 export default function ContactPage() {
