@@ -21,6 +21,8 @@ export type QalamAiCloudResult = {
   json: { text?: string; error?: string; code?: QalamAiClientErrorCode };
 };
 
+type ProviderLogger = (message: string, details: { status: number; code?: string; message?: string }) => void;
+
 export function validateQalamAiRequest(body: unknown):
   | { ok: true; action: QalamAiAction; text: string }
   | { ok: false; status: number; code: QalamAiClientErrorCode; error: string } {
@@ -44,25 +46,40 @@ export function validateQalamAiRequest(body: unknown):
   return { ok: true, action: record.action, text };
 }
 
-export function cloudflareRunUrl(accountId: string, modelId = QALAM_AI_MODEL_ID): string {
-  return `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${modelId}`;
+export function cloudflareChatUrl(accountId: string): string {
+  return `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function extractTextBlocks(content: unknown): string {
+  if (typeof content === "string") return content.trim();
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((block) => {
+      const item = asRecord(block);
+      if (!item) return "";
+      if (typeof item.type === "string" && item.type !== "text") return "";
+      return typeof item.text === "string" ? item.text : "";
+    })
+    .join("")
+    .trim();
 }
 
 export function extractProviderText(payload: unknown): string {
-  if (!payload || typeof payload !== "object") return "";
-  const root = payload as Record<string, unknown>;
-  const result = (root.result ?? root) as unknown;
-  if (typeof result === "string") return result.trim();
-  if (!result || typeof result !== "object") return "";
-  const obj = result as Record<string, unknown>;
-  if (typeof obj.response === "string") return obj.response.trim();
-  if (typeof obj.text === "string") return obj.text.trim();
-  const choices = obj.choices;
-  if (Array.isArray(choices) && choices[0] && typeof choices[0] === "object") {
-    const choice = choices[0] as { message?: { content?: unknown }; text?: unknown };
-    if (typeof choice.message?.content === "string") return choice.message.content.trim();
-    if (typeof choice.text === "string") return choice.text.trim();
+  const root = asRecord(payload);
+  const result = asRecord(root?.result) ?? root;
+  const choices = result && Array.isArray(result.choices) ? result.choices : root && Array.isArray(root.choices) ? root.choices : [];
+  const first = asRecord(choices[0]);
+  const message = asRecord(first?.message);
+  if (message) {
+    const fromContent = extractTextBlocks(message.content);
+    if (fromContent) return fromContent;
   }
+  if (typeof first?.text === "string" && first.text.trim()) return first.text.trim();
+  if (typeof result?.response === "string" && result.response.trim()) return result.response.trim();
   return "";
 }
 
@@ -81,12 +98,32 @@ function safeError(code: QalamAiClientErrorCode, fallback: string): string {
   return "Qalam AI could not generate a response. Please try again.";
 }
 
+export function sanitizeProviderError(payload: unknown): { code?: string; message?: string } {
+  const root = asRecord(payload);
+  const firstError = Array.isArray(root?.errors) ? asRecord(root.errors[0]) : null;
+  const errorObj = asRecord(root?.error) ?? firstError;
+  const codeRaw = errorObj?.code ?? root?.code;
+  const messageRaw = errorObj?.message ?? root?.message;
+  const code = typeof codeRaw === "string" || typeof codeRaw === "number" ? String(codeRaw).slice(0, 80) : undefined;
+  let message = typeof messageRaw === "string" ? messageRaw : undefined;
+  if (message) {
+    message = message
+      .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
+      .replace(/accounts\/[A-Za-z0-9_-]+/gi, "accounts/[redacted]")
+      .slice(0, 180);
+  }
+  return { code, message };
+}
+
 export function buildCloudflareRequestBody(action: QalamAiAction, text: string) {
   return {
+    model: QALAM_AI_MODEL_ID,
     messages: buildCloudflareMessages(action, text),
     max_completion_tokens: ACTION_MAX_TOKENS[action],
     temperature: 0.2,
     n: 1,
+    reasoning_effort: null,
+    chat_template_kwargs: { enable_thinking: false },
   };
 }
 
@@ -96,6 +133,7 @@ export async function runQalamAiInference(
     fetchImpl?: typeof fetch;
     env?: QalamAiCloudEnv;
     timeoutMs?: number;
+    log?: ProviderLogger;
   },
 ): Promise<QalamAiCloudResult> {
   const validated = validateQalamAiRequest(body);
@@ -109,12 +147,13 @@ export async function runQalamAiInference(
     return { status: 503, json: { error: safeError("unavailable", ""), code: "unavailable" } };
   }
 
+  const log: ProviderLogger = options?.log ?? ((message, details) => console.error(message, details));
   const controller = new AbortController();
   const timeoutMs = options?.timeoutMs ?? QALAM_AI_TIMEOUT_MS;
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const fetchImpl = options?.fetchImpl ?? fetch;
   try {
-    const response = await fetchImpl(cloudflareRunUrl(accountId), {
+    const response = await fetchImpl(cloudflareChatUrl(accountId), {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -125,18 +164,21 @@ export async function runQalamAiInference(
     });
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
+      const sanitized = sanitizeProviderError(payload);
+      log("Qalam AI provider error", { status: response.status, code: sanitized.code, message: sanitized.message });
       const code = classifyProviderFailure(response.status, payload);
       return { status: code === "limit" ? 429 : code === "unavailable" ? 503 : 502, json: { error: safeError(code, ""), code } };
     }
     const text = extractProviderText(payload);
     if (!text) {
+      log("Qalam AI provider error", { status: response.status, code: "empty-output" });
       return { status: 502, json: { error: safeError("failed", ""), code: "failed" } };
     }
     return { status: 200, json: { text } };
   } catch (err) {
     const aborted = err instanceof Error && (err.name === "AbortError" || /aborted/i.test(err.message));
-    const code: QalamAiClientErrorCode = aborted ? "failed" : "failed";
-    return { status: aborted ? 504 : 502, json: { error: safeError(code, ""), code } };
+    log("Qalam AI provider error", { status: aborted ? 504 : 502, code: aborted ? "timeout" : "network" });
+    return { status: aborted ? 504 : 502, json: { error: safeError("failed", ""), code: "failed" } };
   } finally {
     clearTimeout(timer);
   }

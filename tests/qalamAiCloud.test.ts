@@ -7,9 +7,10 @@ import {
 } from "../app/tools/document-studio/utils/qalamAi";
 import {
   classifyProviderFailure,
-  cloudflareRunUrl,
+  cloudflareChatUrl,
   extractProviderText,
   runQalamAiInference,
+  sanitizeProviderError,
   validateQalamAiRequest,
 } from "../app/tools/document-studio/utils/qalamAiCloud";
 
@@ -34,19 +35,24 @@ describe("Qalam AI cloud inference", () => {
     expect(validateQalamAiRequest({ action: "improve", text: "سلام" })).toMatchObject({ ok: true, action: "improve" });
   });
 
-  it("uses the fixed GLM model and token caps", async () => {
+  it("posts to OpenAI-compatible chat completions with the fixed GLM model", async () => {
     let seenUrl = "";
     let seenBody: Record<string, unknown> = {};
-    const fetchImpl = fetchJson(200, { result: { response: "done" } }, (url, init) => {
+    const fetchImpl = fetchJson(200, { choices: [{ message: { content: "done" } }] }, (url, init) => {
       seenUrl = url;
       seenBody = JSON.parse(String(init?.body));
     });
     const result = await runQalamAiInference({ action: "summarize", text: "Hello" }, { fetchImpl, env: ENV });
     expect(result.status).toBe(200);
-    expect(seenUrl).toBe(cloudflareRunUrl(ENV.CLOUDFLARE_ACCOUNT_ID));
-    expect(seenUrl).toContain(QALAM_AI_MODEL_ID);
+    expect(seenUrl).toBe(cloudflareChatUrl(ENV.CLOUDFLARE_ACCOUNT_ID));
+    expect(seenUrl).toContain("/ai/v1/chat/completions");
+    expect(seenUrl).not.toContain("/ai/run/");
+    expect(seenBody.model).toBe(QALAM_AI_MODEL_ID);
+    expect(seenBody.messages).toEqual(buildCloudflareMessages("summarize", "Hello"));
     expect(seenBody.max_completion_tokens).toBe(ACTION_MAX_TOKENS.summarize);
     expect(seenBody.n).toBe(1);
+    expect(seenBody.reasoning_effort).toBeNull();
+    expect(seenBody.chat_template_kwargs).toEqual({ enable_thinking: false });
     expect(seenBody).not.toHaveProperty("tools");
     expect(JSON.stringify(result.json)).not.toContain("token_secret_value");
     expect(JSON.stringify(result.json)).not.toContain("acct_test");
@@ -61,7 +67,7 @@ describe("Qalam AI cloud inference", () => {
 
   it("keeps the Cloudflare token on the server request only", async () => {
     let auth = "";
-    const fetchImpl = fetchJson(200, { result: { choices: [{ message: { content: "ok" } }] } }, (_url, init) => {
+    const fetchImpl = fetchJson(200, { choices: [{ message: { content: "ok" } }] }, (_url, init) => {
       const headers = init?.headers as Record<string, string>;
       auth = headers.Authorization;
     });
@@ -70,27 +76,65 @@ describe("Qalam AI cloud inference", () => {
     expect(JSON.stringify(result.json)).toEqual(JSON.stringify({ text: "ok" }));
   });
 
-  it("normalizes provider payloads to { text }", async () => {
-    expect(extractProviderText({ result: { response: "  سلام  " } })).toBe("سلام");
-    const fetchImpl = fetchJson(200, { result: { response: "نیا متن" } });
-    const result = await runQalamAiInference({ action: "simplify", text: "پیچیدہ متن" }, { fetchImpl, env: ENV });
-    expect(result).toEqual({ status: 200, json: { text: "نیا متن" } });
+  it("extracts choices[0].message.content and typed text blocks", () => {
+    expect(extractProviderText({ choices: [{ message: { content: "  سلام  " } }] })).toBe("سلام");
+    expect(extractProviderText({
+      choices: [{
+        message: {
+          content: [
+            { type: "text", text: "ہیلو " },
+            { type: "reasoning", text: "hidden" },
+            { type: "text", text: "دنیا" },
+          ],
+        },
+      }],
+    })).toBe("ہیلو دنیا");
   });
 
-  it("returns a controlled error for provider failure", async () => {
-    const fetchImpl = fetchJson(500, { errors: [{ message: "internal boom stack" }] });
-    const result = await runQalamAiInference({ action: "improve", text: "hi" }, { fetchImpl, env: ENV });
+  it("never returns reasoning_content as the answer", () => {
+    expect(extractProviderText({
+      choices: [{ message: { content: "جواب", reasoning_content: "secret chain" } }],
+    })).toBe("جواب");
+    expect(extractProviderText({
+      choices: [{ message: { content: "", reasoning_content: "should not leak" } }],
+    })).toBe("");
+  });
+
+  it("returns a controlled error for provider 400/500", async () => {
+    const logs: unknown[] = [];
+    const fetchImpl = fetchJson(400, { errors: [{ code: "invalid_request", message: "internal boom stack Bearer token_secret_value accounts/acct_test" }] });
+    const result = await runQalamAiInference({ action: "improve", text: "user selected secret" }, {
+      fetchImpl,
+      env: ENV,
+      log: (message, details) => logs.push({ message, details }),
+    });
     expect(result.status).toBe(502);
     expect(result.json.code).toBe("failed");
-    expect(JSON.stringify(result.json)).not.toMatch(/boom stack|token_secret|acct_test/i);
+    expect(JSON.stringify(result.json)).not.toMatch(/boom stack|token_secret|acct_test|user selected secret/i);
+    expect(JSON.stringify(logs)).not.toMatch(/token_secret_value|acct_test|user selected secret/i);
+    expect(JSON.stringify(logs)).toContain("invalid_request");
   });
 
-  it("maps quota/rate-limit to a controlled limit error", async () => {
+  it("sanitizes diagnostic messages", () => {
+    const sanitized = sanitizeProviderError({
+      errors: [{ code: 10000, message: "Bearer abc123 failed for accounts/acct_test" }],
+    });
+    expect(sanitized.code).toBe("10000");
+    expect(sanitized.message).toContain("Bearer [redacted]");
+    expect(sanitized.message).toContain("accounts/[redacted]");
+    expect(sanitized.message).not.toContain("abc123");
+    expect(sanitized.message).not.toContain("acct_test");
+  });
+
+  it("maps quota/rate-limit and auth failures to controlled errors", async () => {
     expect(classifyProviderFailure(429, {})).toBe("limit");
-    const fetchImpl = fetchJson(429, { errors: [{ message: "quota exceeded" }] });
-    const result = await runQalamAiInference({ action: "improve", text: "hi" }, { fetchImpl, env: ENV });
-    expect(result.status).toBe(429);
-    expect(result.json.code).toBe("limit");
+    expect(classifyProviderFailure(401, {})).toBe("unavailable");
+    const limit = await runQalamAiInference({ action: "improve", text: "hi" }, { fetchImpl: fetchJson(429, { errors: [{ message: "quota exceeded" }] }), env: ENV });
+    expect(limit.status).toBe(429);
+    expect(limit.json.code).toBe("limit");
+    const auth = await runQalamAiInference({ action: "improve", text: "hi" }, { fetchImpl: fetchJson(403, { errors: [{ message: "forbidden" }] }), env: ENV });
+    expect(auth.status).toBe(503);
+    expect(auth.json.code).toBe("unavailable");
   });
 
   it("handles timeout without leaking provider details", async () => {
@@ -109,7 +153,7 @@ describe("Qalam AI cloud inference", () => {
   });
 
   it("does not call Cloudflare when credentials are missing", async () => {
-    const fetchImpl = fetchJson(200, { result: { response: "nope" } });
+    const fetchImpl = fetchJson(200, { choices: [{ message: { content: "nope" } }] });
     const result = await runQalamAiInference({ action: "improve", text: "hi" }, { fetchImpl, env: {} });
     expect(result.status).toBe(503);
     expect(result.json.code).toBe("unavailable");
