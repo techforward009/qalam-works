@@ -12,8 +12,9 @@ import {
   PAGELESS_MAX_WIDTH_PX,
   RULER_PAGE_GUTTER_PX,
   pagesSheetMetrics,
+  resolvePageContentGeometry,
   resolveZoomFactor,
-  visualPageCountWithGaps,
+  visualPageCountForContentGeometry,
   documentPrintCss,
   type DocumentViewMode,
   type DocumentZoom,
@@ -90,9 +91,8 @@ export default function DocumentCanvas({
   const padding = resolveResponsivePagePadding(pageLayout, dir);
   const fitWidth = Math.max(0, availableWidth - 24);
   const sheet = pagesSheetMetrics(pageLayout, fitWidth);
-  const pageCount = isPages
-    ? visualPageCountWithGaps(contentHeight, sheet.heightPx, PAGE_STACK_GAP_PX)
-    : 1;
+  const contentGeo = resolvePageContentGeometry(pageLayout, sheet, PAGE_STACK_GAP_PX);
+  const pageCount = isPages ? visualPageCountForContentGeometry(contentHeight, contentGeo) : 1;
   const stackHeight = isPages
     ? pageCount * sheet.heightPx + Math.max(0, pageCount - 1) * PAGE_STACK_GAP_PX
     : undefined;
@@ -101,15 +101,16 @@ export default function DocumentCanvas({
   const visualWidth = baseWidth * zoomFactor;
   const visualHeight = stackHeight ? stackHeight * zoomFactor : undefined;
   const visualPageHeight = sheet.heightPx * zoomFactor;
+  const visualGutter = PAGE_STACK_GAP_PX * zoomFactor;
   const showRuler = isPages && rulerVisible;
 
   useEffect(() => {
     applyPageGapGeometry(editor, {
       enabled: isPages,
-      pageHeightPx: Math.round(sheet.heightPx),
-      gapPx: PAGE_STACK_GAP_PX,
+      pageHeightPx: Math.round(contentGeo.contentHeightPx),
+      gapPx: Math.round(contentGeo.pageTransitionPx),
     });
-  }, [editor, isPages, sheet.heightPx]);
+  }, [editor, isPages, contentGeo.contentHeightPx, contentGeo.pageTransitionPx]);
 
   const typeVars = {
     "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
@@ -164,6 +165,10 @@ export default function DocumentCanvas({
       data-print-dir={dir}
       data-print-ignores-zoom="true"
       data-page-count={isPages ? pageCount : undefined}
+      data-page-content-height-px={isPages ? String(Math.round(contentGeo.contentHeightPx)) : undefined}
+      data-page-top-margin-px={isPages ? String(Math.round(contentGeo.topMarginPx)) : undefined}
+      data-page-bottom-margin-px={isPages ? String(Math.round(contentGeo.bottomMarginPx)) : undefined}
+      data-page-transition-px={isPages ? String(Math.round(contentGeo.pageTransitionPx)) : undefined}
       data-studio-zoom={String(zoom)}
       data-studio-zoom-factor={String(zoomFactor)}
     >
@@ -173,7 +178,11 @@ export default function DocumentCanvas({
         data-ruler-gutter={showRuler ? String(RULER_PAGE_GUTTER_PX) : undefined}
       >
         {showRuler && (
-          <div className="flex studio-no-print" data-studio-ruler-frame="true">
+          <div
+            className="sticky top-0 z-20 flex studio-no-print bg-[#E8E4DB]"
+            data-studio-ruler-frame="true"
+            data-studio-horizontal-ruler-sticky="true"
+          >
             <div className="h-6 w-6 shrink-0 border-b border-r border-slate-300 bg-[#dfe4dc]" data-ruler-corner="true" />
             <div className="shrink-0 studio-no-print" style={{ width: RULER_PAGE_GUTTER_PX }} aria-hidden />
             <div className="min-w-0 flex-1">
@@ -184,8 +193,23 @@ export default function DocumentCanvas({
         {showRuler && <div className="studio-no-print" style={{ height: RULER_PAGE_GUTTER_PX }} data-ruler-page-gap="horizontal" aria-hidden />}
         <div className={showRuler ? "flex" : undefined}>
           {showRuler && (
-            <div className="studio-no-print w-6 shrink-0" style={{ height: visualPageHeight }}>
-              <WordRuler dir={dir} layout={pageLayout} axis="vertical" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
+            <div className="studio-no-print w-6 shrink-0" data-studio-vertical-ruler-stack="true" data-vertical-ruler-count={pageCount}>
+              {Array.from({ length: pageCount }, (_, index) => (
+                <div key={index}>
+                  {index > 0 ? (
+                    <div
+                      className="studio-no-print"
+                      style={{ height: visualGutter }}
+                      data-ruler-page-gap="vertical"
+                      data-ruler-stack-gap={String(PAGE_STACK_GAP_PX)}
+                      aria-hidden
+                    />
+                  ) : null}
+                  <div className="studio-no-print w-6" style={{ height: visualPageHeight }} data-studio-vertical-ruler-page={index + 1}>
+                    <WordRuler dir={dir} layout={pageLayout} axis="vertical" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
           {showRuler && <div className="studio-no-print shrink-0" style={{ width: RULER_PAGE_GUTTER_PX }} data-ruler-page-gap="vertical" aria-hidden />}
@@ -230,7 +254,7 @@ export default function DocumentCanvas({
                   width: "100%",
                   minHeight: stackHeight,
                   paddingTop: `${padding.topPct}%`,
-                  paddingBottom: `${padding.bottomPct}%`,
+                  paddingBottom: 0,
                   paddingLeft: `${padding.leftPct}%`,
                   paddingRight: `${padding.rightPct}%`,
                 }
@@ -257,7 +281,16 @@ export default function DocumentCanvas({
         </div>
       </div>
       <style jsx global>{`
-        .qalam-editor-content.qalam-doc-page .ProseMirror,
+        .qalam-editor-content.qalam-doc-page .ProseMirror {
+          min-height: var(--qalam-page-min-height, 60vh);
+          padding: 0;
+          outline: none;
+          text-align: start;
+          font-size: var(--qalam-body-size, 1.05rem);
+          line-height: var(--qalam-line-height, 1.85);
+          color: #1a1a1a;
+          background: transparent;
+        }
         .qalam-editor-content.qalam-view-pageless .ProseMirror {
           min-height: var(--qalam-page-min-height, 60vh);
           padding: 0.5rem;
@@ -275,7 +308,9 @@ export default function DocumentCanvas({
           direction: ltr;
         }
         @media (min-width: 640px) {
-          .qalam-editor-content.qalam-doc-page .ProseMirror,
+          .qalam-editor-content.qalam-doc-page .ProseMirror {
+            padding: 0;
+          }
           .qalam-editor-content.qalam-view-pageless .ProseMirror {
             padding: 0.75rem;
             font-size: var(--qalam-body-size, 1.1rem);
