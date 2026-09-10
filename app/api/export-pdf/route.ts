@@ -28,7 +28,11 @@ import { resolvePageLayout, puppeteerPaperFormat, resolvePhysicalMargins } from 
 import { STUDIO_FONTS } from "../../tools/document-studio/utils/fontRegistry";
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """);
+  return s
+    .replace(/&/g, "\u0026amp;")
+    .replace(/</g, "\u0026lt;")
+    .replace(/>/g, "\u0026gt;")
+    .replace(/"/g, "\u0026quot;");
 }
 
 function safeDir(text: string): string {
