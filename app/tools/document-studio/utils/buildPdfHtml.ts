@@ -17,16 +17,9 @@ import {
 
 export interface PdfFontFace {
   familyName: string;
-  /** Successfully loaded woff2 subset payloads for regular weight */
   regularSources: string[];
-  /** Successfully loaded woff2 subset payloads for bold weight */
   boldSources?: string[];
-  /**
-   * True only when every declared regular (and bold, if declared)
-   * subset file for this family loaded successfully.
-   */
   complete: boolean;
-  /** Declared subset path counts for diagnostics */
   declaredRegular: number;
   declaredBold: number;
   loadedRegular: number;
@@ -45,11 +38,11 @@ export interface PdfHtmlResult {
 
 function escapeHtml(text: string): string {
   return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, "\u0026amp;")
+    .replace(/</g, "\u0026lt;")
+    .replace(/>/g, "\u0026gt;")
+    .replace(/"/g, "\u0026quot;")
+    .replace(/'/g, "\u0026#39;");
 }
 
 function escapeAttr(text: string): string {
@@ -72,31 +65,18 @@ function alignStyleFor(node: DocNode): string {
 
 interface WalkCtx {
   globalDir: Direction;
-  /** familyName → complete loaded face */
   available: Map<string, PdfFontFace>;
   fontsUsed: Set<string>;
   fallbacks: Map<string, string>;
-  /** Batch 16A — document-wide typography defaults, used by openAttrs() as the fallback layer below explicit per-block attrs. */
   typography?: DocumentStudioSettings["typography"];
 }
 
-/**
- * Resolve the effective PDF family/class using only fully-loaded faces.
- * If the preferred family is missing or incomplete, use the deterministic
- * registry fallback (and record the mapping).
- */
 function resolveEffectivePdfFont(
   rawFamily: unknown,
   blockDir: Direction,
   available: Map<string, PdfFontFace>,
   typography?: DocumentStudioSettings["typography"]
 ): { family: string; cssClass: string; requestedLabel: string | null; fellBack: boolean } {
-  // Batch 16A correction — EXPLICIT FONTFAMILY MARK > SETTINGS DEFAULT >
-  // SYSTEM FALLBACK, same pattern as buildDocxDocument.ts's
-  // resolveEffectiveFontFamily(): when no explicit mark exists, substitute
-  // the document's chosen default font id's own editorFamily as the
-  // "requested" value into the SAME resolveEditorFontFamily() the
-  // explicit-mark path already uses, rather than bypassing the registry.
   const effectiveRawFamily = (() => {
     if (typeof rawFamily === "string" && rawFamily.trim().length > 0) return rawFamily;
     if (typography) {
@@ -108,7 +88,6 @@ function resolveEffectivePdfFont(
   })();
 
   const base = resolveEditorFontFamily(effectiveRawFamily, blockDir);
-  // Start from registry PDF family (already may have fallen back from Jameel etc.)
   let preferred = base.pdfFamily;
   let preferredClass = base.cssClass;
   let requestedLabel = base.fallbackFrom ?? base.editorFamily ?? base.pdfFamily;
@@ -119,7 +98,6 @@ function resolveEffectivePdfFont(
   };
 
   if (preferComplete(preferred)) {
-    // Registry may have already recorded a logical fallback (Jameel → Noto)
     return {
       family: preferred,
       cssClass: preferredClass,
@@ -128,11 +106,9 @@ function resolveEffectivePdfFont(
     };
   }
 
-  // Preferred face unavailable/incomplete → document-direction default fallback
   const dirFallbackName = blockDir === "ltr" ? "Inter" : "Noto Nastaliq Urdu";
   const dirFallbackClass = blockDir === "ltr" ? "qf-inter" : "qf-noto-nastaliq";
 
-  // Try registry fallbackFontId chain first if preferred came from a known font
   const preferredId = resolvePdfFontId(preferred);
   if (preferredId) {
     const def = getFontById(preferredId);
@@ -158,7 +134,6 @@ function resolveEffectivePdfFont(
     };
   }
 
-  // Last resort: still emit class for dir fallback so HTML is deterministic
   return {
     family: dirFallbackName,
     cssClass: dirFallbackClass,
@@ -204,17 +179,6 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
       ctx.typography
     );
     noteEffective(ctx, effective);
-    // Batch 16A.1 fix — EXPLICIT textStyle.fontSize > BLOCK STYLE default >
-    // DOCUMENT bodyFontSizePt > system fallback. Previously this always
-    // fell back to ctx.typography.bodyFontSizePt when no explicit mark
-    // existed, stamping an inline font-size on EVERY span — which then
-    // overrode a Title/Subtitle/Caption paragraph's own 28pt/18pt/10pt
-    // (set on the parent <p> by openAttrs()), since inline style on a
-    // child span always wins over an inherited parent style. Only emit an
-    // inline size here when there's a genuine explicit override; leaving
-    // it unset lets the span correctly INHERIT from its parent <p> —
-    // whether that parent's font-size came from a block style or (via
-    // the <body> rule) the document's own bodyFontSizePt default.
     const explicitSizePt = resolveFontSizePt(styleMark?.attrs?.fontSize);
     const sizeStyle = explicitSizePt ? `font-size:${explicitSizePt}pt;` : "";
 
@@ -224,8 +188,8 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
     if (typeof href === "string" && href.trim().length > 0) {
       inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
     }
-    // Class always matches the effective (available) family
-    inner = `<span class="${effective.cssClass}"${sizeStyle ? ` style="${sizeStyle}"` : ""}>${inner}</span>`;
+    const fontMarker = effective.family === "Jameel Noori Nastaleeq" ? ` data-pdf-font="${escapeAttr(effective.family)}"` : "";
+    inner = `<span class="${effective.cssClass}"${fontMarker}${sizeStyle ? ` style="${sizeStyle}"` : ""}>${inner}</span>`;
     html += inner;
   }
 
@@ -233,20 +197,8 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
 }
 
 function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
-  // Batch 16A correction — canonical block-style presentation
-  // (Title/Subtitle/Caption's font size/bold/alignment), sourced from
-  // documentStyles.ts's BLOCK_STYLES (the single source of truth also
-  // used by the editor's own CSS and the toolbar's style list) — never
-  // duplicated/redefined here. Only applies when the paragraph itself
-  // has no explicit conflicting attr; alignment specifically still
-  // respects an explicit textAlign attr first (alignStyleFor below).
   const blockStyleId = typeof node.attrs?.blockStyle === "string" && isBlockStyleId(node.attrs.blockStyle) ? node.attrs.blockStyle : null;
   const styleDef = blockStyleId ? BLOCK_STYLES[blockStyleId] : null;
-
-  // Batch 16A — EXPLICIT TIPTAP FORMAT > DOCUMENT SETTINGS DEFAULT: a
-  // per-block attr (set via the editor's real schema attrs) always wins;
-  // only falls back to the document-wide typography default when the
-  // block itself has no explicit override.
   const lh =
     typeof node.attrs?.lineHeight === "number"
       ? validateLineHeight(node.attrs.lineHeight)
@@ -333,12 +285,6 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
   }
 }
 
-// Batch 16A correction — a list item's first paragraph previously had its
-// content converted via convertInline() directly, bypassing openAttrs()
-// entirely, so an explicit per-item lineHeight/spacing attr (or the
-// document-wide typography default) silently never reached the <li> at
-// all. Extracts just the `style="…"` portion openAttrs() would have
-// produced for that paragraph (dir is already set on the <li> itself).
 function listItemStyleAttrs(item: DocNode, parentDir: Direction, ctx: WalkCtx): string {
   const firstChild = item.content?.[0];
   if (!firstChild || firstChild.type !== "paragraph") return "";
@@ -391,10 +337,6 @@ function classRulesCss(): string {
 `;
 }
 
-/**
- * Pure: DocNode + direction + pre-loaded font faces → self-contained HTML.
- * CSS classes always match faces that are complete/available.
- */
 export function buildPdfHtml(
   doc: DocNode,
   dir: Direction,
@@ -424,20 +366,12 @@ export function buildPdfHtml(
   }
 
   const embeddedNames = [...ctx.fontsUsed].filter((n) => available.has(n));
-  // Only emit @font-face for families actually used and complete
   const faces = fonts.faces.filter(
     (f) => f.complete && embeddedNames.includes(f.familyName)
   );
 
   const defaultFamily =
     dir === "ltr" ? "Inter, system-ui, sans-serif" : '"Noto Nastaliq Urdu", serif';
-  // Batch 16A — document-wide body defaults now come from
-  // DocumentStudioSettings.typography (EXPLICIT TIPTAP FORMAT still wins:
-  // per-block overrides render inline in openAttrs()/convertInline()
-  // below, which sit closer to the element and win the CSS cascade over
-  // this body-level rule). Falls back to the previous hardcoded values
-  // when no settings are supplied, so existing callers that don't pass
-  // typography are unaffected.
   const bodyFontSize = typography ? `${typography.bodyFontSizePt}pt` : "12pt";
   const bodyLineHeight = typography ? typography.lineHeight : 2;
 
@@ -484,20 +418,11 @@ ${bodyHtml}
   };
 }
 
-/** Helper for tests/route: which embed defs are needed for a document. */
 export function requiredPdfEmbedFonts(
   doc: DocNode,
   dir: Direction,
   typography?: DocumentStudioSettings["typography"]
 ): StudioFontDefinition[] {
-  // Batch 16A correction — without `typography`, a document with NO
-  // explicit font marks would only ever request embedding of the
-  // hardcoded system default (Inter/Noto Nastaliq Urdu) — meaning even
-  // if buildPdfHtml() correctly RESOLVED the settings-chosen default
-  // font in its HTML/CSS, the actual font FILE would never have been
-  // fetched/embedded, silently falling back to a system font in the
-  // rendered PDF regardless. This ensures the settings default is always
-  // among the fonts requested for embedding.
   const used = new Set<string>();
   const walk = (nodes: DocNode[] | undefined, blockDir: Direction) => {
     if (!nodes) return;
@@ -531,7 +456,6 @@ export function requiredPdfEmbedFonts(
       used.add(resolveEditorFontFamily(null, dir).pdfFamily);
     }
   }
-  // Always include direction default for fallback capacity
   used.add(dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu");
   return collectPdfEmbedFonts(used);
 }
