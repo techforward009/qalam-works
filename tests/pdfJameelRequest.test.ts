@@ -8,6 +8,7 @@ import {
   resolveRequestScopedJameelFace,
 } from "../app/tools/document-studio/utils/pdfJameelRequest";
 import { jameelLoadToPdfFace, type JameelFontLoadResult } from "../app/lib/privateJameelFont";
+import { jameelActuallyUsed } from "../app/tools/document-studio/utils/pdfFontReady";
 
 const jameelMarkDoc: DocNode = {
   type: "doc",
@@ -128,5 +129,37 @@ describe("request-scoped Jameel load", () => {
       requested: "Jameel Noori Nastaleeq",
       used: "Noto Nastaliq Urdu",
     });
+  });
+});
+
+describe("Jameel PDF HTML and readiness diagnostics", () => {
+  it("emits Jameel @font-face and qf-jameel with a diagnostic marker", () => {
+    const loaded: JameelFontLoadResult = { ok: true, buffer: Buffer.from("woff2"), reason: "loaded-blob-token" };
+    const faces = applyJameelFace([notoFace()], jameelLoadToPdfFace(loaded) as PdfFontFace);
+    const out = buildPdfHtml(jameelMarkDoc, "rtl", { faces });
+    expect(out.html).toContain('@font-face{font-family:"Jameel Noori Nastaleeq"');
+    expect(out.html).toContain("data:font/woff2;base64,");
+    expect(out.html).toContain('class="qf-jameel"');
+    expect(out.html).toContain('data-pdf-font="Jameel Noori Nastaleeq"');
+    expect(out.html).not.toMatch(/JAMEEL_FONT_BLOB_URL|VERCEL_OIDC_TOKEN|BLOB_READ_WRITE_TOKEN/);
+  });
+});
+
+describe("X-Pdf-Jameel-Used evidence", () => {
+  it("is not yes merely because fontsUsed lists Jameel", () => {
+    expect(jameelActuallyUsed({
+      fontSetStatus: "loaded",
+      jameelFaceCount: 0,
+      jameelLoadedFaceCount: 0,
+      jameelLoadResultCount: 0,
+      allRequestedFontsReady: false,
+    }, "unknown")).toBe(false);
+    expect(jameelActuallyUsed({
+      fontSetStatus: "loaded",
+      jameelFaceCount: 1,
+      jameelLoadedFaceCount: 1,
+      jameelLoadResultCount: 1,
+      allRequestedFontsReady: true,
+    }, "Jameel Noori Nastaleeq")).toBe(true);
   });
 });
