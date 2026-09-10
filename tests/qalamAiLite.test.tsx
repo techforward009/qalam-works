@@ -11,10 +11,15 @@ import {
   isQalamAiReady,
   loadQalamAiPipeline,
   normalizeGenerationOutput,
+  QALAM_AI_LOW_MEMORY_EN,
   QALAM_AI_MODEL_ID,
+  QALAM_AI_NO_WEBGPU_EN,
+  QALAM_AI_WEBGPU_DTYPE,
+  QalamAiLoadError,
   resetQalamAiForTests,
   setQalamAiTestHooks,
   chooseAiDtype,
+  shouldBlockForLowMemory,
 } from "../app/tools/document-studio/utils/localAi";
 import {
   AI_ACTIONS,
@@ -69,6 +74,7 @@ describe("Qalam AI Lite", () => {
         return mockTransformers();
       },
       detectWebGpu: () => true,
+      deviceMemoryGb: 8,
     });
     const ed = make(helloDoc());
     ed.commands.selectAll();
@@ -81,38 +87,94 @@ describe("Qalam AI Lite", () => {
     await vi.waitFor(() => expect(isQalamAiReady()).toBe(true));
     expect(getQalamAiLoadedInfo()?.modelId).toBe(QALAM_AI_MODEL_ID);
     expect(getQalamAiLoadedInfo()?.backend).toBe("webgpu");
+    expect(getQalamAiLoadedInfo()?.dtype).toBe("q4f16");
   });
 
-  it("prefers WebGPU and falls back to WASM", async () => {
-    const created: string[] = [];
+  it("requests WebGPU q4f16 and never fp32, q4, or WASM", async () => {
+    const created: Array<{ device: string; dtype: string }> = [];
     setQalamAiTestHooks({
-      importTransformers: async () => mockTransformers({ webgpuFail: true, onCreate: (device) => created.push(device) }),
+      importTransformers: async () => mockTransformers({ onCreate: (device, dtype) => created.push({ device, dtype }) }),
       detectWebGpu: () => true,
+      deviceMemoryGb: 8,
     });
     const info = await loadQalamAiPipeline();
-    expect(created).toContain("webgpu");
-    expect(created).toContain("wasm");
-    expect(info.backend).toBe("wasm");
-    expect(info.webgpuError).toMatch(/webgpu failed/);
+    expect(info.dtype).toBe(QALAM_AI_WEBGPU_DTYPE);
+    expect(info.backend).toBe("webgpu");
+    expect(created).toEqual([{ device: "webgpu", dtype: "q4f16" }]);
+    expect(created.some((item) => item.dtype === "fp32")).toBe(false);
+    expect(chooseAiDtype()).toBe("q4f16");
   });
 
-  it("uses WASM when WebGPU is unavailable", async () => {
+  it("does not fall back to fp32 or WASM q4 when WebGPU fails", async () => {
+    const created: Array<{ device: string; dtype: string }> = [];
+    setQalamAiTestHooks({
+      importTransformers: async () => mockTransformers({
+        webgpuFail: true,
+        onCreate: (device, dtype) => created.push({ device, dtype }),
+      }),
+      detectWebGpu: () => true,
+      deviceMemoryGb: 8,
+    });
+    await expect(loadQalamAiPipeline()).rejects.toBeInstanceOf(QalamAiLoadError);
+    expect(created.every((item) => item.device === "webgpu" && item.dtype === "q4f16")).toBe(true);
+    expect(created.some((item) => item.dtype === "fp32" || item.device === "wasm")).toBe(false);
+    expect(isQalamAiReady()).toBe(false);
+  });
+
+  it("blocks low deviceMemory before creating a pipeline", async () => {
+    let imported = false;
+    setQalamAiTestHooks({
+      importTransformers: async () => {
+        imported = true;
+        return mockTransformers();
+      },
+      detectWebGpu: () => true,
+      deviceMemoryGb: 4,
+    });
+    expect(shouldBlockForLowMemory(4)).toBe(true);
+    await expect(loadQalamAiPipeline()).rejects.toMatchObject({ code: "low-memory", message: QALAM_AI_LOW_MEMORY_EN });
+    expect(imported).toBe(false);
+  });
+
+  it("shows unsupported/low-memory state instead of WASM load", async () => {
     setQalamAiTestHooks({
       importTransformers: async () => mockTransformers(),
       detectWebGpu: () => false,
+      deviceMemoryGb: 8,
     });
-    const info = await loadQalamAiPipeline();
-    expect(info.backend).toBe("wasm");
-    expect(info.webgpuAvailable).toBe(false);
-    expect(chooseAiDtype(["q4f16", "q4", "q8"], "webgpu")).toBe("q4f16");
-    expect(chooseAiDtype(["q4f16", "q4", "q8"], "wasm")).toBe("q4");
+    const ed = make(helloDoc());
+    ed.commands.selectAll();
+    render(<QalamAiPanel editor={ed as never} isUr={false} onClose={() => {}} />);
+    fireEvent.click(document.querySelector("[data-qalam-ai-load]")!);
+    await vi.waitFor(() => expect(document.querySelector("[data-qalam-ai-unsupported]")?.textContent).toBe(QALAM_AI_NO_WEBGPU_EN));
+    expect(isQalamAiReady()).toBe(false);
+    expect(ed.isDestroyed).toBe(false);
   });
 
-  it("reports progress while loading", async () => {
+  it("shows the low-memory message without importing Transformers", async () => {
+    let imported = false;
+    setQalamAiTestHooks({
+      importTransformers: async () => {
+        imported = true;
+        return mockTransformers();
+      },
+      detectWebGpu: () => true,
+      deviceMemoryGb: 4,
+    });
+    const ed = make(helloDoc());
+    render(<QalamAiPanel editor={ed as never} isUr={false} onClose={() => {}} />);
+    fireEvent.click(document.querySelector("[data-qalam-ai-load]")!);
+    await vi.waitFor(() => expect(document.querySelector("[data-qalam-ai-unsupported]")?.textContent).toBe(QALAM_AI_LOW_MEMORY_EN));
+    expect(imported).toBe(false);
+    expect(ed.isDestroyed).toBe(false);
+  });
+
+  it("reports progress while loading q4f16 WebGPU", async () => {
     const reports: string[] = [];
     setQalamAiTestHooks({
       importTransformers: async () => mockTransformers(),
-      detectWebGpu: () => false,
+      detectWebGpu: () => true,
+      deviceMemoryGb: 8,
     });
     await loadQalamAiPipeline((p) => reports.push(`${p.file}:${p.progress}`));
     expect(reports.some((item) => item.includes("model.onnx"))).toBe(true);
@@ -148,7 +210,8 @@ describe("Qalam AI Lite", () => {
   it("keeps generated output as preview until Replace is clicked", async () => {
     setQalamAiTestHooks({
       importTransformers: async () => mockTransformers({ output: "بہتر جملہ۔" }),
-      detectWebGpu: () => false,
+      detectWebGpu: () => true,
+      deviceMemoryGb: 8,
     });
     const ed = make(helloDoc());
     ed.commands.selectAll();
@@ -191,12 +254,12 @@ describe("Qalam AI Lite", () => {
     setQalamAiTestHooks({
       importTransformers: async () => ({
         env: { allowLocalModels: true },
-        get_available_dtypes: async () => ["q4"],
         pipeline: async () => async () => {
           throw new Error("boom");
         },
       }),
-      detectWebGpu: () => false,
+      detectWebGpu: () => true,
+      deviceMemoryGb: 8,
     });
     await loadQalamAiPipeline();
     const ed = make(helloDoc());
@@ -221,7 +284,8 @@ describe("Qalam AI Lite", () => {
     expect(normalizeGenerationOutput([{ generated_text: "clean" }], "prompt")).toBe("clean");
     setQalamAiTestHooks({
       importTransformers: async () => mockTransformers({ output: "ok" }),
-      detectWebGpu: () => false,
+      detectWebGpu: () => true,
+      deviceMemoryGb: 8,
     });
     await loadQalamAiPipeline();
     expect(await generateQalamAiText("prompt")).toBe("ok");

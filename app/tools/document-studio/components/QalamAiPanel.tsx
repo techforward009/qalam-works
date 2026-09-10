@@ -7,6 +7,8 @@ import {
   getQalamAiLoadedInfo,
   isQalamAiReady,
   loadQalamAiPipeline,
+  messageForLoadError,
+  QalamAiLoadError,
   type QalamAiLoadProgress,
 } from "../utils/localAi";
 import {
@@ -47,6 +49,7 @@ export default function QalamAiPanel({
   const [preview, setPreview] = useState("");
   const [stale, setStale] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [unsupported, setUnsupported] = useState(false);
 
   useEffect(() => {
     const result = captureEditorSelection(editor);
@@ -74,13 +77,19 @@ export default function QalamAiPanel({
 
   const loadModel = async () => {
     setError("");
+    setUnsupported(false);
     setStatus("loading");
     try {
       await loadQalamAiPipeline((report) => setProgress(report));
       setStatus("ready");
     } catch (err) {
       setStatus("error");
-      setError(err instanceof Error ? err.message : String(err));
+      if (err instanceof QalamAiLoadError) {
+        setUnsupported(err.code === "low-memory" || err.code === "no-webgpu");
+        setError(messageForLoadError(err.code, isUr));
+      } else {
+        setError(err instanceof Error ? err.message : String(err));
+      }
     }
   };
 
@@ -164,7 +173,15 @@ export default function QalamAiPanel({
             <span data-qalam-ai-progress="true"> {progress.file ?? "model"} {typeof progress.progress === "number" ? `${Math.round(progress.progress)}%` : ""}</span>
           ) : null}
         </div>
-        {error ? <p data-qalam-ai-error="true" className="mb-2 text-xs text-red-700">{error}</p> : null}
+        {error ? (
+          <p
+            data-qalam-ai-error="true"
+            data-qalam-ai-unsupported={unsupported ? "true" : undefined}
+            className="mb-2 text-xs text-red-700"
+          >
+            {error}
+          </p>
+        ) : null}
         {stale ? <p data-qalam-ai-stale="true" className="mb-2 text-xs text-amber-800">{t("Document changed. Please select the text again.", "دستاویز بدل گئی۔ براہ کرم متن دوبارہ منتخب کریں۔")}</p> : null}
         <div className="mb-2 grid grid-cols-2 gap-1">
           {AI_ACTIONS.map((id) => (

@@ -1,14 +1,39 @@
 /**
  * Document Studio local AI loader — browser-only Transformers.js.
- * Mirrors the Whisper lazy-load pattern without sharing Whisper state.
+ * Memory-safe: WebGPU q4f16 only. Never fp32/q4/WASM fallbacks.
  */
 export const QALAM_AI_MODEL_ID = "onnx-community/Qwen2.5-0.5B-Instruct";
 export const QALAM_AI_TASK = "text-generation";
+export const QALAM_AI_WEBGPU_DTYPE = "q4f16";
 export const MAX_NEW_TOKENS = 128;
 export const SUMMARIZE_MAX_NEW_TOKENS = 64;
+export const LOW_MEMORY_GB = 4;
 
-export type QalamAiBackend = "webgpu" | "wasm";
+export const QALAM_AI_LOW_MEMORY_EN =
+  "Qalam AI requires more browser memory on this device. A lighter model will be offered soon.";
+export const QALAM_AI_LOW_MEMORY_UR =
+  "قلم اے آئی کو اس ڈیوائس پر زیادہ براؤزر میموری درکار ہے۔ جلد ہی ہلکا ماڈل پیش کیا جائے گا۔";
+export const QALAM_AI_NO_WEBGPU_EN =
+  "Qalam AI currently requires WebGPU. This browser cannot load the model safely. A lighter model will be offered soon.";
+export const QALAM_AI_NO_WEBGPU_UR =
+  "قلم اے آئی کو فی الحال WebGPU درکار ہے۔ یہ براؤزر ماڈل محفوظ طریقے سے لوڈ نہیں کر سکتا۔ جلد ہی ہلکا ماڈل پیش کیا جائے گا۔";
+export const QALAM_AI_WEBGPU_FAILED_EN =
+  "Could not load the compact WebGPU model. A lighter model will be offered soon.";
+export const QALAM_AI_WEBGPU_FAILED_UR =
+  "compact WebGPU ماڈل لوڈ نہیں ہو سکا۔ جلد ہی ہلکا ماڈل پیش کیا جائے گا۔";
+
+export type QalamAiBackend = "webgpu";
 export type QalamAiStatus = "not-loaded" | "loading" | "ready" | "error";
+export type QalamAiLoadErrorCode = "low-memory" | "no-webgpu" | "webgpu-failed";
+
+export class QalamAiLoadError extends Error {
+  readonly code: QalamAiLoadErrorCode;
+  constructor(code: QalamAiLoadErrorCode, message: string) {
+    super(message);
+    this.name = "QalamAiLoadError";
+    this.code = code;
+  }
+}
 
 export interface QalamAiLoadProgress {
   status: string;
@@ -18,7 +43,7 @@ export interface QalamAiLoadProgress {
 
 export interface QalamAiLoadedInfo {
   modelId: string;
-  dtype: string;
+  dtype: typeof QALAM_AI_WEBGPU_DTYPE;
   backend: QalamAiBackend;
   webgpuAvailable: boolean;
   webgpuError: string | null;
@@ -43,20 +68,25 @@ let loadedInfo: QalamAiLoadedInfo | null = null;
 let loadInFlight: Promise<QalamAiLoadedInfo> | null = null;
 let importer: (() => Promise<TransformersLike>) | null = null;
 let webGpuDetector: (() => boolean) | null = null;
+let deviceMemoryGb: number | null | undefined = undefined;
 
 export function detectWebGpuAvailable(): boolean {
   if (webGpuDetector) return webGpuDetector();
   return typeof navigator !== "undefined" && "gpu" in navigator && navigator.gpu != null;
 }
 
-export function chooseAiDtype(available: string[], backend: QalamAiBackend): string {
-  const order = backend === "webgpu"
-    ? ["q4f16", "q4", "q8", "int8", "fp16", "fp32"]
-    : ["q4", "q8", "int8", "fp32", "fp16"];
-  for (const dtype of order) {
-    if (available.includes(dtype)) return dtype;
-  }
-  return available[0] ?? "q4";
+export function getDeviceMemoryGb(): number | null {
+  if (deviceMemoryGb !== undefined) return deviceMemoryGb;
+  const mem = typeof navigator !== "undefined" ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory : undefined;
+  return typeof mem === "number" && Number.isFinite(mem) ? mem : null;
+}
+
+export function shouldBlockForLowMemory(memoryGb: number | null = getDeviceMemoryGb()): boolean {
+  return memoryGb !== null && memoryGb <= LOW_MEMORY_GB;
+}
+
+export function chooseAiDtype(): typeof QALAM_AI_WEBGPU_DTYPE {
+  return QALAM_AI_WEBGPU_DTYPE;
 }
 
 function formatError(err: unknown): string {
@@ -72,9 +102,11 @@ async function defaultImportTransformers(): Promise<TransformersLike> {
 export function setQalamAiTestHooks(hooks?: {
   importTransformers?: () => Promise<TransformersLike>;
   detectWebGpu?: () => boolean;
+  deviceMemoryGb?: number | null;
 } | null): void {
   importer = hooks?.importTransformers ?? null;
   webGpuDetector = hooks?.detectWebGpu ?? null;
+  deviceMemoryGb = hooks && "deviceMemoryGb" in hooks ? hooks.deviceMemoryGb : undefined;
 }
 
 export function getQalamAiLoadedInfo(): QalamAiLoadedInfo | null {
@@ -91,6 +123,13 @@ export function resetQalamAiForTests(): void {
   loadInFlight = null;
   importer = null;
   webGpuDetector = null;
+  deviceMemoryGb = undefined;
+}
+
+export function messageForLoadError(code: QalamAiLoadErrorCode, isUr: boolean): string {
+  if (code === "low-memory") return isUr ? QALAM_AI_LOW_MEMORY_UR : QALAM_AI_LOW_MEMORY_EN;
+  if (code === "no-webgpu") return isUr ? QALAM_AI_NO_WEBGPU_UR : QALAM_AI_NO_WEBGPU_EN;
+  return isUr ? QALAM_AI_WEBGPU_FAILED_UR : QALAM_AI_WEBGPU_FAILED_EN;
 }
 
 export async function loadQalamAiPipeline(
@@ -100,21 +139,17 @@ export async function loadQalamAiPipeline(
   if (loadInFlight) return loadInFlight;
 
   loadInFlight = (async () => {
-    const started = typeof performance !== "undefined" ? performance.now() : Date.now();
+    if (shouldBlockForLowMemory()) {
+      throw new QalamAiLoadError("low-memory", QALAM_AI_LOW_MEMORY_EN);
+    }
     const webgpuAvailable = detectWebGpuAvailable();
-    let webgpuError: string | null = null;
+    if (!webgpuAvailable) {
+      throw new QalamAiLoadError("no-webgpu", QALAM_AI_NO_WEBGPU_EN);
+    }
+
+    const started = typeof performance !== "undefined" ? performance.now() : Date.now();
     const transformers = await (importer ?? defaultImportTransformers)();
     transformers.env.allowLocalModels = false;
-
-    let availableDtypes: string[] = [];
-    try {
-      if (typeof transformers.get_available_dtypes === "function") {
-        availableDtypes = await transformers.get_available_dtypes(QALAM_AI_MODEL_ID);
-      }
-    } catch {
-      availableDtypes = [];
-    }
-    if (availableDtypes.length === 0) availableDtypes = ["q4f16", "q4", "q8", "fp32"];
 
     const progress_callback = (report: { status?: string; file?: string; progress?: number }) => {
       onProgress?.({
@@ -124,58 +159,27 @@ export async function loadQalamAiPipeline(
       });
     };
 
-    async function createPipeline(device: QalamAiBackend, dtype: string): Promise<TextGenPipeline> {
-      return transformers.pipeline(QALAM_AI_TASK, QALAM_AI_MODEL_ID, {
-        device,
-        dtype,
+    try {
+      pipelineRef = await transformers.pipeline(QALAM_AI_TASK, QALAM_AI_MODEL_ID, {
+        device: "webgpu",
+        dtype: QALAM_AI_WEBGPU_DTYPE,
         progress_callback,
       });
-    }
-
-    async function createWithDtypeFallback(device: QalamAiBackend): Promise<{ pipe: TextGenPipeline; dtype: string }> {
-      const preferred = chooseAiDtype(availableDtypes, device);
-      try {
-        return { pipe: await createPipeline(device, preferred), dtype: preferred };
-      } catch (firstErr) {
-        if (preferred !== "fp32") {
-          return { pipe: await createPipeline(device, "fp32"), dtype: "fp32" };
-        }
-        throw firstErr;
-      }
-    }
-
-    let backend: QalamAiBackend = "wasm";
-    let dtype = chooseAiDtype(availableDtypes, "wasm");
-    if (webgpuAvailable) {
-      try {
-        const created = await createWithDtypeFallback("webgpu");
-        pipelineRef = created.pipe;
-        dtype = created.dtype;
-        backend = "webgpu";
-      } catch (err) {
-        webgpuError = formatError(err);
-        const created = await createWithDtypeFallback("wasm");
-        pipelineRef = created.pipe;
-        dtype = created.dtype;
-        backend = "wasm";
-      }
-    } else {
-      const created = await createWithDtypeFallback("wasm");
-      pipelineRef = created.pipe;
-      dtype = created.dtype;
-      backend = "wasm";
+    } catch (err) {
+      pipelineRef = null;
+      throw new QalamAiLoadError("webgpu-failed", `${QALAM_AI_WEBGPU_FAILED_EN} (${formatError(err)})`);
     }
 
     const ended = typeof performance !== "undefined" ? performance.now() : Date.now();
     loadedInfo = {
       modelId: QALAM_AI_MODEL_ID,
-      dtype,
-      backend,
-      webgpuAvailable,
-      webgpuError,
+      dtype: QALAM_AI_WEBGPU_DTYPE,
+      backend: "webgpu",
+      webgpuAvailable: true,
+      webgpuError: null,
       loadMs: Math.round(ended - started),
       reusedInMemory: false,
-      availableDtypes,
+      availableDtypes: [QALAM_AI_WEBGPU_DTYPE],
     };
     return loadedInfo;
   })();
