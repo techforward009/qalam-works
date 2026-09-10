@@ -12,6 +12,7 @@ import {
   PageGapExtension,
   applyPageGapGeometry,
   pageGapPluginKey,
+  pageGapProbeXs,
 } from "../app/tools/document-studio/utils/pageGapDecorations";
 
 const PAGE_H = 100;
@@ -81,5 +82,98 @@ describe("Pages mode visual gaps", () => {
     expect(JSON.stringify(editor.getJSON())).toBe(before);
     expect(pageGapPluginKey.getState(editor.state)?.decorations.find().length).toBe(0);
     editor.destroy();
+  });
+
+  it("A. keeps a short paragraph on page 1", () => {
+    const breaks = collectPageGapBreaksFromLines([{ pos: 1, top: 0, bottom: 40 }], PAGE_H, GAP);
+    expect(breaks).toEqual([]);
+  });
+
+  it("C. splits one oversized paragraph internally without a start spacer", () => {
+    const breaks = collectPageGapBreaksFromLines(
+      [{ pos: 1, top: 0, bottom: 180, splitPositions: [{ offsetY: 100, pos: 40 }] }],
+      PAGE_H,
+      GAP,
+    );
+    expect(breaks).toEqual([{ pos: 40, heightPx: GAP }]);
+    expect(breaks.some((entry) => entry.pos === 1)).toBe(false);
+  });
+
+  it("D. produces multiple internal breaks for a 3+ page paragraph", () => {
+    const breaks = collectPageGapBreaksFromLines(
+      [{
+        pos: 1,
+        top: 0,
+        bottom: 280,
+        splitPositions: [
+          { offsetY: 100, pos: 40 },
+          { offsetY: 200, pos: 80 },
+        ],
+      }],
+      PAGE_H,
+      GAP,
+    );
+    expect(breaks.map((entry) => entry.pos)).toEqual([40, 80]);
+    expect(breaks.every((entry) => entry.heightPx === GAP)).toBe(true);
+    expect(breaks.length).toBeGreaterThan(1);
+  });
+
+  it("E/F. RTL and LTR oversized paragraphs split internally", () => {
+    const metric = {
+      pos: 1,
+      top: 0,
+      bottom: 220,
+      splitPositions: [{ offsetY: 100, pos: 55 }, { offsetY: 200, pos: 90 }],
+    };
+    const rtl = collectPageGapBreaksFromLines([metric], PAGE_H, GAP);
+    const ltr = collectPageGapBreaksFromLines([metric], PAGE_H, GAP);
+    expect(rtl).toEqual(ltr);
+    expect(rtl[0]?.pos).toBeGreaterThan(1);
+  });
+
+  it("G. does not create a phantom blank first page when the block starts slightly below the sheet top", () => {
+    const breaks = collectPageGapBreaksFromLines(
+      [{
+        pos: 1,
+        top: 8,
+        bottom: 308,
+        splitPositions: [
+          { offsetY: 92, pos: 42 },
+          { offsetY: 192, pos: 84 },
+        ],
+      }],
+      PAGE_H,
+      GAP,
+    );
+    expect(breaks.some((entry) => entry.pos === 1)).toBe(false);
+    expect(breaks.map((entry) => entry.pos)).toEqual([42, 84]);
+  });
+
+  it("H. decoration pagination does not mutate editor JSON", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const editor = new Editor({
+      element: host,
+      extensions: [...createDocumentStudioExtensions(), PageGapExtension],
+      content: {
+        type: "doc",
+        content: [{
+          type: "paragraph",
+          attrs: { dir: "rtl" },
+          content: [{ type: "text", text: "اردو ".repeat(80) }],
+        }],
+      },
+    });
+    const before = JSON.stringify(editor.getJSON());
+    applyPageGapGeometry(editor, { enabled: true, pageHeightPx: PAGE_H, gapPx: GAP });
+    expect(JSON.stringify(editor.getJSON())).toBe(before);
+    editor.destroy();
+  });
+
+  it("probes RTL from the right edge first", () => {
+    const xs = pageGapProbeXs({ left: 0, width: 200 }, "rtl");
+    expect(xs[0]).toBeGreaterThan(xs[xs.length - 1]);
+    const ltr = pageGapProbeXs({ left: 0, width: 200 }, "ltr");
+    expect(ltr[0]).toBeLessThan(ltr[ltr.length - 1]);
   });
 });

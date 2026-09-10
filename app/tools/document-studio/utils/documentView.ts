@@ -315,12 +315,19 @@ export function pageGapWidgetHeight(lineTop: number, pageBottom: number, gapPx: 
   return Math.max(0, pageBottom - lineTop) + gapPx;
 }
 
+export interface PageLineSplit {
+  offsetY: number;
+  pos: number;
+}
+
 export interface PageLineMetric {
   pos: number;
   top: number;
   bottom: number;
   /** Character pos at a Y inside the line; used when the line itself overflows a page. */
   splitPos?: number;
+  /** Safe in-block document positions, offset from the block's unshifted top. */
+  splitPositions?: PageLineSplit[];
 }
 
 export interface PageGapBreak {
@@ -328,14 +335,42 @@ export interface PageGapBreak {
   heightPx: number;
 }
 
+export type ResolvePageGapSplitPos = (line: PageLineMetric, offsetY: number) => number | null | undefined;
+
+const MAX_INTERNAL_PAGE_SPLITS = 40;
+
+export function isOversizedPageBlock(heightPx: number, pageHeightPx: number): boolean {
+  return heightPx > pageHeightPx + 0.5;
+}
+
+export function pickSplitPosForOffset(line: PageLineMetric, offsetY: number): number | null {
+  const candidates = line.splitPositions?.filter((entry) => entry.pos > line.pos) ?? [];
+  if (candidates.length > 0) {
+    let best = candidates[0];
+    let bestDist = Math.abs(best.offsetY - offsetY);
+    for (const entry of candidates) {
+      const dist = Math.abs(entry.offsetY - offsetY);
+      if (dist < bestDist) {
+        best = entry;
+        bestDist = dist;
+      }
+    }
+    return best.pos;
+  }
+  if (typeof line.splitPos === "number" && line.splitPos > line.pos) return line.splitPos;
+  return null;
+}
+
 /**
- * Pack lines onto sheets. A spacer before a line is leftover (fill the
- * sheet) + gapPx (the empty gutter). Later pages use shifted visual Y.
+ * Pack lines onto sheets. Short blocks that straddle a page bottom may move
+ * wholesale to the next sheet. Oversized blocks (taller than one page) MUST
+ * split internally and must never receive a spacer at the paragraph start.
  */
 export function collectPageGapBreaksFromLines(
   lines: ReadonlyArray<PageLineMetric>,
   pageHeightPx: number,
   gapPx: number,
+  resolveSplitPos?: ResolvePageGapSplitPos,
 ): PageGapBreak[] {
   if (!(pageHeightPx > 0) || lines.length === 0) return [];
   const sorted = [...lines].sort((a, b) => a.top - b.top || a.pos - b.pos);
@@ -343,6 +378,12 @@ export function collectPageGapBreaksFromLines(
   const seen = new Set<number>();
   let shift = 0;
   let pageStart = 0;
+
+  const resolve = (line: PageLineMetric, offsetY: number): number | null => {
+    const resolved = resolveSplitPos?.(line, offsetY);
+    if (typeof resolved === "number" && resolved > line.pos) return resolved;
+    return pickSplitPosForOffset(line, offsetY);
+  };
 
   for (const line of sorted) {
     const height = Math.max(0, line.bottom - line.top);
@@ -354,6 +395,33 @@ export function collectPageGapBreaksFromLines(
       pageBottom = pageStart + pageHeightPx;
     }
 
+    if (isOversizedPageBlock(height, pageHeightPx)) {
+      let consumed = 0;
+      let splits = 0;
+      while (consumed < height - 0.5 && splits < MAX_INTERNAL_PAGE_SPLITS) {
+        visualTop = line.top + consumed + shift;
+        pageBottom = pageStart + pageHeightPx;
+        while (visualTop >= pageBottom - 0.5) {
+          pageStart = pageBottom + gapPx;
+          pageBottom = pageStart + pageHeightPx;
+        }
+        const remainingInBlock = height - consumed;
+        const remainingOnPage = pageBottom - visualTop;
+        if (remainingInBlock <= remainingOnPage + 0.5) break;
+        const offsetY = consumed + remainingOnPage;
+        const pos = resolve(line, offsetY);
+        if (pos == null || pos <= line.pos || seen.has(pos)) break;
+        seen.add(pos);
+        breaks.push({ pos, heightPx: gapPx });
+        shift += gapPx;
+        if (offsetY <= consumed + 0.5) break;
+        consumed = offsetY;
+        pageStart = pageBottom + gapPx;
+        splits += 1;
+      }
+      continue;
+    }
+
     const visualBottom = visualTop + height;
     const straddles = visualBottom > pageBottom + 0.5 && visualTop > pageStart + 0.5 && visualTop < pageBottom;
     if (straddles) {
@@ -363,17 +431,6 @@ export function collectPageGapBreaksFromLines(
         breaks.push({ pos: Math.max(1, line.pos), heightPx });
       }
       shift += heightPx;
-      pageStart = pageBottom + gapPx;
-      continue;
-    }
-
-    if (visualTop <= pageStart + 0.5 && visualBottom > pageBottom + 0.5) {
-      const pos = Math.max(1, line.splitPos ?? line.pos);
-      if (!seen.has(pos)) {
-        seen.add(pos);
-        breaks.push({ pos, heightPx: gapPx });
-      }
-      shift += gapPx;
       pageStart = pageBottom + gapPx;
     }
   }

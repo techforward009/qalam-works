@@ -24,6 +24,38 @@ export const PAGE_GAP_ATTR = "data-studio-page-gap";
 
 const DISABLED: PageGapGeometry = { enabled: false, pageHeightPx: 0, gapPx: PAGE_STACK_GAP_PX };
 
+
+export function pageGapProbeXs(rect: { left: number; width: number }, dir: "rtl" | "ltr"): number[] {
+  const mid = rect.left + rect.width / 2;
+  const inset = Math.min(24, Math.max(8, rect.width / 8));
+  if (dir === "rtl") {
+    return [rect.left + rect.width - inset, mid, rect.left + inset];
+  }
+  return [rect.left + inset, mid, rect.left + rect.width - inset];
+}
+
+export function resolveInternalPageGapPos(
+  view: EditorView,
+  origin: DOMRect,
+  block: HTMLElement,
+  yFromOrigin: number,
+  dir: "rtl" | "ltr",
+  nodeFrom: number,
+  nodeTo: number,
+): number | null {
+  const innerFrom = nodeFrom + 1;
+  const innerTo = Math.max(innerFrom + 1, nodeTo - 1);
+  const y = origin.top + yFromOrigin;
+  const rect = block.getBoundingClientRect();
+  for (const left of pageGapProbeXs(rect, dir)) {
+    const hit = view.posAtCoords({ left, top: y });
+    if (!hit) continue;
+    const pos = Math.min(innerTo, Math.max(innerFrom + 1, hit.pos));
+    if (pos > innerFrom && pos < nodeTo) return pos;
+  }
+  return null;
+}
+
 export function makePageGapElement(heightPx: number): HTMLElement {
   const el = document.createElement("span");
   el.setAttribute(PAGE_GAP_ATTR, "true");
@@ -58,28 +90,38 @@ export function collectPageGapBreaks(
 
   try {
     const origin = pm.getBoundingClientRect();
-    const lines: { pos: number; top: number; bottom: number; splitPos?: number }[] = [];
+    const lines: { pos: number; top: number; bottom: number }[] = [];
+    const blocks: Array<{ el: HTMLElement; dir: "rtl" | "ltr"; from: number; to: number }> = [];
     view.state.doc.forEach((node, offset) => {
-      const dom = view.nodeDOM(offset);
+      let dom: Node | null = null;
+      try {
+        if (view.isDestroyed) return;
+        dom = view.nodeDOM(offset);
+      } catch {
+        return;
+      }
       if (!(dom instanceof HTMLElement) || !node.isBlock) return;
       const rect = dom.getBoundingClientRect();
       const top = rect.top - origin.top;
       const bottom = rect.bottom - origin.top;
-      const metric: { pos: number; top: number; bottom: number; splitPos?: number } = {
+      const computedDir = typeof getComputedStyle === "function" ? getComputedStyle(dom).direction : "";
+      const dir: "rtl" | "ltr" =
+        node.attrs?.dir === "rtl" || (!node.attrs?.dir && (dom.dir === "rtl" || computedDir === "rtl"))
+          ? "rtl"
+          : "ltr";
+      lines.push({
         pos: Math.max(1, offset + 1),
         top,
         bottom,
-      };
-      if (bottom - top > pageHeightPx + 0.5) {
-        const hit = view.posAtCoords({
-          left: origin.left + Math.min(24, Math.max(8, origin.width / 2)),
-          top: origin.top + top + pageHeightPx,
-        });
-        if (hit) metric.splitPos = hit.pos;
-      }
-      lines.push(metric);
+      });
+      blocks.push({ el: dom, dir, from: offset, to: offset + node.nodeSize });
     });
-    return collectPageGapBreaksFromLines(lines, pageHeightPx, gapPx);
+    return collectPageGapBreaksFromLines(lines, pageHeightPx, gapPx, (line, offsetY) => {
+      const block = blocks.find((entry) => entry.from + 1 === line.pos)
+        ?? blocks.find((entry) => line.pos > entry.from && line.pos < entry.to);
+      if (!block) return null;
+      return resolveInternalPageGapPos(view, origin, block.el, line.top + offsetY, block.dir, block.from, block.to);
+    });
   } finally {
     widgets.forEach((el, index) => {
       el.style.display = previous[index] ?? "";
@@ -125,8 +167,10 @@ function createPageGapPlugin() {
     view(view) {
       let scheduled = false;
       let lastKey = "";
+      let destroyed = false;
       const recompute = () => {
         scheduled = false;
+        if (destroyed || view.isDestroyed) return;
         const st = pageGapPluginKey.getState(view.state);
         if (!st) return;
         if (!st.geometry.enabled || !(st.geometry.pageHeightPx > 0)) {
@@ -162,6 +206,7 @@ function createPageGapPlugin() {
           if (view.state.doc !== prevState.doc || geoChanged) schedule();
         },
         destroy() {
+          destroyed = true;
           ro?.disconnect();
         },
       };
