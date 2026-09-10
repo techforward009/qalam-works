@@ -10,6 +10,11 @@ afterEach(() => {
   cleanup();
 });
 
+function stubMeasuredRulerBox(width = 794, height = 1123) {
+  Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, get: () => width });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, get: () => height });
+}
+
 const layout = resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "normal" });
 const settings = defaultDocumentSettings();
 
@@ -31,6 +36,7 @@ function renderCanvas(viewMode: "pages" | "pageless") {
 
 describe("DocumentCanvas view modes", () => {
   it("renders Pages with canonical sheet geometry and no pageless column", () => {
+    stubMeasuredRulerBox();
     renderCanvas("pages");
     const root = document.querySelector("[data-studio-view='pages']");
     expect(root).toBeTruthy();
@@ -117,6 +123,7 @@ describe("DocumentCanvas view modes", () => {
   });
 
   it("updates ruler geometry when page size/orientation change", () => {
+    stubMeasuredRulerBox();
     const landscape = resolvePageLayout({ size: "a5", orientation: "landscape", marginPreset: "narrow" });
     render(
       <DocumentCanvas
