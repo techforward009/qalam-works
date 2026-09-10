@@ -2,7 +2,7 @@
  * Pages / Pageless is a VIEW preference only.
  * It must not live in the document JSON schema.
  */
-import { mmToPx, scaleLayoutToWidth, type ResolvedPageLayout } from "./pageLayout";
+import { scaleLayoutToWidth, type ResolvedPageLayout } from "./pageLayout";
 import type { RulerUnit } from "./rulerLayout";
 import { studioJameelFontFaceCss } from "./fontRegistry";
 
@@ -306,44 +306,6 @@ export function visualPageCountWithGaps(
 export function pagesSheetMetrics(layout: ResolvedPageLayout, availableWidthPx: number) {
   return scaleLayoutToWidth(layout, availableWidthPx);
 }
-
-export interface PageContentGeometry {
-  pageHeightPx: number;
-  topMarginPx: number;
-  bottomMarginPx: number;
-  contentHeightPx: number;
-  gutterPx: number;
-  pageTransitionPx: number;
-}
-
-/** Physical sheet metrics plus repeated per-page content area. */
-export function resolvePageContentGeometry(
-  layout: ResolvedPageLayout,
-  sheet: { heightPx: number; scale: number },
-  gutterPx = PAGE_STACK_GAP_PX,
-): PageContentGeometry {
-  const pageHeightPx = Math.max(0, sheet.heightPx);
-  const topMarginPx = Math.max(0, mmToPx(layout.margins.topMm) * sheet.scale);
-  const bottomMarginPx = Math.max(0, mmToPx(layout.margins.bottomMm) * sheet.scale);
-  const contentHeightPx = Math.max(1, pageHeightPx - topMarginPx - bottomMarginPx);
-  const pageTransitionPx = bottomMarginPx + Math.max(0, gutterPx) + topMarginPx;
-  return { pageHeightPx, topMarginPx, bottomMarginPx, contentHeightPx, gutterPx: Math.max(0, gutterPx), pageTransitionPx };
-}
-
-export function pageTransitionSpacerPx(bottomMarginPx: number, gutterPx: number, topMarginPx: number): number {
-  return Math.max(0, bottomMarginPx) + Math.max(0, gutterPx) + Math.max(0, topMarginPx);
-}
-
-/** Count sheets from spaced ProseMirror height using content-area + transition stride. */
-export function visualPageCountForContentGeometry(spacedHeightPx: number, geo: PageContentGeometry): number {
-  if (!(geo.contentHeightPx > 0)) return 1;
-  const height = Math.max(0, spacedHeightPx);
-  if (height <= geo.contentHeightPx + 0.5) return 1;
-  const stride = geo.contentHeightPx + geo.pageTransitionPx;
-  if (!(stride > 0)) return 1;
-  return Math.max(2, Math.ceil(height / stride));
-}
-
 
 export function snapPageGapToLine(lineTop: number, pageStart: number, pageBottom: number): boolean {
   return lineTop > pageStart + 0.5 && lineTop < pageBottom;

@@ -147,45 +147,4 @@ describe("DocumentCanvas view modes", () => {
     expect(Number(v?.getAttribute("data-ruler-major-ticks"))).toBeGreaterThan(1);
     expect(Number(v?.getAttribute("data-ruler-minor-ticks"))).toBeGreaterThan(1);
   });
-
-  it("exposes repeated page-margin geometry and sticky/multi rulers", () => {
-    stubMeasuredRulerBox();
-    renderCanvas("pages");
-    const root = document.querySelector("[data-studio-view='pages']") as HTMLElement;
-    expect(Number(root.getAttribute("data-page-top-margin-px"))).toBeGreaterThan(10);
-    expect(Number(root.getAttribute("data-page-bottom-margin-px"))).toBeGreaterThan(10);
-    const contentH = Number(root.getAttribute("data-page-content-height-px"));
-    const top = Number(root.getAttribute("data-page-top-margin-px"));
-    const bottom = Number(root.getAttribute("data-page-bottom-margin-px"));
-    const transition = Number(root.getAttribute("data-page-transition-px"));
-    expect(contentH).toBeGreaterThan(100);
-    expect(transition).toBe(bottom + 12 + top);
-    expect(document.querySelectorAll("[data-studio-ruler][data-ruler-axis='horizontal']").length).toBe(1);
-    expect(document.querySelector("[data-studio-horizontal-ruler-sticky]")?.className).toContain("sticky");
-    expect(document.querySelector("[data-vertical-ruler-count]")?.getAttribute("data-vertical-ruler-count")).toBe(root.getAttribute("data-page-count"));
-    const verticalPages = document.querySelectorAll("[data-studio-vertical-ruler-page]");
-    expect(verticalPages.length).toBe(Number(root.getAttribute("data-page-count")));
-    expect(document.querySelectorAll("[data-studio-vertical-ruler]").length).toBe(Number(root.getAttribute("data-page-count")));
-  });
-
-  it("keeps a single horizontal ruler in RTL Pages mode", () => {
-    stubMeasuredRulerBox();
-    render(
-      <DocumentCanvas
-        editor={null}
-        dir="rtl"
-        isUr
-        isEditorEmpty={false}
-        documentSettings={settings}
-        pageLayout={layout}
-        viewMode="pages"
-        onLoadExample={vi.fn()}
-        onWrapperClick={vi.fn()}
-      />,
-    );
-    const root = document.querySelector("[data-studio-view='pages']") as HTMLElement;
-    expect(root.getAttribute("data-print-dir")).toBe("rtl");
-    expect(Number(root.getAttribute("data-page-top-margin-px"))).toBe(Number(root.getAttribute("data-page-bottom-margin-px")));
-    expect(document.querySelectorAll("[data-studio-ruler][data-ruler-axis='horizontal']").length).toBe(1);
-  });
 });

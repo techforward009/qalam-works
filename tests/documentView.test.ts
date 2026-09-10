@@ -4,15 +4,11 @@ import {
   DEFAULT_DOCUMENT_VIEW_MODE,
   DEFAULT_DOCUMENT_ZOOM,
   PAGELESS_MAX_WIDTH_PX,
-  PAGE_STACK_GAP_PX,
   parseStoredViewMode,
   parseStoredZoom,
   pagesSheetMetrics,
-  pageTransitionSpacerPx,
-  resolvePageContentGeometry,
   resolveZoomFactor,
   visualPageCount,
-  visualPageCountForContentGeometry,
   visualPageCountWithGaps,
 } from "../app/tools/document-studio/utils/documentView";
 import {
@@ -60,22 +56,6 @@ describe("document view mode", () => {
     expect(visualPageCountWithGaps(100, 100, 12)).toBe(1);
     expect(visualPageCountWithGaps(101, 100, 12)).toBe(2);
     expect(visualPageCountWithGaps(212, 100, 12)).toBe(2);
-  });
-
-
-  it("repeats top/bottom margins in page-transition geometry", () => {
-    const layout = resolvePageLayout({ size: "a4", orientation: "portrait", marginPreset: "normal" });
-    const sheet = pagesSheetMetrics(layout, 2000);
-    const geo = resolvePageContentGeometry(layout, sheet, PAGE_STACK_GAP_PX);
-    expect(geo.contentHeightPx).toBeCloseTo(geo.pageHeightPx - geo.topMarginPx - geo.bottomMarginPx, 5);
-    expect(geo.topMarginPx).toBeGreaterThan(10);
-    expect(geo.bottomMarginPx).toBeGreaterThan(10);
-    expect(geo.pageTransitionPx).toBeCloseTo(geo.bottomMarginPx + PAGE_STACK_GAP_PX + geo.topMarginPx, 5);
-    expect(pageTransitionSpacerPx(20, 12, 20)).toBe(52);
-    expect(visualPageCountForContentGeometry(geo.contentHeightPx, geo)).toBe(1);
-    expect(visualPageCountForContentGeometry(geo.contentHeightPx + 1 + geo.pageTransitionPx, geo)).toBe(2);
-    const three = 2 * geo.contentHeightPx + 2 * geo.pageTransitionPx + 10;
-    expect(visualPageCountForContentGeometry(three, geo)).toBe(3);
   });
 
   it("keeps Pageless as a max reading width, not a paper height", () => {

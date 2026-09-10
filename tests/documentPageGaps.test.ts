@@ -6,7 +6,6 @@ import { createDocumentStudioExtensions } from "../app/tools/document-studio/uti
 import {
   PAGE_STACK_GAP_PX,
   collectPageGapBreaksFromLines,
-  pageTransitionSpacerPx,
   type PageLineMetric,
 } from "../app/tools/document-studio/utils/documentView";
 import {
@@ -176,43 +175,5 @@ describe("Pages mode visual gaps", () => {
     expect(xs[0]).toBeGreaterThan(xs[xs.length - 1]);
     const ltr = pageGapProbeXs({ left: 0, width: 200 }, "ltr");
     expect(ltr[0]).toBeLessThan(ltr[ltr.length - 1]);
-  });
-
-  it("C/D. internal long-paragraph break includes bottom margin + gutter + next top margin", () => {
-    const top = 20;
-    const bottom = 20;
-    const contentH = 100;
-    const transition = pageTransitionSpacerPx(bottom, GAP, top);
-    expect(transition).toBe(52);
-    const breaks = collectPageGapBreaksFromLines(
-      [{
-        pos: 1,
-        top: 0,
-        bottom: 280,
-        splitPositions: [
-          { offsetY: 100, pos: 40 },
-          { offsetY: 200, pos: 80 },
-        ],
-      }],
-      contentH,
-      transition,
-    );
-    expect(breaks.map((entry) => entry.pos)).toEqual([40, 80]);
-    expect(breaks.every((entry) => entry.heightPx === transition)).toBe(true);
-    expect(breaks.some((entry) => entry.pos === 1)).toBe(false);
-  });
-
-  it("D. short block moved to next page begins after leftover content + transition", () => {
-    const transition = pageTransitionSpacerPx(20, GAP, 20);
-    const breaks = collectPageGapBreaksFromLines(
-      [
-        { pos: 1, top: 0, bottom: 80 },
-        { pos: 20, top: 80, bottom: 110 },
-      ],
-      100,
-      transition,
-    );
-    expect(breaks[0]?.pos).toBe(20);
-    expect(breaks[0]?.heightPx).toBe(20 + transition);
   });
 });
