@@ -7,7 +7,7 @@ import path from "path";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { PDFDocument } from "pdf-lib";
-import { waitForPdfDocumentFonts } from "../../tools/document-studio/utils/pdfFontReady";
+import { inspectPdfRuntimeFonts, jameelActuallyUsed } from "../../tools/document-studio/utils/pdfFontReady";
 import {
   applyJameelFace,
   resolveRequestScopedJameelFace,
@@ -28,7 +28,7 @@ import { resolvePageLayout, puppeteerPaperFormat, resolvePhysicalMargins } from 
 import { STUDIO_FONTS } from "../../tools/document-studio/utils/fontRegistry";
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return s.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, """);
 }
 
 function safeDir(text: string): string {
@@ -201,13 +201,7 @@ export async function POST(request: NextRequest) {
   try {
     const resolved = await fontsForDocument(doc, dir, settings.typography);
     const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
-    const jameelUsed = fontsUsed.includes("Jameel Noori Nastaleeq");
     const jameelFallback = fontFallbacks.some((item) => item.requested === "Jameel Noori Nastaleeq");
-    if (resolved.jameelRequested) {
-      console.info(
-        `[pdf-jameel] requested=yes load=${resolved.jameelLoad} used=${jameelUsed ? "yes" : "no"} fallback=${jameelFallback ? "yes" : "no"}`,
-      );
-    }
     const executablePath = await chromium.executablePath();
     browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true });
     const page = await browser.newPage();
@@ -217,7 +211,31 @@ export async function POST(request: NextRequest) {
       else req.abort();
     });
     await page.setContent(html, { waitUntil: "load" });
-    await page.evaluate(waitForPdfDocumentFonts, fontsUsed);
+    const runtime = await page.evaluate(inspectPdfRuntimeFonts, fontsUsed);
+    let actualFont = "unknown";
+    try {
+      const session = await page.createCDPSession();
+      await session.send("DOM.enable");
+      await session.send("CSS.enable");
+      const pdfDocNode = await session.send("DOM.getDocument");
+      const found = await session.send("DOM.querySelector", {
+        nodeId: pdfDocNode.root.nodeId,
+        selector: '[data-pdf-font="Jameel Noori Nastaleeq"]',
+      });
+      if (found?.nodeId) {
+        const used = await session.send("CSS.getPlatformFontsForNode", { nodeId: found.nodeId });
+        const names = (used?.fonts ?? []).map((f: { familyName?: string }) => f.familyName).filter(Boolean);
+        if (names.length > 0) actualFont = names.join(",");
+      }
+    } catch {
+      actualFont = "unknown";
+    }
+    const jameelUsed = jameelActuallyUsed(runtime, actualFont);
+    if (resolved.jameelRequested) {
+      console.info(
+        `[pdf-jameel] requested=yes load=${resolved.jameelLoad} used=${jameelUsed ? "yes" : "no"} fallback=${jameelFallback ? "yes" : "no"} fontsReady=${runtime.allRequestedFontsReady ? "yes" : "no"} faces=${runtime.jameelFaceCount} loaded=${runtime.jameelLoadedFaceCount} loadResults=${runtime.jameelLoadResultCount} actual=${actualFont}`,
+      );
+    }
     const layout = resolvePageLayout({
       size: settings.page.size,
       orientation: settings.page.orientation,
@@ -259,6 +277,11 @@ export async function POST(request: NextRequest) {
         "X-Pdf-Jameel-Requested": resolved.jameelRequested ? "yes" : "no",
         "X-Pdf-Jameel-Load": resolved.jameelLoad,
         "X-Pdf-Jameel-Used": jameelUsed ? "yes" : "no",
+        "X-Pdf-Fonts-Ready": runtime.allRequestedFontsReady ? "yes" : "no",
+        "X-Pdf-Jameel-Face-Count": String(runtime.jameelFaceCount),
+        "X-Pdf-Jameel-Loaded-Faces": String(runtime.jameelLoadedFaceCount),
+        "X-Pdf-Jameel-Load-Results": String(runtime.jameelLoadResultCount),
+        "X-Pdf-Jameel-Actual-Font": actualFont,
       },
     });
   } catch (err) {
