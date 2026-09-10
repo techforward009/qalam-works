@@ -6,8 +6,6 @@ export interface PdfRuntimeFontDiagnostics {
   allRequestedFontsReady: boolean;
 }
 
-const JAMEEL = "Jameel Noori Nastaleeq";
-
 /** Puppeteer page.evaluate helper: wait until named families are loaded. */
 export async function waitForPdfDocumentFonts(families: string[]): Promise<boolean> {
   if (typeof document === "undefined") return false;
@@ -38,10 +36,37 @@ export async function waitForPdfDocumentFonts(families: string[]): Promise<boole
   return families.every((family) => Boolean(fonts?.check?.(`16px "${family}"`)));
 }
 
-/** Safe Chromium-side Jameel face counts. No bytes, no URLs. */
+/**
+ * Must be fully self-contained: Puppeteer page.evaluate serializes only this
+ * function body into Chromium. Do not reference module-scope names.
+ */
 export async function inspectPdfRuntimeFonts(families: string[]): Promise<PdfRuntimeFontDiagnostics> {
+  const JAMEEL = "Jameel Noori Nastaleeq";
   const fonts = typeof document === "undefined" ? undefined : document.fonts;
-  const ready = await waitForPdfDocumentFonts(families);
+  if (fonts?.ready) {
+    try {
+      await fonts.ready;
+    } catch {
+      /* continue */
+    }
+  }
+  if (fonts?.load) {
+    for (const family of families) {
+      try {
+        await fonts.load(`16px "${family}"`);
+      } catch {
+        /* family may be a fallback */
+      }
+    }
+  }
+  if (fonts?.ready) {
+    try {
+      await fonts.ready;
+    } catch {
+      /* continue */
+    }
+  }
+  const ready = families.every((family) => Boolean(fonts?.check?.(`16px "${family}"`)));
   const list = fonts ? Array.from(fonts as Iterable<FontFace>) : [];
   const jameelFaces = list.filter((face) => face.family.replace(/["']/g, "") === JAMEEL);
   let loadResultCount = 0;
