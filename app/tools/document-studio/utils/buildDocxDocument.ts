@@ -21,6 +21,7 @@ import {
   PageNumber,
   PageOrientation,
   Packer,
+  ShadingType,
   TabStopPosition,
   TabStopType,
   Paragraph,
@@ -30,6 +31,7 @@ import {
 import type { DocNode, Direction } from "./extractPlainText";
 import { deriveDocumentTitle } from "./extractPlainText";
 import { resolveFontSizePt, type DocumentStudioSettings, defaultDocumentSettings, validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
+import { hexToDocxColor } from "./studioColors";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
 import { resolvePageLayout, resolvePageDimensions, mmToTwips, ptToHalfPoints, resolvePhysicalMargins } from "./pageLayout";
 import {
@@ -345,6 +347,10 @@ function convertInline(
     const styleMark = node.marks?.find((m) => m.type === "textStyle");
     const sizePt = resolveFontSizePt(styleMark?.attrs?.fontSize);
     const size = overrides?.size ?? (sizePt != null ? ptToHalfPoints(sizePt) : defaultSizeHalfPoints);
+    const runColor = hexToDocxColor(styleMark?.attrs?.color);
+    const highlightMark = node.marks?.find((m) => m.type === "highlight");
+    const highlightFill = hexToDocxColor(highlightMark?.attrs?.color);
+    const shading = highlightFill ? { type: ShadingType.CLEAR, fill: highlightFill } : undefined;
 
     if (typeof href === "string" && href.trim().length > 0) {
       runs.push(
@@ -359,6 +365,8 @@ function convertInline(
               style: "Hyperlink",
               font: runFont(node, dir, typography),
               size,
+              color: runColor,
+              shading,
             }),
           ],
         })
@@ -372,6 +380,8 @@ function convertInline(
           underline: underline ? {} : undefined,
           font: runFont(node, dir, typography),
           size,
+          color: runColor,
+          shading,
         })
       );
     }
