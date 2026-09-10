@@ -227,4 +227,48 @@ describe("DOCX color fidelity", () => {
     expect(xml).toContain("1A3A2A");
     expect(xml).toContain("FEF3C7");
   });
+
+  it("exports expanded and custom safe colors", async () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [{
+        type: "paragraph",
+        attrs: { dir: "ltr" },
+        content: [{
+          type: "text",
+          text: "Hello",
+          marks: [
+            { type: "textStyle", attrs: { color: "#7C3AED", fontFamily: "Inter" } },
+            { type: "highlight", attrs: { color: "#E9D5FF" } },
+          ],
+        }],
+      }],
+    };
+    const html = buildPdfHtml(doc, "ltr", { faces: [interFace] });
+    expect(html.html).toContain("color:#7C3AED;");
+    expect(html.html).toContain("background-color:#E9D5FF;");
+    const custom: DocNode = {
+      type: "doc",
+      content: [{
+        type: "paragraph",
+        attrs: { dir: "ltr" },
+        content: [{
+          type: "text",
+          text: "Custom",
+          marks: [
+            { type: "textStyle", attrs: { color: "#2F6B4F" } },
+            { type: "highlight", attrs: { color: "#CFFAFE" } },
+          ],
+        }],
+      }],
+    };
+    const customHtml = buildPdfHtml(custom, "ltr", { faces: [interFace] });
+    expect(customHtml.html).toContain("color:#2F6B4F;");
+    expect(customHtml.html).toContain("background-color:#CFFAFE;");
+    const buffer = await Packer.toBuffer(createDocxDocument(custom, "ltr"));
+    const zip = await JSZip.loadAsync(buffer);
+    const xml = await zip.file("word/document.xml")!.async("text");
+    expect(xml).toContain("2F6B4F");
+    expect(xml).toContain("CFFAFE");
+  });
 });
