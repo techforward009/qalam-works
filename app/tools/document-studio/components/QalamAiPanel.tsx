@@ -3,22 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import {
-  generateQalamAiText,
-  getQalamAiLoadedInfo,
-  isQalamAiReady,
-  loadQalamAiPipeline,
-  messageForLoadError,
-  QalamAiLoadError,
-  type QalamAiLoadProgress,
-} from "../utils/localAi";
-import {
   AI_ACTIONS,
-  actionMaxNewTokens,
-  buildGenerationPrompt,
   captureEditorSelection,
+  hostedAiUserMessage,
   replaceCapturedSelection,
+  requestHostedQalamAi,
   type CapturedSelection,
   type QalamAiAction,
+  type QalamAiClientErrorCode,
 } from "../utils/qalamAi";
 
 const ACTION_LABELS: Record<QalamAiAction, { en: string; ur: string }> = {
@@ -40,16 +32,12 @@ export default function QalamAiPanel({
   const initialCapture = captureEditorSelection(editor);
   const captureRef = useRef<CapturedSelection | null>(initialCapture.ok ? initialCapture.capture : null);
   const [captureError, setCaptureError] = useState<"empty" | "too-large" | null>(initialCapture.ok ? null : initialCapture.reason);
-  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "generating" | "error">(
-    isQalamAiReady() ? "ready" : "idle",
-  );
-  const [progress, setProgress] = useState<QalamAiLoadProgress | null>(null);
+  const [status, setStatus] = useState<"idle" | "generating" | "ready" | "error">("idle");
   const [error, setError] = useState("");
   const [action, setAction] = useState<QalamAiAction>("improve");
   const [preview, setPreview] = useState("");
   const [stale, setStale] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [unsupported, setUnsupported] = useState(false);
 
   useEffect(() => {
     const result = captureEditorSelection(editor);
@@ -73,25 +61,6 @@ export default function QalamAiPanel({
   const keepSelection = (event: React.MouseEvent) => event.preventDefault();
   const t = (en: string, ur: string) => (isUr ? ur : en);
   const capture = captureRef.current;
-  const info = getQalamAiLoadedInfo();
-
-  const loadModel = async () => {
-    setError("");
-    setUnsupported(false);
-    setStatus("loading");
-    try {
-      await loadQalamAiPipeline((report) => setProgress(report));
-      setStatus("ready");
-    } catch (err) {
-      setStatus("error");
-      if (err instanceof QalamAiLoadError) {
-        setUnsupported(err.code === "low-memory" || err.code === "no-webgpu");
-        setError(messageForLoadError(err.code, isUr));
-      } else {
-        setError(err instanceof Error ? err.message : String(err));
-      }
-    }
-  };
 
   const run = async () => {
     if (!capture) return;
@@ -99,13 +68,13 @@ export default function QalamAiPanel({
     setStale(false);
     setStatus("generating");
     try {
-      const prompt = buildGenerationPrompt(action, capture.text);
-      const text = await generateQalamAiText(prompt, { maxNewTokens: actionMaxNewTokens(action) });
+      const text = await requestHostedQalamAi(action, capture.text);
       setPreview(text);
       setStatus("ready");
     } catch (err) {
+      const code = ((err as { code?: QalamAiClientErrorCode }).code ?? "failed") as QalamAiClientErrorCode;
       setStatus("error");
-      setError(err instanceof Error ? err.message : String(err));
+      setError(hostedAiUserMessage(code, isUr));
     }
   };
 
@@ -144,14 +113,11 @@ export default function QalamAiPanel({
             {t("Close", "بند کریں")}
           </button>
         </div>
-        <p className="mb-2 text-[11px] text-gray-500">
+        <p className="mb-2 text-[11px] text-gray-500" data-qalam-ai-privacy="true">
           {t(
-            "Qalam AI runs in your browser. The first use downloads the local AI model.",
-            "قلم اے آئی آپ کے براؤزر میں چلتا ہے۔ پہلی مرتبہ مقامی ماڈل ڈاؤن لوڈ ہوتا ہے۔",
+            "Selected text is sent securely to our AI provider for processing.",
+            "منتخب متن پروسیسنگ کے لیے محفوظ طریقے سے ہمارے اے آئی فراہم کنندہ کو بھیجا جاتا ہے۔",
           )}
-        </p>
-        <p className="mb-2 text-[11px] text-gray-500">
-          {t("Text is processed locally in your browser.", "متن آپ کے براؤزر میں مقامی طور پر پروسیس ہوتا ہے۔")}
         </p>
         {captureError === "empty" ? (
           <p data-qalam-ai-empty="true" className="mb-2 text-xs text-amber-800">{t("Select some text first.", "پہلے کچھ متن منتخب کریں۔")}</p>
@@ -165,23 +131,9 @@ export default function QalamAiPanel({
           </div>
         ) : null}
         <div className="mb-2 text-[11px] text-gray-500" data-qalam-ai-status="true">
-          {status === "loading" ? t("Loading model…", "ماڈل لوڈ ہو رہا ہے…") : null}
           {status === "generating" ? t("Generating…", "تیار ہو رہا ہے…") : null}
-          {status === "ready" && info ? t(`Ready (${info.backend}, ${info.dtype})`, `تیار (${info.backend}، ${info.dtype})`) : null}
-          {status === "idle" ? t("Model not loaded", "ماڈل لوڈ نہیں") : null}
-          {progress?.file || typeof progress?.progress === "number" ? (
-            <span data-qalam-ai-progress="true"> {progress.file ?? "model"} {typeof progress.progress === "number" ? `${Math.round(progress.progress)}%` : ""}</span>
-          ) : null}
         </div>
-        {error ? (
-          <p
-            data-qalam-ai-error="true"
-            data-qalam-ai-unsupported={unsupported ? "true" : undefined}
-            className="mb-2 text-xs text-red-700"
-          >
-            {error}
-          </p>
-        ) : null}
+        {error ? <p data-qalam-ai-error="true" className="mb-2 text-xs text-red-700">{error}</p> : null}
         {stale ? <p data-qalam-ai-stale="true" className="mb-2 text-xs text-amber-800">{t("Document changed. Please select the text again.", "دستاویز بدل گئی۔ براہ کرم متن دوبارہ منتخب کریں۔")}</p> : null}
         <div className="mb-2 grid grid-cols-2 gap-1">
           {AI_ACTIONS.map((id) => (
@@ -198,18 +150,13 @@ export default function QalamAiPanel({
             </button>
           ))}
         </div>
-        {status === "idle" || status === "error" ? (
-          <button type="button" data-qalam-ai-load="true" onMouseDown={keepSelection} onClick={() => void loadModel()} className="mb-2 h-8 w-full rounded bg-[#1A3A2A] text-xs font-semibold text-white">
-            {t("Load AI", "اے آئی لوڈ کریں")}
-          </button>
-        ) : null}
         <button
           type="button"
           data-qalam-ai-generate="true"
-          disabled={!capture || (status !== "ready" && status !== "error")}
+          disabled={!capture || status === "generating"}
           onMouseDown={keepSelection}
           onClick={() => void run()}
-          className="mb-2 h-8 w-full rounded border border-[#1A3A2A] text-xs font-semibold text-[#1A3A2A] disabled:opacity-40"
+          className="mb-2 h-8 w-full rounded bg-[#1A3A2A] text-xs font-semibold text-white disabled:opacity-40"
         >
           {t("Generate", "تیار کریں")}
         </button>
@@ -225,7 +172,7 @@ export default function QalamAiPanel({
           <button type="button" data-qalam-ai-copy="true" disabled={!preview} onMouseDown={keepSelection} onClick={() => void copy()} className="h-7 rounded border border-gray-200 px-2 text-[11px] text-gray-700 disabled:opacity-40">
             {copied ? t("Copied", "کاپی ہو گیا") : t("Copy", "کاپی")}
           </button>
-          <button type="button" data-qalam-ai-retry="true" disabled={!capture || status === "loading" || status === "generating"} onMouseDown={keepSelection} onClick={() => void run()} className="h-7 rounded border border-gray-200 px-2 text-[11px] text-gray-700 disabled:opacity-40">
+          <button type="button" data-qalam-ai-retry="true" disabled={!capture || status === "generating"} onMouseDown={keepSelection} onClick={() => void run()} className="h-7 rounded border border-gray-200 px-2 text-[11px] text-gray-700 disabled:opacity-40">
             {t("Retry", "دوبارہ")}
           </button>
         </div>
