@@ -1,19 +1,11 @@
 /** @vitest-environment happy-dom */
 
 import { describe, expect, it } from "vitest";
-import { Editor } from "@tiptap/core";
-import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
 import {
   PAGE_STACK_GAP_PX,
   collectPageGapBreaksFromLines,
   type PageLineMetric,
 } from "../app/tools/document-studio/utils/documentView";
-import {
-  PageGapExtension,
-  applyPageGapGeometry,
-  pageGapPluginKey,
-  pageGapProbeXs,
-} from "../app/tools/document-studio/utils/pageGapDecorations";
 
 const PAGE_H = 100;
 const GAP = PAGE_STACK_GAP_PX;
@@ -34,8 +26,8 @@ function spaceLines(lines: PageLineMetric[], breaks: { pos: number; heightPx: nu
   });
 }
 
-describe("Pages mode visual gaps", () => {
-  it("keeps multi-page lines out of the 12px sheet gutter without mutating JSON", () => {
+describe("legacy packing helpers (not the live pagination engine)", () => {
+  it("keeps multi-page lines out of the 12px sheet gutter", () => {
     const lines: PageLineMetric[] = [
       { pos: 1, top: 0, bottom: 20 },
       { pos: 10, top: 20, bottom: 40 },
@@ -59,29 +51,6 @@ describe("Pages mode visual gaps", () => {
         expect(line.top < gapEnd && line.bottom > gapStart).toBe(false);
       }
     }
-
-    const host = document.createElement("div");
-    document.body.appendChild(host);
-    const editor = new Editor({
-      element: host,
-      extensions: [...createDocumentStudioExtensions(), PageGapExtension],
-      content: {
-        type: "doc",
-        content: lines.map((line, index) => ({
-          type: "paragraph",
-          attrs: { dir: index % 2 === 0 ? "rtl" : "ltr" },
-          content: [{ type: "text", text: index % 2 === 0 ? "اردو سطر" : "English line" }],
-        })),
-      },
-    });
-    const before = JSON.stringify(editor.getJSON());
-    applyPageGapGeometry(editor, { enabled: true, pageHeightPx: PAGE_H, gapPx: GAP });
-    expect(JSON.stringify(editor.getJSON())).toBe(before);
-    expect(pageGapPluginKey.getState(editor.state)?.geometry.enabled).toBe(true);
-    applyPageGapGeometry(editor, { enabled: false, pageHeightPx: PAGE_H, gapPx: GAP });
-    expect(JSON.stringify(editor.getJSON())).toBe(before);
-    expect(pageGapPluginKey.getState(editor.state)?.decorations.find().length).toBe(0);
-    editor.destroy();
   });
 
   it("A. keeps a short paragraph on page 1", () => {
@@ -147,33 +116,5 @@ describe("Pages mode visual gaps", () => {
     );
     expect(breaks.some((entry) => entry.pos === 1)).toBe(false);
     expect(breaks.map((entry) => entry.pos)).toEqual([42, 84]);
-  });
-
-  it("H. decoration pagination does not mutate editor JSON", () => {
-    const host = document.createElement("div");
-    document.body.appendChild(host);
-    const editor = new Editor({
-      element: host,
-      extensions: [...createDocumentStudioExtensions(), PageGapExtension],
-      content: {
-        type: "doc",
-        content: [{
-          type: "paragraph",
-          attrs: { dir: "rtl" },
-          content: [{ type: "text", text: "اردو ".repeat(80) }],
-        }],
-      },
-    });
-    const before = JSON.stringify(editor.getJSON());
-    applyPageGapGeometry(editor, { enabled: true, pageHeightPx: PAGE_H, gapPx: GAP });
-    expect(JSON.stringify(editor.getJSON())).toBe(before);
-    editor.destroy();
-  });
-
-  it("probes RTL from the right edge first", () => {
-    const xs = pageGapProbeXs({ left: 0, width: 200 }, "rtl");
-    expect(xs[0]).toBeGreaterThan(xs[xs.length - 1]);
-    const ltr = pageGapProbeXs({ left: 0, width: 200 }, "ltr");
-    expect(ltr[0]).toBeLessThan(ltr[ltr.length - 1]);
   });
 });

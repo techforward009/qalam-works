@@ -65,6 +65,7 @@ import {
   findBlockStartPosition,
   findSuggestionRange,
   replaceAll,
+  setEditorContent,
   setLinkHref,
   transformPastedSlice,
   activeBlockStyleId,
@@ -103,7 +104,7 @@ import {
   type DocumentZoom,
   type RulerUnit,
 } from "../utils/documentView";
-import { PageGapExtension } from "../utils/pageGapDecorations";
+import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
 import DocumentCanvas from "./DocumentCanvas";
 import DocumentStudioPanels from "./DocumentStudioPanels";
@@ -316,7 +317,7 @@ export default function DocumentStudioEditor() {
   const [initialContent] = useState(() => getInitialDraftContent());
 
   const editor = useEditor({
-    extensions: [...createDocumentStudioExtensions(), PageGapExtension],
+    extensions: [...createDocumentStudioExtensions(), QalamPagination],
     content: initialContent,
     immediatelyRender: false,
     editorProps: {
@@ -430,7 +431,8 @@ export default function DocumentStudioEditor() {
   const handleLoadExample = () => {
     if (!editor) return;
     const exampleDoc = buildDocumentStudioExample(dir);
-    editor.chain().focus().setContent(exampleDoc).run();
+    editor.chain().focus().run();
+    setEditorContent(editor, exampleDoc, "user");
     // NOTE: applyDocumentDirection is intentionally NOT called here.
     // That function bulk-overwrites every block's dir with the document-
     // level dir, which would destroy the per-block direction detection
@@ -494,7 +496,7 @@ export default function DocumentStudioEditor() {
   const handleClearDraft = () => {
     if (window.confirm(isUr ? "کیا آپ موجودہ دستاویز کو خالی کرنا چاہتے ہیں؟" : "Clear the current document text?")) {
       if (!editor) return;
-      editor.commands.setContent(emptyDocumentContent(dir));
+      setEditorContent(editor, emptyDocumentContent(dir), "user");
     }
   };
 
@@ -511,7 +513,7 @@ export default function DocumentStudioEditor() {
     setDocumentSettings(record.documentSettings);
     documentSettingsRef.current = record.documentSettings;
     if (!options?.skipContent && editor) {
-      editor.commands.setContent(record.content);
+      setEditorContent(editor, record.content, "load");
     }
     setSaveStatus("saved");
     setPreview(null);
@@ -735,7 +737,7 @@ export default function DocumentStudioEditor() {
       // trailing newline (if any) are already meaningful as typed.
       const text = isDocxFile ? normalizeDocxParagraphBreaks(rawText) : rawText;
       const docNode = plainTextToDocNodeWithDir(text, dir);
-      editor?.commands.setContent(docNode);
+      if (editor) setEditorContent(editor, docNode, "user");
 
       // Same full-state reset as New Document — the previous document's
       // preview/audit/save state no longer describes what's in the editor.
@@ -785,7 +787,7 @@ export default function DocumentStudioEditor() {
     } catch (err) {
       console.error("Failed to apply standardization transaction:", err);
       try {
-        editor.commands.setContent(normalized);
+        setEditorContent(editor, normalized, "user");
         return true;
       } catch (err2) {
         console.error("Fallback setContent also failed:", err2);

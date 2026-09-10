@@ -4,21 +4,24 @@ import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
 import { getFontById } from "../utils/fontRegistry";
-import { resolvePhysicalMargins, resolveResponsivePagePadding, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
+import { layoutNaturalSizePx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { BLOCK_STYLE_EDITOR_CSS } from "../utils/documentSchema";
 import {
   PAGE_STACK_GAP_PX,
   PAGELESS_MAX_WIDTH_PX,
   RULER_PAGE_GUTTER_PX,
-  pagesSheetMetrics,
   resolveZoomFactor,
-  visualPageCountWithGaps,
   documentPrintCss,
   type DocumentViewMode,
   type DocumentZoom,
 } from "../utils/documentView";
-import { applyPageGapGeometry } from "../utils/pageGapDecorations";
+import {
+  applyQalamPagination,
+  getQalamPaginationState,
+  pageStackHeightPx,
+  paginationGeometryFromLayout,
+} from "../extensions/QalamPagination";
 import type { RulerUnit } from "../utils/rulerLayout";
 import { WordRuler } from "./WordRuler";
 
@@ -53,10 +56,9 @@ export default function DocumentCanvas({
 }) {
   const isPages = viewMode === "pages";
   const workspaceRef = useRef<HTMLDivElement>(null);
-  const measureRef = useRef<HTMLDivElement>(null);
   const [availableWidth, setAvailableWidth] = useState(0);
   const [availableHeight, setAvailableHeight] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
+  const [livePageCount, setLivePageCount] = useState(1);
 
   useEffect(() => {
     const el = workspaceRef.current;
@@ -73,43 +75,48 @@ export default function DocumentCanvas({
     return () => ro.disconnect();
   }, []);
 
-  useEffect(() => {
-    const el = measureRef.current;
-    if (!el || !isPages || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver((entries) => {
-      const target = entries[0]?.target as HTMLElement | undefined;
-      const pm = target?.querySelector?.(".ProseMirror") as HTMLElement | null;
-      setContentHeight(pm?.scrollHeight ?? 0);
-    });
-    ro.observe(el);
-    const pm = el.querySelector(".ProseMirror") as HTMLElement | null;
-    setContentHeight(pm?.scrollHeight ?? 0);
-    return () => ro.disconnect();
-  }, [isPages, pageLayout.widthMm, pageLayout.heightMm]);
+  const natural = layoutNaturalSizePx(pageLayout);
+  const geometry = paginationGeometryFromLayout(pageLayout, dir, isPages);
 
-  const padding = resolveResponsivePagePadding(pageLayout, dir);
+  useEffect(() => {
+    applyQalamPagination(editor, geometry);
+  }, [
+    editor,
+    geometry.enabled,
+    geometry.pageWidthPx,
+    geometry.pageHeightPx,
+    geometry.marginTopPx,
+    geometry.marginBottomPx,
+    geometry.marginLeftPx,
+    geometry.marginRightPx,
+    geometry.gapPx,
+  ]);
+
+  useEffect(() => {
+    if (!editor) {
+      setLivePageCount(1);
+      return;
+    }
+    const sync = () => {
+      const st = getQalamPaginationState(editor);
+      setLivePageCount(st?.geometry.enabled ? st.pageCount : 1);
+    };
+    sync();
+    editor.on("transaction", sync);
+    return () => {
+      editor.off("transaction", sync);
+    };
+  }, [editor, isPages]);
+
   const fitWidth = Math.max(0, availableWidth - 24);
-  const sheet = pagesSheetMetrics(pageLayout, fitWidth);
-  const pageCount = isPages
-    ? visualPageCountWithGaps(contentHeight, sheet.heightPx, PAGE_STACK_GAP_PX)
-    : 1;
-  const stackHeight = isPages
-    ? pageCount * sheet.heightPx + Math.max(0, pageCount - 1) * PAGE_STACK_GAP_PX
-    : undefined;
-  const baseWidth = isPages ? sheet.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, fitWidth || PAGELESS_MAX_WIDTH_PX);
-  const zoomFactor = resolveZoomFactor(zoom, baseWidth, sheet.heightPx, fitWidth || baseWidth, Math.max(0, availableHeight - 32));
+  const pageCount = isPages ? Math.max(1, livePageCount) : 1;
+  const stackHeight = isPages ? pageStackHeightPx(pageCount, natural.heightPx, PAGE_STACK_GAP_PX) : undefined;
+  const baseWidth = isPages ? natural.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, fitWidth || PAGELESS_MAX_WIDTH_PX);
+  const zoomFactor = resolveZoomFactor(zoom, baseWidth, natural.heightPx, fitWidth || baseWidth, Math.max(0, availableHeight - 32));
   const visualWidth = baseWidth * zoomFactor;
   const visualHeight = stackHeight ? stackHeight * zoomFactor : undefined;
-  const visualPageHeight = sheet.heightPx * zoomFactor;
+  const visualPageHeight = natural.heightPx * zoomFactor;
   const showRuler = isPages && rulerVisible;
-
-  useEffect(() => {
-    applyPageGapGeometry(editor, {
-      enabled: isPages,
-      pageHeightPx: Math.round(sheet.heightPx),
-      gapPx: PAGE_STACK_GAP_PX,
-    });
-  }, [editor, isPages, sheet.heightPx]);
 
   const typeVars = {
     "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
@@ -150,7 +157,7 @@ export default function DocumentCanvas({
   return (
     <div
       ref={workspaceRef}
-      className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-3 sm:py-5 lg:px-6 lg:py-6"
+      className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-3 sm:py-5 lg:px-6 lg:py-6 overflow-auto"
       data-studio-view={viewMode}
       data-studio-print-root="true"
       data-page-width-mm={pageLayout.widthMm}
@@ -166,6 +173,7 @@ export default function DocumentCanvas({
       data-page-count={isPages ? pageCount : undefined}
       data-studio-zoom={String(zoom)}
       data-studio-zoom-factor={String(zoomFactor)}
+      data-qalam-pagination-owner={isPages ? "extension" : undefined}
     >
       <div
         className={`relative mx-auto ${showRuler ? "flex flex-col" : ""}`}
@@ -184,7 +192,7 @@ export default function DocumentCanvas({
         {showRuler && <div className="studio-no-print" style={{ height: RULER_PAGE_GUTTER_PX }} data-ruler-page-gap="horizontal" aria-hidden />}
         <div className={showRuler ? "flex" : undefined}>
           {showRuler && (
-            <div className="studio-no-print w-6 shrink-0" style={{ height: visualPageHeight }}>
+            <div className="studio-no-print w-6 shrink-0" style={{ height: visualPageHeight }} data-ruler-page-bound="1">
               <WordRuler dir={dir} layout={pageLayout} axis="vertical" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
             </div>
           )}
@@ -205,36 +213,22 @@ export default function DocumentCanvas({
             transformOrigin: "top left",
           }}
         >
-        {isPages && (
+        {isPages && !editor && (
           <div className="pointer-events-none absolute inset-x-0 top-0 z-0" style={{ height: stackHeight }} aria-hidden>
-            {Array.from({ length: pageCount }, (_, index) => (
-              <div
-                key={index}
-                data-studio-page-sheet={index + 1}
-                data-print-sheet-last={index === pageCount - 1 ? "true" : undefined}
-                className="absolute inset-x-0 rounded-sm border border-[#1A3A2A]/12 bg-white shadow-[0_8px_24px_rgba(26,58,42,0.10)]"
-                style={{
-                  top: index * (sheet.heightPx + PAGE_STACK_GAP_PX),
-                  height: sheet.heightPx,
-                }}
-              />
-            ))}
+            <div
+              data-studio-page-sheet={1}
+              data-print-sheet-last="true"
+              className="absolute inset-x-0 rounded-sm border border-[#1A3A2A]/12 bg-white shadow-[0_8px_24px_rgba(26,58,42,0.10)]"
+              style={{ top: 0, height: natural.heightPx }}
+            />
           </div>
         )}
         <div
-          ref={measureRef}
           className="relative z-[1] cursor-text"
           style={
             isPages
-              ? {
-                  width: "100%",
-                  minHeight: stackHeight,
-                  paddingTop: `${padding.topPct}%`,
-                  paddingBottom: `${padding.bottomPct}%`,
-                  paddingLeft: `${padding.leftPct}%`,
-                  paddingRight: `${padding.rightPct}%`,
-                }
-              : { width: "100%", minHeight: "60vh", padding: undefined }
+              ? { width: "100%", minHeight: stackHeight }
+              : { width: "100%", minHeight: "60vh" }
           }
           dir={dir}
           onClick={onWrapperClick}
@@ -268,6 +262,11 @@ export default function DocumentCanvas({
           color: #1a1a1a;
           background: transparent;
         }
+        .qalam-editor-content.qalam-view-pages .ProseMirror.qalam-pagination {
+          padding: var(--qalam-margin-top) var(--qalam-margin-right) 0 var(--qalam-margin-left);
+          min-height: var(--qalam-page-height);
+          background: #fff;
+        }
         .qalam-editor-content .ProseMirror[dir="rtl"] {
           direction: rtl;
         }
@@ -280,6 +279,9 @@ export default function DocumentCanvas({
             padding: 0.75rem;
             font-size: var(--qalam-body-size, 1.1rem);
             line-height: var(--qalam-line-height, 1.9);
+          }
+          .qalam-editor-content.qalam-view-pages .ProseMirror.qalam-pagination {
+            padding: var(--qalam-margin-top) var(--qalam-margin-right) 0 var(--qalam-margin-left);
           }
         }
         .qalam-editor-content .ProseMirror p[dir="rtl"],
@@ -371,14 +373,6 @@ export default function DocumentCanvas({
         .qalam-editor-content a {
           color: #b45309;
           text-decoration: underline;
-        }
-        .qalam-page-gap {
-          display: block;
-          width: 100%;
-          pointer-events: none;
-          user-select: none;
-          line-height: 0;
-          background: transparent;
         }
       `}</style>
       <style jsx global>{`

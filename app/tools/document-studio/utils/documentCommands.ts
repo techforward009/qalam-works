@@ -7,6 +7,7 @@ import type { Editor } from "@tiptap/react";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { Mark, Node as PMNode } from "@tiptap/pm/model";
 import { Slice, Fragment as pmFragment } from "@tiptap/pm/model";
+import { closeHistory } from "@tiptap/pm/history";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { findAllTextMatches } from "./findReplace";
 import { extractPlainText, type DocNode } from "./extractPlainText";
@@ -38,6 +39,23 @@ export function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr"): 
   const dom = editor.view.dom as HTMLElement;
   dom.setAttribute("dir", nextDir);
   dom.style.direction = nextDir;
+}
+
+/** Replace editor JSON. `load` is not a user edit and must not join the next undo group. */
+export function setEditorContent(
+  editor: Editor,
+  content: Parameters<Editor["commands"]["setContent"]>[0],
+  origin: "load" | "user",
+): void {
+  editor
+    .chain()
+    .command(({ tr }) => {
+      tr.setMeta("addToHistory", origin === "user");
+      return true;
+    })
+    .setContent(content)
+    .run();
+  editor.view.dispatch(closeHistory(editor.view.state.tr).setMeta("addToHistory", false));
 }
 
 export function applyBlockStyle(editor: Editor, id: BlockStyleId): void {
