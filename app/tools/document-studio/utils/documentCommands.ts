@@ -12,6 +12,7 @@ import { findAllTextMatches } from "./findReplace";
 import { extractPlainText, type DocNode } from "./extractPlainText";
 import { detectBlockDirection } from "./plainTextToDocNode";
 import { normalizeEditorFontFamily } from "./fontRegistry";
+import { normalizeSafeHex } from "./studioColors";
 
 export function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr"): void {
   const { state } = editor;
@@ -198,10 +199,8 @@ export function findBlockStartPosition(editor: Editor, blockIndex: number): numb
   return foundPos;
 }
 
-/** Paste slice: re-detect dir from content. Shared by editor and tests. */
 export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): Slice {
   if (!slice.content.size) return slice;
-
   function assignDir(node: PMNode): PMNode {
     if (!node.isTextblock) {
       const mapped = node.content.content.map(assignDir);
@@ -212,7 +211,6 @@ export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): 
     const detectedDir = detectBlockDirection(text, fallbackDir);
     return node.type.create({ ...node.attrs, dir: detectedDir }, node.content, node.marks);
   }
-
   const nodes = slice.content.content.map(assignDir);
   return new Slice(pmFragment.from(nodes), slice.openStart, slice.openEnd);
 }
@@ -231,4 +229,26 @@ export function buildDocumentStudioExample(fallbackDir: "rtl" | "ltr" = "rtl"): 
       content: [{ type: "text", text }],
     })),
   };
+}
+
+export function applyTextColor(editor: Editor, hex: string): void {
+  const safe = normalizeSafeHex(hex);
+  if (!safe) {
+    editor.chain().focus().unsetColor().run();
+    return;
+  }
+  editor.chain().focus().setColor(safe).run();
+}
+
+export function applyHighlight(editor: Editor, hex: string): void {
+  const safe = normalizeSafeHex(hex);
+  if (!safe) {
+    editor.chain().focus().unsetHighlight().run();
+    return;
+  }
+  editor.chain().focus().setHighlight({ color: safe }).run();
+}
+
+export function clearHighlight(editor: Editor): void {
+  editor.chain().focus().unsetHighlight().run();
 }
