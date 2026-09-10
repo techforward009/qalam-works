@@ -10,11 +10,14 @@ import { DictationControl } from "./DictationControl";
 import type { DocumentZoom } from "../utils/documentView";
 import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
 import { MIXED_TOOLBAR_VALUE, resolveActiveToolbarFormatting } from "../utils/activeToolbarFormatting";
+import { STUDIO_HIGHLIGHT_COLORS, STUDIO_TEXT_COLORS } from "../utils/studioColors";
 import {
   applyBlockStyle,
   applyFontFamily,
   applyFontSize,
+  applyHighlight,
   applyLineHeight,
+  applyTextColor,
   redo,
   setAlign,
   toggleBold,
@@ -216,6 +219,54 @@ export default function DocumentToolbar({
       <ToolbarButton label="Underline" active={ui.underline} onClick={() => toggleUnderline(editor)}>
         U
       </ToolbarButton>
+      <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
+        <span className="sr-only">{isUr ? "رنگ" : "Text color"}</span>
+        <select
+          className={selectCls}
+          aria-label={isUr ? "رنگ" : "Text color"}
+          data-studio-text-color="true"
+          value={ui.mixed.color ? MIXED_TOOLBAR_VALUE : (ui.color ?? "")}
+          onChange={(e) => {
+            if (e.target.value === MIXED_TOOLBAR_VALUE) return;
+            applyTextColor(editor, e.target.value);
+          }}
+        >
+          {ui.mixed.color && (
+            <option value={MIXED_TOOLBAR_VALUE} disabled>
+              {isUr ? "مخلوط" : "Mixed"}
+            </option>
+          )}
+          {STUDIO_TEXT_COLORS.map((c) => (
+            <option key={c.id} value={c.hex}>
+              {isUr && c.id === "default" ? "طے شدہ" : c.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
+        <span className="sr-only">{isUr ? "نمایاں" : "Highlight"}</span>
+        <select
+          className={selectCls}
+          aria-label={isUr ? "نمایاں" : "Highlight"}
+          data-studio-highlight="true"
+          value={ui.mixed.highlight ? MIXED_TOOLBAR_VALUE : (ui.highlight ?? "")}
+          onChange={(e) => {
+            if (e.target.value === MIXED_TOOLBAR_VALUE) return;
+            applyHighlight(editor, e.target.value);
+          }}
+        >
+          {ui.mixed.highlight && (
+            <option value={MIXED_TOOLBAR_VALUE} disabled>
+              {isUr ? "مخلوط" : "Mixed"}
+            </option>
+          )}
+          {STUDIO_HIGHLIGHT_COLORS.map((c) => (
+            <option key={c.id} value={c.hex}>
+              {isUr && c.id === "none" ? "کوئی نہیں" : c.label}
+            </option>
+          ))}
+        </select>
+      </label>
       <ToolbarDivider />
       <ToolbarButton label="Align Left" active={ui.textAlign === "left"} onClick={() => setAlign(editor, "left")}>
         ⇤
