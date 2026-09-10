@@ -7,8 +7,11 @@ import path from "path";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { PDFDocument } from "pdf-lib";
-import { loadPrivateJameelWoff2Base64 } from "../../lib/privateJameelFont";
 import { waitForPdfDocumentFonts } from "../../tools/document-studio/utils/pdfFontReady";
+import {
+  applyJameelFace,
+  resolveRequestScopedJameelFace,
+} from "../../tools/document-studio/utils/pdfJameelRequest";
 import {
   buildPdfHtml,
   requiredPdfEmbedFonts,
@@ -18,24 +21,16 @@ import {
 import type { DocNode, Direction } from "../../tools/document-studio/utils/extractPlainText";
 import { deriveDocumentTitle } from "../../tools/document-studio/utils/extractPlainText";
 import {
-  defaultDocumentSettings,
   parseDocumentSettings,
   type DocumentStudioSettings,
 } from "../../tools/document-studio/utils/documentSettings";
 import { resolvePageLayout, puppeteerPaperFormat, resolvePhysicalMargins } from "../../tools/document-studio/utils/pageLayout";
 import { STUDIO_FONTS } from "../../tools/document-studio/utils/fontRegistry";
 
-// ── PDF header/footer template helpers ───────────────────────────────────────
-// Chromium header/footer templates run in a separate renderer context;
-// they do NOT automatically share page body styles or embedded fonts.
-// We use system-safe fonts (Arial/Tahoma for Arabic script, sans-serif
-// otherwise) and `dir="auto"` for direction. No remote resources are fetched.
-
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-/** Deterministic safe direction: Latin-only text is always ltr. */
 function safeDir(text: string): string {
   return /^[\x20-\x7E]*$/.test(text) ? "ltr" : "auto";
 }
@@ -58,42 +53,24 @@ export function buildPdfFooterTemplate(settings: DocumentStudioSettings): string
   const hasText = footerText.trim().length > 0;
   const hasNumbers = pageNumbers !== "none";
   if (!hasText && !hasNumbers) return "<div></div>";
-
   const pageSpan =
     pageNumbers === "current"
       ? `<span class="pageNumber"></span>`
       : `<span class="pageNumber"></span> / <span class="totalPages"></span>`;
-
-  if (!hasText) {
-    return `<div style="${HF_STYLE}text-align:center;">${pageSpan}</div>`;
-  }
+  if (!hasText) return `<div style="${HF_STYLE}text-align:center;">${pageSpan}</div>`;
   if (!hasNumbers) {
     const d = safeDir(footerText);
     return `<div dir="${d}" style="${HF_STYLE}text-align:center;">${escapeHtml(footerText)}</div>`;
   }
-  // Text at one side, number at the other — use flex to keep them both visible.
   const d = safeDir(footerText);
   return `<div dir="${d}" style="${HF_STYLE}display:flex;justify-content:space-between;align-items:center;"><span>${escapeHtml(footerText)}</span><span>${pageSpan}</span></div>`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 let cachedFaces: Map<string, PdfFontFace> | null = null;
 
-async function loadPrivateBlob(filename: string): Promise<string | null> {
-  if (!filename.toLowerCase().includes("jameel")) return null;
-  return loadPrivateJameelWoff2Base64();
-}
-
-/**
- * Resolve a @fontsource (node_modules) or assets/fonts path to an absolute
- * filesystem path, with traversal protection.
- * Returns null if the path would escape its approved root.
- */
 function resolveLocalFontPath(relPath: string): string | null {
   const cwd = process.cwd();
   let full: string;
-
   if (relPath.startsWith("assets/fonts/")) {
     const filename = path.basename(relPath.slice("assets/fonts/".length));
     if (!filename || filename.includes("..")) return null;
@@ -111,10 +88,6 @@ function resolveLocalFontPath(relPath: string): string | null {
   return full;
 }
 
-/**
- * Read a local or @fontsource font file as base64.
- * Returns null if the file is missing or the path is disallowed.
- */
 function readBase64Sync(relPath: string): string | null {
   const full = resolveLocalFontPath(relPath);
   if (!full) return null;
@@ -125,88 +98,59 @@ function readBase64Sync(relPath: string): string | null {
   return readFileSync(full).toString("base64");
 }
 
-/**
- * Load every declared font subset asynchronously.
- *
- * @fontsource paths are read synchronously (local node_modules files).
- * private-blob: paths are fetched asynchronously (local dev override or Blob).
- *
- * A family is `complete` only when ALL declared regular files load successfully.
- * Incomplete families are excluded so buildPdfHtml falls back deterministically.
- *
- * The result is cached on warm Lambda instances.  Private-blob failures are
- * NOT cached — a later request is allowed to retry.
- */
 async function loadAllBundledFaces(): Promise<Map<string, PdfFontFace>> {
   if (cachedFaces) return cachedFaces;
-
   const map = new Map<string, PdfFontFace>();
-
   for (const def of STUDIO_FONTS) {
     if (!def.pdf.embedded || !def.pdf.familyName || !def.pdf.regularFiles?.length) continue;
-
     const declaredRegular = def.pdf.regularFiles.length;
-    const declaredBold    = def.pdf.boldFiles?.length ?? 0;
-    const isPrivateBlob   = def.pdf.regularFiles.some(f => f.startsWith("private-blob:"));
-
+    const declaredBold = def.pdf.boldFiles?.length ?? 0;
+    const isPrivateBlob = def.pdf.regularFiles.some(f => f.startsWith("private-blob:"));
+    if (isPrivateBlob) continue;
     const regularSources: string[] = [];
     for (const f of def.pdf.regularFiles) {
-      const b = f.startsWith("private-blob:")
-        ? await loadPrivateBlob(f.slice("private-blob:".length))
-        : readBase64Sync(f);
+      const b = readBase64Sync(f);
       if (b) regularSources.push(b);
     }
-
     const boldSources: string[] = [];
     for (const f of def.pdf.boldFiles ?? []) {
-      const b = f.startsWith("private-blob:")
-        ? await loadPrivateBlob(f.slice("private-blob:".length))
-        : readBase64Sync(f);
+      const b = readBase64Sync(f);
       if (b) boldSources.push(b);
     }
-
     const complete =
       regularSources.length === declaredRegular &&
       (declaredBold === 0 || boldSources.length === declaredBold) &&
       regularSources.length > 0;
-
     if (!complete) {
       console.warn(
         `[pdf-font] Incomplete: ${def.pdf.familyName}` +
         ` regular ${regularSources.length}/${declaredRegular}` +
-        ` bold ${boldSources.length}/${declaredBold}` +
-        (isPrivateBlob ? " (private-blob source)" : ""),
+        ` bold ${boldSources.length}/${declaredBold}`,
       );
     }
-
     map.set(def.pdf.familyName, {
-      familyName:     def.pdf.familyName,
+      familyName: def.pdf.familyName,
       regularSources,
-      boldSources:    boldSources.length > 0 ? boldSources : undefined,
+      boldSources: boldSources.length > 0 ? boldSources : undefined,
       complete,
       declaredRegular,
       declaredBold,
-      loadedRegular:  regularSources.length,
-      loadedBold:     boldSources.length,
+      loadedRegular: regularSources.length,
+      loadedBold: boldSources.length,
     });
   }
-
-  // Only cache when no private-blob failures occurred — retry is allowed
-  const anyPrivateBlobFailed = STUDIO_FONTS
-    .filter(d => d.pdf.embedded && d.pdf.regularFiles?.some(f => f.startsWith("private-blob:")))
-    .some(d => {
-      const face = map.get(d.pdf.familyName ?? "");
-      return face && !face.complete;
-    });
-
-  if (!anyPrivateBlobFailed) cachedFaces = map;
-
+  cachedFaces = map;
   return map;
 }
 
-async function fontsForDocument(doc: DocNode, dir: Direction, typography?: DocumentStudioSettings["typography"]): Promise<PdfFonts> {
-  const all = await loadAllBundledFaces();
+export async function fontsForDocument(
+  doc: DocNode,
+  dir: Direction,
+  typography?: DocumentStudioSettings["typography"],
+): Promise<{ fonts: PdfFonts; jameelRequested: boolean; jameelLoad: string }> {
   const needed = requiredPdfEmbedFonts(doc, dir, typography);
+  const jameel = await resolveRequestScopedJameelFace(needed);
+  const all = await loadAllBundledFaces();
   const faces: PdfFontFace[] = [];
   const seen = new Set<string>();
   for (const def of needed) {
@@ -218,33 +162,15 @@ async function fontsForDocument(doc: DocNode, dir: Direction, typography?: Docum
       seen.add(name);
     }
   }
-  // Always include direction default for fallback capacity
   const fallbackName = dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu";
   if (!seen.has(fallbackName) && all.has(fallbackName)) {
     faces.push(all.get(fallbackName)!);
   }
-  const jameelName = "Jameel Noori Nastaleeq";
-  if (needed.some((def) => def.pdf.familyName === jameelName)) {
-    const current = faces.find((face) => face.familyName === jameelName);
-    if (!current?.complete) {
-      const b64 = await loadPrivateJameelWoff2Base64();
-      if (b64) {
-        const completeFace: PdfFontFace = {
-          familyName: jameelName,
-          regularSources: [b64],
-          complete: true,
-          declaredRegular: 1,
-          declaredBold: 0,
-          loadedRegular: 1,
-          loadedBold: 0,
-        };
-        const index = faces.findIndex((face) => face.familyName === jameelName);
-        if (index >= 0) faces[index] = completeFace;
-        else faces.push(completeFace);
-      }
-    }
-  }
-  return { faces };
+  return {
+    fonts: { faces: applyJameelFace(faces, jameel.face) },
+    jameelRequested: jameel.requested,
+    jameelLoad: jameel.loadReason,
+  };
 }
 
 interface ExportPdfRequestBody {
@@ -256,11 +182,7 @@ interface ExportPdfRequestBody {
 function isValidRequestBody(body: unknown): body is ExportPdfRequestBody {
   if (typeof body !== "object" || body === null) return false;
   const b = body as Record<string, unknown>;
-  return (
-    typeof b.doc === "object" &&
-    b.doc !== null &&
-    (b.dir === "rtl" || b.dir === "ltr")
-  );
+  return typeof b.doc === "object" && b.doc !== null && (b.dir === "rtl" || b.dir === "ltr");
 }
 
 export async function POST(request: NextRequest) {
@@ -268,44 +190,34 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request body / غلط درخواست۔" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid request body / غلط درخواست۔" }, { status: 400 });
   }
-
   if (!isValidRequestBody(body)) {
-    return NextResponse.json(
-      { error: "Invalid document data / دستاویز کا ڈیٹا غلط ہے۔" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid document data / دستاویز کا ڈیٹا غلط ہے۔" }, { status: 400 });
   }
-
   const { doc, dir } = body;
   const settings = parseDocumentSettings(body.settings);
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
-
   try {
-    const fonts = await fontsForDocument(doc, dir, settings.typography);
-    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, fonts, settings.typography);
-
+    const resolved = await fontsForDocument(doc, dir, settings.typography);
+    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
+    const jameelUsed = fontsUsed.includes("Jameel Noori Nastaleeq");
+    const jameelFallback = fontFallbacks.some((item) => item.requested === "Jameel Noori Nastaleeq");
+    if (resolved.jameelRequested) {
+      console.info(
+        `[pdf-jameel] requested=yes load=${resolved.jameelLoad} used=${jameelUsed ? "yes" : "no"} fallback=${jameelFallback ? "yes" : "no"}`,
+      );
+    }
     const executablePath = await chromium.executablePath();
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath,
-      headless: true,
-    });
-
+    browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true });
     const page = await browser.newPage();
     await page.setRequestInterception(true);
     page.on("request", (req) => {
       if (req.url().startsWith("data:")) req.continue();
       else req.abort();
     });
-
     await page.setContent(html, { waitUntil: "load" });
     await page.evaluate(waitForPdfDocumentFonts, fontsUsed);
-
     const layout = resolvePageLayout({
       size: settings.page.size,
       orientation: settings.page.orientation,
@@ -320,7 +232,6 @@ export async function POST(request: NextRequest) {
       margin: {
         top: `${layout.margins.topMm}mm`,
         bottom: `${layout.margins.bottomMm}mm`,
-        // Batch 16B — document-level direction only (not per-paragraph).
         left: `${resolvePhysicalMargins(layout.margins, dir).leftMm}mm`,
         right: `${resolvePhysicalMargins(layout.margins, dir).rightMm}mm`,
       },
@@ -328,7 +239,6 @@ export async function POST(request: NextRequest) {
       headerTemplate: buildPdfHeaderTemplate(settings, doc),
       footerTemplate: buildPdfFooterTemplate(settings),
     });
-
     const pdfDoc = await PDFDocument.load(pdfUint8Array);
     pdfDoc.setTitle(deriveDocumentTitle(doc));
     pdfDoc.setCreator("Qalam Works");
@@ -337,7 +247,6 @@ export async function POST(request: NextRequest) {
     const pageCount = pdfDoc.getPageCount();
     const finalBytes = await pdfDoc.save();
     const pdfBuffer = Buffer.from(finalBytes);
-
     return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
@@ -347,14 +256,14 @@ export async function POST(request: NextRequest) {
         "X-Pdf-File-Size-Bytes": String(pdfBuffer.length),
         "X-Pdf-Fonts-Used": JSON.stringify(fontsUsed),
         "X-Pdf-Font-Fallbacks": JSON.stringify(fontFallbacks),
+        "X-Pdf-Jameel-Requested": resolved.jameelRequested ? "yes" : "no",
+        "X-Pdf-Jameel-Load": resolved.jameelLoad,
+        "X-Pdf-Jameel-Used": jameelUsed ? "yes" : "no",
       },
     });
   } catch (err) {
     console.error("PDF export failed:", err);
-    return NextResponse.json(
-      { error: "PDF بنانے میں خرابی ہوئی / Failed to generate PDF." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "PDF بنانے میں خرابی ہوئی / Failed to generate PDF." }, { status: 500 });
   } finally {
     if (browser) await browser.close();
   }
