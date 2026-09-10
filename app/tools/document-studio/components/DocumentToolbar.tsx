@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
@@ -58,6 +59,165 @@ function ToolbarButton({
 
 function ToolbarDivider() {
   return <div className="w-px h-5 bg-gray-200 mx-0.5 self-center" />;
+}
+
+type StudioSwatch = { id: string; label: string; hex: string };
+
+function applyKeepingSelection(editor: Editor, apply: () => void) {
+  const { from, to } = editor.state.selection;
+  apply();
+  editor.commands.setTextSelection({ from, to });
+}
+
+function ColorPaletteControl({
+  editor,
+  kind,
+  colors,
+  value,
+  mixed,
+  isUr,
+}: {
+  editor: Editor;
+  kind: "text" | "highlight";
+  colors: readonly StudioSwatch[];
+  value: string | null;
+  mixed: boolean;
+  isUr: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const current = mixed ? null : (value ?? "");
+  const triggerLabel = kind === "text" ? (isUr ? "متن کا رنگ" : "Text color") : (isUr ? "نمایاں رنگ" : "Highlight");
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    const onPointer = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onPointer);
+    };
+  }, [open]);
+
+  const keepFocus = (event: React.MouseEvent) => {
+    event.preventDefault();
+  };
+
+  const pick = (hex: string) => {
+    applyKeepingSelection(editor, () => {
+      if (kind === "text") applyTextColor(editor, hex);
+      else applyHighlight(editor, hex);
+    });
+    setOpen(false);
+  };
+
+  const barColor = mixed ? undefined : current || (kind === "text" ? "#111111" : "transparent");
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        title={triggerLabel}
+        aria-label={triggerLabel}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        data-studio-text-color={kind === "text" ? "palette" : undefined}
+        data-studio-highlight={kind === "highlight" ? "palette" : undefined}
+        data-studio-text-color-button={kind === "text" ? "true" : undefined}
+        data-studio-highlight-button={kind === "highlight" ? "true" : undefined}
+        onMouseDown={keepFocus}
+        onClick={() => setOpen((next) => !next)}
+        className="h-8 min-w-8 px-1.5 rounded border bg-white text-gray-700 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
+      >
+        {kind === "text" ? (
+          <span className="flex flex-col items-center leading-none">
+            <span className="text-[13px] font-bold">A</span>
+            <span
+              data-studio-text-color-swab="true"
+              className="mt-0.5 h-[3px] w-4 rounded-sm"
+              style={{
+                background: mixed ? "repeating-linear-gradient(90deg,#111 0 2px,#ccc 2px 4px)" : barColor,
+              }}
+            />
+          </span>
+        ) : (
+          <span className="flex flex-col items-center leading-none">
+            <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
+              <path d="M1.5 11h5.2L12 3.4 9.4 1.6 3.7 9.2H1.5V11zm8.3-8.2 1.2.8L9.6 5.7 8.4 4.9l1.4-2.1z" fill="currentColor" />
+            </svg>
+            <span
+              data-studio-highlight-swab="true"
+              className="mt-0.5 h-[3px] w-4 rounded-sm border border-gray-200"
+              style={{
+                background: mixed ? "repeating-linear-gradient(90deg,#FEF3C7 0 2px,#fff 2px 4px)" : barColor,
+              }}
+            />
+          </span>
+        )}
+      </button>
+      {open ? (
+        <div
+          role="dialog"
+          aria-label={triggerLabel}
+          data-studio-text-color-palette={kind === "text" ? "true" : undefined}
+          data-studio-highlight-palette={kind === "highlight" ? "true" : undefined}
+          className="absolute left-0 top-full z-[80] mt-1 w-[196px] rounded-md border border-gray-200 bg-white p-2 shadow-md"
+        >
+          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+            {triggerLabel}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {colors.map((swatch) => {
+              const selected = !mixed && (current ?? "") === swatch.hex;
+              const reset = !swatch.hex;
+              const urLabel = swatch.id === "default" && isUr ? "طے شدہ" : swatch.id === "none" && isUr ? "کوئی نہیں" : swatch.label;
+              return (
+                <button
+                  key={swatch.id}
+                  type="button"
+                  title={urLabel}
+                  aria-label={urLabel}
+                  aria-pressed={selected}
+                  data-studio-color-swatch={swatch.id}
+                  data-studio-color-swatch-active={selected ? "true" : "false"}
+                  onMouseDown={keepFocus}
+                  onClick={() => pick(swatch.hex)}
+                  className={`relative h-6 w-6 rounded-full border ${selected ? "ring-2 ring-[#1A3A2A] ring-offset-1" : "border-gray-300"}`}
+                  style={{
+                    background: reset
+                      ? "linear-gradient(135deg, #fff 46%, #ef4444 46%, #ef4444 54%, #fff 54%)"
+                      : swatch.hex,
+                  }}
+                >
+                  {selected ? (
+                    <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold" style={{ color: reset || isLightHex(swatch.hex) ? "#1A3A2A" : "#fff" }}>
+                      ✓
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function isLightHex(hex: string): boolean {
+  const match = /^#([0-9A-Fa-f]{6})$/.exec(hex);
+  if (!match) return true;
+  const n = parseInt(match[1], 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return (r * 299 + g * 587 + b * 114) / 1000 > 160;
 }
 
 const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
@@ -219,54 +379,22 @@ export default function DocumentToolbar({
       <ToolbarButton label="Underline" active={ui.underline} onClick={() => toggleUnderline(editor)}>
         U
       </ToolbarButton>
-      <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
-        <span className="sr-only">{isUr ? "رنگ" : "Text color"}</span>
-        <select
-          className={selectCls}
-          aria-label={isUr ? "رنگ" : "Text color"}
-          data-studio-text-color="true"
-          value={ui.mixed.color ? MIXED_TOOLBAR_VALUE : (ui.color ?? "")}
-          onChange={(e) => {
-            if (e.target.value === MIXED_TOOLBAR_VALUE) return;
-            applyTextColor(editor, e.target.value);
-          }}
-        >
-          {ui.mixed.color && (
-            <option value={MIXED_TOOLBAR_VALUE} disabled>
-              {isUr ? "مخلوط" : "Mixed"}
-            </option>
-          )}
-          {STUDIO_TEXT_COLORS.map((c) => (
-            <option key={c.id} value={c.hex}>
-              {isUr && c.id === "default" ? "طے شدہ" : c.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
-        <span className="sr-only">{isUr ? "نمایاں" : "Highlight"}</span>
-        <select
-          className={selectCls}
-          aria-label={isUr ? "نمایاں" : "Highlight"}
-          data-studio-highlight="true"
-          value={ui.mixed.highlight ? MIXED_TOOLBAR_VALUE : (ui.highlight ?? "")}
-          onChange={(e) => {
-            if (e.target.value === MIXED_TOOLBAR_VALUE) return;
-            applyHighlight(editor, e.target.value);
-          }}
-        >
-          {ui.mixed.highlight && (
-            <option value={MIXED_TOOLBAR_VALUE} disabled>
-              {isUr ? "مخلوط" : "Mixed"}
-            </option>
-          )}
-          {STUDIO_HIGHLIGHT_COLORS.map((c) => (
-            <option key={c.id} value={c.hex}>
-              {isUr && c.id === "none" ? "کوئی نہیں" : c.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <ColorPaletteControl
+        editor={editor}
+        kind="text"
+        colors={STUDIO_TEXT_COLORS}
+        value={ui.color}
+        mixed={ui.mixed.color}
+        isUr={isUr}
+      />
+      <ColorPaletteControl
+        editor={editor}
+        kind="highlight"
+        colors={STUDIO_HIGHLIGHT_COLORS}
+        value={ui.highlight}
+        mixed={ui.mixed.highlight}
+        isUr={isUr}
+      />
       <ToolbarDivider />
       <ToolbarButton label="Align Left" active={ui.textAlign === "left"} onClick={() => setAlign(editor, "left")}>
         ⇤
