@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   calculateRulerMetrics,
   calculateRulerTicks,
@@ -34,15 +34,21 @@ export const WordRuler: React.FC<WordRulerProps> = ({
   layoutRef.current = layout;
   callbackRef.current = onPhysicalMarginChange;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    setSize(vertical ? el.clientHeight : el.clientWidth);
+  }, [vertical, layout.widthMm, layout.heightMm]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver((entries) => {
       const box = entries[0]?.contentRect;
-      setSize(vertical ? box?.height ?? 0 : box?.width ?? 0);
+      const next = vertical ? box?.height ?? el.clientHeight : box?.width ?? el.clientWidth;
+      setSize(next);
     });
     observer.observe(el);
-    setSize(vertical ? el.clientHeight : el.clientWidth);
     return () => observer.disconnect();
   }, [vertical]);
 
@@ -83,10 +89,11 @@ export const WordRuler: React.FC<WordRulerProps> = ({
   }, [vertical]);
 
   const lengthMm = vertical ? layout.heightMm : layout.widthMm;
-  const measured = size || lengthMm;
-  const ticks = calculateRulerTicks(measured, lengthMm, unit);
-  const hMetrics = vertical ? null : calculateRulerMetrics(measured, layout, dir);
-  const vMetrics = vertical ? calculateVerticalRulerMetrics(measured, layout) : null;
+  const measured = size > 0 ? size : 0;
+  const ready = measured > 0;
+  const ticks = ready ? calculateRulerTicks(measured, lengthMm, unit) : [];
+  const hMetrics = ready && !vertical ? calculateRulerMetrics(measured, layout, dir) : null;
+  const vMetrics = ready && vertical ? calculateVerticalRulerMetrics(measured, layout) : null;
   const startZone = vertical ? vMetrics?.topMarginPx ?? 0 : hMetrics?.leftMarginPx ?? 0;
   const endZone = vertical ? vMetrics?.bottomMarginPx ?? 0 : hMetrics?.rightMarginPx ?? 0;
 
@@ -131,12 +138,16 @@ export const WordRuler: React.FC<WordRulerProps> = ({
       data-ruler-page-height-mm={layout.heightMm}
       data-ruler-orientation={layout.orientation}
       data-ruler-page-size={layout.size}
+      data-ruler-ready={ready ? "true" : "false"}
+      data-ruler-measured-px={String(measured)}
       data-ruler-interactive={onPhysicalMarginChange ? "true" : undefined}
       data-ruler-major-ticks={String(ticks.filter((tick) => tick.kind === "major").length)}
       data-ruler-minor-ticks={String(ticks.filter((tick) => tick.kind === "minor").length)}
       title="Page ruler — drag margin boundaries"
     >
       <div className="absolute inset-0 bg-[#dfe4dc]" />
+      {ready ? (
+        <>
       <div
         className="absolute bg-[#c5cdc2]"
         data-ruler-margin="start"
@@ -208,6 +219,8 @@ export const WordRuler: React.FC<WordRulerProps> = ({
             </div>
           ))
         : null}
+        </>
+      ) : null}
     </div>
   );
 };
