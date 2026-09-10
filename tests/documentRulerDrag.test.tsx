@@ -13,6 +13,11 @@ import { displayUnitToMm, formatMarginDisplay, marginMmFromPointer, pointerOffse
 
 afterEach(() => cleanup());
 
+function stubMeasuredRulerBox(width: number, height: number) {
+  Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, get: () => width });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, get: () => height });
+}
+
 const settings = defaultDocumentSettings();
 const base = { topMm: 25.4, bottomMm: 25.4, startMm: 25.4, endMm: 25.4 };
 
@@ -97,6 +102,7 @@ describe("physical margin mapping and units", () => {
 
 describe("interactive WordRuler drag updates actual settings", () => {
   it("left handle pointerDown/move/up changes startMm", () => {
+    stubMeasuredRulerBox(210, 24);
     const { container } = render(<Harness axis="horizontal" />);
     const ruler = container.querySelector("[data-studio-ruler]") as HTMLElement;
     mockRect(ruler, { left: 0, top: 0, width: 210, height: 24 });
@@ -108,6 +114,7 @@ describe("interactive WordRuler drag updates actual settings", () => {
   });
 
   it("right handle changes endMm", () => {
+    stubMeasuredRulerBox(210, 24);
     const { container } = render(<Harness axis="horizontal" />);
     mockRect(container.querySelector("[data-studio-ruler]") as HTMLElement, { left: 0, top: 0, width: 210, height: 24 });
     fireEvent.pointerDown(container.querySelector('[data-ruler-handle="right"]') as HTMLElement, { clientX: 170, pointerId: 1 });
@@ -117,6 +124,7 @@ describe("interactive WordRuler drag updates actual settings", () => {
   });
 
   it("top and bottom handles change topMm/bottomMm", () => {
+    stubMeasuredRulerBox(24, 297);
     const { container } = render(<Harness axis="vertical" />);
     mockRect(container.querySelector("[data-studio-vertical-ruler]") as HTMLElement, { left: 0, top: 0, width: 24, height: 297 });
     fireEvent.pointerDown(container.querySelector('[data-ruler-handle="top"]') as HTMLElement, { clientY: 40, pointerId: 1 });
@@ -132,6 +140,7 @@ describe("interactive WordRuler drag updates actual settings", () => {
   it("persists after re-render and updates page/print geometry", () => {
     const next = applyPhysicalPageMargin(base, "ltr", "left", 40);
     const updated = layoutFrom(next);
+    stubMeasuredRulerBox(210, 24);
     const { container, rerender } = render(<WordRuler dir="ltr" layout={updated} axis="horizontal" unit="cm" onPhysicalMarginChange={vi.fn()} />);
     rerender(<WordRuler dir="ltr" layout={updated} axis="horizontal" unit="in" onPhysicalMarginChange={vi.fn()} />);
     expect(updated.margins.startMm).toBe(40);
