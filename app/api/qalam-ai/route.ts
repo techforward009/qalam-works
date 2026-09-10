@@ -1,5 +1,5 @@
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from "next/server";
 import { MAX_JSON_BODY_BYTES, runQalamAiInference } from "../../tools/document-studio/utils/qalamAiCloud";

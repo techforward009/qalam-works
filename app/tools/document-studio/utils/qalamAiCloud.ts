@@ -1,15 +1,15 @@
 import {
   ACTION_MAX_TOKENS,
-  MAX_SELECTION_CHARS,
+  MAX_PROVIDER_CHUNK_CHARS,
   QALAM_AI_MODEL_ID,
   QALAM_AI_TIMEOUT_MS,
   buildCloudflareMessages,
-  isQalamAiAction,
-  type QalamAiAction,
+  isServerQalamAiAction,
   type QalamAiClientErrorCode,
+  type ServerQalamAiAction,
 } from "./qalamAi";
 
-export const MAX_JSON_BODY_BYTES = 8192;
+export const MAX_JSON_BODY_BYTES = 16384;
 
 export type QalamAiCloudEnv = {
   CLOUDFLARE_ACCOUNT_ID?: string;
@@ -18,19 +18,19 @@ export type QalamAiCloudEnv = {
 
 export type QalamAiCloudResult = {
   status: number;
-  json: { text?: string; error?: string; code?: QalamAiClientErrorCode };
+  json: { text?: string; truncated?: boolean; error?: string; code?: QalamAiClientErrorCode };
 };
 
 type ProviderLogger = (message: string, details: { status: number; code?: string; message?: string }) => void;
 
 export function validateQalamAiRequest(body: unknown):
-  | { ok: true; action: QalamAiAction; text: string }
+  | { ok: true; action: ServerQalamAiAction; text: string }
   | { ok: false; status: number; code: QalamAiClientErrorCode; error: string } {
   if (!body || typeof body !== "object") {
     return { ok: false, status: 400, code: "invalid", error: "Malformed request." };
   }
   const record = body as Record<string, unknown>;
-  if (!isQalamAiAction(record.action)) {
+  if (!isServerQalamAiAction(record.action)) {
     return { ok: false, status: 400, code: "invalid", error: "Unknown action." };
   }
   if (typeof record.text !== "string") {
@@ -40,8 +40,8 @@ export function validateQalamAiRequest(body: unknown):
   if (!text) {
     return { ok: false, status: 400, code: "invalid", error: "Text is required." };
   }
-  if (text.length > MAX_SELECTION_CHARS) {
-    return { ok: false, status: 400, code: "invalid", error: "Text exceeds the 2000-character limit." };
+  if (text.length > MAX_PROVIDER_CHUNK_CHARS) {
+    return { ok: false, status: 400, code: "invalid", error: "Text exceeds the processing limit." };
   }
   return { ok: true, action: record.action, text };
 }
@@ -83,6 +83,19 @@ export function extractProviderText(payload: unknown): string {
   return "";
 }
 
+export function extractFinishReason(payload: unknown): string | null {
+  const root = asRecord(payload);
+  const result = asRecord(root?.result) ?? root;
+  const choices = result && Array.isArray(result.choices) ? result.choices : root && Array.isArray(root.choices) ? root.choices : [];
+  const first = asRecord(choices[0]);
+  const reason = first?.finish_reason ?? first?.native_finish_reason;
+  return typeof reason === "string" ? reason : null;
+}
+
+export function isTruncatedFinishReason(reason: string | null): boolean {
+  return reason === "length" || reason === "max_tokens";
+}
+
 export function classifyProviderFailure(status: number, payload: unknown): QalamAiClientErrorCode {
   if (status === 401 || status === 403) return "unavailable";
   if (status === 429) return "limit";
@@ -95,6 +108,7 @@ function safeError(code: QalamAiClientErrorCode, fallback: string): string {
   if (code === "unavailable") return "Qalam AI is temporarily unavailable.";
   if (code === "limit") return "Qalam AI usage limit has been reached. Please try again later.";
   if (code === "invalid") return fallback;
+  if (code === "truncated") return "Qalam AI could not finish this section. Please try again.";
   return "Qalam AI could not generate a response. Please try again.";
 }
 
@@ -115,7 +129,7 @@ export function sanitizeProviderError(payload: unknown): { code?: string; messag
   return { code, message };
 }
 
-export function buildCloudflareRequestBody(action: QalamAiAction, text: string) {
+export function buildCloudflareRequestBody(action: ServerQalamAiAction, text: string) {
   return {
     model: QALAM_AI_MODEL_ID,
     messages: buildCloudflareMessages(action, text),
@@ -170,11 +184,12 @@ export async function runQalamAiInference(
       return { status: code === "limit" ? 429 : code === "unavailable" ? 503 : 502, json: { error: safeError(code, ""), code } };
     }
     const text = extractProviderText(payload);
+    const truncated = isTruncatedFinishReason(extractFinishReason(payload));
     if (!text) {
-      log("Qalam AI provider error", { status: response.status, code: "empty-output" });
-      return { status: 502, json: { error: safeError("failed", ""), code: "failed" } };
+      log("Qalam AI provider error", { status: response.status, code: truncated ? "truncated" : "empty-output" });
+      return { status: 502, json: { error: safeError(truncated ? "truncated" : "failed", ""), code: truncated ? "truncated" : "failed", truncated } };
     }
-    return { status: 200, json: { text } };
+    return { status: 200, json: { text, truncated: truncated || undefined } };
   } catch (err) {
     const aborted = err instanceof Error && (err.name === "AbortError" || /aborted/i.test(err.message));
     log("Qalam AI provider error", { status: aborted ? 504 : 502, code: aborted ? "timeout" : "network" });
