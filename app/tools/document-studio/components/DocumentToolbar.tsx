@@ -5,7 +5,7 @@ import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { listEditorFonts } from "../utils/fontRegistry";
-import { FONT_SIZE_OPTIONS_PT, LINE_HEIGHT_OPTIONS, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
+import { FONT_SIZE_OPTIONS_PT, LINE_SPACING_PRESETS, parseNumericField, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
 import { BLOCK_STYLES, BLOCK_STYLE_IDS, type BlockStyleId } from "../utils/documentStyles";
 import { DictationControl } from "./DictationControl";
 import type { DocumentZoom } from "../utils/documentView";
@@ -13,13 +13,18 @@ import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
 import { MIXED_TOOLBAR_VALUE, resolveActiveToolbarFormatting } from "../utils/activeToolbarFormatting";
 import { STUDIO_HIGHLIGHT_COLORS, STUDIO_TEXT_COLORS, normalizeSafeHex, parseCustomColorInput } from "../utils/studioColors";
 import {
+  addSpaceAfterParagraph,
+  addSpaceBeforeParagraph,
   applyBlockStyle,
+  applyCustomParagraphSpacing,
   applyFontFamily,
   applyFontSize,
   applyHighlight,
   applyLineHeight,
   applyTextColor,
   redo,
+  removeSpaceAfterParagraph,
+  removeSpaceBeforeParagraph,
   setAlign,
   toggleBold,
   toggleBulletList,
@@ -271,6 +276,235 @@ function isLightHex(hex: string): boolean {
   return (r * 299 + g * 587 + b * 114) / 1000 > 160;
 }
 
+function ParagraphSpacingMenu({
+  editor,
+  ui,
+  settings,
+  isUr,
+}: {
+  editor: Editor;
+  ui: NonNullable<ReturnType<typeof resolveActiveToolbarFormatting>>;
+  settings: DocumentStudioSettings;
+  isUr: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const label = isUr ? "پیراگراف فاصلہ" : "Paragraph spacing";
+
+  useEffect(() => {
+    if (!open && !customOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        setCustomOpen(false);
+      }
+    };
+    const onPointer = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setCustomOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onPointer);
+    };
+  }, [open, customOpen]);
+
+  const keepFocus = (event: React.MouseEvent) => event.preventDefault();
+  const hasBefore = !ui.mixed.spaceBefore && (ui.spaceBeforePt ?? 0) > 0;
+  const hasAfter = !ui.mixed.spaceAfter && (ui.spaceAfterPt ?? 0) > 0;
+
+  const applyPreset = (value: number) => {
+    applyLineHeight(editor, value);
+    setOpen(false);
+  };
+
+  const applyCustom = (form: HTMLFormElement) => {
+    const read = (name: string, kind: "line" | "pt" | "mm") => {
+      const raw = String(new FormData(form).get(name) ?? "").trim();
+      if (!raw) return undefined;
+      return parseNumericField(raw, kind);
+    };
+    const lineHeight = read("lineHeight", "line");
+    const spaceBeforePt = read("spaceBeforePt", "pt");
+    const spaceAfterPt = read("spaceAfterPt", "pt");
+    const firstLineIndentMm = read("firstLineIndentMm", "mm");
+    const indentStartMm = read("indentStartMm", "mm");
+    const indentEndMm = read("indentEndMm", "mm");
+    const fields = { lineHeight, spaceBeforePt, spaceAfterPt, firstLineIndentMm, indentStartMm, indentEndMm };
+    const filled = Object.values(fields).filter((value) => value !== undefined);
+    if (filled.some((value) => value === null)) return;
+    const next: Record<string, number> = {};
+    (Object.keys(fields) as (keyof typeof fields)[]).forEach((key) => {
+      const value = fields[key];
+      if (typeof value === "number") next[key] = value;
+    });
+    applyCustomParagraphSpacing(editor, next);
+    setCustomOpen(false);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        title={label}
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={open || customOpen}
+        data-studio-line-height="menu"
+        data-studio-spacing-button="true"
+        onMouseDown={keepFocus}
+        onClick={() => {
+          setCustomOpen(false);
+          setOpen((next) => !next);
+        }}
+        className="h-8 min-w-8 px-1.5 rounded border bg-white text-gray-700 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
+      >
+        <span className="flex flex-col items-center leading-none">
+          <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
+            <path d="M1 2h12M1 6h12M1 10h8" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+          </svg>
+        </span>
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          aria-label={label}
+          data-studio-spacing-menu="true"
+          className="absolute right-0 top-full z-[80] mt-1 w-[240px] rounded-md border border-gray-200 bg-white py-1 shadow-md"
+        >
+          <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+            {isUr ? "لائن اسپیسنگ" : "Line spacing"}
+          </div>
+          {LINE_SPACING_PRESETS.map((preset) => {
+            const checked = !ui.mixed.lineHeight && ui.lineHeight === preset.value;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={checked}
+                data-studio-spacing-preset={String(preset.value)}
+                onMouseDown={keepFocus}
+                onClick={() => applyPreset(preset.value)}
+                className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-[12px] text-gray-700 hover:bg-[#F7F5EF]"
+              >
+                <span className="w-4 text-[#1A3A2A]">{checked ? "✓" : ""}</span>
+                {isUr ? preset.labelUr : preset.labelEn}
+              </button>
+            );
+          })}
+          <div className="my-1 border-t border-gray-100" />
+          <button
+            type="button"
+            role="menuitem"
+            data-studio-add-space-before="true"
+            onMouseDown={keepFocus}
+            onClick={() => {
+              if (hasBefore) removeSpaceBeforeParagraph(editor);
+              else addSpaceBeforeParagraph(editor, settings);
+              setOpen(false);
+            }}
+            className="flex w-full px-2 py-1.5 text-left text-[12px] text-gray-700 hover:bg-[#F7F5EF]"
+          >
+            {hasBefore
+              ? isUr ? "پیراگراف سے پہلے فاصلہ ہٹائیں" : "Remove space before paragraph"
+              : isUr ? "پیراگراف سے پہلے فاصلہ شامل کریں" : "Add space before paragraph"}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            data-studio-add-space-after="true"
+            onMouseDown={keepFocus}
+            onClick={() => {
+              if (hasAfter) removeSpaceAfterParagraph(editor);
+              else addSpaceAfterParagraph(editor, settings);
+              setOpen(false);
+            }}
+            className="flex w-full px-2 py-1.5 text-left text-[12px] text-gray-700 hover:bg-[#F7F5EF]"
+          >
+            {hasAfter
+              ? isUr ? "پیراگراف کے بعد فاصلہ ہٹائیں" : "Remove space after paragraph"
+              : isUr ? "پیراگراف کے بعد فاصلہ شامل کریں" : "Add space after paragraph"}
+          </button>
+          <div className="my-1 border-t border-gray-100" />
+          <button
+            type="button"
+            role="menuitem"
+            data-studio-custom-spacing="true"
+            onMouseDown={keepFocus}
+            onClick={() => {
+              setOpen(false);
+              setCustomOpen(true);
+            }}
+            className="flex w-full px-2 py-1.5 text-left text-[12px] text-gray-700 hover:bg-[#F7F5EF]"
+          >
+            {isUr ? "حسب ضرورت فاصلہ…" : "Custom spacing…"}
+          </button>
+        </div>
+      ) : null}
+      {customOpen ? (
+        <form
+          role="dialog"
+          aria-label={isUr ? "حسب ضرورت فاصلہ" : "Custom spacing"}
+          data-studio-custom-spacing-dialog="true"
+          className="absolute right-0 top-full z-[80] mt-1 w-[260px] rounded-md border border-gray-200 bg-white p-2 shadow-md"
+          onSubmit={(event) => {
+            event.preventDefault();
+            applyCustom(event.currentTarget);
+          }}
+        >
+          {[
+            { name: "lineHeight", label: isUr ? "لائن اسپیسنگ" : "Line spacing", kind: "line" as const, value: ui.mixed.lineHeight ? "" : ui.lineHeight, step: "0.05" },
+            { name: "spaceBeforePt", label: isUr ? "پہلے فاصلہ (pt)" : "Space before (pt)", kind: "pt" as const, value: ui.mixed.spaceBefore ? "" : ui.spaceBeforePt, step: "1" },
+            { name: "spaceAfterPt", label: isUr ? "بعد فاصلہ (pt)" : "Space after (pt)", kind: "pt" as const, value: ui.mixed.spaceAfter ? "" : ui.spaceAfterPt, step: "1" },
+            { name: "firstLineIndentMm", label: isUr ? "پہلی سطر انڈینٹ (mm)" : "First-line indent (mm)", kind: "mm" as const, value: ui.mixed.firstLineIndent ? "" : ui.firstLineIndentMm, step: "1" },
+            { name: "indentStartMm", label: isUr ? "شروع انڈینٹ (mm)" : "Start indent (mm)", kind: "mm" as const, value: ui.mixed.indentStart ? "" : ui.indentStartMm, step: "1" },
+            { name: "indentEndMm", label: isUr ? "اختتام انڈینٹ (mm)" : "End indent (mm)", kind: "mm" as const, value: ui.mixed.indentEnd ? "" : ui.indentEndMm, step: "1" },
+          ].map((field) => (
+            <label key={field.name} className="mb-1.5 flex items-center justify-between gap-2 text-[11px] text-gray-600">
+              <span>{field.label}</span>
+              <input
+                name={field.name}
+                type="number"
+                step={field.step}
+                defaultValue={field.value ?? ""}
+                placeholder={field.value == null || field.value === "" ? (isUr ? "مخلوط" : "Mixed") : undefined}
+                data-studio-spacing-field={field.name}
+                className="h-7 w-20 rounded border border-gray-200 px-1.5 text-[11px] text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#1A3A2A]/30"
+              />
+            </label>
+          ))}
+          <div className="mt-1 flex justify-end gap-1">
+            <button
+              type="button"
+              data-studio-spacing-cancel="true"
+              onMouseDown={keepFocus}
+              onClick={() => setCustomOpen(false)}
+              className="h-7 rounded border border-gray-200 px-2 text-[11px] text-gray-600"
+            >
+              {isUr ? "منسوخ" : "Cancel"}
+            </button>
+            <button
+              type="submit"
+              data-studio-spacing-apply="true"
+              onMouseDown={keepFocus}
+              className="h-7 rounded bg-[#1A3A2A] px-2 text-[11px] font-semibold text-white"
+            >
+              {isUr ? "لاگو کریں" : "Apply"}
+            </button>
+          </div>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
 const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
   { label: "Default", value: "" },
   ...listEditorFonts().map((f) => ({
@@ -313,13 +547,9 @@ export default function DocumentToolbar({
 
   const currentFont = ui.mixed.fontFamily ? MIXED_TOOLBAR_VALUE : ui.fontFamily;
   const currentSize = ui.mixed.fontSize ? MIXED_TOOLBAR_VALUE : String(ui.fontSizePt ?? settings.typography.bodyFontSizePt);
-  const currentLine = ui.mixed.lineHeight ? MIXED_TOOLBAR_VALUE : String(ui.lineHeight ?? settings.typography.lineHeight);
   const sizeOptions = FONT_SIZE_OPTIONS_PT.includes((ui.fontSizePt ?? settings.typography.bodyFontSizePt) as typeof FONT_SIZE_OPTIONS_PT[number])
     ? FONT_SIZE_OPTIONS_PT
     : [...FONT_SIZE_OPTIONS_PT, ui.fontSizePt as number].filter((n): n is number => typeof n === "number").sort((a, b) => a - b);
-  const lineOptions = LINE_HEIGHT_OPTIONS.includes((ui.lineHeight ?? settings.typography.lineHeight) as typeof LINE_HEIGHT_OPTIONS[number])
-    ? LINE_HEIGHT_OPTIONS
-    : [...LINE_HEIGHT_OPTIONS, ui.lineHeight as number].filter((n): n is number => typeof n === "number").sort((a, b) => a - b);
 
   return (
     <div
@@ -473,30 +703,7 @@ export default function DocumentToolbar({
       <ToolbarButton label="Left-to-right (English)" active={dir === "ltr"} onClick={() => setDir("ltr")}>
         LTR
       </ToolbarButton>
-      <select
-        id="studio-line-height"
-        data-studio-line-height="true"
-        value={currentLine}
-        onChange={(e) => {
-          const raw = e.target.value;
-          if (raw === MIXED_TOOLBAR_VALUE) return;
-          applyLineHeight(editor, Number(raw));
-        }}
-        className={selectCls}
-        title={isUr ? "فاصلہ" : "Line spacing"}
-        aria-label={isUr ? "فاصلہ" : "Line spacing"}
-      >
-        {ui.mixed.lineHeight && (
-          <option value={MIXED_TOOLBAR_VALUE} disabled>
-            {isUr ? "مخلوط" : "Mixed"}
-          </option>
-        )}
-        {lineOptions.map((lh) => (
-          <option key={lh} value={lh}>
-            {lh}
-          </option>
-        ))}
-      </select>
+      <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />
       <div className="shrink-0" data-studio-dictation="true">
         <DictationControl editor={editor} docDir={dir} isUr={isUr} />
       </div>

@@ -8,7 +8,9 @@ import { activeBlockStyleId, activeToolbarFontFamily } from "./documentCommands"
 import {
   defaultDocumentSettings,
   resolveFontSizePt,
+  validateIndentMm,
   validateLineHeight,
+  validateSpacingPt,
   type DocumentStudioSettings,
 } from "./documentSettings";
 import { getFontById, normalizeEditorFontFamily } from "./fontRegistry";
@@ -29,12 +31,22 @@ export interface ActiveToolbarFormatting {
   ordered: boolean;
   color: string | null;
   highlight: string | null;
+  spaceBeforePt: number | null;
+  spaceAfterPt: number | null;
+  firstLineIndentMm: number | null;
+  indentStartMm: number | null;
+  indentEndMm: number | null;
   mixed: {
     fontFamily: boolean;
     fontSize: boolean;
     lineHeight: boolean;
     color: boolean;
     highlight: boolean;
+    spaceBefore: boolean;
+    spaceAfter: boolean;
+    firstLineIndent: boolean;
+    indentStart: boolean;
+    indentEnd: boolean;
   };
 }
 
@@ -54,6 +66,26 @@ function lineHeightAt(editor: Editor, pos: number, settings: DocumentStudioSetti
     if (raw !== null) return raw;
   }
   return settings.typography.lineHeight;
+}
+
+function textblockAt(editor: Editor, pos: number) {
+  const $pos = editor.state.doc.resolve(Math.min(pos, editor.state.doc.content.size));
+  for (let depth = $pos.depth; depth > 0; depth -= 1) {
+    const node = $pos.node(depth);
+    if (node.type.name === "paragraph" || node.type.name === "heading") return node;
+  }
+  return null;
+}
+
+function spacingFromNode(node: { type: { name: string }; attrs: Record<string, unknown> } | null, settings: DocumentStudioSettings) {
+  const isHeading = node?.type.name === "heading";
+  return {
+    spaceBeforePt: validateSpacingPt(node?.attrs.spaceBeforePt) ?? (isHeading ? 0 : settings.typography.paragraphBeforePt),
+    spaceAfterPt: validateSpacingPt(node?.attrs.spaceAfterPt) ?? (isHeading ? 0 : settings.typography.paragraphAfterPt),
+    firstLineIndentMm: validateIndentMm(node?.attrs.firstLineIndentMm) ?? (isHeading ? 0 : settings.typography.firstLineIndentMm),
+    indentStartMm: validateIndentMm(node?.attrs.indentStartMm) ?? 0,
+    indentEndMm: validateIndentMm(node?.attrs.indentEndMm) ?? 0,
+  };
 }
 
 function blockStyleAt(editor: Editor, pos: number): BlockStyleId {
@@ -105,6 +137,20 @@ export function resolveActiveToolbarFormatting(
   const lineHeights = new Set<number>();
   const colors = new Set<string>();
   const highlights = new Set<string>();
+  const spaceBefores = new Set<number>();
+  const spaceAfters = new Set<number>();
+  const firstIndents = new Set<number>();
+  const startIndents = new Set<number>();
+  const endIndents = new Set<number>();
+
+  const addSpacingFromPos = (pos: number) => {
+    const spacing = spacingFromNode(textblockAt(editor, pos), settings);
+    spaceBefores.add(spacing.spaceBeforePt);
+    spaceAfters.add(spacing.spaceAfterPt);
+    firstIndents.add(spacing.firstLineIndentMm);
+    startIndents.add(spacing.indentStartMm);
+    endIndents.add(spacing.indentEndMm);
+  };
 
   const addFromText = (pos: number, explicitFamily: string, explicitSize: number | null) => {
     const dir = blockDirAt(editor, pos, globalDir);
@@ -112,6 +158,7 @@ export function resolveActiveToolbarFormatting(
     families.add(effectiveFamily(explicitFamily, dir, settings));
     sizes.add(effectiveSize(explicitSize, localStyle, settings));
     lineHeights.add(lineHeightAt(editor, pos, settings));
+    addSpacingFromPos(pos);
   };
 
   if (empty) {
@@ -145,6 +192,13 @@ export function resolveActiveToolbarFormatting(
         activeToolbarFontFamily(editor),
         resolveFontSizePt(editor.getAttributes("textStyle").fontSize),
       );
+    } else {
+      editor.state.doc.nodesBetween(from, to, (node, pos) => {
+        if (node.type.name === "paragraph" || node.type.name === "heading") {
+          addSpacingFromPos(pos + 1);
+          return false;
+        }
+      });
     }
   }
 
@@ -154,6 +208,11 @@ export function resolveActiveToolbarFormatting(
     lineHeight: lineHeights.size > 1,
     color: colors.size > 1,
     highlight: highlights.size > 1,
+    spaceBefore: spaceBefores.size > 1,
+    spaceAfter: spaceAfters.size > 1,
+    firstLineIndent: firstIndents.size > 1,
+    indentStart: startIndents.size > 1,
+    indentEnd: endIndents.size > 1,
   };
 
   const explicitAlign = editor.isActive({ textAlign: "justify" })
@@ -177,6 +236,11 @@ export function resolveActiveToolbarFormatting(
     textAlign: explicitAlign ?? style.align ?? null,
     color: mixed.color ? null : ([...colors][0] || null),
     highlight: mixed.highlight ? null : ([...highlights][0] || null),
+    spaceBeforePt: mixed.spaceBefore ? null : [...spaceBefores][0] ?? settings.typography.paragraphBeforePt,
+    spaceAfterPt: mixed.spaceAfter ? null : [...spaceAfters][0] ?? settings.typography.paragraphAfterPt,
+    firstLineIndentMm: mixed.firstLineIndent ? null : [...firstIndents][0] ?? settings.typography.firstLineIndentMm,
+    indentStartMm: mixed.indentStart ? null : [...startIndents][0] ?? 0,
+    indentEndMm: mixed.indentEnd ? null : [...endIndents][0] ?? 0,
     bullet: editor.isActive("bulletList"),
     ordered: editor.isActive("orderedList"),
     mixed,

@@ -13,6 +13,12 @@ import { extractPlainText, type DocNode } from "./extractPlainText";
 import { detectBlockDirection } from "./plainTextToDocNode";
 import { normalizeEditorFontFamily } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
+import {
+  defaultDocumentSettings,
+  resolveAddSpaceAfterPt,
+  resolveAddSpaceBeforePt,
+  type DocumentStudioSettings,
+} from "./documentSettings";
 
 export function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr"): void {
   const { state } = editor;
@@ -59,8 +65,66 @@ export function activeBlockStyleId(editor: Editor): BlockStyleId {
 }
 
 export function applyLineHeight(editor: Editor, value: number | null): void {
-  const nodeType = editor.isActive("heading") ? "heading" : "paragraph";
-  editor.chain().focus().updateAttributes(nodeType, { lineHeight: value }).run();
+  applyParagraphAttrs(editor, { lineHeight: value });
+}
+
+const HEADING_INDENT_KEYS = new Set(["firstLineIndentMm", "indentStartMm", "indentEndMm"]);
+
+export type ParagraphSpacingAttrs = {
+  lineHeight?: number | null;
+  spaceBeforePt?: number | null;
+  spaceAfterPt?: number | null;
+  firstLineIndentMm?: number | null;
+  indentStartMm?: number | null;
+  indentEndMm?: number | null;
+};
+
+export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs): void {
+  const { state } = editor;
+  const { from, to } = state.selection;
+  let tr = state.tr;
+  let changed = false;
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
+    const next = { ...node.attrs };
+    let nodeChanged = false;
+    (Object.keys(attrs) as (keyof ParagraphSpacingAttrs)[]).forEach((key) => {
+      if (!(key in attrs)) return;
+      if (node.type.name === "heading" && HEADING_INDENT_KEYS.has(key)) return;
+      if (next[key] !== attrs[key]) {
+        next[key] = attrs[key] ?? null;
+        nodeChanged = true;
+      }
+    });
+    if (nodeChanged) {
+      tr = tr.setNodeMarkup(pos, undefined, next);
+      changed = true;
+    }
+    return false;
+  });
+  if (changed) editor.view.dispatch(tr);
+  editor.commands.setTextSelection({ from, to });
+  editor.chain().focus().run();
+}
+
+export function addSpaceBeforeParagraph(editor: Editor, settings: DocumentStudioSettings = defaultDocumentSettings()): void {
+  applyParagraphAttrs(editor, { spaceBeforePt: resolveAddSpaceBeforePt(settings) });
+}
+
+export function removeSpaceBeforeParagraph(editor: Editor): void {
+  applyParagraphAttrs(editor, { spaceBeforePt: 0 });
+}
+
+export function addSpaceAfterParagraph(editor: Editor, settings: DocumentStudioSettings = defaultDocumentSettings()): void {
+  applyParagraphAttrs(editor, { spaceAfterPt: resolveAddSpaceAfterPt(settings) });
+}
+
+export function removeSpaceAfterParagraph(editor: Editor): void {
+  applyParagraphAttrs(editor, { spaceAfterPt: 0 });
+}
+
+export function applyCustomParagraphSpacing(editor: Editor, attrs: ParagraphSpacingAttrs): void {
+  applyParagraphAttrs(editor, attrs);
 }
 
 export function applyFontFamily(editor: Editor, family: string): void {

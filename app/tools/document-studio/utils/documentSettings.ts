@@ -53,6 +53,13 @@ export const FONT_SIZE_OPTIONS_PT = [
 
 export const LINE_HEIGHT_OPTIONS = [1, 1.15, 1.5, 1.8, 2, 2.2] as const;
 
+export const LINE_SPACING_PRESETS = [
+  { id: "single", value: 1, labelEn: "Single", labelUr: "واحد" },
+  { id: "115", value: 1.15, labelEn: "1.15", labelUr: "1.15" },
+  { id: "150", value: 1.5, labelEn: "1.5", labelUr: "1.5" },
+  { id: "double", value: 2, labelEn: "Double", labelUr: "دگنا" },
+] as const;
+
 export const FONT_SIZE_MIN_PT = 6;
 export const FONT_SIZE_MAX_PT = 96;
 
@@ -120,6 +127,33 @@ export function validateSpacingPt(raw: unknown): number | null {
   if (typeof raw !== "number" || !Number.isFinite(raw)) return null;
   if (raw < SPACING_PT_MIN || raw > SPACING_PT_MAX) return null;
   return raw;
+}
+
+export function resolveAddSpaceBeforePt(settings: DocumentStudioSettings): number {
+  if (settings.typography.paragraphBeforePt > 0) return settings.typography.paragraphBeforePt;
+  if (settings.typography.paragraphAfterPt > 0) return settings.typography.paragraphAfterPt;
+  return 12;
+}
+
+export function resolveAddSpaceAfterPt(settings: DocumentStudioSettings): number {
+  if (settings.typography.paragraphAfterPt > 0) return settings.typography.paragraphAfterPt;
+  if (settings.typography.paragraphBeforePt > 0) return settings.typography.paragraphBeforePt;
+  return 12;
+}
+
+export function parseNumericField(raw: unknown, kind: "line" | "pt" | "mm"): number | null {
+  if (typeof raw === "number") {
+    if (kind === "line") return validateLineHeight(raw);
+    if (kind === "pt") return validateSpacingPt(raw);
+    return validateIndentMm(raw);
+  }
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  if (kind === "line") return validateLineHeight(n);
+  if (kind === "pt") return validateSpacingPt(n);
+  return validateIndentMm(n);
 }
 
 export function resolveFontSizePt(raw: unknown): number | null {

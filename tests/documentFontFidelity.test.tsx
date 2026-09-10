@@ -103,7 +103,9 @@ describe("toolbar font selection sync", () => {
     render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr documentSettings={defaultDocumentSettings()} />);
     expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Noto Nastaliq Urdu");
     expect((document.querySelector("[data-studio-font-size]") as HTMLSelectElement).value).toBe("12");
-    expect((document.querySelector("[data-studio-line-height]") as HTMLSelectElement).value).toBe("1.5");
+    expect(document.querySelector("select[data-studio-line-height]")).toBeNull();
+    expect(document.querySelector("[data-studio-spacing-button]")).toBeTruthy();
+    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").lineHeight).toBe(1.5);
     editor.destroy();
   });
 
