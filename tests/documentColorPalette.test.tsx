@@ -7,6 +7,7 @@ import DocumentToolbar from "../app/tools/document-studio/components/DocumentToo
 import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import { resolveActiveToolbarFormatting } from "../app/tools/document-studio/utils/activeToolbarFormatting";
+import { STUDIO_HIGHLIGHT_COLORS, STUDIO_TEXT_COLORS, parseCustomColorInput } from "../app/tools/document-studio/utils/studioColors";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
 let editor: Editor | null = null;
@@ -161,5 +162,46 @@ describe("visual color palettes", () => {
     expect(ed.state.selection.to).toBe(before.to);
     const style = (ed.getJSON() as DocNode).content?.[0]?.content?.[0]?.marks?.find((m) => m.type === "textStyle");
     expect(style?.attrs?.color).toMatch(/#1E3A8A/i);
+  });
+
+  it("expands text and highlight palettes with broad hue coverage", () => {
+    const textHex = STUDIO_TEXT_COLORS.filter((c) => c.hex).map((c) => c.hex.toUpperCase());
+    const hiHex = STUDIO_HIGHLIGHT_COLORS.filter((c) => c.hex).map((c) => c.hex.toUpperCase());
+    expect(STUDIO_TEXT_COLORS[0]?.id).toBe("default");
+    expect(STUDIO_HIGHLIGHT_COLORS[0]?.id).toBe("none");
+    expect(textHex.length).toBeGreaterThanOrEqual(35);
+    expect(textHex.length).toBeLessThanOrEqual(45);
+    expect(hiHex.length).toBeGreaterThanOrEqual(15);
+    expect(hiHex.length).toBeLessThanOrEqual(20);
+    expect(textHex).toEqual(expect.arrayContaining(["#111111", "#1A3A2A", "#B45309", "#991B1B", "#1E3A8A", "#374151"]));
+    expect(hiHex).toEqual(expect.arrayContaining(["#FEF3C7", "#D1FAE5", "#DBEAFE", "#FCE7F3", "#F3F4F6", "#FDE68A"]));
+    expect(textHex.some((hex) => hex.startsWith("#99") || hex.startsWith("#7F") || hex.startsWith("#DC"))).toBe(true);
+    expect(textHex.some((hex) => hex === "#1D4ED8" || hex === "#2563EB")).toBe(true);
+    expect(textHex).toContain("#7C3AED");
+    expect(hiHex).toContain("#E9D5FF");
+  });
+
+  it("accepts custom valid hex and rejects invalid custom values", () => {
+    expect(parseCustomColorInput("#2F6B4F")).toBe("#2F6B4F");
+    expect(parseCustomColorInput("2f6b4f")).toBe("#2F6B4F");
+    expect(parseCustomColorInput("red")).toBeNull();
+    expect(parseCustomColorInput("#fff")).toBeNull();
+    expect(parseCustomColorInput("url(javascript:alert(1))")).toBeNull();
+    const ed = make(helloDoc);
+    ed.commands.setTextSelection({ from: 1, to: 6 });
+    mount(ed);
+    fireEvent.click(document.querySelector("[data-studio-text-color-button]")!);
+    expect(document.querySelector("[data-studio-custom-color='text']")).toBeTruthy();
+    expect(document.querySelector("[data-studio-custom-hex='text']")).toBeTruthy();
+    fireEvent.change(document.querySelector("[data-studio-custom-hex='text']")!, { target: { value: "not-a-color" } });
+    const before = (ed.getJSON() as DocNode).content?.[0]?.content?.[0]?.marks ?? [];
+    expect(before.some((m) => m.type === "textStyle" && m.attrs?.color)).toBe(false);
+    fireEvent.change(document.querySelector("[data-studio-custom-hex='text']")!, { target: { value: "#2F6B4F" } });
+    const style = (ed.getJSON() as DocNode).content?.[0]?.content?.[0]?.marks?.find((m) => m.type === "textStyle");
+    expect(style?.attrs?.color).toBe("#2F6B4F");
+    fireEvent.click(document.querySelector("[data-studio-highlight-button]")!);
+    fireEvent.change(document.querySelector("[data-studio-custom-hex='highlight']")!, { target: { value: "#CFFAFE" } });
+    const hi = (ed.getJSON() as DocNode).content?.[0]?.content?.[0]?.marks?.find((m) => m.type === "highlight");
+    expect(hi?.attrs?.color).toBe("#CFFAFE");
   });
 });
