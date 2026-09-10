@@ -81,6 +81,11 @@ export type ParagraphSpacingAttrs = {
 
 export function applyParagraphAttrs(editor: Editor, attrs: ParagraphSpacingAttrs): void {
   const { state } = editor;
+  if (!state?.selection || typeof state.doc?.nodesBetween !== "function") {
+    const nodeType = editor.isActive("heading") ? "heading" : "paragraph";
+    editor.chain().focus().updateAttributes(nodeType, attrs).run();
+    return;
+  }
   const { from, to } = state.selection;
   let tr = state.tr;
   let changed = false;

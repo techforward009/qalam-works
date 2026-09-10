@@ -114,6 +114,7 @@ import DocumentStatusBar from "./DocumentStatusBar";
 import DocumentLeftSidebar from "./DocumentLeftSidebar";
 import DocumentRightSidebar from "./DocumentRightSidebar";
 import DocumentHelpDialog from "./DocumentHelpDialog";
+import QalamAiPanel from "./QalamAiPanel";
 import { FindReplacePanel } from "./FindReplacePanel";
 import DocumentLibraryDialog from "./DocumentLibraryDialog";
 import {
@@ -265,6 +266,7 @@ export default function DocumentStudioEditor() {
   const [leftPanel, setLeftPanel] = useState<LeftPanelId>("none");
   const [rightPanel, setRightPanel] = useState<RightPanelId>("none");
   const [helpOpen, setHelpOpen] = useState<HelpDialogMode | null>(null);
+  const [qalamAiOpen, setQalamAiOpen] = useState(false);
   const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
   const [zoom, setZoomState] = useState<DocumentZoom>(() => loadDocumentZoom());
   const [rulerVisible, setRulerVisibleState] = useState(() => loadRulerVisible());
@@ -1283,6 +1285,7 @@ export default function DocumentStudioEditor() {
       audit: handleRunAudit,
       showStats: () => setRightPanel("quality"),
       startDictation: focusExistingDictationControl,
+      openQalamAi: () => setQalamAiOpen(true),
       openHelp: setHelpOpen,
     });
   };
@@ -1640,6 +1643,7 @@ export default function DocumentStudioEditor() {
       </DocumentStudioShell>
 
       {helpOpen && <DocumentHelpDialog isUr={isUr} mode={helpOpen} onClose={() => setHelpOpen(null)} />}
+      {qalamAiOpen ? <QalamAiPanel editor={editor} isUr={isUr} onClose={() => setQalamAiOpen(false)} /> : null}
     </div>
   );
 }

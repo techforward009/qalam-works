@@ -70,6 +70,7 @@ function mockHandlers(extra: Partial<DocumentMenuHandlers> = {}): DocumentMenuHa
     audit: track("audit"),
     showStats: track("stats"),
     startDictation: track("dictation"),
+    openQalamAi: track("qalamAi"),
     openHelp: (mode) => {
       calls.push(`help:${mode}`);
     },
@@ -179,6 +180,7 @@ describe("document menus", () => {
     dispatchDocumentMenuAction("tools.audit", null, h);
     dispatchDocumentMenuAction("tools.stats", null, h);
     dispatchDocumentMenuAction("tools.dictation", null, h);
+    dispatchDocumentMenuAction("tools.qalamAi", null, h);
     dispatchDocumentMenuAction("help.rtl", null, h);
     expect(h.calls).toEqual([
       "new",
@@ -200,6 +202,7 @@ describe("document menus", () => {
       "audit",
       "stats",
       "dictation",
+      "qalamAi",
       "help:rtl",
     ]);
   });

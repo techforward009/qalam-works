@@ -60,6 +60,7 @@ describe("Phase 3A editor parity", () => {
       audit: () => calls.push("audit"),
       showStats: () => calls.push("stats"),
       startDictation: () => calls.push("dictation"),
+      openQalamAi: () => calls.push("qalamAi"),
       toggleGlossary: () => calls.push("glossary"),
     } as unknown as DocumentMenuHandlers;
     dispatchDocumentMenuAction("file.print", null, handlers);
@@ -71,7 +72,8 @@ describe("Phase 3A editor parity", () => {
     dispatchDocumentMenuAction("tools.stats", null, handlers);
     dispatchDocumentMenuAction("tools.dictation", null, handlers);
     dispatchDocumentMenuAction("tools.glossary", null, handlers);
-    expect(calls).toEqual(["print", "pageSetup", "zoom:75", "ruler", "standardize", "audit", "stats", "dictation", "glossary"]);
+    dispatchDocumentMenuAction("tools.qalamAi", null, handlers);
+    expect(calls).toEqual(["print", "pageSetup", "zoom:75", "ruler", "standardize", "audit", "stats", "dictation", "glossary", "qalamAi"]);
     expect(allMenuActionIds()).toContain("insert.link");
     expect(allMenuActionIds()).not.toContain("toolbar.more");
     expect(DOCUMENT_TOOLBAR_LEADING).toEqual(["undo", "redo", "zoom", "style"]);
@@ -82,6 +84,7 @@ describe("Phase 3A editor parity", () => {
       "tools.stats",
       "tools.dictation",
       "tools.glossary",
+      "tools.qalamAi",
     ]);
   });
 

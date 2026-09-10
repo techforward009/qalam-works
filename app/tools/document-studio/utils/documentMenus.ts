@@ -70,6 +70,7 @@ export type MenuActionId =
   | "tools.stats"
   | "tools.dictation"
   | "tools.glossary"
+  | "tools.qalamAi"
   | "help.about"
   | "help.shortcuts"
   | "help.rtl"
@@ -291,6 +292,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
       { type: "action", id: "tools.stats", labelEn: "Word count", labelUr: "الفاظ کی تعداد" },
       { type: "action", id: "tools.dictation", labelEn: "Voice dictation", labelUr: "آواز سے لکھیں" },
       { type: "action", id: "tools.glossary", labelEn: "Glossary", labelUr: "اصطلاحات" },
+      { type: "action", id: "tools.qalamAi", labelEn: "Qalam AI — Experimental", labelUr: "قلم اے آئی — تجرباتی" },
     ],
   },
   {

@@ -51,6 +51,7 @@ export type DocumentMenuHandlers = {
   audit: () => void;
   showStats: () => void;
   startDictation: () => void;
+  openQalamAi: () => void;
   openHelp: (mode: HelpDialogMode) => void;
 };
 
@@ -214,6 +215,9 @@ export function dispatchDocumentMenuAction(
       return;
     case "tools.glossary":
       handlers.toggleGlossary();
+      return;
+    case "tools.qalamAi":
+      handlers.openQalamAi();
       return;
     case "help.about":
       handlers.openHelp("about");
