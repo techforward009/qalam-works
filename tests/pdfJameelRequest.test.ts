@@ -8,7 +8,7 @@ import {
   resolveRequestScopedJameelFace,
 } from "../app/tools/document-studio/utils/pdfJameelRequest";
 import { jameelLoadToPdfFace, type JameelFontLoadResult } from "../app/lib/privateJameelFont";
-import { jameelActuallyUsed } from "../app/tools/document-studio/utils/pdfFontReady";
+import { inspectPdfRuntimeFonts, jameelActuallyUsed } from "../app/tools/document-studio/utils/pdfFontReady";
 
 const jameelMarkDoc: DocNode = {
   type: "doc",
@@ -161,5 +161,13 @@ describe("X-Pdf-Jameel-Used evidence", () => {
       jameelLoadResultCount: 1,
       allRequestedFontsReady: true,
     }, "Jameel Noori Nastaleeq")).toBe(true);
+  });
+});
+
+describe("inspectPdfRuntimeFonts serialization safety", () => {
+  it("does not close over module-scope helpers", () => {
+    const src = inspectPdfRuntimeFonts.toString();
+    expect(src).not.toMatch(/waitForPdfDocumentFonts/);
+    expect(src).toContain('const JAMEEL = "Jameel Noori Nastaleeq"');
   });
 });
