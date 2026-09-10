@@ -14,6 +14,7 @@ import {
   type FontResolution,
   type StudioFontDefinition,
 } from "./fontRegistry";
+import { normalizeSafeHex } from "./studioColors";
 
 export interface PdfFontFace {
   familyName: string;
@@ -180,7 +181,14 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
     );
     noteEffective(ctx, effective);
     const explicitSizePt = resolveFontSizePt(styleMark?.attrs?.fontSize);
-    const sizeStyle = explicitSizePt ? `font-size:${explicitSizePt}pt;` : "";
+    const safeColor = normalizeSafeHex(styleMark?.attrs?.color);
+    const highlightMark = node.marks?.find((m) => m.type === "highlight");
+    const safeHighlight = normalizeSafeHex(highlightMark?.attrs?.color);
+    const sizeStyle = [
+      explicitSizePt ? `font-size:${explicitSizePt}pt;` : "",
+      safeColor ? `color:${safeColor};` : "",
+      safeHighlight ? `background-color:${safeHighlight};` : "",
+    ].join("");
 
     if (bold) inner = `<strong>${inner}</strong>`;
     if (italics) inner = `<em>${inner}</em>`;
