@@ -11,7 +11,7 @@ import { DictationControl } from "./DictationControl";
 import type { DocumentZoom } from "../utils/documentView";
 import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
 import { MIXED_TOOLBAR_VALUE, resolveActiveToolbarFormatting } from "../utils/activeToolbarFormatting";
-import { STUDIO_HIGHLIGHT_COLORS, STUDIO_TEXT_COLORS } from "../utils/studioColors";
+import { STUDIO_HIGHLIGHT_COLORS, STUDIO_TEXT_COLORS, normalizeSafeHex, parseCustomColorInput } from "../utils/studioColors";
 import {
   applyBlockStyle,
   applyFontFamily,
@@ -109,15 +109,26 @@ function ColorPaletteControl({
     event.preventDefault();
   };
 
-  const pick = (hex: string) => {
+  const pick = (hex: string, close = true) => {
     applyKeepingSelection(editor, () => {
       if (kind === "text") applyTextColor(editor, hex);
       else applyHighlight(editor, hex);
     });
-    setOpen(false);
+    if (close) setOpen(false);
+  };
+
+  const applyCustom = (raw: string) => {
+    const safe = parseCustomColorInput(raw);
+    if (!safe) return false;
+    pick(safe, false);
+    return true;
   };
 
   const barColor = mixed ? undefined : current || (kind === "text" ? "#111111" : "transparent");
+  const resetSwatch = colors[0];
+  const gridSwatches = colors.slice(1);
+  const customValue = normalizeSafeHex(current) ?? (kind === "text" ? "#111111" : "#FEF3C7");
+  const customLabel = isUr ? "حسب ضرورت" : "Custom";
 
   return (
     <div ref={rootRef} className="relative">
@@ -167,36 +178,51 @@ function ColorPaletteControl({
           aria-label={triggerLabel}
           data-studio-text-color-palette={kind === "text" ? "true" : undefined}
           data-studio-highlight-palette={kind === "highlight" ? "true" : undefined}
-          className="absolute left-0 top-full z-[80] mt-1 w-[196px] rounded-md border border-gray-200 bg-white p-2 shadow-md"
+          className="absolute left-0 top-full z-[80] mt-1 w-[232px] rounded-md border border-gray-200 bg-white p-2 shadow-md"
         >
           <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
             {triggerLabel}
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {colors.map((swatch) => {
-              const selected = !mixed && (current ?? "") === swatch.hex;
-              const reset = !swatch.hex;
-              const urLabel = swatch.id === "default" && isUr ? "طے شدہ" : swatch.id === "none" && isUr ? "کوئی نہیں" : swatch.label;
+          {resetSwatch ? (
+            <button
+              type="button"
+              title={isUr && resetSwatch.id === "default" ? "طے شدہ" : isUr && resetSwatch.id === "none" ? "کوئی نہیں" : resetSwatch.label}
+              aria-label={isUr && resetSwatch.id === "default" ? "طے شدہ" : isUr && resetSwatch.id === "none" ? "کوئی نہیں" : resetSwatch.label}
+              aria-pressed={!mixed && (current ?? "") === ""}
+              data-studio-color-swatch={resetSwatch.id}
+              data-studio-color-swatch-active={!mixed && (current ?? "") === "" ? "true" : "false"}
+              onMouseDown={keepFocus}
+              onClick={() => pick("")}
+              className={`mb-1.5 flex h-6 w-full items-center gap-2 rounded border px-1.5 text-[11px] font-medium ${
+                !mixed && (current ?? "") === "" ? "border-[#1A3A2A] text-[#1A3A2A]" : "border-gray-200 text-gray-600"
+              }`}
+            >
+              <span
+                className="h-4 w-4 shrink-0 rounded-sm border border-gray-300"
+                style={{ background: "linear-gradient(135deg, #fff 46%, #ef4444 46%, #ef4444 54%, #fff 54%)" }}
+              />
+              {isUr && resetSwatch.id === "default" ? "طے شدہ" : isUr && resetSwatch.id === "none" ? "کوئی نہیں" : resetSwatch.label}
+            </button>
+          ) : null}
+          <div className="grid grid-cols-10 gap-[3px]" data-studio-color-grid="true">
+            {gridSwatches.map((swatch) => {
+              const selected = !mixed && (current ?? "").toUpperCase() === swatch.hex.toUpperCase();
               return (
                 <button
                   key={swatch.id}
                   type="button"
-                  title={urLabel}
-                  aria-label={urLabel}
+                  title={swatch.label}
+                  aria-label={swatch.label}
                   aria-pressed={selected}
                   data-studio-color-swatch={swatch.id}
                   data-studio-color-swatch-active={selected ? "true" : "false"}
                   onMouseDown={keepFocus}
                   onClick={() => pick(swatch.hex)}
-                  className={`relative h-6 w-6 rounded-full border ${selected ? "ring-2 ring-[#1A3A2A] ring-offset-1" : "border-gray-300"}`}
-                  style={{
-                    background: reset
-                      ? "linear-gradient(135deg, #fff 46%, #ef4444 46%, #ef4444 54%, #fff 54%)"
-                      : swatch.hex,
-                  }}
+                  className={`relative h-[18px] w-[18px] rounded-sm border ${selected ? "ring-2 ring-[#1A3A2A] ring-offset-1" : "border-black/10 hover:ring-1 hover:ring-[#B8935A]"}`}
+                  style={{ background: swatch.hex }}
                 >
                   {selected ? (
-                    <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold" style={{ color: reset || isLightHex(swatch.hex) ? "#1A3A2A" : "#fff" }}>
+                    <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold" style={{ color: isLightHex(swatch.hex) ? "#1A3A2A" : "#fff" }}>
                       ✓
                     </span>
                   ) : null}
@@ -204,6 +230,31 @@ function ColorPaletteControl({
               );
             })}
           </div>
+          <label className="mt-2 flex items-center gap-2 border-t border-gray-100 pt-2 text-[11px] font-medium text-gray-600">
+            <span className="shrink-0">{customLabel}</span>
+            <input
+              type="color"
+              aria-label={customLabel}
+              data-studio-custom-color={kind}
+              value={customValue}
+              onMouseDown={keepFocus}
+              onChange={(event) => applyCustom(event.target.value)}
+              className="h-6 w-8 cursor-pointer rounded border border-gray-200 bg-white p-0"
+            />
+            <input
+              type="text"
+              spellCheck={false}
+              maxLength={7}
+              placeholder="#RRGGBB"
+              aria-label={isUr ? "حسب ضرورت کوڈ" : "Custom hex"}
+              data-studio-custom-hex={kind}
+              defaultValue={normalizeSafeHex(current) ?? ""}
+              onMouseDown={keepFocus}
+              onKeyDown={(event) => event.stopPropagation()}
+              onChange={(event) => applyCustom(event.target.value)}
+              className="h-6 min-w-0 flex-1 rounded border border-gray-200 px-1.5 font-mono text-[10px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A3A2A]/30"
+            />
+          </label>
         </div>
       ) : null}
     </div>
