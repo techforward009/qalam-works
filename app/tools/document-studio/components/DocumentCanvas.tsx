@@ -89,7 +89,7 @@ export default function DocumentCanvas({
 
   const padding = resolveResponsivePagePadding(pageLayout, dir);
   const fitWidth = Math.max(0, availableWidth - 24);
-  const sheet = pagesSheetMetrics(pageLayout, fitWidth || 800);
+  const sheet = pagesSheetMetrics(pageLayout, fitWidth);
   const pageCount = isPages
     ? visualPageCountWithGaps(contentHeight, sheet.heightPx, PAGE_STACK_GAP_PX)
     : 1;
