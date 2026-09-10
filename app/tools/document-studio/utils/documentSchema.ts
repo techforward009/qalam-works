@@ -8,19 +8,12 @@ import Paragraph from "@tiptap/extension-paragraph";
 import Heading from "@tiptap/extension-heading";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
-import { TextStyle, FontFamily, FontSize } from "@tiptap/extension-text-style";
+import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-style";
+import Highlight from "@tiptap/extension-highlight";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 
 /** Persist writing direction on textblocks so empty RTL paragraphs place the caret on the right. */
-// Batch 16A (2026-08-11) — real, persistent schema attrs. Previously
-// only `dir` was declared here; block-style/line-height/indent/spacing
-// attrs were being set via updateAttributes() WITHOUT being declared in
-// the schema, which TipTap does not persist through getJSON()/reload —
-// a real, verified bug (confirmed via round-trip test). `blockStyle`
-// renders as `data-block-style` (CSS-driven presentation — see
-// BLOCK_STYLE_EDITOR_CSS — never stamps inline FontSize/Bold/TextAlign
-// marks, so switching styles is always a clean, symmetric reset).
 const PARAGRAPH_STYLE_ATTRS = {
   blockStyle: {
     default: null as string | null,
@@ -164,7 +157,6 @@ export const HeadingWithDir = Heading.extend({
   },
 });
 
-/** Production editor extension list — one assembly point for UI and tests. */
 export function createDocumentStudioExtensions() {
   return [
     StarterKit.configure({
@@ -178,5 +170,7 @@ export function createDocumentStudioExtensions() {
     TextStyle,
     FontFamily,
     FontSize.configure({ types: ["textStyle"] }),
+    Color,
+    Highlight.configure({ multicolor: true }),
   ];
 }
