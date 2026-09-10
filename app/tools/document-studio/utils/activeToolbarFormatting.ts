@@ -12,6 +12,7 @@ import {
   type DocumentStudioSettings,
 } from "./documentSettings";
 import { getFontById, normalizeEditorFontFamily } from "./fontRegistry";
+import { normalizeSafeHex } from "./studioColors";
 
 export const MIXED_TOOLBAR_VALUE = "__mixed__";
 
@@ -26,10 +27,14 @@ export interface ActiveToolbarFormatting {
   textAlign: "left" | "center" | "right" | "justify" | "start" | null;
   bullet: boolean;
   ordered: boolean;
+  color: string | null;
+  highlight: string | null;
   mixed: {
     fontFamily: boolean;
     fontSize: boolean;
     lineHeight: boolean;
+    color: boolean;
+    highlight: boolean;
   };
 }
 
@@ -98,6 +103,8 @@ export function resolveActiveToolbarFormatting(
   const families = new Set<string>();
   const sizes = new Set<number>();
   const lineHeights = new Set<number>();
+  const colors = new Set<string>();
+  const highlights = new Set<string>();
 
   const addFromText = (pos: number, explicitFamily: string, explicitSize: number | null) => {
     const dir = blockDirAt(editor, pos, globalDir);
@@ -113,6 +120,10 @@ export function resolveActiveToolbarFormatting(
       activeToolbarFontFamily(editor),
       resolveFontSizePt(editor.getAttributes("textStyle").fontSize),
     );
+    const storedColor = normalizeSafeHex(editor.getAttributes("textStyle").color);
+    colors.add(storedColor ?? "");
+    const storedHi = normalizeSafeHex(editor.getAttributes("highlight").color);
+    highlights.add(storedHi ?? "");
   } else {
     let sawText = false;
     editor.state.doc.nodesBetween(from, to, (node, pos) => {
@@ -124,6 +135,9 @@ export function resolveActiveToolbarFormatting(
         normalizeEditorFontFamily(mark?.attrs?.fontFamily),
         resolveFontSizePt(mark?.attrs?.fontSize),
       );
+      colors.add(normalizeSafeHex(mark?.attrs?.color) ?? "");
+      const hi = node.marks.find((item) => item.type.name === "highlight");
+      highlights.add(normalizeSafeHex(hi?.attrs?.color) ?? "");
     });
     if (!sawText) {
       addFromText(
@@ -138,6 +152,8 @@ export function resolveActiveToolbarFormatting(
     fontFamily: families.size > 1,
     fontSize: sizes.size > 1,
     lineHeight: lineHeights.size > 1,
+    color: colors.size > 1,
+    highlight: highlights.size > 1,
   };
 
   const explicitAlign = editor.isActive({ textAlign: "justify" })
@@ -159,6 +175,8 @@ export function resolveActiveToolbarFormatting(
     italic: editor.isActive("italic"),
     underline: editor.isActive("underline"),
     textAlign: explicitAlign ?? style.align ?? null,
+    color: mixed.color ? null : ([...colors][0] || null),
+    highlight: mixed.highlight ? null : ([...highlights][0] || null),
     bullet: editor.isActive("bulletList"),
     ordered: editor.isActive("orderedList"),
     mixed,
