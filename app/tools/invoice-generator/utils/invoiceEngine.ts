@@ -64,7 +64,7 @@ export type InvoiceResult = {
   balanceDue?: number;
 };
 
-function precisionForCurrency(currency: string) {
+export function precisionForCurrency(currency: string): number {
   // basic table — default 2
   const zeroDec = ["JPY"];
   return zeroDec.includes(currency.toUpperCase()) ? 0 : 2;
@@ -77,6 +77,33 @@ export function toMinor(amount: number, precision = 2) {
 export function fromMinor(minor: number, precision = 2) {
   const scale = Math.pow(10, precision);
   return (minor / scale).toFixed(precision);
+}
+
+/** Format a major-unit price using the same precision as invoice arithmetic. */
+export function formatInvoicePrice(amount: number, currency: string, lang: "en" | "ur"): string {
+  const precision = precisionForCurrency(currency);
+  try {
+    return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", {
+      minimumFractionDigits: precision, maximumFractionDigits: precision,
+    }).format(amount);
+  } catch {
+    return amount.toFixed(precision);
+  }
+}
+
+/** Format calculated minor units, optionally including the currency symbol. */
+export function formatInvoiceMinor(minor: number, currency: string, lang: "en" | "ur", withCurrency = false): string {
+  const precision = precisionForCurrency(currency);
+  const major = Number(fromMinor(minor, precision));
+  if (!withCurrency) return formatInvoicePrice(major, currency, lang);
+  try {
+    return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", {
+      style: "currency", currency: currency || "USD",
+      minimumFractionDigits: precision, maximumFractionDigits: precision,
+    }).format(major);
+  } catch {
+    return `${fromMinor(minor, precision)} ${currency}`;
+  }
 }
 
 export function calculateInvoice(inv: Invoice): InvoiceResult {
@@ -192,7 +219,7 @@ export function combinedDiscount(result: InvoiceResult): number {
   return Math.max(0, (result.lineDiscountTotal || 0) + (result.discount || 0));
 }
 
-export function lineDiscountLabel(item: LineItem): string {
+export function lineDiscountLabel(item: LineItem, currency = "USD"): string {
   const percent = Number(item.discountPercent || 0);
   const fixed = Number(item.discountFixed || 0);
   if (percent <= 0 && fixed <= 0) return "—";
@@ -201,7 +228,7 @@ export function lineDiscountLabel(item: LineItem): string {
     const shown = Number.isInteger(percent) ? String(percent) : String(percent);
     parts.push(`${shown}%`);
   }
-  if (fixed > 0) parts.push(fixed.toFixed(2));
+  if (fixed > 0) parts.push(fixed.toFixed(precisionForCurrency(currency)));
   return parts.join(" + ");
 }
 

@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
 import { useLanguage } from "../../../lib/language-context";
 import { useEffect } from "react";
-import { calculateInvoice, fromMinor, type Invoice, type LineItem } from "../utils/invoiceEngine";
+import { calculateInvoice, formatInvoiceMinor, type Invoice, type LineItem } from "../utils/invoiceEngine";
 import InvoiceDocumentPreview from "./InvoiceDocumentPreview";
 import {
   DEFAULT_INVOICE_PRINT,
@@ -103,12 +103,6 @@ function fmtNum(n: number, lang: "en" | "ur"): string {
   try { return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n); }
   catch { return n.toString(); }
 }
-/** Format unit price with thousands separator, no symbol */
-function fmtPrice(n: number, lang: "en" | "ur"): string {
-  try { return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
-  catch { return n.toFixed(2); }
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function InvoiceGeneratorTool() {
   useEffect(() => { trackToolOpenOnce("invoice_generator"); }, []);
@@ -461,7 +455,7 @@ export default function InvoiceGeneratorTool() {
                         dir="ltr" step="0.1" min="0" max="100" />
                       <div className="col-span-2 flex items-center justify-between">
                         <span className="text-xs font-mono text-gray-700" dir="ltr">
-                          {fmtPrice(parseFloat(fromMinor(result.lineTotals[idx] || 0, 2)), invoiceLang)}
+                          {formatInvoiceMinor(result.lineTotals[idx] || 0, invoice.currency, invoiceLang)}
                         </span>
                         <button onClick={() => removeItem(idx)} disabled={invoice.items.length <= 1}
                           className="text-red-400 hover:text-red-600 disabled:opacity-20 text-xs ml-1">✕</button>

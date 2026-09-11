@@ -6,7 +6,8 @@
 import {
   calculateInvoice,
   combinedDiscount,
-  fromMinor,
+  formatInvoiceMinor,
+  formatInvoicePrice,
   lineDiscountLabel,
   type Invoice,
 } from "./invoiceEngine";
@@ -81,25 +82,8 @@ function fmtNum(n: number, lang: InvoiceLanguage): string {
   }
 }
 
-function fmtPrice(n: number, lang: InvoiceLanguage): string {
-  try {
-    return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", {
-      minimumFractionDigits: 2, maximumFractionDigits: 2,
-    }).format(n);
-  } catch {
-    return n.toFixed(2);
-  }
-}
-
 function fmt(minor: number, currency: string, lang: InvoiceLanguage): string {
-  const major = minor / 100;
-  try {
-    return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", {
-      style: "currency", currency: currency || "USD", minimumFractionDigits: 2,
-    }).format(major);
-  } catch {
-    return `${fromMinor(minor, 2)} ${currency}`;
-  }
+  return formatInvoiceMinor(minor, currency, lang, true);
 }
 
 function alignFlex(align: Alignment): string {
@@ -251,9 +235,9 @@ function westernInner(
     <tr style="border-bottom:1px solid #F3F4F6;">
       <td style="padding:7px 4px;color:#374151;text-align:start;${naskh}">${esc(it.description || "—")}</td>
       <td style="padding:7px 4px;color:#6B7280;text-align:end;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
-      <td style="padding:7px 4px;color:#6B7280;text-align:end;" dir="ltr">${fmtPrice(it.unitPrice, invoiceLang)}</td>
-      <td style="padding:7px 4px;text-align:end;${lineDiscountLabel(it) === "—" ? "color:#9CA3AF;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it))}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:7px 4px;font-weight:600;color:#111827;font-size:11px;" dir="ltr">${fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
+      <td style="padding:7px 4px;color:#6B7280;text-align:end;" dir="ltr">${formatInvoicePrice(it.unitPrice, invoice.currency, invoiceLang)}</td>
+      <td style="padding:7px 4px;text-align:end;${lineDiscountLabel(it, invoice.currency) === "—" ? "color:#9CA3AF;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it, invoice.currency))}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:7px 4px;font-weight:600;color:#111827;font-size:11px;" dir="ltr">${formatInvoiceMinor(result.lineTotals[i] || 0, invoice.currency, invoiceLang)}</td>
     </tr>`).join("");
 
   const totalsRows = `
@@ -384,9 +368,9 @@ function pakistaniInner(
       <td style="${cell}text-align:center;" dir="ltr">${i + 1}</td>
       <td style="${cell}text-align:start;${naskh}">${esc(it.description || "—")}</td>
       <td style="${cell}text-align:center;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
-      <td style="${cell}text-align:end;" dir="ltr">${fmtPrice(it.unitPrice, invoiceLang)}</td>
-      <td style="${cell}text-align:end;${lineDiscountLabel(it) === "—" ? "color:#6B7280;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it))}</td>
-      <td data-col="amount" style="${AMT_STYLE}${cell}font-weight:600;font-size:11px;" dir="ltr">${fmtPrice(parseFloat(fromMinor(result.lineTotals[i] || 0, 2)), invoiceLang)}</td>
+      <td style="${cell}text-align:end;" dir="ltr">${formatInvoicePrice(it.unitPrice, invoice.currency, invoiceLang)}</td>
+      <td style="${cell}text-align:end;${lineDiscountLabel(it, invoice.currency) === "—" ? "color:#6B7280;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it, invoice.currency))}</td>
+      <td data-col="amount" style="${AMT_STYLE}${cell}font-weight:600;font-size:11px;" dir="ltr">${formatInvoiceMinor(result.lineTotals[i] || 0, invoice.currency, invoiceLang)}</td>
     </tr>`).join("");
 
   const moneyRows = `
