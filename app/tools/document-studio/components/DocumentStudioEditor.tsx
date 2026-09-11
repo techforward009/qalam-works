@@ -58,6 +58,7 @@ import {
 } from "../utils/documentSchema";
 import {
   applyDocumentDirection,
+  applyParagraphDirection,
   buildDocumentStudioExample,
   buildReplaceAllTransaction,
   editorToPlainText,
@@ -422,8 +423,7 @@ export default function DocumentStudioEditor() {
     };
   }, [editor]);
 
-  // Persist direction on root + every paragraph/heading so empty RTL
-  // documents place the caret on the right and new blocks inherit RTL.
+  // Language mode supplies canvas direction; textblocks resolve independently.
   useEffect(() => {
     if (!editor) return;
     applyDocumentDirection(editor, dir);
@@ -1284,7 +1284,7 @@ export default function DocumentStudioEditor() {
       toggleRuler,
       loadExample: handleLoadExample,
       promptLink,
-      setDir,
+      setDir: (direction) => { if (editor) applyParagraphDirection(editor, direction); },
       standardize: handleStandardizeClick,
       audit: handleRunAudit,
       showStats: () => setRightPanel("quality"),
@@ -1322,8 +1322,9 @@ export default function DocumentStudioEditor() {
   if (editor?.isActive({ textAlign: "center" })) checkedIds.add("format.alignCenter");
   if (editor?.isActive({ textAlign: "right" })) checkedIds.add("format.alignRight");
   if (editor?.isActive({ textAlign: "justify" })) checkedIds.add("format.alignJustify");
-  if (dir === "rtl") checkedIds.add("format.rtl");
-  if (dir === "ltr") checkedIds.add("format.ltr");
+  const paragraphMode = editor?.state.selection.$from.parent.attrs.directionMode;
+  if (paragraphMode === "rtl") checkedIds.add("format.rtl");
+  if (paragraphMode === "ltr") checkedIds.add("format.ltr");
   if (leftPanel === "outline") checkedIds.add("view.outline");
   if (rightPanel === "quality") checkedIds.add("view.quality");
   if (rightPanel === "glossary") checkedIds.add("view.glossary");

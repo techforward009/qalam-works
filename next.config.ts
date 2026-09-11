@@ -42,7 +42,7 @@ const nextConfig: NextConfig = {
   //    read via runtime fs calls the tracer can't see on its own.
   serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
   outputFileTracingIncludes: {
-    "/api/export-pdf/route": [
+    "/api/export-pdf": [
       // Chromium binary — see comment above
       "./node_modules/@sparticuz/chromium/bin/**/*",
       // @fontsource WOFF2 files read at runtime by fontRegistry.ts via fs.

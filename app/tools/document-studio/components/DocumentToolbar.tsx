@@ -16,6 +16,7 @@ import {
   addSpaceAfterParagraph,
   addSpaceBeforeParagraph,
   applyBlockStyle,
+  applyParagraphDirection,
   applyCustomParagraphSpacing,
   applyFontFamily,
   applyFontSize,
@@ -521,7 +522,6 @@ export const DOCUMENT_TOOLBAR_LEADING = ["undo", "redo", "zoom", "style"] as con
 export default function DocumentToolbar({
   editor,
   dir,
-  setDir,
   isUr,
   zoom = 100,
   onZoomChange,
@@ -697,10 +697,13 @@ export default function DocumentToolbar({
         1.
       </ToolbarButton>
       <ToolbarDivider />
-      <ToolbarButton label="Right-to-left (Urdu/Arabic/Persian)" active={dir === "rtl"} onClick={() => setDir("rtl")}>
+      <ToolbarButton label="Automatic paragraph direction" active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")}>
+        Auto
+      </ToolbarButton>
+      <ToolbarButton label="Right-to-left (Urdu/Arabic/Persian)" active={ui.directionMode === "rtl"} onClick={() => applyParagraphDirection(editor, "rtl")}>
         RTL
       </ToolbarButton>
-      <ToolbarButton label="Left-to-right (English)" active={dir === "ltr"} onClick={() => setDir("ltr")}>
+      <ToolbarButton label="Left-to-right (English)" active={ui.directionMode === "ltr"} onClick={() => applyParagraphDirection(editor, "ltr")}>
         LTR
       </ToolbarButton>
       <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />

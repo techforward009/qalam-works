@@ -48,7 +48,7 @@ export interface DocumentStudioSettings {
 export const SETTINGS_STORAGE_KEY = "qalam-document-studio-settings-v1";
 
 export const FONT_SIZE_OPTIONS_PT = [
-  8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72,
+  8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72,
 ] as const;
 
 export const LINE_HEIGHT_OPTIONS = [1, 1.15, 1.5, 1.8, 2, 2.2] as const;

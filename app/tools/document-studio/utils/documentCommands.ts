@@ -8,6 +8,8 @@ import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { Mark, Node as PMNode } from "@tiptap/pm/model";
 import { Slice, Fragment as pmFragment } from "@tiptap/pm/model";
 import { closeHistory } from "@tiptap/pm/history";
+import { liftTarget } from "@tiptap/pm/transform";
+import { detectParagraphDirection, type ParagraphDirectionMode } from "./paragraphDirection";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { findAllTextMatches } from "./findReplace";
 import { extractPlainText, type DocNode } from "./extractPlainText";
@@ -22,23 +24,23 @@ import {
 } from "./documentSettings";
 
 export function applyDocumentDirection(editor: Editor, nextDir: "rtl" | "ltr"): void {
-  const { state } = editor;
-  let tr = state.tr;
-  let changed = false;
-  state.doc.descendants((node, pos) => {
-    if (!node.isTextblock) return;
-    if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
-    if (node.attrs.dir === nextDir) return;
-    tr = tr.setNodeMarkup(pos, undefined, { ...node.attrs, dir: nextDir });
-    changed = true;
-  });
-  if (changed) {
-    tr.setMeta("addToHistory", false);
-    editor.view.dispatch(tr);
-  }
   const dom = editor.view.dom as HTMLElement;
   dom.setAttribute("dir", nextDir);
   dom.style.direction = nextDir;
+}
+
+/** Explicit direction affects only selected/current textblocks, never alignment. */
+export function applyParagraphDirection(editor: Editor, mode: ParagraphDirectionMode): void {
+  const { state } = editor;
+  const tr = state.tr;
+  state.doc.nodesBetween(state.selection.from, state.selection.to, (node, pos) => {
+    if (node.type.name !== "paragraph" && node.type.name !== "heading") return;
+    const dir = mode === "auto" ? detectParagraphDirection(node.textContent, node.attrs.dir) : mode;
+    tr.setNodeMarkup(pos, undefined, { ...node.attrs, directionMode: mode, dir });
+    return false;
+  });
+  editor.view.dispatch(tr);
+  editor.commands.focus();
 }
 
 /** Replace editor JSON. `load` is not a user edit and must not join the next undo group. */
@@ -61,15 +63,38 @@ export function setEditorContent(
 export function applyBlockStyle(editor: Editor, id: BlockStyleId): void {
   const style = BLOCK_STYLES[id];
   if (!style) return;
-  const chain = editor.chain().focus();
-  if (style.kind === "heading" && style.headingLevel) {
-    chain.setHeading({ level: style.headingLevel }).run();
-  } else if (style.kind === "blockquote") {
-    chain.setBlockquote().run();
-  } else {
-    chain.setParagraph().run();
-    chain.updateAttributes("paragraph", { blockStyle: style.blockStyleAttr ?? null }).run();
-  }
+  const chain = editor.chain().focus().command(({ tr }) => {
+    const positions: number[] = [];
+    tr.doc.nodesBetween(tr.selection.from, tr.selection.to, (node, pos) => {
+      if (node.type.name === "paragraph" || node.type.name === "heading") positions.push(pos);
+    });
+    const mapStart = tr.mapping.maps.length;
+    for (const originalPos of positions) {
+      let pos = tr.mapping.slice(mapStart).map(originalPos);
+      // Lift only the selected textblock, retaining unselected quote siblings.
+      for (;;) {
+        const $inside = tr.doc.resolve(pos + 1);
+        if ($inside.depth < 2 || $inside.node($inside.depth - 1).type.name !== "blockquote") break;
+        const range = $inside.blockRange($inside);
+        const target = range && liftTarget(range);
+        if (!range || target == null) break;
+        const stepStart = tr.mapping.maps.length;
+        tr.lift(range, target);
+        pos = tr.mapping.slice(stepStart).map(pos);
+      }
+      const node = tr.doc.nodeAt(pos)!;
+      tr.setNodeMarkup(pos, style.kind === "heading" ? editor.schema.nodes.heading : editor.schema.nodes.paragraph, {
+        ...node.attrs,
+        level: style.headingLevel,
+        blockStyle: style.blockStyleAttr ?? null,
+        lineHeight: null, spaceBeforePt: null, spaceAfterPt: null,
+        firstLineIndentMm: null, indentStartMm: null, indentEndMm: null,
+      });
+    }
+    return true;
+  });
+  if (style.kind === "blockquote") chain.setBlockquote();
+  chain.run();
 }
 
 export function activeBlockStyleId(editor: Editor): BlockStyleId {
@@ -295,7 +320,8 @@ export function transformPastedSlice(slice: Slice, fallbackDir: "rtl" | "ltr"): 
     }
     const text = node.textContent;
     if (!text.trim()) return node;
-    const detectedDir = detectBlockDirection(text, fallbackDir);
+    if (node.attrs.directionMode === "rtl" || node.attrs.directionMode === "ltr") return node;
+    const detectedDir = detectParagraphDirection(text, node.attrs.dir ?? fallbackDir);
     return node.type.create({ ...node.attrs, dir: detectedDir }, node.content, node.marks);
   }
   const nodes = slice.content.content.map(assignDir);

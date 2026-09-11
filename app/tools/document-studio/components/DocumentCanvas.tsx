@@ -323,28 +323,24 @@ export default function DocumentCanvas({
           line-height: inherit;
         }
         .qalam-editor-content h1 {
-          font-size: 1.55rem;
           font-weight: 700;
           margin: 1rem 0 0.55rem;
-          line-height: 1.45;
+          line-height: 1.5;
         }
         .qalam-editor-content h2 {
-          font-size: 1.28rem;
           font-weight: 700;
           margin: 0.85rem 0 0.45rem;
-          line-height: 1.45;
+          line-height: 1.5;
         }
         .qalam-editor-content h3 {
-          font-size: 1.12rem;
           font-weight: 700;
           margin: 0.7rem 0 0.4rem;
-          line-height: 1.45;
+          line-height: 1.5;
         }
         .qalam-editor-content h4 {
-          font-size: 1.02rem;
           font-weight: 700;
           margin: 0.6rem 0 0.35rem;
-          line-height: 1.45;
+          line-height: 1.5;
         }
         .qalam-editor-content ul {
           list-style: disc;

@@ -15,6 +15,7 @@ import {
   type StudioFontDefinition,
 } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
+import { pdfFontUnicodeRange } from "./pdfFontSubsets";
 
 export interface PdfFontFace {
   familyName: string;
@@ -197,7 +198,8 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
       inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
     }
     const fontMarker = effective.family === "Jameel Noori Nastaleeq" ? ` data-pdf-font="${escapeAttr(effective.family)}"` : "";
-    inner = `<span class="${effective.cssClass}"${fontMarker}${sizeStyle ? ` style="${sizeStyle}"` : ""}>${inner}</span>`;
+    const urduMarker = /\p{Script=Arabic}/u.test(node.text) ? ' data-pdf-urdu="true"' : "";
+    inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${sizeStyle ? ` style="${sizeStyle}"` : ""}>${inner}</span>`;
     html += inner;
   }
 
@@ -206,7 +208,9 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
 
 function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
   const blockStyleId = typeof node.attrs?.blockStyle === "string" && isBlockStyleId(node.attrs.blockStyle) ? node.attrs.blockStyle : null;
-  const styleDef = blockStyleId ? BLOCK_STYLES[blockStyleId] : null;
+  const styleDef = node.type === "heading"
+    ? BLOCK_STYLES[`heading-${node.attrs?.level}` as keyof typeof BLOCK_STYLES]
+    : blockStyleId ? BLOCK_STYLES[blockStyleId] : null;
   const lh =
     typeof node.attrs?.lineHeight === "number"
       ? validateLineHeight(node.attrs.lineHeight)
@@ -318,14 +322,20 @@ function fontFaceCss(faces: PdfFontFace[]): string {
   const rules: string[] = [];
   for (const f of faces) {
     if (!f.complete) continue;
-    for (const src of f.regularSources) {
+    const id = resolvePdfFontId(f.familyName);
+    const definition = id ? getFontById(id) : undefined;
+    const coverage = (file: string | undefined) => {
+      const range = file ? pdfFontUnicodeRange(file) : undefined;
+      return range ? `unicode-range:${range};` : "";
+    };
+    for (const [index, src] of f.regularSources.entries()) {
       rules.push(
-        `@font-face{font-family:"${f.familyName}";src:url(data:font/woff2;base64,${src}) format("woff2");font-weight:400;font-display:block;}`
+        `@font-face{font-family:"${f.familyName}";src:url(data:font/woff2;base64,${src}) format("woff2");font-weight:400;font-style:normal;font-display:block;${coverage(definition?.pdf.regularFiles?.[index])}}`
       );
     }
-    for (const src of f.boldSources ?? []) {
+    for (const [index, src] of (f.boldSources ?? []).entries()) {
       rules.push(
-        `@font-face{font-family:"${f.familyName}";src:url(data:font/woff2;base64,${src}) format("woff2");font-weight:700;font-display:block;}`
+        `@font-face{font-family:"${f.familyName}";src:url(data:font/woff2;base64,${src}) format("woff2");font-weight:700;font-style:normal;font-display:block;${coverage(definition?.pdf.boldFiles?.[index])}}`
       );
     }
   }
@@ -373,7 +383,8 @@ export function buildPdfHtml(
     noteEffective(ctx, effective);
   }
 
-  const embeddedNames = [...ctx.fontsUsed].filter((n) => available.has(n));
+  // A CSS fallback must be embedded even when no run selects it as primary.
+  const embeddedNames = [...new Set([...ctx.fontsUsed, "Noto Nastaliq Urdu", "Inter"])].filter((n) => available.has(n));
   const faces = fonts.faces.filter(
     (f) => f.complete && embeddedNames.includes(f.familyName)
   );
@@ -465,5 +476,6 @@ export function requiredPdfEmbedFonts(
     }
   }
   used.add(dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu");
+  used.add("Noto Nastaliq Urdu");
   return collectPdfEmbedFonts(used);
 }

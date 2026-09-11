@@ -23,6 +23,7 @@ export interface ActiveToolbarFormatting {
   fontSizePt: number | null;
   lineHeight: number | null;
   blockStyle: BlockStyleId;
+  directionMode: "auto" | "rtl" | "ltr";
   bold: boolean;
   italic: boolean;
   underline: boolean;
@@ -103,7 +104,6 @@ function blockStyleAt(editor: Editor, pos: number): BlockStyleId {
     if (node.type.name === "paragraph") {
       const attr = node.attrs.blockStyle as string | undefined;
       if (attr === "title" || attr === "subtitle" || attr === "caption") return attr;
-      return "normal";
     }
   }
   return "normal";
@@ -233,7 +233,8 @@ export function resolveActiveToolbarFormatting(
     bold: editor.isActive("bold") || Boolean(style.bold),
     italic: editor.isActive("italic"),
     underline: editor.isActive("underline"),
-    textAlign: explicitAlign ?? style.align ?? null,
+    textAlign: explicitAlign ?? style.align ?? (blockDirAt(editor, from, globalDir) === "rtl" ? "right" : "left"),
+    directionMode: textblockAt(editor, from)?.attrs.directionMode ?? "auto",
     color: mixed.color ? null : ([...colors][0] || null),
     highlight: mixed.highlight ? null : ([...highlights][0] || null),
     spaceBeforePt: mixed.spaceBefore ? null : [...spaceBefores][0] ?? settings.typography.paragraphBeforePt,

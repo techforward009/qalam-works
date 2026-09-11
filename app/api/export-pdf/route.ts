@@ -8,6 +8,7 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { PDFDocument } from "pdf-lib";
 import { inspectPdfRuntimeFonts, jameelActuallyUsed } from "../../tools/document-studio/utils/pdfFontReady";
+import { guardPdfUrduFonts, loadPdfUrduFace } from "../../tools/document-studio/utils/pdfUrduFontGuard";
 import {
   applyJameelFace,
   resolveRequestScopedJameelFace,
@@ -166,9 +167,9 @@ export async function fontsForDocument(
       seen.add(name);
     }
   }
-  const fallbackName = dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu";
-  if (!seen.has(fallbackName) && all.has(fallbackName)) {
-    faces.push(all.get(fallbackName)!);
+  // Mixed/LTR documents may still contain Urdu or a selected Jameel run.
+  for (const fallbackName of ["Noto Nastaliq Urdu", "Inter"]) {
+    if (!seen.has(fallbackName) && all.has(fallbackName)) faces.push(all.get(fallbackName)!);
   }
   return {
     fonts: { faces: applyJameelFace(faces, jameel.face) },
@@ -204,8 +205,7 @@ export async function POST(request: NextRequest) {
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
   try {
     const resolved = await fontsForDocument(doc, dir, settings.typography);
-    const { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
-    const jameelFallback = fontFallbacks.some((item) => item.requested === "Jameel Noori Nastaleeq");
+    let { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
     const executablePath = await chromium.executablePath();
     browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true });
     const page = await browser.newPage();
@@ -215,7 +215,19 @@ export async function POST(request: NextRequest) {
       else req.abort();
     });
     await page.setContent(html, { waitUntil: "load" });
+    if (fontsUsed.includes("Jameel Noori Nastaleeq") && !await page.evaluate(loadPdfUrduFace, "Jameel Noori Nastaleeq")) {
+      ({ html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, {
+        faces: resolved.fonts.faces.filter(face => face.familyName !== "Jameel Noori Nastaleeq"),
+      }, settings.typography));
+      await page.setContent(html, { waitUntil: "load" });
+    }
     const runtime = await page.evaluate(inspectPdfRuntimeFonts, fontsUsed);
+    const urduFonts = await guardPdfUrduFonts(page);
+    if (urduFonts.fallbackRuns > 0) {
+      if (!fontsUsed.includes("Noto Nastaliq Urdu")) fontsUsed.push("Noto Nastaliq Urdu");
+      fontFallbacks.push({ requested: "Runtime Urdu font", used: "Noto Nastaliq Urdu" });
+    }
+    const jameelFallback = fontFallbacks.some(item => item.requested === "Jameel Noori Nastaleeq") || urduFonts.fallbackRuns > 0;
     let actualFont = "unknown";
     try {
       const session = await page.createCDPSession();
@@ -282,6 +294,8 @@ export async function POST(request: NextRequest) {
         "X-Pdf-Jameel-Load": resolved.jameelLoad,
         "X-Pdf-Jameel-Used": jameelUsed ? "yes" : "no",
         "X-Pdf-Fonts-Ready": runtime.allRequestedFontsReady ? "yes" : "no",
+        "X-Pdf-Urdu-Fallback-Runs": String(urduFonts.fallbackRuns),
+        "X-Pdf-Urdu-Actual-Fonts": JSON.stringify(urduFonts.actualFamilies),
         "X-Pdf-Jameel-Face-Count": String(runtime.jameelFaceCount),
         "X-Pdf-Jameel-Loaded-Faces": String(runtime.jameelLoadedFaceCount),
         "X-Pdf-Jameel-Load-Results": String(runtime.jameelLoadResultCount),

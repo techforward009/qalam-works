@@ -12,6 +12,16 @@ import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-s
 import Highlight from "@tiptap/extension-highlight";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
+import { ParagraphAutoDirection } from "./paragraphDirection";
+
+const DIRECTION_MODE_ATTR = {
+  default: "auto",
+  parseHTML: (element: HTMLElement) => {
+    const mode = element.getAttribute("data-direction-mode");
+    return mode === "rtl" || mode === "ltr" ? mode : "auto";
+  },
+  renderHTML: (attrs: Record<string, unknown>) => ({ "data-direction-mode": String(attrs.directionMode ?? "auto") }),
+};
 
 /** Persist writing direction on textblocks so empty RTL paragraphs place the caret on the right. */
 const PARAGRAPH_STYLE_ATTRS = {
@@ -101,17 +111,18 @@ const PARAGRAPH_STYLE_ATTRS = {
 };
 
 export const BLOCK_STYLE_EDITOR_CSS = (Object.values(BLOCK_STYLES) as typeof BLOCK_STYLES[BlockStyleId][])
-  .filter((style) => style.blockStyleAttr)
+  .filter((style) => style.blockStyleAttr || style.headingLevel)
   .map((style) => {
     const declarations = [
-      style.defaultFontSizePt ? `font-size:${style.defaultFontSizePt / 12}rem;` : "",
+      style.defaultFontSizePt ? `font-size:${style.defaultFontSizePt}pt;` : "",
       style.bold ? "font-weight:700;" : "",
       style.align ? `text-align:${style.align};` : "",
       style.blockStyleAttr === "caption" ? "color:#666;" : "",
     ]
       .filter(Boolean)
       .join("");
-    return `.qalam-editor-content .ProseMirror p[data-block-style="${style.blockStyleAttr}"] { ${declarations} }`;
+    const selector = style.headingLevel ? `h${style.headingLevel}` : `p[data-block-style="${style.blockStyleAttr}"]`;
+    return `.qalam-editor-content .ProseMirror ${selector} { ${declarations} }`;
   })
   .join("\n");
 
@@ -119,6 +130,7 @@ export const ParagraphWithDir = Paragraph.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      directionMode: DIRECTION_MODE_ATTR,
       dir: {
         default: "rtl",
         parseHTML: (element) => {
@@ -139,6 +151,7 @@ export const HeadingWithDir = Heading.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      directionMode: DIRECTION_MODE_ATTR,
       dir: {
         default: "rtl",
         parseHTML: (element) => {
@@ -165,6 +178,7 @@ export function createDocumentStudioExtensions() {
     }),
     ParagraphWithDir,
     HeadingWithDir,
+    ParagraphAutoDirection,
     Link.configure({ openOnClick: false }),
     TextAlign.configure({ types: ["heading", "paragraph"] }),
     TextStyle,

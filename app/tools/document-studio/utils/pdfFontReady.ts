@@ -88,6 +88,5 @@ export async function inspectPdfRuntimeFonts(families: string[]): Promise<PdfRun
 }
 
 export function jameelActuallyUsed(diag: PdfRuntimeFontDiagnostics, actualFont: string): boolean {
-  if (actualFont.toLowerCase().includes("jameel")) return true;
-  return diag.jameelLoadedFaceCount > 0 && diag.jameelLoadResultCount > 0 && diag.allRequestedFontsReady;
+  return actualFont.toLowerCase().includes("jameel") && diag.jameelLoadedFaceCount > 0;
 }

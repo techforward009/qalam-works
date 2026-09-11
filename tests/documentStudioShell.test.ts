@@ -1,4 +1,7 @@
+/** @vitest-environment happy-dom */
 import { describe, expect, it } from "vitest";
+import { Editor } from "@tiptap/core";
+import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
 import {
   defaultDocumentTitle,
   sanitizeDocumentTitle,
@@ -240,10 +243,17 @@ describe("document menus", () => {
     const h = mockHandlers();
     dispatchDocumentMenuAction("format.bold", editor, h);
     dispatchDocumentMenuAction("format.alignCenter", editor, h);
-    dispatchDocumentMenuAction("format.style.heading-1", editor, h);
+    const semanticEditor = new Editor({ extensions: createDocumentStudioExtensions(), content: "<p>Heading</p>" });
+    try {
+      dispatchDocumentMenuAction("format.style.heading-1", semanticEditor, h);
+      expect(semanticEditor.state.doc.firstChild?.type.name).toBe("heading");
+      expect(semanticEditor.state.doc.firstChild?.attrs.level).toBe(1);
+    } finally {
+      semanticEditor.destroy();
+    }
     dispatchDocumentMenuAction("format.lh.1.5", editor, h);
     dispatchDocumentMenuAction("format.rtl", editor, h);
-    expect(calls).toEqual(["bold", "align:center", "h1", "lh:1.5"]);
+    expect(calls).toEqual(["bold", "align:center", "lh:1.5"]);
     expect(h.calls).toEqual(["dir:rtl"]);
   });
 

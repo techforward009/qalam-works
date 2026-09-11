@@ -428,13 +428,17 @@ function convertNode(
       const blockDir = directionForNode(node, dir);
       const level = node.attrs?.level;
       const heading = headingLevelFor(level);
+      const headingStyle = BLOCK_STYLES[`heading-${level}` as keyof typeof BLOCK_STYLES];
       return [
         new Paragraph({
           heading,
           bidirectional: blockDir === "rtl",
           alignment: alignmentFor(node),
           spacing: headingSpacingFor(level, node),
-          children: convertInline(node.content, blockDir, typography),
+          children: convertInline(node.content, blockDir, typography, undefined, {
+            fontSizePt: headingStyle?.defaultFontSizePt,
+            bold: headingStyle?.bold,
+          }),
         }),
       ];
     }
@@ -455,6 +459,7 @@ function convertNode(
           out.push(
             new Paragraph({
               bidirectional: blockDir === "rtl",
+              alignment: alignmentFor(child),
               indent: { start: BLOCKQUOTE_INDENT },
               spacing: quoteSpacing,
               border: {

@@ -80,10 +80,10 @@ describe("Batch 16A.1 — PDF block-style size precedence", () => {
 });
 
 describe("Batch 16A.1 — Editor block-style CSS derives from canonical BLOCK_STYLES (single source of truth)", () => {
-  test("generated editor CSS contains the canonical pt values converted to rem, not old hardcoded rem values", () => {
-    expect(BLOCK_STYLE_EDITOR_CSS).toContain(`font-size:${28 / 12}rem`); // Title
-    expect(BLOCK_STYLE_EDITOR_CSS).toContain(`font-size:${18 / 12}rem`); // Subtitle
-    expect(BLOCK_STYLE_EDITOR_CSS).toContain(`font-size:${10 / 12}rem`); // Caption
+  test("generated editor CSS contains canonical point sizes independent of the surrounding rem scale", () => {
+    expect(BLOCK_STYLE_EDITOR_CSS).toContain("font-size:28pt"); // Title
+    expect(BLOCK_STYLE_EDITOR_CSS).toContain("font-size:18pt"); // Subtitle
+    expect(BLOCK_STYLE_EDITOR_CSS).toContain("font-size:10pt"); // Caption
     // The old, now-divergent hardcoded values must be gone.
     expect(BLOCK_STYLE_EDITOR_CSS).not.toContain("1.9rem");
     expect(BLOCK_STYLE_EDITOR_CSS).not.toContain("1.25rem");
