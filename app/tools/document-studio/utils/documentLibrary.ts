@@ -1,6 +1,6 @@
 /**
  * Local Document Library — storage-agnostic API.
- * IndexedDB is the browser backend; tests use the in-memory backend.
+ * IndexedDB is persistent; the in-memory backend is a temporary fallback.
  * Document JSON is stored as-is (no schema transform).
  */
 
@@ -41,8 +41,10 @@ export interface DocumentWriteInput {
 }
 
 export interface DocumentLibrary {
+  readonly durability: "persistent" | "memory";
   listDocuments(): Promise<DocumentListItem[]>;
   getDocument(id: string): Promise<DocumentRecord | null>;
+  /** Persistent backends resolve only after the write transaction commits. */
   createDocument(input?: DocumentWriteInput): Promise<DocumentRecord>;
   updateDocument(id: string, patch: DocumentWriteInput): Promise<DocumentRecord>;
   deleteDocument(id: string): Promise<void>;
@@ -107,6 +109,7 @@ export function createMemoryDocumentLibrary(seed: DocumentRecord[] = []): Docume
   }
 
   return {
+    durability: "memory",
     async listDocuments() {
       return sortDocumentsNewestFirst(Array.from(records.values())).map((record) => ({
         id: record.id,
@@ -187,61 +190,62 @@ export interface LegacyStorage {
 
 /**
  * One-time migration from the single localStorage draft.
- * Never duplicates. On failure, leaves legacy keys intact.
+ * Only a committed persistent destination permits legacy cleanup.
+ * Errors propagate to the editor's storage-error status.
  */
 export async function migrateLegacyDraftIfNeeded(
   library: DocumentLibrary,
   storage: LegacyStorage,
   options?: { defaultTitle?: string; settings?: DocumentStudioSettings },
 ): Promise<DocumentRecord | null> {
-  try {
-    if (storage.getItem(LIBRARY_MIGRATION_KEY) === "done") return null;
-    const existing = await library.listDocuments();
-    if (existing.length > 0) {
-      storage.setItem(LIBRARY_MIGRATION_KEY, "done");
-      return null;
-    }
+  if (storage.getItem(LIBRARY_MIGRATION_KEY) === "done") return null;
 
-    const draftRaw = storage.getItem(LEGACY_DRAFT_STORAGE_KEY);
-    const titleRaw = storage.getItem("qalam-document-studio-title");
-    const settingsRaw = storage.getItem("qalam-document-studio-settings-v1");
-    if (!draftRaw && !titleRaw && !settingsRaw) {
-      storage.setItem(LIBRARY_MIGRATION_KEY, "done");
-      return null;
-    }
-
-    let content = emptyDocumentContent();
-    if (draftRaw) {
-      try {
-        const parsed = JSON.parse(draftRaw) as unknown;
-        if (isDocNode(parsed)) content = parsed;
-      } catch {
-        content = emptyDocumentContent();
-      }
-    }
-
-    let settings = options?.settings ?? defaultDocumentSettings();
-    if (settingsRaw) {
-      try {
-        settings = parseDocumentSettings(JSON.parse(settingsRaw));
-      } catch {
-        /* keep fallback */
-      }
-    }
-
-    const record = await library.createDocument({
-      title: sanitizeDocumentTitle(titleRaw) || options?.defaultTitle || defaultDocumentTitle(false),
-      content,
-      documentSettings: settings,
-    });
-
-    storage.setItem(LIBRARY_MIGRATION_KEY, "done");
-    storage.removeItem(LEGACY_DRAFT_STORAGE_KEY);
-    storage.removeItem("qalam-document-studio-title");
-    return record;
-  } catch {
+  const draftRaw = storage.getItem(LEGACY_DRAFT_STORAGE_KEY);
+  const titleRaw = storage.getItem("qalam-document-studio-title");
+  const settingsRaw = storage.getItem("qalam-document-studio-settings-v1");
+  if (!draftRaw && !titleRaw && !settingsRaw) {
+    if (library.durability === "persistent") storage.setItem(LIBRARY_MIGRATION_KEY, "done");
     return null;
   }
+
+  let content = emptyDocumentContent();
+  if (draftRaw) {
+    const parsed = JSON.parse(draftRaw) as unknown;
+    if (!isDocNode(parsed)) throw new Error("Invalid legacy document draft");
+    content = parsed;
+  }
+
+  let settings = options?.settings ?? defaultDocumentSettings();
+  if (settingsRaw) {
+    settings = parseDocumentSettings(JSON.parse(settingsRaw));
+  }
+
+  const record = await library.createDocument({
+    title: sanitizeDocumentTitle(titleRaw) || options?.defaultTitle || defaultDocumentTitle(false),
+    content,
+    documentSettings: settings,
+  });
+
+  if (library.durability === "memory") return record;
+
+  // IndexedDB createDocument resolves only after transaction completion.
+  // An unrelated library document is not proof this draft was migrated.
+  try {
+    storage.setItem(LIBRARY_MIGRATION_KEY, "done");
+    storage.removeItem("qalam-document-studio-title");
+    storage.removeItem(LEGACY_DRAFT_STORAGE_KEY);
+  } catch (error) {
+    // Keep migration retryable if cleanup fails. The destination is already
+    // durable, even if the browser also refuses these restorations.
+    try {
+      if (draftRaw !== null) storage.setItem(LEGACY_DRAFT_STORAGE_KEY, draftRaw);
+      if (titleRaw !== null) storage.setItem("qalam-document-studio-title", titleRaw);
+    } finally {
+      storage.removeItem(LIBRARY_MIGRATION_KEY);
+    }
+    throw error;
+  }
+  return record;
 }
 
 let singleton: DocumentLibrary | null = null;

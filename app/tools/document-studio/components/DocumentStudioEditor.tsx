@@ -212,6 +212,7 @@ export default function DocumentStudioEditor() {
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle" | "error">("idle");
   const [online, setOnline] = useState(true);
+  const [storageDurability, setStorageDurability] = useState<DocumentLibrary["durability"] | null>(null);
   const [documentTitle, setDocumentTitle] = useState(() => defaultDocumentTitle(isUr));
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [libraryItems, setLibraryItems] = useState<DocumentListItem[]>([]);
@@ -632,6 +633,7 @@ export default function DocumentStudioEditor() {
         const library = await getDocumentLibrary();
         if (cancelled) return;
         libraryRef.current = library;
+        setStorageDurability(library.durability);
         const migrated = await migrateLegacyDraftIfNeeded(library, window.localStorage, {
           defaultTitle: defaultDocumentTitle(isUrRef.current),
           settings: documentSettingsRef.current,
@@ -1415,6 +1417,7 @@ export default function DocumentStudioEditor() {
             onTitleChange={setDocumentTitle}
             onTitleCommit={commitDocumentTitle}
             saveStatus={saveStatus}
+            storageDurability={storageDurability}
             online={online}
             isImporting={isImporting}
             onNewDocument={handleNewDocument}
@@ -1496,6 +1499,7 @@ export default function DocumentStudioEditor() {
             dir={dir}
             stats={stats}
             saveStatus={saveStatus}
+            storageDurability={storageDurability}
             online={online}
             auditScore={auditReport?.score ?? null}
             auditStale={isAuditStale}

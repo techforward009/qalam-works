@@ -4,6 +4,8 @@
  * No React, no TipTap, no export/normalization.
  */
 
+import type { DocumentLibrary } from "./documentLibrary";
+
 export type LeftPanelId = "none" | "outline";
 export type RightPanelId = "none" | "quality" | "glossary" | "settings";
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -20,8 +22,12 @@ export function describeSaveStatus(args: {
   saveStatus: SaveStatus;
   online: boolean;
   isUr: boolean;
+  storageDurability?: DocumentLibrary["durability"] | null;
 }): { label: string; tone: "muted" | "saving" | "saved" | "offline" | "error" } {
   const { saveStatus, online, isUr } = args;
+  if (args.storageDurability === "memory" && saveStatus !== "error") {
+    return { label: isUr ? "عارضی · صرف اس سیشن میں" : "Temporary · This session only", tone: "offline" };
+  }
   if (saveStatus === "saving") {
     return { label: isUr ? "محفوظ ہو رہا ہے…" : "Saving…", tone: "saving" };
   }

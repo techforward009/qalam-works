@@ -2,12 +2,14 @@
 
 import { describeDocumentLanguage, describeSaveStatus, type SaveStatus } from "../utils/documentShell";
 import type { DocumentStats } from "../utils/buildDocumentStats";
+import type { DocumentLibrary } from "../utils/documentLibrary";
 
 export default function DocumentStatusBar({
   isUr,
   dir,
   stats,
   saveStatus,
+  storageDurability,
   online,
   auditScore,
   auditStale,
@@ -16,11 +18,12 @@ export default function DocumentStatusBar({
   dir: "rtl" | "ltr";
   stats: DocumentStats | null;
   saveStatus: SaveStatus;
+  storageDurability: DocumentLibrary["durability"] | null;
   online: boolean;
   auditScore?: number | null;
   auditStale?: boolean;
 }) {
-  const status = describeSaveStatus({ saveStatus, online, isUr });
+  const status = describeSaveStatus({ saveStatus, online, isUr, storageDurability });
   const language = describeDocumentLanguage({
     dominant: stats?.language.dominant,
     isUr,

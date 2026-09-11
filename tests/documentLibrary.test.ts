@@ -1,9 +1,13 @@
-import { afterEach, describe, expect, it } from "vitest";
+/** @vitest-environment happy-dom */
+
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ACTIVE_DOCUMENT_STORAGE_KEY,
   LEGACY_DRAFT_STORAGE_KEY,
   LIBRARY_MIGRATION_KEY,
   createMemoryDocumentLibrary,
+  getDocumentLibrary,
+  setDocumentLibraryForTests,
   loadActiveDocumentId,
   migrateLegacyDraftIfNeeded,
   saveActiveDocumentId,
@@ -12,6 +16,58 @@ import {
 } from "../app/tools/document-studio/utils/documentLibrary";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
+
+// Narrow IndexedDB event harness: request success and transaction commit are
+// separate, so migration must wait for the actual backend's commit boundary.
+function installIndexedDB(options: { holdWrites?: boolean; abortWrites?: boolean } = {}) {
+  const records = new Map<string, DocumentRecord>();
+  const commits: (() => void)[] = [];
+  const db = {
+    transaction() {
+      const tx = {
+        oncomplete: null as null | (() => void),
+        onabort: null as null | (() => void),
+        error: new Error("transaction aborted"),
+        objectStore() {
+          const requestFor = (result: unknown, write?: () => void) => {
+            const request = { result, onsuccess: null as null | (() => void) };
+            queueMicrotask(() => {
+              request.onsuccess?.();
+              const complete = () => {
+                if (write && options.abortWrites) { tx.onabort?.(); return; }
+                write?.();
+                tx.oncomplete?.();
+              };
+              if (write && options.holdWrites) commits.push(complete);
+              else queueMicrotask(complete);
+            });
+            return request;
+          };
+          return {
+            getAll: () => requestFor([...records.values()]),
+            get: (id: string) => requestFor(records.get(id)),
+            put: (record: DocumentRecord) => requestFor(record.id, () => records.set(record.id, structuredClone(record))),
+          };
+        },
+      };
+      return tx;
+    },
+  };
+  vi.stubGlobal("indexedDB", {
+    open: vi.fn(() => {
+      const request = { result: db, onsuccess: null as null | (() => void) };
+      queueMicrotask(() => request.onsuccess?.());
+      return request;
+    }),
+  });
+  return { records, commits };
+}
+
+afterEach(() => {
+  setDocumentLibraryForTests(null);
+  vi.unstubAllGlobals();
+  localStorage.clear();
+});
 
 function paragraph(text: string): DocNode {
   return { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text }] }] };
@@ -128,8 +184,139 @@ describe("active document id persistence", () => {
 });
 
 describe("legacy localStorage draft migration", () => {
+  it("preserves real localStorage through open failure, reload, and later durable recovery", async () => {
+    const raw = JSON.stringify(paragraph("recover this draft"));
+    localStorage.setItem(LEGACY_DRAFT_STORAGE_KEY, raw);
+    localStorage.setItem("qalam-document-studio-title", "Recover me");
+    const open = vi.fn(() => {
+      const request = { error: new Error("open denied"), onerror: null as null | (() => void) };
+      queueMicrotask(() => request.onerror?.());
+      return request;
+    });
+    vi.stubGlobal("indexedDB", { open });
+    const first = await getDocumentLibrary();
+    expect(open).toHaveBeenCalledOnce();
+    expect(first.durability).toBe("memory");
+    const temporary = await migrateLegacyDraftIfNeeded(first, localStorage);
+    expect((await first.getDocument(temporary!.id))?.content).toEqual(paragraph("recover this draft"));
+    expect(localStorage.getItem(LEGACY_DRAFT_STORAGE_KEY)).toBe(raw);
+    expect(localStorage.getItem("qalam-document-studio-title")).toBe("Recover me");
+    expect(localStorage.getItem(LIBRARY_MIGRATION_KEY)).toBeNull();
+
+    // Reload drops the module singleton and its session-only documents.
+    setDocumentLibraryForTests(null);
+    const reloaded = await getDocumentLibrary();
+    expect(reloaded).not.toBe(first);
+    expect(reloaded.durability).toBe("memory");
+    expect(await reloaded.listDocuments()).toEqual([]);
+    const recovered = await migrateLegacyDraftIfNeeded(reloaded, localStorage);
+    expect(recovered?.content).toEqual(temporary?.content);
+    expect(localStorage.getItem(LEGACY_DRAFT_STORAGE_KEY)).toBe(raw);
+    expect(localStorage.getItem(LIBRARY_MIGRATION_KEY)).toBeNull();
+
+    setDocumentLibraryForTests(null);
+    installIndexedDB();
+    const persistent = await getDocumentLibrary();
+    expect(persistent.durability).toBe("persistent");
+    const migrated = await migrateLegacyDraftIfNeeded(persistent, localStorage);
+    expect((await persistent.getDocument(migrated!.id))?.content).toEqual(temporary?.content);
+    expect(localStorage.getItem(LEGACY_DRAFT_STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem(LIBRARY_MIGRATION_KEY)).toBe("done");
+  });
+
+  it("does not mark an empty memory session migrated", async () => {
+    vi.stubGlobal("indexedDB", undefined);
+    const library = await getDocumentLibrary();
+    expect(library.durability).toBe("memory");
+    expect(await migrateLegacyDraftIfNeeded(library, localStorage)).toBeNull();
+    expect(localStorage.getItem(LIBRARY_MIGRATION_KEY)).toBeNull();
+  });
+
+  it("waits for transaction commit, not merely request success, before cleanup", async () => {
+    const { commits, records } = installIndexedDB({ holdWrites: true });
+    const library = await getDocumentLibrary();
+    const raw = JSON.stringify(paragraph("pending commit"));
+    localStorage.setItem(LEGACY_DRAFT_STORAGE_KEY, raw);
+    const migration = migrateLegacyDraftIfNeeded(library, localStorage);
+    await vi.waitFor(() => expect(commits).toHaveLength(1));
+    expect(records.size).toBe(0);
+    expect(localStorage.getItem(LEGACY_DRAFT_STORAGE_KEY)).toBe(raw);
+    expect(localStorage.getItem(LIBRARY_MIGRATION_KEY)).toBeNull();
+    commits.shift()!();
+    const migrated = await migration;
+    expect(records.get(migrated!.id)?.content).toEqual(paragraph("pending commit"));
+    expect(localStorage.getItem(LEGACY_DRAFT_STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem(LIBRARY_MIGRATION_KEY)).toBe("done");
+  });
+
+  it("preserves the source and surfaces an IndexedDB transaction abort", async () => {
+    const { records } = installIndexedDB({ abortWrites: true });
+    const library = await getDocumentLibrary();
+    const raw = JSON.stringify(paragraph("aborted"));
+    localStorage.setItem(LEGACY_DRAFT_STORAGE_KEY, raw);
+    await expect(migrateLegacyDraftIfNeeded(library, localStorage)).rejects.toThrow("transaction aborted");
+    expect(records.size).toBe(0);
+    expect(localStorage.getItem(LEGACY_DRAFT_STORAGE_KEY)).toBe(raw);
+    expect(localStorage.getItem(LIBRARY_MIGRATION_KEY)).toBeNull();
+  });
+
+  it.each(["{broken", '{"type":"unknown"}'])("does not replace an unreadable legacy draft with an empty document: %s", async (raw) => {
+    installIndexedDB();
+    const library = await getDocumentLibrary();
+    localStorage.setItem(LEGACY_DRAFT_STORAGE_KEY, raw);
+    await expect(migrateLegacyDraftIfNeeded(library, localStorage)).rejects.toThrow();
+    expect(await library.listDocuments()).toEqual([]);
+    expect(localStorage.getItem(LEGACY_DRAFT_STORAGE_KEY)).toBe(raw);
+    expect(localStorage.getItem(LIBRARY_MIGRATION_KEY)).toBeNull();
+  });
+
+  it("does not invalidate a legacy draft merely because another document exists", async () => {
+    installIndexedDB();
+    const library = await getDocumentLibrary();
+    await library.createDocument({ content: paragraph("unrelated") });
+    localStorage.setItem(LEGACY_DRAFT_STORAGE_KEY, JSON.stringify(paragraph("legacy")));
+    const migrated = await migrateLegacyDraftIfNeeded(library, localStorage);
+    expect((await library.getDocument(migrated!.id))?.content).toEqual(paragraph("legacy"));
+    expect(await library.listDocuments()).toHaveLength(2);
+  });
+
+  it("preserves legacy content when its settings cannot be parsed", async () => {
+    installIndexedDB();
+    const library = await getDocumentLibrary();
+    const raw = JSON.stringify(paragraph("keep with settings"));
+    localStorage.setItem(LEGACY_DRAFT_STORAGE_KEY, raw);
+    localStorage.setItem("qalam-document-studio-settings-v1", "{broken");
+    await expect(migrateLegacyDraftIfNeeded(library, localStorage)).rejects.toThrow();
+    expect(localStorage.getItem(LEGACY_DRAFT_STORAGE_KEY)).toBe(raw);
+    expect(localStorage.getItem("qalam-document-studio-settings-v1")).toBe("{broken");
+    expect(localStorage.getItem(LIBRARY_MIGRATION_KEY)).toBeNull();
+  });
+
+  it.each(["marker", "cleanup"])("preserves the source and clears the marker on %s failure", async (stage) => {
+    installIndexedDB();
+    const library = await getDocumentLibrary();
+    const raw = JSON.stringify(paragraph("keep after cleanup failure"));
+    const storage = memoryStorage({ [LEGACY_DRAFT_STORAGE_KEY]: raw, "qalam-document-studio-title": "Keep" });
+    const failing = {
+      ...storage,
+      setItem(key: string, value: string) {
+        if (stage === "marker" && key === LIBRARY_MIGRATION_KEY) throw new Error("storage denied");
+        storage.setItem(key, value);
+      },
+      removeItem(key: string) {
+        if (stage === "cleanup" && key === LEGACY_DRAFT_STORAGE_KEY) throw new Error("storage denied");
+        storage.removeItem(key);
+      },
+    };
+    await expect(migrateLegacyDraftIfNeeded(library, failing)).rejects.toThrow("storage denied");
+    expect(storage.getItem(LEGACY_DRAFT_STORAGE_KEY)).toBe(raw);
+    expect(storage.getItem("qalam-document-studio-title")).toBe("Keep");
+    expect(storage.getItem(LIBRARY_MIGRATION_KEY)).toBeNull();
+  });
+
   it("migrates an existing draft once and then removes legacy content keys", async () => {
-    const library = createMemoryDocumentLibrary();
+    installIndexedDB();
+    const library = await getDocumentLibrary();
     const storage = memoryStorage({
       [LEGACY_DRAFT_STORAGE_KEY]: JSON.stringify(paragraph("میراث")),
       "qalam-document-studio-title": "Old draft",
@@ -148,6 +335,7 @@ describe("legacy localStorage draft migration", () => {
 
   it("does not erase legacy data when migration save fails", async () => {
     const failing: DocumentLibrary = {
+      durability: "persistent",
       async listDocuments() {
         return [];
       },
@@ -169,15 +357,15 @@ describe("legacy localStorage draft migration", () => {
       [LEGACY_DRAFT_STORAGE_KEY]: JSON.stringify(paragraph("keep")),
       "qalam-document-studio-title": "Keep title",
     });
-    const result = await migrateLegacyDraftIfNeeded(failing, storage);
-    expect(result).toBeNull();
+    await expect(migrateLegacyDraftIfNeeded(failing, storage)).rejects.toThrow("quota");
     expect(storage.getItem(LEGACY_DRAFT_STORAGE_KEY)).toBeTruthy();
     expect(storage.getItem("qalam-document-studio-title")).toBe("Keep title");
     expect(storage.getItem(LIBRARY_MIGRATION_KEY)).toBeNull();
   });
 
   it("does not keep full document content dependent on localStorage after migration", async () => {
-    const library = createMemoryDocumentLibrary();
+    installIndexedDB();
+    const library = await getDocumentLibrary();
     const storage = memoryStorage({
       [LEGACY_DRAFT_STORAGE_KEY]: JSON.stringify(paragraph("full-document-json")),
     });

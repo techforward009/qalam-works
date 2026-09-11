@@ -55,6 +55,7 @@ export async function createIndexedDBDocumentLibrary(): Promise<DocumentLibrary>
   };
 
   return {
+    durability: "persistent",
     async listDocuments() {
       const rows = await withStore("readonly", (store) => store.getAll());
       const records = (rows as unknown[])

@@ -1,6 +1,7 @@
 "use client";
 
 import { describeSaveStatus, type SaveStatus } from "../utils/documentShell";
+import type { DocumentLibrary } from "../utils/documentLibrary";
 
 export default function DocumentTopBar({
   isUr,
@@ -8,6 +9,7 @@ export default function DocumentTopBar({
   onTitleChange,
   onTitleCommit,
   saveStatus,
+  storageDurability,
   online,
   isImporting,
   onNewDocument,
@@ -20,6 +22,7 @@ export default function DocumentTopBar({
   onTitleChange: (value: string) => void;
   onTitleCommit: () => void;
   saveStatus: SaveStatus;
+  storageDurability: DocumentLibrary["durability"] | null;
   online: boolean;
   isImporting: boolean;
   onNewDocument: () => void;
@@ -27,12 +30,19 @@ export default function DocumentTopBar({
   onStandardize: () => void;
   onAudit: () => void;
 }) {
-  const status = describeSaveStatus({ saveStatus, online, isUr });
+  const status = describeSaveStatus({ saveStatus, online, isUr, storageDurability });
   const btn =
     "h-8 px-2.5 rounded-md text-xs font-semibold border border-transparent text-[#1A3A2A] hover:bg-[#F3F7F2] disabled:opacity-40";
 
   return (
     <div className="flex flex-wrap items-center gap-2 px-3 py-2" data-studio-topbar="true">
+      {storageDurability === "memory" ? (
+        <p role="status" dir={isUr ? "rtl" : "ltr"} className={`w-full rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900 ${isUr ? "font-naskh" : ""}`}>
+          {isUr
+            ? "براؤزر اسٹوریج دستیاب نہیں۔ اس سیشن کی تبدیلیاں عارضی ہیں۔ یہ ٹیب کھلا رکھیں اور اپنی دستاویز ڈاؤن لوڈ یا ایکسپورٹ کر لیں۔"
+            : "Browser storage is unavailable. Changes are temporary in this session. Keep this tab open and download/export your document."}
+        </p>
+      ) : null}
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <span
           className="hidden shrink-0 text-sm font-semibold tracking-tight text-[#1A3A2A] sm:inline"
