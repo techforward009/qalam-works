@@ -120,6 +120,14 @@ describe("semantic paragraph formatting", () => {
 
 describe("paragraph auto direction", () => {
   it.each([
+    ["یہ عبارت Document Studio کی formatting اور export testing کے لیے استعمال کی جا رہی ہے۔", "rtl"],
+    ["2026 میں کراچی نے ایک نئی صبح کا استقبال کیا۔", "rtl"],
+    ["Document Studio میں اردو لکھیں۔", "rtl"],
+    ["This is Karachi. ہم آج کام نہیں کر رہے۔", "rtl"],
+    ["2026 is a good year for testing document layout.", "ltr"],
+    ["۔۔۔ (2026) کراچی میں اردو لکھیں۔", "rtl"],
+    ["یہ کراچی ہے https://qalamworks.com/very-long-technical-documentation user@example.com", "rtl"],
+    ["https://qalamworks.com", "ltr"],
     ["یہ کراچی ہے۔", "rtl"], ["This is Karachi.", "ltr"],
     ["2026 کراچی", "rtl"], ["2026 Karachi", "ltr"], ["https://example.com", "ltr"],
     ["۱۲۳، ... Karachi", "ltr"], ["A یہ کراچی کا خوبصورت شہر ہے", "rtl"],
@@ -131,6 +139,25 @@ describe("paragraph auto direction", () => {
       expect(detectParagraphDirection(text, "ltr")).toBe("ltr");
       expect(detectParagraphDirection(text, "rtl")).toBe("rtl");
     }
+  });
+
+  it.each(["left", "right", "center"] as const)("preserves explicit %s alignment through auto detection and PDF export", alignment => {
+    const ed = make(`<p style="text-align:${alignment}">English</p>`);
+    ed.commands.setTextSelection({ from: 1, to: 8 });
+    ed.commands.insertContent("یہ عبارت Document Studio کی formatting اور export testing کے لیے استعمال کی جا رہی ہے۔");
+    expect(ed.state.doc.firstChild?.attrs.dir).toBe("rtl");
+    expect(ed.state.doc.firstChild?.attrs.textAlign).toBe(alignment);
+    const pdf = buildPdfHtml(ed.getJSON(), "ltr", { faces: [] }, settings.typography);
+    expect(pdf.html).toContain(`text-align:${alignment}`);
+    expect(pdf.html).toContain('<p dir="rtl"');
+  });
+
+  it("re-detects stale automatic direction at export while preserving manual direction", () => {
+    const paragraph = (directionMode: string) => ({ type: "paragraph", attrs: { dir: "ltr", directionMode }, content: [{ type: "text", text: "2026 میں کراچی نے ایک نئی صبح کا استقبال کیا۔" }] });
+    const auto = buildPdfHtml({ type: "doc", content: [paragraph("auto")] }, "ltr", { faces: [] }, settings.typography);
+    expect(auto.html).toContain('<p dir="rtl"');
+    const manual = buildPdfHtml({ type: "doc", content: [paragraph("ltr")] }, "rtl", { faces: [] }, settings.typography);
+    expect(manual.html).toContain('<p dir="ltr"');
   });
 
   it("typing, manual overrides, Auto, paste and root language changes stay paragraph-local", () => {

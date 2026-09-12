@@ -10,6 +10,13 @@ import type { DocNode } from "../app/tools/document-studio/utils/extractPlainTex
 const emptyFonts = { faces: [] } as never;
 
 describe("Batch 16A.1 — PDF block-style size precedence", () => {
+  test("headings retain the editor's 1.5 spacing unless the paragraph explicitly overrides it", () => {
+    const settings = defaultDocumentSettings();
+    settings.typography.lineHeight = 1;
+    const heading = (attrs = {}) => ({ type: "heading", attrs: { level: 2, ...attrs }, content: [{ type: "text", text: "کراچی" }] });
+    const html = buildPdfHtml({ type: "doc", content: [heading(), heading({ lineHeight: 2 })] }, "rtl", emptyFonts, settings.typography).html;
+    expect(html.match(/<h2[^>]*>/g)).toEqual([expect.stringContaining("line-height:1.5"), expect.stringContaining("line-height:2")]);
+  });
   test("Title with no explicit FontSize: the paragraph gets 28pt, and the unmarked run does NOT stamp a competing body-size span", () => {
     const settings = defaultDocumentSettings(); // bodyFontSizePt: 12 by default
     const doc: DocNode = {

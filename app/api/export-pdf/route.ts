@@ -25,8 +25,11 @@ import {
   parseDocumentSettings,
   type DocumentStudioSettings,
 } from "../../tools/document-studio/utils/documentSettings";
-import { resolvePageLayout, puppeteerPaperFormat, resolvePhysicalMargins } from "../../tools/document-studio/utils/pageLayout";
+import { resolvePageLayout, resolvePhysicalMargins } from "../../tools/document-studio/utils/pageLayout";
 import { STUDIO_FONTS } from "../../tools/document-studio/utils/fontRegistry";
+import { verifyPdfUrduEmbedding } from "../../tools/document-studio/utils/pdfEmbeddedFonts";
+import { paginatePdfInk } from "../../tools/document-studio/utils/pdfInkPagination";
+import { preflightPdfSource } from "../../tools/document-studio/utils/pdfSourcePreflight";
 
 function escapeHtml(s: string): string {
   return s
@@ -191,6 +194,7 @@ function isValidRequestBody(body: unknown): body is ExportPdfRequestBody {
 }
 
 export async function POST(request: NextRequest) {
+  const exportStarted = Date.now();
   let body: unknown;
   try {
     body = await request.json();
@@ -204,6 +208,7 @@ export async function POST(request: NextRequest) {
   const settings = parseDocumentSettings(body.settings);
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
   try {
+    preflightPdfSource(doc);
     const resolved = await fontsForDocument(doc, dir, settings.typography);
     let { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
     const executablePath = await chromium.executablePath();
@@ -258,10 +263,12 @@ export async function POST(request: NextRequest) {
       marginPreset: settings.page.margins.preset,
       customMargins: settings.page.margins,
     });
+    const inkPagination = await paginatePdfInk(page, layout.contentWidthMm, layout.heightMm - layout.margins.topMm - layout.margins.bottomMm);
     const pdfUint8Array = await page.pdf({
-      format: settings.page.orientation === "portrait" ? puppeteerPaperFormat(settings.page.size) : undefined,
-      width: settings.page.orientation === "landscape" ? `${layout.widthMm}mm` : undefined,
-      height: settings.page.orientation === "landscape" ? `${layout.heightMm}mm` : undefined,
+      width: `${layout.widthMm}mm`,
+      height: `${layout.heightMm}mm`,
+      scale: 1,
+      preferCSSPageSize: false,
       printBackground: true,
       margin: {
         top: `${layout.margins.topMm}mm`,
@@ -279,7 +286,9 @@ export async function POST(request: NextRequest) {
     pdfDoc.setProducer("Qalam Works PDF Export");
     if (fontsUsed.length > 0) pdfDoc.setKeywords(fontsUsed);
     const pageCount = pdfDoc.getPageCount();
+    if (pageCount !== inkPagination.pages) throw new Error("PDF page count differs from the measured ink pagination; export blocked");
     const finalBytes = await pdfDoc.save();
+    const embeddedFonts = verifyPdfUrduEmbedding(await PDFDocument.load(finalBytes), urduFonts.actualFamilies);
     const pdfBuffer = Buffer.from(finalBytes);
     return new NextResponse(pdfBuffer, {
       status: 200,
@@ -287,8 +296,15 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/pdf",
         "Content-Disposition": 'attachment; filename="qalam-document.pdf"',
         "X-Pdf-Page-Count": String(pageCount),
+        "X-Pdf-Printable-Width": String(layout.contentWidthMm * 96 / 25.4),
+        "X-Pdf-Visual-Lines": String(inkPagination.lines),
+        "X-Pdf-Staging-Height": String(inkPagination.stagingHeight),
+        "X-Pdf-Measurement-Screenshots": String(inkPagination.screenshots),
+        "X-Pdf-Measurement-Ms": String(inkPagination.measurementMs),
+        "X-Pdf-Export-Ms": String(Date.now() - exportStarted),
         "X-Pdf-File-Size-Bytes": String(pdfBuffer.length),
         "X-Pdf-Fonts-Used": JSON.stringify(fontsUsed),
+        "X-Pdf-Embedded-Fonts": JSON.stringify(embeddedFonts),
         "X-Pdf-Font-Fallbacks": JSON.stringify(fontFallbacks),
         "X-Pdf-Jameel-Requested": resolved.jameelRequested ? "yes" : "no",
         "X-Pdf-Jameel-Load": resolved.jameelLoad,
@@ -304,7 +320,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error("PDF export failed:", err);
-    return NextResponse.json({ error: "PDF بنانے میں خرابی ہوئی / Failed to generate PDF." }, { status: 500 });
+    const blocked = err instanceof Error && err.message.endsWith("export blocked") ? err.message : null;
+    return NextResponse.json({ error: blocked ?? "PDF بنانے میں خرابی ہوئی / Failed to generate PDF." }, { status: 500 });
   } finally {
     if (browser) await browser.close();
   }

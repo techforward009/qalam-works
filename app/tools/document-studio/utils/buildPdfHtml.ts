@@ -207,6 +207,10 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
 }
 
 function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
+  // Match the editor's paragraph font, including its line-box metrics. A Noto
+  // body strut combined with an Inter span otherwise expands English lines.
+  const blockFont = resolveEffectivePdfFont(null, blockDir, ctx.available, ctx.typography);
+  noteEffective(ctx, blockFont);
   const blockStyleId = typeof node.attrs?.blockStyle === "string" && isBlockStyleId(node.attrs.blockStyle) ? node.attrs.blockStyle : null;
   const styleDef = node.type === "heading"
     ? BLOCK_STYLES[`heading-${node.attrs?.level}` as keyof typeof BLOCK_STYLES]
@@ -214,7 +218,7 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
   const lh =
     typeof node.attrs?.lineHeight === "number"
       ? validateLineHeight(node.attrs.lineHeight)
-      : ctx.typography?.lineHeight ?? null;
+      : node.type === "heading" ? 1.5 : ctx.typography?.lineHeight ?? null;
   const firstLineIndentMm =
     typeof node.attrs?.firstLineIndentMm === "number"
       ? validateIndentMm(node.attrs.firstLineIndentMm)
@@ -252,7 +256,7 @@ function openAttrs(node: DocNode, blockDir: Direction, ctx: WalkCtx): string {
   ]
     .filter(Boolean)
     .join(";");
-  return ` dir="${blockDir}" style="${styles}"`;
+  return ` dir="${blockDir}" class="${blockFont.cssClass}" style="${styles}"`;
 }
 
 function convertNode(node: DocNode, ctx: WalkCtx): string {

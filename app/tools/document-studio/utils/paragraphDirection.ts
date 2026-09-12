@@ -1,19 +1,9 @@
 import { Extension } from "@tiptap/core";
 import { Plugin } from "@tiptap/pm/state";
+import { detectParagraphDirection } from "./paragraphDirectionDetection";
+export { detectParagraphDirection } from "./paragraphDirectionDetection";
 
 export type ParagraphDirectionMode = "auto" | "rtl" | "ltr";
-
-/** Count strong letters only; Arabic digits, marks and punctuation are neutral. */
-export function detectParagraphDirection(text: string, fallback: "rtl" | "ltr" = "rtl"): "rtl" | "ltr" {
-  let rtl = 0;
-  let ltr = 0;
-  for (const letter of text) {
-    if (!/\p{Letter}/u.test(letter)) continue;
-    if (/[\p{Script=Arabic}\p{Script=Hebrew}\p{Script=Syriac}\p{Script=Thaana}]/u.test(letter)) rtl++;
-    else ltr++;
-  }
-  return rtl === ltr ? fallback : rtl > ltr ? "rtl" : "ltr";
-}
 
 export const ParagraphAutoDirection = Extension.create({
   name: "paragraphAutoDirection",

@@ -31,17 +31,12 @@ export async function guardPdfUrduFonts(page: Page): Promise<{ fallbackRuns: num
     const actualFamilies = new Set<string>();
     let fallbackRuns = 0;
     for (const [index, nodeId] of nodeIds.entries()) {
-      const { node } = await session.send("DOM.describeNode", { nodeId, depth: -1 });
-      const textParents: number[] = [];
-      const collect = (current: typeof node) => {
-        if (current.children?.some(child => child.nodeType === 3 && /\p{Script=Arabic}/u.test(child.nodeValue))) textParents.push(current.nodeId);
-        current.children?.forEach(collect);
-      };
-      collect(node);
       const inspect = async () => {
-        // Bold/link/underline wrappers may own the actual TextNode below the run span.
-        const results = await Promise.all(textParents.map(parentId => session.send("CSS.getPlatformFontsForNode", { nodeId: parentId })));
-        const used = results.flatMap(result => result.fonts).filter(font => font.glyphCount > 0);
+        // The marked span is a stable frontend node and the CDP query includes
+        // fonts used by text below inline bold/link/underline wrappers. Child
+        // ids returned by describeNode are not guaranteed to be frontend ids.
+        const result = await session.send("CSS.getPlatformFontsForNode", { nodeId });
+        const used = result.fonts.filter(font => font.glyphCount > 0);
         const hasUrdu = used.some(font => font.isCustomFont && /Jameel|Noto Nastaliq|Noto Naskh|Amiri|Vazirmatn/i.test(font.familyName));
         return { used, usable: hasUrdu && used.every(font => font.isCustomFont) };
       };

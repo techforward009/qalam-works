@@ -86,7 +86,7 @@ describe("Chromium actual-font guard", () => {
     const { page, detach, send } = runtimePage(["Jameel Noori Nastaleeq"]);
     expect(await guardPdfUrduFonts(page)).toEqual({ fallbackRuns: 0, actualFamilies: ["Jameel Noori Nastaleeq"] });
     expect(detach).toHaveBeenCalled();
-    expect(send).toHaveBeenCalledWith("CSS.getPlatformFontsForNode", { nodeId: 3 });
+    expect(send).toHaveBeenCalledWith("CSS.getPlatformFontsForNode", { nodeId: 2 });
   });
   it("replaces unusable Urdu with verified Noto and records the substitution", async () => {
     const { page } = runtimePage(["LastResort", "Noto Nastaliq Urdu"]);

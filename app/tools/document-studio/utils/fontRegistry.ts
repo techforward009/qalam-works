@@ -3,6 +3,9 @@
  * Only values from this registry may reach generated CSS/HTML/OOXML.
  */
 
+import { detectParagraphDirection } from "./paragraphDirectionDetection";
+import type { DocNode } from "./extractPlainText";
+
 export type FontId =
   | "default"
   | "jameel-noori-nastaleeq"
@@ -241,10 +244,16 @@ export function listEditorFonts(): StudioFontDefinition[] {
 }
 
 export function directionForNode(
-  node: { attrs?: Record<string, unknown> | null },
+  node: DocNode,
   globalDir: Direction
 ): Direction {
+  const mode = node.attrs?.directionMode;
+  if (mode === "rtl" || mode === "ltr") return mode;
   const value = node.attrs?.dir;
+  if (mode === "auto") {
+    const text = (node.content ?? []).map(child => child.type === "hardBreak" ? "\n" : child.text ?? "").join("");
+    return detectParagraphDirection(text, value === "ltr" || value === "rtl" ? value : globalDir);
+  }
   if (value === "rtl" || value === "ltr") return value;
   return globalDir;
 }
