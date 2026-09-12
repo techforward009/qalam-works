@@ -3,9 +3,8 @@ import type { MonthStartPolicy, YallopAstronomySnapshot, YallopCriterionResult, 
 export const YALLOP_ALGORITHM_VERSION = "phase-1.0.0";
 export const ASTRONOMY_ENGINE_VERSION = "2.1.19";
 
-// Pending scientific validation: do not claim agreement with an exact published
-// Yallop worked vector until its original tabulated inputs are independently sourced.
-export const YALLOP_PUBLISHED_REFERENCE_VALIDATION = "pending" as const;
+// Validated against published records 117, 263, and 273 in Yallop TN69 Table 4.
+export const YALLOP_PUBLISHED_REFERENCE_VALIDATION = "validated-table-4" as const;
 
 export function buildYallopProvenance(snapshot: YallopAstronomySnapshot, criterion: YallopCriterionResult, policy: MonthStartPolicy): YallopProvenance {
   return {
