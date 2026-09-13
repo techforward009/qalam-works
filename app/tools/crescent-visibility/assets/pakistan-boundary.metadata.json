@@ -1,0 +1,11 @@
+{
+  "assetVersion": "natural-earth-110m-pakistan-v1",
+  "source": "Natural Earth, Admin 0 Countries, 1:110m, feature PAK",
+  "sourceVersion": "5.1.1",
+  "sourceUrl": "https://www.naturalearthdata.com/downloads/110m-cultural-vectors/",
+  "downloadedOn": "2026-09-13",
+  "license": "Public domain (Natural Earth terms of use)",
+  "simplification": "Source geometry is retained as extracted from the Natural Earth 1:110m GeoJSON feature; no additional simplification was applied.",
+  "boundaryConvention": "Natural Earth Admin 0 Countries de facto boundary representation. This scientific visualization is not a legal or political boundary adjudication.",
+  "runtime": "Bundled locally; no runtime network request is made."
+}
