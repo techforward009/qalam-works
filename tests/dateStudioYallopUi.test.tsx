@@ -9,6 +9,7 @@ import { observerLocalMidnightUtc, type DateStudioYallopPrediction } from "../ap
 import { yallopObserver } from "../app/tools/date-converter/utils/yallop/observerLocations";
 import { convert } from "../app/tools/date-converter/utils/dateEngine";
 import { interpretDateStudioMonthStart } from "../app/tools/date-converter/utils/yallop/dateStudioMonthStart";
+import type { ResolvedHijriDate } from "../app/tools/date-converter/utils/hijri-authority/types";
 
 const adapter = vi.hoisted(() => ({ predict: vi.fn() }));
 const locale = vi.hoisted(() => ({ language: "en" as "en" | "ur" }));
@@ -34,12 +35,19 @@ function evaluated(observerId: string, localDate: string): DateStudioYallopPredi
   };
 }
 
-function Harness({ lang = "en", predict, hijriDay = 29, hijriDayAuthority = "qalam-tabular" }: { lang?: "en" | "ur"; predict?: any; hijriDay?: number; hijriDayAuthority?: "official" | "observed" | "qalam-tabular" }) {
+function officialContext(day: number, authority: "official" | "reported-official" = "official"): ResolvedHijriDate {
+  return {
+    hijri: { year: 1448, month: 3, day }, authority, anchorId: "test-anchor", providerId: "test-provider",
+    providerLabel: { en: "Central Ruet-e-Hilal Committee", ur: "مرکزی رویتِ ہلال کمیٹی" }, sourceUrl: "https://example.invalid", sourceReference: "Test", verificationStatus: authority === "official" ? "verified" : "reported",
+  };
+}
+
+function Harness({ lang = "en", predict, hijriDay = 29, hijriDayAuthority = "qalam-tabular", authorityContext }: { lang?: "en" | "ur"; predict?: any; hijriDay?: number; hijriDayAuthority?: "official" | "reported-official" | "observed" | "qalam-tabular"; authorityContext?: ResolvedHijriDate | null }) {
   const [method, setMethod] = useState<DateStudioMethod>("qalam");
   const [observer, setObserver] = useState("karachi");
   const [date, setDate] = useState({ year: 2024, month: 3, day: 11 });
   const defaultPredict = (value: typeof date, place: NonNullable<ReturnType<typeof yallopObserver>>) => evaluated(place.id, `${value.year}-${String(value.month).padStart(2, "0")}-${String(value.day).padStart(2, "0")}`);
-  return <><button onClick={() => setDate({ year: 2024, month: 4, day: 8 })}>change date</button><YallopIntegration lang={lang} method={method} onMethodChange={setMethod} observerId={observer} onObserverChange={setObserver} gregorian={date} hijriDay={hijriDay} hijriDayAuthority={hijriDayAuthority} predict={predict ?? defaultPredict} /></>;
+  return <><button onClick={() => setDate({ year: 2024, month: 4, day: 8 })}>change date</button><YallopIntegration lang={lang} method={method} onMethodChange={setMethod} observerId={observer} onObserverChange={setObserver} gregorian={date} hijriDay={hijriDay} hijriDayAuthority={hijriDayAuthority} authorityContext={authorityContext} predict={predict ?? defaultPredict} /></>;
 }
 
 describe("Date Studio Yallop integration", () => {
@@ -78,9 +86,10 @@ describe("Date Studio Yallop integration", () => {
     fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
 
     expect(adapter.predict).toHaveBeenLastCalledWith({ year: 2026, month: 9, day: 13 }, expect.objectContaining({ id: "karachi" }));
-    expect(screen.getByText("Pakistan Hijri date context")).toBeTruthy();
-    expect(screen.getByText(/30\/3\/1448/)).toBeTruthy();
-    expect(screen.getByText("The current Hijri month has completed 30 days; the next day is necessarily the first day of the next Hijri month.")).toBeTruthy();
+    expect(screen.getByText("Current lunar situation")).toBeTruthy();
+    expect(screen.getByText("Pakistan official Hijri date")).toBeTruthy();
+    expect(screen.getByText("30 Rabi al-Awwal 1448 AH")).toBeTruthy();
+    expect(screen.getByText("Today is the 30th day of the current Hijri month. Therefore, tomorrow is necessarily the first day of the next Hijri month.")).toBeTruthy();
   });
 
   it("makes a valid Pakistan official date primary while retaining the deterministic date as calculated context", () => {
@@ -128,28 +137,29 @@ describe("Date Studio Yallop integration", () => {
     expect(screen.getByText("قلم کی حسابی ہجری تاریخ")).toBeTruthy();
   });
 
-  it("is opt-in and always renders the independent accepted Yallop policy result", () => {
+  it("is opt-in and presents an independent astronomical result when no official date exists", () => {
     render(<Harness />);
     fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
     expect((screen.getByLabelText("Observer location") as HTMLSelectElement).value).toBe("karachi");
     expect(screen.getByText("A")).toBeTruthy();
     expect(screen.getByText("0.321")).toBeTruthy();
-    expect(screen.getByText("Crescent visibility conditions are favorable. Under the current Qalam Yallop policy, this evening qualifies for next-day month start.")).toBeTruthy();
-    expect(screen.getByText("Next-day month-start policy")).toBeTruthy();
-    expect(screen.getByText("According to the Qalam calculated Hijri date, this evening qualifies for next-day month start under current Qalam v1 policy.")).toBeTruthy();
+    expect(screen.getByText("Astronomical visibility")).toBeTruthy();
+    expect(screen.getByText("Crescent visibility conditions are favorable this evening.")).toBeTruthy();
+    expect(screen.queryByText("Yallop policy result")).toBeNull();
+    expect(screen.queryByText("Next-day month-start policy")).toBeNull();
     expect(screen.getByText("Astronomical crescent-visibility prediction; not an official moon-sighting declaration.")).toBeTruthy();
   });
 
-  it("keeps accepted and rejected Yallop policy output visible away from a Hijri month boundary", () => {
+  it("keeps accepted and rejected Yallop visibility visible without inferring official authority", () => {
     const rejected = vi.fn((value, place) => ({ ...evaluated(place.id, `${value.year}-03-11`), acceptedByPolicy: false }));
     const { rerender } = render(<Harness hijriDay={1} />);
     fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
-    expect(screen.getByText("Crescent visibility conditions are favorable. Under the current Qalam Yallop policy, this evening qualifies for next-day month start.")).toBeTruthy();
-    expect(screen.queryByText("Next-day month-start policy")).toBeNull();
+    expect(screen.getByText("Crescent visibility conditions are favorable this evening.")).toBeTruthy();
+    expect(screen.queryByText("Pakistan official Hijri date")).toBeNull();
 
     rerender(<Harness predict={rejected} hijriDay={15} />);
     expect(screen.getByText("Crescent visibility conditions do not qualify for next-day month start under the current Qalam Yallop policy.")).toBeTruthy();
-    expect(screen.queryByText("Next-day month-start policy")).toBeNull();
+    expect(screen.queryByText("Pakistan official Hijri date")).toBeNull();
   });
 
   it("recalculates using the selected observer and changed converted date", () => {
@@ -181,21 +191,39 @@ describe("Date Studio Yallop integration", () => {
     expect(screen.getByText("Astronomical crescent-visibility prediction; not an official moon-sighting declaration.")).toBeTruthy();
   });
 
-  it("shows day-29 rejection and forced day-30 month completion separately from Yallop", () => {
-    const rejected = vi.fn((value, place) => ({ ...evaluated(place.id, `${value.year}-03-11`), acceptedByPolicy: false }));
-    const { rerender } = render(<Harness predict={rejected} hijriDay={29} />);
+  it("uses conditional day-29 wording and never states that tomorrow definitely starts the month", () => {
+    render(<Harness hijriDay={29} hijriDayAuthority="official" authorityContext={officialContext(29)} />);
     fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
-    expect(screen.getByText("According to the Qalam calculated Hijri date, this evening does not qualify; the current calculated Hijri month completes 30 days.")).toBeTruthy();
-    expect(screen.getByText("A")).toBeTruthy();
-    rerender(<Harness predict={rejected} hijriDay={30} />);
-    expect(screen.getByText("According to the Qalam calculated Hijri date, the current month is on day 30, so the next calculated Hijri day is the first of the next month.")).toBeTruthy();
+    expect(screen.getByText("Current lunar situation")).toBeTruthy();
+    expect(screen.getByText("Crescent visibility conditions are favorable this evening in Karachi.")).toBeTruthy();
+    expect(screen.getByText("According to the current Qalam Yallop policy, tomorrow may begin the new Hijri month, subject to the official moon-sighting decision.")).toBeTruthy();
+    expect(screen.queryByText(/tomorrow is necessarily the first day/i)).toBeNull();
+    const disclaimer = screen.getByText("Astronomical crescent-visibility prediction; not an official moon-sighting declaration.");
+    const scientificDetails = screen.getByText("Scientific details");
+    expect(disclaimer.compareDocumentPosition(scientificDetails) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByText("Astronomical crescent-visibility prediction; not an official moon-sighting declaration.")).toHaveLength(1);
     expect(screen.getByText("A")).toBeTruthy();
   });
 
-  it("omits a month-start decision away from the Hijri month boundary", () => {
+  it("keeps the official day-30 calendar conclusion independent from rejected Yallop visibility", () => {
+    const rejected = vi.fn((value, place) => ({ ...evaluated(place.id, `${value.year}-03-11`), acceptedByPolicy: false }));
+    render(<Harness predict={rejected} hijriDay={30} hijriDayAuthority="official" authorityContext={officialContext(30)} />);
+    fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
+    const visibility = screen.getByText("Astronomical visibility");
+    const consequence = screen.getByText("Today is the 30th day of the current Hijri month. Therefore, tomorrow is necessarily the first day of the next Hijri month.");
+    const disclaimer = screen.getByText("Astronomical crescent-visibility prediction; not an official moon-sighting declaration.");
+    const scientificDetails = screen.getByText("Scientific details");
+    expect(visibility.compareDocumentPosition(consequence) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(consequence.compareDocumentPosition(disclaimer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(disclaimer.compareDocumentPosition(scientificDetails) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByText("Crescent visibility conditions do not qualify for next-day month start under the current Qalam Yallop policy.")).toHaveLength(1);
+    expect(screen.getAllByText("Today is the 30th day of the current Hijri month. Therefore, tomorrow is necessarily the first day of the next Hijri month.")).toHaveLength(1);
+  });
+
+  it("does not show a calendar outlook away from an official month boundary", () => {
     render(<Harness hijriDay={15} />);
     fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
-    expect(screen.queryByText("Next-day month-start policy")).toBeNull();
+    expect(screen.queryByText("Month-start outlook")).toBeNull();
     expect(screen.getByText("A")).toBeTruthy();
     expect(screen.getByText("0.321")).toBeTruthy();
   });
@@ -232,10 +260,10 @@ describe("Date Studio Yallop integration", () => {
   it("updates language direction and evaluated policy content without a stale result", () => {
     const { container, rerender } = render(<Harness lang="en" />);
     fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
-    expect(screen.getByText("According to the Qalam calculated Hijri date, this evening qualifies for next-day month start under current Qalam v1 policy.")).toBeTruthy();
+    expect(screen.getByText("Crescent visibility conditions are favorable this evening.")).toBeTruthy();
     rerender(<Harness lang="ur" />);
     expect(container.querySelector('section[dir="rtl"]')).toBeTruthy();
-    expect(screen.getByText("قلم کی حسابی قمری تاریخ کے مطابق یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں ہے۔")).toBeTruthy();
+    expect(screen.getByText("آج شام ہلال کی رؤیت کے حالات موافق ہیں۔")).toBeTruthy();
     expect(screen.getByText("A")).toBeTruthy();
   });
 
@@ -249,10 +277,10 @@ describe("Date Studio Yallop integration", () => {
     expect(interpretDateStudioMonthStart(30, false, "official")).toEqual({ state: "day30_forced_next_month", authority: "official" });
   });
 
-  it("uses calculated-date authority wording in Urdu for day 30", () => {
-    render(<Harness lang="ur" hijriDay={30} />);
+  it("uses Urdu day-29 wording that remains conditional on the official decision", () => {
+    render(<Harness lang="ur" hijriDay={29} hijriDayAuthority="official" authorityContext={officialContext(29)} />);
     fireEvent.change(screen.getByLabelText("حساب کا طریقہ"), { target: { value: "yallop" } });
-    expect(screen.getByText("قلم کی حسابی قمری تاریخ کے مطابق موجودہ مہینے کی آج 30 تاریخ ہے، اس لیے اگلی حسابی قمری تاریخ نئے مہینے کی پہلی ہوگی۔")).toBeTruthy();
+    expect(screen.getByText("موجودہ قلم یالوپ پالیسی کے مطابق کل نئے قمری مہینے کا آغاز ہو سکتا ہے، تاہم سرکاری آغاز مرکزی رویتِ ہلال کمیٹی کے فیصلے پر منحصر ہوگا۔")).toBeTruthy();
   });
 
   it("uses the observer IANA timezone for local civil-date boundaries", () => {

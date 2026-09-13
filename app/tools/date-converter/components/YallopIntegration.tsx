@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { PAKISTAN_YALLOP_OBSERVERS, yallopObserver } from "../utils/yallop/observerLocations";
 import { evaluateDateStudioYallopPrediction, type DateStudioYallopPrediction } from "../utils/yallop/dateStudioPrediction";
-import type { DateParts } from "../utils/dateEngine";
+import { formatDate, type DateParts } from "../utils/dateEngine";
 import type { YallopObserver } from "../utils/yallop/types";
 import { interpretDateStudioMonthStart, type HijriDayAuthority } from "../utils/yallop/dateStudioMonthStart";
 import type { ResolvedHijriDate } from "../utils/hijri-authority/types";
@@ -15,26 +15,30 @@ const COPY = {
   en: {
     method: "Calculation method", qalam: "Current Qalam Method", yallop: "Yallop Crescent Visibility",
     observer: "Observer location", evening: "Evaluation evening", visibility: "Visibility class",
-    q: "q value", policyResult: "Yallop policy result", monthStart: "Next-day month-start policy",
-    policyQualifies: "Crescent visibility conditions are favorable. Under the current Qalam Yallop policy, this evening qualifies for next-day month start.",
-    policyDoesNotQualify: "Crescent visibility conditions do not qualify for next-day month start under the current Qalam Yallop policy.",
-    qualifies: "This evening qualifies for next-day month start under current Qalam v1 policy", doesNotQualify: "This evening does not qualify; the current Hijri month completes 30 days.", forcedNextMonth: "The current Hijri month has completed 30 days; the next day is necessarily the first day of the next Hijri month.", qalamQualifies: "According to the Qalam calculated Hijri date, this evening qualifies for next-day month start under current Qalam v1 policy.", qalamDoesNotQualify: "According to the Qalam calculated Hijri date, this evening does not qualify; the current calculated Hijri month completes 30 days.", qalamForcedNextMonth: "According to the Qalam calculated Hijri date, the current month is on day 30, so the next calculated Hijri day is the first of the next month.",
+    q: "q value", currentSituation: "Current lunar situation", astronomicalVisibility: "Astronomical visibility", monthStartOutlook: "Month-start outlook", scientificDetails: "Scientific details",
+    officialDate: "Pakistan official Hijri date", reportedOfficialDate: "Reported official Pakistan Hijri date",
+    day29Favorable: (observer: string) => `Crescent visibility conditions are favorable this evening in ${observer}.`,
+    day29Outlook: "According to the current Qalam Yallop policy, tomorrow may begin the new Hijri month, subject to the official moon-sighting decision.",
+    doesNotQualify: "Crescent visibility conditions do not qualify for next-day month start under the current Qalam Yallop policy.",
+    day30Consequence: "Today is the 30th day of the current Hijri month. Therefore, tomorrow is necessarily the first day of the next Hijri month.",
+    favorable: "Crescent visibility conditions are favorable this evening.",
     prediction: "Astronomical crescent-visibility prediction", provenance: "Method", provenanceValue: "Yallop Crescent Visibility — NAO Technical Note 69",
     disclaimer: "Astronomical crescent-visibility prediction; not an official moon-sighting declaration.",
     unavailable: "A Yallop prediction is unavailable for this evaluation evening.",
-    authority: "Pakistan Hijri date context", reportedAuthority: "Reported official Pakistan Hijri date",
   },
   ur: {
     method: "حساب کا طریقہ", qalam: "موجودہ قلم طریقہ", yallop: "یالوپ رؤیتِ ہلال",
     observer: "مقامِ مشاہدہ", evening: "جانچ کی شام", visibility: "رؤیت کی درجہ بندی",
-    q: "q قدر", policyResult: "یالوپ پالیسی کا نتیجہ", monthStart: "اگلے دن کے آغازِ ماہ کی پالیسی",
-    policyQualifies: "ہلال کی رؤیت کے حالات موافق ہیں۔ موجودہ قلم یالوپ پالیسی کے مطابق یہ شام اگلے دن کے آغازِ ماہ کے لیے موزوں ہے۔",
-    policyDoesNotQualify: "ہلال کی رؤیت کے حالات موجودہ قلم یالوپ پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں نہیں ہیں۔",
-    qualifies: "یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں ہے", doesNotQualify: "یہ شام موزوں نہیں؛ موجودہ ہجری مہینہ 30 دن مکمل کرے گا۔", forcedNextMonth: "موجودہ ہجری مہینہ 30 دن مکمل کر چکا ہے؛ اگلا دن لازماً اگلے ہجری مہینے کا پہلا دن ہے۔", qalamQualifies: "قلم کی حسابی قمری تاریخ کے مطابق یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں ہے۔", qalamDoesNotQualify: "قلم کی حسابی قمری تاریخ کے مطابق یہ شام موزوں نہیں؛ موجودہ حسابی ہجری مہینہ 30 دن مکمل کرے گا۔", qalamForcedNextMonth: "قلم کی حسابی قمری تاریخ کے مطابق موجودہ مہینے کی آج 30 تاریخ ہے، اس لیے اگلی حسابی قمری تاریخ نئے مہینے کی پہلی ہوگی۔",
+    q: "q قدر", currentSituation: "آج کی قمری صورتِ حال", astronomicalVisibility: "فلکیاتی رؤیت", monthStartOutlook: "آغازِ ماہ کا امکان", scientificDetails: "سائنسی تفصیلات",
+    officialDate: "پاکستان کی سرکاری ہجری تاریخ", reportedOfficialDate: "رپورٹ شدہ سرکاری پاکستانی ہجری تاریخ",
+    day29Favorable: (observer: string) => `${observer} میں آج شام ہلال کی رؤیت کے حالات موافق ہیں۔`,
+    day29Outlook: "موجودہ قلم یالوپ پالیسی کے مطابق کل نئے قمری مہینے کا آغاز ہو سکتا ہے، تاہم سرکاری آغاز مرکزی رویتِ ہلال کمیٹی کے فیصلے پر منحصر ہوگا۔",
+    doesNotQualify: "موجودہ قلم یالوپ پالیسی کے مطابق آج شام کے حالات اگلے دن نئے قمری مہینے کے آغاز کے لیے موزوں نہیں ہیں۔",
+    day30Consequence: "آج موجودہ ہجری مہینے کی تیس تاریخ ہے۔ اس لیے کل لازماً اگلے ہجری مہینے کی پہلی تاریخ ہوگی۔",
+    favorable: "آج شام ہلال کی رؤیت کے حالات موافق ہیں۔",
     prediction: "فلکیاتی رؤیتِ ہلال کی پیش گوئی", provenance: "طریقہ", provenanceValue: "یالوپ رؤیتِ ہلال — این اے او ٹیکنیکل نوٹ 69",
     disclaimer: "یہ رؤیتِ ہلال کی فلکیاتی پیش گوئی ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔",
     unavailable: "اس جانچ کی شام کے لیے یالوپ پیش گوئی دستیاب نہیں۔",
-    authority: "پاکستانی ہجری تاریخ کا حوالہ", reportedAuthority: "رپورٹ شدہ سرکاری پاکستانی ہجری تاریخ",
   },
 } as const;
 
@@ -69,12 +73,10 @@ export function YallopIntegration({
     () => method === "yallop" && gregorian ? (predict ?? evaluateDateStudioYallopPrediction)(gregorian, observer) : null,
     [method, gregorian?.year, gregorian?.month, gregorian?.day, observer, predict],
   );
-  const monthStart = prediction?.status === "evaluated"
+  const monthStart = prediction?.status === "evaluated" && authorityContext
     ? interpretDateStudioMonthStart(hijriDay, prediction.acceptedByPolicy, hijriDayAuthority)
     : null;
-  const monthStartCopy = monthStart?.state === "day29_qualifies" ? (monthStart.authority === "qalam-tabular" ? t.qalamQualifies : t.qualifies)
-    : monthStart?.state === "day29_does_not_qualify" ? (monthStart.authority === "qalam-tabular" ? t.qalamDoesNotQualify : t.doesNotQualify)
-    : monthStart?.state === "day30_forced_next_month" ? (monthStart.authority === "qalam-tabular" ? t.qalamForcedNextMonth : t.forcedNextMonth) : null;
+  const officialDateLabel = authorityContext?.authority === "reported-official" ? t.reportedOfficialDate : t.officialDate;
 
   return (
     <section className="mb-5 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] p-5 sm:p-6" dir={isUr ? "rtl" : "ltr"}>
@@ -95,22 +97,34 @@ export function YallopIntegration({
         </select>
 
         {prediction && (prediction.status === "evaluated" ? <div className="mt-4 rounded-xl border border-[#B8935A]/40 bg-white/70 p-4 dark:bg-[#0e1c15]/60">
-          <h2 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.prediction}</h2>
-          <p className={`mt-2 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>
-            <span className="sr-only">{t.policyResult}: </span>
-            {prediction.acceptedByPolicy ? t.policyQualifies : t.policyDoesNotQualify}
-          </p>
+          {authorityContext && <>
+            <h2 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.currentSituation}</h2>
+            <p className={`mt-3 text-[11px] font-semibold text-[#4a7a5a] dark:text-[#8faa93] ${isUr ? "font-naskh" : ""}`}>{officialDateLabel}</p>
+            <p className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{formatDate(authorityContext.hijri, "hijri", lang)}</p>
+          </>}
+          {monthStart?.state === "day30_forced_next_month" ? <>
+            <h3 className={`mt-3 text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.astronomicalVisibility}</h3>
+            <p className={`mt-1 text-sm text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{prediction.acceptedByPolicy ? t.favorable : t.doesNotQualify}</p>
+            <p className={`mt-4 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.day30Consequence}</p>
+          </> : <>
+            {!authorityContext && <h2 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.astronomicalVisibility}</h2>}
+            <p className={`mt-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>
+              {monthStart?.state === "day29_qualifies" ? t.day29Favorable(observerDisplayName(prediction.snapshot.observer, lang))
+                : prediction.acceptedByPolicy ? t.favorable : t.doesNotQualify}
+            </p>
+            {monthStart?.state === "day29_qualifies" && <><h3 className={`mt-4 text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.monthStartOutlook}</h3><p className={`mt-1 text-sm text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.day29Outlook}</p></>}
+          </>}
+          <p className={`mt-4 rounded-lg bg-[#1A3A2A]/5 px-3 py-2 text-[12px] leading-relaxed text-[#3a6a4a] dark:bg-white/[0.05] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.disclaimer}</p>
+          <h3 className={`mt-5 text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.scientificDetails}</h3>
           <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
             <Detail label={t.observer} value={observerDisplayName(prediction.snapshot.observer, lang)} urdu={isUr} />
             <Detail label={t.evening} value={prediction.observerLocalDate} numeric />
             <Detail label={t.visibility} value={prediction.criterion.visibilityClass} numeric />
             <Detail label={t.q} value={prediction.criterion.q.toFixed(3)} numeric />
-            {monthStartCopy && <Detail label={t.monthStart} value={monthStartCopy} urdu={isUr} />}
-            {authorityContext && <Detail label={authorityContext.authority === "reported-official" ? t.reportedAuthority : t.authority} value={`${authorityContext.hijri.day}/${authorityContext.hijri.month}/${authorityContext.hijri.year} — ${authorityContext.providerLabel[lang]}`} urdu={isUr} />}
             <Detail label={t.provenance} value={t.provenanceValue} urdu={isUr} />
           </div>
         </div> : <p className={`mt-4 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.unavailable}</p>)}
-        {prediction && <p className={`mt-4 rounded-lg bg-[#1A3A2A]/5 px-3 py-2 text-[12px] leading-relaxed text-[#3a6a4a] dark:bg-white/[0.05] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.disclaimer}</p>}
+        {prediction && prediction.status !== "evaluated" && <p className={`mt-4 rounded-lg bg-[#1A3A2A]/5 px-3 py-2 text-[12px] leading-relaxed text-[#3a6a4a] dark:bg-white/[0.05] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.disclaimer}</p>}
       </>}
     </section>
   );
