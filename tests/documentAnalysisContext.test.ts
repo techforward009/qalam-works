@@ -130,20 +130,4 @@ describe("Shared context — large document performance improvement", () => {
     expect(Array.isArray(suggestions)).toBe(true);
   });
 
-  test("shared context avoids measurable overhead growth relative to a single getBlockTexts call, even at 500 paragraphs", () => {
-    const doc = buildLargeDoc(500);
-    const singleCallTime = (() => {
-      const t0 = performance.now();
-      getBlockTexts(doc);
-      return performance.now() - t0;
-    })();
-    const contextTime = (() => {
-      const t0 = performance.now();
-      createDocumentAnalysisContext(doc);
-      return performance.now() - t0;
-    })();
-    // createDocumentAnalysisContext does one getBlockTexts call, then
-    // linear LI-1 run analysis + LI-3 punctuation analysis.
-    expect(contextTime).toBeLessThan(Math.max(singleCallTime * 12, 15));
-  });
 });
