@@ -105,6 +105,28 @@ describe("Date Studio Yallop integration", () => {
     expect(container.querySelector('section[dir="ltr"]')).toBeTruthy();
   });
 
+  it("localizes observer display names without changing prediction identity", () => {
+    const predict = vi.fn((value, place) => evaluated(place.id, `${value.year}-${String(value.month).padStart(2, "0")}-${String(value.day).padStart(2, "0")}`));
+    const { rerender } = render(<Harness lang="ur" predict={predict} />);
+    fireEvent.change(screen.getByLabelText("حساب کا طریقہ"), { target: { value: "yallop" } });
+    expect(screen.getAllByText("کراچی")).toHaveLength(2);
+    fireEvent.change(screen.getByLabelText("مقامِ مشاہدہ"), { target: { value: "lahore" } });
+    expect(screen.getAllByText("لاہور")).toHaveLength(2);
+    expect(predict).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ id: "lahore", name: "Lahore" }));
+    rerender(<Harness lang="en" predict={predict} />);
+    expect(screen.getAllByText("Lahore")).toHaveLength(2);
+  });
+
+  it("keeps scientific values and renders readable localized provenance", () => {
+    const { rerender } = render(<Harness lang="en" />);
+    fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
+    expect(screen.getByText("A")).toBeTruthy();
+    expect(screen.getByText("0.321")).toBeTruthy();
+    expect(screen.getByText("Yallop Crescent Visibility — NAO Technical Note 69")).toBeTruthy();
+    rerender(<Harness lang="ur" />);
+    expect(screen.getByText("یالوپ رؤیتِ ہلال — این اے او ٹیکنیکل نوٹ 69")).toBeTruthy();
+  });
+
   it("updates language direction and evaluated policy content without a stale result", () => {
     const { container, rerender } = render(<Harness lang="en" />);
     fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });

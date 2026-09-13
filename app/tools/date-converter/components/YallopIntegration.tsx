@@ -15,7 +15,7 @@ const COPY = {
     observer: "Observer location", evening: "Evaluation evening", visibility: "Visibility class",
     q: "q value", monthStart: "Next-day month-start policy",
     qualifies: "This evening qualifies for next-day month start under current Qalam v1 policy", doesNotQualify: "This evening does not qualify for next-day month start under current Qalam v1 policy",
-    prediction: "Astronomical crescent-visibility prediction", provenance: "Method",
+    prediction: "Astronomical crescent-visibility prediction", provenance: "Method", provenanceValue: "Yallop Crescent Visibility — NAO Technical Note 69",
     disclaimer: "Astronomical crescent-visibility prediction; not an official moon-sighting declaration.",
     unavailable: "A Yallop prediction is unavailable for this evaluation evening.",
   },
@@ -24,11 +24,21 @@ const COPY = {
     observer: "مقامِ مشاہدہ", evening: "جانچ کی شام", visibility: "رؤیت کی درجہ بندی",
     q: "q قدر", monthStart: "اگلے دن کے آغازِ ماہ کی پالیسی",
     qualifies: "یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں ہے", doesNotQualify: "یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں نہیں",
-    prediction: "فلکیاتی رؤیتِ ہلال کی پیش گوئی", provenance: "طریقہ",
+    prediction: "فلکیاتی رؤیتِ ہلال کی پیش گوئی", provenance: "طریقہ", provenanceValue: "یالوپ رؤیتِ ہلال — این اے او ٹیکنیکل نوٹ 69",
     disclaimer: "یہ رؤیتِ ہلال کی فلکیاتی پیش گوئی ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔",
     unavailable: "اس جانچ کی شام کے لیے یالوپ پیش گوئی دستیاب نہیں۔",
   },
 } as const;
+
+const URDU_OBSERVER_NAMES: Record<string, string> = {
+  karachi: "کراچی", hyderabad: "حیدرآباد", lahore: "لاہور", rawalpindi: "راولپنڈی",
+  multan: "ملتان", islamabad: "اسلام آباد", peshawar: "پشاور", quetta: "کوئٹہ",
+  muzaffarabad: "مظفرآباد", gilgit: "گلگت", skardu: "سکردو",
+};
+
+function observerDisplayName(observer: YallopObserver, lang: Language): string {
+  return lang === "ur" ? URDU_OBSERVER_NAMES[observer.id] ?? observer.name : observer.name;
+}
 
 export function YallopIntegration({
   lang, method, onMethodChange, observerId, onObserverChange, gregorian, predict,
@@ -64,18 +74,18 @@ export function YallopIntegration({
           {t.observer}
         </label>
         <select aria-label={t.observer} value={observer.id} onChange={(event) => onObserverChange(event.target.value)} className={`w-full rounded-lg border border-[#1A3A2A]/15 bg-white px-3 py-2.5 text-sm dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>
-          {PAKISTAN_YALLOP_OBSERVERS.map((place) => <option key={place.id} value={place.id}>{place.name}</option>)}
+          {PAKISTAN_YALLOP_OBSERVERS.map((place) => <option key={place.id} value={place.id}>{observerDisplayName(place, lang)}</option>)}
         </select>
 
         {prediction && (prediction.status === "evaluated" ? <div className="mt-4 rounded-xl border border-[#B8935A]/40 bg-white/70 p-4 dark:bg-[#0e1c15]/60">
           <h2 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.prediction}</h2>
           <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-            <Detail label={t.observer} value={prediction.snapshot.observer.name} urdu={isUr} />
+            <Detail label={t.observer} value={observerDisplayName(prediction.snapshot.observer, lang)} urdu={isUr} />
             <Detail label={t.evening} value={prediction.observerLocalDate} numeric />
             <Detail label={t.visibility} value={prediction.criterion.visibilityClass} numeric />
             <Detail label={t.q} value={prediction.criterion.q.toFixed(3)} numeric />
             <Detail label={t.monthStart} value={prediction.acceptedByPolicy ? t.qualifies : t.doesNotQualify} urdu={isUr} />
-            <Detail label={t.provenance} value={prediction.provenance.algorithm} numeric />
+            <Detail label={t.provenance} value={t.provenanceValue} urdu={isUr} />
           </div>
         </div> : <p className={`mt-4 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.unavailable}</p>)}
         {prediction && <p className={`mt-4 rounded-lg bg-[#1A3A2A]/5 px-3 py-2 text-[12px] leading-relaxed text-[#3a6a4a] dark:bg-white/[0.05] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.disclaimer}</p>}
