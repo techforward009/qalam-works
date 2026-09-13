@@ -51,6 +51,9 @@ const L = {
     linkCopied:   "Link copied!",
     gregorian:    "Gregorian",
     hijri:        "Hijri",
+    officialHijriDate: "Pakistan official Hijri date",
+    reportedOfficialHijriDate: "Reported official Pakistan Hijri date",
+    qalamCalculatedHijriDate: "Qalam calculated Hijri date",
     solar:        "Solar Hijri",
     methodHijri:  "Tabular · Civil",
     methodSolar:  "Arithmetic · 33-year cycle",
@@ -120,6 +123,9 @@ const L = {
     linkCopied:   "لنک کاپی ہوگیا!",
     gregorian:    "عیسوی",
     hijri:        "ہجری قمری",
+    officialHijriDate: "پاکستان کی سرکاری ہجری تاریخ",
+    reportedOfficialHijriDate: "رپورٹ شدہ سرکاری پاکستانی ہجری تاریخ",
+    qalamCalculatedHijriDate: "قلم کی حسابی ہجری تاریخ",
     solar:        "ہجری شمسی",
     methodHijri:  "حسابی قمری طریقہ",
     methodSolar:  "33 سالہ حسابی طریقہ",
@@ -521,12 +527,17 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
             {result && (
               <div className="space-y-3">
                 {resultCals.map(cal => {
-                  const parts    = result![cal];
+                  const authorityHijri = cal === "hijri" ? pakistanOfficialHijri : null;
+                  const isAuthoritativeHijri = authorityHijri !== null;
+                  const parts    = authorityHijri?.hijri ?? result![cal];
                   const long     = formatDate(parts, cal, lang);
                   const iso      = isoDate(parts);
                   const copyText = `${weekdayName}  ${long}\n${iso}`;
                   const isCopied = copied === cal;
-                  const methodBadge = cal === "hijri" ? t.methodHijri
+                  const resultLabel = authorityHijri
+                    ? (authorityHijri.authority === "reported-official" ? t.reportedOfficialHijriDate : t.officialHijriDate)
+                    : calLabel(cal, lang);
+                  const methodBadge = cal === "hijri" && !isAuthoritativeHijri ? t.methodHijri
                                     : cal === "solar" ? t.methodSolar
                                     : null;
                   return (
@@ -537,7 +548,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
                           {isUr ? (
                             <>
                               <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-0.5 ${naskh}`}>
-                                {calLabel(cal, lang)}
+                                {resultLabel}
                               </p>
                               {methodBadge && (
                                 <p className={`text-[11px] font-medium text-[#4a7a5a] dark:text-[#8faa93] mb-1 ${naskh}`}>
@@ -548,7 +559,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
                           ) : (
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <p className="text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0]">
-                                {calLabel(cal, lang)}
+                                {resultLabel}
                               </p>
                               {methodBadge && (
                                 <span className="text-[10px] font-medium text-[#3a6a4a]/60 dark:text-[#8faa93]/60">
@@ -572,7 +583,13 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
                         </button>
                       </div>
                       {cal === "hijri" && (
-                        <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.hijriNote}</p>
+                        isAuthoritativeHijri ? (
+                          <div className={`mt-2 text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] ${naskh}`}>
+                            <p className="font-semibold">{t.qalamCalculatedHijriDate}</p>
+                            <p>{formatDate(result!.hijri, "hijri", lang)}</p>
+                            <p className="font-mono" dir="ltr">{isoDate(result!.hijri)}</p>
+                          </div>
+                        ) : <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.hijriNote}</p>
                       )}
                       {cal === "solar" && (
                         <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.solarNote}</p>
