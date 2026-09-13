@@ -17,6 +17,9 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getByText(/For Karachi, both scientific methods/)).toBeTruthy();
     expect(screen.getByText("The final official declaration may be based on credible accepted sighting testimony from any location in Pakistan.")).toBeTruthy();
     expect(screen.getByText("Yallop Crescent Visibility")).toBeTruthy(); expect(screen.getByText("Pakistan 5-Year Calendar Criterion")).toBeTruthy(); expect(screen.getByText("Official historical decision")).toBeTruthy();
+    expect(screen.getByText("The Pakistan-wide crescent visibility map is temporarily unavailable while its geographic base map is being reviewed.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Yallop" })).toBeNull(); expect(screen.queryByRole("button", { name: "Pakistan 5-Year Criterion" })).toBeNull();
+    expect(screen.queryByLabelText("Pakistan-wide scientific visibility map")).toBeNull(); expect(screen.queryByText(/actual grid locations/)).toBeNull();
     expect(screen.queryByText(/winner|accuracy|correct method|wrong method/i)).toBeNull();
   });
   it("keeps Urdu local wording", () => { locale.language="ur"; render(<CrescentVisibilityContent />); expect(screen.getByText(/کراچی میں دونوں سائنسی طریقوں/)).toBeTruthy(); expect(screen.getAllByText(/حتمی سرکاری اعلان پاکستان کے کسی بھی مقام/).length).toBeGreaterThan(0); locale.language="en"; });
