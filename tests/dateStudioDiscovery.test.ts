@@ -30,6 +30,8 @@ describe("Date Studio discovery surfaces", () => {
     expect(source).toMatch(/\/tools\/calendar-maker/);
     expect(source).toMatch(/\/tools\/crescent-visibility/);
     expect(source).toMatch(/crescentVisibility/);
+    expect(source).toMatch(/\/tools\/crescent-visibility/);
+    expect(source).toMatch(/crescentVisibility/);
     expect(source).toMatch(/\/calendar\//);
     expect(source).toMatch(/\/hijri\//);
   });

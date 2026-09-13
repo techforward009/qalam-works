@@ -98,6 +98,7 @@ const L = {
     gregorianExplorer: "Explore Calendars",
     hijriExplorer: "Hijri Calendar Explorer",
     calendarMakerAction: "Calendar Maker",
+    crescentVisibility: "Crescent Visibility",
     findIntro: "Know the Hijri day and month, but not the Hijri year? Search the selected Gregorian year using the same deterministic Qalam Works engine.",
     hijriDay: "Hijri day",
     hijriMonth: "Hijri month",
@@ -171,6 +172,7 @@ const L = {
     gregorianExplorer: "تقویم دیکھیں",
     hijriExplorer: "ہجری کیلنڈر ایکسپلورر",
     calendarMakerAction: "تقویم ساز",
+    crescentVisibility: "رؤیتِ ہلال",
     findIntro: "اگر ہجری دن اور مہینہ معلوم ہو لیکن ہجری سال معلوم نہ ہو تو اسی قلم ورکس حسابی انجن سے منتخب عیسوی سال میں تاریخ تلاش کریں۔",
     hijriDay: "ہجری دن",
     hijriMonth: "ہجری مہینہ",
@@ -418,6 +420,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
             <div className="grid gap-2.5 sm:grid-cols-2">
               <Link href={`/calendar/${studioToday.year}`} className={`rounded-xl border border-[#B8935A]/55 bg-[#B8935A]/8 px-4 py-3.5 text-start text-sm font-bold text-[#6F4E25] dark:text-[#E0C18D] hover:bg-[#B8935A]/14 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
               <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3.5 text-start text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.calendarMakerAction}</Link>
+              <Link href="/tools/crescent-visibility" className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3.5 text-start text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.crescentVisibility}</Link>
               <Link href={`/hijri/${studioHijri.year}`} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3.5 text-start text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors sm:col-span-2 ${naskh}`}>{t.hijriExplorer}</Link>
             </div>
           </div>
