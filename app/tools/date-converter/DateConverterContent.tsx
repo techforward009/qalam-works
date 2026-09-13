@@ -30,6 +30,7 @@ import {
   type RegionalReference,
 } from "./utils/regionalDateEvidence";
 import { YallopIntegration, type DateStudioMethod } from "./components/YallopIntegration";
+import { resolvePakistanOfficialHijriDate } from "./utils/hijri-authority/resolveOfficialHijriDate";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const L = {
@@ -299,6 +300,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
   }
 
   const intelligence = result ? getRichDateIntelligence(result.gregorian) : null;
+  const pakistanOfficialHijri = result ? resolvePakistanOfficialHijriDate(result.gregorian) : null;
   const weekdayName = intelligence
     ? (isUr ? WEEKDAYS_UR[intelligence.weekdayIndex] : WEEKDAYS_EN[intelligence.weekdayIndex])
     : "";
@@ -422,6 +424,9 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
               observerId={yallopObserverId}
               onObserverChange={setYallopObserverId}
               gregorian={result?.gregorian ?? null}
+              hijriDay={pakistanOfficialHijri?.hijri.day ?? result?.hijri.day ?? null}
+              hijriDayAuthority={pakistanOfficialHijri?.authority ?? "qalam-tabular"}
+              authorityContext={pakistanOfficialHijri}
             />
             {/* Input card — accepted Date Converter presentation preserved */}
             <div className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6 mb-5">

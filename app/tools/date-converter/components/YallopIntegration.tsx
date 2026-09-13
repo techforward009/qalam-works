@@ -5,6 +5,8 @@ import { PAKISTAN_YALLOP_OBSERVERS, yallopObserver } from "../utils/yallop/obser
 import { evaluateDateStudioYallopPrediction, type DateStudioYallopPrediction } from "../utils/yallop/dateStudioPrediction";
 import type { DateParts } from "../utils/dateEngine";
 import type { YallopObserver } from "../utils/yallop/types";
+import { interpretDateStudioMonthStart, type HijriDayAuthority } from "../utils/yallop/dateStudioMonthStart";
+import type { ResolvedHijriDate } from "../utils/hijri-authority/types";
 
 type Language = "en" | "ur";
 export type DateStudioMethod = "qalam" | "yallop";
@@ -14,19 +16,21 @@ const COPY = {
     method: "Calculation method", qalam: "Current Qalam Method", yallop: "Yallop Crescent Visibility",
     observer: "Observer location", evening: "Evaluation evening", visibility: "Visibility class",
     q: "q value", monthStart: "Next-day month-start policy",
-    qualifies: "This evening qualifies for next-day month start under current Qalam v1 policy", doesNotQualify: "This evening does not qualify for next-day month start under current Qalam v1 policy",
+    qualifies: "This evening qualifies for next-day month start under current Qalam v1 policy", doesNotQualify: "This evening does not qualify; the current Hijri month completes 30 days.", forcedNextMonth: "The current Hijri month has completed 30 days; the next day is necessarily the first day of the next Hijri month.", qalamQualifies: "According to the Qalam calculated Hijri date, this evening qualifies for next-day month start under current Qalam v1 policy.", qalamDoesNotQualify: "According to the Qalam calculated Hijri date, this evening does not qualify; the current calculated Hijri month completes 30 days.", qalamForcedNextMonth: "According to the Qalam calculated Hijri date, the current month is on day 30, so the next calculated Hijri day is the first of the next month.",
     prediction: "Astronomical crescent-visibility prediction", provenance: "Method", provenanceValue: "Yallop Crescent Visibility — NAO Technical Note 69",
     disclaimer: "Astronomical crescent-visibility prediction; not an official moon-sighting declaration.",
     unavailable: "A Yallop prediction is unavailable for this evaluation evening.",
+    authority: "Pakistan Hijri date context", reportedAuthority: "Reported official Pakistan Hijri date",
   },
   ur: {
     method: "حساب کا طریقہ", qalam: "موجودہ قلم طریقہ", yallop: "یالوپ رؤیتِ ہلال",
     observer: "مقامِ مشاہدہ", evening: "جانچ کی شام", visibility: "رؤیت کی درجہ بندی",
     q: "q قدر", monthStart: "اگلے دن کے آغازِ ماہ کی پالیسی",
-    qualifies: "یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں ہے", doesNotQualify: "یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں نہیں",
+    qualifies: "یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں ہے", doesNotQualify: "یہ شام موزوں نہیں؛ موجودہ ہجری مہینہ 30 دن مکمل کرے گا۔", forcedNextMonth: "موجودہ ہجری مہینہ 30 دن مکمل کر چکا ہے؛ اگلا دن لازماً اگلے ہجری مہینے کا پہلا دن ہے۔", qalamQualifies: "قلم کی حسابی قمری تاریخ کے مطابق یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں ہے۔", qalamDoesNotQualify: "قلم کی حسابی قمری تاریخ کے مطابق یہ شام موزوں نہیں؛ موجودہ حسابی ہجری مہینہ 30 دن مکمل کرے گا۔", qalamForcedNextMonth: "قلم کی حسابی قمری تاریخ کے مطابق موجودہ مہینے کی آج 30 تاریخ ہے، اس لیے اگلی حسابی قمری تاریخ نئے مہینے کی پہلی ہوگی۔",
     prediction: "فلکیاتی رؤیتِ ہلال کی پیش گوئی", provenance: "طریقہ", provenanceValue: "یالوپ رؤیتِ ہلال — این اے او ٹیکنیکل نوٹ 69",
     disclaimer: "یہ رؤیتِ ہلال کی فلکیاتی پیش گوئی ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔",
     unavailable: "اس جانچ کی شام کے لیے یالوپ پیش گوئی دستیاب نہیں۔",
+    authority: "پاکستانی ہجری تاریخ کا حوالہ", reportedAuthority: "رپورٹ شدہ سرکاری پاکستانی ہجری تاریخ",
   },
 } as const;
 
@@ -41,7 +45,7 @@ function observerDisplayName(observer: YallopObserver, lang: Language): string {
 }
 
 export function YallopIntegration({
-  lang, method, onMethodChange, observerId, onObserverChange, gregorian, predict,
+  lang, method, onMethodChange, observerId, onObserverChange, gregorian, hijriDay, hijriDayAuthority, authorityContext, predict,
 }: {
   lang: Language;
   method: DateStudioMethod;
@@ -49,6 +53,9 @@ export function YallopIntegration({
   observerId: string;
   onObserverChange: (observerId: string) => void;
   gregorian: DateParts | null;
+  hijriDay: number | null;
+  hijriDayAuthority: HijriDayAuthority;
+  authorityContext?: ResolvedHijriDate | null;
   predict?: (gregorian: DateParts, observer: YallopObserver) => DateStudioYallopPrediction;
 }) {
   const t = COPY[lang];
@@ -58,6 +65,12 @@ export function YallopIntegration({
     () => method === "yallop" && gregorian ? (predict ?? evaluateDateStudioYallopPrediction)(gregorian, observer) : null,
     [method, gregorian?.year, gregorian?.month, gregorian?.day, observer, predict],
   );
+  const monthStart = prediction?.status === "evaluated"
+    ? interpretDateStudioMonthStart(hijriDay, prediction.acceptedByPolicy, hijriDayAuthority)
+    : null;
+  const monthStartCopy = monthStart?.state === "day29_qualifies" ? (monthStart.authority === "qalam-tabular" ? t.qalamQualifies : t.qualifies)
+    : monthStart?.state === "day29_does_not_qualify" ? (monthStart.authority === "qalam-tabular" ? t.qalamDoesNotQualify : t.doesNotQualify)
+    : monthStart?.state === "day30_forced_next_month" ? (monthStart.authority === "qalam-tabular" ? t.qalamForcedNextMonth : t.forcedNextMonth) : null;
 
   return (
     <section className="mb-5 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] p-5 sm:p-6" dir={isUr ? "rtl" : "ltr"}>
@@ -84,7 +97,8 @@ export function YallopIntegration({
             <Detail label={t.evening} value={prediction.observerLocalDate} numeric />
             <Detail label={t.visibility} value={prediction.criterion.visibilityClass} numeric />
             <Detail label={t.q} value={prediction.criterion.q.toFixed(3)} numeric />
-            <Detail label={t.monthStart} value={prediction.acceptedByPolicy ? t.qualifies : t.doesNotQualify} urdu={isUr} />
+            {monthStartCopy && <Detail label={t.monthStart} value={monthStartCopy} urdu={isUr} />}
+            {authorityContext && <Detail label={authorityContext.authority === "reported-official" ? t.reportedAuthority : t.authority} value={`${authorityContext.hijri.day}/${authorityContext.hijri.month}/${authorityContext.hijri.year} — ${authorityContext.providerLabel[lang]}`} urdu={isUr} />}
             <Detail label={t.provenance} value={t.provenanceValue} urdu={isUr} />
           </div>
         </div> : <p className={`mt-4 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.unavailable}</p>)}
