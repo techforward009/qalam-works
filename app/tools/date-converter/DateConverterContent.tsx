@@ -29,6 +29,7 @@ import {
   resolveRegionalHijriReference,
   type RegionalReference,
 } from "./utils/regionalDateEvidence";
+import { YallopIntegration, type DateStudioMethod } from "./components/YallopIntegration";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const L = {
@@ -208,6 +209,8 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
   const [copied,      setCopied]      = useState<CalendarType | null>(null);
   const [linkCopied,  setLinkCopied]  = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [dateStudioMethod, setDateStudioMethod] = useState<DateStudioMethod>("qalam");
+  const [yallopObserverId, setYallopObserverId] = useState("karachi");
   const [findDay, setFindDay] = useState("");
   const [findMonth, setFindMonth] = useState("");
   const [findYear, setFindYear] = useState("");
@@ -412,6 +415,14 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
 
         {mode === "convert" ? (
           <>
+            <YallopIntegration
+              lang={lang}
+              method={dateStudioMethod}
+              onMethodChange={setDateStudioMethod}
+              observerId={yallopObserverId}
+              onObserverChange={setYallopObserverId}
+              gregorian={result?.gregorian ?? null}
+            />
             {/* Input card — accepted Date Converter presentation preserved */}
             <div className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6 mb-5">
               <label className={`block text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-2 ${naskh}`}>
