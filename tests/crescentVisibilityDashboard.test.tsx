@@ -18,11 +18,15 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getByText("The final official declaration may be based on credible accepted sighting testimony from any location in Pakistan.")).toBeTruthy();
     expect(screen.getByText("Yallop Crescent Visibility")).toBeTruthy(); expect(screen.getByText("Pakistan 5-Year Calendar Criterion")).toBeTruthy(); expect(screen.getByText("Official historical decision")).toBeTruthy();
     expect(screen.getByText("The Pakistan-wide crescent visibility map is temporarily unavailable while its geographic base map is being reviewed.")).toBeTruthy();
+    const otherCities = screen.getByRole("button", { name: "Other cities" }); expect(otherCities.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(otherCities); expect(otherCities.getAttribute("aria-expanded")).toBe("true"); expect(screen.getByRole("listbox", { name: "Other cities" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Hyderabad" })).toBeTruthy(); expect(screen.getByRole("option", { name: "Lahore" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("option", { name: "Lahore" })); expect(otherCities.getAttribute("aria-expanded")).toBe("false"); expect(screen.getByText(/For Lahore, both scientific methods/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Yallop" })).toBeNull(); expect(screen.queryByRole("button", { name: "Pakistan 5-Year Criterion" })).toBeNull();
     expect(screen.queryByLabelText("Pakistan-wide scientific visibility map")).toBeNull(); expect(screen.queryByText(/actual grid locations/)).toBeNull();
     expect(screen.queryByText(/winner|accuracy|correct method|wrong method/i)).toBeNull();
   });
-  it("keeps Urdu local wording", () => { locale.language="ur"; render(<CrescentVisibilityContent />); expect(screen.getByText(/کراچی میں دونوں سائنسی طریقوں/)).toBeTruthy(); expect(screen.getAllByText(/حتمی سرکاری اعلان پاکستان کے کسی بھی مقام/).length).toBeGreaterThan(0); locale.language="en"; });
+  it("keeps Urdu local wording", () => { locale.language="ur"; render(<CrescentVisibilityContent />); expect(screen.getByText(/کراچی میں دونوں سائنسی طریقوں/)).toBeTruthy(); expect(screen.getAllByText(/حتمی سرکاری اعلان پاکستان کے کسی بھی مقام/).length).toBeGreaterThan(0); const otherCities = screen.getByRole("button", { name: "دیگر شہر" }); fireEvent.keyDown(otherCities, { key: "Enter" }); expect(screen.getByRole("listbox", { name: "دیگر شہر" })).toBeTruthy(); expect(screen.getByRole("option", { name: "لاہور" })).toBeTruthy(); locale.language="en"; });
 
   it.each(["1899-12-31", "2101-01-01", "", "2026-02-30"])("rejects invalid date %s without retaining scientific output", async value => {
     const { evaluateDateStudioYallopPrediction } = await import("../app/tools/date-converter/utils/yallop/dateStudioPrediction");
