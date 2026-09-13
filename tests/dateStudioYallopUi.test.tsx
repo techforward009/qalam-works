@@ -66,15 +66,44 @@ describe("Date Studio Yallop integration", () => {
     expect(adapter.predict).toHaveBeenLastCalledWith({ year: 2024, month: 3, day: 10 }, expect.objectContaining({ id: "karachi" }));
   });
 
-  it("is opt-in and renders class, q, accurate policy wording, and disclaimer", () => {
+  it("passes the resolved official day-30 context to Date Studio without changing the conversion", () => {
+    adapter.predict.mockImplementation((value, place) => evaluated(place.id, `${value.year}-${String(value.month).padStart(2, "0")}-${String(value.day).padStart(2, "0")}`));
+    const { container } = render(<DateConverterContent />);
+    fireEvent.click(screen.getByText("Hijri"));
+    const numbers = container.querySelectorAll('input[type="number"]');
+    fireEvent.change(numbers[0], { target: { value: "1" } });
+    fireEvent.change(container.querySelectorAll("select")[1], { target: { value: "4" } });
+    fireEvent.change(numbers[1], { target: { value: "1448" } });
+    fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
+
+    expect(adapter.predict).toHaveBeenLastCalledWith({ year: 2026, month: 9, day: 13 }, expect.objectContaining({ id: "karachi" }));
+    expect(screen.getByText("Pakistan Hijri date context")).toBeTruthy();
+    expect(screen.getByText(/30\/3\/1448/)).toBeTruthy();
+    expect(screen.getByText("The current Hijri month has completed 30 days; the next day is necessarily the first day of the next Hijri month.")).toBeTruthy();
+  });
+
+  it("is opt-in and always renders the independent accepted Yallop policy result", () => {
     render(<Harness />);
     fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
     expect((screen.getByLabelText("Observer location") as HTMLSelectElement).value).toBe("karachi");
     expect(screen.getByText("A")).toBeTruthy();
     expect(screen.getByText("0.321")).toBeTruthy();
+    expect(screen.getByText("Crescent visibility conditions are favorable. Under the current Qalam Yallop policy, this evening qualifies for next-day month start.")).toBeTruthy();
     expect(screen.getByText("Next-day month-start policy")).toBeTruthy();
     expect(screen.getByText("According to the Qalam calculated Hijri date, this evening qualifies for next-day month start under current Qalam v1 policy.")).toBeTruthy();
     expect(screen.getByText("Astronomical crescent-visibility prediction; not an official moon-sighting declaration.")).toBeTruthy();
+  });
+
+  it("keeps accepted and rejected Yallop policy output visible away from a Hijri month boundary", () => {
+    const rejected = vi.fn((value, place) => ({ ...evaluated(place.id, `${value.year}-03-11`), acceptedByPolicy: false }));
+    const { rerender } = render(<Harness hijriDay={1} />);
+    fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "yallop" } });
+    expect(screen.getByText("Crescent visibility conditions are favorable. Under the current Qalam Yallop policy, this evening qualifies for next-day month start.")).toBeTruthy();
+    expect(screen.queryByText("Next-day month-start policy")).toBeNull();
+
+    rerender(<Harness predict={rejected} hijriDay={15} />);
+    expect(screen.getByText("Crescent visibility conditions do not qualify for next-day month start under the current Qalam Yallop policy.")).toBeTruthy();
+    expect(screen.queryByText("Next-day month-start policy")).toBeNull();
   });
 
   it("recalculates using the selected observer and changed converted date", () => {
@@ -167,6 +196,11 @@ describe("Date Studio Yallop integration", () => {
   it("keeps authority explicit for future official or observed Hijri-day providers", () => {
     expect(interpretDateStudioMonthStart(30, false, "official")).toEqual({ state: "day30_forced_next_month", authority: "official" });
     expect(interpretDateStudioMonthStart(29, true, "observed")).toEqual({ state: "day29_qualifies", authority: "observed" });
+  });
+
+  it("uses the official day-30 calendar interpretation independently of Yallop acceptance", () => {
+    expect(interpretDateStudioMonthStart(30, true, "official")).toEqual({ state: "day30_forced_next_month", authority: "official" });
+    expect(interpretDateStudioMonthStart(30, false, "official")).toEqual({ state: "day30_forced_next_month", authority: "official" });
   });
 
   it("uses calculated-date authority wording in Urdu for day 30", () => {

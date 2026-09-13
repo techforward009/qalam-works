@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolvePakistanOfficialHijriDate } from "../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriDate";
+import { PAKISTAN_OFFICIAL_HIJRI_ANCHORS } from "../app/tools/date-converter/utils/hijri-authority/pakistanOfficialAnchors";
 import type { OfficialHijriMonthAnchor } from "../app/tools/date-converter/utils/hijri-authority/types";
 
 const anchor = (overrides: Partial<OfficialHijriMonthAnchor> = {}): OfficialHijriMonthAnchor => ({
@@ -10,6 +11,17 @@ const anchor = (overrides: Partial<OfficialHijriMonthAnchor> = {}): OfficialHijr
 });
 
 describe("Pakistan official Hijri authority resolver", () => {
+  it("resolves the reviewed production Rabi al-Awwal anchor only through day 30", () => {
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 8, day: 15 })).toMatchObject({
+      hijri: { year: 1448, month: 3, day: 1 }, authority: "official", verificationStatus: "verified",
+    });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 13 })).toMatchObject({
+      hijri: { year: 1448, month: 3, day: 30 }, authority: "official",
+    });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 14 })).toBeNull();
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(1);
+  });
+
   it("resolves anchor day 1 and bounded derived days", () => {
     expect(resolvePakistanOfficialHijriDate({ year: 2025, month: 3, day: 1 }, [anchor()])?.hijri).toEqual({ year: 1446, month: 9, day: 1 });
     expect(resolvePakistanOfficialHijriDate({ year: 2025, month: 3, day: 29 }, [anchor()])?.hijri.day).toBe(29);

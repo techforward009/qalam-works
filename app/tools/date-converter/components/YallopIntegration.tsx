@@ -15,7 +15,9 @@ const COPY = {
   en: {
     method: "Calculation method", qalam: "Current Qalam Method", yallop: "Yallop Crescent Visibility",
     observer: "Observer location", evening: "Evaluation evening", visibility: "Visibility class",
-    q: "q value", monthStart: "Next-day month-start policy",
+    q: "q value", policyResult: "Yallop policy result", monthStart: "Next-day month-start policy",
+    policyQualifies: "Crescent visibility conditions are favorable. Under the current Qalam Yallop policy, this evening qualifies for next-day month start.",
+    policyDoesNotQualify: "Crescent visibility conditions do not qualify for next-day month start under the current Qalam Yallop policy.",
     qualifies: "This evening qualifies for next-day month start under current Qalam v1 policy", doesNotQualify: "This evening does not qualify; the current Hijri month completes 30 days.", forcedNextMonth: "The current Hijri month has completed 30 days; the next day is necessarily the first day of the next Hijri month.", qalamQualifies: "According to the Qalam calculated Hijri date, this evening qualifies for next-day month start under current Qalam v1 policy.", qalamDoesNotQualify: "According to the Qalam calculated Hijri date, this evening does not qualify; the current calculated Hijri month completes 30 days.", qalamForcedNextMonth: "According to the Qalam calculated Hijri date, the current month is on day 30, so the next calculated Hijri day is the first of the next month.",
     prediction: "Astronomical crescent-visibility prediction", provenance: "Method", provenanceValue: "Yallop Crescent Visibility — NAO Technical Note 69",
     disclaimer: "Astronomical crescent-visibility prediction; not an official moon-sighting declaration.",
@@ -25,7 +27,9 @@ const COPY = {
   ur: {
     method: "حساب کا طریقہ", qalam: "موجودہ قلم طریقہ", yallop: "یالوپ رؤیتِ ہلال",
     observer: "مقامِ مشاہدہ", evening: "جانچ کی شام", visibility: "رؤیت کی درجہ بندی",
-    q: "q قدر", monthStart: "اگلے دن کے آغازِ ماہ کی پالیسی",
+    q: "q قدر", policyResult: "یالوپ پالیسی کا نتیجہ", monthStart: "اگلے دن کے آغازِ ماہ کی پالیسی",
+    policyQualifies: "ہلال کی رؤیت کے حالات موافق ہیں۔ موجودہ قلم یالوپ پالیسی کے مطابق یہ شام اگلے دن کے آغازِ ماہ کے لیے موزوں ہے۔",
+    policyDoesNotQualify: "ہلال کی رؤیت کے حالات موجودہ قلم یالوپ پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں نہیں ہیں۔",
     qualifies: "یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں ہے", doesNotQualify: "یہ شام موزوں نہیں؛ موجودہ ہجری مہینہ 30 دن مکمل کرے گا۔", forcedNextMonth: "موجودہ ہجری مہینہ 30 دن مکمل کر چکا ہے؛ اگلا دن لازماً اگلے ہجری مہینے کا پہلا دن ہے۔", qalamQualifies: "قلم کی حسابی قمری تاریخ کے مطابق یہ شام موجودہ قلم v1 پالیسی کے تحت اگلے دن کے آغازِ ماہ کے لیے موزوں ہے۔", qalamDoesNotQualify: "قلم کی حسابی قمری تاریخ کے مطابق یہ شام موزوں نہیں؛ موجودہ حسابی ہجری مہینہ 30 دن مکمل کرے گا۔", qalamForcedNextMonth: "قلم کی حسابی قمری تاریخ کے مطابق موجودہ مہینے کی آج 30 تاریخ ہے، اس لیے اگلی حسابی قمری تاریخ نئے مہینے کی پہلی ہوگی۔",
     prediction: "فلکیاتی رؤیتِ ہلال کی پیش گوئی", provenance: "طریقہ", provenanceValue: "یالوپ رؤیتِ ہلال — این اے او ٹیکنیکل نوٹ 69",
     disclaimer: "یہ رؤیتِ ہلال کی فلکیاتی پیش گوئی ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔",
@@ -92,6 +96,10 @@ export function YallopIntegration({
 
         {prediction && (prediction.status === "evaluated" ? <div className="mt-4 rounded-xl border border-[#B8935A]/40 bg-white/70 p-4 dark:bg-[#0e1c15]/60">
           <h2 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.prediction}</h2>
+          <p className={`mt-2 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>
+            <span className="sr-only">{t.policyResult}: </span>
+            {prediction.acceptedByPolicy ? t.policyQualifies : t.policyDoesNotQualify}
+          </p>
           <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
             <Detail label={t.observer} value={observerDisplayName(prediction.snapshot.observer, lang)} urdu={isUr} />
             <Detail label={t.evening} value={prediction.observerLocalDate} numeric />
