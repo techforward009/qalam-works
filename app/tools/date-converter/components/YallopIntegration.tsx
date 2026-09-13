@@ -3,17 +3,19 @@
 import { useMemo } from "react";
 import { PAKISTAN_YALLOP_OBSERVERS, yallopObserver } from "../utils/yallop/observerLocations";
 import { evaluateDateStudioYallopPrediction, type DateStudioYallopPrediction } from "../utils/yallop/dateStudioPrediction";
+import { evaluateDateStudioPakistanCrescentPrediction } from "../utils/pakistan-crescent/dateStudioPrediction";
+import type { PakistanCrescentPrediction } from "../utils/pakistan-crescent/types";
 import { formatDate, type DateParts } from "../utils/dateEngine";
 import type { YallopObserver } from "../utils/yallop/types";
 import { interpretDateStudioMonthStart, type HijriDayAuthority } from "../utils/yallop/dateStudioMonthStart";
 import type { ResolvedHijriDate } from "../utils/hijri-authority/types";
 
 type Language = "en" | "ur";
-export type DateStudioMethod = "qalam" | "yallop";
+export type DateStudioMethod = "qalam" | "yallop" | "pakistan-5year";
 
 const COPY = {
   en: {
-    method: "Calculation method", qalam: "Current Qalam Method", yallop: "Yallop Crescent Visibility",
+    method: "Calculation method", qalam: "Current Qalam Method", yallop: "Yallop Crescent Visibility", pakistan: "Pakistan 5-Year Calendar Criterion",
     observer: "Observer location", evening: "Evaluation evening", visibility: "Visibility class",
     q: "q value", currentSituation: "Current lunar situation", astronomicalVisibility: "Astronomical visibility", monthStartOutlook: "Month-start outlook", scientificDetails: "Scientific details",
     officialDate: "Pakistan official Hijri date", reportedOfficialDate: "Reported official Pakistan Hijri date",
@@ -25,9 +27,10 @@ const COPY = {
     prediction: "Astronomical crescent-visibility prediction", provenance: "Method", provenanceValue: "Yallop Crescent Visibility — NAO Technical Note 69",
     disclaimer: "Astronomical crescent-visibility prediction; not an official moon-sighting declaration.",
     unavailable: "A Yallop prediction is unavailable for this evaluation evening.",
+    pakistanPass: "Crescent conditions meet the published Pakistan 5-Year Calendar criterion at sunset.", pakistanFail: "Crescent conditions do not meet the published Pakistan 5-Year Calendar criterion at sunset.", pakistanDisclaimer: "Scientific crescent-visibility calculation; not an official moon-sighting declaration.", sunset: "Local sunset", moonset: "Moonset", altitude: "Moon altitude", width: "Crescent width", illumination: "Illumination", elongation: "Elongation", lag: "Lag", threshold: "required", illuminationOrElongation: "Illumination OR elongation",
   },
   ur: {
-    method: "حساب کا طریقہ", qalam: "موجودہ قلم طریقہ", yallop: "یالوپ رؤیتِ ہلال",
+    method: "حساب کا طریقہ", qalam: "موجودہ قلم طریقہ", yallop: "یالوپ رؤیتِ ہلال", pakistan: "پاکستان پانچ سالہ قمری تقویم معیار",
     observer: "مقامِ مشاہدہ", evening: "جانچ کی شام", visibility: "رؤیت کی درجہ بندی",
     q: "q قدر", currentSituation: "آج کی قمری صورتِ حال", astronomicalVisibility: "فلکیاتی رؤیت", monthStartOutlook: "آغازِ ماہ کا امکان", scientificDetails: "سائنسی تفصیلات",
     officialDate: "پاکستان کی سرکاری ہجری تاریخ", reportedOfficialDate: "رپورٹ شدہ سرکاری پاکستانی ہجری تاریخ",
@@ -39,6 +42,7 @@ const COPY = {
     prediction: "فلکیاتی رؤیتِ ہلال کی پیش گوئی", provenance: "طریقہ", provenanceValue: "یالوپ رؤیتِ ہلال — این اے او ٹیکنیکل نوٹ 69",
     disclaimer: "یہ رؤیتِ ہلال کی فلکیاتی پیش گوئی ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔",
     unavailable: "اس جانچ کی شام کے لیے یالوپ پیش گوئی دستیاب نہیں۔",
+    pakistanPass: "غروبِ آفتاب کے وقت ہلال کے حالات پاکستان کے شائع شدہ پانچ سالہ قمری تقویم معیار پر پورا اترتے ہیں۔", pakistanFail: "غروبِ آفتاب کے وقت ہلال کے حالات پاکستان کے شائع شدہ پانچ سالہ قمری تقویم معیار پر پورا نہیں اترتے۔", pakistanDisclaimer: "یہ رؤیتِ ہلال کا سائنسی حساب ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔", sunset: "مقامی غروبِ آفتاب", moonset: "غروبِ قمر", altitude: "ہلال کی بلندی", width: "ہلال کی چوڑائی", illumination: "روشن حصہ", elongation: "استطالہ", lag: "وقفۂ غروب", threshold: "درکار", illuminationOrElongation: "روشن حصہ یا استطالہ",
   },
 } as const;
 
@@ -53,7 +57,7 @@ function observerDisplayName(observer: YallopObserver, lang: Language): string {
 }
 
 export function YallopIntegration({
-  lang, method, onMethodChange, observerId, onObserverChange, gregorian, hijriDay, hijriDayAuthority, authorityContext, predict,
+  lang, method, onMethodChange, observerId, onObserverChange, gregorian, hijriDay, hijriDayAuthority, authorityContext, predict, pakistanPredict,
 }: {
   lang: Language;
   method: DateStudioMethod;
@@ -65,6 +69,7 @@ export function YallopIntegration({
   hijriDayAuthority: HijriDayAuthority;
   authorityContext?: ResolvedHijriDate | null;
   predict?: (gregorian: DateParts, observer: YallopObserver) => DateStudioYallopPrediction;
+  pakistanPredict?: (gregorian: DateParts, observer: YallopObserver) => PakistanCrescentPrediction;
 }) {
   const t = COPY[lang];
   const isUr = lang === "ur";
@@ -72,6 +77,10 @@ export function YallopIntegration({
   const prediction = useMemo(
     () => method === "yallop" && gregorian ? (predict ?? evaluateDateStudioYallopPrediction)(gregorian, observer) : null,
     [method, gregorian?.year, gregorian?.month, gregorian?.day, observer, predict],
+  );
+  const pakistanPrediction = useMemo(
+    () => method === "pakistan-5year" && gregorian ? (pakistanPredict ?? evaluateDateStudioPakistanCrescentPrediction)(gregorian, observer) : null,
+    [method, gregorian?.year, gregorian?.month, gregorian?.day, observer, pakistanPredict],
   );
   const monthStart = prediction?.status === "evaluated" && authorityContext
     ? interpretDateStudioMonthStart(hijriDay, prediction.acceptedByPolicy, hijriDayAuthority)
@@ -86,9 +95,10 @@ export function YallopIntegration({
       <select aria-label={t.method} value={method} onChange={(event) => onMethodChange(event.target.value as DateStudioMethod)} className={`w-full rounded-lg border border-[#1A3A2A]/15 bg-white px-3 py-2.5 text-sm dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>
         <option value="qalam">{t.qalam}</option>
         <option value="yallop">{t.yallop}</option>
+        <option value="pakistan-5year">{t.pakistan}</option>
       </select>
 
-      {method === "yallop" && <>
+      {(method === "yallop" || method === "pakistan-5year") && <>
         <label className={`mt-4 block text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] mb-2 ${isUr ? "font-naskh" : ""}`}>
           {t.observer}
         </label>
@@ -125,9 +135,28 @@ export function YallopIntegration({
           </div>
         </div> : <p className={`mt-4 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.unavailable}</p>)}
         {prediction && prediction.status !== "evaluated" && <p className={`mt-4 rounded-lg bg-[#1A3A2A]/5 px-3 py-2 text-[12px] leading-relaxed text-[#3a6a4a] dark:bg-white/[0.05] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.disclaimer}</p>}
+        {pakistanPrediction && (pakistanPrediction.status === "evaluated" ? <div className="mt-4 rounded-xl border border-[#B8935A]/40 bg-white/70 p-4 dark:bg-[#0e1c15]/60">
+          {authorityContext && <><p className={`text-[11px] font-semibold text-[#4a7a5a] dark:text-[#8faa93] ${isUr ? "font-naskh" : ""}`}>{officialDateLabel}</p><p className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{formatDate(authorityContext.hijri, "hijri", lang)}</p></>}
+          <p className={`mt-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{pakistanPrediction.criterion.qualifies ? t.pakistanPass : t.pakistanFail}</p>
+          {authorityContext?.hijri.day === 29 && pakistanPrediction.criterion.qualifies && <p className={`mt-3 text-sm text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{isUr ? "اس سائنسی معیار کے مطابق اگلا دن آغازِ ماہ کے لیے موزوں ہے؛ حتمی سرکاری فیصلہ مرکزی رویتِ ہلال کمیٹی کا ہوگا۔" : "Under this scientific criterion, the next day qualifies for month start; the official decision remains with the Central Ruet-e-Hilal Committee."}</p>}
+          <p className={`mt-4 rounded-lg bg-[#1A3A2A]/5 px-3 py-2 text-[12px] leading-relaxed text-[#3a6a4a] dark:bg-white/[0.05] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.pakistanDisclaimer}</p>
+          <h3 className={`mt-5 text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.scientificDetails}</h3>
+          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <Detail label={t.observer} value={observerDisplayName(pakistanPrediction.snapshot.observer, lang)} urdu={isUr} /><Detail label={t.evening} value={pakistanPrediction.observerLocalDate} numeric />
+            <PakistanDetail label={t.altitude} value={`${pakistanPrediction.snapshot.altitudeDeg.toFixed(2)}°`} required="≥ 6.5°" pass={pakistanPrediction.criterion.altitudePasses} urdu={isUr} /><PakistanDetail label={t.width} value={`${pakistanPrediction.snapshot.widthArcMin.toFixed(3)} arcmin`} required="≥ 0.17 arcmin" pass={pakistanPrediction.criterion.widthPasses} urdu={isUr} />
+            <PakistanDetail label={t.illumination} value={`${pakistanPrediction.snapshot.illuminationPercent.toFixed(2)}%`} required="≥ 0.8%" pass={pakistanPrediction.snapshot.illuminationPercent >= 0.8} urdu={isUr} /><PakistanDetail label={t.elongation} value={`${pakistanPrediction.snapshot.elongationDeg.toFixed(2)}°`} required="≥ 9°" pass={pakistanPrediction.snapshot.elongationDeg >= 9} urdu={isUr} />
+            <PakistanDetail label={t.illuminationOrElongation} value={pakistanPrediction.criterion.illuminationOrElongationPasses ? (isUr ? "پورا اترتا ہے" : "Pass") : (isUr ? "پورا نہیں اترتا" : "Fail")} required="illumination ≥ 0.8% OR elongation ≥ 9°" pass={pakistanPrediction.criterion.illuminationOrElongationPasses} urdu={isUr} />
+            <PakistanDetail label={t.lag} value={`${pakistanPrediction.snapshot.lagMinutes.toFixed(1)} min`} required="≥ 38 min" pass={pakistanPrediction.criterion.lagPasses} urdu={isUr} /><Detail label={t.provenance} value={t.pakistan} urdu={isUr} />
+          </div>
+        </div> : <><p className={`mt-4 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${isUr ? "font-naskh" : ""}`}>{t.pakistanDisclaimer}</p></>)}
       </>}
     </section>
   );
+}
+
+function PakistanDetail({ label, value, required, pass, urdu }: { label: string; value: string; required: string; pass: boolean; urdu: boolean }) {
+  const state = urdu ? (pass ? "پورا اترتا ہے" : "پورا نہیں اترتا") : (pass ? "Pass" : "Fail");
+  return <div><p className={`text-[11px] font-semibold text-[#4a7a5a] dark:text-[#8faa93] ${urdu ? "font-naskh" : ""}`}>{label}</p><p className="mt-0.5 font-bold text-[#1A3A2A] dark:text-[#e8ede9]" dir="ltr">{value}</p><p className={`text-[11px] ${pass ? "text-[#3a6a4a]" : "text-[#9a4b35]"}`} dir={urdu ? undefined : "ltr"}>{`${required} · ${state}`}</p></div>;
 }
 
 function Detail({ label, value, numeric, urdu }: { label: string; value: string; numeric?: boolean; urdu?: boolean }) {

@@ -47,15 +47,43 @@ function officialContext(day: number, authority: "official" | "reported-official
   };
 }
 
-function Harness({ lang = "en", predict, hijriDay = 29, hijriDayAuthority = "qalam-tabular", authorityContext }: { lang?: "en" | "ur"; predict?: any; hijriDay?: number; hijriDayAuthority?: "official" | "reported-official" | "observed" | "qalam-tabular"; authorityContext?: ResolvedHijriDate | null }) {
+function Harness({ lang = "en", predict, pakistanPredict, hijriDay = 29, hijriDayAuthority = "qalam-tabular", authorityContext }: { lang?: "en" | "ur"; predict?: any; pakistanPredict?: any; hijriDay?: number; hijriDayAuthority?: "official" | "reported-official" | "observed" | "qalam-tabular"; authorityContext?: ResolvedHijriDate | null }) {
   const [method, setMethod] = useState<DateStudioMethod>("qalam");
   const [observer, setObserver] = useState("karachi");
   const [date, setDate] = useState({ year: 2024, month: 3, day: 11 });
   const defaultPredict = (value: typeof date, place: NonNullable<ReturnType<typeof yallopObserver>>) => evaluated(place.id, `${value.year}-${String(value.month).padStart(2, "0")}-${String(value.day).padStart(2, "0")}`);
-  return <><button onClick={() => setDate({ year: 2024, month: 4, day: 8 })}>change date</button><YallopIntegration lang={lang} method={method} onMethodChange={setMethod} observerId={observer} onObserverChange={setObserver} gregorian={date} hijriDay={hijriDay} hijriDayAuthority={hijriDayAuthority} authorityContext={authorityContext} predict={predict ?? defaultPredict} /></>;
+  return <><button onClick={() => setDate({ year: 2024, month: 4, day: 8 })}>change date</button><YallopIntegration lang={lang} method={method} onMethodChange={setMethod} observerId={observer} onObserverChange={setObserver} gregorian={date} hijriDay={hijriDay} hijriDayAuthority={hijriDayAuthority} authorityContext={authorityContext} predict={predict ?? defaultPredict} pakistanPredict={pakistanPredict} /></>;
+}
+
+function pakistanPrediction(illuminationPercent: number, elongationDeg: number) {
+  const observer = yallopObserver("karachi")!;
+  const illuminationOrElongationPasses = illuminationPercent >= 0.8 || elongationDeg >= 9;
+  return { status: "evaluated", observerLocalDate: "2024-03-11", evaluationWindowStartUtc: "2024-03-10T19:00:00.000Z", snapshot: { observer, sunsetUtc: "2024-03-11T13:00:00.000Z", moonsetUtc: "2024-03-11T14:00:00.000Z", altitudeDeg: 7, widthArcMin: 0.2, illuminationPercent, elongationDeg, lagMinutes: 60 }, criterion: { altitudeDeg: 7, widthArcMin: 0.2, illuminationPercent, elongationDeg, lagMinutes: 60, altitudePasses: true, widthPasses: true, illuminationOrElongationPasses, lagPasses: true, qualifies: illuminationOrElongationPasses }, provenance: { method: "Pakistan 5-Year Calendar Criterion", criterionId: "test", criterionVersion: "test", astronomyProvider: "Astronomy Engine", sourceUrl: "https://example.invalid", sourceType: "astronomical-prediction", altitudeConvention: "test", crescentWidthConvention: "test", evaluationInstant: "local sunset", illuminationConvention: "test" } } as const;
 }
 
 describe("Date Studio Yallop integration", () => {
+  it.each([
+    [0.8, 8.9, "≥ 0.8% · Pass", "≥ 9° · Fail", "illumination ≥ 0.8% OR elongation ≥ 9° · Pass"],
+    [0.7, 9, "≥ 0.8% · Fail", "≥ 9° · Pass", "illumination ≥ 0.8% OR elongation ≥ 9° · Pass"],
+    [0.7, 8.9, "≥ 0.8% · Fail", "≥ 9° · Fail", "illumination ≥ 0.8% OR elongation ≥ 9° · Fail"],
+  ])("renders deterministic Pakistan illumination/elongation OR states", (illumination, elongation, illuminationState, elongationState, combinedState) => {
+    render(<Harness pakistanPredict={() => pakistanPrediction(illumination, elongation)} />);
+    fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "pakistan-5year" } });
+    expect(screen.getByText(illuminationState)).toBeTruthy();
+    expect(screen.getByText(elongationState)).toBeTruthy();
+    expect(screen.getByText(combinedState)).toBeTruthy();
+  });
+  it("renders the independent Pakistan five-year criterion with localized selected observers", () => {
+    const { rerender } = render(<Harness />);
+    fireEvent.change(screen.getByLabelText("Calculation method"), { target: { value: "pakistan-5year" } });
+    expect(screen.getByText("Crescent conditions", { exact: false })).toBeTruthy();
+    expect(screen.getByText("Moon altitude")).toBeTruthy();
+    expect(screen.getByText("Scientific crescent-visibility calculation; not an official moon-sighting declaration.")).toBeTruthy();
+    rerender(<Harness lang="ur" />);
+    fireEvent.change(screen.getByLabelText("حساب کا طریقہ"), { target: { value: "pakistan-5year" } });
+    expect(screen.getAllByText("پاکستان پانچ سالہ قمری تقویم معیار").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("کراچی").length).toBeGreaterThan(1);
+  });
   it.each([
     [29, true, "day29_qualifies"], [29, false, "day29_does_not_qualify"],
     [30, true, "day30_forced_next_month"], [30, false, "day30_forced_next_month"],

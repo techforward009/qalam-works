@@ -35,7 +35,7 @@ export function geometricGeocentricVector(body: Body.Sun | Body.Moon, date: Date
   return new Vector(target.x - earth.x, target.y - earth.y, target.z - earth.z, target.t);
 }
 
-function geocentricPosition(body: Body.Sun | Body.Moon, date: Date, observer: YallopObserver) {
+export function geocentricPosition(body: Body.Sun | Body.Moon, date: Date, observer: YallopObserver) {
   const vectorJ2000 = geometricGeocentricVector(body, date);
   const vectorOfDate = RotateVector(Rotation_EQJ_EQD(date), vectorJ2000);
   const equatorial = EquatorFromVector(vectorOfDate);
