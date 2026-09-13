@@ -14,10 +14,12 @@ describe("crescent visibility dashboard", () => {
   it("puts national context first and retains secondary city science controls", () => {
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "Pakistan crescent visibility" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Pakistan-wide context" })).toBeTruthy();
     expect(screen.getByText("The national official decision considers credible accepted testimony from across Pakistan; local scientific calculations describe the selected location.")).toBeTruthy();
     expect(screen.getByText("Selected location details")).toBeTruthy(); expect(screen.getByText("Local scientific conditions for Karachi")).toBeTruthy();
     const karachi = screen.getByRole("button", { name:"Karachi" }), islamabad = screen.getByRole("button", { name:"Islamabad" });
     expect(karachi.getAttribute("aria-pressed")).toBe("true"); expect(islamabad.getAttribute("aria-pressed")).toBe("false");
+    expect(karachi.className).toContain("bg-[#1A3A2A]"); expect(islamabad.className).toContain("bg-[#F7F5EF]");
     expect(screen.getByText(/For Karachi, both scientific methods/)).toBeTruthy();
     expect(screen.getByText("This scientific result applies to the selected location only; it is not the nationwide official decision.")).toBeTruthy();
     expect(screen.getByText("The final official declaration may be based on credible accepted sighting testimony from any location in Pakistan.")).toBeTruthy();
@@ -27,12 +29,12 @@ describe("crescent visibility dashboard", () => {
     fireEvent.click(otherCities); expect(otherCities.getAttribute("aria-expanded")).toBe("true"); expect(screen.getByRole("listbox", { name: "Other cities" })).toBeTruthy();
     expect(screen.getByRole("option", { name: "Hyderabad" })).toBeTruthy(); expect(screen.getByRole("option", { name: "Lahore" })).toBeTruthy();
     fireEvent.click(screen.getByRole("option", { name: "Lahore" })); expect(otherCities.getAttribute("aria-expanded")).toBe("false"); expect(screen.getByText(/For Lahore, both scientific methods/)).toBeTruthy();
-    fireEvent.click(islamabad); expect(islamabad.getAttribute("aria-pressed")).toBe("true"); expect(karachi.getAttribute("aria-pressed")).toBe("false"); expect(screen.getByText(/For Islamabad, both scientific methods/)).toBeTruthy();
+    fireEvent.click(islamabad); expect(islamabad.getAttribute("aria-pressed")).toBe("true"); expect(karachi.getAttribute("aria-pressed")).toBe("false"); expect(islamabad.className).toContain("bg-[#1A3A2A]"); expect(karachi.className).toContain("bg-[#F7F5EF]"); expect(screen.getByText(/For Islamabad, both scientific methods/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Yallop" })).toBeNull(); expect(screen.queryByRole("button", { name: "Pakistan 5-Year Criterion" })).toBeNull();
     expect(screen.queryByLabelText("Pakistan-wide scientific visibility map")).toBeNull(); expect(screen.queryByText(/actual grid locations/)).toBeNull();
     expect(screen.queryByText(/winner|accuracy|correct method|wrong method/i)).toBeNull();
   });
-  it("keeps Urdu national and local wording", () => { locale.language="ur"; render(<CrescentVisibilityContent />); expect(screen.getByRole("heading", { name: "پاکستان میں رؤیتِ ہلال" })).toBeTruthy(); expect(screen.getByText(/قومی سرکاری فیصلہ پورے پاکستان سے موصول ہونے والی معتبر شہادت/)).toBeTruthy(); expect(screen.getByText("منتخب مقام کی تفصیل")).toBeTruthy(); expect(screen.getByText(/کراچی کے مقامی سائنسی حالات/)).toBeTruthy(); expect(screen.getByText(/کراچی میں دونوں سائنسی طریقوں/)).toBeTruthy(); expect(screen.getByText(/یہ سائنسی نتیجہ صرف منتخب مقام کے لیے ہے/)).toBeTruthy(); expect(screen.getAllByText(/حتمی سرکاری اعلان پاکستان کے کسی بھی مقام/).length).toBeGreaterThan(0); const otherCities = screen.getByRole("button", { name: "دیگر شہر" }); fireEvent.keyDown(otherCities, { key: "Enter" }); expect(screen.getByRole("listbox", { name: "دیگر شہر" })).toBeTruthy(); expect(screen.getByRole("option", { name: "لاہور" })).toBeTruthy(); locale.language="en"; });
+  it("keeps Urdu national and local wording", () => { locale.language="ur"; render(<CrescentVisibilityContent />); expect(screen.getByRole("heading", { name: "پاکستان میں رؤیتِ ہلال" })).toBeTruthy(); expect(screen.getByRole("heading", { name: "پاکستان بھر کا تناظر" })).toBeTruthy(); expect(screen.getByText(/قومی سرکاری فیصلہ پورے پاکستان سے موصول ہونے والی معتبر شہادت/)).toBeTruthy(); expect(screen.getByText("منتخب مقام کی تفصیل")).toBeTruthy(); expect(screen.getByText(/کراچی کے مقامی سائنسی حالات/)).toBeTruthy(); expect(screen.getByText(/کراچی میں دونوں سائنسی طریقوں/)).toBeTruthy(); expect(screen.getByText(/یہ سائنسی نتیجہ صرف منتخب مقام کے لیے ہے/)).toBeTruthy(); expect(screen.getAllByText(/حتمی سرکاری اعلان پاکستان کے کسی بھی مقام/).length).toBeGreaterThan(0); const otherCities = screen.getByRole("button", { name: "دیگر شہر" }); fireEvent.keyDown(otherCities, { key: "Enter" }); expect(screen.getByRole("listbox", { name: "دیگر شہر" })).toBeTruthy(); expect(screen.getByRole("option", { name: "لاہور" })).toBeTruthy(); locale.language="en"; });
 
   it.each(["1899-12-31", "2101-01-01", "", "2026-02-30"])("rejects invalid date %s without retaining scientific output", async value => {
     const { evaluateDateStudioYallopPrediction } = await import("../app/tools/date-converter/utils/yallop/dateStudioPrediction");

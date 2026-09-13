@@ -27,6 +27,7 @@ const L = {
     convertDate: "Convert a Date",
     findDate: "Find Date",
     makeCalendar: "Make a Calendar",
+    crescentVisibility: "Crescent Visibility",
     gregorianExplorer: "Gregorian Calendar Explorer",
     hijriExplorer: "Hijri Calendar Explorer",
   },
@@ -47,6 +48,7 @@ const L = {
     convertDate: "تاریخ تبدیل کریں",
     findDate: "تاریخ تلاش کریں",
     makeCalendar: "تقویم بنائیں",
+    crescentVisibility: "رؤیتِ ہلال",
     gregorianExplorer: "عیسوی تقویم دیکھیں",
     hijriExplorer: "ہجری تقویم دیکھیں",
   },
@@ -184,6 +186,7 @@ export default function AllToolsContent() {
             <Link href="/tools/date-converter" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.convertDate}</Link>
             <Link href="/tools/date-converter?mode=find#date-studio" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.findDate}</Link>
             <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.makeCalendar}</Link>
+            <Link href="/tools/crescent-visibility" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.crescentVisibility}</Link>
             <Link href={`/calendar/${studioToday.year}`} className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
             <Link href={`/hijri/${studioHijri.year}`} className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors sm:col-span-2 ${naskh}`}>{t.hijriExplorer}</Link>
           </div>

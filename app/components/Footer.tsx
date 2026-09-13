@@ -27,6 +27,7 @@ const TOOL_ROUTES = [
   { key: "unicodeStandardizer", href: "/tools/unicode-standardizer" },
   { key: "invoiceStudio", href: "/tools/invoice-generator", labelEn: "Invoice Generator", labelUr: "انوائس جنریٹر" },
   { key: "dateConverter", href: "/tools/date-converter",    labelEn: "Date Converter",    labelUr: "تاریخ کنورٹر"    },
+  { key: "crescentVisibility", href: "/tools/crescent-visibility", labelEn: "Crescent Visibility", labelUr: "رؤیتِ ہلال" },
   { key: "whatsappRtlFormatter", href: "/tools/whatsapp-rtl-formatter", labelEn: "WhatsApp RTL Formatter", labelUr: "واٹس ایپ آر ٹی ایل فارمیٹر" },
 ];
 

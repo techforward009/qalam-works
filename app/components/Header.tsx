@@ -41,7 +41,7 @@ function PenNibIcon({ size = 22 }: { size?: number }) {
  *
  * Document Cleaner ▼  → Urdu Text Cleaner, Urdu Text Check, Urdu Unicode Fixer
  * Tools ▼             → Translation Studio, Roman Urdu→Urdu, Urdu→Roman, ─, All Tools
- * Utilities ▼         → Invoice Generator, Date Converter
+ * Utilities ▼         → Invoice Generator, Date Converter, Crescent Visibility
  *
  * Each top-level dropdown is independent; only one open at a time.
  * Desktop dropdowns: flat list panel below the button.
@@ -86,6 +86,7 @@ export default function Header() {
   const utilitiesLinks = [
     { label: t.invoiceStudio, href: "/tools/invoice-generator" },
     { label: t.dateStudio, href: "/tools/date-converter" },
+    { label: language === "ur" ? "رؤیتِ ہلال" : "Crescent Visibility", href: "/tools/crescent-visibility" },
   ];
 
   // ── Primary flat links (desktop + mobile) ───────────────────────────────────

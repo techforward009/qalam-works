@@ -28,6 +28,8 @@ describe("Date Studio discovery surfaces", () => {
     expect(source).toMatch(/dateStudioTitle/);
     expect(source).toMatch(/\/tools\/date-converter/);
     expect(source).toMatch(/\/tools\/calendar-maker/);
+    expect(source).toMatch(/\/tools\/crescent-visibility/);
+    expect(source).toMatch(/crescentVisibility/);
     expect(source).toMatch(/\/calendar\//);
     expect(source).toMatch(/\/hijri\//);
   });
@@ -86,5 +88,17 @@ describe("Date Studio discovery surfaces", () => {
     expect(header).not.toMatch(/label: "Date Studio", href: "\/tools\/date-converter"/);
     expect(translations).toMatch(/dateStudio: "Date Studio"/);
     expect(translations).toMatch(/dateStudio: "ڈیٹ اسٹوڈیو"/);
+  });
+
+  it("publishes Crescent Visibility through shared navigation and sitemap surfaces", () => {
+    const header = read("app/components/Header.tsx");
+    const footer = read("app/components/Footer.tsx");
+    const sitemap = read("app/sitemap.ts");
+
+    expect(header).toMatch(/label: language === "ur" \? "رؤیتِ ہلال" : "Crescent Visibility", href: "\/tools\/crescent-visibility"/);
+    expect(header).toMatch(/links=\{utilitiesLinks\}/);
+    expect((header.match(/href: "\/tools\/crescent-visibility"/g) ?? []).length).toBe(1);
+    expect(footer).toMatch(/href: "\/tools\/crescent-visibility"/);
+    expect(sitemap).toMatch(/\$\{BASE\}\/tools\/crescent-visibility/);
   });
 });
