@@ -53,6 +53,7 @@ const L = {
     hijri:        "Hijri",
     officialHijriDate: "Pakistan official Hijri date",
     reportedOfficialHijriDate: "Reported official Pakistan Hijri date",
+    calculatedHijriDate: "Calculated Hijri date",
     qalamCalculatedHijriDate: "Qalam calculated Hijri date",
     solar:        "Solar Hijri",
     methodHijri:  "Tabular · Civil",
@@ -125,6 +126,7 @@ const L = {
     hijri:        "ہجری قمری",
     officialHijriDate: "پاکستان کی سرکاری ہجری تاریخ",
     reportedOfficialHijriDate: "رپورٹ شدہ سرکاری پاکستانی ہجری تاریخ",
+    calculatedHijriDate: "حسابی ہجری تاریخ",
     qalamCalculatedHijriDate: "قلم کی حسابی ہجری تاریخ",
     solar:        "ہجری شمسی",
     methodHijri:  "حسابی قمری طریقہ",
@@ -536,7 +538,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
                   const isCopied = copied === cal;
                   const resultLabel = authorityHijri
                     ? (authorityHijri.authority === "reported-official" ? t.reportedOfficialHijriDate : t.officialHijriDate)
-                    : calLabel(cal, lang);
+                    : cal === "hijri" ? t.calculatedHijriDate : calLabel(cal, lang);
                   const methodBadge = cal === "hijri" && !isAuthoritativeHijri ? t.methodHijri
                                     : cal === "solar" ? t.methodSolar
                                     : null;
@@ -582,14 +584,8 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
                           {isCopied ? t.copied : t.copy}
                         </button>
                       </div>
-                      {cal === "hijri" && (
-                        isAuthoritativeHijri ? (
-                          <div className={`mt-2 text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] ${naskh}`}>
-                            <p className="font-semibold">{t.qalamCalculatedHijriDate}</p>
-                            <p>{formatDate(result!.hijri, "hijri", lang)}</p>
-                            <p className="font-mono" dir="ltr">{isoDate(result!.hijri)}</p>
-                          </div>
-                        ) : <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.hijriNote}</p>
+                      {cal === "hijri" && !isAuthoritativeHijri && (
+                        <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.hijriNote}</p>
                       )}
                       {cal === "solar" && (
                         <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.solarNote}</p>

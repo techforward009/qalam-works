@@ -13,17 +13,22 @@ import type { ResolvedHijriDate } from "../app/tools/date-converter/utils/hijri-
 
 const adapter = vi.hoisted(() => ({ predict: vi.fn() }));
 const locale = vi.hoisted(() => ({ language: "en" as "en" | "ur" }));
+const authority = vi.hoisted(() => ({ value: undefined as any }));
 
 vi.mock("../app/tools/date-converter/utils/yallop/dateStudioPrediction", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../app/tools/date-converter/utils/yallop/dateStudioPrediction")>();
   return { ...actual, evaluateDateStudioYallopPrediction: adapter.predict };
+});
+vi.mock("../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriDate", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriDate")>();
+  return { ...actual, resolvePakistanOfficialHijriDate: (gregorian: any) => authority.value === undefined ? actual.resolvePakistanOfficialHijriDate(gregorian) : authority.value };
 });
 
 vi.mock("../app/lib/language-context", () => ({ useLanguage: () => ({ language: locale.language, dir: locale.language === "ur" ? "rtl" : "ltr", setLanguage: vi.fn() }) }));
 vi.mock("../app/lib/analytics", () => ({ trackEvent: vi.fn(), trackToolOpenOnce: vi.fn() }));
 vi.mock("next/link", () => ({ default: ({ children, ...props }: any) => <a {...props}>{children}</a> }));
 
-afterEach(() => { locale.language = "en"; cleanup(); });
+afterEach(() => { locale.language = "en"; authority.value = undefined; cleanup(); });
 
 function evaluated(observerId: string, localDate: string): DateStudioYallopPrediction {
   const observer = yallopObserver(observerId)!;
@@ -92,7 +97,7 @@ describe("Date Studio Yallop integration", () => {
     expect(screen.getByText("Today is the 30th day of the current Hijri month. Therefore, tomorrow is necessarily the first day of the next Hijri month.")).toBeTruthy();
   });
 
-  it("makes a valid Pakistan official date primary while retaining the deterministic date as calculated context", () => {
+  it("makes a valid Pakistan official date primary without rendering a competing tabular date", () => {
     adapter.predict.mockImplementation((value, place) => evaluated(place.id, `${value.year}-${String(value.month).padStart(2, "0")}-${String(value.day).padStart(2, "0")}`));
     const deterministic = convert("gregorian", { year: 2026, month: 9, day: 13 });
     expect(deterministic.hijri).toEqual({ year: 1448, month: 4, day: 1 });
@@ -105,8 +110,8 @@ describe("Date Studio Yallop integration", () => {
 
     expect(screen.getByText("Pakistan official Hijri date")).toBeTruthy();
     expect(screen.getByText("30 Rabi al-Awwal 1448 AH")).toBeTruthy();
-    expect(screen.getByText("Qalam calculated Hijri date")).toBeTruthy();
-    expect(screen.getByText("1 Rabi al-Thani 1448 AH")).toBeTruthy();
+    expect(screen.queryByText("Qalam calculated Hijri date")).toBeNull();
+    expect(screen.queryByText("1 Rabi al-Thani 1448 AH")).toBeNull();
     expect(deterministic).toEqual(convert("gregorian", { year: 2026, month: 9, day: 13 }));
   });
 
@@ -120,11 +125,11 @@ describe("Date Studio Yallop integration", () => {
     fireEvent.change(numbers[1], { target: { value: "2026" } });
 
     expect(screen.queryByText("Pakistan official Hijri date")).toBeNull();
-    expect(screen.queryByText("Qalam calculated Hijri date")).toBeNull();
+    expect(screen.getByText("Calculated Hijri date")).toBeTruthy();
     expect(screen.getByText(`${deterministic.hijri.day} Rabi al-Thani 1448 AH`)).toBeTruthy();
   });
 
-  it("uses distinct Urdu labels for official and Qalam calculated Hijri dates", () => {
+  it("uses the official Urdu label without rendering a competing calculated date", () => {
     locale.language = "ur";
     const { container } = render(<DateConverterContent />);
     fireEvent.click(screen.getAllByText("عیسوی").find(element => element.tagName === "BUTTON")!);
@@ -134,7 +139,34 @@ describe("Date Studio Yallop integration", () => {
     fireEvent.change(numbers[1], { target: { value: "2026" } });
 
     expect(screen.getByText("پاکستان کی سرکاری ہجری تاریخ")).toBeTruthy();
-    expect(screen.getByText("قلم کی حسابی ہجری تاریخ")).toBeTruthy();
+    expect(screen.queryByText("قلم کی حسابی ہجری تاریخ")).toBeNull();
+  });
+
+  it("uses the calculated Urdu label when Pakistan authority is unavailable", () => {
+    locale.language = "ur";
+    const { container } = render(<DateConverterContent />);
+    fireEvent.click(screen.getAllByText("عیسوی").find(element => element.tagName === "BUTTON")!);
+    const numbers = container.querySelectorAll('input[type="number"]');
+    fireEvent.change(numbers[0], { target: { value: "14" } });
+    fireEvent.change(container.querySelectorAll("select")[1], { target: { value: "9" } });
+    fireEvent.change(numbers[1], { target: { value: "2026" } });
+
+    expect(screen.getByText("حسابی ہجری تاریخ")).toBeTruthy();
+    expect(screen.queryByText("پاکستان کی سرکاری ہجری تاریخ")).toBeNull();
+  });
+
+  it("keeps reported-official authority distinct without rendering the tabular date", () => {
+    authority.value = officialContext(30, "reported-official");
+    const { container } = render(<DateConverterContent />);
+    fireEvent.click(screen.getAllByText("Gregorian").find(element => element.tagName === "BUTTON")!);
+    const numbers = container.querySelectorAll('input[type="number"]');
+    fireEvent.change(numbers[0], { target: { value: "14" } });
+    fireEvent.change(container.querySelectorAll("select")[1], { target: { value: "9" } });
+    fireEvent.change(numbers[1], { target: { value: "2026" } });
+
+    expect(screen.getByText("Reported official Pakistan Hijri date")).toBeTruthy();
+    expect(screen.queryByText("Pakistan official Hijri date")).toBeNull();
+    expect(screen.queryByText("Qalam calculated Hijri date")).toBeNull();
   });
 
   it("is opt-in and presents an independent astronomical result when no official date exists", () => {
