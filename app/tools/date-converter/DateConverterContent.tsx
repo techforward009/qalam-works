@@ -383,7 +383,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
       <div className="max-w-2xl mx-auto py-6 sm:py-10">
         <div className="text-center mb-7">
           <h1 className={`text-2xl sm:text-3xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${isUr ? "font-nastaliq font-normal" : ""}`}>
-            {t.title}
+            {t.studioTitle}
           </h1>
           <p className={`text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`}>{t.desc}</p>
         </div>
@@ -401,45 +401,19 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
             </div>
             <Link href="/tools/calendar-maker" className={`block rounded-xl bg-[#1A3A2A] px-4 py-3 text-start text-white shadow-sm transition-colors hover:bg-[#254d37] ${naskh}`}><span className="block text-sm font-bold">{isUr ? "اپنی تقویم بنائیں" : "Make Your Own Calendar"}</span><span className="mt-0.5 block text-xs text-white/75">{isUr ? "اپنی قابلِ طباعت تقویم تیار کریں۔" : "Create a personalized printable calendar."}</span></Link>
             <Link href="/tools/crescent-visibility" className={`block rounded-xl border border-[#B8935A]/55 bg-[#B8935A]/10 px-4 py-3 text-start text-[#6F4E25] transition-colors hover:bg-[#B8935A]/16 dark:text-[#E0C18D] ${naskh}`}><span className="block text-sm font-bold">{isUr ? "رؤیتِ ہلال دیکھیں" : "Check Crescent Visibility"}</span><span className="mt-0.5 block text-xs opacity-80">{isUr ? "پاکستان میں ہلال کی سائنسی رؤیت کی معلومات دیکھیں۔" : "View Pakistan-focused scientific crescent visibility information."}</span></Link>
-            <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => { setMode("convert"); setToolMode("convert"); }}
-              aria-pressed={mode === "convert"}
-              className={`rounded-xl border-2 px-4 py-3 text-start text-sm font-bold transition-colors ${naskh} ${
-                mode === "convert"
-                  ? "border-[#1A3A2A] bg-[#1A3A2A] text-white shadow-sm dark:border-[#2a5a3a] dark:bg-[#2a5a3a]"
-                  : "border-[#1A3A2A]/15 bg-white text-[#1A3A2A] hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9]"
-              }`}
-            >
-              {t.convertTab}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setMode("find"); setToolMode("find"); }}
-              aria-pressed={mode === "find"}
-              className={`rounded-xl border-2 px-4 py-3 text-start text-sm font-bold transition-colors ${naskh} ${
-                mode === "find"
-                  ? "border-[#1A3A2A] bg-[#1A3A2A] text-white shadow-sm dark:border-[#2a5a3a] dark:bg-[#2a5a3a]"
-                  : "border-[#1A3A2A]/15 bg-white text-[#1A3A2A] hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9]"
-              }`}
-            >
-              {t.findTab}
-            </button>
-            </div>
-
           </div>
         </section>
+
+        <div className="mb-5 rounded-2xl bg-white p-3 shadow-sm dark:bg-[#162a1e]">
+          <div className="grid grid-cols-2 gap-2">
+            {(["convert", "find"] as ToolMode[]).map(nextMode => <button key={nextMode} type="button" onClick={() => { setMode(nextMode); setToolMode(nextMode); }} aria-pressed={mode === nextMode} className={`rounded-xl border-2 px-4 py-3 text-start text-sm font-bold transition-colors ${naskh} ${mode === nextMode ? "border-[#1A3A2A] bg-[#1A3A2A] text-white shadow-sm dark:border-[#2a5a3a] dark:bg-[#2a5a3a]" : "border-[#1A3A2A]/15 bg-white text-[#1A3A2A] hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9]"}`}>{nextMode === "convert" ? t.convertTab : t.findTab}</button>)}
+          </div>
+        </div>
 
         {mode === "convert" ? (
           <>
             {/* Input card — accepted Date Converter presentation preserved */}
             <div className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6 mb-5">
-              <div className="mb-5 border-b border-[#1A3A2A]/10 pb-4 dark:border-[#2a3d30]">
-                <p className={`text-xs font-bold uppercase tracking-wide text-[#B8935A] ${naskh}`}>{t.convertTab}</p>
-                <p className={`mt-1 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.sourceLabel}</p>
-              </div>
               <label className={`block text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-2 ${naskh}`}>
                 {t.sourceLabel}
               </label>
