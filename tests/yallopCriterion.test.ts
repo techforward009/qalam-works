@@ -36,10 +36,10 @@ describe("Yallop pure criterion", () => {
 });
 
 describe("Yallop observers and astronomy adapter", () => {
-  it("provides and validates the eleven Pakistan observer presets", () => {
-    expect(PAKISTAN_YALLOP_OBSERVERS).toHaveLength(11);
+  it("provides and validates the twelve Pakistan observer presets", () => {
+    expect(PAKISTAN_YALLOP_OBSERVERS).toHaveLength(12);
     for (const observer of PAKISTAN_YALLOP_OBSERVERS) expect(() => validateYallopObserver(observer)).not.toThrow();
-    expect(new Set(PAKISTAN_YALLOP_OBSERVERS.map(observer => observer.id)).size).toBe(11);
+    expect(new Set(PAKISTAN_YALLOP_OBSERVERS.map(observer => observer.id)).size).toBe(12);
     expect(() => validateYallopObserver({ ...PAKISTAN_YALLOP_OBSERVERS[0], latitudeDeg: 91 })).toThrow("latitude");
     expect(() => validateYallopObserver({ ...PAKISTAN_YALLOP_OBSERVERS[0], longitudeDeg: 181 })).toThrow("longitude");
     expect(() => validateYallopObserver({ ...PAKISTAN_YALLOP_OBSERVERS[0], elevationMeters: Number.NaN })).toThrow("elevation");

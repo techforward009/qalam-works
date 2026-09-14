@@ -52,7 +52,7 @@ const COPY = {
 const URDU_OBSERVER_NAMES: Record<string, string> = {
   karachi: "کراچی", hyderabad: "حیدرآباد", lahore: "لاہور", rawalpindi: "راولپنڈی",
   multan: "ملتان", islamabad: "اسلام آباد", peshawar: "پشاور", quetta: "کوئٹہ",
-  muzaffarabad: "مظفرآباد", gilgit: "گلگت", skardu: "سکردو",
+  muzaffarabad: "مظفرآباد", gilgit: "گلگت", skardu: "سکردو", jiwani: "جیوانی",
 };
 
 function observerDisplayName(observer: YallopObserver, lang: Language): string {

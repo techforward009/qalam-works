@@ -6,6 +6,9 @@ const TIMEZONE = "Asia/Karachi";
 // uses a documented sea-level reference instead of inventing station heights.
 export const PAKISTAN_YALLOP_OBSERVERS = [
   ["karachi", "Karachi", 24.86, 67.01],
+  // Qalam observer realization for the published Jiwani reference location:
+  // PMD PBO Jiwani station 41756 (25°04′ N, 61°48′ E; 56 m AMSL).
+  ["jiwani", "Jiwani", 25.0666666667, 61.8, 56],
   ["hyderabad", "Hyderabad", 25.38, 68.37],
   ["lahore", "Lahore", 31.56, 74.35],
   ["rawalpindi", "Rawalpindi", 33.60, 73.05],
@@ -16,8 +19,8 @@ export const PAKISTAN_YALLOP_OBSERVERS = [
   ["muzaffarabad", "Muzaffarabad", 34.37, 73.47],
   ["gilgit", "Gilgit", 35.92, 74.31],
   ["skardu", "Skardu", 35.30, 75.63],
-].map(([id, name, latitudeDeg, longitudeDeg]) => ({
-  id, name, latitudeDeg, longitudeDeg, elevationMeters: 0, timezone: TIMEZONE,
+].map(([id, name, latitudeDeg, longitudeDeg, elevationMeters = 0]) => ({
+  id, name, latitudeDeg, longitudeDeg, elevationMeters, timezone: TIMEZONE,
 })) as YallopObserver[];
 
 export function validateYallopObserver(observer: YallopObserver): void {
