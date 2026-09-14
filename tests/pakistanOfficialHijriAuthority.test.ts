@@ -11,15 +11,21 @@ const anchor = (overrides: Partial<OfficialHijriMonthAnchor> = {}): OfficialHijr
 });
 
 describe("Pakistan official Hijri authority resolver", () => {
-  it("resolves the reviewed production Rabi al-Awwal anchor only through day 30", () => {
+  it("resolves reviewed production anchors only through their explicit coverage", () => {
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 8, day: 15 })).toMatchObject({
       hijri: { year: 1448, month: 3, day: 1 }, authority: "official", verificationStatus: "verified",
     });
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 13 })).toMatchObject({
       hijri: { year: 1448, month: 3, day: 30 }, authority: "official",
     });
-    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 14 })).toBeNull();
-    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(1);
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 14 })).toMatchObject({ hijri: { year: 1448, month: 4, day: 1 }, authority: "official", verificationStatus: "verified" });
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(2);
+  });
+
+  it("bounds the reviewed Rabi al-Thani anchor through day 29 without inferring day 30", () => {
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 15 })).toMatchObject({ hijri: { year: 1448, month: 4, day: 2 }, authority: "official" });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 10, day: 12 })).toMatchObject({ hijri: { year: 1448, month: 4, day: 29 }, authority: "official" });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 10, day: 13 })).toBeNull();
   });
 
   it("resolves anchor day 1 and bounded derived days", () => {

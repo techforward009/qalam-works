@@ -7,22 +7,23 @@ const locale = vi.hoisted(() => ({ language: "en" }));
 const observer = (id: string, name: string) => ({ id, name, latitudeDeg: 25, longitudeDeg: 67, elevationMeters: 0, timezone: "Asia/Karachi" });
 const locations = ["Gilgit", "Peshawar", "Islamabad", "Lahore", "Muzaffarabad", "Quetta", "Karachi", "Jiwani"].map((name, index) => ({ observer: observer(name.toLowerCase(), name), prediction: { status: "evaluated", criterion: { qualifies: index === 0 } } }));
 const yallopLocations = locations.map(({ observer }, index) => ({ observer, prediction: { status: "evaluated", criterion: { visibilityClass: index === 0 ? "A" : "C", q: 0.3 }, acceptedByPolicy: index === 0 } }));
+const yallopClassCounts = { A: 1, B: 0, C: 7, D: 0, E: 0, F: 0 };
 
 vi.mock("../app/lib/language-context", () => ({ useLanguage: () => ({ language: locale.language }) }));
 vi.mock("../app/tools/date-converter/utils/pakistan-crescent/nationalPrediction", () => ({ evaluatePakistanNationalCrescentPrediction: vi.fn(() => ({ locations, qualifies: true })) }));
-vi.mock("../app/tools/date-converter/utils/yallop/nationalReferencePrediction", () => ({ evaluateYallopNationalReferencePrediction: vi.fn(() => ({ locations: yallopLocations, anyAcceptedByPolicy: true, classCounts: { A: 1, B: 0, C: 7, D: 0, E: 0, F: 0 } })) }));
+vi.mock("../app/tools/date-converter/utils/yallop/nationalReferencePrediction", () => ({ evaluateYallopNationalReferencePrediction: vi.fn(() => ({ locations: yallopLocations, anyAcceptedByPolicy: true, classCounts: yallopClassCounts })) }));
 vi.mock("../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriDate", () => ({ resolvePakistanOfficialHijriDate: vi.fn(() => null) }));
 vi.mock("../app/tools/date-converter/utils/hijri-authority/resolveOfficialSightingDecision", () => ({ resolvePakistanOfficialSightingDecisionForEvening: vi.fn(() => null) }));
 
 describe("crescent visibility dashboard", () => {
-  afterEach(() => { locale.language = "en"; });
+  afterEach(() => { locale.language = "en"; locations.forEach((location, index) => { location.prediction.criterion.qualifies = index === 0; }); yallopLocations.forEach((location, index) => { location.prediction.criterion.visibilityClass = index === 0 ? "A" : "C"; location.prediction.acceptedByPolicy = index === 0; }); Object.assign(yallopClassCounts, { A: 1, B: 0, C: 7, D: 0, E: 0, F: 0 }); });
   it("presents national science without a public city selector", () => {
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "Pakistan national crescent visibility outlook" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Pakistan-wide context" })).toBeTruthy();
-    expect(screen.getByText("At least one of Pakistan's prescribed national observation locations meets the scientific crescent-visibility criterion.")).toBeTruthy();
+    expect(screen.getByText("1 of 8 prescribed national observation locations meet the scientific crescent-visibility criterion.")).toBeTruthy();
     expect(screen.getByText("Yallop comparison across national reference locations")).toBeTruthy();
-    expect(screen.getByText("At least one national reference location reaches the current Qalam Yallop A/B policy.")).toBeTruthy();
+    expect(screen.getByText("1 of 8 national reference locations meet the current Qalam Yallop A/B policy.")).toBeTruthy();
     expect(screen.getByText("Pakistan official Hijri date unavailable")).toBeTruthy();
     expect(screen.getByText("The final official declaration may be based on credible accepted sighting testimony from any location in Pakistan.")).toBeTruthy();
     expect(screen.getByText("Official historical decision")).toBeTruthy();
@@ -41,13 +42,13 @@ describe("crescent visibility dashboard", () => {
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "پاکستان میں رؤیتِ ہلال کا قومی جائزہ" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "پاکستان بھر کا تناظر" })).toBeTruthy();
-    expect(screen.getByText("پاکستان کے مقررہ قومی مشاہداتی مقامات میں کم از کم ایک مقام رؤیتِ ہلال کے سائنسی معیار پر پورا اترتا ہے۔")).toBeTruthy();
+    expect(screen.getByText("8 میں سے 1 مقررہ قومی مشاہداتی مقامات رؤیتِ ہلال کے سائنسی معیار پر پورا اترتے ہیں۔")).toBeTruthy();
     expect(screen.getByText("قومی حوالہ جاتی مقامات پر یالوپ تقابل")).toBeTruthy();
     const details = screen.getByText("مزید سائنسی تفصیلات").closest("details");
     expect(details?.open).toBe(false);
     fireEvent.click(screen.getByText("مزید سائنسی تفصیلات"));
     expect(details?.open).toBe(true);
-    expect(screen.getByText("Jiwani")).toBeTruthy();
+    for (const name of ["گلگت", "پشاور", "اسلام آباد", "لاہور", "مظفرآباد", "کوئٹہ", "کراچی", "جیوانی"]) expect(screen.getByText(name)).toBeTruthy();
     locale.language = "en";
   });
 
@@ -67,5 +68,31 @@ describe("crescent visibility dashboard", () => {
     render(<CrescentVisibilityContent />); const input = screen.getByLabelText("Change date") as HTMLInputElement;
     expect(input.min).toBe("1900-01-01"); expect(input.max).toBe("2100-12-31"); fireEvent.change(input, { target: { value } });
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("uses count-aware all, partial, and zero national summaries without changing the any-location rule", () => {
+    locations.forEach(location => { location.prediction.criterion.qualifies = true; });
+    yallopLocations.forEach(location => { location.prediction.criterion.visibilityClass = "A"; location.prediction.acceptedByPolicy = true; });
+    Object.assign(yallopClassCounts, { A: 8, B: 0, C: 0, D: 0, E: 0, F: 0 });
+    const view = render(<CrescentVisibilityContent />);
+    expect(screen.getByText("All 8 prescribed national observation locations meet the scientific crescent-visibility criterion.")).toBeTruthy();
+    expect(screen.getByText("All 8 national reference locations are Yallop class A.")).toBeTruthy();
+    view.unmount();
+    locations.forEach(location => { location.prediction.criterion.qualifies = false; });
+    yallopLocations.forEach(location => { location.prediction.criterion.visibilityClass = "C"; location.prediction.acceptedByPolicy = false; });
+    Object.assign(yallopClassCounts, { A: 0, B: 0, C: 8, D: 0, E: 0, F: 0 });
+    render(<CrescentVisibilityContent />);
+    expect(screen.getByText("None of Pakistan's prescribed national observation locations currently meets the scientific crescent-visibility criterion.")).toBeTruthy();
+  });
+
+  it("shows the verified official Rabi al-Thani date without a calculated fallback", async () => {
+    const authority = await import("../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriDate");
+    vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue({ hijri: { year: 1448, month: 4, day: 1 }, authority: "official", anchorId: "pk-1448-rabi-al-thani-2026-09-14", providerId: "pk-ministry-religious-affairs-central-ruet-e-hilal", providerLabel: { en: "Pakistan Ministry of Religious Affairs / Central Ruet-e-Hilal Committee", ur: "وزارتِ مذہبی امور پاکستان / مرکزی رویتِ ہلال کمیٹی" }, sourceUrl: "https://example.invalid", sourceReference: "Test", verificationStatus: "verified" });
+    render(<CrescentVisibilityContent />);
+    expect(screen.getByText("Pakistan official Hijri date")).toBeTruthy();
+    expect(screen.getByText("1 Rabi al-Thani 1448 AH")).toBeTruthy();
+    expect(screen.queryByText("Pakistan official Hijri date unavailable")).toBeNull();
+    expect(screen.queryByText(/Calculated Hijri date/)).toBeNull();
+    vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue(null);
   });
 });

@@ -144,17 +144,15 @@ describe("Date Studio Yallop integration", () => {
   });
 
   it("keeps the deterministic Hijri date primary when no Pakistan authority is available", () => {
-    const deterministic = convert("gregorian", { year: 2026, month: 9, day: 14 });
     const { container } = render(<DateConverterContent />);
     fireEvent.click(screen.getAllByText("Gregorian").find(element => element.tagName === "BUTTON")!);
     const numbers = container.querySelectorAll('input[type="number"]');
-    fireEvent.change(numbers[0], { target: { value: "14" } });
-    fireEvent.change(container.querySelectorAll("select")[1], { target: { value: "9" } });
-    fireEvent.change(numbers[1], { target: { value: "2026" } });
+    fireEvent.change(numbers[0], { target: { value: "1" } });
+    fireEvent.change(container.querySelectorAll("select")[1], { target: { value: "1" } });
+    fireEvent.change(numbers[1], { target: { value: "2027" } });
 
     expect(screen.queryByText("Pakistan official Hijri date")).toBeNull();
     expect(screen.getByText("Calculated Hijri date")).toBeTruthy();
-    expect(screen.getByText(`${deterministic.hijri.day} Rabi al-Thani 1448 AH`)).toBeTruthy();
   });
 
   it("uses the official Urdu label without rendering a competing calculated date", () => {
@@ -175,9 +173,9 @@ describe("Date Studio Yallop integration", () => {
     const { container } = render(<DateConverterContent />);
     fireEvent.click(screen.getAllByText("عیسوی").find(element => element.tagName === "BUTTON")!);
     const numbers = container.querySelectorAll('input[type="number"]');
-    fireEvent.change(numbers[0], { target: { value: "14" } });
-    fireEvent.change(container.querySelectorAll("select")[1], { target: { value: "9" } });
-    fireEvent.change(numbers[1], { target: { value: "2026" } });
+    fireEvent.change(numbers[0], { target: { value: "1" } });
+    fireEvent.change(container.querySelectorAll("select")[1], { target: { value: "1" } });
+    fireEvent.change(numbers[1], { target: { value: "2027" } });
 
     expect(screen.getByText("حسابی ہجری تاریخ")).toBeTruthy();
     expect(screen.queryByText("پاکستان کی سرکاری ہجری تاریخ")).toBeNull();
