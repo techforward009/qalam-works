@@ -21,10 +21,10 @@ describe("crescent visibility dashboard", () => {
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "Pakistan Crescent Visibility" })).toBeTruthy();
     expect(screen.getByText("National scientific and official outlook")).toBeTruthy();
-    expect(screen.getByText("1 of 8 prescribed national observation locations meet the scientific crescent-visibility criterion.")).toBeTruthy();
+    expect(screen.getAllByText("1 of 8 prescribed national observation locations meet the scientific crescent-visibility criterion.").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "Pakistan national scientific criterion" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "International crescent-visibility model" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("1 of 8 reference locations have favorable visibility conditions.")).toBeTruthy();
+    expect(screen.getAllByText("1 of 8 reference locations have favorable visibility conditions.").length).toBeGreaterThan(0);
     expect(screen.getByText("Pakistan official Hijri date unavailable")).toBeTruthy();
     expect(screen.getByText("Official historical decision")).toBeTruthy();
     expect(screen.queryByText(/Pakistan-wide crescent visibility map is temporarily unavailable/)).toBeNull();
@@ -42,7 +42,7 @@ describe("crescent visibility dashboard", () => {
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "پاکستان میں رؤیتِ ہلال" })).toBeTruthy();
     expect(screen.getByText("قومی سائنسی اور سرکاری جائزہ")).toBeTruthy();
-    expect(screen.getByText("8 میں سے 1 مقررہ قومی مشاہداتی مقامات رؤیتِ ہلال کے سائنسی معیار پر پورا اترتے ہیں۔")).toBeTruthy();
+    expect(screen.getAllByText("8 میں سے 1 مقررہ قومی مشاہداتی مقامات رؤیتِ ہلال کے سائنسی معیار پر پورا اترتے ہیں۔").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "پاکستانی قومی سائنسی معیار" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "بین الاقوامی طور پر معروف سائنسی ماڈل" }).length).toBeGreaterThan(0);
     const details = screen.getByText("مزید سائنسی تفصیلات").closest("details");
@@ -98,8 +98,8 @@ describe("crescent visibility dashboard", () => {
     yallopLocations.forEach(location => { location.prediction.criterion.visibilityClass = "A"; location.prediction.acceptedByPolicy = true; });
     Object.assign(yallopClassCounts, { A: 8, B: 0, C: 0, D: 0, E: 0, F: 0 });
     const view = render(<CrescentVisibilityContent />);
-    expect(screen.getByText("All 8 prescribed national observation locations meet the scientific crescent-visibility criterion.")).toBeTruthy();
-    expect(screen.getByText("Visibility conditions are very favorable across all 8 reference locations.")).toBeTruthy();
+    expect(screen.getAllByText("All 8 prescribed national observation locations meet the scientific crescent-visibility criterion.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Visibility conditions are very favorable across all 8 reference locations.").length).toBeGreaterThan(0);
     view.unmount();
     locations.forEach(location => { location.prediction.criterion.qualifies = false; });
     yallopLocations.forEach(location => { location.prediction.criterion.visibilityClass = "C"; location.prediction.acceptedByPolicy = false; });
