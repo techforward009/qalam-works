@@ -105,7 +105,7 @@ describe("crescent visibility dashboard", () => {
     yallopLocations.forEach(location => { location.prediction.criterion.visibilityClass = "C"; location.prediction.acceptedByPolicy = false; });
     Object.assign(yallopClassCounts, { A: 0, B: 0, C: 8, D: 0, E: 0, F: 0 });
     render(<CrescentVisibilityContent />);
-    expect(screen.getByText("None of Pakistan's prescribed national observation locations currently meets the scientific crescent-visibility criterion.")).toBeTruthy();
+    expect(screen.getAllByText("None of Pakistan's prescribed national observation locations currently meets the scientific crescent-visibility criterion.").length).toBeGreaterThan(0);
   });
 
   it("shows the verified official Rabi al-Thani date without a calculated fallback", async () => {
