@@ -62,6 +62,8 @@ const L = {
     solarNote:    "Solar Hijri conversion uses an arithmetic 33-year cycle. Dates near Nowruz may differ by one day from astronomical calendars.",
     invalidDate:  "Invalid date",
     enterDate:    "Enter a date above to see conversions.",
+    readyTitle: "Ready to convert",
+    readyDesc: "Enter a date above to view Gregorian, Hijri, and Solar Hijri equivalents.",
     selectMonth:  "Month",
     countryLabel: "Regional Context",
     countryHint:  "Select a country to see how Hijri dates are determined locally.",
@@ -136,6 +138,8 @@ const L = {
     solarNote:    "ہجری شمسی تبدیلی 33 سالہ حسابی دور پر مبنی ہے۔ نوروز کے قریب فلکیاتی تقویم سے ایک دن کا فرق ممکن ہے۔",
     invalidDate:  "غلط تاریخ",
     enterDate:    "تبدیلی دیکھنے کے لیے اوپر تاریخ درج کریں۔",
+    readyTitle: "تبدیلی کے لیے تیار",
+    readyDesc: "عیسوی، ہجری قمری اور ہجری شمسی مساوی تاریخیں دیکھنے کے لیے اوپر تاریخ درج کریں۔",
     selectMonth:  "مہینہ",
     countryLabel: "علاقائی تناظر",
     countryHint:  "اپنا ملک منتخب کریں تاکہ آپ کے خطے میں ہجری تاریخ کا تعین کیسے ہوتا ہے، یہ جان سکیں۔",
@@ -430,17 +434,6 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
 
         {mode === "convert" ? (
           <>
-            <YallopIntegration
-              lang={lang}
-              method={dateStudioMethod}
-              onMethodChange={setDateStudioMethod}
-              observerId={yallopObserverId}
-              onObserverChange={setYallopObserverId}
-              gregorian={result?.gregorian ?? null}
-              hijriDay={pakistanOfficialHijri?.hijri.day ?? result?.hijri.day ?? null}
-              hijriDayAuthority={pakistanOfficialHijri?.authority ?? "qalam-tabular"}
-              authorityContext={pakistanOfficialHijri}
-            />
             {/* Input card — accepted Date Converter presentation preserved */}
             <div className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6 mb-5">
               <div className="mb-5 border-b border-[#1A3A2A]/10 pb-4 dark:border-[#2a3d30]">
@@ -522,6 +515,9 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
                   </button>
                 )}
               </div>
+              <div className="mt-5 border-t border-[#1A3A2A]/10 pt-5 dark:border-[#2a3d30]">
+                <YallopIntegration lang={lang} method={dateStudioMethod} onMethodChange={setDateStudioMethod} observerId={yallopObserverId} onObserverChange={setYallopObserverId} gregorian={result?.gregorian ?? null} hijriDay={pakistanOfficialHijri?.hijri.day ?? result?.hijri.day ?? null} hijriDayAuthority={pakistanOfficialHijri?.authority ?? "qalam-tabular"} authorityContext={pakistanOfficialHijri} embedded />
+              </div>
               <RegionalContext selectedCountry={selectedCountry} setSelectedCountry={setSelectedCountry} calendar={calendar} result={result} day={day} month={month} year={year} lang={lang} isUr={isUr} naskh={naskh} embedded />
             </div>
 
@@ -534,7 +530,8 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
             {!hasInput && !errMsg && (
               <div className="rounded-2xl border border-dashed border-[#B8935A]/45 bg-[#F7F5EF] px-5 py-7 text-center dark:bg-[#162a1e]">
                 <div className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#1A3A2A]/10 text-lg text-[#1A3A2A] dark:bg-white/10 dark:text-[#e8ede9]">◌</div>
-                <p className={`text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.enterDate}</p>
+                <p className={`text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.readyTitle}</p>
+                <p className={`mt-1 text-xs text-[#4A6A4A] dark:text-[#a8c8b0] ${naskh}`}>{t.readyDesc}</p>
               </div>
             )}
 

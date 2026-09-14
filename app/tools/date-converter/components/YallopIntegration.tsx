@@ -60,7 +60,7 @@ function observerDisplayName(observer: YallopObserver, lang: Language): string {
 }
 
 export function YallopIntegration({
-  lang, method, onMethodChange, observerId, onObserverChange, gregorian, hijriDay, hijriDayAuthority, authorityContext, predict, pakistanPredict,
+  lang, method, onMethodChange, observerId, onObserverChange, gregorian, hijriDay, hijriDayAuthority, authorityContext, embedded = false, predict, pakistanPredict,
 }: {
   lang: Language;
   method: DateStudioMethod;
@@ -71,6 +71,7 @@ export function YallopIntegration({
   hijriDay: number | null;
   hijriDayAuthority: HijriDayAuthority;
   authorityContext?: ResolvedHijriDate | null;
+  embedded?: boolean;
   predict?: (gregorian: DateParts, observer: YallopObserver) => DateStudioYallopPrediction;
   pakistanPredict?: (gregorian: DateParts, observer: YallopObserver) => PakistanCrescentPrediction;
 }) {
@@ -92,7 +93,7 @@ export function YallopIntegration({
   const historicalDecision = useMemo(() => gregorian ? resolvePakistanOfficialSightingDecisionForEvening(gregorian) : null, [gregorian?.year, gregorian?.month, gregorian?.day]);
 
   return (
-    <section className="mb-5 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] p-5 sm:p-6" dir={isUr ? "rtl" : "ltr"}>
+    <section className={embedded ? "" : "mb-5 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] p-5 sm:p-6"} dir={isUr ? "rtl" : "ltr"}>
       <label className={`block text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-2 ${isUr ? "font-naskh" : ""}`}>
         {t.method}
       </label>
