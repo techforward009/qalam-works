@@ -390,12 +390,13 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
             <p className={`mt-1 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.studioDesc}</p>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => { setMode("convert"); setToolMode("convert"); }}
               aria-pressed={mode === "convert"}
-              className={`w-full rounded-xl border-2 px-5 py-4 text-start text-base font-bold transition-colors ${naskh} ${
+              className={`rounded-xl border-2 px-4 py-3 text-start text-sm font-bold transition-colors ${naskh} ${
                 mode === "convert"
                   ? "border-[#1A3A2A] bg-[#1A3A2A] text-white shadow-sm dark:border-[#2a5a3a] dark:bg-[#2a5a3a]"
                   : "border-[#1A3A2A]/15 bg-white text-[#1A3A2A] hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9]"
@@ -408,7 +409,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
               type="button"
               onClick={() => { setMode("find"); setToolMode("find"); }}
               aria-pressed={mode === "find"}
-              className={`w-full rounded-xl border-2 px-5 py-4 text-start text-base font-bold transition-colors ${naskh} ${
+              className={`rounded-xl border-2 px-4 py-3 text-start text-sm font-bold transition-colors ${naskh} ${
                 mode === "find"
                   ? "border-[#1A3A2A] bg-[#1A3A2A] text-white shadow-sm dark:border-[#2a5a3a] dark:bg-[#2a5a3a]"
                   : "border-[#1A3A2A]/15 bg-white text-[#1A3A2A] hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9]"
@@ -416,12 +417,13 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
             >
               {t.findTab}
             </button>
+            </div>
 
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              <Link href={`/calendar/${studioToday.year}`} className={`rounded-xl border border-[#B8935A]/55 bg-[#B8935A]/8 px-4 py-3.5 text-start text-sm font-bold text-[#6F4E25] dark:text-[#E0C18D] hover:bg-[#B8935A]/14 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
-              <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3.5 text-start text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.calendarMakerAction}</Link>
-              <Link href="/tools/crescent-visibility" className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3.5 text-start text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.crescentVisibility}</Link>
-              <Link href={`/hijri/${studioHijri.year}`} className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-4 py-3.5 text-start text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors sm:col-span-2 ${naskh}`}>{t.hijriExplorer}</Link>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Link href={`/calendar/${studioToday.year}`} className={`rounded-lg border border-[#B8935A]/55 bg-[#B8935A]/8 px-3 py-2.5 text-start text-xs font-bold text-[#6F4E25] dark:text-[#E0C18D] hover:bg-[#B8935A]/14 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
+              <Link href="/tools/calendar-maker" className={`rounded-lg border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-3 py-2.5 text-start text-xs font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.calendarMakerAction}</Link>
+              <Link href="/tools/crescent-visibility" className={`rounded-lg border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-3 py-2.5 text-start text-xs font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.crescentVisibility}</Link>
+              <Link href={`/hijri/${studioHijri.year}`} className={`rounded-lg border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-3 py-2.5 text-start text-xs font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.hijriExplorer}</Link>
             </div>
           </div>
         </section>
@@ -441,6 +443,10 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
             />
             {/* Input card — accepted Date Converter presentation preserved */}
             <div className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6 mb-5">
+              <div className="mb-5 border-b border-[#1A3A2A]/10 pb-4 dark:border-[#2a3d30]">
+                <p className={`text-xs font-bold uppercase tracking-wide text-[#B8935A] ${naskh}`}>{t.convertTab}</p>
+                <p className={`mt-1 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.sourceLabel}</p>
+              </div>
               <label className={`block text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-2 ${naskh}`}>
                 {t.sourceLabel}
               </label>
@@ -525,7 +531,10 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
             )}
 
             {!hasInput && !errMsg && (
-              <p className={`text-center text-[#4A6A4A]/70 dark:text-[#a8c8b0]/70 text-sm py-4 ${naskh}`}>{t.enterDate}</p>
+              <div className="rounded-2xl border border-dashed border-[#B8935A]/45 bg-[#F7F5EF] px-5 py-7 text-center dark:bg-[#162a1e]">
+                <div className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#1A3A2A]/10 text-lg text-[#1A3A2A] dark:bg-white/10 dark:text-[#e8ede9]">◌</div>
+                <p className={`text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.enterDate}</p>
+              </div>
             )}
 
             {/* Result cards — preserve accepted EN/UR hierarchy exactly */}
