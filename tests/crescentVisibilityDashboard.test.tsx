@@ -5,8 +5,8 @@ import CrescentVisibilityContent from "../app/tools/crescent-visibility/Crescent
 
 const locale = vi.hoisted(() => ({ language: "en" }));
 const observer = (id: string, name: string) => ({ id, name, latitudeDeg: 25, longitudeDeg: 67, elevationMeters: 0, timezone: "Asia/Karachi" });
-const locations = ["Gilgit", "Peshawar", "Islamabad", "Lahore", "Muzaffarabad", "Quetta", "Karachi", "Jiwani"].map((name, index) => ({ observer: observer(name.toLowerCase(), name), prediction: { status: "evaluated", criterion: { qualifies: index === 0 } } }));
-const yallopLocations = locations.map(({ observer }, index) => ({ observer, prediction: { status: "evaluated", criterion: { visibilityClass: index === 0 ? "A" : "C", q: 0.3 }, acceptedByPolicy: index === 0 } }));
+const locations = ["Gilgit", "Peshawar", "Islamabad", "Lahore", "Muzaffarabad", "Quetta", "Karachi", "Jiwani"].map((name, index) => ({ observer: observer(name.toLowerCase(), name), prediction: { status: "evaluated", criterion: { qualifies: index === 0, altitudeDeg: 8.12, widthArcMin: 0.456, illuminationPercent: 0.8, elongationDeg: 9.11, lagMinutes: 42.3 } } }));
+const yallopLocations = locations.map(({ observer }, index) => ({ observer, prediction: { status: "evaluated", criterion: { visibilityClass: index === 0 ? "A" : "C", q: index === 0 ? 2.4952 : -0.1234 }, acceptedByPolicy: index === 0 } }));
 const yallopClassCounts = { A: 1, B: 0, C: 7, D: 0, E: 0, F: 0 };
 
 vi.mock("../app/lib/language-context", () => ({ useLanguage: () => ({ language: locale.language }) }));
@@ -52,6 +52,28 @@ describe("crescent visibility dashboard", () => {
     locale.language = "en";
   });
 
+  it("renders readable Pakistan and Yallop diagnostic badges with formatted scientific values", () => {
+    render(<CrescentVisibilityContent />);
+    fireEvent.click(screen.getByText("Scientific details"));
+    expect(screen.getAllByText("Pass").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Fail").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Class A").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Class C").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("(q = +2.495)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("(q = -0.123)").length).toBeGreaterThan(0);
+    for (const label of ["Altitude", "Crescent width", "Illumination", "Elongation", "Lag"]) expect(screen.getAllByText(label).length).toBe(8);
+    expect(screen.getByTestId("scientific-location-grid").className).toContain("md:grid-cols-2");
+  });
+
+  it("offers accessible conservative Yallop class help without claiming official status", () => {
+    render(<CrescentVisibilityContent />);
+    const help = screen.getByRole("button", { name: "About Yallop classes" });
+    expect(help.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(help);
+    expect(help.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText(/These are astronomical classes, not an official declaration/)).toBeTruthy();
+  });
+
   it("does not call science or authority resolvers for invalid dates", async () => {
     const national = await import("../app/tools/date-converter/utils/pakistan-crescent/nationalPrediction");
     const yallop = await import("../app/tools/date-converter/utils/yallop/nationalReferencePrediction");
@@ -94,5 +116,18 @@ describe("crescent visibility dashboard", () => {
     expect(screen.queryByText("Pakistan official Hijri date unavailable")).toBeNull();
     expect(screen.queryByText(/Calculated Hijri date/)).toBeNull();
     vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue(null);
+  });
+
+  it("shows an official banner only for an exact reviewed sighting decision", async () => {
+    const decision = await import("../app/tools/date-converter/utils/hijri-authority/resolveOfficialSightingDecision");
+    const reviewedDecision = { id: "decision", sightingDecision: "not-sighted", providerLabel: { en: "Central Ruet-e-Hilal Committee", ur: "مرکزی رویتِ ہلال کمیٹی" }, sourceReference: "Reviewed source" } as never;
+    vi.mocked(decision.resolvePakistanOfficialSightingDecisionForEvening).mockImplementation(date => date.day === 12 ? reviewedDecision : null);
+    render(<CrescentVisibilityContent />);
+    fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-09-12" } });
+    expect(screen.getByRole("heading", { name: "Official Pakistan moon-sighting decision" })).toBeTruthy();
+    expect(screen.getByText("Crescent not sighted.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-09-13" } });
+    expect(screen.queryByRole("heading", { name: "Official Pakistan moon-sighting decision" })).toBeNull();
+    vi.mocked(decision.resolvePakistanOfficialSightingDecisionForEvening).mockReturnValue(null);
   });
 });
