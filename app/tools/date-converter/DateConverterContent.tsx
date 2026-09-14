@@ -171,7 +171,7 @@ const L = {
     futureDate: "آئندہ تاریخ",
     inDays: (days: number) => `${days} دن بعد`,
     calendarMaker: "سالانہ تقویم بنائیں",
-    studioTitle: "ڈیٹ اسٹوڈیو",
+    studioTitle: "تاریخ اسٹوڈیو",
     studioDesc: "عیسوی، ہجری قمری اور ہجری شمسی تاریخیں تبدیل کریں، تلاش کریں، دیکھیں اور قابلِ طباعت تقویم بنائیں۔",
     gregorianExplorer: "تقویم دیکھیں",
     hijriExplorer: "ہجری کیلنڈر ایکسپلورر",
@@ -385,15 +385,10 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
           <h1 className={`text-2xl sm:text-3xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${isUr ? "font-nastaliq font-normal" : ""}`}>
             {t.studioTitle}
           </h1>
-          <p className={`text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`}>{t.desc}</p>
+          <p className={`text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`}>{t.studioDesc}</p>
         </div>
 
         <section id="date-studio" className="mb-7 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] p-4 sm:p-5">
-          <div className="mb-4 text-start">
-            <h2 className={`text-xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.studioTitle}</h2>
-            <p className={`mt-1 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.studioDesc}</p>
-          </div>
-
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <Link href={`/calendar/${studioToday.year}`} className={`rounded-lg border border-[#B8935A]/55 bg-[#B8935A]/8 px-3 py-2.5 text-start text-xs font-bold text-[#6F4E25] dark:text-[#E0C18D] hover:bg-[#B8935A]/14 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
