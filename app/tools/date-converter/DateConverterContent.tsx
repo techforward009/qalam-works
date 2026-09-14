@@ -522,6 +522,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
                   </button>
                 )}
               </div>
+              <RegionalContext selectedCountry={selectedCountry} setSelectedCountry={setSelectedCountry} calendar={calendar} result={result} day={day} month={month} year={year} lang={lang} isUr={isUr} naskh={naskh} embedded />
             </div>
 
             {errMsg && (
@@ -651,18 +652,6 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
               );
             })()}
 
-            <RegionalContext
-              selectedCountry={selectedCountry}
-              setSelectedCountry={setSelectedCountry}
-              calendar={calendar}
-              result={result}
-              day={day}
-              month={month}
-              year={year}
-              lang={lang}
-              isUr={isUr}
-              naskh={naskh}
-            />
           </>
         ) : (
           <section className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
@@ -728,7 +717,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
 }
 
 
-function RegionalContext({ selectedCountry, setSelectedCountry, calendar, result, day, month, year, lang, isUr, naskh }: {
+function RegionalContext({ selectedCountry, setSelectedCountry, calendar, result, day, month, year, lang, isUr, naskh, embedded = false }: {
   selectedCountry: string;
   setSelectedCountry: (value: string) => void;
   calendar: CalendarType;
@@ -739,11 +728,12 @@ function RegionalContext({ selectedCountry, setSelectedCountry, calendar, result
   lang: "en" | "ur";
   isUr: boolean;
   naskh: string;
+  embedded?: boolean;
 }) {
   const t = L[lang];
 
   return (
-    <div className="mt-6 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
+    <div className={embedded ? "mt-5 border-t border-[#1A3A2A]/10 pt-5 dark:border-[#2a3d30]" : "mt-6 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6"}>
       <p className={`text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-1 ${naskh}`}>
         {t.countryLabel}
       </p>
