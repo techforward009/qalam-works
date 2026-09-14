@@ -396,6 +396,12 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
 
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
+              <Link href={`/calendar/${studioToday.year}`} className={`rounded-lg border border-[#B8935A]/55 bg-[#B8935A]/8 px-3 py-2.5 text-start text-xs font-bold text-[#6F4E25] dark:text-[#E0C18D] hover:bg-[#B8935A]/14 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
+              <Link href={`/hijri/${studioHijri.year}`} className={`rounded-lg border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-3 py-2.5 text-start text-xs font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.hijriExplorer}</Link>
+            </div>
+            <Link href="/tools/calendar-maker" className={`block rounded-xl bg-[#1A3A2A] px-4 py-3 text-start text-white shadow-sm transition-colors hover:bg-[#254d37] ${naskh}`}><span className="block text-sm font-bold">{isUr ? "اپنی تقویم بنائیں" : "Make Your Own Calendar"}</span><span className="mt-0.5 block text-xs text-white/75">{isUr ? "اپنی قابلِ طباعت تقویم تیار کریں۔" : "Create a personalized printable calendar."}</span></Link>
+            <Link href="/tools/crescent-visibility" className={`block rounded-xl border border-[#B8935A]/55 bg-[#B8935A]/10 px-4 py-3 text-start text-[#6F4E25] transition-colors hover:bg-[#B8935A]/16 dark:text-[#E0C18D] ${naskh}`}><span className="block text-sm font-bold">{isUr ? "رؤیتِ ہلال دیکھیں" : "Check Crescent Visibility"}</span><span className="mt-0.5 block text-xs opacity-80">{isUr ? "پاکستان میں ہلال کی سائنسی رؤیت کی معلومات دیکھیں۔" : "View Pakistan-focused scientific crescent visibility information."}</span></Link>
+            <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => { setMode("convert"); setToolMode("convert"); }}
@@ -423,12 +429,6 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
             </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Link href={`/calendar/${studioToday.year}`} className={`rounded-lg border border-[#B8935A]/55 bg-[#B8935A]/8 px-3 py-2.5 text-start text-xs font-bold text-[#6F4E25] dark:text-[#E0C18D] hover:bg-[#B8935A]/14 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
-              <Link href="/tools/calendar-maker" className={`rounded-lg border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-3 py-2.5 text-start text-xs font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.calendarMakerAction}</Link>
-              <Link href="/tools/crescent-visibility" className={`rounded-lg border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-3 py-2.5 text-start text-xs font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.crescentVisibility}</Link>
-              <Link href={`/hijri/${studioHijri.year}`} className={`rounded-lg border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-3 py-2.5 text-start text-xs font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.hijriExplorer}</Link>
-            </div>
           </div>
         </section>
 
@@ -457,6 +457,9 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
                     {calLabel(c, lang)}
                   </button>
                 ))}
+              </div>
+              <div className="mb-5 border-y border-[#1A3A2A]/10 py-5 dark:border-[#2a3d30]">
+                <YallopIntegration lang={lang} method={dateStudioMethod} onMethodChange={setDateStudioMethod} observerId={yallopObserverId} onObserverChange={setYallopObserverId} gregorian={result?.gregorian ?? null} hijriDay={pakistanOfficialHijri?.hijri.day ?? result?.hijri.day ?? null} hijriDayAuthority={pakistanOfficialHijri?.authority ?? "qalam-tabular"} authorityContext={pakistanOfficialHijri} embedded />
               </div>
 
               <div className="grid grid-cols-3 gap-3 mb-4">
@@ -514,9 +517,6 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
                     {linkCopied ? t.linkCopied : t.copyLink}
                   </button>
                 )}
-              </div>
-              <div className="mt-5 border-t border-[#1A3A2A]/10 pt-5 dark:border-[#2a3d30]">
-                <YallopIntegration lang={lang} method={dateStudioMethod} onMethodChange={setDateStudioMethod} observerId={yallopObserverId} onObserverChange={setYallopObserverId} gregorian={result?.gregorian ?? null} hijriDay={pakistanOfficialHijri?.hijri.day ?? result?.hijri.day ?? null} hijriDayAuthority={pakistanOfficialHijri?.authority ?? "qalam-tabular"} authorityContext={pakistanOfficialHijri} embedded />
               </div>
               <RegionalContext selectedCountry={selectedCountry} setSelectedCountry={setSelectedCountry} calendar={calendar} result={result} day={day} month={month} year={year} lang={lang} isUr={isUr} naskh={naskh} embedded />
             </div>
