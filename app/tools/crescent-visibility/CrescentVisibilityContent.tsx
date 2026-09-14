@@ -73,7 +73,55 @@ export default function CrescentVisibilityContent() {
     <section className="mt-7 overflow-hidden rounded-[22px] bg-[#123326] p-6 text-white shadow-xl shadow-[#123326]/15 md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#d7bc7b]">{ur ? "قومی جائزہ" : "National outlook"}</p><p className="mt-3 text-lg text-[#dce8de]">{formatDate(date, "gregorian", lang)}</p></div><span className="rounded-full border border-[#d7bc7b]/50 px-3 py-1 text-xs font-semibold text-[#f1d99e]">{ur ? "سائنسی و سرکاری سیاق" : "Science and authority context"}</span></div>
       {authority ? <><p className="text-sm font-semibold">{authority.authority === "official" ? (ur ? "پاکستان کی سرکاری ہجری تاریخ" : "Pakistan official Hijri date") : (ur ? "رپورٹ شدہ سرکاری پاکستانی ہجری تاریخ" : "Reported official Pakistan Hijri date")}</p><p className={`text-2xl font-bold ${ur ? "font-naskh" : ""}`}>{formatDate(authority.hijri, "hijri", lang)}</p></> : <><p className={`text-sm font-semibold ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان کی سرکاری ہجری تاریخ دستیاب نہیں" : "Pakistan official Hijri date unavailable"}</p><p className={`mt-1 text-sm ${ur ? "font-naskh" : ""}`}>{ur ? "اس تاریخ کے لیے کوئی جائزہ شدہ سرکاری پاکستانی ہجری تاریخ دستیاب نہیں۔" : "No reviewed official Pakistan Hijri date is available for this date."}</p></>}
-      <div className="mt-7 grid gap-3 md:grid-cols-2"><div className="rounded-2xl bg-white/10 p-5 ring-1 ring-white/15"><p className="text-xs font-bold uppercase tracking-wider text-[#b9d6c0]">{ur ? "پاکستانی قومی سائنسی معیار" : "Pakistan national scientific criterion"}</p><p className={`mt-2 text-lg font-semibold leading-7 ${ur ? "font-naskh" : ""}`}>{pakistanSummary}</p></div><div className="rounded-2xl bg-[#d8b76a]/15 p-5 ring-1 ring-[#d8b76a]/30"><p className="text-xs font-bold uppercase tracking-wider text-[#f1d99e]">{ur ? "بین الاقوامی طور پر معروف سائنسی ماڈل" : "International crescent-visibility model"}</p><p className={`mt-2 text-lg font-semibold leading-7 ${ur ? "font-naskh" : ""}`}>{yallopPublicSummary}</p><p className={`mt-3 text-xs text-[#dce8de] ${ur ? "font-naskh" : ""}`}>{ur ? "استعمال شدہ ماڈل: Yallop" : "Model used: Yallop"}</p></div></div>
+      <div className="mt-7 grid gap-3 sm:grid-cols-3">
+        {/* Signal 1 — Official status */}
+        <div className="rounded-2xl bg-[#d8b76a]/15 p-5 ring-1 ring-[#d8b76a]/30">
+          <p className="text-xs font-bold uppercase tracking-wider text-[#f1d99e]">{ur ? "سرکاری حیثیت" : "Official status"}</p>
+          {authority ? (
+            <>
+              <p className={`mt-2 text-xl font-bold leading-snug text-white ${ur ? "font-naskh" : ""}`}>
+                {formatDate(authority.hijri, "hijri", lang)}
+              </p>
+              <p className={`mt-1 text-xs text-[#dce8de] ${ur ? "font-naskh" : ""}`}>
+                {authority.authority === "official" ? (ur ? "سرکاری" : "Official") : (ur ? "رپورٹ شدہ سرکاری" : "Reported official")}
+              </p>
+            </>
+          ) : (
+            <p className={`mt-2 text-sm font-semibold text-[#f1d99e] ${ur ? "font-naskh" : ""}`}>
+              {ur ? "سرکاری تاریخ دستیاب نہیں" : "Official date unavailable"}
+            </p>
+          )}
+        </div>
+        {/* Signal 2 — Pakistan national criterion (ANY-location semantics: 1–8 pass = qualifies) */}
+        <div className={`rounded-2xl p-5 ring-1 ${pakistanPassCount > 0 ? "bg-emerald-800/30 ring-emerald-500/40" : "bg-rose-900/30 ring-rose-500/30"}`}>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#b9d6c0]">{ur ? "پاکستانی قومی معیار" : "Pakistan criterion"}</p>
+          <p className={`mt-2 text-xl font-bold text-white ${ur ? "font-naskh" : ""}`}>
+            {pakistanPassCount > 0 ? (ur ? "معیار پورا ✓" : "Meets criterion ✓") : (ur ? "معیار پورا نہیں ✗" : "Does not meet criterion ✗")}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-[#dce8de]" dir="ltr">
+            {pakistanPassCount}/8 {ur ? "مقامات" : "locations"}
+          </p>
+        </div>
+        {/* Signal 3 — International model (Yallop); reuses existing public-summary semantics */}
+        <div className={`rounded-2xl p-5 ring-1 ${yallop.classCounts.A === 8 || yallopAcceptedCount === 8 ? "bg-emerald-800/30 ring-emerald-500/40" : yallopAcceptedCount > 0 ? "bg-amber-800/30 ring-amber-500/30" : "bg-rose-900/30 ring-rose-500/30"}`}>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#f1d99e]">{ur ? "بین الاقوامی ماڈل" : "International model"}</p>
+          <p className={`mt-2 text-xl font-bold text-white ${ur ? "font-naskh" : ""}`}>
+            {yallop.classCounts.A === 8
+              ? (ur ? "بہت موافق ✓" : "Very favorable ✓")
+              : yallopAcceptedCount === 8
+                ? (ur ? "موافق ✓" : "Favorable ✓")
+                : yallopAcceptedCount === 0
+                  ? (ur ? "ناموافق ✗" : "Unfavorable ✗")
+                  : null}
+          </p>
+          <p className={`mt-1 text-sm font-semibold text-[#dce8de] ${yallopAcceptedCount > 0 && yallopAcceptedCount < 8 && yallop.classCounts.A !== 8 ? (ur ? "font-naskh" : "") : ""}`}>
+            {yallopAcceptedCount > 0 && yallopAcceptedCount < 8 && yallop.classCounts.A !== 8
+              ? (ur ? `8 میں سے ${yallopAcceptedCount} حوالہ جاتی مقامات پر رؤیت کے حالات موافق ہیں۔` : `${yallopAcceptedCount} of 8 reference locations have favorable visibility conditions.`)
+              : <span dir="ltr">{yallopAcceptedCount}/8 {ur ? "حوالہ جاتی مقامات" : "reference locations"}</span>}
+          </p>
+          <p className={`mt-1 text-xs text-[#dce8de] ${ur ? "font-naskh" : ""}`}>{ur ? "ماڈل: Yallop" : "Model: Yallop"}</p>
+        </div>
+      </div>
     </section>
     {decision && <section className="mt-4 rounded-2xl border border-[#5b7d54] bg-[#edf4e8] p-5 dark:border-[#78946c] dark:bg-[#213921]" aria-label={ur ? "پاکستان کا سرکاری رویتِ ہلال فیصلہ" : "Official Pakistan moon-sighting decision"}><h2 className={`font-bold ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان کا سرکاری رویتِ ہلال فیصلہ" : "Official Pakistan moon-sighting decision"}</h2><p className={`mt-1 text-lg font-semibold ${ur ? "font-naskh" : ""}`}>{decision.sightingDecision === "sighted" ? (ur ? "چاند نظر آگیا۔" : "Crescent sighted.") : (ur ? "چاند نظر نہیں آیا۔" : "Crescent not sighted.")}</p><p className={`mt-2 text-sm text-[#335a3d] dark:text-[#d7eadb] ${ur ? "font-naskh" : ""}`}>{decision.providerLabel[lang]} · {decision.sourceReference}</p></section>}
     <section className="mt-7 grid gap-4 md:grid-cols-3"><article className="rounded-[20px] bg-[#f6f0df] p-6 shadow-sm ring-1 ring-[#d8b76a]/35 dark:bg-[#2b291c]"><p className="text-xs font-bold uppercase tracking-wider text-[#8a6830]">{ur ? "سرکاری اتھارٹی" : "Official authority"}</p><h2 className={`mt-2 text-xl font-bold text-[#183c2b] dark:text-[#f4e8c7] ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان کی سرکاری حیثیت" : "Official Pakistan status"}</h2><p className={`mt-3 ${ur ? "font-naskh" : ""}`}>{authority ? formatDate(authority.hijri, "hijri", lang) : (ur ? "اس تاریخ کے لیے پاکستان کی سرکاری ہجری تاریخ دستیاب نہیں۔" : "Official Pakistan Hijri date is not available for this date.")}</p></article><article className="rounded-[20px] bg-[#eef6ef] p-6 shadow-sm dark:bg-[#193120]"><p className="text-xs font-bold uppercase tracking-wider text-[#3e7350]">{ur ? "سائنسی پیش گوئی" : "Scientific prediction"}</p><h2 className={`mt-2 text-xl font-bold text-[#183c2b] dark:text-[#dce8de] ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستانی قومی سائنسی معیار" : "Pakistan national scientific criterion"}</h2><p className={`mt-3 ${ur ? "font-naskh" : ""}`}>{pakistanSummary}</p><p className={`mt-4 text-xs text-[#426151] dark:text-[#b9d6c0] ${ur ? "font-naskh" : ""}`}>{ur ? "یہ سائنسی نتیجہ ہے، سرکاری رویتِ ہلال کا اعلان نہیں۔" : "Scientific result — not an official moon-sighting declaration."}</p></article><article className="rounded-[20px] bg-[#f9f6ef] p-6 shadow-sm dark:bg-[#202d25]"><p className="text-xs font-bold uppercase tracking-wider text-[#8a6830]">{ur ? "فلکیاتی ماڈل" : "Astronomical model"}</p><h2 className={`mt-2 text-xl font-bold text-[#183c2b] dark:text-[#dce8de] ${ur ? "font-naskh" : ""}`}>{ur ? "بین الاقوامی طور پر معروف سائنسی ماڈل" : "International crescent-visibility model"}</h2><p className={`mt-3 ${ur ? "font-naskh" : ""}`}>{yallopPublicSummary}</p><p className="mt-4 text-xs text-muted-foreground">{ur ? "استعمال شدہ ماڈل: Yallop" : "Model used: Yallop"}</p></article></section>
