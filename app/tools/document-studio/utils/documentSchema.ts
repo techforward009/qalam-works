@@ -12,7 +12,8 @@ import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-s
 import Highlight from "@tiptap/extension-highlight";
 import { TableKit } from "@tiptap/extension-table";
 import Image from "@tiptap/extension-image";
-import { Node } from "@tiptap/core";
+import { Node, type Editor } from "@tiptap/core";
+import { NodeSelection } from "@tiptap/pm/state";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { ParagraphAutoDirection } from "./paragraphDirection";
@@ -175,6 +176,24 @@ export const HeadingWithDir = Heading.extend({
 
 /** Persisted raster image node. Data URLs are validated at insertion time;
  * width/alignment are authored document attributes, independent of site UI dir. */
+export function placeCaretAfterAtom(editor: Editor): boolean {
+  const { selection, doc } = editor.state;
+  if (!(selection instanceof NodeSelection) || !selection.node.isAtom) return false;
+  const pos = selection.to;
+  const $pos = doc.resolve(pos);
+  if ($pos.parent.inlineContent) return editor.commands.setTextSelection(pos);
+  return editor.chain().insertContentAt(pos, { type: "paragraph" }).setTextSelection(pos + 1).run();
+}
+
+export function placeCaretBeforeAtom(editor: Editor): boolean {
+  const { selection, doc } = editor.state;
+  if (!(selection instanceof NodeSelection) || !selection.node.isAtom) return false;
+  const pos = selection.from;
+  const $pos = doc.resolve(pos);
+  if ($pos.nodeBefore?.isTextblock) return editor.commands.setTextSelection(pos - 1);
+  return editor.chain().insertContentAt(pos, { type: "paragraph" }).setTextSelection(pos + 1).run();
+}
+
 export const DocumentImage = Image.extend({
   addAttributes() {
     return {
@@ -182,6 +201,17 @@ export const DocumentImage = Image.extend({
       width: { default: 480, parseHTML: (el) => Number(el.getAttribute("data-width")) || 480, renderHTML: (attrs) => ({ "data-width": String(attrs.width ?? 480), style: `width:${Math.max(80, Math.min(720, Number(attrs.width) || 480))}px;max-width:100%;height:auto;` }) },
       height: { default: 320, parseHTML: (el) => Number(el.getAttribute("data-height")) || 320, renderHTML: (attrs) => ({ "data-height": String(attrs.height ?? 320) }) },
       alignment: { default: "center", parseHTML: (el) => el.getAttribute("data-alignment") || "center", renderHTML: (attrs) => ({ "data-alignment": ["left", "center", "right"].includes(String(attrs.alignment)) ? String(attrs.alignment) : "center" }) },
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      ...this.parent?.(),
+      End: () => placeCaretAfterAtom(this.editor),
+      ArrowRight: () => placeCaretAfterAtom(this.editor),
+      ArrowDown: () => placeCaretAfterAtom(this.editor),
+      Home: () => placeCaretBeforeAtom(this.editor),
+      ArrowLeft: () => placeCaretBeforeAtom(this.editor),
+      ArrowUp: () => placeCaretBeforeAtom(this.editor),
     };
   },
 });

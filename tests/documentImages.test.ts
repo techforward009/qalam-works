@@ -93,6 +93,31 @@ describe("Document Studio v2.2 images", () => {
     editor.destroy();
   });
 
+  test("End then typing after a selected image keeps the image and appends text", () => {
+    const editor = new Editor({
+      extensions: createDocumentStudioExtensions(),
+      content: "<p>Text before the image.</p>",
+    });
+    editor.commands.focus("end");
+    editor.chain().focus().insertContent({
+      type: "image",
+      attrs: { src: PNG, alt: "tiny.png", width: 80, height: 80, alignment: "center" },
+    }).run();
+    expect((editor.getJSON() as DocNode).content?.some((node) => node.type === "image")).toBe(true);
+    expect(editor.state.selection.constructor.name).toBe("NodeSelection");
+
+    const view = editor.view;
+    const endEvent = new KeyboardEvent("keydown", { key: "End", code: "End", bubbles: true });
+    view.someProp("handleKeyDown", (handler) => handler(view, endEvent));
+    editor.view.dispatch(editor.state.tr.insertText(" Text after the image."));
+
+    const json = editor.getJSON() as DocNode;
+    expect(json.content?.some((node) => node.type === "image")).toBe(true);
+    expect(extractPlainText(json, "ltr")).toContain("Text before the image.");
+    expect(extractPlainText(json, "ltr")).toContain("Text after the image.");
+    editor.destroy();
+  });
+
   test("validates PNG, JPEG, and WebP by file signature rather than MIME alone", async () => {
     const file = (type: string, bytes: number[]) => new File([new Uint8Array(bytes)], "image", { type });
     await expect(validateDocumentImage(file("image/png", [137, 80, 78, 71, 13, 10, 26, 10]))).resolves.toBeNull();

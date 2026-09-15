@@ -65,6 +65,7 @@ import {
   HeadingWithDir,
   BLOCK_STYLE_EDITOR_CSS,
   createDocumentStudioExtensions,
+  placeCaretAfterAtom,
 } from "../utils/documentSchema";
 import {
   applyDocumentDirection,
@@ -1306,6 +1307,9 @@ export default function DocumentStudioEditor() {
           alignment: "center",
         },
       }).run();
+      // Block images are atoms: insert leaves a NodeSelection. Move into the
+      // following paragraph so the next keystroke cannot replace the image.
+      if (editor) placeCaretAfterAtom(editor);
       setImageError(null);
     } catch {
       setImageError(isUr ? "تصویر شامل نہیں ہو سکی۔" : "Image could not be inserted.");
