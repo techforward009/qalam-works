@@ -19,3 +19,4 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test tests/e2e/documentStudio.spec.ts --workers=1 --reporter=github
+      - run: npm test
