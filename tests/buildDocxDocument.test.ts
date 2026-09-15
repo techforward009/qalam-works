@@ -102,6 +102,36 @@ describe("createDocxDocument — paragraphs, headings, direction, alignment", ()
   });
 });
 
+describe("createDocxDocument — tables", () => {
+  test("exports a TipTap table as real DOCX table XML without dropping LTR or RTL cells", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{
+        type: "table",
+        content: [{
+          type: "tableRow",
+          content: [
+            { type: "tableHeader", content: [{ type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Name" }] }] },
+            { type: "tableHeader", content: [{ type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "نام" }] }] },
+          ],
+        }, {
+          type: "tableRow",
+          content: [
+            { type: "tableCell", content: [{ type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Ali" }] }] },
+            { type: "tableCell", content: [{ type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "علی" }] }] },
+          ],
+        }],
+      }]),
+      "rtl",
+    );
+    expect(xml).toContain("<w:tbl>");
+    expect(xml).toContain("Name");
+    expect(xml).toContain("Ali");
+    expect(xml).toContain("نام");
+    expect(xml).toContain("علی");
+    expect(xml).toContain("<w:bidiVisual/>");
+  });
+});
+
 describe("createDocxDocument — marks (bold, italic, links, hardBreak)", () => {
   test("bold mark produces <w:b/> and <w:bCs/> together", async () => {
     const xml = await extractDocumentXml(

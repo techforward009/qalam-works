@@ -10,6 +10,7 @@ import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-style";
 import Highlight from "@tiptap/extension-highlight";
+import { TableKit } from "@tiptap/extension-table";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { ParagraphAutoDirection } from "./paragraphDirection";
@@ -186,5 +187,11 @@ export function createDocumentStudioExtensions() {
     FontSize.configure({ types: ["textStyle"] }),
     Color,
     Highlight.configure({ multicolor: true }),
+    // Official TipTap 3 table nodes: table → tableRow → tableHeader/tableCell
+    // → normal block content. This stays in the document JSON and therefore
+    // uses the existing persistence path without a parallel table model.
+    TableKit.configure({
+      table: { resizable: false, HTMLAttributes: { class: "qalam-document-table" } },
+    }),
   ];
 }

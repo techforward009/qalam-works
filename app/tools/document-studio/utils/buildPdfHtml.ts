@@ -296,6 +296,17 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
         .join("");
       return `<ol${startAttr} dir="${blockDir}">${items}</ol>`;
     }
+    case "table": {
+      const rows = (node.content ?? []).filter((row) => row.type === "tableRow").map((row) => {
+        const cells = (row.content ?? []).filter((cell) => cell.type === "tableCell" || cell.type === "tableHeader").map((cell) => {
+          const tag = cell.type === "tableHeader" ? "th" : "td";
+          const inner = (cell.content ?? []).map((child) => convertNode(child, ctx)).join("");
+          return `<${tag}>${inner}</${tag}>`;
+        }).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+      return `<table class="qalam-document-table" dir="${blockDir}"><tbody>${rows}</tbody></table>`;
+    }
     default:
       return (node.content ?? []).map((c) => convertNode(c, ctx)).join("");
   }
@@ -423,6 +434,11 @@ ${classRulesCss()}
     padding-inline-start: 1rem;
     color: #444;
   }
+  table.qalam-document-table { width:100%; max-width:100%; border-collapse:collapse; table-layout:fixed; margin:0.75em 0; }
+  table.qalam-document-table tr { break-inside:avoid; page-break-inside:avoid; }
+  table.qalam-document-table th, table.qalam-document-table td { border:1px solid #789080; padding:0.45em 0.6em; vertical-align:top; text-align:start; overflow-wrap:anywhere; }
+  table.qalam-document-table th { background:#eaf2eb; color:#1a3a2a; font-weight:700; }
+  table.qalam-document-table p { margin:0; }
   a { color: #b45309; }
 </style>
 </head>

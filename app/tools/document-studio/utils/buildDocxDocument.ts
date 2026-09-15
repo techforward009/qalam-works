@@ -25,7 +25,11 @@ import {
   TabStopPosition,
   TabStopType,
   Paragraph,
+  Table,
+  TableCell,
+  TableRow,
   TextRun,
+  WidthType,
   type ParagraphChild,
 } from "docx";
 import type { DocNode, Direction } from "./extractPlainText";
@@ -556,6 +560,52 @@ function convertListItem(item: DocNode, dir: Direction, ctx: NumberingContext, r
   return out;
 }
 
+/** Maps a real TipTap table structure to a real DOCX table; v2.1 deliberately
+ * omits merged cells, nested tables, and advanced sizing UI. */
+function convertDocxTable(node: DocNode, dir: Direction, ctx: NumberingContext, typography: DocumentStudioSettings["typography"]): Table {
+  const rows = (node.content ?? []).filter((row) => row.type === "tableRow").map((row, rowIndex) => {
+    const cells = (row.content ?? []).filter((cell) => cell.type === "tableCell" || cell.type === "tableHeader").map((cell) => {
+      const header = cell.type === "tableHeader";
+      const children: Paragraph[] = [];
+      for (const child of cell.content ?? []) {
+        if (child.type === "paragraph") {
+          const blockDir = directionForNode(child, dir);
+          const { spacing, indent } = resolveParagraphSpacingAndIndent(child, typography);
+          children.push(new Paragraph({
+            bidirectional: blockDir === "rtl",
+            alignment: alignmentFor(child),
+            spacing,
+            indent,
+            children: convertInline(child.content, blockDir, typography, undefined, { bold: header }),
+          }));
+        } else {
+          children.push(...convertNode(child, dir, ctx, typography));
+        }
+      }
+      if (children.length === 0) children.push(new Paragraph({ children: [] }));
+      return new TableCell({
+        children,
+        shading: header ? { fill: "EAF2EB" } : undefined,
+        margins: { top: 80, bottom: 80, left: 100, right: 100 },
+      });
+    });
+    return new TableRow({ children: cells, tableHeader: rowIndex === 0 && row.content?.every((cell) => cell.type === "tableHeader") });
+  });
+  return new Table({
+    rows,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    visuallyRightToLeft: dir === "rtl",
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 4, color: "789080" },
+      bottom: { style: BorderStyle.SINGLE, size: 4, color: "789080" },
+      left: { style: BorderStyle.SINGLE, size: 4, color: "789080" },
+      right: { style: BorderStyle.SINGLE, size: 4, color: "789080" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: "789080" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 4, color: "789080" },
+    },
+  });
+}
+
 // v1.3 Phase — derives a document title from the DocNode itself (the
 // first H1 heading's plain text), falling back to "Qalam Works" if none
 // exists. No new parameter added to createDocxDocument's signature — the
@@ -622,10 +672,12 @@ function buildDocxFooterParagraph(settings: DocumentStudioSettings, dir: Directi
 
 export function createDocxDocument(doc: DocNode, dir: Direction, settings: DocumentStudioSettings = defaultDocumentSettings()): Document {
   const ctx: NumberingContext = { configs: [], counter: 0 };
-  const children: Paragraph[] = [];
+  const children: Array<Paragraph | Table> = [];
 
   (doc.content ?? []).forEach((node) => {
-    children.push(...convertNode(node, dir, ctx, settings.typography));
+    const hasStructuredRows = node.type === "table" && (node.content ?? []).some((row) => row.type === "tableRow" && (row.content ?? []).some((cell) => cell.type === "tableCell" || cell.type === "tableHeader"));
+    if (hasStructuredRows) children.push(convertDocxTable(node, dir, ctx, settings.typography));
+    else children.push(...convertNode(node, dir, ctx, settings.typography));
   });
 
   const title = deriveDocumentTitle(doc);

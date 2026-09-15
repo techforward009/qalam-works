@@ -155,6 +155,9 @@ export default function DocumentStudioEditor() {
   const { language: uiLanguage } = useLanguage();
   const isUr = uiLanguage === "ur";
   const [dir, setDir] = useState<"rtl" | "ltr">(isUr ? "rtl" : "ltr");
+  const [tableInsertOpen, setTableInsertOpen] = useState(false);
+  const [tableRows, setTableRows] = useState(3);
+  const [tableColumns, setTableColumns] = useState(3);
   const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => loadDocumentSettings());
   // Batch 16B — computed once per render, shared by the page preview and
   // the ruler so their boundaries always agree (single geometry source).
@@ -1258,6 +1261,16 @@ export default function DocumentStudioEditor() {
     setLinkHref(editor, url);
   };
 
+  const insertTable = () => {
+    if (!editor) return;
+    editor.chain().focus().insertTable({
+      rows: Math.min(10, Math.max(1, tableRows)),
+      cols: Math.min(10, Math.max(1, tableColumns)),
+      withHeaderRow: true,
+    }).run();
+    setTableInsertOpen(false);
+  };
+
   const handleMenuAction = (id: MenuActionId) => {
     dispatchDocumentMenuAction(id, editor, {
       newDocument: handleNewDocument,
@@ -1284,6 +1297,7 @@ export default function DocumentStudioEditor() {
       toggleRuler,
       loadExample: handleLoadExample,
       promptLink,
+      openTableInsert: () => setTableInsertOpen(true),
       setDir: (direction) => { if (editor) applyParagraphDirection(editor, direction); },
       standardize: handleStandardizeClick,
       audit: handleRunAudit,
@@ -1299,6 +1313,13 @@ export default function DocumentStudioEditor() {
   if (isImporting) disabledIds.add("file.upload");
   if (typeof document !== "undefined" && !document.fullscreenEnabled) {
     disabledIds.add("view.fullscreen");
+  }
+  if (!editor?.isActive("table")) {
+    ([
+      "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
+      "table.addColumnBefore", "table.addColumnAfter", "table.deleteColumn",
+      "table.toggleHeaderRow", "table.delete",
+    ] as MenuActionId[]).forEach((id) => disabledIds.add(id));
   }
 
   const checkedIds = new Set<MenuActionId>();
@@ -1407,6 +1428,33 @@ export default function DocumentStudioEditor() {
           }}
           onClose={() => setLibraryOpen(false)}
         />
+      ) : null}
+
+      {tableInsertOpen ? (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/35 p-4" role="dialog" aria-modal="true" aria-label={isUr ? "جدول شامل کریں" : "Insert table"}>
+          <form
+            className={`w-full max-w-sm rounded-xl border border-[#1A3A2A]/15 bg-[#FFFCF6] p-5 shadow-xl ${isUr ? "font-naskh" : ""}`}
+            dir={isUr ? "rtl" : "ltr"}
+            onSubmit={(event) => { event.preventDefault(); insertTable(); }}
+          >
+            <h2 className="text-base font-semibold text-[#1A3A2A]">{isUr ? "جدول شامل کریں" : "Insert table"}</h2>
+            <p className="mt-1 text-sm text-[#3D5A47]">{isUr ? "قطاریں اور ستون منتخب کریں۔" : "Choose rows and columns."}</p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <label className="text-sm font-medium text-[#1A3A2A]">
+                {isUr ? "قطاریں" : "Rows"}
+                <input className="mt-1 block w-full rounded-md border border-[#1A3A2A]/20 bg-white px-2 py-1.5" type="number" min={1} max={10} value={tableRows} onChange={(event) => setTableRows(Number(event.target.value))} />
+              </label>
+              <label className="text-sm font-medium text-[#1A3A2A]">
+                {isUr ? "ستون" : "Columns"}
+                <input className="mt-1 block w-full rounded-md border border-[#1A3A2A]/20 bg-white px-2 py-1.5" type="number" min={1} max={10} value={tableColumns} onChange={(event) => setTableColumns(Number(event.target.value))} />
+              </label>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" className="rounded-md px-3 py-1.5 text-sm text-[#1A3A2A] hover:bg-[#EAF2EB]" onClick={() => setTableInsertOpen(false)}>{isUr ? "منسوخ" : "Cancel"}</button>
+              <button type="submit" className="rounded-md bg-[#1A3A2A] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#123020]">{isUr ? "شامل کریں" : "Insert"}</button>
+            </div>
+          </form>
+        </div>
       ) : null}
 
       <DocumentStudioShell

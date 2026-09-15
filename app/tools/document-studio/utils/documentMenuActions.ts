@@ -46,6 +46,7 @@ export type DocumentMenuHandlers = {
   toggleRuler: () => void;
   loadExample: () => void;
   promptLink: () => void;
+  openTableInsert?: () => void;
   setDir: (dir: "rtl" | "ltr") => void;
   standardize: () => void;
   audit: () => void;
@@ -164,6 +165,33 @@ export function dispatchDocumentMenuAction(
       return;
     case "insert.link":
       handlers.promptLink();
+      return;
+    case "insert.table":
+      handlers.openTableInsert?.();
+      return;
+    case "table.addRowBefore":
+      editor?.chain().focus().addRowBefore().run();
+      return;
+    case "table.addRowAfter":
+      editor?.chain().focus().addRowAfter().run();
+      return;
+    case "table.deleteRow":
+      editor?.chain().focus().deleteRow().run();
+      return;
+    case "table.addColumnBefore":
+      editor?.chain().focus().addColumnBefore().run();
+      return;
+    case "table.addColumnAfter":
+      editor?.chain().focus().addColumnAfter().run();
+      return;
+    case "table.deleteColumn":
+      editor?.chain().focus().deleteColumn().run();
+      return;
+    case "table.toggleHeaderRow":
+      editor?.chain().focus().toggleHeaderRow().run();
+      return;
+    case "table.delete":
+      editor?.chain().focus().deleteTable().run();
       return;
     case "insert.example":
       handlers.loadExample();

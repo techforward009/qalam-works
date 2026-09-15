@@ -82,6 +82,18 @@ function walkForDisplay(node: DocNode, lines: string[], dir: Direction, listPref
       node.content?.forEach((child, i) => walkForDisplay(child, lines, dir, i === 0 ? listPrefix : undefined));
       break;
     }
+    case "table": {
+      // Copy/download keeps table content deterministic without introducing
+      // bidi controls: cells are tab-separated and rows newline-separated.
+      for (const row of node.content ?? []) {
+        if (row.type !== "tableRow") continue;
+        const cells = (row.content ?? [])
+          .filter((cell) => cell.type === "tableCell" || cell.type === "tableHeader")
+          .map((cell) => (cell.content ?? []).map(nodeText).join("\n"));
+        lines.push(cells.join("\t"));
+      }
+      break;
+    }
     default: {
       node.content?.forEach((child) => walkForDisplay(child, lines, dir, listPrefix));
     }
@@ -112,6 +124,18 @@ function walkForBlocks(node: DocNode, lines: string[]) {
     case "paragraph":
     case "heading": {
       lines.push(nodeText(node));
+      break;
+    }
+    case "table": {
+      for (const row of node.content ?? []) {
+        if (row.type !== "tableRow") continue;
+        lines.push(
+          (row.content ?? [])
+            .filter((cell) => cell.type === "tableCell" || cell.type === "tableHeader")
+            .map((cell) => (cell.content ?? []).map(nodeText).join("\n"))
+            .join("\t"),
+        );
+      }
       break;
     }
     default: {
