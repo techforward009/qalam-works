@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - document-studio-v2-images
+      - document-studio-v2-page-sections
 
 jobs:
   document-studio-browser-acceptance:
@@ -19,7 +20,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test tests/e2e/documentStudio.spec.ts --workers=1 --reporter=github
-      - run: npx vitest run tests/documentImages.test.ts tests/documentTables.test.ts tests/documentStudioSchemaAttrs.test.ts tests/documentStudioShell.test.ts tests/buildDocxDocument.test.ts tests/documentCommands.test.ts tests/documentStudioMultilingual.test.ts tests/pdfRealPipeline.test.ts
+      - run: npx vitest run tests/documentImages.test.ts tests/documentPageSections.test.ts tests/documentTables.test.ts tests/documentStudioSchemaAttrs.test.ts tests/documentStudioShell.test.ts tests/buildDocxDocument.test.ts tests/documentCommands.test.ts tests/documentStudioMultilingual.test.ts tests/pdfRealPipeline.test.ts
       - run: npx tsc --noEmit
       - run: npm run build
       - run: git diff --check
