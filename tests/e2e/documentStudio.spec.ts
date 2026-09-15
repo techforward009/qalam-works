@@ -207,6 +207,9 @@ test.describe("Document Studio v1 browser smoke", () => {
     await page.locator('[data-menu-action="insert.sectionBreakNextPage"]').click();
     await expect(editor.locator('[data-document-section-break="true"]')).toHaveAttribute("data-section-break-type", "nextPage");
     await page.keyboard.type("Section two text.");
+    // Wait for the save caused by the inserted section/text rather than a
+    // possibly already-visible "Saved" state from the initial document load.
+    await expect(page.locator('[data-studio-save-status="saving"]')).toBeVisible();
     await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
 
     await page.reload();
