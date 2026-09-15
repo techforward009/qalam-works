@@ -1,0 +1,22 @@
+name: Document Studio E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - document-studio-v1-closure
+
+jobs:
+  document-studio-browser-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/e2e/documentStudio.spec.ts --workers=1 --reporter=github
+      - run: npm test
