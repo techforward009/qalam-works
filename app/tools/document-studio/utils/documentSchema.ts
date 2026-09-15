@@ -207,6 +207,16 @@ export function createDocumentStudioExtensions() {
     TableKit.configure({
       table: { resizable: false, HTMLAttributes: { class: "qalam-document-table" } },
     }),
-    DocumentImage.configure({ allowBase64: true, HTMLAttributes: { class: "qalam-document-image" } }),
+    DocumentImage.configure({
+      allowBase64: true,
+      HTMLAttributes: { class: "qalam-document-image" },
+      resize: {
+        enabled: true,
+        directions: ["top-left", "top-right", "bottom-left", "bottom-right"],
+        minWidth: 80,
+        minHeight: 60,
+        alwaysPreserveAspectRatio: true,
+      },
+    }),
   ];
 }

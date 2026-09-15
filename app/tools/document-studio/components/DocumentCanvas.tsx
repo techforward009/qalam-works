@@ -407,6 +407,33 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror img.qalam-document-image[data-alignment="left"] { margin: .75rem auto .75rem 0; }
         .qalam-editor-content .ProseMirror img.qalam-document-image[data-alignment="center"] { margin: .75rem auto; }
         .qalam-editor-content .ProseMirror img.qalam-document-image[data-alignment="right"] { margin: .75rem 0 .75rem auto; }
+        .qalam-editor-content .ProseMirror [data-resize-container] {
+          width: 100%;
+          max-width: 100%;
+          margin-block: .75rem;
+        }
+        .qalam-editor-content .ProseMirror [data-resize-container]:has(img[data-alignment="left"]) { justify-content: flex-start; }
+        .qalam-editor-content .ProseMirror [data-resize-container]:has(img[data-alignment="center"]) { justify-content: center; }
+        .qalam-editor-content .ProseMirror [data-resize-container]:has(img[data-alignment="right"]) { justify-content: flex-end; }
+        .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-wrapper] {
+          outline: 2px solid #B8935A;
+          outline-offset: 3px;
+          border-radius: .5rem;
+        }
+        .qalam-editor-content .ProseMirror [data-resize-handle] {
+          width: .75rem;
+          height: .75rem;
+          margin: -.375rem;
+          border: 2px solid #fff;
+          border-radius: 9999px;
+          background: #1A3A2A;
+          box-shadow: 0 1px 4px rgba(26,58,42,.35);
+          opacity: 0;
+          transition: opacity .15s ease;
+          cursor: nwse-resize;
+        }
+        .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-handle],
+        .qalam-editor-content .ProseMirror [data-resize-container]:hover [data-resize-handle] { opacity: 1; }
       `}</style>
       <style jsx global>{`
         ${documentPrintCss(pageLayout.widthMm, pageLayout.heightMm)}

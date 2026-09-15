@@ -1293,7 +1293,7 @@ export default function DocumentStudioEditor() {
         return;
       }
       const dimensions = await getImageDimensions(src);
-      const width = Math.min(480, dimensions.width);
+      const width = Math.max(80, Math.min(480, dimensions.width));
       const height = Math.max(1, Math.round((dimensions.height / dimensions.width) * width));
       editor?.chain().focus().insertContent({
         type: "image",

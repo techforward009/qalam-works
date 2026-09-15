@@ -42,6 +42,17 @@ describe("Document Studio v2.2 images", () => {
     expect(image?.attrs?.alignment).toBe("right");
   });
 
+  test("enables the official four-corner resizable image NodeView with aspect preservation", () => {
+    const image = createDocumentStudioExtensions().find((extension) => extension.name === "image");
+    expect(image?.options.resize).toMatchObject({
+      enabled: true,
+      directions: ["top-left", "top-right", "bottom-left", "bottom-right"],
+      minWidth: 80,
+      minHeight: 60,
+      alwaysPreserveAspectRatio: true,
+    });
+  });
+
   test("plain text uses the alt-text image placeholder and preserves surrounding direction blocks", () => {
     expect(extractPlainText(imageDoc(), "rtl")).toBe("Before\r\n[Image: Qalam mark]\r\nبعد");
   });

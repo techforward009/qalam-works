@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
+import { NodeSelection } from "@tiptap/pm/state";
 import type { ProcessingLanguage } from "../../../utils/processing/types";
 import { listEditorFonts } from "../utils/fontRegistry";
 import { FONT_SIZE_OPTIONS_PT, LINE_SPACING_PRESETS, parseNumericField, type DocumentStudioSettings, defaultDocumentSettings } from "../utils/documentSettings";
@@ -66,6 +67,22 @@ function ToolbarButton({
 
 function ToolbarDivider() {
   return <div className="w-px h-5 bg-gray-200 mx-0.5 self-center" />;
+}
+
+function ImageActionButton({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#B8935A]/50 ${
+        active
+          ? "border-[#1A3A2A] bg-[#1A3A2A] text-white"
+          : "border-[#1A3A2A]/15 bg-white text-[#1A3A2A] hover:border-[#B8935A] hover:bg-[#FBF6EC]"
+      }`}
+    >
+      {label}
+    </button>
+  );
 }
 
 type StudioSwatch = { id: string; label: string; hex: string };
@@ -544,6 +561,18 @@ export default function DocumentToolbar({
     selector: ({ editor: current }) =>
       current ? resolveActiveToolbarFormatting(current, settings, dir) : null,
   });
+  const selectedImage = useEditorState({
+    editor,
+    selector: ({ editor: current }) => {
+      const selection = current?.state.selection;
+      if (!(selection instanceof NodeSelection) || selection.node.type.name !== "image") return null;
+      const node = selection.node;
+      const width = typeof node.attrs.width === "number" ? node.attrs.width : 480;
+      const height = typeof node.attrs.height === "number" ? node.attrs.height : 320;
+      const alignment = node.attrs.alignment === "left" || node.attrs.alignment === "right" ? node.attrs.alignment : "center";
+      return { width, height, alignment, alt: typeof node.attrs.alt === "string" ? node.attrs.alt : "" };
+    },
+  });
   if (!editor || !ui) return null;
 
   const currentFont = ui.mixed.fontFamily ? MIXED_TOOLBAR_VALUE : ui.fontFamily;
@@ -561,7 +590,28 @@ export default function DocumentToolbar({
   };
 
   return (
-    <div
+    <>
+      {selectedImage ? (
+        <div
+          className="flex flex-wrap items-center gap-2 border-b border-[#1A3A2A]/10 bg-[#F7F3E9] px-3 py-2"
+          data-studio-image-controls="true"
+          role="group"
+          aria-label={isUr ? "تصویر کے اختیارات" : "Image controls"}
+        >
+          <span className="text-xs font-bold text-[#1A3A2A]">{isUr ? "تصویر" : "Image"}</span>
+          <span className="rounded bg-white px-2 py-1 font-mono text-xs text-[#405647]" dir="ltr" data-studio-image-width="true">
+            {isUr ? "چوڑائی" : "Width"}: {Math.round(selectedImage.width)} px
+          </span>
+          <ImageActionButton label={isUr ? "چھوٹی" : "Smaller"} onClick={() => resizeSelectedImage(-80)} />
+          <ImageActionButton label={isUr ? "بڑی" : "Larger"} onClick={() => resizeSelectedImage(80)} />
+          <ImageActionButton label={isUr ? "بائیں" : "Left"} active={selectedImage.alignment === "left"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "left" }).run()} />
+          <ImageActionButton label={isUr ? "درمیان" : "Center"} active={selectedImage.alignment === "center"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "center" }).run()} />
+          <ImageActionButton label={isUr ? "دائیں" : "Right"} active={selectedImage.alignment === "right"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "right" }).run()} />
+          <ImageActionButton label={isUr ? "متبادل متن" : "Alt Text"} onClick={() => { const alt = window.prompt(isUr ? "متبادل متن" : "Alternative text", selectedImage.alt); if (alt !== null) editor.chain().focus().updateAttributes("image", { alt: sanitizeImageMetadata(alt) }).run(); }} />
+          <ImageActionButton label={isUr ? "حذف" : "Delete"} onClick={() => editor.chain().focus().deleteSelection().run()} />
+        </div>
+      ) : null}
+      <div
       className="flex flex-wrap items-center gap-1 px-2 py-1.5"
       dir="ltr"
       data-studio-toolbar="true"
@@ -705,18 +755,6 @@ export default function DocumentToolbar({
       <ToolbarButton label="Numbered List" active={ui.ordered} onClick={() => toggleOrderedList(editor)}>
         1.
       </ToolbarButton>
-      {editor.isActive("image") ? (
-        <>
-          <ToolbarDivider />
-          <ToolbarButton label={isUr ? "چھوٹا کریں" : "Smaller image"} onClick={() => resizeSelectedImage(-80)}>−</ToolbarButton>
-          <ToolbarButton label={isUr ? "بڑا کریں" : "Larger image"} onClick={() => resizeSelectedImage(80)}>＋</ToolbarButton>
-          <ToolbarButton label={isUr ? "بائیں سیدھ" : "Align image left"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "left" }).run()}>⇤</ToolbarButton>
-          <ToolbarButton label={isUr ? "درمیان" : "Center image"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "center" }).run()}>⇔</ToolbarButton>
-          <ToolbarButton label={isUr ? "دائیں سیدھ" : "Align image right"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "right" }).run()}>⇥</ToolbarButton>
-          <ToolbarButton label={isUr ? "متبادل متن" : "Edit image alt text"} onClick={() => { const current = String(editor.getAttributes("image").alt ?? ""); const alt = window.prompt(isUr ? "متبادل متن" : "Alternative text", current); if (alt !== null) editor.chain().focus().updateAttributes("image", { alt: sanitizeImageMetadata(alt) }).run(); }}>Alt</ToolbarButton>
-          <ToolbarButton label={isUr ? "تصویر حذف کریں" : "Remove image"} onClick={() => editor.chain().focus().deleteSelection().run()}>×</ToolbarButton>
-        </>
-      ) : null}
       <ToolbarDivider />
       <ToolbarButton label="Automatic paragraph direction" active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")}>
         Auto
@@ -731,6 +769,7 @@ export default function DocumentToolbar({
       <div className="shrink-0" data-studio-dictation="true">
         <DictationControl editor={editor} docDir={dir} isUr={isUr} />
       </div>
-    </div>
+      </div>
+    </>
   );
 }

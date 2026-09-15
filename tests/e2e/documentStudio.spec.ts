@@ -134,6 +134,7 @@ test.describe("Document Studio v1 browser smoke", () => {
 
   test("inserts, edits, persists, and exports a local raster image", async ({ page }) => {
     await openStudio(page);
+    const editor = await replaceEditorContent(page, "Text before the image.");
     await page.locator('[data-menu-root="insert"]').click();
     await page.locator('[data-menu-action="insert.image"]').click();
     await page.locator('[data-studio-image-input="true"]').setInputFiles({
@@ -142,14 +143,44 @@ test.describe("Document Studio v1 browser smoke", () => {
     const image = page.locator(".ProseMirror img.qalam-document-image");
     await expect(image).toBeVisible();
     await image.click();
-    await page.getByRole("button", { name: "Larger image" }).click();
-    await page.getByRole("button", { name: "Align image right" }).click();
+    const imageControls = page.locator('[data-studio-image-controls="true"]');
+    await expect(imageControls).toBeVisible();
+    await expect(page.locator('[data-resize-handle]')).toHaveCount(4);
+    await expect(imageControls.locator('[data-studio-image-width="true"]')).toContainText("80 px");
+
+    await page.getByRole("button", { name: "Larger", exact: true }).click();
+    await expect(image).toHaveAttribute("data-width", "160");
+    const resizeHandle = page.locator('[data-resize-handle="bottom-right"]');
+    const handleBox = await resizeHandle.boundingBox();
+    if (!handleBox) throw new Error("Image resize handle was not rendered.");
+    await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(handleBox.x + 60, handleBox.y + 60);
+    await page.mouse.up();
+    await expect.poll(async () => Number(await image.getAttribute("data-width"))).toBeGreaterThan(160);
+
+    await page.getByRole("button", { name: "Left", exact: true }).click();
+    const leftPosition = await image.boundingBox();
+    await page.getByRole("button", { name: "Center", exact: true }).click();
+    const centerPosition = await image.boundingBox();
+    await page.getByRole("button", { name: "Right", exact: true }).click();
+    const rightPosition = await image.boundingBox();
+    expect(leftPosition?.x).toBeLessThan(centerPosition?.x ?? 0);
+    expect(centerPosition?.x).toBeLessThan(rightPosition?.x ?? 0);
     page.once("dialog", (dialog) => dialog.accept("Qalam mark"));
-    await page.getByRole("button", { name: "Edit image alt text" }).click();
+    await page.getByRole("button", { name: "Alt Text", exact: true }).click();
     await expect(image).toHaveAttribute("alt", "Qalam mark");
+    await editor.click();
+    await page.keyboard.press("End");
+    await page.keyboard.type(" Text after the image.");
     await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
     await page.reload();
-    await expect(page.locator(".ProseMirror img.qalam-document-image")).toHaveAttribute("alt", "Qalam mark");
+    const restoredImage = page.locator(".ProseMirror img.qalam-document-image");
+    await expect(restoredImage).toHaveAttribute("alt", "Qalam mark");
+    await expect(restoredImage).toHaveAttribute("data-alignment", "right");
+    await expect.poll(async () => Number(await restoredImage.getAttribute("data-width"))).toBeGreaterThan(160);
+    await expect(page.locator(".ProseMirror")).toContainText("Text before the image.");
+    await expect(page.locator(".ProseMirror")).toContainText("Text after the image.");
     const docx = await downloadAction(page, "file.downloadDocx");
     expect(docx.suggestedFilename()).toMatch(/\.docx$/i);
     const responsePromise = page.waitForResponse((response) => response.url().includes("/api/export-pdf") && response.request().method() === "POST");
