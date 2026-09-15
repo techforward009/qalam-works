@@ -1123,7 +1123,7 @@ export default function DocumentStudioEditor() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (err) {
       console.error("Failed to generate .docx:", err);
     }
@@ -1165,7 +1165,7 @@ export default function DocumentStudioEditor() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
 
       if (pageCountHeader && fileSizeHeader) {
         let fontsUsed: string[] = [];
