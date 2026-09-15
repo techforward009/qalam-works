@@ -1323,11 +1323,19 @@ export default function DocumentStudioEditor() {
   };
 
   const insertPageBreak = () => {
-    editor?.chain().focus().insertContent({ type: "pageBreak" }).run();
+    // Atomic break markers cannot accept text. Always create the following
+    // paragraph in the same transaction so typing continues on the new page.
+    editor?.chain().focus().insertContent([
+      { type: "pageBreak" },
+      { type: "paragraph" },
+    ]).run();
   };
 
   const insertSectionBreak = (type: "nextPage" | "continuous") => {
-    editor?.chain().focus().insertContent({ type: "sectionBreak", attrs: { type } }).run();
+    editor?.chain().focus().insertContent([
+      { type: "sectionBreak", attrs: { type } },
+      { type: "paragraph" },
+    ]).run();
   };
 
   const handleMenuAction = (id: MenuActionId) => {
