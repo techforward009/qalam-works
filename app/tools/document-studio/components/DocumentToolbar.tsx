@@ -69,11 +69,23 @@ function ToolbarDivider() {
   return <div className="w-px h-5 bg-gray-200 mx-0.5 self-center" />;
 }
 
-function ImageActionButton({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
+function ImageActionButton({
+  label,
+  active,
+  onClick,
+  wrapMode,
+}: {
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+  wrapMode?: "wrap" | "break";
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
+      data-studio-image-wrap={wrapMode}
       className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#B8935A]/50 ${
         active
           ? "border-[#1A3A2A] bg-[#1A3A2A] text-white"
@@ -570,7 +582,8 @@ export default function DocumentToolbar({
       const width = typeof node.attrs.width === "number" ? node.attrs.width : 480;
       const height = typeof node.attrs.height === "number" ? node.attrs.height : 320;
       const alignment = node.attrs.alignment === "left" || node.attrs.alignment === "right" ? node.attrs.alignment : "center";
-      return { width, height, alignment, alt: typeof node.attrs.alt === "string" ? node.attrs.alt : "" };
+      const wrapMode = node.attrs.wrapMode === "wrap" ? "wrap" : "break";
+      return { width, height, alignment, wrapMode, alt: typeof node.attrs.alt === "string" ? node.attrs.alt : "" };
     },
   });
   if (!editor || !ui) return null;
@@ -605,8 +618,27 @@ export default function DocumentToolbar({
           <ImageActionButton label={isUr ? "چھوٹی" : "Smaller"} onClick={() => resizeSelectedImage(-80)} />
           <ImageActionButton label={isUr ? "بڑی" : "Larger"} onClick={() => resizeSelectedImage(80)} />
           <ImageActionButton label={isUr ? "بائیں" : "Left"} active={selectedImage.alignment === "left"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "left" }).run()} />
-          <ImageActionButton label={isUr ? "درمیان" : "Center"} active={selectedImage.alignment === "center"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "center" }).run()} />
+          <ImageActionButton
+            label={isUr ? "درمیان" : "Center"}
+            active={selectedImage.alignment === "center"}
+            onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "center", wrapMode: "break" }).run()}
+          />
           <ImageActionButton label={isUr ? "دائیں" : "Right"} active={selectedImage.alignment === "right"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "right" }).run()} />
+          <ImageActionButton
+            label={isUr ? "متن لپیٹیں" : "Wrap text"}
+            active={selectedImage.wrapMode === "wrap"}
+            wrapMode="wrap"
+            onClick={() => {
+              const alignment = selectedImage.alignment === "right" ? "right" : "left";
+              editor.chain().focus().updateAttributes("image", { wrapMode: "wrap", alignment }).run();
+            }}
+          />
+          <ImageActionButton
+            label={isUr ? "متن توڑیں" : "Break text"}
+            active={selectedImage.wrapMode === "break"}
+            wrapMode="break"
+            onClick={() => editor.chain().focus().updateAttributes("image", { wrapMode: "break" }).run()}
+          />
           <ImageActionButton label={isUr ? "متبادل متن" : "Alt Text"} onClick={() => { const alt = window.prompt(isUr ? "متبادل متن" : "Alternative text", selectedImage.alt); if (alt !== null) editor.chain().focus().updateAttributes("image", { alt: sanitizeImageMetadata(alt) }).run(); }} />
           <ImageActionButton label={isUr ? "حذف" : "Delete"} onClick={() => editor.chain().focus().deleteSelection().run()} />
         </div>

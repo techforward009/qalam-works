@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - document-studio-v2-images
+      - document-studio-v2-image-wrapping
 
 jobs:
   document-studio-browser-acceptance:

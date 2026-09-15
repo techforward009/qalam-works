@@ -38,6 +38,49 @@ async function downloadAction(page: Page, action: "file.downloadDocx" | "file.do
   return download;
 }
 
+type LayoutBox = { x: number; y: number; right: number; bottom: number; width: number; height: number };
+
+async function imageAndFirstLine(page: Page): Promise<{ image: LayoutBox; line: LayoutBox }> {
+  const layout = await page.evaluate(() => {
+    const imageEl = document.querySelector(".ProseMirror img.qalam-document-image");
+    if (!imageEl) return null;
+    const container = (imageEl.closest("[data-resize-container]") ?? imageEl) as HTMLElement;
+    const prose = document.querySelector(".ProseMirror");
+    if (!prose) return null;
+    const imageBox = container.getBoundingClientRect();
+    const paragraphs = [...prose.querySelectorAll("p")];
+    const paragraph = prose.querySelector("p.qalam-image-wrap-beside")
+      ?? paragraphs.find((node) => (node.textContent ?? "").trim().length > 40)
+      ?? paragraphs.find((node) => (node.textContent ?? "").trim().length > 0);
+    if (!paragraph) return null;
+    const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+    let line: DOMRect | null = null;
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      if (!(node.textContent ?? "").trim()) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const rects = [...range.getClientRects()];
+      line = rects.find((rect) => rect.bottom > imageBox.y + 4 && rect.y < imageBox.bottom - 4) ?? rects[0] ?? null;
+      if (line) break;
+    }
+    if (!line) return null;
+    const box = (rect: DOMRectReadOnly) => ({
+      x: rect.x,
+      y: rect.y,
+      right: rect.right,
+      bottom: rect.bottom,
+      width: rect.width,
+      height: rect.height,
+    });
+    return { image: box(imageBox), line: box(line) };
+  });
+  if (!layout) throw new Error("Could not measure image and wrapping paragraph line box.");
+  return layout;
+}
+
+const WRAP_PARAGRAPH = "The Qalam Works document wraps this paragraph beside the picture so the first line sits next to the image rather than below it. Additional sentences keep the column of text tall enough to occupy the side of the raster on both desktop and mobile viewports.";
+
 test.describe("Document Studio v1 browser smoke", () => {
   test("loads an editable English workspace, formats it, and persists after reload", async ({ page }) => {
     const errors: Error[] = [];
@@ -190,6 +233,65 @@ test.describe("Document Studio v1 browser smoke", () => {
     await page.locator('[data-menu-action="file.downloadPdf"]').click();
     expect((await responsePromise).status()).toBe(200);
     expect(await page.waitForEvent("download")).toBeTruthy();
+  });
+
+  test("wraps paragraph text beside left and right images and persists wrap mode", async ({ page }) => {
+    await openStudio(page);
+    await page.locator('[data-menu-root="insert"]').click();
+    await page.locator('[data-menu-action="insert.image"]').click();
+    await page.locator('[data-studio-image-input="true"]').setInputFiles({
+      name: "tiny.png", mimeType: "image/png", buffer: Buffer.from(TINY_PNG_BASE64, "base64"),
+    });
+    const image = page.locator(".ProseMirror img.qalam-document-image");
+    await expect(image).toBeVisible();
+    await image.click();
+    const imageControls = page.locator('[data-studio-image-controls="true"]');
+    await expect(imageControls).toBeVisible();
+    await expect(image).toHaveAttribute("data-wrap-mode", "break");
+    await expect(page.getByRole("button", { name: "Break text", exact: true })).toHaveAttribute("aria-pressed", "true");
+
+    await page.getByRole("button", { name: "Wrap text", exact: true }).click();
+    await page.getByRole("button", { name: "Left", exact: true }).click();
+    await expect(image).toHaveAttribute("data-wrap-mode", "wrap");
+    await expect(image).toHaveAttribute("data-alignment", "left");
+    await expect(page.locator("[data-resize-container]")).toHaveAttribute("data-image-float", "left");
+    await expect(page.getByRole("button", { name: "Wrap text", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await page.locator(".ProseMirror p").last().click();
+    await page.keyboard.type(WRAP_PARAGRAPH);
+    await expect(page.locator(".ProseMirror")).toContainText("wraps this paragraph beside the picture");
+    const wrapLeft = await imageAndFirstLine(page);
+    expect(wrapLeft.line.x).toBeGreaterThan(wrapLeft.image.right - 4);
+    expect(wrapLeft.line.y).toBeLessThan(wrapLeft.image.bottom);
+    expect(wrapLeft.line.bottom).toBeGreaterThan(wrapLeft.image.y);
+
+    await image.click();
+    await expect(imageControls).toBeVisible();
+    await page.getByRole("button", { name: "Right", exact: true }).click();
+    await expect(image).toHaveAttribute("data-alignment", "right");
+    await expect(page.locator("[data-resize-container]")).toHaveAttribute("data-image-float", "right");
+    const wrapRight = await imageAndFirstLine(page);
+    expect(wrapRight.line.right).toBeLessThan(wrapRight.image.x + 4);
+    expect(wrapRight.line.y).toBeLessThan(wrapRight.image.bottom);
+    expect(wrapRight.line.bottom).toBeGreaterThan(wrapRight.image.y);
+    expect(wrapRight.image.x).toBeGreaterThan(wrapLeft.image.x);
+
+    await page.getByRole("button", { name: "Break text", exact: true }).click();
+    await expect(image).toHaveAttribute("data-wrap-mode", "break");
+    await expect(page.locator("[data-resize-container]")).not.toHaveAttribute("data-image-float");
+    await expect(page.getByRole("button", { name: "Break text", exact: true })).toHaveAttribute("aria-pressed", "true");
+    const broken = await imageAndFirstLine(page);
+    expect(broken.line.y).toBeGreaterThan(broken.image.bottom - 8);
+
+    await page.getByRole("button", { name: "Wrap text", exact: true }).click();
+    await page.getByRole("button", { name: "Left", exact: true }).click();
+    await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
+    await page.reload();
+    const restoredImage = page.locator(".ProseMirror img.qalam-document-image");
+    await expect(restoredImage).toHaveAttribute("data-wrap-mode", "wrap");
+    await expect(restoredImage).toHaveAttribute("data-alignment", "left");
+    const restored = await imageAndFirstLine(page);
+    expect(restored.line.x).toBeGreaterThan(restored.image.right - 4);
+    expect(restored.line.y).toBeLessThan(restored.image.bottom);
   });
 
   test("downloads non-empty DOCX and PDF exports", async ({ page }) => {

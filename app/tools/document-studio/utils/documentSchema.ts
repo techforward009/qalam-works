@@ -12,9 +12,12 @@ import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-s
 import Highlight from "@tiptap/extension-highlight";
 import { TableKit } from "@tiptap/extension-table";
 import Image from "@tiptap/extension-image";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { ParagraphAutoDirection } from "./paragraphDirection";
+import { applyImageFloatDataset, imageFloatsBesideText, imageWrapSize, parseImageAlignment } from "./documentImages";
 
 const DIRECTION_MODE_ATTR = {
   default: "auto",
@@ -173,7 +176,7 @@ export const HeadingWithDir = Heading.extend({
 });
 
 /** Persisted raster image node. Data URLs are validated at insertion time;
- * width/alignment are authored document attributes, independent of site UI dir. */
+ * width/alignment/wrapMode are authored document attributes, independent of site UI dir. */
 export const DocumentImage = Image.extend({
   addAttributes() {
     return {
@@ -181,7 +184,67 @@ export const DocumentImage = Image.extend({
       width: { default: 480, parseHTML: (el) => Number(el.getAttribute("data-width")) || 480, renderHTML: (attrs) => ({ "data-width": String(attrs.width ?? 480), style: `width:${Math.max(80, Math.min(720, Number(attrs.width) || 480))}px;max-width:100%;height:auto;` }) },
       height: { default: 320, parseHTML: (el) => Number(el.getAttribute("data-height")) || 320, renderHTML: (attrs) => ({ "data-height": String(attrs.height ?? 320) }) },
       alignment: { default: "center", parseHTML: (el) => el.getAttribute("data-alignment") || "center", renderHTML: (attrs) => ({ "data-alignment": ["left", "center", "right"].includes(String(attrs.alignment)) ? String(attrs.alignment) : "center" }) },
+      wrapMode: {
+        default: "break",
+        parseHTML: (el) => (el.getAttribute("data-wrap-mode") === "wrap" ? "wrap" : "break"),
+        renderHTML: (attrs) => ({ "data-wrap-mode": attrs.wrapMode === "wrap" ? "wrap" : "break" }),
+      },
     };
+  },
+  addNodeView() {
+    const parentRenderer = this.parent?.();
+    if (typeof parentRenderer !== "function") return parentRenderer ?? null;
+    return (props) => {
+      const view = parentRenderer(props);
+      if (!view?.dom) return view;
+      const sync = (attrs: Record<string, unknown>) => applyImageFloatDataset(view.dom as HTMLElement, attrs);
+      sync(props.node.attrs);
+      const previousUpdate = view.update;
+      if (previousUpdate) {
+        view.update = (node, decorations, innerDecorations) => {
+          const allowed = previousUpdate.call(view, node, decorations, innerDecorations);
+          if (allowed !== false) sync(node.attrs);
+          return allowed;
+        };
+      }
+      return view;
+    };
+  },
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("qalamImageWrap"),
+        props: {
+          decorations(state) {
+            const widgets: Decoration[] = [];
+            state.doc.forEach((node, offset) => {
+              if (node.type.name !== "image" || !imageFloatsBesideText(node.attrs.wrapMode, node.attrs.alignment)) return;
+              const after = offset + node.nodeSize;
+              const next = state.doc.nodeAt(after);
+              if (!next || next.type.name !== "paragraph") return;
+              const alignment = parseImageAlignment(node.attrs.alignment);
+              const { width, height } = imageWrapSize(node.attrs);
+              widgets.push(Decoration.node(after, after + next.nodeSize, {
+                class: "qalam-image-wrap-beside",
+                style: `--qalam-wrap-h:${height}px`,
+                "data-wrap-beside": alignment,
+              }));
+              widgets.push(Decoration.widget(after + 1, () => {
+                const spacer = document.createElement("span");
+                spacer.setAttribute("data-image-wrap-spacer", alignment);
+                spacer.style.cssFloat = alignment;
+                spacer.style.width = `${width + 16}px`;
+                spacer.style.height = `${height}px`;
+                spacer.style.pointerEvents = "none";
+                spacer.style.userSelect = "none";
+                return spacer;
+              }, { side: -1, ignoreSelection: true, key: `qalam-image-wrap-${offset}-${alignment}-${width}-${height}` }));
+            });
+            return widgets.length ? DecorationSet.create(state.doc, widgets) : DecorationSet.empty;
+          },
+        },
+      }),
+    ];
   },
 });
 

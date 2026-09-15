@@ -6,9 +6,13 @@ import { extractPlainText, type DocNode } from "../app/tools/document-studio/uti
 import { buildPdfHtml } from "../app/tools/document-studio/utils/buildPdfHtml";
 import { createMemoryDocumentLibrary } from "../app/tools/document-studio/utils/documentLibrary";
 import {
+  applyImageFloatDataset,
   documentImagePayloadBytes,
   imageDataUrlByteLength,
+  imageFloatsBesideText,
   MAX_DOCUMENT_IMAGE_BYTES,
+  parseImageAlignment,
+  parseImageWrapMode,
   sanitizeImageMetadata,
   validateDocumentImage,
 } from "../app/tools/document-studio/utils/documentImages";
@@ -40,6 +44,78 @@ describe("Document Studio v2.2 images", () => {
     expect(image?.type).toBe("image");
     expect(image?.attrs?.width).toBe(240);
     expect(image?.attrs?.alignment).toBe("right");
+    expect(image?.attrs?.wrapMode).toBe("break");
+  });
+
+  test("existing documents without wrapMode default to break", () => {
+    const schema = getSchema(createDocumentStudioExtensions());
+    const result = PMNode.fromJSON(schema, imageDoc()).toJSON() as DocNode;
+    expect(result.content?.[1]?.attrs?.wrapMode).toBe("break");
+  });
+
+  test("wrapMode wrap survives schema JSON round-trip", () => {
+    const schema = getSchema(createDocumentStudioExtensions());
+    const wrapped = {
+      type: "doc",
+      content: [{
+        type: "image",
+        attrs: { src: PNG, alt: "Mark", width: 240, height: 120, alignment: "left", wrapMode: "wrap" },
+      }],
+    };
+    const result = PMNode.fromJSON(schema, wrapped).toJSON() as DocNode;
+    expect(result.content?.[0]?.attrs).toMatchObject({ alignment: "left", wrapMode: "wrap" });
+  });
+
+  test("parse helpers treat missing/invalid wrap as break and center as no-float", () => {
+    expect(parseImageWrapMode(undefined)).toBe("break");
+    expect(parseImageWrapMode("wrap")).toBe("wrap");
+    expect(parseImageAlignment("right")).toBe("right");
+    expect(parseImageAlignment("elsewhere")).toBe("center");
+    expect(imageFloatsBesideText("wrap", "left")).toBe(true);
+    expect(imageFloatsBesideText("wrap", "right")).toBe(true);
+    expect(imageFloatsBesideText("wrap", "center")).toBe(false);
+    expect(imageFloatsBesideText("break", "left")).toBe(false);
+  });
+
+  test("float dataset shrink-wraps only wrap + left/right", () => {
+    const element = document.createElement("div");
+    applyImageFloatDataset(element, { wrapMode: "wrap", alignment: "left" });
+    expect(element.dataset.imageFloat).toBe("left");
+    expect(element.dataset.wrapMode).toBe("wrap");
+    applyImageFloatDataset(element, { wrapMode: "wrap", alignment: "center" });
+    expect(element.dataset.imageFloat).toBeUndefined();
+    applyImageFloatDataset(element, { wrapMode: "break", alignment: "right" });
+    expect(element.dataset.imageFloat).toBeUndefined();
+    expect(element.dataset.wrapMode).toBe("break");
+  });
+
+  test("real editor NodeView marks wrap floats on the resize container", () => {
+    const editor = new Editor({
+      element: document.createElement("div"),
+      extensions: createDocumentStudioExtensions(),
+      content: {
+        type: "doc",
+        content: [
+          { type: "image", attrs: { src: PNG, alt: "Mark", width: 120, height: 60, alignment: "left", wrapMode: "wrap" } },
+          { type: "paragraph", content: [{ type: "text", text: "Beside the picture." }] },
+        ],
+      },
+    });
+    const container = editor.view.dom.querySelector("[data-resize-container]") as HTMLElement | null;
+    expect(container?.dataset.imageFloat).toBe("left");
+    expect(container?.dataset.wrapMode).toBe("wrap");
+    expect(container?.style.getPropertyValue("--qalam-wrap-h")).toBe("60px");
+    expect(editor.getHTML()).toContain('data-wrap-mode="wrap"');
+    expect(editor.view.dom.querySelector("[data-image-wrap-spacer='left']")).toBeTruthy();
+    expect(editor.view.dom.querySelector("p.qalam-image-wrap-beside")).toBeTruthy();
+    selectImage(editor);
+    editor.chain().focus().updateAttributes("image", { alignment: "right" }).run();
+    expect((editor.view.dom.querySelector("[data-resize-container]") as HTMLElement | null)?.dataset.imageFloat).toBe("right");
+    expect(editor.view.dom.querySelector("[data-image-wrap-spacer='right']")).toBeTruthy();
+    editor.chain().focus().updateAttributes("image", { wrapMode: "break" }).run();
+    expect((editor.view.dom.querySelector("[data-resize-container]") as HTMLElement | null)?.dataset.imageFloat).toBeUndefined();
+    expect(editor.view.dom.querySelector("[data-image-wrap-spacer]")).toBeNull();
+    editor.destroy();
   });
 
   test("enables the official four-corner resizable image NodeView with aspect preservation", () => {
@@ -68,16 +144,16 @@ describe("Document Studio v2.2 images", () => {
     });
   });
 
-  test("real editor image commands preserve authored dimensions, alignment, and alt text", () => {
+  test("real editor image commands preserve authored dimensions, alignment, wrap mode, and alt text", () => {
     const editor = new Editor({ extensions: createDocumentStudioExtensions(), content: "<p>Before</p>" });
     editor.chain().focus().insertContent({
       type: "image",
       attrs: { src: PNG, alt: "Initial", width: 320, height: 160, alignment: "left" },
     }).run();
     selectImage(editor);
-    editor.chain().focus().updateAttributes("image", { width: 400, height: 200, alignment: "right", alt: "Updated" }).run();
+    editor.chain().focus().updateAttributes("image", { width: 400, height: 200, alignment: "right", wrapMode: "wrap", alt: "Updated" }).run();
     const image = (editor.getJSON() as DocNode).content?.find((node) => node.type === "image");
-    expect(image?.attrs).toMatchObject({ width: 400, height: 200, alignment: "right", alt: "Updated" });
+    expect(image?.attrs).toMatchObject({ width: 400, height: 200, alignment: "right", wrapMode: "wrap", alt: "Updated" });
     expect((image?.attrs?.height as number) / (image?.attrs?.width as number)).toBe(0.5);
     editor.destroy();
   });
@@ -119,5 +195,33 @@ describe("Document Studio v2.2 images", () => {
     expect(built.html).toContain("max-width:100%");
     expect(built.html).toContain("Before");
     expect(built.html).toContain("بعد");
+    expect(built.html).not.toContain("image-right image-wrap");
+  });
+
+  test("PDF HTML wraps text beside left and right images with physical floats", () => {
+    const wrapDoc = (alignment: "left" | "right"): DocNode => ({
+      type: "doc",
+      content: [
+        { type: "image", attrs: { src: PNG, alt: "Mark", width: 240, height: 120, alignment, wrapMode: "wrap" } },
+        { type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Beside the image." }] },
+      ],
+    });
+    const left = buildPdfHtml(wrapDoc("left"), "rtl", { faces: [] });
+    expect(left.html).toContain('class="qalam-document-image image-left image-wrap"');
+    expect(left.html).toContain("float:left");
+    expect(left.html).toContain("width:fit-content");
+    expect(left.html).toContain("margin:0.25em 1em 0.75em 0");
+    expect(left.html).not.toContain("margin-inline");
+    expect(left.html).not.toContain("float:inline-start");
+    const right = buildPdfHtml(wrapDoc("right"), "ltr", { faces: [] });
+    expect(right.html).toContain('class="qalam-document-image image-right image-wrap"');
+    expect(right.html).toContain("float:right");
+    expect(right.html).toContain("margin:0.25em 0 0.75em 1em");
+    const centered = buildPdfHtml({
+      type: "doc",
+      content: [{ type: "image", attrs: { src: PNG, alt: "Mark", width: 240, height: 120, alignment: "center", wrapMode: "wrap" } }],
+    }, "ltr", { faces: [] });
+    expect(centered.html).toContain('class="qalam-document-image image-center"');
+    expect(centered.html).not.toContain("image-center image-wrap");
   });
 });

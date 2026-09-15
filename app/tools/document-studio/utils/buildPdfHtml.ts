@@ -16,6 +16,7 @@ import {
 } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
 import { pdfFontUnicodeRange } from "./pdfFontSubsets";
+import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "./documentImages";
 
 export interface PdfFontFace {
   familyName: string;
@@ -312,8 +313,9 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
       if (!src) return "";
       const alt = typeof node.attrs?.alt === "string" ? escapeAttr(node.attrs.alt) : "";
       const width = Math.max(80, Math.min(720, Number(node.attrs?.width) || 480));
-      const alignment = ["left", "center", "right"].includes(String(node.attrs?.alignment)) ? String(node.attrs?.alignment) : "center";
-      return `<figure class="qalam-document-image image-${alignment}" dir="${blockDir}"><img src="${src}" alt="${alt}" style="width:${width}px;max-width:100%;height:auto"/></figure>`;
+      const alignment = parseImageAlignment(node.attrs?.alignment);
+      const wrapClass = imageFloatsBesideText(parseImageWrapMode(node.attrs?.wrapMode), alignment) ? " image-wrap" : "";
+      return `<figure class="qalam-document-image image-${alignment}${wrapClass}" dir="${blockDir}"><img src="${src}" alt="${alt}" style="width:${width}px;max-width:100%;height:auto"/></figure>`;
     }
     default:
       return (node.content ?? []).map((c) => convertNode(c, ctx)).join("");
@@ -431,8 +433,10 @@ ${classRulesCss()}
     margin: 0;
     padding: 0;
     color: #111;
+    overflow: hidden;
   }
   p, h1, h2, h3, h4, li, blockquote { margin: 0.5em 0; }
+  h1, h2, h3, h4, table, hr, blockquote { clear: both; }
   h1 { font-size: 1.6rem; }
   h2 { font-size: 1.3rem; }
   h3 { font-size: 1.15rem; }
@@ -448,8 +452,11 @@ ${classRulesCss()}
   table.qalam-document-table th { background:#eaf2eb; color:#1a3a2a; font-weight:700; }
   table.qalam-document-table p { margin:0; }
   figure.qalam-document-image { max-width:100%; margin:.75em auto; break-inside:avoid; page-break-inside:avoid; }
-  figure.qalam-document-image.image-left { margin-inline:0 auto; }
-  figure.qalam-document-image.image-right { margin-inline:auto 0; }
+  figure.qalam-document-image.image-left { margin-left:0; margin-right:auto; }
+  figure.qalam-document-image.image-right { margin-left:auto; margin-right:0; }
+  figure.qalam-document-image.image-wrap { width:fit-content; max-width:calc(100% - 1.25em); }
+  figure.qalam-document-image.image-wrap.image-left { float:left; margin:0.25em 1em 0.75em 0; }
+  figure.qalam-document-image.image-wrap.image-right { float:right; margin:0.25em 0 0.75em 1em; }
   figure.qalam-document-image img { display:block; max-width:100%; height:auto; }
   a { color: #b45309; }
 </style>

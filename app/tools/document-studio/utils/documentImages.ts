@@ -8,9 +8,49 @@ export type DocumentImageValidationError =
   | "malformed"
   | "budget";
 
+export type DocumentImageWrapMode = "break" | "wrap";
+export type DocumentImageAlignment = "left" | "center" | "right";
+
 /** Image metadata is displayed as text and exported as text, never markup. */
 export function sanitizeImageMetadata(value: string): string {
   return value.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "");
+}
+
+export function parseImageWrapMode(value: unknown): DocumentImageWrapMode {
+  return value === "wrap" ? "wrap" : "break";
+}
+
+export function parseImageAlignment(value: unknown): DocumentImageAlignment {
+  return value === "left" || value === "right" ? value : "center";
+}
+
+/** Wrap only takes effect for physical left/right; center always behaves as break. */
+export function imageFloatsBesideText(wrapMode: unknown, alignment: unknown): boolean {
+  return parseImageWrapMode(wrapMode) === "wrap" && parseImageAlignment(alignment) !== "center";
+}
+
+export function imageWrapSize(attrs: Record<string, unknown> | undefined): { width: number; height: number } {
+  const width = Math.max(80, Math.min(720, Number(attrs?.width) || 480));
+  const height = Math.max(1, Number(attrs?.height) || Math.round(width * 0.667));
+  return { width, height };
+}
+
+/** Marks the official TipTap resize container so CSS can shrink-wrap and float it. */
+export function applyImageFloatDataset(element: HTMLElement, attrs: Record<string, unknown> | undefined): void {
+  const alignment = parseImageAlignment(attrs?.alignment);
+  const wrapMode = parseImageWrapMode(attrs?.wrapMode);
+  const { width, height } = imageWrapSize(attrs);
+  element.dataset.alignment = alignment;
+  element.dataset.wrapMode = wrapMode;
+  if (imageFloatsBesideText(wrapMode, alignment)) {
+    element.dataset.imageFloat = alignment;
+    element.style.setProperty("--qalam-wrap-w", `${width}px`);
+    element.style.setProperty("--qalam-wrap-h", `${height}px`);
+  } else {
+    delete element.dataset.imageFloat;
+    element.style.removeProperty("--qalam-wrap-w");
+    element.style.removeProperty("--qalam-wrap-h");
+  }
 }
 
 export async function validateDocumentImage(file: File): Promise<DocumentImageValidationError | null> {

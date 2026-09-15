@@ -1304,6 +1304,7 @@ export default function DocumentStudioEditor() {
           width,
           height,
           alignment: "center",
+          wrapMode: "break",
         },
       }).run();
       setImageError(null);
