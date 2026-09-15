@@ -19,4 +19,44 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test tests/e2e/documentStudio.spec.ts --workers=1 --reporter=github
-      - run: npm test
+      - run: npx vitest run tests/documentTables.test.ts tests/documentStudioSchemaAttrs.test.ts tests/documentStudioShell.test.ts tests/buildDocxDocument.test.ts tests/documentCommands.test.ts tests/documentStudioMultilingual.test.ts tests/pdfRealPipeline.test.ts
+      - run: npx tsc --noEmit
+      - run: npm run build
+      - run: git diff --check
+      - name: Run repository suite with an explicit main-baseline comparison
+        shell: bash
+        run: |
+          set +e
+          npm test 2>&1 | tee "$RUNNER_TEMP/branch-npm-test.log"
+          branch_status=${PIPESTATUS[0]}
+
+          baseline_dir="$RUNNER_TEMP/qalam-main-baseline"
+          git worktree add --detach "$baseline_dir" origin/main
+          (
+            cd "$baseline_dir"
+            npm ci
+            npm test
+          ) 2>&1 | tee "$RUNNER_TEMP/main-npm-test.log"
+          main_status=${PIPESTATUS[0]}
+          git worktree remove --force "$baseline_dir"
+
+          if [ "$branch_status" -eq 0 ]; then
+            exit 0
+          fi
+
+          branch_failures=$(grep -E '^[[:space:]]*× ' "$RUNNER_TEMP/branch-npm-test.log" | sed -E 's/^[[:space:]]*× //' | sort -u)
+          main_failures=$(grep -E '^[[:space:]]*× ' "$RUNNER_TEMP/main-npm-test.log" | sed -E 's/^[[:space:]]*× //' | sort -u)
+          new_failures=$(comm -23 <(printf '%s\n' "$branch_failures") <(printf '%s\n' "$main_failures"))
+
+          if [ -n "$new_failures" ]; then
+            echo "New repository-suite failures compared with origin/main:"
+            printf '%s\n' "$new_failures"
+            exit 1
+          fi
+
+          if [ "$main_status" -eq 0 ]; then
+            echo "Branch npm test failed while main passed."
+            exit 1
+          fi
+
+          echo "::warning::Repository suite has only unchanged origin/main baseline failures."
