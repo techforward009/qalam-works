@@ -48,6 +48,8 @@ export type DocumentMenuHandlers = {
   promptLink: () => void;
   openTableInsert?: () => void;
   openImageInsert?: () => void;
+  insertPageBreak?: () => void;
+  insertSectionBreak?: (type: "nextPage" | "continuous") => void;
   setDir: (dir: "rtl" | "ltr") => void;
   standardize: () => void;
   audit: () => void;
@@ -172,6 +174,15 @@ export function dispatchDocumentMenuAction(
       return;
     case "insert.image":
       handlers.openImageInsert?.();
+      return;
+    case "insert.pageBreak":
+      handlers.insertPageBreak?.();
+      return;
+    case "insert.sectionBreakNextPage":
+      handlers.insertSectionBreak?.("nextPage");
+      return;
+    case "insert.sectionBreakContinuous":
+      handlers.insertSectionBreak?.("continuous");
       return;
     case "table.addRowBefore":
       editor?.chain().focus().addRowBefore().run();

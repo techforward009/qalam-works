@@ -315,6 +315,12 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
       const alignment = ["left", "center", "right"].includes(String(node.attrs?.alignment)) ? String(node.attrs?.alignment) : "center";
       return `<figure class="qalam-document-image image-${alignment}" dir="${blockDir}"><img src="${src}" alt="${alt}" style="width:${width}px;max-width:100%;height:auto"/></figure>`;
     }
+    case "pageBreak":
+      return '<div class="qalam-page-break" aria-hidden="true"></div>';
+    case "sectionBreak":
+      return node.attrs?.type === "continuous"
+        ? '<div class="qalam-section-break qalam-section-break-continuous" aria-hidden="true"></div>'
+        : '<div class="qalam-section-break qalam-section-break-next-page" aria-hidden="true"></div>';
     default:
       return (node.content ?? []).map((c) => convertNode(c, ctx)).join("");
   }
@@ -451,6 +457,8 @@ ${classRulesCss()}
   figure.qalam-document-image.image-left { margin-inline:0 auto; }
   figure.qalam-document-image.image-right { margin-inline:auto 0; }
   figure.qalam-document-image img { display:block; max-width:100%; height:auto; }
+  .qalam-page-break, .qalam-section-break-next-page { break-before:page; page-break-before:always; height:0; margin:0; }
+  .qalam-section-break-continuous { height:0; margin:0; }
   a { color: #b45309; }
 </style>
 </head>

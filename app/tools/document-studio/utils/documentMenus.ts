@@ -39,6 +39,9 @@ export type MenuActionId =
   | "insert.link"
   | "insert.table"
   | "insert.image"
+  | "insert.pageBreak"
+  | "insert.sectionBreakNextPage"
+  | "insert.sectionBreakContinuous"
   | "table.addRowBefore"
   | "table.addRowAfter"
   | "table.deleteRow"
@@ -216,6 +219,18 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
       { type: "action", id: "insert.link", labelEn: "Link…", labelUr: "لنک…" },
       { type: "action", id: "insert.table", labelEn: "Table…", labelUr: "جدول…" },
       { type: "action", id: "insert.image", labelEn: "Image…", labelUr: "تصویر…" },
+      { type: "separator" },
+      { type: "action", id: "insert.pageBreak", labelEn: "Page break", labelUr: "صفحہ وقفہ" },
+      {
+        type: "submenu",
+        id: "insert.sectionBreak",
+        labelEn: "Section break",
+        labelUr: "حصہ وقفہ",
+        items: [
+          { type: "action", id: "insert.sectionBreakNextPage", labelEn: "Next page", labelUr: "اگلا صفحہ" },
+          { type: "action", id: "insert.sectionBreakContinuous", labelEn: "Continuous", labelUr: "مسلسل" },
+        ],
+      },
       {
         type: "submenu",
         id: "insert.tableActions",

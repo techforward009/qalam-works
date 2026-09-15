@@ -192,6 +192,41 @@ test.describe("Document Studio v1 browser smoke", () => {
     expect(await page.waitForEvent("download")).toBeTruthy();
   });
 
+  test("inserts, persists, and exports manual page and section breaks", async ({ page }) => {
+    await openStudio(page);
+    const editor = await replaceEditorContent(page, "Page one text.");
+
+    await page.locator('[data-menu-root="insert"]').click();
+    await page.locator('[data-menu-action="insert.pageBreak"]').click();
+    await expect(editor.locator('[data-document-page-break="true"]')).toHaveCount(1);
+    await page.keyboard.type("Page two text.");
+    await expect(editor).toContainText("Page two text.");
+
+    await page.locator('[data-menu-root="insert"]').click();
+    await page.locator('[data-menu-submenu="insert.sectionBreak"]').hover();
+    await page.locator('[data-menu-action="insert.sectionBreakNextPage"]').click();
+    await expect(editor.locator('[data-document-section-break="true"]')).toHaveAttribute("data-section-break-type", "nextPage");
+    await page.keyboard.type("Section two text.");
+    await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
+
+    await page.reload();
+    const restored = page.locator(".ProseMirror");
+    await expect(restored.locator('[data-document-page-break="true"]')).toHaveCount(1);
+    await expect(restored.locator('[data-document-section-break="true"]')).toHaveAttribute("data-section-break-type", "nextPage");
+    await expect(restored).toContainText("Page one text.");
+    await expect(restored).toContainText("Page two text.");
+    await expect(restored).toContainText("Section two text.");
+
+    const docx = await downloadAction(page, "file.downloadDocx");
+    expect(docx.suggestedFilename()).toMatch(/\.docx$/i);
+    const responsePromise = page.waitForResponse((response) => response.url().includes("/api/export-pdf") && response.request().method() === "POST");
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-submenu="file.download"]').hover();
+    await page.locator('[data-menu-action="file.downloadPdf"]').click();
+    expect((await responsePromise).status()).toBe(200);
+    expect(await page.waitForEvent("download")).toBeTruthy();
+  });
+
   test("downloads non-empty DOCX and PDF exports", async ({ page }) => {
     await openStudio(page);
     await replaceEditorContent(page, "Small deterministic export document.");

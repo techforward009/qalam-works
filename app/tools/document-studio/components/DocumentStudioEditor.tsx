@@ -1322,6 +1322,14 @@ export default function DocumentStudioEditor() {
     setTableInsertOpen(false);
   };
 
+  const insertPageBreak = () => {
+    editor?.chain().focus().insertContent({ type: "pageBreak" }).run();
+  };
+
+  const insertSectionBreak = (type: "nextPage" | "continuous") => {
+    editor?.chain().focus().insertContent({ type: "sectionBreak", attrs: { type } }).run();
+  };
+
   const handleMenuAction = (id: MenuActionId) => {
     dispatchDocumentMenuAction(id, editor, {
       newDocument: handleNewDocument,
@@ -1350,6 +1358,8 @@ export default function DocumentStudioEditor() {
       promptLink,
       openTableInsert: () => setTableInsertOpen(true),
       openImageInsert: () => imageInputRef.current?.click(),
+      insertPageBreak,
+      insertSectionBreak,
       setDir: (direction) => { if (editor) applyParagraphDirection(editor, direction); },
       standardize: handleStandardizeClick,
       audit: handleRunAudit,

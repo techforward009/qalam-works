@@ -12,6 +12,7 @@ import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-s
 import Highlight from "@tiptap/extension-highlight";
 import { TableKit } from "@tiptap/extension-table";
 import Image from "@tiptap/extension-image";
+import { Node } from "@tiptap/core";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { ParagraphAutoDirection } from "./paragraphDirection";
@@ -185,6 +186,55 @@ export const DocumentImage = Image.extend({
   },
 });
 
+/**
+ * Authored, persisted manual page break. It is deliberately independent of
+ * QalamPagination: this is a document instruction, not a display decoration.
+ */
+export const DocumentPageBreak = Node.create({
+  name: "pageBreak",
+  group: "block",
+  atom: true,
+  selectable: true,
+  isolating: true,
+  parseHTML: () => [{ tag: 'div[data-document-page-break="true"]' }],
+  renderHTML: () => ["div", {
+    "data-document-page-break": "true",
+    "data-document-break-marker": "page",
+    contenteditable: "false",
+    role: "separator",
+    "aria-label": "Page break",
+  }, "Page break"],
+});
+
+export const DocumentSectionBreak = Node.create({
+  name: "sectionBreak",
+  group: "block",
+  atom: true,
+  selectable: true,
+  isolating: true,
+  addAttributes() {
+    return {
+      type: {
+        default: "nextPage",
+        parseHTML: (element) => element.getAttribute("data-section-break-type") === "continuous" ? "continuous" : "nextPage",
+        renderHTML: (attributes) => ({ "data-section-break-type": attributes.type === "continuous" ? "continuous" : "nextPage" }),
+      },
+    };
+  },
+  parseHTML: () => [{ tag: 'div[data-document-section-break="true"]' }],
+  renderHTML: ({ HTMLAttributes }) => {
+    const type = HTMLAttributes["data-section-break-type"] === "continuous" ? "continuous" : "nextPage";
+    return ["div", {
+      ...HTMLAttributes,
+      "data-document-section-break": "true",
+      "data-document-break-marker": "section",
+      contenteditable: "false",
+      role: "separator",
+      "aria-label": type === "continuous" ? "Section break, continuous" : "Section break, next page",
+    }, type === "continuous" ? "Section break (continuous)" : "Section break (next page)"];
+  },
+});
+
 export function createDocumentStudioExtensions() {
   return [
     StarterKit.configure({
@@ -218,5 +268,7 @@ export function createDocumentStudioExtensions() {
         alwaysPreserveAspectRatio: true,
       },
     }),
+    DocumentPageBreak,
+    DocumentSectionBreak,
   ];
 }

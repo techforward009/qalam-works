@@ -20,12 +20,14 @@ import {
   LevelFormat,
   LineRuleType,
   PageNumber,
+  PageBreak,
   PageOrientation,
   Packer,
   ShadingType,
   TabStopPosition,
   TabStopType,
   Paragraph,
+  SectionType,
   Table,
   TableCell,
   TableRow,
@@ -522,6 +524,10 @@ function convertNode(
         })],
       })];
     }
+    case "pageBreak":
+      return [new Paragraph({ children: [new PageBreak()] })];
+    case "sectionBreak":
+      return [];
     default: {
       // Unknown/unsupported node type (tables, images — out of v1 scope
       // per the spec) — walk children defensively rather than throwing,
@@ -692,12 +698,20 @@ function buildDocxFooterParagraph(settings: DocumentStudioSettings, dir: Directi
 
 export function createDocxDocument(doc: DocNode, dir: Direction, settings: DocumentStudioSettings = defaultDocumentSettings()): Document {
   const ctx: NumberingContext = { configs: [], counter: 0 };
-  const children: Array<Paragraph | Table> = [];
+  type DocxChild = Paragraph | Table;
+  type SectionChunk = { children: DocxChild[]; breakType?: "nextPage" | "continuous" };
+  const chunks: SectionChunk[] = [{ children: [] }];
 
   (doc.content ?? []).forEach((node) => {
+    if (node.type === "sectionBreak") {
+      const type = node.attrs?.type === "continuous" ? "continuous" : "nextPage";
+      chunks[chunks.length - 1].breakType = type;
+      chunks.push({ children: [] });
+      return;
+    }
     const hasStructuredRows = node.type === "table" && (node.content ?? []).some((row) => row.type === "tableRow" && (row.content ?? []).some((cell) => cell.type === "tableCell" || cell.type === "tableHeader"));
-    if (hasStructuredRows) children.push(convertDocxTable(node, dir, ctx, settings.typography));
-    else children.push(...convertNode(node, dir, ctx, settings.typography));
+    if (hasStructuredRows) chunks[chunks.length - 1].children.push(convertDocxTable(node, dir, ctx, settings.typography));
+    else chunks[chunks.length - 1].children.push(...convertNode(node, dir, ctx, settings.typography));
   });
 
   const title = deriveDocumentTitle(doc);
@@ -712,9 +726,9 @@ export function createDocxDocument(doc: DocNode, dir: Direction, settings: Docum
     subject: "Document exported from Qalam Works Document Studio",
     keywords: dir === "rtl" ? "Urdu, Arabic, Persian, RTL" : "English, LTR",
     numbering: ctx.configs.length > 0 ? { config: ctx.configs } : undefined,
-    sections: [
-      {
+    sections: chunks.map((chunk) => ({
         properties: {
+          type: chunk.breakType === "continuous" ? SectionType.CONTINUOUS : chunk.breakType === "nextPage" ? SectionType.NEXT_PAGE : undefined,
           page: (() => {
             const layout = resolvePageLayout({
               size: settings.page.size,
@@ -786,9 +800,8 @@ export function createDocxDocument(doc: DocNode, dir: Direction, settings: Docum
               }),
             }
           : undefined,
-        children,
-      },
-    ],
+        children: chunk.children,
+      })),
   });
 }
 

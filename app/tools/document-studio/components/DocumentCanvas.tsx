@@ -434,6 +434,34 @@ export default function DocumentCanvas({
         }
         .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-handle],
         .qalam-editor-content .ProseMirror [data-resize-container]:hover [data-resize-handle] { opacity: 1; }
+        .qalam-editor-content .ProseMirror [data-document-page-break="true"],
+        .qalam-editor-content .ProseMirror [data-document-section-break="true"] {
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 1.75rem;
+          margin: .75rem 0;
+          border-block: 1px dashed rgba(26,58,42,.38);
+          color: #52705c;
+          background: rgba(234,242,235,.6);
+          font-family: Inter, system-ui, sans-serif;
+          font-size: .7rem;
+          font-weight: 700;
+          letter-spacing: .04em;
+          text-transform: uppercase;
+          user-select: none;
+        }
+        .qalam-editor-content .ProseMirror [data-document-section-break="true"] {
+          border-color: rgba(184,147,90,.55);
+          color: #876a3f;
+          background: rgba(251,246,236,.78);
+        }
+        .qalam-editor-content .ProseMirror [data-document-page-break="true"].ProseMirror-selectednode,
+        .qalam-editor-content .ProseMirror [data-document-section-break="true"].ProseMirror-selectednode {
+          outline: 2px solid #B8935A;
+          outline-offset: 2px;
+        }
       `}</style>
       <style jsx global>{`
         ${documentPrintCss(pageLayout.widthMm, pageLayout.heightMm)}
