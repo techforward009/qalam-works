@@ -147,12 +147,45 @@ describe("createDocxDocument — images", () => {
     const contentTypes = await zip.file("[Content_Types].xml")?.async("text");
     const media = Object.keys(zip.files).filter((path) => path.startsWith("word/media/") && !zip.files[path].dir);
     expect(xml).toContain("<w:drawing>");
+    expect(xml).toContain("<wp:inline");
+    expect(xml).not.toContain("<wp:anchor");
     expect(xml).toContain("Before");
     expect(xml).toContain("بعد");
     expect(media).toHaveLength(1);
     expect((await zip.file(media[0])?.async("uint8array"))?.byteLength).toBeGreaterThan(0);
     expect(relationships).toContain("/image");
     expect(contentTypes).toContain("image/png");
+  });
+
+  test("maps wrap mode to a real Word square-wrapped floating drawing", async () => {
+    const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9WAAAAABJRU5ErkJggg==";
+    const xml = await extractDocumentXml(
+      docWith([
+        { type: "image", attrs: { src: png, alt: "Qalam mark", width: 120, height: 60, alignment: "left", wrapMode: "wrap" } },
+        { type: "paragraph", content: [{ type: "text", text: "Text beside the image." }] },
+      ]),
+      "ltr"
+    );
+    expect(xml).toContain("<wp:anchor");
+    expect(xml).toContain("<wp:wrapSquare");
+    expect(xml).toContain('wrapText="right"');
+    expect(xml).toContain("<wp:align>left</wp:align>");
+    expect(xml).not.toContain("<wp:inline");
+  });
+
+  test("right wrap anchors to the physical right with square wrapping", async () => {
+    const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9WAAAAABJRU5ErkJggg==";
+    const xml = await extractDocumentXml(
+      docWith([
+        { type: "image", attrs: { src: png, alt: "Mark", width: 120, height: 60, alignment: "right", wrapMode: "wrap" } },
+        { type: "paragraph", content: [{ type: "text", text: "Opposite side." }] },
+      ]),
+      "rtl"
+    );
+    expect(xml).toContain("<wp:anchor");
+    expect(xml).toContain("<wp:wrapSquare");
+    expect(xml).toContain('wrapText="left"');
+    expect(xml).toContain("<wp:align>right</wp:align>");
   });
 });
 

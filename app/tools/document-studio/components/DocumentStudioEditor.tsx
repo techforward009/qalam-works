@@ -1305,6 +1305,7 @@ export default function DocumentStudioEditor() {
           width,
           height,
           alignment: "center",
+          wrapMode: "break",
         },
       }).run();
       // Block images are atoms: insert leaves a NodeSelection. Move into the

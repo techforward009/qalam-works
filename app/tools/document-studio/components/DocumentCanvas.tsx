@@ -261,11 +261,13 @@ export default function DocumentCanvas({
           line-height: var(--qalam-line-height, 1.85);
           color: #1a1a1a;
           background: transparent;
+          display: flow-root;
         }
         .qalam-editor-content.qalam-view-pages .ProseMirror.qalam-pagination {
           padding: var(--qalam-margin-top) var(--qalam-margin-right) 0 var(--qalam-margin-left);
           min-height: var(--qalam-page-height);
           background: #fff;
+          display: flow-root;
         }
         .qalam-editor-content .ProseMirror[dir="rtl"] {
           direction: rtl;
@@ -407,14 +409,70 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror img.qalam-document-image[data-alignment="left"] { margin: .75rem auto .75rem 0; }
         .qalam-editor-content .ProseMirror img.qalam-document-image[data-alignment="center"] { margin: .75rem auto; }
         .qalam-editor-content .ProseMirror img.qalam-document-image[data-alignment="right"] { margin: .75rem 0 .75rem auto; }
+        .qalam-editor-content .ProseMirror img.qalam-document-image[data-wrap-mode="wrap"][data-alignment="left"],
+        .qalam-editor-content .ProseMirror img.qalam-document-image[data-wrap-mode="wrap"][data-alignment="right"] {
+          margin: 0;
+        }
         .qalam-editor-content .ProseMirror [data-resize-container] {
           width: 100%;
           max-width: 100%;
           margin-block: .75rem;
         }
-        .qalam-editor-content .ProseMirror [data-resize-container]:has(img[data-alignment="left"]) { justify-content: flex-start; }
+        .qalam-editor-content .ProseMirror [data-resize-container]:has(img[data-alignment="left"]) { justify-content: left; }
         .qalam-editor-content .ProseMirror [data-resize-container]:has(img[data-alignment="center"]) { justify-content: center; }
-        .qalam-editor-content .ProseMirror [data-resize-container]:has(img[data-alignment="right"]) { justify-content: flex-end; }
+        .qalam-editor-content .ProseMirror [data-resize-container]:has(img[data-alignment="right"]) { justify-content: right; }
+        /* Pageless: physical floats wrap following in-flow blocks. Pages mode
+           cannot float the image itself — Qalam pagination already uses
+           source-order floats, and a later float cannot sit above them —
+           so the following paragraph is pulled up over the in-flow image
+           and a view-only spacer float reserves the image's column. */
+        .qalam-editor-content .ProseMirror:not(.qalam-pagination) [data-resize-container][data-image-float="left"],
+        .qalam-editor-content .ProseMirror:not(.qalam-pagination) [data-resize-container]:has(img[data-wrap-mode="wrap"][data-alignment="left"]) {
+          float: left;
+          width: fit-content;
+          max-width: calc(100% - 1.25rem);
+          margin: 0.25rem 1rem 0.75rem 0;
+        }
+        .qalam-editor-content .ProseMirror:not(.qalam-pagination) [data-resize-container][data-image-float="right"],
+        .qalam-editor-content .ProseMirror:not(.qalam-pagination) [data-resize-container]:has(img[data-wrap-mode="wrap"][data-alignment="right"]) {
+          float: right;
+          width: fit-content;
+          max-width: calc(100% - 1.25rem);
+          margin: 0.25rem 0 0.75rem 1rem;
+        }
+        .qalam-editor-content .ProseMirror.qalam-pagination [data-resize-container][data-image-float="left"],
+        .qalam-editor-content .ProseMirror.qalam-pagination [data-resize-container]:has(img[data-wrap-mode="wrap"][data-alignment="left"]) {
+          width: fit-content;
+          max-width: calc(100% - 1.25rem);
+          margin: 0.25rem auto 0 0;
+          position: relative;
+          z-index: 1;
+        }
+        .qalam-editor-content .ProseMirror.qalam-pagination [data-resize-container][data-image-float="right"],
+        .qalam-editor-content .ProseMirror.qalam-pagination [data-resize-container]:has(img[data-wrap-mode="wrap"][data-alignment="right"]) {
+          width: fit-content;
+          max-width: calc(100% - 1.25rem);
+          margin: 0.25rem 0 0 auto;
+          position: relative;
+          z-index: 1;
+        }
+        .qalam-editor-content .ProseMirror p.qalam-image-wrap-beside {
+          display: flow-root;
+          margin-top: calc(-1 * var(--qalam-wrap-h, 0px));
+        }
+        .qalam-editor-content .ProseMirror [data-image-wrap-spacer="left"] { float: left; }
+        .qalam-editor-content .ProseMirror [data-image-wrap-spacer="right"] { float: right; }
+        .qalam-editor-content .ProseMirror h1,
+        .qalam-editor-content .ProseMirror h2,
+        .qalam-editor-content .ProseMirror h3,
+        .qalam-editor-content .ProseMirror h4,
+        .qalam-editor-content .ProseMirror h5,
+        .qalam-editor-content .ProseMirror h6,
+        .qalam-editor-content .ProseMirror table,
+        .qalam-editor-content .ProseMirror hr,
+        .qalam-editor-content .ProseMirror blockquote {
+          clear: both;
+        }
         .qalam-editor-content .ProseMirror [data-resize-container].ProseMirror-selectednode [data-resize-wrapper] {
           outline: 2px solid #B8935A;
           outline-offset: 3px;

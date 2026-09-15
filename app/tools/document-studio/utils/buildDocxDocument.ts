@@ -15,6 +15,8 @@ import {
   ExternalHyperlink,
   Footer,
   Header,
+  HorizontalPositionAlign,
+  HorizontalPositionRelativeFrom,
   ImageRun,
   HeadingLevel,
   LevelFormat,
@@ -32,7 +34,12 @@ import {
   TableCell,
   TableRow,
   TextRun,
+  TextWrappingSide,
+  TextWrappingType,
+  VerticalPositionAlign,
+  VerticalPositionRelativeFrom,
   WidthType,
+  type IFloating,
   type ParagraphChild,
 } from "docx";
 import type { DocNode, Direction } from "./extractPlainText";
@@ -40,6 +47,7 @@ import { deriveDocumentTitle } from "./extractPlainText";
 import { resolveFontSizePt, type DocumentStudioSettings, defaultDocumentSettings, validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { hexToDocxColor } from "./studioColors";
 import { BLOCK_STYLES, isBlockStyleId } from "./documentStyles";
+import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "./documentImages";
 import { resolvePageLayout, resolvePageDimensions, mmToTwips, ptToHalfPoints, resolvePhysicalMargins } from "./pageLayout";
 import {
   directionForNode,
@@ -251,6 +259,32 @@ const ALIGNMENT_MAP: Record<string, (typeof AlignmentType)[keyof typeof Alignmen
 function alignmentFor(node: DocNode): (typeof AlignmentType)[keyof typeof AlignmentType] | undefined {
   const textAlign = node.attrs?.textAlign;
   return typeof textAlign === "string" ? ALIGNMENT_MAP[textAlign] : undefined;
+}
+
+/** 12 CSS pixels in EMUs (96 CSS px = 1 in = 914400 EMU). */
+const IMAGE_WRAP_MARGIN_EMU = 114300;
+
+function imageWrapFloating(alignment: "left" | "right"): IFloating {
+  return {
+    horizontalPosition: {
+      relative: HorizontalPositionRelativeFrom.MARGIN,
+      align: alignment === "right" ? HorizontalPositionAlign.RIGHT : HorizontalPositionAlign.LEFT,
+    },
+    verticalPosition: {
+      relative: VerticalPositionRelativeFrom.PARAGRAPH,
+      align: VerticalPositionAlign.TOP,
+    },
+    wrap: {
+      type: TextWrappingType.SQUARE,
+      side: alignment === "right" ? TextWrappingSide.LEFT : TextWrappingSide.RIGHT,
+    },
+    margins: {
+      top: Math.round(IMAGE_WRAP_MARGIN_EMU / 2.5),
+      bottom: IMAGE_WRAP_MARGIN_EMU,
+      left: alignment === "right" ? IMAGE_WRAP_MARGIN_EMU : 0,
+      right: alignment === "left" ? IMAGE_WRAP_MARGIN_EMU : 0,
+    },
+  };
 }
 
 // Tracks list-numbering config entries as they're discovered while walking
@@ -513,7 +547,9 @@ function convertNode(
       const data = Uint8Array.from(binary, (character) => character.charCodeAt(0));
       const width = Math.max(80, Math.min(720, Number(node.attrs?.width) || 480));
       const height = Math.max(1, Math.round(Number(node.attrs?.height) || width * 0.667));
-      const alignment = node.attrs?.alignment === "left" ? AlignmentType.LEFT : node.attrs?.alignment === "right" ? AlignmentType.RIGHT : AlignmentType.CENTER;
+      const imageAlignment = parseImageAlignment(node.attrs?.alignment);
+      const floats = imageFloatsBesideText(parseImageWrapMode(node.attrs?.wrapMode), imageAlignment);
+      const alignment = imageAlignment === "left" ? AlignmentType.LEFT : imageAlignment === "right" ? AlignmentType.RIGHT : AlignmentType.CENTER;
       return [new Paragraph({
         alignment,
         children: [new ImageRun({
@@ -521,6 +557,7 @@ function convertNode(
           data,
           transformation: { width, height },
           altText: { title: typeof node.attrs?.title === "string" ? node.attrs.title : "", description: typeof node.attrs?.alt === "string" ? node.attrs.alt : "", name: typeof node.attrs?.alt === "string" ? node.attrs.alt : "Image" },
+          ...(floats && imageAlignment !== "center" ? { floating: imageWrapFloating(imageAlignment) } : {}),
         })],
       })];
     }
