@@ -12,6 +12,7 @@ import type { DocumentZoom } from "../utils/documentView";
 import { DOCUMENT_ZOOM_PRESETS } from "../utils/documentView";
 import { MIXED_TOOLBAR_VALUE, resolveActiveToolbarFormatting } from "../utils/activeToolbarFormatting";
 import { STUDIO_HIGHLIGHT_COLORS, STUDIO_TEXT_COLORS, normalizeSafeHex, parseCustomColorInput } from "../utils/studioColors";
+import { sanitizeImageMetadata } from "../utils/documentImages";
 import {
   addSpaceAfterParagraph,
   addSpaceBeforeParagraph,
@@ -550,6 +551,14 @@ export default function DocumentToolbar({
   const sizeOptions = FONT_SIZE_OPTIONS_PT.includes((ui.fontSizePt ?? settings.typography.bodyFontSizePt) as typeof FONT_SIZE_OPTIONS_PT[number])
     ? FONT_SIZE_OPTIONS_PT
     : [...FONT_SIZE_OPTIONS_PT, ui.fontSizePt as number].filter((n): n is number => typeof n === "number").sort((a, b) => a - b);
+  const resizeSelectedImage = (delta: number) => {
+    const attrs = editor.getAttributes("image");
+    const width = typeof attrs.width === "number" ? attrs.width : 480;
+    const height = typeof attrs.height === "number" ? attrs.height : 320;
+    const nextWidth = Math.min(720, Math.max(80, width + delta));
+    const nextHeight = Math.max(1, Math.round((height / width) * nextWidth));
+    editor.chain().focus().updateAttributes("image", { width: nextWidth, height: nextHeight }).run();
+  };
 
   return (
     <div
@@ -696,6 +705,18 @@ export default function DocumentToolbar({
       <ToolbarButton label="Numbered List" active={ui.ordered} onClick={() => toggleOrderedList(editor)}>
         1.
       </ToolbarButton>
+      {editor.isActive("image") ? (
+        <>
+          <ToolbarDivider />
+          <ToolbarButton label={isUr ? "چھوٹا کریں" : "Smaller image"} onClick={() => resizeSelectedImage(-80)}>−</ToolbarButton>
+          <ToolbarButton label={isUr ? "بڑا کریں" : "Larger image"} onClick={() => resizeSelectedImage(80)}>＋</ToolbarButton>
+          <ToolbarButton label={isUr ? "بائیں سیدھ" : "Align image left"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "left" }).run()}>⇤</ToolbarButton>
+          <ToolbarButton label={isUr ? "درمیان" : "Center image"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "center" }).run()}>⇔</ToolbarButton>
+          <ToolbarButton label={isUr ? "دائیں سیدھ" : "Align image right"} onClick={() => editor.chain().focus().updateAttributes("image", { alignment: "right" }).run()}>⇥</ToolbarButton>
+          <ToolbarButton label={isUr ? "متبادل متن" : "Edit image alt text"} onClick={() => { const current = String(editor.getAttributes("image").alt ?? ""); const alt = window.prompt(isUr ? "متبادل متن" : "Alternative text", current); if (alt !== null) editor.chain().focus().updateAttributes("image", { alt: sanitizeImageMetadata(alt) }).run(); }}>Alt</ToolbarButton>
+          <ToolbarButton label={isUr ? "تصویر حذف کریں" : "Remove image"} onClick={() => editor.chain().focus().deleteSelection().run()}>×</ToolbarButton>
+        </>
+      ) : null}
       <ToolbarDivider />
       <ToolbarButton label="Automatic paragraph direction" active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")}>
         Auto

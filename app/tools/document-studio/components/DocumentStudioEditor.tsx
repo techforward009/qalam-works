@@ -51,6 +51,16 @@ import { validateFile } from "../../../utils/fileValidation";
 import { extractTextFromFile } from "../../../utils/documents/extractTextFromFile";
 import { formatFileSize } from "../../../utils/formatFileSize";
 import {
+  documentImagePayloadBytes,
+  getImageDimensions,
+  imageDataUrlByteLength,
+  MAX_DOCUMENT_IMAGE_BYTES,
+  MAX_DOCUMENT_IMAGE_TOTAL_BYTES,
+  readImageAsDataUrl,
+  sanitizeImageMetadata,
+  validateDocumentImage,
+} from "../utils/documentImages";
+import {
   ParagraphWithDir,
   HeadingWithDir,
   BLOCK_STYLE_EDITOR_CSS,
@@ -158,6 +168,7 @@ export default function DocumentStudioEditor() {
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [tableRows, setTableRows] = useState(3);
   const [tableColumns, setTableColumns] = useState(3);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => loadDocumentSettings());
   // Batch 16B — computed once per render, shared by the page preview and
   // the ruler so their boundaries always agree (single geometry source).
@@ -235,6 +246,7 @@ export default function DocumentStudioEditor() {
   }, [documentTitle]);
   const saveChainRef = useRef(Promise.resolve());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<{
     document: DocNode;
@@ -1261,6 +1273,45 @@ export default function DocumentStudioEditor() {
     setLinkHref(editor, url);
   };
 
+  const insertImageFile = async (file: File) => {
+    const error = await validateDocumentImage(file);
+    if (error) {
+      setImageError(isUr
+        ? (error === "oversized" ? "تصویر 2 ایم بی سے چھوٹی ہونی چاہیے۔" : "درست PNG، JPEG یا WebP تصویر منتخب کریں۔")
+        : (error === "oversized" ? "Images must be smaller than 2 MB." : "Choose a valid PNG, JPEG, or WebP image."));
+      return;
+    }
+    try {
+      const src = await readImageAsDataUrl(file);
+      const imageBytes = imageDataUrlByteLength(src);
+      if (imageBytes > MAX_DOCUMENT_IMAGE_BYTES) {
+        setImageError(isUr ? "تصویر 2 ایم بی سے چھوٹی ہونی چاہیے۔" : "Images must be smaller than 2 MB.");
+        return;
+      }
+      if ((editor ? documentImagePayloadBytes(editor.getJSON()) : 0) + imageBytes > MAX_DOCUMENT_IMAGE_TOTAL_BYTES) {
+        setImageError(isUr ? "اس دستاویز میں تصاویر کی 8 ایم بی حد پوری ہو چکی ہے۔" : "This document has reached its 8 MB image limit.");
+        return;
+      }
+      const dimensions = await getImageDimensions(src);
+      const width = Math.min(480, dimensions.width);
+      const height = Math.max(1, Math.round((dimensions.height / dimensions.width) * width));
+      editor?.chain().focus().insertContent({
+        type: "image",
+        attrs: {
+          src,
+          alt: sanitizeImageMetadata(file.name),
+          title: sanitizeImageMetadata(file.name),
+          width,
+          height,
+          alignment: "center",
+        },
+      }).run();
+      setImageError(null);
+    } catch {
+      setImageError(isUr ? "تصویر شامل نہیں ہو سکی۔" : "Image could not be inserted.");
+    }
+  };
+
   const insertTable = () => {
     if (!editor) return;
     editor.chain().focus().insertTable({
@@ -1298,6 +1349,7 @@ export default function DocumentStudioEditor() {
       loadExample: handleLoadExample,
       promptLink,
       openTableInsert: () => setTableInsertOpen(true),
+      openImageInsert: () => imageInputRef.current?.click(),
       setDir: (direction) => { if (editor) applyParagraphDirection(editor, direction); },
       standardize: handleStandardizeClick,
       audit: handleRunAudit,
@@ -1407,6 +1459,19 @@ export default function DocumentStudioEditor() {
         id="document-studio-upload-input"
         disabled={isImporting}
       />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        data-studio-image-input="true"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void insertImageFile(file);
+          event.target.value = "";
+        }}
+      />
+      {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
 
       {libraryOpen ? (
         <DocumentLibraryDialog

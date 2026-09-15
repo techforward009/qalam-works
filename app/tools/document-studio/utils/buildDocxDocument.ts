@@ -15,6 +15,7 @@ import {
   ExternalHyperlink,
   Footer,
   Header,
+  ImageRun,
   HeadingLevel,
   LevelFormat,
   LineRuleType,
@@ -501,6 +502,25 @@ function convertNode(
         out.push(...convertListItem(item, dir, ctx, reference, 0, typography));
       });
       return out;
+    }
+    case "image": {
+      const src = typeof node.attrs?.src === "string" ? node.attrs.src : "";
+      const match = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/=]+)$/i.exec(src);
+      if (!match || typeof globalThis.atob !== "function") return [];
+      const binary = globalThis.atob(match[2]);
+      const data = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+      const width = Math.max(80, Math.min(720, Number(node.attrs?.width) || 480));
+      const height = Math.max(1, Math.round(Number(node.attrs?.height) || width * 0.667));
+      const alignment = node.attrs?.alignment === "left" ? AlignmentType.LEFT : node.attrs?.alignment === "right" ? AlignmentType.RIGHT : AlignmentType.CENTER;
+      return [new Paragraph({
+        alignment,
+        children: [new ImageRun({
+          type: match[1].toLowerCase() === "jpeg" ? "jpg" : "png",
+          data,
+          transformation: { width, height },
+          altText: { title: typeof node.attrs?.title === "string" ? node.attrs.title : "", description: typeof node.attrs?.alt === "string" ? node.attrs.alt : "", name: typeof node.attrs?.alt === "string" ? node.attrs.alt : "Image" },
+        })],
+      })];
     }
     default: {
       // Unknown/unsupported node type (tables, images — out of v1 scope

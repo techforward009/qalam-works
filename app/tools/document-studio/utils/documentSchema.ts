@@ -11,6 +11,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-style";
 import Highlight from "@tiptap/extension-highlight";
 import { TableKit } from "@tiptap/extension-table";
+import Image from "@tiptap/extension-image";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { ParagraphAutoDirection } from "./paragraphDirection";
@@ -171,6 +172,19 @@ export const HeadingWithDir = Heading.extend({
   },
 });
 
+/** Persisted raster image node. Data URLs are validated at insertion time;
+ * width/alignment are authored document attributes, independent of site UI dir. */
+export const DocumentImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: { default: 480, parseHTML: (el) => Number(el.getAttribute("data-width")) || 480, renderHTML: (attrs) => ({ "data-width": String(attrs.width ?? 480), style: `width:${Math.max(80, Math.min(720, Number(attrs.width) || 480))}px;max-width:100%;height:auto;` }) },
+      height: { default: 320, parseHTML: (el) => Number(el.getAttribute("data-height")) || 320, renderHTML: (attrs) => ({ "data-height": String(attrs.height ?? 320) }) },
+      alignment: { default: "center", parseHTML: (el) => el.getAttribute("data-alignment") || "center", renderHTML: (attrs) => ({ "data-alignment": ["left", "center", "right"].includes(String(attrs.alignment)) ? String(attrs.alignment) : "center" }) },
+    };
+  },
+});
+
 export function createDocumentStudioExtensions() {
   return [
     StarterKit.configure({
@@ -193,5 +207,6 @@ export function createDocumentStudioExtensions() {
     TableKit.configure({
       table: { resizable: false, HTMLAttributes: { class: "qalam-document-table" } },
     }),
+    DocumentImage.configure({ allowBase64: true, HTMLAttributes: { class: "qalam-document-image" } }),
   ];
 }

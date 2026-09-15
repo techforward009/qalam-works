@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { TINY_PNG_BASE64 } from "./fixtures/tinyPng";
 
 const URL = "/tools/document-studio";
 const ENGLISH = "Document Studio browser acceptance text.";
@@ -129,6 +130,34 @@ test.describe("Document Studio v1 browser smoke", () => {
     let size = 0;
     for await (const chunk of stream ?? []) size += (chunk as Buffer).length;
     expect(size).toBeGreaterThan(0);
+  });
+
+  test("inserts, edits, persists, and exports a local raster image", async ({ page }) => {
+    await openStudio(page);
+    await page.locator('[data-menu-root="insert"]').click();
+    await page.locator('[data-menu-action="insert.image"]').click();
+    await page.locator('[data-studio-image-input="true"]').setInputFiles({
+      name: "tiny.png", mimeType: "image/png", buffer: Buffer.from(TINY_PNG_BASE64, "base64"),
+    });
+    const image = page.locator(".ProseMirror img.qalam-document-image");
+    await expect(image).toBeVisible();
+    await image.click();
+    await page.getByRole("button", { name: "Larger image" }).click();
+    await page.getByRole("button", { name: "Align image right" }).click();
+    page.once("dialog", (dialog) => dialog.accept("Qalam mark"));
+    await page.getByRole("button", { name: "Edit image alt text" }).click();
+    await expect(image).toHaveAttribute("alt", "Qalam mark");
+    await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
+    await page.reload();
+    await expect(page.locator(".ProseMirror img.qalam-document-image")).toHaveAttribute("alt", "Qalam mark");
+    const docx = await downloadAction(page, "file.downloadDocx");
+    expect(docx.suggestedFilename()).toMatch(/\.docx$/i);
+    const responsePromise = page.waitForResponse((response) => response.url().includes("/api/export-pdf") && response.request().method() === "POST");
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-submenu="file.download"]').hover();
+    await page.locator('[data-menu-action="file.downloadPdf"]').click();
+    expect((await responsePromise).status()).toBe(200);
+    expect(await page.waitForEvent("download")).toBeTruthy();
   });
 
   test("downloads non-empty DOCX and PDF exports", async ({ page }) => {

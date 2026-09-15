@@ -38,6 +38,7 @@ export type MenuActionId =
   | "view.fullscreen"
   | "insert.link"
   | "insert.table"
+  | "insert.image"
   | "table.addRowBefore"
   | "table.addRowAfter"
   | "table.deleteRow"
@@ -214,6 +215,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     items: [
       { type: "action", id: "insert.link", labelEn: "Link…", labelUr: "لنک…" },
       { type: "action", id: "insert.table", labelEn: "Table…", labelUr: "جدول…" },
+      { type: "action", id: "insert.image", labelEn: "Image…", labelUr: "تصویر…" },
       {
         type: "submenu",
         id: "insert.tableActions",
@@ -340,7 +342,6 @@ export const OMITTED_FUTURE_ACTIONS = [
   "cloud",
   "comment",
   "suggesting",
-  "image",
   "page-break",
   "strikethrough",
   "text-color",

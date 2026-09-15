@@ -307,6 +307,14 @@ function convertNode(node: DocNode, ctx: WalkCtx): string {
       }).join("");
       return `<table class="qalam-document-table" dir="${blockDir}"><tbody>${rows}</tbody></table>`;
     }
+    case "image": {
+      const src = typeof node.attrs?.src === "string" && /^data:image\/(png|jpeg|webp);base64,/i.test(node.attrs.src) ? node.attrs.src : "";
+      if (!src) return "";
+      const alt = typeof node.attrs?.alt === "string" ? escapeAttr(node.attrs.alt) : "";
+      const width = Math.max(80, Math.min(720, Number(node.attrs?.width) || 480));
+      const alignment = ["left", "center", "right"].includes(String(node.attrs?.alignment)) ? String(node.attrs?.alignment) : "center";
+      return `<figure class="qalam-document-image image-${alignment}" dir="${blockDir}"><img src="${src}" alt="${alt}" style="width:${width}px;max-width:100%;height:auto"/></figure>`;
+    }
     default:
       return (node.content ?? []).map((c) => convertNode(c, ctx)).join("");
   }
@@ -439,6 +447,10 @@ ${classRulesCss()}
   table.qalam-document-table th, table.qalam-document-table td { border:1px solid #789080; padding:0.45em 0.6em; vertical-align:top; text-align:start; overflow-wrap:anywhere; }
   table.qalam-document-table th { background:#eaf2eb; color:#1a3a2a; font-weight:700; }
   table.qalam-document-table p { margin:0; }
+  figure.qalam-document-image { max-width:100%; margin:.75em auto; break-inside:avoid; page-break-inside:avoid; }
+  figure.qalam-document-image.image-left { margin-inline:0 auto; }
+  figure.qalam-document-image.image-right { margin-inline:auto 0; }
+  figure.qalam-document-image img { display:block; max-width:100%; height:auto; }
   a { color: #b45309; }
 </style>
 </head>

@@ -397,6 +397,16 @@ export default function DocumentCanvas({
         .qalam-editor-content .ProseMirror .selectedCell::after {
           background: rgba(26, 58, 42, 0.12);
         }
+        .qalam-editor-content .ProseMirror img.qalam-document-image {
+          display: block;
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.375rem;
+          border: 1px solid rgba(26,58,42,.18);
+        }
+        .qalam-editor-content .ProseMirror img.qalam-document-image[data-alignment="left"] { margin: .75rem auto .75rem 0; }
+        .qalam-editor-content .ProseMirror img.qalam-document-image[data-alignment="center"] { margin: .75rem auto; }
+        .qalam-editor-content .ProseMirror img.qalam-document-image[data-alignment="right"] { margin: .75rem 0 .75rem auto; }
       `}</style>
       <style jsx global>{`
         ${documentPrintCss(pageLayout.widthMm, pageLayout.heightMm)}

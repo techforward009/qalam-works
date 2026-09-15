@@ -263,7 +263,7 @@ describe("document menus", () => {
     expect(lineHeightFromMenuAction("format.bold")).toBeUndefined();
   });
 
-  it("wires only real actions and omits future cloud/image items", () => {
+  it("wires only real actions and omits future cloud items", () => {
     const ids = allMenuActionIds();
     expect(ids).toContain("file.print");
     expect(ids).toContain("view.ruler");
@@ -272,6 +272,7 @@ describe("document menus", () => {
     expect(ids).toContain("edit.find");
     expect(ids).toContain("insert.link");
     expect(ids).toContain("insert.table");
+    expect(ids).toContain("insert.image");
     expect(ids).toContain("format.style.title");
     expect(ids).toContain("tools.stats");
     expect(ids).not.toContain("share" as never);
@@ -284,7 +285,7 @@ describe("document menus", () => {
   it("keeps Insert limited to currently implemented actions", () => {
     const insert = DOCUMENT_MENU_BAR.find((m) => m.id === "insert");
     expect(collectMenuActionIds(insert?.items ?? [])).toEqual([
-      "insert.link", "insert.table", "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
+      "insert.link", "insert.table", "insert.image", "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
       "table.addColumnBefore", "table.addColumnAfter", "table.deleteColumn", "table.toggleHeaderRow",
       "table.delete", "insert.example",
     ]);

@@ -132,6 +132,30 @@ describe("createDocxDocument — tables", () => {
   });
 });
 
+describe("createDocxDocument — images", () => {
+  test("exports a persisted PNG image as real DOCX drawing XML with surrounding text", async () => {
+    const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9WAAAAABJRU5ErkJggg==";
+    const document = docWith([
+      { type: "paragraph", content: [{ type: "text", text: "Before" }] },
+      { type: "image", attrs: { src: png, alt: "Qalam mark", title: "Mark", width: 120, height: 60, alignment: "center" } },
+      { type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "بعد" }] },
+    ]);
+    const buffer = await Packer.toBuffer(createDocxDocument(document, "rtl"));
+    const zip = await JSZip.loadAsync(buffer);
+    const xml = await zip.file("word/document.xml")?.async("text");
+    const relationships = await zip.file("word/_rels/document.xml.rels")?.async("text");
+    const contentTypes = await zip.file("[Content_Types].xml")?.async("text");
+    const media = Object.keys(zip.files).filter((path) => path.startsWith("word/media/") && !zip.files[path].dir);
+    expect(xml).toContain("<w:drawing>");
+    expect(xml).toContain("Before");
+    expect(xml).toContain("بعد");
+    expect(media).toHaveLength(1);
+    expect((await zip.file(media[0])?.async("uint8array"))?.byteLength).toBeGreaterThan(0);
+    expect(relationships).toContain("/image");
+    expect(contentTypes).toContain("image/png");
+  });
+});
+
 describe("createDocxDocument — marks (bold, italic, links, hardBreak)", () => {
   test("bold mark produces <w:b/> and <w:bCs/> together", async () => {
     const xml = await extractDocumentXml(

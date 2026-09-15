@@ -47,6 +47,7 @@ export type DocumentMenuHandlers = {
   loadExample: () => void;
   promptLink: () => void;
   openTableInsert?: () => void;
+  openImageInsert?: () => void;
   setDir: (dir: "rtl" | "ltr") => void;
   standardize: () => void;
   audit: () => void;
@@ -168,6 +169,9 @@ export function dispatchDocumentMenuAction(
       return;
     case "insert.table":
       handlers.openTableInsert?.();
+      return;
+    case "insert.image":
+      handlers.openImageInsert?.();
       return;
     case "table.addRowBefore":
       editor?.chain().focus().addRowBefore().run();

@@ -94,6 +94,9 @@ function walkForDisplay(node: DocNode, lines: string[], dir: Direction, listPref
       }
       break;
     }
+    case "image":
+      lines.push(typeof node.attrs?.alt === "string" && node.attrs.alt.trim() ? `[Image: ${node.attrs.alt.trim()}]` : "[Image]");
+      break;
     default: {
       node.content?.forEach((child) => walkForDisplay(child, lines, dir, listPrefix));
     }
