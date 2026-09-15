@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - document-studio-v1-closure
+      - document-studio-v2-tables
 
 jobs:
   document-studio-browser-acceptance:

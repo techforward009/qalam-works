@@ -370,6 +370,33 @@ export default function DocumentCanvas({
           color: #b45309;
           text-decoration: underline;
         }
+        .qalam-editor-content .ProseMirror table.qalam-document-table {
+          width: 100%;
+          max-width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+          margin: 0.75rem 0;
+          overflow-wrap: anywhere;
+        }
+        .qalam-editor-content .ProseMirror table.qalam-document-table th,
+        .qalam-editor-content .ProseMirror table.qalam-document-table td {
+          min-width: 4rem;
+          border: 1px solid #95a89a;
+          padding: 0.45rem 0.6rem;
+          vertical-align: top;
+          text-align: start;
+        }
+        .qalam-editor-content .ProseMirror table.qalam-document-table th {
+          background: #eaf2eb;
+          color: #1a3a2a;
+          font-weight: 700;
+        }
+        .qalam-editor-content .ProseMirror table.qalam-document-table p {
+          margin: 0;
+        }
+        .qalam-editor-content .ProseMirror .selectedCell::after {
+          background: rgba(26, 58, 42, 0.12);
+        }
       `}</style>
       <style jsx global>{`
         ${documentPrintCss(pageLayout.widthMm, pageLayout.heightMm)}

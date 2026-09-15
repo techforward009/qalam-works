@@ -85,6 +85,52 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(editor).not.toContainText("target");
   });
 
+  test("creates, edits, persists, and exports a multilingual table", async ({ page }) => {
+    await openStudio(page);
+    await page.locator('[data-menu-root="insert"]').click();
+    await page.locator('[data-menu-action="insert.table"]').click();
+    await page.getByRole("dialog", { name: "Insert table" }).getByLabel("Rows").fill("2");
+    await page.getByRole("dialog", { name: "Insert table" }).getByLabel("Columns").fill("2");
+    await page.getByRole("dialog", { name: "Insert table" }).getByRole("button", { name: "Insert" }).click();
+
+    const table = page.locator(".ProseMirror table");
+    await expect(table).toHaveCount(1);
+    const cells = table.locator("td, th");
+    await cells.nth(0).click();
+    await page.keyboard.type("English cell");
+    await cells.nth(1).click();
+    await page.keyboard.type("اردو خانہ");
+    await expect(table).toContainText("English cell");
+    await expect(table).toContainText("اردو خانہ");
+
+    await page.locator('[data-menu-root="insert"]').click();
+    await page.locator('[data-menu-submenu="insert.tableActions"]').hover();
+    await page.locator('[data-menu-action="table.addRowAfter"]').click();
+    await page.locator('[data-menu-root="insert"]').click();
+    await page.locator('[data-menu-submenu="insert.tableActions"]').hover();
+    await page.locator('[data-menu-action="table.addColumnAfter"]').click();
+    await expect(table.locator("tr")).toHaveCount(3);
+    await expect(table.locator("tr").first().locator("td, th")).toHaveCount(3);
+
+    await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
+    await page.reload();
+    await expect(page.locator(".ProseMirror table")).toContainText("English cell");
+    await expect(page.locator(".ProseMirror table")).toContainText("اردو خانہ");
+
+    const docx = await downloadAction(page, "file.downloadDocx");
+    expect(docx.suggestedFilename()).toMatch(/\.docx$/i);
+    const responsePromise = page.waitForResponse((response) => response.url().includes("/api/export-pdf") && response.request().method() === "POST");
+    await page.locator('[data-menu-root="file"]').click();
+    await page.locator('[data-menu-submenu="file.download"]').hover();
+    await page.locator('[data-menu-action="file.downloadPdf"]').click();
+    expect((await responsePromise).status()).toBe(200);
+    const pdf = await page.waitForEvent("download");
+    const stream = await pdf.createReadStream();
+    let size = 0;
+    for await (const chunk of stream ?? []) size += (chunk as Buffer).length;
+    expect(size).toBeGreaterThan(0);
+  });
+
   test("downloads non-empty DOCX and PDF exports", async ({ page }) => {
     await openStudio(page);
     await replaceEditorContent(page, "Small deterministic export document.");

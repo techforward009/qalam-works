@@ -37,6 +37,15 @@ export type MenuActionId =
   | "view.rulerUnit.in"
   | "view.fullscreen"
   | "insert.link"
+  | "insert.table"
+  | "table.addRowBefore"
+  | "table.addRowAfter"
+  | "table.deleteRow"
+  | "table.addColumnBefore"
+  | "table.addColumnAfter"
+  | "table.deleteColumn"
+  | "table.toggleHeaderRow"
+  | "table.delete"
   | "insert.example"
   | "format.bold"
   | "format.italic"
@@ -204,6 +213,24 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     labelUr: "اندراج",
     items: [
       { type: "action", id: "insert.link", labelEn: "Link…", labelUr: "لنک…" },
+      { type: "action", id: "insert.table", labelEn: "Table…", labelUr: "جدول…" },
+      {
+        type: "submenu",
+        id: "insert.tableActions",
+        labelEn: "Table", labelUr: "جدول",
+        items: [
+          { type: "action", id: "table.addRowBefore", labelEn: "Add row before", labelUr: "اوپر قطار شامل کریں" },
+          { type: "action", id: "table.addRowAfter", labelEn: "Add row after", labelUr: "نیچے قطار شامل کریں" },
+          { type: "action", id: "table.deleteRow", labelEn: "Delete row", labelUr: "قطار حذف کریں" },
+          { type: "separator" },
+          { type: "action", id: "table.addColumnBefore", labelEn: "Add column before", labelUr: "پہلے ستون شامل کریں" },
+          { type: "action", id: "table.addColumnAfter", labelEn: "Add column after", labelUr: "بعد ستون شامل کریں" },
+          { type: "action", id: "table.deleteColumn", labelEn: "Delete column", labelUr: "ستون حذف کریں" },
+          { type: "separator" },
+          { type: "action", id: "table.toggleHeaderRow", labelEn: "Toggle header row", labelUr: "سرخی کی قطار بدلیں" },
+          { type: "action", id: "table.delete", labelEn: "Delete table", labelUr: "جدول حذف کریں" },
+        ],
+      },
       { type: "action", id: "insert.example", labelEn: "Load example", labelUr: "مثال لوڈ کریں" },
     ],
   },
@@ -313,7 +340,6 @@ export const OMITTED_FUTURE_ACTIONS = [
   "cloud",
   "comment",
   "suggesting",
-  "table",
   "image",
   "page-break",
   "strikethrough",

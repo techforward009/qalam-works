@@ -14,7 +14,7 @@ import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { TextStyle, FontFamily } from "@tiptap/extension-text-style";
 import { Node as PMNode } from "@tiptap/pm/model";
-import { ParagraphWithDir, HeadingWithDir } from "../app/tools/document-studio/utils/documentSchema";
+import { ParagraphWithDir, HeadingWithDir, createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
 
 const extensions = [
   StarterKit.configure({ paragraph: false, heading: false }),
@@ -93,6 +93,38 @@ describe("Batch 16A — paragraph/heading schema attrs really persist (real TipT
     const node = paragraphNodeType.create({ blockStyle: "subtitle" }, schema.text("hi"));
     const dom = paragraphNodeType.spec.toDOM?.(node) as unknown as [string, Record<string, string>, ...unknown[]];
     expect(dom[1]["data-block-style"]).toBe("subtitle");
+  });
+});
+
+describe("Document Studio v2.1 — real table schema", () => {
+  test("table JSON with headers, cells, and directed paragraphs survives a production-schema round-trip", () => {
+    const tableSchema = getSchema(createDocumentStudioExtensions());
+    const json = {
+      type: "doc",
+      content: [{
+        type: "table",
+        content: [{
+          type: "tableRow",
+          content: [
+            { type: "tableHeader", content: [{ type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Name" }] }] },
+            { type: "tableHeader", content: [{ type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "نام" }] }] },
+          ],
+        }, {
+          type: "tableRow",
+          content: [
+            { type: "tableCell", content: [{ type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Ali" }] }] },
+            { type: "tableCell", content: [{ type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "علی" }] }] },
+          ],
+        }],
+      }],
+    };
+    const result = PMNode.fromJSON(tableSchema, json).toJSON() as typeof json;
+    const table = result.content[0];
+    expect(table.type).toBe("table");
+    expect(table.content).toHaveLength(2);
+    expect(table.content?.[0].content?.every((cell) => cell.type === "tableHeader")).toBe(true);
+    expect(table.content?.[1].content?.every((cell) => cell.type === "tableCell")).toBe(true);
+    expect(table.content?.[0].content?.[1].content?.[0].attrs?.dir).toBe("rtl");
   });
 });
 
