@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   assertPdfMeasurementLimits,
+  baselineBesideFloat,
   fitHorizontalInk,
+  floatExclusionBox,
   inkLinePaintTop,
   mmToCssPx,
   placeInkLines,
   visualLineFrame,
+  wrapFrameBesideFloat,
   type InkLine,
 } from "../app/tools/document-studio/utils/pdfInkPagination";
 
@@ -111,5 +114,22 @@ describe("measured PDF ink pagination", () => {
     expect(ltrBeside.left).toBe(180);
     expect(ltrBeside.left).toBeGreaterThanOrEqual(160);
     expect(visualLineFrame(0, 0, CONTENT_WIDTH, 10, 0)).toEqual({ left: 0, width: CONTENT_WIDTH });
+  });
+  it("H: wrap column uses float exclusion, not a full-width hanging glyph box", () => {
+    const exclusion = floatExclusionBox(
+      { top: 100, right: CONTENT_WIDTH, bottom: 260, left: 400 },
+      { top: 4, right: 0, bottom: 12, left: 16 },
+    );
+    expect(exclusion.left).toBe(384);
+    expect(exclusion.bottom).toBe(272);
+    expect(baselineBesideFloat(250, exclusion.top, exclusion.bottom)).toBe(true);
+    expect(baselineBesideFloat(280, exclusion.top, exclusion.bottom)).toBe(false);
+    const frame = wrapFrameBesideFloat(0, 0, CONTENT_WIDTH, exclusion.left, exclusion.right, "right");
+    expect(frame).toEqual({ left: 0, width: 384 });
+    const hanging = visualLineFrame(0, 0, CONTENT_WIDTH, 0, 580);
+    expect(hanging.width).toBe(580);
+    expect(frame!.width).toBeLessThan(hanging.width);
+    const leftFrame = wrapFrameBesideFloat(0, 0, CONTENT_WIDTH, 0, 180, "left");
+    expect(leftFrame).toEqual({ left: 180, width: CONTENT_WIDTH - 180 });
   });
 });

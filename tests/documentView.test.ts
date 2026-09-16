@@ -11,6 +11,7 @@ import {
   resolveZoomFactor,
   visualPageCount,
   visualPageCountWithGaps,
+  documentPrintCss,
   mountDocumentPrintPortal,
   unmountDocumentPrintPortal,
 } from "../app/tools/document-studio/utils/documentView";
@@ -122,6 +123,13 @@ describe("print portal strips view-only pagination", () => {
                 </div>
               </div>
               <p>Page one</p>
+              <div data-resize-container data-image-float="right">
+                <img data-wrap-mode="wrap" data-alignment="right" alt="wrap" />
+              </div>
+              <p class="qalam-image-wrap-beside" data-wrap-beside="right" style="--qalam-wrap-h:180px;margin-top:calc(-1 * var(--qalam-wrap-h, 0px))">
+                <span data-image-wrap-spacer="right"></span>
+                Wrapped beside
+              </p>
               <div data-document-page-break="true">Page break</div>
               <p>Page two</p>
               <div data-document-section-break="true" data-section-break-type="nextPage">Section break (next page)</div>
@@ -172,5 +180,29 @@ describe("print portal strips view-only pagination", () => {
     const page = portal?.querySelector("[data-studio-print-page]") as HTMLElement | null;
     expect(page?.style.minHeight === "0" || page?.style.minHeight === "0px").toBe(true);
     expect(page?.style.minHeight).not.toBe("1800px");
+  });
+
+  it("E: print clone converts Pages wrap to physical floats without negative pull-up", () => {
+    const portal = mountPagedPrintPortal();
+    const clone = portal?.querySelector(".ProseMirror") as HTMLElement | null;
+    expect(clone).toBeTruthy();
+    expect(clone?.querySelector(".qalam-image-wrap-beside")).toBeNull();
+    expect(clone?.querySelector("[data-wrap-beside]")).toBeNull();
+    expect(clone?.querySelector("[data-image-wrap-spacer]")).toBeNull();
+    const wrapped = Array.from(clone?.querySelectorAll("p") ?? []).find((node) => node.textContent?.includes("Wrapped beside"));
+    expect(wrapped).toBeTruthy();
+    expect(wrapped?.classList.contains("qalam-image-wrap-beside")).toBe(false);
+    expect(wrapped?.style.getPropertyValue("--qalam-wrap-h")).toBe("");
+    expect(wrapped?.style.marginTop).toBe("");
+    expect(clone?.querySelector("[data-image-float='right']")).toBeTruthy();
+    expect(portal?.querySelector("[data-studio-print-page]")?.textContent).toContain("Wrapped beside");
+  });
+
+  it("F: print CSS zeros page-stack min-height and wrap-beside pull-up", () => {
+    const css = documentPrintCss(210, 297);
+    expect(css).toContain("[data-studio-print-page] .ProseMirror");
+    expect(css).toContain("min-height: 0 !important");
+    expect(css).toContain("p.qalam-image-wrap-beside");
+    expect(css).toContain("[data-image-wrap-spacer]");
   });
 });

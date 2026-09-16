@@ -214,9 +214,13 @@ const VIEW_ONLY_PAGINATION_VARS = [
   "--qalam-canvas",
 ] as const;
 
-/** Strip Pages-mode decorations from a print clone. Authored breaks stay. */
+/** Strip Pages-mode decorations from a print clone. Authored breaks stay.
+ *  Removing `.qalam-pagination` switches image wrap CSS to Pageless floats.
+ *  Pages wrap (spacer + negative margin) must be converted in the same pass,
+ *  or the wrapping paragraph climbs into the preceding block. */
 export function stripViewOnlyPagination(root: HTMLElement): void {
   root.querySelectorAll("[data-qalam-pagination], .qalam-pagination-pages").forEach((node) => node.remove());
+  root.querySelectorAll("[data-image-wrap-spacer]").forEach((node) => node.remove());
   const styled: HTMLElement[] = [];
   if (root.classList.contains("qalam-pagination")) styled.push(root);
   root.querySelectorAll(".qalam-pagination").forEach((node) => styled.push(node as HTMLElement));
@@ -226,6 +230,13 @@ export function stripViewOnlyPagination(root: HTMLElement): void {
     node.style.removeProperty("min-height");
     node.style.removeProperty("width");
   }
+  root.querySelectorAll(".qalam-image-wrap-beside, [data-wrap-beside]").forEach((node) => {
+    const element = node as HTMLElement;
+    element.classList.remove("qalam-image-wrap-beside");
+    element.removeAttribute("data-wrap-beside");
+    element.style.removeProperty("--qalam-wrap-h");
+    element.style.removeProperty("margin-top");
+  });
 }
 
 export function mountDocumentPrintPortal(): HTMLElement | null {
@@ -310,6 +321,21 @@ export function documentPrintCss(widthMm: number, heightMm: number): string {
     break-after: auto !important;
     min-height: 0 !important;
     transform: none !important;
+  }
+  [data-studio-print-page] .ProseMirror {
+    min-height: 0 !important;
+    height: auto !important;
+    width: auto !important;
+  }
+  [data-studio-print-page] p.qalam-image-wrap-beside,
+  [data-studio-print-page] [data-wrap-beside] {
+    margin-top: 0 !important;
+  }
+  [data-studio-print-page] [data-image-wrap-spacer] {
+    display: none !important;
+    float: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
   [data-document-page-break="true"],
   [data-document-section-break="true"][data-section-break-type="nextPage"] {

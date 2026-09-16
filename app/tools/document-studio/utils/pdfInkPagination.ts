@@ -30,6 +30,39 @@ export function visualLineFrame(
   }
   return { left: lineLeft - originLeft, width: lineWidth };
 }
+/** Float exclusion includes margins. getBoundingClientRect is border-box only. */
+export function floatExclusionBox(
+  border: { top: number; right: number; bottom: number; left: number },
+  margin: { top: number; right: number; bottom: number; left: number },
+): { top: number; right: number; bottom: number; left: number } {
+  return {
+    top: border.top - margin.top,
+    right: border.right + margin.right,
+    bottom: border.bottom + margin.bottom,
+    left: border.left - margin.left,
+  };
+}
+export function baselineBesideFloat(baseline: number, exclusionTop: number, exclusionBottom: number): boolean {
+  return baseline >= exclusionTop - 1 && baseline <= exclusionBottom + 1;
+}
+/** Wrap column beside a float. Independent of glyph-ink client rects, which hang through Nastaliq. */
+export function wrapFrameBesideFloat(
+  originLeft: number,
+  blockLeft: number,
+  blockWidth: number,
+  exclusionLeft: number,
+  exclusionRight: number,
+  side: "left" | "right",
+): { left: number; width: number } | null {
+  if (side === "right") {
+    const width = exclusionLeft - blockLeft;
+    if (!(width > 8) || width >= blockWidth - 8) return null;
+    return { left: blockLeft - originLeft, width };
+  }
+  const width = blockLeft + blockWidth - exclusionRight;
+  if (!(width > 8) || width >= blockWidth - 8) return null;
+  return { left: exclusionRight - originLeft, width };
+}
 export const PDF_MEASUREMENT_LIMITS = { visualLines: 300, stagingHeight: 40_000 } as const;
 export const PDF_INK_EDGE_GUARD = 1;
 /** Allow up to 1 CSS pixel of rasterization overshoot without treating it as overflow. */
@@ -226,7 +259,18 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
         return { left: rect.left, width: rect.width };
       }
     };
-    const wrapFloats = Array.from(document.querySelectorAll<HTMLElement>("figure.qalam-document-image.image-wrap"));
+    const wrapFloats = Array.from(document.querySelectorAll<HTMLElement>("figure.qalam-document-image.image-wrap")).map(figure => {
+      const border = figure.getBoundingClientRect();
+      const floatStyle = getComputedStyle(figure);
+      const exclusion = {
+        top: border.top - (parseFloat(floatStyle.marginTop) || 0),
+        right: border.right + (parseFloat(floatStyle.marginRight) || 0),
+        bottom: border.bottom + (parseFloat(floatStyle.marginBottom) || 0),
+        left: border.left - (parseFloat(floatStyle.marginLeft) || 0),
+      };
+      const side: "left" | "right" = figure.classList.contains("image-left") || floatStyle.cssFloat === "left" ? "left" : "right";
+      return { side, ...exclusion };
+    });
     for (const [index, group] of groups.entries()) {
       const element = source.cloneNode(true) as HTMLElement, cloned = textNodes(element);
       const locate = (position: number): [Text, number] => {
@@ -245,13 +289,19 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       });
       for (const property of ["font-family", "font-size", "font-weight", "font-style", "line-height", "color", "direction", "text-align", "letter-spacing", "word-spacing", "text-decoration"]) element.style.setProperty(property, style.getPropertyValue(property));
       const box = lineBox(group);
-      const besideFloat = wrapFloats.some(figure => {
-        const floatBox = figure.getBoundingClientRect();
-        return group.baseline >= floatBox.top - 1 && group.baseline <= floatBox.bottom + 1 && box.width < rect.width - 8;
-      });
-      const frame = besideFloat && box.width > 1
-        ? { left: box.left - origin.left, width: box.width }
-        : { left: rect.left - origin.left, width: rect.width };
+      let frame = { left: rect.left - origin.left, width: rect.width };
+      let besideFloat = false;
+      for (const floatBox of wrapFloats) {
+        if (group.baseline < floatBox.top - 1 || group.baseline > floatBox.bottom + 1) continue;
+        besideFloat = true;
+        const next = floatBox.side === "right"
+          ? { left: rect.left - origin.left, width: floatBox.left - rect.left }
+          : { left: floatBox.right - origin.left, width: rect.right - floatBox.right };
+        if (next.width > 8 && next.width < frame.width - 8) frame = next;
+      }
+      if (besideFloat && frame.width >= rect.width - 8 && box.width > 1 && box.width < rect.width - 8) {
+        frame = { left: box.left - origin.left, width: box.width };
+      }
       element.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${frame.width}px;white-space:nowrap;`;
       element.style.textIndent = index === 0 ? style.textIndent : "0px";
       if (style.textAlign === "justify" && index < groups.length - 1) element.style.textAlignLast = "justify";

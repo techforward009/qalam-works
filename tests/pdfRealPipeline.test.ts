@@ -240,7 +240,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     const doc = { type: "doc", content: [
       { type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "پہلا پیراگراف تصویر سے اوپر رہے۔" }] },
       { type: "image", attrs: { src: png, alt: "Mark", width: 220, height: 160, alignment: "right", wrapMode: "wrap" } },
-      { type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: wrap.repeat(8) }] },
+      { type: "paragraph", attrs: { dir: "rtl", textAlign: "justify" }, content: [{ type: "text", text: wrap.repeat(8) }] },
     ] };
     const response = await POST(new NextRequest("http://localhost/api/export-pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc, dir: "rtl", settings }) }));
     expect(response.status).toBe(200);
@@ -269,6 +269,15 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     for (const line of beside) {
       const separate = line.finalBounds.right <= image!.finalBounds.left + 1 || line.finalBounds.left >= image!.finalBounds.right - 1;
       expect(separate).toBe(true);
+      expect(line.css.width).toBeLessThan(image!.css.left + image!.css.width - 8);
+    }
+    for (const line of lines) {
+      if (line.image) continue;
+      const mid = (line.finalBounds.top + line.finalBounds.bottom) / 2;
+      if (mid < image!.finalBounds.top || mid > image!.finalBounds.bottom) continue;
+      const cssRight = line.css.left + line.css.width;
+      const throughImage = line.css.left < image!.css.left + 8 && cssRight > image!.css.left + image!.css.width - 8;
+      expect(throughImage).toBe(false);
       expect(line.css.width).toBeLessThan(image!.css.left + image!.css.width - 8);
     }
   }, 120000);
