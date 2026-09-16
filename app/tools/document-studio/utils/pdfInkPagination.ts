@@ -13,10 +13,34 @@ export interface InkLine {
 }
 export interface InkPlacement { page: number; baseline: number }
 export const PDF_MEASUREMENT_LIMITS = { visualLines: 300, stagingHeight: 40_000 } as const;
+export const PDF_INK_EDGE_GUARD = 1;
+/** Allow up to 1 CSS pixel of rasterization overshoot without treating it as overflow. */
+export const PDF_INK_HORIZONTAL_EPSILON = 1;
 
 export function assertPdfMeasurementLimits(visualLines: number, stagingHeight: number): void {
   if (visualLines > PDF_MEASUREMENT_LIMITS.visualLines) throw new Error(`PDF measurement exceeds the supported ${PDF_MEASUREMENT_LIMITS.visualLines} visual-line limit; export blocked`);
   if (stagingHeight > PDF_MEASUREMENT_LIMITS.stagingHeight) throw new Error(`PDF measurement exceeds the supported ${PDF_MEASUREMENT_LIMITS.stagingHeight}px staging limit; export blocked`);
+}
+
+export function fitHorizontalInk(
+  inkLeft: number,
+  inkRight: number,
+  width: number,
+  index: number,
+  text?: string,
+): number {
+  const edgeGuard = PDF_INK_EDGE_GUARD;
+  const epsilon = PDF_INK_HORIZONTAL_EPSILON;
+  if (inkRight - inkLeft > width - edgeGuard * 2 + epsilon) {
+    throw new Error(`PDF glyph ink cannot fit the printable horizontal boundary for line ${index} (${JSON.stringify(text)}): ${inkLeft}..${inkRight} in 0..${width}; export blocked`);
+  }
+  const horizontalShift = inkRight > width - edgeGuard
+    ? width - edgeGuard - inkRight
+    : inkLeft < edgeGuard ? edgeGuard - inkLeft : 0;
+  if (inkLeft + horizontalShift < edgeGuard - epsilon || inkRight + horizontalShift > width - edgeGuard + epsilon) {
+    throw new Error(`PDF glyph ink crosses the printable horizontal boundary for line ${index}: ${inkLeft}..${inkRight} in 0..${width}; export blocked`);
+  }
+  return horizontalShift;
 }
 
 /** Keep baseline distances unchanged within a page; break only between whole ink extents. */
@@ -340,14 +364,7 @@ export async function paginatePdfInk(page: Page, widthMm: number, heightMm: numb
     }
     if (line.inkTop <= line.frameTop || line.inkBottom >= line.frameBottom) throw new Error(`PDF glyph ink could not be bounded safely for line ${i}: ${line.inkTop}..${line.inkBottom} in ${line.frameTop}..${line.frameBottom}; export blocked`);
     line.inkTop -= baselines[i]; line.inkBottom -= baselines[i];
-    const edgeGuard = 1;
-    if (line.inkRight - line.inkLeft > width - edgeGuard * 2) throw new Error(`PDF glyph ink cannot fit the printable horizontal boundary for line ${i} (${JSON.stringify(line.text)}): ${line.inkLeft}..${line.inkRight} in 0..${width}; export blocked`);
-    line.horizontalShift = line.inkRight > width - edgeGuard
-      ? width - edgeGuard - line.inkRight
-      : line.inkLeft < edgeGuard ? edgeGuard - line.inkLeft : 0;
-    if (line.inkLeft + line.horizontalShift < edgeGuard || line.inkRight + line.horizontalShift > width - edgeGuard) {
-      throw new Error(`PDF glyph ink crosses the printable horizontal boundary for line ${i}: ${line.inkLeft}..${line.inkRight} in 0..${width}; export blocked`);
-    }
+    line.horizontalShift = fitHorizontalInk(line.inkLeft, line.inkRight, width, i, line.text);
   });
   const placements = placeInkLines(lines, height);
   await page.evaluate(({ lines, placements, height }) => {
