@@ -99,7 +99,9 @@ export function fitHorizontalInk(
   return 0;
 }
 
-/** Keep baseline distances unchanged within a page; break only between whole ink extents. */
+/** Keep baseline distances unchanged within a page; break only between whole ink extents.
+ *  Body paragraphs fill the remaining page and may split. Headings stay with the next line.
+ *  A trailing blank caret paragraph must not mint an extra last page. */
 export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] {
   const edgeGuard = 1;
   let page = 0, shift = 0;
@@ -110,13 +112,26 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     if (relativeBottom - relativeTop > height - edgeGuard * 2) throw new Error("PDF visual line is taller than the configured printable page; export blocked");
     if (index === 0 && top < edgeGuard) shift = edgeGuard - top;
     let end = index;
-    while (end + 1 < lines.length && lines[end + 1].block === line.block) end++;
-    if (line.heading && end + 1 < lines.length) end++;
+    if (line.heading) {
+      while (end + 1 < lines.length && lines[end + 1].block === line.block) end++;
+      if (end + 1 < lines.length) end++;
+    }
     const groupBottom = lines[end].baseline + Math.max(lines[end].inkBottom, lines[end].boxBottom ?? lines[end].inkBottom);
-    const keep = (index === 0 || lines[index - 1].block !== line.block) && groupBottom - top <= height / 3;
-    if (index > 0 && line.forceBreak) { page++; shift = -top + edgeGuard; }
-    else if (index > 0 && (bottom + shift > height - edgeGuard || (keep && groupBottom + shift > height - edgeGuard))) { page++; shift = -top + edgeGuard; }
-    return { page, baseline: line.baseline + shift };
+    const keepHeading = line.heading && (index === 0 || lines[index - 1].block !== line.block) && groupBottom - top <= height / 3;
+    const trailingBlank = Boolean(line.blank) && !line.image && lines.slice(index).every(item => item.blank && !item.image);
+    let placedBaseline = line.baseline + shift;
+    if (index > 0 && line.forceBreak) {
+      page++;
+      shift = -top + edgeGuard;
+      placedBaseline = line.baseline + shift;
+    } else if (index > 0 && trailingBlank) {
+      if (bottom + shift > height - edgeGuard) placedBaseline = height - edgeGuard - relativeBottom;
+    } else if (index > 0 && (bottom + shift > height - edgeGuard || (keepHeading && groupBottom + shift > height - edgeGuard))) {
+      page++;
+      shift = -top + edgeGuard;
+      placedBaseline = line.baseline + shift;
+    }
+    return { page, baseline: placedBaseline };
   });
 }
 

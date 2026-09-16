@@ -29,9 +29,17 @@ describe("measured PDF ink pagination", () => {
       expect(item.baseline + lines[i].inkBottom).toBeLessThanOrEqual(100);
     });
   });
-  it("keeps a short paragraph and a heading with its next line together", () => {
-    expect(placeInkLines([line(20), line(90, 1), line(100, 1)], 100).map(item => item.page)).toEqual([0, 1, 1]);
+  it("fills the page with body text and keeps a heading with its next line", () => {
+    expect(placeInkLines([line(20), line(90, 1), line(100, 1)], 100).map(item => item.page)).toEqual([0, 0, 1]);
     expect(placeInkLines([line(20), { ...line(90, 1), heading: true }, line(100, 2)], 100).map(item => item.page)).toEqual([0, 1, 1]);
+  });
+  it("does not mint a last page for a trailing blank paragraph", () => {
+    const blank: InkLine = { ...line(90, 1), blank: true };
+    expect(placeInkLines([line(20), blank], 100).map(item => item.page)).toEqual([0, 0]);
+    const overflowing: InkLine = { ...line(98, 1, -15, 15), blank: true };
+    const placed = placeInkLines([line(20), overflowing], 100);
+    expect(placed.map(item => item.page)).toEqual([0, 0]);
+    expect(placed[1].baseline + overflowing.inkBottom).toBeLessThanOrEqual(100);
   });
   it("starts a new page at an authored page or next-page section break", () => {
     expect(placeInkLines([

@@ -267,18 +267,21 @@ export function mountDocumentPrintPortal(): HTMLElement | null {
     marker.textContent = "";
   });
   stripViewOnlyPagination(page);
-  page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:${topMm}mm ${rightMm}mm ${bottomMm}mm ${leftMm}mm;background:#fff;min-height:0;`;
+  page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:0 ${rightMm}mm 0 ${leftMm}mm;background:#fff;min-height:0;`;
   const style = document.createElement("style");
-  style.textContent = `${studioJameelFontFaceCss()}\n${documentPrintCss(widthMm, heightMm)}`;
+  style.textContent = `${studioJameelFontFaceCss()}\n${documentPrintCss(widthMm, heightMm, topMm, bottomMm)}`;
   portal.append(style, page);
   document.body.appendChild(portal);
   return portal;
 }
 
-/** Print CSS uses physical page mm and hides the whole app except the body-level portal. */
-export function documentPrintCss(widthMm: number, heightMm: number): string {
+/** Print CSS uses physical page mm. Top/bottom must live on @page so every
+ *  printed sheet gets them — padding on a long clone only applies to the first
+ *  and last fragments. Left/right stay as element padding (those do repeat). */
+export function documentPrintCss(widthMm: number, heightMm: number, topMm = 0, bottomMm = 0): string {
+  const pageMargin = topMm || bottomMm ? `${topMm}mm 0 ${bottomMm}mm 0` : "0";
   return `
-@page { size: ${widthMm}mm ${heightMm}mm; margin: 0; }
+@page { size: ${widthMm}mm ${heightMm}mm; margin: ${pageMargin}; }
 @media screen {
   [data-studio-print-portal] {
     position: absolute !important;
@@ -321,11 +324,15 @@ export function documentPrintCss(widthMm: number, heightMm: number): string {
     break-after: auto !important;
     min-height: 0 !important;
     transform: none !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
   [data-studio-print-page] .ProseMirror {
     min-height: 0 !important;
     height: auto !important;
     width: auto !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
   [data-studio-print-page] p.qalam-image-wrap-beside,
   [data-studio-print-page] [data-wrap-beside] {

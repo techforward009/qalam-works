@@ -522,7 +522,7 @@ export default function DocumentCanvas({
         }
       `}</style>
       <style jsx global>{`
-        ${documentPrintCss(pageLayout.widthMm, pageLayout.heightMm)}
+        ${documentPrintCss(pageLayout.widthMm, pageLayout.heightMm, printMargins.topMm, printMargins.bottomMm)}
       `}</style>
     </div>
   );

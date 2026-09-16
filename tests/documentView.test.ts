@@ -205,4 +205,26 @@ describe("print portal strips view-only pagination", () => {
     expect(css).toContain("p.qalam-image-wrap-beside");
     expect(css).toContain("[data-image-wrap-spacer]");
   });
+
+  it("G: print CSS puts physical top/bottom margin on every sheet, not clone padding", () => {
+    const css = documentPrintCss(210, 297, 25.4, 25.4);
+    expect(css).toContain("@page { size: 210mm 297mm; margin: 25.4mm 0 25.4mm 0; }");
+    expect(css).toContain("padding-top: 0 !important");
+    expect(css).toContain("padding-bottom: 0 !important");
+    document.body.innerHTML = `
+      <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-margin-top-mm="25.4" data-print-margin-bottom-mm="25.4" data-print-margin-left-mm="25.4" data-print-margin-right-mm="25.4" data-print-dir="ltr">
+        <div data-studio-print-surface>
+          <div class="qalam-editor-content">
+            <div class="ProseMirror"><p>Hello</p></div>
+          </div>
+        </div>
+      </div>`;
+    const portal = mountDocumentPrintPortal();
+    const page = portal?.querySelector("[data-studio-print-page]") as HTMLElement | null;
+    expect(page?.style.paddingTop === "0" || page?.style.paddingTop === "0px").toBe(true);
+    expect(page?.style.paddingBottom === "0" || page?.style.paddingBottom === "0px").toBe(true);
+    expect(page?.style.paddingLeft).toContain("25.4");
+    expect(page?.style.paddingRight).toContain("25.4");
+    expect(portal?.querySelector("style")?.textContent).toContain("margin: 25.4mm 0 25.4mm 0");
+  });
 });
