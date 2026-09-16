@@ -236,12 +236,13 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     settings.headerFooter.headerEnabled = false;
     settings.headerFooter.footerEnabled = false;
     const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9WAAAAABJRU5ErkJggg==";
+    const wrap = "یہ عبارت تصویر کے ساتھ لپٹی ہوئی ہے اور تصویر کے اوپر یا اس کے اندر نہیں چڑھنی چاہیے۔ ";
     const doc = { type: "doc", content: [
-      { type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Preceding paragraph stays above the wrapped image." }] },
-      { type: "image", attrs: { src: png, alt: "Mark", width: 160, height: 80, alignment: "left", wrapMode: "wrap" } },
-      { type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Text beside the wrapped image continues on the right of the figure." }] },
+      { type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "پہلا پیراگراف تصویر سے اوپر رہے۔" }] },
+      { type: "image", attrs: { src: png, alt: "Mark", width: 220, height: 160, alignment: "right", wrapMode: "wrap" } },
+      { type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: wrap.repeat(8) }] },
     ] };
-    const response = await POST(new NextRequest("http://localhost/api/export-pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc, dir: "ltr", settings }) }));
+    const response = await POST(new NextRequest("http://localhost/api/export-pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc, dir: "rtl", settings }) }));
     expect(response.status).toBe(200);
     await response.arrayBuffer();
     const pages = JSON.parse(await import("node:fs").then(fs => fs.readFileSync(path.join(output, `${currentCase}-print-lines.json`), "utf8"))) as Array<Array<{
@@ -251,7 +252,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
       css: { left: number; width: number };
     }>>;
     const lines = pages.flat();
-    const preceding = lines.find(line => line.text.includes("Preceding paragraph"));
+    const preceding = lines.find(line => line.text.includes("پہلا پیراگراف"));
     const image = lines.find(line => line.image);
     expect(preceding).toBeTruthy();
     expect(image).toBeTruthy();
@@ -259,6 +260,17 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     expect(image!.css.width).toBeGreaterThan(0);
     expect(image!.finalBounds.top).toBeGreaterThanOrEqual(preceding!.finalBounds.bottom - 1);
     expect(image!.measuredInk.horizontalShift).toBe(0);
+    const beside = lines.filter(line => {
+      if (line.image || !line.text.includes("لپٹی ہوئی")) return false;
+      const mid = (line.finalBounds.top + line.finalBounds.bottom) / 2;
+      return mid >= image!.finalBounds.top && mid <= image!.finalBounds.bottom;
+    });
+    expect(beside.length).toBeGreaterThan(0);
+    for (const line of beside) {
+      const separate = line.finalBounds.right <= image!.finalBounds.left + 1 || line.finalBounds.left >= image!.finalBounds.right - 1;
+      expect(separate).toBe(true);
+      expect(line.css.width).toBeLessThan(image!.css.left + image!.css.width - 8);
+    }
   }, 120000);
 
   it("bounds long-document measurement before raster work", async () => {

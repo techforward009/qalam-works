@@ -5,6 +5,7 @@ import {
   inkLinePaintTop,
   mmToCssPx,
   placeInkLines,
+  visualLineFrame,
   type InkLine,
 } from "../app/tools/document-studio/utils/pdfInkPagination";
 
@@ -97,5 +98,18 @@ describe("measured PDF ink pagination", () => {
     const imageTop = inkLinePaintTop(image, placed[1]);
     expect(imageTop).toBeGreaterThanOrEqual(textBottom);
     expect(imageTop).toBe(50);
+  });
+  it("G: wrapped visual lines use the line box, not the parent block", () => {
+    const block = visualLineFrame(0, 0, CONTENT_WIDTH, 0, CONTENT_WIDTH);
+    expect(block.left).toBe(0);
+    expect(block.width).toBe(CONTENT_WIDTH);
+    const rtlBeside = visualLineFrame(0, 0, CONTENT_WIDTH, 8, 360);
+    expect(rtlBeside.left).toBe(8);
+    expect(rtlBeside.width).toBe(360);
+    expect(rtlBeside.left + rtlBeside.width).toBeLessThan(CONTENT_WIDTH - 160);
+    const ltrBeside = visualLineFrame(0, 0, CONTENT_WIDTH, 180, 400);
+    expect(ltrBeside.left).toBe(180);
+    expect(ltrBeside.left).toBeGreaterThanOrEqual(160);
+    expect(visualLineFrame(0, 0, CONTENT_WIDTH, 10, 0)).toEqual({ left: 0, width: CONTENT_WIDTH });
   });
 });

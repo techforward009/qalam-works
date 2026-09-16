@@ -17,6 +17,19 @@ export interface InkPlacement { page: number; baseline: number }
 export function inkLinePaintTop(line: Pick<InkLine, "offset">, placement: InkPlacement): number {
   return placement.baseline - line.offset;
 }
+/** Use the visual line box, not the parent block, so wrap beside a float is preserved. */
+export function visualLineFrame(
+  originLeft: number,
+  blockLeft: number,
+  blockWidth: number,
+  lineLeft: number,
+  lineWidth: number,
+): { left: number; width: number } {
+  if (!(lineWidth > 1) || !Number.isFinite(lineLeft) || !Number.isFinite(lineWidth)) {
+    return { left: blockLeft - originLeft, width: blockWidth };
+  }
+  return { left: lineLeft - originLeft, width: lineWidth };
+}
 export const PDF_MEASUREMENT_LIMITS = { visualLines: 300, stagingHeight: 40_000 } as const;
 export const PDF_INK_EDGE_GUARD = 1;
 /** Allow up to 1 CSS pixel of rasterization overshoot without treating it as overflow. */
@@ -186,6 +199,34 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       }
       offset += node.length;
     }
+    const locateOriginal = (position: number): [Text, number] => {
+      let remaining = position;
+      for (const node of nodes) {
+        if (remaining <= node.length) return [node, remaining];
+        remaining -= node.length;
+      }
+      const last = nodes[nodes.length - 1];
+      return [last, last.length];
+    };
+    const lineBox = (group: { start: number; end: number; baseline: number }) => {
+      try {
+        const [startNode, startOffset] = locateOriginal(group.start);
+        const [endNode, endOffset] = locateOriginal(Math.max(group.start, group.end));
+        const range = document.createRange();
+        range.setStart(startNode, startOffset);
+        range.setEnd(endNode, endOffset);
+        const rects = Array.from(range.getClientRects()).filter(item => item.width > 1 && item.height > 0);
+        if (!rects.length) return { left: rect.left, width: rect.width };
+        return rects.reduce((best, item) => {
+          const distance = Math.abs(item.top + item.height / 2 - group.baseline);
+          const bestDistance = Math.abs(best.top + best.height / 2 - group.baseline);
+          return distance < bestDistance ? item : best;
+        });
+      } catch {
+        return { left: rect.left, width: rect.width };
+      }
+    };
+    const wrapFloats = Array.from(document.querySelectorAll<HTMLElement>("figure.qalam-document-image.image-wrap"));
     for (const [index, group] of groups.entries()) {
       const element = source.cloneNode(true) as HTMLElement, cloned = textNodes(element);
       const locate = (position: number): [Text, number] => {
@@ -203,7 +244,15 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
         br.replaceWith(marker);
       });
       for (const property of ["font-family", "font-size", "font-weight", "font-style", "line-height", "color", "direction", "text-align", "letter-spacing", "word-spacing", "text-decoration"]) element.style.setProperty(property, style.getPropertyValue(property));
-      element.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${rect.width}px;white-space:nowrap;`;
+      const box = lineBox(group);
+      const besideFloat = wrapFloats.some(figure => {
+        const floatBox = figure.getBoundingClientRect();
+        return group.baseline >= floatBox.top - 1 && group.baseline <= floatBox.bottom + 1 && box.width < rect.width - 8;
+      });
+      const frame = besideFloat && box.width > 1
+        ? { left: box.left - origin.left, width: box.width }
+        : { left: rect.left - origin.left, width: rect.width };
+      element.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${frame.width}px;white-space:nowrap;`;
       element.style.textIndent = index === 0 ? style.textIndent : "0px";
       if (style.textAlign === "justify" && index < groups.length - 1) element.style.textAlignLast = "justify";
       const quote = block.closest("blockquote");
@@ -220,7 +269,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
         const list = listItem.parentElement;
         if (list?.tagName === "OL") element.setAttribute("value", String(Number(list.getAttribute("start") ?? 1) + Array.from(list.children).indexOf(listItem)));
       }
-      snapshots.push({ element, baseline: group.baseline, block: blockIndex, heading: /^H[1-4]$/.test(block.tagName), left: rect.left - origin.left, width: rect.width, fontHeight, inkAscent, inkDescent, forceBreak: forceBreak && index === 0 });
+      snapshots.push({ element, baseline: group.baseline, block: blockIndex, heading: /^H[1-4]$/.test(block.tagName), left: frame.left, width: frame.width, fontHeight, inkAscent, inkDescent, forceBreak: forceBreak && index === 0 });
     }
   }
   const stage = document.createElement("div"); stage.dataset.pdfInkStage = "true";
