@@ -49,4 +49,15 @@ describe("measured PDF ink pagination", () => {
     expect(() => fitHorizontalInk(1, 592, 590.40057053104, 1)).toThrow("cannot fit the printable horizontal boundary");
     expect(() => fitHorizontalInk(0, 600, 590.40057053104, 0)).toThrow("cannot fit the printable horizontal boundary");
   });
+  it("allows small glyph overhang when the layout frame fits", () => {
+    const width = 590.40057053104;
+    expect(fitHorizontalInk(1, 593, width, 2, "اردو", 0, width)).toBe(0);
+  });
+  it("rejects a layout box that itself exceeds printable width", () => {
+    expect(() => fitHorizontalInk(1, 593, 590.40057053104, 2, "wide", 0, 600)).toThrow("cannot fit the printable horizontal boundary");
+  });
+  it("rejects large glyph overflow beyond the safe overhang", () => {
+    const width = 590.40057053104;
+    expect(() => fitHorizontalInk(1, 650, width, 2, "huge hang", 0, width)).toThrow("cannot fit the printable horizontal boundary");
+  });
 });
