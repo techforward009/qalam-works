@@ -285,7 +285,9 @@ describe("document menus", () => {
   it("keeps Insert limited to currently implemented actions", () => {
     const insert = DOCUMENT_MENU_BAR.find((m) => m.id === "insert");
     expect(collectMenuActionIds(insert?.items ?? [])).toEqual([
-      "insert.link", "insert.table", "insert.image", "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
+      "insert.link", "insert.table", "insert.image",
+      "insert.pageBreak", "insert.sectionBreakNextPage", "insert.sectionBreakContinuous",
+      "table.addRowBefore", "table.addRowAfter", "table.deleteRow",
       "table.addColumnBefore", "table.addColumnAfter", "table.deleteColumn", "table.toggleHeaderRow",
       "table.delete", "insert.example",
     ]);
