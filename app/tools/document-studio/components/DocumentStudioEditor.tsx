@@ -66,6 +66,7 @@ import {
   BLOCK_STYLE_EDITOR_CSS,
   createDocumentStudioExtensions,
   placeCaretAfterAtom,
+  insertDocumentBreak,
 } from "../utils/documentSchema";
 import {
   applyDocumentDirection,
@@ -1328,19 +1329,13 @@ export default function DocumentStudioEditor() {
   };
 
   const insertPageBreak = () => {
-    // Atomic break markers cannot accept text. Always create the following
-    // paragraph in the same transaction so typing continues on the new page.
-    editor?.chain().focus().insertContent([
-      { type: "pageBreak" },
-      { type: "paragraph" },
-    ]).run();
+    if (!editor) return;
+    insertDocumentBreak(editor, { type: "pageBreak" });
   };
 
   const insertSectionBreak = (type: "nextPage" | "continuous") => {
-    editor?.chain().focus().insertContent([
-      { type: "sectionBreak", attrs: { type } },
-      { type: "paragraph" },
-    ]).run();
+    if (!editor) return;
+    insertDocumentBreak(editor, { type: "sectionBreak", attrs: { type } });
   };
 
   const handleMenuAction = (id: MenuActionId) => {

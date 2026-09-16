@@ -13,8 +13,8 @@ import Highlight from "@tiptap/extension-highlight";
 import { TableKit } from "@tiptap/extension-table";
 import Image from "@tiptap/extension-image";
 import { Node, type Editor } from "@tiptap/core";
-import { NodeSelection, Plugin, PluginKey } from "@tiptap/pm/state";
-import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
+import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
 import { ParagraphAutoDirection } from "./paragraphDirection";
@@ -182,6 +182,8 @@ export function placeCaretAfterAtom(editor: Editor): boolean {
   const { selection, doc } = editor.state;
   if (!(selection instanceof NodeSelection) || !selection.node.isAtom) return false;
   const pos = selection.to;
+  const next = doc.nodeAt(pos);
+  if (next?.isTextblock) return editor.commands.setTextSelection(pos + 1);
   const $pos = doc.resolve(pos);
   if ($pos.parent.inlineContent) return editor.commands.setTextSelection(pos);
   return editor.chain().insertContentAt(pos, { type: "paragraph" }).setTextSelection(pos + 1).run();
@@ -194,6 +196,86 @@ export function placeCaretBeforeAtom(editor: Editor): boolean {
   const $pos = doc.resolve(pos);
   if ($pos.nodeBefore?.isTextblock) return editor.commands.setTextSelection(pos - 1);
   return editor.chain().insertContentAt(pos, { type: "paragraph" }).setTextSelection(pos + 1).run();
+}
+
+function focusEditorView(editor: Editor): void {
+  editor.commands.focus();
+  try {
+    editor.view.focus();
+  } catch {
+    // jsdom / detached view
+  }
+}
+
+/** Collapse the caret into a textblock after an atomic document break. */
+export function placeCaretInFollowingParagraph(editor: Editor): boolean {
+  const { selection, doc } = editor.state;
+  if (selection instanceof NodeSelection && selection.node.isAtom) {
+    const after = selection.to;
+    const next = doc.nodeAt(after);
+    if (next?.isTextblock) return editor.chain().focus().setTextSelection(after + 1).run();
+    return placeCaretAfterAtom(editor);
+  }
+  if (selection.$from.parent.isTextblock) {
+    if (selection.empty) return true;
+    return editor.chain().focus().setTextSelection(selection.$from.start()).run();
+  }
+  let caret: number | null = null;
+  doc.nodesBetween(Math.max(0, selection.from), doc.content.size, (node, pos) => {
+    if (caret != null) return false;
+    if (node.isTextblock) {
+      caret = pos + 1;
+      return false;
+    }
+  });
+  if (caret == null) return false;
+  return editor.chain().focus().setTextSelection(caret).run();
+}
+
+export type DocumentBreakJSON =
+  | { type: "pageBreak" }
+  | { type: "sectionBreak"; attrs: { type: "nextPage" | "continuous" } };
+
+/**
+ * Insert an atomic page/section break plus a following paragraph, then put a
+ * collapsed caret inside that paragraph. Menu clicks unmount after insert and
+ * can steal DOM focus onto the contenteditable=false marker; re-focus after
+ * the current frame so the next keystroke is not swallowed.
+ */
+export function insertDocumentBreak(editor: Editor, node: DocumentBreakJSON): boolean {
+  const inserted = editor.chain().focus().insertContent([node, { type: "paragraph" }]).run();
+  if (!inserted) return false;
+  placeCaretInFollowingParagraph(editor);
+  focusEditorView(editor);
+  const restore = () => {
+    if (editor.isDestroyed) return;
+    placeCaretInFollowingParagraph(editor);
+    focusEditorView(editor);
+  };
+  if (typeof requestAnimationFrame === "function") requestAnimationFrame(restore);
+  else restore();
+  return true;
+}
+
+function redirectTypingOffDocumentBreak(view: EditorView, text: string): boolean {
+  const { selection, schema, doc } = view.state;
+  if (!(selection instanceof NodeSelection)) return false;
+  const name = selection.node.type.name;
+  if (name !== "pageBreak" && name !== "sectionBreak") return false;
+  const after = selection.to;
+  const next = doc.nodeAt(after);
+  let tr = view.state.tr;
+  if (next?.isTextblock) {
+    tr = tr.setSelection(TextSelection.create(doc, after + 1));
+  } else {
+    const paragraph = schema.nodes.paragraph.createAndFill();
+    if (!paragraph) return false;
+    tr = tr.insert(after, paragraph);
+    tr = tr.setSelection(TextSelection.create(tr.doc, after + 1));
+  }
+  tr = tr.insertText(text);
+  view.dispatch(tr);
+  return true;
 }
 
 export const DocumentImage = Image.extend({
@@ -293,9 +375,27 @@ export const DocumentPageBreak = Node.create({
     "data-document-page-break": "true",
     "data-document-break-marker": "page",
     contenteditable: "false",
+    tabindex: "-1",
     role: "separator",
     "aria-label": "Page break",
   }, "Page break"],
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("qalamDocumentBreakCaret"),
+        props: {
+          handleTextInput(view, _from, _to, text) {
+            return redirectTypingOffDocumentBreak(view, text);
+          },
+          handleKeyDown(view, event) {
+            if (event.ctrlKey || event.metaKey || event.altKey) return false;
+            if (event.key.length !== 1) return false;
+            return redirectTypingOffDocumentBreak(view, event.key);
+          },
+        },
+      }),
+    ];
+  },
 });
 
 export const DocumentSectionBreak = Node.create({
@@ -321,6 +421,7 @@ export const DocumentSectionBreak = Node.create({
       "data-document-section-break": "true",
       "data-document-break-marker": "section",
       contenteditable: "false",
+      tabindex: "-1",
       role: "separator",
       "aria-label": type === "continuous" ? "Section break, continuous" : "Section break, next page",
     }, type === "continuous" ? "Section break (continuous)" : "Section break (next page)"];

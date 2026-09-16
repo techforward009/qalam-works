@@ -247,8 +247,21 @@ export default function DocumentMenuBar({
     openMenu && openState.submenuId && !inlineSubmenus ? findSubmenuItems(openMenu.items, openState.submenuId) : null;
 
   const closeAndAct = (id: MenuActionId) => {
-    onAction(id);
     setOpenState(CLOSED_MENU_STATE);
+    const run = () => onAction(id);
+    // Page/section breaks are atomic; inserting them while the submenu button
+    // still holds DOM focus lets the unmount steal the caret onto the marker
+    // and swallow the first typed characters. Close first, then insert.
+    if (
+      id === "insert.pageBreak"
+      || id === "insert.sectionBreakNextPage"
+      || id === "insert.sectionBreakContinuous"
+    ) {
+      if (typeof requestAnimationFrame === "function") requestAnimationFrame(run);
+      else queueMicrotask(run);
+      return;
+    }
+    run();
   };
 
   const dropdown =

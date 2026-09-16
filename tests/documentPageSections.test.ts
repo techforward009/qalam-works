@@ -3,7 +3,7 @@ import JSZip from "jszip";
 import { Editor, getSchema } from "@tiptap/core";
 import { Packer } from "docx";
 import { Node as PMNode } from "@tiptap/pm/model";
-import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
+import { createDocumentStudioExtensions, insertDocumentBreak } from "../app/tools/document-studio/utils/documentSchema";
 import { createMemoryDocumentLibrary } from "../app/tools/document-studio/utils/documentLibrary";
 import { createDocxDocument } from "../app/tools/document-studio/utils/buildDocxDocument";
 import { buildPdfHtml } from "../app/tools/document-studio/utils/buildPdfHtml";
@@ -47,6 +47,62 @@ describe("Document Studio v2.3 page and section breaks", () => {
     const json = editor.getJSON() as DocNode;
     expect(json.content?.some((node) => node.type === "pageBreak")).toBe(true);
     expect(json.content?.find((node) => node.type === "sectionBreak")?.attrs?.type).toBe("continuous");
+    editor.destroy();
+  });
+
+  test("page and section break insertion places a collapsed caret in the following paragraph so typing keeps every character", () => {
+    const editor = new Editor({
+      extensions: createDocumentStudioExtensions(),
+      content: { type: "doc", content: [{ type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Page one text." }] }] },
+    });
+    editor.commands.focus("end");
+    expect(insertDocumentBreak(editor, { type: "pageBreak" })).toBe(true);
+    expect(editor.state.selection.empty).toBe(true);
+    expect(editor.state.selection.$from.parent.type.name).toBe("paragraph");
+    expect(editor.state.selection.$from.parent.textContent).toBe("");
+    editor.commands.insertContent("Page two text.");
+
+    expect(insertDocumentBreak(editor, { type: "sectionBreak", attrs: { type: "nextPage" } })).toBe(true);
+    expect(editor.state.selection.empty).toBe(true);
+    expect(editor.state.selection.$from.parent.type.name).toBe("paragraph");
+    expect(editor.state.selection.$from.parent.textContent).toBe("");
+    editor.commands.insertContent("Section two text.");
+
+    const json = editor.getJSON() as DocNode;
+    expect(json.content?.some((node) => node.type === "pageBreak")).toBe(true);
+    expect(json.content?.find((node) => node.type === "sectionBreak")?.attrs?.type).toBe("nextPage");
+    const last = json.content?.[json.content.length - 1];
+    expect(last?.type).toBe("paragraph");
+    expect(last?.content?.[0]?.text).toBe("Section two text.");
+    expect(extractPlainText(json, "ltr")).toContain("Page two text.");
+    editor.destroy();
+  });
+
+  test("typing while a section break is selected lands in the following paragraph without dropping the first characters", () => {
+    const editor = new Editor({
+      extensions: createDocumentStudioExtensions(),
+      content: { type: "doc", content: [{ type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Page two text." }] }] },
+    });
+    editor.commands.focus("end");
+    insertDocumentBreak(editor, { type: "sectionBreak", attrs: { type: "nextPage" } });
+    let breakPos: number | null = null;
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === "sectionBreak") breakPos = pos;
+    });
+    if (breakPos === null) throw new Error("Expected a section break node.");
+    editor.commands.setNodeSelection(breakPos);
+    expect(editor.state.selection.constructor.name).toBe("NodeSelection");
+
+    const view = editor.view;
+    const first = new KeyboardEvent("keydown", { key: "S", bubbles: true });
+    const handled = view.someProp("handleKeyDown", (handler) => handler(view, first));
+    expect(handled).toBe(true);
+    editor.commands.insertContent("ection two text.");
+
+    const json = editor.getJSON() as DocNode;
+    const breakIndex = json.content?.findIndex((node) => node.type === "sectionBreak") ?? -1;
+    expect(breakIndex).toBeGreaterThanOrEqual(0);
+    expect(json.content?.[breakIndex + 1]?.content?.[0]?.text).toBe("Section two text.");
     editor.destroy();
   });
 
