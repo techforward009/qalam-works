@@ -146,6 +146,26 @@ import {
 export { ParagraphWithDir, HeadingWithDir, BLOCK_STYLE_EDITOR_CSS };
 export { buildDocumentStudioExample, buildReplaceAllTransaction };
 
+export const GENERIC_PDF_EXPORT_ERROR = "PDF بنانے میں خرابی ہوئی / Failed to generate PDF.";
+
+export async function readPdfExportError(response: Response): Promise<string> {
+  try {
+    const payload: unknown = await response.json();
+    if (
+      payload
+      && typeof payload === "object"
+      && "error" in payload
+      && typeof (payload as { error: unknown }).error === "string"
+    ) {
+      const message = (payload as { error: string }).error.trim();
+      if (message) return message;
+    }
+  } catch {
+    // Non-JSON bodies keep the existing bilingual fallback.
+  }
+  return GENERIC_PDF_EXPORT_ERROR;
+}
+
 const AUTOSAVE_DEBOUNCE_MS = 1000;
 const LARGE_DOCUMENT_CHAR_THRESHOLD = 5000;
 const ANALYSIS_DEBOUNCE_MS = 300;
@@ -1166,7 +1186,8 @@ export default function DocumentStudioEditor() {
       });
 
       if (!response.ok) {
-        throw new Error(`Export failed with status ${response.status}`);
+        setPdfError(await readPdfExportError(response));
+        return;
       }
 
       const pageCountHeader = response.headers.get("X-Pdf-Page-Count");
@@ -1206,7 +1227,7 @@ export default function DocumentStudioEditor() {
       }
     } catch (err) {
       console.error("Failed to generate PDF:", err);
-      setPdfError("PDF بنانے میں خرابی ہوئی / Failed to generate PDF.");
+      setPdfError(GENERIC_PDF_EXPORT_ERROR);
     } finally {
       setIsExportingPdf(false);
     }
