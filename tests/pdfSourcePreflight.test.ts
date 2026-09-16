@@ -17,6 +17,19 @@ describe("PDF source complexity preflight", () => {
     expect(result.codePoints).toBeLessThan(PDF_SOURCE_LIMITS.codePoints);
   });
 
+  it("does not charge in-document raster payloads against the text-source byte budget", () => {
+    const src = `data:image/png;base64,${"A".repeat(200_000)}`;
+    const result = preflightPdfSource({
+      type: "doc",
+      content: [
+        paragraph("الحمدللہ آج ہم خیریت سے کراچی پہنچ گئے ہیں۔"),
+        { type: "image", attrs: { src, alt: "Mark", width: 160, alignment: "left", wrapMode: "wrap" } },
+        paragraph("Text beside the wrapped image."),
+      ],
+    });
+    expect(result.bytes).toBeLessThan(PDF_SOURCE_LIMITS.bytes);
+  });
+
   it("rejects oversized bytes and aggregate characters deterministically", () => {
     const byteHeavy = Array.from({ length: 3 }, () => paragraph("ی".repeat(18_000)));
     expect(() => preflightPdfSource({ type: "doc", content: byteHeavy })).toThrow(`${PDF_SOURCE_LIMITS.bytes}-byte limit`);

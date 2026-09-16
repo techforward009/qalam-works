@@ -19,6 +19,13 @@ describe("measured PDF ink pagination", () => {
     expect(placeInkLines([line(20), line(90, 1), line(100, 1)], 100).map(item => item.page)).toEqual([0, 1, 1]);
     expect(placeInkLines([line(20), { ...line(90, 1), heading: true }, line(100, 2)], 100).map(item => item.page)).toEqual([0, 1, 1]);
   });
+  it("starts a new page at an authored page or next-page section break", () => {
+    expect(placeInkLines([
+      line(20),
+      { ...line(52), forceBreak: true },
+      { ...line(84), forceBreak: true },
+    ], 100).map(item => item.page)).toEqual([0, 1, 2]);
+  });
   it("does not create pages for an empty document and rejects ink that cannot fit", () => {
     expect(placeInkLines([], 100)).toEqual([]);
     expect(() => placeInkLines([line(100, 0, -100, 20)], 100)).toThrow("export blocked");

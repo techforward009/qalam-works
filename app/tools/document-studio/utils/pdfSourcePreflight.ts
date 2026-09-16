@@ -1,4 +1,5 @@
 import type { DocNode } from "./extractPlainText";
+import { documentImagePayloadBytes, MAX_DOCUMENT_IMAGE_TOTAL_BYTES } from "./documentImages";
 
 export const PDF_SOURCE_LIMITS = {
   bytes: 96 * 1024,
@@ -71,6 +72,34 @@ export function measureJsonUtf8Bytes(value: unknown, limit = Number.POSITIVE_INF
   return bytes;
 }
 
+/** Raster payloads live in image attrs.src and are budgeted separately. */
+function withoutImagePayloads(root: DocNode): DocNode {
+  const copies = new Map<DocNode, DocNode>();
+  const stack: DocNode[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    const next: DocNode = { ...node };
+    if (node.attrs) {
+      next.attrs = { ...node.attrs };
+      if (node.type === "image" && typeof next.attrs.src === "string") next.attrs.src = "data:image/png;base64,";
+    }
+    copies.set(node, next);
+    if (Array.isArray(node.content)) {
+      for (let i = 0; i < node.content.length; i++) stack.push(node.content[i]);
+    }
+  }
+  const stitch: DocNode[] = [root];
+  while (stitch.length) {
+    const node = stitch.pop()!;
+    const next = copies.get(node)!;
+    if (Array.isArray(node.content)) {
+      next.content = node.content.map((child) => copies.get(child)!);
+      for (let i = 0; i < node.content.length; i++) stitch.push(node.content[i]);
+    }
+  }
+  return copies.get(root)!;
+}
+
 /** Cheap request-side bound that runs before fonts, Chromium, layout, or raster work. */
 export function preflightPdfSource(doc: DocNode): PdfSourceComplexity {
   let codePoints = 0;
@@ -103,6 +132,10 @@ export function preflightPdfSource(doc: DocNode): PdfSourceComplexity {
       for (let index = 0; index < node.content.length; index++) pending.push(node.content[index]);
     }
   }
-  const bytes = measureJsonUtf8Bytes(doc, PDF_SOURCE_LIMITS.bytes);
+  const imageBytes = documentImagePayloadBytes(doc);
+  if (imageBytes > MAX_DOCUMENT_IMAGE_TOTAL_BYTES) {
+    throw new Error(`PDF source exceeds the supported ${MAX_DOCUMENT_IMAGE_TOTAL_BYTES}-byte image payload; export blocked`);
+  }
+  const bytes = measureJsonUtf8Bytes(withoutImagePayloads(doc), PDF_SOURCE_LIMITS.bytes);
   return { bytes, codePoints, nodes, textNodes, maxTextNodeCodePoints };
 }

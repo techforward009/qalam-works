@@ -322,6 +322,28 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(restored).toContainText("Page two text.");
     await expect(restored).toContainText("Section two text.");
 
+    const printProbe = await page.evaluate(() => {
+      const root = document.querySelector("[data-studio-print-root]");
+      const surface = document.querySelector("[data-studio-print-surface]");
+      if (!root || !surface) return { text: "", hasPage: false, hasSection: false };
+      const source = surface.querySelector(".qalam-editor-content") ?? surface;
+      const clone = source.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll('[data-document-page-break="true"], [data-document-section-break="true"]').forEach((marker) => {
+        marker.textContent = "";
+      });
+      return {
+        text: clone.textContent ?? "",
+        hasPage: Boolean(clone.querySelector('[data-document-page-break="true"]')),
+        hasSection: Boolean(clone.querySelector('[data-document-section-break="true"]')),
+      };
+    });
+    expect(printProbe.hasPage).toBe(true);
+    expect(printProbe.hasSection).toBe(true);
+    expect(printProbe.text).toContain("Page one text.");
+    expect(printProbe.text).toContain("Section two text.");
+    expect(printProbe.text).not.toMatch(/page break/i);
+    expect(printProbe.text).not.toMatch(/section break/i);
+
     const docx = await downloadAction(page, "file.downloadDocx");
     expect(docx.suggestedFilename()).toMatch(/\.docx$/i);
     const responsePromise = page.waitForResponse((response) => response.url().includes("/api/export-pdf") && response.request().method() === "POST");

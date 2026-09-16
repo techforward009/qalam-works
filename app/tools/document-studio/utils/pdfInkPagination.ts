@@ -9,6 +9,7 @@ export interface InkLine {
   horizontalShift?: number;
   blank?: boolean;
   text?: string;
+  forceBreak?: boolean;
 }
 export interface InkPlacement { page: number; baseline: number }
 export const PDF_MEASUREMENT_LIMITS = { visualLines: 300, stagingHeight: 40_000 } as const;
@@ -33,7 +34,8 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     if (line.heading && end + 1 < lines.length) end++;
     const groupBottom = lines[end].baseline + Math.max(lines[end].inkBottom, lines[end].boxBottom ?? lines[end].inkBottom);
     const keep = (index === 0 || lines[index - 1].block !== line.block) && groupBottom - top <= height / 3;
-    if (index > 0 && (bottom + shift > height - edgeGuard || (keep && groupBottom + shift > height - edgeGuard))) { page++; shift = -top + edgeGuard; }
+    if (index > 0 && line.forceBreak) { page++; shift = -top + edgeGuard; }
+    else if (index > 0 && (bottom + shift > height - edgeGuard || (keep && groupBottom + shift > height - edgeGuard))) { page++; shift = -top + edgeGuard; }
     return { page, baseline: line.baseline + shift };
   });
 }
@@ -59,13 +61,32 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
     .filter(node => Boolean(node.parentElement?.closest(blockSelector)))
     .map(node => node.data)
     .join("");
-  const snapshots: Array<{ element: HTMLElement; baseline: number; block: number; heading: boolean; left: number; width: number; fontHeight: number; inkAscent: number; inkDescent: number; blank?: boolean }> = [];
+  const snapshots: Array<{ element: HTMLElement; baseline: number; block: number; heading: boolean; left: number; width: number; fontHeight: number; inkAscent: number; inkDescent: number; blank?: boolean; forceBreak?: boolean }> = [];
   const origin = document.body.getBoundingClientRect();
   const quotes = Array.from(document.querySelectorAll("blockquote"));
   const sourceLists = Array.from(document.querySelectorAll<HTMLElement>("ul,ol"));
   const sourceListItems = Array.from(document.querySelectorAll<HTMLElement>("li"));
   const originalText = documentText(document.body);
-  for (const [blockIndex, block] of Array.from(document.querySelectorAll<HTMLElement>(blockSelector)).entries()) {
+  const breakSelector = ".qalam-page-break, .qalam-section-break-next-page";
+  const imageSelector = "figure.qalam-document-image";
+  const ordered = Array.from(document.querySelectorAll<HTMLElement>(`${blockSelector},${imageSelector},${breakSelector}`));
+  let pendingForce = false;
+  let blockIndex = -1;
+  for (const block of ordered) {
+    if (block.matches(breakSelector)) {
+      pendingForce = true;
+      continue;
+    }
+    const forceBreak = pendingForce;
+    pendingForce = false;
+    blockIndex += 1;
+    if (block.matches(imageSelector)) {
+      const rect = block.getBoundingClientRect();
+      const source = block.cloneNode(true) as HTMLElement;
+      source.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${rect.width}px;height:${rect.height}px;`;
+      snapshots.push({ element: source, baseline: rect.top, block: blockIndex, heading: false, left: rect.left - origin.left, width: rect.width, fontHeight: Math.max(1, rect.height), inkAscent: 0, inkDescent: Math.max(1, rect.height), forceBreak, blank: true });
+      continue;
+    }
     const nodes = textNodes(block).filter(node => node.parentElement!.closest(blockSelector) === block);
     const rect = block.getBoundingClientRect(), style = getComputedStyle(block);
     const source = block.cloneNode(true) as HTMLElement;
@@ -96,7 +117,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       source.append(document.createElement("br"));
       source.querySelector("br")!.dataset.pdfPreservedBreak = "blank-paragraph";
       source.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${rect.width}px;height:${lineHeight}px;white-space:nowrap;`;
-      snapshots.push({ element: source, baseline: rect.top + metric.fontBoundingBoxAscent, block: blockIndex, heading: false, left: rect.left - origin.left, width: rect.width, fontHeight: lineHeight, inkAscent: 0, inkDescent: 0, blank: true });
+      snapshots.push({ element: source, baseline: rect.top + metric.fontBoundingBoxAscent, block: blockIndex, heading: false, left: rect.left - origin.left, width: rect.width, fontHeight: lineHeight, inkAscent: 0, inkDescent: 0, blank: true, forceBreak });
       continue;
     }
     const groups: Array<{ start: number; end: number; baseline: number }> = [];
@@ -163,7 +184,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
         const list = listItem.parentElement;
         if (list?.tagName === "OL") element.setAttribute("value", String(Number(list.getAttribute("start") ?? 1) + Array.from(list.children).indexOf(listItem)));
       }
-      snapshots.push({ element, baseline: group.baseline, block: blockIndex, heading: /^H[1-4]$/.test(block.tagName), left: rect.left - origin.left, width: rect.width, fontHeight, inkAscent, inkDescent });
+      snapshots.push({ element, baseline: group.baseline, block: blockIndex, heading: /^H[1-4]$/.test(block.tagName), left: rect.left - origin.left, width: rect.width, fontHeight, inkAscent, inkDescent, forceBreak: forceBreak && index === 0 });
     }
   }
   const stage = document.createElement("div"); stage.dataset.pdfInkStage = "true";
@@ -192,7 +213,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
     const measuredBaseline = first ? baseline(first, 0, (first.data.codePointAt(0) ?? 0) > 0xffff ? 2 : 1) : parseFloat(element.style.top) + item.fontHeight;
     const elementBounds = element.getBoundingClientRect();
     const frameBottom = Math.ceil(Math.max(measuredBaseline + item.fontHeight, elementBounds.bottom));
-    lines.push({ block: item.block, heading: item.heading, baseline: item.baseline, offset: measuredBaseline - parseFloat(element.style.top), frameTop: cursor, frameBottom, frameLeft: item.left, frameRight: item.left + item.width, inkTop: 0, inkBottom: 0, inkLeft: Infinity, inkRight: -Infinity, metricTop: measuredBaseline - item.inkAscent, metricBottom: measuredBaseline + item.inkDescent, boxTop: elementBounds.top - measuredBaseline, boxBottom: elementBounds.bottom - measuredBaseline, blank: item.blank, text: element.textContent ?? "" });
+    lines.push({ block: item.block, heading: item.heading, baseline: item.baseline, offset: measuredBaseline - parseFloat(element.style.top), frameTop: cursor, frameBottom, frameLeft: item.left, frameRight: item.left + item.width, inkTop: 0, inkBottom: 0, inkLeft: Infinity, inkRight: -Infinity, metricTop: measuredBaseline - item.inkAscent, metricBottom: measuredBaseline + item.inkDescent, boxTop: elementBounds.top - measuredBaseline, boxBottom: elementBounds.bottom - measuredBaseline, blank: item.blank, text: element.textContent ?? "", forceBreak: item.forceBreak });
     element.dataset.pdfMeasureBaseline = String(measuredBaseline); cursor = frameBottom + Math.max(measurementGap, Math.ceil(item.fontHeight));
     if (cursor > maxStagingHeight) throw new Error(`PDF measurement exceeds the supported ${maxStagingHeight}px staging limit; export blocked`);
   }

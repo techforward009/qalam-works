@@ -226,6 +226,9 @@ export function mountDocumentPrintPortal(): HTMLElement | null {
   page.setAttribute("dir", dir);
   page.className = source.className;
   page.innerHTML = source.innerHTML;
+  page.querySelectorAll('[data-document-page-break="true"], [data-document-section-break="true"]').forEach((marker) => {
+    marker.textContent = "";
+  });
   page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:${topMm}mm ${rightMm}mm ${bottomMm}mm ${leftMm}mm;background:#fff;min-height:0;`;
   const style = document.createElement("style");
   style.textContent = `${studioJameelFontFaceCss()}\n${documentPrintCss(widthMm, heightMm)}`;
@@ -280,6 +283,39 @@ export function documentPrintCss(widthMm: number, heightMm: number): string {
     break-after: auto !important;
     min-height: 0 !important;
     transform: none !important;
+  }
+  [data-document-page-break="true"],
+  [data-document-section-break="true"][data-section-break-type="nextPage"] {
+    break-before: page !important;
+    page-break-before: always !important;
+    display: block !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    letter-spacing: 0 !important;
+    overflow: hidden !important;
+  }
+  [data-document-section-break="true"][data-section-break-type="continuous"] {
+    break-before: auto !important;
+    page-break-before: auto !important;
+    display: block !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    letter-spacing: 0 !important;
+    overflow: hidden !important;
   }
 }
 `.trim();

@@ -8,6 +8,7 @@ import { createMemoryDocumentLibrary } from "../app/tools/document-studio/utils/
 import { createDocxDocument } from "../app/tools/document-studio/utils/buildDocxDocument";
 import { buildPdfHtml } from "../app/tools/document-studio/utils/buildPdfHtml";
 import { extractPlainText, type DocNode } from "../app/tools/document-studio/utils/extractPlainText";
+import { documentPrintCss, mountDocumentPrintPortal, unmountDocumentPrintPortal } from "../app/tools/document-studio/utils/documentView";
 
 function breakDocument(): DocNode {
   return {
@@ -128,6 +129,36 @@ describe("Document Studio v2.3 page and section breaks", () => {
     const restored = await library.getDocument(created.id);
     expect(restored?.content.content?.filter((node) => node.type === "pageBreak")).toHaveLength(1);
     expect(restored?.content.content?.filter((node) => node.type === "sectionBreak").map((node) => node.attrs?.type)).toEqual(["nextPage", "continuous"]);
+  });
+
+  test("print CSS keeps authored breaks but hides editor marker labels", () => {
+    const css = documentPrintCss(210, 297);
+    expect(css).toContain('[data-document-page-break="true"]');
+    expect(css).toContain('[data-document-section-break="true"][data-section-break-type="nextPage"]');
+    expect(css).toContain('[data-document-section-break="true"][data-section-break-type="continuous"]');
+    expect(css).toContain("break-before: page");
+    expect(css).toContain("page-break-before: always");
+    expect(css).toContain("break-before: auto");
+    document.body.innerHTML = `
+      <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-dir="ltr">
+        <div data-studio-print-surface>
+          <div class="qalam-editor-content">
+            <p>Page one</p>
+            <div data-document-page-break="true">Page break</div>
+            <p>Page two</p>
+            <div data-document-section-break="true" data-section-break-type="nextPage">Section break (next page)</div>
+            <p>Section two</p>
+          </div>
+        </div>
+      </div>`;
+    const portal = mountDocumentPrintPortal();
+    expect(portal?.textContent).toContain("Page one");
+    expect(portal?.textContent).toContain("Section two");
+    expect(portal?.textContent).not.toMatch(/page break/i);
+    expect(portal?.textContent).not.toMatch(/section break/i);
+    expect(portal?.querySelector('[data-document-page-break="true"]')).toBeTruthy();
+    expect(portal?.querySelector('[data-document-section-break="true"]')).toBeTruthy();
+    unmountDocumentPrintPortal();
   });
 
   test("PDF HTML makes page and next-page section breaks forced print breaks while continuous stays non-forcing", () => {

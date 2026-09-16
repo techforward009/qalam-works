@@ -128,6 +128,8 @@ describe("Phase 3A editor parity", () => {
     expect(css).toContain("box-shadow: none");
     expect(css).toContain("border-radius: 0");
     expect(css).toContain("min-height: 0");
+    expect(css).toContain('[data-document-page-break="true"]');
+    expect(css).toContain("break-before: page");
     expect(css).toContain("header");
     expect(css).toContain("footer");
     expect(css).not.toContain("inset: 0");
