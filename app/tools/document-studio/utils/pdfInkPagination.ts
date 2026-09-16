@@ -10,8 +10,13 @@ export interface InkLine {
   blank?: boolean;
   text?: string;
   forceBreak?: boolean;
+  image?: boolean;
 }
 export interface InkPlacement { page: number; baseline: number }
+/** CSS top used when painting a measured line back onto the PDF page. */
+export function inkLinePaintTop(line: Pick<InkLine, "offset">, placement: InkPlacement): number {
+  return placement.baseline - line.offset;
+}
 export const PDF_MEASUREMENT_LIMITS = { visualLines: 300, stagingHeight: 40_000 } as const;
 export const PDF_INK_EDGE_GUARD = 1;
 /** Allow up to 1 CSS pixel of rasterization overshoot without treating it as overflow. */
@@ -90,7 +95,7 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
     .filter(node => Boolean(node.parentElement?.closest(blockSelector)))
     .map(node => node.data)
     .join("");
-  const snapshots: Array<{ element: HTMLElement; baseline: number; block: number; heading: boolean; left: number; width: number; fontHeight: number; inkAscent: number; inkDescent: number; blank?: boolean; forceBreak?: boolean }> = [];
+  const snapshots: Array<{ element: HTMLElement; baseline: number; block: number; heading: boolean; left: number; width: number; fontHeight: number; inkAscent: number; inkDescent: number; blank?: boolean; forceBreak?: boolean; image?: boolean }> = [];
   const origin = document.body.getBoundingClientRect();
   const quotes = Array.from(document.querySelectorAll("blockquote"));
   const sourceLists = Array.from(document.querySelectorAll<HTMLElement>("ul,ol"));
@@ -113,7 +118,9 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
       const rect = block.getBoundingClientRect();
       const source = block.cloneNode(true) as HTMLElement;
       source.style.cssText += `;position:absolute;display:block;margin:0;padding:0;border:0;width:${rect.width}px;height:${rect.height}px;`;
-      snapshots.push({ element: source, baseline: rect.top, block: blockIndex, heading: false, left: rect.left - origin.left, width: rect.width, fontHeight: Math.max(1, rect.height), inkAscent: 0, inkDescent: Math.max(1, rect.height), forceBreak, blank: true });
+      // Images have no text baseline. Anchor at the source box top so reconstruction
+      // cannot shift the figure up over preceding text.
+      snapshots.push({ element: source, baseline: rect.top, block: blockIndex, heading: false, left: rect.left - origin.left, width: rect.width, fontHeight: Math.max(1, rect.height), inkAscent: 0, inkDescent: Math.max(1, rect.height), forceBreak, blank: true, image: true });
       continue;
     }
     const nodes = textNodes(block).filter(node => node.parentElement!.closest(blockSelector) === block);
@@ -234,15 +241,21 @@ export async function collectInkLines(limits = { visualLines: 300, stagingHeight
     if (index >= maxVisualLines) throw new Error(`PDF measurement exceeds the supported ${maxVisualLines} visual-line limit; export blocked`);
     const element = item.element; element.dataset.pdfInkLine = String(index);
     element.dataset.pdfSourceBlock = String(item.block);
+    if (item.image) element.dataset.pdfImage = "true";
     // Move the complete line inward while rasterizing. Chromium clips glyph
     // overhang when a shaped run is painted directly on a layout boundary,
     // even if the surrounding screenshot viewport has spare pixels.
-    element.style.left = `${item.left + horizontalOverscan}px`; element.style.top = `${cursor + item.fontHeight}px`; stage.append(element);
-    const first = textNodes(element).find(node => node.length);
-    const measuredBaseline = first ? baseline(first, 0, (first.data.codePointAt(0) ?? 0) > 0xffff ? 2 : 1) : parseFloat(element.style.top) + item.fontHeight;
+    // Images use a top anchor: 1px of staging pad keeps raster ink inside the
+    // frame without treating the figure as a text baseline.
+    const stageTop = item.image ? cursor + 1 : cursor + item.fontHeight;
+    element.style.left = `${item.left + horizontalOverscan}px`; element.style.top = `${stageTop}px`; stage.append(element);
+    const first = item.image ? undefined : textNodes(element).find(node => node.length);
     const elementBounds = element.getBoundingClientRect();
-    const frameBottom = Math.ceil(Math.max(measuredBaseline + item.fontHeight, elementBounds.bottom));
-    lines.push({ block: item.block, heading: item.heading, baseline: item.baseline, offset: measuredBaseline - parseFloat(element.style.top), frameTop: cursor, frameBottom, frameLeft: item.left, frameRight: item.left + item.width, inkTop: 0, inkBottom: 0, inkLeft: Infinity, inkRight: -Infinity, metricTop: measuredBaseline - item.inkAscent, metricBottom: measuredBaseline + item.inkDescent, boxTop: elementBounds.top - measuredBaseline, boxBottom: elementBounds.bottom - measuredBaseline, blank: item.blank, text: element.textContent ?? "", forceBreak: item.forceBreak });
+    const measuredBaseline = item.image
+      ? elementBounds.top
+      : first ? baseline(first, 0, (first.data.codePointAt(0) ?? 0) > 0xffff ? 2 : 1) : parseFloat(element.style.top) + item.fontHeight;
+    const frameBottom = Math.ceil(Math.max(item.image ? elementBounds.bottom + 1 : measuredBaseline + item.fontHeight, elementBounds.bottom));
+    lines.push({ block: item.block, heading: item.heading, baseline: item.baseline, offset: item.image ? 0 : measuredBaseline - parseFloat(element.style.top), frameTop: cursor, frameBottom, frameLeft: item.left, frameRight: item.left + item.width, inkTop: 0, inkBottom: 0, inkLeft: Infinity, inkRight: -Infinity, metricTop: item.image ? elementBounds.top : measuredBaseline - item.inkAscent, metricBottom: item.image ? elementBounds.bottom : measuredBaseline + item.inkDescent, boxTop: item.image ? 0 : elementBounds.top - measuredBaseline, boxBottom: item.image ? Math.max(1, elementBounds.height) : elementBounds.bottom - measuredBaseline, blank: item.blank, text: element.textContent ?? "", forceBreak: item.forceBreak, image: item.image });
     element.dataset.pdfMeasureBaseline = String(measuredBaseline); cursor = frameBottom + Math.max(measurementGap, Math.ceil(item.fontHeight));
     if (cursor > maxStagingHeight) throw new Error(`PDF measurement exceeds the supported ${maxStagingHeight}px staging limit; export blocked`);
   }

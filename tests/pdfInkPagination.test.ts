@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertPdfMeasurementLimits,
   fitHorizontalInk,
+  inkLinePaintTop,
   mmToCssPx,
   placeInkLines,
   type InkLine,
@@ -67,5 +68,34 @@ describe("measured PDF ink pagination", () => {
   });
   it("D: allows the previous 1..590 near-boundary case", () => {
     expect(fitHorizontalInk(1, 590, CONTENT_WIDTH, 1)).toBe(0);
+  });
+  it("E: Download PDF image reconstruction preserves source image top", () => {
+    const sourceTop = 120;
+    const preceding = line(40);
+    const image: InkLine = {
+      block: 1, heading: false, baseline: sourceTop, offset: 0,
+      frameTop: 0, frameBottom: 80, frameLeft: 12, frameRight: 172,
+      inkTop: 0, inkBottom: 80, inkLeft: 12, inkRight: 172,
+      metricTop: 0, metricBottom: 80, boxTop: 0, boxBottom: 80, image: true,
+    };
+    const placed = placeInkLines([preceding, image], 800);
+    expect(image.offset).toBe(0);
+    expect(inkLinePaintTop(image, placed[1])).toBe(sourceTop);
+    expect(placed[1].baseline).toBe(sourceTop);
+    expect(placed[0].baseline).toBe(40);
+  });
+  it("F: wrapped image does not overlap preceding text", () => {
+    const text = line(40, 0, -15, 5);
+    const image: InkLine = {
+      block: 1, heading: false, baseline: 50, offset: 0,
+      frameTop: 0, frameBottom: 80, frameLeft: 12, frameRight: 172,
+      inkTop: 0, inkBottom: 80, inkLeft: 12, inkRight: 172,
+      metricTop: 0, metricBottom: 80, boxTop: 0, boxBottom: 80, image: true,
+    };
+    const placed = placeInkLines([text, image], 800);
+    const textBottom = placed[0].baseline + text.inkBottom;
+    const imageTop = inkLinePaintTop(image, placed[1]);
+    expect(imageTop).toBeGreaterThanOrEqual(textBottom);
+    expect(imageTop).toBe(50);
   });
 });

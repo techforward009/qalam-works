@@ -53,7 +53,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
           writeFileSync(path.join(output, `${currentCase}-print-lines.json`), JSON.stringify(await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>("[data-pdf-ink-page]")).map(section => Array.from(section.querySelectorAll<HTMLElement>("[data-pdf-ink-line]")).map(line => {
             const bounds = line.getBoundingClientRect();
              const style = getComputedStyle(line);
-             return { id: Number(line.dataset.pdfInkLine), text: line.textContent ?? "", measuredInk: JSON.parse(line.dataset.pdfInkBounds ?? "null"), finalBounds: { left: bounds.left, top: bounds.top, right: bounds.right, bottom: bounds.bottom }, css: { left: parseFloat(style.left), width: parseFloat(style.width), transform: style.transform, alignment: style.textAlign, direction: style.direction } };
+             return { id: Number(line.dataset.pdfInkLine), text: line.textContent ?? "", image: line.dataset.pdfImage === "true", measuredInk: JSON.parse(line.dataset.pdfInkBounds ?? "null"), finalBounds: { left: bounds.left, top: bounds.top, right: bounds.right, bottom: bounds.bottom }, css: { left: parseFloat(style.left), width: parseFloat(style.width), transform: style.transform, alignment: style.textAlign, direction: style.direction } };
           }))), null, 2));
           writeFileSync(path.join(output, `${currentCase}-page-structure.json`), JSON.stringify(await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>("[data-pdf-ink-page]")).map(section => {
             const page = section.getBoundingClientRect();
@@ -228,6 +228,37 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
       expect(line.css.direction).toBe(source[1]); expect(line.css.alignment).toBe(source[2]);
     }
     expect(new Set(lines.map(line => line.css.width.toFixed(3))).size).toBe(1);
+  }, 120000);
+
+  it("keeps a wrapped image at its source top without overlapping preceding text", async () => {
+    currentCase = "wrapped-image-anchor";
+    const settings = defaultDocumentSettings();
+    settings.headerFooter.headerEnabled = false;
+    settings.headerFooter.footerEnabled = false;
+    const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9WAAAAABJRU5ErkJggg==";
+    const doc = { type: "doc", content: [
+      { type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Preceding paragraph stays above the wrapped image." }] },
+      { type: "image", attrs: { src: png, alt: "Mark", width: 160, height: 80, alignment: "left", wrapMode: "wrap" } },
+      { type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "Text beside the wrapped image continues on the right of the figure." }] },
+    ] };
+    const response = await POST(new NextRequest("http://localhost/api/export-pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc, dir: "ltr", settings }) }));
+    expect(response.status).toBe(200);
+    await response.arrayBuffer();
+    const pages = JSON.parse(await import("node:fs").then(fs => fs.readFileSync(path.join(output, `${currentCase}-print-lines.json`), "utf8"))) as Array<Array<{
+      id: number; text: string; image?: boolean;
+      measuredInk: { left: number; right: number; horizontalShift: number };
+      finalBounds: { left: number; top: number; right: number; bottom: number };
+      css: { left: number; width: number };
+    }>>;
+    const lines = pages.flat();
+    const preceding = lines.find(line => line.text.includes("Preceding paragraph"));
+    const image = lines.find(line => line.image);
+    expect(preceding).toBeTruthy();
+    expect(image).toBeTruthy();
+    expect(image!.css.left).toBeGreaterThanOrEqual(0);
+    expect(image!.css.width).toBeGreaterThan(0);
+    expect(image!.finalBounds.top).toBeGreaterThanOrEqual(preceding!.finalBounds.bottom - 1);
+    expect(image!.measuredInk.horizontalShift).toBe(0);
   }, 120000);
 
   it("bounds long-document measurement before raster work", async () => {

@@ -202,6 +202,32 @@ export function unmountDocumentPrintPortal(): void {
   document.querySelectorAll("[data-studio-print-portal]").forEach((node) => node.remove());
 }
 
+const VIEW_ONLY_PAGINATION_VARS = [
+  "--qalam-page-width",
+  "--qalam-page-height",
+  "--qalam-margin-top",
+  "--qalam-margin-bottom",
+  "--qalam-margin-left",
+  "--qalam-margin-right",
+  "--qalam-page-gap",
+  "--qalam-content-height",
+  "--qalam-canvas",
+] as const;
+
+/** Strip Pages-mode decorations from a print clone. Authored breaks stay. */
+export function stripViewOnlyPagination(root: HTMLElement): void {
+  root.querySelectorAll("[data-qalam-pagination], .qalam-pagination-pages").forEach((node) => node.remove());
+  const styled: HTMLElement[] = [];
+  if (root.classList.contains("qalam-pagination")) styled.push(root);
+  root.querySelectorAll(".qalam-pagination").forEach((node) => styled.push(node as HTMLElement));
+  for (const node of styled) {
+    node.classList.remove("qalam-pagination");
+    for (const name of VIEW_ONLY_PAGINATION_VARS) node.style.removeProperty(name);
+    node.style.removeProperty("min-height");
+    node.style.removeProperty("width");
+  }
+}
+
 export function mountDocumentPrintPortal(): HTMLElement | null {
   if (typeof document === "undefined") return null;
   unmountDocumentPrintPortal();
@@ -229,6 +255,7 @@ export function mountDocumentPrintPortal(): HTMLElement | null {
   page.querySelectorAll('[data-document-page-break="true"], [data-document-section-break="true"]').forEach((marker) => {
     marker.textContent = "";
   });
+  stripViewOnlyPagination(page);
   page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:${topMm}mm ${rightMm}mm ${bottomMm}mm ${leftMm}mm;background:#fff;min-height:0;`;
   const style = document.createElement("style");
   style.textContent = `${studioJameelFontFaceCss()}\n${documentPrintCss(widthMm, heightMm)}`;

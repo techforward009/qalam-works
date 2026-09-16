@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+/** @vitest-environment happy-dom */
+import { afterEach, describe, expect, it } from "vitest";
 import { resolvePageLayout, mmToPx } from "../app/tools/document-studio/utils/pageLayout";
 import {
   DEFAULT_DOCUMENT_VIEW_MODE,
@@ -10,6 +11,8 @@ import {
   resolveZoomFactor,
   visualPageCount,
   visualPageCountWithGaps,
+  mountDocumentPrintPortal,
+  unmountDocumentPrintPortal,
 } from "../app/tools/document-studio/utils/documentView";
 import {
   DOCUMENT_MENU_BAR,
@@ -93,5 +96,81 @@ describe("View menu Pages/Pageless", () => {
     dispatchDocumentMenuAction("view.pageless", null, handlers);
     dispatchDocumentMenuAction("view.pages", null, handlers);
     expect(calls).toEqual(["pageless", "pages"]);
+  });
+});
+
+describe("print portal strips view-only pagination", () => {
+  afterEach(() => {
+    unmountDocumentPrintPortal();
+    document.body.innerHTML = "";
+  });
+
+  function mountPagedPrintPortal() {
+    document.body.innerHTML = `
+      <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-dir="ltr">
+        <div data-studio-print-surface>
+          <div class="qalam-editor-content qalam-view-pages">
+            <div class="ProseMirror qalam-pagination" style="min-height:1800px;width:794px;--qalam-page-height:1123px;--qalam-page-gap:12px;--qalam-content-height:937px;">
+              <div data-qalam-pagination="true" class="qalam-pagination-pages">
+                <div class="qalam-pagination-unit">
+                  <div class="qalam-pagination-page"></div>
+                  <div class="qalam-pagination-breaker">
+                    <div class="qalam-pagination-sheet-end"></div>
+                    <div class="qalam-pagination-gutter"></div>
+                    <div class="qalam-pagination-sheet-start"></div>
+                  </div>
+                </div>
+              </div>
+              <p>Page one</p>
+              <div data-document-page-break="true">Page break</div>
+              <p>Page two</p>
+              <div data-document-section-break="true" data-section-break-type="nextPage">Section break (next page)</div>
+              <p>Section two</p>
+              <div data-document-section-break="true" data-section-break-type="continuous">Section break (continuous)</div>
+              <p>Still continuous</p>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    return mountDocumentPrintPortal();
+  }
+
+  it("A: print portal clone contains no [data-qalam-pagination]", () => {
+    const portal = mountPagedPrintPortal();
+    expect(portal).toBeTruthy();
+    expect(portal?.querySelector("[data-qalam-pagination]")).toBeNull();
+  });
+
+  it("B: print portal clone contains no .qalam-pagination-gutter", () => {
+    const portal = mountPagedPrintPortal();
+    expect(portal?.querySelector(".qalam-pagination-gutter")).toBeNull();
+    expect(portal?.querySelector(".qalam-pagination-sheet-end")).toBeNull();
+    expect(portal?.querySelector(".qalam-pagination-sheet-start")).toBeNull();
+  });
+
+  it("C: authored page/section break nodes remain in the print clone", () => {
+    const portal = mountPagedPrintPortal();
+    expect(portal?.querySelector('[data-document-page-break="true"]')).toBeTruthy();
+    expect(portal?.querySelector('[data-document-section-break="true"][data-section-break-type="nextPage"]')).toBeTruthy();
+    expect(portal?.querySelector('[data-document-section-break="true"][data-section-break-type="continuous"]')).toBeTruthy();
+    expect(portal?.textContent).toContain("Page one");
+    expect(portal?.textContent).toContain("Still continuous");
+    expect(portal?.textContent).not.toMatch(/page break/i);
+    expect(portal?.textContent).not.toMatch(/section break/i);
+  });
+
+  it("D: print clone does not retain pagination-only min-height/page-stack geometry", () => {
+    const portal = mountPagedPrintPortal();
+    const clone = portal?.querySelector(".ProseMirror") as HTMLElement | null;
+    expect(clone).toBeTruthy();
+    expect(clone?.classList.contains("qalam-pagination")).toBe(false);
+    expect(clone?.style.minHeight).toBe("");
+    expect(clone?.style.width).toBe("");
+    expect(clone?.style.getPropertyValue("--qalam-page-gap")).toBe("");
+    expect(clone?.style.getPropertyValue("--qalam-page-height")).toBe("");
+    expect(clone?.style.getPropertyValue("--qalam-content-height")).toBe("");
+    const page = portal?.querySelector("[data-studio-print-page]") as HTMLElement | null;
+    expect(page?.style.minHeight === "0" || page?.style.minHeight === "0px").toBe(true);
+    expect(page?.style.minHeight).not.toBe("1800px");
   });
 });
