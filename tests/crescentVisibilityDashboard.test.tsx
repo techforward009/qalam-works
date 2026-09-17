@@ -1,5 +1,6 @@
 /** @vitest-environment happy-dom */
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import CrescentVisibilityContent from "../app/tools/crescent-visibility/CrescentVisibilityContent";
 
@@ -9,6 +10,7 @@ const locations = ["Gilgit", "Peshawar", "Islamabad", "Lahore", "Muzaffarabad", 
 const yallopLocations = locations.map(({ observer }, index) => ({ observer, prediction: { status: "evaluated", criterion: { visibilityClass: index === 0 ? "A" : "C", q: index === 0 ? 2.4952 : -0.1234 }, acceptedByPolicy: index === 0 } }));
 const yallopClassCounts = { A: 1, B: 0, C: 7, D: 0, E: 0, F: 0 };
 
+vi.mock("next/link", () => ({ default: ({ children, href, ...props }: { children?: ReactNode; href: string }) => <a href={href} {...props}>{children}</a> }));
 vi.mock("../app/lib/language-context", () => ({ useLanguage: () => ({ language: locale.language }) }));
 vi.mock("../app/tools/date-converter/utils/pakistan-crescent/nationalPrediction", () => ({ evaluatePakistanNationalCrescentPrediction: vi.fn(() => ({ locations, qualifies: true })) }));
 vi.mock("../app/tools/date-converter/utils/yallop/nationalReferencePrediction", () => ({ evaluateYallopNationalReferencePrediction: vi.fn(() => ({ locations: yallopLocations, anyAcceptedByPolicy: true, classCounts: yallopClassCounts })) }));
@@ -20,6 +22,7 @@ describe("crescent visibility dashboard", () => {
   it("presents national science without a public city selector", () => {
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "Pakistan Crescent Visibility" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Back to Date Studio/i }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
     expect(screen.getByText("National scientific and official outlook")).toBeTruthy();
     expect(screen.getAllByText("1 of 8 prescribed national observation locations meet the scientific crescent-visibility criterion.").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "Pakistan national scientific criterion" }).length).toBeGreaterThan(0);
@@ -41,6 +44,7 @@ describe("crescent visibility dashboard", () => {
     locale.language = "ur";
     render(<CrescentVisibilityContent />);
     expect(screen.getByRole("heading", { name: "پاکستان میں رؤیتِ ہلال" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /ڈیٹ اسٹوڈیو پر واپس/ }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
     expect(screen.getByText("قومی سائنسی اور سرکاری جائزہ")).toBeTruthy();
     expect(screen.getAllByText("8 میں سے 1 مقررہ قومی مشاہداتی مقامات رؤیتِ ہلال کے سائنسی معیار پر پورا اترتے ہیں۔").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "پاکستانی قومی سائنسی معیار" }).length).toBeGreaterThan(0);

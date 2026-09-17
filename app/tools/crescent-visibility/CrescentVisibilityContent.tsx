@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useLanguage } from "../../lib/language-context";
 import { formatDate, validateDate, type DateParts } from "../date-converter/utils/dateEngine";
 import { resolvePakistanOfficialHijriDate } from "../date-converter/utils/hijri-authority/resolveOfficialHijriDate";
@@ -33,8 +34,19 @@ export default function CrescentVisibilityContent() {
   const authority = useMemo(() => isValidDate ? resolvePakistanOfficialHijriDate(date) : null, [isValidDate, date.year, date.month, date.day]);
   const decision = useMemo(() => isValidDate ? resolvePakistanOfficialSightingDecisionForEvening(date) : null, [isValidDate, date.year, date.month, date.day]);
   const dateControl = <div className="mt-4 flex flex-wrap items-center gap-2"><label className="text-sm font-semibold" htmlFor="dashboard-date">{ur ? "تاریخ" : "Date"}</label><input id="dashboard-date" aria-label={ur ? "تاریخ تبدیل کریں" : "Change date"} type="date" min="1900-01-01" max="2100-12-31" value={dateInput} onChange={e => setDateInput(e.target.value)} className="rounded-lg border px-3 py-2" /></div>;
+  const backToStudio = (
+    <div className="mb-6">
+      <Link
+        href="/tools/date-converter#date-studio"
+        className={`inline-flex items-center gap-2 rounded-lg border border-[#1A3A2A]/15 bg-white/80 px-3 py-2 text-sm font-semibold text-[#1A3A2A] shadow-sm transition-colors hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#162a1e] dark:text-[#e8ede9] ${ur ? "font-naskh" : ""}`}
+      >
+        <span aria-hidden="true">{ur ? "→" : "←"}</span>
+        <span>{ur ? "ڈیٹ اسٹوڈیو پر واپس" : "Back to Date Studio"}</span>
+      </Link>
+    </div>
+  );
 
-  if (!isValidDate || !pakistan || !yallop) return <main className="mx-auto max-w-5xl px-4 py-8" dir={ur ? "rtl" : "ltr"}><h1 className={`text-3xl font-bold text-[#1A3A2A] dark:text-white ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان میں رؤیتِ ہلال" : "Pakistan Crescent Visibility"}</h1>{dateControl}<p role="alert" className={`mt-5 rounded-xl border border-red-300 bg-red-50 p-4 text-red-800 ${ur ? "font-naskh" : ""}`}>{ur ? "براہِ کرم 1900 سے 2100 کے درمیان عیسوی تاریخ منتخب کریں۔" : "Please select a Gregorian date between 1900 and 2100."}</p></main>;
+  if (!isValidDate || !pakistan || !yallop) return <main className="mx-auto max-w-5xl px-4 py-8" dir={ur ? "rtl" : "ltr"}>{backToStudio}<h1 className={`text-3xl font-bold text-[#1A3A2A] dark:text-white ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان میں رؤیتِ ہلال" : "Pakistan Crescent Visibility"}</h1>{dateControl}<p role="alert" className={`mt-5 rounded-xl border border-red-300 bg-red-50 p-4 text-red-800 ${ur ? "font-naskh" : ""}`}>{ur ? "براہِ کرم 1900 سے 2100 کے درمیان عیسوی تاریخ منتخب کریں۔" : "Please select a Gregorian date between 1900 and 2100."}</p></main>;
 
   const month = authority ? interpretDateStudioMonthStart(authority.hijri.day, yallop.anyAcceptedByPolicy, authority.authority) : null;
   const classSummary = (["A", "B", "C", "D", "E", "F"] as const).filter(key => yallop.classCounts[key] > 0).map(key => `${key}: ${yallop.classCounts[key]}`).join(" · ");
@@ -67,6 +79,7 @@ export default function CrescentVisibilityContent() {
       : "border-rose-300 bg-rose-100 text-rose-900 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-100";
 
   return <main className="mx-auto max-w-[1080px] px-4 py-12" dir={ur ? "rtl" : "ltr"}>
+    {backToStudio}
     <header className="max-w-2xl"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#9a7438]">Qalam Works</p><h1 className={`mt-3 text-4xl font-bold tracking-tight text-[#123326] md:text-5xl dark:text-[#f7faf7] ${ur ? "font-naskh" : ""}`}>{ur ? "پاکستان میں رؤیتِ ہلال" : "Pakistan Crescent Visibility"}</h1><p className={`mt-3 text-lg text-[#486155] dark:text-[#c8d5cc] ${ur ? "font-naskh" : ""}`}>{ur ? "قومی سائنسی اور سرکاری جائزہ" : "National scientific and official outlook"}</p></header>
     <section className={`mt-5 max-w-3xl text-sm leading-7 text-muted-foreground ${ur ? "font-naskh" : ""}`}>{ur ? "سرکاری فیصلہ پورے پاکستان سے موصول ہونے والی معتبر اور قابلِ قبول شہادتوں کی بنیاد پر کیا جاتا ہے۔ یہ صفحہ مقررہ قومی مقامات کے فلکیاتی حالات کا سائنسی جائزہ پیش کرتا ہے۔" : "Pakistan's official decision is based on credible accepted testimony from across the country. This page presents a scientific outlook based on prescribed national reference locations."}</section>
     {dateControl}

@@ -481,15 +481,12 @@ export default function DateConverterContent({
     <div className="bg-[#F7F5EF] dark:bg-[#0e1c15]" dir={dir}>
       <div className="site-container max-w-[1120px] mx-auto py-8 sm:py-10">
         {!hideHeading && (
-          <header className="mb-6 max-w-3xl">
+          <header className="mb-6 mx-auto max-w-3xl text-center">
             <h1 className={`text-3xl sm:text-[2rem] font-bold text-[#1A3A2A] dark:text-[#e8ede9] leading-tight ${isUr ? "font-nastaliq font-normal" : ""}`}>
               {t.studioTitle}
             </h1>
-            <p className={`mt-2 text-[15px] leading-relaxed text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`} lang="en" dir="ltr">
-              {L.en.studioDesc}
-            </p>
-            <p className="mt-1 text-[15px] leading-relaxed text-[#4A6A4A] dark:text-[#b8d4bc] font-naskh" lang="ur" dir="rtl">
-              {L.ur.studioDesc}
+            <p className={`mt-2 text-[15px] leading-relaxed text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`}>
+              {t.studioDesc}
             </p>
           </header>
         )}
@@ -526,13 +523,13 @@ export default function DateConverterContent({
         </div>
 
         <section id="date-studio" className="rounded-2xl border border-[#1A3A2A]/10 bg-white p-4 sm:p-6 shadow-[0_1px_2px_rgba(26,58,42,0.04)] dark:border-[#2a3d30] dark:bg-[#162a1e]">
-          <div className={`flex flex-col gap-4 lg:flex-row lg:items-center ${isUr ? "lg:flex-row-reverse" : ""}`}>
-            <div className="inline-flex w-full sm:w-auto rounded-2xl bg-[#F4F1E8] p-1 dark:bg-[#0e1c15]">
+          <div className="flex justify-center">
+            <div className="flex w-full rounded-2xl bg-[#F4F1E8] p-1 dark:bg-[#0e1c15]">
               <button
                 type="button"
                 onClick={() => { setMode("convert"); setToolMode("convert"); }}
                 aria-pressed={mode === "convert"}
-                className={`flex flex-1 items-center gap-2.5 rounded-xl px-4 py-2.5 text-start transition-colors ${naskh} ${
+                className={`flex flex-1 items-center justify-center gap-2.5 rounded-xl px-4 py-3 text-center transition-colors ${naskh} ${
                   mode === "convert"
                     ? "bg-[#1A3A2A] text-white shadow-sm dark:bg-[#2a5a3a]"
                     : "text-[#1A3A2A] hover:bg-white/70 dark:text-[#e8ede9]"
@@ -548,7 +545,7 @@ export default function DateConverterContent({
                 type="button"
                 onClick={() => { setMode("find"); setToolMode("find"); }}
                 aria-pressed={mode === "find"}
-                className={`flex flex-1 items-center gap-2.5 rounded-xl px-4 py-2.5 text-start transition-colors ${naskh} ${
+                className={`flex flex-1 items-center justify-center gap-2.5 rounded-xl px-4 py-3 text-center transition-colors ${naskh} ${
                   mode === "find"
                     ? "bg-[#1A3A2A] text-white shadow-sm dark:bg-[#2a5a3a]"
                     : "text-[#1A3A2A] hover:bg-white/70 dark:text-[#e8ede9]"
@@ -561,10 +558,6 @@ export default function DateConverterContent({
                 </span>
               </button>
             </div>
-            <p className={`lg:ms-auto text-[13px] text-[#6F4E25] dark:text-[#E0C18D] ${isUr ? "font-naskh text-start" : "text-end"}`}>
-              <span className="block italic" lang="en" dir="ltr">{L.en.studioTagline}</span>
-              <span className="mt-0.5 block font-naskh" lang="ur" dir="rtl">{L.ur.studioTagline}</span>
-            </p>
           </div>
 
           {mode === "convert" ? (
@@ -662,23 +655,6 @@ export default function DateConverterContent({
                     )}
                   </div>
                 </div>
-              </div>
-
-              <div className="mt-5 flex flex-col gap-4 border-t border-[#1A3A2A]/10 pt-5 dark:border-[#2a3d30] lg:flex-row lg:items-end">
-                <div className="min-w-0 flex-1">
-                  <RegionalContext selectedCountry={selectedCountry} setSelectedCountry={setSelectedCountry} calendar={calendar} result={result} day={day} month={month} year={year} lang={lang} isUr={isUr} naskh={naskh} embedded />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof document === "undefined") return;
-                    document.getElementById("conversion-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                  className={`inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#1A3A2A] px-6 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#254d37] dark:bg-[#2a5a3a] ${naskh}`}
-                >
-                  {t.convertAction}
-                  <ChevronRight className={`h-4 w-4 ${isUr ? "rotate-180" : ""}`} />
-                </button>
               </div>
             </>
           ) : (
