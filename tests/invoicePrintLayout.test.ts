@@ -203,8 +203,8 @@ describe("header scale", () => {
     const west = html({ style: "western" });
     expect(west).toContain('data-header-scale="0.8"');
     expect(west).toContain('data-brand-scale="1"');
-    const pk = html({ style: "pakistani", headerScale: 0.65 });
-    expect(pk).toContain('data-header-scale="0.65"');
+    const pk = html({ style: "pakistani", headerScale: 0.35 });
+    expect(pk).toContain('data-header-scale="0.35"');
   });
 
   it("header size pads the band without shrinking logo or header type", () => {
@@ -410,6 +410,18 @@ describe("Urdu and boxed-cell presentation", () => {
     expect(ur).toContain("gap:4px");
     expect(ur).toMatch(/data-invoice-meta="western"[\s\S]*?text-align:center;vertical-align:middle/);
     expect(ur).toMatch(/data-meta="date"[^>]*text-align:center/);
+  });
+
+  it("centers western qty/price/disc and left-aligns Urdu amounts", () => {
+    const ur = html({ style: "western" }, sampleInvoice(), "ur");
+    expect(ur).toMatch(/data-col="qty"[^>]*text-align:center/);
+    expect(ur).toMatch(/data-col="price"[^>]*text-align:center/);
+    expect(ur).toMatch(/data-col="disc"[^>]*text-align:center/);
+    expect(ur).toMatch(/data-col="amount-header"[^>]*text-align:center/);
+    expect(ur).toMatch(/data-col="amount"[^>]*text-align:left/);
+    const en = html({ style: "western" });
+    expect(en).toMatch(/data-col="qty"[^>]*text-align:center/);
+    expect(en).toMatch(/data-col="amount"[^>]*text-align:end/);
   });
 
   it("gives the items editor enough width for quantity and amount", () => {

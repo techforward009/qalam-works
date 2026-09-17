@@ -86,8 +86,9 @@ describe("extra lines are user-controlled, not fill-page", () => {
     expect(extra.spacerMm).toBe(0);
   });
 
-  it("header scale clamps to 65%–100%", () => {
-    expect(clampHeaderScale(0.2)).toBe(0.65);
+  it("header scale clamps to 35%–100%", () => {
+    expect(clampHeaderScale(0.2)).toBe(0.35);
+    expect(clampHeaderScale(0.35)).toBe(0.35);
     expect(clampHeaderScale(0.8)).toBe(0.8);
     expect(clampHeaderScale(1.4)).toBe(1);
   });

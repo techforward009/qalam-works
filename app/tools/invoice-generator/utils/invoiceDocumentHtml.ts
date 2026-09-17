@@ -60,8 +60,11 @@ export interface InvoiceExportPayload {
 const LOGO_H: Record<SizeOption, number> = { small: 36, medium: 52, large: 72 };
 const SIG_H: Record<SizeOption, number> = { small: 50, medium: 90, large: 140 };
 const SIG_BLOCK_PX = 160;
-const AMT_STYLE = "text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap;box-sizing:border-box;";
 const PAK_AMT_STYLE = "text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap;box-sizing:border-box;";
+
+function westernAmtStyle(lang: InvoiceLanguage): string {
+  return `text-align:${lang === "ur" ? "left" : "end"};font-variant-numeric:tabular-nums;white-space:nowrap;box-sizing:border-box;`;
+}
 
 export function esc(value: string): string {
   return value
@@ -270,14 +273,15 @@ function westernInner(
   const colRule = "border-inline-start:1px solid #E5E7EB;";
   const headRule = "border-inline-start:1px solid rgba(255,255,255,0.28);";
   const headCell = `padding:8px 8px;font-weight:700;color:#ffffff;vertical-align:middle;`;
+  const amt = westernAmtStyle(invoiceLang);
 
   const itemRows = invoice.items.map((it, i) => `
     <tr style="border-bottom:1px solid #E5E7EB;">
       <td style="padding:7px 8px;color:#374151;text-align:start;${naskh}">${esc(it.description || "—")}</td>
-      <td data-col="qty" style="padding:7px 8px;color:#374151;text-align:end;font-size:${nf(12)}px;font-variant-numeric:tabular-nums;white-space:nowrap;${colRule}" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
-      <td data-col="price" style="padding:7px 8px;color:#374151;text-align:end;font-size:${nf(12)}px;font-variant-numeric:tabular-nums;white-space:nowrap;${colRule}" dir="ltr">${formatInvoicePrice(it.unitPrice, invoice.currency, invoiceLang)}</td>
-      <td data-col="disc" style="padding:7px 8px;text-align:end;font-size:${nf(12)}px;white-space:nowrap;${colRule}${lineDiscountLabel(it, invoice.currency, invoiceLang) === "—" ? "color:#9CA3AF;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it, invoice.currency, invoiceLang))}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:7px 8px;font-weight:600;color:#111827;font-size:${nf(12)}px;${colRule}" dir="ltr">${formatInvoiceMinor(result.lineTotals[i] || 0, invoice.currency, invoiceLang)}</td>
+      <td data-col="qty" style="padding:7px 8px;color:#374151;text-align:center;vertical-align:middle;font-size:${nf(12)}px;font-variant-numeric:tabular-nums;white-space:nowrap;${colRule}" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
+      <td data-col="price" style="padding:7px 8px;color:#374151;text-align:center;vertical-align:middle;font-size:${nf(12)}px;font-variant-numeric:tabular-nums;white-space:nowrap;${colRule}" dir="ltr">${formatInvoicePrice(it.unitPrice, invoice.currency, invoiceLang)}</td>
+      <td data-col="disc" style="padding:7px 8px;text-align:center;vertical-align:middle;font-size:${nf(12)}px;white-space:nowrap;${colRule}${lineDiscountLabel(it, invoice.currency, invoiceLang) === "—" ? "color:#9CA3AF;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it, invoice.currency, invoiceLang))}</td>
+      <td data-col="amount" style="${amt}padding:7px 8px;vertical-align:middle;font-weight:600;color:#111827;font-size:${nf(12)}px;${colRule}" dir="ltr">${formatInvoiceMinor(result.lineTotals[i] || 0, invoice.currency, invoiceLang)}</td>
     </tr>`).join("");
 
   const ledgerSpaceRows = extra.extraLines > 0
@@ -297,24 +301,24 @@ function westernInner(
     <tr data-totals-row="subtotal">
       <td></td>
       <td colspan="3" style="padding:6px 10px;text-align:end;color:#4B5563;font-size:${fs(12)}px;${totalsBox}${naskh}">${esc(V.subtotal)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 8px;color:#111827;font-size:${nf(12)}px;${totalsBox}${colRule}" dir="ltr">${fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</td>
+      <td data-col="amount" style="${amt}padding:6px 8px;color:#111827;font-size:${nf(12)}px;${totalsBox}${colRule}" dir="ltr">${fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</td>
     </tr>
     ${hasDiscount ? `
     <tr data-totals-row="discount">
       <td></td>
       <td colspan="3" style="padding:6px 10px;text-align:end;color:#4B5563;font-size:${fs(12)}px;${totalsBox}${naskh}">${esc(V.discount)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 8px;color:#DC2626;font-size:${nf(12)}px;${totalsBox}${colRule}" dir="ltr">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</td>
+      <td data-col="amount" style="${amt}padding:6px 8px;color:#DC2626;font-size:${nf(12)}px;${totalsBox}${colRule}" dir="ltr">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</td>
     </tr>` : ""}
     ${taxes.map(t => `
     <tr data-totals-row="tax">
       <td></td>
       <td colspan="3" style="padding:6px 10px;text-align:end;color:#4B5563;font-size:${fs(12)}px;${totalsBox}${naskh}">${esc(displayTaxName(t.name, invoiceLang))}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 8px;color:#111827;font-size:${nf(12)}px;${totalsBox}${colRule}" dir="ltr">${fmt(t.amount, invoice.currency, invoiceLang)}</td>
+      <td data-col="amount" style="${amt}padding:6px 8px;color:#111827;font-size:${nf(12)}px;${totalsBox}${colRule}" dir="ltr">${fmt(t.amount, invoice.currency, invoiceLang)}</td>
     </tr>`).join("")}
     <tr data-totals-row="total">
       <td></td>
       <td colspan="3" style="padding:8px 10px;text-align:end;font-weight:800;font-size:${fs(14)}px;${totalsBar}${naskh}">${esc(V.total)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:8px 6px;font-weight:800;font-size:${nf(13)}px;${totalsBar}${colRule}" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
+      <td data-col="amount" style="${amt}padding:8px 6px;font-weight:800;font-size:${nf(13)}px;${totalsBar}${colRule}" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
     </tr>`;
 
   const metaRows = `
@@ -379,10 +383,10 @@ function westernInner(
       <thead>
         <tr style="background:${P.accent};">
           <th style="${headCell}text-align:start;${naskh}">${esc(V.desc)}</th>
-          <th data-col="qty" style="${headCell}text-align:end;${headRule}${naskhHead}">${esc(V.qty)}</th>
-          <th data-col="price" style="${headCell}text-align:end;${headRule}${naskhHead}">${esc(V.price)}</th>
-          <th data-col="disc" style="${headCell}text-align:end;${headRule}${naskhHead}">${esc(V.disc)}</th>
-          <th data-col="amount-header" style="${headCell}text-align:end;${headRule}${naskhHead}">${esc(V.amount)}</th>
+          <th data-col="qty" style="${headCell}text-align:center;${headRule}${naskhHead}">${esc(V.qty)}</th>
+          <th data-col="price" style="${headCell}text-align:center;${headRule}${naskhHead}">${esc(V.price)}</th>
+          <th data-col="disc" style="${headCell}text-align:center;${headRule}${naskhHead}">${esc(V.disc)}</th>
+          <th data-col="amount-header" style="${headCell}text-align:center;${headRule}${naskhHead}">${esc(V.amount)}</th>
         </tr>
       </thead>
       <tbody>${itemRows}${ledgerSpaceRows}</tbody>
@@ -599,7 +603,7 @@ html,body{
 [data-col="amount"]{
   font-variant-numeric:tabular-nums;
   white-space:nowrap;
-  text-align:end;
+  text-align:${lang === "ur" ? "left" : "end"};
   direction:ltr;
   unicode-bidi:isolate;
   box-sizing:border-box;
