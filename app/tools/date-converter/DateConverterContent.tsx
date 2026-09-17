@@ -207,7 +207,15 @@ function monthOptions(cal: CalendarType, lang: "en" | "ur") {
   return lang === "ur" ? SOLAR_MONTHS_UR : SOLAR_MONTHS_EN;
 }
 
-export default function DateConverterContent({ initialMode = "convert" }: { initialMode?: ToolMode }) {
+export default function DateConverterContent({
+  initialMode = "convert",
+  initialCalendar = "gregorian",
+  hideHeading = false,
+}: {
+  initialMode?: ToolMode;
+  initialCalendar?: CalendarType;
+  hideHeading?: boolean;
+}) {
   useEffect(() => { trackToolOpenOnce("date_converter"); }, []);
 
   const { language, dir } = useLanguage();
@@ -217,7 +225,7 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
   const naskh  = isUr ? "font-naskh" : "";
 
   const [mode, setMode] = useState<ToolMode>(initialMode);
-  const [calendar,    setCalendar]    = useState<CalendarType>("gregorian");
+  const [calendar,    setCalendar]    = useState<CalendarType>(initialCalendar);
   const [day,         setDay]         = useState("");
   const [month,       setMonth]       = useState("");
   const [year,        setYear]        = useState("");
@@ -381,12 +389,14 @@ export default function DateConverterContent({ initialMode = "convert" }: { init
   return (
     <div className="site-container" dir={dir}>
       <div className="max-w-2xl mx-auto py-6 sm:py-10">
+        {!hideHeading && (
         <div className="text-center mb-7">
           <h1 className={`text-2xl sm:text-3xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${isUr ? "font-nastaliq font-normal" : ""}`}>
             {t.studioTitle}
           </h1>
           <p className={`text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`}>{t.studioDesc}</p>
         </div>
+        )}
 
         <section id="date-studio" className="mb-7 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] p-4 sm:p-5">
           <div className="space-y-3">

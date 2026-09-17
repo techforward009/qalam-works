@@ -212,10 +212,11 @@ const UI = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function RomanUrduWriterClient() {
+export default function RomanUrduWriterClient({ hideHeading = false }: { hideHeading?: boolean } = {}) {
   const { language } = useLanguage();
   const isUr = language === "ur";
   const ui = isUr ? UI.ur : UI.en;
+  const Body = hideHeading ? "div" : "main";
   const router = useRouter();
 
   // Mode — default Roman Urdu
@@ -745,6 +746,8 @@ export default function RomanUrduWriterClient() {
       {/* ── Header ── */}
       <header className="bg-[#151B2E] text-white px-4 py-6 md:px-8">
         <div className="max-w-5xl mx-auto">
+          {!hideHeading && (
+            <>
           <h1
             className={`text-2xl md:text-3xl font-bold tracking-tight ${isUr ? "font-nastaliq font-normal" : ""}`}
             dir={isUr ? "rtl" : "ltr"}
@@ -759,6 +762,8 @@ export default function RomanUrduWriterClient() {
           >
             {ui.sub}
           </p>
+            </>
+          )}
 
           {/* Mode segmented control */}
           <div
@@ -790,7 +795,7 @@ export default function RomanUrduWriterClient() {
       </header>
 
       {/* ── Main ── */}
-      <main className="flex-1 px-4 py-6 md:px-8">
+      <Body className="flex-1 px-4 py-6 md:px-8">
         <div className="max-w-5xl mx-auto space-y-5">
 
           <div className="flex flex-wrap items-center gap-2" data-testid="writer-utility-bar" dir={isUr ? "rtl" : "ltr"} lang={isUr ? "ur" : "en"}>
@@ -1276,7 +1281,7 @@ export default function RomanUrduWriterClient() {
           )}
 
         </div>
-      </main>
+      </Body>
     </div>
   );
 }

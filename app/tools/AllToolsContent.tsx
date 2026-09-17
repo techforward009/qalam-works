@@ -30,6 +30,11 @@ const L = {
     crescentVisibility: "Crescent Visibility",
     gregorianExplorer: "Gregorian Calendar Explorer",
     hijriExplorer: "Hijri Calendar Explorer",
+    searchPagesTitle: "Common searches",
+    searchPagesIntro: "These pages open the same Qalam tools, already set up for a specific task.",
+    searchPdf: "Urdu text to PDF",
+    searchRoman: "Roman Urdu to Urdu",
+    searchHijri: "Hijri to Gregorian",
   },
   ur: {
     title:       "قلم ورکس کے تمام ٹولز",
@@ -51,6 +56,11 @@ const L = {
     crescentVisibility: "رؤیتِ ہلال",
     gregorianExplorer: "عیسوی تقویم دیکھیں",
     hijriExplorer: "ہجری تقویم دیکھیں",
+    searchPagesTitle: "عام تلاشیں",
+    searchPagesIntro: "یہ صفحات وہی قلم ٹولز کھولتے ہیں، ایک مخصوص کام کے لیے تیار۔",
+    searchPdf: "اردو متن سے PDF",
+    searchRoman: "رومن اردو سے اردو",
+    searchHijri: "ہجری سے عیسوی",
   },
 };
 
@@ -189,6 +199,16 @@ export default function AllToolsContent() {
             <Link href="/tools/crescent-visibility" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.crescentVisibility}</Link>
             <Link href={`/calendar/${studioToday.year}`} className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
             <Link href={`/hijri/${studioHijri.year}`} className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors sm:col-span-2 ${naskh}`}>{t.hijriExplorer}</Link>
+          </div>
+        </section>
+
+        <section className="mb-8 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-white dark:bg-[#162a1e] p-5 sm:p-6">
+          <h2 className={`text-xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>{t.searchPagesTitle}</h2>
+          <p className={`mt-1 text-sm leading-relaxed text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.searchPagesIntro}</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <Link href="/tools/urdu-text-to-pdf" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.searchPdf}</Link>
+            <Link href="/tools/roman-urdu-to-urdu" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.searchRoman}</Link>
+            <Link href="/tools/hijri-to-gregorian" className={`rounded-xl border border-[#1A3A2A]/12 dark:border-[#35513d] px-4 py-3 text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.searchHijri}</Link>
           </div>
         </section>
 
