@@ -247,31 +247,31 @@ function westernInner(
 
   const itemRows = invoice.items.map((it, i) => `
     <tr style="border-bottom:1px solid #F3F4F6;">
-      <td style="padding:7px 4px;color:#374151;text-align:start;${naskh}" dir="${dir}">${esc(it.description || "—")}</td>
+      <td style="padding:7px 4px;color:#374151;text-align:start;${naskh}">${esc(it.description || "—")}</td>
       <td style="padding:7px 4px;color:#6B7280;text-align:end;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
       <td style="padding:7px 4px;color:#6B7280;text-align:end;" dir="ltr">${formatInvoicePrice(it.unitPrice, invoice.currency, invoiceLang)}</td>
       <td style="padding:7px 4px;text-align:end;${lineDiscountLabel(it, invoice.currency) === "—" ? "color:#9CA3AF;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it, invoice.currency))}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:7px 4px;font-weight:600;color:#111827;font-size:${fs(11)}px;" dir="ltr">${formatInvoiceMinor(result.lineTotals[i] || 0, invoice.currency, invoiceLang)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:7px 4px;font-weight:600;color:#111827;font-size:11px;" dir="ltr">${formatInvoiceMinor(result.lineTotals[i] || 0, invoice.currency, invoiceLang)}</td>
     </tr>`).join("");
 
   const totalsRows = `
     <tr data-totals-row="subtotal">
-      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:${fs(12)}px;${naskh}">${esc(V.subtotal)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#6B7280;font-size:${fs(11)}px;" dir="ltr">${fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</td>
+      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:12px;${naskh}">${esc(V.subtotal)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#6B7280;font-size:11px;" dir="ltr">${fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</td>
     </tr>
     ${hasDiscount ? `
     <tr data-totals-row="discount">
-      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:${fs(12)}px;${naskh}">${esc(V.discount)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#DC2626;font-size:${fs(11)}px;" dir="ltr">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</td>
+      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:12px;${naskh}">${esc(V.discount)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#DC2626;font-size:11px;" dir="ltr">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</td>
     </tr>` : ""}
     ${taxes.map(t => `
     <tr data-totals-row="tax">
-      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:${fs(12)}px;${naskh}">${esc(displayTaxName(t.name, invoiceLang))}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#6B7280;font-size:${fs(11)}px;" dir="ltr">${fmt(t.amount, invoice.currency, invoiceLang)}</td>
+      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:12px;${naskh}">${esc(displayTaxName(t.name, invoiceLang))}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#6B7280;font-size:11px;" dir="ltr">${fmt(t.amount, invoice.currency, invoiceLang)}</td>
     </tr>`).join("")}
     <tr data-totals-row="total">
-      <td colspan="4" style="padding:8px 8px 4px;text-align:end;font-weight:800;font-size:${fs(14)}px;color:${P.accent};border-top:2px solid ${P.accent};${naskh}">${esc(V.total)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:8px 4px 4px;font-weight:800;font-size:${fs(12)}px;color:${P.accent};border-top:2px solid ${P.accent};" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
+      <td colspan="4" style="padding:8px 8px 4px;text-align:end;font-weight:800;font-size:14px;color:${P.accent};border-top:2px solid ${P.accent};${naskh}">${esc(V.total)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:8px 4px 4px;font-weight:800;font-size:12px;color:${P.accent};border-top:2px solid ${P.accent};" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
     </tr>`;
 
   return `
@@ -312,15 +312,15 @@ function westernInner(
       </div>` : ""}
     </div>
 
-    <table data-invoice-table="western" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:${fs(12)}px;direction:ltr;">
+    <table data-invoice-table="western" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;direction:${dir};">
       ${westernColgroup()}
       <thead>
         <tr style="border-bottom:2px solid ${P.accent};">
           <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:start;${naskh}">${esc(V.desc)}</th>
-          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;${naskh}">${esc(V.qty)}</th>
-          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;${naskh}">${esc(V.price)}</th>
-          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;${naskh}">${esc(V.disc)}</th>
-          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;${naskh}">${esc(V.amount)}</th>
+          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;">${esc(V.qty)}</th>
+          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;">${esc(V.price)}</th>
+          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;">${esc(V.disc)}</th>
+          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;">${esc(V.amount)}</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>
@@ -328,7 +328,7 @@ function westernInner(
 
     <div data-extra-lines="true" data-extra-lines-count="${extra.extraLines}" data-gap-mm="${extra.spacerMm}" style="height:${extra.spacerMm}mm;flex-shrink:0;"></div>
 
-    <table data-totals="column-aligned" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:${fs(12)}px;direction:ltr;">
+    <table data-totals="column-aligned" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;direction:${dir};">
       ${westernColgroup()}
       <tbody>${totalsRows}</tbody>
     </table>

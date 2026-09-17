@@ -279,6 +279,16 @@ describe("Urdu and boxed-cell presentation", () => {
     expect(built).toContain("line-height:1.85");
   });
 
+  it("keeps Western Urdu item table RTL so Description is start-edge and Amount is end-edge", () => {
+    const ur = html({ style: "western" }, sampleInvoice(), "ur");
+    const en = html({ style: "western" });
+    expect(ur).toMatch(/data-invoice-table="western"[^>]*direction:rtl/);
+    expect(ur).toMatch(/data-totals="column-aligned"[^>]*direction:rtl/);
+    expect(ur).toMatch(/data-invoice-table="western"[^>]*font-size:12px/);
+    expect(en).toMatch(/data-invoice-table="western"[^>]*direction:ltr/);
+    expect(en).toMatch(/data-totals="column-aligned"[^>]*direction:ltr/);
+  });
+
   it("fits the live A4 preview to the full page box", () => {
     const source = readFileSync(join(__dirname, "../app/tools/invoice-generator/components/InvoiceDocumentPreview.tsx"), "utf8");
     expect(source).toContain("viewportCap");
