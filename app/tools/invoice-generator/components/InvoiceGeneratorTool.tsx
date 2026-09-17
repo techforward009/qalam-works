@@ -12,9 +12,12 @@ import {
   EXTRA_LINES_MIN,
   HEADER_SCALE_MAX,
   HEADER_SCALE_MIN,
+  BRAND_SCALE_MAX,
+  BRAND_SCALE_MIN,
   WESTERN_SKINS,
   clampExtraLines,
   clampHeaderScale,
+  clampBrandScale,
   invoiceChrome,
   type InvoicePrintSettings,
   type WesternSkin,
@@ -170,6 +173,7 @@ export default function InvoiceGeneratorTool() {
     landscape:       isUr ? "افقی" : "Landscape",
     extraLines:      isUr ? "اضافی لائنیں" : "Extra lines",
     headerSize:      isUr ? "ہیڈر سائز" : "Header size",
+    brandSize:       isUr ? "لوگو و متن" : "Logo & text",
     amountInWords:   isUr ? "رقم الفاظ میں" : "Amount in words",
     advance:         isUr ? "ایڈوانس" : "Advance",
     footer:          isUr ? "فوٹر" : "Footer",
@@ -425,7 +429,7 @@ export default function InvoiceGeneratorTool() {
                   <div
                     className="grid gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide px-0.5"
                     data-item-grid="true"
-                    style={{ gridTemplateColumns: "minmax(0,1.4fr) 5rem 5.5rem 3.5rem 3.5rem minmax(7rem,0.9fr) 1.35rem" }}
+                    style={{ gridTemplateColumns: "minmax(9rem,2.2fr) 3.75rem 4.25rem 3rem 3rem 6.25rem 1.25rem" }}
                   >
                     <span>{L.description}</span>
                     <span className="text-center">{L.qty}</span>
@@ -439,7 +443,7 @@ export default function InvoiceGeneratorTool() {
                     <div
                       key={it.id}
                       className="grid gap-1 items-center"
-                      style={{ gridTemplateColumns: "minmax(0,1.4fr) 5rem 5.5rem 3.5rem 3.5rem minmax(7rem,0.9fr) 1.35rem" }}
+                      style={{ gridTemplateColumns: "minmax(9rem,2.2fr) 3.75rem 4.25rem 3rem 3rem 6.25rem 1.25rem" }}
                     >
                       <input value={it.description}
                         onChange={e => updateItem(idx, { description: e.target.value })}
@@ -573,6 +577,16 @@ export default function InvoiceGeneratorTool() {
                         onChange={e => setPrint(p => ({ ...p, headerScale: clampHeaderScale(Number(e.target.value) / 100) }))}
                         className="flex-1 accent-amber-700" />
                       <span className="text-xs font-mono text-gray-600 w-10" dir="ltr">{Math.round(print.headerScale * 100)}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={`block text-[12px] font-bold text-gray-500 mb-2 ${naskh}`}>{L.brandSize}</label>
+                    <div className="flex items-center gap-3">
+                      <input type="range" min={Math.round(BRAND_SCALE_MIN * 100)} max={Math.round(BRAND_SCALE_MAX * 100)} step={1}
+                        value={Math.round(print.brandScale * 100)}
+                        onChange={e => setPrint(p => ({ ...p, brandScale: clampBrandScale(Number(e.target.value) / 100) }))}
+                        className="flex-1 accent-amber-700" />
+                      <span className="text-xs font-mono text-gray-600 w-10" dir="ltr">{Math.round(print.brandScale * 100)}%</span>
                     </div>
                   </div>
                   <div>

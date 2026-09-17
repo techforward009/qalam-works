@@ -52,7 +52,8 @@ describe("western vs pakistani rendering", () => {
     expect(built).toContain('data-invoice-style="western"');
     expect(built).toContain('data-totals="column-aligned"');
     expect(built).toContain('data-col="amount"');
-    expect(built).toContain("width:110px");
+    expect(built).toContain("width:64px");
+    expect(built).toContain("width:140px");
     expect(built).toContain("text-align:end");
     expect(built).toContain("font-variant-numeric:tabular-nums");
     expect(built).not.toContain('data-invoice-table="pakistani"');
@@ -201,8 +202,32 @@ describe("header scale", () => {
   it("writes the compact default and a custom scale on both styles", () => {
     const west = html({ style: "western" });
     expect(west).toContain('data-header-scale="0.8"');
+    expect(west).toContain('data-brand-scale="1"');
     const pk = html({ style: "pakistani", headerScale: 0.65 });
     expect(pk).toContain('data-header-scale="0.65"');
+  });
+
+  it("header size pads the band without shrinking logo or header type", () => {
+    const compact = html({ style: "western", headerScale: 0.65, brandScale: 1 });
+    expect(compact).toContain("padding:10px");
+    expect(compact).toContain("font-size:18px");
+    const roomy = html({ style: "western", headerScale: 1, brandScale: 1 });
+    expect(roomy).toContain("padding:16px");
+    expect(roomy).toContain("font-size:18px");
+  });
+
+  it("logo and text scale independently of header padding", () => {
+    const branded = buildInvoiceHtml({
+      invoice: sampleInvoice(),
+      invoiceLang: "en",
+      logo: { src: "data:image/png;base64,xx", align: "center", size: "medium" },
+      sig,
+      print: { style: "western", headerScale: 1, brandScale: 0.65 },
+    });
+    expect(branded).toContain('data-brand-scale="0.65"');
+    expect(branded).toContain("height:34px");
+    expect(branded).toContain("font-size:12px");
+    expect(branded).toContain("padding:16px");
   });
 });
 
@@ -354,8 +379,8 @@ describe("Urdu and boxed-cell presentation", () => {
     const ur = html({ style: "western" }, sampleInvoice(), "ur");
     expect(ur).toContain(">قیمت<");
     expect(ur).not.toContain("فی یونٹ قیمت");
-    expect(ur).toContain("width:54px");
-    expect(ur).toContain("width:96px");
+    expect(ur).toContain("width:64px");
+    expect(ur).toContain("width:120px");
     expect(ur).toMatch(/data-invoice-table="western"[^>]*direction:rtl/);
   });
 
@@ -391,7 +416,7 @@ describe("Urdu and boxed-cell presentation", () => {
     const source = readFileSync(join(__dirname, "../app/tools/invoice-generator/components/InvoiceGeneratorTool.tsx"), "utf8");
     expect(source).toContain('data-item-qty="true"');
     expect(source).toContain('data-item-amount="true"');
-    expect(source).toContain("minmax(7rem,0.9fr)");
+    expect(source).toContain("minmax(9rem,2.2fr)");
     expect(source).toContain("[appearance:textfield]");
     expect(source).not.toContain("grid-cols-12");
   });

@@ -3,9 +3,11 @@ import {
   EXTRA_LINES_DEFAULT,
   EXTRA_LINES_MAX,
   HEADER_SCALE_DEFAULT,
+  BRAND_SCALE_DEFAULT,
   WESTERN_EXTRA_LINE_MM,
   clampExtraLines,
   clampHeaderScale,
+  clampBrandScale,
   displayTaxName,
   resolveExtraLines,
   resolveInvoicePageBox,
@@ -22,6 +24,7 @@ describe("resolveInvoicePrintSettings", () => {
       pageOrientation: "portrait",
       extraLines: EXTRA_LINES_DEFAULT,
       headerScale: HEADER_SCALE_DEFAULT,
+      brandScale: BRAND_SCALE_DEFAULT,
     });
   });
 
@@ -87,6 +90,12 @@ describe("extra lines are user-controlled, not fill-page", () => {
     expect(clampHeaderScale(0.2)).toBe(0.65);
     expect(clampHeaderScale(0.8)).toBe(0.8);
     expect(clampHeaderScale(1.4)).toBe(1);
+  });
+
+  it("brand scale clamps to 65%–120%", () => {
+    expect(clampBrandScale(0.2)).toBe(0.65);
+    expect(clampBrandScale(1)).toBe(1);
+    expect(clampBrandScale(1.4)).toBe(1.2);
   });
 });
 

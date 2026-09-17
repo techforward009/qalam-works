@@ -26,6 +26,7 @@ export interface InvoicePrintSettings {
   pageOrientation: InvoicePageOrientation;
   extraLines: number;
   headerScale: number;
+  brandScale: number;
 }
 
 export interface InvoicePageBox {
@@ -53,6 +54,9 @@ export const EXTRA_LINES_DEFAULT = 3;
 export const HEADER_SCALE_MIN = 0.65;
 export const HEADER_SCALE_MAX = 1;
 export const HEADER_SCALE_DEFAULT = 0.8;
+export const BRAND_SCALE_MIN = 0.65;
+export const BRAND_SCALE_MAX = 1.2;
+export const BRAND_SCALE_DEFAULT = 1;
 export const PAKISTANI_BLANK_ROW_MM = 8;
 export const WESTERN_EXTRA_LINE_MM = 7.5;
 
@@ -63,22 +67,23 @@ export const DEFAULT_INVOICE_PRINT: InvoicePrintSettings = {
   pageOrientation: "portrait",
   extraLines: EXTRA_LINES_DEFAULT,
   headerScale: HEADER_SCALE_DEFAULT,
+  brandScale: BRAND_SCALE_DEFAULT,
 };
 
 /** Western item-table tracks — totals use the same definition. */
 export const WESTERN_COL = {
-  qtyPx: 40,
-  pricePx: 70,
+  qtyPx: 64,
+  pricePx: 72,
   discPx: 48,
-  amountPx: 110,
+  amountPx: 140,
 } as const;
 
 /** Urdu western tracks — Nastaliq headers need more room so columns stay distinct. */
 export const WESTERN_COL_UR = {
-  qtyPx: 54,
+  qtyPx: 64,
   pricePx: 72,
   discPx: 56,
-  amountPx: 96,
+  amountPx: 120,
 } as const;
 
 export function westernColTracks(lang: InvoiceLanguage = "en") {
@@ -132,6 +137,12 @@ export function clampHeaderScale(value: number): number {
   return Math.min(HEADER_SCALE_MAX, Math.max(HEADER_SCALE_MIN, rounded));
 }
 
+export function clampBrandScale(value: number): number {
+  if (!Number.isFinite(value)) return BRAND_SCALE_DEFAULT;
+  const rounded = Math.round(value * 100) / 100;
+  return Math.min(BRAND_SCALE_MAX, Math.max(BRAND_SCALE_MIN, rounded));
+}
+
 export function isWesternSkin(value: string): value is WesternSkin {
   return value === "modern" || value === "minimal" || value === "corporate";
 }
@@ -157,6 +168,7 @@ export function resolveInvoicePrintSettings(
     pageOrientation,
     extraLines: clampExtraLines(input?.extraLines ?? EXTRA_LINES_DEFAULT),
     headerScale: clampHeaderScale(input?.headerScale ?? HEADER_SCALE_DEFAULT),
+    brandScale: clampBrandScale(input?.brandScale ?? BRAND_SCALE_DEFAULT),
   };
 }
 

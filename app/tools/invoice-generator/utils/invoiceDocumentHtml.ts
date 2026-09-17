@@ -253,6 +253,7 @@ function westernInner(
   const result = calculateInvoice(invoice);
   const P = invoiceChrome(print);
   const hs = print.headerScale;
+  const bs = print.brandScale;
   const dir = invoiceLang === "ur" ? "rtl" : "ltr";
   const pageSize = print.pageSize;
   const naskh = naskhStyle(invoiceLang, pageSize);
@@ -313,7 +314,7 @@ function westernInner(
     <tr data-totals-row="total">
       <td></td>
       <td colspan="3" style="padding:8px 10px;text-align:end;font-weight:800;font-size:${fs(14)}px;${totalsBar}${naskh}">${esc(V.total)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:8px;font-weight:800;font-size:${nf(13)}px;${totalsBar}${colRule}" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:8px 6px;font-weight:800;font-size:${nf(13)}px;${totalsBar}${colRule}" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
     </tr>`;
 
   const metaRows = `
@@ -337,21 +338,21 @@ function westernInner(
         </tr>` : ""}`;
 
   return `
-    <div data-invoice-header="true" data-header-scale="${hs}" style="background:${P.headerBg};border-bottom:3px solid ${P.accent};margin:${-INVOICE_PAGE_MARGIN_MM}mm ${-INVOICE_PAGE_MARGIN_MM}mm ${scaled(16, hs)}px;padding:${scaled(16, hs)}px ${INVOICE_PAGE_MARGIN_MM}mm ${scaled(14, hs)}px;">
-      ${logoHtml(logo, 8, hs)}
+    <div data-invoice-header="true" data-header-scale="${hs}" data-brand-scale="${bs}" style="background:${P.headerBg};border-bottom:3px solid ${P.accent};margin:${-INVOICE_PAGE_MARGIN_MM}mm ${-INVOICE_PAGE_MARGIN_MM}mm ${scaled(16, hs)}px;padding:${scaled(16, hs)}px ${INVOICE_PAGE_MARGIN_MM}mm ${scaled(14, hs)}px;">
+      ${logoHtml(logo, 8, bs)}
       <div style="display:flex;flex-direction:row;justify-content:space-between;align-items:flex-start;gap:16px;">
         <div style="flex:1;min-width:0;text-align:start;">
-          <h2 style="font-size:${fs(scaled(18, hs))}px;font-weight:800;color:${P.headerText};margin:0 0 ${scaled(4, hs)}px;${naskh}">
+          <h2 style="font-size:${fs(scaled(18, bs))}px;font-weight:800;color:${P.headerText};margin:0 0 ${scaled(4, hs)}px;${naskh}">
             ${esc(invoice.seller.name || V.businessFallback)}
           </h2>
-          ${invoice.seller.address ? `<p style="font-size:${fs(scaled(11, hs))}px;color:#6B7280;margin:0 0 2px;white-space:pre-wrap;text-align:start;${naskh}">${esc(invoice.seller.address)}</p>` : ""}
-          ${ltrStart([invoice.seller.phone, invoice.seller.email].filter(Boolean).join("  ·  "), `font-size:${fs(scaled(11, hs))}px;color:#9CA3AF;`)}
-          ${invoice.seller.website ? ltrStart(invoice.seller.website, `font-size:${fs(scaled(10, hs))}px;color:#9CA3AF;`) : ""}
-          ${invoice.seller.taxNumber ? ltrStart(invoice.seller.taxNumber, `font-size:${fs(scaled(10, hs))}px;color:#9CA3AF;`) : ""}
+          ${invoice.seller.address ? `<p style="font-size:${fs(scaled(11, bs))}px;color:#6B7280;margin:0 0 2px;white-space:pre-wrap;text-align:start;${naskh}">${esc(invoice.seller.address)}</p>` : ""}
+          ${ltrStart([invoice.seller.phone, invoice.seller.email].filter(Boolean).join("  ·  "), `font-size:${fs(scaled(11, bs))}px;color:#9CA3AF;`)}
+          ${invoice.seller.website ? ltrStart(invoice.seller.website, `font-size:${fs(scaled(10, bs))}px;color:#9CA3AF;`) : ""}
+          ${invoice.seller.taxNumber ? ltrStart(invoice.seller.taxNumber, `font-size:${fs(scaled(10, bs))}px;color:#9CA3AF;`) : ""}
         </div>
         <div style="flex-shrink:0;${billPad}">
           <div data-invoice-meta-block="true" style="display:flex;flex-direction:column;align-items:center;">
-            <p style="font-size:${fs(scaled(24, hs))}px;font-weight:900;color:${P.accent};margin:0 0 ${scaled(8, hs)}px;letter-spacing:0.04em;text-align:center;${naskh}">${esc(V.invoice)}</p>
+            <p style="font-size:${fs(scaled(24, bs))}px;font-weight:900;color:${P.accent};margin:0 0 ${scaled(8, hs)}px;letter-spacing:0.04em;text-align:center;${naskh}">${esc(V.invoice)}</p>
             <table data-invoice-meta="western" style="border-collapse:collapse;font-size:${fs(11)}px;">
               ${metaRows}
             </table>
@@ -415,6 +416,7 @@ function pakistaniInner(
 ): string {
   const result = calculateInvoice(invoice);
   const hs = print.headerScale;
+  const bs = print.brandScale;
   const pageSize = print.pageSize;
   const dir = invoiceLang === "ur" ? "rtl" : "ltr";
   const naskh = naskhStyle(invoiceLang, pageSize);
@@ -479,18 +481,18 @@ function pakistaniInner(
   const dueCols = invoice.dueDate ? 5 : 3;
 
   return `
-    <div data-invoice-header="true" data-header-scale="${hs}">
-      ${logoHtml(logo, 6, hs)}
+    <div data-invoice-header="true" data-header-scale="${hs}" data-brand-scale="${bs}">
+      ${logoHtml(logo, 6, bs)}
       <div style="text-align:center;margin-bottom:${scaled(12, hs)}px;border-bottom:2px solid #111827;padding-bottom:${scaled(10, hs)}px;">
-        <h2 style="font-size:${fs(scaled(17, hs))}px;font-weight:800;color:#111827;margin:0 0 ${scaled(3, hs)}px;${naskh}">
+        <h2 style="font-size:${fs(scaled(17, bs))}px;font-weight:800;color:#111827;margin:0 0 ${scaled(3, hs)}px;${naskh}">
           ${esc(invoice.seller.name || V.businessFallback)}
         </h2>
-        ${invoice.seller.address ? `<p style="font-size:${fs(scaled(11, hs))}px;color:#374151;margin:2px 0;${naskh}">${esc(invoice.seller.address)}</p>` : ""}
-        <p style="font-size:${fs(scaled(11, hs))}px;color:#374151;margin:2px 0;text-align:center;">
+        ${invoice.seller.address ? `<p style="font-size:${fs(scaled(11, bs))}px;color:#374151;margin:2px 0;${naskh}">${esc(invoice.seller.address)}</p>` : ""}
+        <p style="font-size:${fs(scaled(11, bs))}px;color:#374151;margin:2px 0;text-align:center;">
           <span dir="ltr">${esc([invoice.seller.phone, invoice.seller.email, invoice.seller.website].filter(Boolean).join("  |  "))}</span>
         </p>
       </div>
-      <p style="text-align:center;font-size:${fs(scaled(15, hs))}px;font-weight:900;letter-spacing:0.15em;color:#111827;margin:${scaled(8, hs)}px 0 ${scaled(12, hs)}px;${naskh}">
+      <p style="text-align:center;font-size:${fs(scaled(15, bs))}px;font-weight:900;letter-spacing:0.15em;color:#111827;margin:${scaled(8, hs)}px 0 ${scaled(12, hs)}px;${naskh}">
         ${esc(V.invoice)}
       </p>
     </div>
@@ -570,6 +572,7 @@ export function buildInvoiceDocument(payload: InvoiceExportPayload): BuiltInvoic
     data-page-orientation="${print.pageOrientation}"
     data-extra-lines="${print.extraLines}"
     data-header-scale="${print.headerScale}"
+    data-brand-scale="${print.brandScale}"
     data-blank-rows="${extra.blankRowCount}"
     data-skin="${print.skin}"
     dir="${dir}"
