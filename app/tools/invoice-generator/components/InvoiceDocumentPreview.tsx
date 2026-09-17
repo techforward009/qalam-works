@@ -18,7 +18,9 @@ export default function InvoiceDocumentPreview(payload: InvoiceExportPayload) {
       const pad = 24;
       const availW = Math.max(1, well.clientWidth - pad);
       const paperW = doc.box.widthMm * MM_TO_PX;
-      const next = Math.min(1, availW / paperW);
+      const paperH = doc.box.heightMm * MM_TO_PX;
+      const viewportCap = typeof window === "undefined" ? paperH : Math.max(320, window.innerHeight - 140);
+      const next = Math.min(1, availW / paperW, viewportCap / paperH);
       setScale(Number.isFinite(next) && next > 0 ? next : 1);
     };
 
@@ -26,7 +28,11 @@ export default function InvoiceDocumentPreview(payload: InvoiceExportPayload) {
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(fit);
     ro.observe(well);
-    return () => ro.disconnect();
+    window.addEventListener("resize", fit);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
+    };
   }, [doc.box.widthMm, doc.box.heightMm, doc.pageHtml]);
 
   const paperWmm = doc.box.widthMm;
@@ -35,9 +41,10 @@ export default function InvoiceDocumentPreview(payload: InvoiceExportPayload) {
   return (
     <div
       ref={wellRef}
-      className="p-3 overflow-x-hidden"
+      className="p-3"
       style={{ background: "#E8E2D6" }}
       data-invoice-preview-well="true"
+      data-preview-fits-page="true"
     >
       <div
         data-preview-scale={String(scale)}
@@ -51,6 +58,7 @@ export default function InvoiceDocumentPreview(payload: InvoiceExportPayload) {
         <div
           style={{
             width: `${paperWmm}mm`,
+            height: `${paperHmm}mm`,
             transform: `scale(${scale})`,
             transformOrigin: "top left",
             boxShadow: "0 8px 24px rgba(28, 25, 23, 0.18)",

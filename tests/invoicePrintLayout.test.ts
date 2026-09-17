@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { buildInvoiceHtml } from "../app/tools/invoice-generator/utils/buildInvoiceHtml";
 import { buildInvoiceDocument } from "../app/tools/invoice-generator/utils/invoiceDocumentHtml";
 import type { Invoice } from "../app/tools/invoice-generator/utils/invoiceEngine";
@@ -101,7 +103,6 @@ describe("extra lines replace fill page", () => {
     const built = html({ style: "pakistani", extraLines: 4 });
     expect(built).not.toContain("Fill page");
     expect(built).not.toContain('data-body-gap-mode="fill"');
-    expect(built).not.toContain("overflow:hidden");
   });
 
   it("western extra lines are invisible spacing", () => {
@@ -238,5 +239,51 @@ describe("deprecated classic template still builds a pakistani sheet", () => {
       template: "classic",
     });
     expect(built).toContain('data-invoice-style="pakistani"');
+  });
+});
+
+describe("Urdu and boxed-cell presentation", () => {
+  it("centers the signature caption on the line in both languages", () => {
+    const en = html({ style: "western" });
+    const ur = html({ style: "western" }, sampleInvoice(), "ur");
+    expect(en).toContain('data-sig-caption-text="true" style="text-align:center;width:100%');
+    expect(ur).toContain('data-sig-caption-text="true" style="text-align:center;width:100%');
+    expect(ur).toContain("دستخط");
+    expect(en).not.toContain("flex-direction:row-reverse");
+    expect(ur).not.toContain("flex-direction:row-reverse");
+  });
+
+  it("centers Pakistani invoice number, date, rate, discount and amount headers", () => {
+    const built = html({ style: "pakistani" }, sampleInvoice(), "ur");
+    expect(built).toContain('data-meta="number"');
+    expect(built).toContain('data-meta="date"');
+    expect(built).toMatch(/data-meta="number"[^>]*text-align:center/);
+    expect(built).toMatch(/data-meta="date"[^>]*text-align:center/);
+    expect(built).toMatch(/data-col="rate"[^>]*text-align:center/);
+    expect(built).toMatch(/data-col="disc"[^>]*text-align:center/);
+    expect(built).toMatch(/data-col="amount-header"[^>]*text-align:center/);
+  });
+
+  it("left-aligns Pakistani money figures including the total amount", () => {
+    const pk = html({ style: "pakistani" });
+    expect(pk).toContain("text-align:left;font-variant-numeric:tabular-nums");
+    expect(pk).toMatch(/data-totals-row="total"[\s\S]*data-col="amount"[^>]*text-align:left/);
+  });
+
+  it("keeps Urdu western header contacts on the start edge and bumps Urdu type", () => {
+    const built = html({ style: "western" }, sampleInvoice(), "ur");
+    expect(built).toContain("text-align:start");
+    expect(built).toContain('<span dir="ltr">');
+    expect(built).toContain("font-size:16px");
+    expect(built).toContain("height:297mm");
+    expect(built).toContain("line-height:1.85");
+  });
+
+  it("fits the live A4 preview to the full page box", () => {
+    const source = readFileSync(join(__dirname, "../app/tools/invoice-generator/components/InvoiceDocumentPreview.tsx"), "utf8");
+    expect(source).toContain("viewportCap");
+    expect(source).toContain("data-preview-fits-page");
+    expect(source).toContain("height: `${paperHmm}mm`");
+    expect(source).not.toContain("overflow-x-hidden");
   });
 });

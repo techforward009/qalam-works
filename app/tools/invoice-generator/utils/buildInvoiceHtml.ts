@@ -58,7 +58,7 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 ${fontFaces}
-${invoiceDocumentCss(doc.box, baseFontFamily)}
+${invoiceDocumentCss(doc.box, baseFontFamily, payload.invoiceLang)}
 </style>
 </head>
 <body>
