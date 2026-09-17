@@ -319,4 +319,43 @@ describe("Urdu and boxed-cell presentation", () => {
     expect(source).toContain('transformOrigin: "0 0"');
     expect(source).toContain("left: 0");
   });
+
+  it("centers Pakistani Urdu بنام and مقدار and widens the qty box", () => {
+    const built = html({ style: "pakistani" }, sampleInvoice({
+      client: { name: "سجاد حسین" },
+      items: [{
+        id: "i-1",
+        description: "کتاب حیاء",
+        quantity: 1000,
+        unit: "",
+        unitPrice: 150,
+        discountPercent: 0,
+        taxes: [],
+      }],
+      currency: "PKR",
+    }), "ur");
+    expect(built).toMatch(/data-ms-label="true"[^>]*text-align:center/);
+    expect(built).toMatch(/data-col="qty"[^>]*text-align:center/);
+    expect(built).toContain("width:14%");
+    expect(built).toContain("بنام");
+  });
+
+  it("uses a smaller page type size on Urdu A5 than on Urdu A4", () => {
+    const a4 = html({ style: "pakistani", pageSize: "a4" }, sampleInvoice(), "ur");
+    const a5 = html({ style: "pakistani", pageSize: "a5" }, sampleInvoice(), "ur");
+    expect(a4).toContain("font-size:16px");
+    expect(a5).toContain("font-size:13px");
+    expect(a5).toContain("height:210mm");
+    expect(a5).toContain("line-height:1.65");
+    expect(a4).toContain("line-height:1.85");
+  });
+
+  it("keeps Western Urdu numeric headers compact and distinct", () => {
+    const ur = html({ style: "western" }, sampleInvoice(), "ur");
+    expect(ur).toContain(">قیمت<");
+    expect(ur).not.toContain("فی یونٹ قیمت");
+    expect(ur).toContain("width:54px");
+    expect(ur).toContain("width:96px");
+    expect(ur).toMatch(/data-invoice-table="western"[^>]*direction:rtl/);
+  });
 });

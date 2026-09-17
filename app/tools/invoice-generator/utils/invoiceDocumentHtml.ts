@@ -19,14 +19,15 @@ import {
   resolveExtraLines,
   resolveInvoicePageBox,
   resolveInvoicePrintSettings,
-  WESTERN_COL,
   PAKISTANI_COL,
+  westernColTracks,
   INVOICE_PAGE_MARGIN_MM,
   INVOICE_SAFE_BOTTOM_INSET_MM,
   type Alignment,
   type ExtraLinesResult,
   type InvoiceLanguage,
   type InvoicePageBox,
+  type InvoicePageSize,
   type InvoicePrintSettings,
   type SizeOption,
 } from "./invoiceLayout";
@@ -73,12 +74,27 @@ function scaled(n: number, scale: number): number {
   return Math.max(1, Math.round(n * scale));
 }
 
-function typePx(px: number, lang: InvoiceLanguage): number {
-  return lang === "ur" ? Math.round(px * 1.16) : px;
+function typePx(px: number, lang: InvoiceLanguage, pageSize: InvoicePageSize = "a4"): number {
+  const langMul = lang === "ur" ? 1.16 : 1;
+  const sizeMul = pageSize === "a5" ? 0.86 : 1;
+  return Math.max(8, Math.round(px * langMul * sizeMul));
 }
 
-function naskhStyle(lang: InvoiceLanguage): string {
-  return lang === "ur" ? "font-family:'Noto Nastaliq Urdu',serif;line-height:1.85;" : "";
+function figurePx(px: number, lang: InvoiceLanguage, pageSize: InvoicePageSize = "a4"): number {
+  const bumped = lang === "ur" ? px + 3 : px;
+  const sizeMul = pageSize === "a5" ? 0.94 : 1;
+  return Math.max(10, Math.round(bumped * sizeMul));
+}
+
+function pageFontPx(lang: InvoiceLanguage, pageSize: InvoicePageSize): number {
+  if (lang === "ur") return pageSize === "a5" ? 13 : 16;
+  return pageSize === "a5" ? 12 : 14;
+}
+
+function naskhStyle(lang: InvoiceLanguage, pageSize: InvoicePageSize = "a4"): string {
+  if (lang !== "ur") return "";
+  const lh = pageSize === "a5" ? "1.65" : "1.85";
+  return `font-family:'Noto Nastaliq Urdu',serif;line-height:${lh};`;
 }
 
 function ltrStart(text: string, style: string): string {
@@ -203,13 +219,14 @@ function amountInWordsBlock(text: string, lang: InvoiceLanguage, naskh: string):
   return `<div data-amount-in-words="true" style="margin-top:10px;font-size:11px;color:#374151;${naskh}"><strong>${esc(V.amountInWords)}:</strong> ${esc(trimmed)}</div>`;
 }
 
-function westernColgroup(): string {
+function westernColgroup(lang: InvoiceLanguage): string {
+  const col = westernColTracks(lang);
   return `<colgroup>
     <col>
-    <col style="width:${WESTERN_COL.qtyPx}px">
-    <col style="width:${WESTERN_COL.pricePx}px">
-    <col style="width:${WESTERN_COL.discPx}px">
-    <col style="width:${WESTERN_COL.amountPx}px">
+    <col style="width:${col.qtyPx}px">
+    <col style="width:${col.pricePx}px">
+    <col style="width:${col.discPx}px">
+    <col style="width:${col.amountPx}px">
   </colgroup>`;
 }
 
@@ -236,42 +253,46 @@ function westernInner(
   const P = invoiceChrome(print);
   const hs = print.headerScale;
   const dir = invoiceLang === "ur" ? "rtl" : "ltr";
-  const naskh = naskhStyle(invoiceLang);
+  const pageSize = print.pageSize;
+  const naskh = naskhStyle(invoiceLang, pageSize);
+  const naskhHead = invoiceLang === "ur" ? "font-family:'Noto Nastaliq Urdu',serif;line-height:1.45;white-space:nowrap;" : "white-space:nowrap;";
   const V = invoiceVocab(invoiceLang);
   const shownDiscount = combinedDiscount(result);
   const hasDiscount = shownDiscount > 0;
   const taxes = result.taxes.filter(t => t.amount !== 0);
   const metaAlign = "end";
   const billPad = dir === "rtl" ? "padding-inline-start:24px;" : "padding-left:24px;";
-  const fs = (n: number) => typePx(n, invoiceLang);
+  const fs = (n: number) => typePx(n, invoiceLang, pageSize);
+  const nf = (n: number) => figurePx(n, invoiceLang, pageSize);
+  const tableFs = pageSize === "a5" ? 11 : 12;
 
   const itemRows = invoice.items.map((it, i) => `
     <tr style="border-bottom:1px solid #F3F4F6;">
       <td style="padding:7px 4px;color:#374151;text-align:start;${naskh}">${esc(it.description || "—")}</td>
-      <td style="padding:7px 4px;color:#6B7280;text-align:end;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
-      <td style="padding:7px 4px;color:#6B7280;text-align:end;" dir="ltr">${formatInvoicePrice(it.unitPrice, invoice.currency, invoiceLang)}</td>
-      <td style="padding:7px 4px;text-align:end;${lineDiscountLabel(it, invoice.currency) === "—" ? "color:#9CA3AF;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it, invoice.currency))}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:7px 4px;font-weight:600;color:#111827;font-size:11px;" dir="ltr">${formatInvoiceMinor(result.lineTotals[i] || 0, invoice.currency, invoiceLang)}</td>
+      <td data-col="qty" style="padding:7px 4px;color:#6B7280;text-align:end;font-size:${nf(12)}px;font-variant-numeric:tabular-nums;white-space:nowrap;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
+      <td data-col="price" style="padding:7px 4px;color:#6B7280;text-align:end;font-size:${nf(12)}px;font-variant-numeric:tabular-nums;white-space:nowrap;" dir="ltr">${formatInvoicePrice(it.unitPrice, invoice.currency, invoiceLang)}</td>
+      <td data-col="disc" style="padding:7px 4px;text-align:end;font-size:${nf(12)}px;white-space:nowrap;${lineDiscountLabel(it, invoice.currency, invoiceLang) === "—" ? "color:#9CA3AF;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it, invoice.currency, invoiceLang))}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:7px 4px;font-weight:600;color:#111827;font-size:${nf(12)}px;" dir="ltr">${formatInvoiceMinor(result.lineTotals[i] || 0, invoice.currency, invoiceLang)}</td>
     </tr>`).join("");
 
   const totalsRows = `
     <tr data-totals-row="subtotal">
-      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:12px;${naskh}">${esc(V.subtotal)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#6B7280;font-size:11px;" dir="ltr">${fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</td>
+      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:${fs(12)}px;${naskh}">${esc(V.subtotal)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#6B7280;font-size:${nf(12)}px;" dir="ltr">${fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</td>
     </tr>
     ${hasDiscount ? `
     <tr data-totals-row="discount">
-      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:12px;${naskh}">${esc(V.discount)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#DC2626;font-size:11px;" dir="ltr">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</td>
+      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:${fs(12)}px;${naskh}">${esc(V.discount)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#DC2626;font-size:${nf(12)}px;" dir="ltr">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</td>
     </tr>` : ""}
     ${taxes.map(t => `
     <tr data-totals-row="tax">
-      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:12px;${naskh}">${esc(displayTaxName(t.name, invoiceLang))}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#6B7280;font-size:11px;" dir="ltr">${fmt(t.amount, invoice.currency, invoiceLang)}</td>
+      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:${fs(12)}px;${naskh}">${esc(displayTaxName(t.name, invoiceLang))}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:6px 4px;color:#6B7280;font-size:${nf(12)}px;" dir="ltr">${fmt(t.amount, invoice.currency, invoiceLang)}</td>
     </tr>`).join("")}
     <tr data-totals-row="total">
-      <td colspan="4" style="padding:8px 8px 4px;text-align:end;font-weight:800;font-size:14px;color:${P.accent};border-top:2px solid ${P.accent};${naskh}">${esc(V.total)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:8px 4px 4px;font-weight:800;font-size:12px;color:${P.accent};border-top:2px solid ${P.accent};" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
+      <td colspan="4" style="padding:8px 8px 4px;text-align:end;font-weight:800;font-size:${fs(14)}px;color:${P.accent};border-top:2px solid ${P.accent};${naskh}">${esc(V.total)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:8px 4px 4px;font-weight:800;font-size:${nf(13)}px;color:${P.accent};border-top:2px solid ${P.accent};" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
     </tr>`;
 
   return `
@@ -279,19 +300,19 @@ function westernInner(
       ${logoHtml(logo, 8, hs)}
       <div style="display:flex;flex-direction:row;justify-content:space-between;align-items:flex-start;gap:16px;">
         <div style="flex:1;min-width:0;text-align:start;">
-          <h2 style="font-size:${typePx(scaled(18, hs), invoiceLang)}px;font-weight:800;color:${P.headerText};margin:0 0 ${scaled(4, hs)}px;${naskh}">
+          <h2 style="font-size:${fs(scaled(18, hs))}px;font-weight:800;color:${P.headerText};margin:0 0 ${scaled(4, hs)}px;${naskh}">
             ${esc(invoice.seller.name || V.businessFallback)}
           </h2>
-          ${invoice.seller.address ? `<p style="font-size:${typePx(scaled(11, hs), invoiceLang)}px;color:#6B7280;margin:0 0 2px;white-space:pre-wrap;text-align:start;${naskh}">${esc(invoice.seller.address)}</p>` : ""}
-          ${ltrStart([invoice.seller.phone, invoice.seller.email].filter(Boolean).join("  ·  "), `font-size:${typePx(scaled(11, hs), invoiceLang)}px;color:#9CA3AF;`)}
-          ${invoice.seller.website ? ltrStart(invoice.seller.website, `font-size:${typePx(scaled(10, hs), invoiceLang)}px;color:#9CA3AF;`) : ""}
-          ${invoice.seller.taxNumber ? ltrStart(invoice.seller.taxNumber, `font-size:${typePx(scaled(10, hs), invoiceLang)}px;color:#9CA3AF;`) : ""}
+          ${invoice.seller.address ? `<p style="font-size:${fs(scaled(11, hs))}px;color:#6B7280;margin:0 0 2px;white-space:pre-wrap;text-align:start;${naskh}">${esc(invoice.seller.address)}</p>` : ""}
+          ${ltrStart([invoice.seller.phone, invoice.seller.email].filter(Boolean).join("  ·  "), `font-size:${fs(scaled(11, hs))}px;color:#9CA3AF;`)}
+          ${invoice.seller.website ? ltrStart(invoice.seller.website, `font-size:${fs(scaled(10, hs))}px;color:#9CA3AF;`) : ""}
+          ${invoice.seller.taxNumber ? ltrStart(invoice.seller.taxNumber, `font-size:${fs(scaled(10, hs))}px;color:#9CA3AF;`) : ""}
         </div>
         <div style="flex-shrink:0;${billPad}text-align:${metaAlign};">
-          <p style="font-size:${typePx(scaled(24, hs), invoiceLang)}px;font-weight:900;color:${P.accent};margin:0 0 ${scaled(4, hs)}px;letter-spacing:-0.02em;${naskh}">${esc(V.invoice)}</p>
-          <p style="font-size:${typePx(scaled(12, hs), invoiceLang)}px;font-weight:600;color:#374151;margin:0 0 4px;"><span dir="ltr">${esc(invoice.number)}</span></p>
-          <p style="font-size:${typePx(scaled(11, hs), invoiceLang)}px;color:#6B7280;margin:0;"><span style="${naskh}font-weight:600;">${esc(V.date)}: </span><span dir="ltr">${esc(invoice.issueDate)}</span></p>
-          ${invoice.dueDate ? `<p style="font-size:${typePx(scaled(11, hs), invoiceLang)}px;color:#6B7280;margin:0;"><span style="${naskh}font-weight:600;">${esc(V.due)}: </span><span dir="ltr">${esc(invoice.dueDate)}</span></p>` : ""}
+          <p style="font-size:${fs(scaled(24, hs))}px;font-weight:900;color:${P.accent};margin:0 0 ${scaled(4, hs)}px;letter-spacing:-0.02em;${naskh}">${esc(V.invoice)}</p>
+          <p style="font-size:${fs(scaled(12, hs))}px;font-weight:600;color:#374151;margin:0 0 4px;"><span dir="ltr">${esc(invoice.number)}</span></p>
+          <p style="font-size:${fs(scaled(11, hs))}px;color:#6B7280;margin:0;"><span style="${naskh}font-weight:600;">${esc(V.date)}: </span><span dir="ltr">${esc(invoice.issueDate)}</span></p>
+          ${invoice.dueDate ? `<p style="font-size:${fs(scaled(11, hs))}px;color:#6B7280;margin:0;"><span style="${naskh}font-weight:600;">${esc(V.due)}: </span><span dir="ltr">${esc(invoice.dueDate)}</span></p>` : ""}
         </div>
       </div>
     </div>
@@ -312,15 +333,15 @@ function westernInner(
       </div>` : ""}
     </div>
 
-    <table data-invoice-table="western" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;direction:${dir};">
-      ${westernColgroup()}
+    <table data-invoice-table="western" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:${tableFs}px;direction:${dir};">
+      ${westernColgroup(invoiceLang)}
       <thead>
         <tr style="border-bottom:2px solid ${P.accent};">
           <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:start;${naskh}">${esc(V.desc)}</th>
-          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;">${esc(V.qty)}</th>
-          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;">${esc(V.price)}</th>
-          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;">${esc(V.disc)}</th>
-          <th style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;">${esc(V.amount)}</th>
+          <th data-col="qty" style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;${naskhHead}">${esc(V.qty)}</th>
+          <th data-col="price" style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;${naskhHead}">${esc(V.price)}</th>
+          <th data-col="disc" style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;${naskhHead}">${esc(V.disc)}</th>
+          <th data-col="amount-header" style="padding:8px 4px;font-weight:700;color:#374151;text-align:end;${naskhHead}">${esc(V.amount)}</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>
@@ -328,8 +349,8 @@ function westernInner(
 
     <div data-extra-lines="true" data-extra-lines-count="${extra.extraLines}" data-gap-mm="${extra.spacerMm}" style="height:${extra.spacerMm}mm;flex-shrink:0;"></div>
 
-    <table data-totals="column-aligned" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;direction:${dir};">
-      ${westernColgroup()}
+    <table data-totals="column-aligned" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:${tableFs}px;direction:${dir};">
+      ${westernColgroup(invoiceLang)}
       <tbody>${totalsRows}</tbody>
     </table>
 
@@ -358,17 +379,20 @@ function pakistaniInner(
 ): string {
   const result = calculateInvoice(invoice);
   const hs = print.headerScale;
+  const pageSize = print.pageSize;
   const dir = invoiceLang === "ur" ? "rtl" : "ltr";
-  const naskh = naskhStyle(invoiceLang);
-  const fs = (n: number) => typePx(n, invoiceLang);
+  const naskh = naskhStyle(invoiceLang, pageSize);
+  const fs = (n: number) => typePx(n, invoiceLang, pageSize);
+  const nf = (n: number) => figurePx(n, invoiceLang, pageSize);
   const V = invoiceVocab(invoiceLang);
   const shownDiscount = combinedDiscount(result);
   const hasDiscount = shownDiscount > 0;
   const taxes = result.taxes.filter(t => t.amount !== 0);
   const advanceMinor = result.amountPaid || 0;
   const showAdvance = advanceMinor > 0;
-  const cell = "border:1px solid #111827;padding:6px 8px;";
-  const metaCell = "border:1px solid #111827;padding:6px 8px;";
+  const cellPad = pageSize === "a5" ? "padding:4px 5px;" : "padding:6px 8px;";
+  const cell = `border:1px solid #111827;${cellPad}`;
+  const metaCell = `border:1px solid #111827;${cellPad}`;
 
   const blankRows = Array.from({ length: extra.blankRowCount }).map(() => {
     return `<tr data-blank-row="true" style="height:${extra.blankRowMm}mm;">
@@ -380,39 +404,39 @@ function pakistaniInner(
     <tr>
       <td style="${cell}text-align:center;" dir="ltr">${i + 1}</td>
       <td style="${cell}text-align:start;${naskh}">${esc(it.description || "—")}</td>
-      <td style="${cell}text-align:center;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
-      <td style="${cell}text-align:left;" dir="ltr">${formatInvoicePrice(it.unitPrice, invoice.currency, invoiceLang)}</td>
-      <td style="${cell}text-align:left;${lineDiscountLabel(it, invoice.currency) === "—" ? "color:#6B7280;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it, invoice.currency))}</td>
-      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:600;font-size:${fs(11)}px;" dir="ltr">${formatInvoiceMinor(result.lineTotals[i] || 0, invoice.currency, invoiceLang)}</td>
+      <td data-col="qty" style="${cell}text-align:center;vertical-align:middle;white-space:nowrap;font-size:${nf(12)}px;font-variant-numeric:tabular-nums;" dir="ltr">${fmtNum(it.quantity, invoiceLang)}</td>
+      <td style="${cell}text-align:left;font-size:${nf(12)}px;font-variant-numeric:tabular-nums;white-space:nowrap;" dir="ltr">${formatInvoicePrice(it.unitPrice, invoice.currency, invoiceLang)}</td>
+      <td style="${cell}text-align:left;font-size:${nf(12)}px;white-space:nowrap;${lineDiscountLabel(it, invoice.currency, invoiceLang) === "—" ? "color:#6B7280;" : "color:#DC2626;"}" dir="ltr">${esc(lineDiscountLabel(it, invoice.currency, invoiceLang))}</td>
+      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:600;font-size:${nf(12)}px;" dir="ltr">${formatInvoiceMinor(result.lineTotals[i] || 0, invoice.currency, invoiceLang)}</td>
     </tr>`).join("");
 
   const moneyRows = `
     ${hasDiscount ? `
     <tr data-totals-row="discount">
-      <td colspan="5" style="${cell}text-align:end;font-weight:700;font-size:12px;${naskh}">${esc(V.discount)}</td>
-      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:700;font-size:11px;color:#DC2626;" dir="ltr">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</td>
+      <td colspan="5" style="${cell}text-align:end;font-weight:700;font-size:${fs(12)}px;${naskh}">${esc(V.discount)}</td>
+      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:700;font-size:${nf(12)}px;color:#DC2626;" dir="ltr">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</td>
     </tr>` : ""}
     ${taxes.map(t => `
     <tr data-totals-row="tax">
-      <td colspan="5" style="${cell}text-align:end;font-weight:700;font-size:12px;${naskh}">${esc(displayTaxName(t.name, invoiceLang))}</td>
-      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:700;font-size:11px;" dir="ltr">${fmt(t.amount, invoice.currency, invoiceLang)}</td>
+      <td colspan="5" style="${cell}text-align:end;font-weight:700;font-size:${fs(12)}px;${naskh}">${esc(displayTaxName(t.name, invoiceLang))}</td>
+      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:700;font-size:${nf(12)}px;" dir="ltr">${fmt(t.amount, invoice.currency, invoiceLang)}</td>
     </tr>`).join("")}
     ${showAdvance ? `
     <tr data-totals-row="advance">
-      <td colspan="5" style="${cell}text-align:end;font-weight:700;font-size:12px;${naskh}">${esc(V.advance)}</td>
-      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:700;font-size:11px;" dir="ltr">${fmt(advanceMinor, invoice.currency, invoiceLang)}</td>
+      <td colspan="5" style="${cell}text-align:end;font-weight:700;font-size:${fs(12)}px;${naskh}">${esc(V.advance)}</td>
+      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:700;font-size:${nf(12)}px;" dir="ltr">${fmt(advanceMinor, invoice.currency, invoiceLang)}</td>
     </tr>
     <tr data-totals-row="balance">
-      <td colspan="5" style="${cell}text-align:end;font-weight:700;font-size:12px;${naskh}">${esc(V.balance)}</td>
-      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:700;font-size:11px;" dir="ltr">${fmt(result.balanceDue || 0, invoice.currency, invoiceLang)}</td>
+      <td colspan="5" style="${cell}text-align:end;font-weight:700;font-size:${fs(12)}px;${naskh}">${esc(V.balance)}</td>
+      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:700;font-size:${nf(12)}px;" dir="ltr">${fmt(result.balanceDue || 0, invoice.currency, invoiceLang)}</td>
     </tr>` : ""}
     <tr data-totals-row="total" style="background:#F3F4F6;">
-      <td colspan="5" style="${cell}text-align:end;font-weight:800;font-size:13px;${naskh}">${esc(V.totalCls)}</td>
-      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:800;font-size:12px;" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
+      <td colspan="5" style="${cell}text-align:end;font-weight:800;font-size:${fs(13)}px;${naskh}">${esc(V.totalCls)}</td>
+      <td data-col="amount" style="${PAK_AMT_STYLE}${cell}font-weight:800;font-size:${nf(13)}px;" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
     </tr>
     ${invoice.amountInWords?.trim() ? `
     <tr data-amount-in-words="true">
-      <td colspan="6" style="${cell}text-align:start;font-size:11px;${naskh}"><strong>${esc(V.amountInWords)}:</strong> ${esc(invoice.amountInWords.trim())}</td>
+      <td colspan="6" style="${cell}text-align:start;font-size:${fs(11)}px;${naskh}"><strong>${esc(V.amountInWords)}:</strong> ${esc(invoice.amountInWords.trim())}</td>
     </tr>` : ""}
   `;
 
@@ -422,15 +446,15 @@ function pakistaniInner(
     <div data-invoice-header="true" data-header-scale="${hs}">
       ${logoHtml(logo, 6, hs)}
       <div style="text-align:center;margin-bottom:${scaled(12, hs)}px;border-bottom:2px solid #111827;padding-bottom:${scaled(10, hs)}px;">
-        <h2 style="font-size:${typePx(scaled(17, hs), invoiceLang)}px;font-weight:800;color:#111827;margin:0 0 ${scaled(3, hs)}px;${naskh}">
+        <h2 style="font-size:${fs(scaled(17, hs))}px;font-weight:800;color:#111827;margin:0 0 ${scaled(3, hs)}px;${naskh}">
           ${esc(invoice.seller.name || V.businessFallback)}
         </h2>
-        ${invoice.seller.address ? `<p style="font-size:${typePx(scaled(11, hs), invoiceLang)}px;color:#374151;margin:2px 0;${naskh}">${esc(invoice.seller.address)}</p>` : ""}
-        <p style="font-size:${typePx(scaled(11, hs), invoiceLang)}px;color:#374151;margin:2px 0;text-align:center;">
+        ${invoice.seller.address ? `<p style="font-size:${fs(scaled(11, hs))}px;color:#374151;margin:2px 0;${naskh}">${esc(invoice.seller.address)}</p>` : ""}
+        <p style="font-size:${fs(scaled(11, hs))}px;color:#374151;margin:2px 0;text-align:center;">
           <span dir="ltr">${esc([invoice.seller.phone, invoice.seller.email, invoice.seller.website].filter(Boolean).join("  |  "))}</span>
         </p>
       </div>
-      <p style="text-align:center;font-size:${typePx(scaled(15, hs), invoiceLang)}px;font-weight:900;letter-spacing:0.15em;color:#111827;margin:${scaled(8, hs)}px 0 ${scaled(12, hs)}px;${naskh}">
+      <p style="text-align:center;font-size:${fs(scaled(15, hs))}px;font-weight:900;letter-spacing:0.15em;color:#111827;margin:${scaled(8, hs)}px 0 ${scaled(12, hs)}px;${naskh}">
         ${esc(V.invoice)}
       </p>
     </div>
@@ -446,7 +470,7 @@ function pakistaniInner(
           <td data-meta="due" style="${metaCell}text-align:center;" dir="ltr">${esc(invoice.dueDate)}</td>` : ""}
         </tr>
         <tr>
-          <td data-ms-label="true" style="${metaCell}font-weight:700;white-space:nowrap;${naskh}">${esc(V.ms)}</td>
+          <td data-ms-label="true" style="${metaCell}font-weight:700;white-space:nowrap;text-align:center;vertical-align:middle;${naskh}">${esc(V.ms)}</td>
           <td colspan="${dueCols}" style="${metaCell}${naskh}">
             ${esc(invoice.client.name || "—")}
             ${invoice.client.address ? `<span style="color:#6B7280;font-size:10px;"> — ${esc(invoice.client.address)}</span>` : ""}
@@ -460,7 +484,7 @@ function pakistaniInner(
         <tr style="background:#F3F4F6;">
           <th style="${cell}text-align:center;vertical-align:middle;font-weight:700;${naskh}">${esc(V.sno)}</th>
           <th data-col="particulars" style="${cell}text-align:center;vertical-align:middle;font-weight:700;${naskh}">${esc(V.partic)}</th>
-          <th style="${cell}text-align:center;vertical-align:middle;font-weight:700;${naskh}">${esc(V.qty)}</th>
+          <th data-col="qty" style="${cell}text-align:center;vertical-align:middle;font-weight:700;white-space:nowrap;${naskh}">${esc(V.qty)}</th>
           <th data-col="rate" style="${cell}text-align:center;vertical-align:middle;font-weight:700;${naskh}">${esc(V.rate)}</th>
           <th data-col="disc" style="${cell}text-align:center;vertical-align:middle;font-weight:700;${naskh}">${esc(V.disc)}</th>
           <th data-col="amount-header" style="${cell}text-align:center;vertical-align:middle;font-weight:700;${naskh}">${esc(V.amount)}</th>
@@ -513,7 +537,7 @@ export function buildInvoiceDocument(payload: InvoiceExportPayload): BuiltInvoic
     data-blank-rows="${extra.blankRowCount}"
     data-skin="${print.skin}"
     dir="${dir}"
-    style="width:${box.widthMm}mm;height:${box.heightMm}mm;min-height:${box.heightMm}mm;padding:${box.marginMm}mm;box-sizing:border-box;background:#ffffff;color:#111827;display:flex;flex-direction:column;overflow:hidden;font-size:${payload.invoiceLang === "ur" ? 16 : 14}px;">
+    style="width:${box.widthMm}mm;height:${box.heightMm}mm;min-height:${box.heightMm}mm;padding:${box.marginMm}mm;box-sizing:border-box;background:#ffffff;color:#111827;display:flex;flex-direction:column;overflow:hidden;font-size:${pageFontPx(payload.invoiceLang, print.pageSize)}px;">
     ${innerHtml}
   </div>`;
 
@@ -525,7 +549,7 @@ export function invoiceDocumentCss(box: InvoicePageBox, fontFamily: string, lang
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{
   font-family:${fontFamily};
-  font-size:${lang === "ur" ? 16 : 14}px;
+  font-size:${pageFontPx(lang, box.sizeId === "a5" ? "a5" : "a4")}px;
   color:#111827;
   background:#ffffff;
   -webkit-print-color-adjust:exact;

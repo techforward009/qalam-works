@@ -120,6 +120,24 @@ describe("Invoice currency precision", () => {
     }
   });
 
+  it("omits trailing .00 on Urdu figures and keeps real fractions", () => {
+    expect(formatInvoicePrice(10, "USD", "ur")).toBe("10");
+    expect(formatInvoicePrice(10.5, "USD", "ur")).toBe("10.5");
+    expect(formatInvoiceMinor(1000, "USD", "ur")).toBe("10");
+    expect(formatInvoiceMinor(1050, "USD", "ur")).toBe("10.5");
+    expect(formatInvoiceMinor(15000000, "PKR", "ur", true)).not.toMatch(/\.00/);
+    expect(lineDiscountLabel({ ...plainItem, discountFixed: 1 }, "USD", "ur")).toBe("1");
+    const invoice = sampleInvoice({
+      currency: "PKR",
+      items: [{ ...plainItem, description: "کتاب", unitPrice: 150, quantity: 1000 }],
+    });
+    const html = buildInvoiceDocument(payload(invoice, "pakistani", "ur")).pageHtml;
+    expect(html).toContain("150,000");
+    expect(html).not.toMatch(/150,000\.00/);
+    expect(html).not.toMatch(/>150\.00</);
+    expect(html).toMatch(/data-col="qty"[^>]*>1,000</);
+  });
+
   for (const style of ["western", "pakistani"] as const) {
     for (const lang of ["en", "ur"] as const) {
       it(`${style}/${lang}: actual preview and PDF HTML agree on JPY line and total`, () => {

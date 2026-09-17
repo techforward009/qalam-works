@@ -70,6 +70,21 @@ export function precisionForCurrency(currency: string): number {
   return zeroDec.includes(currency.toUpperCase()) ? 0 : 2;
 }
 
+function fractionDigitOpts(currency: string, lang: "en" | "ur"): {
+  minimumFractionDigits: number;
+  maximumFractionDigits: number;
+} {
+  const precision = precisionForCurrency(currency);
+  if (lang === "ur") {
+    return { minimumFractionDigits: 0, maximumFractionDigits: precision };
+  }
+  return { minimumFractionDigits: precision, maximumFractionDigits: precision };
+}
+
+function trimTrailingZeros(value: string): string {
+  return value.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+}
+
 export function toMinor(amount: number, precision = 2) {
   return Math.round((amount || 0) * Math.pow(10, precision));
 }
@@ -82,12 +97,12 @@ export function fromMinor(minor: number, precision = 2) {
 /** Format a major-unit price using the same precision as invoice arithmetic. */
 export function formatInvoicePrice(amount: number, currency: string, lang: "en" | "ur"): string {
   const precision = precisionForCurrency(currency);
+  const digits = fractionDigitOpts(currency, lang);
   try {
-    return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", {
-      minimumFractionDigits: precision, maximumFractionDigits: precision,
-    }).format(amount);
+    return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", digits).format(amount);
   } catch {
-    return amount.toFixed(precision);
+    const raw = amount.toFixed(precision);
+    return lang === "ur" ? trimTrailingZeros(raw) : raw;
   }
 }
 
@@ -96,13 +111,15 @@ export function formatInvoiceMinor(minor: number, currency: string, lang: "en" |
   const precision = precisionForCurrency(currency);
   const major = Number(fromMinor(minor, precision));
   if (!withCurrency) return formatInvoicePrice(major, currency, lang);
+  const digits = fractionDigitOpts(currency, lang);
   try {
     return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", {
       style: "currency", currency: currency || "USD",
-      minimumFractionDigits: precision, maximumFractionDigits: precision,
+      ...digits,
     }).format(major);
   } catch {
-    return `${fromMinor(minor, precision)} ${currency}`;
+    const raw = `${fromMinor(minor, precision)} ${currency}`;
+    return lang === "ur" ? trimTrailingZeros(raw) : raw;
   }
 }
 
@@ -219,7 +236,7 @@ export function combinedDiscount(result: InvoiceResult): number {
   return Math.max(0, (result.lineDiscountTotal || 0) + (result.discount || 0));
 }
 
-export function lineDiscountLabel(item: LineItem, currency = "USD"): string {
+export function lineDiscountLabel(item: LineItem, currency = "USD", lang: "en" | "ur" = "en"): string {
   const percent = Number(item.discountPercent || 0);
   const fixed = Number(item.discountFixed || 0);
   if (percent <= 0 && fixed <= 0) return "—";
@@ -228,7 +245,9 @@ export function lineDiscountLabel(item: LineItem, currency = "USD"): string {
     const shown = Number.isInteger(percent) ? String(percent) : String(percent);
     parts.push(`${shown}%`);
   }
-  if (fixed > 0) parts.push(fixed.toFixed(precisionForCurrency(currency)));
+  if (fixed > 0) {
+    parts.push(lang === "ur" ? formatInvoicePrice(fixed, currency, lang) : fixed.toFixed(precisionForCurrency(currency)));
+  }
   return parts.join(" + ");
 }
 

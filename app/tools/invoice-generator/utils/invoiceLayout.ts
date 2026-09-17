@@ -73,12 +73,24 @@ export const WESTERN_COL = {
   amountPx: 110,
 } as const;
 
+/** Urdu western tracks — Nastaliq headers need more room so columns stay distinct. */
+export const WESTERN_COL_UR = {
+  qtyPx: 54,
+  pricePx: 72,
+  discPx: 56,
+  amountPx: 96,
+} as const;
+
+export function westernColTracks(lang: InvoiceLanguage = "en") {
+  return lang === "ur" ? WESTERN_COL_UR : WESTERN_COL;
+}
+
 export const PAKISTANI_COL = {
   sno: "7%",
-  qty: "8%",
-  rate: "12%",
-  disc: "9%",
-  amount: "18%",
+  qty: "14%",
+  rate: "14%",
+  disc: "11%",
+  amount: "20%",
 } as const;
 
 export interface InvoiceChrome {
@@ -169,8 +181,9 @@ export function invoicePuppeteerFormat(print: InvoicePrintSettings): "A4" | "A5"
   return puppeteerPaperFormat(print.pageSize) === "A5" ? "A5" : "A4";
 }
 
-export function westernColumnTemplate(): string {
-  return `minmax(0,1fr) ${WESTERN_COL.qtyPx}px ${WESTERN_COL.pricePx}px ${WESTERN_COL.discPx}px ${WESTERN_COL.amountPx}px`;
+export function westernColumnTemplate(lang: InvoiceLanguage = "en"): string {
+  const col = westernColTracks(lang);
+  return `minmax(0,1fr) ${col.qtyPx}px ${col.pricePx}px ${col.discPx}px ${col.amountPx}px`;
 }
 
 export function resolveExtraLines(print: InvoicePrintSettings): ExtraLinesResult {
@@ -206,7 +219,7 @@ export function invoiceVocab(lang: InvoiceLanguage) {
     billTo: ur ? "بل وصول کنندہ" : "BILL TO",
     desc: ur ? "تفصیل" : "Description",
     qty: ur ? "مقدار" : "Qty",
-    price: ur ? "فی یونٹ قیمت" : "Unit Price",
+    price: ur ? "قیمت" : "Unit Price",
     disc: ur ? "چھوٹ" : "Disc",
     amount: ur ? "رقم" : "Amount",
     subtotal: ur ? "ذیلی کل" : "Subtotal",
