@@ -257,11 +257,11 @@ function westernInner(
   const pageSize = print.pageSize;
   const naskh = naskhStyle(invoiceLang, pageSize);
   const naskhHead = invoiceLang === "ur" ? "font-family:'Noto Nastaliq Urdu',serif;line-height:1.45;white-space:nowrap;" : "white-space:nowrap;";
+  const naskhTight = invoiceLang === "ur" ? "font-family:'Noto Nastaliq Urdu',serif;line-height:1.4;" : "";
   const V = invoiceVocab(invoiceLang);
   const shownDiscount = combinedDiscount(result);
   const hasDiscount = shownDiscount > 0;
   const taxes = result.taxes.filter(t => t.amount !== 0);
-  const metaAlign = "end";
   const billPad = dir === "rtl" ? "padding-inline-start:24px;" : "padding-left:24px;";
   const fs = (n: number) => typePx(n, invoiceLang, pageSize);
   const nf = (n: number) => figurePx(n, invoiceLang, pageSize);
@@ -318,22 +318,22 @@ function westernInner(
 
   const metaRows = `
         <tr>
-          <td style="border:1px solid #D1D5DB;padding:5px 8px;font-weight:700;white-space:nowrap;background:#F9FAFB;${naskh}">${esc(V.invNum)}</td>
-          <td style="border:1px solid #D1D5DB;padding:5px 8px;text-align:end;white-space:nowrap;" dir="ltr">${esc(invoice.number)}</td>
+          <td style="border:1px solid #D1D5DB;padding:6px 10px;font-weight:700;white-space:nowrap;background:#F9FAFB;text-align:center;vertical-align:middle;${naskh}">${esc(V.invNum)}</td>
+          <td style="border:1px solid #D1D5DB;padding:6px 10px;text-align:center;vertical-align:middle;white-space:nowrap;" dir="ltr">${esc(invoice.number)}</td>
         </tr>
         <tr>
-          <td style="border:1px solid #D1D5DB;padding:5px 8px;font-weight:700;white-space:nowrap;background:#F9FAFB;${naskh}">${esc(V.date)}</td>
-          <td data-meta="date" style="border:1px solid #D1D5DB;padding:5px 8px;text-align:end;white-space:nowrap;" dir="ltr">${esc(invoice.issueDate)}</td>
+          <td style="border:1px solid #D1D5DB;padding:6px 10px;font-weight:700;white-space:nowrap;background:#F9FAFB;text-align:center;vertical-align:middle;${naskh}">${esc(V.date)}</td>
+          <td data-meta="date" style="border:1px solid #D1D5DB;padding:6px 10px;text-align:center;vertical-align:middle;white-space:nowrap;" dir="ltr">${esc(invoice.issueDate)}</td>
         </tr>
         ${invoice.dueDate ? `
         <tr>
-          <td style="border:1px solid #D1D5DB;padding:5px 8px;font-weight:700;white-space:nowrap;background:#F9FAFB;${naskh}">${esc(V.due)}</td>
-          <td style="border:1px solid #D1D5DB;padding:5px 8px;text-align:end;white-space:nowrap;" dir="ltr">${esc(invoice.dueDate)}</td>
+          <td style="border:1px solid #D1D5DB;padding:6px 10px;font-weight:700;white-space:nowrap;background:#F9FAFB;text-align:center;vertical-align:middle;${naskh}">${esc(V.due)}</td>
+          <td style="border:1px solid #D1D5DB;padding:6px 10px;text-align:center;vertical-align:middle;white-space:nowrap;" dir="ltr">${esc(invoice.dueDate)}</td>
         </tr>` : ""}
         ${invoice.terms ? `
         <tr>
-          <td style="border:1px solid #D1D5DB;padding:5px 8px;font-weight:700;white-space:nowrap;background:#F9FAFB;${naskh}">${esc(V.payterms)}</td>
-          <td style="border:1px solid #D1D5DB;padding:5px 8px;text-align:end;${naskh}">${esc(invoice.terms)}</td>
+          <td style="border:1px solid #D1D5DB;padding:6px 10px;font-weight:700;white-space:nowrap;background:#F9FAFB;text-align:center;vertical-align:middle;${naskh}">${esc(V.payterms)}</td>
+          <td style="border:1px solid #D1D5DB;padding:6px 10px;text-align:center;vertical-align:middle;${naskh}">${esc(invoice.terms)}</td>
         </tr>` : ""}`;
 
   return `
@@ -349,23 +349,27 @@ function westernInner(
           ${invoice.seller.website ? ltrStart(invoice.seller.website, `font-size:${fs(scaled(10, hs))}px;color:#9CA3AF;`) : ""}
           ${invoice.seller.taxNumber ? ltrStart(invoice.seller.taxNumber, `font-size:${fs(scaled(10, hs))}px;color:#9CA3AF;`) : ""}
         </div>
-        <div style="flex-shrink:0;${billPad}text-align:${metaAlign};">
-          <p style="font-size:${fs(scaled(24, hs))}px;font-weight:900;color:${P.accent};margin:0 0 ${scaled(8, hs)}px;letter-spacing:0.04em;${naskh}">${esc(V.invoice)}</p>
-          <table data-invoice-meta="western" style="border-collapse:collapse;margin-inline-start:auto;font-size:${fs(11)}px;">
-            ${metaRows}
-          </table>
+        <div style="flex-shrink:0;${billPad}">
+          <div data-invoice-meta-block="true" style="display:flex;flex-direction:column;align-items:center;">
+            <p style="font-size:${fs(scaled(24, hs))}px;font-weight:900;color:${P.accent};margin:0 0 ${scaled(8, hs)}px;letter-spacing:0.04em;text-align:center;${naskh}">${esc(V.invoice)}</p>
+            <table data-invoice-meta="western" style="border-collapse:collapse;font-size:${fs(11)}px;">
+              ${metaRows}
+            </table>
+          </div>
         </div>
       </div>
     </div>
 
     <div style="margin-bottom:16px;direction:${dir};">
       <div style="text-align:start;min-width:0;max-width:58%;">
-        <p data-bill-to-bar="true" style="background:${P.accent};color:#ffffff;padding:4px 10px;font-size:${fs(9)}px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;margin:0 0 8px;${naskh}">${esc(V.billTo)}</p>
-        <p style="font-size:${fs(13)}px;font-weight:700;color:#111827;margin:0 0 2px;padding:0 2px;${naskh}">${esc(invoice.client.name || V.clientFallback)}</p>
-        ${invoice.client.contactPerson ? `<p style="font-size:${fs(11)}px;color:#374151;margin:1px 0;padding:0 2px;${naskh}">${esc(invoice.client.contactPerson)}</p>` : ""}
-        ${invoice.client.address ? `<p style="font-size:${fs(11)}px;color:#6B7280;white-space:pre-wrap;margin:1px 0;padding:0 2px;${naskh}">${esc(invoice.client.address)}</p>` : ""}
-        ${invoice.client.email ? ltrStart(invoice.client.email, `font-size:${fs(11)}px;color:#6B7280;margin:1px 0;padding:0 2px;`) : ""}
-        ${invoice.client.phone ? ltrStart(invoice.client.phone, `font-size:${fs(11)}px;color:#6B7280;margin:1px 0;padding:0 2px;`) : ""}
+        <p data-bill-to-bar="true" style="background:${P.accent};color:#ffffff;padding:4px 10px;font-size:${fs(9)}px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;margin:0 0 6px;${naskhHead}">${esc(V.billTo)}</p>
+        <div data-bill-to-stack="true" style="display:flex;flex-direction:column;gap:4px;padding:0 2px;">
+          <p style="font-size:${fs(13)}px;font-weight:700;color:#111827;margin:0;${naskhTight}">${esc(invoice.client.name || V.clientFallback)}</p>
+          ${invoice.client.contactPerson ? `<p style="font-size:${fs(11)}px;color:#374151;margin:0;${naskhTight}">${esc(invoice.client.contactPerson)}</p>` : ""}
+          ${invoice.client.address ? `<p style="font-size:${fs(11)}px;color:#6B7280;white-space:pre-wrap;margin:0;${naskhTight}">${esc(invoice.client.address)}</p>` : ""}
+          ${invoice.client.email ? ltrStart(invoice.client.email, `font-size:${fs(11)}px;color:#6B7280;line-height:1.4;`) : ""}
+          ${invoice.client.phone ? ltrStart(invoice.client.phone, `font-size:${fs(11)}px;color:#6B7280;line-height:1.4;`) : ""}
+        </div>
       </div>
     </div>
 

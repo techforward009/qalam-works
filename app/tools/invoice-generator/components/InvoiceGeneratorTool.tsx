@@ -422,44 +422,51 @@ export default function InvoiceGeneratorTool() {
               {/* ── LINE ITEMS ────────────────────────────────────────── */}
               {activeSection === "items" && (
                 <div className="space-y-3" dir={isUr ? "rtl" : "ltr"}>
-                  <div className="grid grid-cols-12 gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide px-0.5">
-                    <span className="col-span-5">{L.description}</span>
-                    <span className="col-span-1 text-center">{L.qty}</span>
-                    <span className="col-span-2 text-center">{L.price}</span>
-                    <span className="col-span-1 text-center">{L.disc}</span>
-                    <span className="col-span-1 text-center">{L.tax}</span>
-                    <span className="col-span-2 text-right">{L.amount}</span>
+                  <div
+                    className="grid gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wide px-0.5"
+                    data-item-grid="true"
+                    style={{ gridTemplateColumns: "minmax(0,1.4fr) 5rem 5.5rem 3.5rem 3.5rem minmax(7rem,0.9fr) 1.35rem" }}
+                  >
+                    <span>{L.description}</span>
+                    <span className="text-center">{L.qty}</span>
+                    <span className="text-center">{L.price}</span>
+                    <span className="text-center">{L.disc}</span>
+                    <span className="text-center">{L.tax}</span>
+                    <span className="text-center">{L.amount}</span>
+                    <span />
                   </div>
                   {invoice.items.map((it, idx) => (
-                    <div key={it.id} className="grid grid-cols-12 gap-1 items-center">
+                    <div
+                      key={it.id}
+                      className="grid gap-1 items-center"
+                      style={{ gridTemplateColumns: "minmax(0,1.4fr) 5rem 5.5rem 3.5rem 3.5rem minmax(7rem,0.9fr) 1.35rem" }}
+                    >
                       <input value={it.description}
                         onChange={e => updateItem(idx, { description: e.target.value })}
                         placeholder={L.description}
-                        className={`col-span-5 border border-gray-200 rounded px-2 py-1.5 text-xs ${isUr ? "text-right font-naskh" : ""}`}
+                        className={`min-w-0 border border-gray-200 rounded px-2 py-1.5 text-xs ${isUr ? "text-right font-naskh" : ""}`}
                         dir={isUr ? "rtl" : "ltr"} />
-                      <input type="number" value={it.quantity}
+                      <input type="number" value={it.quantity} data-item-qty="true"
                         onChange={e => updateItem(idx, { quantity: parseFloat(e.target.value) || 0 })}
-                        className="col-span-1 border border-gray-200 rounded px-1 py-1.5 text-xs text-center"
+                        className="w-full min-w-0 border border-gray-200 rounded px-1.5 py-1.5 text-xs text-center font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         dir="ltr" step="0.01" min="0" />
                       <input type="number" value={it.unitPrice}
                         onChange={e => updateItem(idx, { unitPrice: parseFloat(e.target.value) || 0 })}
-                        className="col-span-2 border border-gray-200 rounded px-1 py-1.5 text-xs text-right"
+                        className="w-full min-w-0 border border-gray-200 rounded px-1.5 py-1.5 text-xs text-right font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         dir="ltr" step="0.01" min="0" />
                       <input type="number" value={it.discountPercent || 0}
                         onChange={e => updateItem(idx, { discountPercent: parseFloat(e.target.value) || 0 })}
-                        className="col-span-1 border border-gray-200 rounded px-1 py-1.5 text-xs text-center"
+                        className="w-full min-w-0 border border-gray-200 rounded px-1 py-1.5 text-xs text-center font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         dir="ltr" step="0.1" min="0" max="100" />
                       <input type="number" value={it.taxes?.[0]?.percent || 0}
                         onChange={e => updateItem(idx, { taxes: [{ name: "Tax", percent: parseFloat(e.target.value) || 0 }] })}
-                        className="col-span-1 border border-gray-200 rounded px-1 py-1.5 text-xs text-center"
+                        className="w-full min-w-0 border border-gray-200 rounded px-1 py-1.5 text-xs text-center font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         dir="ltr" step="0.1" min="0" max="100" />
-                      <div className="col-span-2 flex items-center justify-between">
-                        <span className="text-xs font-mono text-gray-700" dir="ltr">
-                          {formatInvoiceMinor(result.lineTotals[idx] || 0, invoice.currency, invoiceLang)}
-                        </span>
-                        <button onClick={() => removeItem(idx)} disabled={invoice.items.length <= 1}
-                          className="text-red-400 hover:text-red-600 disabled:opacity-20 text-xs ml-1">✕</button>
+                      <div data-item-amount="true" className="min-w-0 px-1 text-xs font-mono tabular-nums text-gray-700 whitespace-nowrap overflow-visible" dir="ltr">
+                        {formatInvoiceMinor(result.lineTotals[idx] || 0, invoice.currency, invoiceLang)}
                       </div>
+                      <button onClick={() => removeItem(idx)} disabled={invoice.items.length <= 1}
+                        className="text-red-400 hover:text-red-600 disabled:opacity-20 text-xs leading-none">✕</button>
                     </div>
                   ))}
                   <button onClick={addItem}

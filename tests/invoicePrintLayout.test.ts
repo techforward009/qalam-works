@@ -377,4 +377,22 @@ describe("Urdu and boxed-cell presentation", () => {
     expect(five.pageHtml).toContain('data-ledger-space="true"');
     expect(five.pageHtml).not.toContain('data-blank-row="true"');
   });
+
+  it("centers western invoice meta cells and equalizes bill-to line gaps", () => {
+    const ur = html({ style: "western" }, sampleInvoice(), "ur");
+    expect(ur).toContain('data-invoice-meta-block="true"');
+    expect(ur).toContain('data-bill-to-stack="true"');
+    expect(ur).toContain("gap:4px");
+    expect(ur).toMatch(/data-invoice-meta="western"[\s\S]*?text-align:center;vertical-align:middle/);
+    expect(ur).toMatch(/data-meta="date"[^>]*text-align:center/);
+  });
+
+  it("gives the items editor enough width for quantity and amount", () => {
+    const source = readFileSync(join(__dirname, "../app/tools/invoice-generator/components/InvoiceGeneratorTool.tsx"), "utf8");
+    expect(source).toContain('data-item-qty="true"');
+    expect(source).toContain('data-item-amount="true"');
+    expect(source).toContain("minmax(7rem,0.9fr)");
+    expect(source).toContain("[appearance:textfield]");
+    expect(source).not.toContain("grid-cols-12");
+  });
 });
