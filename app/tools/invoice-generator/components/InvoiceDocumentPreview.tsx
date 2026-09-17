@@ -42,25 +42,35 @@ export default function InvoiceDocumentPreview(payload: InvoiceExportPayload) {
     <div
       ref={wellRef}
       className="p-3"
-      style={{ background: "#E8E2D6" }}
+      dir="ltr"
+      style={{ background: "#E8E2D6", direction: "ltr", unicodeBidi: "isolate" }}
       data-invoice-preview-well="true"
       data-preview-fits-page="true"
     >
       <div
         data-preview-scale={String(scale)}
+        data-preview-stage="ltr"
+        dir="ltr"
         style={{
           width: `${paperWmm * scale}mm`,
           height: `${paperHmm * scale}mm`,
           margin: "0 auto",
           overflow: "hidden",
+          direction: "ltr",
+          position: "relative",
         }}
       >
         <div
+          data-preview-paper="true"
           style={{
             width: `${paperWmm}mm`,
             height: `${paperHmm}mm`,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: "auto",
             transform: `scale(${scale})`,
-            transformOrigin: "top left",
+            transformOrigin: "0 0",
             boxShadow: "0 8px 24px rgba(28, 25, 23, 0.18)",
           }}
           dangerouslySetInnerHTML={{ __html: doc.pageHtml }}

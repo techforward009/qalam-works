@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildInvoiceHtml } from "../app/tools/invoice-generator/utils/buildInvoiceHtml";
 import { buildInvoiceDocument } from "../app/tools/invoice-generator/utils/invoiceDocumentHtml";
+import InvoiceDocumentPreview from "../app/tools/invoice-generator/components/InvoiceDocumentPreview";
 import type { Invoice } from "../app/tools/invoice-generator/utils/invoiceEngine";
 import type { InvoicePrintSettings } from "../app/tools/invoice-generator/utils/invoiceLayout";
 
@@ -289,11 +292,31 @@ describe("Urdu and boxed-cell presentation", () => {
     expect(en).toMatch(/data-totals="column-aligned"[^>]*direction:ltr/);
   });
 
+  it("keeps preview scale chrome LTR so an Urdu parent cannot clip the A4 sheet", () => {
+    const markup = renderToStaticMarkup(createElement(InvoiceDocumentPreview, {
+      invoice: sampleInvoice(),
+      invoiceLang: "ur",
+      logo,
+      sig,
+      print: { style: "western" },
+    }));
+    expect(markup).toContain('data-preview-stage="ltr"');
+    expect(markup).toContain('data-preview-paper="true"');
+    expect(markup).toContain('data-invoice-preview-well="true"');
+    expect(markup).toContain('dir="ltr"');
+    expect(markup).toMatch(/class="invoice-page"[\s\S]*?dir="rtl"/);
+    expect(markup).toMatch(/data-invoice-table="western"[^>]*direction:rtl/);
+  });
+
   it("fits the live A4 preview to the full page box", () => {
     const source = readFileSync(join(__dirname, "../app/tools/invoice-generator/components/InvoiceDocumentPreview.tsx"), "utf8");
     expect(source).toContain("viewportCap");
     expect(source).toContain("data-preview-fits-page");
     expect(source).toContain("height: `${paperHmm}mm`");
     expect(source).not.toContain("overflow-x-hidden");
+    expect(source).toContain('data-preview-stage="ltr"');
+    expect(source).toContain('dir="ltr"');
+    expect(source).toContain('transformOrigin: "0 0"');
+    expect(source).toContain("left: 0");
   });
 });
