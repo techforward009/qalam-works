@@ -1,7 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, type ReactNode } from "react";
+import {
+  ArrowLeftRight,
+  BookOpen,
+  CalendarDays,
+  CalendarPlus,
+  ChevronRight,
+  Globe,
+  Moon,
+  Search,
+  Sun,
+} from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
 import { trackEvent, trackToolOpenOnce } from "../../lib/analytics";
 import {
@@ -109,6 +120,26 @@ const L = {
     matches: "Calculated matches",
     noMatches: "No calculated match was found in this Gregorian year.",
     searchCaveat: "These are calculated tabular-Hijri matches. Regional historical evidence, where available, remains supplementary and does not replace them.",
+    studioTagline: "One date. A wider perspective.",
+    convertHint: "Convert between calendars",
+    findHint: "Find a date across calendars",
+    enterDateLabel: "Enter Date",
+    convertAction: "Convert Date",
+    resultsTitle: "Conversion Results",
+    resultsLive: "Calculated instantly",
+    resultsApprox: "Dates are approximate and may vary by region.",
+    exploreMoreTitle: "Explore More About This Date",
+    exploreMoreDesc: "Discover historical events, Islamic significance, and interesting facts about this date across different calendars.",
+    viewIntelligence: "View Date Intelligence",
+    gregorianWestern: "Gregorian (Western)",
+    hijriIslamic: "Hijri (Islamic)",
+    solarJalali: "Solar Hijri (Jalali)",
+    exploreDesc: "Browse and explore Gregorian, Hijri and Solar Hijri calendars.",
+    hijriExploreDesc: "Explore Islamic months, events and important dates.",
+    makeCalendarTitle: "Make Your Own Calendar",
+    makeCalendarDesc: "Create a personalized printable calendar.",
+    crescentTitle: "Check Crescent Visibility",
+    crescentDesc: "View Pakistan-focused scientific crescent visibility information.",
   },
   ur: {
     title:        "تاریخ کنورٹر",
@@ -185,6 +216,26 @@ const L = {
     matches: "حسابی نتائج",
     noMatches: "اس عیسوی سال میں کوئی حسابی مطابقت نہیں ملی۔",
     searchCaveat: "یہ حسابی ہجری نتائج ہیں۔ دستیاب علاقائی تاریخی شواہد ضمنی رہتے ہیں اور ان حسابی نتائج کی جگہ نہیں لیتے۔",
+    studioTagline: "ایک تاریخ، وسیع تر نقطہ نظر۔",
+    convertHint: "تقویم کے درمیان تبدیل کریں",
+    findHint: "تقویموں میں تاریخ تلاش کریں",
+    enterDateLabel: "تاریخ درج کریں",
+    convertAction: "تاریخ تبدیل کریں",
+    resultsTitle: "نتائجِ تبدیلی",
+    resultsLive: "فوری حساب",
+    resultsApprox: "تاریخیں تخمینی ہیں اور علاقے کے لحاظ سے بدل سکتی ہیں۔",
+    exploreMoreTitle: "اس تاریخ کے بارے میں مزید",
+    exploreMoreDesc: "تاریخی واقعات، اسلامی اہمیت اور مختلف تقویموں میں اس تاریخ کی تفصیل۔",
+    viewIntelligence: "تاریخ کی تفصیل دیکھیں",
+    gregorianWestern: "عیسوی (مغربی)",
+    hijriIslamic: "ہجری (اسلامی)",
+    solarJalali: "ہجری شمسی (جلالی)",
+    exploreDesc: "عیسوی، ہجری اور شمسی تقویم دیکھیں اور تلاش کریں۔",
+    hijriExploreDesc: "اسلامی مہینے، مناسبتیں اور اہم تاریخیں۔",
+    makeCalendarTitle: "اپنی تقویم بنائیں",
+    makeCalendarDesc: "اپنی قابلِ طباعت تقویم تیار کریں۔",
+    crescentTitle: "رؤیتِ ہلال دیکھیں",
+    crescentDesc: "پاکستان میں ہلال کی سائنسی رؤیت کی معلومات دیکھیں۔",
   },
 };
 
@@ -205,6 +256,17 @@ function monthOptions(cal: CalendarType, lang: "en" | "ur") {
   if (cal === "gregorian") return lang === "ur" ? GREGORIAN_MONTHS_UR : GREGORIAN_MONTHS_EN;
   if (cal === "hijri")     return lang === "ur" ? HIJRI_MONTHS_UR     : HIJRI_MONTHS_EN;
   return lang === "ur" ? SOLAR_MONTHS_UR : SOLAR_MONTHS_EN;
+}
+
+function MosqueIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className={className} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 20h16M6 20V11.5L12 7l6 4.5V20" />
+      <path strokeLinecap="round" d="M12 7V4" />
+      <circle cx="12" cy="3.2" r="0.8" fill="currentColor" stroke="none" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 20v-3.5h6V20" />
+    </svg>
+  );
 }
 
 export default function DateConverterContent({
@@ -381,211 +443,414 @@ export default function DateConverterContent({
   }, []);
 
   const months = monthOptions(calendar, lang);
-  const resultCals = CAL_ORDER.filter(cal => cal !== calendar);
-  const inputClass = "w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]";
+  const inputClass = "w-full h-11 border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-xl px-3 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]";
   const studioToday = todayGregorian();
   const studioHijri = convert("gregorian", studioToday).hijri;
 
+  const actionCards: Array<{ href: string; title: string; desc: string; icon: ReactNode; accent?: boolean }> = [
+    {
+      href: `/calendar/${studioToday.year}`,
+      title: t.gregorianExplorer,
+      desc: t.exploreDesc,
+      icon: <CalendarDays className="h-5 w-5" />,
+    },
+    {
+      href: `/hijri/${studioHijri.year}`,
+      title: t.hijriExplorer,
+      desc: t.hijriExploreDesc,
+      icon: <MosqueIcon className="h-5 w-5" />,
+    },
+    {
+      href: "/tools/calendar-maker",
+      title: t.makeCalendarTitle,
+      desc: t.makeCalendarDesc,
+      icon: <CalendarPlus className="h-5 w-5" />,
+    },
+    {
+      href: "/tools/crescent-visibility",
+      title: t.crescentTitle,
+      desc: t.crescentDesc,
+      icon: <Moon className="h-5 w-5" />,
+      accent: true,
+    },
+  ];
+
+  const fieldClass = `${inputClass} ${naskh}`;
+
   return (
-    <div className="site-container" dir={dir}>
-      <div className="max-w-2xl mx-auto py-6 sm:py-10">
+    <div className="bg-[#F7F5EF] dark:bg-[#0e1c15]" dir={dir}>
+      <div className="site-container max-w-[1120px] mx-auto py-8 sm:py-10">
         {!hideHeading && (
-        <div className="text-center mb-7">
-          <h1 className={`text-2xl sm:text-3xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-2 ${isUr ? "font-nastaliq font-normal" : ""}`}>
-            {t.studioTitle}
-          </h1>
-          <p className={`text-[15px] text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`}>{t.studioDesc}</p>
-        </div>
+          <header className="mb-6 max-w-3xl">
+            <h1 className={`text-3xl sm:text-[2rem] font-bold text-[#1A3A2A] dark:text-[#e8ede9] leading-tight ${isUr ? "font-nastaliq font-normal" : ""}`}>
+              {t.studioTitle}
+            </h1>
+            <p className={`mt-2 text-[15px] leading-relaxed text-[#4A6A4A] dark:text-[#b8d4bc] ${naskh}`} lang="en" dir="ltr">
+              {L.en.studioDesc}
+            </p>
+            <p className="mt-1 text-[15px] leading-relaxed text-[#4A6A4A] dark:text-[#b8d4bc] font-naskh" lang="ur" dir="rtl">
+              {L.ur.studioDesc}
+            </p>
+          </header>
         )}
 
-        <section id="date-studio" className="mb-7 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] p-4 sm:p-5">
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <Link href={`/calendar/${studioToday.year}`} className={`rounded-lg border border-[#B8935A]/55 bg-[#B8935A]/8 px-3 py-2.5 text-start text-xs font-bold text-[#6F4E25] dark:text-[#E0C18D] hover:bg-[#B8935A]/14 transition-colors ${naskh}`}>{t.gregorianExplorer}</Link>
-              <Link href={`/hijri/${studioHijri.year}`} className={`rounded-lg border border-[#1A3A2A]/15 dark:border-[#35513d] bg-white dark:bg-[#0e1c15] px-3 py-2.5 text-start text-xs font-bold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.hijriExplorer}</Link>
-            </div>
-            <Link href="/tools/calendar-maker" className={`block rounded-xl bg-[#1A3A2A] px-4 py-3 text-start text-white shadow-sm transition-colors hover:bg-[#254d37] ${naskh}`}><span className="block text-sm font-bold">{isUr ? "اپنی تقویم بنائیں" : "Make Your Own Calendar"}</span><span className="mt-0.5 block text-xs text-white/75">{isUr ? "اپنی قابلِ طباعت تقویم تیار کریں۔" : "Create a personalized printable calendar."}</span></Link>
-            <Link href="/tools/crescent-visibility" className={`block rounded-xl border border-[#B8935A]/55 bg-[#B8935A]/10 px-4 py-3 text-start text-[#6F4E25] transition-colors hover:bg-[#B8935A]/16 dark:text-[#E0C18D] ${naskh}`}><span className="block text-sm font-bold">{isUr ? "رؤیتِ ہلال دیکھیں" : "Check Crescent Visibility"}</span><span className="mt-0.5 block text-xs opacity-80">{isUr ? "پاکستان میں ہلال کی سائنسی رؤیت کی معلومات دیکھیں۔" : "View Pakistan-focused scientific crescent visibility information."}</span></Link>
-          </div>
-        </section>
-
-        <div className="mb-5 rounded-2xl bg-white p-3 shadow-sm dark:bg-[#162a1e]">
-          <div className="grid grid-cols-2 gap-2">
-            {(["convert", "find"] as ToolMode[]).map(nextMode => <button key={nextMode} type="button" onClick={() => { setMode(nextMode); setToolMode(nextMode); }} aria-pressed={mode === nextMode} className={`rounded-xl border-2 px-4 py-3 text-start text-sm font-bold transition-colors ${naskh} ${mode === nextMode ? "border-[#1A3A2A] bg-[#1A3A2A] text-white shadow-sm dark:border-[#2a5a3a] dark:bg-[#2a5a3a]" : "border-[#1A3A2A]/15 bg-white text-[#1A3A2A] hover:border-[#B8935A]/60 dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#e8ede9]"}`}>{nextMode === "convert" ? t.convertTab : t.findTab}</button>)}
-          </div>
+        <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {actionCards.map(card => (
+            <Link
+              key={card.href}
+              href={card.href}
+              className={`group flex items-start gap-3 rounded-2xl border bg-white px-4 py-3.5 text-start shadow-[0_1px_2px_rgba(26,58,42,0.04)] transition-colors hover:border-[#B8935A]/50 dark:bg-[#162a1e] ${
+                card.accent
+                  ? "border-[#B8935A]/45 bg-[#FBF6EA] dark:border-[#B8935A]/40"
+                  : "border-[#1A3A2A]/10 dark:border-[#2a3d30]"
+              }`}
+            >
+              <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                card.accent
+                  ? "bg-[#B8935A]/15 text-[#8A6A32] dark:text-[#E0C18D]"
+                  : "bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-white/10 dark:text-[#e8ede9]"
+              }`}>
+                {card.icon}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className={`flex items-start justify-between gap-2 text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                  {card.title}
+                  <ChevronRight className={`h-4 w-4 shrink-0 text-[#1A3A2A]/35 mt-0.5 ${isUr ? "rotate-180" : ""}`} />
+                </span>
+                <span className={`mt-0.5 block text-[12px] leading-snug text-[#5a7a62] dark:text-[#a8c8b0] ${naskh}`}>
+                  {card.desc}
+                </span>
+              </span>
+            </Link>
+          ))}
         </div>
 
-        {mode === "convert" ? (
-          <>
-            {/* Input card — accepted Date Converter presentation preserved */}
-            <div className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6 mb-5">
-              <label className={`block text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-2 ${naskh}`}>
-                {t.sourceLabel}
-              </label>
+        <section id="date-studio" className="rounded-2xl border border-[#1A3A2A]/10 bg-white p-4 sm:p-6 shadow-[0_1px_2px_rgba(26,58,42,0.04)] dark:border-[#2a3d30] dark:bg-[#162a1e]">
+          <div className={`flex flex-col gap-4 lg:flex-row lg:items-center ${isUr ? "lg:flex-row-reverse" : ""}`}>
+            <div className="inline-flex w-full sm:w-auto rounded-2xl bg-[#F4F1E8] p-1 dark:bg-[#0e1c15]">
+              <button
+                type="button"
+                onClick={() => { setMode("convert"); setToolMode("convert"); }}
+                aria-pressed={mode === "convert"}
+                className={`flex flex-1 items-center gap-2.5 rounded-xl px-4 py-2.5 text-start transition-colors ${naskh} ${
+                  mode === "convert"
+                    ? "bg-[#1A3A2A] text-white shadow-sm dark:bg-[#2a5a3a]"
+                    : "text-[#1A3A2A] hover:bg-white/70 dark:text-[#e8ede9]"
+                }`}
+              >
+                <ArrowLeftRight className="h-4 w-4 shrink-0" />
+                <span>
+                  <span className="block text-sm font-bold leading-tight">{t.convertTab}</span>
+                  <span className={`block text-[11px] font-medium ${mode === "convert" ? "text-white/75" : "text-[#5a7a62] dark:text-[#a8c8b0]"}`}>{t.convertHint}</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode("find"); setToolMode("find"); }}
+                aria-pressed={mode === "find"}
+                className={`flex flex-1 items-center gap-2.5 rounded-xl px-4 py-2.5 text-start transition-colors ${naskh} ${
+                  mode === "find"
+                    ? "bg-[#1A3A2A] text-white shadow-sm dark:bg-[#2a5a3a]"
+                    : "text-[#1A3A2A] hover:bg-white/70 dark:text-[#e8ede9]"
+                }`}
+              >
+                <Search className="h-4 w-4 shrink-0" />
+                <span>
+                  <span className="block text-sm font-bold leading-tight">{t.findTab}</span>
+                  <span className={`block text-[11px] font-medium ${mode === "find" ? "text-white/75" : "text-[#5a7a62] dark:text-[#a8c8b0]"}`}>{t.findHint}</span>
+                </span>
+              </button>
+            </div>
+            <p className={`lg:ms-auto text-[13px] text-[#6F4E25] dark:text-[#E0C18D] ${isUr ? "font-naskh text-start" : "text-end"}`}>
+              <span className="block italic" lang="en" dir="ltr">{L.en.studioTagline}</span>
+              <span className="mt-0.5 block font-naskh" lang="ur" dir="rtl">{L.ur.studioTagline}</span>
+            </p>
+          </div>
 
-              <div className="flex gap-2 flex-wrap mb-5">
-                {CAL_ORDER.map(c => (
-                  <button key={c} onClick={() => {
-                    setCalendar(c); setMonth(""); setDay("");
-                    pushURL(c, "", "", year);
+          {mode === "convert" ? (
+            <>
+              <div className="mt-6 grid gap-6 lg:grid-cols-12 lg:gap-5">
+                <div className="lg:col-span-3">
+                  <p className={`mb-2 text-[11px] font-bold uppercase tracking-wide text-[#3a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                    {t.sourceLabel}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {CAL_ORDER.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => {
+                          setCalendar(c); setMonth(""); setDay("");
+                          pushURL(c, "", "", year);
+                        }}
+                        className={`rounded-xl px-3.5 py-2 text-sm font-semibold border transition-all ${naskh}
+                          ${calendar === c
+                            ? "bg-[#1A3A2A] dark:bg-[#2a5a3a] text-white border-transparent"
+                            : "border-[#1A3A2A]/15 dark:border-[#2a3d30] bg-white dark:bg-[#0e1c15] text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#1A3A2A]/40"}`}
+                      >
+                        {calLabel(c, lang)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="lg:col-span-4 min-w-0">
+                  <YallopIntegration lang={lang} method={dateStudioMethod} onMethodChange={setDateStudioMethod} observerId={yallopObserverId} onObserverChange={setYallopObserverId} gregorian={result?.gregorian ?? null} hijriDay={pakistanOfficialHijri?.hijri.day ?? result?.hijri.day ?? null} hijriDayAuthority={pakistanOfficialHijri?.authority ?? "qalam-tabular"} authorityContext={pakistanOfficialHijri} embedded />
+                </div>
+
+                <div className="lg:col-span-5">
+                  <p className={`mb-2 text-[11px] font-bold uppercase tracking-wide text-[#3a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
+                    {t.enterDateLabel}
+                  </p>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="min-w-[4.5rem] flex-1">
+                      <label className={`mb-1 block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] ${naskh}`}>{t.day}</label>
+                      <input
+                        type="number" min={1} max={31} value={day}
+                        onChange={e => { const v = e.target.value; setDay(v); pushURL(calendar, v, month, year); }}
+                        placeholder="1"
+                        className={`${inputClass} text-center`}
+                        dir="ltr"
+                      />
+                    </div>
+                    <div className="min-w-[8rem] flex-[1.4]">
+                      <label className={`mb-1 block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] ${naskh}`}>{t.month}</label>
+                      <select
+                        value={month}
+                        onChange={e => { const v = e.target.value; setMonth(v); pushURL(calendar, day, v, year); }}
+                        className={fieldClass}
+                      >
+                        <option value="">{t.selectMonth}</option>
+                        {months.map((m, i) => (
+                          <option key={i + 1} value={String(i + 1)}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="min-w-[5.5rem] flex-1">
+                      <label className={`mb-1 block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] ${naskh}`}>{t.year}</label>
+                      <input
+                        type="number" value={year}
+                        onChange={e => { const v = e.target.value; setYear(v); pushURL(calendar, day, month, v); }}
+                        placeholder={calendar === "gregorian" ? "2026" : calendar === "hijri" ? "1447" : "1405"}
+                        className={`${inputClass} text-center`}
+                        dir="ltr"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleToday}
+                      className={`inline-flex h-11 items-center gap-1.5 rounded-xl border border-[#1A3A2A]/20 px-3 text-sm font-semibold text-[#1A3A2A] hover:bg-[#1A3A2A]/6 dark:border-[#35513d] dark:text-[#e8ede9] ${naskh}`}
+                    >
+                      <CalendarDays className="h-4 w-4" />
+                      {t.today}
+                    </button>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-3">
+                    {(day || month || year) && (
+                      <button type="button" onClick={handleClear} className={`text-sm font-semibold text-[#3a6a4a] hover:text-red-600 dark:text-[#b8d4bc] ${naskh}`}>
+                        {t.clear}
+                      </button>
+                    )}
+                    {result && (
+                      <button
+                        type="button"
+                        onClick={handleCopyLink}
+                        className={`text-sm font-semibold ${naskh} ${linkCopied ? "text-amber-700 dark:text-amber-400" : "text-[#3a6a4a] dark:text-[#b8d4bc]"}`}
+                      >
+                        {linkCopied ? t.linkCopied : t.copyLink}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-col gap-4 border-t border-[#1A3A2A]/10 pt-5 dark:border-[#2a3d30] lg:flex-row lg:items-end">
+                <div className="min-w-0 flex-1">
+                  <RegionalContext selectedCountry={selectedCountry} setSelectedCountry={setSelectedCountry} calendar={calendar} result={result} day={day} month={month} year={year} lang={lang} isUr={isUr} naskh={naskh} embedded />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof document === "undefined") return;
+                    document.getElementById("conversion-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
-                      ${calendar === c
-                        ? "bg-[#1A3A2A] dark:bg-[#2a5a3a] text-white border-transparent"
-                        : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#1A3A2A]/40 dark:hover:border-[#4a7a5a]"}`}>
-                    {calLabel(c, lang)}
-                  </button>
-                ))}
+                  className={`inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#1A3A2A] px-6 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#254d37] dark:bg-[#2a5a3a] ${naskh}`}
+                >
+                  {t.convertAction}
+                  <ChevronRight className={`h-4 w-4 ${isUr ? "rotate-180" : ""}`} />
+                </button>
               </div>
-              <div className="mb-5 border-y border-[#1A3A2A]/10 py-5 dark:border-[#2a3d30]">
-                <YallopIntegration lang={lang} method={dateStudioMethod} onMethodChange={setDateStudioMethod} observerId={yallopObserverId} onObserverChange={setYallopObserverId} gregorian={result?.gregorian ?? null} hijriDay={pakistanOfficialHijri?.hijri.day ?? result?.hijri.day ?? null} hijriDayAuthority={pakistanOfficialHijri?.authority ?? "qalam-tabular"} authorityContext={pakistanOfficialHijri} embedded />
-              </div>
+            </>
+          ) : (
+            <div className="mt-6">
+              <p className={`text-[13px] leading-relaxed text-[#4a6a4a] dark:text-[#a8c8b0] mb-5 ${naskh}`}>{t.findIntro}</p>
 
-              <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.day}</label>
-                  <input
-                    type="number" min={1} max={31} value={day}
-                    onChange={e => { const v = e.target.value; setDay(v); pushURL(calendar, v, month, year); }}
-                    placeholder="1"
-                    className="w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm text-center focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]"
-                    dir="ltr"
-                  />
+                  <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.hijriDay}</label>
+                  <input type="number" min={1} max={30} value={findDay} onChange={(e) => setFindDay(e.target.value)} className={`${inputClass} text-center`} dir="ltr" />
                 </div>
                 <div>
-                  <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.month}</label>
-                  <select
-                    value={month}
-                    onChange={e => { const v = e.target.value; setMonth(v); pushURL(calendar, day, v, year); }}
-                    className={`w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a] ${naskh}`}>
+                  <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.hijriMonth}</label>
+                  <select value={findMonth} onChange={(e) => setFindMonth(e.target.value)} className={fieldClass}>
                     <option value="">{t.selectMonth}</option>
-                    {months.map((m, i) => (
-                      <option key={i + 1} value={String(i + 1)}>{m}</option>
-                    ))}
+                    {(isUr ? HIJRI_MONTHS_UR : HIJRI_MONTHS_EN).map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.year}</label>
-                  <input
-                    type="number" value={year}
-                    onChange={e => { const v = e.target.value; setYear(v); pushURL(calendar, day, month, v); }}
-                    placeholder={calendar === "gregorian" ? "2026" : calendar === "hijri" ? "1447" : "1405"}
-                    className="w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm text-center focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]"
-                    dir="ltr"
-                  />
+                  <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.gregorianYear}</label>
+                  <input type="number" min={1900} max={2100} value={findYear} onChange={(e) => setFindYear(e.target.value)} placeholder="1976" className={`${inputClass} text-center`} dir="ltr" />
                 </div>
               </div>
 
-              <div className="flex gap-3 flex-wrap">
-                <button onClick={handleToday}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold bg-[#1A3A2A]/8 dark:bg-[#2a3d30] text-[#1A3A2A] dark:text-[#e8ede9] hover:bg-[#1A3A2A]/15 dark:hover:bg-[#3a5a45] transition-colors ${naskh}`}>
-                  {t.today}
-                </button>
-                {(day || month || year) && (
-                  <button onClick={handleClear}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] hover:text-red-600 dark:hover:text-red-400 transition-colors ${naskh}`}>
-                    {t.clear}
-                  </button>
-                )}
-                {result && (
-                  <button onClick={handleCopyLink}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${naskh}
-                      ${linkCopied
-                        ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400"
-                        : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#b8d4bc] hover:border-amber-400 dark:hover:border-amber-600"}`}>
-                    {linkCopied ? t.linkCopied : t.copyLink}
-                  </button>
-                )}
-              </div>
-              <RegionalContext selectedCountry={selectedCountry} setSelectedCountry={setSelectedCountry} calendar={calendar} result={result} day={day} month={month} year={year} lang={lang} isUr={isUr} naskh={naskh} embedded />
-            </div>
+              {!hasFindInput && <p className={`mt-5 text-sm text-[#4a6a4a]/70 dark:text-[#a8c8b0]/70 ${naskh}`}>{t.findPrompt}</p>}
+              {hasFindInput && !findValid && <p className={`mt-5 text-sm text-red-600 dark:text-red-400 ${naskh}`}>{t.invalidDate}</p>}
 
+              {findValid && (
+                <div className="mt-6">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <h2 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.matches}</h2>
+                    <span className="text-xs font-semibold text-[#4a7a5a] dark:text-[#8faa93]" dir="ltr">{findMatches.length}</span>
+                  </div>
+
+                  {findMatches.length === 0 ? (
+                    <p className={`rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] px-4 py-3 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.noMatches}</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {findMatches.map(match => {
+                        const wd = isUr ? WEEKDAYS_UR[match.weekdayIndex] : WEEKDAYS_EN[match.weekdayIndex];
+                        return (
+                          <article key={isoDate(match.gregorian)} className="rounded-xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] p-4">
+                            <p className={`text-sm font-semibold text-amber-700 dark:text-amber-400 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>{wd}</p>
+                            <p className={`mt-0.5 text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{formatDate(match.gregorian, "gregorian", lang)}</p>
+                            <p className="text-xs text-[#4a7a5a] dark:text-[#9fbfa8] font-mono" dir="ltr">{isoDate(match.gregorian)}</p>
+                            <div className="mt-2 grid sm:grid-cols-2 gap-1 text-sm">
+                              <p className={naskh}>{formatDate(match.hijri, "hijri", lang)}</p>
+                              <p className={naskh}>{formatDate(match.solar, "solar", lang)}</p>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <p className={`mt-4 text-[11px] leading-relaxed text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{t.searchCaveat}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        {mode === "convert" && (
+          <>
             {errMsg && (
-              <div className={`rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400 mb-5 ${naskh}`} dir={dir}>
+              <div className={`mt-5 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400 ${naskh}`} dir={dir}>
                 {errMsg}
               </div>
             )}
 
-            {!hasInput && !errMsg && (
-              <div className="rounded-2xl border border-dashed border-[#B8935A]/45 bg-[#F7F5EF] px-5 py-7 text-center dark:bg-[#162a1e]">
-                <div className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#1A3A2A]/10 text-lg text-[#1A3A2A] dark:bg-white/10 dark:text-[#e8ede9]">◌</div>
-                <p className={`text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.readyTitle}</p>
-                <p className={`mt-1 text-xs text-[#4A6A4A] dark:text-[#a8c8b0] ${naskh}`}>{t.readyDesc}</p>
+            <section id="conversion-results" className="mt-6 scroll-mt-6">
+              <div className={`mb-3 flex flex-wrap items-end justify-between gap-2 ${naskh}`}>
+                <h2 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-nastaliq font-normal" : ""}`}>{t.resultsTitle}</h2>
+                <p className="text-[12px] text-[#5a7a62] dark:text-[#a8c8b0]">
+                  <span>{t.resultsLive}</span>
+                  <span className="mx-2 text-[#B8935A]">|</span>
+                  <span>{t.resultsApprox}</span>
+                </p>
               </div>
-            )}
 
-            {/* Result cards — preserve accepted EN/UR hierarchy exactly */}
-            {result && (
-              <div className="space-y-3">
-                {resultCals.map(cal => {
-                  const authorityHijri = cal === "hijri" ? pakistanOfficialHijri : null;
-                  const isAuthoritativeHijri = authorityHijri !== null;
-                  const parts    = authorityHijri?.hijri ?? result![cal];
-                  const long     = formatDate(parts, cal, lang);
-                  const iso      = isoDate(parts);
-                  const copyText = `${weekdayName}  ${long}\n${iso}`;
-                  const isCopied = copied === cal;
-                  const resultLabel = authorityHijri
-                    ? (authorityHijri.authority === "reported-official" ? t.reportedOfficialHijriDate : t.officialHijriDate)
-                    : cal === "hijri" ? t.calculatedHijriDate : calLabel(cal, lang);
-                  const methodBadge = cal === "hijri" && !isAuthoritativeHijri ? t.methodHijri
-                                    : cal === "solar" ? t.methodSolar
-                                    : null;
-                  return (
-                    <div key={cal}
-                      className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-xl px-5 py-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          {isUr ? (
-                            <>
-                              <p className={`text-[15px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-0.5 ${naskh}`}>
-                                {resultLabel}
-                              </p>
-                              {methodBadge && (
-                                <p className={`text-[11px] font-medium text-[#4a7a5a] dark:text-[#8faa93] mb-1 ${naskh}`}>
-                                  {methodBadge}
-                                </p>
+              {!hasInput && !errMsg && (
+                <div className="rounded-2xl border border-dashed border-[#B8935A]/40 bg-white px-5 py-5 dark:bg-[#162a1e]">
+                  <p className={`text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.readyTitle}</p>
+                  <p className={`mt-1 text-xs text-[#4A6A4A] dark:text-[#a8c8b0] ${naskh}`}>{t.readyDesc}</p>
+                </div>
+              )}
+
+              {result && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {CAL_ORDER.map(cal => {
+                    const authorityHijri = cal === "hijri" ? pakistanOfficialHijri : null;
+                    const isAuthoritativeHijri = authorityHijri !== null;
+                    const parts    = authorityHijri?.hijri ?? result![cal];
+                    const long     = formatDate(parts, cal, lang);
+                    const iso      = isoDate(parts);
+                    const copyText = `${weekdayName}  ${long}\n${iso}`;
+                    const isCopied = copied === cal;
+                    const resultLabel = authorityHijri
+                      ? (authorityHijri.authority === "reported-official" ? t.reportedOfficialHijriDate : t.officialHijriDate)
+                      : cal === "hijri" ? t.calculatedHijriDate : calLabel(cal, lang);
+                    const methodBadge = cal === "hijri" && !isAuthoritativeHijri ? t.methodHijri
+                                      : cal === "solar" ? t.methodSolar
+                                      : null;
+                    const category = cal === "gregorian" ? t.gregorianWestern : cal === "hijri" ? t.hijriIslamic : t.solarJalali;
+                    const icon = cal === "gregorian"
+                      ? <CalendarDays className="h-5 w-5" />
+                      : cal === "hijri"
+                        ? <MosqueIcon className="h-5 w-5" />
+                        : <Sun className="h-5 w-5" />;
+                    const meta = cal === "gregorian" && intelligence
+                      ? (isUr
+                          ? `${t.dayOfYear} ${intelligence.dayOfYear} · ${t.weekNumber} ${intelligence.isoWeek}`
+                          : `Day ${intelligence.dayOfYear} of ${parts.year} · Week ${intelligence.isoWeek}`)
+                      : cal === "hijri"
+                        ? (isUr ? `مہینہ ${parts.month} از 12 · ${parts.year} ھ` : `Month ${parts.month} of 12 · ${parts.year} AH`)
+                        : (isUr ? `مہینہ ${parts.month} از 12 · ${parts.year}` : `Month ${parts.month} of 12 · ${parts.year}`);
+                    return (
+                      <div
+                        key={cal}
+                        className={`rounded-2xl border px-4 py-4 ${
+                          cal === "hijri"
+                            ? "border-[#B8935A]/35 bg-[#FBF6EA] dark:border-[#B8935A]/30 dark:bg-[#1b2418]"
+                            : "border-[#1A3A2A]/10 bg-[#F3F7F3] dark:border-[#2a3d30] dark:bg-[#162a1e]"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                              cal === "hijri" ? "bg-[#B8935A]/18 text-[#8A6A32] dark:text-[#E0C18D]" : "bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-white/10 dark:text-[#e8ede9]"
+                            }`}>
+                              {icon}
+                            </span>
+                            <div className="min-w-0">
+                              <p className={`text-[13px] font-semibold text-[#3a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{category}</p>
+                              {isUr ? (
+                                <p className={`text-[13px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{resultLabel}</p>
+                              ) : (
+                                <p className="text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0]">{resultLabel}</p>
                               )}
-                            </>
-                          ) : (
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <p className="text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0]">
-                                {resultLabel}
-                              </p>
                               {methodBadge && (
-                                <span className="text-[10px] font-medium text-[#3a6a4a]/60 dark:text-[#8faa93]/60">
-                                  {methodBadge}
-                                </span>
+                                <p className={`text-[11px] font-medium text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{methodBadge}</p>
                               )}
+                              <p className={`mt-2 text-lg font-bold leading-snug text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{long}</p>
+                              <p className={`text-sm font-semibold text-[#6F4E25] dark:text-[#E0C18D] ${naskh}`} dir={isUr ? "rtl" : "ltr"}>{weekdayName}</p>
+                              <p className={`mt-1 text-[12px] text-[#5a7a62] dark:text-[#9fbfa8] ${naskh}`}>{meta}</p>
+                              <p className="mt-0.5 text-[11px] font-mono text-[#4a7a5a] dark:text-[#9fbfa8]" dir="ltr">{iso}</p>
                             </div>
-                          )}
-                          <p className={`text-sm font-semibold text-amber-700 dark:text-amber-400 mb-0.5 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>
-                            {weekdayName}
-                          </p>
-                          <p className={`text-lg font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{long}</p>
-                          <p className={`text-xs text-[#4a7a5a] dark:text-[#9fbfa8] mt-0.5 font-mono ${isUr ? "text-right" : ""}`} dir="ltr">{iso}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(cal, copyText)}
+                            className={`shrink-0 rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-all ${naskh}
+                              ${isCopied
+                                ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
+                                : "border-[#1A3A2A]/15 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#a8c8b0]"}`}
+                          >
+                            {isCopied ? t.copied : t.copy}
+                          </button>
                         </div>
-                        <button onClick={() => handleCopy(cal, copyText)}
-                          className={`shrink-0 mt-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${naskh}
-                            ${isCopied
-                              ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
-                              : "border-[#1A3A2A]/20 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#a8c8b0] hover:border-[#1A3A2A]/40 dark:hover:border-[#4a7a5a]"}`}>
-                          {isCopied ? t.copied : t.copy}
-                        </button>
+                        {cal === "hijri" && !isAuthoritativeHijri && (
+                          <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-3 ${naskh}`}>{t.hijriNote}</p>
+                        )}
+                        {cal === "solar" && (
+                          <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-3 ${naskh}`}>{t.solarNote}</p>
+                        )}
                       </div>
-                      {cal === "hijri" && !isAuthoritativeHijri && (
-                        <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.hijriNote}</p>
-                      )}
-                      {cal === "solar" && (
-                        <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-2 ${naskh}`}>{t.solarNote}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </section>
 
-            {/* Additive rich intelligence; numeric-only values use LTR, Urdu phrases do not. */}
             {intelligence && (() => {
               const ageValue = intelligence.age
                 ? (isUr
@@ -609,9 +874,25 @@ export default function DateConverterContent({
               ];
 
               return (
-                <section className="mt-5 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
-                  <h2 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-4 ${naskh}`}>{t.moreInfo}</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-4">
+                <section className="mt-5 rounded-2xl border border-[#1A3A2A]/10 bg-white p-4 sm:p-5 shadow-[0_1px_2px_rgba(26,58,42,0.04)] dark:border-[#2a3d30] dark:bg-[#162a1e]">
+                  <div className={`flex flex-col gap-3 sm:flex-row sm:items-center ${isUr ? "sm:flex-row-reverse" : ""}`}>
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#B8935A]/15 text-[#8A6A32] dark:text-[#E0C18D]">
+                      <BookOpen className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1 text-start">
+                      <h2 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.exploreMoreTitle}</h2>
+                      <p className={`mt-0.5 text-[13px] leading-relaxed text-[#5a7a62] dark:text-[#a8c8b0] ${naskh}`}>{t.exploreMoreDesc}</p>
+                    </div>
+                    <Link
+                      href={`/date/${isoDate(result!.gregorian)}`}
+                      className={`inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-[#1A3A2A]/15 px-4 text-sm font-semibold text-[#1A3A2A] hover:border-[#B8935A]/50 dark:border-[#35513d] dark:text-[#e8ede9] ${naskh}`}
+                    >
+                      {t.viewIntelligence}
+                      <ChevronRight className={`h-4 w-4 ${isUr ? "rotate-180" : ""}`} />
+                    </Link>
+                  </div>
+                  <p className={`sr-only ${naskh}`}>{t.moreInfo}</p>
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-4 border-t border-[#1A3A2A]/8 pt-4 dark:border-[#2a3d30]">
                     {rows.map(row => (
                       <div key={row.label}>
                         <p className={`text-[11px] font-semibold text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{row.label}</p>
@@ -627,65 +908,7 @@ export default function DateConverterContent({
                 </section>
               );
             })()}
-
           </>
-        ) : (
-          <section className="bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6">
-            <p className={`text-[13px] text-[#4a6a4a] dark:text-[#a8c8b0] leading-relaxed mb-5 ${naskh}`}>{t.findIntro}</p>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.hijriDay}</label>
-                <input type="number" min={1} max={30} value={findDay} onChange={(e) => setFindDay(e.target.value)} className={`${inputClass} text-center`} dir="ltr" />
-              </div>
-              <div>
-                <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.hijriMonth}</label>
-                <select value={findMonth} onChange={(e) => setFindMonth(e.target.value)} className={`${inputClass} ${naskh}`}>
-                  <option value="">{t.selectMonth}</option>
-                  {(isUr ? HIJRI_MONTHS_UR : HIJRI_MONTHS_EN).map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={`block text-[11px] font-semibold text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>{t.gregorianYear}</label>
-                <input type="number" min={1900} max={2100} value={findYear} onChange={(e) => setFindYear(e.target.value)} placeholder="1976" className={`${inputClass} text-center`} dir="ltr" />
-              </div>
-            </div>
-
-            {!hasFindInput && <p className={`mt-5 text-center text-sm text-[#4a6a4a]/70 dark:text-[#a8c8b0]/70 ${naskh}`}>{t.findPrompt}</p>}
-            {hasFindInput && !findValid && <p className={`mt-5 text-sm text-red-600 dark:text-red-400 ${naskh}`}>{t.invalidDate}</p>}
-
-            {findValid && (
-              <div className="mt-6">
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <h2 className={`text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.matches}</h2>
-                  <span className="text-xs font-semibold text-[#4a7a5a] dark:text-[#8faa93]" dir="ltr">{findMatches.length}</span>
-                </div>
-
-                {findMatches.length === 0 ? (
-                  <p className={`rounded-xl bg-[#1A3A2A]/5 dark:bg-white/[0.04] px-4 py-3 text-sm text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.noMatches}</p>
-                ) : (
-                  <div className="space-y-3">
-                    {findMatches.map(match => {
-                      const wd = isUr ? WEEKDAYS_UR[match.weekdayIndex] : WEEKDAYS_EN[match.weekdayIndex];
-                      return (
-                        <article key={isoDate(match.gregorian)} className="rounded-xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] p-4">
-                          <p className={`text-sm font-semibold text-amber-700 dark:text-amber-400 ${naskh}`} dir={isUr ? "rtl" : "ltr"}>{wd}</p>
-                          <p className={`mt-0.5 text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{formatDate(match.gregorian, "gregorian", lang)}</p>
-                          <p className="text-xs text-[#4a7a5a] dark:text-[#9fbfa8] font-mono" dir="ltr">{isoDate(match.gregorian)}</p>
-                          <div className="mt-2 grid sm:grid-cols-2 gap-1 text-sm">
-                            <p className={naskh}>{formatDate(match.hijri, "hijri", lang)}</p>
-                            <p className={naskh}>{formatDate(match.solar, "solar", lang)}</p>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <p className={`mt-4 text-[11px] leading-relaxed text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{t.searchCaveat}</p>
-              </div>
-            )}
-          </section>
         )}
       </div>
     </div>
@@ -709,25 +932,40 @@ function RegionalContext({ selectedCountry, setSelectedCountry, calendar, result
   const t = L[lang];
 
   return (
-    <div className={embedded ? "mt-5 border-t border-[#1A3A2A]/10 pt-5 dark:border-[#2a3d30]" : "mt-6 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6"}>
-      <p className={`text-[12px] font-bold text-[#3a6a4a] dark:text-[#b8d4bc] uppercase tracking-wide mb-1 ${naskh}`}>
-        {t.countryLabel}
-      </p>
-      <p className={`text-[13px] text-[#4a7a5a] dark:text-[#8faa93] mb-3 ${naskh}`}>
-        {t.countryHint}
-      </p>
-
-      <select
-        value={selectedCountry}
-        onChange={e => setSelectedCountry(e.target.value)}
-        className={`w-full border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a] ${naskh}`}
-        dir={isUr ? "rtl" : "ltr"}
-      >
-        <option value="">{t.countryNone}</option>
-        {COUNTRY_CALENDARS.map(c => (
-          <option key={c.id} value={c.id}>{c.name[lang]}</option>
-        ))}
-      </select>
+    <div className={embedded ? "" : "mt-6 bg-white dark:bg-[#162a1e] border border-[#1A3A2A]/10 dark:border-[#2a3d30] rounded-2xl shadow-sm p-5 sm:p-6"}>
+      <div className={`flex items-start gap-3 ${isUr ? "flex-row-reverse" : ""}`}>
+        {embedded && (
+          <span className="mt-5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-white/10 dark:text-[#e8ede9]">
+            <Globe className="h-4 w-4" />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className={`text-[11px] font-bold uppercase tracking-wide text-[#3a6a4a] dark:text-[#b8d4bc] mb-1 ${naskh}`}>
+            {t.countryLabel}
+          </p>
+          <select
+            value={selectedCountry}
+            onChange={e => setSelectedCountry(e.target.value)}
+            className={`w-full h-11 border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-xl px-3 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a] ${naskh}`}
+            dir={isUr ? "rtl" : "ltr"}
+          >
+            <option value="">{t.countryNone}</option>
+            {COUNTRY_CALENDARS.map(c => (
+              <option key={c.id} value={c.id}>{c.name[lang]}</option>
+            ))}
+          </select>
+        </div>
+        {embedded && (
+          <p className={`hidden xl:block max-w-[220px] pt-6 text-[12px] leading-snug text-[#5a7a62] dark:text-[#8faa93] ${naskh}`}>
+            {t.countryHint}
+          </p>
+        )}
+      </div>
+      {!embedded && (
+        <p className={`text-[13px] text-[#4a7a5a] dark:text-[#8faa93] mt-2 ${naskh}`}>
+          {t.countryHint}
+        </p>
+      )}
 
       {selectedCountry && (() => {
         const country = COUNTRY_MAP.get(selectedCountry);

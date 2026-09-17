@@ -120,8 +120,8 @@ describe("Date Studio Yallop integration", () => {
 
     expect(adapter.predict).toHaveBeenLastCalledWith({ year: 2026, month: 9, day: 13 }, expect.objectContaining({ id: "karachi" }));
     expect(screen.getByText("Current lunar situation")).toBeTruthy();
-    expect(screen.getByText("Pakistan official Hijri date")).toBeTruthy();
-    expect(screen.getByText("30 Rabi al-Awwal 1448 AH")).toBeTruthy();
+    expect(screen.getAllByText("Pakistan official Hijri date").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("30 Rabi al-Awwal 1448 AH").length).toBeGreaterThan(0);
     expect(screen.getByText("Today is the 30th day of the current Hijri month. Therefore, tomorrow is necessarily the first day of the next Hijri month.")).toBeTruthy();
   });
 
