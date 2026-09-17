@@ -368,6 +368,25 @@ export default function DateConverterContent({
     return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (hash && hash !== "#date-studio") return;
+
+    const alignToStudio = () => {
+      const node = document.getElementById("date-studio");
+      if (node && typeof node.scrollIntoView === "function") {
+        node.scrollIntoView({ block: "start", behavior: "auto" });
+        return;
+      }
+      window.scrollTo(0, 0);
+    };
+
+    alignToStudio();
+    const frame = window.requestAnimationFrame(alignToStudio);
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   // ── Derived conversion result ───────────────────────────────────────────────
   const dayN   = parseInt(day,   10);
   const monthN = parseInt(month, 10);
@@ -478,7 +497,11 @@ export default function DateConverterContent({
   const fieldClass = `${inputClass} ${naskh}`;
 
   return (
-    <div className="bg-[#F7F5EF] dark:bg-[#0e1c15]" dir={dir}>
+    <div
+      id="date-studio"
+      className="bg-[#F7F5EF] dark:bg-[#0e1c15] scroll-mt-[97px] lg:scroll-mt-[105px] xl:scroll-mt-[113px]"
+      dir={dir}
+    >
       <div className="site-container max-w-[1120px] mx-auto py-8 sm:py-10">
         {!hideHeading && (
           <header className="mb-6 mx-auto max-w-3xl text-center">
@@ -522,7 +545,7 @@ export default function DateConverterContent({
           ))}
         </div>
 
-        <section id="date-studio" className="rounded-2xl border border-[#1A3A2A]/10 bg-white p-4 sm:p-6 shadow-[0_1px_2px_rgba(26,58,42,0.04)] dark:border-[#2a3d30] dark:bg-[#162a1e]">
+        <section className="rounded-2xl border border-[#1A3A2A]/10 bg-white p-4 sm:p-6 shadow-[0_1px_2px_rgba(26,58,42,0.04)] dark:border-[#2a3d30] dark:bg-[#162a1e]">
           <div className="flex justify-center">
             <div className="flex w-full rounded-2xl bg-[#F4F1E8] p-1 dark:bg-[#0e1c15]">
               <button
@@ -727,8 +750,8 @@ export default function DateConverterContent({
 
             <section id="conversion-results" className="mt-6 scroll-mt-6">
               <div className={`mb-3 flex flex-wrap items-end justify-between gap-2 ${naskh}`}>
-                <h2 className={`text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-nastaliq font-normal" : ""}`}>{t.resultsTitle}</h2>
-                <p className="text-[12px] text-[#5a7a62] dark:text-[#a8c8b0]">
+                <h2 className={`text-start text-base font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-nastaliq font-normal" : ""}`}>{t.resultsTitle}</h2>
+                <p className="text-end text-[12px] text-[#5a7a62] dark:text-[#a8c8b0]">
                   <span>{t.resultsLive}</span>
                   <span className="mx-2 text-[#B8935A]">|</span>
                   <span>{t.resultsApprox}</span>
@@ -736,14 +759,14 @@ export default function DateConverterContent({
               </div>
 
               {!hasInput && !errMsg && (
-                <div className="rounded-2xl border border-dashed border-[#B8935A]/40 bg-white px-5 py-5 dark:bg-[#162a1e]">
+                <div className="rounded-2xl border border-dashed border-[#B8935A]/40 bg-white px-5 py-5 text-start dark:bg-[#162a1e]">
                   <p className={`text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.readyTitle}</p>
                   <p className={`mt-1 text-xs text-[#4A6A4A] dark:text-[#a8c8b0] ${naskh}`}>{t.readyDesc}</p>
                 </div>
               )}
 
               {result && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3" dir="ltr">
                   {CAL_ORDER.map(cal => {
                     const authorityHijri = cal === "hijri" ? pakistanOfficialHijri : null;
                     const isAuthoritativeHijri = authorityHijri !== null;
@@ -774,45 +797,50 @@ export default function DateConverterContent({
                     return (
                       <div
                         key={cal}
-                        className={`rounded-2xl border px-4 py-4 ${
+                        dir={dir}
+                        className={`rounded-2xl border px-4 py-4 text-start ${
                           cal === "hijri"
                             ? "border-[#B8935A]/35 bg-[#FBF6EA] dark:border-[#B8935A]/30 dark:bg-[#1b2418]"
                             : "border-[#1A3A2A]/10 bg-[#F3F7F3] dark:border-[#2a3d30] dark:bg-[#162a1e]"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-start gap-3 min-w-0">
-                            <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                              cal === "hijri" ? "bg-[#B8935A]/18 text-[#8A6A32] dark:text-[#E0C18D]" : "bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-white/10 dark:text-[#e8ede9]"
-                            }`}>
-                              {icon}
-                            </span>
-                            <div className="min-w-0">
-                              <p className={`text-[13px] font-semibold text-[#3a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{category}</p>
-                              {isUr ? (
-                                <p className={`text-[13px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{resultLabel}</p>
-                              ) : (
-                                <p className="text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0]">{resultLabel}</p>
-                              )}
-                              {methodBadge && (
-                                <p className={`text-[11px] font-medium text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{methodBadge}</p>
-                              )}
-                              <p className={`mt-2 text-lg font-bold leading-snug text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{long}</p>
-                              <p className={`text-sm font-semibold text-[#6F4E25] dark:text-[#E0C18D] ${naskh}`} dir={isUr ? "rtl" : "ltr"}>{weekdayName}</p>
-                              <p className={`mt-1 text-[12px] text-[#5a7a62] dark:text-[#9fbfa8] ${naskh}`}>{meta}</p>
-                              <p className="mt-0.5 text-[11px] font-mono text-[#4a7a5a] dark:text-[#9fbfa8]" dir="ltr">{iso}</p>
+                        <div className="flex items-start gap-3">
+                          <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                            cal === "hijri" ? "bg-[#B8935A]/18 text-[#8A6A32] dark:text-[#E0C18D]" : "bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-white/10 dark:text-[#e8ede9]"
+                          }`}>
+                            {icon}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className={`text-[13px] font-semibold text-[#3a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{category}</p>
+                                {isUr ? (
+                                  <p className={`text-[13px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{resultLabel}</p>
+                                ) : (
+                                  <p className="text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0]">{resultLabel}</p>
+                                )}
+                                {methodBadge && (
+                                  <p className={`text-[11px] font-medium text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{methodBadge}</p>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(cal, copyText)}
+                                className={`shrink-0 rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-all ${naskh}
+                                  ${isCopied
+                                    ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
+                                    : "border-[#1A3A2A]/15 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#a8c8b0]"}`}
+                              >
+                                {isCopied ? t.copied : t.copy}
+                              </button>
                             </div>
+                            <p className={`mt-2 text-lg font-bold leading-snug text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{long}</p>
+                            <p className={`text-sm font-semibold text-[#6F4E25] dark:text-[#E0C18D] ${naskh}`}>{weekdayName}</p>
+                            <p className={`mt-1 text-[12px] text-[#5a7a62] dark:text-[#9fbfa8] ${naskh}`}>{meta}</p>
+                            <p className="mt-0.5 text-[11px] font-mono text-[#4a7a5a] dark:text-[#9fbfa8]">
+                              <span dir="ltr" className="inline-block">{iso}</span>
+                            </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(cal, copyText)}
-                            className={`shrink-0 rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-all ${naskh}
-                              ${isCopied
-                                ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
-                                : "border-[#1A3A2A]/15 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#a8c8b0]"}`}
-                          >
-                            {isCopied ? t.copied : t.copy}
-                          </button>
                         </div>
                         {cal === "hijri" && !isAuthoritativeHijri && (
                           <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-3 ${naskh}`}>{t.hijriNote}</p>
@@ -851,7 +879,7 @@ export default function DateConverterContent({
 
               return (
                 <section className="mt-5 rounded-2xl border border-[#1A3A2A]/10 bg-white p-4 sm:p-5 shadow-[0_1px_2px_rgba(26,58,42,0.04)] dark:border-[#2a3d30] dark:bg-[#162a1e]">
-                  <div className={`flex flex-col gap-3 sm:flex-row sm:items-center ${isUr ? "sm:flex-row-reverse" : ""}`}>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#B8935A]/15 text-[#8A6A32] dark:text-[#E0C18D]">
                       <BookOpen className="h-5 w-5" />
                     </span>
@@ -861,7 +889,7 @@ export default function DateConverterContent({
                     </div>
                     <Link
                       href={`/date/${isoDate(result!.gregorian)}`}
-                      className={`inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-[#1A3A2A]/15 px-4 text-sm font-semibold text-[#1A3A2A] hover:border-[#B8935A]/50 dark:border-[#35513d] dark:text-[#e8ede9] ${naskh}`}
+                      className={`inline-flex h-10 shrink-0 items-center justify-center gap-1.5 self-start rounded-full border border-[#1A3A2A]/15 px-4 text-sm font-semibold text-[#1A3A2A] hover:border-[#B8935A]/50 sm:self-auto dark:border-[#35513d] dark:text-[#e8ede9] ${naskh}`}
                     >
                       {t.viewIntelligence}
                       <ChevronRight className={`h-4 w-4 ${isUr ? "rotate-180" : ""}`} />
@@ -870,13 +898,10 @@ export default function DateConverterContent({
                   <p className={`sr-only ${naskh}`}>{t.moreInfo}</p>
                   <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-4 border-t border-[#1A3A2A]/8 pt-4 dark:border-[#2a3d30]">
                     {rows.map(row => (
-                      <div key={row.label}>
+                      <div key={row.label} className="min-w-0 text-start">
                         <p className={`text-[11px] font-semibold text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{row.label}</p>
-                        <p
-                          className={`mt-0.5 text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}
-                          dir={row.numeric ? "ltr" : (isUr ? "rtl" : undefined)}
-                        >
-                          {row.value}
+                        <p className={`mt-0.5 text-sm font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>
+                          {row.numeric ? <span dir="ltr" className="inline-block">{row.value}</span> : row.value}
                         </p>
                       </div>
                     ))}

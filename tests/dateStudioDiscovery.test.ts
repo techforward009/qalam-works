@@ -15,6 +15,18 @@ describe("Date Studio discovery surfaces", () => {
     expect(source).toMatch(/\/hijri\//);
   });
 
+  it("returns to Date Studio at the heading and keeps Urdu results on the start edge", () => {
+    const source = read("app/tools/date-converter/DateConverterContent.tsx");
+    expect(source).toMatch(/id="date-studio"/);
+    expect(source).toMatch(/scroll-mt-\[97px\]/);
+    expect(source).toMatch(/scrollIntoView\(\{ block: "start", behavior: "auto" \}\)/);
+    expect(source).not.toMatch(/<section id="date-studio"/);
+    expect(source).not.toMatch(/isUr \? "sm:flex-row-reverse"/);
+    expect(source).toMatch(/row\.numeric \? <span dir="ltr" className="inline-block">\{row\.value\}<\/span>/);
+    expect(source).toMatch(/<span dir="ltr" className="inline-block">\{iso\}<\/span>/);
+    expect(source).toMatch(/grid grid-cols-1 md:grid-cols-3 gap-3" dir="ltr"/);
+  });
+
   it("adds homepage Date Studio discovery", () => {
     expect(read("app/page.tsx")).toMatch(/DateStudioDiscoverySection/);
     const source = read("app/components/DateStudioDiscoverySection.tsx");

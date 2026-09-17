@@ -181,6 +181,36 @@ describe("Date Studio Yallop integration", () => {
     expect(screen.queryByText("پاکستان کی سرکاری ہجری تاریخ")).toBeNull();
   });
 
+  it("aligns Urdu conversion results and intelligence to the shared start edge", () => {
+    locale.language = "ur";
+    const { container } = render(<DateConverterContent />);
+    const studio = container.querySelector("#date-studio") as HTMLElement;
+    expect(studio).toBeTruthy();
+    expect(studio.getAttribute("dir")).toBe("rtl");
+    expect(studio.className).toContain("scroll-mt-[97px]");
+
+    fireEvent.click(screen.getAllByText("عیسوی").find(element => element.tagName === "BUTTON")!);
+    const numbers = container.querySelectorAll('input[type="number"]');
+    fireEvent.change(numbers[0], { target: { value: "17" } });
+    fireEvent.change(container.querySelectorAll("select")[1], { target: { value: "9" } });
+    fireEvent.change(numbers[1], { target: { value: "2026" } });
+
+    const results = container.querySelector("#conversion-results");
+    expect(results).toBeTruthy();
+    const grid = results!.querySelector(".grid.grid-cols-1.md\\:grid-cols-3") as HTMLElement | null
+      ?? results!.querySelector("[dir='ltr']") as HTMLElement | null;
+    expect(grid?.getAttribute("dir")).toBe("ltr");
+    const cards = results!.querySelectorAll("[dir='rtl']");
+    expect(cards.length).toBe(3);
+    for (const card of cards) expect(card.className).toContain("text-start");
+
+    const exploreTitle = screen.getByText("اس تاریخ کے بارے میں مزید");
+    const explore = exploreTitle.closest("section")!;
+    expect(explore.querySelector('[class*="flex-row-reverse"]')).toBeNull();
+    expect(explore.querySelectorAll(".text-start").length).toBeGreaterThan(0);
+    expect(screen.getByText("تاریخ کی تفصیل دیکھیں")).toBeTruthy();
+  });
+
   it("keeps reported-official authority distinct without rendering the tabular date", () => {
     authority.value = officialContext(30, "reported-official");
     const { container } = render(<DateConverterContent />);
