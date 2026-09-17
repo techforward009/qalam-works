@@ -290,24 +290,30 @@ function westernInner(
     </tr>`).join("")
     : "";
 
+  const totalsBox = "background:#F8FAFC;";
+  const totalsBar = `background:${P.accent};color:#ffffff;`;
   const totalsRows = `
     <tr data-totals-row="subtotal">
-      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:${fs(12)}px;${naskh}">${esc(V.subtotal)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 8px;color:#374151;font-size:${nf(12)}px;${colRule}" dir="ltr">${fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</td>
+      <td></td>
+      <td colspan="3" style="padding:6px 10px;text-align:end;color:#4B5563;font-size:${fs(12)}px;${totalsBox}${naskh}">${esc(V.subtotal)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:6px 8px;color:#111827;font-size:${nf(12)}px;${totalsBox}${colRule}" dir="ltr">${fmt(result.grossSubtotal, invoice.currency, invoiceLang)}</td>
     </tr>
     ${hasDiscount ? `
     <tr data-totals-row="discount">
-      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:${fs(12)}px;${naskh}">${esc(V.discount)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 8px;color:#DC2626;font-size:${nf(12)}px;${colRule}" dir="ltr">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</td>
+      <td></td>
+      <td colspan="3" style="padding:6px 10px;text-align:end;color:#4B5563;font-size:${fs(12)}px;${totalsBox}${naskh}">${esc(V.discount)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:6px 8px;color:#DC2626;font-size:${nf(12)}px;${totalsBox}${colRule}" dir="ltr">−${fmt(shownDiscount, invoice.currency, invoiceLang)}</td>
     </tr>` : ""}
     ${taxes.map(t => `
     <tr data-totals-row="tax">
-      <td colspan="4" style="padding:6px 8px;text-align:end;color:#6B7280;font-size:${fs(12)}px;${naskh}">${esc(displayTaxName(t.name, invoiceLang))}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:6px 8px;color:#374151;font-size:${nf(12)}px;${colRule}" dir="ltr">${fmt(t.amount, invoice.currency, invoiceLang)}</td>
+      <td></td>
+      <td colspan="3" style="padding:6px 10px;text-align:end;color:#4B5563;font-size:${fs(12)}px;${totalsBox}${naskh}">${esc(displayTaxName(t.name, invoiceLang))}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:6px 8px;color:#111827;font-size:${nf(12)}px;${totalsBox}${colRule}" dir="ltr">${fmt(t.amount, invoice.currency, invoiceLang)}</td>
     </tr>`).join("")}
-    <tr data-totals-row="total" style="background:${P.accent};">
-      <td colspan="4" style="padding:8px;text-align:end;font-weight:800;font-size:${fs(14)}px;color:#ffffff;${naskh}">${esc(V.total)}</td>
-      <td data-col="amount" style="${AMT_STYLE}padding:8px;font-weight:800;font-size:${nf(13)}px;color:#ffffff;background:${P.accent};${colRule}" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
+    <tr data-totals-row="total">
+      <td></td>
+      <td colspan="3" style="padding:8px 10px;text-align:end;font-weight:800;font-size:${fs(14)}px;${totalsBar}${naskh}">${esc(V.total)}</td>
+      <td data-col="amount" style="${AMT_STYLE}padding:8px;font-weight:800;font-size:${nf(13)}px;${totalsBar}${colRule}" dir="ltr">${fmt(result.total, invoice.currency, invoiceLang)}</td>
     </tr>`;
 
   const metaRows = `
@@ -363,7 +369,7 @@ function westernInner(
       </div>
     </div>
 
-    <table data-invoice-table="western" data-western-ledger="true" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:${tableFs}px;direction:${dir};">
+    <table data-invoice-table="western" data-western-ledger="true" data-totals="column-aligned" data-totals-compact="true" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:${tableFs}px;direction:${dir};">
       ${westernColgroup(invoiceLang)}
       <thead>
         <tr style="background:${P.accent};">
@@ -375,14 +381,10 @@ function westernInner(
         </tr>
       </thead>
       <tbody>${itemRows}${ledgerSpaceRows}</tbody>
+      <tbody>${totalsRows}</tbody>
     </table>
 
     <div data-extra-lines="true" data-extra-lines-count="${extra.extraLines}" data-gap-mm="${extra.spacerMm}" style="height:${extra.extraLines > 0 ? 0 : extra.spacerMm}mm;flex-shrink:0;"></div>
-
-    <table data-totals="column-aligned" style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:${tableFs}px;direction:${dir};margin-top:4px;">
-      ${westernColgroup(invoiceLang)}
-      <tbody>${totalsRows}</tbody>
-    </table>
 
     ${amountInWordsBlock(invoice.amountInWords || "", invoiceLang, naskh)}
 

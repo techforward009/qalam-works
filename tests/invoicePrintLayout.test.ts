@@ -367,7 +367,9 @@ describe("Urdu and boxed-cell presentation", () => {
       expect(built).toContain('data-invoice-meta="western"');
       expect(built).toContain('data-bill-to-bar="true"');
       expect(built).toContain("border-inline-start:1px solid");
-      expect(built).toMatch(/data-totals-row="total"[^>]*background:/);
+      expect(built).toContain('data-totals-compact="true"');
+      expect(built).toMatch(/data-totals-row="total"[\s\S]*?background:/);
+      expect(built).toMatch(/data-totals-row="subtotal"[\s\S]*?<td><\/td>/);
     }
     expect(en).toContain("BILL TO");
     expect(en).toContain("Due Date");
