@@ -1,5 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/tools/quality-checker/page": "app/tools/quality-checker/page.js",
-  "/tools/unicode-standardizer/page": "app/tools/unicode-standardizer/page.js"
-}
