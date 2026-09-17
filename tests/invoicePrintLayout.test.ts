@@ -358,4 +358,21 @@ describe("Urdu and boxed-cell presentation", () => {
     expect(ur).toContain("width:96px");
     expect(ur).toMatch(/data-invoice-table="western"[^>]*direction:rtl/);
   });
+
+  it("gives the western sheet a ledger header bar, column rules, and invoice meta table", () => {
+    const en = html({ style: "western" });
+    const ur = html({ style: "western" }, sampleInvoice(), "ur");
+    for (const built of [en, ur]) {
+      expect(built).toContain('data-western-ledger="true"');
+      expect(built).toContain('data-invoice-meta="western"');
+      expect(built).toContain('data-bill-to-bar="true"');
+      expect(built).toContain("border-inline-start:1px solid");
+      expect(built).toMatch(/data-totals-row="total"[^>]*background:/);
+    }
+    expect(en).toContain("BILL TO");
+    expect(en).toContain("Due Date");
+    const five = doc({ style: "western", extraLines: 5 });
+    expect(five.pageHtml).toContain('data-ledger-space="true"');
+    expect(five.pageHtml).not.toContain('data-blank-row="true"');
+  });
 });
