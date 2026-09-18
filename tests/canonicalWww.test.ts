@@ -58,4 +58,14 @@ describe("canonical www origin", () => {
       expect(source(file), file).not.toMatch(NON_WWW);
     }
   });
+
+  test("non-www host permanently redirects to www with path preserved", () => {
+    const src = source("next.config.ts");
+    expect(src).toContain("async redirects()");
+    expect(src).toContain('value: "qalamworks.com"');
+    expect(src).toContain('source: "/:path*"');
+    expect(src).toContain('destination: "https://www.qalamworks.com/:path*"');
+    expect(src).toContain("permanent: true");
+    expect(src).not.toMatch(/has:\s*\[[\s\S]*value:\s*"www\.qalamworks\.com"/);
+  });
 });

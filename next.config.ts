@@ -20,6 +20,17 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "qalamworks.com" }],
+        destination: "https://www.qalamworks.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
+
   // Deployment fix (2026-08-08): @sparticuz/chromium ships its Chromium
   // binary as data files (bin/*.br) that it reads at runtime via fs, not
   // via a static `require()`/`import`. Next.js's bundler and its separate
