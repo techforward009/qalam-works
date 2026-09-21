@@ -445,3 +445,34 @@ provider has been selected.
 
 Current product policy remains to avoid paid dependencies for core
 features until revenue begins.
+
+---
+
+## Decision: Research Engine spec freeze (no implementation yet)
+
+**Date:** 2026-09-21
+**Status:** Approved — freeze
+
+**Decision:**
+Qalam will not copy code from `Arindam200/awesome-ai-apps`. We adopt
+selected architectural *ideas* (typed answers, stable chunk IDs, page
+provenance, hybrid retrieval, evidence/refusal gates, exact quote
+verification) as a Qalam-native **Research Engine**.
+
+The contract lives in `docs/research-assistant/` and is frozen. Coders
+must not add `engine/` modules, `/api/research` routes, or a public
+Research Studio page until Phase A is explicitly unfrozen.
+
+The existing notes/sources store in `app/tools/research-studio/utils/`
+is a separate v0 workspace and must not be rewritten for RAG.
+
+AI is allowed only after deterministic retrieval and the evidence gate
+succeed. Existing Unicode, BiDi, Quality Checker, Translation Studio, and
+Document Studio engines must not be modified for this work.
+
+**Reason:**
+awesome-ai-apps is a pattern library, not a Qalam core. Implementation
+without a frozen spec would invite LangChain/LlamaIndex absorption,
+OCR/GraphRAG scope creep, and silent replacement of deterministic
+text processing. Freeze first; implement phase-by-phase later.
+
