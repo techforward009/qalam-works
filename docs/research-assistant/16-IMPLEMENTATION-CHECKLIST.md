@@ -3,11 +3,20 @@
 **Status:** SPEC FREEZE  
 **Do not execute this checklist until product owner unfreezes Phase A.**
 
+See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
+
 ## Sequence (locked)
+
+**Phase A (next unfreeze — still frozen today)**
 
 1. Types  
 2. Document ingestion  
 3. Page preservation  
+
+**Stop and review.**
+
+**Later phases (each needs its own unfreeze)**
+
 4. Qalam `processText()` adapter  
 5. Chunking  
 6. Storage  

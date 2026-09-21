@@ -7,6 +7,10 @@
 
 Ship an **evidence-based document research assistant**, not a chatbot.
 
+**Product-level rule:** Research Studio is an evidence-based document research tool. It is not a general-purpose conversational AI assistant. (`Research Engine ≠ AI Chatbot`)
+
+**MVP promise:** Ask your documents. See the answer with a page and an original quotation. If the material is not there, you will be told clearly.
+
 AI is a way to **reach and understand a source**. AI is not a substitute for the source.
 
 ```text
@@ -36,7 +40,7 @@ Human-readable result
 **Research Studio** — public name.  
 **Research Engine** — the evidence pipeline specified in this package.
 
-Existing notes/sources utilities in `app/tools/research-studio/utils/` remain a separate v0 workspace and are out of v0.1 scope.
+Existing notes/sources utilities in `app/tools/research-studio/utils/` remain a v0 workspace. Do not rewrite them in Phase A. Later UI should add **Ask your documents** onto Research Studio, not a separate AI-chat product.
 
 ## In scope for v0.1
 

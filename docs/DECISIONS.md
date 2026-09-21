@@ -476,3 +476,29 @@ without a frozen spec would invite LangChain/LlamaIndex absorption,
 OCR/GraphRAG scope creep, and silent replacement of deterministic
 text processing. Freeze first; implement phase-by-phase later.
 
+---
+
+## Decision: Research Engine MVP amendment (still frozen)
+
+**Date:** 2026-09-21
+**Status:** Approved — freeze remains; Phase A not unfrozen
+
+**Decision:**
+Product rule: Research Studio is evidence-based document research, not a
+general-purpose conversational AI assistant.
+
+MVP promise: ask your documents; answer comes with page + original quote;
+otherwise a clear “not enough material.”
+
+Phase A, when later unfrozen, is only types + ingestion + page
+preservation. Keyword search, LLM, API, and UI stay later phases.
+Ask-your-documents UI, when it exists, sits on Research Studio — not a
+new chatbot route.
+
+See `docs/research-assistant/17-AMENDMENT-MVP.md`.
+
+**Reason:**
+Keep the engineering contract, compress the first slice to a practical
+MVP, and prevent Phase A from swallowing the whole pipeline.
+
+

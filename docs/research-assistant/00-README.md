@@ -66,6 +66,7 @@ Public UI, when it ships, is `/tools/research-studio`. Until then, do not add th
 | [14-EVALUATION.md](14-EVALUATION.md) | Benchmarks, metrics, refusal |
 | [15-TEST-PLAN.md](15-TEST-PLAN.md) | Fixtures, golden tests, regression |
 | [16-IMPLEMENTATION-CHECKLIST.md](16-IMPLEMENTATION-CHECKLIST.md) | Phase order and Definition of Done |
+| [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md) | Product rule, MVP promise, Phase A cap |
 
 ## How to read each document
 
@@ -75,7 +76,7 @@ Every numbered spec has three locked sections:
 - **MUST NOT** — forbidden behavior
 - **ACCEPTANCE** — tests or checks that close the phase
 
-If a later conversation contradicts this folder, **this folder wins** until a dated amendment is added here or in `docs/DECISIONS.md`.
+If a later conversation contradicts this folder, **this folder wins** until a dated amendment is added here or in `docs/DECISIONS.md`. **[17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md) wins over 00–16 on MVP scope and Phase A width.**
 
 ## Implementation freeze
 
