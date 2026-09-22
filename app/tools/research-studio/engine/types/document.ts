@@ -29,6 +29,7 @@ export type ResearchDocument = {
   createdAt: string;
   processingStatus: ProcessingStatus;
   failureCode?: FailureCode;
+  chunkerVersion?: string;
 };
 
 export type DocumentPage = {
@@ -78,6 +79,7 @@ export type ResearchAnswer = {
 };
 
 export const EXTRACTOR_VERSION = "1";
+export const CHUNKER_VERSION = "1";
 
 export function pageId(documentId: string, pageNumber: number): string {
   return `${documentId}:p${pageNumber}`;

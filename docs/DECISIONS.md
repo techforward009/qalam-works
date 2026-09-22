@@ -516,3 +516,22 @@ or notes-store rewrite.
 **Reason:**
 Product owner requested Phase A start after the MVP amendment freeze.
 
+---
+
+## Decision: Unfreeze Research Engine Phase B
+
+**Date:** 2026-09-22
+**Status:** Approved — Phase B implementation
+
+**Decision:**
+Phase B is unfrozen for the processText adapter boundary and
+deterministic page/paragraph chunking with stable
+`{documentId}:p{page}:c{chunk}` ids. No search, embeddings, LLM, UI,
+or `/api/research/*`.
+
+The adapter must call existing `processText()` and must not rewrite
+`rawText` or the Unicode engine.
+
+**Reason:**
+Product owner opened Phase B from the verified Phase A baseline
+(215c5c4).
