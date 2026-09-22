@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Phase A done. Phase B unfrozen 2026-09-22 (processText adapter + chunking). Later phases still frozen.
+**Status:** Phase A–B done. Phase C unfrozen 2026-09-22 (local document/page/chunk storage). Later phases still frozen.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -21,9 +21,14 @@ See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **onl
 
 **Stop and review.**
 
-**Later phases (each needs its own unfreeze)**
+**Phase C (unfrozen 2026-09-22)**
 
 6. Storage  
+
+**Stop and review.**
+
+**Later phases (each needs its own unfreeze)**
+
 7. Dense retrieval (v0.2; stub interface in v0.1)  
 8. Keyword retrieval  
 9. Hybrid fusion (v0.2)  

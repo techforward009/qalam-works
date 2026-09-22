@@ -535,3 +535,20 @@ The adapter must call existing `processText()` and must not rewrite
 **Reason:**
 Product owner opened Phase B from the verified Phase A baseline
 (215c5c4).
+
+---
+
+## Decision: Unfreeze Research Engine Phase C
+
+**Date:** 2026-09-22
+**Status:** Approved — Phase C implementation
+
+**Decision:**
+Phase C stores ResearchDocument, DocumentPage, and DocumentChunk in a
+dedicated engine store (memory + optional localStorage). It must not
+reuse or rewrite the notes-store keys/types, Document Studio IndexedDB,
+or introduce a server database. No search or retrieval.
+
+**Reason:**
+Product owner opened Phase C from the verified Phase B baseline
+(9697ce9).

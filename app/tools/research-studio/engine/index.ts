@@ -26,3 +26,20 @@ export {
   MAX_CHUNK_CODE_POINTS,
   type ChunkResult,
 } from "./chunking/createChunks";
+export {
+  ENGINE_STORE_SCHEMA_VERSION,
+  parseStoredCorpus,
+  type StoredCorpus,
+} from "./storage/parseStoredCorpus";
+export {
+  ENGINE_DOC_KEY_PREFIX,
+  ENGINE_LIST_KEY,
+  createLocalStorageResearchEngineStore,
+  createMemoryResearchEngineStore,
+  createResearchEngineStore,
+  engineDocKey,
+  makeStoredCorpus,
+  type EngineStoreError,
+  type EngineStoreResult,
+  type ResearchEngineStore,
+} from "./storage/researchEngineStore";
