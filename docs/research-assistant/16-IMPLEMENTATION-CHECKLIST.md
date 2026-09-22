@@ -1,13 +1,12 @@
 # 16 — Implementation checklist
 
-**Status:** SPEC FREEZE  
-**Do not execute this checklist until product owner unfreezes Phase A.**
+**Status:** Phase A unfrozen 2026-09-22 (types + ingestion + page preservation). Later phases still frozen.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
 ## Sequence (locked)
 
-**Phase A (next unfreeze — still frozen today)**
+**Phase A (unfrozen 2026-09-22)**
 
 1. Types  
 2. Document ingestion  

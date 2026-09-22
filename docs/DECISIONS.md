@@ -501,4 +501,18 @@ See `docs/research-assistant/17-AMENDMENT-MVP.md`.
 Keep the engineering contract, compress the first slice to a practical
 MVP, and prevent Phase A from swallowing the whole pipeline.
 
+---
+
+## Decision: Unfreeze Research Engine Phase A
+
+**Date:** 2026-09-22
+**Status:** Approved — Phase A implementation
+
+**Decision:**
+Phase A is unfrozen for types, PDF/DOCX/TXT/MD ingestion, and page
+preservation only. No RAG, embeddings, LLM, UI, `/api/research/*`, OCR,
+or notes-store rewrite.
+
+**Reason:**
+Product owner requested Phase A start after the MVP amendment freeze.
 

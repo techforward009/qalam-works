@@ -1,6 +1,6 @@
 # 17 — Amendment: MVP product rule (2026-09-21)
 
-**Status:** SPEC AMENDMENT — still frozen; **Phase A is not unfrozen**  
+**Status:** SPEC AMENDMENT — Phase A unfrozen 2026-09-22 for types + ingestion + page preservation only
 **Supersedes in case of conflict:** the “first slice” language in 00–16, without deleting those files.
 
 This amendment records agreement between the engineering freeze and the product/MVP reading:
@@ -60,9 +60,9 @@ Answer + page + quote   OR   “مواد کافی نہیں”
 
 Dense / RRF / rerank stay **v0.2+**, and only if keyword retrieval is proven insufficient.
 
-## Phase A — still frozen; scope not expanded
+## Phase A — unfrozen 2026-09-22; scope not expanded
 
-When Phase A is explicitly unfrozen, it is **only**:
+Phase A is **only**:
 
 1. Types (`ResearchDocument`, `DocumentPage`, related ids)
 2. Ingestion (PDF / DOCX / TXT / MD)
@@ -77,10 +77,10 @@ Then **stop**. Review the result. Unfreeze the next phase in a dated decision. D
 
 ## MUST NOT
 
-- Unfreeze Phase A by implication of this amendment.
+- Unfreeze later phases by implication of Phase A.
 - Widen Phase A to “the whole v0.1 pipeline”.
 - Add a standalone ChatGPT-style chat route.
 
 ## ACCEPTANCE
 
-- A reviewer reading only this file can state: chatbot or not; MVP promise; Phase A contents; whether code may start (**no**).
+- A reviewer reading only this file can state: chatbot or not; MVP promise; Phase A contents; later phases still frozen.
