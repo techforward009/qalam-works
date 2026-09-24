@@ -688,3 +688,21 @@ process-memory store. Persistent storage stays deferred.
 **Reason:**
 Product owner opened page fetch from the verified upload baseline
 (f6eb64d).
+
+---
+
+## Decision: Unfreeze the tiny evaluation harness
+
+**Date:** 2026-09-24
+**Status:** Approved — benchmark only
+
+**Decision:**
+A ten-case offline benchmark locks the current retrieval, gate, citation,
+and refusal behavior. It must not call a model or change those systems.
+One measured gap is recorded: a shared word can retrieve a chunk that
+does not answer the question, and the gate still refuses. That is not
+enough evidence to change retrieval in this phase.
+
+**Reason:**
+Product owner opened evaluation from the verified page-fetch baseline
+(e8a4836).

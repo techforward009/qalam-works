@@ -78,4 +78,5 @@ Every Research Engine PR must still run the **focused** existing suites that pro
 
 - `vitest run tests/researchStudio.test.ts` stays green without edits.
 - New `tests/research/evidenceGate.test.ts` covers the six gate rows.
+- The tiny offline benchmark is `tests/research/evaluation.test.ts` plus `tests/research/fixtures/evaluationCorpus.ts`. It does not call a model. The 100-item JSON set is still deferred.
 - Citation verifier has a failing quote fixture.

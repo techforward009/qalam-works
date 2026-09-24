@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Ask, upload, and page fetch are unfrozen. Search and UI stay frozen. Source pages are process memory only.
+**Status:** Ask, upload, page fetch, and the tiny evaluation harness are unfrozen. The 100-item set, search, and UI stay frozen.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -63,14 +63,19 @@ Workers AI draft only, after the evidence gate and before citation verification.
 
 **Stop and review.**
 
+**Evaluation harness (unfrozen 2026-09-24)**
+
+16. Tiny offline benchmark only. No retrieval change and no model call.
+
+**Stop and review.**
+
 **Later phases (each needs its own unfreeze)**
 
 7. Dense retrieval (v0.2; stub interface in v0.1)  
 9. Hybrid fusion (v0.2)  
 10. Reranking (v0.2; `NoopReranker` in v0.1)  
 15. UI  
-16. Evaluation dataset  
-17. Golden tests  
+17. Golden tests (100-item set)
 18. Performance / security testing  
 
 **Agentic retrieval last** (v0.6), only if fixed retrieval benchmarks fail.
