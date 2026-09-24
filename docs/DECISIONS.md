@@ -619,3 +619,20 @@ bypass the gate or citation check.
 **Reason:**
 Product owner opened Phase G from the verified Phase F baseline
 (6e284de).
+
+---
+
+## Decision: Unfreeze the LLM answer adapter
+
+**Date:** 2026-09-24
+**Status:** Approved — adapter only
+
+**Decision:**
+The first model call is a Cloudflare Workers AI answer adapter behind
+`askResearchAsync`. It receives at most five gate-approved chunks.
+Every proposed quote still goes through citation verification.
+A gate refusal makes zero model calls. No API, UI, tools, or web search.
+
+**Reason:**
+Product owner opened the adapter from the verified Phase G baseline
+(edd5462). The provider matches the existing Workers AI chat endpoint.

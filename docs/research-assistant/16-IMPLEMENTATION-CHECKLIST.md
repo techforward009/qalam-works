@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Phase A–F done. Phase G unfrozen 2026-09-24 (typed answer contract, no LLM). Model calls still frozen.
+**Status:** Phase A–G done. LLM answer adapter unfrozen 2026-09-24. API and UI still frozen.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -48,6 +48,12 @@ See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **onl
 **Phase G (unfrozen 2026-09-24)**
 
 12. Typed answer contract, without an LLM call
+
+**Stop and review.**
+
+**LLM answer adapter (unfrozen 2026-09-24)**
+
+Workers AI draft only, after the evidence gate and before citation verification. No API or UI.
 
 **Stop and review.**
 
