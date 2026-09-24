@@ -77,7 +77,7 @@ Localized `answer` strings are a UI concern; API may return an English `answer` 
 GET /api/research/documents/:id/pages/:page
 ```
 
-Returns `{ pageNumber, rawText }` for highlighting. No analytics of `rawText`.
+Returns `{ documentId, pageNumber, rawText }`. `rawText` is the stored page text, unchanged. Unknown document or page is HTTP 404 `not_found`, without other ids. A malformed id or page is HTTP 400. Page text lives only in process memory.
 
 ## MUST
 

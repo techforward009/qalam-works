@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Ask and document upload are unfrozen. Process, search, page fetch, and UI stay frozen. Uploads are process memory only.
+**Status:** Ask, upload, and page fetch are unfrozen. Search and UI stay frozen. Source pages are process memory only.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -59,7 +59,7 @@ Workers AI draft only, after the evidence gate and before citation verification.
 
 **Research API (unfrozen 2026-09-24)**
 
-14. `POST /api/research/ask` and `POST /api/research/documents`. Process memory only. No UI.
+14. `POST /api/research/ask`, `POST /api/research/documents`, and `GET /api/research/documents/:id/pages/:page`. Process memory only. No UI.
 
 **Stop and review.**
 

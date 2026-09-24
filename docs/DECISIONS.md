@@ -671,3 +671,20 @@ Restart or deploy clears uploaded documents. That limit is intentional.
 **Reason:**
 Product owner opened upload from the verified ask API baseline
 (fb4473f).
+
+---
+
+## Decision: Unfreeze Research page fetch
+
+**Date:** 2026-09-24
+**Status:** Approved — read-only page endpoint
+
+**Decision:**
+`GET /api/research/documents/:id/pages/:page` returns the stored page
+`rawText` unchanged. It does not read chunks, call a model, or write.
+A missing document or page is 404. Restart or deploy still clears the
+process-memory store. Persistent storage stays deferred.
+
+**Reason:**
+Product owner opened page fetch from the verified upload baseline
+(f6eb64d).
