@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
-import { afterEach } from "vitest";
+import { afterEach, beforeEach } from "vitest";
 import { POST } from "../../app/api/research/ask/route";
 import { handleResearchAsk } from "../../app/api/research/ask/handleAsk";
 import { setResearchBlobClientForTests } from "../../app/api/research/vercelResearchBlob";
+import { clearTestResearchAuth, testResearchSessionCookie, useTestResearchAuth } from "./researchAuthFixture";
 import {
   CHUNKER_VERSION,
   INSUFFICIENT_EVIDENCE_EN,
@@ -18,8 +19,13 @@ import {
 
 const TOKEN = "super-secret-token";
 
+beforeEach(() => {
+  useTestResearchAuth();
+});
+
 afterEach(() => {
   setResearchBlobClientForTests(null);
+  clearTestResearchAuth();
 });
 
 function emptyBlob(): ResearchBlobClient {
@@ -285,7 +291,7 @@ describe("POST /api/research/ask", () => {
     const malformed = await POST(
       new NextRequest("http://localhost/api/research/ask", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", cookie: testResearchSessionCookie() },
         body: "{",
       }),
     );
@@ -295,7 +301,7 @@ describe("POST /api/research/ask", () => {
     const oversized = await POST(
       new NextRequest("http://localhost/api/research/ask", {
         method: "POST",
-        headers: { "content-type": "application/json", "content-length": "999999" },
+        headers: { "content-type": "application/json", "content-length": "999999", cookie: testResearchSessionCookie() },
         body: JSON.stringify({ query: "عبارت" }),
       }),
     );
@@ -305,7 +311,7 @@ describe("POST /api/research/ask", () => {
     const emptyStore = await POST(
       new NextRequest("http://localhost/api/research/ask", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", cookie: testResearchSessionCookie() },
         body: JSON.stringify({ query: "عبارت" }),
       }),
     );

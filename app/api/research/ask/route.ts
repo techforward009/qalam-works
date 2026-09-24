@@ -4,6 +4,7 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { ResearchPersistenceError, hydrateResearchStore } from "../../../tools/research-studio/engine";
 import { researchBlobClientFromEnv } from "../memoryStore";
+import { rejectUnauthenticatedResearch } from "../auth/requireSession";
 import {
   MAX_RESEARCH_JSON_BYTES,
   handleResearchAsk,
@@ -14,6 +15,9 @@ import {
 const FAILED = { error: "Research request failed.", code: "failed" } as const;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const denied = rejectUnauthenticatedResearch(req);
+  if (denied) return denied;
+
   const length = Number(req.headers.get("content-length") ?? 0);
   if (Number.isFinite(length) && length > MAX_RESEARCH_JSON_BYTES) {
     return NextResponse.json({ error: "Malformed request.", code: "invalid" }, { status: 400 });

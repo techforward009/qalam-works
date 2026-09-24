@@ -1,9 +1,23 @@
 # 11 — API contract
 
-**Status:** SPEC FREEZE  
+**Status:** SPEC FREEZE. Owner authentication documented 2026-09-24.
 **Depends on:** [03-DATA-MODEL.md](03-DATA-MODEL.md), [10-LLM-CONTRACT.md](10-LLM-CONTRACT.md)
 
 Routes live under `app/api/research/` when implementation is unfrozen. They must not be added to the public sitemap.
+
+## Owner authentication
+
+Research Studio v0.1 is a single-owner gate. It is not a multi-user account system and it does not assign documents to people.
+
+`POST /api/research/auth` accepts only `{ "password": "..." }`. The password is compared on the server with `QALAM_RESEARCH_ACCESS_PASSWORD`. It is not stored in the cookie and it is not returned. A correct password sets the HttpOnly cookie `qalam_research_session`: HMAC-SHA256 over an expiry and a random nonce, about 7 days, `SameSite=Lax`, `Path=/api/research`, and `Secure` in production. The signature key is `QALAM_RESEARCH_SESSION_SECRET`. A wrong password is HTTP 401 `unauthorized` and sets no cookie. Malformed JSON, unexpected fields, and an oversized body are HTTP 400.
+
+`GET /api/research/auth` returns HTTP 200 `{ "authenticated": true }` or HTTP 401 `{ "authenticated": false }`. `DELETE /api/research/auth` clears that cookie and returns `{ "authenticated": false }`. Logout only clears the browser cookie. v0.1 has no server-side revocation list, so a copied cookie still works until it expires.
+
+If either environment variable is missing, password checks and the document routes return HTTP 503 `{ "error": "Research access is not configured.", "code": "auth_not_configured" }`. There is no unsigned fallback and no process-memory fallback.
+
+`POST /api/research/documents`, `POST /api/research/ask`, and `GET /api/research/documents/:id/pages/:page` check the session before any document bytes are read and before Blob is called. Otherwise HTTP 401 `{ "error": "Authentication required.", "code": "unauthorized" }`.
+
+The `qalam-research` Blob store stays private and authoritative. Responses do not include blob URLs.
 
 ## Endpoints
 
@@ -81,7 +95,7 @@ Returns `{ documentId, pageNumber, rawText }`. `rawText` is the stored page text
 
 ## MUST
 
-- Auth / private-mode: v0.1 may be owner-only or local-dev unsigned; document the chosen lock. Do not expose other users’ documents.
+- Auth / private-mode: v0.1 is owner-only. The password stays on the server. There is no per-user document ownership.
 - Cap upload size (recommend 25 MB) and page count (recommend 400) with a typed error.
 - Return structured error codes, not stack traces.
 

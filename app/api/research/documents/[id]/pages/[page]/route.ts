@@ -7,15 +7,19 @@ import {
   loadDurableCorpus,
 } from "../../../../../../tools/research-studio/engine";
 import { researchBlobClientFromEnv } from "../../../../memoryStore";
+import { rejectUnauthenticatedResearch } from "../../../../auth/requireSession";
 import { handleResearchPage, parseResearchPageParams } from "../../../handlePage";
 
 const FAILED = { error: "Research page fetch failed.", code: "failed" } as const;
 const MISSING = { error: "Not found.", code: "not_found" } as const;
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   context: { params: Promise<{ id: string; page: string }> },
 ): Promise<NextResponse> {
+  const denied = rejectUnauthenticatedResearch(req);
+  if (denied) return denied;
+
   const params = await context.params;
   const parsed = parseResearchPageParams(params.id, params.page);
   if (!parsed) {

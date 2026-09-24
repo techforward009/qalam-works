@@ -1,7 +1,7 @@
 "use client";
 
 import { useLanguage } from "../../lib/language-context";
-import ResearchStudioWorkspace from "./components/ResearchStudioWorkspace";
+import ResearchStudioGate from "./components/ResearchStudioGate";
 
 const INTRO = {
   en: "Ask your documents. See the answer with a page and an original quotation. If the material is not there, you will be told clearly.",
@@ -20,7 +20,7 @@ export default function ResearchStudioContent() {
         <p className={`max-w-2xl text-gray-700 dark:text-white ${language === "ur" ? "font-naskh" : ""}`}>{INTRO[language]}</p>
       </section>
       <div className="site-container">
-        <ResearchStudioWorkspace language={language} dir={dir} />
+        <ResearchStudioGate language={language} dir={dir} />
       </div>
     </main>
   );

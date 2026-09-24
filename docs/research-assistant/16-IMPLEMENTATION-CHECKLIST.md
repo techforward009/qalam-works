@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Ask, upload, page fetch, the tiny evaluation harness, the Research Studio page, and private Blob persistence are unfrozen. The 100-item set stays frozen.
+**Status:** Ask, upload, page fetch, the tiny evaluation harness, the Research Studio page, private Blob persistence, and the owner password gate are unfrozen. The 100-item set stays frozen.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -78,6 +78,12 @@ Workers AI draft only, after the evidence gate and before citation verification.
 **Private Blob persistence (unfrozen 2026-09-24)**
 
 Research documents persist in the private `qalam-research` Vercel Blob store. One JSON object per document. `parseStoredCorpus()` validates every read and write. Memory is a per-request working set only. Production requires `QALAM_RESEARCH_STORE_ID`.
+
+**Stop and review.**
+
+**Research Studio owner authentication (unfrozen 2026-09-24)**
+
+`/tools/research-studio` stays publicly reachable as a page. The workspace and the document APIs require a server-checked owner password (`QALAM_RESEARCH_ACCESS_PASSWORD`). The session cookie `qalam_research_session` is HttpOnly and signed with `QALAM_RESEARCH_SESSION_SECRET`. Missing configuration is `auth_not_configured`, not unsigned access. Blob persistence is unchanged. This is a single-owner v0.1 gate, not per-user ownership.
 
 **Stop and review.**
 

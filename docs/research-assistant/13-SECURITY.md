@@ -1,6 +1,6 @@
 # 13 — Security and privacy
 
-**Status:** SPEC FREEZE  
+**Status:** SPEC FREEZE. Owner gate documented 2026-09-24.
 **Depends on:** `docs/ANALYTICS-PRIVACY.md`
 
 Qalam must be stricter than demo RAG apps.
@@ -42,6 +42,10 @@ Allowed: tool id, success boolean, error codes, latency buckets, gate reason **e
 - LLM keys only on the server (`app/api/research/*`).
 - No `XAI_API_KEY` (or any provider key) in client components.
 
+## Research Studio owner gate
+
+v0.1 has one owner, not accounts. The browser bundle does not receive `QALAM_RESEARCH_ACCESS_PASSWORD` or `QALAM_RESEARCH_SESSION_SECRET`. The session is an HttpOnly signed cookie named `qalam_research_session`. Passwords and session tokens are not logged and are not copied into auth errors. Auth errors do not include document content, filenames, or document ids. Unauthenticated callers do not list documents, fetch pages, or reach Blob. Research Blob objects stay private. Logout clears the cookie in the browser; a copied cookie remains valid until expiry because v0.1 keeps no revocation list.
+
 ## MUST
 
 - Cap file size and page count.
@@ -52,6 +56,7 @@ Allowed: tool id, success boolean, error codes, latency buckets, gate reason **e
 
 - Use document text as a prompt prefix without an untrusted-data wrapper.
 - Log `rawText` to Vercel Analytics or stdout in production.
+- Log Research passwords or session tokens.
 - Follow redirects to private IPs if URL ingest is added.
 
 ## ACCEPTANCE

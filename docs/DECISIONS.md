@@ -744,3 +744,25 @@ Missing configuration is a safe server error, not a memory fallback.
 **Reason:**
 Process memory does not survive a Vercel restart. The project owner
 connected the dedicated private store `qalam-research`.
+
+---
+
+## Decision: Add owner authentication to Research Studio
+
+**Date:** 2026-09-24
+**Status:** Approved — single-owner gate only
+
+**Decision:**
+Research Studio and `POST /api/research/documents`, `POST /api/research/ask`,
+and `GET /api/research/documents/:id/pages/:page` require a signed HttpOnly
+session. The password is `QALAM_RESEARCH_ACCESS_PASSWORD`, checked only on
+the server with Node crypto. The cookie `qalam_research_session` is
+HMAC-SHA256 with `QALAM_RESEARCH_SESSION_SECRET`, a random nonce, and about
+a 7-day lifetime. `Secure` follows production; it is not an access bypass.
+Missing configuration fails closed. Blob remains the private authoritative
+store. There are no accounts and no per-user document ownership. Logout
+clears the browser cookie only.
+
+**Reason:**
+Durable documents share one private store. Unsigned access would let any
+caller read and write that corpus.

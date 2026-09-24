@@ -1,5 +1,6 @@
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { NextRequest } from "next/server";
+import { afterEach, beforeEach } from "vitest";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { POST } from "../../app/api/research/documents/route";
 import {
@@ -12,6 +13,15 @@ import {
   type AsyncAnswerAdapter,
   type ResearchEngineStore,
 } from "../../app/tools/research-studio/engine";
+import { clearTestResearchAuth, testResearchSessionCookie, useTestResearchAuth } from "./researchAuthFixture";
+
+beforeEach(() => {
+  useTestResearchAuth();
+});
+
+afterEach(() => {
+  clearTestResearchAuth();
+});
 
 function file(name: string, bytes: Uint8Array | string, type = ""): File {
   const body = typeof bytes === "string" ? bytes : Buffer.from(bytes);
@@ -166,6 +176,7 @@ describe("POST /api/research/documents", () => {
     const missing = await POST(
       new NextRequest("http://localhost/api/research/documents", {
         method: "POST",
+        headers: { cookie: testResearchSessionCookie() },
         body: new FormData(),
       }),
     );
@@ -175,7 +186,7 @@ describe("POST /api/research/documents", () => {
     const oversized = await POST(
       new NextRequest("http://localhost/api/research/documents", {
         method: "POST",
-        headers: { "content-length": String(26 * 1024 * 1024) },
+        headers: { "content-length": String(26 * 1024 * 1024), cookie: testResearchSessionCookie() },
         body: new FormData(),
       }),
     );

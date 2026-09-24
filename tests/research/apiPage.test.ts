@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { afterEach } from "vitest";
+import { afterEach, beforeEach } from "vitest";
 import { GET } from "../../app/api/research/documents/[id]/pages/[page]/route";
 import * as pageRoute from "../../app/api/research/documents/[id]/pages/[page]/route";
 import { handleResearchUpload } from "../../app/api/research/documents/handleUpload";
@@ -14,9 +14,15 @@ import {
   type ResearchDocument,
   type ResearchEngineStore,
 } from "../../app/tools/research-studio/engine";
+import { clearTestResearchAuth, testResearchSessionCookie, useTestResearchAuth } from "./researchAuthFixture";
+
+beforeEach(() => {
+  useTestResearchAuth();
+});
 
 afterEach(() => {
   setResearchBlobClientForTests(null);
+  clearTestResearchAuth();
 });
 
 function document(id: string, pageCount: number): ResearchDocument {
@@ -172,15 +178,21 @@ describe("GET /api/research/documents/:id/pages/:page", () => {
         return [];
       },
     });
-    const missing = await GET(new NextRequest("http://localhost/api/research/documents/doc_missing/pages/1"), {
-      params: Promise.resolve({ id: "doc_missing", page: "1" }),
-    });
+    const missing = await GET(
+      new NextRequest("http://localhost/api/research/documents/doc_missing/pages/1", {
+        headers: { cookie: testResearchSessionCookie() },
+      }),
+      { params: Promise.resolve({ id: "doc_missing", page: "1" }) },
+    );
     expect(missing.status).toBe(404);
     expect(await missing.json()).toEqual({ error: "Not found.", code: "not_found" });
 
-    const invalid = await GET(new NextRequest("http://localhost/api/research/documents/bad id/pages/1"), {
-      params: Promise.resolve({ id: "bad id", page: "1" }),
-    });
+    const invalid = await GET(
+      new NextRequest("http://localhost/api/research/documents/bad id/pages/1", {
+        headers: { cookie: testResearchSessionCookie() },
+      }),
+      { params: Promise.resolve({ id: "bad id", page: "1" }) },
+    );
     expect(invalid.status).toBe(400);
   });
 });

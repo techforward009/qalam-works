@@ -1,6 +1,6 @@
 /**
  * POST /api/research/ask
- * Unsigned local/dev lock: no user accounts.
+ * The route checks the owner session before calling this handler.
  * The client cannot supply evidence. Retrieval, the gate, and citation
  * checks stay in the engine. Documents are loaded from durable storage
  * by the route before this handler runs.

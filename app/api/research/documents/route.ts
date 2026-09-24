@@ -8,11 +8,15 @@ import {
   saveDurableCorpus,
 } from "../../../tools/research-studio/engine";
 import { researchBlobClientFromEnv } from "../memoryStore";
+import { rejectUnauthenticatedResearch } from "../auth/requireSession";
 import { MAX_RESEARCH_UPLOAD_BYTES, handleResearchUpload } from "./handleUpload";
 
 const FAILED = { error: "Research upload failed.", code: "failed" } as const;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const denied = rejectUnauthenticatedResearch(req);
+  if (denied) return denied;
+
   const length = Number(req.headers.get("content-length") ?? 0);
   if (Number.isFinite(length) && length > MAX_RESEARCH_UPLOAD_BYTES) {
     return NextResponse.json({ error: "Malformed request.", code: "invalid" }, { status: 400 });
