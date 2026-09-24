@@ -779,3 +779,16 @@ Ask preparation reads up to 20 keyword hits, then keeps at most 5 chunks for the
 
 **Reason:**
 A compound question can have its highest-ranked chunks all support one part, so the other part never reaches the model.
+
+---
+
+## Decision: Refuse answers that skip a selected evidence cluster
+
+**Date:** 2026-09-24
+**Status:** Approved — post-citation check only
+
+**Decision:**
+After every citation has been verified, the answer is refused with `insufficient_answer_coverage` when any selected evidence chunk has at least two folded matched terms that none of the verified cited chunks contain. One missing term does not refuse. The answer prose is not matched. There is no second model call and no appended quotation. The user-facing sentence is "The answer did not cover all supported parts of the question."
+
+**Reason:**
+The coverage selector can send two term clusters, and the model can still cite only one. An incomplete citation set must not look like a complete answer.

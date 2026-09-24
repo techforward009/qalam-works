@@ -55,6 +55,9 @@ Free-form chat is invalid. Parse as JSON (or a constrained decoder). On parse fa
 | Invalid quote | retry then refuse |
 | No evidence (should never reach here) | refuse |
 | Schema miss | retry then refuse |
+| Verified citations omit a selected evidence cluster | `insufficient_answer_coverage` |
+
+After citation verification, a selected chunk refuses the answer when at least two of its folded matched terms appear in none of the verified cited chunks. One missing term does not refuse. The answer text is not scanned. There is no second model call, and missing quotes are not appended. The user-facing sentence is "The answer did not cover all supported parts of the question."
 
 User-visible refusal copy (Urdu UI):
 

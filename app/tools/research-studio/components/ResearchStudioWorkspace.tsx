@@ -5,6 +5,7 @@ import type { Language } from "../../../lib/language-context";
 
 const INSUFFICIENT_UR = "مجھے فراہم کردہ دستاویزات میں اس سوال کا کافی مستند مواد نہیں ملا۔";
 const PROVIDER_UR = "اے آئی فراہم کنندہ اس وقت دستیاب نہیں۔";
+const COVERAGE_UR = "جواب نے سوال کے تمام دستیاب حصوں کا احاطہ نہیں کیا۔";
 
 type UploadedDocument = {
   documentId: string;
@@ -57,6 +58,7 @@ const COPY = {
     answered: "Answered",
     refused: "Insufficient evidence",
     providerUnavailable: "AI provider unavailable",
+    incompleteCoverage: "Incomplete answer",
     evidence: "Evidence",
     openPage: "Open page",
     opening: "Opening page…",
@@ -85,6 +87,7 @@ const COPY = {
     answered: "جواب مل گیا",
     refused: "مواد کافی نہیں",
     providerUnavailable: "اے آئی فراہم کنندہ دستیاب نہیں",
+    incompleteCoverage: "نامکمل جواب",
     evidence: "شواہد",
     openPage: "صفحہ کھولیں",
     opening: "صفحہ کھل رہا ہے…",
@@ -346,9 +349,21 @@ export default function ResearchStudioWorkspace({
           {askState === "loading" ? <p className="text-sm">{t.asking}</p> : null}
           {result && !showAnswer ? (
             <div>
-              <p className="font-semibold">{result.refusalReason === "provider_error" ? t.providerUnavailable : t.refused}</p>
+              <p className="font-semibold">
+                {result.refusalReason === "provider_error"
+                  ? t.providerUnavailable
+                  : result.refusalReason === "insufficient_answer_coverage"
+                    ? t.incompleteCoverage
+                    : t.refused}
+              </p>
               {language === "ur" ? (
-                <p dir="rtl">{result.refusalReason === "provider_error" ? PROVIDER_UR : INSUFFICIENT_UR}</p>
+                <p dir="rtl">
+                  {result.refusalReason === "provider_error"
+                    ? PROVIDER_UR
+                    : result.refusalReason === "insufficient_answer_coverage"
+                      ? COVERAGE_UR
+                      : INSUFFICIENT_UR}
+                </p>
               ) : null}
               <p dir="auto">{result.answer}</p>
               {result.answered && result.citations.length === 0 ? <p>{t.unverified}</p> : null}

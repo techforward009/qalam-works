@@ -136,6 +136,16 @@ describe("Research Studio UI", () => {
           evidence: { chunksUsed: 0, reason: "sufficient" },
         });
       }
+      if (body.query === "partial") {
+        return jsonResponse({
+          answered: false,
+          status: "refused",
+          answer: "The answer did not cover all supported parts of the question.",
+          refusalReason: "insufficient_answer_coverage",
+          citations: [],
+          evidence: { chunksUsed: 0, reason: "sufficient" },
+        });
+      }
       if (body.query === "broken") return jsonResponse({ error: "Malformed request.", code: "invalid" }, 400);
       return jsonResponse({
         answered: true,
@@ -163,6 +173,14 @@ describe("Research Studio UI", () => {
     expect(screen.getByText("provider_error")).toBeTruthy();
     expect(screen.queryByText("Insufficient evidence", { exact: true })).toBeNull();
     expect(screen.queryByText("Insufficient evidence in the provided documents.")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Question text"), { target: { value: "partial" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    expect(await screen.findByText("Incomplete answer", { exact: true })).toBeTruthy();
+    expect(screen.getByText("The answer did not cover all supported parts of the question.")).toBeTruthy();
+    expect(screen.getByText("insufficient_answer_coverage")).toBeTruthy();
+    expect(screen.queryByText("Insufficient evidence", { exact: true })).toBeNull();
+    expect(screen.queryByText("The AI provider is unavailable.")).toBeNull();
 
     fireEvent.change(screen.getByLabelText("Question text"), { target: { value: "broken" } });
     fireEvent.click(screen.getByRole("button", { name: "Ask" }));

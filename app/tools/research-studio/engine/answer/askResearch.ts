@@ -10,6 +10,7 @@ import { MAX_KEYWORD_K, searchKeywords, type RetrievedChunk } from "../retrieval
 import type { ResearchEngineStore } from "../storage/researchEngineStore";
 import type { Citation, EvidenceGateReason, ResearchAnswer } from "../types/document";
 import { selectCoveredEvidence } from "./selectCoveredEvidence";
+import { citationsCoverSelectedEvidence } from "./answerCoverage";
 
 /** Spec limit: at most five evidence chunks may support an answer. */
 export const MAX_ANSWER_EVIDENCE = 5;
@@ -18,6 +19,7 @@ export const INSUFFICIENT_EVIDENCE_EN = "Insufficient evidence in the provided d
 export const INSUFFICIENT_EVIDENCE_UR =
   "مجھے فراہم کردہ دستاویزات میں اس سوال کا کافی مستند مواد نہیں ملا۔";
 export const PROVIDER_UNAVAILABLE_EN = "The AI provider is unavailable.";
+export const INCOMPLETE_ANSWER_COVERAGE_EN = "The answer did not cover all supported parts of the question.";
 
 export type AnswerStatus = "answered" | "refused";
 
@@ -26,7 +28,8 @@ export type RefusalReason =
   | "empty_query"
   | "invalid_citation"
   | "malformed_evidence"
-  | "provider_error";
+  | "provider_error"
+  | "insufficient_answer_coverage";
 
 export type AnswerSection = {
   documentId: string;
@@ -96,7 +99,12 @@ function refuse(
     query,
     status: "refused",
     answered: false,
-    answer: refusalReason === "provider_error" ? PROVIDER_UNAVAILABLE_EN : INSUFFICIENT_EVIDENCE_EN,
+    answer:
+      refusalReason === "provider_error"
+        ? PROVIDER_UNAVAILABLE_EN
+        : refusalReason === "insufficient_answer_coverage"
+          ? INCOMPLETE_ANSWER_COVERAGE_EN
+          : INSUFFICIENT_EVIDENCE_EN,
     sections: [],
     citations: [],
     evidence: { chunksUsed: 0, reason: evidenceReason },
@@ -185,6 +193,10 @@ function completeDraft(
       chunkId: verified.chunkId,
       quote: verified.sourceQuote,
     });
+  }
+
+  if (!citationsCoverSelectedEvidence(evidence, sections)) {
+    return refuse(query, "insufficient_answer_coverage", evidenceReason);
   }
 
   return {

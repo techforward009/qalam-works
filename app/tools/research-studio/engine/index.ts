@@ -84,6 +84,7 @@ export {
   INSUFFICIENT_EVIDENCE_EN,
   INSUFFICIENT_EVIDENCE_UR,
   PROVIDER_UNAVAILABLE_EN,
+  INCOMPLETE_ANSWER_COVERAGE_EN,
   MAX_ANSWER_EVIDENCE,
   askResearch,
   askResearchAsync,
@@ -100,6 +101,10 @@ export {
   type TypedResearchAnswer,
 } from "./answer/askResearch";
 export { selectCoveredEvidence, type CoveredEvidenceOptions } from "./answer/selectCoveredEvidence";
+export {
+  MIN_UNCOVERED_MATCHED_TERMS,
+  citationsCoverSelectedEvidence,
+} from "./answer/answerCoverage";
 export {
   MAX_LLM_CHUNK_CHARS,
   MAX_LLM_EVIDENCE_CHARS,

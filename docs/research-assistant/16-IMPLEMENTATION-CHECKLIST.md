@@ -93,6 +93,12 @@ Keyword retrieval and the evidence gate are unchanged. Ask preparation reads up 
 
 **Stop and review.**
 
+**Answer coverage guard (unfrozen 2026-09-24)**
+
+After citation verification, an answer is refused as `insufficient_answer_coverage` when a selected evidence chunk has at least two folded matched terms that no verified citation covers. One missing term does not refuse. No second model call and no appended evidence.
+
+**Stop and review.**
+
 **Later phases (each needs its own unfreeze)**
 
 7. Dense retrieval (v0.2; stub interface in v0.1)  
