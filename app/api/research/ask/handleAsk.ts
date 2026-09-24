@@ -9,6 +9,7 @@ import {
   MAX_KEYWORD_K,
   askResearchAsync,
   createLlmAnswerAdapter,
+  type AskDiagnosticTrace,
   type AsyncAnswerAdapter,
   type ResearchEngineStore,
   type TypedResearchAnswer,
@@ -28,12 +29,13 @@ export type PreparedResearchAsk =
   | { ok: false; status: number; body: ResearchAskError }
   | { ok: true; query: string; documentIds?: string[]; k?: number };
 
-export function researchAskAdapterFromEnv(): AsyncAnswerAdapter {
+export function researchAskAdapterFromEnv(diagnostic?: AskDiagnosticTrace): AsyncAnswerAdapter {
   return createLlmAnswerAdapter({
     env: {
       CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID,
       CLOUDFLARE_AUTH_TOKEN: process.env.CLOUDFLARE_AUTH_TOKEN,
     },
+    diagnostic,
   });
 }
 
@@ -85,13 +87,18 @@ export async function handleResearchAsk(input: {
   body: unknown;
   store: ResearchEngineStore;
   adapter?: AsyncAnswerAdapter;
+  diagnostic?: AskDiagnosticTrace;
 }): Promise<{ status: number; body: TypedResearchAnswer | ResearchAskError }> {
   const prepared = prepareResearchAsk(input.body);
-  if (!prepared.ok) return { status: prepared.status, body: prepared.body };
+  if (!prepared.ok) {
+    if (input.diagnostic) input.diagnostic.finalStatus = prepared.body.code;
+    return { status: prepared.status, body: prepared.body };
+  }
 
   if (prepared.documentIds) {
     const known = new Set(input.store.list());
     if (prepared.documentIds.some((id) => !known.has(id))) {
+      if (input.diagnostic) input.diagnostic.finalStatus = "invalid_scope";
       return invalid("Invalid document scope.", "invalid_scope");
     }
   }
@@ -101,9 +108,11 @@ export async function handleResearchAsk(input: {
       documentIds: prepared.documentIds,
       k: prepared.k,
       adapter: input.adapter,
+      diagnostic: input.diagnostic,
     });
     return { status: 200, body: answer };
   } catch {
+    if (input.diagnostic && input.diagnostic.finalStatus === "not_finished") input.diagnostic.finalStatus = "failed";
     return { status: 500, body: { error: "Research request failed.", code: "failed" } };
   }
 }

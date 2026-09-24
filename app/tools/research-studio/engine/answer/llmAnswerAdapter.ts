@@ -6,6 +6,7 @@
 import { findRawQuote } from "../citation/verifyCitation";
 import type { RetrievedChunk } from "../retrieval/keywordSearch";
 import type { AnswerDraft, AsyncAnswerAdapter, AsyncAnswerResult } from "./askResearch";
+import { noteDraftCitations, type AskDiagnosticTrace } from "./askDiagnostic";
 
 /** Same Workers AI model already configured for Qalam. */
 export const RESEARCH_LLM_MODEL_ID = "@cf/zai-org/glm-4.7-flash";
@@ -45,6 +46,8 @@ export type LlmAnswerAdapterOptions = {
   model?: string;
   timeoutMs?: number;
   log?: ProviderLogger;
+  /** Present only when server diagnostics are enabled. Never included in the API body. */
+  diagnostic?: AskDiagnosticTrace;
 };
 
 type ProviderCall = { ok: true; text: string } | { ok: false };
@@ -252,26 +255,87 @@ async function callProvider(
   }
 }
 
+function noteFirstDraft(
+  diagnostic: AskDiagnosticTrace | undefined,
+  evidence: readonly RetrievedChunk[],
+  draft: AnswerDraft | null,
+  quoteVerified: boolean | null,
+): void {
+  if (!diagnostic) return;
+  if (!draft) {
+    diagnostic.firstParseStatus = "unparsed";
+    diagnostic.firstQuoteVerified = null;
+    return;
+  }
+  const noted = noteDraftCitations(evidence, draft);
+  diagnostic.firstParseStatus = "parsed";
+  diagnostic.firstQuoteVerified = quoteVerified;
+  diagnostic.firstCitationCount = noted.count;
+  diagnostic.firstCitationRefs = noted.refs;
+  diagnostic.firstUnmatchedCitationCount = noted.unmatched;
+  diagnostic.firstAnswerCharCount = noted.answerChars;
+}
+
+function noteRepairDraft(
+  diagnostic: AskDiagnosticTrace | undefined,
+  evidence: readonly RetrievedChunk[],
+  draft: AnswerDraft | null,
+  quoteVerified: boolean | null,
+): void {
+  if (!diagnostic) return;
+  if (!draft) {
+    diagnostic.repairResultStatus = "malformed";
+    diagnostic.repairQuoteVerified = null;
+    return;
+  }
+  const noted = noteDraftCitations(evidence, draft);
+  diagnostic.repairResultStatus = "draft";
+  diagnostic.repairQuoteVerified = quoteVerified;
+  diagnostic.repairCitationCount = noted.count;
+  diagnostic.repairCitationRefs = noted.refs;
+  diagnostic.repairUnmatchedCitationCount = noted.unmatched;
+  diagnostic.repairAnswerCharCount = noted.answerChars;
+  diagnostic.quoteVerificationSucceeded = quoteVerified;
+}
+
 export function createLlmAnswerAdapter(options: LlmAnswerAdapterOptions): AsyncAnswerAdapter {
   const fetchImpl = options.fetchImpl ?? fetch;
   const model = options.model ?? RESEARCH_LLM_MODEL_ID;
   const timeoutMs = options.timeoutMs ?? RESEARCH_LLM_TIMEOUT_MS;
   const log: ProviderLogger = options.log ?? ((message, details) => console.error(message, details));
+  const diagnostic = options.diagnostic;
 
   return async ({ query, evidence }): Promise<AsyncAnswerResult> => {
     const accountId = options.env.CLOUDFLARE_ACCOUNT_ID?.trim() ?? "";
     const token = options.env.CLOUDFLARE_AUTH_TOKEN?.trim() ?? "";
-    if (!accountId || !token) return { kind: "refuse", reason: "provider_error" };
+    if (!accountId || !token) {
+      if (diagnostic) {
+        diagnostic.modelCallStatus = "provider_error";
+        diagnostic.firstParseStatus = "provider_error";
+      }
+      return { kind: "refuse", reason: "provider_error" };
+    }
 
     const baseUser = buildEvidencePrompt(query, evidence);
     const first = await callProvider(accountId, token, model, baseUser, fetchImpl, timeoutMs, log);
-    if (!first.ok) return { kind: "refuse", reason: "provider_error" };
+    if (!first.ok) {
+      if (diagnostic) {
+        diagnostic.modelCallStatus = "provider_error";
+        diagnostic.firstParseStatus = "provider_error";
+      }
+      return { kind: "refuse", reason: "provider_error" };
+    }
+    if (diagnostic) diagnostic.modelCallStatus = "ok";
 
     const firstDraft = parseDraft(first.text);
-    if (firstDraft && draftFitsEvidence(firstDraft, evidence)) {
+    const firstFits = firstDraft ? draftFitsEvidence(firstDraft, evidence) : false;
+    noteFirstDraft(diagnostic, evidence, firstDraft, firstDraft ? firstFits : null);
+    if (firstDraft && firstFits) {
+      if (diagnostic) diagnostic.quoteVerificationSucceeded = true;
       return { kind: "draft", draft: firstDraft };
     }
 
+    if (diagnostic) diagnostic.repairOccurred = true;
     const repair = [
       baseUser,
       "The previous output was rejected.",
@@ -279,9 +343,16 @@ export function createLlmAnswerAdapter(options: LlmAnswerAdapterOptions): AsyncA
       "Use only the chunk ids listed above.",
     ].join("\n\n");
     const second = await callProvider(accountId, token, model, repair, fetchImpl, timeoutMs, log);
-    if (!second.ok) return { kind: "refuse", reason: "provider_error" };
+    if (!second.ok) {
+      if (diagnostic) diagnostic.repairResultStatus = "provider_error";
+      return { kind: "refuse", reason: "provider_error" };
+    }
     const secondDraft = parseDraft(second.text);
-    if (!secondDraft) return { kind: "refuse", reason: "malformed_evidence" };
+    if (!secondDraft) {
+      noteRepairDraft(diagnostic, evidence, null, null);
+      return { kind: "refuse", reason: "malformed_evidence" };
+    }
+    noteRepairDraft(diagnostic, evidence, secondDraft, draftFitsEvidence(secondDraft, evidence));
     return { kind: "draft", draft: secondDraft };
   };
 }

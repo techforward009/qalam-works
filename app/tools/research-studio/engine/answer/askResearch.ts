@@ -10,7 +10,12 @@ import { MAX_KEYWORD_K, searchKeywords, type RetrievedChunk } from "../retrieval
 import type { ResearchEngineStore } from "../storage/researchEngineStore";
 import type { Citation, EvidenceGateReason, ResearchAnswer } from "../types/document";
 import { selectCoveredEvidence } from "./selectCoveredEvidence";
-import { citationsCoverSelectedEvidence } from "./answerCoverage";
+import { citationsCoverSelectedEvidence, describeCitationCoverage } from "./answerCoverage";
+import {
+  citationRefFor,
+  rememberSelectedChunks,
+  type AskDiagnosticTrace,
+} from "./askDiagnostic";
 
 /** Spec limit: at most five evidence chunks may support an answer. */
 export const MAX_ANSWER_EVIDENCE = 5;
@@ -72,6 +77,8 @@ export type AskResearchAsyncOptions = {
   documentIds?: string[];
   k?: number;
   adapter?: AsyncAnswerAdapter;
+  /** Omitted unless server diagnostics are enabled. Not part of the API response. */
+  diagnostic?: AskDiagnosticTrace;
 };
 
 export function deterministicEvidenceAdapter(input: {
@@ -164,28 +171,47 @@ function approvedHit(evidence: readonly RetrievedChunk[], citation: Citation): b
   );
 }
 
+function finish(diagnostic: AskDiagnosticTrace | undefined, result: TypedResearchAnswer): TypedResearchAnswer {
+  if (diagnostic) diagnostic.finalStatus = result.refusalReason ?? result.status;
+  return result;
+}
+
 function completeDraft(
   store: ResearchEngineStore,
   query: string,
   evidenceReason: EvidenceGateReason,
   evidence: readonly RetrievedChunk[],
   draft: AnswerDraft,
+  diagnostic?: AskDiagnosticTrace,
 ): TypedResearchAnswer {
   if (!draft || typeof draft.answer !== "string" || !Array.isArray(draft.citations)) {
-    return refuse(query, "malformed_evidence", evidenceReason);
+    if (diagnostic) diagnostic.citationVerification = "failed";
+    return finish(diagnostic, refuse(query, "malformed_evidence", evidenceReason));
   }
   if (draft.citations.length === 0 || draft.citations.some((citation) => !isCitation(citation))) {
-    return refuse(query, draft.citations.length === 0 ? "invalid_citation" : "malformed_evidence", evidenceReason);
+    if (diagnostic) diagnostic.citationVerification = "failed";
+    return finish(
+      diagnostic,
+      refuse(query, draft.citations.length === 0 ? "invalid_citation" : "malformed_evidence", evidenceReason),
+    );
   }
   if (draft.citations.some((citation) => !approvedHit(evidence, citation))) {
-    return refuse(query, "invalid_citation", evidenceReason);
+    if (diagnostic) diagnostic.citationVerification = "failed";
+    return finish(diagnostic, refuse(query, "invalid_citation", evidenceReason));
   }
 
   const sections: AnswerSection[] = [];
   for (const citation of draft.citations) {
     const verified = verifyCitation(store, citation);
     if (!verified.ok || !verified.sourceQuote) {
-      return refuse(query, "invalid_citation", evidenceReason);
+      if (diagnostic) {
+        diagnostic.citationVerification = "failed";
+        diagnostic.verifiedSectionCount = sections.length;
+        diagnostic.verifiedCitationRefs = sections.map(
+          (section) => citationRefFor(evidence, section) ?? 0,
+        ).filter((ref) => ref > 0);
+      }
+      return finish(diagnostic, refuse(query, "invalid_citation", evidenceReason));
     }
     sections.push({
       documentId: verified.documentId,
@@ -195,11 +221,23 @@ function completeDraft(
     });
   }
 
-  if (!citationsCoverSelectedEvidence(evidence, sections)) {
-    return refuse(query, "insufficient_answer_coverage", evidenceReason);
+  if (diagnostic) {
+    diagnostic.citationVerification = "passed";
+    diagnostic.verifiedSectionCount = sections.length;
+    diagnostic.verifiedCitationRefs = sections.map((section) => citationRefFor(evidence, section) ?? 0).filter((ref) => ref > 0);
+    const coverage = describeCitationCoverage(evidence, sections);
+    diagnostic.coverageChecked = true;
+    diagnostic.citedMatchedTerms = coverage.citedMatchedTerms;
+    diagnostic.thresholdTriggered = coverage.thresholdTriggered;
+    diagnostic.selectedChunks = coverage.chunks;
+    diagnostic.selectedChunkCount = coverage.chunks.length;
   }
 
-  return {
+  if (!citationsCoverSelectedEvidence(evidence, sections)) {
+    return finish(diagnostic, refuse(query, "insufficient_answer_coverage", evidenceReason));
+  }
+
+  return finish(diagnostic, {
     query,
     status: "answered",
     answered: true,
@@ -207,7 +245,7 @@ function completeDraft(
     sections,
     citations: sections.map((section) => ({ ...section })),
     evidence: { chunksUsed: sections.length, reason: "sufficient" },
-  };
+  });
 }
 
 export function askResearch(
@@ -232,7 +270,11 @@ export async function askResearchAsync(
   options: AskResearchAsyncOptions = {},
 ): Promise<TypedResearchAnswer> {
   const prepared = prepareAsk(store, query, options);
-  if (!prepared.ok) return prepared.result;
+  if (!prepared.ok) {
+    if (options.diagnostic) options.diagnostic.finalStatus = prepared.result.refusalReason ?? prepared.result.status;
+    return prepared.result;
+  }
+  if (options.diagnostic) rememberSelectedChunks(options.diagnostic, prepared.evidence);
 
   const adapter =
     options.adapter ??
@@ -242,7 +284,7 @@ export async function askResearchAsync(
     }));
   const output = await adapter({ query, evidence: prepared.evidence });
   if (output.kind === "refuse") {
-    return refuse(query, output.reason, prepared.reason);
+    return finish(options.diagnostic, refuse(query, output.reason, prepared.reason));
   }
-  return completeDraft(store, query, prepared.reason, prepared.evidence, output.draft);
+  return completeDraft(store, query, prepared.reason, prepared.evidence, output.draft, options.diagnostic);
 }

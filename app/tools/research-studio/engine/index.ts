@@ -104,7 +104,15 @@ export { selectCoveredEvidence, type CoveredEvidenceOptions } from "./answer/sel
 export {
   MIN_UNCOVERED_MATCHED_TERMS,
   citationsCoverSelectedEvidence,
+  describeCitationCoverage,
+  type CitationCoverageChunk,
+  type CitationCoverageTrace,
 } from "./answer/answerCoverage";
+export {
+  createAskDiagnosticTrace,
+  type AskDiagnosticTrace,
+  type SelectedChunkDiagnostic,
+} from "./answer/askDiagnostic";
 export {
   MAX_LLM_CHUNK_CHARS,
   MAX_LLM_EVIDENCE_CHARS,
