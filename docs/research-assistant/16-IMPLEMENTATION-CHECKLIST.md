@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Phase A–E done. Phase F unfrozen 2026-09-24 (citation verification only). Answers still frozen.
+**Status:** Phase A–F done. Phase G unfrozen 2026-09-24 (typed answer contract, no LLM). Model calls still frozen.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -45,12 +45,17 @@ See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **onl
 
 **Stop and review.**
 
+**Phase G (unfrozen 2026-09-24)**
+
+12. Typed answer contract, without an LLM call
+
+**Stop and review.**
+
 **Later phases (each needs its own unfreeze)**
 
 7. Dense retrieval (v0.2; stub interface in v0.1)  
 9. Hybrid fusion (v0.2)  
 10. Reranking (v0.2; `NoopReranker` in v0.1)  
-12. Typed LLM answer  
 14. API  
 15. UI  
 16. Evaluation dataset  

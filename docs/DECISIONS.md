@@ -601,3 +601,21 @@ not a citation. No answer generation and no LLM.
 **Reason:**
 Product owner opened Phase F from the verified Phase E baseline
 (1709c74).
+
+---
+
+## Decision: Unfreeze Research Engine Phase G
+
+**Date:** 2026-09-24
+**Status:** Approved — Phase G implementation
+
+**Decision:**
+Phase G adds the typed answer contract and deterministic orchestration:
+keyword retrieval, evidence gate, then citation verification. The
+default answer is verified raw excerpts only. No LLM provider, prompt,
+or model call. A future model must use the same adapter seam and cannot
+bypass the gate or citation check.
+
+**Reason:**
+Product owner opened Phase G from the verified Phase F baseline
+(6e284de).
