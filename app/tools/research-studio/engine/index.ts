@@ -60,3 +60,12 @@ export {
   type EvidenceGateOptions,
   type EvidenceGateResult,
 } from "./evidence/evaluateEvidence";
+export {
+  findRawQuote,
+  verifyAnswer,
+  verifyCitation,
+  type CitationCheck,
+  type CitationFailureCode,
+  type CitationVerificationResult,
+  type CitationVerificationStatus,
+} from "./citation/verifyCitation";

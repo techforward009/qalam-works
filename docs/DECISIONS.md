@@ -585,3 +585,19 @@ Refusal reasons stay inside the existing EvidenceGateReason union.
 **Reason:**
 Product owner opened Phase E from the verified Phase D baseline
 (1ab3bbd).
+
+---
+
+## Decision: Unfreeze Research Engine Phase F
+
+**Date:** 2026-09-24
+**Status:** Approved — Phase F implementation
+
+**Decision:**
+Phase F verifies a proposed quote against the stored chunk rawText.
+The only allowed fold is whitespace. A normalizedText-only match is
+not a citation. No answer generation and no LLM.
+
+**Reason:**
+Product owner opened Phase F from the verified Phase E baseline
+(1709c74).
