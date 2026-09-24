@@ -1,6 +1,7 @@
 import {
   CHUNKER_VERSION,
   INSUFFICIENT_EVIDENCE_EN,
+  PROVIDER_UNAVAILABLE_EN,
   RESEARCH_LLM_MODEL_ID,
   askResearchAsync,
   createLlmAnswerAdapter,
@@ -102,7 +103,10 @@ describe("LLM answer adapter", () => {
     },
   ]);
 
-  function adapter(handler: (calls: { url: string; body: string; auth: string }[]) => Response | Promise<Response>) {
+  function adapter(
+    handler: (calls: { url: string; body: string; auth: string }[]) => Response | Promise<Response>,
+    log?: (message: string, details: { status: number; code?: string; message?: string }) => void,
+  ) {
     const calls: { url: string; body: string; auth: string }[] = [];
     const fetchImpl: typeof fetch = async (input, init) => {
       const body = String(init?.body ?? "");
@@ -115,6 +119,7 @@ describe("LLM answer adapter", () => {
       run: createLlmAnswerAdapter({
         env: { CLOUDFLARE_ACCOUNT_ID: ACCOUNT, CLOUDFLARE_AUTH_TOKEN: TOKEN },
         fetchImpl,
+        log,
       }),
     };
   }
@@ -154,12 +159,20 @@ describe("LLM answer adapter", () => {
       model: string;
       temperature: number;
       seed: number;
+      n: number;
+      max_completion_tokens: number;
+      reasoning_effort: null;
+      chat_template_kwargs: { enable_thinking: boolean };
       tools?: unknown;
       messages: { role: string; content: string }[];
     };
     expect(body.model).toBe(RESEARCH_LLM_MODEL_ID);
     expect(body.temperature).toBe(0);
     expect(body.seed).toBe(1);
+    expect(body.n).toBe(1);
+    expect(body.max_completion_tokens).toBe(800);
+    expect(body.reasoning_effort).toBeNull();
+    expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
     expect(body.tools).toBeUndefined();
     expect(body.messages[0].role).toBe("system");
     expect(body.messages[0].content).not.toContain(TOKEN);
@@ -257,18 +270,30 @@ describe("LLM answer adapter", () => {
   });
 
   test("provider failure does not leak secrets and is not retried as a quote repair", async () => {
+    const logs: { message: string; details: { status: number; code?: string; message?: string } }[] = [];
     const client = adapter(
       () =>
-        new Response(JSON.stringify({ error: { message: `bad Bearer ${TOKEN}` } }), {
+        new Response(JSON.stringify({ error: { message: `bad Bearer ${TOKEN} accounts/${ACCOUNT}` } }), {
           status: 503,
         }),
+      (message, details) => logs.push({ message, details }),
     );
     const result = await askResearchAsync(store, "عبارت", { documentIds: ["ur"], adapter: client.run });
     expect(client.calls).toHaveLength(1);
     expect(result.refusalReason).toBe("provider_error");
-    expect(result.answer).toBe(INSUFFICIENT_EVIDENCE_EN);
+    expect(result.answer).toBe(PROVIDER_UNAVAILABLE_EN);
+    expect(result.answer).not.toContain("Insufficient evidence");
     expect(result.answer).not.toContain(TOKEN);
     expect(JSON.stringify(result)).not.toContain(TOKEN);
+    expect(logs).toEqual([
+      {
+        message: "Research Studio provider error",
+        details: { status: 503, code: undefined, message: "bad Bearer [redacted] accounts/[redacted]" },
+      },
+    ]);
+    expect(JSON.stringify(logs)).not.toContain(TOKEN);
+    expect(JSON.stringify(logs)).not.toContain(ACCOUNT);
+    expect(JSON.stringify(logs)).not.toContain(urduA);
 
     const missing = createLlmAnswerAdapter({
       env: {},
@@ -278,6 +303,7 @@ describe("LLM answer adapter", () => {
     });
     const offline = await askResearchAsync(store, "عبارت", { documentIds: ["ur"], adapter: missing });
     expect(offline.refusalReason).toBe("provider_error");
+    expect(offline.answer).toBe(PROVIDER_UNAVAILABLE_EN);
   });
 
   test("the same model payload produces the same typed answer", async () => {

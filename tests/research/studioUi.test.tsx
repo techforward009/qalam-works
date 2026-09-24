@@ -126,6 +126,16 @@ describe("Research Studio UI", () => {
           evidence: { chunksUsed: 0, reason: "no_evidence" },
         });
       }
+      if (body.query === "provider") {
+        return jsonResponse({
+          answered: false,
+          status: "refused",
+          answer: "The AI provider is unavailable.",
+          refusalReason: "provider_error",
+          citations: [],
+          evidence: { chunksUsed: 0, reason: "sufficient" },
+        });
+      }
       if (body.query === "broken") return jsonResponse({ error: "Malformed request.", code: "invalid" }, 400);
       return jsonResponse({
         answered: true,
@@ -145,6 +155,14 @@ describe("Research Studio UI", () => {
     expect(screen.getByText("no_evidence")).toBeTruthy();
     expect(screen.getByText("Insufficient evidence in the provided documents.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Open page/ })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Question text"), { target: { value: "provider" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    expect(await screen.findByText("AI provider unavailable", { exact: true })).toBeTruthy();
+    expect(screen.getByText("The AI provider is unavailable.")).toBeTruthy();
+    expect(screen.getByText("provider_error")).toBeTruthy();
+    expect(screen.queryByText("Insufficient evidence", { exact: true })).toBeNull();
+    expect(screen.queryByText("Insufficient evidence in the provided documents.")).toBeNull();
 
     fireEvent.change(screen.getByLabelText("Question text"), { target: { value: "broken" } });
     fireEvent.click(screen.getByRole("button", { name: "Ask" }));

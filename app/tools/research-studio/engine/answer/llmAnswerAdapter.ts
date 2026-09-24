@@ -37,9 +37,11 @@ export type LlmAnswerAdapterOptions = {
   fetchImpl?: typeof fetch;
   model?: string;
   timeoutMs?: number;
+  log?: ProviderLogger;
 };
 
 type ProviderCall = { ok: true; text: string } | { ok: false };
+type ProviderLogger = (message: string, details: { status: number; code?: string; message?: string }) => void;
 
 function clip(text: string, max: number): string {
   return text.length <= max ? text : text.slice(0, max);
@@ -77,6 +79,8 @@ function requestBody(model: string, user: string) {
     seed: 1,
     n: 1,
     max_completion_tokens: MAX_LLM_OUTPUT_TOKENS,
+    reasoning_effort: null,
+    chat_template_kwargs: { enable_thinking: false },
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: user },
@@ -84,18 +88,61 @@ function requestBody(model: string, user: string) {
   };
 }
 
+function textFromContent(content: unknown): string {
+  if (typeof content === "string") return content.trim();
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((block) => {
+      if (!block || typeof block !== "object") return "";
+      const item = block as { type?: unknown; text?: unknown };
+      if (typeof item.type === "string" && item.type !== "text") return "";
+      return typeof item.text === "string" ? item.text : "";
+    })
+    .join("")
+    .trim();
+}
+
 function providerText(payload: unknown): string {
   if (!payload || typeof payload !== "object") return "";
-  const root = payload as { choices?: unknown[]; result?: { choices?: unknown[] } };
+  const root = payload as { choices?: unknown[]; result?: { choices?: unknown[]; response?: unknown } };
   const choices = Array.isArray(root.choices)
     ? root.choices
     : Array.isArray(root.result?.choices)
       ? root.result.choices
       : [];
   const first = choices[0];
-  if (!first || typeof first !== "object") return "";
-  const message = (first as { message?: { content?: unknown } }).message;
-  return typeof message?.content === "string" ? message.content.trim() : "";
+  if (first && typeof first === "object") {
+    const message = (first as { message?: { content?: unknown }; text?: unknown }).message;
+    const fromContent = message ? textFromContent(message.content) : "";
+    if (fromContent) return fromContent;
+    const text = (first as { text?: unknown }).text;
+    if (typeof text === "string" && text.trim()) return text.trim();
+  }
+  const response = root.result?.response;
+  return typeof response === "string" ? response.trim() : "";
+}
+
+/** Same redaction as the working Qalam AI adapter. Does not log prompts or credentials. */
+function sanitizeProviderError(payload: unknown): { code?: string; message?: string } {
+  const root = payload && typeof payload === "object" && !Array.isArray(payload) ? (payload as Record<string, unknown>) : null;
+  const firstError = Array.isArray(root?.errors) && root.errors[0] && typeof root.errors[0] === "object"
+    ? (root.errors[0] as Record<string, unknown>)
+    : null;
+  const errorObj =
+    root?.error && typeof root.error === "object" && !Array.isArray(root.error)
+      ? (root.error as Record<string, unknown>)
+      : firstError;
+  const codeRaw = errorObj?.code ?? root?.code;
+  const messageRaw = errorObj?.message ?? root?.message;
+  const code = typeof codeRaw === "string" || typeof codeRaw === "number" ? String(codeRaw).slice(0, 80) : undefined;
+  let message = typeof messageRaw === "string" ? messageRaw : undefined;
+  if (message) {
+    message = message
+      .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
+      .replace(/accounts\/[A-Za-z0-9_-]+/gi, "accounts/[redacted]")
+      .slice(0, 180);
+  }
+  return { code, message };
 }
 
 function parseDraft(text: string): AnswerDraft | null {
@@ -155,6 +202,7 @@ async function callProvider(
   user: string,
   fetchImpl: typeof fetch,
   timeoutMs: number,
+  log: ProviderLogger,
 ): Promise<ProviderCall> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -172,10 +220,16 @@ async function callProvider(
       },
     );
     const payload = await response.json().catch(() => null);
-    if (!response.ok) return { ok: false };
+    if (!response.ok) {
+      const sanitized = sanitizeProviderError(payload);
+      log("Research Studio provider error", { status: response.status, code: sanitized.code, message: sanitized.message });
+      return { ok: false };
+    }
     const text = providerText(payload);
     return text ? { ok: true, text } : { ok: false };
-  } catch {
+  } catch (err) {
+    const aborted = err instanceof Error && (err.name === "AbortError" || /aborted/i.test(err.message));
+    log("Research Studio provider error", { status: aborted ? 504 : 502, code: aborted ? "timeout" : "network" });
     return { ok: false };
   } finally {
     clearTimeout(timer);
@@ -186,6 +240,7 @@ export function createLlmAnswerAdapter(options: LlmAnswerAdapterOptions): AsyncA
   const fetchImpl = options.fetchImpl ?? fetch;
   const model = options.model ?? RESEARCH_LLM_MODEL_ID;
   const timeoutMs = options.timeoutMs ?? RESEARCH_LLM_TIMEOUT_MS;
+  const log: ProviderLogger = options.log ?? ((message, details) => console.error(message, details));
 
   return async ({ query, evidence }): Promise<AsyncAnswerResult> => {
     const accountId = options.env.CLOUDFLARE_ACCOUNT_ID?.trim() ?? "";
@@ -193,7 +248,7 @@ export function createLlmAnswerAdapter(options: LlmAnswerAdapterOptions): AsyncA
     if (!accountId || !token) return { kind: "refuse", reason: "provider_error" };
 
     const baseUser = buildEvidencePrompt(query, evidence);
-    const first = await callProvider(accountId, token, model, baseUser, fetchImpl, timeoutMs);
+    const first = await callProvider(accountId, token, model, baseUser, fetchImpl, timeoutMs, log);
     if (!first.ok) return { kind: "refuse", reason: "provider_error" };
 
     const firstDraft = parseDraft(first.text);
@@ -207,7 +262,7 @@ export function createLlmAnswerAdapter(options: LlmAnswerAdapterOptions): AsyncA
       "Return JSON only. Copy quotes verbatim from rawText.",
       "Use only the chunk ids listed above.",
     ].join("\n\n");
-    const second = await callProvider(accountId, token, model, repair, fetchImpl, timeoutMs);
+    const second = await callProvider(accountId, token, model, repair, fetchImpl, timeoutMs, log);
     if (!second.ok) return { kind: "refuse", reason: "provider_error" };
     const secondDraft = parseDraft(second.text);
     if (!secondDraft) return { kind: "refuse", reason: "malformed_evidence" };

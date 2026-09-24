@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Language } from "../../../lib/language-context";
 
 const INSUFFICIENT_UR = "مجھے فراہم کردہ دستاویزات میں اس سوال کا کافی مستند مواد نہیں ملا۔";
+const PROVIDER_UR = "اے آئی فراہم کنندہ اس وقت دستیاب نہیں۔";
 
 type UploadedDocument = {
   documentId: string;
@@ -55,6 +56,7 @@ const COPY = {
     limitHint: "Optional. Whole number from 1 to 20.",
     answered: "Answered",
     refused: "Insufficient evidence",
+    providerUnavailable: "AI provider unavailable",
     evidence: "Evidence",
     openPage: "Open page",
     opening: "Opening page…",
@@ -82,6 +84,7 @@ const COPY = {
     limitHint: "اختیاری۔ 1 سے 20 تک پورا عدد۔",
     answered: "جواب مل گیا",
     refused: "مواد کافی نہیں",
+    providerUnavailable: "اے آئی فراہم کنندہ دستیاب نہیں",
     evidence: "شواہد",
     openPage: "صفحہ کھولیں",
     opening: "صفحہ کھل رہا ہے…",
@@ -343,8 +346,10 @@ export default function ResearchStudioWorkspace({
           {askState === "loading" ? <p className="text-sm">{t.asking}</p> : null}
           {result && !showAnswer ? (
             <div>
-              <p className="font-semibold">{t.refused}</p>
-              {language === "ur" ? <p dir="rtl">{INSUFFICIENT_UR}</p> : null}
+              <p className="font-semibold">{result.refusalReason === "provider_error" ? t.providerUnavailable : t.refused}</p>
+              {language === "ur" ? (
+                <p dir="rtl">{result.refusalReason === "provider_error" ? PROVIDER_UR : INSUFFICIENT_UR}</p>
+              ) : null}
               <p dir="auto">{result.answer}</p>
               {result.answered && result.citations.length === 0 ? <p>{t.unverified}</p> : null}
               {result.refusalReason ? <p dir="ltr">{result.refusalReason}</p> : null}

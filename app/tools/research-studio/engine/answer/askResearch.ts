@@ -16,6 +16,7 @@ export const MAX_ANSWER_EVIDENCE = 5;
 export const INSUFFICIENT_EVIDENCE_EN = "Insufficient evidence in the provided documents.";
 export const INSUFFICIENT_EVIDENCE_UR =
   "مجھے فراہم کردہ دستاویزات میں اس سوال کا کافی مستند مواد نہیں ملا۔";
+export const PROVIDER_UNAVAILABLE_EN = "The AI provider is unavailable.";
 
 export type AnswerStatus = "answered" | "refused";
 
@@ -94,7 +95,7 @@ function refuse(
     query,
     status: "refused",
     answered: false,
-    answer: INSUFFICIENT_EVIDENCE_EN,
+    answer: refusalReason === "provider_error" ? PROVIDER_UNAVAILABLE_EN : INSUFFICIENT_EVIDENCE_EN,
     sections: [],
     citations: [],
     evidence: { chunksUsed: 0, reason: evidenceReason },
