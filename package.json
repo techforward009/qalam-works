@@ -29,6 +29,7 @@
     "@tiptap/starter-kit": "^3.29.2",
     "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.8.0",
+    "@vercel/oidc": "^3.8.9",
     "@vercel/speed-insights": "^2.0.0",
     "astronomy-engine": "^2.1.19",
     "docx": "^9.7.1",

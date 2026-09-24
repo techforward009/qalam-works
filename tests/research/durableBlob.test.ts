@@ -175,12 +175,12 @@ describe("durable research blob storage", () => {
   });
 
   test("missing configuration and a failed write do not fall back to memory", async () => {
-    expect(() => researchBlobAuth({})).toThrow(ResearchPersistenceError);
-    expect(() => researchBlobClientFromEnv({ BLOB_READ_WRITE_TOKEN: "font-token" })).toThrow(
+    await expect(researchBlobAuth({})).rejects.toBeInstanceOf(ResearchPersistenceError);
+    await expect(researchBlobClientFromEnv({ BLOB_READ_WRITE_TOKEN: "font-token" })).rejects.toBeInstanceOf(
       ResearchPersistenceError,
     );
     try {
-      researchBlobAuth({ QALAM_RESEARCH_STORE_ID: "store_research" });
+      await researchBlobAuth({ QALAM_RESEARCH_STORE_ID: "store_research" });
       expect.unreachable();
     } catch (err) {
       expect(err).toBeInstanceOf(ResearchPersistenceError);
@@ -265,7 +265,7 @@ describe("durable research blob storage", () => {
       expect(lists).toHaveLength(2);
       expect(lists[1]?.cursor).toBe("next");
 
-      const tokenClient = researchBlobClientFromEnv(
+      const tokenClient = await researchBlobClientFromEnv(
         {
           QALAM_RESEARCH_STORE_ID: "store_research",
           QALAM_RESEARCH_READ_WRITE_TOKEN: "research-token",

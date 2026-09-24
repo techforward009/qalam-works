@@ -23,7 +23,7 @@ export async function GET(
   }
 
   try {
-    const client = researchBlobClientFromEnv();
+    const client = await researchBlobClientFromEnv();
     const loaded = await loadDurableCorpus(client, parsed.documentId);
     if (!loaded.ok) {
       return NextResponse.json(loaded.error === "not_found" ? MISSING : FAILED, {

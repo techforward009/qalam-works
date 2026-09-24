@@ -35,7 +35,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!loaded.ok) return NextResponse.json(FAILED, { status: 500 });
 
   try {
-    const client = researchBlobClientFromEnv();
+    const client = await researchBlobClientFromEnv();
     const saved = await saveDurableCorpus(client, loaded.value);
     if (!saved.ok) return NextResponse.json(FAILED, { status: 500 });
   } catch (err) {

@@ -37,7 +37,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const client = researchBlobClientFromEnv();
+    const client = await researchBlobClientFromEnv();
     const store = await hydrateResearchStore(client, prepared.documentIds);
     const result = await handleResearchAsk({
       body,

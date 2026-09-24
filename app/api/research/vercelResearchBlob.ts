@@ -4,6 +4,7 @@
  * Never returns a blob URL to callers.
  */
 import { get, list, put } from "@vercel/blob";
+import { getVercelOidcToken } from "@vercel/oidc";
 import {
   ResearchPersistenceError,
   type ResearchBlobClient,
@@ -40,14 +41,23 @@ function authOptions(auth: BlobAuth): Record<string, unknown> {
 
 type EnvLike = Record<string, string | undefined>;
 
-export function researchBlobAuth(env: EnvLike): BlobAuth {
-  const storeId = env.QALAM_RESEARCH_STORE_ID?.trim() ?? "";
+function readNamed(env: EnvLike, name: string): string {
+  return (env[name] ?? "").trim();
+}
+
+/**
+ * Store id must be the qalam-research id.
+ * A prefixed read-write token wins. Otherwise use Vercel OIDC for that store.
+ * Never reads BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID.
+ */
+export async function researchBlobAuth(env: EnvLike): Promise<BlobAuth> {
+  const storeId = readNamed(env, "QALAM_RESEARCH_STORE_ID");
   if (!storeId) throw new ResearchPersistenceError("unavailable");
-  const token = env.QALAM_RESEARCH_READ_WRITE_TOKEN?.trim() ?? "";
+  const token = readNamed(env, "QALAM_RESEARCH_READ_WRITE_TOKEN");
   if (token) return { token };
-  const oidcToken = env.VERCEL_OIDC_TOKEN?.trim() ?? "";
-  if (!oidcToken) throw new ResearchPersistenceError("unavailable");
-  return { storeId, oidcToken };
+  const explicitOidc = readNamed(env, "VERCEL_OIDC_TOKEN");
+  if (!explicitOidc) throw new ResearchPersistenceError("unavailable");
+  return { storeId, oidcToken: explicitOidc };
 }
 
 const defaultSdk: ResearchBlobSdk = {
@@ -130,11 +140,24 @@ export function setResearchBlobClientForTests(client: ResearchBlobClient | null)
   testClient = client;
 }
 
-export function researchBlobClientFromEnv(
-  env: EnvLike = process.env,
+export async function researchBlobClientFromEnv(
+  env?: EnvLike,
   sdk?: ResearchBlobSdk,
-): ResearchBlobClient {
+): Promise<ResearchBlobClient> {
   if (testClient) return testClient;
-  return createVercelResearchBlobClient(researchBlobAuth(env), sdk);
+  const source: EnvLike = env ?? {
+    QALAM_RESEARCH_STORE_ID: process.env.QALAM_RESEARCH_STORE_ID,
+    QALAM_RESEARCH_READ_WRITE_TOKEN: process.env.QALAM_RESEARCH_READ_WRITE_TOKEN,
+    VERCEL_OIDC_TOKEN: process.env.VERCEL_OIDC_TOKEN,
+  };
+  if (!env && !readNamed(source, "QALAM_RESEARCH_READ_WRITE_TOKEN") && !readNamed(source, "VERCEL_OIDC_TOKEN")) {
+    try {
+      const oidcToken = (await getVercelOidcToken()).trim();
+      if (oidcToken) source.VERCEL_OIDC_TOKEN = oidcToken;
+    } catch {
+      /* researchBlobAuth reports unavailable without the provider message */
+    }
+  }
+  return createVercelResearchBlobClient(await researchBlobAuth(source), sdk);
 }
 
