@@ -84,7 +84,6 @@ describe("Phase 3A editor parity", () => {
       "tools.stats",
       "tools.dictation",
       "tools.glossary",
-      "tools.qalamAi",
     ]);
   });
 

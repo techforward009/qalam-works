@@ -84,10 +84,10 @@ describe("Qalam AI hosted panel", () => {
     expect(replaceCapturedSelection(ed, captured.capture, "NEW")).toBe(false);
   });
 
-  it("exposes Qalam AI in the Tools menu", () => {
-    expect(allMenuActionIds()).toContain("tools.qalamAi");
+  it("hides Qalam AI from the Tools menu", () => {
+    expect(allMenuActionIds()).not.toContain("tools.qalamAi");
     const tools = DOCUMENT_MENU_BAR.find((menu) => menu.id === "tools");
-    expect(tools?.items.filter((item) => item.type === "action").map((item) => item.id)).toContain("tools.qalamAi");
+    expect(tools?.items.filter((item) => item.type === "action").map((item) => item.id)).not.toContain("tools.qalamAi");
   });
 
   it("accepts 16000 characters and rejects more", () => {
