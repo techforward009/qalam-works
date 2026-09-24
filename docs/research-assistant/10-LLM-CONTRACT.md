@@ -29,7 +29,9 @@ Free-form chat is invalid. Parse as JSON (or a constrained decoder). On parse fa
 ## Prompt rules
 
 - System instructions live only in server code. Retrieved `rawText` is wrapped as **untrusted document data**.
-- Instruct: use only provided chunks; if not in chunks, `answered: false`.
+- Each selected chunk is one numbered evidence item, with `citationRef`, `documentId`, `pageNumber`, `chunkId`, the chunk's existing `matchedTerms`, and untrusted `rawText`.
+- The question may have more than one part. The single call must cite every supplied item that supports a part, and must say when the supplied evidence does not establish a part. It must not invent missing facts.
+- Instruct: use only provided chunks; if none of them support an answer, `answered: false`.
 - Every factual sentence in `answer` must have a citation marker that maps to `citations[]`.
 - Quotes must be copied verbatim from the chunk.
 
