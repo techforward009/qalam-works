@@ -2,8 +2,15 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from "next/server";
-import { getResearchApiStore } from "../memoryStore";
+import {
+  ResearchPersistenceError,
+  createMemoryResearchEngineStore,
+  saveDurableCorpus,
+} from "../../../tools/research-studio/engine";
+import { researchBlobClientFromEnv } from "../memoryStore";
 import { MAX_RESEARCH_UPLOAD_BYTES, handleResearchUpload } from "./handleUpload";
+
+const FAILED = { error: "Research upload failed.", code: "failed" } as const;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const length = Number(req.headers.get("content-length") ?? 0);
@@ -18,6 +25,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Malformed request.", code: "invalid" }, { status: 400 });
   }
 
-  const result = await handleResearchUpload({ form, store: getResearchApiStore() });
-  return NextResponse.json(result.body, { status: result.status });
+  const working = createMemoryResearchEngineStore();
+  const result = await handleResearchUpload({ form, store: working });
+  if (result.status !== 200 || !("documentId" in result.body)) {
+    return NextResponse.json(result.body, { status: result.status });
+  }
+
+  const loaded = working.get(result.body.documentId);
+  if (!loaded.ok) return NextResponse.json(FAILED, { status: 500 });
+
+  try {
+    const client = researchBlobClientFromEnv();
+    const saved = await saveDurableCorpus(client, loaded.value);
+    if (!saved.ok) return NextResponse.json(FAILED, { status: 500 });
+  } catch (err) {
+    if (err instanceof ResearchPersistenceError || err instanceof Error) {
+      return NextResponse.json(FAILED, { status: 500 });
+    }
+    return NextResponse.json(FAILED, { status: 500 });
+  }
+
+  return NextResponse.json(result.body, { status: 200 });
 }

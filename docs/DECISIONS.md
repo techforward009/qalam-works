@@ -723,3 +723,24 @@ Uploaded documents still disappear when the server process restarts.
 **Reason:**
 Product owner opened the UI from the verified evaluation baseline
 (2455e7e).
+
+---
+
+## Decision: Persist Research documents in private Vercel Blob
+
+**Date:** 2026-09-24
+**Status:** Approved — storage only
+
+**Decision:**
+Research API documents are stored in the private Vercel Blob store
+`qalam-research` via `QALAM_RESEARCH_STORE_ID`. One private JSON object
+per document lives at `research/v1/documents/{documentId}.json`.
+`parseStoredCorpus()` remains the validation boundary. Blob is
+authoritative. A per-request memory store is only a working set.
+Production also needs `QALAM_RESEARCH_READ_WRITE_TOKEN` or Vercel OIDC.
+The font blob store is not used. Responses do not include blob URLs.
+Missing configuration is a safe server error, not a memory fallback.
+
+**Reason:**
+Process memory does not survive a Vercel restart. The project owner
+connected the dedicated private store `qalam-research`.

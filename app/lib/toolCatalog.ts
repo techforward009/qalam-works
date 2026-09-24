@@ -398,16 +398,16 @@ export const TOOL_CATALOG: ToolEntry[] = [
     input: { en: "Upload a document and type a question. Choose which uploaded documents are in scope.", ur: "دستاویز اپلوڈ کریں اور سوال لکھیں۔ منتخب کریں کہ کون سی دستاویزات شامل ہوں۔" },
     output: { en: "An answer with page and original quotation, or a clear refusal.", ur: "صفحے اور اصل اقتباس کے ساتھ جواب، یا واضح انکار۔" },
     doesNotDo: {
-      en: "Does not chat without sources, search the web, or keep documents after the server restarts.",
-      ur: "بغیر مآخذ کے گفتگو نہیں کرتا، ویب نہیں کھنگالتا، اور سرور دوبارہ چلنے پر دستاویز نہیں رکھتا۔",
+      en: "Does not chat without sources, search the web, or publish document links.",
+      ur: "بغیر مآخذ کے گفتگو نہیں کرتا، ویب نہیں کھنگالتا، اور دستاویز کا عوامی لنک نہیں دیتا۔",
     },
     bestFor: {
       en: "Reading a specific uploaded document with a quotation you can check.",
       ur: "اپنی اپلوڈ شدہ دستاویز کو اس اقتباس کے ساتھ پڑھنا جسے آپ خود دیکھ سکیں۔",
     },
     importantNote: {
-      en: "Uploaded documents stay in server memory only and are cleared on restart.",
-      ur: "اپلوڈ شدہ دستاویزات صرف سرور کی عارضی یادداشت میں رہتی ہیں اور دوبارہ چلنے پر مٹ جاتی ہیں۔",
+      en: "Uploaded documents are stored privately for Research Studio and are not returned as public links.",
+      ur: "اپلوڈ شدہ دستاویزات ریسرچ اسٹوڈیو کے لیے نجی ذخیرے میں رہتی ہیں اور عوامی لنک کے طور پر نہیں دکھائی جاتیں۔",
     },
   },
 ];

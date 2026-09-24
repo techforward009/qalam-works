@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
+import { afterEach } from "vitest";
 import { POST } from "../../app/api/research/ask/route";
 import { handleResearchAsk } from "../../app/api/research/ask/handleAsk";
+import { setResearchBlobClientForTests } from "../../app/api/research/vercelResearchBlob";
 import {
   CHUNKER_VERSION,
   INSUFFICIENT_EVIDENCE_EN,
@@ -10,10 +12,27 @@ import {
   type AsyncAnswerAdapter,
   type DocumentChunk,
   type DocumentPage,
+  type ResearchBlobClient,
   type ResearchDocument,
 } from "../../app/tools/research-studio/engine";
 
 const TOKEN = "super-secret-token";
+
+afterEach(() => {
+  setResearchBlobClientForTests(null);
+});
+
+function emptyBlob(): ResearchBlobClient {
+  return {
+    async putObject() {},
+    async getObject() {
+      return null;
+    },
+    async listObjects() {
+      return [];
+    },
+  };
+}
 
 function document(id: string, pageCount: number): ResearchDocument {
   return {
@@ -282,6 +301,7 @@ describe("POST /api/research/ask", () => {
     );
     expect(oversized.status).toBe(400);
 
+    setResearchBlobClientForTests(emptyBlob());
     const emptyStore = await POST(
       new NextRequest("http://localhost/api/research/ask", {
         method: "POST",

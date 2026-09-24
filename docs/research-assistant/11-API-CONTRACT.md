@@ -13,7 +13,7 @@ Routes live under `app/api/research/` when implementation is unfrozen. They must
 POST /api/research/documents
 ```
 
-Multipart file field `file`. v0.1 ingests, chunks, and stores in the same request. Response: `{ id, documentId, filename, format, pageCount, chunkCount, processingStatus }`. No raw text. Documents live only in process memory. The separate process route stays frozen.
+Multipart file field `file`. v0.1 ingests, chunks, and stores in the same request. Response: `{ id, documentId, filename, format, pageCount, chunkCount, processingStatus }`. No raw text. Each ready document is one private object in the `qalam-research` Blob store. The separate process route stays frozen.
 
 ### Process
 
@@ -77,7 +77,7 @@ Localized `answer` strings are a UI concern; API may return an English `answer` 
 GET /api/research/documents/:id/pages/:page
 ```
 
-Returns `{ documentId, pageNumber, rawText }`. `rawText` is the stored page text, unchanged. Unknown document or page is HTTP 404 `not_found`, without other ids. A malformed id or page is HTTP 400. Page text lives only in process memory.
+Returns `{ documentId, pageNumber, rawText }`. `rawText` is the stored page text, unchanged. Unknown document or page is HTTP 404 `not_found`, without other ids. A malformed id or page is HTTP 400. Page text is read from the private `qalam-research` object. Responses do not include blob URLs.
 
 ## MUST
 

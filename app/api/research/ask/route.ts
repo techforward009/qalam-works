@@ -2,12 +2,16 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from "next/server";
+import { ResearchPersistenceError, hydrateResearchStore } from "../../../tools/research-studio/engine";
+import { researchBlobClientFromEnv } from "../memoryStore";
 import {
   MAX_RESEARCH_JSON_BYTES,
-  getResearchApiStore,
   handleResearchAsk,
+  prepareResearchAsk,
   researchAskAdapterFromEnv,
 } from "./handleAsk";
+
+const FAILED = { error: "Research request failed.", code: "failed" } as const;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const length = Number(req.headers.get("content-length") ?? 0);
@@ -27,10 +31,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Malformed request.", code: "invalid" }, { status: 400 });
   }
 
-  const result = await handleResearchAsk({
-    body,
-    store: getResearchApiStore(),
-    adapter: researchAskAdapterFromEnv(),
-  });
-  return NextResponse.json(result.body, { status: result.status });
+  const prepared = prepareResearchAsk(body);
+  if (!prepared.ok) {
+    return NextResponse.json(prepared.body, { status: prepared.status });
+  }
+
+  try {
+    const client = researchBlobClientFromEnv();
+    const store = await hydrateResearchStore(client, prepared.documentIds);
+    const result = await handleResearchAsk({
+      body,
+      store,
+      adapter: researchAskAdapterFromEnv(),
+    });
+    return NextResponse.json(result.body, { status: result.status });
+  } catch (err) {
+    if (err instanceof ResearchPersistenceError || err instanceof Error) {
+      return NextResponse.json(FAILED, { status: 500 });
+    }
+    return NextResponse.json(FAILED, { status: 500 });
+  }
 }

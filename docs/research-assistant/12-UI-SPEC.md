@@ -1,6 +1,6 @@
 # 12 — UI spec
 
-**Status:** SPEC FREEZE. First workspace implemented 2026-09-24 at `/tools/research-studio`. Not added to the sitemap. Documents remain process memory.
+**Status:** SPEC FREEZE. First workspace implemented 2026-09-24 at `/tools/research-studio`. Not added to the sitemap. Documents are stored in the private `qalam-research` Blob store.
 **Depends on:** [11-API-CONTRACT.md](11-API-CONTRACT.md)  
 **Phase H workspace:** shipped 2026-09-24 after engine phases A–G.
 

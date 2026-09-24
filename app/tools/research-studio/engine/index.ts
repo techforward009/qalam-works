@@ -32,6 +32,17 @@ export {
   type StoredCorpus,
 } from "./storage/parseStoredCorpus";
 export {
+  RESEARCH_BLOB_PREFIX,
+  ResearchPersistenceError,
+  documentIdFromResearchPathname,
+  hydrateResearchStore,
+  loadDurableCorpus,
+  parseDurableCorpusJson,
+  researchDocumentPathname,
+  saveDurableCorpus,
+  type ResearchBlobClient,
+} from "./storage/durableCorpus";
+export {
   ENGINE_DOC_KEY_PREFIX,
   ENGINE_LIST_KEY,
   createLocalStorageResearchEngineStore,

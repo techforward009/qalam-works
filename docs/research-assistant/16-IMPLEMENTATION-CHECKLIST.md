@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Ask, upload, page fetch, the tiny evaluation harness, and the Research Studio page are unfrozen. The 100-item set stays frozen. Documents remain process memory.
+**Status:** Ask, upload, page fetch, the tiny evaluation harness, the Research Studio page, and private Blob persistence are unfrozen. The 100-item set stays frozen.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -72,6 +72,12 @@ Workers AI draft only, after the evidence gate and before citation verification.
 **Research Studio UI (unfrozen 2026-09-24)**
 
 15. `/tools/research-studio` only. No sitemap entry. No engine changes.
+
+**Stop and review.**
+
+**Private Blob persistence (unfrozen 2026-09-24)**
+
+Research documents persist in the private `qalam-research` Vercel Blob store. One JSON object per document. `parseStoredCorpus()` validates every read and write. Memory is a per-request working set only. Production requires `QALAM_RESEARCH_STORE_ID`.
 
 **Stop and review.**
 

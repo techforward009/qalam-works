@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
+import { afterEach } from "vitest";
 import { GET } from "../../app/api/research/documents/[id]/pages/[page]/route";
 import * as pageRoute from "../../app/api/research/documents/[id]/pages/[page]/route";
 import { handleResearchUpload } from "../../app/api/research/documents/handleUpload";
 import { handleResearchPage } from "../../app/api/research/documents/handlePage";
+import { setResearchBlobClientForTests } from "../../app/api/research/vercelResearchBlob";
 import {
   CHUNKER_VERSION,
   createMemoryResearchEngineStore,
@@ -12,6 +14,10 @@ import {
   type ResearchDocument,
   type ResearchEngineStore,
 } from "../../app/tools/research-studio/engine";
+
+afterEach(() => {
+  setResearchBlobClientForTests(null);
+});
 
 function document(id: string, pageCount: number): ResearchDocument {
   return {
@@ -157,6 +163,15 @@ describe("GET /api/research/documents/:id/pages/:page", () => {
   });
 
   test("the route returns 404 for an unknown document and 400 for a bad id", async () => {
+    setResearchBlobClientForTests({
+      async putObject() {},
+      async getObject() {
+        return null;
+      },
+      async listObjects() {
+        return [];
+      },
+    });
     const missing = await GET(new NextRequest("http://localhost/api/research/documents/doc_missing/pages/1"), {
       params: Promise.resolve({ id: "doc_missing", page: "1" }),
     });

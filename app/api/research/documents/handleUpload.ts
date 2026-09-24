@@ -1,6 +1,7 @@
 /**
  * POST /api/research/documents
- * Multipart file → existing ingestion and chunking → process memory store.
+ * Multipart file → existing ingestion and chunking.
+ * The route persists the corpus after this handler accepts it.
  * Does not call a model and does not accept client evidence.
  */
 import {
@@ -10,9 +11,6 @@ import {
   sniffKind,
   type ResearchEngineStore,
 } from "../../../tools/research-studio/engine";
-import { getResearchApiStore } from "../memoryStore";
-
-export { getResearchApiStore };
 
 export const MAX_RESEARCH_UPLOAD_BYTES = 25 * 1024 * 1024;
 export const MAX_RESEARCH_UPLOAD_PAGES = 400;
