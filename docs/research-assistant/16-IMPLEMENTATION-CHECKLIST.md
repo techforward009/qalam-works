@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Phase A–B done. Phase C unfrozen 2026-09-22 (local document/page/chunk storage). Later phases still frozen.
+**Status:** Phase A–C done. Phase D unfrozen 2026-09-24 (keyword retrieval only). Dense/hybrid still frozen.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -27,10 +27,15 @@ See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **onl
 
 **Stop and review.**
 
+**Phase D (unfrozen 2026-09-24)**
+
+8. Keyword retrieval
+
+**Stop and review.**
+
 **Later phases (each needs its own unfreeze)**
 
 7. Dense retrieval (v0.2; stub interface in v0.1)  
-8. Keyword retrieval  
 9. Hybrid fusion (v0.2)  
 10. Reranking (v0.2; `NoopReranker` in v0.1)  
 11. Evidence gate  

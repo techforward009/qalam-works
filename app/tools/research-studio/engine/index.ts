@@ -43,3 +43,12 @@ export {
   type EngineStoreResult,
   type ResearchEngineStore,
 } from "./storage/researchEngineStore";
+export {
+  DEFAULT_KEYWORD_K,
+  MAX_KEYWORD_K,
+  foldKeywordToken,
+  keywordTokens,
+  searchKeywords,
+  type KeywordSearchOptions,
+  type RetrievedChunk,
+} from "./retrieval/keywordSearch";

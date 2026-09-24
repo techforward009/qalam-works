@@ -552,3 +552,20 @@ or introduce a server database. No search or retrieval.
 **Reason:**
 Product owner opened Phase C from the verified Phase B baseline
 (9697ce9).
+
+---
+
+## Decision: Unfreeze Research Engine Phase D
+
+**Date:** 2026-09-24
+**Status:** Approved — Phase D implementation
+
+**Decision:**
+Phase D adds deterministic keyword retrieval over stored chunks.
+Search tokens come from normalizedText after the existing processText
+adapter plus retriever-only folding. rawText is returned unchanged.
+No dense search, RRF, reranking, LLM, or API.
+
+**Reason:**
+Product owner opened Phase D after Phase C (e2a2562) and the Qalam AI
+hide (32afa9e).
