@@ -569,3 +569,19 @@ No dense search, RRF, reranking, LLM, or API.
 **Reason:**
 Product owner opened Phase D after Phase C (e2a2562) and the Qalam AI
 hide (32afa9e).
+
+---
+
+## Decision: Unfreeze Research Engine Phase E
+
+**Date:** 2026-09-24
+**Status:** Approved — Phase E implementation
+
+**Decision:**
+Phase E adds a deterministic evidence gate over keyword hits. It may
+allow or refuse. It must not answer, call an LLM, or rewrite chunks.
+Refusal reasons stay inside the existing EvidenceGateReason union.
+
+**Reason:**
+Product owner opened Phase E from the verified Phase D baseline
+(1ab3bbd).

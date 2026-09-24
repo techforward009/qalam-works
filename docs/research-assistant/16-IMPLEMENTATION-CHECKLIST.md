@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Phase A–C done. Phase D unfrozen 2026-09-24 (keyword retrieval only). Dense/hybrid still frozen.
+**Status:** Phase A–D done. Phase E unfrozen 2026-09-24 (evidence gate only). Answer generation still frozen.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -33,12 +33,17 @@ See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **onl
 
 **Stop and review.**
 
+**Phase E (unfrozen 2026-09-24)**
+
+11. Evidence gate
+
+**Stop and review.**
+
 **Later phases (each needs its own unfreeze)**
 
 7. Dense retrieval (v0.2; stub interface in v0.1)  
 9. Hybrid fusion (v0.2)  
 10. Reranking (v0.2; `NoopReranker` in v0.1)  
-11. Evidence gate  
 12. Typed LLM answer  
 13. Citation verification  
 14. API  

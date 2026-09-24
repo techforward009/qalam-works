@@ -52,3 +52,11 @@ export {
   type KeywordSearchOptions,
   type RetrievedChunk,
 } from "./retrieval/keywordSearch";
+export {
+  EVIDENCE_MIN_INDEPENDENT_CHUNKS,
+  EVIDENCE_MIN_MATCHED_TERMS,
+  EVIDENCE_MIN_SCORE,
+  evaluateEvidence,
+  type EvidenceGateOptions,
+  type EvidenceGateResult,
+} from "./evidence/evaluateEvidence";
