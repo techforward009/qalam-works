@@ -87,6 +87,12 @@ Research documents persist in the private `qalam-research` Vercel Blob store. On
 
 **Stop and review.**
 
+**Multi-part evidence coverage (unfrozen 2026-09-24)**
+
+Keyword retrieval and the evidence gate are unchanged. Ask preparation reads up to 20 keyword hits, then keeps at most 5 chunks by deterministic matched-term coverage. This is not semantic query understanding. Citation verification, Blob storage, and authentication are unchanged.
+
+**Stop and review.**
+
 **Later phases (each needs its own unfreeze)**
 
 7. Dense retrieval (v0.2; stub interface in v0.1)  

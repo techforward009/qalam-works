@@ -17,6 +17,10 @@ export type EvalCase = {
   relevantChunkIds: string[];
   gateReason: EvidenceGateReason;
   answered: boolean;
+  /** When set, askResearch evidence must include these chunks even if keyword top 5 does not. */
+  mustCoverChunkIds?: string[];
+  /** Relevant chunks that keyword top 5 is expected to omit. */
+  omittedByTop5ChunkIds?: string[];
   /** When set, verify this quote against stored rawText. */
   citation?: {
     documentId: string;
@@ -83,6 +87,13 @@ export function createEvaluationStore(): ResearchEngineStore {
   put(store, "book_conflict", ["پیدائش 868 میں ہوئی۔", "پیدائش 874 میں ہوئی۔"]);
   put(store, "book_hadith", ["Hadith 289 is recorded on this page."]);
   put(store, "book_mixed", ["کراچی qalamworks کا ذکر ہے۔", "کراچی qalamworks دوسرا صفحہ۔"]);
+  put(store, "book_coverage", [
+    ...[1, 2, 3, 4, 5].map(
+      (n) =>
+        `${"abrotanum ".repeat(8)}${"marasmus ".repeat(8)}${"features ".repeat(8)}${"characteristic ".repeat(8)}passage ${n}`,
+    ),
+    "choudhuri compare remedies",
+  ]);
   return store;
 }
 
@@ -184,5 +195,16 @@ export const EVAL_CASES: EvalCase[] = [
     relevantChunkIds: ["book_askar:p2:c1"],
     gateReason: "weak_retrieval",
     answered: false,
+  },
+  {
+    id: "multipart-coverage",
+    query:
+      "What are the characteristic features of Abrotanum, and which remedies does Choudhuri compare with it in cases of marasmus?",
+    documentIds: ["book_coverage"],
+    relevantChunkIds: [1, 2, 3, 4, 5].map((page) => `book_coverage:p${page}:c1`),
+    omittedByTop5ChunkIds: ["book_coverage:p6:c1"],
+    mustCoverChunkIds: ["book_coverage:p1:c1", "book_coverage:p6:c1"],
+    gateReason: "sufficient",
+    answered: true,
   },
 ];

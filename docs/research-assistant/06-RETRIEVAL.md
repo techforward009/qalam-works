@@ -63,3 +63,5 @@ interface Retriever {
 - Zero-result query returns `[]`, not a throw.
 - Retrieval tests do not import Document Studio or Unicode engine internals.
 - Mixed-script query `امام Hasan al-Askari` returns the same page as the Urdu-only form on the golden fixture.
+
+Keyword scoring is unchanged. Ask preparation may read a keyword pool of up to 20 hits, then pass at most 5 chunks to the answer step. Those 5 are chosen by deterministic matched-term coverage: a lower-ranked hit is preferred over another high-ranked hit when it adds folded query terms the selected set does not already cover. This is not semantic query understanding, and it does not parse the question. The evidence gate still decides whether the pool is strong enough.

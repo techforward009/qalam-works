@@ -72,7 +72,7 @@ Use public-domain or project-owned fixtures. Do not commit copyrighted books.
 
 ## v0.1 tiny harness
 
-`tests/research/evaluation.test.ts` runs ten checked-in cases from `tests/research/fixtures/evaluationCorpus.ts`. No network, no Workers AI, no API key. The default deterministic answer path is used. There is no single quality score.
+`tests/research/evaluation.test.ts` runs eleven checked-in cases from `tests/research/fixtures/evaluationCorpus.ts`. No network, no Workers AI, no API key. The default deterministic answer path is used. There is no single quality score.
 
 | Case | Measured result |
 | --- | --- |
@@ -86,5 +86,6 @@ Use public-domain or project-owned fixtures. Do not commit copyrighted books.
 | exact-reference | `Hadith 289` is enough as one chunk. Gate: sufficient. |
 | mixed-script-fold | `كراچى qalamworks` matches stored `کراچی qalamworks`. |
 | paraphrase-gap | `علمی مقام` retrieves the chunk that only shares `علمی`. Gate: `weak_retrieval`. Refused. |
+| multipart-coverage | Keyword top 5 keeps repeated Abrotanum/marasmus feature chunks and omits the lower-ranked comparison chunk. Coverage selection still passes both portions, capped at 5. Gate thresholds unchanged. |
 
-Measured limitation: a shared content word is enough to retrieve a chunk, and not enough to answer. Citation fold is not applied; `ك` matching `ک` is retrieval-only. This set does not justify an embedding or hybrid retrieval change. False answers on the refused cases: 0.
+Measured limitation: a shared content word is enough to retrieve a chunk, and not enough to answer. Coverage selection only redistributes matched query terms; it does not decide what a question means. Citation fold is not applied; `ك` matching `ک` is retrieval-only. This set does not justify an embedding or hybrid retrieval change. False answers on the refused cases: 0.

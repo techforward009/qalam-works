@@ -40,6 +40,8 @@ Combine, not a single magic number:
 - Allow generation on a single weak semantic hit.
 - Mutate chunks inside the gate.
 
+Coverage selection is not part of this gate. A multi-word query is not sufficient by itself. `EVIDENCE_MIN_SCORE`, the two-chunk minimum, the exact-reference exception, conflict detection, and provenance checks stay as they are. Selection of which strong chunks reach the model happens after the gate allows the pool.
+
 ## Decision table
 
 | Situation | Result |

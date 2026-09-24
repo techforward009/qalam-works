@@ -6,9 +6,10 @@
  */
 import { verifyCitation } from "../citation/verifyCitation";
 import { evaluateEvidence } from "../evidence/evaluateEvidence";
-import { searchKeywords, type RetrievedChunk } from "../retrieval/keywordSearch";
+import { MAX_KEYWORD_K, searchKeywords, type RetrievedChunk } from "../retrieval/keywordSearch";
 import type { ResearchEngineStore } from "../storage/researchEngineStore";
 import type { Citation, EvidenceGateReason, ResearchAnswer } from "../types/document";
+import { selectCoveredEvidence } from "./selectCoveredEvidence";
 
 /** Spec limit: at most five evidence chunks may support an answer. */
 export const MAX_ANSWER_EVIDENCE = 5;
@@ -111,7 +112,7 @@ function prepareAsk(
   | { ok: false; result: TypedResearchAnswer }
   | { ok: true; evidence: RetrievedChunk[]; reason: EvidenceGateReason } {
   const hits = searchKeywords(store, query, {
-    k: options.k,
+    k: options.k ?? MAX_KEYWORD_K,
     documentIds: options.documentIds,
   });
   const gate = evaluateEvidence(hits, {
@@ -125,7 +126,14 @@ function prepareAsk(
   if (!gate.allowed) {
     return { ok: false, result: refuse(query, gate.reason, gate.reason) };
   }
-  return { ok: true, evidence: gate.hits.slice(0, MAX_ANSWER_EVIDENCE), reason: gate.reason };
+  return {
+    ok: true,
+    evidence: selectCoveredEvidence(gate.hits, {
+      limit: MAX_ANSWER_EVIDENCE,
+      documentIds: options.documentIds,
+    }),
+    reason: gate.reason,
+  };
 }
 
 function isCitation(value: unknown): value is Citation {

@@ -766,3 +766,16 @@ clears the browser cookie only.
 **Reason:**
 Durable documents share one private store. Unsigned access would let any
 caller read and write that corpus.
+
+---
+
+## Decision: Select Research evidence by query-term coverage
+
+**Date:** 2026-09-24
+**Status:** Approved — answer selection only
+
+**Decision:**
+Ask preparation reads up to 20 keyword hits, then keeps at most 5 chunks for the model. Selection prefers a chunk that adds folded matched terms the higher-ranked chunks do not already cover. Keyword scores, the evidence gate thresholds, citation verification, and the Workers AI request stay as they are. This does not parse or understand the question.
+
+**Reason:**
+A compound question can have its highest-ranked chunks all support one part, so the other part never reaches the model.

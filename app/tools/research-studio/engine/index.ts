@@ -99,6 +99,7 @@ export {
   type RefusalReason,
   type TypedResearchAnswer,
 } from "./answer/askResearch";
+export { selectCoveredEvidence, type CoveredEvidenceOptions } from "./answer/selectCoveredEvidence";
 export {
   MAX_LLM_CHUNK_CHARS,
   MAX_LLM_EVIDENCE_CHARS,

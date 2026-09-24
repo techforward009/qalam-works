@@ -5,7 +5,7 @@
 
 ## When the model runs
 
-Only after `evaluateEvidence().allowed === true`. Pass the **question + at most 5 evidence chunks**.
+Only after `evaluateEvidence().allowed === true`. Pass the **question + at most 5 evidence chunks**. Those chunks are a deterministic matched-term coverage subset of the keyword pool (up to 20), not necessarily the first five by score, and not a second model call.
 
 ## Output schema (locked)
 

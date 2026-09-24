@@ -8,7 +8,7 @@ import { EVAL_CASES, createEvaluationStore, type EvalCase } from "./fixtures/eva
 
 type StageFailure = {
   id: string;
-  stage: "retrieval" | "top5" | "gate" | "citation" | "refusal" | "scope";
+  stage: "retrieval" | "top5" | "gate" | "citation" | "refusal" | "scope" | "coverage";
   expected: string;
   actual: string;
 };
@@ -38,6 +38,15 @@ function runCase(item: EvalCase, failures: StageFailure[]) {
     if (outside.length > 0) {
       failures.push({ id: item.id, stage: "top5", expected: item.relevantChunkIds.join(","), actual: found.join(",") });
     }
+  }
+
+  if (item.omittedByTop5ChunkIds?.some((id) => found.slice(0, 5).includes(id))) {
+    failures.push({
+      id: item.id,
+      stage: "coverage",
+      expected: `top5 omits ${item.omittedByTop5ChunkIds.join(",")}`,
+      actual: found.join(","),
+    });
   }
 
   const gate = evaluateEvidence(hits, { query: item.query, documentIds: item.documentIds });
@@ -101,6 +110,18 @@ function runCase(item: EvalCase, failures: StageFailure[]) {
       }
     }
   }
+  if (item.mustCoverChunkIds) {
+    const covered = new Set(answer.citations.map((citation) => citation.chunkId));
+    const missing = item.mustCoverChunkIds.filter((id) => !covered.has(id));
+    if (missing.length > 0) {
+      failures.push({
+        id: item.id,
+        stage: "coverage",
+        expected: item.mustCoverChunkIds.join(","),
+        actual: answer.citations.map((citation) => citation.chunkId).join(",") || "(none)",
+      });
+    }
+  }
 }
 
 function summarize(failures: StageFailure[]) {
@@ -160,12 +181,12 @@ describe("research evaluation benchmark", () => {
     expect(second).toEqual(first);
     expect(summarize(first).failures).toEqual([]);
     expect(summarize(first)).toMatchObject({
-      retrievalHitRate: "9/9",
-      top5RelevantRate: "9/9",
-      gateDecisionRate: "9/9",
-      citationVerificationRate: "6/6",
+      retrievalHitRate: "10/10",
+      top5RelevantRate: "10/10",
+      gateDecisionRate: "10/10",
+      citationVerificationRate: "7/7",
       refusalRate: "4/4",
-      documentScopeRate: "6/6",
+      documentScopeRate: "7/7",
     });
   });
 });
