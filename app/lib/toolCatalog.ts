@@ -22,6 +22,7 @@ import {
   FilePenLine,
   CalendarDays,
   ArrowLeftRight,
+  Library,
 } from "lucide-react";
 
 export type ToolIcon =
@@ -34,7 +35,8 @@ export type ToolIcon =
   | typeof MessageCircle
   | typeof FilePenLine
   | typeof CalendarDays
-  | typeof ArrowLeftRight;
+  | typeof ArrowLeftRight
+  | typeof Library;
 
 export interface ToolEntry {
   id: string;
@@ -375,6 +377,37 @@ export const TOOL_CATALOG: ToolEntry[] = [
     importantNote: {
       en: "Hijri dates use the same deterministic tabular engine as Date Converter and may differ from local moon sighting.",
       ur: "ہجری تاریخیں تاریخ کنورٹر کے اسی حسابی قمری انجن سے بنتی ہیں اور مقامی رویتِ ہلال سے مختلف ہو سکتی ہیں۔",
+    },
+  },
+
+  {
+    id: "research_studio",
+    route: "/tools/research-studio",
+    Icon: Library,
+    iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50",
+    iconColor: "text-[#1A3A2A] dark:text-[#8faa93]",
+    name: { en: "Research Studio", ur: "ریسرچ اسٹوڈیو" },
+    short: {
+      en: "Ask your own documents and read the answer next to the original page.",
+      ur: "اپنی دستاویزات سے سوال کریں اور جواب اصل صفحے کے ساتھ پڑھیں۔",
+    },
+    whatItDoes: {
+      en: "Uploads a PDF, DOCX, TXT, or MD file, then answers only from those documents. A refusal is shown when the material is not strong enough. Each citation can open the stored page.",
+      ur: "PDF، DOCX، TXT یا MD اپلوڈ کریں، پھر جواب صرف انہی دستاویزات سے آتا ہے۔ مواد کمزور ہو تو صاف انکار دکھایا جاتا ہے۔ ہر حوالہ اصل صفحہ کھول سکتا ہے۔",
+    },
+    input: { en: "Upload a document and type a question. Choose which uploaded documents are in scope.", ur: "دستاویز اپلوڈ کریں اور سوال لکھیں۔ منتخب کریں کہ کون سی دستاویزات شامل ہوں۔" },
+    output: { en: "An answer with page and original quotation, or a clear refusal.", ur: "صفحے اور اصل اقتباس کے ساتھ جواب، یا واضح انکار۔" },
+    doesNotDo: {
+      en: "Does not chat without sources, search the web, or keep documents after the server restarts.",
+      ur: "بغیر مآخذ کے گفتگو نہیں کرتا، ویب نہیں کھنگالتا، اور سرور دوبارہ چلنے پر دستاویز نہیں رکھتا۔",
+    },
+    bestFor: {
+      en: "Reading a specific uploaded document with a quotation you can check.",
+      ur: "اپنی اپلوڈ شدہ دستاویز کو اس اقتباس کے ساتھ پڑھنا جسے آپ خود دیکھ سکیں۔",
+    },
+    importantNote: {
+      en: "Uploaded documents stay in server memory only and are cleared on restart.",
+      ur: "اپلوڈ شدہ دستاویزات صرف سرور کی عارضی یادداشت میں رہتی ہیں اور دوبارہ چلنے پر مٹ جاتی ہیں۔",
     },
   },
 ];

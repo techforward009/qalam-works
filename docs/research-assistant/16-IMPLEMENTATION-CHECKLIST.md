@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Ask, upload, page fetch, and the tiny evaluation harness are unfrozen. The 100-item set, search, and UI stay frozen.
+**Status:** Ask, upload, page fetch, the tiny evaluation harness, and the Research Studio page are unfrozen. The 100-item set stays frozen. Documents remain process memory.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -69,12 +69,17 @@ Workers AI draft only, after the evidence gate and before citation verification.
 
 **Stop and review.**
 
+**Research Studio UI (unfrozen 2026-09-24)**
+
+15. `/tools/research-studio` only. No sitemap entry. No engine changes.
+
+**Stop and review.**
+
 **Later phases (each needs its own unfreeze)**
 
 7. Dense retrieval (v0.2; stub interface in v0.1)  
 9. Hybrid fusion (v0.2)  
 10. Reranking (v0.2; `NoopReranker` in v0.1)  
-15. UI  
 17. Golden tests (100-item set)
 18. Performance / security testing  
 

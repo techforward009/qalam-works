@@ -1,8 +1,8 @@
 # 12 — UI spec
 
-**Status:** SPEC FREEZE  
+**Status:** SPEC FREEZE. First workspace implemented 2026-09-24 at `/tools/research-studio`. Not added to the sitemap. Documents remain process memory.
 **Depends on:** [11-API-CONTRACT.md](11-API-CONTRACT.md)  
-**Build in Phase H only.** No `page.tsx` until engine phases A–G exist.
+**Phase H workspace:** shipped 2026-09-24 after engine phases A–G.
 
 ## Surface
 

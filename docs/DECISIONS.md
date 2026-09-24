@@ -706,3 +706,20 @@ enough evidence to change retrieval in this phase.
 **Reason:**
 Product owner opened evaluation from the verified page-fetch baseline
 (e8a4836).
+
+---
+
+## Decision: Unfreeze Research Studio UI
+
+**Date:** 2026-09-24
+**Status:** Approved — workspace only
+
+**Decision:**
+`/tools/research-studio` uploads, asks, and opens pages through the
+existing research API. The client does not score evidence, rewrite
+quotes, or call a model directly. The page is not in the sitemap.
+Uploaded documents still disappear when the server process restarts.
+
+**Reason:**
+Product owner opened the UI from the verified evaluation baseline
+(2455e7e).
