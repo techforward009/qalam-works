@@ -654,3 +654,20 @@ Upload, search, and page fetch stay frozen.
 **Reason:**
 Product owner opened the API from the verified adapter baseline
 (f0ed1b5).
+
+---
+
+## Decision: Unfreeze Research document upload
+
+**Date:** 2026-09-24
+**Status:** Approved — upload endpoint only
+
+**Decision:**
+`POST /api/research/documents` accepts one multipart file and runs the
+existing ingestion and chunking into the same process-memory store used
+by ask. No model call, no client evidence, and no new persistence.
+Restart or deploy clears uploaded documents. That limit is intentional.
+
+**Reason:**
+Product owner opened upload from the verified ask API baseline
+(fb4473f).

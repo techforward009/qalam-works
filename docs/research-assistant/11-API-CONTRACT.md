@@ -13,7 +13,7 @@ Routes live under `app/api/research/` when implementation is unfrozen. They must
 POST /api/research/documents
 ```
 
-Multipart file. Response: `{ id, processingStatus }`.
+Multipart file field `file`. v0.1 ingests, chunks, and stores in the same request. Response: `{ id, documentId, filename, format, pageCount, chunkCount, processingStatus }`. No raw text. Documents live only in process memory. The separate process route stays frozen.
 
 ### Process
 

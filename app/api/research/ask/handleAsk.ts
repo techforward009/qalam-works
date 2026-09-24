@@ -8,11 +8,13 @@ import {
   MAX_KEYWORD_K,
   askResearchAsync,
   createLlmAnswerAdapter,
-  createMemoryResearchEngineStore,
   type AsyncAnswerAdapter,
   type ResearchEngineStore,
   type TypedResearchAnswer,
 } from "../../../tools/research-studio/engine";
+import { getResearchApiStore } from "../memoryStore";
+
+export { getResearchApiStore };
 
 export const MAX_RESEARCH_JSON_BYTES = 16_384;
 export const MAX_RESEARCH_QUERY_CHARS = 2_000;
@@ -23,13 +25,6 @@ export type ResearchAskError = {
   error: string;
   code: "invalid" | "invalid_scope" | "failed";
 };
-
-let apiStore: ResearchEngineStore | null = null;
-
-export function getResearchApiStore(): ResearchEngineStore {
-  if (!apiStore) apiStore = createMemoryResearchEngineStore();
-  return apiStore;
-}
 
 export function researchAskAdapterFromEnv(): AsyncAnswerAdapter {
   return createLlmAnswerAdapter({
