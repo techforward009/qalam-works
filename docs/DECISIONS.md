@@ -636,3 +636,21 @@ A gate refusal makes zero model calls. No API, UI, tools, or web search.
 **Reason:**
 Product owner opened the adapter from the verified Phase G baseline
 (edd5462). The provider matches the existing Workers AI chat endpoint.
+
+---
+
+## Decision: Unfreeze the Research ask API
+
+**Date:** 2026-09-24
+**Status:** Approved — ask endpoint only
+
+**Decision:**
+`POST /api/research/ask` validates the query and document scope, then
+calls `askResearchAsync`. There is no upload and no client evidence.
+v0.1 is unsigned local/dev: one process memory store, no accounts.
+Domain refusals are HTTP 200. Invalid requests are HTTP 400.
+Upload, search, and page fetch stay frozen.
+
+**Reason:**
+Product owner opened the API from the verified adapter baseline
+(f0ed1b5).

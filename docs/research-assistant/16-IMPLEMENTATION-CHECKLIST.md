@@ -1,6 +1,6 @@
 # 16 — Implementation checklist
 
-**Status:** Phase A–G done. LLM answer adapter unfrozen 2026-09-24. API and UI still frozen.
+**Status:** Phase A–G and the LLM adapter are done. Research ask API unfrozen 2026-09-24. Upload, search, page fetch, and UI stay frozen.
 
 See [17-AMENDMENT-MVP.md](17-AMENDMENT-MVP.md). Phase A, when unfrozen, is **only** items 1–3 below. Later numbers require their own unfreeze.
 
@@ -57,12 +57,17 @@ Workers AI draft only, after the evidence gate and before citation verification.
 
 **Stop and review.**
 
+**Research API (unfrozen 2026-09-24)**
+
+14. `POST /api/research/ask` only. No upload and no UI.
+
+**Stop and review.**
+
 **Later phases (each needs its own unfreeze)**
 
 7. Dense retrieval (v0.2; stub interface in v0.1)  
 9. Hybrid fusion (v0.2)  
 10. Reranking (v0.2; `NoopReranker` in v0.1)  
-14. API  
 15. UI  
 16. Evaluation dataset  
 17. Golden tests  
