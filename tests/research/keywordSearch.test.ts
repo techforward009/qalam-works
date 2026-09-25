@@ -200,6 +200,29 @@ describe("keyword retrieval", () => {
     expect(searchKeywords(book, "Hadith", { k: 0 })).toEqual([]);
   });
 
+  test("common English function words do not become matched retrieval terms", () => {
+    const store = storeOf([
+      {
+        id: "abrotanum",
+        pages: [page("abrotanum", 1, "The remedy is useful in cases of marasmus.")],
+        chunks: [chunk("abrotanum", 1, 1, "The remedy is useful in cases of marasmus.")],
+      },
+      {
+        id: "noise",
+        pages: [page("noise", 1, "The and of in are with it.")],
+        chunks: [chunk("noise", 1, 1, "The and of in are with it.")],
+      },
+    ]);
+
+    const hits = searchKeywords(store, "What is the remedy in cases?");
+    expect(hits.map((hit) => hit.chunk.id)).toContain("abrotanum:p1:c1");
+    expect(hits.map((hit) => hit.chunk.id)).not.toContain("noise:p1:c1");
+    expect(hits.find((hit) => hit.chunk.id === "abrotanum:p1:c1")?.matchedTerms).toEqual([
+      "remedy",
+      "cases",
+    ]);
+  });
+
   test("rawText stays distinct from normalizedText", () => {
     const hits = searchKeywords(book, "العسکری");
     const hit = hits.find((item) => item.chunk.id === "book_001:p2:c1");

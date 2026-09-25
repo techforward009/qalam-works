@@ -27,6 +27,13 @@ export type KeywordSearchOptions = {
 const WORD = /[\p{L}\p{N}]+/gu;
 const MARKS = /[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g;
 
+/** Common English function words are not evidence-bearing retrieval terms. */
+const ENGLISH_FUNCTION_WORDS = new Set([
+  "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
+  "in", "is", "it", "of", "on", "or", "the", "to", "was", "were",
+  "with",
+]);
+
 /** Retriever-only fold. Does not call or change processText. */
 export function foldKeywordToken(token: string): string {
   let folded = token
@@ -47,7 +54,7 @@ export function keywordTokens(text: string): string[] {
   const tokens: string[] = [];
   for (const match of source.matchAll(WORD)) {
     const folded = foldKeywordToken(match[0]);
-    if (folded.length > 0) tokens.push(folded);
+    if (folded.length > 0 && !ENGLISH_FUNCTION_WORDS.has(folded)) tokens.push(folded);
   }
   return tokens;
 }
