@@ -213,7 +213,7 @@ export default function ResearchStudioWorkspace({
     setPageView(null);
     const selected = documents.filter((item) => item.selected).map((item) => item.documentId);
     const body: { query: string; documentIds?: string[]; k?: number } = { query: query.trim() };
-    if (selected.length > 0 && selected.length < documents.length) body.documentIds = selected;
+    if (selected.length > 0) body.documentIds = selected;
     if (limitValue) body.k = Number(limitValue);
     try {
       const response = await fetch("/api/research/ask", {

@@ -95,7 +95,7 @@ describe("Research Studio UI", () => {
     const quote = document.querySelector("blockquote");
     expect(quote?.textContent).toBe("  یہ    اردو ہے۔  ");
     expect(quote?.getAttribute("dir")).toBe("auto");
-    expect(calls[0]?.body).toBe(JSON.stringify({ query: "اردو" }));
+    expect(calls[0]?.body).toBe(JSON.stringify({ query: "اردو", documentIds: ["doc_1"] }));
     expect(calls[0]?.body).not.toContain("rawText");
   });
 
