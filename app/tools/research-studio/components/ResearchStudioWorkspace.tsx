@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../../lib/language-context";
 
 const INSUFFICIENT_UR = "مجھے فراہم کردہ دستاویزات میں اس سوال کا کافی مستند مواد نہیں ملا۔";
@@ -100,6 +100,10 @@ const COPY = {
   },
 } as const;
 
+function researchPagePath(documentId: string, pageNumber: number): string {
+  return `/api/research/documents/${encodeURIComponent(documentId)}/pages/${pageNumber}`;
+}
+
 function safeError(payload: unknown, fallback: string): string {
   if (!payload || typeof payload !== "object" || !("error" in payload)) return fallback;
   const error = (payload as { error?: unknown }).error;
@@ -140,10 +144,19 @@ export default function ResearchStudioWorkspace({
   const [pageState, setPageState] = useState<"idle" | "loading" | "error">("idle");
   const [pageMessage, setPageMessage] = useState("");
   const [pageView, setPageView] = useState<PageView | null>(null);
+  const pageRegionRef = useRef<HTMLDivElement | null>(null);
 
   const limitValue = limit.trim();
   const limitInvalid = limitValue.length > 0 && !/^(?:[1-9]|1\d|20)$/.test(limitValue);
   const canAsk = query.trim().length > 0 && documents.length > 0 && !limitInvalid && askState !== "loading";
+
+  useEffect(() => {
+    if (!pageView) return;
+    const region = pageRegionRef.current;
+    if (!region) return;
+    region.scrollIntoView?.({ block: "start" });
+    region.focus();
+  }, [pageView]);
 
   async function onUpload() {
     if (!file || uploadState === "loading") return;
@@ -240,7 +253,7 @@ export default function ResearchStudioWorkspace({
     setPageMessage("");
     setPageView(null);
     try {
-      const response = await fetch(`/api/research/documents/${encodeURIComponent(citation.documentId)}/pages/${citation.pageNumber}`);
+      const response = await fetch(researchPagePath(citation.documentId, citation.pageNumber));
       const payload: unknown = await response.json().catch(() => null);
       if (!response.ok || !payload || typeof payload !== "object" || !("rawText" in payload)) {
         setPageState("error");
@@ -249,6 +262,11 @@ export default function ResearchStudioWorkspace({
       }
       const page = payload as { documentId?: unknown; pageNumber?: unknown; rawText?: unknown };
       if (typeof page.rawText !== "string" || typeof page.documentId !== "string" || typeof page.pageNumber !== "number") {
+        setPageState("error");
+        setPageMessage(t.requestFailed);
+        return;
+      }
+      if (page.documentId !== citation.documentId || page.pageNumber !== citation.pageNumber) {
         setPageState("error");
         setPageMessage(t.requestFailed);
         return;
@@ -397,13 +415,16 @@ export default function ResearchStudioWorkspace({
                   </p>
                   <blockquote dir="auto" className="mt-2 whitespace-pre-wrap">{citation.quote}</blockquote>
                   <p className="mt-1 text-sm text-gray-600 dark:text-white/70" dir="ltr">{citation.chunkId}</p>
-                  <button
-                    type="button"
-                    className="mt-2 underline focus-visible:outline focus-visible:outline-2"
-                    onClick={() => openPage(citation)}
+                  <a
+                    href={researchPagePath(citation.documentId, citation.pageNumber)}
+                    className="mt-2 inline-block underline focus-visible:outline focus-visible:outline-2"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      void openPage(citation);
+                    }}
                   >
                     {t.openPage} {citation.pageNumber}
-                  </button>
+                  </a>
                 </li>
               ))}
             </ol>
@@ -414,7 +435,12 @@ export default function ResearchStudioWorkspace({
           {pageState === "loading" ? <p>{t.opening}</p> : null}
           {pageState === "error" ? <p>{pageMessage}</p> : null}
           {pageView ? (
-            <div>
+            <div
+              ref={pageRegionRef}
+              tabIndex={-1}
+              data-document-id={pageView.documentId}
+              data-page-number={pageView.pageNumber}
+            >
               <h3 className="font-semibold">{t.page} <span dir="ltr">{pageView.pageNumber}</span></h3>
               <pre dir="auto" className="mt-2 whitespace-pre-wrap font-sans">{pageView.rawText}</pre>
             </div>

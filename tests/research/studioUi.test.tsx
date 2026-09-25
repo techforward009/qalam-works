@@ -164,7 +164,7 @@ describe("Research Studio UI", () => {
     expect(await screen.findByText("Insufficient evidence", { exact: true })).toBeTruthy();
     expect(screen.getByText("no_evidence")).toBeTruthy();
     expect(screen.getByText("Insufficient evidence in the provided documents.")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Open page/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Open page/ })).toBeNull();
 
     fireEvent.change(screen.getByLabelText("Question text"), { target: { value: "provider" } });
     fireEvent.click(screen.getByRole("button", { name: "Ask" }));
@@ -188,7 +188,7 @@ describe("Research Studio UI", () => {
 
     fireEvent.change(screen.getByLabelText("Question text"), { target: { value: "beta" } });
     fireEvent.click(screen.getByRole("button", { name: "Ask" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Open page 2" }));
+    fireEvent.click(await screen.findByRole("link", { name: "Open page 2" }));
     await screen.findByText("Source page");
     const page = document.querySelector("pre");
     expect(page?.textContent).toBe("  beta   marker  ");
@@ -240,8 +240,74 @@ describe("Research Studio UI", () => {
     expect(calls).toEqual([JSON.stringify({ query: "alpha", documentIds: ["doc_a"], k: 4 })]);
     expect(screen.getByText("doc_a:p1:c1").getAttribute("dir")).toBe("ltr");
 
-    fireEvent.click(screen.getByRole("button", { name: "Open page 1" }));
+    fireEvent.click(screen.getByRole("link", { name: "Open page 1" }));
     expect(await screen.findByText("The request could not be completed.")).toBeTruthy();
     expect(screen.queryByText(/secret/)).toBeNull();
+  });
+
+  it("opens the cited document at that page, including a later page", async () => {
+    const pageUrls: string[] = [];
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/documents") && init?.method === "POST") {
+        return jsonResponse({
+          documentId: "doc_13994cc9557d",
+          filename: "book.pdf",
+          format: "pdf",
+          pageCount: 200,
+          chunkCount: 2,
+          processingStatus: "ready",
+        });
+      }
+      if (url.includes("/pages/")) {
+        pageUrls.push(url);
+        if (url.endsWith("/pages/137")) {
+          return jsonResponse({ documentId: "doc_13994cc9557d", pageNumber: 137, rawText: "page one hundred thirty seven" });
+        }
+        if (url.endsWith("/pages/1")) {
+          return jsonResponse({ documentId: "doc_13994cc9557d", pageNumber: 1, rawText: "first cited page only" });
+        }
+        return jsonResponse({ documentId: "doc_13994cc9557d", pageNumber: 1, rawText: "whole book" });
+      }
+      return jsonResponse({
+        answered: true,
+        answer: "cited",
+        citations: [
+          { documentId: "doc_13994cc9557d", pageNumber: 1, chunkId: "doc_13994cc9557d:p1:c1", quote: "first" },
+          { documentId: "doc_13994cc9557d", pageNumber: 137, chunkId: "doc_13994cc9557d:p137:c1", quote: "later" },
+        ],
+        evidence: { chunksUsed: 2, reason: "sufficient" },
+      });
+    });
+    workspace();
+    fireEvent.change(screen.getByLabelText("Document"), { target: { files: [new File(["x"], "book.pdf")] } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload" }));
+    await screen.findByText("book.pdf");
+    fireEvent.change(screen.getByLabelText("Question text"), { target: { value: "abrotanum" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+
+    const first = await screen.findByRole("link", { name: "Open page 1" });
+    const later = screen.getByRole("link", { name: "Open page 137" });
+    expect(first.getAttribute("href")).toBe("/api/research/documents/doc_13994cc9557d/pages/1");
+    expect(later.getAttribute("href")).toBe("/api/research/documents/doc_13994cc9557d/pages/137");
+
+    const opened = () => document.querySelector("div[data-page-number]");
+    fireEvent.click(first);
+    expect(await screen.findByText("first cited page only")).toBeTruthy();
+    expect(opened()?.getAttribute("data-document-id")).toBe("doc_13994cc9557d");
+    expect(opened()?.getAttribute("data-page-number")).toBe("1");
+    expect(screen.queryByText("whole book")).toBeNull();
+    expect(screen.queryByText("page one hundred thirty seven")).toBeNull();
+
+    fireEvent.click(later);
+    expect(await screen.findByText("page one hundred thirty seven")).toBeTruthy();
+    expect(opened()?.getAttribute("data-document-id")).toBe("doc_13994cc9557d");
+    expect(opened()?.getAttribute("data-page-number")).toBe("137");
+    expect(screen.queryByText("first cited page only")).toBeNull();
+    expect(screen.queryByText("whole book")).toBeNull();
+    expect(pageUrls).toEqual([
+      "/api/research/documents/doc_13994cc9557d/pages/1",
+      "/api/research/documents/doc_13994cc9557d/pages/137",
+    ]);
   });
 });
