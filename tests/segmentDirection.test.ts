@@ -84,6 +84,26 @@ describe("segmentLine", () => {
     expect(urlSeg?.dir).toBe("ltr");
   });
 
+  it("keeps parentheses with the embedded Latin run", () => {
+    const input = "(Note) یہ اہم ہے";
+    const segs = segmentLine(input, "rtl");
+    expect(segs.map((s) => s.text).join("")).toBe(input);
+    const note = segs.find((s) => s.text.includes("Note"));
+    expect(note?.dir).toBe("ltr");
+    expect(note?.text.startsWith("(")).toBe(true);
+    expect(note?.text).toContain(")");
+  });
+
+  it("keeps an Urdu full stop out of the URL segment", () => {
+    const input = "سائٹ https://qalamworks.com۔";
+    const segs = segmentLine(input, "rtl");
+    expect(segs.map((s) => s.text).join("")).toBe(input);
+    const urlSeg = segs.find((s) => s.text.includes("https://"));
+    expect(urlSeg?.dir).toBe("ltr");
+    expect(urlSeg?.text).not.toContain("۔");
+    expect(segs.some((s) => s.dir === "rtl" && s.text.includes("۔"))).toBe(true);
+  });
+
   it("does not reverse or alter characters", () => {
     const input = "علي كتاب and English";
     const segs = segmentLine(input, "rtl");

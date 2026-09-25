@@ -5,7 +5,7 @@
 
 const ARABIC_SCRIPT = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 const LATIN_LETTER = /[A-Za-z\u00C0-\u024F]/;
-const URL_OR_EMAIL = /(?:https?:\/\/|www\.)[^\s]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+const URL_OR_EMAIL = /(?:https?:\/\/|www\.)[^\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 
 export type TextDirection = "rtl" | "ltr";
 
@@ -71,7 +71,7 @@ export function segmentLine(
   const segments: DirectionSegment[] = [];
   // Tokenize: URL/email | arabic-run | latin-run | other
   const tokenRe =
-    /((?:https?:\/\/|www\.)[^\s]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})|([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+(?:[\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF.,،؟؛:!?'"«»()[\]{}-]*)*)|([A-Za-z\u00C0-\u024F]+(?:[\sA-Za-z\u00C0-\u024F0-9.,!?;:'"()\-]*)*)|([\s\S])/g;
+    /((?:https?:\/\/|www\.)[^\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})|([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+(?:[\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF.,،؟؛:!?'"«»()[\]{}-]*)*)|([(\[\u201C"«]*[A-Za-z\u00C0-\u024F]+(?:[\sA-Za-z\u00C0-\u024F0-9.,!?;:'"()\-\u201D»]*)*)|([\s\S])/g;
 
   let m: RegExpExecArray | null;
   let buffer = "";
@@ -104,7 +104,11 @@ export function segmentLine(
       dir = "ltr";
     } else {
       piece = other ?? "";
-      dir = bufferDir ?? fallback;
+      const cp = piece.codePointAt(0) ?? 0;
+      // Arabic punctuation must stay with the RTL run. Inheriting the
+      // previous LTR buffer pulls a sentence stop into a URL isolate.
+      const arabicPunct = cp === 0x060c || cp === 0x061b || cp === 0x061f || cp === 0x06d4;
+      dir = arabicPunct ? "rtl" : (bufferDir ?? fallback);
     }
 
     if (bufferDir === null) {

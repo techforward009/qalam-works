@@ -30,9 +30,12 @@ const BIDI_ISOLATE_RE = /[\u2066\u2067\u2069]/;
 /**
  * Leading numbering + contiguous Latin (or URL/email) + attached punctuation.
  * Spaces between Latin words stay inside the run so "Carbo vegetabilis —" is one isolate.
+ * A dot before another Latin word stays inside too ("report.pdf"), and an
+ * opening bracket is part of the run so "(Note)" does not leave the paragraph LTR.
+ * URLs stop before Arabic-script characters so "۔" is not swallowed.
  */
 const LATIN_RUN_RE =
-  /(?:^|(?<=\s))(?:\d+[).]\s*)?(?:https?:\/\/[^\s]+|www\.[^\s]+|[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}|[A-Za-z][A-Za-z'’\-]*(?:[ \t]+[A-Za-z][A-Za-z'’\-]*)*)(?:[ \t]*[)\].,;:!?…\-—–]+)?/g;
+  /(?:^|(?<=\s))(?:\d+[).]\s*)?(?:[\[(\u201C"«]\s*)?(?:https?:\/\/[^\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+|www\.[^\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+|[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}|[A-Za-z][A-Za-z'’\-]*(?:\.[A-Za-z][A-Za-z0-9'’\-]*)*(?:[ \t]+[A-Za-z][A-Za-z'’\-]*(?:\.[A-Za-z][A-Za-z0-9'’\-]*)*)*)(?:[ \t]*[)\].,;:!?…\-—–»\u201D"]+)?/g;
 const NUM_PREFIX_RE = /^(\d+[).]\s*)/;
 
 function stripOwnBidiControls(text: string): string {

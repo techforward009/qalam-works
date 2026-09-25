@@ -122,6 +122,35 @@ describe("formatForWhatsAppRTL — mixed-script bidi", () => {
     expect(result).not.toMatch(/ا\d+\)/);
   });
 
+  it("keeps a filename extension inside the Latin isolate", () => {
+    const input = "فائل report.pdf کھولیں";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(result).toBe(RLM + "فائل " + LRI + "report.pdf" + PDI + " کھولیں");
+    expect(stripBidi(result)).toBe(input);
+  });
+
+  it("isolates a parenthetical English run and keeps the paragraph RTL", () => {
+    const input = "(Note) یہ اہم ہے";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(result).toBe(RLM + LRI + "(Note)" + PDI + " یہ اہم ہے");
+    expect(result.startsWith(RLM)).toBe(true);
+    expect(stripBidi(result)).toBe(input);
+  });
+
+  it("wraps parenthetical Latin inside an Urdu sentence", () => {
+    const input = "دوا (Spigelia) مفید ہے";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(result).toBe(RLM + "دوا " + LRI + "(Spigelia)" + PDI + " مفید ہے");
+    expect(stripBidi(result)).toBe(input);
+  });
+
+  it("does not pull an Urdu full stop into a URL isolate", () => {
+    const input = "سائٹ https://qalamworks.com۔";
+    const result = stripFinal(formatForWhatsAppRTL(input));
+    expect(result).toBe(RLM + "سائٹ " + LRI + "https://qalamworks.com" + PDI + "۔");
+    expect(stripBidi(result)).toBe(input);
+  });
+
   it("does not double-wrap text that already contains bidi isolates", () => {
     const input = "1) Lachesis —\nمناسبت: بائیں طرف";
     const once = formatForWhatsAppRTL(input);
