@@ -1,4 +1,4 @@
-export type QuranProvenance = "verified" | "unresolved" | "test-fixture";
+export type QuranProvenance = "verified" | "unresolved" | "test-fixture" | "source-attributed";
 
 export type QuranScript = "Indo-Pakistani" | "Uthmani" | "unresolved";
 
@@ -30,6 +30,8 @@ export type QuranReferenceMetadata = {
   tajCompanyOfficial: boolean;
   referenceHash: string;
   expectedHash: string;
+  /** SHA-256 of the unchanged source file, when the provider is file-backed. */
+  sourceSha256?: string;
 };
 
 export type QuranMatchStatus = "verified" | "corrected" | "unchanged" | "ambiguous" | "no-match";

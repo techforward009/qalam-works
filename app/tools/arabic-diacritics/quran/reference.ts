@@ -28,6 +28,7 @@ export function quranReferenceHash(ayahs: readonly QuranAyah[]): string {
 function hasControlChar(text: string): boolean {
   for (const ch of text) {
     const code = ch.codePointAt(0) ?? 0;
+    if (code === 0x09) continue;
     if (code <= 0x1f || code === 0x7f) return true;
   }
   return false;
@@ -137,6 +138,9 @@ export function quranReferenceLabel(metadata: QuranReferenceMetadata): string {
   if (metadata.provenanceStatus === "unresolved") {
     return "Quran reference: unresolved. Taj Company 16-line text is not loaded.";
   }
+  if (metadata.provenanceStatus === "source-attributed" && metadata.referenceSource === "ahmedgraf.com") {
+    return "Quran reference: Indo-Pak Quran Text — source: ahmedgraf.com";
+  }
   return `Quran reference: ${metadata.referenceName} (${metadata.referenceEdition}, ${metadata.referenceScript})`;
 }
 
@@ -154,12 +158,20 @@ export function createQuranReference(
     ),
   );
   const byLocation = new Map(frozen.map((ayah) => [`${ayah.surah}:${ayah.ayah}`, ayah]));
+  const byExactKey = new Map<string, QuranAyah[]>();
+  for (const ayah of frozen) {
+    const key = quranMatchKey(ayah.text);
+    if (!key) continue;
+    const list = byExactKey.get(key);
+    if (list) list.push(ayah);
+    else byExactKey.set(key, [ayah]);
+  }
 
   return {
     getMetadata: () => metadata,
     getAyah: (surah, ayah) => byLocation.get(`${surah}:${ayah}`) ?? null,
     listAyahs: () => frozen,
-    findExact: (normalizedText) => frozen.filter((ayah) => quranMatchKey(ayah.text) === normalizedText && normalizedText.length > 0),
+    findExact: (normalizedText) => (normalizedText ? (byExactKey.get(normalizedText) ?? []) : []),
     findCandidates: (normalizedText) => {
       if (!normalizedText) return [];
       const hits: QuranCandidate[] = [];

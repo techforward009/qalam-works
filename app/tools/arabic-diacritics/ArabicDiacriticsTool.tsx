@@ -5,14 +5,14 @@ import { GOLDEN_INPUT } from "./engine/goldenPassage";
 import { diacritizeArabic } from "./engine/diacritizeArabic";
 import { restoreQuran } from "./quran/matchQuran";
 import { quranReferenceLabel } from "./quran/reference";
-import { unresolvedQuranReference } from "./quran/unresolvedProvider";
+import { ahmedgrafQuranReference } from "./quran/ahmedgrafProvider";
 
 export default function ArabicDiacriticsTool() {
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState<"general" | "quran">("general");
   const general = useMemo(() => diacritizeArabic(input), [input]);
-  const quran = useMemo(() => restoreQuran(input, unresolvedQuranReference), [input]);
+  const quran = useMemo(() => restoreQuran(input, ahmedgrafQuranReference), [input]);
   const output = mode === "general" ? general.output : quran.output;
   const vocalized = general.reviews.filter((item) => item.status !== "unchanged");
   const unchanged = general.reviews.filter((item) => item.status === "unchanged");
@@ -55,7 +55,10 @@ export default function ArabicDiacriticsTool() {
         </div>
         {mode === "quran" && (
           <p className="mb-4 text-sm text-[#4a6a4a]" data-quran-reference>
-            {quranReferenceLabel(quran.metadata)}
+            {quranReferenceLabel(quran.metadata)}{" "}
+            <a href="http://ahmedgraf.com" className="underline">
+              ahmedgraf.com
+            </a>
           </p>
         )}
         <div className="mb-4 flex flex-wrap gap-2">
@@ -130,7 +133,7 @@ export default function ArabicDiacriticsTool() {
             <>
               <p className="mt-1 text-sm text-[#4a6a4a]">
                 {quran.referenceReady
-                  ? `Verified ${quran.segments.filter((item) => item.status === "verified").length} · Corrected ${quran.segments.filter((item) => item.status === "corrected").length} · Ambiguous ${quran.segments.filter((item) => item.status === "ambiguous").length} · Unchanged ${quran.segments.filter((item) => item.status === "unchanged").length}`
+                  ? `verified_exact ${quran.segments.filter((item) => item.category === "verified_exact").length} · verified_normalized ${quran.segments.filter((item) => item.category === "verified_normalized").length} · verified_recovered ${quran.segments.filter((item) => item.category === "verified_recovered").length} · reference_match_not_established ${quran.segments.filter((item) => item.category === "Quranic reference match not established.").length}`
                   : "Quranic reference match not established."}
               </p>
               {quran.referenceReady && quranChanges.length > 0 && (

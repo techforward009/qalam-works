@@ -34,6 +34,14 @@ function tokenKey(token: string): string {
   return quranMatchKey(token);
 }
 
+function missingFinalAlefKey(token: string): string | null {
+  const base = tokenKey(token);
+  if (!base || base.endsWith("\u0627")) return null;
+  const extended = tokenKey(`${token}\u0627`);
+  if (extended !== `${base}\u0627`) return null;
+  return extended;
+}
+
 function peelEnds(paragraph: string): { lead: string; core: string; tail: string } {
   const spaced = /^(\s*)([\s\S]*?)(\s*)$/u.exec(paragraph);
   const leadSpace = spaced?.[1] ?? "";
@@ -99,6 +107,7 @@ function segment(
   status: QuranMatchStatus,
   referenceId: string | null,
   referenceText: string | null,
+  category = CATEGORY[status],
 ): QuranSegment {
   return {
     input,
@@ -107,7 +116,7 @@ function segment(
     status,
     matchedReferenceId: referenceId,
     referenceText,
-    category: CATEGORY[status],
+    category,
   };
 }
 
@@ -133,7 +142,7 @@ function runsFrom(
         length += 1;
         continue;
       }
-      const recovered = listedRecoveryKey(token.core);
+      const recovered = listedRecoveryKey(token.core) ?? missingFinalAlefKey(token.core);
       if (recovered && recovered === next.key && length >= 1) {
         length += 1;
         corrected = true;
@@ -160,23 +169,101 @@ function chooseRun(runs: Run[]): { kind: "use"; run: Run } | { kind: "ambiguous"
   const max = Math.max(...runs.map((run) => run.length));
   const top = runs.filter((run) => run.length === max);
   const distinct = [...new Set(top.map((run) => run.exact))];
-  if (distinct.length !== 1) return { kind: "ambiguous" };
+  const ayahIds = new Set(top.map((run) => run.ayahId));
+  if (distinct.length !== 1 || ayahIds.size !== 1) return { kind: "ambiguous" };
   const run = top[0];
   if (!run || (run.corrected && run.length < 2)) return { kind: "ambiguous" };
   return { kind: "use", run };
 }
 
+const REFUSAL = "Quranic reference match not established.";
+const CITATION =
+  /^[\[(]?\s*([0-9\u0660-\u0669\u06F0-\u06F9]{1,3})\s*:\s*([0-9\u0660-\u0669\u06F0-\u06F9]{1,3})\s*[\])]?\s*([\s\S]*)$/u;
+
+function parseCitationNumber(raw: string): number {
+  let value = 0;
+  for (const ch of raw) {
+    const code = ch.codePointAt(0) ?? 0;
+    let digit = -1;
+    if (code >= 48 && code <= 57) digit = code - 48;
+    else if (code >= 0x0660 && code <= 0x0669) digit = code - 0x0660;
+    else if (code >= 0x06f0 && code <= 0x06f9) digit = code - 0x06f0;
+    if (digit < 0) return Number.NaN;
+    value = value * 10 + digit;
+  }
+  return value;
+}
+
+const indexCache = new WeakMap<QuranReferenceProvider, ReturnType<typeof indexReference>>();
+
+function cachedIndex(provider: QuranReferenceProvider): ReturnType<typeof indexReference> {
+  const cached = indexCache.get(provider);
+  if (cached) return cached;
+  const built = indexReference(provider.listAyahs());
+  indexCache.set(provider, built);
+  return built;
+}
+
+function levelFor(input: string, output: string, corrected: boolean): string {
+  if (corrected) return "verified_recovered";
+  return input === output ? "verified_exact" : "verified_normalized";
+}
+
+function restoreCited(
+  paragraph: string,
+  peeled: { lead: string; core: string; tail: string },
+  provider: QuranReferenceProvider,
+): { text: string; segments: QuranSegment[] } | null {
+  const cited = CITATION.exec(peeled.core);
+  if (!cited) return null;
+  const surah = parseCitationNumber(cited[1] ?? "");
+  const ayahNumber = parseCitationNumber(cited[2] ?? "");
+  if (surah < 1 || surah > 114 || ayahNumber < 1) return null;
+  const rest = (cited[3] ?? "").trim();
+  const ayah = provider.getAyah(surah, ayahNumber);
+  if (!ayah || !rest) {
+    return { text: paragraph, segments: [segment(paragraph, paragraph, "no-match", null, null, REFUSAL)] };
+  }
+  const restTokens = tokenize(rest);
+  const arabicOnly = restTokens.length > 0 && restTokens.every((token) => tokenKey(token.core).length > 0);
+  if (arabicOnly && quranMatchKey(rest) === quranMatchKey(ayah.text)) {
+    const output = `${peeled.lead}${ayah.text}${peeled.tail}`;
+    return {
+      text: output,
+      segments: [segment(paragraph, output, "verified", ayah.id, ayah.text, levelFor(peeled.core, ayah.text, false))],
+    };
+  }
+  const local = indexReference([ayah]);
+  const decision = chooseRun(runsFrom(restTokens, 0, local));
+  if (decision?.kind === "use" && decision.run.length === restTokens.length) {
+    const words = local.byAyah.get(ayah.id) ?? [];
+    const coversAyah = decision.run.from === 0 && decision.run.to === words.length - 1;
+    const exact = coversAyah ? ayah.text : decision.run.exact;
+    const output = `${peeled.lead}${exact}${peeled.tail}`;
+    return {
+      text: output,
+      segments: [segment(paragraph, output, decision.run.corrected ? "corrected" : "verified", ayah.id, exact, levelFor(rest, exact, decision.run.corrected))],
+    };
+  }
+  return { text: paragraph, segments: [segment(paragraph, paragraph, "no-match", ayah.id, null, REFUSAL)] };
+}
+
 function restoreParagraph(paragraph: string, provider: QuranReferenceProvider, index: ReturnType<typeof indexReference>): { text: string; segments: QuranSegment[] } {
   const peeled = peelEnds(paragraph);
+  const cited = restoreCited(paragraph, peeled, provider);
+  if (cited) return cited;
   const tokensForAyah = tokenize(peeled.core);
   const arabicOnly = tokensForAyah.length > 0 && tokensForAyah.every((token) => tokenKey(token.core).length > 0);
   const exact = arabicOnly ? provider.findExact(quranMatchKey(peeled.core)) : [];
   if (peeled.core && exact.length === 1 && exact[0]) {
     const output = `${peeled.lead}${exact[0].text}${peeled.tail}`;
-    return { text: output, segments: [segment(paragraph, output, "verified", exact[0].id, exact[0].text)] };
+    return {
+      text: output,
+      segments: [segment(paragraph, output, "verified", exact[0].id, exact[0].text, levelFor(peeled.core, exact[0].text, false))],
+    };
   }
   if (peeled.core && exact.length > 1) {
-    return { text: paragraph, segments: [segment(paragraph, paragraph, "ambiguous", null, null)] };
+    return { text: paragraph, segments: [segment(paragraph, paragraph, "ambiguous", null, null, REFUSAL)] };
   }
 
   const tokens = tokenize(paragraph);
@@ -201,6 +288,7 @@ function restoreParagraph(paragraph: string, provider: QuranReferenceProvider, i
           decision.run.corrected ? "corrected" : "verified",
           decision.run.ayahId,
           decision.run.exact,
+          levelFor(inputSlice, outputSlice, decision.run.corrected),
         ),
       );
       cursor = last.end;
@@ -209,7 +297,7 @@ function restoreParagraph(paragraph: string, provider: QuranReferenceProvider, i
     }
     const status: QuranMatchStatus = decision?.kind === "ambiguous" ? "ambiguous" : tokenKey(token.core) ? "no-match" : "unchanged";
     text += token.raw;
-    segments.push(segment(token.raw, token.raw, status, null, null));
+    segments.push(segment(token.raw, token.raw, status, null, null, status === "unchanged" ? CATEGORY.unchanged : REFUSAL));
     cursor = token.end;
     tokenIndex += 1;
   }
@@ -246,7 +334,7 @@ export function restoreQuran(input: string, provider: QuranReferenceProvider): Q
     };
   }
 
-  const index = indexReference(provider.listAyahs());
+  const index = cachedIndex(provider);
   const segments: QuranSegment[] = [];
   let output = "";
   for (const chunk of input.split(/(\r\n|\n|\r)/)) {

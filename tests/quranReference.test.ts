@@ -190,7 +190,8 @@ describe("general mode remains the diacritizer", () => {
     const source = readFileSync("app/tools/arabic-diacritics/ArabicDiacriticsTool.tsx", "utf8");
     expect(source).toContain("General Arabic");
     expect(source).toContain("Quran — Indo-Pak");
-    expect(source).toContain("unresolvedQuranReference");
+    expect(source).toContain("ahmedgrafQuranReference");
+    expect(source).toContain("http://ahmedgraf.com");
     expect(source).not.toContain("Quran reference: Indo-Pakistani / Taj Company 16-line");
   });
 });
