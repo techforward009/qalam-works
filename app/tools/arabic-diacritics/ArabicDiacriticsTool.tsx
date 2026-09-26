@@ -7,6 +7,11 @@ import { restoreQuran } from "./quran/matchQuran";
 import { quranReferenceLabel } from "./quran/reference";
 import { ahmedgrafQuranReference } from "./quran/ahmedgrafProvider";
 
+export function sampleInput(mode: "general" | "quran"): string {
+  if (mode === "quran") return ahmedgrafQuranReference.getAyah(1, 1)?.text ?? "";
+  return GOLDEN_INPUT;
+}
+
 export default function ArabicDiacriticsTool() {
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
@@ -65,7 +70,7 @@ export default function ArabicDiacriticsTool() {
           <button
             type="button"
             className="rounded-lg border border-[#1A3A2A]/20 px-3 py-1.5 text-sm text-[#1A3A2A] dark:text-[#e8ede9]"
-            onClick={() => setInput(GOLDEN_INPUT)}
+            onClick={() => setInput(sampleInput(mode))}
           >
             نمونہ
           </button>

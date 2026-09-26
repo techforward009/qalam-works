@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
+import { sampleInput } from "../app/tools/arabic-diacritics/ArabicDiacriticsTool";
 import { diacritizeArabic } from "../app/tools/arabic-diacritics/engine/diacritizeArabic";
 import { CREATION_INPUT, CREATION_OUTPUT, GOLDEN_INPUT, GOLDEN_OUTPUT } from "../app/tools/arabic-diacritics/engine/goldenPassage";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
@@ -164,6 +165,19 @@ describe("ahmedgraf Indo-Pak corpus", () => {
     expect(restored.output).not.toBe(input);
     expect(restored.segments.some((segment) => segment.category === "verified_recovered" && segment.matchedReferenceId === found.ayahId)).toBe(true);
     expect(stripMarks(restored.output)).toContain(found.word);
+  });
+
+  test("the Quran sample is a stored corpus line, not the general golden passage", () => {
+    expect(sampleInput("general")).toBe(GOLDEN_INPUT);
+    const quranSample = sampleInput("quran");
+    expect(quranSample).not.toBe(GOLDEN_INPUT);
+    expect(quranSample).not.toContain("القائل بالجبر");
+    const stored = provider.listAyahs().find((ayah) => ayah.text === quranSample);
+    expect(stored?.id).toBe("1:1");
+    const verified = restoreQuran(quranSample, provider);
+    expect(verified.output).toBe(quranSample);
+    expect(verified.segments[0]?.status).toBe("verified");
+    expect(verified.segments[0]?.category).toBe("verified_exact");
   });
 
   test("general Arabic mode is not the Quran fallback", () => {
