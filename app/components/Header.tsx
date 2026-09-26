@@ -75,6 +75,7 @@ export default function Header() {
     { label: t.documentCleaner,     href: "/tools/document-cleaner" },
     { label: t.qualityChecker,      href: "/tools/quality-checker" },
     { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
+    { label: language === "ur" ? "عربی اعراب" : "Arabic Diacritics", href: "/tools/arabic-diacritics" },
   ];
 
   const toolsLinks = [

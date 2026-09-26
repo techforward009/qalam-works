@@ -25,6 +25,7 @@ const TOOL_ROUTES = [
   { key: "documentCleaner", href: "/tools/document-cleaner", labelEn: "Document Cleaner", labelUr: "ڈاکومنٹ کلینر" },
   { key: "qualityChecker", href: "/tools/quality-checker" },
   { key: "unicodeStandardizer", href: "/tools/unicode-standardizer" },
+  { key: "arabicDiacritics", href: "/tools/arabic-diacritics", labelEn: "Arabic Diacritics", labelUr: "عربی اعراب" },
   { key: "invoiceStudio", href: "/tools/invoice-generator", labelEn: "Invoice Generator", labelUr: "انوائس جنریٹر" },
   { key: "dateConverter", href: "/tools/date-converter",    labelEn: "Date Converter",    labelUr: "تاریخ کنورٹر"    },
   { key: "crescentVisibility", href: "/tools/crescent-visibility", labelEn: "Crescent Visibility", labelUr: "رؤیتِ ہلال" },

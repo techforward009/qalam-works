@@ -410,4 +410,36 @@ export const TOOL_CATALOG: ToolEntry[] = [
       ur: "اپلوڈ شدہ دستاویزات ریسرچ اسٹوڈیو کے لیے نجی ذخیرے میں رہتی ہیں اور عوامی لنک کے طور پر نہیں دکھائی جاتیں۔",
     },
   },
+
+  {
+    id: "arabic_diacritics",
+    route: "/tools/arabic-diacritics",
+    Icon: Languages,
+    iconBg: "bg-emerald-50 dark:bg-emerald-950/30",
+    iconColor: "text-emerald-700 dark:text-emerald-400",
+    name: { en: "Arabic Diacritics", ur: "عربی اعراب" },
+    short: {
+      en: "Add Indo-Pakistani publishing diacritics to plain Arabic. Uncertain words stay as typed.",
+      ur: "سادہ عربی پر پاکستانی مطبوعہ اعراب۔ غیر یقینی لفظ جوں کا توں رہتا ہے۔",
+    },
+    whatItDoes: {
+      en: "Vocalizes known Arabic words in the style of Pakistani and Indo-Pakistani Islamic books, including dagger alef and the pronoun mark. It does not rewrite Urdu, English, numbers, or punctuation.",
+      ur: "جانے پہچانے عربی الفاظ پر پاکستانی اسلامی کتابوں والا اعراب لگاتا ہے، بشمول الف خنجریہ اور ہٗ۔ اردو، انگریزی، اعداد اور رموزِ اوقاف نہیں بدلتا۔",
+    },
+    input: { en: "Paste plain Arabic. Urdu, English, and numbers may sit in the same text.", ur: "سادہ عربی پیسٹ کریں۔ ساتھ اردو، انگریزی اور اعداد بھی ہو سکتے ہیں۔" },
+    output: { en: "A separate vocalized text, plus a review of what changed. Copy the output.", ur: "الگ اعراب شدہ متن، اور جائزہ کہ کیا بدلا۔ نتیجہ نقل کریں۔" },
+    doesNotDo: {
+      en: "Does not diacritize Urdu. Does not apply newspaper tashkeel. Does not guess unknown words. Does not change the input box.",
+      ur: "اردو پر اعراب نہیں لگاتا۔ اخبار والا تشکیل نہیں۔ نامعلوم لفظ نہیں گھڑتا۔ ان پٹ نہیں بدلتا۔",
+    },
+    bestFor: {
+      en: "Editors preparing Arabic quotations in the diacritic style of Indo-Pakistani Islamic books.",
+      ur: "مدیران جو عربی اقتباس کو برصغیر کی اسلامی کتابوں والے اعراب میں تیار کریں۔",
+    },
+    importantNote: {
+      en: "One publishing form is stored per known word. A full sentence parser is not used, except for the reviewed passage.",
+      ur: "ہر جانے ہوئے لفظ کی ایک مطبوعہ شکل محفوظ ہے۔ مکمل جملہ تجزیہ نہیں، سوائے جائزہ شدہ عبارت کے۔",
+    },
+    example: "الی → اِلٰى",
+  },
 ];

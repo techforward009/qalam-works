@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/tools/document-cleaner`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/quality-checker`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/unicode-standardizer`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/tools/arabic-diacritics`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/invoice-generator`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/tools/date-converter`,    lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/tools/crescent-visibility`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
