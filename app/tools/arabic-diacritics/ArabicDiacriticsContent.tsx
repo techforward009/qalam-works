@@ -12,8 +12,8 @@ export default function ArabicDiacriticsContent() {
         ur: "سادہ عربی کو اس اعراب میں لاتا ہے جو پاکستانی اور برصغیر کی اسلامی کتابوں میں چلتا ہے۔ اصل متن ان پٹ میں رہتا ہے۔ جو لفظ طے نہ ہو اسے بغیر اعراب کے چھوڑ دیا جاتا ہے۔",
       }}
       note={{
-        en: "This is not Urdu diacritization and not modern newspaper tashkeel. Case endings follow the stored Indo-Pakistani publishing form, not a full syntactic parser.",
-        ur: "یہ اردو اعراب نہیں اور نہ اخبار والا تشکیل۔ اعراب محفوظ شدہ پاکستانی طرز پر ہے، مکمل نحوی تجزیہ نہیں۔",
+        en: "This is not Urdu diacritization and not modern newspaper tashkeel. Case endings follow the stored Indo-Pakistani publishing form, not a full syntactic parser. Inside a known Arabic word, Urdu letters are normalized, and a missing letter is restored only when that spelling is listed.",
+        ur: "یہ اردو اعراب نہیں اور نہ اخبار والا تشکیل۔ اعراب محفوظ شدہ پاکستانی طرز پر ہے، مکمل نحوی تجزیہ نہیں۔ معلوم عربی لفظ کے اردو حروف درست ہو جاتے ہیں، اور گرا ہوا حرف صرف درج شدہ ہجے پر لوٹایا جاتا ہے۔",
       }}
       sections={[
         {

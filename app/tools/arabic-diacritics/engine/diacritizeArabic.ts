@@ -1,5 +1,6 @@
 import { GOLDEN_INPUT, GOLDEN_OUTPUT } from "./goldenPassage";
 import { BROKEN_AL_PAIRS, VOCALIZED_BY_SKELETON } from "./lexicon";
+import { joinBrokenSpelling, prepareArabicToken } from "./orthography";
 import { hasVowelMark, leaveAsUrduOrPersian, skeleton } from "./skeleton";
 
 export type DiacriticStatus = "vocalized" | "unchanged" | "passage";
@@ -109,7 +110,20 @@ function vocalizeParagraph(paragraph: string): { text: string; reviews: Diacriti
       continue;
     }
 
-    const known = lookup(piece.core, nextCore);
+    if (next && next.kind === "word" && nextIndex != null && piece.after === "" && next.before === "") {
+      const joined = joinBrokenSpelling(piece.core, next.core);
+      const vocalized = joined ? lookup(joined, null) : null;
+      if (joined && vocalized) {
+        resolved[index] = vocalized;
+        skip.add(nextIndex);
+        for (let gap = index + 1; gap < nextIndex; gap += 1) skip.add(gap);
+        continue;
+      }
+    }
+
+    const prepared = prepareArabicToken(piece.core);
+    const nextPrepared = nextCore == null ? null : prepareArabicToken(nextCore);
+    const known = lookup(prepared, nextPrepared);
     resolved[index] = known ?? piece.core;
   }
 
@@ -145,7 +159,7 @@ function vocalizeParagraph(paragraph: string): { text: string; reviews: Diacriti
 
 /**
  * Indo-Pakistani Arabic diacritics. The input string is never mutated.
- * Unknown words stay as typed.
+ * Orthography runs first; unknown words stay as typed.
  */
 export function diacritizeArabic(input: string): DiacriticResult {
   if (input.length === 0) return { input, output: "", reviews: [] };

@@ -4,7 +4,7 @@ import ArabicDiacriticsContent from "./ArabicDiacriticsContent";
 export const metadata: Metadata = {
   title: "Arabic Diacritics — Indo-Pakistani Tashkeel | Qalam Works",
   description:
-    "Add Indo-Pakistani publishing diacritics to plain Arabic. Unknown words stay unchanged. Not Urdu diacritization and not newspaper tashkeel.",
+    "Add Indo-Pakistani publishing diacritics to plain Arabic. A listed missing letter can be restored. Unknown words stay unchanged. Not Urdu diacritization and not newspaper tashkeel.",
   alternates: { canonical: "/tools/arabic-diacritics" },
 };
 

@@ -61,11 +61,27 @@ const ENTRIES: ReadonlyArray<readonly [string, string]> = [
   ["فی", "فِيْ"],
   ["والاٰخرۃ", "وَالْاٰخِرَةِ"],
   ["الاٰخرۃ", "الْاٰخِرَةِ"],
+  ["خلق", "خَلَقَ"],
+  ["لکم", "لَكُمْ"],
+  ["الارض", "الْاَرْضِ"],
+  ["جمیعا", "جَمِيْعًا"],
+  ["لتعتبروا", "لِتَعْتَبِرُوْا"],
+  ["بہ", "بِهٖ"],
+  ["وتتوصلوا", "وَتَتَوَصَّلُوْا"],
+  ["رضوانہ", "رِضْوَانِهٖ"],
+  ["وتتوقوا", "وَتَتَوَقَّوْا"],
+  ["تتوقوا", "تَتَوَقَّوْا"],
+  ["عذاب", "عَذَابِ"],
+  ["نیرانہ", "نِيْرَانِهٖ"],
 ];
 
 export const VOCALIZED_BY_SKELETON: ReadonlyMap<string, string> = new Map(
   ENTRIES.map(([plain, vocalized]) => [skeleton(plain), vocalized]),
 );
+
+if (VOCALIZED_BY_SKELETON.size !== ENTRIES.length) {
+  throw new Error("Arabic lexicon skeleton collision");
+}
 
 export const BROKEN_AL_PAIRS: ReadonlyArray<{ left: string; right: string; vocalized: string }> = [
   { left: "ا", right: "لدنیا", vocalized: "الدُّنْيَا" },
