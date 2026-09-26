@@ -53,9 +53,10 @@ function isStrong(hit: RetrievedChunk): boolean {
 
 function exactReference(query: string, hit: RetrievedChunk): boolean {
   const terms = keywordTokens(adaptProcessText(query).normalizedText);
-  if (terms.length === 0 || !terms.some((term) => /\d/.test(term))) return false;
+  if (terms.length === 0) return false;
   const matched = new Set(hit.matchedTerms);
-  return terms.every((term) => matched.has(term));
+  if (!terms.every((term) => matched.has(term))) return false;
+  return terms.length === 1 || terms.some((term) => /\d/.test(term));
 }
 
 function numberSet(text: string): Set<string> {

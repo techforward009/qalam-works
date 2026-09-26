@@ -213,7 +213,7 @@ describe("POST /api/research/ask", () => {
     });
 
     const weak = await handleResearchAsk({
-      body: { query: "عسکری", documentIds: ["book_003"] },
+      body: { query: "عسکری زائد", documentIds: ["book_003"] },
       store,
       adapter: client.adapter,
     });

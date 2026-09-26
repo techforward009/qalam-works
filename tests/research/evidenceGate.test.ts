@@ -68,12 +68,36 @@ describe("evidence gate", () => {
     expect(only.chunk.rawText).toBe(raw);
   });
 
-  test("score at the threshold still needs a second independent chunk", () => {
-    const below = evaluateEvidence([hit("book_001", 1, 1, "عسکری", strong - 1, ["عسکری"])], { query: "عسکری" });
-    const at = evaluateEvidence([hit("book_001", 1, 1, "عسکری", strong, ["عسکری"])], { query: "عسکری" });
-    expect(below.reason).toBe("weak_retrieval");
-    expect(at.reason).toBe("weak_retrieval");
-    expect(at.independentCount).toBe(1);
+  test("a weak single lexical term stays weak_retrieval", () => {
+    const decision = evaluateEvidence(
+      [hit("book_001", 2, 5, "Abrotanum Southernwood.", strong - 1, ["abrotanum"])],
+      { query: "Abrotanum" },
+    );
+    expect(decision.allowed).toBe(false);
+    expect(decision.reason).toBe("weak_retrieval");
+    expect(decision.independentCount).toBe(0);
+  });
+
+  test("one strong exact lexical term is sufficient", () => {
+    const decision = evaluateEvidence(
+      [hit("book_001", 2, 5, "Abrotanum Southernwood.", strong, ["abrotanum"])],
+      { query: "Abrotanum" },
+    );
+    expect(decision.allowed).toBe(true);
+    expect(decision.reason).toBe("sufficient");
+    expect(decision.independentCount).toBe(1);
+    expect(decision.hits[0]?.chunk.id).toBe("book_001:p2:c5");
+    expect(decision.hits[0]?.chunk.pageNumber).toBe(2);
+  });
+
+  test("an ordinary multi-term query still needs a second independent chunk", () => {
+    const decision = evaluateEvidence(
+      [hit("book_001", 2, 5, "Abrotanum marasmus of children", strong, ["abrotanum", "marasmus"])],
+      { query: "Abrotanum marasmus" },
+    );
+    expect(decision.allowed).toBe(false);
+    expect(decision.reason).toBe("weak_retrieval");
+    expect(decision.independentCount).toBe(1);
   });
 
   test("one exact reference is sufficient", () => {
@@ -116,16 +140,16 @@ describe("evidence gate", () => {
   test("duplicate normalized text does not count twice", () => {
     const decision = evaluateEvidence(
       [
-        hit("book_001", 1, 1, "عسکری   نقل", strong + 10, ["عسکری"], "عسکری نقل"),
-        hit("book_001", 2, 1, "عسکری نقل", strong, ["عسکری"], "عسکری نقل"),
+        hit("book_001", 1, 1, "liver action abrotanum", strong + 10, ["liver", "action"], "liver action abrotanum"),
+        hit("book_001", 2, 1, "liver action abrotanum", strong, ["liver", "action"], "liver action abrotanum"),
       ],
-      { query: "عسکری" },
+      { query: "liver action" },
     );
     expect(decision.allowed).toBe(false);
     expect(decision.reason).toBe("weak_retrieval");
     expect(decision.independentCount).toBe(1);
     expect(decision.hits).toHaveLength(1);
-    expect(decision.hits[0]?.chunk.rawText).toBe("عسکری   نقل");
+    expect(decision.hits[0]?.chunk.rawText).toBe("liver action abrotanum");
   });
 
   test("two documents can pass, and documentIds can narrow them to a refusal", () => {
@@ -135,8 +159,16 @@ describe("evidence gate", () => {
     ];
     expect(evaluateEvidence(hits, { query: "عسکری" }).reason).toBe("sufficient");
     const scoped = evaluateEvidence(hits, { query: "عسکری", documentIds: ["book_002"] });
-    expect(scoped.reason).toBe("weak_retrieval");
+    expect(scoped.reason).toBe("sufficient");
+    expect(scoped.independentCount).toBe(1);
     expect(scoped.hits.map((item) => item.chunk.documentId)).toEqual(["book_002"]);
+    const multi = [
+      hit("book_001", 1, 1, "کتاب الف عسکری سامرا", strong, ["عسکری", "سامرا"]),
+      hit("book_002", 1, 1, "کتاب ب عسکری سامرا", strong, ["عسکری", "سامرا"]),
+    ];
+    const narrowed = evaluateEvidence(multi, { query: "عسکری سامرا", documentIds: ["book_002"] });
+    expect(narrowed.reason).toBe("weak_retrieval");
+    expect(narrowed.independentCount).toBe(1);
     expect(evaluateEvidence(hits, { query: "عسکری", documentIds: [] }).reason).toBe("no_evidence");
   });
 

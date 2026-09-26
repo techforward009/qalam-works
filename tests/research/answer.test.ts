@@ -123,7 +123,7 @@ describe("typed research answer", () => {
     expect(missing.citations).toEqual([]);
     expect(missing.answer).toBe(INSUFFICIENT_EVIDENCE_EN);
 
-    const weak = askResearch(store, "عسکری", { documentIds: ["book_003"] });
+    const weak = askResearch(store, "عسکری زائد", { documentIds: ["book_003"] });
     expect(weak.refusalReason).toBe("weak_retrieval");
     expect(weak.citations).toEqual([]);
     expect(weak.sections).toEqual([]);
@@ -137,7 +137,7 @@ describe("typed research answer", () => {
 
   test("the answer adapter is not called when the gate refuses", () => {
     let calls = 0;
-    const refused = askResearch(store, "عسکری", {
+    const refused = askResearch(store, "عسکری زائد", {
       documentIds: ["book_003"],
       adapter: (input) => {
         calls += 1;

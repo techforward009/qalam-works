@@ -126,7 +126,7 @@ describe("LLM answer adapter", () => {
 
   test("gate refusal, empty query, and no evidence make zero model calls", async () => {
     const weak = adapter(() => modelJson({ answered: true, answer: "x", citations: [] }));
-    const weakResult = await askResearchAsync(store, "عسکری", {
+    const weakResult = await askResearchAsync(store, "عسکری زائد", {
       documentIds: ["book_003"],
       adapter: weak.run,
     });

@@ -129,7 +129,7 @@ export const EVAL_CASES: EvalCase[] = [
   },
   {
     id: "weak-retrieval",
-    query: "عسکری",
+    query: "عسکری زائد",
     documentIds: ["book_weak"],
     relevantChunkIds: ["book_weak:p1:c1"],
     gateReason: "weak_retrieval",

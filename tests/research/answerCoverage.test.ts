@@ -201,7 +201,7 @@ describe("answer citation coverage", () => {
     expect(provider.answer).toBe(PROVIDER_UNAVAILABLE_EN);
 
     const weak = storeOf("book_weak", ["صرف ایک عسکری"]);
-    expect(askResearch(weak, "عسکری").refusalReason).toBe("weak_retrieval");
+    expect(askResearch(weak, "عسکری زائد").refusalReason).toBe("weak_retrieval");
     expect(askResearch(storeOf("book_none", ["عسکری"]), "zzzznotpresent").refusalReason).toBe("no_evidence");
     const conflict = storeOf("book_conflict", ["پیدائش 868 میں ہوئی", "پیدائش 874 میں ہوئی"]);
     expect(askResearch(conflict, "پیدائش").refusalReason).toBe("conflicting_evidence");
