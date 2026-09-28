@@ -43,7 +43,10 @@ def main() -> None:
     for path in ROOT.rglob("*"):
         if path.suffix.lower() in {".ttf", ".otf", ".woff", ".woff2"} and path.name != FONT.name:
             raise SystemExit(f"unexpected font in tree: {path}")
-    print("ok", FONT.name, "glyphs", len(font.getGlyphOrder()))
+    fatiha = (ROOT / "sources" / "fatiha-1.txt").read_text(encoding="utf-8")
+    info = names(fatiha.replace("\n", " "))
+    assert all(n != ".notdef" for n, _y in info), "Al-Fatihah still has a missing glyph"
+    print("ok", FONT.name, "glyphs", len(font.getGlyphOrder()), "fatiha", len(info))
 
 
 if __name__ == "__main__":

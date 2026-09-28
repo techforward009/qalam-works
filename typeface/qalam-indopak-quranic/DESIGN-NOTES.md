@@ -41,6 +41,8 @@ The AhmedGraf corpus encodes kaf as U+0643, yeh as U+064A, and heh mostly as U+0
 
 SIL Open Font License 1.1, after the outlines are reviewed as original. This phase does not claim a finished OFL release. Reserved name, when released: Qalam IndoPak Quranic.
 
+Phase 1B keeps that grammar. Heh goal, kaf, seen, and final yeh were redrawn on the same bar and the same stroke. The only new base letters are the ones Al-Fatihah was missing: teh, hah, thal, dad, tah, ghain, and waw. U+06E7 was added because that ayah uses it; it is a small high hook, not a new letter.
+
 ## Source choice
 
 Parametric Python, compiled with fontTools to TrueType, plus a generated `build/features.fea`. The centerlines are easier to edit than a dumped contour file, and the script rebuilds the font without FontForge. WOFF2 can be added later with the same outlines.

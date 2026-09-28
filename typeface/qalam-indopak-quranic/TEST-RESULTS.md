@@ -1,43 +1,36 @@
-# Qalam IndoPak Quranic — Phase 1A test results
+# Qalam IndoPak Quranic — Phase 1B test results
 
-## Samples
+Built with fontTools. Checked with fontTools and HarfBuzz (`sources/check_prototype.py`). Browser specimen uses the compiled font, not images of text.
 
-Rendered from the AhmedGraf Indo-Pak corpus, unmodified:
+## Al-Fatihah
 
-- Al-Fatihah 1:1–7
-- Maryam 19:1–4
-- Al-Baqarah 2:282
-- The same passages carry the mark-heavy sequences, U+06DD, and the Indo-Pak letters ہ، ھ، ي، ك
+1:1–1:7 now shapes with no `.notdef`. The seven ayahs are in `sources/fatiha-1.txt`, copied from the AhmedGraf corpus and not rewritten. HarfBuzz reports 316 glyphs for that passage and zero missing boxes.
 
-`sources/check_prototype.py` shapes بِسْمِ, رَّ, مٰ, and ۝۱۲.
+Joins that matter in the surah are present: lam initial, seen medial, yeh medial, dad medial, noon final, heh-goal final, waw final.
 
-## What rendered
+## Other samples
 
-- بِسْمِ becomes beh initial, seen medial, meem final, with kasra and sukun attached.
-- رَّ places shadda on reh and fatha above the shadda (`mkmk`). Measured offsets: shadda above the base, fatha higher than the shadda.
-- مٰ places the superscript alif on meem.
-- اللہِ joins alef, lam initial, lam medial, heh-goal final.
-- ۝ plus an eastern digit uses the small ring, not a missing glyph.
-- The stroke is visibly thinner and more compact than Noto Naskh on the same line.
-- Kaf reads as a slanted arm rather than a Naskh kaf. Final yeh returns under the line. The verse ring is small.
+Maryam 19:1–4 and Al-Baqarah 2:282 still contain letters this phase does not draw:
 
-## What is still wrong
+ء خ ز ش ظ ى
 
-- Only the first letter set exists. Fatiha still drops waw, hah, tah, thal, ghain, dad, and teh to `.notdef`. That is expected for this phase and it breaks the line.
-- Heh goal is recognizable as a bowl, but the contour is still stiff.
-- Kaf’s arm is the right idea and not yet elegant.
-- Seen teeth and meem tails need a calligrapher’s pass; some joins look mechanically even.
-- Pause marks are simple ticks, not the small ligatures of a finished mushaf.
-- No kerning, no real kasheeda behavior beyond U+0640, no lam-alef ligature.
-- Bari yeh and dotless yeh are drawn but unused by this corpus.
-- `1 MUHAMMADI QURANIC.ttf` was not in the attachment folder, so that reference could not be rendered here. PDMS Saleem, Al Qalam, and Al Majeed were available as visual references only.
+and marks U+064B, U+064C, U+064D, U+0656, U+06E0. Those stay boxes. That is intentional.
 
-## Before Phase 2
+## What improved
 
-1. Redraw heh goal, kaf, seen, and final yeh by hand on top of these proportions.
-2. Add the missing base letters that Fatiha and 2:282 actually use, still from this stroke, before any ornament.
-3. Replace the placeholder pause marks with small original signs.
-4. Tune anchors on tall letters so fatha does not sit as high as it does on lam.
-5. Only then consider a page specimen against PDMS at the same point size.
+- Heh goal is a shallower open bowl instead of a cornered hook. It is rounder, and still not soft enough.
+- Kaf keeps the long arm, now as a curve with a small terminal rather than two straight strokes.
+- Seen teeth are uneven in height and the peak sits off-center, so the row is less like three identical arches. It is still more regular than a pen.
+- Final yeh returns under the baseline and ends in a short hook. The two dots sit closer to the tail.
+- Fatha and shadda are smaller. Alef and lam are shorter, so vowels sit nearer the letters.
+- Sad now shares the baseline bar, so it joins.
 
-The corpus file and the production reader were not modified.
+## Comparison
+
+Against Noto, the line is thinner, tighter, and the kaf and gol heh are not Naskh. Against PDMS Saleem, Qalam is still stiffer: the bowls are simpler, the teeth are more even, and the marks are plainer. It reads as a Quranic line, not as a finished mushaf face.
+
+## Still weak
+
+Heh goal’s bowl, the kaf arm, and seen’s rhythm need a drawn pass before any more letters. Waw’s tail and tah’s stem are serviceable and plain. No kerning. No lam-alef.
+
+The corpus and the production reader were not modified.
