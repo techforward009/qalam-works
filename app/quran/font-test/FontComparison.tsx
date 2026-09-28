@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { QuranPageSurface } from "../QuranReader";
 import { FONT_CANDIDATES, OPEN_FONT_FINDINGS } from "../reader/fontAudit";
 import { fontComparisonBlocks } from "../reader/fontSample";
+import { ayahsOnPage, pageByNumber, pageCount } from "../reader/model";
 import { QURAN_LAYOUT_PROFILE } from "../reader/profile";
 
 type LoadedFace = {
@@ -25,10 +27,26 @@ const boxStyle = {
   letterSpacing: 0,
 } as const;
 
+type PageMeasure = {
+  face: string;
+  height: number;
+  lines: number;
+  overflow: boolean;
+  width: number;
+};
+
+const NOTO_FACE = 'var(--font-naskh), "Noto Naskh Arabic", serif';
+
 export default function FontComparison() {
   const blocks = useMemo(() => fontComparisonBlocks(), []);
   const [faces, setFaces] = useState<LoadedFace[]>([]);
   const [measures, setMeasures] = useState<Record<string, Measure>>({});
+  const [pageNumber, setPageNumber] = useState(413);
+  const [pdmsFamily, setPdmsFamily] = useState<string | null>(null);
+  const [pdmsStatus, setPdmsStatus] = useState("not loaded");
+  const [pageMeasures, setPageMeasures] = useState<PageMeasure[]>([]);
+  const page = pageByNumber(pageNumber);
+  const pageAyahs = useMemo(() => (page ? ayahsOnPage(page.page) : []), [page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +71,57 @@ export default function FontComparison() {
     return () => {
       cancelled = true;
     };
-  }, [faces]);
+  }, [faces, pdmsFamily, pageNumber]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const measurePages = () => {
+      if (cancelled) return;
+      const next: PageMeasure[] = [];
+      for (const node of document.querySelectorAll<HTMLElement>("[data-qalam-face]")) {
+        const flows = [...node.querySelectorAll<HTMLElement>("p[dir='rtl']")];
+        const lines = flows.reduce((sum, flow) => {
+          const range = document.createRange();
+          range.selectNodeContents(flow);
+          return sum + range.getClientRects().length;
+        }, 0);
+        next.push({
+          face: node.dataset.qalamFace ?? "",
+          height: Math.round(node.scrollHeight),
+          lines,
+          overflow: node.scrollHeight > QURAN_LAYOUT_PROFILE.pageMinHeightPx + 1,
+          width: Math.round(node.getBoundingClientRect().width),
+        });
+      }
+      setPageMeasures(next);
+    };
+    void document.fonts.ready.then(() => requestAnimationFrame(measurePages));
+    return () => {
+      cancelled = true;
+    };
+  }, [pdmsFamily, pageNumber]);
+
+  const onPdms = async (file: File | undefined) => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const family = "qalam-local-pdms";
+    try {
+      const face = new FontFace(family, `url(${url})`);
+      await face.load();
+      document.fonts.add(face);
+      setPdmsFamily(family);
+      setPdmsStatus(`${file.name}; local only; not production`);
+    } catch {
+      setPdmsFamily(null);
+      setPdmsStatus("failed to load");
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const shiftPage = (delta: number) => {
+    setPageNumber((current) => Math.min(pageCount(), Math.max(1, current + delta)));
+  };
 
   const onFiles = async (list: FileList | null) => {
     if (!list) return;
@@ -94,7 +162,82 @@ export default function FontComparison() {
   return (
     <main className="bg-[#efe8da] px-4 py-6 text-[#1c140c]" dir="ltr">
       <h1 className="text-xl font-semibold">Quran font comparison</h1>
-      <p className="mt-2 max-w-3xl text-sm text-[#6d5a3c]">
+      <section className="mt-4">
+        <h2 className="text-lg font-semibold">Same Qalam page</h2>
+        <p className="mt-1 max-w-3xl text-sm text-[#6d5a3c]">
+          Loads a local PDMS file in this tab only. Both columns use the existing {pageCount()}-page map and the same ayah text. Pagination is not recalculated.
+        </p>
+        <div className="mt-3 flex flex-wrap items-end gap-3 text-sm">
+          <label>
+            Qalam page
+            <input
+              className="ms-2 w-24 border border-[#c4a36a]/50 bg-white px-2 py-1"
+              type="number"
+              min={1}
+              max={pageCount()}
+              value={pageNumber}
+              aria-label="Qalam page number"
+              onChange={(event) => setPageNumber(Number(event.target.value) || 1)}
+            />
+          </label>
+          {[1, 2, 64, 413, 887].map((preset) => (
+            <button key={preset} type="button" className="border border-[#c4a36a]/50 px-2 py-1" onClick={() => setPageNumber(preset)}>
+              {preset}
+            </button>
+          ))}
+          <label>
+            Local PDMS Saleem
+            <input
+              className="mt-1 block"
+              type="file"
+              accept=".ttf,font/ttf"
+              aria-label="Choose local PDMS Saleem font"
+              onChange={(event) => void onPdms(event.target.files?.[0])}
+            />
+          </label>
+          <span>{pdmsStatus}</span>
+        </div>
+        {pageMeasures.length > 0 && (
+          <p className="mt-2 text-sm text-[#6d5a3c]">
+            {pageMeasures.map((item) => `${item.face}: ${item.height}px, ${item.lines} flow rects, width ${item.width}px, overflow ${item.overflow ? "yes" : "no"}`).join(" · ")}
+          </p>
+        )}
+        {page && (
+          <div className="mt-4 grid items-start gap-4 xl:grid-cols-2">
+            <div>
+              <p className="mb-2 text-sm">Noto Naskh Arabic · page {page.page}</p>
+              <QuranPageSurface
+                surah={page.surahStart}
+                ayah={page.ayahStart}
+                pageNumber={page.page}
+                ayahs={pageAyahs}
+                fontFamily={NOTO_FACE}
+                scale={1}
+                idPrefix="noto-"
+                faceLabel="Noto Naskh Arabic"
+                onPreviousPage={() => shiftPage(-1)}
+                onNextPage={() => shiftPage(1)}
+              />
+            </div>
+            <div>
+              <p className="mb-2 text-sm">PDMS Saleem · page {page.page}</p>
+              <QuranPageSurface
+                surah={page.surahStart}
+                ayah={page.ayahStart}
+                pageNumber={page.page}
+                ayahs={pageAyahs}
+                fontFamily={pdmsFamily ? `"${pdmsFamily}", ${NOTO_FACE}` : NOTO_FACE}
+                scale={1}
+                idPrefix="pdms-"
+                faceLabel="PDMS Saleem"
+                onPreviousPage={() => shiftPage(-1)}
+                onNextPage={() => shiftPage(1)}
+              />
+            </div>
+          </div>
+        )}
+      </section>
+      <p className="mt-8 max-w-3xl text-sm text-[#6d5a3c]">
         Local test only. Choose TTF files on this machine. They stay in this browser tab, are not uploaded, and are not saved.
         Every panel uses the same canonical text, width, size, and line height. Production remains {QURAN_LAYOUT_PROFILE.productionFont}.
       </p>

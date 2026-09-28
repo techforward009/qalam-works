@@ -75,8 +75,6 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
     }
   };
 
-  const blocks = blocksFor(ayahs);
-
   return (
     <main className="bg-[#e6dece] text-[#241910]" dir="rtl">
       <div className="mx-auto max-w-5xl px-3 py-4 sm:px-6 sm:py-8">
@@ -180,75 +178,22 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
         )}
 
         <div className="flex justify-center">
-          <article
-            className="w-full border border-[#c4a36a] bg-[#fbf6ea] px-4 py-6 shadow-[inset_0_0_0_1px_#fbf6ea,inset_0_0_0_4px_#e7d3ae] sm:px-12 sm:py-8"
-            style={{
-              maxWidth: QURAN_LAYOUT_PROFILE.pageWidthPx,
-              minHeight: QURAN_LAYOUT_PROFILE.pageMinHeightPx,
-              fontFamily: QURAN_FONT_STACK,
-              fontSize: `${Math.round(QURAN_LAYOUT_PROFILE.fontSizePx * scale)}px`,
+          <QuranPageSurface
+            surah={surah}
+            ayah={ayah}
+            pageNumber={page.page}
+            ayahs={ayahs}
+            fontFamily={QURAN_FONT_STACK}
+            scale={scale}
+            onPreviousPage={() => {
+              const previous = adjacentPage(page.page, -1);
+              if (previous) go({ surah: previous.surahStart, ayah: previous.ayahStart });
             }}
-            lang="ar"
-          >
-            <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 border-b border-[#c4a36a]/80 pb-3 font-naskh text-[#3d2e1a]" dir="ltr">
-              <div className="text-left text-base leading-tight sm:text-xl">{surahTitle(surah)}</div>
-              <div className="flex items-center gap-1">
-                <NavButton label="Previous page" disabled={!adjacentPage(page.page, -1)} onClick={() => {
-                  const previous = adjacentPage(page.page, -1);
-                  if (previous) go({ surah: previous.surahStart, ayah: previous.ayahStart });
-                }}>
-                  ‹
-                </NavButton>
-                <span className="min-w-12 text-center text-xl sm:text-2xl">{easternDigits(page.page)}</span>
-                <NavButton label="Next page" disabled={!adjacentPage(page.page, 1)} onClick={() => {
-                  const next = adjacentPage(page.page, 1);
-                  if (next) go({ surah: next.surahStart, ayah: next.ayahStart });
-                }}>
-                  ›
-                </NavButton>
-              </div>
-              <div className="text-right text-base leading-tight sm:text-xl">{juzTitle(juz)}</div>
-            </header>
-            {blocks.map((block) => {
-              if (block.kind === "surah") {
-                return <SurahBand key={`s-${block.surah}`} name={surahTitle(block.surah)} />;
-              }
-              if (block.kind === "bismillah") {
-                const active = block.surah === surah && block.ayah === ayah;
-                return (
-                  <p
-                    key={`b-${block.id}`}
-                    id={block.anchor ? `ayah-${block.surah}-${block.ayah}` : undefined}
-                    className={`mb-6 text-center text-[1.35rem] leading-relaxed ${active && block.anchor ? "bg-[#f3ead4]" : ""}`}
-                  >
-                    {block.text}
-                  </p>
-                );
-              }
-              return (
-                <p
-                  key={block.ids}
-                  dir="rtl"
-                  lang="ar"
-                  className="mb-2 text-justify"
-                  style={{ lineHeight: QURAN_LAYOUT_PROFILE.lineHeight, unicodeBidi: "plaintext" }}
-                >
-                  {block.ayahs.map((item, index) => (
-                    <span key={item.id}>
-                      {index > 0 ? " " : ""}
-                      <span
-                        id={item.anchor ? `ayah-${item.surah}-${item.ayah}` : undefined}
-                        className={`quran-ayah inline ${item.anchor && item.surah === surah && item.ayah === ayah ? "bg-[#f3ead4]" : ""}`}
-                        style={{ boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}
-                      >
-                        {item.text}
-                      </span>
-                    </span>
-                  ))}
-                </p>
-              );
-            })}
-          </article>
+            onNextPage={() => {
+              const next = adjacentPage(page.page, 1);
+              if (next) go({ surah: next.surahStart, ayah: next.ayahStart });
+            }}
+          />
         </div>
 
         <div className="mx-auto mt-3 flex max-w-[760px] flex-wrap items-center justify-between gap-2 text-[#5c4a32]" dir="ltr">
@@ -288,6 +233,101 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
     </main>
   );
 }
+
+function QuranPageSurface({
+  surah,
+  ayah,
+  pageNumber,
+  ayahs,
+  fontFamily,
+  scale,
+  idPrefix = "",
+  faceLabel,
+  onPreviousPage,
+  onNextPage,
+}: {
+  surah: number;
+  ayah: number;
+  pageNumber: number;
+  ayahs: readonly QuranAyah[];
+  fontFamily: string;
+  scale: number;
+  idPrefix?: string;
+  faceLabel?: string;
+  onPreviousPage: () => void;
+  onNextPage: () => void;
+}) {
+  const blocks = blocksFor(ayahs);
+  return (
+    <article
+      className="w-full border border-[#c4a36a] bg-[#fbf6ea] px-4 py-6 shadow-[inset_0_0_0_1px_#fbf6ea,inset_0_0_0_4px_#e7d3ae] sm:px-12 sm:py-8"
+      style={{
+        maxWidth: QURAN_LAYOUT_PROFILE.pageWidthPx,
+        minHeight: QURAN_LAYOUT_PROFILE.pageMinHeightPx,
+        fontFamily,
+        fontSize: `${Math.round(QURAN_LAYOUT_PROFILE.fontSizePx * scale)}px`,
+      }}
+      lang="ar"
+      data-qalam-page={pageNumber}
+      data-qalam-face={faceLabel}
+    >
+      <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 border-b border-[#c4a36a]/80 pb-3 font-naskh text-[#3d2e1a]" dir="ltr">
+        <div className="text-left text-base leading-tight sm:text-xl">{surahTitle(surah)}</div>
+        <div className="flex items-center gap-1">
+          <NavButton label="Previous page" disabled={!adjacentPage(pageNumber, -1)} onClick={onPreviousPage}>
+            ‹
+          </NavButton>
+          <span className="min-w-12 text-center text-xl sm:text-2xl">{easternDigits(pageNumber)}</span>
+          <NavButton label="Next page" disabled={!adjacentPage(pageNumber, 1)} onClick={onNextPage}>
+            ›
+          </NavButton>
+        </div>
+        <div className="text-right text-base leading-tight sm:text-xl">{juzTitle(juzOf(surah, ayah))}</div>
+      </header>
+      {blocks.map((block) => {
+        if (block.kind === "surah") {
+          return <SurahBand key={`${idPrefix}s-${block.surah}`} name={surahTitle(block.surah)} />;
+        }
+        if (block.kind === "bismillah") {
+          const active = block.surah === surah && block.ayah === ayah;
+          return (
+            <p
+              key={`${idPrefix}b-${block.id}`}
+              id={block.anchor ? `${idPrefix}ayah-${block.surah}-${block.ayah}` : undefined}
+              className={`mb-6 text-center text-[1.35rem] leading-relaxed ${active && block.anchor ? "bg-[#f3ead4]" : ""}`}
+            >
+              {block.text}
+            </p>
+          );
+        }
+        return (
+          <p
+            key={`${idPrefix}${block.ids}`}
+            dir="rtl"
+            lang="ar"
+            className="mb-2 text-justify"
+            style={{ lineHeight: QURAN_LAYOUT_PROFILE.lineHeight, unicodeBidi: "plaintext" }}
+          >
+            {block.ayahs.map((item, index) => (
+              <span key={item.id}>
+                {index > 0 ? " " : ""}
+                <span
+                  id={item.anchor ? `${idPrefix}ayah-${item.surah}-${item.ayah}` : undefined}
+                  className={`quran-ayah inline ${item.anchor && item.surah === surah && item.ayah === ayah ? "bg-[#f3ead4]" : ""}`}
+                  style={{ boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}
+                >
+                  {item.text}
+                </span>
+              </span>
+            ))}
+          </p>
+        );
+      })}
+    </article>
+  );
+}
+
+export { QuranPageSurface };
 
 function blocksFor(ayahs: readonly QuranAyah[]) {
   const blocks: Array<

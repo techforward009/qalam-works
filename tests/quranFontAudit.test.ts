@@ -50,6 +50,8 @@ describe("Quran font audit", () => {
     const gate = readFileSync("app/quran/font-test/page.tsx", "utf8");
     expect(page).toContain('dir="rtl"');
     expect(page).toContain("createObjectURL");
+    expect(page).toContain("pageByNumber");
+    expect(page).toContain("QuranPageSurface");
     expect(page).not.toContain("/workspace/attachments");
     expect(page).not.toContain("public/fonts");
     expect(gate).toContain('process.env.NODE_ENV === "production"');
