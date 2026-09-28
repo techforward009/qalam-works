@@ -27,7 +27,7 @@ Shadda plus fatha, and meem plus superscript alif, are the two stacks this phase
 
 The AhmedGraf corpus encodes kaf as U+0643, yeh as U+064A, and heh mostly as U+06C1. Those codepoints get Indo-Pak drawings:
 
-- Kaf has a diagonal stem and a long arm with a small flick, not an Arabic naskh kaf.
+- Kaf is one bowed arm over the baseline, not an Arabic naskh kaf.
 - Heh goal is an open bowl. Medial heh goal is a small eye on the bar.
 - Do-chashmi heh is two eyes on the bar.
 - Yeh returns under the baseline. U+06CC is the same skeleton without dots. Bari yeh (U+06D2) is a larger open tail and does not join forward. The corpus does not use U+06CC or U+06D2; they are here so the Indo-Pak set exists.
@@ -41,7 +41,13 @@ The AhmedGraf corpus encodes kaf as U+0643, yeh as U+064A, and heh mostly as U+0
 
 SIL Open Font License 1.1, after the outlines are reviewed as original. This phase does not claim a finished OFL release. Reserved name, when released: Qalam IndoPak Quranic.
 
-Phase 1B keeps that grammar. Heh goal, kaf, seen, and final yeh were redrawn on the same bar and the same stroke. The only new base letters are the ones Al-Fatihah was missing: teh, hah, thal, dad, tah, ghain, and waw. U+06E7 was added because that ayah uses it; it is a small high hook, not a new letter.
+Phase 2A redraws only heh, kaf, and seen. A `chain()` helper strokes several cubics as one centerline, so a letter can be one gesture instead of stacked pieces. No new base letters.
+
+Heh goal is a shallow open bowl: the left wall is taller, the bottom stays near the baseline, and the end turns in without closing. Final uses that same bowl plus the entry bar. Medial and initial are small asymmetric eyes from the same curve, not circles.
+
+Kaf is one bowed stroke. It leaves the baseline, bends as it rises, and the arm sags on the way left before a short lift. The top anchor sits above the arm so fatha clears it.
+
+Seen is one wave of three rounded teeth. The middle tooth is the tallest and its crest comes early. The baseline bar stops at the wave instead of running under it.
 
 ## Source choice
 

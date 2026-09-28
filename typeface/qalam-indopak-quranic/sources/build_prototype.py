@@ -110,10 +110,13 @@ def bar(d: Draw, x0, x1, y=22, width=THIN):
     d.stroke([(x0, y), (x1, y)], width)
 
 
-def tooth(d: Draw, x, y=22, h=122, w=66):
-    rise = _samples((x, y), (x + w * 0.1, y + h * 0.72), (x + w * 0.32, y + h), (x + w * 0.44, y + h * 0.9), 8)
-    fall = _samples((x + w * 0.44, y + h * 0.9), (x + w * 0.62, y + h * 0.28), (x + w * 0.86, y + 6), (x + w, y), 8)
-    d.stroke(rise + fall[1:], STROKE - 4)
+def chain(d: Draw, segments, width: float) -> None:
+    """Stroke several cubics as one centerline. Each segment is (start, c1, c2, end)."""
+    pts = []
+    for p0, c1, c2, p3 in segments:
+        seg = _samples(p0, c1, c2, p3, 12)
+        pts.extend(seg if not pts else seg[1:])
+    d.stroke(pts, width)
 
 
 def entry_bar(d: Draw, length, y=22):
@@ -197,17 +200,29 @@ def reh_shape(final=False):
 
 
 def seen_shape(form):
-    length = {"isol": 430, "init": 380, "medi": 340, "fina": 420}[form]
+    """Three teeth as one wave. The bar does not run under the teeth."""
+    length = {"isol": 390, "init": 350, "medi": 310, "fina": 380}[form]
     d = Draw(length)
-    bar(d, -20, length + 20, 22)
-    origin = 92 if form in ("isol", "fina") else 8
-    heights = (112, 126, 108)
-    for i, h in enumerate(heights):
-        tooth(d, origin + i * 74, h=h, w=64)
+    origin = 78 if form in ("isol", "fina") else 4
+    teeth = (
+        (72, 86, 0.32, 0.68),
+        (76, 138, 0.22, 0.48),
+        (70, 104, 0.40, 0.74),
+    )
+    segments = []
+    x = origin
+    y = 24
+    for w, h, a, b in teeth:
+        segments.append(((x, y), (x + w * a, y + h), (x + w * b, y + h * 0.9), (x + w, y)))
+        x += w
+    wave_end = x
+    bar(d, wave_end - 4, length + 18, 22)
+    bar(d, -18, origin + 4, 22)
+    chain(d, segments, 20)
     if form in ("isol", "fina"):
-        d.curve((8, 24), (4, -6), (28, -36), (72, 16), 22)
-    top_at(d, origin + 80, 150)
-    bot_at(d, 40, -52)
+        chain(d, [((origin, 24), (origin - 22, 16), (origin - 30, -8), (origin - 6, 6))], 16)
+    top_at(d, origin + 70, y + 154)
+    bot_at(d, origin + 16, -20)
     return d.finish()
 
 
@@ -292,14 +307,21 @@ def qaf_shape(form):
 
 
 def kaf_shape(form):
-    """Indo-Pak kaf: a curved arm over the shared baseline."""
-    length = {"isol": 400, "init": 360, "medi": 340, "fina": 410}[form]
+    """One bowed gesture: the rise bends, then the arm turns left and sags."""
+    length = {"isol": 370, "init": 340, "medi": 320, "fina": 380}[form]
     d = Draw(length)
-    bar(d, -20, length + 20, 22)
-    d.curve((78, 24), (130, 70), (length - 90, 160), (length - 48, 292), 22)
-    d.curve((length - 48, 292), (length * 0.52, 334), (110, 292), (34, 248), 17)
-    d.curve((34, 248), (20, 236), (22, 286), (48, 298), 13)
-    top_at(d, length * 0.5, 250)
+    bar(d, -18, length + 18, 22)
+    chain(
+        d,
+        [
+            ((64, 22), (88, 16), (140, 36), (176, 96)),
+            ((176, 96), (214, 170), (length - 24, 210), (length - 18, 268)),
+            ((length - 18, 268), (length * 0.55, 302), (length * 0.30, 228), (44, 196)),
+            ((44, 196), (30, 186), (34, 214), (54, 222)),
+        ],
+        17,
+    )
+    top_at(d, length * 0.46, 318)
     bot_at(d, length * 0.4, -8)
     return d.finish()
 
@@ -347,46 +369,80 @@ def noon_shape(form):
 
 
 def heh_shape(form):
-    length = {"isol": 280, "init": 230, "medi": 210, "fina": 300}[form]
+    length = {"isol": 260, "init": 210, "medi": 190, "fina": 280}[form]
     d = Draw(length)
-    if form == "medi":
-        bar(d, -20, length + 20, 22)
-        d.ring(length * 0.5, 78, 40, 58, 0.55)
-    elif form == "init":
+    if form in ("medi", "init"):
         bar(d, -20, length + 16, 22)
-        d.ring(length * 0.62, 84, 42, 50, 0.55)
-    else:
-        d.curve((length - 28, 36), (length * 0.2, 20), (36, 48), (48, 130), 26)
-        d.curve((48, 130), (62, 196), (length * 0.72, 188), (length - 36, 78), 24)
-        if form == "fina":
-            bar(d, length - 70, length + 20, 22)
-    top_at(d, length * 0.55, 150)
-    bot_at(d, length * 0.45, -8)
+        cx = length * (0.58 if form == "init" else 0.5)
+        chain(
+            d,
+            [
+                ((cx + 28, 28), (cx + 34, 78), (cx + 8, 118), (cx - 8, 112)),
+                ((cx - 8, 112), (cx - 36, 100), (cx - 30, 36), (cx + 28, 28)),
+            ],
+            16,
+        )
+        top_at(d, cx, 132)
+        bot_at(d, cx, -8)
+        return d.finish()
+    chain(
+        d,
+        [
+            ((length - 24, 30), (length * 0.45, 8), (48, 24), (40, 78)),
+            ((40, 78), (34, 150), (length * 0.55, 162), (length - 30, 86)),
+        ],
+        22,
+    )
+    if form == "fina":
+        bar(d, length - 60, length + 18, 22)
+    top_at(d, length * 0.48, 148)
+    bot_at(d, length * 0.4, -8)
     return d.finish()
 
 
 def hehgoal_shape(form):
-    length = {"isol": 300, "init": 220, "medi": 190, "fina": 320}[form]
+    length = {"isol": 320, "init": 200, "medi": 180, "fina": 340}[form]
     d = Draw(length)
     if form == "medi":
-        bar(d, -20, length + 20, 22)
-        d.ring(length * 0.5, 64, 32, 40, 0.58)
-        top_at(d, length * 0.5, 112)
-        bot_at(d, length * 0.5, -8)
+        bar(d, -20, length + 16, 22)
+        cx = length * 0.5
+        chain(
+            d,
+            [
+                ((cx + 30, 18), (cx + 36, 48), (cx + 6, 78), (cx - 16, 70)),
+                ((cx - 16, 70), (cx - 34, 58), (cx - 18, 16), (cx + 8, 14)),
+            ],
+            16,
+        )
+        top_at(d, cx, 96)
+        bot_at(d, cx, -8)
         return d.finish()
     if form == "init":
         bar(d, -20, length + 16, 22)
-        d.curve((length * 0.55, 22), (length * 0.78, 36), (length * 0.7, 108), (length * 0.4, 24), 22)
-        top_at(d, length * 0.58, 120)
+        chain(
+            d,
+            [
+                ((length * 0.72, 22), (length * 0.86, 28), (length * 0.7, 92), (length * 0.42, 78)),
+                ((length * 0.42, 78), (length * 0.24, 68), (length * 0.28, 30), (length * 0.48, 22)),
+            ],
+            18,
+        )
+        top_at(d, length * 0.55, 108)
         bot_at(d, length * 0.45, -8)
         return d.finish()
-    bowl = _samples((length - 22, 34), (length * 0.72, 6), (length * 0.42, -52), (78, 10), 10)
-    bowl += _samples((78, 10), (54, 52), (96, 118), (146, 86), 8)[1:]
-    d.stroke(bowl, 26)
+    chain(
+        d,
+        [
+            ((length - 14, 26), (length * 0.62, 10), (length * 0.40, -2), (length * 0.20, -16)),
+            ((length * 0.20, -16), (52, -6), (24, 34), (28, 102)),
+            ((28, 102), (32, 132), (74, 124), (112, 104)),
+        ],
+        21,
+    )
     if form == "fina":
-        bar(d, length - 80, length + 20, 22)
-    top_at(d, length * 0.42, 150)
-    bot_at(d, length * 0.38, -90)
+        bar(d, length - 64, length + 16, 22)
+    top_at(d, length * 0.42, 140)
+    bot_at(d, length * 0.32, -46)
     return d.finish()
 
 
@@ -951,7 +1007,7 @@ def build():
             "styleName": "Prototype",
             "uniqueFontIdentifier": "Qalam Works: Qalam IndoPak Quranic Prototype 0.1",
             "fullName": "Qalam IndoPak Quranic Prototype",
-            "version": "Version 0.2",
+            "version": "Version 0.3",
             "psName": "QalamIndoPakQuranic-Prototype",
             "manufacturer": "Qalam Works",
             "designer": "Qalam Works",
