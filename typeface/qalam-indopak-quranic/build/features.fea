@@ -2,13 +2,13 @@ languagesystem DFLT dflt;
 languagesystem arab dflt;
 
 feature init {
-  sub [beh jeem seen sad ain feh qaf kaf lam meem noon heh hehgoal hehdo teh hah dad tah ghain yeh yehdotless] by [beh_init jeem_init seen_init sad_init ain_init feh_init qaf_init kaf_init lam_init meem_init noon_init heh_init hehgoal_init hehdo_init teh_init hah_init dad_init tah_init ghain_init yeh_init yehdotless_init];
+  sub [beh jeem seen sad ain feh qaf kaf lam meem noon heh hehgoal hehdo teh hah dad tah ghain khah sheen zah maqsura yeh yehdotless] by [beh_init jeem_init seen_init sad_init ain_init feh_init qaf_init kaf_init lam_init meem_init noon_init heh_init hehgoal_init hehdo_init teh_init hah_init dad_init tah_init ghain_init khah_init sheen_init zah_init maqsura_init yeh_init yehdotless_init];
 } init;
 feature medi {
-  sub [beh jeem seen sad ain feh qaf kaf lam meem noon heh hehgoal hehdo teh hah dad tah ghain yeh yehdotless] by [beh_medi jeem_medi seen_medi sad_medi ain_medi feh_medi qaf_medi kaf_medi lam_medi meem_medi noon_medi heh_medi hehgoal_medi hehdo_medi teh_medi hah_medi dad_medi tah_medi ghain_medi yeh_medi yehdotless_medi];
+  sub [beh jeem seen sad ain feh qaf kaf lam meem noon heh hehgoal hehdo teh hah dad tah ghain khah sheen zah maqsura yeh yehdotless] by [beh_medi jeem_medi seen_medi sad_medi ain_medi feh_medi qaf_medi kaf_medi lam_medi meem_medi noon_medi heh_medi hehgoal_medi hehdo_medi teh_medi hah_medi dad_medi tah_medi ghain_medi khah_medi sheen_medi zah_medi maqsura_medi yeh_medi yehdotless_medi];
 } medi;
 feature fina {
-  sub [beh jeem seen sad ain feh qaf kaf lam meem noon heh hehgoal hehdo teh hah dad tah ghain yeh yehdotless alef dal reh bariyeh tehgoal thal waw] by [beh_fina jeem_fina seen_fina sad_fina ain_fina feh_fina qaf_fina kaf_fina lam_fina meem_fina noon_fina heh_fina hehgoal_fina hehdo_fina teh_fina hah_fina dad_fina tah_fina ghain_fina yeh_fina yehdotless_fina alef_fina dal_fina reh_fina bariyeh_fina tehgoal_fina thal_fina waw_fina];
+  sub [beh jeem seen sad ain feh qaf kaf lam meem noon heh hehgoal hehdo teh hah dad tah ghain khah sheen zah maqsura yeh yehdotless alef dal reh bariyeh tehgoal thal waw zain] by [beh_fina jeem_fina seen_fina sad_fina ain_fina feh_fina qaf_fina kaf_fina lam_fina meem_fina noon_fina heh_fina hehgoal_fina hehdo_fina teh_fina hah_fina dad_fina tah_fina ghain_fina khah_fina sheen_fina zah_fina maqsura_fina yeh_fina yehdotless_fina alef_fina dal_fina reh_fina bariyeh_fina tehgoal_fina thal_fina waw_fina zain_fina];
 } fina;
 
 markClass fatha <anchor 0 0> @TOP;
@@ -40,6 +40,13 @@ feature mark {
     pos base dal_fina <anchor 120 168> mark @TOP;
     pos base reh <anchor 130 52> mark @TOP;
     pos base reh_fina <anchor 130 52> mark @TOP;
+    pos base hamzalet <anchor 90 174> mark @TOP;
+    pos base khah <anchor 226 140> mark @TOP;
+    pos base zain <anchor 112 116> mark @TOP;
+    pos base zain_fina <anchor 112 116> mark @TOP;
+    pos base sheen <anchor 198 220> mark @TOP;
+    pos base zah <anchor 280 278> mark @TOP;
+    pos base maqsura <anchor 128 46> mark @TOP;
     pos base seen <anchor 140 178> mark @TOP;
     pos base sad <anchor 300 186> mark @TOP;
     pos base ain <anchor 267 250> mark @TOP;
@@ -127,6 +134,18 @@ feature mark {
     pos base ghain_init <anchor 170 210> mark @TOP;
     pos base ghain_medi <anchor 90 176> mark @TOP;
     pos base ghain_fina <anchor 240 220> mark @TOP;
+    pos base khah_init <anchor 151 136> mark @TOP;
+    pos base khah_medi <anchor 130 136> mark @TOP;
+    pos base khah_fina <anchor 232 140> mark @TOP;
+    pos base sheen_init <anchor 132 220> mark @TOP;
+    pos base sheen_medi <anchor 132 220> mark @TOP;
+    pos base sheen_fina <anchor 198 220> mark @TOP;
+    pos base zah_init <anchor 230 278> mark @TOP;
+    pos base zah_medi <anchor 200 278> mark @TOP;
+    pos base zah_fina <anchor 280 278> mark @TOP;
+    pos base maqsura_init <anchor 88 130> mark @TOP;
+    pos base maqsura_medi <anchor 81 130> mark @TOP;
+    pos base maqsura_fina <anchor 136 46> mark @TOP;
     pos base yeh_init <anchor 148 52> mark @TOP;
     pos base yeh_medi <anchor 127 52> mark @TOP;
     pos base yeh_fina <anchor 215 52> mark @TOP;
@@ -153,6 +172,13 @@ feature mark {
     pos base dal_fina <anchor 80 -12> mark @BOT;
     pos base reh <anchor 96 -210> mark @BOT;
     pos base reh_fina <anchor 96 -210> mark @BOT;
+    pos base hamzalet <anchor 82 -10> mark @BOT;
+    pos base khah <anchor 101 -210> mark @BOT;
+    pos base zain <anchor 98 -198> mark @BOT;
+    pos base zain_fina <anchor 98 -198> mark @BOT;
+    pos base sheen <anchor 92 -18> mark @BOT;
+    pos base zah <anchor 106 -8> mark @BOT;
+    pos base maqsura <anchor 115 -22> mark @BOT;
     pos base seen <anchor 86 -20> mark @BOT;
     pos base sad <anchor 126 -48> mark @BOT;
     pos base ain <anchor 150 -230> mark @BOT;
@@ -240,6 +266,18 @@ feature mark {
     pos base ghain_init <anchor 91 -8> mark @BOT;
     pos base ghain_medi <anchor 80 -8> mark @BOT;
     pos base ghain_fina <anchor 140 -210> mark @BOT;
+    pos base khah_init <anchor 145 -8> mark @BOT;
+    pos base khah_medi <anchor 125 -8> mark @BOT;
+    pos base khah_fina <anchor 104 -210> mark @BOT;
+    pos base sheen_init <anchor 26 -18> mark @BOT;
+    pos base sheen_medi <anchor 26 -18> mark @BOT;
+    pos base sheen_fina <anchor 92 -18> mark @BOT;
+    pos base zah_init <anchor 92 -8> mark @BOT;
+    pos base zah_medi <anchor 84 -8> mark @BOT;
+    pos base zah_fina <anchor 106 -8> mark @BOT;
+    pos base maqsura_init <anchor 88 -16> mark @BOT;
+    pos base maqsura_medi <anchor 81 -16> mark @BOT;
+    pos base maqsura_fina <anchor 122 -22> mark @BOT;
     pos base yeh_init <anchor 135 -78> mark @BOT;
     pos base yeh_medi <anchor 115 -78> mark @BOT;
     pos base yeh_fina <anchor 130 -186> mark @BOT;
@@ -275,4 +313,7 @@ feature mkmk {
     pos mark smallwaw <anchor 0 60> mark @TOP;
     pos mark smallyeh <anchor 0 46> mark @TOP;
   } stack;
+  lookup stackb {
+    pos mark hamzabelow <anchor 0 -92> mark @BOT;
+  } stackb;
 } mkmk;

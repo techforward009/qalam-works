@@ -765,6 +765,7 @@ def mark_hamza():
 def mark_hamzabelow():
     d = Draw(0)
     d.curve((-16, -8), (-28, -60), (10, -78), (8, -36), 14)
+    d.anchor("bottom", 0, -92)
     return d.finish(), (0, 0)
 
 
@@ -807,6 +808,149 @@ def mark_low_wave():
     return d.finish(), (0, 0)
 
 
+def hamza_letter():
+    """Standalone hamza. Compact, two light strokes, not the combining mark."""
+    d = Draw(170)
+    chain(
+        d,
+        [
+            ((96, 44), (54, 38), (42, 122), (88, 142)),
+            ((88, 142), (128, 156), (136, 82), (100, 64)),
+        ],
+        14,
+    )
+    chain(d, [((70, 32), (104, 12), (140, 38), (116, 56))], 12)
+    top_at(d, 90, 174)
+    bot_at(d, 82, -10)
+    return d.finish()
+
+
+def khah_shape(form):
+    """Jeem-family head with the dot above, in the open-curve language of heh goal."""
+    length = {"isol": 390, "init": 290, "medi": 250, "fina": 400}[form]
+    d = Draw(length)
+    if form in ("medi", "init"):
+        bar(d, -16, length + 16, 22)
+        chain(
+            d,
+            [
+                ((length * 0.78, 22), (length * 0.94, 34), (length * 0.52, 92), (length * 0.30, 62)),
+            ],
+            18,
+        )
+        d.dot(length * 0.52, 108)
+        top_at(d, length * 0.52, 136)
+        bot_at(d, length * 0.5, -8)
+        return d.finish()
+    chain(
+        d,
+        [
+            ((length - 18, 74), (length * 0.56, 14), (length * 0.36, -24), (length * 0.24, -124)),
+            ((length * 0.24, -124), (length * 0.12, -192), (68, -86), (102, -8)),
+        ],
+        24,
+    )
+    d.dot(length * 0.58, 112)
+    if form == "fina":
+        bar(d, length - 62, length + 16, 22)
+    top_at(d, length * 0.58, 140)
+    bot_at(d, length * 0.26, -210)
+    return d.finish()
+
+
+def zain_shape(final=False):
+    """Reh-family descender with one dot above the shoulder."""
+    d = Draw(220 if final else 180)
+    chain(
+        d,
+        [
+            ((156, 46), (128, 16), (82, -22), (98, -146)),
+            ((98, -146), (106, -182), (140, -160), (126, -122)),
+        ],
+        22,
+    )
+    d.dot(112, 88)
+    if final:
+        bar(d, 146, 230, 22)
+    top_at(d, 112, 116)
+    bot_at(d, 98, -198)
+    return d.finish()
+
+
+def sheen_shape(form):
+    """Seen’s wave, widened so a three-dot pyramid can sit on the tall middle tooth."""
+    length = {"isol": 440, "init": 400, "medi": 360, "fina": 430}[form]
+    d = Draw(length)
+    origin = 72 if form in ("isol", "fina") else 6
+    teeth = (
+        (74, 82, 0.34, 0.70, 12),
+        (104, 126, 0.20, 0.46, 34),
+        (76, 98, 0.42, 0.74, 24),
+    )
+    segments = []
+    x = origin
+    y = 24
+    for w, h, a, b, end_y in teeth:
+        segments.append(((x, y), (x + w * a, y + h * 0.96), (x + w * b, y + h * 0.82), (x + w, end_y)))
+        x += w
+        y = end_y
+    bar(d, x - 4, length + 16, 22)
+    bar(d, -16, origin + 4, 22)
+    chain(d, segments, 20)
+    if form in ("isol", "fina"):
+        chain(d, [((origin, 24), (origin - 20, 14), (origin - 28, -6), (origin - 4, 6))], 16)
+    mid = origin + 74 + 52
+    d.dot(mid - 18, 162, 14, 12)
+    d.dot(mid + 18, 162, 14, 12)
+    d.dot(mid, 188, 14, 12)
+    top_at(d, mid, 220)
+    bot_at(d, origin + 20, -18)
+    return d.finish()
+
+
+def zah_shape(form):
+    """Tah family: ring and thin stem, with one dot beside the stem."""
+    length = {"isol": 380, "init": 330, "medi": 300, "fina": 380}[form]
+    d = Draw(length)
+    bar(d, -18, length + 16, 22)
+    eye = length - 100
+    d.ring(eye, 72, 48, 42, 0.55)
+    d.stroke([(eye + 2, 96), (eye - 2, 168), (eye - 6, 246)], 18)
+    d.stroke([(eye - 12, 234), (eye + 6, 256)], 11)
+    d.dot(eye - 40, 128)
+    top_at(d, eye, 278)
+    bot_at(d, length * 0.28, -8)
+    return d.finish()
+
+
+def maqsura_shape(form):
+    """Yeh family without dots. Final returns; medial is one seen-like tooth."""
+    length = {"isol": 320, "init": 240, "medi": 210, "fina": 340}[form]
+    d = Draw(length)
+    if form in ("isol", "fina"):
+        if form == "fina":
+            bar(d, length * 0.5, length + 16, 22)
+        chain(
+            d,
+            [
+                ((length * 0.46, 22), (length * 0.30, 8), (length * 0.12, -28), (length * 0.15, -96)),
+                ((length * 0.15, -96), (length * 0.18, -142), (length * 0.42, -136), (length * 0.56, -80)),
+                ((length * 0.56, -80), (length * 0.48, -64), (length * 0.40, -74), (length * 0.45, -94)),
+            ],
+            18,
+        )
+        top_at(d, length * 0.4, 46)
+        bot_at(d, length * 0.36, -22)
+        return d.finish()
+    bar(d, -16, length + 16, 22)
+    x = length * 0.22
+    w, h = 84, 92
+    chain(d, [((x, 24), (x + w * 0.30, 24 + h), (x + w * 0.66, 24 + h * 0.84), (x + w, 24))], 18)
+    top_at(d, x + w * 0.42, 24 + h + 14)
+    bot_at(d, x + w * 0.42, -16)
+    return d.finish()
+
+
 def build():
     glyphs = {}
     cmap = {0x20: "space"}
@@ -829,6 +973,13 @@ def build():
     add("dal_fina", dal_shape(True))
     add("reh", reh_shape(False), 0x0631)
     add("reh_fina", reh_shape(True))
+    add("hamzalet", hamza_letter(), 0x0621)
+    add("khah", khah_shape("isol"), 0x062E)
+    add("zain", zain_shape(False), 0x0632)
+    add("zain_fina", zain_shape(True))
+    add("sheen", sheen_shape("isol"), 0x0634)
+    add("zah", zah_shape("isol"), 0x0638)
+    add("maqsura", maqsura_shape("isol"), 0x0649)
     add("seen", seen_shape("isol"), 0x0633)
     add("sad", sad_shape("isol"), 0x0635)
     add("ain", ain_shape("isol"), 0x0639)
@@ -880,6 +1031,10 @@ def build():
         "dad": dad_fresh,
         "tah": tah_shape,
         "ghain": ghain_shape,
+        "khah": khah_shape,
+        "sheen": sheen_shape,
+        "zah": zah_shape,
+        "maqsura": maqsura_shape,
     }
     for name, fn in dual.items():
         for form in ("init", "medi", "fina"):
@@ -937,7 +1092,7 @@ def build():
         return [f"{n}{suffix}" for n in bases]
 
     dual_names = list(dual) + ["yeh", "yehdotless"]
-    right = ["alef", "dal", "reh", "bariyeh", "tehgoal", "thal", "waw"]
+    right = ["alef", "dal", "reh", "bariyeh", "tehgoal", "thal", "waw", "zain"]
     fea = ["languagesystem DFLT dflt;", "languagesystem arab dflt;", ""]
     fea.append("feature init {")
     fea.append("  sub [" + " ".join(dual_names) + "] by [" + " ".join(f"{n}_init" for n in dual_names) + "];")
@@ -979,6 +1134,12 @@ def build():
             x, y = anchors[name]["top"]
             fea.append(f"    pos mark {name} <anchor {x} {y}> mark @TOP;")
     fea.append("  } stack;")
+    fea.append("  lookup stackb {")
+    for name in bot_marks:
+        if "bottom" in anchors.get(name, {}):
+            x, y = anchors[name]["bottom"]
+            fea.append(f"    pos mark {name} <anchor {x} {y}> mark @BOT;")
+    fea.append("  } stackb;")
     fea.append("} mkmk;")
     fea_text = "\n".join(fea) + "\n"
 
@@ -1009,7 +1170,7 @@ def build():
             "styleName": "Prototype",
             "uniqueFontIdentifier": "Qalam Works: Qalam IndoPak Quranic Prototype 0.1",
             "fullName": "Qalam IndoPak Quranic Prototype",
-            "version": "Version 0.4",
+            "version": "Version 0.5",
             "psName": "QalamIndoPakQuranic-Prototype",
             "manufacturer": "Qalam Works",
             "designer": "Qalam Works",

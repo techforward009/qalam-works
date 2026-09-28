@@ -46,6 +46,33 @@ def main() -> None:
     fatiha = (ROOT / "sources" / "fatiha-1.txt").read_text(encoding="utf-8")
     info = names(fatiha.replace("\n", " "))
     assert all(n != ".notdef" for n, _y in info), "Al-Fatihah still has a missing glyph"
+    assert len(info) == 316, len(info)
+    assert len(font.getGlyphOrder()) == 151
+    samples = {
+        "ءَاَنْذَرْتَھُمْ": "hamzalet",
+        "خَتَمَ": "khah_init",
+        "يُخٰدِعُوْنَ": "khah_medi",
+        "نَنْسَخْ": "khah_fina",
+        "الْاَخِ": "khah",
+        "رَزَقْنٰھُمْ": "zain",
+        "اُنْزِلَ": "zain_fina",
+        "يَشْعُرُوْنَ": "sheen_medi",
+        "اشْتَرَوُا": "sheen_init",
+        "وَلْيَخْشَ": "sheen_fina",
+        "ظٰلِمُوْنَ": "zah_init",
+        "يَظُنُّوْنَ": "zah_medi",
+        "الْغَيْظَ": "zah_fina",
+        "فِىْ": "maqsura_fina",
+        "اُولٰۗىِٕكَ": "maqsura_medi",
+        "بِاَسْمَاۗىِٕہِمْ": "maqsura_init",
+        "الَّذِى": "maqsura",
+    }
+    for word, glyph in samples.items():
+        got = [n for n, _y in names(word)]
+        assert ".notdef" not in got, (word, got)
+        assert glyph in got, (word, glyph, got)
+    stack = dict(names("اُولٰۗىِٕكَ"))
+    assert stack["kasra"] < stack["hamzabelow"] < 0
     print("ok", FONT.name, "glyphs", len(font.getGlyphOrder()), "fatiha", len(info))
 
 

@@ -1,13 +1,26 @@
-# Qalam IndoPak Quranic — Phase 2B test results
+# Qalam IndoPak Quranic — Phase 2C test results
 
-fontTools compile and the HarfBuzz check pass. Al-Fatihah 1:1–1:7 is still 316 glyphs and zero `.notdef`. Glyph count remains 132. No letters were added.
+fontTools compile and the HarfBuzz check pass. The font has 151 glyphs. Al-Fatihah 1:1–1:7 is still 316 shaped glyphs and zero `.notdef`. Heh, kaf, and seen were not redrawn.
 
-## This pass
+## New letters
 
-- Heh goal’s bowl is wider. The bottom stays near the baseline, the left wall stays taller, and the end eases across the opening instead of curling shut. The bottom anchor moved from -46 to -36 so kasra sits with the shallower bowl. Medial heh goal is a slightly wider eye.
-- Kaf’s concept is unchanged. The last part of the arm is a lighter lift, width 11 on the same centerline, so the finish is a release rather than a blunt knob.
-- Seen’s troughs are no longer one height. The exit valley dips to 14, the middle valley stays at 36, and the entry returns to the bar at 24. The middle tooth is also given more width.
+Each form below is an AhmedGraf word. None of these words produced `.notdef`.
 
-The three still share the thin centerline. Against Noto they remain lighter and the kaf is not a Naskh kaf. Against PDMS they are still simpler: the heh mouth can look wide rather than soft, the kaf tip is small, and the seen rhythm is controlled but not yet a pen’s.
+| Letter | isol | init | medi | fina |
+|---|---|---|---|---|
+| ء | ءَاَنْذَرْتَھُمْ | — non-joining | — | — |
+| خ | الْاَخِ | خَتَمَ | يُخٰدِعُوْنَ | نَنْسَخْ |
+| ز | رَزَقْنٰھُمْ | — right-joining | — | اُنْزِلَ |
+| ش | — | اشْتَرَوُا | يَشْعُرُوْنَ | وَلْيَخْشَ |
+| ظ | — | ظٰلِمُوْنَ | يَظُنُّوْنَ | الْغَيْظَ |
+| ى | الَّذِى | بِاَسْمَاۗىِٕہِمْ | اُولٰۗىِٕكَ | فِىْ |
 
-Maryam and 2:282 still omit the letters left out on purpose. The corpus and the production reader were not modified.
+In `اُولٰۗىِٕكَ`, kasra sits below hamza-below. That is the only mark change: hamza-below gained a bottom anchor, and `mkmk` can stack a bottom mark on it. Joins, shadda plus fatha, superscript alif, and U+06DD still pass.
+
+## Consistency
+
+The six letters use the same thin centerline as heh, kaf, and seen. Sheen keeps seen’s uneven troughs. Zah stays in the tah family and is shorter than a heavy naskh zah. Khah’s connected head is an open arch, not a closed circle. They are still simpler than PDMS: the hamza is small, the sheen dots are plain, and the maqsura return is restrained.
+
+Words that also contain tanween (`ءٌ`, `شٍ`, `ظٌ`, `دًى`) still show a missing-glyph box for U+064B, U+064C, or U+064D. Those marks were not added. Maryam 19:1–4 and 2:282 still miss other letters that were out of scope, including U+0626.
+
+No reference outlines were imported. The corpus and the production reader were not modified.

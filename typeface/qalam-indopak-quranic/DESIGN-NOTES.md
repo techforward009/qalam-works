@@ -41,7 +41,7 @@ The AhmedGraf corpus encodes kaf as U+0643, yeh as U+064A, and heh mostly as U+0
 
 SIL Open Font License 1.1, after the outlines are reviewed as original. This phase does not claim a finished OFL release. Reserved name, when released: Qalam IndoPak Quranic.
 
-Phase 2B is a small pass on the same three letters. The heh-goal bowl is wider and its mouth stays open; the left wall is still the taller one. The kaf arm now ends in a lighter lifted tip instead of a blunt return. Seen’s three troughs are no longer level: the first dips, the middle valley stays high, and the last returns to the bar.
+Phase 2C adds six letters and does not redraw heh, kaf, or seen. Hamza is a small two-stroke letter, not the combining mark. Khah is an open head with the dot above. Zay is a reh-family descender with one dot. Sheen uses the seen wave, widened, with a compact three-dot pyramid. Zah is the tah ring and thin stem with one dot beside the stem. Alef maqsura returns like yeh when final, and is one rounded tooth when it joins both ways. The existing dot shape was not redesigned.
 
 Heh goal is a shallow open bowl: the left wall is taller, the bottom stays near the baseline, and the end turns in without closing. Final uses that same bowl plus the entry bar. Medial and initial are small asymmetric eyes from the same curve, not circles.
 
