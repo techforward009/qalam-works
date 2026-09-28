@@ -79,6 +79,7 @@ export default function Header() {
   ];
 
   const toolsLinks = [
+    { label: language === "ur" ? "قرآن کریم" : "Quran", href: "/quran/1/1" },
     { label: t.translationStudio,  href: "/tools/translation-studio" },
     { label: t.urduWriter,         href: "/tools/roman-urdu-writer" },
     { label: t.urduRomanWriter,    href: "/tools/urdu-roman-writer" },
