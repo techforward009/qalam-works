@@ -203,18 +203,20 @@ def seen_shape(form):
     """Three teeth as one wave. The bar does not run under the teeth."""
     length = {"isol": 390, "init": 350, "medi": 310, "fina": 380}[form]
     d = Draw(length)
-    origin = 78 if form in ("isol", "fina") else 4
+    origin = 70 if form in ("isol", "fina") else 4
+    # Widths and troughs differ on purpose: dip, then a high valley, then back to the bar.
     teeth = (
-        (72, 86, 0.32, 0.68),
-        (76, 138, 0.22, 0.48),
-        (70, 104, 0.40, 0.74),
+        (62, 88, 0.36, 0.72, 14),
+        (88, 134, 0.18, 0.44, 36),
+        (66, 106, 0.44, 0.76, 24),
     )
     segments = []
     x = origin
     y = 24
-    for w, h, a, b in teeth:
-        segments.append(((x, y), (x + w * a, y + h), (x + w * b, y + h * 0.9), (x + w, y)))
+    for w, h, a, b, end_y in teeth:
+        segments.append(((x, y), (x + w * a, y + h * 0.96), (x + w * b, y + h * 0.82), (x + w, end_y)))
         x += w
+        y = end_y
     wave_end = x
     bar(d, wave_end - 4, length + 18, 22)
     bar(d, -18, origin + 4, 22)
@@ -315,12 +317,12 @@ def kaf_shape(form):
         d,
         [
             ((64, 22), (88, 16), (140, 36), (176, 96)),
-            ((176, 96), (214, 170), (length - 24, 210), (length - 18, 268)),
-            ((length - 18, 268), (length * 0.55, 302), (length * 0.30, 228), (44, 196)),
-            ((44, 196), (30, 186), (34, 214), (54, 222)),
+            ((176, 96), (214, 170), (length - 24, 200), (length - 18, 258)),
+            ((length - 18, 258), (length * 0.58, 284), (length * 0.36, 232), (52, 206)),
         ],
         17,
     )
+    chain(d, [((52, 206), (36, 196), (24, 222), (34, 248))], 11)
     top_at(d, length * 0.46, 318)
     bot_at(d, length * 0.4, -8)
     return d.finish()
@@ -401,7 +403,7 @@ def heh_shape(form):
 
 
 def hehgoal_shape(form):
-    length = {"isol": 320, "init": 200, "medi": 180, "fina": 340}[form]
+    length = {"isol": 340, "init": 220, "medi": 200, "fina": 360}[form]
     d = Draw(length)
     if form == "medi":
         bar(d, -20, length + 16, 22)
@@ -409,8 +411,8 @@ def hehgoal_shape(form):
         chain(
             d,
             [
-                ((cx + 30, 18), (cx + 36, 48), (cx + 6, 78), (cx - 16, 70)),
-                ((cx - 16, 70), (cx - 34, 58), (cx - 18, 16), (cx + 8, 14)),
+                ((cx + 36, 16), (cx + 48, 46), (cx + 8, 72), (cx - 22, 64)),
+                ((cx - 22, 64), (cx - 44, 52), (cx - 20, 14), (cx + 10, 12)),
             ],
             16,
         )
@@ -433,16 +435,16 @@ def hehgoal_shape(form):
     chain(
         d,
         [
-            ((length - 14, 26), (length * 0.62, 10), (length * 0.40, -2), (length * 0.20, -16)),
-            ((length * 0.20, -16), (52, -6), (24, 34), (28, 102)),
-            ((28, 102), (32, 132), (74, 124), (112, 104)),
+            ((length - 12, 24), (length * 0.68, 12), (length * 0.42, 2), (length * 0.22, -14)),
+            ((length * 0.22, -14), (length * 0.08, -4), (34, 24), (40, 96)),
+            ((40, 96), (48, 122), (108, 114), (156, 90)),
         ],
         21,
     )
     if form == "fina":
         bar(d, length - 64, length + 16, 22)
     top_at(d, length * 0.42, 140)
-    bot_at(d, length * 0.32, -46)
+    bot_at(d, length * 0.32, -36)
     return d.finish()
 
 
@@ -1007,7 +1009,7 @@ def build():
             "styleName": "Prototype",
             "uniqueFontIdentifier": "Qalam Works: Qalam IndoPak Quranic Prototype 0.1",
             "fullName": "Qalam IndoPak Quranic Prototype",
-            "version": "Version 0.3",
+            "version": "Version 0.4",
             "psName": "QalamIndoPakQuranic-Prototype",
             "manufacturer": "Qalam Works",
             "designer": "Qalam Works",

@@ -40,7 +40,7 @@ feature mark {
     pos base dal_fina <anchor 120 168> mark @TOP;
     pos base reh <anchor 130 52> mark @TOP;
     pos base reh_fina <anchor 130 52> mark @TOP;
-    pos base seen <anchor 148 178> mark @TOP;
+    pos base seen <anchor 140 178> mark @TOP;
     pos base sad <anchor 300 186> mark @TOP;
     pos base ain <anchor 267 250> mark @TOP;
     pos base feh <anchor 310 246> mark @TOP;
@@ -60,7 +60,7 @@ feature mark {
     pos base waw <anchor 130 156> mark @TOP;
     pos base waw_fina <anchor 130 156> mark @TOP;
     pos base heh <anchor 125 148> mark @TOP;
-    pos base hehgoal <anchor 134 140> mark @TOP;
+    pos base hehgoal <anchor 143 140> mark @TOP;
     pos base hehdo <anchor 153 136> mark @TOP;
     pos base yeh <anchor 198 52> mark @TOP;
     pos base yehdotless <anchor 198 52> mark @TOP;
@@ -78,7 +78,7 @@ feature mark {
     pos base jeem_fina <anchor 308 80> mark @TOP;
     pos base seen_init <anchor 74 178> mark @TOP;
     pos base seen_medi <anchor 74 178> mark @TOP;
-    pos base seen_fina <anchor 148 178> mark @TOP;
+    pos base seen_fina <anchor 140 178> mark @TOP;
     pos base sad_init <anchor 240 186> mark @TOP;
     pos base sad_medi <anchor 210 186> mark @TOP;
     pos base sad_fina <anchor 290 186> mark @TOP;
@@ -106,9 +106,9 @@ feature mark {
     pos base heh_init <anchor 122 132> mark @TOP;
     pos base heh_medi <anchor 95 132> mark @TOP;
     pos base heh_fina <anchor 134 148> mark @TOP;
-    pos base hehgoal_init <anchor 110 108> mark @TOP;
-    pos base hehgoal_medi <anchor 90 96> mark @TOP;
-    pos base hehgoal_fina <anchor 143 140> mark @TOP;
+    pos base hehgoal_init <anchor 121 108> mark @TOP;
+    pos base hehgoal_medi <anchor 100 96> mark @TOP;
+    pos base hehgoal_fina <anchor 151 140> mark @TOP;
     pos base hehdo_init <anchor 138 136> mark @TOP;
     pos base hehdo_medi <anchor 128 136> mark @TOP;
     pos base hehdo_fina <anchor 153 136> mark @TOP;
@@ -153,7 +153,7 @@ feature mark {
     pos base dal_fina <anchor 80 -12> mark @BOT;
     pos base reh <anchor 96 -210> mark @BOT;
     pos base reh_fina <anchor 96 -210> mark @BOT;
-    pos base seen <anchor 94 -20> mark @BOT;
+    pos base seen <anchor 86 -20> mark @BOT;
     pos base sad <anchor 126 -48> mark @BOT;
     pos base ain <anchor 150 -230> mark @BOT;
     pos base feh <anchor 160 -16> mark @BOT;
@@ -173,7 +173,7 @@ feature mark {
     pos base waw <anchor 88 -170> mark @BOT;
     pos base waw_fina <anchor 88 -170> mark @BOT;
     pos base heh <anchor 104 -8> mark @BOT;
-    pos base hehgoal <anchor 102 -46> mark @BOT;
+    pos base hehgoal <anchor 109 -36> mark @BOT;
     pos base hehdo <anchor 153 -8> mark @BOT;
     pos base yeh <anchor 130 -186> mark @BOT;
     pos base yehdotless <anchor 130 -186> mark @BOT;
@@ -191,7 +191,7 @@ feature mark {
     pos base jeem_fina <anchor 123 -250> mark @BOT;
     pos base seen_init <anchor 20 -20> mark @BOT;
     pos base seen_medi <anchor 20 -20> mark @BOT;
-    pos base seen_fina <anchor 94 -20> mark @BOT;
+    pos base seen_fina <anchor 86 -20> mark @BOT;
     pos base sad_init <anchor 108 -8> mark @BOT;
     pos base sad_medi <anchor 99 -8> mark @BOT;
     pos base sad_fina <anchor 123 -48> mark @BOT;
@@ -219,9 +219,9 @@ feature mark {
     pos base heh_init <anchor 122 -8> mark @BOT;
     pos base heh_medi <anchor 95 -8> mark @BOT;
     pos base heh_fina <anchor 112 -8> mark @BOT;
-    pos base hehgoal_init <anchor 90 -8> mark @BOT;
-    pos base hehgoal_medi <anchor 90 -8> mark @BOT;
-    pos base hehgoal_fina <anchor 109 -46> mark @BOT;
+    pos base hehgoal_init <anchor 99 -8> mark @BOT;
+    pos base hehgoal_medi <anchor 100 -8> mark @BOT;
+    pos base hehgoal_fina <anchor 115 -36> mark @BOT;
     pos base hehdo_init <anchor 138 -8> mark @BOT;
     pos base hehdo_medi <anchor 128 -8> mark @BOT;
     pos base hehdo_fina <anchor 153 -8> mark @BOT;

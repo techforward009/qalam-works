@@ -1,19 +1,13 @@
-# Qalam IndoPak Quranic — Phase 2A test results
+# Qalam IndoPak Quranic — Phase 2B test results
 
-fontTools compile and HarfBuzz check still pass. Al-Fatihah 1:1–1:7 is 316 glyphs and zero `.notdef`. Glyph count remains 132. No base letters were added. `init`, `medi`, `fina`, `mark`, and `mkmk` are unchanged in structure. Kaf’s top anchor moved above the arm; heh goal’s bottom anchor moved up with the shallower bowl.
+fontTools compile and the HarfBuzz check pass. Al-Fatihah 1:1–1:7 is still 316 glyphs and zero `.notdef`. Glyph count remains 132. No letters were added.
 
-## The three letters
+## This pass
 
-Compared with the Phase 1B drawings, and with PDMS Saleem and Noto Naskh on the same AhmedGraf words (`بِسْمِ`, `اللہِ`, `مٰلِكِ`, `الَّذِينَ`, `الصِّرَاطَ`, and full Al-Fatihah):
+- Heh goal’s bowl is wider. The bottom stays near the baseline, the left wall stays taller, and the end eases across the opening instead of curling shut. The bottom anchor moved from -46 to -36 so kasra sits with the shallower bowl. Medial heh goal is a slightly wider eye.
+- Kaf’s concept is unchanged. The last part of the arm is a lighter lift, width 11 on the same centerline, so the finish is a release rather than a blunt knob.
+- Seen’s troughs are no longer one height. The exit valley dips to 14, the middle valley stays at 36, and the entry returns to the bar at 24. The middle tooth is also given more width.
 
-- Seen is one wave. The middle tooth is taller and the crests are round, not three identical pointed arches. It is more deliberate than before. It is still more even than PDMS.
-- Kaf’s arm bends and sags. It is not a straight diagonal and it is not a Naskh kaf. The terminal is still short and a little blunt.
-- Heh goal is a wider, shallower bowl with an open top. It is less of a hook than Phase 1B. The left wall is still stiffer than a pen-drawn gol he.
+The three still share the thin centerline. Against Noto they remain lighter and the kaf is not a Naskh kaf. Against PDMS they are still simpler: the heh mouth can look wide rather than soft, the kaf tip is small, and the seen rhythm is controlled but not yet a pen’s.
 
-Against Noto, all three stay thinner and the kaf and gol heh are not Naskh. Against PDMS, Qalam is more restrained and less fluid. The grammar is stronger than Phase 1B. It is not a finished calligraphic face.
-
-## Still weak
-
-The heh bowl can still look narrow in a word. The kaf terminal needs a softer release. Seen’s troughs are clean but regular. Marks on the kaf arm are clear of the stroke and still plain. Maryam and 2:282 still lack the letters left out on purpose.
-
-No reference outlines were imported. The corpus and the production reader were not modified.
+Maryam and 2:282 still omit the letters left out on purpose. The corpus and the production reader were not modified.
