@@ -6,6 +6,7 @@ import { FONT_CANDIDATES, OPEN_FONT_FINDINGS } from "../reader/fontAudit";
 import { fontComparisonBlocks } from "../reader/fontSample";
 import { ayahsOnPage, pageByNumber, pageCount } from "../reader/model";
 import { QURAN_LAYOUT_PROFILE } from "../reader/profile";
+import UthmanProbe from "./UthmanProbe";
 
 type LoadedFace = {
   family: string;
@@ -293,6 +294,7 @@ export default function FontComparison() {
           );
         })}
       </div>
+      <UthmanProbe />
     </main>
   );
 }
