@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FONT_CANDIDATES } from "../reader/fontAudit";
+import { FONT_CANDIDATES, OPEN_FONT_FINDINGS } from "../reader/fontAudit";
 import { fontComparisonBlocks } from "../reader/fontSample";
 import { QURAN_LAYOUT_PROFILE } from "../reader/profile";
 
@@ -98,6 +98,13 @@ export default function FontComparison() {
         Local test only. Choose TTF files on this machine. They stay in this browser tab, are not uploaded, and are not saved.
         Every panel uses the same canonical text, width, size, and line height. Production remains {QURAN_LAYOUT_PROFILE.productionFont}.
       </p>
+      <ul className="mt-3 max-w-3xl text-sm text-[#6d5a3c]">
+        {OPEN_FONT_FINDINGS.map((item) => (
+          <li key={item.id}>
+            {item.family}: web {item.webEmbedding}; corpus coverage {item.corpusCoverageComplete ? "complete" : "incomplete"}; not production
+          </li>
+        ))}
+      </ul>
       <label className="mt-4 block text-sm">
         Local Quran fonts
         <input

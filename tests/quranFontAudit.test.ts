@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { QURAN_SIMPLE_SHA256 } from "../app/tools/arabic-diacritics/quran/corpusIntegrity";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
-import { FONT_CANDIDATES } from "../app/quran/reader/fontAudit";
+import { FONT_CANDIDATES, OPEN_FONT_FINDINGS, OPEN_LAYOUT_PROFILE_ID } from "../app/quran/reader/fontAudit";
 import { fontComparisonBlocks } from "../app/quran/reader/fontSample";
 import { pageCount } from "../app/quran/reader/model";
 import { QURAN_LAYOUT_PROFILE } from "../app/quran/reader/profile";
@@ -54,5 +54,22 @@ describe("Quran font audit", () => {
     expect(page).not.toContain("public/fonts");
     expect(gate).toContain('process.env.NODE_ENV === "production"');
     expect(gate).toContain("notFound()");
+  });
+
+  test("open candidates stay out of production and do not claim full corpus coverage", () => {
+    expect(OPEN_LAYOUT_PROFILE_ID).toBeNull();
+    expect(OPEN_FONT_FINDINGS.map((item) => item.id)).toEqual([
+      "qf-indopak-4.2.1",
+      "digitalkhatt-indopak-0.1",
+      "noto-nastaliq-urdu",
+    ]);
+    for (const font of OPEN_FONT_FINDINGS) {
+      expect(font.productionEnabled).toBe(false);
+      expect(font.bundle).toBe(false);
+      expect(font.corpusCoverageComplete).toBe(false);
+    }
+    expect(OPEN_FONT_FINDINGS.find((item) => item.id === "digitalkhatt-indopak-0.1")?.rendersAhmedgrafDirectly).toBe(false);
+    expect(OPEN_FONT_FINDINGS.find((item) => item.id === "qf-indopak-4.2.1")?.webEmbedding).toBe("conditional");
+    expect(pageCount()).toBe(887);
   });
 });

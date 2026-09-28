@@ -72,3 +72,53 @@ export const FONT_CANDIDATES: readonly FontCandidate[] = [
     productionEnabled: false,
   },
 ];
+
+export type WebEmbedding = "confirmed" | "conditional" | "restricted" | "unknown" | "not-permitted";
+
+export type OpenFontFinding = {
+  id: string;
+  family: string;
+  source: string;
+  webEmbedding: WebEmbedding;
+  corpusCoverageComplete: boolean;
+  rendersAhmedgrafDirectly: boolean;
+  bundle: false;
+  productionEnabled: false;
+};
+
+export const OPEN_FONT_FINDINGS: readonly OpenFontFinding[] = [
+  {
+    id: "qf-indopak-4.2.1",
+    family: "AlQuran IndoPak by QuranWBW",
+    source:
+      "https://verses.quran.foundation/fonts/quran/hafs/nastaleeq/indopak/indopak-nastaleeq-waqf-lazim-v4.2.1.woff2",
+    webEmbedding: "conditional",
+    corpusCoverageComplete: false,
+    rendersAhmedgrafDirectly: true,
+    bundle: false,
+    productionEnabled: false,
+  },
+  {
+    id: "digitalkhatt-indopak-0.1",
+    family: "DigitalKhatt IndoPak",
+    source: "https://github.com/DigitalKhatt/indopakfont/releases/tag/v1.0.0-beta.1",
+    webEmbedding: "confirmed",
+    corpusCoverageComplete: false,
+    rendersAhmedgrafDirectly: false,
+    bundle: false,
+    productionEnabled: false,
+  },
+  {
+    id: "noto-nastaliq-urdu",
+    family: "Noto Nastaliq Urdu",
+    source: "https://fonts.google.com/noto/specimen/Noto+Nastaliq+Urdu",
+    webEmbedding: "confirmed",
+    corpusCoverageComplete: false,
+    rendersAhmedgrafDirectly: false,
+    bundle: false,
+    productionEnabled: false,
+  },
+];
+
+/** No open font was clear, complete, and close enough to PDMS Saleem to justify a layout profile. */
+export const OPEN_LAYOUT_PROFILE_ID = null;
