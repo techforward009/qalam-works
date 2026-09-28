@@ -78,12 +78,12 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
   const blocks = blocksFor(ayahs);
 
   return (
-    <main className="bg-[#efe8da] text-[#1c140c]" dir="rtl">
-      <div className="mx-auto max-w-6xl px-3 py-6 sm:px-6">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3" dir="ltr">
+    <main className="bg-[#e6dece] text-[#241910]" dir="rtl">
+      <div className="mx-auto max-w-5xl px-3 py-4 sm:px-6 sm:py-8">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-3" dir="ltr">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-[#6d5a3c]">Qalam Works</p>
-            <h1 className="font-naskh text-3xl text-[#1A3A2A]" dir="rtl" lang="ar">قرآن کریم</h1>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[#7a6852]">Qalam Works</p>
+            <h1 className="font-naskh text-2xl text-[#3d2e1a]" dir="rtl" lang="ar">قرآن کریم</h1>
           </div>
           <div className="flex gap-2">
             <button type="button" className={tabClass(panel === "browse")} onClick={() => setPanel(panel === "browse" ? null : "browse")}>
@@ -97,7 +97,7 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
 
         {panel === "search" && (
           <form
-            className="mb-4 rounded-xl bg-white/80 p-3"
+            className="mb-3 border-b border-[#c4a36a]/40 pb-3"
             onSubmit={(event) => {
               event.preventDefault();
               setSearched(true);
@@ -109,9 +109,9 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                className="min-w-0 flex-1 rounded-lg border border-[#c4a36a]/50 bg-[#fbf6ea] px-3 py-2 font-naskh text-lg"
+                className="min-w-0 flex-1 border border-[#c4a36a]/40 bg-[#fbf6ea] px-3 py-2 font-naskh text-lg"
               />
-              <button type="submit" className="rounded-lg bg-[#1A3A2A] px-4 py-2 text-sm text-white">
+              <button type="submit" className="border border-[#3d2e1a]/30 px-4 py-2 text-sm text-[#3d2e1a]">
                 ابحث
               </button>
             </label>
@@ -129,7 +129,7 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
         )}
 
         {panel === "browse" && (
-          <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-white/80 p-3 sm:grid-cols-4" dir="ltr">
+          <div className="mb-4 grid grid-cols-2 gap-2 border-b border-[#c4a36a]/40 pb-3 sm:grid-cols-4" dir="ltr">
             <Select label="Surah" value={surah} onChange={(value) => go({ surah: value, ayah: 1 })}>
               {SURAH_NAMES.map((name, index) => (
                 <option key={name} value={index + 1}>
@@ -179,46 +179,39 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
           </div>
         )}
 
-        <div className="mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 font-naskh text-[#3d2e1a]" dir="ltr">
-          <div className="text-left text-lg sm:text-2xl">{surahTitle(surah)}</div>
-          <div className="flex items-center gap-2">
-            <NavButton label="Previous page" disabled={!adjacentPage(page.page, -1)} onClick={() => {
-              const previous = adjacentPage(page.page, -1);
-              if (previous) go({ surah: previous.surahStart, ayah: previous.ayahStart });
-            }}>
-              ◀
-            </NavButton>
-            <span className="min-w-16 text-center text-2xl">{easternDigits(page.page)}</span>
-            <NavButton label="Next page" disabled={!adjacentPage(page.page, 1)} onClick={() => {
-              const next = adjacentPage(page.page, 1);
-              if (next) go({ surah: next.surahStart, ayah: next.ayahStart });
-            }}>
-              ▶
-            </NavButton>
-          </div>
-          <div className="text-right text-lg sm:text-2xl">{juzTitle(juz)}</div>
-        </div>
-
         <div className="flex justify-center">
           <article
-            className="w-full border-[10px] border-[#e7d3ae] bg-[#fbf6ea] px-5 py-8 shadow-[inset_0_0_0_1px_#b8905a,inset_0_0_0_8px_#fbf6ea,inset_0_0_0_9px_#b8905a] sm:px-10"
+            className="w-full border border-[#c4a36a] bg-[#fbf6ea] px-4 py-6 shadow-[inset_0_0_0_1px_#fbf6ea,inset_0_0_0_4px_#e7d3ae] sm:px-12 sm:py-8"
             style={{
               maxWidth: QURAN_LAYOUT_PROFILE.pageWidthPx,
               minHeight: QURAN_LAYOUT_PROFILE.pageMinHeightPx,
               fontFamily: QURAN_FONT_STACK,
-              fontSize: `${Math.round(28 * scale)}px`,
+              fontSize: `${Math.round(QURAN_LAYOUT_PROFILE.fontSizePx * scale)}px`,
             }}
             lang="ar"
           >
+            <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 border-b border-[#c4a36a]/80 pb-3 font-naskh text-[#3d2e1a]" dir="ltr">
+              <div className="text-left text-base leading-tight sm:text-xl">{surahTitle(surah)}</div>
+              <div className="flex items-center gap-1">
+                <NavButton label="Previous page" disabled={!adjacentPage(page.page, -1)} onClick={() => {
+                  const previous = adjacentPage(page.page, -1);
+                  if (previous) go({ surah: previous.surahStart, ayah: previous.ayahStart });
+                }}>
+                  ‹
+                </NavButton>
+                <span className="min-w-12 text-center text-xl sm:text-2xl">{easternDigits(page.page)}</span>
+                <NavButton label="Next page" disabled={!adjacentPage(page.page, 1)} onClick={() => {
+                  const next = adjacentPage(page.page, 1);
+                  if (next) go({ surah: next.surahStart, ayah: next.ayahStart });
+                }}>
+                  ›
+                </NavButton>
+              </div>
+              <div className="text-right text-base leading-tight sm:text-xl">{juzTitle(juz)}</div>
+            </header>
             {blocks.map((block) => {
               if (block.kind === "surah") {
-                return (
-                  <div key={`s-${block.surah}`} className="mx-auto my-6 max-w-md px-6 py-3 text-center">
-                    <div className="border-y-2 border-[#b8905a] py-2">
-                      <div className="border-y border-[#b8905a]/70 py-1 text-[1.65rem] leading-normal">{surahTitle(block.surah)}</div>
-                    </div>
-                  </div>
-                );
+                return <SurahBand key={`s-${block.surah}`} name={surahTitle(block.surah)} />;
               }
               if (block.kind === "bismillah") {
                 const active = block.surah === surah && block.ayah === ayah;
@@ -226,7 +219,7 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
                   <p
                     key={`b-${block.id}`}
                     id={block.anchor ? `ayah-${block.surah}-${block.ayah}` : undefined}
-                    className={`mb-5 text-center text-[1.55rem] leading-loose ${active && block.anchor ? "bg-[#f3e2b8]" : ""}`}
+                    className={`mb-6 text-center text-[1.35rem] leading-relaxed ${active && block.anchor ? "bg-[#f3ead4]" : ""}`}
                   >
                     {block.text}
                   </p>
@@ -237,7 +230,7 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
                   key={block.ids}
                   dir="rtl"
                   lang="ar"
-                  className="mb-2 text-justify text-[1.65rem]"
+                  className="mb-2 text-justify"
                   style={{ lineHeight: QURAN_LAYOUT_PROFILE.lineHeight, unicodeBidi: "plaintext" }}
                 >
                   {block.ayahs.map((item, index) => (
@@ -245,7 +238,7 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
                       {index > 0 ? " " : ""}
                       <span
                         id={item.anchor ? `ayah-${item.surah}-${item.ayah}` : undefined}
-                        className={`quran-ayah inline rounded-sm ${item.anchor && item.surah === surah && item.ayah === ayah ? "bg-[#f3e2b8]" : ""}`}
+                        className={`quran-ayah inline ${item.anchor && item.surah === surah && item.ayah === ayah ? "bg-[#f3ead4]" : ""}`}
                         style={{ boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}
                       >
                         {item.text}
@@ -258,25 +251,25 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
           </article>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2" dir="ltr">
+        <div className="mx-auto mt-3 flex max-w-[760px] flex-wrap items-center justify-between gap-2 text-[#5c4a32]" dir="ltr">
           <div className="flex gap-2">
             <NavButton label="Previous ayah" disabled={!adjacentAyah(surah, ayah, -1)} onClick={() => go(adjacentAyah(surah, ayah, -1))}>
-              Previous ayah
+              الآية السابقة
             </NavButton>
             <NavButton label="Next ayah" disabled={!adjacentAyah(surah, ayah, 1)} onClick={() => go(adjacentAyah(surah, ayah, 1))}>
-              Next ayah
+              الآية التالية
             </NavButton>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-[#6d5a3c]">
+            <label className="text-sm">
               Scale
-              <select className="ms-2 rounded border border-[#c4a36a]/60 bg-white px-2 py-1" value={scale} aria-label="Display scale" onChange={(event) => setScale(Number(event.target.value))}>
+              <select className="ms-2 border border-[#c4a36a]/50 bg-transparent px-2 py-1" value={scale} aria-label="Display scale" onChange={(event) => setScale(Number(event.target.value))}>
                 <option value={0.85}>Small</option>
                 <option value={1}>Medium</option>
                 <option value={1.12}>Large</option>
               </select>
             </label>
-            <button type="button" className="rounded-lg border border-[#1A3A2A]/20 px-3 py-1.5 text-sm" onClick={copy}>
+            <button type="button" className="border border-[#c4a36a]/50 px-3 py-1.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d2e1a]" onClick={copy}>
               {copied ? "Copied" : "Copy page"}
             </button>
           </div>
@@ -333,14 +326,36 @@ function blocksFor(ayahs: readonly QuranAyah[]) {
 }
 
 function tabClass(active: boolean): string {
-  return `rounded-lg px-3 py-1.5 text-sm ${active ? "bg-[#1A3A2A] text-white" : "bg-white text-[#1A3A2A]"}`;
+  return `px-3 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d2e1a] ${active ? "border-b border-[#3d2e1a] text-[#241910]" : "text-[#7a6852]"}`;
 }
 
 function NavButton({ label, disabled, onClick, children }: { label: string; disabled: boolean; onClick: () => void; children: string }) {
   return (
-    <button type="button" aria-label={label} disabled={disabled} onClick={onClick} className="rounded-lg border border-[#1A3A2A]/20 bg-white px-3 py-1.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1A3A2A] disabled:opacity-40">
+    <button type="button" aria-label={label} disabled={disabled} onClick={onClick} className="px-2 py-1 text-sm text-[#5c4a32] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d2e1a] disabled:opacity-40">
       {children}
     </button>
+  );
+}
+
+function SurahBand({ name }: { name: string }) {
+  return (
+    <div className="mx-auto my-4 flex max-w-md items-center gap-3">
+      <BandRule />
+      <div className="shrink-0 border-y border-[#a78445] px-5 py-1 text-center text-[1.35rem] leading-normal">{name}</div>
+      <BandRule />
+    </div>
+  );
+}
+
+function BandRule() {
+  return (
+    <span className="flex min-w-8 flex-1 items-center gap-1 text-[#a78445]" aria-hidden="true">
+      <span className="h-px flex-1 bg-[#a78445]" />
+      <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 shrink-0" fill="currentColor">
+        <path d="M6 0 L12 6 L6 12 L0 6 Z" />
+      </svg>
+      <span className="h-px flex-1 bg-[#a78445]" />
+    </span>
   );
 }
 
@@ -348,7 +363,7 @@ function Select({ label, value, onChange, children }: { label: string; value: nu
   return (
     <label className="text-xs text-[#6d5a3c]">
       {label}
-      <select aria-label={label} className="mt-1 w-full rounded border border-[#c4a36a]/50 bg-[#fbf6ea] px-2 py-1 text-sm" value={value} onChange={(event) => onChange(Number(event.target.value))}>
+      <select aria-label={label} className="mt-1 w-full border border-[#c4a36a]/40 bg-transparent px-2 py-1 text-sm" value={value} onChange={(event) => onChange(Number(event.target.value))}>
         {children}
       </select>
     </label>

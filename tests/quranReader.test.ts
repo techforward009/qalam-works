@@ -104,6 +104,9 @@ describe("Quran reader", () => {
     expect(copied).not.toContain("Search");
     const source = readFileSync("app/quran/QuranReader.tsx", "utf8");
     expect(source).toContain('className={`quran-ayah inline');
+    expect(source).toContain("QURAN_FONT_STACK");
+    expect(source).toContain("QURAN_LAYOUT_PROFILE.lineHeight");
+    expect(source).not.toContain("skew");
     expect(source).toContain('dir="rtl"');
   });
 
