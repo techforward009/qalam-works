@@ -2,16 +2,11 @@ import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahm
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
 import type { QuranAyah } from "../../tools/arabic-diacritics/quran/types";
 import { JUZ_STARTS } from "./metadata";
+import { TANZIL_PAGE_STARTS } from "./tanzilPageMap";
 import { QURAN_LAYOUT_PROFILE } from "./profile";
 
 const END_SIGN = "\u06dd";
 
-/**
- * Quranic combining marks and layout-only characters.
- *
- * These characters are preserved in the source text. They are ignored
- * only for synthetic pagination estimates.
- */
 const ZERO_WIDTH =
   /[\u0640\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/u;
 
@@ -41,23 +36,46 @@ const ayahs = ahmedgrafQuranReference.listAyahs();
 const byIndex = ayahs;
 
 const indexById = new Map(
-  ayahs.map((ayah, index) => [ayah.id, index]),
+  ayahs.map((ayah, index) => [
+    ayah.id,
+    index,
+  ]),
+);
+
+const indexByAyah = new Map(
+  ayahs.map((ayah, index) => [
+    `${ayah.surah}:${ayah.ayah}`,
+    index,
+  ]),
 );
 
 /**
  * Extract the Bismillah prefix from the first Quran record.
  *
- * This is used only for visual splitting. The underlying source text
- * remains untouched.
+ * This is used only for visual splitting.
+ * The source Quran text itself is never rewritten.
  */
 function bismillahPrefix(): string {
-  const first = byIndex[0]?.text ?? "";
-  const at = first.indexOf(END_SIGN);
+  const first =
+    byIndex[0]?.text ?? "";
 
-  return (at >= 0 ? first.slice(0, at) : first).trim();
+  const at =
+    first.indexOf(
+      END_SIGN,
+    );
+
+  return (
+    at >= 0
+      ? first.slice(
+          0,
+          at,
+        )
+      : first
+  ).trim();
 }
 
-const BISMILLAH_PREFIX = bismillahPrefix();
+const BISMILLAH_PREFIX =
+  bismillahPrefix();
 
 export function displayPieces(
   ayah: QuranAyah,
@@ -93,13 +111,14 @@ export function displayPieces(
 }
 
 /**
- * Synthetic visual width estimate.
+ * Count approximate visual units.
  *
- * Quran source text is not altered here.
- * Combining/layout marks are excluded from the estimate because their
- * advance width is normally supplied by the base glyph/OpenType layout.
+ * This function is retained for diagnostics / compatibility only.
+ * It is no longer used to determine Quran page boundaries.
  */
-export function layoutUnits(text: string): number {
+export function layoutUnits(
+  text: string,
+): number {
   let units = 0;
 
   for (const ch of text) {
@@ -108,7 +127,8 @@ export function layoutUnits(text: string): number {
     }
 
     units +=
-      ch === " " || ch === "\t"
+      ch === " " ||
+      ch === "\t"
         ? 0.35
         : 1;
   }
@@ -116,93 +136,20 @@ export function layoutUnits(text: string): number {
   return units;
 }
 
-/**
- * Estimate the number of visual lines occupied by a text fragment.
- *
- * The production page is intentionally allowed to carry slightly more
- * Quran text than the previous synthetic pagination pass. This keeps the
- * 770 × 1000 reading surface from looking sparsely populated while still
- * leaving the actual browser layout responsible for line wrapping.
- */
-function lineCount(text: string): number {
-  if (!text.trim()) {
-    return 0;
-  }
-
-  const units = layoutUnits(text);
-
-  /**
-   * The previous profile used 42 units per synthetic line.
-   * A slightly higher value packs the page more densely.
-   *
-   * This is a pagination estimate only; it does not modify the text.
-   */
-  const packingUnitsPerLine =
-    Math.max(
-      QURAN_LAYOUT_PROFILE.unitsPerLine,
-      46,
-    );
-
-  return Math.max(
-    1,
-    Math.ceil(
-      units / packingUnitsPerLine,
-    ),
-  );
-}
-
-/**
- * Estimate the visual cost of one ayah.
- *
- * Surah headings and Bismillah are given a compact reservation so that
- * they do not consume excessive pagination budget compared with the
- * actual reading surface.
- */
-function ayahCost(
-  ayah: QuranAyah,
-): number {
-  const pieces = displayPieces(ayah);
-
-  let lines =
-    ayah.ayah === 1
-      ? Math.max(
-          1,
-          QURAN_LAYOUT_PROFILE
-            .surahHeaderLines - 1,
-        )
-      : 0;
-
-  if (
-    pieces[0]?.kind ===
-    "bismillah"
-  ) {
-    lines += Math.max(
-      1,
-      QURAN_LAYOUT_PROFILE
-        .bismillahLines - 1,
-    );
-  }
-
-  lines += lineCount(
-    pieces[
-      pieces.length - 1
-    ]?.text ?? "",
-  );
-
-  return lines;
-}
-
 function pageRef(
   fromIndex: number,
   toIndex: number,
   page: number,
 ): QuranPageRef {
-  const start = byIndex[fromIndex];
-  const end = byIndex[toIndex];
+  const start =
+    byIndex[fromIndex];
+
+  const end =
+    byIndex[toIndex];
 
   if (!start || !end) {
     throw new Error(
-      "page range is outside the Quran",
+      `Quran page ${page} is outside the Quran corpus`,
     );
   }
 
@@ -210,101 +157,167 @@ function pageRef(
     page,
     fromIndex,
     toIndex,
-    surahStart: start.surah,
-    ayahStart: start.ayah,
-    surahEnd: end.surah,
-    ayahEnd: end.ayah,
+    surahStart:
+      start.surah,
+    ayahStart:
+      start.ayah,
+    surahEnd:
+      end.surah,
+    ayahEnd:
+      end.ayah,
   };
 }
 
 /**
- * Build synthetic reading pages.
+ * Resolve a Tanzil page-map tuple to the corresponding corpus index.
+ */
+function indexForPageStart(
+  page: number,
+  surah: number,
+  ayah: number,
+): number {
+  const key = `${surah}:${ayah}`;
+
+  const index =
+    indexByAyah.get(key);
+
+  if (index === undefined) {
+    throw new Error(
+      `Tanzil page ${page} starts at missing Quran ayah ${key}`,
+    );
+  }
+
+  return index;
+}
+
+/**
+ * Build the fixed 604-page map.
  *
- * This is deliberately NOT a Mushaf-page migration.
- * There is no replacement of the Quran corpus and no new external
- * page-map source here.
+ * The page boundaries come from Tanzil metadata.
  *
- * The goal is only to make each Qalam reading page visually fuller.
+ * The source Quran corpus remains ahmedgrafQuranReference.
+ * This file only maps existing ayahs into fixed page ranges.
  */
 function buildPages(): QuranPageRef[] {
-  const pages: QuranPageRef[] = [];
-
-  let from = 0;
-  let used = 0;
-
-  /**
-   * Give the reading surface a little more vertical content than the
-   * previous 15-line estimate.
-   *
-   * The actual CSS/browser wrapping still determines the true visual
-   * line breaks.
-   */
-  const pageBudget =
-    Math.max(
-      QURAN_LAYOUT_PROFILE.linesPerPage,
-      QURAN_LAYOUT_PROFILE.linesPerPage + 2,
+  if (
+    TANZIL_PAGE_STARTS.length !==
+    604
+  ) {
+    throw new Error(
+      `Expected 604 Tanzil page starts, received ${TANZIL_PAGE_STARTS.length}`,
     );
+  }
+
+  const pages: QuranPageRef[] =
+    [];
+
+  let previousStart =
+    -1;
 
   for (
-    let index = 0;
-    index < byIndex.length;
-    index += 1
+    let i = 0;
+    i <
+    TANZIL_PAGE_STARTS.length;
+    i += 1
   ) {
-    const ayah = byIndex[index];
+    const [
+      page,
+      surah,
+      ayah,
+    ] =
+      TANZIL_PAGE_STARTS[i];
 
-    if (!ayah) {
-      continue;
-    }
-
-    const cost = ayahCost(ayah);
-
-    if (
-      index > from &&
-      used + cost > pageBudget
-    ) {
-      pages.push(
-        pageRef(
-          from,
-          index - 1,
-          pages.length + 1,
-        ),
+    const startIndex =
+      indexForPageStart(
+        page,
+        surah,
+        ayah,
       );
-
-      from = index;
-      used = 0;
-    }
-
-    used += cost;
 
     /**
-     * Prevent an unusually long ayah from causing an endless or empty
-     * page boundary.
+     * Page starts must move strictly forward.
      */
     if (
-      cost > pageBudget
+      startIndex <=
+      previousStart
     ) {
-      pages.push(
-        pageRef(
-          from,
-          index,
-          pages.length + 1,
-        ),
+      throw new Error(
+        `Invalid Tanzil page order at page ${page}`,
       );
-
-      from = index + 1;
-      used = 0;
     }
+
+    previousStart =
+      startIndex;
+
+    const next =
+      TANZIL_PAGE_STARTS[
+        i + 1
+      ];
+
+    const endIndex =
+      next
+        ? indexForPageStart(
+            next[0],
+            next[1],
+            next[2],
+          ) - 1
+        : byIndex.length - 1;
+
+    if (
+      endIndex <
+      startIndex
+    ) {
+      throw new Error(
+        `Invalid Quran range for page ${page}`,
+      );
+    }
+
+    pages.push(
+      pageRef(
+        startIndex,
+        endIndex,
+        page,
+      ),
+    );
+  }
+
+  /**
+   * Final integrity checks.
+   */
+  if (
+    pages.length !==
+    604
+  ) {
+    throw new Error(
+      `Expected 604 Quran pages, received ${pages.length}`,
+    );
+  }
+
+  const first =
+    pages[0];
+
+  const last =
+    pages[
+      pages.length - 1
+    ];
+
+  if (
+    first?.page !== 1 ||
+    first.surahStart !== 1 ||
+    first.ayahStart !== 1
+  ) {
+    throw new Error(
+      "Quran page 1 must start at 1:1",
+    );
   }
 
   if (
-    from < byIndex.length
+    last?.page !== 604 ||
+    last.surahEnd !== 114 ||
+    last.ayahEnd !== 6
   ) {
-    pages.push(
-      pageRef(
-        from,
-        byIndex.length - 1,
-        pages.length + 1,
-      ),
+    throw new Error(
+      "Quran page 604 must end at 114:6",
     );
   }
 
@@ -319,14 +332,45 @@ const pageByIndex =
     byIndex.length,
   );
 
-for (const page of quranPages) {
+for (
+  const page of quranPages
+) {
   for (
-    let index = page.fromIndex;
-    index <= page.toIndex;
+    let index =
+      page.fromIndex;
+    index <=
+      page.toIndex;
     index += 1
   ) {
+    if (
+      pageByIndex[index] !==
+      undefined
+    ) {
+      throw new Error(
+        `Ayah index ${index} is assigned to more than one Quran page`,
+      );
+    }
+
     pageByIndex[index] =
       page.page;
+  }
+}
+
+/**
+ * Every corpus ayah must belong to exactly one fixed page.
+ */
+for (
+  let index = 0;
+  index < byIndex.length;
+  index += 1
+) {
+  if (
+    pageByIndex[index] ===
+    undefined
+  ) {
+    throw new Error(
+      `Ayah index ${index} is missing from the Quran page map`,
+    );
   }
 }
 
@@ -348,9 +392,13 @@ function requireAyah(
   }
 
   const index =
-    indexById.get(found.id);
+    indexById.get(
+      found.id,
+    );
 
-  if (index === undefined) {
+  if (
+    index === undefined
+  ) {
     return null;
   }
 
@@ -433,7 +481,8 @@ export function copyPageText(
 ): string {
   return ayahsOnPage(page)
     .map(
-      (ayah) => ayah.text,
+      (ayah) =>
+        ayah.text,
     )
     .join("\n");
 }
@@ -463,8 +512,10 @@ export function adjacentAyah(
 
   return next
     ? {
-        surah: next.surah,
-        ayah: next.ayah,
+        surah:
+          next.surah,
+        ayah:
+          next.ayah,
       }
     : null;
 }
@@ -490,11 +541,14 @@ export function juzOf(
     if (
       surah > start.surah ||
       (
-        surah === start.surah &&
-        ayah >= start.ayah
+        surah ===
+          start.surah &&
+        ayah >=
+          start.ayah
       )
     ) {
-      current = start.juz;
+      current =
+        start.juz;
     }
   }
 
@@ -550,13 +604,16 @@ export function searchQuran(
     return [];
   }
 
-  const hits: SearchHit[] = [];
+  const hits: SearchHit[] =
+    [];
 
   for (
     const ayah of byIndex
   ) {
     const words =
-      wordKeys(ayah.text);
+      wordKeys(
+        ayah.text,
+      );
 
     let found = false;
 
@@ -574,7 +631,8 @@ export function searchQuran(
             offset,
           ) =>
             words[
-              index + offset
+              index +
+                offset
             ] === needle,
         );
 
@@ -613,9 +671,10 @@ export function selectQuranFont(
   profile: string;
 } {
   return {
-    family: pdmsAvailable
-      ? QURAN_LAYOUT_PROFILE.referenceFont
-      : QURAN_LAYOUT_PROFILE.productionFont,
+    family:
+      pdmsAvailable
+        ? QURAN_LAYOUT_PROFILE.referenceFont
+        : QURAN_LAYOUT_PROFILE.productionFont,
 
     bundled: false,
 
