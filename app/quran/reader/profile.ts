@@ -1,13 +1,16 @@
 /**
  * One layout profile. Page breaks come from these constants, not from the
  * viewport and not from a 604- or 548-page mushaf.
- * PDMS Saleem is a local reference face only. It is not bundled.
- * Production text uses Noto Naskh Arabic, already licensed in this app.
- * Amiri leaves the Indo-Pak end-of-ayah sign unenclosed, so it is only a fallback.
+ *
+ * The production Quran Reader uses Al Majeed Quranic as its primary web font.
+ * PDMS Saleem is retained only as a local/reference face and is not bundled.
+ *
+ * Page geometry and pagination values are intentionally unchanged for now.
+ * They will be re-evaluated after visual review with the production font.
  */
 export const QURAN_LAYOUT_PROFILE = {
   id: "qalam-indopak-v1",
-  productionFont: "Noto Naskh Arabic",
+  productionFont: "Al Majeed Quranic",
   referenceFont: "PDMS Saleem Quran",
   pdmsBundled: false,
   pageWidthPx: 760,
