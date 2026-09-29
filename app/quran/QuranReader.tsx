@@ -22,43 +22,6 @@ import {
 } from "./reader/model";
 import { QURAN_FONT_STACK, QURAN_LAYOUT_PROFILE } from "./reader/profile";
 
-// ── Surgical Fix for Specific Glyph Collisions ─────────────────────────────
-// Isolates critical marks to prevent font ligature errors (e.g., Madda vs Small Qaf)
-const CRITICAL_MARKS = /([\u06D6-\u06DC\u06DF-\u06ED])/g; 
-// Range includes: ۗۘۙۚۛۜ۝۞ۣ۟۠ۡۢۤۥۦۧۨ۩ۭ۫۬
-
-function renderQuranText(text: string): React.ReactNode {
-  const parts = text.split(CRITICAL_MARKS);
-  
-  // Fast path: if no critical marks found, return original string
-  if (parts.length === 1) {
-    return text;
-  }
-
-  const nodes: React.ReactNode[] = [];
-  parts.forEach((part, index) => {
-    if (!part) return;
-    
-    // If this part matches a critical mark
-    if (CRITICAL_MARKS.test(part)) {
-      nodes.push(
-        <span 
-          key={`m-${index}`} 
-          className="quran-isolated-mark"
-          aria-hidden="true"
-        >
-          {part}
-        </span>
-      );
-    } else {
-      // Normal text chunk
-      nodes.push(part);
-    }
-  });
-
-  return <>{nodes}</>;
-}
-
 function href(surah: number, ayah: number): string {
   return `/quran/${surah}/${ayah}`;
 }
@@ -345,10 +308,10 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
             Indo-Pak Quran Text, version 1.0. Source:{" "}
             <a className="underline" href="http://ahmedgraf.com">
               ahmedgraf.com
-            </a>.
-            Page count ({pages}) is the Qalam layout profile{" "}
-            {QURAN_LAYOUT_PROFILE.id}, not a 604-page or Taj page count.
-            PDMS Saleem is not bundled. The production face is{" "}
+            </a>
+            . Page count ({pages}) is the Qalam layout profile{" "}
+            {QURAN_LAYOUT_PROFILE.id}, not a 604-page or Taj page count. PDMS Saleem
+            is not bundled. The production face is{" "}
             {QURAN_LAYOUT_PROFILE.productionFont}.
           </p>
         </details>
@@ -441,8 +404,7 @@ function QuranPageSurface({
         }
 
         if (block.kind === "bismillah") {
-          const active =
-            block.surah === surah && block.ayah === ayah;
+          const active = block.surah === surah && block.ayah === ayah;
 
           return (
             <p
@@ -494,8 +456,7 @@ function QuranPageSurface({
                     WebkitBoxDecorationBreak: "clone",
                   }}
                 >
-                  {/* --- CHANGE HERE: Use renderQuranText helper --- */}
-                  {renderQuranText(item.text)}
+                  {item.text}
                 </span>
               </span>
             ))}
