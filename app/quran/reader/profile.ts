@@ -22,4 +22,4 @@ export const QURAN_LAYOUT_PROFILE = {
 } as const;
 
 export const QURAN_FONT_STACK =
-  '"PDMS Saleem Quran", var(--font-naskh), "Noto Naskh Arabic", var(--font-amiri), Amiri, serif';
+  '"Al Majeed Quranic", var(--font-naskh), "Noto Naskh Arabic", var(--font-amiri), Amiri, serif';
