@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { easternDigits, juzTitle, surahTitle, SURAH_NAMES } from "./reader/metadata";
@@ -22,9 +22,34 @@ import {
 } from "./reader/model";
 import { QURAN_FONT_STACK, QURAN_LAYOUT_PROFILE } from "./reader/profile";
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const LAST_READ_KEY = "qalam-quran-last-read";
+const SCALE_MIN = 0.7;
+const SCALE_MAX = 2.0;
+const SCALE_STEP = 0.05;
+
 function href(surah: number, ayah: number): string {
   return `/quran/${surah}/${ayah}`;
 }
+
+function loadLastRead(): { surah: number; ayah: number } | null {
+  try {
+    const raw = localStorage.getItem(LAST_READ_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.surah === "number" && typeof parsed.ayah === "number") return parsed;
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveLastRead(surah: number, ayah: number): void {
+  try {
+    localStorage.setItem(LAST_READ_KEY, JSON.stringify({ surah, ayah }));
+  } catch { /* ignore */ }
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function QuranReader({ surah, ayah }: { surah: number; ayah: number }) {
   const router = useRouter();
@@ -39,11 +64,23 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
   const ayahs = useMemo(() => (page ? ayahsOnPage(page.page) : []), [page]);
   const juz = juzOf(surah, ayah);
   const pages = pageCount();
+  const lastSavedRef = useRef("");
 
+  // Save last read position
+  useEffect(() => {
+    const key = `${surah}:${ayah}`;
+    if (key !== lastSavedRef.current) {
+      lastSavedRef.current = key;
+      saveLastRead(surah, ayah);
+    }
+  }, [surah, ayah]);
+
+  // Scroll active ayah into view
   useEffect(() => {
     document.getElementById(`ayah-${surah}-${ayah}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [surah, ayah]);
 
+  // Keyboard navigation
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.altKey && event.key === "ArrowLeft" && page) {
@@ -78,24 +115,27 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
   return (
     <main className="bg-[#e6dece] text-[#241910]" dir="rtl">
       <div className="mx-auto max-w-5xl px-3 py-4 sm:px-6 sm:py-8">
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-3" dir="ltr">
+
+        {/* ── Header ──────────────────────────────────────────────────── */}
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3" dir="ltr">
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-[#7a6852]">Qalam Works</p>
             <h1 className="font-naskh text-2xl text-[#3d2e1a]" dir="rtl" lang="ar">قرآن کریم</h1>
           </div>
-          <div className="flex gap-2">
-            <button type="button" className={tabClass(panel === "browse")} onClick={() => setPanel(panel === "browse" ? null : "browse")}>
+          <div className="flex gap-1">
+            <TabButton active={panel === "browse"} onClick={() => setPanel(panel === "browse" ? null : "browse")}>
               Browse
-            </button>
-            <button type="button" className={tabClass(panel === "search")} onClick={() => setPanel(panel === "search" ? null : "search")}>
+            </TabButton>
+            <TabButton active={panel === "search"} onClick={() => setPanel(panel === "search" ? null : "search")}>
               Search
-            </button>
+            </TabButton>
           </div>
         </div>
 
+        {/* ── Search Panel ────────────────────────────────────────────── */}
         {panel === "search" && (
           <form
-            className="mb-3 border-b border-[#c4a36a]/40 pb-3"
+            className="mb-4 rounded-lg border border-[#c4a36a]/30 bg-[#fbf6ea]/60 p-3"
             onSubmit={(event) => {
               event.preventDefault();
               setSearched(true);
@@ -107,76 +147,53 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                className="min-w-0 flex-1 border border-[#c4a36a]/40 bg-[#fbf6ea] px-3 py-2 font-naskh text-lg"
+                placeholder="ابحث في القرآن…"
+                className="min-w-0 flex-1 rounded border border-[#c4a36a]/40 bg-white px-3 py-2 font-naskh text-lg outline-none focus:border-[#a78445]"
               />
-              <button type="submit" className="border border-[#3d2e1a]/30 px-4 py-2 text-sm text-[#3d2e1a]">
+              <button type="submit" className="rounded border border-[#3d2e1a]/30 bg-[#3d2e1a]/5 px-4 py-2 text-sm font-medium text-[#3d2e1a] hover:bg-[#3d2e1a]/10">
                 ابحث
               </button>
             </label>
-            <ul className="mt-3 max-h-48 space-y-1 overflow-auto">
+            <ul className="mt-3 max-h-48 space-y-0.5 overflow-auto rounded">
               {hits.map((hit) => (
                 <li key={hit.id}>
-                  <Link href={href(hit.surah, hit.ayah)} className="block rounded px-2 py-1 font-naskh hover:bg-[#f3e2b8]">
+                  <Link href={href(hit.surah, hit.ayah)} className="block rounded px-3 py-1.5 font-naskh text-sm hover:bg-[#f3e2b8]">
                     {surahTitle(hit.surah)} — {easternDigits(hit.ayah)}
                   </Link>
                 </li>
               ))}
-              {searched && hits.length === 0 && <li className="px-2 text-sm text-[#6d5a3c]">لا نتيجة</li>}
+              {searched && hits.length === 0 && <li className="px-3 py-2 text-sm text-[#6d5a3c]">لا نتيجة</li>}
             </ul>
           </form>
         )}
 
+        {/* ── Browse Panel ────────────────────────────────────────────── */}
         {panel === "browse" && (
-          <div className="mb-4 grid grid-cols-2 gap-2 border-b border-[#c4a36a]/40 pb-3 sm:grid-cols-4" dir="ltr">
+          <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg border border-[#c4a36a]/30 bg-[#fbf6ea]/60 p-3 sm:grid-cols-4" dir="ltr">
             <Select label="Surah" value={surah} onChange={(value) => go({ surah: value, ayah: 1 })}>
               {SURAH_NAMES.map((name, index) => (
-                <option key={name} value={index + 1}>
-                  {index + 1}. {name}
-                </option>
+                <option key={name} value={index + 1}>{index + 1}. {name}</option>
               ))}
             </Select>
-            <Select
-              label="Ayah"
-              value={ayah}
-              onChange={(value) => go({ surah, ayah: value })}
-            >
+            <Select label="Ayah" value={ayah} onChange={(value) => go({ surah, ayah: value })}>
               {Array.from({ length: HAFS_AYAH_COUNTS[surah - 1] ?? 0 }, (_, index) => (
-                <option key={index + 1} value={index + 1}>
-                  {index + 1}
-                </option>
+                <option key={index + 1} value={index + 1}>{index + 1}</option>
               ))}
             </Select>
-            <Select
-              label="Juz"
-              value={juz}
-              onChange={(value) => {
-                const start = juzStart(value);
-                if (start) go(start);
-              }}
-            >
+            <Select label="Juz" value={juz} onChange={(value) => { const start = juzStart(value); if (start) go(start); }}>
               {Array.from({ length: 30 }, (_, index) => (
-                <option key={index + 1} value={index + 1}>
-                  {index + 1}
-                </option>
+                <option key={index + 1} value={index + 1}>{index + 1}</option>
               ))}
             </Select>
-            <Select
-              label="Page"
-              value={page.page}
-              onChange={(value) => {
-                const ref = pageByNumber(value);
-                if (ref) go({ surah: ref.surahStart, ayah: ref.ayahStart });
-              }}
-            >
+            <Select label="Page" value={page.page} onChange={(value) => { const ref = pageByNumber(value); if (ref) go({ surah: ref.surahStart, ayah: ref.ayahStart }); }}>
               {Array.from({ length: pages }, (_, index) => (
-                <option key={index + 1} value={index + 1}>
-                  {index + 1}
-                </option>
+                <option key={index + 1} value={index + 1}>{index + 1}</option>
               ))}
             </Select>
           </div>
         )}
 
+        {/* ── Quran Page ──────────────────────────────────────────────── */}
         <div className="flex justify-center">
           <QuranPageSurface
             surah={surah}
@@ -185,48 +202,56 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
             ayahs={ayahs}
             fontFamily={QURAN_FONT_STACK}
             scale={scale}
-            onPreviousPage={() => {
-              const previous = adjacentPage(page.page, -1);
-              if (previous) go({ surah: previous.surahStart, ayah: previous.ayahStart });
-            }}
-            onNextPage={() => {
-              const next = adjacentPage(page.page, 1);
-              if (next) go({ surah: next.surahStart, ayah: next.ayahStart });
-            }}
+            onPreviousPage={() => { const previous = adjacentPage(page.page, -1); if (previous) go({ surah: previous.surahStart, ayah: previous.ayahStart }); }}
+            onNextPage={() => { const next = adjacentPage(page.page, 1); if (next) go({ surah: next.surahStart, ayah: next.ayahStart }); }}
           />
         </div>
 
-        <div className="mx-auto mt-3 flex max-w-[760px] flex-wrap items-center justify-between gap-2 text-[#5c4a32]" dir="ltr">
-          <div className="flex gap-2">
+        {/* ── Controls Toolbar ────────────────────────────────────────── */}
+        <div className="mx-auto mt-4 flex max-w-[760px] flex-wrap items-center justify-between gap-3 rounded-lg border border-[#c4a36a]/30 bg-[#fbf6ea]/60 px-4 py-2.5 text-[#5c4a32]" dir="ltr">
+          <div className="flex items-center gap-1">
             <NavButton label="Previous ayah" disabled={!adjacentAyah(surah, ayah, -1)} onClick={() => go(adjacentAyah(surah, ayah, -1))}>
-              الآية السابقة
+              ﴿ الآية السابقة ﴾
             </NavButton>
             <NavButton label="Next ayah" disabled={!adjacentAyah(surah, ayah, 1)} onClick={() => go(adjacentAyah(surah, ayah, 1))}>
-              الآية التالية
+              ﴿ الآية التالية ﴾
             </NavButton>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm">
-              Scale
-              <select className="ms-2 border border-[#c4a36a]/50 bg-transparent px-2 py-1" value={scale} aria-label="Display scale" onChange={(event) => setScale(Number(event.target.value))}>
-                <option value={0.85}>Small</option>
-                <option value={1}>Medium</option>
-                <option value={1.12}>Large</option>
-              </select>
-            </label>
-            <button type="button" className="border border-[#c4a36a]/50 px-3 py-1.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d2e1a]" onClick={copy}>
-              {copied ? "Copied" : "Copy page"}
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#7a6852]">A</span>
+              <input
+                type="range"
+                min={SCALE_MIN}
+                max={SCALE_MAX}
+                step={SCALE_STEP}
+                value={scale}
+                onChange={(e) => setScale(Number(e.target.value))}
+                aria-label="Font size"
+                className="h-1.5 w-24 cursor-pointer accent-[#a78445] sm:w-32"
+              />
+              <span className="text-sm text-[#7a6852]">A</span>
+              <span className="min-w-[3ch] text-xs tabular-nums text-[#7a6852]">{Math.round(scale * 100)}%</span>
+            </div>
+            <button
+              type="button"
+              className="rounded border border-[#c4a36a]/50 px-3 py-1.5 text-xs font-medium hover:bg-[#f3e2b8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d2e1a]"
+              onClick={copy}
+            >
+              {copied ? "✓ Copied" : "Copy page"}
             </button>
           </div>
         </div>
 
+        {/* ── Source Info ─────────────────────────────────────────────── */}
         <details className="mt-6 text-sm text-[#6d5a3c]" dir="ltr">
-          <summary>Source</summary>
-          <p className="mt-2">
+          <summary className="cursor-pointer select-none hover:text-[#3d2e1a]">Source & Layout Info</summary>
+          <p className="mt-2 leading-relaxed">
             Indo-Pak Quran Text, version 1.0. Source:{" "}
-            <a className="underline" href="http://ahmedgraf.com">ahmedgraf.com</a>.
-            Page count ({pages}) is the Qalam layout profile {QURAN_LAYOUT_PROFILE.id}, not a 604-page or Taj page count.
-            PDMS Saleem is not bundled. The production face is {QURAN_LAYOUT_PROFILE.productionFont}.
+            <a className="underline hover:text-[#3d2e1a]" href="http://ahmedgraf.com">ahmedgraf.com</a>.
+            Page count ({pages}) uses the Qalam layout profile <code className="text-xs">{QURAN_LAYOUT_PROFILE.id}</code>.
+            Production font: {QURAN_LAYOUT_PROFILE.productionFont}.
           </p>
         </details>
       </div>
@@ -234,33 +259,21 @@ export default function QuranReader({ surah, ayah }: { surah: number; ayah: numb
   );
 }
 
+// ─── Quran Page Surface ──────────────────────────────────────────────────────
+
 function QuranPageSurface({
-  surah,
-  ayah,
-  pageNumber,
-  ayahs,
-  fontFamily,
-  scale,
-  idPrefix = "",
-  faceLabel,
-  onPreviousPage,
-  onNextPage,
+  surah, ayah, pageNumber, ayahs, fontFamily, scale,
+  idPrefix = "", faceLabel, onPreviousPage, onNextPage,
 }: {
-  surah: number;
-  ayah: number;
-  pageNumber: number;
-  ayahs: readonly QuranAyah[];
-  fontFamily: string;
-  scale: number;
-  idPrefix?: string;
-  faceLabel?: string;
-  onPreviousPage: () => void;
-  onNextPage: () => void;
+  surah: number; ayah: number; pageNumber: number;
+  ayahs: readonly QuranAyah[]; fontFamily: string; scale: number;
+  idPrefix?: string; faceLabel?: string;
+  onPreviousPage: () => void; onNextPage: () => void;
 }) {
   const blocks = blocksFor(ayahs);
   return (
     <article
-      className="w-full border border-[#c4a36a] bg-[#fbf6ea] px-4 py-6 shadow-[inset_0_0_0_1px_#fbf6ea,inset_0_0_0_4px_#e7d3ae] sm:px-12 sm:py-8"
+      className="quran-page w-full bg-[#fbf6ea] px-4 py-6 sm:px-12 sm:py-8"
       style={{
         maxWidth: QURAN_LAYOUT_PROFILE.pageWidthPx,
         minHeight: QURAN_LAYOUT_PROFILE.pageMinHeightPx,
@@ -271,19 +284,20 @@ function QuranPageSurface({
       data-qalam-page={pageNumber}
       data-qalam-face={faceLabel}
     >
-      <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 border-b border-[#c4a36a]/80 pb-3 font-naskh text-[#3d2e1a]" dir="ltr">
+      {/* Mushaf-style double border via CSS (see globals.css .quran-page) */}
+
+      {/* ── Page Header ─────────────────────────────────────────────── */}
+      <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 border-b-2 border-[#c4a36a]/60 pb-3 font-naskh text-[#3d2e1a]" dir="ltr">
         <div className="text-left text-base leading-tight sm:text-xl">{surahTitle(surah)}</div>
-        <div className="flex items-center gap-1">
-          <NavButton label="Previous page" disabled={!adjacentPage(pageNumber, -1)} onClick={onPreviousPage}>
-            ‹
-          </NavButton>
-          <span className="min-w-12 text-center text-xl sm:text-2xl">{easternDigits(pageNumber)}</span>
-          <NavButton label="Next page" disabled={!adjacentPage(pageNumber, 1)} onClick={onNextPage}>
-            ›
-          </NavButton>
+        <div className="flex items-center gap-2">
+          <NavButton label="Previous page" disabled={!adjacentPage(pageNumber, -1)} onClick={onPreviousPage}>‹</NavButton>
+          <span className="min-w-14 text-center text-xl font-bold sm:text-2xl">{easternDigits(pageNumber)}</span>
+          <NavButton label="Next page" disabled={!adjacentPage(pageNumber, 1)} onClick={onNextPage}>›</NavButton>
         </div>
         <div className="text-right text-base leading-tight sm:text-xl">{juzTitle(juzOf(surah, ayah))}</div>
       </header>
+
+      {/* ── Content Blocks ──────────────────────────────────────────── */}
       {blocks.map((block) => {
         if (block.kind === "surah") {
           return <SurahBand key={`${idPrefix}s-${block.surah}`} name={surahTitle(block.surah)} />;
@@ -291,13 +305,19 @@ function QuranPageSurface({
         if (block.kind === "bismillah") {
           const active = block.surah === surah && block.ayah === ayah;
           return (
-            <p
-              key={`${idPrefix}b-${block.id}`}
-              id={block.anchor ? `${idPrefix}ayah-${block.surah}-${block.ayah}` : undefined}
-              className={`mb-6 text-center text-[1.35rem] leading-relaxed ${active && block.anchor ? "bg-[#f3ead4]" : ""}`}
-            >
-              {block.text}
-            </p>
+            <div key={`${idPrefix}b-${block.id}`} className="my-6">
+              <p
+                id={block.anchor ? `${idPrefix}ayah-${block.surah}-${block.ayah}` : undefined}
+                className={`text-center text-[1.4em] leading-relaxed transition-colors duration-300 ${active && block.anchor ? "rounded bg-[#f3ead4] py-1" : ""}`}
+              >
+                {block.text}
+              </p>
+              <div className="mx-auto mt-3 flex max-w-xs items-center gap-2 text-[#c4a36a]" aria-hidden="true">
+                <span className="h-px flex-1 bg-[#c4a36a]/50" />
+                <svg viewBox="0 0 8 8" className="h-2 w-2"><circle cx="4" cy="4" r="3" fill="currentColor" /></svg>
+                <span className="h-px flex-1 bg-[#c4a36a]/50" />
+              </div>
+            </div>
           );
         }
         return (
@@ -313,7 +333,11 @@ function QuranPageSurface({
                 {index > 0 ? " " : ""}
                 <span
                   id={item.anchor ? `${idPrefix}ayah-${item.surah}-${item.ayah}` : undefined}
-                  className={`quran-ayah inline ${item.anchor && item.surah === surah && item.ayah === ayah ? "bg-[#f3ead4]" : ""}`}
+                  className={`quran-ayah inline rounded-sm transition-colors duration-300 ${
+                    item.anchor && item.surah === surah && item.ayah === ayah
+                      ? "bg-[#f3ead4] shadow-[inset_0_-2px_0_#c4a36a]"
+                      : ""
+                  }`}
                   style={{ boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}
                 >
                   {item.text}
@@ -328,6 +352,8 @@ function QuranPageSurface({
 }
 
 export { QuranPageSurface };
+
+// ─── Block Builder ───────────────────────────────────────────────────────────
 
 function blocksFor(ayahs: readonly QuranAyah[]) {
   const blocks: Array<
@@ -349,10 +375,7 @@ function blocksFor(ayahs: readonly QuranAyah[]) {
       blocks.push({ kind: "bismillah", id: ayah.id, surah: 1, ayah: 1, text: ayah.text, anchor: true });
       continue;
     }
-    if (ayah.ayah === 1) {
-      flush();
-      blocks.push({ kind: "surah", surah: ayah.surah });
-    }
+    if (ayah.ayah === 1) { flush(); blocks.push({ kind: "surah", surah: ayah.surah }); }
     if (pieces[0]?.kind === "bismillah") {
       flush();
       blocks.push({ kind: "bismillah", id: ayah.id, surah: ayah.surah, ayah: ayah.ayah, text: pieces[0].text, anchor: false });
@@ -365,13 +388,33 @@ function blocksFor(ayahs: readonly QuranAyah[]) {
   return blocks;
 }
 
-function tabClass(active: boolean): string {
-  return `px-3 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d2e1a] ${active ? "border-b border-[#3d2e1a] text-[#241910]" : "text-[#7a6852]"}`;
+// ─── UI Primitives ───────────────────────────────────────────────────────────
+
+function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d2e1a] ${
+        active
+          ? "bg-[#3d2e1a] text-[#fbf6ea]"
+          : "text-[#7a6852] hover:bg-[#3d2e1a]/10"
+      }`}
+    >
+      {children}
+    </button>
+  );
 }
 
-function NavButton({ label, disabled, onClick, children }: { label: string; disabled: boolean; onClick: () => void; children: string }) {
+function NavButton({ label, disabled, onClick, children }: { label: string; disabled: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button type="button" aria-label={label} disabled={disabled} onClick={onClick} className="px-2 py-1 text-sm text-[#5c4a32] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d2e1a] disabled:opacity-40">
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="rounded px-2 py-1 text-sm text-[#5c4a32] transition-colors hover:bg-[#f3e2b8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3d2e1a] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+    >
       {children}
     </button>
   );
@@ -379,20 +422,26 @@ function NavButton({ label, disabled, onClick, children }: { label: string; disa
 
 function SurahBand({ name }: { name: string }) {
   return (
-    <div className="mx-auto my-4 flex max-w-md items-center gap-3">
-      <BandRule />
-      <div className="shrink-0 border-y border-[#a78445] px-5 py-1 text-center text-[1.35rem] leading-normal">{name}</div>
-      <BandRule />
+    <div className="mx-auto my-6 flex max-w-lg items-center gap-3" role="heading" aria-level={2}>
+      <OrnamentalRule />
+      <div className="shrink-0 border-y-2 border-[#a78445] px-6 py-1.5 text-center text-[1.4rem] leading-normal text-[#3d2e1a]">
+        {name}
+      </div>
+      <OrnamentalRule />
     </div>
   );
 }
 
-function BandRule() {
+function OrnamentalRule() {
   return (
-    <span className="flex min-w-8 flex-1 items-center gap-1 text-[#a78445]" aria-hidden="true">
+    <span className="flex min-w-12 flex-1 items-center gap-1.5 text-[#a78445]" aria-hidden="true">
       <span className="h-px flex-1 bg-[#a78445]" />
-      <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 shrink-0" fill="currentColor">
-        <path d="M6 0 L12 6 L6 12 L0 6 Z" />
+      <svg viewBox="0 0 16 16" className="h-3 w-3 shrink-0" fill="currentColor">
+        <path d="M8 0 L16 8 L8 16 L0 8 Z" />
+      </svg>
+      <span className="h-px flex-1 bg-[#a78445]" />
+      <svg viewBox="0 0 8 8" className="h-1.5 w-1.5 shrink-0" fill="currentColor">
+        <circle cx="4" cy="4" r="3" />
       </svg>
       <span className="h-px flex-1 bg-[#a78445]" />
     </span>
@@ -401,9 +450,14 @@ function BandRule() {
 
 function Select({ label, value, onChange, children }: { label: string; value: number; onChange: (value: number) => void; children: ReactNode }) {
   return (
-    <label className="text-xs text-[#6d5a3c]">
+    <label className="text-xs font-medium text-[#6d5a3c]">
       {label}
-      <select aria-label={label} className="mt-1 w-full border border-[#c4a36a]/40 bg-transparent px-2 py-1 text-sm" value={value} onChange={(event) => onChange(Number(event.target.value))}>
+      <select
+        aria-label={label}
+        className="mt-1 w-full rounded border border-[#c4a36a]/40 bg-white px-2 py-1.5 text-sm outline-none focus:border-[#a78445]"
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      >
         {children}
       </select>
     </label>
