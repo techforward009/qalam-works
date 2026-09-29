@@ -5,50 +5,71 @@
 
 /* ── Semantic colour tokens ─────────────────────────────────────────────────── */
 :root {
-  --background:      #faf9f6;
-  --foreground:      #0f172a;
-  --surface:         #ffffff;
-  --surface-muted:   #f3f4f0;
-  --border:          #e2e8f0;
-  --muted-foreground:#6b7280;
+  --background: #faf9f6;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-muted: #f3f4f0;
+  --border: #e2e8f0;
+  --muted-foreground: #6b7280;
 }
 
 html.dark {
-  --background:      #0e1c15;
-  --foreground:      #e8ede9;
-  --surface:         #162a1e;
-  --surface-muted:   #1e3527;
-  --border:          #2a3d30;
-  --muted-foreground:#8faa93;
+  --background: #0e1c15;
+  --foreground: #e8ede9;
+  --surface: #162a1e;
+  --surface-muted: #1e3527;
+  --border: #2a3d30;
+  --muted-foreground: #8faa93;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-* { border-color: #e2e8f0; }
+* {
+  border-color: #e2e8f0;
+}
 
 .font-urdu {
-  font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif;
+  font-family:
+    "Jameel Noori Nastaleeq",
+    "Noto Nastaliq Urdu",
+    "Urdu Typesetting",
+    serif;
   line-height: 2.2;
 }
 
 .font-arabic {
-  font-family: 'Amiri', 'Traditional Arabic', 'Scheherazade New', serif;
+  font-family:
+    "Amiri",
+    "Traditional Arabic",
+    "Scheherazade New",
+    serif;
   line-height: 1.8;
 }
 
 .font-nastaliq {
-  font-family: var(--font-nastaliq), var(--font-nastaliq-latin), 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif;
+  font-family:
+    var(--font-nastaliq),
+    var(--font-nastaliq-latin),
+    "Noto Nastaliq Urdu",
+    "Urdu Typesetting",
+    serif;
   line-height: 2.2;
 }
 
 .font-naskh {
-  font-family: var(--font-naskh), 'Noto Naskh Arabic', 'Scheherazade New', 'Traditional Arabic', serif;
+  font-family:
+    var(--font-naskh),
+    "Noto Naskh Arabic",
+    "Scheherazade New",
+    "Traditional Arabic",
+    serif;
   line-height: 1.9;
 }
 
@@ -59,11 +80,19 @@ body {
   padding-left: 1.5rem;
   padding-right: 1.5rem;
 }
+
 @media (min-width: 768px) {
-  .site-container { padding-left: 2.5rem; padding-right: 2.5rem; }
+  .site-container {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
 }
+
 @media (min-width: 1280px) {
-  .site-container { padding-left: 4rem; padding-right: 4rem; }
+  .site-container {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
 }
 
 .card-clean {
@@ -73,7 +102,10 @@ body {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease-in-out;
 }
-.card-clean:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+
+.card-clean:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
 
 .input-clean {
   width: 100%;
@@ -84,6 +116,7 @@ body {
   outline: none;
   transition: border-color 0.2s ease;
 }
+
 .input-clean:focus {
   border-color: #d97706;
   box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
@@ -95,45 +128,64 @@ body {
   print-color-adjust: exact !important;
   color-adjust: exact !important;
 }
+
 @media print {
-  .min-h-screen { min-height: 0 !important; }
-  section { break-inside: avoid-page; }
-  header { position: static !important; }
+  .min-h-screen {
+    min-height: 0 !important;
+  }
+
+  section {
+    break-inside: avoid-page;
+  }
+
+  header {
+    position: static !important;
+  }
+
   html.dark {
-    --background: #ffffff; --foreground: #000000; --surface: #ffffff;
-    --surface-muted: #f8f8f8; --border: #e2e8f0; --muted-foreground: #6b7280;
+    --background: #ffffff;
+    --foreground: #000000;
+    --surface: #ffffff;
+    --surface-muted: #f8f8f8;
+    --border: #e2e8f0;
+    --muted-foreground: #6b7280;
+  }
+
+  .quran-page {
+    box-shadow: none !important;
+    break-inside: avoid;
   }
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   QURANIC FONTS STACK (Priority Order)
-   1. Al Qalam Quran Majeed (Primary - Best OpenType Support)
-   2. Muhammadi Quranic (Fallback 1)
-   3. Asif Quranic (Fallback 2)
+   QURANIC FONTS
    ──────────────────────────────────────────────────────────────────────────── */
 
-/* 1. Primary Font */
+/* 1. Primary Quran font */
 @font-face {
   font-family: "Al Qalam Quran Majeed";
-  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/al-qalam-quran-majeed-web-regular.woff2") format("woff2");
+  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/al-qalam-quran-majeed-web-regular.woff2")
+    format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
-/* 2. Fallback: Muhammadi */
+/* 2. Fallback Quran font */
 @font-face {
   font-family: "Muhammadi Quranic";
-  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/muhammadi-quranic-400.woff2") format("woff2");
+  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/muhammadi-quranic-400.woff2")
+    format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
-/* 3. Fallback: Asif */
+/* 3. Secondary fallback Quran font */
 @font-face {
   font-family: "Asif Quranic";
-  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/asif-quranic-400.woff2") format("woff2");
+  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/asif-quranic-400.woff2")
+    format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -142,30 +194,149 @@ body {
 /* Urdu UI Font */
 @font-face {
   font-family: "Jameel Noori Nastaleeq";
-  src: local("Jameel Noori Nastaleeq"), url("/api/studio-font/jameel") format("woff2");
+  src: local("Jameel Noori Nastaleeq"),
+    url("/api/studio-font/jameel") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
-/* Editor Overrides */
+/* ────────────────────────────────────────────────────────────────────────────
+   EDITOR FONT OVERRIDES
+   ──────────────────────────────────────────────────────────────────────────── */
+
 .qalam-editor-content [style*="Jameel Noori Nastaleeq"],
 .qalam-editor-content span[style*="Jameel Noori Nastaleeq"] {
-  font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
+  font-family:
+    "Jameel Noori Nastaleeq",
+    var(--font-nastaliq),
+    "Noto Nastaliq Urdu",
+    serif !important;
 }
-.qalam-editor-content [style*="Noto Nastaliq Urdu"] { font-family: var(--font-nastaliq), "Noto Nastaliq Urdu", serif; }
-.qalam-editor-content [style*="Amiri"] { font-family: var(--font-amiri), Amiri, serif; }
-.qalam-editor-content [style*="Noto Naskh Arabic"] { font-family: var(--font-naskh), "Noto Naskh Arabic", serif; }
-.qalam-editor-content [style*="Vazirmatn"] { font-family: var(--font-vazirmatn), Vazirmatn, sans-serif; }
-.qalam-editor-content [style*="Sahel"] { font-family: Sahel, Tahoma, "Segoe UI", sans-serif; }
-.qalam-editor-content [style*="Inter"] { font-family: var(--font-inter), Inter, system-ui, sans-serif; }
 
-/* Mushaf Border */
+.qalam-editor-content [style*="Noto Nastaliq Urdu"] {
+  font-family:
+    var(--font-nastaliq),
+    "Noto Nastaliq Urdu",
+    serif;
+}
+
+.qalam-editor-content [style*="Amiri"] {
+  font-family:
+    var(--font-amiri),
+    Amiri,
+    serif;
+}
+
+.qalam-editor-content [style*="Noto Naskh Arabic"] {
+  font-family:
+    var(--font-naskh),
+    "Noto Naskh Arabic",
+    serif;
+}
+
+.qalam-editor-content [style*="Vazirmatn"] {
+  font-family:
+    var(--font-vazirmatn),
+    Vazirmatn,
+    sans-serif;
+}
+
+.qalam-editor-content [style*="Sahel"] {
+  font-family:
+    Sahel,
+    Tahoma,
+    "Segoe UI",
+    sans-serif;
+}
+
+.qalam-editor-content [style*="Inter"] {
+  font-family:
+    var(--font-inter),
+    Inter,
+    system-ui,
+    sans-serif;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   QURAN READING SURFACE
+   ──────────────────────────────────────────────────────────────────────────── */
+
 .quran-page {
+  position: relative;
+
   border: 3px double #c4a36a;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.42),
+      rgba(246, 237, 216, 0.14)
+    );
+
   box-shadow:
-    inset 0 0 0 1px #fbf6ea,
+    inset 0 0 0 1px #fffdf8,
     inset 0 0 0 5px #e7d3ae,
-    inset 0 0 0 6px #c4a36a40,
-    0 4px 24px rgba(164, 130, 70, 0.15);
+    inset 0 0 0 6px rgba(196, 163, 106, 0.25),
+    0 10px 30px rgba(91, 67, 31, 0.12);
+
+  color: #241910;
+
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1;
+}
+
+/*
+ * Keep Quran text visually independent from surrounding UI text.
+ * The actual Unicode Quran text is not modified here.
+ */
+.quran-page .quran-ayah {
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-variant-ligatures: normal;
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1;
+}
+
+/*
+ * Paragraph rhythm for the Quran reading column.
+ * The component itself controls the exact line-height value.
+ */
+.quran-page p {
+  hanging-punctuation: allow-end;
+}
+
+/*
+ * Prevent accidental selection/focus styles from visually disturbing
+ * the Arabic reading surface.
+ */
+.quran-page button,
+.quran-page select {
+  font-family:
+    var(--font-naskh),
+    "Noto Naskh Arabic",
+    "Scheherazade New",
+    serif;
+}
+
+/* Slightly tighten the page frame on small screens. */
+@media (max-width: 639px) {
+  .quran-page {
+    box-shadow:
+      inset 0 0 0 1px #fffdf8,
+      inset 0 0 0 4px #e7d3ae,
+      inset 0 0 0 5px rgba(196, 163, 106, 0.22),
+      0 6px 20px rgba(91, 67, 31, 0.1);
+  }
+
+  .quran-page .quran-ayah {
+    font-feature-settings:
+      "kern" 1,
+      "liga" 1;
+  }
 }
