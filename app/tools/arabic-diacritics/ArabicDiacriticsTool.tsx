@@ -74,17 +74,17 @@ export default function ArabicDiacriticsTool() {
         <div className="mb-4 flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-lg border border-[#1A3A2A]/20 px-3 py-1.5 text-sm text-[#1A3A2A] dark:text-[#e8ede9]"
+            className={`rounded-lg border border-[#1A3A2A]/20 px-3 py-1.5 text-sm text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}
             onClick={() => setInput(sampleInput(mode))}
           >
-            نمونہ
+            {isUr ? "نمونہ" : "Sample"}
           </button>
           <button
             type="button"
-            className="rounded-lg border border-[#1A3A2A]/20 px-3 py-1.5 text-sm"
+            className={`rounded-lg border border-[#1A3A2A]/20 px-3 py-1.5 text-sm ${isUr ? "font-naskh" : ""}`}
             onClick={() => setInput("")}
           >
-            صاف کریں
+            {isUr ? "صاف کریں" : "Clear"}
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,12 +120,16 @@ export default function ArabicDiacriticsTool() {
             </div>
           </div>
         </div>
-        <div className="mt-6" dir="rtl">
-          <h2 className="text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9]">جائزہ</h2>
+        <div className="mt-6">
+          <h2 className={`text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${isUr ? "font-naskh" : ""}`}>
+            {isUr ? "جائزہ" : "Review"}
+          </h2>
           {mode === "general" ? (
             <>
-              <p className="mt-1 text-sm text-[#4a6a4a]">
-                اعراب شدہ: {vocalized.length} · بغیر تبدیلی: {unchanged.length}
+              <p className={`mt-1 text-sm text-[#4a6a4a] ${isUr ? "font-naskh" : ""}`}>
+                {isUr
+                  ? `اعراب شدہ: ${vocalized.length} · بغیر تبدیلی: ${unchanged.length}`
+                  : `Vocalized: ${vocalized.length} · Unchanged: ${unchanged.length}`}
               </p>
               {vocalized.length > 0 && (
                 <ul className="mt-3 max-h-56 space-y-1 overflow-auto text-sm font-naskh">
