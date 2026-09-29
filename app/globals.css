@@ -169,15 +169,3 @@ body {
     inset 0 0 0 6px #c4a36a40,
     0 4px 24px rgba(164, 130, 70, 0.15);
 }
-
-/* ── Surgical Fix for Isolated Marks ─────────────────────────────────────── */
-.quran-isolated-mark {
-  display: inline-block;
-  direction: rtl;
-  unicode-bidi: isolate;
-  width: auto;
-  line-height: 0; /* Prevents extra vertical spacing */
-  position: relative;
-  /* Optional:微调 top position if marks are slightly too high/low */
-  /* top: -0.1em; */ 
-}
