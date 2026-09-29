@@ -452,17 +452,17 @@ export default function QuranReader({
       className="quran-reader min-h-screen"
       dir="ltr"
     >
-      <div className="mx-auto w-full max-w-[1010px] px-3 py-4 sm:px-5 sm:py-6">
+      <div className="quran-reader-container mx-auto w-full max-w-[1010px] px-3 py-4 sm:px-5 sm:py-6">
         <div
-          className="grid items-start gap-4 lg:grid-cols-[175px_minmax(0,770px)]"
+          className="quran-reader-layout grid items-start gap-4 lg:grid-cols-[175px_minmax(0,770px)]"
           dir="ltr"
         >
           {/* ─────────────────────────────
-              LANGUAGE-SPECIFIC SIDEBAR
+              TANZIL-LIKE SIDEBAR
              ───────────────────────────── */}
 
           <aside
-            className="tanzil-sidebar"
+            className="tanzil-sidebar quran-reader-sidebar"
             dir={interfaceDir}
             lang={interfaceLang}
           >
@@ -480,12 +480,7 @@ export default function QuranReader({
                 }}
               >
                 <div
-                  className={
-                    language ===
-                    "ur"
-                      ? "flex gap-1"
-                      : "flex gap-1"
-                  }
+                  className="flex gap-1"
                   dir={interfaceDir}
                 >
                   <input
@@ -502,7 +497,12 @@ export default function QuranReader({
                       copy.search
                     }
                     className="min-w-0 flex-1 border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#33372f] outline-none focus:border-[#718067]"
-                    dir="rtl"
+                    dir={
+                      interfaceDir
+                    }
+                    lang={
+                      interfaceLang
+                    }
                   />
 
                   <button
@@ -519,6 +519,7 @@ export default function QuranReader({
                   <div
                     className="mt-1 max-h-40 overflow-auto border-t border-[#d0d4cc] pt-1"
                     dir="rtl"
+                    lang="ar"
                   >
                     {hits.length ===
                     0 ? (
@@ -529,6 +530,12 @@ export default function QuranReader({
                             ? "font-naskh"
                             : ""
                         }`}
+                        dir={
+                          interfaceDir
+                        }
+                        lang={
+                          interfaceLang
+                        }
                       >
                         {
                           copy.noResults
@@ -552,6 +559,7 @@ export default function QuranReader({
                                 )}
                                 className="block px-1 py-1 font-naskh text-[11px] text-[#465046] hover:bg-[#f1f4ee]"
                                 dir="rtl"
+                                lang="ar"
                               >
                                 {
                                   surahTitle(
@@ -829,6 +837,9 @@ export default function QuranReader({
                   dir={
                     interfaceDir
                   }
+                  lang={
+                    interfaceLang
+                  }
                 >
                   <option value={0.85}>
                     {
@@ -855,6 +866,9 @@ export default function QuranReader({
               className="border-t border-[#d0d4cc] bg-white px-2 py-2"
               dir={
                 interfaceDir
+              }
+              lang={
+                interfaceLang
               }
             >
               <p
@@ -884,7 +898,7 @@ export default function QuranReader({
               MAIN QURAN READER
              ───────────────────────────── */}
 
-          <section className="min-w-0">
+          <section className="quran-reader-main min-w-0">
             <div className="quran-page-shell">
               <QuranPageMeta
                 surah={
@@ -985,13 +999,16 @@ export default function QuranReader({
             </div>
 
             <div
-              className={`mt-2 flex items-center justify-between px-1 text-xs text-[#70776b] ${
+              className={`quran-outer-page-nav mt-2 flex items-center justify-between px-1 text-xs text-[#70776b] ${
                 language ===
                 "ur"
                   ? "font-naskh"
                   : ""
               }`}
               dir="rtl"
+              lang={
+                interfaceLang
+              }
             >
               <button
                 type="button"
@@ -1090,16 +1107,19 @@ function QuranPageMeta({
       lang="ar"
     >
       <div className="quran-page-meta-item quran-page-meta-surah">
-        {
-          surahTitle(
-            surah,
-          )
-        }
+        <span className="quran-page-meta-surah-name">
+          {
+            surahTitle(
+              surah,
+            )
+          }
+        </span>
       </div>
 
       <div
         className="quran-page-meta-item quran-page-meta-number"
         dir="ltr"
+        lang="ar"
       >
         <PageArrow
           direction="previous"
@@ -1115,7 +1135,7 @@ function QuranPageMeta({
           }
         />
 
-        <span>
+        <span className="quran-page-meta-page-number">
           {
             easternDigits(
               pageNumber,
@@ -1139,9 +1159,11 @@ function QuranPageMeta({
       </div>
 
       <div className="quran-page-meta-item quran-page-meta-juz">
-        {
-          juzTitle(juz)
-        }
+        <span className="quran-page-meta-juz-name">
+          {
+            juzTitle(juz)
+          }
+        </span>
       </div>
     </div>
   );
@@ -1696,18 +1718,26 @@ function SurahBand({
   name: string;
 }) {
   return (
-    <div className="quran-surah-band shrink-0">
+    <div
+      className="quran-surah-band shrink-0"
+      dir="rtl"
+      lang="ar"
+    >
       <span
-        className="quran-band-rule"
+        className="quran-band-rule quran-band-rule-before"
         aria-hidden="true"
       />
 
       <div className="quran-surah-title">
-        {name}
+        <span className="quran-surah-name">
+          {
+            name
+          }
+        </span>
       </div>
 
       <span
-        className="quran-band-rule"
+        className="quran-band-rule quran-band-rule-after"
         aria-hidden="true"
       />
     </div>
