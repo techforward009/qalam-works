@@ -171,8 +171,10 @@ body {
 
 
 /* Document Studio typography font stacks */
+
+/* NEW PRIMARY FONT: Al Qalam Quran Majeed */
 @font-face {
-  font-family: "Al Majeed Quranic";
+  font-family: "Al Qalam Quran Majeed";
   src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/al-qalam-quran-majeed-web-regular.woff2")
     format("woff2");
   font-weight: 400;
