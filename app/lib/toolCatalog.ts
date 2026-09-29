@@ -438,7 +438,7 @@ export const TOOL_CATALOG: ToolEntry[] = [
     },
     importantNote: {
       en: "One publishing form is stored per known word. A full sentence parser is not used, except for the reviewed passage. Urdu letters inside a known Arabic word are normalized. A missing letter is restored only from an explicit list.",
-      ur: "ہر جانے ہوئے لفظ کی ایک مطبوعہ شکل محفوظ ہے۔ مکمل جملہ تجزیہ نہیں، سوائے جائزہ شدہ عبارت کے۔ معلوم عربی لفظ کے اردو حروف درست ہوتے ہیں۔ گرا ہوا حرف صرف درج فہرست سے لوٹتا ہے۔",
+      ur: "ہر جانے ہوئے لفظ کی ایک مطبوعہ شکل محفوظ ہے۔ مکمل جملہ تجزیہ نہیں، سوائے جائزہ شدہ عبارت کے۔ معلوم عربی لفظ کے اردو حروف درست ہوتے ہیں۔ چھوٹا ہوا حرف صرف درج فہرست سے لوٹتا ہے۔",
     },
     example: "الی → اِلٰى",
   },

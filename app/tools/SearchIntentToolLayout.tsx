@@ -29,6 +29,7 @@ export default function SearchIntentToolLayout({
   faqs,
   related,
   note,
+  centerHeader = false,
 }: {
   h1: Bilingual;
   intro: Bilingual;
@@ -37,6 +38,7 @@ export default function SearchIntentToolLayout({
   faqs: SearchIntentFaq[];
   related: SearchIntentRelated[];
   note?: Bilingual;
+  centerHeader?: boolean;
 }) {
   const { language, dir } = useLanguage();
   const isUr = language === "ur";
@@ -46,7 +48,7 @@ export default function SearchIntentToolLayout({
   return (
     <main className="bg-[#F7F5EF] dark:bg-[#0e1c15]" dir={dir} lang={language}>
       <div className="site-container pt-8 sm:pt-10 pb-4">
-        <header className="max-w-3xl">
+        <header className={`max-w-3xl ${centerHeader ? "mx-auto text-center" : ""}`}>
           <h1
             className={`text-3xl sm:text-4xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] leading-tight ${
               isUr ? "font-nastaliq font-normal" : ""

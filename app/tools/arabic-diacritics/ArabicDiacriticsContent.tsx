@@ -6,6 +6,7 @@ import ArabicDiacriticsTool from "./ArabicDiacriticsTool";
 export default function ArabicDiacriticsContent() {
   return (
     <SearchIntentToolLayout
+      centerHeader
       h1={{ en: "Arabic Diacritics", ur: "عربی اعراب" }}
       intro={{
         en: "Turn plain Arabic into the diacritic style used in Pakistani and Indo-Pakistani Islamic books. The original text stays in the input. Words the engine cannot resolve are left unchanged.",
@@ -13,7 +14,7 @@ export default function ArabicDiacriticsContent() {
       }}
       note={{
         en: "This is not Urdu diacritization and not modern newspaper tashkeel. Case endings follow the stored Indo-Pakistani publishing form, not a full syntactic parser. Inside a known Arabic word, Urdu letters are normalized, and a missing letter is restored only when that spelling is listed.",
-        ur: "یہ اردو اعراب نہیں اور نہ اخبار والا تشکیل۔ اعراب محفوظ شدہ پاکستانی طرز پر ہے، مکمل نحوی تجزیہ نہیں۔ معلوم عربی لفظ کے اردو حروف درست ہو جاتے ہیں، اور گرا ہوا حرف صرف درج شدہ ہجے پر لوٹایا جاتا ہے۔",
+        ur: "یہ اردو اعراب نہیں اور نہ اخبار والا تشکیل۔ اعراب محفوظ شدہ پاکستانی طرز پر ہے، مکمل نحوی تجزیہ نہیں۔ معلوم عربی لفظ کے اردو حروف درست ہو جاتے ہیں، اور چھوٹا ہوا حرف صرف درج شدہ ہجے پر لوٹایا جاتا ہے۔",
       }}
       sections={[
         {

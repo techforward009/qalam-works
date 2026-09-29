@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLanguage } from "../../lib/language-context";
 import { GOLDEN_INPUT } from "./engine/goldenPassage";
 import { diacritizeArabic } from "./engine/diacritizeArabic";
 import { restoreQuran } from "./quran/matchQuran";
@@ -22,6 +23,8 @@ export default function ArabicDiacriticsTool() {
   const vocalized = general.reviews.filter((item) => item.status !== "unchanged");
   const unchanged = general.reviews.filter((item) => item.status === "unchanged");
   const quranChanges = quran.segments.filter((item) => item.status === "verified" || item.status === "corrected" || item.status === "ambiguous");
+  const { language } = useLanguage();
+  const isUr = language === "ur";
 
   const copy = async () => {
     if (!output) return;
@@ -37,8 +40,10 @@ export default function ArabicDiacriticsTool() {
   return (
     <div className="site-container">
       <div className="bg-white dark:bg-[#13261c] p-6 md:p-8 rounded-2xl border border-[#1A3A2A]/15 shadow-md">
-        <p className="mb-4 text-sm leading-relaxed text-[#3d3d3d] dark:text-[#c8d8cc]" dir="rtl" lang="ur">
-          یہ اردو اعراب نہیں ہے۔ سادہ عربی کو پاکستانی مطبوعہ انداز میں اعراب دیتا ہے۔ جو لفظ یقینی نہ ہو وہ جوں کا توں رہتا ہے۔
+        <p className={`mb-4 text-sm leading-relaxed text-[#3d3d3d] dark:text-[#c8d8cc] ${isUr ? "font-naskh" : ""}`}>
+          {isUr
+            ? "یہ اردو اعراب نہیں ہے۔ سادہ عربی کو پاکستانی مطبوعہ انداز میں اعراب دیتا ہے۔ جو لفظ یقینی نہ ہو وہ جوں کا توں رہتا ہے۔"
+            : "This is not Urdu diacritization. It gives plain Arabic the diacritics of Pakistani printed books. A word that is not certain is left as typed."}
         </p>
         <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Diacritics mode">
           <button
