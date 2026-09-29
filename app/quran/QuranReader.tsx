@@ -45,10 +45,12 @@ export default function QuranReader({
   ayah: number;
 }) {
   const router = useRouter();
+
   const current = getReaderAyah(
     surah,
     ayah,
   );
+
   const page = pageOf(
     surah,
     ayah,
@@ -56,21 +58,29 @@ export default function QuranReader({
 
   const [query, setQuery] =
     useState("");
+
   const [hits, setHits] =
     useState<
-      ReturnType<typeof searchQuran>
+      ReturnType<
+        typeof searchQuran
+      >
     >([]);
+
   const [searched, setSearched] =
     useState(false);
+
   const [scale, setScale] =
     useState(1);
+
   const [copied, setCopied] =
     useState(false);
 
   const ayahs = useMemo(
     () =>
       page
-        ? ayahsOnPage(page.page)
+        ? ayahsOnPage(
+            page.page,
+          )
         : [],
     [page],
   );
@@ -79,6 +89,7 @@ export default function QuranReader({
     surah,
     ayah,
   );
+
   const pages = pageCount();
 
   useEffect(() => {
@@ -96,18 +107,24 @@ export default function QuranReader({
     const onKey = (
       event: KeyboardEvent,
     ) => {
-      if (!page) return;
+      if (!page) {
+        return;
+      }
 
       const target =
-        event.target as HTMLElement | null;
+        event.target as
+          | HTMLElement
+          | null;
 
       const tagName =
         target?.tagName;
 
       if (
         tagName === "INPUT" ||
-        tagName === "TEXTAREA" ||
-        tagName === "SELECT" ||
+        tagName ===
+          "TEXTAREA" ||
+        tagName ===
+          "SELECT" ||
         target?.isContentEditable
       ) {
         return;
@@ -129,7 +146,8 @@ export default function QuranReader({
 
         if (
           next &&
-          next.surah !== surah
+          next.surah !==
+            surah
         ) {
           router.push(
             href(
@@ -158,7 +176,8 @@ export default function QuranReader({
 
         if (
           previous &&
-          previous.surah !== surah
+          previous.surah !==
+            surah
         ) {
           router.push(
             href(
@@ -318,7 +337,9 @@ export default function QuranReader({
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(
-        copyPageText(page.page),
+        copyPageText(
+          page.page,
+        ),
       );
 
       setCopied(true);
@@ -336,18 +357,23 @@ export default function QuranReader({
 
   return (
     <main
-      className="min-h-screen bg-[#e4e8de] text-[#252a22]"
+      className="quran-reader min-h-screen bg-[#e5e9df] text-[#292d26]"
       dir="ltr"
     >
       <div className="mx-auto w-full max-w-[1010px] px-3 py-4 sm:px-5 sm:py-6">
         <div
-          className="grid items-start gap-3 lg:grid-cols-[170px_minmax(0,770px)]"
+          className="grid items-start gap-4 lg:grid-cols-[175px_minmax(0,770px)]"
           dir="ltr"
         >
-          <aside className="tanzil-sidebar">
-            <SidebarSection
-              title="تلاش"
-            >
+          {/* ─────────────────────────────
+              Urdu-only navigation panel
+             ───────────────────────────── */}
+          <aside
+            className="tanzil-sidebar"
+            dir="rtl"
+            lang="ur"
+          >
+            <SidebarSection title="تلاش">
               <form
                 onSubmit={(
                   event,
@@ -367,14 +393,14 @@ export default function QuranReader({
                           .value,
                       )
                     }
-                    aria-label="Quran search"
-                    className="min-w-0 flex-1 border border-[#aab49f] bg-[#f9fbf3] px-2 py-1 font-naskh text-xs text-[#333b2e] outline-none focus:border-[#77886c]"
+                    aria-label="قرآن میں تلاش"
+                    className="min-w-0 flex-1 border border-[#b8bdb3] bg-white px-2 py-1 font-naskh text-xs text-[#33372f] outline-none focus:border-[#718067]"
                     dir="rtl"
                   />
 
                   <button
                     type="submit"
-                    className="border border-[#8d9b81] bg-[#e7ecdf] px-2 py-1 font-naskh text-xs text-[#3f4a39] hover:bg-[#dde5d4]"
+                    className="border border-[#9aa394] bg-white px-2 py-1 font-naskh text-xs text-[#3d4439] hover:bg-[#f3f5f1]"
                   >
                     تلاش
                   </button>
@@ -382,12 +408,12 @@ export default function QuranReader({
 
                 {searched && (
                   <div
-                    className="mt-1 max-h-40 overflow-auto border-t border-[#bbc4b2] pt-1"
+                    className="mt-1 max-h-40 overflow-auto border-t border-[#d0d4cc] pt-1"
                     dir="rtl"
                   >
                     {hits.length ===
                     0 ? (
-                      <p className="px-1 py-1 font-naskh text-[11px] text-[#747c6d]">
+                      <p className="px-1 py-1 font-naskh text-[11px] text-[#777c74]">
                         کوئی نتیجہ نہیں ملا۔
                       </p>
                     ) : (
@@ -406,7 +432,7 @@ export default function QuranReader({
                                   hit.surah,
                                   hit.ayah,
                                 )}
-                                className="block px-1 py-1 font-naskh text-[11px] text-[#46513f] hover:bg-[#e5ebdc]"
+                                className="block px-1 py-1 font-naskh text-[11px] text-[#465046] hover:bg-[#f1f4ee]"
                               >
                                 {
                                   surahTitle(
@@ -440,7 +466,8 @@ export default function QuranReader({
                     value,
                   ) =>
                     go({
-                      surah: value,
+                      surah:
+                        value,
                       ayah: 1,
                     })
                   }
@@ -520,7 +547,10 @@ export default function QuranReader({
                     {
                       length: 30,
                     },
-                    (_, index) => (
+                    (
+                      _,
+                      index,
+                    ) => (
                       <option
                         key={
                           index + 1
@@ -563,7 +593,10 @@ export default function QuranReader({
                       length:
                         pages,
                     },
-                    (_, index) => (
+                    (
+                      _,
+                      index,
+                    ) => (
                       <option
                         key={
                           index + 1
@@ -580,12 +613,10 @@ export default function QuranReader({
               </div>
             </SidebarSection>
 
-            <SidebarSection
-              title="آیت کی نقل"
-            >
+            <SidebarSection title="آیت کی نقل">
               <button
                 type="button"
-                className="w-full border border-[#9ca98f] bg-[#edf1e7] px-2 py-1.5 font-naskh text-xs text-[#485440] hover:bg-[#e1e8da]"
+                className="w-full border border-[#b5bbb1] bg-white px-2 py-1.5 font-naskh text-xs text-[#465046] hover:bg-[#f3f5f1]"
                 onClick={copy}
               >
                 {copied
@@ -594,18 +625,16 @@ export default function QuranReader({
               </button>
             </SidebarSection>
 
-            <SidebarSection
-              title="نمایش"
-            >
-              <label className="block font-naskh text-xs text-[#697361]">
+            <SidebarSection title="نمایش">
+              <label className="block font-naskh text-xs text-[#697067]">
                 سائز
 
                 <select
-                  className="mt-1 w-full border border-[#aab49f] bg-[#f9fbf3] px-2 py-1 text-xs text-[#3f4939] outline-none focus:border-[#77886c]"
+                  className="mt-1 w-full border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#3e453b] outline-none focus:border-[#718067]"
                   value={
                     scale
                   }
-                  aria-label="Display scale"
+                  aria-label="سائز"
                   onChange={(
                     event,
                   ) =>
@@ -620,9 +649,11 @@ export default function QuranReader({
                   <option value={0.85}>
                     چھوٹا
                   </option>
+
                   <option value={1}>
                     درمیانہ
                   </option>
+
                   <option value={1.12}>
                     بڑا
                   </option>
@@ -631,10 +662,10 @@ export default function QuranReader({
             </SidebarSection>
 
             <div
-              className="border-t border-[#b4bdac] px-2 py-2"
+              className="border-t border-[#d0d4cc] bg-white px-2 py-2"
               dir="rtl"
             >
-              <p className="font-naskh text-[10px] leading-5 text-[#737b6d]">
+              <p className="font-naskh text-[10px] leading-5 text-[#777d74]">
                 ↑ ↓ آیات
                 <br />
                 ← → صفحات
@@ -645,54 +676,99 @@ export default function QuranReader({
             </div>
           </aside>
 
+          {/* ─────────────────────────────
+              Main Quran reading area
+             ───────────────────────────── */}
           <section className="min-w-0">
-            <QuranPageSurface
-              surah={surah}
-              ayah={ayah}
-              pageNumber={
-                page.page
-              }
-              ayahs={ayahs}
-              fontFamily={
-                QURAN_FONT_STACK
-              }
-              scale={scale}
-              onPreviousPage={() => {
-                const previous =
-                  adjacentPage(
-                    page.page,
-                    -1,
-                  );
-
-                if (previous) {
-                  go({
-                    surah:
-                      previous.surahStart,
-                    ayah:
-                      previous.ayahStart,
-                  });
+            <div className="quran-page-shell">
+              <QuranPageMeta
+                surah={surah}
+                pageNumber={
+                  page.page
                 }
-              }}
-              onNextPage={() => {
-                const next =
-                  adjacentPage(
-                    page.page,
-                    1,
-                  );
+                juz={juz}
+                onPreviousPage={() => {
+                  const previous =
+                    adjacentPage(
+                      page.page,
+                      -1,
+                    );
 
-                if (next) {
-                  go({
-                    surah:
-                      next.surahStart,
-                    ayah:
-                      next.ayahStart,
-                  });
+                  if (previous) {
+                    go({
+                      surah:
+                        previous.surahStart,
+                      ayah:
+                        previous.ayahStart,
+                    });
+                  }
+                }}
+                onNextPage={() => {
+                  const next =
+                    adjacentPage(
+                      page.page,
+                      1,
+                    );
+
+                  if (next) {
+                    go({
+                      surah:
+                        next.surahStart,
+                      ayah:
+                        next.ayahStart,
+                    });
+                  }
+                }}
+              />
+
+              <QuranPageSurface
+                surah={surah}
+                ayah={ayah}
+                pageNumber={
+                  page.page
                 }
-              }}
-            />
+                ayahs={ayahs}
+                fontFamily={
+                  QURAN_FONT_STACK
+                }
+                scale={scale}
+                onPreviousPage={() => {
+                  const previous =
+                    adjacentPage(
+                      page.page,
+                      -1,
+                    );
+
+                  if (previous) {
+                    go({
+                      surah:
+                        previous.surahStart,
+                      ayah:
+                        previous.ayahStart,
+                    });
+                  }
+                }}
+                onNextPage={() => {
+                  const next =
+                    adjacentPage(
+                      page.page,
+                      1,
+                    );
+
+                  if (next) {
+                    go({
+                      surah:
+                        next.surahStart,
+                      ayah:
+                        next.ayahStart,
+                    });
+                  }
+                }}
+              />
+            </div>
 
             <div
-              className="mt-1 flex items-center justify-between px-1 font-naskh text-xs text-[#6d765f]"
+              className="mt-2 flex items-center justify-between px-1 font-naskh text-xs text-[#70776b]"
               dir="rtl"
             >
               <button
@@ -719,15 +795,17 @@ export default function QuranReader({
                     });
                   }
                 }}
-                className="px-2 py-1 hover:bg-[#dce3d7] disabled:opacity-25"
+                className="px-2 py-1 hover:bg-[#dce3d8] disabled:opacity-25"
               >
                 اگلا صفحہ →
               </button>
 
               <span>
-                {easternDigits(
-                  page.page,
-                )}
+                {
+                  easternDigits(
+                    page.page,
+                  )
+                }
               </span>
 
               <button
@@ -754,46 +832,82 @@ export default function QuranReader({
                     });
                   }
                 }}
-                className="px-2 py-1 hover:bg-[#dce3d7] disabled:opacity-25"
+                className="px-2 py-1 hover:bg-[#dce3d8] disabled:opacity-25"
               >
                 ← پچھلا صفحہ
               </button>
             </div>
           </section>
         </div>
-
-        <details
-          className="mx-auto mt-3 max-w-[940px] border-t border-[#b4bcaf] pt-2 font-naskh text-[11px] text-[#798073]"
-          dir="ltr"
-        >
-          <summary className="cursor-pointer select-none">
-            Source & reader information
-          </summary>
-
-          <p className="mt-1 leading-5">
-            Indo-Pak Quran Text,
-            version 1.0. Source:{" "}
-            <a
-              className="underline"
-              href="http://ahmedgraf.com"
-              target="_blank"
-              rel="noreferrer"
-            >
-              ahmedgraf.com
-            </a>
-            . Page count (
-            {pages}) is the Qalam
-            layout profile{" "}
-            {
-              QURAN_LAYOUT_PROFILE.id
-            }
-            . The Quran source
-            text has not been
-            changed.
-          </p>
-        </details>
       </div>
     </main>
+  );
+}
+
+function QuranPageMeta({
+  surah,
+  pageNumber,
+  juz,
+  onPreviousPage,
+  onNextPage,
+}: {
+  surah: number;
+  pageNumber: number;
+  juz: number;
+  onPreviousPage: () => void;
+  onNextPage: () => void;
+}) {
+  return (
+    <div
+      className="quran-page-meta"
+      dir="rtl"
+      lang="ar"
+    >
+      <div className="quran-page-meta-item quran-page-meta-surah">
+        {surahTitle(surah)}
+      </div>
+
+      <div
+        className="quran-page-meta-item quran-page-meta-number"
+        dir="ltr"
+      >
+        <PageArrow
+          direction="previous"
+          label="Previous page"
+          disabled={
+            !adjacentPage(
+              pageNumber,
+              -1,
+            )
+          }
+          onClick={
+            onPreviousPage
+          }
+        />
+
+        <span>
+          {easternDigits(
+            pageNumber,
+          )}
+        </span>
+
+        <PageArrow
+          direction="next"
+          label="Next page"
+          disabled={
+            !adjacentPage(
+              pageNumber,
+              1,
+            )
+          }
+          onClick={onNextPage}
+        />
+      </div>
+
+      <div className="quran-page-meta-item quran-page-meta-juz">
+        {juzTitle(juz)}
+      </div>
+    </div>
   );
 }
 
@@ -838,6 +952,7 @@ function QuranPageSurface({
         )}px`,
       }}
       lang="ar"
+      dir="rtl"
       data-qalam-page={
         pageNumber
       }
@@ -845,78 +960,12 @@ function QuranPageSurface({
         faceLabel
       }
     >
-      <QuranCorner
-        position="top-left"
-      />
-      <QuranCorner
-        position="top-right"
-      />
-      <QuranCorner
-        position="bottom-left"
-      />
-      <QuranCorner
-        position="bottom-right"
-      />
+      <QuranCorner position="top-left" />
+      <QuranCorner position="top-right" />
+      <QuranCorner position="bottom-left" />
+      <QuranCorner position="bottom-right" />
 
       <div className="quran-page-inner flex min-h-0 flex-1 flex-col">
-        <header
-          className="relative shrink-0 border-b border-[#a8a07d]/60 pb-2 font-naskh text-[#514a35]"
-          dir="ltr"
-        >
-          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
-            <div className="text-left text-sm sm:text-base">
-              {surahTitle(
-                surah,
-              )}
-            </div>
-
-            <div className="flex items-center">
-              <PageArrow
-                direction="previous"
-                label="Previous page"
-                disabled={
-                  !adjacentPage(
-                    pageNumber,
-                    -1,
-                  )
-                }
-                onClick={
-                  onPreviousPage
-                }
-              />
-
-              <span className="min-w-11 text-center text-base text-[#514a35] sm:text-lg">
-                {easternDigits(
-                  pageNumber,
-                )}
-              </span>
-
-              <PageArrow
-                direction="next"
-                label="Next page"
-                disabled={
-                  !adjacentPage(
-                    pageNumber,
-                    1,
-                  )
-                }
-                onClick={
-                  onNextPage
-                }
-              />
-            </div>
-
-            <div className="text-right text-sm sm:text-base">
-              {juzTitle(
-                juzOf(
-                  surah,
-                  ayah,
-                ),
-              )}
-            </div>
-          </div>
-        </header>
-
         <div className="quran-content relative flex min-h-0 flex-1 flex-col pt-2">
           {blocks.map(
             (block) => {
@@ -952,7 +1001,7 @@ function QuranPageSurface({
                         ? `${idPrefix}ayah-${block.surah}-${block.ayah}`
                         : undefined
                     }
-                    className={`quran-bismillah mb-5 shrink-0 text-center text-[1.26rem] leading-[2] sm:text-[1.36rem] ${
+                    className={`quran-bismillah shrink-0 ${
                       active &&
                       block.anchor
                         ? "quran-active-ayah"
@@ -971,7 +1020,7 @@ function QuranPageSurface({
                   key={`${idPrefix}${block.ids}`}
                   dir="rtl"
                   lang="ar"
-                  className="quran-flow shrink-0 text-right"
+                  className="quran-flow shrink-0"
                   style={{
                     lineHeight:
                       QURAN_LAYOUT_PROFILE.lineHeight,
@@ -1033,9 +1082,9 @@ function QuranPageSurface({
           )}
         </div>
 
-        <footer className="relative mt-auto shrink-0 border-t border-[#a8a07d]/55 pt-2">
+        <footer className="relative mt-auto shrink-0 pt-1">
           <div
-            className="flex items-center justify-center gap-2"
+            className="flex items-center justify-center"
             dir="ltr"
           >
             <PageArrow
@@ -1052,7 +1101,7 @@ function QuranPageSurface({
               }
             />
 
-            <span className="px-3 font-naskh text-xs text-[#756d54] sm:text-sm">
+            <span className="px-3 font-naskh text-xs text-[#776f58]">
               {easternDigits(
                 pageNumber,
               )}
@@ -1067,9 +1116,7 @@ function QuranPageSurface({
                   1,
                 )
               }
-              onClick={
-                onNextPage
-              }
+              onClick={onNextPage}
             />
           </div>
         </footer>
@@ -1316,14 +1363,14 @@ function Select({
 }) {
   return (
     <label
-      className="block font-naskh text-xs text-[#697361]"
+      className="block font-naskh text-xs text-[#687066]"
       dir="rtl"
     >
       {label}
 
       <select
         aria-label={label}
-        className="mt-1 w-full border border-[#aab49f] bg-[#f9fbf3] px-2 py-1 text-xs text-[#3f4939] outline-none focus:border-[#77886c]"
+        className="mt-1 w-full border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#3f463c] outline-none focus:border-[#718067]"
         value={value}
         onChange={(event) =>
           onChange(
@@ -1359,12 +1406,12 @@ function PageArrow({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-6 w-6 items-center justify-center border border-transparent font-serif text-base leading-none text-[#746d55] transition hover:border-[#b5ae91] hover:bg-[#e8eadf] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7e8d6f] disabled:pointer-events-none disabled:opacity-25"
+      className="quran-page-arrow"
     >
       {direction ===
       "previous"
-        ? "‹"
-        : "›"}
+        ? "◄"
+        : "►"}
     </button>
   );
 }
