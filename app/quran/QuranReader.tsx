@@ -22,6 +22,43 @@ import {
 } from "./reader/model";
 import { QURAN_FONT_STACK, QURAN_LAYOUT_PROFILE } from "./reader/profile";
 
+// ── Surgical Fix for Specific Glyph Collisions ─────────────────────────────
+// Isolates critical marks to prevent font ligature errors (e.g., Madda vs Small Qaf)
+const CRITICAL_MARKS = /([\u06D6-\u06DC\u06DF-\u06ED])/g; 
+// Range includes: ۗۘۙۚۛۜ۝۞ۣ۟۠ۡۢۤۥۦۧۨ۩ۭ۫۬
+
+function renderQuranText(text: string): React.ReactNode {
+  const parts = text.split(CRITICAL_MARKS);
+  
+  // Fast path: if no critical marks found, return original string
+  if (parts.length === 1) {
+    return text;
+  }
+
+  const nodes: React.ReactNode[] = [];
+  parts.forEach((part, index) => {
+    if (!part) return;
+    
+    // If this part matches a critical mark
+    if (CRITICAL_MARKS.test(part)) {
+      nodes.push(
+        <span 
+          key={`m-${index}`} 
+          className="quran-isolated-mark"
+          aria-hidden="true"
+        >
+          {part}
+        </span>
+      );
+    } else {
+      // Normal text chunk
+      nodes.push(part);
+    }
+  });
+
+  return <>{nodes}</>;
+}
+
 function href(surah: number, ayah: number): string {
   return `/quran/${surah}/${ayah}`;
 }
@@ -457,7 +494,8 @@ function QuranPageSurface({
                     WebkitBoxDecorationBreak: "clone",
                   }}
                 >
-                  {item.text}
+                  {/* --- CHANGE HERE: Use renderQuranText helper --- */}
+                  {renderQuranText(item.text)}
                 </span>
               </span>
             ))}
