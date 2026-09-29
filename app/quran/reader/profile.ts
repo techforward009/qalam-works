@@ -1,78 +1,92 @@
 /**
  * Qalam Works — Quran Reader Layout Profile
  *
- * Rendering-first profile:
- * - Quran source text remains unchanged.
- * - Page geometry is controlled here, not by viewport size.
- * - The layout is inspired by the reading surface proportions used by
- *   Tanzil's embedded Quran viewer.
+ * Rendering model:
+ * - Quran page numbers and ayah boundaries are fixed by Tanzil metadata.
+ * - Page WIDTH is fixed for a stable reading column.
+ * - Page HEIGHT is intentionally flexible and follows the amount of text
+ *   contained on that page.
  *
  * IMPORTANT:
- * This file controls presentation only.
- * It does not alter Quran text, normalization, search keys, or page source data.
+ * This profile controls presentation only.
+ * It does not alter Quran text, normalization, search keys, or the source
+ * Quran corpus.
  */
+
 export const QURAN_LAYOUT_PROFILE = {
+  /**
+   * Reader profile identifier.
+   */
   id: "qalam-indopak-v1",
 
   /**
    * Production Quran font.
-   *
-   * The font is kept separate from the Quran source text because
-   * Unicode text and OpenType rendering are independent layers.
    */
   productionFont: "Al Qalam Quran Majeed",
 
   /**
-   * Reference-only font name.
+   * Reference-only font.
    * PDMS Saleem is not bundled with the application.
    */
   referenceFont: "PDMS Saleem Quran",
   pdmsBundled: false,
 
   /**
-   * Reading surface geometry.
+   * Fixed reading-surface width.
    *
-   * Tanzil documents a 770 × 1000 px embedded Quran surface.
-   * We use the same outer proportions here as a visual reference,
-   * while keeping Qalam's own synthetic page model intact.
+   * 770px is retained as the desktop reference width used by the
+   * Tanzil-style reader layout.
    */
   pageWidthPx: 770,
-  pageMinHeightPx: 1000,
 
   /**
-   * Usable Quran text area.
+   * IMPORTANT:
    *
-   * This remains narrower than the outer page so that the Arabic text
-   * has comfortable side breathing room and a book-like reading column.
+   * Page height is now content-driven.
+   *
+   * QuranReader.tsx still reads this property and applies it as
+   * minHeight, therefore zero is used rather than removing the property
+   * entirely. This prevents an old fixed-height assumption from forcing
+   * every page to 1000px.
+   */
+  pageMinHeightPx: 0,
+
+  /**
+   * Maximum usable Quran text width inside the decorative frame.
+   *
+   * The browser will still determine the actual line wrapping.
    */
   textAreaWidthPx: 650,
 
   /**
    * Base Quran font size.
    *
-   * Scale controls in the reader may multiply this value.
+   * Reader scale controls may multiply this value.
    */
   fontSizePx: 28,
 
   /**
-   * Vertical rhythm of Quran paragraphs.
+   * Quran line rhythm.
    *
-   * Slightly tighter than the previous 2.35 value to make the page
-   * feel denser and closer to a traditional Quran reading surface.
+   * This remains comfortable for Arabic reading while allowing the
+   * content-driven page height to remain compact on short pages.
    */
   lineHeight: 2.2,
 
   /**
-   * Synthetic pagination controls.
+   * Retained for compatibility with the older layout model and tests.
    *
-   * These values are intentionally unchanged for now because the
-   * current task is visual refinement, not corpus/page migration.
+   * These values no longer determine page breaks.
+   * Fixed page boundaries now come from TANZIL_PAGE_STARTS.
    */
   unitsPerLine: 42,
   linesPerPage: 15,
 
   /**
-   * Layout reservation values used by the page model.
+   * Retained as metadata for layout consumers.
+   *
+   * These values no longer control pagination because page boundaries
+   * are fixed by the Tanzil page map.
    */
   surahHeaderLines: 2,
   bismillahLines: 2,
@@ -87,8 +101,8 @@ export const QURAN_LAYOUT_PROFILE = {
  * 3. Asif Quranic
  * 4. Project/system Arabic fonts
  *
- * The fallback order is intentionally retained so that a font-loading
- * problem does not leave the Quran unreadable.
+ * The fallback order is intentionally retained so that a temporary
+ * font-loading problem does not make the Quran unreadable.
  */
 export const QURAN_FONT_STACK =
   '"Al Qalam Quran Majeed", "Muhammadi Quranic", "Asif Quranic", var(--font-naskh), "Noto Naskh Arabic", var(--font-amiri), Amiri, serif';
