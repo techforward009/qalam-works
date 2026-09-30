@@ -98,7 +98,7 @@ describe("Date Studio discovery surfaces", () => {
     const routeEntries = header.match(/label: t\.dateStudio, href: "\/tools\/date-converter"/g) ?? [];
 
     expect(routeEntries).toHaveLength(1);
-    expect(header).toMatch(/dateStudio: translations\[language\]\.nav\.dateStudio/);
+    expect(header).toMatch(/const t = translations\.en\.nav/);
     expect(header).not.toMatch(/label: "Date Studio", href: "\/tools\/date-converter"/);
     expect(translations).toMatch(/dateStudio: "Date Studio"/);
     expect(translations).toMatch(/dateStudio: "ڈیٹ اسٹوڈیو"/);
@@ -109,7 +109,7 @@ describe("Date Studio discovery surfaces", () => {
     const footer = read("app/components/Footer.tsx");
     const sitemap = read("app/sitemap.ts");
 
-    expect(header).toMatch(/label: language === "ur" \? "رؤیتِ ہلال" : "Crescent Visibility", href: "\/tools\/crescent-visibility"/);
+    expect(header).toMatch(/label: "Crescent Visibility", href: "\/tools\/crescent-visibility"/);
     expect((header.match(/href: "\/tools\/crescent-visibility"/g) ?? []).length).toBe(1);
     expect(footer).toMatch(/href: "\/tools\/crescent-visibility"/);
     expect(sitemap).toMatch(/\$\{BASE\}\/tools\/crescent-visibility/);

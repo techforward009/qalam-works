@@ -92,50 +92,58 @@ export const translations = {
       ],
     },
     beforeAfter: {
-      afterStatus: "Auto-corrected",
-      headline: "See the difference in seconds.",
-      before: "BEFORE",
-      after: "AFTER",
-      note: "Fixed automatically by Qalam Works.",
+      headline: "Unicode Standardizer",
+      watch: "Watch Qalam fix broken encoding deterministically.",
+      inputLabel: "Input (Broken)",
+      outputLabel: "Output (Fixed)",
+      prompt: "Click “Fix Text” to see the result.",
+      fixButton: "Fix Text Deterministically",
+      principle: "Deterministic First. AI Later.",
+      principleBody:
+        "Qalam corrects your text with precision rules before any AI enhancement. Unicode normalization, RTL punctuation, and script errors are fixed deterministically — the same result, every time.",
+      tagYeh: "Yeh (Arabic)",
+      tagComma: "Comma (Latin)",
+      tagSpacing: "Spacing Errors",
     },
     howItWorks: {
-      headline: "One workspace for every stage of Urdu publishing.",
+      headline: "The Toolkit",
+      supporting: "Nine tools. One platform. Built for precision.",
       tools: [
         {
           name: "Document Studio",
-          body: "Write, edit, clean, and export Urdu documents in one workspace — including punctuation correction and language-aware processing.",
+          body: "Full publishing environment for Urdu documents with real-time preview.",
         },
         {
-          name: "Roman Urdu → Urdu",
-          body: "A Roman Urdu converter and writing assistant: type in Roman Urdu, review uncertain words, and copy Urdu script.",
+          name: "Document Cleaner",
+          body: "Fix spacing, punctuation, and encoding errors instantly.",
+        },
+        {
+          name: "Unicode Standardizer",
+          body: "Correct Urdu characters at source (Yeh, Kaf, Heh).",
         },
         {
           name: "Translation Studio",
-          body: "Translate documents segment by segment, manage glossary and review, then continue in Document Studio.",
+          body: "Specialized translation for Urdu, English, Arabic, and Persian.",
         },
         {
-          name: "Urdu Text Cleaner",
-          body: "An Urdu text cleaner for safe cleanup, normalization, and formatting — with English-safe and Arabic-safe modes.",
+          name: "Roman Urdu Writer",
+          body: "Type Roman, receive Urdu instantly.",
         },
         {
-          name: "Urdu Text Check",
-          body: "Inspect punctuation, spacing, and script issues in Urdu text — without changing a single character.",
-        },
-        {
-          name: "Urdu Unicode Fixer",
-          body: "An Urdu Unicode fixer for letter-form correction, spacing, and punctuation in plain text.",
-        },
-        {
-          name: "WhatsApp Urdu Formatter",
-          body: "Prepare mixed Urdu/Arabic + English text for stable WhatsApp direction.",
-        },
-        {
-          name: "Invoice Generator",
-          body: "Create clean, professional invoices and export them as PDF.",
+          name: "Quality Checker",
+          body: "Catch Unicode errors and inconsistencies before you publish.",
         },
         {
           name: "Date Converter",
-          body: "Convert dates between Gregorian, Hijri, and Solar Hijri calendars with weekday and calculation-method details.",
+          body: "Accurate Gregorian, Hijri, and Solar Hijri date conversion.",
+        },
+        {
+          name: "WhatsApp RTL",
+          body: "Format right-to-left text perfectly for WhatsApp messages.",
+        },
+        {
+          name: "Invoice Generator",
+          body: "Create professional, print-ready Urdu invoices in seconds.",
         },
       ],
     },
@@ -481,50 +489,58 @@ export const translations = {
       ],
     },
     beforeAfter: {
-      afterStatus: "خودکار اصلاح",
-      headline: "چند ثانیوں میں فرق دیکھیں۔",
-      before: "پہلے",
-      after: "بعد",
-      note: "قلم ورکس کے ذریعے خودکار طور پر درست کیا گیا۔",
+      headline: "یونیکوڈ اسٹینڈرڈائزر",
+      watch: "دیکھیں قلم ٹوٹی ہوئی انکوڈنگ کو قواعد سے کیسے درست کرتا ہے۔",
+      inputLabel: "ان پٹ (خراب)",
+      outputLabel: "آؤٹ پٹ (درست)",
+      prompt: "نتیجہ دیکھنے کے لیے «متن درست کریں» دبائیں۔",
+      fixButton: "قواعد سے متن درست کریں",
+      principle: "پہلے قواعد۔ مصنوعی ذہانت بعد میں۔",
+      principleBody:
+        "قلم پہلے درستگی کے قواعد سے متن سنوارتا ہے۔ یونیکوڈ، دائیں سے بائیں رموز اور رسم الخط ہر بار ایک ہی نتیجہ دیتے ہیں۔",
+      tagYeh: "ی (عربی)",
+      tagComma: "کوما (لاطینی)",
+      tagSpacing: "فاصلے کی غلطیاں",
     },
     howItWorks: {
-      headline: "اردو اشاعت کے ہر مرحلے کے لیے ایک ہی ماحول۔",
+      headline: "ٹول کٹ",
+      supporting: "نو اوزار۔ ایک پلیٹ فارم۔ درستگی کے لیے۔",
       tools: [
         {
           name: "ڈاکومنٹ اسٹوڈیو",
-          body: "اردو دستاویزات لکھیں، صاف کریں اور ایکسپورٹ کریں — رموزِ اوقاف کی اصلاح اور زبان کے مطابق پروسیسنگ کے ساتھ۔",
+          body: "اردو دستاویزات کے لیے مکمل اشاعتی ماحول، براہِ راست پیش منظر کے ساتھ۔",
         },
         {
-          name: "رومن اردو سے اردو",
-          body: "رومن اردو سے اردو لکھنے کا معاون: رومن اردو لکھیں، مشکوک الفاظ کا جائزہ لیں، اور اردو رسم الخط حاصل کریں۔",
+          name: "ڈاکومنٹ کلینر",
+          body: "فاصلہ، رموزِ اوقاف اور انکوڈنگ فوراً درست کرتا ہے۔",
+        },
+        {
+          name: "یونیکوڈ اسٹینڈرڈائزر",
+          body: "اردو حروف (ی، ک، ہ) منبع پر درست کرتا ہے۔",
         },
         {
           name: "ترجمہ اسٹوڈیو",
-          body: "حصہ بہ حصہ ترجمہ کریں، اصطلاحی فہرست اور نظرثانی کا انتظام کریں، پھر ڈاکومنٹ اسٹوڈیو میں جاری رکھیں۔",
+          body: "اردو، انگریزی، عربی اور فارسی کا مخصوص ترجمہ۔",
         },
         {
-          name: "اردو ٹیکسٹ کلینر",
-          body: "اردو متن کی صفائی: محفوظ صفائی، معیاری کاری اور فارمیٹنگ — انگریزی اور عربی محفوظ موڈ کے ساتھ۔",
+          name: "رومن اردو سے اردو",
+          body: "رومن لکھیں، اردو فوراً حاصل کریں۔",
         },
         {
-          name: "اردو متن کی جانچ",
-          body: "فاصلہ، رموزِ اوقاف اور رسم الخط کے مسائل متن بدلے بغیر چیک کریں۔",
-        },
-        {
-          name: "اردو یونیکوڈ فکسر",
-          body: "اردو یونیکوڈ اصلاح: حروف کی شکلیں، فاصلہ اور رموزِ اوقاف درست کریں۔",
-        },
-        {
-          name: "واٹس ایپ اردو فارمیٹر",
-          body: "مخلوط اردو/عربی اور انگریزی متن کو واٹس ایپ کے لیے مستحکم سمت میں تیار کریں۔",
-        },
-        {
-          name: "انوائس جنریٹر",
-          body: "صاف ستھری اور پیشہ ورانہ انوائس تیار کریں اور پی ڈی ایف میں محفوظ کریں۔",
+          name: "کوالٹی چیکر",
+          body: "اشاعت سے پہلے یونیکوڈ کی غلطیاں اور بے ترتیبی پکڑتا ہے۔",
         },
         {
           name: "تاریخ کنورٹر",
-          body: "عیسوی، ہجری قمری اور ہجری شمسی تاریخوں کو باہم تبدیل کریں، ہفتے کے دن اور حسابی طریقے کی وضاحت کے ساتھ۔",
+          body: "عیسوی، ہجری قمری اور ہجری شمسی تاریخوں کا درست تبادلہ۔",
+        },
+        {
+          name: "واٹس ایپ آر ٹی ایل",
+          body: "دائیں سے بائیں متن کو واٹس ایپ کے لیے مستحکم سمت میں رکھتا ہے۔",
+        },
+        {
+          name: "انوائس جنریٹر",
+          body: "پیشہ ورانہ، طباعت کے قابل اردو انوائس چند لمحوں میں۔",
         },
       ],
     },

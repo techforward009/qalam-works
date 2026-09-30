@@ -1,121 +1,90 @@
 "use client";
 
+import { useState } from "react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 
-// The marketing example is generated from the real production standardizer.
-// Keep the example here in sync with actual tool behavior rather than
-// hard-coding a fictional AFTER result.
-const BEFORE_TEXT =
-  "تحقیق :  یہ  ایک  علمی  مضمون  ہے ,جس ميں\nاردو اور English متن  ايك  ساتھ موجود  ہے۔\nمصنف  نے  کہا  : \"یہ مواد اشاعت کے لئے تیار ہے\" !!";
+const BROKEN_TEXT = "يہ  ,  ايك  غلط  حروف  والا  متن  ہے";
+const FIXED_TEXT = standardizeUrduText(BROKEN_TEXT).output;
 
-const AFTER_TEXT = standardizeUrduText(BEFORE_TEXT).output;
-
-function PenNibIcon() {
-  return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 19l7-7 3 3-7 7-3-3z" />
-      <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-      <path d="M2 2l7.586 7.586" />
-      <circle cx="11" cy="11" r="2" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M5 12.5l4 4L19 7.5" />
-    </svg>
-  );
-}
-
-/**
- * Homepage proof section.
- *
- * Design direction is taken from the approved Qwen concept:
- * BEFORE → QALAM → AFTER, with a restrained editorial treatment.
- * The actual AFTER text is produced by the real production standardizer.
- */
 export default function BeforeAfterSection() {
   const { language, dir } = useLanguage();
   const t = translations[language].beforeAfter;
   const naskh = language === "ur" ? "font-naskh" : "";
+  const [fixed, setFixed] = useState(false);
 
   return (
-    <section
-      id="before-after"
-      className="bg-[#F3F7F2] py-16 dark:bg-[#0E1524] md:py-20"
-      dir={dir}
-    >
-      <div className="mx-auto max-w-[1100px] px-6">
-        <div className="mx-auto mb-10 max-w-2xl text-center">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#1F6C54] dark:text-[#2FA37D]">
-            Deterministic First. AI Later.
-          </p>
-          <h2
-            className={`mt-3 text-2xl font-bold text-[#11182A] dark:text-[#F7F5EF] md:text-3xl ${
-              language === "ur" ? "font-nastaliq font-normal leading-[1.7]" : ""
-            }`}
-          >
+    <section id="before-after" className="bg-white py-16 dark:bg-[#11182A] md:py-20" dir={dir}>
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="mb-12 text-center">
+          <h2 className={`text-3xl font-bold text-[#11182A] dark:text-white ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
             {t.headline}
           </h2>
+          <p className={`mt-4 text-lg text-[#4d564f] dark:text-[#b7c4bb] ${naskh}`}>{t.watch}</p>
         </div>
 
-        <div className="grid items-stretch gap-4 md:grid-cols-[1fr_auto_1fr] md:gap-0">
-          <div dir="rtl" className="rounded-2xl bg-[#1A2036] p-6 text-right shadow-xl shadow-[#0E1524]/20 md:rounded-r-none">
-            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.16em] text-[#E7C7C0]" dir="ltr">
-              {t.before}
+        <div className="grid items-stretch gap-6 md:grid-cols-[1fr_auto_1fr]" dir="ltr">
+          <div className="relative overflow-hidden rounded-2xl border-2 border-[#1A2036]/10 bg-[#F7F5EF] p-8 shadow-inner dark:border-white/10 dark:bg-[#0E1524]">
+            <div className="absolute left-0 top-0 rounded-br-lg bg-[#1A2036] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white dark:bg-[#243049]" dir="ltr">
+              {t.inputLabel}
+            </div>
+            <p dir="rtl" lang="ur" className="mt-6 break-words font-nastaliq text-2xl leading-[2.4] text-[#6b645c] dark:text-[#c5b8b0]">
+              {BROKEN_TEXT}
             </p>
-            <p className="whitespace-pre-line break-words font-nastaliq text-[22px] leading-[2.15] text-[#f3e4df] md:text-[24px]">
-              {BEFORE_TEXT}
-            </p>
-          </div>
-
-          <div className="relative z-10 flex items-center justify-center md:-mx-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#2FA37D] text-white shadow-[0_0_0_8px_rgba(47,163,125,0.18),0_12px_30px_rgba(47,163,125,0.35)]">
-              <PenNibIcon />
+            <div className="mt-4 flex flex-wrap gap-2" dir="ltr">
+              {[t.tagYeh, t.tagComma, t.tagSpacing].map((tag) => (
+                <span key={tag} className="rounded bg-red-100 px-2 py-1 text-xs font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                  {tag}
+                </span>
+              ))}
             </div>
           </div>
 
-          <div dir="rtl" className="rounded-2xl bg-[#11182A] p-6 text-right shadow-xl shadow-[#0E1524]/25 ring-1 ring-[#2FA37D]/25 md:rounded-l-none">
-            <div className="mb-4 flex items-center justify-between gap-3" dir="ltr">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2FA37D]">{t.after}</p>
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#9BE0C8]">
-                <CheckIcon />
-                {t.afterStatus}
-              </span>
+          <div className="flex items-center justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-[#2FA37D]/15 text-[#1F6C54] shadow-lg dark:border-[#11182A] dark:bg-[#2FA37D]/20 dark:text-[#7DDCB8]">
+              <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
             </div>
-            <p className="whitespace-pre-line break-words font-nastaliq text-[22px] leading-[2.15] text-[#F7F5EF] md:text-[24px]">
-              {AFTER_TEXT}
-            </p>
+          </div>
+
+          <div className="relative overflow-hidden rounded-2xl border-2 border-[#2FA37D]/40 bg-white p-8 shadow-xl dark:border-[#2FA37D]/35 dark:bg-[#1A2036]">
+            <div className="absolute left-0 top-0 rounded-br-lg bg-[#2FA37D] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white" dir="ltr">
+              {t.outputLabel}
+            </div>
+            <div className="mt-6 flex min-h-[120px] flex-col justify-center">
+              {fixed ? (
+                <>
+                  <p dir="rtl" lang="ur" className="break-words font-nastaliq text-2xl font-bold leading-[2.4] text-[#11182A] dark:text-white">
+                    {FIXED_TEXT}
+                  </p>
+                </>
+              ) : (
+                <p className={`text-sm italic text-[#6b645c] dark:text-[#b7c4bb] ${naskh}`}>{t.prompt}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setFixed(true)}
+              className={`mt-6 flex w-full items-center justify-center rounded-lg bg-[#11182A] px-4 py-3 font-bold text-white transition-colors hover:bg-[#1F6C54] dark:bg-[#2FA37D] dark:hover:bg-[#248565] ${naskh}`}
+            >
+              {t.fixButton}
+            </button>
           </div>
         </div>
 
-        <p className={`mx-auto mt-8 max-w-2xl text-center text-[14px] leading-relaxed text-[#3d5648] dark:text-[#b7c4bb] ${naskh}`}>
-          {t.note}
-        </p>
+        <div className="mt-12 flex items-start gap-4 rounded-xl border border-[#2FA37D]/20 bg-[#F3F7F2] p-6 dark:border-white/10 dark:bg-[#0E1524]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2FA37D]/20 text-[#1F6C54] dark:text-[#7DDCB8]">
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className={`text-lg font-bold text-[#11182A] dark:text-white ${naskh}`}>{t.principle}</h3>
+            <p className={`mt-2 leading-relaxed text-[#4d564f] dark:text-[#b7c4bb] ${naskh}`}>{t.principleBody}</p>
+          </div>
+        </div>
       </div>
     </section>
   );

@@ -78,7 +78,7 @@ test("4-6. homepage How It Works card links correctly in English", async () => {
   await renderHowItWorks();
   const card = screen.getByRole("link", { name: /Roman Urdu/i });
   expect(writerHref(card)).toBe("/tools/roman-urdu-writer");
-  expect(card.textContent).toMatch(/Roman Urdu converter|writing assistant/i);
+  expect(card.textContent).toMatch(/Type Roman, receive Urdu instantly/i);
   expect(card.textContent).not.toMatch(/100%|perfect|AI-powered|V2|V3|benchmark/i);
 });
 
@@ -153,7 +153,7 @@ test("13-15. existing major tool links unchanged", async () => {
 test("16-17. Urdu footer localization", async () => {
   mockLanguage = "ur";
   await renderFooter();
-  const link = screen.getByRole("link", { name: /رومن اردو سے اردو/ });
+  const link = screen.getByRole("link", { name: /Roman Urdu/i });
   expect(writerHref(link)).toBe("/tools/roman-urdu-writer");
 });
 

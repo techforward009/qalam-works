@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Menu, X } from "lucide-react";
-import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import LanguageSwitch from "./LanguageSwitch";
 
@@ -20,7 +19,7 @@ function PenNibIcon({ size = 22 }: { size?: number }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="text-[#C9A46B] shrink-0"
+      className="text-white shrink-0"
     >
       <path d="M12 19l7-7 3 3-7 7-3-3z" />
       <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
@@ -41,32 +40,27 @@ export default function Header() {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
-  const { language } = useLanguage();
-  const copy = translations[language].nav;
-  const t = {
-    ...translations.en.nav,
-    dateStudio: translations[language].nav.dateStudio,
-  };
+  const t = translations.en.nav;
 
   const toolLinks = [
     { label: t.documentStudio, href: "/tools/document-studio" },
     { label: t.documentCleaner, href: "/tools/document-cleaner" },
     { label: t.qualityChecker, href: "/tools/quality-checker" },
     { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
-    { label: language === "ur" ? "عربی اعراب" : "Arabic Diacritics", href: "/tools/arabic-diacritics" },
-    { label: language === "ur" ? "قرآن کریم" : "Quran", href: "/quran/1/1" },
+    { label: "Arabic Diacritics", href: "/tools/arabic-diacritics" },
+    { label: "Quran", href: "/quran/1/1" },
     { label: t.translationStudio, href: "/tools/translation-studio" },
     { label: t.urduWriter, href: "/tools/roman-urdu-writer" },
     { label: t.urduRomanWriter, href: "/tools/urdu-roman-writer" },
-    { label: language === "ur" ? "واٹس ایپ آر ٹی ایل" : "WhatsApp RTL", href: "/tools/whatsapp-rtl-formatter" },
+    { label: "WhatsApp RTL", href: "/tools/whatsapp-rtl-formatter" },
     { label: t.invoiceStudio, href: "/tools/invoice-generator" },
     { label: t.dateStudio, href: "/tools/date-converter" },
-    { label: language === "ur" ? "رؤیتِ ہلال" : "Crescent Visibility", href: "/tools/crescent-visibility" },
+    { label: "Crescent Visibility", href: "/tools/crescent-visibility" },
   ];
 
   const sectionLinks = [
-    { label: copy.howItWorks, href: "/#how-it-works" },
-    { label: copy.whoItsFor, href: "/#who-its-for" },
+    { label: "How it Works", href: "/#how-it-works" },
+    { label: "Who It's For", href: "/#who-its-for" },
   ];
 
   useEffect(() => {
@@ -107,17 +101,25 @@ export default function Header() {
   return (
     <div className="sticky top-0 z-50">
       <header className="bg-[#11182A] shadow-[0_10px_30px_rgba(14,21,36,0.28)]">
-        <div className="site-container flex h-16 items-center gap-3 lg:h-[72px]" dir="ltr">
-          <Link href="/" className="flex min-w-0 items-center gap-2 shrink-0" dir="ltr">
-            <PenNibIcon />
-            <span className="truncate text-[17px] font-bold tracking-tight text-white sm:text-[19px]">
-              Qalam Works
+        <div className="site-container flex h-20 items-center justify-between gap-4" dir="ltr">
+          <Link href="/" className="flex min-w-0 items-center gap-3 shrink-0" dir="ltr">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1F6C54] text-white shadow-md">
+              <PenNibIcon />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[18px] font-bold leading-none tracking-tight text-white">
+                Qalam Works
+              </span>
+              <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.18em] text-white/55">
+                Publishing Tools
+              </span>
             </span>
           </Link>
 
+          <div className="hidden items-center gap-8 lg:flex">
           <nav
             ref={navRef}
-            className="hidden flex-1 items-center gap-1 lg:flex"
+            className="flex items-center gap-8"
             dir="ltr"
             aria-label="Primary"
           >
@@ -129,7 +131,7 @@ export default function Header() {
                 aria-haspopup="menu"
                 className="flex items-center gap-1 px-2 py-2 text-[14px] font-medium text-white hover:text-[#7DDCB8]"
               >
-                {copy.tools}
+                {t.tools}
                 <ChevronDown size={14} className={`transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
               </button>
               {toolsOpen && (
@@ -168,13 +170,12 @@ export default function Header() {
             ))}
           </nav>
 
-          <div className="ml-auto hidden items-center gap-3 lg:flex">
             <LanguageSwitch />
             <Link
               href="/tools/document-studio"
-              className="inline-flex min-h-10 items-center rounded-lg bg-[#2FA37D] px-4 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-[#248565]"
+              className="inline-flex min-h-10 items-center rounded-lg bg-[#2FA37D] px-5 text-[14px] font-bold text-white shadow-md transition-colors hover:bg-[#248565]"
             >
-              {copy.openStudio}
+              Open Studio
             </Link>
           </div>
 
@@ -219,7 +220,7 @@ export default function Header() {
               aria-expanded={mobileToolsOpen}
               className="flex w-full items-center justify-between border-b border-white/5 py-3.5 text-left text-[16px] font-medium text-white"
             >
-              <span>{copy.tools}</span>
+              <span>Tools</span>
               <ChevronDown size={16} className={`transition-transform ${mobileToolsOpen ? "rotate-180" : ""}`} />
             </button>
             {mobileToolsOpen && (
@@ -249,7 +250,7 @@ export default function Header() {
               onClick={closeAll}
               className="mx-1 my-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-[#2FA37D] px-4 text-[15px] font-semibold text-white"
             >
-              {copy.openStudio}
+              Open Studio
             </Link>
           </div>
         </nav>

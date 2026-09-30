@@ -10,17 +10,17 @@ export default function FinalCtaSection() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section className="bg-[#0E1524] py-16 md:py-20" dir={dir}>
-      <div className="mx-auto max-w-2xl px-6 text-center">
-        <h2 className={`mb-6 whitespace-pre-line text-3xl font-bold leading-tight text-white md:text-4xl ${language === "ur" ? "font-nastaliq font-normal leading-[1.8]" : ""}`}>
+    <section className="bg-gradient-to-br from-[#1F6C54] to-[#115E59] py-20 md:py-24" dir={dir}>
+      <div className="mx-auto max-w-3xl px-6 text-center">
+        <h2 className={`mb-6 whitespace-pre-line text-4xl font-bold leading-tight text-white md:text-5xl ${language === "ur" ? "font-nastaliq font-normal leading-[1.8]" : ""}`}>
           {t.headline}
         </h2>
-        <p className={`mb-8 text-base text-[#c5d0c9] md:text-lg ${naskh}`}>{t.subline}</p>
-        <Link href="/tools/document-studio" className={`inline-flex min-h-12 items-center rounded-lg bg-[#2FA37D] px-8 py-3 text-[15px] font-semibold text-white shadow-lg shadow-[#2FA37D]/20 transition-colors hover:bg-[#248565] ${naskh}`}>
+        <p className={`mb-10 text-lg text-[#E7F6F0] md:text-xl ${naskh}`}>{t.subline}</p>
+        <Link href="/tools/document-studio" className={`inline-flex min-h-12 items-center rounded-xl bg-white px-8 py-3 text-[16px] font-bold text-[#1F6C54] shadow-xl transition-transform hover:-translate-y-0.5 hover:bg-[#F3F7F2] ${naskh}`}>
           {t.cta}
         </Link>
         <p className="mt-5">
-          <Link href="/tools" className={`text-[14px] text-[#C9A46B] underline decoration-[#C9A46B]/40 underline-offset-4 hover:text-[#E0BA85] ${naskh}`}>
+          <Link href="/tools" className={`text-[15px] text-white/85 underline decoration-white/30 underline-offset-4 hover:text-white ${naskh}`}>
             {t.exploreTools}
           </Link>
         </p>
