@@ -5,18 +5,7 @@ import { Eraser, Type, FilePenLine, MessageCircle, SearchCheck, Languages, PenLi
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { trackEvent, type ToolId } from "../lib/analytics";
-import { getHomepageToolAccent } from "../lib/homepage-tool-accents";
 
-// Task chips — compact workflow shortcuts above the card list
-const CHIP_LINKS = [
-  { key: "clean",     href: "/tools/document-cleaner" },
-  { key: "write",     href: "/tools/roman-urdu-writer" },
-  { key: "translate", href: "/tools/translation-studio" },
-  { key: "review",    href: "/tools/quality-checker" },
-  { key: "publish",   href: "/tools/document-studio" },
-] as const;
-
-// Tiny visual examples — only where genuinely illustrative
 const CARD_EXAMPLE: Record<string, string> = {
   "/tools/document-cleaner":    "يہ , متن !! → یہ، متن!",
   "/tools/unicode-standardizer": "ي / ك → ی / ک",
@@ -48,30 +37,14 @@ const CARD_ICONS: Record<string, typeof Eraser> = {
 export default function JobGuidanceSection() {
   const { language, dir } = useLanguage();
   const t = translations[language].jobGuidance;
-  const tc = translations[language].taskChips;
   const naskh = language === "ur" ? "font-naskh" : "";
   const isUr = language === "ur";
 
   return (
-    <section className="bg-white dark:bg-[#0e1c15] py-10 md:py-12" dir={dir}>
-      <div className="site-container max-w-3xl mx-auto">
-
-        {/* Task chips — compact workflow shortcuts */}
-        <div className="flex gap-2 flex-wrap justify-center mb-6">
-          {CHIP_LINKS.map(({ key, href }) => (
-            <Link
-              key={key}
-              href={href}
-              onClick={() => trackEvent("nav_click", { tool: "home", target_tool: HREF_TO_TOOL[href] ?? "unknown", nav_source: "homepage_card" })}
-              className={`px-4 py-1.5 rounded-full text-sm font-semibold border border-[#1A3A2A]/15 dark:border-[#2a3d30] bg-[#F7F5EF] dark:bg-[#162a1e] text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/50 hover:bg-[#B8935A]/8 dark:hover:bg-[#B8935A]/10 hover:text-[#9A6A30] dark:hover:text-[#C9A46B] transition-all duration-150 ${naskh}`}
-            >
-              {(tc as Record<string, string>)[key]}
-            </Link>
-          ))}
-        </div>
-
+    <section className="bg-[#F7F5EF] py-14 dark:bg-[#0E1524] md:py-16" dir={dir}>
+      <div className="site-container mx-auto max-w-3xl">
         <h2
-          className={`text-xl md:text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] text-center mb-5 ${
+          className={`mb-6 text-center text-xl font-bold text-[#11182A] dark:text-[#F7F5EF] md:text-2xl ${
             isUr ? "font-nastaliq font-normal" : ""
           }`}
         >
@@ -81,7 +54,6 @@ export default function JobGuidanceSection() {
         <ul className="space-y-3.5">
           {t.items.map((item) => {
             const Icon = CARD_ICONS[item.href] ?? Eraser;
-            const accent = getHomepageToolAccent(item.href);
             const example = CARD_EXAMPLE[item.href];
 
             return (
@@ -95,10 +67,10 @@ export default function JobGuidanceSection() {
                       nav_source: "homepage_card",
                     })
                   }
-                  className={`group flex items-center gap-3.5 sm:gap-4 rounded-2xl border bg-[#F7F5EF] dark:bg-[#162a1e] px-4 py-4 sm:px-5 sm:py-4.5 min-h-[72px] transition-all duration-200 motion-safe:hover:-translate-y-[2px] motion-safe:hover:scale-[1.008] ${accent.borderAccent} ${accent.hoverShadow} hover:bg-[#F1ECE0] dark:hover:bg-[#1e3527] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 ${naskh}`}
+                  className={`group flex min-h-[72px] items-center gap-3.5 rounded-2xl border border-[#1A2036]/8 bg-white px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2FA37D]/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2FA37D] dark:border-white/10 dark:bg-[#1A2036] dark:hover:border-[#2FA37D]/40 sm:gap-4 sm:px-5 ${naskh}`}
                 >
                   <span
-                    className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl ${accent.iconBg} ${accent.iconColor}`}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#2FA37D]/12 text-[#1F6C54] dark:bg-[#2FA37D]/15 dark:text-[#7DDCB8] sm:h-12 sm:w-12"
                     aria-hidden="true"
                   >
                     <Icon className="h-5 w-5 sm:h-[22px] sm:w-[22px]" strokeWidth={2} />
@@ -125,10 +97,10 @@ export default function JobGuidanceSection() {
 
                   {/* Logical arrow: flips correctly in RTL without bidi issues */}
                   <span
-                    className="shrink-0 text-[#1A3A2A]/45 group-hover:text-[#1A3A2A] transition-colors rtl:rotate-180"
+                    className="shrink-0 text-[#2FA37D] transition-colors rtl:rotate-180"
                     aria-hidden="true"
                   >
-                    <ChevronRight className="h-5 w-5 text-[#1A3A2A] dark:text-[#8faa93] group-hover:dark:text-[#a8b9ac]" strokeWidth={2.25} />
+                    <ChevronRight className="h-5 w-5" strokeWidth={2.25} />
                   </span>
                 </Link>
               </li>

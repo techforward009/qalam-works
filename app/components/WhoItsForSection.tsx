@@ -17,7 +17,7 @@ export default function WhoItsForSection() {
         <div className="grid gap-4 sm:grid-cols-2">
           {t.audiences.map((a) => (
             <div key={a.role} className="rounded-2xl border border-white/10 bg-[#11182A] p-6 text-start">
-              <h3 className={`mb-2 text-[19px] font-bold text-[#F7F5EF] ${naskh}`}>{a.role}</h3>
+              <h3 className={`mb-2 text-[19px] font-bold text-[#2FA37D] ${naskh}`}>{a.role}</h3>
               <p className={`text-[16px] leading-relaxed text-[#c5d0c9] ${naskh}`}>{a.body}</p>
             </div>
           ))}

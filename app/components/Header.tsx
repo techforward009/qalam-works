@@ -96,7 +96,7 @@ export default function Header() {
   }, [pathname]);
 
   const linkCls =
-    "relative px-2 py-2 text-[14px] font-medium text-white/88 hover:text-white whitespace-nowrap transition-colors";
+    "relative px-2 py-2 text-[14px] font-medium text-white/88 hover:text-[#7DDCB8] whitespace-nowrap transition-colors";
 
   function closeAll() {
     setToolsOpen(false);
@@ -127,7 +127,7 @@ export default function Header() {
                 onClick={() => setToolsOpen((open) => !open)}
                 aria-expanded={toolsOpen}
                 aria-haspopup="menu"
-                className="flex items-center gap-1 px-2 py-2 text-[14px] font-medium text-white hover:text-white"
+                className="flex items-center gap-1 px-2 py-2 text-[14px] font-medium text-white hover:text-[#7DDCB8]"
               >
                 {copy.tools}
                 <ChevronDown size={14} className={`transition-transform ${toolsOpen ? "rotate-180" : ""}`} />

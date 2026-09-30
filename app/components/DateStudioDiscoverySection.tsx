@@ -40,10 +40,10 @@ export default function DateStudioDiscoverySection() {
               <p className={`mt-1 text-[15px] leading-relaxed text-[#4d564f] dark:text-[#b7c4bb] ${naskh}`}>{t.desc}</p>
             </div>
           </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-3">
-            <Link href="/tools/date-converter" className={`rounded-xl bg-[#2FA37D] px-4 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[#248565] ${naskh}`}>{t.convert}</Link>
-            <Link href="/tools/date-converter#date-studio" className={`rounded-xl border border-[#1A2036]/15 px-4 py-3 text-center text-sm font-semibold text-[#11182A] transition-colors hover:border-[#2FA37D]/50 dark:border-white/15 dark:text-[#F7F5EF] ${naskh}`}>{t.explore}</Link>
-            <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A2036]/15 px-4 py-3 text-center text-sm font-semibold text-[#11182A] transition-colors hover:border-[#2FA37D]/50 dark:border-white/15 dark:text-[#F7F5EF] ${naskh}`}>{t.make}</Link>
+          <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <Link href="/tools/date-converter" className={`inline-flex min-h-11 items-center rounded-lg bg-[#2FA37D] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#248565] ${naskh}`}>{t.convert}</Link>
+            <Link href="/tools/date-converter#date-studio" className={`text-sm font-semibold text-[#1F6C54] underline decoration-[#2FA37D]/40 underline-offset-4 hover:text-[#248565] dark:text-[#7DDCB8] ${naskh}`}>{t.explore}</Link>
+            <Link href="/tools/calendar-maker" className={`text-sm font-semibold text-[#1F6C54] underline decoration-[#2FA37D]/40 underline-offset-4 hover:text-[#248565] dark:text-[#7DDCB8] ${naskh}`}>{t.make}</Link>
           </div>
         </div>
       </div>
