@@ -3,156 +3,85 @@
 import Link from "next/link";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
+import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 
-/**
- * Homepage Hero — Qwen visual direction, production-native Qalam implementation.
- *
- * Keeps the approved Qalam copy and existing local font system, while adopting
- * the Qwen revision's stronger centered hierarchy, restrained green palette,
- * subtle geometric identity, and clearer CTA flow.
- */
+const PREVIEW_BEFORE = "يہ  ايك  مضمون ہے ,جس ميں English بھی ہے۔";
+const PREVIEW_AFTER = standardizeUrduText(PREVIEW_BEFORE).output;
+
+function PenNibIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 19l7-7 3 3-7 7-3-3z" />
+      <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+      <path d="M2 2l7.586 7.586" />
+      <circle cx="11" cy="11" r="2" />
+    </svg>
+  );
+}
+
 export default function Hero() {
   const { language, dir } = useLanguage();
   const t = translations[language].hero;
-
+  const urduLine = translations.ur.hero.subheadline;
   const naskh = language === "ur" ? "font-naskh" : "";
-  const headlineClass =
-    language === "ur"
-      ? "font-nastaliq font-normal leading-[1.7]"
-      : "leading-[1.08] tracking-tight";
+  const headlineClass = language === "ur" ? "font-nastaliq font-normal leading-[1.7]" : "leading-[1.08] tracking-tight";
 
   return (
-    <section
-      className="relative overflow-hidden bg-[#F7F5EF] dark:bg-[#0e1c15] border-b border-[#1A3A2A]/[0.06] dark:border-white/[0.06]"
-      dir={dir}
-    >
-      {/* Subtle geometric identity — intentionally decorative, never dominant. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.42] dark:opacity-[0.22]"
-      >
-        <svg
-          className="absolute -left-24 top-8 h-[420px] w-[420px] text-[#2FA37D]/[0.10] dark:text-[#5BC2A0]/[0.08]"
-          viewBox="0 0 240 240"
-          fill="none"
-        >
-          <path
-            d="M120 8 232 74v92L120 232 8 166V74L120 8Z"
-            stroke="currentColor"
-            strokeWidth="1.2"
-          />
-          <path
-            d="m120 36 84 48v72l-84 48-84-48V84l84-48Z"
-            stroke="currentColor"
-            strokeWidth="1"
-          />
-          <path d="m60 60 120 120M180 60 60 180" stroke="currentColor" strokeWidth="0.9" />
-        </svg>
-
-        <svg
-          className="absolute -right-28 bottom-0 h-[360px] w-[360px] text-[#B8935A]/[0.10] dark:text-[#C9A46B]/[0.08]"
-          viewBox="0 0 240 240"
-          fill="none"
-        >
-          <circle cx="120" cy="120" r="92" stroke="currentColor" strokeWidth="1" />
-          <path d="M28 120h184M120 28v184" stroke="currentColor" strokeWidth="0.9" />
-          <path d="m55 55 130 130M185 55 55 185" stroke="currentColor" strokeWidth="0.9" />
-        </svg>
-      </div>
-
-      {/* Soft depth without the heavy marketing-template glow. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#C3EDE0]/40 dark:bg-[#1F6C54]/20 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-[#E8DDCA]/45 dark:bg-[#25362A]/30 blur-3xl"
-      />
-
-      <div className="relative site-container px-6 pt-20 pb-16 md:pt-24 md:pb-20 lg:pt-28 lg:pb-24">
-        <div className="mx-auto max-w-4xl text-center">
-          <div
-            className={`inline-flex items-center gap-2 rounded-full border border-[#B8935A]/35 bg-white/75 dark:bg-[#162a1e]/80 px-4 py-2 shadow-sm backdrop-blur-sm ${naskh}`}
-          >
-            <span
-              aria-hidden="true"
-              className="relative flex h-2.5 w-2.5 shrink-0"
-            >
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#5BC2A0] opacity-40" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#2FA37D]" />
-            </span>
-            <span className="text-[11px] font-bold tracking-[0.16em] text-[#1F6C54] dark:text-[#94DDC5] uppercase">
-              Arabic · Persian · Urdu Publishing
-            </span>
-          </div>
-
-          <h1
-            className={`mx-auto mt-7 max-w-4xl text-[2.8rem] font-extrabold text-[#183328] dark:text-[#E8EDE9] sm:text-5xl md:text-6xl lg:text-[4.6rem] ${headlineClass}`}
-          >
-            <span>Write. Refine. </span>
-            <span className="text-[#1F6C54] dark:text-[#5BC2A0]">Publish.</span>
-          </h1>
-
-          <p
-            className={`mx-auto mt-6 max-w-2xl text-[1.3rem] text-[#4A4840] dark:text-[#C4D0C6] md:text-[1.45rem] ${naskh} ${
-              language === "ur" ? "leading-[2.35]" : "leading-relaxed"
-            }`}
-          >
-            {t.subheadline}
-          </p>
-
-          <p
-            className={`mx-auto mt-3 max-w-xl text-base font-semibold tracking-wide text-[#5B5748] dark:text-[#A8B9AC] md:text-lg ${naskh}`}
-          >
+    <section className="relative overflow-hidden border-b border-[#1A2036]/10 bg-[#F7F5EF] dark:border-white/5 dark:bg-[#0E1524]" dir={dir}>
+      <div className="site-container grid items-center gap-10 px-6 py-14 md:py-18 lg:grid-cols-[1.05fr_0.95fr] lg:py-20">
+        <div className={language === "ur" ? "text-right" : "text-left"}>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#B8935A]">
             Deterministic First. AI Later.
           </p>
-
-          <p
-            className={`mx-auto mt-6 max-w-3xl text-[15px] leading-7 text-[#635F57] dark:text-[#A8B9AC] md:text-base ${naskh}`}
-          >
-            Text that is standardized <em>before</em> it is enhanced. From raw
-            input to publication-ready output — normalization, cleanup,
-            translation, and Hijri dates in one platform.
+          <h1 className={`mt-4 max-w-xl text-[2.5rem] font-extrabold text-[#11182A] dark:text-[#F7F5EF] sm:text-5xl lg:text-[3.4rem] ${headlineClass}`}>
+            {language === "ur" ? t.headline : <>Write. Refine. <span className="text-[#1F6C54] dark:text-[#2FA37D]">Publish.</span></>}
+          </h1>
+          <p dir="rtl" lang="ur" className="mt-5 max-w-xl font-nastaliq text-[1.35rem] leading-[2.2] text-[#3d4a42] dark:text-[#d5e0d8]">
+            {urduLine}
           </p>
-
-          <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+          <p className={`mt-4 max-w-xl text-[15px] leading-7 text-[#4d564f] dark:text-[#b7c4bb] ${naskh}`}>
+            {language === "ur"
+              ? "پہلے معیاری صفائی، پھر وہی متن اشاعت کے لیے تیار۔ نتیجہ قواعد سے آتا ہے، اندازے سے نہیں۔"
+              : "Text is standardized and cleaned before it is published. The same input follows the same rules."}
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/tools/document-studio"
-              className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-[#2F7E62] px-7 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-[#2F7E62]/20 transition-all hover:-translate-y-0.5 hover:bg-[#24674F] hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0e1c15] ${naskh}`}
+              className={`inline-flex min-h-12 items-center justify-center rounded-lg bg-[#2FA37D] px-6 text-[15px] font-bold text-white shadow-lg shadow-[#2FA37D]/20 transition-colors hover:bg-[#248565] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0E1524] ${naskh}`}
             >
               {t.ctaPrimary}
             </Link>
-
             <Link
               href="#before-after"
-              className={`inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-[#1A3A2A]/15 bg-white/70 px-7 py-3.5 text-[15px] font-semibold text-[#1A3A2A] transition-all hover:border-[#1A3A2A]/30 hover:bg-white dark:border-white/15 dark:bg-[#162a1e]/75 dark:text-[#E8EDE9] dark:hover:border-white/25 dark:hover:bg-[#1E3527] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0e1c15] ${naskh}`}
+              className={`inline-flex min-h-12 items-center justify-center rounded-lg border border-[#1A2036]/15 bg-white/70 px-6 text-[15px] font-semibold text-[#11182A] hover:bg-white dark:border-white/15 dark:bg-[#1A2036] dark:text-[#F7F5EF] dark:hover:bg-[#243049] ${naskh}`}
             >
               {t.ctaSecondary}
-              <span aria-hidden="true" className="ml-2 text-lg leading-none">
-                →
-              </span>
             </Link>
           </div>
+        </div>
 
-          <p
-            className={`mx-auto mt-5 max-w-xl text-[14px] text-[#6B675E] dark:text-[#98A99C] ${naskh}`}
-          >
-            {t.quickCleanupPrompt}{" "}
-            <Link
-              href="/tools/document-cleaner"
-              className="font-semibold text-[#1F6C54] underline decoration-[#B8935A]/60 underline-offset-2 hover:text-[#B8935A] dark:text-[#94DDC5] dark:hover:text-[#C9A46B]"
-            >
-              {t.quickCleanupLink}
-            </Link>
-          </p>
-
-          <p
-            className={`mt-6 text-[14px] font-medium tracking-wide text-[#80786C] dark:text-[#91A496] ${
-              language === "ur" ? "font-naskh leading-loose" : ""
-            }`}
-          >
-            {t.trustLine}
+        <div className="rounded-2xl border border-white/10 bg-[#1A2036] p-5 text-white shadow-[0_24px_50px_rgba(14,21,36,0.28)] sm:p-6" dir="ltr">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#F7F5EF]">
+              <span className="text-[#C9A46B]"><PenNibIcon /></span>
+              {translations[language].hero.mockupLabel}
+            </span>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-[#2FA37D]">RTL</span>
+          </div>
+          <div className="space-y-3">
+            <div className="rounded-xl bg-[#0E1524] px-4 py-3" dir="rtl">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/40" dir="ltr">Before</p>
+              <p className="font-nastaliq text-[20px] leading-[2] text-[#e7d7d2]">{PREVIEW_BEFORE}</p>
+            </div>
+            <div className="rounded-xl bg-[#12261f] px-4 py-3 ring-1 ring-[#2FA37D]/30" dir="rtl">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[#2FA37D]" dir="ltr">Standardized</p>
+              <p className="font-nastaliq text-[20px] leading-[2] text-[#F7F5EF]">{PREVIEW_AFTER}</p>
+            </div>
+          </div>
+          <p className="mt-4 text-[12px] leading-5 text-white/60">
+            {language === "ur"
+              ? "یونیکوڈ، فاصلہ اور رموزِ اوقاف ایک ہی قواعد سے درست ہوتے ہیں۔"
+              : "Unicode, spacing, and punctuation follow one deterministic cleanup."}
           </p>
         </div>
       </div>

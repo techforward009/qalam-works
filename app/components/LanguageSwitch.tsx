@@ -13,7 +13,7 @@ export default function LanguageSwitch() {
         onClick={() => setLanguage("ur")}
         aria-pressed={language === "ur"}
         className={`px-2.5 py-1.5 xl:px-3 rounded-full font-medium transition-colors whitespace-nowrap ${
-          language === "ur" ? "bg-[#B8935A] text-white" : "text-white hover:text-white"
+          language === "ur" ? "bg-[#2FA37D] text-white" : "text-white/80 hover:text-white"
         }`}
       >
         اردو
@@ -23,7 +23,7 @@ export default function LanguageSwitch() {
         onClick={() => setLanguage("en")}
         aria-pressed={language === "en"}
         className={`px-2.5 py-1.5 xl:px-3 rounded-full font-medium transition-colors whitespace-nowrap ${
-          language === "en" ? "bg-[#B8935A] text-white" : "text-white hover:text-white"
+          language === "en" ? "bg-[#2FA37D] text-white" : "text-white/80 hover:text-white"
         }`}
       >
         ENG

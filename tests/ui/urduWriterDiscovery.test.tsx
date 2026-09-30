@@ -48,9 +48,9 @@ function writerHref(el: HTMLElement) {
   return (el as HTMLAnchorElement).getAttribute("href") ?? "";
 }
 
-test("1-2. Header Writing & Translation menu contains Urdu Writer once with canonical route", async () => {
+test("1-2. Header Tools menu contains Urdu Writer once with canonical route", async () => {
   await renderHeader();
-  const toolsBtn = screen.getByRole("button", { name: /writing & translation/i });
+  const toolsBtn = screen.getByRole("button", { name: /^tools$/i });
   await act(async () => { fireEvent.click(toolsBtn); });
   const items = screen.getAllByRole("menuitem").filter((a) =>
     writerHref(a).includes("/tools/roman-urdu-writer")
@@ -63,7 +63,7 @@ test("3. mobile nav exposes Urdu Writer", async () => {
   await renderHeader();
   const menuBtn = screen.getByRole("button", { name: /open menu/i });
   await act(async () => { fireEvent.click(menuBtn); });
-  const groupBtn = screen.getAllByRole("button", { name: /writing & translation/i }).find(
+  const groupBtn = screen.getAllByRole("button", { name: /^tools$/i }).find(
     (el) => !el.getAttribute("aria-haspopup")
   );
   expect(groupBtn).toBeTruthy();
@@ -125,11 +125,11 @@ test("10-11. no alternate routes or duplicates in source", () => {
 
 test("12. Header primary nav does not include Urdu Writer", async () => {
   await renderHeader();
-  const primaryStudio = screen.getByRole("link", { name: /^Document Studio$/i });
-  expect(primaryStudio).toBeTruthy();
+  const primaryStudio = screen.getByRole("link", { name: /^Open Studio$/i });
+  expect(primaryStudio.getAttribute("href")).toBe("/tools/document-studio");
   const primaryWriter = screen.queryAllByRole("link", { name: /^(Urdu Writer|Roman Urdu → Urdu)$/i });
   expect(primaryWriter.length).toBe(0);
-  const toolsBtn = screen.getByRole("button", { name: /writing & translation/i });
+  const toolsBtn = screen.getByRole("button", { name: /^tools$/i });
   await act(async () => { fireEvent.click(toolsBtn); });
   const items = screen.getAllByRole("menuitem").filter((el) =>
     writerHref(el).includes("/tools/roman-urdu-writer")
@@ -139,10 +139,10 @@ test("12. Header primary nav does not include Urdu Writer", async () => {
 
 test("13-15. existing major tool links unchanged", async () => {
   await renderHeader();
-  expect(screen.getByRole("link", { name: /Document Studio/i }).getAttribute("href")).toBe("/tools/document-studio");
-  expect(screen.getByRole("link", { name: /WhatsApp RTL/i }).getAttribute("href")).toBe("/tools/whatsapp-rtl-formatter");
-  const toolsBtn = screen.getByRole("button", { name: /writing & translation/i });
+  const toolsBtn = screen.getByRole("button", { name: /^tools$/i });
   await act(async () => { fireEvent.click(toolsBtn); });
+  expect(screen.getByRole("menuitem", { name: /Document Studio/i }).getAttribute("href")).toBe("/tools/document-studio");
+  expect(screen.getByRole("menuitem", { name: /WhatsApp RTL/i }).getAttribute("href")).toBe("/tools/whatsapp-rtl-formatter");
   const translation = screen.getAllByRole("menuitem").find((el) =>
     writerHref(el).includes("/tools/translation-studio")
   );

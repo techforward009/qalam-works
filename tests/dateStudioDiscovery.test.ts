@@ -110,7 +110,6 @@ describe("Date Studio discovery surfaces", () => {
     const sitemap = read("app/sitemap.ts");
 
     expect(header).toMatch(/label: language === "ur" \? "رؤیتِ ہلال" : "Crescent Visibility", href: "\/tools\/crescent-visibility"/);
-    expect(header).toMatch(/links=\{utilitiesLinks\}/);
     expect((header.match(/href: "\/tools\/crescent-visibility"/g) ?? []).length).toBe(1);
     expect(footer).toMatch(/href: "\/tools\/crescent-visibility"/);
     expect(sitemap).toMatch(/\$\{BASE\}\/tools\/crescent-visibility/);

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import LanguageSwitch from "./LanguageSwitch";
@@ -20,7 +20,7 @@ function PenNibIcon({ size = 22 }: { size?: number }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="text-[#B8935A] shrink-0"
+      className="text-[#C9A46B] shrink-0"
     >
       <path d="M12 19l7-7 3 3-7 7-3-3z" />
       <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
@@ -31,82 +31,53 @@ function PenNibIcon({ size = 22 }: { size?: number }) {
 }
 
 /**
- * Header architecture (2026-09-01 v3):
- *
- * ┌──────────────────────────────────────────────────────────────────┐
- * │ Utility bar 33px  light in dark mode  │ Services  About  Contact │
- * ├──────────────────────────────────────────────────────────────────┤
- * │ Logo  Home  Doc Studio  Doc Cleaner▼  WhatsApp RTL  Tools▼  Utilities▼  [lang] │
- * └──────────────────────────────────────────────────────────────────┘
- *
- * Document Cleaner ▼  → Urdu Text Cleaner, Urdu Text Check, Urdu Unicode Fixer
- * Tools ▼             → Translation Studio, Roman Urdu→Urdu, Urdu→Roman, ─, All Tools
- * Utilities ▼         → Invoice Generator, Date Converter, Crescent Visibility
- *
- * Each top-level dropdown is independent; only one open at a time.
- * Desktop dropdowns: flat list panel below the button.
- * Mobile: vertical accordion for each group.
- * Utility bar: dark in light mode, light sage in dark mode.
- * Header chrome always English/LTR.
- *
- * Sticky header total heights (utility bar + main header):
- *   mobile: 33 + 64 = 97px
- *   lg:     33 + 72 = 105px
- *   xl:     33 + 80 = 113px
+ * Primary header: logo, one Tools menu, two section links,
+ * language switch, and Open Studio. Services, About, and Contact
+ * stay in the footer.
  */
-
-type MenuId = "cleaner" | "tools" | "utilities";
-
 export default function Header() {
   const pathname = usePathname();
-  const [mobileOpen,   setMobileOpen]  = useState(false);
-  const [activeMenu,   setActiveMenu]  = useState<MenuId | null>(null);
-  // Mobile accordion — which section is expanded
-  const [mobileGroup,  setMobileGroup] = useState<MenuId | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
   const { language } = useLanguage();
+  const copy = translations[language].nav;
   const t = {
     ...translations.en.nav,
     dateStudio: translations[language].nav.dateStudio,
   };
 
-  // ── Menu definitions ────────────────────────────────────────────────────────
-  const cleanerLinks = [
-    { label: t.documentCleaner,     href: "/tools/document-cleaner" },
-    { label: t.qualityChecker,      href: "/tools/quality-checker" },
+  const toolLinks = [
+    { label: t.documentStudio, href: "/tools/document-studio" },
+    { label: t.documentCleaner, href: "/tools/document-cleaner" },
+    { label: t.qualityChecker, href: "/tools/quality-checker" },
     { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
     { label: language === "ur" ? "عربی اعراب" : "Arabic Diacritics", href: "/tools/arabic-diacritics" },
-  ];
-
-  const toolsLinks = [
     { label: language === "ur" ? "قرآن کریم" : "Quran", href: "/quran/1/1" },
-    { label: t.translationStudio,  href: "/tools/translation-studio" },
-    { label: t.urduWriter,         href: "/tools/roman-urdu-writer" },
-    { label: t.urduRomanWriter,    href: "/tools/urdu-roman-writer" },
-  ];
-
-  const utilitiesLinks = [
+    { label: t.translationStudio, href: "/tools/translation-studio" },
+    { label: t.urduWriter, href: "/tools/roman-urdu-writer" },
+    { label: t.urduRomanWriter, href: "/tools/urdu-roman-writer" },
+    { label: language === "ur" ? "واٹس ایپ آر ٹی ایل" : "WhatsApp RTL", href: "/tools/whatsapp-rtl-formatter" },
     { label: t.invoiceStudio, href: "/tools/invoice-generator" },
     { label: t.dateStudio, href: "/tools/date-converter" },
     { label: language === "ur" ? "رؤیتِ ہلال" : "Crescent Visibility", href: "/tools/crescent-visibility" },
   ];
 
-  // ── Primary flat links (desktop + mobile) ───────────────────────────────────
-  const primaryLinks = [
-    { label: t.home,           href: "/" },
-    { label: t.documentStudio, href: "/tools/document-studio" },
+  const sectionLinks = [
+    { label: copy.howItWorks, href: "/#how-it-works" },
+    { label: copy.whoItsFor, href: "/#who-its-for" },
   ];
 
-  // ── Outside-click + Escape ──────────────────────────────────────────────────
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
       if (navRef.current && !navRef.current.contains(e.target as Node)) {
-        setActiveMenu(null);
+        setToolsOpen(false);
       }
     }
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        setActiveMenu(null);
+        setToolsOpen(false);
         setMobileOpen(false);
       }
     }
@@ -120,211 +91,60 @@ export default function Header() {
 
   useEffect(() => {
     setMobileOpen(false);
-    setActiveMenu(null);
-    setMobileGroup(null);
+    setToolsOpen(false);
+    setMobileToolsOpen(false);
   }, [pathname]);
 
-  const isActive = (href: string) =>
-    !href.startsWith("mailto:") && pathname === href;
-
-  // Slightly compact nav text for a lighter feel
   const linkCls =
-    "relative font-medium transition-colors whitespace-nowrap py-2 " +
-    "text-[13px] xl:text-[14px] text-white hover:text-white";
+    "relative px-2 py-2 text-[14px] font-medium text-white/88 hover:text-white whitespace-nowrap transition-colors";
 
-  const dropdownBtnCls =
-    "flex items-center gap-0.5 font-medium transition-colors whitespace-nowrap py-2 " +
-    "text-[13px] xl:text-[14px] text-white hover:text-white";
-
-  function toggle(id: MenuId) {
-    setActiveMenu(prev => (prev === id ? null : id));
-  }
-
-  // ── Shared dropdown panel styles ────────────────────────────────────────────
-  const dropPanel =
-    "absolute top-full mt-1 z-50 left-0 bg-[#1A3A2A] border border-white/10 " +
-    "rounded-xl shadow-xl py-1.5 min-w-[195px]";
-
-  const dropLink =
-    "block px-4 py-2.5 text-[14px] text-white/85 hover:text-white " +
-    "hover:bg-white/5 transition-colors whitespace-nowrap";
-
-  function closeAll() { setActiveMenu(null); setMobileOpen(false); }
-
-  // ── Mobile accordion section ─────────────────────────────────────────────────
-  function MobileSection({
-    id, label, links, allToolsLink,
-  }: {
-    id: MenuId;
-    label: string;
-    links: { label: string; href: string }[];
-    allToolsLink?: boolean;
-  }) {
-    const isOpen = mobileGroup === id;
-    return (
-      <div>
-        <button
-          type="button"
-          onClick={() => setMobileGroup(prev => prev === id ? null : id)}
-          aria-expanded={isOpen}
-          className="w-full flex items-center justify-between px-4 py-3 text-[14px] font-semibold text-white/80 hover:text-white hover:bg-white/5 transition-colors"
-        >
-          <span>{label}</span>
-          <ChevronDown
-            size={13}
-            className={`shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}
-          />
-        </button>
-        {isOpen && (
-          <div className="bg-white/[0.04] pb-1">
-            {links.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={closeAll}
-                className="block pl-7 pr-4 py-2.5 text-[14px] text-white/85 hover:text-white hover:bg-white/5 transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
-            {allToolsLink && (
-              <>
-                <div className="mx-4 my-1 border-t border-white/10" />
-                <Link
-                  href="/tools"
-                  onClick={closeAll}
-                  className="block pl-7 pr-4 py-2.5 text-[14px] font-semibold text-[#C9A46B] hover:text-[#E0BA85] hover:bg-white/5 transition-colors"
-                >
-                  {t.allTools}
-                </Link>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    );
+  function closeAll() {
+    setToolsOpen(false);
+    setMobileOpen(false);
+    setMobileToolsOpen(false);
   }
 
   return (
     <div className="sticky top-0 z-50">
-
-      {/* ── Utility bar ─────────────────────────────────────────────────────── */}
-      {/* Light sage in dark mode — visually separates from the dark main header */}
-      <div
-        className="bg-[#E7EFE8] border-b border-[#1A3A2A]/10 h-[33px] flex items-center"
-        dir="ltr"
-      >
-        <div className="site-container flex items-center justify-end gap-5">
-          {[
-            { label: "Services", href: "/services" },
-            { label: "About",    href: "/about" },
-            { label: "Contact",  href: "/contact" },
-          ].map(({ label, href }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`text-[12px] transition-colors whitespace-nowrap ${
-                isActive(href)
-                  ? "text-[#111111] font-semibold"
-                  : "text-[#111111]/85 font-medium hover:text-[#1A3A2A]"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Main header ─────────────────────────────────────────────────────── */}
-      <header className="bg-[#1A3A2A] border-b border-white/10">
-        <div
-          className="site-container h-16 lg:h-[72px] xl:h-[80px] flex items-center gap-2 lg:gap-3 min-w-0"
-          dir="ltr"
-        >
-          {/* Brand — never shrinks */}
-          <Link
-            href="/"
-            className="flex items-center gap-2 shrink-0 min-w-0 max-w-[42%] sm:max-w-none"
-            dir="ltr"
-          >
-            <PenNibIcon size={22} />
-            <span className="font-bold text-[17px] sm:text-[18px] lg:text-[19px] xl:text-[21px] text-white tracking-tight leading-none whitespace-nowrap">
+      <header className="bg-[#11182A] shadow-[0_10px_30px_rgba(14,21,36,0.28)]">
+        <div className="site-container flex h-16 items-center gap-3 lg:h-[72px]" dir="ltr">
+          <Link href="/" className="flex min-w-0 items-center gap-2 shrink-0" dir="ltr">
+            <PenNibIcon />
+            <span className="truncate text-[17px] font-bold tracking-tight text-white sm:text-[19px]">
               Qalam Works
             </span>
           </Link>
 
-          {/* Desktop nav — lg+ only */}
           <nav
             ref={navRef}
-            className="hidden lg:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-4 flex-1 min-w-0 overflow-visible"
+            className="hidden flex-1 items-center gap-1 lg:flex"
             dir="ltr"
             aria-label="Primary"
           >
-            {/* Flat primary links */}
-            {primaryLinks.map(link => (
-              <Link key={link.href} href={link.href} className={linkCls}>
-                {link.label}
-                {isActive(link.href) && (
-                  <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[#B8935A] rounded-full" />
-                )}
-              </Link>
-            ))}
-
-            {/* Document Cleaner ▼ */}
-            <div className="relative shrink-0">
+            <div className="relative">
               <button
                 type="button"
-                onClick={() => toggle("cleaner")}
-                aria-expanded={activeMenu === "cleaner"}
+                onClick={() => setToolsOpen((open) => !open)}
+                aria-expanded={toolsOpen}
                 aria-haspopup="menu"
-                className={dropdownBtnCls}
+                className="flex items-center gap-1 px-2 py-2 text-[14px] font-medium text-white hover:text-white"
               >
-                Document Cleaner
-                <ChevronDown
-                  size={13}
-                  className={`transition-transform shrink-0 ${activeMenu === "cleaner" ? "rotate-180" : ""}`}
-                />
+                {copy.tools}
+                <ChevronDown size={14} className={`transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
               </button>
-              {activeMenu === "cleaner" && (
-                <div role="menu" className={dropPanel}>
-                  {cleanerLinks.map(link => (
-                    <Link key={link.href} href={link.href} role="menuitem"
-                      onClick={closeAll} className={dropLink}>
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* WhatsApp RTL — flat */}
-            <Link href="/tools/whatsapp-rtl-formatter" className={linkCls}>
-              WhatsApp RTL
-              {isActive("/tools/whatsapp-rtl-formatter") && (
-                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[#B8935A] rounded-full" />
-              )}
-            </Link>
-
-            {/* Writing & Translation ▼ */}
-            <div className="relative shrink-0">
-              <button
-                type="button"
-                onClick={() => toggle("tools")}
-                aria-expanded={activeMenu === "tools"}
-                aria-haspopup="menu"
-                className={dropdownBtnCls}
-              >
-                Writing & Translation
-                <ChevronDown
-                  size={13}
-                  className={`transition-transform shrink-0 ${activeMenu === "tools" ? "rotate-180" : ""}`}
-                />
-              </button>
-              {activeMenu === "tools" && (
-                <div role="menu" className={dropPanel}>
-                  {toolsLinks.map(link => (
-                    <Link key={link.href} href={link.href} role="menuitem"
-                      onClick={closeAll} className={dropLink}>
+              {toolsOpen && (
+                <div
+                  role="menu"
+                  className="absolute left-0 top-full z-50 mt-2 max-h-[70vh] w-64 overflow-y-auto rounded-xl border border-white/10 bg-[#1A2036] py-1.5 shadow-2xl"
+                >
+                  {toolLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      role="menuitem"
+                      onClick={closeAll}
+                      className="block px-4 py-2.5 text-[14px] text-white/85 hover:bg-white/5 hover:text-white"
+                    >
                       {link.label}
                     </Link>
                   ))}
@@ -333,7 +153,7 @@ export default function Header() {
                     href="/tools"
                     role="menuitem"
                     onClick={closeAll}
-                    className="block px-4 py-2.5 text-[14px] font-semibold text-[#C9A46B] hover:text-[#E0BA85] hover:bg-white/5 transition-colors"
+                    className="block px-4 py-2.5 text-[14px] font-semibold text-[#C9A46B] hover:bg-white/5 hover:text-[#E0BA85]"
                   >
                     {t.allTools}
                   </Link>
@@ -341,46 +161,29 @@ export default function Header() {
               )}
             </div>
 
-            {/* Utilities ▼ */}
-            <div className="relative shrink-0">
-              <button
-                type="button"
-                onClick={() => toggle("utilities")}
-                aria-expanded={activeMenu === "utilities"}
-                aria-haspopup="menu"
-                className={dropdownBtnCls}
-              >
-                Utilities
-                <ChevronDown
-                  size={13}
-                  className={`transition-transform shrink-0 ${activeMenu === "utilities" ? "rotate-180" : ""}`}
-                />
-              </button>
-              {activeMenu === "utilities" && (
-                <div role="menu" className={dropPanel.replace("left-0", "right-0")}>
-                  {utilitiesLinks.map(link => (
-                    <Link key={link.href} href={link.href} role="menuitem"
-                      onClick={closeAll} className={dropLink}>
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+            {sectionLinks.map((link) => (
+              <Link key={link.href} href={link.href} className={linkCls}>
+                {link.label}
+              </Link>
+            ))}
           </nav>
 
-          {/* Desktop language switch */}
-          <div className="hidden lg:flex items-center shrink-0">
+          <div className="ml-auto hidden items-center gap-3 lg:flex">
             <LanguageSwitch />
+            <Link
+              href="/tools/document-studio"
+              className="inline-flex min-h-10 items-center rounded-lg bg-[#2FA37D] px-4 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-[#248565]"
+            >
+              {copy.openStudio}
+            </Link>
           </div>
 
-          {/* Mobile: language + hamburger */}
-          <div className="flex lg:hidden items-center gap-2 shrink-0 ml-auto">
+          <div className="ml-auto flex items-center gap-2 lg:hidden">
             <LanguageSwitch />
             <button
               type="button"
-              onClick={() => setMobileOpen(o => !o)}
-              className="p-2.5 text-white rounded-md hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A]"
+              onClick={() => setMobileOpen((open) => !open)}
+              className="rounded-md p-2.5 text-white hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2FA37D]"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
               aria-controls="mobile-nav"
@@ -391,59 +194,63 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ── Mobile drawer ─────────────────────────────────────────────────── */}
       {mobileOpen && (
         <nav
           id="mobile-nav"
-          className="lg:hidden border-t border-white/10 bg-[#153020]"
+          className="border-t border-white/10 bg-[#0E1524] lg:hidden"
           dir="ltr"
           aria-label="Mobile"
         >
-          <div className="site-container py-2 flex flex-col max-h-[min(75vh,580px)] overflow-y-auto">
-
-            {/* Primary flat links */}
-            {[...primaryLinks,
-              { label: "WhatsApp RTL", href: "/tools/whatsapp-rtl-formatter" },
-            ].map(link => (
+          <div className="site-container flex max-h-[min(75vh,560px)] flex-col overflow-y-auto py-2">
+            {sectionLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={closeAll}
-                className="py-3.5 text-[16px] font-medium border-b border-white/5 text-white"
+                className="border-b border-white/5 py-3.5 text-[16px] font-medium text-white"
               >
                 {link.label}
               </Link>
             ))}
 
-            {/* Tools label */}
-            <div className="pt-4 pb-1">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-white/35">
-                Tools
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={() => setMobileToolsOpen((open) => !open)}
+              aria-expanded={mobileToolsOpen}
+              className="flex w-full items-center justify-between border-b border-white/5 py-3.5 text-left text-[16px] font-medium text-white"
+            >
+              <span>{copy.tools}</span>
+              <ChevronDown size={16} className={`transition-transform ${mobileToolsOpen ? "rotate-180" : ""}`} />
+            </button>
+            {mobileToolsOpen && (
+              <div className="bg-white/[0.03] pb-1">
+                {toolLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeAll}
+                    className="block py-2.5 pl-4 pr-2 text-[15px] text-white/85 hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <Link
+                  href="/tools"
+                  onClick={closeAll}
+                  className="block py-2.5 pl-4 text-[15px] font-semibold text-[#C9A46B]"
+                >
+                  {t.allTools}
+                </Link>
+              </div>
+            )}
 
-            {/* Mobile accordion sections */}
-            <div className="border border-white/10 rounded-xl overflow-hidden mb-2">
-              <MobileSection
-                id="cleaner"
-                label="Document Cleaner"
-                links={cleanerLinks}
-              />
-              <div className="border-t border-white/10" />
-              <MobileSection
-                id="tools"
-                label="Writing & Translation"
-                links={toolsLinks}
-                allToolsLink
-              />
-              <div className="border-t border-white/10" />
-              <MobileSection
-                id="utilities"
-                label="Utilities"
-                links={utilitiesLinks}
-              />
-            </div>
-
+            <Link
+              href="/tools/document-studio"
+              onClick={closeAll}
+              className="mx-1 my-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-[#2FA37D] px-4 text-[15px] font-semibold text-white"
+            >
+              {copy.openStudio}
+            </Link>
           </div>
         </nav>
       )}

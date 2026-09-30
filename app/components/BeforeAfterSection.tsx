@@ -66,20 +66,16 @@ export default function BeforeAfterSection() {
   return (
     <section
       id="before-after"
-      className="bg-[#EAF0E7] dark:bg-[#102018] py-14 md:py-20"
+      className="bg-[#F3F7F2] py-16 dark:bg-[#0E1524] md:py-20"
       dir={dir}
     >
-      <div className="max-w-[1240px] mx-auto px-6">
-        <div className="text-center max-w-3xl mx-auto mb-9 md:mb-12">
-          <span
-            className={`inline-flex items-center gap-2 rounded-full border border-[#B8935A]/35 bg-[#B8935A]/10 px-3 py-1 text-[11px] font-semibold tracking-[0.16em] uppercase text-[#8D642F] dark:text-[#C9A46B] mb-4 ${naskh}`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[#B8935A]" />
-            {language === "ur" ? "حقیقی مثال" : "Live example"}
-          </span>
-
+      <div className="mx-auto max-w-[1100px] px-6">
+        <div className="mx-auto mb-10 max-w-2xl text-center">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#1F6C54] dark:text-[#2FA37D]">
+            Deterministic First. AI Later.
+          </p>
           <h2
-            className={`text-2xl md:text-3xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${
+            className={`mt-3 text-2xl font-bold text-[#11182A] dark:text-[#F7F5EF] md:text-3xl ${
               language === "ur" ? "font-nastaliq font-normal leading-[1.7]" : ""
             }`}
           >
@@ -87,85 +83,39 @@ export default function BeforeAfterSection() {
           </h2>
         </div>
 
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-[1fr_auto_1fr] items-stretch">
-            {/* BEFORE */}
-            <div className="text-right" dir="rtl">
-              <div className="flex items-center gap-2 mb-3 px-1" dir="ltr">
-                <span className="h-2 w-2 rounded-full bg-red-400" />
-                <span className="text-[11px] font-bold tracking-[0.16em] uppercase text-red-500/80 dark:text-red-400/80">
-                  {t.before}
-                </span>
-              </div>
+        <div className="grid items-stretch gap-4 md:grid-cols-[1fr_auto_1fr] md:gap-0">
+          <div dir="rtl" className="rounded-2xl bg-[#1A2036] p-6 text-right shadow-xl shadow-[#0E1524]/20 md:rounded-r-none">
+            <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.16em] text-[#E7C7C0]" dir="ltr">
+              {t.before}
+            </p>
+            <p className="whitespace-pre-line break-words font-nastaliq text-[22px] leading-[2.15] text-[#f3e4df] md:text-[24px]">
+              {BEFORE_TEXT}
+            </p>
+          </div>
 
-              <div className="h-full rounded-2xl bg-white/90 dark:bg-[#1b2920] border border-red-300/45 dark:border-red-900/40 p-6 md:p-7 shadow-sm">
-                <p className="font-nastaliq text-[22px] md:text-[25px] leading-[2.15] text-[#3a2525] dark:text-[#cfabab] whitespace-pre-line break-words">
-                  {BEFORE_TEXT}
-                </p>
-
-                <div
-                  className="mt-6 flex flex-wrap gap-2"
-                  dir="ltr"
-                  aria-label="Detected text issues"
-                >
-                  <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/25 px-2.5 py-1 text-[10px] font-semibold text-red-700 dark:text-red-300">
-                    Arabic Yeh
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/25 px-2.5 py-1 text-[10px] font-semibold text-red-700 dark:text-red-300">
-                    Wrong punctuation
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/25 px-2.5 py-1 text-[10px] font-semibold text-red-700 dark:text-red-300">
-                    Spacing
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* CONNECTOR */}
-            <div className="flex md:flex-col items-center justify-center px-4 py-5 md:py-0">
-              <div className="relative flex items-center md:flex-col">
-                <div className="hidden md:block h-12 w-px bg-[#B8935A]/25" />
-                <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-[#B8935A] text-white shadow-lg shadow-[#B8935A]/25 ring-4 ring-[#EAF0E7] dark:ring-[#102018]">
-                  <PenNibIcon />
-                </div>
-                <div className="hidden md:block h-12 w-px bg-[#B8935A]/25" />
-              </div>
-            </div>
-
-            {/* AFTER */}
-            <div className="text-right" dir="rtl">
-              <div className="flex items-center justify-between gap-3 mb-3 px-1" dir="ltr">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span className="text-[11px] font-bold tracking-[0.16em] uppercase text-emerald-600 dark:text-emerald-400">
-                    {t.after}
-                  </span>
-                </div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/35 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
-                  <CheckIcon />
-                  {t.afterStatus}
-                </span>
-              </div>
-
-              <div className="h-full rounded-2xl bg-white dark:bg-[#162a1e] border border-emerald-300/45 dark:border-emerald-900/40 p-6 md:p-7 shadow-lg shadow-[#1A3A2A]/5">
-                <p className="font-nastaliq text-[22px] md:text-[25px] leading-[2.15] text-[#1A2A1A] dark:text-[#e8ede9] whitespace-pre-line break-words">
-                  {AFTER_TEXT}
-                </p>
-
-                <div className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#EAF4EC] dark:bg-emerald-900/20 px-3 py-2 text-[11px] font-semibold text-[#28603B] dark:text-emerald-300" dir="ltr">
-                  <CheckIcon />
-                  <span>Deterministic result · same input, same rules</span>
-                </div>
-              </div>
+          <div className="relative z-10 flex items-center justify-center md:-mx-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#2FA37D] text-white shadow-[0_0_0_8px_rgba(47,163,125,0.18),0_12px_30px_rgba(47,163,125,0.35)]">
+              <PenNibIcon />
             </div>
           </div>
 
-          <p
-            className={`max-w-3xl mx-auto text-center text-[14px] md:text-[15px] text-[#4A6A4A] dark:text-[#a8b9ac] leading-relaxed mt-8 ${naskh}`}
-          >
-            {t.note}
-          </p>
+          <div dir="rtl" className="rounded-2xl bg-[#11182A] p-6 text-right shadow-xl shadow-[#0E1524]/25 ring-1 ring-[#2FA37D]/25 md:rounded-l-none">
+            <div className="mb-4 flex items-center justify-between gap-3" dir="ltr">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2FA37D]">{t.after}</p>
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#9BE0C8]">
+                <CheckIcon />
+                {t.afterStatus}
+              </span>
+            </div>
+            <p className="whitespace-pre-line break-words font-nastaliq text-[22px] leading-[2.15] text-[#F7F5EF] md:text-[24px]">
+              {AFTER_TEXT}
+            </p>
+          </div>
         </div>
+
+        <p className={`mx-auto mt-8 max-w-2xl text-center text-[14px] leading-relaxed text-[#3d5648] dark:text-[#b7c4bb] ${naskh}`}>
+          {t.note}
+        </p>
       </div>
     </section>
   );

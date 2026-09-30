@@ -40,7 +40,7 @@ export default function Footer() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <footer className="bg-[#1A3A2A] border-t border-white/10 mt-16" dir={dir}>
+    <footer className="mt-0 border-t border-white/10 bg-[#11182A]" dir={dir}>
       <div className="site-container py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Brand */}
         <div className="sm:col-span-2 lg:col-span-1">

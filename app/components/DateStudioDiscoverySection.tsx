@@ -28,22 +28,22 @@ export default function DateStudioDiscoverySection() {
   const naskh = lang === "ur" ? "font-naskh" : "";
 
   return (
-    <section className="bg-[#F7F5EF] dark:bg-[#162a1e] py-10 md:py-12" dir={dir}>
-      <div className="site-container max-w-3xl mx-auto">
-        <div className="rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-white dark:bg-[#0e1c15] p-5 sm:p-6">
+    <section className="bg-[#F7F5EF] py-10 dark:bg-[#0E1524] md:py-12" dir={dir}>
+      <div className="site-container mx-auto max-w-3xl">
+        <div className="rounded-2xl border border-[#1A2036]/10 bg-white p-5 dark:border-white/10 dark:bg-[#1A2036] sm:p-6">
           <div className="flex items-start gap-4">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400" aria-hidden="true">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#2FA37D]/10 text-[#1F6C54] dark:bg-[#2FA37D]/15 dark:text-[#7DDCB8]" aria-hidden="true">
               <CalendarDays className="h-6 w-6" />
             </span>
             <div className="text-start">
-              <h2 className={`text-xl sm:text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${lang === "ur" ? "font-nastaliq font-normal" : ""}`}>{t.title}</h2>
-              <p className={`mt-1 text-[15px] leading-relaxed text-[#4a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{t.desc}</p>
+              <h2 className={`text-xl font-bold text-[#11182A] dark:text-[#F7F5EF] sm:text-2xl ${lang === "ur" ? "font-nastaliq font-normal" : ""}`}>{t.title}</h2>
+              <p className={`mt-1 text-[15px] leading-relaxed text-[#4d564f] dark:text-[#b7c4bb] ${naskh}`}>{t.desc}</p>
             </div>
           </div>
           <div className="mt-5 grid gap-2 sm:grid-cols-3">
-            <Link href="/tools/date-converter" className={`rounded-xl bg-[#1A3A2A] dark:bg-[#2a5a3a] px-4 py-3 text-center text-sm font-semibold text-white hover:bg-[#244E38] dark:hover:bg-[#3a7a4a] transition-colors ${naskh}`}>{t.convert}</Link>
-            <Link href="/tools/date-converter#date-studio" className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] px-4 py-3 text-center text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.explore}</Link>
-            <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A3A2A]/15 dark:border-[#35513d] px-4 py-3 text-center text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] hover:border-[#B8935A]/60 transition-colors ${naskh}`}>{t.make}</Link>
+            <Link href="/tools/date-converter" className={`rounded-xl bg-[#2FA37D] px-4 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[#248565] ${naskh}`}>{t.convert}</Link>
+            <Link href="/tools/date-converter#date-studio" className={`rounded-xl border border-[#1A2036]/15 px-4 py-3 text-center text-sm font-semibold text-[#11182A] transition-colors hover:border-[#2FA37D]/50 dark:border-white/15 dark:text-[#F7F5EF] ${naskh}`}>{t.explore}</Link>
+            <Link href="/tools/calendar-maker" className={`rounded-xl border border-[#1A2036]/15 px-4 py-3 text-center text-sm font-semibold text-[#11182A] transition-colors hover:border-[#2FA37D]/50 dark:border-white/15 dark:text-[#F7F5EF] ${naskh}`}>{t.make}</Link>
           </div>
         </div>
       </div>
