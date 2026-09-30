@@ -16,14 +16,14 @@ export default function FinalCtaSection() {
           {t.headline}
         </h2>
         <p className={`mb-10 text-lg text-[#E7F6F0] md:text-xl ${naskh}`}>{t.subline}</p>
-        <Link href="/tools/document-studio" className={`inline-flex min-h-12 items-center rounded-xl bg-white px-8 py-3 text-[16px] font-bold text-[#1F6C54] shadow-xl transition-transform hover:-translate-y-0.5 hover:bg-[#F3F7F2] ${naskh}`}>
-          {t.cta}
-        </Link>
-        <p className="mt-5">
-          <Link href="/tools" className={`text-[15px] text-white/85 underline decoration-white/30 underline-offset-4 hover:text-white ${naskh}`}>
+        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <Link href="/tools/document-studio" className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-white px-8 py-3 text-[16px] font-bold text-[#1F6C54] shadow-xl transition-transform hover:-translate-y-0.5 hover:bg-[#F3F7F2] ${naskh}`}>
+            {t.cta}
+          </Link>
+          <Link href="/tools" className={`inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 bg-[#164638]/40 px-8 py-3 text-[16px] font-bold text-white backdrop-blur transition-colors hover:bg-[#164638]/70 ${naskh}`}>
             {t.exploreTools}
           </Link>
-        </p>
+        </div>
       </div>
     </section>
   );

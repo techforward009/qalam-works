@@ -31,15 +31,15 @@ const TOOL_IDS: ToolId[] = [
 ];
 
 const TOOL_META = [
-  { Icon: BookOpen, example: null },
-  { Icon: Eraser, example: "يہ , → یہ،" },
-  { Icon: Type, example: "ي → ی" },
-  { Icon: Languages, example: null },
-  { Icon: PenLine, example: "mera naam → میرا نام" },
-  { Icon: SearchCheck, example: null },
-  { Icon: CalendarDays, example: null },
-  { Icon: MessageCircle, example: null },
-  { Icon: FilePenLine, example: null },
+  { Icon: BookOpen, icon: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400", example: null },
+  { Icon: Eraser, icon: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400", example: "يہ , → یہ،" },
+  { Icon: Type, icon: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400", example: "ي → ی" },
+  { Icon: Languages, icon: "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400", example: null },
+  { Icon: PenLine, icon: "bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400", example: "mera naam → میرا نام" },
+  { Icon: SearchCheck, icon: "bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400", example: null },
+  { Icon: CalendarDays, icon: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400", example: null },
+  { Icon: MessageCircle, icon: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400", example: null },
+  { Icon: FilePenLine, icon: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400", example: null },
 ];
 
 export default function HowItWorksSection() {
@@ -50,12 +50,11 @@ export default function HowItWorksSection() {
   return (
     <section id="how-it-works" className="bg-[#F7F5EF] py-16 dark:bg-[#11182A] md:py-20" dir={dir}>
       <div className="mx-auto max-w-[1100px] px-6 text-center">
-        <h2 className={`text-3xl font-bold text-[#11182A] dark:text-white md:text-4xl ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+        <h2 className={`mb-10 text-3xl font-bold text-[#11182A] dark:text-white md:mb-12 md:text-4xl ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}
         </h2>
-        <p className={`mx-auto mt-4 max-w-2xl text-lg text-[#4d564f] dark:text-[#b7c4bb] ${naskh}`}>{t.supporting}</p>
 
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {t.tools.map((tool, i) => {
             const meta = TOOL_META[i];
             const { Icon } = meta;
@@ -72,7 +71,7 @@ export default function HowItWorksSection() {
                 }
                 className="group block rounded-2xl border border-[#1A2036]/10 bg-white/80 p-6 text-start shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#1F6C54]/10 dark:border-white/10 dark:bg-[#1A2036]"
               >
-                <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#2FA37D]/12 text-[#1F6C54] transition-transform group-hover:scale-110 dark:bg-[#2FA37D]/15 dark:text-[#7DDCB8]">
+                <span className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${meta.icon}`}>
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden="true" />
                 </span>
                 <h3 className={`mb-1.5 text-[17px] font-bold text-[#11182A] dark:text-[#F7F5EF] ${naskh}`}>{tool.name}</h3>

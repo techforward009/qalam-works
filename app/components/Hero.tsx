@@ -39,12 +39,14 @@ export default function Hero() {
           )}
         </h1>
 
-        <p dir="rtl" lang="ur" className="mx-auto mt-6 max-w-2xl font-nastaliq text-xl leading-[2.4] text-[#243028] dark:text-[#d7e3dc] md:text-2xl">
-          اردو، عربی اور فارسی متن کے لیے سنجیدہ اشاعتی اوزار
+        <p className={`mx-auto mt-6 max-w-2xl text-xl leading-relaxed text-[#243028] dark:text-[#d7e3dc] md:text-2xl ${language === "ur" ? "font-nastaliq leading-[2.4]" : ""}`} dir={language === "ur" ? "rtl" : "ltr"}>
+          {language === "ur"
+            ? "اردو، عربی اور فارسی متن کے لیے سنجیدہ اشاعتی اوزار"
+            : "Serious publishing tools for Urdu, Arabic, and Persian text."}
         </p>
 
-        <p className="mx-auto mt-3 max-w-2xl text-lg font-bold text-[#1F6C54] dark:text-[#2FA37D]">
-          Deterministic First. AI Later.
+        <p className={`mx-auto mt-3 max-w-2xl text-lg font-bold text-[#1F6C54] dark:text-[#2FA37D] ${language === "ur" ? "font-nastaliq font-normal leading-[2.2]" : ""}`}>
+          {language === "ur" ? "پہلے قواعد۔ مصنوعی ذہانت بعد میں۔" : "Deterministic First. AI Later."}
         </p>
 
         <p className={`mx-auto mt-6 max-w-3xl text-[16px] leading-7 text-[#4d564f] dark:text-[#b7c4bb] ${naskh}`}>

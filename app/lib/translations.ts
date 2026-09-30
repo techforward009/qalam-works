@@ -84,11 +84,6 @@ export const translations = {
           example: "یہ, وہ → یہ، وہ",
           impact: "English commas and marks creep into Urdu prose without anyone noticing.",
         },
-        {
-          title: "Terminology drift",
-          example: "استعمار → نوآبادیاتی نظام",
-          impact: "The same term gets translated two different ways across a single document.",
-        },
       ],
     },
     beforeAfter: {
@@ -106,8 +101,7 @@ export const translations = {
       tagSpacing: "Spacing Errors",
     },
     howItWorks: {
-      headline: "The Toolkit",
-      supporting: "Nine tools. One platform. Built for precision.",
+      headline: "One workspace for every stage of Urdu publishing.",
       tools: [
         {
           name: "Document Studio",
@@ -211,9 +205,9 @@ export const translations = {
     },
     finalCta: {
       headline: "Bring your text.\nLeave with publication-ready text.",
-      subline: "Standardized and cleaned first. Consistent output, ready to publish.",
+      subline: "No account. No download. No friction. Free to use.",
       cta: "Open Document Studio",
-      exploreTools: "Explore all tools",
+      exploreTools: "Explore All Tools",
     },
     footer: {
       tagline: "A professional writing and publishing environment built for Urdu.",
@@ -481,11 +475,6 @@ export const translations = {
           example: "یہ, وہ → یہ، وہ",
           impact: "انگریزی کوما اور نشانات بغیر کسی کے متوجہ ہوئے اردو نثر میں شامل ہو جاتے ہیں۔",
         },
-        {
-          title: "اصطلاحی بے ترتیبی",
-          example: "استعمار → نوآبادیاتی نظام",
-          impact: "ایک ہی اصطلاح ایک ہی دستاویز میں دو مختلف طریقوں سے لکھی جاتی ہے۔",
-        },
       ],
     },
     beforeAfter: {
@@ -503,8 +492,7 @@ export const translations = {
       tagSpacing: "فاصلے کی غلطیاں",
     },
     howItWorks: {
-      headline: "ٹول کٹ",
-      supporting: "نو اوزار۔ ایک پلیٹ فارم۔ درستگی کے لیے۔",
+      headline: "اردو اشاعت کے ہر مرحلے کے لیے ایک ہی ماحول۔",
       tools: [
         {
           name: "ڈاکومنٹ اسٹوڈیو",
@@ -608,7 +596,7 @@ export const translations = {
     },
     finalCta: {
       headline: "متن لائیے۔ اشاعت کے قابل متن لے کر جائیے۔",
-      subline: "پہلے معیاری اور صاف۔ نتیجہ یکساں، اشاعت کے لیے تیار۔",
+      subline: "نہ اکاؤنٹ۔ نہ ڈاؤن لوڈ۔ نہ رکاوٹ۔ مفت استعمال۔",
       cta: "ڈاکومنٹ اسٹوڈیو کھولیں",
       exploreTools: "تمام ٹولز دیکھیں",
     },
