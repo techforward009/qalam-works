@@ -486,14 +486,13 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 86px;
-  height: 33px;
-  padding: 0 5px;
-  border: 1px solid #9b8c5f;
-  border-bottom: 0;
-  background: linear-gradient(to bottom, #efe9d6 0%, #f8f3e4 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  color: #5a5137;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: inherit;
   direction: ltr;
   overflow: visible;
 }
@@ -943,9 +942,12 @@ textarea {
   }
 
   .quran-page-meta-number {
-    min-width: 74px;
-    height: 30px;
-    padding-inline: 2px;
+    min-width: 0;
+    height: auto;
+    padding-inline: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
   }
 
   .quran-page-meta-page-number {
@@ -1083,7 +1085,13 @@ textarea {
   }
 
   .quran-page-meta-number {
-    min-width: 68px;
+    min-width: 0;
+
+    border: 0;
+
+    background: none;
+
+    box-shadow: none;
   }
 
   .quran-page-arrow {
@@ -1179,8 +1187,10 @@ html.dark .quran-page-meta-juz-name {
 }
 
 html.dark .quran-page-meta-number {
-  color: #5a5137;
-  background: linear-gradient(to bottom, #efe9d6 0%, #f8f3e4 100%);
+  color: inherit;
+  background: none;
+  border: 0;
+  box-shadow: none;
 }
 
 html.dark .quran-page-meta-page-number {

@@ -84,8 +84,8 @@ const SIDEBAR_COPY: Record<
     keysAyah: "↑ ↓ Ayahs",
     keysPage: "← → Pages",
     keysSura: "Ctrl + ← → Surah",
-    nextPage: "Next page →",
-    previousPage: "← Previous page",
+    nextPage: "Next Page →",
+    previousPage: "← Previous Page",
   },
 
   ur: {
@@ -1041,14 +1041,6 @@ export default function QuranReader({
                 }
               </button>
 
-              <span>
-                {
-                  easternDigits(
-                    page.page,
-                  )
-                }
-              </span>
-
               <button
                 type="button"
                 disabled={
@@ -1100,6 +1092,12 @@ function QuranPageMeta({
   onPreviousPage: () => void;
   onNextPage: () => void;
 }) {
+  const { language } = useLanguage();
+  const pageLabel =
+    language === "ur"
+      ? pageNumber.toLocaleString("ur-PK")
+      : String(pageNumber);
+
   return (
     <div
       className="quran-page-meta"
@@ -1117,9 +1115,9 @@ function QuranPageMeta({
       </div>
 
       <div
-        className="quran-page-meta-item quran-page-meta-number"
+        className="quran-page-meta-item flex items-center justify-center overflow-visible"
         dir="ltr"
-        lang="ar"
+        lang={language === "ur" ? "ur" : "en"}
       >
         <PageArrow
           direction="previous"
@@ -1136,11 +1134,7 @@ function QuranPageMeta({
         />
 
         <span className="quran-page-meta-page-number">
-          {
-            easternDigits(
-              pageNumber,
-            )
-          }
+          {pageLabel}
         </span>
 
         <PageArrow
