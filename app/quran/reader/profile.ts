@@ -16,20 +16,16 @@
 export const QURAN_LAYOUT_PROFILE = {
   /**
    * Reader profile identifier.
+   * Indicates Indo-Pak script layout version 1.
    */
   id: "qalam-indopak-v1",
 
   /**
    * Production Quran font.
+   * CURRENTLY TESTING: Asif Quranic
+   * Fallbacks: Muhammadi Quranic, Al Qalam Quran Majeed
    */
-  productionFont: "Al Qalam Quran Majeed",
-
-  /**
-   * Reference-only font.
-   * PDMS Saleem is not bundled with the application.
-   */
-  referenceFont: "PDMS Saleem Quran",
-  pdmsBundled: false,
+  productionFont: "Asif Quranic",
 
   /**
    * Fixed reading-surface width.
@@ -47,36 +43,38 @@ export const QURAN_LAYOUT_PROFILE = {
    * QuranReader.tsx still reads this property and applies it as
    * minHeight, therefore zero is used rather than removing the property
    * entirely. This prevents an old fixed-height assumption from forcing
-   * every page to 1000px.
+   * every page to a specific pixel height.
    */
   pageMinHeightPx: 0,
 
   /**
    * Maximum usable Quran text width inside the decorative frame.
    *
-   * The browser will still determine the actual line wrapping.
+   * The browser will still determine the actual line wrapping based on
+   * the font metrics, but this serves as a layout guide.
    */
   textAreaWidthPx: 650,
 
   /**
    * Base Quran font size.
    *
-   * Reader scale controls may multiply this value.
+   * Reader scale controls (e.g., 0.85x, 1.2x) will multiply this value.
    */
   fontSizePx: 28,
 
   /**
    * Quran line rhythm.
    *
-   * This remains comfortable for Arabic reading while allowing the
-   * content-driven page height to remain compact on short pages.
+   * Optimized for Asif/Muhammadi/Al Qalam fonts to prevent mark collision
+   * while maintaining a compact, readable flow.
    */
   lineHeight: 2.2,
 
   /**
    * Retained for compatibility with the older layout model and tests.
    *
-   * These values no longer determine page breaks.
+   * These values no longer strictly determine page breaks in the new
+   * flexible height model, but serve as a reference for expected density.
    * Fixed page boundaries now come from TANZIL_PAGE_STARTS.
    */
   unitsPerLine: 42,
@@ -95,14 +93,14 @@ export const QURAN_LAYOUT_PROFILE = {
 /**
  * Quran Font Stack
  *
- * Priority:
- * 1. Al Qalam Quran Majeed
- * 2. Muhammadi Quranic
- * 3. Asif Quranic
- * 4. Project/system Arabic fonts
+ * Priority Order (CURRENT TEST):
+ * 1. Asif Quranic (Primary - Currently Testing)
+ * 2. Muhammadi Quranic (Fallback 1)
+ * 3. Al Qalam Quran Majeed (Fallback 2)
+ * 4. Project/System Arabic fonts (Noto, Amiri, etc.)
  *
- * The fallback order is intentionally retained so that a temporary
- * font-loading problem does not make the Quran unreadable.
+ * To switch back to Al Qalam later, simply move "Al Qalam Quran Majeed" 
+ * to the front of this string.
  */
 export const QURAN_FONT_STACK =
-  '"Al Qalam Quran Majeed", "Muhammadi Quranic", "Asif Quranic", var(--font-naskh), "Noto Naskh Arabic", var(--font-amiri), Amiri, serif';
+  '"Asif Quranic", "Muhammadi Quranic", "Al Qalam Quran Majeed", var(--font-naskh), "Noto Naskh Arabic", var(--font-amiri), Amiri, serif';
