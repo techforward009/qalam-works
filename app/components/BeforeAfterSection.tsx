@@ -5,7 +5,7 @@ import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { standardizeUrduText } from "../utils/unicode/standardizeUrduText";
 
-const BROKEN_TEXT = "يہ  ,  ايك  غلط  حروف  والا  متن  ہے";
+const BROKEN_TEXT = "يہ  ,  ايك  غلط  كلمات  والا  متن  ہے";
 const FIXED_TEXT = standardizeUrduText(BROKEN_TEXT).output;
 
 export default function BeforeAfterSection() {

@@ -9,16 +9,16 @@ export default function WhoItsForSection() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <section id="who-its-for" className="bg-[#0F172A] py-20 dark:bg-black" dir={dir}>
+    <section id="who-its-for" className="bg-[#F7F5EF] py-16 dark:bg-[#11182A] md:py-20" dir={dir}>
       <div className="mx-auto max-w-[1100px] px-6 text-center">
-        <h2 className={`mb-12 text-3xl font-bold text-white md:text-4xl ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
+        <h2 className={`mb-10 text-3xl font-bold text-[#11182A] dark:text-white md:text-4xl ${language === "ur" ? "font-nastaliq font-normal" : ""}`}>
           {t.headline}
         </h2>
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2">
           {t.audiences.map((a) => (
-            <div key={a.role} className="rounded-xl border border-white/10 bg-[#1E293B]/70 p-6 text-start backdrop-blur-sm">
-              <h3 className={`mb-2 text-xl font-bold text-[#2FA37D] ${naskh}`}>{a.role}</h3>
-              <p className={`text-sm leading-relaxed text-[#CBD5E1] ${naskh}`}>{a.body}</p>
+            <div key={a.role} className="rounded-2xl border border-[#1A2036]/8 bg-white p-6 text-start shadow-sm dark:border-white/10 dark:bg-[#1A2036]">
+              <h3 className={`mb-2 text-[19px] font-bold text-[#1F6C54] dark:text-[#2FA37D] ${naskh}`}>{a.role}</h3>
+              <p className={`text-[16px] leading-relaxed text-[#4d564f] dark:text-[#c5d0c9] ${naskh}`}>{a.body}</p>
             </div>
           ))}
         </div>

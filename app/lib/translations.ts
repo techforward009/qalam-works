@@ -84,6 +84,11 @@ export const translations = {
           example: "یہ, وہ → یہ، وہ",
           impact: "English commas and marks creep into Urdu prose without anyone noticing.",
         },
+        {
+          title: "Arabic kaf",
+          example: "كتاب → کتاب",
+          impact: "Arabic kaf is not the Urdu kaf. The shapes are close, but search and consistency still break.",
+        },
       ],
     },
     beforeAfter: {
@@ -204,7 +209,7 @@ export const translations = {
       ],
     },
     finalCta: {
-      headline: "Bring your text.\nLeave with publication-ready text.",
+      headline: "Bring your text. Leave with publication-ready text.",
       subline: "No account. No download. No friction. Free to use.",
       cta: "Open Document Studio",
       exploreTools: "Explore All Tools",
@@ -474,6 +479,11 @@ export const translations = {
           title: "غلط رموزِ اوقاف",
           example: "یہ, وہ → یہ، وہ",
           impact: "انگریزی کوما اور نشانات بغیر کسی کے متوجہ ہوئے اردو نثر میں شامل ہو جاتے ہیں۔",
+        },
+        {
+          title: "عربی کاف",
+          example: "كتاب → کتاب",
+          impact: "عربی کاف اردو کی کاف نہیں۔ شکل قریب ہے، مگر تلاش اور یکسانیت پھر بھی بگڑتی ہے۔",
         },
       ],
     },
