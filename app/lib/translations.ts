@@ -206,6 +206,7 @@ export const translations = {
         { role: "Translators", body: "Consistent terms across every draft." },
         { role: "Publishers", body: "Fewer proofreading rounds, faster print." },
         { role: "Academic Institutions", body: "Standardized output at scale." },
+        { role: "Ruet-e-Hilal Committees", body: "Specialized tools for Hijri dates, crescent visibility calculations, and official announcements." },
       ],
     },
     finalCta: {
@@ -602,6 +603,7 @@ export const translations = {
         { role: "مترجمین", body: "ہر مسودے میں یکساں اصطلاحات۔" },
         { role: "ناشرین", body: "کم پروف ریڈنگ، تیز اشاعت۔" },
         { role: "تعلیمی ادارے", body: "بڑے پیمانے پر معیاری آؤٹ پٹ۔" },
+        { role: "رؤیتِ ہلال کمیٹیاں", body: "ہجری تاریخوں، رؤیتِ ہلال کے حساب اور سرکاری اعلانات کے لیے مخصوص اوزار۔" },
       ],
     },
     finalCta: {
