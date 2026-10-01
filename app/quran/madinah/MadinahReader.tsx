@@ -11,6 +11,13 @@ import { useQuranKeyboardNavigation } from "../reader/keyboard";
 import { adjacentAyah } from "../reader/model";
 import { TANZIL_PAGE_STARTS } from "../reader/tanzilPageMap";
 import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahmedgrafProvider";
+import {
+  cachedQpcHafsPage,
+  loadQpcHafsPage,
+  qpcHafsTextForPage,
+  qpcHafsTextForVerseKeys,
+  verseKeyFromLocation,
+} from "./qpcHafsCopy";
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
 import {
   MADINAH_BASMALA_FAMILY,
@@ -213,65 +220,54 @@ export default function MadinahReader({
 
   const handlePageCopy = (event: React.ClipboardEvent<HTMLElement>) => {
     const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) return;
+    if (!selection || selection.isCollapsed || !page) return;
 
     const range = selection.getRangeAt(0);
-    const selectedWords = Array.from(
+    const locations = Array.from(
       event.currentTarget.querySelectorAll<HTMLElement>("[data-quran-location]"),
-    ).filter((element) => {
-      try {
-        return range.intersectsNode(element);
-      } catch {
-        return false;
-      }
-    });
+    )
+      .filter((element) => {
+        try {
+          return range.intersectsNode(element);
+        } catch {
+          return false;
+        }
+      })
+      .map((element) => element.dataset.quranLocation ?? "")
+      .map(verseKeyFromLocation)
+      .filter((key): key is string => Boolean(key));
 
-    if (!selectedWords.length) return;
-
-    const seen = new Set<string>();
-    const textLines: string[] = [];
-    for (const word of selectedWords) {
-      const location = word.dataset.quranLocation ?? "";
-      const parsed = parseLocation(location);
-      if (!parsed) continue;
-      const key = `${parsed.surah}:${parsed.ayah}`;
-      if (seen.has(key)) continue;
-      const ayahText = ahmedgrafQuranReference.getAyah(parsed.surah, parsed.ayah)?.text;
-      if (!ayahText) continue;
-      seen.add(key);
-      textLines.push(ayahText);
-    }
-
-    if (!textLines.length) return;
+    const verseKeys = new Set(locations);
+    if (!verseKeys.size) return;
 
     event.preventDefault();
-    event.clipboardData.setData("text/plain", textLines.join("\n"));
+    const qpcPage = cachedQpcHafsPage(page.page);
+    const text = qpcPage ? qpcHafsTextForVerseKeys(qpcPage, verseKeys) : "";
+    if (!text) {
+      event.clipboardData.clearData();
+      return;
+    }
+    event.clipboardData.setData("text/plain", text);
   };
 
   const copyCurrentPage = async () => {
     if (!page) return;
-    const seen = new Set<string>();
-    const textLines: string[] = [];
-    for (const line of page.lines) {
-      for (const word of line.words) {
-        const parsed = parseLocation(word.location);
-        if (!parsed) continue;
-        const key = `${parsed.surah}:${parsed.ayah}`;
-        if (seen.has(key)) continue;
-        const ayahText = ahmedgrafQuranReference.getAyah(parsed.surah, parsed.ayah)?.text;
-        if (!ayahText) continue;
-        seen.add(key);
-        textLines.push(ayahText);
-      }
-    }
     try {
-      await navigator.clipboard.writeText(textLines.join("\n"));
+      const qpcPage = await loadQpcHafsPage(page.page);
+      const text = qpcHafsTextForPage(qpcPage);
+      if (!text) throw new Error("No QPC Hafs text was found for this page.");
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
       setCopied(false);
     }
   };
+
+  useEffect(() => {
+    if (!page) return;
+    loadQpcHafsPage(page.page).catch(() => undefined);
+  }, [page]);
 
   useEffect(() => {
     const stored = Number(window.localStorage.getItem("qalam-madinah-display-scale"));

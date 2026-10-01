@@ -39,11 +39,13 @@ describe("Quran common reader parity", () => {
     }
   });
 
-  it("intercepts normal browser copy on the Madinah QCF page and maps glyphs to canonical text", () => {
+  it("copies Madinah selections from QPC Hafs, not AhmedGraf", () => {
     const file = readFileSync("app/quran/madinah/MadinahReader.tsx", "utf8");
     expect(file).toContain("onCopyCapture={handlePageCopy}");
     expect(file).toContain('querySelectorAll<HTMLElement>("[data-quran-location]")');
     expect(file).toContain("data-quran-location={word.location}");
-    expect(file).toContain('event.clipboardData.setData("text/plain", textLines.join("\\n"))');
+    expect(file).toContain("qpcHafsTextForVerseKeys");
+    expect(file).toContain("qpcHafsTextForPage");
+    expect(file).not.toContain("ahmedgrafQuranReference.getAyah");
   });
 });
