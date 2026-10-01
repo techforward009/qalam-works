@@ -71,7 +71,7 @@
   gap: 0.4em;
   width: min(680px, 96%);
   margin: 0.2em auto 0.45em;
-  padding: 0.28em 0.9em;
+  padding: 0.18em 0.9em 0.42em;
   border: 1px solid #b9ad91;
   border-radius: 999px;
   position: relative;
@@ -79,12 +79,12 @@
   box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6);
   background: rgba(255, 252, 244, 0.72);
   font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
-  line-height: 1.35;
+  line-height: 1.2;
 }
 
 .surahPlace,
 .surahCount {
-  font-size: 0.48em;
+  font-size: 0.6em;
   color: #3f4a3c;
   white-space: nowrap;
 }
@@ -95,9 +95,16 @@
 
 .surahCount {
   justify-self: end;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.28em;
 }
 
 .surahName {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.42em;
   font-size: 0.72em;
   line-height: 1.2;
   color: #171914;
@@ -127,7 +134,7 @@
   display: inline-block;
   margin-inline: 0.1em 0.14em;
   line-height: 1;
-  vertical-align: 0.18em;
+  vertical-align: 0.05em;
 }
 
 .ayahOrb {
@@ -152,17 +159,19 @@
 .ayahDigit,
 .ayahDigitTight {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 0;
+  display: block;
   color: var(--green);
   direction: ltr;
   font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
   font-weight: 400;
-  line-height: 1;
+  line-height: 0;
+  text-align: center;
   pointer-events: none;
-  transform: translateY(-0.04em);
+  transform: translateY(0.12em);
 }
 
 .ayahDigit {
@@ -175,13 +184,15 @@
 
 .waqf {
   position: absolute;
-  bottom: 100%;
+  top: 0;
   left: 50%;
+  height: 0;
   color: var(--ink);
   direction: rtl;
-  font-size: 0.7em;
-  line-height: 1;
-  transform: translateX(-50%);
+  font-size: 1em;
+  line-height: 0;
+  text-align: center;
+  transform: translate(-50%, -0.06em);
   white-space: nowrap;
 }
 

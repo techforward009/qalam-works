@@ -406,11 +406,12 @@ export default function DigitalKhattReader({
                             <span className={styles.surahPlace}>{banner?.place}</span>
                             <span className={styles.surahName}>
                               <span className={styles.bannerDigit}>{banner?.surahNumber}</span>
-                              {" " + (banner?.name ?? "") + " "}
+                              <span>{banner?.name}</span>
                               <span className={styles.bannerDigit}>{banner?.revealed}</span>
                             </span>
                             <span className={styles.surahCount}>
-                              آیات <span className={styles.bannerDigit}>{banner?.ayatCount}</span>
+                              <span>آیات</span>
+                              <span className={styles.bannerDigit}>{banner?.ayatCount}</span>
                             </span>
                           </span>
 
@@ -446,12 +447,6 @@ export default function DigitalKhattReader({
                 >
                   ← Previous page
                 </button>
-
-                <span className="text-xs text-[#776f61]">
-                  {easternDigits(currentPage.startChapter)}:{easternDigits(currentPage.startVerse)}
-                  {" — "}
-                  {easternDigits(currentPage.endChapter)}:{easternDigits(currentPage.endVerse)}
-                </span>
 
                 <button
                   type="button"
