@@ -20,6 +20,7 @@ import {
   type DigitalKhattCorpus,
 } from "./data";
 import styles from "./reader.module.css";
+import { surahBanner } from "./surahBanner";
 
 const BASMILLAH = "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ";
 const TRAILING_QURAN_MARKS = /[\u0614-\u0617\u06D6-\u06DC\u08D5-\u08DF]+$/u;
@@ -395,17 +396,21 @@ export default function DigitalKhattReader({
                 {pageVerses.map((item) => {
                   const { body, endingMarks } = splitEndingMarks(item.text);
                   const digits = easternDigits(item.verse);
+                  const banner = item.verse === 1 ? surahBanner(item.chapter) : null;
 
                   return (
                     <span key={item.chapter + ":" + item.verse}>
                       {item.verse === 1 && (
                         <>
                           <span className={styles.surahHeader} dir="rtl">
-                            <span className={styles.surahMeta}>
-                              SURAH {String(item.chapter).padStart(3, "0")}
-                            </span>
+                            <span className={styles.surahPlace}>{banner?.place}</span>
                             <span className={styles.surahName}>
-                              {SURAH_NAMES[item.chapter - 1] ?? ""}
+                              <span className={styles.bannerDigit}>{banner?.surahNumber}</span>
+                              {" " + (banner?.name ?? "") + " "}
+                              <span className={styles.bannerDigit}>{banner?.revealed}</span>
+                            </span>
+                            <span className={styles.surahCount}>
+                              آیات <span className={styles.bannerDigit}>{banner?.ayatCount}</span>
                             </span>
                           </span>
 

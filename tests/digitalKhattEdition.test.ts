@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
+import { surahBanner } from "../app/quran/indopak-digital-khatt/surahBanner";
 import {
   buildDigitalKhattPages,
   DIGITAL_KHATT_EDITION,
@@ -62,5 +63,16 @@ describe("Qalam Digital Khatt IndoPak edition", () => {
     expect(css).toContain("min-height: 0");
     expect(css).not.toContain("min-height: 900px");
     expect(css).not.toContain("margin-top: auto");
+  });
+
+  test("surah banner matches the mushaf head for Al-Munafiqun", () => {
+    const banner = surahBanner(63);
+    expect(banner.place).toBe("مَدَنِيَّةٌ");
+    expect(banner.surahNumber).toBe("٦٣");
+    expect(banner.name).toBe("سُوْرَةُ الْمُنٰفِقُوْنَ");
+    expect(banner.revealed).toBe("١٠٤");
+    expect(banner.ayatCount).toBe("١١");
+    expect(surahBanner(96).place).toBe("مَكِّيَّةٌ");
+    expect(surahBanner(2).ayatCount).toBe("٢٨٦");
   });
 });
