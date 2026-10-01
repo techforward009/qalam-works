@@ -35,7 +35,7 @@
 .centeredLine { justify-content:center; gap:0.4em; }
 .word { display:inline-block; }
 .surahLine { justify-content:center; font-family:"Noto Naskh Arabic","Traditional Arabic",serif; font-size:calc(100cqi / 28); color:#171717; font-weight:600; }
-.basmala { font-family:"QalamMadinahBasmala", serif; font-size:2.05em; line-height:1; }
+.basmala { font-family:"QalamMadinahBasmala", serif; font-size:1.23em; line-height:1; }
 .loading,.error { padding:50px; text-align:center; color:#756f63; }
 .error { color:#8b3c32; }
 .navRow { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--line); margin-top:10px; padding-top:12px; }
