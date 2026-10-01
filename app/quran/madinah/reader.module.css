@@ -21,7 +21,7 @@
 .pageMeta { display:flex; justify-content:space-between; gap:10px; margin-bottom:8px; color:#777064; font-size:11px; }
 .page { background:var(--paper); border:9px solid #eee6d3; box-shadow:0 15px 38px rgba(65,55,37,.12); border-radius:20px; padding:28px 30px 22px; min-height:1120px; display:flex; flex-direction:column; }
 .pageLines { flex:1 1 auto; min-height:900px; display:grid; grid-template-rows:repeat(15, minmax(0, 1fr)); align-items:center; }
-.line { min-height:0; height:100%; display:flex; align-items:center; justify-content:flex-end; direction:rtl; text-align:right; white-space:pre; font-size:30px; line-height:1; letter-spacing:0; overflow:visible; }
+.line { min-height:0; height:100%; display:flex; align-items:center; justify-content:flex-start; direction:rtl; text-align:right; white-space:pre; font-size:30px; line-height:1; letter-spacing:0; overflow:visible; }
 .centered { justify-content:center; text-align:center; }
 .surahLine { font-family:"Noto Naskh Arabic", "Traditional Arabic", serif; font-size:25px; color:#171717; font-weight:600; letter-spacing:0; }
 .loading,.error { padding:50px; text-align:center; color:#756f63; }
