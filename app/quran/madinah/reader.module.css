@@ -1,0 +1,31 @@
+.reader { --paper:#fcfaf4; --ink:#171717; --line:#d8cfbc; --green:#2f8f68; min-height:100vh; background:#f5f2ea; color:var(--ink); }
+.container { width:100%; max-width:1280px; margin:0 auto; padding:18px 16px 40px; }
+.toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:16px; }
+.eyebrow { font-weight:700; color:var(--green); font-size:15px; }
+.subtle { font-size:12px; color:#746e62; }
+.link { color:var(--green); font-size:13px; text-decoration:none; }
+.grid { display:grid; grid-template-columns:220px minmax(0,1fr); gap:18px; align-items:start; }
+.sidebar { background:#fffdf8; border:1px solid #ded7c8; border-radius:14px; padding:14px; position:sticky; top:12px; }
+.label { display:block; font-size:12px; color:#625d53; }
+.labelBlock { display:block; margin-top:13px; padding-top:13px; border-top:1px solid #ebe5d8; font-size:12px; color:#625d53; }
+.input { box-sizing:border-box; width:100%; margin-top:5px; border:1px solid #cfc7b7; border-radius:7px; padding:8px 9px; background:#fff; color:#222; }
+.primary,.secondary { border-radius:7px; padding:8px 10px; font-size:12px; cursor:pointer; }
+.primary { margin-top:8px; width:100%; background:var(--green); color:white; border:1px solid var(--green); }
+.secondary { background:#fff; color:#5d574c; border:1px solid #cfc7b7; }
+.secondary:disabled { opacity:.4; cursor:not-allowed; }
+.results { margin-top:10px; max-height:240px; overflow:auto; border-top:1px solid #ebe5d8; padding-top:8px; }
+.result { display:block; width:100%; text-align:left; border:0; background:transparent; padding:6px 5px; border-radius:6px; font-size:12px; color:#49443b; cursor:pointer; }
+.result:hover { background:#f3efe6; }
+.pageInputRow { display:flex; align-items:center; gap:8px; }
+.metaBlock { margin-top:13px; padding-top:13px; border-top:1px solid #ebe5d8; font-size:12px; line-height:1.9; color:#676156; }
+.pageMeta { display:flex; justify-content:space-between; gap:10px; margin-bottom:8px; color:#777064; font-size:11px; }
+.page { background:var(--paper); border:9px solid #eee6d3; box-shadow:0 15px 38px rgba(65,55,37,.12); border-radius:20px; padding:38px 34px 22px; min-height:1120px; display:flex; flex-direction:column; }
+.line { min-height:48px; display:flex; align-items:center; justify-content:flex-end; direction:rtl; text-align:right; white-space:pre; font-size:30px; line-height:1; letter-spacing:0; }
+.centered { justify-content:center; text-align:center; }
+.surahLine { font-family:"Noto Naskh Arabic", "Traditional Arabic", serif; font-size:25px; color:#171717; font-weight:600; letter-spacing:0; }
+.loading,.error { padding:50px; text-align:center; color:#756f63; }
+.error { color:#8b3c32; }
+.navRow { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--line); margin-top:auto; padding-top:16px; }
+.credit { margin-top:8px; text-align:center; font-size:10px; line-height:1.5; color:#8a8478; }
+@media (max-width:900px){ .grid{grid-template-columns:1fr}.sidebar{position:static}.page{min-height:900px;padding:26px 15px 18px}.line{font-size:24px;min-height:42px}.surahLine{font-size:20px} }
+@media (max-width:600px){ .container{padding-inline:8px}.toolbar{align-items:flex-start;flex-direction:column}.page{border-width:5px;border-radius:14px;padding:20px 8px 15px}.line{font-size:19px;min-height:34px}.surahLine{font-size:16px}.pageMeta{font-size:10px}.navRow{justify-content:center;flex-wrap:wrap} }
