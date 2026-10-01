@@ -348,12 +348,6 @@ export default function MadinahReader({
           </aside>
 
           <section>
-            <div className={styles.pageMeta}>
-              <span>{MADINAH_V2_EDITION.name}</span>
-              <span>{easternDigits(pageNumber)} / 604</span>
-              <span>Juz {pageJuz}</span>
-            </div>
-
             <article className={styles.page}>
               <div className={styles.mushafHeader} dir="ltr" aria-label="Mushaf running headers">
                 <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderLeft}`} dir="rtl">{displaySurahTitle}</div>

@@ -18,7 +18,6 @@
 .result:hover { background:#f3efe6; }
 .pageInputRow { display:flex; align-items:center; gap:6px; }
 .metaBlock { margin-top:11px; padding-top:11px; border-top:1px solid #ebe5d8; font-size:11px; line-height:1.8; color:#676156; }
-.pageMeta { display:flex; justify-content:space-between; gap:10px; margin-bottom:8px; color:#777064; font-size:10px; }
 .page { width:min(100%, 720px); margin-inline:auto; aspect-ratio:1 / 1.42; background:var(--paper); border:1px solid #c4b48a; box-shadow:inset 0 0 0 5px #fcfaf4, inset 0 0 0 6px #d9cba8, 0 12px 32px rgba(65,55,37,.1); border-radius:10px; padding:16px 40px 12px; min-height:0; display:flex; flex-direction:column; }
 .mushafHeader { flex:0 0 auto; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px; min-height:36px; padding:0 2px 8px; border-bottom:1px solid #cfc6b1; }
 .mushafHeaderSide { min-width:0; color:#202018; font-family:"Noto Naskh Arabic","Traditional Arabic",serif; font-size:20px; line-height:1.1; white-space:nowrap; }
@@ -42,4 +41,4 @@
 .credit { margin-top:8px; text-align:center; font-size:10px; line-height:1.5; color:#8a8478; }
 @media (max-width:1100px){ .grid{grid-template-columns:150px minmax(0,1fr)} .page{padding-inline:32px} }
 @media (max-width:900px){ .grid{grid-template-columns:1fr}.sidebar{position:static}.page{padding:16px 28px 12px}.mushafHeaderSide{font-size:18px}.mushafHeaderPage{min-width:72px;gap:4px}.mushafHeaderNumber{font-size:14px}.pageArrow{width:26px;height:26px} }
-@media (max-width:600px){ .container{padding-inline:8px}.toolbar{align-items:flex-start;flex-direction:column}.page{border-radius:8px;padding:12px 16px 10px}.pageMeta{font-size:9px}.mushafHeader{min-height:30px;gap:5px;padding-inline:0}.mushafHeaderSide{font-size:14px}.mushafHeaderPage{min-width:50px;gap:2px}.mushafHeaderNumber{font-size:12px}.pageArrow{width:24px;height:24px}.pageArrowIcon{width:14px;height:14px}.navRow{justify-content:center;flex-wrap:wrap} }
+@media (max-width:600px){ .container{padding-inline:8px}.toolbar{align-items:flex-start;flex-direction:column}.page{border-radius:8px;padding:12px 16px 10px}.mushafHeader{min-height:30px;gap:5px;padding-inline:0}.mushafHeaderSide{font-size:14px}.mushafHeaderPage{min-width:50px;gap:2px}.mushafHeaderNumber{font-size:12px}.pageArrow{width:24px;height:24px}.pageArrowIcon{width:14px;height:14px}.navRow{justify-content:center;flex-wrap:wrap} }
