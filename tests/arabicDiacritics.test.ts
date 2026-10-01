@@ -41,11 +41,25 @@ describe("Indo-Pakistani Arabic diacritics", () => {
     expect(out("ما  فی")).toBe("مَا  فِيْ");
   });
 
-  test("religious terminology and Allah forms", () => {
+  test("Allah receives the correct final case in unambiguous contexts", () => {
     expect(out("اللہ")).toBe("اللّٰهُ");
+    expect(out("کان اللہ")).toBe("کَانَ اللّٰهُ");
+    expect(out("عبد اللہ")).toBe("عَبْد اللّٰهِ");
+    expect(out("من اللہ")).toBe("مِنَ اللّٰهِ");
     expect(out("للہ")).toBe("لِلّٰهِ");
     expect(out("تعالٰی")).toBe("تَعَالٰى");
-    expect(out("من اللہ")).toBe("مِنَ اللّٰهُ");
+  });
+
+  test("reported Arabic prose regression case", () => {
+    const input =
+      "اوّل بقعۃ عبد اللہ علیھا ظھر الکوفۃ، لمّا اَمر الملائکۃ ان یسجدوا لاٰدم سجدوا علی ظھر الکوفۃ.\n" +
+      "لم یکن من الملآئکۃ و کانت الملائکۃ تریٰ انہ منھا، و کان اللہ یعلم انّہ لیس منھا و لم یکن یلی شیئا من أمر السماء ولا کرامۃ.";
+
+    const expected =
+      "اوّل بقعۃ عَبْد اللّٰهِ عَلَيْهَا ظھر الکوفۃ، لمّا اَمر الملائکۃ ان یسجدوا لاٰدم سجدوا علی ظھر الکوفۃ.\n" +
+      "لم یکن مِنَ الملآئکۃ و کانت الملائکۃ تریٰ انہ منھا، و کَانَ اللّٰهُ یعلم انّہ لیس منھا و لم یکن یلی شیئا مِنَ أمر السماء ولا کرامۃ.";
+
+    expect(out(input)).toBe(expected);
   });
 
   test("alif khanjariyah and the pronoun mark", () => {

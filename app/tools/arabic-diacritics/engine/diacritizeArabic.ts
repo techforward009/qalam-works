@@ -25,6 +25,7 @@ type Piece =
   | { kind: "word"; source: string; before: string; core: string; after: string };
 
 const GOLDEN_KEY = skeleton(GOLDEN_INPUT);
+const ALLAH_KEY = skeleton("اللہ");
 
 function startsWithAlef(core: string): boolean {
   return skeleton(core).startsWith("\u0627");
@@ -37,11 +38,72 @@ function functionWord(core: string, nextStartsWithAlef: boolean): string | null 
   return null;
 }
 
-function lookup(core: string, nextCore: string | null): string | null {
+/**
+ * Allah is a special Indo-Pakistani publishing form. The base form is
+ * اللّٰه and its final case vowel is contextual:
+ *   nominative  اللّٰهُ
+ *   accusative  اللّٰهَ
+ *   genitive    اللّٰهِ
+ *
+ * This is intentionally conservative. Only contexts that are unambiguous
+ * from the immediate token sequence are handled here; unknown contexts keep
+ * the lexical default rather than guessing.
+ */
+function allahForm(previousCore: string | null, previousPrepared: string | null): string {
+  const previousKey = previousPrepared ? skeleton(previousPrepared) : previousCore ? skeleton(previousCore) : "";
+
+  // Prepositions that require the following noun to be genitive.
+  const genitivePrepositions = new Set([
+    skeleton("من"),
+    skeleton("عن"),
+    skeleton("ب"),
+    skeleton("ل"),
+    skeleton("ک"),
+    skeleton("فی"),
+    skeleton("على"),
+    skeleton("الی"),
+  ]);
+
+  if (genitivePrepositions.has(previousKey)) return "اللّٰهِ";
+
+  // Common, unambiguous idafa heads used in Indo-Pakistani religious prose.
+  // Keep this list deliberately small rather than pretending to be a parser.
+  const genitiveIdafaHeads = new Set([
+    skeleton("عبد"),
+    skeleton("عباد"),
+    skeleton("كتاب"),
+    skeleton("کتاب"),
+    skeleton("أمر"),
+    skeleton("امر"),
+    skeleton("رسول"),
+    skeleton("نبی"),
+    skeleton("نبي"),
+    skeleton("خلق"),
+    skeleton("ذکر"),
+    skeleton("ذکر"),
+  ]);
+
+  if (genitiveIdafaHeads.has(previousKey)) return "اللّٰهِ";
+
+  return "اللّٰهُ";
+}
+
+function lookup(
+  core: string,
+  nextCore: string | null,
+  previousCore: string | null,
+  previousPrepared: string | null,
+): string | null {
   if (hasVowelMark(core) || leaveAsUrduOrPersian(core)) return null;
+
+  const key = skeleton(core);
+  if (key === ALLAH_KEY) {
+    return allahForm(previousCore, previousPrepared);
+  }
+
   const contextual = functionWord(core, nextCore != null && startsWithAlef(nextCore));
   if (contextual) return contextual;
-  return VOCALIZED_BY_SKELETON.get(skeleton(core)) ?? null;
+  return VOCALIZED_BY_SKELETON.get(key) ?? null;
 }
 
 function applyIdgham(previous: string, current: string): string {
@@ -83,6 +145,7 @@ function vocalizeParagraph(paragraph: string): { text: string; reviews: Diacriti
   const pieces = tokenize(paragraph);
   const wordIndexes = pieces.flatMap((piece, index) => (piece.kind === "word" ? [index] : []));
   const resolved: Array<string | undefined> = new Array(pieces.length);
+  const preparedByIndex = new Map<number, string>();
   const skip = new Set<number>();
 
   for (let n = 0; n < wordIndexes.length; n += 1) {
@@ -95,6 +158,11 @@ function vocalizeParagraph(paragraph: string): { text: string; reviews: Diacriti
     const next = nextIndex == null ? undefined : pieces[nextIndex];
     const nextCore = next && next.kind === "word" ? next.core : null;
 
+    const previousIndex = wordIndexes[n - 1];
+    const previous = previousIndex == null ? undefined : pieces[previousIndex];
+    const previousCore = previous && previous.kind === "word" ? previous.core : null;
+    const previousPrepared = previousIndex == null ? null : preparedByIndex.get(previousIndex) ?? null;
+
     const pair = BROKEN_AL_PAIRS.find(
       (item) =>
         next &&
@@ -105,6 +173,7 @@ function vocalizeParagraph(paragraph: string): { text: string; reviews: Diacriti
     );
     if (pair && next && next.kind === "word" && nextIndex != null) {
       resolved[index] = pair.vocalized;
+      preparedByIndex.set(index, pair.vocalized);
       skip.add(nextIndex);
       for (let gap = index + 1; gap < nextIndex; gap += 1) skip.add(gap);
       continue;
@@ -112,9 +181,10 @@ function vocalizeParagraph(paragraph: string): { text: string; reviews: Diacriti
 
     if (next && next.kind === "word" && nextIndex != null && piece.after === "" && next.before === "") {
       const joined = joinBrokenSpelling(piece.core, next.core);
-      const vocalized = joined ? lookup(joined, null) : null;
+      const vocalized = joined ? lookup(joined, null, previousCore, previousPrepared) : null;
       if (joined && vocalized) {
         resolved[index] = vocalized;
+        preparedByIndex.set(index, joined);
         skip.add(nextIndex);
         for (let gap = index + 1; gap < nextIndex; gap += 1) skip.add(gap);
         continue;
@@ -123,8 +193,9 @@ function vocalizeParagraph(paragraph: string): { text: string; reviews: Diacriti
 
     const prepared = prepareArabicToken(piece.core);
     const nextPrepared = nextCore == null ? null : prepareArabicToken(nextCore);
-    const known = lookup(prepared, nextPrepared);
+    const known = lookup(prepared, nextPrepared, previousCore, previousPrepared);
     resolved[index] = known ?? piece.core;
+    preparedByIndex.set(index, prepared);
   }
 
   let previous = "";
