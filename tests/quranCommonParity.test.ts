@@ -38,4 +38,12 @@ describe("Quran common reader parity", () => {
       expect(readFileSync(file, "utf8")).toContain("QURAN_READER_COPY");
     }
   });
+
+  it("intercepts normal browser copy on the Madinah QCF page and maps glyphs to canonical text", () => {
+    const file = readFileSync("app/quran/madinah/MadinahReader.tsx", "utf8");
+    expect(file).toContain("onCopyCapture={handlePageCopy}");
+    expect(file).toContain('querySelectorAll<HTMLElement>("[data-quran-location]")');
+    expect(file).toContain("data-quran-location={word.location}");
+    expect(file).toContain('event.clipboardData.setData("text/plain", textLines.join("\\n"))');
+  });
 });

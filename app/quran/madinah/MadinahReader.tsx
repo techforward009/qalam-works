@@ -211,6 +211,43 @@ export default function MadinahReader({
     window.localStorage.setItem("qalam-madinah-display-scale", String(value));
   };
 
+  const handlePageCopy = (event: React.ClipboardEvent<HTMLElement>) => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+
+    const range = selection.getRangeAt(0);
+    const selectedWords = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>("[data-quran-location]"),
+    ).filter((element) => {
+      try {
+        return range.intersectsNode(element);
+      } catch {
+        return false;
+      }
+    });
+
+    if (!selectedWords.length) return;
+
+    const seen = new Set<string>();
+    const textLines: string[] = [];
+    for (const word of selectedWords) {
+      const location = word.dataset.quranLocation ?? "";
+      const parsed = parseLocation(location);
+      if (!parsed) continue;
+      const key = `${parsed.surah}:${parsed.ayah}`;
+      if (seen.has(key)) continue;
+      const ayahText = ahmedgrafQuranReference.getAyah(parsed.surah, parsed.ayah)?.text;
+      if (!ayahText) continue;
+      seen.add(key);
+      textLines.push(ayahText);
+    }
+
+    if (!textLines.length) return;
+
+    event.preventDefault();
+    event.clipboardData.setData("text/plain", textLines.join("\n"));
+  };
+
   const copyCurrentPage = async () => {
     if (!page) return;
     const seen = new Set<string>();
@@ -348,7 +385,7 @@ export default function MadinahReader({
           </aside>
 
           <section>
-            <article className={styles.page}>
+            <article className={styles.page} onCopyCapture={handlePageCopy}>
               <div className={styles.mushafHeader} dir="ltr" aria-label="Mushaf running headers">
                 <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderLeft}`} dir="rtl">{displaySurahTitle}</div>
                 <div className={styles.mushafHeaderPage} aria-label={`Page ${pageNumber}`}>
@@ -384,7 +421,11 @@ export default function MadinahReader({
                       style={{ fontFamily }}
                       dir="rtl"
                     >
-                      {line.words.map((word) => <span key={word.word_id} className={styles.word}>{word.qpcV2}</span>)}
+                      {line.words.map((word) => (
+                        <span key={word.word_id} className={styles.word} data-quran-location={word.location}>
+                          {word.qpcV2}
+                        </span>
+                      ))}
                     </div>
                   );
                 }) : <div className={styles.loading}>Loading page…</div>}
