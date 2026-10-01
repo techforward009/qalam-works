@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { SURAH_NAMES, JUZ_STARTS, easternDigits } from "../reader/metadata";
+import { SURAH_NAMES, JUZ_STARTS, easternDigits, juzTitle, surahTitle } from "../reader/metadata";
 import { TANZIL_PAGE_STARTS } from "../reader/tanzilPageMap";
 import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
@@ -53,6 +53,14 @@ function pageHasAyah(page: MadinahPage, surah: number, ayah: number): boolean {
   return page.lines.some((line) =>
     line.words.some((word) => word.location.startsWith(`${surah}:${ayah}:`)),
   );
+}
+
+function juzForLocation(surah: number, ayah: number): number {
+  let current = 1;
+  for (const item of JUZ_STARTS) {
+    if (surah > item.surah || (surah === item.surah && ayah >= item.ayah)) current = item.juz;
+  }
+  return current;
 }
 
 export default function MadinahReader({
@@ -175,14 +183,11 @@ export default function MadinahReader({
     navigatePage(Number(pageInput) || pageNumber);
   };
 
-  const activeSurah = page ? page.lines.flatMap((line) => line.words.map((w) => parseLocation(w.location))).find((v) => v)?.surah ?? surah : surah;
-  const activeJuz = (() => {
-    let current = 1;
-    for (const item of JUZ_STARTS) {
-      if (activeSurah > item.surah || (activeSurah === item.surah && ayah >= item.ayah)) current = item.juz;
-    }
-    return current;
-  })();
+  const pageStart = page ? firstAyah(page) : null;
+  const pageSurah = pageStart?.surah ?? surah;
+  const pageJuz = pageStart ? juzForLocation(pageStart.surah, pageStart.ayah) : 1;
+  const displaySurahTitle = surahTitle(pageSurah) || SURAH_NAMES[pageSurah - 1] || String(pageSurah);
+  const displayJuzTitle = juzTitle(pageJuz) || `Juz ${pageJuz}`;
 
   if (loadError && !page) {
     return <main className={styles.reader}><div className={styles.error}>{loadError}</div></main>;
@@ -243,8 +248,8 @@ export default function MadinahReader({
             </form>
 
             <div className={styles.metaBlock}>
-              Surah <strong>{SURAH_NAMES[activeSurah - 1] ?? activeSurah}</strong><br />
-              Juz <strong>{activeJuz}</strong>
+              Surah <strong>{SURAH_NAMES[pageSurah - 1] ?? pageSurah}</strong><br />
+              Juz <strong>{pageJuz}</strong>
             </div>
           </aside>
 
@@ -252,29 +257,38 @@ export default function MadinahReader({
             <div className={styles.pageMeta}>
               <span>{MADINAH_V2_EDITION.name}</span>
               <span>{easternDigits(pageNumber)} / 604</span>
-              <span>Juz {activeJuz}</span>
+              <span>Juz {pageJuz}</span>
             </div>
 
             <article className={styles.page}>
+              <div className={styles.mushafHeader} dir="ltr" aria-label="Mushaf running headers">
+                <div className={styles.mushafHeaderSide} dir="rtl">{displaySurahTitle}</div>
+                <div className={styles.mushafHeaderOrnament} aria-hidden="true"><span>✦</span><span>۞</span><span>✦</span></div>
+                <div className={styles.mushafHeaderSide} dir="rtl">{displayJuzTitle}</div>
+              </div>
+
               <div className={styles.pageLines}>
                 {page ? page.lines.map((line) => {
-                const text = line.type === "basmallah" ? (line.decor?.glyph ?? "﷽") : lineGlyphText(line);
-                if (line.type === "blank") return <div key={line.line} className={styles.line} aria-hidden="true" />;
-                if (line.type === "surah_name") {
-                  const name = line.decor?.surah ? SURAH_NAMES[line.decor.surah - 1] : "";
-                  return <div key={line.line} className={`${styles.line} ${styles.surahLine}`}><span>{name}</span></div>;
-                }
-                return (
-                  <div
-                    key={line.line}
-                    className={`${styles.line} ${line.centered ? styles.centered : ""}`}
-                    style={{ fontFamily }}
-                    dir="rtl"
-                  >
-                    {text}
-                  </div>
-                );
+                  const text = line.type === "basmallah" ? (line.decor?.glyph ?? "﷽") : lineGlyphText(line);
+                  if (line.type === "blank") return <div key={line.line} className={styles.line} aria-hidden="true" />;
+                  if (line.type === "surah_name") {
+                    return <div key={line.line} className={`${styles.line} ${styles.surahLine}`} dir="rtl" aria-hidden="true" />;
+                  }
+                  return (
+                    <div
+                      key={line.line}
+                      className={`${styles.line} ${line.centered ? styles.centered : ""}`}
+                      style={{ fontFamily }}
+                      dir="rtl"
+                    >
+                      {text}
+                    </div>
+                  );
                 }) : <div className={styles.loading}>Loading page…</div>}
+              </div>
+
+              <div className={styles.pageFooter}>
+                <span className={styles.pageNumber}>{easternDigits(pageNumber)}</span>
               </div>
 
               <div className={styles.navRow}>

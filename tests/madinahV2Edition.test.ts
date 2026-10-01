@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MADINAH_V2_EDITION, lineGlyphText } from "../app/quran/madinah/data";
+import { juzTitle, surahTitle } from "../app/quran/reader/metadata";
 
 describe("Madinah Mushaf V2 edition", () => {
   it("pins the 1421H 604-page, 15-line edition", () => {
@@ -18,5 +19,10 @@ describe("Madinah Mushaf V2 edition", () => {
         { location: "1:1:2", word_id: 2, qpcV2: "ﱂ", kind: "word" },
       ],
     })).toBe("ﱁ ﱂ");
+  });
+
+  it("provides the running-header labels used by the Madinah page layout", () => {
+    expect(surahTitle(2)).toBe("سورة البقرة");
+    expect(juzTitle(1)).toBe("الجزء الأول");
   });
 });
