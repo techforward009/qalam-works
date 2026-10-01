@@ -256,7 +256,8 @@ export default function MadinahReader({
             </div>
 
             <article className={styles.page}>
-              {page ? page.lines.map((line) => {
+              <div className={styles.pageLines}>
+                {page ? page.lines.map((line) => {
                 const text = line.type === "basmallah" ? (line.decor?.glyph ?? "﷽") : lineGlyphText(line);
                 if (line.type === "blank") return <div key={line.line} className={styles.line} aria-hidden="true" />;
                 if (line.type === "surah_name") {
@@ -273,7 +274,8 @@ export default function MadinahReader({
                     {text}
                   </div>
                 );
-              }) : <div className={styles.loading}>Loading page…</div>}
+                }) : <div className={styles.loading}>Loading page…</div>}
+              </div>
 
               <div className={styles.navRow}>
                 <button type="button" className={styles.secondary} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)}>← Previous page</button>
