@@ -24,20 +24,26 @@ const CACHE_NAME = "qalam-arabic-diacritics-v1";
 const MAX_MODEL_CHARS = 900;
 
 /**
- * Rawi is trained primarily on canonical Arabic graphemes. Qalam users often
- * type the same Arabic words with Indo-Pakistani publishing letters such as
- * ک, ی, ھ and ۃ. Keep those letters in the final output, but fold them only
- * for the model's input so the model sees the standard Arabic skeleton.
+ * Qalam's General Arabic mode accepts Arabic text pasted with common
+ * Indo-Pakistani/Persian variants. Rawi should see one canonical Arabic
+ * orthography, and the final output should use that same canonical form.
  */
-const RAWI_MODEL_FOLD: Readonly<Record<string, string>> = Object.freeze({
+const RAWI_ARABIC_FOLD: Readonly<Record<string, string>> = Object.freeze({
   "ک": "ك",
   "ی": "ي",
+  "ے": "ي",
   "ھ": "ه",
   "ہ": "ه",
+  "ۂ": "ه",
+  "ۀ": "ه",
   "ۃ": "ة",
+  "أ": "ا",
+  "إ": "ا",
+  "ٱ": "ا",
 });
 
 const RAWI_VOWEL_MARK = /[\u064B-\u0652\u0670]/u;
+const SHADDA = "\u0651";
 
 let sessionPromise: Promise<ort.InferenceSession> | undefined;
 let vocabPromise:
@@ -106,16 +112,18 @@ function stripCombiningMarks(text: string): string {
     .join("");
 }
 
-/** Preserve the source spelling for output; only strip existing marks. */
-function sourceBase(text: string): string {
-  return Array.from(text.normalize("NFC"))
-    .filter((char) => !/\p{M}/u.test(char))
-    .join("");
+/** Canonical Arabic base used for both Rawi input and final output. */
+function canonicalArabicBase(text: string): string {
+  return Array.from(stripCombiningMarks(text), (char) => RAWI_ARABIC_FOLD[char] ?? char).join("");
 }
 
-/** Canonical Arabic base used only for Rawi tokenization/inference. */
-function modelBase(text: string): string {
-  return Array.from(stripCombiningMarks(text), (char) => RAWI_MODEL_FOLD[char] ?? char).join("");
+/**
+ * Arabic fonts used in Pakistani publishing commonly expect shadda before
+ * the accompanying vowel mark. Unicode canonical ordering may place the
+ * vowel first, so enforce the publishing order after inference.
+ */
+function orderShaddaFirst(text: string): string {
+  return text.replace(/([\u064B-\u0650\u0652\u0670]+)\u0651/gu, `${SHADDA}$1`);
 }
 
 function encode(text: string, charToId: Record<string, number>): bigint[] {
@@ -124,23 +132,23 @@ function encode(text: string, charToId: Record<string, number>): bigint[] {
 }
 
 function attachClasses(
-  source: string,
+  base: string,
   classes: ArrayLike<number>,
   idToDiacritic: Record<number, string>,
 ): string {
-  const chars = Array.from(source);
+  const chars = Array.from(base);
   let out = "";
   for (let i = 0; i < chars.length; i += 1) {
     const char = chars[i];
     // Rawi also predicts orthographic restorations (hamza/madda) in addition
     // to harakat. Qalam's General mode is a diacritizer, not a spelling
-    // normalizer, so keep the source grapheme and project only actual
+    // normalizer, so keep the canonical Arabic base and project only actual
     // tashkeel/dagger-alef marks onto it.
     const predicted = /\p{L}/u.test(char) ? idToDiacritic[Number(classes[i])] ?? "" : "";
     const diacritic = Array.from(predicted).filter((mark) => RAWI_VOWEL_MARK.test(mark)).join("");
     out += char + diacritic;
   }
-  return out.normalize("NFC");
+  return orderShaddaFirst(out);
 }
 
 /**
@@ -165,16 +173,18 @@ function normalizeAllah(word: string): string {
 }
 
 function applyPublishingPostprocess(text: string): string {
-  return text
-    .split(/(\s+)/u)
-    .map((part) => {
-      if (/^\s+$/u.test(part) || part.length === 0) return part;
-      const match = /^(\p{P}*)(.*?)(\p{P}*)$/u.exec(part);
-      if (!match) return part;
-      const [, before, core, after] = match;
-      return `${before}${normalizeAllah(core)}${after}`;
-    })
-    .join("");
+  return orderShaddaFirst(
+    text
+      .split(/(\s+)/u)
+      .map((part) => {
+        if (/^\s+$/u.test(part) || part.length === 0) return part;
+        const match = /^(\p{P}*)(.*?)(\p{P}*)$/u.exec(part);
+        if (!match) return part;
+        const [, before, core, after] = match;
+        return `${before}${normalizeAllah(core)}${after}`;
+      })
+      .join(""),
+  );
 }
 
 function splitForModel(text: string): string[] {
@@ -200,17 +210,10 @@ function splitForModel(text: string): string[] {
 
 async function diacritizeChunk(text: string): Promise<string> {
   const [session, vocab] = await Promise.all([getSession(), getVocab()]);
-  const outputBase = sourceBase(text);
-  const inputBase = modelBase(text);
-  if (!inputBase) return text;
+  const base = canonicalArabicBase(text);
+  if (!base) return text;
 
-  const outputChars = Array.from(outputBase);
-  const modelChars = Array.from(inputBase);
-  if (outputChars.length !== modelChars.length) {
-    throw new Error("Rawi source/model character alignment failed");
-  }
-
-  const ids = encode(inputBase, vocab.char_to_idx);
+  const ids = encode(base, vocab.char_to_idx);
   const tensor = new ort.Tensor("int64", BigInt64Array.from(ids), [1, ids.length]);
   const results = await session.run({ input: tensor });
   const output = results["gated_cls"];
@@ -220,7 +223,7 @@ async function diacritizeChunk(text: string): Promise<string> {
   for (const [mark, id] of Object.entries(vocab.diac_to_idx)) {
     idToDiacritic[Number(id)] = mark;
   }
-  return attachClasses(outputBase, output.data as ArrayLike<number>, idToDiacritic);
+  return attachClasses(base, output.data as ArrayLike<number>, idToDiacritic);
 }
 
 /**
