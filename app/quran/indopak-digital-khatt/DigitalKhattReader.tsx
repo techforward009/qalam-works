@@ -8,9 +8,12 @@ import { useLanguage } from "../../lib/language-context";
 import { easternDigits, SURAH_NAMES } from "../reader/metadata";
 import {
   DIGITAL_KHATT_EDITION,
+  buildDigitalKhattPages,
   chapterVerses,
   digitalKhattJuzOf,
   digitalKhattJuzStart,
+  digitalKhattPageByNumber,
+  digitalKhattPageOf,
   findDigitalKhattAyah,
   flattenDigitalKhatt,
   isDigitalKhattCorpus,
@@ -19,7 +22,26 @@ import {
 import styles from "./reader.module.css";
 
 const BASMILLAH = "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ";
+const TRAILING_QURAN_MARKS = /[\u0614-\u0617\u06D6-\u06DC\u08D5-\u08DF]+$/u;
+
 type Hit = { surah: number; ayah: number };
+type RenderText = { body: string; endingMarks: string };
+
+function splitEndingMarks(text: string): RenderText {
+  const match = text.match(TRAILING_QURAN_MARKS);
+  if (!match || match.index === undefined) {
+    return { body: text, endingMarks: "" };
+  }
+
+  return {
+    body: text.slice(0, match.index).trimEnd(),
+    endingMarks: match[0],
+  };
+}
+
+function pageLabel(page: number, pageCount: number): string {
+  return `Page ${page} / ${pageCount}`;
+}
 
 export default function DigitalKhattReader({
   surah,
@@ -34,6 +56,7 @@ export default function DigitalKhattReader({
   const [query, setQuery] = useState("");
   const [searched, setSearched] = useState(false);
   const [hits, setHits] = useState<Hit[]>([]);
+  const [pageInput, setPageInput] = useState("1");
 
   useEffect(() => {
     let cancelled = false;
@@ -57,19 +80,57 @@ export default function DigitalKhattReader({
     () => (corpus ? findDigitalKhattAyah(corpus, surah, ayah) : null),
     [corpus, surah, ayah],
   );
+
   const chapterAyahs = useMemo(
     () => (corpus ? chapterVerses(corpus, surah) : []),
     [corpus, surah],
   );
+
+  const flatVerses = useMemo(
+    () => (corpus ? flattenDigitalKhatt(corpus) : []),
+    [corpus],
+  );
+
+  const pages = useMemo(
+    () => (corpus ? buildDigitalKhattPages(corpus) : []),
+    [corpus],
+  );
+
+  const currentPage = useMemo(
+    () => digitalKhattPageOf(pages, surah, ayah),
+    [pages, surah, ayah],
+  );
+
+  const pageVerses = useMemo(
+    () =>
+      currentPage
+        ? flatVerses.slice(currentPage.fromIndex, currentPage.toIndex + 1)
+        : [],
+    [currentPage, flatVerses],
+  );
+
   const juz = digitalKhattJuzOf(surah, ayah);
+  const pageNumber = currentPage?.page ?? 1;
+
+  useEffect(() => {
+    setPageInput(String(pageNumber));
+  }, [pageNumber]);
 
   useEffect(() => {
     if (!current) return;
-    document.getElementById("current-ayah")?.scrollIntoView({ block: "center" });
-  }, [current]);
+    requestAnimationFrame(() => {
+      document.getElementById("current-ayah")?.scrollIntoView({ block: "center" });
+    });
+  }, [current, pageNumber]);
 
   const navigate = (nextSurah: number, nextAyah: number) => {
     router.push("/quran/indopak-digital-khatt/" + nextSurah + "/" + nextAyah);
+  };
+
+  const navigatePage = (nextPageNumber: number) => {
+    const target = digitalKhattPageByNumber(pages, nextPageNumber);
+    if (!target) return;
+    navigate(target.startChapter, target.startVerse);
   };
 
   const runSearch = () => {
@@ -95,7 +156,14 @@ export default function DigitalKhattReader({
     setHits(result);
   };
 
-  const hasBismillah = surah !== 9;
+  const submitPage = () => {
+    const nextPage = Math.max(
+      1,
+      Math.min(DIGITAL_KHATT_EDITION.pageCount, Number(pageInput) || pageNumber),
+    );
+    setPageInput(String(nextPage));
+    navigatePage(nextPage);
+  };
 
   if (corpus === null) {
     return (
@@ -107,7 +175,7 @@ export default function DigitalKhattReader({
     );
   }
 
-  if (!current || chapterAyahs.length === 0) {
+  if (!current || !currentPage || pageVerses.length === 0 || chapterAyahs.length === 0) {
     return (
       <main className={styles.reader} dir="ltr">
         <div className="mx-auto max-w-5xl px-4 py-12 text-center text-sm text-red-700">
@@ -139,7 +207,12 @@ export default function DigitalKhattReader({
 
         <div className="grid items-start gap-4 lg:grid-cols-[210px_minmax(0,1fr)]">
           <aside className="order-2 rounded-xl border border-[#ddd5c5] bg-white/80 p-3 lg:order-1">
-            <form onSubmit={(event) => { event.preventDefault(); runSearch(); }}>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                runSearch();
+              }}
+            >
               <label className="block text-xs font-medium text-[#625d53]">
                 Search Quran
                 <input
@@ -204,7 +277,9 @@ export default function DigitalKhattReader({
                   className="mt-1 w-full rounded-md border border-[#cfc7b7] bg-white px-2 py-2 text-sm"
                 >
                   {chapterAyahs.map((item) => (
-                    <option key={item.verse} value={item.verse}>{item.verse}</option>
+                    <option key={item.verse} value={item.verse}>
+                      {item.verse}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -220,79 +295,131 @@ export default function DigitalKhattReader({
                   className="mt-1 w-full rounded-md border border-[#cfc7b7] bg-white px-2 py-2 text-sm"
                 >
                   {Array.from({ length: 30 }, (_, index) => (
-                    <option key={index + 1} value={index + 1}>{index + 1}</option>
+                    <option key={index + 1} value={index + 1}>
+                      {index + 1}
+                    </option>
                   ))}
                 </select>
               </label>
+
+              <form
+                className="mt-3 border-t border-[#e2dccd] pt-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  submitPage();
+                }}
+              >
+                <label className="block text-xs text-[#625d53]">
+                  Page
+                  <div className="mt-1 flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={DIGITAL_KHATT_EDITION.pageCount}
+                      value={pageInput}
+                      onChange={(event) => setPageInput(event.target.value)}
+                      className="min-w-0 flex-1 rounded-md border border-[#cfc7b7] bg-white px-2 py-2 text-sm"
+                    />
+                    <span className="text-xs text-[#777164]">/ {DIGITAL_KHATT_EDITION.pageCount}</span>
+                  </div>
+                </label>
+                <button
+                  type="submit"
+                  className="mt-2 w-full rounded-md border border-[#2f8f68]/40 px-3 py-2 text-sm font-medium text-[#2f8f68]"
+                >
+                  Go to page
+                </button>
+              </form>
             </div>
           </aside>
 
           <section className="order-1 lg:order-2">
-            <article className="rounded-2xl border-8 border-[#eee7d5] bg-[#fcfaf3] px-4 py-6 shadow-[0_14px_36px_rgba(56,45,24,0.10)] sm:px-10 sm:py-9">
-              <div className="mb-5 border-b border-[#d9d0bc] pb-4 text-center">
-                <div className="text-xs tracking-[0.2em] text-[#777064]">
-                  SURAH {String(surah).padStart(3, "0")}
-                </div>
-                <h1 className="mt-1 text-2xl font-semibold text-[#1e211d]">
-                  {SURAH_NAMES[surah - 1] ?? ""}
-                </h1>
-                {hasBismillah && (
-                  <div className={styles.quran + " mt-3 text-[30px] text-[#1d201b] sm:text-[34px]"}>
-                    {BASMILLAH}
-                  </div>
-                )}
+            <article className={styles.page}>
+              <div className={styles.pageTop}>
+                <span>{pageLabel(pageNumber, DIGITAL_KHATT_EDITION.pageCount)}</span>
+                <span>{easternDigits(pageNumber)}</span>
               </div>
 
-              <div className={styles.quran + " text-[27px] text-[#171717] sm:text-[32px]"}>
-                {chapterAyahs.map((item) => (
-                  <span
-                    key={item.chapter + ":" + item.verse}
-                    id={item.verse === ayah ? "current-ayah" : undefined}
-                    className={item.verse === ayah ? "rounded-[0.22em] bg-[#eef5ef] px-[0.08em]" : undefined}
-                  >
-                    <span className={styles.ayah}>{item.text}</span>
-                    <span className={styles.ayahNumber} aria-label={"Ayah " + item.verse}>
-                      ۝{easternDigits(item.verse)}
-                    </span>{" "}
-                  </span>
-                ))}
+              <div className={styles.quran}>
+                {pageVerses.map((item) => {
+                  const { body, endingMarks } = splitEndingMarks(item.text);
+                  const isCurrent = item.chapter === surah && item.verse === ayah;
+
+                  return (
+                    <span key={item.chapter + ":" + item.verse}>
+                      {item.verse === 1 && (
+                        <>
+                          <span className={styles.surahHeader} dir="rtl">
+                            <span className={styles.surahMeta}>
+                              SURAH {String(item.chapter).padStart(3, "0")}
+                            </span>
+                            <span className={styles.surahName}>
+                              {SURAH_NAMES[item.chapter - 1] ?? ""}
+                            </span>
+                          </span>
+
+                          {item.chapter !== 9 && (
+                            <span className={styles.bismillah}>{BASMILLAH}</span>
+                          )}
+                        </>
+                      )}
+
+                      <span
+                        id={isCurrent ? "current-ayah" : undefined}
+                        className={isCurrent ? styles.currentAyah : undefined}
+                      >
+                        <span className={styles.ayah}>{body}</span>
+                        <span className={styles.ayahNumber} aria-label={"Ayah " + item.verse}>
+                          <span aria-hidden="true">۝</span>
+                          {easternDigits(item.verse)}
+                          {endingMarks && <span className={styles.endingMarks}>{endingMarks}</span>}
+                        </span>{" "}
+                      </span>
+                    </span>
+                  );
+                })}
               </div>
 
-              <nav className="mt-8 flex items-center justify-between border-t border-[#ded6c5] pt-4 text-sm">
+              <div className={styles.pageBottom}>
                 <button
                   type="button"
-                  disabled={surah === 1 && ayah === 1}
-                  onClick={() => {
-                    if (ayah > 1) navigate(surah, ayah - 1);
-                    else if (surah > 1 && corpus) {
-                      const previous = chapterVerses(corpus, surah - 1);
-                      if (previous.length) navigate(surah - 1, previous.length);
-                    }
-                  }}
-                  className="rounded-md border border-[#cfc7b7] px-3 py-2 text-[#575247] disabled:opacity-40"
+                  disabled={pageNumber <= 1}
+                  onClick={() => navigatePage(pageNumber - 1)}
+                  className="rounded-md border border-[#cfc7b7] px-4 py-2 text-sm text-[#575247] disabled:opacity-40"
                 >
-                  ← Previous
+                  ← Previous page
                 </button>
+
                 <span className="text-xs text-[#776f61]">
-                  {easternDigits(surah)} : {easternDigits(ayah)}
+                  {easternDigits(currentPage.startChapter)}:{easternDigits(currentPage.startVerse)}
+                  {" — "}
+                  {easternDigits(currentPage.endChapter)}:{easternDigits(currentPage.endVerse)}
                 </span>
+
                 <button
                   type="button"
-                  disabled={surah === 114 && ayah === chapterAyahs.length}
-                  onClick={() => {
-                    if (ayah < chapterAyahs.length) navigate(surah, ayah + 1);
-                    else if (surah < 114) navigate(surah + 1, 1);
-                  }}
-                  className="rounded-md border border-[#2f8f68]/40 px-3 py-2 text-[#2f8f68] disabled:opacity-40"
+                  disabled={pageNumber >= DIGITAL_KHATT_EDITION.pageCount}
+                  onClick={() => navigatePage(pageNumber + 1)}
+                  className="rounded-md border border-[#2f8f68]/40 px-4 py-2 text-sm font-medium text-[#2f8f68] disabled:opacity-40"
                 >
-                  Next →
+                  Next page →
                 </button>
-              </nav>
+              </div>
             </article>
-            <p className="mt-3 text-center text-[11px] leading-relaxed text-[#8a8478]">
-              Text: DigitalKhatt IndoPak, MIT, via risan/quran-json. Font: DigitalKhatt OFL-1.1.
-              Not Taj Company and not the AhmedGraf edition. The ۝ marker is display-only.
-            </p>
+
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] leading-relaxed text-[#8a8478]">
+              <span>
+                Text: DigitalKhatt IndoPak, MIT, via risan/quran-json. Font: DigitalKhatt OFL-1.1.
+              </span>
+              <a
+                href="https://fonts.quran.ws/fonts/indopak/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#2f8f68] hover:underline"
+              >
+                Matching font for Word
+              </a>
+            </div>
           </section>
         </div>
       </div>

@@ -11,13 +11,114 @@
   --line: #ded6c5;
 }
 
+.page {
+  min-height: 900px;
+  border: 8px solid #eee7d5;
+  border-radius: 22px;
+  background:
+    linear-gradient(90deg, rgba(108, 83, 42, 0.045), transparent 8%, transparent 92%, rgba(108, 83, 42, 0.045)),
+    var(--paper);
+  padding: 20px 28px 22px;
+  box-shadow: 0 14px 36px rgba(56, 45, 24, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.pageTop,
+.pageBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #777064;
+  font-size: 0.72rem;
+}
+
+.pageTop {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pageBottom {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .quran {
+  flex: 1;
+  padding: 20px 18px 28px;
   font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   direction: rtl;
   text-align: justify;
   text-justify: inter-word;
-  line-height: 2.35;
+  line-height: 2.18;
+  font-size: 30px;
+  color: var(--ink);
+  text-rendering: optimizeLegibility;
+}
+
+.surahHeader {
+  display: block;
+  width: min(560px, 88%);
+  margin: 0.35em auto 0.65em;
+  padding: 0.33em 2.7em 0.45em;
+  border: 1px solid #b9ad91;
+  border-radius: 999px;
+  position: relative;
+  text-align: center;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6);
+  background: rgba(255, 252, 244, 0.72);
+}
+
+.surahHeader::before,
+.surahHeader::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 1.8em;
+  height: 1px;
+  background: #b9ad91;
+}
+
+.surahHeader::before {
+  inset-inline-start: 0.7em;
+}
+
+.surahHeader::after {
+  inset-inline-end: 0.7em;
+}
+
+.surahMeta {
+  display: block;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.29em;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: #8c826f;
+  direction: ltr;
+}
+
+.surahName {
+  display: block;
+  margin-top: 0.08em;
+  font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
+  font-size: 1.12em;
+  line-height: 1.1;
+  color: #171914;
+}
+
+.bismillah {
+  display: block;
+  margin: 0.15em auto 0.55em;
+  text-align: center;
+  white-space: nowrap;
+  direction: rtl;
 }
 
 .ayah {
@@ -25,17 +126,79 @@
 }
 
 .ayahNumber {
-  display: inline-block;
-  margin-inline: 0.18em;
+  display: inline-flex;
+  align-items: baseline;
+  position: relative;
+  margin-inline: 0.14em;
   color: var(--green);
-  font-size: 0.62em;
+  font-size: 0.66em;
   line-height: 1;
-  vertical-align: 0.12em;
+  vertical-align: 0.08em;
   white-space: nowrap;
+  direction: rtl;
+  unicode-bidi: isolate;
+}
+
+.endingMarks {
+  display: inline;
+  position: relative;
+  margin-inline-start: 0.03em;
+  font-size: 0.92em;
+  vertical-align: 0.04em;
+}
+
+.currentAyah {
+  border-radius: 0.22em;
+  background: rgba(47, 143, 104, 0.1);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding-inline: 0.02em;
+}
+
+@media (max-width: 900px) {
+  .page {
+    min-height: 760px;
+    padding: 16px 16px 18px;
+  }
+
+  .quran {
+    padding-inline: 4px;
+    font-size: 27px;
+    line-height: 2.08;
+  }
 }
 
 @media (max-width: 640px) {
+  .page {
+    min-height: 0;
+    border-width: 5px;
+    border-radius: 16px;
+    padding: 12px 10px 14px;
+  }
+
+  .pageTop {
+    padding-bottom: 7px;
+    font-size: 0.66rem;
+  }
+
   .quran {
-    line-height: 2.12;
+    padding: 16px 2px 24px;
+    font-size: 25px;
+    line-height: 2;
+    text-align: right;
+  }
+
+  .surahHeader {
+    width: 96%;
+    padding-inline: 2.1em;
+  }
+
+  .pageBottom {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .bismillah {
+    font-size: 0.95em;
   }
 }

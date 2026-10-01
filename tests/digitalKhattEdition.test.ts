@@ -1,11 +1,17 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
-import { DIGITAL_KHATT_EDITION, flattenDigitalKhatt, type DigitalKhattCorpus } from "../app/quran/indopak-digital-khatt/data";
+import {
+  buildDigitalKhattPages,
+  DIGITAL_KHATT_EDITION,
+  flattenDigitalKhatt,
+  type DigitalKhattCorpus,
+} from "../app/quran/indopak-digital-khatt/data";
 
 describe("Qalam Digital Khatt IndoPak edition", () => {
   test("keeps the separate edition identity", () => {
     expect(DIGITAL_KHATT_EDITION.id).toBe("qalam-indopak-digitalkhatt-v1");
     expect(DIGITAL_KHATT_EDITION.verseCount).toBe(6236);
+    expect(DIGITAL_KHATT_EDITION.pageCount).toBe(604);
     expect(DIGITAL_KHATT_EDITION.license).toBe("MIT");
     expect(DIGITAL_KHATT_EDITION.fontLicense).toBe("OFL-1.1");
   });
@@ -27,5 +33,19 @@ describe("Qalam Digital Khatt IndoPak edition", () => {
     expect(chapters["1"].some((verse) => verse.text.startsWith("بِسْمِ"))).toBe(false);
     expect(chapters["114"]).toHaveLength(6);
     expect(readFileSync("public/fonts/DigitalKhattIndoPak.woff2").subarray(0, 4).toString("ascii")).toBe("wOF2");
+  });
+
+  test("builds the fixed 604-page navigation map without rewriting corpus text", () => {
+    const raw = readFileSync("public/quran/indopak-digital-khatt.json", "utf8");
+    const chapters = JSON.parse(raw) as DigitalKhattCorpus;
+    const pages = buildDigitalKhattPages(chapters);
+
+    expect(pages).toHaveLength(604);
+    expect(pages[0]).toMatchObject({ page: 1, startChapter: 1, startVerse: 1 });
+    expect(pages[603]).toMatchObject({ page: 604, endChapter: 114, endVerse: 6 });
+
+    for (let index = 1; index < pages.length; index += 1) {
+      expect(pages[index].fromIndex).toBe(pages[index - 1].toIndex + 1);
+    }
   });
 });
