@@ -10,7 +10,6 @@ import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQura
 import {
   MADINAH_V2_EDITION,
   fontUrl,
-  lineGlyphText,
   pageUrl,
   type MadinahPage,
 } from "./data";
@@ -262,30 +261,33 @@ export default function MadinahReader({
 
             <article className={styles.page}>
               <div className={styles.mushafHeader} dir="ltr" aria-label="Mushaf running headers">
-                <div className={styles.mushafHeaderSide} dir="rtl">{displaySurahTitle}</div>
+                <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderLeft}`} dir="rtl">{displaySurahTitle}</div>
                 <div className={styles.mushafHeaderPage} aria-label={`Page ${pageNumber}`}>
                   <span className={styles.mushafHeaderRule} aria-hidden="true" />
                   <span className={styles.mushafHeaderNumber}>{easternDigits(pageNumber)}</span>
                   <span className={styles.mushafHeaderRule} aria-hidden="true" />
                 </div>
-                <div className={styles.mushafHeaderSide} dir="rtl">{displayJuzTitle}</div>
+                <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderRight}`} dir="rtl">{displayJuzTitle}</div>
               </div>
 
               <div className={styles.pageLines}>
                 {page ? page.lines.map((line) => {
-                  const text = line.type === "basmallah" ? (line.decor?.glyph ?? "﷽") : lineGlyphText(line);
                   if (line.type === "blank") return <div key={line.line} className={styles.line} aria-hidden="true" />;
                   if (line.type === "surah_name") {
-                    return <div key={line.line} className={`${styles.line} ${styles.surahLine}`} dir="rtl" aria-hidden="true" />;
+                    const name = line.decor?.surah ? surahTitle(line.decor.surah) : "";
+                    return <div key={line.line} className={`${styles.line} ${styles.surahLine}`} dir="rtl">{name}</div>;
+                  }
+                  if (line.type === "basmallah") {
+                    return <div key={line.line} className={`${styles.line} ${styles.centeredLine}`} dir="rtl"><span className={styles.basmala}>{line.decor?.glyph ?? "﷽"}</span></div>;
                   }
                   return (
                     <div
                       key={line.line}
-                      className={styles.line}
+                      className={`${styles.line} ${line.centered ? styles.centeredLine : ""}`}
                       style={{ fontFamily }}
                       dir="rtl"
                     >
-                      <span className={styles.lineText}>{text}</span>
+                      {line.words.map((word) => <span key={word.word_id} className={styles.word}>{word.qpcV2}</span>)}
                     </div>
                   );
                 }) : <div className={styles.loading}>Loading page…</div>}
