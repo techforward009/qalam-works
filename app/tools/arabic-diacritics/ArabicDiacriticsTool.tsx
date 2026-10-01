@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../../lib/language-context";
 import { GOLDEN_INPUT } from "./engine/goldenPassage";
 import { diacritizeArabic } from "./engine/diacritizeArabic";
@@ -17,14 +17,65 @@ export default function ArabicDiacriticsTool() {
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState<"general" | "quran">("general");
-  const general = useMemo(() => diacritizeArabic(input), [input]);
+  const [modelOutput, setModelOutput] = useState("");
+  const [modelState, setModelState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [modelError, setModelError] = useState("");
+  const deterministic = useMemo(() => diacritizeArabic(input), [input]);
   const quran = useMemo(() => restoreQuran(input, ahmedgrafQuranReference), [input]);
-  const output = mode === "general" ? general.output : quran.output;
-  const vocalized = general.reviews.filter((item) => item.status !== "unchanged");
-  const unchanged = general.reviews.filter((item) => item.status === "unchanged");
+  const output = mode === "general" ? modelOutput : quran.output;
+  const vocalized = deterministic.reviews.filter((item) => item.status !== "unchanged");
+  const unchanged = deterministic.reviews.filter((item) => item.status === "unchanged");
   const quranChanges = quran.segments.filter((item) => item.status === "verified" || item.status === "corrected" || item.status === "ambiguous");
   const { language } = useLanguage();
   const isUr = language === "ur";
+
+  useEffect(() => {
+    if (mode !== "general") return;
+    let cancelled = false;
+    import("./engine/rawiBrowser")
+      .then((mod) => mod.preloadArabicDiacritizer())
+      .catch(() => {
+        if (!cancelled) {
+          /* The first typed request reports the failure and falls back. */
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "general") return;
+    let cancelled = false;
+    if (!input.trim()) {
+      setModelOutput("");
+      setModelState("idle");
+      setModelError("");
+      return;
+    }
+
+    setModelState("loading");
+    setModelError("");
+    const timer = window.setTimeout(async () => {
+      try {
+        const { diacritizeArabicWithModel } = await import("./engine/rawiBrowser");
+        const result = await diacritizeArabicWithModel(input);
+        if (cancelled) return;
+        setModelOutput(result);
+        setModelState("ready");
+      } catch (error) {
+        if (cancelled) return;
+        setModelOutput(deterministic.output);
+        setModelState("error");
+        setModelError(error instanceof Error ? error.message : String(error));
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [input, mode, deterministic.output]);
 
   const copy = async () => {
     if (!output) return;
@@ -42,8 +93,8 @@ export default function ArabicDiacriticsTool() {
       <div className="bg-white dark:bg-[#13261c] p-6 md:p-8 rounded-2xl border border-[#1A3A2A]/15 shadow-md">
         <p className={`mb-4 text-sm leading-relaxed text-[#3d3d3d] dark:text-[#c8d8cc] ${isUr ? "font-naskh" : ""}`}>
           {isUr
-            ? "یہ اردو اعراب نہیں ہے۔ سادہ عربی کو پاکستانی مطبوعہ انداز میں اعراب دیتا ہے۔ جو لفظ یقینی نہ ہو وہ جوں کا توں رہتا ہے۔"
-            : "This is not Urdu diacritization. It gives plain Arabic the diacritics of Pakistani printed books. A word that is not certain is left as typed."}
+            ? "سادہ عربی متن کو مکمل اعراب دیتا ہے۔ اعراب میں حرکات، تشدید، سکون، تنوین اور آخری نحوی اعراب شامل ہیں، جبکہ کتابی پاکستانی/ہند و پاک انداز محفوظ رکھنے کی کوشش کی جاتی ہے۔"
+            : "Fully vocalizes plain Arabic with harakat, shadda, sukun, tanwin, and contextual final case endings, while preserving the Indo-Pakistani publishing style where applicable."}
         </p>
         <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Diacritics mode">
           <button
@@ -116,8 +167,15 @@ export default function ArabicDiacriticsTool() {
               lang="ar"
               className="min-h-64 whitespace-pre-wrap rounded-xl border border-[#B8935A]/40 bg-white p-4 font-naskh text-lg leading-9 text-[#1A3A2A] dark:bg-[#0e1c15] dark:text-[#e8ede9]"
             >
-              {output}
+              {mode === "general" && modelState === "loading" && !modelOutput ? (isUr ? "لوڈ ہو رہا ہے…" : "Loading…") : output}
             </div>
+            {mode === "general" && modelState === "error" && (
+              <p className="text-xs text-amber-700 dark:text-amber-300" title={modelError}>
+                {isUr
+                  ? "ماڈل دستیاب نہیں؛ متعین فہرست والا نتیجہ دکھایا جا رہا ہے۔"
+                  : "Model unavailable; deterministic fallback shown."}
+              </p>
+            )}
           </div>
         </div>
         <div className="mt-6">
@@ -127,11 +185,15 @@ export default function ArabicDiacriticsTool() {
           {mode === "general" ? (
             <>
               <p className={`mt-1 text-sm text-[#4a6a4a] ${isUr ? "font-naskh" : ""}`}>
-                {isUr
-                  ? `اعراب شدہ: ${vocalized.length} · بغیر تبدیلی: ${unchanged.length}`
-                  : `Vocalized: ${vocalized.length} · Unchanged: ${unchanged.length}`}
+                {modelState === "ready"
+                  ? isUr
+                    ? "مکمل اعراب شدہ نتیجہ تیار ہے۔"
+                    : "Full model-based tashkeel is ready."
+                  : isUr
+                    ? `اعراب شدہ: ${vocalized.length} · بغیر تبدیلی: ${unchanged.length}`
+                    : `Vocalized: ${vocalized.length} · Unchanged: ${unchanged.length}`}
               </p>
-              {vocalized.length > 0 && (
+              {modelState !== "loading" && modelState !== "ready" && vocalized.length > 0 && (
                 <ul className="mt-3 max-h-56 space-y-1 overflow-auto text-sm font-naskh">
                   {vocalized.slice(0, 40).map((item, index) => (
                     <li key={`${item.source}-${index}`} className="rounded-lg bg-[#F7F5EF] px-3 py-1 dark:bg-[#0e1c15]">

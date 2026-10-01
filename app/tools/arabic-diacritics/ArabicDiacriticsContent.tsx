@@ -9,35 +9,35 @@ export default function ArabicDiacriticsContent() {
       centerHeader
       h1={{ en: "Arabic Diacritics", ur: "عربی اعراب" }}
       intro={{
-        en: "Turn plain Arabic into the diacritic style used in Pakistani and Indo-Pakistani Islamic books. The original text stays in the input. Words the engine cannot resolve are left unchanged.",
-        ur: "سادہ عربی کو اس اعراب میں لاتا ہے جو پاکستانی اور برصغیر کی اسلامی کتابوں میں چلتا ہے۔ اصل متن ان پٹ میں رہتا ہے۔ جو لفظ طے نہ ہو اسے بغیر اعراب کے چھوڑ دیا جاتا ہے۔",
+        en: "Turn plain Arabic into fully vocalized Arabic in the style used by Pakistani and Indo-Pakistani Islamic publishing, including contextual word-final case endings.",
+        ur: "سادہ عربی کو پاکستانی اور برصغیر کی اسلامی اشاعت کے انداز میں مکمل اعراب شدہ عربی میں بدلیں، جس میں جہاں ممکن ہو الفاظ کے آخری نحوی اعراب بھی شامل ہیں۔",
       }}
       note={{
-        en: "This is not Urdu diacritization and not modern newspaper tashkeel. Case endings follow the stored Indo-Pakistani publishing form, not a full syntactic parser. Inside a known Arabic word, Urdu letters are normalized, and a missing letter is restored only when that spelling is listed.",
-        ur: "یہ اردو اعراب نہیں اور نہ اخبار والا تشکیل۔ اعراب محفوظ شدہ پاکستانی طرز پر ہے، مکمل نحوی تجزیہ نہیں۔ معلوم عربی لفظ کے اردو حروف درست ہو جاتے ہیں، اور چھوٹا ہوا حرف صرف درج شدہ ہجے پر لوٹایا جاتا ہے۔",
+        en: "The General mode uses a browser-side Arabic diacritization model. Your text is processed on your device; Qalam's publishing layer then applies high-confidence Indo-Pakistani forms. Quran mode remains reference-based.",
+        ur: "جنرل موڈ میں عربی اعراب کے لیے براؤزر پر ماڈل چلتا ہے۔ متن آپ کے آلے پر ہی پراسیس ہوتا ہے، پھر قلم کی اشاعتی تہہ مستند پاکستانی و برصغیری صورتوں کو برقرار رکھتی ہے۔ قرآن موڈ بدستور اصل ماخذ سے ملان پر قائم ہے۔",
       }}
       sections={[
         {
           title: { en: "What is vocalized", ur: "کس چیز پر اعراب آتا ہے" },
           body: {
-            en: "Known Arabic words receive fatha, kasra, damma, sukun, shadda, tanwin, dagger alef, and the Indo-Pakistani pronoun mark. Urdu-only letters, English, numbers, and punctuation stay as typed.",
-            ur: "جانے پہچانے عربی الفاظ پر زبر، زیر، پیش، جزم، شد، تنوین، الف خنجریہ اور ہٗ والا نشان آتا ہے۔ اردو کے خاص حروف، انگریزی، اعداد اور رموزِ اوقاف نہیں بدلتے۔",
+            en: "The General mode adds fatha, kasra, damma, sukun, shadda, tanwin, and contextual final case endings. Indo-Pakistani publishing conventions are preserved where Qalam has a high-confidence rule.",
+            ur: "جنرل موڈ زبر، زیر، پیش، جزم، تشدید، تنوین اور سیاق کے مطابق آخری نحوی اعراب دیتا ہے۔ جہاں قلم کے پاس قابلِ اعتماد قاعدہ موجود ہو وہاں پاکستانی و برصغیری کتابی انداز برقرار رکھا جاتا ہے۔",
           },
         },
       ]}
       faqs={[
         {
-          q: { en: "Will unknown Arabic be guessed?", ur: "نامعلوم عربی پر اندازہ تو نہیں؟" },
+          q: { en: "Is this just a word list?", ur: "کیا یہ صرف الفاظ کی فہرست ہے؟" },
           a: {
-            en: "No. If a word is not in the reviewed lexicon and no reliable rule applies, it is copied unchanged.",
-            ur: "نہیں۔ اگر لفظ فہرست میں نہ ہو اور کوئی قابلِ اعتماد قاعدہ نہ لگے تو وہ جوں کا توں رہتا ہے۔",
+            en: "No. General mode uses a trained Arabic diacritization model, with Qalam's deterministic publishing rules around it. The older reviewed lexicon remains useful as a fallback and regression layer.",
+            ur: "نہیں۔ جنرل موڈ تربیت یافتہ عربی اعراب ماڈل استعمال کرتا ہے اور اس کے گرد قلم کے متعین اشاعتی قواعد کام کرتے ہیں۔ سابقہ جائزہ شدہ فہرست بطور fallback اور regression layer برقرار رہتی ہے۔",
           },
         },
         {
-          q: { en: "Does already vocalized text get rewritten?", ur: "پہلے سے اعراب شدہ متن دوبارہ بدلے گا؟" },
+          q: { en: "What happens to already-vocalized text?", ur: "پہلے سے اعراب شدہ متن کا کیا ہوگا؟" },
           a: {
-            en: "A word that already has vowel marks is left as it is, unless the whole paragraph is the reviewed passage.",
-            ur: "جس لفظ پر پہلے سے حرکات ہوں اسے نہیں چھیڑا جاتا، سوائے اس کے کہ پورا پیراگراف جائزہ شدہ عبارت ہو۔",
+            en: "The model normalizes the existing marks and produces a fresh canonical vocalization. Reviewed Qalam passages remain protected by exact fixtures.",
+            ur: "ماڈل موجودہ اعراب کو معمول کے مطابق دیکھ کر نئی مکمل اعراب شدہ صورت بناتا ہے۔ قلم کی جائزہ شدہ مخصوص عبارتیں اپنے مقررہ نتائج کے ساتھ محفوظ رہتی ہیں۔",
           },
         },
       ]}

@@ -4,9 +4,10 @@ import ArabicDiacriticsContent from "./ArabicDiacriticsContent";
 export const metadata: Metadata = {
   title: "Arabic Diacritics — Indo-Pakistani Tashkeel | Qalam Works",
   description:
-    "Add Indo-Pakistani publishing diacritics to plain Arabic. A listed missing letter can be restored. Unknown words stay unchanged. Not Urdu diacritization and not newspaper tashkeel.",
+    "Fully vocalize plain Arabic in an Indo-Pakistani publishing style, including harakat, shadda, sukun, tanwin, and contextual final case endings.",
   alternates: { canonical: "/tools/arabic-diacritics" },
 };
+
 
 export default function ArabicDiacriticsPage() {
   return <ArabicDiacriticsContent />;
