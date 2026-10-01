@@ -165,19 +165,19 @@
   justify-content: center;
   color: var(--green);
   direction: ltr;
-  font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
+  font-family: var(--font-naskh), "Noto Naskh Arabic", serif;
   font-weight: 400;
   line-height: 1;
   pointer-events: none;
-  transform: translateY(-0.08em);
+  transform: translateY(0.5em);
 }
 
 .ayahDigit {
-  font-size: 1.28em;
+  font-size: 0.52em;
 }
 
 .ayahDigitTight {
-  font-size: 0.96em;
+  font-size: 0.34em;
 }
 
 .waqf {
