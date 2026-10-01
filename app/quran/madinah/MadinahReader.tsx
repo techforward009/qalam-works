@@ -263,9 +263,17 @@ export default function MadinahReader({
               <div className={styles.mushafHeader} dir="ltr" aria-label="Mushaf running headers">
                 <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderLeft}`} dir="rtl">{displaySurahTitle}</div>
                 <div className={styles.mushafHeaderPage} aria-label={`Page ${pageNumber}`}>
-                  <button type="button" className={styles.pageArrow} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} aria-label="Previous page">‹</button>
+                  <button type="button" className={styles.pageArrow} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} aria-label="Previous page">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}>
+                      <path d="M14.8 5.2 8 12l6.8 6.8" />
+                    </svg>
+                  </button>
                   <span className={styles.mushafHeaderNumber}>{easternDigits(pageNumber)}</span>
-                  <button type="button" className={styles.pageArrow} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)} aria-label="Next page">›</button>
+                  <button type="button" className={styles.pageArrow} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)} aria-label="Next page">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}>
+                      <path d="M9.2 5.2 16 12l-6.8 6.8" />
+                    </svg>
+                  </button>
                 </div>
                 <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderRight}`} dir="rtl">{displayJuzTitle}</div>
               </div>
