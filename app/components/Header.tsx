@@ -48,7 +48,7 @@ export default function Header() {
     { label: t.qualityChecker, href: "/tools/quality-checker" },
     { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
     { label: "Arabic Diacritics", href: "/tools/arabic-diacritics" },
-    { label: "Quran", href: "/quran/1/1" },
+    { label: "Quran", href: "/quran" },
     { label: t.translationStudio, href: "/tools/translation-studio" },
     { label: t.urduWriter, href: "/tools/roman-urdu-writer" },
     { label: t.urduRomanWriter, href: "/tools/urdu-roman-writer" },
