@@ -106,8 +106,14 @@ async function getSession(): Promise<ort.InferenceSession> {
   return sessionPromise;
 }
 
+/**
+ * Normalize to NFC first so precomposed Arabic letters such as ئ, ؤ, آ,
+ * أ, and إ remain intact before combining marks are removed. Using NFD here
+ * would decompose ئ into ي + ◌ٔ and then silently turn it into ي, corrupting
+ * words such as الملائكة and شيئًا.
+ */
 function stripCombiningMarks(text: string): string {
-  return Array.from(text.normalize("NFD"))
+  return Array.from(text.normalize("NFC"))
     .filter((char) => !/\p{M}/u.test(char))
     .join("");
 }

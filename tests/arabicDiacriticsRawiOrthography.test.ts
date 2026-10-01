@@ -19,6 +19,12 @@ describe("Rawi Arabic canonicalization contract", () => {
     expect(RAWI_SOURCE).toContain("attachClasses(base,");
   });
 
+  it("preserves precomposed hamza letters during mark stripping", () => {
+    expect(RAWI_SOURCE).toContain('text.normalize("NFC")');
+    expect(RAWI_SOURCE).toContain("such as ئ, ؤ, آ");
+    expect(RAWI_SOURCE).toContain("words such as الملائكة and شيئًا");
+  });
+
   it("enforces shadda-before-vowel publishing order", () => {
     expect(RAWI_SOURCE).toContain("function orderShaddaFirst");
     expect(RAWI_SOURCE).toContain("return orderShaddaFirst(out);");
