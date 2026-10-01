@@ -1,0 +1,41 @@
+@font-face {
+  font-family: "DigitalKhattIndoPak";
+  src: url("/fonts/DigitalKhattIndoPak.woff2") format("woff2");
+  font-display: swap;
+}
+
+.reader {
+  --green: #2f8f68;
+  --paper: #fcfaf3;
+  --ink: #171717;
+  --line: #ded6c5;
+}
+
+.quran {
+  font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  direction: rtl;
+  text-align: justify;
+  text-justify: inter-word;
+  line-height: 2.35;
+}
+
+.ayah {
+  display: inline;
+}
+
+.ayahNumber {
+  display: inline-block;
+  margin-inline: 0.18em;
+  color: var(--green);
+  font-size: 0.62em;
+  line-height: 1;
+  vertical-align: 0.12em;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .quran {
+    line-height: 2.12;
+  }
+}

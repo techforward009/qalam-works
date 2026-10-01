@@ -25,6 +25,7 @@ const TOOL_ROUTES = [
   { key: "qualityChecker", href: "/tools/quality-checker" },
   { key: "unicodeStandardizer", href: "/tools/unicode-standardizer" },
   { key: "quran", href: "/quran/1/1", labelEn: "Quran", labelUr: "قرآن کریم" },
+  { key: "digitalKhatt", href: "/quran/indopak-digital-khatt/1/1", labelEn: "IndoPak Digital Khatt", labelUr: "انڈو پاک ڈیجیٹل خط" },
   { key: "arabicDiacritics", href: "/tools/arabic-diacritics", labelEn: "Arabic Diacritics", labelUr: "عربی اعراب" },
   { key: "invoiceStudio", href: "/tools/invoice-generator", labelEn: "Invoice Generator", labelUr: "انوائس جنریٹر" },
   { key: "dateConverter", href: "/tools/date-converter",    labelEn: "Date Converter",    labelUr: "تاریخ کنورٹر"    },

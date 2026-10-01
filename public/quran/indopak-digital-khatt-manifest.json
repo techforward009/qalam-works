@@ -1,0 +1,15 @@
+{
+  "edition": "qalam-indopak-digitalkhatt-v1",
+  "textSource": "https://raw.githubusercontent.com/risan/quran-json/main/data/digitalkhatt/quran.json",
+  "textLicense": "MIT",
+  "textHostLicense": "CC BY-SA 4.0",
+  "textBytes": 1796408,
+  "textSha256": "cd4901ed2b9d47038379a3b0e81e767988663ee6d4516a9832eb98335927b85d",
+  "fontSource": "https://github.com/DigitalKhatt/indopakfont/releases/download/v1.0.0-beta.1/indopak.woff2",
+  "fontLicense": "OFL-1.1",
+  "fontBytes": 345344,
+  "fontSha256": "db13541bb18303ed4c4c1e3b9c1373084baac4cf8d911bc75919ff05048dd481",
+  "chapters": 114,
+  "verses": 6236,
+  "shape": "chapter-keyed-object"
+}
