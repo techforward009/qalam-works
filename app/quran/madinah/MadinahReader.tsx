@@ -263,7 +263,11 @@ export default function MadinahReader({
             <article className={styles.page}>
               <div className={styles.mushafHeader} dir="ltr" aria-label="Mushaf running headers">
                 <div className={styles.mushafHeaderSide} dir="rtl">{displaySurahTitle}</div>
-                <div className={styles.mushafHeaderOrnament} aria-hidden="true"><span>✦</span><span>۞</span><span>✦</span></div>
+                <div className={styles.mushafHeaderPage} aria-label={`Page ${pageNumber}`}>
+                  <span className={styles.mushafHeaderRule} aria-hidden="true" />
+                  <span className={styles.mushafHeaderNumber}>{easternDigits(pageNumber)}</span>
+                  <span className={styles.mushafHeaderRule} aria-hidden="true" />
+                </div>
                 <div className={styles.mushafHeaderSide} dir="rtl">{displayJuzTitle}</div>
               </div>
 
@@ -277,18 +281,14 @@ export default function MadinahReader({
                   return (
                     <div
                       key={line.line}
-                      className={`${styles.line} ${line.centered ? styles.centered : ""}`}
+                      className={styles.line}
                       style={{ fontFamily }}
                       dir="rtl"
                     >
-                      {text}
+                      <span className={styles.lineText}>{text}</span>
                     </div>
                   );
                 }) : <div className={styles.loading}>Loading page…</div>}
-              </div>
-
-              <div className={styles.pageFooter}>
-                <span className={styles.pageNumber}>{easternDigits(pageNumber)}</span>
               </div>
 
               <div className={styles.navRow}>
