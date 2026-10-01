@@ -8,6 +8,8 @@ import { TANZIL_PAGE_STARTS } from "../reader/tanzilPageMap";
 import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
 import {
+  MADINAH_BASMALA_FAMILY,
+  MADINAH_BASMALA_GLYPH,
   MADINAH_V2_EDITION,
   fontUrl,
   pageUrl,
@@ -19,6 +21,24 @@ type Hit = { surah: number; ayah: number; page: number };
 
 const FONT_PREFIX = "QalamMadinahV2";
 const FONT_READY = new Set<number>();
+let basmalaReady: Promise<void> | null = null;
+
+function ensureBasmalaFont(): Promise<void> {
+  if (basmalaReady) return basmalaReady;
+  if (typeof FontFace === "undefined") return Promise.resolve();
+  const font = new FontFace(
+    MADINAH_BASMALA_FAMILY,
+    `url(${MADINAH_V2_EDITION.basmalaFont}) format("truetype")`,
+    { display: "block" },
+  );
+  basmalaReady = font.load().then((loaded) => {
+    document.fonts.add(loaded);
+  }).catch((error) => {
+    basmalaReady = null;
+    throw error;
+  });
+  return basmalaReady;
+}
 
 async function ensurePageFont(page: number): Promise<string> {
   const family = `${FONT_PREFIX}-${page}`;
@@ -92,7 +112,7 @@ export default function MadinahReader({
       }
       if (!response.ok) throw new Error("Page data unavailable");
       const nextPage = (await response.json()) as MadinahPage;
-      const family = await ensurePageFont(targetPage);
+      const [family] = await Promise.all([ensurePageFont(targetPage), ensureBasmalaFont().catch(() => undefined)]);
       setPage(nextPage);
       setPageNumber(targetPage);
       window.sessionStorage.setItem("qalam-madinah-last-page", String(targetPage));
@@ -169,7 +189,7 @@ export default function MadinahReader({
       })
       .then(async (next) => {
         const start = firstAyah(next);
-        const family = await ensurePageFont(bounded);
+        const [family] = await Promise.all([ensurePageFont(bounded), ensureBasmalaFont().catch(() => undefined)]);
         setPage(next);
         setFontFamily(family);
         if (start) navigate(start.surah, start.ayah);
@@ -286,7 +306,7 @@ export default function MadinahReader({
                     return <div key={line.line} className={`${styles.line} ${styles.surahLine}`} dir="rtl">{name}</div>;
                   }
                   if (line.type === "basmallah") {
-                    return <div key={line.line} className={`${styles.line} ${styles.centeredLine}`} dir="rtl"><span className={styles.basmala}>{line.decor?.glyph ?? "﷽"}</span></div>;
+                    return <div key={line.line} className={`${styles.line} ${styles.centeredLine}`} dir="rtl"><span className={styles.basmala}>{MADINAH_BASMALA_GLYPH}</span></div>;
                   }
                   return (
                     <div

@@ -30,7 +30,13 @@ export const MADINAH_V2_EDITION = {
     "https://raw.githubusercontent.com/manaf/KFGQPC-Madinah-Mushaf/main/data/pages",
   fontBase:
     "https://verses.quran.foundation/fonts/quran/hafs/v2/woff2",
+  basmalaFont:
+    "https://cdn.jsdelivr.net/gh/nuqayah/qpc-fonts@master/mushaf-v2/QCF2BSML.ttf",
 } as const;
+
+/** Calligraphic Madinah basmala in QCF2BSML. Not the U+FDFD ligature. */
+export const MADINAH_BASMALA_GLYPH = "\uFC21";
+export const MADINAH_BASMALA_FAMILY = "QalamMadinahBasmala";
 
 export function pageUrl(page: number, remote = false): string {
   const n = String(page).padStart(3, "0");

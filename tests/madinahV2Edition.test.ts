@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MADINAH_V2_EDITION, lineGlyphText } from "../app/quran/madinah/data";
+import { MADINAH_V2_EDITION, MADINAH_BASMALA_GLYPH, lineGlyphText } from "../app/quran/madinah/data";
 import { juzTitle, surahTitle } from "../app/quran/reader/metadata";
 
 describe("Madinah Mushaf V2 edition", () => {
@@ -19,6 +19,11 @@ describe("Madinah Mushaf V2 edition", () => {
         { location: "1:1:2", word_id: 2, qpcV2: "ﱂ", kind: "word" },
       ],
     })).toBe("ﱁ ﱂ");
+  });
+
+  it("uses the calligraphic Madinah basmala glyph, not the broken ligature", () => {
+    expect(MADINAH_BASMALA_GLYPH).toBe("\uFC21");
+    expect(MADINAH_BASMALA_GLYPH).not.toBe("\uFDFD");
   });
 
   it("provides the running-header labels used by the Madinah page layout", () => {
