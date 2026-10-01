@@ -159,19 +159,17 @@
 .ayahDigit,
 .ayahDigitTight {
   position: absolute;
-  top: 50%;
-  right: 0;
-  left: 0;
-  height: 0;
-  display: block;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--green);
   direction: ltr;
   font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
   font-weight: 400;
-  line-height: 0;
-  text-align: center;
+  line-height: 1;
   pointer-events: none;
-  transform: translateY(0.12em);
+  transform: translateY(-0.08em);
 }
 
 .ayahDigit {
@@ -184,15 +182,13 @@
 
 .waqf {
   position: absolute;
-  top: 0;
+  bottom: 80%;
   left: 50%;
-  height: 0;
   color: var(--ink);
   direction: rtl;
   font-size: 1em;
-  line-height: 0;
-  text-align: center;
-  transform: translate(-50%, -0.06em);
+  line-height: 1;
+  transform: translateX(-50%);
   white-space: nowrap;
 }
 
