@@ -59,6 +59,10 @@ describe("Qalam Digital Khatt IndoPak edition", () => {
     expect(source).not.toContain("current-ayah");
     expect(source).not.toContain("currentAyah");
     expect(source).toContain('className={styles.waqf}');
+    expect(source).toContain("styles.waqfGlyph");
+    expect(source).not.toContain('"\\u00A0" + endingMarks');
+    expect(css).toContain('font-feature-settings: "mark" 0, "mkmk" 0, "kern" 0');
+    expect(css).toContain("flex-direction: row");
     expect(source).toContain("styles.ayahDigit");
     expect(css).toContain("min-height: 0");
     expect(css).not.toContain("min-height: 900px");

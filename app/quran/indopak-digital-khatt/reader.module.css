@@ -182,14 +182,34 @@
 
 .waqf {
   position: absolute;
-  bottom: 80%;
+  bottom: 64%;
   left: 50%;
-  color: var(--ink);
-  direction: rtl;
-  font-size: 1em;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.05em;
+  height: 0.42em;
+  direction: ltr;
   line-height: 1;
+  pointer-events: none;
   transform: translateX(-50%);
-  white-space: nowrap;
+}
+
+.waqfMark {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  height: 0.42em;
+}
+
+.waqfGlyph {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  color: var(--ink);
+  font-feature-settings: "mark" 0, "mkmk" 0, "kern" 0;
+  line-height: 1;
 }
 
 @media (max-width: 900px) {

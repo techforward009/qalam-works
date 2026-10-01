@@ -25,6 +25,25 @@ import { surahBanner } from "./surahBanner";
 const BASMILLAH = "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ";
 const TRAILING_QURAN_MARKS = /[\u0614-\u0617\u06D6-\u06DC\u08D5-\u08DF]+$/u;
 const DISPLAY_SCALE_KEY = "qalam-digital-khatt-display-scale";
+/** Ink width of each DigitalKhatt waqf glyph, in em. They are zero-advance marks. */
+const WAQF_EM: Record<string, number> = {
+  "\u0614": 0.52,
+  "\u0615": 0.28,
+  "\u0617": 0.22,
+  "\u06D6": 0.4,
+  "\u06D8": 0.36,
+  "\u06D9": 0.34,
+  "\u06DA": 0.34,
+  "\u06DB": 0.28,
+  "\u06DC": 0.4,
+  "\u08D5": 0.36,
+  "\u08D6": 0.28,
+  "\u08D7": 0.26,
+  "\u08DB": 0.84,
+  "\u08DD": 0.7,
+  "\u08DE": 0.5,
+  "\u08DF": 0.66,
+};
 
 type Hit = { surah: number; ayah: number };
 type RenderText = { body: string; endingMarks: string };
@@ -429,7 +448,13 @@ export default function DigitalKhattReader({
                             {digits}
                           </span>
                           {endingMarks ? (
-                            <span className={styles.waqf}>{"\u00A0" + endingMarks}</span>
+                            <span className={styles.waqf}>
+                              {Array.from(endingMarks).map((mark, index) => (
+                                <span key={index} className={styles.waqfMark} style={{ width: `${WAQF_EM[mark] ?? 0.36}em` }}>
+                                  <span className={styles.waqfGlyph}>{mark}</span>
+                                </span>
+                              ))}
+                            </span>
                           ) : null}
                         </span>
                       </span>{" "}
