@@ -263,9 +263,9 @@ export default function MadinahReader({
               <div className={styles.mushafHeader} dir="ltr" aria-label="Mushaf running headers">
                 <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderLeft}`} dir="rtl">{displaySurahTitle}</div>
                 <div className={styles.mushafHeaderPage} aria-label={`Page ${pageNumber}`}>
-                  <span className={styles.mushafHeaderRule} aria-hidden="true" />
+                  <button type="button" className={styles.pageArrow} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} aria-label="Previous page">‹</button>
                   <span className={styles.mushafHeaderNumber}>{easternDigits(pageNumber)}</span>
-                  <span className={styles.mushafHeaderRule} aria-hidden="true" />
+                  <button type="button" className={styles.pageArrow} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)} aria-label="Next page">›</button>
                 </div>
                 <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderRight}`} dir="rtl">{displayJuzTitle}</div>
               </div>
