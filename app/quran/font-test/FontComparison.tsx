@@ -181,7 +181,7 @@ export default function FontComparison() {
               onChange={(event) => setPageNumber(Number(event.target.value) || 1)}
             />
           </label>
-          {[1, 2, 64, 413, 887].map((preset) => (
+          {[1, 2, 64, 413, 604].map((preset) => (
             <button key={preset} type="button" className="border border-[#c4a36a]/50 px-2 py-1" onClick={() => setPageNumber(preset)}>
               {preset}
             </button>

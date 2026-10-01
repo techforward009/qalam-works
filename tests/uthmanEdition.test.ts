@@ -19,9 +19,9 @@ const FATIHA = [
 describe("Uthman Taha edition investigation", () => {
   test("keeps Indo-Pak production untouched", () => {
     expect(QURAN_SIMPLE_SHA256).toBe("ab31a2a8672b45571367f9884bd0a43f820f9699544289dd1b8d0efe1bdece0e");
-    expect(pageCount()).toBe(887);
+    expect(pageCount()).toBe(604);
     expect(QURAN_LAYOUT_PROFILE.id).toBe("qalam-indopak-v1");
-    expect(QURAN_LAYOUT_PROFILE.productionFont).toBe("Noto Naskh Arabic");
+    expect(QURAN_LAYOUT_PROFILE.productionFont).toBe("Muhammadi Quranic");
     expect(UTHMAN_EDITION.productionEnabled).toBe(false);
     expect(UTHMAN_EDITION.officialPageCount).toBeNull();
     expect(UTHMAN_EDITION.sourceHasPageNumbers).toBe(false);

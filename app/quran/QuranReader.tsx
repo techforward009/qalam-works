@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "r
 import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
+import EditionTopBar from "./reader/EditionTopBar";
 import { surahBanner } from "./indopak-digital-khatt/surahBanner";
 import {
   easternDigits,
@@ -464,14 +465,7 @@ export default function QuranReader({
       dir="ltr"
     >
       <div className="quran-reader-container mx-auto w-full max-w-[1010px] px-3 py-4 sm:px-5 sm:py-6">
-        <div className="mb-3 flex justify-end" dir={interfaceDir} lang={interfaceLang}>
-          <Link
-            href="/quran"
-            className="border border-[#b8bdb3] bg-white px-3 py-1.5 text-xs text-[#3d4439] hover:bg-[#f3f5f1]"
-          >
-            {language === "ur" ? "قرآن کے تمام ایڈیشنز" : "All Quran Editions"}
-          </Link>
-        </div>
+        <EditionTopBar editionId="qalam-indopak" />
         <div
           className="quran-reader-layout grid items-start gap-4 lg:grid-cols-[175px_minmax(0,770px)]"
           dir="ltr"

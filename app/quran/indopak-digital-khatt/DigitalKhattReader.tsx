@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
 import { useLanguage } from "../../lib/language-context";
+import EditionTopBar from "../reader/EditionTopBar";
+import { QURAN_READER_COPY } from "../reader/copy";
+import { useQuranKeyboardNavigation } from "../reader/keyboard";
 import { easternDigits, juzRunningHead, surahRunningHead, SURAH_NAMES } from "../reader/metadata";
 import {
   DIGITAL_KHATT_EDITION,
@@ -75,12 +78,14 @@ export default function DigitalKhattReader({
 }) {
   const router = useRouter();
   const { language } = useLanguage();
+  const copy = QURAN_READER_COPY[language];
   const [corpus, setCorpus] = useState<DigitalKhattCorpus | null>(null);
   const [query, setQuery] = useState("");
   const [searched, setSearched] = useState(false);
   const [hits, setHits] = useState<Hit[]>([]);
   const [pageInput, setPageInput] = useState("1");
   const [scale, setScale] = useState(1);
+  const [copied, setCopied] = useState(false);
 
   useLayoutEffect(() => {
     setScale(readDisplayScale());
@@ -161,6 +166,39 @@ export default function DigitalKhattReader({
     navigate(target.startChapter, target.startVerse);
   };
 
+  const copyCurrentPage = async () => {
+    try {
+      await navigator.clipboard.writeText(pageVerses.map((item) => item.text).join("\n"));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  useQuranKeyboardNavigation({
+    onPreviousAyah: () => {
+      const index = flatVerses.findIndex((item) => item.chapter === surah && item.verse === ayah);
+      const target = index > 0 ? flatVerses[index - 1] : null;
+      if (target) navigate(target.chapter, target.verse);
+    },
+    onNextAyah: () => {
+      const index = flatVerses.findIndex((item) => item.chapter === surah && item.verse === ayah);
+      const target = index >= 0 ? flatVerses[index + 1] : null;
+      if (target) navigate(target.chapter, target.verse);
+    },
+    onPreviousPage: () => navigatePage(pageNumber - 1),
+    onNextPage: () => navigatePage(pageNumber + 1),
+    onPreviousSurah: () => {
+      const target = flatVerses.find((item) => item.chapter === surah - 1);
+      if (target) navigate(target.chapter, target.verse);
+    },
+    onNextSurah: () => {
+      const target = flatVerses.find((item) => item.chapter === surah + 1);
+      if (target) navigate(target.chapter, target.verse);
+    },
+  });
+
   const runSearch = () => {
     if (!corpus) return;
     const needles = query.split(/\s+/).map(quranMatchKey).filter(Boolean);
@@ -197,7 +235,7 @@ export default function DigitalKhattReader({
     return (
       <main className={styles.reader} dir="ltr">
         <div className="mx-auto max-w-5xl px-4 py-12 text-center text-sm text-[#716c60]">
-          Loading IndoPak Digital Khatt…
+          {copy.loading}
         </div>
       </main>
     );
@@ -207,7 +245,7 @@ export default function DigitalKhattReader({
     return (
       <main className={styles.reader} dir="ltr">
         <div className="mx-auto max-w-5xl px-4 py-12 text-center text-sm text-red-700">
-          This ayah could not be found.
+          {copy.notFound}
         </div>
       </main>
     );
@@ -216,22 +254,7 @@ export default function DigitalKhattReader({
   return (
     <main className={styles.reader} dir="ltr" lang={language === "ur" ? "ur" : "en"}>
       <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-5 sm:py-6">
-        <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#d9d2c2] pb-3">
-          <div>
-            <div className="text-sm font-semibold tracking-wide text-[#2f8f68]">
-              {DIGITAL_KHATT_EDITION.name}
-            </div>
-            <div className="mt-1 text-xs text-[#756f62]">
-              Separate edition · DigitalKhatt text and font · not AhmedGraf
-            </div>
-          </div>
-          <Link
-            href="/quran"
-            className="text-sm text-[#2f8f68] hover:underline"
-          >
-            {language === "ur" ? "قرآن کے تمام ایڈیشنز" : "All Quran Editions"}
-          </Link>
-        </header>
+        <EditionTopBar editionId="digital-khatt" />
 
         <div className="grid items-start gap-4 lg:grid-cols-[210px_minmax(0,1fr)]">
           <aside className="order-2 rounded-xl border border-[#ddd5c5] bg-white/80 p-3 lg:order-1">
@@ -242,7 +265,7 @@ export default function DigitalKhattReader({
               }}
             >
               <label className="block text-xs font-medium text-[#625d53]">
-                Search Quran
+                {copy.search}
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -255,7 +278,7 @@ export default function DigitalKhattReader({
                 type="submit"
                 className="mt-2 w-full rounded-md bg-[#2f8f68] px-3 py-2 text-sm font-medium text-white hover:bg-[#277a59]"
               >
-                Search
+                {copy.search}
               </button>
             </form>
 
@@ -270,20 +293,20 @@ export default function DigitalKhattReader({
                           onClick={() => navigate(hit.surah, hit.ayah)}
                           className="w-full rounded px-2 py-1 text-left text-xs hover:bg-[#f1eee6]"
                         >
-                          Surah {SURAH_NAMES[hit.surah - 1] ?? hit.surah} — {easternDigits(hit.ayah)}
+                          {copy.surah} {SURAH_NAMES[hit.surah - 1] ?? hit.surah} — {easternDigits(hit.ayah)}
                         </button>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-xs text-[#777164]">No results.</p>
+                  <p className="text-xs text-[#777164]">{copy.noResults}</p>
                 )}
               </div>
             )}
 
             <div className="mt-4 border-t border-[#e2dccd] pt-3">
               <label className="block text-xs text-[#625d53]">
-                Surah
+                {copy.surah}
                 <select
                   value={surah}
                   onChange={(event) => navigate(Number(event.target.value), 1)}
@@ -298,7 +321,7 @@ export default function DigitalKhattReader({
               </label>
 
               <label className="mt-2 block text-xs text-[#625d53]">
-                Ayah
+                {copy.ayah}
                 <select
                   value={ayah}
                   onChange={(event) => navigate(surah, Number(event.target.value))}
@@ -313,7 +336,7 @@ export default function DigitalKhattReader({
               </label>
 
               <label className="mt-2 block text-xs text-[#625d53]">
-                Juz
+                {copy.juz}
                 <select
                   value={juz}
                   onChange={(event) => {
@@ -338,7 +361,7 @@ export default function DigitalKhattReader({
                 }}
               >
                 <label className="block text-xs text-[#625d53]">
-                  Page
+                  {copy.page}
                   <div className="mt-1 flex items-center gap-2">
                     <input
                       type="number"
@@ -355,15 +378,23 @@ export default function DigitalKhattReader({
                   type="submit"
                   className="mt-2 w-full rounded-md border border-[#2f8f68]/40 px-3 py-2 text-sm font-medium text-[#2f8f68]"
                 >
-                  Go to page
+                  {copy.goToPage}
                 </button>
               </form>
 
+              <button
+                type="button"
+                onClick={() => void copyCurrentPage()}
+                className="mt-3 w-full rounded-md border border-[#cfc7b7] px-3 py-2 text-sm text-[#575247] hover:bg-[#f4f2ec]"
+              >
+                {copied ? copy.copyDone : copy.copy}
+              </button>
+
               <label className="mt-3 block border-t border-[#e2dccd] pt-3 text-xs text-[#625d53]">
-                {language === "ur" ? "نمایش" : "Display"}
+                {copy.display}
                 <select
                   value={scale}
-                  aria-label={language === "ur" ? "سائز" : "Size"}
+                  aria-label={copy.size}
                   onChange={(event) => chooseScale(Number(event.target.value))}
                   className="mt-1 w-full rounded-md border border-[#cfc7b7] bg-white px-2 py-2 text-sm"
                 >
@@ -470,7 +501,7 @@ export default function DigitalKhattReader({
                   onClick={() => navigatePage(pageNumber - 1)}
                   className="rounded-md border border-[#cfc7b7] px-4 py-2 text-sm text-[#575247] disabled:opacity-40"
                 >
-                  ← Previous page
+                  {copy.previousPage}
                 </button>
 
                 <button
@@ -479,14 +510,14 @@ export default function DigitalKhattReader({
                   onClick={() => navigatePage(pageNumber + 1)}
                   className="rounded-md border border-[#2f8f68]/40 px-4 py-2 text-sm font-medium text-[#2f8f68] disabled:opacity-40"
                 >
-                  Next page →
+                  {copy.nextPage}
                 </button>
               </div>
             </article>
 
             <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-[11px] leading-relaxed text-[#8a8478]">
               <span>
-                Text: DigitalKhatt IndoPak, MIT, via risan/quran-json. Font: DigitalKhatt OFL-1.1.
+                {copy.digitalCredit}
               </span>
               <a
                 href="https://fonts.quran.ws/fonts/indopak/"
@@ -494,7 +525,7 @@ export default function DigitalKhattReader({
                 rel="noreferrer"
                 className="text-[#2f8f68] hover:underline"
               >
-                Matching font for Word
+                {copy.matchingFontForWord}
               </a>
             </div>
           </section>

@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { SURAH_NAMES, JUZ_STARTS, easternDigits, juzTitle, surahTitle } from "../reader/metadata";
 import { useLanguage } from "../../lib/language-context";
+import EditionTopBar from "../reader/EditionTopBar";
+import { QURAN_READER_COPY } from "../reader/copy";
+import { useQuranKeyboardNavigation } from "../reader/keyboard";
+import { adjacentAyah } from "../reader/model";
 import { TANZIL_PAGE_STARTS } from "../reader/tanzilPageMap";
 import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
@@ -92,6 +96,7 @@ export default function MadinahReader({
 }) {
   const router = useRouter();
   const { language } = useLanguage();
+  const copy = QURAN_READER_COPY[language];
   const [pageNumber, setPageNumber] = useState(1);
   const [page, setPage] = useState<MadinahPage | null>(null);
   const [fontFamily, setFontFamily] = useState(`${FONT_PREFIX}-1`);
@@ -100,6 +105,8 @@ export default function MadinahReader({
   const [searched, setSearched] = useState(false);
   const [hits, setHits] = useState<Hit[]>([]);
   const [loadError, setLoadError] = useState("");
+  const [scale, setScale] = useState(1);
+  const [copied, setCopied] = useState(false);
 
   const navigate = (nextSurah: number, nextAyah: number) => {
     router.push(`/quran/madinah/${nextSurah}/${nextAyah}`);
@@ -112,7 +119,7 @@ export default function MadinahReader({
       if (!response.ok) {
         response = await fetch(pageUrl(targetPage, true), { cache: "force-cache" });
       }
-      if (!response.ok) throw new Error("Page data unavailable");
+      if (!response.ok) throw new Error(copy.pageCouldNotLoad);
       const nextPage = (await response.json()) as MadinahPage;
       const [family] = await Promise.all([ensurePageFont(targetPage), ensureBasmalaFont().catch(() => undefined)]);
       setPage(nextPage);
@@ -120,7 +127,7 @@ export default function MadinahReader({
       window.sessionStorage.setItem("qalam-madinah-last-page", String(targetPage));
       setFontFamily(family);
     } catch {
-      setLoadError(`Page ${targetPage} could not be loaded.`);
+      setLoadError(`${copy.pageCouldNotLoad} ${targetPage}`);
     }
   };
 
@@ -196,8 +203,62 @@ export default function MadinahReader({
         setFontFamily(family);
         if (start) navigate(start.surah, start.ayah);
       })
-      .catch(() => setLoadError(`Page ${bounded} could not be loaded.`));
+      .catch(() => setLoadError(`${copy.pageCouldNotLoad} ${bounded}`));
   };
+
+  const chooseScale = (value: number) => {
+    setScale(value);
+    window.localStorage.setItem("qalam-madinah-display-scale", String(value));
+  };
+
+  const copyCurrentPage = async () => {
+    if (!page) return;
+    const seen = new Set<string>();
+    const textLines: string[] = [];
+    for (const line of page.lines) {
+      for (const word of line.words) {
+        const parsed = parseLocation(word.location);
+        if (!parsed) continue;
+        const key = `${parsed.surah}:${parsed.ayah}`;
+        if (seen.has(key)) continue;
+        const ayahText = ahmedgrafQuranReference.getAyah(parsed.surah, parsed.ayah)?.text;
+        if (!ayahText) continue;
+        seen.add(key);
+        textLines.push(ayahText);
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(textLines.join("\n"));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  useEffect(() => {
+    const stored = Number(window.localStorage.getItem("qalam-madinah-display-scale"));
+    if (stored === 0.85 || stored === 1 || stored === 1.12) setScale(stored);
+  }, []);
+
+  useQuranKeyboardNavigation({
+    onPreviousAyah: () => {
+      const next = adjacentAyah(surah, ayah, -1);
+      if (next) navigate(next.surah, next.ayah);
+    },
+    onNextAyah: () => {
+      const next = adjacentAyah(surah, ayah, 1);
+      if (next) navigate(next.surah, next.ayah);
+    },
+    onPreviousPage: () => navigatePage(pageNumber - 1),
+    onNextPage: () => navigatePage(pageNumber + 1),
+    onPreviousSurah: () => {
+      if (surah > 1) navigate(surah - 1, 1);
+    },
+    onNextSurah: () => {
+      if (surah < 114) navigate(surah + 1, 1);
+    },
+  });
 
   const submitPage = (event: React.FormEvent) => {
     event.preventDefault();
@@ -217,24 +278,16 @@ export default function MadinahReader({
   return (
     <main className={styles.reader} dir="ltr">
       <div className={styles.container}>
-        <header className={styles.toolbar}>
-          <div>
-            <div className={styles.eyebrow}>{MADINAH_V2_EDITION.name}</div>
-            <div className={styles.subtle}>{MADINAH_V2_EDITION.subtitle} · 604 pages · 15 lines</div>
-          </div>
-          <Link href="/quran" className={styles.link}>
-            {language === "ur" ? "قرآن کے تمام ایڈیشنز" : "All Quran Editions"}
-          </Link>
-        </header>
+        <EditionTopBar editionId="madinah-v2" />
 
         <div className={styles.grid}>
           <aside className={styles.sidebar}>
             <form onSubmit={(event) => { event.preventDefault(); runSearch(); }}>
               <label className={styles.label}>
-                Search Quran
+                {copy.search}
                 <input value={query} onChange={(event) => setQuery(event.target.value)} className={styles.input} dir="rtl" lang="ar" />
               </label>
-              <button type="submit" className={styles.primary}>Search</button>
+              <button type="submit" className={styles.primary}>{copy.search}</button>
             </form>
 
             {searched && (
@@ -243,37 +296,55 @@ export default function MadinahReader({
                   <button key={`${hit.surah}:${hit.ayah}`} type="button" className={styles.result} onClick={() => navigate(hit.surah, hit.ayah)}>
                     {SURAH_NAMES[hit.surah - 1] ?? hit.surah} — {easternDigits(hit.ayah)}
                   </button>
-                )) : <div className={styles.subtle}>No results.</div>}
+                )) : <div className={styles.subtle}>{copy.noResults}</div>}
               </div>
             )}
 
             <label className={styles.labelBlock}>
-              Surah
+              {copy.surah}
               <select value={surah} onChange={(event) => navigate(Number(event.target.value), 1)} className={styles.input}>
                 {SURAH_NAMES.map((name, index) => <option key={name} value={index + 1}>{index + 1}. {name}</option>)}
               </select>
             </label>
 
             <label className={styles.labelBlock}>
-              Ayah
+              {copy.ayah}
               <input type="number" min={1} max={6236} value={ayah} onChange={(event) => navigate(surah, Number(event.target.value) || 1)} className={styles.input} />
             </label>
 
             <form className={styles.labelBlock} onSubmit={submitPage}>
               <label className={styles.label}>
-                Page
+                {copy.page}
                 <div className={styles.pageInputRow}>
                   <input type="number" min={1} max={604} value={pageInput} onChange={(event) => setPageInput(event.target.value)} className={styles.input} />
                   <span className={styles.subtle}>/ 604</span>
                 </div>
               </label>
-              <button type="submit" className={styles.secondary}>Go to page</button>
+              <button type="submit" className={styles.secondary}>{copy.goToPage}</button>
             </form>
 
             <div className={styles.metaBlock}>
-              Surah <strong>{SURAH_NAMES[pageSurah - 1] ?? pageSurah}</strong><br />
-              Juz <strong>{pageJuz}</strong>
+              {copy.surah} <strong>{SURAH_NAMES[pageSurah - 1] ?? pageSurah}</strong><br />
+              {copy.juz} <strong>{pageJuz}</strong>
             </div>
+
+            <label className={styles.labelBlock}>
+              {copy.display}
+              <select
+                value={scale}
+                aria-label={copy.size}
+                onChange={(event) => chooseScale(Number(event.target.value))}
+                className={styles.input}
+              >
+                <option value={0.85}>{copy.small}</option>
+                <option value={1}>{copy.medium}</option>
+                <option value={1.12}>{copy.large}</option>
+              </select>
+            </label>
+
+            <button type="button" className={styles.secondary} style={{ width: "100%", marginTop: 11 }} onClick={() => void copyCurrentPage()}>
+              {copied ? copy.copyDone : copy.copy}
+            </button>
           </aside>
 
           <section>
@@ -302,7 +373,7 @@ export default function MadinahReader({
                 <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderRight}`} dir="rtl">{displayJuzTitle}</div>
               </div>
 
-              <div className={styles.pageLines}>
+              <div className={styles.pageLines} style={{ ["--mushaf-scale" as string]: String(scale) }}>
                 {page ? page.lines.map((line) => {
                   if (line.type === "blank") return <div key={line.line} className={styles.line} aria-hidden="true" />;
                   if (line.type === "surah_name") {
@@ -326,13 +397,13 @@ export default function MadinahReader({
               </div>
 
               <div className={styles.navRow}>
-                <button type="button" className={styles.secondary} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)}>← Previous page</button>
-                <button type="button" className={styles.secondary} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)}>Next page →</button>
+                <button type="button" className={styles.secondary} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)}>{copy.previousPage}</button>
+                <button type="button" className={styles.secondary} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)}>{copy.nextPage}</button>
               </div>
             </article>
 
             <div className={styles.credit}>
-              Madinah Mushaf fonts/data: King Fahd Glorious Quran Printing Complex · Layout data via QUL · QCF V2 fonts served from Quran Foundation CDN.
+              {copy.madinahCredit}
             </div>
           </section>
         </div>

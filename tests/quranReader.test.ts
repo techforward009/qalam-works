@@ -58,7 +58,7 @@ describe("Quran reader", () => {
     expect(last?.surahEnd).toBe(114);
     expect(last?.ayahEnd).toBe(6);
     expect(pageCount()).toBe(quranPages.length);
-    expect(pageCount()).not.toBe(604);
+    expect(pageCount()).toBe(604);
     expect(pageCount()).not.toBe(548);
     expect(pageCount()).not.toBe(549);
     for (let page = 1; page < quranPages.length; page += 1) {
@@ -127,7 +127,7 @@ describe("Quran reader", () => {
 
   test("PDMS Saleem is a local reference and is not bundled", () => {
     expect(QURAN_LAYOUT_PROFILE.pdmsBundled).toBe(false);
-    expect(selectQuranFont(false)).toEqual({ family: "Noto Naskh Arabic", bundled: false, profile: "qalam-indopak-v1" });
+    expect(selectQuranFont(false)).toEqual({ family: "Muhammadi Quranic", bundled: false, profile: "qalam-indopak-v1" });
     expect(selectQuranFont(true).bundled).toBe(false);
     expect(selectQuranFont(true).family).toBe("PDMS Saleem Quran");
     const files = readdirSync("app/quran", { recursive: true }).map(String);

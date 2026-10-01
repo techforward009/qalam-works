@@ -31,10 +31,10 @@
 .pageArrowIcon { width:16px; height:16px; display:block; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
 .mushafHeaderNumber { min-width:22px; text-align:center; font-family:"Noto Naskh Arabic","Traditional Arabic",serif; font-size:16px; line-height:1; }
 .pageLines { flex:1 1 auto; min-height:0; width:100%; padding:calc(8px + 3mm) 0 2px; box-sizing:border-box; display:grid; grid-template-rows:repeat(15, minmax(0, 1fr)); align-items:center; row-gap:calc(8px + 2mm); container-type:inline-size; }
-.line { min-width:0; min-height:0; height:100%; width:100%; display:flex; align-items:center; justify-content:space-between; direction:rtl; white-space:nowrap; font-size:calc(100cqi / 18.6); line-height:1; letter-spacing:0; }
+.line { min-width:0; min-height:0; height:100%; width:100%; display:flex; align-items:center; justify-content:space-between; direction:rtl; white-space:nowrap; font-size:calc((100cqi / 18.6) * var(--mushaf-scale, 1)); line-height:1; letter-spacing:0; }
 .centeredLine { justify-content:center; gap:0.4em; }
 .word { display:inline-block; }
-.surahLine { justify-content:center; font-family:"Noto Naskh Arabic","Traditional Arabic",serif; font-size:calc(100cqi / 28); color:#171717; font-weight:600; }
+.surahLine { justify-content:center; font-family:"Noto Naskh Arabic","Traditional Arabic",serif; font-size:calc((100cqi / 28) * var(--mushaf-scale, 1)); color:#171717; font-weight:600; }
 .basmala { font-family:"QalamMadinahBasmala", serif; font-size:1.23em; line-height:1; }
 .loading,.error { padding:50px; text-align:center; color:#756f63; }
 .error { color:#8b3c32; }
