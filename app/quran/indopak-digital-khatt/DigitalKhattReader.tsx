@@ -226,10 +226,10 @@ export default function DigitalKhattReader({
             </div>
           </div>
           <Link
-            href={"/quran/" + surah + "/" + ayah}
+            href="/quran"
             className="text-sm text-[#2f8f68] hover:underline"
           >
-            Existing Qalam edition
+            {language === "ur" ? "قرآن کے تمام ایڈیشنز" : "All Quran Editions"}
           </Link>
         </header>
 

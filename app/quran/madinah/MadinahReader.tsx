@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { SURAH_NAMES, JUZ_STARTS, easternDigits, juzTitle, surahTitle } from "../reader/metadata";
+import { useLanguage } from "../../lib/language-context";
 import { TANZIL_PAGE_STARTS } from "../reader/tanzilPageMap";
 import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
@@ -90,6 +91,7 @@ export default function MadinahReader({
   ayah: number;
 }) {
   const router = useRouter();
+  const { language } = useLanguage();
   const [pageNumber, setPageNumber] = useState(1);
   const [page, setPage] = useState<MadinahPage | null>(null);
   const [fontFamily, setFontFamily] = useState(`${FONT_PREFIX}-1`);
@@ -220,7 +222,9 @@ export default function MadinahReader({
             <div className={styles.eyebrow}>{MADINAH_V2_EDITION.name}</div>
             <div className={styles.subtle}>{MADINAH_V2_EDITION.subtitle} · 604 pages · 15 lines</div>
           </div>
-          <Link href="/quran/1/1" className={styles.link}>Existing Qalam edition</Link>
+          <Link href="/quran" className={styles.link}>
+            {language === "ur" ? "قرآن کے تمام ایڈیشنز" : "All Quran Editions"}
+          </Link>
         </header>
 
         <div className={styles.grid}>

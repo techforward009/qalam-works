@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { QURAN_EDITIONS, getQuranEdition } from "../app/quran/editions";
 
 describe("Quran edition registry", () => {
@@ -22,6 +23,20 @@ describe("Quran edition registry", () => {
   it("resolves all registered editions by id", () => {
     for (const edition of QURAN_EDITIONS) {
       expect(getQuranEdition(edition.id)).toEqual(edition);
+    }
+  });
+
+  it("uses the approved AhmedGraf wording and links every reader back to the center", () => {
+    expect(QURAN_EDITIONS[0]?.description).toBe("IndoPak Quran text from AhmedGraf.");
+    for (const file of [
+      "app/quran/QuranReader.tsx",
+      "app/quran/indopak-digital-khatt/DigitalKhattReader.tsx",
+      "app/quran/madinah/MadinahReader.tsx",
+    ]) {
+      const source = readFileSync(file, "utf8");
+      expect(source).toContain('href="/quran"');
+      expect(source).toContain("All Quran Editions");
+      expect(source).toContain("قرآن کے تمام ایڈیشنز");
     }
   });
 });

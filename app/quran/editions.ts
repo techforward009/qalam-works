@@ -17,7 +17,7 @@ export const QURAN_EDITIONS: readonly QuranEdition[] = [
     id: "qalam-indopak",
     name: "Qalam IndoPak",
     shortName: "Qalam IndoPak",
-    description: "AhmedGraf-based IndoPak edition used by the original Qalam reader.",
+    description: "IndoPak Quran text from AhmedGraf.",
     detail: "604 pages · Qalam web rendering",
     route: "/quran/1/1",
     pageCount: 604,
