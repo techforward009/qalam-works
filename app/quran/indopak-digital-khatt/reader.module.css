@@ -67,7 +67,7 @@
 .surahHeader {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
+  align-items: baseline;
   gap: 0.4em;
   width: min(680px, 96%);
   margin: 0.2em auto 0.45em;
@@ -91,6 +91,7 @@
 
 .surahPlace {
   justify-self: start;
+  align-self: baseline;
 }
 
 .surahCount {

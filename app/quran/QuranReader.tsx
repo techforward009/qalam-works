@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "r
 import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
+import { surahBanner } from "./indopak-digital-khatt/surahBanner";
 import {
   easternDigits,
   juzRunningHead,
@@ -1244,9 +1245,7 @@ function QuranPageSurface({
                 return (
                   <SurahBand
                     key={`${idPrefix}s-${block.surah}`}
-                    name={surahTitle(
-                      block.surah,
-                    )}
+                    surah={block.surah}
                   />
                 );
               }
@@ -1255,12 +1254,6 @@ function QuranPageSurface({
                 block.kind ===
                 "bismillah"
               ) {
-                const active =
-                  block.surah ===
-                    surah &&
-                  block.ayah ===
-                    ayah;
-
                 return (
                   <p
                     key={`${idPrefix}b-${block.id}`}
@@ -1269,12 +1262,7 @@ function QuranPageSurface({
                         ? `ayah-${block.surah}-${block.ayah}`
                         : undefined
                     }
-                    className={`quran-bismillah shrink-0 ${
-                      active &&
-                      block.anchor
-                        ? "quran-active-ayah"
-                        : ""
-                    }`}
+                    className="quran-bismillah shrink-0"
                   >
                     {
                       block.text
@@ -1321,15 +1309,7 @@ function QuranPageSurface({
                               ? `ayah-${item.surah}-${item.ayah}`
                               : undefined
                           }
-                          className={`quran-ayah inline ${
-                            item.anchor &&
-                            item.surah ===
-                              surah &&
-                            item.ayah ===
-                              ayah
-                              ? "quran-active-ayah"
-                              : ""
-                          }`}
+                          className="quran-ayah inline"
                           style={{
                             boxDecorationBreak:
                               "clone",
@@ -1719,33 +1699,28 @@ function PageArrow({
 }
 
 function SurahBand({
-  name,
+  surah,
 }: {
-  name: string;
+  surah: number;
 }) {
+  const banner = surahBanner(surah);
+
   return (
     <div
-      className="quran-surah-band shrink-0"
+      className="quran-surah-header shrink-0"
       dir="rtl"
       lang="ar"
     >
-      <span
-        className="quran-band-rule quran-band-rule-before"
-        aria-hidden="true"
-      />
-
-      <div className="quran-surah-title">
-        <span className="quran-surah-name">
-          {
-            name
-          }
-        </span>
-      </div>
-
-      <span
-        className="quran-band-rule quran-band-rule-after"
-        aria-hidden="true"
-      />
+      <span className="quran-surah-place">{banner.place}</span>
+      <span className="quran-banner-name">
+        <span className="quran-banner-digit">{banner.surahNumber}</span>
+        <span>{banner.name}</span>
+        <span className="quran-banner-digit">{banner.revealed}</span>
+      </span>
+      <span className="quran-surah-count">
+        <span>آیات</span>
+        <span className="quran-banner-digit">{banner.ayatCount}</span>
+      </span>
     </div>
   );
 }
