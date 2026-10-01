@@ -107,20 +107,31 @@ async function getSession(): Promise<ort.InferenceSession> {
 }
 
 /**
- * Normalize to NFC first so precomposed Arabic letters such as ئ, ؤ, آ,
- * أ, and إ remain intact before combining marks are removed. Using NFD here
- * would decompose ئ into ي + ◌ٔ and then silently turn it into ي, corrupting
- * words such as الملائكة and شيئًا.
+ * Match Rawi's upstream tokenizer contract: NFD, then remove combining marks.
+ * This deliberately turns precomposed letters such as ئ/ؤ into their base
+ * letters for MODEL INPUT. The visible output keeps the canonical Arabic
+ * spelling separately, so ئ/ؤ are not lost from the user's text.
  */
 function stripCombiningMarks(text: string): string {
-  return Array.from(text.normalize("NFC"))
+  return Array.from(text.normalize("NFD"))
     .filter((char) => !/\p{M}/u.test(char))
     .join("");
 }
 
-/** Canonical Arabic base used for both Rawi input and final output. */
+/** Canonical Arabic base used for visible output. */
 function canonicalArabicBase(text: string): string {
-  return Array.from(stripCombiningMarks(text), (char) => RAWI_ARABIC_FOLD[char] ?? char).join("");
+  return Array.from(text.normalize("NFC"))
+    .filter((char) => !/\p{M}/u.test(char))
+    .map((char) => RAWI_ARABIC_FOLD[char] ?? char)
+    .join("");
+}
+
+/**
+ * Rawi itself expects the NFD/mark-stripped skeleton. Keep this separate from
+ * canonicalArabicBase() so output spelling such as الملائكة and شيئًا survives.
+ */
+function modelBase(text: string): string {
+  return stripCombiningMarks(text);
 }
 
 /**
@@ -216,10 +227,17 @@ function splitForModel(text: string): string[] {
 
 async function diacritizeChunk(text: string): Promise<string> {
   const [session, vocab] = await Promise.all([getSession(), getVocab()]);
-  const base = canonicalArabicBase(text);
-  if (!base) return text;
+  const outputBase = canonicalArabicBase(text);
+  const inputBase = modelBase(outputBase);
+  if (!inputBase) return text;
 
-  const ids = encode(base, vocab.char_to_idx);
+  const outputChars = Array.from(outputBase);
+  const modelChars = Array.from(inputBase);
+  if (outputChars.length !== modelChars.length) {
+    throw new Error("Rawi canonical/model character alignment failed");
+  }
+
+  const ids = encode(inputBase, vocab.char_to_idx);
   const tensor = new ort.Tensor("int64", BigInt64Array.from(ids), [1, ids.length]);
   const results = await session.run({ input: tensor });
   const output = results["gated_cls"];
@@ -229,7 +247,7 @@ async function diacritizeChunk(text: string): Promise<string> {
   for (const [mark, id] of Object.entries(vocab.diac_to_idx)) {
     idToDiacritic[Number(id)] = mark;
   }
-  return attachClasses(base, output.data as ArrayLike<number>, idToDiacritic);
+  return attachClasses(outputBase, output.data as ArrayLike<number>, idToDiacritic);
 }
 
 /**

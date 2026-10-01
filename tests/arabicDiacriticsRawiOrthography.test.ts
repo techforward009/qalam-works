@@ -14,15 +14,23 @@ describe("Rawi Arabic canonicalization contract", () => {
     expect(RAWI_SOURCE).toContain('"أ": "ا"');
     expect(RAWI_SOURCE).toContain('"إ": "ا"');
     expect(RAWI_SOURCE).toContain("function canonicalArabicBase");
-    expect(RAWI_SOURCE).toContain("const base = canonicalArabicBase(text)");
-    expect(RAWI_SOURCE).toContain("encode(base, vocab.char_to_idx)");
-    expect(RAWI_SOURCE).toContain("attachClasses(base,");
+    expect(RAWI_SOURCE).toContain("const outputBase = canonicalArabicBase(text);");
+    expect(RAWI_SOURCE).toContain("encode(inputBase, vocab.char_to_idx)");
+    expect(RAWI_SOURCE).toContain("attachClasses(outputBase,");
   });
 
   it("preserves precomposed hamza letters during mark stripping", () => {
-    expect(RAWI_SOURCE).toContain('text.normalize("NFC")');
-    expect(RAWI_SOURCE).toContain("such as ئ, ؤ, آ");
-    expect(RAWI_SOURCE).toContain("words such as الملائكة and شيئًا");
+    expect(RAWI_SOURCE).toContain('text.normalize("NFD")');
+    expect(RAWI_SOURCE).toContain("The visible output keeps the canonical Arabic");
+    expect(RAWI_SOURCE).toContain("so ئ/ؤ are not lost from the user's text");
+  });
+
+  it("keeps canonical output separate from the Rawi model skeleton", () => {
+    expect(RAWI_SOURCE).toContain("function canonicalArabicBase");
+    expect(RAWI_SOURCE).toContain("function modelBase");
+    expect(RAWI_SOURCE).toContain("const outputBase = canonicalArabicBase(text);");
+    expect(RAWI_SOURCE).toContain("const inputBase = modelBase(outputBase);");
+    expect(RAWI_SOURCE).toContain("Rawi canonical/model character alignment failed");
   });
 
   it("enforces shadda-before-vowel publishing order", () => {
