@@ -12,7 +12,8 @@
 }
 
 .page {
-  min-height: 900px;
+  height: auto;
+  min-height: 0;
   border: 8px solid #eee7d5;
   border-radius: 22px;
   background:
@@ -42,7 +43,7 @@
 }
 
 .pageBottom {
-  margin-top: auto;
+  margin-top: 12px;
   border-top: 1px solid var(--line);
   padding-top: 12px;
   text-transform: none;
@@ -50,15 +51,15 @@
 }
 
 .quran {
-  flex: 1;
-  padding: 20px 18px 28px;
+  flex: 0 0 auto;
+  padding: 16px 18px 8px;
   font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   direction: rtl;
   text-align: justify;
   text-justify: inter-word;
-  line-height: 2.18;
-  font-size: 30px;
+  line-height: 2.35;
+  font-size: calc(30px * var(--quran-scale, 1));
   color: var(--ink);
   text-rendering: optimizeLegibility;
 }
@@ -125,46 +126,77 @@
   display: inline;
 }
 
-.ayahNumber {
-  display: inline-flex;
-  align-items: baseline;
+.ayahMark {
+  display: inline-block;
+  margin-inline: 0.08em 0.18em;
+  line-height: 0;
+  vertical-align: middle;
+}
+
+.ayahOrb {
   position: relative;
-  margin-inline: 0.14em;
-  color: var(--green);
-  font-size: 0.66em;
+  display: inline-block;
+  width: 1.55em;
+  height: 1.55em;
   line-height: 1;
-  vertical-align: 0.08em;
-  white-space: nowrap;
+  vertical-align: -0.28em;
+}
+
+.ayahRing {
+  position: absolute;
+  bottom: 0.28em;
+  left: 0;
+  height: 0;
+  color: var(--green);
+  font-size: 2.25em;
+  line-height: 0;
+}
+
+.ayahDigit,
+.ayahDigitTight {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green);
+  direction: ltr;
+  font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
+  font-weight: 600;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.ayahDigit {
+  font-size: 0.68em;
+}
+
+.ayahDigitTight {
+  font-size: 0.5em;
+}
+
+.waqf {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  color: var(--ink);
   direction: rtl;
-  unicode-bidi: isolate;
-}
-
-.endingMarks {
-  display: inline;
-  position: relative;
-  margin-inline-start: 0.03em;
-  font-size: 0.92em;
-  vertical-align: 0.04em;
-}
-
-.currentAyah {
-  border-radius: 0.22em;
-  background: rgba(47, 143, 104, 0.1);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  padding-inline: 0.02em;
+  font-size: 0.78em;
+  line-height: 1;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 @media (max-width: 900px) {
   .page {
-    min-height: 760px;
+    min-height: 0;
     padding: 16px 16px 18px;
   }
 
   .quran {
     padding-inline: 4px;
-    font-size: 27px;
-    line-height: 2.08;
+    font-size: calc(27px * var(--quran-scale, 1));
+    line-height: 2.2;
   }
 }
 
@@ -182,9 +214,9 @@
   }
 
   .quran {
-    padding: 16px 2px 24px;
-    font-size: 25px;
-    line-height: 2;
+    padding: 16px 2px 8px;
+    font-size: calc(25px * var(--quran-scale, 1));
+    line-height: 2.15;
     text-align: right;
   }
 

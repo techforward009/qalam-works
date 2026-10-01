@@ -48,4 +48,19 @@ describe("Qalam Digital Khatt IndoPak edition", () => {
       expect(pages[index].fromIndex).toBe(pages[index - 1].toIndex + 1);
     }
   });
+
+  test("reader header, marker, and display size stay explicit", () => {
+    const source = readFileSync("app/quran/indopak-digital-khatt/DigitalKhattReader.tsx", "utf8");
+    const css = readFileSync("app/quran/indopak-digital-khatt/reader.module.css", "utf8");
+    expect(source).toContain("juzRunningHead");
+    expect(source).toContain("surahRunningHead");
+    expect(source).toContain("qalam-digital-khatt-display-scale");
+    expect(source).not.toContain("current-ayah");
+    expect(source).not.toContain("currentAyah");
+    expect(source).toContain('className={styles.waqf}');
+    expect(source).toContain("styles.ayahDigit");
+    expect(css).toContain("min-height: 0");
+    expect(css).not.toContain("min-height: 900px");
+    expect(css).not.toContain("margin-top: auto");
+  });
 });

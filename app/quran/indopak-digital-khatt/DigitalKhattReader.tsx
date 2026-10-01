@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
 import { useLanguage } from "../../lib/language-context";
-import { easternDigits, SURAH_NAMES } from "../reader/metadata";
+import { easternDigits, juzRunningHead, surahRunningHead, SURAH_NAMES } from "../reader/metadata";
 import {
   DIGITAL_KHATT_EDITION,
   buildDigitalKhattPages,
@@ -23,6 +23,7 @@ import styles from "./reader.module.css";
 
 const BASMILLAH = "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ";
 const TRAILING_QURAN_MARKS = /[\u0614-\u0617\u06D6-\u06DC\u08D5-\u08DF]+$/u;
+const DISPLAY_SCALE_KEY = "qalam-digital-khatt-display-scale";
 
 type Hit = { surah: number; ayah: number };
 type RenderText = { body: string; endingMarks: string };
@@ -39,8 +40,10 @@ function splitEndingMarks(text: string): RenderText {
   };
 }
 
-function pageLabel(page: number, pageCount: number): string {
-  return `Page ${page} / ${pageCount}`;
+function readDisplayScale(): number {
+  if (typeof window === "undefined") return 1;
+  const stored = Number(window.localStorage.getItem(DISPLAY_SCALE_KEY));
+  return stored === 0.85 || stored === 1 || stored === 1.12 ? stored : 1;
 }
 
 export default function DigitalKhattReader({
@@ -57,6 +60,16 @@ export default function DigitalKhattReader({
   const [searched, setSearched] = useState(false);
   const [hits, setHits] = useState<Hit[]>([]);
   const [pageInput, setPageInput] = useState("1");
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    setScale(readDisplayScale());
+  }, []);
+
+  const chooseScale = (value: number) => {
+    setScale(value);
+    window.localStorage.setItem(DISPLAY_SCALE_KEY, String(value));
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -111,17 +124,12 @@ export default function DigitalKhattReader({
 
   const juz = digitalKhattJuzOf(surah, ayah);
   const pageNumber = currentPage?.page ?? 1;
+  const pageLabel =
+    language === "ur" ? pageNumber.toLocaleString("ur-PK") : String(pageNumber);
 
   useEffect(() => {
     setPageInput(String(pageNumber));
   }, [pageNumber]);
-
-  useEffect(() => {
-    if (!current) return;
-    requestAnimationFrame(() => {
-      document.getElementById("current-ayah")?.scrollIntoView({ block: "center" });
-    });
-  }, [current, pageNumber]);
 
   const navigate = (nextSurah: number, nextAyah: number) => {
     router.push("/quran/indopak-digital-khatt/" + nextSurah + "/" + nextAyah);
@@ -330,20 +338,63 @@ export default function DigitalKhattReader({
                   Go to page
                 </button>
               </form>
+
+              <label className="mt-3 block border-t border-[#e2dccd] pt-3 text-xs text-[#625d53]">
+                {language === "ur" ? "نمایش" : "Display"}
+                <select
+                  value={scale}
+                  aria-label={language === "ur" ? "سائز" : "Size"}
+                  onChange={(event) => chooseScale(Number(event.target.value))}
+                  className="mt-1 w-full rounded-md border border-[#cfc7b7] bg-white px-2 py-2 text-sm"
+                >
+                  <option value={0.85}>{language === "ur" ? "چھوٹا" : "Small"}</option>
+                  <option value={1}>{language === "ur" ? "درمیانہ" : "Medium"}</option>
+                  <option value={1.12}>{language === "ur" ? "بڑا" : "Large"}</option>
+                </select>
+              </label>
             </div>
           </aside>
 
           <section className="order-1 lg:order-2">
-            <article className={styles.page}>
-              <div className={styles.pageTop}>
-                <span>{pageLabel(pageNumber, DIGITAL_KHATT_EDITION.pageCount)}</span>
-                <span>{easternDigits(pageNumber)}</span>
+            <div className="quran-page-meta" dir="rtl" lang="ar">
+              <div className="quran-page-meta-item quran-page-meta-juz">
+                <span className="quran-page-meta-juz-name">{juzRunningHead(juz)}</span>
               </div>
+              <div
+                className="quran-page-meta-item flex items-center justify-center overflow-visible"
+                dir="ltr"
+                lang={language === "ur" ? "ur" : "en"}
+              >
+                <button
+                  type="button"
+                  className="quran-page-arrow"
+                  aria-label="Previous page"
+                  disabled={pageNumber <= 1}
+                  onClick={() => navigatePage(pageNumber - 1)}
+                >
+                  ◄
+                </button>
+                <span className="quran-page-meta-page-number">{pageLabel}</span>
+                <button
+                  type="button"
+                  className="quran-page-arrow"
+                  aria-label="Next page"
+                  disabled={pageNumber >= DIGITAL_KHATT_EDITION.pageCount}
+                  onClick={() => navigatePage(pageNumber + 1)}
+                >
+                  ►
+                </button>
+              </div>
+              <div className="quran-page-meta-item quran-page-meta-surah">
+                <span className="quran-page-meta-surah-name">{surahRunningHead(surah)}</span>
+              </div>
+            </div>
 
-              <div className={styles.quran}>
+            <article className={styles.page}>
+              <div className={styles.quran} style={{ ["--quran-scale" as string]: String(scale) }}>
                 {pageVerses.map((item) => {
                   const { body, endingMarks } = splitEndingMarks(item.text);
-                  const isCurrent = item.chapter === surah && item.verse === ayah;
+                  const digits = easternDigits(item.verse);
 
                   return (
                     <span key={item.chapter + ":" + item.verse}>
@@ -364,17 +415,18 @@ export default function DigitalKhattReader({
                         </>
                       )}
 
-                      <span
-                        id={isCurrent ? "current-ayah" : undefined}
-                        className={isCurrent ? styles.currentAyah : undefined}
-                      >
-                        <span className={styles.ayah}>{body}</span>
-                        <span className={styles.ayahNumber} aria-label={"Ayah " + item.verse}>
-                          <span aria-hidden="true">۝</span>
-                          {easternDigits(item.verse)}
-                          {endingMarks && <span className={styles.endingMarks}>{endingMarks}</span>}
-                        </span>{" "}
-                      </span>
+                      <span className={styles.ayah}>{body}</span>
+                      <span className={styles.ayahMark} aria-label={"Ayah " + item.verse}>
+                        <span className={styles.ayahOrb} aria-hidden="true">
+                          <span className={styles.ayahRing}>۝</span>
+                          <span className={digits.length >= 3 ? styles.ayahDigitTight : styles.ayahDigit}>
+                            {digits}
+                          </span>
+                          {endingMarks ? (
+                            <span className={styles.waqf}>{"\u00A0" + endingMarks}</span>
+                          ) : null}
+                        </span>
+                      </span>{" "}
                     </span>
                   );
                 })}
