@@ -18,8 +18,12 @@ import {
   searchQuran,
   selectQuranFont,
 } from "../app/quran/reader/model";
+import {
+  juzRunningHead,
+  SURAH_NAMES,
+  surahRunningHead,
+} from "../app/quran/reader/metadata";
 import { QURAN_LAYOUT_PROFILE } from "../app/quran/reader/profile";
-import { SURAH_NAMES } from "../app/quran/reader/metadata";
 
 const provider = ahmedgrafQuranReference;
 
@@ -131,5 +135,17 @@ describe("Quran reader", () => {
       const magic = readFileSync(local).readUInt32BE(0);
       expect(magic).toBe(0x00010000);
     }
+  });
+
+  test("keeps the Taj-style running heads and the display scale", () => {
+    expect(juzRunningHead(2)).toBe("سيقول\u00a0٢");
+    expect(surahRunningHead(2)).toBe("البقرة\u00a0٢");
+    expect(juzRunningHead(0)).toBe("");
+    const source = readFileSync("app/quran/QuranReader.tsx", "utf8");
+    expect(source).toContain("qalam-quran-display-scale");
+    expect(source).toContain("juzRunningHead");
+    expect(source).toContain("surahRunningHead");
+    const css = readFileSync("app/globals.css", "utf8");
+    expect(css).toMatch(/html\.dark \.quran-page-meta-page-number \{\s*color: #ffffff;/);
   });
 });

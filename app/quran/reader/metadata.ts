@@ -55,6 +55,41 @@ export const JUZ_STARTS: readonly { juz: number; surah: number; ayah: number }[]
   { juz: 30, surah: 78, ayah: 1 },
 ];
 
+/** Traditional Indo-Pak running heads. Display only; not Quran text. */
+const JUZ_RUBRICS = [
+  "",
+  "الم",
+  "سيقول",
+  "تلك الرسل",
+  "لن تنالوا",
+  "والمحصنات",
+  "لا يحب الله",
+  "وإذا سمعوا",
+  "ولو أننا",
+  "قال الملأ",
+  "واعلموا",
+  "يعتذرون",
+  "وما من دابة",
+  "وما أبرئ",
+  "ربما",
+  "سبحان",
+  "قال ألم",
+  "اقترب",
+  "قد أفلح",
+  "وقال الذين",
+  "أمن خلق",
+  "اتل ما أوحي",
+  "ومن يقنت",
+  "وما لي",
+  "فمن أظلم",
+  "إليه يرد",
+  "حم",
+  "قال فما خطبكم",
+  "قد سمع",
+  "تبارك",
+  "عم",
+] as const;
+
 export function surahTitle(surah: number): string {
   const name = SURAH_NAMES[surah - 1] ?? "";
   return name ? `سورة ${name}` : "";
@@ -62,6 +97,18 @@ export function surahTitle(surah: number): string {
 
 export function juzTitle(juz: number): string {
   return `الجزء ${JUZ_ORDINALS[juz] ?? ""}`.trim();
+}
+
+/** Taj-style left head: surah name plus its number. */
+export function surahRunningHead(surah: number): string {
+  const name = SURAH_NAMES[surah - 1] ?? "";
+  return name ? `${name}\u00a0${easternDigits(surah)}` : "";
+}
+
+/** Taj-style right head: the juz's traditional name plus its number. */
+export function juzRunningHead(juz: number): string {
+  const name = JUZ_RUBRICS[juz] ?? "";
+  return name ? `${name}\u00a0${easternDigits(juz)}` : "";
 }
 
 export function easternDigits(value: number): string {

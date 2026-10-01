@@ -464,12 +464,12 @@ textarea {
 
 .quran-page-meta-surah {
   min-width: 0;
-  text-align: right;
+  text-align: left;
 }
 
 .quran-page-meta-juz {
   min-width: 0;
-  text-align: left;
+  text-align: right;
 }
 
 .quran-page-meta-surah-name,
@@ -1194,7 +1194,7 @@ html.dark .quran-page-meta-number {
 }
 
 html.dark .quran-page-meta-page-number {
-  color: #5a5137;
+  color: #ffffff;
 }
 
 html.dark .quran-page-arrow {

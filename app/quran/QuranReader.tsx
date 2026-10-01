@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
 import {
   easternDigits,
-  juzTitle,
+  juzRunningHead,
+  surahRunningHead,
   surahTitle,
   SURAH_NAMES,
 } from "./reader/metadata";
@@ -161,8 +162,17 @@ export default function QuranReader({
   const [searched, setSearched] =
     useState(false);
 
-  const [scale, setScale] =
-    useState(1);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const stored = Number(window.localStorage.getItem("qalam-quran-display-scale"));
+    if (stored === 0.85 || stored === 1 || stored === 1.12) setScale(stored);
+  }, []);
+
+  const chooseScale = (value: number) => {
+    setScale(value);
+    window.localStorage.setItem("qalam-quran-display-scale", String(value));
+  };
 
   const [copied, setCopied] =
     useState(false);
@@ -827,7 +837,7 @@ export default function QuranReader({
                   onChange={(
                     event,
                   ) =>
-                    setScale(
+                    chooseScale(
                       Number(
                         event.target
                           .value,
@@ -1104,13 +1114,9 @@ function QuranPageMeta({
       dir="rtl"
       lang="ar"
     >
-      <div className="quran-page-meta-item quran-page-meta-surah">
-        <span className="quran-page-meta-surah-name">
-          {
-            surahTitle(
-              surah,
-            )
-          }
+      <div className="quran-page-meta-item quran-page-meta-juz">
+        <span className="quran-page-meta-juz-name">
+          {juzRunningHead(juz)}
         </span>
       </div>
 
@@ -1152,11 +1158,9 @@ function QuranPageMeta({
         />
       </div>
 
-      <div className="quran-page-meta-item quran-page-meta-juz">
-        <span className="quran-page-meta-juz-name">
-          {
-            juzTitle(juz)
-          }
+      <div className="quran-page-meta-item quran-page-meta-surah">
+        <span className="quran-page-meta-surah-name">
+          {surahRunningHead(surah)}
         </span>
       </div>
     </div>
