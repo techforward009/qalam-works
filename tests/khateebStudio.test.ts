@@ -262,6 +262,47 @@ describe("Khateeb Studio deep sermon dossiers", () => {
     expect(studio).toContain("منبر میں آپ کیا لے سکتے ہیں؟");
     expect(studio).toContain("قابلِ بیان منبری flow");
   });
+
+  test("Imamate is a multi-scholar doctrinal dossier, not the legacy outline", () => {
+    const dossier = getTopicDossier("imamate");
+    expect(dossier).not.toBeNull();
+    expect(dossier?.perspectives.length).toBeGreaterThanOrEqual(4);
+    expect(dossier?.perspectives.some((item) => item.speakerId === "hamed-kashani")).toBe(true);
+    expect(dossier?.perspectives.some((item) => item.nameUr.includes("طباطبائی"))).toBe(true);
+    expect(dossier?.perspectives.some((item) => item.nameUr.includes("مطہری"))).toBe(true);
+    expect(dossier?.perspectives.some((item) => item.nameUr.includes("ابراہیم امینی"))).toBe(true);
+    expect(dossier?.pulpitFlowUr.length).toBeGreaterThanOrEqual(6);
+  });
+
+  test("Imamate dossier moves from definition to evidence to lived recognition", () => {
+    const text = buildDossierText(getTopicDossier("imamate")!, "ur");
+    expect(text).toContain("حامد کاشانی");
+    expect(text).toContain("علامہ سید محمد حسین طباطبائی");
+    expect(text).toContain("شہید مرتضیٰ مطہری");
+    expect(text).toContain("آیت اللہ ابراہیم امینی");
+    expect(text).toContain("معرفت");
+    expect(text).toContain("قابلِ بیان ترتیب");
+  });
+
+  test("Dua is a deep dossier grounded in primary text and scholarly explanation", () => {
+    const dossier = getTopicDossier("dua");
+    expect(dossier).not.toBeNull();
+    expect(dossier?.perspectives.length).toBeGreaterThanOrEqual(4);
+    expect(dossier?.perspectives.some((item) => item.nameUr.includes("زین العابدین"))).toBe(true);
+    expect(dossier?.perspectives.some((item) => item.nameUr.includes("طباطبائی"))).toBe(true);
+    expect(dossier?.perspectives.some((item) => item.nameUr.includes("جوادی آملی"))).toBe(true);
+    expect(dossier?.perspectives.some((item) => item.speakerId === "alireza-panahian")).toBe(true);
+    expect(dossier?.pulpitFlowUr.length).toBeGreaterThanOrEqual(6);
+  });
+
+  test("Dua dossier moves from nearness to character and action", () => {
+    const text = buildDossierText(getTopicDossier("dua")!, "ur");
+    expect(text).toContain("فَإِنِّي قَرِيبٌ");
+    expect(text).toContain("صحیفہ");
+    expect(text).toContain("خیر");
+    expect(text).toContain("حضور قلب");
+    expect(text).toContain("عمل");
+  });
 });
 
 describe("Khateeb Studio guided workflow", () => {

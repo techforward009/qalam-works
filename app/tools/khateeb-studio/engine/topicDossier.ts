@@ -193,7 +193,442 @@ const SABR: SermonDossier = {
     "Give the audience a one-week challenge: whenever anger or anxiety rises, pause before answering, make a brief prayer or remembrance, then ask: 'What does my impulse want, and what is my responsibility?' That turns patience from an abstract virtue into an operating skill for life.",
 };
 
-const DOSSIERS: readonly SermonDossier[] = [SABR];
+const IMAMATE: SermonDossier = {
+  topicId: "imamate",
+  titleUr: "امامت — ہدایت، حجت اور زندہ دینی مرجعیت",
+  titleEn: "Imamate — guidance, divine proof, and living religious authority",
+  thesisUr:
+    "امامت کو صرف یہ سوال بنا دینا کہ رسول اکرمؐ کے بعد سیاسی جانشین کون تھا، اس پورے عقیدے کو بہت محدود کر دیتا ہے۔ امامیہ علمی روایت میں امام ایک ایسی الٰہی حجت ہے جو دین کی معتبر تعبیر، علمی حفاظت، اخلاقی نمونہ، روحانی تربیت اور اجتماعی ہدایت کو ایک مرکز میں جمع کرتی ہے۔ اسی لیے معرفتِ امام کا مطلب صرف نام اور نسب جان لینا نہیں، بلکہ یہ سمجھنا ہے کہ دین کو کس علمی و اخلاقی معیار سے پڑھنا اور جینا ہے۔",
+  thesisEn:
+    "Reducing Imamate to the question of political succession after the Prophet severely narrows the doctrine. In Imami thought, the Imam is a divinely grounded authority who gathers reliable interpretation of religion, preservation of knowledge, moral exemplarity, spiritual formation, and communal guidance into one center. Knowing the Imam therefore means more than knowing a name or genealogy; it means knowing the authoritative intellectual and moral measure by which religion is understood and lived.",
+  governingQuestionUr:
+    "اگر وحی ختم ہو گئی، مگر انسان کی دینی تعبیر، اخلاقی تربیت، اجتماعی اختلاف اور صحیح رہنمائی کی ضرورت ختم نہیں ہوئی، تو نبوت کے بعد اس ہدایت کا معتبر معیار کیا ہوگا؟",
+  governingQuestionEn:
+    "If revelation has ended but the need for reliable interpretation, moral formation, communal judgment, and guidance has not ended, what becomes the authoritative measure of guidance after prophethood?",
+  perspectives: [
+    {
+      id: "kashani-imamate-method",
+      speakerId: "hamed-kashani",
+      nameUr: "حامد کاشانی",
+      nameEn: "Hamed Kashani",
+      sourceTitleUr: "درآمدی بر امامت پژوهی با محوریت منهج صاحب عبقات",
+      sourceTitleEn: "Introduction to Imamate research through the method of Abaqat al-Anwar",
+      sourceUrl: "https://www.hkashani.com/?p=22660",
+      coreUr:
+        "کاشانی کا سب سے مفید اضافہ یہ ہے کہ وہ 'امامت' کو ایک مبہم جذباتی عنوان نہیں رہنے دیتے بلکہ اس کے مطالعے کی مختلف سطحیں الگ کرتے ہیں: پہلے یہ واضح کریں کہ امامت کیا ہے اور امام کی صفات کیا ہیں؛ پھر یہ دیکھیں کہ یہ اوصاف کس شخصیت پر منطبق ہوتے ہیں؛ اور اس کے بعد تاریخی و حدیثی دلائل کی سند، دلالت اور مخالف علمی روایت کے ساتھ تقابلی جانچ کی جائے۔",
+      coreEn:
+        "Kashani's most useful contribution is methodological: he refuses to leave Imamate as a vague devotional slogan. He separates explanatory study of what Imamate is and what qualities an Imam has from comparative study of whom those qualities apply to, followed by rigorous examination of hadith evidence, meaning, transmission, and competing scholarly readings.",
+      explanationUr: [
+        "وہ امامتِ تبیینی اور امامتِ تطبیقی میں فرق کرتے ہیں۔ منبر کے لیے یہ فرق بہت اہم ہے: پہلے سامع کو یہ سمجھایا جائے کہ 'امام' کس منصب کا نام ہے؛ اس کے بعد شخصیات اور تاریخی نصوص پر گفتگو کی جائے۔ اگر ترتیب الٹ دی جائے تو مجلس فوراً شخصی مناظرے میں چلی جاتی ہے اور اصل عقیدہ واضح نہیں ہوتا۔",
+        "ان کا عبقات الانوار پر زور ایک اور منبری سبق دیتا ہے: مضبوط استدلال صرف روایت نقل کرنے سے نہیں بنتا؛ روایت کی سند، مختلف طرق، الفاظ کے معنی، تاریخی استعمال، اور مخاطب کے علمی مبانی کو سمجھنا بھی ضروری ہے۔",
+        "کاشانی کی approach خطیب کو یہ سکھاتی ہے کہ امامت پر گفتگو میں پہلے framework بنائیں، پھر evidence رکھیں۔ اس سے موضوع جذباتی دفاع کے بجائے علمی confidence کے ساتھ کھلتا ہے۔",
+      ],
+      explanationEn: [
+        "He distinguishes explanatory Imamate—what the office is and what qualities define it—from applied/comparative Imamate—who fulfills those qualities. For preaching, this order matters: define the office before moving into personalities and historical proof.",
+        "His emphasis on Abaqat al-Anwar teaches a second lesson: strong argument is not produced by quoting a report alone. Transmission routes, wording, semantic force, historical use, and the assumptions of the audience all matter.",
+        "This approach teaches the preacher to build a framework first and then place evidence inside it, replacing defensive polemic with intellectual confidence.",
+      ],
+      styleUr:
+        "انداز: پہلے مسئلے کی taxonomy، پھر methodological caution، پھر source criticism۔ جذباتی نعرے کے بجائے علمی نقشہ بنا کر سامع کو ساتھ لے جانا۔",
+      styleEn:
+        "Style: begin with taxonomy, add methodological caution, then move into source criticism. Build an intellectual map before argument.",
+      useUr:
+        "منبر کے آغاز میں یہی ترتیب اختیار کریں: 'آج ہم پہلے یہ نہیں پوچھیں گے کہ امام کون ہے؛ پہلے یہ پوچھیں گے کہ امامت ہے کیا؟' یہی ایک جملہ پورے موضوع کی سطح بلند کر دیتا ہے۔",
+      useEn:
+        "Open with: 'Before asking who the Imam is, we first need to ask what Imamate actually is.' That single move raises the level of the entire discussion.",
+      originalSnippet: "یک حالت هم امامتِ تبیینی است.",
+    },
+    {
+      id: "tabatabai-three-dimensions",
+      nameUr: "علامہ سید محمد حسین طباطبائیؒ",
+      nameEn: "Allamah Sayyid Muhammad Husayn Tabataba'i",
+      sourceTitleUr: "اسلامی تعلیمات میں امامت",
+      sourceTitleEn: "Imamah in Islamic Teachings in Brief",
+      sourceUrl: "https://al-islam.org/islamic-teachings-brief-sayyid-muhammad-husayn-tabatabai/imamah",
+      coreUr:
+        "علامہ طباطبائی امامت کو صرف حکومت نہیں سمجھتے بلکہ دینی و اجتماعی امور کی ولایت اور حفاظت کے طور پر پیش کرتے ہیں۔ ان کے وسیع تر بیان میں امامت کے تین پہلو واضح ہوتے ہیں: اسلامی معاشرے کی قیادت، دین کے علوم و احکام کی معتبر حفاظت و توضیح، اور انسان کی روحانی ہدایت۔",
+      coreEn:
+        "Tabataba'i does not reduce Imamate to government. He presents it as guardianship of religious and social affairs; in his broader formulation, Imamate carries three dimensions: leadership of the Muslim community, preservation and authoritative exposition of religious knowledge and law, and spiritual guidance.",
+      explanationUr: [
+        "یہ framework منبر کے لیے نہایت قیمتی ہے کیونکہ اس سے 'امام' محض ایک تاریخی حکمران یا فقہی reference نہیں رہتا۔ امام کا منصب simultaneously society، knowledge اور spiritual formation تینوں سے متعلق ہو جاتا ہے۔",
+        "علامہ کی reasoning نبوت کے مقصد سے شروع ہوتی ہے: اگر دین انسان کو کمال کی طرف ہدایت دینے آیا ہے تو پیغمبرؐ کی وفات کے بعد دین کی حفاظت، صحیح تعبیر اور انسان کی مسلسل رہنمائی کا مسئلہ باقی رہتا ہے۔ امامت اسی continuity کا ادارہ ہے، نئی نبوت نہیں۔",
+        "اس زاویے سے حدیثِ ثقلین، قرآن و اہل بیتؑ کی باہمی نسبت، اور اہل بیتؑ کی علمی مرجعیت کو ایک coherent structure میں سمجھایا جا سکتا ہے: قرآن متن ہے، مگر متن کی معصوم نبوی توضیح اور زندہ نمونہ بھی امت کی ضرورت ہے۔",
+      ],
+      explanationEn: [
+        "This framework is valuable for preaching because the Imam is no longer merely a historical ruler or a legal reference. The office touches society, knowledge, and spiritual formation at once.",
+        "Tabataba'i's reasoning begins from the purpose of prophethood: if religion guides human beings toward perfection, the Prophet's death does not remove the need to preserve, interpret, and embody that guidance. Imamate continues that function without becoming new prophethood.",
+        "This makes it easier to present the relationship of Qur'an and Ahl al-Bayt coherently: revelation remains the text, while authoritative Prophetic interpretation and embodied guidance remain necessary for the community.",
+      ],
+      styleUr:
+        "انداز: فلسفی مگر سادہ structural reasoning۔ فردی تاریخی واقعات سے پہلے 'دین کو survive اور guide کرنے کے لیے کن functions کی ضرورت ہے؟' والا سوال۔",
+      styleEn:
+        "Style: structural reasoning before historical detail. Ask what functions religion still needs in order to preserve and guide.",
+      useUr:
+        "تین لفظ یاد رکھیں: **قیادت، علم، تربیت**۔ انہی تین headings پر 8–10 منٹ کی مضبوط علمی گفتگو بن سکتی ہے۔",
+      useEn:
+        "Remember three words: **leadership, knowledge, formation**. They can carry an eight-to-ten-minute scholarly segment.",
+    },
+    {
+      id: "mutahhari-guidance-leadership",
+      nameUr: "شہید مرتضیٰ مطہریؒ",
+      nameEn: "Ayatullah Murtadha Mutahhari",
+      sourceTitleUr: "امامت اور قیادت",
+      sourceTitleEn: "Imamah and Leadership",
+      sourceUrl: "https://al-islam.org/imamah-and-khilafah-murtadha-mutahhari/imamah-leadership",
+      coreUr:
+        "مطہری 'ہدایت' اور 'قیادت' کے فرق سے امامت کو بہت مؤثر انداز میں کھولتے ہیں۔ ہدایت راستہ دکھاتی ہے؛ قیادت انسان اور معاشرے کی موجود صلاحیتوں کو حرکت دیتی، منظم کرتی اور مقصد تک پہنچانے کے لیے mobilize کرتی ہے۔ اس طرح امام صرف teacher نہیں بلکہ transformative leader بنتا ہے۔",
+      coreEn:
+        "Mutahhari opens Imamate through the distinction between guidance and leadership. Guidance shows the road; leadership mobilizes and organizes the latent capacities of persons and society so they can actually move toward the goal. The Imam is therefore not only a teacher but a transformative leader.",
+      explanationUr: [
+        "یہ فرق منبر پر بہت طاقتور ہے: کسی کو راستہ معلوم ہونا اور کسی کا اس راستے پر چل پڑنا دو الگ چیزیں ہیں۔ کتاب direction دے سکتی ہے، مگر leadership انسان کے خوف، کمزوری، انتشار اور dormant potential سے deal کرتی ہے۔",
+        "مطہری leadership کو انسان کی hidden capacities کو unfold کرنے سے جوڑتے ہیں۔ اس زاویے سے امام کی سیرت محض historical admiration نہیں رہتی؛ وہ یہ سوال بن جاتی ہے کہ امام علیؑ نے افراد اور معاشرے میں کون سی صلاحیتیں جگائیں؟ امام حسینؑ نے ضمیر کو کیسے mobilize کیا؟",
+        "اسی framework سے یہ بھی سمجھایا جا سکتا ہے کہ امامت کا تعلق صرف اقتدار سے نہیں۔ ممکن ہے امام ظاہری حکومت میں نہ ہو، مگر علمی، اخلاقی اور روحانی leadership پھر بھی جاری رہے۔",
+      ],
+      explanationEn: [
+        "This distinction is powerful on the pulpit: knowing the road and actually moving on it are different. A text can give direction, but leadership engages fear, weakness, fragmentation, and dormant human potential.",
+        "Mutahhari links leadership to unfolding hidden capacities. The lives of the Imams can therefore be read not as historical admiration alone but as questions of transformation: what capacities did Imam Ali awaken, and how did Imam Husayn mobilize conscience?",
+        "This also clarifies why Imamate is not exhausted by political office. An Imam may be denied government while intellectual, moral, and spiritual leadership continues.",
+      ],
+      styleUr:
+        "انداز: abstract concept کو everyday distinction سے واضح کرنا، پھر اسے history اور human psychology پر apply کرنا۔",
+      styleEn:
+        "Style: clarify an abstract doctrine through an everyday distinction, then apply it to history and human psychology.",
+      useUr:
+        "سامع سے پوچھیں: 'آپ کو راستہ معلوم ہے، پھر بھی آپ چل کیوں نہیں رہے؟' وہاں سے teacher اور leader کا فرق کھولیں، پھر امام کو 'انسان کو حرکت دینے والی حجت' کے طور پر پیش کریں۔",
+      useEn:
+        "Ask: 'If you already know the road, why are you still not moving?' Then distinguish teacher from leader and present the Imam as guidance that mobilizes.",
+    },
+    {
+      id: "amini-recognition",
+      nameUr: "آیت اللہ ابراہیم امینیؒ",
+      nameEn: "Ayatullah Ibrahim Amini",
+      sourceTitleUr: "امامت اور ائمہؑ — معرفتِ امام کا مفہوم",
+      sourceTitleEn: "Imamate and the Imams — what recognition of the Imam means",
+      sourceUrl: "https://al-islam.org/imamate-and-imams-ibrahim-amini/authors-preface",
+      coreUr:
+        "آیت اللہ امینی ایک نہایت اہم practical correction کرتے ہیں: 'معرفتِ امام' صرف یہ نہیں کہ ہم بارہ ائمہؑ کے نام، القاب اور تاریخیں جانتے ہوں۔ حقیقی معرفت میں امام کے علم، عصمت، اخلاق، عبادت، طرزِ عمل اور دینی مرجعیت کو پہچاننا اور اسے اپنی زندگی کا معیار بنانا شامل ہے۔",
+      coreEn:
+        "Amini makes a crucial practical correction: recognition of the Imam is not merely knowing the names, titles, and dates of the Twelve Imams. Real recognition includes understanding the Imam's knowledge, infallibility, ethics, worship, conduct, and religious authority, then treating that pattern as a standard for life.",
+      explanationUr: [
+        "یہ زاویہ عقیدۂ امامت کو biography quiz بننے سے بچاتا ہے۔ اگر کوئی شخص امام صادقؑ کی تاریخِ ولادت جانتا ہے مگر علم، صدق، امانت، عبادت اور علمی دیانت میں ان کی روش سے بے تعلق ہے تو معرفت کا اہم حصہ ابھی پیدا نہیں ہوا۔",
+        "امینی امام کو دینی علوم کا معتبر source، اخلاقی نمونہ اور امت کی رہنمائی کا مرکز قرار دیتے ہیں۔ اس سے 'امام کو ماننا' ایک lived relationship بن جاتا ہے: میں اپنی عبادت، خاندان، علم، معاملات اور اختلاف میں کس معیار کی پیروی کرتا ہوں؟",
+        "یہ نوجوانوں کے لیے خاص طور پر مفید framing ہے، کیونکہ وہ abstract succession debate کے بجائے فوراً یہ پوچھ سکتے ہیں: 'امام میری life decisions میں کیا بدلتا ہے؟'",
+      ],
+      explanationEn: [
+        "This prevents Imamate from becoming a biography quiz. Knowing dates without becoming connected to the Imam's knowledge, integrity, worship, and moral method leaves an essential part of recognition unrealized.",
+        "Amini presents the Imam as a reliable source of religious knowledge, a moral exemplar, and a center of guidance. Belief in the Imam therefore becomes a lived relationship: what standard governs my worship, family, learning, transactions, and disagreements?",
+        "This framing is especially effective with younger audiences because it moves immediately from succession theory to the question: what difference does the Imam make to my decisions?",
+      ],
+      styleUr:
+        "انداز: doctrine کو character formation میں translate کرنا۔ پہلے تعریف، پھر qualities، پھر 'اس کا میری زندگی میں فائدہ کیا ہے؟' کا جواب۔",
+      styleEn:
+        "Style: translate doctrine into character formation—definition, qualities, then the practical question of why it matters.",
+      useUr:
+        "منبر کے آخر میں سامع سے صرف یہ نہ پوچھیں کہ 'آپ امام کو مانتے ہیں؟' بلکہ پوچھیں: 'آپ کی زندگی میں کون سی ایک چیز امام کی سیرت نے بدل دی؟'",
+      useEn:
+        "Near the end, do not ask only 'Do you believe in the Imam?' Ask: 'What is one thing in your life that the Imam's model has actually changed?'",
+    },
+  ],
+  synthesisUr: [
+    "کاشانی ہمیں **طریقۂ تحقیق** دیتے ہیں: پہلے امامت کی تعریف، پھر تطبیق اور دلیل۔ علامہ طباطبائی **منصب کی ساخت** دیتے ہیں: قیادت، علم اور روحانی تربیت۔ مطہری **function** واضح کرتے ہیں: امام صرف راستہ نہیں بتاتا، انسان اور معاشرے کو حرکت دیتا ہے۔ امینی **معرفت کو زندگی** میں لے آتے ہیں: امام کو جاننا یعنی اس کے علمی و اخلاقی معیار کو اختیار کرنا۔",
+    "ان چار زاویوں کو ملا کر امامت نہ صرف historical succession رہتی ہے، نہ صرف political authority، نہ صرف devotional love۔ یہ ایک مکمل نظامِ ہدایت بن جاتی ہے: صحیح علم کہاں سے لیا جائے، کردار کس pattern پر بنے، اجتماعی direction کیسے محفوظ رہے، اور انسان potential سے action تک کیسے پہنچے۔",
+    "منبر میں شخصیات کے فضائل ضرور آئیں، مگر framework کے بعد۔ پہلے سامع کو 'امامت کس ضرورت کا جواب ہے؟' سمجھا دیں، پھر امام علیؑ، امام صادقؑ یا امام عصرؑ کی مثالیں زیادہ meaningful محسوس ہوں گی۔",
+  ],
+  synthesisEn: [
+    "Kashani supplies the **method**: define Imamate before applying evidence. Tabataba'i supplies the **structure**: leadership, knowledge, and spiritual formation. Mutahhari clarifies the **function**: the Imam not only shows the road but mobilizes persons and society. Amini translates **recognition into life**: knowing the Imam means adopting an intellectual and moral standard.",
+    "Together these approaches prevent Imamate from collapsing into succession history, political authority alone, or devotional affection alone. It becomes a complete architecture of guidance: where reliable knowledge comes from, how character is formed, how communal direction is preserved, and how human potential is moved into action.",
+    "Virtues and biographies belong in the sermon, but after the framework. First explain what human and religious need Imamate answers; then the lives of Imam Ali, Imam al-Sadiq, or the Imam of the Age become much more meaningful.",
+  ],
+  pulpitFlowUr: [
+    {
+      heading: "1. سوال جانشینی سے پہلے: امامت کس مسئلے کا جواب ہے؟",
+      body:
+        "ابتدا سیاست سے نہ کریں۔ سامع سے پوچھیں: رسول اکرمؐ کے بعد قرآن باقی ہے، مگر اختلافِ تفسیر بھی باقی ہے؛ احکام باقی ہیں، مگر نئے حالات بھی پیدا ہوتے ہیں؛ اخلاقی تعلیم موجود ہے، مگر انسان کو زندہ نمونہ بھی درکار ہے۔ اگر نبوت ختم ہوئی ہے تو کیا trustworthy guidance کی ضرورت بھی ختم ہوگئی؟ یہی وہ جگہ ہے جہاں امامت کو ایک theological necessity کے طور پر introduce کریں۔",
+    },
+    {
+      heading: "2. امامت کو تین دائروں میں سمجھیں: قیادت، علم، تربیت",
+      body:
+        "علامہ طباطبائی کے framework سے کہیں: امام معاشرے کی direction سے متعلق ہے، دین کے معتبر علم و تعبیر سے متعلق ہے، اور انسان کی روحانی و اخلاقی تربیت سے متعلق ہے۔ یوں امام صرف ruler نہیں، صرف mufti نہیں، صرف saint نہیں؛ یہ dimensions ایک ہی منصب میں جمع ہوتے ہیں۔",
+    },
+    {
+      heading: "3. راستہ دکھانا کافی نہیں — انسان کو حرکت بھی دینا ہوتی ہے",
+      body:
+        "مطہری کے فرق کو عام زندگی سے کھولیں: ہر smoker جانتا ہے smoking نقصان دہ ہے، ہر آدمی جانتا ہے غصہ خراب ہے، مگر knowledge alone انسان نہیں بدلتی۔ leadership وہ قوت ہے جو latent capacity کو mobilize کرتی ہے۔ اسی لیے امام کی سیرت محض information نہیں؛ وہ انسان کو stand لینے، sacrifice کرنے، عدل پر قائم رہنے اور نفس سے لڑنے کی قوت دیتی ہے۔",
+    },
+    {
+      heading: "4. پھر سوال کریں: امام کون؟ — اب evidence meaningful ہوگا",
+      body:
+        "کاشانی کے methodological lesson کے مطابق اب نصوص اور شخصیات کی طرف آئیں۔ آیتِ ابراہیمؑ (2:124) سے امامت کے عہدِ الٰہی ہونے کا concept کھولیں؛ آیتِ ولایت (5:55) اور حدیثِ ثقلین یا غدیر کو اپنی chosen scholarly treatment کے ساتھ لائیں۔ لیکن ہر روایت کو صرف slogan نہ بنائیں؛ یہ بتائیں کہ وہ کس dimension—علم، ولایت، اطاعت یا leadership—کو establish کر رہی ہے۔",
+    },
+    {
+      heading: "5. معرفتِ امام کو معلومات سے کردار تک لے جائیں",
+      body:
+        "آیت اللہ امینی کے زاویے سے مجلس کو اپنے اندر موڑیں۔ اگر میں امام علیؑ کے عدل، امام سجادؑ کی عبادت، امام صادقؑ کی علمی دیانت، اور امام کاظمؑ کے حلم کو جانتا ہوں مگر میرے کاروبار، گھر، عبادت اور اختلاف میں اس کا اثر نہیں، تو معرفت ابھی biography سے آگے نہیں بڑھی۔ امامت کا practical test یہ ہے کہ امام میری priorities اور conduct کو کہاں تبدیل کرتا ہے۔",
+    },
+    {
+      heading: "6. امامِ عصرؑ: غیبت میں امامت غیر فعال نہیں ہوتی",
+      body:
+        "اختتام سے پہلے یہ misconception دور کریں کہ غیبت کا مطلب امامت کا practical suspension ہے۔ امامیہ تصور میں حجت، دینی continuity، دعا و انتظار، علمی transmission اور ذمہ دار دینداری جاری رہتی ہے۔ انتظار کا مطلب passive انتظار نہیں بلکہ اپنے آپ اور معاشرے کو اس معیار کے قابل بنانا ہے جس کی امام نمائندگی کرتے ہیں۔",
+    },
+  ],
+  pulpitFlowEn: [
+    {
+      heading: "1. Before succession: what problem does Imamate answer?",
+      body:
+        "Do not begin with politics. Ask: after the Prophet, the Qur'an remains, but disagreement over interpretation remains too; law remains, but new circumstances arise; moral teaching remains, but people still need an embodied standard. The end of prophethood does not mean the end of the need for trustworthy guidance.",
+    },
+    {
+      heading: "2. Understand Imamate in three spheres",
+      body:
+        "Using Tabataba'i's framework, present leadership, authoritative religious knowledge, and spiritual/moral formation. The Imam is not merely a ruler, jurist, or saint; these dimensions are gathered in one office.",
+    },
+    {
+      heading: "3. Showing the road is not the same as moving people",
+      body:
+        "Use Mutahhari's distinction. People often know what is right and still fail to act. Leadership mobilizes latent capacities. The Imam's life therefore becomes transformative guidance, not historical information.",
+    },
+    {
+      heading: "4. Only now ask: who is the Imam?",
+      body:
+        "Following Kashani's method, move from definition to evidence. Use Qur'an 2:124, 5:55, Thaqalayn, or Ghadir through a serious scholarly treatment, explaining what dimension of Imamate each proof establishes rather than using reports as slogans.",
+    },
+    {
+      heading: "5. Move recognition from information to character",
+      body:
+        "Use Amini's practical turn: knowing the Imams' names and dates is not enough. Ask what Imam Ali's justice, Imam al-Sajjad's worship, Imam al-Sadiq's intellectual integrity, and Imam al-Kazim's restraint change in our own conduct.",
+    },
+    {
+      heading: "6. Occultation does not make Imamate inactive",
+      body:
+        "Close by correcting the idea that occultation suspends the practical meaning of Imamate. Divine proof, religious continuity, responsible scholarship, prayer, expectation, and moral readiness remain active responsibilities.",
+    },
+  ],
+  closingUr:
+    "اختتام ایک commitment پر کریں: اس ہفتے صرف ایک امام کی زندگی سے ایک صفت منتخب کریں—عدل، علم، عبادت، حلم یا خدمت—اور سات دن اسے consciously practice کریں۔ پھر معرفتِ امام ناموں سے نکل کر character میں اترنے لگے گی۔",
+  closingEn:
+    "End with one commitment: choose one quality from the life of one Imam—justice, knowledge, worship, restraint, or service—and practice it consciously for seven days. That is how recognition begins to move from names into character.",
+};
+
+const DUA: SermonDossier = {
+  topicId: "dua",
+  titleUr: "دعا — حاجت سے آگے، قرب، معرفت اور تربیت",
+  titleEn: "Dua — beyond requests to nearness, knowledge, and formation",
+  thesisUr:
+    "دعا کو صرف حاجت مانگنے تک محدود کرنا اس کی روح کو چھوٹا کر دیتا ہے۔ قرآن، صحیفہ سجادیہ اور شیعہ علمی روایت میں دعا ایک ایسا مقام ہے جہاں انسان خدا کی قربت کو پہچانتا ہے، اپنی فقر و نیاز کو سمجھتا ہے، اپنی خواہش کو خیر کے تابع کرتا ہے، اپنے اخلاق کی اصلاح مانگتا ہے، اور پھر اسی دعا کے مطابق عمل کرنے کی ذمہ داری قبول کرتا ہے۔",
+  thesisEn:
+    "Reducing dua to asking for needs shrinks its meaning. In the Qur'an, Sahifa al-Sajjadiyya, and Shi'i scholarly tradition, supplication is where a person recognizes divine nearness, discovers his own neediness, submits desire to what is truly good, asks for moral reform, and accepts responsibility to live in accordance with the prayer.",
+  governingQuestionUr:
+    "اگر خدا ہماری ضرورت پہلے ہی جانتا ہے، تو دعا میں اصل تبدیلی خدا کے فیصلے میں آتی ہے یا خود دعا کرنے والے انسان میں؟ اور اگر مانگی ہوئی چیز نہ ملے تو کیا دعا ناکام ہوگئی؟",
+  governingQuestionEn:
+    "If God already knows our needs, is the central change in dua a change in God's knowledge—or in the person who prays? And if the requested object is not granted, has the prayer failed?",
+  perspectives: [
+    {
+      id: "sahifa-makarim-formation",
+      nameUr: "امام زین العابدینؑ — صحیفہ سجادیہ",
+      nameEn: "Imam Zayn al-Abidin — Sahifa al-Sajjadiyya",
+      sourceTitleUr: "دعائے مکارم الاخلاق — دعا بطور کردار سازی",
+      sourceTitleEn: "Supplication for Noble Moral Traits — prayer as character formation",
+      sourceUrl: "https://al-islam.org/sahifa-al-kamilah-al-sajjadiyya-imam-ali-zayn-al-abidin/20-his-supplication-noble-moral-traits-and",
+      coreUr:
+        "صحیفہ سجادیہ کا سب سے طاقتور سبق یہ ہے کہ دعا انسان کو محض 'کچھ دلوانے' کے لیے نہیں، 'کچھ بنوانے' کے لیے بھی ہے۔ دعائے مکارم الاخلاق میں امامؑ ایمان کی تکمیل، یقین کی قوت، نیت کی اصلاح، عمل کی بہتری، تکبر سے حفاظت، لوگوں کے ساتھ حسنِ سلوک، غصے پر قابو، عدل، سچائی اور نفس کی اصلاح مانگتے ہیں۔",
+      coreEn:
+        "One of the strongest lessons of the Sahifa is that prayer is not only for obtaining something but for becoming someone. In the Supplication for Noble Moral Traits, the Imam asks for perfected faith, sound certainty, purified intention, better action, freedom from pride, good treatment of others, restraint of anger, justice, truthfulness, and reform of the self.",
+      explanationUr: [
+        "یہاں دعا اور اخلاق الگ نہیں ہیں۔ امامؑ صرف یہ نہیں کہتے کہ 'خدایا مجھے اچھا بنا دے'؛ وہ character کو چھوٹے operational حصوں میں توڑتے ہیں: نیت درست ہو، عبادت عجب سے خراب نہ ہو، نیکی احسان جتانے سے ضائع نہ ہو، دشمنی محبت میں بدلے، غصہ روکا جائے، حق بولا جائے۔",
+        "اس سے خطیب کو ایک اہم منبری اصول ملتا ہے: اچھی دعا vague نہیں ہوتی۔ انسان پہلے اپنی خرابی کا نام لیتا ہے، پھر اس کے مقابل ایک واضح اخلاقی صفت مانگتا ہے، اور پھر اس صفت کے مطابق چلنے کی ذمہ داری قبول کرتا ہے۔",
+        "صحیفہ میں دعا self-diagnosis بھی ہے۔ آدمی جب یہ مانگتا ہے کہ 'لوگوں میں میری عزت بڑھے تو میرے اندر اسی قدر تواضع بڑھے' تو وہ دراصل اپنی ego-risk پہچان رہا ہوتا ہے۔ دعا یہاں spiritual mirror بن جاتی ہے۔",
+      ],
+      explanationEn: [
+        "Prayer and ethics are inseparable here. The Imam does not merely ask to 'become good'; he breaks character into operational parts: sound intention, worship protected from self-admiration, generosity without humiliation, transformed hostility, restrained anger, and truthful speech.",
+        "This gives the preacher a practical rule: strong prayer is not vague. Name the defect, ask for its opposing virtue, then accept responsibility to live accordingly.",
+        "The Sahifa also turns prayer into self-diagnosis. Asking that outward honor be matched by inward humility is recognition of an ego-risk; dua becomes a spiritual mirror.",
+      ],
+      styleUr:
+        "انداز: دعا کو moral checklist میں بدل دینا؛ abstract روحانیت کے بجائے شخصیت کے precise defects اور virtues کا نام لینا۔",
+      styleEn:
+        "Style: turn prayer into a moral checklist, naming precise defects and virtues instead of leaving spirituality abstract.",
+      useUr:
+        "منبر میں سامع سے کہیں: آج دعا میں صرف 'مشکل حل کر دے' نہ کہیں؛ ایک character defect کا نام لیں—غصہ، حسد، تکبر، زبان—اور اس کے مقابل ایک صفت مانگیں، پھر سات دن اس پر عمل کریں۔",
+      useEn:
+        "Ask the audience not to pray only 'solve my problem.' Name one character defect—anger, envy, pride, speech—ask for its opposite virtue, and practice it for seven days.",
+      originalSnippet: "وَاسْتَصْلِحْ بِقُدْرَتِكَ مَا فَسَدَ مِنِّي",
+    },
+    {
+      id: "tabatabai-nearness-real-dua",
+      nameUr: "علامہ سید محمد حسین طباطبائیؒ",
+      nameEn: "Allamah Sayyid Muhammad Husayn Tabataba'i",
+      sourceTitleUr: "المیزان — سورۂ بقرہ 2:186 کی تفسیر",
+      sourceTitleEn: "Al-Mizan — commentary on Qur'an 2:186",
+      sourceUrl: "https://al-islam.org/al-mizan-exegesis-quran-volume-3-sayyid-muhammad-husayn-tabatabai/suratul-baqarah-verse-186",
+      coreUr:
+        "علامہ طباطبائی آیت «فَإِنِّي قَرِيبٌ» میں دعا کی بنیاد 'قرب' کو قرار دیتے ہیں۔ ان کے نزدیک حقیقی دعا صرف زبان کے الفاظ نہیں؛ دل کا واقعی خدا کی طرف متوجہ ہونا اور حاجت کو اسی کے سامنے رکھنا ضروری ہے۔ اگر زبان خدا کو پکار رہی ہو مگر دل مستقل اسباب یا دوسرے سہاروں کو مستقل مؤثر سمجھ رہا ہو تو دعا کی حقیقت کمزور ہو جاتی ہے۔",
+      coreEn:
+        "Tabataba'i places divine nearness at the center of Qur'an 2:186. Real dua is not merely verbal formula; the heart must actually turn toward God and place the need before Him. If the tongue addresses God while the heart treats other causes as independently effective, the reality of supplication is weakened.",
+      explanationUr: [
+        "وہ آیت کے linguistic structure پر توجہ دلاتے ہیں: خدا 'کہہ دو کہ میں قریب ہوں' نہیں فرماتا، بلکہ براہِ راست «فَإِنِّي قَرِيبٌ» کہتا ہے۔ منبر پر اس نکتے سے دعا کو distance-breaking encounter کے طور پر پیش کیا جا سکتا ہے۔",
+        "علامہ یہ بھی واضح کرتے ہیں کہ ہر مانگی ہوئی چیز، اسی صورت میں ہمارا حقیقی مطلوب نہیں ہوتی۔ انسان کبھی ایسی چیز مانگتا ہے جس کے نتائج جان لے تو خود نہ مانگے۔ لہٰذا 'دعا قبول نہیں ہوئی' کا فیصلہ صرف ظاہری object نہ ملنے سے نہیں کیا جا سکتا۔",
+        "ان کے ہاں دعا کی authenticity heart-dependence سے جڑی ہے۔ اسباب استعمال کریں، ڈاکٹر کے پاس جائیں، محنت کریں—مگر دل cause کو خدا کا شریک نہ بنائے۔ یہ توکل اور دعا کے تعلق کو mature بناتا ہے۔",
+      ],
+      explanationEn: [
+        "He notices the linguistic immediacy of the verse: God does not tell the Prophet to 'say that I am near'; the response comes directly—'I am near.' This lets the preacher present dua as an encounter that collapses distance.",
+        "He also explains that what we verbally request is not always our real good. A person may ask for something he would abandon if he knew its consequences, so apparent non-granting does not prove that prayer failed.",
+        "For Tabataba'i, authentic dua is tied to dependence of the heart. Use means, doctors, work, and planning, but do not treat causes as independent rivals to God.",
+      ],
+      styleUr:
+        "انداز: ایک آیت کے الفاظ سے theological depth نکالنا؛ پھر psychological reality اور توکل کے practical مسئلے تک جانا۔",
+      styleEn:
+        "Style: extract theological depth from the wording of one verse, then connect it to psychological reality and practical reliance.",
+      useUr:
+        "آیت 2:186 پڑھ کر صرف 'خدا قریب ہے' نہ کہیں۔ سامع سے پوچھیں: 'آپ دعا میں خدا سے بات کرتے ہیں، مگر دل میں اصل طاقت کس کو سمجھتے ہیں؟' یہاں سے دعا کی sincerity کھولیں۔",
+      useEn:
+        "After 2:186, do not stop at 'God is near.' Ask: 'When you pray, whom does your heart actually treat as the decisive power?' Then develop sincerity in supplication.",
+      originalSnippet: "فَإِنِّي قَرِيبٌ",
+    },
+    {
+      id: "javadi-khayr-not-demand",
+      nameUr: "آیت اللہ عبداللہ جوادی آملی",
+      nameEn: "Ayatullah Abdullah Javadi Amoli",
+      sourceTitleUr: "آدابِ دعا اور شرحِ دعائے ابوحمزہ ثمالی",
+      sourceTitleEn: "Etiquette of supplication and commentary on Dua Abu Hamza al-Thumali",
+      sourceUrl: "https://shiastudies.com/fa/%D8%B4%D8%B1%D8%AD-%D8%AF%D8%B9%D8%A7%DB%8C-%D8%A7%D8%A8%D9%88%D8%AD%D9%85%D8%B2%D9%87-%D8%AB%D9%85%D8%A7%D9%84%DB%8C-%D8%A8%D9%87-%D8%B1%D9%88%D8%A7%DB%8C%D8%AA-%D8%A2%DB%8C%D8%A9-%D8%A7%D9%84%D9%84/",
+      coreUr:
+        "جوادی آملی دعا میں ایک بنیادی correction کرتے ہیں: بندہ خدا کو 'proposal' نہیں دیتا کہ بس یہی چیز اسی شکل میں مجھے دینی ہے؛ ادبِ دعا یہ ہے کہ انسان خیر مانگے۔ کسی مخصوص خواہش پر اصرار ہو سکتا ہے، مگر اس کے ساتھ یہ معرفت رہے کہ مصلحت اور انجام کا کامل علم خدا کے پاس ہے۔",
+      coreEn:
+        "Javadi Amoli makes a fundamental correction: the servant does not issue God a proposal that one specific outcome must be delivered in one specific form. The etiquette of dua is to ask for what is truly good, while recognizing that complete knowledge of consequences and benefit belongs to God.",
+      explanationUr: [
+        "یہ زاویہ 'میں نے اتنا رو کر مانگا پھر کیوں نہیں ملا؟' والے بحران کو علمی جواب دیتا ہے۔ اخلاص اور شدتِ طلب اپنی جگہ اہم ہیں، مگر اخلاص کسی harmful request کو automatically خیر نہیں بنا دیتا۔",
+        "ان کے بیان میں اجابت binary نہیں: کبھی مطلوب چیز ملتی ہے، کبھی گناہ کی مغفرت یا درجہ کی بلندی کی صورت میں اثر ظاہر ہوتا ہے، اور کبھی حکیمانہ تاخیر خود بہتر نتیجہ ہوتی ہے۔ اس سے دعا disappointment-management نہیں بلکہ trust-formation بن جاتی ہے۔",
+        "دعائے ابوحمزہ کی شرح میں وہ بتاتے ہیں کہ دعا صرف request نہیں؛ اس میں خود دعا کی حقیقت، مقدمات، شرائط، آداب اور قبولیت کے اسباب بھی سکھائے جاتے ہیں۔ یعنی مأثور دعا اپنے اندر theology of prayer بھی رکھتی ہے۔",
+      ],
+      explanationEn: [
+        "This gives an intellectual answer to 'I cried sincerely, so why was I not given what I asked?' Sincerity matters, but sincerity does not automatically turn a harmful request into true good.",
+        "Acceptance is not binary in his account: sometimes the requested object is granted, sometimes the effect appears as forgiveness or elevation, and sometimes wise delay itself serves the person better. Prayer therefore becomes formation in trust.",
+        "In his commentary on Dua Abu Hamza, he stresses that the supplication itself teaches the meaning, preconditions, etiquette, and causes of answered prayer. A transmitted dua contains a theology of prayer within it.",
+      ],
+      styleUr:
+        "انداز: عام مذہبی misconception اٹھانا، قرآن اور حکمت سے correct کرنا، پھر بندے کے خدا سے تعلق کو زیادہ mature بنانا۔",
+      styleEn:
+        "Style: identify a common religious misconception, correct it through Qur'anic wisdom, then mature the servant's relationship with God.",
+      useUr:
+        "یہ segment ان مجالس میں بہت مفید ہے جہاں لوگ unanswered prayer سے زخمی ہوں۔ جملہ بنائیں: 'دعا خدا کو میری مرضی پر لانے کا نام نہیں؛ مجھے خیر کے لیے خدا پر اعتماد سکھانے کا نام بھی ہے۔'",
+      useEn:
+        "This is especially useful where listeners carry pain from apparently unanswered prayers: 'Dua is not forcing God into my preferred outcome; it also trains me to trust God for the good.'",
+      originalSnippet: "ما باید خیر را بخواهیم.",
+    },
+    {
+      id: "panahian-attentive-dua",
+      speakerId: "alireza-panahian",
+      nameUr: "علیرضا پناہیان",
+      nameEn: "Alireza Panahian",
+      sourceTitleUr: "عقلانیت در قرائت دعا؛ احساسات در قرائت قرآن",
+      sourceTitleEn: "Reasoned attention in reciting supplication",
+      sourceUrl: "https://telegram.me/s/Panahian_ir?q=%23%D8%B1%D8%A7%D9%87%E2%80%8C%D9%87%D8%A7%DB%8C_%D8%B1%D8%B3%DB%8C%D8%AF%D9%86",
+      coreUr:
+        "پناہیان دعا پڑھنے میں 'توجہ' کو مرکزی شرط بناتے ہیں۔ ان کا کہنا ہے کہ مأثور دعا کو صرف emotional recitation نہ بنایا جائے؛ اس کے جملوں کو سمجھ کر، ان پر فکر کرکے، اور جس قدر دل حاضر ہو اسی قدر expectation of response کے ساتھ پڑھا جائے۔",
+      coreEn:
+        "Panahian places attention at the center of reciting supplication. A transmitted dua should not become emotional recitation alone; its phrases should be understood, reflected upon, and read with presence of heart corresponding to the seriousness of the request.",
+      explanationUr: [
+        "وہ دعا کے فقرات کو meaning-bearing text سمجھتے ہیں۔ اگر کسی difficult عبارت کی گہرائی پوری طرح نہ سمجھ آئے تو بھی جو حصے واضح ہیں انہیں بے توجہی سے نہ گزارا جائے۔ یہ approach صحیفہ اور دعائے کمیل کو 'پڑھنے' سے 'مطالعہ کرنے' کی طرف لے جاتی ہے۔",
+        "حضورِ قلب کو وہ محض mystical state نہیں بناتے؛ understanding اس کی ایک راہ ہے۔ جب آدمی جانتا ہے کہ کیا کہہ رہا ہے تو emotion بھی زیادہ حقیقی بنتا ہے۔",
+        "ان کا ایک اور practical نکتہ دعا برای دیگران ہے: روایات کے مطابق غائب مؤمن کے لیے دعا خود دعا کرنے والے کی تربیت، رزق اور دفعِ بلا سے بھی مربوط ہے۔ اس سے دعا self-centered wish list نہیں رہتی۔",
+      ],
+      explanationEn: [
+        "He treats the phrases of transmitted prayers as meaning-bearing texts. Even when a difficult passage is not fully understood, the clear portions should not be passed over inattentively. This moves Sahifa and Dua Kumayl from mere recitation toward study.",
+        "Presence of heart is not treated as a mysterious feeling only; understanding is one road to it. When a person knows what he is saying, emotion becomes more truthful.",
+        "Another practical point is praying for others. Narrations on supplication for an absent believer shift dua away from a self-centered wish list and toward moral concern for others.",
+      ],
+      styleUr:
+        "انداز: عبادت کی familiar practice میں hidden negligence پکڑنا، پھر چھوٹا practical correction دینا—رفتار کم کرو، معنی سمجھو، ایک فقرہ واقعی مانگو۔",
+      styleEn:
+        "Style: expose hidden inattentiveness inside a familiar practice, then offer a small correction—slow down, understand, and genuinely ask for one phrase.",
+      useUr:
+        "سامع کو challenge دیں کہ اگلی دعائے کمیل یا صحیفہ میں مقدار کم اور توجہ زیادہ کرے: دس صفحات بے توجہی سے نہیں، ایک فقرہ سمجھ کر اور سچ میں مانگ کر۔",
+      useEn:
+        "Challenge the listener to prefer quality over quantity in the next recitation: not ten pages inattentively, but one phrase understood and genuinely asked.",
+      originalSnippet: "اولین شرط اجابت دعا، حضور قلب است.",
+    },
+  ],
+  synthesisUr: [
+    "صحیفہ ہمیں بتاتا ہے **کیا مانگنا ہے**: اپنی ذات کی اصلاح۔ علامہ طباطبائی بتاتے ہیں **کس حقیقت کے سامنے مانگنا ہے**: قریب خدا کے سامنے، دل کی حقیقی توجہ کے ساتھ۔ جوادی آملی بتاتے ہیں **قبولیت کو کیسے سمجھنا ہے**: خیر مانگو، خدا کو اپنی preferred شکل dictate نہ کرو۔ پناہیان بتاتے ہیں **دعا پڑھنی کیسے ہے**: معنی، حضور اور فکر کے ساتھ۔",
+    "یوں دعا چار سطحوں پر کام کرتی ہے: تعلقِ خدا، شناختِ خود، اصلاحِ خواہش، اور اصلاحِ کردار۔ اگر ان میں سے کوئی بھی نہ ہو اور صرف حاجت کی فہرست رہ جائے تو دعا کا بہت بڑا تربیتی حصہ ضائع ہو جاتا ہے۔",
+    "اس dossier کا مرکزی منبری pivot یہ ہو سکتا ہے: **دعا میں انسان صرف جواب نہیں مانگتا؛ وہ جواب کے قابل انسان بننے کی تربیت بھی لیتا ہے۔**",
+  ],
+  synthesisEn: [
+    "The Sahifa teaches **what to ask for**: reform of the self. Tabataba'i explains **before whom we ask**: the near God, with real dependence of the heart. Javadi Amoli explains **how to understand acceptance**: ask for the good rather than dictating one preferred form. Panahian explains **how to recite**: with meaning, presence, and reflection.",
+    "Dua therefore works on four levels: relationship with God, self-knowledge, reform of desire, and reform of character. If it becomes only a list of requests, much of its formative power is lost.",
+    "The sermon's central pivot can be: **in dua, a person does not only ask for an answer; he is also trained into the kind of person who can receive and live that answer.**",
+  ],
+  pulpitFlowUr: [
+    {
+      heading: "1. دعا خدا کو خبر دینا نہیں",
+      body:
+        "ابتدا اسی سوال سے کریں: خدا میری حاجت جانتا ہے تو میں بتاتا کیوں ہوں؟ جواب یہ ہے کہ دعا information transfer نہیں؛ relationship activation ہے۔ قرآن 2:186 میں جواب براہِ راست آتا ہے: «فَإِنِّي قَرِيبٌ»۔ بندہ خدا کو نہیں جگاتا، اپنے دل کو خدا کی قربت کے لیے جگاتا ہے۔",
+    },
+    {
+      heading: "2. اصل دعا زبان سے پہلے دل میں بنتی ہے",
+      body:
+        "علامہ طباطبائی کے زاویے سے فرق کریں: زبان کہہ رہی ہے 'یا اللہ'، مگر دل سمجھ رہا ہے اصل نجات فلاں شخص، فلاں connection یا فلاں سبب کے ہاتھ میں ہے۔ اسباب اختیار کرنا درست ہے، مگر استقلالِ تاثیر صرف خدا کے لیے ہے۔ حقیقی دعا دل کے dependence کو درست کرتی ہے۔",
+    },
+    {
+      heading: "3. صحیفہ سکھاتی ہے: دعا میں اپنی شخصیت بھی مانگو",
+      body:
+        "اب دعائے مکارم الاخلاق کی طرف آئیں۔ امام سجادؑ رزق اور مشکل کے ساتھ نیت، یقین، humility، زبان، غصہ، عدل، سخاوت اور character کی اصلاح مانگتے ہیں۔ سامع کو دکھائیں کہ ائمہؑ کی دعا wish list نہیں بلکہ character curriculum ہے۔",
+    },
+    {
+      heading: "4. اگر وہ چیز نہ ملی تو کیا دعا رد ہوگئی؟",
+      body:
+        "جوادی آملی کے زاویے سے اس دردناک سوال کو address کریں۔ اخلاص کے ساتھ مانگی ہوئی چیز بھی ہمیشہ اسی صورت میں خیر نہیں ہوتی۔ بندہ مانگے، اصرار کرے، روئے—مگر آخری جملہ trust کا ہو: خدایا، مجھے وہ خیر دے جس کا انجام تو جانتا ہے۔ قبولیت کبھی عطا، کبھی تاخیر، کبھی دفعِ ضرر، کبھی مغفرت اور کبھی درجے کی بلندی کی شکل میں آ سکتی ہے۔",
+    },
+    {
+      heading: "5. مأثور دعا کو پڑھیں نہیں—سمجھ کر مانگیں",
+      body:
+        "پناہیان کے practical correction سے دعا کی مجلس کو بدلیں۔ رفتار کم کریں۔ ہر فقرے کے معنی پر رکیں۔ اگر دعائے کمیل میں کہتے ہیں «ظَلَمْتُ نَفْسِي» تو ایک لمحے کو واقعی پوچھیں: میں نے اپنے اوپر کیا ظلم کیا؟ اگر صحیفہ میں حلم مانگ رہے ہیں تو کل کے غصے کو سامنے لائیں۔ تب الفاظ زندگی سے جڑتے ہیں۔",
+    },
+    {
+      heading: "6. دعا کے بعد action لازم ہے",
+      body:
+        "صحیفہ کا logic یہی ہے: جو صفت خدا سے مانگی، اس کے لیے اگلا قدم بھی اٹھاؤ۔ اگر رزق مانگا تو حلال کوشش؛ اگر مغفرت مانگی تو ترکِ گناہ؛ اگر اخلاق مانگا تو زبان اور غصے کی practice؛ اگر ہدایت مانگی تو حق سننے کی readiness۔ دعا action کا substitute نہیں، action کو خدا سے جوڑنے والی روح ہے۔",
+    },
+  ],
+  pulpitFlowEn: [
+    {
+      heading: "1. Dua is not informing God",
+      body:
+        "Begin with the question: if God knows my need, why tell Him? Dua is not information transfer; it activates relationship. Qur'an 2:186 answers directly: 'I am near.' The servant is not waking God up; he is waking his own heart to divine nearness.",
+    },
+    {
+      heading: "2. Real prayer forms in the heart before the tongue",
+      body:
+        "Use Tabataba'i's distinction: the tongue may say 'O God' while the heart treats a person, connection, or material cause as the real independent savior. Means are valid, but ultimate dependence belongs to God alone.",
+    },
+    {
+      heading: "3. The Sahifa teaches us to ask for character",
+      body:
+        "Move to the Supplication for Noble Moral Traits. Imam al-Sajjad asks not only for relief but for corrected intention, certainty, humility, speech, restraint, justice, generosity, and character. The prayer is a curriculum of formation.",
+    },
+    {
+      heading: "4. If the object was not granted, was the prayer rejected?",
+      body:
+        "Use Javadi Amoli's correction. A sincerely desired object is not automatically the true good. Ask intensely, but let trust have the final word: grant me the good whose outcome You know. Acceptance may appear as grant, delay, protection, forgiveness, or elevation.",
+    },
+    {
+      heading: "5. Do not merely recite transmitted prayers—understand and ask",
+      body:
+        "Use Panahian's practical correction: slow down, understand the phrase, connect it to an actual failure or need, and ask it honestly. One meaningful line can form the heart more than pages of inattentive recitation.",
+    },
+    {
+      heading: "6. Action follows prayer",
+      body:
+        "The Sahifa's logic joins asking with responsibility. Pray for provision and pursue lawful work; pray for forgiveness and abandon sin; pray for character and train speech and anger; pray for guidance and become willing to hear truth. Dua is not a substitute for action but the soul that connects action to God.",
+    },
+  ],
+  closingUr:
+    "اختتام میں سامع کو ایک سادہ مشق دیں: آج رات صرف ایک دعا منتخب کریں، ایک فقرہ چنیں، اس کا معنی سمجھیں، اسے اپنی زندگی کے ایک حقیقی مسئلے سے جوڑیں، پھر اسی فقرے کے مطابق کل ایک عملی قدم اٹھائیں۔ یہی مقام ہے جہاں دعا زبان سے نکل کر شخصیت میں داخل ہوتی ہے۔",
+  closingEn:
+    "End with one simple exercise: tonight choose one supplication, select one phrase, understand its meaning, connect it to one real issue in your life, and tomorrow take one action consistent with that phrase. That is where dua moves from the tongue into character.",
+};
+
+const DOSSIERS: readonly SermonDossier[] = [SABR, IMAMATE, DUA];
 
 export function getTopicDossier(topicId: string): SermonDossier | null {
   return DOSSIERS.find((item) => item.topicId === topicId) ?? null;
@@ -224,6 +659,7 @@ export function buildDossierText(
     }
     lines.push(`${ur ? "انداز" : "Style"}: ${ur ? item.styleUr : item.styleEn}`);
     lines.push(`${ur ? "منبر میں استعمال" : "Use on the pulpit"}: ${ur ? item.useUr : item.useEn}`);
+    if (item.originalSnippet) lines.push(item.originalSnippet);
   }
 
   lines.push("", ur ? "منبری synthesis" : "Sermonic synthesis");
