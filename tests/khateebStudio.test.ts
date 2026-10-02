@@ -30,6 +30,7 @@ import { buildFreshMajlisSeries } from "../app/tools/khateeb-studio/engine/fresh
 import { checkSeriesOriginality } from "../app/tools/khateeb-studio/engine/originalityGuard";
 import {
   khateebNoteKey,
+  parseKhateebNoteKey,
   parseStoredKhateebNote,
   serializeKhateebNote,
 } from "../app/tools/khateeb-studio/engine/khateebNotes";
@@ -670,12 +671,37 @@ describe("Khateeb Studio personal session notes", () => {
   });
 
   test("serializes and safely parses saved notes", () => {
-    const raw = serializeKhateebNote("اپنی مثال یہاں شامل کرنی ہے", "2026-10-02T12:00:00.000Z");
+    const raw = serializeKhateebNote(
+      "اپنی مثال یہاں شامل کرنی ہے",
+      "2026-10-02T12:00:00.000Z",
+      {
+        topicTitleUr: "امامت",
+        topicTitleEn: "Imamate",
+        sessionTitleUr: "امامت اور ہدایت",
+        sessionTitleEn: "Imamate and guidance",
+      },
+    );
     expect(parseStoredKhateebNote(raw)).toEqual({
       text: "اپنی مثال یہاں شامل کرنی ہے",
       updatedAt: "2026-10-02T12:00:00.000Z",
+      topicTitleUr: "امامت",
+      topicTitleEn: "Imamate",
+      sessionTitleUr: "امامت اور ہدایت",
+      sessionTitleEn: "Imamate and guidance",
     });
     expect(parseStoredKhateebNote(null)).toEqual({ text: "", updatedAt: "" });
+  });
+
+  test("parses a stored note key back into its session scope", () => {
+    expect(
+      parseKhateebNoteKey("qalam-khateeb-note-v1:imamate:10:fresh:4"),
+    ).toEqual({
+      topicId: "imamate",
+      seriesLength: 10,
+      layer: "fresh",
+      sessionNumber: 4,
+    });
+    expect(parseKhateebNoteKey("bad-key")).toBeNull();
   });
 
   test("studio attaches a personal notes editor to every multi-majlis session", () => {
@@ -686,6 +712,36 @@ describe("Khateeb Studio personal session notes", () => {
     expect(notes).toContain("میرے ذاتی نوٹس");
     expect(notes).toContain("خودکار طور پر محفوظ");
     expect(notes).toContain("اسی براؤزر اور اسی آلے");
+  });
+});
+
+describe("Khateeb Studio all-notes library", () => {
+  test("studio exposes a dedicated notes library", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    const library = readFileSync("app/tools/khateeb-studio/AllKhateebNotesPanel.tsx", "utf8");
+    expect(studio).toContain("میرے تمام نوٹس");
+    expect(studio).toContain("<AllKhateebNotesPanel");
+    expect(library).toContain("موضوع، مجلس یا اپنے نوٹس میں تلاش کریں");
+    expect(library).toContain("تمام نوٹس محفوظ فائل میں نکالیں");
+    expect(library).toContain("محفوظ نوٹس واپس لائیں");
+  });
+
+  test("notes library supports series and source-layer filtering", () => {
+    const library = readFileSync("app/tools/khateeb-studio/AllKhateebNotesPanel.tsx", "utf8");
+    expect(library).toContain("سب سلسلے");
+    expect(library).toContain("سہ روزہ");
+    expect(library).toContain("خمسہ");
+    expect(library).toContain("عشرہ");
+    expect(library).toContain("نئی منبری تشکیل");
+    expect(library).toContain("تحقیقی نقشہ");
+  });
+
+  test("notes export and import stay local rather than claiming cloud sync", () => {
+    const library = readFileSync("app/tools/khateeb-studio/AllKhateebNotesPanel.tsx", "utf8");
+    expect(library).toContain("window.localStorage");
+    expect(library).toContain("اسی براؤزر اور اسی آلے");
+    expect(library).not.toContain("cloud");
+    expect(library).not.toContain("sync");
   });
 });
 

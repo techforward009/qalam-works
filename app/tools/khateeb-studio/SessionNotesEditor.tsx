@@ -13,14 +13,20 @@ export default function SessionNotesEditor({
   seriesLength,
   layer,
   sessionNumber,
-  sessionTitle,
+  topicTitleUr,
+  topicTitleEn,
+  sessionTitleUr,
+  sessionTitleEn,
   ur,
 }: {
   topicId: string;
   seriesLength: number;
   layer: "fresh" | "research";
   sessionNumber: number;
-  sessionTitle: string;
+  topicTitleUr: string;
+  topicTitleEn: string;
+  sessionTitleUr: string;
+  sessionTitleEn: string;
   ur: boolean;
 }) {
   const storageKey = useMemo(
@@ -57,21 +63,39 @@ export default function SessionNotesEditor({
       if (!text.trim()) {
         window.localStorage.removeItem(storageKey);
         setSavedAt("");
+        window.dispatchEvent(new Event("qalam-khateeb-notes-changed"));
         return;
       }
       const now = new Date().toISOString();
-      window.localStorage.setItem(storageKey, serializeKhateebNote(text, now));
+      window.localStorage.setItem(
+        storageKey,
+        serializeKhateebNote(text, now, {
+          topicTitleUr,
+          topicTitleEn,
+          sessionTitleUr,
+          sessionTitleEn,
+        }),
+      );
       setSavedAt(now);
+      window.dispatchEvent(new Event("qalam-khateeb-notes-changed"));
     } catch {
       // localStorage can be unavailable in private/restricted browsing.
     }
-  }, [text, loadedKey, storageKey]);
+  }, [
+    text,
+    loadedKey,
+    storageKey,
+    topicTitleUr,
+    topicTitleEn,
+    sessionTitleUr,
+    sessionTitleEn,
+  ]);
 
   const copyNote = async () => {
     if (!text.trim()) return;
     try {
       await navigator.clipboard.writeText(
-        `${sessionTitle}\n\n${ur ? "میرے نوٹس" : "My notes"}\n${text}`,
+        `${ur ? sessionTitleUr : sessionTitleEn}\n\n${ur ? "میرے نوٹس" : "My notes"}\n${text}`,
       );
     } catch {
       // Clipboard may be unavailable.
@@ -91,6 +115,7 @@ export default function SessionNotesEditor({
       return;
     }
     setText("");
+    window.dispatchEvent(new Event("qalam-khateeb-notes-changed"));
   };
 
   const savedLabel = savedAt

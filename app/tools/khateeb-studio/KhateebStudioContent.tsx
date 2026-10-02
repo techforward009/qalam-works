@@ -49,6 +49,7 @@ import {
 import { buildFreshMajlisSeries } from "./engine/freshPulpitSeries";
 import { checkSeriesOriginality } from "./engine/originalityGuard";
 import SessionNotesEditor from "./SessionNotesEditor";
+import AllKhateebNotesPanel from "./AllKhateebNotesPanel";
 import {
   buildSessionWorkbench,
   buildSessionWorkbenchText,
@@ -124,6 +125,7 @@ export default function KhateebStudioContent({
   const [seriesLayer, setSeriesLayer] = useState<"fresh" | "research">("fresh");
   const [topicQuery, setTopicQuery] = useState("");
   const [selectedTopicId, setSelectedTopicId] = useState(initialView.topic);
+  const [notesLibraryOpen, setNotesLibraryOpen] = useState(false);
 
   const filteredSpeakers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -460,7 +462,21 @@ export default function KhateebStudioContent({
               ? "موضوع سے یا مناسبت سے تیاری کریں، معتبر علمی سمتیں دیکھیں، اور خطبے کا قابلِ استعمال خاکہ بنائیں۔"
               : "Prepare by topic or occasion, review source-led directions, and build a usable sermon outline."}
           </p>
+          <button
+            type="button"
+            onClick={() => setNotesLibraryOpen((value) => !value)}
+            className="mt-5 inline-flex items-center rounded-xl border border-[#B8935A]/35 bg-white px-4 py-2 text-sm font-semibold text-[#6f5730] shadow-sm hover:bg-[#fbf7ee] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#e2c895]"
+          >
+            {ur ? "میرے تمام نوٹس" : "My notes library"}
+          </button>
         </header>
+
+        {notesLibraryOpen ? (
+          <AllKhateebNotesPanel
+            ur={ur}
+            onClose={() => setNotesLibraryOpen(false)}
+          />
+        ) : null}
 
         <nav className="mb-6 rounded-2xl border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]" aria-label={ur ? "تیاری کے مراحل" : "Preparation steps"}>
           <div className="grid gap-2 sm:grid-cols-3">
@@ -964,7 +980,10 @@ export default function KhateebStudioContent({
                           seriesLength={seriesLength}
                           layer={seriesLayer}
                           sessionNumber={session.number}
-                          sessionTitle={ur ? session.titleUr : session.titleEn}
+                          topicTitleUr={topic.titleUr}
+                          topicTitleEn={topic.titleEn}
+                          sessionTitleUr={session.titleUr}
+                          sessionTitleEn={session.titleEn}
                           ur={ur}
                         />
                       </article>
