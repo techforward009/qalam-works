@@ -29,6 +29,11 @@ import { buildMajlisSeries, buildMajlisSeriesText } from "../app/tools/khateeb-s
 import { buildFreshMajlisSeries } from "../app/tools/khateeb-studio/engine/freshPulpitSeries";
 import { checkSeriesOriginality } from "../app/tools/khateeb-studio/engine/originalityGuard";
 import {
+  khateebNoteKey,
+  parseStoredKhateebNote,
+  serializeKhateebNote,
+} from "../app/tools/khateeb-studio/engine/khateebNotes";
+import {
   buildSessionWorkbench,
   buildSessionWorkbenchText,
 } from "../app/tools/khateeb-studio/engine/sessionWorkbench";
@@ -650,6 +655,37 @@ describe("Khateeb Studio full session workbench", () => {
     expect(studio).toContain('seriesLayer === "fresh"');
     expect(studio).toContain("اس مجلس کی مکمل تیاری نقل کریں");
     expect(studio).toContain("اپنی آواز محفوظ رکھیں");
+  });
+});
+
+describe("Khateeb Studio personal session notes", () => {
+  test("creates a stable note key per topic, series, layer, and session", () => {
+    const key = khateebNoteKey({
+      topicId: "imamate",
+      seriesLength: 10,
+      layer: "fresh",
+      sessionNumber: 4,
+    });
+    expect(key).toBe("qalam-khateeb-note-v1:imamate:10:fresh:4");
+  });
+
+  test("serializes and safely parses saved notes", () => {
+    const raw = serializeKhateebNote("اپنی مثال یہاں شامل کرنی ہے", "2026-10-02T12:00:00.000Z");
+    expect(parseStoredKhateebNote(raw)).toEqual({
+      text: "اپنی مثال یہاں شامل کرنی ہے",
+      updatedAt: "2026-10-02T12:00:00.000Z",
+    });
+    expect(parseStoredKhateebNote(null)).toEqual({ text: "", updatedAt: "" });
+  });
+
+  test("studio attaches a personal notes editor to every multi-majlis session", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    const notes = readFileSync("app/tools/khateeb-studio/SessionNotesEditor.tsx", "utf8");
+    expect(studio).toContain("<SessionNotesEditor");
+    expect(studio).toContain("sessionNumber={session.number}");
+    expect(notes).toContain("میرے ذاتی نوٹس");
+    expect(notes).toContain("خودکار طور پر محفوظ");
+    expect(notes).toContain("اسی براؤزر اور اسی آلے");
   });
 });
 

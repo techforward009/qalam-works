@@ -48,6 +48,7 @@ import {
 } from "./engine/seriesPlanner";
 import { buildFreshMajlisSeries } from "./engine/freshPulpitSeries";
 import { checkSeriesOriginality } from "./engine/originalityGuard";
+import SessionNotesEditor from "./SessionNotesEditor";
 import {
   buildSessionWorkbench,
   buildSessionWorkbenchText,
@@ -957,6 +958,15 @@ export default function KhateebStudioContent({
                             })()}
                           </details>
                         ) : null}
+                        <SessionNotesEditor
+                          key={`${topic.id}:${seriesLength}:${seriesLayer}:${session.number}`}
+                          topicId={topic.id}
+                          seriesLength={seriesLength}
+                          layer={seriesLayer}
+                          sessionNumber={session.number}
+                          sessionTitle={ur ? session.titleUr : session.titleEn}
+                          ur={ur}
+                        />
                       </article>
                     ))}
                   </section>
