@@ -36,6 +36,6 @@ describe("Rawi Arabic canonicalization contract", () => {
   it("enforces shadda-before-vowel publishing order", () => {
     expect(RAWI_SOURCE).toContain("function orderShaddaFirst");
     expect(RAWI_SOURCE).toContain("return orderShaddaFirst(out);");
-    expect(RAWI_SOURCE).toContain("return orderShaddaFirst(");
+    expect(RAWI_SOURCE).toContain("orderShaddaFirst(reviewed)");
   });
 });

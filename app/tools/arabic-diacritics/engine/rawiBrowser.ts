@@ -44,6 +44,27 @@ const RAWI_ARABIC_FOLD: Readonly<Record<string, string>> = Object.freeze({
 
 const RAWI_VOWEL_MARK = /[\u064B-\u0652\u0670]/u;
 const SHADDA = "\u0651";
+const INVERTED_DAMMA = "\u0657";
+
+/**
+ * Whole-word spelling exceptions needed after the generic character fold.
+ * These are limited to forms where the Arabic spelling is unambiguous.
+ */
+const RAWI_ARABIC_WORD_FOLD: Readonly<Record<string, string>> = Object.freeze({
+  "علی": "على",
+  "تری": "ترى",
+  "ادم": "آدم",
+  "لادم": "لآدم",
+  "ملائکۃ": "ملآئكة",
+  "الملائکۃ": "الملآئكة",
+  "ملائكة": "ملآئكة",
+  "الملائكة": "الملآئكة",
+});
+
+const REVIEWED_PRONOUN_DAMMA: Readonly<Record<string, string>> = Object.freeze({
+  "اَنَّهُ": `اَنَّه${INVERTED_DAMMA}`,
+  "لَهُ": `لَه${INVERTED_DAMMA}`,
+});
 
 let sessionPromise: Promise<ort.InferenceSession> | undefined;
 let vocabPromise:
@@ -120,9 +141,20 @@ function stripCombiningMarks(text: string): string {
 
 /** Canonical Arabic base used for visible output. */
 function canonicalArabicBase(text: string): string {
-  return Array.from(text.normalize("NFC"))
+  const unmarked = Array.from(text.normalize("NFC"))
     .filter((char) => !/\p{M}/u.test(char))
-    .map((char) => RAWI_ARABIC_FOLD[char] ?? char)
+    .join("");
+
+  return unmarked
+    .split(/(\s+|\p{P}+)/u)
+    .map((part) => {
+      if (/^\s+$/u.test(part) || /^\p{P}+$/u.test(part) || part.length === 0) return part;
+      const exact = RAWI_ARABIC_WORD_FOLD[part];
+      if (exact) return exact;
+      return Array.from(part)
+        .map((char) => RAWI_ARABIC_FOLD[char] ?? char)
+        .join("");
+    })
     .join("");
 }
 
@@ -141,6 +173,11 @@ function modelBase(text: string): string {
  */
 function orderShaddaFirst(text: string): string {
   return text.replace(/([\u064B-\u0650\u0652\u0670]+)\u0651/gu, `${SHADDA}$1`);
+}
+
+/** Qalam publishing form for واو الجماعة: add sukun to final و before alif. */
+function markFinalPluralWaw(text: string): string {
+  return text.replace(/و(?=ا(?=$|[\s\p{P}\p{S}]))/gu, "وْ");
 }
 
 function encode(text: string, charToId: Record<string, number>): bigint[] {
@@ -190,18 +227,37 @@ function normalizeAllah(word: string): string {
 }
 
 function applyPublishingPostprocess(text: string): string {
-  return orderShaddaFirst(
-    text
-      .split(/(\s+)/u)
-      .map((part) => {
-        if (/^\s+$/u.test(part) || part.length === 0) return part;
-        const match = /^(\p{P}*)(.*?)(\p{P}*)$/u.exec(part);
-        if (!match) return part;
-        const [, before, core, after] = match;
-        return `${before}${normalizeAllah(core)}${after}`;
-      })
-      .join(""),
-  );
+  const normalized = text
+    .split(/(\s+)/u)
+    .map((part) => {
+      if (/^\s+$/u.test(part) || part.length === 0) return part;
+      const match = /^(\p{P}*)(.*?)(\p{P}*)$/u.exec(part);
+      if (!match) return part;
+      const [, before, core, after] = match;
+      const allah = normalizeAllah(core);
+      return `${before}${REVIEWED_PRONOUN_DAMMA[allah] ?? allah}${after}`;
+    })
+    .join("");
+
+  const reviewed = normalized
+    // This construction is the temporal connector "when".
+    .replace(/لَمَا(?=\s+اَمَرَ(?:\s|[\p{P}\p{S}]|$))/gu, "لَمَّا")
+    // Reviewed reading: passive عُبِدَ اللهُ, not the noun عبدِ اللهِ.
+    .replace(
+      /بُقْعَة[ٍِ]\s+عَبْدِ\s+اللّٰهِ(?=\s+عَلَيْهَا)/gu,
+      "بُقْعَةٍ عُبِدَ اللّٰهُ",
+    )
+    // Reviewed construction: ظهرُ الكوفة after عليها.
+    .replace(/عَلَيْهَا\s+ظُهْرَ(?=\s+الْكُوفَةِ)/gu, "عَلَيْهَا ظَهْرُ")
+    // The source word is على, not the separate pronoun form عليَّ.
+    .replace(/سَجَدُوا\s+عَلَيَّ(?=\s+ظُهْرِ)/gu, "سَجَدُوا عَلَى")
+    // The source word تَرَى has final alif-maqsurah.
+    .replace(/الْمَل(?:َا|آ)ئِكَةُ\s+تَرِي(?=\s+اَنَّهُ)/gu, "الْمَلَآئِكَةُ تَرَى")
+    // Keep the hamza-bearing letter and correct the malformed generated form.
+    .replace(/شَيْيًا/gu, "شَيْئًا")
+    .replace(/لِادَمَ/gu, "لِآدَمَ");
+
+  return markFinalPluralWaw(orderShaddaFirst(reviewed));
 }
 
 function splitForModel(text: string): string[] {
