@@ -402,10 +402,610 @@ const IMAMATE_ASHRA: MajlisSeriesPlan = {
     "Close by presenting Imamate as a living standard for understanding religion, forming character, and remaining faithful to truth.",
 };
 
+
+const QURAN_HIDAYAT_KHAMSA: MajlisSeriesPlan = {
+  length: 5,
+  titleUr: "خمسۂ مجالس — قرآن اور ہدایت: کتاب سے زندگی تک",
+  titleEn: "Five-session series — Qur'an and guidance: from revelation to life",
+  aimUr:
+    "یہ خمسہ علامہ طالب جوہریؒ کی اصل اردو کتاب «منصبِ ہدایت اور قرآن» کے مرکزی بہاؤ کو پانچ مربوط مجالس میں سمیٹتا ہے۔ پہلی مجلس قرآن کو زندہ ہدایت کے طور پر قائم کرتی ہے؛ دوسری ایمان و علم کو کردار سے جوڑتی ہے؛ تیسری دنیا، آخرت اور انسانی قدر کے پیمانے درست کرتی ہے؛ چوتھی اطاعتِ رسولؐ اور منصبِ ہدایت تک پہنچتی ہے؛ اور پانچویں کربلا میں ہدایت سے وفاداری کے عملی امتحان پر سلسلہ مکمل کرتی ہے۔",
+  aimEn:
+    "This five-session series condenses the central movement of Talib Johari's Mansab-e-Hidayat aur Qur'an: living Qur'anic guidance, faith and character, Qur'anic measures of value and the hereafter, obedience and authoritative guidance, and finally Karbala as the practical test of fidelity.",
+  sessions: [
+    {
+      number: 1,
+      titleUr: "قرآن: تلاوت سے آگے، زندہ ہدایت",
+      titleEn: "The Qur'an: beyond recitation to living guidance",
+      purposeUr:
+        "پہلی مجلس میں سورۂ اسراء 17:9 کو مرکزی آیت بنائیں اور یہ واضح کریں کہ قرآن کی عظمت صرف اس کے پڑھے جانے میں نہیں بلکہ انسان کے فیصلوں، ترجیحات اور طرزِ زندگی کو سیدھی راہ دینے میں ہے۔",
+      purposeEn:
+        "Use Qur'an 17:9 to establish the Qur'an as living guidance that shapes decisions, priorities, and conduct.",
+      materialUr: [
+        "«اِنَّ هٰذَا الْقُرْاٰنَ يَهْدِيْ لِلَّتِيْ هِيَ اَقْوَمُ» کو مجلس کا بنیادی جملہ بنائیں۔",
+        "سامع سے پوچھیں: قرآن ہمارے گھر میں موجود ہے، لیکن کیا اختلاف، غصے، تجارت، خاندان اور ذاتی فیصلوں میں بھی وہی ہمارا میزان ہے؟",
+        "علامہ طالب جوہریؒ کے انداز میں موجودہ زندگی کے سوال سے آغاز کرکے جواب قرآن کی طرف واپس لائیں۔",
+      ],
+      materialEn: [
+        "Make Qur'an 17:9 the central verse.",
+        "Ask whether the Qur'an actually governs disagreement, anger, business, family, and personal decisions.",
+        "Use Johari's method of beginning from a lived question and returning to the Qur'an.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — «منصبِ ہدایت اور قرآن»، مجلس اول و سوم",
+      sourceEn: "Allama Talib Johari — Mansab-e-Hidayat aur Qur'an, Majalis 1 and 3",
+      quranUr: ["الإسراء 17:9 — اِنَّ هٰذَا الْقُرْاٰنَ يَهْدِيْ لِلَّتِيْ هِيَ اَقْوَمُ"],
+      quranEn: ["Qur'an 17:9"],
+      avoidRepeatUr:
+        "اس مجلس میں ابھی اطاعتِ رسولؐ، امامت یا کربلا کی پوری بحث نہ کھولیں؛ صرف یہ بنیاد مضبوط کریں کہ قرآن زندہ اور عملی ہدایت ہے۔",
+      avoidRepeatEn:
+        "Do not yet open the full discussions of Prophetic obedience, Imamate, or Karbala.",
+      takeawayUr:
+        "قرآن سے حقیقی تعلق اس وقت ظاہر ہوتا ہے جب وہ ہمارے فیصلوں کا معیار بنے۔",
+      takeawayEn:
+        "A real relationship with the Qur'an appears when it governs decisions.",
+      nextBridgeUr:
+        "اگلی مجلس میں دیکھیں گے کہ قرآن کی ہدایت علم اور ایمان کو انسان کے کردار میں کیسے ظاہر کرنا چاہتی ہے۔",
+      nextBridgeEn:
+        "Next, examine how Qur'anic guidance becomes visible in knowledge, faith, and character.",
+    },
+    {
+      number: 2,
+      titleUr: "ایمان اور علم: معلومات سے کردار تک",
+      titleEn: "Faith and knowledge: from information to character",
+      purposeUr:
+        "دوسری مجلس میں علامہ طالب جوہریؒ کی مجالس دوم اور چہارم کے مطابق ایمان کو محض زبانی نسبت اور علم کو محض معلومات سے الگ کریں؛ دونوں کی صداقت کردار اور عمل میں ظاہر ہونی چاہیے۔",
+      purposeEn:
+        "Use Majalis 2 and 4 to distinguish faith from verbal identity and knowledge from information, tying both to conduct.",
+      materialUr: [
+        "علم کی قدر اس وقت ہے جب وہ انسان کو بہتر انسان بنائے اور اس کی سمت درست کرے۔",
+        "ایمان کی حقیقت زبان کے دعوے سے نہیں بلکہ عمل، تعلقات اور ترجیحات سے پہچانی جاتی ہے۔",
+        "سامع سے خود احتسابی کا سوال کریں: اگر میری مذہبی شناخت زبان سے نہ بتائی جائے تو کیا میرا کردار خود اس کی گواہی دے گا؟",
+      ],
+      materialEn: [
+        "Knowledge is valuable when it forms the person.",
+        "Faith becomes credible through conduct, relationships, and priorities.",
+        "Ask whether character would testify to faith without verbal identification.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — «منصبِ ہدایت اور قرآن»، مجالس دوم و چہارم",
+      sourceEn: "Allama Talib Johari — Mansab-e-Hidayat aur Qur'an, Majalis 2 and 4",
+      quranUr: ["مومنین کی صفات سے متعلق ان آیات کو اصل سیاق کے ساتھ منتخب کریں جن پر کتاب میں گفتگو کی گئی ہے۔"],
+      quranEn: ["Use the Qur'anic descriptions of believers in their original context."],
+      previousBridgeUr:
+        "گزشتہ مجلس میں قرآن کو زندہ ہدایت کے طور پر قائم کیا تھا؛ آج دیکھیں کہ یہ ہدایت انسان کے اندر کیا تبدیلی پیدا کرتی ہے۔",
+      previousBridgeEn:
+        "The first session established living guidance; now examine its effect within the believer.",
+      avoidRepeatUr:
+        "اس مجلس کو عمومی اخلاقی نصیحت نہ بنائیں؛ علم، ایمان اور کردار کے باہمی تعلق کو مرکزی نکتہ رکھیں۔",
+      avoidRepeatEn:
+        "Do not turn the session into generic moral advice; keep faith, knowledge, and character connected.",
+      takeawayUr:
+        "ہدایت یافتہ علم وہ ہے جو انسان کے کردار میں اپنا نشان چھوڑے۔",
+      takeawayEn:
+        "Guided knowledge leaves a mark on character.",
+      nextBridgeUr:
+        "اگلی مجلس میں قرآن کے پیمانے سے دیکھیں گے کہ حقیقی فائدہ، نقصان اور انسانی فضیلت کیا ہے۔",
+      nextBridgeEn:
+        "Next, examine Qur'anic measures of gain, loss, and human worth.",
+    },
+    {
+      number: 3,
+      titleUr: "قرآن کا میزان: نفع، نقصان اور انسانی فضیلت",
+      titleEn: "The Qur'anic scale: gain, loss, and human worth",
+      purposeUr:
+        "تیسری مجلس میں مجالس پنجم، ششم اور ہفتم کے مواد کو یکجا کرکے یہ دکھائیں کہ قرآن دنیاوی فائدے، انسانی برتری اور زندگی کے انجام کے پیمانے بدل دیتا ہے۔",
+      purposeEn:
+        "Use Majalis 5, 6, and 7 to show how the Qur'an redefines benefit, excellence, mortality, and accountability.",
+      materialUr: [
+        "ہر فوری فائدہ حقیقی فائدہ نہیں؛ جس منفعت کا اخلاقی یا آخرتی نقصان زیادہ ہو، قرآن اسے کامیابی نہیں کہتا۔",
+        "دولت، نسب، علم یا سماجی مرتبہ خود بخود فضیلت نہیں؛ حقیقی فضیلت خدا کے میزان سے طے ہوتی ہے۔",
+        "موت کو مایوسی کا عنوان نہیں بلکہ ترجیحات کی اصلاح اور جواب دہی کی بیداری بنائیں۔",
+        "سامع کو اپنے کامیابی اور نقصان کے پیمانے پر نظرثانی کی دعوت دیں۔",
+      ],
+      materialEn: [
+        "Immediate benefit is not always true benefit.",
+        "Wealth, lineage, knowledge, or status do not automatically equal excellence.",
+        "Use death to awaken accountability rather than despair.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — «منصبِ ہدایت اور قرآن»، مجالس پنجم تا ہفتم",
+      sourceEn: "Allama Talib Johari — Mansab-e-Hidayat aur Qur'an, Majalis 5–7",
+      quranUr: ["دنیا، آخرت، اعمال کے انجام اور انسانی فضیلت سے متعلق کتاب میں زیرِ بحث آیات کو سیاق کے ساتھ لائیں۔"],
+      quranEn: ["Use the book's Qur'anic passages on this world, the hereafter, consequences, and human worth."],
+      previousBridgeUr:
+        "گزشتہ مجلس میں ایمان و علم کو کردار سے جوڑا تھا؛ آج قرآن کے اسی کردار ساز معیار کو فائدے، فضیلت اور انجام پر نافذ کریں۔",
+      previousBridgeEn:
+        "Now apply the Qur'anic moral criterion to benefit, human worth, and destiny.",
+      avoidRepeatUr:
+        "دنیا کی مذمت کو مقصد نہ بنائیں؛ اصل مقصد دنیا کے فائدے اور حقیقی کامیابی کے درمیان صحیح نسبت قائم کرنا ہے۔",
+      avoidRepeatEn:
+        "Do not make condemnation of worldly life the point; correct the measure of success.",
+      takeawayUr:
+        "قرآن صرف راستہ نہیں دکھاتا؛ وہ کامیابی، نقصان اور انسانی قدر کی تعریف بھی درست کرتا ہے۔",
+      takeawayEn:
+        "The Qur'an not only shows the road; it corrects the meaning of success, loss, and human worth.",
+      nextBridgeUr:
+        "اگلی مجلس میں سوال ہوگا کہ قرآن خود رسولؐ کی اطاعت اور معتبر دینی رہنمائی کو کس طرح اپنے نظامِ ہدایت میں شامل کرتا ہے۔",
+      nextBridgeEn:
+        "Next, move into obedience to the Messenger and authoritative guidance.",
+    },
+    {
+      number: 4,
+      titleUr: "قرآن، اطاعتِ رسولؐ اور منصبِ ہدایت",
+      titleEn: "Qur'an, obedience to the Messenger, and authoritative guidance",
+      purposeUr:
+        "چوتھی مجلس میں مجلس ہشتم و نہم کی بنیاد پر قرآن اور رسولؐ کو ایک ہی نظامِ ہدایت کے مربوط اجزا کے طور پر پیش کریں، پھر یہ سوال کھولیں کہ معتبر دینی رہنمائی کی ضرورت قرآن کے موجود ہونے سے کیوں ختم نہیں ہوتی۔",
+      purposeEn:
+        "Use Majalis 8 and 9 to connect Qur'anic guidance, Prophetic obedience, and the continuing need for authoritative religious guidance.",
+      materialUr: [
+        "قرآن خود رسولؐ کی اطاعت کا حکم دیتا ہے، اس لیے قرآن اور صاحبِ قرآن کو ایک دوسرے کے مقابل رکھنا درست نہیں۔",
+        "احترام اور اطاعت میں فرق واضح کریں: اطاعت اپنے فیصلے کو معتبر دینی رہنمائی کے تابع کرنا ہے۔",
+        "منصبِ ہدایت کو قرآن سے باہر کوئی متوازی اختیار نہ بنائیں؛ اسے قرآن کے اپنے نظامِ ہدایت کے اندر سمجھائیں۔",
+      ],
+      materialEn: [
+        "The Qur'an itself commands obedience to the Messenger.",
+        "Distinguish respect from obedience.",
+        "Present authoritative guidance from within, not against, the Qur'anic order.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — «منصبِ ہدایت اور قرآن»، مجالس ہشتم و نہم",
+      sourceEn: "Allama Talib Johari — Mansab-e-Hidayat aur Qur'an, Majalis 8 and 9",
+      quranUr: [
+        "النساء 4:59 — اَطِيْعُوا اللّٰهَ وَاَطِيْعُوا الرَّسُوْلَ",
+        "اطاعتِ رسولؐ سے متعلق دیگر آیات کو اصل کتاب کے سیاق کے مطابق شامل کریں۔",
+      ],
+      quranEn: ["Qur'an 4:59 and the relevant Prophetic-obedience passages used in the book."],
+      previousBridgeUr:
+        "گزشتہ مجلس میں قرآن نے ہمارے پیمانے درست کیے؛ اب دیکھیں کہ یہی قرآن معتبر اطاعت اور رہنمائی کے بارے میں کیا کہتا ہے۔",
+      previousBridgeEn:
+        "Having corrected our measures, now examine what the Qur'an says about authority and obedience.",
+      avoidRepeatUr:
+        "امامت کے تمام تاریخی دلائل نہ کھولیں؛ آج صرف قرآن، رسولؐ اور منصبِ ہدایت کے اصولی ربط کو واضح کریں۔",
+      avoidRepeatEn:
+        "Do not open the entire historical case for Imamate; establish the principle of authoritative guidance.",
+      takeawayUr:
+        "قرآن کی پیروی میں رسولؐ کی اطاعت اور معتبر دینی رہنمائی سے وابستگی شامل ہے۔",
+      takeawayEn:
+        "Following the Qur'an includes obedience to the Messenger and authoritative religious guidance.",
+      nextBridgeUr:
+        "آخری مجلس میں دیکھیں گے کہ ہدایت پہچان لینے کے بعد کربلا انسان سے کس درجے کی وفاداری کا مطالبہ کرتی ہے۔",
+      nextBridgeEn:
+        "The final session turns recognized guidance into the test of fidelity at Karbala.",
+    },
+    {
+      number: 5,
+      titleUr: "کربلا: ہدایت سے وفاداری کا امتحان",
+      titleEn: "Karbala: the test of fidelity to guidance",
+      purposeUr:
+        "آخری مجلس میں شامِ غریباں کے منبری بہاؤ کو بنیاد بنائیں۔ پورے خمسے کی علمی بحث کو کربلا میں اس سوال تک لے جائیں کہ حق اور ہدایت پہچان لینے کے بعد انسان خوف، مفاد اور نقصان کے باوجود اس کے ساتھ کہاں تک کھڑا رہتا ہے۔",
+      purposeEn:
+        "Use the Sham-e-Ghariban conclusion to turn the series into the practical test of fidelity at Karbala.",
+      materialUr: [
+        "مصائب کو پچھلی علمی گفتگو سے الگ جذباتی ضمیمہ نہ بنائیں؛ کربلا اسی ہدایت اور اطاعت کے اصول کی انسانی قیمت ہے۔",
+        "پہلی مجلس کی طرف لوٹیں: قرآن ہدایت دیتا ہے؛ دوسری میں ایمان کردار بنتا ہے؛ تیسری میں فائدے کا میزان بدلتا ہے؛ چوتھی میں اطاعت سامنے آتی ہے؛ اب کربلا ان سب کا عملی امتحان ہے۔",
+        "اختتام سامع کی زندگی پر کریں: حق کی قیمت سامنے آئے تو میرا فیصلہ کس میزان سے ہوگا؟",
+      ],
+      materialEn: [
+        "Do not make masaib an unrelated emotional appendix.",
+        "Recap the full five-session movement and make Karbala its practical test.",
+        "End by asking what criterion governs the listener when truth becomes costly.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — «منصبِ ہدایت اور قرآن»، مجلس شامِ غریباں",
+      sourceEn: "Allama Talib Johari — Mansab-e-Hidayat aur Qur'an, Sham-e-Ghariban",
+      quranUr: ["پورے خمسے کی مرکزی آیات کا مختصر اعادہ کریں؛ نئی قرآنی بحث نہ چھیڑیں۔"],
+      quranEn: ["Recap the core verses of the series rather than opening a new Qur'anic argument."],
+      previousBridgeUr:
+        "گزشتہ مجلس نے اطاعت اور منصبِ ہدایت کا اصول قائم کیا؛ آج کربلا میں اسی اصول کی وفاداری اور قیمت کو دیکھیں۔",
+      previousBridgeEn:
+        "The previous session established obedience and guidance; now examine their cost in Karbala.",
+      avoidRepeatUr:
+        "پانچویں مجلس کو صرف خلاصہ یا صرف مصائب نہ بنائیں؛ علم، اخلاق اور مصائب کو ایک ہی مرکزی نکتے میں جوڑیں۔",
+      avoidRepeatEn:
+        "Do not make the final session only summary or only tragedy; integrate argument, ethics, and masaib.",
+      takeawayUr:
+        "ہدایت کی معرفت اس وقت مکمل ہوتی ہے جب انسان قیمت کے باوجود حق کے ساتھ وفادار رہے۔",
+      takeawayEn:
+        "Recognition of guidance matures into fidelity when truth becomes costly.",
+    },
+  ],
+  finalUr:
+    "خمسے کا حاصل یہ ہو کہ قرآن کو پڑھنے سے آگے بڑھ کر اسے زندگی کا میزان بنایا جائے، ایمان کو کردار میں اتارا جائے، کامیابی کے پیمانے درست کیے جائیں، معتبر اطاعت کو سمجھا جائے، اور کربلا کی روشنی میں حق کے ساتھ وفاداری کا عملی عہد کیا جائے۔",
+  finalEn:
+    "The series should move the listener from recitation to Qur'anic criteria, from faith to character, from worldly measures to accountability, from obedience to authoritative guidance, and finally to fidelity under cost.",
+};
+
+const QURAN_HIDAYAT_ASHRA: MajlisSeriesPlan = {
+  length: 10,
+  titleUr: "عشرۂ مجالس — قرآن اور ہدایت: میزان سے وفاداری تک",
+  titleEn: "Ten-session series — Qur'an and guidance: from criterion to fidelity",
+  aimUr:
+    "یہ عشرہ علامہ طالب جوہریؒ کی اصل کتاب «منصبِ ہدایت اور قرآن» کی نو مجالس اور مجلسِ شامِ غریباں کے حقیقی تسلسل کو محفوظ رکھتے ہوئے تیار کیا گیا ہے۔ ہر مجلس کتاب کے اپنے علمی مرحلے سے نکلتی ہے؛ مقصد نئی نسبتیں گھڑنا نہیں بلکہ اصل سلسلۂ مجالس کو خطیب کے لیے واضح، مربوط اور قابلِ بیان صورت میں پیش کرنا ہے۔",
+  aimEn:
+    "This ten-session series follows the actual sequence of the nine numbered majalis and Sham-e-Ghariban in Talib Johari's Mansab-e-Hidayat aur Qur'an, preserving the book's progression rather than inventing a new one.",
+  sessions: [
+    {
+      number: 1,
+      titleUr: "قرآن بحیثیت زندہ ہدایت",
+      titleEn: "The Qur'an as living guidance",
+      purposeUr:
+        "سورۂ اسراء 17:9 سے یہ بنیاد قائم کریں کہ قرآن انسان کو ایسی راہ دکھاتا ہے جو زیادہ سیدھی اور زیادہ قائم ہے؛ تلاوت کا حقیقی مقصد زندگی کی سمت درست ہونا ہے۔",
+      purposeEn:
+        "Establish Qur'an 17:9 as the foundation for living guidance.",
+      materialUr: [
+        "قرآن کو صرف مقدس متن نہیں بلکہ زندگی کے لیے ہدایت کے طور پر پیش کریں۔",
+        "موجودہ حالات اور روزمرہ فیصلوں سے سوال اٹھا کر قرآن کی طرف واپس آئیں۔",
+        "اطاعت اور حق و باطل کی پہچان کو ہدایت کے عملی تقاضوں کے طور پر متعارف کرائیں، مگر تفصیل بعد کی مجالس کے لیے محفوظ رکھیں۔",
+      ],
+      materialEn: [
+        "Present the Qur'an as guidance for life.",
+        "Raise lived questions and return them to the Qur'anic criterion.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — مجلس اول، «منصبِ ہدایت اور قرآن»",
+      sourceEn: "Allama Talib Johari — Majlis 1",
+      quranUr: ["الإسراء 17:9 — اِنَّ هٰذَا الْقُرْاٰنَ يَهْدِيْ لِلَّتِيْ هِيَ اَقْوَمُ"],
+      quranEn: ["Qur'an 17:9"],
+      avoidRepeatUr:
+        "پہلی مجلس میں پورے عشرے کے نتائج نہ کھولیں؛ صرف قرآن کو زندہ ہدایت کے طور پر مضبوط بنیاد دیں۔",
+      avoidRepeatEn:
+        "Do not reveal the entire series in the opening session.",
+      takeawayUr:
+        "قرآن کی ہدایت کا ثبوت یہ ہے کہ وہ زندگی کی سمت بدل دے۔",
+      takeawayEn:
+        "Qur'anic guidance is proven when it changes the direction of life.",
+      nextBridgeUr:
+        "اگلی مجلس میں دیکھیں گے کہ یہی ہدایت ایمان اور علم کے اندر کیسے کام کرتی ہے۔",
+      nextBridgeEn:
+        "Next, examine how guidance acts through faith and knowledge.",
+    },
+    {
+      number: 2,
+      titleUr: "ایمان، علم اور ہدایت",
+      titleEn: "Faith, knowledge, and guidance",
+      purposeUr:
+        "مجلس دوم کے مطابق ایمان کو زبانی دعوے اور علم کو معلومات کے ذخیرے سے آگے لے جائیں؛ حقیقی ہدایت انسان کے شعور اور عمل کو بدلتی ہے۔",
+      purposeEn:
+        "Use Majlis 2 to move faith beyond verbal claim and knowledge beyond information.",
+      materialUr: [
+        "علم کا حاصل انسان سازی ہے؛ ایسا علم جو سمت نہ بدلے، ابھی ہدایت نہیں بنا۔",
+        "ایمان کی خوشخبری اس وقت معنی رکھتی ہے جب وہ عمل میں اپنا اثر دکھائے۔",
+        "سامع سے دینی معلومات اور دینی تبدیلی کے فرق پر غور کرائیں۔",
+      ],
+      materialEn: [
+        "Knowledge should form the person.",
+        "Faith becomes meaningful through its practical effect.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — مجلس دوم، «منصبِ ہدایت اور قرآن»",
+      sourceEn: "Allama Talib Johari — Majlis 2",
+      quranUr: ["مجلس دوم میں زیرِ بحث ایمان و ہدایت سے متعلق آیات کو اصل ترتیب کے مطابق لائیں۔"],
+      quranEn: ["Use the faith-and-guidance passages discussed in Majlis 2."],
+      previousBridgeUr:
+        "پہلی مجلس میں قرآن کو ہدایت کا سرچشمہ کہا تھا؛ آج دیکھیں کہ ہدایت انسان کے اندر کس صورت میں ظاہر ہوتی ہے۔",
+      previousBridgeEn:
+        "After establishing the Qur'an as guidance, examine its effect within the person.",
+      avoidRepeatUr:
+        "ایمان کی تمام کلامی تعریفیں نہ کھولیں؛ آج کا زور علم، ایمان اور عملی اثر کے تعلق پر رہے۔",
+      avoidRepeatEn:
+        "Keep the focus on faith, knowledge, and practical effect.",
+      takeawayUr:
+        "ہدایت یافتہ علم کردار میں تبدیلی پیدا کرتا ہے۔",
+      takeawayEn:
+        "Guided knowledge produces change in character.",
+      nextBridgeUr:
+        "اگلی مجلس میں قرآن کو مختلف دعووں اور اختلافات کے درمیان میزان کے طور پر دیکھیں گے۔",
+      nextBridgeEn:
+        "Next, present the Qur'an as the criterion amid competing claims.",
+    },
+    {
+      number: 3,
+      titleUr: "قرآن: اختلافات میں فیصلہ کن میزان",
+      titleEn: "The Qur'an as the decisive criterion",
+      purposeUr:
+        "مجلس سوم کے مطابق قرآن کو سابقہ وحی کے تسلسل میں رکھتے ہوئے یہ سوال کھولیں کہ امت اپنے مذہبی دعووں، تصورات اور اختلافات کو کس میزان پر پرکھے۔",
+      purposeEn:
+        "Use Majlis 3 to present the Qur'an as the enduring criterion amid disagreement.",
+      materialUr: [
+        "قرآن کو تاریخ کی کتاب نہیں بلکہ حاضر دینی میزان کے طور پر پیش کریں۔",
+        "شخصیت، جماعت اور جذبات کو قرآن پر مقدم کرنے کے خطرے کی طرف توجہ دلائیں۔",
+        "یہ واضح کریں کہ قرآن کا فہم رسولؐ کی رہنمائی اور معتبر دینی روایت سے الگ نہیں کیا جاتا۔",
+      ],
+      materialEn: [
+        "Present the Qur'an as a present criterion rather than a historical book.",
+        "Do not let personality or group loyalty replace the Qur'anic measure.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — مجلس سوم، «منصبِ ہدایت اور قرآن»",
+      sourceEn: "Allama Talib Johari — Majlis 3",
+      quranUr: ["مجلس سوم میں قرآن کی حجیت اور ہدایت سے متعلق زیرِ بحث آیات کو سیاق کے ساتھ لائیں۔"],
+      quranEn: ["Use the Qur'anic authority passages discussed in Majlis 3."],
+      previousBridgeUr:
+        "گزشتہ مجلس میں ہدایت کے اندرونی اثر پر بات ہوئی؛ آج اسی ہدایت کو امت کے اختلافات کا میزان بنائیں۔",
+      previousBridgeEn:
+        "Now move from inward formation to the Qur'an as a communal criterion.",
+      avoidRepeatUr:
+        "اس مجلس کو فرقہ وارانہ مناظرے میں نہ بدلیں؛ اصل موضوع میزان اور اصولِ جانچ ہے۔",
+      avoidRepeatEn:
+        "Do not turn the session into sectarian polemic; keep it about criteria.",
+      takeawayUr:
+        "دینی دعوے کی قدر شخصیت سے نہیں، قرآن کے میزان سے طے ہونی چاہیے۔",
+      takeawayEn:
+        "Religious claims should be judged by the Qur'anic criterion, not personality.",
+      nextBridgeUr:
+        "اگلی مجلس میں اسی میزان کو خود اپنے ایمان اور عمل پر نافذ کریں گے۔",
+      nextBridgeEn:
+        "Next, turn the criterion inward toward faith and action.",
+    },
+    {
+      number: 4,
+      titleUr: "ایمان کی پہچان: دعویٰ یا عمل؟",
+      titleEn: "Recognizing faith: claim or action?",
+      purposeUr:
+        "مجلس چہارم میں اہلِ ایمان کی قرآنی صفات کے ذریعے یہ واضح کریں کہ ایمان کی حقیقت نام، نسبت یا دعوے سے نہیں بلکہ عملی آثار سے پہچانی جاتی ہے۔",
+      purposeEn:
+        "Use Majlis 4 to identify faith through practical Qur'anic effects rather than labels.",
+      materialUr: [
+        "ایمان کو ذہنی تصدیق اور زبانی اقرار تک محدود نہ کریں۔",
+        "قرآنی صفاتِ مومنین کو دوسروں کی جانچ کے بجائے خود احتسابی کا ذریعہ بنائیں۔",
+        "سامع سے پوچھیں: اگر میرا دعویٰ خاموش ہو جائے تو کیا میرا عمل میرے ایمان کی گواہی دے گا؟",
+      ],
+      materialEn: [
+        "Do not reduce faith to profession.",
+        "Use Qur'anic qualities of believers for self-examination.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — مجلس چہارم، «منصبِ ہدایت اور قرآن»",
+      sourceEn: "Allama Talib Johari — Majlis 4",
+      quranUr: ["اہلِ ایمان کی صفات سے متعلق اصل مجلس میں زیرِ بحث آیات۔"],
+      quranEn: ["The Qur'anic descriptions of believers used in Majlis 4."],
+      previousBridgeUr:
+        "گزشتہ مجلس میں قرآن کو دعووں کا میزان بنایا تھا؛ آج اسی میزان پر اپنے ایمان کو پرکھیں۔",
+      previousBridgeEn:
+        "Having established the criterion, now apply it to one's own faith.",
+      avoidRepeatUr:
+        "مجلس کو دوسروں کے ایمان کا فیصلہ بنانے کے بجائے اپنی اصلاح کا آئینہ رکھیں۔",
+      avoidRepeatEn:
+        "Use the session for self-examination rather than judging others.",
+      takeawayUr:
+        "ایمان کا سب سے مضبوط تعارف اس کے عملی آثار ہیں۔",
+      takeawayEn:
+        "The strongest evidence of faith is its practical effect.",
+      nextBridgeUr:
+        "اگلی مجلس میں قرآن کے میزان سے فائدہ اور نقصان کی تعریف درست کریں گے۔",
+      nextBridgeEn:
+        "Next, correct the meaning of gain and loss.",
+    },
+    {
+      number: 5,
+      titleUr: "نفع و نقصان: کامیابی کا قرآنی پیمانہ",
+      titleEn: "Gain and loss: the Qur'anic measure of success",
+      purposeUr:
+        "مجلس پنجم میں انسان کی فطری خواہشِ منفعت کو بنیاد بنا کر یہ دکھائیں کہ ہر فوری فائدہ حقیقی فائدہ نہیں اور آخرت دنیاوی فیصلوں کے پیمانے کو بدل دیتی ہے۔",
+      purposeEn:
+        "Use Majlis 5 to redefine benefit and loss in light of the hereafter.",
+      materialUr: [
+        "دنیا کو ترک کرنے کے بجائے فائدے کی تعریف درست کریں۔",
+        "فوری منفعت اور دائمی انجام کے درمیان فرق واضح کریں۔",
+        "کاروبار، خاندان اور ذاتی انتخاب کی مثالوں سے سامع کو اپنے پیمانے پر نظرثانی کرائیں۔",
+      ],
+      materialEn: [
+        "Correct the definition of benefit rather than rejecting worldly life.",
+        "Contrast immediate gain with lasting consequence.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — مجلس پنجم، «منصبِ ہدایت اور قرآن»",
+      sourceEn: "Allama Talib Johari — Majlis 5",
+      quranUr: ["دنیا و آخرت اور حقیقی نفع و نقصان سے متعلق مجلس پنجم کی آیات۔"],
+      quranEn: ["Majlis 5 passages on worldly and ultimate gain and loss."],
+      previousBridgeUr:
+        "گزشتہ مجلس میں عمل کو ایمان کا معیار بنایا؛ آج عمل کے پیچھے موجود فائدے اور کامیابی کے تصور کو درست کریں۔",
+      previousBridgeEn:
+        "Now examine the idea of success that drives action.",
+      avoidRepeatUr:
+        "قناعت یا ترکِ دنیا کی الگ بحث نہ چھیڑیں؛ اصل نکتہ کامیابی کے پیمانے کی اصلاح ہے۔",
+      avoidRepeatEn:
+        "Keep the focus on the measure of success rather than opening a separate discourse on asceticism.",
+      takeawayUr:
+        "ہر فائدہ کامیابی نہیں؛ حقیقی فائدہ وہ ہے جو انسان کے دائمی انجام کو تباہ نہ کرے۔",
+      takeawayEn:
+        "Not every benefit is success; true benefit must survive the test of ultimate consequence.",
+      nextBridgeUr:
+        "اگلی مجلس میں یہی قرآنی میزان انسان کی اپنی قدر اور فضیلت پر نافذ ہوگا۔",
+      nextBridgeEn:
+        "Next, apply the Qur'anic scale to human worth.",
+    },
+    {
+      number: 6,
+      titleUr: "انسانی فضیلت: نسب، دولت یا خدا کا میزان؟",
+      titleEn: "Human excellence: lineage, wealth, or God's criterion?",
+      purposeUr:
+        "مجلس ششم میں انسانوں کے درمیان فرق اور حقیقی فضیلت کو الگ کریں؛ دولت، نسب، علم یا سماجی مرتبہ خود بخود اخلاقی برتری ثابت نہیں کرتے۔",
+      purposeEn:
+        "Use Majlis 6 to distinguish social difference from genuine human excellence.",
+      materialUr: [
+        "ہر امتیاز فضیلت نہیں؛ حقیقی فضیلت خدا کے میزان سے متعین ہوتی ہے۔",
+        "طبقاتی غرور، خاندانی تفاخر اور دینی خود پسندی کو اسی قرآنی اصول کی روشنی میں دیکھیں۔",
+        "سامع سے پوچھیں: میں دوسروں کی قدر کس پیمانے سے کرتا ہوں؟",
+      ],
+      materialEn: [
+        "Not every distinction is excellence.",
+        "Apply the Qur'anic criterion to class pride, lineage pride, and religious self-satisfaction.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — مجلس ششم، «منصبِ ہدایت اور قرآن»",
+      sourceEn: "Allama Talib Johari — Majlis 6",
+      quranUr: ["انسانی فضیلت اور تقویٰ سے متعلق مجلس ششم میں زیرِ بحث قرآنی بنیاد۔"],
+      quranEn: ["The Qur'anic basis for human excellence used in Majlis 6."],
+      previousBridgeUr:
+        "گزشتہ مجلس میں کامیابی کا پیمانہ درست کیا تھا؛ آج اسی پیمانے سے انسان کی قدر کو پرکھیں۔",
+      previousBridgeEn:
+        "Having corrected success, now correct the measure of human worth.",
+      avoidRepeatUr:
+        "بحث کو نسب یا طبقے کی مذمت میں محدود نہ کریں؛ اصل نکتہ خدا کے میزان کو اختیار کرنا ہے۔",
+      avoidRepeatEn:
+        "Do not stop at criticizing class or lineage; establish God's criterion.",
+      takeawayUr:
+        "انسان کی حقیقی قدر وہ نہیں جو معاشرہ دیتا ہے بلکہ وہ ہے جو خدا کے میزان پر قائم ہو۔",
+      takeawayEn:
+        "Human worth is determined by God's measure rather than social standing.",
+      nextBridgeUr:
+        "اگلی مجلس میں موت اور آخرت اسی میزان کو آخری جواب دہی سے جوڑیں گے۔",
+      nextBridgeEn:
+        "Next, death and the hereafter connect this measure to final accountability.",
+    },
+    {
+      number: 7,
+      titleUr: "موت اور واپسی: ترجیحات کی قرآنی اصلاح",
+      titleEn: "Death and return: correcting priorities",
+      purposeUr:
+        "مجلس ہفتم میں موت کو خوف یا مایوسی نہیں بلکہ جواب دہی، انجام اور ترجیحات کی اصلاح کا ذریعہ بنائیں۔",
+      purposeEn:
+        "Use Majlis 7 to make death a source of accountability and corrected priorities rather than despair.",
+      materialUr: [
+        "زندگی کی محدودیت ہر فیصلے کو سنجیدہ بناتی ہے۔",
+        "قرآن انسان کو فنا کے احساس پر نہیں چھوڑتا بلکہ واپسی اور جواب دہی کا شعور دیتا ہے۔",
+        "سامع سے پوچھیں: اگر وقت محدود ہے تو کون سی ذمہ داری، حق یا تعلق آج ہی درست ہونا چاہیے؟",
+      ],
+      materialEn: [
+        "Mortality gives weight to decisions.",
+        "The Qur'an moves from mortality to return and accountability.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — مجلس ہفتم، «منصبِ ہدایت اور قرآن»",
+      sourceEn: "Allama Talib Johari — Majlis 7",
+      quranUr: ["موت، واپسی اور جواب دہی سے متعلق مجلس ہفتم میں زیرِ بحث آیات۔"],
+      quranEn: ["Majlis 7 passages on death, return, and accountability."],
+      previousBridgeUr:
+        "گزشتہ مجلس میں انسانی قدر کا پیمانہ دیکھا؛ آج اس قدر اور عمل کو آخری جواب دہی سے جوڑیں۔",
+      previousBridgeEn:
+        "Now connect human worth and action to final accountability.",
+      avoidRepeatUr:
+        "موت کو دہشت کی مجلس نہ بنائیں؛ اصل مقصد بیداری اور فوری اصلاح ہے۔",
+      avoidRepeatEn:
+        "Do not make death merely frightening; aim at awakening and reform.",
+      takeawayUr:
+        "موت زندگی کو بے معنی نہیں کرتی؛ وہ زندگی کے فیصلوں کو زیادہ ذمہ دار بناتی ہے۔",
+      takeawayEn:
+        "Death does not empty life of meaning; it makes decisions more accountable.",
+      nextBridgeUr:
+        "اگلی مجلس میں قرآن کی ہدایت ہمیں رسولؐ کی اطاعت کے اصول تک لے جائے گی۔",
+      nextBridgeEn:
+        "Next, Qur'anic guidance leads into obedience to the Messenger.",
+    },
+    {
+      number: 8,
+      titleUr: "اطاعتِ رسولؐ: احترام سے آگے",
+      titleEn: "Obedience to the Messenger: beyond respect",
+      purposeUr:
+        "مجلس ہشتم میں قرآن اور رسولؐ کو ایک دوسرے کے مقابل رکھنے کی غلطی دور کریں اور اطاعت کو محض محبت و احترام کے بجائے عملی دینی تابع داری کے طور پر واضح کریں۔",
+      purposeEn:
+        "Use Majlis 8 to distinguish Prophetic obedience from mere respect and to keep Qur'an and Messenger within one order of guidance.",
+      materialUr: [
+        "قرآن خود رسولؐ کی اطاعت کا حکم دیتا ہے۔",
+        "احترام قلبی نسبت ہے؛ اطاعت اپنے فیصلے اور عمل کو دینی ہدایت کے تابع کرنا ہے۔",
+        "یہی اصول اگلی مجلس میں منصبِ ہدایت کے تسلسل کا دروازہ کھولے گا۔",
+      ],
+      materialEn: [
+        "The Qur'an itself commands obedience to the Messenger.",
+        "Obedience submits judgment and action to guidance.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — مجلس ہشتم، «منصبِ ہدایت اور قرآن»",
+      sourceEn: "Allama Talib Johari — Majlis 8",
+      quranUr: ["النساء 4:59 — اَطِيْعُوا اللّٰهَ وَاَطِيْعُوا الرَّسُوْلَ"],
+      quranEn: ["Qur'an 4:59"],
+      previousBridgeUr:
+        "گزشتہ مجلس میں جواب دہی کا شعور پیدا ہوا؛ آج دیکھیں کہ صحیح عمل کے لیے قرآن کس اطاعت کی طرف رہنمائی کرتا ہے۔",
+      previousBridgeEn:
+        "Now ask what obedience the Qur'an requires for right action.",
+      avoidRepeatUr:
+        "امامت کی مکمل بحث اسی مجلس میں نہ کھولیں؛ اطاعتِ رسولؐ کے اصول کو واضح کرکے اگلی مجلس کے لیے سوال چھوڑیں۔",
+      avoidRepeatEn:
+        "Do not complete the Imamate argument here; establish Prophetic obedience first.",
+      takeawayUr:
+        "رسولؐ کی اطاعت قرآن سے الگ نہیں؛ خود قرآن کے حکم کی پیروی ہے۔",
+      takeawayEn:
+        "Obedience to the Messenger is itself obedience to the Qur'an's command.",
+      nextBridgeUr:
+        "اگلی مجلس میں سوال ہوگا کہ قرآن کے موجود رہنے کے باوجود معتبر منصبِ ہدایت کی ضرورت کیوں باقی رہتی ہے۔",
+      nextBridgeEn:
+        "Next, ask why authoritative guidance remains necessary while the Qur'an remains present.",
+    },
+    {
+      number: 9,
+      titleUr: "منصبِ ہدایت: متن اور معتبر ہادی کا تعلق",
+      titleEn: "The office of guidance: text and authoritative guide",
+      purposeUr:
+        "مجلس نہم میں کتاب کے مرکزی عنوان کو سمیٹیں: قرآن کامل ہدایت ہے، مگر انسان اس ہدایت کو سمجھنے، اپنانے اور اختلافات میں نافذ کرنے کے لیے معتبر دینی رہنمائی کا محتاج رہتا ہے۔",
+      purposeEn:
+        "Use Majlis 9 to relate complete Qur'anic guidance to the continuing need for authoritative religious guidance.",
+      materialUr: [
+        "قرآن کی حجیت اور منصبِ ہدایت کی ضرورت کو متقابل نہ بنائیں۔",
+        "اصل سوال شخصی عقیدت نہیں بلکہ خدا کے مقرر کردہ نظامِ رہنمائی کا ہے۔",
+        "یہاں سے اہلِ بیتؑ اور امامت کی بحث کے لیے علمی تمہید پیدا کی جا سکتی ہے، مگر صرف اتنا ہی بیان کریں جتنا اصل مجلس کے بہاؤ سے ثابت ہے۔",
+      ],
+      materialEn: [
+        "Do not oppose Qur'anic authority to authoritative guidance.",
+        "The issue is the divinely authorized order of guidance, not personality worship.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — مجلس نہم، «منصبِ ہدایت اور قرآن»",
+      sourceEn: "Allama Talib Johari — Majlis 9",
+      quranUr: ["گزشتہ مجالس کی ہدایت و اطاعت والی مرکزی آیات کو باہم جوڑ کر استعمال کریں۔"],
+      quranEn: ["Connect the central guidance-and-obedience verses established in the previous sessions."],
+      previousBridgeUr:
+        "گزشتہ مجلس میں اطاعتِ رسولؐ قائم ہوئی؛ آج اسی اصول کو منصبِ ہدایت کے وسیع تر سوال تک لے جائیں۔",
+      previousBridgeEn:
+        "Having established Prophetic obedience, now develop the broader question of authoritative guidance.",
+      avoidRepeatUr:
+        "اصل متن سے آگے بڑھ کر ایسی تفصیلی تاریخی یا کلامی نسبتیں نہ گھڑیں جو کتاب کی اس مجلس میں موجود نہیں۔",
+      avoidRepeatEn:
+        "Do not add historical or theological claims beyond what the source session supports.",
+      takeawayUr:
+        "قرآن اور معتبر ہادی ایک دوسرے کے حریف نہیں؛ ہدایت کے ایک ہی نظام کے مربوط اجزا ہیں۔",
+      takeawayEn:
+        "Revealed text and authoritative guide are not rivals but related parts of one order of guidance.",
+      nextBridgeUr:
+        "آخری مجلس میں یہی علمی اصول کربلا کے عملی اور عاطفی امتحان میں داخل ہوگا۔",
+      nextBridgeEn:
+        "The final session carries this principle into Karbala's practical and devotional test.",
+    },
+    {
+      number: 10,
+      titleUr: "شامِ غریباں: ہدایت سے وفاداری کی قیمت",
+      titleEn: "Sham-e-Ghariban: the cost of fidelity to guidance",
+      purposeUr:
+        "اختتامی مجلس میں پورے عشرے کو کربلا سے اس طرح جوڑیں کہ مصائب الگ ضمیمہ نہ بنیں۔ قرآن، ایمان، میزان، اطاعت اور منصبِ ہدایت کی پوری بحث اس سوال پر ختم ہو کہ حق پہچان لینے کے بعد انسان اس کے لیے کتنی قیمت دینے کو تیار ہے۔",
+      purposeEn:
+        "Use Sham-e-Ghariban to make Karbala the lived test of the series' Qur'anic principles rather than an unrelated appendix.",
+      materialUr: [
+        "علمی بحث سے مصائب تک قدرتی ربط قائم کریں۔",
+        "پہلی مجلس کے «ہدایت» والے سوال کو دسویں مجلس میں «وفاداری» کے سوال میں بدلیں۔",
+        "کربلا کو اس حقیقت کا مظہر بنائیں کہ صحیح میزان جان لینا کافی نہیں؛ فیصلہ کن وقت میں اس کے مطابق کھڑا ہونا بھی ضروری ہے۔",
+        "اختتام ذاتی عہد پر کریں: حق مہنگا ہو تو بھی میرا میزان کیا رہے گا؟",
+      ],
+      materialEn: [
+        "Create an organic transition from argument to masaib.",
+        "Transform the opening question of guidance into the closing question of fidelity.",
+        "End with a personal commitment to the Qur'anic criterion under cost.",
+      ],
+      sourceUr: "علامہ طالب جوہریؒ — مجلس شامِ غریباں، «منصبِ ہدایت اور قرآن»",
+      sourceEn: "Allama Talib Johari — Sham-e-Ghariban",
+      quranUr: ["عشرے کی مرکزی آیات کا مختصر اعادہ کریں؛ نئی علمی بحث نہ کھولیں۔"],
+      quranEn: ["Recap the series' core Qur'anic anchors without opening a new argument."],
+      previousBridgeUr:
+        "گزشتہ نو مجالس نے ہدایت کا میزان قائم کیا؛ آج کربلا میں اسی میزان کے ساتھ وفاداری کی قیمت سامنے آئے گی۔",
+      previousBridgeEn:
+        "The previous nine sessions established the criterion; today Karbala reveals the cost of fidelity.",
+      avoidRepeatUr:
+        "آخری مجلس کو نو مجالس کی فہرست نہ بنائیں؛ سب نکات کو وفاداری کے ایک مرکزی سوال میں سمیٹیں۔",
+      avoidRepeatEn:
+        "Do not merely list the previous sessions; gather them into one question of fidelity.",
+      takeawayUr:
+        "قرآنی ہدایت کا آخری امتحان یہ ہے کہ انسان حق پہچاننے کے بعد اس کے ساتھ وفادار بھی رہے۔",
+      takeawayEn:
+        "The final test of Qur'anic guidance is fidelity after truth has been recognized.",
+    },
+  ],
+  finalUr:
+    "عشرے کا اختتام اس نتیجے پر ہو کہ قرآن صرف پڑھنے کی کتاب نہیں؛ وہ انسان کا میزان ہے۔ وہ ایمان کو کردار، دنیا کو ذمہ داری، موت کو احتساب، رسولؐ سے محبت کو اطاعت، اور ہدایت کی معرفت کو کربلا جیسی وفاداری میں بدلنا چاہتا ہے۔",
+  finalEn:
+    "Close by presenting the Qur'an as a criterion that transforms faith into character, worldly life into responsibility, mortality into accountability, love of the Messenger into obedience, and recognition of guidance into fidelity.",
+};
+
 export function getCuratedMajlisSeries(
   topicId: string,
   length: MajlisSeriesLength,
 ): MajlisSeriesPlan | null {
   if (topicId === "imamate" && length === 10) return IMAMATE_ASHRA;
+  if (topicId === "quran-hidayat" && length === 5) return QURAN_HIDAYAT_KHAMSA;
+  if (topicId === "quran-hidayat" && length === 10) return QURAN_HIDAYAT_ASHRA;
   return null;
 }

@@ -455,6 +455,63 @@ describe("Khateeb Studio curated Imamate ashra", () => {
   });
 });
 
+describe("Khateeb Studio curated Qur'an and guidance series", () => {
+  test("uses a hand-curated khamsa for Qur'an and guidance", () => {
+    const plan = buildMajlisSeries(getTopicDossier("quran-hidayat")!, 5);
+    expect(plan.sessions).toHaveLength(5);
+    expect(plan.titleUr).toContain("خمسۂ مجالس");
+    expect(plan.sessions[0].titleUr).toContain("زندہ ہدایت");
+    expect(plan.sessions[3].titleUr).toContain("اطاعتِ رسول");
+    expect(plan.sessions[4].titleUr).toContain("کربلا");
+  });
+
+  test("uses the original nine majalis plus Sham-e-Ghariban as the curated ashra spine", () => {
+    const plan = buildMajlisSeries(getTopicDossier("quran-hidayat")!, 10);
+    expect(plan.sessions).toHaveLength(10);
+    expect(plan.titleUr).toContain("عشرۂ مجالس");
+    expect(plan.sessions[0].sourceUr).toContain("مجلس اول");
+    expect(plan.sessions[7].sourceUr).toContain("مجلس ہشتم");
+    expect(plan.sessions[8].sourceUr).toContain("مجلس نہم");
+    expect(plan.sessions[9].sourceUr).toContain("شامِ غریباں");
+  });
+
+  test("every curated Qur'an series session has continuity and anti-repetition guidance", () => {
+    for (const length of [5, 10] as const) {
+      const plan = buildMajlisSeries(getTopicDossier("quran-hidayat")!, length);
+      expect(new Set(plan.sessions.map((item) => item.titleUr)).size).toBe(length);
+      for (const session of plan.sessions) {
+        expect(session.purposeUr.length).toBeGreaterThan(60);
+        expect(session.sourceUr.length).toBeGreaterThan(8);
+        expect(session.takeawayUr?.length).toBeGreaterThan(20);
+        expect(session.avoidRepeatUr?.length).toBeGreaterThan(20);
+      }
+    }
+  });
+
+  test("curated Qur'an and guidance Urdu contains no English words", () => {
+    for (const length of [5, 10] as const) {
+      const plan = buildMajlisSeries(getTopicDossier("quran-hidayat")!, length);
+      const payload = [
+        plan.titleUr,
+        plan.aimUr,
+        plan.finalUr,
+        ...plan.sessions.flatMap((item) => [
+          item.titleUr,
+          item.purposeUr,
+          ...item.materialUr,
+          item.sourceUr,
+          ...(item.quranUr ?? []),
+          item.previousBridgeUr ?? "",
+          item.nextBridgeUr ?? "",
+          item.takeawayUr ?? "",
+          item.avoidRepeatUr ?? "",
+        ]),
+      ].join("\n");
+      expect(hasLatinWord(payload)).toBe(false);
+    }
+  });
+});
+
 describe("Khateeb Studio South Asian corpus intake", () => {
   test("starts with a substantial verified Pakistan/India intake queue", () => {
     expect(SOUTH_ASIA_CORPUS_QUEUE.length).toBeGreaterThanOrEqual(12);
