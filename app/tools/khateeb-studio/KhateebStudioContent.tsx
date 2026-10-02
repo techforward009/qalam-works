@@ -35,6 +35,10 @@ import {
   searchTopicPreps,
   topicTitle,
 } from "./engine/topicPrep";
+import {
+  buildDossierText,
+  getTopicDossier,
+} from "./engine/topicDossier";
 
 const CALENDAR_REGIONS = ["all", "pk", "in", "ir"] as const;
 
@@ -76,6 +80,8 @@ const SPEAKER_REGION_LABELS_EN = {
 export default function KhateebStudioContent() {
   const { language, dir } = useLanguage();
   const ur = language === "ur";
+  const [workflowStep, setWorkflowStep] = useState<1 | 2 | 3>(1);
+  const [preparationMode, setPreparationMode] = useState<"topic" | "occasion">("topic");
   const [query, setQuery] = useState("");
   const [selectedRegion, setSelectedRegion] =
     useState<ShiaCalendarRegion>("all");
@@ -148,6 +154,10 @@ export default function KhateebStudioContent() {
   );
   const topic = topicResults.find((item) => item.id === selectedTopicId)
     ?? topicResults[0];
+  const topicDossier = topic ? getTopicDossier(topic.id) : null;
+  const topicDossierText = topicDossier
+    ? buildDossierText(topicDossier, ur ? "ur" : "en")
+    : "";
   const topicSpeakerEvidence = topic ? evidenceForTopic(topic.id) : [];
   const topicPreparationText = topic
     ? buildPreparationText(
@@ -220,9 +230,10 @@ export default function KhateebStudioContent() {
   };
 
   const copyTopicPreparation = async () => {
-    if (!topicPreparationText) return;
+    const text = topicDossierText || topicPreparationText;
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(topicPreparationText);
+      await navigator.clipboard.writeText(text);
     } catch {
       // Clipboard may be unavailable.
     }
@@ -242,6 +253,28 @@ export default function KhateebStudioContent() {
 
   const selectGroup = (key: string) => {
     setSelectedEvent(key);
+    setWorkflowStep(2);
+  };
+
+  const chooseTopic = (topicId: string) => {
+    setSelectedTopicId(topicId);
+    setWorkflowStep(2);
+  };
+
+  const chooseSpeaker = (speakerId: string) => {
+    setSelectedSpeaker(speakerId);
+    setWorkflowStep(3);
+  };
+
+  const skipSpeaker = () => {
+    setSelectedSpeaker("");
+    setWorkflowStep(3);
+  };
+
+  const changeMode = (mode: "topic" | "occasion") => {
+    setPreparationMode(mode);
+    setWorkflowStep(1);
+    setSelectedSpeaker("");
   };
 
   return (
@@ -337,7 +370,85 @@ export default function KhateebStudioContent() {
           </p>
         </header>
 
-        <section className="mb-6 rounded-2xl border border-[#B8935A]/30 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]">
+        <nav className="mb-6 rounded-2xl border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]" aria-label={ur ? "تیاری کے مراحل" : "Preparation steps"}>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {([
+              [1, ur ? "1 — موضوع یا مناسبت" : "1 — Topic or occasion"],
+              [2, ur ? "2 — خطیب (اختیاری)" : "2 — Speaker (optional)"],
+              [3, ur ? "3 — تیار مواد" : "3 — Preparation"],
+            ] as const).map(([step, label]) => (
+              <button
+                key={step}
+                type="button"
+                onClick={() => setWorkflowStep(step)}
+                className={`rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
+                  workflowStep === step
+                    ? "bg-[#1A3A2A] text-white dark:bg-[#35513d]"
+                    : "bg-[#F7F5EF] text-[#5b685e] hover:bg-[#eef0ea] dark:bg-[#0e1c15] dark:text-[#a8b8aa]"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        {workflowStep === 1 ? (
+          <section className="mb-6 rounded-2xl border border-[#B8935A]/30 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]">
+            <div className="mb-5">
+              <h2 className="text-xl font-bold text-[#1A3A2A] dark:text-white">
+                {ur ? "پہلا مرحلہ: تیاری کہاں سے شروع کرنی ہے؟" : "Step 1: Where do you want to begin?"}
+              </h2>
+              <p className="mt-1 text-sm text-[#5f6f61] dark:text-[#a8c8b0]">
+                {ur
+                  ? "سال بھر کے کسی موضوع سے شروع کریں، یا کسی موجودہ دینی مناسبت سے۔ دونوں راستے الگ رکھے گئے ہیں۔"
+                  : "Start from a year-round topic or from a religious occasion. The two paths are kept separate."}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => changeMode("topic")}
+                className={`rounded-xl border p-4 text-start ${
+                  preparationMode === "topic"
+                    ? "border-[#B8935A] bg-[#fbf7ee] dark:bg-[#241f14]"
+                    : "border-[#1A3A2A]/10 dark:border-[#35513d]"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <PenLine className="h-5 w-5 text-[#8a6838]" />
+                  <span className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                    {ur ? "موضوع سے تیاری" : "Prepare by topic"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-[#687469] dark:text-[#9fb0a2]">
+                  {ur ? "صبر، امامت، دعا، خاندان، نوجوان، اخلاق وغیرہ" : "Patience, Imamate, dua, family, youth, ethics, and more"}
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => changeMode("occasion")}
+                className={`rounded-xl border p-4 text-start ${
+                  preparationMode === "occasion"
+                    ? "border-[#B8935A] bg-[#fbf7ee] dark:bg-[#241f14]"
+                    : "border-[#1A3A2A]/10 dark:border-[#35513d]"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5 text-[#8a6838]" />
+                  <span className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                    {ur ? "مناسبت سے تیاری" : "Prepare by occasion"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-[#687469] dark:text-[#9fb0a2]">
+                  {ur ? "قمری مہینہ، علاقائی تاریخ اور دینی مناسبت منتخب کریں" : "Choose the lunar month, regional usage, and occasion"}
+                </p>
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        <section className={`${workflowStep === 1 && preparationMode === "topic" ? "block" : workflowStep === 3 && preparationMode === "topic" ? "block" : "hidden"} mb-6 rounded-2xl border border-[#B8935A]/30 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]`}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-[#2a5a3a]/50 dark:text-[#8faa93]">
@@ -372,7 +483,7 @@ export default function KhateebStudioContent() {
             </div>
           </div>
 
-          <label className="relative mt-5 block">
+          <label className={`${workflowStep === 1 ? "relative mt-5 block" : "hidden"}`}>
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#748078]" />
             <input
               value={topicQuery}
@@ -382,12 +493,12 @@ export default function KhateebStudioContent() {
             />
           </label>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className={`${workflowStep === 1 ? "mt-3 flex flex-wrap gap-2" : "hidden"}`}>
             {topicResults.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setSelectedTopicId(item.id)}
+                onClick={() => chooseTopic(item.id)}
                 className={`rounded-full border px-3 py-1.5 text-sm ${
                   topic?.id === item.id
                     ? "border-[#B8935A] bg-[#fbf7ee] text-[#6f5730] dark:bg-[#241f14] dark:text-[#e2c895]"
@@ -403,7 +514,7 @@ export default function KhateebStudioContent() {
             <p className="mt-4 rounded-xl bg-[#F7F5EF] p-4 text-sm text-[#5f6f61] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
               {ur ? "اس تلاش سے ابھی کوئی محفوظ موضوع نہیں ملا۔" : "No stored topic matches this search yet."}
             </p>
-          ) : (
+          ) : workflowStep === 3 ? (
             <div className="mt-5 rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="max-w-3xl">
@@ -424,10 +535,132 @@ export default function KhateebStudioContent() {
                   className="inline-flex items-center gap-2 rounded-lg bg-[#1A3A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#244E38]"
                 >
                   <Copy className="h-4 w-4" />
-                  {ur ? "مکمل تیاری نقل کریں" : "Copy full preparation"}
+                  {topicDossier
+                    ? (ur ? "تحقیقی dossier نقل کریں" : "Copy research dossier")
+                    : (ur ? "مکمل تیاری نقل کریں" : "Copy full preparation")}
                 </button>
               </div>
 
+              {topicDossier ? (
+                <div className="mt-5 space-y-5">
+                  <section className="rounded-xl border border-[#B8935A]/30 bg-white p-4 dark:border-[#6f5b35] dark:bg-[#162a1e]">
+                    <div className="text-xs font-bold text-[#8a6838] dark:text-[#d7bc8a]">
+                      {ur ? "مرکزی thesis" : "Central thesis"}
+                    </div>
+                    <p className="mt-2 text-sm leading-8 text-[#303830] dark:text-[#d7e1d9]">
+                      {ur ? topicDossier.thesisUr : topicDossier.thesisEn}
+                    </p>
+                    <div className="mt-3 rounded-lg bg-[#F7F5EF] p-3 text-sm font-semibold text-[#5a4830] dark:bg-[#0e1c15] dark:text-[#d7bc8a]">
+                      {ur ? "مرکزی سوال: " : "Governing question: "}
+                      {ur ? topicDossier.governingQuestionUr : topicDossier.governingQuestionEn}
+                    </div>
+                  </section>
+
+                  <section>
+                    <h4 className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                      {ur ? "مختلف اہلِ علم نے اسے کیسے کھولا؟" : "How different scholars develop the topic"}
+                    </h4>
+                    <div className="mt-3 space-y-4">
+                      {topicDossier.perspectives.map((perspective) => (
+                        <article
+                          key={perspective.id}
+                          className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                                {ur ? perspective.nameUr : perspective.nameEn}
+                              </h5>
+                              <p className="text-xs text-[#8a6838] dark:text-[#d7bc8a]">
+                                {ur ? perspective.sourceTitleUr : perspective.sourceTitleEn}
+                              </p>
+                            </div>
+                            <span className="rounded-full bg-[#F7F5EF] px-2 py-1 text-[11px] font-semibold text-[#677266] dark:bg-[#0e1c15] dark:text-[#9fb0a2]">
+                              source-backed
+                            </span>
+                          </div>
+
+                          <p className="mt-3 text-sm font-semibold leading-7 text-[#37443a] dark:text-[#c8d5cc]">
+                            {ur ? perspective.coreUr : perspective.coreEn}
+                          </p>
+
+                          <div className="mt-3 space-y-2">
+                            {(ur ? perspective.explanationUr : perspective.explanationEn).map((point) => (
+                              <p key={point} className="text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
+                                {point}
+                              </p>
+                            ))}
+                          </div>
+
+                          {perspective.originalSnippet ? (
+                            <blockquote
+                              dir="rtl"
+                              className="mt-3 rounded-lg border-s-4 border-[#B8935A] bg-[#F7F5EF] px-4 py-2 font-naskh text-sm text-[#303830] dark:bg-[#0e1c15] dark:text-[#d7e1d9]"
+                            >
+                              {perspective.originalSnippet}
+                            </blockquote>
+                          ) : null}
+
+                          <div className="mt-3 grid gap-3 md:grid-cols-2">
+                            <div className="rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#0e1c15]">
+                              <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
+                                {ur ? "ان کے بیان کا انداز" : "How this speaker frames it"}
+                              </div>
+                              <p className="mt-1 text-sm text-[#445247] dark:text-[#b8c8bb]">
+                                {ur ? perspective.styleUr : perspective.styleEn}
+                              </p>
+                            </div>
+                            <div className="rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#0e1c15]">
+                              <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
+                                {ur ? "منبر میں آپ کیا لے سکتے ہیں؟" : "What to take to the pulpit"}
+                              </div>
+                              <p className="mt-1 text-sm text-[#445247] dark:text-[#b8c8bb]">
+                                {ur ? perspective.useUr : perspective.useEn}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 text-[11px] text-[#7c877e] dark:text-[#8fa294]">
+                            {ur ? "اصل ماخذ verification کے لیے محفوظ ہے؛ بنیادی مواد اوپر دے دیا گیا ہے۔" : "The original source is retained for verification; the usable material is provided above."}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]">
+                    <h4 className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                      {ur ? "اب ان سب کو ایک منبر میں کیسے جوڑیں؟" : "How to synthesize these into one sermon"}
+                    </h4>
+                    <div className="mt-3 space-y-2">
+                      {(ur ? topicDossier.synthesisUr : topicDossier.synthesisEn).map((point) => (
+                        <p key={point} className="text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
+                          • {point}
+                        </p>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section>
+                    <h4 className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                      {ur ? "قابلِ بیان منبری flow" : "Ready speaking flow"}
+                    </h4>
+                    <div className="mt-3 space-y-3">
+                      {(ur ? topicDossier.pulpitFlowUr : topicDossier.pulpitFlowEn).map((block) => (
+                        <article key={block.heading} className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
+                          <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">{block.heading}</h5>
+                          <p className="mt-2 text-sm leading-8 text-[#37443a] dark:text-[#c8d5cc]">{block.body}</p>
+                        </article>
+                      ))}
+                    </div>
+                    <div className="mt-4 rounded-xl border border-[#B8935A]/30 bg-[#fbf7ee] p-4 text-sm leading-8 text-[#5a4830] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#e2c895]">
+                      <strong>{ur ? "اختتام: " : "Closing: "}</strong>
+                      {ur ? topicDossier.closingUr : topicDossier.closingEn}
+                    </div>
+                  </section>
+                </div>
+              ) : (
+              <>
               <div className="mt-4 grid gap-3 md:grid-cols-3">
                 <div className="rounded-lg bg-white p-3 dark:bg-[#162a1e]">
                   <span className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">{ur ? "قرآنی بنیاد" : "Qur'anic anchors"}</span>
@@ -547,12 +780,14 @@ export default function KhateebStudioContent() {
                   {topicPreparationText}
                 </pre>
               </details>
+              </>
+              )}
             </div>
-          )}
+          ) : null}
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-white dark:bg-[#162a1e] p-5 sm:p-6">
+        <section className={`${workflowStep === 1 && preparationMode === "occasion" ? "block" : workflowStep === 2 ? "block" : "hidden"} space-y-6`}>
+          <div className={`${workflowStep === 1 && preparationMode === "occasion" ? "block" : "hidden"} rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-white dark:bg-[#162a1e] p-5 sm:p-6`}>
             <div className="flex items-center gap-3 mb-5">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
                 <CalendarDays className="h-5 w-5" />
@@ -762,7 +997,7 @@ export default function KhateebStudioContent() {
             ) : null}
           </div>
 
-          <div className="rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-white dark:bg-[#162a1e] p-5 sm:p-6">
+          <div className={`${workflowStep === 2 ? "block" : "hidden"} rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-white dark:bg-[#162a1e] p-5 sm:p-6`}>
             <div className="flex items-center gap-3 mb-5">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-[#2a5a3a]/50 dark:text-[#8faa93]">
                 <BookOpen className="h-5 w-5" />
@@ -777,10 +1012,25 @@ export default function KhateebStudioContent() {
                   className={`text-sm text-[#5f6f61] dark:text-[#a8c8b0]`}
                 >
                   {ur
-                    ? "یہ فہرست کسی درجہ بندی کا اعلان نہیں ہے۔"
-                    : "This is a source map, not a ranking."}
+                    ? "اختیاری مرحلہ: اگر کسی خاص خطیب کے مواد اور زاویے سے استفادہ کرنا ہو تو منتخب کریں، ورنہ آگے بڑھیں۔"
+                    : "Optional: choose a speaker if you want that speaker's sourced material and approach, or continue without one."}
                 </p>
               </div>
+            </div>
+
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F7F5EF] p-3 dark:bg-[#0e1c15]">
+              <div className="text-sm text-[#5f6f61] dark:text-[#a8c8b0]">
+                {preparationMode === "topic"
+                  ? `${ur ? "منتخب موضوع:" : "Selected topic:"} ${topic ? topicTitle(topic, ur ? "ur" : "en") : "—"}`
+                  : `${ur ? "منتخب مناسبت:" : "Selected occasion:"} ${event ? eventTitle(event, !ur) : "—"}`}
+              </div>
+              <button
+                type="button"
+                onClick={skipSpeaker}
+                className="rounded-lg border border-[#1A3A2A]/15 px-3 py-2 text-xs font-semibold text-[#425247] hover:border-[#B8935A] dark:border-[#35513d] dark:text-[#b7c8bb]"
+              >
+                {ur ? "خطیب منتخب کیے بغیر آگے بڑھیں" : "Continue without a speaker"}
+              </button>
             </div>
 
             <label className="relative block mb-4">
@@ -810,7 +1060,7 @@ export default function KhateebStudioContent() {
                         <button
                           key={item.id}
                           type="button"
-                          onClick={() => setSelectedSpeaker(item.id)}
+                          onClick={() => chooseSpeaker(item.id)}
                           className={`w-full rounded-xl border px-3.5 py-3 text-start ${
                             selectedSpeaker === item.id
                               ? "border-[#B8935A]/70 bg-[#fbf7ee] dark:bg-[#241f14]"
@@ -863,6 +1113,8 @@ export default function KhateebStudioContent() {
                           onClick={() => {
                             setTopicQuery("");
                             setSelectedTopicId(indexedTopic.id);
+                            setPreparationMode("topic");
+                            setWorkflowStep(3);
                           }}
                           className="rounded-full border border-[#1A3A2A]/12 bg-[#F7F5EF] px-3 py-1 text-xs font-semibold text-[#425247] hover:border-[#B8935A] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#b7c8bb]"
                         >
@@ -959,7 +1211,7 @@ export default function KhateebStudioContent() {
           </div>
         </section>
 
-        {preparation ? (
+        {workflowStep === 3 && preparationMode === "occasion" && preparation ? (
           <section className="mt-6 rounded-2xl border border-[#B8935A]/25 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-3">
@@ -1156,6 +1408,7 @@ export default function KhateebStudioContent() {
           </section>
         ) : null}
 
+        {workflowStep === 3 && preparationMode === "occasion" ? (
         <section className="mt-6 rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-white dark:bg-[#162a1e] p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1188,6 +1441,7 @@ export default function KhateebStudioContent() {
             {brief}
           </pre>
         </section>
+        ) : null}
       </div>
     </main>
   );

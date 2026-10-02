@@ -17,6 +17,7 @@ import {
   validateSpeakerTopicIndex,
 } from "../app/tools/khateeb-studio/engine/speakerTopicIndex";
 import { searchTopicPreps, TOPIC_PREPS } from "../app/tools/khateeb-studio/engine/topicPrep";
+import { buildDossierText, getTopicDossier } from "../app/tools/khateeb-studio/engine/topicDossier";
 
 describe("Khateeb Studio seed corpus", () => {
   test("contains the requested historical speakers", () => {
@@ -229,5 +230,67 @@ describe("Khateeb Studio speaker × topic index", () => {
     expect(studio).toContain("اس خطیب کا اصل متن ابھی ingest نہیں ہوا");
     expect(studio).not.toContain("دستیاب ذخیرہ کھولیں");
     expect(studio).not.toContain("Open available corpus");
+  });
+});
+
+describe("Khateeb Studio deep sermon dossiers", () => {
+  test("Sabr is a multi-scholar dossier rather than a bare outline", () => {
+    const dossier = getTopicDossier("sabr");
+    expect(dossier).not.toBeNull();
+    expect(dossier?.perspectives.length).toBeGreaterThanOrEqual(3);
+    expect(dossier?.perspectives.some((item) => item.speakerId === "hamed-kashani")).toBe(true);
+    expect(dossier?.perspectives.some((item) => item.speakerId === "alireza-panahian")).toBe(true);
+    expect(dossier?.perspectives.some((item) => item.speakerId === "shojaei")).toBe(true);
+    expect(dossier?.pulpitFlowUr.length).toBeGreaterThanOrEqual(5);
+  });
+
+  test("dossier copy text contains scholarship, synthesis, and speaking material", () => {
+    const dossier = getTopicDossier("sabr")!;
+    const text = buildDossierText(dossier, "ur");
+    expect(text).toContain("اہلِ علم کے زاویے");
+    expect(text).toContain("منبری synthesis");
+    expect(text).toContain("قابلِ بیان ترتیب");
+    expect(text).toContain("حامد کاشانی");
+    expect(text).toContain("علیرضا پناہیان");
+    expect(text).toContain("محمد شجاعی");
+  });
+
+  test("UI foregrounds scholar explanation and ready speaking flow", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("مختلف اہلِ علم نے اسے کیسے کھولا؟");
+    expect(studio).toContain("ان کے بیان کا انداز");
+    expect(studio).toContain("منبر میں آپ کیا لے سکتے ہیں؟");
+    expect(studio).toContain("قابلِ بیان منبری flow");
+  });
+});
+
+describe("Khateeb Studio guided workflow", () => {
+  test("presents a clear three-step preparation journey", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("1 — موضوع یا مناسبت");
+    expect(studio).toContain("2 — خطیب (اختیاری)");
+    expect(studio).toContain("3 — تیار مواد");
+    expect(studio).toContain("Step 1: Where do you want to begin?");
+  });
+
+  test("separates topic and occasion entry paths", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain('preparationMode === "topic"');
+    expect(studio).toContain('preparationMode === "occasion"');
+    expect(studio).toContain("موضوع سے تیاری");
+    expect(studio).toContain("مناسبت سے تیاری");
+  });
+
+  test("makes speaker selection optional and advances to preparation", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("خطیب منتخب کیے بغیر آگے بڑھیں");
+    expect(studio).toContain("Continue without a speaker");
+    expect(studio).toContain("setWorkflowStep(3)");
+  });
+
+  test("calendar and speaker index are no longer forced side by side", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).not.toContain("lg:grid-cols-[1.05fr_0.95fr]");
+    expect(studio).toContain("space-y-6");
   });
 });
