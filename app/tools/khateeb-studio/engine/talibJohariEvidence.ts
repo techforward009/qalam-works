@@ -7,7 +7,7 @@ export const TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE: readonly SpeakerEvidence[] = 
   {
     id: "talib-mansab-01-quran-guidance",
     speakerId: "talib-johari",
-    topicIds: ["imamate"],
+    topicIds: ["imamate", "quran-hidayat"],
     kind: "compiled-majalis",
     status: "ready",
     titleUr: "مجلس اول — قرآن، ہدایت اور اطاعتِ رسولؐ",
@@ -45,7 +45,7 @@ export const TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE: readonly SpeakerEvidence[] = 
   {
     id: "talib-mansab-02-iman-guidance",
     speakerId: "talib-johari",
-    topicIds: ["imamate"],
+    topicIds: ["imamate", "quran-hidayat"],
     kind: "compiled-majalis",
     status: "ready",
     titleUr: "مجلس دوم — ایمان، علم اور ہدایت کا باہمی تعلق",
@@ -83,7 +83,7 @@ export const TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE: readonly SpeakerEvidence[] = 
   {
     id: "talib-mansab-03-quran-preservation",
     speakerId: "talib-johari",
-    topicIds: ["imamate"],
+    topicIds: ["imamate", "quran-hidayat"],
     kind: "compiled-majalis",
     status: "ready",
     titleUr: "مجلس سوم — قرآن بحیثیت میزانِ ہدایت",
@@ -121,7 +121,7 @@ export const TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE: readonly SpeakerEvidence[] = 
   {
     id: "talib-mansab-04-faith-action",
     speakerId: "talib-johari",
-    topicIds: [],
+    topicIds: ["quran-hidayat"],
     kind: "compiled-majalis",
     status: "ready",
     titleUr: "مجلس چہارم — ایمان کی پہچان اور عمل",
@@ -273,7 +273,7 @@ export const TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE: readonly SpeakerEvidence[] = 
   {
     id: "talib-mansab-08-obedience-authority",
     speakerId: "talib-johari",
-    topicIds: ["imamate"],
+    topicIds: ["imamate", "quran-hidayat"],
     kind: "compiled-majalis",
     status: "ready",
     titleUr: "مجلس ہشتم — اطاعتِ رسولؐ اور دینی اختیار",
@@ -311,7 +311,7 @@ export const TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE: readonly SpeakerEvidence[] = 
   {
     id: "talib-mansab-09-guidance-continuity",
     speakerId: "talib-johari",
-    topicIds: ["imamate"],
+    topicIds: ["imamate", "quran-hidayat"],
     kind: "compiled-majalis",
     status: "ready",
     titleUr: "مجلس نہم — منصبِ ہدایت کا تسلسل",
@@ -349,7 +349,7 @@ export const TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE: readonly SpeakerEvidence[] = 
   {
     id: "talib-mansab-sham-ghareeban",
     speakerId: "talib-johari",
-    topicIds: ["imamate"],
+    topicIds: ["imamate", "quran-hidayat"],
     kind: "compiled-majalis",
     status: "ready",
     titleUr: "مجلس شامِ غریباں — اطاعت، اہلِ بیتؑ اور کربلا",

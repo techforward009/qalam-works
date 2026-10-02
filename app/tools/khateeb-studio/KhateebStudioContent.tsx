@@ -593,7 +593,13 @@ export default function KhateebStudioContent({
 
                   <section>
                     <h4 className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
-                      {ur ? "مختلف اہلِ علم نے اسے کیسے کھولا؟" : "How different scholars develop the topic"}
+                      {ur
+                        ? new Set(topicDossier.perspectives.map((item) => item.nameUr)).size === 1
+                          ? "اصل ماخذ کے علمی زاویے"
+                          : "مختلف اہلِ علم نے اسے کیسے کھولا؟"
+                        : new Set(topicDossier.perspectives.map((item) => item.nameEn)).size === 1
+                          ? "Scholarly angles from the source"
+                          : "How different scholars develop the topic"}
                     </h4>
                     <div className="mt-3 space-y-4">
                       {topicDossier.perspectives.map((perspective) => (

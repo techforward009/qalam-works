@@ -17,6 +17,82 @@ export type TopicPrep = SermonPrep & {
 
 const TOPICS: readonly TopicPrep[] = [
   {
+    id: "quran-hidayat",
+    category: "belief",
+    titleUr: "قرآن اور ہدایت: کتاب سے زندگی تک",
+    titleEn: "Qur'an and guidance: from revelation to lived direction",
+    themeUr:
+      "قرآن کو صرف تلاوت اور ثواب کی کتاب نہیں بلکہ فکر، فیصلہ، اطاعت، کردار اور اجتماعی زندگی کے لیے زندہ ہدایت کے طور پر پیش کریں؛ پھر یہ واضح کریں کہ قرآن خود رسولؐ کی اطاعت اور معتبر دینی رہنمائی کی طرف رہنمائی کرتا ہے۔",
+    themeEn:
+      "Present the Qur'an not only as a text of recitation but as living guidance for thought, decision, obedience, character, and communal life; then show that the Qur'an itself directs believers toward obedience to the Messenger and authoritative religious guidance.",
+    openingUr:
+      "اگر قرآن ہدایت کی کامل کتاب ہے تو سوال یہ ہے: اس ہدایت کو زندگی کے اختلافات، فیصلوں اور عملی مسائل پر نافذ کون سا دینی اصول کرتا ہے؟",
+    openingEn:
+      "If the Qur'an is complete guidance, what religious principle carries that guidance into concrete disagreements, decisions, and lived problems?",
+    quran: [
+      {
+        ref: "الإسراء 17:9",
+        arabic: "اِنَّ هٰذَا الْقُرْاٰنَ يَهْدِيْ لِلَّتِيْ هِيَ اَقْوَمُ",
+        ur: "قرآن کو زندہ، قائم اور عملی ہدایت کے طور پر مجلس کی بنیاد بنائیں۔",
+        en: "Use the verse to establish the Qur'an as living and upright guidance.",
+      },
+      {
+        ref: "النساء 4:59",
+        arabic: "اَطِيْعُوا اللّٰهَ وَاَطِيْعُوا الرَّسُوْلَ",
+        ur: "اللہ کی اطاعت اور رسولؐ کی اطاعت کے باہمی تعلق کو واضح کریں۔",
+        en: "Clarify the relationship between obedience to God and obedience to the Messenger.",
+      },
+      {
+        ref: "الحشر 59:7",
+        arabic: "وَمَا اٰتٰىكُمُ الرَّسُوْلُ فَخُذُوْهُ",
+        ur: "دینی زندگی میں رسولؐ کی عملی رہنمائی کی حجیت کے لیے۔",
+        en: "Use for the authority of Prophetic guidance in lived religion.",
+      },
+    ],
+    sources: [
+      {
+        labelUr: "علامہ طالب جوہریؒ — منصبِ ہدایت اور قرآن",
+        labelEn: "Allama Talib Johari — Mansab-e-Hidayat aur Qur'an",
+        detailUr:
+          "اصل اردو کتاب کی نو مجالس اور مجلسِ شامِ غریباں: قرآن، ایمان، اطاعتِ رسولؐ، انسانی فضیلت، آخرت اور منصبِ ہدایت کا تسلسل۔",
+        detailEn:
+          "Original Urdu book: nine majalis plus Sham-e-Ghariban on Qur'an, faith, obedience to the Messenger, human excellence, the hereafter, and continuity of guidance.",
+      },
+      {
+        labelUr: "اصل قرآنی آیات",
+        labelEn: "Primary Qur'anic anchors",
+        detailUr:
+          "خصوصاً سورۂ اسراء 17:9 کو مرکزی آیت بنائیں، پھر اطاعتِ رسولؐ سے متعلق آیات کو اسی نظامِ ہدایت کے اندر جوڑیں۔",
+        detailEn:
+          "Use Qur'an 17:9 as the central anchor, then connect verses on obedience to the Messenger within the same architecture of guidance.",
+      },
+    ],
+    anglesUr: [
+      "ہدایت اور محض معلومات میں فرق",
+      "قرآن اور عملی زندگی",
+      "قرآن اور اطاعتِ رسولؐ",
+      "ایمان کا کردار میں ظہور",
+      "ہدایت اور انسانی فیصلے",
+      "معتبر دینی رہنمائی کی ضرورت",
+      "کربلا: ہدایت سے وفاداری کا عملی امتحان",
+    ],
+    anglesEn: [
+      "guidance versus information",
+      "Qur'an and lived life",
+      "Qur'an and obedience to the Messenger",
+      "faith manifested in character",
+      "guidance and human decisions",
+      "the need for authoritative religious guidance",
+      "Karbala as the lived test of fidelity to guidance",
+    ],
+    cautionUr:
+      "قرآن کی حجیت اور معتبر دینی رہنمائی کو ایک دوسرے کے مقابل نہ رکھیں۔ طالب جوہریؒ کی اصل ترتیب یہی ہے کہ رسولؐ کی اطاعت اور منصبِ ہدایت کو قرآن کے اندر سے سمجھا جائے۔",
+    cautionEn:
+      "Do not set Qur'anic authority against authoritative religious guidance. Johari's sequence is to understand obedience to the Messenger and the office of guidance from within the Qur'anic framework itself.",
+    keywordsUr: ["قرآن", "ہدایت", "اطاعت رسول", "منصب ہدایت", "ایمان", "اہل بیت", "کربلا"],
+    keywordsEn: ["Qur'an", "guidance", "obedience", "religious authority", "faith", "Ahl al-Bayt", "Karbala"],
+  },
+  {
     id: "ismah",
     category: "belief",
     titleUr: "عصمت: اختیار کے ساتھ پاکیزگی اور الٰہی منصب کی اہلیت",

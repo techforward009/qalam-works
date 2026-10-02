@@ -864,7 +864,241 @@ const ISMAH: SermonDossier = {
     "Close by joining doctrine and ethics: recognizing the infallible is not only acknowledging a lofty station; it also teaches that human greatness lies not in having no impulses, but in keeping truth and moral judgment sovereign over them.",
 };
 
-const DOSSIERS: readonly SermonDossier[] = [SABR, IMAMATE, DUA, ISMAH];
+const QURAN_HIDAYAT: SermonDossier = {
+  topicId: "quran-hidayat",
+  titleUr: "قرآن اور ہدایت — کتاب سے زندگی تک",
+  titleEn: "Qur'an and guidance — from revelation to lived direction",
+  thesisUr:
+    "علامہ طالب جوہریؒ کی کتاب «منصبِ ہدایت اور قرآن» میں قرآن کو صرف پڑھنے، حفظ کرنے یا ثواب حاصل کرنے کی کتاب نہیں سمجھا گیا، بلکہ ایسا زندہ میزان قرار دیا گیا ہے جو ایمان، فکر، اطاعت، کردار، دنیا و آخرت اور اجتماعی زندگی کو سمت دیتا ہے۔ اسی قرآنی ہدایت کے اندر رسول اکرمؐ کی اطاعت اور معتبر دینی رہنمائی کی ضرورت بھی سامنے آتی ہے۔",
+  thesisEn:
+    "In Talib Johari's Mansab-e-Hidayat aur Qur'an, the Qur'an is treated not merely as a text for recitation, memorization, or reward, but as a living criterion that directs faith, thought, obedience, character, worldly priorities, and communal life. Within that Qur'anic guidance, obedience to the Messenger and the need for authoritative religious guidance also emerge.",
+  governingQuestionUr:
+    "قرآن ہمارے گھروں میں موجود ہے، تلاوت بھی ہوتی ہے؛ پھر سوال یہ ہے کہ کیا قرآن ہمارے فیصلوں، وفاداریوں، اختلافات اور اخلاق کا واقعی معیار بھی ہے؟",
+  governingQuestionEn:
+    "The Qur'an is present in our homes and recited regularly; but is it actually the criterion for our decisions, loyalties, disagreements, and character?",
+  perspectives: [
+    {
+      id: "talib-quran-living-guidance",
+      speakerId: "talib-johari",
+      nameUr: "علامہ طالب جوہریؒ",
+      nameEn: "Allama Talib Johari",
+      sourceTitleUr: "مجلس اول و سوم — قرآن بحیثیت زندہ ہدایت",
+      sourceTitleEn: "Majalis 1 and 3 — the Qur'an as living guidance",
+      sourceUrl: "https://maablib.org/mansb-e-hidayat-aur-quran-by-talib-johri/",
+      coreUr:
+        "طالب جوہریؒ سورۂ اسراء 17:9 کے «يَهْدِي لِلَّتِي هِيَ أَقْوَمُ» کو مرکزی بنیاد بناتے ہیں۔ ان کے بیان میں قرآن کی عظمت صرف اس کے مقدس ہونے میں نہیں بلکہ اس بات میں ہے کہ وہ انسان کو زیادہ درست، زیادہ قائم اور زیادہ محفوظ راہ دکھاتا ہے۔",
+      coreEn:
+        "Johari centers Qur'an 17:9. The Qur'an's greatness lies not only in sacredness but in its function of directing human beings toward the most upright and enduring path.",
+      explanationUr: [
+        "وہ سامع کو تلاوت سے عمل کی طرف لے جاتے ہیں: قرآن کا احترام اپنی جگہ، مگر ہدایت کا حقیقی اثر اس وقت ظاہر ہوتا ہے جب انسان کے فیصلے اور ترجیحات اس کے معیار سے بدلیں۔",
+        "مختلف دینی دعووں اور اختلافات کے درمیان قرآن کو میزان بنانا ان کی گفتگو کا نمایاں رخ ہے۔ شخصیت، جماعت یا جذبات کے بجائے اصل سوال یہ ہو کہ قرآن کس سمت لے جا رہا ہے۔",
+        "اس زاویے سے خطیب قرآن کی مجلس کو محض فضائلِ قرآن کی فہرست سے نکال کر زندگی کے عملی سوالات سے جوڑ سکتا ہے۔",
+      ],
+      explanationEn: [
+        "He moves the listener from recitation toward action: respect for the Qur'an is incomplete if decisions and priorities remain unchanged.",
+        "The Qur'an becomes the criterion amid competing religious claims and disagreements.",
+        "This allows a preacher to move beyond listing virtues of the Qur'an toward practical questions of life.",
+      ],
+      styleUr:
+        "انداز: ایک مرکزی آیت، پھر موجودہ زندگی کا سوال، اس کے بعد قرآن کو فیصلہ کن میزان کے طور پر سامنے لانا۔",
+      styleEn:
+        "Style: one central verse, then a contemporary human question, followed by the Qur'an as the decisive criterion.",
+      useUr:
+        "ابتدا ہی میں سامع سے پوچھیں: قرآن میرے گھر میں کہاں رکھا ہے یہ آسان سوال ہے؛ مشکل سوال یہ ہے کہ میرے فیصلوں میں قرآن کہاں رکھا ہے؟",
+      useEn:
+        "Open by asking not where the Qur'an is kept in the home, but where it stands in one's decisions.",
+      originalSnippet: "اِنَّ هٰذَا الْقُرْاٰنَ يَهْدِيْ لِلَّتِيْ هِيَ اَقْوَمُ",
+    },
+    {
+      id: "talib-faith-becomes-character",
+      speakerId: "talib-johari",
+      nameUr: "علامہ طالب جوہریؒ",
+      nameEn: "Allama Talib Johari",
+      sourceTitleUr: "مجالس دوم، چہارم اور ششم — ایمان، علم اور انسانی فضیلت",
+      sourceTitleEn: "Majalis 2, 4, and 6 — faith, knowledge, and human excellence",
+      sourceUrl: "https://maablib.org/mansb-e-hidayat-aur-quran-by-talib-johri/",
+      coreUr:
+        "ان مجالس میں ہدایت کو محض ذہنی معلومات نہیں رہنے دیا جاتا۔ علم کی قدر اس وقت ہے جب وہ انسان کے کردار کو سنوارے، اور ایمان کی صداقت اس وقت ظاہر ہوتی ہے جب وہ زبان، تعلقات، معاملات اور ترجیحات میں اپنا اثر دکھائے۔",
+      coreEn:
+        "These majalis refuse to reduce guidance to information. Knowledge has value when it forms character, and faith becomes credible when its effects appear in speech, relationships, conduct, and priorities.",
+      explanationUr: [
+        "طالب جوہریؒ مومن کی شناخت کو نام اور نسبت سے نکال کر عمل کے میدان میں لاتے ہیں۔",
+        "وہ انسانی فضیلت کو دولت، نسب اور ظاہری مرتبے کے بجائے خدا کی میزان سے پرکھنے کی دعوت دیتے ہیں۔",
+        "یہاں قرآن ایک فکری کتاب ہی نہیں رہتا؛ وہ انسان کی قدر، کامیابی اور ناکامی کی تعریف بھی بدلتا ہے۔",
+      ],
+      explanationEn: [
+        "Johari moves the identity of the believer from labels into conduct.",
+        "Human excellence is measured by God's criterion rather than wealth, lineage, or status.",
+        "The Qur'an does not only shape ideas; it redefines human worth, success, and failure.",
+      ],
+      styleUr:
+        "انداز: عام انسانی تصور کو سامنے رکھنا، پھر قرآنی معیار سے اس کی اصلاح کرنا اور آخر میں سامع کو خود احتسابی کی طرف لے جانا۔",
+      styleEn:
+        "Style: begin with a common human assumption, correct it through a Qur'anic criterion, then turn the argument toward self-examination.",
+      useUr:
+        "سامع سے کہیں: اگر میری مذہبی شناخت زبان سے نہ بتائی جائے تو کیا میرا کردار خود میرے ایمان کی گواہی دے گا؟",
+      useEn:
+        "Ask whether one's character would testify to faith even if one's religious identity were not verbally announced.",
+    },
+    {
+      id: "talib-quran-obedience-rasul",
+      speakerId: "talib-johari",
+      nameUr: "علامہ طالب جوہریؒ",
+      nameEn: "Allama Talib Johari",
+      sourceTitleUr: "مجلس ہشتم — قرآن اور اطاعتِ رسولؐ",
+      sourceTitleEn: "Majlis 8 — Qur'an and obedience to the Messenger",
+      sourceUrl: "https://maablib.org/mansb-e-hidayat-aur-quran-by-talib-johri/",
+      coreUr:
+        "طالب جوہریؒ قرآن اور رسولؐ کو ایک دوسرے کے مقابل رکھنے کے بجائے ایک ہی نظامِ ہدایت کے دو مربوط پہلو قرار دیتے ہیں۔ قرآن خود رسولؐ کی اطاعت کا حکم دیتا ہے؛ اس لیے صاحبِ قرآن کی دینی رہنمائی کو قرآن سے باہر سمجھنا خود قرآنی منہج کے خلاف ہے۔",
+      coreEn:
+        "Johari refuses to set the Qur'an and the Messenger against each other. The Qur'an itself commands obedience to the Messenger, so Prophetic guidance belongs within the Qur'anic order of guidance.",
+      explanationUr: [
+        "وہ احترام اور اطاعت میں فرق پیدا کرتے ہیں۔ رسولؐ سے محبت و احترام ضروری ہے، مگر اطاعت اس سے آگے بڑھ کر اپنے فیصلے اور عمل کو ان کی دینی رہنمائی کے تابع کرنا ہے۔",
+        "یہی مقام منصبِ ہدایت کی بحث کا دروازہ کھولتا ہے: اگر خدا کی ہدایت صرف متن دینے پر ختم نہیں ہوتی تو معتبر ہادی کی ضرورت کو بھی اسی قرآن کے اندر سے سمجھنا ہوگا۔",
+        "اس ترتیب میں امامت قرآن کے مقابل کوئی اضافی دعویٰ نہیں رہتی؛ پہلے معتبر رہنمائی کا قرآنی اصول قائم ہوتا ہے، پھر اس کے استمرار کا سوال پیدا ہوتا ہے۔",
+      ],
+      explanationEn: [
+        "He distinguishes respect from obedience: obedience submits judgment and action to Prophetic religious guidance.",
+        "This opens the question of the office of guidance: if divine guidance is not exhausted by delivering a text, authoritative guidance must be understood from within the Qur'an itself.",
+        "Imamate therefore enters after the Qur'anic principle of authoritative guidance has been established.",
+      ],
+      styleUr:
+        "انداز: پہلے ایسا اصول قائم کرنا جس پر سامع پہلے سے متفق ہو، پھر اسی اصول کے منطقی تقاضے کو اگلے دینی مسئلے تک لے جانا۔",
+      styleEn:
+        "Style: establish an agreed principle first, then follow its implications into the next religious question.",
+      useUr:
+        "امامت کا نام آغاز ہی میں لے کر بحث کو دفاعی نہ بنائیں؛ پہلے قرآن سے اطاعتِ رسولؐ اور معتبر ہدایت کا اصول قائم کریں۔",
+      useEn:
+        "Do not begin defensively with the label of Imamate; first establish Qur'anic obedience to the Messenger and authoritative guidance.",
+    },
+    {
+      id: "talib-guidance-continuity-karbala",
+      speakerId: "talib-johari",
+      nameUr: "علامہ طالب جوہریؒ",
+      nameEn: "Allama Talib Johari",
+      sourceTitleUr: "مجلس نہم اور شامِ غریباں — ہدایت کا تسلسل اور کربلا",
+      sourceTitleEn: "Majlis 9 and Sham-e-Ghariban — continuity of guidance and Karbala",
+      sourceUrl: "https://maablib.org/mansb-e-hidayat-aur-quran-by-talib-johri/",
+      coreUr:
+        "سلسلے کے آخری حصے میں طالب جوہریؒ قرآن، رسولؐ کی اطاعت، اہلِ بیتؑ اور کربلا کو الگ الگ خانوں میں نہیں رکھتے۔ ہدایت کا علمی اصول آخرکار وفاداری کے عملی امتحان میں داخل ہوتا ہے، اور کربلا اس سوال کا جواب بن جاتی ہے کہ صحیح ہدایت پہچان لینے کے بعد انسان اس کے لیے کتنی قیمت دینے کو تیار ہے۔",
+      coreEn:
+        "In the closing part of the series, Johari does not isolate Qur'an, obedience to the Messenger, Ahl al-Bayt, and Karbala. The intellectual principle of guidance enters the practical test of fidelity.",
+      explanationUr: [
+        "نویں مجلس میں منصبِ ہدایت کا سوال پورے سلسلے کی قرآنی بحث کو سمیٹتا ہے۔",
+        "شامِ غریباں میں وہ علمی بحث کو اچانک چھوڑ کر مصائب کی طرف نہیں جاتے؛ کربلا کو اسی ہدایت اور اطاعت کے اصول کی زندہ قیمت کے طور پر سامنے لاتے ہیں۔",
+        "یہ منبر کے لیے بڑا سبق ہے: مصائب علمی مجلس کا غیر متعلق ضمیمہ نہیں، بلکہ اسی مرکزی دینی نکتے کا انسانی اور عاطفی ظہور بن سکتے ہیں۔",
+      ],
+      explanationEn: [
+        "Majlis 9 gathers the Qur'anic argument into the question of the continuing office of guidance.",
+        "In Sham-e-Ghariban, Karbala becomes the lived cost of the same principle of obedience and guidance rather than an unrelated emotional appendix.",
+        "For preaching, masaib can become the human and devotional manifestation of the sermon's central religious principle.",
+      ],
+      styleUr:
+        "انداز: علمی مقدمہ → دینی ذمہ داری → تاریخی مظہر → مصائب؛ یوں علم اور عاطفہ ایک ہی مرکزی نکتے کے دو رخ بن جاتے ہیں۔",
+      styleEn:
+        "Style: intellectual premise → religious responsibility → historical manifestation → masaib.",
+      useUr:
+        "اگر مجلس کا مرکزی موضوع ہدایت ہے تو مصائب میں بھی اسی سوال کو زندہ رکھیں: حق پہچاننے کے بعد اس کے ساتھ وفاداری کی قیمت کیا ہے؟",
+      useEn:
+        "If guidance is the central theme, keep the same question alive in masaib: what is the cost of fidelity after truth has been recognized?",
+    },
+    {
+      id: "talib-pulpit-method",
+      speakerId: "talib-johari",
+      nameUr: "علامہ طالب جوہریؒ",
+      nameEn: "Allama Talib Johari",
+      sourceTitleUr: "پورے مجموعے سے اخذ کردہ منبری طریقۂ کار",
+      sourceTitleEn: "Pulpit method derived from the complete collection",
+      sourceUrl: "https://maablib.org/mansb-e-hidayat-aur-quran-by-talib-johri/",
+      coreUr:
+        "اس مجموعے میں طالب جوہریؒ کی نمایاں قوت یہ ہے کہ وہ مشکل علمی مسئلے کو سوال، مکالمے اور عام مثال کے ذریعے سامع کے قریب لاتے ہیں؛ پھر قرآنی آیات کے باہمی ربط سے نتیجہ بناتے ہیں۔ ان کا منبر سیدھی لکیر میں صرف معلومات نہیں سناتا بلکہ سامع کو سوچنے کے عمل میں شریک کرتا ہے۔",
+      coreEn:
+        "Across the collection, Johari repeatedly brings difficult ideas close to the listener through questions, dialogue, and ordinary examples, then builds conclusions by connecting Qur'anic passages.",
+      explanationUr: [
+        "وہ کئی جگہ سوال خود قائم کرتے ہیں، ممکنہ جواب بھی زبان پر لاتے ہیں، پھر اس کی کمزوری دکھا کر اگلا مرحلہ کھولتے ہیں۔",
+        "روزمرہ گفتگو، استاد و شاگرد، گھر، معاشرہ اور انسانی تجربے کی مثالیں علمی بحث کو خشک ہونے سے بچاتی ہیں۔",
+        "پچھلی بات کو یاد دلا کر اگلی آیت یا اگلے مسئلے تک جانا پورے سلسلے میں تسلسل پیدا کرتا ہے۔",
+        "اختتام میں علمی بحث کو کردار یا مصائب تک پہنچانا ان کے منبر کو صرف ذہنی مشق نہیں رہنے دیتا۔",
+      ],
+      explanationEn: [
+        "He often voices the question himself, offers a possible answer, then exposes its weakness before moving forward.",
+        "Ordinary conversation and human situations prevent the scholarly argument from becoming dry.",
+        "Recalling earlier points before adding a new verse creates continuity across the series.",
+        "Moving the argument into character or masaib prevents the sermon from remaining purely intellectual.",
+      ],
+      styleUr:
+        "انداز: سوال قائم کریں، سامع کے ممکنہ جواب کو سامنے لائیں، عام مثال سے مفہوم روشن کریں، پھر قرآن سے فیصلہ کن سمت دیں۔",
+      styleEn:
+        "Style: construct the question, voice the listener's likely response, clarify with an ordinary example, then let the Qur'an give the decisive direction.",
+      useUr:
+        "طالب جوہریؒ کے الفاظ یا لہجے کی نقل نہ کریں؛ ان کی یہ علمی ترکیب اپنائیں کہ سامع کو نتیجہ سنانے کے بجائے استدلال کے سفر میں اپنے ساتھ لے کر چلیں۔",
+      useEn:
+        "Do not imitate Johari's wording or mannerisms; adopt the intellectual technique of taking the listener through the reasoning rather than merely announcing the conclusion.",
+    },
+  ],
+  synthesisUr: [
+    "اس پورے موضوع کی پہلی بنیاد یہ ہے کہ قرآن **زندہ ہدایت** ہے؛ دوسری یہ کہ ہدایت انسان کے کردار اور فیصلے میں ظاہر ہونی چاہیے؛ تیسری یہ کہ قرآن خود رسولؐ کی اطاعت کا حکم دیتا ہے؛ اور چوتھی یہ کہ معتبر دینی رہنمائی کا سوال قرآن کے مقابل نہیں بلکہ قرآن ہی کے اندر سے پیدا ہوتا ہے۔",
+    "طالب جوہریؒ کے منبر کا فائدہ یہ ہے کہ وہ سامع کو ایک دم آخری نتیجے پر نہیں لے جاتے۔ پہلے مشترک قرآنی بنیاد بناتے ہیں، پھر سوال پیدا کرتے ہیں، پھر اطاعت اور ہدایت کے تقاضے کھولتے ہیں۔ اس ترتیب سے امامت کی بحث بھی دفاعی مناظرہ بننے کے بجائے نظامِ ہدایت کی فطری اگلی منزل بن سکتی ہے۔",
+    "کربلا اس بحث کا عاطفی ضمیمہ نہیں بلکہ عملی امتحان ہے: ہدایت پہچان لینے کے بعد کیا انسان اپنے مفاد، خوف اور دباؤ کے باوجود اس کے ساتھ کھڑا رہتا ہے؟",
+  ],
+  synthesisEn: [
+    "The sequence is: Qur'an as living guidance; guidance becoming visible in character and decision; the Qur'an itself commanding obedience to the Messenger; and the question of authoritative guidance arising from within the Qur'anic order rather than against it.",
+    "Johari does not rush the listener to the final conclusion. He builds shared Qur'anic ground, raises the question, then unfolds the implications of obedience and guidance.",
+    "Karbala becomes the practical test of whether recognized guidance is followed despite cost, fear, and pressure.",
+  ],
+  pulpitFlowUr: [
+    {
+      heading: "1. قرآن گھر میں موجود ہے؛ کیا زندگی میں بھی موجود ہے؟",
+      body:
+        "سورۂ اسراء 17:9 سے آغاز کریں۔ سامع سے پوچھیں: ہم قرآن کو کہاں رکھتے ہیں، یہ معلوم ہے؛ مگر جب خاندان، کاروبار، اختلاف یا غصے میں فیصلہ کرنا ہو تو کیا قرآن واقعی میزان بنتا ہے؟ ہدایت کا مطلب یہی ہے کہ کتاب زندگی کی سمت بدل دے۔",
+    },
+    {
+      heading: "2. ہدایت اور معلومات میں فرق",
+      body:
+        "دینی معلومات بہت ہونا خود ہدایت کی ضمانت نہیں۔ طالب جوہریؒ کی مجالس سے یہ نکتہ نکالیں کہ ایمان اور علم کی صداقت کردار میں ظاہر ہونی چاہیے۔ اگر معلومات بڑھیں مگر زبان، معاملات اور ترجیحات نہ بدلیں تو قرآن سے تعلق ابھی عملی ہدایت تک نہیں پہنچا۔",
+    },
+    {
+      heading: "3. قرآن خود رسولؐ کی طرف لے جاتا ہے",
+      body:
+        "اب اطاعت کی آیات لائیں۔ سوال یہ نہ ہو کہ قرآن کافی ہے یا رسولؐ؛ سوال یہ ہو کہ خود قرآن رسولؐ کے بارے میں کیا حکم دیتا ہے۔ جب قرآن اطاعتِ رسولؐ کو دینی اطاعت کا حصہ بناتا ہے تو قرآن اور صاحبِ قرآن کو مقابل رکھنا درست نہیں رہتا۔",
+    },
+    {
+      heading: "4. احترام سے آگے: اطاعت کیا ہے؟",
+      body:
+        "رسولؐ سے محبت اور احترام ضروری ہیں، مگر اطاعت کا مطلب یہ ہے کہ اپنے فیصلے کو معتبر دینی ہدایت کے تابع کیا جائے۔ یہاں سامع سے پوچھیں: میں جس بات سے محبت کا دعویٰ کرتا ہوں، کیا اختلاف کی صورت میں اس کی رہنمائی کو اپنے نفس پر مقدم بھی کرتا ہوں؟",
+    },
+    {
+      heading: "5. یہی مقام منصبِ ہدایت کا سوال پیدا کرتا ہے",
+      body:
+        "اب کہیں کہ اصل بحث یہ نہیں کہ قرآن کے علاوہ کوئی دوسری کتاب چاہیے؛ اصل سوال یہ ہے کہ قرآن نے خود ہدایت سمجھانے، نافذ کرنے اور محفوظ رکھنے کے لیے معتبر رہنمائی کا کیا اصول دیا ہے۔ یہاں سے امامت کی طرف علمی راستہ قدرتی طور پر کھلتا ہے۔",
+    },
+    {
+      heading: "6. طالب جوہریؒ کی منبری ترکیب اپنائیں",
+      body:
+        "نتیجہ فوراً نہ سنائیں۔ پہلے سوال، پھر ممکنہ اعتراض، پھر عام مثال، پھر آیت۔ سامع کو اپنی بات کا محض مخاطب نہیں بلکہ استدلال کے سفر کا شریک بنائیں۔ مشکل بات اسی وقت آسان ہوتی ہے جب سامع دیکھ سکے کہ نتیجہ کہاں سے نکلا۔",
+    },
+    {
+      heading: "7. کربلا: ہدایت پہچاننے کے بعد وفاداری",
+      body:
+        "اختتام میں علمی گفتگو کو کربلا سے یوں جوڑیں کہ ربط ٹوٹے نہیں۔ ہدایت پہچان لینا پہلا مرحلہ ہے؛ اس کے ساتھ کھڑا رہنا دوسرا۔ کربلا بتاتی ہے کہ حق کا علم جب جان، مال، خاندان اور خوف کے امتحان میں آئے تو وفاداری کی حقیقت سامنے آتی ہے۔",
+    },
+  ],
+  pulpitFlowEn: [
+    { heading: "1. The Qur'an is in the home—but is it in life?", body: "Begin with Qur'an 17:9 and ask whether the Qur'an actually becomes the criterion in family, business, disagreement, and anger." },
+    { heading: "2. Guidance is more than information", body: "Religious information does not guarantee guidance. Faith and knowledge must become visible in character, speech, dealings, and priorities." },
+    { heading: "3. The Qur'an itself leads to the Messenger", body: "Use verses of obedience. The question is not Qur'an versus Messenger, but what the Qur'an itself commands regarding obedience to the Messenger." },
+    { heading: "4. Beyond respect: what is obedience?", body: "Love and respect matter, but obedience means submitting one's judgment and action to authoritative religious guidance." },
+    { heading: "5. The question of the office of guidance now arises", body: "The issue is not another book beside the Qur'an; it is what order of authoritative guidance the Qur'an itself establishes." },
+    { heading: "6. Use Johari's pulpit method", body: "Do not announce the result immediately. Build the question, voice the objection, use an ordinary example, then return to the verse." },
+    { heading: "7. Karbala: fidelity after recognizing guidance", body: "Karbala becomes the test of whether recognized truth is followed despite fear, cost, and pressure." },
+  ],
+  closingUr:
+    "سامع کو ایک عملی عہد دیں: اس ہفتے کسی ایک اہم فیصلے سے پہلے صرف یہ سوال کرے—میں جو چاہتا ہوں وہ ایک طرف، قرآن مجھے کس سمت لے جا رہا ہے؟ پھر معتبر دینی رہنمائی سے اپنے فہم کی تصدیق کرے۔ قرآن اسی وقت ہدایت بنتا ہے جب وہ ہمارے فیصلے پر حکومت کرے۔",
+  closingEn:
+    "Give the listener one practical commitment: before one important decision this week, ask not only what I want, but where the Qur'an directs me, then test that understanding through authoritative religious guidance.",
+};
+
+const DOSSIERS: readonly SermonDossier[] = [SABR, IMAMATE, DUA, ISMAH, QURAN_HIDAYAT];
 
 export function getTopicDossier(topicId: string): SermonDossier | null {
   const dossier = DOSSIERS.find((item) => item.topicId === topicId);

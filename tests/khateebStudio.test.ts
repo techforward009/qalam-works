@@ -446,6 +446,56 @@ describe("Khateeb Studio Talib Johari full-book ingestion", () => {
   });
 });
 
+describe("Khateeb Studio Qur'an and guidance deep topic", () => {
+  test("adds a searchable year-round Qur'an and guidance topic", () => {
+    const topic = searchTopicPreps("قرآن اور ہدایت", "ur")[0];
+    expect(topic?.id).toBe("quran-hidayat");
+    expect(topic?.quran.length).toBeGreaterThanOrEqual(3);
+  });
+
+  test("builds the deep dossier directly from Talib Johari's full-book material", () => {
+    const dossier = getTopicDossier("quran-hidayat");
+    expect(dossier).not.toBeNull();
+    expect(dossier?.perspectives.length).toBeGreaterThanOrEqual(5);
+    expect(dossier?.perspectives.every((item) => item.speakerId === "talib-johari")).toBe(true);
+    expect(dossier?.pulpitFlowUr.length).toBeGreaterThanOrEqual(7);
+  });
+
+  test("maps the relevant Talib Johari majalis into the new topic", () => {
+    const records = evidenceForSpeakerAndTopic("talib-johari", "quran-hidayat");
+    expect(records.length).toBeGreaterThanOrEqual(7);
+    expect(records.some((item) => item.id === "talib-mansab-01-quran-guidance")).toBe(true);
+    expect(records.some((item) => item.id === "talib-mansab-08-obedience-authority")).toBe(true);
+    expect(records.some((item) => item.id === "talib-mansab-09-guidance-continuity")).toBe(true);
+  });
+
+  test("Qur'an and guidance dossier Urdu is free of English vocabulary", () => {
+    const dossier = getTopicDossier("quran-hidayat")!;
+    const payload = [
+      dossier.titleUr,
+      dossier.thesisUr,
+      dossier.governingQuestionUr,
+      ...dossier.synthesisUr,
+      dossier.closingUr,
+      ...dossier.pulpitFlowUr.flatMap((item) => [item.heading, item.body]),
+      ...dossier.perspectives.flatMap((item) => [
+        item.nameUr,
+        item.sourceTitleUr,
+        item.coreUr,
+        ...item.explanationUr,
+        item.styleUr,
+        item.useUr,
+      ]),
+    ].join("\n");
+    expect(hasLatinWord(payload)).toBe(false);
+  });
+
+  test("single-author dossiers use an accurate Urdu heading", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("اصل ماخذ کے علمی زاویے");
+  });
+});
+
 describe("Khateeb Studio Urdu language purity", () => {
   test("normalizes legacy mixed terminology into Urdu", () => {
     const mixed =
