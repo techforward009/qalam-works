@@ -1,3 +1,5 @@
+import { NAQQAN_ASHRA_EVIDENCE } from "./naqqanEvidence";
+
 export type SpeakerEvidenceKind = "transcript" | "compiled-majalis";
 export type SpeakerEvidenceStatus = "ready" | "catalog-only";
 
@@ -39,6 +41,7 @@ export type SpeakerEvidence = {
  * pretend we have extracted claims from the full book until its text is ingested.
  */
 export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
+  ...NAQQAN_ASHRA_EVIDENCE,
   {
     id: "kashani-askari-1402",
     speakerId: "hamed-kashani",

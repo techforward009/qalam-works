@@ -18,6 +18,7 @@ import {
 } from "../app/tools/khateeb-studio/engine/speakerTopicIndex";
 import { searchTopicPreps, TOPIC_PREPS } from "../app/tools/khateeb-studio/engine/topicPrep";
 import { buildDossierText, getTopicDossier } from "../app/tools/khateeb-studio/engine/topicDossier";
+import { NAQQAN_ASHRA_EVIDENCE } from "../app/tools/khateeb-studio/engine/naqqanEvidence";
 import {
   SOUTH_ASIA_CORPUS_QUEUE,
   southAsiaSourcesForSpeaker,
@@ -363,5 +364,36 @@ describe("Khateeb Studio South Asian corpus intake", () => {
       expect(record.nextAction).toBe("full-text-ingest");
       expect(record.sourceUrl).toMatch(/^https:\/\//);
     }
+  });
+});
+
+describe("Khateeb Studio Naqqan full-text ingestion", () => {
+  test("ingests all nine numbered majalis present in the supplied transcript", () => {
+    expect(NAQQAN_ASHRA_EVIDENCE).toHaveLength(9);
+    expect(NAQQAN_ASHRA_EVIDENCE.every((item) => item.speakerId === "ali-naqi-naqvi")).toBe(true);
+    expect(NAQQAN_ASHRA_EVIDENCE.every((item) => item.status === "ready")).toBe(true);
+    expect(NAQQAN_ASHRA_EVIDENCE.every((item) => (item.materialUr?.length ?? 0) >= 3)).toBe(true);
+  });
+
+  test("adds a selectable deep dossier for ismah", () => {
+    const topic = searchTopicPreps("عصمت", "ur")[0];
+    expect(topic?.id).toBe("ismah");
+    const dossier = getTopicDossier("ismah");
+    expect(dossier).not.toBeNull();
+    expect(dossier?.perspectives.length).toBeGreaterThanOrEqual(4);
+    expect(dossier?.pulpitFlowUr.length).toBeGreaterThanOrEqual(7);
+  });
+
+  test("Naqqan material now contributes directly to the Imamate topic index", () => {
+    const records = evidenceForSpeakerAndTopic("ali-naqi-naqvi", "imamate");
+    expect(records.length).toBeGreaterThanOrEqual(3);
+    expect(records.some((item) => item.id === "naqqan-ashra-09-nubuwwah-imamate")).toBe(true);
+  });
+
+  test("speaker selection exposes actual ready Naqqan material, not a catalog link", () => {
+    const records = evidenceForSpeaker("ali-naqi-naqvi");
+    expect(records.length).toBeGreaterThanOrEqual(9);
+    expect(records.every((item) => item.kind === "transcript")).toBe(true);
+    expect(records.some((item) => item.summaryUr.includes("اصطف"))).toBe(true);
   });
 });

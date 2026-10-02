@@ -16,6 +16,31 @@ export type TopicPrep = SermonPrep & {
 
 const TOPICS: readonly TopicPrep[] = [
   {
+    id: "ismah",
+    category: "belief",
+    titleUr: "عصمت: اختیار کے ساتھ پاکیزگی اور الٰہی منصب کی اہلیت",
+    titleEn: "Infallibility: moral freedom, purity, and qualification for divine office",
+    themeUr: "عصمت کو جبر یا محض 'گناہ دیکھا نہیں گیا' کے معنی میں نہیں، بلکہ شعور و اختیار کے ساتھ ایسی بلند اخلاقی و روحانی اہلیت کے طور پر سمجھیں جو منصبِ الٰہی کے شایان ہو۔",
+    themeEn: "Present infallibility neither as compulsion nor as mere absence of observed sin, but as a state of moral and spiritual qualification compatible with awareness and freedom.",
+    openingUr: "اگر معصوم گناہ نہیں کرتا تو کیا وہ گناہ کر ہی نہیں سکتا؟ اور اگر اختیار باقی ہے تو عصمت کی قطعی ضمانت کہاں سے آتی ہے؟",
+    openingEn: "If the infallible does not sin, does that mean sin is mechanically impossible—and if freedom remains, where does certainty come from?",
+    quran: [
+      { ref: "آل عمران 3:33", arabic: "اِنَّ اللّٰهَ اصْطَفٰى اٰدَمَ وَنُوْحًا وَّاٰلَ اِبْرٰهِيْمَ وَاٰلَ عِمْرٰنَ عَلَى الْعٰلَمِيْنَ", ur: "اصطفاء کو الٰہی انتخاب اور qualification کے باب میں کھولیں۔", en: "Use istifa to discuss divine selection and qualification." },
+      { ref: "الأنعام 6:124", arabic: "اَللّٰهُ اَعْلَمُ حَيْثُ يَجْعَلُ رِسَالَتَهٗ", ur: "منصب کو علمِ الٰہی اور حقیقی اہلیت سے جوڑیں۔", en: "Connect divine office with God's knowledge of true qualification." },
+      { ref: "البقرة 2:124", arabic: "اِنِّي جَاعِلُكَ لِلنَّاسِ اِمَامًا", ur: "امامت اور اخلاقی qualification کے تعلق کے لیے۔", en: "Use for the relationship between Imamate and moral qualification." },
+    ],
+    sources: [
+      { labelUr: "علامہ سید علی نقی نقویؒ — عشرۂ مجالس: عصمت", labelEn: "Sayyid Ali Naqi Naqvi — majalis series on infallibility", detailUr: "صارف فراہم کردہ مکمل اردو transcript: اصطفاء، عصمت و اختیار، ملائکہ و انسانی عصمت، بشریت، ضبطِ نفس اور مراتبِ امامت۔", detailEn: "User-provided full Urdu transcript covering istifa, freedom, angelic vs human infallibility, humanity, self-mastery, and Imamate." },
+      { labelUr: "قرآن: 3:33، 6:124، 2:124", labelEn: "Qur'an: 3:33, 6:124, 2:124", detailUr: "اسی series میں استعمال ہونے والے بنیادی قرآنی anchors۔", detailEn: "Primary Qur'anic anchors used across the series." },
+    ],
+    anglesUr: ["اصطفاء اور عصمت", "عدم وقوع بمقابلہ عدم امکان", "عصمت اور اختیار", "ملائکہ اور انسانی عصمت", "بشریت اور اسوہ", "ضبط نفس", "نبوت، رسالت اور امامت"],
+    anglesEn: ["istifa and infallibility", "non-occurrence vs impossibility", "infallibility and freedom", "angelic vs human infallibility", "humanity and exemplarity", "self-mastery", "prophethood, messengership, and Imamate"],
+    cautionUr: "عصمت کے دقیق کلامی مباحث میں terminology واضح رکھیں؛ 'ناممکن' کو جسمانی incapacity یا جبر کے معنی میں نہ پیش کریں۔",
+    cautionEn: "Keep terminology precise; do not present moral impossibility as physical incapacity or compulsion.",
+    keywordsUr: ["عصمت", "معصوم", "اصطفاء", "اختیار", "ملائکہ", "بشریت", "ضبط نفس"],
+    keywordsEn: ["infallibility", "ismah", "istifa", "free will", "angels", "humanity", "self-mastery"],
+  },
+  {
     id: "sabr",
     category: "ethics",
     titleUr: "صبر: برداشت سے آگے، درست موقف پر ثابت قدمی",

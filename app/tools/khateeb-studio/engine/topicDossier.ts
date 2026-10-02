@@ -628,7 +628,211 @@ const DUA: SermonDossier = {
     "End with one simple exercise: tonight choose one supplication, select one phrase, understand its meaning, connect it to one real issue in your life, and tomorrow take one action consistent with that phrase. That is where dua moves from the tongue into character.",
 };
 
-const DOSSIERS: readonly SermonDossier[] = [SABR, IMAMATE, DUA];
+const ISMAH: SermonDossier = {
+  topicId: "ismah",
+  titleUr: "عصمت — اختیار، کمالِ کردار اور منصبِ الٰہی",
+  titleEn: "Infallibility — freedom, perfected character, and divine office",
+  thesisUr:
+    "علامہ سید علی نقی نقویؒ کے فراہم کردہ عشرۂ مجالس میں عصمت کو جبر یا محض تاریخی بے گناہی کے طور پر نہیں، بلکہ ایک منظم کلامی argument کے طور پر کھولا گیا ہے: الٰہی انتخاب پہلے سے موجود اہلیت پر قائم ہے؛ عصمت صرف گناہ کے عدمِ وقوع کا نام نہیں؛ moral impossibility اختیار کی نفی نہیں؛ اور انسانی عصمت کی عظمت حقیقی بشریت، جذبات اور محرکات کے باوجود ضبطِ نفس میں ظاہر ہوتی ہے۔",
+  thesisEn:
+    "In the supplied Naqvi majalis series, infallibility is developed not as compulsion or merely an observed history of sinlessness, but as a structured theological argument: divine selection rests on prior qualification; infallibility is stronger than non-occurrence; moral impossibility does not negate freedom; and human infallibility is elevated precisely because self-mastery is maintained within real human drives.",
+  governingQuestionUr:
+    "معصوم کا گناہ نہ کرنا اگر جبر نہیں تو کس معنی میں یقینی ہے، اور یہی عصمت نبوت و امامت کی اہلیت سے کیسے مربوط ہوتی ہے؟",
+  governingQuestionEn:
+    "If the infallible person's sinlessness is not compulsion, in what sense is it certain, and how does that certainty relate to qualification for prophethood and Imamate?",
+  perspectives: [
+    {
+      id: "naqqan-ismah-istifa",
+      speakerId: "ali-naqi-naqvi",
+      nameUr: "آیت اللہ سید علی نقی نقویؒ (نقن)",
+      nameEn: "Ayatullah Sayyid Ali Naqi Naqvi (Naqqan)",
+      sourceTitleUr: "مجالس 1–2: اصطفاء، علمِ الٰہی اور منصب",
+      sourceTitleEn: "Majalis 1–2: istifa, divine knowledge, and office",
+      sourceUrl: "https://maablib.org/list_of__ulama_majalis/majalis-list-of-allama-syed-ali-naqi-naqqan-sahib/",
+      coreUr:
+        "پہلا قدم یہ ہے کہ منصب عصمت پیدا نہیں کرتا؛ الٰہی انتخاب اس ہستی کو چنتا ہے جو منصب کے معیار پر پہلے ہی پوری اترتی ہے۔ «اصطفیٰ» کو وہ 'صاف بنا دینا' نہیں بلکہ 'صاف کو چن لینا' سمجھاتے ہیں، اور 6:124 سے اس انتخاب کو علمِ الٰہی سے جوڑتے ہیں۔",
+      coreEn:
+        "The first move is that office does not manufacture infallibility. Divine selection chooses the person already qualified for it. Naqvi reads istifa as selecting the pure rather than creating purity, and Qur'an 6:124 links the appointment to divine knowledge.",
+      explanationUr: [
+        "لغت یہاں decoration نہیں بلکہ argument ہے: «اصطفاء» کے morphology سے وہ qualification-before-appointment کا اصول اخذ کرتے ہیں۔",
+        "«اللّٰهُ أَعْلَمُ حَيْثُ يَجْعَلُ رِسَالَتَهُ» میں علم کا حوالہ یہ بتاتا ہے کہ منصب کسی حقیقی suitability کے مطابق رکھا جاتا ہے۔",
+        "یہی framework نبوت، رسالت اور امامت تینوں کے لیے ایک shared principle بن جاتا ہے۔",
+      ],
+      explanationEn: [
+        "Morphology becomes argument: istifa is used to establish qualification before appointment.",
+        "Qur'an 6:124 makes divine knowledge, not arbitrary choice, central to the placement of messengership.",
+        "The same framework is extended across prophethood, messengership, and Imamate.",
+      ],
+      styleUr:
+        "انداز: ایک لفظ کی صرفی و لغوی تحلیل → روزمرہ مثال → کلامی نتیجہ → منصبِ الٰہی پر اطلاق۔",
+      styleEn:
+        "Style: morphology and lexical analysis → ordinary analogy → theological conclusion → application to divine office.",
+      useUr:
+        "منبر میں پہلے 'اصطفاء' سمجھائیں، پھر یہ جملہ دیں: منصب نے انہیں پاک نہیں کیا؛ پاکیزگی و اہلیت کی بنا پر منصب ان کے سپرد ہوا۔",
+      useEn:
+        "Explain istifa first, then state: the office did not create purity; the office was entrusted on the basis of qualification.",
+      originalSnippet: "عصمت نتیجۂ رسالت نہیں ہے، بلکہ رسالت نتیجۂ عصمت ہے۔",
+    },
+    {
+      id: "naqqan-ismah-freedom",
+      speakerId: "ali-naqi-naqvi",
+      nameUr: "آیت اللہ سید علی نقی نقویؒ (نقن)",
+      nameEn: "Ayatullah Sayyid Ali Naqi Naqvi (Naqqan)",
+      sourceTitleUr: "مجالس 3–4: عدمِ وقوع، عدمِ امکان اور اختیار",
+      sourceTitleEn: "Majalis 3–4: non-occurrence, impossibility, and freedom",
+      sourceUrl: "https://maablib.org/list_of__ulama_majalis/majalis-list-of-allama-syed-ali-naqi-naqqan-sahib/",
+      coreUr:
+        "دوسرا قدم definition کو سخت بنانا ہے: صرف یہ کہنا کہ 'گناہ ہوا نہیں' عصمت نہیں، کیونکہ مستقبل اور باطن کی ضمانت نہیں بنتی۔ لیکن 'گناہ ناممکن ہے' کہتے ہی جبر کا سوال اٹھتا ہے۔ علامہ عدلِ الٰہی کی مثال سے دکھاتے ہیں کہ moral impossibility قدرت یا اختیار کی نفی نہیں ہوتی۔",
+      coreEn:
+        "The second move sharpens the definition: saying only that sin has not occurred cannot ground certainty. But calling sin impossible raises the problem of compulsion. Naqvi uses divine justice to show that moral impossibility need not negate power or freedom.",
+      explanationUr: [
+        "عدمِ وقوع empirical observation ہے؛ عصمت stronger certainty کا دعویٰ ہے۔",
+        "کسی کام کا نہ ہونا weakness کی وجہ سے بھی ہوسکتا ہے، اور perfection کی وجہ سے بھی۔",
+        "خدا کا ظلم نہ کرنا قدرت کی کمی نہیں؛ اسی analogy سے معصوم کی بے گناہی کو اختیار کے ساتھ compatible دکھایا جاتا ہے۔",
+      ],
+      explanationEn: [
+        "Non-occurrence is empirical; infallibility claims stronger certainty.",
+        "An act may fail to occur because of weakness or because perfected character excludes it.",
+        "God's not acting unjustly is not weakness; the analogy is used to preserve freedom within infallibility.",
+      ],
+      styleUr:
+        "انداز: binary question کھڑا کرنا، دونوں طرف کی مشکل دکھانا، پھر اصولِ عدل سے conceptual resolution دینا۔",
+      styleEn:
+        "Style: construct a binary problem, expose the difficulty on both sides, then resolve it through the doctrine of divine justice.",
+      useUr:
+        "سامع سے سیدھا سوال کریں: 'گناہ نہیں ہوا' اور 'گناہ اس شان سے صادر نہیں ہوسکتا'—کیا دونوں ایک بات ہیں؟ یہاں سے اختیار کی بحث کھولیں۔",
+      useEn:
+        "Ask directly: are 'sin did not occur' and 'sin cannot issue from this perfected moral station' the same claim? Then open the freedom question.",
+      originalSnippet: "نہ کرسکنا اور چیز ہے اور نہ ہوسکنا اور چیز ہے۔",
+    },
+    {
+      id: "naqqan-ismah-humanity",
+      speakerId: "ali-naqi-naqvi",
+      nameUr: "آیت اللہ سید علی نقی نقویؒ (نقن)",
+      nameEn: "Ayatullah Sayyid Ali Naqi Naqvi (Naqqan)",
+      sourceTitleUr: "مجالس 5–8: ملائکہ، بشریت اور ضبطِ نفس",
+      sourceTitleEn: "Majalis 5–8: angels, real humanity, and self-mastery",
+      sourceUrl: "https://maablib.org/list_of__ulama_majalis/majalis-list-of-allama-syed-ali-naqi-naqqan-sahib/",
+      coreUr:
+        "تیسرا قدم عصمت کی فضیلت کو real human condition میں رکھنا ہے۔ ملائکہ کی ارادی اطاعت تسلیم کرنے کے بعد علامہ فرق یہ بتاتے ہیں کہ انسان بھوک، پیاس، خواہش، غضب اور دنیاوی دباؤ کے درمیان اطاعت کرتا ہے۔ یہی وجہ ہے کہ حقیقی بشریت عصمت کے خلاف نہیں، بلکہ اس کی اخلاقی عظمت کا میدان ہے۔",
+      coreEn:
+        "The third move places the excellence of infallibility inside real human life. Angelic voluntary obedience is affirmed, but humans obey amid hunger, desire, anger, and worldly pressures. Real humanity therefore becomes the arena of moral excellence rather than a threat to infallibility.",
+      explanationUr: [
+        "بے گناہی تبھی moral virtue بنتی ہے جب شعور و ارادہ موجود ہوں۔",
+        "رسول یا امام کی عظمت بچانے کے لیے ان کی بشریت کو ظاہری قرار دینا اسوۂ عمل کی معنویت کم کر دیتا ہے۔",
+        "اس پوری بحث کا اخلاقی خلاصہ 'ضبطِ نفس' ہے: محرکات موجود ہیں، مگر وہ فیصلے پر حکومت نہیں کرتے۔",
+      ],
+      explanationEn: [
+        "Sinlessness becomes moral virtue only where awareness and volition are present.",
+        "Reducing the Prophet's or Imam's humanity to appearance weakens meaningful exemplarity.",
+        "The ethical summary is self-mastery: impulses exist, but they do not rule judgment.",
+      ],
+      styleUr:
+        "انداز: comparison → objection → Qur'anic correction → practical ethical bridge۔",
+      styleEn:
+        "Style: comparison → objection → Qur'anic correction → practical ethical bridge.",
+      useUr:
+        "عصمت کو inaccessible metaphysics نہ بنائیں؛ آخر میں ضبطِ نفس کو عام سامع کے لیے قابلِ عمل اخلاقی lesson کے طور پر نکالیں۔",
+      useEn:
+        "Do not leave infallibility as inaccessible metaphysics; end by drawing self-mastery as an actionable ethical lesson.",
+      originalSnippet: "حقیقت میں اس کی روح ہے ضبطِ نفس۔",
+    },
+    {
+      id: "naqqan-ismah-ranks-imamate",
+      speakerId: "ali-naqi-naqvi",
+      nameUr: "آیت اللہ سید علی نقی نقویؒ (نقن)",
+      nameEn: "Ayatullah Sayyid Ali Naqi Naqvi (Naqqan)",
+      sourceTitleUr: "مجلس 9: نبوت، رسالت، امامت اور مراتب",
+      sourceTitleEn: "Majlis 9: prophethood, messengership, Imamate, and ranks",
+      sourceUrl: "https://maablib.org/list_of__ulama_majalis/majalis-list-of-allama-syed-ali-naqi-naqqan-sahib/",
+      coreUr:
+        "آخری مجلس عصمت کو hierarchy of guidance سے جوڑتی ہے۔ ایک ہی حقیقت کے درجات ہوسکتے ہیں، جیسے روشنی کے درجات؛ اسی طرح نبوت، رسالت اور امامت الگ منصب ہیں۔ حضرت ابراہیمؑ کے 2:124 والے واقعے سے امامت کو distinct divine office کے طور پر argue کیا جاتا ہے۔",
+      coreEn:
+        "The final majlis connects infallibility with a hierarchy of guidance. One shared reality can have degrees, like light; similarly prophethood, messengership, and Imamate are distinct offices. Abraham's appointment in Qur'an 2:124 is used to argue for Imamate as a distinct divine office.",
+      explanationUr: [
+        "مراتبِ عصمت کو مراتبِ منصب سے سمجھانے کے لیے روشنی کی مثال استعمال ہوتی ہے۔",
+        "حضرت ابراہیمؑ کے پہلے سے نبی و رسول ہونے اور پھر امام بنائے جانے کی ترتیب distinction پیدا کرتی ہے۔",
+        "«لا ينال عهدي الظالمين» اخلاقی qualification کو الٰہی عہد کے ساتھ جوڑتی ہے۔",
+      ],
+      explanationEn: [
+        "Degrees of light are used to explain ranks within a shared reality.",
+        "Abraham's prior prophethood and later appointment as Imam create a distinction of offices.",
+        "'My covenant does not reach the wrongdoers' links moral qualification to divine covenant.",
+      ],
+      styleUr:
+        "انداز: analogy → classification → Qur'anic case study → qualification → succession۔",
+      styleEn:
+        "Style: analogy → classification → Qur'anic case study → qualification → succession.",
+      useUr:
+        "اس حصے کو عصمت سے امامت کی طرف transition کے طور پر استعمال کریں؛ سامع کو دکھائیں کہ doctrine isolated نہیں بلکہ ایک بڑے نظامِ ہدایت کا حصہ ہے۔",
+      useEn:
+        "Use this as the transition from infallibility to Imamate, showing that the doctrine belongs to a larger architecture of guidance.",
+      originalSnippet: "نبوت، رسالت، امامت۔",
+    },
+  ],
+  synthesisUr: [
+    "نقنؒ کی پوری series ایک مسلسل intellectual staircase بناتی ہے: **اصطفاء → qualification → عصمت کی تعریف → اختیار → ملائکہ سے تقابل → حقیقی بشریت → ضبطِ نفس → مراتبِ ہدایت → امامت**۔ یہی continuity اس material کی سب سے بڑی منبری طاقت ہے۔",
+    "یہاں عصمت کوئی magic shield نہیں بلکہ ایک کلامی و اخلاقی تصور ہے: خدا کے علم میں معلوم perfected qualification، جو آزادی کے ساتھ compatible ہے اور real human life میں self-mastery کی صورت میں ظاہر ہوتی ہے۔",
+    "خطیب کے لیے عملی سبق یہ ہے کہ عصمت کی مجلس کو صرف 'معصوم گناہ نہیں کرتے' پر ختم نہ کرے۔ سامع کو یہ سمجھائے کہ کیوں، کس معنی میں، اختیار کے ساتھ کیسے، اور اس عقیدے کا ordinary moral life کے لیے کیا ethical implication نکلتا ہے۔",
+  ],
+  synthesisEn: [
+    "Naqqan's series forms a continuous intellectual staircase: **istifa → qualification → definition of infallibility → freedom → comparison with angels → real humanity → self-mastery → ranks of guidance → Imamate**.",
+    "Infallibility is not presented as a magical shield but as a theological and ethical category: perfected qualification known to God, compatible with freedom, and manifested within real human life as self-mastery.",
+    "The practical preaching lesson is not to stop at 'the infallible do not sin,' but to explain why, in what sense, how freedom remains, and what ethical implication the doctrine has for ordinary life.",
+  ],
+  pulpitFlowUr: [
+    {
+      heading: "1. عصمت کو لفظِ اصطفاء سے کھولیں",
+      body:
+        "آل عمران 3:33 سے آغاز کریں۔ 'اصطفاء' کو صرف 'چن لیا' کہہ کر نہ گزریں۔ سوال کریں: چننے سے صفت پیدا ہوتی ہے یا صاحبِ صفت منتخب ہوتا ہے؟ یہی سے بنیاد رکھیں کہ الٰہی منصب کسی arbitrary lottery کا نتیجہ نہیں بلکہ خدا کے علم میں معلوم حقیقی اہلیت پر قائم ہے۔",
+    },
+    {
+      heading: "2. 'گناہ نہیں کیا' کافی تعریف کیوں نہیں؟",
+      body:
+        "سامع کو فرق سمجھائیں: کسی شخص سے ہمارے سامنے گناہ نہ ہونا observation ہے؛ عصمت certainty کا دعویٰ ہے۔ اگر definition صرف ماضی کے observation پر کھڑی ہو تو future اور hidden conduct کی ضمانت نہیں۔",
+    },
+    {
+      heading: "3. پھر مشکل خود پیدا کریں: اگر گناہ ممکن نہیں تو اختیار کہاں؟",
+      body:
+        "یہاں answer جلدی نہ دیں۔ پہلے tension محسوس کرائیں۔ اگر 'نہیں کرسکتا' physical inability ہے تو فضیلت ختم۔ پھر عدلِ الٰہی کی analogy لائیں: خدا ظلم نہیں کرتا، مگر قدرت ناقص نہیں۔ perfection بعض افعال کو character-incompatible بنا دیتی ہے۔",
+    },
+    {
+      heading: "4. ملائکہ سے comparison کر کے انسانی عصمت کا مقام واضح کریں",
+      body:
+        "فرشتوں کی اطاعت کو mechanical نہ کہیں؛ پھر فرق یہ رکھیں کہ human life میں hunger, anger, desire, pain اور social pressure موجود ہیں۔ انہی کے اندر obedience انسانی عصمت کو خاص moral grandeur دیتی ہے۔",
+    },
+    {
+      heading: "5. حقیقی بشریت کو کم نہ کریں",
+      body:
+        "قرآن رسول کی بشریت پر اصرار کرتا ہے۔ اگر بھوک، پیاس، خوف، درد اور انسانی جذبات حقیقت نہ ہوں تو صبر، روزہ، ایثار اور وفاداری ہمارے لیے قابلِ اتباع کیسے ہوں گے؟ معصومینؑ کا کمال انسان نہ ہونے میں نہیں، انسان ہوتے ہوئے نفس کے مغلوب نہ ہونے میں ہے۔",
+    },
+    {
+      heading: "6. عام سامع کے لیے اخلاقی bridge: ضبطِ نفس",
+      body:
+        "واضح کریں کہ سامع theological عصمت کا دعویٰ نہیں کرتا، مگر doctrine سے اخلاقی تربیت لیتا ہے: خواہش موجود ہو مگر فیصلہ اس کی غلامی میں نہ ہو؛ غصہ آئے مگر عدل نہ جائے؛ درد ہو مگر ذمہ داری نہ ٹوٹے۔ یہی 'ضبطِ نفس' ordinary life میں اس عقیدے کا تربیتی اثر ہے۔",
+    },
+    {
+      heading: "7. عصمت سے امامت کی طرف جائیں",
+      body:
+        "آخر میں ابراہیمؑ اور 2:124 لائیں۔ نبوت، رسالت اور امامت کو distinct مگر متعلق divine offices کے طور پر کھولیں، اور «لا ينال عهدي الظالمين» سے دکھائیں کہ الٰہی عہد moral qualification سے جدا نہیں۔",
+    },
+  ],
+  pulpitFlowEn: [
+    { heading: "1. Open infallibility through istifa", body: "Begin with Qur'an 3:33 and ask whether selection creates the quality or selects the qualified person. Divine office is grounded in real qualification known to God." },
+    { heading: "2. Why 'no sin was observed' is not enough", body: "Observed non-sinning is empirical; infallibility claims certainty stronger than an observer's limited history." },
+    { heading: "3. Raise the freedom problem", body: "If sin is impossible, is the person compelled? Use divine justice to distinguish weakness-based inability from perfection-based moral impossibility." },
+    { heading: "4. Compare angels and human infallibles", body: "Affirm angelic obedience, then note that human obedience occurs amid hunger, anger, desire, pain, and pressure." },
+    { heading: "5. Preserve real humanity", body: "The Qur'an insists on prophetic humanity. Real hunger, pain, and emotion give fasting, patience, sacrifice, and restraint their exemplary force." },
+    { heading: "6. Ethical bridge: self-mastery", body: "Ordinary believers do not claim theological infallibility, but they can learn self-government: desires exist without becoming rulers of judgment." },
+    { heading: "7. Move from infallibility to Imamate", body: "Use Abraham and Qur'an 2:124 to distinguish divine offices and connect covenant with moral qualification." },
+  ],
+  closingUr:
+    "اختتام میں عقیدہ اور اخلاق کو جوڑیں: معصوم کی پہچان صرف اس لیے نہیں کہ ہم ایک بلند مقام کا اعتراف کریں، بلکہ اس لیے بھی کہ ہمیں معلوم ہو انسان کی اصل عظمت نفس کے ہر جذبے کو ختم کرنے میں نہیں، بلکہ ان سب کے ہوتے ہوئے حق کو حاکم رکھنے میں ہے۔",
+  closingEn:
+    "Close by joining doctrine and ethics: recognizing the infallible is not only acknowledging a lofty station; it also teaches that human greatness lies not in having no impulses, but in keeping truth and moral judgment sovereign over them.",
+};
+
+const DOSSIERS: readonly SermonDossier[] = [SABR, IMAMATE, DUA, ISMAH];
 
 export function getTopicDossier(topicId: string): SermonDossier | null {
   return DOSSIERS.find((item) => item.topicId === topicId) ?? null;
