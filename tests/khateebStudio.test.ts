@@ -18,6 +18,10 @@ import {
 } from "../app/tools/khateeb-studio/engine/speakerTopicIndex";
 import { searchTopicPreps, TOPIC_PREPS } from "../app/tools/khateeb-studio/engine/topicPrep";
 import { buildDossierText, getTopicDossier } from "../app/tools/khateeb-studio/engine/topicDossier";
+import {
+  SOUTH_ASIA_CORPUS_QUEUE,
+  southAsiaSourcesForSpeaker,
+} from "../app/tools/khateeb-studio/engine/southAsianCorpusQueue";
 
 describe("Khateeb Studio seed corpus", () => {
   test("contains the requested historical speakers", () => {
@@ -333,5 +337,31 @@ describe("Khateeb Studio guided workflow", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).not.toContain("lg:grid-cols-[1.05fr_0.95fr]");
     expect(studio).toContain("space-y-6");
+  });
+});
+
+describe("Khateeb Studio South Asian corpus intake", () => {
+  test("starts with a substantial verified Pakistan/India intake queue", () => {
+    expect(SOUTH_ASIA_CORPUS_QUEUE.length).toBeGreaterThanOrEqual(12);
+    expect(new Set(SOUTH_ASIA_CORPUS_QUEUE.map((item) => item.region))).toEqual(
+      new Set(["pk", "in"]),
+    );
+    expect(SOUTH_ASIA_CORPUS_QUEUE.every((item) => item.status === "catalog-verified")).toBe(true);
+    expect(SOUTH_ASIA_CORPUS_QUEUE.every((item) => item.nextAction === "full-text-ingest")).toBe(true);
+  });
+
+  test("covers the first four priority South Asian voices", () => {
+    expect(southAsiaSourcesForSpeaker("talib-johari").length).toBeGreaterThanOrEqual(5);
+    expect(southAsiaSourcesForSpeaker("rashid-turabi").length).toBeGreaterThanOrEqual(3);
+    expect(southAsiaSourcesForSpeaker("ali-naqi-naqvi").length).toBeGreaterThanOrEqual(2);
+    expect(southAsiaSourcesForSpeaker("zeeshan-jawadi").length).toBeGreaterThanOrEqual(3);
+  });
+
+  test("does not pretend catalog metadata is already ingested sermon content", () => {
+    for (const record of SOUTH_ASIA_CORPUS_QUEUE) {
+      expect(record.status).toBe("catalog-verified");
+      expect(record.nextAction).toBe("full-text-ingest");
+      expect(record.sourceUrl).toMatch(/^https:\/\//);
+    }
   });
 });

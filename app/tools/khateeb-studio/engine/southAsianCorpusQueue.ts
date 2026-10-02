@@ -1,0 +1,230 @@
+export type SouthAsiaCorpusStatus = "catalog-verified";
+export type SouthAsiaCorpusKind = "compiled-majalis" | "speech-collection" | "majlis-series";
+
+export type SouthAsiaCorpusRecord = {
+  id: string;
+  speakerId: string;
+  region: "pk" | "in";
+  titleUr: string;
+  titleEn: string;
+  language: "ur";
+  kind: SouthAsiaCorpusKind;
+  publisherOrHost: string;
+  yearLabel?: string;
+  pages?: number;
+  topicHints: readonly string[];
+  sourceUrl: string;
+  status: SouthAsiaCorpusStatus;
+  nextAction: "full-text-ingest";
+};
+
+/**
+ * Verified South Asian corpus intake queue.
+ *
+ * IMPORTANT:
+ * - These records are NOT user-facing sermon material yet.
+ * - `topicHints` come only from explicit titles/catalog metadata.
+ * - No claim about what the speaker argued is made until the full text/audio is ingested.
+ */
+export const SOUTH_ASIA_CORPUS_QUEUE: readonly SouthAsiaCorpusRecord[] = [
+  {
+    id: "talib-johari-mansab-hidayat-quran",
+    speakerId: "talib-johari",
+    region: "pk",
+    titleUr: "منصب ہدایت اور قرآن",
+    titleEn: "The Office of Guidance and the Qur'an",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "پاک محرم ایجوکیشن ٹرسٹ کراچی / محفوظ بک ایجنسی",
+    yearLabel: "1427 AH / 2006",
+    pages: 160,
+    topicHints: ["امامت", "ہدایت", "قرآن"],
+    sourceUrl: "https://maablib.org/mansb-e-hidayat-aur-quran-by-talib-johri/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "talib-johari-tehzeeb-nafs",
+    speakerId: "talib-johari",
+    region: "pk",
+    titleUr: "تہذیب نفس اور تہذیب حاضر",
+    titleEn: "Refinement of the Self and Contemporary Civilization",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "پاک محرم ایجوکیشن ٹرسٹ کراچی",
+    yearLabel: "1422 AH / 2001",
+    pages: 243,
+    topicHints: ["اخلاق", "تربیت", "نفس", "معاصر مسائل"],
+    sourceUrl: "https://maablib.org/tehzeeb-e-nafs-aur-tehzeeb-e-hazr-by-talab-johri/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "talib-johari-miras-aql-wahy",
+    speakerId: "talib-johari",
+    region: "pk",
+    titleUr: "میراث عقل اور وحی الٰہی",
+    titleEn: "The Heritage of Reason and Divine Revelation",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "پاک محرم ایجوکیشن ٹرسٹ کراچی / محفوظ بک ایجنسی",
+    yearLabel: "1424 AH / 2003",
+    topicHints: ["عقل", "وحی", "قرآن", "کلام"],
+    sourceUrl: "https://maablib.org/miraas-e-aql-aur-wahi-e-elahi-by-talib-johri/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "talib-johari-asas-adamiyat-quran",
+    speakerId: "talib-johari",
+    region: "pk",
+    titleUr: "اساس آدمیت اور قرآن",
+    titleEn: "The Foundations of Humanity and the Qur'an",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "پاک محرم ایجوکیشن ٹرسٹ کراچی / محفوظ بک ایجنسی",
+    yearLabel: "1423 AH / 2002",
+    topicHints: ["انسان", "قرآن", "اخلاق"],
+    sourceUrl: "https://maablib.org/isas-e-aadmiyat-aur-quran-by-talib-johri/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "talib-johari-aalmi-muashra-quran",
+    speakerId: "talib-johari",
+    region: "pk",
+    titleUr: "عالمی معاشرہ اور قرآن حکیم",
+    titleEn: "Global Society and the Wise Qur'an",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "پاک محرم ایجوکیشن ٹرسٹ کراچی / محفوظ بک ایجنسی",
+    yearLabel: "1421 AH / 2000",
+    topicHints: ["معاشرہ", "قرآن", "اجتماعی مسائل"],
+    sourceUrl: "https://maablib.org/aalmi-muashra-aur-quran-e-hakeem-by-talib-johri/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "rashid-turabi-tawhid-shirk",
+    speakerId: "rashid-turabi",
+    region: "pk",
+    titleUr: "مجالس ترابی — توحید اور شرک",
+    titleEn: "Majalis-e-Turabi — Tawhid and Shirk",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "مآب لائبریری",
+    topicHints: ["توحید", "شرک", "عقائد"],
+    sourceUrl: "https://maablib.org/category/majaaalis-books/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "rashid-turabi-kufran-hayat",
+    speakerId: "rashid-turabi",
+    region: "pk",
+    titleUr: "مجالس ترابی — کفران نعمت اور حیات طیبہ",
+    titleEn: "Majalis-e-Turabi — Ingratitude and the Good Life",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "مآب لائبریری",
+    topicHints: ["کفران نعمت", "حیات طیبہ", "اخلاق"],
+    sourceUrl: "https://maablib.org/majalas-e-turabi-jild02-kufran-e-nimat-aur-hayat-tyyaba-turabi-mrtba-doctor-syed-zameer-akhtar-naqvi/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "rashid-turabi-dua-itmam",
+    speakerId: "rashid-turabi",
+    region: "pk",
+    titleUr: "مجالس ترابی — دعا اور اتمام نعمت",
+    titleEn: "Majalis-e-Turabi — Dua and Completion of Blessing",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "مآب لائبریری",
+    topicHints: ["دعا", "نعمت", "عبادت"],
+    sourceUrl: "https://maablib.org/category/majaaalis-books/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "ali-naqi-naqvi-taqareer-5",
+    speakerId: "ali-naqi-naqvi",
+    region: "in",
+    titleUr: "مجموعہ تقاریر — حصہ پنجم",
+    titleEn: "Collected Speeches — Part Five",
+    language: "ur",
+    kind: "speech-collection",
+    publisherOrHost: "امامیہ کتب خانہ لاہور / مآب لائبریری",
+    yearLabel: "1404 AH / 1984",
+    pages: 294,
+    topicHints: ["تقاریر", "مجالس"],
+    sourceUrl: "https://maablib.org/majmuwa-e-taqareer-syed-ali-naqi-naqvi-luckhnavi-mrtba-syed-afsar-abbas-zaidi/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "ali-naqi-naqvi-surah-jumuah",
+    speakerId: "ali-naqi-naqvi",
+    region: "in",
+    titleUr: "سورۂ جمعہ — سلسلۂ مجالس",
+    titleEn: "Surah al-Jumu'ah — Majlis Series",
+    language: "ur",
+    kind: "majlis-series",
+    publisherOrHost: "مآب مجالس آرکائیو",
+    topicHints: ["قرآن", "سورۂ جمعہ", "تفسیر"],
+    sourceUrl: "https://maablib.org/list_of__ulama_majalis/majalis-list-of-allama-syed-ali-naqi-naqqan-sahib/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "zeeshan-jawadi-khulq-azeem",
+    speakerId: "zeeshan-jawadi",
+    region: "in",
+    titleUr: "خلق عظیم",
+    titleEn: "Noble Character",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "عصمہ پبلیکیشنز کراچی / مآب لائبریری",
+    yearLabel: "1423 AH / 2002",
+    pages: 262,
+    topicHints: ["اخلاق", "سیرت", "مجالس"],
+    sourceUrl: "https://maablib.org/khulq-e-azeem-majalis-by-allama-zeeshan-jawadi/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "zeeshan-jawadi-irfan-risalat",
+    speakerId: "zeeshan-jawadi",
+    region: "in",
+    titleUr: "عرفان رسالت — بارہ مجلسیں",
+    titleEn: "Recognition of Prophethood — Twelve Majalis",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "احمد بک ڈپو کراچی / مآب لائبریری",
+    yearLabel: "1409 AH / 1989",
+    pages: 186,
+    topicHints: ["رسالت", "سیرت", "مجالس"],
+    sourceUrl: "https://maablib.org/barah-majlisain-by-syed-zeeshan-haider-jawadi/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
+    id: "zeeshan-jawadi-mahafil-majalis-1",
+    speakerId: "zeeshan-jawadi",
+    region: "in",
+    titleUr: "محافل و مجالس — حصہ اول",
+    titleEn: "Gatherings and Majalis — Part One",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "مذہبی دنیا الہ آباد / مآب لائبریری",
+    pages: 266,
+    topicHints: ["سیرت معصومین", "مجالس"],
+    sourceUrl: "https://maablib.org/mhafil-w-majalis-part01-by-syed-zeeshan-haider-jawadi/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+];
+
+export function southAsiaSourcesForSpeaker(speakerId: string): readonly SouthAsiaCorpusRecord[] {
+  return SOUTH_ASIA_CORPUS_QUEUE.filter((record) => record.speakerId === speakerId);
+}
