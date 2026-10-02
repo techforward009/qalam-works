@@ -4,6 +4,7 @@ import { KHATEEB_CALENDAR_SOURCE_ARCHIVE } from "../app/tools/khateeb-studio/eng
 import { KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
 import { RABI_AL_THANI_1448_EVENTS, SHIA_CALENDAR_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
 import { buildPreparationText, getSermonPrep, outlineMinutes } from "../app/tools/khateeb-studio/engine/sermonPrep";
+import { evidenceForSpeaker, SPEAKER_EVIDENCE } from "../app/tools/khateeb-studio/engine/speakerEvidence";
 import { searchTopicPreps, TOPIC_PREPS } from "../app/tools/khateeb-studio/engine/topicPrep";
 
 describe("Khateeb Studio seed corpus", () => {
@@ -139,5 +140,37 @@ describe("Khateeb Studio year-round topic preparation", () => {
     expect(studio).toContain("موضوع سے خطبہ تیار کریں");
     expect(studio).toContain("Prepare a sermon by topic");
     expect(studio.indexOf("موضوع سے خطبہ تیار کریں")).toBeLessThan(studio.indexOf("۱۴۴۸ھ کی تقویمی مناسبتیں"));
+  });
+});
+
+describe("Khateeb Studio real speaker material", () => {
+  test("does not treat profile tags as speech content", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("حقیقی مواد");
+    expect(studio).toContain("فرضی خلاصہ نہیں دکھا رہا");
+    expect(studio).toContain("verified material");
+  });
+
+  test("ships source-backed Kashani transcripts", () => {
+    const rows = evidenceForSpeaker("hamed-kashani");
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    expect(rows.every((row) => row.kind === "transcript")).toBe(true);
+    expect(rows.every((row) => row.sourceUrl.startsWith("https://www.hkashani.com/"))).toBe(true);
+    expect(rows.some((row) => row.topicsUr.includes("امام حسن عسکریؑ"))).toBe(true);
+  });
+
+  test("keeps Turabi collection records honest about ingestion state", () => {
+    const rows = evidenceForSpeaker("rashid-turabi");
+    expect(rows.length).toBeGreaterThanOrEqual(3);
+    expect(rows.every((row) => row.kind === "compiled-majalis")).toBe(true);
+    expect(rows.some((row) => row.titleUr.includes("توحید اور شرک"))).toBe(true);
+  });
+
+  test("every evidence row carries an inspectable source", () => {
+    for (const row of SPEAKER_EVIDENCE) {
+      expect(row.sourceUrl).toMatch(/^https:\/\//);
+      expect(row.summaryUr.length).toBeGreaterThan(40);
+      expect(row.takeawaysUr.length).toBeGreaterThanOrEqual(2);
+    }
   });
 });

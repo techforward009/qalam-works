@@ -26,6 +26,7 @@ import {
   outlineMinutes,
   type SermonDuration,
 } from "./engine/sermonPrep";
+import { evidenceForSpeaker } from "./engine/speakerEvidence";
 import {
   searchTopicPreps,
   topicTitle,
@@ -131,6 +132,9 @@ export default function KhateebStudioContent() {
   const event = selectedGroup?.representative;
 
   const speaker = KHATEEB_CORPUS.find((item) => item.id === selectedSpeaker);
+  const speakerEvidence = selectedSpeaker
+    ? evidenceForSpeaker(selectedSpeaker)
+    : [];
   const topicResults = useMemo(
     () => searchTopicPreps(topicQuery, ur ? "ur" : "en"),
     [topicQuery, ur],
@@ -744,6 +748,96 @@ export default function KhateebStudioContent() {
                 );
               })}
             </div>
+
+            {speaker ? (
+              <div className="mt-6 border-t border-[#1A3A2A]/10 pt-5 dark:border-[#35513d]">
+                <div className="mb-3">
+                  <h3 className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                    {ur
+                      ? `${speakerName(speaker, false)} — حقیقی مواد`
+                      : `${speakerName(speaker, true)} — verified material`}
+                  </h3>
+                  <p className="mt-1 text-xs text-[#687469] dark:text-[#9fb0a2]">
+                    {ur
+                      ? "یہاں صرف وہی مواد دکھایا جاتا ہے جس کا اصل ماخذ محفوظ ہے۔ عمومی tags کو قول یا خلاصہ بنا کر پیش نہیں کیا جاتا۔"
+                      : "Only source-backed material appears here. Generic profile tags are never presented as quotations or speech summaries."}
+                  </p>
+                </div>
+
+                {speakerEvidence.length ? (
+                  <div className="space-y-3">
+                    {speakerEvidence.map((record) => (
+                      <article
+                        key={record.id}
+                        className="rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                            record.kind === "transcript"
+                              ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+                              : "bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+                          }`}>
+                            {record.kind === "transcript"
+                              ? (ur ? "مکمل مکتوب خطاب" : "Full transcript")
+                              : (ur ? "محفوظ مجموعۂ مجالس" : "Archived collection")}
+                          </span>
+                          {record.dateLabel ? (
+                            <span className="text-[11px] text-[#687469] dark:text-[#9fb0a2]">
+                              {record.dateLabel}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <h4 className="mt-2 font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                          {ur ? record.titleUr : record.titleEn}
+                        </h4>
+                        <p className="mt-2 text-sm text-[#37443a] dark:text-[#c8d5cc]">
+                          {ur ? record.summaryUr : record.summaryEn}
+                        </p>
+
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {(ur ? record.topicsUr : record.topicsEn).map((label) => (
+                            <span
+                              key={label}
+                              className="rounded-full border border-[#1A3A2A]/10 bg-white px-2 py-0.5 text-[11px] text-[#5f6f61] dark:border-[#35513d] dark:bg-[#162a1e] dark:text-[#a8c8b0]"
+                            >
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="mt-3">
+                          <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
+                            {ur ? "اس خطاب/ماخذ سے قابلِ استفادہ نکات" : "Usable points from this source"}
+                          </div>
+                          <ul className="mt-1 space-y-1 text-sm text-[#303830] dark:text-[#d7e1d9]">
+                            {(ur ? record.takeawaysUr : record.takeawaysEn).map((point) => (
+                              <li key={point}>• {point}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <a
+                          href={record.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#3a6a4a] hover:underline dark:text-[#a8c8b0]"
+                        >
+                          {ur ? record.sourceLabelUr : record.sourceLabelEn}
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-[#1A3A2A]/15 bg-[#F7F5EF] p-4 text-sm text-[#5f6f61] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
+                    {ur
+                      ? "اس شخصیت کا verified خطاب/متن ابھی corpus میں ingest نہیں ہوا۔ اس لیے Qalam یہاں کوئی فرضی خلاصہ نہیں دکھا رہا۔"
+                      : "No verified transcript or text for this speaker has been ingested yet, so Qalam does not invent a summary."}
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         </section>
 
