@@ -398,6 +398,63 @@ describe("Khateeb Studio multi-majlis series planning", () => {
   });
 });
 
+describe("Khateeb Studio curated Imamate ashra", () => {
+  test("uses a hand-curated ten-session scholarly journey for Imamate", () => {
+    const plan = buildMajlisSeries(getTopicDossier("imamate")!, 10);
+    expect(plan.sessions).toHaveLength(10);
+    expect(plan.titleUr).toContain("عشرۂ مجالس");
+    expect(plan.sessions[0].titleUr).toContain("امامت کا سوال");
+    expect(plan.sessions[4].titleUr).toContain("ابراہیم");
+    expect(plan.sessions[9].titleUr).toContain("عہدِ زندگی");
+  });
+
+  test("every curated Imamate session has a distinct purpose, source, and takeaway", () => {
+    const plan = buildMajlisSeries(getTopicDossier("imamate")!, 10);
+    expect(new Set(plan.sessions.map((item) => item.titleUr)).size).toBe(10);
+    for (const session of plan.sessions) {
+      expect(session.purposeUr.length).toBeGreaterThan(70);
+      expect(session.sourceUr.length).toBeGreaterThan(5);
+      expect(session.takeawayUr?.length).toBeGreaterThan(20);
+      expect(session.avoidRepeatUr?.length).toBeGreaterThan(20);
+    }
+  });
+
+  test("curated Imamate ashra deliberately includes Pakistani and Indian scholarship", () => {
+    const plan = buildMajlisSeries(getTopicDossier("imamate")!, 10);
+    const sources = plan.sessions.map((item) => item.sourceUr).join(" ");
+    expect(sources).toContain("طالب جوہری");
+    expect(sources).toContain("علی نقی نقوی");
+  });
+
+  test("curated Imamate Urdu contains no English words", () => {
+    const plan = buildMajlisSeries(getTopicDossier("imamate")!, 10);
+    const payload = [
+      plan.titleUr,
+      plan.aimUr,
+      plan.finalUr,
+      ...plan.sessions.flatMap((item) => [
+        item.titleUr,
+        item.purposeUr,
+        ...item.materialUr,
+        item.sourceUr,
+        ...(item.quranUr ?? []),
+        item.previousBridgeUr ?? "",
+        item.nextBridgeUr ?? "",
+        item.takeawayUr ?? "",
+        item.avoidRepeatUr ?? "",
+      ]),
+    ].join("\n");
+    expect(hasLatinWord(payload)).toBe(false);
+  });
+
+  test("series UI exposes Qur'anic foundation, takeaway, and anti-repetition guidance", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("قرآنی بنیاد");
+    expect(studio).toContain("حاصلِ مجلس");
+    expect(studio).toContain("تکرار سے بچیں");
+  });
+});
+
 describe("Khateeb Studio South Asian corpus intake", () => {
   test("starts with a substantial verified Pakistan/India intake queue", () => {
     expect(SOUTH_ASIA_CORPUS_QUEUE.length).toBeGreaterThanOrEqual(12);

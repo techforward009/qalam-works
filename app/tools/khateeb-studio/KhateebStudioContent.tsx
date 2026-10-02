@@ -669,6 +669,18 @@ export default function KhateebStudioContent({
                         <p className="mt-3 text-sm font-semibold leading-7 text-[#37443a] dark:text-[#c8d5cc]">
                           {ur ? session.purposeUr : session.purposeEn}
                         </p>
+                        {(ur ? session.quranUr : session.quranEn)?.length ? (
+                          <div className="mt-3 rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#0e1c15]">
+                            <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
+                              {ur ? "قرآنی بنیاد" : "Qur'anic foundation"}
+                            </div>
+                            <div className="mt-2 space-y-1 text-sm text-[#303830] dark:text-[#d7e1d9]">
+                              {(ur ? session.quranUr : session.quranEn)?.map((item) => (
+                                <p key={item}>• {item}</p>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
                         <div className="mt-3 space-y-2">
                           {(ur ? session.materialUr : session.materialEn).map((point) => (
                             <p key={point} className="text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
@@ -676,6 +688,18 @@ export default function KhateebStudioContent({
                             </p>
                           ))}
                         </div>
+                        {(ur ? session.takeawayUr : session.takeawayEn) ? (
+                          <div className="mt-3 rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#0e1c15]">
+                            <strong>{ur ? "حاصلِ مجلس: " : "Session takeaway: "}</strong>
+                            {ur ? session.takeawayUr : session.takeawayEn}
+                          </div>
+                        ) : null}
+                        {(ur ? session.avoidRepeatUr : session.avoidRepeatEn) ? (
+                          <div className="mt-3 text-xs leading-6 text-[#7b6750] dark:text-[#c0a77c]">
+                            <strong>{ur ? "تکرار سے بچیں: " : "Avoid repetition: "}</strong>
+                            {ur ? session.avoidRepeatUr : session.avoidRepeatEn}
+                          </div>
+                        ) : null}
                         {(ur ? session.nextBridgeUr : session.nextBridgeEn) ? (
                           <div className="mt-3 rounded-lg border border-[#B8935A]/25 bg-[#fbf7ee] p-3 text-sm text-[#5a4830] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#d7bc8a]">
                             <strong>{ur ? "اگلی مجلس کی تمہید: " : "Lead into next: "}</strong>

@@ -1,4 +1,5 @@
 import type { SermonDossier, ScholarPerspective } from "./topicDossier";
+import { getCuratedMajlisSeries } from "./curatedSeries";
 
 export type MajlisSeriesLength = 1 | 3 | 5 | 10;
 
@@ -16,6 +17,12 @@ export type MajlisSeriesSession = {
   previousBridgeEn?: string;
   nextBridgeUr?: string;
   nextBridgeEn?: string;
+  quranUr?: readonly string[];
+  quranEn?: readonly string[];
+  avoidRepeatUr?: string;
+  avoidRepeatEn?: string;
+  takeawayUr?: string;
+  takeawayEn?: string;
 };
 
 export type MajlisSeriesPlan = {
@@ -111,6 +118,9 @@ export function buildMajlisSeries(
   dossier: SermonDossier,
   length: MajlisSeriesLength,
 ): MajlisSeriesPlan {
+  const curated = getCuratedMajlisSeries(dossier.topicId, length);
+  if (curated) return curated;
+
   const pool = candidatesFor(dossier);
   const chosen = evenlySelect(pool, Math.min(length, pool.length));
 
@@ -192,7 +202,16 @@ export function buildMajlisSeriesText(
     );
     const previous = ur ? session.previousBridgeUr : session.previousBridgeEn;
     if (previous) lines.push(`${ur ? "ربطِ گزشتہ" : "Bridge from previous"}: ${previous}`);
+    const quran = ur ? session.quranUr : session.quranEn;
+    if (quran?.length) {
+      lines.push(ur ? "قرآنی بنیاد:" : "Qur'anic foundation:");
+      for (const item of quran) lines.push(`• ${item}`);
+    }
     for (const point of ur ? session.materialUr : session.materialEn) lines.push(`• ${point}`);
+    const takeaway = ur ? session.takeawayUr : session.takeawayEn;
+    if (takeaway) lines.push(`${ur ? "حاصلِ مجلس" : "Session takeaway"}: ${takeaway}`);
+    const avoid = ur ? session.avoidRepeatUr : session.avoidRepeatEn;
+    if (avoid) lines.push(`${ur ? "تکرار سے بچیں" : "Avoid repetition"}: ${avoid}`);
     const next = ur ? session.nextBridgeUr : session.nextBridgeEn;
     if (next) lines.push(`${ur ? "اگلی مجلس کی تمہید" : "Lead into next"}: ${next}`);
   }
