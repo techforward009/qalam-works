@@ -40,6 +40,11 @@ import {
   getTopicDossier,
 } from "./engine/topicDossier";
 import {
+  buildMajlisSeries,
+  buildMajlisSeriesText,
+  type MajlisSeriesLength,
+} from "./engine/seriesPlanner";
+import {
   applyKhateebStudioQuery,
   DEFAULT_KHATEEB_STUDIO_VIEW,
   type KhateebStudioView,
@@ -99,6 +104,7 @@ export default function KhateebStudioContent({
   const [selectedEvent, setSelectedEvent] = useState(initialView.event);
   const [selectedSpeaker, setSelectedSpeaker] = useState(initialView.speaker);
   const [duration, setDuration] = useState<SermonDuration>(initialView.duration);
+  const [seriesLength, setSeriesLength] = useState<MajlisSeriesLength>(initialView.series);
   const [topicQuery, setTopicQuery] = useState("");
   const [selectedTopicId, setSelectedTopicId] = useState(initialView.topic);
 
@@ -166,6 +172,12 @@ export default function KhateebStudioContent({
   const topicDossier = topic ? getTopicDossier(topic.id) : null;
   const topicDossierText = topicDossier
     ? buildDossierText(topicDossier, ur ? "ur" : "en")
+    : "";
+  const topicSeries = topicDossier
+    ? buildMajlisSeries(topicDossier, seriesLength)
+    : null;
+  const topicSeriesText = topicSeries
+    ? buildMajlisSeriesText(topicSeries, ur ? "ur" : "en")
     : "";
   const topicSpeakerEvidence = topic ? evidenceForTopic(topic.id) : [];
   const topicPreparationText = topic
@@ -239,7 +251,10 @@ export default function KhateebStudioContent({
   };
 
   const copyTopicPreparation = async () => {
-    const text = topicDossierText || topicPreparationText;
+    const text =
+      seriesLength > 1 && topicSeriesText
+        ? topicSeriesText
+        : topicDossierText || topicPreparationText;
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
@@ -296,6 +311,7 @@ export default function KhateebStudioContent({
       region: selectedRegion,
       event: selectedEvent,
       duration,
+      series: seriesLength,
     });
     const current = window.location.search.replace(/^\?/, "");
     if (next === current) return;
@@ -310,6 +326,7 @@ export default function KhateebStudioContent({
     selectedRegion,
     selectedEvent,
     duration,
+    seriesLength,
   ]);
 
   return (
@@ -518,6 +535,40 @@ export default function KhateebStudioContent({
             </div>
           </div>
 
+          <div className="mt-4 rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-3 dark:border-[#35513d] dark:bg-[#0e1c15]">
+            <div className="mb-2 text-xs font-bold text-[#687469] dark:text-[#9fb0a2]">
+              {ur ? "تیاری کی نوعیت" : "Preparation format"}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {([
+                [1, ur ? "ایک مجلس" : "Single sermon"],
+                [3, ur ? "سہ روزہ مجالس" : "3-session series"],
+                [5, ur ? "خمسہ مجالس" : "5-session series"],
+                [10, ur ? "عشرۂ مجالس" : "10-session series"],
+              ] as const).map(([count, label]) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => setSeriesLength(count)}
+                  className={`rounded-full border px-3 py-1.5 text-sm ${
+                    seriesLength === count
+                      ? "border-[#1A3A2A] bg-[#1A3A2A] text-white dark:border-[#8faa93] dark:bg-[#35513d]"
+                      : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {seriesLength > 1 ? (
+              <p className="mt-2 text-xs text-[#687469] dark:text-[#9fb0a2]">
+                {ur
+                  ? "ہر مجلس پچھلی مجلس پر تعمیر ہوگی؛ ایک ہی مضمون کو کئی بار دہرانے کے بجائے علمی سفر مرحلہ وار آگے بڑھے گا۔"
+                  : "Each session builds on the previous one; the subject advances instead of repeating the same sermon."}
+              </p>
+            ) : null}
+          </div>
+
           <label className={`${workflowStep === 1 ? "relative mt-5 block" : "hidden"}`}>
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#748078]" />
             <input
@@ -576,7 +627,71 @@ export default function KhateebStudioContent({
                 </button>
               </div>
 
-              {topicDossier ? (
+              {topicDossier && seriesLength > 1 && topicSeries ? (
+                <div className="mt-5 space-y-5">
+                  <section className="rounded-xl border border-[#B8935A]/30 bg-white p-4 dark:border-[#6f5b35] dark:bg-[#162a1e]">
+                    <div className="text-xs font-bold text-[#8a6838] dark:text-[#d7bc8a]">
+                      {ur ? "پورے سلسلے کا علمی مقصد" : "Aim of the whole series"}
+                    </div>
+                    <h3 className="mt-2 text-lg font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                      {ur ? topicSeries.titleUr : topicSeries.titleEn}
+                    </h3>
+                    <p className="mt-2 text-sm leading-8 text-[#303830] dark:text-[#d7e1d9]">
+                      {ur ? topicSeries.aimUr : topicSeries.aimEn}
+                    </p>
+                  </section>
+
+                  <section className="space-y-4">
+                    {topicSeries.sessions.map((session) => (
+                      <article
+                        key={session.number}
+                        className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1A3A2A] text-sm font-bold text-white dark:bg-[#35513d]">
+                            {session.number}
+                          </span>
+                          <div>
+                            <h4 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                              {ur ? session.titleUr : session.titleEn}
+                            </h4>
+                            <p className="mt-1 text-xs text-[#8a6838] dark:text-[#d7bc8a]">
+                              {ur ? `علمی بنیاد: ${session.sourceUr}` : `Source basis: ${session.sourceEn}`}
+                            </p>
+                          </div>
+                        </div>
+                        {(ur ? session.previousBridgeUr : session.previousBridgeEn) ? (
+                          <div className="mt-3 rounded-lg bg-[#F7F5EF] p-3 text-sm text-[#5a4830] dark:bg-[#0e1c15] dark:text-[#d7bc8a]">
+                            <strong>{ur ? "ربطِ گزشتہ: " : "Bridge from previous: "}</strong>
+                            {ur ? session.previousBridgeUr : session.previousBridgeEn}
+                          </div>
+                        ) : null}
+                        <p className="mt-3 text-sm font-semibold leading-7 text-[#37443a] dark:text-[#c8d5cc]">
+                          {ur ? session.purposeUr : session.purposeEn}
+                        </p>
+                        <div className="mt-3 space-y-2">
+                          {(ur ? session.materialUr : session.materialEn).map((point) => (
+                            <p key={point} className="text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
+                              • {point}
+                            </p>
+                          ))}
+                        </div>
+                        {(ur ? session.nextBridgeUr : session.nextBridgeEn) ? (
+                          <div className="mt-3 rounded-lg border border-[#B8935A]/25 bg-[#fbf7ee] p-3 text-sm text-[#5a4830] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#d7bc8a]">
+                            <strong>{ur ? "اگلی مجلس کی تمہید: " : "Lead into next: "}</strong>
+                            {ur ? session.nextBridgeUr : session.nextBridgeEn}
+                          </div>
+                        ) : null}
+                      </article>
+                    ))}
+                  </section>
+
+                  <section className="rounded-xl border border-[#B8935A]/30 bg-[#fbf7ee] p-4 text-sm leading-8 text-[#5a4830] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#e2c895]">
+                    <strong>{ur ? "آخری مجلس کے لیے ہدایت: " : "Guidance for the final session: "}</strong>
+                    {ur ? topicSeries.finalUr : topicSeries.finalEn}
+                  </section>
+                </div>
+              ) : topicDossier ? (
                 <div className="mt-5 space-y-5">
                   <section className="rounded-xl border border-[#B8935A]/30 bg-white p-4 dark:border-[#6f5b35] dark:bg-[#162a1e]">
                     <div className="text-xs font-bold text-[#8a6838] dark:text-[#d7bc8a]">

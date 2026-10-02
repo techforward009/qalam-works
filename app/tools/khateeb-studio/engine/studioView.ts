@@ -7,6 +7,7 @@ import {
   type ShiaCalendarRegion,
 } from "./shiaCalendar";
 import type { SermonDuration } from "./sermonPrep";
+import type { MajlisSeriesLength } from "./seriesPlanner";
 import { TOPIC_PREPS } from "./topicPrep";
 
 export type KhateebPreparationMode = "topic" | "occasion";
@@ -21,6 +22,7 @@ export type KhateebStudioView = {
   region: ShiaCalendarRegion;
   event: string;
   duration: SermonDuration;
+  series: MajlisSeriesLength;
 };
 
 export const DEFAULT_KHATEEB_STUDIO_VIEW: KhateebStudioView = {
@@ -32,6 +34,7 @@ export const DEFAULT_KHATEEB_STUDIO_VIEW: KhateebStudioView = {
   region: "all",
   event: "",
   duration: 30,
+  series: 1,
 };
 
 const MONTHS = new Set(CALENDAR_MONTHS_1448.map((item) => item.id));
@@ -39,6 +42,7 @@ const TOPICS = new Set(TOPIC_PREPS.map((item) => item.id));
 const SPEAKERS = new Set(KHATEEB_CORPUS.map((item) => item.id));
 const REGIONS = new Set<ShiaCalendarRegion>(["all", "pk", "in", "ir"]);
 const DURATIONS = new Set<SermonDuration>([20, 30, 45]);
+const SERIES_LENGTHS = new Set<MajlisSeriesLength>([1, 3, 5, 10]);
 
 function first(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
@@ -66,6 +70,7 @@ export function parseKhateebStudioView(
   const monthValue = first(raw.month);
   const regionValue = first(raw.region);
   const durationValue = Number(first(raw.duration));
+  const seriesValue = Number(first(raw.series));
   const month = MONTHS.has(monthValue as IslamicMonthId)
     ? (monthValue as IslamicMonthId)
     : DEFAULT_KHATEEB_STUDIO_VIEW.month;
@@ -84,6 +89,9 @@ export function parseKhateebStudioView(
     duration: DURATIONS.has(durationValue as SermonDuration)
       ? (durationValue as SermonDuration)
       : 30,
+    series: SERIES_LENGTHS.has(seriesValue as MajlisSeriesLength)
+      ? (seriesValue as MajlisSeriesLength)
+      : 1,
   };
 }
 
@@ -97,12 +105,13 @@ export function khateebStudioQuery(view: KhateebStudioView): string {
   if (view.region !== DEFAULT_KHATEEB_STUDIO_VIEW.region) params.set("region", view.region);
   if (view.event) params.set("event", view.event);
   if (view.duration !== DEFAULT_KHATEEB_STUDIO_VIEW.duration) params.set("duration", String(view.duration));
+  if (view.series !== DEFAULT_KHATEEB_STUDIO_VIEW.series) params.set("series", String(view.series));
   return params.toString();
 }
 
 export function applyKhateebStudioQuery(current: string, view: KhateebStudioView): string {
   const params = new URLSearchParams(current.startsWith("?") ? current.slice(1) : current);
-  for (const key of ["step", "mode", "topic", "speaker", "month", "region", "event", "duration"]) {
+  for (const key of ["step", "mode", "topic", "speaker", "month", "region", "event", "duration", "series"]) {
     params.delete(key);
   }
   const next = new URLSearchParams(khateebStudioQuery(view));

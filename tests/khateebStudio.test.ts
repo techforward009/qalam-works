@@ -25,6 +25,7 @@ import {
   southAsiaSourcesForSpeaker,
 } from "../app/tools/khateeb-studio/engine/southAsianCorpusQueue";
 import { hasLatinWord, pureKhateebUrdu } from "../app/tools/khateeb-studio/engine/urduPurity";
+import { buildMajlisSeries, buildMajlisSeriesText } from "../app/tools/khateeb-studio/engine/seriesPlanner";
 import { groupCalendarEvents } from "../app/tools/khateeb-studio/engine/groupCalendarEvents";
 import {
   applyKhateebStudioQuery,
@@ -349,6 +350,54 @@ describe("Khateeb Studio guided workflow", () => {
   });
 });
 
+describe("Khateeb Studio multi-majlis series planning", () => {
+  test("builds one, three, five, and ten-session plans from a deep dossier", () => {
+    const dossier = getTopicDossier("sabr")!;
+    expect(buildMajlisSeries(dossier, 1).sessions).toHaveLength(1);
+    expect(buildMajlisSeries(dossier, 3).sessions).toHaveLength(3);
+    expect(buildMajlisSeries(dossier, 5).sessions).toHaveLength(5);
+    expect(buildMajlisSeries(dossier, 10).sessions).toHaveLength(10);
+  });
+
+  test("multi-session plans contain continuity bridges instead of isolated repeats", () => {
+    const plan = buildMajlisSeries(getTopicDossier("imamate")!, 5);
+    expect(plan.sessions[0].previousBridgeUr).toBeUndefined();
+    expect(plan.sessions[0].nextBridgeUr).toBeTruthy();
+    expect(plan.sessions[1].previousBridgeUr).toBeTruthy();
+    expect(plan.sessions[plan.sessions.length - 1].nextBridgeUr).toBeUndefined();
+  });
+
+  test("copyable Urdu series text exposes session-by-session progression", () => {
+    const text = buildMajlisSeriesText(buildMajlisSeries(getTopicDossier("dua")!, 3), "ur");
+    expect(text).toContain("مجلس 1:");
+    expect(text).toContain("مجلس 2:");
+    expect(text).toContain("مجلس 3:");
+    expect(text).toContain("ربطِ گزشتہ");
+    expect(text).toContain("اگلی مجلس کی تمہید");
+  });
+
+  test("series length survives refresh in the URL view state", () => {
+    const view = parseKhateebStudioView({
+      step: "3",
+      mode: "topic",
+      topic: "imamate",
+      series: "10",
+    });
+    expect(view.series).toBe(10);
+    expect(khateebStudioQuery(view)).toContain("series=10");
+  });
+
+  test("studio offers single, three-day, five-part, and ten-part preparation", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("ایک مجلس");
+    expect(studio).toContain("سہ روزہ مجالس");
+    expect(studio).toContain("خمسہ مجالس");
+    expect(studio).toContain("عشرۂ مجالس");
+    expect(studio).toContain("ربطِ گزشتہ");
+    expect(studio).toContain("اگلی مجلس کی تمہید");
+  });
+});
+
 describe("Khateeb Studio South Asian corpus intake", () => {
   test("starts with a substantial verified Pakistan/India intake queue", () => {
     expect(SOUTH_ASIA_CORPUS_QUEUE.length).toBeGreaterThanOrEqual(12);
@@ -609,6 +658,7 @@ describe("Khateeb Studio refresh", () => {
       region: "all",
       event: "",
       duration: 30,
+      series: 1,
     });
     const params = new URLSearchParams(next);
     expect(params.get("lang")).toBe("ur");
