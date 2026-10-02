@@ -501,7 +501,7 @@ export default function KhateebStudioContent() {
               />
             </label>
 
-            <div className="max-h-[560px] overflow-auto pe-1 space-y-5">
+            <div className="space-y-5">
               {(["pk", "in", "ir"] as const).map((region) => {
                 const rows = filteredSpeakers.filter(
                   (item) => item.region === region,

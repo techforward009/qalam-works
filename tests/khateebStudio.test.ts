@@ -53,5 +53,6 @@ describe("Khateeb Studio typography", () => {
     expect(studio).toContain("Visible occasions");
     expect(globals).not.toContain("khateeb-studio");
     expect(globals).not.toContain("jameel-noori-nastaleeq-400.woff2");
+    expect(studio).not.toContain("max-h-[560px]");
   });
 });
