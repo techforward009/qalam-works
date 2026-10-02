@@ -442,4 +442,31 @@ export const TOOL_CATALOG: ToolEntry[] = [
     },
     example: "الی → اِلٰى",
   },
+
+  {
+    id: "khateeb_studio",
+    route: "/tools/khateeb-studio",
+    Icon: Library,
+    iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50",
+    iconColor: "text-[#1A3A2A] dark:text-[#8faa93]",
+    name: { en: "Khateeb Studio", ur: "خطیب اسٹوڈیو" },
+    short: {
+      en: "Explore Shi'a calendar occasions and a curated khateeb source index for sermon research.",
+      ur: "شیعی مناسبتیں دیکھیں اور خطبے کی تحقیق کے لیے منتخب خطیبانہ ماخذ تلاش کریں۔",
+    },
+    whatItDoes: {
+      en: "Lets you choose a calendar occasion, browse a source-index of Pakistani, Indian, and Iranian speakers and scholars, and prepare a compact research brief.",
+      ur: "کسی تقویمی مناسبت کو منتخب کریں، پاکستانی، ہندوستانی اور ایرانی خطباء و اہل علم کے ماخذ دیکھیں، اور تحقیق کا مختصر خاکہ تیار کریں۔",
+    },
+    input: { en: "A calendar occasion and optional speaker/source selection.", ur: "تقویمی مناسبت اور اختیاری خطیب یا ماخذ کا انتخاب۔" },
+    output: { en: "A source-aware research brief and links to selected public sources.", ur: "ماخذ کے ساتھ تحقیقی brief اور منتخب عوامی ذرائع کے روابط۔" },
+    doesNotDo: {
+      en: "It does not yet answer from a fully indexed speaker corpus or generate a sermon.",
+      ur: "یہ ابھی مکمل indexed خطیبانہ corpus سے براہِ راست جواب یا مکمل خطبہ تیار نہیں کرتا۔",
+    },
+    bestFor: {
+      en: "Starting sermon research from a Shi'a calendar occasion and a known speaker or source.",
+      ur: "شیعی تقویمی مناسبت اور معروف خطیب یا علمی ماخذ سے خطبے کی تحقیق شروع کرنے کے لیے۔",
+    },
+  },
 ];
