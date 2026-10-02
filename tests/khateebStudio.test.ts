@@ -4,6 +4,7 @@ import { KHATEEB_CALENDAR_SOURCE_ARCHIVE } from "../app/tools/khateeb-studio/eng
 import { KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
 import { RABI_AL_THANI_1448_EVENTS, SHIA_CALENDAR_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
 import { buildPreparationText, getSermonPrep, outlineMinutes } from "../app/tools/khateeb-studio/engine/sermonPrep";
+import { searchTopicPreps, TOPIC_PREPS } from "../app/tools/khateeb-studio/engine/topicPrep";
 
 describe("Khateeb Studio seed corpus", () => {
   test("contains the requested historical speakers", () => {
@@ -105,5 +106,38 @@ describe("Khateeb Studio sermon preparation", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).not.toContain("max-h-[560px] overflow-auto");
     expect(studio).toContain("Sermon preparation");
+  });
+});
+
+describe("Khateeb Studio year-round topic preparation", () => {
+  test("ships a substantive year-round starter library", () => {
+    expect(TOPIC_PREPS.length).toBeGreaterThanOrEqual(10);
+    for (const topic of TOPIC_PREPS) {
+      expect(topic.quran.length).toBeGreaterThanOrEqual(2);
+      expect(topic.sources.length).toBeGreaterThanOrEqual(2);
+      expect(topic.anglesUr.length).toBeGreaterThanOrEqual(4);
+      expect(topic.anglesEn.length).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  test("finds topics in Urdu and English", () => {
+    expect(searchTopicPreps("صبر", "ur")[0]?.id).toBe("sabr");
+    expect(searchTopicPreps("family", "en")[0]?.id).toBe("family");
+    expect(searchTopicPreps("امامت", "ur")[0]?.id).toBe("imamate");
+  });
+
+  test("topic packs use the same timed preparation builder", () => {
+    const topic = searchTopicPreps("دعا", "ur")[0];
+    expect(topic).toBeTruthy();
+    const text = buildPreparationText(topic!, "ur", 45);
+    expect(text).toContain("قرآنی بنیاد");
+    expect(text).toContain("خطبہ خاکہ");
+  });
+
+  test("studio exposes topic-first preparation before the calendar workflow", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("موضوع سے خطبہ تیار کریں");
+    expect(studio).toContain("Prepare a sermon by topic");
+    expect(studio.indexOf("موضوع سے خطبہ تیار کریں")).toBeLessThan(studio.indexOf("۱۴۴۸ھ کی تقویمی مناسبتیں"));
   });
 });

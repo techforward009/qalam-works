@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, Sparkles } from "lucide-react";
+import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Search, Sparkles } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
 import {
   CALENDAR_MONTHS_1448,
@@ -26,6 +26,10 @@ import {
   outlineMinutes,
   type SermonDuration,
 } from "./engine/sermonPrep";
+import {
+  searchTopicPreps,
+  topicTitle,
+} from "./engine/topicPrep";
 
 const CALENDAR_REGIONS = ["all", "pk", "in", "ir"] as const;
 
@@ -75,6 +79,8 @@ export default function KhateebStudioContent() {
   const [selectedEvent, setSelectedEvent] = useState("");
   const [selectedSpeaker, setSelectedSpeaker] = useState("");
   const [duration, setDuration] = useState<SermonDuration>(30);
+  const [topicQuery, setTopicQuery] = useState("");
+  const [selectedTopicId, setSelectedTopicId] = useState("sabr");
 
   const filteredSpeakers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -125,6 +131,25 @@ export default function KhateebStudioContent() {
   const event = selectedGroup?.representative;
 
   const speaker = KHATEEB_CORPUS.find((item) => item.id === selectedSpeaker);
+  const topicResults = useMemo(
+    () => searchTopicPreps(topicQuery, ur ? "ur" : "en"),
+    [topicQuery, ur],
+  );
+  const topic = topicResults.find((item) => item.id === selectedTopicId)
+    ?? topicResults[0];
+  const topicPreparationText = topic
+    ? buildPreparationText(
+        topic,
+        ur ? "ur" : "en",
+        duration,
+        speaker
+          ? {
+              name: speakerName(speaker, !ur),
+              focus: speakerFocus(speaker, !ur),
+            }
+          : undefined,
+      )
+    : "";
   const preparation = getSermonPrep(event);
   const preparationMinutes = outlineMinutes(duration);
   const preparationText = preparation
@@ -177,6 +202,15 @@ export default function KhateebStudioContent() {
     if (!preparationText) return;
     try {
       await navigator.clipboard.writeText(preparationText);
+    } catch {
+      // Clipboard may be unavailable.
+    }
+  };
+
+  const copyTopicPreparation = async () => {
+    if (!topicPreparationText) return;
+    try {
+      await navigator.clipboard.writeText(topicPreparationText);
     } catch {
       // Clipboard may be unavailable.
     }
@@ -286,10 +320,146 @@ export default function KhateebStudioContent() {
             className={`mx-auto mt-5 max-w-2xl text-base md:text-lg text-gray-700 dark:text-[#d9e2db] leading-8`}
           >
             {ur
-              ? "تقویمی مناسبت منتخب کریں، علاقائی روایت دیکھیں، اور خطبے کی تحقیق کے لیے مختصر خاکہ تیار کریں۔"
-              : "Choose a lunar occasion, account for regional usage, and prepare a research brief."}
+              ? "موضوع سے یا مناسبت سے تیاری کریں، معتبر علمی سمتیں دیکھیں، اور خطبے کا قابلِ استعمال خاکہ بنائیں۔"
+              : "Prepare by topic or occasion, review source-led directions, and build a usable sermon outline."}
           </p>
         </header>
+
+        <section className="mb-6 rounded-2xl border border-[#B8935A]/30 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-[#2a5a3a]/50 dark:text-[#8faa93]">
+                <PenLine className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="text-xl font-bold text-[#1A3A2A] dark:text-white">
+                  {ur ? "موضوع سے خطبہ تیار کریں" : "Prepare a sermon by topic"}
+                </h2>
+                <p className="mt-1 text-sm text-[#5f6f61] dark:text-[#a8c8b0]">
+                  {ur
+                    ? "سال بھر کے لیے موضوع تلاش کریں؛ قرآن، بنیادی ماخذ، زاویۂ بیان اور وقت کے مطابق خاکہ حاصل کریں۔"
+                    : "Search year-round topics and get Qur'anic anchors, source leads, speaking angles, and a timed outline."}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {([20, 30, 45] as SermonDuration[]).map((minutes) => (
+                <button
+                  key={minutes}
+                  type="button"
+                  onClick={() => setDuration(minutes)}
+                  className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${
+                    duration === minutes
+                      ? "border-[#1A3A2A] bg-[#1A3A2A] text-white dark:border-[#8faa93] dark:bg-[#35513d]"
+                      : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
+                  }`}
+                >
+                  {minutes} {ur ? "منٹ" : "min"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label className="relative mt-5 block">
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#748078]" />
+            <input
+              value={topicQuery}
+              onChange={(event) => setTopicQuery(event.target.value)}
+              placeholder={ur ? "مثلاً: صبر، امامت، دعا، نوجوان، خاندان، موت..." : "e.g. patience, Imamate, dua, youth, family, death..."}
+              className="w-full rounded-xl border border-[#1A3A2A]/12 bg-transparent py-3 ps-10 pe-3 outline-none focus:border-[#B8935A] dark:border-[#35513d]"
+            />
+          </label>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {topicResults.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setSelectedTopicId(item.id)}
+                className={`rounded-full border px-3 py-1.5 text-sm ${
+                  topic?.id === item.id
+                    ? "border-[#B8935A] bg-[#fbf7ee] text-[#6f5730] dark:bg-[#241f14] dark:text-[#e2c895]"
+                    : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
+                }`}
+              >
+                {topicTitle(item, ur ? "ur" : "en")}
+              </button>
+            ))}
+          </div>
+
+          {!topic ? (
+            <p className="mt-4 rounded-xl bg-[#F7F5EF] p-4 text-sm text-[#5f6f61] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
+              {ur ? "اس تلاش سے ابھی کوئی محفوظ موضوع نہیں ملا۔" : "No stored topic matches this search yet."}
+            </p>
+          ) : (
+            <div className="mt-5 rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="max-w-3xl">
+                  <h3 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                    {topicTitle(topic, ur ? "ur" : "en")}
+                  </h3>
+                  <p className="mt-1 text-sm text-[#4f5f53] dark:text-[#b8c8bb]">
+                    {ur ? topic.themeUr : topic.themeEn}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-[#7a5c31] dark:text-[#d3b274]">
+                    {ur ? "سوالِ آغاز: " : "Opening question: "}
+                    {ur ? topic.openingUr : topic.openingEn}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={copyTopicPreparation}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#1A3A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#244E38]"
+                >
+                  <Copy className="h-4 w-4" />
+                  {ur ? "مکمل تیاری نقل کریں" : "Copy full preparation"}
+                </button>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <div className="rounded-lg bg-white p-3 dark:bg-[#162a1e]">
+                  <span className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">{ur ? "قرآنی بنیاد" : "Qur'anic anchors"}</span>
+                  <div className="mt-2 space-y-2">
+                    {topic.quran.map((anchor) => (
+                      <div key={anchor.ref}>
+                        <div className="text-xs font-semibold text-[#8a6838]">{anchor.ref}</div>
+                        <div dir="rtl" className="mt-0.5 font-naskh text-sm text-[#1A3A2A] dark:text-[#e7eee9]">{anchor.arabic}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg bg-white p-3 dark:bg-[#162a1e]">
+                  <span className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">{ur ? "اصل ماخذ" : "Source leads"}</span>
+                  <ul className="mt-2 space-y-1 text-sm text-[#303830] dark:text-[#d7e1d9]">
+                    {topic.sources.map((source) => (
+                      <li key={source.labelEn}>{ur ? source.labelUr : source.labelEn}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-lg bg-white p-3 dark:bg-[#162a1e]">
+                  <span className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">{ur ? "زاویۂ بیان" : "Speaking angles"}</span>
+                  <ul className="mt-2 space-y-1 text-sm text-[#303830] dark:text-[#d7e1d9]">
+                    {(ur ? topic.anglesUr : topic.anglesEn).map((angle) => (
+                      <li key={angle}>• {angle}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <details className="mt-4 rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]">
+                <summary className="cursor-pointer text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                  {ur ? `${duration} منٹ کی مکمل تیاری دیکھیں` : `View full ${duration}-minute preparation`}
+                </summary>
+                <pre
+                  dir={ur ? "rtl" : "ltr"}
+                  className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[#303830] dark:text-[#d7e1d9] font-sans"
+                >
+                  {topicPreparationText}
+                </pre>
+              </details>
+            </div>
+          )}
+        </section>
 
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="rounded-2xl border border-[#1A3A2A]/10 dark:border-[#2a3d30] bg-white dark:bg-[#162a1e] p-5 sm:p-6">
