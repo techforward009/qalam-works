@@ -1,4 +1,5 @@
 import { NAQQAN_ASHRA_EVIDENCE } from "./naqqanEvidence";
+import { pureKhateebUrdu } from "./urduPurity";
 
 export type SpeakerEvidenceKind = "transcript" | "compiled-majalis";
 export type SpeakerEvidenceStatus = "ready" | "catalog-only";
@@ -211,7 +212,14 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
 export function evidenceForSpeaker(speakerId: string): readonly SpeakerEvidence[] {
   return SPEAKER_EVIDENCE.filter(
     (item) => item.speakerId === speakerId && item.status === "ready",
-  );
+  ).map((item) => ({
+    ...item,
+    titleUr: pureKhateebUrdu(item.titleUr),
+    summaryUr: pureKhateebUrdu(item.summaryUr),
+    materialUr: item.materialUr?.map(pureKhateebUrdu),
+    takeawaysUr: item.takeawaysUr.map(pureKhateebUrdu),
+    sourceLabelUr: pureKhateebUrdu(item.sourceLabelUr),
+  }));
 }
 
 /** Internal catalog records: known sources whose actual contents are not yet ingested. */

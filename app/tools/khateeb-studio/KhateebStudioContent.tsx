@@ -536,7 +536,7 @@ export default function KhateebStudioContent() {
                 >
                   <Copy className="h-4 w-4" />
                   {topicDossier
-                    ? (ur ? "تحقیقی dossier نقل کریں" : "Copy research dossier")
+                    ? (ur ? "تحقیقی دستاویز نقل کریں" : "Copy research dossier")
                     : (ur ? "مکمل تیاری نقل کریں" : "Copy full preparation")}
                 </button>
               </div>
@@ -545,7 +545,7 @@ export default function KhateebStudioContent() {
                 <div className="mt-5 space-y-5">
                   <section className="rounded-xl border border-[#B8935A]/30 bg-white p-4 dark:border-[#6f5b35] dark:bg-[#162a1e]">
                     <div className="text-xs font-bold text-[#8a6838] dark:text-[#d7bc8a]">
-                      {ur ? "مرکزی thesis" : "Central thesis"}
+                      {ur ? "مرکزی مقدمہ" : "Central thesis"}
                     </div>
                     <p className="mt-2 text-sm leading-8 text-[#303830] dark:text-[#d7e1d9]">
                       {ur ? topicDossier.thesisUr : topicDossier.thesisEn}
@@ -621,7 +621,7 @@ export default function KhateebStudioContent() {
                           </div>
 
                           <div className="mt-3 text-[11px] text-[#7c877e] dark:text-[#8fa294]">
-                            {ur ? "اصل ماخذ verification کے لیے محفوظ ہے؛ بنیادی مواد اوپر دے دیا گیا ہے۔" : "The original source is retained for verification; the usable material is provided above."}
+                            {ur ? "اصل ماخذ تصدیق کے لیے محفوظ ہے؛ بنیادی مواد اوپر دے دیا گیا ہے۔" : "The original source is retained for verification; the usable material is provided above."}
                           </div>
                         </article>
                       ))}
@@ -630,7 +630,7 @@ export default function KhateebStudioContent() {
 
                   <section className="rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]">
                     <h4 className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
-                      {ur ? "اب ان سب کو ایک منبر میں کیسے جوڑیں؟" : "How to synthesize these into one sermon"}
+                      {ur ? "اب ان سب زاویوں کو ایک منبر میں کیسے یکجا کریں؟" : "How to synthesize these into one sermon"}
                     </h4>
                     <div className="mt-3 space-y-2">
                       {(ur ? topicDossier.synthesisUr : topicDossier.synthesisEn).map((point) => (
@@ -643,7 +643,7 @@ export default function KhateebStudioContent() {
 
                   <section>
                     <h4 className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
-                      {ur ? "قابلِ بیان منبری flow" : "Ready speaking flow"}
+                      {ur ? "قابلِ بیان منبری ترتیب" : "Ready speaking flow"}
                     </h4>
                     <div className="mt-3 space-y-3">
                       {(ur ? topicDossier.pulpitFlowUr : topicDossier.pulpitFlowEn).map((block) => (
@@ -699,7 +699,7 @@ export default function KhateebStudioContent() {
                     </h4>
                     <p className="mt-0.5 text-xs text-[#687469] dark:text-[#9fb0a2]">
                       {ur
-                        ? "صرف وہی خطابات یا محفوظ مجموعے دکھائے جاتے ہیں جنہیں اس موضوع سے واضح طور پر index کیا گیا ہے۔"
+                        ? "صرف وہی خطابات یا محفوظ مجموعے دکھائے جاتے ہیں جنہیں اس موضوع سے واضح طور پر موضوعاتی فہرست میں شامل کیا گیا ہے۔"
                         : "Only speeches or archived collections explicitly indexed to this topic are shown."}
                     </p>
                   </div>
@@ -763,7 +763,7 @@ export default function KhateebStudioContent() {
                 ) : (
                   <p className="mt-3 rounded-lg border border-dashed border-[#1A3A2A]/15 bg-[#F7F5EF] p-3 text-sm text-[#5f6f61] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
                     {ur
-                      ? "اس موضوع کے لیے خطباء کا verified مواد ابھی index نہیں ہوا؛ Qalam یہاں کوئی مصنوعی نسبت نہیں بنا رہا۔"
+                      ? "اس موضوع کے لیے خطباء کا مصدقہ مواد ابھی موضوعاتی فہرست میں شامل نہیں ہوا؛ قلم یہاں کوئی مصنوعی نسبت نہیں بناتا۔"
                       : "No verified speaker material is indexed to this topic yet; Qalam does not manufacture an attribution."}
                   </p>
                 )}
@@ -1095,7 +1095,7 @@ export default function KhateebStudioContent() {
                   </h3>
                   <p className="mt-1 text-xs text-[#687469] dark:text-[#9fb0a2]">
                     {ur
-                      ? "یہاں صرف وہی مواد دکھایا جاتا ہے جس کا اصل ماخذ محفوظ ہے۔ عمومی tags کو قول یا خلاصہ بنا کر پیش نہیں کیا جاتا۔"
+                      ? "یہاں صرف وہی مواد دکھایا جاتا ہے جس کا اصل ماخذ محفوظ ہے۔ عمومی موضوعاتی نشانات کو قول یا خلاصہ بنا کر پیش نہیں کیا جاتا۔"
                       : "Only source-backed material appears here. Generic profile tags are never presented as quotations or speech summaries."}
                   </p>
                 </div>
@@ -1103,7 +1103,7 @@ export default function KhateebStudioContent() {
                 {speakerIndexedTopics.length ? (
                   <div className="mb-4">
                     <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
-                      {ur ? "اس خطیب کے index شدہ موضوعات" : "Indexed topics for this speaker"}
+                      {ur ? "اس خطیب کے موضوعاتی طور پر شامل کردہ موضوعات" : "Indexed topics for this speaker"}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {speakerIndexedTopics.map(({ topic: indexedTopic, records }) => (
@@ -1202,7 +1202,7 @@ export default function KhateebStudioContent() {
                 ) : (
                   <div className="rounded-xl border border-dashed border-[#1A3A2A]/15 bg-[#F7F5EF] p-4 text-sm text-[#5f6f61] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
                     {ur
-                      ? "اس شخصیت کا verified خطاب/متن ابھی corpus میں ingest نہیں ہوا۔ اس لیے Qalam یہاں کوئی فرضی خلاصہ نہیں دکھا رہا۔"
+                      ? "اس شخصیت کا مصدقہ خطاب یا متن ابھی علمی ذخیرے میں شامل نہیں ہوا۔ اس لیے قلم یہاں کوئی فرضی خلاصہ نہیں دکھاتا۔"
                       : "No verified transcript or text for this speaker has been ingested yet, so Qalam does not invent a summary."}
                   </div>
                 )}
@@ -1296,7 +1296,7 @@ export default function KhateebStudioContent() {
                 ) : (
                   <p className="rounded-xl border border-dashed border-[#1A3A2A]/15 p-4 text-sm text-[#687469] dark:border-[#35513d] dark:text-[#9fb0a2]">
                     {ur
-                      ? "اس مناسبت کے لیے مخصوص قرآنی آیات ابھی curated pack میں شامل نہیں؛ نیچے تحقیق کے زاویے سے آغاز کریں۔"
+                      ? "اس مناسبت کے لیے مخصوص قرآنی آیات ابھی مرتب شدہ مجموعے میں شامل نہیں؛ نیچے تحقیق کے زاویے سے آغاز کریں۔"
                       : "No event-specific Qur'anic anchors are curated yet; start from the research angles below."}
                   </p>
                 )}
@@ -1317,7 +1317,7 @@ export default function KhateebStudioContent() {
                       </p>
                       <div className="mt-2 text-[11px] text-[#7c877e] dark:text-[#8fa294]">
                         {ur
-                          ? "یہ حوالہ verification کے لیے محفوظ ہے؛ خطیب کو بنیادی مواد اسی صفحے پر ملنا چاہیے۔"
+                          ? "یہ حوالہ تصدیق کے لیے محفوظ ہے؛ خطیب کو بنیادی مواد اسی صفحے پر ملنا چاہیے۔"
                           : "This reference is retained for verification; the preacher should receive the core material on this page."}
                       </div>
                     </article>
@@ -1380,13 +1380,13 @@ export default function KhateebStudioContent() {
                 {speakerEvidence.length ? (
                   <p className="mt-2 text-xs font-semibold text-[#3a6a4a] dark:text-[#a8c8b0]">
                     {ur
-                      ? `${speakerEvidence.length} تیار source-backed مواد اوپر خطیب کے حصے میں موجود ہے۔`
+                      ? `${speakerEvidence.length} ماخذ سے ثابت شدہ تیار مواد اوپر خطیب کے حصے میں موجود ہے۔`
                       : `${speakerEvidence.length} source-backed ready material record(s) are available in the speaker section above.`}
                   </p>
                 ) : (
                   <p className="mt-2 text-xs text-[#8a6838] dark:text-[#d7bc8a]">
                     {ur
-                      ? "اس خطیب کا اصل متن ابھی ingest نہیں ہوا، اس لیے یہاں محض خارجی لنک نہیں دیا جا رہا۔"
+                      ? "اس خطیب کا اصل متن ابھی علمی ذخیرے میں شامل نہیں ہوا، اس لیے یہاں محض خارجی ربط نہیں دیا جا رہا۔"
                       : "This speaker's actual text has not been ingested yet, so no bare external link is presented as material."}
                   </p>
                 )}

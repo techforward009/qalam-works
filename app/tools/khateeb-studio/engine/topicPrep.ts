@@ -1,4 +1,5 @@
 import type { SermonPrep, SermonLocale } from "./sermonPrep";
+import { pureKhateebUrdu } from "./urduPurity";
 
 export type TopicCategory =
   | "belief"
@@ -278,5 +279,5 @@ export function searchTopicPreps(query: string, locale: SermonLocale): readonly 
 }
 
 export function topicTitle(topic: TopicPrep, locale: SermonLocale): string {
-  return locale === "ur" ? topic.titleUr : topic.titleEn;
+  return locale === "ur" ? pureKhateebUrdu(topic.titleUr) : topic.titleEn;
 }

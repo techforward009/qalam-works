@@ -1,4 +1,5 @@
 import type { SermonLocale } from "./sermonPrep";
+import { pureKhateebUrdu } from "./urduPurity";
 
 export type ScholarPerspective = {
   id: string;
@@ -835,7 +836,29 @@ const ISMAH: SermonDossier = {
 const DOSSIERS: readonly SermonDossier[] = [SABR, IMAMATE, DUA, ISMAH];
 
 export function getTopicDossier(topicId: string): SermonDossier | null {
-  return DOSSIERS.find((item) => item.topicId === topicId) ?? null;
+  const dossier = DOSSIERS.find((item) => item.topicId === topicId);
+  if (!dossier) return null;
+  return {
+    ...dossier,
+    titleUr: pureKhateebUrdu(dossier.titleUr),
+    thesisUr: pureKhateebUrdu(dossier.thesisUr),
+    governingQuestionUr: pureKhateebUrdu(dossier.governingQuestionUr),
+    perspectives: dossier.perspectives.map((item) => ({
+      ...item,
+      nameUr: pureKhateebUrdu(item.nameUr),
+      sourceTitleUr: pureKhateebUrdu(item.sourceTitleUr),
+      coreUr: pureKhateebUrdu(item.coreUr),
+      explanationUr: item.explanationUr.map(pureKhateebUrdu),
+      styleUr: pureKhateebUrdu(item.styleUr),
+      useUr: pureKhateebUrdu(item.useUr),
+    })),
+    synthesisUr: dossier.synthesisUr.map(pureKhateebUrdu),
+    pulpitFlowUr: dossier.pulpitFlowUr.map((item) => ({
+      heading: pureKhateebUrdu(item.heading),
+      body: pureKhateebUrdu(item.body),
+    })),
+    closingUr: pureKhateebUrdu(dossier.closingUr),
+  };
 }
 
 export function buildDossierText(
@@ -846,7 +869,7 @@ export function buildDossierText(
   const lines: string[] = [
     ur ? dossier.titleUr : dossier.titleEn,
     "",
-    `${ur ? "مرکزی thesis" : "Central thesis"}: ${ur ? dossier.thesisUr : dossier.thesisEn}`,
+    `${ur ? "مرکزی مقدمہ" : "Central thesis"}: ${ur ? dossier.thesisUr : dossier.thesisEn}`,
     `${ur ? "مرکزی سوال" : "Governing question"}: ${ur ? dossier.governingQuestionUr : dossier.governingQuestionEn}`,
     "",
     ur ? "اہلِ علم کے زاویے" : "Scholar perspectives",
@@ -866,7 +889,7 @@ export function buildDossierText(
     if (item.originalSnippet) lines.push(item.originalSnippet);
   }
 
-  lines.push("", ur ? "منبری synthesis" : "Sermonic synthesis");
+  lines.push("", ur ? "منبری جامع نتیجہ" : "Sermonic synthesis");
   for (const point of ur ? dossier.synthesisUr : dossier.synthesisEn) lines.push(`• ${point}`);
 
   lines.push("", ur ? "قابلِ بیان ترتیب" : "Ready speaking flow");
@@ -875,5 +898,6 @@ export function buildDossierText(
   }
 
   lines.push("", `${ur ? "اختتام" : "Closing"}: ${ur ? dossier.closingUr : dossier.closingEn}`);
-  return lines.join("\n");
+  const text = lines.join("\n");
+  return ur ? pureKhateebUrdu(text) : text;
 }

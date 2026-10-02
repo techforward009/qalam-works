@@ -23,6 +23,7 @@ import {
   SOUTH_ASIA_CORPUS_QUEUE,
   southAsiaSourcesForSpeaker,
 } from "../app/tools/khateeb-studio/engine/southAsianCorpusQueue";
+import { hasLatinWord, pureKhateebUrdu } from "../app/tools/khateeb-studio/engine/urduPurity";
 
 describe("Khateeb Studio seed corpus", () => {
   test("contains the requested historical speakers", () => {
@@ -164,7 +165,7 @@ describe("Khateeb Studio real speaker material", () => {
   test("does not treat profile tags as speech content", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).toContain("حقیقی مواد");
-    expect(studio).toContain("فرضی خلاصہ نہیں دکھا رہا");
+    expect(studio).toContain("فرضی خلاصہ نہیں دکھاتا");
     expect(studio).toContain("verified material");
   });
 
@@ -225,14 +226,14 @@ describe("Khateeb Studio speaker × topic index", () => {
   test("UI exposes both topic-to-speaker and speaker-to-topic navigation", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).toContain("اس موضوع پر خطباء کا حقیقی مواد");
-    expect(studio).toContain("اس خطیب کے index شدہ موضوعات");
+    expect(studio).toContain("اس خطیب کے موضوعاتی طور پر شامل کردہ موضوعات");
     expect(studio).toContain("No verified speaker material is indexed to this topic yet");
   });
 
   test("bare external links are not presented as the material itself", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).toContain("خطابت کے لیے تیار مواد");
-    expect(studio).toContain("اس خطیب کا اصل متن ابھی ingest نہیں ہوا");
+    expect(studio).toContain("اس خطیب کا اصل متن ابھی علمی ذخیرے میں شامل نہیں ہوا");
     expect(studio).not.toContain("دستیاب ذخیرہ کھولیں");
     expect(studio).not.toContain("Open available corpus");
   });
@@ -253,7 +254,7 @@ describe("Khateeb Studio deep sermon dossiers", () => {
     const dossier = getTopicDossier("sabr")!;
     const text = buildDossierText(dossier, "ur");
     expect(text).toContain("اہلِ علم کے زاویے");
-    expect(text).toContain("منبری synthesis");
+    expect(text).toContain("منبری جامع نتیجہ");
     expect(text).toContain("قابلِ بیان ترتیب");
     expect(text).toContain("حامد کاشانی");
     expect(text).toContain("علیرضا پناہیان");
@@ -265,7 +266,7 @@ describe("Khateeb Studio deep sermon dossiers", () => {
     expect(studio).toContain("مختلف اہلِ علم نے اسے کیسے کھولا؟");
     expect(studio).toContain("ان کے بیان کا انداز");
     expect(studio).toContain("منبر میں آپ کیا لے سکتے ہیں؟");
-    expect(studio).toContain("قابلِ بیان منبری flow");
+    expect(studio).toContain("قابلِ بیان منبری ترتیب");
   });
 
   test("Imamate is a multi-scholar doctrinal dossier, not the legacy outline", () => {
@@ -395,5 +396,25 @@ describe("Khateeb Studio Naqqan full-text ingestion", () => {
     expect(records.length).toBeGreaterThanOrEqual(9);
     expect(records.every((item) => item.kind === "transcript")).toBe(true);
     expect(records.some((item) => item.summaryUr.includes("اصطف"))).toBe(true);
+  });
+});
+
+describe("Khateeb Studio Urdu language purity", () => {
+  test("normalizes legacy mixed terminology into Urdu", () => {
+    const mixed =
+      "یہ research dossier source-backed material اور ready speaking flow دیتا ہے۔";
+    const cleaned = pureKhateebUrdu(mixed);
+    expect(cleaned).toContain("تحقیقی دستاویز");
+    expect(cleaned).toContain("ماخذ سے ثابت شدہ");
+    expect(cleaned).toContain("قابلِ بیان منبری ترتیب");
+    expect(hasLatinWord(cleaned)).toBe(false);
+  });
+
+  test("new Urdu UI wording avoids internal engineering vocabulary", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("تحقیقی دستاویز نقل کریں");
+    expect(studio).toContain("مرکزی مقدمہ");
+    expect(studio).toContain("قابلِ بیان منبری ترتیب");
+    expect(studio).toContain("ماخذ سے ثابت شدہ تیار مواد");
   });
 });
