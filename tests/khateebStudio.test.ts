@@ -47,8 +47,10 @@ describe("Khateeb Studio typography", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     const globals = readFileSync("app/globals.css", "utf8");
     expect(studio).toContain("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2");
-    expect(studio).toContain('.khateeb-studio h1');
+    expect(studio).toContain("khateeb-studio-ur");
+    expect(studio).toContain(".khateeb-studio-ur h1");
     expect(studio).toContain("var(--font-nastaliq), var(--font-nastaliq-latin)");
+    expect(studio).toContain("Visible occasions");
     expect(globals).not.toContain("khateeb-studio");
     expect(globals).not.toContain("jameel-noori-nastaleeq-400.woff2");
   });

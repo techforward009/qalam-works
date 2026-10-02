@@ -21,6 +21,34 @@ const CALENDAR_REGION_LABELS: Record<ShiaCalendarRegion, string> = {
   ir: "ایران",
 };
 
+const CALENDAR_REGION_LABELS_EN: Record<ShiaCalendarRegion, string> = {
+  all: "All",
+  pk: "Pakistan",
+  in: "India",
+  ir: "Iran",
+};
+
+const CALENDAR_MONTH_LABELS_EN: Record<IslamicMonthId, string> = {
+  muharram: "Muharram",
+  safar: "Safar",
+  "rabi-al-awwal": "Rabi al-Awwal",
+  "rabi-al-thani": "Rabi al-Thani",
+  "jumada-al-awwal": "Jumada al-Awwal",
+  "jumada-al-thani": "Jumada al-Thani",
+  rajab: "Rajab",
+  shaban: "Sha'ban",
+  ramadan: "Ramadan",
+  shawwal: "Shawwal",
+  "dhu-al-qadah": "Dhu al-Qi'dah",
+  "dhu-al-hijjah": "Dhu al-Hijjah",
+};
+
+const SPEAKER_REGION_LABELS_EN = {
+  pk: "Pakistan",
+  in: "India",
+  ir: "Iran",
+} as const;
+
 export default function KhateebStudioContent() {
   const { language, dir } = useLanguage();
   const ur = language === "ur";
@@ -82,12 +110,6 @@ export default function KhateebStudioContent() {
 
   const event = selectedGroup?.representative;
 
-  const selectedSourceRegions = selectedGroup
-    ? [...new Set(
-        selectedGroup.items.flatMap((item) => item.regions ?? []),
-      )]
-    : [];
-
   const speaker = KHATEEB_CORPUS.find((item) => item.id === selectedSpeaker);
 
   const brief = [
@@ -128,7 +150,7 @@ export default function KhateebStudioContent() {
 
   return (
     <main
-      className="khateeb-studio min-h-screen bg-[#F7F5EF] dark:bg-[#0e1c15] py-10 md:py-14"
+      className={`khateeb-studio min-h-screen bg-[#F7F5EF] dark:bg-[#0e1c15] py-10 md:py-14${ur ? " khateeb-studio-ur" : ""}`}
       dir={dir}
     >
       <style>{`
@@ -140,39 +162,78 @@ export default function KhateebStudioContent() {
           font-display: swap;
         }
 
-        .khateeb-studio {
+        .khateeb-studio-ur {
           font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
-          line-height: 2.15;
+          font-size: 1.09rem;
+          line-height: 2.08;
         }
 
-        .khateeb-studio h1,
-        .khateeb-studio h2,
-        .khateeb-studio h3,
-        .khateeb-studio h4,
-        .khateeb-studio h5,
-        .khateeb-studio h6 {
+        .khateeb-studio-ur h1,
+        .khateeb-studio-ur h2,
+        .khateeb-studio-ur h3,
+        .khateeb-studio-ur h4,
+        .khateeb-studio-ur h5,
+        .khateeb-studio-ur h6 {
           font-family: var(--font-nastaliq), var(--font-nastaliq-latin), "Noto Nastaliq Urdu", serif !important;
+          line-height: 1.62;
         }
 
-        .khateeb-studio input,
-        .khateeb-studio button,
-        .khateeb-studio a,
-        .khateeb-studio p,
-        .khateeb-studio span,
-        .khateeb-studio pre,
-        .khateeb-studio label {
+        .khateeb-studio-ur h1 {
+          font-size: clamp(2.3rem, 4vw, 2.8rem);
+        }
+
+        .khateeb-studio-ur h2 {
+          font-size: 1.58rem;
+        }
+
+        .khateeb-studio-ur h3 {
+          font-size: 1.08rem;
+        }
+
+        .khateeb-studio-ur p {
+          line-height: 2.02;
+        }
+
+        .khateeb-studio-ur .text-sm {
+          font-size: 1.02rem;
+          line-height: 1.9;
+        }
+
+        .khateeb-studio-ur .text-xs {
+          font-size: 0.88rem;
+          line-height: 1.78;
+        }
+
+        .khateeb-studio-ur button,
+        .khateeb-studio-ur input,
+        .khateeb-studio-ur a,
+        .khateeb-studio-ur label,
+        .khateeb-studio-ur pre {
           font-family: inherit;
+        }
+
+        .khateeb-studio-ur button {
+          line-height: 1.9;
+        }
+
+        .khateeb-studio-ur input {
+          font-size: 1.02rem;
+        }
+
+        .khateeb-studio-ur pre {
+          font-size: 1.02rem;
+          line-height: 2.05;
         }
       `}</style>
       <div className="site-container max-w-6xl">
-        <header className="mb-8 text-start">
+        <header className="mb-12 text-center">
           <h1
-            className={`text-3xl md:text-4xl font-bold text-[#1A3A2A] dark:text-white`}
+            className={`mx-auto text-4xl md:text-5xl font-bold text-[#1A3A2A] dark:text-white`}
           >
             {ur ? "خطیب اسٹوڈیو" : "Khateeb Studio"}
           </h1>
           <p
-            className={`mt-3 max-w-3xl text-gray-700 dark:text-[#d9e2db] leading-relaxed`}
+            className={`mx-auto mt-5 max-w-2xl text-base md:text-lg text-gray-700 dark:text-[#d9e2db] leading-8`}
           >
             {ur
               ? "تقویمی مناسبت منتخب کریں، علاقائی روایت دیکھیں، اور خطبے کی تحقیق کے لیے مختصر خاکہ تیار کریں۔"
@@ -220,7 +281,7 @@ export default function KhateebStudioContent() {
                         : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
                     }`}
                   >
-                    {month.label}
+                    {ur ? month.label : CALENDAR_MONTH_LABELS_EN[month.id]}
                   </button>
                 );
               })}
@@ -245,7 +306,7 @@ export default function KhateebStudioContent() {
                         : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
                     }`}
                   >
-                    {CALENDAR_REGION_LABELS[region]}
+                    {ur ? CALENDAR_REGION_LABELS[region] : CALENDAR_REGION_LABELS_EN[region]}
                   </button>
                 );
               })}
@@ -256,19 +317,19 @@ export default function KhateebStudioContent() {
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-semibold text-[#1A3A2A] dark:text-[#dfe9e1]">
-                  منتخب علاقہ: {CALENDAR_REGION_LABELS[selectedRegion]}
+                  {ur ? "منتخب علاقہ" : "Selected region"}: {ur ? CALENDAR_REGION_LABELS[selectedRegion] : CALENDAR_REGION_LABELS_EN[selectedRegion]}
                 </span>
                 <span className="text-[#687469] dark:text-[#a8b8aa]">
-                  نمایاں مناسبتیں: {visibleGroups.length}
+                  {ur ? "نمایاں مناسبتیں" : "Visible occasions"}: {visibleGroups.length}
                 </span>
               </div>
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#687469] dark:text-[#9fb0a2]">
-                <span>محفوظ ماخذی ریکارڈ: {filteredEvents.length}</span>
-                <span>عمومی ریکارڈ: {generalRecordCount}</span>
+                <span>{ur ? "محفوظ ماخذی ریکارڈ" : "Preserved source records"}: {filteredEvents.length}</span>
+                <span>{ur ? "عمومی ریکارڈ" : "General records"}: {generalRecordCount}</span>
                 <span>
                   {selectedRegion === "all"
-                    ? `علاقائی مخصوص ریکارڈ: ${regionalRecordCount}`
-                    : `${CALENDAR_REGION_LABELS[selectedRegion]} کے مخصوص ریکارڈ: ${regionalRecordCount}`}
+                    ? `${ur ? "علاقائی مخصوص ریکارڈ" : "Regional-only records"}: ${regionalRecordCount}`
+                    : `${ur ? CALENDAR_REGION_LABELS[selectedRegion] + " کے مخصوص ریکارڈ" : SPEAKER_REGION_LABELS_EN[selectedRegion] + " regional records"}: ${regionalRecordCount}`}
                 </span>
               </div>
             </div>
@@ -277,13 +338,13 @@ export default function KhateebStudioContent() {
               <div
                 className={`mb-4 rounded-xl border border-[#B8935A]/30 bg-[#fbf7ee] px-4 py-3 text-sm text-[#6f5730] dark:border-[#8a6c38]/40 dark:bg-[#241f14] dark:text-[#d7bc8a]`}
               >
-                اس علاقے کے لیے ابھی الگ تاریخی اندراج محفوظ نہیں۔ عمومی مناسبتیں بدستور دکھائی جا رہی ہیں؛ نئی علاقائی تاریخ معتبر ماخذ کے ساتھ شامل کی جائے گی۔
+                {ur ? "اس علاقے کے لیے ابھی الگ تاریخی اندراج محفوظ نہیں۔ عمومی مناسبتیں بدستور دکھائی جا رہی ہیں؛ نئی علاقائی تاریخ معتبر ماخذ کے ساتھ شامل کی جائے گی۔" : "No separate historical record is currently stored for this region. General occasions remain visible; a new regional date will be added with a reliable source."}
               </div>
             ) : selectedRegion !== "all" ? (
               <div
                 className={`mb-4 rounded-xl border border-[#1A3A2A]/10 bg-white px-4 py-3 text-sm text-[#4b5a4f] dark:border-[#35513d] dark:bg-[#162a1e] dark:text-[#b8c8bb]`}
               >
-                {CALENDAR_REGION_LABELS[selectedRegion]} کے مخصوص اندراجات عمومی مناسبتوں کے ساتھ شامل ہیں؛ ایک ہی واقعے کی مختلف علاقائی تاریخوں کے ماخذی ریکارڈ ایک مناسبت کے تحت جمع دکھائے جاتے ہیں۔
+                {ur ? `${CALENDAR_REGION_LABELS[selectedRegion]} کے مخصوص اندراجات عمومی مناسبتوں کے ساتھ شامل ہیں؛ ایک ہی واقعے کی مختلف علاقائی تاریخوں کے ماخذی ریکارڈ ایک مناسبت کے تحت جمع دکھائے جاتے ہیں۔` : `${CALENDAR_REGION_LABELS_EN[selectedRegion]} regional records are shown together with general occasions; source records for the same event and date are grouped under one occasion.`}
               </div>
             ) : null}
 
@@ -322,14 +383,14 @@ export default function KhateebStudioContent() {
                         ) : null}
                         {group.items.length > 1 ? (
                           <span className="mt-1 block text-[11px] font-semibold text-[#8a6838]">
-                            {group.items.length} ماخذی ریکارڈ
+                            {ur ? `${group.items.length} ماخذی ریکارڈ` : `${group.items.length} source records`}
                           </span>
                         ) : null}
                         {groupRegions.length ? (
                           <span className="mt-1 inline-block text-[11px] font-semibold text-[#8a6838]">
                             {groupRegions
-                              .map((region) => CALENDAR_REGION_LABELS[region])
-                              .join("، ")}
+                              .map((region) => (ur ? CALENDAR_REGION_LABELS[region] : CALENDAR_REGION_LABELS_EN[region]))
+                              .join(ur ? "، " : ", ")}
                           </span>
                         ) : null}
                       </span>
@@ -345,10 +406,10 @@ export default function KhateebStudioContent() {
               >
                 <div className="mb-3">
                   <h3 className="text-sm font-bold text-[#1A3A2A] dark:text-[#dfe9e1]">
-                    ماخذی تفصیل
+                    {ur ? "ماخذی تفصیل" : "Source details"}
                   </h3>
                   <p className="mt-1 text-xs text-[#687469] dark:text-[#9fb0a2]">
-                    یہ تمام ریکارڈ ایک ہی تاریخ اور ایک ہی مناسبت کے تحت محفوظ ہیں؛ اصل ماخذی شناختیں برقرار رکھی گئی ہیں۔
+                    {ur ? "یہ تمام ریکارڈ ایک ہی تاریخ اور ایک ہی مناسبت کے تحت محفوظ ہیں؛ اصل ماخذی شناختیں برقرار رکھی گئی ہیں۔" : "These records are preserved under the same date and occasion; the original source identities remain intact."}
                   </p>
                 </div>
 
@@ -361,15 +422,15 @@ export default function KhateebStudioContent() {
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#687469] dark:text-[#9fb0a2]">
                         {source.regions?.length ? (
                           <span>
-                            علاقہ:{" "}
+                            {ur ? "علاقہ:" : "Region:"}{" "}
                             {source.regions
-                              .map((region) => CALENDAR_REGION_LABELS[region])
-                              .join("، ")}
+                              .map((region) => (ur ? CALENDAR_REGION_LABELS[region] : CALENDAR_REGION_LABELS_EN[region]))
+                              .join(ur ? "، " : ", ")}
                           </span>
                         ) : (
-                          <span>علاقہ: عمومی</span>
+                          <span>{ur ? "علاقہ: عمومی" : "Region: General"}</span>
                         )}
-                        <span>محفوظہ: {source.sourceCapturedAt}</span>
+                        <span>{ur ? "محفوظہ" : "Captured"}: {source.sourceCapturedAt}</span>
                       </div>
                       <div className="mt-1 font-semibold text-[#1A3A2A] dark:text-[#e7eee9]">
                         {source.sourceLabel}
@@ -432,7 +493,7 @@ export default function KhateebStudioContent() {
                     <h3
                       className={`mb-2 text-sm font-bold text-[#6b776d] dark:text-[#98aa9b]`}
                     >
-                      {REGION_LABELS[region]}
+                      {ur ? REGION_LABELS[region] : SPEAKER_REGION_LABELS_EN[region]}
                     </h3>
                     <div className="space-y-2">
                       {rows.map((item) => (
