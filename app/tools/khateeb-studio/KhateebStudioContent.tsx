@@ -11,6 +11,15 @@ import {
 } from "./engine/shiaCalendar";
 import { groupCalendarEvents } from "./engine/groupCalendarEvents";
 import { KHATEEB_CORPUS, REGION_LABELS } from "./engine/khateebCorpus";
+import {
+  eventDayLabel,
+  eventNote,
+  eventTitle,
+  sourceLabel as localizedSourceLabel,
+  speakerFocus,
+  speakerName,
+  speakerSearchText,
+} from "./engine/khateebLocale";
 
 const CALENDAR_REGIONS = ["all", "pk", "in", "ir"] as const;
 
@@ -61,11 +70,9 @@ export default function KhateebStudioContent() {
   const [selectedSpeaker, setSelectedSpeaker] = useState("");
 
   const filteredSpeakers = useMemo(() => {
-    const q = query.trim();
+    const q = query.trim().toLowerCase();
     if (!q) return [...KHATEEB_CORPUS];
-    return KHATEEB_CORPUS.filter((item) =>
-      `${item.name} ${item.corpusFocus.join(" ")}`.includes(q),
-    );
+    return KHATEEB_CORPUS.filter((item) => speakerSearchText(item).includes(q));
   }, [query]);
 
   const eventsFor = (month: IslamicMonthId, region: ShiaCalendarRegion) =>
@@ -112,17 +119,29 @@ export default function KhateebStudioContent() {
 
   const speaker = KHATEEB_CORPUS.find((item) => item.id === selectedSpeaker);
 
-  const brief = [
-    event
-      ? `مناسبت: ${event.dayLabel ?? event.day} ${event.monthLabel} ۱۴۴۸ھ — ${event.title}`
-      : "",
-    event?.regions?.includes("pk") ? "تقویمی حیثیت: پاکستان میں رائج تاریخ" : "",
-    speaker ? `خطیبانہ مطالعہ: ${speaker.name}` : "",
-    speaker ? `مرکزی میدان: ${speaker.corpusFocus.join("، ")}` : "",
-    "درکار تحقیق: اصل علمی مصادر، متعلقہ روایات/آیات، اور منتخب خطابات میں اختیار کیے گئے زاویے اور ترتیب۔",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const brief = ur
+    ? [
+        event
+          ? `مناسبت: ${eventDayLabel(event, false)} ${event.monthLabel} ۱۴۴۸ھ — ${eventTitle(event, false)}`
+          : "",
+        event?.regions?.includes("pk") ? "تقویمی حیثیت: پاکستان میں رائج تاریخ" : "",
+        speaker ? `خطیبانہ مطالعہ: ${speakerName(speaker, false)}` : "",
+        speaker ? `مرکزی میدان: ${speakerFocus(speaker, false).join("، ")}` : "",
+        "درکار تحقیق: اصل علمی مصادر، متعلقہ روایات/آیات، اور منتخب خطابات میں اختیار کیے گئے زاویے اور ترتیب۔",
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : [
+        event
+          ? `Occasion: ${eventDayLabel(event, true)} ${CALENDAR_MONTH_LABELS_EN[event.month]} 1448 AH — ${eventTitle(event, true)}`
+          : "",
+        event?.regions?.includes("pk") ? "Calendar usage: date used in Pakistan" : "",
+        speaker ? `Speaker study: ${speakerName(speaker, true)}` : "",
+        speaker ? `Corpus focus: ${speakerFocus(speaker, true).join(", ")}` : "",
+        "Research needed: primary scholarly sources, relevant verses and narrations, and the angles and structure used in selected speeches.",
+      ]
+        .filter(Boolean)
+        .join("\n");
 
   const copyBrief = async () => {
     try {
@@ -370,15 +389,15 @@ export default function KhateebStudioContent() {
                   >
                     <div className="flex items-start gap-3">
                       <span className="mt-0.5 shrink-0 rounded-lg bg-[#1A3A2A] px-2 py-1 text-xs font-semibold text-white">
-                        {item.dayLabel ?? item.day}
+                        {eventDayLabel(item, !ur)}
                       </span>
                       <span>
                         <span className="block font-semibold text-[#1A3A2A] dark:text-[#e7eee9]">
-                          {item.title}
+                          {eventTitle(item, !ur)}
                         </span>
-                        {item.note ? (
+                        {eventNote(item, !ur) ? (
                           <span className="mt-0.5 block text-xs text-[#677266] dark:text-[#a8b8aa]">
-                            {item.note}
+                            {eventNote(item, !ur)}
                           </span>
                         ) : null}
                         {group.items.length > 1 ? (
@@ -433,7 +452,7 @@ export default function KhateebStudioContent() {
                         <span>{ur ? "محفوظہ" : "Captured"}: {source.sourceCapturedAt}</span>
                       </div>
                       <div className="mt-1 font-semibold text-[#1A3A2A] dark:text-[#e7eee9]">
-                        {source.sourceLabel}
+                        {localizedSourceLabel(source, !ur)}
                       </div>
                       <a
                         className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-[#3a6a4a] dark:text-[#a8c8b0] hover:underline"
@@ -510,12 +529,12 @@ export default function KhateebStudioContent() {
                           <span
                             className={`block font-semibold text-[#1A3A2A] dark:text-[#e7eee9]`}
                           >
-                            {item.name}
+                            {speakerName(item, !ur)}
                           </span>
                           <span
                             className={`mt-1 block text-xs text-[#687469] dark:text-[#9fb0a2]`}
                           >
-                            {item.corpusFocus.join("، ")}
+                            {speakerFocus(item, !ur).join(ur ? "، " : ", ")}
                           </span>
                         </button>
                       ))}
@@ -553,7 +572,7 @@ export default function KhateebStudioContent() {
             </button>
           </div>
           <pre
-            dir="rtl"
+            dir={ur ? "rtl" : "ltr"}
             className="mt-4 whitespace-pre-wrap rounded-xl bg-[#F7F5EF] dark:bg-[#0e1c15] p-4 text-sm leading-7 text-[#303830] dark:text-[#d7e1d9] font-sans"
           >
             {brief}
@@ -565,7 +584,7 @@ export default function KhateebStudioContent() {
               target="_blank"
               rel="noreferrer"
             >
-              {speaker.sourceLabel ?? (ur ? "ماخذ کھولیں" : "Open source")}
+              {ur ? speaker.sourceLabel ?? "ماخذ کھولیں" : "Open source"}
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           ) : null}

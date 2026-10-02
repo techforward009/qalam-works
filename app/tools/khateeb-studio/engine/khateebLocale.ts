@@ -1,0 +1,338 @@
+import type { ShiaCalendarEvent } from "./shiaCalendar";
+import type { KhateebProfile } from "./khateebCorpus";
+
+type SpeakerLocale = { name: string; focus: readonly string[] };
+
+export const KHATEEB_EN: Readonly<Record<string, SpeakerLocale>> = Object.freeze({
+  "talib-johari": { name: "Allama Syed Talib Jauhari", focus: ["Qur'an", "philosophy", "theology", "history", "sermonic reasoning"] },
+  "rashid-turabi": { name: "Allama Syed Rashid Turabi", focus: ["majalis", "oratory", "Qur'anic references", "historical and literary presentation"] },
+  "azhar-hasan-zaidi": { name: "Allama Azhar Hasan Zaidi", focus: ["majalis", "Ahl al-Bayt", "sermonic presentation"] },
+  "zameer-akhtar-naqvi": { name: "Allama Dr Syed Zameer Akhtar Naqvi", focus: ["majalis", "history", "seerah", "research", "thematic oratory"] },
+  "shahenshah-naqvi": { name: "Allama Syed Shahenshah Hussain Naqvi", focus: ["majalis", "speeches", "ethics", "seerah", "doctrine"] },
+  "hasan-zafar-naqvi": { name: "Allama Syed Hasan Zafar Naqvi", focus: ["Qur'an", "imamate", "wilayah", "history", "majalis"] },
+  "jawad-naqvi": { name: "Allama Syed Jawad Naqvi", focus: ["Friday sermons", "Qur'an", "lessons", "thought", "contemporary issues"] },
+  "muhammad-zaki-baqeri": { name: "Allama Muhammad Zaki Baqeri", focus: ["majalis", "history", "seerah"] },
+  "amin-shahidi": { name: "Allama Syed Amin Shahidi", focus: ["contemporary issues", "religious discourse", "social themes"] },
+  "ali-naqi-naqvi": { name: "Ayatollah Syed Ali Naqi Naqvi Lakhnavi (Naqqan)", focus: ["tafsir", "Qur'anic studies", "theology", "hadith", "doctrine", "fiqh and usul"] },
+  "zeeshan-jawadi": { name: "Allama Syed Zeeshan Haider Jawadi", focus: ["Qur'an", "hadith", "rijal", "Nahj al-Balagha", "majalis", "doctrine"] },
+  "aqeel-gharaavi": { name: "Ayatollah Syed Aqeel-ul-Gharavi", focus: ["Qur'an", "philosophy", "theology", "education", "Nahj al-Balagha"] },
+  "kalbe-sadiq": { name: "Maulana Dr Kalbe Sadiq", focus: ["Qur'an", "science", "contemporary issues", "public speaking"] },
+  "kalbe-jawad": { name: "Maulana Syed Kalbe Jawad Naqvi", focus: ["majalis", "Qur'an", "hadith", "religious occasions"] },
+  "razi-jafar-naqvi": { name: "Syed Razi Jafar Naqvi", focus: ["Urdu pulpit", "majalis", "seerah"] },
+  "hossein-ansarian": { name: "Hujjat al-Islam Hossein Ansarian", focus: ["ethics", "Qur'an", "spirituality", "Ahl al-Bayt", "majalis"] },
+  "alireza-panahian": { name: "Hujjat al-Islam Alireza Panahian", focus: ["theme development", "training", "ethics", "social thought", "lecture series"] },
+  "hamed-kashani": { name: "Hujjat al-Islam Hamed Kashani", focus: ["hadith", "rijal", "Islamic history", "maqtal studies", "Ashura", "Ahl al-Bayt seerah"] },
+  "masoud-aali": { name: "Hujjat al-Islam Masoud Aali", focus: ["ethics", "seerah", "training", "Qur'an", "Ahl al-Bayt"] },
+  "naser-rafiei": { name: "Hujjat al-Islam Dr Naser Rafiei", focus: ["ethics", "Qur'an", "hadith", "family", "seerah"] },
+  "mirbaqeri": { name: "Ayatollah Syed Mohammad-Mehdi Mirbaqeri", focus: ["Qur'an", "wilayah", "Mahdism", "civilizational thought", "history"] },
+  "abedini": { name: "Hujjat al-Islam Mohammad-Reza Abedini", focus: ["Qur'an", "training", "Ahl al-Bayt seerah", "trials", "ethics"] },
+  "raji": { name: "Hujjat al-Islam Mohammad-Hossein Raji", focus: ["history", "social issues", "religious thought", "lectures"] },
+  "shojaei": { name: "Ustad Mohammad Shojaei", focus: ["ethics", "training", "spiritual wayfaring", "trials", "Karbala"] },
+  "qaraati": { name: "Hujjat al-Islam Mohsen Qaraati", focus: ["Qur'an understanding", "tafsir", "public education", "practical lessons"] },
+  "ghanbariyan": { name: "Hujjat al-Islam Mohsen Ghanbarian", focus: ["Qur'an", "Ashura", "social responsibility", "contemporary thought"] },
+  "aghamiri": { name: "Hujjat al-Islam Syed Hossein Aghamiri", focus: ["history", "seerah", "contemporary audiences", "ethics"] },
+});
+
+export function speakerName(profile: KhateebProfile, english: boolean): string {
+  return english ? (KHATEEB_EN[profile.id]?.name ?? profile.id.replace(/-/g, " ")) : profile.name;
+}
+
+export function speakerFocus(profile: KhateebProfile, english: boolean): readonly string[] {
+  return english ? (KHATEEB_EN[profile.id]?.focus ?? []) : profile.corpusFocus;
+}
+
+export function speakerSearchText(profile: KhateebProfile): string {
+  const en = KHATEEB_EN[profile.id];
+  return [profile.name, ...profile.corpusFocus, en?.name ?? "", ...(en?.focus ?? [])].join(" ").toLowerCase();
+}
+
+const EVENT_TITLE_EN: Readonly<Record<string, string>> = Object.freeze({
+  "muh-01-husaini-decade": "Ten days honoring the Husayni rites",
+  "muh-02-karbala": "Imam Husayn's arrival in Karbala",
+  "muh-03-umar-saad": "Umar ibn Sa'd arrives in Karbala with his forces",
+  "muh-06-habib": "Habib ibn Mazahir seeks support from Banu Asad",
+  "muh-07-water": "Water is blocked from Imam Husayn and the Ahl al-Bayt",
+  "muh-09-tasua": "Tasu'a of Husayn",
+  "muh-10-ashura": "Ashura and the martyrdom of Imam Husayn and his companions",
+  "muh-11-zaynab": "Ten days honoring Lady Zaynab al-Kubra",
+  "muh-13-bani-asad": "Banu Asad mourning and burial of the martyrs of Karbala",
+  "muh-19-sham": "The captives of Ahl al-Bayt depart Kufa for Damascus",
+  "muh-20-jawn": "Burial of Jawn",
+  "muh-21-sajjad": "Ten days honoring the martyrdom of Imam al-Sajjad",
+  "muh-23-askari-shrines": "Attack on the shrine of the Askari Imams in Samarra",
+  "muh-25-sajjad": "Martyrdom of Imam al-Sajjad",
+  "muh-28-hudhayfa": "Death of Hudhayfa ibn al-Yaman / arrival of the captives in Baalbek",
+
+  "saf-01-hasan-decade": "Ten days honoring the martyrdom of Imam Hasan al-Mujtaba",
+  "saf-02-yazid-court": "Ahl al-Bayt are brought to Yazid's court",
+  "saf-05-ruqayya": "Day of Ruqayya bint al-Husayn / martyrdom of Lady Ruqayya",
+  "saf-07-hasan": "Martyrdom of Imam Hasan al-Mujtaba",
+  "saf-08-salman": "Death of Salman al-Muhammadi",
+  "saf-09-ammar": "Martyrdom of Ammar ibn Yasir / Battle of Nahrawan",
+  "saf-11-arbaeen-decade": "Ten days honoring Arbaeen of Imam Husayn",
+  "saf-14-muhammad-b-abi-bakr": "Martyrdom of Muhammad ibn Abi Bakr",
+  "saf-15-prophet-illness": "Beginning of the Prophet's final illness",
+  "saf-20-arbaeen": "Arbaeen of Imam Husayn",
+  "saf-23-prophet-decade": "Week honoring the martyrdom of the Prophet",
+  "saf-24-pen": "The pen-and-paper incident",
+  "saf-26-usama": "Preparation of Usama's army",
+  "saf-28-prophet": "Martyrdom of the Prophet",
+  "saf-28-hasan-report": "Martyrdom of Imam Hasan al-Mujtaba",
+  "saf-29-30-rida": "Martyrdom of Imam al-Rida",
+
+  "r1-01-muhsin-week": "Week honoring Muhsin ibn Ali",
+  "r1-01-laylat-al-mabit": "Laylat al-Mabit and Qur'an 2:207",
+  "r1-01-hijra": "Beginning of the Prophet's migration",
+  "r1-03-kaaba-attack": "Catapult attack on the Kaaba",
+  "r1-04-thawr": "Departure from the Cave of Thawr toward Medina",
+  "r1-05-sukayna": "Death of Sukayna bint al-Husayn",
+  "r1-08-askari": "Martyrdom of Imam Hasan al-Askari",
+  "r1-09-baraah-week": "Week of Bara'ah and Farhat al-Zahra",
+  "r1-10-khadija": "Marriage of the Prophet and Lady Khadija",
+  "r1-12-quba": "The Prophet arrives at Quba",
+  "r1-14-yazid": "Death of Yazid ibn Muawiya",
+  "r1-16-mawlid-week": "Ten days honoring the births of the Prophet and Imam Ja'far al-Sadiq",
+  "r1-17-mawlid": "Birth of the Prophet and Imam Ja'far al-Sadiq",
+  "r1-23-masuma": "Lady Fatima Masuma arrives in Qum",
+  "r1-25-hasan-muawiya": "Peace treaty between Imam Hasan al-Mujtaba and Muawiya",
+
+  "r2-01-tawwabin": "Uprising of the Tawwabun",
+  "r2-02-08-askari-week": "Week honoring the birth of Imam Hasan al-Askari",
+  "r2-03-jurjan": "Imam Hasan al-Askari's historic journey to Jurjan",
+  "r2-04-abdolazim": "Birth of Abd al-Azim al-Hasani",
+  "r2-06-hisham": "Death of Hisham ibn Abd al-Malik",
+  "r2-06-askari": "Birth of Imam Hasan al-Askari",
+  "r2-08-askari": "Birth of Imam Hasan al-Askari",
+  "r2-08-zahra-40": "Martyrdom of Lady Fatima al-Zahra",
+  "r2-10-fatimiyya": "Days commemorating the martyrdom of Lady Fatima al-Zahra",
+  "r2-10-masuma": "Death of Lady Fatima Masuma",
+  "r2-10-russian-shelling": "Russian shelling of the shrine of Imam al-Rida and martyrdom of pilgrims",
+  "r2-10-askari-pk": "Birth of Imam Hasan al-Askari",
+  "r2-10-askari-alkafeel": "Birth of Imam Hasan al-Askari",
+  "r2-10-askari-shia-org": "Birth of Imam Hasan al-Askari",
+  "r2-10-askari-baltistan": "Birth of Imam Hasan al-Askari",
+  "r2-12-umayyad": "End of Umayyad rule and beginning of Abbasid rule",
+  "r2-13-fatimiyya-45": "Martyrdom of Lady Fatima al-Zahra",
+  "r2-13-mohaghegh-hilli": "Death of al-Muhaqqiq al-Hilli",
+  "r2-14-mukhtar": "Uprising of Mukhtar al-Thaqafi",
+  "r2-20-fatwa-1920": "Commemoration of the 1920 Revolution fatwa",
+  "r2-22-musa-mubarqa": "Death of Musa al-Mubarqa",
+  "r2-25-muawiya-yazid": "Muawiya ibn Yazid withdraws from the caliphate",
+  "r2-28-amini": "Death of Allama Abd al-Husayn Amini",
+  "r2-29-30-khalid": "Death of Khalid ibn al-Walid",
+
+  "j1-01-zaynab-week": "Week honoring the birth of Lady Zaynab al-Kubra",
+  "j1-05-zaynab": "Birth of Lady Zaynab al-Kubra",
+  "j1-06-muta": "Battle of Mu'ta and martyrdom of Ja'far al-Tayyar",
+  "j1-10-fatima-second": "Ten days honoring the martyrdom of Lady Fatima al-Zahra",
+  "j1-13-fatima-75": "Martyrdom of Lady Fatima al-Zahra",
+  "j1-19-zayd": "Martyrdom of Zayd ibn Sawhan",
+  "j1-26-naeeni": "Death of Mirza Muhammad Husayn Na'ini",
+  "j1-26-shirazi": "Death of Syed Muhammad Rida al-Husayni al-Shirazi",
+  "j1-27-abdulmuttalib": "Death of Abd al-Muttalib",
+  "j1-29-30-muhammad-simri": "Death of Muhammad ibn Uthman al-Umari, the second deputy of Imam al-Mahdi",
+
+  "j2-01-fatima-third": "Ten days honoring the martyrdom of Lady Fatima al-Zahra",
+  "j2-03-fatima-95": "Martyrdom of Lady Fatima al-Zahra",
+  "j2-04-harun": "Death of Harun al-Abbasi",
+  "j2-09-sharafuddin": "Death of Syed Abd al-Husayn Sharaf al-Din al-Amili",
+  "j2-11-13-umm-al-banin": "Days commemorating the death of Lady Umm al-Banin",
+  "j2-13-umm-al-banin": "Death of Lady Umm al-Banin",
+  "j2-16-hasan-shirazi": "Martyrdom of Syed Hasan Shirazi",
+  "j2-18-fatima-birthday-week": "Ten days honoring the birth of Lady Fatima al-Zahra",
+  "j2-20-fatima-birthday": "Birth of Lady Fatima al-Zahra",
+  "j2-22-abu-bakr": "Death of Abu Bakr",
+  "j2-24-gulpayegani": "Death of Syed Muhammad Rida Gulpaygani",
+  "j2-27-sultan-ali": "Martyrdom of Sultan Ali, son of Imam Muhammad al-Baqir",
+  "j2-29-30-umm-kulthum": "Death of Lady Umm Kulthum / martyrdom of Syed Muhammad, son of Imam al-Hadi",
+
+  "raj-01-baqir": "Birth of Imam Muhammad al-Baqir",
+  "raj-02-05-hadi": "Days commemorating the martyrdom of Imam al-Hadi",
+  "raj-03-hadi": "Martyrdom of Imam Ali al-Hadi",
+  "raj-05-ibn-sikkit": "Martyrdom of Ibn al-Sikkit",
+  "raj-06-10-jawad-week": "Week honoring the birth of Imam al-Jawad",
+  "raj-07-rida-wilayat": "Appointment of Imam al-Rida as heir apparent",
+  "raj-10-jawad": "Birth of Imam Muhammad al-Jawad",
+  "raj-11-14-ali-week": "Week honoring the birth of Imam Ali",
+  "raj-12-kuufa": "Imam Ali arrives in Kufa",
+  "raj-13-ali-birthday": "Birth of Imam Ali",
+  "raj-14-mutamid": "Death of al-Mu'tamid al-Abbasi",
+  "raj-15-zaynab": "Martyrdom of Lady Zaynab al-Kubra",
+  "raj-17-ahmad-musavi": "Martyrdom of Ahmad ibn Musa (Shah Cheragh)",
+  "raj-18-ibrahim": "Death of Ibrahim, son of the Prophet",
+  "raj-20-26-kazim-week": "Week commemorating the martyrdom of Imam Musa al-Kazim",
+  "raj-22-kaashif-al-ghita": "Death of Shaykh Ja'far Kashif al-Ghita",
+  "raj-23-kazim-illness": "Source records on the wounding of Imam Hasan al-Mujtaba / poisoning of Imam al-Kazim",
+  "raj-24-khaybar": "Victory at Khaybar and the combat with Marhab",
+  "raj-25-kazim": "Martyrdom of Imam Musa al-Kazim",
+  "raj-26-abu-talib": "Death of Abu Talib",
+  "raj-27-30-mabath": "Days honoring the Prophet's mission (Mab'ath)",
+  "raj-28-husayn-makkah": "Imam Husayn departs Medina for Mecca",
+
+  "sha-01-10-births": "Ten days honoring the births of Imam Husayn, Abbas ibn Ali and Imam al-Sajjad",
+  "sha-02-roza": "Obligation of fasting / expedition of Banu Mustaliq / death of al-Mu'tazz al-Abbasi",
+  "sha-03-husayn": "Birth of Imam Husayn",
+  "sha-04-abbas": "Birth of Abbas ibn Ali",
+  "sha-05-sajjad": "Birth of Imam al-Sajjad",
+  "sha-10-samhari": "Issuance of the final tawqi",
+  "sha-11-20-mahdawiyyat": "Ten days honoring Mahdism",
+  "sha-11-ali-akbar": "Birth of Ali al-Akbar",
+  "sha-15-mahdi": "Birth of Imam al-Mahdi",
+  "sha-15-samari": "Death of Ali ibn Muhammad al-Samari and beginning of the Major Occultation",
+  "sha-18-husayn-b-rooh": "Death of Husayn ibn Ruh al-Nawbakhti",
+  "sha-20-sultan-waizin": "Death of Sultan al-Wa'izin Shirazi",
+  "sha-21-shabani-rising": "Source record on the killing of Shias in Iraq during the Sha'bani uprising",
+  "sha-23-ruqayya": "Commemoration of the birth of Lady Ruqayya",
+  "sha-24-shirazi": "Death of the first Mujaddid, Syed Muhammad Hasan al-Husayni al-Shirazi",
+  "sha-28-mehdi-shirazi": "Death of Syed Mahdi al-Husayni al-Shirazi",
+
+  "ram-01-10-khadija-week": "Ten days honoring the death of Lady Khadija al-Kubra",
+  "ram-03-shaykh-mufid": "Death of Shaykh al-Mufid",
+  "ram-04-ziyad": "Death of Ziyad ibn Abih",
+  "ram-06-rida-bayah": "People pledge allegiance to Imam al-Rida",
+  "ram-08-badr": "The Prophet departs for the Battle of Badr",
+  "ram-10-khadija": "Death of Lady Khadija al-Kubra",
+  "ram-11-17-hasan-week": "Week honoring the birth of Imam Hasan al-Mujtaba",
+  "ram-12-brotherhood": "Pact of brotherhood and the brotherhood of the Prophet and Imam Ali",
+  "ram-13-hajjaj": "Death of al-Hajjaj ibn Yusuf",
+  "ram-14-mukhtar": "Martyrdom of Mukhtar al-Thaqafi",
+  "ram-15-hasan": "Birth of Imam Hasan al-Mujtaba",
+  "ram-15-muslim": "Muslim ibn Aqil departs for Kufa",
+  "ram-18-27-ali-decade": "Ten days commemorating the martyrdom of Imam Ali",
+  "ram-19-ali-strike": "Imam Ali is struck",
+  "ram-20-fath-makkah": "Conquest of Mecca",
+  "ram-21-ali": "Martyrdom of Imam Ali",
+  "ram-23-qadr": "Third Night of Qadr",
+  "ram-26-fazil": "Death of Fazil Darbandi",
+  "ram-27-majlisi": "Death of Allama Muhammad Baqir al-Majlisi",
+
+  "shaw-01-eid": "Eid al-Fitr",
+  "shaw-03-mutawakkil": "Death of al-Mutawakkil al-Abbasi",
+  "shaw-04-10-baqi-week": "Week commemorating the destruction of the Baqi shrines",
+  "shaw-08-baqi": "Baqi Day / destruction of the Baqi shrines",
+  "shaw-12-bahai": "Death of Shaykh Baha'i",
+  "shaw-13-borujerdi": "Death of Syed Husayn Tabataba'i Borujerdi",
+  "shaw-14-abdulmalik": "Death of Abd al-Malik ibn Marwan",
+  "shaw-15-uhud": "Battle of Uhud and martyrdom of Hamza",
+  "shaw-17-khandaq": "Battle of the Trench and death of Aba Salt",
+  "shaw-20-kazim-capture": "Arrest of Imam Musa al-Kazim",
+  "shaw-21-30-sadiq-decade": "Ten days commemorating the martyrdom of Imam Ja'far al-Sadiq",
+  "shaw-25-sadiq": "Martyrdom of Imam Ja'far al-Sadiq",
+  "shaw-27-taif": "The Prophet departs for Ta'if",
+  "shaw-29-30-wahid-bahbahani": "Death of Wahid al-Bahbahani",
+
+  "qid-01-masuma": "Birth of Lady Fatima Masuma",
+  "qid-02-11-rida-week": "Ten days honoring the birth of Imam al-Rida",
+  "qid-06-ibn-tawus": "Death of Syed Ibn Tawus",
+  "qid-09-muslim-letter": "Muslim ibn Aqil writes to Imam Husayn",
+  "qid-11-rida": "Birth of Imam Ali ibn Musa al-Rida",
+  "qid-17-haeri": "Death of Shaykh Abd al-Karim Ha'iri",
+  "qid-21-30-jawad-decade": "Ten days commemorating the martyrdom of Imam al-Jawad",
+  "qid-23-rida-visit": "Day of visitation of Imam al-Rida / one report of his martyrdom",
+  "qid-25-dahw-al-ard": "Dahw al-Ard and Imam al-Rida's departure for Khurasan",
+  "qid-26-hujjat-al-balag": "The Prophet departs Medina for the Farewell Hajj",
+  "qid-29-30-jawad": "Martyrdom of Imam al-Jawad",
+
+  "hij-01-ali-fatima": "Marriage of Imam Ali and Lady Fatima al-Zahra",
+  "hij-04-makkah": "The Prophet enters Mecca for the Farewell Hajj",
+  "hij-05-08-baqir-week": "Days commemorating the martyrdom of Imam Muhammad al-Baqir",
+  "hij-07-baqir": "Martyrdom of Imam Muhammad al-Baqir",
+  "hij-08-arafa-prep": "Day of Tarwiyah / Imam Husayn departs Mecca for Iraq",
+  "hij-09-arafa-muslim": "Arafah and the martyrdom of Muslim ibn Aqil and Hani ibn Urwa",
+  "hij-10-eid-qurban": "Eid al-Adha",
+  "hij-13-shaq-al-qamar": "Source record on the splitting of the moon",
+  "hij-14-fadak": "Source record on Fadak being granted to Lady Fatima al-Zahra",
+  "hij-15-hadi": "Birth of Imam Ali al-Hadi",
+  "hij-18-ghadir": "Eid al-Ghadir",
+  "hij-19-karbala-remembrance": "Day of remembrance for the oppressed of Karbala",
+  "hij-20-26-kazim-birth-week": "Days honoring the birth of Imam Musa al-Kazim",
+  "hij-22-mitham": "Martyrdom of Maytham al-Tammar",
+  "hij-23-muslim-sons": "Martyrdom of Muhammad and Ibrahim, sons of Muslim ibn Aqil",
+  "hij-24-mubahala": "Day of Mubahala and the verses of Mubahala and Wilayah",
+  "hij-25-hal-ata": "Revelation of Surat Hal Ata and source record on the first Friday prayer",
+  "hij-27-marwan": "Death of Marwan al-Himar",
+  "hij-28-harra": "Source record on the Battle of al-Harra",
+  "hij-29-30": "Approach of Muharram / final days of the month",
+});
+
+const EVENT_NOTE_EN: Readonly<Record<string, string>> = Object.freeze({
+  "muh-01-husaini-decade": "Beginning of Husayni mourning",
+  "muh-09-tasua": "Safe-conduct offered to Abbas; request to delay battle; address to the companions",
+  "muh-11-zaynab": "Beginning of the captivity of the Ahl al-Bayt",
+  "saf-20-arbaeen": "Reports of Jabir ibn Abd Allah al-Ansari arriving in Karbala and the return of the Ahl al-Bayt",
+  "saf-28-hasan-report": "One reported date",
+  "r1-10-khadija": "A calendar report placing it 15 years before the mission",
+  "r2-02-08-askari-week": "2–8 Rabi al-Thani",
+  "r2-06-askari": "232 AH; one report",
+  "r2-08-askari": "232 AH; a widely cited calendar report",
+  "r2-08-zahra-40": "The 40-day report",
+  "r2-10-fatimiyya": "First Fatimiyya; 45-day report",
+  "r2-10-russian-shelling": "1330 AH; historical entry in the cited source",
+  "r2-10-askari-pk": "232 AH; commonly used date in Pakistan",
+  "r2-10-askari-alkafeel": "232 AH; report for 10 Rabi al-Thani",
+  "r2-10-askari-shia-org": "232 AH; historical attribution to 10 Rabi al-Thani",
+  "r2-10-askari-baltistan": "232 AH; 10 Rabi al-Thani in a Pakistani religious source",
+  "r2-13-fatimiyya-45": "45-day report; attributed to Ibn Shahr Ashub",
+  "r2-13-mohaghegh-hilli": "676 AH; author of Shara'i al-Islam",
+  "r2-20-fatwa-1920": "1337 AH; Mirza Muhammad Taqi Shirazi",
+  "r2-28-amini": "1390 AH; author of al-Ghadir",
+  "r2-29-30-khalid": "21 or 22 AH; source places it on 29/30 Rabi al-Thani",
+  "j1-10-fatima-second": "Second Fatimiyya; 75-day report",
+  "j1-13-fatima-75": "75-day report",
+  "j1-19-zayd": "Battle of the Camel, 36 AH",
+  "j2-01-fatima-third": "Third Fatimiyya; 95-day report",
+  "j2-03-fatima-95": "95-day report",
+  "j2-09-sharafuddin": "1377 AH; author of al-Muraja'at",
+  "j2-20-fatima-birthday": "Five years after the beginning of the mission",
+  "raj-13-ali-birthday": "Year of the Elephant; 600 CE",
+  "raj-23-kazim-illness": "40 AH / 183 AH",
+  "raj-26-abu-talib": "Tenth year of the Prophetic mission",
+  "sha-20-sultan-waizin": "1291 AH; author of Peshawar Nights",
+  "sha-21-shabani-rising": "1411 AH",
+  "ram-10-khadija": "Tenth year of the Prophetic mission",
+  "ram-19-ali-strike": "40 AH; first Night of Qadr",
+  "ram-21-ali": "40 AH; second Night of Qadr",
+  "ram-23-qadr": "The source also records a day of support for the two Askari Imams",
+  "shaw-15-uhud": "3 AH; the source also records the event of Radd al-Shams",
+  "shaw-27-taif": "Ten years after the beginning of the mission",
+  "hij-01-ali-fatima": "2 AH; with historical disagreement over the date",
+  "hij-09-arafa-muslim": "60 AH; historical attribution",
+  "hij-13-shaq-al-qamar": "Five years before the Hijra; source attribution",
+  "hij-19-karbala-remembrance": "Listed by the source as an international designation",
+  "hij-25-hal-ata": "35 AH; source attribution",
+});
+
+const SOURCE_LABEL_EN: Readonly<Record<string, string>> = Object.freeze({
+  "shiawaves-calendar-2026-10-02": "ShiaWaves / Imam Hussain Network — Shi'a Calendar",
+  "shiastudies-rabi-al-thani": "World Assembly of Shi'a Studies",
+  "shareekatulhussain-pk-1448": "Shareekat-ul-Hussain Mosque & Imambargah — Karachi",
+  "alkafeel-10-rabi-al-thani": "Al-Kafeel International Network",
+  "al-shia-10-rabi-al-thani": "Al-Shia Urdu",
+  "ya-mahdi-baltistan-askari": "Imam Zaman (aj) Academic & Cultural Institute — Baltistan",
+});
+
+export function eventTitle(event: ShiaCalendarEvent, english: boolean): string {
+  return english ? (EVENT_TITLE_EN[event.id] ?? "Calendar occasion") : event.title;
+}
+
+export function eventNote(event: ShiaCalendarEvent, english: boolean): string | undefined {
+  if (!english) return event.note;
+  if (!event.note) return undefined;
+  const mapped = EVENT_NOTE_EN[event.id];
+  if (mapped) return mapped;
+  const generic = event.note.replace(/ھ/g, " AH").replace(/ق/g, " AH");
+  return /[\u0600-\u06FF]/u.test(generic) ? undefined : generic;
+}
+
+export function eventDayLabel(event: ShiaCalendarEvent, english: boolean): string | number {
+  if (!event.dayLabel) return event.day;
+  return english ? event.dayLabel.replace(/\s*تا\s*/g, "–") : event.dayLabel;
+}
+
+export function sourceLabel(event: ShiaCalendarEvent, english: boolean): string {
+  return english ? (SOURCE_LABEL_EN[event.sourceId] ?? "Referenced calendar source") : event.sourceLabel;
+}
+
+export function sourceLabelById(sourceId: string, fallback: string, english: boolean): string {
+  return english ? (SOURCE_LABEL_EN[sourceId] ?? "Referenced calendar source") : fallback;
+}
