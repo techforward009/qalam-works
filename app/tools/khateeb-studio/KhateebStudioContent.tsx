@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Search, Sparkles } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
 import {
@@ -39,6 +39,11 @@ import {
   buildDossierText,
   getTopicDossier,
 } from "./engine/topicDossier";
+import {
+  applyKhateebStudioQuery,
+  DEFAULT_KHATEEB_STUDIO_VIEW,
+  type KhateebStudioView,
+} from "./engine/studioView";
 
 const CALENDAR_REGIONS = ["all", "pk", "in", "ir"] as const;
 
@@ -77,21 +82,25 @@ const SPEAKER_REGION_LABELS_EN = {
   ir: "Iran",
 } as const;
 
-export default function KhateebStudioContent() {
+export default function KhateebStudioContent({
+  initialView = DEFAULT_KHATEEB_STUDIO_VIEW,
+}: {
+  initialView?: KhateebStudioView;
+}) {
   const { language, dir } = useLanguage();
   const ur = language === "ur";
-  const [workflowStep, setWorkflowStep] = useState<1 | 2 | 3>(1);
-  const [preparationMode, setPreparationMode] = useState<"topic" | "occasion">("topic");
+  const [workflowStep, setWorkflowStep] = useState<1 | 2 | 3>(initialView.step);
+  const [preparationMode, setPreparationMode] = useState<"topic" | "occasion">(initialView.mode);
   const [query, setQuery] = useState("");
   const [selectedRegion, setSelectedRegion] =
-    useState<ShiaCalendarRegion>("all");
+    useState<ShiaCalendarRegion>(initialView.region);
   const [selectedMonth, setSelectedMonth] =
-    useState<IslamicMonthId>("rabi-al-thani");
-  const [selectedEvent, setSelectedEvent] = useState("");
-  const [selectedSpeaker, setSelectedSpeaker] = useState("");
-  const [duration, setDuration] = useState<SermonDuration>(30);
+    useState<IslamicMonthId>(initialView.month);
+  const [selectedEvent, setSelectedEvent] = useState(initialView.event);
+  const [selectedSpeaker, setSelectedSpeaker] = useState(initialView.speaker);
+  const [duration, setDuration] = useState<SermonDuration>(initialView.duration);
   const [topicQuery, setTopicQuery] = useState("");
-  const [selectedTopicId, setSelectedTopicId] = useState("sabr");
+  const [selectedTopicId, setSelectedTopicId] = useState(initialView.topic);
 
   const filteredSpeakers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -276,6 +285,32 @@ export default function KhateebStudioContent() {
     setWorkflowStep(1);
     setSelectedSpeaker("");
   };
+
+  useEffect(() => {
+    const next = applyKhateebStudioQuery(window.location.search, {
+      step: workflowStep,
+      mode: preparationMode,
+      topic: selectedTopicId,
+      speaker: selectedSpeaker,
+      month: selectedMonth,
+      region: selectedRegion,
+      event: selectedEvent,
+      duration,
+    });
+    const current = window.location.search.replace(/^\?/, "");
+    if (next === current) return;
+    const url = next ? `${window.location.pathname}?${next}` : window.location.pathname;
+    window.history.replaceState(null, "", url);
+  }, [
+    workflowStep,
+    preparationMode,
+    selectedTopicId,
+    selectedSpeaker,
+    selectedMonth,
+    selectedRegion,
+    selectedEvent,
+    duration,
+  ]);
 
   return (
     <main

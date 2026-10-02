@@ -24,6 +24,12 @@ import {
   southAsiaSourcesForSpeaker,
 } from "../app/tools/khateeb-studio/engine/southAsianCorpusQueue";
 import { hasLatinWord, pureKhateebUrdu } from "../app/tools/khateeb-studio/engine/urduPurity";
+import { groupCalendarEvents } from "../app/tools/khateeb-studio/engine/groupCalendarEvents";
+import {
+  applyKhateebStudioQuery,
+  khateebStudioQuery,
+  parseKhateebStudioView,
+} from "../app/tools/khateeb-studio/engine/studioView";
 
 describe("Khateeb Studio seed corpus", () => {
   test("contains the requested historical speakers", () => {
@@ -455,5 +461,67 @@ describe("Khateeb Studio Urdu language purity", () => {
   test("Urdu UI never shows the English source-backed badge", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).toContain('{ur ? "ماخذ سے ثابت شدہ" : "source-backed"}');
+  });
+});
+
+describe("Khateeb Studio refresh", () => {
+  test("restores the opened topic, speaker, and preparation step", () => {
+    const view = parseKhateebStudioView({
+      step: "3",
+      mode: "topic",
+      topic: "ismah",
+      speaker: "ali-naqi-naqvi",
+      duration: "45",
+    });
+    expect(view).toMatchObject({
+      step: 3,
+      mode: "topic",
+      topic: "ismah",
+      speaker: "ali-naqi-naqvi",
+      duration: 45,
+    });
+    const again = parseKhateebStudioView(
+      Object.fromEntries(new URLSearchParams(khateebStudioQuery(view))),
+    );
+    expect(again).toEqual(view);
+  });
+
+  test("keeps an opened occasion instead of returning to the studio start", () => {
+    const event = groupCalendarEvents(
+      SHIA_CALENDAR_1448_EVENTS.filter((item) => item.month === "muharram"),
+    )[0];
+    const view = parseKhateebStudioView({
+      step: "3",
+      mode: "occasion",
+      month: "muharram",
+      event: event.key,
+    });
+    expect(view.step).toBe(3);
+    expect(view.mode).toBe("occasion");
+    expect(view.month).toBe("muharram");
+    expect(view.event).toBe(event.key);
+  });
+
+  test("an empty address stays on the main studio", () => {
+    const view = parseKhateebStudioView({});
+    expect(view).toMatchObject({ step: 1, mode: "topic", topic: "sabr", speaker: "" });
+    expect(khateebStudioQuery(view)).toBe("");
+  });
+
+  test("address update keeps unrelated parameters", () => {
+    const next = applyKhateebStudioQuery("?lang=ur", {
+      step: 3,
+      mode: "topic",
+      topic: "imamate",
+      speaker: "",
+      month: "rabi-al-thani",
+      region: "all",
+      event: "",
+      duration: 30,
+    });
+    const params = new URLSearchParams(next);
+    expect(params.get("lang")).toBe("ur");
+    expect(params.get("step")).toBe("3");
+    expect(params.get("topic")).toBe("imamate");
   });
 });
