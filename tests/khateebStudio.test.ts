@@ -5,6 +5,13 @@ import { KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus
 import { RABI_AL_THANI_1448_EVENTS, SHIA_CALENDAR_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
 import { buildPreparationText, getSermonPrep, outlineMinutes } from "../app/tools/khateeb-studio/engine/sermonPrep";
 import { evidenceForSpeaker, SPEAKER_EVIDENCE } from "../app/tools/khateeb-studio/engine/speakerEvidence";
+import {
+  evidenceForSpeakerAndTopic,
+  evidenceForTopic,
+  speakersForTopic,
+  topicsForSpeaker,
+  validateSpeakerTopicIndex,
+} from "../app/tools/khateeb-studio/engine/speakerTopicIndex";
 import { searchTopicPreps, TOPIC_PREPS } from "../app/tools/khateeb-studio/engine/topicPrep";
 
 describe("Khateeb Studio seed corpus", () => {
@@ -172,5 +179,41 @@ describe("Khateeb Studio real speaker material", () => {
       expect(row.summaryUr.length).toBeGreaterThan(40);
       expect(row.takeawaysUr.length).toBeGreaterThanOrEqual(2);
     }
+  });
+});
+
+describe("Khateeb Studio speaker × topic index", () => {
+  test("has no dangling speaker or topic references", () => {
+    expect(validateSpeakerTopicIndex()).toEqual({
+      unknownSpeakerIds: [],
+      unknownTopicIds: [],
+    });
+  });
+
+  test("projects one evidence record in both directions without duplication", () => {
+    const byTopic = evidenceForTopic("imamate");
+    const bySpeaker = evidenceForSpeakerAndTopic("hamed-kashani", "imamate");
+    expect(byTopic.map((item) => item.id)).toContain("kashani-askari-1402");
+    expect(bySpeaker.map((item) => item.id)).toContain("kashani-askari-1402");
+    expect(SPEAKER_EVIDENCE.filter((item) => item.id === "kashani-askari-1402")).toHaveLength(1);
+  });
+
+  test("indexes Rashid Turabi under real source-backed topics only", () => {
+    const topics = topicsForSpeaker("rashid-turabi").map((row) => row.topic.id);
+    expect(topics).toContain("tawhid");
+    expect(topics).toContain("dua");
+    expect(topics).not.toContain("imamate");
+  });
+
+  test("topic view can enumerate contributing speakers", () => {
+    const rows = speakersForTopic("imamate");
+    expect(rows.some((row) => row.speakerId === "hamed-kashani")).toBe(true);
+  });
+
+  test("UI exposes both topic-to-speaker and speaker-to-topic navigation", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("اس موضوع پر خطباء کا حقیقی مواد");
+    expect(studio).toContain("اس خطیب کے index شدہ موضوعات");
+    expect(studio).toContain("No verified speaker material is indexed to this topic yet");
   });
 });

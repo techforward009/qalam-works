@@ -3,6 +3,11 @@ export type SpeakerEvidenceKind = "transcript" | "compiled-majalis";
 export type SpeakerEvidence = {
   id: string;
   speakerId: string;
+  /**
+   * Explicit links to year-round topic ids from topicPrep.ts.
+   * Never infer these links from generic speaker profile tags.
+   */
+  topicIds: readonly string[];
   kind: SpeakerEvidenceKind;
   titleUr: string;
   titleEn: string;
@@ -29,6 +34,7 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
   {
     id: "kashani-askari-1402",
     speakerId: "hamed-kashani",
+    topicIds: ["imamate"],
     kind: "transcript",
     titleUr: "امام حسن عسکریؑ کے عہدِ حیات پر ایک نظر",
     titleEn: "A reflection on the lifetime of Imam Hasan al-Askari",
@@ -58,6 +64,7 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
   {
     id: "kashani-askari-concerns-1399",
     speakerId: "hamed-kashani",
+    topicIds: ["imamate"],
     kind: "transcript",
     titleUr: "امام عسکریؑ کی بعض فکری و اجتماعی دغدغه‌ها — جلسہ اول",
     titleEn: "Some concerns of Imam al-Askari — session 1",
@@ -87,6 +94,7 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
   {
     id: "turabi-tawhid-shirk",
     speakerId: "rashid-turabi",
+    topicIds: ["tawhid"],
     kind: "compiled-majalis",
     titleUr: "مجالس ترابی، جلد اول: توحید اور شرک",
     titleEn: "Majalis-e-Turabi, vol. 1: Tawhid and Shirk",
@@ -111,6 +119,7 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
   {
     id: "turabi-kufran-hayat",
     speakerId: "rashid-turabi",
+    topicIds: [],
     kind: "compiled-majalis",
     titleUr: "مجالس ترابی، جلد دوم: کفرانِ نعمت اور حیاتِ طیبہ",
     titleEn: "Majalis-e-Turabi, vol. 2: Ingratitude and the Good Life",
@@ -135,6 +144,7 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
   {
     id: "turabi-dua-itmam",
     speakerId: "rashid-turabi",
+    topicIds: ["dua"],
     kind: "compiled-majalis",
     titleUr: "مجالس ترابی، جلد سوم: دعا اور اتمامِ نعمت",
     titleEn: "Majalis-e-Turabi, vol. 3: Dua and Completion of Blessing",

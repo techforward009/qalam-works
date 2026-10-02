@@ -28,6 +28,10 @@ import {
 } from "./engine/sermonPrep";
 import { evidenceForSpeaker } from "./engine/speakerEvidence";
 import {
+  evidenceForTopic,
+  topicsForSpeaker,
+} from "./engine/speakerTopicIndex";
+import {
   searchTopicPreps,
   topicTitle,
 } from "./engine/topicPrep";
@@ -135,12 +139,16 @@ export default function KhateebStudioContent() {
   const speakerEvidence = selectedSpeaker
     ? evidenceForSpeaker(selectedSpeaker)
     : [];
+  const speakerIndexedTopics = speaker
+    ? topicsForSpeaker(speaker.id)
+    : [];
   const topicResults = useMemo(
     () => searchTopicPreps(topicQuery, ur ? "ur" : "en"),
     [topicQuery, ur],
   );
   const topic = topicResults.find((item) => item.id === selectedTopicId)
     ?? topicResults[0];
+  const topicSpeakerEvidence = topic ? evidenceForTopic(topic.id) : [];
   const topicPreparationText = topic
     ? buildPreparationText(
         topic,
@@ -448,6 +456,78 @@ export default function KhateebStudioContent() {
                     ))}
                   </ul>
                 </div>
+              </div>
+
+              <div className="mt-4 rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                      {ur ? "اس موضوع پر خطباء کا حقیقی مواد" : "Verified speaker material on this topic"}
+                    </h4>
+                    <p className="mt-0.5 text-xs text-[#687469] dark:text-[#9fb0a2]">
+                      {ur
+                        ? "صرف وہی خطابات یا محفوظ مجموعے دکھائے جاتے ہیں جنہیں اس موضوع سے واضح طور پر index کیا گیا ہے۔"
+                        : "Only speeches or archived collections explicitly indexed to this topic are shown."}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-[#F7F5EF] px-2.5 py-1 text-xs font-semibold text-[#6b776d] dark:bg-[#0e1c15] dark:text-[#98aa9b]">
+                    {topicSpeakerEvidence.length} {ur ? "ریکارڈ" : "records"}
+                  </span>
+                </div>
+
+                {topicSpeakerEvidence.length ? (
+                  <div className="mt-3 space-y-3">
+                    {topicSpeakerEvidence.map((record) => {
+                      const indexedSpeaker = KHATEEB_CORPUS.find(
+                        (item) => item.id === record.speakerId,
+                      );
+                      return (
+                        <article
+                          key={record.id}
+                          className="rounded-lg border border-[#1A3A2A]/10 bg-[#F7F5EF] p-3 dark:border-[#35513d] dark:bg-[#0e1c15]"
+                        >
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            {indexedSpeaker ? (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedSpeaker(indexedSpeaker.id)}
+                                className="font-bold text-[#1A3A2A] hover:underline dark:text-[#e7eee9]"
+                              >
+                                {speakerName(indexedSpeaker, !ur)}
+                              </button>
+                            ) : null}
+                            <span className="text-[#8a6838]">
+                              {record.kind === "transcript"
+                                ? (ur ? "مکمل مکتوب خطاب" : "Full transcript")
+                                : (ur ? "محفوظ مجموعۂ مجالس" : "Archived collection")}
+                            </span>
+                          </div>
+                          <h5 className="mt-1 font-semibold text-[#1A3A2A] dark:text-[#e7eee9]">
+                            {ur ? record.titleUr : record.titleEn}
+                          </h5>
+                          <p className="mt-1 text-sm text-[#4f5f53] dark:text-[#b8c8bb]">
+                            {ur ? record.summaryUr : record.summaryEn}
+                          </p>
+                          <a
+                            href={record.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#3a6a4a] hover:underline dark:text-[#a8c8b0]"
+                          >
+                            {ur ? "اصل ماخذ" : "Open original source"}
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-3 rounded-lg border border-dashed border-[#1A3A2A]/15 bg-[#F7F5EF] p-3 text-sm text-[#5f6f61] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
+                    {ur
+                      ? "اس موضوع کے لیے خطباء کا verified مواد ابھی index نہیں ہوا؛ Qalam یہاں کوئی مصنوعی نسبت نہیں بنا رہا۔"
+                      : "No verified speaker material is indexed to this topic yet; Qalam does not manufacture an attribution."}
+                  </p>
+                )}
               </div>
 
               <details className="mt-4 rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]">
@@ -763,6 +843,29 @@ export default function KhateebStudioContent() {
                       : "Only source-backed material appears here. Generic profile tags are never presented as quotations or speech summaries."}
                   </p>
                 </div>
+
+                {speakerIndexedTopics.length ? (
+                  <div className="mb-4">
+                    <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
+                      {ur ? "اس خطیب کے index شدہ موضوعات" : "Indexed topics for this speaker"}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {speakerIndexedTopics.map(({ topic: indexedTopic, records }) => (
+                        <button
+                          key={indexedTopic.id}
+                          type="button"
+                          onClick={() => {
+                            setTopicQuery("");
+                            setSelectedTopicId(indexedTopic.id);
+                          }}
+                          className="rounded-full border border-[#1A3A2A]/12 bg-[#F7F5EF] px-3 py-1 text-xs font-semibold text-[#425247] hover:border-[#B8935A] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#b7c8bb]"
+                        >
+                          {topicTitle(indexedTopic, ur ? "ur" : "en")} · {records.length}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 {speakerEvidence.length ? (
                   <div className="space-y-3">
