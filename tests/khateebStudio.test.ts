@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { readFileSync } from "node:fs";
 import { KHATEEB_CALENDAR_SOURCE_ARCHIVE } from "../app/tools/khateeb-studio/engine/calendarSourceArchive";
 import { KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
 import { RABI_AL_THANI_1448_EVENTS, SHIA_CALENDAR_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
@@ -38,5 +39,17 @@ describe("Rabi al-Thani calendar seed", () => {
     const askari = RABI_AL_THANI_1448_EVENTS.filter((item) => item.title === "ولادت امام حسن عسکریؑ");
     expect(new Set(askari.map((item) => item.day))).toEqual(new Set([6, 8, 10]));
     expect(askari.some((item) => item.regions?.includes("pk") && item.day === 10)).toBe(true);
+  });
+});
+
+describe("Khateeb Studio typography", () => {
+  test("keeps Jameel on the studio body and Noto Nastaliq on headings only", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    const globals = readFileSync("app/globals.css", "utf8");
+    expect(studio).toContain("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2");
+    expect(studio).toContain('.khateeb-studio h1');
+    expect(studio).toContain("var(--font-nastaliq), var(--font-nastaliq-latin)");
+    expect(globals).not.toContain("khateeb-studio");
+    expect(globals).not.toContain("jameel-noori-nastaleeq-400.woff2");
   });
 });
