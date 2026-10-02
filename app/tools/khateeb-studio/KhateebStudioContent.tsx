@@ -49,6 +49,10 @@ import {
 import { buildFreshMajlisSeries } from "./engine/freshPulpitSeries";
 import { checkSeriesOriginality } from "./engine/originalityGuard";
 import {
+  buildSessionWorkbench,
+  buildSessionWorkbenchText,
+} from "./engine/sessionWorkbench";
+import {
   applyKhateebStudioQuery,
   DEFAULT_KHATEEB_STUDIO_VIEW,
   type KhateebStudioView,
@@ -861,6 +865,97 @@ export default function KhateebStudioContent({
                             <strong>{ur ? "اگلی مجلس کی تمہید: " : "Lead into next: "}</strong>
                             {ur ? session.nextBridgeUr : session.nextBridgeEn}
                           </div>
+                        ) : null}
+                        {seriesLayer === "fresh" ? (
+                          <details className="mt-4 rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-3 dark:border-[#35513d] dark:bg-[#0e1c15]">
+                            <summary className="cursor-pointer font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                              {ur ? "اس مجلس کی مکمل منبری تیاری" : "Open full session workbench"}
+                            </summary>
+                            {(() => {
+                              const workbench = buildSessionWorkbench(session, duration);
+                              return (
+                                <div className="mt-4 space-y-4">
+                                  <div className="rounded-lg bg-white p-3 dark:bg-[#162a1e]">
+                                    <div className="text-xs font-bold text-[#8a6838] dark:text-[#d7bc8a]">
+                                      {ur ? "مرکزی مقصد" : "Central purpose"}
+                                    </div>
+                                    <p className="mt-1 text-sm leading-7 text-[#37443a] dark:text-[#c8d5cc]">
+                                      {ur ? workbench.centralUr : workbench.centralEn}
+                                    </p>
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    {workbench.blocks.map((block, blockIndex) => (
+                                      <div
+                                        key={`${session.number}-${blockIndex}`}
+                                        className="rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]"
+                                      >
+                                        <div className="flex items-center justify-between gap-3">
+                                          <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
+                                            {ur ? block.headingUr : block.headingEn}
+                                          </strong>
+                                          <span className="shrink-0 rounded-full bg-[#F7F5EF] px-2 py-1 text-xs text-[#687469] dark:bg-[#0e1c15] dark:text-[#9fb0a2]">
+                                            {block.minutes} {ur ? "منٹ" : "min"}
+                                          </span>
+                                        </div>
+                                        <div className="mt-2 space-y-1">
+                                          {(ur ? block.bodyUr : block.bodyEn).map((point) => (
+                                            <p key={point} className="text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
+                                              • {point}
+                                            </p>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  <div className="grid gap-3 md:grid-cols-2">
+                                    <div className="rounded-lg border border-[#B8935A]/25 bg-[#fbf7ee] p-3 dark:border-[#6f5b35] dark:bg-[#241f14]">
+                                      <strong className="text-sm text-[#5a4830] dark:text-[#e2c895]">
+                                        {ur ? "سامع کے لیے سوال" : "Audience question"}
+                                      </strong>
+                                      <p className="mt-1 text-sm leading-7 text-[#5a4830] dark:text-[#d7bc8a]">
+                                        {ur ? workbench.audienceQuestionUr : workbench.audienceQuestionEn}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-lg border border-[#B8935A]/25 bg-[#fbf7ee] p-3 dark:border-[#6f5b35] dark:bg-[#241f14]">
+                                      <strong className="text-sm text-[#5a4830] dark:text-[#e2c895]">
+                                        {ur ? "اپنی مثال کی جگہ" : "Own-example slot"}
+                                      </strong>
+                                      <p className="mt-1 text-sm leading-7 text-[#5a4830] dark:text-[#d7bc8a]">
+                                        {ur ? workbench.ownExampleUr : workbench.ownExampleEn}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]">
+                                    <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
+                                      {ur ? "اپنی آواز محفوظ رکھیں" : "Protect your own voice"}
+                                    </strong>
+                                    <p className="mt-1 text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
+                                      {ur ? workbench.voiceGuardUr : workbench.voiceGuardEn}
+                                    </p>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        await navigator.clipboard.writeText(
+                                          buildSessionWorkbenchText(workbench, ur ? "ur" : "en"),
+                                        );
+                                      } catch {
+                                        // Clipboard may be unavailable.
+                                      }
+                                    }}
+                                    className="rounded-lg bg-[#1A3A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#244E38]"
+                                  >
+                                    {ur ? "اس مجلس کی مکمل تیاری نقل کریں" : "Copy full session workbench"}
+                                  </button>
+                                </div>
+                              );
+                            })()}
+                          </details>
                         ) : null}
                       </article>
                     ))}

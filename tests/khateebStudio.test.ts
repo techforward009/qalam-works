@@ -28,6 +28,10 @@ import { hasLatinWord, pureKhateebUrdu } from "../app/tools/khateeb-studio/engin
 import { buildMajlisSeries, buildMajlisSeriesText } from "../app/tools/khateeb-studio/engine/seriesPlanner";
 import { buildFreshMajlisSeries } from "../app/tools/khateeb-studio/engine/freshPulpitSeries";
 import { checkSeriesOriginality } from "../app/tools/khateeb-studio/engine/originalityGuard";
+import {
+  buildSessionWorkbench,
+  buildSessionWorkbenchText,
+} from "../app/tools/khateeb-studio/engine/sessionWorkbench";
 import { groupCalendarEvents } from "../app/tools/khateeb-studio/engine/groupCalendarEvents";
 import {
   applyKhateebStudioQuery,
@@ -608,6 +612,44 @@ describe("Khateeb Studio originality guard", () => {
     expect(studio).toContain("اصالت و عدمِ نقل جانچ");
     expect(studio).toContain('seriesLayer === "fresh" && originalityReport');
     expect(studio).toContain("عنوانات کی آزادی");
+  });
+});
+
+describe("Khateeb Studio full session workbench", () => {
+  test("turns a fresh series session into timed pulpit preparation", () => {
+    const series = buildFreshMajlisSeries(getTopicDossier("imamate")!, 10)!;
+    const workbench = buildSessionWorkbench(series.sessions[0], 30);
+    expect(workbench.blocks.length).toBe(5);
+    expect(workbench.blocks.reduce((sum, block) => sum + block.minutes, 0)).toBe(30);
+    expect(workbench.audienceQuestionUr.length).toBeGreaterThan(30);
+    expect(workbench.ownExampleUr).toContain("اپنی مثال");
+    expect(workbench.voiceGuardUr.length).toBeGreaterThan(30);
+  });
+
+  test("adapts the same session to 20, 30, and 45 minutes", () => {
+    const session = buildFreshMajlisSeries(getTopicDossier("quran-hidayat")!, 5)!.sessions[0];
+    for (const duration of [20, 30, 45] as const) {
+      const workbench = buildSessionWorkbench(session, duration);
+      expect(workbench.blocks.reduce((sum, block) => sum + block.minutes, 0)).toBe(duration);
+    }
+  });
+
+  test("copyable Urdu workbench contains evidence, own-example slot, and voice protection", () => {
+    const session = buildFreshMajlisSeries(getTopicDossier("quran-hidayat")!, 5)!.sessions[0];
+    const text = buildSessionWorkbenchText(buildSessionWorkbench(session, 30), "ur");
+    expect(text).toContain("قرآنی اور علمی بنیاد");
+    expect(text).toContain("اپنی مثال");
+    expect(text).toContain("اپنی آواز محفوظ رکھیں");
+    expect(text).toContain("حاصلِ مجلس اور اختتام");
+    expect(hasLatinWord(text)).toBe(false);
+  });
+
+  test("studio exposes the workbench only in fresh composition", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("اس مجلس کی مکمل منبری تیاری");
+    expect(studio).toContain('seriesLayer === "fresh"');
+    expect(studio).toContain("اس مجلس کی مکمل تیاری نقل کریں");
+    expect(studio).toContain("اپنی آواز محفوظ رکھیں");
   });
 });
 
