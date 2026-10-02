@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { KHATEEB_CALENDAR_SOURCE_ARCHIVE } from "../app/tools/khateeb-studio/engine/calendarSourceArchive";
 import { KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
-import { RABI_AL_THANI_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
+import { RABI_AL_THANI_1448_EVENTS, SHIA_CALENDAR_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
 
 describe("Khateeb Studio seed corpus", () => {
   test("contains the requested historical speakers", () => {
@@ -29,7 +29,7 @@ describe("Rabi al-Thani calendar seed", () => {
 
   test("keeps source attribution", () => {
     const archiveIds = new Set(KHATEEB_CALENDAR_SOURCE_ARCHIVE.map((item) => item.id));
-    for (const item of RABI_AL_THANI_1448_EVENTS) {
+    for (const item of SHIA_CALENDAR_1448_EVENTS) {
       expect(item.sourceLabel).toBeTruthy();
       expect(item.sourceUrl).toMatch(/^https:\/\//);
       expect(item.sourceCapturedAt).toBe("2026-10-02");
