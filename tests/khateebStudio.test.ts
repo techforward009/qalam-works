@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { KHATEEB_CALENDAR_SOURCE_ARCHIVE } from "../app/tools/khateeb-studio/engine/calendarSourceArchive";
 import { KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
 import { RABI_AL_THANI_1448_EVENTS, SHIA_CALENDAR_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
+import { buildPreparationText, getSermonPrep, outlineMinutes } from "../app/tools/khateeb-studio/engine/sermonPrep";
 
 describe("Khateeb Studio seed corpus", () => {
   test("contains the requested historical speakers", () => {
@@ -54,5 +55,55 @@ describe("Khateeb Studio typography", () => {
     expect(globals).not.toContain("khateeb-studio");
     expect(globals).not.toContain("jameel-noori-nastaleeq-400.woff2");
     expect(studio).not.toContain("max-h-[560px]");
+  });
+});
+
+describe("Khateeb Studio sermon preparation", () => {
+  test("provides a substantive Askari preparation pack", () => {
+    const event = RABI_AL_THANI_1448_EVENTS.find((item) => item.title === "ولادت امام حسن عسکریؑ");
+    const prep = getSermonPrep(event);
+    expect(prep).not.toBeNull();
+    expect(prep?.quran.length).toBeGreaterThanOrEqual(3);
+    expect(prep?.sources.length).toBeGreaterThanOrEqual(3);
+    expect(prep?.anglesUr.length).toBeGreaterThanOrEqual(3);
+  });
+
+  test("provides source-led preparation for Tawwabun", () => {
+    const event = RABI_AL_THANI_1448_EVENTS.find((item) => item.title.includes("توابین"));
+    const prep = getSermonPrep(event);
+    expect(prep?.id).toBe("tawwabin");
+    expect(prep?.sources.some((item) => item.labelEn.includes("Tabari"))).toBe(true);
+  });
+
+  test("every other occasion still gets a useful fallback", () => {
+    const event = RABI_AL_THANI_1448_EVENTS.find((item) => item.title.includes("موسیٰ مبرقع"));
+    const prep = getSermonPrep(event);
+    expect(prep?.id.startsWith("generic-")).toBe(true);
+    expect(prep?.anglesUr.length).toBeGreaterThanOrEqual(4);
+    expect(prep?.titleEn).not.toMatch(/[\u0600-\u06FF]/u);
+  });
+
+  test("duration allocation is deterministic and sums correctly", () => {
+    expect(outlineMinutes(20).reduce((a, b) => a + b, 0)).toBe(20);
+    expect(outlineMinutes(30).reduce((a, b) => a + b, 0)).toBe(30);
+    expect(outlineMinutes(45).reduce((a, b) => a + b, 0)).toBe(45);
+  });
+
+  test("copyable preparation includes evidence and outline", () => {
+    const event = RABI_AL_THANI_1448_EVENTS.find((item) => item.title === "ولادت امام حسن عسکریؑ");
+    const prep = getSermonPrep(event)!;
+    const text = buildPreparationText(prep, "ur", 30, {
+      name: "علامہ سید رشید ترابیؒ",
+      focus: ["مجالس", "خطابت"],
+    });
+    expect(text).toContain("قرآنی بنیاد");
+    expect(text).toContain("خطبہ خاکہ");
+    expect(text).toContain("علامہ سید رشید ترابیؒ");
+  });
+
+  test("speaker list uses page flow rather than an internal scrollbar", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).not.toContain("max-h-[560px] overflow-auto");
+    expect(studio).toContain("Sermon preparation");
   });
 });
