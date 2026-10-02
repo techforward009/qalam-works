@@ -19,6 +19,7 @@ import {
 import { searchTopicPreps, TOPIC_PREPS } from "../app/tools/khateeb-studio/engine/topicPrep";
 import { buildDossierText, getTopicDossier } from "../app/tools/khateeb-studio/engine/topicDossier";
 import { NAQQAN_ASHRA_EVIDENCE } from "../app/tools/khateeb-studio/engine/naqqanEvidence";
+import { TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariEvidence";
 import {
   SOUTH_ASIA_CORPUS_QUEUE,
   southAsiaSourcesForSpeaker,
@@ -402,6 +403,46 @@ describe("Khateeb Studio Naqqan full-text ingestion", () => {
     expect(records.length).toBeGreaterThanOrEqual(9);
     expect(records.every((item) => item.kind === "transcript")).toBe(true);
     expect(records.some((item) => item.summaryUr.includes("اصطف"))).toBe(true);
+  });
+});
+
+describe("Khateeb Studio Talib Johari full-book ingestion", () => {
+  test("ingests the nine numbered majalis plus Sham-e-Ghariban from Mansab-e-Hidayat", () => {
+    expect(TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE).toHaveLength(10);
+    expect(
+      TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE.every(
+        (item) => item.speakerId === "talib-johari" && item.status === "ready",
+      ),
+    ).toBe(true);
+    expect(
+      TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE.every(
+        (item) => (item.materialUr?.length ?? 0) >= 3,
+      ),
+    ).toBe(true);
+  });
+
+  test("Talib Johari now contributes real Pakistani material to Imamate", () => {
+    const records = evidenceForSpeakerAndTopic("talib-johari", "imamate");
+    expect(records.length).toBeGreaterThanOrEqual(6);
+    expect(records.some((item) => item.id === "talib-mansab-08-obedience-authority")).toBe(true);
+    expect(records.some((item) => item.id === "talib-mansab-09-guidance-continuity")).toBe(true);
+  });
+
+  test("the main Imamate dossier now contains Talib Johari as a substantive perspective", () => {
+    const dossier = getTopicDossier("imamate");
+    expect(dossier?.perspectives.some((item) => item.speakerId === "talib-johari")).toBe(true);
+  });
+
+  test("Talib Johari Urdu material contains no English words", () => {
+    const payload = TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE.flatMap((item) => [
+      item.titleUr,
+      ...item.topicsUr,
+      item.summaryUr,
+      ...(item.materialUr ?? []),
+      ...item.takeawaysUr,
+      item.sourceLabelUr,
+    ]).join("\n");
+    expect(hasLatinWord(payload)).toBe(false);
   });
 });
 

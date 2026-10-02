@@ -329,6 +329,37 @@ const IMAMATE: SermonDossier = {
       useEn:
         "Near the end, do not ask only 'Do you believe in the Imam?' Ask: 'What is one thing in your life that the Imam's model has actually changed?'",
     },
+    {
+      id: "talib-johari-guidance-quran",
+      speakerId: "talib-johari",
+      nameUr: "علامہ طالب جوہریؒ",
+      nameEn: "Allama Talib Johari",
+      sourceTitleUr: "منصبِ ہدایت اور قرآن",
+      sourceTitleEn: "Mansab-e-Hidayat aur Qur'an",
+      sourceUrl: "https://maablib.org/mansb-e-hidayat-aur-quran-by-talib-johri/",
+      coreUr:
+        "طالب جوہریؒ امامت کی بحث کو قرآن کے مقابل کوئی الگ عقیدہ بنا کر پیش نہیں کرتے، بلکہ پہلے یہ اصول قائم کرتے ہیں کہ قرآن خود زندہ ہدایت ہے، رسولؐ کی اطاعت اسی قرآنی ہدایت کا تقاضا ہے، اور دینی زندگی میں معتبر رہنمائی کی ضرورت محض کتاب کے موجود ہونے سے ختم نہیں ہوتی۔ اس طرح منصبِ ہدایت کو قرآن ہی کے نظامِ ہدایت کے اندر سمجھنے کا راستہ کھلتا ہے۔",
+      coreEn:
+        "Talib Johari does not present Imamate as a doctrine competing with the Qur'an. He first establishes the Qur'an as living guidance, treats obedience to the Messenger as a Qur'anic requirement, and argues that the presence of a revealed text does not remove the human need for authoritative religious guidance.",
+      explanationUr: [
+        "کتاب کی مجالس بار بار سورۂ اسراء 17:9 کے اس اصول کی طرف لوٹتی ہیں کہ قرآن اس راہ کی ہدایت کرتا ہے جو سب سے زیادہ قائم اور سیدھی ہے۔ طالب جوہریؒ اسی سے سوال اٹھاتے ہیں کہ اس ہدایت کو اجتماعی اور عملی زندگی میں کیسے پہچانا جائے۔",
+        "ان کے بیان میں قرآن اور رسولؐ کی اطاعت ایک دوسرے سے جدا نہیں۔ قرآن خود صاحبِ قرآن کی اطاعت کا حکم دیتا ہے؛ اس لیے معتبر دینی رہنمائی کو قرآن کے مقابل کھڑا کرنا ان کے منہج کے خلاف ہے۔",
+        "بعد کی مجالس میں یہی بحث منصبِ ہدایت کے تسلسل تک پہنچتی ہے: اصل سوال شخصی عقیدت نہیں بلکہ یہ ہے کہ وحی نے انسان کو ہدایت سمجھنے، اپنانے اور محفوظ رکھنے کے لیے کس معتبر دینی نظم کی طرف رہنمائی کی ہے۔",
+      ],
+      explanationEn: [
+        "The majalis repeatedly return to Qur'an 17:9 and ask how that guidance is recognized and lived in communal life.",
+        "For Johari, Qur'an and obedience to the Messenger are not separable; the Qur'an itself commands obedience to the one who conveys and explains it.",
+        "The later majalis move toward continuity of the office of guidance: the issue is the divinely authorized order through which revelation is understood and lived.",
+      ],
+      styleUr:
+        "انداز: ایک مرکزی قرآنی آیت کو پورے عشرے کی بنیاد بنانا، روزمرہ اور موجودہ مثال سے سوال اٹھانا، سامع کے ممکنہ اعتراض کو خود زبان دینا، پھر آیات کے باہمی ربط سے نتیجہ نکالنا اور آخر میں اسی علمی نکتے کو اہلِ بیتؑ اور کربلا سے جوڑ دینا۔",
+      styleEn:
+        "Style: use one central Qur'anic verse across the series, raise questions through contemporary examples, voice likely objections, connect verses into an argument, then carry the same principle into Ahl al-Bayt and Karbala.",
+      useUr:
+        "امامت پر مجلس میں پہلے یہ ثابت کرنے کی جلدی نہ کریں کہ امام کون ہے۔ پہلے طالب جوہریؒ کے انداز میں یہ سوال قائم کریں کہ قرآن کی ہدایت عملی زندگی تک کیسے پہنچتی ہے، رسولؐ کی اطاعت کیوں لازم ہے، اور معتبر ہدایت کا تسلسل کس دینی ضرورت کا جواب ہے۔",
+      useEn:
+        "Before arguing who the Imam is, use Johari's sequence: ask how Qur'anic guidance reaches lived reality, why obedience to the Messenger is required, and what religious need continuing authoritative guidance answers.",
+    },
   ],
   synthesisUr: [
     "کاشانی ہمیں **طریقۂ تحقیق** دیتے ہیں: پہلے امامت کی تعریف، پھر تطبیق اور دلیل۔ علامہ طباطبائی **منصب کی ساخت** دیتے ہیں: قیادت، علم اور روحانی تربیت۔ مطہری **function** واضح کرتے ہیں: امام صرف راستہ نہیں بتاتا، انسان اور معاشرے کو حرکت دیتا ہے۔ امینی **معرفت کو زندگی** میں لے آتے ہیں: امام کو جاننا یعنی اس کے علمی و اخلاقی معیار کو اختیار کرنا۔",

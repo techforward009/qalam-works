@@ -1,4 +1,5 @@
 import { NAQQAN_ASHRA_EVIDENCE } from "./naqqanEvidence";
+import { TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE } from "./talibJohariEvidence";
 import { pureKhateebUrdu } from "./urduPurity";
 
 export type SpeakerEvidenceKind = "transcript" | "compiled-majalis";
@@ -43,6 +44,7 @@ export type SpeakerEvidence = {
  */
 export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
   ...NAQQAN_ASHRA_EVIDENCE,
+  ...TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE,
   {
     id: "kashani-askari-1402",
     speakerId: "hamed-kashani",
