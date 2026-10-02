@@ -44,6 +44,7 @@ import {
   buildMajlisSeriesText,
   type MajlisSeriesLength,
 } from "./engine/seriesPlanner";
+import { buildFreshMajlisSeries } from "./engine/freshPulpitSeries";
 import {
   applyKhateebStudioQuery,
   DEFAULT_KHATEEB_STUDIO_VIEW,
@@ -105,6 +106,7 @@ export default function KhateebStudioContent({
   const [selectedSpeaker, setSelectedSpeaker] = useState(initialView.speaker);
   const [duration, setDuration] = useState<SermonDuration>(initialView.duration);
   const [seriesLength, setSeriesLength] = useState<MajlisSeriesLength>(initialView.series);
+  const [seriesLayer, setSeriesLayer] = useState<"fresh" | "research">("fresh");
   const [topicQuery, setTopicQuery] = useState("");
   const [selectedTopicId, setSelectedTopicId] = useState(initialView.topic);
 
@@ -173,9 +175,16 @@ export default function KhateebStudioContent({
   const topicDossierText = topicDossier
     ? buildDossierText(topicDossier, ur ? "ur" : "en")
     : "";
-  const topicSeries = topicDossier
+  const researchSeries = topicDossier
     ? buildMajlisSeries(topicDossier, seriesLength)
     : null;
+  const freshSeries = topicDossier
+    ? buildFreshMajlisSeries(topicDossier, seriesLength)
+    : null;
+  const topicSeries =
+    seriesLength > 1 && seriesLayer === "fresh" && freshSeries
+      ? freshSeries
+      : researchSeries;
   const topicSeriesText = topicSeries
     ? buildMajlisSeriesText(topicSeries, ur ? "ur" : "en")
     : "";
@@ -561,11 +570,51 @@ export default function KhateebStudioContent({
               ))}
             </div>
             {seriesLength > 1 ? (
-              <p className="mt-2 text-xs text-[#687469] dark:text-[#9fb0a2]">
-                {ur
-                  ? "ہر مجلس پچھلی مجلس پر تعمیر ہوگی؛ ایک ہی مضمون کو کئی بار دہرانے کے بجائے علمی سفر مرحلہ وار آگے بڑھے گا۔"
-                  : "Each session builds on the previous one; the subject advances instead of repeating the same sermon."}
-              </p>
+              <>
+                <p className="mt-2 text-xs text-[#687469] dark:text-[#9fb0a2]">
+                  {ur
+                    ? "ہر مجلس پچھلی مجلس پر تعمیر ہوگی؛ ایک ہی مضمون کو کئی بار دہرانے کے بجائے علمی سفر مرحلہ وار آگے بڑھے گا۔"
+                    : "Each session builds on the previous one; the subject advances instead of repeating the same sermon."}
+                </p>
+                <div className="mt-3 border-t border-[#1A3A2A]/10 pt-3 dark:border-[#35513d]">
+                  <div className="mb-2 text-xs font-bold text-[#687469] dark:text-[#9fb0a2]">
+                    {ur ? "مواد کس صورت میں چاہیے؟" : "How should the series use its sources?"}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSeriesLayer("fresh")}
+                      className={`rounded-full border px-3 py-1.5 text-sm ${
+                        seriesLayer === "fresh"
+                          ? "border-[#1A3A2A] bg-[#1A3A2A] text-white dark:border-[#8faa93] dark:bg-[#35513d]"
+                          : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
+                      }`}
+                    >
+                      {ur ? "نئی منبری تشکیل" : "Fresh pulpit composition"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSeriesLayer("research")}
+                      className={`rounded-full border px-3 py-1.5 text-sm ${
+                        seriesLayer === "research"
+                          ? "border-[#1A3A2A] bg-[#1A3A2A] text-white dark:border-[#8faa93] dark:bg-[#35513d]"
+                          : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
+                      }`}
+                    >
+                      {ur ? "تحقیقی نقشہ" : "Research map"}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-[#687469] dark:text-[#9fb0a2]">
+                    {ur
+                      ? seriesLayer === "fresh"
+                        ? "اصل ماخذ علمی پشت پر رہیں گے، مگر سوال، ترتیب، مثال اور منبری بہاؤ نئی تشکیل ہوگا؛ کسی عالم کی مجلس دوبارہ نہیں سنائی جائے گی۔"
+                        : "یہ سطح دکھاتی ہے کہ اصل اہلِ علم نے موضوع کو کس علمی ترتیب اور کس ماخذ سے کھولا؛ اسے بعینہٖ منبر پر پڑھنے کے لیے نہیں بنایا گیا۔"
+                      : seriesLayer === "fresh"
+                        ? "Sources remain behind the argument, while questions, sequence, examples, and pulpit flow are newly composed."
+                        : "This layer maps how the source scholars developed the topic; it is for study and verification, not verbatim delivery."}
+                  </p>
+                </div>
+              </>
             ) : null}
           </div>
 
@@ -621,7 +670,15 @@ export default function KhateebStudioContent({
                   className="inline-flex items-center gap-2 rounded-lg bg-[#1A3A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#244E38]"
                 >
                   <Copy className="h-4 w-4" />
-                  {topicDossier
+                  {seriesLength > 1
+                    ? (ur
+                        ? seriesLayer === "fresh"
+                          ? "نئی تشکیل نقل کریں"
+                          : "تحقیقی نقشہ نقل کریں"
+                        : seriesLayer === "fresh"
+                          ? "Copy fresh composition"
+                          : "Copy research map")
+                    : topicDossier
                     ? (ur ? "تحقیقی دستاویز نقل کریں" : "Copy research dossier")
                     : (ur ? "مکمل تیاری نقل کریں" : "Copy full preparation")}
                 </button>
@@ -629,6 +686,26 @@ export default function KhateebStudioContent({
 
               {topicDossier && seriesLength > 1 && topicSeries ? (
                 <div className="mt-5 space-y-5">
+                  <section className="rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]">
+                    <div className="text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                      {ur
+                        ? seriesLayer === "fresh"
+                          ? "یہ منبر کے لیے نئی تشکیل ہے"
+                          : "یہ تحقیق اور ماخذ کی جانچ کا نقشہ ہے"
+                        : seriesLayer === "fresh"
+                          ? "Fresh composition for delivery"
+                          : "Research and source map"}
+                    </div>
+                    <p className="mt-1 text-sm leading-7 text-[#5f6f61] dark:text-[#a8c8b0]">
+                      {ur
+                        ? seriesLayer === "fresh"
+                          ? "علمی نکات معتبر ماخذوں سے ہیں، مگر مجلس کی ترتیب، سوالات اور عملی ربط ازسرِنو بنایا گیا ہے۔ خطیب اپنی مقامی مثال اور اپنے سامع کی ضرورت بھی شامل کرے۔"
+                          : "اس نقشے سے اصل عالم کا علمی بہاؤ، دلیل اور ماخذ سمجھیں۔ اسے کسی عالم کی مجلس کے بدل یا نقل کے طور پر نہ پڑھیں۔"
+                        : seriesLayer === "fresh"
+                          ? "Verified scholarship supports the material, while the sermon sequence and framing are newly composed."
+                          : "Use this to study source logic and provenance; do not deliver it as a reproduction of a source sermon."}
+                    </p>
+                  </section>
                   <section className="rounded-xl border border-[#B8935A]/30 bg-white p-4 dark:border-[#6f5b35] dark:bg-[#162a1e]">
                     <div className="text-xs font-bold text-[#8a6838] dark:text-[#d7bc8a]">
                       {ur ? "پورے سلسلے کا علمی مقصد" : "Aim of the whole series"}

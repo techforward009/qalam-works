@@ -26,6 +26,7 @@ import {
 } from "../app/tools/khateeb-studio/engine/southAsianCorpusQueue";
 import { hasLatinWord, pureKhateebUrdu } from "../app/tools/khateeb-studio/engine/urduPurity";
 import { buildMajlisSeries, buildMajlisSeriesText } from "../app/tools/khateeb-studio/engine/seriesPlanner";
+import { buildFreshMajlisSeries } from "../app/tools/khateeb-studio/engine/freshPulpitSeries";
 import { groupCalendarEvents } from "../app/tools/khateeb-studio/engine/groupCalendarEvents";
 import {
   applyKhateebStudioQuery,
@@ -509,6 +510,67 @@ describe("Khateeb Studio curated Qur'an and guidance series", () => {
       ].join("\n");
       expect(hasLatinWord(payload)).toBe(false);
     }
+  });
+});
+
+describe("Khateeb Studio separates source study from fresh pulpit composition", () => {
+  test("Qur'an and guidance khamsa has a newly composed pulpit layer", () => {
+    const source = buildMajlisSeries(getTopicDossier("quran-hidayat")!, 5);
+    const fresh = buildFreshMajlisSeries(getTopicDossier("quran-hidayat")!, 5)!;
+    expect(fresh.sessions).toHaveLength(5);
+    expect(fresh.titleUr).toContain("قرآن میرے فیصلوں میں کہاں ہے");
+    expect(fresh.sessions.map((item) => item.titleUr)).not.toEqual(
+      source.sessions.map((item) => item.titleUr),
+    );
+    expect(fresh.sessions[0].avoidRepeatUr).toContain("اصل ترتیب");
+  });
+
+  test("Imamate ashra has a fresh multi-source journey distinct from the research map", () => {
+    const source = buildMajlisSeries(getTopicDossier("imamate")!, 10);
+    const fresh = buildFreshMajlisSeries(getTopicDossier("imamate")!, 10)!;
+    expect(fresh.sessions).toHaveLength(10);
+    expect(fresh.titleUr).toContain("آج کیا بدلتا ہے");
+    expect(fresh.sessions.map((item) => item.titleUr)).not.toEqual(
+      source.sessions.map((item) => item.titleUr),
+    );
+    const sources = fresh.sessions.map((item) => item.sourceUr).join(" ");
+    expect(sources).toContain("طالب جوہری");
+    expect(sources).toContain("علی نقی نقوی");
+    expect(sources).toContain("طباطبائی");
+    expect(sources).toContain("مطہری");
+    expect(sources).toContain("ابراہیم امینی");
+    expect(sources).toContain("حامد کاشانی");
+  });
+
+  test("fresh Urdu series remains free of English vocabulary", () => {
+    for (const [topicId, length] of [["quran-hidayat", 5], ["imamate", 10]] as const) {
+      const plan = buildFreshMajlisSeries(getTopicDossier(topicId)!, length)!;
+      const payload = [
+        plan.titleUr,
+        plan.aimUr,
+        plan.finalUr,
+        ...plan.sessions.flatMap((item) => [
+          item.titleUr,
+          item.purposeUr,
+          ...item.materialUr,
+          item.sourceUr,
+          ...(item.quranUr ?? []),
+          item.previousBridgeUr ?? "",
+          item.nextBridgeUr ?? "",
+          item.takeawayUr ?? "",
+          item.avoidRepeatUr ?? "",
+        ]),
+      ].join("\n");
+      expect(hasLatinWord(payload)).toBe(false);
+    }
+  });
+
+  test("studio clearly distinguishes research map from new pulpit composition", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("نئی منبری تشکیل");
+    expect(studio).toContain("تحقیقی نقشہ");
+    expect(studio).toContain("کسی عالم کی مجلس دوبارہ نہیں سنائی جائے گی");
+    expect(studio).toContain("یہ منبر کے لیے نئی تشکیل ہے");
   });
 });
 
