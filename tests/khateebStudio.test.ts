@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { KHATEEB_CALENDAR_SOURCE_ARCHIVE } from "../app/tools/khateeb-studio/engine/calendarSourceArchive";
 import { KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
 import { RABI_AL_THANI_1448_EVENTS, SHIA_CALENDAR_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
-import { buildPreparationText, getSermonPrep, outlineMinutes } from "../app/tools/khateeb-studio/engine/sermonPrep";
+import { buildPreparationText, durationBrief, getSermonPrep, outlineMinutes, pointsForDuration } from "../app/tools/khateeb-studio/engine/sermonPrep";
 import {
   catalogEvidenceForSpeaker,
   evidenceForSpeaker,
@@ -27,6 +27,7 @@ import {
 import { hasLatinWord, pureKhateebUrdu } from "../app/tools/khateeb-studio/engine/urduPurity";
 import { buildMajlisSeries, buildMajlisSeriesText } from "../app/tools/khateeb-studio/engine/seriesPlanner";
 import { buildFreshMajlisSeries } from "../app/tools/khateeb-studio/engine/freshPulpitSeries";
+import { checkSeriesOriginality } from "../app/tools/khateeb-studio/engine/originalityGuard";
 import { groupCalendarEvents } from "../app/tools/khateeb-studio/engine/groupCalendarEvents";
 import {
   applyKhateebStudioQuery,
@@ -571,6 +572,59 @@ describe("Khateeb Studio separates source study from fresh pulpit composition", 
     expect(studio).toContain("تحقیقی نقشہ");
     expect(studio).toContain("کسی عالم کی مجلس دوبارہ نہیں سنائی جائے گی");
     expect(studio).toContain("یہ منبر کے لیے نئی تشکیل ہے");
+  });
+});
+
+describe("Khateeb Studio originality guard", () => {
+  test("fresh Qur'an and guidance khamsa passes title and structure checks", () => {
+    const dossier = getTopicDossier("quran-hidayat")!;
+    const research = buildMajlisSeries(dossier, 5);
+    const fresh = buildFreshMajlisSeries(dossier, 5)!;
+    const report = checkSeriesOriginality(fresh, research);
+    expect(report.checks.find((item) => item.id === "titles")?.status).toBe("clear");
+    expect(report.checks.find((item) => item.id === "structure")?.status).toBe("clear");
+  });
+
+  test("fresh Imamate ashra does not reuse research-map titles", () => {
+    const dossier = getTopicDossier("imamate")!;
+    const research = buildMajlisSeries(dossier, 10);
+    const fresh = buildFreshMajlisSeries(dossier, 10)!;
+    const report = checkSeriesOriginality(fresh, research);
+    expect(report.checks.find((item) => item.id === "titles")?.status).toBe("clear");
+  });
+
+  test("a copied plan is correctly flagged for review", () => {
+    const dossier = getTopicDossier("imamate")!;
+    const research = buildMajlisSeries(dossier, 10);
+    const report = checkSeriesOriginality(research, research);
+    expect(report.status).toBe("review");
+    expect(report.checks.find((item) => item.id === "titles")?.status).toBe("review");
+    expect(report.checks.find((item) => item.id === "structure")?.status).toBe("review");
+    expect(report.checks.find((item) => item.id === "wording")?.status).toBe("review");
+  });
+
+  test("studio shows originality checks only for fresh composition", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("اصالت و عدمِ نقل جانچ");
+    expect(studio).toContain('seriesLayer === "fresh" && originalityReport');
+    expect(studio).toContain("عنوانات کی آزادی");
+  });
+});
+
+describe("Khateeb Studio sermon duration", () => {
+  test("twenty, thirty, and forty-five minutes change the visible brief and the amount of material", () => {
+    const items = ["ایک", "دو", "تین", "چار"];
+    expect(pointsForDuration(items, 20)).toEqual(["ایک"]);
+    expect(pointsForDuration(items, 30)).toEqual(["ایک", "دو"]);
+    expect(pointsForDuration(items, 45)).toEqual(items);
+    expect(durationBrief(20, "ur")).not.toBe(durationBrief(30, "ur"));
+    expect(durationBrief(30, "ur")).not.toBe(durationBrief(45, "ur"));
+    expect(outlineMinutes(20).reduce((sum, item) => sum + item, 0)).toBe(20);
+    expect(outlineMinutes(30).reduce((sum, item) => sum + item, 0)).toBe(30);
+    expect(outlineMinutes(45).reduce((sum, item) => sum + item, 0)).toBe(45);
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("durationBrief(duration");
+    expect(studio).toContain("pointsForDuration");
   });
 });
 

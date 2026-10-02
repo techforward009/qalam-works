@@ -281,6 +281,31 @@ export function outlineMinutes(duration: SermonDuration): number[] {
   return [4, 7, 8, 8, 3];
 }
 
+export function durationBrief(duration: SermonDuration, locale: "ur" | "en"): string {
+  if (locale === "ur") {
+    if (duration === 20) {
+      return "بیس منٹ: ایک مرکزی سوال، ایک قرآنی بنیاد، ایک علمی نکتہ اور ایک عملی نتیجہ۔ تفصیل اس مدت میں نہ کھولیں۔";
+    }
+    if (duration === 45) {
+      return "پینتالیس منٹ: مکمل علمی وضاحت، متعدد زاویے، آج کی تطبیق اور جامع اختتام۔";
+    }
+    return "تیس منٹ: بنیاد، دو علمی نکات، ایک تطبیق اور مختصر اختتام۔";
+  }
+  if (duration === 20) {
+    return "Twenty minutes: one question, one Qur'anic anchor, one scholarly point, and one practical result. Do not open the full detail.";
+  }
+  if (duration === 45) {
+    return "Forty-five minutes: full explanation, several angles, present-day application, and a gathered close.";
+  }
+  return "Thirty minutes: the foundation, two scholarly points, one application, and a short close.";
+}
+
+export function pointsForDuration<T>(items: readonly T[], duration: SermonDuration): readonly T[] {
+  if (duration === 45 || items.length <= 1) return items;
+  if (duration === 30) return items.slice(0, Math.min(items.length, Math.max(2, Math.ceil(items.length / 2))));
+  return items.slice(0, 1);
+}
+
 export function buildPreparationText(
   prep: SermonPrep,
   locale: SermonLocale,

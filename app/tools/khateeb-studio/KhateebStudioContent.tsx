@@ -22,8 +22,10 @@ import {
 } from "./engine/khateebLocale";
 import {
   buildPreparationText,
+  durationBrief,
   getSermonPrep,
   outlineMinutes,
+  pointsForDuration,
   type SermonDuration,
 } from "./engine/sermonPrep";
 import { evidenceForSpeaker } from "./engine/speakerEvidence";
@@ -45,11 +47,19 @@ import {
   type MajlisSeriesLength,
 } from "./engine/seriesPlanner";
 import { buildFreshMajlisSeries } from "./engine/freshPulpitSeries";
+import { checkSeriesOriginality } from "./engine/originalityGuard";
 import {
   applyKhateebStudioQuery,
   DEFAULT_KHATEEB_STUDIO_VIEW,
   type KhateebStudioView,
 } from "./engine/studioView";
+
+const ORIGINALITY_LABEL_UR = {
+  titles: "عنوانات کی آزادی",
+  structure: "ترتیب کی آزادی",
+  wording: "عبارت کی آزادی",
+  "source-balance": "ماخذی توازن",
+} as const;
 
 const CALENDAR_REGIONS = ["all", "pk", "in", "ir"] as const;
 
@@ -185,9 +195,25 @@ export default function KhateebStudioContent({
     seriesLength > 1 && seriesLayer === "fresh" && freshSeries
       ? freshSeries
       : researchSeries;
-  const topicSeriesText = topicSeries
-    ? buildMajlisSeriesText(topicSeries, ur ? "ur" : "en")
+  const displaySeries = topicSeries
+    ? {
+        ...topicSeries,
+        sessions: topicSeries.sessions.map((session) => ({
+          ...session,
+          materialUr: pointsForDuration(session.materialUr, duration),
+          materialEn: pointsForDuration(session.materialEn, duration),
+          quranUr: session.quranUr ? pointsForDuration(session.quranUr, duration) : undefined,
+          quranEn: session.quranEn ? pointsForDuration(session.quranEn, duration) : undefined,
+        })),
+      }
+    : null;
+  const topicSeriesText = displaySeries
+    ? `${durationBrief(duration, ur ? "ur" : "en")}\n\n${buildMajlisSeriesText(displaySeries, ur ? "ur" : "en")}`
     : "";
+  const originalityReport =
+    seriesLength > 1 && freshSeries && researchSeries
+      ? checkSeriesOriginality(freshSeries, researchSeries)
+      : null;
   const topicSpeakerEvidence = topic ? evidenceForTopic(topic.id) : [];
   const topicPreparationText = topic
     ? buildPreparationText(
@@ -543,6 +569,9 @@ export default function KhateebStudioContent({
               ))}
             </div>
           </div>
+          <p className="mt-3 rounded-xl border border-[#B8935A]/25 bg-[#fbf7ee] px-4 py-3 text-sm leading-7 text-[#5a4830] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#e2c895]">
+            {durationBrief(duration, ur ? "ur" : "en")}
+          </p>
 
           <div className="mt-4 rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-3 dark:border-[#35513d] dark:bg-[#0e1c15]">
             <div className="mb-2 text-xs font-bold text-[#687469] dark:text-[#9fb0a2]">
@@ -718,8 +747,58 @@ export default function KhateebStudioContent({
                     </p>
                   </section>
 
+                  {seriesLayer === "fresh" && originalityReport ? (
+                    <section className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                            {ur ? "اصالت و عدمِ نقل جانچ" : "Originality check"}
+                          </div>
+                          <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                            {ur
+                              ? "یہ جانچ نئی منبری تشکیل کو تحقیقی نقشے سے ملا کر دیکھتی ہے؛ مقصد یہ ہے کہ معتبر علم محفوظ رہے مگر کسی عالم کی مجلس غیر محسوس طور پر دوبارہ نہ بن جائے۔"
+                              : "This compares the fresh composition with the research map so verified scholarship remains while source sermons are not inadvertently reproduced."}
+                          </p>
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          originalityReport.status === "clear"
+                            ? "bg-[#eaf3ec] text-[#315f3d] dark:bg-[#173222] dark:text-[#a8d4b3]"
+                            : "bg-[#fbf1de] text-[#7a5a21] dark:bg-[#382b13] dark:text-[#e3c77f]"
+                        }`}>
+                          {ur
+                            ? originalityReport.status === "clear"
+                              ? "نئی تشکیل مناسب طور پر آزاد ہے"
+                              : "کچھ حصوں پر دوبارہ نظر ڈالیں"
+                            : originalityReport.status === "clear"
+                              ? "Composition is sufficiently independent"
+                              : "Review recommended"}
+                        </span>
+                      </div>
+                      <div className="mt-3 grid gap-2 md:grid-cols-2">
+                        {originalityReport.checks.map((check) => (
+                          <div
+                            key={check.id}
+                            className="rounded-lg border border-[#1A3A2A]/10 bg-[#F7F5EF] p-3 dark:border-[#35513d] dark:bg-[#0e1c15]"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span aria-hidden="true">
+                                {check.status === "clear" ? "✓" : "△"}
+                              </span>
+                              <strong className="text-sm text-[#37443a] dark:text-[#d7e1d9]">
+                                {ur ? ORIGINALITY_LABEL_UR[check.id] : check.labelEn}
+                              </strong>
+                            </div>
+                            <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                              {ur ? check.detailUr : check.detailEn}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+
                   <section className="space-y-4">
-                    {topicSeries.sessions.map((session) => (
+                    {(displaySeries ?? topicSeries).sessions.map((session) => (
                       <article
                         key={session.number}
                         className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]"
@@ -842,14 +921,14 @@ export default function KhateebStudioContent({
                           </p>
 
                           <div className="mt-3 space-y-2">
-                            {(ur ? perspective.explanationUr : perspective.explanationEn).map((point) => (
+                            {pointsForDuration(ur ? perspective.explanationUr : perspective.explanationEn, duration).map((point) => (
                               <p key={point} className="text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
                                 {point}
                               </p>
                             ))}
                           </div>
 
-                          {perspective.originalSnippet ? (
+                          {duration === 45 && perspective.originalSnippet ? (
                             <blockquote
                               dir="rtl"
                               className="mt-3 rounded-lg border-s-4 border-[#B8935A] bg-[#F7F5EF] px-4 py-2 font-naskh text-sm text-[#303830] dark:bg-[#0e1c15] dark:text-[#d7e1d9]"
@@ -858,6 +937,7 @@ export default function KhateebStudioContent({
                             </blockquote>
                           ) : null}
 
+                          {duration > 20 ? (
                           <div className="mt-3 grid gap-3 md:grid-cols-2">
                             <div className="rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#0e1c15]">
                               <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
@@ -876,6 +956,7 @@ export default function KhateebStudioContent({
                               </p>
                             </div>
                           </div>
+                          ) : null}
 
                           <div className="mt-3 text-[11px] text-[#7c877e] dark:text-[#8fa294]">
                             {ur ? "اصل ماخذ تصدیق کے لیے محفوظ ہے؛ بنیادی مواد اوپر دے دیا گیا ہے۔" : "The original source is retained for verification; the usable material is provided above."}
@@ -890,7 +971,7 @@ export default function KhateebStudioContent({
                       {ur ? "اب ان سب زاویوں کو ایک منبر میں کیسے یکجا کریں؟" : "How to synthesize these into one sermon"}
                     </h4>
                     <div className="mt-3 space-y-2">
-                      {(ur ? topicDossier.synthesisUr : topicDossier.synthesisEn).map((point) => (
+                      {pointsForDuration(ur ? topicDossier.synthesisUr : topicDossier.synthesisEn, duration).map((point) => (
                         <p key={point} className="text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
                           • {point}
                         </p>
@@ -906,7 +987,9 @@ export default function KhateebStudioContent({
                       {(ur ? topicDossier.pulpitFlowUr : topicDossier.pulpitFlowEn).map((block) => (
                         <article key={block.heading} className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
                           <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">{block.heading}</h5>
-                          <p className="mt-2 text-sm leading-8 text-[#37443a] dark:text-[#c8d5cc]">{block.body}</p>
+                          {duration > 20 ? (
+                            <p className="mt-2 text-sm leading-8 text-[#37443a] dark:text-[#c8d5cc]">{block.body}</p>
+                          ) : null}
                         </article>
                       ))}
                     </div>
@@ -941,7 +1024,7 @@ export default function KhateebStudioContent({
                 <div className="rounded-lg bg-white p-3 dark:bg-[#162a1e]">
                   <span className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">{ur ? "زاویۂ بیان" : "Speaking angles"}</span>
                   <ul className="mt-2 space-y-1 text-sm text-[#303830] dark:text-[#d7e1d9]">
-                    {(ur ? topic.anglesUr : topic.anglesEn).map((angle) => (
+                    {pointsForDuration(ur ? topic.anglesUr : topic.anglesEn, duration).map((angle) => (
                       <li key={angle}>• {angle}</li>
                     ))}
                   </ul>
@@ -1516,6 +1599,9 @@ export default function KhateebStudioContent({
                 </button>
               </div>
             </div>
+            <p className="mt-4 rounded-xl border border-[#B8935A]/25 bg-[#fbf7ee] px-4 py-3 text-sm leading-7 text-[#5a4830] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#e2c895]">
+              {durationBrief(duration, ur ? "ur" : "en")}
+            </p>
 
             <div className="mt-5 rounded-xl bg-[#F7F5EF] p-4 dark:bg-[#0e1c15]">
               <h3 className="text-lg font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
@@ -1589,7 +1675,7 @@ export default function KhateebStudioContent({
                   {ur ? "قابلِ بیان زاویے" : "Speaking angles"}
                 </h3>
                 <ul className="mt-3 space-y-2 text-sm text-[#445247] dark:text-[#b8c8bb]">
-                  {(ur ? preparation.anglesUr : preparation.anglesEn).map((angle) => (
+                  {pointsForDuration(ur ? preparation.anglesUr : preparation.anglesEn, duration).map((angle) => (
                     <li key={angle} className="flex gap-2">
                       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#B8935A]" />
                       <span>{angle}</span>
