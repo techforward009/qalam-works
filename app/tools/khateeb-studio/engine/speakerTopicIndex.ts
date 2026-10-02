@@ -20,7 +20,10 @@ export type TopicSpeakerIndexRow = {
  * that record explicitly carries the topic id in `topicIds`.
  */
 export function evidenceForTopic(topicId: string): readonly SpeakerEvidence[] {
-  return SPEAKER_EVIDENCE.filter((record) => record.topicIds.includes(topicId));
+  return SPEAKER_EVIDENCE.filter(
+    (record) =>
+      record.status === "ready" && record.topicIds.includes(topicId),
+  );
 }
 
 export function evidenceForSpeakerAndTopic(
@@ -29,13 +32,15 @@ export function evidenceForSpeakerAndTopic(
 ): readonly SpeakerEvidence[] {
   return SPEAKER_EVIDENCE.filter(
     (record) =>
-      record.speakerId === speakerId && record.topicIds.includes(topicId),
+      record.status === "ready" &&
+      record.speakerId === speakerId &&
+      record.topicIds.includes(topicId),
   );
 }
 
 export function topicsForSpeaker(speakerId: string): readonly SpeakerTopicIndexRow[] {
   const records = SPEAKER_EVIDENCE.filter(
-    (record) => record.speakerId === speakerId,
+    (record) => record.speakerId === speakerId && record.status === "ready",
   );
 
   return TOPIC_PREPS.flatMap((topic) => {

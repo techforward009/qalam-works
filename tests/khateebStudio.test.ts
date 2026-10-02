@@ -4,7 +4,11 @@ import { KHATEEB_CALENDAR_SOURCE_ARCHIVE } from "../app/tools/khateeb-studio/eng
 import { KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
 import { RABI_AL_THANI_1448_EVENTS, SHIA_CALENDAR_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
 import { buildPreparationText, getSermonPrep, outlineMinutes } from "../app/tools/khateeb-studio/engine/sermonPrep";
-import { evidenceForSpeaker, SPEAKER_EVIDENCE } from "../app/tools/khateeb-studio/engine/speakerEvidence";
+import {
+  catalogEvidenceForSpeaker,
+  evidenceForSpeaker,
+  SPEAKER_EVIDENCE,
+} from "../app/tools/khateeb-studio/engine/speakerEvidence";
 import {
   evidenceForSpeakerAndTopic,
   evidenceForTopic,
@@ -162,14 +166,18 @@ describe("Khateeb Studio real speaker material", () => {
     const rows = evidenceForSpeaker("hamed-kashani");
     expect(rows.length).toBeGreaterThanOrEqual(2);
     expect(rows.every((row) => row.kind === "transcript")).toBe(true);
+    expect(rows.every((row) => row.status === "ready")).toBe(true);
+    expect(rows.every((row) => (row.materialUr?.length ?? 0) >= 4)).toBe(true);
     expect(rows.every((row) => row.sourceUrl.startsWith("https://www.hkashani.com/"))).toBe(true);
     expect(rows.some((row) => row.topicsUr.includes("امام حسن عسکریؑ"))).toBe(true);
   });
 
-  test("keeps Turabi collection records honest about ingestion state", () => {
-    const rows = evidenceForSpeaker("rashid-turabi");
+  test("does not expose catalog-only Turabi records as ready sermon material", () => {
+    expect(evidenceForSpeaker("rashid-turabi")).toHaveLength(0);
+    const rows = catalogEvidenceForSpeaker("rashid-turabi");
     expect(rows.length).toBeGreaterThanOrEqual(3);
     expect(rows.every((row) => row.kind === "compiled-majalis")).toBe(true);
+    expect(rows.every((row) => row.status === "catalog-only")).toBe(true);
     expect(rows.some((row) => row.titleUr.includes("توحید اور شرک"))).toBe(true);
   });
 
@@ -200,9 +208,7 @@ describe("Khateeb Studio speaker × topic index", () => {
 
   test("indexes Rashid Turabi under real source-backed topics only", () => {
     const topics = topicsForSpeaker("rashid-turabi").map((row) => row.topic.id);
-    expect(topics).toContain("tawhid");
-    expect(topics).toContain("dua");
-    expect(topics).not.toContain("imamate");
+    expect(topics).toEqual([]);
   });
 
   test("topic view can enumerate contributing speakers", () => {
@@ -215,5 +221,13 @@ describe("Khateeb Studio speaker × topic index", () => {
     expect(studio).toContain("اس موضوع پر خطباء کا حقیقی مواد");
     expect(studio).toContain("اس خطیب کے index شدہ موضوعات");
     expect(studio).toContain("No verified speaker material is indexed to this topic yet");
+  });
+
+  test("bare external links are not presented as the material itself", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("خطابت کے لیے تیار مواد");
+    expect(studio).toContain("اس خطیب کا اصل متن ابھی ingest نہیں ہوا");
+    expect(studio).not.toContain("دستیاب ذخیرہ کھولیں");
+    expect(studio).not.toContain("Open available corpus");
   });
 });

@@ -508,15 +508,21 @@ export default function KhateebStudioContent() {
                           <p className="mt-1 text-sm text-[#4f5f53] dark:text-[#b8c8bb]">
                             {ur ? record.summaryUr : record.summaryEn}
                           </p>
-                          <a
-                            href={record.sourceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#3a6a4a] hover:underline dark:text-[#a8c8b0]"
-                          >
-                            {ur ? "اصل ماخذ" : "Open original source"}
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
+                          {record.materialUr?.length ? (
+                            <div className="mt-3 space-y-2 rounded-lg bg-white p-3 dark:bg-[#162a1e]">
+                              <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
+                                {ur ? "خطابت کے لیے تیار مواد" : "Ready-to-use study material"}
+                              </div>
+                              {(ur ? record.materialUr : record.materialEn ?? []).map((paragraph) => (
+                                <p key={paragraph} className="text-sm text-[#303830] dark:text-[#d7e1d9]">
+                                  {paragraph}
+                                </p>
+                              ))}
+                            </div>
+                          ) : null}
+                          <div className="mt-2 text-[11px] text-[#7c877e] dark:text-[#8fa294]">
+                            {ur ? `حوالہ: ${record.sourceLabelUr}` : `Reference: ${record.sourceLabelEn}`}
+                          </div>
                         </article>
                       );
                     })}
@@ -898,6 +904,21 @@ export default function KhateebStudioContent() {
                           {ur ? record.summaryUr : record.summaryEn}
                         </p>
 
+                        {record.materialUr?.length ? (
+                          <div className="mt-3 rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]">
+                            <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
+                              {ur ? "خطابت کے لیے تیار مواد" : "Ready-to-use study material"}
+                            </div>
+                            <div className="mt-2 space-y-2">
+                              {(ur ? record.materialUr : record.materialEn ?? []).map((paragraph) => (
+                                <p key={paragraph} className="text-sm text-[#303830] dark:text-[#d7e1d9]">
+                                  {paragraph}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
                         <div className="mt-3 flex flex-wrap gap-1.5">
                           {(ur ? record.topicsUr : record.topicsEn).map((label) => (
                             <span
@@ -920,15 +941,9 @@ export default function KhateebStudioContent() {
                           </ul>
                         </div>
 
-                        <a
-                          href={record.sourceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#3a6a4a] hover:underline dark:text-[#a8c8b0]"
-                        >
-                          {ur ? record.sourceLabelUr : record.sourceLabelEn}
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
+                        <div className="mt-3 border-t border-[#1A3A2A]/8 pt-2 text-[11px] text-[#7c877e] dark:border-[#35513d] dark:text-[#8fa294]">
+                          {ur ? `حوالہ: ${record.sourceLabelUr}` : `Reference: ${record.sourceLabelEn}`}
+                        </div>
                       </article>
                     ))}
                   </div>
@@ -1037,7 +1052,7 @@ export default function KhateebStudioContent() {
 
               <div>
                 <h3 className="mb-3 text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
-                  {ur ? "اصل علمی مصادر" : "Source leads"}
+                  {ur ? "علمی بنیاد اور حوالہ" : "Scholarly basis and references"}
                 </h3>
                 <div className="space-y-3">
                   {preparation.sources.map((source, index) => (
@@ -1048,17 +1063,11 @@ export default function KhateebStudioContent() {
                       <p className="mt-1 text-sm text-[#59665b] dark:text-[#a8b8aa]">
                         {ur ? source.detailUr : source.detailEn}
                       </p>
-                      {source.url ? (
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#3a6a4a] hover:underline dark:text-[#a8c8b0]"
-                        >
-                          {ur ? "ماخذ کھولیں" : "Open source"}
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      ) : null}
+                      <div className="mt-2 text-[11px] text-[#7c877e] dark:text-[#8fa294]">
+                        {ur
+                          ? "یہ حوالہ verification کے لیے محفوظ ہے؛ خطیب کو بنیادی مواد اسی صفحے پر ملنا چاہیے۔"
+                          : "This reference is retained for verification; the preacher should receive the core material on this page."}
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -1116,17 +1125,19 @@ export default function KhateebStudioContent() {
                   {ur ? "متعلقہ میدان:" : "Corpus focus:"}{" "}
                   {speakerFocus(speaker, !ur).join(ur ? "، " : ", ")}
                 </p>
-                {speaker.sourceUrl ? (
-                  <a
-                    href={speaker.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#3a6a4a] hover:underline dark:text-[#a8c8b0]"
-                  >
-                    {ur ? "دستیاب ذخیرہ کھولیں" : "Open available corpus"}
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                ) : null}
+                {speakerEvidence.length ? (
+                  <p className="mt-2 text-xs font-semibold text-[#3a6a4a] dark:text-[#a8c8b0]">
+                    {ur
+                      ? `${speakerEvidence.length} تیار source-backed مواد اوپر خطیب کے حصے میں موجود ہے۔`
+                      : `${speakerEvidence.length} source-backed ready material record(s) are available in the speaker section above.`}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-[#8a6838] dark:text-[#d7bc8a]">
+                    {ur
+                      ? "اس خطیب کا اصل متن ابھی ingest نہیں ہوا، اس لیے یہاں محض خارجی لنک نہیں دیا جا رہا۔"
+                      : "This speaker's actual text has not been ingested yet, so no bare external link is presented as material."}
+                  </p>
+                )}
               </div>
             ) : (
               <p className="mt-5 rounded-xl border border-dashed border-[#1A3A2A]/15 p-4 text-sm text-[#687469] dark:border-[#35513d] dark:text-[#9fb0a2]">
@@ -1176,17 +1187,6 @@ export default function KhateebStudioContent() {
           >
             {brief}
           </pre>
-          {speaker?.sourceUrl ? (
-            <a
-              className={`mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#3a6a4a] dark:text-[#a8c8b0] hover:underline`}
-              href={speaker.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {ur ? speaker.sourceLabel ?? "ماخذ کھولیں" : "Open source"}
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          ) : null}
         </section>
       </div>
     </main>
