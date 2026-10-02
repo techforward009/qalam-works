@@ -576,7 +576,7 @@ export default function KhateebStudioContent() {
                               </p>
                             </div>
                             <span className="rounded-full bg-[#F7F5EF] px-2 py-1 text-[11px] font-semibold text-[#677266] dark:bg-[#0e1c15] dark:text-[#9fb0a2]">
-                              source-backed
+                              {ur ? "ماخذ سے ثابت شدہ" : "source-backed"}
                             </span>
                           </div>
 

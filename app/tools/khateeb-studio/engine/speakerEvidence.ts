@@ -209,17 +209,22 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
   },
 ];
 
-export function evidenceForSpeaker(speakerId: string): readonly SpeakerEvidence[] {
-  return SPEAKER_EVIDENCE.filter(
-    (item) => item.speakerId === speakerId && item.status === "ready",
-  ).map((item) => ({
+export function normalizeSpeakerEvidenceUrdu(item: SpeakerEvidence): SpeakerEvidence {
+  return {
     ...item,
     titleUr: pureKhateebUrdu(item.titleUr),
+    topicsUr: item.topicsUr.map(pureKhateebUrdu),
     summaryUr: pureKhateebUrdu(item.summaryUr),
     materialUr: item.materialUr?.map(pureKhateebUrdu),
     takeawaysUr: item.takeawaysUr.map(pureKhateebUrdu),
     sourceLabelUr: pureKhateebUrdu(item.sourceLabelUr),
-  }));
+  };
+}
+
+export function evidenceForSpeaker(speakerId: string): readonly SpeakerEvidence[] {
+  return SPEAKER_EVIDENCE.filter(
+    (item) => item.speakerId === speakerId && item.status === "ready",
+  ).map(normalizeSpeakerEvidenceUrdu);
 }
 
 /** Internal catalog records: known sources whose actual contents are not yet ingested. */

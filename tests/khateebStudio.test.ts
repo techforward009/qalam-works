@@ -417,4 +417,43 @@ describe("Khateeb Studio Urdu language purity", () => {
     expect(studio).toContain("قابلِ بیان منبری ترتیب");
     expect(studio).toContain("ماخذ سے ثابت شدہ تیار مواد");
   });
+
+  test("Ismah dossier contains no English words in any Urdu user-facing field", () => {
+    const dossier = getTopicDossier("ismah")!;
+    const urduPayload = [
+      dossier.titleUr,
+      dossier.thesisUr,
+      dossier.governingQuestionUr,
+      ...dossier.synthesisUr,
+      dossier.closingUr,
+      ...dossier.pulpitFlowUr.flatMap((item) => [item.heading, item.body]),
+      ...dossier.perspectives.flatMap((item) => [
+        item.nameUr,
+        item.sourceTitleUr,
+        item.coreUr,
+        ...item.explanationUr,
+        item.styleUr,
+        item.useUr,
+      ]),
+    ].join("\n");
+    expect(hasLatinWord(urduPayload)).toBe(false);
+  });
+
+  test("Naqqan topic-index material is also clean Urdu", () => {
+    const records = evidenceForTopic("ismah");
+    const urduPayload = records.flatMap((item) => [
+      item.titleUr,
+      ...item.topicsUr,
+      item.summaryUr,
+      ...(item.materialUr ?? []),
+      ...item.takeawaysUr,
+      item.sourceLabelUr,
+    ]).join("\n");
+    expect(hasLatinWord(urduPayload)).toBe(false);
+  });
+
+  test("Urdu UI never shows the English source-backed badge", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain('{ur ? "ماخذ سے ثابت شدہ" : "source-backed"}');
+  });
 });
