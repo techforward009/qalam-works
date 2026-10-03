@@ -1,0 +1,211 @@
+import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
+import { SPEAKER_EVIDENCE } from "./speakerEvidence";
+import { getTopicDossier } from "./topicDossier";
+import { TOPIC_PREPS, type TopicPrep } from "./topicPrep";
+import type {
+  KhateebResearchEvidence,
+  KhateebResearchRequest,
+  KhateebResearchResult,
+} from "./researchTypes";
+
+function normalize(value: string): string {
+  return value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670]/gu, "")
+    .replace(/[أإآ]/gu, "ا")
+    .replace(/ى/gu, "ی")
+    .replace(/ي/gu, "ی")
+    .replace(/ك/gu, "ک")
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
+function topicHaystack(topic: TopicPrep): string {
+  return normalize(
+    [
+      topic.titleUr,
+      topic.titleEn,
+      topic.themeUr,
+      topic.themeEn,
+      ...topic.keywordsUr,
+      ...topic.keywordsEn,
+    ].join(" "),
+  );
+}
+
+function topicScore(topic: TopicPrep, query: string): number {
+  const q = normalize(query);
+  if (!q) return 0;
+  const haystack = topicHaystack(topic);
+  if (haystack.includes(q)) return 100 + q.length;
+
+  const tokens = q.split(" ").filter((token) => token.length >= 2);
+  return tokens.reduce((score, token) => score + (haystack.includes(token) ? 10 : 0), 0);
+}
+
+function matchedTopics(query: string): readonly TopicPrep[] {
+  return TOPIC_PREPS
+    .map((topic) => ({ topic, score: topicScore(topic, query) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.topic);
+}
+
+function pushUnique(
+  target: KhateebResearchEvidence[],
+  seen: Set<string>,
+  row: KhateebResearchEvidence,
+): void {
+  const key = [row.kind, row.status, row.citationUr, row.detailUr].join("|");
+  if (seen.has(key)) return;
+  seen.add(key);
+  target.push(row);
+}
+
+export function researchKhateebTopic(
+  request: KhateebResearchRequest,
+): KhateebResearchResult {
+  const query = request.query.trim();
+  const locale = request.locale === "en" ? "en" : "ur";
+  const maxEvidence = Math.min(Math.max(request.maxEvidence ?? 40, 5), 100);
+  const topics = matchedTopics(query);
+  const evidence: KhateebResearchEvidence[] = [];
+  const seen = new Set<string>();
+
+  for (const topic of topics) {
+    const dossier = getTopicDossier(topic.id);
+
+    for (const row of dossier?.primaryTexts ?? []) {
+      let arabic = row.sourceArabicMarked || row.sourceArabic || row.arabic;
+      let citationUr = row.sourceRefUr;
+      let citationEn = row.sourceRefEn;
+
+      if (row.kind === "quran" && row.quranLocation) {
+        arabic =
+          ahmedgrafQuranReference.getAyah(
+            row.quranLocation.surah,
+            row.quranLocation.ayah,
+          )?.text ?? "";
+        citationUr = row.refUr;
+        citationEn = row.refEn;
+      }
+
+      pushUnique(evidence, seen, {
+        id: `${topic.id}-primary-${row.id}`,
+        topicId: topic.id,
+        kind: row.kind,
+        status: "verified",
+        titleUr: row.refUr,
+        titleEn: row.refEn,
+        detailUr: row.explanationUr,
+        detailEn: row.explanationEn,
+        citationUr,
+        citationEn,
+        sourceUrl: row.sourceUrl,
+        arabic,
+      });
+    }
+
+    for (const perspective of dossier?.perspectives ?? []) {
+      for (const section of perspective.sourceGroundedUr ?? []) {
+        pushUnique(evidence, seen, {
+          id: `${topic.id}-scholar-${perspective.id}-${section.heading}`,
+          topicId: topic.id,
+          kind: "scholar",
+          status: "verified",
+          titleUr: `${perspective.nameUr} — ${section.heading}`,
+          titleEn: perspective.nameEn,
+          detailUr: section.explanation,
+          detailEn:
+            perspective.sourceGroundedEn?.find(
+              (item) => item.heading === section.heading,
+            )?.explanation ?? perspective.coreEn,
+          citationUr: section.exactRef,
+          citationEn:
+            perspective.sourceGroundedEn?.find(
+              (item) => item.heading === section.heading,
+            )?.exactRef ?? perspective.sourceTitleEn,
+          sourceUrl: section.sourceUrl ?? perspective.sourceUrl,
+        });
+      }
+    }
+
+    for (const source of topic.sources) {
+      pushUnique(evidence, seen, {
+        id: `${topic.id}-source-${source.labelUr}`,
+        topicId: topic.id,
+        kind: "source",
+        status: "source-lead",
+        titleUr: source.labelUr,
+        titleEn: source.labelEn,
+        detailUr: source.detailUr,
+        detailEn: source.detailEn,
+        citationUr: source.labelUr,
+        citationEn: source.labelEn,
+        sourceUrl: source.url,
+      });
+    }
+
+    for (const speaker of SPEAKER_EVIDENCE.filter((item) =>
+      item.topicIds.includes(topic.id),
+    )) {
+      pushUnique(evidence, seen, {
+        id: `${topic.id}-speaker-${speaker.id}`,
+        topicId: topic.id,
+        kind: "speaker",
+        status: speaker.status === "ready" ? "verified" : "catalog-only",
+        titleUr: speaker.titleUr,
+        titleEn: speaker.titleEn,
+        detailUr:
+          speaker.status === "ready"
+            ? speaker.summaryUr
+            : "اس ماخذ کا ریکارڈ محفوظ ہے، مگر مکمل متن ابھی علمی ذخیرے میں شامل نہیں؛ اس لیے اس سے مخصوص دعویٰ اخذ نہیں کیا گیا۔",
+        detailEn:
+          speaker.status === "ready"
+            ? speaker.summaryEn
+            : "The source record is preserved, but its full text has not yet been ingested, so no specific claim is derived from it.",
+        citationUr: speaker.sourceLabelUr,
+        citationEn: speaker.sourceLabelEn,
+        sourceUrl: speaker.sourceUrl,
+      });
+    }
+  }
+
+  const limited = evidence.slice(0, maxEvidence);
+  const verifiedCount = limited.filter((item) => item.status === "verified").length;
+  const sourceLeadCount = limited.filter((item) => item.status === "source-lead").length;
+  const catalogOnlyCount = limited.filter((item) => item.status === "catalog-only").length;
+
+  const gapsUr: string[] = [];
+  const gapsEn: string[] = [];
+
+  if (!topics.length) {
+    gapsUr.push(
+      "اس موضوع کے لیے ابھی مقامی مصدقہ تحقیقی اندراج موجود نہیں۔ قلم کسی آیت، روایت، قول یا حوالہ کو اندازے سے شامل نہیں کرے گا۔",
+    );
+    gapsEn.push(
+      "No verified local research entry exists for this topic yet. Qalam will not invent a verse, narration, quotation, or citation.",
+    );
+  } else if (!verifiedCount) {
+    gapsUr.push(
+      "موضوع کی شناخت موجود ہے، مگر قابلِ استناد بنیادی مواد ابھی کافی نہیں؛ پہلے مصدقہ ماخذ شامل کرنا ضروری ہے۔",
+    );
+    gapsEn.push(
+      "The topic is recognized, but there is not yet enough verified evidence to build a sourced sermon.",
+    );
+  }
+
+  return {
+    query,
+    locale,
+    matchedTopicIds: topics.map((topic) => topic.id),
+    evidence: limited,
+    verifiedCount,
+    sourceLeadCount,
+    catalogOnlyCount,
+    canBuildSermon: topics.length > 0 && verifiedCount > 0,
+    gapsUr,
+    gapsEn,
+  };
+}
