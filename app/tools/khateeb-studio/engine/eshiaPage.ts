@@ -20,6 +20,9 @@ function decode(value: string): string {
     .replace(/&#39;/gi, "'")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
+    .replace(/&zwnj;/gi, "\u200C")
+    .replace(/&zwj;/gi, "\u200D")
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(Number.parseInt(n, 16)))
     .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
     .replace(/\s+/g, " ")
     .trim();
