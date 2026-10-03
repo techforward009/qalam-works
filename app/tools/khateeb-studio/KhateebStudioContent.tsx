@@ -41,6 +41,7 @@ import {
   buildDossierText,
   getTopicDossier,
 } from "./engine/topicDossier";
+import { dossierForDuration } from "./engine/dossierDuration";
 import {
   buildMajlisSeries,
   buildMajlisSeriesText,
@@ -192,15 +193,18 @@ export default function KhateebStudioContent({
   );
   const topic = topicResults.find((item) => item.id === selectedTopicId)
     ?? topicResults[0];
-  const topicDossier = topic ? getTopicDossier(topic.id) : null;
+  const rawTopicDossier = topic ? getTopicDossier(topic.id) : null;
+  const topicDossier = rawTopicDossier
+    ? dossierForDuration(rawTopicDossier, duration)
+    : null;
   const topicDossierText = topicDossier
     ? buildDossierText(topicDossier, ur ? "ur" : "en")
     : "";
-  const researchSeries = topicDossier
-    ? buildMajlisSeries(topicDossier, seriesLength)
+  const researchSeries = rawTopicDossier
+    ? buildMajlisSeries(rawTopicDossier, seriesLength)
     : null;
-  const freshSeries = topicDossier
-    ? buildFreshMajlisSeries(topicDossier, seriesLength)
+  const freshSeries = rawTopicDossier
+    ? buildFreshMajlisSeries(rawTopicDossier, seriesLength)
     : null;
   const topicSeries =
     seriesLength > 1 && seriesLayer === "fresh" && freshSeries
