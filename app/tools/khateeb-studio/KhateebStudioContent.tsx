@@ -50,6 +50,7 @@ import { buildFreshMajlisSeries } from "./engine/freshPulpitSeries";
 import { checkSeriesOriginality } from "./engine/originalityGuard";
 import SessionNotesEditor from "./SessionNotesEditor";
 import AllKhateebNotesPanel from "./AllKhateebNotesPanel";
+import SessionDeliveryHistory from "./SessionDeliveryHistory";
 import {
   buildSessionWorkbench,
   buildSessionWorkbenchText,
@@ -985,6 +986,25 @@ export default function KhateebStudioContent({
                           sessionTitleUr={session.titleUr}
                           sessionTitleEn={session.titleEn}
                           ur={ur}
+                        />
+                        <SessionDeliveryHistory
+                          topicId={topic.id}
+                          topicTitleUr={topic.titleUr}
+                          topicTitleEn={topic.titleEn}
+                          seriesLength={seriesLength}
+                          layer={seriesLayer}
+                          session={session}
+                          ur={ur}
+                          occasion={
+                            preparationMode === "occasion" && event
+                              ? {
+                                  id: event.id,
+                                  titleUr: event.title,
+                                  month: event.month,
+                                  day: event.day,
+                                }
+                              : undefined
+                          }
                         />
                       </article>
                     ))}

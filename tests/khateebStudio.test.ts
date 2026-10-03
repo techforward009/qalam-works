@@ -38,6 +38,13 @@ import {
   buildSessionWorkbench,
   buildSessionWorkbenchText,
 } from "../app/tools/khateeb-studio/engine/sessionWorkbench";
+import {
+  buildDeliveryRecord,
+  matchingPastDeliveries,
+  parseDeliveryRecord,
+  repetitionFingerprint,
+  serializeDeliveryRecord,
+} from "../app/tools/khateeb-studio/engine/deliveryHistory";
 import { groupCalendarEvents } from "../app/tools/khateeb-studio/engine/groupCalendarEvents";
 import {
   applyKhateebStudioQuery,
@@ -742,6 +749,80 @@ describe("Khateeb Studio all-notes library", () => {
     expect(library).toContain("اسی براؤزر اور اسی آلے");
     expect(library).not.toContain("cloud");
     expect(library).not.toContain("sync");
+  });
+});
+
+describe("Khateeb Studio delivery history", () => {
+  test("records what was actually delivered for future repetition checks", () => {
+    const session = buildFreshMajlisSeries(getTopicDossier("imamate")!, 10)!.sessions[0];
+    const record = buildDeliveryRecord({
+      now: "2026-10-03T00:00:00.000Z",
+      topicId: "imamate",
+      topicTitleUr: "امامت",
+      topicTitleEn: "Imamate",
+      seriesLength: 10,
+      layer: "fresh",
+      session,
+      personalNote: "اگلی بار یہی مثال نہ دہرانی ہے",
+      occasion: {
+        id: "r2-10-askari-birthday",
+        titleUr: "ولادت امام حسن عسکریؑ",
+        month: "rabi-al-thani",
+        day: 10,
+      },
+    });
+    expect(record.sessionTitleUr).toBe(session.titleUr);
+    expect(record.materialUr.length).toBeGreaterThan(0);
+    expect(record.personalNote).toContain("نہ دہرانی");
+    expect(record.occasionTitleUr).toContain("عسکری");
+    expect(parseDeliveryRecord(serializeDeliveryRecord(record))).toEqual(record);
+  });
+
+  test("same occasion is found even when the topic/session changes", () => {
+    const session = buildFreshMajlisSeries(getTopicDossier("imamate")!, 10)!.sessions[0];
+    const record = buildDeliveryRecord({
+      now: "2025-10-03T00:00:00.000Z",
+      topicId: "imamate",
+      topicTitleUr: "امامت",
+      topicTitleEn: "Imamate",
+      seriesLength: 10,
+      layer: "fresh",
+      session,
+      occasion: {
+        id: "r2-10-askari-birthday",
+        titleUr: "ولادت امام حسن عسکریؑ",
+      },
+    });
+    const matches = matchingPastDeliveries([record], {
+      topicId: "another-topic",
+      occasionId: "r2-10-askari-birthday",
+    });
+    expect(matches).toHaveLength(1);
+  });
+
+  test("fingerprint preserves enough previous content to avoid repeating it", () => {
+    const session = buildFreshMajlisSeries(getTopicDossier("quran-hidayat")!, 5)!.sessions[0];
+    const record = buildDeliveryRecord({
+      topicId: "quran-hidayat",
+      topicTitleUr: "قرآن اور ہدایت",
+      topicTitleEn: "Qur'an and guidance",
+      seriesLength: 5,
+      layer: "fresh",
+      session,
+    });
+    const fingerprint = repetitionFingerprint(record);
+    expect(fingerprint).toContain(session.titleUr);
+    expect(fingerprint).toContain(session.purposeUr);
+    expect(fingerprint.length).toBeGreaterThanOrEqual(3);
+  });
+
+  test("studio exposes previous-delivery reminders at session level", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    const history = readFileSync("app/tools/khateeb-studio/SessionDeliveryHistory.tsx", "utf8");
+    expect(studio).toContain("<SessionDeliveryHistory");
+    expect(history).toContain("گزشتہ بیان کی یاد دہانی");
+    expect(history).toContain("یہ مجلس پڑھ لی");
+    expect(history).toContain("اس مرتبہ انہی نکات کو جوں کا توں دہرانے");
   });
 });
 
