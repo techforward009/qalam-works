@@ -63,6 +63,7 @@ import {
   DEFAULT_KHATEEB_STUDIO_VIEW,
   type KhateebStudioView,
 } from "./engine/studioView";
+import type { KhateebResearchResult } from "./engine/researchTypes";
 
 const ORIGINALITY_LABEL_UR = {
   titles: "عنوانات کی آزادی",
@@ -129,6 +130,9 @@ export default function KhateebStudioContent({
   const [seriesLayer, setSeriesLayer] = useState<"fresh" | "research">("fresh");
   const [topicQuery, setTopicQuery] = useState("");
   const [selectedTopicId, setSelectedTopicId] = useState(initialView.topic);
+  const [liveTopicResearch, setLiveTopicResearch] = useState<KhateebResearchResult | null>(null);
+  const [liveTopicLoading, setLiveTopicLoading] = useState(false);
+  const [liveTopicError, setLiveTopicError] = useState("");
   const [notesLibraryOpen, setNotesLibraryOpen] = useState(false);
   const topicResultRef = useRef<HTMLElement | null>(null);
 
@@ -191,6 +195,54 @@ export default function KhateebStudioContent({
     () => searchTopicPreps(topicQuery, ur ? "ur" : "en"),
     [topicQuery, ur],
   );
+
+  useEffect(() => {
+    const query = topicQuery.trim();
+    if (query.length < 3 || topicResults.length > 0) {
+      setLiveTopicResearch(null);
+      setLiveTopicLoading(false);
+      setLiveTopicError("");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLiveTopicLoading(true);
+      setLiveTopicError("");
+      try {
+        const response = await fetch("/api/khateeb/research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query,
+            locale: ur ? "ur" : "en",
+            maxEvidence: 24,
+          }),
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) throw new Error(`research-http-${response.status}`);
+        const result = (await response.json()) as KhateebResearchResult;
+        if (!controller.signal.aborted) setLiveTopicResearch(result);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setLiveTopicResearch(null);
+        setLiveTopicError(
+          ur
+            ? "براہِ راست تحقیق اس وقت مکمل نہیں ہو سکی؛ دوبارہ کوشش کریں۔"
+            : "Live research could not be completed right now. Please try again.",
+        );
+      } finally {
+        if (!controller.signal.aborted) setLiveTopicLoading(false);
+      }
+    }, 800);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [topicQuery, topicResults.length, ur]);
   const topic = topicResults.find((item) => item.id === selectedTopicId)
     ?? topicResults[0];
   const rawTopicDossier = topic ? getTopicDossier(topic.id) : null;
@@ -626,11 +678,79 @@ export default function KhateebStudioContent({
                     </button>
                   ))
                 ) : (
-                  <p className="w-full rounded-xl bg-[#F7F5EF] px-4 py-3 text-sm text-[#5f6f61] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
-                    {ur
-                      ? "اس عنوان پر ابھی تیار موضوع نہیں ملا۔ اسے علمی ذخیرے میں شامل کرنا ہوگا۔"
-                      : "No prepared topic matches this title yet. It needs to be added to the research corpus."}
-                  </p>
+                  <div className="w-full space-y-3">
+                    <div className="rounded-xl border border-[#B8935A]/25 bg-[#fbf7ee] px-4 py-3 text-sm text-[#5f6f61] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#d7bc8a]">
+                      {liveTopicLoading
+                        ? (ur ? "ای شیعہ اور علمی ذخیرے میں براہِ راست تحقیق جاری ہے..." : "Searching eShia and the research corpus...")
+                        : (ur ? "یہ موضوع تیار فہرست میں نہیں؛ خطیب اسٹوڈیو اس پر براہِ راست تحقیق کر رہا ہے۔" : "This topic is not prebuilt; Khateeb Studio is researching it live.")}
+                    </div>
+
+                    {liveTopicError ? (
+                      <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
+                        {liveTopicError}
+                      </p>
+                    ) : null}
+
+                    {liveTopicResearch?.evidence?.length ? (
+                      <div className="space-y-3 rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <h4 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                              {ur ? "براہِ راست تحقیقی مواد" : "Live research material"}
+                            </h4>
+                            <p className="mt-1 text-xs text-[#687469] dark:text-[#9fb0a2]">
+                              {ur
+                                ? "اصل ماخذ سے حاصل شدہ متن اور حوالہ؛ صارف کو دوسری ویب سائٹ پر جانے کی ضرورت نہیں۔"
+                                : "Source-grounded text and references are shown here; no external browsing is required."}
+                            </p>
+                          </div>
+                          <span className="rounded-full bg-[#F7F5EF] px-2.5 py-1 text-xs font-semibold text-[#6b776d] dark:bg-[#0e1c15] dark:text-[#98aa9b]">
+                            {liveTopicResearch.verifiedCount} {ur ? "مصدقہ اندراج" : "verified records"}
+                          </span>
+                        </div>
+
+                        {liveTopicResearch.evidence
+                          .filter((item) => item.status === "verified")
+                          .slice(0, 5)
+                          .map((item) => (
+                            <article
+                              key={item.id}
+                              className="rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
+                                  {ur ? item.titleUr : item.titleEn}
+                                </strong>
+                                {item.providerId === "eshia-library" ? (
+                                  <span className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-[#8a6838] dark:bg-[#162a1e] dark:text-[#d7bc8a]">
+                                    {ur ? "ای شیعہ سے" : "eShia"}
+                                  </span>
+                                ) : null}
+                              </div>
+                              {item.arabic ? (
+                                <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
+                                  <KhateebScriptText text={item.arabic} forceArabic />
+                                </div>
+                              ) : (
+                                <p className="mt-2 text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
+                                  {ur ? item.detailUr : item.detailEn}
+                                </p>
+                              )}
+                              <div className="mt-3 text-xs leading-6 text-[#6f5730] dark:text-[#d7bc8a]">
+                                <strong>{ur ? "حوالہ: " : "Reference: "}</strong>
+                                {ur ? item.citationUr : item.citationEn}
+                              </div>
+                            </article>
+                          ))}
+                      </div>
+                    ) : liveTopicResearch && !liveTopicLoading ? (
+                      <p className="rounded-xl border border-dashed border-[#1A3A2A]/15 bg-[#F7F5EF] px-4 py-3 text-sm text-[#5f6f61] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
+                        {ur
+                          ? "اس تلاش میں ابھی قابلِ پیشکش اصل متن نہیں ملا؛ قلم کوئی عبارت یا حوالہ گھڑ کر شامل نہیں کرے گا۔"
+                          : "No source-grounded text was found in this search; Qalam will not invent a quotation or citation."}
+                      </p>
+                    ) : null}
+                  </div>
                 )}
               </div>
             ) : (
