@@ -6,6 +6,11 @@ const URDU_PERSIAN_EXCLUSIVE = /[پچژگکںھہےٹڈڑ]/u;
 const ARABIC_DIACRITICS = /[\u064B-\u065F\u0670\u06D6-\u06ED]/u;
 const ARABIC_LETTERS = /[\u0621-\u063A\u0641-\u064A]/u;
 const GUILLEMETS = /(«[^»]+»)/gu;
+const PERSIAN_EXCLUSIVE = /[پچژگک]/u;
+
+export function looksLikePersianText(text: string): boolean {
+  return PERSIAN_EXCLUSIVE.test(text);
+}
 
 export function looksLikeArabicReligiousText(text: string): boolean {
   const value = text.replace(/[«»]/g, "").trim();
@@ -15,6 +20,14 @@ export function looksLikeArabicReligiousText(text: string): boolean {
 
   const words = value.split(/\s+/u).filter(Boolean);
   return words.length >= 2 && /[ةثذظضصطحعغفق]/u.test(value);
+}
+
+function PersianSpan({ children }: { children: string }) {
+  return (
+    <span dir="rtl" lang="fa" className="font-vazirmatn">
+      {children}
+    </span>
+  );
 }
 
 function ArabicSpan({ children }: { children: string }) {
@@ -32,10 +45,15 @@ function ArabicSpan({ children }: { children: string }) {
 export default function KhateebScriptText({
   text,
   forceArabic = false,
+  forcePersian = false,
 }: {
   text: string;
   forceArabic?: boolean;
+  forcePersian?: boolean;
 }) {
+  if (forcePersian || (!forceArabic && looksLikePersianText(text))) {
+    return <PersianSpan>{text}</PersianSpan>;
+  }
   if (forceArabic) return <ArabicSpan>{text}</ArabicSpan>;
 
   const parts = text.split(GUILLEMETS);
