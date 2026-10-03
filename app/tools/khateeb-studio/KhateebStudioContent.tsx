@@ -506,12 +506,53 @@ export default function KhateebStudioContent({
             display: none !important;
           }
 
+          /*
+           * Print flow must stay continuous. Avoiding every card/container
+           * forces large blocks onto the next page and creates half-empty or
+           * nearly blank sheets. Only protect small semantic units that should
+           * remain together; larger sections are allowed to split naturally.
+           */
           #khateeb-print-area article,
           #khateeb-print-area section,
           #khateeb-print-area .rounded-xl,
           #khateeb-print-area .rounded-lg {
-            break-inside: avoid;
+            break-inside: auto;
+            page-break-inside: auto;
             box-shadow: none !important;
+          }
+
+          #khateeb-print-area h1,
+          #khateeb-print-area h2,
+          #khateeb-print-area h3,
+          #khateeb-print-area h4,
+          #khateeb-print-area h5,
+          #khateeb-print-area h6,
+          #khateeb-print-area summary {
+            break-after: avoid-page;
+            page-break-after: avoid;
+          }
+
+          #khateeb-print-area h1 + *,
+          #khateeb-print-area h2 + *,
+          #khateeb-print-area h3 + *,
+          #khateeb-print-area h4 + *,
+          #khateeb-print-area h5 + *,
+          #khateeb-print-area h6 + *,
+          #khateeb-print-area summary + * {
+            break-before: avoid-page;
+            page-break-before: avoid;
+          }
+
+          #khateeb-print-area .khateeb-print-keep,
+          #khateeb-print-area blockquote {
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+          }
+
+          #khateeb-print-area p,
+          #khateeb-print-area li {
+            orphans: 3;
+            widows: 3;
           }
 
           #khateeb-print-area a {
