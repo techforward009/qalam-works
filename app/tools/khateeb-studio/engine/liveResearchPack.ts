@@ -5,6 +5,9 @@ export type LiveResearchPack = {
   duration: SermonDuration;
   query: string;
   evidence: readonly KhateebResearchEvidence[];
+  ready: boolean;
+  minimumSources: number;
+  missingSources: number;
   sections: readonly {
     id: string;
     minutes: number;
@@ -19,6 +22,12 @@ const LIMITS: Record<SermonDuration, number> = {
   20: 5,
   30: 8,
   45: 12,
+};
+
+const MINIMUM_SOURCES: Record<SermonDuration, number> = {
+  20: 3,
+  30: 5,
+  45: 8,
 };
 
 const SECTION_MINUTES: Record<SermonDuration, readonly number[]> = {
@@ -50,6 +59,8 @@ export function buildLiveResearchPack(
   duration: SermonDuration,
 ): LiveResearchPack {
   const evidence = chooseEvidence(result, duration);
+  const minimumSources = MINIMUM_SOURCES[duration];
+  const ready = evidence.length >= minimumSources;
   const quran = evidence.filter((item) => item.kind === "quran").map((item) => item.id);
   const narrations = evidence
     .filter((item) => item.kind === "hadith")
@@ -98,9 +109,11 @@ export function buildLiveResearchPack(
   ];
 
   const minutes = SECTION_MINUTES[duration];
-  const activeGroups = groups
-    .filter((group) => group.evidenceIds.length > 0 || group.id === "opening" || group.id === "synthesis" || group.id === "closing")
-    .slice(0, minutes.length);
+  const activeGroups = ready
+    ? groups
+        .filter((group) => group.evidenceIds.length > 0 || group.id === "opening" || group.id === "synthesis" || group.id === "closing")
+        .slice(0, minutes.length)
+    : [];
 
   const assigned = activeGroups.map((group, index) => ({
     ...group,
@@ -111,6 +124,9 @@ export function buildLiveResearchPack(
     duration,
     query: result.query,
     evidence,
+    ready,
+    minimumSources,
+    missingSources: Math.max(0, minimumSources - evidence.length),
     sections: assigned,
     totalMinutes: assigned.reduce((sum, item) => sum + item.minutes, 0),
   };
