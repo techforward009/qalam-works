@@ -25,6 +25,7 @@ export type KhateebResearchEvidence = {
   sourceUrl?: string;
   providerId?: string;
   arabic?: string;
+  themesUr?: readonly string[];
 };
 
 export type KhateebResearchRequest = {
