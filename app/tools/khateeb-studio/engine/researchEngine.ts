@@ -1,5 +1,9 @@
 import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
 import { SPEAKER_EVIDENCE } from "./speakerEvidence";
+import {
+  preferredIslamicDiscoveryProviders,
+  sourceProviderForUrl,
+} from "./islamicSourceRegistry";
 import { getTopicDossier } from "./topicDossier";
 import { TOPIC_PREPS, type TopicPrep } from "./topicPrep";
 import type {
@@ -140,6 +144,7 @@ export function researchKhateebTopic(
         citationUr,
         citationEn,
         sourceUrl: row.sourceUrl,
+        providerId: sourceProviderForUrl(row.sourceUrl)?.id,
         arabic,
       });
     }
@@ -164,6 +169,7 @@ export function researchKhateebTopic(
               (item) => item.heading === section.heading,
             )?.exactRef ?? perspective.sourceTitleEn,
           sourceUrl: section.sourceUrl ?? perspective.sourceUrl,
+          providerId: sourceProviderForUrl(section.sourceUrl ?? perspective.sourceUrl)?.id,
         });
       }
     }
@@ -181,6 +187,7 @@ export function researchKhateebTopic(
         citationUr: source.labelUr,
         citationEn: source.labelEn,
         sourceUrl: source.url,
+        providerId: sourceProviderForUrl(source.url)?.id,
       });
     }
 
@@ -205,6 +212,7 @@ export function researchKhateebTopic(
         citationUr: speaker.sourceLabelUr,
         citationEn: speaker.sourceLabelEn,
         sourceUrl: speaker.sourceUrl,
+        providerId: sourceProviderForUrl(speaker.sourceUrl)?.id,
       });
     }
   }
@@ -242,6 +250,12 @@ export function researchKhateebTopic(
     sourceLeadCount,
     catalogOnlyCount,
     canBuildSermon: topics.length > 0 && verifiedCount > 0,
+    providerHints: preferredIslamicDiscoveryProviders().map((provider) => ({
+      id: provider.id,
+      nameUr: provider.nameUr,
+      nameEn: provider.nameEn,
+      baseUrl: provider.baseUrl,
+    })),
     gapsUr,
     gapsEn,
   };
