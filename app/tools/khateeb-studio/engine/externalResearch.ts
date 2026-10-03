@@ -1,5 +1,6 @@
 import { discoverEShia } from "./eshiaDiscovery";
 import { fetchEShiaPage } from "./eshiaPage";
+import { eShiaQueryVariants } from "./eshiaQueryVariants";
 import { researchKhateebTopic } from "./researchEngine";
 import type { KhateebResearchEvidence, KhateebResearchRequest, KhateebResearchResult } from "./researchTypes";
 
@@ -23,27 +24,40 @@ export async function researchKhateebTopicWithEShia(
   options: { fetchImpl?: typeof fetch; maxEShiaPages?: number } = {},
 ): Promise<KhateebResearchResult> {
   const local = researchKhateebTopic(request);
-  const discovery = await discoverEShia(request.query, {
-    fetchImpl: options.fetchImpl,
-    limit: Math.max(3, Math.min(options.maxEShiaPages ?? 5, 8)),
-  });
+  const variants = eShiaQueryVariants(request.query);
+  const discovered = [];
+  let sawUnavailable = false;
 
-  if (discovery.status !== "ok") {
+  for (const variant of variants) {
+    const result = await discoverEShia(variant, {
+      fetchImpl: options.fetchImpl,
+      limit: Math.max(3, Math.min(options.maxEShiaPages ?? 5, 8)),
+    });
+    if (result.status === "unavailable") sawUnavailable = true;
+    if (result.status !== "ok") continue;
+    for (const hit of result.hits) {
+      if (!discovered.some((item) => item.url === hit.url)) discovered.push(hit);
+      if (discovered.length >= (options.maxEShiaPages ?? 5)) break;
+    }
+    if (discovered.length >= (options.maxEShiaPages ?? 5)) break;
+  }
+
+  if (!discovered.length) {
     return {
       ...local,
       gapsUr:
-        discovery.status === "unavailable"
-          ? [...local.gapsUr, "ای شیعہ کی براہِ راست تلاش اس وقت دستیاب نہیں؛ مقامی مصدقہ مواد بدستور محفوظ ہے۔"]
-          : local.gapsUr,
+        sawUnavailable
+          ? [...local.gapsUr, "ای شیعہ کی براہِ راست تلاش اس وقت مکمل نہیں ہو سکی؛ مقامی مصدقہ مواد بدستور محفوظ ہے۔"]
+          : [...local.gapsUr, "ای شیعہ میں اس عبارت کے لیے براہِ راست نتیجہ نہیں ملا؛ متبادل عربی/فارسی موضوعاتی الفاظ بھی آزمائے گئے۔"],
       gapsEn:
-        discovery.status === "unavailable"
-          ? [...local.gapsEn, "Live eShia discovery is currently unavailable; verified local material remains available."]
-          : local.gapsEn,
+        sawUnavailable
+          ? [...local.gapsEn, "Live eShia discovery could not be completed; verified local material remains available."]
+          : [...local.gapsEn, "No direct eShia result was found; Arabic/Persian concept variants were also tried."],
     };
   }
 
   const records = await Promise.all(
-    discovery.hits
+    discovered
       .slice(0, options.maxEShiaPages ?? 5)
       .map((hit) => fetchEShiaPage(hit.url, request.query, { fetchImpl: options.fetchImpl })),
   );

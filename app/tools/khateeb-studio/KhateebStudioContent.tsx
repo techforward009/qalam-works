@@ -244,6 +244,13 @@ export default function KhateebStudioContent({
       controller.abort();
     };
   }, [topicQuery, topicResults.length, ur]);
+  const liveEShiaCount = liveTopicResearch?.evidence.filter(
+    (item) => item.status === "verified" && item.providerId === "eshia-library",
+  ).length ?? 0;
+  const localVerifiedCount = Math.max(
+    0,
+    (liveTopicResearch?.verifiedCount ?? 0) - liveEShiaCount,
+  );
   const liveResearchPack = liveTopicResearch
     ? buildLiveResearchPack(liveTopicResearch, duration)
     : null;
@@ -701,16 +708,24 @@ export default function KhateebStudioContent({
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
                             <h4 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
-                              {ur ? "براہِ راست تحقیقی مواد" : "Live research material"}
+                              {liveEShiaCount > 0
+  ? (ur ? "براہِ راست تحقیقی مواد" : "Live research material")
+  : (ur ? "متعلقہ محفوظ تحقیقی مواد" : "Related verified local material")}
                             </h4>
                             <p className="mt-1 text-xs text-[#687469] dark:text-[#9fb0a2]">
-                              {ur
-                                ? "اصل ماخذ سے حاصل شدہ متن اور حوالہ؛ صارف کو دوسری ویب سائٹ پر جانے کی ضرورت نہیں۔"
-                                : "Source-grounded text and references are shown here; no external browsing is required."}
+                              {liveEShiaCount > 0
+  ? (ur
+      ? "ای شیعہ کے اصل صفحات اور محفوظ علمی مواد سے حاصل شدہ متن و حوالہ؛ صارف کو دوسری ویب سائٹ پر جانے کی ضرورت نہیں۔"
+      : "Text and references from live eShia pages and the verified local corpus are shown here.")
+  : (ur
+      ? "یہ مواد براہِ راست ای شیعہ سے نہیں ملا؛ قریب ترین محفوظ موضوع سے مصدقہ مواد دکھایا جا رہا ہے۔"
+      : "No live eShia hit was found; this is verified material from the closest local topic.")}
                             </p>
                           </div>
                           <span className="rounded-full bg-[#F7F5EF] px-2.5 py-1 text-xs font-semibold text-[#6b776d] dark:bg-[#0e1c15] dark:text-[#98aa9b]">
-                            {liveTopicResearch.verifiedCount} {ur ? "مصدقہ اندراج" : "verified records"}
+                            {liveEShiaCount > 0
+  ? (ur ? `${liveEShiaCount} ای شیعہ سے، ${localVerifiedCount} محفوظ` : `${liveEShiaCount} eShia, ${localVerifiedCount} local`)
+  : (ur ? `${localVerifiedCount} محفوظ مصدقہ اندراج` : `${localVerifiedCount} verified local records`)}
                           </span>
                         </div>
 
