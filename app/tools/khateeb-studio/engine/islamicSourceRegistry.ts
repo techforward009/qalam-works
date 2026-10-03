@@ -10,6 +10,7 @@ export type IslamicSourceProvider = {
   nameEn: string;
   baseUrl: string;
   roles: readonly IslamicSourceRole[];
+  priority: number;
   languages: readonly string[];
   strengthsUr: readonly string[];
   strengthsEn: readonly string[];
@@ -24,6 +25,7 @@ export const ISLAMIC_SOURCE_PROVIDERS: readonly IslamicSourceProvider[] = [
     nameEn: "eShia / Madrasah-e-Fiqh Library",
     baseUrl: "https://lib.eshia.ir/",
     roles: ["primary-text-library", "scholarly-library"],
+    priority: 100,
     languages: ["ar", "fa"],
     strengthsUr: [
       "عربی اور فارسی شیعہ کتب کا بڑا متنی ذخیرہ",
@@ -38,9 +40,9 @@ export const ISLAMIC_SOURCE_PROVIDERS: readonly IslamicSourceProvider[] = [
       "Multiple major hadith collections and editions",
     ],
     verificationUr:
-      "اسے اصل متن اور مطبوعہ حوالہ تلاش کرنے کے لیے ترجیحی ذخیرہ سمجھیں، لیکن کتاب کی شناخت، طبعت، جلد، صفحہ اور عبارت کو الگ الگ محفوظ کریں۔ محض کسی مجموعے میں موجود ہونا روایت کی سند یا صحت کا خودکار فیصلہ نہیں ہے۔",
+      "خطیب اسٹوڈیو میں اسلامی متون اور روایات کی تلاش کے لیے اسے پہلی ترجیح دیں۔ عبارت کے ساتھ کتاب، مصنف، جلد، صفحہ اور دستیاب طبعت کا حوالہ محفوظ کریں، تاکہ خطیب اصل ماخذ کے ساتھ مواد سے استفادہ کر سکے۔",
     verificationEn:
-      "Prefer it for locating original text and printed references, while preserving book identity, edition, volume, page, and exact wording separately. Presence in a digital library does not itself establish hadith authenticity.",
+      "Use this as the first-priority discovery source for Islamic texts and narrations in Khateeb Studio. Preserve the book, author, volume, page, and available edition with the text so the preacher can use the material with its source reference.",
   },
   {
     id: "al-islam",
@@ -48,6 +50,7 @@ export const ISLAMIC_SOURCE_PROVIDERS: readonly IslamicSourceProvider[] = [
     nameEn: "Al-Islam.org",
     baseUrl: "https://al-islam.org/",
     roles: ["scholarly-library", "translation-library", "primary-text-library"],
+    priority: 60,
     languages: ["en", "ar", "fa"],
     strengthsUr: [
       "شیعہ علماء اور مصنفین کی منظم کتابیں اور مقالات",
@@ -88,5 +91,5 @@ export function sourceProviderForUrl(url?: string): IslamicSourceProvider | null
 }
 
 export function preferredIslamicDiscoveryProviders(): readonly IslamicSourceProvider[] {
-  return ISLAMIC_SOURCE_PROVIDERS;
+  return [...ISLAMIC_SOURCE_PROVIDERS].sort((a, b) => b.priority - a.priority);
 }
