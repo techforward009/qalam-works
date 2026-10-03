@@ -37,6 +37,16 @@ export type SermonDossier = {
   thesisEn: string;
   governingQuestionUr: string;
   governingQuestionEn: string;
+  primaryTexts?: readonly {
+    id: string;
+    kind: "quran" | "hadith";
+    refUr: string;
+    refEn: string;
+    arabic: string;
+    explanationUr: string;
+    explanationEn: string;
+    sourceUrl?: string;
+  }[];
   perspectives: readonly ScholarPerspective[];
   synthesisUr: readonly string[];
   synthesisEn: readonly string[];
@@ -1124,6 +1134,11 @@ export function getTopicDossier(topicId: string): SermonDossier | null {
     titleUr: pureKhateebUrdu(dossier.titleUr),
     thesisUr: pureKhateebUrdu(dossier.thesisUr),
     governingQuestionUr: pureKhateebUrdu(dossier.governingQuestionUr),
+    primaryTexts: dossier.primaryTexts?.map((item) => ({
+      ...item,
+      refUr: pureKhateebUrdu(item.refUr),
+      explanationUr: pureKhateebUrdu(item.explanationUr),
+    })),
     perspectives: dossier.perspectives.map((item) => ({
       ...item,
       nameUr: pureKhateebUrdu(item.nameUr),
@@ -1156,9 +1171,24 @@ export function buildDossierText(
     "",
     `${ur ? "مرکزی مقدمہ" : "Central thesis"}: ${ur ? dossier.thesisUr : dossier.thesisEn}`,
     `${ur ? "مرکزی سوال" : "Governing question"}: ${ur ? dossier.governingQuestionUr : dossier.governingQuestionEn}`,
+  ];
+
+  if (dossier.primaryTexts?.length) {
+    lines.push("", ur ? "اصل آیات و روایات" : "Primary verses and narrations");
+    for (const item of dossier.primaryTexts) {
+      lines.push(
+        "",
+        ur ? item.refUr : item.refEn,
+        item.arabic,
+        ur ? item.explanationUr : item.explanationEn,
+      );
+    }
+  }
+
+  lines.push(
     "",
     ur ? "اہلِ علم کے زاویے" : "Scholar perspectives",
-  ];
+  );
 
   for (const item of dossier.perspectives) {
     lines.push(

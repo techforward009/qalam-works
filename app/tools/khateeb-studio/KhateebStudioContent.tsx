@@ -408,8 +408,8 @@ export default function KhateebStudioContent({
 
         .khateeb-studio-ur {
           font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
-          font-size: 1.09rem;
-          line-height: 2.08;
+          font-size: 1.22rem;
+          line-height: 2.18;
         }
 
         .khateeb-studio-ur h1,
@@ -435,17 +435,17 @@ export default function KhateebStudioContent({
         }
 
         .khateeb-studio-ur p {
-          line-height: 2.02;
+          line-height: 2.12;
         }
 
         .khateeb-studio-ur .text-sm {
-          font-size: 1.02rem;
-          line-height: 1.9;
+          font-size: 1.12rem;
+          line-height: 2.02;
         }
 
         .khateeb-studio-ur .text-xs {
-          font-size: 0.88rem;
-          line-height: 1.78;
+          font-size: 1rem;
+          line-height: 1.9;
         }
 
         .khateeb-studio-ur button,
@@ -461,12 +461,12 @@ export default function KhateebStudioContent({
         }
 
         .khateeb-studio-ur input {
-          font-size: 1.02rem;
+          font-size: 1.12rem;
         }
 
         .khateeb-studio-ur pre {
-          font-size: 1.02rem;
-          line-height: 2.05;
+          font-size: 1.12rem;
+          line-height: 2.15;
         }
       `}</style>
       <div className="site-container max-w-6xl">
@@ -648,13 +648,28 @@ export default function KhateebStudioContent({
               </span>
               <div>
                 <h2 className="text-xl font-bold text-[#1A3A2A] dark:text-white">
-                  {ur ? "موضوع سے خطبہ تیار کریں" : "Prepare a sermon by topic"}
+                  {workflowStep === 3 && topic
+                    ? (ur ? "آپ کا منتخب موضوع" : "Selected topic")
+                    : (ur ? "موضوع سے خطبہ تیار کریں" : "Prepare a sermon by topic")}
                 </h2>
-                <p className="mt-1 text-sm text-[#5f6f61] dark:text-[#a8c8b0]">
-                  {ur
-                    ? "سال بھر کے لیے موضوع تلاش کریں؛ قرآن، بنیادی ماخذ، زاویۂ بیان اور وقت کے مطابق خاکہ حاصل کریں۔"
-                    : "Search year-round topics and get Qur'anic anchors, source leads, speaking angles, and a timed outline."}
-                </p>
+                {workflowStep === 3 && topic ? (
+                  <>
+                    <h3 className="mt-2 text-lg font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                      {topicTitle(topic, ur ? "ur" : "en")}
+                    </h3>
+                    <p className="mt-1 text-sm text-[#5f6f61] dark:text-[#a8c8b0]">
+                      {ur
+                        ? "متعلقہ تحقیقی اور منبری مواد نیچے کھل گیا ہے؛ خطیب کا انتخاب اختیاری ہے۔"
+                        : "The relevant research and pulpit material is open below; choosing a speaker is optional."}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-[#5f6f61] dark:text-[#a8c8b0]">
+                    {ur
+                      ? "سال بھر کے لیے موضوع تلاش کریں؛ قرآن، بنیادی ماخذ، زاویۂ بیان اور وقت کے مطابق خاکہ حاصل کریں۔"
+                      : "Search year-round topics and get Qur'anic anchors, source leads, speaking angles, and a timed outline."}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -1098,6 +1113,47 @@ export default function KhateebStudioContent({
                       {ur ? topicDossier.governingQuestionUr : topicDossier.governingQuestionEn}
                     </div>
                   </section>
+
+                  {topicDossier.primaryTexts?.length ? (
+                    <section className="rounded-xl border border-[#B8935A]/30 bg-white p-4 dark:border-[#6f5b35] dark:bg-[#162a1e]">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-5 w-5 text-[#8a6838]" />
+                        <h4 className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                          {ur ? "اصل آیات و روایات" : "Primary verses and narrations"}
+                        </h4>
+                      </div>
+                      <p className="mt-1 text-sm text-[#687469] dark:text-[#9fb0a2]">
+                        {ur
+                          ? "مجلس کی علمی بنیاد کے لیے اصل عربی متن، حوالہ اور مختصر وضاحت۔"
+                          : "Original Arabic text, reference, and a short explanation for the sermon's textual foundation."}
+                      </p>
+                      <div className="mt-4 space-y-4">
+                        {topicDossier.primaryTexts.map((item) => (
+                          <article
+                            key={item.id}
+                            className="rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <strong className="text-sm text-[#6f5730] dark:text-[#e2c895]">
+                                {ur ? item.refUr : item.refEn}
+                              </strong>
+                              <span className="rounded-full bg-white px-2 py-1 text-xs text-[#687469] dark:bg-[#162a1e] dark:text-[#9fb0a2]">
+                                {item.kind === "quran"
+                                  ? (ur ? "آیت" : "Qur'an")
+                                  : (ur ? "روایت" : "Narration")}
+                              </span>
+                            </div>
+                            <div className="mt-3 rounded-lg bg-white px-4 py-3 text-lg leading-[2.1] text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
+                              <KhateebScriptText text={item.arabic} forceArabic />
+                            </div>
+                            <p className="mt-3 text-sm leading-8 text-[#445247] dark:text-[#b8c8bb]">
+                              {ur ? item.explanationUr : item.explanationEn}
+                            </p>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
 
                   <section>
                     <h4 className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">

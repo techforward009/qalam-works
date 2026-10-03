@@ -113,6 +113,12 @@ describe("Khateeb Studio typography", () => {
     expect(looksLikeArabicReligiousText("«رَبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا»")).toBe(true);
     expect(looksLikeArabicReligiousText("«والدین کے ساتھ حسن سلوک»")).toBe(false);
   });
+
+  test("uses a larger readable Urdu body size", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("font-size: 1.22rem");
+    expect(studio).toContain("font-size: 1.12rem");
+  });
 });
 
 describe("Khateeb Studio sermon preparation", () => {
@@ -365,6 +371,25 @@ describe("Khateeb Studio parents and memorial deep topic", () => {
     expect(dossier?.pulpitFlowUr.length).toBeGreaterThanOrEqual(7);
   });
 
+  test("includes original Qur'an and hadith text for actual sermon preparation", () => {
+    const dossier = getTopicDossier("parents-barsi")!;
+    expect(dossier.primaryTexts?.length).toBeGreaterThanOrEqual(6);
+    expect(dossier.primaryTexts?.filter((item) => item.kind === "quran").length).toBeGreaterThanOrEqual(3);
+    expect(dossier.primaryTexts?.filter((item) => item.kind === "hadith").length).toBeGreaterThanOrEqual(3);
+    expect(dossier.primaryTexts?.some((item) => item.arabic.includes("رَبِّ ارْحَمْهُمَا"))).toBe(true);
+    expect(dossier.primaryTexts?.some((item) => item.arabic.includes("حَقُّ أُمِّكَ"))).toBe(true);
+    expect(dossier.primaryTexts?.some((item) => item.arabic.includes("بَعْدَ مَوْتِهِمَا"))).toBe(true);
+  });
+
+  test("UI displays primary verses and narrations before scholar analysis", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("اصل آیات و روایات");
+    expect(studio).toContain("topicDossier.primaryTexts.map");
+    expect(studio).toContain("item.arabic");
+    expect(studio).toContain("forceArabic");
+    expect(studio.indexOf("اصل آیات و روایات")).toBeLessThan(studio.indexOf("مختلف اہلِ علم نے اسے کیسے کھولا؟"));
+  });
+
   test("keeps the Urdu dossier preacher-facing and free of English prose", () => {
     const text = buildDossierText(getTopicDossier("parents-barsi")!, "ur");
     expect(text).toContain("والدین");
@@ -448,6 +473,13 @@ describe("Khateeb Studio guided workflow", () => {
     expect(studio).toContain('id="khateeb-topic-result"');
     expect(studio).toContain("مواد کھولیں");
     expect(studio).toContain("متعلقہ تحقیقی اور منبری مواد نیچے کھل گیا ہے");
+  });
+
+  test("replaces the generic topic-preparation heading after a topic is selected", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("آپ کا منتخب موضوع");
+    expect(studio).toContain("متعلقہ تحقیقی اور منبری مواد نیچے کھل گیا ہے");
+    expect(studio).toContain("workflowStep === 3 && topic");
   });
 });
 

@@ -12,6 +12,86 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
     "اگر والدین دنیا سے چلے جائیں تو کیا ان کا حق ختم ہو جاتا ہے، یا اولاد کی ذمہ داری ایک نئی صورت میں شروع ہوتی ہے؟",
   governingQuestionEn:
     "When parents die, does their right end, or does the child's responsibility continue in another form?",
+  primaryTexts: [
+    {
+      id: "quran-isra-23-24",
+      kind: "quran",
+      refUr: "قرآن مجید — سورۂ اسراء 17:23–24",
+      refEn: "Qur'an 17:23–24",
+      arabic:
+        "وَقَضٰى رَبُّكَ أَلَّا تَعْبُدُوا إِلَّا إِيَّاهُ وَبِالْوَالِدَيْنِ إِحْسَانًا ۚ إِمَّا يَبْلُغَنَّ عِندَكَ الْكِبَرَ أَحَدُهُمَا أَوْ كِلَاهُمَا فَلَا تَقُلْ لَهُمَا أُفٍّ وَلَا تَنْهَرْهُمَا وَقُلْ لَهُمَا قَوْلًا كَرِيمًا ۝ وَاخْفِضْ لَهُمَا جَنَاحَ الذُّلِّ مِنَ الرَّحْمَةِ وَقُلْ رَبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا",
+      explanationUr:
+        "یہ مجلس کی بنیادی آیت ہے۔ توحید کے فوراً بعد والدین کے ساتھ احسان، پھر بڑھاپے میں لہجے کی حفاظت، رحمت اور آخر میں ان کے لیے دعا آتی ہے۔ برسی کے موضوع میں آخری دعا خاص طور پر مرکزی حیثیت رکھتی ہے۔",
+      explanationEn:
+        "The central Qur'anic anchor: worship, kindness, gentleness in old age, mercy, and prayer for one's parents.",
+    },
+    {
+      id: "quran-luqman-14",
+      kind: "quran",
+      refUr: "قرآن مجید — سورۂ لقمان 31:14",
+      refEn: "Qur'an 31:14",
+      arabic:
+        "وَوَصَّيْنَا الْإِنسَانَ بِوَالِدَيْهِ حَمَلَتْهُ أُمُّهُ وَهْنًا عَلَىٰ وَهْنٍ وَفِصَالُهُ فِي عَامَيْنِ أَنِ اشْكُرْ لِي وَلِوَالِدَيْكَ إِلَيَّ الْمَصِيرُ",
+      explanationUr:
+        "یہ آیت ماں کی مسلسل جسمانی مشقت کو یاد دلاتی ہے اور پھر شکرِ خدا کے ساتھ شکرِ والدین کو جوڑتی ہے۔ یہاں سے یہ نکتہ کھلتا ہے کہ بالغ انسان اپنی کامیابی کو صرف اپنی محنت کا نتیجہ نہ سمجھے بلکہ اپنی تشکیل میں والدین کے حصے کو بھی پہچانے۔",
+      explanationEn:
+        "The verse recalls the mother's hardship and joins gratitude to God with gratitude to parents.",
+    },
+    {
+      id: "quran-ahqaf-15",
+      kind: "quran",
+      refUr: "قرآن مجید — سورۂ احقاف 46:15",
+      refEn: "Qur'an 46:15",
+      arabic:
+        "وَوَصَّيْنَا الْإِنسَانَ بِوَالِدَيْهِ إِحْسَانًا حَمَلَتْهُ أُمُّهُ كُرْهًا وَوَضَعَتْهُ كُرْهًا ۖ وَحَمْلُهُ وَفِصَالُهُ ثَلَاثُونَ شَهْرًا ۚ حَتَّىٰ إِذَا بَلَغَ أَشُدَّهُ وَبَلَغَ أَرْبَعِينَ سَنَةً قَالَ رَبِّ أَوْزِعْنِي أَنْ أَشْكُرَ نِعْمَتَكَ الَّتِي أَنْعَمْتَ عَلَيَّ وَعَلَىٰ وَالِدَيَّ",
+      explanationUr:
+        "یہاں پختگی کی عمر میں انسان کی دعا والدین کی طرف لوٹتی ہے۔ مجلس میں اسے اس بات کے لیے استعمال کریں کہ عمر بڑھنے کے ساتھ انسان کو اپنی زندگی میں والدین کی نعمت اور ان کی قربانی کا شعور زیادہ گہرا ہونا چاہیے۔",
+      explanationEn:
+        "At maturity, the believer's prayer explicitly remembers divine blessings upon both self and parents.",
+    },
+    {
+      id: "risalat-mother",
+      kind: "hadith",
+      refUr: "امام زین العابدینؑ — رسالۃ الحقوق، حقِ مادر",
+      refEn: "Imam Zayn al-Abidin — Treatise on Rights, Right of the Mother",
+      arabic:
+        "وَأَمَّا حَقُّ أُمِّكَ فَأَنْ تَعْلَمَ أَنَّهَا حَمَلَتْكَ حَيْثُ لَا يَحْتَمِلُ أَحَدٌ أَحَدًا، وَأَعْطَتْكَ مِنْ ثَمَرَةِ قَلْبِهَا مَا لَا يُعْطِي أَحَدٌ أَحَدًا، وَوَقَتْكَ بِجَمِيعِ جَوَارِحِهَا، وَلَمْ تُبَالِ أَنْ تَجُوعَ وَتُطْعِمَكَ، وَتَعْطَشَ وَتَسْقِيَكَ، وَتَعْرَى وَتَكْسُوَكَ، وَتَضْحَى وَتُظِلَّكَ، وَتَهْجُرَ النَّوْمَ لِأَجْلِكَ",
+      explanationUr:
+        "امامؑ ماں کے حق کو مجرد نصیحت نہیں رہنے دیتے؛ حمل، غذا، پیاس، لباس، دھوپ اور نیند تک کی قربانی گنواتے ہیں۔ یہی اصل متن خطیب کو تفصیلی اور زندہ بیان کی بنیاد دیتا ہے۔",
+      explanationEn:
+        "The Imam grounds the mother's right in concrete sacrifice: carrying, feeding, thirst, clothing, exposure, and lost sleep.",
+      sourceUrl:
+        "https://al-islam.org/sahifa-al-kamilah-al-sajjadiyya-imam-ali-zayn-al-abidin/treatise-rights",
+    },
+    {
+      id: "risalat-father",
+      kind: "hadith",
+      refUr: "امام زین العابدینؑ — رسالۃ الحقوق، حقِ پدر",
+      refEn: "Imam Zayn al-Abidin — Treatise on Rights, Right of the Father",
+      arabic:
+        "وَأَمَّا حَقُّ أَبِيكَ فَتَعْلَمَ أَنَّهُ أَصْلُكَ، وَأَنَّكَ فَرْعُهُ، وَأَنَّكَ لَوْلَاهُ لَمْ تَكُنْ، فَمَهْمَا رَأَيْتَ فِي نَفْسِكَ مِمَّا يُعْجِبُكَ فَاعْلَمْ أَنَّ أَبَاكَ أَصْلُ النِّعْمَةِ عَلَيْكَ فِيهِ",
+      explanationUr:
+        "یہ عبارت والد کے حق کو صرف مالی کفالت تک محدود نہیں کرتی بلکہ انسان کو اپنی اصل اور اپنے وجود کی نعمت کی طرف واپس لے جاتی ہے۔",
+      explanationEn:
+        "The father's right is connected to origin and the blessing of one's own existence, not merely material provision.",
+      sourceUrl:
+        "https://al-islam.org/treatise-rights-risalat-al-huquq-imam-ali-zayn-al-abidin/rights-womb-relatives",
+    },
+    {
+      id: "birr-after-death",
+      kind: "hadith",
+      refUr: "رسول اکرمؐ — والدین کی وفات کے بعد بھی نیکی",
+      refEn: "The Prophet — goodness to parents after their death",
+      arabic:
+        "سَيِّدُ الْأَبْرَارِ يَوْمَ الْقِيَامَةِ رَجُلٌ بَرَّ وَالِدَيْهِ بَعْدَ مَوْتِهِمَا",
+      explanationUr:
+        "یہ روایت برسی کی مجلس کا مرکزی پل بن سکتی ہے: والدین کی وفات نیکی کا دروازہ بند نہیں کرتی۔ خدمت کی صورت بدلتی ہے اور دعا، خیر، صدقہ اور صالح عمل کے ذریعے برِّ والدین جاری رہتا ہے۔",
+      explanationEn:
+        "This narration makes continuing goodness after the parents' death the bridge into the memorial theme.",
+      sourceUrl:
+        "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+    },
+  ],
   perspectives: [
     {
       id: "sajjad-rights-parents",
