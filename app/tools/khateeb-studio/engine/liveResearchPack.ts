@@ -52,7 +52,7 @@ export function buildLiveResearchPack(
   const evidence = chooseEvidence(result, duration);
   const quran = evidence.filter((item) => item.kind === "quran").map((item) => item.id);
   const narrations = evidence
-    .filter((item) => item.kind === "hadith" || (item.providerId === "eshia-library" && Boolean(item.arabic)))
+    .filter((item) => item.kind === "hadith")
     .map((item) => item.id);
   const scholarly = evidence
     .filter((item) => item.kind === "scholar" || item.kind === "source")
@@ -73,14 +73,14 @@ export function buildLiveResearchPack(
     },
     {
       id: "narrations",
-      headingUr: "اصل روایات و متون",
-      headingEn: "Primary narrations and texts",
+      headingUr: "اصل روایات",
+      headingEn: "Primary narrations",
       evidenceIds: narrations,
     },
     {
       id: "scholarship",
-      headingUr: "علمی توضیح اور ماخذی نکات",
-      headingEn: "Scholarly explanation and source-led points",
+      headingUr: "ای شیعہ کے متعلقہ ماخذی متون",
+      headingEn: "Relevant eShia source texts",
       evidenceIds: scholarly,
     },
     {
