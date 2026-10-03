@@ -19,6 +19,7 @@ export type KhateebResearchEvidence = {
   citationUr: string;
   citationEn: string;
   sourceUrl?: string;
+  providerId?: string;
   arabic?: string;
 };
 
@@ -37,6 +38,12 @@ export type KhateebResearchResult = {
   sourceLeadCount: number;
   catalogOnlyCount: number;
   canBuildSermon: boolean;
+  providerHints: readonly {
+    id: string;
+    nameUr: string;
+    nameEn: string;
+    baseUrl: string;
+  }[];
   gapsUr: readonly string[];
   gapsEn: readonly string[];
 };
