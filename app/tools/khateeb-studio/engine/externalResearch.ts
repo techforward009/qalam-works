@@ -1,4 +1,4 @@
-import { discoverEShia } from "./eshiaDiscovery";
+import { discoverEShia, type EShiaDiscoveryHit } from "./eshiaDiscovery";
 import { fetchEShiaPage } from "./eshiaPage";
 import { eShiaQueryVariants } from "./eshiaQueryVariants";
 import { researchKhateebTopic } from "./researchEngine";
@@ -25,7 +25,7 @@ export async function researchKhateebTopicWithEShia(
 ): Promise<KhateebResearchResult> {
   const local = researchKhateebTopic(request);
   const variants = eShiaQueryVariants(request.query);
-  const discovered = [];
+  const discovered: EShiaDiscoveryHit[] = [];
   let sawUnavailable = false;
 
   for (const variant of variants) {
