@@ -106,6 +106,24 @@ function sourceIsRelevant(title: string, text: string, query: string): boolean {
   return score >= minimum;
 }
 
+
+function sourceThemesUr(text: string): readonly string[] {
+  const hay = normalizeForRelevance(text);
+  const themes: string[] = [];
+  const push = (label: string) => {
+    if (!themes.includes(label)) themes.push(label);
+  };
+  if (/حلال|رزق حلال|طلب الحلال/u.test(hay)) push("کسبِ حلال");
+  if (/توکل|التوکل|ثقه بالله|الرزق من الله/u.test(hay)) push("توکل اور اعتماد علی اللہ");
+  if (/قناعت|يقنع|الحرص|طمع/u.test(hay)) push("قناعت اور حرص سے اجتناب");
+  if (/صلة الرحم|ارحام|رحم/u.test(hay)) push("صلۂ رحم");
+  if (/استغفار|توبه|توبہ/u.test(hay)) push("استغفار و توبہ");
+  if (/تقوی|تقوى|متق/u.test(hay)) push("تقویٰ");
+  if (/خمس|سهم امام|حق حلال/u.test(hay)) push("حقوقِ مالیہ کی ادائیگی");
+  if (/بسط الرزق|يقسم|مقسوم|قسمة الرزق/u.test(hay)) push("تقسیمِ رزق اور رضائے الٰہی");
+  return themes.slice(0, 3);
+}
+
 export async function researchKhateebTopicWithEShia(
   request: KhateebResearchRequest,
   options: { fetchImpl?: typeof fetch; maxEShiaPages?: number } = {},
@@ -166,7 +184,7 @@ export async function researchKhateebTopicWithEShia(
       id: `eshia-live-${record.bookId}-${record.volume}-${record.page}-${index}`,
       topicId: local.matchedTopicIds[0] ?? "live-research",
       kind: "source",
-      status: "verified",
+      status: "source-lead",
       titleUr: record.bookTitle,
       titleEn: record.bookTitle,
       detailUr: excerpt(record.text, request.query),
@@ -175,7 +193,7 @@ export async function researchKhateebTopicWithEShia(
       citationEn: `${record.bookTitle}, vol. ${record.volume}, p. ${record.page}${record.author ? `, ${record.author}` : ""}.`,
       sourceUrl: record.url,
       providerId: "eshia-library",
-      arabic: excerpt(record.text, request.query),
+      themesUr: sourceThemesUr(`${record.bookTitle} ${record.text}`),
     }));
 
   const maxEvidence = Math.min(Math.max(request.maxEvidence ?? 40, 5), 100);
