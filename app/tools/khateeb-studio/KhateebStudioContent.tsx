@@ -64,6 +64,7 @@ import {
   type KhateebStudioView,
 } from "./engine/studioView";
 import type { KhateebResearchResult } from "./engine/researchTypes";
+import { buildLiveResearchPack } from "./engine/liveResearchPack";
 
 const ORIGINALITY_LABEL_UR = {
   titles: "عنوانات کی آزادی",
@@ -243,6 +244,10 @@ export default function KhateebStudioContent({
       controller.abort();
     };
   }, [topicQuery, topicResults.length, ur]);
+  const liveResearchPack = liveTopicResearch
+    ? buildLiveResearchPack(liveTopicResearch, duration)
+    : null;
+
   const topic = topicResults.find((item) => item.id === selectedTopicId)
     ?? topicResults[0];
   const rawTopicDossier = topic ? getTopicDossier(topic.id) : null;
@@ -709,9 +714,64 @@ export default function KhateebStudioContent({
                           </span>
                         </div>
 
-                        {liveTopicResearch.evidence
-                          .filter((item) => item.status === "verified")
-                          .slice(0, 5)
+                        <div className="flex flex-wrap gap-2">
+                          {([20, 30, 45] as SermonDuration[]).map((minutes) => (
+                            <button
+                              key={minutes}
+                              type="button"
+                              onClick={() => setDuration(minutes)}
+                              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                                duration === minutes
+                                  ? "border-[#1A3A2A] bg-[#1A3A2A] text-white dark:border-[#8faa93] dark:bg-[#35513d]"
+                                  : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
+                              }`}
+                            >
+                              {minutes} {ur ? "منٹ" : "min"}
+                            </button>
+                          ))}
+                        </div>
+
+                        {liveResearchPack ? (
+                          <div className="rounded-xl border border-[#B8935A]/30 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                                {ur
+                                  ? `${duration} منٹ کا تحقیقی منبری پیک`
+                                  : `${duration}-minute research sermon pack`}
+                              </h5>
+                              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#6b776d] dark:bg-[#162a1e] dark:text-[#98aa9b]">
+                                {liveResearchPack.evidence.length} {ur ? "منتخب ماخذ" : "selected sources"}
+                              </span>
+                            </div>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                              {liveResearchPack.sections.map((section) => (
+                                <div
+                                  key={section.id}
+                                  className="rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
+                                      {ur ? section.headingUr : section.headingEn}
+                                    </strong>
+                                    <span className="text-xs text-[#8a6838] dark:text-[#d7bc8a]">
+                                      {section.minutes} {ur ? "منٹ" : "min"}
+                                    </span>
+                                  </div>
+                                  {section.evidenceIds.length ? (
+                                    <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                                      {ur
+                                        ? `${section.evidenceIds.length} ماخذی اندراج اس حصے کے لیے منتخب`
+                                        : `${section.evidenceIds.length} source records selected for this section`}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {liveResearchPack?.evidence
+                          .slice(0, duration === 20 ? 5 : duration === 30 ? 8 : 12)
                           .map((item) => (
                             <article
                               key={item.id}
