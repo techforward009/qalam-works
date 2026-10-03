@@ -703,7 +703,7 @@ export default function KhateebStudioContent({
                       </p>
                     ) : null}
 
-                    {liveTopicResearch?.evidence?.length ? (
+                    {(liveTopicResearch?.verifiedCount ?? 0) > 0 ? (
                       <div className="space-y-3 rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
@@ -746,7 +746,7 @@ export default function KhateebStudioContent({
                           ))}
                         </div>
 
-                        {liveResearchPack ? (
+                        {liveResearchPack && liveResearchPack.evidence.length > 0 ? (
                           <div className="rounded-xl border border-[#B8935A]/30 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">

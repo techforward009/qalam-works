@@ -1,6 +1,6 @@
 const ESHIA_BASE = "https://lib.eshia.ir";
 const ESHIA_ADVANCED_SEARCH = `${ESHIA_BASE}/advanced-search`;
-const PAGE_PATH = /^\/\d+\/\d+\/\d+(?:[/?#].*)?$/;
+const PAGE_PATH = /^\/(\d+)\/(\d+)\/(\d+)(?:\/.*)?$/;
 
 export type EShiaDiscoveryHit = {
   url: string;
@@ -91,8 +91,9 @@ export function parseEShiaResultLinks(html: string, limit = 12): readonly EShiaD
       continue;
     }
 
-    if (url.hostname !== "lib.eshia.ir" || !PAGE_PATH.test(url.pathname)) continue;
-    const canonical = `${url.origin}${url.pathname}`;
+    const pageMatch = url.pathname.match(PAGE_PATH);
+    if (url.hostname !== "lib.eshia.ir" || !pageMatch) continue;
+    const canonical = `${url.origin}/${pageMatch[1]}/${pageMatch[2]}/${pageMatch[3]}`;
     if (seen.has(canonical)) continue;
 
     const title = stripTags(match[2]);
@@ -167,7 +168,20 @@ export async function discoverEShia(
       return { query: clean, provider: "eshia-library", status: "unavailable", hits: [], diagnostic: `search-http-${response.status}` };
     }
 
-    const hits = parseEShiaResultLinks(await response.text(), options.limit ?? 12);
+    const resultHtml = await response.text();
+    const hits = parseEShiaResultLinks(resultHtml, options.limit ?? 12);
+    console.info("[khateeb-eshia] discovery", {
+      query: clean,
+      action: target,
+      method: form.method,
+      queryField: form.queryField,
+      responseUrl: response.url,
+      htmlLength: resultHtml.length,
+      candidateHrefs: [...resultHtml.matchAll(/<a\b[^>]*href=(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi)]
+        .slice(0, 20)
+        .map((match) => match[1] ?? match[2] ?? match[3] ?? ""),
+      hitCount: hits.length,
+    });
     return {
       query: clean,
       provider: "eshia-library",
