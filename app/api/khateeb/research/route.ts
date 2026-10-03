@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { researchKhateebTopic } from "../../../tools/khateeb-studio/engine/researchEngine";
+import { researchKhateebTopicWithEShia } from "../../../tools/khateeb-studio/engine/externalResearch";
 
 export const runtime = "nodejs";
 
@@ -42,12 +42,10 @@ export async function POST(request: Request) {
       ? body.maxEvidence
       : undefined;
 
-  return NextResponse.json(
-    researchKhateebTopic({ query, locale, maxEvidence }),
-    {
-      headers: {
-        "Cache-Control": "no-store",
-      },
+  const result = await researchKhateebTopicWithEShia({ query, locale, maxEvidence });
+  return NextResponse.json(result, {
+    headers: {
+      "Cache-Control": "no-store",
     },
-  );
+  });
 }
