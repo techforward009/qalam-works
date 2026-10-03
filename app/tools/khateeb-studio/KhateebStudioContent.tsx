@@ -814,8 +814,8 @@ export default function KhateebStudioContent({
                                 <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
                                   <KhateebScriptText
                                     text={item.arabic}
-                                    forceArabic={item.providerId !== "eshia-library"}
-                                    forcePersian={item.providerId === "eshia-library" && /[پچژگک]/u.test(item.arabic)}
+                                    forcePersian={/[پچژگک]/u.test(item.arabic)}
+                                    forceArabic={!/[پچژگک]/u.test(item.arabic)}
                                   />
                                 </div>
                               ) : (
