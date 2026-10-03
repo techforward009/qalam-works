@@ -52,6 +52,7 @@ import {
   parseKhateebStudioView,
 } from "../app/tools/khateeb-studio/engine/studioView";
 import { looksLikeArabicReligiousText } from "../app/tools/khateeb-studio/KhateebScriptText";
+import { toQalamArabicPresentation } from "../app/tools/khateeb-studio/qalamArabicPresentation";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
 
 describe("Khateeb Studio seed corpus", () => {
@@ -409,13 +410,35 @@ describe("Khateeb Studio parents and memorial deep topic", () => {
     expect(hadithRows.find((item) => item.id === "birr-after-death")?.sourceRefUr).not.toContain("ج71");
   });
 
+  test("uses source-supplied Arabic marks and only converts presentation style", () => {
+    const dossier = getTopicDossier("parents-barsi")!;
+    const hadithRows = dossier.primaryTexts?.filter((item) => item.kind === "hadith") ?? [];
+    expect(hadithRows.every((item) => (item.sourceArabicMarked?.length ?? 0) > 20)).toBe(true);
+    const mother = hadithRows.find((item) => item.id === "risalat-mother")!;
+    const rendered = toQalamArabicPresentation(mother.sourceArabicMarked!);
+    expect(rendered).not.toMatch(/[أإ]/u);
+    expect(rendered).toContain("حَقُّ اُمِّكَ");
+    expect(rendered).toContain("اللّٰهِ");
+  });
+
+  test("does not expose implementation provenance clutter in Urdu primary-text cards", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    const primary = readFileSync("app/tools/khateeb-studio/KhateebPrimaryArabic.tsx", "utf8");
+    expect(primary).not.toContain("قرآن متن: قلم ورکس");
+    expect(primary).not.toContain("اعراب کا ماڈل دستیاب نہیں");
+    expect(primary).not.toContain("diacritizeArabicWithModel");
+    expect(studio).toContain('item.kind === "hadith"');
+    expect(studio).toContain("!ur && section.sourceUrl");
+    expect(studio).not.toContain('{ur ? "اصل ماخذ دیکھیں" : "Open source"}');
+  });
+
   test("UI uses the central Arabic pipeline instead of static Arabic display", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     const primary = readFileSync("app/tools/khateeb-studio/KhateebPrimaryArabic.tsx", "utf8");
     expect(studio).toContain("<KhateebPrimaryArabic");
     expect(primary).toContain("ahmedgrafQuranReference.getAyah");
-    expect(primary).toContain("diacritizeArabicWithModel");
-    expect(studio).toContain("دقیق حوالہ");
+    expect(primary).toContain("toQalamArabicPresentation");
+    expect(primary).not.toContain("diacritizeArabicWithModel");
   });
 
   test("UI displays primary verses and narrations before scholar analysis", () => {
@@ -477,7 +500,8 @@ describe("Khateeb Studio parents and memorial deep topic", () => {
     expect(studio).toContain("اصل ماخذ سے اخذ شدہ تفصیل");
     expect(studio).toContain("تدوینی اضافہ نہیں");
     expect(studio).toContain("منبری ربط — تدوینی");
-    expect(studio).toContain("اصل ماخذ دیکھیں");
+    expect(studio).toContain("!ur && section.sourceUrl");
+    expect(studio).toContain("Open source");
   });
 
   test("UI shows full speaking material before stylistic suggestions", () => {
@@ -539,7 +563,7 @@ describe("Khateeb Studio guided workflow", () => {
     expect(studio).toContain('setSelectedSpeaker("")');
     expect(studio).toContain("setWorkflowStep(3)");
     expect(studio).toContain("scrollIntoView");
-    expect(studio).toContain('id="khateeb-topic-result"');
+    expect(studio).toContain("khateeb-topic-result");
     expect(studio).toContain("مواد کھولیں");
     expect(studio).toContain("متعلقہ تحقیقی اور منبری مواد نیچے کھل گیا ہے");
   });
@@ -549,6 +573,24 @@ describe("Khateeb Studio guided workflow", () => {
     expect(studio).toContain("آپ کا منتخب موضوع");
     expect(studio).toContain("متعلقہ تحقیقی اور منبری مواد نیچے کھل گیا ہے");
     expect(studio).toContain("workflowStep === 3 && topic");
+  });
+
+  test("makes multi-majlis preparation obvious instead of hiding it as a minor control", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("ایک مجلس یا مکمل سلسلہ؟");
+    expect(studio).toContain("اسی موضوع پر ایک مجلس، سہ روزہ، خمسہ یا پورا عشرہ");
+    expect(studio).toContain("تین مربوط مجالس");
+    expect(studio).toContain("پانچ مرحلوں کا علمی سفر");
+    expect(studio).toContain("دس مربوط مجالس کا عشرہ");
+  });
+
+  test("offers a direct print / PDF action for topic and occasion preparation", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("window.print()");
+    expect(studio).toContain("مجلس پرنٹ کریں / PDF محفوظ کریں");
+    expect(studio).toContain("@media print");
+    expect(studio).toContain('id="khateeb-print-area"');
+    expect(studio).toContain("khateeb-no-print");
   });
 });
 

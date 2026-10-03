@@ -58,6 +58,7 @@ export type SermonDossier = {
     refEn: string;
     arabic?: string;
     sourceArabic?: string;
+    sourceArabicMarked?: string;
     quranLocation?: {
       surah: number;
       ayah: number;

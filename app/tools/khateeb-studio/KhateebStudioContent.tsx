@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Search, Sparkles } from "lucide-react";
+import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Printer, Search, Sparkles } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
 import {
   CALENDAR_MONTHS_1448,
@@ -309,6 +309,10 @@ export default function KhateebStudioContent({
     }
   };
 
+  const printPreparation = () => {
+    window.print();
+  };
+
   const selectMonth = (month: IslamicMonthId) => {
     const groups = groupCalendarEvents(eventsFor(month, selectedRegion));
     setSelectedMonth(month);
@@ -468,6 +472,56 @@ export default function KhateebStudioContent({
         .khateeb-studio-ur pre {
           font-size: 1.12rem;
           line-height: 2.15;
+        }
+
+        @media print {
+          @page {
+            size: A4;
+            margin: 16mm 14mm;
+          }
+
+          body * {
+            visibility: hidden !important;
+          }
+
+          #khateeb-print-area,
+          #khateeb-print-area * {
+            visibility: visible !important;
+          }
+
+          #khateeb-print-area {
+            position: absolute !important;
+            inset: 0 auto auto 0 !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            background: white !important;
+            color: black !important;
+          }
+
+          #khateeb-print-area .khateeb-no-print {
+            display: none !important;
+          }
+
+          #khateeb-print-area article,
+          #khateeb-print-area section,
+          #khateeb-print-area .rounded-xl,
+          #khateeb-print-area .rounded-lg {
+            break-inside: avoid;
+            box-shadow: none !important;
+          }
+
+          #khateeb-print-area a {
+            color: black !important;
+            text-decoration: none !important;
+          }
+
+          .khateeb-muhammadi-quranic {
+            color: black !important;
+          }
         }
       `}</style>
       <div className="site-container max-w-6xl">
@@ -639,7 +693,7 @@ export default function KhateebStudioContent({
 
         <section
           ref={topicResultRef}
-          id="khateeb-topic-result"
+          id={workflowStep === 3 && preparationMode === "topic" ? "khateeb-print-area" : "khateeb-topic-result"}
           className={`${workflowStep === 1 && preparationMode === "topic" ? "block" : workflowStep === 3 && preparationMode === "topic" ? "block" : "hidden"} scroll-mt-6 mb-6 rounded-2xl border border-[#B8935A]/30 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]`}
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -673,7 +727,7 @@ export default function KhateebStudioContent({
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="khateeb-no-print flex items-center gap-2">
               {([20, 30, 45] as SermonDuration[]).map((minutes) => (
                 <button
                   key={minutes}
@@ -694,11 +748,16 @@ export default function KhateebStudioContent({
             {durationBrief(duration, ur ? "ur" : "en")}
           </p>
 
-          <div className="mt-4 rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-3 dark:border-[#35513d] dark:bg-[#0e1c15]">
-            <div className="mb-2 text-xs font-bold text-[#687469] dark:text-[#9fb0a2]">
-              {ur ? "تیاری کی نوعیت" : "Preparation format"}
+          <div className="khateeb-no-print mt-4 rounded-xl border border-[#B8935A]/25 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
+            <div className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+              {ur ? "ایک مجلس یا مکمل سلسلہ؟" : "One sermon or a complete series?"}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+              {ur
+                ? "اسی موضوع پر ایک مجلس، سہ روزہ، خمسہ یا پورا عشرہ تیار کیا جا سکتا ہے۔"
+                : "Prepare one sermon, a 3-session series, a 5-session series, or a full 10-session series on this topic."}
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {([
                 [1, ur ? "ایک مجلس" : "Single sermon"],
                 [3, ur ? "سہ روزہ مجالس" : "3-session series"],
@@ -709,13 +768,24 @@ export default function KhateebStudioContent({
                   key={count}
                   type="button"
                   onClick={() => setSeriesLength(count)}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${
+                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
                     seriesLength === count
-                      ? "border-[#1A3A2A] bg-[#1A3A2A] text-white dark:border-[#8faa93] dark:bg-[#35513d]"
-                      : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
+                      ? "border-[#1A3A2A] bg-[#1A3A2A] text-white shadow-sm dark:border-[#8faa93] dark:bg-[#35513d]"
+                      : "border-[#B8935A]/25 bg-white text-[#425247] hover:border-[#B8935A] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#b7c8bb]"
                   }`}
                 >
-                  {label}
+                  <span className="block">{label}</span>
+                  <span className={`mt-1 block text-xs font-normal ${
+                    seriesLength === count ? "text-white/80" : "text-[#7a857c] dark:text-[#9fb0a2]"
+                  }`}>
+                    {count === 1
+                      ? (ur ? "ایک نشست کی مکمل تیاری" : "Complete preparation for one sitting")
+                      : count === 3
+                        ? (ur ? "تین مربوط مجالس" : "Three connected sessions")
+                        : count === 5
+                          ? (ur ? "پانچ مرحلوں کا علمی سفر" : "Five-stage scholarly journey")
+                          : (ur ? "دس مربوط مجالس کا عشرہ" : "Ten connected sessions")}
+                  </span>
                 </button>
               ))}
             </div>
@@ -800,24 +870,34 @@ export default function KhateebStudioContent({
                     {ur ? topic.openingUr : topic.openingEn}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={copyTopicPreparation}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#1A3A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#244E38]"
-                >
-                  <Copy className="h-4 w-4" />
-                  {seriesLength > 1
-                    ? (ur
-                        ? seriesLayer === "fresh"
-                          ? "نئی تشکیل نقل کریں"
-                          : "تحقیقی نقشہ نقل کریں"
-                        : seriesLayer === "fresh"
-                          ? "Copy fresh composition"
-                          : "Copy research map")
-                    : topicDossier
-                    ? (ur ? "تحقیقی دستاویز نقل کریں" : "Copy research dossier")
-                    : (ur ? "مکمل تیاری نقل کریں" : "Copy full preparation")}
-                </button>
+                <div className="khateeb-no-print flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={printPreparation}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[#1A3A2A]/15 bg-white px-4 py-2 text-sm font-semibold text-[#1A3A2A] hover:border-[#B8935A] dark:border-[#4b594f] dark:bg-[#162a1e] dark:text-[#d7e1d9]"
+                  >
+                    <Printer className="h-4 w-4" />
+                    {ur ? "مجلس پرنٹ کریں / PDF محفوظ کریں" : "Print / Save PDF"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={copyTopicPreparation}
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#1A3A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#244E38]"
+                  >
+                    <Copy className="h-4 w-4" />
+                    {seriesLength > 1
+                      ? (ur
+                          ? seriesLayer === "fresh"
+                            ? "نئی تشکیل نقل کریں"
+                            : "تحقیقی نقشہ نقل کریں"
+                          : seriesLayer === "fresh"
+                            ? "Copy fresh composition"
+                            : "Copy research map")
+                      : topicDossier
+                      ? (ur ? "تحقیقی دستاویز نقل کریں" : "Copy research dossier")
+                      : (ur ? "مکمل تیاری نقل کریں" : "Copy full preparation")}
+                  </button>
+                </div>
               </div>
 
               {topicDossier && seriesLength > 1 && topicSeries ? (
@@ -1149,15 +1229,18 @@ export default function KhateebStudioContent({
                                 kind={item.kind}
                                 quranLocation={item.quranLocation}
                                 sourceArabic={item.sourceArabic ?? item.arabic ?? ""}
+                                sourceArabicMarked={item.sourceArabicMarked}
                               />
                             </div>
                             <p className="mt-3 text-sm leading-8 text-[#445247] dark:text-[#b8c8bb]">
                               {ur ? item.explanationUr : item.explanationEn}
                             </p>
-                            <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-white px-3 py-2 text-sm leading-7 text-[#5a4830] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#d7bc8a]">
-                              <strong>{ur ? "دقیق حوالہ: " : "Exact reference: "}</strong>
-                              {ur ? item.sourceRefUr : item.sourceRefEn}
-                            </div>
+                            {item.kind === "hadith" ? (
+                              <div className="mt-3 text-sm leading-7 text-[#5a4830] dark:text-[#d7bc8a]">
+                                <strong>{ur ? "حوالہ: " : "Reference: "}</strong>
+                                {ur ? item.sourceRefUr : item.sourceRefEn}
+                              </div>
+                            ) : null}
                           </article>
                         ))}
                       </div>
@@ -1227,18 +1310,18 @@ export default function KhateebStudioContent({
                                     <p className="mt-2 text-sm leading-8 text-[#37443a] dark:text-[#c8d5cc]">
                                       {section.explanation}
                                     </p>
-                                    <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-[#fffdf8] px-3 py-2 text-xs leading-7 text-[#6f5730] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#d7bc8a]">
-                                      <strong>{ur ? "دقیق حوالہ: " : "Exact reference: "}</strong>
+                                    <div className="mt-3 text-xs leading-7 text-[#6f5730] dark:text-[#d7bc8a]">
+                                      <strong>{ur ? "حوالہ: " : "Reference: "}</strong>
                                       {section.exactRef}
                                     </div>
-                                    {section.sourceUrl ? (
+                                    {!ur && section.sourceUrl ? (
                                       <a
                                         href={section.sourceUrl}
                                         target="_blank"
                                         rel="noreferrer"
                                         className="mt-2 inline-block text-xs font-semibold text-[#31513a] underline underline-offset-4 dark:text-[#b9d4bf]"
                                       >
-                                        {ur ? "اصل ماخذ دیکھیں" : "Open source"}
+                                        Open source
                                       </a>
                                     ) : null}
                                   </article>
@@ -1910,7 +1993,7 @@ export default function KhateebStudioContent({
         </section>
 
         {workflowStep === 3 && preparationMode === "occasion" && preparation ? (
-          <section className="mt-6 rounded-2xl border border-[#B8935A]/25 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]">
+          <section id="khateeb-print-area" className="mt-6 rounded-2xl border border-[#B8935A]/25 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#B8935A]/10 text-[#8a6838] dark:bg-[#B8935A]/15 dark:text-[#d7bc8a]">
@@ -1928,7 +2011,7 @@ export default function KhateebStudioContent({
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="khateeb-no-print flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#687469] dark:text-[#a8b8aa]">
                   <Clock3 className="h-3.5 w-3.5" />
                   {ur ? "مدت" : "Duration"}
@@ -1954,6 +2037,14 @@ export default function KhateebStudioContent({
                 >
                   <Copy className="h-3.5 w-3.5" />
                   {ur ? "مکمل تیاری نقل کریں" : "Copy preparation"}
+                </button>
+                <button
+                  type="button"
+                  onClick={printPreparation}
+                  className="inline-flex items-center gap-2 rounded-lg border border-[#1A3A2A]/15 bg-white px-3.5 py-2 text-xs font-semibold text-[#1A3A2A] hover:border-[#B8935A] dark:border-[#4b594f] dark:bg-[#162a1e] dark:text-[#d7e1d9]"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  {ur ? "پرنٹ / PDF" : "Print / PDF"}
                 </button>
               </div>
             </div>
