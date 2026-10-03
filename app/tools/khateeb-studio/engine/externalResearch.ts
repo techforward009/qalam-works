@@ -19,6 +19,54 @@ function excerpt(text: string, query: string, max = 1400): string {
   return clean.slice(start, start + max).trim();
 }
 
+const RELEVANCE_STOP_WORDS = new Set([
+  "میں", "سے", "کے", "کی", "کا", "کو", "اور", "پر", "ایک", "یہ", "وہ",
+  "اسلامی", "طریقے", "ذمہ", "داری", "پانے", "کرنے", "اسباب",
+]);
+
+function normalizeForRelevance(value: string): string {
+  return value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670]/gu, "")
+    .replace(/[أإآ]/gu, "ا")
+    .replace(/ى/gu, "ی")
+    .replace(/ي/gu, "ی")
+    .replace(/ك/gu, "ک")
+    .replace(/ء/gu, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function relevanceTerms(query: string): readonly string[] {
+  const values = [query, ...eShiaQueryVariants(query)];
+  const terms = new Set<string>();
+  for (const value of values) {
+    for (let token of normalizeForRelevance(value).split(" ")) {
+      if (token.length < 3 || RELEVANCE_STOP_WORDS.has(token)) continue;
+      if (token.startsWith("ال") && token.length > 4) token = token.slice(2);
+      terms.add(token);
+    }
+  }
+  return [...terms];
+}
+
+function sourceRelevanceScore(title: string, text: string, query: string): number {
+  const hay = normalizeForRelevance(`${title} ${text}`);
+  const terms = relevanceTerms(query);
+  const matched = terms.filter((term) => hay.includes(term));
+  const exact = hay.includes(normalizeForRelevance(query));
+  return (exact ? 10 : 0) + matched.length;
+}
+
+function sourceIsRelevant(title: string, text: string, query: string): boolean {
+  const terms = relevanceTerms(query);
+  const score = sourceRelevanceScore(title, text, query);
+  const minimum = terms.length <= 2 ? 1 : 2;
+  return score >= minimum;
+}
+
 export async function researchKhateebTopicWithEShia(
   request: KhateebResearchRequest,
   options: { fetchImpl?: typeof fetch; maxEShiaPages?: number } = {},
@@ -64,6 +112,12 @@ export async function researchKhateebTopicWithEShia(
 
   const externalEvidence: KhateebResearchEvidence[] = records
     .filter((record): record is NonNullable<typeof record> => Boolean(record))
+    .filter((record) => sourceIsRelevant(record.bookTitle, record.text, request.query))
+    .sort(
+      (a, b) =>
+        sourceRelevanceScore(b.bookTitle, b.text, request.query) -
+        sourceRelevanceScore(a.bookTitle, a.text, request.query),
+    )
     .map((record, index) => ({
       id: `eshia-live-${record.bookId}-${record.volume}-${record.page}-${index}`,
       topicId: local.matchedTopicIds[0] ?? "live-research",
