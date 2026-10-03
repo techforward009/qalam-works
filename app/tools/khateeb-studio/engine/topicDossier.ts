@@ -90,6 +90,88 @@ const SABR: SermonDossier = {
     "جب انسان کے پاس فوراً ردِّعمل دینے کی طاقت بھی ہو، غصہ بھی ہو اور دلیل بھی—تب وہ کیسے پہچانے کہ اقدام کرنا ہے، خاموش رہنا ہے، یا اپنے نفس کو روک کر صحیح وقت کا انتظار کرنا ہے؟",
   governingQuestionEn:
     "When a person has the power, anger, and even an argument to react immediately, how do they know whether to act, remain silent, or restrain the self until the right moment?",
+  primaryTexts: [
+    {
+      id: "sabr-muslim-three-traits",
+      kind: "hadith",
+      refUr: "امام صادقؑ — مسلمان کی تین بنیادی صفات",
+      refEn: "Imam al-Sadiq — three essential qualities of a Muslim",
+      sourceArabicMarked:
+        "لا يُصبِحُ المُسلِمُ إلّا عَلى ثَلاثِ خِصالٍ: التَّفَقُّهِ في الدِّينِ، وحُسنِ التَّقديرِ في المَعيشَةِ، والصَّبرِ عَلى النّائِبَةِ.",
+      sourceRefUr: "مشکاۃ الانوار، حدیث 1622۔",
+      sourceRefEn: "Mishkat al-Anwar, hadith 1622.",
+      explanationUr:
+        "یہ روایت صبر کو زندگی کے الگ تھلگ گوشے کے بجائے دین فہمی اور درست معاشی تدبیر کے ساتھ ایک بنیادی مسلم صفت کے طور پر رکھتی ہے۔",
+      explanationEn:
+        "This narration places patience alongside religious understanding and sound management of life.",
+      sourceUrl:
+        "https://al-islam.org/mishkat-ul-anwar-fi-ghurar-il-akhbar-lamp-niche-best-traditions-abu-ali-al-fadl-ibn-al-hasan-ibn--12",
+    },
+    {
+      id: "sabr-conceal-calamity",
+      kind: "hadith",
+      refUr: "امام صادقؑ — مصیبت کو وقار کے ساتھ برداشت کرنا",
+      refEn: "Imam al-Sadiq — carrying calamity with restraint",
+      sourceArabicMarked:
+        "كِتمانُ المُصيبَةِ مِن كُنوزِ البِرِّ.",
+      sourceRefUr: "مشکاۃ الانوار، حدیث 1623۔",
+      sourceRefEn: "Mishkat al-Anwar, hadith 1623.",
+      explanationUr:
+        "مختصر روایت خطیب کو یہ زاویہ دیتی ہے کہ صبر بعض اوقات دکھ کے انکار کا نام نہیں بلکہ مصیبت کے باوجود وقار اور ضبط قائم رکھنے کا نام ہے۔",
+      explanationEn:
+        "The concise saying frames patience as preserving dignity and restraint amid hardship.",
+      sourceUrl:
+        "https://al-islam.org/mishkat-ul-anwar-fi-ghurar-il-akhbar-lamp-niche-best-traditions-abu-ali-al-fadl-ibn-al-hasan-ibn--12",
+    },
+    {
+      id: "sabr-before-reckoning",
+      kind: "hadith",
+      refUr: "امام صادقؑ — صابرین کا قیامت میں امتیاز",
+      refEn: "Imam al-Sadiq — the distinction of the patient on the Day of Resurrection",
+      sourceArabicMarked:
+        "إنَّ قَوماً يَأتونَ يَومَ القِيامَةِ ... فَيُقالُ لَهُم: بِمَ تَستَحِقّونَ الدُّخولَ إلَى الجَنَّةِ قَبلَ الحِسابِ؟ فَيَقولونَ: كُنّا مِنَ الصّابِرينَ في الدُّنيا.",
+      sourceRefUr: "مشکاۃ الانوار، حدیث 1624۔",
+      sourceRefEn: "Mishkat al-Anwar, hadith 1624.",
+      explanationUr:
+        "یہ روایت صبر کو آخرت کے نتیجے سے جوڑتی ہے اور خطیب کو مصیبت کے فوری احساس سے آگے اس کے دائمی اجر کی طرف لے جانے کا موقع دیتی ہے۔",
+      explanationEn:
+        "This narration connects patience in the world with distinction in the Hereafter.",
+      sourceUrl:
+        "https://al-islam.org/mishkat-ul-anwar-fi-ghurar-il-akhbar-lamp-niche-best-traditions-abu-ali-al-fadl-ibn-al-hasan-ibn--12",
+    },
+    {
+      id: "sabr-head-of-faith",
+      kind: "hadith",
+      refUr: "امام صادقؑ — صبر اور ایمان کا رشتہ",
+      refEn: "Imam al-Sadiq — patience and faith",
+      sourceArabicMarked:
+        "الصَّبرُ مِنَ الإيمانِ بِمَنزِلَةِ الرَّأسِ مِنَ الجَسَدِ، فَإذا ذَهَبَ الرَّأسُ ذَهَبَ الجَسَدُ، وكَذلِكَ إذا ذَهَبَ الصَّبرُ ذَهَبَ الإيمانُ.",
+      sourceRefUr: "مشکاۃ الانوار، حدیث 1625۔",
+      sourceRefEn: "Mishkat al-Anwar, hadith 1625.",
+      explanationUr:
+        "یہ صبر کی مرکزی حدیث بن سکتی ہے: صبر ایمان کی اضافی خوبی نہیں بلکہ ایمان کو زندہ رکھنے والی بنیادی قوت ہے۔",
+      explanationEn:
+        "This can serve as a central narration: patience is not an optional ornament but a sustaining condition of faith.",
+      sourceUrl:
+        "https://al-islam.org/mishkat-ul-anwar-fi-ghurar-il-akhbar-lamp-niche-best-traditions-abu-ali-al-fadl-ibn-al-hasan-ibn--12",
+    },
+    {
+      id: "sabr-istirja-calamity",
+      kind: "hadith",
+      refUr: "امام باقرؑ — مصیبت، استرجاع اور صبر",
+      refEn: "Imam al-Baqir — calamity, istirja, and patience",
+      sourceArabicMarked:
+        "ما مِن عَبدٍ يُصابُ بِمُصيبَةٍ فَيَستَرجِعُ عِندَ ذِكرِ المُصيبَةِ ويَصبِرُ ... إلّا غَفَرَ اللهُ لَهُ.",
+      sourceRefUr: "مشکاۃ الانوار، حدیث 1627۔",
+      sourceRefEn: "Mishkat al-Anwar, hadith 1627.",
+      explanationUr:
+        "یہ روایت مصیبت کے وقت قرآنی استرجاع اور صبر کو جوڑتی ہے؛ مجلس میں اسے جذبات کے انکار کے بجائے ایمان کے ساتھ غم کو سنبھالنے کے طور پر پیش کیا جا سکتا ہے۔",
+      explanationEn:
+        "This narration connects remembrance of loss, istirja, and patient endurance.",
+      sourceUrl:
+        "https://al-islam.org/mishkat-ul-anwar-fi-ghurar-il-akhbar-lamp-niche-best-traditions-abu-ali-al-fadl-ibn-al-hasan-ibn--12",
+    },
+  ],
   perspectives: [
     {
       id: "kashani-hardship-duty",
@@ -494,6 +576,83 @@ const DUA: SermonDossier = {
     "اگر خدا ہماری ضرورت پہلے ہی جانتا ہے، تو دعا میں اصل تبدیلی خدا کے فیصلے میں آتی ہے یا خود دعا کرنے والے انسان میں؟ اور اگر مانگی ہوئی چیز نہ ملے تو کیا دعا ناکام ہوگئی؟",
   governingQuestionEn:
     "If God already knows our needs, is the central change in dua a change in God's knowledge—or in the person who prays? And if the requested object is not granted, has the prayer failed?",
+  primaryTexts: [
+    {
+      id: "dua-weapon-believer",
+      kind: "hadith",
+      refUr: "رسول اکرمؐ — دعا مومن کا ہتھیار",
+      refEn: "The Prophet — supplication is the believer's weapon",
+      sourceArabicMarked:
+        "الدُّعاءُ سِلاحُ المُؤمِنِ، وعَمودُ الدِّينِ، ونورُ السَّماواتِ والأرضِ.",
+      sourceRefUr: "الکافی، ج2، ص468، ح1۔",
+      sourceRefEn: "al-Kafi, vol.2, p.468, hadith 1.",
+      explanationUr:
+        "یہ روایت دعا کو محض حاجت کی فہرست نہیں رہنے دیتی؛ اسے مومن کی قوت، دین کے سہارے اور باطنی روشنی کے طور پر پیش کرتی ہے۔",
+      explanationEn:
+        "This narration presents supplication as strength, support for religion, and spiritual light.",
+      sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    },
+    {
+      id: "dua-best-worship",
+      kind: "hadith",
+      refUr: "رسول اکرمؐ — افضل عبادت دعا ہے",
+      refEn: "The Prophet — the best worship is supplication",
+      sourceArabicMarked:
+        "أفضَلُ العِبادَةِ الدُّعاءُ، فإذا أذِنَ اللهُ لِلعَبدِ في الدُّعاءِ فَتَحَ لَهُ بابَ الرَّحمَةِ.",
+      sourceRefUr: "تنبیہ الخواطر، ج2، ص237۔",
+      sourceRefEn: "Tanbih al-Khawatir, vol.2, p.237.",
+      explanationUr:
+        "اس روایت سے دعا کو عبادت کے مرکز کے طور پر کھولا جا سکتا ہے: بندہ مانگتے ہوئے اپنی محتاجی، ربوبیتِ الٰہی اور رحمت کے دروازے کو پہچانتا ہے۔",
+      explanationEn:
+        "The narration frames supplication as a central act of worship and an opening to mercy.",
+      sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    },
+    {
+      id: "dua-beloved-action",
+      kind: "hadith",
+      refUr: "امیرالمومنینؑ — خدا کو محبوب عمل",
+      refEn: "Imam Ali — an action beloved to God",
+      sourceArabicMarked:
+        "أحَبُّ الأعمالِ إلى اللهِ عزَّ وجلَّ في الأرضِ الدُّعاءُ.",
+      sourceRefUr: "الکافی، ج2، ص467، ح8۔",
+      sourceRefEn: "al-Kafi, vol.2, p.467, hadith 8.",
+      explanationUr:
+        "یہ مختصر حدیث مجلس میں دعا کی قدر کو بہت سادہ مگر مؤثر انداز میں قائم کرتی ہے: دعا محض بحران کی تدبیر نہیں بلکہ خود ایک محبوب عمل ہے۔",
+      explanationEn:
+        "This concise narration shows that supplication is not merely a crisis response but itself a beloved act.",
+      sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    },
+    {
+      id: "dua-shield-believer",
+      kind: "hadith",
+      refUr: "امیرالمومنینؑ — دعا مومن کی سپر",
+      refEn: "Imam Ali — supplication is the believer's shield",
+      sourceArabicMarked:
+        "الدُّعاءُ تُرسُ المُؤمِنِ.",
+      sourceRefUr: "الکافی، ج2، ص468، ح7۔",
+      sourceRefEn: "al-Kafi, vol.2, p.468, hadith 7.",
+      explanationUr:
+        "ہتھیار کے ساتھ سپر کا استعارہ دعا کے دوسرے رخ کو واضح کرتا ہے: دعا صرف اقدام نہیں، دل اور ایمان کی حفاظت بھی ہے۔",
+      explanationEn:
+        "The image of a shield highlights supplication as protection of the believer's heart and faith.",
+      sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    },
+    {
+      id: "dua-station-through-asking",
+      kind: "hadith",
+      refUr: "امام صادقؑ — بعض مقامات دعا ہی سے حاصل ہوتے ہیں",
+      refEn: "Imam al-Sadiq — some stations are reached only through asking",
+      sourceArabicMarked:
+        "يا مُيَسِّرُ، اُدعُ ولا تَقُلْ: إنَّ الأمرَ قَد فُرِغَ مِنهُ؛ إنَّ عِندَ اللهِ عزَّ وجلَّ مَنزِلَةً لا تُنالُ إلّا بِمَسألَةٍ.",
+      sourceRefUr: "الکافی، ج2، ص466، ح3۔",
+      sourceRefEn: "al-Kafi, vol.2, p.466, hadith 3.",
+      explanationUr:
+        "یہ روایت تقدیر کے نام پر دعا ترک کرنے کی نفی کرتی ہے اور بتاتی ہے کہ بندگی کے بعض مقامات خود سوال اور دعا کے ذریعے کھلتے ہیں۔",
+      explanationEn:
+        "This narration rejects abandoning supplication on the pretext that everything is already decreed.",
+      sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    },
+  ],
   perspectives: [
     {
       id: "sahifa-makarim-formation",
