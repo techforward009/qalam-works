@@ -1,3 +1,7 @@
+/**
+ * "verified" means the text/reference has been source-verified for presentation.
+ * It is not a grading of hadith authenticity or chain strength.
+ */
 export type KhateebEvidenceStatus = "verified" | "source-lead" | "catalog-only";
 
 export type KhateebEvidenceKind =
