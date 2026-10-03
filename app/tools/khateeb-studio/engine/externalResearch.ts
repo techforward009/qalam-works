@@ -4,19 +4,29 @@ import { eShiaQueryVariants } from "./eshiaQueryVariants";
 import { researchKhateebTopic } from "./researchEngine";
 import type { KhateebResearchEvidence, KhateebResearchRequest, KhateebResearchResult } from "./researchTypes";
 
-function excerpt(text: string, query: string, max = 1400): string {
+function excerpt(text: string, query: string, max = 900): string {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= max) return clean;
-  const tokens = query
-    .normalize("NFKC")
-    .split(/\s+/)
+
+  const variants = eShiaQueryVariants(query)
+    .flatMap((value) => normalizeForRelevance(value).split(" "))
     .filter((item) => item.length >= 3);
-  const lower = clean.toLowerCase();
-  const index = tokens
-    .map((token) => lower.indexOf(token.toLowerCase()))
-    .find((value) => typeof value === "number" && value >= 0) ?? 0;
-  const start = Math.max(0, index - Math.floor(max / 4));
-  return clean.slice(start, start + max).trim();
+  const tokens = Array.from(
+    new Set([
+      ...normalizeForRelevance(query).split(" ").filter((item) => item.length >= 3),
+      ...variants,
+    ]),
+  );
+
+  const hay = normalizeForRelevance(clean);
+  const hitIndexes = tokens
+    .map((token) => hay.indexOf(token))
+    .filter((value) => value >= 0);
+
+  const index = hitIndexes.length ? Math.min(...hitIndexes) : 0;
+  const start = Math.max(0, index - Math.floor(max / 5));
+  const sliced = clean.slice(start, start + max).trim();
+  return start > 0 ? `…${sliced}` : sliced;
 }
 
 const RELEVANCE_STOP_WORDS = new Set([
