@@ -26,6 +26,20 @@ export type ScholarPerspective = {
     heading: string;
     body: string;
   }[];
+  sourceGroundedUr?: readonly {
+    heading: string;
+    explanation: string;
+    exactRef: string;
+    sourceUrl?: string;
+  }[];
+  sourceGroundedEn?: readonly {
+    heading: string;
+    explanation: string;
+    exactRef: string;
+    sourceUrl?: string;
+  }[];
+  editorialBridgeUr?: string;
+  editorialBridgeEn?: string;
   originalSnippet?: string;
 };
 
@@ -42,7 +56,14 @@ export type SermonDossier = {
     kind: "quran" | "hadith";
     refUr: string;
     refEn: string;
-    arabic: string;
+    arabic?: string;
+    sourceArabic?: string;
+    quranLocation?: {
+      surah: number;
+      ayah: number;
+    };
+    sourceRefUr: string;
+    sourceRefEn: string;
     explanationUr: string;
     explanationEn: string;
     sourceUrl?: string;
@@ -1137,6 +1158,7 @@ export function getTopicDossier(topicId: string): SermonDossier | null {
     primaryTexts: dossier.primaryTexts?.map((item) => ({
       ...item,
       refUr: pureKhateebUrdu(item.refUr),
+      sourceRefUr: pureKhateebUrdu(item.sourceRefUr),
       explanationUr: pureKhateebUrdu(item.explanationUr),
     })),
     perspectives: dossier.perspectives.map((item) => ({
@@ -1151,6 +1173,15 @@ export function getTopicDossier(topicId: string): SermonDossier | null {
         heading: pureKhateebUrdu(section.heading),
         body: pureKhateebUrdu(section.body),
       })),
+      sourceGroundedUr: item.sourceGroundedUr?.map((section) => ({
+        ...section,
+        heading: pureKhateebUrdu(section.heading),
+        explanation: pureKhateebUrdu(section.explanation),
+        exactRef: pureKhateebUrdu(section.exactRef),
+      })),
+      editorialBridgeUr: item.editorialBridgeUr
+        ? pureKhateebUrdu(item.editorialBridgeUr)
+        : undefined,
     })),
     synthesisUr: dossier.synthesisUr.map(pureKhateebUrdu),
     pulpitFlowUr: dossier.pulpitFlowUr.map((item) => ({
@@ -1179,7 +1210,10 @@ export function buildDossierText(
       lines.push(
         "",
         ur ? item.refUr : item.refEn,
-        item.arabic,
+        item.kind === "quran" && item.quranLocation
+          ? `قرآنی متن: ${item.quranLocation.surah}:${item.quranLocation.ayah} — داخلی Indo-Pak Ahmedgraf ذخیرے سے`
+          : (item.sourceArabic ?? item.arabic ?? ""),
+        `${ur ? "دقیق حوالہ" : "Exact reference"}: ${ur ? item.sourceRefUr : item.sourceRefEn}`,
         ur ? item.explanationUr : item.explanationEn,
       );
     }
@@ -1205,6 +1239,23 @@ export function buildDossierText(
       for (const section of ready) {
         lines.push(`${section.heading}\n${section.body}`);
       }
+    }
+    const grounded = ur ? item.sourceGroundedUr : item.sourceGroundedEn;
+    if (grounded?.length) {
+      lines.push("", ur ? "اصل ماخذ سے اخذ شدہ تفصیل" : "Source-grounded detail");
+      for (const section of grounded) {
+        lines.push(
+          `${section.heading}\n${section.explanation}`,
+          `${ur ? "دقیق حوالہ" : "Exact reference"}: ${section.exactRef}`,
+        );
+      }
+    }
+    const bridge = ur ? item.editorialBridgeUr : item.editorialBridgeEn;
+    if (bridge) {
+      lines.push(
+        "",
+        `${ur ? "منبری ربط — تدوینی" : "Editorial pulpit bridge"}: ${bridge}`,
+      );
     }
     lines.push(`${ur ? "انداز" : "Style"}: ${ur ? item.styleUr : item.styleEn}`);
     lines.push(`${ur ? "منبر میں استعمال" : "Use on the pulpit"}: ${ur ? item.useUr : item.useEn}`);

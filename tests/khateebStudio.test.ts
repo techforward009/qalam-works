@@ -52,6 +52,7 @@ import {
   parseKhateebStudioView,
 } from "../app/tools/khateeb-studio/engine/studioView";
 import { looksLikeArabicReligiousText } from "../app/tools/khateeb-studio/KhateebScriptText";
+import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
 
 describe("Khateeb Studio seed corpus", () => {
   test("contains the requested historical speakers", () => {
@@ -373,12 +374,48 @@ describe("Khateeb Studio parents and memorial deep topic", () => {
 
   test("includes original Qur'an and hadith text for actual sermon preparation", () => {
     const dossier = getTopicDossier("parents-barsi")!;
-    expect(dossier.primaryTexts?.length).toBeGreaterThanOrEqual(6);
-    expect(dossier.primaryTexts?.filter((item) => item.kind === "quran").length).toBeGreaterThanOrEqual(3);
+    expect(dossier.primaryTexts?.length).toBeGreaterThanOrEqual(7);
+    expect(dossier.primaryTexts?.filter((item) => item.kind === "quran").length).toBeGreaterThanOrEqual(4);
     expect(dossier.primaryTexts?.filter((item) => item.kind === "hadith").length).toBeGreaterThanOrEqual(3);
-    expect(dossier.primaryTexts?.some((item) => item.arabic.includes("رَبِّ ارْحَمْهُمَا"))).toBe(true);
-    expect(dossier.primaryTexts?.some((item) => item.arabic.includes("حَقُّ أُمِّكَ"))).toBe(true);
-    expect(dossier.primaryTexts?.some((item) => item.arabic.includes("بَعْدَ مَوْتِهِمَا"))).toBe(true);
+    expect(dossier.primaryTexts?.some((item) => item.sourceArabic?.includes("حق أمك"))).toBe(true);
+    expect(dossier.primaryTexts?.some((item) => item.sourceArabic?.includes("بعد موتهما"))).toBe(true);
+  });
+
+  test("never stores hand-typed Qur'an for parents/barsi primary texts", () => {
+    const dossier = getTopicDossier("parents-barsi")!;
+    const quranRows = dossier.primaryTexts?.filter((item) => item.kind === "quran") ?? [];
+    expect(quranRows.length).toBeGreaterThanOrEqual(4);
+    for (const row of quranRows) {
+      expect(row.quranLocation).toBeTruthy();
+      expect(row.arabic).toBeUndefined();
+      const location = row.quranLocation!;
+      expect(ahmedgrafQuranReference.getAyah(location.surah, location.ayah)?.text).toBeTruthy();
+      expect(row.sourceRefUr).toContain("ahmedgraf.com");
+    }
+  });
+
+  test("hadith keeps exact source text separate from Qalam diacritization", () => {
+    const dossier = getTopicDossier("parents-barsi")!;
+    const hadithRows = dossier.primaryTexts?.filter((item) => item.kind === "hadith") ?? [];
+    expect(hadithRows.length).toBeGreaterThanOrEqual(3);
+    for (const row of hadithRows) {
+      expect(row.sourceArabic?.length).toBeGreaterThan(20);
+      expect(row.sourceRefUr.length).toBeGreaterThan(50);
+      expect(row.sourceUrl).toMatch(/^https:\/\//);
+    }
+    expect(hadithRows.find((item) => item.id === "risalat-mother")?.sourceRefUr).toContain("ج15، ص175");
+    expect(hadithRows.find((item) => item.id === "risalat-father")?.sourceRefUr).toContain("الخصال، ص568");
+    expect(hadithRows.find((item) => item.id === "birr-after-death")?.sourceRefUr).toContain("ج74، ص86");
+    expect(hadithRows.find((item) => item.id === "birr-after-death")?.sourceRefUr).not.toContain("ج71");
+  });
+
+  test("UI uses the central Arabic pipeline instead of static Arabic display", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    const primary = readFileSync("app/tools/khateeb-studio/KhateebPrimaryArabic.tsx", "utf8");
+    expect(studio).toContain("<KhateebPrimaryArabic");
+    expect(primary).toContain("ahmedgrafQuranReference.getAyah");
+    expect(primary).toContain("diacritizeArabicWithModel");
+    expect(studio).toContain("دقیق حوالہ");
   });
 
   test("UI displays primary verses and narrations before scholar analysis", () => {
@@ -396,7 +433,11 @@ describe("Khateeb Studio parents and memorial deep topic", () => {
     expect(text).toContain("برسی");
     expect(text).toContain("وفات کے بعد");
     expect(text).toContain("رسالۃ الحقوق");
-    expect(hasLatinWord(text)).toBe(false);
+    const prose = text
+      .split("\n")
+      .filter((line) => !line.includes("دقیق حوالہ") && !line.startsWith("قرآنی متن:"))
+      .join("\n");
+    expect(hasLatinWord(prose)).toBe(false);
   });
 
   test("provides full speaking material rather than short instructions", () => {
@@ -409,6 +450,34 @@ describe("Khateeb Studio parents and memorial deep topic", () => {
     expect(reyshahri.readyUr?.length).toBeGreaterThanOrEqual(4);
     expect(amini.readyUr?.map((item) => `${item.heading} ${item.body}`).join(" ").length).toBeGreaterThan(2000);
     expect(buildDossierText(dossier, "ur")).toContain("تفصیلی قابلِ بیان مواد");
+  });
+
+  test("separates source-grounded scholar detail from editorial pulpit bridges", () => {
+    const dossier = getTopicDossier("parents-barsi")!;
+    const amini = dossier.perspectives.find((item) => item.nameUr.includes("ابراہیم امینی"))!;
+    const reyshahri = dossier.perspectives.find((item) => item.nameUr.includes("محمدی ری شہری"))!;
+    const sajjad = dossier.perspectives.find((item) => item.nameUr.includes("زین العابدین"))!;
+    expect(amini.sourceGroundedUr?.length).toBeGreaterThanOrEqual(4);
+    expect(reyshahri.sourceGroundedUr?.length).toBeGreaterThanOrEqual(4);
+    expect(sajjad.sourceGroundedUr?.length).toBeGreaterThanOrEqual(3);
+    expect(amini.editorialBridgeUr).toContain("تدوینی");
+    expect(reyshahri.editorialBridgeUr).toContain("تدوینی");
+  });
+
+  test("corrects the post-death birr reference to Bihar vol 74 p 86 h 100", () => {
+    const dossier = getTopicDossier("parents-barsi")!;
+    const reyshahri = dossier.perspectives.find((item) => item.nameUr.includes("محمدی ری شہری"))!;
+    const postDeath = reyshahri.sourceGroundedUr?.find((item) => item.heading.includes("وفات کے بعد"));
+    expect(postDeath?.exactRef).toContain("ج74، ص86، ح100");
+    expect(postDeath?.exactRef).not.toContain("ج71");
+  });
+
+  test("UI labels source-derived detail and editorial material separately", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("اصل ماخذ سے اخذ شدہ تفصیل");
+    expect(studio).toContain("تدوینی اضافہ نہیں");
+    expect(studio).toContain("منبری ربط — تدوینی");
+    expect(studio).toContain("اصل ماخذ دیکھیں");
   });
 
   test("UI shows full speaking material before stylistic suggestions", () => {

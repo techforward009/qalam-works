@@ -52,6 +52,7 @@ import SessionNotesEditor from "./SessionNotesEditor";
 import AllKhateebNotesPanel from "./AllKhateebNotesPanel";
 import SessionDeliveryHistory from "./SessionDeliveryHistory";
 import KhateebScriptText from "./KhateebScriptText";
+import KhateebPrimaryArabic from "./KhateebPrimaryArabic";
 import {
   buildSessionWorkbench,
   buildSessionWorkbenchText,
@@ -1143,12 +1144,20 @@ export default function KhateebStudioContent({
                                   : (ur ? "روایت" : "Narration")}
                               </span>
                             </div>
-                            <div className="mt-3 rounded-lg bg-white px-4 py-3 text-lg leading-[2.1] text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
-                              <KhateebScriptText text={item.arabic} forceArabic />
+                            <div className="mt-3 rounded-lg bg-white px-4 py-3 dark:bg-[#162a1e]">
+                              <KhateebPrimaryArabic
+                                kind={item.kind}
+                                quranLocation={item.quranLocation}
+                                sourceArabic={item.sourceArabic ?? item.arabic ?? ""}
+                              />
                             </div>
                             <p className="mt-3 text-sm leading-8 text-[#445247] dark:text-[#b8c8bb]">
                               {ur ? item.explanationUr : item.explanationEn}
                             </p>
+                            <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-white px-3 py-2 text-sm leading-7 text-[#5a4830] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#d7bc8a]">
+                              <strong>{ur ? "دقیق حوالہ: " : "Exact reference: "}</strong>
+                              {ur ? item.sourceRefUr : item.sourceRefEn}
+                            </div>
                           </article>
                         ))}
                       </div>
@@ -1198,6 +1207,56 @@ export default function KhateebStudioContent({
                               </p>
                             ))}
                           </div>
+
+                          {(ur ? perspective.sourceGroundedUr : perspective.sourceGroundedEn)?.length ? (
+                            <div className="mt-4 rounded-xl border border-[#31513a]/20 bg-[#f5faf6] p-4 dark:border-[#45604b] dark:bg-[#122319]">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="text-sm font-bold text-[#31513a] dark:text-[#b9d4bf]">
+                                  {ur ? "اصل ماخذ سے اخذ شدہ تفصیل" : "Source-grounded detail"}
+                                </div>
+                                <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-[#47654d] dark:bg-[#162a1e] dark:text-[#b9d4bf]">
+                                  {ur ? "تدوینی اضافہ نہیں" : "Not editorial invention"}
+                                </span>
+                              </div>
+                              <div className="mt-3 space-y-4">
+                                {(ur ? perspective.sourceGroundedUr : perspective.sourceGroundedEn)?.map((section) => (
+                                  <article key={section.heading} className="rounded-lg bg-white p-3 dark:bg-[#162a1e]">
+                                    <h6 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                                      {section.heading}
+                                    </h6>
+                                    <p className="mt-2 text-sm leading-8 text-[#37443a] dark:text-[#c8d5cc]">
+                                      {section.explanation}
+                                    </p>
+                                    <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-[#fffdf8] px-3 py-2 text-xs leading-7 text-[#6f5730] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#d7bc8a]">
+                                      <strong>{ur ? "دقیق حوالہ: " : "Exact reference: "}</strong>
+                                      {section.exactRef}
+                                    </div>
+                                    {section.sourceUrl ? (
+                                      <a
+                                        href={section.sourceUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="mt-2 inline-block text-xs font-semibold text-[#31513a] underline underline-offset-4 dark:text-[#b9d4bf]"
+                                      >
+                                        {ur ? "اصل ماخذ دیکھیں" : "Open source"}
+                                      </a>
+                                    ) : null}
+                                  </article>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {(ur ? perspective.editorialBridgeUr : perspective.editorialBridgeEn) ? (
+                            <div className="mt-4 rounded-xl border border-[#B8935A]/25 bg-[#fbf7ee] p-3 dark:border-[#6f5b35] dark:bg-[#241f14]">
+                              <div className="text-xs font-bold text-[#8a6838] dark:text-[#d7bc8a]">
+                                {ur ? "منبری ربط — تدوینی" : "Editorial pulpit bridge"}
+                              </div>
+                              <p className="mt-1 text-sm leading-8 text-[#5a4830] dark:text-[#d7bc8a]">
+                                {ur ? perspective.editorialBridgeUr : perspective.editorialBridgeEn}
+                              </p>
+                            </div>
+                          ) : null}
 
                           {(ur ? perspective.readyUr : perspective.readyEn)?.length ? (
                             <div className="mt-4 rounded-xl border border-[#B8935A]/25 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">

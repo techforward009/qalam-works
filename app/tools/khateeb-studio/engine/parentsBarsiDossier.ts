@@ -14,24 +14,45 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
     "When parents die, does their right end, or does the child's responsibility continue in another form?",
   primaryTexts: [
     {
-      id: "quran-isra-23-24",
+      id: "quran-isra-23",
       kind: "quran",
-      refUr: "قرآن مجید — سورۂ اسراء 17:23–24",
-      refEn: "Qur'an 17:23–24",
-      arabic:
-        "وَقَضٰى رَبُّكَ أَلَّا تَعْبُدُوا إِلَّا إِيَّاهُ وَبِالْوَالِدَيْنِ إِحْسَانًا ۚ إِمَّا يَبْلُغَنَّ عِندَكَ الْكِبَرَ أَحَدُهُمَا أَوْ كِلَاهُمَا فَلَا تَقُلْ لَهُمَا أُفٍّ وَلَا تَنْهَرْهُمَا وَقُلْ لَهُمَا قَوْلًا كَرِيمًا ۝ وَاخْفِضْ لَهُمَا جَنَاحَ الذُّلِّ مِنَ الرَّحْمَةِ وَقُلْ رَبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا",
+      refUr: "قرآن مجید — سورۂ اسراء 17:23",
+      refEn: "Qur'an 17:23",
+      quranLocation: { surah: 17, ayah: 23 },
+      sourceRefUr:
+        "سورۂ اسراء 17:23 — قلم ورکس Indo-Pak Quran Text v1.0، ماخذ ahmedgraf.com",
+      sourceRefEn:
+        "Qur'an 17:23 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
       explanationUr:
-        "یہ مجلس کی بنیادی آیت ہے۔ توحید کے فوراً بعد والدین کے ساتھ احسان، پھر بڑھاپے میں لہجے کی حفاظت، رحمت اور آخر میں ان کے لیے دعا آتی ہے۔ برسی کے موضوع میں آخری دعا خاص طور پر مرکزی حیثیت رکھتی ہے۔",
+        "یہ مجلس کی بنیادی آیت ہے۔ توحید کے فوراً بعد والدین کے ساتھ احسان، پھر بڑھاپے میں لہجے کی حفاظت آتی ہے۔",
       explanationEn:
-        "The central Qur'anic anchor: worship, kindness, gentleness in old age, mercy, and prayer for one's parents.",
+        "The central Qur'anic anchor: worship, kindness, and gentleness toward parents in old age.",
+    },
+    {
+      id: "quran-isra-24",
+      kind: "quran",
+      refUr: "قرآن مجید — سورۂ اسراء 17:24",
+      refEn: "Qur'an 17:24",
+      quranLocation: { surah: 17, ayah: 24 },
+      sourceRefUr:
+        "سورۂ اسراء 17:24 — قلم ورکس Indo-Pak Quran Text v1.0، ماخذ ahmedgraf.com",
+      sourceRefEn:
+        "Qur'an 17:24 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
+      explanationUr:
+        "رحمت کے ساتھ جھکنے اور والدین کے لیے دعا کا اصل قرآنی متن۔ برسی کے موضوع میں یہ دعا خاص طور پر مرکزی حیثیت رکھتی ہے۔",
+      explanationEn:
+        "The Qur'anic text on humility through mercy and prayer for parents.",
     },
     {
       id: "quran-luqman-14",
       kind: "quran",
       refUr: "قرآن مجید — سورۂ لقمان 31:14",
       refEn: "Qur'an 31:14",
-      arabic:
-        "وَوَصَّيْنَا الْإِنسَانَ بِوَالِدَيْهِ حَمَلَتْهُ أُمُّهُ وَهْنًا عَلَىٰ وَهْنٍ وَفِصَالُهُ فِي عَامَيْنِ أَنِ اشْكُرْ لِي وَلِوَالِدَيْكَ إِلَيَّ الْمَصِيرُ",
+      quranLocation: { surah: 31, ayah: 14 },
+      sourceRefUr:
+        "سورۂ لقمان 31:14 — قلم ورکس Indo-Pak Quran Text v1.0، ماخذ ahmedgraf.com",
+      sourceRefEn:
+        "Qur'an 31:14 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
       explanationUr:
         "یہ آیت ماں کی مسلسل جسمانی مشقت کو یاد دلاتی ہے اور پھر شکرِ خدا کے ساتھ شکرِ والدین کو جوڑتی ہے۔ یہاں سے یہ نکتہ کھلتا ہے کہ بالغ انسان اپنی کامیابی کو صرف اپنی محنت کا نتیجہ نہ سمجھے بلکہ اپنی تشکیل میں والدین کے حصے کو بھی پہچانے۔",
       explanationEn:
@@ -42,8 +63,11 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       kind: "quran",
       refUr: "قرآن مجید — سورۂ احقاف 46:15",
       refEn: "Qur'an 46:15",
-      arabic:
-        "وَوَصَّيْنَا الْإِنسَانَ بِوَالِدَيْهِ إِحْسَانًا حَمَلَتْهُ أُمُّهُ كُرْهًا وَوَضَعَتْهُ كُرْهًا ۖ وَحَمْلُهُ وَفِصَالُهُ ثَلَاثُونَ شَهْرًا ۚ حَتَّىٰ إِذَا بَلَغَ أَشُدَّهُ وَبَلَغَ أَرْبَعِينَ سَنَةً قَالَ رَبِّ أَوْزِعْنِي أَنْ أَشْكُرَ نِعْمَتَكَ الَّتِي أَنْعَمْتَ عَلَيَّ وَعَلَىٰ وَالِدَيَّ",
+      quranLocation: { surah: 46, ayah: 15 },
+      sourceRefUr:
+        "سورۂ احقاف 46:15 — قلم ورکس Indo-Pak Quran Text v1.0، ماخذ ahmedgraf.com",
+      sourceRefEn:
+        "Qur'an 46:15 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
       explanationUr:
         "یہاں پختگی کی عمر میں انسان کی دعا والدین کی طرف لوٹتی ہے۔ مجلس میں اسے اس بات کے لیے استعمال کریں کہ عمر بڑھنے کے ساتھ انسان کو اپنی زندگی میں والدین کی نعمت اور ان کی قربانی کا شعور زیادہ گہرا ہونا چاہیے۔",
       explanationEn:
@@ -54,36 +78,48 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       kind: "hadith",
       refUr: "امام زین العابدینؑ — رسالۃ الحقوق، حقِ مادر",
       refEn: "Imam Zayn al-Abidin — Treatise on Rights, Right of the Mother",
-      arabic:
-        "وَأَمَّا حَقُّ أُمِّكَ فَأَنْ تَعْلَمَ أَنَّهَا حَمَلَتْكَ حَيْثُ لَا يَحْتَمِلُ أَحَدٌ أَحَدًا، وَأَعْطَتْكَ مِنْ ثَمَرَةِ قَلْبِهَا مَا لَا يُعْطِي أَحَدٌ أَحَدًا، وَوَقَتْكَ بِجَمِيعِ جَوَارِحِهَا، وَلَمْ تُبَالِ أَنْ تَجُوعَ وَتُطْعِمَكَ، وَتَعْطَشَ وَتَسْقِيَكَ، وَتَعْرَى وَتَكْسُوَكَ، وَتَضْحَى وَتُظِلَّكَ، وَتَهْجُرَ النَّوْمَ لِأَجْلِكَ",
+      sourceArabic:
+        "وأما حق أمك أن تعلم أنها حملتك حيث لا يحتمل أحد أحدا، وأعطتك من ثمرة قلبها ما لا يعطي أحد أحدا، ووقتك بجميع جوارحها، ولم تبال أن تجوع وتطعمك، وتعطش وتسقيك، وتعرى وتكسوك، وتضحى وتظلك، وتهجر النوم لأجلك، ووقتك الحر والبرد لتكون لها، وأنك لا تطيق شكرها إلا بعون الله وتوفيقه.",
+      sourceRefUr:
+        "رسالۃ الحقوق، امام زین العابدینؑ؛ وسائل الشیعہ، ج15، ص175؛ نیز روضۃ الواعظین، ج2، ص241، ح1032، جس کے حاشیے میں الخصال ص568/ح1 اور تحف العقول ص255 کی نشان دہی ہے۔",
+      sourceRefEn:
+        "Risalat al-Huquq; Wasa'il al-Shi'a, vol.15, p.175; also Rawdat al-Wa'izin, vol.2, p.241, hadith 1032, citing al-Khisal p.568/1 and Tuhaf al-'Uqul p.255.",
       explanationUr:
         "امامؑ ماں کے حق کو مجرد نصیحت نہیں رہنے دیتے؛ حمل، غذا، پیاس، لباس، دھوپ اور نیند تک کی قربانی گنواتے ہیں۔ یہی اصل متن خطیب کو تفصیلی اور زندہ بیان کی بنیاد دیتا ہے۔",
       explanationEn:
         "The Imam grounds the mother's right in concrete sacrifice: carrying, feeding, thirst, clothing, exposure, and lost sleep.",
       sourceUrl:
-        "https://al-islam.org/sahifa-al-kamilah-al-sajjadiyya-imam-ali-zayn-al-abidin/treatise-rights",
+        "https://almntqim.com/%D9%A1%D9%A2%D9%A0%D9%A1_%D9%88%D8%B3%D8%A7%D8%A6%D9%84-%D8%A7%D9%84%D8%B4%D9%8A%D8%B9%D8%A9-%D8%A2%D9%84-%D8%A7%D9%84%D8%A8%D9%8A%D8%AA-%D8%A7%D9%84%D8%AD%D8%B1-%D8%A7%D9%84%D8%B9%D8%A7%D9%85%D9%84%D9%8A-%D8%AC-%D9%A1%D9%A5/%D9%A1%D9%A7%D9%A5_%D8%A7%D9%84%D8%B5%D9%81%D8%AD%D8%A9%D8%A8%D8%A7%D8%A8-%D8%AC%D9%85%D9%84%D8%A9-%D9%85%D9%85%D8%A7-%D9%8A%D9%86%D8%A8%D8%BA%D9%8A-%D8%A7%D9%84%D9%82%D9%8A%D8%A7%D9%85-%D8%A8%D9%87-%D9%85%D9%86-%D8%A7%D9%84%D8%AD%D9%82%D9%88%D9%82-%D8%A7%D9%84%D9%88%D8%A7%D8%AC%D8%A8%D8%A9-%D9%88%D8%A7%D9%84%D9%85%D9%86%D8%AF%D9%88%D8%A8%D8%A9",
     },
     {
       id: "risalat-father",
       kind: "hadith",
       refUr: "امام زین العابدینؑ — رسالۃ الحقوق، حقِ پدر",
       refEn: "Imam Zayn al-Abidin — Treatise on Rights, Right of the Father",
-      arabic:
-        "وَأَمَّا حَقُّ أَبِيكَ فَتَعْلَمَ أَنَّهُ أَصْلُكَ، وَأَنَّكَ فَرْعُهُ، وَأَنَّكَ لَوْلَاهُ لَمْ تَكُنْ، فَمَهْمَا رَأَيْتَ فِي نَفْسِكَ مِمَّا يُعْجِبُكَ فَاعْلَمْ أَنَّ أَبَاكَ أَصْلُ النِّعْمَةِ عَلَيْكَ فِيهِ",
+      sourceArabic:
+        "وأما حق أبيك فأن تعلم أنه أصلك، وأنك لولاه لم تكن، فمهما رأيت من نفسك ما يعجبك فاعلم أن أباك أصل النعمة عليك فيه، فاحمد الله واشكره على قدر ذلك، ولا قوة إلا بالله.",
+      sourceRefUr:
+        "رسالۃ الحقوق، امام زین العابدینؑ؛ وسائل الشیعہ، ج15، ص175؛ روضۃ الواعظین، ج2، ص241، ح1032؛ الخصال، ص568/ح1؛ تحف العقول، ص255۔",
+      sourceRefEn:
+        "Risalat al-Huquq; Wasa'il al-Shi'a, vol.15, p.175; Rawdat al-Wa'izin, vol.2, p.241, hadith 1032; al-Khisal p.568/1; Tuhaf al-'Uqul p.255.",
       explanationUr:
         "یہ عبارت والد کے حق کو صرف مالی کفالت تک محدود نہیں کرتی بلکہ انسان کو اپنی اصل اور اپنے وجود کی نعمت کی طرف واپس لے جاتی ہے۔",
       explanationEn:
         "The father's right is connected to origin and the blessing of one's own existence, not merely material provision.",
       sourceUrl:
-        "https://al-islam.org/treatise-rights-risalat-al-huquq-imam-ali-zayn-al-abidin/rights-womb-relatives",
+        "https://najafdesertlibrary.com/book/%D8%B1%D9%88%D8%B6%D8%A9-%D8%A7%D9%84%D9%88%D8%A7%D8%B9%D8%B8%D9%8A%D9%86-%D9%88%D8%A8%D8%B5%D9%8A%D8%B1%D8%A9-%D8%A7%D9%84%D9%85%D8%AA%D8%B9%D8%B8%D9%8A%D9%86/v/2/p/241",
     },
     {
       id: "birr-after-death",
       kind: "hadith",
       refUr: "رسول اکرمؐ — والدین کی وفات کے بعد بھی نیکی",
       refEn: "The Prophet — goodness to parents after their death",
-      arabic:
-        "سَيِّدُ الْأَبْرَارِ يَوْمَ الْقِيَامَةِ رَجُلٌ بَرَّ وَالِدَيْهِ بَعْدَ مَوْتِهِمَا",
+      sourceArabic:
+        "سيد الأبرار يوم القيامة، رجل بر والديه بعد موتهما.",
+      sourceRefUr:
+        "رسول اکرمؐ؛ بحار الأنوار، علامہ مجلسی، ج74، ص86، ح100؛ روایت امام صادقؑ عن ابیہ عن آبائہؑ عن رسول اللّٰهؐ۔",
+      sourceRefEn:
+        "The Prophet; Bihar al-Anwar, vol.74, p.86, hadith 100; narrated by Imam al-Sadiq from his father and forefathers from the Prophet.",
       explanationUr:
         "یہ روایت برسی کی مجلس کا مرکزی پل بن سکتی ہے: والدین کی وفات نیکی کا دروازہ بند نہیں کرتی۔ خدمت کی صورت بدلتی ہے اور دعا، خیر، صدقہ اور صالح عمل کے ذریعے برِّ والدین جاری رہتا ہے۔",
       explanationEn:
@@ -136,6 +172,50 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
         { heading: "The father's right", body: "Move beyond provision to origin, identity, formation, protection, and inherited moral capital." },
         { heading: "Memorial connection", body: "Explain that death changes the form of service but does not erase moral indebtedness." },
       ],
+      sourceGroundedUr: [
+        {
+          heading: "رسالۃ الحقوق کی اپنی ترتیب: حقوقِ رحم میں ماں کا حق سب سے پہلے",
+          explanation:
+            "رسالۃ الحقوق میں امام زین العابدینؑ حقوقِ رحم کو قرابت کے درجے کے مطابق مرتب کرتے ہیں اور سب سے پہلے ماں، پھر باپ، پھر اولاد اور پھر بھائی کا حق ذکر کرتے ہیں۔ اس ترتیب سے واضح ہوتا ہے کہ والدین کی بحث کسی الگ اخلاقی نصیحت کے طور پر نہیں بلکہ انسان کے پورے نظامِ حقوق کے اندر رکھی گئی ہے۔",
+          exactRef:
+            "امام زین العابدینؑ، رسالۃ الحقوق، حقوقِ رحم؛ Al-Islam.org، The Treatise on Rights، حقوقِ اقربا کی تمہید۔",
+          sourceUrl:
+            "https://al-islam.org/sahifa-al-kamilah-al-sajjadiyya-imam-ali-zayn-al-abidin/treatise-rights",
+        },
+        {
+          heading: "حقِ مادر میں دلیل خود ماں کی مسلسل قربانی ہے",
+          explanation:
+            "امامؑ حقِ مادر کو ایک مجرد حکم سے ثابت نہیں کرتے بلکہ حمل، غذا، پیاس، لباس، دھوپ، نیند، گرمی اور سردی سے حفاظت کی مسلسل تاریخ سامنے رکھتے ہیں۔ آخر میں نتیجہ یہ ہے کہ اولاد اپنی قوت سے اس شکر کا حق ادا نہیں کر سکتی مگر خدا کی مدد اور توفیق سے۔ یعنی حق کی بنیاد صرف نسب نہیں بلکہ وہ یک طرفہ پرورش بھی ہے جس کا بیشتر حصہ بچہ خود یاد نہیں رکھتا۔",
+          exactRef:
+            "رسالۃ الحقوق، حق الام؛ Al-Islam.org میں عنوان: 22) The Right of the Mother۔",
+          sourceUrl:
+            "https://al-islam.org/sahifa-al-kamilah-al-sajjadiyya-imam-ali-zayn-al-abidin/treatise-rights",
+        },
+        {
+          heading: "حقِ پدر میں اصل، وجود اور نعمت کا رشتہ",
+          explanation:
+            "حقِ پدر میں امامؑ باپ کو اولاد کی اصل قرار دیتے ہیں اور انسان کو یہ سکھاتے ہیں کہ اپنے اندر جو خیر اور نعمت اسے پسند آئے، اس میں اپنے باپ کے وجودی سبب کو بھی پہچانے۔ متن کا رخ مالی کفالت کی فہرست بنانے کے بجائے وجود، نسبت اور شکر کی طرف ہے؛ اسی لیے اختتام حمدِ خدا اور شکر پر ہوتا ہے۔",
+          exactRef:
+            "رسالۃ الحقوق، حق الاب؛ Al-Islam.org میں عنوان: 23) The Right of the Father۔",
+          sourceUrl:
+            "https://al-islam.org/sahifa-al-kamilah-al-sajjadiyya-imam-ali-zayn-al-abidin/treatise-rights",
+        },
+      ],
+      sourceGroundedEn: [
+        {
+          heading: "The Treatise's own ordering",
+          explanation:
+            "The Treatise places the mother's right first among the rights of blood relatives, followed by father, child, and brother.",
+          exactRef:
+            "Imam Zayn al-Abidin, Risalat al-Huquq, Rights of Womb Relatives, Al-Islam.org.",
+          sourceUrl:
+            "https://al-islam.org/sahifa-al-kamilah-al-sajjadiyya-imam-ali-zayn-al-abidin/treatise-rights",
+        },
+      ],
+      editorialBridgeUr:
+        "منبر پر ہماری تدوینی تجویز یہ ہے کہ اس اصل ترتیب کے بعد سوال اٹھایا جائے: جب براہِ راست خدمت کا امکان وفات کے ساتھ ختم ہو جائے تو شکر اور حق کی ادائیگی کس نئی صورت میں جاری رہتی ہے؟ یہ سوال اصل متن کا اقتباس نہیں بلکہ برسی کی مجلس سے جوڑنے کے لیے تدوینی ربط ہے۔",
+      editorialBridgeEn:
+        "Editorial bridge: after the source material, ask how gratitude and filial duty continue when direct service is no longer possible after death.",
       styleUr:
         "اصل عبارت سے آغاز کریں، پھر سامع کو اپنی زندگی کے ان برسوں کی طرف واپس لے جائیں جن کی اسے خود یاد نہیں مگر جن کی قیمت والدین نے ادا کی۔",
       styleEn:
@@ -200,6 +280,59 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
         { heading: "Legacy after death", body: "A parent's moral training remains visible when virtues continue in the child's conduct." },
         { heading: "Pulpit conclusion", body: "A memorial should identify one inherited virtue and deliberately continue it." },
       ],
+      sourceGroundedUr: [
+        {
+          heading: "امینیؒ کا پہلا سوال: والدین کا بلند مقام آخر کس ذمہ داری کے بدلے ہے؟",
+          explanation:
+            "آیت اللہ ابراہیم امینیؒ باب کے آغاز میں والدین کے بلند مقام کو تسلیم کرنے کے بعد خود سوال اٹھاتے ہیں کہ کیا صرف پیدائش، دودھ پلانا اور خرچ اٹھانا اس مقام کی پوری وجہ ہے؟ پھر وہ یک طرفہ حق کے تصور کو رد کرتے ہیں اور واضح کرتے ہیں کہ جیسے والدین کا اولاد پر حق ہے، اولاد کا بھی والدین پر حق ہے۔ ان کے استدلال کا مرکزی رخ یہی ہے کہ والدین کا مقام ان کی عظیم تربیتی ذمہ داری سے جدا نہیں کیا جا سکتا۔",
+          exactRef:
+            "آیت اللہ ابراہیم امینیؒ، Principles of Upbringing Children، Chapter 1: The Parents Responsibility، ابتدائی حصہ؛ اسی باب میں حقوقِ اولاد کے لیے متعدد روایات نقل کی گئی ہیں۔",
+          sourceUrl:
+            "https://al-islam.org/principles-upbringing-children-ibrahim-amini/chapter-1-parents-responsibility",
+        },
+        {
+          heading: "اصل خدمت: بچے کو صرف زندہ رکھنا نہیں، ایک صالح انسان بنانا",
+          explanation:
+            "امینیؒ صاف لکھتے ہیں کہ بچے کی نیکی یا بدی اس تربیت سے گہرا تعلق رکھتی ہے جو اسے والدین سے ملتی ہے، اور والدین انسانی شخصیت کو بنانے والے اسباب میں سے ہیں۔ وہ مطلوبہ تربیت کو اخلاق، خیر خواہی، عدل، دانائی، دیانت، ذمہ داری، محنت، علم اور ایمان جیسے اوصاف سے بیان کرتے ہیں۔ اس بنا پر ان کے ہاں والدین کی بڑی خدمت جسمانی نگہداشت سے آگے بڑھ کر شخصیت سازی ہے۔",
+          exactRef:
+            "وہی، Chapter 1: The Parents Responsibility، حصہ جس کا آغاز بچے کے طرزِ زندگی کی تشکیل اور والدین کی ذمہ داری سے ہوتا ہے؛ بعد میں مطلوبہ اوصاف کی تفصیلی فہرست آتی ہے۔",
+          sourceUrl:
+            "https://al-islam.org/principles-upbringing-children-ibrahim-amini/chapter-1-parents-responsibility",
+        },
+        {
+          heading: "تربیت گھر کی چار دیواری تک محدود نہیں: کل کا معاشرہ آج کے بچوں سے بنے گا",
+          explanation:
+            "امینیؒ اپنا استدلال فرد سے معاشرے تک لے جاتے ہیں۔ ان کے مطابق آج کے بچے کل کے شہری، والدین، اساتذہ اور مختلف اجتماعی ذمہ داریوں کے حامل ہوں گے؛ اس لیے اچھی یا خراب تربیت کا اثر آنے والے معاشرے پر پڑتا ہے۔ اسی بنیاد پر وہ والدین کو صرف اپنے بچے کے سامنے نہیں بلکہ معاشرے کے سامنے بھی جواب دہ سمجھتے۔ یہ ان کے باب کا ایک مستقل اجتماعی نتیجہ ہے، محض ہماری منبری توسیع نہیں۔",
+          exactRef:
+            "وہی، Chapter 1: The Parents Responsibility، پیراگراف: “The parents are also answerable to the society” سے شروع ہونے والی بحث۔",
+          sourceUrl:
+            "https://al-islam.org/principles-upbringing-children-ibrahim-amini/chapter-1-parents-responsibility",
+        },
+        {
+          heading: "ماں کی ذمہ داری پر امینیؒ کا خاص زور",
+          explanation:
+            "باب کے آخری حصے میں امینیؒ ماں کی تربیتی ذمہ داری کو خاص اہمیت دیتے ہیں، کیونکہ بچپن کا بڑا حصہ ماں کے ساتھ گزرتا ہے اور مستقبل کی سمت کی بنیاد اسی دور میں پڑتی ہے۔ ان کا اصل زور اس بات پر ہے کہ انسان سازی کی یہ خدمت ظاہری سماجی عہدوں سے کم اہم نہیں۔ اس نکتے کو بیان کرتے وقت ان کے اپنے تاریخی و سماجی سیاق کو ملحوظ رکھنا چاہیے اور اسے جدید پیشہ ورانہ کرداروں پر حکم لگانے کے لیے بڑھانا نہیں چاہیے۔",
+          exactRef:
+            "وہی، Chapter 1: The Parents Responsibility، آخری حصہ: “The mothers in particular bear more responsibility…” سے شروع ہونے والی بحث۔",
+          sourceUrl:
+            "https://al-islam.org/principles-upbringing-children-ibrahim-amini/chapter-1-parents-responsibility",
+        },
+      ],
+      sourceGroundedEn: [
+        {
+          heading: "Why is parenthood exalted?",
+          explanation:
+            "Amini explicitly asks whether birth, feeding, and financial maintenance alone explain the exalted status of parents, and rejects a one-sided concept of rights.",
+          exactRef:
+            "Ibrahim Amini, Principles of Upbringing Children, Chapter 1: The Parents Responsibility.",
+          sourceUrl:
+            "https://al-islam.org/principles-upbringing-children-ibrahim-amini/chapter-1-parents-responsibility",
+        },
+      ],
+      editorialBridgeUr:
+        "برسی کی مجلس سے جوڑنے کے لیے ہماری تدوینی تجویز یہ ہے کہ امینیؒ کے اس اصل استدلال کے بعد سامع سے پوچھا جائے: والدین کی تربیت سے پیدا ہونے والی کون سی خوبی ان کے انتقال کے بعد بھی اولاد کے کردار میں زندہ ہے؟ یہ سوال امینیؒ کے متن کا اقتباس نہیں بلکہ ان کے استدلال سے اخذ کردہ منبری ربط ہے۔",
+      editorialBridgeEn:
+        "Editorial bridge: ask which virtues formed by one's parents remain alive in the child's conduct after their death.",
       styleUr:
         "روزمرہ گھر، تربیت اور نسلوں کے تسلسل سے مثالیں لیں؛ محض فضیلت کی تعریف پر اکتفا نہ کریں۔",
       styleEn:
@@ -258,6 +391,59 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
         { heading: "Goodness after death", body: "The hadith collection explicitly preserves filial goodness beyond the parents' death." },
         { heading: "Annual moral audit", body: "A memorial anniversary can measure which acts of goodness have actually continued." },
       ],
+      sourceGroundedUr: [
+        {
+          heading: "ری شہریؒ کی کتاب میں یہ ذاتی مضمون نہیں بلکہ موضوعی حدیثی ترتیب ہے",
+          explanation:
+            "محمدی ری شہریؒ اس باب میں اپنا مستقل فلسفیانہ استدلال پیش کرنے کے بجائے قرآن اور روایات کو موضوعاتی ترتیب سے جمع کرتے ہیں۔ باب 2.1 میں والدین کے حق کی اہمیت، 2.2 میں عملی حقوق، 2.3 میں جامع حقوق، اور 2.4 میں برِّ والدین کی برکات رکھی گئی ہیں۔ اس لیے خطیب اسٹوڈیو میں ان کے نام سے وہی بات منسوب ہونی چاہیے جو اس مرتب حدیثی ساخت یا ان کے واضح باب بندی سے ثابت ہو۔",
+          exactRef:
+            "آیت اللہ محمد محمدی ری شہریؒ، Children in the Qur’an and Sunnah، Chapter 2: The Children’s Duties towards their Parents، حصے 2.1 تا 2.4۔",
+          sourceUrl:
+            "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+        },
+        {
+          heading: "احسان کی عملی تعریف: والدین کو ضرورت مانگنے تک نہ پہنچانا",
+          explanation:
+            "حصہ 2.2 میں ری شہریؒ امام صادقؑ کی روایت نمبر 429 لاتے ہیں، جس میں احسان کو اچھا ساتھ دینے اور والدین کی ضرورت کو اس حد تک پہلے سے پورا کرنے سے جوڑا گیا ہے کہ انہیں مانگنا نہ پڑے، خواہ وہ صاحبِ استطاعت ہوں۔ اسی مقام کے حاشیے میں الکافی ج2، ص157، ح1 اور مشکاۃ الانوار ص282، ح854 کا حوالہ دیا گیا ہے۔",
+          exactRef:
+            "وہی، 2.2 A) Doing Good، حدیث 429؛ الکافی، ج2، ص157، ح1؛ مشکاۃ الانوار، ص282، ح854۔",
+          sourceUrl:
+            "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+        },
+        {
+          heading: "جامع حقوق: شکر، اطاعت اور خیر خواہی",
+          explanation:
+            "حصہ 2.3 میں امام صادقؑ کی روایت نمبر 445 تین جامع حقوق گنواتی ہے: ہر حال میں والدین کا شکر، گناہ کے علاوہ ان کے جائز امر و نہی کی اطاعت، اور پوشیدہ و علانیہ ان کی خیر خواہی۔ ری شہریؒ نے اس روایت کے لیے تحف العقول ص322 اور بحار الانوار ج78، ص236، ح67 کا حوالہ درج کیا ہے۔",
+          exactRef:
+            "وہی، 2.3 General Rights of Parents، حدیث 445؛ تحف العقول، ص322؛ بحار الانوار، ج78، ص236، ح67۔",
+          sourceUrl:
+            "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+        },
+        {
+          heading: "وفات کے بعد بھی برِّ والدین: دقیق روایت اور درست حوالہ",
+          explanation:
+            "حصہ 2.4 میں روایت نمبر 447 والدین کی وفات کے بعد بھی نیکی کرنے والے شخص کو قیامت کے دن نیکوکاروں میں ممتاز قرار دیتی ہے۔ اسی کتاب کے حاشیے میں اس روایت کا حوالہ بحار الانوار ج74، ص86، ح100 دیا گیا ہے، اور سندی ماخذ کے طور پر کتاب الامامۃ والتبصرۃ سے سکونی، امام صادقؑ، ان کے آباءؑ کے ذریعے نقل کی نشان دہی کی گئی ہے۔",
+          exactRef:
+            "وہی، 2.4 The Benefits of Doing Good to Parents، حدیث 447؛ بحار الانوار، ج74، ص86، ح100؛ عن کتاب الامامۃ والتبصرۃ، عن السکونی، عن الامام الصادقؑ، عن آبائہؑ۔",
+          sourceUrl:
+            "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+        },
+      ],
+      sourceGroundedEn: [
+        {
+          heading: "A thematic hadith compilation",
+          explanation:
+            "Reyshahri structures the chapter thematically: importance, concrete duties, general rights, and benefits of filial goodness.",
+          exactRef:
+            "Muhammadi Reyshahri, Children in the Qur'an and Sunnah, Chapter 2, sections 2.1–2.4.",
+          sourceUrl:
+            "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+        },
+      ],
+      editorialBridgeUr:
+        "برسی کے لیے ہماری تدوینی تجویز یہ ہے کہ روایت 447 کو مجلس کا موڑ بنایا جائے: زندگی میں خدمت کی ایک شکل تھی، وفات کے بعد برِّ والدین کی دوسری شکلیں باقی رہتی ہیں۔ یہ جملہ ری شہریؒ کا اقتباس نہیں، ان کی مرتب کردہ روایت کو منبر سے جوڑنے والی ہماری تدوینی ساخت ہے۔",
+      editorialBridgeEn:
+        "Editorial bridge: use hadith 447 as the transition from service during life to filial goodness after death.",
       styleUr:
         "روایات کو فہرست کی صورت میں نہ پڑھیں؛ ایک اصول منتخب کریں، اس کا روزمرہ مطلب کھولیں، پھر وفات کے بعد اس کی نئی صورت دکھائیں۔",
       styleEn:
