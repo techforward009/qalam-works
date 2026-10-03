@@ -46,32 +46,54 @@ export function parseEShiaSearchForm(html: string): {
   queryField: string;
   hidden: Record<string, string>;
 } | null {
-  const forms = [...html.matchAll(/<form\b[^>]*>[\s\S]*?<\/form>/gi)];
-  for (const formMatch of forms) {
-    const form = formMatch[0];
-    if (!/advanced|جستجو|search/i.test(form)) continue;
-    const open = form.match(/^<form\b[^>]*>/i)?.[0] ?? "";
-    const formAttrs = attrs(open);
-    const inputs = [...form.matchAll(/<input\b[^>]*>/gi)].map((m) => attrs(m[0]));
-    const textInputs = inputs.filter((input) => {
-      const type = (input.type || "text").toLowerCase();
-      return type === "text" || type === "search";
-    });
-    const queryField = textInputs.find((input) => input.name)?.name;
+  const forms = [...html.matchAll(/<form\b[^>]*>[\s\S]*?<\/form>/gi)]
+    .map((formMatch) => {
+      const form = formMatch[0];
+      const open = form.match(/^<form\b[^>]*>/i)?.[0] ?? "";
+      const formAttrs = attrs(open);
+      const inputs = [...form.matchAll(/<input\b[^>]*>/gi)].map((m) => attrs(m[0]));
+      const textInputs = inputs.filter((input) => {
+        const type = (input.type || "text").toLowerCase();
+        return type === "text" || type === "search";
+      });
+      return { formAttrs, inputs, textInputs };
+    })
+    .filter((item) => item.textInputs.some((input) => input.name));
+
+  forms.sort((a, b) => {
+    const aAdvanced = a.textInputs.length >= 3 ? 100 : 0;
+    const bAdvanced = b.textInputs.length >= 3 ? 100 : 0;
+    return (bAdvanced + b.textInputs.length) - (aAdvanced + a.textInputs.length);
+  });
+
+  for (const { formAttrs, inputs, textInputs } of forms) {
+    const queryField =
+      textInputs.find((input) =>
+        /all|word|key|query|search|text/i.test(input.name || ""),
+      )?.name ?? textInputs[0]?.name;
     if (!queryField) continue;
 
     const hidden: Record<string, string> = {};
     for (const input of inputs) {
-      if ((input.type || "").toLowerCase() === "hidden" && input.name) hidden[input.name] = input.value || "";
+      if ((input.type || "").toLowerCase() === "hidden" && input.name) {
+        hidden[input.name] = input.value || "";
+      }
     }
 
     return {
-      action: formAttrs.action || "/advanced-search",
-      method: (formAttrs.method || "GET").toUpperCase() === "POST" ? "POST" : "GET",
+      action:
+        formAttrs.action && formAttrs.action !== "#"
+          ? formAttrs.action
+          : "/advanced-search",
+      method:
+        (formAttrs.method || "GET").toUpperCase() === "POST"
+          ? "POST"
+          : "GET",
       queryField,
       hidden,
     };
   }
+
   return null;
 }
 
