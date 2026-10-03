@@ -85,19 +85,22 @@ export async function researchKhateebTopicWithEShia(
   const variants = eShiaQueryVariants(request.query);
   const discovered: EShiaDiscoveryHit[] = [];
   let sawUnavailable = false;
+  const fetchBudget = Math.max(5, Math.min(options.maxEShiaPages ?? 8, 12));
+  const discoveryBudget = Math.min(fetchBudget * 2, 16);
+  const perVariant = 3;
 
   for (const variant of variants) {
     const result = await discoverEShia(variant, {
       fetchImpl: options.fetchImpl,
-      limit: Math.max(3, Math.min(options.maxEShiaPages ?? 5, 8)),
+      limit: perVariant,
     });
     if (result.status === "unavailable") sawUnavailable = true;
     if (result.status !== "ok") continue;
-    for (const hit of result.hits) {
+    for (const hit of result.hits.slice(0, perVariant)) {
       if (!discovered.some((item) => item.url === hit.url)) discovered.push(hit);
-      if (discovered.length >= (options.maxEShiaPages ?? 5)) break;
+      if (discovered.length >= discoveryBudget) break;
     }
-    if (discovered.length >= (options.maxEShiaPages ?? 5)) break;
+    if (discovered.length >= discoveryBudget) break;
   }
 
   if (!discovered.length) {
@@ -116,7 +119,7 @@ export async function researchKhateebTopicWithEShia(
 
   const records = await Promise.all(
     discovered
-      .slice(0, options.maxEShiaPages ?? 5)
+      .slice(0, fetchBudget)
       .map((hit) => fetchEShiaPage(hit.url, request.query, { fetchImpl: options.fetchImpl })),
   );
 
