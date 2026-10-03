@@ -34,14 +34,51 @@ function topicHaystack(topic: TopicPrep): string {
   );
 }
 
+const SEARCH_STOP_WORDS = new Set([
+  "میں",
+  "سے",
+  "کے",
+  "کی",
+  "کا",
+  "کو",
+  "اور",
+  "ہے",
+  "ہیں",
+  "ایک",
+  "یہ",
+  "وہ",
+  "موضوع",
+  "پر",
+  "the",
+  "a",
+  "an",
+  "of",
+  "and",
+  "in",
+  "on",
+  "for",
+  "topic",
+]);
+
 function topicScore(topic: TopicPrep, query: string): number {
   const q = normalize(query);
   if (!q) return 0;
   const haystack = topicHaystack(topic);
   if (haystack.includes(q)) return 100 + q.length;
 
-  const tokens = q.split(" ").filter((token) => token.length >= 2);
-  return tokens.reduce((score, token) => score + (haystack.includes(token) ? 10 : 0), 0);
+  const tokens = Array.from(
+    new Set(
+      q
+        .split(" ")
+        .filter((token) => token.length >= 2 && !SEARCH_STOP_WORDS.has(token)),
+    ),
+  );
+  if (!tokens.length) return 0;
+
+  const matched = tokens.filter((token) => haystack.includes(token)).length;
+  if (tokens.length === 1) return matched ? 10 : 0;
+  if (matched < 2) return 0;
+  return matched * 10;
 }
 
 function matchedTopics(query: string): readonly TopicPrep[] {
