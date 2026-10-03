@@ -70,6 +70,35 @@ function sourceRelevanceScore(title: string, text: string, query: string): numbe
   return (exact ? 10 : 0) + matched.length;
 }
 
+function sourceAuthorityBonus(title: string): number {
+  const value = normalizeForRelevance(title);
+  const preferred = [
+    "\u0627\u0644\u06a9\u0627\u0641\u06cc",
+    "\u0627\u0644\u0643\u0627\u0641\u064a",
+    "\u0645\u064a\u0632\u0627\u0646 \u0627\u0644\u062d\u0643\u0645\u0647",
+    "\u0645\u064a\u0632\u0627\u0646 \u0627\u0644\u062d\u0643\u0645\u0629",
+    "\u0648\u0633\u0627\u0626\u0644 \u0627\u0644\u0634\u064a\u0639\u0647",
+    "\u0648\u0633\u0627\u0626\u0644 \u0627\u0644\u0634\u064a\u0639\u0629",
+    "\u0628\u062d\u0627\u0631 \u0627\u0644\u0627\u0646\u0648\u0627\u0631",
+    "\u0627\u0644\u062e\u0635\u0627\u0644",
+    "\u062c\u0627\u0645\u0639 \u0627\u062d\u0627\u062f\u064a\u062b \u0627\u0644\u0634\u064a\u0639\u0647",
+    "\u062c\u0627\u0645\u0639 \u0623\u062d\u0627\u062f\u064a\u062b \u0627\u0644\u0634\u064a\u0639\u0629",
+    "\u0627\u0644\u0645\u062d\u062c\u0647 \u0627\u0644\u0628\u064a\u0636\u0627\u0621",
+    "\u0627\u0644\u0645\u062d\u062c\u0629 \u0627\u0644\u0628\u064a\u0636\u0627\u0621",
+    "\u0627\u0644\u0645\u064a\u0632\u0627\u0646 \u0641\u064a \u062a\u0641\u0633\u064a\u0631 \u0627\u0644\u0642\u0631\u0627\u0646",
+    "\u0627\u0644\u0645\u064a\u0632\u0627\u0646 \u0641\u064a \u062a\u0641\u0633\u064a\u0631 \u0627\u0644\u0642\u0631\u0622\u0646",
+    "\u0645\u0633\u062a\u062f\u0631\u0643 \u0633\u0641\u064a\u0646\u0647 \u0627\u0644\u0628\u062d\u0627\u0631",
+    "\u0645\u0633\u062a\u062f\u0631\u0643 \u0633\u0641\u064a\u0646\u0629 \u0627\u0644\u0628\u062d\u0627\u0631",
+    "\u0645\u0634\u06a9\u0627\u0647 \u0627\u0644\u0627\u0646\u0648\u0627\u0631",
+    "\u0645\u0634\u0643\u0627\u0629 \u0627\u0644\u0623\u0646\u0648\u0627\u0631",
+    "\u0631\u0648\u0636\u0647 \u0627\u0644\u0648\u0627\u0639\u0638\u064a\u0646",
+    "\u0631\u0648\u0636\u0629 \u0627\u0644\u0648\u0627\u0639\u0638\u064a\u0646",
+  ];
+  return preferred.some((item) =>
+    value.includes(normalizeForRelevance(item))
+  ) ? 4 : 0;
+}
+
 function sourceIsRelevant(title: string, text: string, query: string): boolean {
   const terms = relevanceTerms(query);
   const score = sourceRelevanceScore(title, text, query);
@@ -85,9 +114,9 @@ export async function researchKhateebTopicWithEShia(
   const variants = eShiaQueryVariants(request.query);
   const discovered: EShiaDiscoveryHit[] = [];
   let sawUnavailable = false;
-  const fetchBudget = Math.max(5, Math.min(options.maxEShiaPages ?? 8, 12));
-  const discoveryBudget = Math.min(fetchBudget * 2, 16);
-  const perVariant = 3;
+  const fetchBudget = Math.max(8, Math.min(options.maxEShiaPages ?? 10, 12));
+  const discoveryBudget = Math.min(fetchBudget * 2, 20);
+  const perVariant = 2;
 
   for (const variant of variants) {
     const result = await discoverEShia(variant, {
@@ -128,8 +157,10 @@ export async function researchKhateebTopicWithEShia(
     .filter((record) => sourceIsRelevant(record.bookTitle, record.text, request.query))
     .sort(
       (a, b) =>
-        sourceRelevanceScore(b.bookTitle, b.text, request.query) -
-        sourceRelevanceScore(a.bookTitle, a.text, request.query),
+        (sourceRelevanceScore(b.bookTitle, b.text, request.query) +
+          sourceAuthorityBonus(b.bookTitle)) -
+        (sourceRelevanceScore(a.bookTitle, a.text, request.query) +
+          sourceAuthorityBonus(a.bookTitle)),
     )
     .map((record, index) => ({
       id: `eshia-live-${record.bookId}-${record.volume}-${record.page}-${index}`,
