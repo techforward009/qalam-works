@@ -51,6 +51,7 @@ import {
   khateebStudioQuery,
   parseKhateebStudioView,
 } from "../app/tools/khateeb-studio/engine/studioView";
+import { looksLikeArabicReligiousText } from "../app/tools/khateeb-studio/KhateebScriptText";
 
 describe("Khateeb Studio seed corpus", () => {
   test("contains the requested historical speakers", () => {
@@ -102,6 +103,15 @@ describe("Khateeb Studio typography", () => {
     expect(globals).not.toContain("khateeb-studio");
     expect(globals).not.toContain("jameel-noori-nastaleeq-400.woff2");
     expect(studio).not.toContain("max-h-[560px]");
+  });
+
+  test("uses Muhammadi Quranic for Arabic ayat and hadith inside Urdu content", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain('"Muhammadi Quranic"');
+    expect(studio).toContain("<KhateebScriptText");
+    expect(studio).toContain("forceArabic");
+    expect(looksLikeArabicReligiousText("«رَبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا»")).toBe(true);
+    expect(looksLikeArabicReligiousText("«والدین کے ساتھ حسن سلوک»")).toBe(false);
   });
 });
 
@@ -292,7 +302,7 @@ describe("Khateeb Studio deep sermon dossiers", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).toContain("مختلف اہلِ علم نے اسے کیسے کھولا؟");
     expect(studio).toContain("ان کے بیان کا انداز");
-    expect(studio).toContain("منبر میں آپ کیا لے سکتے ہیں؟");
+    expect(studio).toContain("اس حصے کا منبری مقصد");
     expect(studio).toContain("قابلِ بیان منبری ترتیب");
   });
 
@@ -363,6 +373,25 @@ describe("Khateeb Studio parents and memorial deep topic", () => {
     expect(text).toContain("رسالۃ الحقوق");
     expect(hasLatinWord(text)).toBe(false);
   });
+
+  test("provides full speaking material rather than short instructions", () => {
+    const dossier = getTopicDossier("parents-barsi")!;
+    const amini = dossier.perspectives.find((item) => item.nameUr.includes("ابراہیم امینی"))!;
+    const sajjad = dossier.perspectives.find((item) => item.nameUr.includes("زین العابدین"))!;
+    const reyshahri = dossier.perspectives.find((item) => item.nameUr.includes("محمدی ری شہری"))!;
+    expect(amini.readyUr?.length).toBeGreaterThanOrEqual(5);
+    expect(sajjad.readyUr?.length).toBeGreaterThanOrEqual(3);
+    expect(reyshahri.readyUr?.length).toBeGreaterThanOrEqual(4);
+    expect(amini.readyUr?.map((item) => `${item.heading} ${item.body}`).join(" ").length).toBeGreaterThan(2000);
+    expect(buildDossierText(dossier, "ur")).toContain("تفصیلی قابلِ بیان مواد");
+  });
+
+  test("UI shows full speaking material before stylistic suggestions", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("تفصیلی قابلِ بیان مواد");
+    expect(studio).toContain("perspective.readyUr");
+    expect(studio).toContain("اس حصے کا منبری مقصد");
+  });
 });
 
 describe("Khateeb Studio guided workflow", () => {
@@ -408,6 +437,17 @@ describe("Khateeb Studio guided workflow", () => {
     expect(studio).toContain('setPreparationMode("topic")');
     expect(studio).toContain("setWorkflowStep(1)");
     expect(studio).toContain("topicResults.slice(0, 8)");
+  });
+
+  test("opens a search result directly into usable topic material", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain('setPreparationMode("topic")');
+    expect(studio).toContain('setSelectedSpeaker("")');
+    expect(studio).toContain("setWorkflowStep(3)");
+    expect(studio).toContain("scrollIntoView");
+    expect(studio).toContain('id="khateeb-topic-result"');
+    expect(studio).toContain("مواد کھولیں");
+    expect(studio).toContain("متعلقہ تحقیقی اور منبری مواد نیچے کھل گیا ہے");
   });
 });
 

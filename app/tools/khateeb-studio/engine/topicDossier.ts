@@ -18,6 +18,14 @@ export type ScholarPerspective = {
   styleEn: string;
   useUr: string;
   useEn: string;
+  readyUr?: readonly {
+    heading: string;
+    body: string;
+  }[];
+  readyEn?: readonly {
+    heading: string;
+    body: string;
+  }[];
   originalSnippet?: string;
 };
 
@@ -1124,6 +1132,10 @@ export function getTopicDossier(topicId: string): SermonDossier | null {
       explanationUr: item.explanationUr.map(pureKhateebUrdu),
       styleUr: pureKhateebUrdu(item.styleUr),
       useUr: pureKhateebUrdu(item.useUr),
+      readyUr: item.readyUr?.map((section) => ({
+        heading: pureKhateebUrdu(section.heading),
+        body: pureKhateebUrdu(section.body),
+      })),
     })),
     synthesisUr: dossier.synthesisUr.map(pureKhateebUrdu),
     pulpitFlowUr: dossier.pulpitFlowUr.map((item) => ({
@@ -1156,6 +1168,13 @@ export function buildDossierText(
     );
     for (const point of ur ? item.explanationUr : item.explanationEn) {
       lines.push(`• ${point}`);
+    }
+    const ready = ur ? item.readyUr : item.readyEn;
+    if (ready?.length) {
+      lines.push("", ur ? "تفصیلی قابلِ بیان مواد" : "Detailed speaking material");
+      for (const section of ready) {
+        lines.push(`${section.heading}\n${section.body}`);
+      }
     }
     lines.push(`${ur ? "انداز" : "Style"}: ${ur ? item.styleUr : item.styleEn}`);
     lines.push(`${ur ? "منبر میں استعمال" : "Use on the pulpit"}: ${ur ? item.useUr : item.useEn}`);

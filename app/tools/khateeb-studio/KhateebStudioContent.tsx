@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Search, Sparkles } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
 import {
@@ -51,6 +51,7 @@ import { checkSeriesOriginality } from "./engine/originalityGuard";
 import SessionNotesEditor from "./SessionNotesEditor";
 import AllKhateebNotesPanel from "./AllKhateebNotesPanel";
 import SessionDeliveryHistory from "./SessionDeliveryHistory";
+import KhateebScriptText from "./KhateebScriptText";
 import {
   buildSessionWorkbench,
   buildSessionWorkbenchText,
@@ -127,6 +128,7 @@ export default function KhateebStudioContent({
   const [topicQuery, setTopicQuery] = useState("");
   const [selectedTopicId, setSelectedTopicId] = useState(initialView.topic);
   const [notesLibraryOpen, setNotesLibraryOpen] = useState(false);
+  const topicResultRef = useRef<HTMLElement | null>(null);
 
   const filteredSpeakers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -325,7 +327,18 @@ export default function KhateebStudioContent({
 
   const chooseTopic = (topicId: string) => {
     setSelectedTopicId(topicId);
-    setWorkflowStep(2);
+    setPreparationMode("topic");
+    setSelectedSpeaker("");
+    setWorkflowStep(3);
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        topicResultRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+    });
   };
 
   const chooseSpeaker = (speakerId: string) => {
@@ -384,6 +397,13 @@ export default function KhateebStudioContent({
           font-style: normal;
           font-weight: 400;
           font-display: swap;
+        }
+
+        .khateeb-muhammadi-quranic {
+          font-family: "Muhammadi Quranic", "Al Qalam Quran Majeed", "Noto Naskh Arabic", serif !important;
+          font-size: 1.08em;
+          line-height: 1.85;
+          unicode-bidi: isolate;
         }
 
         .khateeb-studio-ur {
@@ -497,9 +517,12 @@ export default function KhateebStudioContent({
                       key={item.id}
                       type="button"
                       onClick={() => chooseTopic(item.id)}
-                      className="rounded-full border border-[#B8935A]/35 bg-[#fbf7ee] px-3 py-1.5 text-sm text-[#6f5730] hover:border-[#B8935A] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#e2c895]"
+                      className="group flex items-center gap-2 rounded-xl border border-[#B8935A]/35 bg-[#fbf7ee] px-4 py-2 text-sm text-[#6f5730] shadow-sm transition hover:border-[#B8935A] hover:bg-[#f7efdf] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#e2c895]"
                     >
-                      {topicTitle(item, ur ? "ur" : "en")}
+                      <span>{topicTitle(item, ur ? "ur" : "en")}</span>
+                      <span className="text-xs font-bold opacity-70 group-hover:opacity-100">
+                        {ur ? "مواد کھولیں ←" : "Open material →"}
+                      </span>
                     </button>
                   ))
                 ) : (
@@ -613,7 +636,11 @@ export default function KhateebStudioContent({
           </section>
         ) : null}
 
-        <section className={`${workflowStep === 1 && preparationMode === "topic" ? "block" : workflowStep === 3 && preparationMode === "topic" ? "block" : "hidden"} mb-6 rounded-2xl border border-[#B8935A]/30 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]`}>
+        <section
+          ref={topicResultRef}
+          id="khateeb-topic-result"
+          className={`${workflowStep === 1 && preparationMode === "topic" ? "block" : workflowStep === 3 && preparationMode === "topic" ? "block" : "hidden"} scroll-mt-6 mb-6 rounded-2xl border border-[#B8935A]/30 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]`}
+        >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-[#2a5a3a]/50 dark:text-[#8faa93]">
@@ -731,6 +758,19 @@ export default function KhateebStudioContent({
             </p>
           ) : workflowStep === 3 ? (
             <div className="mt-5 rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]">
+              <div className="mb-4 rounded-xl border border-[#B8935A]/25 bg-white px-4 py-3 dark:border-[#6f5b35] dark:bg-[#162a1e]">
+                <div className="text-xs font-bold text-[#8a6838] dark:text-[#d7bc8a]">
+                  {ur ? "آپ کا منتخب موضوع" : "Selected topic"}
+                </div>
+                <div className="mt-1 font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                  {topicTitle(topic, ur ? "ur" : "en")}
+                </div>
+                <p className="mt-1 text-xs text-[#687469] dark:text-[#9fb0a2]">
+                  {ur
+                    ? "متعلقہ تحقیقی اور منبری مواد نیچے کھل گیا ہے؛ خطیب کا انتخاب اختیاری ہے۔"
+                    : "The relevant research and pulpit material is open below; choosing a speaker is optional."}
+                </p>
+              </div>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="max-w-3xl">
                   <h3 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
@@ -1090,23 +1130,47 @@ export default function KhateebStudioContent({
                           </div>
 
                           <p className="mt-3 text-sm font-semibold leading-7 text-[#37443a] dark:text-[#c8d5cc]">
-                            {ur ? perspective.coreUr : perspective.coreEn}
+                            {ur
+                              ? <KhateebScriptText text={perspective.coreUr} />
+                              : perspective.coreEn}
                           </p>
 
                           <div className="mt-3 space-y-2">
                             {pointsForDuration(ur ? perspective.explanationUr : perspective.explanationEn, duration).map((point) => (
                               <p key={point} className="text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
-                                {point}
+                                {ur ? <KhateebScriptText text={point} /> : point}
                               </p>
                             ))}
                           </div>
 
+                          {(ur ? perspective.readyUr : perspective.readyEn)?.length ? (
+                            <div className="mt-4 rounded-xl border border-[#B8935A]/25 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
+                              <div className="text-sm font-bold text-[#6f5730] dark:text-[#e2c895]">
+                                {ur ? "تفصیلی قابلِ بیان مواد" : "Detailed speaking material"}
+                              </div>
+                              <div className="mt-3 space-y-4">
+                                {(ur ? perspective.readyUr : perspective.readyEn)?.map((section) => (
+                                  <div key={section.heading}>
+                                    <h6 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                                      {section.heading}
+                                    </h6>
+                                    <p className="mt-1 text-sm leading-8 text-[#37443a] dark:text-[#c8d5cc]">
+                                      {ur ? <KhateebScriptText text={section.body} /> : section.body}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
                           {duration === 45 && perspective.originalSnippet ? (
                             <blockquote
                               dir="rtl"
-                              className="mt-3 rounded-lg border-s-4 border-[#B8935A] bg-[#F7F5EF] px-4 py-2 font-naskh text-sm text-[#303830] dark:bg-[#0e1c15] dark:text-[#d7e1d9]"
+                              className="mt-3 rounded-lg border-s-4 border-[#B8935A] bg-[#F7F5EF] px-4 py-2 text-sm text-[#303830] dark:bg-[#0e1c15] dark:text-[#d7e1d9]"
                             >
-                              {perspective.originalSnippet}
+                              {ur
+                                ? <KhateebScriptText text={perspective.originalSnippet} forceArabic />
+                                : perspective.originalSnippet}
                             </blockquote>
                           ) : null}
 
@@ -1122,7 +1186,7 @@ export default function KhateebStudioContent({
                             </div>
                             <div className="rounded-lg bg-[#F7F5EF] p-3 dark:bg-[#0e1c15]">
                               <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
-                                {ur ? "منبر میں آپ کیا لے سکتے ہیں؟" : "What to take to the pulpit"}
+                                {ur ? "اس حصے کا منبری مقصد" : "Sermonic purpose of this section"}
                               </div>
                               <p className="mt-1 text-sm text-[#445247] dark:text-[#b8c8bb]">
                                 {ur ? perspective.useUr : perspective.useEn}
@@ -1146,7 +1210,7 @@ export default function KhateebStudioContent({
                     <div className="mt-3 space-y-2">
                       {pointsForDuration(ur ? topicDossier.synthesisUr : topicDossier.synthesisEn, duration).map((point) => (
                         <p key={point} className="text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
-                          • {point}
+                          • {ur ? <KhateebScriptText text={point} /> : point}
                         </p>
                       ))}
                     </div>
@@ -1161,14 +1225,18 @@ export default function KhateebStudioContent({
                         <article key={block.heading} className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
                           <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">{block.heading}</h5>
                           {duration > 20 ? (
-                            <p className="mt-2 text-sm leading-8 text-[#37443a] dark:text-[#c8d5cc]">{block.body}</p>
+                            <p className="mt-2 text-sm leading-8 text-[#37443a] dark:text-[#c8d5cc]">
+                              {ur ? <KhateebScriptText text={block.body} /> : block.body}
+                            </p>
                           ) : null}
                         </article>
                       ))}
                     </div>
                     <div className="mt-4 rounded-xl border border-[#B8935A]/30 bg-[#fbf7ee] p-4 text-sm leading-8 text-[#5a4830] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#e2c895]">
                       <strong>{ur ? "اختتام: " : "Closing: "}</strong>
-                      {ur ? topicDossier.closingUr : topicDossier.closingEn}
+                      {ur
+                        ? <KhateebScriptText text={topicDossier.closingUr} />
+                        : topicDossier.closingEn}
                     </div>
                   </section>
                 </div>
@@ -1181,7 +1249,9 @@ export default function KhateebStudioContent({
                     {topic.quran.map((anchor) => (
                       <div key={anchor.ref}>
                         <div className="text-xs font-semibold text-[#8a6838]">{anchor.ref}</div>
-                        <div dir="rtl" className="mt-0.5 font-naskh text-sm text-[#1A3A2A] dark:text-[#e7eee9]">{anchor.arabic}</div>
+                        <div dir="rtl" className="mt-0.5 text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
+                          <KhateebScriptText text={anchor.arabic} forceArabic />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1800,8 +1870,8 @@ export default function KhateebStudioContent({
                     {preparation.quran.map((anchor) => (
                       <article key={anchor.ref} className="rounded-xl border border-[#1A3A2A]/10 p-4 dark:border-[#35513d]">
                         <div className="text-xs font-bold text-[#8a6838]">{anchor.ref}</div>
-                        <div dir="rtl" className="mt-2 font-naskh text-lg leading-9 text-[#17251c] dark:text-[#edf4ef]">
-                          {anchor.arabic}
+                        <div dir="rtl" className="mt-2 text-lg leading-9 text-[#17251c] dark:text-[#edf4ef]">
+                          <KhateebScriptText text={anchor.arabic} forceArabic />
                         </div>
                         <p className="mt-2 text-sm text-[#59665b] dark:text-[#a8b8aa]">
                           {ur ? anchor.ur : anchor.en}
