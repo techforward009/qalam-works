@@ -254,6 +254,22 @@ export default function KhateebStudioContent({
     0,
     (liveTopicResearch?.verifiedCount ?? 0) - liveEShiaVerifiedCount,
   );
+  const liveEShiaSourceLeads = liveTopicResearch?.evidence.filter(
+    (item) => item.status === "source-lead" && item.providerId === "eshia-library",
+  ) ?? [];
+  const liveThemeMap = Array.from(
+    liveEShiaSourceLeads.reduce((map, item) => {
+      for (const theme of item.themesUr ?? []) {
+        const current = map.get(theme) ?? [];
+        current.push(item.titleUr);
+        map.set(theme, current);
+      }
+      return map;
+    }, new Map<string, string[]>()),
+  ).map(([theme, titles]) => ({
+    theme,
+    titles: Array.from(new Set(titles)),
+  }));
   const liveResearchPack = liveTopicResearch
     ? buildLiveResearchPack(liveTopicResearch, duration)
     : null;
@@ -706,7 +722,7 @@ export default function KhateebStudioContent({
                       </p>
                     ) : null}
 
-                    {(liveTopicResearch?.verifiedCount ?? 0) > 0 ? (
+                    {(liveTopicResearch?.verifiedCount ?? 0) > 0 || (liveTopicResearch?.sourceLeadCount ?? 0) > 0 ? (
                       <div className="space-y-3 rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
@@ -731,6 +747,34 @@ export default function KhateebStudioContent({
   : (ur ? `${localVerifiedCount} محفوظ مصدقہ اندراج` : `${localVerifiedCount} verified local records`)}
                           </span>
                         </div>
+
+                        {ur && liveThemeMap.length > 0 ? (
+                          <div className="rounded-xl border border-[#B8935A]/25 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                                تحقیقی نقشہ
+                              </h5>
+                              <span className="text-xs text-[#687469] dark:text-[#9fb0a2]">
+                                {liveThemeMap.length} موضوعاتی محور
+                              </span>
+                            </div>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                              {liveThemeMap.map(({ theme, titles }) => (
+                                <div
+                                  key={theme}
+                                  className="rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]"
+                                >
+                                  <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
+                                    {theme}
+                                  </strong>
+                                  <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                                    {titles.length} متعلقہ ماخذی صفحہ{titles.length === 1 ? "" : "ات"}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
 
                         <div className="flex flex-wrap gap-2">
                           {([20, 30, 45] as SermonDuration[]).map((minutes) => (
@@ -796,7 +840,19 @@ export default function KhateebStudioContent({
                           )
                         ) : null}
 
-                        {liveResearchPack?.evidence
+                        {!liveResearchPack?.evidence.length && liveEShiaSourceLeads.length > 0 ? (
+                          <div className="rounded-xl border border-dashed border-[#B8935A]/35 bg-[#fbf7ee] px-4 py-3 text-sm leading-7 text-[#6f5730] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#d7bc8a]">
+                            {ur
+                              ? "یہ ماخذی صفحات تحقیق کے لیے مفید ہیں، مگر ابھی quote-verified مواد نہیں۔ مصدقہ اصل اقتباسات تیار ہونے کے بعد ہی 20/30/45 منٹ کا منبری پیک فعال ہوگا۔"
+                              : "These source pages are useful research leads, but they are not yet quote-verified. Timed sermon packs activate only after exact quotations are verified."}
+                          </div>
+                        ) : null}
+
+                        {(
+                          liveResearchPack?.evidence.length
+                            ? liveResearchPack.evidence
+                            : liveEShiaSourceLeads
+                        )
                           .slice(0, duration === 20 ? 5 : duration === 30 ? 8 : 12)
                           .map((item) => (
                             <article
