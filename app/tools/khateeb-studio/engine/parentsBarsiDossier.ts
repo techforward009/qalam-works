@@ -114,6 +114,106 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
         "https://najafdesertlibrary.com/book/%D8%B1%D9%88%D8%B6%D8%A9-%D8%A7%D9%84%D9%88%D8%A7%D8%B9%D8%B8%D9%8A%D9%86-%D9%88%D8%A8%D8%B5%D9%8A%D8%B1%D8%A9-%D8%A7%D9%84%D9%85%D8%AA%D8%B9%D8%B8%D9%8A%D9%86/v/2/p/241",
     },
     {
+      id: "rida-thank-parents",
+      kind: "hadith",
+      refUr: "امام رضاؑ — والدین کا شکر، شکرِ خدا کا حصہ",
+      refEn: "Imam al-Ridha — gratitude to parents and gratitude to God",
+      sourceArabic:
+        "إن الله عز وجل أمر بالشكر له وللوالدين، فمن لم يشكر والديه لم يشكر الله.",
+      sourceArabicMarked:
+        "إنَّ اللهَ عزّ وجل ... أمَرَ بِالشُّكرِ لَهُ ولِلوالِدَينِ، فَمَن لَم يَشكُر والِدَيهِ لَم يَشكُرِ اللهَ.",
+      sourceRefUr:
+        "امام رضاؑ؛ الخصال، ص156، ح196؛ عیون اخبار الرضا، ج1، ص258، ح13۔",
+      sourceRefEn:
+        "Imam al-Ridha; al-Khisal, p.156, hadith 196; Uyun Akhbar al-Ridha, vol.1, p.258, hadith 13.",
+      explanationUr:
+        "یہ روایت شکرِ والدین کو دینی شکر کے وسیع تصور سے جوڑتی ہے۔ خطیب اس سے یہ نکتہ کھول سکتا ہے کہ نعمت کے انسانی وسیلے کو پہچاننا بھی شکر کا حصہ ہے۔",
+      explanationEn:
+        "This narration connects gratitude to parents with the wider religious meaning of gratitude.",
+      sourceUrl:
+        "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+    },
+    {
+      id: "sadiq-ihsan-before-asking",
+      kind: "hadith",
+      refUr: "امام صادقؑ — احسان: والدین کو مانگنے پر مجبور نہ کرنا",
+      refEn: "Imam al-Sadiq — kindness before parents have to ask",
+      sourceArabic:
+        "الإحسان أن تحسن صحبتهما، وألا تكلفهما أن يسألاك شيئا مما يحتاجان إليه وإن كانا مستغنيين.",
+      sourceArabicMarked:
+        "الإحسانُ أن تُحسِنَ صُحبَتَهُما، وألّا تُكَلِّفَهُما أن يَسألاكَ شَيئاً مِمّا يَحتاجانِ إلَيهِ وإن كانا مُستَغنِيَينِ.",
+      sourceRefUr:
+        "امام صادقؑ؛ الکافی، ج2، ص157، ح1؛ مشکاۃ الانوار، ص282، ح854۔",
+      sourceRefEn:
+        "Imam al-Sadiq; al-Kafi, vol.2, p.157, hadith 1; Mishkat al-Anwar, p.282, hadith 854.",
+      explanationUr:
+        "یہ روایت خدمت کو صرف مالی مدد سے آگے لے جاتی ہے: اولاد والدین کی ضرورت، وقت، عزت اور سہولت کو اس سے پہلے محسوس کرے کہ انہیں خود سوال کرنا پڑے۔",
+      explanationEn:
+        "The narration expands kindness beyond money into anticipating parents' needs before they are forced to ask.",
+      sourceUrl:
+        "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+    },
+    {
+      id: "sadiq-mercy-voice-steps",
+      kind: "hadith",
+      refUr: "امام صادقؑ — نگاہ، آواز اور طرزِ رفتار میں احترام",
+      refEn: "Imam al-Sadiq — mercy in gaze, voice, and conduct",
+      sourceArabic:
+        "لا تملأ عينيك من النظر إليهما إلا برحمة ورقة، ولا ترفع صوتك فوق أصواتهما، ولا يدك فوق أيديهما، ولا تقدم قدامهما.",
+      sourceArabicMarked:
+        "لا تَملأَ عَينَيكَ مِنَ النَّظَرِ إلَيهِما إلّا بِرَحمَةٍ ورِقَّةٍ، ولا تَرفَع صَوتَكَ فَوقَ أصواتِهِما، ولا يَدَكَ فَوقَ أيديهِما، ولا تَقَدَّم قُدّامَهُما.",
+      sourceRefUr:
+        "امام صادقؑ؛ الکافی، ج2، ص158، ح1؛ من لا یحضرہ الفقیہ، ج4، ص408، ح5883۔",
+      sourceRefEn:
+        "Imam al-Sadiq; al-Kafi, vol.2, p.158, hadith 1; Man la Yahduruhu al-Faqih, vol.4, p.408, hadith 5883.",
+      explanationUr:
+        "یہ روایت احترام کو نہایت عملی تفصیل دیتی ہے: نگاہ، آواز، ہاتھ اور چلنے کے انداز تک۔ خطیب کے لیے روزمرہ گھریلو رویے پر گفتگو کا مضبوط متن ہے۔",
+      explanationEn:
+        "The narration makes respect concrete through gaze, voice, gesture, and walking conduct.",
+      sourceUrl:
+        "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+    },
+    {
+      id: "sadiq-three-parental-rights",
+      kind: "hadith",
+      refUr: "امام صادقؑ — والدین کے تین جامع حقوق",
+      refEn: "Imam al-Sadiq — three comprehensive rights of parents",
+      sourceArabic:
+        "يجب للوالدين على الولد ثلاثة أشياء: شكرهما على كل حال، وطاعتهما فيما يأمرانه وينهيانه عنه في غير معصية الله، ونصيحتهما في السر والعلانية.",
+      sourceArabicMarked:
+        "يَجِبُ لِلوالِدَينِ عَلَى الوَلَدِ ثَلاثَةُ أشياءَ: شُكرُهُما عَلى كُلِّ حالٍ، وطاعَتُهُما فيما يَأمُرانِهِ ويَنهَيانِهِ عَنهُ في غَيرِ مَعصيَةِ اللهِ، ونَصيحَتُهُما فِي السِّرِّ وَالعَلانِيَةِ.",
+      sourceRefUr:
+        "امام صادقؑ؛ تحف العقول، ص322؛ بحار الانوار، ج78، ص236، ح67۔",
+      sourceRefEn:
+        "Imam al-Sadiq; Tuhaf al-Uqul, p.322; Bihar al-Anwar, vol.78, p.236, hadith 67.",
+      explanationUr:
+        "شکر، جائز امور میں اطاعت اور پوشیدہ و علانیہ خیر خواہی—یہ تین نکات خطیب کو والدین کے حق کا مختصر مگر جامع خاکہ دیتے ہیں۔",
+      explanationEn:
+        "Gratitude, obedience outside sin, and sincere counsel provide a compact framework for parental rights.",
+      sourceUrl:
+        "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+    },
+    {
+      id: "sadiq-generational-birr",
+      kind: "hadith",
+      refUr: "امام صادقؑ — والدین سے نیکی اور نسلوں میں اس کا اثر",
+      refEn: "Imam al-Sadiq — filial goodness across generations",
+      sourceArabic:
+        "بروا آباءكم يبركم أبناؤكم.",
+      sourceArabicMarked:
+        "بَرُّوا آباءَكُم؛ يَبَرَّكُم أبناؤُكُم.",
+      sourceRefUr:
+        "امام صادقؑ؛ الکافی، ج5، ص554، ح5؛ من لا یحضرہ الفقیہ، ج4، ص21، ح4985۔",
+      sourceRefEn:
+        "Imam al-Sadiq; al-Kafi, vol.5, p.554, hadith 5; Man la Yahduruhu al-Faqih, vol.4, p.21, hadith 4985.",
+      explanationUr:
+        "یہ مختصر روایت برِّ والدین کو نسل در نسل اخلاقی تربیت سے جوڑتی ہے۔ والدین کے ساتھ ہمارا رویہ ہماری اولاد کے لیے بھی ایک عملی نمونہ بنتا ہے۔",
+      explanationEn:
+        "This concise narration links filial goodness with intergenerational moral formation.",
+      sourceUrl:
+        "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+    },
+    {
       id: "birr-after-death",
       kind: "hadith",
       refUr: "رسول اکرمؐ — والدین کی وفات کے بعد بھی نیکی",
