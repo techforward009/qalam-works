@@ -88,7 +88,7 @@ export function buildLiveResearchPack(
   }
 
   const hasQuranOrHadith = quran.length > 0 || narrations.length > 0;
-  const sections: LiveResearchPack["sections"] = [];
+  const sections: Array<LiveResearchPack["sections"][number]> = [];
 
   if (!hasQuranOrHadith) {
     const minutes = SOURCE_ONLY_MINUTES[duration];
