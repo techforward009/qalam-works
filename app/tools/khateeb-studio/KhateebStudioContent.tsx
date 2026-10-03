@@ -64,6 +64,7 @@ import {
   type KhateebStudioView,
 } from "./engine/studioView";
 import type { KhateebResearchResult } from "./engine/researchTypes";
+import { buildLiveResearchPack } from "./engine/liveResearchPack";
 
 const ORIGINALITY_LABEL_UR = {
   titles: "عنوانات کی آزادی",
@@ -243,6 +244,36 @@ export default function KhateebStudioContent({
       controller.abort();
     };
   }, [topicQuery, topicResults.length, ur]);
+  const liveEShiaVerifiedCount = liveTopicResearch?.evidence.filter(
+    (item) => item.status === "verified" && item.providerId === "eshia-library",
+  ).length ?? 0;
+  const liveEShiaLeadCount = liveTopicResearch?.evidence.filter(
+    (item) => item.status === "source-lead" && item.providerId === "eshia-library",
+  ).length ?? 0;
+  const localVerifiedCount = Math.max(
+    0,
+    (liveTopicResearch?.verifiedCount ?? 0) - liveEShiaVerifiedCount,
+  );
+  const liveEShiaSourceLeads = liveTopicResearch?.evidence.filter(
+    (item) => item.status === "source-lead" && item.providerId === "eshia-library",
+  ) ?? [];
+  const liveThemeMap = Array.from(
+    liveEShiaSourceLeads.reduce((map, item) => {
+      for (const theme of item.themesUr ?? []) {
+        const current = map.get(theme) ?? [];
+        current.push(item.titleUr);
+        map.set(theme, current);
+      }
+      return map;
+    }, new Map<string, string[]>()),
+  ).map(([theme, titles]) => ({
+    theme,
+    titles: Array.from(new Set(titles)),
+  }));
+  const liveResearchPack = liveTopicResearch
+    ? buildLiveResearchPack(liveTopicResearch, duration)
+    : null;
+
   const topic = topicResults.find((item) => item.id === selectedTopicId)
     ?? topicResults[0];
   const rawTopicDossier = topic ? getTopicDossier(topic.id) : null;
@@ -691,27 +722,138 @@ export default function KhateebStudioContent({
                       </p>
                     ) : null}
 
-                    {liveTopicResearch?.evidence?.length ? (
+                    {(liveTopicResearch?.verifiedCount ?? 0) > 0 || (liveTopicResearch?.sourceLeadCount ?? 0) > 0 ? (
                       <div className="space-y-3 rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
                             <h4 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
-                              {ur ? "براہِ راست تحقیقی مواد" : "Live research material"}
+                              {liveEShiaLeadCount > 0 || liveEShiaVerifiedCount > 0
+  ? (ur ? "براہِ راست ماخذی تحقیق" : "Live source research")
+  : (ur ? "متعلقہ محفوظ تحقیقی مواد" : "Related verified local material")}
                             </h4>
                             <p className="mt-1 text-xs text-[#687469] dark:text-[#9fb0a2]">
-                              {ur
-                                ? "اصل ماخذ سے حاصل شدہ متن اور حوالہ؛ صارف کو دوسری ویب سائٹ پر جانے کی ضرورت نہیں۔"
-                                : "Source-grounded text and references are shown here; no external browsing is required."}
+                              {liveEShiaLeadCount > 0 || liveEShiaVerifiedCount > 0
+  ? (ur
+      ? "ای شیعہ کے متعلقہ اصل صفحات مل گئے ہیں۔ صفحاتی متن بطور ماخذی سراغ دکھایا جا رہا ہے؛ اسے ابھی لفظ بہ لفظ مصدقہ روایت یا حتمی اقتباس نہ سمجھیں۔"
+      : "Relevant eShia source pages were found. Page text is shown as a source lead, not yet as a quote-verified narration.")
+  : (ur
+      ? "یہ مواد براہِ راست ای شیعہ سے نہیں ملا؛ قریب ترین محفوظ موضوع سے مصدقہ مواد دکھایا جا رہا ہے۔"
+      : "No live eShia hit was found; this is verified material from the closest local topic.")}
                             </p>
                           </div>
                           <span className="rounded-full bg-[#F7F5EF] px-2.5 py-1 text-xs font-semibold text-[#6b776d] dark:bg-[#0e1c15] dark:text-[#98aa9b]">
-                            {liveTopicResearch.verifiedCount} {ur ? "مصدقہ اندراج" : "verified records"}
+                            {liveEShiaLeadCount > 0 || liveEShiaVerifiedCount > 0
+  ? (ur ? `${liveEShiaLeadCount + liveEShiaVerifiedCount} ای شیعہ ماخذی صفحات، ${localVerifiedCount} محفوظ مصدقہ` : `${liveEShiaLeadCount + liveEShiaVerifiedCount} eShia source pages, ${localVerifiedCount} verified local`)
+  : (ur ? `${localVerifiedCount} محفوظ مصدقہ اندراج` : `${localVerifiedCount} verified local records`)}
                           </span>
                         </div>
 
-                        {liveTopicResearch.evidence
-                          .filter((item) => item.status === "verified")
-                          .slice(0, 5)
+                        {ur && liveThemeMap.length > 0 ? (
+                          <div className="rounded-xl border border-[#B8935A]/25 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                                تحقیقی نقشہ
+                              </h5>
+                              <span className="text-xs text-[#687469] dark:text-[#9fb0a2]">
+                                {liveThemeMap.length} موضوعاتی محور
+                              </span>
+                            </div>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                              {liveThemeMap.map(({ theme, titles }) => (
+                                <div
+                                  key={theme}
+                                  className="rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]"
+                                >
+                                  <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
+                                    {theme}
+                                  </strong>
+                                  <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                                    {titles.length} متعلقہ ماخذی صفحہ{titles.length === 1 ? "" : "ات"}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <div className="flex flex-wrap gap-2">
+                          {([20, 30, 45] as SermonDuration[]).map((minutes) => (
+                            <button
+                              key={minutes}
+                              type="button"
+                              onClick={() => setDuration(minutes)}
+                              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                                duration === minutes
+                                  ? "border-[#1A3A2A] bg-[#1A3A2A] text-white dark:border-[#8faa93] dark:bg-[#35513d]"
+                                  : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
+                              }`}
+                            >
+                              {minutes} {ur ? "منٹ" : "min"}
+                            </button>
+                          ))}
+                        </div>
+
+                        {liveResearchPack && liveResearchPack.evidence.length > 0 ? (
+                          liveResearchPack.ready ? (
+                            <div className="rounded-xl border border-[#B8935A]/30 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                                  {ur
+                                    ? `${duration} منٹ کا تحقیقی منبری پیک`
+                                    : `${duration}-minute research sermon pack`}
+                                </h5>
+                                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#6b776d] dark:bg-[#162a1e] dark:text-[#98aa9b]">
+                                  {liveResearchPack.evidence.length} {ur ? "منتخب ماخذ" : "selected sources"}
+                                </span>
+                              </div>
+                              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                {liveResearchPack.sections.map((section) => (
+                                  <div
+                                    key={section.id}
+                                    className="rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
+                                        {ur ? section.headingUr : section.headingEn}
+                                      </strong>
+                                      <span className="text-xs text-[#8a6838] dark:text-[#d7bc8a]">
+                                        {section.minutes} {ur ? "منٹ" : "min"}
+                                      </span>
+                                    </div>
+                                    {section.evidenceIds.length ? (
+                                      <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                                        {ur
+                                          ? `${section.evidenceIds.length} ماخذی اندراج اس حصے کے لیے منتخب`
+                                          : `${section.evidenceIds.length} source records selected for this section`}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-200">
+                              {ur
+                                ? `${duration} منٹ کا باقاعدہ منبری پیک بنانے کے لیے کم از کم ${liveResearchPack.minimumSources} مضبوط ماخذ درکار ہیں۔ ابھی ${liveResearchPack.evidence.length} ملا ہے؛ مزید ${liveResearchPack.missingSources} ماخذ درکار ہیں۔`
+                                : `A ${duration}-minute sermon pack needs at least ${liveResearchPack.minimumSources} strong sources. ${liveResearchPack.evidence.length} found; ${liveResearchPack.missingSources} more needed.`}
+                            </div>
+                          )
+                        ) : null}
+
+                        {!liveResearchPack?.evidence.length && liveEShiaSourceLeads.length > 0 ? (
+                          <div className="rounded-xl border border-dashed border-[#B8935A]/35 bg-[#fbf7ee] px-4 py-3 text-sm leading-7 text-[#6f5730] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#d7bc8a]">
+                            {ur
+                              ? "یہ ماخذی صفحات تحقیق کے لیے مفید ہیں، مگر ابھی quote-verified مواد نہیں۔ مصدقہ اصل اقتباسات تیار ہونے کے بعد ہی 20/30/45 منٹ کا منبری پیک فعال ہوگا۔"
+                              : "These source pages are useful research leads, but they are not yet quote-verified. Timed sermon packs activate only after exact quotations are verified."}
+                          </div>
+                        ) : null}
+
+                        {(
+                          liveResearchPack?.evidence.length
+                            ? liveResearchPack.evidence
+                            : liveEShiaSourceLeads
+                        )
+                          .slice(0, duration === 20 ? 5 : duration === 30 ? 8 : 12)
                           .map((item) => (
                             <article
                               key={item.id}
@@ -727,7 +869,15 @@ export default function KhateebStudioContent({
                                   </span>
                                 ) : null}
                               </div>
-                              {item.arabic ? (
+                              {item.providerId === "eshia-library" ? (
+                                <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
+                                  <KhateebScriptText
+                                    text={ur ? item.detailUr : item.detailEn}
+                                    forcePersian={/[پچژگک]/u.test(ur ? item.detailUr : item.detailEn)}
+                                    forceArabic={!/[پچژگک]/u.test(ur ? item.detailUr : item.detailEn)}
+                                  />
+                                </div>
+                              ) : item.arabic ? (
                                 <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
                                   <KhateebScriptText text={item.arabic} forceArabic />
                                 </div>
@@ -736,6 +886,15 @@ export default function KhateebStudioContent({
                                   {ur ? item.detailUr : item.detailEn}
                                 </p>
                               )}
+                              {ur && item.themesUr?.length ? (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {item.themesUr.map((theme) => (
+                                    <span key={theme} className="rounded-full border border-[#B8935A]/25 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#6f5730] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#d7bc8a]">
+                                      {theme}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
                               <div className="mt-3 text-xs leading-6 text-[#6f5730] dark:text-[#d7bc8a]">
                                 <strong>{ur ? "حوالہ: " : "Reference: "}</strong>
                                 {ur ? item.citationUr : item.citationEn}

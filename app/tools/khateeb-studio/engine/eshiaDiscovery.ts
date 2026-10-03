@@ -1,6 +1,6 @@
 const ESHIA_BASE = "https://lib.eshia.ir";
 const ESHIA_ADVANCED_SEARCH = `${ESHIA_BASE}/advanced-search`;
-const PAGE_PATH = /^\/\d+\/\d+\/\d+(?:[/?#].*)?$/;
+const PAGE_PATH = /^\/(\d+)\/(\d+)\/(\d+)(?:\/.*)?$/;
 
 export type EShiaDiscoveryHit = {
   url: string;
@@ -46,32 +46,54 @@ export function parseEShiaSearchForm(html: string): {
   queryField: string;
   hidden: Record<string, string>;
 } | null {
-  const forms = [...html.matchAll(/<form\b[^>]*>[\s\S]*?<\/form>/gi)];
-  for (const formMatch of forms) {
-    const form = formMatch[0];
-    if (!/advanced|جستجو|search/i.test(form)) continue;
-    const open = form.match(/^<form\b[^>]*>/i)?.[0] ?? "";
-    const formAttrs = attrs(open);
-    const inputs = [...form.matchAll(/<input\b[^>]*>/gi)].map((m) => attrs(m[0]));
-    const textInputs = inputs.filter((input) => {
-      const type = (input.type || "text").toLowerCase();
-      return type === "text" || type === "search";
-    });
-    const queryField = textInputs.find((input) => input.name)?.name;
+  const forms = [...html.matchAll(/<form\b[^>]*>[\s\S]*?<\/form>/gi)]
+    .map((formMatch) => {
+      const form = formMatch[0];
+      const open = form.match(/^<form\b[^>]*>/i)?.[0] ?? "";
+      const formAttrs = attrs(open);
+      const inputs = [...form.matchAll(/<input\b[^>]*>/gi)].map((m) => attrs(m[0]));
+      const textInputs = inputs.filter((input) => {
+        const type = (input.type || "text").toLowerCase();
+        return type === "text" || type === "search";
+      });
+      return { formAttrs, inputs, textInputs };
+    })
+    .filter((item) => item.textInputs.some((input) => input.name));
+
+  forms.sort((a, b) => {
+    const aAdvanced = a.textInputs.length >= 3 ? 100 : 0;
+    const bAdvanced = b.textInputs.length >= 3 ? 100 : 0;
+    return (bAdvanced + b.textInputs.length) - (aAdvanced + a.textInputs.length);
+  });
+
+  for (const { formAttrs, inputs, textInputs } of forms) {
+    const queryField =
+      textInputs.find((input) =>
+        /all|word|key|query|search|text/i.test(input.name || ""),
+      )?.name ?? textInputs[0]?.name;
     if (!queryField) continue;
 
     const hidden: Record<string, string> = {};
     for (const input of inputs) {
-      if ((input.type || "").toLowerCase() === "hidden" && input.name) hidden[input.name] = input.value || "";
+      if ((input.type || "").toLowerCase() === "hidden" && input.name) {
+        hidden[input.name] = input.value || "";
+      }
     }
 
     return {
-      action: formAttrs.action || "/advanced-search",
-      method: (formAttrs.method || "GET").toUpperCase() === "POST" ? "POST" : "GET",
+      action:
+        formAttrs.action && formAttrs.action !== "#"
+          ? formAttrs.action
+          : "/advanced-search",
+      method:
+        (formAttrs.method || "GET").toUpperCase() === "POST"
+          ? "POST"
+          : "GET",
       queryField,
       hidden,
     };
   }
+
   return null;
 }
 
@@ -91,8 +113,9 @@ export function parseEShiaResultLinks(html: string, limit = 12): readonly EShiaD
       continue;
     }
 
-    if (url.hostname !== "lib.eshia.ir" || !PAGE_PATH.test(url.pathname)) continue;
-    const canonical = `${url.origin}${url.pathname}`;
+    const pageMatch = url.pathname.match(PAGE_PATH);
+    if (url.hostname !== "lib.eshia.ir" || !pageMatch) continue;
+    const canonical = `${url.origin}/${pageMatch[1]}/${pageMatch[2]}/${pageMatch[3]}`;
     if (seen.has(canonical)) continue;
 
     const title = stripTags(match[2]);
@@ -167,7 +190,20 @@ export async function discoverEShia(
       return { query: clean, provider: "eshia-library", status: "unavailable", hits: [], diagnostic: `search-http-${response.status}` };
     }
 
-    const hits = parseEShiaResultLinks(await response.text(), options.limit ?? 12);
+    const resultHtml = await response.text();
+    const hits = parseEShiaResultLinks(resultHtml, options.limit ?? 12);
+    console.info("[khateeb-eshia] discovery", {
+      query: clean,
+      action: target,
+      method: form.method,
+      queryField: form.queryField,
+      responseUrl: response.url,
+      htmlLength: resultHtml.length,
+      candidateHrefs: [...resultHtml.matchAll(/<a\b[^>]*href=(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi)]
+        .slice(0, 20)
+        .map((match) => match[1] ?? match[2] ?? match[3] ?? ""),
+      hitCount: hits.length,
+    });
     return {
       query: clean,
       provider: "eshia-library",

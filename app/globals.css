@@ -77,6 +77,11 @@ textarea {
   line-height: 1.9;
 }
 
+.font-vazirmatn {
+  font-family: var(--font-vazirmatn), Vazirmatn, sans-serif;
+  line-height: 1.9;
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
    SITE CONTAINER
    ──────────────────────────────────────────────────────────────────────────── */
