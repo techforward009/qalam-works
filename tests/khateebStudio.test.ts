@@ -338,6 +338,33 @@ describe("Khateeb Studio deep sermon dossiers", () => {
   });
 });
 
+describe("Khateeb Studio parents and memorial deep topic", () => {
+  test("finds the topic from natural Urdu search terms", () => {
+    expect(searchTopicPreps("والدین", "ur")[0]?.id).toBe("parents-barsi");
+    expect(searchTopicPreps("برسی", "ur")[0]?.id).toBe("parents-barsi");
+    expect(searchTopicPreps("مرحوم والدین", "ur")[0]?.id).toBe("parents-barsi");
+  });
+
+  test("provides a substantive multi-source parents dossier", () => {
+    const dossier = getTopicDossier("parents-barsi");
+    expect(dossier).not.toBeNull();
+    expect(dossier?.perspectives.length).toBeGreaterThanOrEqual(3);
+    expect(dossier?.perspectives.some((item) => item.nameUr.includes("زین العابدین"))).toBe(true);
+    expect(dossier?.perspectives.some((item) => item.nameUr.includes("ابراہیم امینی"))).toBe(true);
+    expect(dossier?.perspectives.some((item) => item.nameUr.includes("محمدی ری شہری"))).toBe(true);
+    expect(dossier?.pulpitFlowUr.length).toBeGreaterThanOrEqual(7);
+  });
+
+  test("keeps the Urdu dossier preacher-facing and free of English prose", () => {
+    const text = buildDossierText(getTopicDossier("parents-barsi")!, "ur");
+    expect(text).toContain("والدین");
+    expect(text).toContain("برسی");
+    expect(text).toContain("وفات کے بعد");
+    expect(text).toContain("رسالۃ الحقوق");
+    expect(hasLatinWord(text)).toBe(false);
+  });
+});
+
 describe("Khateeb Studio guided workflow", () => {
   test("presents a clear three-step preparation journey", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
@@ -366,6 +393,21 @@ describe("Khateeb Studio guided workflow", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).not.toContain("lg:grid-cols-[1.05fr_0.95fr]");
     expect(studio).toContain("space-y-6");
+  });
+
+  test("puts topic search at the very top of the studio workflow", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("مجلس کا موضوع تلاش کریں");
+    expect(studio).toContain("مثلاً: والدین، برسی، امامت، دعا، صبر، نوجوان، موت");
+    expect(studio.indexOf("مجلس کا موضوع تلاش کریں")).toBeLessThan(studio.indexOf("میرے تمام نوٹس"));
+    expect(studio.indexOf("مجلس کا موضوع تلاش کریں")).toBeLessThan(studio.indexOf("تیاری کے مراحل"));
+  });
+
+  test("top search immediately switches the workflow into topic preparation", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain('setPreparationMode("topic")');
+    expect(studio).toContain("setWorkflowStep(1)");
+    expect(studio).toContain("topicResults.slice(0, 8)");
   });
 });
 

@@ -17,6 +17,119 @@ export type TopicPrep = SermonPrep & {
 
 const TOPICS: readonly TopicPrep[] = [
   {
+    id: "parents-barsi",
+    category: "family",
+    titleUr: "والدین، برسی اور وفات کے بعد بھی جاری رہنے والا حق",
+    titleEn: "Parents, remembrance, and duties that continue after death",
+    themeUr:
+      "والدین کے حق کو صرف اطاعت یا جذباتی یاد تک محدود نہ رکھیں؛ قرآن، رسالۃ الحقوق اور معتبر شیعہ علمی مواد کی روشنی میں اسے وجود، پرورش، شکر، بڑھاپا، تربیت، دعا اور وفات کے بعد جاری نیکی کے ایک مربوط رشتے کے طور پر پیش کریں۔",
+    themeEn:
+      "Present parental rights as a continuous relationship of origin, nurture, gratitude, care, formation, prayer, and goodness after death.",
+    openingUr:
+      "اگر والدین دنیا سے چلے جائیں تو کیا ان کا حق ختم ہو جاتا ہے، یا اولاد کی ذمہ داری ایک نئی صورت میں شروع ہوتی ہے؟",
+    openingEn:
+      "When parents die, does their right end, or does the child's responsibility continue in another form?",
+    quran: [
+      {
+        ref: "الإسراء 17:23–24",
+        arabic: "وَقَضٰى رَبُّكَ اَلَّا تَعْبُدُوْا اِلَّا اِيَّاهُ وَبِالْوَالِدَيْنِ اِحْسَانًا",
+        ur: "توحید کے فوراً بعد والدین کے ساتھ احسان، بڑھاپے میں نرم لہجہ، رحمت اور دعا کو مجلس کی بنیادی قرآنی ساخت بنائیں۔",
+        en: "Use the sequence from worship of God to kindness, gentleness, mercy, and prayer for parents.",
+      },
+      {
+        ref: "لقمان 31:14",
+        arabic: "اَنِ اشْكُرْ لِيْ وَلِوَالِدَيْكَ",
+        ur: "شکرِ خدا اور شکرِ والدین کے باہمی تعلق کو واضح کریں۔",
+        en: "Connect gratitude to God with gratitude to parents.",
+      },
+      {
+        ref: "الأحقاف 46:15",
+        arabic: "رَبِّ اَوْزِعْنِيْ اَنْ اَشْكُرَ نِعْمَتَكَ الَّتِيْ اَنْعَمْتَ عَلَيَّ وَعَلٰى وَالِدَيَّ",
+        ur: "بالغ انسان کی دعا میں اپنے ساتھ والدین کی نعمت کو یاد کرنے کا زاویہ لائیں۔",
+        en: "Use the mature believer's prayer that remembers blessings upon both self and parents.",
+      },
+    ],
+    sources: [
+      {
+        labelUr: "امام زین العابدینؑ — رسالۃ الحقوق",
+        labelEn: "Imam Ali Zayn al-Abidin — Treatise on Rights",
+        detailUr:
+          "حقِ مادر اور حقِ پدر: حمل، پرورش، حفاظت، قربانی، اصل و نسبت اور شکر کے بنیادی نکات۔",
+        detailEn:
+          "Rights of mother and father: pregnancy, nurture, protection, sacrifice, origin, and gratitude.",
+      },
+      {
+        labelUr: "آیت اللہ ابراہیم امینیؒ — اصولِ تربیتِ اولاد",
+        labelEn: "Ayatullah Ibrahim Amini — Principles of Upbringing Children",
+        detailUr:
+          "والدین کے مقام کے ساتھ ان کی تربیتی ذمہ داری اور اولاد کے کردار میں ان کی نیکی کے تسلسل کا زاویہ۔",
+        detailEn:
+          "Parental responsibility and the continuation of parental formation in the child's character.",
+      },
+      {
+        labelUr: "آیت اللہ محمد محمدی ری شہریؒ — قرآن و سنت میں بچے",
+        labelEn: "Ayatullah Muhammad Muhammadi Reyshahri — Children in the Qur'an and Sunnah",
+        detailUr:
+          "والدین کے ساتھ حسنِ سلوک، شکر، خدمت، دعا اور وفات کے بعد بھی جاری نیکی سے متعلق مرتب روایات۔",
+        detailEn:
+          "Hadith material on kindness, gratitude, service, prayer, and continuing goodness after parents' death.",
+      },
+    ],
+    anglesUr: [
+      "توحید کے بعد والدین کے ساتھ احسان",
+      "ماں اور باپ کے الگ الگ حقوق",
+      "بڑھاپے میں لہجہ اور عملی خدمت",
+      "والدین کی تربیت اولاد میں کیسے زندہ رہتی ہے",
+      "وفات کے بعد دعا، استغفار اور صدقہ",
+      "برسی کو سالانہ محاسبہ بنانا",
+      "والدین کی ایک اچھی صفت کو اپنی زندگی میں جاری رکھنا",
+    ],
+    anglesEn: [
+      "Kindness to parents after tawhid",
+      "Distinct rights of mother and father",
+      "Speech and service in old age",
+      "Parental formation that survives in children",
+      "Prayer, forgiveness, and charity after death",
+      "Turning remembrance into an annual moral audit",
+      "Continuing one parental virtue in one's own life",
+    ],
+    cautionUr:
+      "برسی کو صرف جذباتی یاد یا روایات کی فہرست نہ بنائیں۔ اصل آیات اور معتبر متن سے اصول قائم کریں، پھر سامع کو واضح عملی نتیجے تک لے جائیں۔ وفات کے بعد ثواب پہنچانے سے متعلق وہی اعمال بیان کریں جن کا معتبر دینی ماخذ موجود ہو۔",
+    cautionEn:
+      "Do not reduce the memorial sermon to emotion or a list of narrations. Establish principles from verified sources and move to concrete action.",
+    keywordsUr: [
+      "والدین",
+      "ماں",
+      "باپ",
+      "مادر",
+      "پدر",
+      "حق والدین",
+      "بر والدین",
+      "برسی",
+      "وفات",
+      "مرحوم والدین",
+      "ایصال ثواب",
+      "دعا",
+      "استغفار",
+      "صدقہ",
+      "صلہ رحم",
+      "تربیت اولاد",
+    ],
+    keywordsEn: [
+      "parents",
+      "mother",
+      "father",
+      "parental rights",
+      "memorial",
+      "death anniversary",
+      "deceased parents",
+      "prayer for parents",
+      "charity",
+      "kinship",
+      "upbringing",
+    ],
+  },
+  {
     id: "quran-hidayat",
     category: "belief",
     titleUr: "قرآن اور ہدایت: کتاب سے زندگی تک",

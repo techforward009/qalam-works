@@ -1,5 +1,6 @@
 import type { SermonLocale } from "./sermonPrep";
 import { pureKhateebUrdu } from "./urduPurity";
+import { PARENTS_BARSI_DOSSIER } from "./parentsBarsiDossier";
 
 export type ScholarPerspective = {
   id: string;
@@ -1098,7 +1099,14 @@ const QURAN_HIDAYAT: SermonDossier = {
     "Give the listener one practical commitment: before one important decision this week, ask not only what I want, but where the Qur'an directs me, then test that understanding through authoritative religious guidance.",
 };
 
-const DOSSIERS: readonly SermonDossier[] = [SABR, IMAMATE, DUA, ISMAH, QURAN_HIDAYAT];
+const DOSSIERS: readonly SermonDossier[] = [
+  SABR,
+  IMAMATE,
+  DUA,
+  ISMAH,
+  QURAN_HIDAYAT,
+  PARENTS_BARSI_DOSSIER,
+];
 
 export function getTopicDossier(topicId: string): SermonDossier | null {
   const dossier = DOSSIERS.find((item) => item.topicId === topicId);

@@ -463,6 +463,62 @@ export default function KhateebStudioContent({
               ? "موضوع سے یا مناسبت سے تیاری کریں، معتبر علمی سمتیں دیکھیں، اور خطبے کا قابلِ استعمال خاکہ بنائیں۔"
               : "Prepare by topic or occasion, review source-led directions, and build a usable sermon outline."}
           </p>
+
+          <div className="mx-auto mt-6 max-w-3xl text-start">
+            <div className="mb-2 text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+              {ur ? "مجلس کا موضوع تلاش کریں" : "Search your sermon topic"}
+            </div>
+            <label className="relative block">
+              <Search className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#748078]" />
+              <input
+                value={topicQuery}
+                onFocus={() => {
+                  setPreparationMode("topic");
+                  setWorkflowStep(1);
+                }}
+                onChange={(event) => {
+                  setTopicQuery(event.target.value);
+                  setPreparationMode("topic");
+                  setWorkflowStep(1);
+                }}
+                placeholder={
+                  ur
+                    ? "مثلاً: والدین، برسی، امامت، دعا، صبر، نوجوان، موت..."
+                    : "e.g. parents, anniversary, Imamate, dua, patience, youth, death..."
+                }
+                className="w-full rounded-2xl border border-[#B8935A]/45 bg-white py-4 ps-12 pe-4 text-base shadow-sm outline-none transition focus:border-[#B8935A] focus:ring-2 focus:ring-[#B8935A]/15 dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-white"
+              />
+            </label>
+            {topicQuery.trim() ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {topicResults.length ? (
+                  topicResults.slice(0, 8).map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => chooseTopic(item.id)}
+                      className="rounded-full border border-[#B8935A]/35 bg-[#fbf7ee] px-3 py-1.5 text-sm text-[#6f5730] hover:border-[#B8935A] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#e2c895]"
+                    >
+                      {topicTitle(item, ur ? "ur" : "en")}
+                    </button>
+                  ))
+                ) : (
+                  <p className="w-full rounded-xl bg-[#F7F5EF] px-4 py-3 text-sm text-[#5f6f61] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
+                    {ur
+                      ? "اس عنوان پر ابھی تیار موضوع نہیں ملا۔ اسے علمی ذخیرے میں شامل کرنا ہوگا۔"
+                      : "No prepared topic matches this title yet. It needs to be added to the research corpus."}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                {ur
+                  ? "عنوان لکھیں؛ متعلقہ تیار موضوعات فوراً سامنے آجائیں گے۔"
+                  : "Type a title and matching prepared topics will appear immediately."}
+              </p>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={() => setNotesLibraryOpen((value) => !value)}
@@ -667,33 +723,6 @@ export default function KhateebStudioContent({
                 </div>
               </>
             ) : null}
-          </div>
-
-          <label className={`${workflowStep === 1 ? "relative mt-5 block" : "hidden"}`}>
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#748078]" />
-            <input
-              value={topicQuery}
-              onChange={(event) => setTopicQuery(event.target.value)}
-              placeholder={ur ? "مثلاً: صبر، امامت، دعا، نوجوان، خاندان، موت..." : "e.g. patience, Imamate, dua, youth, family, death..."}
-              className="w-full rounded-xl border border-[#1A3A2A]/12 bg-transparent py-3 ps-10 pe-3 outline-none focus:border-[#B8935A] dark:border-[#35513d]"
-            />
-          </label>
-
-          <div className={`${workflowStep === 1 ? "mt-3 flex flex-wrap gap-2" : "hidden"}`}>
-            {topicResults.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => chooseTopic(item.id)}
-                className={`rounded-full border px-3 py-1.5 text-sm ${
-                  topic?.id === item.id
-                    ? "border-[#B8935A] bg-[#fbf7ee] text-[#6f5730] dark:bg-[#241f14] dark:text-[#e2c895]"
-                    : "border-[#1A3A2A]/12 text-[#425247] dark:border-[#35513d] dark:text-[#b7c8bb]"
-                }`}
-              >
-                {topicTitle(item, ur ? "ur" : "en")}
-              </button>
-            ))}
           </div>
 
           {!topic ? (
