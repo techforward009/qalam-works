@@ -244,12 +244,15 @@ export default function KhateebStudioContent({
       controller.abort();
     };
   }, [topicQuery, topicResults.length, ur]);
-  const liveEShiaCount = liveTopicResearch?.evidence.filter(
+  const liveEShiaVerifiedCount = liveTopicResearch?.evidence.filter(
     (item) => item.status === "verified" && item.providerId === "eshia-library",
+  ).length ?? 0;
+  const liveEShiaLeadCount = liveTopicResearch?.evidence.filter(
+    (item) => item.status === "source-lead" && item.providerId === "eshia-library",
   ).length ?? 0;
   const localVerifiedCount = Math.max(
     0,
-    (liveTopicResearch?.verifiedCount ?? 0) - liveEShiaCount,
+    (liveTopicResearch?.verifiedCount ?? 0) - liveEShiaVerifiedCount,
   );
   const liveResearchPack = liveTopicResearch
     ? buildLiveResearchPack(liveTopicResearch, duration)
@@ -708,23 +711,23 @@ export default function KhateebStudioContent({
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
                             <h4 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
-                              {liveEShiaCount > 0
-  ? (ur ? "براہِ راست تحقیقی مواد" : "Live research material")
+                              {liveEShiaLeadCount > 0 || liveEShiaVerifiedCount > 0
+  ? (ur ? "براہِ راست ماخذی تحقیق" : "Live source research")
   : (ur ? "متعلقہ محفوظ تحقیقی مواد" : "Related verified local material")}
                             </h4>
                             <p className="mt-1 text-xs text-[#687469] dark:text-[#9fb0a2]">
-                              {liveEShiaCount > 0
+                              {liveEShiaLeadCount > 0 || liveEShiaVerifiedCount > 0
   ? (ur
-      ? "ای شیعہ کے اصل صفحات اور محفوظ علمی مواد سے حاصل شدہ متن و حوالہ؛ صارف کو دوسری ویب سائٹ پر جانے کی ضرورت نہیں۔"
-      : "Text and references from live eShia pages and the verified local corpus are shown here.")
+      ? "ای شیعہ کے متعلقہ اصل صفحات مل گئے ہیں۔ صفحاتی متن بطور ماخذی سراغ دکھایا جا رہا ہے؛ اسے ابھی لفظ بہ لفظ مصدقہ روایت یا حتمی اقتباس نہ سمجھیں۔"
+      : "Relevant eShia source pages were found. Page text is shown as a source lead, not yet as a quote-verified narration.")
   : (ur
       ? "یہ مواد براہِ راست ای شیعہ سے نہیں ملا؛ قریب ترین محفوظ موضوع سے مصدقہ مواد دکھایا جا رہا ہے۔"
       : "No live eShia hit was found; this is verified material from the closest local topic.")}
                             </p>
                           </div>
                           <span className="rounded-full bg-[#F7F5EF] px-2.5 py-1 text-xs font-semibold text-[#6b776d] dark:bg-[#0e1c15] dark:text-[#98aa9b]">
-                            {liveEShiaCount > 0
-  ? (ur ? `${liveEShiaCount} ای شیعہ سے، ${localVerifiedCount} محفوظ` : `${liveEShiaCount} eShia, ${localVerifiedCount} local`)
+                            {liveEShiaLeadCount > 0 || liveEShiaVerifiedCount > 0
+  ? (ur ? `${liveEShiaLeadCount + liveEShiaVerifiedCount} ای شیعہ ماخذی صفحات، ${localVerifiedCount} محفوظ مصدقہ` : `${liveEShiaLeadCount + liveEShiaVerifiedCount} eShia source pages, ${localVerifiedCount} verified local`)
   : (ur ? `${localVerifiedCount} محفوظ مصدقہ اندراج` : `${localVerifiedCount} verified local records`)}
                           </span>
                         </div>
@@ -810,19 +813,32 @@ export default function KhateebStudioContent({
                                   </span>
                                 ) : null}
                               </div>
-                              {item.arabic ? (
+                              {item.providerId === "eshia-library" ? (
                                 <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
                                   <KhateebScriptText
-                                    text={item.arabic}
-                                    forcePersian={/[پچژگک]/u.test(item.arabic)}
-                                    forceArabic={!/[پچژگک]/u.test(item.arabic)}
+                                    text={ur ? item.detailUr : item.detailEn}
+                                    forcePersian={/[پچژگک]/u.test(ur ? item.detailUr : item.detailEn)}
+                                    forceArabic={!/[پچژگک]/u.test(ur ? item.detailUr : item.detailEn)}
                                   />
+                                </div>
+                              ) : item.arabic ? (
+                                <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
+                                  <KhateebScriptText text={item.arabic} forceArabic />
                                 </div>
                               ) : (
                                 <p className="mt-2 text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
                                   {ur ? item.detailUr : item.detailEn}
                                 </p>
                               )}
+                              {ur && item.themesUr?.length ? (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {item.themesUr.map((theme) => (
+                                    <span key={theme} className="rounded-full border border-[#B8935A]/25 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#6f5730] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#d7bc8a]">
+                                      {theme}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
                               <div className="mt-3 text-xs leading-6 text-[#6f5730] dark:text-[#d7bc8a]">
                                 <strong>{ur ? "حوالہ: " : "Reference: "}</strong>
                                 {ur ? item.citationUr : item.citationEn}
