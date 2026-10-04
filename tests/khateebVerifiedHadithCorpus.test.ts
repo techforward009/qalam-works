@@ -179,3 +179,49 @@ describe("Khateeb Dua hadith verification inventory", () => {
     ).toBe(true);
   });
 });
+
+
+describe("Khateeb Dua direct source verification", () => {
+  test("verifies four Al-Kafi Dua narrations and leaves Tanbih pending", () => {
+    const dua = VERIFIED_HADITH_CORPUS.filter((row) => row.topicIds.includes("dua"));
+    expect(dua.filter((row) => row.status === "verified")).toHaveLength(4);
+    expect(dua.filter((row) => row.status === "pending-verification")).toHaveLength(1);
+    expect(
+      dua.find((row) => row.dossierPrimaryTextId === "dua-best-worship")?.status,
+    ).toBe("pending-verification");
+  });
+
+  test("restores full Al-Kafi wording for abbreviated Dua dossier texts", () => {
+    const beloved = verifiedHadithForDossierText("dua-beloved-action");
+    const shield = verifiedHadithForDossierText("dua-shield-believer");
+    const station = verifiedHadithForDossierText("dua-station-through-asking");
+
+    expect(beloved?.exactArabic).toContain("وأفضل العبادة العفاف");
+    expect(shield?.exactArabic).toBe(
+      "الدعاء ترس المؤمن ومتى تكثر قرع الباب يفتح لك.",
+    );
+    expect(station?.exactArabic).toContain("ولو أن عبدا سد فاه ولم يسأل");
+  });
+
+  test("locks the corrected Al-Kafi hadith number for the believer's shield", () => {
+    const shield = verifiedHadithForDossierText("dua-shield-believer");
+    expect(shield?.verifiedReferenceUr).toBe("الکافی، ج2، ص468، ح4۔");
+    expect(shield?.witnesses[0]?.citation.hadithNumber).toBe("4");
+  });
+
+  test("live research exposes only the four directly verified Dua quotations", () => {
+    const result = researchKhateebTopic({
+      query: "دعا",
+      locale: "ur",
+      maxEvidence: 50,
+    });
+    const duaHadiths = result.evidence.filter(
+      (row) => row.kind === "hadith" && row.topicId === "dua",
+    );
+    expect(duaHadiths.filter((row) => row.status === "verified")).toHaveLength(4);
+    expect(duaHadiths.filter((row) => row.status === "source-lead")).toHaveLength(1);
+    expect(
+      duaHadiths.find((row) => row.id === "dua-primary-dua-shield-believer")?.citationUr,
+    ).toBe("الکافی، ج2، ص468، ح4۔");
+  });
+});
