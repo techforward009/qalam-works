@@ -30,6 +30,23 @@ export type KhateebResearchEvidence = {
   sourceExcerptStatus?: "page-excerpt";
 };
 
+export type KhateebHadithCandidate = {
+  id: string;
+  evidenceId: string;
+  status: "candidate" | "needs-context" | "not-hadith-like";
+  exactPageText: string;
+  sourceUrl: string;
+  citationUr: string;
+  citationEn: string;
+  score: number;
+  signals: readonly string[];
+  missing: readonly (
+    | "explicit-attribution"
+    | "clear-text-boundaries"
+    | "primary-source-confirmation"
+  )[];
+};
+
 export type KhateebResearchRequest = {
   query: string;
   locale?: "ur" | "en";
@@ -53,4 +70,5 @@ export type KhateebResearchResult = {
   }[];
   gapsUr: readonly string[];
   gapsEn: readonly string[];
+  hadithCandidates?: readonly KhateebHadithCandidate[];
 };
