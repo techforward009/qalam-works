@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 import { parseEShiaPage } from "../app/tools/khateeb-studio/engine/eshiaPage";
+import { extractEShiaSourceExcerpt } from "../app/tools/khateeb-studio/engine/eshiaSourceExcerpt";
 import { researchKhateebTopicWithEShia } from "../app/tools/khateeb-studio/engine/externalResearch";
 
 const PAGE = `
@@ -29,13 +30,32 @@ describe("live eShia page grounding", () => {
     expect(record?.text).toContain("الْقُرْآنُ عَهْدُ اللَّهِ");
   });
 
-  test("combines live eShia source text with Khateeb research without sending user away", async () => {
+  test("extracts an exact page substring without adding or normalizing source marks", () => {
+    const record = parseEShiaPage(PAGE, "https://lib.eshia.ir/11005/2/609", "القرآن");
+    const excerpt = extractEShiaSourceExcerpt(record?.text ?? "", "القرآن عهد الله");
+
+    expect(excerpt).not.toBeNull();
+    expect(record?.text.includes(excerpt!.text)).toBe(true);
+    expect(excerpt?.text).toContain("الْقُرْآنُ عَهْدُ اللَّهِ");
+    expect(excerpt?.matchedTerms.length).toBeGreaterThan(0);
+  });
+
+  test("combines live eShia source text with Khateeb research without promoting page text to verified hadith", async () => {
+    const htmlResponse = (body: string, url: string, status = 200) => {
+      const response = new Response(body, {
+        status,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+      Object.defineProperty(response, "url", { value: url });
+      return response;
+    };
+
     const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.endsWith("/advanced-search")) return new Response(SEARCH_FORM, { status: 200 });
-      if (url.includes("/advanced-search/results")) return new Response(SEARCH_RESULTS, { status: 200 });
-      if (url === "https://lib.eshia.ir/11005/2/609") return new Response(PAGE, { status: 200 });
-      return new Response("not found", { status: 404 });
+      if (url.endsWith("/advanced-search")) return htmlResponse(SEARCH_FORM, url);
+      if (url.includes("/advanced-search/results")) return htmlResponse(SEARCH_RESULTS, url);
+      if (url === "https://lib.eshia.ir/11005/2/609") return htmlResponse(PAGE, url);
+      return htmlResponse("not found", url, 404);
     });
 
     const result = await researchKhateebTopicWithEShia(
@@ -45,9 +65,11 @@ describe("live eShia page grounding", () => {
 
     const live = result.evidence.find((item) => item.id.startsWith("eshia-live-"));
     expect(live?.providerId).toBe("eshia-library");
-    expect(live?.status).toBe("verified");
+    expect(live?.status).toBe("source-lead");
     expect(live?.sourceUrl).toBe("https://lib.eshia.ir/11005/2/609");
     expect(live?.citationUr).toContain("ص609");
-    expect(live?.arabic).toContain("الْقُرْآنُ");
+    expect(live?.arabic).toBeUndefined();
+    expect(live?.sourceExcerptStatus).toBe("page-excerpt");
+    expect(live?.sourceExcerpt).toContain("الْقُرْآنُ عَهْدُ اللَّهِ");
   });
 });
