@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildGroundedFullSermon,
   buildGroundedFullSermonText,
+  validateGroundedFullSermon,
 } from "../app/tools/khateeb-studio/engine/groundedFullSermon";
 import { verifiedHadithForDossierText } from "../app/tools/khateeb-studio/engine/verifiedHadithCorpus";
 
@@ -93,6 +94,46 @@ describe("Khateeb grounded full sermon composer", () => {
     expect(fortyFive.ready).toBe(true);
     expect(fortyFive.verifiedHadithCount).toBeGreaterThanOrEqual(
       twenty.verifiedHadithCount,
+    );
+  });
+
+  test("all current prepared doctrinal/topic sermons satisfy composition invariants", () => {
+    for (const topicId of [
+      "sabr",
+      "dua",
+      "imamate",
+      "ismah",
+      "parents-barsi",
+      "quran-hidayat",
+    ]) {
+      for (const duration of [20, 30, 45] as const) {
+        const sermon = buildGroundedFullSermon(topicId, duration, "ur");
+        expect(sermon).not.toBeNull();
+        expect(validateGroundedFullSermon(sermon!)).toEqual([]);
+      }
+    }
+  });
+
+  test("validator rejects editorial blocks that pretend to be sources", () => {
+    const sermon = buildGroundedFullSermon("sabr", 20, "ur")!;
+    const firstEditorial = sermon.blocks.find(
+      (block) => block.provenance === "editorial",
+    )!;
+    const broken = {
+      ...sermon,
+      blocks: sermon.blocks.map((block) =>
+        block.id === firstEditorial.id
+          ? {
+              ...block,
+              citationUr: "جعلی حوالہ",
+              citationEn: "Fake reference",
+            }
+          : block,
+      ),
+    };
+
+    expect(validateGroundedFullSermon(broken)).toContain(
+      `${firstEditorial.id}: editorial block must not impersonate a source`,
     );
   });
 
