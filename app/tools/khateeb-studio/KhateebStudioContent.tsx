@@ -1706,15 +1706,20 @@ export default function KhateebStudioContent({
                                   <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
                                     {ur ? block.headingUr : block.headingEn}
                                   </strong>
-                                  <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
-                                    block.provenance === "source-grounded"
-                                      ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
-                                      : "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
-                                  }`}>
-                                    {block.provenance === "source-grounded"
-                                      ? (ur ? "ماخذی بنیاد" : "Source-grounded")
-                                      : (ur ? "تدوینی حصہ" : "Editorial")}
-                                  </span>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-[#8a6838] dark:bg-[#162a1e] dark:text-[#d7bc8a]">
+                                      {block.minutes} {ur ? "منٹ" : "min"}
+                                    </span>
+                                    <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                                      block.provenance === "source-grounded"
+                                        ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
+                                        : "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                                    }`}>
+                                      {block.provenance === "source-grounded"
+                                        ? (ur ? "ماخذی بنیاد" : "Source-grounded")
+                                        : (ur ? "تدوینی حصہ" : "Editorial")}
+                                    </span>
+                                  </div>
                                 </div>
                                 {block.arabic ? (
                                   <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
