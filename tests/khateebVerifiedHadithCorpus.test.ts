@@ -136,3 +136,46 @@ describe("Khateeb verified hadith textual variants", () => {
     expect(kafi?.exactArabic).not.toBe(record?.exactArabic);
   });
 });
+
+
+describe("Khateeb Dua hadith verification inventory", () => {
+  test("adds the five current Dua dossier narrations as pending verification", () => {
+    const dua = VERIFIED_HADITH_CORPUS.filter((row) => row.topicIds.includes("dua"));
+    expect(dua).toHaveLength(5);
+    expect(dua.every((row) => row.status === "pending-verification")).toBe(true);
+    expect(dua.map((row) => row.dossierPrimaryTextId)).toEqual([
+      "dua-weapon-believer",
+      "dua-best-worship",
+      "dua-beloved-action",
+      "dua-shield-believer",
+      "dua-station-through-asking",
+    ]);
+  });
+
+  test("does not expose pending Dua candidate text as verified quotation", () => {
+    const result = researchKhateebTopic({
+      query: "دعا",
+      locale: "ur",
+      maxEvidence: 50,
+    });
+    const duaHadiths = result.evidence.filter(
+      (row) =>
+        row.kind === "hadith" &&
+        row.topicId === "dua" &&
+        VERIFIED_HADITH_CORPUS.some(
+          (inventory) =>
+            inventory.topicIds.includes("dua") &&
+            row.id === `dua-primary-${inventory.dossierPrimaryTextId}`,
+        ),
+    );
+
+    expect(duaHadiths).toHaveLength(5);
+    expect(duaHadiths.every((row) => row.status === "source-lead")).toBe(true);
+    expect(duaHadiths.every((row) => !row.arabic)).toBe(true);
+    expect(
+      duaHadiths.every((row) =>
+        row.detailUr.includes("اصل متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی"),
+      ),
+    ).toBe(true);
+  });
+});
