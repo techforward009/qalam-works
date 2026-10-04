@@ -843,8 +843,8 @@ export default function KhateebStudioContent({
                         {!liveResearchPack?.evidence.length && liveEShiaSourceLeads.length > 0 ? (
                           <div className="rounded-xl border border-dashed border-[#B8935A]/35 bg-[#fbf7ee] px-4 py-3 text-sm leading-7 text-[#6f5730] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#d7bc8a]">
                             {ur
-                              ? "یہ ماخذی صفحات تحقیق کے لیے مفید ہیں، مگر ابھی quote-verified مواد نہیں۔ مصدقہ اصل اقتباسات تیار ہونے کے بعد ہی 20/30/45 منٹ کا منبری پیک فعال ہوگا۔"
-                              : "These source pages are useful research leads, but they are not yet quote-verified. Timed sermon packs activate only after exact quotations are verified."}
+                              ? "یہ ماخذی صفحات تحقیق کے لیے مفید ہیں، مگر ان کے اصل اقتباسات کی لفظ بہ لفظ تصدیق ابھی باقی ہے۔ مصدقہ اصل اقتباسات تیار ہونے کے بعد ہی 20/30/45 منٹ کا منبری پیک فعال ہوگا۔"
+                              : "These source pages are useful research leads, but their exact quotations are not yet verified word-for-word. Timed sermon packs activate only after exact quotations are verified."}
                           </div>
                         ) : null}
 
@@ -867,6 +867,10 @@ export default function KhateebStudioContent({
                                   <span className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-[#8a6838] dark:bg-[#162a1e] dark:text-[#d7bc8a]">
                                     {ur ? "ای شیعہ سے" : "eShia"}
                                   </span>
+                                ) : item.kind === "hadith" && item.status === "verified" ? (
+                                  <span className="rounded-full border border-emerald-700/20 bg-white px-2 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-500/25 dark:bg-[#162a1e] dark:text-emerald-300">
+                                    {ur ? "لفظ بہ لفظ مصدقہ" : "Exact text verified"}
+                                  </span>
                                 ) : null}
                               </div>
                               {item.providerId === "eshia-library" ? (
@@ -882,7 +886,7 @@ export default function KhateebStudioContent({
                                   <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
                                     <KhateebScriptText text={item.arabic} forceArabic />
                                   </div>
-                                  {item.kind === "quran" ? (
+                                  {item.kind === "quran" || item.kind === "hadith" ? (
                                     <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-white px-3 py-2 text-sm leading-7 text-[#445247] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#b8c8bb]">
                                       <strong className="me-2 text-[#6f5730] dark:text-[#d7bc8a]">
                                         {ur ? "موضوعی ربط:" : "Topic link:"}
