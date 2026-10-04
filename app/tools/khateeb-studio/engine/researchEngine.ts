@@ -7,6 +7,7 @@ import {
 import { getTopicDossier } from "./topicDossier";
 import { TOPIC_PREPS, type TopicPrep } from "./topicPrep";
 import { quranEvidenceForTopic } from "./quranTopicIndex";
+import { verifiedLiveHadithEvidenceForQuery, verifiedLiveHadithTopicIds } from "./verifiedLiveTopicHadiths";
 import {
   hadithRecordForDossierText,
   verifiedHadithForDossierText,
@@ -122,6 +123,12 @@ export function researchKhateebTopic(
   for (const row of quranEvidenceForTopic(query, 8)) {
     pushUnique(evidence, seen, row);
   }
+
+  for (const row of verifiedLiveHadithEvidenceForQuery(query, 8)) {
+    pushUnique(evidence, seen, row);
+  }
+
+  const liveHadithTopicIds = verifiedLiveHadithTopicIds(query);
 
   for (const topic of topics) {
     const dossier = getTopicDossier(topic.id);
@@ -295,12 +302,12 @@ export function researchKhateebTopic(
   return {
     query,
     locale,
-    matchedTopicIds: topics.map((topic) => topic.id),
+    matchedTopicIds: Array.from(new Set([...topics.map((topic) => topic.id), ...liveHadithTopicIds])),
     evidence: limited,
     verifiedCount,
     sourceLeadCount,
     catalogOnlyCount,
-    canBuildSermon: topics.length > 0 && hasVerifiedSermonCore,
+    canBuildSermon: hasVerifiedSermonCore,
     providerHints: preferredIslamicDiscoveryProviders().map((provider) => ({
       id: provider.id,
       nameUr: provider.nameUr,
