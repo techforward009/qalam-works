@@ -61,6 +61,14 @@ describe("Khateeb hadith verification coverage audit", () => {
     expect(pending).toBe(1);
   });
 
+
+  test("the only remaining pending record is the Tanbih al-Khawatir edition conflict", () => {
+    const coverage = hadithVerificationCoverage();
+    const pending = coverage.flatMap((row) => row.pendingIds);
+
+    expect(pending).toEqual(["dua-best-worship"]);
+  });
+
   test("never lets coverage arithmetic drift", () => {
     for (const row of hadithVerificationCoverage()) {
       expect(row.verified + row.pending + row.untracked).toBe(row.total);
