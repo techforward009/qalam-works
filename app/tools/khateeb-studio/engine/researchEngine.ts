@@ -283,7 +283,7 @@ export function researchKhateebTopic(
     gapsEn.push(
       "No verified local research entry exists for this topic yet. Qalam will not invent a verse, narration, quotation, or citation.",
     );
-  } else if (!topics.length && verifiedCount > 0) {
+  } else if (!topics.length && verifiedCount > 0 && !hasVerifiedSermonCore) {
     gapsUr.push(
       "موضوع سے متعلق قرآنی بنیاد داخلی احمد گراف ذخیرے سے مل گئی ہے؛ روایت اور علمی توضیح کے لیے مزید مصدقہ ماخذ درکار ہیں۔",
     );
