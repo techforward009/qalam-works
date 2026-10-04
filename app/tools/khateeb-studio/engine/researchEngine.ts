@@ -6,6 +6,7 @@ import {
 } from "./islamicSourceRegistry";
 import { getTopicDossier } from "./topicDossier";
 import { TOPIC_PREPS, type TopicPrep } from "./topicPrep";
+import { quranEvidenceForTopic } from "./quranTopicIndex";
 import type {
   KhateebResearchEvidence,
   KhateebResearchRequest,
@@ -113,6 +114,10 @@ export function researchKhateebTopic(
   const topics = matchedTopics(query);
   const evidence: KhateebResearchEvidence[] = [];
   const seen = new Set<string>();
+
+  for (const row of quranEvidenceForTopic(query, 3)) {
+    pushUnique(evidence, seen, row);
+  }
 
   for (const topic of topics) {
     const dossier = getTopicDossier(topic.id);
@@ -225,12 +230,19 @@ export function researchKhateebTopic(
   const gapsUr: string[] = [];
   const gapsEn: string[] = [];
 
-  if (!topics.length) {
+  if (!topics.length && verifiedCount === 0) {
     gapsUr.push(
       "اس موضوع کے لیے ابھی مقامی مصدقہ تحقیقی اندراج موجود نہیں۔ قلم کسی آیت، روایت، قول یا حوالہ کو اندازے سے شامل نہیں کرے گا۔",
     );
     gapsEn.push(
       "No verified local research entry exists for this topic yet. Qalam will not invent a verse, narration, quotation, or citation.",
+    );
+  } else if (!topics.length && verifiedCount > 0) {
+    gapsUr.push(
+      "موضوع سے متعلق قرآنی بنیاد داخلی احمد گراف ذخیرے سے مل گئی ہے؛ روایت اور علمی توضیح کے لیے مزید مصدقہ ماخذ درکار ہیں۔",
+    );
+    gapsEn.push(
+      "A Qur'anic foundation was found in the internal AhmedGraf corpus; verified narration and scholarly material are still needed.",
     );
   } else if (!verifiedCount) {
     gapsUr.push(
