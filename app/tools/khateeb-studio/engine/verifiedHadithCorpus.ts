@@ -391,9 +391,27 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     candidateArabic:
       "أفضَلُ العِبادَةِ الدُّعاءُ، فإذا أذِنَ اللهُ لِلعَبدِ في الدُّعاءِ فَتَحَ لَهُ بابَ الرَّحمَةِ.",
     status: "pending-verification",
-    witnesses: [],
+    witnesses: [
+      {
+        id: "mizan-869-tanbih-cross-reference",
+        role: "cross-reference",
+        sourceTitleUr: "میزان الحکمہ",
+        sourceTitleEn: "Mizan al-Hikmah",
+        sourceUrl: "https://ablibrary.net/book_content/b/3733/13?lang=ar",
+        citation: {
+          bookUr: "میزان الحکمہ",
+          bookEn: "Mizan al-Hikmah",
+          page: 869,
+        },
+        exactArabic:
+          "أفضل العبادة الدعاء ، فإذا أذن الله للعبد في الدعاء فتح له باب الرحمة ، إنه لن يهلك مع الدعاء أحد",
+        textVerified: true,
+        note:
+          "Secondary cross-reference explicitly attributes this wording to Tanbih al-Khawatir 2/237. It is not promoted to a primary verification witness.",
+      },
+    ],
     verificationNote:
-      "Citation is preserved from the existing dossier. Direct source verification is still required before this can be shown as an exact quotation.",
+      "Edition conflict: the accessible Najaf Desert Library edition of Tanbih al-Khawatir vol. 2 p. 237 contains a different passage and does not show this narration. Secondary compilations cite 2/237, so the record remains pending until the exact cited edition/page is checked directly.",
   },
   {
     id: "dua-kafi-467-8",
