@@ -3,6 +3,7 @@ import {
   buildLiveHadithCandidate,
   buildLiveHadithCandidateQueue,
   candidateQueueSummaryUr,
+  validateLiveHadithCandidateQueue,
 } from "../app/tools/khateeb-studio/engine/hadithCandidateQueue";
 import type { KhateebResearchEvidence } from "../app/tools/khateeb-studio/engine/researchTypes";
 
@@ -102,6 +103,26 @@ describe("Khateeb live hadith candidate queue", () => {
     expect(queue[0].evidenceId).toBe("strong");
     expect(queue[0].status).toBe("candidate");
     expect(queue[1].status).toBe("needs-context");
+  });
+
+  test("candidate queue integrity locks exact page text, citation, source URL, and pending primary verification", () => {
+    const source = lead(
+      "strong",
+      "قال أبو عبد الله عليه السلام: الصبر من الإيمان بمنزلة الرأس من الجسد.",
+    );
+    const queue = buildLiveHadithCandidateQueue([source]);
+
+    expect(validateLiveHadithCandidateQueue([source], queue)).toEqual([]);
+
+    const drifted = [
+      {
+        ...queue[0],
+        exactPageText: "changed text",
+      },
+    ];
+    expect(validateLiveHadithCandidateQueue([source], drifted)).toContain(
+      `${queue[0].id}: candidate text differs from exact page excerpt`,
+    );
   });
 
   test("summary explicitly says candidates are not auto-verified", () => {
