@@ -65,6 +65,11 @@ import {
 } from "./engine/studioView";
 import type { KhateebResearchResult } from "./engine/researchTypes";
 import { buildLiveResearchPack } from "./engine/liveResearchPack";
+import {
+  buildGroundedFullSermon,
+  buildGroundedFullSermonText,
+} from "./engine/groundedFullSermon";
+import { auditGroundedFullSermon } from "./engine/groundedSermonAudit";
 import { buildGroundedSermonBlueprintText } from "./engine/groundedSermonBlueprint";
 import {
   hadithRecordForDossierText,
@@ -295,6 +300,15 @@ export default function KhateebStudioContent({
   const topicDossierText = topicDossier
     ? buildDossierText(topicDossier, ur ? "ur" : "en")
     : "";
+  const groundedFullSermon = topic
+    ? buildGroundedFullSermon(topic.id, duration, ur ? "ur" : "en")
+    : null;
+  const groundedFullSermonText = groundedFullSermon
+    ? buildGroundedFullSermonText(groundedFullSermon, ur ? "ur" : "en")
+    : "";
+  const groundedFullSermonAudit = groundedFullSermon
+    ? auditGroundedFullSermon(groundedFullSermon)
+    : null;
   const researchSeries = rawTopicDossier
     ? buildMajlisSeries(rawTopicDossier, seriesLength)
     : null;
@@ -1611,6 +1625,202 @@ export default function KhateebStudioContent({
                       {ur ? topicDossier.governingQuestionUr : topicDossier.governingQuestionEn}
                     </div>
                   </section>
+
+                  {groundedFullSermon ? (
+                    <section className="rounded-xl border border-[#31513a]/25 bg-[#f5faf6] p-4 dark:border-[#45604b] dark:bg-[#122319]">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="text-xs font-bold text-[#47654d] dark:text-[#b9d4bf]">
+                            {ur ? "مصدقہ مکمل مجلس — خودکار تشکیل" : "Verified full sermon — automatic composition"}
+                          </div>
+                          <h4 className="mt-1 text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                            {groundedFullSermon.ready
+                              ? (ur
+                                  ? `${duration} منٹ کی ماخذی مجلس تیار ہے`
+                                  : `${duration}-minute source-grounded sermon is ready`)
+                              : (ur
+                                  ? "مکمل مجلس ابھی تیار نہیں"
+                                  : "Full sermon is not ready yet")}
+                          </h4>
+                          <p className="mt-2 max-w-3xl text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
+                            {ur
+                              ? "اصل آیات اور روایات مصدقہ ماخذ سے لی گئی ہیں۔ علمی توضیح صرف source-grounded اندراج سے آتی ہے۔ تمہید، ربط، جمع بندی اور اختتام الگ تدوینی حصے ہیں۔"
+                              : "Verses and narrations come from verified sources. Scholarly explanation is drawn only from source-grounded records. Opening, transitions, synthesis, and closing remain separate editorial layers."}
+                          </p>
+                        </div>
+                        {groundedFullSermon.ready ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(groundedFullSermonText);
+                              } catch {
+                                // Clipboard may be unavailable.
+                              }
+                            }}
+                            className="khateeb-no-print rounded-lg bg-[#1A3A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#244E38]"
+                          >
+                            {ur ? "مکمل مصدقہ مجلس نقل کریں" : "Copy verified full sermon"}
+                          </button>
+                        ) : null}
+                      </div>
+
+                      {groundedFullSermonAudit ? (
+                        <div className="mt-4 rounded-xl border border-[#31513a]/20 bg-white p-4 dark:border-[#45604b] dark:bg-[#162a1e]">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <strong className="text-sm text-[#31513a] dark:text-[#b9d4bf]">
+                              {ur ? "ماخذی و تدوینی جانچ" : "Source and editorial audit"}
+                            </strong>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              groundedFullSermonAudit.status === "pass"
+                                ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
+                                : groundedFullSermonAudit.status === "warning"
+                                  ? "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                                  : "bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-300"
+                            }`}>
+                              {groundedFullSermonAudit.status === "pass"
+                                ? (ur ? "جانچ مکمل" : "Audit passed")
+                                : groundedFullSermonAudit.status === "warning"
+                                  ? (ur ? "بہتری کی گنجائش" : "Review suggested")
+                                  : (ur ? "اہم مسئلہ" : "Audit error")}
+                            </span>
+                          </div>
+                          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                            {groundedFullSermonAudit.items.map((item) => (
+                              <div
+                                key={item.id}
+                                className="rounded-lg border border-[#1A3A2A]/10 bg-[#F7F5EF] p-3 dark:border-[#35513d] dark:bg-[#0e1c15]"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className={`h-2.5 w-2.5 rounded-full ${
+                                    item.level === "pass"
+                                      ? "bg-emerald-600"
+                                      : item.level === "warning"
+                                        ? "bg-amber-500"
+                                        : "bg-red-600"
+                                  }`} />
+                                  <strong className="text-xs text-[#1A3A2A] dark:text-[#e7eee9]">
+                                    {ur ? item.titleUr : item.titleEn}
+                                  </strong>
+                                </div>
+                                <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                                  {ur ? item.detailUr : item.detailEn}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        {[
+                          [ur ? "قرآنی بنیاد" : "Qur'an", groundedFullSermon.quranCount],
+                          [ur ? "مصدقہ روایات" : "Verified hadith", groundedFullSermon.verifiedHadithCount],
+                          [ur ? "علمی توضیحات" : "Scholar blocks", groundedFullSermon.scholarCount],
+                          [ur ? "تدوینی حصے" : "Editorial blocks", groundedFullSermon.editorialCount],
+                        ].map(([label, count]) => (
+                          <div
+                            key={String(label)}
+                            className="rounded-lg border border-[#31513a]/15 bg-white px-3 py-2 dark:border-[#45604b] dark:bg-[#162a1e]"
+                          >
+                            <div className="text-[11px] text-[#687469] dark:text-[#9fb0a2]">
+                              {label}
+                            </div>
+                            <div className="mt-1 text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                              {count}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {!groundedFullSermon.ready ? (
+                        <div className="mt-4 rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-sm leading-7 text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-200">
+                          {(ur
+                            ? groundedFullSermon.blockersUr
+                            : groundedFullSermon.blockersEn
+                          ).map((blocker) => (
+                            <p key={blocker}>• {blocker}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <details className="mt-4 rounded-xl border border-[#31513a]/20 bg-white p-4 dark:border-[#45604b] dark:bg-[#162a1e]">
+                          <summary className="cursor-pointer font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                            {ur ? "مکمل مجلس کی ماخذی ترتیب دیکھیں" : "Open the full source-grounded sermon"}
+                          </summary>
+                          <div className="mt-4 space-y-4">
+                            {groundedFullSermon.blocks.map((block) => (
+                              <article
+                                key={block.id}
+                                className="rounded-lg border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
+                                    {ur ? block.headingUr : block.headingEn}
+                                  </strong>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-[#8a6838] dark:bg-[#162a1e] dark:text-[#d7bc8a]">
+                                      {block.minutes} {ur ? "منٹ" : "min"}
+                                    </span>
+                                    <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                                      block.provenance === "source-grounded"
+                                        ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
+                                        : "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                                    }`}>
+                                      {block.provenance === "source-grounded"
+                                        ? (ur ? "ماخذی بنیاد" : "Source-grounded")
+                                        : (ur ? "تدوینی حصہ" : "Editorial")}
+                                    </span>
+                                  </div>
+                                </div>
+                                {block.arabic ? (
+                                  <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
+                                    <KhateebScriptText text={block.arabic} forceArabic />
+                                  </div>
+                                ) : null}
+                                <p className="mt-3 text-sm leading-8 text-[#445247] dark:text-[#b8c8bb]">
+                                  {ur ? block.bodyUr : block.bodyEn}
+                                </p>
+                                {(ur ? block.citationUr : block.citationEn) ? (
+                                  <div className="mt-3 text-xs leading-6 text-[#6f5730] dark:text-[#d7bc8a]">
+                                    <strong>{ur ? "حوالہ: " : "Reference: "}</strong>
+                                    {ur ? block.citationUr : block.citationEn}
+                                  </div>
+                                ) : null}
+                              </article>
+                            ))}
+
+                          <div className="mt-5 rounded-xl border border-[#B8935A]/25 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <strong className="text-sm text-[#5a4830] dark:text-[#e2c895]">
+                                {ur ? "ماخذی رجسٹر" : "Source ledger"}
+                              </strong>
+                              <span className="text-xs text-[#687469] dark:text-[#9fb0a2]">
+                                {groundedFullSermon.sourceLedger.length} {ur ? "منفرد مراجع" : "unique references"}
+                              </span>
+                            </div>
+                            <div className="mt-3 space-y-2">
+                              {groundedFullSermon.sourceLedger.map((source) => (
+                                <div
+                                  key={source.id}
+                                  className="rounded-lg bg-white px-3 py-2 text-xs leading-6 text-[#5a4830] dark:bg-[#162a1e] dark:text-[#d7bc8a]"
+                                >
+                                  <strong>
+                                    {source.kind === "quran"
+                                      ? (ur ? "قرآن: " : "Qur'an: ")
+                                      : source.kind === "hadith"
+                                        ? (ur ? "روایت: " : "Hadith: ")
+                                        : (ur ? "علمی ماخذ: " : "Scholar source: ")}
+                                  </strong>
+                                  {ur ? source.citationUr : source.citationEn}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          </div>
+                        </details>
+                      )}
+                    </section>
+                  ) : null}
 
                   {topicDossier.primaryTexts?.length ? (
                     <section className="rounded-xl border border-[#B8935A]/30 bg-white p-4 dark:border-[#6f5b35] dark:bg-[#162a1e]">
