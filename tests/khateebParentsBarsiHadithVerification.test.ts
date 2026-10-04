@@ -18,9 +18,13 @@ describe("Khateeb Parents/Barsi exact hadith verification", () => {
     expect(parents).toHaveLength(8);
     expect(parents.every((row) => row.status === "verified")).toBe(true);
     expect(
-      parents.every((row) => Boolean(verifiedHadithForDossierText(row.dossierPrimaryTextId))),
+      parents.every((row) =>
+        Boolean(verifiedHadithForDossierText(row.dossierPrimaryTextId)),
+      ),
     ).toBe(true);
-    test("verifies the Al-Khisal gratitude clause and Tuhaf parental-rights text directly", () => {
+  });
+
+  test("verifies the Al-Khisal gratitude clause and Tuhaf parental-rights text directly", () => {
     const gratitude = verifiedHadithForDossierText("rida-thank-parents");
     const rights = verifiedHadithForDossierText("sadiq-three-parental-rights");
 
@@ -29,7 +33,6 @@ describe("Khateeb Parents/Barsi exact hadith verification", () => {
     expect(rights?.verificationWitnessId).toBe("tuhaf-322-parent-rights");
     expect(rights?.verifiedReferenceUr).toBe("تحف العقول، ص322۔");
   });
-});
 
   test("supports a verified verbatim excerpt inside a larger checked source witness", () => {
     const mother = verifiedHadithForDossierText("risalat-mother");
