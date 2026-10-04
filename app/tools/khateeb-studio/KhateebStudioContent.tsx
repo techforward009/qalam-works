@@ -10,7 +10,7 @@ import {
   type ShiaCalendarRegion,
 } from "./engine/shiaCalendar";
 import { groupCalendarEvents } from "./engine/groupCalendarEvents";
-import { KHATEEB_CORPUS, REGION_LABELS } from "./engine/khateebCorpus";
+import { KHATEEB_CORPUS, PUBLIC_KHATEEB_CORPUS, REGION_LABELS } from "./engine/khateebCorpus";
 import {
   eventDayLabel,
   eventNote,
@@ -132,7 +132,11 @@ export default function KhateebStudioContent({
 }) {
   const { language, dir } = useLanguage();
   const ur = language === "ur";
-  const [workflowStep, setWorkflowStep] = useState<1 | 2 | 3>(initialView.step);
+  const [workflowStep, setWorkflowStep] = useState<1 | 2 | 3>(
+    initialView.step === 2 && PUBLIC_KHATEEB_CORPUS.length === 0
+      ? 1
+      : initialView.step,
+  );
   const [preparationMode, setPreparationMode] = useState<"topic" | "occasion">(initialView.mode);
   const [query, setQuery] = useState("");
   const [selectedRegion, setSelectedRegion] =
@@ -140,7 +144,11 @@ export default function KhateebStudioContent({
   const [selectedMonth, setSelectedMonth] =
     useState<IslamicMonthId>(initialView.month);
   const [selectedEvent, setSelectedEvent] = useState(initialView.event);
-  const [selectedSpeaker, setSelectedSpeaker] = useState(initialView.speaker);
+  const [selectedSpeaker, setSelectedSpeaker] = useState(
+    PUBLIC_KHATEEB_CORPUS.some((item) => item.id === initialView.speaker)
+      ? initialView.speaker
+      : "",
+  );
   const [duration, setDuration] = useState<SermonDuration>(initialView.duration);
   const [seriesLength, setSeriesLength] = useState<MajlisSeriesLength>(initialView.series);
   const [seriesLayer, setSeriesLayer] = useState<"fresh" | "research">("fresh");
@@ -154,8 +162,10 @@ export default function KhateebStudioContent({
 
   const filteredSpeakers = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return [...KHATEEB_CORPUS];
-    return KHATEEB_CORPUS.filter((item) => speakerSearchText(item).includes(q));
+    if (!q) return [...PUBLIC_KHATEEB_CORPUS];
+    return PUBLIC_KHATEEB_CORPUS.filter((item) =>
+      speakerSearchText(item).includes(q),
+    );
   }, [query]);
 
   const eventsFor = (month: IslamicMonthId, region: ShiaCalendarRegion) =>
@@ -200,7 +210,9 @@ export default function KhateebStudioContent({
 
   const event = selectedGroup?.representative;
 
-  const speaker = KHATEEB_CORPUS.find((item) => item.id === selectedSpeaker);
+  const speaker = PUBLIC_KHATEEB_CORPUS.find(
+    (item) => item.id === selectedSpeaker,
+  );
   const speakerEvidence = selectedSpeaker
     ? evidenceForSpeaker(selectedSpeaker)
     : [];
@@ -448,7 +460,8 @@ export default function KhateebStudioContent({
 
   const selectGroup = (key: string) => {
     setSelectedEvent(key);
-    setWorkflowStep(2);
+    setSelectedSpeaker("");
+    setWorkflowStep(PUBLIC_KHATEEB_CORPUS.length > 0 ? 2 : 3);
   };
 
   const chooseTopic = (topicId: string) => {
@@ -1138,8 +1151,10 @@ export default function KhateebStudioContent({
           <div className="grid gap-2 sm:grid-cols-3">
             {([
               [1, ur ? "1 — موضوع یا مناسبت" : "1 — Topic or occasion"],
-              [2, ur ? "2 — خطیب (اختیاری)" : "2 — Speaker (optional)"],
-              [3, ur ? "3 — تیار مواد" : "3 — Preparation"],
+              ...(PUBLIC_KHATEEB_CORPUS.length > 0
+                ? ([[2, ur ? "2 — خطیب (اختیاری)" : "2 — Speaker (optional)"]] as const)
+                : []),
+              [3, ur ? "2 — تیار مواد" : "2 — Preparation"],
             ] as const).map(([step, label]) => (
               <button
                 key={step}
