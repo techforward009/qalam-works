@@ -115,7 +115,7 @@ export function researchKhateebTopic(
   const evidence: KhateebResearchEvidence[] = [];
   const seen = new Set<string>();
 
-  for (const row of quranEvidenceForTopic(query, 3)) {
+  for (const row of quranEvidenceForTopic(query, 6)) {
     pushUnique(evidence, seen, row);
   }
 
