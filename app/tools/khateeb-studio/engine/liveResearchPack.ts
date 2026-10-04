@@ -1,18 +1,46 @@
 import type { SermonDuration } from "./sermonPrep";
 import type { KhateebResearchEvidence, KhateebResearchResult } from "./researchTypes";
 
+export type LiveResearchSectionRole =
+  | "source-grounded"
+  | "editorial-bridge";
+
+export type LiveResearchPackBlocker = {
+  code:
+    | "not-enough-verified"
+    | "not-enough-core-evidence"
+    | "quran-only";
+  messageUr: string;
+  messageEn: string;
+};
+
+export type LiveResearchEvidenceProfile = {
+  verified: number;
+  quran: number;
+  hadith: number;
+  scholar: number;
+  speaker: number;
+  source: number;
+  core: number;
+};
+
 export type LiveResearchPack = {
   duration: SermonDuration;
   query: string;
   evidence: readonly KhateebResearchEvidence[];
   ready: boolean;
   minimumSources: number;
+  minimumCoreEvidence: number;
   missingSources: number;
+  missingCoreEvidence: number;
+  blockers: readonly LiveResearchPackBlocker[];
+  profile: LiveResearchEvidenceProfile;
   sections: readonly {
     id: string;
     minutes: number;
     headingUr: string;
     headingEn: string;
+    role: LiveResearchSectionRole;
     evidenceIds: readonly string[];
   }[];
   totalMinutes: number;
@@ -28,6 +56,12 @@ const MINIMUM_SOURCES: Record<SermonDuration, number> = {
   20: 3,
   30: 5,
   45: 8,
+};
+
+const MINIMUM_CORE_EVIDENCE: Record<SermonDuration, number> = {
+  20: 1,
+  30: 2,
+  45: 3,
 };
 
 const SOURCE_ONLY_MINUTES: Record<SermonDuration, readonly number[]> = {
@@ -48,7 +82,8 @@ function rankEvidence(item: KhateebResearchEvidence): number {
   if (item.kind === "quran") score += 40;
   if (item.kind === "hadith") score += 35;
   if (item.providerId === "eshia-library") score += 25;
-  if (item.kind === "scholar") score += 15;
+  if (item.kind === "scholar") score += 20;
+  if (item.kind === "speaker") score += 5;
   if (item.arabic) score += 10;
   return score;
 }
@@ -60,29 +95,109 @@ function chooseEvidence(result: KhateebResearchResult, duration: SermonDuration)
     .slice(0, LIMITS[duration]);
 }
 
+function evidenceProfile(
+  evidence: readonly KhateebResearchEvidence[],
+): LiveResearchEvidenceProfile {
+  const count = (kind: KhateebResearchEvidence["kind"]) =>
+    evidence.filter((item) => item.kind === kind).length;
+  const hadith = count("hadith");
+  const scholar = count("scholar");
+
+  return {
+    verified: evidence.length,
+    quran: count("quran"),
+    hadith,
+    scholar,
+    speaker: count("speaker"),
+    source: count("source"),
+    core: hadith + scholar,
+  };
+}
+
+function packBlockers(
+  profile: LiveResearchEvidenceProfile,
+  minimumSources: number,
+  minimumCoreEvidence: number,
+): readonly LiveResearchPackBlocker[] {
+  const blockers: LiveResearchPackBlocker[] = [];
+
+  if (profile.verified < minimumSources) {
+    blockers.push({
+      code: "not-enough-verified",
+      messageUr: `کم از کم ${minimumSources} لفظ بہ لفظ یا ماخذی طور پر مصدقہ اندراج درکار ہیں۔`,
+      messageEn: `At least ${minimumSources} source-verified records are required.`,
+    });
+  }
+
+  if (profile.quran > 0 && profile.core === 0) {
+    blockers.push({
+      code: "quran-only",
+      messageUr:
+        "صرف قرآنی آیات کی بنیاد پر وقت بند منبری پیک نہیں بنایا جائے گا؛ کم از کم ایک مصدقہ روایت یا ماخذ سے ثابت علمی توضیح ضروری ہے۔",
+      messageEn:
+        "A timed sermon pack is not built from Qur'anic verses alone; at least one verified narration or source-grounded scholarly explanation is required.",
+    });
+  }
+
+  if (profile.core < minimumCoreEvidence) {
+    blockers.push({
+      code: "not-enough-core-evidence",
+      messageUr: `اس مدت کے لیے کم از کم ${minimumCoreEvidence} بنیادی مصدقہ روایتی یا علمی اندراج درکار ہیں۔`,
+      messageEn: `This duration requires at least ${minimumCoreEvidence} core verified hadith or scholarly records.`,
+    });
+  }
+
+  return blockers;
+}
+
+function roleForSection(id: string): LiveResearchSectionRole {
+  return id === "synthesis" || id === "closing"
+    ? "editorial-bridge"
+    : "source-grounded";
+}
+
 export function buildLiveResearchPack(
   result: KhateebResearchResult,
   duration: SermonDuration,
 ): LiveResearchPack {
   const evidence = chooseEvidence(result, duration);
   const minimumSources = MINIMUM_SOURCES[duration];
-  const hasNonQuranVerified = evidence.some((item) => item.kind !== "quran");
-  const ready = evidence.length >= minimumSources && hasNonQuranVerified;
+  const minimumCoreEvidence = MINIMUM_CORE_EVIDENCE[duration];
+  const profile = evidenceProfile(evidence);
+  const blockers = packBlockers(profile, minimumSources, minimumCoreEvidence);
+  const ready = blockers.length === 0;
 
-  const quran = evidence.filter((item) => item.kind === "quran").map((item) => item.id);
-  const narrations = evidence.filter((item) => item.kind === "hadith").map((item) => item.id);
-  const sourceTexts = evidence
-    .filter((item) => item.kind === "source" || item.kind === "scholar")
+  const quran = evidence
+    .filter((item) => item.kind === "quran")
     .map((item) => item.id);
+  const narrations = evidence
+    .filter((item) => item.kind === "hadith")
+    .map((item) => item.id);
+  const sourceTexts = evidence
+    .filter(
+      (item) =>
+        item.kind === "source" ||
+        item.kind === "scholar" ||
+        item.kind === "speaker",
+    )
+    .map((item) => item.id);
+
+  const baseResult = {
+    duration,
+    query: result.query,
+    evidence,
+    ready,
+    minimumSources,
+    minimumCoreEvidence,
+    missingSources: Math.max(0, minimumSources - profile.verified),
+    missingCoreEvidence: Math.max(0, minimumCoreEvidence - profile.core),
+    blockers,
+    profile,
+  };
 
   if (!ready) {
     return {
-      duration,
-      query: result.query,
-      evidence,
-      ready,
-      minimumSources,
-      missingSources: Math.max(0, minimumSources - evidence.length),
+      ...baseResult,
       sections: [],
       totalMinutes: 0,
     };
@@ -102,26 +217,30 @@ export function buildLiveResearchPack(
       },
       {
         id: "sources",
-        headingUr: "ای شیعہ کے متعلقہ ماخذی متون",
-        headingEn: "Relevant eShia source texts",
+        headingUr: "مصدقہ علمی ماخذ",
+        headingEn: "Verified scholarly sources",
         evidenceIds: sourceTexts,
       },
       {
         id: "synthesis",
-        headingUr: "منبری ربط، ترتیب اور خلاصہ",
-        headingEn: "Pulpit synthesis, ordering, and summary",
+        headingUr: "منبری ربط — تدوینی",
+        headingEn: "Editorial pulpit bridge",
         evidenceIds: evidence.slice(0, Math.min(3, evidence.length)).map((item) => item.id),
       },
       {
         id: "closing",
-        headingUr: "اختتام اور یاد رہنے والا نکتہ",
-        headingEn: "Closing and memorable takeaway",
+        headingUr: "اختتامی ربط — تدوینی",
+        headingEn: "Editorial closing bridge",
         evidenceIds: evidence.slice(-1).map((item) => item.id),
       },
     ];
 
     base.forEach((section, index) => {
-      sections.push({ ...section, minutes: minutes[index] ?? 0 });
+      sections.push({
+        ...section,
+        role: roleForSection(section.id),
+        minutes: minutes[index] ?? 0,
+      });
     });
   } else {
     const minutes = MIXED_MINUTES[duration];
@@ -140,55 +259,60 @@ export function buildLiveResearchPack(
       },
       {
         id: "narrations",
-        headingUr: "اصل روایات",
-        headingEn: "Primary narrations",
+        headingUr: "اصل روایات و متون",
+        headingEn: "Primary narrations and texts",
         evidenceIds: narrations,
       },
       {
         id: "sources",
-        headingUr: "متعلقہ ماخذی متون اور علمی توضیح",
-        headingEn: "Relevant source texts and scholarly explanation",
+        headingUr: "ماخذ سے ثابت علمی توضیح",
+        headingEn: "Source-grounded scholarly explanation",
         evidenceIds: sourceTexts,
       },
       {
         id: "synthesis",
-        headingUr: "منبری ربط اور خلاصہ",
-        headingEn: "Pulpit synthesis and summary",
-        evidenceIds: evidence.slice(Math.max(0, evidence.length - 2)).map((item) => item.id),
+        headingUr: "منبری ربط — تدوینی",
+        headingEn: "Editorial pulpit bridge",
+        evidenceIds: evidence
+          .slice(Math.max(0, evidence.length - 3))
+          .map((item) => item.id),
       },
       {
         id: "closing",
-        headingUr: "اختتام اور یاد رہنے والا نکتہ",
-        headingEn: "Closing and memorable takeaway",
+        headingUr: "اختتامی ربط — تدوینی",
+        headingEn: "Editorial closing bridge",
         evidenceIds: evidence.slice(-1).map((item) => item.id),
       },
-    ].filter((section) =>
-      section.id === "opening" ||
-      section.id === "synthesis" ||
-      section.id === "closing" ||
-      section.evidenceIds.length > 0
+    ].filter(
+      (section) =>
+        section.id === "opening" ||
+        section.id === "synthesis" ||
+        section.id === "closing" ||
+        section.evidenceIds.length > 0,
     );
 
     const selected = base.slice(0, minutes.length);
     selected.forEach((section, index) => {
-      sections.push({ ...section, minutes: minutes[index] ?? 0 });
+      sections.push({
+        ...section,
+        role: roleForSection(section.id),
+        minutes: minutes[index] ?? 0,
+      });
     });
 
     const currentTotal = sections.reduce((sum, item) => sum + item.minutes, 0);
     const delta = duration - currentTotal;
     if (sections.length && delta !== 0) {
       const last = sections[sections.length - 1];
-      sections[sections.length - 1] = { ...last, minutes: last.minutes + delta };
+      sections[sections.length - 1] = {
+        ...last,
+        minutes: last.minutes + delta,
+      };
     }
   }
 
   return {
-    duration,
-    query: result.query,
-    evidence,
-    ready,
-    minimumSources,
-    missingSources: 0,
+    ...baseResult,
     sections,
     totalMinutes: sections.reduce((sum, item) => sum + item.minutes, 0),
   };
