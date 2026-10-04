@@ -260,6 +260,11 @@ export function researchKhateebTopic(
   const verifiedCount = limited.filter((item) => item.status === "verified").length;
   const sourceLeadCount = limited.filter((item) => item.status === "source-lead").length;
   const catalogOnlyCount = limited.filter((item) => item.status === "catalog-only").length;
+  const hasVerifiedSermonCore = limited.some(
+    (item) =>
+      item.status === "verified" &&
+      (item.kind === "hadith" || item.kind === "scholar"),
+  );
 
   const gapsUr: string[] = [];
   const gapsEn: string[] = [];
@@ -295,7 +300,7 @@ export function researchKhateebTopic(
     verifiedCount,
     sourceLeadCount,
     catalogOnlyCount,
-    canBuildSermon: topics.length > 0 && verifiedCount > 0,
+    canBuildSermon: topics.length > 0 && hasVerifiedSermonCore,
     providerHints: preferredIslamicDiscoveryProviders().map((provider) => ({
       id: provider.id,
       nameUr: provider.nameUr,
