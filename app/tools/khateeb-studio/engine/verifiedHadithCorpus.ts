@@ -332,6 +332,96 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
       },
     ],
   },
+  {
+    id: "dua-kafi-468-1",
+    topicIds: ["dua"],
+    dossierPrimaryTextId: "dua-weapon-believer",
+    attributedToUr: "رسول اکرمؐ",
+    attributedToEn: "The Prophet",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص468، ح1۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 468, hadith 1.",
+    sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    candidateArabic:
+      "الدُّعاءُ سِلاحُ المُؤمِنِ، وعَمودُ الدِّينِ، ونورُ السَّماواتِ والأرضِ.",
+    status: "pending-verification",
+    witnesses: [],
+    verificationNote:
+      "Citation is preserved from the existing dossier. Direct Al-Kafi text verification is still required before this can be shown as an exact quotation.",
+  },
+  {
+    id: "dua-tanbih-2-237",
+    topicIds: ["dua"],
+    dossierPrimaryTextId: "dua-best-worship",
+    attributedToUr: "رسول اکرمؐ",
+    attributedToEn: "The Prophet",
+    sourceTitleUr: "تنبیہ الخواطر",
+    sourceTitleEn: "Tanbih al-Khawatir",
+    citedReferenceUr: "تنبیہ الخواطر، ج2، ص237۔",
+    citedReferenceEn: "Tanbih al-Khawatir, vol. 2, p. 237.",
+    sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    candidateArabic:
+      "أفضَلُ العِبادَةِ الدُّعاءُ، فإذا أذِنَ اللهُ لِلعَبدِ في الدُّعاءِ فَتَحَ لَهُ بابَ الرَّحمَةِ.",
+    status: "pending-verification",
+    witnesses: [],
+    verificationNote:
+      "Citation is preserved from the existing dossier. Direct source verification is still required before this can be shown as an exact quotation.",
+  },
+  {
+    id: "dua-kafi-467-8",
+    topicIds: ["dua"],
+    dossierPrimaryTextId: "dua-beloved-action",
+    attributedToUr: "امیرالمومنینؑ",
+    attributedToEn: "Imam Ali",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص467، ح8۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 467, hadith 8.",
+    sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    candidateArabic:
+      "أحَبُّ الأعمالِ إلى اللهِ عزَّ وجلَّ في الأرضِ الدُّعاءُ.",
+    status: "pending-verification",
+    witnesses: [],
+    verificationNote:
+      "Citation is preserved from the existing dossier. Direct Al-Kafi text verification is still required before this can be shown as an exact quotation.",
+  },
+  {
+    id: "dua-kafi-468-7",
+    topicIds: ["dua"],
+    dossierPrimaryTextId: "dua-shield-believer",
+    attributedToUr: "امیرالمومنینؑ",
+    attributedToEn: "Imam Ali",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص468، ح7۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 468, hadith 7.",
+    sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    candidateArabic: "الدُّعاءُ تُرسُ المُؤمِنِ.",
+    status: "pending-verification",
+    witnesses: [],
+    verificationNote:
+      "Citation is preserved from the existing dossier. Direct Al-Kafi text verification is still required before this can be shown as an exact quotation.",
+  },
+  {
+    id: "dua-kafi-466-3",
+    topicIds: ["dua"],
+    dossierPrimaryTextId: "dua-station-through-asking",
+    attributedToUr: "امام صادقؑ",
+    attributedToEn: "Imam al-Sadiq",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص466، ح3۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 466, hadith 3.",
+    sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    candidateArabic:
+      "يا مُيَسِّرُ، اُدعُ ولا تَقُلْ: إنَّ الأمرَ قَد فُرِغَ مِنهُ؛ إنَّ عِندَ اللهِ عزَّ وجلَّ مَنزِلَةً لا تُنالُ إلّا بِمَسألَةٍ.",
+    status: "pending-verification",
+    witnesses: [],
+    verificationNote:
+      "Citation is preserved from the existing dossier. Direct Al-Kafi text verification is still required before this can be shown as an exact quotation.",
+  },
+
 ];
 
 export function hadithRecordForDossierText(
