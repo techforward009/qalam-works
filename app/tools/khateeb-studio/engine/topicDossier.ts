@@ -691,8 +691,8 @@ const DUA: SermonDossier = {
       refEn: "Imam Ali — supplication is the believer's shield",
       sourceArabicMarked:
         "الدُّعاءُ تُرسُ المُؤمِنِ.",
-      sourceRefUr: "الکافی، ج2، ص468، ح7۔",
-      sourceRefEn: "al-Kafi, vol.2, p.468, hadith 7.",
+      sourceRefUr: "الکافی، ج2، ص468، ح4۔",
+      sourceRefEn: "al-Kafi, vol.2, p.468, hadith 4.",
       explanationUr:
         "ہتھیار کے ساتھ سپر کا استعارہ دعا کے دوسرے رخ کو واضح کرتا ہے: دعا صرف اقدام نہیں، دل اور ایمان کی حفاظت بھی ہے۔",
       explanationEn:
