@@ -1,26 +1,10 @@
-import type { KhateebResearchEvidence } from "./researchTypes";
+import type {
+  KhateebHadithCandidate,
+  KhateebResearchEvidence,
+} from "./researchTypes";
 
-export type LiveHadithCandidateStatus =
-  | "candidate"
-  | "needs-context"
-  | "not-hadith-like";
-
-export type LiveHadithCandidate = {
-  id: string;
-  evidenceId: string;
-  status: LiveHadithCandidateStatus;
-  exactPageText: string;
-  sourceUrl: string;
-  citationUr: string;
-  citationEn: string;
-  score: number;
-  signals: readonly string[];
-  missing: readonly (
-    | "explicit-attribution"
-    | "clear-text-boundaries"
-    | "primary-source-confirmation"
-  )[];
-};
+export type LiveHadithCandidateStatus = KhateebHadithCandidate["status"];
+export type LiveHadithCandidate = KhateebHadithCandidate;
 
 const HADITH_SIGNALS: readonly {
   id: string;
