@@ -171,7 +171,7 @@ export function researchKhateebTopic(
         titleEn: row.refEn,
         detailUr:
           status === "source-lead" && row.kind === "hadith"
-            ? `${row.explanationUr} — اصل متن ابھی لفظ بہ لفظ ماخذ سے verify ہونا باقی ہے۔`
+            ? `${row.explanationUr} — اصل متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی ہے۔`
             : row.explanationUr,
         detailEn:
           status === "source-lead" && row.kind === "hadith"
