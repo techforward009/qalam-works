@@ -201,6 +201,11 @@ export async function researchKhateebTopicWithEShia(
   const verifiedCount = evidence.filter((item) => item.status === "verified").length;
   const sourceLeadCount = evidence.filter((item) => item.status === "source-lead").length;
   const catalogOnlyCount = evidence.filter((item) => item.status === "catalog-only").length;
+  const hasVerifiedSermonCore = evidence.some(
+    (item) =>
+      item.status === "verified" &&
+      (item.kind === "hadith" || item.kind === "scholar"),
+  );
 
   return {
     ...local,
@@ -208,7 +213,7 @@ export async function researchKhateebTopicWithEShia(
     verifiedCount,
     sourceLeadCount,
     catalogOnlyCount,
-    canBuildSermon: verifiedCount > 0,
+    canBuildSermon: hasVerifiedSermonCore,
     gapsUr:
       externalEvidence.length > 0
         ? local.gapsUr.filter((item) => !item.includes("مقامی مصدقہ تحقیقی اندراج"))
