@@ -54,3 +54,26 @@ describe("Khateeb Quran topical index", () => {
     expect(pack.ready).toBe(false);
   });
 });
+
+
+describe("Khateeb Quran reviewed mappings", () => {
+  test("adds Ahqaf 46:15 to parents", () => {
+    const rows = quranEvidenceForTopic("والدین");
+    expect(rows.map((row) => row.citationUr)).toContain("سورۂ احقاف 46:15");
+  });
+
+  test("uses Al Imran 3:200 for sabr instead of Zumar 39:10", () => {
+    const rows = quranEvidenceForTopic("صبر");
+    const refs = rows.map((row) => row.citationUr);
+    expect(refs).toContain("سورۂ آل عمران 3:200");
+    expect(refs).not.toContain("سورۂ زمر 39:10");
+  });
+
+  test("uses Araf and Naml for dua instead of Furqan 25:77", () => {
+    const rows = quranEvidenceForTopic("دعا");
+    const refs = rows.map((row) => row.citationUr);
+    expect(refs).toContain("سورۂ اعراف 7:55");
+    expect(refs).toContain("سورۂ نمل 27:62");
+    expect(refs).not.toContain("سورۂ فرقان 25:77");
+  });
+});
