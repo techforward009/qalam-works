@@ -641,20 +641,44 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     dossierPrimaryTextId: "rida-thank-parents",
     attributedToUr: "امام رضاؑ",
     attributedToEn: "Imam al-Ridha",
-    sourceTitleUr: "عیون اخبار الرضا / الخصال",
-    sourceTitleEn: "Uyun Akhbar al-Ridha / Al-Khisal",
-    citedReferenceUr:
-      "عیون اخبار الرضا، ج1، ص258؛ الخصال، ج1، ص70۔",
-    citedReferenceEn:
-      "Uyun Akhbar al-Ridha, vol. 1, p. 258; Al-Khisal, vol. 1, p. 70.",
+    sourceTitleUr: "الخصال",
+    sourceTitleEn: "Al-Khisal",
+    citedReferenceUr: "الخصال، ج1، ص156، ح196۔",
+    citedReferenceEn: "Al-Khisal, vol. 1, p. 156, hadith 196.",
     sourceUrl:
-      "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+      "https://al-islam.org/al-khisal-numeric-classification-traditions-characteristics-shaykh-saduq/part-3-three-numbered",
     candidateArabic:
       "إن الله عز وجل أمر بالشكر له وللوالدين، فمن لم يشكر والديه لم يشكر الله.",
-    status: "pending-verification",
-    witnesses: [],
-    verificationNote:
-      "The wording and references have secondary confirmation, but a direct Uyun or Khisal source witness has not yet been checked in this layer.",
+    status: "verified",
+    exactArabic:
+      "وأمر بالشكر له وللوالدين، فمن لم يشكر والديه لم يشكر الله",
+    verifiedReferenceUr: "الخصال، باب الثلاثة، ح3-196۔",
+    verifiedReferenceEn: "Al-Khisal, Part Three, hadith 3-196.",
+    verifiedSourceUrl:
+      "https://al-islam.org/al-khisal-numeric-classification-traditions-characteristics-shaykh-saduq/part-3-three-numbered",
+    verificationWitnessId: "khisal-3-196",
+    witnesses: [
+      {
+        id: "khisal-3-196",
+        role: "verification-source",
+        sourceTitleUr: "الخصال",
+        sourceTitleEn: "Al-Khisal",
+        sourceUrl:
+          "https://al-islam.org/al-khisal-numeric-classification-traditions-characteristics-shaykh-saduq/part-3-three-numbered",
+        citation: {
+          bookUr: "الخصال",
+          bookEn: "Al-Khisal",
+          chapterUr: "باب الثلاثة",
+          chapterEn: "Three-numbered characteristics",
+          hadithNumber: "3-196",
+        },
+        exactArabic:
+          "إن الله عز وجل أمر بثلاثة مقرون بها ثلاثة اخرى: أمر بالصلاة والزكاة فمن صلى ولم يزك لم تقبل منه صلاته، وأمر بالشكر له وللوالدين، فمن لم يشكر والديه لم يشكر الله، وأمر باتقاء الله وصلة الرحم، فمن لم يصل رحمه لم يتق الله عز وجل.",
+        textVerified: true,
+        note:
+          "The record displays the parents-related clause as a verbatim excerpt from the directly checked Al-Khisal narration.",
+      },
+    ],
   },
   {
     id: "parents-kafi-157-1-kindness",
@@ -756,17 +780,35 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     attributedToEn: "Imam al-Sadiq",
     sourceTitleUr: "تحف العقول",
     sourceTitleEn: "Tuhaf al-Uqul",
-    citedReferenceUr: "تحف العقول، ص322؛ بحار الانوار، ج78، ص236، ح67۔",
-    citedReferenceEn:
-      "Tuhaf al-Uqul, p. 322; Bihar al-Anwar, vol. 78, p. 236, hadith 67.",
-    sourceUrl:
-      "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+    citedReferenceUr: "تحف العقول، ص322۔",
+    citedReferenceEn: "Tuhaf al-Uqul, p. 322.",
+    sourceUrl: "https://ablibrary.net/book_content/b/6129/333",
     candidateArabic:
       "يجب للوالدين على الولد ثلاثة أشياء: شكرهما على كل حال، وطاعتهما فيما يأمرانه وينهيانه عنه في غير معصية الله، ونصيحتهما في السر والعلانية.",
-    status: "pending-verification",
-    witnesses: [],
-    verificationNote:
-      "The wording has secondary confirmation and the Tuhaf al-Uqul page reference is preserved, but the direct Tuhaf witness has not yet been checked.",
+    status: "verified",
+    exactArabic:
+      "ويجب للوالدين على الولد ثلاثة أشياء : شكرهما على كل حال . وطاعتهما فيما يأمرانه وينهيانه عنه في غير معصية الله . ونصيحتهما في السر والعلانية .",
+    verifiedReferenceUr: "تحف العقول، ص322۔",
+    verifiedReferenceEn: "Tuhaf al-Uqul, p. 322.",
+    verifiedSourceUrl: "https://ablibrary.net/book_content/b/6129/333",
+    verificationWitnessId: "tuhaf-322-parent-rights",
+    witnesses: [
+      {
+        id: "tuhaf-322-parent-rights",
+        role: "verification-source",
+        sourceTitleUr: "تحف العقول",
+        sourceTitleEn: "Tuhaf al-Uqul",
+        sourceUrl: "https://ablibrary.net/book_content/b/6129/333",
+        citation: {
+          bookUr: "تحف العقول",
+          bookEn: "Tuhaf al-Uqul",
+          page: 322,
+        },
+        exactArabic:
+          "ويجب للوالدين على الولد ثلاثة أشياء : شكرهما على كل حال . وطاعتهما فيما يأمرانه وينهيانه عنه في غير معصية الله . ونصيحتهما في السر والعلانية .",
+        textVerified: true,
+      },
+    ],
   },
   {
     id: "parents-kafi-5-554-5",
