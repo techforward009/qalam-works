@@ -65,6 +65,7 @@ import {
 } from "./engine/studioView";
 import type { KhateebResearchResult } from "./engine/researchTypes";
 import { buildLiveResearchPack } from "./engine/liveResearchPack";
+import { buildGroundedSermonBlueprintText } from "./engine/groundedSermonBlueprint";
 import {
   hadithRecordForDossierText,
   verifiedHadithForDossierText,
@@ -277,6 +278,13 @@ export default function KhateebStudioContent({
   const liveResearchPack = liveTopicResearch
     ? buildLiveResearchPack(liveTopicResearch, duration)
     : null;
+  const groundedLiveBlueprintText =
+    liveResearchPack?.ready
+      ? buildGroundedSermonBlueprintText(
+          liveResearchPack,
+          ur ? "ur" : "en",
+        )
+      : "";
 
   const topic = topicResults.find((item) => item.id === selectedTopicId)
     ?? topicResults[0];
@@ -801,14 +809,56 @@ export default function KhateebStudioContent({
                           liveResearchPack.ready ? (
                             <div className="rounded-xl border border-[#B8935A]/30 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
                               <div className="flex flex-wrap items-center justify-between gap-2">
-                                <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
-                                  {ur
-                                    ? `${duration} منٹ کا تحقیقی منبری پیک`
-                                    : `${duration}-minute research sermon pack`}
-                                </h5>
-                                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#6b776d] dark:bg-[#162a1e] dark:text-[#98aa9b]">
-                                  {liveResearchPack.evidence.length} {ur ? "منتخب ماخذ" : "selected sources"}
-                                </span>
+                                <div>
+                                  <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                                    {ur
+                                      ? `${duration} منٹ کا مصدقہ منبری خاکہ`
+                                      : `${duration}-minute verified sermon blueprint`}
+                                  </h5>
+                                  <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                                    {ur
+                                      ? "اصل نصوص اور علمی توضیحات ماخذی اندراجات سے ہیں؛ منبری ربط اور اختتام واضح طور پر تدوینی حصے ہیں۔"
+                                      : "Primary texts and scholarly explanations are source-grounded; transitions and closing remain clearly editorial."}
+                                  </p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#6b776d] dark:bg-[#162a1e] dark:text-[#98aa9b]">
+                                    {liveResearchPack.evidence.length} {ur ? "مصدقہ اندراج" : "verified records"}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        await navigator.clipboard.writeText(groundedLiveBlueprintText);
+                                      } catch {
+                                        // Clipboard may be unavailable.
+                                      }
+                                    }}
+                                    className="rounded-lg bg-[#1A3A2A] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#244E38]"
+                                  >
+                                    {ur ? "مصدقہ خاکہ نقل کریں" : "Copy verified blueprint"}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                {[
+                                  [ur ? "قرآنی بنیاد" : "Qur'an", liveResearchPack.profile.quran],
+                                  [ur ? "مصدقہ روایات" : "Hadith", liveResearchPack.profile.hadith],
+                                  [ur ? "علمی توضیح" : "Scholar", liveResearchPack.profile.scholar],
+                                  [ur ? "بنیادی ماخذ" : "Core evidence", liveResearchPack.profile.core],
+                                ].map(([label, count]) => (
+                                  <div
+                                    key={String(label)}
+                                    className="rounded-lg border border-[#1A3A2A]/10 bg-white px-3 py-2 dark:border-[#35513d] dark:bg-[#162a1e]"
+                                  >
+                                    <div className="text-[11px] text-[#687469] dark:text-[#9fb0a2]">
+                                      {label}
+                                    </div>
+                                    <div className="mt-1 text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                                      {count}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                                 {liveResearchPack.sections.map((section) => (
@@ -817,9 +867,20 @@ export default function KhateebStudioContent({
                                     className="rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]"
                                   >
                                     <div className="flex items-center justify-between gap-2">
-                                      <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
-                                        {ur ? section.headingUr : section.headingEn}
-                                      </strong>
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <strong className="text-sm text-[#1A3A2A] dark:text-[#e7eee9]">
+                                          {ur ? section.headingUr : section.headingEn}
+                                        </strong>
+                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                          section.role === "source-grounded"
+                                            ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
+                                            : "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                                        }`}>
+                                          {section.role === "source-grounded"
+                                            ? (ur ? "ماخذی بنیاد" : "Source-grounded")
+                                            : (ur ? "تدوینی ربط" : "Editorial bridge")}
+                                        </span>
+                                      </div>
                                       <span className="text-xs text-[#8a6838] dark:text-[#d7bc8a]">
                                         {section.minutes} {ur ? "منٹ" : "min"}
                                       </span>
@@ -837,9 +898,23 @@ export default function KhateebStudioContent({
                             </div>
                           ) : (
                             <div className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-200">
-                              {ur
-                                ? `${duration} منٹ کا باقاعدہ منبری پیک بنانے کے لیے کم از کم ${liveResearchPack.minimumSources} مضبوط ماخذ درکار ہیں۔ ابھی ${liveResearchPack.evidence.length} ملا ہے؛ مزید ${liveResearchPack.missingSources} ماخذ درکار ہیں۔`
-                                : `A ${duration}-minute sermon pack needs at least ${liveResearchPack.minimumSources} strong sources. ${liveResearchPack.evidence.length} found; ${liveResearchPack.missingSources} more needed.`}
+                              <strong>
+                                {ur
+                                  ? `${duration} منٹ کا مصدقہ منبری خاکہ ابھی فعال نہیں۔`
+                                  : `The ${duration}-minute verified sermon blueprint is not ready yet.`}
+                              </strong>
+                              <div className="mt-2 space-y-1">
+                                {liveResearchPack.blockers.map((blocker) => (
+                                  <p key={blocker.code}>
+                                    • {ur ? blocker.messageUr : blocker.messageEn}
+                                  </p>
+                                ))}
+                              </div>
+                              <p className="mt-2 text-xs">
+                                {ur
+                                  ? `مصدقہ اندراج: ${liveResearchPack.profile.verified}؛ بنیادی روایت/علمی توضیح: ${liveResearchPack.profile.core}۔`
+                                  : `Verified records: ${liveResearchPack.profile.verified}; core hadith/scholar records: ${liveResearchPack.profile.core}.`}
+                              </p>
                             </div>
                           )
                         ) : null}
