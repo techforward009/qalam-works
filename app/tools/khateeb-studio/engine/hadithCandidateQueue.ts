@@ -118,6 +118,57 @@ export function buildLiveHadithCandidateQueue(
     });
 }
 
+export function validateLiveHadithCandidateQueue(
+  evidence: readonly KhateebResearchEvidence[],
+  queue: readonly LiveHadithCandidate[],
+): readonly string[] {
+  const errors: string[] = [];
+  const evidenceById = new Map(evidence.map((item) => [item.id, item]));
+  const candidateIds = new Set<string>();
+
+  for (const candidate of queue) {
+    if (candidateIds.has(candidate.id)) {
+      errors.push(`duplicate candidate id: ${candidate.id}`);
+    }
+    candidateIds.add(candidate.id);
+
+    const source = evidenceById.get(candidate.evidenceId);
+    if (!source) {
+      errors.push(`${candidate.id}: source evidence not found`);
+      continue;
+    }
+    if (source.status !== "source-lead") {
+      errors.push(`${candidate.id}: source is not a source-lead`);
+    }
+    if (source.providerId !== "eshia-library") {
+      errors.push(`${candidate.id}: source is not an eShia record`);
+    }
+    if (source.sourceExcerptStatus !== "page-excerpt") {
+      errors.push(`${candidate.id}: source has no page-excerpt status`);
+    }
+    if (!source.sourceExcerpt || candidate.exactPageText !== source.sourceExcerpt.trim()) {
+      errors.push(`${candidate.id}: candidate text differs from exact page excerpt`);
+    }
+    if (candidate.sourceUrl !== source.sourceUrl) {
+      errors.push(`${candidate.id}: source URL drift`);
+    }
+    if (
+      candidate.citationUr !== source.citationUr ||
+      candidate.citationEn !== source.citationEn
+    ) {
+      errors.push(`${candidate.id}: citation drift`);
+    }
+    if (candidate.status === "not-hadith-like") {
+      errors.push(`${candidate.id}: rejected prose must not remain in queue`);
+    }
+    if (!candidate.missing.includes("primary-source-confirmation")) {
+      errors.push(`${candidate.id}: primary verification requirement missing`);
+    }
+  }
+
+  return errors;
+}
+
 export function candidateQueueSummaryUr(
   queue: readonly LiveHadithCandidate[],
 ): string {
