@@ -1,5 +1,9 @@
 import type { SermonLocale } from "./sermonPrep";
 import { pureKhateebUrdu } from "./urduPurity";
+import {
+  hadithRecordForDossierText,
+  verifiedHadithForDossierText,
+} from "./verifiedHadithCorpus";
 import { PARENTS_BARSI_DOSSIER } from "./parentsBarsiDossier";
 
 export type ScholarPerspective = {
@@ -1622,17 +1626,41 @@ export function buildDossierText(
   if (dossier.primaryTexts?.length) {
     lines.push("", ur ? "اصل آیات و روایات" : "Primary verses and narrations");
     for (const item of dossier.primaryTexts) {
-      lines.push(
-        "",
-        ur ? item.refUr : item.refEn,
-        item.kind === "quran" && item.quranLocation
-          ? `قرآنی متن: ${item.quranLocation.surah}:${item.quranLocation.ayah} — داخلی Indo-Pak Ahmedgraf ذخیرے سے`
-          : (item.sourceArabic ?? item.arabic ?? ""),
-        `${ur ? "دقیق حوالہ" : "Exact reference"}: ${ur ? item.sourceRefUr : item.sourceRefEn}`,
-        ur ? item.explanationUr : item.explanationEn,
-      );
-    }
-  }
+      if (item.kind === "quran") {
+        lines.push(
+          "",
+          ur ? item.refUr : item.refEn,
+          item.quranLocation
+            ? `قرآنی متن: ${item.quranLocation.surah}:${item.quranLocation.ayah} — داخلی Indo-Pak Ahmedgraf ذخیرے سے`
+            : "",
+          `${ur ? "دقیق حوالہ" : "Exact reference"}: ${ur ? item.sourceRefUr : item.sourceRefEn}`,
+          ur ? item.explanationUr : item.explanationEn,
+        );
+        continue;
+      }
+
+      const verified = verifiedHadithForDossierText(item.id);
+      const inventory = hadithRecordForDossierText(item.id);
+      if (verified) {
+        lines.push(
+          "",
+          ur ? item.refUr : item.refEn,
+          verified.exactArabic ?? "",
+          `${ur ? "لفظ بہ لفظ مصدقہ حوالہ" : "Exact verified reference"}: ${ur ? verified.verifiedReferenceUr : verified.verifiedReferenceEn}`,
+          ur ? item.explanationUr : item.explanationEn,
+        );
+      } else {
+        lines.push(
+          "",
+          ur ? item.refUr : item.refEn,
+          ur
+            ? "اصل عربی متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی ہے؛ غیر مصدقہ عبارت نقل نہیں کی گئی۔"
+            : "The exact Arabic source text is still pending word-for-word verification; unverified wording is not reproduced.",
+          `${ur ? "ماخذی حوالہ (زیرِ تصدیق)" : "Source reference (pending verification)"}: ${inventory ? (ur ? inventory.citedReferenceUr : inventory.citedReferenceEn) : (ur ? item.sourceRefUr : item.sourceRefEn)}`,
+          ur ? item.explanationUr : item.explanationEn,
+        );
+      }
+    }  }
 
   lines.push(
     "",

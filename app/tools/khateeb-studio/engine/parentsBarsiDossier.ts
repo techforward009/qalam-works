@@ -223,15 +223,15 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       sourceArabicMarked:
         "سيدُ الأبرار يوم القيامة رجلٌ برَّ والديه بعد موتهما.",
       sourceRefUr:
-        "رسول اکرمؐ؛ بحار الأنوار، علامہ مجلسی، ج74، ص86، ح100؛ روایت امام صادقؑ عن ابیہ عن آبائہؑ عن رسول اللّٰهؐ۔",
+        "رسول اکرمؐ؛ بحار الأنوار، علامہ مجلسی، ج71، ص88؛ روایت امام صادقؑ عن ابیہ عن آبائہؑ عن رسول اللّٰهؐ۔",
       sourceRefEn:
-        "The Prophet; Bihar al-Anwar, vol.74, p.86, hadith 100; narrated by Imam al-Sadiq from his father and forefathers from the Prophet.",
+        "The Prophet; Bihar al-Anwar, vol.71, p.88; narrated by Imam al-Sadiq from his father and forefathers from the Prophet.",
       explanationUr:
         "یہ روایت برسی کی مجلس کا مرکزی پل بن سکتی ہے: والدین کی وفات نیکی کا دروازہ بند نہیں کرتی۔ خدمت کی صورت بدلتی ہے اور دعا، خیر، صدقہ اور صالح عمل کے ذریعے برِّ والدین جاری رہتا ہے۔",
       explanationEn:
         "This narration makes continuing goodness after the parents' death the bridge into the memorial theme.",
       sourceUrl:
-        "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
+        "https://najafdesertlibrary.com/book/%D8%A8%D8%AD%D8%A7%D8%B1-%D8%A7%D9%84%D8%A3%D9%86%D9%88%D8%A7%D8%B1/v/71/p/88",
     },
   ],
   perspectives: [
