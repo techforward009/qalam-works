@@ -43,6 +43,38 @@ const TOPICS: readonly QuranTopicEntry[] = [
         noteUr: "رزق کو صرف انسانی تدبیر کا نتیجہ سمجھنے کے بجائے اللہ کی کفالت کے وسیع تصور سے جوڑتی ہے۔",
         noteEn: "Places provision within the wider Qur'anic idea of divine sustenance.",
       },
+      {
+        surah: 11,
+        ayah: 6,
+        refUr: "سورۂ ہود 11:6",
+        refEn: "Qur'an 11:6",
+        noteUr: "زمین کے ہر جاندار کے رزق کو اللہ کی کفالت سے جوڑتی ہے؛ رزق کے باب میں بنیادی توحیدی اصول فراہم کرتی ہے۔",
+        noteEn: "Grounds the provision of every creature in Allah's care, giving a foundational monotheistic principle for rizq.",
+      },
+      {
+        surah: 71,
+        ayah: 10,
+        refUr: "سورۂ نوح 71:10",
+        refEn: "Qur'an 71:10",
+        noteUr: "استغفار کو حضرت نوحؑ کی دعوت میں ایک بنیادی اصلاحی عمل کے طور پر پیش کرتی ہے، جس کے مادی آثار اگلی آیات میں بیان ہوتے ہیں۔",
+        noteEn: "Presents seeking forgiveness as a central reformative act in Noah's call, with material effects described in the following verses.",
+      },
+      {
+        surah: 71,
+        ayah: 12,
+        refUr: "سورۂ نوح 71:12",
+        refEn: "Qur'an 71:12",
+        noteUr: "استغفار کے سیاق میں مال، اولاد، باغات اور نہروں کی فراوانی کا ذکر کرتی ہے؛ رزق میں وسعت کے محور کے لیے براہِ راست قرآنی بنیاد ہے۔",
+        noteEn: "In the context of seeking forgiveness, mentions increase in wealth, children, gardens, and rivers, providing a direct Qur'anic basis for abundance.",
+      },
+      {
+        surah: 2,
+        ayah: 267,
+        refUr: "سورۂ بقرہ 2:267",
+        refEn: "Qur'an 2:267",
+        noteUr: "اپنی کمائی کی پاکیزہ چیزوں میں سے خرچ کرنے کی ہدایت دیتی ہے؛ اسے حلال کمائی کی مستقل دلیل کے بجائے کمائی اور انفاق کی پاکیزگی کے اخلاقی اصول کے طور پر لینا زیادہ محتاط ہے۔",
+        noteEn: "Commands spending from the good things one has earned; it is safer to use this as an ethical principle of wholesome earning and spending rather than as a standalone proof-text for lawful income.",
+      },
     ],
   },
   {
@@ -277,7 +309,7 @@ function scoreTopic(entry: QuranTopicEntry, query: string): number {
 
 export function quranEvidenceForTopic(
   query: string,
-  limit = 3,
+  limit = 6,
 ): readonly KhateebResearchEvidence[] {
   const matches = TOPICS
     .map((entry) => ({ entry, score: scoreTopic(entry, query) }))
