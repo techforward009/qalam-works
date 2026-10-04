@@ -22,6 +22,9 @@ describe("Khateeb grounded full sermon composer", () => {
         .filter((block) => block.kind === "editorial")
         .every((block) => block.provenance === "editorial"),
     ).toBe(true);
+    expect(
+      sermon?.blocks.reduce((sum, block) => sum + block.minutes, 0),
+    ).toBe(30);
   });
 
   test("uses exact verified hadith text rather than dossier candidate text", () => {
@@ -110,6 +113,12 @@ describe("Khateeb grounded full sermon composer", () => {
         const sermon = buildGroundedFullSermon(topicId, duration, "ur");
         expect(sermon).not.toBeNull();
         expect(validateGroundedFullSermon(sermon!)).toEqual([]);
+        if (sermon!.ready) {
+          expect(
+            sermon!.blocks.reduce((sum, block) => sum + block.minutes, 0),
+          ).toBe(duration);
+          expect(sermon!.blocks.every((block) => block.minutes >= 1)).toBe(true);
+        }
       }
     }
   });
