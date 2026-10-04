@@ -332,6 +332,207 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
       },
     ],
   },
+  {
+    id: "dua-kafi-468-1",
+    topicIds: ["dua"],
+    dossierPrimaryTextId: "dua-weapon-believer",
+    attributedToUr: "رسول اکرمؐ",
+    attributedToEn: "The Prophet",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص468، ح1۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 468, hadith 1.",
+    sourceUrl:
+      "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8A/v/2/p/468",
+    candidateArabic:
+      "الدُّعاءُ سِلاحُ المُؤمِنِ، وعَمودُ الدِّينِ، ونورُ السَّماواتِ والأرضِ.",
+    status: "verified",
+    exactArabic:
+      "الدعاء سلاح المؤمن وعمود الدين ونور السماوات والأرض.",
+    verifiedReferenceUr: "الکافی، ج2، ص468، ح1۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, p. 468, hadith 1.",
+    verifiedSourceUrl:
+      "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/468",
+    verificationWitnessId: "kafi-najaf-468-1",
+    witnesses: [
+      {
+        id: "kafi-najaf-468-1",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl:
+          "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/468",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 468,
+          chapterUr: "باب أن الدعاء سلاح المؤمن",
+          chapterEn: "Chapter: Supplication is the believer's weapon",
+          hadithNumber: "1",
+        },
+        exactArabic:
+          "الدعاء سلاح المؤمن وعمود الدين ونور السماوات والأرض.",
+        textVerified: true,
+      },
+    ],
+  },
+  {
+    id: "dua-tanbih-2-237",
+    topicIds: ["dua"],
+    dossierPrimaryTextId: "dua-best-worship",
+    attributedToUr: "رسول اکرمؐ",
+    attributedToEn: "The Prophet",
+    sourceTitleUr: "تنبیہ الخواطر",
+    sourceTitleEn: "Tanbih al-Khawatir",
+    citedReferenceUr: "تنبیہ الخواطر، ج2، ص237۔",
+    citedReferenceEn: "Tanbih al-Khawatir, vol. 2, p. 237.",
+    sourceUrl: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/supplication",
+    candidateArabic:
+      "أفضَلُ العِبادَةِ الدُّعاءُ، فإذا أذِنَ اللهُ لِلعَبدِ في الدُّعاءِ فَتَحَ لَهُ بابَ الرَّحمَةِ.",
+    status: "pending-verification",
+    witnesses: [],
+    verificationNote:
+      "Citation is preserved from the existing dossier. Direct source verification is still required before this can be shown as an exact quotation.",
+  },
+  {
+    id: "dua-kafi-467-8",
+    topicIds: ["dua"],
+    dossierPrimaryTextId: "dua-beloved-action",
+    attributedToUr: "امیرالمومنینؑ",
+    attributedToEn: "Imam Ali",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص467، ح8۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 467, hadith 8.",
+    sourceUrl:
+      "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/467",
+    candidateArabic:
+      "أحَبُّ الأعمالِ إلى اللهِ عزَّ وجلَّ في الأرضِ الدُّعاءُ.",
+    status: "verified",
+    exactArabic:
+      "أحب الأعمال إلى الله عز وجل في الأرض الدعاء وأفضل العبادة العفاف، قال: وكان أمير المؤمنين عليه السلام رجلا دعاء.",
+    verifiedReferenceUr: "الکافی، ج2، ص467–468، ح8۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, pp. 467–468, hadith 8.",
+    verifiedSourceUrl:
+      "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/467",
+    verificationWitnessId: "kafi-najaf-467-468-8",
+    witnesses: [
+      {
+        id: "kafi-najaf-467-468-8",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl:
+          "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/467",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 467,
+          chapterUr: "باب فضل الدعاء والحث عليه",
+          chapterEn: "Chapter on the merit of supplication and encouragement toward it",
+          hadithNumber: "8",
+        },
+        exactArabic:
+          "أحب الأعمال إلى الله عز وجل في الأرض الدعاء وأفضل العبادة العفاف، قال: وكان أمير المؤمنين عليه السلام رجلا دعاء.",
+        textVerified: true,
+        note: "The narration begins on p. 467 and continues onto p. 468.",
+      },
+    ],
+  },
+  {
+    id: "dua-kafi-468-7",
+    topicIds: ["dua"],
+    dossierPrimaryTextId: "dua-shield-believer",
+    attributedToUr: "امیرالمومنینؑ",
+    attributedToEn: "Imam Ali",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص468، ح7۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 468, hadith 7.",
+    sourceUrl:
+      "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/468",
+    candidateArabic: "الدُّعاءُ تُرسُ المُؤمِنِ.",
+    status: "verified",
+    exactArabic:
+      "الدعاء ترس المؤمن ومتى تكثر قرع الباب يفتح لك.",
+    verifiedReferenceUr: "الکافی، ج2، ص468، ح4۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, p. 468, hadith 4.",
+    verifiedSourceUrl:
+      "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/468",
+    verificationWitnessId: "kafi-najaf-468-4",
+    witnesses: [
+      {
+        id: "kafi-najaf-468-4",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl:
+          "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/468",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 468,
+          chapterUr: "باب أن الدعاء سلاح المؤمن",
+          chapterEn: "Chapter: Supplication is the believer's weapon",
+          hadithNumber: "4",
+        },
+        exactArabic:
+          "الدعاء ترس المؤمن ومتى تكثر قرع الباب يفتح لك.",
+        textVerified: true,
+        note: "Direct source check corrects the dossier's hadith number from 7 to 4 and restores the omitted second clause.",
+      },
+    ],
+  },
+  {
+    id: "dua-kafi-466-3",
+    topicIds: ["dua"],
+    dossierPrimaryTextId: "dua-station-through-asking",
+    attributedToUr: "امام صادقؑ",
+    attributedToEn: "Imam al-Sadiq",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص466، ح3۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 466, hadith 3.",
+    sourceUrl:
+      "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/466",
+    candidateArabic:
+      "يا مُيَسِّرُ، اُدعُ ولا تَقُلْ: إنَّ الأمرَ قَد فُرِغَ مِنهُ؛ إنَّ عِندَ اللهِ عزَّ وجلَّ مَنزِلَةً لا تُنالُ إلّا بِمَسألَةٍ.",
+    status: "verified",
+    exactArabic:
+      "يا ميسر ادع ولا تقل: إن الامر قد فرغ منه، إن عند الله عز وجل منزلة لا تنال إلا بمسألة، ولو أن عبدا سد فاه ولم يسأل لم يعط شيئا فسل تعط، يا ميسر إنه ليس من باب يقرع إلا يوشك أن يفتح لصاحبه.",
+    verifiedReferenceUr: "الکافی، ج2، ص466–467، ح3۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, pp. 466–467, hadith 3.",
+    verifiedSourceUrl:
+      "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/466",
+    verificationWitnessId: "kafi-najaf-466-467-3",
+    witnesses: [
+      {
+        id: "kafi-najaf-466-467-3",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl:
+          "https://najafdesertlibrary.com/book/%D8%A7%D9%84%D9%83%D8%A7%D9%81%D9%8a/v/2/p/466",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 466,
+          chapterUr: "باب فضل الدعاء والحث عليه",
+          chapterEn: "Chapter on the merit of supplication and encouragement toward it",
+          hadithNumber: "3",
+        },
+        exactArabic:
+          "يا ميسر ادع ولا تقل: إن الامر قد فرغ منه، إن عند الله عز وجل منزلة لا تنال إلا بمسألة، ولو أن عبدا سد فاه ولم يسأل لم يعط شيئا فسل تعط، يا ميسر إنه ليس من باب يقرع إلا يوشك أن يفتح لصاحبه.",
+        textVerified: true,
+        note: "The narration begins on p. 466 and continues onto p. 467.",
+      },
+    ],
+  },
+
 ];
 
 export function hadithRecordForDossierText(
