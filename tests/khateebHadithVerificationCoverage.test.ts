@@ -36,19 +36,29 @@ describe("Khateeb hadith verification coverage audit", () => {
       pending: 0,
       untracked: 0,
     });
+    expect(byTopic.get("quran-hidayat")).toMatchObject({
+      total: 8,
+      verified: 8,
+      pending: 0,
+      untracked: 0,
+    });
   });
 
-  test("keeps untracked legacy dossier hadiths visible instead of silently treating them as verified", () => {
-    const quranHidayat = hadithVerificationCoverage().find(
-      (row) => row.topicId === "quran-hidayat",
-    );
+  test("has no untracked hadith left in any prepared dossier", () => {
+    const coverage = hadithVerificationCoverage();
+    expect(coverage.every((row) => row.untracked === 0)).toBe(true);
+    expect(coverage.flatMap((row) => row.untrackedIds)).toEqual([]);
+  });
 
-    expect(quranHidayat).toBeDefined();
-    expect(quranHidayat!.total).toBeGreaterThan(0);
-    expect(quranHidayat!.verified).toBe(0);
-    expect(quranHidayat!.pending).toBe(0);
-    expect(quranHidayat!.untracked).toBe(quranHidayat!.total);
-    expect(quranHidayat!.untrackedIds.length).toBe(quranHidayat!.total);
+  test("locks the migration milestone at 36 tracked dossier hadiths", () => {
+    const coverage = hadithVerificationCoverage();
+    const total = coverage.reduce((sum, row) => sum + row.total, 0);
+    const verified = coverage.reduce((sum, row) => sum + row.verified, 0);
+    const pending = coverage.reduce((sum, row) => sum + row.pending, 0);
+
+    expect(total).toBe(36);
+    expect(verified).toBe(35);
+    expect(pending).toBe(1);
   });
 
   test("never lets coverage arithmetic drift", () => {
