@@ -878,9 +878,19 @@ export default function KhateebStudioContent({
                                   />
                                 </div>
                               ) : item.arabic ? (
-                                <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
-                                  <KhateebScriptText text={item.arabic} forceArabic />
-                                </div>
+                                <>
+                                  <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
+                                    <KhateebScriptText text={item.arabic} forceArabic />
+                                  </div>
+                                  {item.kind === "quran" ? (
+                                    <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-white px-3 py-2 text-sm leading-7 text-[#445247] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#b8c8bb]">
+                                      <strong className="me-2 text-[#6f5730] dark:text-[#d7bc8a]">
+                                        {ur ? "موضوعی ربط:" : "Topic link:"}
+                                      </strong>
+                                      {ur ? item.detailUr : item.detailEn}
+                                    </div>
+                                  ) : null}
+                                </>
                               ) : (
                                 <p className="mt-2 text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
                                   {ur ? item.detailUr : item.detailEn}
