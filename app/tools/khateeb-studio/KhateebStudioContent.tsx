@@ -72,6 +72,11 @@ import {
 import { auditGroundedFullSermon } from "./engine/groundedSermonAudit";
 import { buildGroundedSermonBlueprintText } from "./engine/groundedSermonBlueprint";
 import {
+  buildLiveHadithCandidateQueue,
+  candidateQueueSummaryEn,
+  candidateQueueSummaryUr,
+} from "./engine/hadithCandidateQueue";
+import {
   hadithRecordForDossierText,
   verifiedHadithForDossierText,
 } from "./engine/verifiedHadithCorpus";
@@ -267,6 +272,9 @@ export default function KhateebStudioContent({
   const liveEShiaSourceLeads = liveTopicResearch?.evidence.filter(
     (item) => item.status === "source-lead" && item.providerId === "eshia-library",
   ) ?? [];
+  const liveHadithCandidateQueue =
+    liveTopicResearch?.hadithCandidates ??
+    buildLiveHadithCandidateQueue(liveEShiaSourceLeads);
   const liveThemeMap = Array.from(
     liveEShiaSourceLeads.reduce((map, item) => {
       for (const theme of item.themesUr ?? []) {
@@ -773,6 +781,70 @@ export default function KhateebStudioContent({
   : (ur ? `${localVerifiedCount} محفوظ مصدقہ اندراج` : `${localVerifiedCount} verified local records`)}
                           </span>
                         </div>
+
+                        {liveHadithCandidateQueue.length > 0 ? (
+                          <div className="rounded-xl border border-[#31513a]/20 bg-[#f5faf6] p-4 dark:border-[#45604b] dark:bg-[#122319]">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <h5 className="font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                                  {ur ? "ممکنہ روایات — تصدیقی قطار" : "Possible narrations — verification queue"}
+                                </h5>
+                                <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                                  {ur
+                                    ? candidateQueueSummaryUr(liveHadithCandidateQueue)
+                                    : candidateQueueSummaryEn(liveHadithCandidateQueue)}
+                                </p>
+                              </div>
+                              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#47654d] dark:bg-[#162a1e] dark:text-[#b9d4bf]">
+                                {liveHadithCandidateQueue.length} {ur ? "زیرِ جانچ" : "to review"}
+                              </span>
+                            </div>
+
+                            <div className="mt-3 space-y-3">
+                              {liveHadithCandidateQueue.slice(0, 5).map((candidate, index) => (
+                                <article
+                                  key={candidate.id}
+                                  className="rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]"
+                                >
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1A3A2A] text-[11px] font-bold text-white">
+                                        {index + 1}
+                                      </span>
+                                      <strong className="text-xs text-[#1A3A2A] dark:text-[#e7eee9]">
+                                        {candidate.status === "candidate"
+                                          ? (ur ? "مضبوط امیدوار" : "Strong candidate")
+                                          : (ur ? "مزید سیاق درکار" : "Needs more context")}
+                                      </strong>
+                                    </div>
+                                    <span className="rounded-full bg-[#F7F5EF] px-2 py-1 text-[11px] text-[#687469] dark:bg-[#0e1c15] dark:text-[#9fb0a2]">
+                                      {ur ? "ترجیح" : "score"} {candidate.score}
+                                    </span>
+                                  </div>
+
+                                  <div dir="rtl" className="mt-3 rounded-lg bg-[#F7F5EF] px-3 py-2 text-sm leading-8 text-[#1A3A2A] dark:bg-[#0e1c15] dark:text-[#e7eee9]">
+                                    <KhateebScriptText
+                                      text={candidate.exactPageText}
+                                      forcePersian={/[پچژگک]/u.test(candidate.exactPageText)}
+                                      forceArabic={!/[پچژگک]/u.test(candidate.exactPageText)}
+                                    />
+                                  </div>
+
+                                  <div className="mt-2 text-xs leading-6 text-[#6f5730] dark:text-[#d7bc8a]">
+                                    <strong>{ur ? "صفحاتی حوالہ: " : "Page reference: "}</strong>
+                                    {ur ? candidate.citationUr : candidate.citationEn}
+                                  </div>
+
+                                  <div className="mt-2 rounded-lg border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-200">
+                                    {ur
+                                      ? "یہ صرف تصدیقی امیدوار ہے۔ امام/راوی، باب، حدیث نمبر اور اصل ماخذ کی براہِ راست جانچ کے بغیر اسے روایت کے طور پر نقل نہ کریں۔"
+                                      : "This is only a verification candidate. Do not quote it as a hadith until attribution, chapter/hadith number, and the direct source are checked."}
+                                  </div>
+                                </article>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
 
                         {ur && liveThemeMap.length > 0 ? (
                           <div className="rounded-xl border border-[#B8935A]/25 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">

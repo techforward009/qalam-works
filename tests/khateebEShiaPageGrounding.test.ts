@@ -71,5 +71,11 @@ describe("live eShia page grounding", () => {
     expect(live?.arabic).toBeUndefined();
     expect(live?.sourceExcerptStatus).toBe("page-excerpt");
     expect(live?.sourceExcerpt).toContain("الْقُرْآنُ عَهْدُ اللَّهِ");
+    expect(result.hadithCandidates).toBeDefined();
+    expect(
+      result.hadithCandidates?.every((candidate) =>
+        ["candidate", "needs-context"].includes(candidate.status),
+      ),
+    ).toBe(true);
   });
 });

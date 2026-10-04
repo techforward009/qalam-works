@@ -2,6 +2,7 @@ import { discoverEShia, type EShiaDiscoveryHit } from "./eshiaDiscovery";
 import { fetchEShiaPage } from "./eshiaPage";
 import { eShiaQueryVariants } from "./eshiaQueryVariants";
 import { extractEShiaSourceExcerpt } from "./eshiaSourceExcerpt";
+import { buildLiveHadithCandidateQueue } from "./hadithCandidateQueue";
 import { researchKhateebTopic } from "./researchEngine";
 import type { KhateebResearchEvidence, KhateebResearchRequest, KhateebResearchResult } from "./researchTypes";
 
@@ -213,6 +214,8 @@ export async function researchKhateebTopicWithEShia(
       (item.kind === "hadith" || item.kind === "scholar"),
   );
 
+  const hadithCandidates = buildLiveHadithCandidateQueue(externalEvidence);
+
   return {
     ...local,
     evidence,
@@ -220,6 +223,7 @@ export async function researchKhateebTopicWithEShia(
     sourceLeadCount,
     catalogOnlyCount,
     canBuildSermon: hasVerifiedSermonCore,
+    hadithCandidates,
     gapsUr:
       externalEvidence.length > 0
         ? local.gapsUr.filter((item) => !item.includes("مقامی مصدقہ تحقیقی اندراج"))
