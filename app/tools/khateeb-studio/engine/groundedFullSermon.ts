@@ -27,6 +27,15 @@ export type SermonCompositionBlock = {
   minutes: number;
 };
 
+export type GroundedSermonSourceLedgerEntry = {
+  id: string;
+  kind: Exclude<SermonCompositionBlockKind, "editorial">;
+  citationUr: string;
+  citationEn: string;
+  sourceUrl?: string;
+  blockIds: readonly string[];
+};
+
 export type GroundedFullSermon = {
   topicId: string;
   duration: SermonDuration;
@@ -41,6 +50,7 @@ export type GroundedFullSermon = {
   quranCount: number;
   scholarCount: number;
   editorialCount: number;
+  sourceLedger: readonly GroundedSermonSourceLedgerEntry[];
 };
 
 const BLOCK_LIMITS: Record<
@@ -226,6 +236,50 @@ function allocateMinutes(
   return base.map(({ block, minutes }) => ({ ...block, minutes }));
 }
 
+function sourceLedger(
+  blocks: readonly SermonCompositionBlock[],
+): GroundedSermonSourceLedgerEntry[] {
+  const byKey = new Map<string, GroundedSermonSourceLedgerEntry>();
+
+  for (const block of blocks) {
+    if (
+      block.provenance !== "source-grounded" ||
+      block.kind === "editorial" ||
+      !block.citationUr ||
+      !block.citationEn
+    ) {
+      continue;
+    }
+
+    const key = [
+      block.kind,
+      block.citationUr,
+      block.citationEn,
+      block.sourceUrl ?? "",
+    ].join("|");
+    const existing = byKey.get(key);
+
+    if (existing) {
+      byKey.set(key, {
+        ...existing,
+        blockIds: [...existing.blockIds, block.id],
+      });
+      continue;
+    }
+
+    byKey.set(key, {
+      id: `source-${byKey.size + 1}`,
+      kind: block.kind,
+      citationUr: block.citationUr,
+      citationEn: block.citationEn,
+      sourceUrl: block.sourceUrl,
+      blockIds: [block.id],
+    });
+  }
+
+  return [...byKey.values()];
+}
+
 function buildBlockers(
   dossier: SermonDossier,
   duration: SermonDuration,
@@ -337,6 +391,7 @@ export function buildGroundedFullSermon(
     quranCount: quran.length,
     scholarCount: scholar.length,
     editorialCount: blocks.filter((item) => item.provenance === "editorial").length,
+    sourceLedger: sourceLedger(blocks),
   };
 }
 
@@ -386,6 +441,23 @@ export function validateGroundedFullSermon(
   }
   if (!sermon.ready && sermon.blocks.length > 0) {
     errors.push("blocked sermon exposes composed blocks");
+  }
+
+  const groundedBlockIds = new Set(
+    sermon.blocks
+      .filter((item) => item.provenance === "source-grounded")
+      .map((item) => item.id),
+  );
+  const ledgerBlockIds = sermon.sourceLedger.flatMap((item) => item.blockIds);
+  for (const blockId of ledgerBlockIds) {
+    if (!groundedBlockIds.has(blockId)) {
+      errors.push(`source ledger references non-grounded block: ${blockId}`);
+    }
+  }
+  for (const blockId of groundedBlockIds) {
+    if (!ledgerBlockIds.includes(blockId)) {
+      errors.push(`source-grounded block missing from ledger: ${blockId}`);
+    }
   }
 
   const counted = {
@@ -452,6 +524,16 @@ export function buildGroundedFullSermonText(
 
     const citation = ur ? block.citationUr : block.citationEn;
     if (citation) lines.push(`${ur ? "حوالہ" : "Reference"}: ${citation}`);
+  }
+
+  lines.push(
+    "",
+    ur ? "ماخذی رجسٹر" : "Source ledger",
+  );
+  for (const source of sermon.sourceLedger) {
+    lines.push(
+      `• ${ur ? source.citationUr : source.citationEn}`,
+    );
   }
 
   lines.push(
