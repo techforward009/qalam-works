@@ -285,6 +285,71 @@ export function buildGroundedFullSermon(
   };
 }
 
+export function validateGroundedFullSermon(
+  sermon: GroundedFullSermon,
+): readonly string[] {
+  const errors: string[] = [];
+  const ids = new Set<string>();
+
+  for (const block of sermon.blocks) {
+    if (ids.has(block.id)) errors.push(`duplicate block id: ${block.id}`);
+    ids.add(block.id);
+
+    if (block.provenance === "source-grounded") {
+      if (!block.citationUr || !block.citationEn) {
+        errors.push(`${block.id}: source-grounded block has no complete citation`);
+      }
+      if (
+        (block.kind === "quran" || block.kind === "hadith") &&
+        !block.arabic?.trim()
+      ) {
+        errors.push(`${block.id}: primary source block has no exact Arabic`);
+      }
+      if (block.kind === "hadith" && block.arabic?.includes("...")) {
+        errors.push(`${block.id}: verified hadith block contains ellipsis`);
+      }
+    }
+
+    if (block.provenance === "editorial") {
+      if (block.kind !== "editorial") {
+        errors.push(`${block.id}: editorial provenance used on source block`);
+      }
+      if (block.citationUr || block.citationEn || block.sourceUrl) {
+        errors.push(`${block.id}: editorial block must not impersonate a source`);
+      }
+    }
+  }
+
+  if (sermon.ready && sermon.blocks.length === 0) {
+    errors.push("ready sermon has no blocks");
+  }
+  if (!sermon.ready && sermon.blocks.length > 0) {
+    errors.push("blocked sermon exposes composed blocks");
+  }
+
+  const counted = {
+    hadith: sermon.blocks.filter((item) => item.kind === "hadith").length,
+    quran: sermon.blocks.filter((item) => item.kind === "quran").length,
+    scholar: sermon.blocks.filter((item) => item.kind === "scholar").length,
+    editorial: sermon.blocks.filter((item) => item.kind === "editorial").length,
+  };
+
+  if (counted.hadith !== sermon.verifiedHadithCount) {
+    errors.push("verifiedHadithCount does not match blocks");
+  }
+  if (counted.quran !== sermon.quranCount) {
+    errors.push("quranCount does not match blocks");
+  }
+  if (counted.scholar !== sermon.scholarCount) {
+    errors.push("scholarCount does not match blocks");
+  }
+  if (counted.editorial !== sermon.editorialCount) {
+    errors.push("editorialCount does not match blocks");
+  }
+
+  return errors;
+}
+
 export function buildGroundedFullSermonText(
   sermon: GroundedFullSermon,
   locale: SermonLocale,
