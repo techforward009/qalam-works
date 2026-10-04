@@ -1764,6 +1764,21 @@ export function validateVerifiedHadithCorpus(
   return errors;
 }
 
+export type DossierHadithVerificationState =
+  | "verified"
+  | "pending"
+  | "untracked";
+
+export function dossierHadithVerificationState(
+  dossierPrimaryTextId: string,
+): DossierHadithVerificationState {
+  const record = hadithRecordForDossierText(dossierPrimaryTextId);
+  if (!record) return "untracked";
+  return verifiedHadithForDossierText(dossierPrimaryTextId)
+    ? "verified"
+    : "pending";
+}
+
 export function hadithRecordForDossierText(
   dossierPrimaryTextId: string,
 ): VerifiedHadithRecord | null {
