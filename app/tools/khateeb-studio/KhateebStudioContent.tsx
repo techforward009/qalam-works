@@ -69,6 +69,7 @@ import {
   buildGroundedFullSermon,
   buildGroundedFullSermonText,
 } from "./engine/groundedFullSermon";
+import { auditGroundedFullSermon } from "./engine/groundedSermonAudit";
 import { buildGroundedSermonBlueprintText } from "./engine/groundedSermonBlueprint";
 import {
   hadithRecordForDossierText,
@@ -305,6 +306,9 @@ export default function KhateebStudioContent({
   const groundedFullSermonText = groundedFullSermon
     ? buildGroundedFullSermonText(groundedFullSermon, ur ? "ur" : "en")
     : "";
+  const groundedFullSermonAudit = groundedFullSermon
+    ? auditGroundedFullSermon(groundedFullSermon)
+    : null;
   const researchSeries = rawTopicDossier
     ? buildMajlisSeries(rawTopicDossier, seriesLength)
     : null;
@@ -1660,6 +1664,53 @@ export default function KhateebStudioContent({
                           </button>
                         ) : null}
                       </div>
+
+                      {groundedFullSermonAudit ? (
+                        <div className="mt-4 rounded-xl border border-[#31513a]/20 bg-white p-4 dark:border-[#45604b] dark:bg-[#162a1e]">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <strong className="text-sm text-[#31513a] dark:text-[#b9d4bf]">
+                              {ur ? "ماخذی و تدوینی جانچ" : "Source and editorial audit"}
+                            </strong>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              groundedFullSermonAudit.status === "pass"
+                                ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
+                                : groundedFullSermonAudit.status === "warning"
+                                  ? "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                                  : "bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-300"
+                            }`}>
+                              {groundedFullSermonAudit.status === "pass"
+                                ? (ur ? "جانچ مکمل" : "Audit passed")
+                                : groundedFullSermonAudit.status === "warning"
+                                  ? (ur ? "بہتری کی گنجائش" : "Review suggested")
+                                  : (ur ? "اہم مسئلہ" : "Audit error")}
+                            </span>
+                          </div>
+                          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                            {groundedFullSermonAudit.items.map((item) => (
+                              <div
+                                key={item.id}
+                                className="rounded-lg border border-[#1A3A2A]/10 bg-[#F7F5EF] p-3 dark:border-[#35513d] dark:bg-[#0e1c15]"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className={`h-2.5 w-2.5 rounded-full ${
+                                    item.level === "pass"
+                                      ? "bg-emerald-600"
+                                      : item.level === "warning"
+                                        ? "bg-amber-500"
+                                        : "bg-red-600"
+                                  }`} />
+                                  <strong className="text-xs text-[#1A3A2A] dark:text-[#e7eee9]">
+                                    {ur ? item.titleUr : item.titleEn}
+                                  </strong>
+                                </div>
+                                <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                                  {ur ? item.detailUr : item.detailEn}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
 
                       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         {[
