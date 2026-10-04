@@ -65,6 +65,10 @@ import {
 } from "./engine/studioView";
 import type { KhateebResearchResult } from "./engine/researchTypes";
 import { buildLiveResearchPack } from "./engine/liveResearchPack";
+import {
+  hadithRecordForDossierText,
+  verifiedHadithForDossierText,
+} from "./engine/verifiedHadithCorpus";
 
 const ORIGINALITY_LABEL_UR = {
   titles: "عنوانات کی آزادی",
@@ -1547,40 +1551,88 @@ export default function KhateebStudioContent({
                           : "Original Arabic text, reference, and a short explanation for the sermon's textual foundation."}
                       </p>
                       <div className="mt-4 space-y-4">
-                        {topicDossier.primaryTexts.map((item) => (
-                          <article
-                            key={item.id}
-                            className="rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]"
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <strong className="text-sm text-[#6f5730] dark:text-[#e2c895]">
-                                {ur ? item.refUr : item.refEn}
-                              </strong>
-                              <span className="rounded-full bg-white px-2 py-1 text-xs text-[#687469] dark:bg-[#162a1e] dark:text-[#9fb0a2]">
-                                {item.kind === "quran"
-                                  ? (ur ? "آیت" : "Qur'an")
-                                  : (ur ? "روایت" : "Narration")}
-                              </span>
-                            </div>
-                            <div className="mt-3 rounded-lg bg-white px-4 py-3 dark:bg-[#162a1e]">
-                              <KhateebPrimaryArabic
-                                kind={item.kind}
-                                quranLocation={item.quranLocation}
-                                sourceArabic={item.sourceArabic ?? item.arabic ?? ""}
-                                sourceArabicMarked={item.sourceArabicMarked}
-                              />
-                            </div>
-                            <p className="mt-3 text-sm leading-8 text-[#445247] dark:text-[#b8c8bb]">
-                              {ur ? item.explanationUr : item.explanationEn}
-                            </p>
-                            {item.kind === "hadith" ? (
-                              <div className="mt-3 text-sm leading-7 text-[#5a4830] dark:text-[#d7bc8a]">
-                                <strong>{ur ? "حوالہ: " : "Reference: "}</strong>
-                                {ur ? item.sourceRefUr : item.sourceRefEn}
+                        {topicDossier.primaryTexts.map((item) => {
+                          const verifiedHadith =
+                            item.kind === "hadith"
+                              ? verifiedHadithForDossierText(item.id)
+                              : null;
+                          const hadithInventory =
+                            item.kind === "hadith"
+                              ? hadithRecordForDossierText(item.id)
+                              : null;
+
+                          return (
+                            <article
+                              key={item.id}
+                              className="rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-4 dark:border-[#35513d] dark:bg-[#0e1c15]"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <strong className="text-sm text-[#6f5730] dark:text-[#e2c895]">
+                                  {ur ? item.refUr : item.refEn}
+                                </strong>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="rounded-full bg-white px-2 py-1 text-xs text-[#687469] dark:bg-[#162a1e] dark:text-[#9fb0a2]">
+                                    {item.kind === "quran"
+                                      ? (ur ? "آیت" : "Qur'an")
+                                      : (ur ? "روایت" : "Narration")}
+                                  </span>
+                                  {verifiedHadith ? (
+                                    <span className="rounded-full border border-emerald-700/20 bg-white px-2 py-1 text-[11px] font-semibold text-emerald-800 dark:border-emerald-500/25 dark:bg-[#162a1e] dark:text-emerald-300">
+                                      {ur ? "لفظ بہ لفظ مصدقہ" : "Exact text verified"}
+                                    </span>
+                                  ) : item.kind === "hadith" ? (
+                                    <span className="rounded-full border border-amber-700/20 bg-white px-2 py-1 text-[11px] font-semibold text-amber-800 dark:border-amber-500/25 dark:bg-[#162a1e] dark:text-amber-300">
+                                      {ur ? "زیرِ تصدیق" : "Pending verification"}
+                                    </span>
+                                  ) : null}
+                                </div>
                               </div>
-                            ) : null}
-                          </article>
-                        ))}
+
+                              {item.kind === "quran" ? (
+                                <div className="mt-3 rounded-lg bg-white px-4 py-3 dark:bg-[#162a1e]">
+                                  <KhateebPrimaryArabic
+                                    kind={item.kind}
+                                    quranLocation={item.quranLocation}
+                                    sourceArabic={item.sourceArabic ?? item.arabic ?? ""}
+                                    sourceArabicMarked={item.sourceArabicMarked}
+                                  />
+                                </div>
+                              ) : verifiedHadith?.exactArabic ? (
+                                <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
+                                  <KhateebScriptText text={verifiedHadith.exactArabic} forceArabic />
+                                </div>
+                              ) : (
+                                <div className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-200">
+                                  {ur
+                                    ? "اصل عربی متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی ہے؛ غیر مصدقہ عبارت یہاں نہیں دکھائی جا رہی۔"
+                                    : "The exact Arabic source text is still pending word-for-word verification; unverified wording is not displayed here."}
+                                </div>
+                              )}
+
+                              <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-white px-3 py-2 text-sm leading-7 text-[#445247] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#b8c8bb]">
+                                <strong className="me-2 text-[#6f5730] dark:text-[#d7bc8a]">
+                                  {ur ? "موضوعی ربط:" : "Topic link:"}
+                                </strong>
+                                {ur ? item.explanationUr : item.explanationEn}
+                              </div>
+
+                              {item.kind === "hadith" ? (
+                                <div className="mt-3 text-sm leading-7 text-[#5a4830] dark:text-[#d7bc8a]">
+                                  <strong>
+                                    {verifiedHadith
+                                      ? (ur ? "مصدقہ حوالہ: " : "Verified reference: ")
+                                      : (ur ? "ماخذی حوالہ (زیرِ تصدیق): " : "Source reference (pending verification): ")}
+                                  </strong>
+                                  {verifiedHadith
+                                    ? (ur ? verifiedHadith.verifiedReferenceUr : verifiedHadith.verifiedReferenceEn)
+                                    : hadithInventory
+                                      ? (ur ? hadithInventory.citedReferenceUr : hadithInventory.citedReferenceEn)
+                                      : (ur ? item.sourceRefUr : item.sourceRefEn)}
+                                </div>
+                              ) : null}
+                            </article>
+                          );
+                        })}
                       </div>
                     </section>
                   ) : null}
