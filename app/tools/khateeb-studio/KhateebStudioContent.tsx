@@ -967,12 +967,30 @@ export default function KhateebStudioContent({
                                 ) : null}
                               </div>
                               {item.providerId === "eshia-library" ? (
-                                <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
-                                  <KhateebScriptText
-                                    text={ur ? item.detailUr : item.detailEn}
-                                    forcePersian={/[پچژگک]/u.test(ur ? item.detailUr : item.detailEn)}
-                                    forceArabic={!/[پچژگک]/u.test(ur ? item.detailUr : item.detailEn)}
-                                  />
+                                <div className="mt-3 space-y-3">
+                                  {item.sourceExcerpt ? (
+                                    <div className="rounded-lg border border-[#31513a]/20 bg-white p-3 dark:border-[#45604b] dark:bg-[#162a1e]">
+                                      <div className="text-xs font-bold text-[#31513a] dark:text-[#b9d4bf]">
+                                        {ur
+                                          ? "صفحے سے لفظ بہ لفظ اقتباس — ابھی روایت کے طور پر مصدقہ نہیں"
+                                          : "Verbatim page excerpt — not yet verified as a narration"}
+                                      </div>
+                                      <div dir="rtl" className="mt-2 text-sm leading-8 text-[#1A3A2A] dark:text-[#e7eee9]">
+                                        <KhateebScriptText
+                                          text={item.sourceExcerpt}
+                                          forcePersian={/[پچژگک]/u.test(item.sourceExcerpt)}
+                                          forceArabic={!/[پچژگک]/u.test(item.sourceExcerpt)}
+                                        />
+                                      </div>
+                                    </div>
+                                  ) : null}
+                                  <div dir="rtl" className="rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
+                                    <KhateebScriptText
+                                      text={ur ? item.detailUr : item.detailEn}
+                                      forcePersian={/[پچژگک]/u.test(ur ? item.detailUr : item.detailEn)}
+                                      forceArabic={!/[پچژگک]/u.test(ur ? item.detailUr : item.detailEn)}
+                                    />
+                                  </div>
                                 </div>
                               ) : item.arabic ? (
                                 <>

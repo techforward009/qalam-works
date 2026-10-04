@@ -1,5 +1,6 @@
 const ESHIA_HOST = "lib.eshia.ir";
 const PAGE_PATH = /^\/(\d+)\/(\d+)\/(\d+)$/;
+const MAX_HTML_BYTES = 2_000_000;
 
 export type EShiaPageRecord = {
   url: string;
@@ -151,7 +152,33 @@ export async function fetchEShiaPage(
       signal: controller.signal,
     });
     if (!response.ok) return null;
-    return parseEShiaPage(await response.text(), url.toString(), query);
+
+    let finalUrl: URL;
+    try {
+      finalUrl = new URL(response.url || url.toString());
+    } catch {
+      return null;
+    }
+    if (finalUrl.hostname !== ESHIA_HOST || !PAGE_PATH.test(finalUrl.pathname)) {
+      return null;
+    }
+
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!/^(?:text\/html|application\/xhtml\+xml)(?:;|$)/i.test(contentType.trim())) {
+      return null;
+    }
+
+    const declaredLength = Number(response.headers.get("content-length") ?? "0");
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_HTML_BYTES) {
+      return null;
+    }
+
+    const html = await response.text();
+    if (new TextEncoder().encode(html).byteLength > MAX_HTML_BYTES) {
+      return null;
+    }
+
+    return parseEShiaPage(html, finalUrl.toString(), query);
   } catch {
     return null;
   } finally {

@@ -1,6 +1,7 @@
 import { discoverEShia, type EShiaDiscoveryHit } from "./eshiaDiscovery";
 import { fetchEShiaPage } from "./eshiaPage";
 import { eShiaQueryVariants } from "./eshiaQueryVariants";
+import { extractEShiaSourceExcerpt } from "./eshiaSourceExcerpt";
 import { researchKhateebTopic } from "./researchEngine";
 import type { KhateebResearchEvidence, KhateebResearchRequest, KhateebResearchResult } from "./researchTypes";
 
@@ -180,7 +181,9 @@ export async function researchKhateebTopicWithEShia(
         (sourceRelevanceScore(a.bookTitle, a.text, request.query) +
           sourceAuthorityBonus(a.bookTitle)),
     )
-    .map((record, index) => ({
+    .map((record, index) => {
+      const pageExcerpt = extractEShiaSourceExcerpt(record.text, request.query);
+      return {
       id: `eshia-live-${record.bookId}-${record.volume}-${record.page}-${index}`,
       topicId: local.matchedTopicIds[0] ?? "live-research",
       kind: "source",
@@ -194,7 +197,10 @@ export async function researchKhateebTopicWithEShia(
       sourceUrl: record.url,
       providerId: "eshia-library",
       themesUr: sourceThemesUr(`${record.bookTitle} ${record.text}`),
-    }));
+      sourceExcerpt: pageExcerpt?.text,
+      sourceExcerptStatus: pageExcerpt ? "page-excerpt" : undefined,
+    };
+    });
 
   const maxEvidence = Math.min(Math.max(request.maxEvidence ?? 40, 5), 100);
   const evidence = [...local.evidence, ...externalEvidence].slice(0, maxEvidence);
