@@ -84,9 +84,29 @@ describe("Khateeb grounded full sermon composer", () => {
     expect(text).toContain("30 منٹ — مصدقہ مجلس");
     expect(text).toContain("[ماخذی بنیاد]");
     expect(text).toContain("[تدوینی حصہ]");
+    expect(text).toContain("ماخذی رجسٹر");
     expect(text).toContain("تنبیہ: تدوینی حصوں کو حدیث");
     expect(text).toContain("الکافی، ج2، ص18، ح1");
     expect(text).not.toContain("الکافی، ج3، ص18، ح2");
+  });
+
+  test("source ledger covers every source-grounded block and excludes editorial blocks", () => {
+    const sermon = buildGroundedFullSermon("parents-barsi", 30, "ur")!;
+    const groundedIds = sermon.blocks
+      .filter((block) => block.provenance === "source-grounded")
+      .map((block) => block.id)
+      .sort();
+    const ledgerIds = sermon.sourceLedger
+      .flatMap((entry) => entry.blockIds)
+      .sort();
+
+    expect(ledgerIds).toEqual(groundedIds);
+    expect(
+      sermon.sourceLedger.every((entry) => entry.citationUr && entry.citationEn),
+    ).toBe(true);
+    expect(
+      sermon.sourceLedger.flatMap((entry) => entry.blockIds),
+    ).not.toContain("opening");
   });
 
   test("45-minute composition demands a deeper verified core than 20-minute composition", () => {
