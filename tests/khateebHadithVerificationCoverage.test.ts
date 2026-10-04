@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { hadithVerificationCoverage } from "../app/tools/khateeb-studio/engine/topicDossier";
+import { dossierHadithVerificationState } from "../app/tools/khateeb-studio/engine/verifiedHadithCorpus";
 
 describe("Khateeb hadith verification coverage audit", () => {
   test("reports verification state per prepared dossier", () => {
@@ -67,6 +68,17 @@ describe("Khateeb hadith verification coverage audit", () => {
     const pending = coverage.flatMap((row) => row.pendingIds);
 
     expect(pending).toEqual(["dua-best-worship"]);
+  });
+
+
+  test("unknown dossier hadith ids are explicitly untracked, never implicitly verified", () => {
+    expect(dossierHadithVerificationState("future-uninventoried-hadith")).toBe(
+      "untracked",
+    );
+    expect(dossierHadithVerificationState("dua-best-worship")).toBe("pending");
+    expect(dossierHadithVerificationState("quran-hidayat-covenant")).toBe(
+      "verified",
+    );
   });
 
   test("never lets coverage arithmetic drift", () => {
