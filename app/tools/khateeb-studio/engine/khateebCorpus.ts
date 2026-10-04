@@ -11,6 +11,12 @@ export type KhateebProfile = {
   notes?: string;
   sourceUrl?: string;
   sourceLabel?: string;
+  /**
+   * Public discovery stays off until enough source-backed material has been
+   * ingested for this scholar/speaker. Internal indexing may still use the
+   * profile while this flag is false or omitted.
+   */
+  publicReady?: boolean;
 };
 
 /** Seed registry only. This is a source map, not a quality ranking. */
@@ -24,6 +30,24 @@ export const KHATEEB_CORPUS: readonly KhateebProfile[] = [
   { id: "jawad-naqvi", name: "علامہ سید جواد نقوی", region: "pk", kind: "scholar", languages: ["ur"], corpusFocus: ["خطبات جمعہ", "قرآن", "دروس", "فکر", "معاصر مسائل"], sourceUrl: "https://syedjawadnaqvi.com/", sourceLabel: "ویب سائٹ / خطابات و دروس" },
   { id: "muhammad-zaki-baqeri", name: "علامہ محمد زکی باقری", region: "pk", kind: "speaker", languages: ["ur"], corpusFocus: ["مجالس", "تاریخ", "سیرت"] },
   { id: "amin-shahidi", name: "علامہ سید امین شہیدی", region: "pk", kind: "speaker", languages: ["ur"], corpusFocus: ["معاصر مسائل", "دینی خطاب", "اجتماعی مباحث"] },
+  {
+    id: "shabbir-maisami",
+    name: "علامہ ڈاکٹر شبیر حسن میثمی",
+    region: "pk",
+    kind: "scholar",
+    languages: ["ur"],
+    corpusFocus: [],
+    notes: "Internal registry entry; source inventory and evidence ingestion pending.",
+  },
+  {
+    id: "muhammad-raza-dawoodani",
+    name: "حجۃ الاسلام والمسلمین مولانا ڈاکٹر محمد رضا داؤدانی",
+    region: "pk",
+    kind: "scholar",
+    languages: ["ur"],
+    corpusFocus: [],
+    notes: "Internal registry entry; source inventory and evidence ingestion pending.",
+  },
   { id: "ali-naqi-naqvi", name: "آیت اللہ سید علی نقی نقوی لکھنویؒ (نقنؒ)", region: "in", kind: "scholar", languages: ["ur"], corpusFocus: ["تفسیر", "علوم قرآن", "کلام", "حدیث", "عقائد", "فقہ و اصول"], sourceUrl: "https://misbahulqurantrust.org/book/tafseer-faslul-khitab/", sourceLabel: "تفسیر فصل الخطاب — مصباح القرآن ٹرسٹ" },
   { id: "zeeshan-jawadi", name: "علامہ سید ذیشان حیدر جوادیؒ", region: "in", kind: "scholar", languages: ["ur"], corpusFocus: ["قرآن", "حدیث", "رجال", "نہج البلاغہ", "مجالس", "عقائد"], sourceUrl: "https://maablib.org/scholar/life-of-allama-zeeshan-haider-jawadi/", sourceLabel: "سید ذیشان حیدر جوادی — مآب لائبریری" },
   { id: "aqeel-gharaavi", name: "آیت اللہ سید عقیل الغروی", region: "in", kind: "scholar", languages: ["ur", "ar"], corpusFocus: ["قرآن", "فلسفہ", "کلام", "تعلیم", "نہج البلاغہ"] },
@@ -43,5 +67,13 @@ export const KHATEEB_CORPUS: readonly KhateebProfile[] = [
   { id: "ghanbariyan", name: "حجت الاسلام محسن قنبریان", region: "ir", kind: "scholar", languages: ["fa"], corpusFocus: ["قرآن", "عاشورا", "اجتماعی ذمہ داری", "معاصر فکر"] },
   { id: "aghamiri", name: "حجت الاسلام سید حسین آقامیری", region: "ir", kind: "speaker", languages: ["fa"], corpusFocus: ["تاریخ", "سیرت", "معاصر مخاطب", "اخلاق"] },
 ] as const;
+
+/**
+ * Public speaker/scholar discovery is deliberately conservative. A profile is
+ * exposed only after its source-backed material is substantial enough for the
+ * public Khateeb Studio experience.
+ */
+export const PUBLIC_KHATEEB_CORPUS: readonly KhateebProfile[] =
+  KHATEEB_CORPUS.filter((item) => item.publicReady === true);
 
 export const REGION_LABELS = { pk: "پاکستان", in: "ہندوستان", ir: "ایران" } as const;
