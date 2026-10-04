@@ -95,3 +95,44 @@ describe("Khateeb verified hadith corpus", () => {
     }
   });
 });
+
+
+describe("Khateeb verified hadith textual variants", () => {
+  test("keeps Al-Kafi wording separate from Mishkat for the head-of-faith narration", () => {
+    const record = verifiedHadithForDossierText("sabr-head-of-faith");
+    const kafi87 = record?.witnesses.find(
+      (witness) => witness.sourceTitleEn === "Al-Kafi" && witness.citation.page === 87,
+    );
+    const kafi89 = record?.witnesses.find(
+      (witness) => witness.sourceTitleEn === "Al-Kafi" && witness.citation.page === 89,
+    );
+
+    expect(kafi87?.textVerified).toBe(true);
+    expect(kafi87?.exactArabic).toBe(
+      "الصبر من الايمان بمنزلة الرأس من الجسد، فإذا ذهب الرأس ذهب الجسد، كذلك إذا ذهب الصبر ذهب الايمان.",
+    );
+    expect(kafi89?.textVerified).toBe(true);
+    expect(kafi89?.exactArabic).toBe(
+      "الصبر من الايمان بمنزلة الرأس من الجسد، ولا إيمان لمن لا صبر له.",
+    );
+    expect(kafi87?.exactArabic).not.toBe(record?.exactArabic);
+    expect(kafi89?.exactArabic).not.toBe(record?.exactArabic);
+  });
+
+  test("keeps the Al-Kafi istirja wording as an independently verified witness", () => {
+    const record = verifiedHadithForDossierText("sabr-istirja-calamity");
+    const kafi = record?.witnesses.find(
+      (witness) => witness.sourceTitleEn === "Al-Kafi",
+    );
+
+    expect(kafi?.textVerified).toBe(true);
+    expect(kafi?.citation).toMatchObject({
+      volume: 3,
+      page: 224,
+      hadithNumber: "5",
+    });
+    expect(kafi?.exactArabic).toContain("عند ذكره المصيبة");
+    expect(kafi?.exactArabic).toContain("مصيبته");
+    expect(kafi?.exactArabic).not.toBe(record?.exactArabic);
+  });
+});
