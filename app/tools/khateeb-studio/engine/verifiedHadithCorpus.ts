@@ -905,6 +905,90 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
 
 ];
 
+export function validateVerifiedHadithCorpus(
+  records: readonly VerifiedHadithRecord[] = VERIFIED_HADITH_CORPUS,
+): readonly string[] {
+  const errors: string[] = [];
+  const ids = new Set<string>();
+  const dossierIds = new Set<string>();
+
+  for (const record of records) {
+    if (ids.has(record.id)) errors.push(`duplicate record id: ${record.id}`);
+    ids.add(record.id);
+
+    if (dossierIds.has(record.dossierPrimaryTextId)) {
+      errors.push(`duplicate dossier text id: ${record.dossierPrimaryTextId}`);
+    }
+    dossierIds.add(record.dossierPrimaryTextId);
+
+    if (!record.sourceUrl.startsWith("https://")) {
+      errors.push(`${record.id}: sourceUrl must be https`);
+    }
+
+    const witnessIds = new Set<string>();
+    for (const witness of record.witnesses) {
+      if (witnessIds.has(witness.id)) {
+        errors.push(`${record.id}: duplicate witness id ${witness.id}`);
+      }
+      witnessIds.add(witness.id);
+
+      if (!witness.sourceUrl.startsWith("https://")) {
+        errors.push(`${record.id}/${witness.id}: sourceUrl must be https`);
+      }
+      if (witness.textVerified) {
+        if (!witness.exactArabic?.trim()) {
+          errors.push(`${record.id}/${witness.id}: verified witness has no exactArabic`);
+        }
+        if (witness.exactArabic?.includes("...")) {
+          errors.push(`${record.id}/${witness.id}: verified witness contains ellipsis`);
+        }
+      }
+    }
+
+    if (record.status === "verified") {
+      if (!record.exactArabic?.trim()) {
+        errors.push(`${record.id}: verified record has no exactArabic`);
+      }
+      if (record.exactArabic?.includes("...")) {
+        errors.push(`${record.id}: verified exactArabic contains ellipsis`);
+      }
+      if (!record.verifiedReferenceUr || !record.verifiedReferenceEn) {
+        errors.push(`${record.id}: verified references are incomplete`);
+      }
+      if (!record.verifiedSourceUrl?.startsWith("https://")) {
+        errors.push(`${record.id}: verifiedSourceUrl must be https`);
+      }
+      if (!record.verificationWitnessId) {
+        errors.push(`${record.id}: verificationWitnessId is missing`);
+      } else {
+        const witness = record.witnesses.find(
+          (item) => item.id === record.verificationWitnessId,
+        );
+        if (!witness) {
+          errors.push(`${record.id}: verification witness not found`);
+        } else if (!witness.textVerified || !witness.exactArabic) {
+          errors.push(`${record.id}: verification witness is not text-verified`);
+        } else if (
+          record.exactArabic &&
+          !witness.exactArabic.includes(record.exactArabic)
+        ) {
+          errors.push(`${record.id}: exactArabic is not a verbatim witness segment`);
+        }
+      }
+    }
+
+    if (record.status === "pending-verification") {
+      if (record.exactArabic || record.verificationWitnessId) {
+        errors.push(
+          `${record.id}: pending record must not expose verified exact text or witness`,
+        );
+      }
+    }
+  }
+
+  return errors;
+}
+
 export function hadithRecordForDossierText(
   dossierPrimaryTextId: string,
 ): VerifiedHadithRecord | null {
