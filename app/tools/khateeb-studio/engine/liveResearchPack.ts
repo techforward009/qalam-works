@@ -66,7 +66,8 @@ export function buildLiveResearchPack(
 ): LiveResearchPack {
   const evidence = chooseEvidence(result, duration);
   const minimumSources = MINIMUM_SOURCES[duration];
-  const ready = evidence.length >= minimumSources;
+  const hasNonQuranVerified = evidence.some((item) => item.kind !== "quran");
+  const ready = evidence.length >= minimumSources && hasNonQuranVerified;
 
   const quran = evidence.filter((item) => item.kind === "quran").map((item) => item.id);
   const narrations = evidence.filter((item) => item.kind === "hadith").map((item) => item.id);
