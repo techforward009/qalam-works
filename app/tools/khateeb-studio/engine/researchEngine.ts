@@ -7,6 +7,10 @@ import {
 import { getTopicDossier } from "./topicDossier";
 import { TOPIC_PREPS, type TopicPrep } from "./topicPrep";
 import { quranEvidenceForTopic } from "./quranTopicIndex";
+import {
+  hadithRecordForDossierText,
+  verifiedHadithForDossierText,
+} from "./verifiedHadithCorpus";
 import type {
   KhateebResearchEvidence,
   KhateebResearchRequest,
@@ -126,6 +130,8 @@ export function researchKhateebTopic(
       let arabic = row.sourceArabicMarked || row.sourceArabic || row.arabic;
       let citationUr = row.sourceRefUr;
       let citationEn = row.sourceRefEn;
+      let sourceUrl = row.sourceUrl;
+      let status: KhateebResearchEvidence["status"] = "verified";
 
       if (row.kind === "quran" && row.quranLocation) {
         arabic =
@@ -137,19 +143,44 @@ export function researchKhateebTopic(
         citationEn = row.refEn;
       }
 
+      if (row.kind === "hadith") {
+        const inventory = hadithRecordForDossierText(row.id);
+        if (inventory) {
+          const verified = verifiedHadithForDossierText(row.id);
+          if (verified) {
+            arabic = verified.exactArabic;
+            citationUr = verified.verifiedReferenceUr ?? verified.citedReferenceUr;
+            citationEn = verified.verifiedReferenceEn ?? verified.citedReferenceEn;
+            sourceUrl = verified.verifiedSourceUrl ?? verified.sourceUrl;
+          } else {
+            status = "source-lead";
+            arabic = undefined;
+            citationUr = inventory.citedReferenceUr;
+            citationEn = inventory.citedReferenceEn;
+            sourceUrl = inventory.sourceUrl;
+          }
+        }
+      }
+
       pushUnique(evidence, seen, {
         id: `${topic.id}-primary-${row.id}`,
         topicId: topic.id,
         kind: row.kind,
-        status: "verified",
+        status,
         titleUr: row.refUr,
         titleEn: row.refEn,
-        detailUr: row.explanationUr,
-        detailEn: row.explanationEn,
+        detailUr:
+          status === "source-lead" && row.kind === "hadith"
+            ? `${row.explanationUr} — اصل متن ابھی لفظ بہ لفظ ماخذ سے verify ہونا باقی ہے۔`
+            : row.explanationUr,
+        detailEn:
+          status === "source-lead" && row.kind === "hadith"
+            ? `${row.explanationEn} — The exact source text still needs word-for-word verification.`
+            : row.explanationEn,
         citationUr,
         citationEn,
-        sourceUrl: row.sourceUrl,
-        providerId: sourceProviderForUrl(row.sourceUrl)?.id,
+        sourceUrl,
+        providerId: sourceProviderForUrl(sourceUrl)?.id,
         arabic,
       });
     }
