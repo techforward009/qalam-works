@@ -89,10 +89,25 @@ function rankEvidence(item: KhateebResearchEvidence): number {
 }
 
 function chooseEvidence(result: KhateebResearchResult, duration: SermonDuration) {
-  return [...result.evidence]
+  const verified = [...result.evidence]
     .filter((item) => item.status === "verified")
-    .sort((a, b) => rankEvidence(b) - rankEvidence(a))
-    .slice(0, LIMITS[duration]);
+    .sort((a, b) => rankEvidence(b) - rankEvidence(a));
+  const limit = LIMITS[duration];
+  const minimumCore = MINIMUM_CORE_EVIDENCE[duration];
+  const core = verified
+    .filter((item) => item.kind === "hadith" || item.kind === "scholar")
+    .slice(0, minimumCore);
+
+  const selected = [...core];
+  const selectedIds = new Set(core.map((item) => item.id));
+  for (const item of verified) {
+    if (selected.length >= limit) break;
+    if (selectedIds.has(item.id)) continue;
+    selected.push(item);
+    selectedIds.add(item.id);
+  }
+
+  return selected;
 }
 
 function evidenceProfile(
