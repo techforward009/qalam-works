@@ -272,9 +272,9 @@ export default function KhateebStudioContent({
   const liveEShiaSourceLeads = liveTopicResearch?.evidence.filter(
     (item) => item.status === "source-lead" && item.providerId === "eshia-library",
   ) ?? [];
-  const liveHadithCandidateQueue = buildLiveHadithCandidateQueue(
-    liveEShiaSourceLeads,
-  );
+  const liveHadithCandidateQueue =
+    liveTopicResearch?.hadithCandidates ??
+    buildLiveHadithCandidateQueue(liveEShiaSourceLeads);
   const liveThemeMap = Array.from(
     liveEShiaSourceLeads.reduce((map, item) => {
       for (const theme of item.themesUr ?? []) {
