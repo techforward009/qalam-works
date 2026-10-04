@@ -24,6 +24,7 @@ export type SermonCompositionBlock = {
   citationUr?: string;
   citationEn?: string;
   sourceUrl?: string;
+  minutes: number;
 };
 
 export type GroundedFullSermon = {
@@ -66,6 +67,7 @@ function editorial(
     headingEn,
     bodyUr,
     bodyEn,
+    minutes: 0,
   };
 }
 
@@ -89,6 +91,7 @@ function verifiedHadithBlock(
     citationUr: record.verifiedReferenceUr ?? record.citedReferenceUr,
     citationEn: record.verifiedReferenceEn ?? record.citedReferenceEn,
     sourceUrl: record.verifiedSourceUrl ?? record.sourceUrl,
+    minutes: 0,
   };
 }
 
@@ -112,6 +115,7 @@ function quranBlocks(dossier: SermonDossier, limit: number): SermonCompositionBl
           arabic: ayah.text,
           citationUr: item.refUr,
           citationEn: item.refEn,
+          minutes: 0,
         },
       ];
     });
@@ -148,6 +152,7 @@ function scholarBlocks(dossier: SermonDossier, limit: number): SermonComposition
         citationUr: row.exactRef,
         citationEn: en?.exactRef ?? perspective.sourceTitleEn,
         sourceUrl: row.sourceUrl ?? perspective.sourceUrl,
+        minutes: 0,
       });
       if (blocks.length >= limit) return blocks;
     }
@@ -172,6 +177,53 @@ function editorialFlowBlocks(
       enRows[index]?.body ?? row.body,
     ),
   );
+}
+
+function blockWeight(block: SermonCompositionBlock): number {
+  if (block.id === "opening") return 1.2;
+  if (block.kind === "quran") return 1.4;
+  if (block.kind === "hadith") return 2.3;
+  if (block.kind === "scholar") return 1.8;
+  if (block.id === "synthesis") return 1.4;
+  if (block.id === "closing") return 1;
+  return 1.5;
+}
+
+function allocateMinutes(
+  blocks: readonly SermonCompositionBlock[],
+  duration: SermonDuration,
+): SermonCompositionBlock[] {
+  if (!blocks.length) return [];
+
+  const base = blocks.map((block) => ({ block, minutes: 1 }));
+  let remaining = duration - base.length;
+
+  if (remaining < 0) {
+    return blocks.map((block, index) => ({
+      ...block,
+      minutes: index < duration ? 1 : 0,
+    }));
+  }
+
+  const totalWeight = blocks.reduce((sum, block) => sum + blockWeight(block), 0);
+  const shares = blocks.map((block, index) => {
+    const raw = totalWeight > 0
+      ? (remaining * blockWeight(block)) / totalWeight
+      : 0;
+    const whole = Math.floor(raw);
+    base[index].minutes += whole;
+    return { index, fraction: raw - whole };
+  });
+
+  remaining = duration - base.reduce((sum, item) => sum + item.minutes, 0);
+  shares
+    .sort((a, b) => b.fraction - a.fraction || a.index - b.index)
+    .slice(0, remaining)
+    .forEach(({ index }) => {
+      base[index].minutes += 1;
+    });
+
+  return base.map(({ block, minutes }) => ({ ...block, minutes }));
 }
 
 function buildBlockers(
@@ -238,7 +290,7 @@ export function buildGroundedFullSermon(
   const hardBlocked = hadith.length + scholar.length <
     (duration === 20 ? 2 : duration === 30 ? 3 : 4);
 
-  const blocks: SermonCompositionBlock[] = hardBlocked
+  const rawBlocks: SermonCompositionBlock[] = hardBlocked
     ? []
     : [
         editorial(
@@ -267,6 +319,9 @@ export function buildGroundedFullSermon(
           dossier.closingEn,
         ),
       ];
+  const blocks = hardBlocked
+    ? []
+    : allocateMinutes(rawBlocks, duration);
 
   return {
     topicId,
@@ -323,6 +378,12 @@ export function validateGroundedFullSermon(
   if (sermon.ready && sermon.blocks.length === 0) {
     errors.push("ready sermon has no blocks");
   }
+  if (
+    sermon.ready &&
+    sermon.blocks.reduce((sum, block) => sum + block.minutes, 0) !== sermon.duration
+  ) {
+    errors.push("block minutes do not add up to sermon duration");
+  }
   if (!sermon.ready && sermon.blocks.length > 0) {
     errors.push("blocked sermon exposes composed blocks");
   }
@@ -376,7 +437,7 @@ export function buildGroundedFullSermonText(
   for (const block of sermon.blocks) {
     lines.push(
       "",
-      ur ? block.headingUr : block.headingEn,
+      `${ur ? block.headingUr : block.headingEn} — ${block.minutes} ${ur ? "منٹ" : "min"}`,
       block.provenance === "source-grounded"
         ? ur
           ? "[ماخذی بنیاد]"
