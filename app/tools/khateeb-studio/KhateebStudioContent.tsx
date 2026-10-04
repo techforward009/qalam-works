@@ -1737,6 +1737,34 @@ export default function KhateebStudioContent({
                                 ) : null}
                               </article>
                             ))}
+
+                          <div className="mt-5 rounded-xl border border-[#B8935A]/25 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <strong className="text-sm text-[#5a4830] dark:text-[#e2c895]">
+                                {ur ? "ماخذی رجسٹر" : "Source ledger"}
+                              </strong>
+                              <span className="text-xs text-[#687469] dark:text-[#9fb0a2]">
+                                {groundedFullSermon.sourceLedger.length} {ur ? "منفرد مراجع" : "unique references"}
+                              </span>
+                            </div>
+                            <div className="mt-3 space-y-2">
+                              {groundedFullSermon.sourceLedger.map((source) => (
+                                <div
+                                  key={source.id}
+                                  className="rounded-lg bg-white px-3 py-2 text-xs leading-6 text-[#5a4830] dark:bg-[#162a1e] dark:text-[#d7bc8a]"
+                                >
+                                  <strong>
+                                    {source.kind === "quran"
+                                      ? (ur ? "قرآن: " : "Qur'an: ")
+                                      : source.kind === "hadith"
+                                        ? (ur ? "روایت: " : "Hadith: ")
+                                        : (ur ? "علمی ماخذ: " : "Scholar source: ")}
+                                  </strong>
+                                  {ur ? source.citationUr : source.citationEn}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                           </div>
                         </details>
                       )}
