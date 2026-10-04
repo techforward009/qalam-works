@@ -14,18 +14,22 @@ describe("Khateeb Parents/Barsi exact hadith verification", () => {
     row.topicIds.includes("parents-barsi"),
   );
 
-  test("inventories all eight Parents/Barsi narrations with six direct verifications", () => {
+  test("verifies all eight Parents/Barsi narrations against checked source witnesses", () => {
     expect(parents).toHaveLength(8);
-    expect(parents.filter((row) => row.status === "verified")).toHaveLength(6);
+    expect(parents.every((row) => row.status === "verified")).toBe(true);
     expect(
-      parents.filter((row) => row.status === "pending-verification"),
-    ).toHaveLength(2);
-    expect(
-      parents
-        .filter((row) => row.status === "pending-verification")
-        .map((row) => row.dossierPrimaryTextId),
-    ).toEqual(["rida-thank-parents", "sadiq-three-parental-rights"]);
+      parents.every((row) => Boolean(verifiedHadithForDossierText(row.dossierPrimaryTextId))),
+    ).toBe(true);
+    test("verifies the Al-Khisal gratitude clause and Tuhaf parental-rights text directly", () => {
+    const gratitude = verifiedHadithForDossierText("rida-thank-parents");
+    const rights = verifiedHadithForDossierText("sadiq-three-parental-rights");
+
+    expect(gratitude?.verificationWitnessId).toBe("khisal-3-196");
+    expect(gratitude?.witnesses[0]?.exactArabic).toContain(gratitude?.exactArabic);
+    expect(rights?.verificationWitnessId).toBe("tuhaf-322-parent-rights");
+    expect(rights?.verifiedReferenceUr).toBe("تحف العقول، ص322۔");
   });
+});
 
   test("supports a verified verbatim excerpt inside a larger checked source witness", () => {
     const mother = verifiedHadithForDossierText("risalat-mother");
@@ -75,7 +79,7 @@ describe("Khateeb Parents/Barsi exact hadith verification", () => {
     expect(row?.witnesses[0]?.note).toContain("Kitab al-Imama wa al-Tabsira");
   });
 
-  test("live research exposes six verified parent narrations and keeps two as source leads", () => {
+  test("live research exposes all eight parent narrations from verified witnesses", () => {
     const result = researchKhateebTopic({
       query: "والدین",
       locale: "ur",
@@ -85,27 +89,32 @@ describe("Khateeb Parents/Barsi exact hadith verification", () => {
       (row) => row.kind === "hadith" && row.topicId === "parents-barsi",
     );
 
-    expect(hadiths.filter((row) => row.status === "verified")).toHaveLength(6);
-    expect(hadiths.filter((row) => row.status === "source-lead")).toHaveLength(2);
-    expect(
-      hadiths
-        .filter((row) => row.status === "source-lead")
-        .every((row) => !row.arabic),
-    ).toBe(true);
+    expect(hadiths).toHaveLength(8);
+    expect(hadiths.every((row) => row.status === "verified")).toBe(true);
+    expect(hadiths.every((row) => Boolean(row.arabic))).toBe(true);
   });
 
-  test("copied dossier text never reproduces pending candidate Arabic as exact text", () => {
+  test("copied Parents/Barsi dossier uses verified source text and references", () => {
     const dossier = getTopicDossier("parents-barsi");
     expect(dossier).not.toBeNull();
     const text = buildDossierText(dossier!, "ur");
 
     expect(text).toContain("لفظ بہ لفظ مصدقہ حوالہ");
-    expect(text).toContain("ماخذی حوالہ (زیرِ تصدیق)");
+    expect(text).not.toContain("ماخذی حوالہ (زیرِ تصدیق)");
+    expect(text).toContain("الخصال، باب الثلاثة، ح3-196");
+    expect(text).toContain("تحف العقول، ص322");
+    expect(text).toContain("بحار الانوار، ج71، ص88");
+  });
+
+  test("copied dossiers globally suppress unverified candidate hadith wording", () => {
+    const dossier = getTopicDossier("imamate");
+    expect(dossier).not.toBeNull();
+    const text = buildDossierText(dossier!, "ur");
+
     expect(text).toContain(
       "اصل عربی متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی ہے؛ غیر مصدقہ عبارت نقل نہیں کی گئی۔",
     );
-    expect(text).not.toContain(
-      "إن الله عز وجل أمر بالشكر له وللوالدين، فمن لم يشكر والديه لم يشكر الله.",
-    );
+    expect(text).toContain("ماخذی حوالہ (زیرِ تصدیق)");
+    expect(text).not.toContain("الإمامَةُ نِظامُ الاُمَّةِ.");
   });
 });
