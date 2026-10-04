@@ -61,6 +61,14 @@ const TOPICS: readonly QuranTopicEntry[] = [
       },
       {
         surah: 71,
+        ayah: 11,
+        refUr: "سورۂ نوح 71:11",
+        refEn: "Qur'an 71:11",
+        noteUr: "استغفار کے نتیجے میں آسمانی برکت اور فراوانیِ بارش کے ذکر کو سامنے لاتی ہے، جو اگلی آیت میں معاشی وسعت کے ساتھ جڑتا ہے۔",
+        noteEn: "Mentions abundant rain in the sequence following istighfar, leading into the material abundance named in the next verse.",
+      },
+      {
+        surah: 71,
         ayah: 12,
         refUr: "سورۂ نوح 71:12",
         refEn: "Qur'an 71:12",
@@ -309,7 +317,7 @@ function scoreTopic(entry: QuranTopicEntry, query: string): number {
 
 export function quranEvidenceForTopic(
   query: string,
-  limit = 6,
+  limit = 8,
 ): readonly KhateebResearchEvidence[] {
   const matches = TOPICS
     .map((entry) => ({ entry, score: scoreTopic(entry, query) }))
