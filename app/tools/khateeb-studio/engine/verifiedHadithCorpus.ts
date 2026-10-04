@@ -391,9 +391,27 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     candidateArabic:
       "أفضَلُ العِبادَةِ الدُّعاءُ، فإذا أذِنَ اللهُ لِلعَبدِ في الدُّعاءِ فَتَحَ لَهُ بابَ الرَّحمَةِ.",
     status: "pending-verification",
-    witnesses: [],
+    witnesses: [
+      {
+        id: "mizan-869-tanbih-cross-reference",
+        role: "cross-reference",
+        sourceTitleUr: "میزان الحکمہ",
+        sourceTitleEn: "Mizan al-Hikmah",
+        sourceUrl: "https://ablibrary.net/book_content/b/3733/13?lang=ar",
+        citation: {
+          bookUr: "میزان الحکمہ",
+          bookEn: "Mizan al-Hikmah",
+          page: 869,
+        },
+        exactArabic:
+          "أفضل العبادة الدعاء ، فإذا أذن الله للعبد في الدعاء فتح له باب الرحمة ، إنه لن يهلك مع الدعاء أحد",
+        textVerified: true,
+        note:
+          "Secondary cross-reference explicitly attributes this wording to Tanbih al-Khawatir 2/237. It is not promoted to a primary verification witness.",
+      },
+    ],
     verificationNote:
-      "Citation is preserved from the existing dossier. Direct source verification is still required before this can be shown as an exact quotation.",
+      "Edition conflict: the accessible Najaf Desert Library edition of Tanbih al-Khawatir vol. 2 p. 237 contains a different passage and does not show this narration. Secondary compilations cite 2/237, so the record remains pending until the exact cited edition/page is checked directly.",
   },
   {
     id: "dua-kafi-467-8",
@@ -1318,6 +1336,348 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     ],
   },
 
+  {
+    id: "quran-hidayat-kafi-2-609-1",
+    topicIds: ["quran-hidayat"],
+    dossierPrimaryTextId: "quran-hidayat-covenant",
+    attributedToUr: "امام صادقؑ",
+    attributedToEn: "Imam al-Sadiq",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص609، باب فی قراءتہ، ح1۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 609, chapter on recitation, hadith 1.",
+    sourceUrl: "https://lib.eshia.ir/11005/2/609",
+    candidateArabic:
+      "القرآن عهد الله إلى خلقه فقد ينبغي للمرء المسلم أن ينظر في عهده وأن يقرأ منه في كل يوم خمسين آية.",
+    status: "verified",
+    exactArabic:
+      "الْقُرْآنُ عَهْدُ اللَّهِ إِلَى خَلْقِهِ فَقَدْ يَنْبَغِي لِلْمَرْءِ الْمُسْلِمِ أَنْ يَنْظُرَ فِي عَهْدِهِ وَ أَنْ يَقْرَأَ مِنْهُ فِي كُلِّ يَوْمٍ خَمْسِينَ آيَةً.",
+    verifiedReferenceUr: "الکافی، ج2، ص609، باب فی قراءتہ، ح1۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, p. 609, chapter on recitation, hadith 1.",
+    verifiedSourceUrl: "https://lib.eshia.ir/11005/2/609",
+    verificationWitnessId: "eshia-kafi-2-609-1",
+    witnesses: [
+      {
+        id: "eshia-kafi-2-609-1",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl: "https://lib.eshia.ir/11005/2/609",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 609,
+          chapterUr: "باب فی قراءتہ",
+          chapterEn: "Chapter on its recitation",
+          hadithNumber: "1",
+        },
+        exactArabic:
+          "الْقُرْآنُ عَهْدُ اللَّهِ إِلَى خَلْقِهِ فَقَدْ يَنْبَغِي لِلْمَرْءِ الْمُسْلِمِ أَنْ يَنْظُرَ فِي عَهْدِهِ وَ أَنْ يَقْرَأَ مِنْهُ فِي كُلِّ يَوْمٍ خَمْسِينَ آيَةً.",
+        textVerified: true,
+      },
+    ],
+  },
+  {
+    id: "quran-hidayat-kafi-2-609-2",
+    topicIds: ["quran-hidayat"],
+    dossierPrimaryTextId: "quran-hidayat-treasuries",
+    attributedToUr: "امام زین العابدینؑ",
+    attributedToEn: "Imam Zayn al-Abidin",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص609، باب فی قراءتہ، ح2۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 609, chapter on recitation, hadith 2.",
+    sourceUrl: "https://lib.eshia.ir/11005/2/609",
+    candidateArabic:
+      "آيات القرآن خزائن فكلما فتحت خزانة ينبغي لك أن تنظر ما فيها.",
+    status: "verified",
+    exactArabic:
+      "آيَاتُ الْقُرْآنِ خَزَائِنُ فَكُلَّمَا فَتَحْتَ خِزَانَةً يَنْبَغِي لَكَ أَنْ تَنْظُرَ مَا فِيهَا.",
+    verifiedReferenceUr: "الکافی، ج2، ص609، باب فی قراءتہ، ح2۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, p. 609, chapter on recitation, hadith 2.",
+    verifiedSourceUrl: "https://lib.eshia.ir/11005/2/609",
+    verificationWitnessId: "eshia-kafi-2-609-2",
+    witnesses: [
+      {
+        id: "eshia-kafi-2-609-2",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl: "https://lib.eshia.ir/11005/2/609",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 609,
+          chapterUr: "باب فی قراءتہ",
+          chapterEn: "Chapter on its recitation",
+          hadithNumber: "2",
+        },
+        exactArabic:
+          "آيَاتُ الْقُرْآنِ خَزَائِنُ فَكُلَّمَا فَتَحْتَ خِزَانَةً يَنْبَغِي لَكَ أَنْ تَنْظُرَ مَا فِيهَا.",
+        textVerified: true,
+      },
+    ],
+  },
+  {
+    id: "quran-hidayat-kafi-2-603-1",
+    topicIds: ["quran-hidayat"],
+    dossierPrimaryTextId: "quran-hidayat-people",
+    attributedToUr: "رسول اکرمؐ",
+    attributedToEn: "The Prophet",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح1۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 1.",
+    sourceUrl: "https://lib.eshia.ir/11005/2/603",
+    candidateArabic:
+      "إن أهل القرآن في أعلى درجة من الآدميين ما خلا النبيين والمرسلين فلا تستضعفوا أهل القرآن حقوقهم فإن لهم من الله العزيز الجبار لمكانا عليا.",
+    status: "verified",
+    exactArabic:
+      "إِنَّ أَهْلَ الْقُرْآنِ فِي أَعْلَى دَرَجَةٍ مِنَ الْآدَمِيِّينَ مَا خَلَا النَّبِيِّينَ وَ الْمُرْسَلِينَ فَلَا تَسْتَضْعِفُوا أَهْلَ الْقُرْآنِ حُقُوقَهُمْ فَإِنَّ لَهُمْ مِنَ اللَّهِ الْعَزِيزِ الْجَبَّارِ لَمَكَاناً عَلِيّاً.",
+    verifiedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح1۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 1.",
+    verifiedSourceUrl: "https://lib.eshia.ir/11005/2/603",
+    verificationWitnessId: "eshia-kafi-2-603-1",
+    witnesses: [
+      {
+        id: "eshia-kafi-2-603-1",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl: "https://lib.eshia.ir/11005/2/603",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 603,
+          chapterUr: "باب فضل حامل القرآن",
+          chapterEn: "Chapter on the merit of the bearer of the Qur'an",
+          hadithNumber: "1",
+        },
+        exactArabic:
+          "إِنَّ أَهْلَ الْقُرْآنِ فِي أَعْلَى دَرَجَةٍ مِنَ الْآدَمِيِّينَ مَا خَلَا النَّبِيِّينَ وَ الْمُرْسَلِينَ فَلَا تَسْتَضْعِفُوا أَهْلَ الْقُرْآنِ حُقُوقَهُمْ فَإِنَّ لَهُمْ مِنَ اللَّهِ الْعَزِيزِ الْجَبَّارِ لَمَكَاناً عَلِيّاً.",
+        textVerified: true,
+      },
+    ],
+  },
+  {
+    id: "quran-hidayat-kafi-2-603-2",
+    topicIds: ["quran-hidayat"],
+    dossierPrimaryTextId: "quran-hidayat-memorise-act",
+    attributedToUr: "امام صادقؑ",
+    attributedToEn: "Imam al-Sadiq",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح2۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 2.",
+    sourceUrl: "https://lib.eshia.ir/11005/2/603",
+    candidateArabic: "الحافظ للقرآن العامل به مع السفرة الكرام البررة.",
+    status: "verified",
+    exactArabic:
+      "الْحَافِظُ لِلْقُرْآنِ الْعَامِلُ بِهِ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ.",
+    verifiedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح2۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 2.",
+    verifiedSourceUrl: "https://lib.eshia.ir/11005/2/603",
+    verificationWitnessId: "eshia-kafi-2-603-2",
+    witnesses: [
+      {
+        id: "eshia-kafi-2-603-2",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl: "https://lib.eshia.ir/11005/2/603",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 603,
+          chapterUr: "باب فضل حامل القرآن",
+          chapterEn: "Chapter on the merit of the bearer of the Qur'an",
+          hadithNumber: "2",
+        },
+        exactArabic:
+          "الْحَافِظُ لِلْقُرْآنِ الْعَامِلُ بِهِ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ.",
+        textVerified: true,
+      },
+    ],
+  },
+  {
+    id: "quran-hidayat-kafi-2-603-3",
+    topicIds: ["quran-hidayat"],
+    dossierPrimaryTextId: "quran-hidayat-learn",
+    attributedToUr: "رسول اکرمؐ",
+    attributedToEn: "The Prophet",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح3۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 3.",
+    sourceUrl: "https://lib.eshia.ir/11005/2/603",
+    candidateArabic:
+      "تعلموا القرآن فإنه يأتي يوم القيامة صاحبه في صورة شاب جميل شاحب اللون.",
+    status: "verified",
+    exactArabic:
+      "تَعَلَّمُوا الْقُرْآنَ فَإِنَّهُ يَأْتِي يَوْمَ الْقِيَامَةِ صَاحِبَهُ فِي صُورَةِ شَابٍّ جَمِيلٍ شَاحِبِ اللَّوْنِ",
+    verifiedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح3۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 3.",
+    verifiedSourceUrl: "https://lib.eshia.ir/11005/2/603",
+    verificationWitnessId: "eshia-kafi-2-603-3",
+    witnesses: [
+      {
+        id: "eshia-kafi-2-603-3",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl: "https://lib.eshia.ir/11005/2/603",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 603,
+          chapterUr: "باب فضل حامل القرآن",
+          chapterEn: "Chapter on the merit of the bearer of the Qur'an",
+          hadithNumber: "3",
+        },
+        exactArabic:
+          "تَعَلَّمُوا الْقُرْآنَ فَإِنَّهُ يَأْتِي يَوْمَ الْقِيَامَةِ صَاحِبَهُ فِي صُورَةِ شَابٍّ جَمِيلٍ شَاحِبِ اللَّوْنِ",
+        textVerified: true,
+        note:
+          "This record intentionally displays only the dossier's contiguous opening clause from a much longer verified hadith on the same page.",
+      },
+    ],
+  },
+  {
+    id: "quran-hidayat-kafi-2-603-4",
+    topicIds: ["quran-hidayat"],
+    dossierPrimaryTextId: "quran-hidayat-youth",
+    attributedToUr: "امام صادقؑ",
+    attributedToEn: "Imam al-Sadiq",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح4۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 4.",
+    sourceUrl: "https://lib.eshia.ir/11005/2/603",
+    candidateArabic:
+      "من قرأ القرآن وهو شاب مؤمن اختلط القرآن بلحمه ودمه وجعله الله عز وجل مع السفرة الكرام البررة.",
+    status: "verified",
+    exactArabic:
+      "مَنْ قَرَأَ الْقُرْآنَ وَ هُوَ شَابٌّ مُؤْمِنٌ اخْتَلَطَ الْقُرْآنُ بِلَحْمِهِ وَ دَمِهِ وَ جَعَلَهُ اللَّهُ عَزَّ وَ جَلَّ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ",
+    verifiedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح4۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 4.",
+    verifiedSourceUrl: "https://lib.eshia.ir/11005/2/603",
+    verificationWitnessId: "eshia-kafi-2-603-4",
+    witnesses: [
+      {
+        id: "eshia-kafi-2-603-4",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl: "https://lib.eshia.ir/11005/2/603",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 603,
+          chapterUr: "باب فضل حامل القرآن",
+          chapterEn: "Chapter on the merit of the bearer of the Qur'an",
+          hadithNumber: "4",
+        },
+        exactArabic:
+          "مَنْ قَرَأَ الْقُرْآنَ وَ هُوَ شَابٌّ مُؤْمِنٌ اخْتَلَطَ الْقُرْآنُ بِلَحْمِهِ وَ دَمِهِ وَ جَعَلَهُ اللَّهُ عَزَّ وَ جَلَّ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ",
+        textVerified: true,
+        note:
+          "The source continues beyond this clause on the following page; the displayed text is the contiguous dossier segment verified on p. 603.",
+      },
+    ],
+  },
+  {
+    id: "quran-hidayat-kafi-2-604-5",
+    topicIds: ["quran-hidayat"],
+    dossierPrimaryTextId: "quran-hidayat-humility",
+    attributedToUr: "رسول اکرمؐ",
+    attributedToEn: "The Prophet",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص604، باب فضل حامل القرآن، ح5۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 604, chapter on the merit of the bearer of the Qur'an, hadith 5.",
+    sourceUrl: "https://lib.eshia.ir/11005/2/604",
+    candidateArabic:
+      "يا حامل القرآن تواضع به يرفعك الله ولا تعزز به فيذلك الله ... ولكنه يعفو ويصفح ويغفر ويحلم لتعظيم القرآن.",
+    status: "verified",
+    exactArabic:
+      "يَا حَامِلَ الْقُرْآنِ تَوَاضَعْ بِهِ يَرْفَعْكَ اللَّهُ وَ لَا تَعَزَّزْ بِهِ فَيُذِلَّكَ اللَّهُ يَا حَامِلَ الْقُرْآنِ تَزَيَّنْ بِهِ لِلَّهِ يُزَيِّنْكَ اللَّهُ بِهِ وَ لَا تَزَيَّنْ بِهِ لِلنَّاسِ فَيَشِينَكَ اللَّهُ بِهِ مَنْ خَتَمَ الْقُرْآنَ فَكَأَنَّمَا أُدْرِجَتِ النُّبُوَّةُ بَيْنَ جَنْبَيْهِ وَ لَكِنَّهُ لَا يُوحَى إِلَيْهِ وَ مَنْ جَمَعَ الْقُرْآنَ فَنَوْلُهُ لَا يَجْهَلُ مَعَ مَنْ يَجْهَلُ عَلَيْهِ وَ لَا يَغْضَبُ فِيمَنْ يَغْضَبُ عَلَيْهِ وَ لَا يَحِدُّ فِيمَنْ يَحِدُّ وَ لَكِنَّهُ يَعْفُو وَ يَصْفَحُ وَ يَغْفِرُ وَ يَحْلُمُ لِتَعْظِيمِ الْقُرْآنِ",
+    verifiedReferenceUr: "الکافی، ج2، ص604، باب فضل حامل القرآن، ح5۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, p. 604, chapter on the merit of the bearer of the Qur'an, hadith 5.",
+    verifiedSourceUrl: "https://lib.eshia.ir/11005/2/604",
+    verificationWitnessId: "eshia-kafi-2-604-5",
+    witnesses: [
+      {
+        id: "eshia-kafi-2-604-5",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl: "https://lib.eshia.ir/11005/2/604",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 604,
+          chapterUr: "باب فضل حامل القرآن",
+          chapterEn: "Chapter on the merit of the bearer of the Qur'an",
+          hadithNumber: "5",
+        },
+        exactArabic:
+          "يَا حَامِلَ الْقُرْآنِ تَوَاضَعْ بِهِ يَرْفَعْكَ اللَّهُ وَ لَا تَعَزَّزْ بِهِ فَيُذِلَّكَ اللَّهُ يَا حَامِلَ الْقُرْآنِ تَزَيَّنْ بِهِ لِلَّهِ يُزَيِّنْكَ اللَّهُ بِهِ وَ لَا تَزَيَّنْ بِهِ لِلنَّاسِ فَيَشِينَكَ اللَّهُ بِهِ مَنْ خَتَمَ الْقُرْآنَ فَكَأَنَّمَا أُدْرِجَتِ النُّبُوَّةُ بَيْنَ جَنْبَيْهِ وَ لَكِنَّهُ لَا يُوحَى إِلَيْهِ وَ مَنْ جَمَعَ الْقُرْآنَ فَنَوْلُهُ لَا يَجْهَلُ مَعَ مَنْ يَجْهَلُ عَلَيْهِ وَ لَا يَغْضَبُ فِيمَنْ يَغْضَبُ عَلَيْهِ وَ لَا يَحِدُّ فِيمَنْ يَحِدُّ وَ لَكِنَّهُ يَعْفُو وَ يَصْفَحُ وَ يَغْفِرُ وَ يَحْلُمُ لِتَعْظِيمِ الْقُرْآنِ",
+        textVerified: true,
+        note:
+          "The old dossier used an ellipsis between two clauses; this record restores the complete contiguous source passage between them.",
+      },
+    ],
+  },
+  {
+    id: "quran-hidayat-kafi-2-602-13",
+    topicIds: ["quran-hidayat"],
+    dossierPrimaryTextId: "quran-hidayat-companionship",
+    attributedToUr: "امام زین العابدینؑ",
+    attributedToEn: "Imam Zayn al-Abidin",
+    sourceTitleUr: "الکافی",
+    sourceTitleEn: "Al-Kafi",
+    citedReferenceUr: "الکافی، ج2، ص602، ح13۔",
+    citedReferenceEn: "Al-Kafi, vol. 2, p. 602, hadith 13.",
+    sourceUrl: "https://lib.eshia.ir/11005/2/602",
+    candidateArabic:
+      "لو مات من بين المشرق والمغرب لما استوحشت بعد أن يكون القرآن معي.",
+    status: "verified",
+    exactArabic:
+      "لَوْ مَاتَ مَنْ بَيْنَ الْمَشْرِقِ وَ الْمَغْرِبِ لَمَا اسْتَوْحَشْتُ بَعْدَ أَنْ يَكُونَ الْقُرْآنُ مَعِي",
+    verifiedReferenceUr: "الکافی، ج2، ص602، ح13۔",
+    verifiedReferenceEn: "Al-Kafi, vol. 2, p. 602, hadith 13.",
+    verifiedSourceUrl: "https://lib.eshia.ir/11005/2/602",
+    verificationWitnessId: "eshia-kafi-2-602-13",
+    witnesses: [
+      {
+        id: "eshia-kafi-2-602-13",
+        role: "verification-source",
+        sourceTitleUr: "الکافی",
+        sourceTitleEn: "Al-Kafi",
+        sourceUrl: "https://lib.eshia.ir/11005/2/602",
+        citation: {
+          bookUr: "الکافی",
+          bookEn: "Al-Kafi",
+          volume: 2,
+          page: 602,
+          hadithNumber: "13",
+        },
+        exactArabic:
+          "لَوْ مَاتَ مَنْ بَيْنَ الْمَشْرِقِ وَ الْمَغْرِبِ لَمَا اسْتَوْحَشْتُ بَعْدَ أَنْ يَكُونَ الْقُرْآنُ مَعِي",
+        textVerified: true,
+        note:
+          "The source continues with Imam al-Sajjad's repeated recitation of «مالك يوم الدين»; the dossier uses only the opening companionship clause.",
+      },
+    ],
+  },
+
 ];
 
 export function validateVerifiedHadithCorpus(
@@ -1402,6 +1762,21 @@ export function validateVerifiedHadithCorpus(
   }
 
   return errors;
+}
+
+export type DossierHadithVerificationState =
+  | "verified"
+  | "pending"
+  | "untracked";
+
+export function dossierHadithVerificationState(
+  dossierPrimaryTextId: string,
+): DossierHadithVerificationState {
+  const record = hadithRecordForDossierText(dossierPrimaryTextId);
+  if (!record) return "untracked";
+  return verifiedHadithForDossierText(dossierPrimaryTextId)
+    ? "verified"
+    : "pending";
 }
 
 export function hadithRecordForDossierText(

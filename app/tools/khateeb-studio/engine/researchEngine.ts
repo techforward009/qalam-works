@@ -145,16 +145,19 @@ export function researchKhateebTopic(
 
       if (row.kind === "hadith") {
         const inventory = hadithRecordForDossierText(row.id);
-        if (inventory) {
-          const verified = verifiedHadithForDossierText(row.id);
-          if (verified) {
-            arabic = verified.exactArabic;
-            citationUr = verified.verifiedReferenceUr ?? verified.citedReferenceUr;
-            citationEn = verified.verifiedReferenceEn ?? verified.citedReferenceEn;
-            sourceUrl = verified.verifiedSourceUrl ?? verified.sourceUrl;
-          } else {
-            status = "source-lead";
-            arabic = undefined;
+        const verified = inventory
+          ? verifiedHadithForDossierText(row.id)
+          : null;
+
+        if (verified) {
+          arabic = verified.exactArabic;
+          citationUr = verified.verifiedReferenceUr ?? verified.citedReferenceUr;
+          citationEn = verified.verifiedReferenceEn ?? verified.citedReferenceEn;
+          sourceUrl = verified.verifiedSourceUrl ?? verified.sourceUrl;
+        } else {
+          status = "source-lead";
+          arabic = undefined;
+          if (inventory) {
             citationUr = inventory.citedReferenceUr;
             citationEn = inventory.citedReferenceEn;
             sourceUrl = inventory.sourceUrl;
@@ -171,11 +174,11 @@ export function researchKhateebTopic(
         titleEn: row.refEn,
         detailUr:
           status === "source-lead" && row.kind === "hadith"
-            ? `${row.explanationUr} — اصل متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی ہے۔`
+            ? `${row.explanationUr} — اصل متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی ہے؛ غیر درج شدہ روایت بھی خودکار طور پر مصدقہ نہیں مانی جائے گی۔`
             : row.explanationUr,
         detailEn:
           status === "source-lead" && row.kind === "hadith"
-            ? `${row.explanationEn} — The exact source text still needs word-for-word verification.`
+            ? `${row.explanationEn} — The exact source text still needs word-for-word verification; an untracked narration is never auto-promoted to verified.`
             : row.explanationEn,
         citationUr,
         citationEn,
