@@ -1566,6 +1566,48 @@ const DOSSIERS: readonly SermonDossier[] = [
   PARENTS_BARSI_DOSSIER,
 ];
 
+export type HadithVerificationCoverage = {
+  topicId: string;
+  total: number;
+  verified: number;
+  pending: number;
+  untracked: number;
+  verifiedIds: readonly string[];
+  pendingIds: readonly string[];
+  untrackedIds: readonly string[];
+};
+
+export function hadithVerificationCoverage(): readonly HadithVerificationCoverage[] {
+  return DOSSIERS.map((dossier) => {
+    const hadiths = dossier.primaryTexts?.filter((item) => item.kind === "hadith") ?? [];
+    const verifiedIds: string[] = [];
+    const pendingIds: string[] = [];
+    const untrackedIds: string[] = [];
+
+    for (const item of hadiths) {
+      const record = hadithRecordForDossierText(item.id);
+      if (!record) {
+        untrackedIds.push(item.id);
+      } else if (verifiedHadithForDossierText(item.id)) {
+        verifiedIds.push(item.id);
+      } else {
+        pendingIds.push(item.id);
+      }
+    }
+
+    return {
+      topicId: dossier.topicId,
+      total: hadiths.length,
+      verified: verifiedIds.length,
+      pending: pendingIds.length,
+      untracked: untrackedIds.length,
+      verifiedIds,
+      pendingIds,
+      untrackedIds,
+    };
+  });
+}
+
 export function getTopicDossier(topicId: string): SermonDossier | null {
   const dossier = DOSSIERS.find((item) => item.topicId === topicId);
   if (!dossier) return null;
