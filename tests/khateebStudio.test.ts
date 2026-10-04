@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
 import { KHATEEB_CALENDAR_SOURCE_ARCHIVE } from "../app/tools/khateeb-studio/engine/calendarSourceArchive";
-import { KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
+import { KHATEEB_CORPUS, PUBLIC_KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
 import { RABI_AL_THANI_1448_EVENTS, SHIA_CALENDAR_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
 import { buildPreparationText, durationBrief, getSermonPrep, outlineMinutes, pointsForDuration } from "../app/tools/khateeb-studio/engine/sermonPrep";
 import {
@@ -63,12 +63,23 @@ describe("Khateeb Studio seed corpus", () => {
     expect(names).toContain("آیت اللہ سید علی نقی نقوی لکھنویؒ (نقنؒ)");
     expect(names).toContain("علامہ سید ذیشان حیدر جوادیؒ");
     expect(names).toContain("علامہ سید شہنشاہ حسین نقوی");
+    expect(names).toContain("علامہ ڈاکٹر شبیر حسن میثمی");
+    expect(names).toContain("حجۃ الاسلام والمسلمین مولانا ڈاکٹر محمد رضا داؤدانی");
   });
 
-  test("covers all three regions without ranking", () => {
-    expect(KHATEEB_CORPUS.length).toBeGreaterThanOrEqual(20);
+  test("covers all three regions without ranking and keeps profile-only intake explicit", () => {
+    expect(KHATEEB_CORPUS.length).toBeGreaterThanOrEqual(29);
     expect(new Set(KHATEEB_CORPUS.map((item) => item.region))).toEqual(new Set(["pk", "in", "ir"]));
-    for (const item of KHATEEB_CORPUS) expect(item.corpusFocus.length).toBeGreaterThan(0);
+    for (const item of KHATEEB_CORPUS) {
+      if (item.corpusFocus.length > 0) continue;
+      expect(item.publicReady).not.toBe(true);
+      expect(item.notes).toContain("source inventory");
+    }
+  });
+
+  test("keeps the scholar/speaker directory private until profiles are publication-ready", () => {
+    expect(PUBLIC_KHATEEB_CORPUS).toEqual([]);
+    expect(KHATEEB_CORPUS.every((item) => item.publicReady !== true)).toBe(true);
   });
 });
 
@@ -516,8 +527,8 @@ describe("Khateeb Studio guided workflow", () => {
   test("presents a clear three-step preparation journey", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).toContain("1 — موضوع یا مناسبت");
-    expect(studio).toContain("2 — خطیب (اختیاری)");
-    expect(studio).toContain("3 — تیار مواد");
+    expect(studio).toContain("PUBLIC_KHATEEB_CORPUS.length > 0");
+    expect(studio).toContain('ur ? "2 — تیار مواد" : "2 — Preparation"');
     expect(studio).toContain("Step 1: Where do you want to begin?");
   });
 
