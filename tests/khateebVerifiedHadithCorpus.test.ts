@@ -7,40 +7,66 @@ import {
 } from "../app/tools/khateeb-studio/engine/verifiedHadithCorpus";
 
 describe("Khateeb verified hadith corpus", () => {
-  test("starts with the five existing sabr narrations as pending inventory", () => {
+  test("verifies the five existing sabr narrations against concrete source witnesses", () => {
     expect(VERIFIED_HADITH_CORPUS).toHaveLength(5);
     expect(
       VERIFIED_HADITH_CORPUS.every(
-        (row) => row.topicIds.includes("sabr") && row.status === "pending-verification",
+        (row) => row.topicIds.includes("sabr") && row.status === "verified",
       ),
     ).toBe(true);
     expect(
       VERIFIED_HADITH_CORPUS.every(
-        (row) => row.sourceTitleEn === "Mishkat al-Anwar",
+        (row) =>
+          row.verificationWitnessId &&
+          row.witnesses.some(
+            (witness) =>
+              witness.id === row.verificationWitnessId &&
+              witness.textVerified &&
+              witness.exactArabic === row.exactArabic,
+          ),
       ),
     ).toBe(true);
   });
 
-  test("does not expose a pending candidate as exact verified text", () => {
-    const pending = hadithRecordForDossierText("sabr-head-of-faith");
-    expect(pending?.candidateArabic).toContain("الصَّبرُ");
-    expect(verifiedHadithForDossierText("sabr-head-of-faith")).toBeNull();
-  });
-
-  test("marks abbreviated dossier quotations for explicit re-verification", () => {
-    const abbreviated = VERIFIED_HADITH_CORPUS.filter((row) =>
-      row.candidateArabic.includes("..."),
+  test("keeps candidate text separate from exact source text", () => {
+    const record = hadithRecordForDossierText("sabr-head-of-faith");
+    expect(record?.candidateArabic).toContain("الصَّبرُ");
+    expect(record?.exactArabic).toBe(
+      "الصبر من الإيمان بمنزلة الرأس من الجسد، فإذا ذهب الرأس ذهب الجسد، وكذلك إذا ذهب الصبر ذهب الإيمان.",
     );
-    expect(abbreviated.map((row) => row.dossierPrimaryTextId)).toEqual([
-      "sabr-before-reckoning",
-      "sabr-istirja-calamity",
-    ]);
-    expect(
-      abbreviated.every((row) => row.verificationNote?.includes("ellipsis")),
-    ).toBe(true);
+    expect(record?.candidateArabic).not.toBe(record?.exactArabic);
   });
 
-  test("research downgrades inventoried sabr hadiths until exact verification", () => {
+  test("restores the full source wording for previously abbreviated dossier quotations", () => {
+    const beforeReckoning = verifiedHadithForDossierText("sabr-before-reckoning");
+    const istirja = verifiedHadithForDossierText("sabr-istirja-calamity");
+
+    expect(beforeReckoning?.candidateArabic).toContain("...");
+    expect(beforeReckoning?.exactArabic).not.toContain("...");
+    expect(beforeReckoning?.exactArabic).toContain("حتى يضربوا باب الجنة قبل الحساب");
+
+    expect(istirja?.candidateArabic).toContain("...");
+    expect(istirja?.exactArabic).not.toContain("...");
+    expect(istirja?.exactArabic).toContain("وكلما ذكر مصيبة");
+  });
+
+  test("stores structured cross-references without treating them as verified witnesses", () => {
+    const headOfFaith = verifiedHadithForDossierText("sabr-head-of-faith");
+    const kafi = headOfFaith?.witnesses.filter(
+      (witness) => witness.sourceTitleEn === "Al-Kafi",
+    );
+
+    expect(kafi).toHaveLength(2);
+    expect(kafi?.every((witness) => witness.role === "cross-reference")).toBe(true);
+    expect(kafi?.every((witness) => witness.textVerified === false)).toBe(true);
+    expect(kafi?.[0]?.citation).toMatchObject({
+      volume: 2,
+      page: 87,
+      hadithNumber: "2",
+    });
+  });
+
+  test("research exposes verified sabr hadiths only from exact witnesses", () => {
     const result = researchKhateebTopic({
       query: "صبر",
       locale: "ur",
@@ -57,12 +83,15 @@ describe("Khateeb verified hadith corpus", () => {
     );
 
     expect(sabrHadiths).toHaveLength(5);
-    expect(sabrHadiths.every((row) => row.status === "source-lead")).toBe(true);
-    expect(sabrHadiths.every((row) => !row.arabic)).toBe(true);
-    expect(
-      sabrHadiths.every((row) =>
-        row.detailUr.includes("لفظ بہ لفظ ماخذ سے verify ہونا باقی"),
-      ),
-    ).toBe(true);
+    expect(sabrHadiths.every((row) => row.status === "verified")).toBe(true);
+    expect(sabrHadiths.every((row) => Boolean(row.arabic))).toBe(true);
+
+    for (const row of sabrHadiths) {
+      const inventory = VERIFIED_HADITH_CORPUS.find(
+        (item) => row.id === `sabr-primary-${item.dossierPrimaryTextId}`,
+      );
+      expect(row.arabic).toBe(inventory?.exactArabic);
+      expect(row.citationUr).toBe(inventory?.verifiedReferenceUr);
+    }
   });
 });
