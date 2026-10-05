@@ -453,6 +453,30 @@ describe("Khateeb Studio real speaker material", () => {
     expect(rows.some((row) => row.titleUr.includes("توحید اور شرک"))).toBe(true);
   });
 
+  test("keeps Rashid Turabi source inventory precise without promoting catalog records", () => {
+    const rows = SOUTH_ASIA_CORPUS_QUEUE.filter(
+      (item) => item.speakerId === "rashid-turabi",
+    );
+    expect(rows.length).toBeGreaterThanOrEqual(4);
+
+    const vol1 = rows.find((item) => item.id === "rashid-turabi-tawhid-shirk");
+    expect(vol1?.yearLabel).toBe("1412 AH");
+    expect(vol1?.sourceUrl).toContain("jild01-toheed-w-shirk");
+
+    const vol2 = rows.find((item) => item.id === "rashid-turabi-kufran-hayat");
+    expect(vol2?.yearLabel).toBe("1411 AH / 1991");
+    expect(vol2?.pages).toBe(401);
+
+    const vol3 = rows.find((item) => item.id === "rashid-turabi-dua-itmam");
+    expect(vol3?.yearLabel).toBe("1413 AH");
+    expect(vol3?.sourceUrl).toContain("jild03-dua-aur-itmam-nimat");
+
+    expect(
+      rows.some((item) => item.id === "rashid-turabi-kitab-hikmat-mulk-azeem"),
+    ).toBe(true);
+    expect(evidenceForSpeaker("rashid-turabi")).toHaveLength(0);
+  });
+
   test("every evidence row carries an inspectable source", () => {
     for (const row of SPEAKER_EVIDENCE) {
       expect(row.sourceUrl).toMatch(/^https:\/\//);
