@@ -1261,31 +1261,21 @@ export default function KhateebStudioContent({
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-[#2a5a3a]/50 dark:text-[#8faa93]">
                 <PenLine className="h-5 w-5" />
               </span>
-              <div>
-                <h2 className="text-xl font-bold text-[#1A3A2A] dark:text-white">
-                  {workflowStep === 3 && topic
-                    ? (ur ? "آپ کا منتخب موضوع" : "Selected topic")
-                    : (ur ? "موضوع سے خطبہ تیار کریں" : "Prepare a sermon by topic")}
-                </h2>
-                {workflowStep === 3 && topic ? (
-                  <>
-                    <h3 className="mt-2 text-lg font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
-                      {topicTitle(topic, ur ? "ur" : "en")}
-                    </h3>
-                    <p className="mt-1 text-sm text-[#5f6f61] dark:text-[#a8c8b0]">
-                      {ur
-                        ? "متعلقہ تحقیقی اور منبری مواد نیچے کھل گیا ہے؛ خطیب کا انتخاب اختیاری ہے۔"
-                        : "The relevant research and pulpit material is open below; choosing a speaker is optional."}
-                    </p>
-                  </>
-                ) : (
+              {workflowStep === 3 && topic ? (
+                <div>
+                  <h2 className="text-xl font-bold text-[#1A3A2A] dark:text-white">
+                    {ur ? "آپ کا منتخب موضوع" : "Selected topic"}
+                  </h2>
+                  <h3 className="mt-2 text-lg font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                    {topicTitle(topic, ur ? "ur" : "en")}
+                  </h3>
                   <p className="mt-1 text-sm text-[#5f6f61] dark:text-[#a8c8b0]">
                     {ur
-                      ? "سال بھر کے لیے موضوع تلاش کریں؛ قرآن، بنیادی ماخذ، زاویۂ بیان اور وقت کے مطابق خاکہ حاصل کریں۔"
-                      : "Search year-round topics and get Qur'anic anchors, source leads, speaking angles, and a timed outline."}
+                      ? "متعلقہ تحقیقی اور منبری مواد نیچے کھل گیا ہے۔"
+                      : "The relevant research and pulpit material is open below."}
                   </p>
-                )}
-              </div>
+                </div>
+              ) : null}
             </div>
             <div className="khateeb-no-print flex items-center gap-2">
               {([20, 30, 45] as SermonDuration[]).map((minutes) => (
