@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import DeathSpeakingGuide from "./DeathSpeakingGuide";
-import { buildDeathSpeakingGuideText, type SpeakingGuideMode } from "./engine/deathSpeakingGuide";
+import { buildDeathSpeakingGuideText } from "./engine/deathSpeakingGuide";
+import { useSpeakingGuideMode } from "./useSpeakingGuideMode";
 import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Printer, Search, Sparkles } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
 import {
@@ -159,7 +160,7 @@ export default function KhateebStudioContent({
   const [seriesLength, setSeriesLength] = useState<MajlisSeriesLength>(initialView.series);
   const [seriesLayer, setSeriesLayer] = useState<"fresh" | "research">("fresh");
   const [topicQuery, setTopicQuery] = useState("");
-  const [guideMode, setGuideMode] = useState<SpeakingGuideMode>("detailed");
+  const [guideMode, setGuideMode] = useSpeakingGuideMode();
   const [selectedTopicId, setSelectedTopicId] = useState(initialView.topic);
   const [liveTopicResearch, setLiveTopicResearch] = useState<KhateebResearchResult | null>(null);
   const [liveTopicLoading, setLiveTopicLoading] = useState(false);
@@ -368,7 +369,7 @@ export default function KhateebStudioContent({
       : null;
   const topicSpeakerEvidence = topic ? evidenceForTopic(topic.id) : [];
   const hasDeathGuide = topic?.id === "death-akhirah" && seriesLength === 1;
-  const deathGuideText = hasDeathGuide ? buildDeathSpeakingGuideText(ur ? "ur" : "en", duration, guideMode) : "";
+  const deathGuideText = hasDeathGuide ? buildDeathSpeakingGuideText(ur ? "ur" : "en", duration, guideMode, topicSpeakerEvidence) : "";
   const topicPreparationText = topic
     ? buildPreparationText(
         topic,

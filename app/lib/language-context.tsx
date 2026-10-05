@@ -36,10 +36,11 @@ function loadStoredLanguage(): Language {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  // English is the default for first-time visitors. If the user has
-  // previously chosen Urdu (or English), localStorage preference wins.
-  // Lazy init from localStorage — same pattern as glossary/presets.
-  const [language, setLanguageState] = useState<Language>(() => loadStoredLanguage());
+  // Match the server on the first render, then restore the browser preference.
+  const [language, setLanguageState] = useState<Language>("en");
+  useEffect(() => {
+    setLanguageState(loadStoredLanguage());
+  }, []);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);

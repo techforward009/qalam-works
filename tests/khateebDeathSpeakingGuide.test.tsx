@@ -7,6 +7,7 @@ import DeathSpeakingGuide from "../app/tools/khateeb-studio/DeathSpeakingGuide";
 import { DEATH_SPEAKING_GUIDE, buildDeathSpeakingGuideText, deathGuideMinutes, type SpeakingGuideMode } from "../app/tools/khateeb-studio/engine/deathSpeakingGuide";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { quranTranslationFor } from "../app/tools/khateeb-studio/engine/quranTranslationProvider";
+import { evidenceForTopic } from "../app/tools/khateeb-studio/engine/speakerTopicIndex";
 const state = vi.hoisted(() => ({ language: "ur" }));
 vi.mock("../app/lib/language-context", () => ({ useLanguage: () => state }));
 vi.mock("../app/tools/khateeb-studio/KhateebScriptText", () => ({ default: ({ text }: { text: string }) => <span>{text}</span> }));
@@ -16,6 +17,26 @@ function Guide() {
   return <DeathSpeakingGuide duration={45} mode={mode} onModeChange={setMode} />;
 }
 describe("Death / Hereafter speaking guide", () => {
+  test.each(["ur", "en"] as const)("copies related book material with source and editorial attribution in %s", locale => {
+    const records = evidenceForTopic("death-akhirah");
+    expect(records.length).toBeGreaterThan(0);
+    const detailed = buildDeathSpeakingGuideText(locale, 45, "detailed", records);
+    const brief = buildDeathSpeakingGuideText(locale, 45, "brief", records);
+    for (const record of records) {
+      expect(detailed).toContain(locale === "ur" ? record.titleUr : record.titleEn);
+      expect(brief).toContain(locale === "ur" ? record.summaryUr : record.summaryEn);
+      expect(brief).toContain(locale === "ur" ? record.sourceLabelUr : record.sourceLabelEn);
+      expect(detailed).toContain(record.sourceUrl);
+      for (const paragraph of locale === "ur" ? record.materialUr ?? [] : record.materialEn ?? []) {
+        expect(detailed).toContain(paragraph);
+        expect(brief).not.toContain(paragraph);
+      }
+    }
+    expect(detailed).toContain(locale === "ur" ? "لفظی اقتباسات نہیں" : "not verbatim quotations");
+    const unrelated = evidenceForTopic("sabr").filter(record => !record.topicIds.includes("death-akhirah"));
+    const isolated = buildDeathSpeakingGuideText(locale, 45, "detailed", unrelated);
+    for (const record of unrelated) expect(isolated).not.toContain(locale === "ur" ? record.titleUr : record.titleEn);
+  });
   test.each([20, 30, 45] as const)("allocates %s minutes across opening, four angles and closing", duration => {
     const minutes = deathGuideMinutes(duration);
     expect(minutes).toHaveLength(6);

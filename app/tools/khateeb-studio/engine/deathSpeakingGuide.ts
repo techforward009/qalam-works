@@ -1,6 +1,9 @@
 import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
 import { quranTranslationFor, QURAN_TRANSLATION_SOURCES } from "./quranTranslationProvider";
 import type { SermonDuration, SermonLocale } from "./sermonPrep";
+import type { SpeakerEvidence } from "./speakerEvidence";
+import { KHATEEB_CORPUS } from "./khateebCorpus";
+import { speakerName } from "./khateebLocale";
 
 export type SpeakingGuideMode = "brief" | "detailed";
 type Bilingual = { ur: string; en: string };
@@ -111,7 +114,7 @@ export function deathGuideMinutes(duration: SermonDuration): readonly number[] {
   return duration === 20 ? [2, 4, 4, 4, 4, 2] : duration === 30 ? [3, 6, 6, 6, 6, 3] : [5, 9, 10, 9, 7, 5];
 }
 
-export function buildDeathSpeakingGuideText(locale: SermonLocale, duration: SermonDuration, mode: SpeakingGuideMode): string {
+export function buildDeathSpeakingGuideText(locale: SermonLocale, duration: SermonDuration, mode: SpeakingGuideMode, records: readonly SpeakerEvidence[] = []): string {
   const ur = locale === "ur";
   const minutes = deathGuideMinutes(duration);
   const lines = [ur ? "موت و آخرت — بیان کی رہنمائی" : "Death and the Hereafter — speaking guide", `${duration} ${ur ? "منٹ کا مجوزہ خاکہ" : "minute suggested outline"}`, ur ? "مختصر نکات اور تفصیلی وضاحت قلم ورکس کی تدوین ہیں؛ اصل آیات اور تراجم الگ درج ہیں۔" : "The speaking points and explanations are Qalam Works editorial material; verses and translations are identified separately.", `${ur ? "آغاز" : "Opening"}: ${minutes[0]} ${ur ? "منٹ" : "min"}`, ur ? "سامعین سے پوچھیں: اگر زندگی کی مدت معلوم نہیں تو ہم آج کس ذمہ داری کو ترجیح دیں گے؟" : "Ask: if we do not know how long we will live, which responsibility should we prioritize today?"];
@@ -129,5 +132,18 @@ export function buildDeathSpeakingGuideText(locale: SermonLocale, duration: Serm
     if (mode === "detailed") lines.push(`${ur ? "اگلے حصے سے ربط" : "Transition"}: ${section.transition[locale]}`);
   });
   lines.push("", `${ur ? "اختتام" : "Closing"}: ${minutes[5]} ${ur ? "منٹ" : "min"}`, ur ? "چار باتیں جمع کریں: ترجیحات، لوگوں کے حقوق، اصلاح کا آغاز، اور رحمت کی امید۔ سامع کو ایک ممکن عملی قدم کے ساتھ رخصت کریں۔" : "Bring together priorities, others' rights, beginning repair, and hope in mercy. Leave listeners with one possible action.");
+  const relevant = records.filter(record => record.status === "ready" && record.topicIds.includes("death-akhirah"));
+  if (relevant.length) {
+    lines.push("", ur ? "متعلقہ علمی مواد اور کتابی حوالے" : "Related study material and book references", ur ? "قلم ورکس کے تدوینی خلاصے — اصل کتاب کے لفظی اقتباسات نہیں" : "Qalam Works editorial summaries — not verbatim quotations from the books");
+    for (const record of relevant) {
+      const speaker = KHATEEB_CORPUS.find(item => item.id === record.speakerId);
+      lines.push("", ur ? record.titleUr : record.titleEn);
+      if (speaker) lines.push(speakerName(speaker, ur));
+      lines.push(ur ? record.summaryUr : record.summaryEn);
+      if (mode === "detailed") lines.push(...(ur ? record.materialUr ?? [] : record.materialEn ?? []));
+      lines.push(`${ur ? "اصل ماخذ" : "Primary source"}: ${ur ? record.sourceLabelUr : record.sourceLabelEn}`);
+      if (record.sourceUrl) lines.push(record.sourceUrl);
+    }
+  }
   return lines.join("\n");
 }
