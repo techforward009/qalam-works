@@ -138,4 +138,49 @@ export const TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 3, printed pp. 50–68",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-aalmi-04-fitrah-knowledge-society",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "چوتھی مجلس — فطرت، علم اور صالح معاشرے کی تشکیل",
+    titleEn: "Majlis 4 — Human nature, knowledge, and the formation of a sound society",
+    topicsUr: ["فطرت", "علم", "انسان", "معاشرہ", "قرآن", "ہدایت", "عدل"],
+    topicsEn: ["human nature", "knowledge", "humanity", "society", "Qur'an", "guidance", "justice"],
+    summaryUr:
+      "علامہ طالب جوہریؒ چوتھی مجلس میں انسانی فطرت، علم اور معاشرتی تشکیل کو ایک دوسرے سے جوڑتے ہیں۔ وہ انسان کو محض حیاتیاتی وجود نہیں سمجھتے بلکہ ایسا صاحبِ شعور وجود قرار دیتے ہیں جو علم حاصل کرتا، اقدار اختیار کرتا اور اپنے اجتماعی ماحول کو بناتا ہے۔ قرآن کی ہدایت اس صلاحیت کو سمت دیتی ہے تاکہ طاقت، علم اور تنظیم انسان کے خلاف نہیں بلکہ عدل اور خیر کے لیے استعمال ہوں۔",
+    summaryEn:
+      "Talib Johari connects human nature, knowledge, and social formation. The human being is not treated as merely biological but as a conscious agent who learns, adopts values, and shapes collective life. Qur'anic guidance directs these capacities so that power, knowledge, and organization serve justice and good rather than turning against humanity.",
+    materialUr: [
+      "علامہ انسانی فطرت کو ایسی استعداد کے طور پر دیکھتے ہیں جس میں سیکھنے، سمجھنے اور قدر منتخب کرنے کی صلاحیت موجود ہے۔ انسان صرف ماحول کا نتیجہ نہیں؛ وہ ماحول پر اثر بھی ڈالتا ہے۔",
+      "علم اس مجلس میں طاقت بن کر سامنے آتا ہے، مگر ہر طاقت کی طرح اسے اخلاقی سمت درکار ہے۔ علم بغیر معیار کے انسان کو زیادہ مؤثر تو بنا سکتا ہے، ضروری نہیں کہ زیادہ عادل بھی بنا دے۔",
+      "معاشرہ افراد کے کردار، باہمی ذمہ داری اور مشترک اقدار سے بنتا ہے۔ اس لیے اجتماعی اصلاح صرف قانون یا انتظام کا مسئلہ نہیں؛ انسان کی فکر اور اخلاق کی تربیت بھی بنیادی ہے۔",
+      "منبر پر اس بحث کو فطرت، علم، اخلاقی میزان اور معاشرتی تشکیل کی چار منزلوں میں بیان کیا جا سکتا ہے۔ آخر میں سوال یہ ہو کہ ہماری علمی اور اجتماعی قوت کس انسان اور کس معاشرے کو بنا رہی ہے؟",
+    ],
+    materialEn: [
+      "Johari treats human nature as a capacity for learning, understanding, and choosing values. A person is not merely produced by an environment but also acts upon and reshapes it.",
+      "Knowledge appears as power, and like every power it requires moral direction. Knowledge without a criterion may make people more effective without making them more just.",
+      "Society is formed through character, mutual responsibility, and shared values. Social reform therefore cannot be reduced to law or administration; intellectual and moral formation remain fundamental.",
+      "A sermon can move through human nature, knowledge, moral criteria, and social formation, ending with the question of what kind of person and society our intellectual and collective power is producing.",
+    ],
+    takeawaysUr: [
+      "انسان کو صاحبِ شعور اور ماحول ساز وجود کے طور پر پیش کریں۔",
+      "علم کو اخلاقی سمت کا محتاج سمجھیں۔",
+      "اجتماعی اصلاح کو قانون کے ساتھ کردار سازی سے جوڑیں۔",
+      "علم، طاقت اور عدل کے تعلق کو منبری سوال بنائیں۔",
+    ],
+    takeawaysEn: [
+      "Present the human being as a conscious shaper of the environment.",
+      "Treat knowledge as requiring moral direction.",
+      "Connect social reform with character formation as well as law.",
+      "Turn the relation between knowledge, power, and justice into a sermon question.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — چوتھی مجلس، کتابی صفحات 69 تا 87",
+    sourceLabelEn:
+      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 4, printed pp. 69–87",
+    sourceUrl: SOURCE_URL,
+  },
 ];

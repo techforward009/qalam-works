@@ -138,4 +138,49 @@ export const TALIB_JOHARI_INSANIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Insaniyat ka Alahi Manshoor — Majlis 3, printed pp. 42–55",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-insaniyat-04-truth-promise",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "چوتھی مجلس — صدق، وعدہ اور انسانی کردار",
+    titleEn: "Majlis 4 — Truthfulness, promises, and human character",
+    topicsUr: ["صدق", "وعدہ", "امانت", "کردار", "قرآن", "انسانی ذمہ داری"],
+    topicsEn: ["truthfulness", "promise", "trust", "character", "Qur'an", "human responsibility"],
+    summaryUr:
+      "علامہ طالب جوہریؒ چوتھی مجلس میں انسانی کردار کی بنیاد صدق، وعدے کی پابندی اور امانت جیسے اوصاف پر رکھتے ہیں۔ ان کے بیان میں زبان کی سچائی کافی نہیں؛ آدمی کا قول، عہد اور عمل ایک دوسرے کی تصدیق کریں۔ قرآن کی اخلاقی ہدایت اسی وقت زندہ بنتی ہے جب انسان اپنے فائدے، تعلق یا دباؤ کے باوجود حق اور وعدے کے ساتھ وفادار رہے۔",
+    summaryEn:
+      "Talib Johari grounds human character in truthfulness, keeping promises, and trust. Verbal truth alone is not enough; speech, covenant, and action must confirm one another. Qur'anic ethics become real when a person remains loyal to truth and obligation even under pressure of interest, relationship, or circumstance.",
+    materialUr: [
+      "علامہ صدق کو صرف جھوٹ نہ بولنے تک محدود نہیں رکھتے۔ سچا کردار وہ ہے جس میں زبان، نیت اور عمل ایک دوسرے سے متصادم نہ ہوں۔",
+      "وعدہ اور عہد مجلس کا اہم اخلاقی پیمانہ بنتے ہیں۔ انسان کی دینداری اس وقت آزمائی جاتی ہے جب وعدہ پورا کرنا مشکل، مہنگا یا اپنے مفاد کے خلاف ہو۔",
+      "وہ انسانی تعلقات کو بھی اسی اصول سے دیکھتے ہیں: بھروسہ اسی معاشرے میں پیدا ہوتا ہے جہاں قول پر اعتبار کیا جا سکے اور عہد وقتی فائدے کے لیے توڑا نہ جائے۔",
+      "منبر پر اس بحث کو صدق، عہد اور پھر اجتماعی اعتماد کی ترتیب میں پیش کیا جا سکتا ہے، تاکہ سامع یہ دیکھ سکے کہ ایک فرد کی اخلاقی کمزوری پورے معاشرے کے اعتماد کو کیسے متاثر کرتی ہے۔",
+    ],
+    materialEn: [
+      "Johari does not reduce truthfulness to avoiding lies. A truthful character is one in which speech, intention, and action do not contradict one another.",
+      "Promise and covenant become major ethical tests. Religiosity is exposed when keeping a promise becomes difficult, costly, or contrary to immediate interest.",
+      "Human relationships are read through the same principle: social trust grows where words can be relied upon and commitments are not discarded for short-term benefit.",
+      "A sermon can move from truthfulness, to covenant, and then to social trust, showing how personal moral weakness can damage an entire community's confidence.",
+    ],
+    takeawaysUr: [
+      "صدق کو زبان، نیت اور عمل کی یکسانی کے طور پر سمجھائیں۔",
+      "وعدے کی پابندی کو دینداری کی عملی آزمائش بنائیں۔",
+      "امانت اور عہد اجتماعی اعتماد پیدا کرتے ہیں۔",
+      "ذاتی اخلاق اور معاشرتی صحت کے تعلق کو نمایاں کریں۔",
+    ],
+    takeawaysEn: [
+      "Explain truthfulness as consistency of speech, intention, and action.",
+      "Treat keeping promises as a practical test of religion.",
+      "Trust and covenant create social confidence.",
+      "Show the link between personal ethics and social health.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «انسانیت کا الوہی منشور» — چوتھی مجلس، کتابی صفحات 56 تا 67",
+    sourceLabelEn:
+      "Original book Insaniyat ka Alahi Manshoor — Majlis 4, printed pp. 56–67",
+    sourceUrl: SOURCE_URL,
+  },
 ];

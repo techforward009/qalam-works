@@ -138,4 +138,49 @@ export const TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Asas-e-Adamiyat aur Qur'an — Majlis 3, printed pp. 39–57",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-asas-04-parents-rights",
+    speakerId: "talib-johari",
+    topicIds: ["parents-barsi", "quran-hidayat"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "چوتھی مجلس — والدین، احسان اور انسانی حقوق",
+    titleEn: "Majlis 4 — Parents, kindness, and human rights",
+    topicsUr: ["والدین", "احسان", "حقوق", "قرآن", "خاندان", "اطاعت"],
+    topicsEn: ["parents", "kindness", "rights", "Qur'an", "family", "obedience"],
+    summaryUr:
+      "علامہ طالب جوہریؒ چوتھی مجلس میں قرآنی اخلاق کو والدین کے حق اور خاندانی ذمہ داری تک لے جاتے ہیں۔ وہ خدا کی عبادت اور والدین کے ساتھ احسان کو قریب لا کر یہ دکھاتے ہیں کہ دینداری گھر کے اندر رویے سے جدا نہیں۔ بڑھاپے، کمزوری اور محتاجی کے مرحلے میں والدین کے ساتھ زبان، خدمت اور احترام کی کیفیت اولاد کے اخلاقی مقام کا امتحان بن جاتی ہے۔",
+    summaryEn:
+      "Talib Johari brings Qur'anic ethics into the rights of parents and family responsibility. By placing worship of God alongside kindness to parents, he shows that religiosity cannot be separated from conduct at home. In the parents' old age, weakness, and dependence, speech, service, and respect become a test of the child's moral standing.",
+    materialUr: [
+      "علامہ اس قرآنی ترتیب پر زور دیتے ہیں جس میں توحید کے بعد والدین کے ساتھ احسان کا حکم آتا ہے۔ اس سے وہ یہ نتیجہ لیتے ہیں کہ گھر کے حقوق دین کے حاشیے کی چیز نہیں بلکہ بنیادی اخلاقی ذمہ داری ہیں۔",
+      "والدین کے بڑھاپے کو خاص امتحان کے طور پر بیان کیا جاتا ہے۔ جب ان کی قوت، رفتار یا یادداشت کم ہو تو اولاد کا صبر اور نرمی محض معاشرتی ادب نہیں بلکہ عبادت کے اخلاقی تسلسل کا حصہ بنتا ہے۔",
+      "زبان کا ادب بھی مرکزی نکتہ ہے: ناراضی، جھڑک اور تحقیر سے بچنا، اور عزت و دعا کے ساتھ گفتگو کرنا اس حق کی عملی شکل ہے۔",
+      "منبر پر اس مجلس کو توحید سے حقِ والدین، پھر بڑھاپے کی ذمہ داری، اور آخر میں دعا و خدمت تک لے جایا جا سکتا ہے۔ یہ موضوع برسی، والدین کی مجلس یا عمومی خاندانی خطاب میں براہِ راست قابلِ استعمال ہے۔",
+    ],
+    materialEn: [
+      "Johari emphasizes the Qur'anic sequence in which kindness to parents follows the command of worship. Family rights are therefore not peripheral to religion but part of its central moral responsibility.",
+      "Parents' old age is treated as a special test. When strength, pace, or memory decline, the child's patience and gentleness become part of the moral continuity of worship.",
+      "Speech is central: avoiding contempt and harsh dismissal while speaking with honor and prayer gives practical form to the parental right.",
+      "A sermon can move from tawhid to parental rights, then to responsibility in old age, and finally to service and prayer. The material fits memorial, family, and general ethical settings.",
+    ],
+    takeawaysUr: [
+      "توحید اور حقِ والدین کے قرآنی ربط کو نمایاں کریں۔",
+      "بڑھاپے میں والدین کی خدمت کو خاص اخلاقی امتحان سمجھیں۔",
+      "زبان کی نرمی اور احترام کو حقِ والدین کا عملی حصہ بنائیں۔",
+      "خاندانی ذمہ داری کو عبادت سے جدا نہ کریں۔",
+    ],
+    takeawaysEn: [
+      "Highlight the Qur'anic connection between tawhid and parental rights.",
+      "Treat care in old age as a special moral test.",
+      "Make gentle and respectful speech part of the parental right.",
+      "Do not separate family responsibility from worship.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «اساس آدمیت اور قرآن» — چوتھی مجلس، کتابی صفحات 58 تا 77",
+    sourceLabelEn:
+      "Original book Asas-e-Adamiyat aur Qur'an — Majlis 4, printed pp. 58–77",
+    sourceUrl: SOURCE_URL,
+  },
 ];

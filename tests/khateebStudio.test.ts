@@ -162,6 +162,20 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[2]?.sourceLabelUr).toContain("صفحات 50 تا 68");
   });
 
+  test("indexes the fourth majlis of all three Talib Johari books", () => {
+    const corpus = corpusEntryForScholar("talib-johari")!;
+    const ids = corpus.evidence.map((item) => item.id);
+    expect(ids).toEqual(expect.arrayContaining([
+      "talib-insaniyat-04-truth-promise",
+      "talib-asas-04-parents-rights",
+      "talib-aalmi-04-fitrah-knowledge-society",
+    ]));
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[3]?.sourceLabelUr).toContain("صفحات 56 تا 67");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[3]?.sourceLabelUr).toContain("صفحات 58 تا 77");
+    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[3]?.sourceLabelUr).toContain("صفحات 69 تا 87");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[3]?.topicIds).toContain("parents-barsi");
+  });
+
   test("known catalog sources are source-backed even before content ingestion", () => {
     expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });
