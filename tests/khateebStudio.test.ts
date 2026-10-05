@@ -10,8 +10,10 @@ import {
   SPEAKER_EVIDENCE,
 } from "../app/tools/khateeb-studio/engine/speakerEvidence";
 import {
+  buildOccasionEvidenceText,
   evidenceForSpeakerAndTopic,
   evidenceForOccasion,
+  evidenceForOccasions,
   evidenceForTopic,
   speakersForTopic,
   topicsForSpeaker,
