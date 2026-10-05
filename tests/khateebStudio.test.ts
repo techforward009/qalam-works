@@ -233,7 +233,7 @@ describe("Khateeb Studio scholar corpus foundation", () => {
   });
 
   test("occasion evidence is linked to verified calendar ids", () => {
-    expect(TALIB_JOHARI_OCCASION_EVIDENCE).toHaveLength(4);
+    expect(TALIB_JOHARI_OCCASION_EVIDENCE).toHaveLength(5);
     expect(evidenceForOccasion("muh-10-ashura").map((item) => item.id)).toContain(
       "talib-insaniyat-ashura-01",
     );
@@ -243,8 +243,11 @@ describe("Khateeb Studio scholar corpus foundation", () => {
         "talib-aalmi-sham-ghareeban-01",
       ]),
     );
-    expect(evidenceForOccasion("saf-20-arbaeen").map((item) => item.id)).toContain(
-      "talib-insaniyat-arbaeen-01",
+    expect(evidenceForOccasion("saf-20-arbaeen").map((item) => item.id)).toEqual(
+      expect.arrayContaining([
+        "talib-insaniyat-arbaeen-01",
+        "talib-asas-arbaeen-01",
+      ]),
     );
   });
 

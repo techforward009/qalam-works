@@ -403,9 +403,9 @@ export const TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Do not turn personal preference into the religious measure.",
     ],
     sourceLabelUr:
-      "اصل کتاب «اساس آدمیت اور قرآن» — نویں مجلس، کتابی صفحات 150 تا 166",
+      "اصل کتاب «اساس آدمیت اور قرآن» — نویں مجلس، کتابی صفحات 150 تا 169",
     sourceLabelEn:
-      "Original book Asas-e-Adamiyat aur Qur'an — Majlis 9, printed pp. 150–166",
+      "Original book Asas-e-Adamiyat aur Qur'an — Majlis 9, printed pp. 150–169",
     sourceUrl: SOURCE_URL,
   },
 ];

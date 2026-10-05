@@ -186,4 +186,51 @@ export const TALIB_JOHARI_OCCASION_EVIDENCE: readonly SpeakerEvidence[] = [
     sourceUrl:
       "https://maablib.org/aalmi-muashra-aur-quran-e-hakeem-by-talib-johri/",
   },
+
+  {
+    id: "talib-asas-arbaeen-01",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    occasionIds: ["saf-11-arbaeen-decade", "saf-20-arbaeen"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "مجلسِ چہلم — برّ، وفاداری اور محبتِ الٰہی",
+    titleEn: "Arbaeen Majlis — Righteousness, loyalty, and love of God",
+    topicsUr: ["چہلم", "اربعین", "برّ", "وفاداری", "محبت الٰہی", "امام حسینؑ"],
+    topicsEn: ["Arbaeen", "righteousness", "loyalty", "love of God", "Imam Husayn"],
+    summaryUr:
+      "علامہ طالب جوہریؒ مجلسِ چہلم میں آیتِ برّ کی روشنی میں ایمان، وفاداری، محبتِ الٰہی اور عملی قربانی کو یادِ حسینؑ سے جوڑتے ہیں۔ ان کے بیان میں محبتِ خدا صرف جذباتی دعویٰ نہیں؛ اس کی علامت حق سے وفاداری، قربانی، اطاعت اور اس راہ پر ثابت قدمی ہے۔",
+    summaryEn:
+      "Talib Johari links the verse of birr with faith, loyalty, love of God, and practical sacrifice in the remembrance of Imam Husayn. Love of God is not merely an emotional claim; it appears as fidelity to truth, sacrifice, obedience, and steadfastness.",
+    materialUr: [
+      "آیتِ برّ کو مجلس کا اخلاقی نقشہ بنایا گیا ہے: ایمان، عبادت، مالی ایثار، عہد اور صبر ایک دوسرے سے جدا نہیں۔",
+      "اللہ سے محبت کا دعویٰ اس وقت معتبر بنتا ہے جب انسان اس کے حکم، اس کے رسولؐ اور حق کے راستے سے عملی وفاداری دکھائے۔",
+      "کربلا میں امام حسینؑ اور اصحاب کی قربانی محبت و وفاداری کی وہ عملی صورت بنتی ہے جس میں جان اور مفاد دونوں حق کے تابع ہوجاتے ہیں۔",
+      "منبر پر یہ مجلس آیتِ برّ، محبتِ خدا، وفاداری اور اربعین میں عہد کی تجدید کے سلسلے میں پیش کی جا سکتی ہے۔",
+    ],
+    materialEn: [
+      "The verse of birr becomes an ethical map joining faith, worship, generosity, covenant, and patience.",
+      "A claim to love God becomes meaningful when it appears as practical loyalty to His command, His Messenger, and the path of truth.",
+      "The sacrifice of Imam Husayn and his companions becomes a practical form of love and loyalty in which life and self-interest are placed under truth.",
+      "An Arbaeen sermon can move through the verse of birr, love of God, loyalty, and renewal of covenant.",
+    ],
+    takeawaysUr: [
+      "اربعین کو عہدِ وفاداری کی تجدید بنائیں۔",
+      "محبتِ الٰہی کو اطاعت اور قربانی سے جوڑیں۔",
+      "آیتِ برّ کو مجلس کا اخلاقی ڈھانچہ بنائیں۔",
+      "امام حسینؑ کی قربانی کو عملی وفاداری کی میزان کے طور پر پیش کریں۔",
+    ],
+    takeawaysEn: [
+      "Present Arbaeen as renewal of loyalty.",
+      "Connect love of God with obedience and sacrifice.",
+      "Use the verse of birr as the ethical structure of the sermon.",
+      "Present Imam Husayn's sacrifice as a measure of practical fidelity.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «اساس آدمیت اور قرآن» — مجلسِ چہلم، کتابی صفحات 170 تا 182",
+    sourceLabelEn:
+      "Original book Asas-e-Adamiyat aur Qur'an — Arbaeen Majlis, printed pp. 170–182",
+    sourceUrl:
+      "https://maablib.org/isas-e-aadmiyat-aur-quran-by-talib-johri/",
+  },
 ];
