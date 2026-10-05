@@ -79,6 +79,17 @@ export default function CustomSermonWorkspace({ locale }: Props) {
     [activeId, projects],
   );
 
+  useEffect(() => {
+    if (!active) return;
+    const timer = window.setTimeout(() => {
+      saveProject(active);
+      setSavedMessage(
+        ur ? "تبدیلیاں خودکار طور پر محفوظ ہوگئیں۔" : "Changes saved automatically.",
+      );
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [active, ur]);
+
   const replaceProject = (project: CustomSermonProject, persist = true) => {
     setProjects((current) => {
       const next = [
@@ -269,6 +280,11 @@ export default function CustomSermonWorkspace({ locale }: Props) {
             {ur
               ? "اپنا عنوان اور مقصد لکھیں۔ قلم مصدقہ مواد الگ جمع کرے گا، آپ کے اپنے نوٹس الگ رہیں گے، اور تدوینی ربط کو کبھی اصل ماخذ کے الفاظ نہیں بنایا جائے گا۔"
               : "Enter your title and objective. Qalam keeps verified source material, your own notes, and editorial bridges in separate layers."}
+          </p>
+          <p className="mt-1 max-w-3xl text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+            {ur
+              ? "مسودہ اسی براؤزر اور اسی آلے میں خودکار طور پر محفوظ ہوتا ہے؛ دوسرے آلے کے لیے محفوظ فائل بنائیں۔"
+              : "Drafts auto-save in this browser on this device. Export a backup to move them elsewhere."}
           </p>
         </div>
         <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#47654d] dark:bg-[#162a1e] dark:text-[#b9d4bf]">
