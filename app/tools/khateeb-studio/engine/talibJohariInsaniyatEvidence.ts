@@ -273,4 +273,49 @@ export const TALIB_JOHARI_INSANIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Insaniyat ka Alahi Manshoor — Majlis 6, printed pp. 80–93",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-insaniyat-07-knowledge-confirmation-worship",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "ساتویں مجلس — علم، تصدیق اور عبادت",
+    titleEn: "Majlis 7 — Knowledge, confirmation, and worship",
+    topicsUr: ["علم", "تصدیق", "عبادت", "قرآن", "ہدایت", "دل"],
+    topicsEn: ["knowledge", "confirmation", "worship", "Qur'an", "guidance", "heart"],
+    summaryUr:
+      "علامہ طالب جوہریؒ ساتویں مجلس میں علم کو محض معلومات کے انبار کے طور پر نہیں لیتے بلکہ تصدیق، دل کی آمادگی اور عبادت کے ساتھ جوڑتے ہیں۔ ان کے بیان میں قرآن انسان کو جاننے، سمجھنے اور پھر اس معرفت کو عمل میں بدلنے کی دعوت دیتا ہے۔ صرف یہ جان لینا کہ حق کیا ہے کافی نہیں؛ دل کا قبول، زبان کی تصدیق اور عمل کی وفاداری مل کر دینی شعور بناتے ہیں۔",
+    summaryEn:
+      "Talib Johari connects knowledge with confirmation, the readiness of the heart, and worship. Qur'anic knowledge is not information accumulation alone; it calls a person to understand, affirm, and embody what is known. Knowing the truth is incomplete without inward acceptance, verbal confirmation, and faithful action.",
+    materialUr: [
+      "علامہ علم اور ایمان کے درمیان ایک زندہ ربط قائم کرتے ہیں۔ علم وہ ہے جو انسان کے اندر تصدیق پیدا کرے اور اسے خدا کے سامنے ذمہ دار بنائے۔",
+      "عبادت کو محض ظاہری حرکت نہیں بلکہ اس شعور کا عملی اظہار قرار دیا جاتا ہے کہ انسان اپنے رب، اپنے مقصد اور اپنے انجام کو پہچانتا ہے۔",
+      "دل کی کیفیت اس مجلس میں اہم ہے: حق کی معرفت اگر دل تک نہ پہنچے تو علم کردار نہیں بنتا۔ اسی لیے قرآن کی ہدایت جاننے، ماننے اور جینے کے مراحل سے گزرتی ہے۔",
+      "منبر پر اس بحث کو علم، تصدیق، دل اور عبادت کے چار مربوط مرحلوں میں پیش کیا جا سکتا ہے۔",
+    ],
+    materialEn: [
+      "Johari establishes a living relation between knowledge and faith. Knowledge should produce confirmation and a sense of accountability before God.",
+      "Worship is not reduced to outward motion; it becomes the practical expression of awareness of one's Lord, purpose, and destiny.",
+      "The condition of the heart is central: if recognition of truth never reaches inward acceptance, knowledge does not become character.",
+      "A sermon can move through knowledge, confirmation, the heart, and worship as four connected stages.",
+    ],
+    takeawaysUr: [
+      "علم کو عمل اور تصدیق سے جدا نہ کریں۔",
+      "عبادت کو شعوری بندگی کے طور پر پیش کریں۔",
+      "دل کی قبولیت کو دینی معرفت کا ضروری مرحلہ سمجھیں۔",
+      "قرآنی ہدایت کو جاننے، ماننے اور جینے کے سلسلے میں بیان کریں۔",
+    ],
+    takeawaysEn: [
+      "Do not separate knowledge from action and confirmation.",
+      "Present worship as conscious servitude.",
+      "Treat inward acceptance as a necessary stage of religious knowledge.",
+      "Describe Qur'anic guidance as knowing, affirming, and living.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «انسانیت کا الوہی منشور» — ساتویں مجلس، کتابی صفحات 94 تا 108",
+    sourceLabelEn:
+      "Original book Insaniyat ka Alahi Manshoor — Majlis 7, printed pp. 94–108",
+    sourceUrl: SOURCE_URL,
+  },
 ];

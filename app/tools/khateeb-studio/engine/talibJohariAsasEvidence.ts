@@ -273,4 +273,49 @@ export const TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Asas-e-Adamiyat aur Qur'an — Majlis 6, printed pp. 97–113",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-asas-07-obedience-justice-self",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "ساتویں مجلس — اطاعت، عدل اور نفس کی تربیت",
+    titleEn: "Majlis 7 — Obedience, justice, and formation of the self",
+    topicsUr: ["اطاعت", "عدل", "رسول", "نفس", "قرآن", "ذمہ داری"],
+    topicsEn: ["obedience", "justice", "Prophet", "self", "Qur'an", "responsibility"],
+    summaryUr:
+      "دستیاب صفحات میں علامہ طالب جوہریؒ قانون، اطاعتِ رسولؐ، عدل اور نفس کی تربیت کو ایک دوسرے سے جوڑتے ہیں۔ ان کے بیان میں دینی قانون انسان پر محض خارجی پابندی نہیں بلکہ حق کے مطابق زندگی کو منظم کرنے کا وسیلہ ہے۔ عدل اس وقت حقیقی بنتا ہے جب انسان اپنی خواہش، غصے اور مفاد کو بھی اسی میزان کے تابع کرے۔",
+    summaryEn:
+      "In the surviving pages, Talib Johari connects law, obedience to the Prophet, justice, and formation of the self. Religious law is not merely an external restriction but a means of ordering life according to truth. Justice becomes real when desire, anger, and self-interest are also placed under the same moral measure.",
+    materialUr: [
+      "علامہ قانون کی ضرورت کو اجتماعی نظم اور اخلاقی حفاظت سے جوڑتے ہیں۔ قانون اس لیے نہیں کہ انسان کی آزادی ختم ہو بلکہ اس لیے کہ طاقت اور خواہش دوسروں کے حق کو نہ روندیں۔",
+      "اطاعتِ رسولؐ دینی قانون کے عملی فہم کی بنیاد بنتی ہے۔ محض قرآن کا نام کافی نہیں؛ رسولؐ کی تعلیم اور عملی رہنمائی سے اس کے احکام کی صحیح سمت واضح ہوتی ہے۔",
+      "عدل کی بحث بیرونی فیصلے سے آگے نفس تک جاتی ہے۔ انسان اگر دوسروں کے لیے انصاف چاہتا ہے تو اپنے غصے، مفاد اور خواہش کے ساتھ بھی انصاف کرے۔",
+      "دستیاب صفحات کی بنیاد پر منبر کا زاویہ قانون، اطاعت، عدل اور نفس کی تربیت کا باہمی تعلق ہو سکتا ہے۔",
+    ],
+    materialEn: [
+      "Johari connects the need for law with social order and moral protection. Law does not exist to erase freedom but to prevent power and desire from trampling the rights of others.",
+      "Obedience to the Prophet becomes essential to the practical understanding of religious law. Naming the Qur'an alone is insufficient without prophetic teaching and application.",
+      "The discussion of justice moves inward: a person who wants fairness for others must also discipline anger, interest, and desire under the same standard.",
+      "On the surviving pages, the sermon angle is the relation between law, obedience, justice, and formation of the self.",
+    ],
+    takeawaysUr: [
+      "قانون کو اخلاقی اور اجتماعی حفاظت کے تناظر میں سمجھائیں۔",
+      "اطاعتِ رسولؐ کو قرآنی حکم کے عملی فہم سے جوڑیں۔",
+      "عدل کو باہر کے فیصلے سے نفس کی تربیت تک لے جائیں۔",
+      "خواہش اور غصے کو بھی اخلاقی میزان کے تابع رکھیں۔",
+    ],
+    takeawaysEn: [
+      "Explain law as moral and social protection.",
+      "Connect prophetic obedience with practical Qur'anic understanding.",
+      "Extend justice from external judgment to self-discipline.",
+      "Place desire and anger under the moral criterion.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «اساس آدمیت اور قرآن» — ساتویں مجلس، دستیاب کتابی صفحات 118 تا 130؛ ابتدائی صفحات scan میں موجود نہیں",
+    sourceLabelEn:
+      "Original book Asas-e-Adamiyat aur Qur'an — Majlis 7, surviving printed pp. 118–130; opening pages are missing from the scan",
+    sourceUrl: SOURCE_URL,
+  },
 ];

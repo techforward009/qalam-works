@@ -273,4 +273,49 @@ export const TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 6, printed pp. 107–122",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-aalmi-07-knowledge-power-reform",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "ساتویں مجلس — علم، طاقت اور معاشرتی اصلاح",
+    titleEn: "Majlis 7 — Knowledge, power, and social reform",
+    topicsUr: ["علم", "طاقت", "معاشرہ", "اصلاح", "قرآن", "عدل"],
+    topicsEn: ["knowledge", "power", "society", "reform", "Qur'an", "justice"],
+    summaryUr:
+      "علامہ طالب جوہریؒ ساتویں مجلس میں علم اور طاقت کے تعلق کو معاشرتی اصلاح کے سوال سے جوڑتے ہیں۔ وہ واضح کرتے ہیں کہ انسانی علم بہت بڑی قوت ہے، مگر جب اس کے ساتھ اخلاقی میزان نہ ہو تو یہی قوت ظلم، استحصال اور بگاڑ کا ذریعہ بن سکتی ہے۔ قرآن کی ہدایت علم کو انسانیت، عدل اور ذمہ داری کی سمت دینے کا کام کرتی ہے۔",
+    summaryEn:
+      "Talib Johari connects knowledge and power with the question of social reform. Human knowledge is a great force, but without moral direction it can become an instrument of injustice, exploitation, and corruption. Qur'anic guidance directs knowledge toward humanity, justice, and responsibility.",
+    materialUr: [
+      "علامہ علم کو غیر جانب دار قوت کے طور پر نہیں چھوڑتے۔ سوال یہ ہے کہ علم کس مقصد، کس اخلاق اور کس انسانی تصور کے تحت استعمال ہو رہا ہے۔",
+      "طاقت اور علم جب جواب دہی سے خالی ہوں تو معاشرہ زیادہ منظم ہونے کے باوجود زیادہ ظالم بھی بن سکتا ہے۔",
+      "قرآن انسان کو صرف جاننے کی دعوت نہیں دیتا بلکہ علم کے استعمال پر بھی اخلاقی سوال قائم کرتا ہے: یہ علم کس کی خدمت کر رہا ہے اور کس پر اثر ڈال رہا ہے؟",
+      "منبر پر اس مجلس کو علم، طاقت، جواب دہی اور معاشرتی اصلاح کے چار مرحلوں میں پیش کیا جا سکتا ہے۔",
+    ],
+    materialEn: [
+      "Johari does not leave knowledge as a morally neutral force. The central question is the purpose, ethic, and conception of humanity governing its use.",
+      "Knowledge and power without accountability can make a society more organized while also making it more unjust.",
+      "The Qur'an does not only invite knowing; it raises moral questions about the use of knowledge: whom does it serve and whom does it affect?",
+      "A sermon can move through knowledge, power, accountability, and social reform.",
+    ],
+    takeawaysUr: [
+      "علم کو اخلاقی سمت کے بغیر غیر جانب دار نہ سمجھیں۔",
+      "طاقت کو جواب دہی سے جوڑیں۔",
+      "علم کے استعمال پر «کس کی خدمت؟» کا سوال اٹھائیں۔",
+      "معاشرتی اصلاح کو علم اور عدل کے ربط سے پیش کریں۔",
+    ],
+    takeawaysEn: [
+      "Do not treat knowledge as morally neutral without direction.",
+      "Connect power with accountability.",
+      "Ask whom knowledge serves.",
+      "Present social reform through the relation of knowledge and justice.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — ساتویں مجلس، کتابی صفحات 133 تا 139",
+    sourceLabelEn:
+      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 7, printed pp. 133–139",
+    sourceUrl: SOURCE_URL,
+  },
 ];

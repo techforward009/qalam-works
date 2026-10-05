@@ -204,6 +204,19 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[5]?.topicIds).toContain("rizq");
   });
 
+  test("indexes seventh-majlis evidence with source gaps preserved", () => {
+    const corpus = corpusEntryForScholar("talib-johari")!;
+    const ids = corpus.evidence.map((item) => item.id);
+    expect(ids).toEqual(expect.arrayContaining([
+      "talib-insaniyat-07-knowledge-confirmation-worship",
+      "talib-asas-07-obedience-justice-self",
+      "talib-aalmi-07-knowledge-power-reform",
+    ]));
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[6]?.sourceLabelUr).toContain("صفحات 94 تا 108");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[6]?.sourceLabelUr).toContain("ابتدائی صفحات scan میں موجود نہیں");
+    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[6]?.sourceLabelUr).toContain("صفحات 133 تا 139");
+  });
+
   test("known catalog sources are source-backed even before content ingestion", () => {
     expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });
