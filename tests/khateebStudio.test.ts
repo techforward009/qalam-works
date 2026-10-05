@@ -463,6 +463,25 @@ describe("Khateeb Studio real speaker material", () => {
     ).toContain("jild03-dua-aur-itmam-nimat");
   });
 
+  test("maps the verified five-part Azhar Hasan Zaidi source collection", () => {
+    const rows = SOUTH_ASIA_CORPUS_QUEUE.filter(
+      (item) => item.speakerId === "azhar-hasan-zaidi",
+    );
+    expect(rows).toHaveLength(5);
+    expect(rows.map((item) => item.id)).toEqual(
+      expect.arrayContaining([
+        "azhar-hasan-zaidi-khateeb-aal-muhammad-1",
+        "azhar-hasan-zaidi-khateeb-aal-muhammad-2",
+        "azhar-hasan-zaidi-khateeb-aal-muhammad-3",
+        "azhar-hasan-zaidi-khateeb-aal-muhammad-4",
+        "azhar-hasan-zaidi-khateeb-aal-muhammad-5",
+      ]),
+    );
+    expect(rows[0]?.yearLabel).toBe("1439 AH / 2018");
+    expect(rows[1]?.yearLabel).toBe("1402 AH / 1982");
+    expect(rows[2]?.yearLabel).toBe("1393 AH");
+  });
+
   test("keeps Zeeshan Jawadi bibliographic metadata source-safe", () => {
     const rows = SOUTH_ASIA_CORPUS_QUEUE.filter(
       (item) => item.speakerId === "zeeshan-jawadi",
