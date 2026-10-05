@@ -137,6 +137,18 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     expect(aalmi.topicIds).toContain("quran-hidayat");
   });
 
+  test("indexes the second majlis of all three Talib Johari books", () => {
+    const ids = corpusEntryForScholar("talib-johari")!.evidence.map((item) => item.id);
+    expect(ids).toEqual(expect.arrayContaining([
+      "talib-insaniyat-02-hamd-sirat",
+      "talib-asas-02-iman-obedience",
+      "talib-aalmi-02-human-conflict",
+    ]));
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[1]?.sourceLabelUr).toContain("صفحات 27 تا 41");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[1]?.sourceLabelUr).toContain("صفحات 26 تا 38");
+    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[1]?.sourceLabelUr).toContain("صفحات 32 تا 49");
+  });
+
   test("known catalog sources are source-backed even before content ingestion", () => {
     expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });

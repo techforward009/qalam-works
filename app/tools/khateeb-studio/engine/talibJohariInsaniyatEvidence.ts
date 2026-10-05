@@ -48,4 +48,49 @@ export const TALIB_JOHARI_INSANIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Insaniyat ka Alahi Manshoor — Majlis 1, printed pp. 13–26",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-insaniyat-02-hamd-sirat",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "مجلس دوم — حمد، عبادت اور صراطِ مستقیم",
+    titleEn: "Majlis 2 — Praise, worship, and the straight path",
+    topicsUr: ["سورۂ فاتحہ", "حمد", "عبادت", "ہدایت", "صراط مستقیم", "قرآن"],
+    topicsEn: ["Surat al-Fatiha", "praise", "worship", "guidance", "straight path", "Qur'an"],
+    summaryUr:
+      "علامہ طالب جوہریؒ دوسری مجلس میں سورۂ فاتحہ کو انسان کی فکری اور عملی ہدایت کا جامع نقشہ بناتے ہیں۔ «الحمد لله رب العالمين» سے خدا کی ربوبیت، «إياك نعبد وإياك نستعين» سے بندگی اور استعانت، اور «اهدنا الصراط المستقيم» سے مسلسل ہدایت کی ضرورت واضح کرتے ہیں۔ ان کے بیان میں سیدھا راستہ صرف ایک نظری تصور نہیں بلکہ ایسا طرزِ زندگی ہے جس میں انسان اپنی عبادت، اطاعت، تعلقات اور فیصلوں کو خدا کی طرف منظم کرتا ہے۔",
+    summaryEn:
+      "Talib Johari treats Surat al-Fatiha as a compact map of intellectual and practical guidance. 'Praise belongs to God, Lord of the worlds' establishes divine lordship; 'You alone we worship and from You alone we seek help' frames servitude and dependence; and 'Guide us to the straight path' shows the continuing need for guidance. The straight path is not merely an abstract doctrine but a way of ordering worship, obedience, relationships, and decisions toward God.",
+    materialUr: [
+      "علامہ «الحمد لله رب العالمين» سے یہ نکتہ نکالتے ہیں کہ حمد صرف زبان کا جملہ نہیں بلکہ نعمت، ربوبیت اور انسانی وابستگی کی پہچان ہے۔ انسان اپنے وجود اور اپنی قدرت کو خود کفیل حقیقت نہیں سمجھتا بلکہ اسے رب العالمین کی تربیت اور عطا سے جوڑتا ہے۔",
+      "«إياك نعبد وإياك نستعين» میں عبادت اور استعانت کو ایک دوسرے سے جدا نہیں رکھا جاتا۔ بندگی کا مطلب یہ ہے کہ انسان اپنے عمل کی سمت خدا سے لے اور اپنی کمزوری کو پہچانتے ہوئے مدد بھی اسی سے مانگے۔",
+      "«اهدنا الصراط المستقيم» علامہ کے ہاں ایک مسلسل ضرورت ہے۔ ہدایت ایک بار معلومات حاصل کر لینے کا نام نہیں؛ آدمی کو ہر مرحلے، ہر فیصلے اور ہر آزمائش میں دوبارہ سیدھی راہ کی ضرورت رہتی ہے۔",
+      "منبر پر اس مجلس کو سورۂ فاتحہ کے تین مرحلوں میں ترتیب دیا جا سکتا ہے: رب کی معرفت، بندگی و استعانت، اور پھر سیدھی راہ کی دعا۔ آخر میں سامع سے یہ سوال کیا جا سکتا ہے کہ جس صراط کی ہم روز دعا کرتے ہیں، کیا ہمارے معاملات اور ترجیحات بھی اسی سمت جا رہے ہیں؟",
+    ],
+    materialEn: [
+      "Johari reads 'Praise belongs to God, Lord of the worlds' as more than a verbal formula. Praise recognizes blessing, lordship, and human dependence, resisting the illusion that existence and power are self-generated.",
+      "'You alone we worship and from You alone we seek help' keeps worship and dependence together. Servitude means receiving direction from God while acknowledging one's need for divine help.",
+      "'Guide us to the straight path' represents a continuing need. Guidance is not exhausted by receiving information once; every stage, decision, and trial requires renewed direction.",
+      "A sermon can therefore follow three movements in al-Fatiha: recognition of the Lord, worship and reliance, and the prayer for the straight path; then ask whether the conduct of daily life follows the path repeatedly requested in prayer.",
+    ],
+    takeawaysUr: [
+      "سورۂ فاتحہ کو ہدایت کے زندہ نقشے کے طور پر پیش کریں۔",
+      "عبادت اور استعانت کو بندگی کے دو مربوط پہلو سمجھیں۔",
+      "ہدایت ایک مسلسل ضرورت ہے، ایک بار حاصل ہونے والی معلومات نہیں۔",
+      "صراطِ مستقیم کو روزمرہ فیصلوں اور کردار سے جوڑیں۔",
+    ],
+    takeawaysEn: [
+      "Present Surat al-Fatiha as a living map of guidance.",
+      "Treat worship and reliance as two connected dimensions of servitude.",
+      "Guidance is a continuing need, not information acquired once.",
+      "Connect the straight path with everyday choices and character.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «انسانیت کا الوہی منشور» — مجلس دوم، کتابی صفحات 27 تا 41",
+    sourceLabelEn:
+      "Original book Insaniyat ka Alahi Manshoor — Majlis 2, printed pp. 27–41",
+    sourceUrl: SOURCE_URL,
+  },
 ];

@@ -48,4 +48,49 @@ export const TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 1, printed pp. 11–31",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-aalmi-02-human-conflict",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "مجلس دوم — انسانی علم، حسد اور اجتماعی فساد",
+    titleEn: "Majlis 2 — Human knowledge, envy, and social corruption",
+    topicsUr: ["انسان", "علم", "حسد", "اختلاف", "معاشرہ", "قرآن", "عدل"],
+    topicsEn: ["humanity", "knowledge", "envy", "conflict", "society", "Qur'an", "justice"],
+    summaryUr:
+      "علامہ طالب جوہریؒ دوسری مجلس میں انسانی علم اور ترقی کی بحث کو اجتماعی اخلاق کی طرف لے جاتے ہیں۔ وہ انسان کی علمی صلاحیت کو عظیم نعمت قرار دیتے ہوئے ساتھ یہ خطرہ دکھاتے ہیں کہ خواہش، حسد اور خود غرضی اسی انسان کو فساد کی طرف لے جا سکتی ہے۔ حضرت آدمؑ کے دو بیٹوں کے قرآنی واقعے سے وہ یہ واضح کرتے ہیں کہ معاشرتی بگاڑ کا آغاز بیرونی وسائل کی کمی سے پہلے انسان کے باطن، نیت اور انصاف کے بحران سے بھی ہو سکتا ہے۔",
+    summaryEn:
+      "In the second majlis, Talib Johari moves from human knowledge and progress to social ethics. He treats intellectual capacity as a great gift while warning that desire, envy, and self-interest can turn the same human being toward corruption. Through the Qur'anic story of the two sons of Adam, he argues that social breakdown can begin not only in material scarcity but in crises of intention, justice, and the inner self.",
+    materialUr: [
+      "علامہ پہلی مجلس کی علمی ترقی والی بحث کو آگے بڑھاتے ہوئے کہتے ہیں کہ علم خود بخود اخلاقی کمال کی ضمانت نہیں۔ انسان جان سکتا ہے، سیکھ سکتا ہے اور ترقی کر سکتا ہے، مگر پھر بھی حسد، مفاد اور خواہش کے زیر اثر غلط فیصلہ کر سکتا ہے۔",
+      "حضرت آدمؑ کے دو بیٹوں کا واقعہ اس مجلس میں انسانی اختلاف کے بنیادی نمونے کے طور پر آتا ہے۔ قربانی کی قبولیت یا عدم قبولیت پر پیدا ہونے والا ردِ عمل دکھاتا ہے کہ مسئلہ صرف نتیجے کا نہیں بلکہ انسان اپنے ناکام یا نامقبول ہونے کے تجربے کو کس اخلاقی کیفیت میں قبول کرتا ہے۔",
+      "علامہ اس واقعے سے معاشرتی فساد کا ایک باطنی نقشہ بناتے ہیں: جب آدمی دوسرے کی فضیلت یا قبولیت کو برداشت نہیں کرتا تو حسد، دشمنی اور بالآخر ظلم پیدا ہو سکتا ہے۔ اس لیے معاشرے کی اصلاح صرف نظام سے نہیں بلکہ انسان کے باطن سے بھی متعلق ہے۔",
+      "منبر پر اس مجلس کو علم و ترقی، پھر حسد و خود غرضی، اور اس کے بعد قصۂ فرزندانِ آدم کے ذریعے اجتماعی عدل تک لے جایا جا سکتا ہے۔ اختتام یہ ہو کہ علم تبھی انسانیت بناتا ہے جب اس کے ساتھ انصاف، تواضع اور نفس کی تربیت ہو۔",
+    ],
+    materialEn: [
+      "Johari extends the previous discussion of intellectual progress by insisting that knowledge does not automatically guarantee moral excellence. A person may learn and advance while remaining vulnerable to envy, interest, and desire.",
+      "The Qur'anic story of the two sons of Adam becomes a basic model of human conflict. The response to an accepted or rejected offering shows that the decisive issue is not merely the outcome but the moral condition in which a person receives disappointment.",
+      "From this story he develops an inner map of social corruption: inability to tolerate another person's acceptance or excellence can become envy, hostility, and finally injustice. Social reform therefore concerns both systems and the human interior.",
+      "A sermon can move from knowledge and progress, to envy and self-interest, then through the sons of Adam toward social justice, concluding that knowledge becomes truly humanizing only when joined to fairness, humility, and self-discipline.",
+    ],
+    takeawaysUr: [
+      "علم اخلاقی کمال کی خودکار ضمانت نہیں۔",
+      "حسد اور خود غرضی اجتماعی فساد کے باطنی اسباب بن سکتے ہیں۔",
+      "قصۂ فرزندانِ آدم کو اختلاف، قبولیت اور انصاف کے اخلاقی مطالعے کے طور پر استعمال کریں۔",
+      "معاشرتی اصلاح کے لیے نظام کے ساتھ نفس کی اصلاح بھی ضروری ہے۔",
+    ],
+    takeawaysEn: [
+      "Knowledge does not automatically guarantee moral excellence.",
+      "Envy and self-interest can become inner causes of social corruption.",
+      "Use the sons of Adam as an ethical study of conflict, acceptance, and justice.",
+      "Social reform requires formation of the self alongside reform of systems.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — مجلس دوم، کتابی صفحات 32 تا 49",
+    sourceLabelEn:
+      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 2, printed pp. 32–49",
+    sourceUrl: SOURCE_URL,
+  },
 ];

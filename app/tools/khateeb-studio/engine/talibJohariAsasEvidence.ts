@@ -48,4 +48,49 @@ export const TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Asas-e-Adamiyat aur Qur'an — Majlis 1, printed pp. 9–25",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-asas-02-iman-obedience",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "مجلس دوم — ایمان، اطاعت اور صراطِ مستقیم",
+    titleEn: "Majlis 2 — Faith, obedience, and the straight path",
+    topicsUr: ["ایمان", "اطاعت", "قرآن", "صراط مستقیم", "عبادت", "کردار"],
+    topicsEn: ["faith", "obedience", "Qur'an", "straight path", "worship", "character"],
+    summaryUr:
+      "اس مجلس میں علامہ طالب جوہریؒ آیتِ برّ کے اجزا کو مزید کھولتے ہوئے ایمان، عبادت، اطاعت اور عملی کردار کے باہمی تعلق پر گفتگو کرتے ہیں۔ ان کے ہاں ایمان محض ذہنی تصدیق نہیں رہتا؛ وہ نماز، مالی ذمہ داری، وعدے کی پابندی اور صبر میں اپنا اثر دکھاتا ہے۔ پھر صراطِ مستقیم اور اطاعتِ الٰہی کی بحث کے ذریعے وہ یہ واضح کرتے ہیں کہ خدا کی قربت کسی جغرافیائی سمت سے نہیں بلکہ فرمانبرداری اور اخلاقی ذمہ داری سے پیدا ہوتی ہے۔",
+    summaryEn:
+      "Johari expands the components of the verse of birr by connecting faith, worship, obedience, and practical character. Faith is not merely mental assent; it becomes visible in prayer, financial responsibility, keeping promises, and patience. Through the straight path and obedience to God, he argues that nearness to God is not geographical but moral and obedient.",
+    materialUr: [
+      "علامہ ایمان کو الگ خانہ اور عمل کو الگ خانہ نہیں بناتے۔ آیتِ برّ میں ایمان کے فوراً ساتھ مالی ایثار، نماز، زکوٰۃ، عہد اور صبر کا ذکر اس بات کی دلیل بنتا ہے کہ سچا ایمان کردار میں ظاہر ہوتا ہے۔",
+      "اطاعت کی بحث میں وہ انسان کی اپنی خواہش اور حکمِ الٰہی کے درمیان فرق کو نمایاں کرتے ہیں۔ دینداری کی اصل آزمائش وہاں ہوتی ہے جہاں انسان کی پسند اور خدا کی ہدایت ایک ہی چیز نہ ہوں۔",
+      "صراطِ مستقیم کو وہ ایک ایسے راستے کے طور پر بیان کرتے ہیں جو انسان کو خدا کی طرف لے جاتا ہے؛ اس راہ کی علامت محض زبان سے نسبت نہیں بلکہ مسلسل فرمانبرداری، حق شناسی اور اخلاقی ضبط ہے۔",
+      "منبر پر یہ مجلس ایمان سے عمل، عمل سے اطاعت، اور اطاعت سے صراطِ مستقیم تک ایک واضح علمی سفر دیتی ہے۔ اختتام میں سامع سے یہ پوچھا جا سکتا ہے کہ میرے ایمان کا کون سا حصہ میرے وعدے، میری عبادت اور میرے معاملات میں نظر آتا ہے؟",
+    ],
+    materialEn: [
+      "Johari refuses to place faith and action in separate compartments. In Qur'an 2:177, belief is immediately joined to generosity, prayer, zakat, covenant-keeping, and patience, making conduct the visible expression of genuine faith.",
+      "His discussion of obedience highlights the tension between personal preference and divine command. Religious commitment is tested precisely where desire and guidance do not automatically coincide.",
+      "The straight path is presented as a path toward God whose signs are not verbal affiliation alone but sustained obedience, recognition of truth, and moral discipline.",
+      "For a sermon, the majlis offers a clear movement from faith to action, from action to obedience, and from obedience to the straight path, ending with self-examination of promises, worship, and dealings.",
+    ],
+    takeawaysUr: [
+      "ایمان کی سچائی کو عملی کردار میں تلاش کریں۔",
+      "اطاعت کی آزمائش وہاں ہوتی ہے جہاں خواہش اور حکم ایک نہ ہوں۔",
+      "صراطِ مستقیم کو مسلسل فرمانبرداری اور اخلاقی ضبط سے جوڑیں۔",
+      "عبادت اور معاملات کو ایک ہی دینی کردار کے اجزا سمجھیں۔",
+    ],
+    takeawaysEn: [
+      "Look for the truth of faith in practical character.",
+      "Obedience is tested when preference and command diverge.",
+      "Connect the straight path with sustained obedience and moral discipline.",
+      "Treat worship and dealings as parts of one religious character.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «اساس آدمیت اور قرآن» — مجلس دوم، کتابی صفحات 26 تا 38",
+    sourceLabelEn:
+      "Original book Asas-e-Adamiyat aur Qur'an — Majlis 2, printed pp. 26–38",
+    sourceUrl: SOURCE_URL,
+  },
 ];
