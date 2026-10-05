@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "ayahCount": 6236,
+  "chunkSize": 256,
+  "chunkCount": 25,
+  "ur": {
+    "translatorUr": "علامہ شیخ محسن علی نجفی",
+    "translatorEn": "Shaykh Mohsin Ali Najafi"
+  },
+  "en": {
+    "translatorUr": "علی قلی قرائی",
+    "translatorEn": "Ali Quli Qara'i"
+  },
+  "note": "Generated from the user-supplied DOCX sources. Source wording preserved; deterministic DOCX control/mojibake characters in English transliterations repaired."
+}

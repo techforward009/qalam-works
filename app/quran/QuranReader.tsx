@@ -7,6 +7,8 @@ import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
 import EditionTopBar from "./reader/EditionTopBar";
+import QuranTranslationPage from "./QuranTranslationPage";
+import { translationTextForAyahs } from "./reader/translationCorpus";
 import { surahBanner } from "./indopak-digital-khatt/surahBanner";
 import {
   easternDigits,
@@ -63,6 +65,8 @@ type SidebarCopy = {
   keysSura: string;
   nextPage: string;
   previousPage: string;
+  quranTab: string;
+  translationTab: string;
 };
 
 const SIDEBAR_COPY: Record<
@@ -89,6 +93,8 @@ const SIDEBAR_COPY: Record<
     keysSura: "Ctrl + ← → Surah",
     nextPage: "Next Page →",
     previousPage: "← Previous Page",
+    quranTab: "Quran",
+    translationTab: "Translation",
   },
 
   ur: {
@@ -111,6 +117,8 @@ const SIDEBAR_COPY: Record<
     keysSura: "Ctrl + ← → سورت",
     nextPage: "اگلا صفحہ →",
     previousPage: "← پچھلا صفحہ",
+    quranTab: "قرآن",
+    translationTab: "ترجمہ",
   },
 };
 
@@ -165,15 +173,23 @@ export default function QuranReader({
     useState(false);
 
   const [scale, setScale] = useState(1);
+  const [readerView, setReaderView] = useState<"quran" | "translation">("quran");
 
   useLayoutEffect(() => {
     const stored = Number(window.localStorage.getItem("qalam-quran-display-scale"));
     if (stored === 0.85 || stored === 1 || stored === 1.12) setScale(stored);
+    const storedView = window.localStorage.getItem("qalam-quran-reader-view");
+    if (storedView === "quran" || storedView === "translation") setReaderView(storedView);
   }, []);
 
   const chooseScale = (value: number) => {
     setScale(value);
     window.localStorage.setItem("qalam-quran-display-scale", String(value));
+  };
+
+  const chooseReaderView = (value: "quran" | "translation") => {
+    setReaderView(value);
+    window.localStorage.setItem("qalam-quran-reader-view", value);
   };
 
   const [copied, setCopied] =
@@ -440,11 +456,11 @@ export default function QuranReader({
 
   const copyPage = async () => {
     try {
-      await navigator.clipboard.writeText(
-        copyPageText(
-          page.page,
-        ),
-      );
+      const text =
+        readerView === "translation"
+          ? await translationTextForAyahs(ayahs, language === "ur" ? "ur" : "en")
+          : copyPageText(page.page);
+      await navigator.clipboard.writeText(text);
 
       setCopied(true);
 
@@ -912,6 +928,36 @@ export default function QuranReader({
              ───────────────────────────── */}
 
           <section className="quran-reader-main min-w-0">
+            <div
+              className="mb-2 flex items-center justify-center border-b border-[#c7cec2]"
+              dir={interfaceDir}
+              lang={interfaceLang}
+              role="tablist"
+              aria-label={language === "ur" ? "قرآن اور ترجمہ" : "Quran and translation"}
+            >
+              {([
+                ["quran", copy.quranTab],
+                ["translation", copy.translationTab],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="tab"
+                  aria-selected={readerView === value}
+                  onClick={() => chooseReaderView(value)}
+                  className={
+                    "min-w-28 border-b-2 px-5 py-2 text-sm font-semibold transition-colors " +
+                    (readerView === value
+                      ? "border-[#5f7257] text-[#31412f] dark:border-[#aabea3] dark:text-[#e4ede4]"
+                      : "border-transparent text-[#747b71] hover:text-[#465044] dark:text-[#9eaa9e]") +
+                    (language === "ur" ? " font-naskh" : "")
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <div className="quran-page-shell">
               <QuranPageMeta
                 surah={
@@ -957,58 +1003,67 @@ export default function QuranReader({
                 }}
               />
 
-              <QuranPageSurface
-                surah={
-                  surah
-                }
-                ayah={
-                  ayah
-                }
-                pageNumber={
-                  page.page
-                }
-                ayahs={
-                  ayahs
-                }
-                fontFamily={
-                  QURAN_FONT_STACK
-                }
-                scale={
-                  scale
-                }
-                onPreviousPage={() => {
-                  const previous =
-                    adjacentPage(
-                      page.page,
-                      -1,
-                    );
-
-                  if (previous) {
-                    go({
-                      surah:
-                        previous.surahStart,
-                      ayah:
-                        previous.ayahStart,
-                    });
+              {readerView === "quran" ? (
+                <QuranPageSurface
+                  surah={
+                    surah
                   }
-                }}
-                onNextPage={() => {
-                  const next =
-                    adjacentPage(
-                      page.page,
-                      1,
-                    );
-
-                  if (next) {
-                    go({
-                      surah:
-                        next.surahStart,
-                      ayah:
-                        next.ayahStart,
-                    });
+                  ayah={
+                    ayah
                   }
-                }}
-              />
+                  pageNumber={
+                    page.page
+                  }
+                  ayahs={
+                    ayahs
+                  }
+                  fontFamily={
+                    QURAN_FONT_STACK
+                  }
+                  scale={
+                    scale
+                  }
+                  onPreviousPage={() => {
+                    const previous =
+                      adjacentPage(
+                        page.page,
+                        -1,
+                      );
+  
+                    if (previous) {
+                      go({
+                        surah:
+                          previous.surahStart,
+                        ayah:
+                          previous.ayahStart,
+                      });
+                    }
+                  }}
+                  onNextPage={() => {
+                    const next =
+                      adjacentPage(
+                        page.page,
+                        1,
+                      );
+  
+                    if (next) {
+                      go({
+                        surah:
+                          next.surahStart,
+                        ayah:
+                          next.ayahStart,
+                      });
+                    }
+                  }}
+                />
+              ) : (
+                <QuranTranslationPage
+                  ayahs={ayahs}
+                  selectedSurah={surah}
+                  selectedAyah={ayah}
+                  scale={scale}
+                />
+              )}
             </div>
 
             <div

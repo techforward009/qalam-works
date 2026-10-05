@@ -24,10 +24,60 @@ import {
   surahRunningHead,
 } from "../app/quran/reader/metadata";
 import { QURAN_LAYOUT_PROFILE } from "../app/quran/reader/profile";
+import {
+  QURAN_TRANSLATION_AYAH_COUNT,
+  QURAN_TRANSLATION_CHUNK_COUNT,
+  QURAN_TRANSLATION_CHUNK_SIZE,
+  translationChunkIndex,
+  translationGlobalIndex,
+} from "../app/quran/reader/translationCorpus";
 
 const provider = ahmedgrafQuranReference;
 
 describe("Quran reader", () => {
+  test("ships the complete bilingual translation corpus behind a lazy translation tab", () => {
+    expect(QURAN_TRANSLATION_AYAH_COUNT).toBe(6236);
+    expect(QURAN_TRANSLATION_CHUNK_SIZE).toBe(256);
+    expect(QURAN_TRANSLATION_CHUNK_COUNT).toBe(25);
+    expect(translationGlobalIndex(1, 1)).toBe(0);
+    expect(translationGlobalIndex(1, 7)).toBe(6);
+    expect(translationGlobalIndex(2, 1)).toBe(7);
+    expect(translationGlobalIndex(114, 6)).toBe(6235);
+    expect(translationChunkIndex(1, 1)).toBe(0);
+    expect(translationChunkIndex(114, 6)).toBe(24);
+
+    const dir = "public/quran/translations";
+    const manifest = JSON.parse(readFileSync(dir + "/manifest.json", "utf8"));
+    expect(manifest.ayahCount).toBe(6236);
+    expect(manifest.chunkCount).toBe(25);
+    expect(manifest.ur.translatorUr).toContain("محسن علی نجفی");
+    expect(manifest.en.translatorEn).toBe("Ali Quli Qara'i");
+
+    let count = 0;
+    for (let index = 0; index < manifest.chunkCount; index += 1) {
+      const name = String(index).padStart(2, "0") + ".json";
+      const rows = JSON.parse(readFileSync(dir + "/" + name, "utf8"));
+      for (const pair of rows) {
+        expect(pair).toHaveLength(2);
+        expect(String(pair[0]).trim().length).toBeGreaterThan(0);
+        expect(String(pair[1]).trim().length).toBeGreaterThan(0);
+      }
+      count += rows.length;
+    }
+    expect(count).toBe(6236);
+
+    const first = JSON.parse(readFileSync(dir + "/00.json", "utf8"));
+    expect(first[0][0]).toBe("بنام خدائے رحمن و رحیم۔");
+    expect(first[0][1]).toBe(
+      "In the Name of Allah, the All-beneficent, the All-merciful.",
+    );
+
+    const reader = readFileSync("app/quran/QuranReader.tsx", "utf8");
+    expect(reader).toContain("qalam-quran-reader-view");
+    expect(reader).toContain("QuranTranslationPage");
+    expect(reader).toContain('["translation", copy.translationTab]');
+  });
+
   test("uses the existing ahmedgraf corpus without a second copy", () => {
     expect(provider.getMetadata().sourceSha256).toBe(QURAN_SIMPLE_SHA256);
     expect(provider.listAyahs()).toHaveLength(6236);
