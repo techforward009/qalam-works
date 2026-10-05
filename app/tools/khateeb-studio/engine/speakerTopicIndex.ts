@@ -6,6 +6,7 @@ import {
   type SpeakerEvidence,
 } from "./speakerEvidence";
 import { TOPIC_PREPS, type TopicPrep } from "./topicPrep";
+import { SHIA_CALENDAR_1448_EVENTS } from "./shiaCalendar";
 
 export type SpeakerTopicIndexRow = {
   topic: TopicPrep;
@@ -28,6 +29,13 @@ export function evidenceForTopic(topicId: string): readonly SpeakerEvidence[] {
   return SPEAKER_EVIDENCE.filter(
     (record) =>
       record.status === "ready" && record.topicIds.includes(topicId),
+  ).map(normalizeSpeakerEvidenceUrdu);
+}
+
+export function evidenceForOccasion(occasionId: string): readonly SpeakerEvidence[] {
+  return SPEAKER_EVIDENCE.filter(
+    (record) =>
+      record.status === "ready" && record.occasionIds?.includes(occasionId),
   ).map(normalizeSpeakerEvidenceUrdu);
 }
 
@@ -61,22 +69,29 @@ export function speakersForTopic(topicId: string): readonly TopicSpeakerIndexRow
 export function validateSpeakerTopicIndex(): {
   unknownSpeakerIds: string[];
   unknownTopicIds: string[];
+  unknownOccasionIds: string[];
 } {
   const speakerIds = new Set(KHATEEB_CORPUS.map((item) => item.id));
   const topicIds = new Set(TOPIC_PREPS.map((item) => item.id));
+  const occasionIds = new Set(SHIA_CALENDAR_1448_EVENTS.map((item) => item.id));
 
   const unknownSpeakerIds = new Set<string>();
   const unknownTopicIds = new Set<string>();
+  const unknownOccasionIds = new Set<string>();
 
   for (const record of SPEAKER_EVIDENCE) {
     if (!speakerIds.has(record.speakerId)) unknownSpeakerIds.add(record.speakerId);
     for (const topicId of record.topicIds) {
       if (!topicIds.has(topicId)) unknownTopicIds.add(topicId);
     }
+    for (const occasionId of record.occasionIds ?? []) {
+      if (!occasionIds.has(occasionId)) unknownOccasionIds.add(occasionId);
+    }
   }
 
   return {
     unknownSpeakerIds: [...unknownSpeakerIds],
     unknownTopicIds: [...unknownTopicIds],
+    unknownOccasionIds: [...unknownOccasionIds],
   };
 }

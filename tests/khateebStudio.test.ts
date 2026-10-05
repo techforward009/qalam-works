@@ -11,6 +11,7 @@ import {
 } from "../app/tools/khateeb-studio/engine/speakerEvidence";
 import {
   evidenceForSpeakerAndTopic,
+  evidenceForOccasion,
   evidenceForTopic,
   speakersForTopic,
   topicsForSpeaker,
@@ -23,6 +24,7 @@ import { TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE } from "../app/tools/khateeb-studi
 import { TALIB_JOHARI_INSANIYAT_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariInsaniyatEvidence";
 import { TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariAsasEvidence";
 import { TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariAalmiMuashraEvidence";
+import { TALIB_JOHARI_OCCASION_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariOccasionEvidence";
 import { corpusEntryForScholar, SCHOLAR_CORPUS } from "../app/tools/khateeb-studio/engine/scholarCorpus";
 import {
   SOUTH_ASIA_CORPUS_QUEUE,
@@ -243,6 +245,19 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[8]?.sourceLabelUr).toContain("صفحات 155 تا 169");
   });
 
+  test("occasion evidence is linked to verified calendar ids", () => {
+    expect(TALIB_JOHARI_OCCASION_EVIDENCE).toHaveLength(3);
+    expect(evidenceForOccasion("muh-10-ashura").map((item) => item.id)).toContain(
+      "talib-insaniyat-ashura-01",
+    );
+    expect(evidenceForOccasion("muh-11-zaynab").map((item) => item.id)).toContain(
+      "talib-insaniyat-sham-ghareeban-01",
+    );
+    expect(evidenceForOccasion("saf-20-arbaeen").map((item) => item.id)).toContain(
+      "talib-insaniyat-arbaeen-01",
+    );
+  });
+
   test("known catalog sources are source-backed even before content ingestion", () => {
     expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });
@@ -423,6 +438,7 @@ describe("Khateeb Studio speaker × topic index", () => {
     expect(validateSpeakerTopicIndex()).toEqual({
       unknownSpeakerIds: [],
       unknownTopicIds: [],
+      unknownOccasionIds: [],
     });
   });
 
