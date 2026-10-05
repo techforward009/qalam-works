@@ -318,4 +318,49 @@ export const TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Asas-e-Adamiyat aur Qur'an — Majlis 7, surviving printed pp. 118–130; opening pages are missing from the scan",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-asas-08-quran-faith-guidance",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "آٹھویں مجلس — قرآن، ایمان اور ہدایت",
+    titleEn: "Majlis 8 — Qur'an, faith, and guidance",
+    topicsUr: ["قرآن", "ایمان", "ہدایت", "رحمت", "انسان", "اطاعت"],
+    topicsEn: ["Qur'an", "faith", "guidance", "mercy", "humanity", "obedience"],
+    summaryUr:
+      "علامہ طالب جوہریؒ آٹھویں مجلس میں ایمان اور قرآن کے تعلق کو مرکز بناتے ہیں۔ قرآن ان کے بیان میں صرف تلاوت کی کتاب نہیں بلکہ ہدایت، رحمت اور انسانی فیصلہ سازی کا معیار ہے۔ آدمؑ، انسانی اختیار اور وحی کے تذکرے کے ذریعے وہ دکھاتے ہیں کہ ایمان اسی وقت زندہ رہتا ہے جب انسان اپنے فیصلے کو الٰہی ہدایت کے سامنے رکھے۔",
+    summaryEn:
+      "Talib Johari centers the relation between faith and the Qur'an. The Qur'an is not merely a book of recitation but a criterion of guidance, mercy, and human decision-making. Through discussion of Adam, human choice, and revelation, he argues that faith remains alive when decisions are placed before divine guidance.",
+    materialUr: [
+      "علامہ ایمان کو قرآن سے جدا نہیں کرتے۔ ایمان کا دعویٰ تب معنی رکھتا ہے جب انسان قرآن کو اپنی فکر، ترجیح اور عمل کے لیے میزان تسلیم کرے۔",
+      "قرآن کو ہدایت اور رحمت دونوں کہا جاتا ہے؛ یعنی وہ صرف حکم نہیں دیتا بلکہ انسان کو بھٹکنے سے بچانے اور زندگی کو درست رخ دینے کی رہنمائی بھی کرتا ہے۔",
+      "حضرت آدمؑ کے تذکرے میں انسانی اختیار اور غلطی کا امکان سامنے آتا ہے، مگر ساتھ ہی الٰہی ہدایت انسان کو واپسی کا راستہ بھی دیتی ہے۔",
+      "منبر پر یہ مجلس ایمان، قرآن، اختیار اور ہدایت کی مسلسل کڑی کے طور پر بہت مؤثر ہے۔",
+    ],
+    materialEn: [
+      "Johari does not separate faith from the Qur'an. The profession of faith becomes meaningful when the Qur'an is accepted as a measure for thought, priority, and action.",
+      "The Qur'an is described as both guidance and mercy: it does not only command but protects from misdirection and gives life a right orientation.",
+      "The account of Adam brings human choice and the possibility of error into view while also showing that divine guidance opens a path of return.",
+      "A sermon can present faith, Qur'an, choice, and guidance as one continuous chain.",
+    ],
+    takeawaysUr: [
+      "ایمان کو قرآن کی عملی رہنمائی سے جوڑیں۔",
+      "قرآن کو صرف تلاوت نہیں بلکہ میزانِ فیصلہ بنائیں۔",
+      "ہدایت اور رحمت کے باہمی تعلق کو واضح کریں۔",
+      "انسانی اختیار کے ساتھ واپسی اور اصلاح کا امکان بھی دکھائیں۔",
+    ],
+    takeawaysEn: [
+      "Connect faith with practical Qur'anic guidance.",
+      "Present the Qur'an as a criterion for decisions, not recitation alone.",
+      "Explain the relation of guidance and mercy.",
+      "Show both human choice and the possibility of return and reform.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «اساس آدمیت اور قرآن» — آٹھویں مجلس، کتابی صفحات 131 تا 149",
+    sourceLabelEn:
+      "Original book Asas-e-Adamiyat aur Qur'an — Majlis 8, printed pp. 131–149",
+    sourceUrl: SOURCE_URL,
+  },
 ];

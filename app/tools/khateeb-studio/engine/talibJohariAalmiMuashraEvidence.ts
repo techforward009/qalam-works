@@ -318,4 +318,49 @@ export const TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 7, printed pp. 133–139",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-aalmi-08-revelation-knowledge-ethics",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "آٹھویں مجلس — وحی، علم اور اخلاقی معاشرہ",
+    titleEn: "Majlis 8 — Revelation, knowledge, and the ethical society",
+    topicsUr: ["وحی", "علم", "اخلاق", "معاشرہ", "قرآن", "انسان"],
+    topicsEn: ["revelation", "knowledge", "ethics", "society", "Qur'an", "humanity"],
+    summaryUr:
+      "علامہ طالب جوہریؒ آٹھویں مجلس میں انسانی علم، وحی اور اخلاق کے تعلق کو معاشرتی زندگی کے تناظر میں بیان کرتے ہیں۔ انسان کی علمی صلاحیت عظیم ہے، مگر وحی اسے مقصد اور اخلاقی سمت دیتی ہے۔ نبوی تعلیم، انسانی تجربہ اور اخلاقی ذمہ داری مل کر ایسا معاشرہ بناتے ہیں جس میں علم محض طاقت نہیں بلکہ خیر کی خدمت کا ذریعہ بنے۔",
+    summaryEn:
+      "Talib Johari discusses the relationship between human knowledge, revelation, and ethics in social life. Human intellectual capacity is immense, but revelation gives it purpose and moral direction. Prophetic teaching, human experience, and ethical responsibility together make knowledge serve good rather than remain mere power.",
+    materialUr: [
+      "علامہ انسانی علم کی عظمت تسلیم کرتے ہوئے یہ سوال اٹھاتے ہیں کہ علم کو صحیح سمت کون دے گا۔ محض جان لینا انسان کو اخلاقی نہیں بناتا۔",
+      "وحی انسانی علم کی دشمن نہیں بلکہ اس کے اخلاقی استعمال کی رہنما بنتی ہے۔ وہ انسان کو مقصد، حدود اور ذمہ داری کا شعور دیتی ہے۔",
+      "نبوی تعلیم معاشرتی اخلاق کو عملی صورت دیتی ہے: علم، تعلقات، انصاف اور انسانی احترام کو ایک ہی دینی نظام میں جوڑتی ہے۔",
+      "منبر پر اس مجلس کو علم، وحی، اخلاق اور معاشرتی ذمہ داری کے چار مرحلوں میں پیش کیا جا سکتا ہے۔",
+    ],
+    materialEn: [
+      "Johari acknowledges the greatness of human knowledge while asking what gives knowledge its right direction. Knowing more does not automatically make a person moral.",
+      "Revelation is not the enemy of human knowledge; it guides its ethical use by providing purpose, limits, and responsibility.",
+      "Prophetic teaching gives social ethics practical form by joining knowledge, relationships, justice, and human dignity within one religious order.",
+      "A sermon can move through knowledge, revelation, ethics, and social responsibility.",
+    ],
+    takeawaysUr: [
+      "علم اور اخلاق کو الگ نہ کریں۔",
+      "وحی کو علم کی دشمن نہیں بلکہ اخلاقی رہنما کے طور پر پیش کریں۔",
+      "نبوی تعلیم کو معاشرتی اخلاق کے عملی نمونے سے جوڑیں۔",
+      "علم کو خیر کی خدمت میں لانے کی ذمہ داری واضح کریں۔",
+    ],
+    takeawaysEn: [
+      "Do not separate knowledge from ethics.",
+      "Present revelation as moral guidance for knowledge rather than its enemy.",
+      "Connect prophetic teaching with practical social ethics.",
+      "Explain the responsibility to place knowledge in service of good.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — آٹھویں مجلس، کتابی صفحات 140 تا 154",
+    sourceLabelEn:
+      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 8, printed pp. 140–154",
+    sourceUrl: SOURCE_URL,
+  },
 ];

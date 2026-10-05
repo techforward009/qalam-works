@@ -318,4 +318,49 @@ export const TALIB_JOHARI_INSANIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Insaniyat ka Alahi Manshoor — Majlis 7, printed pp. 94–108",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-insaniyat-08-world-hereafter-purpose",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "آٹھویں مجلس — دنیا، آخرت اور مقصدِ زندگی",
+    titleEn: "Majlis 8 — This world, the hereafter, and the purpose of life",
+    topicsUr: ["دنیا", "آخرت", "موت", "زندگی", "قرآن", "مقصد"],
+    topicsEn: ["world", "hereafter", "death", "life", "Qur'an", "purpose"],
+    summaryUr:
+      "علامہ طالب جوہریؒ آٹھویں مجلس میں دنیا اور آخرت کے تعلق کو انسانی مقصد کے سوال سے جوڑتے ہیں۔ دنیا کو وہ بے معنی یا قابلِ نفرت جگہ نہیں بناتے بلکہ امتحان، عمل اور تیاری کی جگہ کے طور پر دیکھتے ہیں۔ موت زندگی کی نفی نہیں بلکہ انسان کو اپنے اعمال، ترجیحات اور انجام کی طرف متوجہ کرنے والی حقیقت بن جاتی ہے۔",
+    summaryEn:
+      "Talib Johari links the relation between this world and the hereafter with the question of human purpose. The world is not dismissed as meaningless; it is treated as a place of testing, action, and preparation. Death is not merely negation of life but a reality that redirects attention to conduct, priorities, and final consequence.",
+    materialUr: [
+      "علامہ دنیا کو آخرت کے مقابل ایک مکمل منفی حقیقت نہیں بناتے۔ اصل سوال دنیا میں رہنے کا طریقہ ہے: کیا انسان اسے مقصد سمجھ لیتا ہے یا اسے ذمہ دار عمل کا میدان بناتا ہے۔",
+      "موت کی یاد مجلس میں خوف کی تنہا فضا نہیں بناتی بلکہ ترجیحات درست کرنے کا ذریعہ بنتی ہے۔ جس انسان کو انجام یاد ہو، اس کا حال بھی مختلف ہونا چاہیے۔",
+      "دنیاوی علم اور انسانی ترقی کے باوجود آخرت کا سوال باقی رہتا ہے؛ مادی کامیابی انسان کے وجودی مقصد کا مکمل جواب نہیں دیتی۔",
+      "منبر پر اس مجلس کو دنیا، موت، جواب دہی اور آخرت کی تیاری کے چار مرحلوں میں پیش کیا جا سکتا ہے۔",
+    ],
+    materialEn: [
+      "Johari does not make the world absolutely negative in contrast to the hereafter. The real question is how a person lives in it: as an ultimate end or as a field of responsible action.",
+      "Remembering death is not used merely to create fear; it becomes a means of correcting priorities. Awareness of the end should reshape the present.",
+      "The question of the hereafter remains even amid worldly knowledge and progress; material success does not fully answer the purpose of existence.",
+      "A sermon can move through this world, death, accountability, and preparation for the hereafter.",
+    ],
+    takeawaysUr: [
+      "دنیا کو مقصد نہیں بلکہ ذمہ دار عمل کا میدان سمجھائیں۔",
+      "موت کی یاد کو ترجیحات کی اصلاح سے جوڑیں۔",
+      "مادی کامیابی اور وجودی مقصد میں فرق واضح کریں۔",
+      "آخرت کو موجودہ کردار کی تشکیل سے مربوط کریں۔",
+    ],
+    takeawaysEn: [
+      "Present the world as a field of responsible action rather than the final purpose.",
+      "Connect remembrance of death with correcting priorities.",
+      "Distinguish material success from existential purpose.",
+      "Link the hereafter with formation of present character.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «انسانیت کا الوہی منشور» — آٹھویں مجلس، کتابی صفحات 109 تا 123",
+    sourceLabelEn:
+      "Original book Insaniyat ka Alahi Manshoor — Majlis 8, printed pp. 109–123",
+    sourceUrl: SOURCE_URL,
+  },
 ];

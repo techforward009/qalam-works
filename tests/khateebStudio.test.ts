@@ -217,6 +217,19 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[6]?.sourceLabelUr).toContain("صفحات 133 تا 139");
   });
 
+  test("indexes eighth-majlis evidence from all three source books", () => {
+    const corpus = corpusEntryForScholar("talib-johari")!;
+    const ids = corpus.evidence.map((item) => item.id);
+    expect(ids).toEqual(expect.arrayContaining([
+      "talib-insaniyat-08-world-hereafter-purpose",
+      "talib-asas-08-quran-faith-guidance",
+      "talib-aalmi-08-revelation-knowledge-ethics",
+    ]));
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[7]?.sourceLabelUr).toContain("صفحات 109 تا 123");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[7]?.sourceLabelUr).toContain("صفحات 131 تا 149");
+    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[7]?.sourceLabelUr).toContain("صفحات 140 تا 154");
+  });
+
   test("known catalog sources are source-backed even before content ingestion", () => {
     expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });
