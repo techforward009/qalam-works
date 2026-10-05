@@ -457,7 +457,13 @@ describe("Khateeb Studio real speaker material", () => {
     const rows = SOUTH_ASIA_CORPUS_QUEUE.filter(
       (item) => item.speakerId === "rashid-turabi",
     );
-    expect(rows.length).toBeGreaterThanOrEqual(4);
+    expect(rows.length).toBeGreaterThanOrEqual(5);
+
+    const collected = rows.find(
+      (item) => item.id === "rashid-turabi-majalis-1407",
+    );
+    expect(collected?.yearLabel).toBe("1407 AH / 1987");
+    expect(collected?.pages).toBe(163);
 
     const vol1 = rows.find((item) => item.id === "rashid-turabi-tawhid-shirk");
     expect(vol1?.yearLabel).toBe("1412 AH");
