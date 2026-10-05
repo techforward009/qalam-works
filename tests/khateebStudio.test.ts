@@ -463,6 +463,28 @@ describe("Khateeb Studio real speaker material", () => {
     ).toContain("jild03-dua-aur-itmam-nimat");
   });
 
+  test("keeps Zeeshan Jawadi bibliographic metadata source-safe", () => {
+    const rows = SOUTH_ASIA_CORPUS_QUEUE.filter(
+      (item) => item.speakerId === "zeeshan-jawadi",
+    );
+    expect(rows).toHaveLength(3);
+    expect(
+      rows.find((item) => item.id === "zeeshan-jawadi-khulq-azeem")?.pages,
+    ).toBe(262);
+    expect(
+      rows.find((item) => item.id === "zeeshan-jawadi-irfan-risalat")
+        ?.yearLabel,
+    ).toBe("1409 AH");
+    expect(
+      rows.find((item) => item.id === "zeeshan-jawadi-irfan-risalat")
+        ?.pages,
+    ).toBe(186);
+    expect(
+      rows.find((item) => item.id === "zeeshan-jawadi-mahafil-majalis-1")
+        ?.pages,
+    ).toBe(266);
+  });
+
   test("keeps Rashid Turabi source inventory precise without promoting catalog records", () => {
     const rows = SOUTH_ASIA_CORPUS_QUEUE.filter(
       (item) => item.speakerId === "rashid-turabi",
