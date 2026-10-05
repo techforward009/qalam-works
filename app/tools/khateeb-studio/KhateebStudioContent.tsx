@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import DeathSpeakingGuide from "./DeathSpeakingGuide";
-import { buildDeathSpeakingGuideText } from "./engine/deathSpeakingGuide";
+import TopicSpeakingGuide from "./TopicSpeakingGuide";
+import { buildTopicSpeakingGuideText } from "./engine/topicSpeakingGuide";
 import { useSpeakingGuideMode } from "./useSpeakingGuideMode";
 import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Printer, Search, Sparkles } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
@@ -368,8 +368,8 @@ export default function KhateebStudioContent({
       ? checkSeriesOriginality(freshSeries, researchSeries)
       : null;
   const topicSpeakerEvidence = topic ? evidenceForTopic(topic.id) : [];
-  const hasDeathGuide = topic?.id === "death-akhirah" && seriesLength === 1;
-  const deathGuideText = hasDeathGuide ? buildDeathSpeakingGuideText(ur ? "ur" : "en", duration, guideMode, topicSpeakerEvidence) : "";
+  const hasTopicGuide = !!topic && seriesLength === 1;
+  const topicGuideText = hasTopicGuide ? buildTopicSpeakingGuideText(topic, ur ? "ur" : "en", duration, guideMode, topicSpeakerEvidence) : "";
   const topicPreparationText = topic
     ? buildPreparationText(
         topic,
@@ -454,10 +454,19 @@ export default function KhateebStudioContent({
     const text =
       seriesLength > 1 && topicSeriesText
         ? topicSeriesText
-        : deathGuideText || topicDossierText || topicPreparationText;
+        : topicGuideText || topicDossierText || topicPreparationText;
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
+    } catch {
+      // Clipboard may be unavailable.
+    }
+  };
+
+  const copyTopicDossier = async () => {
+    if (!topicDossierText) return;
+    try {
+      await navigator.clipboard.writeText(topicDossierText);
     } catch {
       // Clipboard may be unavailable.
     }
@@ -560,7 +569,7 @@ export default function KhateebStudioContent({
         }
 
         .khateeb-muhammadi-quranic {
-          font-family: "Muhammadi Quranic", "Al Qalam Quran Majeed", "Noto Naskh Arabic", serif !important;
+          font-family: "Muhammadi Quranic", "Al Qalam Quran Majeed", var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif !important;
           font-size: 1.08em;
           line-height: 1.85;
           unicode-bidi: isolate;
@@ -1458,14 +1467,14 @@ export default function KhateebStudioContent({
                           : seriesLayer === "fresh"
                             ? "Copy fresh composition"
                             : "Copy research map")
-                      : topicDossier
-                      ? (ur ? "تحقیقی دستاویز نقل کریں" : "Copy research dossier")
-                      : hasDeathGuide
+                      : hasTopicGuide
                         ? (ur ? "بیان کی رہنمائی نقل کریں" : "Copy speaking guide")
                         : (ur ? "خاکہ نقل کریں" : "Copy outline")}
                   </button>
                 </div>
               </div>
+
+              {hasTopicGuide ? <TopicSpeakingGuide topic={topic} duration={duration} mode={guideMode} onModeChange={setGuideMode} /> : null}
 
               {topicDossier && seriesLength > 1 && topicSeries ? (
                 <div className="mt-5 space-y-5">
@@ -1749,6 +1758,10 @@ export default function KhateebStudioContent({
                 </div>
               ) : topicDossier ? (
                 <div className="mt-5 space-y-5">
+                  <div className="khateeb-no-print flex flex-wrap items-center justify-between gap-3">
+                    <h4 className="font-bold">{ur ? "تحقیقی دستاویز اور اصل علمی مواد" : "Research dossier and source material"}</h4>
+                    <button type="button" onClick={copyTopicDossier} className="rounded-lg border border-[#B8935A]/40 px-4 py-2 text-sm">{ur ? "تحقیقی دستاویز نقل کریں" : "Copy research dossier"}</button>
+                  </div>
                   <section className="rounded-xl border border-[#B8935A]/30 bg-white p-4 dark:border-[#6f5b35] dark:bg-[#162a1e]">
                     <div className="text-xs font-bold text-[#8a6838] dark:text-[#d7bc8a]">
                       {ur ? "مرکزی مقدمہ" : "Central thesis"}
@@ -2285,7 +2298,7 @@ export default function KhateebStudioContent({
                 </div>
               ) : (
               <>
-              {hasDeathGuide ? <DeathSpeakingGuide duration={duration} mode={guideMode} onModeChange={setGuideMode} /> : (
+              {!hasTopicGuide ? (
               <div className="mt-4 grid gap-3 md:grid-cols-3">
                 <div className="rounded-lg bg-white p-3 dark:bg-[#162a1e]">
                   <span className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">{ur ? "قرآنی بنیاد" : "Qur'anic anchors"}</span>
@@ -2318,7 +2331,7 @@ export default function KhateebStudioContent({
                 </div>
               </div>
 
-              )}
+              ) : null}
               <div className="mt-4 rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
@@ -2366,7 +2379,7 @@ export default function KhateebStudioContent({
                           <h5 className="mt-1 font-semibold text-[#1A3A2A] dark:text-[#e7eee9]">
                             {ur ? record.titleUr : record.titleEn}
                           </h5>
-                          {hasDeathGuide ? <div className="mt-2 text-xs font-semibold text-[#8a6838]">{ur ? "قلم ورکس کا تدوینی خلاصہ — اصل کتاب کا لفظی اقتباس نہیں" : "Qalam Works editorial summary — not a verbatim book quotation"}</div> : null}
+                          {hasTopicGuide ? <div className="mt-2 text-xs font-semibold text-[#8a6838]">{ur ? "قلم ورکس کا تدوینی خلاصہ — اصل کتاب کا لفظی اقتباس نہیں" : "Qalam Works editorial summary — not a verbatim book quotation"}</div> : null}
                           <p className="mt-1 text-sm text-[#4f5f53] dark:text-[#b8c8bb]">
                             {ur ? record.summaryUr : record.summaryEn}
                           </p>
@@ -2398,7 +2411,7 @@ export default function KhateebStudioContent({
                 )}
               </div>
 
-              {!hasDeathGuide ? <details className="mt-4 rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]">
+              {!hasTopicGuide ? <details className="mt-4 rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]">
                 <summary className="cursor-pointer text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
                   {ur ? `${duration} منٹ کا خاکہ دیکھیں` : `View ${duration}-minute outline`}
                 </summary>

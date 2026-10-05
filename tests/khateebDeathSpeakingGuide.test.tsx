@@ -83,7 +83,7 @@ describe("Death / Hereafter speaking guide", () => {
   test("integrates selected-mode copying, removes repeated selected-topic headers and labels outline honestly", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio.match(/آپ کا منتخب موضوع/g)).toHaveLength(1);
-    expect(studio).toContain("deathGuideText || topicDossierText || topicPreparationText");
+    expect(studio).toContain("topicGuideText || topicDossierText || topicPreparationText");
     expect(studio).not.toContain("منٹ کی مکمل تیاری دیکھیں");
   });
 });
