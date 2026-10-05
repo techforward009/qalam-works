@@ -1,6 +1,8 @@
 import { NAQQAN_ASHRA_EVIDENCE } from "./naqqanEvidence";
 import { TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE } from "./talibJohariEvidence";
 import { TALIB_JOHARI_INSANIYAT_EVIDENCE } from "./talibJohariInsaniyatEvidence";
+import { TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE } from "./talibJohariAsasEvidence";
+import { TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE } from "./talibJohariAalmiMuashraEvidence";
 import { pureKhateebUrdu } from "./urduPurity";
 
 export type SpeakerEvidenceKind = "transcript" | "compiled-majalis";
@@ -47,6 +49,8 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
   ...NAQQAN_ASHRA_EVIDENCE,
   ...TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE,
   ...TALIB_JOHARI_INSANIYAT_EVIDENCE,
+  ...TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE,
+  ...TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE,
   {
     id: "kashani-askari-1402",
     speakerId: "hamed-kashani",

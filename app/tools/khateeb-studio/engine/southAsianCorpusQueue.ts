@@ -28,6 +28,21 @@ export type SouthAsiaCorpusRecord = {
  */
 export const SOUTH_ASIA_CORPUS_QUEUE: readonly SouthAsiaCorpusRecord[] = [
   {
+    id: "talib-johari-insaniyat-manshoor",
+    speakerId: "talib-johari",
+    region: "pk",
+    titleUr: "انسانیت کا الوہی منشور",
+    titleEn: "The Divine Charter of Humanity",
+    language: "ur",
+    kind: "compiled-majalis",
+    publisherOrHost: "پاک محرم ایجوکیشن ٹرسٹ کراچی / محفوظ بک ایجنسی",
+    pages: 177,
+    topicHints: ["انسان", "قرآن", "اخلاق", "ہدایت"],
+    sourceUrl: "https://maablib.org/insaniyat-ka-alohi-manshoor-by-talib-johri/",
+    status: "catalog-verified",
+    nextAction: "full-text-ingest",
+  },
+  {
     id: "talib-johari-mansab-hidayat-quran",
     speakerId: "talib-johari",
     region: "pk",

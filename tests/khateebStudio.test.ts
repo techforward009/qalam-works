@@ -21,6 +21,8 @@ import { buildDossierText, getTopicDossier } from "../app/tools/khateeb-studio/e
 import { NAQQAN_ASHRA_EVIDENCE } from "../app/tools/khateeb-studio/engine/naqqanEvidence";
 import { TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariEvidence";
 import { TALIB_JOHARI_INSANIYAT_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariInsaniyatEvidence";
+import { TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariAsasEvidence";
+import { TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariAalmiMuashraEvidence";
 import { corpusEntryForScholar, SCHOLAR_CORPUS } from "../app/tools/khateeb-studio/engine/scholarCorpus";
 import {
   SOUTH_ASIA_CORPUS_QUEUE,
@@ -93,12 +95,16 @@ describe("Khateeb Studio scholar corpus foundation", () => {
   test("Talib Johari corpus joins catalog sources with indexed evidence", () => {
     const corpus = corpusEntryForScholar("talib-johari")!;
     expect(corpus.status).toBe("indexed");
-    expect(corpus.catalogSourceCount).toBeGreaterThanOrEqual(5);
+    expect(corpus.catalogSourceCount).toBeGreaterThanOrEqual(6);
     expect(corpus.readyRecordCount).toBeGreaterThan(
       TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE.length,
     );
-    expect(corpus.evidence.map((item) => item.id)).toContain(
-      "talib-insaniyat-01-ikhtilaf-hidayat",
+    expect(corpus.evidence.map((item) => item.id)).toEqual(
+      expect.arrayContaining([
+        "talib-insaniyat-01-ikhtilaf-hidayat",
+        "talib-asas-01-birr-humanity",
+        "talib-aalmi-01-ilm-tughyan",
+      ]),
     );
     expect(corpus.sources.some(
       (item) =>
@@ -112,7 +118,7 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     )).toBe(true);
   });
 
-  test("new Insaniyat evidence stays page-grounded and topic-indexed", () => {
+  test("new Talib Johari evidence stays page-grounded and topic-indexed", () => {
     expect(TALIB_JOHARI_INSANIYAT_EVIDENCE).toHaveLength(1);
     const row = TALIB_JOHARI_INSANIYAT_EVIDENCE[0];
     expect(row.sourceLabelUr).toContain("صفحات 13 تا 26");
@@ -121,6 +127,14 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     );
     expect(row.topicIds).toContain("quran-hidayat");
     expect(row.materialUr?.length).toBeGreaterThanOrEqual(4);
+
+    const asas = TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[0];
+    expect(asas.sourceLabelUr).toContain("صفحات 9 تا 25");
+    expect(asas.topicIds).toEqual(expect.arrayContaining(["quran-hidayat", "justice"]));
+
+    const aalmi = TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[0];
+    expect(aalmi.sourceLabelUr).toContain("صفحات 11 تا 31");
+    expect(aalmi.topicIds).toContain("quran-hidayat");
   });
 
   test("known catalog sources are source-backed even before content ingestion", () => {
