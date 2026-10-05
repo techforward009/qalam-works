@@ -363,4 +363,49 @@ export const TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Asas-e-Adamiyat aur Qur'an — Majlis 8, printed pp. 131–149",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-asas-09-guidance-desire-obedience",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "نویں مجلس — ہدایت، خواہش اور اطاعت",
+    titleEn: "Majlis 9 — Guidance, desire, and obedience",
+    topicsUr: ["ہدایت", "خواہش", "اطاعت", "قرآن", "رسول", "انسانی فیصلہ"],
+    topicsEn: ["guidance", "desire", "obedience", "Qur'an", "Prophet", "human judgment"],
+    summaryUr:
+      "علامہ طالب جوہریؒ نویں مجلس میں «ہُدیٰ» اور «ہویٰ» کے فرق کو انسانی فیصلہ سازی کے مرکز میں رکھتے ہیں۔ قرآن اور رسولؐ کی ہدایت کے مقابل ذاتی خواہش، رواج یا وقتی مفاد کو معیار بنانا دینی شعور کو کمزور کرتا ہے۔ اس مجلس میں اطاعت کا مطلب محض حکم سن لینا نہیں بلکہ اپنی خواہش کو حق کے تابع کرنا ہے۔",
+    summaryEn:
+      "Talib Johari places the contrast between huda (guidance) and hawa (desire) at the center of human judgment. Personal preference, custom, or temporary interest cannot replace Qur'anic and prophetic guidance. Obedience therefore means bringing desire under truth rather than merely hearing a command.",
+    materialUr: [
+      "علامہ «ہُدیٰ» اور «ہویٰ» کو دو مختلف سمتوں کے طور پر پیش کرتے ہیں: ایک انسان کو حق کے تابع کرتی ہے، دوسری حق کو انسان کی خواہش کے تابع کرنا چاہتی ہے۔",
+      "قرآن کو محض علامتی یا ذاتی تاثر کی کتاب بنانے کے بجائے عملی ہدایت کی کتاب سمجھنے پر زور دیا جاتا ہے۔",
+      "رسولؐ کی اطاعت اس لیے ضروری ہے کہ وحی زندگی میں ایک قابلِ عمل شکل اختیار کرے۔ ذاتی پسند نبوی رہنمائی کی جگہ نہیں لے سکتی۔",
+      "منبر پر یہ مجلس خواہش، ہدایت، اطاعت اور عملی فیصلہ کے چار مرحلوں میں بہت واضح انداز سے پیش کی جا سکتی ہے۔",
+    ],
+    materialEn: [
+      "Johari presents huda and hawa as two different directions: one places the person under truth, while the other attempts to place truth under personal desire.",
+      "The Qur'an is treated as practical guidance rather than a book reduced to private symbolism or impression.",
+      "Prophetic obedience is necessary because revelation must take an actionable form in life. Personal preference cannot replace prophetic direction.",
+      "A sermon can move through desire, guidance, obedience, and practical decision-making.",
+    ],
+    takeawaysUr: [
+      "ہُدیٰ اور ہویٰ کے فرق کو واضح کریں۔",
+      "قرآن کو عملی رہنمائی کا معیار بنائیں۔",
+      "اطاعتِ رسولؐ کو خواہش پر حق کی ترجیح سے جوڑیں۔",
+      "ذاتی پسند کو دینی میزان نہ بننے دیں۔",
+    ],
+    takeawaysEn: [
+      "Clarify the difference between guidance and desire.",
+      "Treat the Qur'an as a practical criterion.",
+      "Connect prophetic obedience with giving truth priority over desire.",
+      "Do not turn personal preference into the religious measure.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «اساس آدمیت اور قرآن» — نویں مجلس، کتابی صفحات 150 تا 166",
+    sourceLabelEn:
+      "Original book Asas-e-Adamiyat aur Qur'an — Majlis 9, printed pp. 150–166",
+    sourceUrl: SOURCE_URL,
+  },
 ];

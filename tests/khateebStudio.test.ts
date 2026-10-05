@@ -230,6 +230,19 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[7]?.sourceLabelUr).toContain("صفحات 140 تا 154");
   });
 
+  test("indexes ninth-majlis evidence with verified printed-page boundaries", () => {
+    const corpus = corpusEntryForScholar("talib-johari")!;
+    const ids = corpus.evidence.map((item) => item.id);
+    expect(ids).toEqual(expect.arrayContaining([
+      "talib-insaniyat-09-wealth-guidance-hereafter",
+      "talib-asas-09-guidance-desire-obedience",
+      "talib-aalmi-09-balance-justice-order",
+    ]));
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[8]?.sourceLabelUr).toContain("صفحات 124 تا 127");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[8]?.sourceLabelUr).toContain("صفحات 150 تا 166");
+    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[8]?.sourceLabelUr).toContain("صفحات 155 تا 169");
+  });
+
   test("known catalog sources are source-backed even before content ingestion", () => {
     expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });

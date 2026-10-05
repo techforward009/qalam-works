@@ -363,4 +363,49 @@ export const TALIB_JOHARI_INSANIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Insaniyat ka Alahi Manshoor — Majlis 8, printed pp. 109–123",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-insaniyat-09-wealth-guidance-hereafter",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "rizq"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "نویں مجلس — مال، ہدایت اور آخرت",
+    titleEn: "Majlis 9 — Wealth, guidance, and the hereafter",
+    topicsUr: ["مال", "رزق", "ہدایت", "آخرت", "قرآن", "جواب دہی"],
+    topicsEn: ["wealth", "provision", "guidance", "hereafter", "Qur'an", "accountability"],
+    summaryUr:
+      "علامہ طالب جوہریؒ نویں مجلس میں مال اور دنیاوی اختیار کو انسانی نجات کا آخری سہارا ماننے کے تصور پر تنقید کرتے ہیں۔ سورۂ لیل کی آیات «وما يغني عنه ماله إذا تردى» اور «إن علينا للهدى وإن لنا للآخرة والأولى» کے تناظر میں وہ واضح کرتے ہیں کہ مال اپنی جگہ وسیلہ ہے، مگر ہدایت اور انجام کا فیصلہ دولت نہیں کرتی۔",
+    summaryEn:
+      "Talib Johari challenges the idea that wealth or worldly possession can become the final basis of security. Through the verses 'His wealth will not avail him when he falls' and 'Surely guidance belongs to Us, and to Us belong the hereafter and the first life', he treats wealth as a means rather than the measure of salvation.",
+    materialUr: [
+      "مجلس میں مال کی قدر کو رد نہیں کیا جاتا، لیکن اس کی حد واضح کی جاتی ہے: وہ انسانی ضرورت پوری کر سکتا ہے مگر اخلاقی ہدایت، آخرت اور نجات کی ضمانت نہیں بن سکتا۔",
+      "«إن علينا للهدى» کے ذریعے علامہ ہدایت کو خدا کی طرف نسبت دیتے ہیں؛ انسان کو اپنی سمت دولت، قوت یا ماحول کے بجائے الٰہی میزان سے درست کرنی ہے۔",
+      "دنیا اور آخرت دونوں پر خدا کی ملکیت کا بیان انسان کے اندر جواب دہی پیدا کرتا ہے۔ جو کچھ انسان کے پاس ہے وہ مطلق ملک نہیں بلکہ ذمہ داری کے ساتھ دیا ہوا وسیلہ ہے۔",
+      "منبر پر اس مجلس کو مال کی حد، الٰہی ہدایت، ملکیتِ خدا اور آخرت کی جواب دہی کے سلسلے میں پیش کیا جا سکتا ہے۔",
+    ],
+    materialEn: [
+      "The majlis does not deny the usefulness of wealth but defines its limits: wealth can meet needs but cannot guarantee guidance, the hereafter, or salvation.",
+      "Through 'Surely guidance belongs to Us', Johari locates final guidance with God rather than wealth, power, or environment.",
+      "God's ownership of both the present and the hereafter creates accountability: what a person possesses is not absolute ownership but a means held under responsibility.",
+      "A sermon can move from the limits of wealth, to divine guidance, God's ownership, and accountability in the hereafter.",
+    ],
+    takeawaysUr: [
+      "مال کو وسیلہ سمجھائیں، نجات کا معیار نہیں۔",
+      "رزق اور ہدایت کے فرق کو واضح کریں۔",
+      "دنیاوی ملکیت کو جواب دہی سے جوڑیں۔",
+      "آخرت کی یاد کو مالی اخلاق کا حصہ بنائیں۔",
+    ],
+    takeawaysEn: [
+      "Present wealth as a means, not a measure of salvation.",
+      "Distinguish provision from guidance.",
+      "Connect worldly possession with accountability.",
+      "Make remembrance of the hereafter part of financial ethics.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «انسانیت کا الوہی منشور» — نویں مجلس، کتابی صفحات 124 تا 127",
+    sourceLabelEn:
+      "Original book Insaniyat ka Alahi Manshoor — Majlis 9, printed pp. 124–127",
+    sourceUrl: SOURCE_URL,
+  },
 ];

@@ -363,4 +363,49 @@ export const TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 8, printed pp. 140–154",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-aalmi-09-balance-justice-order",
+    speakerId: "talib-johari",
+    topicIds: ["justice", "quran-hidayat"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "نویں مجلس — میزان، عدل اور کائناتی نظم",
+    titleEn: "Majlis 9 — Balance, justice, and cosmic order",
+    topicsUr: ["میزان", "عدل", "کائنات", "معاشرہ", "قرآن", "توازن"],
+    topicsEn: ["balance", "justice", "cosmos", "society", "Qur'an", "equilibrium"],
+    summaryUr:
+      "علامہ طالب جوہریؒ نویں مجلس میں سورۂ الرحمن کے «وضع الميزان» اور «ألا تطغوا في الميزان» کو بنیاد بنا کر کائناتی نظم اور انسانی عدل کے درمیان ربط قائم کرتے ہیں۔ جس طرح کائنات حساب، میزان اور ترتیب پر قائم ہے، انسانی معاشرہ بھی ظلم، تجاوز اور بے اعتدالی کے ساتھ دیرپا طور پر قائم نہیں رہ سکتا۔",
+    summaryEn:
+      "Talib Johari builds on the Qur'anic language of Surat al-Rahman — 'He set the balance' and 'Do not transgress in the balance' — to connect cosmic order with human justice. Just as creation rests on measure and order, human society cannot endure through injustice, excess, and imbalance.",
+    materialUr: [
+      "سورج، چاند اور کائناتی حساب کے ذکر سے علامہ یہ دکھاتے ہیں کہ تخلیق بے ترتیب نہیں بلکہ میزان اور قانون کے تحت ہے۔",
+      "«ألا تطغوا في الميزان» انسانی زندگی کی طرف منتقل ہوتے ہی اخلاقی حکم بن جاتا ہے: طاقت، مال، تعلق اور فیصلہ—سب میں حد سے تجاوز فساد پیدا کرتا ہے۔",
+      "عدل صرف عدالت یا حکومت کا موضوع نہیں؛ وزن، حق، تعلق اور روزمرہ فیصلے بھی میزان کے دائرے میں آتے ہیں۔",
+      "منبر پر اس مجلس کو کائناتی نظم، میزان، انسانی عدل اور معاشرتی توازن کے مسلسل استدلال کے طور پر پیش کیا جا سکتا ہے۔",
+    ],
+    materialEn: [
+      "By referring to the sun, moon, and cosmic reckoning, Johari presents creation as ordered by measure rather than chaos.",
+      "'Do not transgress in the balance' becomes a moral command in human life: excess in power, wealth, relationships, and judgment produces corruption.",
+      "Justice is not limited to courts or government; weight, rights, relationships, and everyday decisions all belong to the sphere of balance.",
+      "A sermon can move from cosmic order to balance, then to human justice and social equilibrium.",
+    ],
+    takeawaysUr: [
+      "کائناتی میزان کو انسانی عدل سے جوڑیں۔",
+      "تجاوز کو فساد کی بنیادی صورت کے طور پر سمجھائیں۔",
+      "عدل کو روزمرہ معاملات تک پھیلائیں۔",
+      "توازن کو صالح معاشرے کی شرط بنائیں۔",
+    ],
+    takeawaysEn: [
+      "Connect cosmic balance with human justice.",
+      "Explain transgression as a root form of corruption.",
+      "Extend justice into everyday dealings.",
+      "Treat balance as a condition of a sound society.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — نویں مجلس، کتابی صفحات 155 تا 169",
+    sourceLabelEn:
+      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 9, printed pp. 155–169",
+    sourceUrl: SOURCE_URL,
+  },
 ];
