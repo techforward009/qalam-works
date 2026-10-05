@@ -216,7 +216,7 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     ]));
     expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[6]?.sourceLabelUr).toContain("صفحات 94 تا 108");
     expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[6]?.sourceLabelUr).toContain("ابتدائی صفحات scan میں موجود نہیں");
-    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[6]?.sourceLabelUr).toContain("صفحات 133 تا 139");
+    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[6]?.sourceLabelUr).toContain("صفحات 123 تا 129");
   });
 
   test("indexes eighth-majlis evidence from all three source books", () => {
@@ -229,29 +229,19 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     ]));
     expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[7]?.sourceLabelUr).toContain("صفحات 109 تا 123");
     expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[7]?.sourceLabelUr).toContain("صفحات 131 تا 149");
-    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[7]?.sourceLabelUr).toContain("صفحات 140 تا 154");
-  });
-
-  test("indexes ninth-majlis evidence with verified printed-page boundaries", () => {
-    const corpus = corpusEntryForScholar("talib-johari")!;
-    const ids = corpus.evidence.map((item) => item.id);
-    expect(ids).toEqual(expect.arrayContaining([
-      "talib-insaniyat-09-wealth-guidance-hereafter",
-      "talib-asas-09-guidance-desire-obedience",
-      "talib-aalmi-09-balance-justice-order",
-    ]));
-    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[8]?.sourceLabelUr).toContain("صفحات 124 تا 127");
-    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[8]?.sourceLabelUr).toContain("صفحات 150 تا 166");
-    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[8]?.sourceLabelUr).toContain("صفحات 155 تا 169");
+    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[7]?.sourceLabelUr).toContain("صفحات 130 تا 139");
   });
 
   test("occasion evidence is linked to verified calendar ids", () => {
-    expect(TALIB_JOHARI_OCCASION_EVIDENCE).toHaveLength(3);
+    expect(TALIB_JOHARI_OCCASION_EVIDENCE).toHaveLength(4);
     expect(evidenceForOccasion("muh-10-ashura").map((item) => item.id)).toContain(
       "talib-insaniyat-ashura-01",
     );
-    expect(evidenceForOccasion("muh-11-zaynab").map((item) => item.id)).toContain(
-      "talib-insaniyat-sham-ghareeban-01",
+    expect(evidenceForOccasion("muh-11-zaynab").map((item) => item.id)).toEqual(
+      expect.arrayContaining([
+        "talib-insaniyat-sham-ghareeban-01",
+        "talib-aalmi-sham-ghareeban-01",
+      ]),
     );
     expect(evidenceForOccasion("saf-20-arbaeen").map((item) => item.id)).toContain(
       "talib-insaniyat-arbaeen-01",

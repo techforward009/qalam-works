@@ -139,4 +139,51 @@ export const TALIB_JOHARI_OCCASION_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Insaniyat ka Alahi Manshoor — Arbaeen Majlis, printed pp. 160–176",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-aalmi-sham-ghareeban-01",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    occasionIds: ["muh-11-zaynab"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "مجلسِ شامِ غریباں — نعمت، توحید اور انسانی ذمہ داری",
+    titleEn: "Sham-e-Ghariban Majlis — Blessing, tawhid, and human responsibility",
+    topicsUr: ["شام غریباں", "کربلا", "نعمت", "توحید", "ہدایت", "انسان"],
+    topicsEn: ["Sham-e-Ghariban", "Karbala", "blessing", "tawhid", "guidance", "humanity"],
+    summaryUr:
+      "علامہ طالب جوہریؒ اس مجلسِ شامِ غریباں میں سورۂ لقمان کی آیت 20 کے ذریعے ظاہری و باطنی نعمت، توحید اور انسانی ذمہ داری کو کربلا کے بعد کے اخلاقی منظر سے جوڑتے ہیں۔ نعمت صرف آسائش نہیں؛ وہ انسان پر حجت اور ذمہ داری بھی پیدا کرتی ہے، اور حقیقی ہدایت یہ ہے کہ انسان نعمت کو ظلم، غرور اور غفلت کے بجائے خدا شناسی اور حق کی خدمت میں استعمال کرے۔",
+    summaryEn:
+      "In this Sham-e-Ghariban majlis, Talib Johari uses Qur'an 31:20 to connect outward and inward blessings, tawhid, and human responsibility with the moral aftermath of Karbala. Blessing is not mere comfort; it creates responsibility, and true guidance requires using divine gifts in the service of truth rather than oppression, pride, or heedlessness.",
+    materialUr: [
+      "سورۂ لقمان کی «وأسبغ عليكم نعمه ظاهرة وباطنة» کو علامہ نعمت کے وسیع تصور کے طور پر لیتے ہیں: انسان کے پاس ظاہر و باطن میں جو کچھ ہے وہ خدا کی عطا ہے۔",
+      "توحید کا اخلاقی تقاضا یہ ہے کہ انسان نعمت کو اپنی خودمختاری کا ثبوت نہ سمجھے بلکہ امانت اور ذمہ داری کے طور پر دیکھے۔",
+      "کربلا کے بعد کا منظر اس سوال کو شدید بناتا ہے کہ اقتدار، علم اور وسائل کس سمت استعمال ہوئے: حق کی حفاظت کے لیے یا ظلم کے استحکام کے لیے۔",
+      "منبر پر اس مجلس کو نعمت، توحید، جواب دہی اور کربلا کی اخلاقی گواہی کے سلسلے میں پیش کیا جا سکتا ہے۔",
+    ],
+    materialEn: [
+      "Johari reads 'He has lavished upon you His blessings, outward and inward' as a broad account of divine gift in human life.",
+      "The moral demand of tawhid is that blessing should not become proof of self-sufficiency but be treated as trust and responsibility.",
+      "The aftermath of Karbala sharpens the question of how power, knowledge, and resources are used: to protect truth or to reinforce oppression.",
+      "A sermon can move through blessing, tawhid, accountability, and the moral testimony of Karbala.",
+    ],
+    takeawaysUr: [
+      "نعمت کو ذمہ داری اور امانت سے جوڑیں۔",
+      "توحید کو عملی اخلاقی جواب دہی بنائیں۔",
+      "وسائل اور اقتدار کے استعمال کو کربلا کے آئینے میں دیکھیں۔",
+      "شامِ غریباں کو صرف مصیبت نہیں بلکہ اخلاقی احتساب کا موقع بنائیں۔",
+    ],
+    takeawaysEn: [
+      "Connect blessing with trust and responsibility.",
+      "Turn tawhid into practical moral accountability.",
+      "Examine power and resources through the mirror of Karbala.",
+      "Present Sham-e-Ghariban as moral reckoning as well as mourning.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — مجلسِ شامِ غریباں، کتابی صفحات 140 تا 161",
+    sourceLabelEn:
+      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Sham-e-Ghariban Majlis, printed pp. 140–161",
+    sourceUrl:
+      "https://maablib.org/aalmi-muashra-aur-quran-e-hakeem-by-talib-johri/",
+  },
 ];
