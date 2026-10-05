@@ -183,4 +183,49 @@ export const TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Asas-e-Adamiyat aur Qur'an — Majlis 4, printed pp. 58–77",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-asas-05-revelation-authority",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "imamate"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "پانچویں مجلس — وحی، اطاعت اور دینی مرجعیت",
+    titleEn: "Majlis 5 — Revelation, obedience, and religious authority",
+    topicsUr: ["وحی", "اطاعت", "قرآن", "رسول", "امامت", "مرجعیت"],
+    topicsEn: ["revelation", "obedience", "Qur'an", "Prophet", "imamate", "religious authority"],
+    summaryUr:
+      "علامہ طالب جوہریؒ پانچویں مجلس میں وحی، اطاعت اور دینی مرجعیت کے باہمی تعلق کو واضح کرتے ہیں۔ قرآن کے احکام اور رسولؐ کی اطاعت کو بنیاد بنا کر وہ یہ دکھاتے ہیں کہ دینی ہدایت محض ذاتی تاثر یا قیاس کا نام نہیں؛ اس کی ایک معتبر نسبت، تعلیم اور سلسلۂ اطاعت ہوتا ہے۔ مجلس کا اہم محور یہ ہے کہ انسان اپنی رائے کو وحی اور ثابت شدہ دینی رہنمائی پر غالب نہ کرے۔",
+    summaryEn:
+      "Talib Johari connects revelation, obedience, and religious authority. Beginning with Qur'anic commands and obedience to the Prophet, he argues that religious guidance is not merely private impression or speculation; it has an authoritative source, teaching, and chain of obedience. A central warning is against placing personal opinion above revelation and established guidance.",
+    materialUr: [
+      "علامہ بار بار اس اصول کی طرف لوٹتے ہیں کہ قرآن کو اپنی خواہش کے مطابق نہیں پڑھا جا سکتا۔ پہلے نص، پھر اس کی معتبر تشریح اور پھر عمل—یہ ترتیب دینی شعور کی حفاظت کرتی ہے۔",
+      "رسولؐ کی اطاعت کو خدا کی اطاعت سے جدا نہیں کیا جاتا۔ نبوی رہنمائی وحی کے عملی فہم اور اطلاق کا بنیادی ذریعہ بنتی ہے۔",
+      "مجلس میں دینی قیادت اور ہدایت کے تسلسل کا سوال بھی اٹھتا ہے، جس سے امامت اور معتبر دینی مرجعیت کی بحث کی بنیاد بنتی ہے۔",
+      "منبر پر یہ مواد وحی، اطاعت، معتبر تشریح اور پھر دینی قیادت کی ضرورت کے چار مرحلوں میں پیش کیا جا سکتا ہے۔",
+    ],
+    materialEn: [
+      "Johari repeatedly returns to the principle that the Qur'an cannot be read simply according to personal desire. Text, authoritative explanation, and then action form a protective sequence for religious understanding.",
+      "Obedience to the Prophet is not detached from obedience to God. Prophetic guidance becomes a primary means for understanding and applying revelation.",
+      "The majlis also raises the question of continuity in religious guidance, opening a path toward discussion of imamate and reliable religious authority.",
+      "A sermon can therefore move through revelation, obedience, authoritative interpretation, and the need for continuing religious guidance.",
+    ],
+    takeawaysUr: [
+      "ذاتی رائے کو وحی پر غالب نہ ہونے دیں۔",
+      "رسولؐ کی اطاعت کو دینی فہم کے مرکز میں رکھیں۔",
+      "معتبر تشریح اور دینی مرجعیت کی ضرورت واضح کریں۔",
+      "وحی سے امامت تک ہدایت کے تسلسل کا علمی راستہ بنائیں۔",
+    ],
+    takeawaysEn: [
+      "Do not place personal opinion above revelation.",
+      "Keep prophetic obedience central to religious understanding.",
+      "Explain the need for authoritative interpretation and religious authority.",
+      "Build a scholarly path from revelation to the continuity of guidance.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «اساس آدمیت اور قرآن» — پانچویں مجلس، کتابی صفحات 78 تا 96",
+    sourceLabelEn:
+      "Original book Asas-e-Adamiyat aur Qur'an — Majlis 5, printed pp. 78–96",
+    sourceUrl: SOURCE_URL,
+  },
 ];

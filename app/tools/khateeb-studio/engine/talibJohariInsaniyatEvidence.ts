@@ -183,4 +183,49 @@ export const TALIB_JOHARI_INSANIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Insaniyat ka Alahi Manshoor — Majlis 4, printed pp. 56–67",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-insaniyat-05-faith-society",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "پانچویں مجلس — ایمان، اجتماعی ذمہ داری اور خیرِ عام",
+    titleEn: "Majlis 5 — Faith, social responsibility, and the common good",
+    topicsUr: ["ایمان", "معاشرہ", "امر بالمعروف", "نہی عن المنکر", "زکوٰۃ", "اطاعت"],
+    topicsEn: ["faith", "society", "enjoining good", "forbidding wrong", "zakat", "obedience"],
+    summaryUr:
+      "علامہ طالب جوہریؒ پانچویں مجلس میں ایمان کو اجتماعی ذمہ داری سے جوڑتے ہیں۔ سورۂ مؤمنون اور دوسری قرآنی آیات کے ذریعے وہ عبادت، زکوٰۃ، معروف کا حکم، منکر سے روکنے اور رسولؐ کی اطاعت کو ایسے عناصر کے طور پر پیش کرتے ہیں جو فرد کی دینداری کو معاشرتی خیر میں بدلتے ہیں۔ ان کے بیان میں ایمان صرف ذاتی کیفیت نہیں رہتا بلکہ دوسروں کی بھلائی اور معاشرے کی اخلاقی سمت کے لیے ذمہ داری بن جاتا ہے۔",
+    summaryEn:
+      "Talib Johari links faith with social responsibility. Through Surat al-Mu'minun and other Qur'anic passages, he presents worship, zakat, enjoining good, forbidding wrong, and obedience to the Prophet as elements that transform personal religion into social good. Faith therefore becomes responsibility for the moral direction and well-being of others.",
+    materialUr: [
+      "علامہ مومن کی صفات کو فردی عبادت تک محدود نہیں کرتے۔ نماز اور خشوع کے ساتھ زکوٰۃ، امانت، عہد اور اجتماعی خیر کے تقاضے بھی ایمان کے عملی نقشے میں شامل ہوتے ہیں۔",
+      "امر بالمعروف اور نہی عن المنکر کو وہ محض دوسروں پر حکم چلانے کے معنی میں نہیں لیتے بلکہ معاشرے کی اخلاقی حفاظت اور خیر کی اجتماعی نگرانی کے طور پر دیکھتے ہیں۔",
+      "رسولؐ کی اطاعت مجلس میں دینی نظم کا بنیادی اصول بنتی ہے: خدا کی ہدایت فردی پسند کے تابع نہیں بلکہ نبوی رہنمائی کے ذریعے اجتماعی عمل میں ڈھلتی ہے۔",
+      "منبر پر یہ مجلس ایمان سے عمل، عمل سے اجتماعی ذمہ داری، اور پھر خیرِ عام تک ایک مضبوط ترتیب دیتی ہے۔",
+    ],
+    materialEn: [
+      "Johari does not restrict the qualities of believers to private worship. Prayer and humility sit alongside zakat, trust, covenant, and responsibility for social good.",
+      "Enjoining good and forbidding wrong are not treated as domination over others but as moral protection of communal life and collective concern for what is right.",
+      "Obedience to the Prophet becomes a principle of religious order: divine guidance is not reduced to personal preference but is embodied through prophetic direction.",
+      "For preaching, the majlis offers a clear movement from faith to action, from action to social responsibility, and from there to the common good.",
+    ],
+    takeawaysUr: [
+      "ایمان کو معاشرتی ذمہ داری سے جوڑیں۔",
+      "امر بالمعروف کو اخلاقی حفاظت کے طور پر سمجھائیں، محض حکم چلانے کے طور پر نہیں۔",
+      "زکوٰۃ، عہد اور امانت کو مومن کی اجتماعی صفات میں شامل کریں۔",
+      "رسولؐ کی اطاعت کو اجتماعی دینی نظم سے جوڑیں۔",
+    ],
+    takeawaysEn: [
+      "Connect faith with social responsibility.",
+      "Present enjoining good as moral protection rather than mere command.",
+      "Include zakat, covenant, and trust among the believer's social qualities.",
+      "Link prophetic obedience with communal religious order.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «انسانیت کا الوہی منشور» — پانچویں مجلس، کتابی صفحات 68 تا 79",
+    sourceLabelEn:
+      "Original book Insaniyat ka Alahi Manshoor — Majlis 5, printed pp. 68–79",
+    sourceUrl: SOURCE_URL,
+  },
 ];

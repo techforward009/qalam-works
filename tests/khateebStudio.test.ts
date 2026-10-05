@@ -176,6 +176,20 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[3]?.topicIds).toContain("parents-barsi");
   });
 
+  test("indexes the fifth majlis of all three Talib Johari books", () => {
+    const corpus = corpusEntryForScholar("talib-johari")!;
+    const ids = corpus.evidence.map((item) => item.id);
+    expect(ids).toEqual(expect.arrayContaining([
+      "talib-insaniyat-05-faith-society",
+      "talib-asas-05-revelation-authority",
+      "talib-aalmi-05-human-dignity",
+    ]));
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[4]?.sourceLabelUr).toContain("صفحات 68 تا 79");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[4]?.sourceLabelUr).toContain("صفحات 78 تا 96");
+    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[4]?.sourceLabelUr).toContain("صفحات 88 تا 106");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[4]?.topicIds).toContain("imamate");
+  });
+
   test("known catalog sources are source-backed even before content ingestion", () => {
     expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });

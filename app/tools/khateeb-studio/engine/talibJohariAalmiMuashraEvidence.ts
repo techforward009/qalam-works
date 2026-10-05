@@ -183,4 +183,49 @@ export const TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 4, printed pp. 69–87",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-aalmi-05-human-dignity",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "پانچویں مجلس — انسان کی حرمت اور معاشرتی امن",
+    titleEn: "Majlis 5 — Human dignity and social peace",
+    topicsUr: ["حرمت انسان", "جان", "معاشرہ", "قرآن", "عدل", "امن"],
+    topicsEn: ["human dignity", "life", "society", "Qur'an", "justice", "peace"],
+    summaryUr:
+      "علامہ طالب جوہریؒ پانچویں مجلس میں انسانی حرمت اور معاشرتی امن کو قرآنی اخلاق کے مرکز میں رکھتے ہیں۔ وہ انسان کی جان، عزت اور حقِ حیات کو اس قدر اہم قرار دیتے ہیں کہ ایک جان کے ناحق قتل کو پوری انسانیت کے قتل کے مترادف قرآنی اصول سے جوڑتے ہیں۔ مجلس کا رخ واضح ہے: ایسا معاشرہ جو انسان کی جان اور عزت کی حفاظت نہ کرے، وہ محض ظاہری نظم سے صالح معاشرہ نہیں بن سکتا۔",
+    summaryEn:
+      "Talib Johari places human dignity and social peace at the center of Qur'anic ethics. He emphasizes the sanctity of life, honor, and the right to live, linking wrongful killing of one person with the Qur'anic principle that treats it as though all humanity were killed. A society that fails to protect life and dignity cannot become sound merely through outward order.",
+    materialUr: [
+      "علامہ انسانی جان کی حرمت کو بنیادی معاشرتی اصل کے طور پر پیش کرتے ہیں۔ اختلاف، گروہی وابستگی یا طاقت کسی بے گناہ جان کو بے حرمت کرنے کا جواز نہیں بنتی۔",
+      "قرآنی اصول «من قتل نفسا بغير نفس أو فساد في الأرض فكأنما قتل الناس جميعا» سے وہ فرد کے حق کو پوری انسانیت کی اخلاقی قدر سے جوڑتے ہیں۔",
+      "مجلس میں انسان کی عزت، خوف سے آزادی اور باہمی احترام کو صالح معاشرے کی ضروری بنیادوں میں شمار کیا جاتا ہے۔",
+      "منبر پر یہ بحث حرمتِ جان، انسانی عزت، اجتماعی امن اور پھر عدل کی ذمہ داری کی ترتیب میں بہت مؤثر بنتی ہے۔",
+    ],
+    materialEn: [
+      "Johari presents the sanctity of human life as a foundational social principle. Difference, group identity, or power cannot justify violation of innocent life.",
+      "The Qur'anic principle that killing one person unjustly is like killing all humanity links the right of the individual with the moral value of humankind as a whole.",
+      "Human honor, freedom from fear, and mutual respect are treated as necessary foundations of a sound society.",
+      "For preaching, the material can move from sanctity of life, to human dignity, to social peace, and finally to the responsibility of justice.",
+    ],
+    takeawaysUr: [
+      "حرمتِ جان کو بنیادی قرآنی معاشرتی اصول بنائیں۔",
+      "انسانی عزت اور امن کو عدل سے جوڑیں۔",
+      "گروہی اختلاف کو انسانی حق تلفی کا جواز نہ بننے دیں۔",
+      "فرد کے حق کو پوری انسانیت کی قدر سے جوڑیں۔",
+    ],
+    takeawaysEn: [
+      "Make the sanctity of life a foundational Qur'anic social principle.",
+      "Connect human dignity and peace with justice.",
+      "Do not let group conflict justify violation of human rights.",
+      "Link the right of one person with the value of humanity as a whole.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — پانچویں مجلس، کتابی صفحات 88 تا 106",
+    sourceLabelEn:
+      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 5, printed pp. 88–106",
+    sourceUrl: SOURCE_URL,
+  },
 ];
