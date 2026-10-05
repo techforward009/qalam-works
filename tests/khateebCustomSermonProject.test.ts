@@ -7,6 +7,7 @@ import {
   parseCustomSermonProject,
   selectCustomEvidence,
   serializeCustomSermonProject,
+  updateCustomProjectBasics,
   updateCustomSection,
   validateCustomSermonProject,
 } from "../app/tools/khateeb-studio/engine/customSermonProject";
@@ -178,6 +179,31 @@ describe("Khateeb custom sermon projects", () => {
       result([evidence("q1", "quran"), evidence("h1", "hadith")]),
     );
     expect(markCustomProjectReady(withHadith).status).toBe("ready");
+  });
+
+  test("editing format or duration preserves the user's existing section notes when possible", () => {
+    let project = createCustomSermonProject({
+      kind: "majlis",
+      title: "اخلاق",
+      objective: "اخلاقی تربیت",
+      duration: 20,
+    });
+    const own = project.sections.find((item) => item.kind === "own-material")!;
+    project = updateCustomSection(project, own.id, "میرا محفوظ ذاتی نکتہ");
+    const changed = updateCustomProjectBasics(project, {
+      duration: 45,
+      kind: "general",
+      researchQuery: "اخلاق اہل بیت",
+    });
+
+    expect(changed.duration).toBe(45);
+    expect(changed.researchQuery).toBe("اخلاق اہل بیت");
+    expect(
+      changed.sections.find((item) => item.kind === "own-material")?.userText,
+    ).toBe("میرا محفوظ ذاتی نکتہ");
+    expect(changed.sections.reduce((sum, item) => sum + item.minutes, 0)).toBe(
+      45,
+    );
   });
 
   test("Friday khutbah gets separate first and second khutbah planning blocks", () => {
