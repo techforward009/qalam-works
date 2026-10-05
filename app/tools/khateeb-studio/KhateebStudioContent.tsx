@@ -1257,11 +1257,11 @@ export default function KhateebStudioContent({
           className={`${workflowStep === 1 && preparationMode === "topic" ? "block" : workflowStep === 3 && preparationMode === "topic" ? "block" : "hidden"} scroll-mt-6 mb-6 rounded-2xl border border-[#B8935A]/30 bg-white p-5 sm:p-6 shadow-sm dark:border-[#6f5b35] dark:bg-[#162a1e]`}
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-[#2a5a3a]/50 dark:text-[#8faa93]">
-                <PenLine className="h-5 w-5" />
-              </span>
-              {workflowStep === 3 && topic ? (
+            {workflowStep === 3 && topic ? (
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-[#2a5a3a]/50 dark:text-[#8faa93]">
+                  <PenLine className="h-5 w-5" />
+                </span>
                 <div>
                   <h2 className="text-xl font-bold text-[#1A3A2A] dark:text-white">
                     {ur ? "آپ کا منتخب موضوع" : "Selected topic"}
@@ -1275,8 +1275,8 @@ export default function KhateebStudioContent({
                       : "The relevant research and pulpit material is open below."}
                   </p>
                 </div>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
             <div className="khateeb-no-print flex items-center gap-2">
               {([20, 30, 45] as SermonDuration[]).map((minutes) => (
                 <button
