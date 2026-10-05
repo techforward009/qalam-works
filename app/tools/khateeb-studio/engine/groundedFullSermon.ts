@@ -1,3 +1,4 @@
+import { quranTranslationFor, QURAN_TRANSLATION_SOURCES } from "./quranTranslationProvider";
 import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
 import type { SermonDuration, SermonLocale } from "./sermonPrep";
 import { getTopicDossier, type SermonDossier } from "./topicDossier";
@@ -532,6 +533,21 @@ export function buildGroundedFullSermonText(
     );
 
     if (block.arabic) lines.push(block.arabic);
+    const translation = block.kind === "hadith"
+      ? (ur ? block.translationUr : block.translationEn)
+      : block.kind === "quran" && block.quranLocation
+        ? quranTranslationFor(block.quranLocation.surah, block.quranLocation.ayah, locale)
+        : null;
+    if (translation) {
+      lines.push(`${ur ? "ترجمہ" : "Translation"}: ${translation}`);
+      const label = block.kind === "quran"
+        ? QURAN_TRANSLATION_SOURCES[locale][ur ? "sourceLabelUr" : "sourceLabelEn"]
+        : (ur ? block.translationSourceLabelUr : block.translationSourceLabelEn);
+      if (label) lines.push(label);
+    }
+    if (block.kind === "hadith" || block.kind === "quran") {
+      lines.push(ur ? "خطیبانہ ربط/تشریح:" : "Pulpit link / commentary:");
+    }
     lines.push(ur ? block.bodyUr : block.bodyEn);
 
     const citation = ur ? block.citationUr : block.citationEn;

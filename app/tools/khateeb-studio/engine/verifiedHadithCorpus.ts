@@ -1,3 +1,5 @@
+import { hadithTranslationFields, validateHadithTranslation } from "./hadithTranslation";
+
 export type HadithVerificationStatus =
   | "pending-verification"
   | "verified"
@@ -55,6 +57,7 @@ export type VerifiedHadithRecord = {
    * Translation is separate from commentary. "editorial" means Qalam translated
    * the verified Arabic; "published" means a cited published translation is used.
    */
+  translationArabic?: string;
   translationUr?: string;
   translationEn?: string;
   translationStatus?: "editorial" | "published";
@@ -90,6 +93,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "لا يصبح المسلم إلا على ثلاث خصالٍ: التفقّه في الدين، وحُسن التقدير في المعيشة، والصبر على النائبة.",
+    translationUr: "مسلمان کو تین خصلتوں کے ساتھ صبح کرنی چاہیے: دین کی سمجھ، معاش کے معاملات میں اچھی تدبیر، اور مصیبت پر صبر۔",
+    translationEn: "A Muslim should begin the day with three qualities: understanding of religion, sound management of livelihood, and patience in calamity.",
+    translationStatus: "editorial",
+    translationArabic: "لا يصبح المسلم إلا على ثلاث خصالٍ: التفقّه في الدين، وحُسن التقدير في المعيشة، والصبر على النائبة.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "مشکاۃ الانوار، روایت 1622۔",
     verifiedReferenceEn: "Mishkat al-Anwar, tradition 1622.",
     verifiedSourceUrl: MISHKAT_AL_ISLAM,
@@ -128,6 +137,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     candidateArabic: "كِتمانُ المُصيبَةِ مِن كُنوزِ البِرِّ.",
     status: "verified",
     exactArabic: "كتمان المصيبة من كنوز البر.",
+    translationUr: "مصیبت کو پوشیدہ رکھنا نیکی کے خزانوں میں سے ہے۔",
+    translationEn: "Keeping a calamity private is among the treasures of goodness.",
+    translationStatus: "editorial",
+    translationArabic: "كتمان المصيبة من كنوز البر.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "مشکاۃ الانوار، ص 484، روایت 1623۔",
     verifiedReferenceEn: "Mishkat al-Anwar, p. 484, tradition 1623.",
     verifiedSourceUrl: MISHKAT_PAGE_484,
@@ -166,6 +181,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "إن قوما يأتون يوم القيامة يتخللون رقاب الناس حتى يضربوا باب الجنة قبل الحساب، فيقولون لهم: بم تستحقون الدخول إلى الجنة قبل الحساب؟ فيقولون: كنا من الصابرين في الدنيا.",
+    translationUr: "قیامت کے دن کچھ لوگ لوگوں کی گردنوں کے درمیان سے گزرتے ہوئے حساب سے پہلے جنت کے دروازے پر جا پہنچیں گے۔ ان سے پوچھا جائے گا: تم حساب سے پہلے جنت میں داخل ہونے کے حق دار کیسے ہوئے؟ وہ کہیں گے: ہم دنیا میں صبر کرنے والوں میں سے تھے۔",
+    translationEn: "On the Day of Resurrection, some people will pass through the crowds until they knock at the gate of Paradise before the reckoning. They will be asked: How do you merit entering Paradise before the reckoning? They will say: We were among those who were patient in this world.",
+    translationStatus: "editorial",
+    translationArabic: "إن قوما يأتون يوم القيامة يتخللون رقاب الناس حتى يضربوا باب الجنة قبل الحساب، فيقولون لهم: بم تستحقون الدخول إلى الجنة قبل الحساب؟ فيقولون: كنا من الصابرين في الدنيا.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "مشکاۃ الانوار، ص 484، روایت 1624۔",
     verifiedReferenceEn: "Mishkat al-Anwar, p. 484, tradition 1624.",
     verifiedSourceUrl: MISHKAT_PAGE_484,
@@ -221,6 +242,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "الصبر من الإيمان بمنزلة الرأس من الجسد، فإذا ذهب الرأس ذهب الجسد، وكذلك إذا ذهب الصبر ذهب الإيمان.",
+    translationUr: "صبر کا ایمان سے وہی تعلق ہے جو سر کا جسم سے ہے۔ سر چلا جائے تو جسم بھی ختم ہو جاتا ہے؛ اسی طرح صبر چلا جائے تو ایمان بھی چلا جاتا ہے۔",
+    translationEn: "Patience stands in relation to faith as the head does to the body. When the head is gone, the body is gone; likewise, when patience is gone, faith is gone.",
+    translationStatus: "editorial",
+    translationArabic: "الصبر من الإيمان بمنزلة الرأس من الجسد، فإذا ذهب الرأس ذهب الجسد، وكذلك إذا ذهب الصبر ذهب الإيمان.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "مشکاۃ الانوار، ص 484، روایت 1625۔",
     verifiedReferenceEn: "Mishkat al-Anwar, p. 484, tradition 1625.",
     verifiedSourceUrl: MISHKAT_PAGE_484,
@@ -300,6 +327,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "ما من عبد يصاب بمصيبة فيسترجع عند ذكر المصيبة ويصبر حين تفجأه إلا غفر الله له ما تقدم من ذنبه، وكلما ذكر مصيبة فاسترجع عند ذكره المصيبة غفر له كل ذنب اكتسبه فيما بينهما.",
+    translationUr: "جس بندے پر کوئی مصیبت آئے، پھر وہ اسے یاد کرتے وقت اِنّا لِلّٰہِ وَاِنّا اِلَیْہِ رَاجِعُوْن کہے اور اچانک مصیبت آنے پر صبر کرے، اللہ اس کے پچھلے گناہ بخش دیتا ہے۔ جب بھی وہ اس مصیبت کو یاد کرکے یہ کلمات کہتا ہے، ان دونوں مواقع کے درمیان کیے ہوئے اس کے گناہ بخش دیے جاتے ہیں۔",
+    translationEn: "Whenever a servant suffers a calamity, declares that we belong to God and return to Him when recalling it, and is patient when it strikes unexpectedly, God forgives that servant's past sins. Each time the servant recalls the calamity and makes that declaration, the sins committed between the two occasions are forgiven.",
+    translationStatus: "editorial",
+    translationArabic: "ما من عبد يصاب بمصيبة فيسترجع عند ذكر المصيبة ويصبر حين تفجأه إلا غفر الله له ما تقدم من ذنبه، وكلما ذكر مصيبة فاسترجع عند ذكره المصيبة غفر له كل ذنب اكتسبه فيما بينهما.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "مشکاۃ الانوار، ص 484، روایت 1627۔",
     verifiedReferenceEn: "Mishkat al-Anwar, p. 484, tradition 1627.",
     verifiedSourceUrl: MISHKAT_PAGE_484,
@@ -358,6 +391,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "الدعاء سلاح المؤمن وعمود الدين ونور السماوات والأرض.",
+    translationUr: "دعا مؤمن کا ہتھیار، دین کا ستون، اور آسمانوں اور زمین کا نور ہے۔",
+    translationEn: "Supplication is the believer's weapon, the pillar of religion, and the light of the heavens and the earth.",
+    translationStatus: "editorial",
+    translationArabic: "الدعاء سلاح المؤمن وعمود الدين ونور السماوات والأرض.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص468، ح1۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 468, hadith 1.",
     verifiedSourceUrl:
@@ -439,6 +478,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "أحب الأعمال إلى الله عز وجل في الأرض الدعاء وأفضل العبادة العفاف، قال: وكان أمير المؤمنين عليه السلام رجلا دعاء.",
+    translationUr: "زمین پر اللہ عزوجل کو سب سے محبوب عمل دعا ہے، اور سب سے افضل عبادت پاک دامنی ہے۔ راوی کہتے ہیں: امیرالمؤمنینؑ بہت دعا کرنے والے تھے۔",
+    translationEn: "The deed on earth most beloved to God, Mighty and Majestic, is supplication, and the best worship is chastity. The narrator says: The Commander of the Faithful was a man who supplicated abundantly.",
+    translationStatus: "editorial",
+    translationArabic: "أحب الأعمال إلى الله عز وجل في الأرض الدعاء وأفضل العبادة العفاف، قال: وكان أمير المؤمنين عليه السلام رجلا دعاء.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص467–468، ح8۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, pp. 467–468, hadith 8.",
     verifiedSourceUrl:
@@ -484,6 +529,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "الدعاء ترس المؤمن ومتى تكثر قرع الباب يفتح لك.",
+    translationUr: "دعا مؤمن کی ڈھال ہے؛ جب تم بار بار دروازہ کھٹکھٹاؤ گے تو وہ تمہارے لیے کھول دیا جائے گا۔",
+    translationEn: "Supplication is the believer's shield; when you knock at the door repeatedly, it will be opened for you.",
+    translationStatus: "editorial",
+    translationArabic: "الدعاء ترس المؤمن ومتى تكثر قرع الباب يفتح لك.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص468، ح4۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 468, hadith 4.",
     verifiedSourceUrl:
@@ -530,6 +581,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "يا ميسر ادع ولا تقل: إن الامر قد فرغ منه، إن عند الله عز وجل منزلة لا تنال إلا بمسألة، ولو أن عبدا سد فاه ولم يسأل لم يعط شيئا فسل تعط، يا ميسر إنه ليس من باب يقرع إلا يوشك أن يفتح لصاحبه.",
+    translationUr: "اے میسر! دعا کرو، اور یہ نہ کہو کہ معاملہ طے ہو چکا ہے۔ اللہ عزوجل کے ہاں ایک مقام ایسا ہے جو مانگے بغیر حاصل نہیں ہوتا۔ اگر بندہ اپنا منہ بند رکھے اور کچھ نہ مانگے تو اسے کچھ نہیں دیا جاتا۔ پس مانگو، تمہیں دیا جائے گا۔ اے میسر! کوئی دروازہ ایسا نہیں جسے کھٹکھٹایا جائے اور وہ کھٹکھٹانے والے کے لیے جلد کھلنے کے قریب نہ ہو۔",
+    translationEn: "O Maysir, supplicate, and do not say that the matter has already been settled. There is a station with God, Mighty and Majestic, that can be attained only by asking. If a servant keeps their mouth closed and does not ask, they are given nothing. So ask, and you will be given. O Maysir, no door is knocked upon without being close to opening for the one who knocks.",
+    translationStatus: "editorial",
+    translationArabic: "يا ميسر ادع ولا تقل: إن الامر قد فرغ منه، إن عند الله عز وجل منزلة لا تنال إلا بمسألة، ولو أن عبدا سد فاه ولم يسأل لم يعط شيئا فسل تعط، يا ميسر إنه ليس من باب يقرع إلا يوشك أن يفتح لصاحبه.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص466–467، ح3۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, pp. 466–467, hadith 3.",
     verifiedSourceUrl:
@@ -579,6 +636,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "حق امك أن تعلم أنها حملتك حيث لا يحمل أحد أحدا، وأعطتك من ثمرة قلبها ما لا يعطي أحد أحدا، ووقتك بجميع جوارحها، ولم تبال أن تجوع وتطعمك، وتعطش وتسقيك، وتعرى وتكسوك، وتضحى وتظلك، وتهجر النوم لأجلك، ووقتك الحر والبرد لتكون لها، فإنك لا تطيق شكرها إلا بعون الله وتوفيقه.",
+    translationUr: "تمہاری ماں کا حق یہ ہے کہ تم جانو: اس نے تمہیں ایسی جگہ اٹھائے رکھا جہاں کوئی کسی کو نہیں اٹھاتا، اپنے دل کا پھل تمہیں دیا جو کوئی کسی کو نہیں دیتا، اور اپنے تمام اعضا سے تمہاری حفاظت کی۔ اسے پروا نہیں تھی کہ خود بھوکی رہے اور تمہیں کھلائے، پیاسی رہے اور تمہیں پلائے، بے لباس رہے اور تمہیں پہنائے، دھوپ میں رہے اور تمہیں سایہ دے۔ تمہاری خاطر نیند چھوڑی اور گرمی سردی سے تمہیں بچایا تاکہ تم اس کے لیے رہو۔ تم اللہ کی مدد اور توفیق کے بغیر اس کا شکر ادا نہیں کرسکتے۔",
+    translationEn: "Your mother's right is that you know she carried you where no one carries another, gave you the fruit of her heart that no one gives another, and protected you with all her limbs. She did not mind going hungry while feeding you, thirsty while giving you drink, unclothed while clothing you, or exposed to the sun while shading you. She gave up sleep for your sake and protected you from heat and cold so that you might remain hers. You cannot thank her adequately without God's help and enabling grace.",
+    translationStatus: "editorial",
+    translationArabic: "حق امك أن تعلم أنها حملتك حيث لا يحمل أحد أحدا، وأعطتك من ثمرة قلبها ما لا يعطي أحد أحدا، ووقتك بجميع جوارحها، ولم تبال أن تجوع وتطعمك، وتعطش وتسقيك، وتعرى وتكسوك، وتضحى وتظلك، وتهجر النوم لأجلك، ووقتك الحر والبرد لتكون لها، فإنك لا تطيق شكرها إلا بعون الله وتوفيقه.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr:
       "روضۃ الواعظین، ج2، ص241، ح1032 — حقِ مادر۔",
     verifiedReferenceEn:
@@ -630,6 +693,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "وأما حق أبيك فأن تعلم أنه أصلك، وأنك لولاه لم تكن فيما رأيت في نفسك مما يعجبك. واعلم أن أباك أصل النعمة عليك فيه، فاحمد الله واشكره على قدر ذلك، ولا قوة إلا بالله.",
+    translationUr: "تمہارے باپ کا حق یہ ہے کہ تم جانو کہ وہ تمہاری اصل ہے، اور اگر وہ نہ ہوتا تو تم میں وہ کچھ نہ ہوتا جو تمہیں اپنے اندر پسند آتا ہے۔ جان لو کہ اس نعمت میں تمہارے باپ کا بنیادی حصہ ہے؛ لہٰذا اللہ کی حمد کرو اور اس نعمت کے بقدر اللہ کا شکر ادا کرو۔ اللہ کے سوا کوئی قوت نہیں۔",
+    translationEn: "Your father's right is that you know he is your origin, and that without him you would not have what you see in yourself and admire. Know that your father is the origin of that blessing upon you; therefore praise God and thank Him accordingly. There is no strength except through God.",
+    translationStatus: "editorial",
+    translationArabic: "وأما حق أبيك فأن تعلم أنه أصلك، وأنك لولاه لم تكن فيما رأيت في نفسك مما يعجبك. واعلم أن أباك أصل النعمة عليك فيه، فاحمد الله واشكره على قدر ذلك، ولا قوة إلا بالله.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr:
       "روضۃ الواعظین، ج2، ص241، ح1032 — حقِ پدر۔",
     verifiedReferenceEn:
@@ -679,6 +748,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "وأمر بالشكر له وللوالدين، فمن لم يشكر والديه لم يشكر الله",
+    translationUr: "اور اس نے اپنے اور والدین کے شکر کا حکم دیا؛ پس جس نے اپنے والدین کا شکر ادا نہیں کیا، اس نے اللہ کا شکر ادا نہیں کیا۔",
+    translationEn: "And He commanded gratitude to Himself and to parents; whoever has not thanked their parents has not thanked God.",
+    translationStatus: "editorial",
+    translationArabic: "وأمر بالشكر له وللوالدين، فمن لم يشكر والديه لم يشكر الله",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الخصال، باب الثلاثة، ح3-196۔",
     verifiedReferenceEn: "Al-Khisal, Part Three, hadith 3-196.",
     verifiedSourceUrl:
@@ -724,6 +799,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "الاحسان أن تحسن صحبتهما وأن لا تكلفهما أن يسألاك شيئا مما يحتاجان إليه وإن كانا مستغنيين",
+    translationUr: "احسان یہ ہے کہ ان دونوں کے ساتھ اچھا برتاؤ کرو، اور انہیں اپنی ضرورت کی کوئی چیز تم سے مانگنے پر مجبور نہ کرو، خواہ وہ بے نیاز ہی ہوں۔",
+    translationEn: "Kindness means keeping good company with both parents and not making them ask you for anything they need, even if they are well-off.",
+    translationStatus: "editorial",
+    translationArabic: "الاحسان أن تحسن صحبتهما وأن لا تكلفهما أن يسألاك شيئا مما يحتاجان إليه وإن كانا مستغنيين",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص157–158، ح1۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, pp. 157–158, hadith 1.",
     verifiedSourceUrl:
@@ -770,6 +851,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "لا تملأ عينيك من النظر إليهما إلا برحمة ورقة ولا ترفع صوتك فوق أصواتهما ولا يدك فوق أيديهما ولا تقدم قدامهما.",
+    translationUr: "انہیں صرف رحمت اور نرمی کی نگاہ سے دیکھو؛ اپنی آواز ان کی آواز سے بلند نہ کرو، اپنا ہاتھ ان کے ہاتھوں سے اونچا نہ اٹھاؤ، اور ان کے آگے نہ چلو۔",
+    translationEn: "Look at them only with mercy and tenderness. Do not raise your voice above theirs, your hand above their hands, or walk ahead of them.",
+    translationStatus: "editorial",
+    translationArabic: "لا تملأ عينيك من النظر إليهما إلا برحمة ورقة ولا ترفع صوتك فوق أصواتهما ولا يدك فوق أيديهما ولا تقدم قدامهما.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص158، ح1۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 158, hadith 1.",
     verifiedSourceUrl:
@@ -815,6 +902,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "ويجب للوالدين على الولد ثلاثة أشياء : شكرهما على كل حال . وطاعتهما فيما يأمرانه وينهيانه عنه في غير معصية الله . ونصيحتهما في السر والعلانية .",
+    translationUr: "اولاد پر والدین کے لیے تین چیزیں لازم ہیں: ہر حال میں ان کا شکر ادا کرنا؛ ان کے حکم اور منع کی اطاعت کرنا، بشرطیکہ اس میں اللہ کی نافرمانی نہ ہو؛ اور پوشیدہ و علانیہ ان کی خیرخواہی کرنا۔",
+    translationEn: "Children owe their parents three things: thanking them in every circumstance; obeying their commands and prohibitions when these do not involve disobedience to God; and seeking their good in private and in public.",
+    translationStatus: "editorial",
+    translationArabic: "ويجب للوالدين على الولد ثلاثة أشياء : شكرهما على كل حال . وطاعتهما فيما يأمرانه وينهيانه عنه في غير معصية الله . ونصيحتهما في السر والعلانية .",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "تحف العقول، ص322۔",
     verifiedReferenceEn: "Tuhaf al-Uqul, p. 322.",
     verifiedSourceUrl: "https://ablibrary.net/book_content/b/6129/333",
@@ -853,6 +946,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "بروا آبائكم يبركم أبناؤكم وعفوا عن نساء الناس تعف نساؤكم.",
+    translationUr: "اپنے باپوں کے ساتھ نیکی کرو، تمہارے بیٹے تمہارے ساتھ نیکی کریں گے؛ اور دوسروں کی عورتوں کے بارے میں پاک دامنی اختیار کرو، تمہاری عورتیں پاک دامن رہیں گی۔",
+    translationEn: "Be good to your fathers, and your sons will be good to you. Observe chastity towards other people's women, and your women will remain chaste.",
+    translationStatus: "editorial",
+    translationArabic: "بروا آبائكم يبركم أبناؤكم وعفوا عن نساء الناس تعف نساؤكم.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج5، ص554، ح5۔",
     verifiedReferenceEn: "Al-Kafi, vol. 5, p. 554, hadith 5.",
     verifiedSourceUrl:
@@ -898,6 +997,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "سيد الأبرار يوم القيامة رجل بر والديه بعد موتهما.",
+    translationUr: "قیامت کے دن نیکوکاروں کا سردار وہ شخص ہوگا جس نے اپنے والدین کی وفات کے بعد بھی ان کے ساتھ نیکی کی۔",
+    translationEn: "The foremost of the righteous on the Day of Resurrection will be a person who was good to their parents after their death.",
+    translationStatus: "editorial",
+    translationArabic: "سيد الأبرار يوم القيامة رجل بر والديه بعد موتهما.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr:
       "بحار الانوار، ج71، ص88؛ منقول از کتاب الامامة والتبصرة۔",
     verifiedReferenceEn:
@@ -944,6 +1049,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     candidateArabic: "الإمامَةُ نِظامُ الاُمَّةِ.",
     status: "verified",
     exactArabic: "الإمامة نظام الأمة",
+    translationUr: "امامت امت کے نظم کی بنیاد ہے۔",
+    translationEn: "Imamate is the ordering principle of the community.",
+    translationStatus: "editorial",
+    translationArabic: "الإمامة نظام الأمة",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "غرر الحکم، ح1095؛ میزان الحکمہ، ج1، ص115۔",
     verifiedReferenceEn: "Ghurar al-Hikam, no. 1095; Mizan al-Hikmah, vol. 1, p. 115.",
     verifiedSourceUrl: "https://ablibrary.net/book_content/b/3732/115?lang=ar",
@@ -985,6 +1096,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "بني الاسلام على خمس : على الصلاة والزكاة والصوم والحج والولاية ولم يناد بشئ كما نودي بالولاية",
+    translationUr: "اسلام کی بنیاد پانچ چیزوں پر رکھی گئی ہے: نماز، زکوٰۃ، روزہ، حج اور ولایت؛ اور کسی چیز کی طرف ایسی دعوت نہیں دی گئی جیسی ولایت کی طرف دی گئی۔",
+    translationEn: "Islam is built upon five things: prayer, zakat, fasting, pilgrimage, and wilayah. Nothing has been called for as wilayah has been called for.",
+    translationStatus: "editorial",
+    translationArabic: "بني الاسلام على خمس : على الصلاة والزكاة والصوم والحج والولاية ولم يناد بشئ كما نودي بالولاية",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص18، ح1۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 18, hadith 1.",
     verifiedSourceUrl: "https://ablibrary.net/book_content/b/3250/18",
@@ -1028,6 +1145,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "إن الله تبارك وتعالى اتخذ إبراهيم عبدا قبل أن يتخذه نبيا وإن الله اتخذه نبيا قبل أن يتخذه رسولا وإن الله اتخذه رسولا قبل أن يتخذه خليلا وإن الله اتخذه خليلا قبل أن يجعله إماما ، فلما جمع له الأشياء قال : إني جاعلك للناس إماما",
+    translationUr: "اللہ تبارک وتعالیٰ نے ابراہیمؑ کو نبی بنانے سے پہلے بندہ بنایا، رسول بنانے سے پہلے نبی بنایا، خلیل بنانے سے پہلے رسول بنایا، اور امام بنانے سے پہلے خلیل بنایا۔ جب ان کے لیے یہ سب مقامات جمع کردیے تو فرمایا: میں تمہیں لوگوں کا امام بنانے والا ہوں۔",
+    translationEn: "God, Blessed and Exalted, took Abraham as a servant before taking him as a prophet, as a prophet before taking him as a messenger, as a messenger before taking him as a friend, and as a friend before making him an imam. When He had brought all these stations together for him, He said: I am making you an imam for the people.",
+    translationStatus: "editorial",
+    translationArabic: "إن الله تبارك وتعالى اتخذ إبراهيم عبدا قبل أن يتخذه نبيا وإن الله اتخذه نبيا قبل أن يتخذه رسولا وإن الله اتخذه رسولا قبل أن يتخذه خليلا وإن الله اتخذه خليلا قبل أن يجعله إماما ، فلما جمع له الأشياء قال : إني جاعلك للناس إماما",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج1، ص175، ح2۔",
     verifiedReferenceEn: "Al-Kafi, vol. 1, p. 175, hadith 2.",
     verifiedSourceUrl: "https://ablibrary.net/book_content/b/3249/223",
@@ -1069,6 +1192,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "إن الأرض لا تخلو إلا وفيها إمام ، كيما إن زاد المؤمنون شيئا ردهم ، وإن نقصوا شيئا أتمه لهم",
+    translationUr: "زمین کبھی امام سے خالی نہیں ہوتی، تاکہ مؤمن اگر کچھ بڑھا دیں تو وہ انہیں واپس لائے، اور اگر کچھ کم کردیں تو وہ ان کے لیے اسے پورا کرے۔",
+    translationEn: "The earth is never without an imam, so that if the believers add anything, he brings them back, and if they leave anything out, he completes it for them.",
+    translationStatus: "editorial",
+    translationArabic: "إن الأرض لا تخلو إلا وفيها إمام ، كيما إن زاد المؤمنون شيئا ردهم ، وإن نقصوا شيئا أتمه لهم",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج1، ص178، ح2۔",
     verifiedReferenceEn: "Al-Kafi, vol. 1, p. 178, hadith 2.",
     verifiedSourceUrl: "https://ablibrary.net/book_content/b/3249/226",
@@ -1112,6 +1241,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "من مات وهو لا يعرف إمامه مات ميتة جاهلية",
+    translationUr: "جو اپنے امام کو پہچانے بغیر مر گیا، وہ جاہلیت کی موت مرا۔",
+    translationEn: "Whoever dies without knowing their imam dies a death of ignorance.",
+    translationStatus: "editorial",
+    translationArabic: "من مات وهو لا يعرف إمامه مات ميتة جاهلية",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr:
       "المحاسن، ج1، ص251، ح474؛ بحار الانوار، ج23، ص76، ح1۔",
     verifiedReferenceEn:
@@ -1153,6 +1288,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     candidateArabic: "مَن اُلهِمَ العِصمَةَ أمِنَ الزَّلَلَ.",
     status: "verified",
     exactArabic: "مَنْ أُلْهِمَ الْعِصْمَةَ أَمِنَ الزَّلَلَ",
+    translationUr: "جسے عصمت کی توفیق دی گئی، وہ لغزش سے محفوظ ہوگیا۔",
+    translationEn: "Whoever is inspired with protection from sin is safe from slipping.",
+    translationStatus: "editorial",
+    translationArabic: "مَنْ أُلْهِمَ الْعِصْمَةَ أَمِنَ الزَّلَلَ",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr:
       "غرر الحکم، ح8469؛ تصنیف غرر الحکم ودرر الکلم، ص318، ش7338۔",
     verifiedReferenceEn:
@@ -1196,6 +1337,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "الامام منا لا يكون إلا معصوما وليست العصمة في ظاهر الخلقة فيعرف بها ولذلك لا يكون إلا منصوصا . فقيل له : يا ابن رسول الله فما معنى المعصوم ؟ فقال : هو المعتصم بحبل الله ، وحبل الله هو القرآن لا يفترقان إلى يوم القيامة ، والامام يهدي إلى القرآن والقرآن يهدي إلى الامام",
+    translationUr: "ہم میں سے امام صرف معصوم ہوتا ہے۔ عصمت ظاہری شکل میں ایسی چیز نہیں کہ اس سے اسے پہچانا جاسکے؛ اسی لیے امام کی تعیین نص کے ذریعے ہوتی ہے۔ عرض کیا گیا: اے فرزندِ رسول! معصوم کا کیا مطلب ہے؟ فرمایا: وہ اللہ کی رسی کو مضبوطی سے تھامنے والا ہے، اور اللہ کی رسی قرآن ہے۔ دونوں قیامت تک جدا نہیں ہوتے۔ امام قرآن کی طرف رہنمائی کرتا ہے اور قرآن امام کی طرف رہنمائی کرتا ہے۔",
+    translationEn: "An imam from among us can only be infallible. Infallibility is not a visible feature of one's physical form by which one can be recognized; therefore an imam can only be designated explicitly. He was asked: O son of the Messenger of God, what does infallible mean? He said: One who holds fast to God's rope; God's rope is the Qur'an. The two do not separate until the Day of Resurrection. The imam guides towards the Qur'an, and the Qur'an guides towards the imam.",
+    translationStatus: "editorial",
+    translationArabic: "الامام منا لا يكون إلا معصوما وليست العصمة في ظاهر الخلقة فيعرف بها ولذلك لا يكون إلا منصوصا . فقيل له : يا ابن رسول الله فما معنى المعصوم ؟ فقال : هو المعتصم بحبل الله ، وحبل الله هو القرآن لا يفترقان إلى يوم القيامة ، والامام يهدي إلى القرآن والقرآن يهدي إلى الامام",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "معانی الاخبار، ص132، ح1۔",
     verifiedReferenceEn: "Ma'ani al-Akhbar, p. 132, hadith 1.",
     verifiedSourceUrl: "https://ablibrary.net/book_content/b/3540/226",
@@ -1237,6 +1384,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "المعصوم هو الممتنع بالله من جميع محارم الله",
+    translationUr: "معصوم وہ ہے جو اللہ کی مدد سے اللہ کی تمام حرام کردہ چیزوں سے محفوظ رہتا ہے۔",
+    translationEn: "The infallible is one who, through God, refrains from all that God has forbidden.",
+    translationStatus: "editorial",
+    translationArabic: "المعصوم هو الممتنع بالله من جميع محارم الله",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "معانی الاخبار، ص132، ح2۔",
     verifiedReferenceEn: "Ma'ani al-Akhbar, p. 132, hadith 2.",
     verifiedSourceUrl: "https://ablibrary.net/book_content/b/3540/226",
@@ -1278,6 +1431,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "معصوما من الزلات ، مصونا عن الفواحش كلها",
+    translationUr: "لغزشوں سے معصوم، اور تمام بے حیائیوں سے محفوظ۔",
+    translationEn: "Protected from slips and safeguarded against all indecencies.",
+    translationStatus: "editorial",
+    translationArabic: "معصوما من الزلات ، مصونا عن الفواحش كلها",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج1، ص204، ح2۔",
     verifiedReferenceEn: "Al-Kafi, vol. 1, p. 204, hadith 2.",
     verifiedSourceUrl: "https://ablibrary.net/book_content/b/3249/252?lang=ar",
@@ -1319,6 +1478,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "فهو معصوم مؤيد ، موفق مسدد ، قد أمن من الخطايا والزلل والعثار ، يخصه الله بذلك ليكون حجته على عباده ، وشاهده على خلقه",
+    translationUr: "پس وہ معصوم، تائید یافتہ، توفیق یافتہ اور راہِ درست پر قائم رکھا گیا ہے؛ خطاؤں، لغزشوں اور ٹھوکروں سے محفوظ ہے۔ اللہ اسے یہ خصوصیت عطا کرتا ہے تاکہ وہ اس کے بندوں پر اس کی حجت اور اس کی مخلوق پر اس کا گواہ ہو۔",
+    translationEn: "Thus he is infallible, supported, granted success, and guided aright, secure from errors, slips, and stumbles. God singles him out for this so that he may be His proof over His servants and His witness over His creation.",
+    translationStatus: "editorial",
+    translationArabic: "فهو معصوم مؤيد ، موفق مسدد ، قد أمن من الخطايا والزلل والعثار ، يخصه الله بذلك ليكون حجته على عباده ، وشاهده على خلقه",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج1، ص203، ح1۔",
     verifiedReferenceEn: "Al-Kafi, vol. 1, p. 203, hadith 1.",
     verifiedSourceUrl: "https://ablibrary.net/book_content/b/3249/251",
@@ -1361,6 +1526,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "الْقُرْآنُ عَهْدُ اللَّهِ إِلَى خَلْقِهِ فَقَدْ يَنْبَغِي لِلْمَرْءِ الْمُسْلِمِ أَنْ يَنْظُرَ فِي عَهْدِهِ وَ أَنْ يَقْرَأَ مِنْهُ فِي كُلِّ يَوْمٍ خَمْسِينَ آيَةً.",
+    translationUr: "قرآن اللہ کا اپنی مخلوق سے عہد ہے؛ پس مسلمان کو چاہیے کہ اپنے اس عہد میں نظر کرے اور ہر روز اس میں سے پچاس آیات پڑھے۔",
+    translationEn: "The Qur'an is God's covenant with His creation. A Muslim should therefore look into that covenant and read fifty verses from it each day.",
+    translationStatus: "editorial",
+    translationArabic: "الْقُرْآنُ عَهْدُ اللَّهِ إِلَى خَلْقِهِ فَقَدْ يَنْبَغِي لِلْمَرْءِ الْمُسْلِمِ أَنْ يَنْظُرَ فِي عَهْدِهِ وَ أَنْ يَقْرَأَ مِنْهُ فِي كُلِّ يَوْمٍ خَمْسِينَ آيَةً.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص609، باب فی قراءتہ، ح1۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 609, chapter on recitation, hadith 1.",
     verifiedSourceUrl: "https://lib.eshia.ir/11005/2/609",
@@ -1403,6 +1574,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "آيَاتُ الْقُرْآنِ خَزَائِنُ فَكُلَّمَا فَتَحْتَ خِزَانَةً يَنْبَغِي لَكَ أَنْ تَنْظُرَ مَا فِيهَا.",
+    translationUr: "قرآن کی آیات خزانے ہیں؛ جب بھی کوئی خزانہ کھولو تو دیکھو کہ اس میں کیا ہے۔",
+    translationEn: "The verses of the Qur'an are treasures; whenever you open a treasure, you should examine what it contains.",
+    translationStatus: "editorial",
+    translationArabic: "آيَاتُ الْقُرْآنِ خَزَائِنُ فَكُلَّمَا فَتَحْتَ خِزَانَةً يَنْبَغِي لَكَ أَنْ تَنْظُرَ مَا فِيهَا.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص609، باب فی قراءتہ، ح2۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 609, chapter on recitation, hadith 2.",
     verifiedSourceUrl: "https://lib.eshia.ir/11005/2/609",
@@ -1445,6 +1622,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "إِنَّ أَهْلَ الْقُرْآنِ فِي أَعْلَى دَرَجَةٍ مِنَ الْآدَمِيِّينَ مَا خَلَا النَّبِيِّينَ وَ الْمُرْسَلِينَ فَلَا تَسْتَضْعِفُوا أَهْلَ الْقُرْآنِ حُقُوقَهُمْ فَإِنَّ لَهُمْ مِنَ اللَّهِ الْعَزِيزِ الْجَبَّارِ لَمَكَاناً عَلِيّاً.",
+    translationUr: "اہلِ قرآن، انبیاء اور رسولوں کے سوا، انسانوں میں سب سے بلند درجے پر ہیں۔ پس اہلِ قرآن کے حقوق کو معمولی نہ سمجھو، کیونکہ اللہ عزیز و جبار کے ہاں ان کا بہت بلند مقام ہے۔",
+    translationEn: "The people of the Qur'an hold the highest rank among human beings, apart from prophets and messengers. Do not belittle their rights, for they have an exalted station with God, the Mighty and Compelling.",
+    translationStatus: "editorial",
+    translationArabic: "إِنَّ أَهْلَ الْقُرْآنِ فِي أَعْلَى دَرَجَةٍ مِنَ الْآدَمِيِّينَ مَا خَلَا النَّبِيِّينَ وَ الْمُرْسَلِينَ فَلَا تَسْتَضْعِفُوا أَهْلَ الْقُرْآنِ حُقُوقَهُمْ فَإِنَّ لَهُمْ مِنَ اللَّهِ الْعَزِيزِ الْجَبَّارِ لَمَكَاناً عَلِيّاً.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح1۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 1.",
     verifiedSourceUrl: "https://lib.eshia.ir/11005/2/603",
@@ -1486,6 +1669,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "الْحَافِظُ لِلْقُرْآنِ الْعَامِلُ بِهِ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ.",
+    translationUr: "قرآن کا حافظ جو اس پر عمل بھی کرتا ہو، معزز اور نیکوکار سفیروں کے ساتھ ہے۔",
+    translationEn: "One who preserves the Qur'an and acts upon it is with the noble, righteous emissaries.",
+    translationStatus: "editorial",
+    translationArabic: "الْحَافِظُ لِلْقُرْآنِ الْعَامِلُ بِهِ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح2۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 2.",
     verifiedSourceUrl: "https://lib.eshia.ir/11005/2/603",
@@ -1528,6 +1717,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "تَعَلَّمُوا الْقُرْآنَ فَإِنَّهُ يَأْتِي يَوْمَ الْقِيَامَةِ صَاحِبَهُ فِي صُورَةِ شَابٍّ جَمِيلٍ شَاحِبِ اللَّوْنِ",
+    translationUr: "قرآن سیکھو، کیونکہ قیامت کے دن وہ اپنے ساتھی کے پاس ایک خوب صورت، زرد رنگت والے نوجوان کی صورت میں آئے گا۔",
+    translationEn: "Learn the Qur'an, for on the Day of Resurrection it will come to its companion in the form of a handsome young man with a pale complexion.",
+    translationStatus: "editorial",
+    translationArabic: "تَعَلَّمُوا الْقُرْآنَ فَإِنَّهُ يَأْتِي يَوْمَ الْقِيَامَةِ صَاحِبَهُ فِي صُورَةِ شَابٍّ جَمِيلٍ شَاحِبِ اللَّوْنِ",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح3۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 3.",
     verifiedSourceUrl: "https://lib.eshia.ir/11005/2/603",
@@ -1572,6 +1767,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "مَنْ قَرَأَ الْقُرْآنَ وَ هُوَ شَابٌّ مُؤْمِنٌ اخْتَلَطَ الْقُرْآنُ بِلَحْمِهِ وَ دَمِهِ وَ جَعَلَهُ اللَّهُ عَزَّ وَ جَلَّ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ",
+    translationUr: "جو مؤمن نوجوانی میں قرآن پڑھے، قرآن اس کے گوشت اور خون میں رچ بس جاتا ہے، اور اللہ عزوجل اسے معزز اور نیکوکار سفیروں کے ساتھ قرار دیتا ہے۔",
+    translationEn: "When a young believer reads the Qur'an, it mingles with their flesh and blood, and God, Mighty and Majestic, places them with the noble, righteous emissaries.",
+    translationStatus: "editorial",
+    translationArabic: "مَنْ قَرَأَ الْقُرْآنَ وَ هُوَ شَابٌّ مُؤْمِنٌ اخْتَلَطَ الْقُرْآنُ بِلَحْمِهِ وَ دَمِهِ وَ جَعَلَهُ اللَّهُ عَزَّ وَ جَلَّ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص603، باب فضل حامل القرآن، ح4۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 603, chapter on the merit of the bearer of the Qur'an, hadith 4.",
     verifiedSourceUrl: "https://lib.eshia.ir/11005/2/603",
@@ -1616,6 +1817,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "يَا حَامِلَ الْقُرْآنِ تَوَاضَعْ بِهِ يَرْفَعْكَ اللَّهُ وَ لَا تَعَزَّزْ بِهِ فَيُذِلَّكَ اللَّهُ يَا حَامِلَ الْقُرْآنِ تَزَيَّنْ بِهِ لِلَّهِ يُزَيِّنْكَ اللَّهُ بِهِ وَ لَا تَزَيَّنْ بِهِ لِلنَّاسِ فَيَشِينَكَ اللَّهُ بِهِ مَنْ خَتَمَ الْقُرْآنَ فَكَأَنَّمَا أُدْرِجَتِ النُّبُوَّةُ بَيْنَ جَنْبَيْهِ وَ لَكِنَّهُ لَا يُوحَى إِلَيْهِ وَ مَنْ جَمَعَ الْقُرْآنَ فَنَوْلُهُ لَا يَجْهَلُ مَعَ مَنْ يَجْهَلُ عَلَيْهِ وَ لَا يَغْضَبُ فِيمَنْ يَغْضَبُ عَلَيْهِ وَ لَا يَحِدُّ فِيمَنْ يَحِدُّ وَ لَكِنَّهُ يَعْفُو وَ يَصْفَحُ وَ يَغْفِرُ وَ يَحْلُمُ لِتَعْظِيمِ الْقُرْآنِ",
+    translationUr: "اے حاملِ قرآن! اس کے ذریعے تواضع اختیار کرو، اللہ تمہیں بلند کرے گا؛ اس کے ذریعے بڑائی نہ جتاؤ، ورنہ اللہ تمہیں پست کردے گا۔ اے حاملِ قرآن! اللہ کے لیے اس سے آراستہ ہو، اللہ تمہیں اس کے ذریعے آراستہ کرے گا؛ لوگوں کے لیے اس سے آراستہ نہ ہو، ورنہ اللہ تمہیں اس کے ذریعے بدنما کردے گا۔ جس نے قرآن ختم کیا، گویا نبوت اس کے دونوں پہلوؤں کے درمیان رکھ دی گئی، البتہ اس کی طرف وحی نہیں آتی۔ جس نے قرآن جمع کیا، اسے چاہیے کہ اس کے ساتھ جہالت کرنے والے کے ساتھ جہالت نہ کرے، اس پر غصہ کرنے والے پر غصہ نہ کرے، اور تندی کرنے والے کے ساتھ تندی نہ کرے؛ بلکہ قرآن کی تعظیم میں معاف کرے، درگزر کرے، بخشے اور بردباری اختیار کرے۔",
+    translationEn: "O bearer of the Qur'an, be humble through it and God will raise you; do not use it to claim superiority, lest God abase you. O bearer of the Qur'an, adorn yourself with it for God and God will adorn you through it; do not adorn yourself with it for people, lest God disfigure you through it. Whoever completes the Qur'an, it is as though prophethood has been placed between their sides, although they receive no revelation. Whoever gathers the Qur'an should not behave ignorantly towards one who treats them ignorantly, be angry with one who is angry with them, or act harshly towards one who acts harshly. Rather, out of reverence for the Qur'an, they should pardon, overlook, forgive, and show forbearance.",
+    translationStatus: "editorial",
+    translationArabic: "يَا حَامِلَ الْقُرْآنِ تَوَاضَعْ بِهِ يَرْفَعْكَ اللَّهُ وَ لَا تَعَزَّزْ بِهِ فَيُذِلَّكَ اللَّهُ يَا حَامِلَ الْقُرْآنِ تَزَيَّنْ بِهِ لِلَّهِ يُزَيِّنْكَ اللَّهُ بِهِ وَ لَا تَزَيَّنْ بِهِ لِلنَّاسِ فَيَشِينَكَ اللَّهُ بِهِ مَنْ خَتَمَ الْقُرْآنَ فَكَأَنَّمَا أُدْرِجَتِ النُّبُوَّةُ بَيْنَ جَنْبَيْهِ وَ لَكِنَّهُ لَا يُوحَى إِلَيْهِ وَ مَنْ جَمَعَ الْقُرْآنَ فَنَوْلُهُ لَا يَجْهَلُ مَعَ مَنْ يَجْهَلُ عَلَيْهِ وَ لَا يَغْضَبُ فِيمَنْ يَغْضَبُ عَلَيْهِ وَ لَا يَحِدُّ فِيمَنْ يَحِدُّ وَ لَكِنَّهُ يَعْفُو وَ يَصْفَحُ وَ يَغْفِرُ وَ يَحْلُمُ لِتَعْظِيمِ الْقُرْآنِ",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص604، باب فضل حامل القرآن، ح5۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 604, chapter on the merit of the bearer of the Qur'an, hadith 5.",
     verifiedSourceUrl: "https://lib.eshia.ir/11005/2/604",
@@ -1660,6 +1867,12 @@ export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
     status: "verified",
     exactArabic:
       "لَوْ مَاتَ مَنْ بَيْنَ الْمَشْرِقِ وَ الْمَغْرِبِ لَمَا اسْتَوْحَشْتُ بَعْدَ أَنْ يَكُونَ الْقُرْآنُ مَعِي",
+    translationUr: "اگر مشرق و مغرب کے درمیان سب لوگ مر جائیں تو بھی، جب تک قرآن میرے ساتھ ہو، مجھے تنہائی کا خوف نہ ہوگا۔",
+    translationEn: "Even if everyone between east and west were to die, I would not feel desolate so long as the Qur'an was with me.",
+    translationStatus: "editorial",
+    translationArabic: "لَوْ مَاتَ مَنْ بَيْنَ الْمَشْرِقِ وَ الْمَغْرِبِ لَمَا اسْتَوْحَشْتُ بَعْدَ أَنْ يَكُونَ الْقُرْآنُ مَعِي",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     verifiedReferenceUr: "الکافی، ج2، ص602، ح13۔",
     verifiedReferenceEn: "Al-Kafi, vol. 2, p. 602, hadith 13.",
     verifiedSourceUrl: "https://lib.eshia.ir/11005/2/602",
@@ -1697,6 +1910,7 @@ export function validateVerifiedHadithCorpus(
   const dossierIds = new Set<string>();
 
   for (const record of records) {
+    errors.push(...validateHadithTranslation(record));
     if (ids.has(record.id)) errors.push(`duplicate record id: ${record.id}`);
     ids.add(record.id);
 
@@ -1818,6 +2032,6 @@ export function verifiedHadithForDossierText(
   return witness?.textVerified &&
     Boolean(witness.exactArabic) &&
     witness.exactArabic!.includes(record.exactArabic)
-    ? record
+    ? { ...record, translationUr: undefined, translationEn: undefined, translationStatus: undefined, translationSourceLabelUr: undefined, translationSourceLabelEn: undefined, ...hadithTranslationFields(record) }
     : null;
 }

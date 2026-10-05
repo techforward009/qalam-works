@@ -1,3 +1,5 @@
+import { quranTranslationFor, QURAN_TRANSLATION_SOURCES } from "./quranTranslationProvider";
+import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
 import type { SermonLocale } from "./sermonPrep";
 import { pureKhateebUrdu } from "./urduPurity";
 import {
@@ -1673,10 +1675,16 @@ export function buildDossierText(
           "",
           ur ? item.refUr : item.refEn,
           item.quranLocation
-            ? `قرآنی متن: ${item.quranLocation.surah}:${item.quranLocation.ayah} — داخلی Indo-Pak Ahmedgraf ذخیرے سے`
+            ? ahmedgrafQuranReference.getAyah(item.quranLocation.surah, item.quranLocation.ayah)?.text ?? ""
             : "",
+          ...(item.quranLocation && quranTranslationFor(item.quranLocation.surah, item.quranLocation.ayah, locale)
+            ? [
+                `${ur ? "ترجمہ" : "Translation"}: ${quranTranslationFor(item.quranLocation.surah, item.quranLocation.ayah, locale)}`,
+                QURAN_TRANSLATION_SOURCES[locale][ur ? "sourceLabelUr" : "sourceLabelEn"],
+              ]
+            : []),
           `${ur ? "دقیق حوالہ" : "Exact reference"}: ${ur ? item.sourceRefUr : item.sourceRefEn}`,
-          ur ? item.explanationUr : item.explanationEn,
+          `${ur ? "خطیبانہ ربط/تشریح" : "Pulpit link / commentary"}: ${ur ? item.explanationUr : item.explanationEn}`,
         );
         continue;
       }
@@ -1688,8 +1696,14 @@ export function buildDossierText(
           "",
           ur ? item.refUr : item.refEn,
           verified.exactArabic ?? "",
+          ...((ur ? verified.translationUr : verified.translationEn)
+            ? [
+                `${ur ? "ترجمہ" : "Translation"}: ${ur ? verified.translationUr : verified.translationEn}`,
+                (ur ? verified.translationSourceLabelUr : verified.translationSourceLabelEn) ?? "",
+              ]
+            : []),
           `${ur ? "لفظ بہ لفظ مصدقہ حوالہ" : "Exact verified reference"}: ${ur ? verified.verifiedReferenceUr : verified.verifiedReferenceEn}`,
-          ur ? item.explanationUr : item.explanationEn,
+          `${ur ? "خطیبانہ ربط/تشریح" : "Pulpit link / commentary"}: ${ur ? item.explanationUr : item.explanationEn}`,
         );
       } else {
         lines.push(
@@ -1699,7 +1713,7 @@ export function buildDossierText(
             ? "اصل عربی متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی ہے؛ غیر مصدقہ عبارت نقل نہیں کی گئی۔"
             : "The exact Arabic source text is still pending word-for-word verification; unverified wording is not reproduced.",
           `${ur ? "ماخذی حوالہ (زیرِ تصدیق)" : "Source reference (pending verification)"}: ${inventory ? (ur ? inventory.citedReferenceUr : inventory.citedReferenceEn) : (ur ? item.sourceRefUr : item.sourceRefEn)}`,
-          ur ? item.explanationUr : item.explanationEn,
+          `${ur ? "خطیبانہ ربط/تشریح" : "Pulpit link / commentary"}: ${ur ? item.explanationUr : item.explanationEn}`,
         );
       }
     }  }

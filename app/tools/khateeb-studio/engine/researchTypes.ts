@@ -1,3 +1,5 @@
+import type { HadithTranslationFields } from "./hadithTranslation";
+
 /**
  * "verified" means the text/reference has been source-verified for presentation.
  * It is not a grading of hadith authenticity or chain strength.
@@ -11,7 +13,7 @@ export type KhateebEvidenceKind =
   | "speaker"
   | "source";
 
-export type KhateebResearchEvidence = {
+export type KhateebResearchEvidence = HadithTranslationFields & {
   id: string;
   topicId: string;
   kind: KhateebEvidenceKind;

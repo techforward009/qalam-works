@@ -1100,6 +1100,15 @@ export default function KhateebStudioContent({
                                       <KhateebQuranTranslation location={item.quranLocation} />
                                     ) : null}
                                   </div>
+                                  {item.kind === "hadith" && (ur ? item.translationUr : item.translationEn) ? (
+                                    <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-white px-3 py-3 text-sm leading-8 dark:bg-[#162a1e]">
+                                      <strong>{ur ? "ترجمہ: " : "Translation: "}</strong>
+                                      {ur ? item.translationUr : item.translationEn}
+                                      <div className="mt-1 text-xs text-[#8a6838] dark:text-[#d7bc8a]">
+                                        {ur ? item.translationSourceLabelUr : item.translationSourceLabelEn}
+                                      </div>
+                                    </div>
+                                  ) : null}
                                   {item.kind === "quran" || item.kind === "hadith" ? (
                                     <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-white px-3 py-2 text-sm leading-7 text-[#445247] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#b8c8bb]">
                                       <strong className="me-2 text-[#6f5730] dark:text-[#d7bc8a]">
@@ -1921,9 +1930,15 @@ export default function KhateebStudioContent({
                                       {ur ? "ترجمہ:" : "Translation:"}
                                     </strong>
                                     {ur ? block.translationUr : block.translationEn}
+                                    <div className="mt-1 text-xs text-[#8a6838] dark:text-[#d7bc8a]">
+                                      {ur ? block.translationSourceLabelUr : block.translationSourceLabelEn}
+                                    </div>
                                   </div>
                                 ) : null}
                                 <p className="mt-3 text-sm leading-8 text-[#445247] dark:text-[#b8c8bb]">
+                                  {block.kind === "hadith" || block.kind === "quran" ? (
+                                    <strong className="me-2">{ur ? "خطیبانہ ربط/تشریح:" : "Pulpit link / commentary:"}</strong>
+                                  ) : null}
                                   {ur ? block.bodyUr : block.bodyEn}
                                 </p>
                                 {(ur ? block.citationUr : block.citationEn) ? (

@@ -1,3 +1,4 @@
+import { quranTranslationFor, QURAN_TRANSLATION_SOURCES } from "./quranTranslationProvider";
 import type { KhateebResearchEvidence } from "./researchTypes";
 import type { LiveResearchPack } from "./liveResearchPack";
 
@@ -135,6 +136,18 @@ export function buildGroundedSermonBlueprintText(
       );
       if (item.arabic) {
         lines.push(item.arabic);
+      }
+      const translation = item.kind === "hadith"
+        ? (ur ? item.translationUr : item.translationEn)
+        : item.kind === "quran" && item.quranLocation
+          ? quranTranslationFor(item.quranLocation.surah, item.quranLocation.ayah, locale)
+          : null;
+      if (translation) {
+        lines.push(`${ur ? "ترجمہ" : "Translation"}: ${translation}`);
+        const label = item.kind === "quran"
+          ? QURAN_TRANSLATION_SOURCES[locale][ur ? "sourceLabelUr" : "sourceLabelEn"]
+          : (ur ? item.translationSourceLabelUr : item.translationSourceLabelEn);
+        if (label) lines.push(label);
       }
       if (item.kind === "quran" || item.kind === "hadith" || item.kind === "scholar") {
         lines.push(

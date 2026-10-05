@@ -1,6 +1,8 @@
+import { hadithTranslationFields, validateHadithTranslation, type HadithTranslationFields } from "./hadithTranslation";
 import type { KhateebResearchEvidence } from "./researchTypes";
 
-export type VerifiedLiveTopicHadith = {
+export type VerifiedLiveTopicHadith = HadithTranslationFields & {
+  translationArabic?: string;
   id: string;
   topicId: string;
   aliases: readonly string[];
@@ -50,6 +52,12 @@ export const VERIFIED_LIVE_TOPIC_HADITHS: readonly VerifiedLiveTopicHadith[] = [
     attributedToEn: "Imam al-Sadiq",
     exactArabic:
       "كنا جلوسا عند أبي عبد الله عليه السلام إذ أقبل العلاء بن كامل فجلس قدام أبي عبد الله عليه السلام فقال: ادع الله أن يرزقني في دعة فقال: لا أدعو لك اطلب كما أمرك الله عز وجل.",
+    translationUr: "ہم امام صادقؑ کے پاس بیٹھے تھے کہ علاء بن کامل آئے اور آپ کے سامنے بیٹھ کر عرض کیا: اللہ سے دعا کیجیے کہ مجھے آرام و آسائش میں رزق دے۔ آپ نے فرمایا: میں تمہارے لیے یہ دعا نہیں کروں گا؛ رزق تلاش کرو، جیسا اللہ عزوجل نے تمہیں حکم دیا ہے۔",
+    translationEn: "We were sitting with Imam al-Sadiq when al-Ala ibn Kamil arrived, sat before him, and said: Pray to God to provide for me in ease. He said: I will not make that prayer for you; seek provision as God, Mighty and Majestic, has commanded you.",
+    translationStatus: "editorial",
+    translationArabic: "كنا جلوسا عند أبي عبد الله عليه السلام إذ أقبل العلاء بن كامل فجلس قدام أبي عبد الله عليه السلام فقال: ادع الله أن يرزقني في دعة فقال: لا أدعو لك اطلب كما أمرك الله عز وجل.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     explanationUr:
       "روایت دعا کے ساتھ عملی کوشش کی ضرورت واضح کرتی ہے؛ رزق کے باب میں سستی یا صرف تمنا پر اکتفا نہیں کیا جاتا۔",
     explanationEn:
@@ -88,6 +96,12 @@ export const VERIFIED_LIVE_TOPIC_HADITHS: readonly VerifiedLiveTopicHadith[] = [
     attributedToEn: "Imam al-Sadiq",
     exactArabic:
       "سأل أبو عبد الله عليه السلام عن رجل وأنا عنده فقيل له: أصابته الحاجة، قال: فما يصنع اليوم؟ قيل: في البيت يعبد ربه قال: فمن أين قوته؟ قيل: من عند بعض إخوانه فقال أبو عبد الله عليه السلام: والله للذي يقوته أشد عبادة منه.",
+    translationUr: "میں امام صادقؑ کے پاس تھا جب آپ نے ایک شخص کے بارے میں پوچھا۔ عرض کیا گیا: وہ محتاج ہوگیا ہے۔ فرمایا: اب وہ کیا کرتا ہے؟ عرض کیا گیا: گھر میں اپنے رب کی عبادت کرتا ہے۔ فرمایا: اس کا کھانا کہاں سے آتا ہے؟ عرض کیا گیا: اس کے بعض بھائیوں کی طرف سے۔ امام صادقؑ نے فرمایا: اللہ کی قسم! جو اسے کھلاتا ہے، وہ اس سے زیادہ عبادت گزار ہے۔",
+    translationEn: "I was with Imam al-Sadiq when he asked about a man. He was told: He has fallen into need. He asked: What does he do now? He was told: He worships his Lord at home. He asked: Where does his food come from? He was told: From some of his brothers. Imam al-Sadiq said: By God, the one who feeds him is more devoted in worship than he is.",
+    translationStatus: "editorial",
+    translationArabic: "سأل أبو عبد الله عليه السلام عن رجل وأنا عنده فقيل له: أصابته الحاجة، قال: فما يصنع اليوم؟ قيل: في البيت يعبد ربه قال: فمن أين قوته؟ قيل: من عند بعض إخوانه فقال أبو عبد الله عليه السلام: والله للذي يقوته أشد عبادة منه.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     explanationUr:
       "روایت عبادت اور معاش کو ایک دوسرے کی ضد نہیں بناتی؛ دوسروں پر بوجھ بننے کے بجائے ذمہ دارانہ کفالت کو دینی قدر کے طور پر پیش کرتی ہے۔",
     explanationEn:
@@ -127,6 +141,12 @@ export const VERIFIED_LIVE_TOPIC_HADITHS: readonly VerifiedLiveTopicHadith[] = [
     attributedToEn: "Imam al-Baqir",
     exactArabic:
       "من طلب [الرزق في] الدنيا استعفافا عن الناس وتوسيعا على أهله وتعطفا على جاره لقى الله عز وجل يوم القيامة ووجهه مثل القمر ليلة البدر.",
+    translationUr: "جو دنیا میں [رزق] اس لیے تلاش کرے کہ لوگوں سے بے نیاز رہے، اپنے اہلِ خانہ کو آسائش دے اور اپنے پڑوسی پر مہربانی کرے، وہ قیامت کے دن اللہ عزوجل سے اس حال میں ملے گا کہ اس کا چہرہ چودھویں رات کے چاند کی طرح ہوگا۔",
+    translationEn: "Whoever seeks [provision in] this world to avoid dependence on people, provide generously for their household, and show kindness to their neighbour will meet God, Mighty and Majestic, on the Day of Resurrection with a face like the moon on the night of its fullness.",
+    translationStatus: "editorial",
+    translationArabic: "من طلب [الرزق في] الدنيا استعفافا عن الناس وتوسيعا على أهله وتعطفا على جاره لقى الله عز وجل يوم القيامة ووجهه مثل القمر ليلة البدر.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     explanationUr:
       "کسب کو صرف ذاتی آمدن نہیں بلکہ عزتِ نفس، اہلِ خانہ کی وسعت اور پڑوسی سے حسنِ سلوک کے ساتھ جوڑا گیا ہے۔",
     explanationEn:
@@ -165,6 +185,12 @@ export const VERIFIED_LIVE_TOPIC_HADITHS: readonly VerifiedLiveTopicHadith[] = [
     attributedToEn: "The Prophet",
     exactArabic:
       "قال رسول الله صلى الله عليه وآله: العبادة سبعون جزءا أفضلها طلب الحلال.",
+    translationUr: "رسول اللہؐ نے فرمایا: عبادت کے ستر حصے ہیں؛ ان میں سب سے افضل حلال کی تلاش ہے۔",
+    translationEn: "The Messenger of God said: Worship has seventy parts; the best of them is seeking what is lawful.",
+    translationStatus: "editorial",
+    translationArabic: "قال رسول الله صلى الله عليه وآله: العبادة سبعون جزءا أفضلها طلب الحلال.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     explanationUr:
       "یہ روایت طلبِ حلال کو عبادت کے بڑے ابواب میں شمار کرتی ہے اور رزق کی بحث کو واضح اخلاقی سمت دیتی ہے۔",
     explanationEn:
@@ -203,6 +229,12 @@ export const VERIFIED_LIVE_TOPIC_HADITHS: readonly VerifiedLiveTopicHadith[] = [
     attributedToEn: "Imam al-Sadiq",
     exactArabic:
       "قال أبو عبد الله عليه السلام: يا هشام إن رأيت الصفين قد التقيا فلا تدع طلب الرزق في ذلك اليوم.",
+    translationUr: "امام صادقؑ نے فرمایا: اے ہشام! اگر تم دیکھو کہ دونوں صفیں آمنے سامنے آگئی ہیں، تو اس دن بھی رزق کی تلاش ترک نہ کرو۔",
+    translationEn: "Imam al-Sadiq said: O Hisham, even if you see the two ranks meet in confrontation, do not abandon seeking provision that day.",
+    translationStatus: "editorial",
+    translationArabic: "قال أبو عبد الله عليه السلام: يا هشام إن رأيت الصفين قد التقيا فلا تدع طلب الرزق في ذلك اليوم.",
+    translationSourceLabelUr: "قلم ورکس — تدوینی ترجمہ",
+    translationSourceLabelEn: "Qalam Works — editorial translation",
     explanationUr:
       "روایت معاشی ذمہ داری میں جدوجہد اور تسلسل کی شدید تاکید کرتی ہے اور طلبِ رزق کو زندگی کی مستقل ذمہ داری کے طور پر سامنے لاتی ہے۔",
     explanationEn:
@@ -233,8 +265,8 @@ function normalize(value: string): string {
     .replace(/ى/gu, "ی")
     .replace(/ي/gu, "ی")
     .replace(/ك/gu, "ک")
-    .replace(/[^p{L}p{N}]+/gu, " ")
-    .replace(/s+/gu, " ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/gu, " ")
     .trim();
 }
 
@@ -261,8 +293,9 @@ export function verifiedLiveHadithEvidenceForQuery(
   query: string,
   limit = 8,
 ): readonly KhateebResearchEvidence[] {
+  const matchedTopicIds = verifiedLiveHadithTopicIds(query);
   return VERIFIED_LIVE_TOPIC_HADITHS
-    .filter((record) => matchesQuery(record, query))
+    .filter((record) => matchedTopicIds.includes(record.topicId))
     .slice(0, Math.max(0, limit))
     .map((record) => ({
       id: `verified-live-hadith-${record.id}`,
@@ -278,6 +311,7 @@ export function verifiedLiveHadithEvidenceForQuery(
       sourceUrl: record.sourceUrl,
       providerId: record.providerId,
       arabic: record.exactArabic,
+      ...hadithTranslationFields({ ...record, status: "verified" }),
       themesUr: ["رزق", "طلبِ حلال", "ذمہ دارانہ معاش"],
     }));
 }
@@ -289,6 +323,7 @@ export function validateVerifiedLiveTopicHadiths(
   const ids = new Set<string>();
 
   for (const record of records) {
+    errors.push(...validateHadithTranslation({ ...record, status: "verified" }));
     if (ids.has(record.id)) errors.push(`duplicate id: ${record.id}`);
     ids.add(record.id);
     if (!record.exactArabic.trim()) errors.push(`${record.id}: missing exact text`);

@@ -1,3 +1,4 @@
+import { hadithTranslationFields, type HadithTranslationFields } from "./hadithTranslation";
 import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
 import { SPEAKER_EVIDENCE } from "./speakerEvidence";
 import {
@@ -134,6 +135,7 @@ export function researchKhateebTopic(
     const dossier = getTopicDossier(topic.id);
 
     for (const row of dossier?.primaryTexts ?? []) {
+      let translation: HadithTranslationFields = {};
       let arabic = row.sourceArabicMarked || row.sourceArabic || row.arabic;
       let citationUr = row.sourceRefUr;
       let citationEn = row.sourceRefEn;
@@ -158,6 +160,7 @@ export function researchKhateebTopic(
 
         if (verified) {
           arabic = verified.exactArabic;
+          translation = hadithTranslationFields(verified);
           citationUr = verified.verifiedReferenceUr ?? verified.citedReferenceUr;
           citationEn = verified.verifiedReferenceEn ?? verified.citedReferenceEn;
           sourceUrl = verified.verifiedSourceUrl ?? verified.sourceUrl;
@@ -192,6 +195,8 @@ export function researchKhateebTopic(
         sourceUrl,
         providerId: sourceProviderForUrl(sourceUrl)?.id,
         arabic,
+        quranLocation: row.quranLocation,
+        ...translation,
       });
     }
 
