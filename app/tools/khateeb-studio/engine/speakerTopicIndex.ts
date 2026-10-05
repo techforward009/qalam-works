@@ -1,4 +1,5 @@
 import { KHATEEB_CORPUS } from "./khateebCorpus";
+import { readyEvidenceForScholar } from "./scholarCorpus";
 import {
   SPEAKER_EVIDENCE,
   normalizeSpeakerEvidenceUrdu,
@@ -34,24 +35,17 @@ export function evidenceForSpeakerAndTopic(
   speakerId: string,
   topicId: string,
 ): readonly SpeakerEvidence[] {
-  return SPEAKER_EVIDENCE.filter(
-    (record) =>
-      record.status === "ready" &&
-      record.speakerId === speakerId &&
-      record.topicIds.includes(topicId),
-  ).map(normalizeSpeakerEvidenceUrdu);
+  return readyEvidenceForScholar(speakerId).filter((record) =>
+    record.topicIds.includes(topicId),
+  );
 }
 
 export function topicsForSpeaker(speakerId: string): readonly SpeakerTopicIndexRow[] {
-  const records = SPEAKER_EVIDENCE.filter(
-    (record) => record.speakerId === speakerId && record.status === "ready",
-  );
+  const records = readyEvidenceForScholar(speakerId);
 
   return TOPIC_PREPS.flatMap((topic) => {
     const matches = records.filter((record) => record.topicIds.includes(topic.id));
-    return matches.length
-      ? [{ topic, records: matches.map(normalizeSpeakerEvidenceUrdu) }]
-      : [];
+    return matches.length ? [{ topic, records: matches }] : [];
   });
 }
 
