@@ -463,6 +463,24 @@ describe("Khateeb Studio real speaker material", () => {
     ).toContain("jild03-dua-aur-itmam-nimat");
   });
 
+  test("seeds high-value Zameer Akhtar sources without inventing extracted claims", () => {
+    const rows = SOUTH_ASIA_CORPUS_QUEUE.filter(
+      (item) => item.speakerId === "zameer-akhtar-naqvi",
+    );
+    expect(rows).toHaveLength(3);
+    expect(rows.map((item) => item.id)).toEqual(
+      expect.arrayContaining([
+        "zameer-akhtar-tareekh-shiat",
+        "zameer-akhtar-mohsineen-islam",
+        "zameer-akhtar-ashab-hussain",
+      ]),
+    );
+    expect(
+      rows.find((item) => item.id === "zameer-akhtar-ashab-hussain")?.pages,
+    ).toBe(715);
+    expect(evidenceForSpeaker("zameer-akhtar-naqvi")).toHaveLength(0);
+  });
+
   test("maps the verified five-part Azhar Hasan Zaidi source collection", () => {
     const rows = SOUTH_ASIA_CORPUS_QUEUE.filter(
       (item) => item.speakerId === "azhar-hasan-zaidi",
