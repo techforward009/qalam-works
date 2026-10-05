@@ -20,6 +20,8 @@ import { searchTopicPreps, TOPIC_PREPS } from "../app/tools/khateeb-studio/engin
 import { buildDossierText, getTopicDossier } from "../app/tools/khateeb-studio/engine/topicDossier";
 import { NAQQAN_ASHRA_EVIDENCE } from "../app/tools/khateeb-studio/engine/naqqanEvidence";
 import { TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariEvidence";
+import { TALIB_JOHARI_INSANIYAT_EVIDENCE } from "../app/tools/khateeb-studio/engine/talibJohariInsaniyatEvidence";
+import { corpusEntryForScholar, SCHOLAR_CORPUS } from "../app/tools/khateeb-studio/engine/scholarCorpus";
 import {
   SOUTH_ASIA_CORPUS_QUEUE,
   southAsiaSourcesForSpeaker,
@@ -80,6 +82,49 @@ describe("Khateeb Studio seed corpus", () => {
   test("keeps the scholar/speaker directory private until profiles are publication-ready", () => {
     expect(PUBLIC_KHATEEB_CORPUS).toEqual([]);
     expect(KHATEEB_CORPUS.every((item) => item.publicReady !== true)).toBe(true);
+  });
+});
+
+describe("Khateeb Studio scholar corpus foundation", () => {
+  test("builds one corpus entry for every registered scholar or speaker", () => {
+    expect(SCHOLAR_CORPUS).toHaveLength(KHATEEB_CORPUS.length);
+  });
+
+  test("Talib Johari corpus joins catalog sources with indexed evidence", () => {
+    const corpus = corpusEntryForScholar("talib-johari")!;
+    expect(corpus.status).toBe("indexed");
+    expect(corpus.catalogSourceCount).toBeGreaterThanOrEqual(5);
+    expect(corpus.readyRecordCount).toBeGreaterThan(
+      TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE.length,
+    );
+    expect(corpus.evidence.map((item) => item.id)).toContain(
+      "talib-insaniyat-01-ikhtilaf-hidayat",
+    );
+    expect(corpus.sources.some(
+      (item) =>
+        item.catalogId === "talib-johari-mansab-hidayat-quran" &&
+        item.readyRecordIds.length >= TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE.length,
+    )).toBe(true);
+    expect(corpus.sources.some(
+      (item) =>
+        item.catalogId === "talib-johari-asas-adamiyat-quran" &&
+        item.status === "catalog-only",
+    )).toBe(true);
+  });
+
+  test("new Insaniyat evidence stays page-grounded and topic-indexed", () => {
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE).toHaveLength(1);
+    const row = TALIB_JOHARI_INSANIYAT_EVIDENCE[0];
+    expect(row.sourceLabelUr).toContain("صفحات 13 تا 26");
+    expect(row.sourceUrl).toBe(
+      "https://maablib.org/insaniyat-ka-alohi-manshoor-by-talib-johri/",
+    );
+    expect(row.topicIds).toContain("quran-hidayat");
+    expect(row.materialUr?.length).toBeGreaterThanOrEqual(4);
+  });
+
+  test("known catalog sources are source-backed even before content ingestion", () => {
+    expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });
 });
 
