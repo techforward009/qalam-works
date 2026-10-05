@@ -24,6 +24,7 @@ import {
   parseCustomSermonProject,
   selectCustomEvidence,
   serializeCustomSermonProject,
+  updateCustomProjectBasics,
   updateCustomSection,
   validateCustomSermonProject,
   type CustomSermonKind,
@@ -67,6 +68,7 @@ export default function CustomSermonWorkspace({ locale }: Props) {
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchError, setResearchError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
+  const [importError, setImportError] = useState("");
 
   useEffect(() => {
     setProjects(loadProjects());
@@ -87,6 +89,79 @@ export default function CustomSermonWorkspace({ locale }: Props) {
     });
     setActiveId(project.id);
     if (persist) saveProject(project);
+  };
+
+  const updateActiveBasics = (
+    patch: Partial<
+      Pick<
+        CustomSermonProject,
+        "kind" | "title" | "objective" | "ownMaterial" | "duration" | "researchQuery"
+      >
+    >,
+  ) => {
+    if (!active) return;
+    replaceProject(updateCustomProjectBasics(active, patch), false);
+  };
+
+  const exportProjects = () => {
+    const payload = JSON.stringify(
+      {
+        type: "qalam-khateeb-custom-sermons",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        projects,
+      },
+      null,
+      2,
+    );
+    const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "qalam-khateeb-my-sermons.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importProjects = async (file: File | null) => {
+    if (!file) return;
+    setImportError("");
+    try {
+      const payload = JSON.parse(await file.text()) as {
+        type?: string;
+        version?: number;
+        projects?: unknown[];
+      };
+      if (
+        payload.type !== "qalam-khateeb-custom-sermons" ||
+        payload.version !== 1 ||
+        !Array.isArray(payload.projects)
+      ) {
+        throw new Error("invalid-backup");
+      }
+      const imported = payload.projects
+        .map((item) => parseCustomSermonProject(JSON.stringify(item)))
+        .filter((item): item is CustomSermonProject => Boolean(item));
+      if (!imported.length) throw new Error("empty-backup");
+      for (const project of imported) saveProject(project);
+      const merged = new Map(
+        [...loadProjects(), ...imported].map((project) => [project.id, project]),
+      );
+      setProjects(
+        [...merged.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+      );
+      setSavedMessage(
+        ur
+          ? `${imported.length} مسودے واپس محفوظ ہوگئے۔`
+          : `${imported.length} draft(s) restored.`,
+      );
+    } catch {
+      setImportError(
+        ur
+          ? "یہ قلم خطیب اسٹوڈیو کی درست محفوظ فائل نہیں۔"
+          : "This is not a valid Khateeb Studio backup file.",
+      );
+    }
   };
 
   const createProject = () => {
@@ -306,12 +381,41 @@ export default function CustomSermonWorkspace({ locale }: Props) {
           </div>
 
           <div className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
-            <div className="flex items-center gap-2">
-              <Library className="h-4 w-4 text-[#47654d] dark:text-[#b9d4bf]" />
-              <h3 className="font-bold text-[#1A3A2A] dark:text-white">
-                {ur ? "میرے محفوظ مسودے" : "My saved drafts"}
-              </h3>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Library className="h-4 w-4 text-[#47654d] dark:text-[#b9d4bf]" />
+                <h3 className="font-bold text-[#1A3A2A] dark:text-white">
+                  {ur ? "میرے محفوظ مسودے" : "My saved drafts"}
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={exportProjects}
+                  disabled={projects.length === 0}
+                  className="rounded-md border border-[#1A3A2A]/15 px-2.5 py-1 text-[11px] font-semibold text-[#445247] disabled:opacity-40 dark:border-[#35513d] dark:text-[#b8c8bb]"
+                >
+                  {ur ? "محفوظ فائل بنائیں" : "Export"}
+                </button>
+                <label className="cursor-pointer rounded-md border border-[#1A3A2A]/15 px-2.5 py-1 text-[11px] font-semibold text-[#445247] dark:border-[#35513d] dark:text-[#b8c8bb]">
+                  {ur ? "محفوظ فائل واپس لائیں" : "Import"}
+                  <input
+                    type="file"
+                    accept="application/json,.json"
+                    className="hidden"
+                    onChange={(event) => {
+                      void importProjects(event.target.files?.[0] ?? null);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </div>
             </div>
+            {importError ? (
+              <p className="mt-2 text-[11px] text-red-700 dark:text-red-300">
+                {importError}
+              </p>
+            ) : null}
             <div className="mt-3 space-y-2">
               {projects.length === 0 ? (
                 <p className="text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
@@ -410,6 +514,70 @@ export default function CustomSermonWorkspace({ locale }: Props) {
               </div>
 
               <div className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
+                <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                  <label className="grid gap-1 text-xs font-semibold text-[#5f6f61] dark:text-[#a8c8b0]">
+                    {ur ? "عنوان" : "Title"}
+                    <input
+                      value={active.title}
+                      onChange={(event) =>
+                        updateActiveBasics({ title: event.target.value })
+                      }
+                      className="rounded-lg border border-[#1A3A2A]/15 bg-white px-3 py-2 text-sm font-normal text-[#1A3A2A] outline-none focus:border-[#1A3A2A] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-white"
+                    />
+                  </label>
+                  <label className="grid gap-1 text-xs font-semibold text-[#5f6f61] dark:text-[#a8c8b0]">
+                    {ur ? "تحقیقی سوال / تلاش" : "Research query"}
+                    <input
+                      value={active.researchQuery}
+                      onChange={(event) =>
+                        updateActiveBasics({ researchQuery: event.target.value })
+                      }
+                      className="rounded-lg border border-[#1A3A2A]/15 bg-white px-3 py-2 text-sm font-normal text-[#1A3A2A] outline-none focus:border-[#1A3A2A] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-white"
+                    />
+                  </label>
+                  <label className="grid gap-1 text-xs font-semibold text-[#5f6f61] dark:text-[#a8c8b0] sm:col-span-2">
+                    {ur ? "مقصد" : "Objective"}
+                    <textarea
+                      value={active.objective}
+                      onChange={(event) =>
+                        updateActiveBasics({ objective: event.target.value })
+                      }
+                      rows={2}
+                      className="rounded-lg border border-[#1A3A2A]/15 bg-white px-3 py-2 text-sm font-normal leading-7 text-[#1A3A2A] outline-none focus:border-[#1A3A2A] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-white"
+                    />
+                  </label>
+                  <div className="sm:col-span-2 flex flex-wrap gap-2">
+                    {(["majlis", "jumuah", "general"] as const).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => updateActiveBasics({ kind: value })}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+                          active.kind === value
+                            ? "border-[#1A3A2A] bg-[#1A3A2A] text-white"
+                            : "border-[#1A3A2A]/15 bg-white text-[#445247] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#b8c8bb]"
+                        }`}
+                      >
+                        {customSermonKindLabel(value, locale)}
+                      </button>
+                    ))}
+                    {([20, 30, 45] as const).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => updateActiveBasics({ duration: value })}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                          active.duration === value
+                            ? "bg-[#6f5730] text-white"
+                            : "bg-[#F1F3EF] text-[#445247] dark:bg-[#0e1c15] dark:text-[#b8c8bb]"
+                        }`}
+                      >
+                        {value} {ur ? "منٹ" : "min"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h4 className="font-bold text-[#1A3A2A] dark:text-white">
@@ -507,6 +675,25 @@ export default function CustomSermonWorkspace({ locale }: Props) {
                     ? "ہر حصے میں آپ اپنی زبان، واقعہ، شعر یا ربط لکھ سکتے ہیں۔ ماخذی متن اس سے الگ محفوظ رہے گا۔"
                     : "Add your own wording, story, poetry, or transition in each section. Source text remains separate."}
                 </p>
+
+                <div className="mt-4 rounded-lg border border-blue-200/70 bg-blue-50/60 p-3 dark:border-blue-900/40 dark:bg-blue-950/10">
+                  <label className="grid gap-1 text-xs font-semibold text-blue-900 dark:text-blue-200">
+                    {ur ? "میرا بنیادی مواد" : "My core material"}
+                    <textarea
+                      value={active.ownMaterial}
+                      onChange={(event) =>
+                        updateActiveBasics({ ownMaterial: event.target.value })
+                      }
+                      rows={4}
+                      placeholder={
+                        ur
+                          ? "اپنا واقعہ، شعر، مثال، تجربہ یا مرکزی ذاتی نکتہ یہاں مسلسل محفوظ کریں۔"
+                          : "Keep your own story, poetry, example, experience, or core personal point here."
+                      }
+                      className="rounded-lg border border-blue-200 bg-white px-3 py-2.5 text-sm font-normal leading-7 text-[#1A3A2A] outline-none dark:border-blue-900/40 dark:bg-[#162a1e] dark:text-white"
+                    />
+                  </label>
+                </div>
 
                 <div className="mt-4 space-y-3">
                   {active.sections.map((section) => (
