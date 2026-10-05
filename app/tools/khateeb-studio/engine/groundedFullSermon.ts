@@ -22,6 +22,11 @@ export type SermonCompositionBlock = {
   bodyEn: string;
   arabic?: string;
   quranLocation?: { surah: number; ayah: number };
+  translationUr?: string;
+  translationEn?: string;
+  translationStatus?: "editorial" | "published";
+  translationSourceLabelUr?: string;
+  translationSourceLabelEn?: string;
   citationUr?: string;
   citationEn?: string;
   sourceUrl?: string;
@@ -99,6 +104,11 @@ function verifiedHadithBlock(
     bodyUr: source.explanationUr,
     bodyEn: source.explanationEn,
     arabic: record.exactArabic,
+    translationUr: record.translationUr,
+    translationEn: record.translationEn,
+    translationStatus: record.translationStatus,
+    translationSourceLabelUr: record.translationSourceLabelUr,
+    translationSourceLabelEn: record.translationSourceLabelEn,
     citationUr: record.verifiedReferenceUr ?? record.citedReferenceUr,
     citationEn: record.verifiedReferenceEn ?? record.citedReferenceEn,
     sourceUrl: record.verifiedSourceUrl ?? record.sourceUrl,

@@ -67,6 +67,23 @@ import {
   QURAN_TRANSLATION_SOURCES,
 } from "../app/tools/khateeb-studio/engine/quranTranslationProvider";
 
+describe("Khateeb Studio hadith translation separation", () => {
+  test("keeps hadith translation distinct from Arabic verification and commentary", () => {
+    const corpus = readFileSync(
+      "app/tools/khateeb-studio/engine/verifiedHadithCorpus.ts",
+      "utf8",
+    );
+    const studio = readFileSync(
+      "app/tools/khateeb-studio/KhateebStudioContent.tsx",
+      "utf8",
+    );
+    expect(corpus).toContain('translationStatus?: "editorial" | "published"');
+    expect(corpus).toContain("translationUr?: string");
+    expect(corpus).toContain("translationEn?: string");
+    expect(studio).toContain("قلم ورکس — تدوینی ترجمہ");
+  });
+});
+
 describe("Khateeb Studio Qur'an translations", () => {
   test("uses the user-supplied Najafi and Qara'i translations separately from commentary", () => {
     expect(quranTranslationCoverageCount()).toBe(60);

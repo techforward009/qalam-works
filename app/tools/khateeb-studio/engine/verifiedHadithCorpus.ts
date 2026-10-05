@@ -51,6 +51,15 @@ export type VerifiedHadithRecord = {
    * specific witness below; it is never reconstructed by the model.
    */
   exactArabic?: string;
+  /**
+   * Translation is separate from commentary. "editorial" means Qalam translated
+   * the verified Arabic; "published" means a cited published translation is used.
+   */
+  translationUr?: string;
+  translationEn?: string;
+  translationStatus?: "editorial" | "published";
+  translationSourceLabelUr?: string;
+  translationSourceLabelEn?: string;
   verifiedReferenceUr?: string;
   verifiedReferenceEn?: string;
   verifiedSourceUrl?: string;
