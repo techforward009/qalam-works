@@ -30,6 +30,7 @@ import {
 } from "./engine/sermonPrep";
 import { evidenceForSpeaker } from "./engine/speakerEvidence";
 import {
+  evidenceForOccasion,
   evidenceForTopic,
   topicsForSpeaker,
 } from "./engine/speakerTopicIndex";
@@ -374,6 +375,7 @@ export default function KhateebStudioContent({
           : undefined,
       )
     : "";
+  const occasionSpeakerEvidence = event ? evidenceForOccasion(event.id) : [];
   const preparation = getSermonPrep(event);
   const preparationMinutes = outlineMinutes(duration);
   const preparationText = preparation
@@ -2947,6 +2949,80 @@ export default function KhateebStudioContent({
                 </div>
               </div>
             </div>
+
+            <section className="mt-5 rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                    {ur ? "اس مناسبت پر اہلِ علم کا اصل مواد" : "Source-backed scholar material for this occasion"}
+                  </h3>
+                  <p className="mt-1 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
+                    {ur
+                      ? "صرف وہی مجلس یا خطاب دکھایا جاتا ہے جسے اسی تقویمی مناسبت سے واضح طور پر جوڑا گیا ہو؛ عمومی موضوعی مشابہت کو نسبت نہیں بنایا جاتا۔"
+                      : "Only material explicitly linked to this calendar occasion is shown; generic thematic similarity is not treated as attribution."}
+                  </p>
+                </div>
+                <span className="rounded-full bg-[#F7F5EF] px-2.5 py-1 text-xs font-semibold text-[#6b776d] dark:bg-[#0e1c15] dark:text-[#98aa9b]">
+                  {occasionSpeakerEvidence.length} {ur ? "مصدقہ اندراج" : "verified records"}
+                </span>
+              </div>
+
+              {occasionSpeakerEvidence.length ? (
+                <div className="mt-3 space-y-3">
+                  {occasionSpeakerEvidence.map((record) => {
+                    const indexedSpeaker = KHATEEB_CORPUS.find(
+                      (item) => item.id === record.speakerId,
+                    );
+                    return (
+                      <article
+                        key={record.id}
+                        className="rounded-lg border border-[#1A3A2A]/10 bg-[#F7F5EF] p-3 dark:border-[#35513d] dark:bg-[#0e1c15]"
+                      >
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          {indexedSpeaker ? (
+                            <strong className="text-[#1A3A2A] dark:text-[#e7eee9]">
+                              {speakerName(indexedSpeaker, !ur)}
+                            </strong>
+                          ) : null}
+                          <span className="text-[#8a6838]">
+                            {record.kind === "transcript"
+                              ? (ur ? "مکتوب خطاب" : "Transcript")
+                              : (ur ? "اصل مجموعۂ مجالس" : "Published majlis collection")}
+                          </span>
+                        </div>
+                        <h4 className="mt-1 font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
+                          {ur ? record.titleUr : record.titleEn}
+                        </h4>
+                        <p className="mt-1 text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
+                          {ur ? record.summaryUr : record.summaryEn}
+                        </p>
+                        {record.materialUr?.length ? (
+                          <div className="mt-3 space-y-2 rounded-lg bg-white p-3 dark:bg-[#162a1e]">
+                            <div className="text-xs font-bold text-[#6b776d] dark:text-[#98aa9b]">
+                              {ur ? "منبر کے لیے قابلِ استعمال نکات" : "Usable study material"}
+                            </div>
+                            {(ur ? record.materialUr : record.materialEn ?? []).map((paragraph) => (
+                              <p key={paragraph} className="text-sm leading-7 text-[#303830] dark:text-[#d7e1d9]">
+                                {paragraph}
+                              </p>
+                            ))}
+                          </div>
+                        ) : null}
+                        <div className="mt-2 text-[11px] leading-6 text-[#7c877e] dark:text-[#8fa294]">
+                          {ur ? `حوالہ: ${record.sourceLabelUr}` : `Reference: ${record.sourceLabelEn}`}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-3 rounded-lg border border-dashed border-[#1A3A2A]/15 bg-[#F7F5EF] p-3 text-sm leading-7 text-[#5f6f61] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
+                  {ur
+                    ? "اس مناسبت سے واضح طور پر منسلک کسی عالم کا اصل مواد ابھی corpus میں شامل نہیں ہوا؛ قلم یہاں عمومی مواد کو کسی عالم کی طرف منسوب نہیں کرے گا۔"
+                    : "No scholar material explicitly linked to this occasion has been ingested yet; Qalam will not turn generic material into an attribution."}
+                </p>
+              )}
+            </section>
 
             {speaker ? (
               <div className="mt-5 rounded-xl border border-[#1A3A2A]/10 bg-[#f9faf7] p-4 dark:border-[#35513d] dark:bg-[#102019]">

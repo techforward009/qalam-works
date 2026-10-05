@@ -706,6 +706,13 @@ describe("Khateeb Studio guided workflow", () => {
     expect(studio).toContain("Step 1: Where do you want to begin?");
   });
 
+  test("occasion preparation exposes source-backed scholar material", () => {
+    const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
+    expect(studio).toContain("evidenceForOccasion");
+    expect(studio).toContain("اس مناسبت پر اہلِ علم کا اصل مواد");
+    expect(studio).toContain("occasionSpeakerEvidence");
+  });
+
   test("separates topic and occasion entry paths", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).toContain('preparationMode === "topic"');
