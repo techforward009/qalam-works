@@ -165,7 +165,7 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     ],
     sourceLabelUr: "مآب لائبریری — محفوظ مجموعۂ مجالس",
     sourceLabelEn: "MAAB Library — archived majalis collection",
-    sourceUrl: "https://maablib.org/category/majaaalis-books/",
+    sourceUrl: "https://maablib.org/majalas-e-turabi-jild01-toheed-w-shirk-turabi-mrtba-doctor-syed-zameer-akhtar-naqvi/",
   },
   {
     id: "turabi-kufran-hayat",
@@ -217,7 +217,60 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     ],
     sourceLabelUr: "مآب لائبریری — محفوظ مجموعۂ مجالس",
     sourceLabelEn: "MAAB Library — archived majalis collection",
-    sourceUrl: "https://maablib.org/category/majaaalis-books/",
+    sourceUrl: "https://maablib.org/majalas-e-turabi-jild03-dua-aur-itmam-nimat-turabi-mrtba-syed-zulfqar-hussain-hasni/",
+  },
+  {
+    id: "turabi-majalis-1407",
+    speakerId: "rashid-turabi",
+    topicIds: [],
+    kind: "compiled-majalis",
+    status: "catalog-only",
+    titleUr: "مجالس ترابی — مجموعہ مجالس (1407ھ)",
+    titleEn: "Majalis-e-Turabi — Collected Majalis (1407 AH)",
+    dateLabel: "1407 AH / 1987",
+    topicsUr: ["فضائل اہل بیت", "مجالس", "مصائب"],
+    topicsEn: ["virtues of Ahl al-Bayt", "majalis", "masaib"],
+    summaryUr:
+      "مآب لائبریری میں علامہ رشید ترابیؒ کی مجالس کا 1407ھ/1987ء کا 163 صفحات پر مشتمل مستقل مجموعہ محفوظ ہے۔ یہ ابھی صرف مصدقہ کتابی ماخذ کے طور پر شامل ہے؛ مجلس بہ مجلس متن پڑھے بغیر Qalam اس سے کوئی مخصوص علمی دعویٰ اخذ نہیں کرتا۔",
+    summaryEn:
+      "MAAB preserves a 163-page 1407 AH / 1987 collection of Rashid Turabi's majalis. It remains a verified bibliographic source only; Qalam does not derive specific scholarly claims until the individual majalis are ingested.",
+    takeawaysUr: [
+      "رشید ترابیؒ کے 163 صفحات کے محفوظ مجموعۂ مجالس کا مصدقہ ماخذ۔",
+      "اگلا مرحلہ مجلس بہ مجلس اصل متن کی indexing ہے، نہ کہ عنوان سے مفروضہ خلاصہ۔",
+    ],
+    takeawaysEn: [
+      "A verified 163-page collected source for Rashid Turabi's majalis.",
+      "The next step is majlis-level full-text indexing, not title-based inference.",
+    ],
+    sourceLabelUr: "مآب لائبریری — مجالس ترابی، 1407ھ/1987ء، 163 صفحات",
+    sourceLabelEn: "MAAB Library — Majalis-e-Turabi, 1407 AH / 1987, 163 pages",
+    sourceUrl: "https://maablib.org/majalas-e-turabi-1407-az-raza-hussain-turabi-mrtba-syed-zameer-akhtar-naqvi/",
+  },
+  {
+    id: "turabi-kitab-hikmat-mulk-azeem",
+    speakerId: "rashid-turabi",
+    topicIds: [],
+    kind: "compiled-majalis",
+    status: "catalog-only",
+    titleUr: "مجالس ترابی، جلد پنجم: کتاب، حکمت اور ملکِ عظیم",
+    titleEn: "Majalis-e-Turabi, vol. 5: Book, Wisdom, and the Great Kingdom",
+    topicsUr: ["کتاب", "حکمت", "ملک عظیم", "مجالس"],
+    topicsEn: ["book", "wisdom", "great kingdom", "majalis"],
+    summaryUr:
+      "مآب کے تازہ کتابی ریکارڈ میں مجالس ترابی کی جلد پنجم 'کتاب، حکمت اور ملکِ عظیم' کے عنوان سے محفوظ ہے۔ مکمل متن ابھی ingest نہیں ہوا، اس لیے یہ صرف قابلِ تصدیق source lead ہے اور کسی مخصوص قول یا استدلال کی نسبت نہیں کی جاتی۔",
+    summaryEn:
+      "MAAB's catalogue preserves volume five of Majalis-e-Turabi under the title 'Book, Wisdom, and the Great Kingdom'. The full text has not yet been ingested, so it remains a verifiable source lead rather than evidence for any specific claim.",
+    takeawaysUr: [
+      "رشید ترابیؒ کے corpus میں ایک مزید مصدقہ کتابی جلد شامل ہوگئی۔",
+      "متن ingest ہونے تک موضوعی عنوان کو علمی دعوے کے برابر نہیں سمجھا جائے گا۔",
+    ],
+    takeawaysEn: [
+      "A further verified bibliographic volume is now represented in Turabi's corpus inventory.",
+      "Its title is not treated as evidence for specific claims until the text is ingested.",
+    ],
+    sourceLabelUr: "مآب لائبریری — مجالس ترابی، جلد پنجم",
+    sourceLabelEn: "MAAB Library — Majalis-e-Turabi, volume 5",
+    sourceUrl: "https://maablib.org/majalis-e-turabi-jild-05-kitab-hikmat-aur-mulk-e-azeem-az-raza-hasan-rasheed-turabi-mrtb-syed-z-akhtar-naqvi/",
   },
 ];
 

@@ -447,10 +447,20 @@ describe("Khateeb Studio real speaker material", () => {
   test("does not expose catalog-only Turabi records as ready sermon material", () => {
     expect(evidenceForSpeaker("rashid-turabi")).toHaveLength(0);
     const rows = catalogEvidenceForSpeaker("rashid-turabi");
-    expect(rows.length).toBeGreaterThanOrEqual(3);
+    expect(rows.length).toBeGreaterThanOrEqual(5);
     expect(rows.every((row) => row.kind === "compiled-majalis")).toBe(true);
     expect(rows.every((row) => row.status === "catalog-only")).toBe(true);
     expect(rows.some((row) => row.titleUr.includes("توحید اور شرک"))).toBe(true);
+    expect(rows.some((row) => row.id === "turabi-majalis-1407")).toBe(true);
+    expect(
+      rows.some((row) => row.id === "turabi-kitab-hikmat-mulk-azeem"),
+    ).toBe(true);
+    expect(
+      rows.find((row) => row.id === "turabi-tawhid-shirk")?.sourceUrl,
+    ).toContain("jild01-toheed-w-shirk");
+    expect(
+      rows.find((row) => row.id === "turabi-dua-itmam")?.sourceUrl,
+    ).toContain("jild03-dua-aur-itmam-nimat");
   });
 
   test("keeps Rashid Turabi source inventory precise without promoting catalog records", () => {
