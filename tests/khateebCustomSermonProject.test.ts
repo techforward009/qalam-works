@@ -15,6 +15,7 @@ import type {
   KhateebResearchEvidence,
   KhateebResearchResult,
 } from "../app/tools/khateeb-studio/engine/researchTypes";
+import { researchKhateebTopic } from "../app/tools/khateeb-studio/engine/researchEngine";
 
 function evidence(
   id: string,
@@ -223,6 +224,38 @@ describe("Khateeb custom sermon projects", () => {
     expect(project.sections.reduce((sum, item) => sum + item.minutes, 0)).toBe(
       30,
     );
+  });
+
+  test("works end-to-end with the verified live Rizq research pipeline", () => {
+    const project = createCustomSermonProject({
+      kind: "majlis",
+      title: "رزقِ حلال اور عزتِ نفس",
+      objective: "توکل، کوشش اور حلال معاش کو ایک مجلس میں جوڑنا",
+      duration: 30,
+    });
+    const research = researchKhateebTopic({
+      query: "رزق",
+      locale: "ur",
+      maxEvidence: 30,
+    });
+    const researched = applyResearchToCustomProject(project, research);
+    const ready = markCustomProjectReady(researched);
+    const text = buildCustomSermonText(ready, "ur");
+
+    expect(ready.status).toBe("ready");
+    expect(
+      ready.evidence.filter(
+        (item) => item.status === "verified" && item.kind === "quran",
+      ).length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      ready.evidence.filter(
+        (item) => item.status === "verified" && item.kind === "hadith",
+      ).length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(text).toContain("الکافی، ج5، ص78");
+    expect(text).toContain("[مصدقہ ماخذ]");
+    expect(validateCustomSermonProject(ready)).toEqual([]);
   });
 
   test("serializes and safely restores a saved project", () => {
