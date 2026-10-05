@@ -228,4 +228,49 @@ export const TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Asas-e-Adamiyat aur Qur'an — Majlis 5, printed pp. 78–96",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-asas-06-faith-divine-help",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "چھٹی مجلس — ایمان، نصرتِ الٰہی اور ذمہ دار عمل",
+    titleEn: "Majlis 6 — Faith, divine help, and responsible action",
+    topicsUr: ["ایمان", "نصرت الٰہی", "قرآن", "عمل", "علم", "توکل"],
+    topicsEn: ["faith", "divine help", "Qur'an", "action", "knowledge", "reliance"],
+    summaryUr:
+      "علامہ طالب جوہریؒ چھٹی مجلس میں ایمان کو محض زبانی دعوے کے بجائے ایسی قوت کے طور پر بیان کرتے ہیں جو انسان کو عمل، استقامت اور نصرتِ الٰہی کے لائق بناتی ہے۔ ان کے بیان میں خدا کی مدد سستی یا بے عملی کا متبادل نہیں؛ «إن تنصروا الله ينصركم» کے تحت بندے کی ذمہ داری اور الٰہی مدد باہم مربوط ہیں۔",
+    summaryEn:
+      "Talib Johari presents faith not as a verbal claim but as a force that produces action, steadfastness, and readiness for divine help. God's support does not replace human effort; under the Qur'anic principle 'If you support God, He will support you', responsibility and divine assistance remain connected.",
+    materialUr: [
+      "علامہ ایمان کو ایسا زندہ تعلق قرار دیتے ہیں جس کا اثر فیصلے، حوصلے اور عمل میں نظر آنا چاہیے۔ محض نسبت یا دعویٰ ایمان کی تکمیل نہیں۔",
+      "نصرتِ الٰہی کو وہ انسانی ذمہ داری کے ساتھ رکھتے ہیں۔ بندہ حق کی حمایت، درست عمل اور استقامت اختیار کرے تو الٰہی مدد کا وعدہ معنی خیز بنتا ہے۔",
+      "علم اور ایمان کے تعلق پر بھی زور ہے: دینی شعور اندھی تقلید یا جذباتی دعوے کے بجائے سمجھ، دلیل اور عمل کی طرف لے جانا چاہیے۔",
+      "منبر پر یہ مجلس ایمان، ذمہ داری، نصرت اور پھر استقامت کی ترتیب میں ایک مضبوط عملی پیغام دیتی ہے۔",
+    ],
+    materialEn: [
+      "Johari presents faith as a living relationship whose effects should appear in decisions, courage, and action. Affiliation or verbal profession alone does not complete faith.",
+      "Divine help is placed alongside human responsibility. Support of truth, sound action, and steadfastness make the promise of divine aid meaningful.",
+      "He also stresses the relation between knowledge and faith: religious awareness should lead beyond blind imitation or emotional claim toward understanding, reasoning, and action.",
+      "A sermon can move from faith to responsibility, then to divine help, and finally to steadfastness.",
+    ],
+    takeawaysUr: [
+      "ایمان کو عمل اور استقامت سے جوڑیں۔",
+      "نصرتِ الٰہی کو انسانی ذمہ داری کا متبادل نہ بنائیں۔",
+      "علم اور ایمان کے باہمی تعلق کو نمایاں کریں۔",
+      "دینی دعوے سے آگے عملی وفاداری کی طرف لے جائیں۔",
+    ],
+    takeawaysEn: [
+      "Connect faith with action and steadfastness.",
+      "Do not treat divine help as a substitute for human responsibility.",
+      "Highlight the relation between knowledge and faith.",
+      "Move from religious claim to practical loyalty.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «اساس آدمیت اور قرآن» — چھٹی مجلس، کتابی صفحات 97 تا 113",
+    sourceLabelEn:
+      "Original book Asas-e-Adamiyat aur Qur'an — Majlis 6, printed pp. 97–113",
+    sourceUrl: SOURCE_URL,
+  },
 ];

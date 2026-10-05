@@ -228,4 +228,49 @@ export const TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 5, printed pp. 88–106",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-aalmi-06-language-social-life",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "چھٹی مجلس — زبان، بیان اور انسانی معاشرت",
+    titleEn: "Majlis 6 — Language, expression, and human social life",
+    topicsUr: ["زبان", "بیان", "انسان", "معاشرہ", "قرآن", "اخلاق"],
+    topicsEn: ["language", "expression", "humanity", "society", "Qur'an", "ethics"],
+    summaryUr:
+      "علامہ طالب جوہریؒ چھٹی مجلس میں انسان کی امتیازی صلاحیتوں میں زبان اور بیان کو نمایاں کرتے ہیں۔ وہ دکھاتے ہیں کہ کلام صرف معلومات منتقل کرنے کا ذریعہ نہیں بلکہ رشتے بناتا، معاشرت تشکیل دیتا اور خیر یا فساد دونوں کا وسیلہ بن سکتا ہے۔ اس لیے زبان کی اخلاقی ذمہ داری انسانی معاشرت کی بنیادی ذمہ داریوں میں شامل ہے۔",
+    summaryEn:
+      "Talib Johari highlights language and expression among the distinctive human capacities. Speech does more than transfer information: it creates relationships, shapes society, and can become an instrument of either good or corruption. Ethical responsibility in speech is therefore fundamental to social life.",
+    materialUr: [
+      "علامہ انسانی بیان کو تمدنی قوت سمجھتے ہیں۔ زبان کے ذریعے علم منتقل ہوتا ہے، رشتے قائم ہوتے ہیں اور اجتماعی یادداشت بنتی ہے۔",
+      "اسی طاقت کا منفی رخ بھی ہے: زبان جھوٹ، فساد، تضحیک اور دشمنی کو پھیلا سکتی ہے۔ اس لیے قوتِ بیان کے ساتھ اخلاقی ضبط ضروری ہے۔",
+      "انسانی معاشرہ محض جسمانی قربت سے نہیں بنتا؛ مشترک معنی، گفتگو، اعتماد اور باہمی احترام اسے حقیقی معاشرہ بناتے ہیں۔",
+      "منبر پر یہ مجلس زبان کی نعمت، اس کی قوت، اس کے خطرے اور پھر ذمہ دار معاشرتی گفتگو کی طرف لے جاتی ہے۔",
+    ],
+    materialEn: [
+      "Johari treats human expression as a civilizational power. Through language knowledge is transmitted, relationships are formed, and collective memory is preserved.",
+      "The same power can turn destructive through lies, humiliation, hostility, and social corruption. Speech therefore requires moral discipline.",
+      "Human society is not made by physical proximity alone; shared meaning, conversation, trust, and mutual respect make genuine social life possible.",
+      "A sermon can move from language as gift, to language as power, to its dangers, and finally to responsible social communication.",
+    ],
+    takeawaysUr: [
+      "زبان کو انسانی تمدن کی بنیادی قوت کے طور پر پیش کریں۔",
+      "بیان کی آزادی کے ساتھ بیان کی اخلاقی ذمہ داری بھی واضح کریں۔",
+      "جھوٹ اور تضحیک کو معاشرتی فساد سے جوڑیں۔",
+      "اعتماد اور احترام کو صحت مند معاشرت کی بنیاد بنائیں۔",
+    ],
+    takeawaysEn: [
+      "Present language as a foundational civilizational power.",
+      "Pair freedom of expression with moral responsibility.",
+      "Connect lying and humiliation with social corruption.",
+      "Make trust and respect foundations of healthy social life.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — چھٹی مجلس، کتابی صفحات 107 تا 122",
+    sourceLabelEn:
+      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 6, printed pp. 107–122",
+    sourceUrl: SOURCE_URL,
+  },
 ];

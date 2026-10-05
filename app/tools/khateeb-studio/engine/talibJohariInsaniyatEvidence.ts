@@ -228,4 +228,49 @@ export const TALIB_JOHARI_INSANIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Insaniyat ka Alahi Manshoor — Majlis 5, printed pp. 68–79",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-insaniyat-06-tayyib-character",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "rizq"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "چھٹی مجلس — طیب، حلال اور پاکیزہ انسانی کردار",
+    titleEn: "Majlis 6 — Tayyib, lawful living, and purified human character",
+    topicsUr: ["طیب", "حلال", "رزق", "کردار", "قرآن", "پاکیزگی"],
+    topicsEn: ["tayyib", "lawful living", "provision", "character", "Qur'an", "purity"],
+    summaryUr:
+      "علامہ طالب جوہریؒ چھٹی مجلس میں قرآنی لفظ «طیب» کو خوراک یا رزق کے ایک محدود حکم سے آگے لے جا کر انسانی کردار، قول اور زندگی کی پاکیزگی سے جوڑتے ہیں۔ حلال و حرام کی بحث کے ساتھ وہ یہ دکھاتے ہیں کہ پاکیزہ زندگی صرف مادی انتخاب نہیں بلکہ زبان، نیت، علم اور عمل کی طہارت کا نام ہے۔",
+    summaryEn:
+      "Talib Johari develops the Qur'anic idea of tayyib beyond food or provision and connects it with the purity of character, speech, intention, knowledge, and action. Lawful living becomes a comprehensive moral quality rather than a merely material rule.",
+    materialUr: [
+      "علامہ «طیب» کو پاکیزگی، بھلائی اور درست انسانی استعمال کے وسیع مفہوم میں لیتے ہیں۔ رزق اور خوراک کی پاکیزگی انسان کے باطن اور کردار سے جدا نہیں رہتی۔",
+      "حلال و حرام کی تمیز مجلس میں اخلاقی شعور کی بنیاد بنتی ہے: ہر وہ چیز جو بظاہر فائدہ دے، ضروری نہیں کہ انسان کے لیے پاکیزہ اور صالح بھی ہو۔",
+      "شجرۂ طیبہ اور کلمۂ طیبہ جیسے قرآنی اشارات سے وہ دکھاتے ہیں کہ پاکیزگی کا تعلق قول، عقیدہ، عمل اور اثر—سب سے ہے۔",
+      "منبر پر اس مجلس کو حلال رزق، پاکیزہ قول، پاکیزہ نیت اور پاکیزہ کردار کے مربوط سلسلے کے طور پر پیش کیا جا سکتا ہے۔",
+    ],
+    materialEn: [
+      "Johari treats tayyib as a broad quality of purity, goodness, and right use. The purity of provision and food cannot be detached from the inner life and moral character.",
+      "The distinction between lawful and unlawful becomes a foundation of moral awareness: not everything apparently useful is necessarily pure or beneficial in the Qur'anic sense.",
+      "Images such as the good tree and the good word show purity extending across belief, speech, action, and effect.",
+      "A sermon can connect lawful provision, pure speech, pure intention, and purified character as one integrated moral chain.",
+    ],
+    takeawaysUr: [
+      "طیب کو صرف خوراک نہیں بلکہ پوری زندگی کی پاکیزگی کے طور پر سمجھائیں۔",
+      "حلال رزق کو اخلاقی کردار سے جوڑیں۔",
+      "کلمۂ طیبہ اور شجرۂ طیبہ کو قول و عمل کی پاکیزگی سے مربوط کریں۔",
+      "فائدہ اور پاکیزگی میں فرق واضح کریں۔",
+    ],
+    takeawaysEn: [
+      "Explain tayyib as purity of the whole life, not food alone.",
+      "Connect lawful provision with moral character.",
+      "Link the good word and good tree with purity of speech and action.",
+      "Distinguish apparent benefit from genuine purity.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «انسانیت کا الوہی منشور» — چھٹی مجلس، کتابی صفحات 80 تا 93",
+    sourceLabelEn:
+      "Original book Insaniyat ka Alahi Manshoor — Majlis 6, printed pp. 80–93",
+    sourceUrl: SOURCE_URL,
+  },
 ];

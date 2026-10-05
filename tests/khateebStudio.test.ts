@@ -190,6 +190,20 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[4]?.topicIds).toContain("imamate");
   });
 
+  test("indexes the sixth majlis of all three Talib Johari books", () => {
+    const corpus = corpusEntryForScholar("talib-johari")!;
+    const ids = corpus.evidence.map((item) => item.id);
+    expect(ids).toEqual(expect.arrayContaining([
+      "talib-insaniyat-06-tayyib-character",
+      "talib-asas-06-faith-divine-help",
+      "talib-aalmi-06-language-social-life",
+    ]));
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[5]?.sourceLabelUr).toContain("صفحات 80 تا 93");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[5]?.sourceLabelUr).toContain("صفحات 97 تا 113");
+    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[5]?.sourceLabelUr).toContain("صفحات 107 تا 122");
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[5]?.topicIds).toContain("rizq");
+  });
+
   test("known catalog sources are source-backed even before content ingestion", () => {
     expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });
