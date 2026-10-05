@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import TopicSpeakingGuide from "./TopicSpeakingGuide";
 import { buildTopicSpeakingGuideText } from "./engine/topicSpeakingGuide";
 import { useSpeakingGuideMode } from "./useSpeakingGuideMode";
+import { useCopyFeedback } from "./useCopyFeedback";
+import ClipboardFeedback from "./ClipboardFeedback";
 import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Printer, Search, Sparkles } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
 import {
@@ -161,6 +163,7 @@ export default function KhateebStudioContent({
   const [seriesLayer, setSeriesLayer] = useState<"fresh" | "research">("fresh");
   const [topicQuery, setTopicQuery] = useState("");
   const [guideMode, setGuideMode] = useSpeakingGuideMode();
+  const clipboardFeedback = useCopyFeedback();
   const [selectedTopicId, setSelectedTopicId] = useState(initialView.topic);
   const [liveTopicResearch, setLiveTopicResearch] = useState<KhateebResearchResult | null>(null);
   const [liveTopicLoading, setLiveTopicLoading] = useState(false);
@@ -443,11 +446,7 @@ export default function KhateebStudioContent({
 
   const copyPreparation = async () => {
     if (!preparationText) return;
-    try {
-      await navigator.clipboard.writeText(preparationText);
-    } catch {
-      // Clipboard may be unavailable.
-    }
+    await clipboardFeedback.copy(preparationText);
   };
 
   const copyTopicPreparation = async () => {
@@ -456,20 +455,12 @@ export default function KhateebStudioContent({
         ? topicSeriesText
         : topicGuideText || topicDossierText || topicPreparationText;
     if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Clipboard may be unavailable.
-    }
+    await clipboardFeedback.copy(text);
   };
 
   const copyTopicDossier = async () => {
     if (!topicDossierText) return;
-    try {
-      await navigator.clipboard.writeText(topicDossierText);
-    } catch {
-      // Clipboard may be unavailable.
-    }
+    await clipboardFeedback.copy(topicDossierText);
   };
 
   const printPreparation = () => {
@@ -729,6 +720,7 @@ export default function KhateebStudioContent({
           }
         }
       `}</style>
+      <ClipboardFeedback state={clipboardFeedback.state} onDismiss={clipboardFeedback.dismiss} />
       <div className="site-container max-w-6xl">
         <header className="mb-12 text-center">
           <h1

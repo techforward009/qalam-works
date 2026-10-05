@@ -4,6 +4,7 @@ import type { SermonDuration, SermonLocale } from "./sermonPrep";
 import type { SpeakerEvidence } from "./speakerEvidence";
 import { KHATEEB_CORPUS } from "./khateebCorpus";
 import { speakerName } from "./khateebLocale";
+import deliveryParagraphs from "./speakingGuides/deliveryParagraphs.json";
 
 export type SpeakingGuideMode = "brief" | "detailed";
 type Bilingual = { ur: string; en: string };
@@ -17,9 +18,10 @@ export type SpeakingGuideSection = {
   question: Bilingual;
   action: Bilingual;
   transition: Bilingual;
+  delivery: Bilingual;
 };
 
-export const DEATH_SPEAKING_GUIDE: readonly SpeakingGuideSection[] = [
+const DEATH_SECTION_DRAFTS: readonly Omit<SpeakingGuideSection, "delivery">[] = [
   {
     id: "priorities",
     heading: { ur: "موت کی یاد اور زندگی کی ترجیحات", en: "Remembering death and reordering life" },
@@ -109,6 +111,7 @@ export const DEATH_SPEAKING_GUIDE: readonly SpeakingGuideSection[] = [
     transition: { ur: "دعا کے ساتھ اختتام کریں: اللہ ہمیں اپنے وقت کی قدر، حقوق کی ادائیگی اور اصلاح کی توفیق عطا فرمائے۔ یہ تدوینی دعا ہے۔", en: "Close with an editorial prayer: may God enable us to value our time, fulfil our responsibilities, and put our conduct right." },
   },
 ];
+export const DEATH_SPEAKING_GUIDE: readonly SpeakingGuideSection[] = DEATH_SECTION_DRAFTS.map((section, index) => ({ ...section, delivery: deliveryParagraphs["death-akhirah"][index] }));
 
 export function deathGuideMinutes(duration: SermonDuration): readonly number[] {
   return duration === 20 ? [2, 4, 4, 4, 4, 2] : duration === 30 ? [3, 6, 6, 6, 6, 3] : [5, 9, 10, 9, 7, 5];
@@ -127,7 +130,7 @@ export function buildDeathSpeakingGuideText(locale: SermonLocale, duration: Serm
       if (arabic) lines.push(arabic);
       if (translation) lines.push(`${ur ? "ترجمہ" : "Translation"}: ${translation}`, QURAN_TRANSLATION_SOURCES[locale][ur ? "sourceLabelUr" : "sourceLabelEn"]);
     }
-    if (mode === "detailed") lines.push(ur ? "خطیبانہ وضاحت — قلم ورکس کی تدوین" : "Speaking explanation — Qalam Works editorial material", ...section.explanation[locale], `${ur ? "فرضی روزمرہ مثال" : "Hypothetical everyday example"}: ${section.example[locale]}`);
+    if (mode === "detailed") lines.push(ur ? "براہِ راست قابلِ بیان عبارت — قلم ورکس کی تدوین" : "Ready-to-deliver paragraph — Qalam Works editorial material", section.delivery[locale], ur ? "خطیبانہ وضاحت — قلم ورکس کی تدوین" : "Speaking explanation — Qalam Works editorial material", ...section.explanation[locale], `${ur ? "فرضی روزمرہ مثال" : "Hypothetical everyday example"}: ${section.example[locale]}`);
     lines.push(`${ur ? "سامعین سے سوال" : "Audience question"}: ${section.question[locale]}`, `${ur ? "عملی قدم" : "Practical step"}: ${section.action[locale]}`);
     if (mode === "detailed") lines.push(`${ur ? "اگلے حصے سے ربط" : "Transition"}: ${section.transition[locale]}`);
   });

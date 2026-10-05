@@ -19,6 +19,7 @@ import type { SpeakerEvidence } from "./speakerEvidence";
 import { KHATEEB_CORPUS } from "./khateebCorpus";
 import { speakerName } from "./khateebLocale";
 import { pureKhateebUrdu } from "./urduPurity";
+import deliveryParagraphs from "./speakingGuides/deliveryParagraphs.json";
 
 type Bilingual = { ur: string; en: string };
 export type TopicGuideDraft = {
@@ -28,7 +29,7 @@ export type TopicGuideDraft = {
   question: Bilingual;
   action: Bilingual;
 };
-export type TopicGuideSection = TopicGuideDraft & { id: string; heading: Bilingual; transition: Bilingual };
+export type TopicGuideSection = TopicGuideDraft & { id: string; heading: Bilingual; transition: Bilingual; delivery: Bilingual };
 const CONTENT: Record<string, readonly TopicGuideDraft[]> = {
   "parents-barsi": parents, "quran-hidayat": quran, ismah, sabr, tawhid, imamate, dua, youth, family, ghibah, justice, rizq,
 };
@@ -40,6 +41,7 @@ export function topicGuideSections(topic: TopicPrep): readonly TopicGuideSection
   if (topic.id === "death-akhirah") return DEATH_SPEAKING_GUIDE.map(section => ({ ...section, explanation: { ur: section.explanation.ur.join("\n\n"), en: section.explanation.en.join("\n\n") } }));
   return (CONTENT[topic.id] ?? []).map((section, index) => ({
     ...section, id: `${topic.id}-${index + 1}`,
+    delivery: (deliveryParagraphs as Record<string, Bilingual[]>)[topic.id][index],
     heading: { ur: topic.anglesUr[index], en: topic.anglesEn[index] },
     transition: index + 1 < topic.anglesUr.length
       ? { ur: `یہاں سے اگلا سوال کھولیں: ${CONTENT[topic.id][index + 1].question.ur}`, en: `Develop the next question: ${CONTENT[topic.id][index + 1].question.en}` }
@@ -92,7 +94,7 @@ export function buildTopicSpeakingGuideText(topic: TopicPrep, locale: SermonLoca
   }
   for (const [index, section] of sections.entries()) {
     lines.push("", `${section.heading[locale]} — ${minutes[index + 1]} ${ur ? "منٹ" : "min"}`, section.point[locale]);
-    if (mode === "detailed") lines.push(ur ? "خطیبانہ وضاحت — تدوینی مواد" : "Speaking explanation — editorial material", section.explanation[locale], `${ur ? "فرضی روزمرہ مثال" : "Hypothetical everyday example"}: ${section.example[locale]}`);
+    if (mode === "detailed") lines.push(ur ? "براہِ راست قابلِ بیان عبارت — قلم ورکس کی تدوین" : "Ready-to-deliver paragraph — Qalam Works editorial material", section.delivery[locale], ur ? "خطیبانہ وضاحت — تدوینی مواد" : "Speaking explanation — editorial material", section.explanation[locale], `${ur ? "فرضی روزمرہ مثال" : "Hypothetical everyday example"}: ${section.example[locale]}`);
     lines.push(`${ur ? "سامعین سے سوال" : "Audience question"}: ${section.question[locale]}`, `${ur ? "عملی قدم" : "Practical step"}: ${section.action[locale]}`);
     if (mode === "detailed") lines.push(`${ur ? "اگلے حصے سے ربط" : "Transition"}: ${section.transition[locale]}`);
   }

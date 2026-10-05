@@ -51,6 +51,10 @@ export default function TopicSpeakingGuide({ topic, duration, mode, onModeChange
         <h4 className="font-bold">{index + 1}. {section.heading[locale]} — {minutes[index + 1]} {ur ? "منٹ" : "min"}</h4>
         <p className="mt-2 text-sm font-semibold leading-8">{section.point[locale]}</p>
         {mode === "detailed" ? <>
+          <div className="mt-4 rounded-lg border border-[#31513a]/25 bg-[#f5faf6] p-3 dark:bg-[#122319]">
+            <h5 className="text-sm font-bold">{ur ? "براہِ راست قابلِ بیان عبارت — قلم ورکس کی تدوین" : "Ready-to-deliver paragraph — Qalam Works editorial material"}</h5>
+            <p className="mt-2 text-sm leading-8">{section.delivery[locale]}</p>
+          </div>
           <h5 className="mt-4 text-sm font-bold">{ur ? "خطیبانہ وضاحت — قلم ورکس کی تدوین" : "Speaking explanation — Qalam Works editorial material"}</h5>
           <p className="mt-2 whitespace-pre-line text-sm leading-8">{section.explanation[locale]}</p>
           <div className="mt-3 rounded-lg border border-[#B8935A]/25 p-3 text-sm leading-8"><strong>{ur ? "فرضی روزمرہ مثال: " : "Hypothetical everyday example: "}</strong>{section.example[locale]}</div>

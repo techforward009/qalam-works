@@ -33,9 +33,11 @@ for (const topic of TOPIC_PREPS) describe(topic.id, () => {
     for (const lead of topicGuideSourceLeads(topic, "ur")) expect(lead.label + lead.detail).not.toMatch(/[A-Za-z]{2,}/);
     expect(new Set(sections.map(section => section.id)).size).toBe(sections.length);
     for (const section of sections) for (const locale of ["ur", "en"] as const) {
-      for (const field of ["point", "explanation", "example", "question", "action", "transition"] as const) expect(section[field][locale].trim().length).toBeGreaterThan(12);
+      for (const field of ["point", "explanation", "example", "question", "action", "transition", "delivery"] as const) expect(section[field][locale].trim().length).toBeGreaterThan(12);
       expect(section.explanation[locale].length).toBeGreaterThan(140);
       expect(section.example[locale]).not.toEqual(section.point[locale]);
+      expect(section.delivery[locale].split(/\s+/).length).toBeGreaterThanOrEqual(35);
+      expect(section.delivery[locale]).not.toMatch(/(?:واضح کریں|پیش کریں|سامع کو|سامعین کو|Explain to the audience|Tell listeners)/);
     }
   });
   test.each([20, 30, 45] as const)("allocates %s minutes across every section", duration => {
@@ -50,6 +52,7 @@ for (const topic of TOPIC_PREPS) describe(topic.id, () => {
     const brief = buildTopicSpeakingGuideText(topic, locale, 45, "brief", records);
     for (const section of topicGuideSections(topic)) {
       expect(full).toContain(section.example[locale]); expect(brief).not.toContain(section.example[locale]);
+      expect(full).toContain(section.delivery[locale]); expect(brief).not.toContain(section.delivery[locale]);
       expect(full).toContain(section.action[locale]); expect(brief).toContain(section.action[locale]);
     }
     for (const anchor of topic.quran) for (const location of quranLocationsFromReference(anchor.ref)) {
@@ -69,8 +72,10 @@ for (const topic of TOPIC_PREPS) describe(topic.id, () => {
     expect(container.querySelectorAll("article")).toHaveLength(topic.anglesUr.length);
     const section = topicGuideSections(topic)[0];
     expect(screen.getByText(section.example[locale], { exact: false })).toBeTruthy();
+    expect(screen.getByText(section.delivery[locale])).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: locale === "ur" ? "مختصر نکات" : "Brief points" }));
     expect(screen.queryByText(section.example[locale], { exact: false })).toBeNull();
+    expect(screen.queryByText(section.delivery[locale])).toBeNull();
     expect(screen.getByText(section.action[locale], { exact: false })).toBeTruthy();
     expect(container.querySelector("section")?.getAttribute("dir")).toBe(locale === "ur" ? "rtl" : "ltr");
     fireEvent.click(screen.getByRole("button", { name: locale === "ur" ? "تفصیلی وضاحت" : "Detailed explanation" }));
