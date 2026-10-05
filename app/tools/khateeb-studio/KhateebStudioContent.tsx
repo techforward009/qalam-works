@@ -30,7 +30,8 @@ import {
 } from "./engine/sermonPrep";
 import { evidenceForSpeaker } from "./engine/speakerEvidence";
 import {
-  evidenceForOccasion,
+  buildOccasionEvidenceText,
+  evidenceForOccasions,
   evidenceForTopic,
   topicsForSpeaker,
 } from "./engine/speakerTopicIndex";
@@ -375,10 +376,16 @@ export default function KhateebStudioContent({
           : undefined,
       )
     : "";
-  const occasionSpeakerEvidence = event ? evidenceForOccasion(event.id) : [];
+  const occasionSpeakerEvidence = selectedGroup
+    ? evidenceForOccasions(selectedGroup.items.map((item) => item.id))
+    : [];
+  const occasionEvidenceText = buildOccasionEvidenceText(
+    occasionSpeakerEvidence,
+    ur ? "ur" : "en",
+  );
   const preparation = getSermonPrep(event);
   const preparationMinutes = outlineMinutes(duration);
-  const preparationText = preparation
+  const basePreparationText = preparation
     ? buildPreparationText(
         preparation,
         ur ? "ur" : "en",
@@ -391,6 +398,9 @@ export default function KhateebStudioContent({
           : undefined,
       )
     : "";
+  const preparationText = [basePreparationText, occasionEvidenceText]
+    .filter(Boolean)
+    .join("\n\n");
 
   const brief = ur
     ? [

@@ -39,6 +39,60 @@ export function evidenceForOccasion(occasionId: string): readonly SpeakerEvidenc
   ).map(normalizeSpeakerEvidenceUrdu);
 }
 
+export function evidenceForOccasions(
+  occasionIds: readonly string[],
+): readonly SpeakerEvidence[] {
+  const ids = new Set(occasionIds);
+  const seen = new Set<string>();
+
+  return SPEAKER_EVIDENCE.filter((record) => {
+    if (record.status !== "ready") return false;
+    if (!(record.occasionIds ?? []).some((occasionId) => ids.has(occasionId))) {
+      return false;
+    }
+    if (seen.has(record.id)) return false;
+    seen.add(record.id);
+    return true;
+  }).map(normalizeSpeakerEvidenceUrdu);
+}
+
+export function buildOccasionEvidenceText(
+  records: readonly SpeakerEvidence[],
+  locale: "ur" | "en",
+): string {
+  if (!records.length) return "";
+
+  const ur = locale === "ur";
+  const heading = ur
+    ? "اس مناسبت پر اہلِ علم کا اصل مواد"
+    : "SOURCE-BACKED SCHOLAR MATERIAL FOR THIS OCCASION";
+
+  const sections = records.map((record) => {
+    const title = ur ? record.titleUr : record.titleEn;
+    const summary = ur ? record.summaryUr : record.summaryEn;
+    const material = ur ? record.materialUr ?? [] : record.materialEn ?? [];
+    const source = ur ? record.sourceLabelUr : record.sourceLabelEn;
+
+    return [
+      title,
+      ur ? "علمی توضیح:" : "Scholarly explanation:",
+      summary,
+      material.length
+        ? [
+            ur ? "منبر کے لیے قابلِ استعمال نکات:" : "Usable study material:",
+            ...material.map((point) => `• ${point}`),
+          ].join("\n")
+        : "",
+      `${ur ? "اصل ماخذ:" : "Primary source:"} ${source}`,
+      record.sourceUrl,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  });
+
+  return [heading, ...sections].join("\n\n");
+}
+
 export function evidenceForSpeakerAndTopic(
   speakerId: string,
   topicId: string,

@@ -251,6 +251,42 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     );
   });
 
+  test("grouped occasion lookup de-duplicates evidence across alternate calendar ids", () => {
+    const rows = evidenceForOccasions([
+      "saf-11-arbaeen-decade",
+      "saf-20-arbaeen",
+    ]);
+    expect(rows.filter((item) => item.id === "talib-insaniyat-arbaeen-01")).toHaveLength(1);
+    expect(rows.map((item) => item.id)).toEqual(
+      expect.arrayContaining([
+        "talib-insaniyat-arbaeen-01",
+        "talib-asas-arbaeen-01",
+      ]),
+    );
+  });
+
+  test("copyable occasion material keeps scholarly explanation and primary source separate", () => {
+    const text = buildOccasionEvidenceText(
+      evidenceForOccasion("saf-20-arbaeen"),
+      "ur",
+    );
+    expect(text).toContain("اس مناسبت پر اہلِ علم کا اصل مواد");
+    expect(text).toContain("علمی توضیح:");
+    expect(text).toContain("اصل ماخذ:");
+    expect(text).toContain("مجلسِ چہلم");
+  });
+
+  test("occasion UI resolves the full selected calendar group and appends it to copied preparation", () => {
+    const studio = readFileSync(
+      "app/tools/khateeb-studio/KhateebStudioContent.tsx",
+      "utf8",
+    );
+    expect(studio).toContain("evidenceForOccasions");
+    expect(studio).toContain("selectedGroup.items.map((item) => item.id)");
+    expect(studio).toContain("occasionEvidenceText");
+    expect(studio).toContain("[basePreparationText, occasionEvidenceText]");
+  });
+
   test("known catalog sources are source-backed even before content ingestion", () => {
     expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });
