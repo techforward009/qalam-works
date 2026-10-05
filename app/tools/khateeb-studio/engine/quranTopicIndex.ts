@@ -363,6 +363,7 @@ export function quranEvidenceForTopic(
         citationEn: row.refEn,
         providerId: "ahmedgraf-quran",
         arabic: ayah.text,
+        quranLocation: { surah: row.surah, ayah: row.ayah },
         themesUr: [entry.aliases[0] ?? entry.id],
       });
       if (evidence.length >= limit) return evidence;

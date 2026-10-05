@@ -25,6 +25,7 @@ export type KhateebResearchEvidence = {
   sourceUrl?: string;
   providerId?: string;
   arabic?: string;
+  quranLocation?: { surah: number; ayah: number };
   themesUr?: readonly string[];
   sourceExcerpt?: string;
   sourceExcerptStatus?: "page-excerpt";

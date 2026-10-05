@@ -21,6 +21,7 @@ export type SermonCompositionBlock = {
   bodyUr: string;
   bodyEn: string;
   arabic?: string;
+  quranLocation?: { surah: number; ayah: number };
   citationUr?: string;
   citationEn?: string;
   sourceUrl?: string;
@@ -123,6 +124,7 @@ function quranBlocks(dossier: SermonDossier, limit: number): SermonCompositionBl
           bodyUr: item.explanationUr,
           bodyEn: item.explanationEn,
           arabic: ayah.text,
+          quranLocation: { surah: location.surah, ayah: location.ayah },
           citationUr: item.refUr,
           citationEn: item.refEn,
           minutes: 0,

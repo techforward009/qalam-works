@@ -60,6 +60,40 @@ import {
 import { looksLikeArabicReligiousText } from "../app/tools/khateeb-studio/KhateebScriptText";
 import { toQalamArabicPresentation } from "../app/tools/khateeb-studio/qalamArabicPresentation";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
+import {
+  quranLocationsFromReference,
+  quranTranslationCoverageCount,
+  quranTranslationFor,
+  QURAN_TRANSLATION_SOURCES,
+} from "../app/tools/khateeb-studio/engine/quranTranslationProvider";
+
+describe("Khateeb Studio Qur'an translations", () => {
+  test("uses the user-supplied Najafi and Qara'i translations separately from commentary", () => {
+    expect(quranTranslationCoverageCount()).toBe(60);
+    expect(quranTranslationFor(17, 23, "ur")).toContain("والدین کے ساتھ نیکی");
+    expect(quranTranslationFor(17, 23, "en")).toContain("kindness to parents");
+    expect(QURAN_TRANSLATION_SOURCES.ur.translatorUr).toContain("محسن علی نجفی");
+    expect(QURAN_TRANSLATION_SOURCES.en.translatorEn).toBe("Ali Quli Qara'i");
+    expect(quranLocationsFromReference("الإسراء 17:23–24")).toEqual([
+      { surah: 17, ayah: 23 },
+      { surah: 17, ayah: 24 },
+    ]);
+  });
+
+  test("renders translation before the separate speaking explanation", () => {
+    const studio = readFileSync(
+      "app/tools/khateeb-studio/KhateebStudioContent.tsx",
+      "utf8",
+    );
+    const primary = readFileSync(
+      "app/tools/khateeb-studio/KhateebPrimaryArabic.tsx",
+      "utf8",
+    );
+    expect(studio).toContain("KhateebQuranTranslation");
+    expect(studio).toContain("خطیبانہ ربط:");
+    expect(primary).toContain("KhateebQuranTranslation");
+  });
+});
 
 describe("Khateeb Studio seed corpus", () => {
   test("contains the requested historical speakers", () => {

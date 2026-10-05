@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { ahmedgrafQuranReference } from "../arabic-diacritics/quran/ahmedgrafProvider";
 import KhateebScriptText from "./KhateebScriptText";
+import KhateebQuranTranslation from "./KhateebQuranTranslation";
 import { toQalamArabicPresentation } from "./qalamArabicPresentation";
 
 export type KhateebPrimaryArabicProps = {
@@ -36,8 +37,13 @@ export default function KhateebPrimaryArabic({
   const text = kind === "quran" ? quranText : hadithText;
 
   return (
-    <div className="khateeb-muhammadi-quranic text-lg leading-[2.1] text-[#1A3A2A] dark:text-[#e7eee9]">
-      <KhateebScriptText text={text} forceArabic />
-    </div>
+    <>
+      <div className="khateeb-muhammadi-quranic text-lg leading-[2.1] text-[#1A3A2A] dark:text-[#e7eee9]">
+        <KhateebScriptText text={text} forceArabic />
+      </div>
+      {kind === "quran" && quranLocation ? (
+        <KhateebQuranTranslation location={quranLocation} />
+      ) : null}
+    </>
   );
 }

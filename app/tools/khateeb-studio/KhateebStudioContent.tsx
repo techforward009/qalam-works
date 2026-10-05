@@ -57,6 +57,7 @@ import SessionDeliveryHistory from "./SessionDeliveryHistory";
 import CustomSermonWorkspace from "./CustomSermonWorkspace";
 import KhateebScriptText from "./KhateebScriptText";
 import KhateebPrimaryArabic from "./KhateebPrimaryArabic";
+import KhateebQuranTranslation from "./KhateebQuranTranslation";
 import {
   buildSessionWorkbench,
   buildSessionWorkbenchText,
@@ -1095,6 +1096,9 @@ export default function KhateebStudioContent({
                                 <>
                                   <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
                                     <KhateebScriptText text={item.arabic} forceArabic />
+                                    {item.kind === "quran" && item.quranLocation ? (
+                                      <KhateebQuranTranslation location={item.quranLocation} />
+                                    ) : null}
                                   </div>
                                   {item.kind === "quran" || item.kind === "hadith" ? (
                                     <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-white px-3 py-2 text-sm leading-7 text-[#445247] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#b8c8bb]">
@@ -1906,6 +1910,9 @@ export default function KhateebStudioContent({
                                 {block.arabic ? (
                                   <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
                                     <KhateebScriptText text={block.arabic} forceArabic />
+                                    {block.kind === "quran" && block.quranLocation ? (
+                                      <KhateebQuranTranslation location={block.quranLocation} />
+                                    ) : null}
                                   </div>
                                 ) : null}
                                 <p className="mt-3 text-sm leading-8 text-[#445247] dark:text-[#b8c8bb]">
@@ -2885,7 +2892,11 @@ export default function KhateebStudioContent({
                         <div dir="rtl" className="mt-2 text-lg leading-9 text-[#17251c] dark:text-[#edf4ef]">
                           <KhateebScriptText text={anchor.arabic} forceArabic />
                         </div>
+                        <KhateebQuranTranslation reference={anchor.ref} />
                         <p className="mt-2 text-sm text-[#59665b] dark:text-[#a8b8aa]">
+                          <strong className="me-2 text-[#6f5730] dark:text-[#d7bc8a]">
+                            {ur ? "خطیبانہ ربط:" : "Speaking link:"}
+                          </strong>
                           {ur ? anchor.ur : anchor.en}
                         </p>
                       </article>
