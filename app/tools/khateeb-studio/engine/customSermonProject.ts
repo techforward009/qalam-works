@@ -254,6 +254,53 @@ export function buildCustomSermonSections(
   });
 }
 
+export function updateCustomProjectBasics(
+  project: CustomSermonProject,
+  patch: Partial<
+    Pick<
+      CustomSermonProject,
+      "kind" | "title" | "objective" | "ownMaterial" | "duration" | "researchQuery"
+    >
+  >,
+  now = new Date().toISOString(),
+): CustomSermonProject {
+  const next = {
+    ...project,
+    ...patch,
+    title: patch.title !== undefined ? patch.title : project.title,
+    objective:
+      patch.objective !== undefined ? patch.objective : project.objective,
+    ownMaterial:
+      patch.ownMaterial !== undefined ? patch.ownMaterial : project.ownMaterial,
+    researchQuery:
+      patch.researchQuery !== undefined
+        ? patch.researchQuery
+        : project.researchQuery,
+    updatedAt: now,
+  };
+  const structureChanged =
+    (patch.kind !== undefined && patch.kind !== project.kind) ||
+    (patch.duration !== undefined && patch.duration !== project.duration);
+
+  if (!structureChanged) return next;
+
+  const selected = next.evidence.filter((item) =>
+    next.selectedEvidenceIds.includes(item.id),
+  );
+  const previousByKind = new Map(
+    project.sections.map((section) => [section.kind, section.userText]),
+  );
+  return {
+    ...next,
+    sections: buildCustomSermonSections(next.kind, next.duration, selected).map(
+      (section) => ({
+        ...section,
+        userText: previousByKind.get(section.kind) ?? "",
+      }),
+    ),
+  };
+}
+
 export function applyResearchToCustomProject(
   project: CustomSermonProject,
   result: KhateebResearchResult,
