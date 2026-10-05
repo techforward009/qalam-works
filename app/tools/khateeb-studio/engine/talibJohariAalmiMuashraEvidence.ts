@@ -93,4 +93,49 @@ export const TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 2, printed pp. 32–49",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-aalmi-03-warning-repentance",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "تیسری مجلس — تنبیہ، رجوع اور اجتماعی ذمہ داری",
+    titleEn: "Majlis 3 — Warning, return, and social responsibility",
+    topicsUr: ["تنبیہ", "توبہ", "استغفار", "معاشرہ", "قرآن", "ذمہ داری"],
+    topicsEn: ["warning", "repentance", "seeking forgiveness", "society", "Qur'an", "responsibility"],
+    summaryUr:
+      "علامہ طالب جوہریؒ تیسری مجلس میں قرآنی تنبیہ کو مایوسی پیدا کرنے کے بجائے اصلاح اور رجوع کا ذریعہ بناتے ہیں۔ وہ قوموں اور افراد کی غلطی، اس کے نتائج، اور پھر توبہ و استغفار کے امکان کو باہم جوڑتے ہیں۔ ان کے بیان میں اجتماعی بگاڑ کا علاج صرف دوسروں کی مذمت نہیں بلکہ اپنی روش کا جائزہ، ذمہ داری کا اعتراف اور عملی واپسی ہے۔",
+    summaryEn:
+      "Talib Johari treats Qur'anic warning not as a mechanism for despair but as an invitation to reform and return. He links individual and communal wrongdoing, consequences, and the continuing possibility of repentance and seeking forgiveness. Social repair therefore begins not merely by condemning others but by examining one's own conduct, acknowledging responsibility, and changing direction.",
+    materialUr: [
+      "علامہ تنبیہ اور عذاب کی آیات کو محض خوف پیدا کرنے کے لیے نہیں برتتے۔ ان کا مقصد یہ دکھانا ہے کہ غلطی کا انجام حقیقی ہے، مگر قرآن انسان کو اس انجام سے پہلے بیدار بھی کرتا ہے۔",
+      "استغفار مجلس کا اہم محور بنتا ہے۔ یہ صرف زبان سے معافی مانگنے کا نام نہیں بلکہ اپنی روش کو غلط تسلیم کرکے خدا کی طرف پلٹنے اور آئندہ کے عمل کو بدلنے کی آمادگی ہے۔",
+      "اجتماعی سطح پر بھی یہی اصول کام کرتا ہے: قوم اپنے فساد کو صرف دوسرے فریق پر ڈال کر اصلاح نہیں کر سکتی۔ اجتماعی جواب دہی میں اپنی زیادتی، غفلت اور غلط ترجیح کو دیکھنا ضروری ہے۔",
+      "منبر پر ترتیب یہ ہو سکتی ہے: قرآنی تنبیہ، غلطی کا نتیجہ، توبہ و استغفار کا دروازہ، اور پھر فرد سے معاشرے تک اصلاح کی ذمہ داری۔",
+    ],
+    materialEn: [
+      "Johari does not use verses of warning merely to produce fear. Their purpose is to make consequences real while showing that revelation warns before destruction becomes inevitable.",
+      "Seeking forgiveness becomes a central theme. It is more than verbal apology: it means recognizing a wrong direction, returning to God, and becoming willing to change future conduct.",
+      "The same principle applies socially. A community cannot reform by assigning all corruption to the other side; collective accountability requires recognition of one's own excess, neglect, and distorted priorities.",
+      "A sermon can therefore move from Qur'anic warning, to consequences, to repentance and forgiveness, and finally to responsibility for reform from the individual to society.",
+    ],
+    takeawaysUr: [
+      "قرآنی تنبیہ کو مایوسی نہیں بلکہ اصلاح کی دعوت کے طور پر پیش کریں۔",
+      "استغفار کو عملی رجوع اور تبدیلی سے جوڑیں۔",
+      "اجتماعی اصلاح میں اپنی غلطی کا اعتراف بھی ضروری ہے۔",
+      "جواب دہی کو فرد سے معاشرے تک پھیلائیں۔",
+    ],
+    takeawaysEn: [
+      "Present Qur'anic warning as an invitation to reform, not despair.",
+      "Connect seeking forgiveness with practical return and change.",
+      "Collective reform also requires admitting one's own wrongdoing.",
+      "Extend accountability from the individual to society.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — تیسری مجلس، کتابی صفحات 50 تا 68",
+    sourceLabelEn:
+      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Majlis 3, printed pp. 50–68",
+    sourceUrl: SOURCE_URL,
+  },
 ];

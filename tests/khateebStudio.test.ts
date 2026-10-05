@@ -149,6 +149,19 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[1]?.sourceLabelUr).toContain("صفحات 32 تا 49");
   });
 
+  test("indexes the third majlis of all three Talib Johari books", () => {
+    const corpus = corpusEntryForScholar("talib-johari")!;
+    const ids = corpus.evidence.map((item) => item.id);
+    expect(ids).toEqual(expect.arrayContaining([
+      "talib-insaniyat-03-guidance-responsibility",
+      "talib-asas-03-sirat-character",
+      "talib-aalmi-03-warning-repentance",
+    ]));
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[2]?.sourceLabelUr).toContain("صفحات 42 تا 55");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[2]?.sourceLabelUr).toContain("صفحات 39 تا 57");
+    expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[2]?.sourceLabelUr).toContain("صفحات 50 تا 68");
+  });
+
   test("known catalog sources are source-backed even before content ingestion", () => {
     expect(corpusEntryForScholar("rashid-turabi")?.status).toBe("source-backed");
   });

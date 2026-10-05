@@ -93,4 +93,49 @@ export const TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Asas-e-Adamiyat aur Qur'an — Majlis 2, printed pp. 26–38",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-asas-03-sirat-character",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "تیسری مجلس — صراطِ مستقیم، کردار اور حق کی پہچان",
+    titleEn: "Majlis 3 — The straight path, character, and recognition of truth",
+    topicsUr: ["صراط مستقیم", "حق", "کردار", "قرآن", "ہدایت", "انصاف"],
+    topicsEn: ["straight path", "truth", "character", "Qur'an", "guidance", "justice"],
+    summaryUr:
+      "علامہ طالب جوہریؒ تیسری مجلس میں صراطِ مستقیم کو محض ایک نظری اصطلاح نہیں رہنے دیتے بلکہ اسے انسان کے کردار، ترجیحات اور حق شناسی سے جوڑتے ہیں۔ ان کے ہاں سیدھا راستہ وہ ہے جو انسان کو خدا کی اطاعت، درست اخلاقی فیصلہ اور ظلم و انحراف سے اجتناب کی طرف لے جائے۔ مجلس میں زبان، رویے، تعلقات اور حق کے ساتھ وفاداری اس راہ کی عملی علامتیں بن جاتی ہیں۔",
+    summaryEn:
+      "Talib Johari treats the straight path not as an abstract label but as a pattern of character, priority, and recognition of truth. The path directs a person toward obedience to God, sound moral judgment, and avoidance of injustice and deviation. Speech, conduct, relationships, and loyalty to truth become practical signs of that path.",
+    materialUr: [
+      "علامہ صراطِ مستقیم کی بحث کو عملی بناتے ہیں: آدمی کس طرف کھڑا ہے، کس بات کو حق مانتا ہے اور اپنے مفاد کے خلاف حق سامنے آئے تو اس کے ساتھ کیا سلوک کرتا ہے، یہی اس کے راستے کی پہچان ہے۔",
+      "قرآن کی ہدایت انسان کے ظاہر تک محدود نہیں رہتی۔ زبان، وعدہ، رشتہ، انصاف اور دوسرے کے حق کی رعایت وہ مقامات ہیں جہاں سیدھی راہ روزمرہ زندگی میں دکھائی دیتی ہے۔",
+      "مجلس میں انحراف کو صرف عقیدے کی غلطی کے طور پر نہیں بلکہ کردار کے ٹیڑھے پن کے طور پر بھی دیکھا جاتا ہے۔ انسان حق جان کر بھی خواہش یا مفاد کی بنا پر اس سے ہٹ سکتا ہے۔",
+      "منبر پر اس مواد کو صراط کی تعریف، کردار میں اس کی علامتیں، اور پھر ظلم و خود غرضی کے ذریعے اس سے انحراف کے تین مرحلوں میں بیان کیا جا سکتا ہے۔",
+    ],
+    materialEn: [
+      "Johari makes the straight path practical: where a person stands, what is recognized as truth, and how truth is treated when it conflicts with personal interest reveal the path actually being followed.",
+      "Qur'anic guidance reaches speech, promises, relationships, fairness, and the rights of others. These are places where the straight path becomes visible in ordinary life.",
+      "Deviation is therefore not only intellectual error but crookedness of character. A person may recognize truth and still leave it under pressure from desire or interest.",
+      "For preaching, the material can move from defining the path, to its signs in character, and then to the ways injustice and selfishness bend a person away from it.",
+    ],
+    takeawaysUr: [
+      "صراطِ مستقیم کو کردار اور فیصلوں سے جوڑیں۔",
+      "حق شناسی کی آزمائش مفاد کے خلاف حق سامنے آنے پر ہوتی ہے۔",
+      "انحراف صرف فکری نہیں، اخلاقی بھی ہو سکتا ہے۔",
+      "زبان، وعدہ اور انصاف کو ہدایت کی عملی علامتیں بنائیں۔",
+    ],
+    takeawaysEn: [
+      "Connect the straight path with character and decisions.",
+      "Recognition of truth is tested when truth conflicts with interest.",
+      "Deviation can be moral as well as intellectual.",
+      "Use speech, promises, and fairness as practical signs of guidance.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «اساس آدمیت اور قرآن» — تیسری مجلس، کتابی صفحات 39 تا 57",
+    sourceLabelEn:
+      "Original book Asas-e-Adamiyat aur Qur'an — Majlis 3, printed pp. 39–57",
+    sourceUrl: SOURCE_URL,
+  },
 ];

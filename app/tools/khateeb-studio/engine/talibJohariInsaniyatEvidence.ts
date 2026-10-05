@@ -93,4 +93,49 @@ export const TALIB_JOHARI_INSANIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Original book Insaniyat ka Alahi Manshoor — Majlis 2, printed pp. 27–41",
     sourceUrl: SOURCE_URL,
   },
+
+  {
+    id: "talib-insaniyat-03-guidance-responsibility",
+    speakerId: "talib-johari",
+    topicIds: ["quran-hidayat", "justice"],
+    kind: "compiled-majalis",
+    status: "ready",
+    titleUr: "تیسری مجلس — ہدایت، ذمہ داری اور انسانی اختیار",
+    titleEn: "Majlis 3 — Guidance, responsibility, and human choice",
+    topicsUr: ["ہدایت", "اختیار", "ذمہ داری", "قرآن", "انسان", "عدل"],
+    topicsEn: ["guidance", "choice", "responsibility", "Qur'an", "humanity", "justice"],
+    summaryUr:
+      "علامہ طالب جوہریؒ تیسری مجلس میں ہدایت کو محض راستہ دکھا دینے کے معنی میں محدود نہیں رکھتے بلکہ اسے انسانی اختیار اور جواب دہی سے جوڑتے ہیں۔ ان کے بیان میں انسان کو راستہ بتایا جاتا ہے، خیر و شر کی پہچان دی جاتی ہے اور پھر اس کے انتخاب کی اخلاقی ذمہ داری اسی پر رہتی ہے۔ یوں قرآنی ہدایت جبر نہیں بنتی بلکہ شعور، آزادی اور حساب کے باہمی تعلق کو واضح کرتی ہے۔",
+    summaryEn:
+      "Talib Johari does not reduce guidance to simply pointing out a road. He connects it with human choice and accountability: the path is shown, good and evil are distinguished, and the moral responsibility for choosing remains with the person. Qur'anic guidance therefore does not become compulsion; it clarifies the relation between awareness, freedom, and judgment.",
+    materialUr: [
+      "علامہ ہدایت کے مفہوم میں یہ امتیاز قائم کرتے ہیں کہ کسی کو راستہ دکھانا اور اسے زبردستی منزل تک پہنچا دینا ایک چیز نہیں۔ قرآن انسان کو شعور، نشانیاں اور معیار دیتا ہے مگر اس کے اخلاقی انتخاب کو ختم نہیں کرتا۔",
+      "انسانی اختیار اسی وقت بامعنی ہے جب اس کے ساتھ نتیجے کی ذمہ داری بھی ہو۔ اگر آدمی اپنے فیصلے میں آزاد ہے تو اپنے ظلم، ناانصافی، وفاداری یا خیر کے لیے جواب دہ بھی ہوگا۔",
+      "مجلس میں انبیاء اور الٰہی ہدایت کا کردار اس طور پر سامنے آتا ہے کہ انسان کے سامنے حق کو واضح کیا جائے؛ پھر ہدایت قبول کرنا یا اس سے منہ موڑنا انسان کے اپنے اخلاقی امتحان کا حصہ بنتا ہے۔",
+      "منبر پر اس بحث کو تین مرحلوں میں پیش کیا جا سکتا ہے: راستہ دکھانے والی ہدایت، انتخاب کرنے والا انسان، اور پھر انتخاب کے نتائج کی جواب دہی۔ یہی ترتیب عدلِ الٰہی اور انسانی ذمہ داری کو ایک دوسرے سے جوڑ دیتی ہے۔",
+    ],
+    materialEn: [
+      "Johari distinguishes between showing a path and forcing a person to reach the destination. Revelation provides awareness, signs, and standards without cancelling moral choice.",
+      "Human freedom becomes meaningful only together with responsibility for consequences. If a person chooses, that person is also accountable for injustice, loyalty, harm, or good.",
+      "Prophetic and divine guidance clarify truth before the human being; accepting or turning away from that clarification becomes part of the moral test.",
+      "A sermon can move through three stages: guidance that shows the road, the human being who chooses, and accountability for the result. This naturally connects divine justice with human responsibility.",
+    ],
+    takeawaysUr: [
+      "ہدایت اور جبر میں واضح فرق رکھیں۔",
+      "اختیار کو جواب دہی سے جدا نہ کریں۔",
+      "انبیاء کا کردار حق کو واضح کرنا ہے، انسانی انتخاب کو ختم کرنا نہیں۔",
+      "عدلِ الٰہی کو انسانی ذمہ داری کے ساتھ سمجھائیں۔",
+    ],
+    takeawaysEn: [
+      "Keep guidance distinct from compulsion.",
+      "Do not separate choice from accountability.",
+      "Prophetic guidance clarifies truth without abolishing human choice.",
+      "Explain divine justice together with human responsibility.",
+    ],
+    sourceLabelUr:
+      "اصل کتاب «انسانیت کا الوہی منشور» — تیسری مجلس، کتابی صفحات 42 تا 55",
+    sourceLabelEn:
+      "Original book Insaniyat ka Alahi Manshoor — Majlis 3, printed pp. 42–55",
+    sourceUrl: SOURCE_URL,
+  },
 ];
