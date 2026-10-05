@@ -49,7 +49,8 @@ describe("live research sermon pack", () => {
   test("creates a source-led pulpit order rather than an invented sermon", () => {
     const pack = buildLiveResearchPack(result, 30);
     expect(pack.sections.map((item) => item.headingUr)).toContain("اصل روایات و متون");
-    expect(pack.sections.map((item) => item.headingUr)).toContain("منبری ربط اور خلاصہ");
+    expect(pack.sections.map((item) => item.headingUr)).toContain("منبری ربط — تدوینی");
+    expect(pack.sections.find(item => item.id === "synthesis")?.role).toBe("editorial-bridge");
     expect(pack.sections.every((item) => Array.isArray(item.evidenceIds))).toBe(true);
   });
 });

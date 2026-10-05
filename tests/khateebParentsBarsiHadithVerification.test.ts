@@ -110,7 +110,7 @@ describe("Khateeb Parents/Barsi exact hadith verification", () => {
   });
 
   test("copied dossiers globally suppress unverified candidate hadith wording", () => {
-    const dossier = getTopicDossier("imamate");
+    const dossier = getTopicDossier("dua");
     expect(dossier).not.toBeNull();
     const text = buildDossierText(dossier!, "ur");
 
@@ -118,6 +118,6 @@ describe("Khateeb Parents/Barsi exact hadith verification", () => {
       "اصل عربی متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی ہے؛ غیر مصدقہ عبارت نقل نہیں کی گئی۔",
     );
     expect(text).toContain("ماخذی حوالہ (زیرِ تصدیق)");
-    expect(text).not.toContain("الإمامَةُ نِظامُ الاُمَّةِ.");
+    expect(text).not.toContain("أفضَلُ العِبادَةِ الدُّعاءُ");
   });
 });

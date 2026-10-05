@@ -204,7 +204,12 @@ export async function researchKhateebTopicWithEShia(
     });
 
   const maxEvidence = Math.min(Math.max(request.maxEvidence ?? 40, 5), 100);
-  const evidence = [...local.evidence, ...externalEvidence].slice(0, maxEvidence);
+  // Reserve a small share for fetched pages so a full local result cannot hide live research.
+  const externalSlots = Math.min(externalEvidence.length, Math.max(1, Math.floor(maxEvidence / 4)));
+  const evidence = [
+    ...local.evidence.slice(0, maxEvidence - externalSlots),
+    ...externalEvidence.slice(0, externalSlots),
+  ];
   const verifiedCount = evidence.filter((item) => item.status === "verified").length;
   const sourceLeadCount = evidence.filter((item) => item.status === "source-lead").length;
   const catalogOnlyCount = evidence.filter((item) => item.status === "catalog-only").length;
@@ -214,7 +219,7 @@ export async function researchKhateebTopicWithEShia(
       (item.kind === "hadith" || item.kind === "scholar"),
   );
 
-  const hadithCandidates = buildLiveHadithCandidateQueue(externalEvidence);
+  const hadithCandidates = buildLiveHadithCandidateQueue(evidence);
 
   return {
     ...local,

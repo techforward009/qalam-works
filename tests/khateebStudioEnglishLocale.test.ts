@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
+import { PUBLIC_KHATEEB_CORPUS } from "../app/tools/khateeb-studio/engine/khateebCorpus";
 import { SHIA_CALENDAR_1448_EVENTS } from "../app/tools/khateeb-studio/engine/shiaCalendar";
 import {
   eventDayLabel,
@@ -15,7 +15,7 @@ const ARABIC_SCRIPT = /[\u0600-\u06FF]/u;
 
 describe("Khateeb Studio English locale", () => {
   test("every speaker has an English-only visible name and focus", () => {
-    for (const speaker of KHATEEB_CORPUS) {
+    for (const speaker of PUBLIC_KHATEEB_CORPUS) {
       expect(speakerName(speaker, true)).not.toMatch(ARABIC_SCRIPT);
       expect(speakerFocus(speaker, true).length).toBeGreaterThan(0);
       expect(speakerFocus(speaker, true).join(" ")).not.toMatch(ARABIC_SCRIPT);

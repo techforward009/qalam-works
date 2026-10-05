@@ -8,14 +8,15 @@ import {
 
 describe("Khateeb verified hadith corpus", () => {
   test("verifies the five existing sabr narrations against concrete source witnesses", () => {
-    expect(VERIFIED_HADITH_CORPUS).toHaveLength(5);
+    const sabr = VERIFIED_HADITH_CORPUS.filter(row => row.topicIds.includes("sabr"));
+    expect(sabr).toHaveLength(5);
     expect(
-      VERIFIED_HADITH_CORPUS.every(
+      sabr.every(
         (row) => row.topicIds.includes("sabr") && row.status === "verified",
       ),
     ).toBe(true);
     expect(
-      VERIFIED_HADITH_CORPUS.every(
+      sabr.every(
         (row) =>
           row.verificationWitnessId &&
           row.witnesses.some(
@@ -50,7 +51,7 @@ describe("Khateeb verified hadith corpus", () => {
     expect(istirja?.exactArabic).toContain("وكلما ذكر مصيبة");
   });
 
-  test("stores structured cross-references without treating them as verified witnesses", () => {
+  test("stores independently checked cross-reference witnesses without changing the selected presentation text", () => {
     const headOfFaith = verifiedHadithForDossierText("sabr-head-of-faith");
     const kafi = headOfFaith?.witnesses.filter(
       (witness) => witness.sourceTitleEn === "Al-Kafi",
@@ -58,7 +59,8 @@ describe("Khateeb verified hadith corpus", () => {
 
     expect(kafi).toHaveLength(2);
     expect(kafi?.every((witness) => witness.role === "cross-reference")).toBe(true);
-    expect(kafi?.every((witness) => witness.textVerified === false)).toBe(true);
+    expect(kafi?.every((witness) => witness.textVerified && Boolean(witness.exactArabic))).toBe(true);
+    expect(headOfFaith?.verificationWitnessId).not.toBe(kafi?.[0]?.id);
     expect(kafi?.[0]?.citation).toMatchObject({
       volume: 2,
       page: 87,
@@ -139,10 +141,10 @@ describe("Khateeb verified hadith textual variants", () => {
 
 
 describe("Khateeb Dua hadith verification inventory", () => {
-  test("adds the five current Dua dossier narrations as pending verification", () => {
+  test("tracks all five Dua narrations and the one pending source", () => {
     const dua = VERIFIED_HADITH_CORPUS.filter((row) => row.topicIds.includes("dua"));
     expect(dua).toHaveLength(5);
-    expect(dua.every((row) => row.status === "pending-verification")).toBe(true);
+    expect(dua.filter(row => row.status === "pending-verification").map(row => row.dossierPrimaryTextId)).toEqual(["dua-best-worship"]);
     expect(dua.map((row) => row.dossierPrimaryTextId)).toEqual([
       "dua-weapon-believer",
       "dua-best-worship",
@@ -170,13 +172,12 @@ describe("Khateeb Dua hadith verification inventory", () => {
     );
 
     expect(duaHadiths).toHaveLength(5);
-    expect(duaHadiths.every((row) => row.status === "source-lead")).toBe(true);
-    expect(duaHadiths.every((row) => !row.arabic)).toBe(true);
-    expect(
-      duaHadiths.every((row) =>
-        row.detailUr.includes("اصل متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی"),
-      ),
-    ).toBe(true);
+    const pending = duaHadiths.filter(row => row.status === "source-lead");
+    expect(pending).toHaveLength(1);
+    expect(pending[0].id).toBe("dua-primary-dua-best-worship");
+    expect(pending[0].arabic).toBeUndefined();
+    expect(pending[0].translationUr).toBeUndefined();
+    expect(pending[0].detailUr).toContain("اصل متن کی لفظ بہ لفظ ماخذی تصدیق ابھی باقی");
   });
 });
 

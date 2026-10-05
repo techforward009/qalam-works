@@ -55,7 +55,7 @@ function meaningfulTerms(query: string): readonly string[] {
   return Array.from(
     new Set(
       normalized
-        .split(/[^p{L}p{N}]+/u)
+        .split(/[^\p{L}\p{N}]+/u)
         .map((item) => item.trim())
         .filter((item) => item.length >= 3),
     ),
@@ -143,8 +143,8 @@ export function extractEShiaSourceExcerpt(
     end = roughEnd;
   }
 
-  while (start < end && /s/u.test(sourceText[start] ?? "")) start += 1;
-  while (end > start && /s/u.test(sourceText[end - 1] ?? "")) end -= 1;
+  while (start < end && /\s/u.test(sourceText[start] ?? "")) start += 1;
+  while (end > start && /\s/u.test(sourceText[end - 1] ?? "")) end -= 1;
 
   const excerpt = sourceText.slice(start, end);
   if (!excerpt.trim()) return null;

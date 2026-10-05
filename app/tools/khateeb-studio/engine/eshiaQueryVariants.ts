@@ -20,7 +20,7 @@ const COMBINED_CONCEPTS: readonly { all: readonly string[]; queries: readonly st
 const CONCEPTS: readonly { match: readonly string[]; queries: readonly string[] }[] = [
   { match: ["رزق","روزی"], queries: ["الرزق","أسباب الرزق"] },
   { match: ["برکت","برکتیں"], queries: ["البركة","البركة في الرزق"] },
-  { match: ["غصہ","غضب"], queries: ["الغضب","كظم الغيظ","الحلم"] },
+  { match: ["غصہ","غصے","غضب"], queries: ["الغضب","كظم الغيظ","الحلم"] },
   { match: ["اولاد","بچے","بچوں"], queries: ["تربية الأولاد","حقوق الأولاد"] },
   { match: ["تربیت"], queries: ["التربية","تربية الأولاد"] },
   { match: ["والدین"], queries: ["بر الوالدين","حقوق الوالدين"] },

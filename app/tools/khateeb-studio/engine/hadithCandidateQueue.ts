@@ -17,7 +17,7 @@ const HADITH_SIGNALS: readonly {
   {
     id: "imam",
     pattern:
-      /(?:الإمام|الامام|أمير\s*المؤمنين|امير\s*المؤمنين|أبي\s*عبد\s*الله|ابي\s*عبد\s*الله|أبي\s*جعفر|ابي\s*جعفر|الصادق|الباقر|الرضا|الكاظم|العسكري)/u,
+      /(?:الإمام|الامام|أمير\s*المؤمنين|امير\s*المؤمنين|أب[يوی]\s*عبد\s*الله|اب[يوی]\s*عبد\s*الله|أب[يوی]\s*جعفر|اب[يوی]\s*جعفر|الصادق|الباقر|الرضا|الكاظم|العسكري)/u,
     weight: 4,
   },
   {
@@ -31,7 +31,7 @@ const HADITH_SIGNALS: readonly {
 
 function hasExplicitAttribution(text: string): boolean {
   return (
-    /رسول\s+الله|النبي|النَّبي|الإمام|الامام|أمير\s*المؤمنين|امير\s*المؤمنين|أبي\s*عبد\s*الله|ابي\s*عبد\s*الله|أبي\s*جعفر|ابي\s*جعفر|الصادق|الباقر|الرضا|الكاظم|العسكري/u.test(
+    /رسول\s+الله|النبي|النَّبي|الإمام|الامام|أمير\s*المؤمنين|امير\s*المؤمنين|أب[يوی]\s*عبد\s*الله|اب[يوی]\s*عبد\s*الله|أب[يوی]\s*جعفر|اب[يوی]\s*جعفر|الصادق|الباقر|الرضا|الكاظم|العسكري/u.test(
       text,
     ) ||
     /(?:^|\s)(?:قال|عن)\s+[\p{L}\s]{2,40}(?:عليه\s*السلام|عليهما\s*السلام|عليهم\s*السلام)/u.test(
@@ -64,13 +64,14 @@ export function buildLiveHadithCandidate(
   }
 
   const text = evidence.sourceExcerpt.trim();
-  const signals = HADITH_SIGNALS.filter((signal) => signal.pattern.test(text));
+  const detectionText = text.normalize("NFKC").replace(/[\u064B-\u065F\u0670]/gu, "");
+  const signals = HADITH_SIGNALS.filter((signal) => signal.pattern.test(detectionText));
   let score = signals.reduce((sum, signal) => sum + signal.weight, 0);
 
   if (text.length >= 70 && text.length <= 700) score += 1;
   if (/[:：]/u.test(text)) score += 1;
 
-  const attribution = hasExplicitAttribution(text);
+  const attribution = hasExplicitAttribution(detectionText);
   const boundaries = hasClearTextBoundaries(text);
   const missing: LiveHadithCandidate["missing"][number][] = [
     "primary-source-confirmation",
@@ -82,7 +83,7 @@ export function buildLiveHadithCandidate(
   const status: LiveHadithCandidateStatus =
     score >= 7 && attribution
       ? "candidate"
-      : score >= 3
+      : score >= 3 || signals.some(signal => signal.id === "an")
         ? "needs-context"
         : "not-hadith-like";
 

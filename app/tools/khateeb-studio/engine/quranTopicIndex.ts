@@ -325,8 +325,8 @@ function scoreTopic(entry: QuranTopicEntry, query: string): number {
   for (const alias of entry.aliases) {
     const term = normalize(alias);
     if (q === term) score = Math.max(score, 100 + term.length);
-    else if (q.includes(term)) score = Math.max(score, 50 + term.length);
-    else if (term.includes(q) && q.length >= 3) score = Math.max(score, 20 + q.length);
+    else if ((` ${q} `).includes(` ${term} `)) score = Math.max(score, 50 + term.length);
+    else if ((` ${term} `).includes(` ${q} `) && q.length >= 3) score = Math.max(score, 20 + q.length);
   }
   return score;
 }

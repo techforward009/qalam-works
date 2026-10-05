@@ -41,17 +41,18 @@ describe("Khateeb Quran topical index", () => {
     expect(ahmedgrafQuranReference.listAyahs()).toHaveLength(6236);
   });
 
-  test("live research can expose a Quran foundation without pretending the sermon pack is ready", () => {
+  test("live research combines reviewed Quran mappings with the verified Rizq corpus", () => {
     const result = researchKhateebTopic({
       query: "رزق میں برکت کے اسباب",
       locale: "ur",
       maxEvidence: 24,
     });
     const quran = result.evidence.filter((row) => row.kind === "quran");
-    expect(quran).toHaveLength(3);
-    expect(result.gapsUr.join(" ")).toContain("قرآنی بنیاد");
+    expect(quran).toHaveLength(8);
+    expect(result.evidence.filter(row => row.kind === "hadith" && row.status === "verified")).toHaveLength(5);
+    expect(result.canBuildSermon).toBe(true);
     const pack = buildLiveResearchPack(result, 20);
-    expect(pack.ready).toBe(false);
+    expect(pack.ready).toBe(true);
   });
 });
 

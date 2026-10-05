@@ -75,7 +75,7 @@ function topicScore(topic: TopicPrep, query: string): number {
   const q = normalize(query);
   if (!q) return 0;
   const haystack = topicHaystack(topic);
-  if (haystack.includes(q)) return 100 + q.length;
+  if ((` ${haystack} `).includes(` ${q} `)) return 100 + q.length;
 
   const tokens = Array.from(
     new Set(
@@ -86,9 +86,9 @@ function topicScore(topic: TopicPrep, query: string): number {
   );
   if (!tokens.length) return 0;
 
-  const matched = tokens.filter((token) => haystack.includes(token)).length;
+  const matched = tokens.filter((token) => (` ${haystack} `).includes(` ${token} `)).length;
   if (tokens.length === 1) return matched ? 10 : 0;
-  if (matched < 2) return 0;
+  if (matched < 2 || matched / tokens.length < 0.5) return 0;
   return matched * 10;
 }
 

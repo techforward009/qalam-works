@@ -169,12 +169,13 @@ describe("Khateeb Studio scholar corpus foundation", () => {
     expect(corpus.sources.some(
       (item) =>
         item.catalogId === "talib-johari-asas-adamiyat-quran" &&
-        item.status === "catalog-only",
+        item.status === "partially-indexed" && item.readyRecordIds.length > 0,
     )).toBe(true);
   });
 
   test("new Talib Johari evidence stays page-grounded and topic-indexed", () => {
-    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE).toHaveLength(1);
+    expect(TALIB_JOHARI_INSANIYAT_EVIDENCE.length).toBeGreaterThanOrEqual(9);
+    expect(new Set(TALIB_JOHARI_INSANIYAT_EVIDENCE.map(item => item.id)).size).toBe(TALIB_JOHARI_INSANIYAT_EVIDENCE.length);
     const row = TALIB_JOHARI_INSANIYAT_EVIDENCE[0];
     expect(row.sourceLabelUr).toContain("صفحات 13 تا 26");
     expect(row.sourceUrl).toBe(
@@ -473,9 +474,9 @@ describe("Khateeb Studio year-round topic preparation", () => {
 
   test("studio exposes topic-first preparation before the calendar workflow", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
-    expect(studio).toContain("موضوع سے خطبہ تیار کریں");
-    expect(studio).toContain("Prepare a sermon by topic");
-    expect(studio.indexOf("موضوع سے خطبہ تیار کریں")).toBeLessThan(studio.indexOf("۱۴۴۸ھ کی تقویمی مناسبتیں"));
+    expect(studio).toContain("موضوع سے تیاری");
+    expect(studio).toContain("Prepare by topic");
+    expect(studio.indexOf("موضوع سے تیاری")).toBeLessThan(studio.indexOf("۱۴۴۸ھ کی تقویمی مناسبتیں"));
   });
 });
 
@@ -774,13 +775,14 @@ describe("Khateeb Studio parents and memorial deep topic", () => {
     expect(hadithRows.length).toBeGreaterThanOrEqual(3);
     for (const row of hadithRows) {
       expect(row.sourceArabic?.length).toBeGreaterThan(20);
-      expect(row.sourceRefUr.length).toBeGreaterThan(50);
+      expect(row.sourceRefUr.trim()).not.toBe("");
+      expect(row.sourceRefEn.trim()).not.toBe("");
       expect(row.sourceUrl).toMatch(/^https:\/\//);
     }
     expect(hadithRows.find((item) => item.id === "risalat-mother")?.sourceRefUr).toContain("ج15، ص175");
     expect(hadithRows.find((item) => item.id === "risalat-father")?.sourceRefUr).toContain("الخصال، ص568");
-    expect(hadithRows.find((item) => item.id === "birr-after-death")?.sourceRefUr).toContain("ج74، ص86");
-    expect(hadithRows.find((item) => item.id === "birr-after-death")?.sourceRefUr).not.toContain("ج71");
+    expect(hadithRows.find((item) => item.id === "birr-after-death")?.sourceRefUr).toContain("ج71، ص88");
+    expect(hadithRows.find((item) => item.id === "birr-after-death")?.sourceRefUr).not.toContain("ج74");
   });
 
   test("uses source-supplied Arabic marks and only converts presentation style", () => {

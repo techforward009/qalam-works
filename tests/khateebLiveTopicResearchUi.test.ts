@@ -15,7 +15,7 @@ describe("Khateeb live topic research UI", () => {
   });
 
   test("keeps the user inside Khateeb Studio while showing source-grounded results", () => {
-    expect(studio).toContain("براہِ راست تحقیقی مواد");
+    expect(studio).toContain("براہِ راست ماخذی تحقیق");
     expect(studio).toContain("ای شیعہ سے");
     expect(studio).toContain("item.citationUr");
     expect(studio).toContain("item.arabic");

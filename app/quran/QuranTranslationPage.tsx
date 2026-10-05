@@ -86,7 +86,11 @@ export default function QuranTranslationPage({
 
       <div
         className={"mt-4 flex-1 " + (ur ? "font-naskh" : "")}
-        style={{ fontSize: Math.round((ur ? 18 : 17) * scale) + "px" }}
+        style={{
+          fontFamily: ur ? '"Qalam Quran Jameel", "Noto Nastaliq Urdu", serif' : undefined,
+          fontSize: Math.round((ur ? 20 : 17) * scale) + "px",
+          lineHeight: ur ? 2.3 : 2,
+        }}
       >
         {loading ? (
           <p className="py-12 text-center text-sm text-[#777d74]">
@@ -105,7 +109,7 @@ export default function QuranTranslationPage({
                   key={ayah.id}
                   id={"translation-ayah-" + ayah.surah + "-" + ayah.ayah}
                   className={
-                    "rounded-lg px-3 py-3 leading-[2] transition-colors " +
+                    "rounded-lg px-3 py-3 transition-colors " +
                     (isActive
                       ? "bg-[#f1ead6] dark:bg-[#293126]"
                       : "hover:bg-[#f7f3e8] dark:hover:bg-[#202720]")

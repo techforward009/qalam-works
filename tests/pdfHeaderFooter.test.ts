@@ -1,5 +1,5 @@
 // Batch 16C — pure template unit tests (no Chromium required)
-import { buildPdfHeaderTemplate, buildPdfFooterTemplate } from "../app/api/export-pdf/route";
+import { buildPdfHeaderTemplate, buildPdfFooterTemplate } from "../app/tools/document-studio/utils/pdfHeaderFooter";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
