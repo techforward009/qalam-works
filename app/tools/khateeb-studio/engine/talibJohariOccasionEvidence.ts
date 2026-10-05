@@ -180,9 +180,9 @@ export const TALIB_JOHARI_OCCASION_EVIDENCE: readonly SpeakerEvidence[] = [
       "Present Sham-e-Ghariban as moral reckoning as well as mourning.",
     ],
     sourceLabelUr:
-      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — مجلسِ شامِ غریباں، کتابی صفحات 140 تا 161",
+      "اصل کتاب «عالمی معاشرہ اور قرآن حکیم» — مجلسِ شامِ غریباں، کتابی صفحات 140 تا 191",
     sourceLabelEn:
-      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Sham-e-Ghariban Majlis, printed pp. 140–161",
+      "Original book Aalmi Muashra aur Qur'an-e-Hakeem — Sham-e-Ghariban Majlis, printed pp. 140–191",
     sourceUrl:
       "https://maablib.org/aalmi-muashra-aur-quran-e-hakeem-by-talib-johri/",
   },
