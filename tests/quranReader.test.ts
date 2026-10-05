@@ -189,6 +189,36 @@ describe("Quran reader", () => {
     }
   });
 
+  test("uses the public Jameel font for Urdu Quran translation", () => {
+    const source = readFileSync("app/quran/QuranTranslationPage.tsx", "utf8");
+    expect(source).toContain("Qalam Quran Jameel");
+    expect(source).toContain(
+      "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2",
+    );
+    expect(source).toContain("lineHeight: ur ? 2.3 : 2");
+  });
+
+  test("keeps Digital Khatt corpus cached across route remounts", () => {
+    const source = readFileSync(
+      "app/quran/indopak-digital-khatt/DigitalKhattReader.tsx",
+      "utf8",
+    );
+    expect(source).toContain("DIGITAL_KHATT_CORPUS_CACHE");
+    expect(source).toContain("DIGITAL_KHATT_CORPUS_PROMISE");
+    expect(source).toContain("loadDigitalKhattCorpus");
+    expect(source).toContain("router.prefetch");
+  });
+
+  test("preloads adjacent Madinah pages and their QCF fonts", () => {
+    const source = readFileSync("app/quran/madinah/MadinahReader.tsx", "utf8");
+    expect(source).toContain("PAGE_CACHE");
+    expect(source).toContain("PAGE_PROMISES");
+    expect(source).toContain("FONT_PROMISES");
+    expect(source).toContain("prepareMadinahPage");
+    expect(source).toContain("[page.page - 1, page.page + 1]");
+    expect(source).toContain("router.prefetch");
+  });
+
   test("keeps the Taj-style running heads and the display scale", () => {
     expect(juzRunningHead(2)).toBe("سيقول\u00a0٢");
     expect(surahRunningHead(2)).toBe("البقرة\u00a0٢");

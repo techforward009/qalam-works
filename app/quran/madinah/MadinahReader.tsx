@@ -33,6 +33,9 @@ type Hit = { surah: number; ayah: number; page: number };
 
 const FONT_PREFIX = "QalamMadinahV2";
 const FONT_READY = new Set<number>();
+const FONT_PROMISES = new Map<number, Promise<string>>();
+const PAGE_CACHE = new Map<number, MadinahPage>();
+const PAGE_PROMISES = new Map<number, Promise<MadinahPage>>();
 let basmalaReady: Promise<void> | null = null;
 
 function ensureBasmalaFont(): Promise<void> {
@@ -54,15 +57,77 @@ function ensureBasmalaFont(): Promise<void> {
 
 async function ensurePageFont(page: number): Promise<string> {
   const family = `${FONT_PREFIX}-${page}`;
-  if (!FONT_READY.has(page) && typeof FontFace !== "undefined") {
-    const font = new FontFace(family, `url(${fontUrl(page)}) format("woff2")`, {
-      display: "swap",
+  if (FONT_READY.has(page) || typeof FontFace === "undefined") return family;
+
+  const pending = FONT_PROMISES.get(page);
+  if (pending) return pending;
+
+  const promise = new FontFace(family, `url(${fontUrl(page)}) format("woff2")`, {
+    display: "swap",
+  })
+    .load()
+    .then((loaded) => {
+      document.fonts.add(loaded);
+      FONT_READY.add(page);
+      return family;
+    })
+    .finally(() => {
+      FONT_PROMISES.delete(page);
     });
-    await font.load();
-    document.fonts.add(font);
-    FONT_READY.add(page);
+
+  FONT_PROMISES.set(page, promise);
+  return promise;
+}
+
+function resolveMadinahPageForAyah(targetSurah: number, targetAyah: number): number {
+  let resolved = 1;
+  for (const [pageNo, startSurah, startAyah] of TANZIL_PAGE_STARTS) {
+    if (
+      targetSurah > startSurah ||
+      (targetSurah === startSurah && targetAyah >= startAyah)
+    ) {
+      resolved = pageNo;
+    }
   }
-  return family;
+  return resolved;
+}
+
+function fetchMadinahPage(targetPage: number): Promise<MadinahPage> {
+  const cached = PAGE_CACHE.get(targetPage);
+  if (cached) return Promise.resolve(cached);
+
+  const pending = PAGE_PROMISES.get(targetPage);
+  if (pending) return pending;
+
+  const promise = fetch(pageUrl(targetPage), { cache: "force-cache" })
+    .then(async (response) => {
+      if (response.ok) return response;
+      return fetch(pageUrl(targetPage, true), { cache: "force-cache" });
+    })
+    .then(async (response) => {
+      if (!response.ok) throw new Error("Page could not load");
+      const value = (await response.json()) as MadinahPage;
+      PAGE_CACHE.set(targetPage, value);
+      return value;
+    })
+    .finally(() => {
+      PAGE_PROMISES.delete(targetPage);
+    });
+
+  PAGE_PROMISES.set(targetPage, promise);
+  return promise;
+}
+
+async function prepareMadinahPage(targetPage: number): Promise<{
+  page: MadinahPage;
+  family: string;
+}> {
+  const [nextPage, family] = await Promise.all([
+    fetchMadinahPage(targetPage),
+    ensurePageFont(targetPage),
+    ensureBasmalaFont().catch(() => undefined),
+  ]);
+  return { page: nextPage, family };
 }
 
 function parseLocation(value: string): { surah: number; ayah: number } | null {
@@ -104,9 +169,12 @@ export default function MadinahReader({
   const router = useRouter();
   const { language } = useLanguage();
   const copy = QURAN_READER_COPY[language];
-  const [pageNumber, setPageNumber] = useState(1);
-  const [page, setPage] = useState<MadinahPage | null>(null);
-  const [fontFamily, setFontFamily] = useState(`${FONT_PREFIX}-1`);
+  const initialPageNumber = resolveMadinahPageForAyah(surah, ayah);
+  const [pageNumber, setPageNumber] = useState(initialPageNumber);
+  const [page, setPage] = useState<MadinahPage | null>(
+    () => PAGE_CACHE.get(initialPageNumber) ?? null,
+  );
+  const [fontFamily, setFontFamily] = useState(`${FONT_PREFIX}-${initialPageNumber}`);
   const [pageInput, setPageInput] = useState("1");
   const [query, setQuery] = useState("");
   const [searched, setSearched] = useState(false);
@@ -122,36 +190,29 @@ export default function MadinahReader({
   const loadPage = async (targetPage: number) => {
     setLoadError("");
     try {
-      let response = await fetch(pageUrl(targetPage), { cache: "force-cache" });
-      if (!response.ok) {
-        response = await fetch(pageUrl(targetPage, true), { cache: "force-cache" });
-      }
-      if (!response.ok) throw new Error(copy.pageCouldNotLoad);
-      const nextPage = (await response.json()) as MadinahPage;
-      const [family] = await Promise.all([ensurePageFont(targetPage), ensureBasmalaFont().catch(() => undefined)]);
-      setPage(nextPage);
+      const prepared = await prepareMadinahPage(targetPage);
+      setPage(prepared.page);
       setPageNumber(targetPage);
       window.sessionStorage.setItem("qalam-madinah-last-page", String(targetPage));
-      setFontFamily(family);
+      setFontFamily(prepared.family);
     } catch {
       setLoadError(`${copy.pageCouldNotLoad} ${targetPage}`);
     }
   };
 
   useEffect(() => {
-    const resolvePageForAyah = (targetSurah: number, targetAyah: number): number => {
-      let resolved = 1;
-      for (const [pageNo, startSurah, startAyah] of TANZIL_PAGE_STARTS) {
-        if (targetSurah > startSurah || (targetSurah === startSurah && targetAyah >= startAyah)) {
-          resolved = pageNo;
-        }
-      }
-      return resolved;
-    };
-
-    const target = resolvePageForAyah(surah, ayah);
+    const target = resolveMadinahPageForAyah(surah, ayah);
     setPageNumber(target);
     setPageInput(String(target));
+
+    const cached = PAGE_CACHE.get(target);
+    if (cached) {
+      setPage(cached);
+      setFontFamily(`${FONT_PREFIX}-${target}`);
+      ensurePageFont(target).catch(() => undefined);
+      return;
+    }
+
     loadPage(target).catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surah, ayah]);
@@ -167,6 +228,20 @@ export default function MadinahReader({
     setPageNumber(page.page);
     window.sessionStorage.setItem("qalam-madinah-last-page", String(page.page));
   }, [page, surah, ayah]);
+
+  useEffect(() => {
+    if (!page) return;
+
+    for (const candidate of [page.page - 1, page.page + 1]) {
+      if (candidate < 1 || candidate > MADINAH_V2_EDITION.pageCount) continue;
+      prepareMadinahPage(candidate)
+        .then(({ page: adjacent }) => {
+          const start = firstAyah(adjacent);
+          if (start) router.prefetch(`/quran/madinah/${start.surah}/${start.ayah}`);
+        })
+        .catch(() => undefined);
+    }
+  }, [page, router]);
 
   const runSearch = () => {
     const needles = query.split(/\s+/).map(quranMatchKey).filter(Boolean);
@@ -191,23 +266,15 @@ export default function MadinahReader({
 
   const navigatePage = (nextPage: number) => {
     const bounded = Math.max(1, Math.min(MADINAH_V2_EDITION.pageCount, nextPage));
-    setPageNumber(bounded);
-    window.sessionStorage.setItem("qalam-madinah-last-page", String(bounded));
-    const target = pageUrl(bounded);
-    fetch(target, { cache: "force-cache" })
-      .then(async (response) => {
-        if (!response.ok) {
-          const remote = await fetch(pageUrl(bounded, true), { cache: "force-cache" });
-          if (!remote.ok) throw new Error();
-          return remote.json() as Promise<MadinahPage>;
-        }
-        return response.json() as Promise<MadinahPage>;
-      })
-      .then(async (next) => {
+    setLoadError("");
+
+    prepareMadinahPage(bounded)
+      .then(({ page: next, family }) => {
         const start = firstAyah(next);
-        const [family] = await Promise.all([ensurePageFont(bounded), ensureBasmalaFont().catch(() => undefined)]);
         setPage(next);
+        setPageNumber(bounded);
         setFontFamily(family);
+        window.sessionStorage.setItem("qalam-madinah-last-page", String(bounded));
         if (start) navigate(start.surah, start.ayah);
       })
       .catch(() => setLoadError(`${copy.pageCouldNotLoad} ${bounded}`));

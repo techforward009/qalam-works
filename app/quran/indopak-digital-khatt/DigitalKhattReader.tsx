@@ -28,6 +28,36 @@ import { surahBanner } from "./surahBanner";
 const BASMILLAH = "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ";
 const TRAILING_QURAN_MARKS = /[\u0614-\u0617\u06D6-\u06DC\u08D5-\u08DF]+$/u;
 const DISPLAY_SCALE_KEY = "qalam-digital-khatt-display-scale";
+let DIGITAL_KHATT_CORPUS_CACHE: DigitalKhattCorpus | null = null;
+let DIGITAL_KHATT_CORPUS_PROMISE: Promise<DigitalKhattCorpus> | null = null;
+
+function loadDigitalKhattCorpus(): Promise<DigitalKhattCorpus> {
+  if (DIGITAL_KHATT_CORPUS_CACHE) return Promise.resolve(DIGITAL_KHATT_CORPUS_CACHE);
+  if (DIGITAL_KHATT_CORPUS_PROMISE) return DIGITAL_KHATT_CORPUS_PROMISE;
+
+  DIGITAL_KHATT_CORPUS_PROMISE = fetch(DIGITAL_KHATT_EDITION.corpusPath, {
+    cache: "force-cache",
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error("Corpus load failed");
+      return response.json() as Promise<unknown>;
+    })
+    .then((value) => {
+      const corpus = isDigitalKhattCorpus(value) ? value : {};
+      DIGITAL_KHATT_CORPUS_CACHE = corpus;
+      return corpus;
+    })
+    .catch(() => {
+      const corpus: DigitalKhattCorpus = {};
+      DIGITAL_KHATT_CORPUS_CACHE = corpus;
+      return corpus;
+    })
+    .finally(() => {
+      DIGITAL_KHATT_CORPUS_PROMISE = null;
+    });
+
+  return DIGITAL_KHATT_CORPUS_PROMISE;
+}
 /** Ink width of each DigitalKhatt waqf glyph, in em. They are zero-advance marks. */
 const WAQF_EM: Record<string, number> = {
   "\u0614": 0.52,
@@ -79,7 +109,7 @@ export default function DigitalKhattReader({
   const router = useRouter();
   const { language } = useLanguage();
   const copy = QURAN_READER_COPY[language];
-  const [corpus, setCorpus] = useState<DigitalKhattCorpus | null>(null);
+  const [corpus, setCorpus] = useState<DigitalKhattCorpus | null>(() => DIGITAL_KHATT_CORPUS_CACHE);
   const [query, setQuery] = useState("");
   const [searched, setSearched] = useState(false);
   const [hits, setHits] = useState<Hit[]>([]);
@@ -98,17 +128,9 @@ export default function DigitalKhattReader({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(DIGITAL_KHATT_EDITION.corpusPath)
-      .then((response) => {
-        if (!response.ok) throw new Error("Corpus load failed");
-        return response.json() as Promise<unknown>;
-      })
-      .then((value) => {
-        if (!cancelled) setCorpus(isDigitalKhattCorpus(value) ? value : {});
-      })
-      .catch(() => {
-        if (!cancelled) setCorpus({});
-      });
+    loadDigitalKhattCorpus().then((value) => {
+      if (!cancelled) setCorpus(value);
+    });
     return () => {
       cancelled = true;
     };
@@ -155,6 +177,17 @@ export default function DigitalKhattReader({
   useEffect(() => {
     setPageInput(String(pageNumber));
   }, [pageNumber]);
+
+  useEffect(() => {
+    if (!pages.length || !currentPage) return;
+    for (const candidate of [currentPage.page - 1, currentPage.page + 1]) {
+      const target = digitalKhattPageByNumber(pages, candidate);
+      if (!target) continue;
+      router.prefetch(
+        "/quran/indopak-digital-khatt/" + target.startChapter + "/" + target.startVerse,
+      );
+    }
+  }, [currentPage, pages, router]);
 
   const navigate = (nextSurah: number, nextAyah: number) => {
     router.push("/quran/indopak-digital-khatt/" + nextSurah + "/" + nextAyah);

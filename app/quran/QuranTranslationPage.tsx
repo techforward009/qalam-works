@@ -57,6 +57,18 @@ export default function QuranTranslationPage({
     : QURAN_READER_TRANSLATION_SOURCES.en;
 
   return (
+    <>
+      {ur ? (
+        <style jsx global>{`
+          @font-face {
+            font-family: "Qalam Quran Jameel";
+            src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2") format("woff2");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+          }
+        `}</style>
+      ) : null}
     <article
       className="quran-page relative flex w-full flex-col overflow-hidden bg-[#fffef9] px-4 py-5 sm:px-10 sm:py-8 dark:bg-[#151a16]"
       style={{ minHeight: 760 }}
@@ -118,5 +130,6 @@ export default function QuranTranslationPage({
           : "Qur'anic text and translation are kept as separate source layers."}
       </footer>
     </article>
+    </>
   );
 }
