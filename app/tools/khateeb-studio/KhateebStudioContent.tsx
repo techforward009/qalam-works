@@ -52,6 +52,7 @@ import { checkSeriesOriginality } from "./engine/originalityGuard";
 import SessionNotesEditor from "./SessionNotesEditor";
 import AllKhateebNotesPanel from "./AllKhateebNotesPanel";
 import SessionDeliveryHistory from "./SessionDeliveryHistory";
+import CustomSermonWorkspace from "./CustomSermonWorkspace";
 import KhateebScriptText from "./KhateebScriptText";
 import KhateebPrimaryArabic from "./KhateebPrimaryArabic";
 import {
@@ -158,6 +159,7 @@ export default function KhateebStudioContent({
   const [liveTopicLoading, setLiveTopicLoading] = useState(false);
   const [liveTopicError, setLiveTopicError] = useState("");
   const [notesLibraryOpen, setNotesLibraryOpen] = useState(false);
+  const [customWorkspaceOpen, setCustomWorkspaceOpen] = useState(false);
   const topicResultRef = useRef<HTMLElement | null>(null);
 
   const filteredSpeakers = useMemo(() => {
@@ -1131,13 +1133,29 @@ export default function KhateebStudioContent({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setNotesLibraryOpen((value) => !value)}
-            className="mt-5 inline-flex items-center rounded-xl border border-[#B8935A]/35 bg-white px-4 py-2 text-sm font-semibold text-[#6f5730] shadow-sm hover:bg-[#fbf7ee] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#e2c895]"
-          >
-            {ur ? "میرے تمام نوٹس" : "My notes library"}
-          </button>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCustomWorkspaceOpen((value) => !value);
+                setNotesLibraryOpen(false);
+              }}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#1A3A2A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#244E38]"
+            >
+              <PenLine className="h-4 w-4" />
+              {ur ? "میری مجلس / میرا موضوع" : "My sermon / my topic"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setNotesLibraryOpen((value) => !value);
+                setCustomWorkspaceOpen(false);
+              }}
+              className="inline-flex items-center rounded-xl border border-[#B8935A]/35 bg-white px-4 py-2 text-sm font-semibold text-[#6f5730] shadow-sm hover:bg-[#fbf7ee] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#e2c895]"
+            >
+              {ur ? "میرے تمام نوٹس" : "My notes library"}
+            </button>
+          </div>
         </header>
 
         {notesLibraryOpen ? (
@@ -1145,6 +1163,12 @@ export default function KhateebStudioContent({
             ur={ur}
             onClose={() => setNotesLibraryOpen(false)}
           />
+        ) : null}
+
+        {customWorkspaceOpen ? (
+          <div className="mb-8">
+            <CustomSermonWorkspace locale={ur ? "ur" : "en"} />
+          </div>
         ) : null}
 
         <nav className="mb-6 rounded-2xl border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]" aria-label={ur ? "تیاری کے مراحل" : "Preparation steps"}>
