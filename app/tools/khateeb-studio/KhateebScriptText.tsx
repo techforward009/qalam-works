@@ -56,12 +56,14 @@ export default function KhateebScriptText({
   text,
   forceArabic = false,
   forcePersian = false,
+  forceUrdu = false,
 }: {
   text: string;
   forceArabic?: boolean;
   forcePersian?: boolean;
+  forceUrdu?: boolean;
 }) {
-  if (forcePersian || (!forceArabic && looksLikePersianText(text))) {
+  if (!forceUrdu && (forcePersian || (!forceArabic && looksLikePersianText(text)))) {
     return <PersianSpan>{text}</PersianSpan>;
   }
   if (forceArabic) return <ArabicSpan>{text}</ArabicSpan>;

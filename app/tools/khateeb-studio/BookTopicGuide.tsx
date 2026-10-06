@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { PATIENCE_ANGLES, PATIENCE_QURAN, patienceTiming, createPatienceBookDraft, patienceGuideText, type PatienceMaterial } from "./engine/patienceBookGuide";
 import type { CustomSermonProject } from "./engine/customSermonProject";
 import type { SermonDuration } from "./engine/sermonPrep";
-import { bookExcerptText } from "./engine/bookLibrary";
+import BookPassageText from "./BookPassageText";
+import { bookExcerptReference } from "./engine/bookLibrary";
 import KhateebScriptText from "./KhateebScriptText";
 import { useCopyFeedback } from "./useCopyFeedback";
 import ClipboardFeedback from "./ClipboardFeedback";
@@ -52,7 +53,9 @@ export default function BookTopicGuide({ locale, onCreateDraft, onOpen }: { loca
         <p><strong>{ur ? "عملی قدم: " : "Action: "}</strong>{a[locale][4]}</p>
         {materials.filter(m => m.angleId === a.id).map(m => <div key={m.excerpt.id} className="rounded bg-[#31513a]/5 p-3">
           <strong>{m.excerpt.language === "ar" ? (ur ? "اصل عربی عبارت" : "Original Arabic") : (ur ? "فراہم کردہ ترجمہ" : "Supplied translation")}</strong>
-          <div className="whitespace-pre-wrap leading-8"><KhateebScriptText text={bookExcerptText(m.excerpt, locale)} /></div>
+          <p className="my-2" dir={ur ? "rtl" : "ltr"}>{bookExcerptReference(m.excerpt, locale)}</p>
+          {m.excerpt.paragraphs.map(p => <BookPassageText key={p.id} text={p.text} language={m.excerpt.language} />)}
+          {m.excerpt.translator ? <p className="mt-2 text-sm">{ur ? "مترجم: " : "Translator: "}{m.excerpt.translator}</p> : null}
           <button type="button" onClick={() => onOpen(m.excerpt.recordId,m.excerpt.sourceId)} className="mt-2 underline">{ur ? "مکمل ماخذ دیکھیں" : "Read full source"}</button>
         </div>)}
       </article>)}

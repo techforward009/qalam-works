@@ -23,8 +23,9 @@ for(const locale of ['ur','en'] as const){
   await workspace.getByRole('button',{name:ur?'کتابی ذخیرہ — تلاش اور اقتباس':'Book library — search and quote',exact:true}).click();
   const library=page.getByTestId('book-library');await expect(library.getByRole('button',{name:ur?'کتاب میں تلاش کریں':'Search books',exact:true})).toBeVisible();
   await library.getByRole('combobox',{name:ur?'زبان':'Language',exact:true}).selectOption('ar');
-  await library.getByLabel(ur?'اسی نسخے میں نمبر':'Number in this edition',{exact:true}).fill('۲۸');
+  await library.getByLabel(ur?'خطبہ، حکمت یا دعا کا نمبر':'Sermon, saying or prayer number',{exact:true}).fill('۲۸');
   await library.getByRole('button',{name:ur?'کتاب میں تلاش کریں':'Search books',exact:true}).click();
+  await expect(library.locator('.khateeb-book-ar .khateeb-muhammadi-quranic').first()).toHaveCSS('font-family',/Muhammadi Quranic/);
   await library.getByRole('button',{name:ur?'مکمل عبارت اور انتخاب':'Read full passage and select',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:ur?'مکمل کتابی عبارت':'Full book passage'});await expect(dialog).toBeVisible();
   const checkbox = dialog.getByRole('checkbox',{name:ur?'پیراگراف 1':'Paragraph 1',exact:true});
@@ -34,7 +35,7 @@ for(const locale of ['ur','en'] as const){
   await expect(dialog.getByText(ur?'منتخب اقتباس مجلس میں شامل اور محفوظ ہوگیا۔':'Selected excerpt added and saved to your sermon.',{exact:true})).toBeVisible();
   await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('denied')}}}));
   await dialog.getByRole('button',{name:ur?'انتخاب اور حوالہ نقل کریں':'Copy selection and reference',exact:true}).click();
-  const fallback=page.getByRole('textbox',{name:ur?'نقل کے لیے مکمل متن':'Full text for copying'});await expect(fallback).toBeVisible();const copied=await fallback.inputValue();expect(copied).toContain(paragraphs[0].text);expect(copied).toContain('paragraph 100');expect(copied).not.toContain(paragraphs[1].text);expect(await fallback.evaluate((el:HTMLTextAreaElement)=>el.selectionEnd-el.selectionStart)).toBe(copied.length);
+  const fallback=page.getByRole('textbox',{name:ur?'نقل کے لیے مکمل متن':'Full text for copying'});await expect(fallback).toBeVisible();const copied=await fallback.inputValue();expect(copied).toContain(paragraphs[0].text);expect(copied).toContain(ur?'دعا 28':'Supplication 28');expect(copied).not.toContain(paragraphs[1].text);expect(await fallback.evaluate((el:HTMLTextAreaElement)=>el.selectionEnd-el.selectionStart)).toBe(copied.length);
   await fallback.press('Escape');await dialog.getByRole('button',{name:ur?'بند کریں':'Close',exact:true}).click();
   await page.reload();await page.getByRole('button',{name:my,exact:true}).click();await expect(workspace.getByText(ur?'مجلس کے محفوظ کتابی اقتباسات':'Saved book excerpts in this sermon')).toBeVisible();
   await workspace.getByRole('button',{name:ur?'45 منٹ':'45 min',exact:true}).last().click();
@@ -43,9 +44,9 @@ for(const locale of ['ur','en'] as const){
   await workspace.locator('input[type=file]').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:backup});
   await expect(workspace.getByText(ur?'مجلس کے محفوظ کتابی اقتباسات':'Saved book excerpts in this sermon')).toBeVisible();
   await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async(text:string)=>{(window as any).copyBookText=text;}}}));
-  await workspace.getByRole('button',{name:ur?'مکمل مسودہ نقل کریں':'Copy full draft',exact:true}).click();expect(await page.evaluate(()=>(window as any).copyBookText)).toContain('sahifa-ar.docx');
+  await workspace.getByRole('button',{name:ur?'مکمل مسودہ نقل کریں':'Copy full draft',exact:true}).click();expect(await page.evaluate(()=>(window as any).copyBookText)).toContain(ur?'دعا 28':'Supplication 28');
   await page.evaluate(()=>{window.print=()=>{};});await workspace.getByRole('button',{name:ur?'مسودہ پرنٹ کریں / PDF محفوظ کریں':'Print draft / Save PDF',exact:true}).click();
-  await page.emulateMedia({media:'print'});const print=page.locator('#khateeb-custom-print-area');await expect(print).toBeVisible();expect(await print.innerText()).toContain(paragraphs[0].text);expect(await print.innerText()).not.toContain(paragraphs[1].text);expect(await print.innerText()).toContain('paragraph 100');await expect(page.locator('#khateeb-print-area')).not.toBeVisible();
+  await page.emulateMedia({media:'print'});const print=page.locator('#khateeb-custom-print-area');await expect(print).toBeVisible();expect(await print.innerText()).toContain(paragraphs[0].text);expect(await print.innerText()).not.toContain(paragraphs[1].text);expect(await print.innerText()).toContain(ur?'دعا 28':'Supplication 28');await expect(page.locator('#khateeb-print-area')).not.toBeVisible();
   const pdf=await page.pdf({path:testInfo.outputPath(`book-${locale}.pdf`),format:'A4',printBackground:true});expect(pdf.length).toBeGreaterThan(5000);await page.emulateMedia({media:'screen'});
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);expect(overflow).toBe(false);expect(errors).toEqual([]);
  });

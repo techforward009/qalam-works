@@ -47,7 +47,7 @@ describe("source-preserving book search and sermon snapshots",()=>{
   expect(p.ownMaterial).toBe("میرے نوٹس");expect(p.bookExcerpts).toEqual([excerpt]);
   expect(parseCustomSermonProject(serializeCustomSermonProject(p))?.bookExcerpts).toEqual([excerpt]);
   expect(prepareCustomRestore(buildCustomBackup([p]),[]).projects[0].bookExcerpts).toEqual([excerpt]);
-  for(const locale of ["ur","en"] as const) {const text=buildCustomSermonText(p,locale);expect(text).toContain(r.paragraphs[0].text);expect(text).toContain(r.paragraphs[2].text);expect(text).not.toContain(r.paragraphs[1].text);expect(text).toContain("paragraph 100");expect(text).toContain("1, 3");expect(text).toContain("sahifa-ar.docx");}
+  for(const locale of ["ur","en"] as const) {const text=buildCustomSermonText(p,locale);expect(text).toContain(r.paragraphs[0].text);expect(text).toContain(r.paragraphs[2].text);expect(text).not.toContain(r.paragraphs[1].text);expect(text).not.toContain("word/document.xml");expect(text).not.toContain(".docx");}
   const revisedSource = { ...sourceFor(), sha256: "b".repeat(64) };
   const revisedExcerpt = createBookExcerpt(r,revisedSource,[r.paragraphs[0].id,r.paragraphs[2].id]);
   expect(addCustomBookExcerpt(p,revisedExcerpt).bookExcerpts).toHaveLength(2);

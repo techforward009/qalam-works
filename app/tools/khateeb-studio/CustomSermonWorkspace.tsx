@@ -15,7 +15,9 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 const BookLibraryPanel = dynamic(() => import("./BookLibraryPanel"), { ssr: false });
-import { bookExcerptText, type BookExcerpt } from "./engine/bookLibrary";
+import { PATIENCE_QURAN } from "./engine/patienceBookGuide";
+import BookPassageText from "./BookPassageText";
+import { bookExcerptText, bookExcerptReference, cleanBookTitle, type BookExcerpt } from "./engine/bookLibrary";
 import KhateebScriptText, { renderKhateebSalawat } from "./KhateebScriptText";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
@@ -691,10 +693,10 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
                 {active.bookExcerpts?.length ? <div className="mt-4 space-y-3">
                   <h5 className="font-semibold">{ur ? "مجلس کے محفوظ کتابی اقتباسات" : "Saved book excerpts in this sermon"}</h5>
                   {active.bookExcerpts.map(excerpt => <article key={excerpt.id} className="rounded-lg border border-[#31513a]/20 p-3">
-                    <strong dir="auto" className="block text-sm">{renderKhateebSalawat(excerpt.title)}</strong>
+                    <strong dir="auto" className="block text-sm">{renderKhateebSalawat(cleanBookTitle(excerpt.title))}</strong>
                     <p className="mt-1 text-xs leading-6">{ur ? "فراہم کردہ کتابی نسخہ؛ ترجمہ اور حواشی کی نسبت ماخذ کے مطابق ہے۔" : "Supplied book edition; translation and commentary retain their source attribution."}</p>
-                    {excerpt.paragraphs.map(p => <div key={p.id} dir="auto" className="mt-2 whitespace-pre-wrap break-words text-sm leading-8">{excerpt.language === "ar" ? <KhateebScriptText text={p.text} forceArabic /> : renderKhateebSalawat(p.text)}</div>)}
-                    <p dir="auto" className="mt-3 break-words text-xs leading-6">{excerpt.filename} · {excerpt.locator} · {ur ? "پیراگراف" : "Paragraphs"}: {excerpt.paragraphNumbers.join(", ")}{excerpt.translator ? ` · ${excerpt.translator}` : ""}</p>
+                    {excerpt.paragraphs.map(p => <BookPassageText key={p.id} text={p.text} language={excerpt.language} />)}
+                    <p dir="auto" className="mt-3 break-words text-xs leading-6">{bookExcerptReference(excerpt, locale)}{excerpt.translator ? ` · ${excerpt.translator}` : ""}</p>
                     <div className="mt-3 flex gap-3">
                       <button type="button" className="rounded-lg border px-3 py-2 text-xs" onClick={() => void feedback.copy(bookExcerptText(excerpt, locale))}>{ur ? "اقتباس اور حوالہ نقل کریں" : "Copy excerpt and reference"}</button>
                       <button type="button" className="rounded-lg border px-3 py-2 text-xs" onClick={() => { const latest = projectsRef.current.find(p => p.id === active.id); if (latest) replaceProject(removeCustomBookExcerpt(latest, excerpt.id), false); }}>{ur ? "اقتباس ہٹائیں" : "Remove excerpt"}</button>
@@ -857,7 +859,11 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
         </div>
       </div>
       {active ? <section id="khateeb-custom-print-area" className="hidden" dir={ur ? "rtl" : "ltr"}>
-        {buildCustomSermonText(active, locale).split("\n").map((line, index) => <p key={index} dir="auto" className="min-h-2 whitespace-pre-wrap break-words text-sm leading-8">{(active.evidence.some(item => item.arabic === line) || active.bookExcerpts?.some(excerpt => excerpt.language === "ar" && excerpt.paragraphs.some(p => p.text.split("\n").includes(line)))) ? <KhateebScriptText text={line} forceArabic /> : renderKhateebSalawat(line)}</p>)}
+        {buildCustomSermonText(active, locale).split("\n").map((line, index) => {
+          const excerpt = active.bookExcerpts?.find(item => item.paragraphs.some(p => p.text.split("\n").includes(line)));
+          const arabic = PATIENCE_QURAN.some(q => q.text === line) || active.evidence.some(item => item.arabic === line);
+          return <div key={index} dir="auto" className="min-h-2 whitespace-pre-wrap break-words text-sm leading-8">{excerpt || arabic ? <BookPassageText text={line} language={arabic ? "ar" : excerpt!.language} /> : renderKhateebSalawat(line)}</div>;
+        })}
       </section> : null}
     </section>
   );

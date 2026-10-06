@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import BookPassageText from "./BookPassageText";
 import BookTopicGuide from "./BookTopicGuide";
 import type { CustomSermonProject } from "./engine/customSermonProject";
 import ResearchStudioGate from "../research-studio/components/ResearchStudioGate";
-import KhateebScriptText, { renderKhateebSalawat } from "./KhateebScriptText";
+import { renderKhateebSalawat } from "./KhateebScriptText";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
-import { bookExcerptText, bookKindLabel, createBookExcerpt, type BookExcerpt, type BookRecord, type BookSearchResult, type BookSource } from "./engine/bookLibrary";
+import { bookExcerptText, bookKindLabel, bookSourceLabel, bookRecordReference, cleanBookTitle, createBookExcerpt, type BookExcerpt, type BookRecord, type BookSearchResult, type BookSource } from "./engine/bookLibrary";
 
 type Props = { locale: "ur" | "en"; onCreateDraft?: (project: CustomSermonProject) => void; onAdd?: (excerpt: BookExcerpt) => boolean; addedIds?: readonly string[] };
 const box = "rounded-lg border border-[#1A3A2A]/20 bg-white p-2 text-sm text-[#1A3A2A] dark:border-[#35513d] dark:bg-[#162a1e] dark:text-white";
@@ -94,7 +95,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
     } catch { setError(ur ? "اقتباس شامل نہیں ہوسکا؛ مختصر انتخاب کریں یا محفوظ اقتباسات کی تعداد کم کریں۔" : "The excerpt could not be added. Select fewer paragraphs or remove some saved excerpts."); }
   }
   return <div data-testid="book-library" className="space-y-4" dir={ur ? "rtl" : "ltr"}>
-    <p className="text-sm leading-7">{ur ? "نہج البلاغہ اور صحیفہ سجادیہ کے فراہم کردہ نسخوں میں تلاش کریں۔ ہر نتیجے کی نمبرنگ اسی نسخے کی ہے۔ ترجمہ اور موجودہ حواشی کو ماخذ کی نسبت کے ساتھ پڑھیں۔" : "Search the supplied editions of Nahj al-Balagha and Sahifa Sajjadiyya. Numbering belongs to each edition. Read translations and existing commentary with their source attribution."}</p>
+    <p className="text-sm leading-7">{ur ? "نہج البلاغہ اور صحیفہ سجادیہ کے فراہم کردہ نسخوں میں تلاش کریں۔ حوالہ کتاب میں درج خطبے، حکمت یا دعا کے نمبر کے مطابق ہے۔ ترجمہ اور موجودہ حواشی کو ماخذ کی نسبت کے ساتھ پڑھیں۔" : "Search the supplied editions of Nahj al-Balagha and Sahifa Sajjadiyya. References use the section number given in the book. Read translations and existing commentary with their source attribution."}</p>
     <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss} />
     {error ? <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p> : null}
     {message && !opened ? <p role="status" className="text-sm text-emerald-700 dark:text-emerald-300">{message}</p> : null}
@@ -106,18 +107,18 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
           <label className="grid gap-1 text-sm sm:col-span-2">{ur ? "لفظ یا عبارت" : "Word or phrase"}<input className={box} value={query} maxLength={300} onChange={event => { setQuery(event.target.value); setResults(null); }} placeholder={ur ? "مثلاً: صبر، دعا، موت" : "e.g. patience, prayer, death"} /></label>
           <label className="grid gap-1 text-sm">{ur ? "کتاب" : "Book"}<select className={box} value={book} onChange={event => { setBook(event.target.value); setSourceId(""); setResults(null); }}><option value="">{ur ? "تمام کتابیں" : "All books"}</option><option value="nahj">{ur ? "نہج البلاغہ" : "Nahj al-Balagha"}</option><option value="sahifa">{ur ? "صحیفہ سجادیہ" : "Sahifa Sajjadiyya"}</option></select></label>
           <label className="grid gap-1 text-sm">{ur ? "زبان" : "Language"}<select className={box} value={language} onChange={event => { setLanguage(event.target.value); setSourceId(""); setResults(null); }}><option value="">{ur ? "تمام زبانیں" : "All languages"}</option><option value="ar">{ur ? "عربی" : "Arabic"}</option><option value="ur">{ur ? "اردو" : "Urdu"}</option><option value="en">{ur ? "انگریزی" : "English"}</option></select></label>
-          <label className="grid gap-1 text-sm sm:col-span-2">{ur ? "اصل نسخہ" : "Source edition"}<select className={box} value={sourceId} onChange={event => { setSourceId(event.target.value); setResults(null); }}><option value="">{ur ? "تمام متعلقہ نسخے" : "All matching editions"}</option>{catalog.sources.filter(s => (!book || s.book === book) && (!language || s.language === language)).map(s => <option key={s.id} value={s.id}>{s.filename}</option>)}</select></label>
+          <label className="grid gap-1 text-sm sm:col-span-2">{ur ? "اصل نسخہ" : "Source edition"}<select className={box} value={sourceId} onChange={event => { setSourceId(event.target.value); setResults(null); }}><option value="">{ur ? "تمام متعلقہ نسخے" : "All matching editions"}</option>{catalog.sources.filter(s => (!book || s.book === book) && (!language || s.language === language)).map(s => <option key={s.id} value={s.id}>{bookSourceLabel(s, locale)}</option>)}</select></label>
           <label className="grid gap-1 text-sm">{ur ? "حصے کی نوعیت" : "Section type"}<select className={box} value={kind} onChange={event => { setKind(event.target.value); setResults(null); }}><option value="">{ur ? "تمام حصے" : "All sections"}</option>{["sermon", "letter", "saying", "supplication", "weekday-supplication", "right", "front-matter"].map(k => <option key={k} value={k}>{bookKindLabel(k, locale)}</option>)}</select></label>
-          <label className="grid gap-1 text-sm">{ur ? "اسی نسخے میں نمبر" : "Number in this edition"}<input dir="ltr" inputMode="numeric" className={box} value={number} maxLength={5} onChange={event => { setNumber(event.target.value); setResults(null); }} /></label>
+          <label className="grid gap-1 text-sm">{ur ? "خطبہ، حکمت یا دعا کا نمبر" : "Sermon, saying or prayer number"}<input dir="ltr" inputMode="numeric" className={box} value={number} maxLength={5} onChange={event => { setNumber(event.target.value); setResults(null); }} /></label>
           <button type="submit" disabled={busy} className={button}>{ur ? "کتاب میں تلاش کریں" : "Search books"}</button>
         </form>
         {results ? <div aria-live="polite" className="space-y-3">
           <p className="text-sm">{results.total} {ur ? "نتائج" : "results"}</p>
           {!results.total ? <p>{ur ? "اس تلاش کے مطابق عبارت نہیں ملی۔ الفاظ یا فلٹر بدل کر تلاش کریں۔" : "No matching passage. Change the words or filters and search again."}</p> : null}
           {results.hits.map(hit => <article key={hit.id} className={`${box} space-y-2`}>
-            <h4 dir="auto" className="font-semibold">{renderKhateebSalawat(hit.title)}</h4>
-            <p dir="auto" className="whitespace-pre-wrap text-sm leading-8">{renderKhateebSalawat(hit.snippet)}</p>
-            <p className="break-words text-xs">{catalog.sources.find(s => s.id === hit.sourceId)?.filename} · {bookKindLabel(hit.kind, locale)} {hit.number || ""}</p>
+            <h4 dir="auto" className="font-semibold">{renderKhateebSalawat(cleanBookTitle(hit.title))}</h4>
+            <BookPassageText text={hit.snippet} language={hit.language} />
+            <p className="break-words text-xs">{(ur ? hit.referenceLabelUr : hit.referenceLabelEn) ?? bookSourceLabel(catalog.sources.find(s => s.id === hit.sourceId)!, locale)}</p>
             <button type="button" className={button} disabled={busy} onClick={() => void openRecord(hit.id, hit.sourceId)}>{ur ? "مکمل عبارت اور انتخاب" : "Read full passage and select"}</button>
           </article>)}
           {results.total > results.pageSize ? <nav aria-label={ur ? "تلاش کے صفحات" : "Search pages"} className="flex items-center gap-3">
@@ -144,15 +145,15 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
           {onAdd ? <button type="button" className={button} disabled={!selection || addedIds.includes(selection.id)} onClick={addSelection}>{ur ? "منتخب عبارت مجلس میں شامل کریں" : "Add selected passage to sermon"}</button> : null}
           <button type="button" className={button} disabled={!selection} onClick={() => selection && void feedback.copy(bookExcerptText(selection, locale))}>{ur ? "انتخاب اور حوالہ نقل کریں" : "Copy selection and reference"}</button>
         </div>
-        <h3 dir="auto" className="text-lg font-bold">{renderKhateebSalawat(opened.record.title)}</h3>
-        <p className="my-3 break-words text-xs leading-6">{opened.source.filename} · {opened.record.reference.locator}{opened.source.translator ? ` · ${ur ? "مترجم" : "Translator"}: ${opened.source.translator}` : ""}</p>
+        <h3 dir="auto" className="text-lg font-bold">{renderKhateebSalawat(cleanBookTitle(opened.record.title))}</h3>
+        <p className="my-3 break-words text-xs leading-6">{bookRecordReference(opened.record, locale)}{opened.source.translator ? ` · ${ur ? "مترجم" : "Translator"}: ${opened.source.translator}` : ""}</p>
         <p className="text-sm leading-7">{ur ? "عبارت اور حوالہ نقل کرنے کے لیے پیراگراف منتخب کریں۔ ترجمے اور حواشی کی اصل نسبت برقرار رکھیں۔" : "Select paragraphs to copy with their reference. Preserve attribution for translations and commentary."}</p>
         <p role="status" className="my-2 text-sm">{selectedIds.length} {ur ? "منتخب پیراگراف" : "selected paragraphs"}{selectedIds.length && !selection ? (ur ? " — انتخاب مختصر کریں" : " — select fewer paragraphs") : ""}</p>
         {message ? <p role="status" className="my-3 text-sm text-emerald-700 dark:text-emerald-300">{message}</p> : null}
         {error ? <p role="alert" className="my-3 text-sm text-red-700 dark:text-red-300">{error}</p> : null}
         {opened.record.paragraphs.map((p, i) => <label key={p.id} className="my-3 flex items-start gap-3 rounded-lg border border-[#31513a]/20 p-3">
           <input aria-label={`${ur ? "پیراگراف" : "Paragraph"} ${i + 1}`} className="mt-2 shrink-0" type="checkbox" checked={selectedIds.includes(p.id)} onChange={event => setSelectedIds(ids => event.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} />
-          <span className="min-w-0 flex-1"><span className="text-xs opacity-70">{i + 1}</span><span dir={opened.record.language === "en" ? "auto" : "rtl"} className={`block whitespace-pre-wrap break-words leading-9 ${opened.record.language === "ar" ? "font-arabic" : ""}`}>{opened.record.language === "ar" ? <KhateebScriptText text={p.text} forceArabic /> : renderKhateebSalawat(p.text)}</span></span>
+          <span className="min-w-0 flex-1"><span className="text-xs opacity-70">{i + 1}</span><BookPassageText text={p.text} language={opened.record.language} /></span>
         </label>)}
       </> : null}
     </dialog>

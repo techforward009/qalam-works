@@ -13,7 +13,7 @@ describe('curated patience',()=>{
   const {records,sources}=fixture();const {materials,unavailable}=resolvePatienceMaterials(records,sources,locale);expect(unavailable).toBe(0);expect(materials).toHaveLength(12);
   const project=createPatienceBookDraft(materials,locale,duration);expect(project.sections.reduce((n,s)=>n+s.minutes,0)).toBe(duration);
   const restored=parseCustomSermonProject(serializeCustomSermonProject(project));expect(restored).toEqual(project);
-  const text=buildCustomSermonText(project,locale);expect(text).toContain(locale==='ur'?'حکمت 55':'saying 55');expect(text).toContain(locale==='ur'?'109':'file entry 109');expect(text).toContain(`sahifa-${locale}:supplication:28`);
+  const text=buildCustomSermonText(project,locale);expect(text).toContain(locale==='ur'?'حکمت 55':'saying 55');expect(text).not.toContain('file entry 109');expect(text).not.toContain('.docx');expect(text).toContain(locale==='ur'?'دعا 28':'supplication 28');
   expect(text).toContain(locale==='ur'?'تدوینی رہنمائی':'Editorial guidance');expect(text).toContain(locale==='ur'?'۱۰۳:۱ تا ۳':'103:1–3');
   expect(bookExcerptText(materials[0].excerpt,locale)).not.toContain('fixture nahj-ar:saying:109 paragraph 1');
  });

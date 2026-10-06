@@ -17,14 +17,18 @@ for(const locale of ['ur','en'] as const) test(`${locale}: public topic to saved
   return route.fulfill({json:op==='topic'?topic:op==='record'?{record:records.find(r=>r.id===url.searchParams.get('id')),source:sources.find(s=>s.id===url.searchParams.get('sourceId'))}:{ready:true,sources,recordCount:2676}});
  });
  await page.goto('/tools/khateeb-studio');await page.getByRole('button',{name:ur?'اردو':'ENG',exact:true}).click();
- await page.getByRole('button',{name:ur?'کتابی ذخیرہ':'Book library',exact:true}).click();
+ const bookButton=page.getByRole('button',{name:ur?'کتابی ذخیرہ':'Book library',exact:true});const myButton=page.getByRole('button',{name:ur?'میری مجلس / میرا موضوع':'My sermon / my topic',exact:true});await myButton.click();await expect(myButton).toHaveAttribute('aria-pressed','true');await bookButton.click();await expect(bookButton).toHaveAttribute('aria-pressed','true');await expect(myButton).toHaveAttribute('aria-pressed','false');
  const guide=page.getByTestId('patience-book-guide');await expect(guide).toBeVisible();
  await guide.getByRole('combobox').selectOption('45');await guide.getByRole('button',{name:ur?'صبر کا مواد کھولیں':'Open patience material',exact:true}).click();
  await expect(guide.getByText(ur?'اصل عربی عبارت':'Original Arabic',{exact:true})).toHaveCount(6);
  expect(authRequests).toBe(0);
+ const arabic=guide.locator('.khateeb-book-ar .khateeb-muhammadi-quranic').first();await expect(arabic).toHaveCSS('font-family',/Muhammadi Quranic/);
+ if(ur){await expect(guide.locator('.khateeb-book-ur').first()).toHaveCSS('font-family',/Jameel Noori Nastaleeq/);expect(await guide.locator('.font-vazirmatn').count()).toBe(0);}
+ expect(await page.getByRole('combobox',{name:ur?/اصل نسخہ/:/Source edition/}).innerText()).not.toMatch(/\.docx|\.epub|\(1\)/);
+ await expect(guide).not.toContainText('word/document.xml');await expect(guide).not.toContainText('file entry');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
  await guide.scrollIntoViewIfNeeded();await page.screenshot({path:testInfo.outputPath(`patience-guide-${locale}.png`)});
- await expect(guide).toContainText(ur?'نہج البلاغہ، حکمت 55؛ اس فائل کا فہرستی اندراج 109':'Nahj al-Balagha, saying 55; file entry 109');
+ await expect(guide).toContainText(ur?'نہج البلاغہ، حکمت 55':'Nahj al-Balagha, saying 55');
  await guide.getByRole('button',{name:ur?'مکمل ماخذ دیکھیں':'Read full source',exact:true}).first().click();
  const dialog=page.getByRole('dialog',{name:ur?'مکمل کتابی عبارت':'Full book passage'});await expect(dialog).toBeVisible();await dialog.getByRole('button',{name:ur?'بند کریں':'Close',exact:true}).click();
  await guide.getByRole('checkbox',{name:ur?'امید کا مرکز':'The foundation of hope',exact:true}).uncheck();
@@ -39,13 +43,13 @@ for(const locale of ['ur','en'] as const) test(`${locale}: public topic to saved
  await expect(workspace.getByText(ur?'مجلس کے محفوظ کتابی اقتباسات':'Saved book excerpts in this sermon',{exact:true})).toBeVisible();
  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async(text:string)=>{(window as any).topicCopy=text}}}));
  await workspace.getByRole('button',{name:ur?'مکمل مسودہ نقل کریں':'Copy full draft',exact:true}).click();
- const copy=await page.evaluate(()=>(window as any).topicCopy);expect(copy).toContain(topic.materials[0].excerpt.paragraphs[0].text);expect(copy).toContain('sahifa-ar:supplication:28');expect(copy).toContain('وَتَوَاصَوْا بِالصَّبْرِ');
+ const copy=await page.evaluate(()=>(window as any).topicCopy);expect(copy).toContain(topic.materials[0].excerpt.paragraphs[0].text);expect(copy).toContain(ur?'دعا 28':'supplication 28');expect(copy).not.toContain('word/document.xml');expect(copy).not.toContain('.docx');expect(copy).toContain('۝');
  const downloadPromise=page.waitForEvent('download');await workspace.getByRole('button',{name:ur?'محفوظ فائل بنائیں':'Export',exact:true}).click();const download=await downloadPromise;const backup=await readFile((await download.path())!);
  await workspace.getByRole('button',{name:ur?'اقتباس ہٹائیں':'Remove excerpt',exact:true}).first().click();await workspace.locator('input[type=file]').setInputFiles({name:'topic-backup.json',mimeType:'application/json',buffer:backup});
  await expect.poll(()=>page.evaluate(()=>{const id=localStorage.getItem('qalam-khateeb-custom-active-v1');return JSON.parse(localStorage.getItem(`qalam-khateeb-custom-v1:${id}`)!).bookExcerpts.length})).toBe(12);
  const versions=await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('qalam-khateeb-custom-v1:')).map(k=>JSON.parse(localStorage[k]).bookExcerpts.length));expect(versions.sort()).toEqual([11,12]);
  await page.evaluate(()=>{window.print=()=>{}});await workspace.getByRole('button',{name:ur?'مسودہ پرنٹ کریں / PDF محفوظ کریں':'Print draft / Save PDF',exact:true}).click();await page.emulateMedia({media:'print'});
- const print=page.locator('#khateeb-custom-print-area');await expect(print).toBeVisible();const printed=await print.innerText();expect(printed).toContain(topic.materials[0].excerpt.paragraphs[0].text);expect(printed).toContain(ur?'حکمت 55':'saying 55');expect(printed).toContain('وَتَوَاصَوْا بِالصَّبْرِ');
+ const print=page.locator('#khateeb-custom-print-area');await expect(print).toBeVisible();const printed=await print.innerText();expect(printed).toContain(topic.materials[0].excerpt.paragraphs[0].text);expect(printed).toContain(ur?'حکمت 55':'saying 55');expect(printed).toContain('۝');
  expect((await page.pdf({path:testInfo.outputPath(`patience-${locale}.pdf`),format:'A4'})).length).toBeGreaterThan(5000);await page.emulateMedia({media:'screen'});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);expect(errors).toEqual([]);
 });

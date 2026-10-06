@@ -1,12 +1,17 @@
+import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
 import bindings from "./patienceBookBindings.json";
 import { createBookExcerpt, bookExcerptText, type BookExcerpt, type BookRecord, type BookSource } from "./bookLibrary";
 import { createCustomSermonProject } from "./customSermonProject";
 import type { SermonDuration } from "./sermonPrep";
 
 export const PATIENCE_QURAN = [
-  { reference: "البقرہ 2:153", text: "يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ" },
-  { reference: "العصر 103:1–3", text: "وَالْعَصْرِ ﴿١﴾ إِنَّ الْإِنْسَانَ لَفِي خُسْرٍ ﴿٢﴾ إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ ﴿٣﴾" },
-];
+  { reference: "البقرہ 2:153", surah: 2, ayahs: [153] },
+  { reference: "العصر 103:1–3", surah: 103, ayahs: [1, 2, 3] },
+].map(group => ({ ...group, text: group.ayahs.map(ayah => {
+  const verse = ahmedgrafQuranReference.getAyah(group.surah, ayah);
+  if (!verse) throw new Error("missing-patience-quran-verse");
+  return verse.text;
+}).join(" ") }));
 export function patienceTiming(duration: SermonDuration): number[] {
   const opening = Math.floor(duration * 3 / 20), material = Math.floor(duration * 12 / 20), application = Math.floor(duration * 3 / 20);
   return [opening, material, application, duration - opening - material - application];
