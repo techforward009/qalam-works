@@ -36,7 +36,7 @@ export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
 
   useEffect(() => {
     const abort = new AbortController();
-    fetch("/api/khateeb/library", { cache: "no-store", signal: abort.signal }).then(async response => {
+    fetch("/api/research/book-library", { cache: "no-store", signal: abort.signal }).then(async response => {
       if (!response.ok) throw new Error("catalog");
       const value = await response.json();
       if (!abort.signal.aborted) setCatalog(value);
@@ -68,17 +68,17 @@ export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
     if (!file) return;
     if (file.size > 4 * 1024 * 1024) { setError(invalid); return; }
     const form = new FormData(); form.set("archive", file);
-    const value = await request("/api/khateeb/library", { method: "POST", body: form });
+    const value = await request("/api/research/book-library", { method: "POST", body: form });
     if (value) { setCatalog(value); setResults(null); setMessage(ur ? "کتابی ذخیرہ نجی طور پر محفوظ ہوگیا۔" : "The book corpus was saved privately."); }
   }
   async function search(page = 1) {
     const params = new URLSearchParams({ op: "search", query, book, language, sourceId, kind, number, page: String(page) });
-    const value = await request(`/api/khateeb/library?${params}`);
+    const value = await request(`/api/research/book-library?${params}`);
     if (value && Array.isArray(value.hits)) setResults(value);
     else if (value) { setCatalog(value); setResults(null); }
   }
   async function openRecord(id: string, sourceId: string) {
-    const value = await request(`/api/khateeb/library?${new URLSearchParams({ op: "record", id, sourceId })}`);
+    const value = await request(`/api/research/book-library?${new URLSearchParams({ op: "record", id, sourceId })}`);
     if (value?.record) { setSelectedIds([]); setOpened(value); }
   }
   let selection: BookExcerpt | null = null;

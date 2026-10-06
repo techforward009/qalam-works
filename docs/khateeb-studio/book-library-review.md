@@ -22,7 +22,7 @@
 
 ## حفاظت اور خطا
 
-`/api/khateeb/library` کی catalog، search، record اور import کارروائیاں موجودہ signed research session سے محفوظ ہیں۔ جوابات `private, no-store` ہیں۔ فائل کی حد 4 MiB ہے، ZIP members اور gzip کا کھلنے والا حجم محدود ہے، ہر record کے متن کا SHA-256 اور پورے manifest کی تعداد جانچی جاتی ہے۔
+`/api/research/book-library` کی catalog، search، record اور import کارروائیاں موجودہ signed research session سے محفوظ ہیں۔ جوابات `private, no-store` ہیں۔ فائل کی حد 4 MiB ہے، ZIP members اور gzip کا کھلنے والا حجم محدود ہے، ہر record کے متن کا SHA-256 اور پورے manifest کی تعداد جانچی جاتی ہے۔
 
 نجی Blob میں الگ `khateeb-foundational/v1/` prefix استعمال ہوتا ہے۔ اصل corpus gzip کے ساتھ محفوظ ہوتا ہے۔ سات version objects کامیابی سے محفوظ ہونے کے بعد ہی active pointer بدلا جاتا ہے؛ نامکمل درآمد پہلے فعال ذخیرے کو نہیں بدلتی۔ فونٹس یا عمومی Blob کے credentials استعمال نہیں ہوتے۔
 
@@ -40,3 +40,7 @@
 ## پہلے استعمال کی حیثیت
 
 یہ کوڈ نجی درآمد اور استعمال کا راستہ فراہم کرتا ہے۔ اصل پیکیج کی production Blob میں پہلی درآمد ابھی باقی ہے: موجودہ ریسرچ پاس ورڈ Vercel میں sensitive ہے اور connector اس کی قدر فراہم نہیں کرتا۔ اس لیے خودکار login یا کتابوں کے production ذخیرے میں پہلے سے موجود ہونے کا دعویٰ نہیں کیا گیا۔
+
+## مالک کی رسائی کا راستہ
+
+کتابی پینل اب `/api/research/book-library` استعمال کرتا ہے، تاکہ براؤزر موجودہ `Path=/api/research` والی مالک کی کوکی بھیجے۔ پہلے مختلف راستے کی وجہ سے درست لاگ اِن کے باوجود catalog اور import کو 401 ملتا تھا۔ اصل session کی حدود اور دوسرے محفوظ مواد کی اجازت تبدیل نہیں کی گئی۔ براؤزر کی جانچ اصل login، catalog، import validation، logout اور بغیر رسائی درخواستوں کو جانچتی ہے؛ ذخیرے کے بغیر test server پر catalog کا 503 متوقع ہے۔
