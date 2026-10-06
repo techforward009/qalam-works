@@ -8,6 +8,7 @@ it("uses the configured existing provider, bounded JSON output and separate draf
     expect(body.model).toBe(KNOWLEDGE_MODEL); expect(body.response_format).toEqual({ type: "json_object" }); expect(init?.signal).toBeTruthy();
     expect(body.messages[0].content).toContain("untrusted"); expect(body.messages[1].content).toContain(input.question);
     expect(body.chat_template_kwargs.enable_thinking).toBe(false);
+    if (body.max_completion_tokens === 1800) { expect(body.messages[0].content).toContain("1 to 4 claims"); expect(body.messages[0].content).toContain("one literal explanation is enough"); }
     return Response.json({ choices: [{ message: { content: JSON.stringify({ answered: false, claims: [] }) } }] });
   });
   const p = createCloudflareKnowledgeProvider({ env, fetchImpl: fetchImpl as typeof fetch })!;
