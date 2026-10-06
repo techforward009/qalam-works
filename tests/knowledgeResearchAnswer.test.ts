@@ -2,7 +2,7 @@ import { quranTranslationFor } from "../app/tools/khateeb-studio/engine/quranTra
 import { describe, expect, it } from "vitest";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { retrieveKnowledge, knowledgeResultText } from "../app/lib/knowledge/retrieval";
-import { parseResearchClaims, reviewedResearchClaims, selectAnswerEvidence, synthesizeKnowledgeAnswer, type KnowledgeSynthesisProvider } from "../app/lib/knowledge/researchAnswer";
+import { parseResearchClaims, exactSourceClaims, reviewedResearchClaims, selectAnswerEvidence, synthesizeKnowledgeAnswer, type KnowledgeSynthesisProvider } from "../app/lib/knowledge/researchAnswer";
 import { createKnowledgeDraft } from "../app/tools/khateeb-studio/engine/knowledgeDraft";
 import { buildCustomSermonText, parseCustomSermonProject, serializeCustomSermonProject, validateCustomSermonProject } from "../app/tools/khateeb-studio/engine/customSermonProject";
 const result = () => retrieveKnowledge({ question: "103:1–3", scope: "quran", locale: "ur", records: [], sources: [], quran: ahmedgrafQuranReference.listAyahs().map(a => ({ ...a, suppliedTranslation: { text: quranTranslationFor(a.surah, a.ayah, "ur") ?? "", language: "ur" as const, translator: "Provided translator" } })), quranSha256: ahmedgrafQuranReference.getMetadata().sourceSha256! });
@@ -47,6 +47,32 @@ describe("source-bound research synthesis", () => {
   it("shows no claims when every independent verdict rejects its claim", async () => {
     const answer = await synthesizeKnowledgeAnswer(result(), "ur", provider(draft(), { reviews: [{ claimId: "claim-1", verdict: "unsupported", reason: "not-in-evidence" }] }));
     expect(answer).toEqual({ status: "unverified", claims: [] });
+  });
+  it("checks a full supplied translation directly without asking a model to judge an identical string", async () => {
+    const r = result(); const p = r.passages[2]; const text = p.suppliedTranslation!.text;
+    const backend = provider({ answered: true, claims: [{ text, citations: [{ ref: 3 }, { ref: 1 }] }] });
+    backend.review = async () => { throw new Error("must not review an exact source extract"); };
+    const answer = await synthesizeKnowledgeAnswer(r, "ur", backend);
+    expect(answer.status).toBe("answered"); expect(answer.claims[0].kind).toBe("source-extract");
+    expect(answer.claims[0].citations).toEqual([{ passageId: p.id, quote: p.text }]);
+    expect(knowledgeResultText({ ...r, research: answer }, "ur")).toContain("ماخذی جواب");
+  });
+  it("does not treat a partial sentence, changed wording or a wrong reference as an exact source proof", () => {
+    const r = result(); const e = selectAnswerEvidence(r.passages); const text = r.passages[2].suppliedTranslation!.text;
+    const raw = { answered: true, claims: [{ text, citations: [{ ref: 1 }] }] };
+    expect(exactSourceClaims(parseResearchClaims(raw, e)!, e, "ur")).toEqual([]);
+    for (const altered of [text.slice(0, -10), text + " اضافی دعویٰ", text.replace("حق", "مال")]) {
+      const claims = parseResearchClaims({ answered: true, claims: [{ text: altered, kind: "source-extract", citations: [{ ref: 3 }] }] }, e)!;
+      expect(exactSourceClaims(claims, e, "ur")).toEqual([]);
+    }
+  });
+  it("keeps a proven source extract while omitting an unreviewed extra interpretation", async () => {
+    const r = result(); const text = r.passages[2].suppliedTranslation!.text;
+    const backend = provider({ answered: true, claims: [{ text, citations: [{ ref: 3 }] }, { text: "Unproven interpretation", citations: [{ ref: 3 }] }] }, null);
+    backend.review = async (_input, claims) => { expect(claims.map(c => c.id)).toEqual(["claim-2"]); throw new Error("review unavailable"); };
+    const answer = await synthesizeKnowledgeAnswer(r, "ur", backend);
+    expect(answer.status).toBe("answered"); expect(answer.omittedClaimCount).toBe(1); expect(answer.claims.map(c => c.text)).toEqual([text]);
+    expect(knowledgeResultText({ ...r, research: answer }, "ur")).not.toContain("Unproven interpretation");
   });
   it("does not invoke a provider without evidence or for authoritative fatwas", async () => {
     const p = provider(); p.draft = async () => { throw new Error("must not run"); };

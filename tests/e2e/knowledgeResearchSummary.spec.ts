@@ -11,7 +11,7 @@ for (const locale of ["ur", "en"] as const) for (const studio of ["khateeb", "re
   const ur = locale === "ur"; const errors: string[] = []; page.on("pageerror", e => errors.push(e.message));
   const sources: BookSource[] = JSON.parse(await readFile(`${corpus}/manifest.json`, "utf8")).sources;
   const records: BookRecord[] = (await Promise.all(sources.map(s => readFile(`${corpus}/${s.id}.json`, "utf8").then(JSON.parse)))).flat();
-  const summaryText = ur ? "منتخب اصل عبارت صبر کے موضوع سے متعلق ہے۔" : "The selected original passage concerns patience.";
+  let summaryText = ur ? "منتخب اصل عبارت صبر کے موضوع سے متعلق ہے۔" : "The selected original passage concerns patience.";
   let lastQuote = "";
   await page.route("**/api/research/auth", route => route.fulfill({ json: { authenticated: false } }));
   await page.route("**/api/khateeb/library**", route => {
@@ -22,8 +22,9 @@ for (const locale of ["ur", "en"] as const) for (const studio of ["khateeb", "re
     const input = route.request().postDataJSON();
     const quran = ahmedgrafQuranReference.listAyahs().map(ayah => { const text = quranTranslationFor(ayah.surah, ayah.ayah, locale); return { ...ayah, ...(text ? { suppliedTranslation: { text, language: locale, translator: ur ? QURAN_TRANSLATION_SOURCES.ur.translatorUr : QURAN_TRANSLATION_SOURCES.en.translatorEn } } : {}) }; });
     const result = retrieveKnowledgeWithContext({ ...input, records, sources, quran, quranSha256: ahmedgrafQuranReference.getMetadata().sourceSha256! });
-    const passage = result.passages.find(p => p.collection === "nahj" && p.language === "ar") ?? result.passages[0];
-    if (input.mode === "research" && passage) { lastQuote = passage.text; result.research = { status: input.question.includes("reject") ? "unverified" : "answered", claims: input.question.includes("reject") ? [] : [{ id: "claim-1", text: summaryText, citations: [{ passageId: passage.id, quote: passage.text }] }], ...(studio === "khateeb" && !input.question.includes("reject") ? { omittedClaimCount: 1 } : {}), generationId: "knowledge-e2e", createdAt: new Date().toISOString(), providerId: "test-fixture" }; }
+    const passage = result.passages.find(p => p.collection === "nahj" && p.language === (ur ? "ur" : "ar")) ?? result.passages[0];
+    if (ur && passage) summaryText = passage.text;
+    if (input.mode === "research" && passage) { lastQuote = passage.text; result.research = { status: input.question.includes("reject") ? "unverified" : "answered", claims: input.question.includes("reject") ? [] : [{ id: "claim-1", ...(ur ? { kind: "source-extract" as const } : {}), text: summaryText, citations: [{ passageId: passage.id, quote: passage.text }] }], ...(studio === "khateeb" && !input.question.includes("reject") ? { omittedClaimCount: 1 } : {}), generationId: "knowledge-e2e", createdAt: new Date().toISOString(), providerId: "test-fixture" }; }
     return route.fulfill({ json: result });
   });
   await page.goto(`/tools/${studio}-studio`); await page.getByRole("button", { name: ur ? "اردو" : "ENG", exact: true }).click();
@@ -34,7 +35,8 @@ for (const locale of ["ur", "en"] as const) for (const studio of ["khateeb", "re
   const summary = assistant.getByTestId("knowledge-research-summary"); await expect(summary).toContainText(summaryText);
   if (studio === "khateeb") await expect(summary).toContainText(ur ? "یہ جزوی خلاصہ ہے" : "This is a partial summary");
   await summary.getByRole("button").first().click(); const dialog = assistant.getByRole("dialog"); await expect(dialog).toBeVisible(); await expect(dialog.locator("mark")).toHaveText(lastQuote);
-  await expect(dialog.locator("mark .khateeb-muhammadi-quranic").first()).toHaveCSS("font-family", /Muhammadi Quranic/);
+  if (ur) { await expect(summary).toContainText("فراہم کردہ متن سے بعینہ انتخاب"); await expect(dialog.locator("mark")).toHaveCSS("font-family", /Jameel Noori/); }
+  else await expect(dialog.locator("mark .khateeb-muhammadi-quranic").first()).toHaveCSS("font-family", /Muhammadi Quranic/);
   await dialog.getByRole("button", { name: ur ? "بند کریں" : "Close", exact: true }).click();
   await page.evaluate(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => { (window as any).researchCopy = text; } } }));
   await assistant.getByRole("button", { name: ur ? "منتخب مواد اور حوالے نقل کریں" : "Copy selected sources", exact: true }).click();

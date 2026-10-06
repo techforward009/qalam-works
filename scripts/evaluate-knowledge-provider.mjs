@@ -8,11 +8,11 @@ registerHooks({ resolve(specifier, context, nextResolve) {
   return nextResolve(specifier, context);
 } });
 // Live evaluation is explicit and uses only these fixed, public-source fixtures.
-const markers = ['Evaluate public knowledge review fixtures', 'Validate knowledge review corrections', 'Validate supplied-language research grounding', 'Validate independent knowledge review'];
+const markers = ['Evaluate public knowledge review fixtures', 'Validate knowledge review corrections', 'Validate supplied-language research grounding', 'Validate independent knowledge review', 'Validate exact-source answers and independent review'];
 if (process.argv.includes('--live') || markers.includes(process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim())) {
   const { createCloudflareKnowledgeProvider } = await import('../app/lib/knowledge/cloudflareAnswerProvider.ts');
   const { hasSuppliedAnswerText } = await import('../app/lib/knowledge/answerLanguage.ts');
-  const { parseResearchClaims, reviewedResearchClaims, selectAnswerEvidence } = await import('../app/lib/knowledge/researchAnswer.ts');
+  const { parseResearchClaims, reviewedResearchClaims, selectAnswerEvidence, synthesizeKnowledgeAnswer } = await import('../app/lib/knowledge/researchAnswer.ts');
   const provider = createCloudflareKnowledgeProvider({ env: process.env });
   if (!provider) throw new Error('Knowledge evaluation bindings unavailable');
   async function available(call) {
@@ -45,10 +45,10 @@ if (process.argv.includes('--live') || markers.includes(process.env.VERCEL_GIT_C
       const input = { question: fixture.contextQuestion ? `Previous question: ${fixture.contextQuestion}\nFollow-up question: ${fixture.question}` : fixture.question, locale: fixture.locale, evidence: selectAnswerEvidence(result.passages.filter(p => hasSuppliedAnswerText(p, fixture.locale))) };
       const candidate = await available(() => provider.draft(input));
       const claims = parseResearchClaims(candidate, input.evidence);
-      const review = claims ? await available(() => provider.review(input, claims)) : null;
-      const accepted = claims ? reviewedResearchClaims(review, claims) : null;
-      console.log('PUBLIC_KNOWLEDGE_EVAL', JSON.stringify({ fixture: fixture.name, candidate, review, acceptedCount: accepted?.length ?? 0 }));
-      if (!accepted?.length) process.exitCode = 1;
+      let review = null;
+      const evaluated = await synthesizeKnowledgeAnswer(result, fixture.locale, { ...provider, draft: async () => candidate, review: async (i, c) => { review = await available(() => provider.review(i, c)); return review; } });
+      console.log('PUBLIC_KNOWLEDGE_EVAL', JSON.stringify({ fixture: fixture.name, candidate, review, status: evaluated.status, acceptedCount: evaluated.claims.length, exactCount: evaluated.claims.filter(c => c.kind === 'source-extract').length }));
+      if (evaluated.status !== 'answered' || !evaluated.claims.length) process.exitCode = 1;
       if (fixture.name === 'asr-follow-up-ur') {
         const verse = input.evidence.find(e => e.passage.quranLocation?.ayah === 3)?.passage;
         if (!verse) { process.exitCode = 1; continue; }
