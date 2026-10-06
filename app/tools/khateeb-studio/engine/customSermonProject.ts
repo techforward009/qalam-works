@@ -1,3 +1,4 @@
+import { bookExcerptText, isBookExcerpt, type BookExcerpt } from "./bookLibrary";
 import type {
   KhateebResearchEvidence,
   KhateebResearchResult,
@@ -57,6 +58,7 @@ export type CustomSermonProject = {
   updatedAt: string;
   researchQuery: string;
   evidence: readonly CustomSermonEvidenceSnapshot[];
+  bookExcerpts?: readonly BookExcerpt[];
   selectedEvidenceIds: readonly string[];
   sections: readonly CustomSermonSection[];
   sectionNotes?: Partial<Record<CustomSermonSectionKind, string>>;
@@ -429,6 +431,7 @@ export function parseCustomSermonProject(
       ![value.title, value.objective, value.ownMaterial, value.researchQuery].every(item => typeof item === "string") ||
       ![value.createdAt, value.updatedAt].every(item => typeof item === "string" && Number.isFinite(Date.parse(item))) ||
       (value.sectionNotes !== undefined && (!value.sectionNotes || typeof value.sectionNotes !== "object" || Array.isArray(value.sectionNotes) || Object.entries(value.sectionNotes).some(([key, text]) => !["opening", "quran", "hadith", "scholar", "own-material", "editorial-bridge", "closing", "jumuah-first", "jumuah-second"].includes(key) || typeof text !== "string"))) ||
+      (value.bookExcerpts !== undefined && (!Array.isArray(value.bookExcerpts) || value.bookExcerpts.length > 100 || !value.bookExcerpts.every(isBookExcerpt) || new Set(value.bookExcerpts.map(x => x.id)).size !== value.bookExcerpts.length)) ||
       !strings(value.selectedEvidenceIds) ||
       !Array.isArray(value.sections) ||
       !Array.isArray(value.evidence) ||
@@ -526,6 +529,11 @@ export function buildCustomSermonText(
     if (section.userText.trim()) lines.push(section.userText.trim());
   }
 
+  if (project.bookExcerpts?.length) {
+    lines.push("", ur ? "منتخب کتابی اقتباسات" : "Selected book excerpts", ur ? "[فراہم کردہ کتابی نسخہ — اصل متن، ترجمہ اور موجودہ حواشی کی نسبت ماخذ کے مطابق پڑھیں]" : "[Supplied book edition — distinguish original text, translation, and existing commentary according to the source]");
+    for (const excerpt of project.bookExcerpts) lines.push("", bookExcerptText(excerpt, locale));
+  }
+
   lines.push(
     "",
     ur
@@ -534,4 +542,15 @@ export function buildCustomSermonText(
   );
 
   return lines.join("\n");
+}
+
+
+export function addCustomBookExcerpt(project: CustomSermonProject, excerpt: BookExcerpt, now = new Date().toISOString()): CustomSermonProject {
+  if (!isBookExcerpt(excerpt)) throw new Error("invalid-excerpt");
+  if (project.bookExcerpts?.some(x => x.id === excerpt.id)) return project;
+  if ((project.bookExcerpts?.length ?? 0) >= 100) throw new Error("excerpt-limit");
+  return { ...project, updatedAt: now, bookExcerpts: [...(project.bookExcerpts ?? []), excerpt] };
+}
+export function removeCustomBookExcerpt(project: CustomSermonProject, id: string, now = new Date().toISOString()): CustomSermonProject {
+  return { ...project, updatedAt: now, bookExcerpts: (project.bookExcerpts ?? []).filter(x => x.id !== id) };
 }

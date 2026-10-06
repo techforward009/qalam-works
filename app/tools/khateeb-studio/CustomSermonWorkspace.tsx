@@ -13,11 +13,16 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import dynamic from "next/dynamic";
+const BookLibraryPanel = dynamic(() => import("./BookLibraryPanel"), { ssr: false });
+import { bookExcerptText, type BookExcerpt } from "./engine/bookLibrary";
 import KhateebScriptText from "./KhateebScriptText";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
 import { CUSTOM_SERMON_ACTIVE_KEY, loadCustomProjects, buildCustomBackup, prepareCustomRestore, persistRestoredProjects, sortCustomProjects } from "./engine/customSermonStorage";
 import {
+  addCustomBookExcerpt,
+  removeCustomBookExcerpt,
   applyResearchToCustomProject,
   buildCustomSermonText,
   createCustomSermonProject,
@@ -48,6 +53,7 @@ export default function CustomSermonWorkspace({ locale }: Props) {
   const [objective, setObjective] = useState("");
   const [ownMaterial, setOwnMaterial] = useState("");
   const [duration, setDuration] = useState<SermonDuration>(30);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchError, setResearchError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
@@ -207,6 +213,12 @@ export default function CustomSermonWorkspace({ locale }: Props) {
       ? active.selectedEvidenceIds.filter((item) => item !== id)
       : [...active.selectedEvidenceIds, id];
     replaceProject(selectCustomEvidence(active, selected));
+  };
+
+  const addBookExcerpt = (excerpt: BookExcerpt) => {
+    const latest = projectsRef.current.find(project => project.id === activeId);
+    if (!latest) throw new Error("missing-project");
+    return replaceProject(addCustomBookExcerpt(latest, excerpt), false);
   };
 
   const updateSectionText = (sectionId: string, value: string) => {
@@ -656,6 +668,30 @@ export default function CustomSermonWorkspace({ locale }: Props) {
               </div>
 
               <div className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
+                <button type="button" aria-expanded={libraryOpen} aria-controls="custom-book-library" onClick={() => setLibraryOpen(value => !value)} className="flex w-full items-center justify-between gap-3 text-start font-bold text-[#1A3A2A] dark:text-white">
+                  <span>{ur ? "کتابی ذخیرہ — تلاش اور اقتباس" : "Book library — search and quote"}</span>
+                  <span aria-hidden="true">{libraryOpen ? "−" : "+"}</span>
+                </button>
+                <p className="mt-2 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">{ur ? "نہج البلاغہ اور صحیفہ سجادیہ سے منتخب عبارت، اصل نسخے اور حوالہ کے ساتھ شامل کریں۔" : "Add selected passages from Nahj al-Balagha and Sahifa Sajjadiyya with their edition and reference."}</p>
+                <div id="custom-book-library" className="mt-4" hidden={!libraryOpen}>
+                  {libraryOpen ? <BookLibraryPanel key={active.id} locale={locale} onAdd={addBookExcerpt} addedIds={(active.bookExcerpts ?? []).map(x => x.id)} /> : null}
+                </div>
+                {active.bookExcerpts?.length ? <div className="mt-4 space-y-3">
+                  <h5 className="font-semibold">{ur ? "مجلس کے محفوظ کتابی اقتباسات" : "Saved book excerpts in this sermon"}</h5>
+                  {active.bookExcerpts.map(excerpt => <article key={excerpt.id} className="rounded-lg border border-[#31513a]/20 p-3">
+                    <strong dir="auto" className="block text-sm">{excerpt.title}</strong>
+                    <p className="mt-1 text-xs leading-6">{ur ? "فراہم کردہ کتابی نسخہ؛ ترجمہ اور حواشی کی نسبت ماخذ کے مطابق ہے۔" : "Supplied book edition; translation and commentary retain their source attribution."}</p>
+                    {excerpt.paragraphs.map(p => <div key={p.id} dir="auto" className="mt-2 whitespace-pre-wrap break-words text-sm leading-8">{excerpt.language === "ar" ? <KhateebScriptText text={p.text} forceArabic /> : p.text}</div>)}
+                    <p dir="auto" className="mt-3 break-words text-xs leading-6">{excerpt.filename} · {excerpt.locator} · {ur ? "پیراگراف" : "Paragraphs"}: {excerpt.paragraphNumbers.join(", ")}{excerpt.translator ? ` · ${excerpt.translator}` : ""}</p>
+                    <div className="mt-3 flex gap-3">
+                      <button type="button" className="rounded-lg border px-3 py-2 text-xs" onClick={() => void feedback.copy(bookExcerptText(excerpt, locale))}>{ur ? "اقتباس اور حوالہ نقل کریں" : "Copy excerpt and reference"}</button>
+                      <button type="button" className="rounded-lg border px-3 py-2 text-xs" onClick={() => { const latest = projectsRef.current.find(p => p.id === active.id); if (latest) replaceProject(removeCustomBookExcerpt(latest, excerpt.id), false); }}>{ur ? "اقتباس ہٹائیں" : "Remove excerpt"}</button>
+                    </div>
+                  </article>)}
+                </div> : null}
+              </div>
+
+              <div className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
                 <h4 className="font-bold text-[#1A3A2A] dark:text-white">
                   {ur ? "2 — اپنی مجلس کی ترتیب بنائیں" : "2 — Shape your sermon"}
                 </h4>
@@ -809,8 +845,9 @@ export default function CustomSermonWorkspace({ locale }: Props) {
         </div>
       </div>
       {active ? <section id="khateeb-custom-print-area" className="hidden" dir={ur ? "rtl" : "ltr"}>
-        {buildCustomSermonText(active, locale).split("\n").map((line, index) => <p key={index} className="min-h-2 whitespace-pre-wrap break-words text-sm leading-8">{active.evidence.some(item => item.arabic === line) ? <KhateebScriptText text={line} forceArabic /> : line}</p>)}
+        {buildCustomSermonText(active, locale).split("\n").map((line, index) => <p key={index} dir="auto" className="min-h-2 whitespace-pre-wrap break-words text-sm leading-8">{(active.evidence.some(item => item.arabic === line) || active.bookExcerpts?.some(excerpt => excerpt.language === "ar" && excerpt.paragraphs.some(p => p.text.split("\n").includes(line)))) ? <KhateebScriptText text={line} forceArabic /> : line}</p>)}
       </section> : null}
     </section>
   );
 }
+

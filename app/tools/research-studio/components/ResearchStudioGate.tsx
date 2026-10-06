@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Language } from "../../../lib/language-context";
-import ResearchStudioWorkspace from "./ResearchStudioWorkspace";
+import dynamic from "next/dynamic";
+const ResearchStudioWorkspace = dynamic(() => import("./ResearchStudioWorkspace"));
 
 type GateStatus = "loading" | "in" | "out" | "unconfigured" | "error";
 
@@ -32,9 +33,11 @@ const COPY = {
 export default function ResearchStudioGate({
   language,
   dir,
+  children,
 }: {
   language: Language;
   dir: "rtl" | "ltr";
+  children?: ReactNode;
 }) {
   const t = COPY[language];
   const [status, setStatus] = useState<GateStatus>("loading");
@@ -165,7 +168,7 @@ export default function ResearchStudioGate({
       >
         {t.logout}
       </button>
-      <ResearchStudioWorkspace language={language} dir={dir} />
+      {children ?? <ResearchStudioWorkspace language={language} dir={dir} />}
     </div>
   );
 }
