@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { retrieveKnowledge, knowledgeResultText } from "../app/lib/knowledge/retrieval";
-import { parseResearchClaims, selectAnswerEvidence, synthesizeKnowledgeAnswer, type KnowledgeSynthesisProvider } from "../app/lib/knowledge/researchAnswer";
+import { parseResearchClaims, reviewedResearchClaims, selectAnswerEvidence, synthesizeKnowledgeAnswer, type KnowledgeSynthesisProvider } from "../app/lib/knowledge/researchAnswer";
 import { createKnowledgeDraft } from "../app/tools/khateeb-studio/engine/knowledgeDraft";
 import { buildCustomSermonText, parseCustomSermonProject, serializeCustomSermonProject, validateCustomSermonProject } from "../app/tools/khateeb-studio/engine/customSermonProject";
 const result = () => retrieveKnowledge({ question: "103:1–3", scope: "quran", locale: "ur", records: [], sources: [], quran: ahmedgrafQuranReference.listAyahs(), quranSha256: ahmedgrafQuranReference.getMetadata().sourceSha256! });
@@ -23,6 +23,29 @@ describe("source-bound research synthesis", () => {
   });
   it("rejects a claim even when its quotation is real but support review fails", async () => {
     for (const review of [null, { supported: false, unsupportedClaimIds: ["claim-1"] }, { supported: true, unsupportedClaimIds: ["claim-1"] }, { supported: true }]) expect((await synthesizeKnowledgeAnswer(result(), "ur", provider(draft(), review))).status).toBe("unverified");
+  });
+  it("accepts complete independent verdicts and removes only explicitly unsupported claims", async () => {
+    const raw = { answered: true, claims: [draft().claims[0], { text: "Unfounded wealth guarantee", citations: [{ ref: 3 }] }] };
+    const reviews = { reviews: [{ claimId: "claim-2", verdict: "unsupported", reason: "not-in-evidence" }, { claimId: "claim-1", verdict: "supported", reason: "entailed" }] };
+    const answer = await synthesizeKnowledgeAnswer(result(), "ur", provider(raw, reviews));
+    expect(answer.status).toBe("answered"); expect(answer.claims.map(c => c.id)).toEqual(["claim-1"]); expect(answer.omittedClaimCount).toBe(1);
+    const r = { ...result(), research: answer };
+    expect(knowledgeResultText(r, "ur")).not.toContain("wealth"); expect(knowledgeResultText(r, "ur")).toContain("جزوی خلاصہ");
+    const saved = createKnowledgeDraft(r, r.passages.map(p => p.id), "ur", 30);
+    expect(buildCustomSermonText(saved, "ur")).not.toContain("wealth");
+  });
+  it("rejects incomplete, duplicate, unknown and contradictory per-claim verdicts", () => {
+    const claims = parseResearchClaims(draft(), selectAnswerEvidence(result().passages))!;
+    for (const reviews of [[], [{ claimId: "other", verdict: "supported", reason: "entailed" }], [{ claimId: "claim-1", verdict: "supported", reason: "contradiction" }], [{ claimId: "claim-1", verdict: "unsupported", reason: "entailed" }], [{ claimId: "claim-1", verdict: "supported" }], [{ claimId: "claim-1", verdict: "maybe", reason: "entailed" }], [{ claimId: "claim-1", verdict: "unsupported", reason: ["not-in-evidence"] }]]) expect(reviewedResearchClaims({ reviews }, claims)).toBeNull();
+    expect(reviewedResearchClaims({ supported: true, unsupportedClaimIds: [], reviews: [{ claimId: "claim-1", verdict: "unsupported", reason: "contradiction" }] }, claims)).toBeNull();
+    const two = [...claims, { ...claims[0], id: "claim-2" }];
+    const duplicate = { claimId: "claim-1", verdict: "supported", reason: "entailed" };
+    expect(reviewedResearchClaims({ reviews: [duplicate, duplicate] }, two)).toBeNull();
+    expect(reviewedResearchClaims({ reviews: [duplicate] }, two)).toBeNull();
+  });
+  it("shows no claims when every independent verdict rejects its claim", async () => {
+    const answer = await synthesizeKnowledgeAnswer(result(), "ur", provider(draft(), { reviews: [{ claimId: "claim-1", verdict: "unsupported", reason: "not-in-evidence" }] }));
+    expect(answer).toEqual({ status: "unverified", claims: [] });
   });
   it("does not invoke a provider without evidence or for authoritative fatwas", async () => {
     const p = provider(); p.draft = async () => { throw new Error("must not run"); };

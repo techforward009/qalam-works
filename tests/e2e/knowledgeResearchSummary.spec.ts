@@ -23,7 +23,7 @@ for (const locale of ["ur", "en"] as const) for (const studio of ["khateeb", "re
     const quran = ahmedgrafQuranReference.listAyahs().map(ayah => { const text = quranTranslationFor(ayah.surah, ayah.ayah, locale); return { ...ayah, ...(text ? { suppliedTranslation: { text, language: locale, translator: ur ? QURAN_TRANSLATION_SOURCES.ur.translatorUr : QURAN_TRANSLATION_SOURCES.en.translatorEn } } : {}) }; });
     const result = retrieveKnowledgeWithContext({ ...input, records, sources, quran, quranSha256: ahmedgrafQuranReference.getMetadata().sourceSha256! });
     const passage = result.passages.find(p => p.collection === "nahj" && p.language === "ar") ?? result.passages[0];
-    if (input.mode === "research" && passage) { lastQuote = passage.text; result.research = { status: input.question.includes("reject") ? "unverified" : "answered", claims: input.question.includes("reject") ? [] : [{ id: "claim-1", text: summaryText, citations: [{ passageId: passage.id, quote: passage.text }] }], generationId: "knowledge-e2e", createdAt: new Date().toISOString(), providerId: "test-fixture" }; }
+    if (input.mode === "research" && passage) { lastQuote = passage.text; result.research = { status: input.question.includes("reject") ? "unverified" : "answered", claims: input.question.includes("reject") ? [] : [{ id: "claim-1", text: summaryText, citations: [{ passageId: passage.id, quote: passage.text }] }], ...(studio === "khateeb" && !input.question.includes("reject") ? { omittedClaimCount: 1 } : {}), generationId: "knowledge-e2e", createdAt: new Date().toISOString(), providerId: "test-fixture" }; }
     return route.fulfill({ json: result });
   });
   await page.goto(`/tools/${studio}-studio`); await page.getByRole("button", { name: ur ? "اردو" : "ENG", exact: true }).click();
@@ -32,12 +32,13 @@ for (const locale of ["ur", "en"] as const) for (const studio of ["khateeb", "re
   await assistant.getByRole("textbox").fill(ur ? "صبر کے بارے میں کیا مواد ہے؟" : "What source passages discuss patience?");
   await assistant.getByRole("button", { name: ur ? "سوال کے مصادر تلاش کریں" : "Find sources for this question", exact: true }).click();
   const summary = assistant.getByTestId("knowledge-research-summary"); await expect(summary).toContainText(summaryText);
+  if (studio === "khateeb") await expect(summary).toContainText(ur ? "یہ جزوی خلاصہ ہے" : "This is a partial summary");
   await summary.getByRole("button").first().click(); const dialog = assistant.getByRole("dialog"); await expect(dialog).toBeVisible(); await expect(dialog.locator("mark")).toHaveText(lastQuote);
   await expect(dialog.locator("mark .khateeb-muhammadi-quranic").first()).toHaveCSS("font-family", /Muhammadi Quranic/);
   await dialog.getByRole("button", { name: ur ? "بند کریں" : "Close", exact: true }).click();
   await page.evaluate(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => { (window as any).researchCopy = text; } } }));
   await assistant.getByRole("button", { name: ur ? "منتخب مواد اور حوالے نقل کریں" : "Copy selected sources", exact: true }).click();
-  const copied = await page.evaluate(() => (window as any).researchCopy); expect(copied).toContain(summaryText); expect(copied).toContain(lastQuote); expect(copied).not.toContain(".docx");
+  const copied = await page.evaluate(() => (window as any).researchCopy); expect(copied).toContain(summaryText); expect(copied).toContain(lastQuote); expect(copied).not.toContain(".docx"); if (studio === "khateeb") expect(copied).toContain(ur ? "جزوی خلاصہ" : "Partial summary");
   const downloaded = page.waitForEvent("download"); await assistant.getByRole("button", { name: ur ? "تحقیقی فائل محفوظ کریں" : "Save research file", exact: true }).click();
   const file = await downloaded; const data = JSON.parse(await readFile((await file.path())!, "utf8")); expect(data.format).toBe("qalam-knowledge-note"); expect(data.result.research.claims[0].text).toBe(summaryText); expect(data.result.research.claims[0].citations[0].quote).toBe(lastQuote);
   await assistant.getByRole("button", { name: ur ? "اسی موضوع پر مزید سوال" : "Ask a follow-up on this topic", exact: true }).click(); await expect(assistant.getByRole("textbox")).toBeFocused();

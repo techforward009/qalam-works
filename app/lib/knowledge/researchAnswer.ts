@@ -5,6 +5,7 @@ export type ResearchClaim = { id: string; text: string; citations: ResearchCitat
 export type KnowledgeResearchAnswer = {
   status: "answered" | "no-evidence" | "unsupported-fatwa" | "not-configured" | "unavailable" | "unverified" | "busy";
   claims: ResearchClaim[];
+  omittedClaimCount?: number;
   generationId?: string;
   createdAt?: string;
   providerId?: string;
@@ -50,6 +51,22 @@ export function parseResearchClaims(value: unknown, evidence: readonly AnswerEvi
 export function supportReviewPassed(value: unknown): boolean {
   return object(value) && value.supported === true && Array.isArray(value.unsupportedClaimIds) && value.unsupportedClaimIds.length === 0;
 }
+export function reviewedResearchClaims(value: unknown, claims: readonly ResearchClaim[]): ResearchClaim[] | null {
+  // Preserve compatibility with providers implementing the original all-or-nothing review.
+  if (!object(value)) return null;
+  if (!("reviews" in value)) return supportReviewPassed(value) ? [...claims] : null;
+  if ("supported" in value || "unsupportedClaimIds" in value) return null;
+  if (!Array.isArray(value.reviews) || value.reviews.length !== claims.length) return null;
+  const seen = new Set<string>(); const accepted = new Set<string>();
+  const reasons = ["entailed", "not-in-evidence", "contradiction", "invented-reference", "authenticity-upgrade", "inferred-fatwa"];
+  for (const review of value.reviews) {
+    if (!object(review) || typeof review.claimId !== "string" || seen.has(review.claimId) || !claims.some(c => c.id === review.claimId) || typeof review.reason !== "string" || !reasons.includes(review.reason)) return null;
+    if (review.verdict !== "supported" && review.verdict !== "unsupported" || review.verdict === "supported" && review.reason !== "entailed" || review.verdict === "unsupported" && review.reason === "entailed") return null;
+    seen.add(review.claimId);
+    if (review.verdict === "supported") accepted.add(review.claimId);
+  }
+  return claims.filter(c => accepted.has(c.id));
+}
 export async function synthesizeKnowledgeAnswer(result: KnowledgeResult, locale: "ur" | "en", provider: KnowledgeSynthesisProvider | null): Promise<KnowledgeResearchAnswer> {
   const refusal = (status: KnowledgeResearchAnswer["status"]): KnowledgeResearchAnswer => ({ status, claims: [] });
   if (result.status === "unsupported-fatwa") return refusal("unsupported-fatwa");
@@ -67,11 +84,12 @@ export async function synthesizeKnowledgeAnswer(result: KnowledgeResult, locale:
       return refusal("unverified");
     }
     const review = await provider.review(input, claims);
-    if (!supportReviewPassed(review)) {
-      console.warn("Knowledge research validation", { stage: "review", code: "unsupported-claims", supported: object(review) ? review.supported === true : false, unsupportedCount: object(review) && Array.isArray(review.unsupportedClaimIds) ? review.unsupportedClaimIds.length : null });
+    const verified = reviewedResearchClaims(review, claims);
+    if (!verified?.length) {
+      console.warn("Knowledge research validation", { stage: "review", code: verified ? "unsupported-claims" : "invalid-review", claimCount: claims.length });
       return refusal("unverified");
     }
-    return { status: "answered", claims, providerId: provider.id, createdAt: new Date().toISOString() };
+    return { status: "answered", claims: verified, ...(verified.length < claims.length ? { omittedClaimCount: claims.length - verified.length } : {}), providerId: provider.id, createdAt: new Date().toISOString() };
   } catch { return refusal("unavailable"); }
 }
 export function selectedResearchClaims(answer: KnowledgeResearchAnswer | undefined, selectedIds: readonly string[]): ResearchClaim[] {
@@ -82,7 +100,7 @@ export function researchSummaryText(answer: KnowledgeResearchAnswer | undefined,
   const claims = selectedResearchClaims(answer, passages.map(p => p.id));
   if (!claims.length) return "";
   const ur = locale === "ur";
-  return [ur ? "تحقیقی خلاصہ — اصل عبارت نہیں" : "Research summary — not a source quotation", ...claims.map(c => [c.text, ...c.citations.map(ref => {
+  return [ur ? "تحقیقی خلاصہ — اصل عبارت نہیں" : "Research summary — not a source quotation", ...(answer?.omittedClaimCount ? [ur ? "جزوی خلاصہ: غیر ثابت شدہ مجوزہ نکات شامل نہیں کیے گئے۔" : "Partial summary: unsupported proposed points were omitted."] : []), ...claims.map(c => [c.text, ...c.citations.map(ref => {
     const p = passages.find(p => p.id === ref.passageId)!;
     return `${ur ? "حوالہ" : "Reference"}: ${ur ? p.referenceUr : p.referenceEn}`;
   })].join("\n"))].join("\n\n");
