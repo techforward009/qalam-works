@@ -11,3 +11,10 @@ it('keeps Urdu in its own font while marking a quoted Arabic passage separately'
 it('explicit Arabic and English language metadata controls rendering and direction',()=>{
  const {container,rerender}=render(<BookPassageText language='ar' text='اَلصَّبْرُ صَبْرَانِ'/>);expect(container.querySelector('.khateeb-muhammadi-quranic')).not.toBeNull();rerender(<BookPassageText language='en' text='Patience (55)'/>);expect(container.querySelector('[lang=en]')?.getAttribute('dir')).toBe('ltr');expect(container.textContent).toBe('Patience (55)');
 });
+
+it('highlights an exact quote without changing source text, direction or script font',()=>{
+ const text='اَلصَّبْرُ صَبْرَانِ: صَبْرٌ عَلٰى مَا تَكْرَهُ';
+ const {container,rerender}=render(<BookPassageText language='ar' text={text} highlight='صَبْرَانِ'/>);
+ expect(container.textContent).toBe(text);expect(container.querySelector('mark')?.textContent).toBe('صَبْرَانِ');expect(container.querySelector('mark .khateeb-muhammadi-quranic')).not.toBeNull();
+ rerender(<BookPassageText language='ar' text={text} highlight='invented quote'/>);expect(container.querySelector('mark')).toBeNull();expect(container.textContent).toBe(text);
+});

@@ -12,6 +12,8 @@ const button = "rounded-lg bg-[#31513a] px-4 py-2 text-sm text-white disabled:op
 export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: "ur" | "en"; onCreateDraft?: (project: CustomSermonProject) => void }) {
   const ur = locale === "ur";
   const [question, setQuestion] = useState("");
+  const [mode, setMode] = useState<"sources" | "research">("research");
+  const [contextQuestion, setContextQuestion] = useState<string | null>(null);
   const [scope, setScope] = useState<KnowledgeScope>("all");
   const [result, setResult] = useState<KnowledgeResult | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -19,10 +21,12 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [opened, setOpened] = useState<{ passage: KnowledgePassage; record?: BookRecord; source?: BookSource } | null>(null);
+  const [opened, setOpened] = useState<{ passage: KnowledgePassage; record?: BookRecord; source?: BookSource; quote?: string } | null>(null);
   const abort = useRef<AbortController | null>(null);
+  const questionInput = useRef<HTMLTextAreaElement>(null);
+  const sourceAbort = useRef<AbortController | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => () => abort.current?.abort(), []);
+  useEffect(() => () => { abort.current?.abort(); sourceAbort.current?.abort(); }, []);
   useEffect(() => {
     if (!opened || !dialog.current) return;
     if (!dialog.current.open) dialog.current.showModal();
@@ -30,26 +34,38 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
     return () => cancelAnimationFrame(frame);
   }, [opened]);
   async function ask() {
+    sourceAbort.current?.abort();
     abort.current?.abort(); const controller = new AbortController(); abort.current = controller;
     setBusy(true); setError(""); setNotice(""); setResult(null); setSelected([]);
     try {
-      const response = await fetch("/api/knowledge/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, scope, locale }), signal: controller.signal });
+      const response = await fetch("/api/knowledge/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, scope, locale, mode, ...(contextQuestion ? { contextQuestion } : {}) }), signal: controller.signal });
       if (!response.ok) throw new Error("unavailable");
       const value: KnowledgeResult = await response.json();
       if (!controller.signal.aborted) { setResult(value); setSelected(value.passages.map(p => p.id)); }
     } catch { if (!controller.signal.aborted) setError(ur ? "سوال کی تلاش مکمل نہیں ہوسکی۔ دوبارہ کوشش کریں۔" : "The search could not be completed. Please retry."); }
     finally { if (!controller.signal.aborted) setBusy(false); }
   }
-  async function openSource(passage: KnowledgePassage) {
-    if (passage.quranLocation) { setOpened({ passage }); return; }
+  async function openSource(passage: KnowledgePassage, quote?: string) {
+    sourceAbort.current?.abort();
+    const controller = new AbortController(); sourceAbort.current = controller;
+    if (passage.quranLocation) { setOpened({ passage, quote }); return; }
     setError("");
     try {
-      const response = await fetch(`/api/khateeb/library?${new URLSearchParams({ op: "record", id: passage.recordId!, sourceId: passage.sourceId! })}`);
+      const response = await fetch(`/api/khateeb/library?${new URLSearchParams({ op: "record", id: passage.recordId!, sourceId: passage.sourceId! })}`, { signal: controller.signal });
       if (!response.ok) throw new Error("source");
       const value: { record: BookRecord; source: BookSource } = await response.json();
       if (value.source.sha256 !== passage.sourceSha256 || value.record.textSha256 !== passage.excerpt?.recordSha256 || !value.record.paragraphs.some(p => p.id === passage.paragraphId && p.text === passage.text)) throw new Error("changed");
-      setOpened({ passage, ...value });
-    } catch { setError(ur ? "اصل عبارت کی تصدیق نہیں ہوسکی۔ ذخیرہ بدل گیا ہو تو سوال دوبارہ تلاش کریں۔" : "The original passage could not be verified. Repeat the search if the corpus has changed."); }
+      if (!controller.signal.aborted) setOpened({ passage, quote, ...value });
+    } catch { if (!controller.signal.aborted) setError(ur ? "اصل عبارت کی تصدیق نہیں ہوسکی۔ ذخیرہ بدل گیا ہو تو سوال دوبارہ تلاش کریں۔" : "The original passage could not be verified. Repeat the search if the corpus has changed."); }
+  }
+  function exportResearch() {
+    if (!result) return;
+    const payload = { format: "qalam-knowledge-note", version: 1, exportedAt: new Date().toISOString(), locale, result };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob); const link = document.createElement("a");
+    link.href = url; link.download = `Qalam-Research-${new Date().toISOString().slice(0, 10)}.json`; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setNotice(ur ? "تحقیقی فائل میں خلاصہ، اصل عبارتیں اور حوالے محفوظ ہوگئے۔" : "The research file includes the summary, source passages and citations.");
   }
   async function copy() {
     if (!result) return;
@@ -68,29 +84,49 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
       .knowledge-assistant .khateeb-salawat { display: inline-block; font-size: .7em; line-height: 1; }
     `}</style>
     <h2 className={`text-xl text-[#1A3A2A] dark:text-white ${ur ? "font-nastaliq leading-loose" : "font-bold"}`}>{ur ? "قلم علمی معاون — کتاب سے پوچھیں" : "Qalam Knowledge Assistant — ask the sources"}</h2>
-    <p className="my-3 text-sm leading-7">{ur ? "سوال سے متعلق اصل عبارتیں تلاش کریں۔ عربی، فراہم کردہ ترجمہ اور حوالہ الگ دکھائے جاتے ہیں۔ یہ ابتدائی معاون ماخذ تلاش کرتا ہے؛ مربوط تحقیقی جواب یا فتویٰ تیار نہیں کرتا۔" : "Find source passages related to your question. Arabic, supplied translations and references remain separate. This first version retrieves evidence; it does not generate a synthesized research answer or fatwa."}</p>
+    <p className="my-3 text-sm leading-7">{ur ? "مصادر میں سوال تلاش کریں، اصل عبارتیں پڑھیں اور انہی پر مبنی حوالہ دار تحقیقی خلاصہ حاصل کریں۔ اصل عربی، فراہم کردہ ترجمہ اور تحقیقی تشریح الگ رہتے ہیں۔" : "Search the sources, read original passages and request a cited research summary grounded in them. Arabic source text, supplied translations and research commentary remain separate."}</p>
+    {contextQuestion ? <div className="my-3 rounded-lg border border-emerald-900/20 p-3 text-sm leading-7"><p>{ur ? "پچھلے موضوع سے متعلق سوال" : "Follow-up on this topic"}: {contextQuestion}</p><button type="button" className="underline" onClick={() => { setContextQuestion(null); setQuestion(""); setResult(null); setSelected([]); }}>{ur ? "نیا موضوع شروع کریں" : "Start a new topic"}</button></div> : null}
     <form className="space-y-3" onSubmit={e => { e.preventDefault(); void ask(); }}>
-      <label className="grid gap-2 text-sm">{ur ? "آپ کا علمی سوال" : "Your research question"}<textarea className={field} required minLength={2} maxLength={600} rows={3} value={question} onChange={e => setQuestion(e.target.value)} placeholder={ur ? "مثلاً: صبر کے بارے میں قرآن اور نہج البلاغہ میں کیا مواد ہے؟" : "e.g. What source passages discuss patience?"} /></label>
+      <label className="grid gap-2 text-sm">{ur ? "آپ کا علمی سوال" : "Your research question"}<textarea ref={questionInput} className={field} required minLength={2} maxLength={600} rows={3} value={question} onChange={e => setQuestion(e.target.value)} placeholder={ur ? "مثلاً: صبر کے بارے میں قرآن اور نہج البلاغہ میں کیا مواد ہے؟" : "e.g. What source passages discuss patience?"} /></label>
       <label className="grid gap-2 text-sm">{ur ? "مصادر کا انتخاب" : "Source scope"}<select className={field} value={scope} onChange={e => setScope(e.target.value as KnowledgeScope)}><option value="all">{ur ? "تمام دستیاب مصادر" : "All available sources"}</option><option value="quran">{ur ? "قرآن — احمدگراف مسودہ" : "Quran — Ahmedgraf corpus"}</option><option value="nahj">{ur ? "نہج البلاغہ" : "Nahj al-Balagha"}</option><option value="sahifa">{ur ? "صحیفہ سجادیہ" : "Sahifa Sajjadiyya"}</option></select></label>
+      <label className="grid gap-2 text-sm">{ur ? "جواب کی نوعیت" : "Answer type"}<select className={field} value={mode} onChange={e => setMode(e.target.value as "sources" | "research")}><option value="research">{ur ? "حوالہ دار تحقیقی خلاصہ اور اصل عبارتیں" : "Cited research summary and original passages"}</option><option value="sources">{ur ? "صرف اصل عبارتیں" : "Original passages only"}</option></select></label>
       <button className={button} disabled={busy}>{busy ? ur ? "مصادر میں تلاش جاری ہے…" : "Searching sources…" : ur ? "سوال کے مصادر تلاش کریں" : "Find sources for this question"}</button>
     </form>
     {error ? <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-300">{error}</p> : null}
     {notice ? <p role="status" className="mt-3 text-sm">{notice}</p> : null}
     {result ? <div className="mt-5 space-y-4" aria-live="polite">
       <p className="text-sm leading-7">{result.status === "unsupported-fatwa" ? ur ? "مراجع کے مستند فتاویٰ کا ذخیرہ ابھی شامل نہیں۔ اس معاون سے کسی مرجع کی طرف فتویٰ منسوب نہیں کیا جائے گا۔" : "An authoritative corpus of marja rulings is not included yet. This assistant cannot attribute a fatwa to a marja." : result.status === "not-found" ? ur ? "اس سوال کے لیے متعلقہ عبارت نہیں ملی۔ مختصر موضوع، عین عبارت کو اقتباسی نشانات میں، یا حکمت/دعا کا نمبر لکھیں۔" : "No matching passage was found. Try a shorter topic, a phrase in quotation marks, or a saying/supplication number." : ur ? `متعلقہ ماخذی عبارتیں: ${result.passages.length}۔ یہ نتائج موضوعاتی تلاش سے منتخب ہوئے ہیں؛ مطابقت اور سیاق اصل ماخذ میں دیکھیں۔` : `${result.passages.length} related passages. These are topic-search results; check relevance and context in the original source.`}</p>
+      {result.research?.status === "answered" ? <div data-testid="knowledge-research-summary" className="space-y-4 rounded-lg border border-emerald-800/30 bg-emerald-50 p-4 dark:bg-emerald-950/40">
+        <h3 className={ur ? "font-nastaliq leading-loose" : "font-semibold"}>{ur ? "تحقیقی خلاصہ — اصل عبارت سے اخذ کردہ" : "Research summary — derived from the sources"}</h3>
+        {result.research.claims.map(claim => <div key={claim.id} className="space-y-2">
+          <BookPassageText text={claim.text} language={locale} />
+          <div className="flex flex-wrap gap-2">{claim.citations.map((ref, index) => {
+            const p = result.passages.find(p => p.id === ref.passageId);
+            return p ? <button key={`${ref.passageId}-${index}`} className="rounded-md border border-emerald-800/30 px-2 py-1 text-sm underline" onClick={() => void openSource(p, ref.quote)}>{ur ? p.referenceUr : p.referenceEn} ({ur ? { ar: "عربی", ur: "اردو", en: "انگریزی" }[p.language] : { ar: "Arabic", ur: "Urdu", en: "English" }[p.language]})</button> : null;
+          })}</div>
+        </div>)}
+      </div> : result.research && result.status === "evidence" ? <p role="status" data-testid="knowledge-summary-status" className="rounded-lg border border-emerald-900/20 p-3 text-sm leading-7">{
+        result.research.status === "unverified" ? ur ? "خلاصے کی ماخذی جانچ کامیاب نہیں ہوئی؛ اصل عبارتیں نیچے موجود ہیں۔" : "The summary did not pass source validation; original passages remain below." :
+        result.research.status === "no-evidence" ? ur ? "ان عبارتوں سے سوال کا تحقیقی جواب ثابت نہیں ہوا۔ اصل مواد نیچے پڑھیں یا سوال مزید واضح کریں۔" : "These passages do not establish a research answer. Read the sources below or refine your question." :
+        result.research.status === "busy" ? ur ? "تحقیقی خلاصے کی سہولت مصروف ہے؛ تھوڑی دیر بعد دوبارہ کوشش کریں۔ اصل عبارتیں دستیاب ہیں۔" : "Research generation is busy. Retry shortly; source passages remain available." :
+        ur ? "تحقیقی خلاصہ اس وقت تیار نہیں ہوسکا؛ اصل عبارتیں اور حوالے نیچے دستیاب ہیں۔" : "The research summary is currently unavailable; original passages and references remain available below."
+      }</p> : null}
       {result.passages.map(p => <article key={p.id} className="rounded-lg border border-emerald-900/20 bg-white p-4 dark:bg-[#162a1e]">
         <label className="flex items-start gap-2 text-sm font-semibold"><input type="checkbox" checked={selected.includes(p.id)} onChange={e => setSelected(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} /><span>{ur ? p.referenceUr : p.referenceEn}</span></label>
         <p className="my-2 text-xs text-gray-600 dark:text-gray-300">{p.language === "ar" ? ur ? "اصل عربی عبارت" : "Arabic source text" : ur ? "فراہم کردہ ترجمہ / حواشی" : "Supplied translation / commentary"}{p.translator ? ` — ${p.translator}` : ""}</p>
         <BookPassageText text={p.text} language={p.language} />
+        {p.suppliedTranslation ? <div className="mt-3 border-t border-emerald-900/15 pt-3"><p className="mb-2 text-xs">{ur ? "فراہم کردہ ترجمہ" : "Supplied translation"} — {p.suppliedTranslation.translator}</p><BookPassageText text={p.suppliedTranslation.text} language={p.suppliedTranslation.language} /></div> : null}
         <button type="button" className="mt-3 text-sm text-emerald-800 underline dark:text-emerald-200" onClick={() => void openSource(p)}>{ur ? "اصل ماخذ اور سیاق دیکھیں" : "Open original source and context"}</button>
       </article>)}
       {result.passages.length ? <div className="flex flex-wrap items-end gap-3">
         <button className={button} disabled={!selected.length} onClick={() => void copy()}>{ur ? "منتخب مواد اور حوالے نقل کریں" : "Copy selected sources"}</button>
+        <button className={button} onClick={exportResearch}>{ur ? "تحقیقی فائل محفوظ کریں" : "Save research file"}</button>
+        <button className={button} onClick={() => { setContextQuestion(result.contextQuestion ?? result.question); setQuestion(""); setResult(null); setSelected([]); requestAnimationFrame(() => { questionInput.current?.focus(); questionInput.current?.scrollIntoView({ block: "center" }); }); }}>{ur ? "اسی موضوع پر مزید سوال" : "Ask a follow-up on this topic"}</button>
         {onCreateDraft ? <><label className="grid gap-1 text-sm">{ur ? "مجلس کا دورانیہ" : "Sermon duration"}<select className={field} value={duration} onChange={e => setDuration(Number(e.target.value) as SermonDuration)}>{[20, 30, 45].map(n => <option key={n} value={n}>{n} {ur ? "منٹ" : "minutes"}</option>)}</select></label><button className={button} disabled={!selected.length} onClick={() => { try { onCreateDraft(createKnowledgeDraft(result, selected, locale, duration)); } catch { setError(ur ? "مسودہ تیار نہیں ہوسکا۔" : "The draft could not be created."); } }}>{ur ? "منتخب مصادر سے میری مجلس بنائیں" : "Create my sermon from selected sources"}</button></> : null}
       </div> : null}
     </div> : null}
     <dialog ref={dialog} onCancel={() => setOpened(null)} onClose={() => setOpened(null)} className="w-[min(92vw,850px)] max-h-[85vh] overflow-y-auto rounded-xl bg-white p-5 text-gray-900 backdrop:bg-black/40 dark:bg-[#162a1e] dark:text-white" aria-label={ur ? "اصل کتابی ماخذ" : "Original source"}>
-      {opened ? <><div className="mb-4 flex justify-between gap-3"><h3>{ur ? opened.passage.referenceUr : opened.passage.referenceEn}</h3><button className={button} onClick={() => dialog.current?.close()}>{ur ? "بند کریں" : "Close"}</button></div>{(opened.record?.paragraphs ?? [{ id: opened.passage.id, text: opened.passage.text }]).map(p => <div key={p.id} data-source-match={p.id === opened.passage.paragraphId || !opened.record} className={`mb-4 rounded-lg p-3 ${p.id === opened.passage.paragraphId || !opened.record ? "border-2 border-emerald-700 bg-emerald-50 dark:bg-emerald-950" : ""}`}><BookPassageText text={p.text} language={opened.passage.language} /></div>)}</> : null}
+      {opened ? <><div className="mb-4 flex justify-between gap-3"><h3>{ur ? opened.passage.referenceUr : opened.passage.referenceEn}</h3><button className={button} onClick={() => dialog.current?.close()}>{ur ? "بند کریں" : "Close"}</button></div>{(opened.record?.paragraphs ?? [{ id: opened.passage.id, text: opened.passage.text }]).map(p => <div key={p.id} data-source-match={p.id === opened.passage.paragraphId || !opened.record} className={`mb-4 rounded-lg p-3 ${p.id === opened.passage.paragraphId || !opened.record ? "border-2 border-emerald-700 bg-emerald-50 dark:bg-emerald-950" : ""}`}><BookPassageText text={p.text} language={opened.passage.language} highlight={p.id === opened.passage.paragraphId || !opened.record ? opened.quote : undefined} /></div>)}</> : null}
     </dialog>
   </section>;
 }

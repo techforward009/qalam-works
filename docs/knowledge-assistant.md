@@ -1,24 +1,29 @@
 # Shared Qalam Knowledge Assistant
 
-The public foundational collection is shared by Khateeb Studio and Research Studio. User documents, private research sessions and saved sermons are separate. The existing protected document assistant remains protected.
+The foundational corpus is shared by Khateeb Studio and Research Studio. Private research documents, authentication and saved user drafts retain their existing boundaries.
 
-## Delivered pilot
+## Delivered
 
-- `app/lib/knowledge`: corpus types, canonical citations, integrity-checked versioned storage, bounded revision cache and question retrieval.
-- `POST /api/knowledge/ask`: bounded public questions, collection/language scope, up to eight source passages. Reads only the foundational corpus, plus exact Ahmedgraf Quran text.
-- Shared UI in both studios: question, source selection, separate Arabic and translated/commentary passages, exact-context viewing, selection and citation-preserving copy.
-- Khateeb adapter transfers chosen Quran evidence and immutable book snapshots into the existing saved/backup/print workflow. It creates a preparation draft, not a completed sermon.
+- Shared corpus types, canonical references, integrity-checked versioned Blob storage and revision-aware source cache.
+- Exact phrase/section/verse lookup plus BM25 lexical ranking with explicit multilingual topic expansion. Collection/language diversity selects at most eight relevant passages. Search normalization never changes stored quotations.
+- Bounded `POST /api/knowledge/ask`: `question`, `scope`, `locale`, optional `mode` (`sources` or `research`) and `contextQuestion`. The default API mode remains source-only. The UI requests research by default. The client cannot submit evidence.
+- Follow-ups retrieve the current question and prior topic independently, so a newly requested exact reference is not shadowed by the prior question.
+- Ahmedgraf Quran originals, with supplied Mohsin Ali Najafi/ Ali Quli Qara'i translations where the existing curated translation provider has coverage. Missing translations are not invented.
+- A replaceable synthesis provider uses the existing production Cloudflare bindings and configured GLM-4.7-Flash model. No new SDK or credential is needed. The unrelated disabled Qalam AI endpoint remains unchanged.
+- The model selects only server-issued citation references; the server attaches exact original passages instead of asking the model to rewrite Arabic. Claims need valid references and original quotations. Legacy model-supplied quote substrings, if present, must match exactly. A separate model call reviews whether every factual statement follows from its cited evidence. Unknown references, altered quotations, empty citations, unsupported claims and failed reviews prevent the summary from being shown. Review is an additional machine check, not scholarly authentication of narrations.
+- The UI keeps source Arabic, supplied translation/commentary and research paraphrase separate. Citation buttons open the original context and highlight the exact cited quote. A failed summary leaves source passages available.
+- Citation-preserving copy, portable research JSON export and Khateeb draft transfer. Only claims whose complete citation set remains selected are copied/transferred. Summary sections are editorial; original book snapshots and Quran evidence remain separately stored through existing backup/restore/print workflows.
 
-Retrieval normalizes only the search index, removes question stopwords, expands a small explicit bilingual topic dictionary, scores coverage/direct matches and reranks for collection/language diversity. Exact quoted phrases and explicit section numbers bypass topic expansion. It is **not embeddings, BM25, a learned reranker or generative AI**. Long paragraphs over 8,000 characters are skipped rather than silently truncated; original context remains available through book search. Translations are independent source passages, not automatically paired with a particular Arabic paragraph.
+## Bounds and cost
 
-The provider-neutral answer contract carries claims and exact evidence citations. Quote verification proves source membership only; it does not prove that a claim follows from its quotation or certify a narration's authenticity. No answer provider is enabled by this pilot. The previously disabled Qalam AI endpoint remains unchanged.
+Complete passages are selected within a 16,000-character evidence budget including supplied translations; text is never silently clipped for the model. Draft generation has a 27-second timeout and 1,800-token cap; support review has a 15-second timeout and 350-token cap. Invalid output is not automatically retried.
 
-## Next substantial stages
+Successful answers receive a unique generation ID, creation time and provider ID. Research-file exports retain that provenance. A source-version/text/translation/question/locale/provider-bound 10-minute cache, identical-request coalescing, four in-flight generations per process and a bounded six-uncached-requests-per-minute caller window reduce repeat cost. These are process-local controls, not a distributed quota guarantee. Requests/prompt contents, credentials and raw provider errors are not logged. Provider failure logs contain only stage, failure category and HTTP status.
 
-1. Build versioned passage indexing with paragraph/section boundaries and complete long-passage retrieval. Expand multilingual evaluation questions before changing ranking.
-2. Add a replaceable embedding adapter, reciprocal-rank fusion of lexical/semantic results, and a replaceable relevance reranker. Evaluate exact Arabic citations, Urdu questions and negative queries independently.
-3. Enable a provider-neutral synthesis adapter with bounded original evidence, untrusted-source handling, citation/quote validation and an entailment/coverage review. Preserve source quotations, translations, generated summaries and sermon guidance as distinct output parts.
-4. Add authenticated private-document adapters without adding those documents to the public corpus. Keep per-user authorization and storage boundaries explicit.
-5. Fiqh ingestion must identify marja, official source, edition/date, ruling number, qualifications and authority status. Authoritative rulings are retrieved and attributed; generated extrapolations cannot be presented as a marja's fatwa. This pilot refuses marja/fatwa requests because that corpus is absent.
+## Remaining stages
 
-Existing immutable Blob object paths and saved snapshot formats stay compatible. Human citations omit filenames, import ordinals and technical locators; hashes/paragraph identifiers remain inside snapshots for verification.
+- Complete long-paragraph indexing (current search skips paragraphs exceeding 8,000 characters), wider multilingual evaluation, replaceable embeddings and hybrid rank fusion. Current topic expansion is not semantic embeddings or a learned reranker.
+- Authenticated private-document adapters with per-user scope, durable general-research notebooks and research-file restore.
+- Authoritative fiqh ingestion identifying marja, official source, edition/date, issue number, qualifications and authority status. Current marja/fatwa questions are refused; no ruling is inferred or attributed from this corpus.
+
+Existing immutable Blob paths and saved sermon formats stay compatible. Human references omit filenames, import ordinals and technical locators; snapshots retain hashes and paragraph IDs for source verification.
