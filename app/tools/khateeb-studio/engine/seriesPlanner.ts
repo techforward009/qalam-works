@@ -1,9 +1,11 @@
 import type { SermonDossier, ScholarPerspective } from "./topicDossier";
 import { getCuratedMajlisSeries } from "./curatedSeries";
+import type { PreparedSessionMaterial } from "./preparedSeries";
 
 export type MajlisSeriesLength = 1 | 3 | 5 | 10;
 
 export type MajlisSeriesSession = {
+  preparation?: PreparedSessionMaterial;
   number: number;
   titleUr: string;
   titleEn: string;

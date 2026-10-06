@@ -88,7 +88,7 @@ describe("Khateeb Studio hadith translation separation", () => {
 
 describe("Khateeb Studio Qur'an translations", () => {
   test("uses the user-supplied Najafi and Qara'i translations separately from commentary", () => {
-    expect(quranTranslationCoverageCount()).toBe(60);
+    expect(quranTranslationCoverageCount()).toBe(65);
     expect(quranTranslationFor(17, 23, "ur")).toContain("والدین کے ساتھ نیکی");
     expect(quranTranslationFor(17, 23, "en")).toContain("kindness to parents");
     expect(QURAN_TRANSLATION_SOURCES.ur.translatorUr).toContain("محسن علی نجفی");

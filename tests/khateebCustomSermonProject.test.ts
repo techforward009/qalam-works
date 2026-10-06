@@ -272,4 +272,15 @@ describe("Khateeb custom sermon projects", () => {
     expect(restored).toEqual(project);
     expect(parseCustomSermonProject("bad-json")).toBeNull();
   });
+  test("research and evidence changes retain section notes, including temporarily unselected sources", () => {
+    let project = applyResearchToCustomProject(createCustomSermonProject({kind:"majlis",title:"صبر",objective:"عمل",duration:30}), result([evidence("h1","hadith")]));
+    project = updateCustomSection(project, project.sections.find(s=>s.kind==="hadith")!.id, "میرے حدیث کے نوٹس");
+    project = selectCustomEvidence(project, []);
+    project = parseCustomSermonProject(serializeCustomSermonProject(project))!;
+    project = selectCustomEvidence(project, ["h1"]);
+    expect(project.sections.find(s=>s.kind==="hadith")!.userText).toBe("میرے حدیث کے نوٹس");
+    project = applyResearchToCustomProject(project, result([evidence("h1","hadith")]));
+    expect(project.sections.find(s=>s.kind==="hadith")!.userText).toBe("میرے حدیث کے نوٹس");
+  });
+
 });

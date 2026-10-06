@@ -1,3 +1,4 @@
+import { buildPreparedSessionWorkbench } from "./preparedSeries";
 import type { SermonDuration } from "./sermonPrep";
 import type { MajlisSeriesSession } from "./seriesPlanner";
 
@@ -47,6 +48,7 @@ export function buildSessionWorkbench(
   session: MajlisSeriesSession,
   duration: SermonDuration,
 ): MajlisSessionWorkbench {
+  if (session.preparation) return buildPreparedSessionWorkbench(session, duration);
   const [openingMinutes, evidenceMinutes, argumentMinutes, closingMinutes] = timings(duration);
   const materialUr = session.materialUr.length ? session.materialUr : [session.purposeUr];
   const materialEn = session.materialEn.length ? session.materialEn : [session.purposeEn];

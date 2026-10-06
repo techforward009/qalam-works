@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import PreparedSeriesSession from "./PreparedSeriesSession";
+import { buildPreparedSeriesText } from "./engine/preparedSeries";
 import TopicSpeakingGuide from "./TopicSpeakingGuide";
 import { buildTopicSpeakingGuideText } from "./engine/topicSpeakingGuide";
 import { useSpeakingGuideMode } from "./useSpeakingGuideMode";
@@ -363,7 +365,9 @@ export default function KhateebStudioContent({
         })),
       }
     : null;
-  const topicSeriesText = displaySeries
+  const topicSeriesText = topicSeries?.sessions.every(session => session.preparation)
+    ? buildPreparedSeriesText(topicSeries, ur ? "ur" : "en", duration)
+    : displaySeries
     ? `${durationBrief(duration, ur ? "ur" : "en")}\n\n${buildMajlisSeriesText(displaySeries, ur ? "ur" : "en")}`
     : "";
   const originalityReport =
@@ -464,6 +468,7 @@ export default function KhateebStudioContent({
   };
 
   const printPreparation = () => {
+    document.documentElement.dataset.khateebPrint = "topic";
     window.print();
   };
 
@@ -635,6 +640,15 @@ export default function KhateebStudioContent({
             margin: 16mm 14mm;
           }
 
+          html[data-khateeb-print="custom"] #khateeb-print-area { display: none !important; }
+          html[data-khateeb-print="custom"] #khateeb-custom-print-area,
+          html[data-khateeb-print="custom"] #khateeb-custom-print-area * { visibility: visible !important; }
+          html[data-khateeb-print="custom"] #khateeb-custom-print-area {
+            display: block !important; position: absolute !important;
+            inset: 0 auto auto 0 !important; width: 100% !important;
+            padding: 0 !important; margin: 0 !important; color: black !important; background: white !important;
+          }
+          #khateeb-custom-print-area p { orphans: 3; widows: 3; }
           body * {
             visibility: hidden !important;
           }
@@ -1592,7 +1606,7 @@ export default function KhateebStudioContent({
                             </div>
                           </div>
                         ) : null}
-                        <div className="mt-3 space-y-2">
+                        <div className={session.preparation ? "hidden" : "mt-3 space-y-2"}>
                           {(ur ? session.materialUr : session.materialEn).map((point) => (
                             <p key={point} className="text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
                               • {point}
@@ -1617,7 +1631,7 @@ export default function KhateebStudioContent({
                             {ur ? session.nextBridgeUr : session.nextBridgeEn}
                           </div>
                         ) : null}
-                        {seriesLayer === "fresh" ? (
+                        {session.preparation ? <PreparedSeriesSession session={session} duration={duration} locale={ur ? "ur" : "en"} onCopy={clipboardFeedback.copy} /> : seriesLayer === "fresh" ? (
                           <details className="mt-4 rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF] p-3 dark:border-[#35513d] dark:bg-[#0e1c15]">
                             <summary className="cursor-pointer font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
                               {ur ? "اس مجلس کی مکمل منبری تیاری" : "Open full session workbench"}
@@ -1690,15 +1704,7 @@ export default function KhateebStudioContent({
 
                                   <button
                                     type="button"
-                                    onClick={async () => {
-                                      try {
-                                        await navigator.clipboard.writeText(
-                                          buildSessionWorkbenchText(workbench, ur ? "ur" : "en"),
-                                        );
-                                      } catch {
-                                        // Clipboard may be unavailable.
-                                      }
-                                    }}
+                                    onClick={() => clipboardFeedback.copy(buildSessionWorkbenchText(workbench, ur ? "ur" : "en"))}
                                     className="rounded-lg bg-[#1A3A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#244E38]"
                                   >
                                     {ur ? "اس مجلس کی مکمل تیاری نقل کریں" : "Copy full session workbench"}

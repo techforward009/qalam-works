@@ -1,27 +1,29 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpenCheck,
   CheckCircle2,
   Copy,
   FilePlus2,
   Library,
+  Printer,
   Loader2,
   Save,
   Search,
   Trash2,
 } from "lucide-react";
 import KhateebScriptText from "./KhateebScriptText";
+import ClipboardFeedback from "./ClipboardFeedback";
+import { useCopyFeedback } from "./useCopyFeedback";
+import { CUSTOM_SERMON_ACTIVE_KEY, loadCustomProjects, buildCustomBackup, prepareCustomRestore, persistRestoredProjects, sortCustomProjects } from "./engine/customSermonStorage";
 import {
-  CUSTOM_SERMON_PREFIX,
   applyResearchToCustomProject,
   buildCustomSermonText,
   createCustomSermonProject,
   customSermonKindLabel,
   customSermonProjectKey,
   markCustomProjectReady,
-  parseCustomSermonProject,
   selectCustomEvidence,
   serializeCustomSermonProject,
   updateCustomProjectBasics,
@@ -37,25 +39,6 @@ type Props = {
   locale: "ur" | "en";
 };
 
-function loadProjects(): CustomSermonProject[] {
-  if (typeof window === "undefined") return [];
-  const rows: CustomSermonProject[] = [];
-  for (let index = 0; index < window.localStorage.length; index += 1) {
-    const key = window.localStorage.key(index);
-    if (!key?.startsWith(`${CUSTOM_SERMON_PREFIX}:`)) continue;
-    const parsed = parseCustomSermonProject(window.localStorage.getItem(key));
-    if (parsed) rows.push(parsed);
-  }
-  return rows.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-}
-
-function saveProject(project: CustomSermonProject): void {
-  window.localStorage.setItem(
-    customSermonProjectKey(project.id),
-    serializeCustomSermonProject(project),
-  );
-}
-
 export default function CustomSermonWorkspace({ locale }: Props) {
   const ur = locale === "ur";
   const [projects, setProjects] = useState<CustomSermonProject[]>([]);
@@ -69,9 +52,28 @@ export default function CustomSermonWorkspace({ locale }: Props) {
   const [researchError, setResearchError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
   const [importError, setImportError] = useState("");
+  const [storageError, setStorageError] = useState("");
+  const projectsRef = useRef(projects);
+  const unsavedIds = useRef(new Set<string>());
+  const feedback = useCopyFeedback();
+  const storageFailure = ur ? "مسودہ محفوظ نہیں ہوسکا۔ آپ کا متن ابھی صفحے پر موجود ہے؛ محفوظ فائل بنائیں یا دوبارہ محفوظ کریں۔" : "The draft could not be saved. Your text is still on this page; export a backup or retry Save.";
+  const rememberActive = (id: string) => {
+    try { window.localStorage.setItem(CUSTOM_SERMON_ACTIVE_KEY, id); } catch { /* The draft itself is saved independently. */ }
+  };
+  const setProjectList = (rows: CustomSermonProject[]) => {
+    projectsRef.current = rows;
+    setProjects(rows);
+  };
 
   useEffect(() => {
-    setProjects(loadProjects());
+    try {
+      const loaded = loadCustomProjects(window.localStorage);
+      setProjectList(loaded.projects);
+      setActiveId(loaded.activeId);
+      if (loaded.invalidCount) setStorageError(locale === "ur" ? "کچھ محفوظ اندراجات خراب ہیں؛ درست مسودے کھول دیے گئے ہیں۔" : "Some saved records are damaged; valid drafts have been opened.");
+    } catch {
+      setStorageError(locale === "ur" ? "محفوظ مسودے نہیں کھل سکے۔ براؤزر کی حفاظت کی سہولت دستیاب نہیں؛ اپنی محفوظ فائل واپس لائیں۔" : "Saved drafts could not be opened. Browser storage is unavailable; import your backup file.");
+    }
   }, []);
 
   const active = useMemo(
@@ -79,27 +81,21 @@ export default function CustomSermonWorkspace({ locale }: Props) {
     [activeId, projects],
   );
 
-  useEffect(() => {
-    if (!active) return;
-    const timer = window.setTimeout(() => {
-      saveProject(active);
-      setSavedMessage(
-        ur ? "تبدیلیاں خودکار طور پر محفوظ ہوگئیں۔" : "Changes saved automatically.",
-      );
-    }, 700);
-    return () => window.clearTimeout(timer);
-  }, [active, ur]);
-
-  const replaceProject = (project: CustomSermonProject, persist = true) => {
-    setProjects((current) => {
-      const next = [
-        project,
-        ...current.filter((item) => item.id !== project.id),
-      ].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-      return next;
-    });
-    setActiveId(project.id);
-    if (persist) saveProject(project);
+  const replaceProject = (project: CustomSermonProject, select = true) => {
+    setProjectList(sortCustomProjects([project, ...projectsRef.current.filter(item => item.id !== project.id)]));
+    if (select) { setActiveId(project.id); rememberActive(project.id); }
+    try {
+      window.localStorage.setItem(customSermonProjectKey(project.id), serializeCustomSermonProject(project));
+      unsavedIds.current.delete(project.id);
+      setStorageError(unsavedIds.current.size ? storageFailure : "");
+      setSavedMessage(ur ? "تبدیلیاں محفوظ ہوگئیں۔" : "Changes saved.");
+      return true;
+    } catch {
+      unsavedIds.current.add(project.id);
+      setSavedMessage("");
+      setStorageError(storageFailure);
+      return false;
+    }
   };
 
   const updateActiveBasics = (
@@ -115,16 +111,7 @@ export default function CustomSermonWorkspace({ locale }: Props) {
   };
 
   const exportProjects = () => {
-    const payload = JSON.stringify(
-      {
-        type: "qalam-khateeb-custom-sermons",
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        projects,
-      },
-      null,
-      2,
-    );
+    const payload = buildCustomBackup(projectsRef.current);
     const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -138,34 +125,18 @@ export default function CustomSermonWorkspace({ locale }: Props) {
     if (!file) return;
     setImportError("");
     try {
-      const payload = JSON.parse(await file.text()) as {
-        type?: string;
-        version?: number;
-        projects?: unknown[];
-      };
-      if (
-        payload.type !== "qalam-khateeb-custom-sermons" ||
-        payload.version !== 1 ||
-        !Array.isArray(payload.projects)
-      ) {
-        throw new Error("invalid-backup");
+      const restored = prepareCustomRestore(await file.text(), projectsRef.current);
+      try {
+        persistRestoredProjects(window.localStorage, restored.added);
+      } catch {
+        setImportError(storageFailure);
+        return;
       }
-      const imported = payload.projects
-        .map((item) => parseCustomSermonProject(JSON.stringify(item)))
-        .filter((item): item is CustomSermonProject => Boolean(item));
-      if (!imported.length) throw new Error("empty-backup");
-      for (const project of imported) saveProject(project);
-      const merged = new Map(
-        [...loadProjects(), ...imported].map((project) => [project.id, project]),
-      );
-      setProjects(
-        [...merged.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
-      );
-      setSavedMessage(
-        ur
-          ? `${imported.length} مسودے واپس محفوظ ہوگئے۔`
-          : `${imported.length} draft(s) restored.`,
-      );
+      setProjectList(restored.projects);
+      setActiveId(restored.activeId);
+      rememberActive(restored.activeId);
+      setStorageError(unsavedIds.current.size ? storageFailure : "");
+      setSavedMessage(ur ? "محفوظ فائل بحال ہوگئی۔ مختلف نسخے الگ محفوظ ہیں۔" : "Backup restored. Different versions are kept as separate drafts.");
     } catch {
       setImportError(
         ur
@@ -184,19 +155,20 @@ export default function CustomSermonWorkspace({ locale }: Props) {
       ownMaterial,
       duration,
     });
-    replaceProject(project);
+    const saved = replaceProject(project);
     setTitle("");
     setObjective("");
     setOwnMaterial("");
-    setSavedMessage(
-      ur ? "نیا مسودہ محفوظ ہوگیا۔" : "New draft saved.",
-    );
+    if (saved) setSavedMessage(ur ? "نیا مسودہ محفوظ ہوگیا۔" : "New draft saved.");
   };
 
   const deleteProject = (project: CustomSermonProject) => {
-    window.localStorage.removeItem(customSermonProjectKey(project.id));
-    setProjects((current) => current.filter((item) => item.id !== project.id));
-    if (activeId === project.id) setActiveId("");
+    try { window.localStorage.removeItem(customSermonProjectKey(project.id)); }
+    catch { setStorageError(storageFailure); return; }
+    unsavedIds.current.delete(project.id);
+    const remaining = projectsRef.current.filter(item => item.id !== project.id);
+    setProjectList(remaining);
+    if (activeId === project.id) { setActiveId(remaining[0]?.id ?? ""); rememberActive(remaining[0]?.id ?? ""); }
   };
 
   const runResearch = async () => {
@@ -216,8 +188,8 @@ export default function CustomSermonWorkspace({ locale }: Props) {
       });
       if (!response.ok) throw new Error(`research-${response.status}`);
       const result = (await response.json()) as KhateebResearchResult;
-      const project = applyResearchToCustomProject(active, result);
-      replaceProject(project);
+      const latest = projectsRef.current.find(project => project.id === active.id);
+      if (latest) replaceProject(applyResearchToCustomProject(latest, result), false);
     } catch {
       setResearchError(
         ur
@@ -245,26 +217,24 @@ export default function CustomSermonWorkspace({ locale }: Props) {
   const saveActive = () => {
     if (!active) return;
     const ready = markCustomProjectReady(active);
-    replaceProject(ready);
-    setSavedMessage(ur ? "مسودہ محفوظ ہوگیا۔" : "Draft saved.");
+    if (replaceProject(ready)) setSavedMessage(ur ? "مسودہ محفوظ ہوگیا۔" : "Draft saved.");
   };
 
   const copyActive = async () => {
     if (!active) return;
-    try {
-      await navigator.clipboard.writeText(buildCustomSermonText(active, locale));
-      setSavedMessage(
-        ur ? "مکمل مسودہ نقل ہوگیا۔" : "Full draft copied.",
-      );
-    } catch {
-      setSavedMessage(
-        ur ? "نقل نہیں ہوسکا۔" : "Could not copy.",
-      );
-    }
+    await feedback.copy(buildCustomSermonText(active, locale));
   };
 
+  const printActive = () => {
+    document.documentElement.dataset.khateebPrint = "custom";
+    window.print();
+  };
+
+
   return (
-    <section className="rounded-2xl border border-[#1A3A2A]/15 bg-[#f7faf7] p-5 dark:border-[#35513d] dark:bg-[#102017] sm:p-6">
+    <section data-testid="custom-sermon-workspace" className="rounded-2xl border border-[#1A3A2A]/15 bg-[#f7faf7] p-5 dark:border-[#35513d] dark:bg-[#102017] sm:p-6">
+      <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss} />
+      {storageError ? <p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">{storageError}</p> : null}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-[#47654d] dark:text-[#b9d4bf]">
@@ -449,7 +419,7 @@ export default function CustomSermonWorkspace({ locale }: Props) {
                   >
                     <button
                       type="button"
-                      onClick={() => setActiveId(project.id)}
+                      onClick={() => { setActiveId(project.id); rememberActive(project.id); }}
                       className="min-w-0 flex-1 text-start"
                     >
                       <div className="truncate text-sm font-bold text-[#1A3A2A] dark:text-white">
@@ -503,6 +473,9 @@ export default function CustomSermonWorkspace({ locale }: Props) {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={printActive} className="flex items-center gap-2 rounded-lg border border-[#1A3A2A]/20 px-3 py-2 text-xs font-semibold">
+                      <Printer className="h-4 w-4" />{ur ? "مسودہ پرنٹ کریں / PDF محفوظ کریں" : "Print draft / Save PDF"}
+                    </button>
                     <button
                       type="button"
                       onClick={saveActive}
@@ -522,7 +495,7 @@ export default function CustomSermonWorkspace({ locale }: Props) {
                   </div>
                 </div>
                 {savedMessage ? (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300">
+                  <div role="status" aria-live="polite" className="mt-3 flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300">
                     <CheckCircle2 className="h-4 w-4" />
                     {savedMessage}
                   </div>
@@ -769,6 +742,7 @@ export default function CustomSermonWorkspace({ locale }: Props) {
                       ) : null}
 
                       <textarea
+                        aria-label={ur ? `${section.headingUr} — میرے نوٹس` : `${section.headingEn} — my notes`}
                         value={section.userText}
                         onChange={(event) =>
                           updateSectionText(section.id, event.target.value)
@@ -834,6 +808,9 @@ export default function CustomSermonWorkspace({ locale }: Props) {
           )}
         </div>
       </div>
+      {active ? <section id="khateeb-custom-print-area" className="hidden" dir={ur ? "rtl" : "ltr"}>
+        {buildCustomSermonText(active, locale).split("\n").map((line, index) => <p key={index} className="min-h-2 whitespace-pre-wrap break-words text-sm leading-8">{active.evidence.some(item => item.arabic === line) ? <KhateebScriptText text={line} forceArabic /> : line}</p>)}
+      </section> : null}
     </section>
   );
 }

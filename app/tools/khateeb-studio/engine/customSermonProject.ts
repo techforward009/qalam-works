@@ -59,6 +59,7 @@ export type CustomSermonProject = {
   evidence: readonly CustomSermonEvidenceSnapshot[];
   selectedEvidenceIds: readonly string[];
   sections: readonly CustomSermonSection[];
+  sectionNotes?: Partial<Record<CustomSermonSectionKind, string>>;
 };
 
 export const CUSTOM_SERMON_PREFIX = "qalam-khateeb-custom-v1";
@@ -254,6 +255,12 @@ export function buildCustomSermonSections(
   });
 }
 
+function rebuildCustomSections(project: CustomSermonProject, kind: CustomSermonKind, duration: SermonDuration, evidence: readonly CustomSermonEvidenceSnapshot[]) {
+  const sectionNotes = { ...project.sectionNotes };
+  for (const section of project.sections) sectionNotes[section.kind] = section.userText;
+  return { sectionNotes, sections: buildCustomSermonSections(kind, duration, evidence).map(section => ({ ...section, userText: sectionNotes[section.kind] ?? "" })) };
+}
+
 export function updateCustomProjectBasics(
   project: CustomSermonProject,
   patch: Partial<
@@ -287,18 +294,7 @@ export function updateCustomProjectBasics(
   const selected = next.evidence.filter((item) =>
     next.selectedEvidenceIds.includes(item.id),
   );
-  const previousByKind = new Map(
-    project.sections.map((section) => [section.kind, section.userText]),
-  );
-  return {
-    ...next,
-    sections: buildCustomSermonSections(next.kind, next.duration, selected).map(
-      (section) => ({
-        ...section,
-        userText: previousByKind.get(section.kind) ?? "",
-      }),
-    ),
-  };
+  return { ...next, ...rebuildCustomSections(project, next.kind, next.duration, selected) };
 }
 
 export function applyResearchToCustomProject(
@@ -317,7 +313,7 @@ export function applyResearchToCustomProject(
     updatedAt: now,
     evidence,
     selectedEvidenceIds,
-    sections: buildCustomSermonSections(project.kind, project.duration, evidence),
+    ...rebuildCustomSections(project, project.kind, project.duration, evidence),
   };
 }
 
@@ -342,7 +338,7 @@ export function selectCustomEvidence(
     ...project,
     updatedAt: now,
     selectedEvidenceIds,
-    sections: buildCustomSermonSections(project.kind, project.duration, selected),
+    ...rebuildCustomSections(project, project.kind, project.duration, selected),
     status: selectedEvidenceIds.length ? "researching" : "draft",
   };
 }
@@ -422,15 +418,39 @@ export function parseCustomSermonProject(
   if (!raw) return null;
   try {
     const value = JSON.parse(raw) as CustomSermonProject;
+    const strings = (items: unknown): items is string[] => Array.isArray(items) && items.every(item => typeof item === "string");
+    const uniqueIds = (items: readonly { id: string }[]) => new Set(items.map(item => item.id)).size === items.length;
     if (
       value?.version !== 1 ||
-      typeof value.id !== "string" ||
-      typeof value.title !== "string" ||
+      typeof value.id !== "string" || !value.id.trim() || value.id.length > 200 ||
+      !["majlis", "jumuah", "general"].includes(value.kind) ||
+      !["draft", "researching", "ready"].includes(value.status) ||
+      ![20, 30, 45].includes(value.duration) ||
+      ![value.title, value.objective, value.ownMaterial, value.researchQuery].every(item => typeof item === "string") ||
+      ![value.createdAt, value.updatedAt].every(item => typeof item === "string" && Number.isFinite(Date.parse(item))) ||
+      (value.sectionNotes !== undefined && (!value.sectionNotes || typeof value.sectionNotes !== "object" || Array.isArray(value.sectionNotes) || Object.entries(value.sectionNotes).some(([key, text]) => !["opening", "quran", "hadith", "scholar", "own-material", "editorial-bridge", "closing", "jumuah-first", "jumuah-second"].includes(key) || typeof text !== "string"))) ||
+      !strings(value.selectedEvidenceIds) ||
       !Array.isArray(value.sections) ||
-      !Array.isArray(value.evidence)
+      !Array.isArray(value.evidence) ||
+      !value.sections.length ||
+      !value.evidence.every(item => item && typeof item.id === "string" && item.id &&
+        ["quran", "hadith", "scholar", "speaker", "source"].includes(item.kind) &&
+        ["verified", "source-lead", "catalog-only"].includes(item.status) &&
+        [item.titleUr, item.titleEn, item.detailUr, item.detailEn, item.citationUr, item.citationEn].every(text => typeof text === "string") &&
+        [item.arabic, item.sourceUrl, item.providerId].every(text => text === undefined || typeof text === "string")) ||
+      !value.sections.every(item => item && typeof item.id === "string" && item.id &&
+        ["opening", "quran", "hadith", "scholar", "own-material", "editorial-bridge", "closing", "jumuah-first", "jumuah-second"].includes(item.kind) &&
+        ["source-grounded", "user", "editorial"].includes(item.provenance) &&
+        [item.headingUr, item.headingEn, item.userText].every(text => typeof text === "string") &&
+        Number.isInteger(item.minutes) && item.minutes >= 0 && strings(item.evidenceIds)) ||
+      !uniqueIds(value.sections) || !uniqueIds(value.evidence) ||
+      new Set(value.selectedEvidenceIds).size !== value.selectedEvidenceIds.length
     ) {
       return null;
     }
+    // Empty title/objective are valid while an existing draft is being edited.
+    const errors = validateCustomSermonProject(value).filter(error => error !== "title is required" && error !== "objective is required");
+    if (errors.length || value.sections.some(section => section.evidenceIds.some((id: string) => !value.evidence.some(item => item.id === id)))) return null;
     return value;
   } catch {
     return null;

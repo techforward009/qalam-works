@@ -1,3 +1,4 @@
+import seriesSupplement from "./quranTranslations/seriesSupplement.json";
 import { QURAN_TRANSLATIONS_SEGMENT_01 } from "./quranTranslations/segment01";
 import { QURAN_TRANSLATIONS_SEGMENT_02 } from "./quranTranslations/segment02";
 import { QURAN_TRANSLATIONS_SEGMENT_03 } from "./quranTranslations/segment03";
@@ -11,6 +12,7 @@ export type QuranLocation = { surah: number; ayah: number };
 type QuranTranslationPair = { ur: string; en: string };
 
 const QURAN_TRANSLATIONS: Record<string, QuranTranslationPair> = {
+  ...seriesSupplement,
   ...QURAN_TRANSLATIONS_SEGMENT_01,
   ...QURAN_TRANSLATIONS_SEGMENT_02,
   ...QURAN_TRANSLATIONS_SEGMENT_03,
