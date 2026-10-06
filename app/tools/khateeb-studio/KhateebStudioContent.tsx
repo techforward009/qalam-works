@@ -571,6 +571,14 @@ export default function KhateebStudioContent({
           unicode-bidi: isolate;
         }
 
+        .khateeb-salawat {
+          display: inline-block;
+          font-size: 0.7em;
+          line-height: 1;
+          vertical-align: baseline;
+          unicode-bidi: isolate;
+        }
+
         .khateeb-studio-ur {
           font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
           font-size: 1.22rem;

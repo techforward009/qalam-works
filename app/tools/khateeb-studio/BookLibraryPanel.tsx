@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import ResearchStudioGate from "../research-studio/components/ResearchStudioGate";
-import KhateebScriptText from "./KhateebScriptText";
+import KhateebScriptText, { renderKhateebSalawat } from "./KhateebScriptText";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
 import { bookExcerptText, bookKindLabel, createBookExcerpt, type BookExcerpt, type BookRecord, type BookSearchResult, type BookSource } from "./engine/bookLibrary";
@@ -117,7 +117,7 @@ export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
           {!results.total ? <p>{ur ? "اس تلاش کے مطابق عبارت نہیں ملی۔ الفاظ یا فلٹر بدل کر تلاش کریں۔" : "No matching passage. Change the words or filters and search again."}</p> : null}
           {results.hits.map(hit => <article key={hit.id} className={`${box} space-y-2`}>
             <h4 dir="auto" className="font-semibold">{hit.title}</h4>
-            <p dir="auto" className="whitespace-pre-wrap text-sm leading-8">{hit.snippet}</p>
+            <p dir="auto" className="whitespace-pre-wrap text-sm leading-8">{renderKhateebSalawat(hit.snippet)}</p>
             <p className="break-words text-xs">{catalog.sources.find(s => s.id === hit.sourceId)?.filename} · {bookKindLabel(hit.kind, locale)} {hit.number || ""}</p>
             <button type="button" className={button} disabled={busy} onClick={() => void openRecord(hit.id, hit.sourceId)}>{ur ? "مکمل عبارت اور انتخاب" : "Read full passage and select"}</button>
           </article>)}
@@ -145,7 +145,7 @@ export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
         {error ? <p role="alert" className="my-3 text-sm text-red-700 dark:text-red-300">{error}</p> : null}
         {opened.record.paragraphs.map((p, i) => <label key={p.id} className="my-3 flex items-start gap-3 rounded-lg border border-[#31513a]/20 p-3">
           <input aria-label={`${ur ? "پیراگراف" : "Paragraph"} ${i + 1}`} className="mt-2 shrink-0" type="checkbox" checked={selectedIds.includes(p.id)} onChange={event => setSelectedIds(ids => event.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} />
-          <span className="min-w-0 flex-1"><span className="text-xs opacity-70">{i + 1}</span><span dir={opened.record.language === "en" ? "auto" : "rtl"} className={`block whitespace-pre-wrap break-words leading-9 ${opened.record.language === "ar" ? "font-arabic" : ""}`}>{opened.record.language === "ar" ? <KhateebScriptText text={p.text} forceArabic /> : p.text}</span></span>
+          <span className="min-w-0 flex-1"><span className="text-xs opacity-70">{i + 1}</span><span dir={opened.record.language === "en" ? "auto" : "rtl"} className={`block whitespace-pre-wrap break-words leading-9 ${opened.record.language === "ar" ? "font-arabic" : ""}`}>{opened.record.language === "ar" ? <KhateebScriptText text={p.text} forceArabic /> : renderKhateebSalawat(p.text)}</span></span>
         </label>)}
       </> : null}
     </dialog>

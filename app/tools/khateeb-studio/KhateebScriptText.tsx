@@ -8,6 +8,16 @@ const ARABIC_LETTERS = /[\u0621-\u063A\u0641-\u064A]/u;
 const GUILLEMETS = /(«[^»]+»)/gu;
 const PERSIAN_EXCLUSIVE = /[پچژگک]/u;
 
+export function renderKhateebSalawat(text: string): ReactNode {
+  if (!text.includes("ﷺ")) return text;
+  return text.split("ﷺ").map((part, index) => (
+    <span key={index}>
+      {index > 0 ? <span className="khateeb-salawat" lang="ar">ﷺ</span> : null}
+      {part}
+    </span>
+  ));
+}
+
 export function looksLikePersianText(text: string): boolean {
   return PERSIAN_EXCLUSIVE.test(text);
 }
@@ -25,7 +35,7 @@ export function looksLikeArabicReligiousText(text: string): boolean {
 function PersianSpan({ children }: { children: string }) {
   return (
     <span dir="rtl" lang="fa" className="font-vazirmatn">
-      {children}
+      {renderKhateebSalawat(children)}
     </span>
   );
 }
@@ -37,7 +47,7 @@ function ArabicSpan({ children }: { children: string }) {
       lang="ar"
       className="khateeb-muhammadi-quranic"
     >
-      {children}
+      {renderKhateebSalawat(children)}
     </span>
   );
 }
@@ -57,14 +67,14 @@ export default function KhateebScriptText({
   if (forceArabic) return <ArabicSpan>{text}</ArabicSpan>;
 
   const parts = text.split(GUILLEMETS);
-  if (parts.length === 1) return <>{text}</>;
+  if (parts.length === 1) return <>{renderKhateebSalawat(text)}</>;
 
   const output: ReactNode[] = parts.map((part, index) =>
     part.startsWith("«") &&
     part.endsWith("»") &&
     looksLikeArabicReligiousText(part)
       ? <ArabicSpan key={`${index}-${part}`}>{part}</ArabicSpan>
-      : part,
+      : <span key={index}>{renderKhateebSalawat(part)}</span>,
   );
 
   return <>{output}</>;
