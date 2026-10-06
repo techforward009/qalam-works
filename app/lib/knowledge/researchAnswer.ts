@@ -1,3 +1,4 @@
+import { hasSuppliedAnswerText } from "./answerLanguage";
 import type { KnowledgePassage, KnowledgeResult } from "./retrieval";
 
 export type ResearchCitation = { passageId: string; quote: string };
@@ -72,7 +73,7 @@ export async function synthesizeKnowledgeAnswer(result: KnowledgeResult, locale:
   if (result.status === "unsupported-fatwa") return refusal("unsupported-fatwa");
   if (result.status !== "evidence") return refusal("no-evidence");
   if (!provider) return refusal("not-configured");
-  const evidence = selectAnswerEvidence(result.passages);
+  const evidence = selectAnswerEvidence(result.passages.filter(p => hasSuppliedAnswerText(p, locale)));
   if (!evidence.length) return refusal("no-evidence");
   const input = { question: result.contextQuestion ? `Previous question: ${result.contextQuestion}\nFollow-up question: ${result.question}` : result.question, locale, evidence };
   try {

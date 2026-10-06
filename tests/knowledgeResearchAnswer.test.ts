@@ -1,10 +1,11 @@
+import { quranTranslationFor } from "../app/tools/khateeb-studio/engine/quranTranslationProvider";
 import { describe, expect, it } from "vitest";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { retrieveKnowledge, knowledgeResultText } from "../app/lib/knowledge/retrieval";
 import { parseResearchClaims, reviewedResearchClaims, selectAnswerEvidence, synthesizeKnowledgeAnswer, type KnowledgeSynthesisProvider } from "../app/lib/knowledge/researchAnswer";
 import { createKnowledgeDraft } from "../app/tools/khateeb-studio/engine/knowledgeDraft";
 import { buildCustomSermonText, parseCustomSermonProject, serializeCustomSermonProject, validateCustomSermonProject } from "../app/tools/khateeb-studio/engine/customSermonProject";
-const result = () => retrieveKnowledge({ question: "103:1–3", scope: "quran", locale: "ur", records: [], sources: [], quran: ahmedgrafQuranReference.listAyahs(), quranSha256: ahmedgrafQuranReference.getMetadata().sourceSha256! });
+const result = () => retrieveKnowledge({ question: "103:1–3", scope: "quran", locale: "ur", records: [], sources: [], quran: ahmedgrafQuranReference.listAyahs().map(a => ({ ...a, suppliedTranslation: { text: quranTranslationFor(a.surah, a.ayah, "ur") ?? "", language: "ur" as const, translator: "Provided translator" } })), quranSha256: ahmedgrafQuranReference.getMetadata().sourceSha256! });
 const draft = () => ({ answered: true, claims: [{ text: "سورۃ العصر میں حق اور صبر کی باہمی نصیحت کا ذکر ہے۔", citations: [{ ref: 3, quote: result().passages[2].text }] }] });
 const provider = (raw: unknown = draft(), review: unknown = { supported: true, unsupportedClaimIds: [] }): KnowledgeSynthesisProvider => ({ id: "test-only", draft: async () => raw, review: async () => review });
 describe("source-bound research synthesis", () => {
