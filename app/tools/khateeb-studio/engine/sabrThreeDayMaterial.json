@@ -302,8 +302,8 @@
           "en": "Al Imran calls believers to steadfastness, and al-Asr includes mutual counsel toward truth and patience alongside faith and good action. That mutual direction invites us to examine our own role. We can support principled conduct in others while listening and accepting correction ourselves."
         },
         "explanation": {
-          "ur": "دونوں سورتوں کے اصل متن اور ترجمے الگ پڑھیں۔ باہمی تعاون کا ذکر ان آیات سے اخذ کی گئی عملی توضیح ہے؛ اپنی خدمت کی فہرست کو آیت کے اصل الفاظ نہ بنائیں۔ حق کی نصیحت اور صبر کی نصیحت ساتھ رکھیں تاکہ تعاون کسی غلط کام میں مدد بننے کے بجائے درست عمل کی تائید کرے۔",
-          "en": "Read the passages and translations separately. The support practices are editorial applications, not words added to the verses. Keep counsel toward truth alongside patience, so that cooperation supports sound conduct rather than enabling wrongdoing."
+          "ur": "دونوں سورتوں کے اصل متن اور ترجمے الگ پڑھیں۔ باہمی تعاون کا ذکر ان آیات سے اخذ کی گئی عملی توضیح ہے؛ اپنی خدمت کی فہرست کو آیت کے اصل الفاظ نہ بنائیں۔ حق کی نصیحت اور صبر کی نصیحت ساتھ رکھیں تاکہ تعاون کسی غلط کام میں مدد بننے کے بجائے درست عمل کی تائید کرے۔ سورۃ العصر کی تینوں آیات پہلے ایک ساتھ تلاوت کریں؛ پھر ایمان، عمل صالح، حق کی تلقین اور صبر کی تلقین کا باہمی ربط کھولیں۔ تواصوا بالصبر کو سورت کے مجموعی پیغام سے الگ نہ کریں۔",
+          "en": "Read the passages and translations separately. The support practices are editorial applications, not words added to the verses. Keep counsel toward truth alongside patience, so that cooperation supports sound conduct rather than enabling wrongdoing. Recite all three verses of Surah al-Asr together first, then explain the connection between faith, righteous deeds, mutual counsel in truth, and mutual counsel in patience."
         }
       },
       {
@@ -347,6 +347,28 @@
           "ur": "اختتامی دعا تدوینی ہے۔ سامع سے تینوں اقدامات کا فوری مطالبہ نہ کریں؛ اپنے حالات کے مطابق ایک قدم چننے دیں۔ سلسلے کے آغاز کے سوال کا جواب یہی عملی صورت ہے: صبر انسان کو ذمہ داری سے جدا نہیں کرتا، بلکہ ضبط اور تعاون کے ساتھ اسے ادا کرنے میں مدد دیتا ہے۔",
           "en": "The prayer is editorial. Do not require immediate action on all three conclusions; invite one step appropriate to circumstances. This answers the opening question: patience can help us fulfil responsibility through restraint and cooperation."
         }
+      }
+    ],
+    "quranGroups": [
+      {
+        "heading": {
+          "ur": "سورۃ العصر — پوری سورت ایک ساتھ پڑھیں",
+          "en": "Surah al-Asr — recite the complete surah together"
+        },
+        "locations": [
+          {
+            "surah": 103,
+            "ayah": 1
+          },
+          {
+            "surah": 103,
+            "ayah": 2
+          },
+          {
+            "surah": 103,
+            "ayah": 3
+          }
+        ]
       }
     ]
   }

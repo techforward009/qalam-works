@@ -33,3 +33,16 @@ test('supplementary translations exactly match the complete reader corpus',()=>{
   for(const [locale,offset] of [['ur',0],['en',1]] as const)expect(quranTranslationFor(surah,ayah,locale)).toBe(pair[offset]);
  }
 });
+
+test.each(['ur','en'] as const)('al-Asr is one complete recitation passage in the %s screen and copied text',locale=>{
+ const session=plan.sessions[2];
+ const arabic=[1,2,3].map(ayah=>ahmedgrafQuranReference.getAyah(103,ayah)!.text).join(' ');
+ const view=render(<PreparedSeriesSession session={session} duration={20} locale={locale} onCopy={vi.fn()}/>);
+ const passage=screen.getByText(arabic);
+ expect(passage.closest('[lang="ar"]')).toBeTruthy();
+ const source=buildSessionWorkbenchText(buildSessionWorkbench(session,20),locale);
+ expect(source).toContain(arabic);
+ expect(source.split(arabic)).toHaveLength(2);
+ expect(source).toContain(session.preparation!.quranGroups![0].heading[locale]);
+ view.unmount();
+});

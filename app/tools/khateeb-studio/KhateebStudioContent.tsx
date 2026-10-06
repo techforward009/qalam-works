@@ -360,8 +360,8 @@ export default function KhateebStudioContent({
           ...session,
           materialUr: pointsForDuration(session.materialUr, duration),
           materialEn: pointsForDuration(session.materialEn, duration),
-          quranUr: session.quranUr ? pointsForDuration(session.quranUr, duration) : undefined,
-          quranEn: session.quranEn ? pointsForDuration(session.quranEn, duration) : undefined,
+          quranUr: session.preparation ? session.quranUr : session.quranUr ? pointsForDuration(session.quranUr, duration) : undefined,
+          quranEn: session.preparation ? session.quranEn : session.quranEn ? pointsForDuration(session.quranEn, duration) : undefined,
         })),
       }
     : null;

@@ -6,19 +6,36 @@ import { ahmedgrafQuranReference } from '../../arabic-diacritics/quran/ahmedgraf
 import { quranTranslationFor, QURAN_TRANSLATION_SOURCES } from './quranTranslationProvider';
 import { verifiedHadithForDossierText } from './verifiedHadithCorpus';
 export type SeriesBilingual = { ur: string; en: string };
+export type PreparedQuranGroup = { heading: SeriesBilingual; locations: readonly { surah: number; ayah: number }[] };
+export type PreparedPrimaryExcerpt = { arabic: string; translation: SeriesBilingual; reference: SeriesBilingual; attribution: SeriesBilingual; sourceUrl: string };
 export type PreparedSessionMaterial = {
  blocks: readonly { heading: SeriesBilingual; delivery: SeriesBilingual; explanation: SeriesBilingual }[];
  quran: readonly {surah: number; ayah: number}[];
+ quranGroups?: readonly PreparedQuranGroup[];
+ primaryExcerpts?: readonly PreparedPrimaryExcerpt[];
  hadithId?: string;
  question: SeriesBilingual; example: SeriesBilingual; action: SeriesBilingual;
 };
 export function preparedSourceLines(preparation: PreparedSessionMaterial, locale: 'ur'|'en') {
  const ur=locale==='ur';const lines: string[]=[];
- for(const {surah,ayah} of preparation.quran) {
-  const arabic=ahmedgrafQuranReference.getAyah(surah,ayah)?.text;
-  const translation=quranTranslationFor(surah,ayah,locale);
-  if(!arabic || !translation)throw Error(`Missing prepared series verse ${surah}:${ayah}`);
-  lines.push(`${ur?'اصل قرآنی آیت':'Qur’anic source verse'} — ${surah}:${ayah}`,arabic,translation,QURAN_TRANSLATION_SOURCES[locale][ur?'sourceLabelUr':'sourceLabelEn']);
+ const used = new Set<string>();
+ for (const location of preparation.quran) {
+  const key = `${location.surah}:${location.ayah}`;
+  if (used.has(key)) continue;
+  const group = preparation.quranGroups?.find(item => item.locations.some(verse => verse.surah === location.surah && verse.ayah === location.ayah));
+  const locations = group?.locations ?? [location];
+  const verses = locations.map(({surah, ayah}) => {
+   const arabic = ahmedgrafQuranReference.getAyah(surah, ayah)?.text;
+   const translation = quranTranslationFor(surah, ayah, locale);
+   if (!arabic || !translation) throw Error(`Missing prepared series verse ${surah}:${ayah}`);
+   used.add(`${surah}:${ayah}`);
+   return {arabic, translation};
+  });
+  const reference = locations.map(({surah, ayah}) => `${surah}:${ayah}`).join(', ');
+  lines.push(group ? `${group.heading[locale]} — ${reference}` : `${ur?'اصل قرآنی آیت':'Qur’anic source verse'} — ${reference}`, verses.map(verse => verse.arabic).join(' '), verses.map(verse => verse.translation).join(' '), QURAN_TRANSLATION_SOURCES[locale][ur?'sourceLabelUr':'sourceLabelEn']);
+ }
+ for (const excerpt of preparation.primaryExcerpts ?? []) {
+  lines.push(excerpt.attribution[locale], excerpt.reference[locale], excerpt.arabic, excerpt.translation[locale], ur?'قلم ورکس — اصل عربی سے تدوینی ترجمہ':'Qalam Works — editorial translation from the Arabic', excerpt.sourceUrl);
  }
  if(preparation.hadithId) {
   const hadith=verifiedHadithForDossierText(preparation.hadithId);
@@ -26,6 +43,13 @@ export function preparedSourceLines(preparation: PreparedSessionMaterial, locale
   lines.push(ur?hadith.attributedToUr:hadith.attributedToEn,hadith.exactArabic, (ur?hadith.translationUr:hadith.translationEn)??'', (ur?hadith.translationSourceLabelUr:hadith.translationSourceLabelEn)??'', (ur?hadith.verifiedReferenceUr:hadith.verifiedReferenceEn)!,hadith.verifiedSourceUrl??hadith.sourceUrl);
  }
  return lines;
+}
+export function preparedArabicSourceTexts(preparation: PreparedSessionMaterial): Set<string | undefined> {
+ const texts = new Set(preparation.quran.map(({surah, ayah}) => ahmedgrafQuranReference.getAyah(surah, ayah)?.text));
+ for (const group of preparation.quranGroups ?? []) texts.add(group.locations.map(({surah, ayah}) => ahmedgrafQuranReference.getAyah(surah, ayah)?.text).join(' '));
+ for (const excerpt of preparation.primaryExcerpts ?? []) texts.add(excerpt.arabic);
+ if (preparation.hadithId) texts.add(verifiedHadithForDossierText(preparation.hadithId)?.exactArabic);
+ return texts;
 }
 export function buildPreparedSessionWorkbench(session: MajlisSeriesSession, duration: SermonDuration): MajlisSessionWorkbench {
  const p=session.preparation!;
