@@ -8,7 +8,7 @@ registerHooks({ resolve(specifier, context, nextResolve) {
   return nextResolve(specifier, context);
 } });
 // Live evaluation is explicit and uses only these fixed, public-source fixtures.
-const markers = ['Evaluate public knowledge review fixtures', 'Validate knowledge review corrections', 'Validate supplied-language research grounding'];
+const markers = ['Evaluate public knowledge review fixtures', 'Validate knowledge review corrections', 'Validate supplied-language research grounding', 'Validate independent knowledge review'];
 if (process.argv.includes('--live') || markers.includes(process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim())) {
   const { createCloudflareKnowledgeProvider } = await import('../app/lib/knowledge/cloudflareAnswerProvider.ts');
   const { hasSuppliedAnswerText } = await import('../app/lib/knowledge/answerLanguage.ts');
@@ -49,6 +49,15 @@ if (process.argv.includes('--live') || markers.includes(process.env.VERCEL_GIT_C
       const accepted = claims ? reviewedResearchClaims(review, claims) : null;
       console.log('PUBLIC_KNOWLEDGE_EVAL', JSON.stringify({ fixture: fixture.name, candidate, review, acceptedCount: accepted?.length ?? 0 }));
       if (!accepted?.length) process.exitCode = 1;
+      if (fixture.name === 'asr-follow-up-ur') {
+        const verse = input.evidence.find(e => e.passage.quranLocation?.ayah === 3)?.passage;
+        if (!verse) { process.exitCode = 1; continue; }
+        const wrongCitation = [{ id: 'claim-1', text: 'اس حوالے میں زمانے کی قسم لی گئی ہے۔', citations: [{ passageId: verse.id, quote: verse.text }] }];
+        const rejection = await available(() => provider.review(input, wrongCitation));
+        const accepted = reviewedResearchClaims(rejection, wrongCitation);
+        console.log('PUBLIC_KNOWLEDGE_EVAL', JSON.stringify({ fixture: 'wrong-verse-citation-rejected', review: rejection, acceptedCount: accepted?.length ?? 0 }));
+        if (accepted === null || accepted.length) process.exitCode = 1;
+      }
       if (fixture.name === 'nahj-55-ur') {
         const fabricated = [{ id: 'claim-1', text: 'یہ حکمت ثابت کرتی ہے کہ ہر صبر کرنے والا شخص ایک ماہ میں مالدار ہو جاتا ہے۔', citations: claims?.[0]?.citations ?? [] }];
         if (!fabricated[0].citations.length) { process.exitCode = 1; continue; }
