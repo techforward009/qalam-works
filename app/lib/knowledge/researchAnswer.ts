@@ -62,7 +62,15 @@ export async function synthesizeKnowledgeAnswer(result: KnowledgeResult, locale:
     const raw = await provider.draft(input);
     if (object(raw) && raw.answered === false && Array.isArray(raw.claims) && raw.claims.length === 0) return refusal("no-evidence");
     const claims = parseResearchClaims(raw, evidence);
-    if (!claims || !supportReviewPassed(await provider.review(input, claims))) return refusal("unverified");
+    if (!claims) {
+      console.warn("Knowledge research validation", { stage: "draft", code: "invalid-claims", answered: object(raw) ? raw.answered === true : false, claimCount: object(raw) && Array.isArray(raw.claims) ? raw.claims.length : 0, citationTypes: object(raw) && Array.isArray(raw.claims) ? raw.claims.slice(0, 6).map(c => object(c) && Array.isArray(c.citations) ? c.citations.slice(0, 4).map(r => object(r) ? typeof r.ref : typeof r) : []) : [] });
+      return refusal("unverified");
+    }
+    const review = await provider.review(input, claims);
+    if (!supportReviewPassed(review)) {
+      console.warn("Knowledge research validation", { stage: "review", code: "unsupported-claims", supported: object(review) ? review.supported === true : false, unsupportedCount: object(review) && Array.isArray(review.unsupportedClaimIds) ? review.unsupportedClaimIds.length : null });
+      return refusal("unverified");
+    }
     return { status: "answered", claims, providerId: provider.id, createdAt: new Date().toISOString() };
   } catch { return refusal("unavailable"); }
 }
