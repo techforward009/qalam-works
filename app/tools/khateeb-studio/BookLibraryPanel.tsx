@@ -116,7 +116,7 @@ export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
           <p className="text-sm">{results.total} {ur ? "نتائج" : "results"}</p>
           {!results.total ? <p>{ur ? "اس تلاش کے مطابق عبارت نہیں ملی۔ الفاظ یا فلٹر بدل کر تلاش کریں۔" : "No matching passage. Change the words or filters and search again."}</p> : null}
           {results.hits.map(hit => <article key={hit.id} className={`${box} space-y-2`}>
-            <h4 dir="auto" className="font-semibold">{hit.title}</h4>
+            <h4 dir="auto" className="font-semibold">{renderKhateebSalawat(hit.title)}</h4>
             <p dir="auto" className="whitespace-pre-wrap text-sm leading-8">{renderKhateebSalawat(hit.snippet)}</p>
             <p className="break-words text-xs">{catalog.sources.find(s => s.id === hit.sourceId)?.filename} · {bookKindLabel(hit.kind, locale)} {hit.number || ""}</p>
             <button type="button" className={button} disabled={busy} onClick={() => void openRecord(hit.id, hit.sourceId)}>{ur ? "مکمل عبارت اور انتخاب" : "Read full passage and select"}</button>
@@ -137,7 +137,7 @@ export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
           <button type="button" className={button} disabled={!selection || addedIds.includes(selection.id)} onClick={addSelection}>{ur ? "منتخب عبارت مجلس میں شامل کریں" : "Add selected passage to sermon"}</button>
           <button type="button" className={button} disabled={!selection} onClick={() => selection && void feedback.copy(bookExcerptText(selection, locale))}>{ur ? "انتخاب اور حوالہ نقل کریں" : "Copy selection and reference"}</button>
         </div>
-        <h3 dir="auto" className="text-lg font-bold">{opened.record.title}</h3>
+        <h3 dir="auto" className="text-lg font-bold">{renderKhateebSalawat(opened.record.title)}</h3>
         <p className="my-3 break-words text-xs leading-6">{opened.source.filename} · {opened.record.reference.locator}{opened.source.translator ? ` · ${ur ? "مترجم" : "Translator"}: ${opened.source.translator}` : ""}</p>
         <p className="text-sm leading-7">{ur ? "مجلس میں شامل کرنے کے لیے پیراگراف منتخب کریں۔ اس نسخے کے ترجمے اور حواشی کو بھی اسی شناخت سے نقل کریں۔" : "Select paragraphs to add to your sermon. Preserve this edition’s attribution for translations and commentary."}</p>
         <p role="status" className="my-2 text-sm">{selectedIds.length} {ur ? "منتخب پیراگراف" : "selected paragraphs"}{selectedIds.length && !selection ? (ur ? " — انتخاب مختصر کریں" : " — select fewer paragraphs") : ""}</p>

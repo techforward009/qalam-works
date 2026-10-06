@@ -679,7 +679,7 @@ export default function CustomSermonWorkspace({ locale }: Props) {
                 {active.bookExcerpts?.length ? <div className="mt-4 space-y-3">
                   <h5 className="font-semibold">{ur ? "مجلس کے محفوظ کتابی اقتباسات" : "Saved book excerpts in this sermon"}</h5>
                   {active.bookExcerpts.map(excerpt => <article key={excerpt.id} className="rounded-lg border border-[#31513a]/20 p-3">
-                    <strong dir="auto" className="block text-sm">{excerpt.title}</strong>
+                    <strong dir="auto" className="block text-sm">{renderKhateebSalawat(excerpt.title)}</strong>
                     <p className="mt-1 text-xs leading-6">{ur ? "فراہم کردہ کتابی نسخہ؛ ترجمہ اور حواشی کی نسبت ماخذ کے مطابق ہے۔" : "Supplied book edition; translation and commentary retain their source attribution."}</p>
                     {excerpt.paragraphs.map(p => <div key={p.id} dir="auto" className="mt-2 whitespace-pre-wrap break-words text-sm leading-8">{excerpt.language === "ar" ? <KhateebScriptText text={p.text} forceArabic /> : renderKhateebSalawat(p.text)}</div>)}
                     <p dir="auto" className="mt-3 break-words text-xs leading-6">{excerpt.filename} · {excerpt.locator} · {ur ? "پیراگراف" : "Paragraphs"}: {excerpt.paragraphNumbers.join(", ")}{excerpt.translator ? ` · ${excerpt.translator}` : ""}</p>
@@ -850,4 +850,3 @@ export default function CustomSermonWorkspace({ locale }: Props) {
     </section>
   );
 }
-
