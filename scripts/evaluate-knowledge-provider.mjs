@@ -15,6 +15,14 @@ if (process.argv.includes('--live') || markers.includes(process.env.VERCEL_GIT_C
   const { parseResearchClaims, reviewedResearchClaims, selectAnswerEvidence } = await import('../app/lib/knowledge/researchAnswer.ts');
   const provider = createCloudflareKnowledgeProvider({ env: process.env });
   if (!provider) throw new Error('Knowledge evaluation bindings unavailable');
+  async function available(call) {
+    try { return await call(); }
+    catch (error) {
+      if (!(error instanceof Error) || error.message !== 'provider-unavailable') throw error;
+      console.log('PUBLIC_KNOWLEDGE_EVAL', JSON.stringify({ retry: 'transient-provider-unavailable', attempts: 2 }));
+      return call();
+    }
+  }
   const fixtures = [
     { name: 'nahj-55-ur', question: 'نہج البلاغہ حکمت 55 کی وضاحت کریں', scope: 'nahj', locale: 'ur' },
     { name: 'patience-multiple-ur', question: 'صبر', scope: 'all', locale: 'ur' },
@@ -24,7 +32,7 @@ if (process.argv.includes('--live') || markers.includes(process.env.VERCEL_GIT_C
   const specificInput = { question: 'کیا وہ بھیڑیے تھے؟', locale: 'ur', evidence: [{ ref: 1, passage: general }] };
   const specificClaim = [{ id: 'claim-1', text: 'بھیڑیے میدان میں آئے۔', citations: [{ passageId: general.id, quote: general.text }] }];
   try {
-    const review = await provider.review(specificInput, specificClaim);
+    const review = await available(() => provider.review(specificInput, specificClaim));
     const accepted = reviewedResearchClaims(review, specificClaim);
     console.log('PUBLIC_KNOWLEDGE_EVAL', JSON.stringify({ fixture: 'unsupported-species-rejected', review, acceptedCount: accepted?.length ?? 0 }));
     if (accepted === null || accepted.length) process.exitCode = 1;
@@ -35,16 +43,16 @@ if (process.argv.includes('--live') || markers.includes(process.env.VERCEL_GIT_C
       if (!response.ok) throw new Error('Fixture retrieval failed');
       const result = await response.json();
       const input = { question: fixture.contextQuestion ? `Previous question: ${fixture.contextQuestion}\nFollow-up question: ${fixture.question}` : fixture.question, locale: fixture.locale, evidence: selectAnswerEvidence(result.passages.filter(p => hasSuppliedAnswerText(p, fixture.locale))) };
-      const candidate = await provider.draft(input);
+      const candidate = await available(() => provider.draft(input));
       const claims = parseResearchClaims(candidate, input.evidence);
-      const review = claims ? await provider.review(input, claims) : null;
+      const review = claims ? await available(() => provider.review(input, claims)) : null;
       const accepted = claims ? reviewedResearchClaims(review, claims) : null;
       console.log('PUBLIC_KNOWLEDGE_EVAL', JSON.stringify({ fixture: fixture.name, candidate, review, acceptedCount: accepted?.length ?? 0 }));
       if (!accepted?.length) process.exitCode = 1;
       if (fixture.name === 'nahj-55-ur') {
         const fabricated = [{ id: 'claim-1', text: 'یہ حکمت ثابت کرتی ہے کہ ہر صبر کرنے والا شخص ایک ماہ میں مالدار ہو جاتا ہے۔', citations: claims?.[0]?.citations ?? [] }];
         if (!fabricated[0].citations.length) { process.exitCode = 1; continue; }
-        const rejection = await provider.review(input, fabricated);
+        const rejection = await available(() => provider.review(input, fabricated));
         const incorrectlyAccepted = reviewedResearchClaims(rejection, fabricated);
         console.log('PUBLIC_KNOWLEDGE_EVAL', JSON.stringify({ fixture: 'fabricated-wealth-rejected', review: rejection, acceptedCount: incorrectlyAccepted?.length ?? 0 }));
         if (incorrectlyAccepted?.length || incorrectlyAccepted === null) process.exitCode = 1;

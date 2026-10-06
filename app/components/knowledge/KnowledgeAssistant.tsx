@@ -108,6 +108,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
         </div>)}
       </div> : result.research && result.status === "evidence" ? <p role="status" data-testid="knowledge-summary-status" className="rounded-lg border border-emerald-900/20 p-3 text-sm leading-7">{
         result.research.status === "unverified" ? ur ? "خلاصے کی ماخذی جانچ کامیاب نہیں ہوئی؛ اصل عبارتیں نیچے موجود ہیں۔" : "The summary did not pass source validation; original passages remain below." :
+        result.research.status === "missing-translation" ? ur ? "ان منتخب عبارتوں کا فراہم کردہ اردو متن یا ترجمہ دستیاب نہیں۔ اصل عبارتیں نیچے موجود ہیں۔" : "These selected passages have no supplied English prose or translation. Original passages remain below." :
         result.research.status === "no-evidence" ? ur ? "ان عبارتوں سے سوال کا تحقیقی جواب ثابت نہیں ہوا۔ اصل مواد نیچے پڑھیں یا سوال مزید واضح کریں۔" : "These passages do not establish a research answer. Read the sources below or refine your question." :
         result.research.status === "busy" ? ur ? "تحقیقی خلاصے کی سہولت مصروف ہے؛ تھوڑی دیر بعد دوبارہ کوشش کریں۔ اصل عبارتیں دستیاب ہیں۔" : "Research generation is busy. Retry shortly; source passages remain available." :
         ur ? "تحقیقی خلاصہ اس وقت تیار نہیں ہوسکا؛ اصل عبارتیں اور حوالے نیچے دستیاب ہیں۔" : "The research summary is currently unavailable; original passages and references remain available below."

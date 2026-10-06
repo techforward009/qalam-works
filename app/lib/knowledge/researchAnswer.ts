@@ -4,7 +4,7 @@ import type { KnowledgePassage, KnowledgeResult } from "./retrieval";
 export type ResearchCitation = { passageId: string; quote: string };
 export type ResearchClaim = { id: string; text: string; citations: ResearchCitation[] };
 export type KnowledgeResearchAnswer = {
-  status: "answered" | "no-evidence" | "unsupported-fatwa" | "not-configured" | "unavailable" | "unverified" | "busy";
+  status: "answered" | "no-evidence" | "unsupported-fatwa" | "not-configured" | "missing-translation" | "unavailable" | "unverified" | "busy";
   claims: ResearchClaim[];
   omittedClaimCount?: number;
   generationId?: string;
@@ -73,7 +73,9 @@ export async function synthesizeKnowledgeAnswer(result: KnowledgeResult, locale:
   if (result.status === "unsupported-fatwa") return refusal("unsupported-fatwa");
   if (result.status !== "evidence") return refusal("no-evidence");
   if (!provider) return refusal("not-configured");
-  const evidence = selectAnswerEvidence(result.passages.filter(p => hasSuppliedAnswerText(p, locale)));
+  const translated = result.passages.filter(p => hasSuppliedAnswerText(p, locale));
+  if (!translated.length) return refusal("missing-translation");
+  const evidence = selectAnswerEvidence(translated);
   if (!evidence.length) return refusal("no-evidence");
   const input = { question: result.contextQuestion ? `Previous question: ${result.contextQuestion}\nFollow-up question: ${result.question}` : result.question, locale, evidence };
   try {

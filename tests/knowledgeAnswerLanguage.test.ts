@@ -16,7 +16,7 @@ it("distinguishes actual answer-language prose from Arabic quotations in a trans
 it("retains Arabic sources but never asks a model to invent a missing translation", async () => {
   const passages = [arabic]; const result = { status: "evidence", question: "صبر", passages } as KnowledgeResult;
   const provider: KnowledgeSynthesisProvider = { id: "test", draft: async () => { throw new Error("must not run"); }, review: async () => { throw new Error("must not run"); } };
-  expect(await synthesizeKnowledgeAnswer(result, "ur", provider)).toEqual({ status: "no-evidence", claims: [] });
+  expect(await synthesizeKnowledgeAnswer(result, "ur", provider)).toEqual({ status: "missing-translation", claims: [] });
   expect(result.passages).toBe(passages); expect(result.passages[0].text).toBe(arabic.text);
 });
 it("renumbers only eligible evidence, preventing a summary from citing an excluded Arabic-only passage", async () => {
