@@ -10,7 +10,8 @@ export const BOOK_POINTER_PATH = "khateeb-foundational/v1/current.json";
 const ROOT = "khateeb-foundational/v1/";
 const MAX_SOURCE_BYTES = 16 * 1024 * 1024;
 const hash = (text: string | Uint8Array) => createHash("sha256").update(text).digest("hex");
-type Catalog = { revision: string; manifest: BookManifest; paths: Record<string, string> };
+export type BookCatalog = { revision: string; manifest: BookManifest; paths: Record<string, string> };
+type Catalog = BookCatalog;
 
 export function validateBookRecords(value: unknown, source: BookSource): BookRecord[] {
   if (!Array.isArray(value) || !value.length || value.length > 3000) throw new Error("invalid-records");

@@ -1,20 +1,23 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import BookTopicGuide from "./BookTopicGuide";
+import type { CustomSermonProject } from "./engine/customSermonProject";
 import ResearchStudioGate from "../research-studio/components/ResearchStudioGate";
 import KhateebScriptText, { renderKhateebSalawat } from "./KhateebScriptText";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
 import { bookExcerptText, bookKindLabel, createBookExcerpt, type BookExcerpt, type BookRecord, type BookSearchResult, type BookSource } from "./engine/bookLibrary";
 
-type Props = { locale: "ur" | "en"; onAdd: (excerpt: BookExcerpt) => boolean; addedIds: readonly string[] };
+type Props = { locale: "ur" | "en"; onCreateDraft?: (project: CustomSermonProject) => void; onAdd?: (excerpt: BookExcerpt) => boolean; addedIds?: readonly string[] };
 const box = "rounded-lg border border-[#1A3A2A]/20 bg-white p-2 text-sm text-[#1A3A2A] dark:border-[#35513d] dark:bg-[#162a1e] dark:text-white";
 const button = "rounded-lg bg-[#31513a] px-3 py-2 text-sm text-white disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
 
 export default function BookLibraryPanel(props: Props) {
-  return <ResearchStudioGate language={props.locale} dir={props.locale === "ur" ? "rtl" : "ltr"}><LibraryWorkspace {...props} /></ResearchStudioGate>;
+  return <LibraryWorkspace {...props} />;
 }
-export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
+export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }: Props) {
   const ur = locale === "ur";
+  const [adminOpen, setAdminOpen] = useState(false);
   const [catalog, setCatalog] = useState<{ ready: boolean; sources: BookSource[]; recordCount: number } | null>(null);
   const [query, setQuery] = useState("");
   const [book, setBook] = useState("");
@@ -31,12 +34,12 @@ export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
   const controller = useRef<AbortController | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const feedback = useCopyFeedback();
-  const failure = ur ? "کتابی ذخیرہ نہیں کھل سکا۔ رسائی اور نجی ذخیرے کی ترتیب دیکھ کر دوبارہ کوشش کریں۔" : "The book library could not be opened. Check access and private storage, then retry.";
+  const failure = ur ? "کتابی ذخیرہ نہیں کھل سکا۔ دوبارہ کوشش کریں۔" : "The book library could not be opened. Please retry.";
   const invalid = ur ? "یہ درست کتابی ذخیرے کی ZIP فائل نہیں، یا اس کا حجم ۴ میگابائٹ سے زیادہ ہے۔" : "This is not a valid book corpus ZIP, or it exceeds 4 MB.";
 
   useEffect(() => {
     const abort = new AbortController();
-    fetch("/api/research/book-library", { cache: "no-store", signal: abort.signal }).then(async response => {
+    fetch("/api/khateeb/library", { cache: "no-store", signal: abort.signal }).then(async response => {
       if (!response.ok) throw new Error("catalog");
       const value = await response.json();
       if (!abort.signal.aborted) setCatalog(value);
@@ -73,18 +76,18 @@ export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
   }
   async function search(page = 1) {
     const params = new URLSearchParams({ op: "search", query, book, language, sourceId, kind, number, page: String(page) });
-    const value = await request(`/api/research/book-library?${params}`);
+    const value = await request(`/api/khateeb/library?${params}`);
     if (value && Array.isArray(value.hits)) setResults(value);
     else if (value) { setCatalog(value); setResults(null); }
   }
   async function openRecord(id: string, sourceId: string) {
-    const value = await request(`/api/research/book-library?${new URLSearchParams({ op: "record", id, sourceId })}`);
+    const value = await request(`/api/khateeb/library?${new URLSearchParams({ op: "record", id, sourceId })}`);
     if (value?.record) { setSelectedIds([]); setOpened(value); }
   }
   let selection: BookExcerpt | null = null;
   try { if (opened && selectedIds.length) selection = createBookExcerpt(opened.record, opened.source, selectedIds); } catch { /* Large selections stay visible; adding is disabled. */ }
   function addSelection() {
-    if (!selection) return;
+    if (!selection || !onAdd) return;
     try {
       const saved = onAdd(selection);
       setMessage(saved ? (ur ? "منتخب اقتباس مجلس میں شامل اور محفوظ ہوگیا۔" : "Selected excerpt added and saved to your sermon.") : (ur ? "اقتباس مجلس میں شامل ہے؛ محفوظ کرنے کی خرابی مجلس میں دیکھیں اور محفوظ فائل بنائیں۔" : "The excerpt is in your draft. Check the storage error and export a backup."));
@@ -96,12 +99,8 @@ export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
     {error ? <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p> : null}
     {message && !opened ? <p role="status" className="text-sm text-emerald-700 dark:text-emerald-300">{message}</p> : null}
     {!catalog && !error ? <p role="status">{ur ? "ذخیرہ دیکھا جا رہا ہے…" : "Checking library…"}</p> : null}
+    {catalog?.ready ? <BookTopicGuide key={locale} locale={locale} onCreateDraft={onCreateDraft} onOpen={openRecord} /> : null}
     {catalog ? <>
-      <details className="rounded-lg border border-[#31513a]/20 p-3" open={!catalog.ready}>
-        <summary className="cursor-pointer font-semibold">{catalog.ready ? (ur ? `کتابی ذخیرہ: ${catalog.recordCount} حصے — نسخہ تبدیل کریں` : `Book corpus: ${catalog.recordCount} records — replace edition`) : (ur ? "کتابی ذخیرہ شامل کریں" : "Import book corpus")}</summary>
-        <p className="my-3 text-sm leading-7">{ur ? "تیار کردہ Khateeb-Foundational-Corpus.zip منتخب کریں۔ کامیاب جانچ اور حفاظت کے بعد ہی نیا نسخہ فعال ہوگا۔" : "Choose Khateeb-Foundational-Corpus.zip. A replacement becomes active only after validation and successful storage."}</p>
-        <label className="grid gap-2 text-sm">{ur ? "کتابی ذخیرے کی ZIP فائل" : "Book corpus ZIP"}<input aria-label={ur ? "کتابی ذخیرے کی ZIP فائل" : "Book corpus ZIP"} type="file" accept=".zip,application/zip" disabled={busy} onChange={event => { void importArchive(event.target.files?.[0] ?? null); event.target.value = ""; }} /></label>
-      </details>
       {catalog.ready ? <>
         <form onSubmit={event => { event.preventDefault(); void search(); }} className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm sm:col-span-2">{ur ? "لفظ یا عبارت" : "Word or phrase"}<input className={box} value={query} maxLength={300} onChange={event => { setQuery(event.target.value); setResults(null); }} placeholder={ur ? "مثلاً: صبر، دعا، موت" : "e.g. patience, prayer, death"} /></label>
@@ -130,16 +129,24 @@ export function LibraryWorkspace({ locale, onAdd, addedIds }: Props) {
       </> : null}
     </> : null}
     {busy ? <p role="status">{ur ? "کام جاری ہے…" : "Working…"}</p> : null}
+    {catalog && !catalog.ready ? <p role="status">{ur ? "کتابی ذخیرہ ابھی تیار نہیں ہے۔" : "The book library is not ready yet."}</p> : null}
+    <details className="rounded-lg border border-[#31513a]/20 p-3" onToggle={event => setAdminOpen(event.currentTarget.open)}>
+      <summary className="cursor-pointer text-sm font-semibold">{ur ? "کتابی ذخیرے کا انتظام — مالک کے لیے" : "Book library management — owner only"}</summary>
+      {adminOpen ? <ResearchStudioGate language={locale} dir={ur ? "rtl" : "ltr"}>
+        <p className="my-3 text-sm leading-7">{ur ? "تیار کردہ Khateeb-Foundational-Corpus.zip منتخب کریں۔ کامیاب جانچ اور حفاظت کے بعد ہی نیا نسخہ فعال ہوگا۔" : "Choose Khateeb-Foundational-Corpus.zip. A replacement becomes active only after validation and successful storage."}</p>
+        <label className="grid gap-2 text-sm">{ur ? "کتابی ذخیرے کی ZIP فائل" : "Book corpus ZIP"}<input aria-label={ur ? "کتابی ذخیرے کی ZIP فائل" : "Book corpus ZIP"} type="file" accept=".zip,application/zip" disabled={busy} onChange={event => { void importArchive(event.target.files?.[0] ?? null); event.target.value = ""; }} /></label>
+      </ResearchStudioGate> : null}
+    </details>
     <dialog ref={dialog} onClose={() => { setOpened(null); setSelectedIds([]); setMessage(""); }} className="m-auto max-h-[90dvh] w-[min(95vw,850px)] overflow-y-auto rounded-2xl bg-white p-5 text-[#1A3A2A] backdrop:bg-black/40 dark:bg-[#102017] dark:text-white" aria-label={ur ? "مکمل کتابی عبارت" : "Full book passage"}>
       {opened ? <>
         <div className="flex flex-wrap gap-3 bg-white pb-4 dark:bg-[#102017]">
           <button type="button" autoFocus className={button} onClick={() => dialog.current?.close()}>{ur ? "بند کریں" : "Close"}</button>
-          <button type="button" className={button} disabled={!selection || addedIds.includes(selection.id)} onClick={addSelection}>{ur ? "منتخب عبارت مجلس میں شامل کریں" : "Add selected passage to sermon"}</button>
+          {onAdd ? <button type="button" className={button} disabled={!selection || addedIds.includes(selection.id)} onClick={addSelection}>{ur ? "منتخب عبارت مجلس میں شامل کریں" : "Add selected passage to sermon"}</button> : null}
           <button type="button" className={button} disabled={!selection} onClick={() => selection && void feedback.copy(bookExcerptText(selection, locale))}>{ur ? "انتخاب اور حوالہ نقل کریں" : "Copy selection and reference"}</button>
         </div>
         <h3 dir="auto" className="text-lg font-bold">{renderKhateebSalawat(opened.record.title)}</h3>
         <p className="my-3 break-words text-xs leading-6">{opened.source.filename} · {opened.record.reference.locator}{opened.source.translator ? ` · ${ur ? "مترجم" : "Translator"}: ${opened.source.translator}` : ""}</p>
-        <p className="text-sm leading-7">{ur ? "مجلس میں شامل کرنے کے لیے پیراگراف منتخب کریں۔ اس نسخے کے ترجمے اور حواشی کو بھی اسی شناخت سے نقل کریں۔" : "Select paragraphs to add to your sermon. Preserve this edition’s attribution for translations and commentary."}</p>
+        <p className="text-sm leading-7">{ur ? "عبارت اور حوالہ نقل کرنے کے لیے پیراگراف منتخب کریں۔ ترجمے اور حواشی کی اصل نسبت برقرار رکھیں۔" : "Select paragraphs to copy with their reference. Preserve attribution for translations and commentary."}</p>
         <p role="status" className="my-2 text-sm">{selectedIds.length} {ur ? "منتخب پیراگراف" : "selected paragraphs"}{selectedIds.length && !selection ? (ur ? " — انتخاب مختصر کریں" : " — select fewer paragraphs") : ""}</p>
         {message ? <p role="status" className="my-3 text-sm text-emerald-700 dark:text-emerald-300">{message}</p> : null}
         {error ? <p role="alert" className="my-3 text-sm text-red-700 dark:text-red-300">{error}</p> : null}

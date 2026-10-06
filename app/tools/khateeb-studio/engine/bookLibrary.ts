@@ -13,6 +13,7 @@ export type BookManifest = { format: "qalam-foundational-corpus"; version: 1; so
 export type BookExcerpt = {
   id: string; recordId: string; sourceId: string; sourceSha256: string; recordSha256: string;
   title: string; language: BookSource["language"]; filename: string; translator: string | null;
+  referenceLabelUr?: string; referenceLabelEn?: string;
   locator: string; paragraphNumbers: number[]; paragraphs: { id: string; text: string }[];
 };
 export type BookSearchHit = { id: string; sourceId: string; title: string; kind: string; number: number | string; language: BookSource["language"]; snippet: string };
@@ -57,6 +58,7 @@ export function isBookExcerpt(value: unknown): value is BookExcerpt {
   if (!value || typeof value !== "object") return false;
   const x = value as BookExcerpt;
   return [x.id, x.recordId, x.sourceId, x.title, x.filename, x.locator].every(s => typeof s === "string" && s.length > 0 && s.length < 4000)
+    && [x.referenceLabelUr, x.referenceLabelEn].every(s => s === undefined || typeof s === "string" && s.length > 0 && s.length < 1000)
     && BOOK_SOURCE_IDS.includes(x.sourceId as typeof BOOK_SOURCE_IDS[number]) && ["ar", "ur", "en"].includes(x.language)
     && [x.sourceSha256, x.recordSha256].every(s => typeof s === "string" && /^[a-f0-9]{64}$/.test(s))
     && (x.translator === null || typeof x.translator === "string")
@@ -69,5 +71,5 @@ export function isBookExcerpt(value: unknown): value is BookExcerpt {
     && x.recordId.startsWith(`${x.sourceId}:`) && x.id === `${x.recordId}:${x.sourceSha256}:${x.recordSha256}:paragraphs:${x.paragraphNumbers.join(",")}`;
 }
 export function bookExcerptText(excerpt: BookExcerpt, locale: "ur" | "en"): string {
-  return [excerpt.title, ...excerpt.paragraphs.flatMap((p, i) => i > 0 && excerpt.paragraphNumbers[i] > excerpt.paragraphNumbers[i - 1] + 1 ? ["[…]", p.text] : [p.text]), `${locale === "ur" ? "حوالہ" : "Reference"}: ${excerpt.filename} | ${excerpt.sourceId} | ${excerpt.recordId} | ${excerpt.locator} | ${locale === "ur" ? "منتخب پیراگراف" : "Selected paragraphs"}: ${excerpt.paragraphNumbers.join(", ")}`, ...(excerpt.translator ? [`${locale === "ur" ? "مترجم" : "Translator"}: ${excerpt.translator}`] : [])].join("\n");
+  return [excerpt.title, ...(excerpt.referenceLabelUr ? [locale === "ur" ? excerpt.referenceLabelUr : excerpt.referenceLabelEn ?? excerpt.referenceLabelUr] : []), ...excerpt.paragraphs.flatMap((p, i) => i > 0 && excerpt.paragraphNumbers[i] > excerpt.paragraphNumbers[i - 1] + 1 ? ["[…]", p.text] : [p.text]), `${locale === "ur" ? "حوالہ" : "Reference"}: ${excerpt.filename} | ${excerpt.sourceId} | ${excerpt.recordId} | ${excerpt.locator} | ${locale === "ur" ? "منتخب پیراگراف" : "Selected paragraphs"}: ${excerpt.paragraphNumbers.join(", ")}`, ...(excerpt.translator ? [`${locale === "ur" ? "مترجم" : "Translator"}: ${excerpt.translator}`] : [])].join("\n");
 }

@@ -4,7 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { rejectUnauthenticatedResearch } from "../../research/auth/requireSession";
 import { researchBlobClientFromEnv } from "../../research/vercelResearchBlob";
 import { BOOK_SOURCE_IDS, searchBookRecords } from "../../../tools/khateeb-studio/engine/bookLibrary";
-import { loadBookCatalog, loadBookSource, MAX_BOOK_UPLOAD_BYTES, parseBookArchive, saveBookArchive } from "./store";
+import { loadBookCatalog, MAX_BOOK_UPLOAD_BYTES, parseBookArchive, saveBookArchive } from "./store";
+
+import { resolvePatienceMaterials } from "../../../tools/khateeb-studio/engine/patienceBookGuide";
+import { readBookSource } from "./sourceCache";
 
 function json(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
@@ -15,23 +18,28 @@ function deny(req: NextRequest) {
   return response;
 }
 export async function GET(req: NextRequest) {
-  const denied = deny(req);
-  if (denied) return denied;
   const params = req.nextUrl.searchParams;
   const op = params.get("op") ?? "catalog";
   const query = params.get("query") ?? "";
   const sourceId = params.get("sourceId") ?? "";
   const number = params.get("number") ?? "";
-  if (!["catalog", "search", "record"].includes(op) || query.length > 300 || sourceId && !BOOK_SOURCE_IDS.includes(sourceId as typeof BOOK_SOURCE_IDS[number]) || number.length > 5) return json({ code: "invalid" }, 400);
+  if (!["catalog", "search", "record", "topic"].includes(op) || query.length > 300 || sourceId && !BOOK_SOURCE_IDS.includes(sourceId as typeof BOOK_SOURCE_IDS[number]) || number.length > 5) return json({ code: "invalid" }, 400);
   try {
     const client = await researchBlobClientFromEnv();
     const catalog = await loadBookCatalog(client);
     if (!catalog) return json({ ready: false, sources: [], recordCount: 0 });
     if (op === "catalog") return json({ ready: true, revision: catalog.revision, sources: catalog.manifest.sources, recordCount: catalog.manifest.recordCount });
+    if (op === "topic") {
+      const locale = params.get("language") ?? "ur";
+      if (params.get("topicId") !== "patience" || !["ur", "en"].includes(locale)) return json({ code: "invalid" }, 400);
+      const sources = catalog.manifest.sources.filter(s => s.language === "ar" || s.language === locale);
+      const records = (await Promise.all(sources.map(s => readBookSource(client, catalog, s.id)))).flat();
+      return json(resolvePatienceMaterials(records, sources, locale as "ur" | "en"));
+    }
     if (op === "record") {
       const id = params.get("id");
       if (!sourceId || !id || id.length > 300) return json({ code: "invalid" }, 400);
-      const records = await loadBookSource(client, catalog, sourceId);
+      const records = await readBookSource(client, catalog, sourceId);
       const record = records.find(r => r.id === id);
       return record ? json({ record, source: catalog.manifest.sources.find(s => s.id === sourceId) }) : json({ code: "not-found" }, 404);
     }
@@ -41,7 +49,7 @@ export async function GET(req: NextRequest) {
     const page = Number(params.get("page") ?? 1);
     if (language && !["ar", "ur", "en"].includes(language) || book && !["nahj", "sahifa"].includes(book) || kind.length > 40 || !Number.isInteger(page) || page < 1 || page > 1000) return json({ code: "invalid" }, 400);
     const sources = catalog.manifest.sources.filter(s => (!sourceId || s.id === sourceId) && (!book || s.book === book) && (!language || s.language === language));
-    const records = (await Promise.all(sources.map(s => loadBookSource(client, catalog, s.id)))).flat();
+    const records = (await Promise.all(sources.map(s => readBookSource(client, catalog, s.id)))).flat();
     return json(searchBookRecords(records, { query, sourceId, language, book, kind, number, page }));
   } catch {
     return json({ code: "unavailable" }, 503);

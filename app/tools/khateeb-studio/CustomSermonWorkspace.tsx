@@ -42,9 +42,11 @@ import type { SermonDuration } from "./engine/sermonPrep";
 
 type Props = {
   locale: "ur" | "en";
+  initialProject?: CustomSermonProject;
+  onInitialProjectApplied?: () => void;
 };
 
-export default function CustomSermonWorkspace({ locale }: Props) {
+export default function CustomSermonWorkspace({ locale, initialProject, onInitialProjectApplied }: Props) {
   const ur = locale === "ur";
   const [projects, setProjects] = useState<CustomSermonProject[]>([]);
   const [activeId, setActiveId] = useState("");
@@ -103,6 +105,16 @@ export default function CustomSermonWorkspace({ locale }: Props) {
       return false;
     }
   };
+
+  const consumedInitial = useRef("");
+  useEffect(() => {
+    if (initialProject && consumedInitial.current !== initialProject.id) {
+      consumedInitial.current = initialProject.id;
+      if (!projectsRef.current.some(p => p.id === initialProject.id)) replaceProject(initialProject);
+      else setActiveId(initialProject.id);
+      onInitialProjectApplied?.();
+    }
+  }, [initialProject]);
 
   const updateActiveBasics = (
     patch: Partial<
@@ -674,7 +686,7 @@ export default function CustomSermonWorkspace({ locale }: Props) {
                 </button>
                 <p className="mt-2 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">{ur ? "نہج البلاغہ اور صحیفہ سجادیہ سے منتخب عبارت، اصل نسخے اور حوالہ کے ساتھ شامل کریں۔" : "Add selected passages from Nahj al-Balagha and Sahifa Sajjadiyya with their edition and reference."}</p>
                 <div id="custom-book-library" className="mt-4" hidden={!libraryOpen}>
-                  {libraryOpen ? <BookLibraryPanel key={active.id} locale={locale} onAdd={addBookExcerpt} addedIds={(active.bookExcerpts ?? []).map(x => x.id)} /> : null}
+                  {libraryOpen ? <BookLibraryPanel key={active.id} locale={locale} onCreateDraft={replaceProject} onAdd={addBookExcerpt} addedIds={(active.bookExcerpts ?? []).map(x => x.id)} /> : null}
                 </div>
                 {active.bookExcerpts?.length ? <div className="mt-4 space-y-3">
                   <h5 className="font-semibold">{ur ? "مجلس کے محفوظ کتابی اقتباسات" : "Saved book excerpts in this sermon"}</h5>

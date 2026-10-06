@@ -9,7 +9,7 @@ for(const locale of ['ur','en'] as const){
   const id='sahifa-ar:supplication:28';const paragraphs=[{id:`${id}:p1`,text:'اَللّٰهُمَّ — عبارتِ آزمائش اوّل'},{id:`${id}:p2`,text:'حاشیہ — عبارتِ آزمائش دوم'}];
   const record={id,sourceId:source.id,book:'sahifa',language:'ar',kind:'supplication',number:28,title:'دعا 28 — آزمائشی عبارت',reference:{sourceId:source.id,section:'supplication',number:28,locator:'word/document.xml paragraph 100',printPage:null},paragraphs,textSha256:createHash('sha256').update(paragraphs.map(p=>p.text).join('\n')).digest('hex')};
   await page.route('**/api/research/auth',route=>route.fulfill({json:{authenticated:true}}));
-  await page.route('**/api/research/book-library**',route=>{
+  await page.route('**/api/khateeb/library**',route=>{
    const url=new URL(route.request().url());
    const body=url.searchParams.get('op')==='record'?{record,source}:url.searchParams.get('op')==='search'?{total:1,page:1,pageSize:20,hits:[{id,sourceId:source.id,title:record.title,kind:'supplication',number:28,language:'ar',snippet:paragraphs[0].text}]}:{ready:true,sources:[source],recordCount:2676};
    return route.fulfill({json:body});

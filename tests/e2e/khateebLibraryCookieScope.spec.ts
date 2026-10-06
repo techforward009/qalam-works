@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('owner login sends its scoped cookie to the book library', async ({ page, context }) => {
+test('public reads and scoped owner-only imports remain separate', async ({ page, context }) => {
   test.skip(process.env.QALAM_AUTH_SCOPE_TEST !== '1', 'Requires an isolated server with test auth and no Blob credentials.');
   const login = await context.request.post('/api/research/auth', {
     data: { password: 'book-cookie-scope-test' },
@@ -17,6 +17,6 @@ test('owner login sends its scoped cookie to the book library', async ({ page, c
   expect((await context.request.post('/api/research/book-library', { data: 'invalid' })).status()).toBe(400);
   const logout = await context.request.delete('/api/research/auth');
   expect(logout.status()).toBe(200);
-  expect((await context.request.get('/api/research/book-library')).status()).toBe(401);
+  expect((await context.request.get('/api/khateeb/library')).status()).toBe(503);
   expect((await context.request.post('/api/research/book-library', { data: 'invalid' })).status()).toBe(401);
 });

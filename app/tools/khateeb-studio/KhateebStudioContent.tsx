@@ -61,7 +61,10 @@ import { checkSeriesOriginality } from "./engine/originalityGuard";
 import SessionNotesEditor from "./SessionNotesEditor";
 import AllKhateebNotesPanel from "./AllKhateebNotesPanel";
 import SessionDeliveryHistory from "./SessionDeliveryHistory";
+import type { CustomSermonProject } from "./engine/customSermonProject";
 import CustomSermonWorkspace from "./CustomSermonWorkspace";
+import dynamic from "next/dynamic";
+const PublicBookLibrary = dynamic(() => import("./BookLibraryPanel"), { ssr: false });
 import KhateebScriptText from "./KhateebScriptText";
 import KhateebPrimaryArabic from "./KhateebPrimaryArabic";
 import KhateebQuranTranslation from "./KhateebQuranTranslation";
@@ -172,6 +175,8 @@ export default function KhateebStudioContent({
   const [liveTopicError, setLiveTopicError] = useState("");
   const [notesLibraryOpen, setNotesLibraryOpen] = useState(false);
   const [customWorkspaceOpen, setCustomWorkspaceOpen] = useState(false);
+  const [bookDraft, setBookDraft] = useState<CustomSermonProject>();
+  const [publicLibraryOpen, setPublicLibraryOpen] = useState(false);
   const topicResultRef = useRef<HTMLElement | null>(null);
 
   const filteredSpeakers = useMemo(() => {
@@ -1192,6 +1197,7 @@ export default function KhateebStudioContent({
               type="button"
               onClick={() => {
                 setCustomWorkspaceOpen((value) => !value);
+                setPublicLibraryOpen(false);
                 setNotesLibraryOpen(false);
               }}
               className="inline-flex items-center gap-2 rounded-xl bg-[#1A3A2A] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#244E38]"
@@ -1199,10 +1205,14 @@ export default function KhateebStudioContent({
               <PenLine className="h-4 w-4" />
               {ur ? "میری مجلس / میرا موضوع" : "My sermon / my topic"}
             </button>
+            <button type="button" aria-expanded={publicLibraryOpen} onClick={() => { setPublicLibraryOpen(value => !value); setCustomWorkspaceOpen(false); setNotesLibraryOpen(false); }} className="inline-flex items-center gap-2 rounded-xl border border-[#31513a]/30 bg-white px-4 py-2 text-sm font-semibold text-[#31513a] dark:bg-[#162a1e] dark:text-[#b9d4bf]">
+              <BookOpen className="h-4 w-4" />{ur ? "کتابی ذخیرہ" : "Book library"}
+            </button>
             <button
               type="button"
               onClick={() => {
                 setNotesLibraryOpen((value) => !value);
+                setPublicLibraryOpen(false);
                 setCustomWorkspaceOpen(false);
               }}
               className="inline-flex items-center rounded-xl border border-[#B8935A]/35 bg-white px-4 py-2 text-sm font-semibold text-[#6f5730] shadow-sm hover:bg-[#fbf7ee] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#e2c895]"
@@ -1219,9 +1229,14 @@ export default function KhateebStudioContent({
           />
         ) : null}
 
+        {publicLibraryOpen ? <section className="mb-8 rounded-2xl border border-[#31513a]/20 bg-white p-5 dark:bg-[#102017]">
+          <h2 className="mb-4 text-xl font-bold">{ur ? "کتابی ذخیرہ — تلاش، حوالہ اور موضوعاتی تیاری" : "Book library — search, sources and topic preparation"}</h2>
+          <PublicBookLibrary locale={ur ? "ur" : "en"} onCreateDraft={project => { setBookDraft(project); setPublicLibraryOpen(false); setCustomWorkspaceOpen(true); }} />
+        </section> : null}
+
         {customWorkspaceOpen ? (
           <div className="mb-8">
-            <CustomSermonWorkspace locale={ur ? "ur" : "en"} />
+            <CustomSermonWorkspace locale={ur ? "ur" : "en"} initialProject={bookDraft} onInitialProjectApplied={() => setBookDraft(undefined)} />
           </div>
         ) : null}
 

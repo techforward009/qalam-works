@@ -1,0 +1,226 @@
+[
+  {
+    "angleId": "meaning",
+    "sourceId": "nahj-ar",
+    "recordId": "nahj-ar:saying:109",
+    "sourceSha256": "ee18dac9861a2698664973b714fd3fa3d5b64a5d6754e0150e2fdf528700d3b0",
+    "recordSha256": "f4713c1b4cfec619db02b411e84559257c80563c108b8a9c635072204a24abbd",
+    "paragraphNumbers": [
+      2
+    ],
+    "referenceLabelUr": "نہج البلاغہ، حکمت 55؛ اس فائل کا فہرستی اندراج 109",
+    "referenceLabelEn": "Nahj al-Balagha, saying 55; file entry 109"
+  },
+  {
+    "angleId": "meaning",
+    "sourceId": "nahj-ur",
+    "recordId": "nahj-ur:saying:109",
+    "sourceSha256": "a3a6bdf97805036f2620335909ba38c5afc4fd01c563b08c3f36085e35b364ce",
+    "recordSha256": "64bd4faf8aa10d6600dd8cb850a6f82d4b1511923d9bb717f1f5575ab1e5d5e1",
+    "paragraphNumbers": [
+      2
+    ],
+    "referenceLabelUr": "نہج البلاغہ، حکمت 55؛ اس فائل کا فہرستی اندراج 109",
+    "referenceLabelEn": "Nahj al-Balagha, saying 55; file entry 109"
+  },
+  {
+    "angleId": "meaning",
+    "sourceId": "nahj-letters-sayings-en",
+    "recordId": "nahj-letters-sayings-en:saying:55",
+    "sourceSha256": "756edad7433ae2f919d3907f2a763ce43248205bee8f580ad87efaa125dd3e2d",
+    "recordSha256": "1549dac8dd5ec0c1f97ae5322098e7689d3221a86adb3fe1c481f4de727fb8d1",
+    "paragraphNumbers": [
+      1
+    ],
+    "referenceLabelUr": "نہج البلاغہ، حکمت 55",
+    "referenceLabelEn": "Nahj al-Balagha, saying 55"
+  },
+  {
+    "angleId": "faith",
+    "sourceId": "nahj-ar",
+    "recordId": "nahj-ar:saying:163",
+    "sourceSha256": "ee18dac9861a2698664973b714fd3fa3d5b64a5d6754e0150e2fdf528700d3b0",
+    "recordSha256": "f2f1ce1eb94e883dcd3a0ef2898f3b93ae563fbee26ab3b62ab683affa4ac495",
+    "paragraphNumbers": [
+      2
+    ],
+    "referenceLabelUr": "نہج البلاغہ، حکمت 82؛ اس فائل کا فہرستی اندراج 163",
+    "referenceLabelEn": "Nahj al-Balagha, saying 82; file entry 163"
+  },
+  {
+    "angleId": "faith",
+    "sourceId": "nahj-ur",
+    "recordId": "nahj-ur:saying:163",
+    "sourceSha256": "a3a6bdf97805036f2620335909ba38c5afc4fd01c563b08c3f36085e35b364ce",
+    "recordSha256": "ffc9067788c5e1ed81ede2c7eed87e998aeb52abfd5bba0e5bcc4516957c4ee0",
+    "paragraphNumbers": [
+      2
+    ],
+    "referenceLabelUr": "نہج البلاغہ، حکمت 82؛ اس فائل کا فہرستی اندراج 163",
+    "referenceLabelEn": "Nahj al-Balagha, saying 82; file entry 163"
+  },
+  {
+    "angleId": "faith",
+    "sourceId": "nahj-letters-sayings-en",
+    "recordId": "nahj-letters-sayings-en:saying:82",
+    "sourceSha256": "756edad7433ae2f919d3907f2a763ce43248205bee8f580ad87efaa125dd3e2d",
+    "recordSha256": "bfee7a6eadb78c2c9bcfba094fecfecf653e1b07ddf793909b2d8564b0f63f79",
+    "paragraphNumbers": [
+      2
+    ],
+    "referenceLabelUr": "نہج البلاغہ، حکمت 82",
+    "referenceLabelEn": "Nahj al-Balagha, saying 82"
+  },
+  {
+    "angleId": "hardship",
+    "sourceId": "sahifa-ar",
+    "recordId": "sahifa-ar:supplication:7",
+    "sourceSha256": "3967d8fca0995bc0f519cfacb211c74c1e3f2600403a42debed8323355970f7c",
+    "recordSha256": "597810f4fef06e550205fcce1e028977797679c1eb891dfd2520bc696c5b2ef7",
+    "paragraphNumbers": [
+      8,
+      9
+    ],
+    "referenceLabelUr": "صحیفۂ سجادیہ، دعا 7",
+    "referenceLabelEn": "Sahifa Sajjadiyya, supplication 7"
+  },
+  {
+    "angleId": "hardship",
+    "sourceId": "sahifa-ur",
+    "recordId": "sahifa-ur:supplication:7",
+    "sourceSha256": "799c3a88407d942864f0fb0b42f4631f70ce373a638ebe8abe64f48d684878d7",
+    "recordSha256": "a8fc4170a98164c23d6d62a011a6e65c26505fb67abda7cdd7f69396224ed3c9",
+    "paragraphNumbers": [
+      8,
+      9
+    ],
+    "referenceLabelUr": "صحیفۂ سجادیہ، دعا 7",
+    "referenceLabelEn": "Sahifa Sajjadiyya, supplication 7"
+  },
+  {
+    "angleId": "hardship",
+    "sourceId": "sahifa-en",
+    "recordId": "sahifa-en:supplication:7",
+    "sourceSha256": "7a49e0eb1042e06bc69104e501e9587dae6f1663c37a4b3c0ab1020964c64184",
+    "recordSha256": "032996258f4a5ba2cd97575766c89dd73710fba2eb05b5a726077fb7d1db5c2a",
+    "paragraphNumbers": [
+      46,
+      47,
+      48
+    ],
+    "referenceLabelUr": "صحیفۂ سجادیہ، دعا 7",
+    "referenceLabelEn": "Sahifa Sajjadiyya, supplication 7"
+  },
+  {
+    "angleId": "justice",
+    "sourceId": "sahifa-ar",
+    "recordId": "sahifa-ar:supplication:20",
+    "sourceSha256": "3967d8fca0995bc0f519cfacb211c74c1e3f2600403a42debed8323355970f7c",
+    "recordSha256": "b97d238a746fe7344fa6d56c3e70789e9cde0061c7007392de0ae837efbf3c2b",
+    "paragraphNumbers": [
+      15,
+      16
+    ],
+    "referenceLabelUr": "صحیفۂ سجادیہ، دعا 20",
+    "referenceLabelEn": "Sahifa Sajjadiyya, supplication 20"
+  },
+  {
+    "angleId": "justice",
+    "sourceId": "sahifa-ur",
+    "recordId": "sahifa-ur:supplication:20",
+    "sourceSha256": "799c3a88407d942864f0fb0b42f4631f70ce373a638ebe8abe64f48d684878d7",
+    "recordSha256": "4bf881e2f7f0df73dbefcc70f0bbc4af6bd4eecdd2a9414dbe350d3b96cc10f7",
+    "paragraphNumbers": [
+      14,
+      15
+    ],
+    "referenceLabelUr": "صحیفۂ سجادیہ، دعا 20",
+    "referenceLabelEn": "Sahifa Sajjadiyya, supplication 20"
+  },
+  {
+    "angleId": "justice",
+    "sourceId": "sahifa-en",
+    "recordId": "sahifa-en:supplication:20",
+    "sourceSha256": "7a49e0eb1042e06bc69104e501e9587dae6f1663c37a4b3c0ab1020964c64184",
+    "recordSha256": "a77c6ca110da13af11c96caa5f6ab4c763caa6b89f1edeac175861620cfb38ac",
+    "paragraphNumbers": [
+      234,
+      235
+    ],
+    "referenceLabelUr": "صحیفۂ سجادیہ، دعا 20",
+    "referenceLabelEn": "Sahifa Sajjadiyya, supplication 20"
+  },
+  {
+    "angleId": "hope",
+    "sourceId": "sahifa-ar",
+    "recordId": "sahifa-ar:supplication:28",
+    "sourceSha256": "3967d8fca0995bc0f519cfacb211c74c1e3f2600403a42debed8323355970f7c",
+    "recordSha256": "5438dba9a0214b25621c46ece96f724094afa527ecf3172a60317248fa8775e9",
+    "paragraphNumbers": [
+      4
+    ],
+    "referenceLabelUr": "صحیفۂ سجادیہ، دعا 28",
+    "referenceLabelEn": "Sahifa Sajjadiyya, supplication 28"
+  },
+  {
+    "angleId": "hope",
+    "sourceId": "sahifa-ur",
+    "recordId": "sahifa-ur:supplication:28",
+    "sourceSha256": "799c3a88407d942864f0fb0b42f4631f70ce373a638ebe8abe64f48d684878d7",
+    "recordSha256": "f0905b6e96faf641a226c419fb37530cbf916d4cfbc65f1d69ad7e734e8dd66c",
+    "paragraphNumbers": [
+      5
+    ],
+    "referenceLabelUr": "صحیفۂ سجادیہ، دعا 28",
+    "referenceLabelEn": "Sahifa Sajjadiyya, supplication 28"
+  },
+  {
+    "angleId": "hope",
+    "sourceId": "sahifa-en",
+    "recordId": "sahifa-en:supplication:28",
+    "sourceSha256": "7a49e0eb1042e06bc69104e501e9587dae6f1663c37a4b3c0ab1020964c64184",
+    "recordSha256": "cb49ee43922c6ee0a649849d00b74277629d2fb27d125f94746d8ed2af88fb6b",
+    "paragraphNumbers": [
+      40,
+      41
+    ],
+    "referenceLabelUr": "صحیفۂ سجادیہ، دعا 28",
+    "referenceLabelEn": "Sahifa Sajjadiyya, supplication 28"
+  },
+  {
+    "angleId": "effort",
+    "sourceId": "nahj-ar",
+    "recordId": "nahj-ar:saying:305",
+    "sourceSha256": "ee18dac9861a2698664973b714fd3fa3d5b64a5d6754e0150e2fdf528700d3b0",
+    "recordSha256": "38ea2ad1548e5de0a17192bd3f5934ef399505197933eb3bf7bcfbe6dcde35de",
+    "paragraphNumbers": [
+      2
+    ],
+    "referenceLabelUr": "نہج البلاغہ، حکمت 153؛ اس فائل کا فہرستی اندراج 305",
+    "referenceLabelEn": "Nahj al-Balagha, saying 153; file entry 305"
+  },
+  {
+    "angleId": "effort",
+    "sourceId": "nahj-ur",
+    "recordId": "nahj-ur:saying:305",
+    "sourceSha256": "a3a6bdf97805036f2620335909ba38c5afc4fd01c563b08c3f36085e35b364ce",
+    "recordSha256": "75f148216eb4ba4a9a128781f78d49b4d238cc815c0f1647b5ffcb6d7f33d56d",
+    "paragraphNumbers": [
+      2
+    ],
+    "referenceLabelUr": "نہج البلاغہ، حکمت 153؛ اس فائل کا فہرستی اندراج 305",
+    "referenceLabelEn": "Nahj al-Balagha, saying 153; file entry 305"
+  },
+  {
+    "angleId": "effort",
+    "sourceId": "nahj-letters-sayings-en",
+    "recordId": "nahj-letters-sayings-en:saying:153",
+    "sourceSha256": "756edad7433ae2f919d3907f2a763ce43248205bee8f580ad87efaa125dd3e2d",
+    "recordSha256": "54f33e3674173d82df7b49d358aac1c3f7db3f4bcb071133f7da1d1664ba111d",
+    "paragraphNumbers": [
+      1
+    ],
+    "referenceLabelUr": "نہج البلاغہ، حکمت 153",
+    "referenceLabelEn": "Nahj al-Balagha, saying 153"
+  }
+]
