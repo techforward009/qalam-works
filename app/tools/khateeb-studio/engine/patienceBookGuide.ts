@@ -1,5 +1,5 @@
 import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
-import bindings from "./patienceBookBindings.json";
+import bindings from "../../../lib/knowledge/patienceBookBindings.json";
 import { createBookExcerpt, bookExcerptText, type BookExcerpt, type BookRecord, type BookSource } from "./bookLibrary";
 import { createCustomSermonProject } from "./customSermonProject";
 import type { SermonDuration } from "./sermonPrep";

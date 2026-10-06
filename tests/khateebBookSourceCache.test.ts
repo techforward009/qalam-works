@@ -1,7 +1,7 @@
 import { beforeEach, afterEach, it, expect, vi } from 'vitest';
-import { clearBookSourceCache, readBookSource } from '../app/api/khateeb/library/sourceCache';
-import { loadBookSource, type BookCatalog } from '../app/api/khateeb/library/store';
-vi.mock('../app/api/khateeb/library/store',()=>({loadBookSource:vi.fn()}));
+import { clearBookSourceCache, readBookSource } from '../app/lib/knowledge/sourceCache';
+import { loadBookSource, type BookCatalog } from '../app/lib/knowledge/store';
+vi.mock('../app/lib/knowledge/store',()=>({loadBookSource:vi.fn()}));
 const client={putObject:async()=>{},getObject:async()=>null,listObjects:async()=>[]};
 const catalog=(revision='one')=>({revision,manifest:{format:'qalam-foundational-corpus',version:1,sources:[],recordCount:0},paths:{}} as BookCatalog);
 beforeEach(()=>{clearBookSourceCache();vi.mocked(loadBookSource).mockReset();vi.mocked(loadBookSource).mockResolvedValue([])});

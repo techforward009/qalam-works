@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "../../lib/language-context";
+import KnowledgeAssistant from "../../components/knowledge/KnowledgeAssistant";
 import ResearchStudioGate from "./components/ResearchStudioGate";
 
 const INTRO = {
@@ -20,6 +21,7 @@ export default function ResearchStudioContent() {
         <p className={`max-w-2xl text-gray-700 dark:text-white ${language === "ur" ? "font-naskh" : ""}`}>{INTRO[language]}</p>
       </section>
       <div className="site-container">
+        <div className="mb-8"><KnowledgeAssistant locale={language} /></div>
         <ResearchStudioGate language={language} dir={dir} />
       </div>
     </main>

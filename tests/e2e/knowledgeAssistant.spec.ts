@@ -1,0 +1,55 @@
+import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import { retrieveKnowledge } from "../../app/lib/knowledge/retrieval";
+import { ahmedgrafQuranReference } from "../../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { resolvePatienceMaterials } from "../../app/tools/khateeb-studio/engine/patienceBookGuide";
+import type { BookRecord, BookSource } from "../../app/lib/knowledge/bookCorpus";
+const corpus = process.env.QALAM_BOOK_CORPUS_DIR;
+test.skip(!corpus, "Requires the real foundational corpus");
+for (const locale of ["ur", "en"] as const) for (const studio of ["khateeb", "research"] as const) test(`${locale} ${studio}: source question, exact context, copy and draft`, async ({ page }, testInfo) => {
+  const ur = locale === "ur"; const errors: string[] = []; page.on("pageerror", e => errors.push(e.message));
+  const sources: BookSource[] = JSON.parse(await readFile(`${corpus}/manifest.json`, "utf8")).sources;
+  const records: BookRecord[] = (await Promise.all(sources.map(s => readFile(`${corpus}/${s.id}.json`, "utf8").then(JSON.parse)))).flat();
+  await page.route("**/api/research/auth", route => route.fulfill({ json: { authenticated: false } }));
+  await page.route("**/api/khateeb/library**", route => {
+    const url = new URL(route.request().url()); const op = url.searchParams.get("op");
+    return route.fulfill({ json: op === "record" ? { record: records.find(r => r.id === url.searchParams.get("id")), source: sources.find(s => s.id === url.searchParams.get("sourceId")) } : op === "topic" ? resolvePatienceMaterials(records, sources, locale) : { ready: true, sources, recordCount: 2676 } });
+  });
+  let response: ReturnType<typeof retrieveKnowledge>;
+  await page.route("**/api/knowledge/ask", route => { const input = route.request().postDataJSON(); response = retrieveKnowledge({ ...input, records, sources, quran: ahmedgrafQuranReference.listAyahs(), quranSha256: ahmedgrafQuranReference.getMetadata().sourceSha256! }); return route.fulfill({ json: response }); });
+  await page.goto(`/tools/${studio}-studio`);
+  await page.getByRole("button", { name: ur ? "اردو" : "ENG", exact: true }).click();
+  if (studio === "khateeb") await page.getByRole("button", { name: ur ? "کتابی ذخیرہ" : "Book library", exact: true }).click();
+  const assistant = page.getByTestId("knowledge-assistant"); await expect(assistant).toBeVisible();
+  await assistant.getByRole("textbox").fill(ur ? "صبر کے بارے میں کیا مواد ہے؟" : "What source passages discuss patience?");
+  await assistant.getByRole("button", { name: ur ? "سوال کے مصادر تلاش کریں" : "Find sources for this question", exact: true }).click();
+  await expect(assistant.locator("article").first()).toBeVisible();
+  const count = await assistant.locator("article").count(); expect(count).toBeGreaterThan(0);
+  await expect(assistant.locator(".khateeb-book-ar .khateeb-muhammadi-quranic").first()).toHaveCSS("font-family", /Muhammadi Quranic/);
+  if (ur) await expect(assistant.locator(".khateeb-book-ur").first()).toHaveCSS("font-family", /Jameel Noori Nastaleeq/);
+  await expect(assistant).not.toContainText(".docx"); await expect(assistant).not.toContainText("word/document.xml");
+  await assistant.locator("article").filter({ has: page.locator(".khateeb-book-ur, .khateeb-book-en") }).first().getByRole("button").click();
+  const dialog = assistant.getByRole("dialog"); await expect(dialog).toBeVisible();
+  expect(await dialog.locator(".border-2").count()).toBe(1);
+  await dialog.getByRole("button", { name: ur ? "بند کریں" : "Close", exact: true }).click();
+  await assistant.getByRole("checkbox").first().uncheck();
+  await page.evaluate(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => { (window as any).knowledgeCopy = text; } } }));
+  await assistant.getByRole("button", { name: ur ? "منتخب مواد اور حوالے نقل کریں" : "Copy selected sources", exact: true }).click();
+  const copy = await page.evaluate(() => (window as any).knowledgeCopy); expect(copy).toContain(response!.passages[1].text); expect(copy).not.toContain(".docx");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)).toBe(false);
+  await page.screenshot({ path: testInfo.outputPath(`${studio}-${locale}.png`) });
+  if (studio === "khateeb") {
+    await assistant.getByRole("button", { name: ur ? "منتخب مصادر سے میری مجلس بنائیں" : "Create my sermon from selected sources", exact: true }).click();
+    const workspace = page.getByTestId("custom-sermon-workspace"); await expect(workspace).toBeVisible();
+    const stored = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith("qalam-khateeb-custom-v1:")).map(k => JSON.parse(localStorage[k])));
+    expect(stored).toHaveLength(1); expect(stored[0].bookExcerpts.length).toBeGreaterThan(0);
+    await page.reload(); await page.getByRole("button", { name: ur ? "میری مجلس / میرا موضوع" : "My sermon / my topic", exact: true }).click();
+    await page.evaluate(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text: string) => { (window as any).knowledgeCopy = text; } } }));
+    await workspace.getByRole("button", { name: ur ? "مکمل مسودہ نقل کریں" : "Copy full draft", exact: true }).click();
+    expect(await page.evaluate(() => (window as any).knowledgeCopy)).toContain(response!.passages.find(p => p.excerpt)!.text);
+    await page.evaluate(() => { window.print = () => { (window as any).knowledgePrinted = true; }; });
+    await workspace.getByRole("button", { name: ur ? "مسودہ پرنٹ کریں / PDF محفوظ کریں" : "Print draft / Save PDF", exact: true }).click();
+    expect(await page.evaluate(() => (window as any).knowledgePrinted)).toBe(true);
+  }
+  expect(errors).toEqual([]);
+});

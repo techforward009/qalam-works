@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import BookPassageText from "./BookPassageText";
 import BookTopicGuide from "./BookTopicGuide";
+import KnowledgeAssistant from "../../components/knowledge/KnowledgeAssistant";
 import type { CustomSermonProject } from "./engine/customSermonProject";
 import ResearchStudioGate from "../research-studio/components/ResearchStudioGate";
 import { renderKhateebSalawat } from "./KhateebScriptText";
@@ -95,6 +96,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
     } catch { setError(ur ? "اقتباس شامل نہیں ہوسکا؛ مختصر انتخاب کریں یا محفوظ اقتباسات کی تعداد کم کریں۔" : "The excerpt could not be added. Select fewer paragraphs or remove some saved excerpts."); }
   }
   return <div data-testid="book-library" className="space-y-4" dir={ur ? "rtl" : "ltr"}>
+    <KnowledgeAssistant locale={locale} onCreateDraft={onCreateDraft} />
     <p className="text-sm leading-7">{ur ? "نہج البلاغہ اور صحیفہ سجادیہ کے فراہم کردہ نسخوں میں تلاش کریں۔ حوالہ کتاب میں درج خطبے، حکمت یا دعا کے نمبر کے مطابق ہے۔ ترجمہ اور موجودہ حواشی کو ماخذ کی نسبت کے ساتھ پڑھیں۔" : "Search the supplied editions of Nahj al-Balagha and Sahifa Sajjadiyya. References use the section number given in the book. Read translations and existing commentary with their source attribution."}</p>
     <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss} />
     {error ? <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p> : null}

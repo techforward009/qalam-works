@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import bindings from "../app/tools/khateeb-studio/engine/patienceBookBindings.json";
+import bindings from "../app/lib/knowledge/patienceBookBindings.json";
 import { resolvePatienceMaterials, createPatienceBookDraft, patienceGuideText } from "../app/tools/khateeb-studio/engine/patienceBookGuide";
 import { bookExcerptText, type BookSource, type BookRecord } from "../app/tools/khateeb-studio/engine/bookLibrary";
 import { buildCustomSermonText, parseCustomSermonProject, serializeCustomSermonProject } from "../app/tools/khateeb-studio/engine/customSermonProject";
