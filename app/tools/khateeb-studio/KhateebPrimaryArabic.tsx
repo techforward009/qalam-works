@@ -38,8 +38,8 @@ export default function KhateebPrimaryArabic({
 
   return (
     <>
-      <div className="khateeb-muhammadi-quranic text-lg leading-[2.1] text-[#1A3A2A] dark:text-[#e7eee9]">
-        <KhateebScriptText text={text} forceArabic />
+      <div className={`${kind === "quran" ? "khateeb-muhammadi-quranic" : "qalam-book-arabic"} text-lg leading-[2.1] text-[#1A3A2A] dark:text-[#e7eee9]`}>
+        <KhateebScriptText text={text} forceArabic nonQuran={kind !== "quran"} />
       </div>
       {kind === "quran" && quranLocation ? (
         <KhateebQuranTranslation location={quranLocation} />

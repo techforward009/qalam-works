@@ -44,9 +44,13 @@ export function preparedSourceLines(preparation: PreparedSessionMaterial, locale
  }
  return lines;
 }
-export function preparedArabicSourceTexts(preparation: PreparedSessionMaterial): Set<string | undefined> {
+export function preparedQuranSourceTexts(preparation: PreparedSessionMaterial): Set<string | undefined> {
  const texts = new Set(preparation.quran.map(({surah, ayah}) => ahmedgrafQuranReference.getAyah(surah, ayah)?.text));
  for (const group of preparation.quranGroups ?? []) texts.add(group.locations.map(({surah, ayah}) => ahmedgrafQuranReference.getAyah(surah, ayah)?.text).join(' '));
+ return texts;
+}
+export function preparedArabicSourceTexts(preparation: PreparedSessionMaterial): Set<string | undefined> {
+ const texts = preparedQuranSourceTexts(preparation);
  for (const excerpt of preparation.primaryExcerpts ?? []) texts.add(excerpt.arabic);
  if (preparation.hadithId) texts.add(verifiedHadithForDossierText(preparation.hadithId)?.exactArabic);
  return texts;

@@ -896,6 +896,7 @@ export default function KhateebStudioContent({
                                   <div dir="rtl" className="mt-3 rounded-lg bg-[#F7F5EF] px-3 py-2 text-sm leading-8 text-[#1A3A2A] dark:bg-[#0e1c15] dark:text-[#e7eee9]">
                                     <KhateebScriptText
                                       text={candidate.exactPageText}
+                                      nonQuran
                                       forcePersian={/[پچژگک]/u.test(candidate.exactPageText)}
                                       forceArabic={!/[پچژگک]/u.test(candidate.exactPageText)}
                                     />
@@ -1121,6 +1122,7 @@ export default function KhateebStudioContent({
                                       <div dir="rtl" className="mt-2 text-sm leading-8 text-[#1A3A2A] dark:text-[#e7eee9]">
                                         <KhateebScriptText
                                           text={item.sourceExcerpt}
+                                      nonQuran
                                           forcePersian={/[پچژگک]/u.test(item.sourceExcerpt)}
                                           forceArabic={!/[پچژگک]/u.test(item.sourceExcerpt)}
                                         />
@@ -1130,6 +1132,7 @@ export default function KhateebStudioContent({
                                   <div dir="rtl" className="rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
                                     <KhateebScriptText
                                       text={ur ? item.detailUr : item.detailEn}
+                                      nonQuran
                                       forcePersian={/[پچژگک]/u.test(ur ? item.detailUr : item.detailEn)}
                                       forceArabic={!/[پچژگک]/u.test(ur ? item.detailUr : item.detailEn)}
                                     />
@@ -1138,7 +1141,7 @@ export default function KhateebStudioContent({
                               ) : item.arabic ? (
                                 <>
                                   <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
-                                    <KhateebScriptText text={item.arabic} forceArabic />
+                                    <KhateebScriptText text={item.arabic} forceArabic nonQuran={item.kind !== "quran"} />
                                     {item.kind === "quran" && item.quranLocation ? (
                                       <KhateebQuranTranslation location={item.quranLocation} />
                                     ) : null}
@@ -1956,7 +1959,7 @@ export default function KhateebStudioContent({
                                 </div>
                                 {block.arabic ? (
                                   <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
-                                    <KhateebScriptText text={block.arabic} forceArabic />
+                                    <KhateebScriptText text={block.arabic} forceArabic nonQuran={block.kind !== "quran"} />
                                     {block.kind === "quran" && block.quranLocation ? (
                                       <KhateebQuranTranslation location={block.quranLocation} />
                                     ) : null}
@@ -2084,7 +2087,7 @@ export default function KhateebStudioContent({
                               ) : verifiedHadith?.exactArabic ? (
                                 <>
                                   <div dir="rtl" className="mt-3 rounded-lg bg-white px-4 py-3 text-sm leading-8 text-[#1A3A2A] dark:bg-[#162a1e] dark:text-[#e7eee9]">
-                                    <KhateebScriptText text={verifiedHadith.exactArabic} forceArabic />
+                                    <KhateebScriptText text={verifiedHadith.exactArabic} forceArabic nonQuran />
                                   </div>
                                   {(ur ? verifiedHadith.translationUr : verifiedHadith.translationEn) ? (
                                     <div className="mt-3 rounded-lg border border-[#B8935A]/20 bg-[#fffdf8] px-3 py-3 text-sm leading-8 text-[#445247] dark:border-[#6f5b35] dark:bg-[#201d15] dark:text-[#d7e1d9]">
@@ -2258,7 +2261,7 @@ export default function KhateebStudioContent({
                               className="mt-3 rounded-lg border-s-4 border-[#B8935A] bg-[#F7F5EF] px-4 py-2 text-sm text-[#303830] dark:bg-[#0e1c15] dark:text-[#d7e1d9]"
                             >
                               {ur
-                                ? <KhateebScriptText text={perspective.originalSnippet} forceArabic />
+                                ? <KhateebScriptText text={perspective.originalSnippet} forceArabic nonQuran />
                                 : perspective.originalSnippet}
                             </blockquote>
                           ) : null}

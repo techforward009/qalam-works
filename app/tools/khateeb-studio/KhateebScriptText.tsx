@@ -40,12 +40,12 @@ function PersianSpan({ children }: { children: string }) {
   );
 }
 
-function ArabicSpan({ children }: { children: string }) {
+function ArabicSpan({ children, nonQuran = false }: { children: string; nonQuran?: boolean }) {
   return (
     <span
       dir="rtl"
       lang="ar"
-      className="khateeb-muhammadi-quranic"
+      className={nonQuran ? "qalam-book-arabic" : "khateeb-muhammadi-quranic"}
     >
       {renderKhateebSalawat(children)}
     </span>
@@ -57,16 +57,18 @@ export default function KhateebScriptText({
   forceArabic = false,
   forcePersian = false,
   forceUrdu = false,
+  nonQuran = false,
 }: {
   text: string;
   forceArabic?: boolean;
   forcePersian?: boolean;
   forceUrdu?: boolean;
+  nonQuran?: boolean;
 }) {
   if (!forceUrdu && (forcePersian || (!forceArabic && looksLikePersianText(text)))) {
     return <PersianSpan>{text}</PersianSpan>;
   }
-  if (forceArabic) return <ArabicSpan>{text}</ArabicSpan>;
+  if (forceArabic) return <ArabicSpan nonQuran={nonQuran}>{text}</ArabicSpan>;
 
   const parts = text.split(GUILLEMETS);
   if (parts.length === 1) return <>{renderKhateebSalawat(text)}</>;
@@ -75,7 +77,7 @@ export default function KhateebScriptText({
     part.startsWith("«") &&
     part.endsWith("»") &&
     looksLikeArabicReligiousText(part)
-      ? <ArabicSpan key={`${index}-${part}`}>{part}</ArabicSpan>
+      ? <ArabicSpan key={`${index}-${part}`} nonQuran={nonQuran}>{part}</ArabicSpan>
       : <span key={index}>{renderKhateebSalawat(part)}</span>,
   );
 

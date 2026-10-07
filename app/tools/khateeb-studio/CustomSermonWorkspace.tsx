@@ -663,7 +663,7 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
                               </div>
                               {item.arabic ? (
                                 <div dir="rtl" className="mt-2 rounded-md bg-white px-3 py-2 text-sm leading-8 dark:bg-[#162a1e]">
-                                  <KhateebScriptText text={item.arabic} forceArabic />
+                                  <KhateebScriptText text={item.arabic} forceArabic nonQuran={item.kind !== "quran"} />
                                 </div>
                               ) : null}
                               <p className="mt-2 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">
@@ -779,7 +779,7 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
                                 </div>
                                 {item.arabic ? (
                                   <div dir="rtl" className="mt-2 text-sm leading-8">
-                                    <KhateebScriptText text={item.arabic} forceArabic />
+                                    <KhateebScriptText text={item.arabic} forceArabic nonQuran={item.kind !== "quran"} />
                                   </div>
                                 ) : null}
                                 <div className="mt-2 text-[11px] text-[#6f5730] dark:text-[#d7bc8a]">
