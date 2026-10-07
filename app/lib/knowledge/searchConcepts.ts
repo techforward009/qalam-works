@@ -51,7 +51,7 @@ const rows: readonly [string, string, string, string][] = [
  ['trust-god','توکل','Reliance on God','توکل|tawakkul|reliance|توكل|يتوكل'],
  ['grief','غم اور مصیبت','Grief and hardship','غم|مصیبت|صدمہ|grief|hardship|مصيبه|حزن|محنه|بلاء'],
  ['illness','بیماری','Illness','بیماری|مرض|illness|sickness|المرض|مريض'],
- ['self-restraint','ضبطِ نفس','Self-restraint','ضبط نفس|ضبطِ نفس|خواہش|خواہشات|self restraint|desire|هوي|شهوه|شهوات'],
+ ['self-restraint','ضبطِ نفس','Self-restraint','ضبط نفس|ضبطِ نفس|خواہش|خواہشات|self restraint|desire|هوي|شهوه|شهوات|حلم|الحلم|كظم|كظم الغيظ|الحلم والرفق'],
  ['youth','نوجوان','Youth','نوجوان|جوان|youth|young|شاب|شباب'],
  ['leadership','امامت و رہنمائی','Leadership','امامت|leadership|imamate|امامه|الامامه'],
  ['oppression','ظلم','Oppression','ظلم|oppression|ظالم|الظلم|مظلوم'],

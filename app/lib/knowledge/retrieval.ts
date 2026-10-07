@@ -50,7 +50,7 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
     && (!reference || (reference.kind === "hadith" ? record.book === "kafi" : record.kind === reference.kind && bookRecordNumber(record) === reference.number)));
   const units = new Map(searchRecords.map(record => [record.id, bookSearchUnits(record)]));
   const lexicalDocuments = [...searchRecords.flatMap(record => units.get(record.id)!.map(unit => ({ text: unit.text, heading: record.title }))), ...((scope === "all" || scope === "quran") ? input.quran.map(a => ({ text: a.text })) : [])];
-  const lexicalScores = !exact && !reference && !quranRef ? rankLexicalDocuments(lexicalDocuments, groups, direct, groups.slice(0, topics.length)) : [];
+  const lexicalScores = !exact && !reference && !quranRef ? rankLexicalDocuments(lexicalDocuments, groups, direct, input.inferredTopicIds?.length && (input.candidateLimit ?? 8) > 8 ? [] : groups.slice(0, topics.length)) : [];
   const rankedScores = new Map<string, number>();
   lexicalDocuments.forEach((doc, i) => { if ((lexicalScores[i] ?? 0) > (rankedScores.get(doc.text) ?? 0)) rankedScores.set(doc.text, lexicalScores[i]); });
   const candidates: { passage: KnowledgePassage; score: number; section: string }[] = [];

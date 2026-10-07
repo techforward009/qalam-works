@@ -68,3 +68,10 @@ it('offers separate complete narrations from one chapter for relevance selection
  expect(result.passages.map(p=>p.paragraphId)).toEqual(expect.arrayContaining(['p1','p3']));
  expect(result.passages.find(p=>p.paragraphId==='p1')?.text).toContain('ومن تمام الخبر');
 });
+
+it('allows one inferred central topic to supply candidates before semantic relevance judgment',()=>{
+ const r={...record,title:'باب الغضب',paragraphs:[{id:'anger',text:'1- لا تغضب فإن الغضب يفسد الإيمان.'}]};
+ const result=retrieveKnowledge({question:'فوراً جواب دے کر پچھتاتا ہوں',inferredTopicIds:['anger','self-restraint'],candidateLimit:16,scope:'kafi',locale:'ur',records:[r],sources:[source],quran:[],quranSha256:''});
+ expect(result.status).toBe('evidence');
+ expect(result.passages[0].paragraphId).toBe('anger');
+});
