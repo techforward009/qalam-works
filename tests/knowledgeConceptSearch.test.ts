@@ -61,3 +61,10 @@ it.runIf(Boolean(corpus))('retrieves source-bound evidence from interpreted coll
   }
  }
 },30000);
+
+it('offers separate complete narrations from one chapter for relevance selection',()=>{
+ const result=retrieveKnowledge({question:'اولاد',candidateLimit:16,scope:'kafi',locale:'ur',records:[record],sources:[source],quran:[],quranSha256:''});
+ expect(result.passages).toHaveLength(2);
+ expect(result.passages.map(p=>p.paragraphId)).toEqual(expect.arrayContaining(['p1','p3']));
+ expect(result.passages.find(p=>p.paragraphId==='p1')?.text).toContain('ومن تمام الخبر');
+});

@@ -16,7 +16,7 @@ export type KnowledgePassage = {
 export type KnowledgeResult = {
   question: string; contextQuestion?: string; research?: KnowledgeResearchAnswer; status: "evidence" | "not-found" | "unsupported-fatwa";
   method: "lexical-topic-expansion" | "lexical-bm25-topic-expansion"; passages: KnowledgePassage[];
-  expandedTerms: string[]; availableCollections: string[]; searchTopics?: SearchTopic[]; questionUnderstanding?: "model" | "lexical";
+  expandedTerms: string[]; availableCollections: string[]; searchTopics?: SearchTopic[]; questionUnderstanding?: "model" | "lexical"; passageRanking?: "model" | "lexical";
 };
 export type QuranInput = { surah: number; ayah: number; text: string; suppliedTranslation?: KnowledgePassage["suppliedTranslation"] };
 export function queryTerms(question: string): { direct: string[]; groups: string[][] } {
@@ -30,7 +30,7 @@ function explicitReference(question: string) {
   const kind = /saying|حكمت|حکمت/u.test(match[0]) ? "saying" : /sermon|خطب/u.test(match[0]) ? "sermon" : /letter|مكتوب/u.test(match[0]) ? "letter" : /حديث|hadith/u.test(match[0]) ? "hadith" : "supplication";
   return { kind, number: Number(match[1]) };
 }
-export function retrieveKnowledge(input: { question: string; inferredTopicIds?: readonly string[]; scope: KnowledgeScope; locale: "ur" | "en"; records: readonly BookRecord[]; sources: readonly BookSource[]; quran: readonly QuranInput[]; quranSha256: string }): KnowledgeResult {
+export function retrieveKnowledge(input: { question: string; inferredTopicIds?: readonly string[]; candidateLimit?: number; scope: KnowledgeScope; locale: "ur" | "en"; records: readonly BookRecord[]; sources: readonly BookSource[]; quran: readonly QuranInput[]; quranSha256: string }): KnowledgeResult {
   const { question, scope, locale } = input;
   const { direct, groups, topics } = planKnowledgeQuery(question, input.inferredTopicIds);
   const base = { question, method: "lexical-bm25-topic-expansion" as const, expandedTerms: [...new Set(groups.flat())], searchTopics: topics, availableCollections: [...new Set([...(input.quran.length ? ["quran"] : []), ...input.sources.map(s => s.book)])] };
@@ -84,7 +84,7 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
       const excerpt = createBookExcerpt(record, source, selected.map(p => p.id));
       excerpt.referenceLabelUr = bookRecordReference(record, "ur", paragraph.id);
       excerpt.referenceLabelEn = bookRecordReference(record, "en", paragraph.id);
-      candidates.push({ score: value, section: matchingChapters.has(record.id) ? paragraph.id : `${record.book}:${record.kind}:${bookRecordNumber(record) ?? record.id}:${record.language}`, passage: { id: excerpt.id, collection: record.book, language: record.language, referenceUr: bookRecordReference(record, "ur", paragraph.id), referenceEn: bookRecordReference(record, "en", paragraph.id), text: selected.map(p => p.text).join("\n"), sourceSha256: source.sha256, recordId: record.id, sourceId: source.id, paragraphId: paragraph.id, excerpt, translator: source.translator } });
+      candidates.push({ score: value, section: matchingChapters.has(record.id) || (input.candidateLimit ?? 8) > 8 ? `${record.id}:${paragraph.id}` : `${record.book}:${record.kind}:${bookRecordNumber(record) ?? record.id}:${record.language}`, passage: { id: excerpt.id, collection: record.book, language: record.language, referenceUr: bookRecordReference(record, "ur", paragraph.id), referenceEn: bookRecordReference(record, "en", paragraph.id), text: selected.map(p => p.text).join("\n"), sourceSha256: source.sha256, recordId: record.id, sourceId: source.id, paragraphId: paragraph.id, excerpt, translator: source.translator } });
     });
   }
   if (scope === "all" || scope === "quran") for (const ayah of input.quran) {
@@ -96,7 +96,8 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
   const eligible = candidates.filter(c => c.score >= (candidates[0]?.score ?? 0) * .55);
   const chosen: typeof candidates = [];
   const sections = new Set<string>();
-  const add = (c: typeof candidates[number]) => { if (!sections.has(c.section) && chosen.length < 8) { chosen.push(c); sections.add(c.section); } };
+  const limit = Math.min(16, Math.max(1, input.candidateLimit ?? 8));
+  const add = (c: typeof candidates[number]) => { if (!sections.has(c.section) && chosen.length < limit) { chosen.push(c); sections.add(c.section); } };
   for (const collection of ["quran", "nahj", "sahifa", "kafi"]) for (const lang of ["ar", locale]) {
     const first = eligible.find(c => c.passage.collection === collection && c.passage.language === lang);
     if (first) add(first);
@@ -124,7 +125,7 @@ export function retrieveKnowledgeWithContext(input: Parameters<typeof retrieveKn
   const passages: KnowledgePassage[] = [];
   const ids = new Set<string>();
   for (let index = 0; index < Math.max(current.passages.length, previous.passages.length); index++) {
-    for (const p of [current.passages[index], previous.passages[index]]) if (p && !ids.has(p.id) && passages.length < 8) { ids.add(p.id); passages.push(p); }
+    for (const p of [current.passages[index], previous.passages[index]]) if (p && !ids.has(p.id) && passages.length < Math.min(16, input.candidateLimit ?? 8)) { ids.add(p.id); passages.push(p); }
   }
   return { ...current, contextQuestion: input.contextQuestion, status: passages.length ? "evidence" : "not-found", passages, expandedTerms: [...new Set([...current.expandedTerms, ...previous.expandedTerms])], availableCollections: [...new Set([...current.availableCollections, ...previous.availableCollections])], searchTopics: [...new Map([...(current.searchTopics ?? []), ...(previous.searchTopics ?? [])].map(t => [t.id, t])).values()] };
 }

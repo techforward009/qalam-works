@@ -120,6 +120,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
         ur ? "تحقیقی خلاصہ اس وقت تیار نہیں ہوسکا؛ اصل عبارتیں اور حوالے نیچے دستیاب ہیں۔" : "The research summary is currently unavailable; original passages and references remain available below."
       }</p> : null}
       {result.questionUnderstanding === "model" ? <p className="text-sm leading-7">{ur ? "سوال کا مفہوم سمجھ کر متعلقہ موضوعات میں تلاش کی گئی ہے۔" : "The question was interpreted to search related topics."}</p> : null}
+      {result.passageRanking === "model" ? <p className="text-sm leading-7">{ur ? "عبارتیں سوال سے مطابقت کے مطابق منتخب اور مرتب کی گئی ہیں۔" : "Passages were selected and ordered by relevance to your question."}</p> : null}
       {result.searchTopics?.length ? <p className="text-sm leading-7">{ur ? "تلاش کی جہتیں: " : "Search topics: "}{result.searchTopics.map(t => ur ? t.labelUr : t.labelEn).join(ur ? "، " : ", ")}</p> : null}
       {result.passages.map(p => <article key={p.id} className="rounded-lg border border-emerald-900/20 bg-white p-4 dark:bg-[#162a1e]">
         <label className="flex items-start gap-2 text-sm font-semibold"><input type="checkbox" checked={selected.includes(p.id)} onChange={e => setSelected(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} /><span className="qalam-source-reference">{ur ? p.referenceUr : p.referenceEn}</span></label>
