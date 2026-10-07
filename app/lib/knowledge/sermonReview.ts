@@ -1,4 +1,4 @@
-import { fetchSermonProvider } from "./sermonProviderFetch";
+import { fetchSermonProvider, sermonProviderSignal } from "./sermonProviderFetch";
 import { reviewedResearchClaims, type AnswerInput, type KnowledgeSynthesisProvider, type ResearchClaim } from "./researchAnswer";
 
 export const SERMON_REVIEW_MODEL = "qwen/qwen3.8-27b";
@@ -12,6 +12,7 @@ export const SENTENCE_REVIEW_PROMPT = [
   "Use the supplied translation as the meaning being checked. Do not invent a new translation, correct source text, upgrade authenticity, infer a ruling, or silently fill missing context.",
   "Mark supported only if every substantive assertion in that sentence is established by its attached evidence. Name the matching attached integer source refs. Mark unsupported if even one assertion is unsupported or contradicts a source.",
   "Mark nonfactual only for a greeting, transition, question, invitation to reflect, or prayer that makes no source assertion. Practical advice may be nonfactual only when explicitly framed as an invitation and without any asserted religious obligation, promised consequence or attributed teaching. A rhetorical question containing a factual premise must have that premise checked.",
+  "Wire format: each sentence uses i for its index, v for verdict (s=supported, u=unsupported, n=nonfactual), r for reason (e=entailed, n=nonfactual, c=contradiction, u=not-in-evidence, i=invented-reference, a=authenticity-upgrade, f=inferred-fatwa), and refs for supporting source integers.",
   "Review every index exactly once. Do not omit a short sentence. Use reason entailed for supported, nonfactual for nonfactual, and contradiction, not-in-evidence, invented-reference, authenticity-upgrade or inferred-fatwa for unsupported."
 ].join(" ");
 
@@ -55,7 +56,28 @@ export function parseSentenceReviews(raw: unknown, input: AnswerInput, claims: r
   return reviewedResearchClaims(result, claims) === null ? null : result;
 }
 
-export function createSermonSentenceReviewer(options: { apiKey?: string; fetchImpl?: typeof fetch }): KnowledgeSynthesisProvider | null {
+export function parseCompactSentenceReviews(raw: unknown, input: AnswerInput, claims: readonly ResearchClaim[]) {
+  if (!raw || typeof raw !== "object" || !Array.isArray((raw as {reviews?:unknown}).reviews)) return null;
+  const verdicts: Record<string,string> = {s:"supported",u:"unsupported",n:"nonfactual"};
+  const reasons: Record<string,string> = {e:"entailed",n:"nonfactual",c:"contradiction",u:"not-in-evidence",i:"invented-reference",a:"authenticity-upgrade",f:"inferred-fatwa"};
+  const reviews=[];
+  for (const item of (raw as {reviews:unknown[]}).reviews) {
+    if (!item || typeof item !== "object") return null;
+    const review=item as {claimId:unknown;sentences:unknown};
+    if (typeof review.claimId!=="string" || !Array.isArray(review.sentences)) return null;
+    const sentences=[];
+    for (const item of review.sentences) {
+      if (!item || typeof item!=="object") return null;
+      const sentence=item as {i:unknown;v:unknown;r:unknown;refs:unknown};
+      if (typeof sentence.v!=="string" || !Object.hasOwn(verdicts,sentence.v) || typeof sentence.r!=="string" || !Object.hasOwn(reasons,sentence.r)) return null;
+      sentences.push({index:sentence.i,verdict:verdicts[sentence.v],reason:reasons[sentence.r],refs:sentence.refs});
+    }
+    reviews.push({claimId:review.claimId,sentences});
+  }
+  return parseSentenceReviews({reviews},input,claims);
+}
+
+export function createSermonSentenceReviewer(options: { apiKey?: string; fetchImpl?: typeof fetch; deadline?:number }): KnowledgeSynthesisProvider | null {
   if (!options.apiKey?.trim()) return null;
   const fetchImpl = options.fetchImpl ?? fetch;
   return {
@@ -72,16 +94,16 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
         ref: e.ref, reference: input.locale === "ur" ? e.passage.referenceUr : e.passage.referenceEn,
         originalText: e.passage.text, language: e.passage.language, suppliedTranslation: e.passage.suppliedTranslation,
       }));
-      const reviewBudget = Math.min(7000, Math.max(1600, sections.reduce((n, s) => n + s.sentences.length, 0) * 35 + 1000));
+      const reviewBudget = Math.min(4500, Math.max(1200, sections.reduce((n, s) => n + s.sentences.length, 0) * 20 + 800));
       const schema = { type: "object", additionalProperties: false, required: ["reviews"], properties: {
         reviews: { type: "array", minItems: claims.length, maxItems: claims.length, items: {
           type: "object", additionalProperties: false, required: ["claimId", "sentences"], properties: {
             claimId: { type: "string", enum: claims.map(c => c.id) },
             sentences: { type: "array", minItems: 1, maxItems: 150, items: {
-              type: "object", additionalProperties: false, required: ["index", "verdict", "reason", "refs"], properties: {
-                index: { type: "integer", minimum: 1, maximum: 150 },
-                verdict: { type: "string", enum: ["supported", "unsupported", "nonfactual"] },
-                reason: { type: "string", enum: ["entailed", "nonfactual", "contradiction", "not-in-evidence", "invented-reference", "authenticity-upgrade", "inferred-fatwa"] },
+              type: "object", additionalProperties: false, required: ["i", "v", "r", "refs"], properties: {
+                i: { type: "integer", minimum: 1, maximum: 150 },
+                v: { type: "string", enum: ["s", "u", "n"] },
+                r: { type: "string", enum: ["e", "n", "c", "u", "i", "a", "f"] },
                 refs: { type: "array", maxItems: 8, items: { type: "integer", enum: input.evidence.map(e => e.ref) } },
               },
             } },
@@ -89,19 +111,19 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
         } },
       } };
       const response = await fetchSermonProvider("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST", headers: { Authorization: `Bearer ${options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(45_000),
+        method: "POST", headers: { Authorization: `Bearer ${options.apiKey}`, "Content-Type": "application/json" }, signal: sermonProviderSignal(options.deadline),
         body: JSON.stringify({ model: SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", reasoning_format: "hidden", max_completion_tokens: reviewBudget,
           response_format: { type: "json_schema", json_schema: { name: "sermon_sentence_audit", strict: true, schema } },
           messages: [{ role: "system", content: SENTENCE_REVIEW_PROMPT }, { role: "user", content: JSON.stringify({ locale: input.locale, evidence, sections }) }],
         }),
       }, fetchImpl);
-      if (!response.ok) { console.warn("Sermon sentence review", { status: response.status }); await response.body?.cancel(); throw new Error("provider-unavailable"); }
+      if (!response.ok) { console.warn("Sermon sentence review", { status: response.status }); await response.body?.cancel(); throw new Error(response.status===429?"provider-rate-limited":"provider-unavailable"); }
       if (!response.body) throw new Error("provider-unavailable");
       const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let bytes = 0;
       while (true) { const chunk = await reader.read(); if (chunk.done) break; bytes += chunk.value.length; if (bytes > 160_000) { await reader.cancel(); throw new Error("provider-format"); } chunks.push(chunk.value); }
       const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
       const content = body.choices?.[0]?.message?.content;
-      const checked = parseSentenceReviews(typeof content === "string" ? JSON.parse(content) : content, input, claims);
+      const checked = parseCompactSentenceReviews(typeof content === "string" ? JSON.parse(content) : content, input, claims);
       if (!checked) throw new Error("provider-format");
       return checked;
     },

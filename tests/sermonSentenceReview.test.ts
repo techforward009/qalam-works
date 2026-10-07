@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { createSermonSentenceReviewer, parseSentenceReviews, sermonSentences } from "../app/lib/knowledge/sermonReview";
+import { createSermonSentenceReviewer, parseSentenceReviews, parseCompactSentenceReviews, sermonSentences } from "../app/lib/knowledge/sermonReview";
 import type { AnswerInput, ResearchClaim } from "../app/lib/knowledge/researchAnswer";
 
 const input: AnswerInput = { question: "صبر", locale: "ur", evidence: [
@@ -34,11 +34,11 @@ it("requires explicit consistent reasons and refuses an unnumbered audit", () =>
   expect(parseSentenceReviews({ supported: true }, input, claims)).toBeNull();
 });
 it("uses a separate source-only reasoning request and never returns model reasoning as sermon text", async () => {
-  const fetchMock = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(review()), reasoning: "not part of the response" } }] })));
+  const fetchMock = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(compactReview()), reasoning: "not part of the response" } }] })));
   const provider = createSermonSentenceReviewer({ apiKey: "test-key", fetchImpl: fetchMock })!;
   expect(await provider.review(input, claims)).toEqual({ reviews: [{ claimId: "section-1", verdict: "unsupported", reason: "contradiction" }] });
   const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
-  expect(body.max_completion_tokens).toBe(1600);
+  expect(body.max_completion_tokens).toBe(1200);
   expect(body.reasoning_effort).toBe("low"); expect(body.reasoning_format).toBe("hidden");
   expect(body.messages[0].content).toContain("reverses the exception");
   const request = JSON.parse(body.messages[1].content);
@@ -48,8 +48,17 @@ it("uses a separate source-only reasoning request and never returns model reason
 });
 it("fails closed on provider rejection and incomplete review output", async () => {
   const rejected = createSermonSentenceReviewer({ apiKey: "test", fetchImpl: vi.fn(async () => new Response("", { status: 429 })) })!;
-  await expect(rejected.review(input, claims)).rejects.toThrow("provider-unavailable");
+  await expect(rejected.review(input, claims)).rejects.toThrow("provider-rate-limited");
   const malformed = createSermonSentenceReviewer({ apiKey: "test", fetchImpl: vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: '{"reviews":[]}' } }] }))) })!;
   await expect(malformed.review(input, claims)).rejects.toThrow("provider-format");
   expect(createSermonSentenceReviewer({ apiKey: "" })).toBeNull();
+});
+
+const compactReview=()=>({reviews:[{claimId:"section-1",sentences:[{i:1,v:"n",r:"n",refs:[]},{i:2,v:"u",r:"c",refs:[1]}]}]});
+it("compact audits retain every sentence, own-source scope and reasons",()=>{
+ expect(parseCompactSentenceReviews(compactReview(),input,claims)).toEqual(parseSentenceReviews(review(),input,claims));
+ const missing=compactReview();missing.reviews[0].sentences.pop();expect(parseCompactSentenceReviews(missing,input,claims)).toBeNull();
+ const wrong=compactReview();wrong.reviews[0].sentences[1].v="s";wrong.reviews[0].sentences[1].r="e";wrong.reviews[0].sentences[1].refs=[2];expect(parseCompactSentenceReviews(wrong,input,claims)).toBeNull();
+ const invalid=compactReview();invalid.reviews[0].sentences[1].r="__proto__";expect(parseCompactSentenceReviews(invalid,input,claims)).toBeNull();
+ expect(parseCompactSentenceReviews(review(),input,claims)).toBeNull();
 });

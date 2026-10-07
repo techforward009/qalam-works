@@ -17,6 +17,6 @@ export async function POST(req:NextRequest){
  const caller=req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()??"anonymous";const key=createHash("sha256").update(caller).digest("hex");const now=Date.now();const window=windows.get(key);if(active>=2||window&&now-window.at<60000&&window.count>=3)return json({code:"busy"},429);
  if(windows.size>=256&&!windows.has(key))windows.delete(windows.keys().next().value!);windows.set(key,{at:window&&now-window.at<60000?window.at:now,count:window&&now-window.at<60000?window.count+1:1});active++;
  try{const input={...b,title:b.title.trim()} as SermonRequest;const evidence=await collectSermonEvidence(input.title,input.locale,caller);const project=await composeSermon(input,evidence,{env:{GROQ_API_KEY:process.env.GROQ_API_KEY,CLOUDFLARE_ACCOUNT_ID:process.env.CLOUDFLARE_ACCOUNT_ID,CLOUDFLARE_AUTH_TOKEN:process.env.CLOUDFLARE_AUTH_TOKEN}});return json({project});}
- catch(error){const code=error instanceof Error&&["missing-translation","no-evidence","insufficient-draft","generation-unavailable","unverified","unsupported-fatwa","not-configured"].includes(error.message)?error.message:"unavailable";return json({code},503);}
+ catch(error){if(error instanceof Error&&error.message==="provider-rate-limited")return json({code:"busy"},429);const code=error instanceof Error&&["missing-translation","no-evidence","insufficient-draft","generation-unavailable","unverified","unsupported-fatwa","not-configured"].includes(error.message)?error.message:"unavailable";return json({code},503);}
  finally{active--;}
 }
