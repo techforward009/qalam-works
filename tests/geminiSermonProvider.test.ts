@@ -44,3 +44,24 @@ it('does not exceed three provider requests when both models are unavailable',as
  expect((await fetchSermonProvider('ignored',init,adapter,async()=>{})).status).toBe(503);
  expect(models).toEqual(['gemini-3.8-flash','gemini-3.7-flash','gemini-3.7-flash']);
 });
+
+it('reaches the alternate model after an attempt times out before the overall deadline',async()=>{
+ const {fetchSermonProvider}=await import('../app/lib/knowledge/sermonProviderFetch');const models:string[]=[];
+ const adapter=geminiSermonFetch(async(_url,request)=>{
+  models.push(JSON.parse(request!.body as string).model);
+  if(models.length===1)return await new Promise<Response>((_resolve,reject)=>request!.signal!.addEventListener('abort',()=>reject(request!.signal!.reason),{once:true}));
+  return Response.json({status:'completed',steps:[{type:'model_output',content:[{type:'text',text:'{}'}]}]});
+ },10);
+ const result=await fetchSermonProvider('ignored',{...init,signal:AbortSignal.timeout(1000)},adapter,async()=>{});
+ expect(result.ok).toBe(true);expect(models).toEqual(['gemini-3.8-flash','gemini-3.7-flash']);
+});
+it('preserves overall cancellation instead of starting the alternate model',async()=>{
+ const {fetchSermonProvider}=await import('../app/lib/knowledge/sermonProviderFetch');const controller=new AbortController();let calls=0;
+ const adapter=geminiSermonFetch(async()=>{calls++;controller.abort(new Error('cancelled'));throw controller.signal.reason;},1000);
+ await expect(fetchSermonProvider('ignored',{...init,signal:controller.signal},adapter,async()=>{})).rejects.toThrow('cancelled');expect(calls).toBe(1);
+});
+it('does not retry malformed completed output on another model',async()=>{
+ const {fetchSermonProvider}=await import('../app/lib/knowledge/sermonProviderFetch');let calls=0;
+ const adapter=geminiSermonFetch(async()=>{calls++;return Response.json({status:'completed',steps:[]});});
+ await expect(fetchSermonProvider('ignored',init,adapter,async()=>{})).rejects.toThrow('unavailable');expect(calls).toBe(1);
+});
