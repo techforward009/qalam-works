@@ -861,8 +861,9 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
       {active ? <section id="khateeb-custom-print-area" className="hidden" dir={ur ? "rtl" : "ltr"}>
         {buildCustomSermonText(active, locale).split("\n").map((line, index) => {
           const excerpt = active.bookExcerpts?.find(item => item.paragraphs.some(p => p.text.split("\n").includes(line)));
-          const arabic = PATIENCE_QURAN.some(q => q.text === line) || active.evidence.some(item => item.arabic === line);
-          return <div key={index} dir="auto" className="min-h-2 whitespace-pre-wrap break-words text-sm leading-8">{excerpt || arabic ? <BookPassageText text={line} language={arabic ? "ar" : excerpt!.language} /> : renderKhateebSalawat(line)}</div>;
+          const quran = PATIENCE_QURAN.some(q => q.text === line) || active.evidence.some(item => item.kind === "quran" && item.arabic === line);
+          const arabic = quran || active.evidence.some(item => item.arabic === line);
+          return <div key={index} dir="auto" className="min-h-2 whitespace-pre-wrap break-words text-sm leading-8">{excerpt || arabic ? <BookPassageText text={line} language={arabic ? "ar" : excerpt!.language} quran={quran} /> : renderKhateebSalawat(line)}</div>;
         })}
       </section> : null}
     </section>
