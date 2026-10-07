@@ -1,3 +1,5 @@
+import { planKnowledgeQuery, type SearchTopic } from "./searchConcepts";
+import { bookSearchUnits } from "./sourceUnits";
 import { rankLexicalDocuments } from "./lexicalRanking";
 import { researchSummaryText, type KnowledgeResearchAnswer } from "./researchAnswer";
 import { bookRecordReference, bookRecordNumber, kafiHadithNumber, createBookExcerpt, normalizeBookSearch, type BookExcerpt, type BookRecord, type BookSource } from "./bookCorpus";
@@ -14,34 +16,11 @@ export type KnowledgePassage = {
 export type KnowledgeResult = {
   question: string; contextQuestion?: string; research?: KnowledgeResearchAnswer; status: "evidence" | "not-found" | "unsupported-fatwa";
   method: "lexical-topic-expansion" | "lexical-bm25-topic-expansion"; passages: KnowledgePassage[];
-  expandedTerms: string[]; availableCollections: string[];
+  expandedTerms: string[]; availableCollections: string[]; searchTopics?: SearchTopic[];
 };
 export type QuranInput = { surah: number; ayah: number; text: string; suppliedTranslation?: KnowledgePassage["suppliedTranslation"] };
-const concepts = [
-  ["صبر", "patience", "patient", "الصبر", "الصابرين", "صابر"],
-  ["دعا", "دعاء", "prayer", "supplication", "ادع", "دعوت"],
-  ["توبہ", "توبه", "repentance", "repent", "استغفار", "توب", "اغفر"],
-  ["موت", "death", "die", "الموت", "اموات"],
-  ["آخرت", "اخره", "hereafter", "قيامه", "القيامه", "الاخره"],
-  ["عدل", "justice", "انصاف", "العدل"],
-  ["امید", "اميد", "hope", "رجاء", "يرجو"],
-  ["شکر", "شكر", "gratitude", "grateful", "شكور", "تشكرون"],
-  ["تقوی", "تقوي", "piety", "متقين", "تقوا", "اتقوا"],
-  ["ایمان", "ايمان", "faith", "belief", "مومن", "مؤمن", "امنوا"],
-  ["صدقہ", "صدقه", "charity", "انفاق", "صدقات", "ينفقون"],
-  ["معافی", "معافي", "forgiveness", "forgive", "عفو", "صفح"],
-  ["اخلاص", "sincerity", "مخلص", "مخلصين"],
-  ["علم", "knowledge", "learning", "education", "تعليم", "يعلمون"],
-  ["غصہ", "غصه", "anger", "غضب", "غيظ", "الغضب"],
-  ["والدین", "والدين", "parents", "والدي", "والد", "والده", "الوالدين", "والديك", "الوالد", "الوالده", "ابويه"],
-  ["تربیت", "تربيه", "تربية", "upbringing", "parenting"],
-  ["اولاد", "بچے", "بچوں", "child", "children", "الولد", "الاولاد", "البنين", "البنات"],
-].map(group => [...new Set(group.map(normalizeBookSearch))]);
-const stop = new Set(normalizeBookSearch("کے کی کا کو سے میں پر اور ہے ہیں تھا کیا کیسے بارے متعلق بتائیں نے ایک ہمیں کس وہ یہ اپنے اپنی اس ان فرماتے فرمایا تعلیمات قرآن قران نہج البلاغہ صحیفہ سجادیہ امام علی اللہ مجھے واضح وضاحت عملی روزمرہ مثال مثالیں زندگی اطلاق تعلق ربط موازنہ تقابل اسی موضوع مزید خلاصہ چاہتا چاہتی چاہیے كريں تطبيق کریں the a an of in on about what how does did say said tell me and or is are to from please explain practical everyday daily life examples example application compare comparison relationship connection this topic further summarize summary source sources passages passage discuss material available books book related provide show quran nahj balagha sahifa sajjadiyya teachings").split(" "));
-
 export function queryTerms(question: string): { direct: string[]; groups: string[][] } {
-  const direct = [...new Set(normalizeBookSearch(question).split(" ").filter(t => t.length > 1 && !stop.has(t) && !/^\d+$/.test(t)))].slice(0, 24);
-  const groups = direct.map(term => concepts.find(g => g.includes(term)) ?? [term]);
+  const { direct, groups } = planKnowledgeQuery(question);
   return { direct, groups };
 }
 function explicitReference(question: string) {
@@ -53,8 +32,8 @@ function explicitReference(question: string) {
 }
 export function retrieveKnowledge(input: { question: string; scope: KnowledgeScope; locale: "ur" | "en"; records: readonly BookRecord[]; sources: readonly BookSource[]; quran: readonly QuranInput[]; quranSha256: string }): KnowledgeResult {
   const { question, scope, locale } = input;
-  const { direct, groups } = queryTerms(question);
-  const base = { question, method: "lexical-bm25-topic-expansion" as const, expandedTerms: [...new Set(groups.flat())], availableCollections: [...new Set([...(input.quran.length ? ["quran"] : []), ...input.sources.map(s => s.book)])] };
+  const { direct, groups, topics } = planKnowledgeQuery(question);
+  const base = { question, method: "lexical-bm25-topic-expansion" as const, expandedTerms: [...new Set(groups.flat())], searchTopics: topics, availableCollections: [...new Set([...(input.quran.length ? ["quran"] : []), ...input.sources.map(s => s.book)])] };
   if (/(?:فتوي|فتوا|fatwa|مرجع|مراجع|marja)/iu.test(normalizeBookSearch(question))) return { ...base, status: "unsupported-fatwa", passages: [] };
   const reference = explicitReference(question);
   const kafiVolume = normalizeBookSearch(question).match(/(?:جلد|volume)\s+(\d+)/u)?.[1];
@@ -66,8 +45,12 @@ export function retrieveKnowledge(input: { question: string; scope: KnowledgeSco
   const matchingChapters = !reference && chapterQuery.split(" ").length >= 2 ? new Set(eligibleRecords.filter(record => record.book === "kafi"
     && (!kafiVolume || record.reference.kafi?.volume === Number(kafiVolume))
     && normalizeBookSearch(record.reference.kafi?.chapterTitle ?? "").includes(chapterQuery)).map(record => record.id)) : new Set<string>();
-  const lexicalDocuments = [...eligibleRecords.flatMap(record => record.paragraphs.map(p => ({ text: p.text, heading: record.title }))), ...((scope === "all" || scope === "quran") ? input.quran.map(a => ({ text: a.text })) : [])];
-  const lexicalScores = !exact && !reference && !quranRef ? rankLexicalDocuments(lexicalDocuments, groups, direct) : [];
+  const searchRecords = eligibleRecords.filter(record => (!matchingChapters.size || matchingChapters.has(record.id))
+    && !(record.book === "kafi" && (record.kind === "front-matter" || kafiVolume && record.reference.kafi?.volume !== Number(kafiVolume)))
+    && (!reference || (reference.kind === "hadith" ? record.book === "kafi" : record.kind === reference.kind && bookRecordNumber(record) === reference.number)));
+  const units = new Map(searchRecords.map(record => [record.id, bookSearchUnits(record)]));
+  const lexicalDocuments = [...searchRecords.flatMap(record => units.get(record.id)!.map(unit => ({ text: unit.text, heading: record.title }))), ...((scope === "all" || scope === "quran") ? input.quran.map(a => ({ text: a.text })) : [])];
+  const lexicalScores = !exact && !reference && !quranRef ? rankLexicalDocuments(lexicalDocuments, groups, direct, groups.slice(0, topics.length)) : [];
   const rankedScores = new Map<string, number>();
   lexicalDocuments.forEach((doc, i) => { if ((lexicalScores[i] ?? 0) > (rankedScores.get(doc.text) ?? 0)) rankedScores.set(doc.text, lexicalScores[i]); });
   const candidates: { passage: KnowledgePassage; score: number; section: string }[] = [];
@@ -77,13 +60,14 @@ export function retrieveKnowledge(input: { question: string; scope: KnowledgeSco
     void heading;
     return rankedScores.get(text) ?? 0;
   }
-  for (const record of input.records) {
+  for (const record of searchRecords) {
     if (scope !== "all" && record.book !== scope || record.language !== "ar" && record.language !== locale) continue;
     const source = input.sources.find(s => s.id === record.sourceId && s.book === record.book && s.language === record.language);
     if (!source || record.book === "kafi" && (record.kind === "front-matter" || kafiVolume && record.reference.kafi?.volume !== Number(kafiVolume))) continue;
     if (reference && (reference.kind === "hadith" ? record.book !== "kafi" : record.kind !== reference.kind || bookRecordNumber(record) !== reference.number)) continue;
     if (matchingChapters.size && !matchingChapters.has(record.id)) continue;
-    record.paragraphs.forEach((paragraph, index) => {
+    units.get(record.id)?.forEach((unit, index) => {
+      const paragraph = unit.paragraph;
       if (record.book === "kafi" && [record.reference.kafi?.bookTitle, record.reference.kafi?.chapterTitle, record.reference.kafi?.sectionTitle].includes(paragraph.text)) return;
       // Printed contents entries are locators, not the hadith text they point to.
       if (record.book === "kafi" && (paragraph.text.match(/\//g)?.length ?? 0) >= 2 && /^\d+\s+باب\s+.+\s+\d+$/u.test(normalizeBookSearch(paragraph.text))) return;
@@ -91,17 +75,11 @@ export function retrieveKnowledge(input: { question: string; scope: KnowledgeSco
       if (reference?.kind === "hadith" && kafiHadithNumber(paragraph.text) !== reference.number) return;
       if (index === 0 && paragraph.text.length < 150 && record.paragraphs.length > 1 && /^\s*[(（][0-9۰-۹٠-٩]+[)）]/u.test(paragraph.text)) return;
       // Preserve the full paragraph within the existing portable excerpt limit.
-      if (paragraph.text.length > 150_000 || paragraph.text.trim().length < 15) return;
-      const value = reference ? 100 + score(paragraph.text) : matchingChapters.has(record.id) ? 100 : score(paragraph.text, record.title);
-      if (reference && exact && !score(paragraph.text) && !(record.book === "kafi" && normalizeBookSearch(record.reference.kafi?.chapterTitle ?? "").includes(exact))) return;
+      if (unit.text.length > 150_000 || unit.text.trim().length < 15) return;
+      const value = reference ? 100 + score(unit.text) : matchingChapters.has(record.id) ? 100 : score(unit.text, record.title);
+      if (reference && exact && !score(unit.text) && !(record.book === "kafi" && normalizeBookSearch(record.reference.kafi?.chapterTitle ?? "").includes(exact))) return;
       if (!value) return;
-      const selected = [paragraph];
-      if (record.book === "kafi" && kafiHadithNumber(paragraph.text) !== null && (matchingChapters.has(record.id) || reference?.kind === "hadith")) {
-        for (const following of record.paragraphs.slice(index + 1)) {
-          if (kafiHadithNumber(following.text) !== null || [record.reference.kafi?.bookTitle, record.reference.kafi?.chapterTitle, record.reference.kafi?.sectionTitle].includes(following.text)) break;
-          selected.push(following);
-        }
-      }
+      const selected = unit.paragraphs;
       if (selected.map(p => p.text).join("\n").length > 150_000) return;
       const excerpt = createBookExcerpt(record, source, selected.map(p => p.id));
       excerpt.referenceLabelUr = bookRecordReference(record, "ur", paragraph.id);
@@ -148,5 +126,5 @@ export function retrieveKnowledgeWithContext(input: Parameters<typeof retrieveKn
   for (let index = 0; index < Math.max(current.passages.length, previous.passages.length); index++) {
     for (const p of [current.passages[index], previous.passages[index]]) if (p && !ids.has(p.id) && passages.length < 8) { ids.add(p.id); passages.push(p); }
   }
-  return { ...current, contextQuestion: input.contextQuestion, status: passages.length ? "evidence" : "not-found", passages, expandedTerms: [...new Set([...current.expandedTerms, ...previous.expandedTerms])], availableCollections: [...new Set([...current.availableCollections, ...previous.availableCollections])] };
+  return { ...current, contextQuestion: input.contextQuestion, status: passages.length ? "evidence" : "not-found", passages, expandedTerms: [...new Set([...current.expandedTerms, ...previous.expandedTerms])], availableCollections: [...new Set([...current.availableCollections, ...previous.availableCollections])], searchTopics: [...new Map([...(current.searchTopics ?? []), ...(previous.searchTopics ?? [])].map(t => [t.id, t])).values()] };
 }

@@ -41,9 +41,13 @@ describe("shared evidence-first knowledge retrieval", () => {
   it.runIf(Boolean(corpus))("finds Arabic and Urdu passages across all three sources for an Urdu question", () => {
     const result = ask("صبر کے بارے میں قرآن اور نہج البلاغہ میں کیا مواد ہے؟");
     expect(result.status).toBe("evidence");
-    expect(new Set(result.passages.map(p => p.collection))).toEqual(new Set(["quran", "nahj", "sahifa"]));
+    expect(result.passages.map(p => p.collection)).toEqual(expect.arrayContaining(["quran", "nahj", "sahifa"]));
     expect(result.passages.some(p => p.language === "ur")).toBe(true);
-    for (const p of result.passages.filter(p => p.excerpt)) expect(records.find(r => r.id === p.recordId)!.paragraphs.find(x => x.id === p.paragraphId)!.text).toBe(p.text);
+    for (const p of result.passages.filter(p => p.excerpt)) {
+      const record = records.find(r => r.id === p.recordId)!;
+      expect(p.excerpt!.paragraphs.every(x => record.paragraphs.some(y => x.id === y.id && x.text === y.text))).toBe(true);
+      expect(p.text).toBe(p.excerpt!.paragraphs.map(x => x.text).join("\n"));
+    }
     expect(result.passages.length).toBeLessThanOrEqual(8);
   });
   it.runIf(Boolean(corpus))("uses canonical saying 55, not file entry 109, and returns the actual quote", () => {

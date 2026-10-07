@@ -39,3 +39,11 @@ Successful answers receive a unique generation ID, creation time and provider ID
 - Authoritative fiqh ingestion identifying marja, official source, edition/date, issue number, qualifications and authority status. Current marja/fatwa questions are refused; no ruling is inferred or attributed from this corpus.
 
 Existing immutable Blob paths and saved sermon formats stay compatible. Human references omit filenames, import ordinals and technical locators; snapshots retain hashes and paragraph IDs for source verification.
+
+## Concept search and complete source units
+
+The shared retrieval engine recognizes 54 curated multilingual topics, including Urdu phrases and selected Roman Urdu forms. This is deterministic topic expansion with BM25 ranking, not an embedding model. Two-topic questions require both topics in the source text or its original chapter heading; longer questions require at least two thirds of the recognized topics. Arabic matching uses bounded attached articles/pronouns instead of unrestricted internal substrings, and multiword concepts are matched as phrases.
+
+All Kafi searches index and return a printed numbered narration together with its following unnumbered paragraphs, stopping at the next printed number or source heading. Exact quotes within a continuation point back to that narration's printed anchor. Original paragraph IDs, text, fingerprints, volume, chapter, and hadith reference remain attached to saved excerpts. Front matter and printed contents are excluded from evidence. Exact references and quoted phrases retain strict matching. The interface shows the recognized search topics in the selected language; follow-ups retain topics from both independently retrieved questions.
+
+Validation covers the actual fifteen-source corpus, the eight original DOCX volumes, archive losslessness, chapter order, long Rawda continuations, quotation matching, saved-draft restore, and opening source context. Missing supplied translations still do not trigger invented translations.

@@ -36,10 +36,10 @@ describe("source-bound Kafi references", () => {
     expect(result.passages[0].text).toBe(records[0].paragraphs.slice(1, 3).map(p => p.text).join("\n"));
     expect(retrieve("جلد 7 حدیث 1").passages).toEqual([]);
   });
-  it("does not turn an import ordinal or an unnumbered continuation into a hadith number", () => {
+  it("does not treat import ordinals as hadith numbers and attaches continuations to their numbered source", () => {
     expect(bookRecordReference(records[1], "ur")).toBe("الکافی، جلد 6، باب تعليم الولد");
     expect(bookRecordReference(records[0], "ur", records[0].paragraphs[2].id)).not.toContain("حدیث");
-    expect(retrieve('"تتمة النص الأصلية"').passages[0].referenceUr).not.toContain("حدیث");
+    expect(retrieve('"تتمة النص الأصلية"').passages[0].referenceUr).toContain("حدیث 1");
   });
   it("matches a number and query in the same numbered paragraph", () => {
     expect(searchBookRecords(records, { book: "kafi", number: "۱", query: "العلم" }).total).toBe(0);
@@ -112,12 +112,15 @@ describe.runIf(Boolean(archivePath))("actual fifteen-source Kafi package", () =>
     expect(body.record.paragraphs.find((p: { id: string }) => p.id === passage.paragraphId).text).toBe(passage.text);
     expect(body.record.reference.printPage).toBeNull();
   });
-  it("retrieves the complete 9,013-character Rawda paragraph without inventing a chapter or continuation number", async () => {
+  it("retrieves the complete Rawda narration containing its 9,013-character continuation with the printed anchor", async () => {
     const archive = await parseBookArchive(await readFile(archivePath!));
     const rows = archive.records["kafi-v8-ar"];
     const long = rows.flatMap(r => r.paragraphs).find(p => p.text.length === 9013)!;
     const result = retrieve(`"${long.text.slice(8050, 8130)}"`, rows, archive.manifest.sources.filter(s => s.book === "kafi"));
-    expect(result.passages.some(p => p.text === long.text)).toBe(true);
+    const passage = result.passages.find(p => p.text.includes(long.text))!;
+    expect(passage).toBeDefined();
+    expect(passage.excerpt!.paragraphs.some(p => p.id === long.id && p.text === long.text)).toBe(true);
+    expect(passage.referenceUr).toContain("حدیث 1");
     expect(rows.every(r => r.reference.kafi!.chapterTitle === null && r.reference.kafi!.bookTitle === null)).toBe(true);
   });
   it("keeps the prior active catalog when any expanded-source write fails", async () => {
