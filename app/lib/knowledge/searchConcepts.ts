@@ -26,7 +26,7 @@ const rows: readonly [string, string, string, string][] = [
  ['lying','جھوٹ','Lying','جھوٹ|lying|lies|الكذب|كذب|jhoot'],
  ['trust','امانت','Trustworthiness','امانت|trustworthiness|امانه|الامانه|خيانة|خيانت'],
  ['promise','وعدہ','Promises','وعدہ|وعدے|promise|promises|وعد|الوفاء|عهد'],
- ['envy','حسد','Envy','حسد|envy|jealousy|الحسد|حاسد|hasad'],
+ ['envy','حسد','Envy','حسد|envy|jealousy|الحسد|حاسد|احسد|تحسد|تحاسد|hasad'],
  ['pride','تکبر','Arrogance','تکبر|غرور|arrogance|pride|تكبر|كبر|الكبر|متكبر'],
  ['humility','عاجزی','Humility','عاجزی|تواضع|humility|تواضع|خضوع|خاشع'],
  ['backbiting','غیبت','Backbiting','غیبت|backbiting|غيبه|اغتياب|غیبت کرنا'],

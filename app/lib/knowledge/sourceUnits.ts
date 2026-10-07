@@ -15,3 +15,9 @@ export function bookSearchUnits(record: BookRecord): BookSearchUnit[] {
  }
  return result;
 }
+
+/** Known printed prayer preambles identify the occasion, not the prayer body. */
+export function isBookLocator(record: BookRecord, unit: BookSearchUnit, index: number): boolean {
+ if (record.paragraphs.length > 1 && index === 0 && unit.text.length < 150 && /^\s*[(（][0-9۰-۹٠-٩]+[)）]/u.test(unit.text)) return true;
+ return record.book === "sahifa" && record.language === "ar" && index < 2 && /^(?:في |اذا |و كان |وكان )/u.test(normalizeBookSearch(unit.text));
+}

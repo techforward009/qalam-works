@@ -1,5 +1,5 @@
 import { planKnowledgeQuery, type SearchTopic } from "./searchConcepts";
-import { bookSearchUnits } from "./sourceUnits";
+import { bookSearchUnits, isBookLocator } from "./sourceUnits";
 import { rankLexicalDocuments } from "./lexicalRanking";
 import { researchSummaryText, type KnowledgeResearchAnswer } from "./researchAnswer";
 import { bookRecordReference, bookRecordNumber, kafiHadithNumber, createBookExcerpt, normalizeBookSearch, type BookExcerpt, type BookRecord, type BookSource } from "./bookCorpus";
@@ -50,6 +50,10 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
     && (!reference || (reference.kind === "hadith" ? record.book === "kafi" : record.kind === reference.kind && bookRecordNumber(record) === reference.number)));
   const units = new Map(searchRecords.map(record => [record.id, bookSearchUnits(record)]));
   const lexicalDocuments = [...searchRecords.flatMap(record => units.get(record.id)!.map(unit => ({ text: unit.text, heading: record.title }))), ...((scope === "all" || scope === "quran") ? input.quran.map(a => ({ text: a.text })) : [])];
+  const referenceFocus = reference ? planKnowledgeQuery(normalizeBookSearch(question).replace(/(?:حكمت|saying|sermon|خطبہ|خطبه|letter|مكتوب|دعا|supplication|حديث|hadith)\s+\d+/u, "")) : null;
+  const focusScores = referenceFocus?.groups.length && !exact ? rankLexicalDocuments(lexicalDocuments, referenceFocus.groups, referenceFocus.direct) : [];
+  const maxFocusScore = Math.max(0, ...focusScores);
+  const focusedScores = new Map(lexicalDocuments.map((doc, i) => [doc.text, maxFocusScore ? 50 * (focusScores[i] ?? 0) / maxFocusScore : 0]));
   const lexicalScores = !exact && !reference && !quranRef ? rankLexicalDocuments(lexicalDocuments, groups, direct, input.inferredTopicIds?.length && (input.candidateLimit ?? 8) > 8 ? [] : groups.slice(0, topics.length)) : [];
   const rankedScores = new Map<string, number>();
   lexicalDocuments.forEach((doc, i) => { if ((lexicalScores[i] ?? 0) > (rankedScores.get(doc.text) ?? 0)) rankedScores.set(doc.text, lexicalScores[i]); });
@@ -73,12 +77,10 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
       if (record.book === "kafi" && (paragraph.text.match(/\//g)?.length ?? 0) >= 2 && /^\d+\s+باب\s+.+\s+\d+$/u.test(normalizeBookSearch(paragraph.text))) return;
       if (matchingChapters.has(record.id) && kafiHadithNumber(paragraph.text) === null) return;
       if (reference?.kind === "hadith" && kafiHadithNumber(paragraph.text) !== reference.number) return;
-      if (index === 0 && paragraph.text.length < 150 && record.paragraphs.length > 1 && /^\s*[(（][0-9۰-۹٠-٩]+[)）]/u.test(paragraph.text)) return;
-      // A prayer's editorial occasion line is not its opening supplication.
-      if (reference?.kind === "supplication" && !exact && record.book === "sahifa" && record.language === "ar" && index < 2 && /^(?:في |اذا |و كان |وكان )/u.test(normalizeBookSearch(paragraph.text))) return;
+      if (!exact && isBookLocator(record, unit, index)) return;
       // Preserve the full paragraph within the existing portable excerpt limit.
       if (unit.text.length > 150_000 || unit.text.trim().length < 15) return;
-      const value = reference ? 100 + score(unit.text) : matchingChapters.has(record.id) ? 100 : score(unit.text, record.title);
+      const value = reference ? 100 + (focusedScores.get(unit.text) ?? 0) + score(unit.text) : matchingChapters.has(record.id) ? 100 : score(unit.text, record.title);
       if (reference && exact && !score(unit.text) && !(record.book === "kafi" && normalizeBookSearch(record.reference.kafi?.chapterTitle ?? "").includes(exact))) return;
       if (!value) return;
       const selected = unit.paragraphs;

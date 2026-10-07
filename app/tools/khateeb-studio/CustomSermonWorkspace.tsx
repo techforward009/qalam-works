@@ -19,6 +19,7 @@ import { PATIENCE_QURAN } from "./engine/patienceBookGuide";
 import BookPassageText from "./BookPassageText";
 import { bookExcerptText, bookExcerptReference, cleanBookTitle, type BookExcerpt } from "./engine/bookLibrary";
 import KhateebScriptText, { renderKhateebSalawat } from "./KhateebScriptText";
+import ReadySermonComposer from "./ReadySermonComposer";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
 import { CUSTOM_SERMON_ACTIVE_KEY, loadCustomProjects, buildCustomBackup, prepareCustomRestore, persistRestoredProjects, sortCustomProjects } from "./engine/customSermonStorage";
@@ -259,6 +260,7 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
 
   return (
     <section data-testid="custom-sermon-workspace" className="rounded-2xl border border-[#1A3A2A]/15 bg-[#f7faf7] p-5 dark:border-[#35513d] dark:bg-[#102017] sm:p-6">
+      <ReadySermonComposer locale={locale} project={active} onPrepared={replaceProject} onCopy={() => void copyActive()} onPrint={printActive} />
       <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss} />
       {storageError ? <p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">{storageError}</p> : null}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -288,6 +290,8 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
         </span>
       </div>
 
+      <details className="mt-5">
+        <summary className="cursor-pointer rounded-lg border p-3 font-semibold">{ur ? "میرے محفوظ نسخے اور اپنی تدوین" : "My saved versions and manual editing"}</summary>
       <div className="mt-5 grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
         <div className="space-y-4">
           <div className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
@@ -859,6 +863,7 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
           )}
         </div>
       </div>
+      </details>
       {active ? <section id="khateeb-custom-print-area" className="hidden" dir={ur ? "rtl" : "ltr"}>
         {buildCustomSermonText(active, locale).split("\n").map((line, index) => {
           const excerpt = active.bookExcerpts?.find(item => item.paragraphs.some(p => p.text.split("\n").includes(line)));

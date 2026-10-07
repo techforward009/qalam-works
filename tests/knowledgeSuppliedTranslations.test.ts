@@ -99,3 +99,20 @@ it.runIf(Boolean(corpus))("returns each short prayer body paragraph in canonical
  expect(long.passages.length).toBeLessThanOrEqual(8);
  expect(long.passages.filter(p=>p.language==="ar").length).toBeGreaterThan(1);
 });
+
+it.runIf(Boolean(corpus))("combines an exact prayer number with topic focus without escaping that prayer",()=>{
+ for(const question of ["دعا ۳۵ حسد", "supplication 35 envy"]){
+  const result=attachCorpusTranslations(ask(question,"sahifa"),records,sources,"ur");
+  const original=result.passages.find(p=>p.language==="ar")!;
+  expect(original.paragraphId).toBe("sahifa-ar:supplication:35:p4");
+  expect(original.suppliedTranslation?.paragraphIds).toEqual(["sahifa-ur:supplication:35:p3"]);
+  expect(result.passages.every(p=>p.recordId?.endsWith(":35"))).toBe(true);
+ }
+ expect(ask("دعا 999 حسد","sahifa").passages).toEqual([]);
+});
+it.runIf(Boolean(corpus))("excludes known prayer occasion headings in topic searches while preserving deliberately quoted headings",()=>{
+ const result=ask("توبہ","sahifa");
+ expect(result.passages.some(p=>p.paragraphId==="sahifa-ar:supplication:31:p2")).toBe(false);
+ const quoted=ask('دعا 31 "فِیْ ذِكْرِ التَّوْبَةِ وَ طَلَبِهَا"',"sahifa");
+ expect(quoted.passages.some(p=>p.paragraphId==="sahifa-ar:supplication:31:p2")).toBe(true);
+});
