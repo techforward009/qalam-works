@@ -19,7 +19,7 @@ export function renderKhateebSalawat(text: string): ReactNode {
 }
 
 export function looksLikePersianText(text: string): boolean {
-  return PERSIAN_EXCLUSIVE.test(text);
+  return PERSIAN_EXCLUSIVE.test(text) && !/[ںھہےٹڈڑ]/u.test(text);
 }
 
 export function looksLikeArabicReligiousText(text: string): boolean {
@@ -65,7 +65,7 @@ export default function KhateebScriptText({
   forceUrdu?: boolean;
   nonQuran?: boolean;
 }) {
-  if (!forceUrdu && (forcePersian || (!forceArabic && looksLikePersianText(text)))) {
+  if (!forceUrdu && forcePersian && looksLikePersianText(text)) {
     return <PersianSpan>{text}</PersianSpan>;
   }
   if (forceArabic) return <ArabicSpan nonQuran={nonQuran}>{text}</ArabicSpan>;

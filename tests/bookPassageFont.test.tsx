@@ -22,3 +22,17 @@ it('preserves the Quran font in the shared renderer', () => {
   const html = renderToStaticMarkup(<KhateebScriptText text="بسم الله الرحمن الرحيم" forceArabic />);
   expect(html).toContain('khateeb-muhammadi-quranic');
 });
+
+it('does not infer Persian from shared Urdu letters in commentary', () => {
+  const html = renderToStaticMarkup(<KhateebScriptText text="کاشانی صبر اور اخلاقی ذمہ داری کے بارے میں کہتے ہیں۔" />);
+  expect(html).not.toContain('font-vazirmatn');
+  expect(html).not.toContain('lang="fa"');
+});
+it('keeps Urdu commentary out of Persian even when forced by an old caller', () => {
+  const html = renderToStaticMarkup(<KhateebScriptText text="یہ صبر کی وضاحت ہے۔" forcePersian />);
+  expect(html).not.toContain('font-vazirmatn');
+});
+it('retains explicitly identified Persian source text', () => {
+  const html = renderToStaticMarkup(<KhateebScriptText text="پژوهش در اخلاق" forcePersian />);
+  expect(html).toContain('font-vazirmatn');
+});
