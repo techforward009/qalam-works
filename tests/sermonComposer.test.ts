@@ -1,7 +1,7 @@
 import type { AnswerInput, ResearchClaim } from "../app/lib/knowledge/researchAnswer";
 import type { SermonRequest } from "../app/lib/knowledge/sermonComposer";
 import { expect, it, vi } from "vitest";
-import { composeSermon, parseComposedSections, generateSermonSections } from "../app/lib/knowledge/sermonComposer";
+import { composeSermon, parseComposedSections, generateSermonSections, selectSermonEvidence } from "../app/lib/knowledge/sermonComposer";
 import type { KnowledgeResult } from "../app/lib/knowledge/retrieval";
 import { buildCustomSermonText, parseCustomSermonProject, serializeCustomSermonProject } from "../app/tools/khateeb-studio/engine/customSermonProject";
 const result:KnowledgeResult={question:"صبر",status:"evidence",method:"lexical-bm25-topic-expansion",expandedTerms:[],availableCollections:["quran"],passages:[{id:"quran:test:2:153",collection:"quran",language:"ar",referenceUr:"قرآن، 2:153",referenceEn:"Quran, 2:153",text:"يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ",sourceSha256:"a".repeat(64),quranLocation:{surah:2,ayah:153},translator:null,suppliedTranslation:{language:"ur",text:"اے ایمان والو صبر اور نماز سے مدد لو۔",translator:"فراہم کردہ مترجم"}}]};
@@ -74,7 +74,7 @@ it("allows a brief closing and deduplicates valid references without accepting u
  expect(fetchMock.mock.calls[0][0]).toBe("https://api.groq.com/openai/v1/chat/completions");
  const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
  expect(body.model).toBe("qwen/qwen3.8-27b");
- expect(body.max_tokens).toBe(5000);
+ expect(body.max_completion_tokens).toBe(5000);expect(body.max_tokens).toBeUndefined();
  expect(body.reasoning_effort).toBe("none");
  expect(body.reasoning_format).toBe("hidden");
  expect(body.response_format.json_schema.strict).toBe(true);
@@ -98,4 +98,9 @@ it("sends supplied meanings to the writer without duplicated original text or me
  await generateSermonSections(input,evidence,{GROQ_API_KEY:"test"},fetchMock);
  const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);const data=JSON.parse(body.messages[1].content);
  expect(data.evidence[0].meaning).toBe(result.passages[0].suppliedTranslation!.text);expect(data.evidence[0].text).toBeUndefined();expect(data.evidence[0].suppliedTranslation).toBeUndefined();
+});
+
+it("bounds sermon evidence with complete source units and unchanged verified translations",()=>{
+ const long={...result.passages[0],id:"too-long",text:"ع".repeat(7000)};
+ const chosen=selectSermonEvidence([long,...result.passages]);expect(chosen).toHaveLength(2);expect(chosen[0].passage).toBe(result.passages[0]);expect(chosen[0].ref).toBe(1);expect(chosen[1].ref).toBe(2);
 });

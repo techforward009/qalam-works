@@ -62,3 +62,24 @@ it("compact audits retain every sentence, own-source scope and reasons",()=>{
  const invalid=compactReview();invalid.reviews[0].sentences[1].r="__proto__";expect(parseCompactSentenceReviews(invalid,input,claims)).toBeNull();
  expect(parseCompactSentenceReviews(review(),input,claims)).toBeNull();
 });
+
+it("reviews long sections in bounded batches and checks every section before acceptance",async()=>{
+ const longClaims=Array.from({length:5},(_,i)=>({...claims[0],id:`section-${i+1}`,text:("نماز خشوع رکھنے والوں پر بھاری نہیں ہوتی۔ ").repeat(40)}));
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+  const body=JSON.parse(init!.body as string);const request=JSON.parse(body.messages[1].content);
+  expect(request.sections).toHaveLength(1);expect(request.evidence).toHaveLength(1);
+  return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({reviews:request.sections.map((s:{claimId:string;sentences:{index:number}[]})=>({claimId:s.claimId,sentences:s.sentences.map(x=>({i:x.index,v:"s",r:"e",refs:[1]}))}))})}}]}));
+ });
+ const smallerClaims=longClaims.map(c=>({...c,text:c.text.slice(0,1000)}));
+ const checked=await createSermonSentenceReviewer({apiKey:"test",fetchImpl:fetchMock})!.review(input,smallerClaims) as {reviews:unknown[]};
+ expect(checked.reviews).toHaveLength(5);expect(fetchMock).toHaveBeenCalledTimes(5);
+});
+it("does not accept earlier batches if a later batch is incomplete",async()=>{
+ const separate=Array.from({length:2},(_,i)=>({...claims[0],id:`section-${i+1}`,text:"نماز خشوع رکھنے والوں پر بھاری نہیں ہوتی۔ ".repeat(50)}));let calls=0;
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+  const request=JSON.parse(JSON.parse(init!.body as string).messages[1].content);
+  const reviews=calls++===0?request.sections.map((s:{claimId:string;sentences:{index:number}[]})=>({claimId:s.claimId,sentences:s.sentences.map(x=>({i:x.index,v:"s",r:"e",refs:[1]}))})):[];
+  return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({reviews})}}]}));
+ });
+ await expect(createSermonSentenceReviewer({apiKey:"test",fetchImpl:fetchMock})!.review(input,separate)).rejects.toThrow("provider-format");expect(fetchMock).toHaveBeenCalledTimes(2);
+});

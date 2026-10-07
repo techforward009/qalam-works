@@ -84,6 +84,24 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
     id: `groq:${SERMON_REVIEW_MODEL}:sentence-review:v1`,
     draft: async () => { throw new Error("review-only"); },
     async review(input, claims) {
+      if(!claims.length || claims.reduce((n,c)=>n+sermonSentences(c.text).length,0)>150)throw new Error("review-too-large");
+      const batches:ResearchClaim[][]=[];
+      for(const claim of claims){
+        const last=batches.at(-1);
+        if(last && last.reduce((n,c)=>n+c.text.length,0)+claim.text.length<=3000 && last.reduce((n,c)=>n+sermonSentences(c.text).length,0)+sermonSentences(claim.text).length<=30)last.push(claim);
+        else batches.push([claim]);
+      }
+      const reviews=[];
+      for(const batch of batches){
+        const checked=await reviewBatch(input,batch);
+        reviews.push(...checked.reviews);
+      }
+      const result={reviews};
+      if(reviewedResearchClaims(result,claims)===null)throw new Error("provider-format");
+      return result;
+    },
+  };
+  async function reviewBatch(input:AnswerInput,claims:readonly ResearchClaim[]){
       const sections = claims.map(claim => ({
         claimId: claim.id,
         sentences: sermonSentences(claim.text).map((text, i) => ({ index: i + 1, text })),
@@ -126,6 +144,5 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
       const checked = parseCompactSentenceReviews(typeof content === "string" ? JSON.parse(content) : content, input, claims);
       if (!checked) throw new Error("provider-format");
       return checked;
-    },
-  };
+  }
 }
