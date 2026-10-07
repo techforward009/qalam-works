@@ -108,7 +108,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
           <BookPassageText text={claim.text} language={locale} />
           <div className="flex flex-wrap gap-2">{claim.citations.map((ref, index) => {
             const p = result.passages.find(p => p.id === ref.passageId);
-            return p ? <button key={`${ref.passageId}-${index}`} className="rounded-md border border-emerald-800/30 px-2 py-1 text-sm underline" onClick={() => void openSource(p, ref.quote)}>{ur ? p.referenceUr : p.referenceEn} ({ur ? { ar: "عربی", ur: "اردو", en: "انگریزی" }[p.language] : { ar: "Arabic", ur: "Urdu", en: "English" }[p.language]})</button> : null;
+            return p ? <button key={`${ref.passageId}-${index}`} className="qalam-source-reference rounded-md border border-emerald-800/30 px-2 py-1 text-sm underline" onClick={() => void openSource(p, ref.quote)}>{ur ? p.referenceUr : p.referenceEn} ({ur ? { ar: "عربی", ur: "اردو", en: "انگریزی" }[p.language] : { ar: "Arabic", ur: "Urdu", en: "English" }[p.language]})</button> : null;
           })}</div>
         </div>)}
       </div> : result.research && result.status === "evidence" ? <p role="status" data-testid="knowledge-summary-status" className="rounded-lg border border-emerald-900/20 p-3 text-sm leading-7">{
@@ -120,7 +120,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
         ur ? "تحقیقی خلاصہ اس وقت تیار نہیں ہوسکا؛ اصل عبارتیں اور حوالے نیچے دستیاب ہیں۔" : "The research summary is currently unavailable; original passages and references remain available below."
       }</p> : null}
       {result.passages.map(p => <article key={p.id} className="rounded-lg border border-emerald-900/20 bg-white p-4 dark:bg-[#162a1e]">
-        <label className="flex items-start gap-2 text-sm font-semibold"><input type="checkbox" checked={selected.includes(p.id)} onChange={e => setSelected(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} /><span>{ur ? p.referenceUr : p.referenceEn}</span></label>
+        <label className="flex items-start gap-2 text-sm font-semibold"><input type="checkbox" checked={selected.includes(p.id)} onChange={e => setSelected(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} /><span className="qalam-source-reference">{ur ? p.referenceUr : p.referenceEn}</span></label>
         <p className="my-2 text-xs text-gray-600 dark:text-gray-300">{p.language === "ar" ? ur ? "اصل عربی عبارت" : "Arabic source text" : ur ? "فراہم کردہ ترجمہ / حواشی" : "Supplied translation / commentary"}{p.translator ? ` — ${p.translator}` : ""}</p>
         <BookPassageText text={p.text} language={p.language} />
         {p.suppliedTranslation ? <div className="mt-3 border-t border-emerald-900/15 pt-3"><p className="mb-2 text-xs">{ur ? "فراہم کردہ ترجمہ" : "Supplied translation"} — {p.suppliedTranslation.translator}</p><BookPassageText text={p.suppliedTranslation.text} language={p.suppliedTranslation.language} /></div> : null}
@@ -134,7 +134,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
       </div> : null}
     </div> : null}
     <dialog ref={dialog} onCancel={() => setOpened(null)} onClose={() => setOpened(null)} className="w-[min(92vw,850px)] max-h-[85vh] overflow-y-auto rounded-xl bg-white p-5 text-gray-900 backdrop:bg-black/40 dark:bg-[#162a1e] dark:text-white" aria-label={ur ? "اصل کتابی ماخذ" : "Original source"}>
-      {opened ? <><div className="mb-4 flex justify-between gap-3"><h3>{ur ? opened.passage.referenceUr : opened.passage.referenceEn}</h3><button className={button} onClick={() => dialog.current?.close()}>{ur ? "بند کریں" : "Close"}</button></div>{(opened.record?.paragraphs ?? [{ id: opened.passage.id, text: opened.passage.text }]).map(p => <div key={p.id} data-source-match={p.id === opened.passage.paragraphId || !opened.record} className={`mb-4 rounded-lg p-3 ${p.id === opened.passage.paragraphId || !opened.record ? "border-2 border-emerald-700 bg-emerald-50 dark:bg-emerald-950" : ""}`}><BookPassageText text={p.text} language={opened.passage.language} highlight={p.id === opened.passage.paragraphId || !opened.record ? opened.quote : undefined} /></div>)}</> : null}
+      {opened ? <><div className="mb-4 flex justify-between gap-3"><h3 className="qalam-source-reference">{ur ? opened.passage.referenceUr : opened.passage.referenceEn}</h3><button className={button} onClick={() => dialog.current?.close()}>{ur ? "بند کریں" : "Close"}</button></div>{(opened.record?.paragraphs ?? [{ id: opened.passage.id, text: opened.passage.text }]).map(p => <div key={p.id} data-source-match={p.id === opened.passage.paragraphId || !opened.record} className={`mb-4 rounded-lg p-3 ${p.id === opened.passage.paragraphId || !opened.record ? "border-2 border-emerald-700 bg-emerald-50 dark:bg-emerald-950" : ""}`}><BookPassageText text={p.text} language={opened.passage.language} highlight={p.id === opened.passage.paragraphId || !opened.record ? opened.quote : undefined} /></div>)}</> : null}
     </dialog>
   </section>;
 }

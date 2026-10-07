@@ -129,7 +129,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
           {results.hits.map(hit => <article key={hit.id} className={`${box} space-y-2`}>
             <h4 dir="auto" className="font-semibold">{renderKhateebSalawat(cleanBookTitle(hit.title))}</h4>
             <BookPassageText text={hit.snippet} language={hit.language} />
-            <p className="break-words text-xs">{(ur ? hit.referenceLabelUr : hit.referenceLabelEn) ?? bookSourceLabel(catalog.sources.find(s => s.id === hit.sourceId)!, locale)}</p>
+            <p className="qalam-source-reference break-words text-xs">{(ur ? hit.referenceLabelUr : hit.referenceLabelEn) ?? bookSourceLabel(catalog.sources.find(s => s.id === hit.sourceId)!, locale)}</p>
             <button type="button" className={button} disabled={busy} onClick={() => void openRecord(hit.id, hit.sourceId)}>{ur ? "مکمل عبارت اور انتخاب" : "Read full passage and select"}</button>
           </article>)}
           {results.total > results.pageSize ? <nav aria-label={ur ? "تلاش کے صفحات" : "Search pages"} className="flex items-center gap-3">
@@ -157,7 +157,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
           <button type="button" className={button} disabled={!selection} onClick={() => selection && void feedback.copy(bookExcerptText(selection, locale))}>{ur ? "انتخاب اور حوالہ نقل کریں" : "Copy selection and reference"}</button>
         </div>
         <h3 dir="auto" className="text-lg font-bold">{renderKhateebSalawat(cleanBookTitle(opened.record.title))}</h3>
-        <p className="my-3 break-words text-xs leading-6">{bookRecordReference(opened.record, locale)}{opened.source.translator ? ` · ${ur ? "مترجم" : "Translator"}: ${opened.source.translator}` : ""}</p>
+        <p className="qalam-source-reference my-3 break-words text-xs leading-6">{bookRecordReference(opened.record, locale)}{opened.source.translator ? ` · ${ur ? "مترجم" : "Translator"}: ${opened.source.translator}` : ""}</p>
         <p className="text-sm leading-7">{ur ? "عبارت اور حوالہ نقل کرنے کے لیے پیراگراف منتخب کریں۔ ترجمے اور حواشی کی اصل نسبت برقرار رکھیں۔" : "Select paragraphs to copy with their reference. Preserve attribution for translations and commentary."}</p>
         <p role="status" className="my-2 text-sm">{selectedIds.length} {ur ? "منتخب پیراگراف" : "selected paragraphs"}{selectedIds.length && !selection ? (ur ? " — انتخاب مختصر کریں" : " — select fewer paragraphs") : ""}</p>
         {message ? <p role="status" className="my-3 text-sm text-emerald-700 dark:text-emerald-300">{message}</p> : null}
