@@ -42,7 +42,7 @@ it("does not generate without configured review or sufficient evidence",async()=
 it("uses bounded existing provider protocol without trusting previous draft as evidence",async()=>{
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections})}}]})));
  expect(await generateSermonSections({...input,previous:"غير ثابت",instruction:"زبان آسان کریں"},evidence,{CLOUDFLARE_ACCOUNT_ID:"test",CLOUDFLARE_AUTH_TOKEN:"test"},fetchMock)).toEqual({sections});
- const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);expect(body.messages[0].content).toContain("Previous draft provides continuity, not proof");expect(body.max_tokens).toBe(6000);
+ const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);expect(body.messages[0].content).toContain("Previous draft provides continuity, not proof");expect(body.max_tokens).toBe(6000);expect(body.response_format.json_schema.schema.properties.sections.minItems).toBe(5);expect(body.response_format.json_schema.strict).toBe(true);
 });
 
 it("rejects a short summary posing as a full duration sermon",async()=>{
