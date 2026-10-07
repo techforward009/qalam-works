@@ -1,19 +1,49 @@
-/** Retry a bounded, explicit provider throttle once; never read or log its response body. */
-export async function fetchSermonProvider(url: string, init: RequestInit, fetchImpl: typeof fetch = fetch, wait?: (ms:number)=>Promise<void>): Promise<Response> {
-  init.signal?.throwIfAborted();
-  const response=await fetchImpl(url,init);
-  if(response.status!==429)return response;
-  const numericHeader=(name:string)=>{const value=response.headers.get(name);if(value===null||!/^\d+(?:\.\d+)?$/.test(value))return undefined;return Number(value);};
-  console.warn("Sermon provider throttle",{retryAfterSeconds:numericHeader("retry-after"),tokenLimit:numericHeader("x-ratelimit-limit-tokens"),remainingTokens:numericHeader("x-ratelimit-remaining-tokens"),remainingRequests:numericHeader("x-ratelimit-remaining-requests")});
-  const retryAfter=response.headers.get("retry-after");
-  const seconds=retryAfter===null?NaN:Number(retryAfter);
-  if(!Number.isFinite(seconds)||seconds<0||seconds>60)return response;
-  await response.body?.cancel();
-  await (wait??(ms=>waitForSermonRetry(ms,init.signal)))(Math.max(1000,Math.ceil(seconds*1000)));
-  init.signal?.throwIfAborted();
-  return fetchImpl(url,init);
+/** Only numeric quota diagnostics are retained from provider errors. */
+export function sermonThrottleMetrics(payload:unknown){
+  const message=payload&&typeof payload==="object"&&(payload as {error?:{message?:unknown}}).error?.message;
+  if(typeof message!=="string")return {};
+  const number=(pattern:RegExp)=>{const found=message.match(pattern);return found?Number(found[1]):undefined;};
+  return {limit:number(/\bLimit\s*:?\s*(\d+)/i),used:number(/\bUsed\s*:?\s*(\d+)/i),requested:number(/\bRequested\s*:?\s*(\d+)/i),retrySeconds:number(/try again in\s+(\d+(?:\.\d+)?)s\b/i)};
 }
-
+async function throttleDetails(response:Response){
+  try{
+    const reader=response.clone().body?.getReader();if(!reader)return {};
+    const chunks:Uint8Array[]=[];let bytes=0;
+    while(true){const chunk=await reader.read();if(chunk.done)break;bytes+=chunk.value.length;if(bytes>4096){void reader.cancel();return {};}chunks.push(chunk.value);}
+    return sermonThrottleMetrics(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+  }catch{return {};}
+}
+export async function fetchSermonProvider(url:string,init:RequestInit,fetchImpl:typeof fetch=fetch,wait?:(ms:number)=>Promise<void>):Promise<Response>{
+  let waited=0;let request=init;
+  for(let attempt=0;attempt<3;attempt++){
+    request.signal?.throwIfAborted();
+    const response=await fetchImpl(url,request);
+    if(response.status!==429)return response;
+    const details=await throttleDetails(response);
+    request.signal?.throwIfAborted();
+    const numericHeader=(name:string)=>{const value=response.headers.get(name);return value!==null&&/^\d+(?:\.\d+)?$/.test(value)?Number(value):undefined;};
+    const seconds=numericHeader("retry-after")??details.retrySeconds;
+    console.warn("Sermon provider throttle",{attempt,retryAfterSeconds:seconds,tokenLimit:numericHeader("x-ratelimit-limit-tokens"),remainingTokens:numericHeader("x-ratelimit-remaining-tokens"),remainingRequests:numericHeader("x-ratelimit-remaining-requests"),...details});
+    if(attempt===2)return response;
+    // If the provider's own token count exceeds its ceiling, reduce only the output reservation.
+    if(details.requested!==undefined&&details.limit!==undefined&&details.requested>details.limit&&typeof request.body==="string"){
+      try{
+        const body=JSON.parse(request.body);const budget=body.max_completion_tokens;
+        const minimum=body.response_format?.json_schema?.name==="sermon_composition"?2000:800;
+        const reduced=budget-(details.requested-details.limit)-128;
+        if(Number.isInteger(budget)&&reduced>=minimum){
+          await response.body?.cancel();request={...request,body:JSON.stringify({...body,max_completion_tokens:reduced})};continue;
+        }
+      }catch{/* Invalid or nonadjustable requests remain rejected. */}
+      return response;
+    }
+    const delay=seconds===undefined?NaN:Math.min(60000,Math.max(1000,Math.ceil(seconds*1000)+1000));
+    if(!Number.isFinite(delay)||(seconds!==undefined&&(seconds<0||seconds>60))||waited+delay>60_000)return response;
+    await response.body?.cancel();waited+=delay;
+    await (wait??(ms=>waitForSermonRetry(ms,request.signal)))(delay);
+  }
+  throw new Error("provider-rate-limited");
+}
 function waitForSermonRetry(ms:number,signal?:AbortSignal|null):Promise<void>{
   return new Promise((resolve,reject)=>{
     if(signal?.aborted){reject(signal.reason);return;}
