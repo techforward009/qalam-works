@@ -92,12 +92,16 @@ export function sermonRejectedSentences(raw:unknown,input:AnswerInput,claims:rea
   return (audit as SentenceReview[]).flatMap(section=>section.sentences.filter(s=>s.verdict==="unsupported").map(s=>({claimId:section.claimId,index:s.index,reason:s.reason,text:sermonSentences(claims.find(c=>c.id===section.claimId)!.text)[s.index-1]})));
 }
 
-export function createSermonSentenceReviewer(options: { apiKey?: string; fetchImpl?: typeof fetch; deadline?:number; cloudflareAccountId?:string; cloudflareToken?:string }): KnowledgeSynthesisProvider | null {
-  const useCloudflare=Boolean(options.cloudflareAccountId&&options.cloudflareToken);
-  if (!useCloudflare&&!options.apiKey?.trim()) return null;
+export function createSermonSentenceReviewer(options: { apiKey?: string; geminiKey?:string; fetchImpl?: typeof fetch; deadline?:number; cloudflareAccountId?:string; cloudflareToken?:string; preferredProvider?:'groq'|'cloudflare'|'gemini' }): KnowledgeSynthesisProvider | null {
+  if(options.preferredProvider&&!["groq","cloudflare","gemini"].includes(options.preferredProvider))return null;
+  const useGemini=options.preferredProvider==="gemini"||!options.preferredProvider&&Boolean(options.geminiKey);
+  if(useGemini&&!options.geminiKey?.trim())return null;
+  const useCloudflare=!useGemini&&options.preferredProvider!=="groq"&&Boolean(options.cloudflareAccountId&&options.cloudflareToken);
+  if(options.preferredProvider==="cloudflare"&&!useCloudflare)return null;
+  if (!useGemini&&!useCloudflare&&!options.apiKey?.trim()) return null;
   const fetchImpl = options.fetchImpl ?? fetch;
   return {
-    id: `${useCloudflare?"cloudflare":"groq"}:${SERMON_REVIEW_MODEL}:sentence-review:v2`,
+    id: `${useGemini?"gemini":useCloudflare?"cloudflare":"groq"}:${useGemini?"gemini-3.8-flash":SERMON_REVIEW_MODEL}:sentence-review:v2`,
     draft: async () => { throw new Error("review-only"); },
     async review(input, claims) {
       if(!claims.length || claims.reduce((n,c)=>n+sermonSentences(c.text).length,0)>150)throw new Error("review-too-large");
@@ -150,10 +154,10 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
           },
         } },
       } };
-      const endpoint=useCloudflare?`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(options.cloudflareAccountId!)}/ai/v1/chat/completions`:"https://api.groq.com/openai/v1/chat/completions";
+      const endpoint=useGemini?"https://generativelanguage.googleapis.com/v1beta/openai/chat/completions":useCloudflare?`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(options.cloudflareAccountId!)}/ai/v1/chat/completions`:"https://api.groq.com/openai/v1/chat/completions";
       const response = await fetchSermonProvider(endpoint, {
-        method: "POST", headers: { Authorization: `Bearer ${useCloudflare?options.cloudflareToken:options.apiKey}`, "Content-Type": "application/json" }, signal: sermonProviderSignal(options.deadline,useCloudflare?120_000:90_000),
-        body: JSON.stringify({ model: useCloudflare?"@cf/qwen/qwen3.8-27b":SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", ...(useCloudflare?{chat_template_kwargs:{enable_thinking:false}}:{reasoning_format:"hidden"}), max_completion_tokens: useCloudflare?Math.max(3000,reviewBudget):reviewBudget,
+        method: "POST", headers: { Authorization: `Bearer ${useGemini?options.geminiKey:useCloudflare?options.cloudflareToken:options.apiKey}`, "Content-Type": "application/json" }, signal: sermonProviderSignal(options.deadline,useCloudflare?120_000:90_000),
+        body: JSON.stringify({ model: useGemini?"gemini-3.8-flash":useCloudflare?"@cf/qwen/qwen3.8-27b":SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", ...(useGemini?{}:useCloudflare?{chat_template_kwargs:{enable_thinking:false}}:{reasoning_format:"hidden"}), ...(useGemini?{max_tokens:Math.max(4500,reviewBudget)}:{max_completion_tokens: useCloudflare?Math.max(3000,reviewBudget):reviewBudget}),
           response_format: { type: "json_schema", json_schema: { name: "sermon_sentence_audit", strict: true, schema } },
           messages: [{ role: "system", content: SENTENCE_REVIEW_PROMPT }, { role: "user", content: JSON.stringify({ locale: input.locale, evidence, sections }) }],
         }),

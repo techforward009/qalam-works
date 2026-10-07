@@ -15,7 +15,7 @@ if (!process.argv.includes('--live') && ![releaseMarker,'Validate complete sermo
 } else {
   const { createSermonSentenceReviewer } = await import('../app/lib/knowledge/sermonReview.ts');
   const { reviewedResearchClaims } = await import('../app/lib/knowledge/researchAnswer.ts');
-  const provider = createSermonSentenceReviewer({ apiKey: process.env.GROQ_API_KEY, cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID, cloudflareToken: process.env.CLOUDFLARE_AUTH_TOKEN });
+  const provider = createSermonSentenceReviewer({ preferredProvider: process.env.QALAM_SERMON_PROVIDER || undefined, geminiKey:process.env.GEMINI_API_KEY, apiKey: process.env.GROQ_API_KEY, cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID, cloudflareToken: process.env.CLOUDFLARE_AUTH_TOKEN });
   if (!provider) throw new Error('Sermon review evaluation key unavailable');
   // Fixed public Quran fixtures; no private book text or credentials are logged.
   const passages = [

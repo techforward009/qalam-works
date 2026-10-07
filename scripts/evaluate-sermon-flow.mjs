@@ -44,14 +44,14 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
         {id:'correct-asr-oath',text:'پہلی آیت میں عصر کی قسم ہے۔',passage:first,expected:true},
         {id:'wrong-asr-attached-verse',text:'پہلی آیت میں تمام انسانوں کے خسارے کا بیان ہے۔',passage:first,expected:false},
       ];
-      const reviewer=createSermonSentenceReviewer({apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN});
+      const reviewer=createSermonSentenceReviewer({preferredProvider:process.env.QALAM_SERMON_PROVIDER||undefined,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN});
       if(!reviewer)throw new Error('provider-unavailable');
       const claims=fixtures.map(f=>({id:f.id,text:f.text,citations:[{passageId:f.passage.id,quote:f.passage.text}]}));
       const checked=reviewedResearchClaims(await reviewer.review({question:input.title,locale:'ur',evidence:evidence.passages.map((passage,i)=>({ref:i+1,passage}))},claims),claims);
       if(checked===null)throw new Error('provider-format');
       for(const fixture of fixtures){const accepted=checked.some(c=>c.id===fixture.id);console.log('SERMON_CONDITIONS_EVAL',JSON.stringify({fixture:fixture.id,expected:fixture.expected,accepted,passed:accepted===fixture.expected}));if(accepted!==fixture.expected)throw new Error('unverified');}
       stage='composition-and-review';
-      const fullReviewer=createSermonSentenceReviewer({apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+230000});
+      const fullReviewer=createSermonSentenceReviewer({preferredProvider:process.env.QALAM_SERMON_PROVIDER||undefined,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+230000});
       if(!fullReviewer)throw new Error('provider-unavailable');
       let reviewAttempt=0;
       const project=await composeSermon(input,evidence,{env:process.env,reviewer:{...fullReviewer,async review(reviewInput,claims){
