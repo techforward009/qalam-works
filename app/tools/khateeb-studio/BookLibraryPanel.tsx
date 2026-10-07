@@ -7,6 +7,7 @@ import type { CustomSermonProject } from "./engine/customSermonProject";
 import ResearchStudioGate from "../research-studio/components/ResearchStudioGate";
 import { renderKhateebSalawat } from "./KhateebScriptText";
 import ClipboardFeedback from "./ClipboardFeedback";
+import { uploadBookArchive } from "../../lib/knowledge/uploadBookArchive";
 import { useCopyFeedback } from "./useCopyFeedback";
 import { bookExcerptText, bookKindLabel, bookSourceLabel, bookRecordReference, cleanBookTitle, createBookExcerpt, type BookExcerpt, type BookRecord, type BookSearchResult, type BookSource } from "./engine/bookLibrary";
 
@@ -37,7 +38,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
   const dialog = useRef<HTMLDialogElement>(null);
   const feedback = useCopyFeedback();
   const failure = ur ? "کتابی ذخیرہ نہیں کھل سکا۔ دوبارہ کوشش کریں۔" : "The book library could not be opened. Please retry.";
-  const invalid = ur ? "یہ درست کتابی ذخیرے کی ZIP فائل نہیں، یا اس کا حجم ۴ میگابائٹ سے زیادہ ہے۔" : "This is not a valid book corpus ZIP, or it exceeds 4 MB.";
+  const invalid = ur ? "یہ درست کتابی ذخیرے کی ZIP فائل نہیں، یا اس کا حجم ۸ میگابائٹ سے زیادہ ہے۔" : "This is not a valid book corpus ZIP, or it exceeds 8 MB.";
 
   useEffect(() => {
     const abort = new AbortController();
@@ -71,10 +72,18 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
   }
   async function importArchive(file: File | null) {
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) { setError(invalid); return; }
-    const form = new FormData(); form.set("archive", file);
-    const value = await request("/api/research/book-library", { method: "POST", body: form });
-    if (value) { setCatalog(value); setResults(null); setMessage(ur ? "کتابی ذخیرہ نجی طور پر محفوظ ہوگیا۔" : "The book corpus was saved privately."); }
+    if (file.size > 8 * 1024 * 1024) { setError(invalid); return; }
+    controller.current?.abort();
+    const abort = new AbortController(); controller.current = abort;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const value = await uploadBookArchive(file, abort.signal, (done, total) => {
+        if (!abort.signal.aborted) setMessage(ur ? `کتابی نسخے محفوظ ہو رہے ہیں: ${done} / ${total}` : `Saving source editions: ${done} / ${total}`);
+      });
+      if (!abort.signal.aborted) { setCatalog(value); setResults(null); setMessage(ur ? "کتابی ذخیرہ نجی طور پر محفوظ ہوگیا۔" : "The book corpus was saved privately."); }
+    } catch (err) {
+      if (!abort.signal.aborted) { setMessage(""); setError(err instanceof Error && err.message === "invalid" ? invalid : failure); }
+    } finally { if (!abort.signal.aborted) setBusy(false); }
   }
   async function search(page = 1) {
     const params = new URLSearchParams({ op: "search", query, book, language, sourceId, kind, number, page: String(page) });
@@ -97,7 +106,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
   }
   return <div data-testid="book-library" className="space-y-4" dir={ur ? "rtl" : "ltr"}>
     <KnowledgeAssistant locale={locale} onCreateDraft={onCreateDraft} />
-    <p className="text-sm leading-7">{ur ? "نہج البلاغہ اور صحیفہ سجادیہ کے فراہم کردہ نسخوں میں تلاش کریں۔ حوالہ کتاب میں درج خطبے، حکمت یا دعا کے نمبر کے مطابق ہے۔ ترجمہ اور موجودہ حواشی کو ماخذ کی نسبت کے ساتھ پڑھیں۔" : "Search the supplied editions of Nahj al-Balagha and Sahifa Sajjadiyya. References use the section number given in the book. Read translations and existing commentary with their source attribution."}</p>
+    <p className="text-sm leading-7">{ur ? "نہج البلاغہ، صحیفہ سجادیہ اور شامل شدہ الکافی کے نسخوں میں تلاش کریں۔ الکافی میں جلد اور اصل باب ساتھ دیکھیں؛ حدیث نمبر ہر باب میں دوبارہ شروع ہوتا ہے۔ ترجمہ اور موجودہ حواشی کو ماخذ کی نسبت کے ساتھ پڑھیں۔" : "Search the supplied editions of Nahj al-Balagha, Sahifa Sajjadiyya and imported Al-Kafi volumes. For Al-Kafi, check the volume and original chapter; hadith numbers restart in each chapter. Read translations and existing commentary with their source attribution."}</p>
     <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss} />
     {error ? <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p> : null}
     {message && !opened ? <p role="status" className="text-sm text-emerald-700 dark:text-emerald-300">{message}</p> : null}
@@ -107,11 +116,11 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
       {catalog.ready ? <>
         <form onSubmit={event => { event.preventDefault(); void search(); }} className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm sm:col-span-2">{ur ? "لفظ یا عبارت" : "Word or phrase"}<input className={box} value={query} maxLength={300} onChange={event => { setQuery(event.target.value); setResults(null); }} placeholder={ur ? "مثلاً: صبر، دعا، موت" : "e.g. patience, prayer, death"} /></label>
-          <label className="grid gap-1 text-sm">{ur ? "کتاب" : "Book"}<select className={box} value={book} onChange={event => { setBook(event.target.value); setSourceId(""); setResults(null); }}><option value="">{ur ? "تمام کتابیں" : "All books"}</option><option value="nahj">{ur ? "نہج البلاغہ" : "Nahj al-Balagha"}</option><option value="sahifa">{ur ? "صحیفہ سجادیہ" : "Sahifa Sajjadiyya"}</option></select></label>
+          <label className="grid gap-1 text-sm">{ur ? "کتاب" : "Book"}<select className={box} value={book} onChange={event => { setBook(event.target.value); setSourceId(""); setResults(null); }}><option value="">{ur ? "تمام کتابیں" : "All books"}</option><option value="nahj">{ur ? "نہج البلاغہ" : "Nahj al-Balagha"}</option><option value="sahifa">{ur ? "صحیفہ سجادیہ" : "Sahifa Sajjadiyya"}</option><option value="kafi">{ur ? "الکافی" : "Al-Kafi"}</option></select></label>
           <label className="grid gap-1 text-sm">{ur ? "زبان" : "Language"}<select className={box} value={language} onChange={event => { setLanguage(event.target.value); setSourceId(""); setResults(null); }}><option value="">{ur ? "تمام زبانیں" : "All languages"}</option><option value="ar">{ur ? "عربی" : "Arabic"}</option><option value="ur">{ur ? "اردو" : "Urdu"}</option><option value="en">{ur ? "انگریزی" : "English"}</option></select></label>
           <label className="grid gap-1 text-sm sm:col-span-2">{ur ? "اصل نسخہ" : "Source edition"}<select className={box} value={sourceId} onChange={event => { setSourceId(event.target.value); setResults(null); }}><option value="">{ur ? "تمام متعلقہ نسخے" : "All matching editions"}</option>{catalog.sources.filter(s => (!book || s.book === book) && (!language || s.language === language)).map(s => <option key={s.id} value={s.id}>{bookSourceLabel(s, locale)}</option>)}</select></label>
-          <label className="grid gap-1 text-sm">{ur ? "حصے کی نوعیت" : "Section type"}<select className={box} value={kind} onChange={event => { setKind(event.target.value); setResults(null); }}><option value="">{ur ? "تمام حصے" : "All sections"}</option>{["sermon", "letter", "saying", "supplication", "weekday-supplication", "right", "front-matter"].map(k => <option key={k} value={k}>{bookKindLabel(k, locale)}</option>)}</select></label>
-          <label className="grid gap-1 text-sm">{ur ? "خطبہ، حکمت یا دعا کا نمبر" : "Sermon, saying or prayer number"}<input dir="ltr" inputMode="numeric" className={box} value={number} maxLength={5} onChange={event => { setNumber(event.target.value); setResults(null); }} /></label>
+          <label className="grid gap-1 text-sm">{ur ? "حصے کی نوعیت" : "Section type"}<select className={box} value={kind} onChange={event => { setKind(event.target.value); setResults(null); }}><option value="">{ur ? "تمام حصے" : "All sections"}</option>{["sermon", "letter", "saying", "supplication", "weekday-supplication", "right", "chapter", "section", "front-matter"].map(k => <option key={k} value={k}>{bookKindLabel(k, locale)}</option>)}</select></label>
+          <label className="grid gap-1 text-sm">{ur ? "خطبہ، حکمت، دعا یا حدیث کا نمبر" : "Sermon, saying, prayer or hadith number"}<input dir="ltr" inputMode="numeric" className={box} value={number} maxLength={5} onChange={event => { setNumber(event.target.value); setResults(null); }} /></label>
           <button type="submit" disabled={busy} className={button}>{ur ? "کتاب میں تلاش کریں" : "Search books"}</button>
         </form>
         {results ? <div aria-live="polite" className="space-y-3">
@@ -136,7 +145,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
     <details className="rounded-lg border border-[#31513a]/20 p-3" onToggle={event => setAdminOpen(event.currentTarget.open)}>
       <summary className="cursor-pointer text-sm font-semibold">{ur ? "کتابی ذخیرے کا انتظام — مالک کے لیے" : "Book library management — owner only"}</summary>
       {adminOpen ? <ResearchStudioGate language={locale} dir={ur ? "rtl" : "ltr"}>
-        <p className="my-3 text-sm leading-7">{ur ? "تیار کردہ Khateeb-Foundational-Corpus.zip منتخب کریں۔ کامیاب جانچ اور حفاظت کے بعد ہی نیا نسخہ فعال ہوگا۔" : "Choose Khateeb-Foundational-Corpus.zip. A replacement becomes active only after validation and successful storage."}</p>
+        <p className="my-3 text-sm leading-7">{ur ? "تیار کردہ کتابی ذخیرے کی ZIP فائل منتخب کریں۔ کامیاب جانچ اور حفاظت کے بعد ہی نیا نسخہ فعال ہوگا۔" : "Choose a prepared book corpus ZIP. A replacement becomes active only after validation and successful storage."}</p>
         <label className="grid gap-2 text-sm">{ur ? "کتابی ذخیرے کی ZIP فائل" : "Book corpus ZIP"}<input aria-label={ur ? "کتابی ذخیرے کی ZIP فائل" : "Book corpus ZIP"} type="file" accept=".zip,application/zip" disabled={busy} onChange={event => { void importArchive(event.target.files?.[0] ?? null); event.target.value = ""; }} /></label>
       </ResearchStudioGate> : null}
     </details>

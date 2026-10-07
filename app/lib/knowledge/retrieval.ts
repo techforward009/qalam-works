@@ -1,8 +1,8 @@
 import { rankLexicalDocuments } from "./lexicalRanking";
 import { researchSummaryText, type KnowledgeResearchAnswer } from "./researchAnswer";
-import { bookRecordReference, bookRecordNumber, createBookExcerpt, normalizeBookSearch, type BookExcerpt, type BookRecord, type BookSource } from "./bookCorpus";
+import { bookRecordReference, bookRecordNumber, kafiHadithNumber, createBookExcerpt, normalizeBookSearch, type BookExcerpt, type BookRecord, type BookSource } from "./bookCorpus";
 
-export type KnowledgeScope = "all" | "quran" | "nahj" | "sahifa";
+export type KnowledgeScope = "all" | "quran" | "nahj" | "sahifa" | "kafi";
 export type KnowledgePassage = {
   id: string; collection: Exclude<KnowledgeScope, "all">; language: "ar" | "ur" | "en";
   referenceUr: string; referenceEn: string; text: string; sourceSha256: string;
@@ -33,7 +33,9 @@ const concepts = [
   ["اخلاص", "sincerity", "مخلص", "مخلصين"],
   ["علم", "knowledge", "learning", "education", "تعليم", "يعلمون"],
   ["غصہ", "غصه", "anger", "غضب", "غيظ", "الغضب"],
-  ["والدین", "والدين", "parents", "والدي", "والد", "والده"],
+  ["والدین", "والدين", "parents", "والدي", "والد", "والده", "الوالدين", "والديك", "الوالد", "الوالده", "ابويه"],
+  ["تربیت", "تربيه", "تربية", "upbringing", "parenting"],
+  ["اولاد", "بچے", "بچوں", "child", "children", "الولد", "الاولاد", "البنين", "البنات"],
 ].map(group => [...new Set(group.map(normalizeBookSearch))]);
 const stop = new Set(normalizeBookSearch("کے کی کا کو سے میں پر اور ہے ہیں تھا کیا کیسے بارے متعلق بتائیں نے ایک ہمیں کس وہ یہ اپنے اپنی اس ان فرماتے فرمایا تعلیمات قرآن قران نہج البلاغہ صحیفہ سجادیہ امام علی اللہ مجھے واضح وضاحت عملی روزمرہ مثال مثالیں زندگی اطلاق تعلق ربط موازنہ تقابل اسی موضوع مزید خلاصہ چاہتا چاہتی چاہیے كريں تطبيق کریں the a an of in on about what how does did say said tell me and or is are to from please explain practical everyday daily life examples example application compare comparison relationship connection this topic further summarize summary source sources passages passage discuss material available books book related provide show quran nahj balagha sahifa sajjadiyya teachings").split(" "));
 
@@ -44,9 +46,9 @@ export function queryTerms(question: string): { direct: string[]; groups: string
 }
 function explicitReference(question: string) {
   const q = normalizeBookSearch(question);
-  const match = q.match(/(?:حكمت|حکمت|saying|sermon|خطبہ|خطبه|letter|مكتوب|دعا|supplication)\s+(\d+)/u);
+  const match = q.match(/(?:حكمت|حکمت|saying|sermon|خطبہ|خطبه|letter|مكتوب|دعا|supplication|حديث|hadith)\s+(\d+)/u);
   if (!match) return null;
-  const kind = /saying|حكمت|حکمت/u.test(match[0]) ? "saying" : /sermon|خطب/u.test(match[0]) ? "sermon" : /letter|مكتوب/u.test(match[0]) ? "letter" : "supplication";
+  const kind = /saying|حكمت|حکمت/u.test(match[0]) ? "saying" : /sermon|خطب/u.test(match[0]) ? "sermon" : /letter|مكتوب/u.test(match[0]) ? "letter" : /حديث|hadith/u.test(match[0]) ? "hadith" : "supplication";
   return { kind, number: Number(match[1]) };
 }
 export function retrieveKnowledge(input: { question: string; scope: KnowledgeScope; locale: "ur" | "en"; records: readonly BookRecord[]; sources: readonly BookSource[]; quran: readonly QuranInput[]; quranSha256: string }): KnowledgeResult {
@@ -55,6 +57,7 @@ export function retrieveKnowledge(input: { question: string; scope: KnowledgeSco
   const base = { question, method: "lexical-bm25-topic-expansion" as const, expandedTerms: [...new Set(groups.flat())], availableCollections: [...new Set([...(input.quran.length ? ["quran"] : []), ...input.sources.map(s => s.book)])] };
   if (/(?:فتوي|فتوا|fatwa|مرجع|مراجع|marja)/iu.test(normalizeBookSearch(question))) return { ...base, status: "unsupported-fatwa", passages: [] };
   const reference = explicitReference(question);
+  const kafiVolume = normalizeBookSearch(question).match(/(?:جلد|volume)\s+(\d+)/u)?.[1];
   const quoted = question.match(/["“«]([^"”»]+)["”»]/u)?.[1];
   const exact = quoted ? normalizeBookSearch(quoted) : null;
   const quranRef = question.match(/([0-9۰-۹٠-٩]{1,3})\s*[:：]\s*([0-9۰-۹٠-٩]{1,3})(?:\s*[–—-]\s*([0-9۰-۹٠-٩]{1,3}))?/u);
@@ -73,14 +76,19 @@ export function retrieveKnowledge(input: { question: string; scope: KnowledgeSco
   for (const record of input.records) {
     if (scope !== "all" && record.book !== scope || record.language !== "ar" && record.language !== locale) continue;
     const source = input.sources.find(s => s.id === record.sourceId && s.book === record.book && s.language === record.language);
-    if (!source || reference && (record.kind !== reference.kind || bookRecordNumber(record) !== reference.number)) continue;
+    if (!source || record.book === "kafi" && (record.kind === "front-matter" || kafiVolume && record.reference.kafi?.volume !== Number(kafiVolume))) continue;
+    if (reference && (reference.kind === "hadith" ? record.book !== "kafi" : record.kind !== reference.kind || bookRecordNumber(record) !== reference.number)) continue;
     record.paragraphs.forEach((paragraph, index) => {
+      if (record.book === "kafi" && [record.reference.kafi?.bookTitle, record.reference.kafi?.chapterTitle, record.reference.kafi?.sectionTitle].includes(paragraph.text)) return;
+      if (reference?.kind === "hadith" && kafiHadithNumber(paragraph.text) !== reference.number) return;
       if (index === 0 && paragraph.text.length < 150 && record.paragraphs.length > 1 && /^\s*[(（][0-9۰-۹٠-٩]+[)）]/u.test(paragraph.text)) return;
-      if (paragraph.text.length > 8000 || paragraph.text.trim().length < 15) return;
+      // Preserve the full paragraph within the existing portable excerpt limit.
+      if (paragraph.text.length > 150_000 || paragraph.text.trim().length < 15) return;
       const value = reference ? 100 + score(paragraph.text) : score(paragraph.text, record.title);
+      if (reference && exact && !score(paragraph.text) && !(record.book === "kafi" && normalizeBookSearch(record.reference.kafi?.chapterTitle ?? "").includes(exact))) return;
       if (!value) return;
       const excerpt = createBookExcerpt(record, source, [paragraph.id]);
-      candidates.push({ score: value, section: `${record.book}:${record.kind}:${bookRecordNumber(record) ?? record.id}:${record.language}`, passage: { id: excerpt.id, collection: record.book, language: record.language, referenceUr: bookRecordReference(record, "ur"), referenceEn: bookRecordReference(record, "en"), text: paragraph.text, sourceSha256: source.sha256, recordId: record.id, sourceId: source.id, paragraphId: paragraph.id, excerpt, translator: source.translator } });
+      candidates.push({ score: value, section: `${record.book}:${record.kind}:${bookRecordNumber(record) ?? record.id}:${record.language}`, passage: { id: excerpt.id, collection: record.book, language: record.language, referenceUr: bookRecordReference(record, "ur", paragraph.id), referenceEn: bookRecordReference(record, "en", paragraph.id), text: paragraph.text, sourceSha256: source.sha256, recordId: record.id, sourceId: source.id, paragraphId: paragraph.id, excerpt, translator: source.translator } });
     });
   }
   if (scope === "all" || scope === "quran") for (const ayah of input.quran) {
@@ -93,7 +101,7 @@ export function retrieveKnowledge(input: { question: string; scope: KnowledgeSco
   const chosen: typeof candidates = [];
   const sections = new Set<string>();
   const add = (c: typeof candidates[number]) => { if (!sections.has(c.section) && chosen.length < 8) { chosen.push(c); sections.add(c.section); } };
-  for (const collection of ["quran", "nahj", "sahifa"]) for (const lang of ["ar", locale]) {
+  for (const collection of ["quran", "nahj", "sahifa", "kafi"]) for (const lang of ["ar", locale]) {
     const first = eligible.find(c => c.passage.collection === collection && c.passage.language === lang);
     if (first) add(first);
   }

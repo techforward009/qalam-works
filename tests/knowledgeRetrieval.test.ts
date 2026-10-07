@@ -66,3 +66,27 @@ describe("shared evidence-first knowledge retrieval", () => {
     expect(dua.passages.every(p => p.referenceUr.includes("28"))).toBe(true);
   });
 });
+
+
+describe("complete long book paragraphs", () => {
+  const source: BookSource = { id: "nahj-ur", book: "nahj", language: "ur", filename: "provided.docx", sha256: "a".repeat(64), translator: "Provided translator" };
+  function search(text: string, question: string) {
+    const record: BookRecord = { id: "nahj-ur:sermon:1", sourceId: source.id, book: "nahj", language: "ur", kind: "sermon", number: 1, title: "خطبہ", reference: { sourceId: source.id, section: "sermon", number: 1, locator: "original paragraph", printPage: null }, paragraphs: [{ id: "nahj-ur:sermon:1:p1", text }], textSha256: "b".repeat(64) };
+    return retrieveKnowledge({ question, scope: "nahj", locale: "ur", sources: [source], records: [record], quran: [], quranSha256: "" });
+  }
+  it("finds a phrase after the old cutoff and preserves complete text through draft restore", () => {
+    const text = "یہ اصل عبارت ہے۔ ".repeat(600) + "والدین کی خدمت";
+    for (const question of ['"والدین کی خدمت"', "والدین", "خطبہ ۱"]) {
+      const result = search(text, question);
+      expect(result.status).toBe("evidence"); expect(result.passages[0].text).toBe(text);
+      const draft = createKnowledgeDraft(result, [result.passages[0].id], "ur", 30);
+      expect(parseCustomSermonProject(serializeCustomSermonProject(draft))).toEqual(draft);
+      expect(buildCustomSermonText(draft, "ur")).toContain(text);
+    }
+  });
+  it("respects the portable excerpt boundary without throwing or truncating", () => {
+    const text = "صبر " + "ا".repeat(149996);
+    expect(search(text, '"صبر"').passages[0].text).toBe(text);
+    expect(search(text + "ا", '"صبر"').passages).toEqual([]);
+  });
+});

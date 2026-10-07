@@ -2,10 +2,10 @@ import { Readable } from "node:stream";
 import { createHash } from "node:crypto";
 import { gzipSync, gunzipSync } from "node:zlib";
 import JSZip from "jszip";
-import { BOOK_SOURCE_IDS, type BookManifest, type BookRecord, type BookSource } from "./bookCorpus";
+import { ALL_BOOK_SOURCE_IDS, BOOK_SOURCE_IDS, KAFI_SOURCE_IDS, type BookManifest, type BookRecord, type BookSource } from "./bookCorpus";
 import type { ResearchBlobClient } from "../../tools/research-studio/engine";
 
-export const MAX_BOOK_UPLOAD_BYTES = 4 * 1024 * 1024;
+export const MAX_BOOK_UPLOAD_BYTES = 8 * 1024 * 1024;
 export const BOOK_POINTER_PATH = "khateeb-foundational/v1/current.json";
 const ROOT = "khateeb-foundational/v1/";
 const MAX_SOURCE_BYTES = 16 * 1024 * 1024;
@@ -16,21 +16,77 @@ type Catalog = BookCatalog;
 export function validateBookRecords(value: unknown, source: BookSource): BookRecord[] {
   if (!Array.isArray(value) || !value.length || value.length > 3000) throw new Error("invalid-records");
   const seen = new Set<string>();
+  let lastSourceParagraph = 0;
+  let lastBookTitle: string | null = null;
   for (const record of value as BookRecord[]) {
     if (!record || typeof record.id !== "string" || !record.id.startsWith(source.id + ":") || seen.has(record.id) || record.sourceId !== source.id || record.book !== source.book || record.language !== source.language || typeof record.title !== "string" || typeof record.kind !== "string" || !(typeof record.number === "number" && Number.isInteger(record.number) && record.number >= 0 || record.kind === "weekday-supplication" && typeof record.number === "string" && ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"].includes(record.number)) || !record.reference || record.reference.sourceId !== source.id || record.reference.number !== record.number || record.reference.section !== record.kind || typeof record.reference.locator !== "string" || (record.reference.printPage !== null && (!Number.isInteger(record.reference.printPage) || record.reference.printPage < 1)) || !Array.isArray(record.paragraphs) || record.paragraphs.length > 5000 || !record.paragraphs.every((p, i) => p && p.id === `${record.id}:p${i + 1}` && typeof p.text === "string") || record.textSha256 !== hash(record.paragraphs.map(p => p.text).join("\n"))) throw new Error("invalid-record");
+    if (source.book === "kafi") {
+      const ref = record.reference.kafi;
+      const volume = Number(source.id.match(/^kafi-v([1-8])-ar$/)?.[1]);
+      if (!ref || ref.volume !== volume || !["chapter", "section", "front-matter"].includes(record.kind)
+        || ![ref.bookTitle, ref.chapterTitle, ref.sectionTitle].every(t => t === null || typeof t === "string" && t.length > 0 && t.length <= 300)
+        || !Array.isArray(ref.sourceParagraphs) || ref.sourceParagraphs.length !== record.paragraphs.length || !ref.sourceParagraphs.length
+        || ref.sourceParagraphs.some((n, i) => !Number.isInteger(n) || n !== lastSourceParagraph + i + 1)
+        || ref.chapterTitle !== null && !record.paragraphs.some(p => p.text === ref.chapterTitle)
+        || ref.sectionTitle !== null && !record.paragraphs.some(p => p.text === ref.sectionTitle)) throw new Error("invalid-kafi-reference");
+      for (const paragraph of record.paragraphs) if (paragraph.text.length <= 300 && paragraph.text.replace(/\p{Mn}/gu, "").trim().startsWith("كتاب ")) lastBookTitle = paragraph.text;
+      if (ref.bookTitle !== lastBookTitle) throw new Error("invalid-kafi-reference");
+      lastSourceParagraph = ref.sourceParagraphs.at(-1)!;
+    } else if (record.reference.kafi !== undefined) throw new Error("invalid-kafi-reference");
     seen.add(record.id);
   }
   return value;
 }
-function validateManifest(value: unknown): BookManifest {
+export function validateManifest(value: unknown): BookManifest {
   const manifest = value as BookManifest;
-  if (manifest?.format !== "qalam-foundational-corpus" || manifest.version !== 1 || !Array.isArray(manifest.sources) || manifest.sources.length !== BOOK_SOURCE_IDS.length || !Number.isInteger(manifest.recordCount) || manifest.recordCount < 1 || manifest.recordCount > 10_000) throw new Error("invalid-manifest");
+  if (manifest?.format !== "qalam-foundational-corpus" || manifest.version !== 1 || !Array.isArray(manifest.sources) || (manifest.sources.length !== BOOK_SOURCE_IDS.length && manifest.sources.length !== ALL_BOOK_SOURCE_IDS.length) || !Number.isInteger(manifest.recordCount) || manifest.recordCount < 1 || manifest.recordCount > 10_000) throw new Error("invalid-manifest");
   const seen = new Set<string>();
   for (const source of manifest.sources) {
-    if (!source || !BOOK_SOURCE_IDS.includes(source.id as typeof BOOK_SOURCE_IDS[number]) || seen.has(source.id) || !["nahj", "sahifa"].includes(source.book) || !["ar", "ur", "en"].includes(source.language) || typeof source.filename !== "string" || !source.filename || !/^[a-f0-9]{64}$/.test(source.sha256) || (source.translator !== null && typeof source.translator !== "string")) throw new Error("invalid-source");
+    if (!source || !ALL_BOOK_SOURCE_IDS.includes(source.id as typeof ALL_BOOK_SOURCE_IDS[number]) || seen.has(source.id) || !["nahj", "sahifa", "kafi"].includes(source.book) || !["ar", "ur", "en"].includes(source.language) || typeof source.filename !== "string" || !source.filename || !/^[a-f0-9]{64}$/.test(source.sha256) || (source.translator !== null && typeof source.translator !== "string")) throw new Error("invalid-source");
+    if (source.book !== (source.id.startsWith("nahj") ? "nahj" : source.id.startsWith("kafi") ? "kafi" : "sahifa") || source.language !== (source.id.endsWith("-ar") ? "ar" : source.id.endsWith("-ur") ? "ur" : "en")) throw new Error("invalid-source");
     seen.add(source.id);
   }
+  if (BOOK_SOURCE_IDS.some(id => !seen.has(id)) || manifest.sources.length === ALL_BOOK_SOURCE_IDS.length && KAFI_SOURCE_IDS.some(id => !seen.has(id))) throw new Error("invalid-manifest");
   return manifest;
+}
+
+export const MAX_BOOK_PART_BYTES = 3 * 1024 * 1024;
+export type BookImportPlan = { manifest: BookManifest; digests: Record<string, string> };
+export function validateBookImportPlan(value: unknown) {
+  const plan = value as BookImportPlan;
+  const manifest = validateManifest(plan?.manifest);
+  if (!plan.digests || typeof plan.digests !== "object" || Object.keys(plan.digests).length !== manifest.sources.length
+    || manifest.sources.some(s => !/^[a-f0-9]{64}$/.test(plan.digests[s.id]))) throw new Error("invalid-plan");
+  const normalized = { manifest, digests: Object.fromEntries(manifest.sources.map(s => [s.id, plan.digests[s.id]])) };
+  return { ...normalized, revision: hash(JSON.stringify(normalized)) };
+}
+export async function saveBookImportSource(client: ResearchBlobClient, value: unknown, sourceId: string, bytes: Uint8Array) {
+  const plan = validateBookImportPlan(value);
+  const source = plan.manifest.sources.find(s => s.id === sourceId);
+  if (!source || !bytes.length || bytes.length > MAX_BOOK_PART_BYTES || hash(bytes) !== plan.digests[sourceId]) throw new Error("invalid-part");
+  const raw = gunzipSync(bytes, { maxOutputLength: MAX_SOURCE_BYTES });
+  validateBookRecords(JSON.parse(raw.toString("utf8")), source);
+  await client.putObject(`${ROOT}${plan.revision}/${sourceId}.json`, JSON.stringify({ encoding: "gzip-base64", data: Buffer.from(bytes).toString("base64") }));
+  return plan.revision;
+}
+export async function activateBookImport(client: ResearchBlobClient, value: unknown) {
+  const plan = validateBookImportPlan(value);
+  const paths = Object.fromEntries(plan.manifest.sources.map(s => [s.id, `${ROOT}${plan.revision}/${s.id}.json`]));
+  const catalog: BookCatalog = { revision: plan.revision, manifest: plan.manifest, paths };
+  let count = 0;
+  for (const source of plan.manifest.sources) {
+    const raw = await client.getObject(paths[source.id]);
+    if (!raw || raw.length > 4 * MAX_BOOK_PART_BYTES / 3 + 1024) throw new Error("missing-source");
+    const stored = JSON.parse(raw);
+    if (stored?.encoding !== "gzip-base64" || typeof stored.data !== "string") throw new Error("invalid-encoding");
+    const bytes = Buffer.from(stored.data, "base64");
+    if (hash(bytes) !== plan.digests[source.id]) throw new Error("invalid-part");
+    count += validateBookRecords(JSON.parse(gunzipSync(bytes, { maxOutputLength: MAX_SOURCE_BYTES }).toString("utf8")), source).length;
+  }
+  if (count !== plan.manifest.recordCount) throw new Error("count-mismatch");
+  // The live pointer changes only after every persisted source has been read and checked.
+  await client.putObject(BOOK_POINTER_PATH, JSON.stringify(catalog));
+  return catalog;
 }
 export async function parseBookArchive(bytes: Uint8Array) {
   if (!bytes.length || bytes.length > MAX_BOOK_UPLOAD_BYTES) throw new Error("invalid-size");
