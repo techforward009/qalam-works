@@ -17,6 +17,7 @@ if (!process.argv.includes('--live') && ![releaseMarker,'Validate complete sermo
   const { reviewedResearchClaims } = await import('../app/lib/knowledge/researchAnswer.ts');
   const provider = createSermonSentenceReviewer({ preferredProvider: process.env.QALAM_SERMON_PROVIDER || undefined, geminiKey:process.env.GEMINI_API_KEY, apiKey: process.env.GROQ_API_KEY, cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID, cloudflareToken: process.env.CLOUDFLARE_AUTH_TOKEN });
   if (!provider) throw new Error('Sermon review evaluation key unavailable');
+  console.log('SERMON_REVIEW_EVAL',JSON.stringify({provider:provider.id}));
   // Fixed public Quran fixtures; no private book text or credentials are logged.
   const passages = [
     { id: 'public-eval:2:45', collection: 'quran', language: 'ar', referenceUr: 'قرآن، 2:45', referenceEn: 'Quran, 2:45', sourceSha256: 'a'.repeat(64), translator: null,

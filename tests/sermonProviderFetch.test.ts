@@ -54,3 +54,13 @@ it("parses JSON fences while rejecting truncated, missing and invalid provider o
  expect(JSON.stringify(warning.mock.calls)).not.toContain("private invalid provider text");expect(warning).toHaveBeenCalledWith("Sermon provider format",expect.objectContaining({stage:"review",code:"truncated"}));
  }finally{warning.mockRestore();}
 });
+
+it("retries service-unavailable responses twice without changing the prompt",async()=>{
+ const init={body:JSON.stringify({messages:[{content:"public fixture"}]})};
+ const fetchMock=vi.fn().mockResolvedValueOnce(new Response(null,{status:503})).mockResolvedValueOnce(new Response(null,{status:503})).mockResolvedValueOnce(new Response("ok"));const wait=vi.fn(async()=>{});
+ expect((await fetchSermonProvider("https://provider.test",init,fetchMock,wait)).status).toBe(200);expect(wait.mock.calls).toEqual([[1000],[2000]]);expect(fetchMock.mock.calls.every(c=>c[1]===init)).toBe(true);
+ const unavailable=vi.fn(async()=>new Response(null,{status:503}));expect((await fetchSermonProvider("https://provider.test",{},unavailable,wait)).status).toBe(503);expect(unavailable).toHaveBeenCalledTimes(3);
+});
+it("does not retry invalid keys or requests as a temporary service failure",async()=>{
+ for(const status of [400,401,403,404]){const fetchMock=vi.fn(async()=>new Response(null,{status}));const wait=vi.fn(async()=>{});expect((await fetchSermonProvider("https://provider.test",{},fetchMock,wait)).status).toBe(status);expect(fetchMock).toHaveBeenCalledTimes(1);expect(wait).not.toHaveBeenCalled();}
+});
