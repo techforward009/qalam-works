@@ -59,7 +59,7 @@ async function readBounded(response: Response): Promise<unknown> {
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
-export function createCloudflareKnowledgeProvider(options: { env: { CLOUDFLARE_ACCOUNT_ID?: string; CLOUDFLARE_AUTH_TOKEN?: string }; fetchImpl?: typeof fetch; model?: string; reviewModel?: string; onFailure?: (event: { stage: "draft" | "review"; code: string; status?: number }) => void }): KnowledgeSynthesisProvider | null {
+export function createCloudflareKnowledgeProvider(options: { env: { CLOUDFLARE_ACCOUNT_ID?: string; CLOUDFLARE_AUTH_TOKEN?: string }; fetchImpl?: typeof fetch; model?: string; reviewModel?: string; reviewPrompt?: string; onFailure?: (event: { stage: "draft" | "review"; code: string; status?: number }) => void }): KnowledgeSynthesisProvider | null {
   const account = options.env.CLOUDFLARE_ACCOUNT_ID?.trim(); const token = options.env.CLOUDFLARE_AUTH_TOKEN?.trim();
   if (!account || !token) return null;
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -86,7 +86,7 @@ export function createCloudflareKnowledgeProvider(options: { env: { CLOUDFLARE_A
     draft: input => call(DRAFT_PROMPT, evidenceInput(input), 1800, 27_000, "draft", DRAFT_SCHEMA),
     review: (input, claims: readonly ResearchClaim[]) => {
       const evidence = evidenceInput(input).evidence;
-      return call(REVIEW_PROMPT, { requestedLanguage: input.locale, claims: claims.map(c => ({
+      return call(options.reviewPrompt ?? REVIEW_PROMPT, { requestedLanguage: input.locale, claims: claims.map(c => ({
         claimId: c.id, text: c.text,
         citedEvidence: c.citations.map(citation => {
           const ref = input.evidence.find(e => e.passage.id === citation.passageId)!.ref;

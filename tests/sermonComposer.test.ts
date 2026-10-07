@@ -49,3 +49,10 @@ it("rejects a short summary posing as a full duration sermon",async()=>{
  const short=async()=>({sections:sections.map(s=>({...s,text:s.text.slice(0,300)}))});
  await expect(composeSermon(input,result,{generate:short,reviewer,env:{}})).rejects.toThrow("insufficient-draft");
 });
+
+it("repairs a rejected section once and still requires every replacement to pass review",async()=>{
+ let calls=0;const repairReviewer={...reviewer,review:async(_i:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((c,i)=>({claimId:c.id,verdict:calls===0&&i===2?"unsupported":"supported",reason:calls===0&&i===2?"not-in-evidence":"entailed"})),...(++calls?{}:{})})};
+ const repairGenerate=vi.fn(async(_request:SermonRequest)=>({sections}));
+ const next=await composeSermon(input,result,{generate:repairGenerate,reviewer:repairReviewer,env:{}});
+ expect(next.sections).toHaveLength(5);expect(repairGenerate).toHaveBeenCalledTimes(2);expect(repairGenerate.mock.calls[1][0].instruction).toContain("section-3");
+});
