@@ -88,10 +88,20 @@ it("independently audits sentences on Cloudflare Qwen when existing credentials 
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({result:{choices:[{message:{content:JSON.stringify(compactReview()),reasoning:"private internal reasoning"}}]}})));
  const provider=createSermonSentenceReviewer({apiKey:"groq-key",cloudflareAccountId:"account",cloudflareToken:"cloudflare-key",fetchImpl:fetchMock})!;
  expect(await provider.review(input,claims)).toEqual({reviews:[{claimId:"section-1",verdict:"unsupported",reason:"contradiction"}]});
- expect(fetchMock.mock.calls[0][0]).toBe("https://api.cloudflare.com/client/v4/accounts/account/ai/v1/chat/completions");const request=fetchMock.mock.calls[0][1]!;expect((request.headers as Record<string,string>).Authorization).toBe("Bearer cloudflare-key");const body=JSON.parse(request.body as string);expect(body.model).toBe("@cf/qwen/qwen3.8-27b");expect(body.chat_template_kwargs.enable_thinking).toBe(true);expect(body.max_completion_tokens).toBe(3000);expect(body.reasoning_format).toBeUndefined();expect(createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key"})).not.toBeNull();
+ expect(fetchMock.mock.calls[0][0]).toBe("https://api.cloudflare.com/client/v4/accounts/account/ai/v1/chat/completions");const request=fetchMock.mock.calls[0][1]!;expect((request.headers as Record<string,string>).Authorization).toBe("Bearer cloudflare-key");const body=JSON.parse(request.body as string);expect(body.model).toBe("@cf/qwen/qwen3.8-27b");expect(body.chat_template_kwargs.enable_thinking).toBe(true);expect(body.max_completion_tokens).toBe(6000);expect(body.reasoning_format).toBeUndefined();expect(createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key"})).not.toBeNull();
 });
 
 it("accepts fenced complete JSON without relaxing sentence coverage",async()=>{
  const fetchMock=vi.fn(async()=>new Response(JSON.stringify({choices:[{finish_reason:"stop",message:{content:"```json\n"+JSON.stringify(compactReview())+"\n```"}}]})));
  expect(await createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key",fetchImpl:fetchMock})!.review(input,claims)).toEqual({reviews:[{claimId:"section-1",verdict:"unsupported",reason:"contradiction"}]});
+});
+
+it("overlaps at most two independent Cloudflare batches and rejects any incomplete result",async()=>{
+ const longClaims=Array.from({length:5},(_,i)=>({...claims[0],id:`section-${i+1}`,text:"نماز خشوع رکھنے والوں پر بھاری نہیں ہوتی۔ ".repeat(25)}));let active=0,maximum=0;
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+  active++;maximum=Math.max(maximum,active);await new Promise(resolve=>setTimeout(resolve,1));active--;const request=JSON.parse(JSON.parse(init!.body as string).messages[1].content);
+  return new Response(JSON.stringify({choices:[{finish_reason:"stop",message:{content:JSON.stringify({reviews:request.sections.map((s:{claimId:string;sentences:{index:number}[]})=>({claimId:s.claimId,sentences:s.sentences.map(x=>({i:x.index,v:"s",r:"e",refs:[1]}))}))})}}]}));
+ });
+ const provider=createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key",fetchImpl:fetchMock})!;const checked=await provider.review(input,longClaims) as {reviews:unknown[]};expect(checked.reviews).toHaveLength(5);expect(maximum).toBe(2);expect(fetchMock).toHaveBeenCalledTimes(5);
+ const missing=vi.fn(async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({reviews:[]})}}]})));await expect(createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key",fetchImpl:missing})!.review(input,longClaims)).rejects.toThrow("provider-format");expect(missing).toHaveBeenCalledTimes(2);
 });

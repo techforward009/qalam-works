@@ -93,9 +93,13 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
         else batches.push([claim]);
       }
       const reviews=[];
-      for(const batch of batches){
-        const checked=await reviewBatch(input,batch);
-        reviews.push(...checked.reviews);
+      // Groq output quotas need sequential calls; independent Cloudflare batches can overlap.
+      const concurrency=useCloudflare?2:1;
+      for(let offset=0;offset<batches.length;offset+=concurrency){
+        const checked=await Promise.allSettled(batches.slice(offset,offset+concurrency).map(batch=>reviewBatch(input,batch)));
+        const failed=checked.find(r=>r.status==="rejected");
+        if(failed?.status==="rejected")throw failed.reason;
+        for(const result of checked)if(result.status==="fulfilled")reviews.push(...result.value.reviews);
       }
       const result={reviews};
       if(reviewedResearchClaims(result,claims)===null)throw new Error("provider-format");
@@ -131,8 +135,8 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
       } };
       const endpoint=useCloudflare?`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(options.cloudflareAccountId!)}/ai/v1/chat/completions`:"https://api.groq.com/openai/v1/chat/completions";
       const response = await fetchSermonProvider(endpoint, {
-        method: "POST", headers: { Authorization: `Bearer ${useCloudflare?options.cloudflareToken:options.apiKey}`, "Content-Type": "application/json" }, signal: sermonProviderSignal(options.deadline),
-        body: JSON.stringify({ model: useCloudflare?"@cf/qwen/qwen3.8-27b":SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", ...(useCloudflare?{chat_template_kwargs:{enable_thinking:true}}:{reasoning_format:"hidden"}), max_completion_tokens: useCloudflare?Math.max(3000,reviewBudget+1500):reviewBudget,
+        method: "POST", headers: { Authorization: `Bearer ${useCloudflare?options.cloudflareToken:options.apiKey}`, "Content-Type": "application/json" }, signal: sermonProviderSignal(options.deadline,useCloudflare?120_000:90_000),
+        body: JSON.stringify({ model: useCloudflare?"@cf/qwen/qwen3.8-27b":SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", ...(useCloudflare?{chat_template_kwargs:{enable_thinking:true}}:{reasoning_format:"hidden"}), max_completion_tokens: useCloudflare?Math.max(6000,reviewBudget+4500):reviewBudget,
           response_format: { type: "json_schema", json_schema: { name: "sermon_sentence_audit", strict: true, schema } },
           messages: [{ role: "system", content: SENTENCE_REVIEW_PROMPT }, { role: "user", content: JSON.stringify({ locale: input.locale, evidence, sections }) }],
         }),

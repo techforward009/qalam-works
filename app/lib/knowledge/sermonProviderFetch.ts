@@ -60,8 +60,8 @@ function waitForSermonRetry(ms:number,signal?:AbortSignal|null):Promise<void>{
     signal?.addEventListener("abort",abort,{once:true});
   });
 }
-export function sermonProviderSignal(deadline?:number):AbortSignal{
-  const remaining=deadline===undefined?90_000:Math.min(90_000,deadline-Date.now());
+export function sermonProviderSignal(deadline?:number,maximumMs=90_000):AbortSignal{
+  const remaining=deadline===undefined?maximumMs:Math.min(maximumMs,deadline-Date.now());
   if(remaining<=0)throw new Error("composition-timeout");
   return AbortSignal.timeout(Math.max(1,Math.ceil(remaining)));
 }
