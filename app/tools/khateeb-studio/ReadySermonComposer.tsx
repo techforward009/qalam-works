@@ -10,6 +10,7 @@ export default function ReadySermonComposer({locale,project,onPrepared,onCopy,on
  const ur=locale==="ur";const [title,setTitle]=useState("");const [duration,setDuration]=useState<SermonDuration>(30);const [instruction,setInstruction]=useState("");const [pending,setPending]=useState(false);const [error,setError]=useState("");const [generated,setGenerated]=useState<string[]>([]);const controller=useRef<AbortController|null>(null);
  useEffect(()=>()=>controller.current?.abort(),[]);
  const revision=project?.sections.some(s=>s.id.startsWith("composed-"))?project:null;
+ useEffect(()=>{if(revision)setDuration(revision.duration);},[revision?.id,revision?.duration]);
  async function prepare(revise:boolean){
   const topic=revise?revision?.title:title.trim();if(!topic||pending)return;
   setPending(true);setError("");const abort=new AbortController();controller.current=abort;

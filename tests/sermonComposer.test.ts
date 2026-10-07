@@ -61,3 +61,20 @@ it("identifies composition provider failures without exposing provider responses
  const unavailable=async()=>{throw new Error("provider internals");};
  await expect(composeSermon(input,result,{generate:unavailable,reviewer,env:{}})).rejects.toThrow("generation-unavailable");
 });
+
+it("allows a brief closing and deduplicates valid references without accepting unknown ones",()=>{
+ const adjusted=sections.map((s,i)=>i===4?{...s,text:"آئیے اس موضوع پر غور کرتے ہوئے اپنی گفتگو مکمل کریں۔",refs:[2,2]}:s);
+ expect(parseComposedSections({sections:adjusted},evidence)?.[4].refs).toEqual([2]);
+ expect(parseComposedSections({sections:adjusted.map(s=>({...s,refs:[0]}))},evidence)).toBeNull();
+});
+
+ it("uses Qwen on Groq when a server key is configured",async()=>{
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections})}}]})));
+ await generateSermonSections(input,evidence,{GROQ_API_KEY:"test-secret"},fetchMock);
+ expect(fetchMock.mock.calls[0][0]).toBe("https://api.groq.com/openai/v1/chat/completions");
+ const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
+ expect(body.model).toBe("qwen/qwen3.8-27b");
+ expect(body.reasoning_effort).toBe("none");
+ expect(body.reasoning_format).toBe("hidden");
+ expect(body.response_format.json_schema.strict).toBe(true);
+ });
