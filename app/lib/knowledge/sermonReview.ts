@@ -107,6 +107,7 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
     },
   };
   async function reviewBatch(input:AnswerInput,claims:readonly ResearchClaim[]){
+      const started=Date.now();
       const sections = claims.map(claim => ({
         claimId: claim.id,
         sentences: sermonSentences(claim.text).map((text, i) => ({ index: i + 1, text })),
@@ -136,7 +137,7 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
       const endpoint=useCloudflare?`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(options.cloudflareAccountId!)}/ai/v1/chat/completions`:"https://api.groq.com/openai/v1/chat/completions";
       const response = await fetchSermonProvider(endpoint, {
         method: "POST", headers: { Authorization: `Bearer ${useCloudflare?options.cloudflareToken:options.apiKey}`, "Content-Type": "application/json" }, signal: sermonProviderSignal(options.deadline,useCloudflare?120_000:90_000),
-        body: JSON.stringify({ model: useCloudflare?"@cf/qwen/qwen3.8-27b":SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", ...(useCloudflare?{chat_template_kwargs:{enable_thinking:true}}:{reasoning_format:"hidden"}), max_completion_tokens: useCloudflare?Math.max(6000,reviewBudget+4500):reviewBudget,
+        body: JSON.stringify({ model: useCloudflare?"@cf/qwen/qwen3.8-27b":SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", ...(useCloudflare?{chat_template_kwargs:{enable_thinking:false}}:{reasoning_format:"hidden"}), max_completion_tokens: useCloudflare?Math.max(3000,reviewBudget):reviewBudget,
           response_format: { type: "json_schema", json_schema: { name: "sermon_sentence_audit", strict: true, schema } },
           messages: [{ role: "system", content: SENTENCE_REVIEW_PROMPT }, { role: "user", content: JSON.stringify({ locale: input.locale, evidence, sections }) }],
         }),
@@ -148,6 +149,7 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
       const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
       const checked = parseCompactSentenceReviews(parseSermonProviderContent(body,"review"), input, claims);
       if (!checked) {console.warn("Sermon sentence review",{code:"incomplete-or-invalid-audit",sectionCount:claims.length,sentenceCount:sections.reduce((n,s)=>n+s.sentences.length,0)});throw new Error("provider-format");}
+      console.info("Sermon sentence review",{status:"complete",sectionCount:claims.length,sentenceCount:sections.reduce((n,s)=>n+s.sentences.length,0),elapsedMs:Date.now()-started});
       return checked;
   }
 }

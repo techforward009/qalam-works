@@ -22,7 +22,9 @@ export async function fetchSermonProvider(url:string,init:RequestInit,fetchImpl:
   let waited=0;let request=init;
   for(let attempt=0;attempt<3;attempt++){
     request.signal?.throwIfAborted();
-    const response=await fetchImpl(url,request);
+    let response:Response;
+    try{response=await fetchImpl(url,request);}
+    catch(error){console.warn("Sermon provider transport",{code:error instanceof Error&&error.name==="TimeoutError"?"timeout":request.signal?.aborted?"aborted":"unavailable"});throw error;}
     if(response.status!==429){
       if(!response.ok)console.warn("Sermon provider rejection",{status:response.status,...await sermonProviderErrorDetails(response)});
       return response;

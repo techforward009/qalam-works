@@ -19,8 +19,11 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
   });
   const {collectSermonEvidence}=await import('../app/lib/knowledge/sermonEvidence.ts');
   const {composeSermon}=await import('../app/lib/knowledge/sermonComposer.ts');
+  const {createSermonSentenceReviewer}=await import('../app/lib/knowledge/sermonReview.ts');
+  const {reviewedResearchClaims}=await import('../app/lib/knowledge/researchAnswer.ts');
   const {buildCustomSermonText,parseCustomSermonProject,serializeCustomSermonProject}=await import('../app/tools/khateeb-studio/engine/customSermonProject.ts');
   if(process.argv.includes('--check-imports'))console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'imports-valid'}));
+  else if(process.exitCode)console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'blocked',reason:'source-review-fixtures-failed'}));
   else{
     let stage='sources';const started=Date.now();
     try{
@@ -29,6 +32,24 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
       const evidence=await collectSermonEvidence(input.title,input.locale,'release-public-sermon-evaluation');
       console.log('SERMON_FLOW_EVAL',JSON.stringify({stage,status:evidence.status,sourceCount:evidence.passages.length,elapsedMs:Date.now()-started}));
       if(evidence.passages.some(p=>p.collection!=='quran'))throw new Error('non-public-fixture');
+      stage='public-source-conditions';
+      const third=evidence.passages.find(p=>p.quranLocation?.surah===103&&p.quranLocation.ayah===3);
+      const first=evidence.passages.find(p=>p.quranLocation?.surah===103&&p.quranLocation.ayah===1);
+      if(!third||!first)throw new Error('no-evidence');
+      const fixtures=[
+        {id:'four-conditions',text:'خسارے سے مستثنیٰ لوگوں کے لیے یہاں ایمان، نیک عمل، حق کی نصیحت اور صبر کی نصیحت چاروں باتیں بیان ہوئی ہیں۔',passage:third,expected:true},
+        {id:'faith-without-action',text:'اس سورت کے مطابق ایمان کافی ہے، عمل اور نصیحت کی ضرورت نہیں۔',passage:third,expected:false},
+        {id:'reversed-asr-exception',text:'اس سورت کے مطابق ایمان والے، نیک عمل کرنے والے اور حق و صبر کی نصیحت کرنے والے خسارے میں ہیں۔',passage:third,expected:false},
+        {id:'invented-asr-wealth',text:'اس سورت میں مال بڑھنے کا وعدہ کیا گیا ہے۔',passage:third,expected:false},
+        {id:'correct-asr-oath',text:'پہلی آیت میں عصر کی قسم ہے۔',passage:first,expected:true},
+        {id:'wrong-asr-attached-verse',text:'پہلی آیت میں تمام انسانوں کے خسارے کا بیان ہے۔',passage:first,expected:false},
+      ];
+      const reviewer=createSermonSentenceReviewer({apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN});
+      if(!reviewer)throw new Error('provider-unavailable');
+      const claims=fixtures.map(f=>({id:f.id,text:f.text,citations:[{passageId:f.passage.id,quote:f.passage.text}]}));
+      const checked=reviewedResearchClaims(await reviewer.review({question:input.title,locale:'ur',evidence:evidence.passages.map((passage,i)=>({ref:i+1,passage}))},claims),claims);
+      if(checked===null)throw new Error('provider-format');
+      for(const fixture of fixtures){const accepted=checked.some(c=>c.id===fixture.id);console.log('SERMON_CONDITIONS_EVAL',JSON.stringify({fixture:fixture.id,expected:fixture.expected,accepted,passed:accepted===fixture.expected}));if(accepted!==fixture.expected)throw new Error('unverified');}
       stage='composition-and-review';
       const project=await composeSermon(input,evidence,{env:process.env});
       stage='portable-output';
@@ -42,7 +63,7 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
       for(const section of project.sections)console.log('SERMON_FLOW_PUBLIC_SECTION',JSON.stringify({heading:section.headingUr,text:section.userText}));
     }catch(error){
       const known=['provider-format','provider-rate-limited','provider-unavailable','composition-timeout','generation-unavailable','unverified','no-evidence','missing-translation','insufficient-draft','invalid-project','missing-source-output','non-public-fixture'];
-      console.log('SERMON_FLOW_EVAL',JSON.stringify({stage,status:'failed',code:error instanceof Error&&known.includes(error.message)?error.message:'unavailable',elapsedMs:Date.now()-started}));
+      console.log('SERMON_FLOW_EVAL',JSON.stringify({stage,status:'failed',code:error instanceof Error&&known.includes(error.message)?error.message:error instanceof Error&&['TimeoutError','AbortError'].includes(error.name)?'timeout':'unavailable',elapsedMs:Date.now()-started}));
       process.exitCode=1;
     }
   }
