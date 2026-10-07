@@ -7,7 +7,6 @@ import { createKnowledgeDraft } from "../../tools/khateeb-studio/engine/knowledg
 import type { CustomSermonProject } from "../../tools/khateeb-studio/engine/customSermonProject";
 import type { SermonDuration } from "../../tools/khateeb-studio/engine/sermonPrep";
 
-import BookTranslationEditor from "./BookTranslationEditor";
 
 const field = "w-full rounded-lg border border-emerald-900/20 bg-white p-3 text-gray-900 dark:bg-[#162a1e] dark:text-white";
 const button = "rounded-lg bg-[#31513a] px-4 py-2 text-sm text-white disabled:opacity-50";
@@ -130,7 +129,6 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
         <BookPassageText text={p.text} language={p.language} quran={p.collection === "quran"} />
         {p.suppliedTranslation ? <div className="mt-3 border-t border-emerald-900/15 pt-3"><p className="mb-2 text-xs">{ur ? "فراہم کردہ ترجمہ" : "Supplied translation"} — {p.suppliedTranslation.translator}{p.suppliedTranslation.source ? ` — ${p.suppliedTranslation.source}` : ""}</p><BookPassageText text={p.suppliedTranslation.text} language={p.suppliedTranslation.language} /></div> : null}
         <button type="button" className="mt-3 text-sm text-emerald-800 underline dark:text-emerald-200" onClick={() => void openSource(p)}>{ur ? "اصل ماخذ اور سیاق دیکھیں" : "Open original source and context"}</button>
-        <BookTranslationEditor passage={p} locale={locale} onSaved={translation => setResult(current => current ? { ...current, research: undefined, passages: current.passages.map(item => item.id === p.id ? { ...item, suppliedTranslation: translation } : item) } : current)} />
       </article>)}
       {result.passages.length ? <div className="flex flex-wrap items-end gap-3">
         <button className={button} disabled={!selected.length} onClick={() => void copy()}>{ur ? "منتخب مواد اور حوالے نقل کریں" : "Copy selected sources"}</button>
