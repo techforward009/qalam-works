@@ -8,6 +8,7 @@ import { loadBookCatalog, MAX_BOOK_UPLOAD_BYTES, parseBookArchive, saveBookArchi
 
 import { resolvePatienceMaterials } from "../../../tools/khateeb-studio/engine/patienceBookGuide";
 import { readBookSource } from "./sourceCache";
+import { activateBookImport, saveBookImportSource, validateBookImportPlan, MAX_BOOK_PART_BYTES } from "../../../lib/knowledge/store";
 
 function json(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
@@ -60,6 +61,48 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
   const origin = req.headers.get("origin");
   if (origin && origin !== req.nextUrl.origin) return json({ code: "invalid" }, 400);
+  const operation = req.nextUrl.searchParams.get("op");
+  if (operation === "source" || operation === "activate") {
+    const limit = operation === "source" ? MAX_BOOK_PART_BYTES + 262_144 : 262_144;
+    if (Number(req.headers.get("content-length")) > limit || !req.body) return json({ code: "invalid" }, 400);
+    let plan: unknown;
+    let bytes: Uint8Array | null = null;
+    let sourceId = "";
+    try {
+      const reader = req.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let length = 0;
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        length += chunk.value.length;
+        if (length > limit) { await reader.cancel(); return json({ code: "invalid" }, 400); }
+        chunks.push(chunk.value);
+      }
+      const body = Buffer.concat(chunks);
+      if (operation === "activate") plan = JSON.parse(body.toString("utf8"));
+      else {
+        const form = await new Response(body, { headers: { "Content-Type": req.headers.get("content-type") ?? "" } }).formData();
+        const file = form.get("source");
+        const rawPlan = form.get("plan");
+        const id = form.get("sourceId");
+        if (!(file instanceof File) || typeof rawPlan !== "string" || typeof id !== "string" || [...form.keys()].length !== 3 || file.size > MAX_BOOK_PART_BYTES) throw new Error("invalid");
+        plan = JSON.parse(rawPlan); sourceId = id;
+        bytes = new Uint8Array(await file.arrayBuffer());
+      }
+      validateBookImportPlan(plan);
+    } catch { return json({ code: "invalid" }, 400); }
+    try {
+      const client = await researchBlobClientFromEnv();
+      if (bytes) {
+        const revision = await saveBookImportSource(client, plan, sourceId, bytes);
+        return json({ stored: true, revision });
+      }
+      const catalog = await activateBookImport(client, plan);
+      return json({ ready: true, revision: catalog.revision, sources: catalog.manifest.sources, recordCount: catalog.manifest.recordCount });
+    } catch { return json({ code: "unavailable" }, 503); }
+  }
+  if (operation) return json({ code: "invalid" }, 400);
   const maxBody = MAX_BOOK_UPLOAD_BYTES + 32_768;
   if (Number(req.headers.get("content-length")) > maxBody || !req.body) return json({ code: "invalid" }, 400);
   let archive: Awaited<ReturnType<typeof parseBookArchive>>;

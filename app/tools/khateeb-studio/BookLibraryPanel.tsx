@@ -7,6 +7,7 @@ import type { CustomSermonProject } from "./engine/customSermonProject";
 import ResearchStudioGate from "../research-studio/components/ResearchStudioGate";
 import { renderKhateebSalawat } from "./KhateebScriptText";
 import ClipboardFeedback from "./ClipboardFeedback";
+import { uploadBookArchive } from "../../lib/knowledge/uploadBookArchive";
 import { useCopyFeedback } from "./useCopyFeedback";
 import { bookExcerptText, bookKindLabel, bookSourceLabel, bookRecordReference, cleanBookTitle, createBookExcerpt, type BookExcerpt, type BookRecord, type BookSearchResult, type BookSource } from "./engine/bookLibrary";
 
@@ -72,9 +73,17 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
   async function importArchive(file: File | null) {
     if (!file) return;
     if (file.size > 8 * 1024 * 1024) { setError(invalid); return; }
-    const form = new FormData(); form.set("archive", file);
-    const value = await request("/api/research/book-library", { method: "POST", body: form });
-    if (value) { setCatalog(value); setResults(null); setMessage(ur ? "کتابی ذخیرہ نجی طور پر محفوظ ہوگیا۔" : "The book corpus was saved privately."); }
+    controller.current?.abort();
+    const abort = new AbortController(); controller.current = abort;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const value = await uploadBookArchive(file, abort.signal, (done, total) => {
+        if (!abort.signal.aborted) setMessage(ur ? `کتابی نسخے محفوظ ہو رہے ہیں: ${done} / ${total}` : `Saving source editions: ${done} / ${total}`);
+      });
+      if (!abort.signal.aborted) { setCatalog(value); setResults(null); setMessage(ur ? "کتابی ذخیرہ نجی طور پر محفوظ ہوگیا۔" : "The book corpus was saved privately."); }
+    } catch (err) {
+      if (!abort.signal.aborted) { setMessage(""); setError(err instanceof Error && err.message === "invalid" ? invalid : failure); }
+    } finally { if (!abort.signal.aborted) setBusy(false); }
   }
   async function search(page = 1) {
     const params = new URLSearchParams({ op: "search", query, book, language, sourceId, kind, number, page: String(page) });

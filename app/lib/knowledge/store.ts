@@ -37,7 +37,7 @@ export function validateBookRecords(value: unknown, source: BookSource): BookRec
   }
   return value;
 }
-function validateManifest(value: unknown): BookManifest {
+export function validateManifest(value: unknown): BookManifest {
   const manifest = value as BookManifest;
   if (manifest?.format !== "qalam-foundational-corpus" || manifest.version !== 1 || !Array.isArray(manifest.sources) || (manifest.sources.length !== BOOK_SOURCE_IDS.length && manifest.sources.length !== ALL_BOOK_SOURCE_IDS.length) || !Number.isInteger(manifest.recordCount) || manifest.recordCount < 1 || manifest.recordCount > 10_000) throw new Error("invalid-manifest");
   const seen = new Set<string>();
@@ -48,6 +48,45 @@ function validateManifest(value: unknown): BookManifest {
   }
   if (BOOK_SOURCE_IDS.some(id => !seen.has(id)) || manifest.sources.length === ALL_BOOK_SOURCE_IDS.length && KAFI_SOURCE_IDS.some(id => !seen.has(id))) throw new Error("invalid-manifest");
   return manifest;
+}
+
+export const MAX_BOOK_PART_BYTES = 3 * 1024 * 1024;
+export type BookImportPlan = { manifest: BookManifest; digests: Record<string, string> };
+export function validateBookImportPlan(value: unknown) {
+  const plan = value as BookImportPlan;
+  const manifest = validateManifest(plan?.manifest);
+  if (!plan.digests || typeof plan.digests !== "object" || Object.keys(plan.digests).length !== manifest.sources.length
+    || manifest.sources.some(s => !/^[a-f0-9]{64}$/.test(plan.digests[s.id]))) throw new Error("invalid-plan");
+  const normalized = { manifest, digests: Object.fromEntries(manifest.sources.map(s => [s.id, plan.digests[s.id]])) };
+  return { ...normalized, revision: hash(JSON.stringify(normalized)) };
+}
+export async function saveBookImportSource(client: ResearchBlobClient, value: unknown, sourceId: string, bytes: Uint8Array) {
+  const plan = validateBookImportPlan(value);
+  const source = plan.manifest.sources.find(s => s.id === sourceId);
+  if (!source || !bytes.length || bytes.length > MAX_BOOK_PART_BYTES || hash(bytes) !== plan.digests[sourceId]) throw new Error("invalid-part");
+  const raw = gunzipSync(bytes, { maxOutputLength: MAX_SOURCE_BYTES });
+  validateBookRecords(JSON.parse(raw.toString("utf8")), source);
+  await client.putObject(`${ROOT}${plan.revision}/${sourceId}.json`, JSON.stringify({ encoding: "gzip-base64", data: Buffer.from(bytes).toString("base64") }));
+  return plan.revision;
+}
+export async function activateBookImport(client: ResearchBlobClient, value: unknown) {
+  const plan = validateBookImportPlan(value);
+  const paths = Object.fromEntries(plan.manifest.sources.map(s => [s.id, `${ROOT}${plan.revision}/${s.id}.json`]));
+  const catalog: BookCatalog = { revision: plan.revision, manifest: plan.manifest, paths };
+  let count = 0;
+  for (const source of plan.manifest.sources) {
+    const raw = await client.getObject(paths[source.id]);
+    if (!raw || raw.length > 4 * MAX_BOOK_PART_BYTES / 3 + 1024) throw new Error("missing-source");
+    const stored = JSON.parse(raw);
+    if (stored?.encoding !== "gzip-base64" || typeof stored.data !== "string") throw new Error("invalid-encoding");
+    const bytes = Buffer.from(stored.data, "base64");
+    if (hash(bytes) !== plan.digests[source.id]) throw new Error("invalid-part");
+    count += validateBookRecords(JSON.parse(gunzipSync(bytes, { maxOutputLength: MAX_SOURCE_BYTES }).toString("utf8")), source).length;
+  }
+  if (count !== plan.manifest.recordCount) throw new Error("count-mismatch");
+  // The live pointer changes only after every persisted source has been read and checked.
+  await client.putObject(BOOK_POINTER_PATH, JSON.stringify(catalog));
+  return catalog;
 }
 export async function parseBookArchive(bytes: Uint8Array) {
   if (!bytes.length || bytes.length > MAX_BOOK_UPLOAD_BYTES) throw new Error("invalid-size");
