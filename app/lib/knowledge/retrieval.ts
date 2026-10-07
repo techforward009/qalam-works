@@ -16,7 +16,7 @@ export type KnowledgePassage = {
 export type KnowledgeResult = {
   question: string; contextQuestion?: string; research?: KnowledgeResearchAnswer; status: "evidence" | "not-found" | "unsupported-fatwa";
   method: "lexical-topic-expansion" | "lexical-bm25-topic-expansion"; passages: KnowledgePassage[];
-  expandedTerms: string[]; availableCollections: string[]; searchTopics?: SearchTopic[];
+  expandedTerms: string[]; availableCollections: string[]; searchTopics?: SearchTopic[]; questionUnderstanding?: "model" | "lexical";
 };
 export type QuranInput = { surah: number; ayah: number; text: string; suppliedTranslation?: KnowledgePassage["suppliedTranslation"] };
 export function queryTerms(question: string): { direct: string[]; groups: string[][] } {
@@ -30,9 +30,9 @@ function explicitReference(question: string) {
   const kind = /saying|حكمت|حکمت/u.test(match[0]) ? "saying" : /sermon|خطب/u.test(match[0]) ? "sermon" : /letter|مكتوب/u.test(match[0]) ? "letter" : /حديث|hadith/u.test(match[0]) ? "hadith" : "supplication";
   return { kind, number: Number(match[1]) };
 }
-export function retrieveKnowledge(input: { question: string; scope: KnowledgeScope; locale: "ur" | "en"; records: readonly BookRecord[]; sources: readonly BookSource[]; quran: readonly QuranInput[]; quranSha256: string }): KnowledgeResult {
+export function retrieveKnowledge(input: { question: string; inferredTopicIds?: readonly string[]; scope: KnowledgeScope; locale: "ur" | "en"; records: readonly BookRecord[]; sources: readonly BookSource[]; quran: readonly QuranInput[]; quranSha256: string }): KnowledgeResult {
   const { question, scope, locale } = input;
-  const { direct, groups, topics } = planKnowledgeQuery(question);
+  const { direct, groups, topics } = planKnowledgeQuery(question, input.inferredTopicIds);
   const base = { question, method: "lexical-bm25-topic-expansion" as const, expandedTerms: [...new Set(groups.flat())], searchTopics: topics, availableCollections: [...new Set([...(input.quran.length ? ["quran"] : []), ...input.sources.map(s => s.book)])] };
   if (/(?:فتوي|فتوا|fatwa|مرجع|مراجع|marja)/iu.test(normalizeBookSearch(question))) return { ...base, status: "unsupported-fatwa", passages: [] };
   const reference = explicitReference(question);
@@ -119,7 +119,7 @@ export function knowledgeResultText(result: KnowledgeResult, locale: "ur" | "en"
 export function retrieveKnowledgeWithContext(input: Parameters<typeof retrieveKnowledge>[0] & { contextQuestion?: string }): KnowledgeResult {
   const current = retrieveKnowledge(input);
   if (!input.contextQuestion || current.status === "unsupported-fatwa") return current;
-  const previous = retrieveKnowledge({ ...input, question: input.contextQuestion });
+  const previous = retrieveKnowledge({ ...input, question: input.contextQuestion, inferredTopicIds: undefined });
   if (previous.status === "unsupported-fatwa") return { ...current, contextQuestion: input.contextQuestion, status: "unsupported-fatwa", passages: [] };
   const passages: KnowledgePassage[] = [];
   const ids = new Set<string>();

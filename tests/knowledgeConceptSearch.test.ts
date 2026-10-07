@@ -47,3 +47,17 @@ it.runIf(Boolean(corpus))('retrieves new concept questions against the full impo
   }
  }
 },30000);
+
+it.runIf(Boolean(corpus))('retrieves source-bound evidence from interpreted colloquial questions',()=>{
+ const manifest=JSON.parse(readFileSync(`${corpus}/manifest.json`,'utf8'));
+ const sources:BookSource[]=manifest.sources;
+ const records:BookRecord[]=sources.flatMap(s=>JSON.parse(readFileSync(`${corpus}/${s.id}.json`,'utf8')));
+ for(const [question,inferredTopicIds] of [['بچہ بات نہیں مانتا',['children','upbringing']],['فوراً جواب دے کر بعد میں پچھتاتا ہوں',['anger','self-restraint']]] as const){
+  const result=retrieveKnowledge({question,inferredTopicIds,scope:'kafi',locale:'ur',sources,records,quran:[],quranSha256:''});
+  expect(result.status,question).toBe('evidence');
+  for(const p of result.passages){
+   const r=records.find(r=>r.id===p.recordId)!;
+   expect(p.excerpt?.paragraphs.every(x=>r.paragraphs.some(y=>x.id===y.id&&x.text===y.text))).toBe(true);
+  }
+ }
+},30000);

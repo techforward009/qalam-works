@@ -59,11 +59,13 @@ const rows: readonly [string, string, string, string][] = [
 ];
 const concepts: Concept[] = rows.map(([id,labelUr,labelEn,terms]) => ({id,labelUr,labelEn,terms:[...new Set(terms.split('|').map(normalizeBookSearch))]}));
 const stop = new Set(normalizeBookSearch('کے کی کا کو سے میں پر اور ہے ہیں تھا کیا کیسے بارے متعلق بتائیں نے ایک ہمیں کس وہ یہ اپنے اپنی اس ان فرماتے فرمایا تعلیمات قرآن قران نہج البلاغہ صحیفہ سجادیہ امام علی اللہ مجھے واضح وضاحت عملی روزمرہ مثال مثالیں زندگی اطلاق تعلق ربط موازنہ تقابل اسی موضوع مزید خلاصہ چاہتا چاہتی چاہیے کریں بتاتا کہ سکتے سکتا سکیں ہوتا ہوتی کریں کرنا کرنے کریں چاہئے کون کہا جاتا جاتا بھی ساتھ کتاب کتابوں روشنی کردار اہمیت طریقہ طریقے نظر پیش حوالے حدیث احادیث روایات متون مواد رہنمائی aur ki ka ke se mein the a an of in on about what how does did say said tell me and or is are to from please explain practical everyday daily life examples example application compare comparison relationship connection this topic further summarize summary source sources passages passage discuss material available books book related provide show quran nahj balagha sahifa sajjadiyya teachings should can why me us according role importance way ways guidance').split(' '));
-export function planKnowledgeQuery(question: string): {direct: string[]; groups: string[][]; topics: SearchTopic[]} {
+export const knowledgeTopicCatalog: readonly SearchTopic[] = concepts.map(({id,labelUr,labelEn})=>({id,labelUr,labelEn}));
+export function planKnowledgeQuery(question: string, inferredTopicIds: readonly string[] = []): {direct: string[]; groups: string[][]; topics: SearchTopic[]} {
  const normalized=normalizeBookSearch(question); const words=normalized.split(' ');
- const found=concepts.filter(c=>c.terms.some(term=>(' '+normalized+' ').includes(' '+term+' ')));
+ const inferred=concepts.filter(c=>inferredTopicIds.includes(c.id));
+ const found=inferred.length ? inferred : concepts.filter(c=>c.terms.some(term=>(' '+normalized+' ').includes(' '+term+' ')));
  const consumed=new Set(found.flatMap(c=>c.terms.filter(term=>(' '+normalized+' ').includes(' '+term+' ')).flatMap(t=>t.split(' '))));
  const direct=[...new Set(words.filter(t=>t.length>1&&!stop.has(t)&&!/^\d+$/.test(t)))].slice(0,24);
- const groups=[...found.map(c=>c.terms),...direct.filter(t=>!consumed.has(t)).map(t=>[t])];
+ const groups=[...found.map(c=>c.terms),...(inferred.length ? [] : direct.filter(t=>!consumed.has(t)).map(t=>[t]))];
  return {direct,groups,topics:found.map(({id,labelUr,labelEn})=>({id,labelUr,labelEn}))};
 }
