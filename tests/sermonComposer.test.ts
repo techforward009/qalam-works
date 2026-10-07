@@ -78,3 +78,10 @@ it("allows a brief closing and deduplicates valid references without accepting u
  expect(body.reasoning_format).toBe("hidden");
  expect(body.response_format.json_schema.strict).toBe(true);
  });
+
+it("rejects foreign-script text in Urdu sermon prose before source review",async()=>{
+ const contaminated=vi.fn(async()=>({sections:sections.map((s,i)=>i===1?{...s,text:s.text+" বিরطفت "}:s)}));
+ const check={...reviewer,review:vi.fn()};
+ await expect(composeSermon(input,result,{generate:contaminated,reviewer:check,env:{}})).rejects.toThrow("unverified");
+ expect(check.review).not.toHaveBeenCalled();
+});

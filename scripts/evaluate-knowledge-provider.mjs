@@ -69,3 +69,5 @@ if (process.argv.includes('--live') || markers.includes(process.env.VERCEL_GIT_C
     } catch { console.log('PUBLIC_KNOWLEDGE_EVAL', JSON.stringify({ fixture: fixture.name, error: 'evaluation-unavailable' })); process.exitCode = 1; }
   }
 }
+
+await import("./evaluate-sermon-review.mjs");

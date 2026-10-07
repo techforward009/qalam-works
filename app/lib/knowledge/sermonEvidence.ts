@@ -14,10 +14,11 @@ import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahm
 import { QURAN_TRANSLATION_SOURCES } from "../../tools/khateeb-studio/engine/quranTranslationProvider";
 
 export function retrieveSermonSources(input:Parameters<typeof retrieveKnowledge>[0]){
- const result=retrieveKnowledge(input);
+ const originalInput={...input,records:input.records.filter(record=>record.language==="ar")};
+ const result=retrieveKnowledge(originalInput);
  if(result.status!=="evidence" || /[0-9۰-۹٠-٩"“«]/u.test(input.question))return result;
  const topics=planKnowledgeQuery(input.question,input.inferredTopicIds).topics.slice(0,3);
- const pools=[result.passages,...topics.map(t=>retrieveKnowledge({...input,question:input.locale==="ur"?t.labelUr:t.labelEn,inferredTopicIds:[t.id]}).passages)];
+ const pools=[result.passages,...topics.map(t=>retrieveKnowledge({...originalInput,question:input.locale==="ur"?t.labelUr:t.labelEn,inferredTopicIds:[t.id]}).passages)];
  const passages:typeof result.passages=[];const seen=new Set<string>();
  for(let i=0;i<16&&passages.length<16;i++)for(const pool of pools){const p=pool[i];if(p&&!seen.has(p.id)&&passages.length<16){seen.add(p.id);passages.push(p);}}
  return {...result,passages};

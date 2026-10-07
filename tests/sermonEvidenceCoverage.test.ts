@@ -13,3 +13,12 @@ it("collects evidence for each topic of a sermon without requiring every verse t
 it("preserves exact numbered references rather than expanding them into unrelated topics",()=>{
  const result=retrieveSermonSources({...base,question:"2:153"});expect(result.passages).toHaveLength(1);expect(result.passages[0].quranLocation).toEqual({surah:2,ayah:153});
 });
+
+it("keeps commentary in translation editions out of primary sermon retrieval",()=>{
+ const source={id:"sahifa-ur",book:"sahifa" as const,language:"ur" as const,filename:"edition.docx",sha256:"a".repeat(64),translator:null};
+ const id="sahifa-ur:supplication:50";
+ const record={id,sourceId:source.id,book:source.book,language:source.language,kind:"supplication",number:50,title:"دعا 50",reference:{sourceId:source.id,section:"supplication",number:50,locator:"test",printPage:null},textSha256:"b".repeat(64),paragraphs:[{id:id+":p1",text:"دعا کے بعد شرح میں صبر کے بارے میں دوسری عبارت نقل کی گئی ہے۔"}]};
+ const result=retrieveSermonSources({...base,scope:"all",question:"صبر",sources:[source],records:[record]});
+ expect(result.passages.length).toBeGreaterThan(0);
+ expect(result.passages.some(p=>p.sourceId==="sahifa-ur")).toBe(false);
+});
