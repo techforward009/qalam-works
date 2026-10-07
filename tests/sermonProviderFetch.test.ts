@@ -1,5 +1,5 @@
 import {expect,it,vi} from "vitest";
-import {fetchSermonProvider,sermonProviderSignal,sermonThrottleMetrics} from "../app/lib/knowledge/sermonProviderFetch";
+import {fetchSermonProvider,sermonProviderSignal,sermonThrottleMetrics,sermonProviderErrorDetails} from "../app/lib/knowledge/sermonProviderFetch";
 it("retries an explicit short throttle once",async()=>{
  const fetchMock=vi.fn().mockResolvedValueOnce(new Response(null,{status:429,headers:{"retry-after":"2"}})).mockResolvedValueOnce(new Response("ok"));const wait=vi.fn(async()=>{});
  expect((await fetchSermonProvider("https://provider.test",{},fetchMock,wait)).status).toBe(200);expect(wait).toHaveBeenCalledWith(3000);expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -28,10 +28,20 @@ it("extracts numeric quota facts without retaining private provider text",()=>{
 });
 it("reduces an oversized output reservation using the provider count, without changing evidence",async()=>{
  const original={max_completion_tokens:3500,messages:[{content:"verified evidence"}],response_format:{json_schema:{name:"sermon_composition"}}};
- const fetchMock=vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({error:{message:"Limit 8000, Requested 9100"}}),{status:429})).mockResolvedValueOnce(new Response("ok"));
+ const fetchMock=vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({error:{message:"tokens per minute (TPM): Limit 8000, Requested 9100"}}),{status:429})).mockResolvedValueOnce(new Response("ok"));
  expect((await fetchSermonProvider("https://provider.test",{body:JSON.stringify(original)},fetchMock)).status).toBe(200);
  const revised=JSON.parse(fetchMock.mock.calls[1][1].body);expect(revised.max_completion_tokens).toBe(2272);expect(revised.messages).toEqual(original.messages);
 });
 it("does not shrink below the composition floor or retry an impossible input",async()=>{
- const fetchMock=vi.fn(async()=>new Response(JSON.stringify({error:{message:"Limit 8000, Requested 14000"}}),{status:429}));expect((await fetchSermonProvider("https://provider.test",{body:JSON.stringify({max_completion_tokens:3500,response_format:{json_schema:{name:"sermon_composition"}}})},fetchMock)).status).toBe(429);expect(fetchMock).toHaveBeenCalledTimes(1);
+ const fetchMock=vi.fn(async()=>new Response(JSON.stringify({error:{message:"tokens per minute (TPM): Limit 8000, Requested 14000"}}),{status:429}));expect((await fetchSermonProvider("https://provider.test",{body:JSON.stringify({max_completion_tokens:3500,response_format:{json_schema:{name:"sermon_composition"}}})},fetchMock)).status).toBe(429);expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+it("distinguishes request limits from input and output token limits",()=>{
+ for(const unit of ["TPM","ITPM","OTPM","RPM","RPD","TPD"])expect(sermonThrottleMetrics({error:{message:`quota (${unit}): Limit 1000, Used 999, Requested 182`}})).toMatchObject({unit,limit:1000,used:999,requested:182});
+});
+it("never adjusts output tokens for request counts or an unidentified quota",async()=>{
+ for(const prefix of ["requests per day (RPD): ",""]){const fetchMock=vi.fn(async()=>new Response(JSON.stringify({error:{message:prefix+"Limit 1000, Requested 1031"}}),{status:429}));await fetchSermonProvider("https://provider.test",{body:JSON.stringify({max_completion_tokens:3500})},fetchMock);expect(fetchMock).toHaveBeenCalledTimes(1);}
+});
+it("retains a known format error code without model output or private messages",async()=>{
+ const details=await sermonProviderErrorDetails(new Response(JSON.stringify({error:{code:"json_validate_failed",message:"private source",failed_generation:"private draft"}}),{status:400}));expect(details).toMatchObject({code:"json_validate_failed"});expect(JSON.stringify(details)).not.toContain("private");
 });
