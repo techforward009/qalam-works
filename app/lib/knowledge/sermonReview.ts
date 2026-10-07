@@ -77,11 +77,12 @@ export function parseCompactSentenceReviews(raw: unknown, input: AnswerInput, cl
   return parseSentenceReviews({reviews},input,claims);
 }
 
-export function createSermonSentenceReviewer(options: { apiKey?: string; fetchImpl?: typeof fetch; deadline?:number }): KnowledgeSynthesisProvider | null {
-  if (!options.apiKey?.trim()) return null;
+export function createSermonSentenceReviewer(options: { apiKey?: string; fetchImpl?: typeof fetch; deadline?:number; cloudflareAccountId?:string; cloudflareToken?:string }): KnowledgeSynthesisProvider | null {
+  const useCloudflare=Boolean(options.cloudflareAccountId&&options.cloudflareToken);
+  if (!useCloudflare&&!options.apiKey?.trim()) return null;
   const fetchImpl = options.fetchImpl ?? fetch;
   return {
-    id: `groq:${SERMON_REVIEW_MODEL}:sentence-review:v1`,
+    id: `${useCloudflare?"cloudflare":"groq"}:${SERMON_REVIEW_MODEL}:sentence-review:v2`,
     draft: async () => { throw new Error("review-only"); },
     async review(input, claims) {
       if(!claims.length || claims.reduce((n,c)=>n+sermonSentences(c.text).length,0)>150)throw new Error("review-too-large");
@@ -128,9 +129,10 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
           },
         } },
       } };
-      const response = await fetchSermonProvider("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST", headers: { Authorization: `Bearer ${options.apiKey}`, "Content-Type": "application/json" }, signal: sermonProviderSignal(options.deadline),
-        body: JSON.stringify({ model: SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", reasoning_format: "hidden", max_completion_tokens: reviewBudget,
+      const endpoint=useCloudflare?`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(options.cloudflareAccountId!)}/ai/v1/chat/completions`:"https://api.groq.com/openai/v1/chat/completions";
+      const response = await fetchSermonProvider(endpoint, {
+        method: "POST", headers: { Authorization: `Bearer ${useCloudflare?options.cloudflareToken:options.apiKey}`, "Content-Type": "application/json" }, signal: sermonProviderSignal(options.deadline),
+        body: JSON.stringify({ model: useCloudflare?"@cf/qwen/qwen3.8-27b":SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", ...(useCloudflare?{chat_template_kwargs:{enable_thinking:true}}:{reasoning_format:"hidden"}), max_completion_tokens: useCloudflare?Math.max(3000,reviewBudget+1500):reviewBudget,
           response_format: { type: "json_schema", json_schema: { name: "sermon_sentence_audit", strict: true, schema } },
           messages: [{ role: "system", content: SENTENCE_REVIEW_PROMPT }, { role: "user", content: JSON.stringify({ locale: input.locale, evidence, sections }) }],
         }),
@@ -140,7 +142,7 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
       const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let bytes = 0;
       while (true) { const chunk = await reader.read(); if (chunk.done) break; bytes += chunk.value.length; if (bytes > 160_000) { await reader.cancel(); throw new Error("provider-format"); } chunks.push(chunk.value); }
       const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-      const content = body.choices?.[0]?.message?.content;
+      const content = (body.choices??body.result?.choices)?.[0]?.message?.content??body.result?.response;
       const checked = parseCompactSentenceReviews(typeof content === "string" ? JSON.parse(content) : content, input, claims);
       if (!checked) throw new Error("provider-format");
       return checked;

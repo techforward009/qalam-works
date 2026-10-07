@@ -42,7 +42,7 @@ it("does not generate without configured review or sufficient evidence",async()=
 it("uses bounded existing provider protocol without trusting previous draft as evidence",async()=>{
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections})}}]})));
  expect(await generateSermonSections({...input,previous:"غير ثابت",instruction:"زبان آسان کریں"},evidence,{CLOUDFLARE_ACCOUNT_ID:"test",CLOUDFLARE_AUTH_TOKEN:"test"},fetchMock)).toEqual({sections});
- const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);expect(body.messages[0].content).toContain("Previous draft provides continuity, not proof");expect(body.max_tokens).toBe(6000);expect(body.response_format.json_schema.schema.properties.sections.minItems).toBe(5);expect(body.response_format.json_schema.strict).toBe(true);
+ const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);expect(body.messages[0].content).toContain("Previous draft provides continuity, not proof");expect(body.max_completion_tokens).toBe(6500);expect(body.response_format.json_schema.schema.properties.sections.minItems).toBe(5);expect(body.response_format.json_schema.strict).toBe(true);
 });
 
 it("rejects a short summary posing as a full duration sermon",async()=>{
@@ -103,4 +103,11 @@ it("sends supplied meanings to the writer without duplicated original text or me
 it("bounds sermon evidence with complete source units and unchanged verified translations",()=>{
  const long={...result.passages[0],id:"too-long",text:"ع".repeat(7000)};
  const chosen=selectSermonEvidence([long,...result.passages]);expect(chosen).toHaveLength(2);expect(chosen[0].passage).toBe(result.passages[0]);expect(chosen[0].ref).toBe(1);expect(chosen[1].ref).toBe(2);
+});
+
+it("uses the same Qwen model on Cloudflare for long composition when both providers are configured",async()=>{
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections}),reasoning:"never sermon text"}}]})));
+ expect(await generateSermonSections(input,evidence,{GROQ_API_KEY:"groq-key",CLOUDFLARE_ACCOUNT_ID:"account",CLOUDFLARE_AUTH_TOKEN:"cloudflare-key"},fetchMock)).toEqual({sections});
+ expect(fetchMock.mock.calls[0][0]).toBe("https://api.cloudflare.com/client/v4/accounts/account/ai/v1/chat/completions");
+ const request=fetchMock.mock.calls[0][1]!;expect((request.headers as Record<string,string>).Authorization).toBe("Bearer cloudflare-key");const body=JSON.parse(request.body as string);expect(body.model).toBe("@cf/qwen/qwen3.8-27b");expect(body.chat_template_kwargs.enable_thinking).toBe(false);expect(body.reasoning_effort).toBe("low");expect(body.reasoning_format).toBeUndefined();expect(body.max_completion_tokens).toBe(6500);expect(body.response_format.json_schema.strict).toBe(true);
 });

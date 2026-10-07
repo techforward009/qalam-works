@@ -83,3 +83,10 @@ it("does not accept earlier batches if a later batch is incomplete",async()=>{
  });
  await expect(createSermonSentenceReviewer({apiKey:"test",fetchImpl:fetchMock})!.review(input,separate)).rejects.toThrow("provider-format");expect(fetchMock).toHaveBeenCalledTimes(2);
 });
+
+it("independently audits sentences on Cloudflare Qwen when existing credentials are available",async()=>{
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({result:{choices:[{message:{content:JSON.stringify(compactReview()),reasoning:"private internal reasoning"}}]}})));
+ const provider=createSermonSentenceReviewer({apiKey:"groq-key",cloudflareAccountId:"account",cloudflareToken:"cloudflare-key",fetchImpl:fetchMock})!;
+ expect(await provider.review(input,claims)).toEqual({reviews:[{claimId:"section-1",verdict:"unsupported",reason:"contradiction"}]});
+ expect(fetchMock.mock.calls[0][0]).toBe("https://api.cloudflare.com/client/v4/accounts/account/ai/v1/chat/completions");const request=fetchMock.mock.calls[0][1]!;expect((request.headers as Record<string,string>).Authorization).toBe("Bearer cloudflare-key");const body=JSON.parse(request.body as string);expect(body.model).toBe("@cf/qwen/qwen3.8-27b");expect(body.chat_template_kwargs.enable_thinking).toBe(true);expect(body.max_completion_tokens).toBe(3000);expect(body.reasoning_format).toBeUndefined();expect(createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key"})).not.toBeNull();
+});

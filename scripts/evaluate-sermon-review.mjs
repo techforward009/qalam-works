@@ -15,7 +15,7 @@ if (!process.argv.includes('--live') && process.env.VERCEL_GIT_COMMIT_MESSAGE?.t
 } else {
   const { createSermonSentenceReviewer } = await import('../app/lib/knowledge/sermonReview.ts');
   const { reviewedResearchClaims } = await import('../app/lib/knowledge/researchAnswer.ts');
-  const provider = createSermonSentenceReviewer({ apiKey: process.env.GROQ_API_KEY });
+  const provider = createSermonSentenceReviewer({ apiKey: process.env.GROQ_API_KEY, cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID, cloudflareToken: process.env.CLOUDFLARE_AUTH_TOKEN });
   if (!provider) throw new Error('Sermon review evaluation key unavailable');
   // Fixed public Quran fixtures; no private book text or credentials are logged.
   const passages = [
