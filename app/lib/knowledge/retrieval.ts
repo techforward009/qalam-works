@@ -11,7 +11,7 @@ export type KnowledgePassage = {
   recordId?: string; sourceId?: string; paragraphId?: string; excerpt?: BookExcerpt;
   quranLocation?: { surah: number; ayah: number };
   translator: string | null;
-  suppliedTranslation?: { text: string; language: "ur" | "en"; translator: string; source?: string };
+  suppliedTranslation?: { text: string; language: "ur" | "en"; translator: string; source?: string; sourceId?: string; sourceSha256?: string; recordId?: string; paragraphIds?: string[] };
 };
 export type KnowledgeResult = {
   question: string; contextQuestion?: string; research?: KnowledgeResearchAnswer; status: "evidence" | "not-found" | "unsupported-fatwa";
