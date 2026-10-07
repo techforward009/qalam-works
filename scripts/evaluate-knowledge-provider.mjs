@@ -71,3 +71,4 @@ if (process.argv.includes('--live') || markers.includes(process.env.VERCEL_GIT_C
 }
 
 await import("./evaluate-sermon-review.mjs");
+await import("./evaluate-sermon-flow.mjs");

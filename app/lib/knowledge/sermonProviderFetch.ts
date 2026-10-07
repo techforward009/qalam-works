@@ -65,3 +65,18 @@ export function sermonProviderSignal(deadline?:number):AbortSignal{
   if(remaining<=0)throw new Error("composition-timeout");
   return AbortSignal.timeout(Math.max(1,Math.ceil(remaining)));
 }
+
+export function parseSermonProviderContent(payload:unknown,stage:"generation"|"review"):unknown{
+  const body=payload as {choices?:{finish_reason?:unknown;message?:{content?:unknown}}[];result?:{choices?:{finish_reason?:unknown;message?:{content?:unknown}}[];response?:unknown};usage?:{completion_tokens?:unknown}}|null;
+  const choice=(body?.choices??body?.result?.choices)?.[0];
+  const content=choice?.message?.content??body?.result?.response;
+  const fail=(code:string):never=>{
+    console.warn("Sermon provider format",{stage,code,completionTokens:typeof body?.usage?.completion_tokens==="number"?body.usage.completion_tokens:undefined});
+    throw new Error("provider-format");
+  };
+  if(choice?.finish_reason==="length")return fail("truncated");
+  if(typeof content!=="string"&&!content)return fail("missing-content");
+  if(typeof content!=="string")return content;
+  try{return JSON.parse(content.trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,"").trim());}
+  catch{return fail("invalid-json");}
+}

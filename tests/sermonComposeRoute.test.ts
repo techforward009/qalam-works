@@ -27,3 +27,10 @@ it("never returns a rejected sermon as a completed project",async()=>{
 it("reports provider throttling as temporary busy without discarding an old draft",async()=>{
  vi.stubEnv("CLOUDFLARE_ACCOUNT_ID","test");vi.stubEnv("CLOUDFLARE_AUTH_TOKEN","test");mocks.collect.mockResolvedValue({status:"evidence"});mocks.compose.mockRejectedValue(new Error("provider-rate-limited"));const response=await POST(request(valid,"https://qalam.test","compose-provider-busy"));expect(response.status).toBe(429);expect(await response.json()).toEqual({code:"busy"});
 });
+
+it("identifies the failing stage without logging private provider errors",async()=>{
+ vi.stubEnv("CLOUDFLARE_ACCOUNT_ID","test");vi.stubEnv("CLOUDFLARE_AUTH_TOKEN","test");const warning=vi.spyOn(console,"warn").mockImplementation(()=>{});
+ try{mocks.collect.mockRejectedValueOnce(new Error("private source and secret token"));const response=await POST(request(valid,"https://qalam.test","source-failure"));expect(response.status).toBe(503);expect(warning).toHaveBeenCalledWith("Sermon request failed",{stage:"sources",code:"unknown",elapsedMs:expect.any(Number)});expect(JSON.stringify(warning.mock.calls)).not.toContain("secret token");
+ mocks.collect.mockResolvedValueOnce({status:"evidence"});mocks.compose.mockRejectedValueOnce(new Error("provider-format"));await POST(request(valid,"https://qalam.test","audit-failure"));expect(warning).toHaveBeenLastCalledWith("Sermon request failed",{stage:"composition",code:"provider-format",elapsedMs:expect.any(Number)});
+ }finally{warning.mockRestore();}
+});

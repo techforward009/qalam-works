@@ -1,5 +1,5 @@
 import {expect,it,vi} from "vitest";
-import {fetchSermonProvider,sermonProviderSignal,sermonThrottleMetrics,sermonProviderErrorDetails} from "../app/lib/knowledge/sermonProviderFetch";
+import {parseSermonProviderContent,fetchSermonProvider,sermonProviderSignal,sermonThrottleMetrics,sermonProviderErrorDetails} from "../app/lib/knowledge/sermonProviderFetch";
 it("retries an explicit short throttle once",async()=>{
  const fetchMock=vi.fn().mockResolvedValueOnce(new Response(null,{status:429,headers:{"retry-after":"2"}})).mockResolvedValueOnce(new Response("ok"));const wait=vi.fn(async()=>{});
  expect((await fetchSermonProvider("https://provider.test",{},fetchMock,wait)).status).toBe(200);expect(wait).toHaveBeenCalledWith(3000);expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -44,4 +44,13 @@ it("never adjusts output tokens for request counts or an unidentified quota",asy
 });
 it("retains a known format error code without model output or private messages",async()=>{
  const details=await sermonProviderErrorDetails(new Response(JSON.stringify({error:{code:"json_validate_failed",message:"private source",failed_generation:"private draft"}}),{status:400}));expect(details).toMatchObject({code:"json_validate_failed"});expect(JSON.stringify(details)).not.toContain("private");
+});
+
+it("parses JSON fences while rejecting truncated, missing and invalid provider output",()=>{
+ const value={reviews:[]};expect(parseSermonProviderContent({choices:[{message:{content:"```json\n"+JSON.stringify(value)+"\n```"},finish_reason:"stop"}]},"review")).toEqual(value);
+ expect(parseSermonProviderContent({result:{response:value}},"generation")).toEqual(value);
+ const warning=vi.spyOn(console,"warn").mockImplementation(()=>{});try{
+ for(const payload of [{choices:[{finish_reason:"length",message:{content:JSON.stringify(value)}}]},{choices:[{message:{content:"private invalid provider text"}}]},{}])expect(()=>parseSermonProviderContent(payload,"review")).toThrow("provider-format");
+ expect(JSON.stringify(warning.mock.calls)).not.toContain("private invalid provider text");expect(warning).toHaveBeenCalledWith("Sermon provider format",expect.objectContaining({stage:"review",code:"truncated"}));
+ }finally{warning.mockRestore();}
 });

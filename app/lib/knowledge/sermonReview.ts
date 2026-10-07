@@ -1,4 +1,4 @@
-import { fetchSermonProvider, sermonProviderSignal } from "./sermonProviderFetch";
+import { fetchSermonProvider, sermonProviderSignal, parseSermonProviderContent } from "./sermonProviderFetch";
 import { reviewedResearchClaims, type AnswerInput, type KnowledgeSynthesisProvider, type ResearchClaim } from "./researchAnswer";
 
 export const SERMON_REVIEW_MODEL = "qwen/qwen3.8-27b";
@@ -142,9 +142,8 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
       const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let bytes = 0;
       while (true) { const chunk = await reader.read(); if (chunk.done) break; bytes += chunk.value.length; if (bytes > 160_000) { await reader.cancel(); throw new Error("provider-format"); } chunks.push(chunk.value); }
       const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-      const content = (body.choices??body.result?.choices)?.[0]?.message?.content??body.result?.response;
-      const checked = parseCompactSentenceReviews(typeof content === "string" ? JSON.parse(content) : content, input, claims);
-      if (!checked) throw new Error("provider-format");
+      const checked = parseCompactSentenceReviews(parseSermonProviderContent(body,"review"), input, claims);
+      if (!checked) {console.warn("Sermon sentence review",{code:"incomplete-or-invalid-audit",sectionCount:claims.length,sentenceCount:sections.reduce((n,s)=>n+s.sentences.length,0)});throw new Error("provider-format");}
       return checked;
   }
 }

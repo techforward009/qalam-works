@@ -10,7 +10,7 @@ registerHooks({ resolve(specifier, context, nextResolve) {
 } });
 
 const releaseMarker = 'Validate sentence-level sermon review and primary sources';
-if (!process.argv.includes('--live') && process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim() !== releaseMarker) {
+if (!process.argv.includes('--live') && ![releaseMarker,'Validate complete sermon composition and source review'].includes(process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim())) {
   console.log('SERMON_REVIEW_EVAL', JSON.stringify({ status: 'skipped', reason: 'explicit-live-evaluation-required' }));
 } else {
   const { createSermonSentenceReviewer } = await import('../app/lib/knowledge/sermonReview.ts');

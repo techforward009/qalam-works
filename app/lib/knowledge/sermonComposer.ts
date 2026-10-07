@@ -1,4 +1,4 @@
-import { fetchSermonProvider, sermonProviderSignal } from "./sermonProviderFetch";
+import { fetchSermonProvider, sermonProviderSignal, parseSermonProviderContent } from "./sermonProviderFetch";
 import { createCloudflareKnowledgeProvider } from "./cloudflareAnswerProvider";
 import { createSermonSentenceReviewer } from "./sermonReview";
 import { hasSuppliedAnswerText } from "./answerLanguage";
@@ -48,8 +48,7 @@ export async function generateSermonSections(input: SermonRequest, evidence: rea
   const reader=response.body.getReader();const chunks:Uint8Array[]=[];let size=0;
   while(true){const c=await reader.read();if(c.done)break;size+=c.value.length;if(size>160_000){await reader.cancel();throw new Error("large-response");}chunks.push(c.value);}
   const payload=JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  const content=(payload.choices??payload.result?.choices)?.[0]?.message?.content??payload.result?.response;
-  return typeof content==="string"?JSON.parse(content.replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,"")):content;
+  return parseSermonProviderContent(payload,"generation");
 }
 export function selectSermonEvidence(passages:readonly AnswerEvidence["passage"][]):AnswerEvidence[]{
   const selected:AnswerEvidence["passage"][]=[];let size=0;
