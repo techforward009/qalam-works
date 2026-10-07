@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { createSermonSentenceReviewer, parseSentenceReviews, parseCompactSentenceReviews, sermonSentences } from "../app/lib/knowledge/sermonReview";
+import { createSermonSentenceReviewer, parseSentenceReviews, parseCompactSentenceReviews, sermonRejectedSentences, sermonSentences } from "../app/lib/knowledge/sermonReview";
 import type { AnswerInput, ResearchClaim } from "../app/lib/knowledge/researchAnswer";
 
 const input: AnswerInput = { question: "صبر", locale: "ur", evidence: [
@@ -36,7 +36,7 @@ it("requires explicit consistent reasons and refuses an unnumbered audit", () =>
 it("uses a separate source-only reasoning request and never returns model reasoning as sermon text", async () => {
   const fetchMock = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(compactReview()), reasoning: "not part of the response" } }] })));
   const provider = createSermonSentenceReviewer({ apiKey: "test-key", fetchImpl: fetchMock })!;
-  expect(await provider.review(input, claims)).toEqual({ reviews: [{ claimId: "section-1", verdict: "unsupported", reason: "contradiction" }] });
+  expect(await provider.review(input, claims)).toMatchObject({ reviews: [{ claimId: "section-1", verdict: "unsupported", reason: "contradiction" }] });
   const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
   expect(body.max_completion_tokens).toBe(1200);
   expect(body.reasoning_effort).toBe("low"); expect(body.reasoning_format).toBe("hidden");
@@ -87,13 +87,13 @@ it("does not accept earlier batches if a later batch is incomplete",async()=>{
 it("independently audits sentences on Cloudflare Qwen when existing credentials are available",async()=>{
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({result:{choices:[{message:{content:JSON.stringify(compactReview()),reasoning:"private internal reasoning"}}]}})));
  const provider=createSermonSentenceReviewer({apiKey:"groq-key",cloudflareAccountId:"account",cloudflareToken:"cloudflare-key",fetchImpl:fetchMock})!;
- expect(await provider.review(input,claims)).toEqual({reviews:[{claimId:"section-1",verdict:"unsupported",reason:"contradiction"}]});
+ expect(await provider.review(input,claims)).toMatchObject({reviews:[{claimId:"section-1",verdict:"unsupported",reason:"contradiction"}]});
  expect(fetchMock.mock.calls[0][0]).toBe("https://api.cloudflare.com/client/v4/accounts/account/ai/v1/chat/completions");const request=fetchMock.mock.calls[0][1]!;expect((request.headers as Record<string,string>).Authorization).toBe("Bearer cloudflare-key");const body=JSON.parse(request.body as string);expect(body.model).toBe("@cf/qwen/qwen3.8-27b");expect(body.chat_template_kwargs.enable_thinking).toBe(false);expect(body.max_completion_tokens).toBe(3000);expect(body.reasoning_format).toBeUndefined();expect(createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key"})).not.toBeNull();
 });
 
 it("accepts fenced complete JSON without relaxing sentence coverage",async()=>{
  const fetchMock=vi.fn(async()=>new Response(JSON.stringify({choices:[{finish_reason:"stop",message:{content:"```json\n"+JSON.stringify(compactReview())+"\n```"}}]})));
- expect(await createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key",fetchImpl:fetchMock})!.review(input,claims)).toEqual({reviews:[{claimId:"section-1",verdict:"unsupported",reason:"contradiction"}]});
+ expect(await createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key",fetchImpl:fetchMock})!.review(input,claims)).toMatchObject({reviews:[{claimId:"section-1",verdict:"unsupported",reason:"contradiction"}]});
 });
 
 it("overlaps at most two independent Cloudflare batches and rejects any incomplete result",async()=>{
@@ -104,4 +104,11 @@ it("overlaps at most two independent Cloudflare batches and rejects any incomple
  });
  const provider=createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key",fetchImpl:fetchMock})!;const checked=await provider.review(input,longClaims) as {reviews:unknown[]};expect(checked.reviews).toHaveLength(5);expect(maximum).toBe(2);expect(fetchMock).toHaveBeenCalledTimes(5);
  const missing=vi.fn(async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({reviews:[]})}}]})));await expect(createSermonSentenceReviewer({cloudflareAccountId:"account",cloudflareToken:"key",fetchImpl:missing})!.review(input,longClaims)).rejects.toThrow("provider-format");expect(missing).toHaveBeenCalledTimes(2);
+});
+
+it("provides repair feedback only from a complete validated audit and server-owned sentence text",async()=>{
+ const fetchMock=vi.fn(async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify(compactReview())}}]})));const audited=await createSermonSentenceReviewer({apiKey:"test",fetchImpl:fetchMock})!.review(input,claims);
+ expect(sermonRejectedSentences(audited,input,claims)).toEqual([{claimId:"section-1",index:2,reason:"contradiction",text:"نماز خشوع رکھنے والوں کے سوا کسی پر بھاری نہیں ہوتی۔"}]);
+ const missing={reviews:(audited as {reviews:unknown}).reviews,sentenceAudit:review().reviews.map(r=>({...r,sentences:[]}))};expect(sermonRejectedSentences(missing,input,claims)).toBeNull();
+ expect(sermonRejectedSentences({...audited as object,reviews:[{claimId:"section-1",verdict:"supported",reason:"entailed"}]},input,claims)).toBeNull();
 });

@@ -12,6 +12,7 @@ export const SENTENCE_REVIEW_PROMPT = [
   "Use the supplied translation as the meaning being checked. Do not invent a new translation, correct source text, upgrade authenticity, infer a ruling, or silently fill missing context.",
   "Mark supported only if every substantive assertion in that sentence is established by its attached evidence. Name the matching attached integer source refs. Mark unsupported if even one assertion is unsupported or contradicts a source.",
   "Mark nonfactual only for a greeting, transition, question, invitation to reflect, or prayer that makes no source assertion. Practical advice may be nonfactual only when explicitly framed as an invitation and without any asserted religious obligation, promised consequence or attributed teaching. A rhetorical question containing a factual premise must have that premise checked.",
+  "A neutral section label without a factual assertion may be nonfactual. A heading asserting a cause, promise, ruling or attribution must be checked against its cited evidence too.",
   "Wire format: each sentence uses i for its index, v for verdict (s=supported, u=unsupported, n=nonfactual), r for reason (e=entailed, n=nonfactual, c=contradiction, u=not-in-evidence, i=invented-reference, a=authenticity-upgrade, f=inferred-fatwa), and refs for supporting source integers.",
   "Review every index exactly once. Do not omit a short sentence. Use reason entailed for supported, nonfactual for nonfactual, and contradiction, not-in-evidence, invented-reference, authenticity-upgrade or inferred-fatwa for unsupported."
 ].join(" ");
@@ -56,7 +57,7 @@ export function parseSentenceReviews(raw: unknown, input: AnswerInput, claims: r
   return reviewedResearchClaims(result, claims) === null ? null : result;
 }
 
-export function parseCompactSentenceReviews(raw: unknown, input: AnswerInput, claims: readonly ResearchClaim[]) {
+function expandCompactSentenceReviews(raw: unknown) {
   if (!raw || typeof raw !== "object" || !Array.isArray((raw as {reviews?:unknown}).reviews)) return null;
   const verdicts: Record<string,string> = {s:"supported",u:"unsupported",n:"nonfactual"};
   const reasons: Record<string,string> = {e:"entailed",n:"nonfactual",c:"contradiction",u:"not-in-evidence",i:"invented-reference",a:"authenticity-upgrade",f:"inferred-fatwa"};
@@ -74,7 +75,21 @@ export function parseCompactSentenceReviews(raw: unknown, input: AnswerInput, cl
     }
     reviews.push({claimId:review.claimId,sentences});
   }
-  return parseSentenceReviews({reviews},input,claims);
+  return {reviews};
+}
+
+export function parseCompactSentenceReviews(raw: unknown, input: AnswerInput, claims: readonly ResearchClaim[]) {
+  return parseSentenceReviews(expandCompactSentenceReviews(raw),input,claims);
+}
+
+export function sermonRejectedSentences(raw:unknown,input:AnswerInput,claims:readonly ResearchClaim[]){
+  if(!raw||typeof raw!=="object")return null;
+  const audit=(raw as {sentenceAudit?:unknown}).sentenceAudit;
+  const verified=parseSentenceReviews({reviews:audit},input,claims);
+  const accepted=reviewedResearchClaims(raw,claims);
+  const checked=verified&&reviewedResearchClaims(verified,claims);
+  if(!accepted||!checked||accepted.length!==checked.length||accepted.some(c=>!checked.some(v=>v.id===c.id)))return null;
+  return (audit as SentenceReview[]).flatMap(section=>section.sentences.filter(s=>s.verdict==="unsupported").map(s=>({claimId:section.claimId,index:s.index,reason:s.reason,text:sermonSentences(claims.find(c=>c.id===section.claimId)!.text)[s.index-1]})));
 }
 
 export function createSermonSentenceReviewer(options: { apiKey?: string; fetchImpl?: typeof fetch; deadline?:number; cloudflareAccountId?:string; cloudflareToken?:string }): KnowledgeSynthesisProvider | null {
@@ -92,17 +107,18 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
         if(last && last.reduce((n,c)=>n+c.text.length,0)+claim.text.length<=3000 && last.reduce((n,c)=>n+sermonSentences(c.text).length,0)+sermonSentences(claim.text).length<=30)last.push(claim);
         else batches.push([claim]);
       }
-      const reviews=[];
+      const reviews=[];const sentenceAudit:SentenceReview[]=[];
       // Groq output quotas need sequential calls; independent Cloudflare batches can overlap.
       const concurrency=useCloudflare?2:1;
       for(let offset=0;offset<batches.length;offset+=concurrency){
         const checked=await Promise.allSettled(batches.slice(offset,offset+concurrency).map(batch=>reviewBatch(input,batch)));
         const failed=checked.find(r=>r.status==="rejected");
         if(failed?.status==="rejected")throw failed.reason;
-        for(const result of checked)if(result.status==="fulfilled")reviews.push(...result.value.reviews);
+        for(const result of checked)if(result.status==="fulfilled"){reviews.push(...result.value.reviews);sentenceAudit.push(...result.value.sentenceAudit);}
       }
-      const result={reviews};
+      const result={reviews,sentenceAudit};
       if(reviewedResearchClaims(result,claims)===null)throw new Error("provider-format");
+      if(parseSentenceReviews({reviews:sentenceAudit},input,claims)===null)throw new Error("provider-format");
       return result;
     },
   };
@@ -147,9 +163,10 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
       const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let bytes = 0;
       while (true) { const chunk = await reader.read(); if (chunk.done) break; bytes += chunk.value.length; if (bytes > 160_000) { await reader.cancel(); throw new Error("provider-format"); } chunks.push(chunk.value); }
       const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-      const checked = parseCompactSentenceReviews(parseSermonProviderContent(body,"review"), input, claims);
+      const expanded=expandCompactSentenceReviews(parseSermonProviderContent(body,"review"));
+      const checked = parseSentenceReviews(expanded, input, claims);
       if (!checked) {console.warn("Sermon sentence review",{code:"incomplete-or-invalid-audit",sectionCount:claims.length,sentenceCount:sections.reduce((n,s)=>n+s.sentences.length,0)});throw new Error("provider-format");}
       console.info("Sermon sentence review",{status:"complete",sectionCount:claims.length,sentenceCount:sections.reduce((n,s)=>n+s.sentences.length,0),elapsedMs:Date.now()-started});
-      return checked;
+      return {...checked,sentenceAudit:expanded!.reviews as SentenceReview[]};
   }
 }

@@ -1,3 +1,4 @@
+import { sermonSentences } from "../app/lib/knowledge/sermonReview";
 import type { AnswerInput, ResearchClaim } from "../app/lib/knowledge/researchAnswer";
 import type { SermonRequest } from "../app/lib/knowledge/sermonComposer";
 import { expect, it, vi } from "vitest";
@@ -110,4 +111,17 @@ it("uses the same Qwen model on Cloudflare for long composition when both provid
  expect(await generateSermonSections(input,evidence,{GROQ_API_KEY:"groq-key",CLOUDFLARE_ACCOUNT_ID:"account",CLOUDFLARE_AUTH_TOKEN:"cloudflare-key"},fetchMock)).toEqual({sections});
  expect(fetchMock.mock.calls[0][0]).toBe("https://api.cloudflare.com/client/v4/accounts/account/ai/v1/chat/completions");
  const request=fetchMock.mock.calls[0][1]!;expect((request.headers as Record<string,string>).Authorization).toBe("Bearer cloudflare-key");const body=JSON.parse(request.body as string);expect(body.model).toBe("@cf/qwen/qwen3.8-27b");expect(body.chat_template_kwargs.enable_thinking).toBe(false);expect(body.reasoning_effort).toBe("low");expect(body.reasoning_format).toBeUndefined();expect(body.max_completion_tokens).toBe(6500);expect(body.response_format.json_schema.strict).toBe(true);
+});
+
+it("repairs specific rejected sentences and rechecks every section after removing remaining unsupported text",async()=>{
+ let checks=0;const precise={...reviewer,review:vi.fn(async(reviewInput:AnswerInput,claims:readonly ResearchClaim[])=>{const rejected=checks++<2;return {reviews:claims.map((c,i)=>({claimId:c.id,verdict:rejected&&i===0?"unsupported":"supported",reason:rejected&&i===0?"not-in-evidence":"entailed"})),sentenceAudit:claims.map((c,i)=>({claimId:c.id,sentences:sermonSentences(c.text).map((_,n)=>({index:n+1,verdict:rejected&&i===0&&n===1?"unsupported":"supported",reason:rejected&&i===0&&n===1?"not-in-evidence":"entailed",refs:[reviewInput.evidence.find(e=>c.citations.some(r=>r.passageId===e.passage.id))!.ref]}))}))};})};
+ const repair=vi.fn(async(_request:SermonRequest)=>({sections}));const project=await composeSermon(input,result,{generate:repair,reviewer:precise,env:{}});expect(repair).toHaveBeenCalledTimes(2);expect(precise.review).toHaveBeenCalledTimes(3);expect(repair.mock.calls[1][0].instruction).toContain(sermonSentences(sections[0].text)[0]);expect(project.sections[0].userText).not.toContain(sermonSentences(sections[0].text)[0]);expect(precise.review.mock.calls[2][1]).toHaveLength(5);
+});
+
+it("does not publish a filtered version unless its final complete review passes",async()=>{
+ const reject={...reviewer,review:vi.fn(async(reviewInput:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((c,i)=>({claimId:c.id,verdict:i===0?"unsupported":"supported",reason:i===0?"not-in-evidence":"entailed"})),sentenceAudit:claims.map((c,i)=>({claimId:c.id,sentences:sermonSentences(c.text).map((_,n)=>({index:n+1,verdict:i===0&&n===1?"unsupported":"supported",reason:i===0&&n===1?"not-in-evidence":"entailed",refs:[reviewInput.evidence.find(e=>c.citations.some(r=>r.passageId===e.passage.id))!.ref]}))}))}))};await expect(composeSermon(input,result,{generate,reviewer:reject,env:{}})).rejects.toThrow("unverified");expect(reject.review).toHaveBeenCalledTimes(3);
+});
+
+it("includes source assertions in section headings in the independent review",async()=>{
+ const assertion="ہر صبر کرنے والے کو دولت ملتی ہے";const claimed=async()=>({sections:sections.map((s,i)=>i===0?{...s,heading:assertion}:s)});const checked={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((c,i)=>({claimId:c.id,verdict:i===0?"unsupported":"supported",reason:i===0?"not-in-evidence":"entailed"}))}))};await expect(composeSermon(input,result,{generate:claimed,reviewer:checked,env:{}})).rejects.toThrow("unverified");expect(checked.review.mock.calls[0][1][0].text).toContain(assertion);
 });

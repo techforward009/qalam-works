@@ -19,7 +19,7 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
   });
   const {collectSermonEvidence}=await import('../app/lib/knowledge/sermonEvidence.ts');
   const {composeSermon}=await import('../app/lib/knowledge/sermonComposer.ts');
-  const {createSermonSentenceReviewer}=await import('../app/lib/knowledge/sermonReview.ts');
+  const {createSermonSentenceReviewer,sermonRejectedSentences}=await import('../app/lib/knowledge/sermonReview.ts');
   const {reviewedResearchClaims}=await import('../app/lib/knowledge/researchAnswer.ts');
   const {buildCustomSermonText,parseCustomSermonProject,serializeCustomSermonProject}=await import('../app/tools/khateeb-studio/engine/customSermonProject.ts');
   if(process.argv.includes('--check-imports'))console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'imports-valid'}));
@@ -51,7 +51,15 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
       if(checked===null)throw new Error('provider-format');
       for(const fixture of fixtures){const accepted=checked.some(c=>c.id===fixture.id);console.log('SERMON_CONDITIONS_EVAL',JSON.stringify({fixture:fixture.id,expected:fixture.expected,accepted,passed:accepted===fixture.expected}));if(accepted!==fixture.expected)throw new Error('unverified');}
       stage='composition-and-review';
-      const project=await composeSermon(input,evidence,{env:process.env});
+      const fullReviewer=createSermonSentenceReviewer({apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+230000});
+      if(!fullReviewer)throw new Error('provider-unavailable');
+      let reviewAttempt=0;
+      const project=await composeSermon(input,evidence,{env:process.env,reviewer:{...fullReviewer,async review(reviewInput,claims){
+        const audit=await fullReviewer.review(reviewInput,claims);
+        // This evaluator is restricted above to a fixed public Quran fixture.
+        for(const rejection of sermonRejectedSentences(audit,reviewInput,claims)??[])console.log('SERMON_FLOW_PUBLIC_REJECTION',JSON.stringify({attempt:reviewAttempt,...rejection}));
+        reviewAttempt++;return audit;
+      }}});
       stage='portable-output';
       const serialized=serializeCustomSermonProject(project);
       const restored=parseCustomSermonProject(serialized);
