@@ -1,3 +1,4 @@
+import { geminiSermonFetch } from "./geminiSermonProvider";
 import { fetchSermonProvider, sermonProviderSignal, parseSermonProviderContent } from "./sermonProviderFetch";
 import { reviewedResearchClaims, type AnswerInput, type KnowledgeSynthesisProvider, type ResearchClaim } from "./researchAnswer";
 
@@ -161,7 +162,7 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; geminiK
           response_format: { type: "json_schema", json_schema: { name: "sermon_sentence_audit", strict: true, schema } },
           messages: [{ role: "system", content: SENTENCE_REVIEW_PROMPT }, { role: "user", content: JSON.stringify({ locale: input.locale, evidence, sections }) }],
         }),
-      }, fetchImpl);
+      }, useGemini ? geminiSermonFetch(fetchImpl) : fetchImpl);
       if (!response.ok) { console.warn("Sermon sentence review", { status: response.status }); await response.body?.cancel(); throw new Error(response.status===429?"provider-rate-limited":"provider-unavailable"); }
       if (!response.body) throw new Error("provider-unavailable");
       const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let bytes = 0;

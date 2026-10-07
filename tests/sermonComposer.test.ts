@@ -132,10 +132,10 @@ it("honors an explicit server provider without changing the retrieval credential
 });
 
 it("uses Gemini with its own key and compatible thinking and output parameters",async()=>{
- const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{finish_reason:"stop",message:{content:JSON.stringify({sections})}}]})));
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({status:"completed",steps:[{type:"model_output",content:[{type:"text",text:JSON.stringify({sections})}]}]})));
  await generateSermonSections(input,evidence,{GEMINI_API_KEY:"gemini-test",GROQ_API_KEY:"groq-test",CLOUDFLARE_ACCOUNT_ID:"account",CLOUDFLARE_AUTH_TOKEN:"cf-test"},fetchMock);
- expect(fetchMock.mock.calls[0][0]).toBe("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
+ expect(fetchMock.mock.calls[0][0]).toBe("https://generativelanguage.googleapis.com/v1beta/interactions");
  const init=fetchMock.mock.calls[0][1]!;const body=JSON.parse(init.body as string);
- expect(init.headers).toMatchObject({Authorization:"Bearer gemini-test"});expect(body.model).toBe("gemini-3.8-flash");expect(body.reasoning_effort).toBe("low");expect(body.max_tokens).toBe(11500);expect(body.max_completion_tokens).toBeUndefined();expect(body.reasoning_format).toBeUndefined();expect(body.chat_template_kwargs).toBeUndefined();
+ expect(init.headers).toMatchObject({"x-goog-api-key":"gemini-test"});expect(body.model).toBe("gemini-3.8-flash");expect(body.generation_config.thinking_level).toBe("low");expect(body.generation_config.max_output_tokens).toBe(11500);expect(body.max_completion_tokens).toBeUndefined();expect(body.reasoning_format).toBeUndefined();expect(body.chat_template_kwargs).toBeUndefined();
  await expect(generateSermonSections(input,evidence,{QALAM_SERMON_PROVIDER:"gemini",GROQ_API_KEY:"groq-test"},fetchMock)).rejects.toThrow("not-configured");expect(fetchMock).toHaveBeenCalledTimes(1);
 });

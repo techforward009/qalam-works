@@ -119,9 +119,9 @@ it("uses the explicitly selected reviewer and does not silently use another cred
 
 it("audits all sentences on Gemini without falling back to a different configured service",async()=>{
  const raw={reviews:[{claimId:"section-1",sentences:[{i:1,v:"n",r:"n",refs:[]},{i:2,v:"u",r:"c",refs:[1]}]}]};
- const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{finish_reason:"stop",message:{content:JSON.stringify(raw)}}]})));
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({status:"completed",steps:[{type:"model_output",content:[{type:"text",text:JSON.stringify(raw)}]}]})));
  const provider=createSermonSentenceReviewer({geminiKey:"gemini-test",apiKey:"groq-test",cloudflareAccountId:"account",cloudflareToken:"cf-test",fetchImpl:fetchMock})!;
  const result=await provider.review(input,claims);expect(result).toMatchObject({reviews:[{claimId:"section-1",verdict:"unsupported",reason:"contradiction"}]});
- expect(fetchMock.mock.calls[0][0]).toBe("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);expect(body.model).toBe("gemini-3.8-flash");expect(body.max_tokens).toBeGreaterThanOrEqual(4500);expect(body.max_completion_tokens).toBeUndefined();expect(body.reasoning_format).toBeUndefined();
+ expect(fetchMock.mock.calls[0][0]).toBe("https://generativelanguage.googleapis.com/v1beta/interactions");const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);expect(body.model).toBe("gemini-3.8-flash");expect(body.generation_config.max_output_tokens).toBeGreaterThanOrEqual(4500);expect(body.max_completion_tokens).toBeUndefined();expect(body.reasoning_format).toBeUndefined();
  expect(createSermonSentenceReviewer({preferredProvider:"gemini",apiKey:"groq-test"})).toBeNull();
 });
