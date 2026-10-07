@@ -33,7 +33,9 @@ const concepts = [
   ["اخلاص", "sincerity", "مخلص", "مخلصين"],
   ["علم", "knowledge", "learning", "education", "تعليم", "يعلمون"],
   ["غصہ", "غصه", "anger", "غضب", "غيظ", "الغضب"],
-  ["والدین", "والدين", "parents", "والدي", "والد", "والده"],
+  ["والدین", "والدين", "parents", "والدي", "والد", "والده", "الوالدين", "والديك", "الوالد", "الوالده", "ابويه"],
+  ["تربیت", "تربيه", "تربية", "upbringing", "parenting"],
+  ["اولاد", "بچے", "بچوں", "child", "children", "الولد", "الاولاد", "البنين", "البنات"],
 ].map(group => [...new Set(group.map(normalizeBookSearch))]);
 const stop = new Set(normalizeBookSearch("کے کی کا کو سے میں پر اور ہے ہیں تھا کیا کیسے بارے متعلق بتائیں نے ایک ہمیں کس وہ یہ اپنے اپنی اس ان فرماتے فرمایا تعلیمات قرآن قران نہج البلاغہ صحیفہ سجادیہ امام علی اللہ مجھے واضح وضاحت عملی روزمرہ مثال مثالیں زندگی اطلاق تعلق ربط موازنہ تقابل اسی موضوع مزید خلاصہ چاہتا چاہتی چاہیے كريں تطبيق کریں the a an of in on about what how does did say said tell me and or is are to from please explain practical everyday daily life examples example application compare comparison relationship connection this topic further summarize summary source sources passages passage discuss material available books book related provide show quran nahj balagha sahifa sajjadiyya teachings").split(" "));
 
@@ -76,7 +78,8 @@ export function retrieveKnowledge(input: { question: string; scope: KnowledgeSco
     if (!source || reference && (record.kind !== reference.kind || bookRecordNumber(record) !== reference.number)) continue;
     record.paragraphs.forEach((paragraph, index) => {
       if (index === 0 && paragraph.text.length < 150 && record.paragraphs.length > 1 && /^\s*[(（][0-9۰-۹٠-٩]+[)）]/u.test(paragraph.text)) return;
-      if (paragraph.text.length > 8000 || paragraph.text.trim().length < 15) return;
+      // Preserve the full paragraph within the existing portable excerpt limit.
+      if (paragraph.text.length > 150_000 || paragraph.text.trim().length < 15) return;
       const value = reference ? 100 + score(paragraph.text) : score(paragraph.text, record.title);
       if (!value) return;
       const excerpt = createBookExcerpt(record, source, [paragraph.id]);

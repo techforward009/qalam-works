@@ -4,7 +4,7 @@ import type { KnowledgePassage, KnowledgeResult } from "./retrieval";
 export type ResearchCitation = { passageId: string; quote: string };
 export type ResearchClaim = { id: string; text: string; citations: ResearchCitation[]; kind?: "source-extract" };
 export type KnowledgeResearchAnswer = {
-  status: "answered" | "no-evidence" | "unsupported-fatwa" | "not-configured" | "missing-translation" | "unavailable" | "unverified" | "busy";
+  status: "answered" | "no-evidence" | "evidence-too-large" | "unsupported-fatwa" | "not-configured" | "missing-translation" | "unavailable" | "unverified" | "busy";
   claims: ResearchClaim[];
   omittedClaimCount?: number;
   generationId?: string;
@@ -90,7 +90,7 @@ export async function synthesizeKnowledgeAnswer(result: KnowledgeResult, locale:
   const translated = result.passages.filter(p => hasSuppliedAnswerText(p, locale));
   if (!translated.length) return refusal("missing-translation");
   const evidence = selectAnswerEvidence(translated);
-  if (!evidence.length) return refusal("no-evidence");
+  if (!evidence.length) return refusal("evidence-too-large");
   const input = { question: result.contextQuestion ? `Previous question: ${result.contextQuestion}\nFollow-up question: ${result.question}` : result.question, locale, evidence };
   try {
     const raw = await provider.draft(input);

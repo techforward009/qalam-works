@@ -28,3 +28,12 @@ it("renumbers only eligible evidence, preventing a summary from citing an exclud
   }, review: async () => ({ reviews: [{ claimId: "claim-1", verdict: "supported", reason: "entailed" }] }) };
   const answer = await synthesizeKnowledgeAnswer(result, "ur", provider); expect(answer.status).toBe("answered"); expect(answer.claims[0].citations[0].passageId).toBe(translated.id);
 });
+
+it("reports an evidence budget limit instead of claiming a long source does not exist", async () => {
+  const text = "یہ صبر کے بارے میں فراہم کردہ اصل متن ہے۔ ".repeat(500);
+  const passage = { ...arabic, language: "ur" as const, text };
+  const result = { status: "evidence", question: "صبر", passages: [passage] } as KnowledgeResult;
+  const provider: KnowledgeSynthesisProvider = { id: "test", draft: async () => { throw new Error("must not send oversized evidence"); }, review: async () => { throw new Error("must not run"); } };
+  expect(await synthesizeKnowledgeAnswer(result, "ur", provider)).toEqual({ status: "evidence-too-large", claims: [] });
+  expect(result.passages[0].text).toBe(text);
+});

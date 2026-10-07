@@ -16,6 +16,8 @@ The foundational corpus is shared by Khateeb Studio and Research Studio. Private
 - The UI keeps source Arabic, supplied translation/commentary and research paraphrase separate. Citation buttons open the original context and highlight the exact cited quote. A failed summary leaves source passages available.
 - Citation-preserving copy, portable research JSON export and Khateeb draft transfer. Only claims whose complete citation set remains selected are copied/transferred. Summary sections are editorial; original book snapshots and Quran evidence remain separately stored through existing backup/restore/print workflows.
 
+Book retrieval preserves complete paragraphs up to the existing 150,000-character portable excerpt bound, including exact phrase matches beyond 8,000 characters. Longer paragraphs remain excluded pending lossless segment indexing. If every answer-language passage exceeds the synthesis budget, `evidence-too-large` keeps the full source visible and explains the summary limit instead of reporting missing evidence.
+
 ## Bounds and cost
 
 Complete passages are selected within a 16,000-character evidence budget including supplied translations; text is never silently clipped for the model. Draft generation has a 27-second timeout and 1,800-token cap; support review has a 15-second timeout and 700-token cap. Invalid output is not automatically retried.
@@ -26,7 +28,7 @@ Successful answers receive a unique generation ID, creation time and provider ID
 
 ## Remaining stages
 
-- Complete long-paragraph indexing (current search skips paragraphs exceeding 8,000 characters), wider multilingual evaluation, replaceable embeddings and hybrid rank fusion. Current topic expansion is not semantic embeddings or a learned reranker.
+- Long-paragraph segment indexing beyond the portable 150,000-character excerpt bound, wider multilingual evaluation, replaceable embeddings and hybrid rank fusion. Current topic expansion is not semantic embeddings or a learned reranker.
 - Authenticated private-document adapters with per-user scope, durable general-research notebooks and research-file restore.
 - Authoritative fiqh ingestion identifying marja, official source, edition/date, issue number, qualifications and authority status. Current marja/fatwa questions are refused; no ruling is inferred or attributed from this corpus.
 

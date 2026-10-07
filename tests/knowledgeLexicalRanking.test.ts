@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import { queryTerms } from "../app/lib/knowledge/retrieval";
 import { rankLexicalDocuments } from "../app/lib/knowledge/lexicalRanking";
 it("weights rare query terms and useful density above common repetition", () => {
   const docs = [{ text: "patience justice" }, { text: "patience ".repeat(100) }, { text: "justice" }, { text: "unrelated words" }];
@@ -15,4 +16,13 @@ it("does not match substrings of English words or mutate original source spellin
   const docs = [{ text: "impatient" }, { text: "صَبْرٌ" }]; const before = JSON.stringify(docs);
   expect(rankLexicalDocuments(docs, [["patient"]], ["patient"])[0]).toBe(0);
   expect(rankLexicalDocuments(docs, [["صبر"]], ["صبر"])[1]).toBeGreaterThan(0); expect(JSON.stringify(docs)).toBe(before);
+});
+
+it("expands Urdu parent and upbringing queries into Arabic and English source terms", () => {
+  const parents = queryTerms("والدین");
+  expect(rankLexicalDocuments([{ text: "بر الوالدين" }, { text: "kindness to parents" }, { text: "unrelated" }], parents.groups, parents.direct).map(s => s > 0)).toEqual([true, true, false]);
+  const upbringing = queryTerms("تربیت اولاد");
+  expect(upbringing.groups.flat()).toContain("تربيه");
+  expect(upbringing.groups.flat()).toContain("children");
+  expect(upbringing.groups.flat()).toContain("الولد");
 });
