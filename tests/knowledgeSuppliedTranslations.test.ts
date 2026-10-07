@@ -11,7 +11,7 @@ const sources:BookSource[]=corpus?JSON.parse(readFileSync(`${corpus}/manifest.js
 const records:BookRecord[]=sources.flatMap(s=>JSON.parse(readFileSync(`${corpus}/${s.id}.json`,"utf8")));
 const ask=(question:string,scope:"nahj"|"sahifa")=>retrieveKnowledge({question,scope,locale:"ur",sources,records,quran:[],quranSha256:""});
 it("has unique edition-bound paragraph correspondences without private text",()=>{
- expect(bindings).toHaveLength(285);
+ expect(bindings).toHaveLength(311);
  expect(new Set(bindings.map(b=>b.originalParagraphId)).size).toBe(bindings.length);
  for(const b of bindings){expect(b.originalRecordSha256).toMatch(/^[a-f0-9]{64}$/);expect(b.translationSourceSha256).toMatch(/^[a-f0-9]{64}$/);expect(b.canonicalNumber).toBeGreaterThan(0);}
 });
@@ -64,5 +64,14 @@ it.runIf(Boolean(corpus))("every binding points to existing canonical source and
   passages.push({id:excerpt.id,collection:a.book,language:"ar",referenceUr:"اصل حوالہ",referenceEn:"Original",sourceSha256:source.sha256,sourceId:source.id,recordId:a.id,paragraphId:paragraph.id,text:paragraph.text,translator:null,excerpt});
  }
  const result=attachCorpusTranslations({question:"موضوع",status:"evidence",method:"lexical-bm25-topic-expansion",passages,expandedTerms:[],availableCollections:["nahj","sahifa"]},records,sources,"ur");
- expect(result.passages.filter(p=>p.suppliedTranslation)).toHaveLength(285);
+ expect(result.passages.filter(p=>p.suppliedTranslation)).toHaveLength(311);
+});
+
+it("includes reviewed complete prayer portions without fragmented sentences or commentary",()=>{
+ const prayer=(n:number)=>bindings.filter(b=>b.originalSourceId==="sahifa-ar"&&b.canonicalNumber===n);
+ expect(prayer(29).map(b=>b.translationParagraphId.split(":").at(-1))).toEqual(["p2","p3"]);
+ expect(prayer(35)).toHaveLength(4);
+ expect(prayer(31)).toHaveLength(20);
+ expect(prayer(31).some(b=>/:p(?:18|19)$/.test(b.originalParagraphId))).toBe(false);
+ expect(prayer(31).some(b=>Number(b.translationParagraphId.split(":p")[1])>=24)).toBe(false);
 });
