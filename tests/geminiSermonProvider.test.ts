@@ -23,3 +23,24 @@ describe('native Gemini response boundary',()=>{
   await expect(geminiSermonFetch(async()=>Response.json({status:'completed',steps:[{type:'thought',content:[{type:'text',text:'{}'}]}]}))('ignored',init)).rejects.toThrow('unavailable');
  });
 });
+
+it('tries the alternate Gemini model only on 503 within the existing call limit',async()=>{
+ const {fetchSermonProvider}=await import('../app/lib/knowledge/sermonProviderFetch');
+ const models:string[]=[];
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,request?:RequestInit)=>{
+  models.push(JSON.parse(request!.body as string).model);
+  return models.length===1?new Response('unavailable',{status:503}):Response.json({status:'completed',steps:[{type:'model_output',content:[{type:'text',text:'{}'}]}]});
+ });
+ const result=await fetchSermonProvider('ignored',init,geminiSermonFetch(fetchMock),async()=>{});
+ expect(result.ok).toBe(true);expect(models).toEqual(['gemini-3.8-flash','gemini-3.7-flash']);
+});
+it.each([400,401,403,404,429])('does not switch models after HTTP %s',async status=>{
+ const models:string[]=[];const adapter=geminiSermonFetch(async(_url,request)=>{models.push(JSON.parse(request!.body as string).model);return new Response('rejected',{status});});
+ await adapter('ignored',init);await adapter('ignored',init);expect(models).toEqual(['gemini-3.8-flash','gemini-3.8-flash']);
+});
+it('does not exceed three provider requests when both models are unavailable',async()=>{
+ const {fetchSermonProvider}=await import('../app/lib/knowledge/sermonProviderFetch');const models:string[]=[];
+ const adapter=geminiSermonFetch(async(_url,request)=>{models.push(JSON.parse(request!.body as string).model);return new Response('unavailable',{status:503});});
+ expect((await fetchSermonProvider('ignored',init,adapter,async()=>{})).status).toBe(503);
+ expect(models).toEqual(['gemini-3.8-flash','gemini-3.7-flash','gemini-3.7-flash']);
+});

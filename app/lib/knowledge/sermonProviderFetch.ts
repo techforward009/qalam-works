@@ -14,7 +14,9 @@ export async function sermonProviderErrorDetails(response:Response):Promise<Serm
     while(true){const chunk=await reader.read();if(chunk.done)break;bytes+=chunk.value.length;if(bytes>4096){void reader.cancel();return {};}chunks.push(chunk.value);}
     const payload=JSON.parse(Buffer.concat(chunks).toString("utf8"));
     const rawCode=payload?.error?.code;
-    const code=["rate_limit_exceeded","json_validate_failed","context_length_exceeded","invalid_request_error","invalid_api_key","model_not_found"].includes(rawCode)?rawCode:undefined;
+    const status=payload?.error?.status;
+    const code=["rate_limit_exceeded","json_validate_failed","context_length_exceeded","invalid_request_error","invalid_api_key","model_not_found"].includes(rawCode)?rawCode:
+      ["UNAVAILABLE","RESOURCE_EXHAUSTED","INVALID_ARGUMENT","PERMISSION_DENIED","UNAUTHENTICATED","NOT_FOUND","DEADLINE_EXCEEDED","INTERNAL"].includes(status)?status:undefined;
     return {...sermonThrottleMetrics(payload),...(code?{code}:{})};
   }catch{return {};}
 }

@@ -1,5 +1,6 @@
 /** Native Gemini Interactions transport; existing sermon validation stays mandatory. */
 export function geminiSermonFetch(fetchImpl: typeof fetch): typeof fetch {
+  let alternateModel: string | undefined;
   return async (_url, init) => {
     const request = JSON.parse(String(init?.body));
     const headers = new Headers(init?.headers);
@@ -11,14 +12,21 @@ export function geminiSermonFetch(fetchImpl: typeof fetch): typeof fetch {
       method: "POST", signal: init?.signal,
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({
-        model: request.model, store: false,
+        model: alternateModel ?? request.model, store: false,
         system_instruction: messages.filter(message => message.role === "system").map(message => message.content).join("\n"),
         input: messages.filter(message => message.role === "user").map(message => message.content).join("\n"),
         generation_config: { temperature: request.temperature, max_output_tokens: request.max_tokens, thinking_level: "low", thinking_summaries: "none" },
         response_format: { type: "text", mime_type: "application/json", schema: request.response_format.json_schema.schema },
       }),
     });
-    if (!response.ok) return response;
+    if (!response.ok) {
+      // The outer retry handler retains its three-call limit and shared deadline.
+      if (response.status === 503 && !alternateModel && request.model === "gemini-3.8-flash") {
+        alternateModel = "gemini-3.7-flash";
+        console.warn("Sermon Gemini model fallback", { from: request.model, to: alternateModel, status: 503 });
+      }
+      return response;
+    }
     const reader = response.body?.getReader();
     if (!reader) throw new Error("unavailable");
     const chunks: Uint8Array[] = []; let bytes = 0;

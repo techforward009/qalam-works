@@ -64,3 +64,10 @@ it("retries service-unavailable responses twice without changing the prompt",asy
 it("does not retry invalid keys or requests as a temporary service failure",async()=>{
  for(const status of [400,401,403,404]){const fetchMock=vi.fn(async()=>new Response(null,{status}));const wait=vi.fn(async()=>{});expect((await fetchSermonProvider("https://provider.test",{},fetchMock,wait)).status).toBe(status);expect(fetchMock).toHaveBeenCalledTimes(1);expect(wait).not.toHaveBeenCalled();}
 });
+
+it('retains only allowlisted native Gemini error statuses',async()=>{
+ const {sermonProviderErrorDetails}=await import('../app/lib/knowledge/sermonProviderFetch');
+ expect(await sermonProviderErrorDetails(Response.json({error:{code:503,status:'UNAVAILABLE',message:'private source text and credentials'}}))).toMatchObject({code:'UNAVAILABLE'});
+ const unknown=await sermonProviderErrorDetails(Response.json({error:{code:503,status:'private arbitrary status',message:'private source text'}}));
+ expect(unknown.code).toBeUndefined();expect(JSON.stringify(unknown)).not.toContain('private');
+});
