@@ -7,7 +7,7 @@ import { buildCustomSermonText, parseCustomSermonProject, serializeCustomSermonP
 const result:KnowledgeResult={question:"صبر",status:"evidence",method:"lexical-bm25-topic-expansion",expandedTerms:[],availableCollections:["quran"],passages:[{id:"quran:test:2:153",collection:"quran",language:"ar",referenceUr:"قرآن، 2:153",referenceEn:"Quran, 2:153",text:"يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ",sourceSha256:"a".repeat(64),quranLocation:{surah:2,ayah:153},translator:null,suppliedTranslation:{language:"ur",text:"اے ایمان والو صبر اور نماز سے مدد لو۔",translator:"فراہم کردہ مترجم"}}]};
 result.passages.push({...result.passages[0],id:"quran:test:2:154",referenceUr:"قرآن، 2:154",referenceEn:"Quran, 2:154",quranLocation:{surah:2,ayah:154}});
 const evidence=result.passages.map((passage,i)=>({ref:i+1,passage}));
-const sections=Array.from({length:5},(_,i)=>({heading:`حصہ ${i+1}`,text:"صبر اور نماز سے مدد لینے کی بات اس آیت میں بیان ہوئی ہے۔ ".repeat(14),refs:[i===4?2:1]}));
+const sections=Array.from({length:5},(_,i)=>({heading:`حصہ ${i+1}`,text:Array.from({length:14},(_,n)=>`یہ نکتہ ${i*14+n} صبر اور نماز سے مدد لینے کے بارے میں اس آیت میں بیان ہوا ہے۔`).join(" "),refs:[i===4?2:1]}));
 const input={title:"صبر",duration:30 as const,locale:"ur" as const};
 const generate=vi.fn(async(_input:SermonRequest)=>({sections}));
 const reviewer={id:"fixture",draft:vi.fn(),review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(c=>({claimId:c.id,verdict:"supported",reason:"entailed"}))}))};
@@ -51,8 +51,13 @@ it("rejects a short summary posing as a full duration sermon",async()=>{
 });
 
 it("repairs a rejected section once and still requires every replacement to pass review",async()=>{
- let calls=0;const repairReviewer={...reviewer,review:async(_i:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((c,i)=>({claimId:c.id,verdict:calls===0&&i===2?"unsupported":"supported",reason:calls===0&&i===2?"not-in-evidence":"entailed"})),...(++calls?{}:{})})};
+ let calls=0;const repairReviewer={...reviewer,review:async(_i:AnswerInput,claims:readonly ResearchClaim[])=>{const first=calls++===0;return {reviews:claims.map((c,i)=>({claimId:c.id,verdict:first&&i===2?"unsupported":"supported",reason:first&&i===2?"not-in-evidence":"entailed"}))};}};
  const repairGenerate=vi.fn(async(_request:SermonRequest)=>({sections}));
  const next=await composeSermon(input,result,{generate:repairGenerate,reviewer:repairReviewer,env:{}});
  expect(next.sections).toHaveLength(5);expect(repairGenerate).toHaveBeenCalledTimes(2);expect(repairGenerate.mock.calls[1][0].instruction).toContain("section-3");
+});
+
+it("identifies composition provider failures without exposing provider responses",async()=>{
+ const unavailable=async()=>{throw new Error("provider internals");};
+ await expect(composeSermon(input,result,{generate:unavailable,reviewer,env:{}})).rejects.toThrow("generation-unavailable");
 });
