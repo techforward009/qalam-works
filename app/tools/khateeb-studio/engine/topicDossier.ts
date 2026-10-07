@@ -86,10 +86,10 @@ export type SermonDossier = {
 
 const SABR: SermonDossier = {
   topicId: "sabr",
-  titleUr: "صبر — منبر کے لیے تحقیقی dossier",
+  titleUr: "صبر — منبر کے لیے تحقیقی مواد",
   titleEn: "Patience — research dossier for the pulpit",
   thesisUr:
-    "صبر محض تکلیف سہنے کا نام نہیں۔ دینی متون اور معاصر خطابت میں اس کے کم از کم تین عملی رخ سامنے آتے ہیں: ردِّعمل پر قابو، نفس کی تربیت، اور ذمہ داری پر ثابت قدمی۔ اچھا منبر ان تینوں کو جوڑ کر دکھاتا ہے کہ صبر انسان کو passive نہیں بلکہ زیادہ بااختیار، زیادہ بااخلاق اور زیادہ درست فیصلہ کرنے والا بناتا ہے۔",
+    "صبر محض تکلیف سہنے کا نام نہیں۔ دینی متون اور معاصر خطابت میں اس کے کم از کم تین عملی رخ سامنے آتے ہیں: ردِّعمل پر قابو، نفس کی تربیت، اور ذمہ داری پر ثابت قدمی۔ اچھا منبر ان تینوں کو جوڑ کر دکھاتا ہے کہ صبر انسان کو بے عمل نہیں بلکہ زیادہ بااختیار، زیادہ بااخلاق اور زیادہ درست فیصلہ کرنے والا بناتا ہے۔",
   thesisEn:
     "Patience is not merely enduring pain. In religious teaching and contemporary preaching it has at least three practical faces: control of reaction, training of the self, and steadfastness in responsibility. A strong sermon joins all three and shows that patience makes a person more—not less—capable of moral action.",
   governingQuestionUr:
@@ -188,13 +188,13 @@ const SABR: SermonDossier = {
       sourceTitleEn: "What should be done in difficult, quasi-war conditions?",
       sourceUrl: "https://www.hkashani.com/?p=26127",
       coreUr:
-        "کاشانی صبر کو سب سے پہلے 'ردِّعمل مؤخر کرنے' اور 'اپنی حقیقی ذمہ داری پہچاننے' سے جوڑتے ہیں۔ ان کے ہاں مسئلہ یہ نہیں کہ انسان جذبات نہ رکھے؛ مسئلہ یہ ہے کہ جذبات کو شرعی و اخلاقی ذمہ داری کا نام دے کر فوراً action میں نہ بدل دے۔",
+        "کاشانی صبر کو سب سے پہلے 'ردِّعمل مؤخر کرنے' اور 'اپنی حقیقی ذمہ داری پہچاننے' سے جوڑتے ہیں۔ ان کے ہاں مسئلہ یہ نہیں کہ انسان جذبات نہ رکھے؛ مسئلہ یہ ہے کہ جذبات کو شرعی و اخلاقی ذمہ داری کا نام دے کر فوراً اقدام میں نہ بدل دے۔",
       coreEn:
         "Kashani first connects patience with delaying reaction long enough to identify one's actual duty. The problem is not having emotion; it is turning emotion immediately into action and calling it religious responsibility.",
       explanationUr: [
-        "وہ سخت اجتماعی حالات کی مثال لیتے ہیں جہاں لوگ فوری اور شدید ردِّعمل چاہتے ہیں۔ ان کا پہلا سوال یہ ہے: کیا یہ واقعی 'احساسِ تکلیف' ہے یا صرف جذباتی جوش؟ اس فرق سے منبر پر صبر کا ایک اہم مفہوم نکلتا ہے: ہر strong feeling تکلیفِ شرعی نہیں ہوتی۔",
-        "وہ بحران میں پہلا دینی عمل تضرع، عبادت اور اپنی کمزوری کے اعتراف کو قرار دیتے ہیں۔ یہ زاویہ صبر کو نفسیاتی suppression نہیں رہنے دیتا؛ صبر پہلے انسان کے ego کو توڑتا ہے، پھر فیصلہ صاف کرتا ہے۔",
-        "اس material سے یہ نکتہ لیا جا سکتا ہے کہ صبر کبھی کبھی 'کچھ نہ کرنا' نہیں بلکہ غلط وقت پر غلط کام نہ کرنا ہے۔ انسان اپنے غصے کو روک کر اپنے حقیقی دائرۂ ذمہ داری کو پہچانتا ہے۔",
+        "وہ سخت اجتماعی حالات کی مثال لیتے ہیں جہاں لوگ فوری اور شدید ردِّعمل چاہتے ہیں۔ ان کا پہلا سوال یہ ہے: کیا یہ واقعی 'ذمہ داری کا احساس' ہے یا صرف جذباتی جوش؟ اس فرق سے منبر پر صبر کا ایک اہم مفہوم نکلتا ہے: ہر شدید جذبہ شرعی ذمہ داری نہیں بن جاتا۔",
+        "وہ بحران میں پہلا دینی عمل تضرع، عبادت اور اپنی کمزوری کے اعتراف کو قرار دیتے ہیں۔ اس طرح صبر صرف جذبات دبانے کا نام نہیں رہتا؛ وہ پہلے انسان کی انا کو کم کرتا ہے، پھر درست فیصلہ کرنے میں مدد دیتا ہے۔",
+        "اس مواد سے یہ نکتہ لیا جا سکتا ہے کہ صبر کبھی کبھی 'کچھ نہ کرنا' نہیں بلکہ غلط وقت پر غلط کام نہ کرنا ہے۔ انسان اپنے غصے کو روک کر اپنے حقیقی دائرۂ ذمہ داری کو پہچانتا ہے۔",
       ],
       explanationEn: [
         "He uses difficult public conditions in which people demand immediate strong reaction. His first question is whether this is a real sense of duty or emotional excitement. That yields a useful pulpit distinction: not every strong feeling is a religious obligation.",
@@ -202,11 +202,11 @@ const SABR: SermonDossier = {
         "The useful sermonic point is that patience is sometimes not 'doing nothing' but refusing to do the wrong thing at the wrong time.",
       ],
       styleUr:
-        "انداز: contemporary واقعے سے آغاز، سامع کے فوری جذبات کو challenge کرنا، پھر قرآن/عبادت کی طرف لے جانا، اور آخر میں ذمہ داری کی نئی تعریف۔",
+        "انداز: موجودہ واقعے سے آغاز، سامع کو اپنے فوری جذبات پر غور کی دعوت دینا، پھر قرآن/عبادت کی طرف لے جانا، اور آخر میں ذمہ داری کی نئی تعریف۔",
       styleEn:
         "Style: begin with a contemporary situation, challenge the listener's immediate emotional certainty, move to worship/Qur'an, then redefine responsibility.",
       useUr:
-        "منبر میں اسے 'صبر = reaction delay for moral clarity' کے باب میں استعمال کریں۔ خاص طور پر غصہ، سوشل میڈیا، اجتماعی بحران اور گھریلو جھگڑے کے contemporary examples کے ساتھ۔",
+        "منبر پر سمجھائیں کہ صبر کا ایک مطلب فوری ردِّعمل سے پہلے رک کر درست فیصلہ کرنا ہے۔ غصے، باہمی پیغام رسانی، اجتماعی مشکل اور گھریلو جھگڑے کی روزمرہ مثالیں دیں۔",
       useEn:
         "Use this under the idea 'patience = delaying reaction for moral clarity,' especially with anger, social media, public crises, and family conflict.",
       originalSnippet: "اول باید تضرّع کنیم.",
@@ -220,13 +220,13 @@ const SABR: SermonDossier = {
       sourceTitleEn: "The place of patience in raising children",
       sourceUrl: "https://www.youtube.com/watch?v=6vI3qYhWLX0",
       coreUr:
-        "پناہیان صبر کو تربیتِ اولاد کے بنیادی اخلاق میں رکھتے ہیں۔ ان کا زور نصیحت سے زیادہ 'دیکھے جانے والے ضبطِ نفس' پر ہے: بچہ والدین کے لیکچر سے کم اور اس بات سے زیادہ سیکھتا ہے کہ مشکل، غصے اور تھکن میں ماں باپ اپنے آپ کو کیسے سنبھالتے ہیں۔",
+        "پناہیان صبر کو تربیتِ اولاد کے بنیادی اخلاق میں رکھتے ہیں۔ ان کا زور نصیحت سے زیادہ 'دیکھے جانے والے ضبطِ نفس' پر ہے: بچہ والدین کی نصیحت سے کم اور اس بات سے زیادہ سیکھتا ہے کہ مشکل، غصے اور تھکن میں ماں باپ اپنے آپ کو کیسے سنبھالتے ہیں۔",
       coreEn:
         "Panahian places patience among the foundational virtues of parenting. His emphasis is less on instruction and more on visible self-restraint: children learn not only from lectures but from watching how parents handle pressure, anger, and fatigue.",
       explanationUr: [
-        "اس سلسلے میں صبر صرف بچے کی شرارت برداشت کرنے کا نام نہیں؛ والدین کی شخصیت میں ایسی capacity پیدا کرنا ہے کہ مشکل میں ان کی زبان، لہجہ اور رویہ بکھر نہ جائے۔",
-        "اس زاویے کا ایک اہم تربیتی اصول یہ ہے کہ بچے کو 'صبر کرو' کہنا کم مؤثر ہے اگر وہ بڑوں کو خود بے صبری، چیخ، تحقیر یا فوری غصے میں دیکھ رہا ہو۔ صبر یہاں transferable character بنتا ہے۔",
-        "پناہیان کے family framing سے خطیب صبر کو abstract اخلاقی فضیلت سے نکال کر گھر کے dining table، homework، مالی دباؤ، زوجین کے اختلاف اور بچوں کی غلطیوں تک لا سکتا ہے۔",
+        "اس سلسلے میں صبر صرف بچے کی شرارت برداشت کرنے کا نام نہیں؛ والدین کی شخصیت میں ایسی صلاحیت پیدا کرنا ہے کہ مشکل میں ان کی زبان، لہجہ اور رویہ بکھر نہ جائے۔",
+        "اس زاویے کا ایک اہم تربیتی اصول یہ ہے کہ بچے کو 'صبر کرو' کہنا کم مؤثر ہے اگر وہ بڑوں کو خود بے صبری، چیخ، تحقیر یا فوری غصے میں دیکھ رہا ہو۔ یوں بڑوں کا صبر بچوں کے کردار میں بھی جگہ پاتا ہے۔",
+        "پناہیان کی گفتگو سے خطیب صبر کو گھر کی زندگی سے جوڑ سکتا ہے: کھانے کے وقت، بچوں کے سبق، مالی تنگی، میاں بیوی کے اختلاف اور بچوں کی غلطیوں میں صبر کیسے اختیار کیا جائے؟",
       ],
       explanationEn: [
         "Here patience is not merely tolerating a child's misbehavior; it is building enough inner capacity that a parent's speech and conduct do not collapse under stress.",
@@ -234,11 +234,11 @@ const SABR: SermonDossier = {
         "This family framing lets a preacher move patience out of abstraction and into meals, homework, financial stress, marital disagreement, and children's mistakes.",
       ],
       styleUr:
-        "انداز: روزمرہ گھر سے مثال، تربیت کے عام مفروضے کو الٹ دینا، پھر بہت concrete behavioral advice دینا۔",
+        "انداز: روزمرہ گھر سے مثال، تربیت کے عام مفروضے کو الٹ دینا، پھر بہت واضح عملی ہدایت دینا۔",
       styleEn:
         "Style: start from ordinary family life, overturn a common assumption about formation, then give concrete behavioral advice.",
       useUr:
-        "منبر کے وسط میں 'آپ کا صبر آپ کے بچوں کی تربیت ہے' کے عنوان سے 5–7 منٹ کا practical segment بن سکتا ہے۔",
+        "منبر کے وسط میں 'آپ کا صبر آپ کے بچوں کی تربیت ہے' کے عنوان سے 5–7 منٹ کا عملی حصہ بن سکتا ہے۔",
       useEn:
         "This can become a five-to-seven-minute practical segment: 'Your patience is part of your child's formation.'",
       originalSnippet: "مهمترین کار خوب مؤثر برای تربیت فرزندان، صبر است.",
@@ -252,14 +252,14 @@ const SABR: SermonDossier = {
       sourceTitleEn: "Exercises in patience",
       sourceUrl: "https://t.me/s/ostad_shojae?q=%23%D8%AA%D9%85%D8%A7%D8%B1%DB%8C%D9%86_%D8%B5%D8%A8%D8%B1",
       coreUr:
-        "شجاعی صبر کو ایک trainable skill کے طور پر پیش کرتے ہیں۔ ان کے material میں patience کوئی vague نصیحت نہیں بلکہ باقاعدہ practice ہے: تحمل اختیار کرنا، خواہشِ نفس کے خلاف کھڑا ہونا، خاموشی کی مشق، اختلاف برداشت کرنا، اور خود شناسی و خلوت کے ذریعے inner energy پیدا کرنا۔",
+        "شجاعی صبر کو ایسی صلاحیت قرار دیتے ہیں جو مشق سے پیدا ہوتی ہے۔ ان کے مواد میں صبر کوئی مبہم نصیحت نہیں بلکہ باقاعدہ مشق ہے: تحمل اختیار کرنا، خواہشِ نفس کے خلاف کھڑا ہونا، خاموش رہنے کی مشق، اختلاف برداشت کرنا، اور اپنے حال پر غور کرکے اندرونی قوت پیدا کرنا۔",
       coreEn:
         "Shojaei presents patience as a trainable skill. In his material it is not vague advice but deliberate practice: adopting forbearance, resisting impulse, practicing silence, tolerating difference, and building inner energy through self-knowledge and solitude with God.",
       explanationUr: [
-        "ان کا ایک بنیادی تربیتی نکتہ یہ ہے کہ اگر حلم فطری طور پر نہیں آتا تو انسان 'تحلم' کرے—یعنی اپنے ظاہر اور ردِّعمل کو دانستہ طور پر صبر کی شکل دے، یہاں تک کہ practice رفتہ رفتہ character بن جائے۔",
-        "وہ خواہشات کے مقابل کھڑے ہونے کو patience training کا زیادہ گہرا مرحلہ کہتے ہیں۔ آدمی ہر خواہش پوری نہ کر کے نفس کو یہ سکھاتا ہے کہ اختیار کس کے ہاتھ میں ہے۔",
-        "خاموشی بھی ان کے ہاں صبر کی exercise ہے: ہر بات کا فوراً جواب نہ دینا، ذہنی و زبانی تحریک کم کرنا، اور اختلاف کو دشمنی کے بجائے تربیت کا میدان سمجھنا۔",
-        "یہ approach خطیب کو 'صبر کیسے پیدا کریں؟' کے سوال کا عملی جواب دیتی ہے: صبر وعظ سے کم، repeated micro-practices سے زیادہ بنتا ہے۔",
+        "ان کا ایک بنیادی تربیتی نکتہ یہ ہے کہ اگر حلم فطری طور پر نہیں آتا تو انسان 'تحلم' کرے—یعنی اپنے ظاہر اور ردِّعمل کو دانستہ طور پر صبر کی شکل دے، یہاں تک کہ مشق رفتہ رفتہ کردار بن جائے۔",
+        "وہ خواہشات کے مقابل کھڑے ہونے کو صبر کی تربیت کا زیادہ گہرا مرحلہ کہتے ہیں۔ آدمی ہر خواہش پوری نہ کر کے نفس کو یہ سکھاتا ہے کہ اختیار کس کے ہاتھ میں ہے۔",
+        "خاموشی بھی ان کے ہاں صبر کی مشق ہے: ہر بات کا فوراً جواب نہ دینا، ذہنی و زبانی تحریک کم کرنا، اور اختلاف کو دشمنی کے بجائے تربیت کا میدان سمجھنا۔",
+        "یہ طریقہ خطیب کو 'صبر کیسے پیدا کریں؟' کے سوال کا عملی جواب دیتا ہے: صبر صرف نصیحت سننے سے نہیں، چھوٹی چھوٹی مشقیں بار بار کرنے سے پختہ ہوتا ہے۔",
       ],
       explanationEn: [
         "A basic training point is tahallum: if forbearance does not come naturally, deliberately perform the outward discipline of forbearance until repeated practice begins shaping character.",
@@ -268,20 +268,20 @@ const SABR: SermonDossier = {
         "This gives the preacher a practical answer to 'How is patience acquired?': less by exhortation alone, more by repeated micro-practices.",
       ],
       styleUr:
-        "انداز: اخلاق کو 'exercise' میں بدلنا؛ چھوٹے، یاد رہنے والے steps؛ نفس اور شیطان کے ساتھ داخلی struggle کی زبان۔",
+        "انداز: اخلاق کو 'مشق' میں بدلنا؛ چھوٹے، یاد رہنے والے مراحل؛ نفس اور شیطان کے ساتھ داخلی کشمکش کی زبان۔",
       styleEn:
         "Style: turn ethics into exercises; use short memorable steps; frame the struggle as internal training against impulse and temptation.",
       useUr:
-        "منبر کے آخری حصے میں سامع کو تین homework دیں: جواب میں تاخیر، ایک خواہش intentionally چھوڑنا، اور روزانہ مختصر silence/خلوت۔",
+        "منبر کے آخری حصے میں سامع کو گھر میں کرنے کے لیے تین کام دیں: جواب میں تاخیر، ایک خواہش جان بوجھ کر چھوڑنا، اور روزانہ چند منٹ خاموشی اور تنہائی میں غور۔",
       useEn:
         "End the sermon with three pieces of homework: delay one reaction, intentionally refuse one impulse, and practice a short period of silence/solitude each day.",
       originalSnippet: "اگر حلیم نیستی، خودتو به حلم بزن.",
     },
   ],
   synthesisUr: [
-    "تینوں approaches کو جوڑیں تو صبر کی مکمل تصویر بنتی ہے: کاشانی decision-making کو درست کرتے ہیں، پناہیان relational modeling دکھاتے ہیں، اور شجاعی skill-building کا طریقہ دیتے ہیں۔",
-    "اس طرح خطبہ محض 'صبر اچھا ہے' نہیں رہتا۔ سامع کو معلوم ہوتا ہے کہ صبر کب درکار ہے، گھر میں کیسا دکھائی دیتا ہے، اور اسے develop کیسے کیا جاتا ہے۔",
-    "قرآن کی «اِنَّ اللّٰهَ مَعَ الصَّابِرِينَ» کو اس synthesis کے بعد پڑھیں: معیتِ الٰہی اس انسان کے ساتھ ہے جو مشکل میں اخلاقی agency کھوتا نہیں بلکہ اسے disciplined بناتا ہے۔",
+    "تینوں زاویوں کو جوڑیں تو صبر کی مکمل تصویر بنتی ہے: کاشانی فیصلہ سازی کو درست کرتے ہیں، پناہیان تعلقات میں عملی نمونہ دکھاتے ہیں، اور شجاعی صلاحیت پیدا کرنے کا طریقہ دیتے ہیں۔",
+    "اس طرح خطبہ محض 'صبر اچھا ہے' نہیں رہتا۔ سامع کو معلوم ہوتا ہے کہ صبر کب درکار ہے، گھر میں کیسا دکھائی دیتا ہے، اور اسے پختہ کیسے کیا جاتا ہے۔",
+    "قرآن کی «اِنَّ اللّٰهَ مَعَ الصَّابِرِينَ» کو اس یکجا گفتگو کے بعد پڑھیں: معیتِ الٰہی اس انسان کے ساتھ ہے جو مشکل میں اخلاقی فیصلہ کرنے کی صلاحیت کھوتا نہیں بلکہ اسے منظم بناتا ہے۔",
   ],
   synthesisEn: [
     "Taken together, the three approaches form a fuller picture: Kashani sharpens decision-making, Panahian shows relational modeling, and Shojaei supplies skill-building.",
@@ -291,23 +291,23 @@ const SABR: SermonDossier = {
   pulpitFlowUr: [
     {
       heading: "1. صبر کو غلط نہ سمجھیں",
-      body: "ابتدا ایک حقیقی سوال سے کریں: ہم میں سے اکثر صبر کو مجبور آدمی کی بے بسی سمجھتے ہیں۔ لیکن اگر صبر صرف کچھ نہ کرنا ہوتا تو قرآن اسے قوت، معیتِ الٰہی اور کامیابی کے ساتھ نہ جوڑتا۔ اصل مسئلہ یہ ہے کہ مشکل لمحے میں آپ کے اندر کون حکومت کرتا ہے—عقل و ایمان یا فوری impulse؟",
+      body: "ابتدا ایک حقیقی سوال سے کریں: ہم میں سے اکثر صبر کو مجبور آدمی کی بے بسی سمجھتے ہیں۔ لیکن اگر صبر صرف کچھ نہ کرنا ہوتا تو قرآن اسے قوت، معیتِ الٰہی اور کامیابی کے ساتھ نہ جوڑتا۔ اصل مسئلہ یہ ہے کہ مشکل لمحے میں آپ کے اندر کون حکومت کرتا ہے—عقل و ایمان یا فوری جذبہ؟",
     },
     {
       heading: "2. پہلا میدان: فوراً ردِّعمل نہ دینا",
-      body: "کاشانی کے زاویے سے دکھائیں کہ ہر strong emotion 'تکلیف' نہیں۔ غصہ آتے ہی message، فیصلہ، الزام یا confrontation شروع کر دینا اکثر قوت نہیں بلکہ اپنے نفس کے ہاتھوں controlled ہونا ہے۔ صبر کا پہلا قدم reaction اور action کے درمیان ایک اخلاقی وقفہ پیدا کرنا ہے۔",
+      body: "کاشانی کے زاویے سے دکھائیں کہ ہر شدید جذبہ 'تکلیف' نہیں۔ غصہ آتے ہی پیغام، فیصلہ، الزام یا ٹکراؤ شروع کر دینا اکثر قوت نہیں بلکہ اپنے نفس کے ہاتھوں مغلوب ہونا ہے۔ صبر کا پہلا قدم ردِّعمل اور اقدام کے درمیان ایک اخلاقی وقفہ پیدا کرنا ہے۔",
     },
     {
       heading: "3. دوسرا میدان: گھر میں صبر دکھائی دینا چاہیے",
-      body: "پناہیان کے family angle سے سامع کو گھر لے آئیں۔ بچہ یہ نہیں دیکھتا کہ والد نے صبر پر کتنی تقریر سنی؛ وہ دیکھتا ہے کہ بجلی جانے، پیسے کم ہونے، homework خراب ہونے یا شریکِ حیات کی غلطی پر گھر کے بڑوں کی زبان کیا کرتی ہے۔ صبر نسل در نسل lecture سے نہیں، model سے منتقل ہوتا ہے۔",
+      body: "پناہیان کے خاندان سے متعلق زاویے سے سامع کو گھر لے آئیں۔ بچہ یہ نہیں دیکھتا کہ والد نے صبر پر کتنی تقریر سنی؛ وہ دیکھتا ہے کہ بجلی جانے، پیسے کم ہونے، گھر کا سبق خراب ہونے یا شریکِ حیات کی غلطی پر گھر کے بڑوں کی زبان کیا کرتی ہے۔ صبر نسل در نسل نصیحت سے نہیں، نمونے سے منتقل ہوتا ہے۔",
     },
     {
-      heading: "4. تیسرا میدان: صبر کی باقاعدہ training",
-      body: "شجاعی کے exercises سے practical حصہ بنائیں: ہر جواب فوراً نہ دیں؛ کبھی اپنی جائز خواہش کو بھی delay کریں؛ اختلاف میں سامنے والے کو مکمل سنیں؛ روزانہ چند منٹ زبان و ذہن کو خاموش کریں۔ نفس کو بار بار یہ تجربہ دیں کہ ہر خواہش command نہیں ہے۔",
+      heading: "4. تیسرا میدان: صبر کی باقاعدہ تربیت",
+      body: "شجاعی کی مشقوں سے عملی حصہ بنائیں: ہر جواب فوراً نہ دیں؛ کبھی اپنی جائز خواہش کو بھی مؤخر کریں؛ اختلاف میں سامنے والے کو مکمل سنیں؛ روزانہ چند منٹ زبان و ذہن کو خاموش کریں۔ نفس کو بار بار یہ تجربہ دیں کہ ہر خواہش حکم نہیں ہے۔",
     },
     {
       heading: "5. صبر کا حاصل: انسان زیادہ فعال ہوتا ہے",
-      body: "نتیجہ یہ نکالیں کہ صبر انسان کو passive نہیں کرتا۔ بے صبری انسان کو stimulus کا غلام بناتی ہے؛ صبر اسے choose کرنے کی طاقت دیتا ہے۔ اب وہ غصے میں بھی عدل کر سکتا ہے، مصیبت میں بھی عبادت، اختلاف میں بھی اخلاق، اور انتظار میں بھی ذمہ داری۔",
+      body: "نتیجہ یہ نکالیں کہ صبر انسان کو بے عمل نہیں کرتا۔ بے صبری انسان کو بیرونی حالات کا غلام بناتی ہے؛ صبر اسے انتخاب کرنے کی طاقت دیتا ہے۔ اب وہ غصے میں بھی عدل کر سکتا ہے، مصیبت میں بھی عبادت، اختلاف میں بھی اخلاق، اور انتظار میں بھی ذمہ داری۔",
     },
   ],
   pulpitFlowEn: [
@@ -318,7 +318,7 @@ const SABR: SermonDossier = {
     { heading: "5. Result: greater agency", body: "Patience is not passivity. Impatience makes a person a slave of stimulus; patience restores the power to choose moral action." },
   ],
   closingUr:
-    "سامع کو ایک ہفتے کا challenge دیں: جب بھی غصہ یا بے چینی آئے، فوراً جواب دینے سے پہلے ایک مختصر توقف، ایک دعا یا ذکر، اور پھر یہ سوال—'میرا نفس کیا چاہتا ہے، اور میری ذمہ داری کیا ہے؟' اگر صرف یہ ایک عادت بن جائے تو صبر abstract فضیلت نہیں رہے گا؛ زندگی کی operating skill بن جائے گا۔",
+    "سامع کو ایک ہفتے کی عملی مشق دیں: جب بھی غصہ یا بے چینی آئے، فوراً جواب دینے سے پہلے ایک مختصر توقف، ایک دعا یا ذکر، اور پھر یہ سوال—'میرا نفس کیا چاہتا ہے، اور میری ذمہ داری کیا ہے؟' اگر صرف یہ ایک عادت بن جائے تو صبر محض نظری فضیلت نہیں رہے گا؛ زندگی گزارنے کی عملی صلاحیت بن جائے گا۔",
   closingEn:
     "Give the audience a one-week challenge: whenever anger or anxiety rises, pause before answering, make a brief prayer or remembrance, then ask: 'What does my impulse want, and what is my responsibility?' That turns patience from an abstract virtue into an operating skill for life.",
 };
@@ -413,7 +413,7 @@ const IMAMATE: SermonDossier = {
       explanationUr: [
         "وہ امامتِ تبیینی اور امامتِ تطبیقی میں فرق کرتے ہیں۔ منبر کے لیے یہ فرق بہت اہم ہے: پہلے سامع کو یہ سمجھایا جائے کہ 'امام' کس منصب کا نام ہے؛ اس کے بعد شخصیات اور تاریخی نصوص پر گفتگو کی جائے۔ اگر ترتیب الٹ دی جائے تو مجلس فوراً شخصی مناظرے میں چلی جاتی ہے اور اصل عقیدہ واضح نہیں ہوتا۔",
         "ان کا عبقات الانوار پر زور ایک اور منبری سبق دیتا ہے: مضبوط استدلال صرف روایت نقل کرنے سے نہیں بنتا؛ روایت کی سند، مختلف طرق، الفاظ کے معنی، تاریخی استعمال، اور مخاطب کے علمی مبانی کو سمجھنا بھی ضروری ہے۔",
-        "کاشانی کی approach خطیب کو یہ سکھاتی ہے کہ امامت پر گفتگو میں پہلے framework بنائیں، پھر evidence رکھیں۔ اس سے موضوع جذباتی دفاع کے بجائے علمی confidence کے ساتھ کھلتا ہے۔",
+        "کاشانی کا طریقہ خطیب کو یہ سکھاتا ہے کہ امامت پر گفتگو میں پہلے بنیادی خاکہ بنائیں، پھر دلیل رکھیں۔ اس سے موضوع جذباتی دفاع کے بجائے علمی اعتماد کے ساتھ کھلتا ہے۔",
       ],
       explanationEn: [
         "He distinguishes explanatory Imamate—what the office is and what qualities define it—from applied/comparative Imamate—who fulfills those qualities. For preaching, this order matters: define the office before moving into personalities and historical proof.",
@@ -421,7 +421,7 @@ const IMAMATE: SermonDossier = {
         "This approach teaches the preacher to build a framework first and then place evidence inside it, replacing defensive polemic with intellectual confidence.",
       ],
       styleUr:
-        "انداز: پہلے مسئلے کی taxonomy، پھر methodological caution، پھر source criticism۔ جذباتی نعرے کے بجائے علمی نقشہ بنا کر سامع کو ساتھ لے جانا۔",
+        "انداز: پہلے مسئلے کی تقسیم، پھر تحقیق میں ضروری احتیاط، پھر ماخذ کی علمی جانچ۔ جذباتی نعرے کے بجائے علمی نقشہ بنا کر سامع کو ساتھ لے جانا۔",
       styleEn:
         "Style: begin with taxonomy, add methodological caution, then move into source criticism. Build an intellectual map before argument.",
       useUr:
@@ -442,9 +442,9 @@ const IMAMATE: SermonDossier = {
       coreEn:
         "Tabataba'i does not reduce Imamate to government. He presents it as guardianship of religious and social affairs; in his broader formulation, Imamate carries three dimensions: leadership of the Muslim community, preservation and authoritative exposition of religious knowledge and law, and spiritual guidance.",
       explanationUr: [
-        "یہ framework منبر کے لیے نہایت قیمتی ہے کیونکہ اس سے 'امام' محض ایک تاریخی حکمران یا فقہی reference نہیں رہتا۔ امام کا منصب simultaneously society، knowledge اور spiritual formation تینوں سے متعلق ہو جاتا ہے۔",
-        "علامہ کی reasoning نبوت کے مقصد سے شروع ہوتی ہے: اگر دین انسان کو کمال کی طرف ہدایت دینے آیا ہے تو پیغمبرؐ کی وفات کے بعد دین کی حفاظت، صحیح تعبیر اور انسان کی مسلسل رہنمائی کا مسئلہ باقی رہتا ہے۔ امامت اسی continuity کا ادارہ ہے، نئی نبوت نہیں۔",
-        "اس زاویے سے حدیثِ ثقلین، قرآن و اہل بیتؑ کی باہمی نسبت، اور اہل بیتؑ کی علمی مرجعیت کو ایک coherent structure میں سمجھایا جا سکتا ہے: قرآن متن ہے، مگر متن کی معصوم نبوی توضیح اور زندہ نمونہ بھی امت کی ضرورت ہے۔",
+        "یہ بنیادی خاکہ منبر کے لیے نہایت قیمتی ہے کیونکہ اس سے 'امام' محض ایک تاریخی حکمران یا فقہی مرجع نہیں رہتا۔ امام کا منصب ایک ساتھ معاشرے، علم اور روحانی تربیت تینوں سے متعلق ہو جاتا ہے۔",
+        "علامہ کا استدلال نبوت کے مقصد سے شروع ہوتا ہے: اگر دین انسان کو کمال کی طرف ہدایت دینے آیا ہے تو پیغمبرؐ کی وفات کے بعد دین کی حفاظت، صحیح تعبیر اور انسان کی مسلسل رہنمائی کا مسئلہ باقی رہتا ہے۔ امامت اسی تسلسل کا ادارہ ہے، نئی نبوت نہیں۔",
+        "اس زاویے سے حدیثِ ثقلین، قرآن و اہل بیتؑ کی باہمی نسبت، اور اہل بیتؑ کی علمی مرجعیت کو ایک مربوط ترتیب میں سمجھایا جا سکتا ہے: قرآن متن ہے، مگر متن کی معصوم نبوی توضیح اور زندہ نمونہ بھی امت کی ضرورت ہے۔",
       ],
       explanationEn: [
         "This framework is valuable for preaching because the Imam is no longer merely a historical ruler or a legal reference. The office touches society, knowledge, and spiritual formation at once.",
@@ -452,11 +452,11 @@ const IMAMATE: SermonDossier = {
         "This makes it easier to present the relationship of Qur'an and Ahl al-Bayt coherently: revelation remains the text, while authoritative Prophetic interpretation and embodied guidance remain necessary for the community.",
       ],
       styleUr:
-        "انداز: فلسفی مگر سادہ structural reasoning۔ فردی تاریخی واقعات سے پہلے 'دین کو survive اور guide کرنے کے لیے کن functions کی ضرورت ہے؟' والا سوال۔",
+        "انداز: سادہ سوال سے منصب کی ضرورت سمجھانا۔ تاریخی واقعات سے پہلے پوچھیں: دین کی حفاظت اور انسان کی رہنمائی کے لیے کن ذمہ داریوں کا پورا ہونا ضروری ہے؟",
       styleEn:
         "Style: structural reasoning before historical detail. Ask what functions religion still needs in order to preserve and guide.",
       useUr:
-        "تین لفظ یاد رکھیں: **قیادت، علم، تربیت**۔ انہی تین headings پر 8–10 منٹ کی مضبوط علمی گفتگو بن سکتی ہے۔",
+        "تین لفظ یاد رکھیں: **قیادت، علم، تربیت**۔ انہی تین عنوانات پر 8–10 منٹ کی مضبوط علمی گفتگو بن سکتی ہے۔",
       useEn:
         "Remember three words: **leadership, knowledge, formation**. They can carry an eight-to-ten-minute scholarly segment.",
     },
@@ -468,13 +468,13 @@ const IMAMATE: SermonDossier = {
       sourceTitleEn: "Imamah and Leadership",
       sourceUrl: "https://al-islam.org/imamah-and-khilafah-murtadha-mutahhari/imamah-leadership",
       coreUr:
-        "مطہری 'ہدایت' اور 'قیادت' کے فرق سے امامت کو بہت مؤثر انداز میں کھولتے ہیں۔ ہدایت راستہ دکھاتی ہے؛ قیادت انسان اور معاشرے کی موجود صلاحیتوں کو حرکت دیتی، منظم کرتی اور مقصد تک پہنچانے کے لیے mobilize کرتی ہے۔ اس طرح امام صرف teacher نہیں بلکہ transformative leader بنتا ہے۔",
+        "مطہری 'ہدایت' اور 'قیادت' کے فرق سے امامت کو بہت مؤثر انداز میں کھولتے ہیں۔ ہدایت راستہ دکھاتی ہے؛ قیادت انسان اور معاشرے کی موجود صلاحیتوں کو حرکت دیتی، منظم کرتی اور مقصد تک پہنچنے کے لیے آمادہ کرتی ہے۔ اس طرح امام صرف استاد نہیں بلکہ انسان اور معاشرے کو بدلنے والا رہنما بنتا ہے۔",
       coreEn:
         "Mutahhari opens Imamate through the distinction between guidance and leadership. Guidance shows the road; leadership mobilizes and organizes the latent capacities of persons and society so they can actually move toward the goal. The Imam is therefore not only a teacher but a transformative leader.",
       explanationUr: [
-        "یہ فرق منبر پر بہت طاقتور ہے: کسی کو راستہ معلوم ہونا اور کسی کا اس راستے پر چل پڑنا دو الگ چیزیں ہیں۔ کتاب direction دے سکتی ہے، مگر leadership انسان کے خوف، کمزوری، انتشار اور dormant potential سے deal کرتی ہے۔",
-        "مطہری leadership کو انسان کی hidden capacities کو unfold کرنے سے جوڑتے ہیں۔ اس زاویے سے امام کی سیرت محض historical admiration نہیں رہتی؛ وہ یہ سوال بن جاتی ہے کہ امام علیؑ نے افراد اور معاشرے میں کون سی صلاحیتیں جگائیں؟ امام حسینؑ نے ضمیر کو کیسے mobilize کیا؟",
-        "اسی framework سے یہ بھی سمجھایا جا سکتا ہے کہ امامت کا تعلق صرف اقتدار سے نہیں۔ ممکن ہے امام ظاہری حکومت میں نہ ہو، مگر علمی، اخلاقی اور روحانی leadership پھر بھی جاری رہے۔",
+        "یہ فرق منبر پر بہت طاقتور ہے: کسی کو راستہ معلوم ہونا اور کسی کا اس راستے پر چل پڑنا دو الگ چیزیں ہیں۔ کتاب سمت دے سکتی ہے، مگر قیادت انسان کے خوف اور کمزوری پر کام کرتی ہے، اسے یکسو کرتی ہے اور اس کی سوئی ہوئی صلاحیتیں جگاتی ہے۔",
+        "مطہری قیادت کو انسان کی پوشیدہ صلاحیتوں کو سامنے لانے سے جوڑتے ہیں۔ اس زاویے سے امام کی سیرت محض تاریخی عظمت کا اعتراف نہیں رہتی؛ وہ یہ سوال بن جاتی ہے کہ امام علیؑ نے افراد اور معاشرے میں کون سی صلاحیتیں جگائیں؟ امام حسینؑ نے ضمیر کو کیسے جگایا؟",
+        "اسی بنیادی خاکے سے یہ بھی سمجھایا جا سکتا ہے کہ امامت کا تعلق صرف اقتدار سے نہیں۔ ممکن ہے امام ظاہری حکومت میں نہ ہو، مگر علمی، اخلاقی اور روحانی قیادت پھر بھی جاری رہے۔",
       ],
       explanationEn: [
         "This distinction is powerful on the pulpit: knowing the road and actually moving on it are different. A text can give direction, but leadership engages fear, weakness, fragmentation, and dormant human potential.",
@@ -482,11 +482,11 @@ const IMAMATE: SermonDossier = {
         "This also clarifies why Imamate is not exhausted by political office. An Imam may be denied government while intellectual, moral, and spiritual leadership continues.",
       ],
       styleUr:
-        "انداز: abstract concept کو everyday distinction سے واضح کرنا، پھر اسے history اور human psychology پر apply کرنا۔",
+        "انداز: کسی علمی تصور کو روزمرہ کے ایک فرق سے واضح کرنا، پھر اسے تاریخ اور انسانی نفسیات پر لاگو کرنا۔",
       styleEn:
         "Style: clarify an abstract doctrine through an everyday distinction, then apply it to history and human psychology.",
       useUr:
-        "سامع سے پوچھیں: 'آپ کو راستہ معلوم ہے، پھر بھی آپ چل کیوں نہیں رہے؟' وہاں سے teacher اور leader کا فرق کھولیں، پھر امام کو 'انسان کو حرکت دینے والی حجت' کے طور پر پیش کریں۔",
+        "سامع سے پوچھیں: 'آپ کو راستہ معلوم ہے، پھر بھی آپ چل کیوں نہیں رہے؟' وہاں سے استاد اور رہنما کا فرق کھولیں، پھر امام کو 'انسان کو حرکت دینے والی حجت' کے طور پر پیش کریں۔",
       useEn:
         "Ask: 'If you already know the road, why are you still not moving?' Then distinguish teacher from leader and present the Imam as guidance that mobilizes.",
     },
@@ -498,13 +498,13 @@ const IMAMATE: SermonDossier = {
       sourceTitleEn: "Imamate and the Imams — what recognition of the Imam means",
       sourceUrl: "https://al-islam.org/imamate-and-imams-ibrahim-amini/authors-preface",
       coreUr:
-        "آیت اللہ امینی ایک نہایت اہم practical correction کرتے ہیں: 'معرفتِ امام' صرف یہ نہیں کہ ہم بارہ ائمہؑ کے نام، القاب اور تاریخیں جانتے ہوں۔ حقیقی معرفت میں امام کے علم، عصمت، اخلاق، عبادت، طرزِ عمل اور دینی مرجعیت کو پہچاننا اور اسے اپنی زندگی کا معیار بنانا شامل ہے۔",
+        "آیت اللہ امینی ایک نہایت اہم عملی اصلاح کرتے ہیں: 'معرفتِ امام' صرف یہ نہیں کہ ہم بارہ ائمہؑ کے نام، القاب اور تاریخیں جانتے ہوں۔ حقیقی معرفت میں امام کے علم، عصمت، اخلاق، عبادت، طرزِ عمل اور دینی مرجعیت کو پہچاننا اور اسے اپنی زندگی کا معیار بنانا شامل ہے۔",
       coreEn:
         "Amini makes a crucial practical correction: recognition of the Imam is not merely knowing the names, titles, and dates of the Twelve Imams. Real recognition includes understanding the Imam's knowledge, infallibility, ethics, worship, conduct, and religious authority, then treating that pattern as a standard for life.",
       explanationUr: [
-        "یہ زاویہ عقیدۂ امامت کو biography quiz بننے سے بچاتا ہے۔ اگر کوئی شخص امام صادقؑ کی تاریخِ ولادت جانتا ہے مگر علم، صدق، امانت، عبادت اور علمی دیانت میں ان کی روش سے بے تعلق ہے تو معرفت کا اہم حصہ ابھی پیدا نہیں ہوا۔",
-        "امینی امام کو دینی علوم کا معتبر source، اخلاقی نمونہ اور امت کی رہنمائی کا مرکز قرار دیتے ہیں۔ اس سے 'امام کو ماننا' ایک lived relationship بن جاتا ہے: میں اپنی عبادت، خاندان، علم، معاملات اور اختلاف میں کس معیار کی پیروی کرتا ہوں؟",
-        "یہ نوجوانوں کے لیے خاص طور پر مفید framing ہے، کیونکہ وہ abstract succession debate کے بجائے فوراً یہ پوچھ سکتے ہیں: 'امام میری life decisions میں کیا بدلتا ہے؟'",
+        "یہ زاویہ عقیدۂ امامت کو سوانحی معلومات کا امتحان بننے سے بچاتا ہے۔ اگر کوئی شخص امام صادقؑ کی تاریخِ ولادت جانتا ہے مگر علم، صدق، امانت، عبادت اور علمی دیانت میں ان کی روش سے بے تعلق ہے تو معرفت کا اہم حصہ ابھی پیدا نہیں ہوا۔",
+        "امینی امام کو دینی علوم کا معتبر ماخذ، اخلاقی نمونہ اور امت کی رہنمائی کا مرکز قرار دیتے ہیں۔ اس سے 'امام کو ماننا' ایک زندگی میں جاری تعلق بن جاتا ہے: میں اپنی عبادت، خاندان، علم، معاملات اور اختلاف میں کس معیار کی پیروی کرتا ہوں؟",
+        "یہ نوجوانوں کے لیے خاص طور پر مفید زاویہ ہے، کیونکہ وہ جانشینی کی محض نظری بحث کے بجائے فوراً یہ پوچھ سکتے ہیں: 'امام میری زندگی کے فیصلوں میں کیا بدلتا ہے؟'",
       ],
       explanationEn: [
         "This prevents Imamate from becoming a biography quiz. Knowing dates without becoming connected to the Imam's knowledge, integrity, worship, and moral method leaves an essential part of recognition unrealized.",
@@ -512,7 +512,7 @@ const IMAMATE: SermonDossier = {
         "This framing is especially effective with younger audiences because it moves immediately from succession theory to the question: what difference does the Imam make to my decisions?",
       ],
       styleUr:
-        "انداز: doctrine کو character formation میں translate کرنا۔ پہلے تعریف، پھر qualities، پھر 'اس کا میری زندگی میں فائدہ کیا ہے؟' کا جواب۔",
+        "انداز: عقیدے کا کردار کی تعمیر سے تعلق واضح کرنا۔ پہلے تعریف، پھر صفات، پھر 'اس کا میری زندگی میں فائدہ کیا ہے؟' کا جواب۔",
       styleEn:
         "Style: translate doctrine into character formation—definition, qualities, then the practical question of why it matters.",
       useUr:
@@ -553,9 +553,9 @@ const IMAMATE: SermonDossier = {
     },
   ],
   synthesisUr: [
-    "کاشانی ہمیں **طریقۂ تحقیق** دیتے ہیں: پہلے امامت کی تعریف، پھر تطبیق اور دلیل۔ علامہ طباطبائی **منصب کی ساخت** دیتے ہیں: قیادت، علم اور روحانی تربیت۔ مطہری **function** واضح کرتے ہیں: امام صرف راستہ نہیں بتاتا، انسان اور معاشرے کو حرکت دیتا ہے۔ امینی **معرفت کو زندگی** میں لے آتے ہیں: امام کو جاننا یعنی اس کے علمی و اخلاقی معیار کو اختیار کرنا۔",
-    "ان چار زاویوں کو ملا کر امامت نہ صرف historical succession رہتی ہے، نہ صرف political authority، نہ صرف devotional love۔ یہ ایک مکمل نظامِ ہدایت بن جاتی ہے: صحیح علم کہاں سے لیا جائے، کردار کس pattern پر بنے، اجتماعی direction کیسے محفوظ رہے، اور انسان potential سے action تک کیسے پہنچے۔",
-    "منبر میں شخصیات کے فضائل ضرور آئیں، مگر framework کے بعد۔ پہلے سامع کو 'امامت کس ضرورت کا جواب ہے؟' سمجھا دیں، پھر امام علیؑ، امام صادقؑ یا امام عصرؑ کی مثالیں زیادہ meaningful محسوس ہوں گی۔",
+    "کاشانی ہمیں **طریقۂ تحقیق** دیتے ہیں: پہلے امامت کی تعریف، پھر تطبیق اور دلیل۔ علامہ طباطبائی **منصب کی ساخت** دیتے ہیں: قیادت، علم اور روحانی تربیت۔ مطہری **کردار** واضح کرتے ہیں: امام صرف راستہ نہیں بتاتا، انسان اور معاشرے کو حرکت دیتا ہے۔ امینی **معرفت کو زندگی** میں لے آتے ہیں: امام کو جاننا یعنی اس کے علمی و اخلاقی معیار کو اختیار کرنا۔",
+    "ان چار زاویوں کو ملا کر امامت نہ صرف تاریخی جانشینی رہتی ہے، نہ صرف سیاسی اختیار، نہ صرف عقیدت و محبت۔ یہ ایک مکمل نظامِ ہدایت بن جاتی ہے: صحیح علم کہاں سے لیا جائے، کردار کس نمونے پر بنے، اجتماعی سمت کیسے محفوظ رہے، اور انسان صلاحیت سے اقدام تک کیسے پہنچے۔",
+    "منبر میں شخصیات کے فضائل ضرور آئیں، مگر بنیادی خاکے کے بعد۔ پہلے سامع کو 'امامت کس ضرورت کا جواب ہے؟' سمجھا دیں، پھر امام علیؑ، امام صادقؑ یا امام عصرؑ کی مثالیں زیادہ بامعنی محسوس ہوں گی۔",
   ],
   synthesisEn: [
     "Kashani supplies the **method**: define Imamate before applying evidence. Tabataba'i supplies the **structure**: leadership, knowledge, and spiritual formation. Mutahhari clarifies the **function**: the Imam not only shows the road but mobilizes persons and society. Amini translates **recognition into life**: knowing the Imam means adopting an intellectual and moral standard.",
@@ -566,32 +566,32 @@ const IMAMATE: SermonDossier = {
     {
       heading: "1. سوال جانشینی سے پہلے: امامت کس مسئلے کا جواب ہے؟",
       body:
-        "ابتدا سیاست سے نہ کریں۔ سامع سے پوچھیں: رسول اکرمؐ کے بعد قرآن باقی ہے، مگر اختلافِ تفسیر بھی باقی ہے؛ احکام باقی ہیں، مگر نئے حالات بھی پیدا ہوتے ہیں؛ اخلاقی تعلیم موجود ہے، مگر انسان کو زندہ نمونہ بھی درکار ہے۔ اگر نبوت ختم ہوئی ہے تو کیا trustworthy guidance کی ضرورت بھی ختم ہوگئی؟ یہی وہ جگہ ہے جہاں امامت کو ایک theological necessity کے طور پر introduce کریں۔",
+        "ابتدا سیاست سے نہ کریں۔ سامع سے پوچھیں: رسول اکرمؐ کے بعد قرآن باقی ہے، مگر اختلافِ تفسیر بھی باقی ہے؛ احکام باقی ہیں، مگر نئے حالات بھی پیدا ہوتے ہیں؛ اخلاقی تعلیم موجود ہے، مگر انسان کو زندہ نمونہ بھی درکار ہے۔ اگر نبوت ختم ہوئی ہے تو کیا معتبر رہنمائی کی ضرورت بھی ختم ہوگئی؟ یہی وہ جگہ ہے جہاں امامت کو ایک دینی ضرورت کے طور پر پیش کریں۔",
     },
     {
       heading: "2. امامت کو تین دائروں میں سمجھیں: قیادت، علم، تربیت",
       body:
-        "علامہ طباطبائی کے framework سے کہیں: امام معاشرے کی direction سے متعلق ہے، دین کے معتبر علم و تعبیر سے متعلق ہے، اور انسان کی روحانی و اخلاقی تربیت سے متعلق ہے۔ یوں امام صرف ruler نہیں، صرف mufti نہیں، صرف saint نہیں؛ یہ dimensions ایک ہی منصب میں جمع ہوتے ہیں۔",
+        "علامہ طباطبائی کے بنیادی خاکے سے کہیں: امام معاشرے کی سمت سے متعلق ہے، دین کے معتبر علم و تعبیر سے متعلق ہے، اور انسان کی روحانی و اخلاقی تربیت سے متعلق ہے۔ یوں امام صرف حکمران نہیں، صرف مفتی نہیں، صرف روحانی پیشوا نہیں؛ یہ پہلو ایک ہی منصب میں جمع ہوتے ہیں۔",
     },
     {
       heading: "3. راستہ دکھانا کافی نہیں — انسان کو حرکت بھی دینا ہوتی ہے",
       body:
-        "مطہری کے فرق کو عام زندگی سے کھولیں: ہر smoker جانتا ہے smoking نقصان دہ ہے، ہر آدمی جانتا ہے غصہ خراب ہے، مگر knowledge alone انسان نہیں بدلتی۔ leadership وہ قوت ہے جو latent capacity کو mobilize کرتی ہے۔ اسی لیے امام کی سیرت محض information نہیں؛ وہ انسان کو stand لینے، sacrifice کرنے، عدل پر قائم رہنے اور نفس سے لڑنے کی قوت دیتی ہے۔",
+        "مطہری کے فرق کو عام زندگی سے کھولیں: ہر تمباکو نوش جانتا ہے تمباکو نوشی نقصان دہ ہے، ہر آدمی جانتا ہے غصہ خراب ہے، مگر صرف معلومات انسان کو نہیں بدلتیں۔ قیادت وہ قوت ہے جو پوشیدہ صلاحیتوں کو حرکت دیتی ہے۔ اسی لیے امام کی سیرت محض معلومات نہیں؛ وہ انسان کو موقف لینے، قربانی کرنے، عدل پر قائم رہنے اور نفس سے لڑنے کی قوت دیتی ہے۔",
     },
     {
-      heading: "4. پھر سوال کریں: امام کون؟ — اب evidence meaningful ہوگا",
+      heading: "4. پھر سوال کریں: امام کون؟ — اب دلیل کا مفہوم واضح ہوگا",
       body:
-        "کاشانی کے methodological lesson کے مطابق اب نصوص اور شخصیات کی طرف آئیں۔ آیتِ ابراہیمؑ (2:124) سے امامت کے عہدِ الٰہی ہونے کا concept کھولیں؛ آیتِ ولایت (5:55) اور حدیثِ ثقلین یا غدیر کو اپنی chosen scholarly treatment کے ساتھ لائیں۔ لیکن ہر روایت کو صرف slogan نہ بنائیں؛ یہ بتائیں کہ وہ کس dimension—علم، ولایت، اطاعت یا leadership—کو establish کر رہی ہے۔",
+        "کاشانی کے بتائے ہوئے تحقیقی اصول کے مطابق اب نصوص اور شخصیات کی طرف آئیں۔ آیتِ ابراہیمؑ (2:124) سے امامت کے عہدِ الٰہی ہونے کا تصور کھولیں؛ آیتِ ولایت (5:55) اور حدیثِ ثقلین یا غدیر کو اپنی منتخب علمی تشریح کے ساتھ لائیں۔ لیکن ہر روایت کو صرف نعرہ نہ بنائیں؛ یہ بتائیں کہ وہ کس پہلو—علم، ولایت، اطاعت یا قیادت—کو واضح کر رہی ہے۔",
     },
     {
       heading: "5. معرفتِ امام کو معلومات سے کردار تک لے جائیں",
       body:
-        "آیت اللہ امینی کے زاویے سے مجلس کو اپنے اندر موڑیں۔ اگر میں امام علیؑ کے عدل، امام سجادؑ کی عبادت، امام صادقؑ کی علمی دیانت، اور امام کاظمؑ کے حلم کو جانتا ہوں مگر میرے کاروبار، گھر، عبادت اور اختلاف میں اس کا اثر نہیں، تو معرفت ابھی biography سے آگے نہیں بڑھی۔ امامت کا practical test یہ ہے کہ امام میری priorities اور conduct کو کہاں تبدیل کرتا ہے۔",
+        "آیت اللہ امینی کے زاویے سے مجلس کو اپنے اندر موڑیں۔ اگر میں امام علیؑ کے عدل، امام سجادؑ کی عبادت، امام صادقؑ کی علمی دیانت، اور امام کاظمؑ کے حلم کو جانتا ہوں مگر میرے کاروبار، گھر، عبادت اور اختلاف میں اس کا اثر نہیں، تو معرفت ابھی سوانحی معلومات سے آگے نہیں بڑھی۔ امامت کی عملی جانچ یہ ہے کہ امام میری ترجیحات اور طرزِ عمل کو کہاں تبدیل کرتا ہے۔",
     },
     {
       heading: "6. امامِ عصرؑ: غیبت میں امامت غیر فعال نہیں ہوتی",
       body:
-        "اختتام سے پہلے یہ misconception دور کریں کہ غیبت کا مطلب امامت کا practical suspension ہے۔ امامیہ تصور میں حجت، دینی continuity، دعا و انتظار، علمی transmission اور ذمہ دار دینداری جاری رہتی ہے۔ انتظار کا مطلب passive انتظار نہیں بلکہ اپنے آپ اور معاشرے کو اس معیار کے قابل بنانا ہے جس کی امام نمائندگی کرتے ہیں۔",
+        "اختتام سے پہلے یہ غلط فہمی دور کریں کہ غیبت کا مطلب امامت کا عملی طور پر رک جانا ہے۔ امامیہ تصور میں حجت، دینی تسلسل، دعا و انتظار، علم کی منتقلی اور ذمہ دار دینداری جاری رہتی ہے۔ انتظار کا مطلب بے عمل انتظار نہیں بلکہ اپنے آپ اور معاشرے کو اس معیار کے قابل بنانا ہے جس کی امام نمائندگی کرتے ہیں۔",
     },
   ],
   pulpitFlowEn: [
@@ -627,7 +627,7 @@ const IMAMATE: SermonDossier = {
     },
   ],
   closingUr:
-    "اختتام ایک commitment پر کریں: اس ہفتے صرف ایک امام کی زندگی سے ایک صفت منتخب کریں—عدل، علم، عبادت، حلم یا خدمت—اور سات دن اسے consciously practice کریں۔ پھر معرفتِ امام ناموں سے نکل کر character میں اترنے لگے گی۔",
+    "اختتام ایک عہد پر کریں: اس ہفتے صرف ایک امام کی زندگی سے ایک صفت منتخب کریں—عدل، علم، عبادت، حلم یا خدمت—اور سات دن اس پر سوچ سمجھ کر عمل کریں۔ پھر معرفتِ امام ناموں سے نکل کر کردار میں اترنے لگے گی۔",
   closingEn:
     "End with one commitment: choose one quality from the life of one Imam—justice, knowledge, worship, restraint, or service—and practice it consciously for seven days. That is how recognition begins to move from names into character.",
 };
@@ -734,9 +734,9 @@ const DUA: SermonDossier = {
       coreEn:
         "One of the strongest lessons of the Sahifa is that prayer is not only for obtaining something but for becoming someone. In the Supplication for Noble Moral Traits, the Imam asks for perfected faith, sound certainty, purified intention, better action, freedom from pride, good treatment of others, restraint of anger, justice, truthfulness, and reform of the self.",
       explanationUr: [
-        "یہاں دعا اور اخلاق الگ نہیں ہیں۔ امامؑ صرف یہ نہیں کہتے کہ 'خدایا مجھے اچھا بنا دے'؛ وہ character کو چھوٹے operational حصوں میں توڑتے ہیں: نیت درست ہو، عبادت عجب سے خراب نہ ہو، نیکی احسان جتانے سے ضائع نہ ہو، دشمنی محبت میں بدلے، غصہ روکا جائے، حق بولا جائے۔",
-        "اس سے خطیب کو ایک اہم منبری اصول ملتا ہے: اچھی دعا vague نہیں ہوتی۔ انسان پہلے اپنی خرابی کا نام لیتا ہے، پھر اس کے مقابل ایک واضح اخلاقی صفت مانگتا ہے، اور پھر اس صفت کے مطابق چلنے کی ذمہ داری قبول کرتا ہے۔",
-        "صحیفہ میں دعا self-diagnosis بھی ہے۔ آدمی جب یہ مانگتا ہے کہ 'لوگوں میں میری عزت بڑھے تو میرے اندر اسی قدر تواضع بڑھے' تو وہ دراصل اپنی ego-risk پہچان رہا ہوتا ہے۔ دعا یہاں spiritual mirror بن جاتی ہے۔",
+        "یہاں دعا اور اخلاق الگ نہیں ہیں۔ امامؑ صرف یہ نہیں کہتے کہ 'خدایا مجھے اچھا بنا دے'؛ وہ کردار کو چھوٹے عملی حصوں میں توڑتے ہیں: نیت درست ہو، عبادت عجب سے خراب نہ ہو، نیکی احسان جتانے سے ضائع نہ ہو، دشمنی محبت میں بدلے، غصہ روکا جائے، حق بولا جائے۔",
+        "اس سے خطیب کو ایک اہم منبری اصول ملتا ہے: اچھی دعا مبہم نہیں ہوتی۔ انسان پہلے اپنی خرابی کا نام لیتا ہے، پھر اس کے مقابل ایک واضح اخلاقی صفت مانگتا ہے، اور پھر اس صفت کے مطابق چلنے کی ذمہ داری قبول کرتا ہے۔",
+        "صحیفہ میں دعا اپنے اندر کی خرابی پہچاننا بھی ہے۔ آدمی جب یہ مانگتا ہے کہ 'لوگوں میں میری عزت بڑھے تو میرے اندر اسی قدر تواضع بڑھے' تو وہ دراصل اپنی انا کا خطرہ پہچان رہا ہوتا ہے۔ دعا یہاں اپنے باطن کو دیکھنے کا آئینہ بن جاتی ہے۔",
       ],
       explanationEn: [
         "Prayer and ethics are inseparable here. The Imam does not merely ask to 'become good'; he breaks character into operational parts: sound intention, worship protected from self-admiration, generosity without humiliation, transformed hostility, restrained anger, and truthful speech.",
@@ -744,11 +744,11 @@ const DUA: SermonDossier = {
         "The Sahifa also turns prayer into self-diagnosis. Asking that outward honor be matched by inward humility is recognition of an ego-risk; dua becomes a spiritual mirror.",
       ],
       styleUr:
-        "انداز: دعا کو moral checklist میں بدل دینا؛ abstract روحانیت کے بجائے شخصیت کے precise defects اور virtues کا نام لینا۔",
+        "انداز: دعا کو اخلاقی جائزے کی فہرست میں بدل دینا؛ محض نظری روحانیت کے بجائے شخصیت کی واضح خرابیوں اور خوبیوں کا نام لینا۔",
       styleEn:
         "Style: turn prayer into a moral checklist, naming precise defects and virtues instead of leaving spirituality abstract.",
       useUr:
-        "منبر میں سامع سے کہیں: آج دعا میں صرف 'مشکل حل کر دے' نہ کہیں؛ ایک character defect کا نام لیں—غصہ، حسد، تکبر، زبان—اور اس کے مقابل ایک صفت مانگیں، پھر سات دن اس پر عمل کریں۔",
+        "منبر میں سامع سے کہیں: آج دعا میں صرف 'مشکل حل کر دے' نہ کہیں؛ اپنے کردار کی ایک خرابی پہچانیں—غصہ، حسد، تکبر یا زبان کا غلط استعمال—اور اس کے مقابل ایک صفت مانگیں، پھر سات دن اس پر عمل کریں۔",
       useEn:
         "Ask the audience not to pray only 'solve my problem.' Name one character defect—anger, envy, pride, speech—ask for its opposite virtue, and practice it for seven days.",
       originalSnippet: "وَاسْتَصْلِحْ بِقُدْرَتِكَ مَا فَسَدَ مِنِّي",
@@ -765,9 +765,9 @@ const DUA: SermonDossier = {
       coreEn:
         "Tabataba'i places divine nearness at the center of Qur'an 2:186. Real dua is not merely verbal formula; the heart must actually turn toward God and place the need before Him. If the tongue addresses God while the heart treats other causes as independently effective, the reality of supplication is weakened.",
       explanationUr: [
-        "وہ آیت کے linguistic structure پر توجہ دلاتے ہیں: خدا 'کہہ دو کہ میں قریب ہوں' نہیں فرماتا، بلکہ براہِ راست «فَإِنِّي قَرِيبٌ» کہتا ہے۔ منبر پر اس نکتے سے دعا کو distance-breaking encounter کے طور پر پیش کیا جا سکتا ہے۔",
-        "علامہ یہ بھی واضح کرتے ہیں کہ ہر مانگی ہوئی چیز، اسی صورت میں ہمارا حقیقی مطلوب نہیں ہوتی۔ انسان کبھی ایسی چیز مانگتا ہے جس کے نتائج جان لے تو خود نہ مانگے۔ لہٰذا 'دعا قبول نہیں ہوئی' کا فیصلہ صرف ظاہری object نہ ملنے سے نہیں کیا جا سکتا۔",
-        "ان کے ہاں دعا کی authenticity heart-dependence سے جڑی ہے۔ اسباب استعمال کریں، ڈاکٹر کے پاس جائیں، محنت کریں—مگر دل cause کو خدا کا شریک نہ بنائے۔ یہ توکل اور دعا کے تعلق کو mature بناتا ہے۔",
+        "وہ آیت کے الفاظ کی ترتیب پر توجہ دلاتے ہیں: خدا 'کہہ دو کہ میں قریب ہوں' نہیں فرماتا، بلکہ براہِ راست «فَإِنِّي قَرِيبٌ» کہتا ہے۔ منبر پر اس نکتے سے دعا کو دوری ختم کرنے والی ملاقات کے طور پر پیش کیا جا سکتا ہے۔",
+        "علامہ یہ بھی واضح کرتے ہیں کہ ہر مانگی ہوئی چیز، اسی صورت میں ہمارا حقیقی مطلوب نہیں ہوتی۔ انسان کبھی ایسی چیز مانگتا ہے جس کے نتائج جان لے تو خود نہ مانگے۔ لہٰذا 'دعا قبول نہیں ہوئی' کا فیصلہ صرف ظاہری مقصد نہ ملنے سے نہیں کیا جا سکتا۔",
+        "ان کے ہاں دعا کی حقیقت دل کے سچے بھروسے سے جڑی ہے۔ اسباب استعمال کریں، ڈاکٹر کے پاس جائیں، محنت کریں—مگر دل سبب کو خدا کا شریک نہ بنائے۔ یہ توکل اور دعا کے تعلق کو پختہ بناتا ہے۔",
       ],
       explanationEn: [
         "He notices the linguistic immediacy of the verse: God does not tell the Prophet to 'say that I am near'; the response comes directly—'I am near.' This lets the preacher present dua as an encounter that collapses distance.",
@@ -775,11 +775,11 @@ const DUA: SermonDossier = {
         "For Tabataba'i, authentic dua is tied to dependence of the heart. Use means, doctors, work, and planning, but do not treat causes as independent rivals to God.",
       ],
       styleUr:
-        "انداز: ایک آیت کے الفاظ سے theological depth نکالنا؛ پھر psychological reality اور توکل کے practical مسئلے تک جانا۔",
+        "انداز: ایک آیت کے الفاظ سے دینی گہرائی نکالنا؛ پھر نفسیاتی حقیقت اور توکل کے عملی مسئلے تک جانا۔",
       styleEn:
         "Style: extract theological depth from the wording of one verse, then connect it to psychological reality and practical reliance.",
       useUr:
-        "آیت 2:186 پڑھ کر صرف 'خدا قریب ہے' نہ کہیں۔ سامع سے پوچھیں: 'آپ دعا میں خدا سے بات کرتے ہیں، مگر دل میں اصل طاقت کس کو سمجھتے ہیں؟' یہاں سے دعا کی sincerity کھولیں۔",
+        "آیت 2:186 پڑھ کر صرف 'خدا قریب ہے' نہ کہیں۔ سامع سے پوچھیں: 'آپ دعا میں خدا سے بات کرتے ہیں، مگر دل میں اصل طاقت کس کو سمجھتے ہیں؟' یہاں سے دعا میں اخلاص کا مفہوم سمجھائیں۔",
       useEn:
         "After 2:186, do not stop at 'God is near.' Ask: 'When you pray, whom does your heart actually treat as the decisive power?' Then develop sincerity in supplication.",
       originalSnippet: "فَإِنِّي قَرِيبٌ",
@@ -792,13 +792,13 @@ const DUA: SermonDossier = {
       sourceTitleEn: "Etiquette of supplication and commentary on Dua Abu Hamza al-Thumali",
       sourceUrl: "https://shiastudies.com/fa/%D8%B4%D8%B1%D8%AD-%D8%AF%D8%B9%D8%A7%DB%8C-%D8%A7%D8%A8%D9%88%D8%AD%D9%85%D8%B2%D9%87-%D8%AB%D9%85%D8%A7%D9%84%DB%8C-%D8%A8%D9%87-%D8%B1%D9%88%D8%A7%DB%8C%D8%AA-%D8%A2%DB%8C%D8%A9-%D8%A7%D9%84%D9%84/",
       coreUr:
-        "جوادی آملی دعا میں ایک بنیادی correction کرتے ہیں: بندہ خدا کو 'proposal' نہیں دیتا کہ بس یہی چیز اسی شکل میں مجھے دینی ہے؛ ادبِ دعا یہ ہے کہ انسان خیر مانگے۔ کسی مخصوص خواہش پر اصرار ہو سکتا ہے، مگر اس کے ساتھ یہ معرفت رہے کہ مصلحت اور انجام کا کامل علم خدا کے پاس ہے۔",
+        "جوادی آملی دعا میں ایک بنیادی اصلاح کرتے ہیں: بندہ خدا کو 'تجویز' نہیں دیتا کہ بس یہی چیز اسی شکل میں مجھے دینی ہے؛ ادبِ دعا یہ ہے کہ انسان خیر مانگے۔ کسی مخصوص خواہش پر اصرار ہو سکتا ہے، مگر اس کے ساتھ یہ معرفت رہے کہ مصلحت اور انجام کا کامل علم خدا کے پاس ہے۔",
       coreEn:
         "Javadi Amoli makes a fundamental correction: the servant does not issue God a proposal that one specific outcome must be delivered in one specific form. The etiquette of dua is to ask for what is truly good, while recognizing that complete knowledge of consequences and benefit belongs to God.",
       explanationUr: [
-        "یہ زاویہ 'میں نے اتنا رو کر مانگا پھر کیوں نہیں ملا؟' والے بحران کو علمی جواب دیتا ہے۔ اخلاص اور شدتِ طلب اپنی جگہ اہم ہیں، مگر اخلاص کسی harmful request کو automatically خیر نہیں بنا دیتا۔",
-        "ان کے بیان میں اجابت binary نہیں: کبھی مطلوب چیز ملتی ہے، کبھی گناہ کی مغفرت یا درجہ کی بلندی کی صورت میں اثر ظاہر ہوتا ہے، اور کبھی حکیمانہ تاخیر خود بہتر نتیجہ ہوتی ہے۔ اس سے دعا disappointment-management نہیں بلکہ trust-formation بن جاتی ہے۔",
-        "دعائے ابوحمزہ کی شرح میں وہ بتاتے ہیں کہ دعا صرف request نہیں؛ اس میں خود دعا کی حقیقت، مقدمات، شرائط، آداب اور قبولیت کے اسباب بھی سکھائے جاتے ہیں۔ یعنی مأثور دعا اپنے اندر theology of prayer بھی رکھتی ہے۔",
+        "یہ زاویہ 'میں نے اتنا رو کر مانگا پھر کیوں نہیں ملا؟' والے بحران کو علمی جواب دیتا ہے۔ اخلاص اور شدتِ طلب اپنی جگہ اہم ہیں، مگر اخلاص کسی نقصان دہ خواہش کو خود بخود خیر نہیں بنا دیتا۔",
+        "ان کے بیان میں قبولیت صرف مطلوب چیز ملنے یا نہ ملنے کا نام نہیں: کبھی مطلوب چیز ملتی ہے، کبھی گناہ کی مغفرت یا درجہ کی بلندی کی صورت میں اثر ظاہر ہوتا ہے، اور کبھی حکیمانہ تاخیر خود بہتر نتیجہ ہوتی ہے۔ اس سے دعا صرف مایوسی سے بچنے کا طریقہ نہیں رہتی، بلکہ خدا پر بھروسے کی تربیت بن جاتی ہے۔",
+        "دعائے ابوحمزہ کی شرح میں وہ بتاتے ہیں کہ دعا صرف درخواست نہیں؛ اس میں خود دعا کی حقیقت، مقدمات، شرائط، آداب اور قبولیت کے اسباب بھی سکھائے جاتے ہیں۔ یعنی مأثور دعا اپنے اندر دعا کی دینی حقیقت بھی رکھتی ہے۔",
       ],
       explanationEn: [
         "This gives an intellectual answer to 'I cried sincerely, so why was I not given what I asked?' Sincerity matters, but sincerity does not automatically turn a harmful request into true good.",
@@ -806,11 +806,11 @@ const DUA: SermonDossier = {
         "In his commentary on Dua Abu Hamza, he stresses that the supplication itself teaches the meaning, preconditions, etiquette, and causes of answered prayer. A transmitted dua contains a theology of prayer within it.",
       ],
       styleUr:
-        "انداز: عام مذہبی misconception اٹھانا، قرآن اور حکمت سے correct کرنا، پھر بندے کے خدا سے تعلق کو زیادہ mature بنانا۔",
+        "انداز: عام مذہبی غلط فہمی اٹھانا، قرآن اور حکمت سے درست کرنا، پھر بندے کے خدا سے تعلق کو زیادہ پختہ بنانا۔",
       styleEn:
         "Style: identify a common religious misconception, correct it through Qur'anic wisdom, then mature the servant's relationship with God.",
       useUr:
-        "یہ segment ان مجالس میں بہت مفید ہے جہاں لوگ unanswered prayer سے زخمی ہوں۔ جملہ بنائیں: 'دعا خدا کو میری مرضی پر لانے کا نام نہیں؛ مجھے خیر کے لیے خدا پر اعتماد سکھانے کا نام بھی ہے۔'",
+        "یہ حصہ ان مجالس میں بہت مفید ہے جہاں لوگ بظاہر قبول نہ ہونے والی دعا سے زخمی ہوں۔ جملہ بنائیں: 'دعا خدا کو میری مرضی پر لانے کا نام نہیں؛ مجھے خیر کے لیے خدا پر اعتماد سکھانے کا نام بھی ہے۔'",
       useEn:
         "This is especially useful where listeners carry pain from apparently unanswered prayers: 'Dua is not forcing God into my preferred outcome; it also trains me to trust God for the good.'",
       originalSnippet: "ما باید خیر را بخواهیم.",
@@ -824,13 +824,13 @@ const DUA: SermonDossier = {
       sourceTitleEn: "Reasoned attention in reciting supplication",
       sourceUrl: "https://telegram.me/s/Panahian_ir?q=%23%D8%B1%D8%A7%D9%87%E2%80%8C%D9%87%D8%A7%DB%8C_%D8%B1%D8%B3%DB%8C%D8%AF%D9%86",
       coreUr:
-        "پناہیان دعا پڑھنے میں 'توجہ' کو مرکزی شرط بناتے ہیں۔ ان کا کہنا ہے کہ مأثور دعا کو صرف emotional recitation نہ بنایا جائے؛ اس کے جملوں کو سمجھ کر، ان پر فکر کرکے، اور جس قدر دل حاضر ہو اسی قدر expectation of response کے ساتھ پڑھا جائے۔",
+        "پناہیان دعا پڑھنے میں 'توجہ' کو مرکزی شرط بناتے ہیں۔ ان کا کہنا ہے کہ مأثور دعا کو صرف جذباتی انداز میں پڑھنا نہ بنایا جائے؛ اس کے جملوں کو سمجھ کر، ان پر فکر کرکے، اور جس قدر دل حاضر ہو اسی قدر جواب کی امید کے ساتھ پڑھا جائے۔",
       coreEn:
         "Panahian places attention at the center of reciting supplication. A transmitted dua should not become emotional recitation alone; its phrases should be understood, reflected upon, and read with presence of heart corresponding to the seriousness of the request.",
       explanationUr: [
-        "وہ دعا کے فقرات کو meaning-bearing text سمجھتے ہیں۔ اگر کسی difficult عبارت کی گہرائی پوری طرح نہ سمجھ آئے تو بھی جو حصے واضح ہیں انہیں بے توجہی سے نہ گزارا جائے۔ یہ approach صحیفہ اور دعائے کمیل کو 'پڑھنے' سے 'مطالعہ کرنے' کی طرف لے جاتی ہے۔",
-        "حضورِ قلب کو وہ محض mystical state نہیں بناتے؛ understanding اس کی ایک راہ ہے۔ جب آدمی جانتا ہے کہ کیا کہہ رہا ہے تو emotion بھی زیادہ حقیقی بنتا ہے۔",
-        "ان کا ایک اور practical نکتہ دعا برای دیگران ہے: روایات کے مطابق غائب مؤمن کے لیے دعا خود دعا کرنے والے کی تربیت، رزق اور دفعِ بلا سے بھی مربوط ہے۔ اس سے دعا self-centered wish list نہیں رہتی۔",
+        "وہ دعا کے فقرات کو معنی رکھنے والی عبارت سمجھتے ہیں۔ اگر کسی مشکل عبارت کی گہرائی پوری طرح نہ سمجھ آئے تو بھی جو حصے واضح ہیں انہیں بے توجہی سے نہ گزارا جائے۔ یہ طریقہ صحیفہ اور دعائے کمیل کو صرف پڑھنے سے آگے، سمجھنے کی طرف لے جاتا ہے۔",
+        "حضورِ قلب کو وہ محض روحانی کیفیت نہیں بناتے؛ سمجھ اس کی ایک راہ ہے۔ جب آدمی جانتا ہے کہ کیا کہہ رہا ہے تو جذبہ بھی زیادہ حقیقی بنتا ہے۔",
+        "ان کا ایک اور عملی نکتہ دوسروں کے لیے دعا ہے: روایات کے مطابق غائب مؤمن کے لیے دعا خود دعا کرنے والے کی تربیت، رزق اور دفعِ بلا سے بھی مربوط ہے۔ اس سے دعا صرف اپنی خواہشات کی فہرست نہیں رہتی۔",
       ],
       explanationEn: [
         "He treats the phrases of transmitted prayers as meaning-bearing texts. Even when a difficult passage is not fully understood, the clear portions should not be passed over inattentively. This moves Sahifa and Dua Kumayl from mere recitation toward study.",
@@ -838,20 +838,20 @@ const DUA: SermonDossier = {
         "Another practical point is praying for others. Narrations on supplication for an absent believer shift dua away from a self-centered wish list and toward moral concern for others.",
       ],
       styleUr:
-        "انداز: عبادت کی familiar practice میں hidden negligence پکڑنا، پھر چھوٹا practical correction دینا—رفتار کم کرو، معنی سمجھو، ایک فقرہ واقعی مانگو۔",
+        "انداز: روزمرہ عبادت میں چھپی بے توجہی کی نشاندہی کرنا، پھر اصلاح کا چھوٹا سا عملی قدم بتانا—رفتار کم کرو، معنی سمجھو، ایک فقرہ واقعی مانگو۔",
       styleEn:
         "Style: expose hidden inattentiveness inside a familiar practice, then offer a small correction—slow down, understand, and genuinely ask for one phrase.",
       useUr:
-        "سامع کو challenge دیں کہ اگلی دعائے کمیل یا صحیفہ میں مقدار کم اور توجہ زیادہ کرے: دس صفحات بے توجہی سے نہیں، ایک فقرہ سمجھ کر اور سچ میں مانگ کر۔",
+        "سامع کو عملی مشق دیں کہ اگلی دعائے کمیل یا صحیفہ میں مقدار کم اور توجہ زیادہ کرے: دس صفحات بے توجہی سے نہیں، ایک فقرہ سمجھ کر اور سچ میں مانگ کر۔",
       useEn:
         "Challenge the listener to prefer quality over quantity in the next recitation: not ten pages inattentively, but one phrase understood and genuinely asked.",
       originalSnippet: "اولین شرط اجابت دعا، حضور قلب است.",
     },
   ],
   synthesisUr: [
-    "صحیفہ ہمیں بتاتا ہے **کیا مانگنا ہے**: اپنی ذات کی اصلاح۔ علامہ طباطبائی بتاتے ہیں **کس حقیقت کے سامنے مانگنا ہے**: قریب خدا کے سامنے، دل کی حقیقی توجہ کے ساتھ۔ جوادی آملی بتاتے ہیں **قبولیت کو کیسے سمجھنا ہے**: خیر مانگو، خدا کو اپنی preferred شکل dictate نہ کرو۔ پناہیان بتاتے ہیں **دعا پڑھنی کیسے ہے**: معنی، حضور اور فکر کے ساتھ۔",
+    "صحیفہ ہمیں بتاتا ہے **کیا مانگنا ہے**: اپنی ذات کی اصلاح۔ علامہ طباطبائی بتاتے ہیں **کس حقیقت کے سامنے مانگنا ہے**: قریب خدا کے سامنے، دل کی حقیقی توجہ کے ساتھ۔ جوادی آملی بتاتے ہیں **قبولیت کو کیسے سمجھنا ہے**: خیر مانگو، خدا کو اپنی پسندیدہ شکل مسلط نہ کرو۔ پناہیان بتاتے ہیں **دعا پڑھنی کیسے ہے**: معنی، حضور اور فکر کے ساتھ۔",
     "یوں دعا چار سطحوں پر کام کرتی ہے: تعلقِ خدا، شناختِ خود، اصلاحِ خواہش، اور اصلاحِ کردار۔ اگر ان میں سے کوئی بھی نہ ہو اور صرف حاجت کی فہرست رہ جائے تو دعا کا بہت بڑا تربیتی حصہ ضائع ہو جاتا ہے۔",
-    "اس dossier کا مرکزی منبری pivot یہ ہو سکتا ہے: **دعا میں انسان صرف جواب نہیں مانگتا؛ وہ جواب کے قابل انسان بننے کی تربیت بھی لیتا ہے۔**",
+    "اس مواد کا مرکزی منبری نکتہ یہ ہو سکتا ہے: **دعا میں انسان صرف جواب نہیں مانگتا؛ وہ جواب کے قابل انسان بننے کی تربیت بھی لیتا ہے۔**",
   ],
   synthesisEn: [
     "The Sahifa teaches **what to ask for**: reform of the self. Tabataba'i explains **before whom we ask**: the near God, with real dependence of the heart. Javadi Amoli explains **how to understand acceptance**: ask for the good rather than dictating one preferred form. Panahian explains **how to recite**: with meaning, presence, and reflection.",
@@ -862,32 +862,32 @@ const DUA: SermonDossier = {
     {
       heading: "1. دعا خدا کو خبر دینا نہیں",
       body:
-        "ابتدا اسی سوال سے کریں: خدا میری حاجت جانتا ہے تو میں بتاتا کیوں ہوں؟ جواب یہ ہے کہ دعا information transfer نہیں؛ relationship activation ہے۔ قرآن 2:186 میں جواب براہِ راست آتا ہے: «فَإِنِّي قَرِيبٌ»۔ بندہ خدا کو نہیں جگاتا، اپنے دل کو خدا کی قربت کے لیے جگاتا ہے۔",
+        "ابتدا اسی سوال سے کریں: خدا میری حاجت جانتا ہے تو میں بتاتا کیوں ہوں؟ جواب یہ ہے کہ دعا معلومات کی منتقلی نہیں؛ تعلق کو زندگی میں مؤثر بنانا ہے۔ قرآن 2:186 میں جواب براہِ راست آتا ہے: «فَإِنِّي قَرِيبٌ»۔ بندہ خدا کو نہیں جگاتا، اپنے دل کو خدا کی قربت کے لیے جگاتا ہے۔",
     },
     {
       heading: "2. اصل دعا زبان سے پہلے دل میں بنتی ہے",
       body:
-        "علامہ طباطبائی کے زاویے سے فرق کریں: زبان کہہ رہی ہے 'یا اللہ'، مگر دل سمجھ رہا ہے اصل نجات فلاں شخص، فلاں connection یا فلاں سبب کے ہاتھ میں ہے۔ اسباب اختیار کرنا درست ہے، مگر استقلالِ تاثیر صرف خدا کے لیے ہے۔ حقیقی دعا دل کے dependence کو درست کرتی ہے۔",
+        "علامہ طباطبائی کے زاویے سے فرق کریں: زبان کہہ رہی ہے 'یا اللہ'، مگر دل سمجھ رہا ہے اصل نجات فلاں شخص، فلاں تعلق یا فلاں سبب کے ہاتھ میں ہے۔ اسباب اختیار کرنا درست ہے، مگر استقلالِ تاثیر صرف خدا کے لیے ہے۔ حقیقی دعا دل کے انحصار کو درست کرتی ہے۔",
     },
     {
       heading: "3. صحیفہ سکھاتی ہے: دعا میں اپنی شخصیت بھی مانگو",
       body:
-        "اب دعائے مکارم الاخلاق کی طرف آئیں۔ امام سجادؑ رزق اور مشکل کے ساتھ نیت، یقین، humility، زبان، غصہ، عدل، سخاوت اور character کی اصلاح مانگتے ہیں۔ سامع کو دکھائیں کہ ائمہؑ کی دعا wish list نہیں بلکہ character curriculum ہے۔",
+        "اب دعائے مکارم الاخلاق کی طرف آئیں۔ امام سجادؑ رزق اور مشکل کے ساتھ نیت، یقین، عاجزی، زبان، غصہ، عدل، سخاوت اور کردار کی اصلاح مانگتے ہیں۔ سامع کو دکھائیں کہ ائمہؑ کی دعا خواہشات کی فہرست نہیں بلکہ کردار سازی کی تربیت ہے۔",
     },
     {
       heading: "4. اگر وہ چیز نہ ملی تو کیا دعا رد ہوگئی؟",
       body:
-        "جوادی آملی کے زاویے سے اس دردناک سوال کو address کریں۔ اخلاص کے ساتھ مانگی ہوئی چیز بھی ہمیشہ اسی صورت میں خیر نہیں ہوتی۔ بندہ مانگے، اصرار کرے، روئے—مگر آخری جملہ trust کا ہو: خدایا، مجھے وہ خیر دے جس کا انجام تو جانتا ہے۔ قبولیت کبھی عطا، کبھی تاخیر، کبھی دفعِ ضرر، کبھی مغفرت اور کبھی درجے کی بلندی کی شکل میں آ سکتی ہے۔",
+        "جوادی آملی کے زاویے سے اس دردناک سوال کا جواب دیں۔ اخلاص کے ساتھ مانگی ہوئی چیز بھی ہمیشہ اسی صورت میں خیر نہیں ہوتی۔ بندہ مانگے، اصرار کرے، روئے—مگر آخری جملہ بھروسے کا ہو: خدایا، مجھے وہ خیر دے جس کا انجام تو جانتا ہے۔ قبولیت کبھی عطا، کبھی تاخیر، کبھی دفعِ ضرر، کبھی مغفرت اور کبھی درجے کی بلندی کی شکل میں آ سکتی ہے۔",
     },
     {
       heading: "5. مأثور دعا کو پڑھیں نہیں—سمجھ کر مانگیں",
       body:
-        "پناہیان کے practical correction سے دعا کی مجلس کو بدلیں۔ رفتار کم کریں۔ ہر فقرے کے معنی پر رکیں۔ اگر دعائے کمیل میں کہتے ہیں «ظَلَمْتُ نَفْسِي» تو ایک لمحے کو واقعی پوچھیں: میں نے اپنے اوپر کیا ظلم کیا؟ اگر صحیفہ میں حلم مانگ رہے ہیں تو کل کے غصے کو سامنے لائیں۔ تب الفاظ زندگی سے جڑتے ہیں۔",
+        "پناہیان کی عملی رہنمائی سے دعا کی مجلس کو بدلیں۔ رفتار کم کریں۔ ہر فقرے کے معنی پر رکیں۔ اگر دعائے کمیل میں کہتے ہیں «ظَلَمْتُ نَفْسِي» تو ایک لمحے کو واقعی پوچھیں: میں نے اپنے اوپر کیا ظلم کیا؟ اگر صحیفہ میں حلم مانگ رہے ہیں تو کل کے غصے کو سامنے لائیں۔ تب الفاظ زندگی سے جڑتے ہیں۔",
     },
     {
-      heading: "6. دعا کے بعد action لازم ہے",
+      heading: "6. دعا کے بعد اقدام لازم ہے",
       body:
-        "صحیفہ کا logic یہی ہے: جو صفت خدا سے مانگی، اس کے لیے اگلا قدم بھی اٹھاؤ۔ اگر رزق مانگا تو حلال کوشش؛ اگر مغفرت مانگی تو ترکِ گناہ؛ اگر اخلاق مانگا تو زبان اور غصے کی practice؛ اگر ہدایت مانگی تو حق سننے کی readiness۔ دعا action کا substitute نہیں، action کو خدا سے جوڑنے والی روح ہے۔",
+        "صحیفہ کا اصول یہی ہے: جو صفت خدا سے مانگی، اس کے لیے اگلا قدم بھی اٹھاؤ۔ اگر رزق مانگا تو حلال کوشش؛ اگر مغفرت مانگی تو ترکِ گناہ؛ اگر اخلاق مانگا تو زبان اور غصے کی مشق؛ اگر ہدایت مانگی تو حق سننے کی تیاری۔ دعا اقدام کا متبادل نہیں، اقدام کو خدا سے جوڑنے والی روح ہے۔",
     },
   ],
   pulpitFlowEn: [
@@ -933,7 +933,7 @@ const ISMAH: SermonDossier = {
   titleUr: "عصمت — اختیار، کمالِ کردار اور منصبِ الٰہی",
   titleEn: "Infallibility — freedom, perfected character, and divine office",
   thesisUr:
-    "علامہ سید علی نقی نقویؒ کے فراہم کردہ عشرۂ مجالس میں عصمت کو جبر یا محض تاریخی بے گناہی کے طور پر نہیں، بلکہ ایک منظم کلامی argument کے طور پر کھولا گیا ہے: الٰہی انتخاب پہلے سے موجود اہلیت پر قائم ہے؛ عصمت صرف گناہ کے عدمِ وقوع کا نام نہیں؛ moral impossibility اختیار کی نفی نہیں؛ اور انسانی عصمت کی عظمت حقیقی بشریت، جذبات اور محرکات کے باوجود ضبطِ نفس میں ظاہر ہوتی ہے۔",
+    "علامہ سید علی نقی نقویؒ کے فراہم کردہ عشرۂ مجالس میں عصمت کو جبر یا محض تاریخی بے گناہی کے طور پر نہیں، بلکہ ایک منظم کلامی دلیل کے طور پر کھولا گیا ہے: الٰہی انتخاب پہلے سے موجود اہلیت پر قائم ہے؛ عصمت صرف گناہ کے عدمِ وقوع کا نام نہیں؛ اخلاقی کمال کی بنا پر گناہ کا ناممکن ہونا اختیار کی نفی نہیں؛ اور انسانی عصمت کی عظمت حقیقی بشریت، جذبات اور محرکات کے باوجود ضبطِ نفس میں ظاہر ہوتی ہے۔",
   thesisEn:
     "In the supplied Naqvi majalis series, infallibility is developed not as compulsion or merely an observed history of sinlessness, but as a structured theological argument: divine selection rests on prior qualification; infallibility is stronger than non-occurrence; moral impossibility does not negate freedom; and human infallibility is elevated precisely because self-mastery is maintained within real human drives.",
   governingQuestionUr:
@@ -1016,9 +1016,9 @@ const ISMAH: SermonDossier = {
       coreEn:
         "The first move is that office does not manufacture infallibility. Divine selection chooses the person already qualified for it. Naqvi reads istifa as selecting the pure rather than creating purity, and Qur'an 6:124 links the appointment to divine knowledge.",
       explanationUr: [
-        "لغت یہاں decoration نہیں بلکہ argument ہے: «اصطفاء» کے morphology سے وہ qualification-before-appointment کا اصول اخذ کرتے ہیں۔",
-        "«اللّٰهُ أَعْلَمُ حَيْثُ يَجْعَلُ رِسَالَتَهُ» میں علم کا حوالہ یہ بتاتا ہے کہ منصب کسی حقیقی suitability کے مطابق رکھا جاتا ہے۔",
-        "یہی framework نبوت، رسالت اور امامت تینوں کے لیے ایک shared principle بن جاتا ہے۔",
+        "لغت یہاں آرائش نہیں بلکہ دلیل ہے: «اصطفاء» کے لفظ کی صرفی ساخت سے وہ منصب سے پہلے اہلیت کا اصول اخذ کرتے ہیں۔",
+        "«اللّٰهُ أَعْلَمُ حَيْثُ يَجْعَلُ رِسَالَتَهُ» میں علم کا حوالہ یہ بتاتا ہے کہ منصب کسی حقیقی اہلیت کے مطابق رکھا جاتا ہے۔",
+        "یہی بنیادی خاکہ نبوت، رسالت اور امامت تینوں کے لیے ایک مشترک اصول بن جاتا ہے۔",
       ],
       explanationEn: [
         "Morphology becomes argument: istifa is used to establish qualification before appointment.",
@@ -1044,13 +1044,13 @@ const ISMAH: SermonDossier = {
       sourceTitleEn: "Majalis 3–4: non-occurrence, impossibility, and freedom",
       sourceUrl: "https://maablib.org/list_of__ulama_majalis/majalis-list-of-allama-syed-ali-naqi-naqqan-sahib/",
       coreUr:
-        "دوسرا قدم definition کو سخت بنانا ہے: صرف یہ کہنا کہ 'گناہ ہوا نہیں' عصمت نہیں، کیونکہ مستقبل اور باطن کی ضمانت نہیں بنتی۔ لیکن 'گناہ ناممکن ہے' کہتے ہی جبر کا سوال اٹھتا ہے۔ علامہ عدلِ الٰہی کی مثال سے دکھاتے ہیں کہ moral impossibility قدرت یا اختیار کی نفی نہیں ہوتی۔",
+        "دوسرا قدم تعریف کو زیادہ واضح کرنا ہے: صرف یہ کہنا کہ 'گناہ ہوا نہیں' عصمت نہیں، کیونکہ مستقبل اور باطن کی ضمانت نہیں بنتی۔ لیکن 'گناہ ناممکن ہے' کہتے ہی جبر کا سوال اٹھتا ہے۔ علامہ عدلِ الٰہی کی مثال سے دکھاتے ہیں کہ اخلاقی کمال کی بنا پر گناہ کا ناممکن ہونا قدرت یا اختیار کی نفی نہیں ہوتی۔",
       coreEn:
         "The second move sharpens the definition: saying only that sin has not occurred cannot ground certainty. But calling sin impossible raises the problem of compulsion. Naqvi uses divine justice to show that moral impossibility need not negate power or freedom.",
       explanationUr: [
-        "عدمِ وقوع empirical observation ہے؛ عصمت stronger certainty کا دعویٰ ہے۔",
-        "کسی کام کا نہ ہونا weakness کی وجہ سے بھی ہوسکتا ہے، اور perfection کی وجہ سے بھی۔",
-        "خدا کا ظلم نہ کرنا قدرت کی کمی نہیں؛ اسی analogy سے معصوم کی بے گناہی کو اختیار کے ساتھ compatible دکھایا جاتا ہے۔",
+        "عدمِ وقوع مشاہدے سے حاصل ہونے والی بات ہے؛ عصمت زیادہ قطعی یقین کا دعویٰ ہے۔",
+        "کسی کام کا نہ ہونا کمزوری کی وجہ سے بھی ہوسکتا ہے، اور کمال کی وجہ سے بھی۔",
+        "خدا کا ظلم نہ کرنا قدرت کی کمی نہیں؛ اسی مثال سے واضح کیا جاتا ہے کہ معصوم کی بے گناہی اختیار کی نفی نہیں کرتی۔",
       ],
       explanationEn: [
         "Non-occurrence is empirical; infallibility claims stronger certainty.",
@@ -1058,7 +1058,7 @@ const ISMAH: SermonDossier = {
         "God's not acting unjustly is not weakness; the analogy is used to preserve freedom within infallibility.",
       ],
       styleUr:
-        "انداز: binary question کھڑا کرنا، دونوں طرف کی مشکل دکھانا، پھر اصولِ عدل سے conceptual resolution دینا۔",
+        "انداز: دو صورتوں والا سوال کھڑا کرنا، دونوں طرف کی مشکل دکھانا، پھر اصولِ عدل سے اصولی حل دینا۔",
       styleEn:
         "Style: construct a binary problem, expose the difficulty on both sides, then resolve it through the doctrine of divine justice.",
       useUr:
@@ -1076,11 +1076,11 @@ const ISMAH: SermonDossier = {
       sourceTitleEn: "Majalis 5–8: angels, real humanity, and self-mastery",
       sourceUrl: "https://maablib.org/list_of__ulama_majalis/majalis-list-of-allama-syed-ali-naqi-naqqan-sahib/",
       coreUr:
-        "تیسرا قدم عصمت کی فضیلت کو real human condition میں رکھنا ہے۔ ملائکہ کی ارادی اطاعت تسلیم کرنے کے بعد علامہ فرق یہ بتاتے ہیں کہ انسان بھوک، پیاس، خواہش، غضب اور دنیاوی دباؤ کے درمیان اطاعت کرتا ہے۔ یہی وجہ ہے کہ حقیقی بشریت عصمت کے خلاف نہیں، بلکہ اس کی اخلاقی عظمت کا میدان ہے۔",
+        "تیسرا قدم عصمت کی فضیلت کو حقیقی انسانی حالات میں رکھنا ہے۔ ملائکہ کی ارادی اطاعت تسلیم کرنے کے بعد علامہ فرق یہ بتاتے ہیں کہ انسان بھوک، پیاس، خواہش، غضب اور دنیاوی دباؤ کے درمیان اطاعت کرتا ہے۔ یہی وجہ ہے کہ حقیقی بشریت عصمت کے خلاف نہیں، بلکہ اس کی اخلاقی عظمت کا میدان ہے۔",
       coreEn:
         "The third move places the excellence of infallibility inside real human life. Angelic voluntary obedience is affirmed, but humans obey amid hunger, desire, anger, and worldly pressures. Real humanity therefore becomes the arena of moral excellence rather than a threat to infallibility.",
       explanationUr: [
-        "بے گناہی تبھی moral virtue بنتی ہے جب شعور و ارادہ موجود ہوں۔",
+        "بے گناہی تبھی اخلاقی فضیلت بنتی ہے جب شعور و ارادہ موجود ہوں۔",
         "رسول یا امام کی عظمت بچانے کے لیے ان کی بشریت کو ظاہری قرار دینا اسوۂ عمل کی معنویت کم کر دیتا ہے۔",
         "اس پوری بحث کا اخلاقی خلاصہ 'ضبطِ نفس' ہے: محرکات موجود ہیں، مگر وہ فیصلے پر حکومت نہیں کرتے۔",
       ],
@@ -1090,11 +1090,11 @@ const ISMAH: SermonDossier = {
         "The ethical summary is self-mastery: impulses exist, but they do not rule judgment.",
       ],
       styleUr:
-        "انداز: comparison → objection → Qur'anic correction → practical ethical bridge۔",
+        "انداز: تقابل → اعتراض → قرآن سے اصلاح → عملی اخلاقی ربط۔",
       styleEn:
         "Style: comparison → objection → Qur'anic correction → practical ethical bridge.",
       useUr:
-        "عصمت کو inaccessible metaphysics نہ بنائیں؛ آخر میں ضبطِ نفس کو عام سامع کے لیے قابلِ عمل اخلاقی lesson کے طور پر نکالیں۔",
+        "عصمت کو عام فہم سے دور فلسفیانہ بحث نہ بنائیں؛ آخر میں ضبطِ نفس کو عام سامع کے لیے قابلِ عمل اخلاقی سبق کے طور پر نکالیں۔",
       useEn:
         "Do not leave infallibility as inaccessible metaphysics; end by drawing self-mastery as an actionable ethical lesson.",
       originalSnippet: "حقیقت میں اس کی روح ہے ضبطِ نفس۔",
@@ -1108,13 +1108,13 @@ const ISMAH: SermonDossier = {
       sourceTitleEn: "Majlis 9: prophethood, messengership, Imamate, and ranks",
       sourceUrl: "https://maablib.org/list_of__ulama_majalis/majalis-list-of-allama-syed-ali-naqi-naqqan-sahib/",
       coreUr:
-        "آخری مجلس عصمت کو hierarchy of guidance سے جوڑتی ہے۔ ایک ہی حقیقت کے درجات ہوسکتے ہیں، جیسے روشنی کے درجات؛ اسی طرح نبوت، رسالت اور امامت الگ منصب ہیں۔ حضرت ابراہیمؑ کے 2:124 والے واقعے سے امامت کو distinct divine office کے طور پر argue کیا جاتا ہے۔",
+        "آخری مجلس عصمت کو ہدایت کے مراتب سے جوڑتی ہے۔ ایک ہی حقیقت کے درجات ہوسکتے ہیں، جیسے روشنی کے درجات؛ اسی طرح نبوت، رسالت اور امامت الگ منصب ہیں۔ حضرت ابراہیمؑ کے 2:124 والے واقعے سے امامت کو الگ الٰہی منصب کے طور پر ثابت کیا جاتا ہے۔",
       coreEn:
         "The final majlis connects infallibility with a hierarchy of guidance. One shared reality can have degrees, like light; similarly prophethood, messengership, and Imamate are distinct offices. Abraham's appointment in Qur'an 2:124 is used to argue for Imamate as a distinct divine office.",
       explanationUr: [
         "مراتبِ عصمت کو مراتبِ منصب سے سمجھانے کے لیے روشنی کی مثال استعمال ہوتی ہے۔",
-        "حضرت ابراہیمؑ کے پہلے سے نبی و رسول ہونے اور پھر امام بنائے جانے کی ترتیب distinction پیدا کرتی ہے۔",
-        "«لا ينال عهدي الظالمين» اخلاقی qualification کو الٰہی عہد کے ساتھ جوڑتی ہے۔",
+        "حضرت ابراہیمؑ کے پہلے سے نبی و رسول ہونے اور پھر امام بنائے جانے کی ترتیب فرق پیدا کرتی ہے۔",
+        "«لا ينال عهدي الظالمين» اخلاقی اہلیت کو الٰہی عہد کے ساتھ جوڑتی ہے۔",
       ],
       explanationEn: [
         "Degrees of light are used to explain ranks within a shared reality.",
@@ -1122,20 +1122,20 @@ const ISMAH: SermonDossier = {
         "'My covenant does not reach the wrongdoers' links moral qualification to divine covenant.",
       ],
       styleUr:
-        "انداز: analogy → classification → Qur'anic case study → qualification → succession۔",
+        "انداز: مثال → تقسیم → قرآنی واقعے کا مطالعہ → اہلیت → جانشینی۔",
       styleEn:
         "Style: analogy → classification → Qur'anic case study → qualification → succession.",
       useUr:
-        "اس حصے کو عصمت سے امامت کی طرف transition کے طور پر استعمال کریں؛ سامع کو دکھائیں کہ doctrine isolated نہیں بلکہ ایک بڑے نظامِ ہدایت کا حصہ ہے۔",
+        "اس حصے کو عصمت سے امامت کی طرف ربط کے طور پر استعمال کریں؛ سامع کو دکھائیں کہ عقیدہ الگ تھلگ نہیں بلکہ ایک بڑے نظامِ ہدایت کا حصہ ہے۔",
       useEn:
         "Use this as the transition from infallibility to Imamate, showing that the doctrine belongs to a larger architecture of guidance.",
       originalSnippet: "نبوت، رسالت، امامت۔",
     },
   ],
   synthesisUr: [
-    "نقنؒ کی پوری series ایک مسلسل intellectual staircase بناتی ہے: **اصطفاء → qualification → عصمت کی تعریف → اختیار → ملائکہ سے تقابل → حقیقی بشریت → ضبطِ نفس → مراتبِ ہدایت → امامت**۔ یہی continuity اس material کی سب سے بڑی منبری طاقت ہے۔",
-    "یہاں عصمت کوئی magic shield نہیں بلکہ ایک کلامی و اخلاقی تصور ہے: خدا کے علم میں معلوم perfected qualification، جو آزادی کے ساتھ compatible ہے اور real human life میں self-mastery کی صورت میں ظاہر ہوتی ہے۔",
-    "خطیب کے لیے عملی سبق یہ ہے کہ عصمت کی مجلس کو صرف 'معصوم گناہ نہیں کرتے' پر ختم نہ کرے۔ سامع کو یہ سمجھائے کہ کیوں، کس معنی میں، اختیار کے ساتھ کیسے، اور اس عقیدے کا ordinary moral life کے لیے کیا ethical implication نکلتا ہے۔",
+    "نقنؒ کے پورے سلسلے میں علمی بحث مربوط انداز سے آگے بڑھتی ہے: **اصطفاء → اہلیت → عصمت کی تعریف → اختیار → ملائکہ سے تقابل → حقیقی بشریت → ضبطِ نفس → مراتبِ ہدایت → امامت**۔ یہی تسلسل اس مواد کی سب سے بڑی منبری طاقت ہے۔",
+    "یہاں عصمت کوئی جادوئی ڈھال نہیں بلکہ ایک کلامی و اخلاقی تصور ہے: خدا کے علم میں معلوم کامل اہلیت، جو اختیار کے ساتھ مطابقت رکھتی ہے اور حقیقی انسانی زندگی میں اپنے نفس پر قابو کی صورت میں ظاہر ہوتی ہے۔",
+    "خطیب کے لیے عملی سبق یہ ہے کہ عصمت کی مجلس کو صرف 'معصوم گناہ نہیں کرتے' پر ختم نہ کرے۔ سامع کو یہ سمجھائے کہ کیوں، کس معنی میں، اختیار کے ساتھ کیسے، اور اس عقیدے سے روزمرہ کی اخلاقی زندگی کے لیے کیا اخلاقی سبق نکلتا ہے۔",
   ],
   synthesisEn: [
     "Naqqan's series forms a continuous intellectual staircase: **istifa → qualification → definition of infallibility → freedom → comparison with angels → real humanity → self-mastery → ranks of guidance → Imamate**.",
@@ -1146,22 +1146,22 @@ const ISMAH: SermonDossier = {
     {
       heading: "1. عصمت کو لفظِ اصطفاء سے کھولیں",
       body:
-        "آل عمران 3:33 سے آغاز کریں۔ 'اصطفاء' کو صرف 'چن لیا' کہہ کر نہ گزریں۔ سوال کریں: چننے سے صفت پیدا ہوتی ہے یا صاحبِ صفت منتخب ہوتا ہے؟ یہی سے بنیاد رکھیں کہ الٰہی منصب کسی arbitrary lottery کا نتیجہ نہیں بلکہ خدا کے علم میں معلوم حقیقی اہلیت پر قائم ہے۔",
+        "آل عمران 3:33 سے آغاز کریں۔ 'اصطفاء' کو صرف 'چن لیا' کہہ کر نہ گزریں۔ سوال کریں: چننے سے صفت پیدا ہوتی ہے یا صاحبِ صفت منتخب ہوتا ہے؟ یہی سے بنیاد رکھیں کہ الٰہی منصب کسی بے قاعدہ قرعہ اندازی کا نتیجہ نہیں بلکہ خدا کے علم میں معلوم حقیقی اہلیت پر قائم ہے۔",
     },
     {
       heading: "2. 'گناہ نہیں کیا' کافی تعریف کیوں نہیں؟",
       body:
-        "سامع کو فرق سمجھائیں: کسی شخص سے ہمارے سامنے گناہ نہ ہونا observation ہے؛ عصمت certainty کا دعویٰ ہے۔ اگر definition صرف ماضی کے observation پر کھڑی ہو تو future اور hidden conduct کی ضمانت نہیں۔",
+        "سامع کو فرق سمجھائیں: کسی شخص سے ہمارے سامنے گناہ نہ ہونا مشاہدہ ہے؛ عصمت یقین کا دعویٰ ہے۔ اگر تعریف صرف ماضی کے مشاہدے پر کھڑی ہو تو مستقبل اور پوشیدہ اعمال کی ضمانت نہیں۔",
     },
     {
       heading: "3. پھر مشکل خود پیدا کریں: اگر گناہ ممکن نہیں تو اختیار کہاں؟",
       body:
-        "یہاں answer جلدی نہ دیں۔ پہلے tension محسوس کرائیں۔ اگر 'نہیں کرسکتا' physical inability ہے تو فضیلت ختم۔ پھر عدلِ الٰہی کی analogy لائیں: خدا ظلم نہیں کرتا، مگر قدرت ناقص نہیں۔ perfection بعض افعال کو character-incompatible بنا دیتی ہے۔",
+        "یہاں جواب جلدی نہ دیں۔ پہلے الجھاؤ محسوس کرائیں۔ اگر 'نہیں کرسکتا' جسمانی بے بسی ہے تو فضیلت ختم۔ پھر عدلِ الٰہی کی مثال لائیں: خدا ظلم نہیں کرتا، مگر قدرت ناقص نہیں۔ کامل کردار کی بنا پر بعض افعال اس شخصیت کی شان کے خلاف ہوتے ہیں۔",
     },
     {
-      heading: "4. ملائکہ سے comparison کر کے انسانی عصمت کا مقام واضح کریں",
+      heading: "4. ملائکہ سے تقابل کر کے انسانی عصمت کا مقام واضح کریں",
       body:
-        "فرشتوں کی اطاعت کو mechanical نہ کہیں؛ پھر فرق یہ رکھیں کہ human life میں hunger, anger, desire, pain اور social pressure موجود ہیں۔ انہی کے اندر obedience انسانی عصمت کو خاص moral grandeur دیتی ہے۔",
+        "فرشتوں کی اطاعت کو بے اختیار نہ کہیں؛ پھر فرق یہ رکھیں کہ انسانی زندگی میں بھوک، غصہ، خواہش، درد اور معاشرتی دباؤ موجود ہیں۔ انہی کے اندر اطاعت انسانی عصمت کو خاص اخلاقی عظمت دیتی ہے۔",
     },
     {
       heading: "5. حقیقی بشریت کو کم نہ کریں",
@@ -1169,14 +1169,14 @@ const ISMAH: SermonDossier = {
         "قرآن رسول کی بشریت پر اصرار کرتا ہے۔ اگر بھوک، پیاس، خوف، درد اور انسانی جذبات حقیقت نہ ہوں تو صبر، روزہ، ایثار اور وفاداری ہمارے لیے قابلِ اتباع کیسے ہوں گے؟ معصومینؑ کا کمال انسان نہ ہونے میں نہیں، انسان ہوتے ہوئے نفس کے مغلوب نہ ہونے میں ہے۔",
     },
     {
-      heading: "6. عام سامع کے لیے اخلاقی bridge: ضبطِ نفس",
+      heading: "6. عام سامع کے لیے اخلاقی ربط: ضبطِ نفس",
       body:
-        "واضح کریں کہ سامع theological عصمت کا دعویٰ نہیں کرتا، مگر doctrine سے اخلاقی تربیت لیتا ہے: خواہش موجود ہو مگر فیصلہ اس کی غلامی میں نہ ہو؛ غصہ آئے مگر عدل نہ جائے؛ درد ہو مگر ذمہ داری نہ ٹوٹے۔ یہی 'ضبطِ نفس' ordinary life میں اس عقیدے کا تربیتی اثر ہے۔",
+        "واضح کریں کہ سامع دینی عصمت کا دعویٰ نہیں کرتا، مگر عقیدے سے اخلاقی تربیت لیتا ہے: خواہش موجود ہو مگر فیصلہ اس کی غلامی میں نہ ہو؛ غصہ آئے مگر عدل نہ جائے؛ درد ہو مگر ذمہ داری نہ ٹوٹے۔ یہی 'ضبطِ نفس' روزمرہ کی زندگی میں اس عقیدے کا تربیتی اثر ہے۔",
     },
     {
       heading: "7. عصمت سے امامت کی طرف جائیں",
       body:
-        "آخر میں ابراہیمؑ اور 2:124 لائیں۔ نبوت، رسالت اور امامت کو distinct مگر متعلق divine offices کے طور پر کھولیں، اور «لا ينال عهدي الظالمين» سے دکھائیں کہ الٰہی عہد moral qualification سے جدا نہیں۔",
+        "آخر میں ابراہیمؑ اور 2:124 لائیں۔ نبوت، رسالت اور امامت کو الگ مگر متعلق الٰہی مناصب کے طور پر کھولیں، اور «لا ينال عهدي الظالمين» سے دکھائیں کہ الٰہی عہد اخلاقی اہلیت سے جدا نہیں۔",
     },
   ],
   pulpitFlowEn: [

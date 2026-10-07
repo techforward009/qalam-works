@@ -324,7 +324,7 @@ function buildBlockers(
 
   if (quranCount === 0) {
     ur.push(
-      "اس dossier میں داخلی قرآن corpus سے منسلک قرآنی بنیاد موجود نہیں؛ مجلس بن سکتی ہے مگر اسے قرآنی بنیاد کے بغیر واضح طور پر پیش کیا جائے گا۔",
+      "اس مواد میں موجود قرآنی ذخیرے سے منسلک قرآنی بنیاد موجود نہیں؛ مجلس بن سکتی ہے مگر اسے قرآنی بنیاد کے بغیر واضح طور پر پیش کیا جائے گا۔",
     );
     en.push(
       "This dossier has no Qur'anic anchor linked to the internal corpus; the sermon may still be assembled, but this absence is kept explicit.",

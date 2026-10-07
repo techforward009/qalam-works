@@ -74,7 +74,7 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
       "کاشانی امام حسن عسکریؑ کے عہد کو محض سیاسی محاصرے کی تاریخ کے طور پر نہیں پڑھتے۔ ان کے نزدیک اس دور کی اصل اہمیت یہ ہے کہ شدید نگرانی کے باوجود علمی و دینی رہنمائی کا سلسلہ رکا نہیں۔ امامؑ کی حکمتِ عملی میں ایسے افراد کی تربیت اور تقویت نمایاں تھی جو مختلف علاقوں میں معارفِ اہل بیتؑ، فقہی رہنمائی اور شیعہ اجتماعی رابطے کو آگے پہنچا سکیں۔",
       "وہ اس نکتے کو خاص طور پر نمایاں کرتے ہیں کہ ہر دور میں دینی قیادت کا مؤثر ہونا بڑے عوامی اجتماع یا کھلی سیاسی طاقت سے وابستہ نہیں ہوتا۔ بعض اوقات محدود حالات میں مضبوط انسان سازی، قابلِ اعتماد واسطوں اور علمی نیٹ ورک کی تشکیل زیادہ بنیادی کام بن جاتی ہے۔ یہی زاویہ غیبت سے پہلے کے شیعہ معاشرے کی تیاری کو سمجھنے میں بھی مدد دیتا ہے۔",
       "خطاب کا عملی رخ یہ ہے کہ مجلس، مسجد یا دینی ادارے کی کامیابی کو صرف تعداد سے نہ ناپا جائے۔ اگر دینی سرگرمی کے بعد آدمی زیادہ سچا، زیادہ امانت دار، قرآن سے زیادہ مربوط، مسجد سے زیادہ وابستہ اور گھر والوں کے ساتھ بہتر اخلاق والا نہیں بنتا تو محض اجتماع خود کامیابی کی کافی علامت نہیں۔",
-      "منبر پر اس مواد کو یوں استعمال کیا جا سکتا ہے: پہلے امامؑ کے سیاسی محدود ماحول کا مختصر پس منظر، پھر علمی نیٹ ورک اور تربیتِ افراد کا اصول، اور آخر میں آج کے دینی اداروں اور مجالس کے لیے measurable اخلاقی نتیجے کا سوال۔",
+      "منبر پر اس مواد کو یوں استعمال کیا جا سکتا ہے: پہلے امامؑ کے سیاسی محدود ماحول کا مختصر پس منظر، پھر علمی نیٹ ورک اور تربیتِ افراد کا اصول، اور آخر میں آج کے دینی اداروں اور مجالس کے لیے واضح طور پر نظر آنے والے اخلاقی نتیجے کا سوال۔",
     ],
     materialEn: [
       "Kashani does not read Imam al-Askari's age merely as a history of political confinement. His central point is that intense surveillance did not stop religious guidance. A major strategy was the formation and strengthening of trusted individuals who could carry the teachings of Ahl al-Bayt, legal guidance, and community links across different regions.",
@@ -86,7 +86,7 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
       "ائمہؑ نے سخت سیاسی محدودیت میں افرادِ خاص اور اہلِ علم کی تربیت پر سرمایہ کاری کی۔",
       "شیعہ علمی نیٹ ورک محض انتظامی ضرورت نہیں بلکہ معارف کے تحفظ کا ذریعہ تھا۔",
       "مجلس اور دینی ادارے کی کامیابی کا عملی معیار اخلاقی تبدیلی ہے۔",
-      "صدق، امانت، قرآن اور گھر کے تعلقات کو دینداری کے visible output کے طور پر پیش کیا گیا ہے۔",
+      "صدق، امانت، قرآن اور گھر کے تعلقات کو دینداری کے عملی نتیجے کے طور پر پیش کیا گیا ہے۔",
     ],
     takeawaysEn: [
       "Under political restriction, the Imams invested in trained scholars and trusted individuals.",
@@ -114,10 +114,10 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     summaryEn:
       "Kashani reads the different eras of the Imams as one continuous historical process: public introduction of Ahl al-Bayt in the Prophet's lifetime, later political marginalization, and a gradual rebuilding of scholarly and social authority under Imams al-Sajjad, al-Baqir, and al-Sadiq. He argues that open public identification of the Imam and the full line of Imams was not always possible because of security pressure on the Imam and the Shi'i network.",
     materialUr: [
-      "اس مجلس میں کاشانی ائمہؑ کی تاریخ کو الگ الگ سوانحی خانوں میں تقسیم کرنے کے بجائے ایک مسلسل تحریک کے طور پر پڑھتے ہیں۔ رسول اکرمؐ کے زمانے میں اہل بیتؑ کے مقام کی معرفی، بعد کے سیاسی حالات میں ان کی مرجعیت کو محدود کرنے کی کوشش، اور پھر امام سجادؑ سے امام صادقؑ تک علمی و سماجی حیثیت کی تدریجی بازیابی کو ایک مربوط تاریخی process کے طور پر پیش کیا گیا ہے۔",
+      "اس مجلس میں کاشانی ائمہؑ کی تاریخ کو الگ الگ سوانحی خانوں میں تقسیم کرنے کے بجائے ایک مسلسل تحریک کے طور پر پڑھتے ہیں۔ رسول اکرمؐ کے زمانے میں اہل بیتؑ کے مقام کی معرفی، بعد کے سیاسی حالات میں ان کی مرجعیت کو محدود کرنے کی کوشش، اور پھر امام سجادؑ سے امام صادقؑ تک علمی و سماجی حیثیت کی تدریجی بازیابی کو ایک مربوط تاریخی عمل کے طور پر پیش کیا گیا ہے۔",
       "ان کے بیان کا اہم نکتہ یہ ہے کہ ہر زمانے میں امام کی شناخت اور آئندہ ائمہؑ کی تفصیلات عوامی سطح پر یکساں طور پر بیان کرنا ممکن نہیں تھا۔ سیاسی نگرانی اور جانی خطرات کے باعث بعض معلومات محدود حلقوں اور قابلِ اعتماد افراد کے ذریعے منتقل ہوتی تھیں۔ اس زاویے سے خاموشی یا محدود ابلاغ کو علمی کمزوری نہیں بلکہ کبھی کبھی حفاظتی حکمتِ عملی کے طور پر سمجھا جا سکتا ہے۔",
-      "یہ مواد امام حسن عسکریؑ کے عہد پر گفتگو کرتے وقت بہت مفید ہے، کیونکہ اس سے سامع کو سمجھایا جا سکتا ہے کہ سامرہ کا زمانہ اچانک پیدا ہونے والا بحران نہیں تھا؛ اس سے پہلے کئی نسلوں میں ایک ایسا علمی و ارتباطی ڈھانچہ تیار ہو چکا تھا جو شدید پابندی کے باوجود دینی continuity برقرار رکھ سکے۔",
-      "منبری ترتیب میں پہلے 'تاریخ کو process کے طور پر پڑھنا' مرکزی مقدمہ بن سکتا ہے، پھر مختلف ادوار میں ابلاغ کے مختلف طریقے، اور آخر میں آج کے حالات میں حکمت، حفاظت اور دینی ذمہ داری کے درمیان توازن کا سوال۔",
+      "یہ مواد امام حسن عسکریؑ کے عہد پر گفتگو کرتے وقت بہت مفید ہے، کیونکہ اس سے سامع کو سمجھایا جا سکتا ہے کہ سامرہ کا زمانہ اچانک پیدا ہونے والا بحران نہیں تھا؛ اس سے پہلے کئی نسلوں میں ایک ایسا علمی و ارتباطی ڈھانچہ تیار ہو چکا تھا جو شدید پابندی کے باوجود دینی تسلسل برقرار رکھ سکے۔",
+      "منبری ترتیب میں پہلے 'تاریخ کو عمل کے طور پر پڑھنا' مرکزی مقدمہ بن سکتا ہے، پھر مختلف ادوار میں ابلاغ کے مختلف طریقے، اور آخر میں آج کے حالات میں حکمت، حفاظت اور دینی ذمہ داری کے درمیان توازن کا سوال۔",
     ],
     materialEn: [
       "Kashani treats the history of the Imams as one continuous movement rather than isolated biographies. The public introduction of Ahl al-Bayt in the Prophet's lifetime, later political efforts to marginalize their authority, and the gradual rebuilding of scholarly and social authority from Imam al-Sajjad through Imam al-Sadiq are presented as one connected historical process.",
@@ -127,9 +127,9 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     ],
     takeawaysUr: [
       "اہل بیتؑ کی دینی مرجعیت مختلف تاریخی ادوار میں مختلف طریقوں سے محفوظ کی گئی۔",
-      "خفقان کی وجہ سے بعض اوقات عمومی تبلیغ کے بجائے محدود اور محفوظ علمی transmission اختیار کیا گیا۔",
-      "امام حسن عسکریؑ کے زمانے کو سمجھنے کے لیے پہلے کے ائمہؑ کے institutional groundwork کو دیکھنا ضروری ہے۔",
-      "تاریخ کو isolated incidents کے بجائے ایک مسلسل process کے طور پر پڑھنے کا منبری زاویہ ملتا ہے۔",
+      "خفقان کی وجہ سے بعض اوقات عمومی تبلیغ کے بجائے علم پہنچانے کا محدود اور محفوظ طریقہ اختیار کیا گیا۔",
+      "امام حسن عسکریؑ کے زمانے کو سمجھنے کے لیے پہلے کے ائمہؑ کی علمی و اجتماعی بنیادوں کو دیکھنا ضروری ہے۔",
+      "تاریخ کو الگ الگ واقعات کے بجائے ایک مسلسل عمل کے طور پر پڑھنے کا منبری زاویہ ملتا ہے۔",
     ],
     takeawaysEn: [
       "The religious authority of Ahl al-Bayt was preserved differently in different political eras.",
@@ -152,12 +152,12 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["توحید", "شرک", "عقائد", "مجالس"],
     topicsEn: ["Tawhid", "shirk", "doctrine", "majalis"],
     summaryUr:
-      "مآب لائبریری میں علامہ رشید ترابیؒ کے خطابات کا یہ باقاعدہ محفوظ مجموعہ 'توحید اور شرک' کے عنوان سے موجود ہے۔ اس مرحلے پر Qalam اسے حقیقی source record کے طور پر دکھاتا ہے؛ مکمل متن ingest کیے بغیر اس کی طرف کوئی مخصوص دعویٰ یا قول منسوب نہیں کرتا۔",
+      "مآب لائبریری میں علامہ رشید ترابیؒ کے خطابات کا یہ باقاعدہ محفوظ مجموعہ 'توحید اور شرک' کے عنوان سے موجود ہے۔ اس مرحلے پر قلم اسے حقیقی کتابی ماخذ کے طور پر دکھاتا ہے؛ مکمل متن ذخیرے میں شامل کیے بغیر اس کی طرف کوئی مخصوص دعویٰ یا قول منسوب نہیں کرتا۔",
     summaryEn:
       "MAAB Library preserves this published collection of Allama Rashid Turabi's majalis under the title 'Tawhid and Shirk'. Qalam treats it here as a real source record and does not attribute specific claims to Turabi until the full text has been ingested.",
     takeawaysUr: [
-      "توحید و شرک پر رشید ترابیؒ کے اصل مرتب شدہ منبری corpus کا مستند سراغ۔",
-      "مکمل متن ingest ہونے کے بعد مجلس بہ مجلس thesis، دلائل اور اقتباسات index کیے جا سکتے ہیں۔",
+      "توحید و شرک پر رشید ترابیؒ کے اصل مرتب شدہ منبری کتابی ذخیرے کا مستند سراغ۔",
+      "مکمل متن ذخیرے میں شامل ہونے کے بعد مجلس بہ مجلس مرکزی خیال، دلائل اور اقتباسات مرتب کیے جا سکتے ہیں۔",
     ],
     takeawaysEn: [
       "A verified route to Turabi's compiled pulpit corpus on Tawhid and shirk.",
@@ -178,12 +178,12 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["کفران نعمت", "حیات طیبہ", "اخلاق", "مجالس"],
     topicsEn: ["ingratitude", "hayat tayyiba", "ethics", "majalis"],
     summaryUr:
-      "یہ علامہ رشید ترابیؒ کے مرتب شدہ مجالس کا دوسرا محفوظ مجموعہ ہے جس کا موضوعی عنوان 'کفرانِ نعمت اور حیاتِ طیبہ' ہے۔ ابھی Qalam صرف verified bibliographic/source information دکھاتا ہے؛ متن کی حقیقی indexing اگلے ingest مرحلے میں ہوگی۔",
+      "یہ علامہ رشید ترابیؒ کے مرتب شدہ مجالس کا دوسرا محفوظ مجموعہ ہے جس کا موضوعی عنوان 'کفرانِ نعمت اور حیاتِ طیبہ' ہے۔ ابھی قلم صرف کتاب اور ماخذ کی مصدقہ معلومات دکھاتا ہے؛ متن کی حقیقی فہرست سازی متن ذخیرے میں شامل کرنے کے اگلے مرحلے میں ہوگی۔",
     summaryEn:
       "This is a preserved second volume of Rashid Turabi's compiled majalis, titled around ingratitude and hayat tayyiba. At this stage Qalam shows verified source information only; detailed content indexing belongs to the next ingestion phase.",
     takeawaysUr: [
-      "اخلاقی و قرآنی موضوعات پر رشید ترابیؒ کے اصل منبری corpus کا قابلِ تصدیق ماخذ۔",
-      "کوئی fabricated خلاصہ نہیں؛ detailed claims مکمل متن ingest ہونے کے بعد ہی۔",
+      "اخلاقی و قرآنی موضوعات پر رشید ترابیؒ کے اصل منبری کتابی ذخیرے کا قابلِ تصدیق ماخذ۔",
+      "کوئی گھڑا ہوا خلاصہ نہیں؛ تفصیلی علمی باتیں مکمل متن ذخیرے میں شامل ہونے کے بعد ہی۔",
     ],
     takeawaysEn: [
       "A verifiable source for Turabi's pulpit corpus on Qur'anic and ethical themes.",
@@ -204,12 +204,12 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["دعا", "نعمت", "عبادت", "مجالس"],
     topicsEn: ["dua", "blessing", "worship", "majalis"],
     summaryUr:
-      "مآب کے محفوظات میں رشید ترابیؒ کے مجالس کا ایک مستقل مجموعہ 'دعا اور اتمامِ نعمت' کے عنوان سے موجود ہے۔ Qalam اسے موضوعی source lead کے طور پر پیش کرتا ہے، نہ کہ ابھی سے استخراج شدہ قول کے طور پر۔",
+      "مآب کے محفوظات میں رشید ترابیؒ کے مجالس کا ایک مستقل مجموعہ 'دعا اور اتمامِ نعمت' کے عنوان سے موجود ہے۔ قلم اسے موضوع کے اصل ماخذ کے سراغ کے طور پر پیش کرتا ہے، نہ کہ ابھی سے استخراج شدہ قول کے طور پر۔",
     summaryEn:
       "MAAB preserves a dedicated collection of Turabi's majalis titled 'Dua and Completion of Blessing'. Qalam exposes it as a topic-level source lead, not as an extracted quotation or claim.",
     takeawaysUr: [
-      "دعا کے موضوع پر رشید ترابیؒ کے حقیقی محفوظ corpus تک براہِ راست رسائی۔",
-      "بعد کے مرحلے میں صفحات/مجالس کی indexing کے ساتھ حقیقی خلاصے اور مختصر اقتباسات شامل کیے جا سکیں گے۔",
+      "دعا کے موضوع پر رشید ترابیؒ کے حقیقی محفوظ کتابی ذخیرے تک براہِ راست رسائی۔",
+      "بعد کے مرحلے میں صفحات/مجالس کی فہرست سازی کے ساتھ حقیقی خلاصے اور مختصر اقتباسات شامل کیے جا سکیں گے۔",
     ],
     takeawaysEn: [
       "Direct access to a real preserved Turabi corpus on dua.",
@@ -231,12 +231,12 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["فضائل اہل بیت", "مجالس", "مصائب"],
     topicsEn: ["virtues of Ahl al-Bayt", "majalis", "masaib"],
     summaryUr:
-      "مآب لائبریری میں علامہ رشید ترابیؒ کی مجالس کا 1407ھ/1987ء کا 163 صفحات پر مشتمل مستقل مجموعہ محفوظ ہے۔ یہ ابھی صرف مصدقہ کتابی ماخذ کے طور پر شامل ہے؛ مجلس بہ مجلس متن پڑھے بغیر Qalam اس سے کوئی مخصوص علمی دعویٰ اخذ نہیں کرتا۔",
+      "مآب لائبریری میں علامہ رشید ترابیؒ کی مجالس کا 1407ھ/1987ء کا 163 صفحات پر مشتمل مستقل مجموعہ محفوظ ہے۔ یہ ابھی صرف مصدقہ کتابی ماخذ کے طور پر شامل ہے؛ مجلس بہ مجلس متن پڑھے بغیر قلم اس سے کوئی مخصوص علمی دعویٰ اخذ نہیں کرتا۔",
     summaryEn:
       "MAAB preserves a 163-page 1407 AH / 1987 collection of Rashid Turabi's majalis. It remains a verified bibliographic source only; Qalam does not derive specific scholarly claims until the individual majalis are ingested.",
     takeawaysUr: [
       "رشید ترابیؒ کے 163 صفحات کے محفوظ مجموعۂ مجالس کا مصدقہ ماخذ۔",
-      "اگلا مرحلہ مجلس بہ مجلس اصل متن کی indexing ہے، نہ کہ عنوان سے مفروضہ خلاصہ۔",
+      "اگلا مرحلہ مجلس بہ مجلس اصل متن کی فہرست سازی ہے، نہ کہ عنوان سے مفروضہ خلاصہ۔",
     ],
     takeawaysEn: [
       "A verified 163-page collected source for Rashid Turabi's majalis.",
@@ -257,12 +257,12 @@ export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["کتاب", "حکمت", "ملک عظیم", "مجالس"],
     topicsEn: ["book", "wisdom", "great kingdom", "majalis"],
     summaryUr:
-      "مآب کے تازہ کتابی ریکارڈ میں مجالس ترابی کی جلد پنجم 'کتاب، حکمت اور ملکِ عظیم' کے عنوان سے محفوظ ہے۔ مکمل متن ابھی ingest نہیں ہوا، اس لیے یہ صرف قابلِ تصدیق source lead ہے اور کسی مخصوص قول یا استدلال کی نسبت نہیں کی جاتی۔",
+      "مآب کے تازہ کتابی ریکارڈ میں مجالس ترابی کی جلد پنجم 'کتاب، حکمت اور ملکِ عظیم' کے عنوان سے محفوظ ہے۔ مکمل متن ابھی ذخیرے میں شامل نہیں ہوا، اس لیے یہ صرف قابلِ تصدیق ماخذ کا سراغ ہے اور کسی مخصوص قول یا استدلال کی نسبت نہیں کی جاتی۔",
     summaryEn:
       "MAAB's catalogue preserves volume five of Majalis-e-Turabi under the title 'Book, Wisdom, and the Great Kingdom'. The full text has not yet been ingested, so it remains a verifiable source lead rather than evidence for any specific claim.",
     takeawaysUr: [
-      "رشید ترابیؒ کے corpus میں ایک مزید مصدقہ کتابی جلد شامل ہوگئی۔",
-      "متن ingest ہونے تک موضوعی عنوان کو علمی دعوے کے برابر نہیں سمجھا جائے گا۔",
+      "رشید ترابیؒ کے کتابی ذخیرے میں ایک مزید مصدقہ کتابی جلد شامل ہوگئی۔",
+      "متن ذخیرے میں شامل ہونے تک موضوعی عنوان کو علمی دعوے کے برابر نہیں سمجھا جائے گا۔",
     ],
     takeawaysEn: [
       "A further verified bibliographic volume is now represented in Turabi's corpus inventory.",

@@ -103,7 +103,7 @@ export function auditGroundedFullSermon(
     detailUr:
       sermon.quranCount > 0
         ? `${sermon.quranCount} قرآنی اندراج داخلی احمد گراف متن سے لیا گیا ہے۔`
-        : "اس موضوع کی تیار مجلس میں داخلی قرآن corpus سے منسلک آیت شامل نہیں۔",
+        : "اس موضوع کی تیار مجلس میں موجود قرآنی ذخیرے سے منسلک آیت شامل نہیں۔",
     detailEn:
       sermon.quranCount > 0
         ? `${sermon.quranCount} Qur'anic record(s) come from the internal AhmedGraf text.`

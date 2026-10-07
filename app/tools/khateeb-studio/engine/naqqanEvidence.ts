@@ -15,14 +15,14 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["عصمت", "اصطفاء", "نبوت", "رسالت", "امامت", "انتخاب الٰہی"],
     topicsEn: ["infallibility", "istifa", "prophethood", "messengership", "Imamate", "divine selection"],
     summaryUr:
-      "علامہ سید علی نقی نقویؒ سورۂ آل عمران 3:33 کے لفظ «اصطفیٰ» سے اپنی پوری بحث کی بنیاد قائم کرتے ہیں۔ ان کے استدلال میں 'اصطفاء' کسی شخص کو پاک بنانے کا نام نہیں بلکہ پہلے سے موجود صفائی و امتیاز کو پہچان کر منتخب کرنے کا نام ہے۔ اسی lexical مقدمے سے وہ یہ نتیجہ نکالتے ہیں کہ عصمت منصبِ نبوت یا امامت کا بعد کا اثر نہیں؛ الٰہی منصب اس ہستی کو دیا جاتا ہے جو پہلے ہی اس منصب کے معیار پر پوری اترتی ہے۔",
+      "علامہ سید علی نقی نقویؒ سورۂ آل عمران 3:33 کے لفظ «اصطفیٰ» سے اپنی پوری بحث کی بنیاد قائم کرتے ہیں۔ ان کے استدلال میں 'اصطفاء' کسی شخص کو پاک بنانے کا نام نہیں بلکہ پہلے سے موجود صفائی و امتیاز کو پہچان کر منتخب کرنے کا نام ہے۔ اسی لغوی مقدمے سے وہ یہ نتیجہ نکالتے ہیں کہ عصمت منصبِ نبوت یا امامت کا بعد کا اثر نہیں؛ الٰہی منصب اس ہستی کو دیا جاتا ہے جو پہلے ہی اس منصب کے معیار پر پوری اترتی ہے۔",
     summaryEn:
       "Naqvi builds the argument from Qur'an 3:33 and the lexical force of istifa. Divine selection, in his reading, does not create purity; it selects one already distinguished by purity. He therefore treats infallibility not as a later effect of prophetic or imamic office, but as a qualification presupposed by divine appointment.",
     materialUr: [
-      "مجلس کی پہلی بڑی تکنیک لفظ سے عقیدہ اخذ کرنا ہے۔ علامہ 'صفّیٰ'، 'تصفیہ' اور 'اصطفیٰ' میں فرق کھولتے ہیں: تصفیہ میں صفائی پیدا کرنے کا مفہوم ہے، جبکہ اصطفاء میں بہت سوں کے درمیان سے صاف اور ممتاز فرد کو چننے کا۔ اس linguistic distinction کو وہ صرف لغوی نکتہ نہیں رہنے دیتے بلکہ علمِ کلام کے مقدمے میں بدل دیتے ہیں۔",
+      "مجلس کی پہلی بڑی تکنیک لفظ سے عقیدہ اخذ کرنا ہے۔ علامہ 'صفّیٰ'، 'تصفیہ' اور 'اصطفیٰ' میں فرق کھولتے ہیں: تصفیہ میں صفائی پیدا کرنے کا مفہوم ہے، جبکہ اصطفاء میں بہت سوں کے درمیان سے صاف اور ممتاز فرد کو چننے کا۔ اس لفظی فرق کو وہ صرف لغوی نکتہ نہیں رہنے دیتے بلکہ علمِ کلام کے مقدمے میں بدل دیتے ہیں۔",
       "مرکزی دعویٰ یہ بنتا ہے: «عصمت نتیجۂ رسالت نہیں، بلکہ رسالت نتیجۂ عصمت ہے۔» یعنی اللہ کسی عام شخص کو منصب دے کر پھر اسے معصوم نہیں بناتا؛ اس کا علم پہلے ہی جانتا ہے کہ کون اس منصب کے شایان ہے، لہٰذا انتخاب اس حقیقی اہلیت پر قائم ہے۔",
-      "اسی اصول کو وہ امامت تک بڑھاتے ہیں۔ اگر نبوت، رسالت اور امامت خالق کی طرف سے عطا ہونے والے مناصب ہیں تو ان کا معیار بھی خالق کے علم اور انتخاب سے وابستہ ہوگا، محض اجتماعی پسند یا بعد میں پیدا ہونے والی qualification سے نہیں۔",
-      "منبری اعتبار سے یہ مجلس ایک عمدہ model ہے: پہلے ایک قرآنی لفظ، پھر morphology اور روزمرہ مثالیں، پھر theological conclusion، اور آخر میں اسی conclusion کو نبوت، امامت اور کربلا کے تناظر سے جوڑنا۔",
+      "اسی اصول کو وہ امامت تک بڑھاتے ہیں۔ اگر نبوت، رسالت اور امامت خالق کی طرف سے عطا ہونے والے مناصب ہیں تو ان کا معیار بھی خالق کے علم اور انتخاب سے وابستہ ہوگا، محض اجتماعی پسند یا بعد میں پیدا ہونے والی اہلیت سے نہیں۔",
+      "منبری اعتبار سے یہ مجلس ایک عمدہ نمونہ ہے: پہلے ایک قرآنی لفظ، پھر لفظ کی صرفی ساخت اور روزمرہ مثالیں، پھر دینی نتیجہ، اور آخر میں اسی نتیجے کو نبوت، امامت اور کربلا کے تناظر سے جوڑنا۔",
     ],
     materialEn: [
       "The majlis begins by turning a lexical distinction into theology: tasfiya suggests producing or preserving purity, while istifa selects the one already distinguished as pure.",
@@ -31,10 +31,10 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "As preaching method, the majlis moves from one Qur'anic word to morphology, ordinary analogies, doctrinal consequence, and finally devotional application.",
     ],
     takeawaysUr: [
-      "قرآنی لفظ کی دقیق لغوی تحلیل کو کلامی argument میں بدلا جا سکتا ہے۔",
+      "قرآنی لفظ کی دقیق لغوی تحلیل کو کلامی دلیل میں بدلا جا سکتا ہے۔",
       "اصطفاء کا مفہوم 'صفت پیدا کرنا' نہیں بلکہ 'صاحبِ صفت کو منتخب کرنا' ہے۔",
-      "عصمت کو منصب کا نتیجہ نہیں بلکہ منصب کے لیے qualification کے طور پر پیش کیا گیا ہے۔",
-      "امامت کو بھی اسی الٰہی selection framework میں رکھا گیا ہے۔",
+      "عصمت کو منصب کا نتیجہ نہیں بلکہ منصب کے لیے اہلیت کے طور پر پیش کیا گیا ہے۔",
+      "امامت کو بھی اسی الٰہی انتخاب کے اصول میں رکھا گیا ہے۔",
     ],
     takeawaysEn: [
       "Close lexical analysis can become a theological argument.",
@@ -57,14 +57,14 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["بعثت", "عصمت", "علم الٰہی", "رسالت", "صادق", "امین"],
     topicsEn: ["prophetic mission", "infallibility", "divine knowledge", "messengership", "truthfulness", "trustworthiness"],
     summaryUr:
-      "دوسری مجلس میں پہلی مجلس کے اصول کو «اللّٰهُ أَعْلَمُ حَيْثُ يَجْعَلُ رِسَالَتَهُ» سے reinforce کیا جاتا ہے۔ علامہ اس بات پر زور دیتے ہیں کہ آیت قدرت نہیں، علمِ الٰہی کا حوالہ دیتی ہے: خدا جانتا ہے رسالت کہاں رکھنی ہے۔ اس سے وہ بعثت، سابقہ کردار، صادق و امین کی شہرت اور اتمامِ حجت کو ایک مربوط argument میں جوڑتے ہیں۔",
+      "دوسری مجلس میں پہلی مجلس کے اصول کو «اللّٰهُ أَعْلَمُ حَيْثُ يَجْعَلُ رِسَالَتَهُ» سے مضبوط کیا جاتا ہے۔ علامہ اس بات پر زور دیتے ہیں کہ آیت قدرت نہیں، علمِ الٰہی کا حوالہ دیتی ہے: خدا جانتا ہے رسالت کہاں رکھنی ہے۔ اس سے وہ بعثت، سابقہ کردار، صادق و امین کی شہرت اور اتمامِ حجت کو ایک مربوط دلیل میں جوڑتے ہیں۔",
     summaryEn:
       "The second majlis reinforces the first through Qur'an 6:124: God knows where to place His message. Naqvi stresses that the verse appeals to divine knowledge rather than arbitrary power, then connects that principle to the Prophet's established character, the titles al-Sadiq and al-Amin, and the public manifestation of the prophetic mission.",
     materialUr: [
-      "علامہ ایک اہم rhetorical distinction بناتے ہیں: اگر منصب محض قدرت کے بے قید استعمال سے ملتا تو آیت یہ کہتی کہ خدا جسے چاہے رسول بنا دے؛ لیکن قرآن علم کا حوالہ دیتا ہے—«اللہ خوب جانتا ہے کہ اپنی رسالت کہاں رکھے»۔ اس سے منصب کسی حقیقی suitability اور divine knowledge سے وابستہ ہو جاتا ہے۔",
-      "وہ نبوت کی قدامت اور بعثت کے تاریخی اعلان میں فرق کرتے ہیں۔ ان کے بیان میں چالیس برس کی عمر میں 'رسول بننا' نہیں بلکہ دعوائے رسالت کے عمومی اعلان پر مامور ہونا مرکزی نکتہ ہے؛ پہلے کی سیرت کو وہ آئندہ دعوے کے لیے experiential evidence قرار دیتے ہیں۔",
-      "صادق اور امین کو وہ محض فضیلت کے القاب نہیں سمجھتے بلکہ دعوائے رسالت سے directly relevant public credentials کے طور پر پڑھتے ہیں: صادق کا دعویٰ جھوٹا کیوں ہوگا، اور امین پیغام میں خیانت کیوں کرے گا؟",
-      "تبلیغ کے مراحل—ذات، گھر، گھرانہ، پھر عام دنیا—کو وہ historical sequence کے طور پر استعمال کرتے ہیں۔ اس سے خطیب کو یہ method ملتا ہے کہ doctrine کو biography اور social history کے ساتھ کیسے مربوط کیا جائے۔",
+      "علامہ بیان میں ایک اہم فرق واضح کرتے ہیں: اگر منصب محض قدرت کے بے قید استعمال سے ملتا تو آیت یہ کہتی کہ خدا جسے چاہے رسول بنا دے؛ لیکن قرآن علم کا حوالہ دیتا ہے—«اللہ خوب جانتا ہے کہ اپنی رسالت کہاں رکھے»۔ اس سے منصب کسی حقیقی اہلیت اور علمِ الٰہی سے وابستہ ہو جاتا ہے۔",
+      "وہ نبوت کی قدامت اور بعثت کے تاریخی اعلان میں فرق کرتے ہیں۔ ان کے بیان میں چالیس برس کی عمر میں 'رسول بننا' نہیں بلکہ دعوائے رسالت کے عمومی اعلان پر مامور ہونا مرکزی نکتہ ہے؛ پہلے کی سیرت کو وہ آئندہ دعوے کے لیے روزمرہ تجربے کی دلیل قرار دیتے ہیں۔",
+      "صادق اور امین کو وہ محض فضیلت کے القاب نہیں سمجھتے بلکہ دعوائے رسالت کی تائید کرنے والے معروف اوصاف کے طور پر پڑھتے ہیں: صادق کا دعویٰ جھوٹا کیوں ہوگا، اور امین پیغام میں خیانت کیوں کرے گا؟",
+      "تبلیغ کے مراحل—ذات، گھر، گھرانہ، پھر عام دنیا—کو وہ تاریخی ترتیب کے طور پر استعمال کرتے ہیں۔ اس سے خطیب کو یہ طریقہ ملتا ہے کہ عقیدے کو سوانحی معلومات اور معاشرتی تاریخ کے ساتھ کیسے مربوط کیا جائے۔",
     ],
     materialEn: [
       "Naqvi notes that Qur'an 6:124 appeals to divine knowledge, not arbitrary power: God knows where to place His message.",
@@ -73,10 +73,10 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "The stages from person, to home, to clan, to public proclamation provide a model for integrating doctrine with biography and social history.",
     ],
     takeawaysUr: [
-      "منصبِ رسالت کے باب میں علمِ الٰہی کو arbitrary power پر مقدم explanatory principle بنایا گیا ہے۔",
-      "بعثت اور اصل نبوت/رسالت میں conceptual فرق پیدا کیا گیا ہے۔",
-      "صادق و امین کو evidence architecture کا حصہ بنایا گیا ہے۔",
-      "تبلیغ کے تاریخی مراحل کو theological claim کے ساتھ جوڑا گیا ہے۔",
+      "منصبِ رسالت کے باب میں منصب کے تعین کی بنیاد بے قاعدہ اختیار نہیں، علمِ الٰہی کو قرار دیا گیا ہے۔",
+      "بعثت اور اصل نبوت و رسالت کے مفہوم میں فرق پیدا کیا گیا ہے۔",
+      "صادق و امین کو دلائل کی ترتیب کا حصہ بنایا گیا ہے۔",
+      "تبلیغ کے تاریخی مراحل کو دینی دعوے کے ساتھ جوڑا گیا ہے۔",
     ],
     takeawaysEn: [
       "Divine knowledge is the explanatory principle for appointment.",
@@ -99,13 +99,13 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["عصمت", "اختیار", "گناہ", "عدم وقوع", "عدم امکان", "ہجرت"],
     topicsEn: ["infallibility", "free will", "sin", "non-occurrence", "impossibility", "Hijra"],
     summaryUr:
-      "تیسری مجلس عصمت کی تعریف کو ایک مشکل منطقی سوال میں بدلتی ہے: کیا معصوم سے گناہ صرف واقع نہیں ہوتا، یا اس کا وقوع حقیقتاً ناممکن ہے؟ علامہ پہلے دونوں possibilities الگ کرتے ہیں، پھر دکھاتے ہیں کہ صرف 'اب تک گناہ نہیں ہوا' قطعی عصمت کی ضمانت نہیں بن سکتا۔ مجلس سوال کو پوری علمی قوت کے ساتھ قائم کرتی ہے اور اختیار و امکان کے اگلے مرحلے کی بنیاد رکھتی ہے۔",
+      "تیسری مجلس عصمت کی تعریف کو ایک مشکل منطقی سوال میں بدلتی ہے: کیا معصوم سے گناہ صرف واقع نہیں ہوتا، یا اس کا وقوع حقیقتاً ناممکن ہے؟ علامہ پہلے دونوں صورتیں الگ کرتے ہیں، پھر دکھاتے ہیں کہ صرف 'اب تک گناہ نہیں ہوا' قطعی عصمت کی ضمانت نہیں بن سکتا۔ مجلس سوال کو پوری علمی قوت کے ساتھ قائم کرتی ہے اور اختیار و امکان کے اگلے مرحلے کی بنیاد رکھتی ہے۔",
     summaryEn:
       "The third majlis turns the definition of infallibility into a precise logical question: does sin merely fail to occur, or is its occurrence impossible? Naqvi separates the two possibilities and argues that mere observed non-occurrence cannot provide the certainty required by infallibility, preparing the next step concerning freedom and possibility.",
     materialUr: [
-      "علامہ سامع کو ready-made answer نہیں دیتے؛ پہلے مسئلہ بناتے ہیں۔ اگر عصمت صرف یہ ہو کہ ہم نے گناہ ہوتے نہیں دیکھا تو یہ knowledge observer کی حد تک ہے، reality کی ضمانت نہیں۔ کل بھی نہ ہوگا، یہ conclusion صرف سابقہ observation سے لازم نہیں آتا۔",
-      "یہاں 'عدمِ وقوع' اور 'عدمِ امکان' کا فرق مرکزی ہے۔ عدمِ وقوع empirical description ہے؛ عدمِ امکان stronger claim ہے۔ مگر stronger claim کے ساتھ فوراً مشکل پیدا ہوتی ہے: اگر گناہ ممکن ہی نہیں تو کیا معصوم مجبور ہے؟ یہی اگلی مجالس کے لیے سوال بنتا ہے۔",
-      "مجلس کا pedagogical style بہت قیمتی ہے: علامہ خود کہتے ہیں کہ آج شاید پورا وقت سوال قائم کرنے میں گزرے۔ خطیب کے لیے سبق یہ ہے کہ ہر علمی مجلس کو answer-dump نہ بنایا جائے؛ بعض اوقات سوال کی درست construction ہی آدھی تعلیم ہے۔",
+      "علامہ سامع کو پہلے سے تیار جواب نہیں دیتے؛ پہلے مسئلہ بناتے ہیں۔ اگر عصمت صرف یہ ہو کہ ہم نے گناہ ہوتے نہیں دیکھا تو یہ مشاہدہ کرنے والے کے علم کی حد تک ہے، حقیقت کی ضمانت نہیں۔ کل بھی نہ ہوگا، یہ نتیجہ صرف سابقہ مشاہدے سے لازم نہیں آتا۔",
+      "یہاں 'عدمِ وقوع' اور 'عدمِ امکان' کا فرق مرکزی ہے۔ عدمِ وقوع مشاہدے کا بیان ہے؛ عدمِ امکان زیادہ قطعی دعویٰ ہے۔ مگر زیادہ قطعی دعوے کے ساتھ فوراً مشکل پیدا ہوتی ہے: اگر گناہ ممکن ہی نہیں تو کیا معصوم مجبور ہے؟ یہی اگلی مجالس کے لیے سوال بنتا ہے۔",
+      "مجلس کا سمجھانے کا انداز بہت قیمتی ہے: علامہ خود کہتے ہیں کہ آج شاید پورا وقت سوال قائم کرنے میں گزرے۔ خطیب کے لیے سبق یہ ہے کہ ہر علمی مجلس کو جوابات کا ڈھیر نہ بنایا جائے؛ بعض اوقات سوال کی درست تشکیل ہی آدھی تعلیم ہے۔",
     ],
     materialEn: [
       "Naqvi deliberately builds the problem before delivering the answer. If infallibility only means that no sin has been observed, certainty is limited by the observer.",
@@ -113,7 +113,7 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "The pedagogical method is itself valuable: a whole session may be used to construct the question accurately before resolving it.",
     ],
     takeawaysUr: [
-      "عدمِ وقوع اور عدمِ امکان الگ logical claims ہیں۔",
+      "عدمِ وقوع اور عدمِ امکان الگ منطقی دعوے ہیں۔",
       "مشاہدۂ عدم، عصمت کی قطعی ضمانت نہیں بن سکتا۔",
       "اختیار کا سوال عصمت کی تعریف کے اندر سے پیدا ہوتا ہے۔",
       "اچھا منبر کبھی کبھی پہلے سوال کو پوری قوت سے قائم کرتا ہے۔",
@@ -139,13 +139,13 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["عصمت", "عدل", "اختیار", "قدرت", "امام جماعت", "گناہ"],
     topicsEn: ["infallibility", "justice", "freedom", "power", "moral reliability", "sin"],
     summaryUr:
-      "چوتھی مجلس میں علامہ 'عدمِ امکان' کو جبر سے بچانے کے لیے عدلِ الٰہی کی مثال لاتے ہیں۔ خدا ظلم نہیں کرتا، لیکن اس کا مطلب یہ نہیں کہ قدرت ناقص ہے؛ ظلم شانِ الوہیت کے خلاف ہے۔ اسی analogy سے وہ معصوم کی بے گناہی کو اختیار کی نفی کے بجائے کمالِ شخصیت اور شانِ منصب سے جوڑتے ہیں۔",
+      "چوتھی مجلس میں علامہ 'عدمِ امکان' کو جبر سے بچانے کے لیے عدلِ الٰہی کی مثال لاتے ہیں۔ خدا ظلم نہیں کرتا، لیکن اس کا مطلب یہ نہیں کہ قدرت ناقص ہے؛ ظلم شانِ الوہیت کے خلاف ہے۔ اسی مثال سے وہ معصوم کی بے گناہی کو اختیار کی نفی کے بجائے کمالِ شخصیت اور شانِ منصب سے جوڑتے ہیں۔",
     summaryEn:
       "The fourth majlis uses divine justice to prevent 'impossibility of sin' from collapsing into compulsion. God does not act unjustly, yet this is not a defect of power; injustice is contrary to divine perfection. Naqvi then uses the analogy to present infallibility as perfection of character and office rather than absence of freedom.",
     materialUr: [
-      "علامہ عادل اور معصوم میں فرق واضح کرتے ہیں۔ کسی عادل شخص کے بارے میں ہمارا علم observational اور defeasible ہوسکتا ہے؛ عصمت ایک stronger theological guarantee مانگتی ہے۔",
-      "پھر وہ power اور moral impossibility کو الگ کرتے ہیں۔ کوئی کام نہ ہونا اس لیے بھی ہوسکتا ہے کہ فاعل کمزور ہے، اور اس لیے بھی کہ اس کا کمالِ ذات اس کام سے incompatible ہے۔ پہلی صورت نقص ہے، دوسری کمال۔",
-      "عدلِ الٰہی اس distinction کی مثال بنتا ہے: ظلم نہ ہونا قدرت کی کمی نہیں۔ اسی طرح معصوم سے گناہ نہ ہونا اختیار کی نفی نہیں، بلکہ اس بلند اخلاقی و روحانی شان کا تقاضا ہے جس کی بنا پر وہ منصب کے لیے منتخب ہے۔",
+      "علامہ عادل اور معصوم میں فرق واضح کرتے ہیں۔ کسی عادل شخص کے بارے میں ہمارا علم مشاہدے پر مبنی اور غلط ثابت ہونے والا ہوسکتا ہے؛ عصمت ایک زیادہ قطعی دینی ضمانت مانگتی ہے۔",
+      "پھر وہ قدرت اور اخلاقی کمال کی بنا پر گناہ نہ ہونے میں فرق کرتے ہیں۔ کوئی کام نہ ہونا اس لیے بھی ہوسکتا ہے کہ فاعل کمزور ہے، اور اس لیے بھی کہ وہ کام اس کے کمالِ ذات کے خلاف ہے۔ پہلی صورت نقص ہے، دوسری کمال۔",
+      "عدلِ الٰہی اس فرق کی مثال بنتا ہے: ظلم نہ ہونا قدرت کی کمی نہیں۔ اسی طرح معصوم سے گناہ نہ ہونا اختیار کی نفی نہیں، بلکہ اس بلند اخلاقی و روحانی شان کا تقاضا ہے جس کی بنا پر وہ منصب کے لیے منتخب ہے۔",
     ],
     materialEn: [
       "Naqvi distinguishes ordinary moral reliability from the stronger theological certainty implied by infallibility.",
@@ -153,9 +153,9 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "Divine justice becomes the analogy: God's not doing injustice is not lack of power; likewise, the infallible person's sinlessness need not negate freedom.",
     ],
     takeawaysUr: [
-      "عصمت کو عدالتِ عامہ سے stronger category کے طور پر واضح کیا گیا ہے۔",
+      "عصمت کو عدالتِ عامہ سے زیادہ بلند درجے کے طور پر واضح کیا گیا ہے۔",
       "قدرت کی کمی اور کمال کی بنا پر عدمِ وقوع میں فرق کیا گیا ہے۔",
-      "عدلِ الٰہی سے عصمت و اختیار کی compatibility سمجھائی گئی ہے۔",
+      "عدلِ الٰہی سے عصمت و اختیار کی مطابقت سمجھائی گئی ہے۔",
     ],
     takeawaysEn: [
       "Infallibility is distinguished from ordinary moral reliability.",
@@ -177,12 +177,12 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["ملائکہ", "عصمت", "ارادہ", "شعور", "اختیار"],
     topicsEn: ["angels", "infallibility", "volition", "consciousness", "freedom"],
     summaryUr:
-      "پانچویں مجلس دائرۂ بحث انسان سے ملائکہ تک بڑھاتی ہے۔ علامہ پہلے یہ طے کرتے ہیں کہ قابلِ تعریف بے گناہی وہ ہے جس میں شعور و ارادہ موجود ہو؛ پتھر یا درخت کا گناہ نہ کرنا اخلاقی فضیلت نہیں۔ پھر قرآن کی زبان سے ملائکہ کو صاحبِ شعور و ارادہ مخلوق کے طور پر پڑھ کر ان کی عصمت کو voluntary obedience کے طور پر سمجھاتے ہیں۔",
+      "پانچویں مجلس دائرۂ بحث انسان سے ملائکہ تک بڑھاتی ہے۔ علامہ پہلے یہ طے کرتے ہیں کہ قابلِ تعریف بے گناہی وہ ہے جس میں شعور و ارادہ موجود ہو؛ پتھر یا درخت کا گناہ نہ کرنا اخلاقی فضیلت نہیں۔ پھر قرآن کی زبان سے ملائکہ کو صاحبِ شعور و ارادہ مخلوق کے طور پر پڑھ کر ان کی عصمت کو اپنے اختیار سے اطاعت کے طور پر سمجھاتے ہیں۔",
     summaryEn:
       "The fifth majlis expands the discussion from human beings to angels. Naqvi first argues that morally praiseworthy sinlessness presupposes awareness and volition; the sinlessness of stones or trees is not virtue. He then reads Qur'anic language about angels as evidence of conscious, voluntary obedience.",
     materialUr: [
-      "یہ مجلس 'بے گناہی' اور 'اخلاقی عصمت' میں فرق کرتی ہے۔ جس میں شعور، ارادہ اور alternative action ہی نہیں، اس کا گناہ نہ کرنا تعریف کے قابل moral achievement نہیں۔",
-      "قرآنی تعبیرات میں ملائکہ کے لیے ایسے صیغے اور افعال آتے ہیں جو شعور و اطاعت کی طرف اشارہ کرتے ہیں۔ علامہ اسی linguistic observation سے angelic obedience کو mechanical programming نہیں رہنے دیتے۔",
+      "یہ مجلس 'بے گناہی' اور 'اخلاقی عصمت' میں فرق کرتی ہے۔ جس میں شعور، ارادہ اور دوسرا عمل کرنے کا اختیار ہی نہیں، اس کا گناہ نہ کرنا تعریف کے قابل اخلاقی کامیابی نہیں۔",
+      "قرآنی تعبیرات میں ملائکہ کے لیے ایسے صیغے اور افعال آتے ہیں جو شعور و اطاعت کی طرف اشارہ کرتے ہیں۔ علامہ الفاظ کے اسی جائزے سے فرشتوں کی اطاعت کو مشین کی طرح پابندی نہیں رہنے دیتے۔",
       "یہاں سے اگلا سوال پیدا ہوتا ہے: اگر فرشتے بھی ارادی طور پر گناہ نہیں کرتے اور انسانی معصوم بھی، تو دونوں کی عصمت میں فرق کہاں ہے؟ یہی مجلس 6 اور 7 کا دروازہ کھولتا ہے۔",
     ],
     materialEn: [
@@ -192,8 +192,8 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     ],
     takeawaysUr: [
       "اخلاقی فضیلت کے لیے شعور و ارادہ ضروری ہیں۔",
-      "ملائکہ کی اطاعت کو mechanical compulsion نہیں سمجھا گیا۔",
-      "comparison method سے اگلی مجلس کا سوال پیدا کیا گیا ہے۔",
+      "ملائکہ کی اطاعت کو بے اختیار پابندی نہیں سمجھا گیا۔",
+      "تقابل کے طریقے سے اگلی مجلس کا سوال پیدا کیا گیا ہے۔",
     ],
     takeawaysEn: [
       "Moral excellence presupposes awareness and volition.",
@@ -215,13 +215,13 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["ملائکہ", "انبیاء", "عصمت", "آدم", "اسماء", "انسان"],
     topicsEn: ["angels", "prophets", "infallibility", "Adam", "names", "humanity"],
     summaryUr:
-      "چھٹی مجلس میں علامہ دونوں طرح کی voluntary sinlessness کو تسلیم کرتے ہوئے فرق environment of temptation میں تلاش کرتے ہیں۔ فرشتوں کی اطاعت میں انسانی خواہشات اور گناہ کے محرکات کی وہ کشمکش موجود نہیں جو بشر میں ہے؛ اس لیے انسان کا جذبات اور خواہشات کے ہوتے ہوئے ان پر غالب رہنا زیادہ بلند اخلاقی achievement بن جاتا ہے۔",
+      "چھٹی مجلس میں علامہ دونوں طرح کی ارادی بے گناہی کو تسلیم کرتے ہوئے فرق خواہشات اور آزمائش کے حالات میں تلاش کرتے ہیں۔ فرشتوں کی اطاعت میں انسانی خواہشات اور گناہ کے محرکات کی وہ کشمکش موجود نہیں جو بشر میں ہے؛ اس لیے انسان کا جذبات اور خواہشات کے ہوتے ہوئے ان پر غالب رہنا زیادہ بلند اخلاقی کامیابی بن جاتا ہے۔",
     summaryEn:
       "The sixth majlis accepts voluntary obedience in both angels and human infallibles, then locates the difference in the environment of temptation. Angels do not face the same human drives and conflicts; human infallibility therefore represents a higher achievement because obedience is maintained amid competing impulses.",
     materialUr: [
-      "علامہ فرشتوں کی عظمت کا انکار نہیں کرتے؛ وہ comparative merit کا سوال اٹھاتے ہیں۔ voluntary obedience مشترک ہے، لیکن human embodiment کے ساتھ hunger, desire, anger اور worldly pressure جیسے محرکات بھی موجود ہیں۔",
-      "حضرت آدمؑ اور تعلیمِ اسماء کے قرآنی واقعے کو وہ انسانی ظرفیتِ علم اور فضیلت کے broader framework میں پڑھتے ہیں۔ ان کی توجہ صرف قصے پر نہیں بلکہ قرآن کے pronouns اور الفاظ تک جاتی ہے۔",
-      "منبری technique یہاں واضح ہے: پہلے common ground مانیں، پھر fine distinction نکالیں۔ فرشتوں کی تحقیر کیے بغیر انسانی عصمت کی اضافی دشواری اور فضیلت سمجھائی جاتی ہے۔",
+      "علامہ فرشتوں کی عظمت کا انکار نہیں کرتے؛ وہ فضیلت کے فرق کا سوال اٹھاتے ہیں۔ اپنے اختیار سے اطاعت مشترک ہے، لیکن انسانی وجود کے ساتھ بھوک، خواہش، غصہ اور دنیاوی دباؤ جیسے محرکات بھی موجود ہیں۔",
+      "حضرت آدمؑ اور تعلیمِ اسماء کے قرآنی واقعے کو وہ انسان کی علمی صلاحیت اور فضیلت کے وسیع تناظر میں پڑھتے ہیں۔ ان کی توجہ صرف قصے پر نہیں بلکہ قرآن کی ضمیروں اور الفاظ تک جاتی ہے۔",
+      "منبری طریقہ یہاں واضح ہے: پہلے مشترک اصول مانیں، پھر باریک فرق نکالیں۔ فرشتوں کی تحقیر کیے بغیر انسانی عصمت کی اضافی دشواری اور فضیلت سمجھائی جاتی ہے۔",
     ],
     materialEn: [
       "Naqvi does not diminish the angels; he asks a comparative question. Voluntary obedience is shared, but embodied human life includes hunger, desire, anger, and worldly pressures.",
@@ -229,9 +229,9 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "The preaching technique is to establish common ground first, then draw the finer distinction without demeaning either side.",
     ],
     takeawaysUr: [
-      "انسانی عصمت کی فضیلت temptation-bearing human condition سے جوڑی گئی ہے۔",
-      "تعلیمِ اسماء کو انسانی ظرفیت کے argument میں استعمال کیا گیا ہے۔",
-      "comparative theology میں پہلے مشترکات، پھر فرق واضح کیے گئے ہیں۔",
+      "انسانی عصمت کی فضیلت خواہشات اور آزمائش والے انسانی حالات سے جوڑی گئی ہے۔",
+      "تعلیمِ اسماء کو انسانی علمی صلاحیت کی دلیل میں استعمال کیا گیا ہے۔",
+      "دینی تصورات کے تقابل میں پہلے مشترکات، پھر فرق واضح کیے گئے ہیں۔",
     ],
     takeawaysEn: [
       "Human infallibility is linked to obedience amid human drives.",
@@ -253,13 +253,13 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["بشریت", "رسالت", "عصمت", "ملائکہ", "اسوہ", "اختیار"],
     topicsEn: ["humanity", "messengership", "infallibility", "angels", "exemplar", "freedom"],
     summaryUr:
-      "ساتویں مجلس میں علامہ ایک نہایت اہم correction کرتے ہیں: رسول یا امام کی عظمت ثابت کرنے کے لیے ان کی حقیقی بشریت کم نہیں کی جا سکتی۔ قرآن خود رسول کی بشریت پر اصرار کرتا ہے، کیونکہ اسوہ اور قابلِ اتباع نمونہ تبھی معنی رکھتا ہے جب بھوک، پیاس، جذبات اور انسانی ضرورتوں کے اندر اطاعت دکھائی جائے۔",
+      "ساتویں مجلس میں علامہ ایک نہایت اہم اصلاح کرتے ہیں: رسول یا امام کی عظمت ثابت کرنے کے لیے ان کی حقیقی بشریت کم نہیں کی جا سکتی۔ قرآن خود رسول کی بشریت پر اصرار کرتا ہے، کیونکہ اسوہ اور قابلِ اتباع نمونہ تبھی معنی رکھتا ہے جب بھوک، پیاس، جذبات اور انسانی ضرورتوں کے اندر اطاعت دکھائی جائے۔",
     summaryEn:
       "The seventh majlis makes an important correction: the greatness of a prophet or Imam should not be defended by diluting their real humanity. The Qur'an insists on the Prophet's humanity precisely because moral exemplarity requires obedience within hunger, thirst, emotion, and real human need.",
     materialUr: [
-      "علامہ دو opposite misunderstandings پر تنقید کرتے ہیں: ایک وہ جو بشر ہونے کی وجہ سے رسالت کو مشکل سمجھتا ہے، اور دوسرا وہ جو رسالت کی عظمت بچانے کے لیے بشر کو محض ظاہری بشر بنا دیتا ہے۔ قرآن کے نزدیک رسول حقیقی بشر ہے۔",
-      "یہ بشریت عصمت کے خلاف نہیں بلکہ اس کی عظمت کی شرط بنتی ہے۔ اگر بھوک، پیاس، خواہش اور درد حقیقتاً موجود نہ ہوں تو روزہ، صبر، ایثار اور ضبطِ نفس انسان کے لیے قابلِ تقلید model نہیں رہتے۔",
-      "منبر کے لیے یہ بہت طاقتور زاویہ ہے: معصومینؑ کو human relevance سے دور نہ کریں۔ ان کی عظمت یہی ہے کہ حقیقی انسانی حالات کے اندر وہ کامل obedience دکھاتے ہیں۔",
+      "علامہ دو متضاد غلط فہمیوں پر تنقید کرتے ہیں: ایک وہ جو بشر ہونے کی وجہ سے رسالت کو مشکل سمجھتا ہے، اور دوسرا وہ جو رسالت کی عظمت بچانے کے لیے بشر کو محض ظاہری بشر بنا دیتا ہے۔ قرآن کے نزدیک رسول حقیقی بشر ہے۔",
+      "یہ بشریت عصمت کے خلاف نہیں بلکہ اس کی عظمت کی شرط بنتی ہے۔ اگر بھوک، پیاس، خواہش اور درد حقیقتاً موجود نہ ہوں تو روزہ، صبر، ایثار اور ضبطِ نفس انسان کے لیے قابلِ تقلید نمونے نہیں رہتے۔",
+      "منبر کے لیے یہ بہت طاقتور زاویہ ہے: معصومینؑ کی سیرت کا انسانی زندگی سے تعلق واضح کریں۔ ان کی عظمت یہی ہے کہ حقیقی انسانی حالات کے اندر وہ کامل اطاعت دکھاتے ہیں۔",
     ],
     materialEn: [
       "Naqvi critiques two opposite errors: rejecting prophethood because the messenger is human, and protecting prophetic greatness by making humanity merely apparent. The Qur'an presents the messenger as genuinely human.",
@@ -268,8 +268,8 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     ],
     takeawaysUr: [
       "حقیقی بشریت کو عصمت کے خلاف نہیں بلکہ اسوائیت کی شرط سمجھا گیا ہے۔",
-      "قرآنی anthropological framing سے رسول و امام کی قابلِ اتباع حیثیت واضح کی گئی ہے۔",
-      "غلو اور reductionism دونوں سے بچنے کا منبری طریقہ ملتا ہے۔",
+      "قرآن میں بیان کردہ انسانی حالات سے رسول و امام کی قابلِ اتباع حیثیت واضح کی گئی ہے۔",
+      "غلو اور مقام کو گھٹا کر پیش کرنے، دونوں سے بچنے کا منبری طریقہ ملتا ہے۔",
     ],
     takeawaysEn: [
       "Real humanity is treated as a condition of moral exemplarity.",
@@ -291,13 +291,13 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["عصمت", "ضبط نفس", "امیرالمؤمنینؑ", "بشریت", "وفاداری", "کردار"],
     topicsEn: ["infallibility", "self-mastery", "Imam Ali", "humanity", "loyalty", "character"],
     summaryUr:
-      "آٹھویں مجلس پچھلی بحث کا عملی حاصل 'ضبطِ نفس' میں سمیٹتی ہے۔ انسانی معصوم میں وہی جذبات اور محرکات موجود ہیں جو بشر میں ہوتے ہیں، مگر وہ ان سے مغلوب نہیں ہوتا۔ علامہ اس اصول کو امیرالمؤمنینؑ کی تربیت، وفاداری، قربِ رسولؐ اور عملی کردار کے ذریعے concrete بناتے ہیں۔",
+      "آٹھویں مجلس پچھلی بحث کا عملی حاصل 'ضبطِ نفس' میں سمیٹتی ہے۔ انسانی معصوم میں وہی جذبات اور محرکات موجود ہیں جو بشر میں ہوتے ہیں، مگر وہ ان سے مغلوب نہیں ہوتا۔ علامہ اس اصول کو امیرالمؤمنینؑ کی تربیت، وفاداری، قربِ رسولؐ اور عملی کردار کے ذریعے واضح بناتے ہیں۔",
     summaryEn:
       "The eighth majlis condenses the previous argument into self-mastery. Human infallibles possess real human drives but are not mastered by them. Naqvi makes the principle concrete through Imam Ali's formation, loyalty, proximity to the Prophet, and sustained conduct.",
     materialUr: [
-      "علامہ human infallibility کی 'روح' ضبطِ نفس کو کہتے ہیں: خواہشات موجود ہیں، مگر decision-making پر حکومت نہیں کرتیں۔ یہ definition عصمت کو abstract metaphysical property سے اخلاقی self-government میں translate کرتی ہے۔",
-      "امیرالمؤمنینؑ کی رسولؐ کے زیر سایہ تربیت، کم سنی سے وفاداری، دعوتِ عشیرہ میں commitment اور بعد کے مراحل کو وہ اسی inner discipline کے historical manifestations کے طور پر پڑھتے ہیں۔",
-      "یہاں خطیب کے لیے بڑا practical bridge بنتا ہے: عصمت کا مقام مخصوص ہے، مگر ضبطِ نفس اس doctrine سے عام انسان کے لیے ethical aspiration کے طور پر نکلتا ہے۔ سامع معصوم نہیں بن سکتا، مگر نفس کے محرکات کا غلام نہ بننے کی تربیت ضرور لے سکتا ہے۔",
+      "علامہ انسانی عصمت کی 'روح' ضبطِ نفس کو کہتے ہیں: خواہشات موجود ہیں، مگر فیصلہ سازی پر حکومت نہیں کرتیں۔ یہ تعریف عصمت کو محض فلسفیانہ تصور نہیں رہنے دیتی، بلکہ اپنے نفس پر اختیار کی صورت میں سمجھاتی ہے۔",
+      "امیرالمؤمنینؑ کی رسولؐ کے زیر سایہ تربیت، کم سنی سے وفاداری، دعوتِ عشیرہ میں عہد اور بعد کے مراحل کو وہ اسی باطنی ضبط کی تاریخی مثالوں کے طور پر پڑھتے ہیں۔",
+      "یہاں خطیب کے لیے بڑا عملی ربط بنتا ہے: عصمت کا مقام مخصوص ہے، مگر ضبطِ نفس اس عقیدے سے عام انسان کے لیے اخلاقی مقصد کے طور پر نکلتا ہے۔ سامع معصوم نہیں بن سکتا، مگر نفس کے محرکات کا غلام نہ بننے کی تربیت ضرور لے سکتا ہے۔",
     ],
     materialEn: [
       "Naqvi describes self-mastery as the inner logic of human infallibility: desires are present but do not govern decision-making.",
@@ -305,9 +305,9 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
       "This creates a practical bridge: infallibility is a special theological station, but self-mastery becomes an ethical aspiration for every listener.",
     ],
     takeawaysUr: [
-      "عصمت کو ضبطِ نفس کے اخلاقی language میں translate کیا گیا ہے۔",
-      "امیرالمؤمنینؑ کی سیرت کو abstract doctrine کی concrete illustration بنایا گیا ہے۔",
-      "عقیدے سے عام سامع کے لیے practical ethical bridge نکالا گیا ہے۔",
+      "عصمت کو ضبطِ نفس کی اخلاقی زبان میں واضح کیا گیا ہے۔",
+      "امیرالمؤمنینؑ کی سیرت کو محض نظری عقیدے کی واضح مثال بنایا گیا ہے۔",
+      "عقیدے سے عام سامع کے لیے عملی اخلاقی ربط نکالا گیا ہے۔",
     ],
     takeawaysEn: [
       "Infallibility is translated into the ethical language of self-mastery.",
@@ -329,14 +329,14 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     topicsUr: ["نبوت", "رسالت", "امامت", "حضرت ابراہیمؑ", "عصمت", "جانشینی"],
     topicsEn: ["prophethood", "messengership", "Imamate", "Abraham", "infallibility", "succession"],
     summaryUr:
-      "آخری دستیاب مجلس میں علامہ عصمت کے مراتب کو مناصبِ الٰہی کے مراتب سے جوڑتے ہیں۔ حضرت ابراہیمؑ کے قرآنی امتحان اور «إِنِّي جَاعِلُكَ لِلنَّاسِ إِمَامًا» سے وہ نبوت، رسالت اور امامت کو ایک ہی سلسلۂ ہدایت کے مختلف مناصب کے طور پر distinguish کرتے ہیں، اور امامت کو ختمِ نبوت کے بعد بھی باقی رہنے والی الٰہی ہدایت کے منصب کے طور پر پیش کرتے ہیں۔",
+      "آخری دستیاب مجلس میں علامہ عصمت کے مراتب کو مناصبِ الٰہی کے مراتب سے جوڑتے ہیں۔ حضرت ابراہیمؑ کے قرآنی امتحان اور «إِنِّي جَاعِلُكَ لِلنَّاسِ إِمَامًا» سے وہ نبوت، رسالت اور امامت کو ایک ہی سلسلۂ ہدایت کے مختلف مناصب کے طور پر الگ واضح کرتے ہیں، اور امامت کو ختمِ نبوت کے بعد بھی باقی رہنے والی الٰہی ہدایت کے منصب کے طور پر پیش کرتے ہیں۔",
     summaryEn:
       "The final available majlis connects ranks of infallibility with ranks of divinely granted guidance. Using Abraham's trial and Qur'an 2:124, Naqvi distinguishes prophethood, messengership, and Imamate as different offices within one architecture of guidance, with Imamate continuing as a divine office after the end of prophethood.",
     materialUr: [
-      "علامہ روشنی کے مختلف درجات کی مثال سے کہتے ہیں کہ سب معصوم یکساں مرتبے کے نہیں۔ عصمت مشترک حقیقت ہے، مگر اس کے مراتب ہوسکتے ہیں؛ اسی طرح نبوت، رسالت اور امامت guidance کے ایک family of offices ہیں، مگر ان کے درجات اور functions مختلف ہیں۔",
-      "حضرت ابراہیمؑ کے بارے میں قرآن 2:124 کو وہ decisive text بناتے ہیں: ابراہیمؑ پہلے ہی نبی و رسول ہیں، امتحانات کے بعد «إِنِّي جَاعِلُكَ لِلنَّاسِ إِمَامًا» کہا جاتا ہے۔ اس ترتیب سے وہ امامت کو محض نبوت کا synonym نہیں بلکہ distinct divine office کے طور پر پڑھتے ہیں۔",
-      "«لَا يَنَالُ عَهْدِي الظَّالِمِينَ» کو وہ اس منصب کے ethical qualification سے جوڑتے ہیں۔ divine appointment کی بحث پھر succession تک پہنچتی ہے: جس authority نے اصل منصب دار مقرر کیا، جانشینی کا معیار اور تقرر بھی اسی authority کے دائرے میں سمجھا جائے گا۔",
-      "منبری طور پر یہ مجلس classification → Qur'anic case study → moral qualification → succession کا بہت صاف argumentative flow دیتی ہے۔",
+      "علامہ روشنی کے مختلف درجات کی مثال سے کہتے ہیں کہ سب معصوم یکساں مرتبے کے نہیں۔ عصمت مشترک حقیقت ہے، مگر اس کے مراتب ہوسکتے ہیں؛ اسی طرح نبوت، رسالت اور امامت ایک سلسلۂ ہدایت کے منصب ہیں، مگر ان کے درجات اور ذمہ داریاں مختلف ہیں۔",
+      "حضرت ابراہیمؑ کے بارے میں قرآن 2:124 کو وہ واضح دلیل بناتے ہیں: ابراہیمؑ پہلے ہی نبی و رسول ہیں، امتحانات کے بعد «إِنِّي جَاعِلُكَ لِلنَّاسِ إِمَامًا» کہا جاتا ہے۔ اس ترتیب سے وہ امامت کو محض نبوت کا ہم معنی لفظ نہیں بلکہ الگ الٰہی منصب کے طور پر پڑھتے ہیں۔",
+      "«لَا يَنَالُ عَهْدِي الظَّالِمِينَ» کو وہ اس منصب کی اخلاقی اہلیت سے جوڑتے ہیں۔ الٰہی تقرر کی بحث پھر جانشینی تک پہنچتی ہے: جس صاحبِ اختیار نے اصل منصب دار مقرر کیا، جانشینی کا معیار اور تقرر بھی اسی صاحبِ اختیار کے دائرے میں سمجھا جائے گا۔",
+      "منبری طور پر یہ مجلس تقسیم → قرآنی واقعے کا مطالعہ → اخلاقی اہلیت → جانشینی تک دلائل کی واضح ترتیب پیش کرتی ہے۔",
     ],
     materialEn: [
       "Using degrees of light, Naqvi argues that infallibility can have ranks even while remaining one shared reality; likewise prophethood, messengership, and Imamate belong to one family of guidance while remaining distinct offices.",
@@ -346,9 +346,9 @@ export const NAQQAN_ASHRA_EVIDENCE: readonly SpeakerEvidence[] = [
     ],
     takeawaysUr: [
       "نبوت، رسالت اور امامت کو ایک ہی ہدایت کے مختلف منصب قرار دیا گیا ہے۔",
-      "قرآن 2:124 سے امامت کی distinct حیثیت argue کی گئی ہے۔",
-      "عہدِ الٰہی اور اخلاقی qualification کو جوڑا گیا ہے۔",
-      "divine appointment سے succession کا منبری argument بنایا گیا ہے۔",
+      "قرآن 2:124 سے امامت کی الگ حیثیت ثابت کی گئی ہے۔",
+      "عہدِ الٰہی اور اخلاقی اہلیت کو جوڑا گیا ہے۔",
+      "الٰہی تقرر سے جانشینی کی منبری دلیل بنائی گئی ہے۔",
     ],
     takeawaysEn: [
       "Prophethood, messengership, and Imamate are distinct offices within one architecture of guidance.",

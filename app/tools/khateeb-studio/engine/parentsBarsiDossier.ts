@@ -20,7 +20,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       refEn: "Qur'an 17:23",
       quranLocation: { surah: 17, ayah: 23 },
       sourceRefUr:
-        "سورۂ اسراء 17:23 — قلم ورکس Indo-Pak Quran Text v1.0، ماخذ ahmedgraf.com",
+        "سورۂ اسراء 17:23 — قلم ورکس کا برصغیری قرآنی متن، نسخہ ۱، ماخذ ahmedgraf.com",
       sourceRefEn:
         "Qur'an 17:23 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
       explanationUr:
@@ -35,7 +35,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       refEn: "Qur'an 17:24",
       quranLocation: { surah: 17, ayah: 24 },
       sourceRefUr:
-        "سورۂ اسراء 17:24 — قلم ورکس Indo-Pak Quran Text v1.0، ماخذ ahmedgraf.com",
+        "سورۂ اسراء 17:24 — قلم ورکس کا برصغیری قرآنی متن، نسخہ ۱، ماخذ ahmedgraf.com",
       sourceRefEn:
         "Qur'an 17:24 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
       explanationUr:
@@ -50,7 +50,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       refEn: "Qur'an 31:14",
       quranLocation: { surah: 31, ayah: 14 },
       sourceRefUr:
-        "سورۂ لقمان 31:14 — قلم ورکس Indo-Pak Quran Text v1.0، ماخذ ahmedgraf.com",
+        "سورۂ لقمان 31:14 — قلم ورکس کا برصغیری قرآنی متن، نسخہ ۱، ماخذ ahmedgraf.com",
       sourceRefEn:
         "Qur'an 31:14 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
       explanationUr:
@@ -65,7 +65,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
       refEn: "Qur'an 46:15",
       quranLocation: { surah: 46, ayah: 15 },
       sourceRefUr:
-        "سورۂ احقاف 46:15 — قلم ورکس Indo-Pak Quran Text v1.0، ماخذ ahmedgraf.com",
+        "سورۂ احقاف 46:15 — قلم ورکس کا برصغیری قرآنی متن، نسخہ ۱، ماخذ ahmedgraf.com",
       sourceRefEn:
         "Qur'an 46:15 — Qalam Works Indo-Pak Quran Text v1.0, source ahmedgraf.com",
       explanationUr:
@@ -392,7 +392,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
           explanation:
             "آیت اللہ ابراہیم امینیؒ باب کے آغاز میں والدین کے بلند مقام کو تسلیم کرنے کے بعد خود سوال اٹھاتے ہیں کہ کیا صرف پیدائش، دودھ پلانا اور خرچ اٹھانا اس مقام کی پوری وجہ ہے؟ پھر وہ یک طرفہ حق کے تصور کو رد کرتے ہیں اور واضح کرتے ہیں کہ جیسے والدین کا اولاد پر حق ہے، اولاد کا بھی والدین پر حق ہے۔ ان کے استدلال کا مرکزی رخ یہی ہے کہ والدین کا مقام ان کی عظیم تربیتی ذمہ داری سے جدا نہیں کیا جا سکتا۔",
           exactRef:
-            "آیت اللہ ابراہیم امینیؒ، Principles of Upbringing Children، Chapter 1: The Parents Responsibility، ابتدائی حصہ؛ اسی باب میں حقوقِ اولاد کے لیے متعدد روایات نقل کی گئی ہیں۔",
+            "آیت اللہ ابراہیم امینیؒ، تربیتِ اولاد کے اصول، باب ۱: والدین کی ذمہ داری، ابتدائی حصہ؛ اسی باب میں حقوقِ اولاد کے لیے متعدد روایات نقل کی گئی ہیں۔",
           sourceUrl:
             "https://al-islam.org/principles-upbringing-children-ibrahim-amini/chapter-1-parents-responsibility",
         },
@@ -401,7 +401,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
           explanation:
             "امینیؒ صاف لکھتے ہیں کہ بچے کی نیکی یا بدی اس تربیت سے گہرا تعلق رکھتی ہے جو اسے والدین سے ملتی ہے، اور والدین انسانی شخصیت کو بنانے والے اسباب میں سے ہیں۔ وہ مطلوبہ تربیت کو اخلاق، خیر خواہی، عدل، دانائی، دیانت، ذمہ داری، محنت، علم اور ایمان جیسے اوصاف سے بیان کرتے ہیں۔ اس بنا پر ان کے ہاں والدین کی بڑی خدمت جسمانی نگہداشت سے آگے بڑھ کر شخصیت سازی ہے۔",
           exactRef:
-            "وہی، Chapter 1: The Parents Responsibility، حصہ جس کا آغاز بچے کے طرزِ زندگی کی تشکیل اور والدین کی ذمہ داری سے ہوتا ہے؛ بعد میں مطلوبہ اوصاف کی تفصیلی فہرست آتی ہے۔",
+            "وہی، باب ۱: والدین کی ذمہ داری، حصہ جس کا آغاز بچے کے طرزِ زندگی کی تشکیل اور والدین کی ذمہ داری سے ہوتا ہے؛ بعد میں مطلوبہ اوصاف کی تفصیلی فہرست آتی ہے۔",
           sourceUrl:
             "https://al-islam.org/principles-upbringing-children-ibrahim-amini/chapter-1-parents-responsibility",
         },
@@ -410,7 +410,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
           explanation:
             "امینیؒ اپنا استدلال فرد سے معاشرے تک لے جاتے ہیں۔ ان کے مطابق آج کے بچے کل کے شہری، والدین، اساتذہ اور مختلف اجتماعی ذمہ داریوں کے حامل ہوں گے؛ اس لیے اچھی یا خراب تربیت کا اثر آنے والے معاشرے پر پڑتا ہے۔ اسی بنیاد پر وہ والدین کو صرف اپنے بچے کے سامنے نہیں بلکہ معاشرے کے سامنے بھی جواب دہ سمجھتے۔ یہ ان کے باب کا ایک مستقل اجتماعی نتیجہ ہے، محض ہماری منبری توسیع نہیں۔",
           exactRef:
-            "وہی، Chapter 1: The Parents Responsibility، پیراگراف: “The parents are also answerable to the society” سے شروع ہونے والی بحث۔",
+            "وہی، باب ۱: والدین کی ذمہ داری، والدین کے معاشرے کے سامنے جواب دہ ہونے کی بحث۔",
           sourceUrl:
             "https://al-islam.org/principles-upbringing-children-ibrahim-amini/chapter-1-parents-responsibility",
         },
@@ -419,7 +419,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
           explanation:
             "باب کے آخری حصے میں امینیؒ ماں کی تربیتی ذمہ داری کو خاص اہمیت دیتے ہیں، کیونکہ بچپن کا بڑا حصہ ماں کے ساتھ گزرتا ہے اور مستقبل کی سمت کی بنیاد اسی دور میں پڑتی ہے۔ ان کا اصل زور اس بات پر ہے کہ انسان سازی کی یہ خدمت ظاہری سماجی عہدوں سے کم اہم نہیں۔ اس نکتے کو بیان کرتے وقت ان کے اپنے تاریخی و سماجی سیاق کو ملحوظ رکھنا چاہیے اور اسے جدید پیشہ ورانہ کرداروں پر حکم لگانے کے لیے بڑھانا نہیں چاہیے۔",
           exactRef:
-            "وہی، Chapter 1: The Parents Responsibility، آخری حصہ: “The mothers in particular bear more responsibility…” سے شروع ہونے والی بحث۔",
+            "وہی، باب ۱: والدین کی ذمہ داری، آخری حصہ: ماؤں کی زیادہ ذمہ داری سے متعلق بحث۔",
           sourceUrl:
             "https://al-islam.org/principles-upbringing-children-ibrahim-amini/chapter-1-parents-responsibility",
         },
@@ -503,7 +503,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
           explanation:
             "محمدی ری شہریؒ اس باب میں اپنا مستقل فلسفیانہ استدلال پیش کرنے کے بجائے قرآن اور روایات کو موضوعاتی ترتیب سے جمع کرتے ہیں۔ باب 2.1 میں والدین کے حق کی اہمیت، 2.2 میں عملی حقوق، 2.3 میں جامع حقوق، اور 2.4 میں برِّ والدین کی برکات رکھی گئی ہیں۔ اس لیے خطیب اسٹوڈیو میں ان کے نام سے وہی بات منسوب ہونی چاہیے جو اس مرتب حدیثی ساخت یا ان کے واضح باب بندی سے ثابت ہو۔",
           exactRef:
-            "آیت اللہ محمد محمدی ری شہریؒ، Children in the Qur’an and Sunnah، Chapter 2: The Children’s Duties towards their Parents، حصے 2.1 تا 2.4۔",
+            "آیت اللہ محمد محمدی ری شہریؒ، قرآن و سنت میں بچے، باب ۲: والدین کے لیے بچوں کی ذمہ داریاں، حصے 2.1 تا 2.4۔",
           sourceUrl:
             "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
         },
@@ -512,7 +512,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
           explanation:
             "حصہ 2.2 میں ری شہریؒ امام صادقؑ کی روایت نمبر 429 لاتے ہیں، جس میں احسان کو اچھا ساتھ دینے اور والدین کی ضرورت کو اس حد تک پہلے سے پورا کرنے سے جوڑا گیا ہے کہ انہیں مانگنا نہ پڑے، خواہ وہ صاحبِ استطاعت ہوں۔ اسی مقام کے حاشیے میں الکافی ج2، ص157، ح1 اور مشکاۃ الانوار ص282، ح854 کا حوالہ دیا گیا ہے۔",
           exactRef:
-            "وہی، 2.2 A) Doing Good، حدیث 429؛ الکافی، ج2، ص157، ح1؛ مشکاۃ الانوار، ص282، ح854۔",
+            "وہی، ۲.۲، الف: نیکی کرنا، حدیث 429؛ الکافی، ج2، ص157، ح1؛ مشکاۃ الانوار، ص282، ح854۔",
           sourceUrl:
             "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
         },
@@ -521,7 +521,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
           explanation:
             "حصہ 2.3 میں امام صادقؑ کی روایت نمبر 445 تین جامع حقوق گنواتی ہے: ہر حال میں والدین کا شکر، گناہ کے علاوہ ان کے جائز امر و نہی کی اطاعت، اور پوشیدہ و علانیہ ان کی خیر خواہی۔ ری شہریؒ نے اس روایت کے لیے تحف العقول ص322 اور بحار الانوار ج78، ص236، ح67 کا حوالہ درج کیا ہے۔",
           exactRef:
-            "وہی، 2.3 General Rights of Parents، حدیث 445؛ تحف العقول، ص322؛ بحار الانوار، ج78، ص236، ح67۔",
+            "وہی، ۲.۳: والدین کے عمومی حقوق، حدیث 445؛ تحف العقول، ص322؛ بحار الانوار، ج78، ص236، ح67۔",
           sourceUrl:
             "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
         },
@@ -530,7 +530,7 @@ export const PARENTS_BARSI_DOSSIER: SermonDossier = {
           explanation:
             "حصہ 2.4 میں روایت نمبر 447 والدین کی وفات کے بعد بھی نیکی کرنے والے شخص کو قیامت کے دن نیکوکاروں میں ممتاز قرار دیتی ہے۔ اسی کتاب کے حاشیے میں اس روایت کا حوالہ بحار الانوار ج74، ص86، ح100 دیا گیا ہے، اور سندی ماخذ کے طور پر کتاب الامامۃ والتبصرۃ سے سکونی، امام صادقؑ، ان کے آباءؑ کے ذریعے نقل کی نشان دہی کی گئی ہے۔",
           exactRef:
-            "وہی، 2.4 The Benefits of Doing Good to Parents، حدیث 447؛ بحار الانوار، ج74، ص86، ح100؛ عن کتاب الامامۃ والتبصرۃ، عن السکونی، عن الامام الصادقؑ، عن آبائہؑ۔",
+            "وہی، ۲.۴: والدین کے ساتھ نیکی کے فوائد، حدیث 447؛ بحار الانوار، ج74، ص86، ح100؛ عن کتاب الامامۃ والتبصرۃ، عن السکونی، عن الامام الصادقؑ، عن آبائہؑ۔",
           sourceUrl:
             "https://al-islam.org/children-quran-and-sunnah-muhammadi-reyshahri/chapter-2-childrens-duties-towards-their-parents",
         },

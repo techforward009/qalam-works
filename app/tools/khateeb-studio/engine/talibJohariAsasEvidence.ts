@@ -313,7 +313,7 @@ export const TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE: readonly SpeakerEvidence[] = [
       "Place desire and anger under the moral criterion.",
     ],
     sourceLabelUr:
-      "اصل کتاب «اساس آدمیت اور قرآن» — ساتویں مجلس، دستیاب کتابی صفحات 118 تا 130؛ ابتدائی صفحات scan میں موجود نہیں",
+      "اصل کتاب «اساس آدمیت اور قرآن» — ساتویں مجلس، دستیاب کتابی صفحات 118 تا 130؛ ابتدائی صفحات عکس میں موجود نہیں",
     sourceLabelEn:
       "Original book Asas-e-Adamiyat aur Qur'an — Majlis 7, surviving printed pp. 118–130; opening pages are missing from the scan",
     sourceUrl: SOURCE_URL,

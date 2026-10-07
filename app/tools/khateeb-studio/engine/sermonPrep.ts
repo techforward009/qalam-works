@@ -88,7 +88,7 @@ const ASKARI: SermonPrep = {
   ],
   anglesUr: [
     "امامت کو صرف سیاسی اقتدار کے بجائے ہدایت، تعلیم اور اخلاقی قیادت کے نظام کے طور پر پیش کریں۔",
-    "سامرہ کی محدود فضا کو پس منظر بنائیں، مگر مجلس کو محض سوانحی chronology نہ بننے دیں۔",
+    "سامرہ کی محدود فضا کو پس منظر بنائیں، مگر مجلس کو محض سوانحی واقعات کی ترتیب نہ بننے دیں۔",
     "امامؑ کے مختصر اخلاقی کلمات سے آج کے معاشرتی رویّوں—غیبت، دو رخی، غصہ، حقوق العباد—کی طرف آئیں۔",
     "غیبتِ صغریٰ سے پہلے شیعہ نیٹ ورک اور نمائندگی کے تصور کو 'ذمہ دار دینداری' کے عنوان سے جوڑیں۔",
   ],
@@ -116,12 +116,12 @@ const TAWWABIN: SermonPrep = {
     { ref: "الانفال 8:25", arabic: "وَاتَّقُوا فِتْنَةً لَا تُصِيبَنَّ الَّذِينَ ظَلَمُوا مِنْكُمْ خَاصَّةً", ur: "اجتماعی بے عملی کے اثرات فرد سے آگے پوری جماعت تک کیسے پہنچتے ہیں—اس زاویے کے لیے۔", en: "Use this to discuss how collective failure can spread consequences beyond the original wrongdoers." },
   ],
   sources: [
-    { labelUr: "تاریخ الطبری — حوادث 65ھ", labelEn: "al-Tabari — events of 65 AH", detailUr: "قیام توابین کی chronology، شخصیات اور عین الوردہ کے واقعات کی تاریخی جانچ کے لیے۔", detailEn: "For chronology, principal figures, and the events around Ayn al-Warda." },
+    { labelUr: "تاریخ الطبری — حوادث 65ھ", labelEn: "al-Tabari — events of 65 AH", detailUr: "قیام توابین کی تاریخی ترتیب، شخصیات اور عین الوردہ کے واقعات کی تاریخی جانچ کے لیے۔", detailEn: "For chronology, principal figures, and the events around Ayn al-Warda." },
     { labelUr: "انساب الاشراف — بلاذری", labelEn: "Ansab al-Ashraf — al-Baladhuri", detailUr: "کوفہ کی سیاسی و قبائلی فضا اور بعد از کربلا حرکتوں کے تقابلی مطالعے کے لیے۔", detailEn: "For comparative study of Kufa's political and tribal setting after Karbala." },
-    { labelUr: "الاخبار الطوال — دینوری", labelEn: "al-Akhbar al-Tiwal — al-Dinawari", detailUr: "واقعات کی دوسری قدیم تاریخی روایت؛ تفصیلات کو طبری و بلاذری سے cross-check کریں۔", detailEn: "An additional early historical narrative; cross-check details with Tabari and Baladhuri." },
+    { labelUr: "الاخبار الطوال — دینوری", labelEn: "al-Akhbar al-Tiwal — al-Dinawari", detailUr: "واقعات کی دوسری قدیم تاریخی روایت؛ تفصیلات کو طبری و بلاذری سے ملا کر جانچیں۔", detailEn: "An additional early historical narrative; cross-check details with Tabari and Baladhuri." },
   ],
   anglesUr: [
-    "'وقت پر نصرت' اور 'بعد کی ندامت' میں فرق—یہی مرکزی tension بن سکتا ہے۔",
+    "'وقت پر نصرت' اور 'بعد کی ندامت' میں فرق—یہی مرکزی سوال بن سکتا ہے۔",
     "توبہ کی تین سطحیں: اعتراف، اصلاح، اور آئندہ صحیح موقف اختیار کرنا۔",
     "اجتماعی فیصلوں میں خاموش اکثریت کی اخلاقی ذمہ داری۔",
     "کربلا کو محض ماضی نہ بنائیں: آج حق واضح ہونے کے بعد تاخیر، مصلحت اور خاموشی کہاں ہمارے فیصلے بدلتی ہے؟",
@@ -151,7 +151,7 @@ const FATIMA: SermonPrep = {
   ],
   sources: [
     { labelUr: "قرآن و منتخب امامیہ تفاسیر", labelEn: "Qur'an with selected Imami tafsir", detailUr: "آیاتِ تطہیر، مودّت، مباہلہ اور سورۂ انسان کی تفسیری نسبتیں اصل تفسیر سے نقل کریں۔", detailEn: "Check the tafsir directly for the Imami readings of purification, mawaddah, mubahala, and Surat al-Insan." },
-    { labelUr: "نہج البلاغہ — خطب و کلماتِ امیرالمؤمنینؑ", labelEn: "Nahj al-Balagha — sermons and sayings of Imam Ali", detailUr: "رسولؐ سے نسبت، حق، صبر اور بعد از رسولؐ حالات کے اخلاقی تناظر کے لیے؛ عبارت کا مقام verify کریں۔", detailEn: "For themes of closeness to the Prophet, rights, patience, and the post-Prophetic setting; verify the exact passage before quotation." },
+    { labelUr: "نہج البلاغہ — خطب و کلماتِ امیرالمؤمنینؑ", labelEn: "Nahj al-Balagha — sermons and sayings of Imam Ali", detailUr: "رسولؐ سے نسبت، حق، صبر اور بعد از رسولؐ حالات کے اخلاقی تناظر کے لیے؛ اصل ماخذ میں عبارت کا مقام دیکھیں۔", detailEn: "For themes of closeness to the Prophet, rights, patience, and the post-Prophetic setting; verify the exact passage before quotation." },
     { labelUr: "قدیم تاریخی و حدیثی مصادر کی تقابلی جانچ", labelEn: "Cross-check early historical and hadith sources", detailUr: "فاطمیہ کی تاریخوں اور واقعات میں متعدد روایات ہیں؛ تاریخ اور استدلال کو ایک دوسرے میں خلط نہ کریں۔", detailEn: "Reports differ on dates and historical detail; keep chronology distinct from theological argument." },
   ],
   anglesUr: [
@@ -188,16 +188,16 @@ const MASUMA: SermonPrep = {
     { labelUr: "امام رضاؑ کے عہد کے تاریخی مصادر", labelEn: "Historical sources for the age of Imam al-Rida", detailUr: "مامون کے دور، امام رضاؑ کی خراسان آمد اور اہل بیتؑ کے سفر کے سیاسی پس منظر کے لیے۔", detailEn: "For the political setting of al-Ma'mun's period, Imam al-Rida's move to Khurasan, and journeys by members of the Prophet's family." },
   ],
   anglesUr: [
-    "حضرت معصومہؑ کے ذکر کو قم کی علمی مرکزیت کے ساتھ جوڑیں، مگر بعد کے تاریخی نتائج کو اصل واقعے پر reverse-project نہ کریں۔",
+    "حضرت معصومہؑ کے ذکر کو قم کی علمی مرکزیت کے ساتھ جوڑیں، مگر بعد کے تاریخی نتائج کو اصل واقعے کا حصہ بنا کر پیش نہ کریں۔",
     "دینی سفر اور قربانی: انسان اپنے آرام کے دائرے سے کب باہر نکلتا ہے؟",
-    "خاندانِ اہل بیتؑ کی خواتین کو صرف مصیبت کے باب میں نہیں بلکہ علم، وفاداری اور دینی agency کے باب میں بھی پیش کریں۔",
+    "خاندانِ اہل بیتؑ کی خواتین کو صرف مصیبت کے باب میں نہیں بلکہ علم، وفاداری اور دینی ذمہ داری اور کردار کے باب میں بھی پیش کریں۔",
   ],
   anglesEn: [
     "Connect Lady Masuma with Qum's later scholarly centrality without projecting later history back onto the original event.",
     "Use the journey as a question of religious sacrifice: when does faith require leaving comfort behind?",
     "Present women of Ahl al-Bayt not only through suffering, but through knowledge, loyalty, and religious agency.",
   ],
-  cautionUr: "سوانحی جزئیات اور وفات کی تاریخ مختلف ماخذوں میں مختلف ہو سکتی ہے؛ خطبے میں source-specific attribution برقرار رکھیں۔",
+  cautionUr: "سوانحی جزئیات اور وفات کی تاریخ مختلف ماخذوں میں مختلف ہو سکتی ہے؛ خطبے میں ہر بات کے ساتھ اس کے اصل ماخذ کی نسبت برقرار رکھیں۔",
   cautionEn: "Biographical details and dates can vary across sources; retain source-specific attribution in the sermon.",
 };
 
@@ -215,12 +215,12 @@ const MUKHTAR: SermonPrep = {
     { ref: "النحل 16:90", arabic: "اِنَّ اللّٰهَ يَاْمُرُ بِالْعَدْلِ وَالْاِحْسَانِ", ur: "عدل اور احسان کے جامع اخلاقی اصول سے اختتام بنایا جا سکتا ہے۔", en: "Use the combined command of justice and excellence as a closing ethical frame." },
   ],
   sources: [
-    { labelUr: "تاریخ الطبری — حوادث 66-67ھ", labelEn: "al-Tabari — events of 66-67 AH", detailUr: "کوفہ، مختار، ابن زبیر اور اموی سیاسی کشمکش کی chronology کے لیے۔", detailEn: "For chronology of Kufa, al-Mukhtar, Ibn al-Zubayr, and the Umayyad political struggle." },
+    { labelUr: "تاریخ الطبری — حوادث 66-67ھ", labelEn: "al-Tabari — events of 66-67 AH", detailUr: "کوفہ، مختار، ابن زبیر اور اموی سیاسی کشمکش کی تاریخی ترتیب کے لیے۔", detailEn: "For chronology of Kufa, al-Mukhtar, Ibn al-Zubayr, and the Umayyad political struggle." },
     { labelUr: "انساب الاشراف — بلاذری", labelEn: "Ansab al-Ashraf — al-Baladhuri", detailUr: "شخصیات اور سیاسی گروہوں کے تقابلی تاریخی مواد کے لیے۔", detailEn: "For comparative historical material on actors and political groupings." },
   ],
   anglesUr: [
     "عدل اور انتقام میں فرق: خطبے کا اخلاقی مرکز یہی ہو سکتا ہے۔",
-    "مختار کے بارے میں مدح و قدح کی روایات کو یکجا کرکے source criticism کا اصول سامنے رکھیں۔",
+    "مختار کے بارے میں مدح و قدح کی روایات کو یکجا کرکے ماخذ کی علمی جانچ کا اصول سامنے رکھیں۔",
     "کوفہ کی مسلسل سیاسی تبدیلی کو کربلا کے بعد کے اجتماعی بحران سے جوڑیں۔",
   ],
   anglesEn: [
@@ -255,13 +255,13 @@ export function getSermonPrep(event: ShiaCalendarEvent | undefined): SermonPrep 
       {
         labelUr: "تقویمی ماخذ",
         labelEn: "Calendar source",
-        detailUr: "پہلے مناسبت کی تاریخ اور بنیادی شناخت موجودہ source record سے verify کریں، پھر تاریخی و حدیثی مصادر کی طرف جائیں۔",
+        detailUr: "پہلے مناسبت کی تاریخ اور بنیادی شناخت موجود ماخذ سے جانچیں، پھر تاریخی و حدیثی مصادر کی طرف جائیں۔",
         detailEn: "First verify the date and basic identification from the stored calendar source, then move to historical and hadith sources.",
         url: event.sourceUrl,
       },
     ],
     anglesUr: [
-      "واقعے کی chronology اور اس کے دینی معنی کو الگ رکھیں۔",
+      "واقعے کی تاریخی ترتیب اور اس کے دینی معنی کو الگ رکھیں۔",
       "ایک بنیادی سوال منتخب کریں؛ بہت سے غیر مربوط نکات جمع نہ کریں۔",
       "کم از کم ایک اصل/قدیم ماخذ اور ایک معتبر علمی شرح ضرور دیکھیں۔",
       "اختتام میں سامع کے لیے ایک واضح عملی نتیجہ دیں۔",

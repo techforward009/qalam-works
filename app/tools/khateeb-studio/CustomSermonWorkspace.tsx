@@ -500,7 +500,7 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button type="button" onClick={printActive} className="flex items-center gap-2 rounded-lg border border-[#1A3A2A]/20 px-3 py-2 text-xs font-semibold">
-                      <Printer className="h-4 w-4" />{ur ? "مسودہ پرنٹ کریں / PDF محفوظ کریں" : "Print draft / Save PDF"}
+                      <Printer className="h-4 w-4" />{ur ? "مسودہ چھاپیں / پی ڈی ایف محفوظ کریں" : "Print draft / Save PDF"}
                     </button>
                     <button
                       type="button"

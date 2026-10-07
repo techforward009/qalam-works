@@ -1495,7 +1495,7 @@ export default function KhateebStudioContent({
                     className="inline-flex items-center gap-2 rounded-lg border border-[#1A3A2A]/15 bg-white px-4 py-2 text-sm font-semibold text-[#1A3A2A] hover:border-[#B8935A] dark:border-[#4b594f] dark:bg-[#162a1e] dark:text-[#d7e1d9]"
                   >
                     <Printer className="h-4 w-4" />
-                    {ur ? "مجلس پرنٹ کریں / PDF محفوظ کریں" : "Print / Save PDF"}
+                    {ur ? "مجلس چھاپیں / پی ڈی ایف محفوظ کریں" : "Print / Save PDF"}
                   </button>
                   <button
                     type="button"
@@ -1829,7 +1829,7 @@ export default function KhateebStudioContent({
                           </h4>
                           <p className="mt-2 max-w-3xl text-sm leading-7 text-[#445247] dark:text-[#b8c8bb]">
                             {ur
-                              ? "اصل آیات اور روایات مصدقہ ماخذ سے لی گئی ہیں۔ علمی توضیح صرف source-grounded اندراج سے آتی ہے۔ تمہید، ربط، جمع بندی اور اختتام الگ تدوینی حصے ہیں۔"
+                              ? "اصل آیات اور روایات مصدقہ ماخذ سے لی گئی ہیں۔ علمی توضیح صرف اصل ماخذ پر مبنی اندراج سے آتی ہے۔ تمہید، ربط، جمع بندی اور اختتام الگ تدوینی حصے ہیں۔"
                               : "Verses and narrations come from verified sources. Scholarly explanation is drawn only from source-grounded records. Opening, transitions, synthesis, and closing remain separate editorial layers."}
                           </p>
                         </div>
@@ -2941,7 +2941,7 @@ export default function KhateebStudioContent({
                   className="inline-flex items-center gap-2 rounded-lg border border-[#1A3A2A]/15 bg-white px-3.5 py-2 text-xs font-semibold text-[#1A3A2A] hover:border-[#B8935A] dark:border-[#4b594f] dark:bg-[#162a1e] dark:text-[#d7e1d9]"
                 >
                   <Printer className="h-3.5 w-3.5" />
-                  {ur ? "پرنٹ / PDF" : "Print / PDF"}
+                  {ur ? "چھاپیں / پی ڈی ایف" : "Print / PDF"}
                 </button>
               </div>
             </div>
@@ -3123,7 +3123,7 @@ export default function KhateebStudioContent({
               ) : (
                 <p className="mt-3 rounded-lg border border-dashed border-[#1A3A2A]/15 bg-[#F7F5EF] p-3 text-sm leading-7 text-[#5f6f61] dark:border-[#35513d] dark:bg-[#0e1c15] dark:text-[#a8c8b0]">
                   {ur
-                    ? "اس مناسبت سے واضح طور پر منسلک کسی عالم کا اصل مواد ابھی corpus میں شامل نہیں ہوا؛ قلم یہاں عمومی مواد کو کسی عالم کی طرف منسوب نہیں کرے گا۔"
+                    ? "اس مناسبت سے واضح طور پر منسلک کسی عالم کا اصل مواد ابھی کتابی ذخیرے میں شامل نہیں ہوا؛ قلم یہاں عمومی مواد کو کسی عالم کی طرف منسوب نہیں کرے گا۔"
                     : "No scholar material explicitly linked to this occasion has been ingested yet; Qalam will not turn generic material into an attribution."}
                 </p>
               )}

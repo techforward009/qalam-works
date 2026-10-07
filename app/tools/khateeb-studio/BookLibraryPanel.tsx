@@ -38,7 +38,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
   const dialog = useRef<HTMLDialogElement>(null);
   const feedback = useCopyFeedback();
   const failure = ur ? "کتابی ذخیرہ نہیں کھل سکا۔ دوبارہ کوشش کریں۔" : "The book library could not be opened. Please retry.";
-  const invalid = ur ? "یہ درست کتابی ذخیرے کی ZIP فائل نہیں، یا اس کا حجم ۸ میگابائٹ سے زیادہ ہے۔" : "This is not a valid book corpus ZIP, or it exceeds 8 MB.";
+  const invalid = ur ? "یہ درست کتابی ذخیرے کی زِپ فائل نہیں، یا اس کا حجم ۸ میگابائٹ سے زیادہ ہے۔" : "This is not a valid book corpus ZIP, or it exceeds 8 MB.";
 
   useEffect(() => {
     const abort = new AbortController();
@@ -145,8 +145,8 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
     <details className="rounded-lg border border-[#31513a]/20 p-3" onToggle={event => setAdminOpen(event.currentTarget.open)}>
       <summary className="cursor-pointer text-sm font-semibold">{ur ? "کتابی ذخیرے کا انتظام — مالک کے لیے" : "Book library management — owner only"}</summary>
       {adminOpen ? <ResearchStudioGate language={locale} dir={ur ? "rtl" : "ltr"}>
-        <p className="my-3 text-sm leading-7">{ur ? "تیار کردہ کتابی ذخیرے کی ZIP فائل منتخب کریں۔ کامیاب جانچ اور حفاظت کے بعد ہی نیا نسخہ فعال ہوگا۔" : "Choose a prepared book corpus ZIP. A replacement becomes active only after validation and successful storage."}</p>
-        <label className="grid gap-2 text-sm">{ur ? "کتابی ذخیرے کی ZIP فائل" : "Book corpus ZIP"}<input aria-label={ur ? "کتابی ذخیرے کی ZIP فائل" : "Book corpus ZIP"} type="file" accept=".zip,application/zip" disabled={busy} onChange={event => { void importArchive(event.target.files?.[0] ?? null); event.target.value = ""; }} /></label>
+        <p className="my-3 text-sm leading-7">{ur ? "تیار کردہ کتابی ذخیرے کی زِپ فائل منتخب کریں۔ کامیاب جانچ اور حفاظت کے بعد ہی نیا نسخہ فعال ہوگا۔" : "Choose a prepared book corpus ZIP. A replacement becomes active only after validation and successful storage."}</p>
+        <label className="grid gap-2 text-sm">{ur ? "کتابی ذخیرے کی زِپ فائل" : "Book corpus ZIP"}<input aria-label={ur ? "کتابی ذخیرے کی زِپ فائل" : "Book corpus ZIP"} type="file" accept=".zip,application/zip" disabled={busy} onChange={event => { void importArchive(event.target.files?.[0] ?? null); event.target.value = ""; }} /></label>
       </ResearchStudioGate> : null}
     </details>
     <dialog ref={dialog} onClose={() => { setOpened(null); setSelectedIds([]); setMessage(""); }} className="m-auto max-h-[90dvh] w-[min(95vw,850px)] overflow-y-auto rounded-2xl bg-white p-5 text-[#1A3A2A] backdrop:bg-black/40 dark:bg-[#102017] dark:text-white" aria-label={ur ? "مکمل کتابی عبارت" : "Full book passage"}>
