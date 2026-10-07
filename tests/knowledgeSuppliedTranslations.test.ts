@@ -75,3 +75,14 @@ it("includes reviewed complete prayer portions without fragmented sentences or c
  expect(prayer(31).some(b=>/:p(?:18|19)$/.test(b.originalParagraphId))).toBe(false);
  expect(prayer(31).some(b=>Number(b.translationParagraphId.split(":p")[1])>=24)).toBe(false);
 });
+
+it.runIf(Boolean(corpus))("numbered prayer searches start with the prayer body and its supplied translation",()=>{
+ for(const n of [29,31,35]){
+  const result=attachCorpusTranslations(ask(`دعا ${n}`,"sahifa"),records,sources,"ur");
+  const p=result.passages.find(p=>p.language==="ar")!;
+  expect(p.paragraphId).toBe(`sahifa-ar:supplication:${n}:p3`);
+  expect(p.suppliedTranslation?.paragraphIds).toEqual([`sahifa-ur:supplication:${n}:p2`]);
+ }
+ const result=attachCorpusTranslations(ask("دعا 28","sahifa"),records,sources,"ur");
+ expect(result.passages.find(p=>p.language==="ar")?.suppliedTranslation).toBeDefined();
+});

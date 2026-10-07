@@ -74,6 +74,8 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
       if (matchingChapters.has(record.id) && kafiHadithNumber(paragraph.text) === null) return;
       if (reference?.kind === "hadith" && kafiHadithNumber(paragraph.text) !== reference.number) return;
       if (index === 0 && paragraph.text.length < 150 && record.paragraphs.length > 1 && /^\s*[(（][0-9۰-۹٠-٩]+[)）]/u.test(paragraph.text)) return;
+      // A prayer's editorial occasion line is not its opening supplication.
+      if (reference?.kind === "supplication" && !exact && record.book === "sahifa" && record.language === "ar" && index < 2 && /^(?:في |اذا |و كان |وكان )/u.test(normalizeBookSearch(paragraph.text))) return;
       // Preserve the full paragraph within the existing portable excerpt limit.
       if (unit.text.length > 150_000 || unit.text.trim().length < 15) return;
       const value = reference ? 100 + score(unit.text) : matchingChapters.has(record.id) ? 100 : score(unit.text, record.title);
