@@ -54,7 +54,10 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
       const response = await fetch(`/api/khateeb/library?${new URLSearchParams({ op: "record", id: passage.recordId!, sourceId: passage.sourceId! })}`, { signal: controller.signal });
       if (!response.ok) throw new Error("source");
       const value: { record: BookRecord; source: BookSource } = await response.json();
-      if (value.source.sha256 !== passage.sourceSha256 || value.record.textSha256 !== passage.excerpt?.recordSha256 || !value.record.paragraphs.some(p => p.id === passage.paragraphId && p.text === passage.text)) throw new Error("changed");
+      const selected = value.record.paragraphs.filter(p => passage.excerpt?.paragraphs.some(saved => saved.id === p.id));
+      if (value.source.sha256 !== passage.sourceSha256 || value.record.textSha256 !== passage.excerpt?.recordSha256 || !selected.length
+        || selected.length !== passage.excerpt?.paragraphs.length || selected[0].id !== passage.paragraphId
+        || selected.some((p, i) => p.text !== passage.excerpt?.paragraphs[i].text) || selected.map(p => p.text).join("\n") !== passage.text) throw new Error("changed");
       if (!controller.signal.aborted) setOpened({ passage, quote, ...value });
     } catch { if (!controller.signal.aborted) setError(ur ? "اصل عبارت کی تصدیق نہیں ہوسکی۔ ذخیرہ بدل گیا ہو تو سوال دوبارہ تلاش کریں۔" : "The original passage could not be verified. Repeat the search if the corpus has changed."); }
   }

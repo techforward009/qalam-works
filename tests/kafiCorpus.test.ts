@@ -33,7 +33,7 @@ describe("source-bound Kafi references", () => {
     const result = retrieve('جلد ۶ حدیث ۱ "باب فضل الولد"');
     expect(result.passages).toHaveLength(1);
     expect(result.passages[0].referenceUr).toBe("الکافی، جلد 6، باب فضل الولد، حدیث 1");
-    expect(result.passages[0].text).toBe(records[0].paragraphs[1].text);
+    expect(result.passages[0].text).toBe(records[0].paragraphs.slice(1, 3).map(p => p.text).join("\n"));
     expect(retrieve("جلد 7 حدیث 1").passages).toEqual([]);
   });
   it("does not turn an import ordinal or an unnumbered continuation into a hadith number", () => {

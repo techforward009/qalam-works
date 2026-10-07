@@ -11,6 +11,10 @@ it.runIf(Boolean(archivePath))('returns actual hadiths from Bab Fadl al-Walad in
     expect(result.passages.every(p => p.recordId === 'kafi-v6-ar:chapter:3')).toBe(true);
     expect(result.passages.map(p => p.text.match(/^\d+/)?.[0])).toEqual(['1','2','3','4','5','6','7','8']);
     expect(result.passages[0].text).toContain('رَيْحَانَةٌ مِنَ اللَّهِ');
+    expect(result.passages[3].text).toContain('قَالَ إِنَّ أَبِي أَمَرَنِي');
+    expect(result.passages[3].text).toContain('بِالتَّسْبِيحِ فَافْعَلْ.');
+    expect(result.passages[3].excerpt?.paragraphs).toHaveLength(2);
+    expect(result.passages[3].excerpt?.referenceLabelUr).toContain('حدیث 4');
     expect(result.passages.every(p => p.referenceUr.includes('بَابُ فَضْلِ الْوَلَدِ'))).toBe(true);
   }
 });
