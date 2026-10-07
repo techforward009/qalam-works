@@ -62,6 +62,10 @@ export function retrieveKnowledge(input: { question: string; scope: KnowledgeSco
   const exact = quoted ? normalizeBookSearch(quoted) : null;
   const quranRef = question.match(/([0-9۰-۹٠-٩]{1,3})\s*[:：]\s*([0-9۰-۹٠-٩]{1,3})(?:\s*[–—-]\s*([0-9۰-۹٠-٩]{1,3}))?/u);
   const eligibleRecords = input.records.filter(record => (scope === "all" || record.book === scope) && (record.language === "ar" || record.language === locale));
+  const chapterQuery = exact ?? direct.filter(t => !["باب", "جلد", "volume", "الکافي", "الكافي", "kafi"].includes(t)).join(" ");
+  const matchingChapters = !reference && chapterQuery.split(" ").length >= 2 ? new Set(eligibleRecords.filter(record => record.book === "kafi"
+    && (!kafiVolume || record.reference.kafi?.volume === Number(kafiVolume))
+    && normalizeBookSearch(record.reference.kafi?.chapterTitle ?? "").includes(chapterQuery)).map(record => record.id)) : new Set<string>();
   const lexicalDocuments = [...eligibleRecords.flatMap(record => record.paragraphs.map(p => ({ text: p.text, heading: record.title }))), ...((scope === "all" || scope === "quran") ? input.quran.map(a => ({ text: a.text })) : [])];
   const lexicalScores = !exact && !reference && !quranRef ? rankLexicalDocuments(lexicalDocuments, groups, direct) : [];
   const rankedScores = new Map<string, number>();
@@ -78,24 +82,28 @@ export function retrieveKnowledge(input: { question: string; scope: KnowledgeSco
     const source = input.sources.find(s => s.id === record.sourceId && s.book === record.book && s.language === record.language);
     if (!source || record.book === "kafi" && (record.kind === "front-matter" || kafiVolume && record.reference.kafi?.volume !== Number(kafiVolume))) continue;
     if (reference && (reference.kind === "hadith" ? record.book !== "kafi" : record.kind !== reference.kind || bookRecordNumber(record) !== reference.number)) continue;
+    if (matchingChapters.size && !matchingChapters.has(record.id)) continue;
     record.paragraphs.forEach((paragraph, index) => {
       if (record.book === "kafi" && [record.reference.kafi?.bookTitle, record.reference.kafi?.chapterTitle, record.reference.kafi?.sectionTitle].includes(paragraph.text)) return;
+      // Printed contents entries are locators, not the hadith text they point to.
+      if (record.book === "kafi" && (paragraph.text.match(/\//g)?.length ?? 0) >= 2 && /^\d+\s+باب\s+.+\s+\d+$/u.test(normalizeBookSearch(paragraph.text))) return;
+      if (matchingChapters.has(record.id) && kafiHadithNumber(paragraph.text) === null) return;
       if (reference?.kind === "hadith" && kafiHadithNumber(paragraph.text) !== reference.number) return;
       if (index === 0 && paragraph.text.length < 150 && record.paragraphs.length > 1 && /^\s*[(（][0-9۰-۹٠-٩]+[)）]/u.test(paragraph.text)) return;
       // Preserve the full paragraph within the existing portable excerpt limit.
       if (paragraph.text.length > 150_000 || paragraph.text.trim().length < 15) return;
-      const value = reference ? 100 + score(paragraph.text) : score(paragraph.text, record.title);
+      const value = reference ? 100 + score(paragraph.text) : matchingChapters.has(record.id) ? 100 : score(paragraph.text, record.title);
       if (reference && exact && !score(paragraph.text) && !(record.book === "kafi" && normalizeBookSearch(record.reference.kafi?.chapterTitle ?? "").includes(exact))) return;
       if (!value) return;
       const excerpt = createBookExcerpt(record, source, [paragraph.id]);
-      candidates.push({ score: value, section: `${record.book}:${record.kind}:${bookRecordNumber(record) ?? record.id}:${record.language}`, passage: { id: excerpt.id, collection: record.book, language: record.language, referenceUr: bookRecordReference(record, "ur", paragraph.id), referenceEn: bookRecordReference(record, "en", paragraph.id), text: paragraph.text, sourceSha256: source.sha256, recordId: record.id, sourceId: source.id, paragraphId: paragraph.id, excerpt, translator: source.translator } });
+      candidates.push({ score: value, section: matchingChapters.has(record.id) ? paragraph.id : `${record.book}:${record.kind}:${bookRecordNumber(record) ?? record.id}:${record.language}`, passage: { id: excerpt.id, collection: record.book, language: record.language, referenceUr: bookRecordReference(record, "ur", paragraph.id), referenceEn: bookRecordReference(record, "en", paragraph.id), text: paragraph.text, sourceSha256: source.sha256, recordId: record.id, sourceId: source.id, paragraphId: paragraph.id, excerpt, translator: source.translator } });
     });
   }
   if (scope === "all" || scope === "quran") for (const ayah of input.quran) {
     const value = quranRef ? ayah.surah === Number(normalizeBookSearch(quranRef[1])) && ayah.ayah >= Number(normalizeBookSearch(quranRef[2])) && ayah.ayah <= Math.min(Number(normalizeBookSearch(quranRef[3] ?? quranRef[2])), Number(normalizeBookSearch(quranRef[2])) + 7) ? 100 : 0 : reference ? 0 : score(ayah.text);
     if (value) candidates.push({ score: value, section: `quran:${ayah.surah}:${ayah.ayah}`, passage: { id: `quran:${input.quranSha256}:${ayah.surah}:${ayah.ayah}`, collection: "quran", language: "ar", referenceUr: `قرآن، ${ayah.surah}:${ayah.ayah}`, referenceEn: `Quran, ${ayah.surah}:${ayah.ayah}`, text: ayah.text, sourceSha256: input.quranSha256, quranLocation: { surah: ayah.surah, ayah: ayah.ayah }, translator: null, ...(ayah.suppliedTranslation ? { suppliedTranslation: ayah.suppliedTranslation } : {}) } });
   }
-  candidates.sort((a, b) => b.score - a.score || (quranRef && a.passage.quranLocation && b.passage.quranLocation ? a.passage.quranLocation.ayah - b.passage.quranLocation.ayah : a.passage.id.localeCompare(b.passage.id)));
+  candidates.sort((a, b) => b.score - a.score || (quranRef && a.passage.quranLocation && b.passage.quranLocation ? a.passage.quranLocation.ayah - b.passage.quranLocation.ayah : a.passage.id.localeCompare(b.passage.id, undefined, { numeric: true })));
   // Rerank for source coverage without letting unrelated low-scoring passages in.
   const eligible = candidates.filter(c => c.score >= (candidates[0]?.score ?? 0) * .55);
   const chosen: typeof candidates = [];
