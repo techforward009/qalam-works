@@ -16,5 +16,5 @@ it('retries failed reads rather than caching errors',async()=>{
 });
 it('expires and bounds source entries',async()=>{
  vi.useFakeTimers();await readBookSource(client,catalog(),'nahj-ar');vi.advanceTimersByTime(300001);await readBookSource(client,catalog(),'nahj-ar');expect(loadBookSource).toHaveBeenCalledTimes(2);
- for(let i=0;i<8;i++) await readBookSource(client,catalog(`revision-${i}`),'nahj-ar');await readBookSource(client,catalog('revision-0'),'nahj-ar');expect(loadBookSource).toHaveBeenCalledTimes(11);
+ for(let i=0;i<16;i++) await readBookSource(client,catalog(`revision-${i}`),'nahj-ar');await readBookSource(client,catalog('revision-0'),'nahj-ar');expect(loadBookSource).toHaveBeenCalledTimes(19);
 });

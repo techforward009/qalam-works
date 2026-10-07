@@ -3,7 +3,7 @@ import type { BookRecord } from "./bookCorpus";
 import { loadBookSource, type BookCatalog } from "./store";
 
 const entries = new Map<string, { expires: number; value: Promise<BookRecord[]> }>();
-const MAX_SOURCES = 7;
+const MAX_SOURCES = 15;
 const TTL = 5 * 60_000;
 
 export function clearBookSourceCache(): void {

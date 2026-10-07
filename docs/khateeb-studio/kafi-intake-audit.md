@@ -22,7 +22,7 @@ Numbered starts are detected paragraph markers, not certified counts of canonica
 - Volume 8 has no standalone chapter heading matching the rule. Do not manufacture chapter labels or apply the earlier volumes’ chapter model.
 - Volume 8 contains a 9,013-character paragraph, which the former 8,000-character retrieval cutoff would discard. The new retrieval limit preserves that paragraph intact once the collection is admitted.
 - Retain Arabic-only material as Arabic sources; no Urdu translation was supplied with these eight files.
-- Current import and search collection enums still admit Nahj and Sahifa only. These Kafi files have not been imported into the live assistant. Schema extension and intake review remain required.
+- The expanded import/search schema now accepts all eight Kafi sources alongside the original seven sources. The combined archive contains 4,978 records, including 2,302 Kafi heading groups. The package is prepared and tested; production import/activation is not claimed.
 
 ## Reproduce
 
@@ -31,3 +31,14 @@ python3 scripts/audit-kafi-docx.py /absolute/source-directory /absolute/audit-ou
 ```
 
 The output contains fingerprints, counts, paragraph locations and warnings, without copying source prose. The script requires all eight volumes and uses only the Python standard library.
+
+
+## Prepared package and verification
+
+`build-kafi-corpus.py` copies the existing seven compressed source members without modification and appends all eight Kafi volumes. Every original paragraph, including metadata/front matter, is preserved in order. Book/chapter/section groups have internal segment ordinals; those ordinals are not human hadith references. Consecutive source-paragraph positions and literal chapter/section labels are checked at import, as is the last actual book heading in source order. The package is approximately 5.8 MiB, within the new 8 MiB upload limit.
+
+```bash
+python3 scripts/build-kafi-corpus.py /absolute/original-corpus.zip /absolute/kafi-docx-directory /absolute/combined-corpus.zip --json-directory /absolute/test-fixtures
+```
+
+The eight Arabic volumes are source-only in Urdu and English research mode unless a supplied translation is added later. No fiqh ruling or hadith-authenticity assessment is inferred from the corpus.

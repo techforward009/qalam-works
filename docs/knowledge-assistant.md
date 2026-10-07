@@ -4,7 +4,7 @@ The foundational corpus is shared by Khateeb Studio and Research Studio. Private
 
 ## Delivered
 
-- Shared corpus types, canonical references, integrity-checked versioned Blob storage and revision-aware source cache.
+- Shared corpus types, canonical references, integrity-checked versioned Blob storage and revision-aware source cache. The original seven-source archive remains accepted; an expanded fifteen-source archive adds all eight supplied Arabic Al-Kafi volumes, with 4,978 total records.
 - Exact phrase/section/verse lookup plus BM25 lexical ranking with explicit multilingual topic expansion. Collection/language diversity selects at most eight relevant passages. Search normalization never changes stored quotations.
 - Bounded `POST /api/knowledge/ask`: `question`, `scope`, `locale`, optional `mode` (`sources` or `research`) and `contextQuestion`. The default API mode remains source-only. The UI requests research by default. The client cannot submit evidence.
 - Follow-ups retrieve the current question and prior topic independently, so a newly requested exact reference is not shadowed by the prior question.
@@ -18,7 +18,11 @@ The foundational corpus is shared by Khateeb Studio and Research Studio. Private
 
 Book retrieval preserves complete paragraphs up to the existing 150,000-character portable excerpt bound, including exact phrase matches beyond 8,000 characters. Longer paragraphs remain excluded pending lossless segment indexing. If every answer-language passage exceeds the synthesis budget, `evidence-too-large` keeps the full source visible and explains the summary limit instead of reporting missing evidence.
 
+Al-Kafi intake preserves all 19,129 original DOCX paragraphs and their global source positions, grouped only by literal supplied book/chapter/section headings. Missing book titles and Rawda chapter titles remain null. Human references use the volume and literal headings; a hadith number is shown only when the selected paragraph begins with that printed marker. Segment ordinals and unnumbered continuations are never labelled as canonical hadith numbers. Whole chapter/section context remains available from the source record, and saved drafts retain immutable paragraph snapshots and hashes. Arabic-only Kafi text never receives a model-invented Urdu/English translation.
+
 ## Bounds and cost
+
+Imports are bounded at 8 MiB compressed and 16 MiB per decompressed source, with all original seven sources required and either no Kafi sources or all eight Kafi sources. Interrupted imports preserve the prior active pointer. The source cache holds at most fifteen entries.
 
 Complete passages are selected within a 16,000-character evidence budget including supplied translations; text is never silently clipped for the model. Draft generation has a 27-second timeout and 1,800-token cap; support review has a 15-second timeout and 700-token cap. Invalid output is not automatically retried.
 

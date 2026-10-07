@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { rejectUnauthenticatedResearch } from "../../research/auth/requireSession";
 import { researchBlobClientFromEnv } from "../../research/vercelResearchBlob";
-import { BOOK_SOURCE_IDS, searchBookRecords } from "../../../tools/khateeb-studio/engine/bookLibrary";
+import { ALL_BOOK_SOURCE_IDS, searchBookRecords } from "../../../tools/khateeb-studio/engine/bookLibrary";
 import { loadBookCatalog, MAX_BOOK_UPLOAD_BYTES, parseBookArchive, saveBookArchive } from "./store";
 
 import { resolvePatienceMaterials } from "../../../tools/khateeb-studio/engine/patienceBookGuide";
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const query = params.get("query") ?? "";
   const sourceId = params.get("sourceId") ?? "";
   const number = params.get("number") ?? "";
-  if (!["catalog", "search", "record", "topic"].includes(op) || query.length > 300 || sourceId && !BOOK_SOURCE_IDS.includes(sourceId as typeof BOOK_SOURCE_IDS[number]) || number.length > 5) return json({ code: "invalid" }, 400);
+  if (!["catalog", "search", "record", "topic"].includes(op) || query.length > 300 || sourceId && !ALL_BOOK_SOURCE_IDS.includes(sourceId as typeof ALL_BOOK_SOURCE_IDS[number]) || number.length > 5) return json({ code: "invalid" }, 400);
   try {
     const client = await researchBlobClientFromEnv();
     const catalog = await loadBookCatalog(client);
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     const book = params.get("book") ?? "";
     const kind = params.get("kind") ?? "";
     const page = Number(params.get("page") ?? 1);
-    if (language && !["ar", "ur", "en"].includes(language) || book && !["nahj", "sahifa"].includes(book) || kind.length > 40 || !Number.isInteger(page) || page < 1 || page > 1000) return json({ code: "invalid" }, 400);
+    if (language && !["ar", "ur", "en"].includes(language) || book && !["nahj", "sahifa", "kafi"].includes(book) || kind.length > 40 || !Number.isInteger(page) || page < 1 || page > 1000) return json({ code: "invalid" }, 400);
     const sources = catalog.manifest.sources.filter(s => (!sourceId || s.id === sourceId) && (!book || s.book === book) && (!language || s.language === language));
     const records = (await Promise.all(sources.map(s => readBookSource(client, catalog, s.id)))).flat();
     return json(searchBookRecords(records, { query, sourceId, language, book, kind, number, page }));

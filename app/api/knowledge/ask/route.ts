@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     if (!input || typeof input !== "object" || Array.isArray(input)) return json({ code: "invalid" }, 400);
   } catch { return json({ code: "invalid" }, 400); }
   const { question, scope = "all", locale = "ur", mode = "sources", contextQuestion } = input;
-  if (typeof question !== "string" || question.trim().length < 2 || question.length > 600 || typeof scope !== "string" || !["all", "quran", "nahj", "sahifa"].includes(scope) || typeof locale !== "string" || !["ur", "en"].includes(locale) || typeof mode !== "string" || !["sources", "research"].includes(mode) || contextQuestion !== undefined && (typeof contextQuestion !== "string" || !contextQuestion.trim() || contextQuestion.length > 600) || Object.keys(input).some(key => !["question", "scope", "locale", "mode", "contextQuestion"].includes(key))) return json({ code: "invalid" }, 400);
+  if (typeof question !== "string" || question.trim().length < 2 || question.length > 600 || typeof scope !== "string" || !["all", "quran", "nahj", "sahifa", "kafi"].includes(scope) || typeof locale !== "string" || !["ur", "en"].includes(locale) || typeof mode !== "string" || !["sources", "research"].includes(mode) || contextQuestion !== undefined && (typeof contextQuestion !== "string" || !contextQuestion.trim() || contextQuestion.length > 600) || Object.keys(input).some(key => !["question", "scope", "locale", "mode", "contextQuestion"].includes(key))) return json({ code: "invalid" }, 400);
   const origin = req.headers.get("origin");
   if (mode === "research" && origin && origin !== req.nextUrl.origin) return json({ code: "invalid" }, 400);
   try {
