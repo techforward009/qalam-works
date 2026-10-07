@@ -86,3 +86,16 @@ it.runIf(Boolean(corpus))("numbered prayer searches start with the prayer body a
  const result=attachCorpusTranslations(ask("دعا 28","sahifa"),records,sources,"ur");
  expect(result.passages.find(p=>p.language==="ar")?.suppliedTranslation).toBeDefined();
 });
+
+it.runIf(Boolean(corpus))("returns each short prayer body paragraph in canonical order within the result budget",()=>{
+ for(const [n,first,count] of [[28,2,4],[29,3,2],[35,3,4]]){
+  const result=attachCorpusTranslations(ask(`دعا ${n}`,"sahifa"),records,sources,"ur");
+  const originals=result.passages.filter(p=>p.language==="ar");
+  expect(originals.map(p=>p.paragraphId)).toEqual(Array.from({length:count},(_,i)=>`sahifa-ar:supplication:${n}:p${first+i}`));
+  expect(originals.every(p=>p.suppliedTranslation)).toBe(true);
+  expect(result.passages.length).toBeLessThanOrEqual(8);
+ }
+ const long=ask("دعا 31","sahifa");
+ expect(long.passages.length).toBeLessThanOrEqual(8);
+ expect(long.passages.filter(p=>p.language==="ar").length).toBeGreaterThan(1);
+});

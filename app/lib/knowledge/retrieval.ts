@@ -86,7 +86,7 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
       const excerpt = createBookExcerpt(record, source, selected.map(p => p.id));
       excerpt.referenceLabelUr = bookRecordReference(record, "ur", paragraph.id);
       excerpt.referenceLabelEn = bookRecordReference(record, "en", paragraph.id);
-      candidates.push({ score: value, section: matchingChapters.has(record.id) || (input.candidateLimit ?? 8) > 8 ? `${record.id}:${paragraph.id}` : `${record.book}:${record.kind}:${bookRecordNumber(record) ?? record.id}:${record.language}`, passage: { id: excerpt.id, collection: record.book, language: record.language, referenceUr: bookRecordReference(record, "ur", paragraph.id), referenceEn: bookRecordReference(record, "en", paragraph.id), text: selected.map(p => p.text).join("\n"), sourceSha256: source.sha256, recordId: record.id, sourceId: source.id, paragraphId: paragraph.id, excerpt, translator: source.translator } });
+      candidates.push({ score: value, section: matchingChapters.has(record.id) || reference?.kind === "supplication" && record.language === "ar" || (input.candidateLimit ?? 8) > 8 ? `${record.id}:${paragraph.id}` : `${record.book}:${record.kind}:${bookRecordNumber(record) ?? record.id}:${record.language}`, passage: { id: excerpt.id, collection: record.book, language: record.language, referenceUr: bookRecordReference(record, "ur", paragraph.id), referenceEn: bookRecordReference(record, "en", paragraph.id), text: selected.map(p => p.text).join("\n"), sourceSha256: source.sha256, recordId: record.id, sourceId: source.id, paragraphId: paragraph.id, excerpt, translator: source.translator } });
     });
   }
   if (scope === "all" || scope === "quran") for (const ayah of input.quran) {
