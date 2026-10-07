@@ -562,8 +562,8 @@ export default function KhateebStudioContent({
     >
       <style>{`
         @font-face {
-          font-family: "Jameel Noori Nastaleeq";
-          src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2") format("woff2");
+          font-family: "Nafees Nastaleeq";
+          src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/NafeesNastaleeq.woff2") format("woff2");
           font-style: normal;
           font-weight: 400;
           font-display: swap;
@@ -577,7 +577,7 @@ export default function KhateebStudioContent({
         }
 
         .khateeb-book-ur {
-          font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), serif !important;
+          font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif !important;
           font-size: 1.16rem;
           line-height: 2.25;
         }
@@ -594,7 +594,7 @@ export default function KhateebStudioContent({
         }
 
         .khateeb-studio-ur {
-          font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
+          font-family: "Nafees Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
           font-size: 1.22rem;
           line-height: 2.18;
         }

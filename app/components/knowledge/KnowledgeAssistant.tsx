@@ -7,6 +7,8 @@ import { createKnowledgeDraft } from "../../tools/khateeb-studio/engine/knowledg
 import type { CustomSermonProject } from "../../tools/khateeb-studio/engine/customSermonProject";
 import type { SermonDuration } from "../../tools/khateeb-studio/engine/sermonPrep";
 
+import BookTranslationEditor from "./BookTranslationEditor";
+
 const field = "w-full rounded-lg border border-emerald-900/20 bg-white p-3 text-gray-900 dark:bg-[#162a1e] dark:text-white";
 const button = "rounded-lg bg-[#31513a] px-4 py-2 text-sm text-white disabled:opacity-50";
 export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: "ur" | "en"; onCreateDraft?: (project: CustomSermonProject) => void }) {
@@ -77,10 +79,10 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
   }
   return <section data-testid="knowledge-assistant" className="knowledge-assistant rounded-xl border border-emerald-900/20 bg-[#f7f5ef] p-4 text-gray-800 dark:bg-[#0e1c15] dark:text-white sm:p-6" dir={ur ? "rtl" : "ltr"}>
     <style>{`
-      @font-face { font-family: "Jameel Noori Nastaleeq"; src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2") format("woff2"); font-display: swap; }
-      .knowledge-assistant[dir="rtl"] { font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), serif; }
+      @font-face { font-family: "Nafees Nastaleeq"; src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/NafeesNastaleeq.woff2") format("woff2"); font-display: swap; }
+      .knowledge-assistant[dir="rtl"] { font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif; }
       .knowledge-assistant button, .knowledge-assistant input, .knowledge-assistant textarea, .knowledge-assistant select { font-family: inherit; }
-      .knowledge-assistant .khateeb-book-ur { font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), serif !important; font-size: 1.16rem; line-height: 2.25; }
+      .knowledge-assistant .khateeb-book-ur { font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif !important; font-size: 1.16rem; line-height: 2.25; }
       .knowledge-assistant .khateeb-muhammadi-quranic { font-family: "Muhammadi Quranic", var(--font-amiri), serif !important; font-size: 1.15em; line-height: 1.85; }
       .knowledge-assistant .khateeb-book-text { unicode-bidi: isolate; }
       .knowledge-assistant .khateeb-book-en { font-family: var(--font-inter), Arial, sans-serif; }
@@ -126,8 +128,9 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
         <label className="flex items-start gap-2 text-sm font-semibold"><input type="checkbox" checked={selected.includes(p.id)} onChange={e => setSelected(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} /><span className="qalam-source-reference">{ur ? p.referenceUr : p.referenceEn}</span></label>
         <p className="my-2 text-xs text-gray-600 dark:text-gray-300">{p.language === "ar" ? ur ? "اصل عربی عبارت" : "Arabic source text" : ur ? "فراہم کردہ ترجمہ / حواشی" : "Supplied translation / commentary"}{p.translator ? ` — ${p.translator}` : ""}</p>
         <BookPassageText text={p.text} language={p.language} quran={p.collection === "quran"} />
-        {p.suppliedTranslation ? <div className="mt-3 border-t border-emerald-900/15 pt-3"><p className="mb-2 text-xs">{ur ? "فراہم کردہ ترجمہ" : "Supplied translation"} — {p.suppliedTranslation.translator}</p><BookPassageText text={p.suppliedTranslation.text} language={p.suppliedTranslation.language} /></div> : null}
+        {p.suppliedTranslation ? <div className="mt-3 border-t border-emerald-900/15 pt-3"><p className="mb-2 text-xs">{ur ? "فراہم کردہ ترجمہ" : "Supplied translation"} — {p.suppliedTranslation.translator}{p.suppliedTranslation.source ? ` — ${p.suppliedTranslation.source}` : ""}</p><BookPassageText text={p.suppliedTranslation.text} language={p.suppliedTranslation.language} /></div> : null}
         <button type="button" className="mt-3 text-sm text-emerald-800 underline dark:text-emerald-200" onClick={() => void openSource(p)}>{ur ? "اصل ماخذ اور سیاق دیکھیں" : "Open original source and context"}</button>
+        <BookTranslationEditor passage={p} locale={locale} onSaved={translation => setResult(current => current ? { ...current, research: undefined, passages: current.passages.map(item => item.id === p.id ? { ...item, suppliedTranslation: translation } : item) } : current)} />
       </article>)}
       {result.passages.length ? <div className="flex flex-wrap items-end gap-3">
         <button className={button} disabled={!selected.length} onClick={() => void copy()}>{ur ? "منتخب مواد اور حوالے نقل کریں" : "Copy selected sources"}</button>

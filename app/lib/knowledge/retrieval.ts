@@ -11,7 +11,7 @@ export type KnowledgePassage = {
   recordId?: string; sourceId?: string; paragraphId?: string; excerpt?: BookExcerpt;
   quranLocation?: { surah: number; ayah: number };
   translator: string | null;
-  suppliedTranslation?: { text: string; language: "ur" | "en"; translator: string };
+  suppliedTranslation?: { text: string; language: "ur" | "en"; translator: string; source?: string };
 };
 export type KnowledgeResult = {
   question: string; contextQuestion?: string; research?: KnowledgeResearchAnswer; status: "evidence" | "not-found" | "unsupported-fatwa";
@@ -113,7 +113,7 @@ export function verifyKnowledgeClaims(claims: readonly CitedClaim[], passages: r
   return claims.length > 0 && claims.every(claim => claim.text.trim().length > 0 && claim.citations.length > 0 && claim.citations.every(c => c.quote.trim().length > 0 && passages.some(p => p.id === c.passageId && p.text.includes(c.quote))));
 }
 export function knowledgeResultText(result: KnowledgeResult, locale: "ur" | "en") {
-  return [result.question, ...(result.contextQuestion ? [`${locale === "ur" ? "پچھلا سوال" : "Previous question"}: ${result.contextQuestion}`] : []), researchSummaryText(result.research, result.passages, locale), locale === "ur" ? "متعلقہ اصل عبارتیں — یہ تحقیقی خلاصہ یا فتویٰ نہیں" : "Related source passages — not a synthesized answer or fatwa", ...result.passages.map(p => [locale === "ur" ? p.referenceUr : p.referenceEn, p.language === "ar" ? locale === "ur" ? "اصل عربی عبارت" : "Arabic source text" : locale === "ur" ? "فراہم کردہ ترجمہ / حواشی" : "Supplied translation / commentary", p.text, ...(p.suppliedTranslation ? [`${locale === "ur" ? "فراہم کردہ ترجمہ" : "Supplied translation"} — ${p.suppliedTranslation.translator}`, p.suppliedTranslation.text] : []), p.translator ? `${locale === "ur" ? "مترجم" : "Translator"}: ${p.translator}` : ""].filter(Boolean).join("\n"))].join("\n\n");
+  return [result.question, ...(result.contextQuestion ? [`${locale === "ur" ? "پچھلا سوال" : "Previous question"}: ${result.contextQuestion}`] : []), researchSummaryText(result.research, result.passages, locale), locale === "ur" ? "متعلقہ اصل عبارتیں — یہ تحقیقی خلاصہ یا فتویٰ نہیں" : "Related source passages — not a synthesized answer or fatwa", ...result.passages.map(p => [locale === "ur" ? p.referenceUr : p.referenceEn, p.language === "ar" ? locale === "ur" ? "اصل عربی عبارت" : "Arabic source text" : locale === "ur" ? "فراہم کردہ ترجمہ / حواشی" : "Supplied translation / commentary", p.text, ...(p.suppliedTranslation ? [`${locale === "ur" ? "فراہم کردہ ترجمہ" : "Supplied translation"} — ${p.suppliedTranslation.translator}${p.suppliedTranslation.source ? ` — ${p.suppliedTranslation.source}` : ""}`, p.suppliedTranslation.text] : []), p.translator ? `${locale === "ur" ? "مترجم" : "Translator"}: ${p.translator}` : ""].filter(Boolean).join("\n"))].join("\n\n");
 }
 
 /** Follow-ups retrieve both questions independently, so a new exact reference is never shadowed. */

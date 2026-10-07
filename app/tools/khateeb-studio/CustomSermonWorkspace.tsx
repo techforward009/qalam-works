@@ -696,6 +696,7 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
                     <strong dir="auto" className="block text-sm">{renderKhateebSalawat(cleanBookTitle(excerpt.title))}</strong>
                     <p className="mt-1 text-xs leading-6">{ur ? "فراہم کردہ کتابی نسخہ؛ ترجمہ اور حواشی کی نسبت ماخذ کے مطابق ہے۔" : "Supplied book edition; translation and commentary retain their source attribution."}</p>
                     {excerpt.paragraphs.map(p => <BookPassageText key={p.id} text={p.text} language={excerpt.language} />)}
+                    {excerpt.suppliedTranslation ? <div className="mt-3 border-t pt-3"><p className="text-xs">{ur ? "فراہم کردہ ترجمہ" : "Supplied translation"} — {excerpt.suppliedTranslation.translator}{excerpt.suppliedTranslation.source ? ` — ${excerpt.suppliedTranslation.source}` : ""}</p><BookPassageText text={excerpt.suppliedTranslation.text} language={excerpt.suppliedTranslation.language} /></div> : null}
                     <p dir="auto" className="mt-3 break-words text-xs leading-6">{bookExcerptReference(excerpt, locale)}{excerpt.translator ? ` · ${excerpt.translator}` : ""}</p>
                     <div className="mt-3 flex gap-3">
                       <button type="button" className="rounded-lg border px-3 py-2 text-xs" onClick={() => void feedback.copy(bookExcerptText(excerpt, locale))}>{ur ? "اقتباس اور حوالہ نقل کریں" : "Copy excerpt and reference"}</button>

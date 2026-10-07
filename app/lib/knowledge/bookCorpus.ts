@@ -18,6 +18,7 @@ export type BookExcerpt = {
   id: string; recordId: string; sourceId: string; sourceSha256: string; recordSha256: string;
   title: string; language: BookSource["language"]; filename: string; translator: string | null;
   referenceLabelUr?: string; referenceLabelEn?: string;
+  suppliedTranslation?: { text: string; language: "ur" | "en"; translator: string; source?: string };
   locator: string; paragraphNumbers: number[]; paragraphs: { id: string; text: string }[];
 };
 export type BookSearchHit = { id: string; sourceId: string; title: string; kind: string; number: number | string | null; language: BookSource["language"]; snippet: string; referenceLabelUr?: string; referenceLabelEn?: string };
@@ -119,6 +120,7 @@ export function isBookExcerpt(value: unknown): value is BookExcerpt {
     && [x.referenceLabelUr, x.referenceLabelEn].every(s => s === undefined || typeof s === "string" && s.length > 0 && s.length < 1000)
     && ALL_BOOK_SOURCE_IDS.includes(x.sourceId as typeof ALL_BOOK_SOURCE_IDS[number]) && ["ar", "ur", "en"].includes(x.language)
     && [x.sourceSha256, x.recordSha256].every(s => typeof s === "string" && /^[a-f0-9]{64}$/.test(s))
+    && (x.suppliedTranslation === undefined || x.suppliedTranslation && ["ur", "en"].includes(x.suppliedTranslation.language) && typeof x.suppliedTranslation.text === "string" && x.suppliedTranslation.text.length > 0 && x.suppliedTranslation.text.length <= 30000 && typeof x.suppliedTranslation.translator === "string" && x.suppliedTranslation.translator.length > 0 && x.suppliedTranslation.translator.length <= 200 && (x.suppliedTranslation.source === undefined || typeof x.suppliedTranslation.source === "string" && x.suppliedTranslation.source.length <= 1000))
     && (x.translator === null || typeof x.translator === "string")
     && Array.isArray(x.paragraphs) && x.paragraphs.length > 0 && x.paragraphs.length <= 2000
     && x.paragraphs.every(p => p && typeof p.id === "string" && p.id.startsWith(`${x.recordId}:p`) && typeof p.text === "string")
@@ -129,5 +131,5 @@ export function isBookExcerpt(value: unknown): value is BookExcerpt {
     && x.recordId.startsWith(`${x.sourceId}:`) && x.id === `${x.recordId}:${x.sourceSha256}:${x.recordSha256}:paragraphs:${x.paragraphNumbers.join(",")}`;
 }
 export function bookExcerptText(excerpt: BookExcerpt, locale: "ur" | "en"): string {
-  return [bookExcerptReference(excerpt, locale), ...excerpt.paragraphs.flatMap((p, i) => i > 0 && excerpt.paragraphNumbers[i] > excerpt.paragraphNumbers[i - 1] + 1 ? ["[…]", p.text] : [p.text]), ...(excerpt.translator ? [`${locale === "ur" ? "مترجم" : "Translator"}: ${excerpt.translator}`] : [])].join("\n");
+  return [bookExcerptReference(excerpt, locale), ...excerpt.paragraphs.flatMap((p, i) => i > 0 && excerpt.paragraphNumbers[i] > excerpt.paragraphNumbers[i - 1] + 1 ? ["[…]", p.text] : [p.text]), ...(excerpt.suppliedTranslation ? [locale === "ur" ? "فراہم کردہ ترجمہ" : "Supplied translation", excerpt.suppliedTranslation.text, `${locale === "ur" ? "مترجم" : "Translator"}: ${excerpt.suppliedTranslation.translator}`, ...(excerpt.suppliedTranslation.source ? [excerpt.suppliedTranslation.source] : [])] : []), ...(excerpt.translator ? [`${locale === "ur" ? "مترجم" : "Translator"}: ${excerpt.translator}`] : [])].join("\n");
 }

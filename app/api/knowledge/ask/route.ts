@@ -10,6 +10,7 @@ import { createCloudflareKnowledgeProvider } from "../../../lib/knowledge/cloudf
 import { answerKnowledgeQuestion } from "../../../lib/knowledge/answerService";
 import { understandKnowledgeQuestion } from "../../../lib/knowledge/questionUnderstanding";
 import { rankKnowledgePassages } from "../../../lib/knowledge/passageRanking";
+import { attachBookTranslations } from "../../../lib/knowledge/bookTranslations";
 export const runtime = "nodejs";
 export const maxDuration = 90;
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
     }), quranSha256: ahmedgrafQuranReference.getMetadata().sourceSha256! });
     result.questionUnderstanding = inferredTopicIds.length ? "model" : "lexical";
     if (mode === "research") result = await rankKnowledgePassages(result, { accountId: process.env.CLOUDFLARE_ACCOUNT_ID, token: process.env.CLOUDFLARE_AUTH_TOKEN, caller });
+    if (scope !== "quran") result = await attachBookTranslations(await researchBlobClientFromEnv(), result, locale as "ur" | "en");
     if (mode === "research") result.research = await answerKnowledgeQuestion(result, locale as "ur" | "en", createCloudflareKnowledgeProvider({ env: { CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_AUTH_TOKEN: process.env.CLOUDFLARE_AUTH_TOKEN } }), req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous");
     return json(result);
   } catch { return json({ code: "unavailable" }, 503); }

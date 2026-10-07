@@ -33,7 +33,7 @@ it.runIf(Boolean(process.env.QALAM_BOOK_CORPUS_TEST_ZIP))("reads the verified fo
   const response = await POST(request({ question: "نہج البلاغہ حکمت 55", scope: "nahj", locale: "ur" }));
   expect(response.status).toBe(200); const result = await response.json();
   expect(result.passages.some((p: {text: string}) => p.text.includes("صَبْرَانِ"))).toBe(true);
-  expect(reads.every(p => p.startsWith("khateeb-foundational/v1/"))).toBe(true);
+  expect(reads.every(p => p.startsWith("khateeb-foundational/v1/") || p.startsWith("khateeb-translations/v1/"))).toBe(true);
 });
 
 it("uses server-retrieved evidence for generation and refuses client-forged context", async () => {

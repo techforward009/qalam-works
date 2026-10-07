@@ -1357,3 +1357,14 @@ html.dark .quran-page-shell > .quran-outer-page-nav button:hover:not(:disabled) 
     overflow-wrap: normal;
   }
 }
+
+@font-face {
+  font-family: "Nafees Nastaleeq";
+  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/NafeesNastaleeq.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+.khateeb-studio-ur .font-urdu {
+  font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif;
+}
