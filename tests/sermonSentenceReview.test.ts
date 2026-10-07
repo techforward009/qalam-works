@@ -38,6 +38,7 @@ it("uses a separate source-only reasoning request and never returns model reason
   const provider = createSermonSentenceReviewer({ apiKey: "test-key", fetchImpl: fetchMock })!;
   expect(await provider.review(input, claims)).toEqual({ reviews: [{ claimId: "section-1", verdict: "unsupported", reason: "contradiction" }] });
   const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
+  expect(body.max_completion_tokens).toBe(1600);
   expect(body.reasoning_effort).toBe("low"); expect(body.reasoning_format).toBe("hidden");
   expect(body.messages[0].content).toContain("reverses the exception");
   const request = JSON.parse(body.messages[1].content);

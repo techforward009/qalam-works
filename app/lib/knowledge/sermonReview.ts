@@ -1,3 +1,4 @@
+import { fetchSermonProvider } from "./sermonProviderFetch";
 import { reviewedResearchClaims, type AnswerInput, type KnowledgeSynthesisProvider, type ResearchClaim } from "./researchAnswer";
 
 export const SERMON_REVIEW_MODEL = "qwen/qwen3.8-27b";
@@ -71,7 +72,7 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
         ref: e.ref, reference: input.locale === "ur" ? e.passage.referenceUr : e.passage.referenceEn,
         originalText: e.passage.text, language: e.passage.language, suppliedTranslation: e.passage.suppliedTranslation,
       }));
-      const reviewBudget = Math.min(9000, Math.max(2000, sections.reduce((n, s) => n + s.sentences.length, 0) * 60 + 1500));
+      const reviewBudget = Math.min(7000, Math.max(1600, sections.reduce((n, s) => n + s.sentences.length, 0) * 35 + 1000));
       const schema = { type: "object", additionalProperties: false, required: ["reviews"], properties: {
         reviews: { type: "array", minItems: claims.length, maxItems: claims.length, items: {
           type: "object", additionalProperties: false, required: ["claimId", "sentences"], properties: {
@@ -87,13 +88,13 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; fetchIm
           },
         } },
       } };
-      const response = await fetchImpl("https://api.groq.com/openai/v1/chat/completions", {
+      const response = await fetchSermonProvider("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST", headers: { Authorization: `Bearer ${options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(45_000),
         body: JSON.stringify({ model: SERMON_REVIEW_MODEL, temperature: 0.2, reasoning_effort: "low", reasoning_format: "hidden", max_completion_tokens: reviewBudget,
           response_format: { type: "json_schema", json_schema: { name: "sermon_sentence_audit", strict: true, schema } },
           messages: [{ role: "system", content: SENTENCE_REVIEW_PROMPT }, { role: "user", content: JSON.stringify({ locale: input.locale, evidence, sections }) }],
         }),
-      });
+      }, fetchImpl);
       if (!response.ok) { console.warn("Sermon sentence review", { status: response.status }); await response.body?.cancel(); throw new Error("provider-unavailable"); }
       if (!response.body) throw new Error("provider-unavailable");
       const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let bytes = 0;

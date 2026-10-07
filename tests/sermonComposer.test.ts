@@ -74,6 +74,7 @@ it("allows a brief closing and deduplicates valid references without accepting u
  expect(fetchMock.mock.calls[0][0]).toBe("https://api.groq.com/openai/v1/chat/completions");
  const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
  expect(body.model).toBe("qwen/qwen3.8-27b");
+ expect(body.max_tokens).toBe(5000);
  expect(body.reasoning_effort).toBe("none");
  expect(body.reasoning_format).toBe("hidden");
  expect(body.response_format.json_schema.strict).toBe(true);
@@ -84,4 +85,17 @@ it("rejects foreign-script text in Urdu sermon prose before source review",async
  const check={...reviewer,review:vi.fn()};
  await expect(composeSermon(input,result,{generate:contaminated,reviewer:check,env:{}})).rejects.toThrow("unverified");
  expect(check.review).not.toHaveBeenCalled();
+});
+
+it("repairs a short first draft before reviewing and preserves minimum length",async()=>{
+ const repair=vi.fn(async(_request:SermonRequest)=>({sections:repair.mock.calls.length===1?sections.map(s=>({...s,text:s.text.slice(0,300)})):sections}));
+ const check={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(c=>({claimId:c.id,verdict:"supported",reason:"entailed"}))}))};
+ const project=await composeSermon(input,result,{generate:repair,reviewer:check,env:{}});
+ expect(project.sections).toHaveLength(5);expect(repair).toHaveBeenCalledTimes(2);expect(check.review).toHaveBeenCalledTimes(1);expect(repair.mock.calls[1][0].instruction).toContain("at least 650 words");expect(repair.mock.calls[1][0].previous).toBeUndefined();
+});
+it("sends supplied meanings to the writer without duplicated original text or metadata",async()=>{
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections})}}]})));
+ await generateSermonSections(input,evidence,{GROQ_API_KEY:"test"},fetchMock);
+ const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);const data=JSON.parse(body.messages[1].content);
+ expect(data.evidence[0].meaning).toBe(result.passages[0].suppliedTranslation!.text);expect(data.evidence[0].text).toBeUndefined();expect(data.evidence[0].suppliedTranslation).toBeUndefined();
 });
