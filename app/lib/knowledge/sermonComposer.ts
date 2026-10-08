@@ -108,7 +108,7 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
   const preservedSections=new Map<number,ComposedSection>();
   // Give format, length, and source-review repairs separate bounded opportunities.
   // A shared three-attempt cap could silently prevent review repair after format and length repair.
-  let formatFailures=0;let draftFailures=0;let reviewFailures=0;
+  let formatFailures=0;let draftFailures=0;let scriptFailures=0;let reviewFailures=0;
   let fullyReviewed=false;
   for(let attempt=0;attempt<5;attempt++){
     let raw:unknown;
@@ -130,8 +130,9 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
     if(foreignScript || repetitive || wordCount < minimumWords || shortSection || insufficientSources){
       const code=foreignScript?"unverified":insufficientSources?"insufficient-evidence":"insufficient-draft";
       console.warn("Sermon composition validation",{stage:"draft",code,attempt,wordCount,minimumWords,shortSection,minimumWordsPerSection,sectionWordCounts,foreignScript,repetitive});
-      if(++draftFailures>=2)throw new Error(code);
-      request={...request,previous:JSON.stringify({sections}),instruction:`${request.instruction??input.instruction??""} Expand the previous five-section draft rather than starting again. Preserve its existing supported material and source references. EACH section must contain at least ${minimumWordsPerSection+25} words (at least ${minimumWords+100} words total), allowing a margin above validation limits. Cite at least ${MINIMUM_SOURCES[input.duration]} distinct supplied source records, including at least ${MINIMUM_CORE_SOURCES[input.duration]} non-Quran source records, across the five sections. Expand each section with distinct questions for the listeners and invitations to examine the exact supplied wording; do not answer those questions with new factual or religious claims. Use only the requested language's script. Do not repeat sentences or add unsupported claims.`};
+      if(foreignScript){if(++scriptFailures>=3)throw new Error("unverified");}
+      else if(++draftFailures>=2)throw new Error(code);
+      request={...request,previous:JSON.stringify({sections}),instruction:`${request.instruction??input.instruction??""} Expand the previous five-section draft rather than starting again. Preserve its existing supported material and source references. EACH section must contain at least ${minimumWordsPerSection+25} words (at least ${minimumWords+100} words total), allowing a margin above validation limits. Cite at least ${MINIMUM_SOURCES[input.duration]} distinct supplied source records, including at least ${MINIMUM_CORE_SOURCES[input.duration]} non-Quran source records, across the five sections. Expand each section with distinct questions for the listeners and invitations to examine the exact supplied wording; do not answer those questions with new factual or religious claims. For Urdu, never include any Latin, Bengali, Devanagari, Han or Cyrillic characters, even in headings or parentheses. Use Urdu-script equivalents for all names and terminology. Use only the requested language's script. Do not repeat sentences or add unsupported claims.`};
       continue;
     }
     claims=sections.map((s,i)=>({id:`section-${i+1}`,text:`${s.heading}\n${s.text}`,citations:s.refs.map(ref=>{const p=evidence.find(e=>e.ref===ref)!.passage;return {passageId:p.id,quote:p.text};})}));
