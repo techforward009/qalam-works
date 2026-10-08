@@ -89,6 +89,7 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
   if(!sourceCoverage(evidence.map(item=>item.passage),input.duration)) throw new Error("insufficient-evidence");
   const deadline=Date.now()+285_000;
   if(options.env.QALAM_SERMON_PROVIDER&&!['groq','cloudflare','gemini'].includes(options.env.QALAM_SERMON_PROVIDER))throw new Error("not-configured");
+  if(options.env.QALAM_SERMON_REVIEW_PROVIDER&&!["groq","cloudflare","gemini"].includes(options.env.QALAM_SERMON_REVIEW_PROVIDER))throw new Error("not-configured");
   const reviewer=options.reviewer===undefined?(createSermonSentenceReviewer({apiKey:options.env.GROQ_API_KEY,geminiKey:options.env.GEMINI_API_KEY,cloudflareAccountId:options.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:options.env.CLOUDFLARE_AUTH_TOKEN,preferredProvider:chooseSermonReviewProvider(options.env),deadline})):options.reviewer;
   if(!reviewer) throw new Error("not-configured");
   let sections:ComposedSection[] | null = null;
