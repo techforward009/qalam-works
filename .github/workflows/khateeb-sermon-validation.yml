@@ -168,7 +168,7 @@ jobs:
             const response = await fetch(endpoint, {
               method:'POST',
               headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_AUTH_TOKEN,'Content-Type':'application/json'},
-              body:JSON.stringify({messages:[{role:'user',content:'جواب صرف اردو میں دیں: صبر اور استقامت میں ایک سطر میں کیا تعلق ہے؟'}],max_tokens:160}),
+              body:JSON.stringify({messages:[{role:'user',content:'اردو میں ایک مختصر جملہ لکھیں: صبر کیا ہے؟'}],max_tokens:1200}),
               signal:controller.signal,
             });
             const payload = await response.json().catch(()=>({}));
