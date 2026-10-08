@@ -86,9 +86,10 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
   let claims:ResearchClaim[] = [];
   let request=input;
   const preservedSections=new Map<number,ComposedSection>();
-  // One format/length repair must not consume the independent source-review repair.
+  // Give format, length, and source-review repairs separate bounded opportunities.
+  // A shared three-attempt cap could silently prevent review repair after format and length repair.
   let formatFailures=0;let draftFailures=0;let reviewFailures=0;
-  for(let attempt=0;attempt<3;attempt++){
+  for(let attempt=0;attempt<5;attempt++){
     let raw:unknown;
     try{raw=await (options.generate??generateSermonSections)(request,evidence,options.env,undefined,deadline);}catch(error){console.warn("Sermon composition validation",{stage:"generation",code:"provider-unavailable",attempt});throw new Error(error instanceof Error&&error.message==="provider-rate-limited"?"provider-rate-limited":"generation-unavailable");}
     sections=parseComposedSections(raw,evidence);
