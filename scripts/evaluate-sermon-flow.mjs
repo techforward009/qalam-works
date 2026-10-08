@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import ts from 'typescript';
 
 const marker='Validate complete sermon composition and source review';
-if(process.argv.includes('--live-full')||process.argv.includes('--check-imports')||process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim()===marker){
+if(process.argv.includes('--live-full')||process.argv.includes('--live-fixture')||process.argv.includes('--check-imports')||process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim()===marker){
   registerHooks({
     resolve(specifier,context,nextResolve){
       if(specifier.startsWith('.')&&!/\.[cm]?[jt]s$|\.json$/.test(specifier)&&context.parentURL){
@@ -24,6 +24,27 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
   const {buildCustomSermonText,parseCustomSermonProject,serializeCustomSermonProject}=await import('../app/tools/khateeb-studio/engine/customSermonProject.ts');
   if(process.argv.includes('--check-imports'))console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'imports-valid'}));
   else if(process.exitCode)console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'blocked',reason:'source-review-fixtures-failed'}));
+  else if(process.argv.includes('--live-fixture')){
+    const input={title:'صبر',duration:20,locale:'ur'};
+    const originals=[
+      {id:'quran:2:153',collection:'quran',language:'ar',referenceUr:'قرآن، البقرہ ۲:۱۵۳',referenceEn:'Quran 2:153',text:'يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ',suppliedTranslation:{language:'ur',text:'اے ایمان والو! صبر اور نماز سے مدد چاہو، بے شک اللہ صبر کرنے والوں کے ساتھ ہے۔',translator:'آزمائشی فراہم کردہ متن'},quranLocation:{surah:2,ayah:153},sourceSha256:'a'.repeat(64)},
+      {id:'nahj:fixture:1',recordId:'nahj:fixture:1',collection:'nahj',language:'ar',referenceUr:'نہج البلاغہ، حکمت ۵۵ (آزمائشی اقتباس)',referenceEn:'Nahj al-Balagha, saying 55 (test excerpt)',text:'الصَّبْرُ صَبْرَانِ: صَبْرٌ عَلَى مَا تَكْرَهُ، وَصَبْرٌ عَمَّا تُحِبُّ',suppliedTranslation:{language:'ur',text:'صبر کی دو قسمیں ہیں: ناپسندیدہ چیز پر صبر اور پسندیدہ چیز سے رکنے پر صبر۔',translator:'آزمائشی فراہم کردہ متن'}},
+      {id:'quran:103:3',collection:'quran',language:'ar',referenceUr:'قرآن، العصر ۱۰۳:۳',referenceEn:'Quran 103:3',text:'إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ',suppliedTranslation:{language:'ur',text:'سوائے ان لوگوں کے جو ایمان لائے، نیک عمل کیے، اور ایک دوسرے کو حق اور صبر کی تلقین کی۔',translator:'آزمائشی فراہم کردہ متن'},quranLocation:{surah:103,ayah:3},sourceSha256:'b'.repeat(64)}
+    ];
+    const result={question:input.title,status:'evidence',method:'fixture',passages:originals,availableCollections:['quran','nahj'],expandedTerms:[]};
+    const started=Date.now();
+    try{
+      const project=await composeSermon(input,result,{env:process.env});
+      const serialized=serializeCustomSermonProject(project);
+      const restored=parseCustomSermonProject(serialized);
+      const output=buildCustomSermonText(project,'ur');
+      const words=project.sections.reduce((n,s)=>n+s.userText.split(/\\s+/u).filter(Boolean).length,0);
+      const valid=restored?.sections.length===5&&project.sections.length===5&&words>=450&&project.sections.reduce((n,s)=>n+s.minutes,0)===20&&project.evidence.every(e=>output.includes(e.arabic)&&output.includes(e.detailUr));
+      console.log('SERMON_FIXTURE_EVAL',JSON.stringify({status:valid?'passed':'failed',sections:project.sections.length,words,sourceCount:project.evidence.length,elapsedMs:Date.now()-started,fixtureOnly:true}));
+      if(!valid)process.exitCode=1;
+    }catch(error){console.log('SERMON_FIXTURE_EVAL',JSON.stringify({status:'failed',reason:error instanceof Error?error.message:'unknown',elapsedMs:Date.now()-started,fixtureOnly:true}));process.exitCode=1;}
+  }
+
   else{
     let stage='sources';const started=Date.now();
     try{
