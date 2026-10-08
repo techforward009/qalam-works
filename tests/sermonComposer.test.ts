@@ -44,6 +44,11 @@ it("never returns a final sermon unless its complete review explicitly approves 
  await expect(composeSermon(input,result,{generate,reviewer:auditing,env:{}})).rejects.toThrow("unverified");
  expect(auditing.review).toHaveBeenCalled();
 });
+it("rejects an unrecognized review provider instead of silently switching reviewers",async()=>{
+ const writer=vi.fn();
+ await expect(composeSermon(input,result,{generate:writer,reviewer,env:{QALAM_SERMON_REVIEW_PROVIDER:"unknown"}})).rejects.toThrow("not-configured");
+ expect(writer).not.toHaveBeenCalled();
+});
 it("does not turn Arabic-only sources into invented Urdu translations",async()=>{
  await expect(composeSermon(input,{...result,passages:result.passages.map(p=>({...p,suppliedTranslation:undefined}))},{generate,reviewer,env:{}})).rejects.toThrow("missing-translation");
 });
