@@ -1,3 +1,4 @@
+import type { ResearchBlobClient } from "../../tools/research-studio/engine";
 import { completeQuranTranslationFor } from "./completeQuranTranslations";
 import { researchBlobClientFromEnv } from "../../api/research/vercelResearchBlob";
 import { loadBookCatalog } from "./store";
@@ -24,13 +25,22 @@ export function retrieveSermonSources(input:Parameters<typeof retrieveKnowledge>
  return {...result,passages};
 }
 
+/** Read-only operations for sermon evidence. Never expose a write method to the retrieval pipeline. */
+export function readOnlySermonCorpus(client: ResearchBlobClient): ResearchBlobClient {
+  return {
+    getObject: (path) => client.getObject(path),
+    listObjects: (prefix) => client.listObjects(prefix),
+    putObject: async () => { throw new Error("sermon-read-only"); },
+  };
+}
+
 export async function collectSermonEvidence(title: string, locale: "ur" | "en", caller: string) {
   const normalized=normalizeBookSearch(title);
   const scope=/قران|quran/u.test(normalized)&&!/نهج|nahj|صحيف|sahifa|کافي|كافي|kafi/u.test(normalized)?"quran" as const:"all" as const;
   const options = { accountId: process.env.CLOUDFLARE_ACCOUNT_ID, token: process.env.CLOUDFLARE_AUTH_TOKEN, caller };
   const interpretation = understandKnowledgeQuestion(title, options);
   // Quran-only requests require no private book-store access.
-  const client = scope === "quran" ? null : await researchBlobClientFromEnv();
+  const client = scope === "quran" ? null : readOnlySermonCorpus(await researchBlobClientFromEnv());
   const catalog = client ? await loadBookCatalog(client) : null;
   const sources = scope === "quran" ? [] : catalog?.manifest.sources.filter(s => s.language === "ar" || s.language === locale) ?? [];
   const records = client && catalog ? (await Promise.all(sources.map(s => readBookSource(client, catalog, s.id)))).flat() : [];
