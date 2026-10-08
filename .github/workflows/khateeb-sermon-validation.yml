@@ -172,10 +172,10 @@ jobs:
               signal:controller.signal,
             });
             const payload = await response.json().catch(()=>({}));
-            const reply = payload?.result?.response ?? payload?.result?.choices?.[0]?.message?.content ?? '';
+            const reply = payload?.result?.response ?? payload?.result?.choices?.[0]?.message?.content ?? payload?.result?.output?.map?.(x=>x?.content?.map?.(y=>y?.text).join(' ')).join(' ') ?? '';
             const text = typeof reply === 'string' ? reply : JSON.stringify(reply);
             const succeeded = response.ok && payload.success !== false && text.trim().length > 8;
-            console.log('GEMMA_PROBE',JSON.stringify({model,status:response.status,passed:succeeded,hasUrdu:/[\u0600-\u06FF]/u.test(text),length:text.length,errors:Array.isArray(payload.errors)?payload.errors.map(e=>e.code):[]}));
+            console.log('GEMMA_PROBE',JSON.stringify({model,status:response.status,passed:succeeded,hasUrdu:/[\u0600-\u06FF]/u.test(text),length:text.length,topKeys:Object.keys(payload).slice(0,8),resultKeys:payload?.result&&typeof payload.result==='object'?Object.keys(payload.result).slice(0,12):[],errors:Array.isArray(payload.errors)?payload.errors.map(e=>e.code):[]}));
             if(!succeeded)process.exitCode=1;
           } catch(err) {
             console.log('GEMMA_PROBE',JSON.stringify({model,passed:false,reason:err?.name==='AbortError'?'timeout':'network-error'}));
