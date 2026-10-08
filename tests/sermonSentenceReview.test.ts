@@ -125,3 +125,14 @@ it("audits all sentences on Gemini without falling back to a different configure
  expect(fetchMock.mock.calls[0][0]).toBe("https://generativelanguage.googleapis.com/v1beta/interactions");const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);expect(body.model).toBe("gemini-3.8-flash");expect(body.generation_config.max_output_tokens).toBeGreaterThanOrEqual(4500);expect(body.max_completion_tokens).toBeUndefined();expect(body.reasoning_format).toBeUndefined();
  expect(createSermonSentenceReviewer({preferredProvider:"gemini",apiKey:"groq-test"})).toBeNull();
 });
+
+it("keeps provider audits below the free output window while preserving every sentence",async()=>{
+ const compactClaims=Array.from({length:3},(_,i)=>({...claims[0],id:`compact-${i+1}`,text:"نماز سے مدد لینے کی ہدایت ہے۔ ".repeat(4)}));
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+  const request=JSON.parse(JSON.parse(init!.body as string).messages[1].content);
+  expect(request.sections.reduce((n:number,section:{sentences:unknown[]})=>n+section.sentences.length,0)).toBeLessThanOrEqual(8);
+  return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({reviews:request.sections.map((section:{claimId:string;sentences:{index:number}[]})=>({claimId:section.claimId,sentences:section.sentences.map(sentence=>({i:sentence.index,v:"s",r:"e",refs:[1]}))}))})}}]}));
+ });
+ const checked=await createSermonSentenceReviewer({apiKey:"test",fetchImpl:fetchMock})!.review(input,compactClaims) as {reviews:unknown[]};
+ expect(checked.reviews).toHaveLength(3);expect(fetchMock).toHaveBeenCalledTimes(2);
+});

@@ -109,7 +109,7 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; geminiK
       const batches:ResearchClaim[][]=[];
       for(const claim of claims){
         const last=batches.at(-1);
-        if(last && last.reduce((n,c)=>n+c.text.length,0)+claim.text.length<=3000 && last.reduce((n,c)=>n+sermonSentences(c.text).length,0)+sermonSentences(claim.text).length<=30)last.push(claim);
+        if(last && last.reduce((n,c)=>n+c.text.length,0)+claim.text.length<=3000 && last.reduce((n,c)=>n+sermonSentences(c.text).length,0)+sermonSentences(claim.text).length<=8)last.push(claim);
         else batches.push([claim]);
       }
       const reviews=[];const sentenceAudit:SentenceReview[]=[];
