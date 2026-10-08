@@ -169,6 +169,14 @@ it("sends supplied meanings to the writer without duplicated original text or me
  expect(data.evidence[0].meaning).toBe(result.passages[0].suppliedTranslation!.text);expect(data.evidence[0].text).toBeUndefined();expect(data.evidence[0].suppliedTranslation).toBeUndefined();
 });
 
+it("reserves a primary non-Quran passage when ranked results begin with eight Quran entries",()=>{
+ const quran=result.passages.find(p=>p.collection==="quran")!;
+ const core=result.passages.find(p=>p.collection!=="quran")!;
+ const ranked=[...Array.from({length:8},(_,i)=>({...quran,id:`quran:ranked:${i}`,recordId:undefined})),core];
+ const chosen=selectSermonEvidence(ranked);
+ expect(chosen.some(e=>e.passage.collection!=="quran")).toBe(true);
+ expect(chosen.length).toBeLessThanOrEqual(8);
+});
 it("bounds sermon evidence with complete source units and unchanged verified translations",()=>{
  const long={...result.passages[0],id:"too-long",text:"ع".repeat(7000)};
  const chosen=selectSermonEvidence([long,...result.passages]);expect(chosen).toHaveLength(5);expect(chosen[0].passage).toBe(result.passages[0]);expect(chosen[0].ref).toBe(1);expect(chosen[1].ref).toBe(2);
