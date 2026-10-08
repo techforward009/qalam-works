@@ -125,7 +125,7 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
           const headingCount=sermonSentences(s.heading).length;
           return {...s,heading:feedback.some(f=>f.claimId===claims[i].id&&f.index<=headingCount)?neutralHeadings[i]:s.heading,text:sermonSentences(s.text).filter((_,n)=>!feedback.some(f=>f.claimId===claims[i].id&&f.index===n+headingCount+1)).join(" ")};
         })},evidence);
-        if(filtered&&filtered.reduce((n,s)=>n+s.text.split(/\s+/u).length,0)>=minimumWords&&new Set(filtered.flatMap(s=>s.refs)).size>=2){
+        if(filtered&&filtered.every(s=>s.text.split(/\s+/u).filter(Boolean).length>=minimumWordsPerSection)&&filtered.reduce((n,s)=>n+s.text.split(/\s+/u).filter(Boolean).length,0)>=minimumWords&&sourceCoverage([...new Set(filtered.flatMap(s=>s.refs))].map(ref=>evidence.find(item=>item.ref===ref)!.passage),input.duration)){
           const filteredClaims=filtered.map((s,i)=>({...claims[i],text:`${s.heading}\n${s.text}`}));
           const finalReview=await reviewer.review({question:input.title,locale:input.locale,evidence},filteredClaims);
           if(reviewedResearchClaims(finalReview,filteredClaims)?.length===filteredClaims.length){sections=filtered;claims=filteredClaims;break;}
