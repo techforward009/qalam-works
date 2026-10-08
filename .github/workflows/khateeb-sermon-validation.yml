@@ -19,7 +19,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vitest run tests/sermonComposer.test.ts tests/sermonReview.test.ts
+      - run: npx vitest run tests/sermonComposer.test.ts tests/sermonReview.test.ts tests/sermonEvidenceCoverage.test.ts
       - name: Run repository suite with exact main-baseline comparison
         shell: bash
         run: |
@@ -126,7 +126,6 @@ jobs:
       - name: Verify model credentials without printing values
         shell: bash
         run: |
-          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
           test -n "$CLOUDFLARE_AUTH_TOKEN" || { echo "::error::Missing CLOUDFLARE_AUTH_TOKEN"; exit 1; }
       - name: Compose and independently review a 20-minute sermon from fixed excerpts
