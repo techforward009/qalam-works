@@ -246,7 +246,7 @@ it("keeps a source-review repair after a short draft without unbounded retries",
 it("retains a final length repair after a source-review rejection",async()=>{
  let reviewCalls=0;
  const auditor={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((claim,i)=>({claimId:claim.id,verdict:reviewCalls++===0&&i===0?"unsupported":"supported",reason:"entailed"}))}))};
- const provider=vi.fn(async(_request:SermonRequest)=>({sections:provider.mock.calls.length===3?sections.map((s,i)=>i===0?{...s,text:s.text.slice(0,300)}:s):sections}));
+ const provider=vi.fn(async(_request:SermonRequest)=>({sections:[2,3].includes(provider.mock.calls.length)?sections.map((s,i)=>i===0?{...s,text:s.text.slice(0,300)}:s):sections}));
  const project=await composeSermon(input,result,{generate:provider,reviewer:auditor,env:{}});
  expect(project.sections).toHaveLength(5);
  expect(provider).toHaveBeenCalledTimes(4);
