@@ -2,7 +2,7 @@ import { sermonSentences } from "../app/lib/knowledge/sermonReview";
 import type { AnswerInput, ResearchClaim } from "../app/lib/knowledge/researchAnswer";
 import type { SermonRequest } from "../app/lib/knowledge/sermonComposer";
 import { expect, it, vi } from "vitest";
-import { composeSermon, parseComposedSections, generateSermonSections, selectSermonEvidence } from "../app/lib/knowledge/sermonComposer";
+import { composeSermon, chooseSermonReviewProvider, parseComposedSections, generateSermonSections, selectSermonEvidence } from "../app/lib/knowledge/sermonComposer";
 import type { KnowledgeResult } from "../app/lib/knowledge/retrieval";
 import { buildCustomSermonText, parseCustomSermonProject, serializeCustomSermonProject } from "../app/tools/khateeb-studio/engine/customSermonProject";
 const result:KnowledgeResult={question:"صبر",status:"evidence",method:"lexical-bm25-topic-expansion",expandedTerms:[],availableCollections:["quran"],passages:[{id:"quran:test:2:153",collection:"quran",language:"ar",referenceUr:"قرآن، 2:153",referenceEn:"Quran, 2:153",text:"يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ",sourceSha256:"a".repeat(64),quranLocation:{surah:2,ayah:153},translator:null,suppliedTranslation:{language:"ur",text:"اے ایمان والو صبر اور نماز سے مدد لو۔",translator:"فراہم کردہ مترجم"}}]};
@@ -13,6 +13,11 @@ const sections=Array.from({length:5},(_,i)=>({heading:`حصہ ${i+1}`,text:Array
 const input={title:"صبر",duration:30 as const,locale:"ur" as const};
 const generate=vi.fn(async(_input:SermonRequest)=>({sections}));
 const reviewer={id:"fixture",draft:vi.fn(),review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(c=>({claimId:c.id,verdict:"supported",reason:"entailed"}))}))};
+it("selects an independent source-review provider without changing the writing model",()=>{
+ expect(chooseSermonReviewProvider({QALAM_SERMON_PROVIDER:"groq",CLOUDFLARE_ACCOUNT_ID:"account",CLOUDFLARE_AUTH_TOKEN:"token"})).toBe("cloudflare");
+ expect(chooseSermonReviewProvider({QALAM_SERMON_PROVIDER:"groq"})).toBe("groq");
+ expect(chooseSermonReviewProvider({QALAM_SERMON_PROVIDER:"groq",QALAM_SERMON_REVIEW_PROVIDER:"groq",CLOUDFLARE_ACCOUNT_ID:"account",CLOUDFLARE_AUTH_TOKEN:"token"})).toBe("groq");
+});
 it("creates five composed sections with exact references, portable sources and correct duration",async()=>{
  const project=await composeSermon(input,result,{generate,reviewer,env:{}});
  expect(project.sections).toHaveLength(5);expect(project.sections.reduce((n,s)=>n+s.minutes,0)).toBe(30);
