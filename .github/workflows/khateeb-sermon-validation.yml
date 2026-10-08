@@ -146,3 +146,39 @@ jobs:
       - run: npm ci
       - name: Retrieve Quran passages without private storage credentials
         run: node scripts/evaluate-sermon-flow.mjs --public-quran
+
+  gemma-probe:
+    if: github.event_name == 'push' && github.event.head_commit.message == 'Probe Gemma 4 safely'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_AUTH_TOKEN: ${{ secrets.CLOUDFLARE_AUTH_TOKEN }}
+    steps:
+      - name: Check Gemma 4 availability on our account without revealing credentials
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID" && test -n "$CLOUDFLARE_AUTH_TOKEN" || { echo "GEMMA_PROBE missing credentials"; exit 1; }
+          node - <<'NODE'
+          const model = '@cf/google/gemma-4-26b-a4b-it';
+          const endpoint = 'https://api.cloudflare.com/client/v4/accounts/'+encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID)+'/ai/run/'+model;
+          const controller = new AbortController();
+          const timeout = setTimeout(()=>controller.abort(), 90000);
+          try {
+            const response = await fetch(endpoint, {
+              method:'POST',
+              headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_AUTH_TOKEN,'Content-Type':'application/json'},
+              body:JSON.stringify({messages:[{role:'user',content:'جواب صرف اردو میں دیں: صبر اور استقامت میں ایک سطر میں کیا تعلق ہے؟'}],max_tokens:160}),
+              signal:controller.signal,
+            });
+            const payload = await response.json().catch(()=>({}));
+            const reply = payload?.result?.response ?? payload?.result?.choices?.[0]?.message?.content ?? '';
+            const text = typeof reply === 'string' ? reply : JSON.stringify(reply);
+            const succeeded = response.ok && payload.success !== false && text.trim().length > 8;
+            console.log('GEMMA_PROBE',JSON.stringify({model,status:response.status,passed:succeeded,hasUrdu:/[\u0600-\u06FF]/u.test(text),length:text.length,errors:Array.isArray(payload.errors)?payload.errors.map(e=>e.code):[]}));
+            if(!succeeded)process.exitCode=1;
+          } catch(err) {
+            console.log('GEMMA_PROBE',JSON.stringify({model,passed:false,reason:err?.name==='AbortError'?'timeout':'network-error'}));
+            process.exitCode=1;
+          } finally {clearTimeout(timeout);}
+          NODE
