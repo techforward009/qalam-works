@@ -139,7 +139,9 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; geminiK
         ref: e.ref, reference: input.locale === "ur" ? e.passage.referenceUr : e.passage.referenceEn,
         originalText: e.passage.text, language: e.passage.language, suppliedTranslation: e.passage.suppliedTranslation,
       }));
-      const reviewBudget = Math.min(4500, Math.max(1200, sections.reduce((n, s) => n + s.sentences.length, 0) * 20 + 800));
+      const sentenceCount=sections.reduce((n,s)=>n+s.sentences.length,0);
+      // Groq's free Qwen tier has a 1k output-token minute window. Keep each reservation modest; strict parsing rejects any truncation.
+      const reviewBudget=Math.min(400,Math.max(200,sentenceCount*30+100));
       const schema = { type: "object", additionalProperties: false, required: ["reviews"], properties: {
         reviews: { type: "array", minItems: claims.length, maxItems: claims.length, items: {
           type: "object", additionalProperties: false, required: ["claimId", "sentences"], properties: {
