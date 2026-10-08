@@ -33,7 +33,7 @@ export async function collectSermonEvidence(title: string, locale: "ur" | "en", 
   const client = scope === "quran" ? null : await researchBlobClientFromEnv();
   const catalog = client ? await loadBookCatalog(client) : null;
   const sources = scope === "quran" ? [] : catalog?.manifest.sources.filter(s => s.language === "ar" || s.language === locale) ?? [];
-  const records = catalog ? (await Promise.all(sources.map(s => readBookSource(client, catalog, s.id)))).flat() : [];
+  const records = client && catalog ? (await Promise.all(sources.map(s => readBookSource(client, catalog, s.id)))).flat() : [];
   const result = retrieveSermonSources({ question: title, scope, locale, candidateLimit: 16, inferredTopicIds: await interpretation, sources, records,
     quran: ahmedgrafQuranReference.listAyahs().map(ayah => {
       const text = completeQuranTranslationFor(ayah.surah, ayah.ayah, locale);
