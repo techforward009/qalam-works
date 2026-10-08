@@ -15,7 +15,24 @@ if (!process.argv.includes('--live') && ![releaseMarker,'Validate complete sermo
 } else {
   const { createSermonSentenceReviewer } = await import('../app/lib/knowledge/sermonReview.ts');
   const { reviewedResearchClaims } = await import('../app/lib/knowledge/researchAnswer.ts');
-  const provider = createSermonSentenceReviewer({ preferredProvider: process.env.QALAM_SERMON_PROVIDER || undefined, geminiKey:process.env.GEMINI_API_KEY, apiKey: process.env.GROQ_API_KEY, cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID, cloudflareToken: process.env.CLOUDFLARE_AUTH_TOKEN });
+  // This diagnostic runs only for the fixed public fixtures below, never user material.
+  const publicFixtureFetch = async (url, init) => {
+    const response = await fetch(url, init);
+    if (response.status === 400) {
+      try {
+        const payload = await response.clone().json();
+        const error = payload?.error;
+        let message = typeof error?.message === 'string' ? error.message : 'no-error-message';
+        for (const secret of [process.env.GEMINI_API_KEY, process.env.GROQ_API_KEY, process.env.CLOUDFLARE_AUTH_TOKEN]) {
+          if (secret) message = message.split(secret).join('[redacted]');
+        }
+        message = message.replace(/AIza[\w-]+/g, '[redacted]').slice(0, 1200);
+        console.log('SERMON_PUBLIC_REQUEST_ERROR', JSON.stringify({status: response.status, message}));
+      } catch { console.log('SERMON_PUBLIC_REQUEST_ERROR', JSON.stringify({status: response.status, message: 'non-json-error'})); }
+    }
+    return response;
+  };
+  const provider = createSermonSentenceReviewer({ fetchImpl: publicFixtureFetch, preferredProvider: process.env.QALAM_SERMON_PROVIDER || undefined, geminiKey:process.env.GEMINI_API_KEY, apiKey: process.env.GROQ_API_KEY, cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID, cloudflareToken: process.env.CLOUDFLARE_AUTH_TOKEN });
   if (!provider) throw new Error('Sermon review evaluation key unavailable');
   console.log('SERMON_REVIEW_EVAL',JSON.stringify({provider:provider.id}));
   // Fixed public Quran fixtures; no private book text or credentials are logged.
