@@ -90,11 +90,14 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
     for(const section of sections)for(const sentence of section.text.split(/[۔.!?\n]+/u)){const normalized=sentence.trim().replace(/\s+/gu," ");if(normalized.length>30)seenSentences.set(normalized,(seenSentences.get(normalized)??0)+1);}
     const repetitive=[...seenSentences.values()].some(count=>count>2);
     const minimumWords={20:450,30:650,45:950}[input.duration];
-    if(foreignScript || repetitive || wordCount < minimumWords || new Set(sections.flatMap(s=>s.refs)).size < 2){
+    const minimumWordsPerSection={20:90,30:130,45:190}[input.duration];
+    const sectionWordCounts=sections.map(section=>section.text.split(/\s+/u).filter(Boolean).length);
+    const shortSection=sectionWordCounts.some(count=>count<minimumWordsPerSection);
+    if(foreignScript || repetitive || wordCount < minimumWords || shortSection || new Set(sections.flatMap(s=>s.refs)).size < 2){
       const code=foreignScript?"unverified":"insufficient-draft";
-      console.warn("Sermon composition validation",{stage:"draft",code,attempt,wordCount,minimumWords,foreignScript,repetitive});
+      console.warn("Sermon composition validation",{stage:"draft",code,attempt,wordCount,minimumWords,shortSection,minimumWordsPerSection,sectionWordCounts,foreignScript,repetitive});
       if(++draftFailures>=2)throw new Error(code);
-      request={...request,previous:undefined,instruction:`${request.instruction??input.instruction??""} Rewrite a complete five-section sermon of at least ${minimumWords} words, using at least two supplied references across the sections. Use only the requested language's script. Give distinct connected explanations, without repeating sentences or adding unsupported claims.`};
+      request={...request,previous:undefined,instruction:`${request.instruction??input.instruction??""} Rewrite the five sections so EACH contains at least ${minimumWordsPerSection} words (at least ${minimumWords} words total). Expand each section with distinct questions for the listeners and invitations to examine the exact supplied wording; do not answer those questions with new factual or religious claims. Use at least two supplied references across the sections. Use only the requested language's script. Do not repeat sentences or add unsupported claims.`};
       continue;
     }
     claims=sections.map((s,i)=>({id:`section-${i+1}`,text:`${s.heading}\n${s.text}`,citations:s.refs.map(ref=>{const p=evidence.find(e=>e.ref===ref)!.passage;return {passageId:p.id,quote:p.text};})}));

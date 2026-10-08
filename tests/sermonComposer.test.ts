@@ -95,6 +95,12 @@ it("repairs a short first draft before reviewing and preserves minimum length",a
  const project=await composeSermon(input,result,{generate:repair,reviewer:check,env:{}});
  expect(project.sections).toHaveLength(5);expect(repair).toHaveBeenCalledTimes(2);expect(check.review).toHaveBeenCalledTimes(1);expect(repair.mock.calls[1][0].instruction).toContain("at least 650 words");expect(repair.mock.calls[1][0].previous).toBeUndefined();
 });
+it("rejects a sermon with one underlength section even when its total is long enough",async()=>{
+ const uneven=sections.map((section,i)=>i===2?{...section,text:Array.from({length:8},(_,n)=>`یہ جملہ نمبر ${n+1} سامعین کو غور کی دعوت دیتا ہے۔`).join(" ")}:section);
+ const generateUneven=vi.fn(async()=>({sections:uneven}));const check={...reviewer,review:vi.fn()};
+ await expect(composeSermon(input,result,{generate:generateUneven,reviewer:check,env:{}})).rejects.toThrow("insufficient-draft");
+ expect(generateUneven).toHaveBeenCalledTimes(2);expect(check.review).not.toHaveBeenCalled();
+});
 it("sends supplied meanings to the writer without duplicated original text or metadata",async()=>{
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections})}}]})));
  await generateSermonSections(input,evidence,{GROQ_API_KEY:"test"},fetchMock);
