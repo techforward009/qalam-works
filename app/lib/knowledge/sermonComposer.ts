@@ -72,29 +72,36 @@ export async function generateSermonSections(input: SermonRequest, evidence: rea
   const payload=JSON.parse(Buffer.concat(chunks).toString("utf8"));
   return parseSermonProviderContent(payload,"generation");
 }
-export function selectSermonEvidence(passages:readonly AnswerEvidence["passage"][]):AnswerEvidence[]{
+export function selectSermonEvidence(passages:readonly AnswerEvidence["passage"][], duration:SermonDuration=20):AnswerEvidence[]{
   const selected:AnswerEvidence["passage"][]=[];let size=0;
-  // Keep source ranking intact while reserving space for one non-Quran passage.
-  const firstCore=passages.find(p=>p.collection!=="quran" && p.text.length+(p.suppliedTranslation?.text.length??0)<=6000);
-  const coreChars=firstCore?firstCore.text.length+(firstCore.suppliedTranslation?.text.length??0):0;
-  const reserveCore=Boolean(firstCore);
+  const requiredCore=MINIMUM_CORE_SOURCES[duration];
+  const reservedCore:AnswerEvidence["passage"][]=[];
+  const seenCore=new Set<string>();
+  const charsOf=(passage:AnswerEvidence["passage"])=>passage.text.length+(passage.suppliedTranslation?.text.length??0);
+  for(const passage of passages){
+    if(passage.collection==="quran" || charsOf(passage)>6000)continue;
+    const key=sourceKey(passage);
+    if(seenCore.has(key))continue;
+    reservedCore.push(passage);seenCore.add(key);
+    if(reservedCore.length>=requiredCore)break;
+  }
   for(const passage of passages){
     if(selected.includes(passage))continue;
-    const chars=passage.text.length+(passage.suppliedTranslation?.text.length??0);
+    const chars=charsOf(passage);
     if(size+chars>6000)continue;
-    if(reserveCore && !selected.some(p=>p.collection!=="quran") && passage!==firstCore && (selected.length===7 || size+chars+coreChars>6000))continue;
+    const remaining=reservedCore.filter(p=>!selected.includes(p));
+    if(!remaining.includes(passage)){
+      if(selected.length+1+remaining.length>8)continue;
+      if(size+chars+remaining.reduce((n,p)=>n+charsOf(p),0)>6000)continue;
+    }
     selected.push(passage);size+=chars;
     if(selected.length===8)break;
-  }
-  if(firstCore && !selected.includes(firstCore) && selected.length<8){
-    const chars=firstCore.text.length+(firstCore.suppliedTranslation?.text.length??0);
-    if(size+chars<=6000){selected.push(firstCore);size+=chars;}
   }
   return selectAnswerEvidence(selected);
 }
 export async function composeSermon(input: SermonRequest, result: KnowledgeResult, options: { generate?: typeof generateSermonSections; reviewer?: KnowledgeSynthesisProvider | null; env: SermonProviderEnv }) {
   if(result.status!=="evidence") throw new Error(result.status==="unsupported-fatwa"?"unsupported-fatwa":"no-evidence");
-  const evidence=selectSermonEvidence(result.passages.filter(p=>(p.collection==="quran"||p.language==="ar")&&hasSuppliedAnswerText(p,input.locale)));
+  const evidence=selectSermonEvidence(result.passages.filter(p=>(p.collection==="quran"||p.language==="ar")&&hasSuppliedAnswerText(p,input.locale)),input.duration);
   if(!evidence.length) throw new Error("missing-translation");
   if(!sourceCoverage(evidence.map(item=>item.passage),input.duration)) throw new Error("insufficient-evidence");
   const deadline=Date.now()+285_000;
