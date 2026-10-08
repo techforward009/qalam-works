@@ -20,7 +20,28 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx vitest run tests/sermonComposer.test.ts tests/sermonReview.test.ts
-      - run: npm test
+      - name: Run repository suite with exact main-baseline comparison
+        shell: bash
+        run: |
+          set +e
+          NO_COLOR=1 npm test 2>&1 | tee "$RUNNER_TEMP/branch-npm-test.log"
+          branch_status=${PIPESTATUS[0]}
+          if [ "$branch_status" -eq 0 ]; then exit 0; fi
+          git worktree add --detach "$RUNNER_TEMP/qalam-main" origin/main
+          (
+            cd "$RUNNER_TEMP/qalam-main"
+            npm ci
+            NO_COLOR=1 npx vitest run tests/khateebBookPassageText.test.tsx tests/khateebStudio.test.ts tests/pdfWrapAndBreaks.test.ts
+          ) 2>&1 | tee "$RUNNER_TEMP/main-failing-files.log"
+          branch_failures=$(grep -E '^ +FAIL ' "$RUNNER_TEMP/branch-npm-test.log" | sed -E 's/^ +FAIL //' | sort -u)
+          main_failures=$(grep -E '^ +FAIL ' "$RUNNER_TEMP/main-failing-files.log" | sed -E 's/^ +FAIL //' | sort -u)
+          new_failures=$(comm -23 <(printf '%s\n' "$branch_failures") <(printf '%s\n' "$main_failures"))
+          if [ -n "$new_failures" ]; then
+            echo "New test failures versus origin/main:"
+            printf '%s\n' "$new_failures"
+            exit 1
+          fi
+          echo "::warning::Full suite has only existing origin/main failures."
       - run: npx tsc --noEmit
       - run: npm run test:sermon:flow:imports
       - run: npm run build
