@@ -79,6 +79,7 @@ it("allows a brief closing and deduplicates valid references without accepting u
  expect(body.reasoning_effort).toBe("low");
  expect(body.reasoning_format).toBeUndefined();
  expect(body.response_format).toEqual({type:"json_object"});
+ expect(body.messages[0].content).toContain('{"sections":[{"heading":"section heading","text":"full spoken paragraphs","refs":[1]}]}');
  });
 
 it("rejects foreign-script text in Urdu sermon prose before source review",async()=>{

@@ -42,6 +42,7 @@ it("uses a separate source-only reasoning request and never returns model reason
   expect(body.reasoning_effort).toBe("low"); expect(body.model).toBe("openai/gpt-oss-120b"); expect(body.reasoning_format).toBeUndefined();
   expect(body.messages[0].content).toContain("reverses the exception");
   expect(body.response_format).toEqual({type:"json_object"});
+  expect(body.messages[0].content).toContain('{"reviews":[{"claimId":"section id","sentences":[{"i":1,"v":"s","r":"e","refs":[1]}]}]}');
   const request = JSON.parse(body.messages[1].content);
   expect(request.evidence).toHaveLength(1);
   expect(request.sections[0].sentences).toHaveLength(2);expect(request.sections[0].refs).toEqual([1]);
