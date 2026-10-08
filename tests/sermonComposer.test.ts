@@ -62,6 +62,13 @@ it("keeps one length-repair attempt available after correcting malformed section
  const project=await composeSermon(input,result,{generate:provider,reviewer,env:{}});
  expect(project.sections).toHaveLength(5);expect(provider).toHaveBeenCalledTimes(3);
 });
+it("preserves source-approved sections while rewriting rejected ones",async()=>{
+ let reviewCount=0;const sourceCheck={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>{const reject=reviewCount++===0;return {reviews:claims.map((claim,index)=>({claimId:claim.id,verdict:reject&&index===0?"unsupported":"supported",reason:reject&&index===0?"not-in-evidence":"entailed"}))};})};
+ const provider=vi.fn(async()=>provider.mock.calls.length===1?{sections}:{sections:sections.map((section,index)=>index===0?section:{...section,text:Array.from({length:16},(_,n)=>`یہ نیا تدوینی جملہ ${n+1} سامعین کو اسی ماخذی نکتے پر غور کی دعوت دیتا ہے۔`).join(" ")})});
+ const project=await composeSermon(input,result,{generate:provider,reviewer:sourceCheck,env:{}});
+ expect(provider).toHaveBeenCalledTimes(2);expect(sourceCheck.review).toHaveBeenCalledTimes(2);
+ for(let index=1;index<5;index++)expect(project.sections[index].userText).toContain(sections[index].text);
+});
 it("uses bounded existing provider protocol without trusting previous draft as evidence",async()=>{
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections})}}]})));
  expect(await generateSermonSections({...input,previous:"غير ثابت",instruction:"زبان آسان کریں"},evidence,{CLOUDFLARE_ACCOUNT_ID:"test",CLOUDFLARE_AUTH_TOKEN:"test"},fetchMock)).toEqual({sections});
