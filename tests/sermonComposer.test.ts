@@ -57,6 +57,11 @@ it("does not reuse a 30-minute source pack as a 45-minute pack",async()=>{
  await expect(composeSermon({...input,duration:45},result,{generate:provider,reviewer,env:{}})).rejects.toThrow("insufficient-evidence");
  expect(provider).not.toHaveBeenCalled();
 });
+it("keeps one length-repair attempt available after correcting malformed section count",async()=>{
+ const provider=vi.fn(async()=>provider.mock.calls.length===1?{sections:[...sections,{...sections[4]}]}:provider.mock.calls.length===2?{sections:sections.map((section,index)=>index===0?{...section,text:section.text.slice(0,300)}:section)}:{sections});
+ const project=await composeSermon(input,result,{generate:provider,reviewer,env:{}});
+ expect(project.sections).toHaveLength(5);expect(provider).toHaveBeenCalledTimes(3);
+});
 it("uses bounded existing provider protocol without trusting previous draft as evidence",async()=>{
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections})}}]})));
  expect(await generateSermonSections({...input,previous:"غير ثابت",instruction:"زبان آسان کریں"},evidence,{CLOUDFLARE_ACCOUNT_ID:"test",CLOUDFLARE_AUTH_TOKEN:"test"},fetchMock)).toEqual({sections});

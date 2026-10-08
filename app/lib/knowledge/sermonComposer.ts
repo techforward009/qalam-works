@@ -86,12 +86,12 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
   let claims:ResearchClaim[] = [];
   let request=input;
   // One format/length repair must not consume the independent source-review repair.
-  let draftFailures=0;let reviewFailures=0;
+  let formatFailures=0;let draftFailures=0;let reviewFailures=0;
   for(let attempt=0;attempt<3;attempt++){
     let raw:unknown;
     try{raw=await (options.generate??generateSermonSections)(request,evidence,options.env,undefined,deadline);}catch(error){console.warn("Sermon composition validation",{stage:"generation",code:"provider-unavailable",attempt});throw new Error(error instanceof Error&&error.message==="provider-rate-limited"?"provider-rate-limited":"generation-unavailable");}
     sections=parseComposedSections(raw,evidence);
-    if(!sections){console.warn("Sermon composition validation",{stage:"draft",code:"invalid-sections",attempt,sectionCount:raw&&typeof raw==="object"&&Array.isArray((raw as {sections?:unknown}).sections)?(raw as {sections:unknown[]}).sections.length:0});if(++draftFailures<2){request={...request,instruction:`${request.instruction??input.instruction??""} Return exactly five full sections, each with heading, text and valid integer refs. Expand only supported explanations.`,previous:undefined};continue;}throw new Error("unverified");}
+    if(!sections){console.warn("Sermon composition validation",{stage:"draft",code:"invalid-sections",attempt,sectionCount:raw&&typeof raw==="object"&&Array.isArray((raw as {sections?:unknown}).sections)?(raw as {sections:unknown[]}).sections.length:0});if(++formatFailures>=2)throw new Error("unverified");request={...request,instruction:`${request.instruction??input.instruction??""} Return exactly five full sections, each with heading, text and valid integer refs. Expand only supported explanations.`,previous:undefined};continue;}
     const foreignScript=input.locale==="ur" && sections.some(s=>/[\p{Script=Bengali}\p{Script=Devanagari}\p{Script=Han}\p{Script=Cyrillic}\p{Script=Latin}]/u.test(s.heading+s.text));
     const wordCount=sections.reduce((n,s)=>n+s.text.split(/\s+/u).length,0);
     const seenSentences=new Map<string,number>();
@@ -106,7 +106,6 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
     if(foreignScript || repetitive || wordCount < minimumWords || shortSection || insufficientSources){
       const code=foreignScript?"unverified":insufficientSources?"insufficient-evidence":"insufficient-draft";
       console.warn("Sermon composition validation",{stage:"draft",code,attempt,wordCount,minimumWords,shortSection,minimumWordsPerSection,sectionWordCounts,foreignScript,repetitive});
-      if(insufficientSources&&attempt===1)throw new Error("insufficient-evidence");
       if(++draftFailures>=2)throw new Error(code);
       request={...request,previous:undefined,instruction:`${request.instruction??input.instruction??""} Rewrite the five sections so EACH contains at least ${minimumWordsPerSection} words (at least ${minimumWords} words total). Cite at least ${MINIMUM_SOURCES[input.duration]} distinct supplied source records, including at least ${MINIMUM_CORE_SOURCES[input.duration]} non-Quran source records, across the five sections. Expand each section with distinct questions for the listeners and invitations to examine the exact supplied wording; do not answer those questions with new factual or religious claims. Use only the requested language's script. Do not repeat sentences or add unsupported claims.`};
       continue;
