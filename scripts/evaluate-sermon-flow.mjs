@@ -48,17 +48,19 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
       if(!reviewer)throw new Error('provider-unavailable');
       const claims=fixtures.map(f=>({id:f.id,text:f.text,citations:[{passageId:f.passage.id,quote:f.passage.text}]}));
       const publicReviewInput={question:input.title,locale:'ur',evidence:evidence.passages.map((passage,i)=>({ref:i+1,passage}))};
-      const reviewPublicOnce=async(reviewInput,reviewClaims)=>{try{return await reviewer.review(reviewInput,reviewClaims);}catch(error){if(!(error instanceof Error)||error.message!=='provider-unavailable')throw error;console.log('SERMON_FLOW_EVAL',JSON.stringify({stage:'public-review-retry',reason:'temporary-provider-unavailable'}));return reviewer.review(reviewInput,reviewClaims);}};
+      const reviewPublicOnce=async(reviewInput,reviewClaims)=>{try{return await reviewer.review(reviewInput,reviewClaims);}catch(error){if(!(error instanceof Error)||!['provider-unavailable','provider-rate-limited'].includes(error.message))throw error;console.log('SERMON_FLOW_EVAL',JSON.stringify({stage:'public-review-retry',reason:error.message}));if(error.message==='provider-rate-limited')await new Promise(resolve=>setTimeout(resolve,60000));return reviewer.review(reviewInput,reviewClaims);}};
       const checked=reviewedResearchClaims(await reviewPublicOnce(publicReviewInput,claims),claims);
       if(checked===null)throw new Error('provider-format');
       for(const fixture of fixtures){const accepted=checked.some(c=>c.id===fixture.id);console.log('SERMON_CONDITIONS_EVAL',JSON.stringify({fixture:fixture.id,expected:fixture.expected,accepted,passed:accepted===fixture.expected}));if(accepted!==fixture.expected)throw new Error('unverified');}
       stage='composition-and-review';
+      // Groq's free output-token window is shared by the previous compact audit.
+      await new Promise(resolve=>setTimeout(resolve,60000));
       const fullReviewer=createSermonSentenceReviewer({preferredProvider:process.env.QALAM_SERMON_PROVIDER||undefined,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+230000});
       if(!fullReviewer)throw new Error('provider-unavailable');
       let reviewAttempt=0;
-      const project=await composeSermon(input,evidence,{env:process.env,generate:async(...args)=>{publicDraft=await generateSermonSections(...args);return publicDraft;},reviewer:{...fullReviewer,async review(reviewInput,claims){
+      const project=await composeSermon(input,evidence,{env:process.env,generate:async(...args)=>{publicDraft=await generateSermonSections(...args);await new Promise(resolve=>setTimeout(resolve,60000));return publicDraft;},reviewer:{...fullReviewer,async review(reviewInput,claims){
         let audit;
-        try{audit=await fullReviewer.review(reviewInput,claims);}catch(error){if(!(error instanceof Error)||error.message!=='provider-unavailable')throw error;console.log('SERMON_FLOW_EVAL',JSON.stringify({stage:'sermon-review-retry',reason:'temporary-provider-unavailable'}));audit=await fullReviewer.review(reviewInput,claims);}
+        try{audit=await fullReviewer.review(reviewInput,claims);}catch(error){if(!(error instanceof Error)||!['provider-unavailable','provider-rate-limited'].includes(error.message))throw error;console.log('SERMON_FLOW_EVAL',JSON.stringify({stage:'sermon-review-retry',reason:error.message}));if(error.message==='provider-rate-limited')await new Promise(resolve=>setTimeout(resolve,60000));audit=await fullReviewer.review(reviewInput,claims);}
         // This evaluator is restricted above to a fixed public Quran fixture.
         for(const rejection of sermonRejectedSentences(audit,reviewInput,claims)??[])console.log('SERMON_FLOW_PUBLIC_REJECTION',JSON.stringify({attempt:reviewAttempt,...rejection}));
         reviewAttempt++;return audit;

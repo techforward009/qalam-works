@@ -59,7 +59,7 @@ if (!process.argv.includes('--live') && ![releaseMarker,'Validate complete sermo
   try {
     let audit;
     try { audit = await provider.review(input, claims); }
-    catch (error) { if (!(error instanceof Error) || error.message !== 'provider-unavailable') throw error; console.log('SERMON_REVIEW_EVAL',JSON.stringify({retry:'temporary-provider-unavailable'})); audit = await provider.review(input, claims); }
+    catch (error) { if (!(error instanceof Error) || !['provider-unavailable','provider-rate-limited'].includes(error.message)) throw error; console.log('SERMON_REVIEW_EVAL',JSON.stringify({retry:error.message})); if(error.message==='provider-rate-limited') await new Promise(resolve=>setTimeout(resolve,60000)); audit = await provider.review(input, claims); }
     const accepted = reviewedResearchClaims(audit, claims);
     if (accepted === null) throw new Error('incomplete-audit');
     for (const fixture of fixtures) {

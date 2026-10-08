@@ -71,4 +71,6 @@ if (process.argv.includes('--live') || markers.includes(process.env.VERCEL_GIT_C
 }
 
 await import("./evaluate-sermon-review.mjs");
+// Let the provider's free output-token window refill before the long sermon fixture.
+await new Promise(resolve=>setTimeout(resolve,60000));
 await import("./evaluate-sermon-flow.mjs");
