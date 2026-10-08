@@ -1,5 +1,8 @@
 name: Khateeb Sermon Validation
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - khateeb-sermon-local-validation
