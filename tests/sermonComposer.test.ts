@@ -151,7 +151,7 @@ it("rejects foreign-script text in Urdu sermon prose before source review",async
 });
 
 it("allows two script-only corrections but never audits contaminated Urdu",async()=>{
- const provider=vi.fn(async()=>({sections:provider.mock.calls.length<3?sections.map((section,i)=>i===0?{...section,heading:"Opening"}:section):sections}));
+ const provider=vi.fn(async(_request:SermonRequest)=>({sections:provider.mock.calls.length<3?sections.map((section,i)=>i===0?{...section,heading:"Opening"}:section):sections}));
  const audit={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(claim=>({claimId:claim.id,verdict:"supported",reason:"entailed"}))}))};
  const project=await composeSermon(input,result,{generate:provider,reviewer:audit,env:{}});
  expect(project.sections).toHaveLength(5);
