@@ -186,6 +186,14 @@ it("reserves a primary non-Quran passage when ranked results begin with eight Qu
  expect(chosen.some(e=>e.passage.collection!=="quran")).toBe(true);
  expect(chosen.length).toBeLessThanOrEqual(8);
 });
+it("retains three distinct non-Quran primary sources for a 45-minute sermon",()=>{
+ const quran=result.passages.find(p=>p.collection==="quran")!;
+ const core=result.passages.filter(p=>p.collection!=="quran");
+ const ranked=[...Array.from({length:8},(_,i)=>({...quran,id:`quran:ranked:forty-five:${i}`,recordId:undefined})),...core];
+ const chosen=selectSermonEvidence(ranked,45);
+ expect(new Set(chosen.filter(item=>item.passage.collection!=="quran").map(item=>item.passage.recordId??item.passage.id)).size).toBe(3);
+ expect(chosen.length).toBeLessThanOrEqual(8);
+});
 it("bounds sermon evidence with complete source units and unchanged verified translations",()=>{
  const long={...result.passages[0],id:"too-long",text:"ع".repeat(7000)};
  const chosen=selectSermonEvidence([long,...result.passages]);expect(chosen).toHaveLength(5);expect(chosen[0].passage).toBe(result.passages[0]);expect(chosen[0].ref).toBe(1);expect(chosen[1].ref).toBe(2);
