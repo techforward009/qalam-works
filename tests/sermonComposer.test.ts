@@ -62,6 +62,23 @@ it("keeps one length-repair attempt available after correcting malformed section
  const project=await composeSermon(input,result,{generate:provider,reviewer,env:{}});
  expect(project.sections).toHaveLength(5);expect(provider).toHaveBeenCalledTimes(3);
 });
+it("permits independent format, length, and source-review corrections without publishing unreviewed prose",async()=>{
+ let reviewCalls=0;
+ const provider=vi.fn(async()=>{
+   const attempt=provider.mock.calls.length;
+   if(attempt===1)return {sections:[...sections,sections[4]]};
+   if(attempt===2)return {sections:sections.map(s=>({...s,text:s.text.slice(0,300)}))};
+   return {sections};
+ });
+ const audit={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>{
+   const reject=reviewCalls++===0;
+   return {reviews:claims.map((c,i)=>({claimId:c.id,verdict:reject&&i===0?"unsupported":"supported",reason:reject&&i===0?"not-in-evidence":"entailed"}))};
+ })};
+ const project=await composeSermon(input,result,{generate:provider,reviewer:audit,env:{}});
+ expect(project.sections).toHaveLength(5);
+ expect(provider).toHaveBeenCalledTimes(4);
+ expect(audit.review).toHaveBeenCalledTimes(2);
+});
 it("preserves source-approved sections while rewriting rejected ones",async()=>{
  let reviewCount=0;const sourceCheck={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>{const reject=reviewCount++===0;return {reviews:claims.map((claim,index)=>({claimId:claim.id,verdict:reject&&index===0?"unsupported":"supported",reason:reject&&index===0?"not-in-evidence":"entailed"}))};})};
  const provider=vi.fn(async()=>provider.mock.calls.length===1?{sections}:{sections:sections.map((section,index)=>index===0?section:{...section,text:Array.from({length:16},(_,n)=>`یہ نیا تدوینی جملہ ${n+1} سامعین کو اسی ماخذی نکتے پر غور کی دعوت دیتا ہے۔`).join(" ")})});
