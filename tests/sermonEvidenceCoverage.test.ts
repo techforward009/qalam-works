@@ -22,3 +22,16 @@ it("keeps commentary in translation editions out of primary sermon retrieval",()
  expect(result.passages.length).toBeGreaterThan(0);
  expect(result.passages.some(p=>p.sourceId==="sahifa-ur")).toBe(false);
 });
+
+it("retrieves an Arabic Nahj passage with its source locator for sermon evidence",()=>{
+ const source={id:"nahj-ar",book:"nahj" as const,language:"ar" as const,filename:"nahj-ar.json",sha256:"a".repeat(64),translator:null};
+ const id="nahj-ar:saying:55";
+ const arabic="الصبر صبران صبر على ما تكره وصبر عما تحب";
+ const record={id,sourceId:source.id,book:source.book,language:source.language,kind:"saying",number:55,title:"الصبر",reference:{sourceId:source.id,section:"saying",number:55,locator:"نهج البلاغة، الحكمة ٥٥",printPage:null},textSha256:"b".repeat(64),paragraphs:[{id:id+":p1",text:arabic}]};
+ const result=retrieveSermonSources({...base,scope:"all",question:"الصبر",sources:[source],records:[record]});
+ const passage=result.passages.find(p=>p.collection==="nahj");
+ expect(passage).toBeDefined();
+ expect(passage?.text).toBe(arabic);
+ expect(passage?.recordId).toBe(id);
+ expect(passage?.referenceUr).toBeTruthy();
+});
