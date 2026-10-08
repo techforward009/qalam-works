@@ -158,6 +158,7 @@ it("allows two script-only corrections but never audits contaminated Urdu",async
  expect(provider).toHaveBeenCalledTimes(3);
  expect(audit.review).toHaveBeenCalledTimes(1);
  expect(provider.mock.calls[1][0].instruction).toContain("never include any Latin");
+ expect(provider.mock.calls[1][0].instruction).toContain("Opening");
 });
 it("repairs a short first draft before reviewing and preserves minimum length",async()=>{
  const repair=vi.fn(async(_request:SermonRequest)=>({sections:repair.mock.calls.length===1?sections.map(s=>({...s,text:s.text.slice(0,300)})):sections}));
