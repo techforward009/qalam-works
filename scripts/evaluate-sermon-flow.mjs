@@ -18,14 +18,14 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
     },
   });
   const {collectSermonEvidence}=await import('../app/lib/knowledge/sermonEvidence.ts');
-  const {composeSermon}=await import('../app/lib/knowledge/sermonComposer.ts');
+  const {composeSermon,generateSermonSections}=await import('../app/lib/knowledge/sermonComposer.ts');
   const {createSermonSentenceReviewer,sermonRejectedSentences}=await import('../app/lib/knowledge/sermonReview.ts');
   const {reviewedResearchClaims}=await import('../app/lib/knowledge/researchAnswer.ts');
   const {buildCustomSermonText,parseCustomSermonProject,serializeCustomSermonProject}=await import('../app/tools/khateeb-studio/engine/customSermonProject.ts');
   if(process.argv.includes('--check-imports'))console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'imports-valid'}));
   else if(process.exitCode)console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'blocked',reason:'source-review-fixtures-failed'}));
   else{
-    let stage='sources';const started=Date.now();
+    let stage='sources';const started=Date.now();let publicDraft;
     try{
       // Only a fixed public Quran request; no private corpus prose is logged.
       const input={title:'قرآن سورۃ العصر 103:1–3',duration:20,locale:'ur'};
@@ -54,7 +54,7 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
       const fullReviewer=createSermonSentenceReviewer({preferredProvider:process.env.QALAM_SERMON_PROVIDER||undefined,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+230000});
       if(!fullReviewer)throw new Error('provider-unavailable');
       let reviewAttempt=0;
-      const project=await composeSermon(input,evidence,{env:process.env,reviewer:{...fullReviewer,async review(reviewInput,claims){
+      const project=await composeSermon(input,evidence,{env:process.env,generate:async(...args)=>{publicDraft=await generateSermonSections(...args);return publicDraft;},reviewer:{...fullReviewer,async review(reviewInput,claims){
         const audit=await fullReviewer.review(reviewInput,claims);
         // This evaluator is restricted above to a fixed public Quran fixture.
         for(const rejection of sermonRejectedSentences(audit,reviewInput,claims)??[])console.log('SERMON_FLOW_PUBLIC_REJECTION',JSON.stringify({attempt:reviewAttempt,...rejection}));
@@ -70,6 +70,7 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
       // Generated public-fixture prose supports human review of the actual result.
       for(const section of project.sections)console.log('SERMON_FLOW_PUBLIC_SECTION',JSON.stringify({heading:section.headingUr,text:section.userText}));
     }catch(error){
+      if(publicDraft)console.log('SERMON_FLOW_PUBLIC_DRAFT',JSON.stringify(publicDraft));
       const known=['provider-format','provider-rate-limited','provider-unavailable','composition-timeout','generation-unavailable','unverified','no-evidence','missing-translation','insufficient-draft','invalid-project','missing-source-output','non-public-fixture'];
       console.log('SERMON_FLOW_EVAL',JSON.stringify({stage,status:'failed',code:error instanceof Error&&known.includes(error.message)?error.message:error instanceof Error&&['TimeoutError','AbortError'].includes(error.name)?'timeout':'unavailable',elapsedMs:Date.now()-started}));
       process.exitCode=1;

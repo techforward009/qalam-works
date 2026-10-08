@@ -139,3 +139,12 @@ it("uses Gemini with its own key and compatible thinking and output parameters",
  expect(init.headers).toMatchObject({"x-goog-api-key":"gemini-test"});expect(body.model).toBe("gemini-3.8-flash");expect(body.generation_config.thinking_level).toBe("low");expect(body.generation_config.max_output_tokens).toBe(11500);expect(body.max_completion_tokens).toBeUndefined();expect(body.reasoning_format).toBeUndefined();expect(body.chat_template_kwargs).toBeUndefined();
  await expect(generateSermonSections(input,evidence,{QALAM_SERMON_PROVIDER:"gemini",GROQ_API_KEY:"groq-test"},fetchMock)).rejects.toThrow("not-configured");expect(fetchMock).toHaveBeenCalledTimes(1);
 });
+
+it("keeps a source-review repair after a short draft without unbounded retries",async()=>{
+ const draft=vi.fn(async(_request:SermonRequest)=>({sections:draft.mock.calls.length===1?sections.map(s=>({...s,text:s.text.slice(0,300)})):sections}));
+ let checks=0;
+ const check={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>{const reject=checks++===0;return {reviews:claims.map((c,i)=>({claimId:c.id,verdict:reject&&i===2?'unsupported':'supported',reason:reject&&i===2?'not-in-evidence':'entailed'}))};})};
+ expect((await composeSermon(input,result,{generate:draft,reviewer:check,env:{}})).sections).toHaveLength(5);
+ expect(draft).toHaveBeenCalledTimes(3);expect(check.review).toHaveBeenCalledTimes(2);
+ expect(draft.mock.calls[2][0].instruction).toContain('section-3');
+});
