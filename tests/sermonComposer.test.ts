@@ -150,6 +150,15 @@ it("rejects foreign-script text in Urdu sermon prose before source review",async
  expect(check.review).not.toHaveBeenCalled();
 });
 
+it("allows two script-only corrections but never audits contaminated Urdu",async()=>{
+ const provider=vi.fn(async()=>({sections:provider.mock.calls.length<3?sections.map((section,i)=>i===0?{...section,heading:"Opening"}:section):sections}));
+ const audit={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(claim=>({claimId:claim.id,verdict:"supported",reason:"entailed"}))}))};
+ const project=await composeSermon(input,result,{generate:provider,reviewer:audit,env:{}});
+ expect(project.sections).toHaveLength(5);
+ expect(provider).toHaveBeenCalledTimes(3);
+ expect(audit.review).toHaveBeenCalledTimes(1);
+ expect(provider.mock.calls[1][0].instruction).toContain("never include any Latin");
+});
 it("repairs a short first draft before reviewing and preserves minimum length",async()=>{
  const repair=vi.fn(async(_request:SermonRequest)=>({sections:repair.mock.calls.length===1?sections.map(s=>({...s,text:s.text.slice(0,300)})):sections}));
  const check={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(c=>({claimId:c.id,verdict:"supported",reason:"entailed"}))}))};
