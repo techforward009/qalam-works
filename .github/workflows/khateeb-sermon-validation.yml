@@ -131,3 +131,19 @@ jobs:
           test -n "$CLOUDFLARE_AUTH_TOKEN" || { echo "::error::Missing CLOUDFLARE_AUTH_TOKEN"; exit 1; }
       - name: Compose and independently review a 20-minute sermon from fixed excerpts
         run: node scripts/evaluate-sermon-flow.mjs --live-fixture
+
+  quran-public-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_AUTH_TOKEN: ${{ secrets.CLOUDFLARE_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Retrieve Quran passages without private storage credentials
+        run: node scripts/evaluate-sermon-flow.mjs --public-quran
