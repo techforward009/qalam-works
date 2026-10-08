@@ -24,7 +24,8 @@ export function geminiSermonFetch(fetchImpl: typeof fetch, attemptTimeoutMs?: nu
         model: alternateModel ?? request.model, store: false,
         system_instruction: messages.filter(message => message.role === "system").map(message => message.content).join("\n"),
         input: messages.filter(message => message.role === "user").map(message => message.content).join("\n"),
-        generation_config: { temperature: request.temperature, max_output_tokens: request.max_tokens, thinking_level: "low", thinking_summaries: "none" },
+        // Interactions accepts no temperature field; use its supported controls only.
+        generation_config: { max_output_tokens: request.max_tokens, thinking_level: "low", thinking_summaries: "none" },
         response_format: { type: "text", mime_type: "application/json", schema: request.response_format.json_schema.schema },
       }),
     });

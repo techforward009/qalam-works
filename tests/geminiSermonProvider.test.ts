@@ -8,6 +8,7 @@ describe('native Gemini response boundary',()=>{
   expect((await response.json()).choices[0].message.content).toBe('{"sections":[]}');
   const call=fetchMock.mock.calls[0] as unknown as [string,RequestInit];
   expect(call[0]).not.toContain('test-key');expect(call[1].headers).toEqual({'Content-Type':'application/json','x-goog-api-key':'test-key'});
+  expect(JSON.parse(call[1].body as string).generation_config).toEqual({max_output_tokens:4500,thinking_level:'low',thinking_summaries:'none'});
   expect(JSON.parse(call[1].body as string)).toMatchObject({store:false,system_instruction:'rules',input:'evidence',generation_config:{thinking_level:'low',max_output_tokens:4500},response_format:{mime_type:'application/json'}});
  });
  it.each(['incomplete','failed','in_progress','requires_action'])('rejects %s even with valid JSON',async status=>{
