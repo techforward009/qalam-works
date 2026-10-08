@@ -243,6 +243,14 @@ it("keeps a source-review repair after a short draft without unbounded retries",
  expect(draft.mock.calls[2][0].instruction).toContain('section-3');
 });
 
+it("retains a final length repair after a source-review rejection",async()=>{
+ let reviewCalls=0;
+ const auditor={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((claim,i)=>({claimId:claim.id,verdict:reviewCalls++===0&&i===0?"unsupported":"supported",reason:"entailed"}))}))};
+ const provider=vi.fn(async(_request:SermonRequest)=>({sections:provider.mock.calls.length===3?sections.map((s,i)=>i===0?{...s,text:s.text.slice(0,300)}:s):sections}));
+ const project=await composeSermon(input,result,{generate:provider,reviewer:auditor,env:{}});
+ expect(project.sections).toHaveLength(5);
+ expect(provider).toHaveBeenCalledTimes(4);
+});
 it("preserves rejected-source feedback when a repair draft also needs more length",async()=>{
  let reviewCount=0;
  const auditor={...reviewer,review:vi.fn(async(reviewInput:AnswerInput,claims:readonly ResearchClaim[])=>{
