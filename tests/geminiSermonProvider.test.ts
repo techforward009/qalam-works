@@ -66,3 +66,19 @@ it('does not retry malformed completed output on another model',async()=>{
  const adapter=geminiSermonFetch(async()=>{calls++;return Response.json({status:'completed',steps:[]});});
  await expect(fetchSermonProvider('ignored',init,adapter,async()=>{})).rejects.toThrow('unavailable');expect(calls).toBe(1);
 });
+
+// Large bounded nested arrays can be rejected by the provider's grammar compiler.
+it('uses a small structural grammar without mutating application constraints',async()=>{
+ const schema={type:'object',additionalProperties:false,required:['reviews'],properties:{reviews:{type:'array',minItems:8,maxItems:8,items:{type:'object',required:['refs','v'],properties:{refs:{type:'array',maxItems:8,items:{type:'integer',enum:[1,2],minimum:1}},v:{type:'string',enum:['s','u','n'],maxLength:1}}}}}};
+ let sent:any;
+ const adapter=geminiSermonFetch(async(_url,request)=>{sent=JSON.parse(request!.body as string);return Response.json({status:'completed',steps:[{type:'model_output',content:[{type:'text',text:'{}'}]}]});});
+ const body={...JSON.parse(init.body),response_format:{json_schema:{schema}}};
+ await adapter('ignored',{...init,body:JSON.stringify(body)});
+ const wire=sent.response_format.schema;
+ expect(wire.properties.reviews.minItems).toBeUndefined();
+ expect(wire.properties.reviews.maxItems).toBeUndefined();
+ expect(wire.properties.reviews.items.properties.refs.items).toEqual({type:'integer'});
+ expect(wire.properties.reviews.items.properties.v).toEqual({type:'string',enum:['s','u','n']});
+ expect(wire.required).toEqual(['reviews']);expect(wire.additionalProperties).toBe(false);
+ expect(schema.properties.reviews.maxItems).toBe(8);
+});

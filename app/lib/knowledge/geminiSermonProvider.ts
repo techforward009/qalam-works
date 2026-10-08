@@ -1,3 +1,18 @@
+/** Keep the provider grammar small; semantic limits remain in the sermon validators. */
+function geminiWireSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (["minItems", "maxItems", "minLength", "maxLength", "minimum", "maximum"].includes(key)) continue;
+    if (key === "enum" && Array.isArray(value) && value.some(item => typeof item !== "string")) continue;
+    if (key === "properties" && value && typeof value === "object") {
+      result[key] = Object.fromEntries(Object.entries(value).map(([name, child]) => [name, geminiWireSchema(child as Record<string, unknown>)]));
+    } else if (key === "items" && value && typeof value === "object") {
+      result[key] = geminiWireSchema(value as Record<string, unknown>);
+    } else result[key] = value;
+  }
+  return result;
+}
+
 /** Native Gemini Interactions transport; existing sermon validation stays mandatory. */
 export function geminiSermonFetch(fetchImpl: typeof fetch, attemptTimeoutMs?: number): typeof fetch {
   let alternateModel: string | undefined;
@@ -26,7 +41,7 @@ export function geminiSermonFetch(fetchImpl: typeof fetch, attemptTimeoutMs?: nu
         input: messages.filter(message => message.role === "user").map(message => message.content).join("\n"),
         // Interactions accepts no temperature field; use its supported controls only.
         generation_config: { max_output_tokens: request.max_tokens, thinking_level: "low", thinking_summaries: "none" },
-        response_format: { type: "text", mime_type: "application/json", schema: request.response_format.json_schema.schema },
+        response_format: { type: "text", mime_type: "application/json", schema: geminiWireSchema(request.response_format.json_schema.schema) },
       }),
     });
     if (!response.ok) {
