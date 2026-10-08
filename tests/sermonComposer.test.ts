@@ -21,6 +21,9 @@ it("selects an independent source-review provider without changing the writing m
 it("creates five composed sections with exact references, portable sources and correct duration",async()=>{
  const project=await composeSermon(input,result,{generate,reviewer,env:{}});
  expect(project.sections).toHaveLength(5);expect(project.sections.reduce((n,s)=>n+s.minutes,0)).toBe(30);
+ expect(project.sections[0].evidenceIds).toContain(result.passages[0].id);
+ expect(project.sections[1].evidenceIds).toContain(result.passages[1].id);
+ expect(project.sections[2].evidenceIds).toEqual([]);
  expect(project.sections[0].userText).toContain("قرآن، 2:153");
  expect(project.evidence[0].arabic).toBe(result.passages[0].text);
  expect(buildCustomSermonText(project,"ur")).toContain(result.passages[0].suppliedTranslation!.text);
