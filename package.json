@@ -9,7 +9,9 @@
     "lint": "next lint",
     "test": "vitest run",
     "prebuild": "node scripts/fetch-madinah-v2-pages.mjs",
-    "postbuild": "node scripts/evaluate-knowledge-provider.mjs"
+    "test:sermon:review:live": "node scripts/evaluate-sermon-review.mjs --live",
+    "test:sermon:flow:live": "node scripts/evaluate-sermon-flow.mjs --live-full",
+    "test:sermon:flow:imports": "node scripts/evaluate-sermon-flow.mjs --check-imports"
   },
   "dependencies": {
     "@fontsource/amiri": "^5.3.0",
