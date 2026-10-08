@@ -122,7 +122,7 @@ it("repairs a short first draft before reviewing and preserves minimum length",a
  const repair=vi.fn(async(_request:SermonRequest)=>({sections:repair.mock.calls.length===1?sections.map(s=>({...s,text:s.text.slice(0,300)})):sections}));
  const check={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(c=>({claimId:c.id,verdict:"supported",reason:"entailed"}))}))};
  const project=await composeSermon(input,result,{generate:repair,reviewer:check,env:{}});
- expect(project.sections).toHaveLength(5);expect(repair).toHaveBeenCalledTimes(2);expect(check.review).toHaveBeenCalledTimes(1);expect(repair.mock.calls[1][0].instruction).toContain("at least 650 words");expect(repair.mock.calls[1][0].previous).toBeUndefined();
+ expect(project.sections).toHaveLength(5);expect(repair).toHaveBeenCalledTimes(2);expect(check.review).toHaveBeenCalledTimes(1);expect(repair.mock.calls[1][0].instruction).toContain("at least 750 words");expect(repair.mock.calls[1][0].previous).toContain("sections");
 });
 it("rejects a sermon with one underlength section even when its total is long enough",async()=>{
  const uneven=sections.map((section,i)=>i===2?{...section,text:Array.from({length:8},(_,n)=>`یہ جملہ نمبر ${n+1} سامعین کو غور کی دعوت دیتا ہے۔`).join(" ")}:section);
