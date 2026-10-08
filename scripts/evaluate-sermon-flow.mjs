@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import ts from 'typescript';
 
 const marker='Validate complete sermon composition and source review';
-if(process.argv.includes('--live-full')||process.argv.includes('--live-fixture')||process.argv.includes('--check-imports')||process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim()===marker){
+if(process.argv.includes('--live-full')||process.argv.includes('--live-fixture')||process.argv.includes('--public-quran')||process.argv.includes('--check-imports')||process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim()===marker){
   registerHooks({
     resolve(specifier,context,nextResolve){
       if(specifier.startsWith('.')&&!/\.[cm]?[jt]s$|\.json$/.test(specifier)&&context.parentURL){
@@ -24,6 +24,17 @@ if(process.argv.includes('--live-full')||process.argv.includes('--live-fixture')
   const {buildCustomSermonText,parseCustomSermonProject,serializeCustomSermonProject}=await import('../app/tools/khateeb-studio/engine/customSermonProject.ts');
   if(process.argv.includes('--check-imports'))console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'imports-valid'}));
   else if(process.exitCode)console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'blocked',reason:'source-review-fixtures-failed'}));
+  else if(process.argv.includes('--public-quran')){
+    const started=Date.now();
+    try{
+      const sources=await collectSermonEvidence('قرآن سورۃ العصر 103:1–3','ur','quran-test-no-private-store');
+      const first=sources.passages.find(p=>p.quranLocation?.surah===103&&p.quranLocation?.ayah===1);
+      const third=sources.passages.find(p=>p.quranLocation?.surah===103&&p.quranLocation?.ayah===3);
+      const valid=sources.status==='evidence'&&Boolean(first&&third)&&sources.passages.every(p=>p.collection==='quran'&&p.suppliedTranslation?.language==='ur');
+      console.log('SERMON_PUBLIC_QURAN',JSON.stringify({status:valid?'passed':'failed',sourceCount:sources.passages.length,elapsedMs:Date.now()-started,privateStoreRequired:false}));
+      if(!valid)process.exitCode=1;
+    }catch(error){console.log('SERMON_PUBLIC_QURAN',JSON.stringify({status:'failed',reason:error instanceof Error?error.message:'unknown',elapsedMs:Date.now()-started}));process.exitCode=1;}
+  }
   else if(process.argv.includes('--live-fixture')){
     const input={title:'صبر',duration:20,locale:'ur'};
     const originals=[
