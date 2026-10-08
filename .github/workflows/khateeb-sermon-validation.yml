@@ -148,7 +148,7 @@ jobs:
         run: node scripts/evaluate-sermon-flow.mjs --public-quran
 
   gemma-probe:
-    if: github.event_name == 'push' && github.event.head_commit.message == 'Probe Gemma 4 safely'
+    if: (github.event_name == 'push' && github.event.head_commit.message == 'Probe Gemma 4 safely') || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[gemma-probe]'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
