@@ -56,6 +56,16 @@ it("fails closed on provider rejection and incomplete review output", async () =
   expect(createSermonSentenceReviewer({ apiKey: "" })).toBeNull();
 });
 
+it("retries one invalid Groq audit and still validates the complete second response",async()=>{
+ let call=0;
+ const fetchMock=vi.fn(async()=>{
+  const content=JSON.stringify(call++===0?{reviews:[]}:compactReview());
+  return new Response(JSON.stringify({choices:[{message:{content}}]}));
+ });
+ const audit=await createSermonSentenceReviewer({apiKey:"test",fetchImpl:fetchMock})!.review(input,claims);
+ expect(audit).toMatchObject({reviews:[{claimId:"section-1",verdict:"unsupported",reason:"contradiction"}]});expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
 const compactReview=()=>({reviews:[{claimId:"section-1",sentences:[{i:1,v:"n",r:"n",refs:[]},{i:2,v:"u",r:"c",refs:[1]}]}]});
 it("compact audits retain every sentence, own-source scope and reasons",()=>{
  expect(parseCompactSentenceReviews(compactReview(),input,claims)).toEqual(parseSentenceReviews(review(),input,claims));
@@ -83,7 +93,7 @@ it("does not accept earlier batches if a later batch is incomplete",async()=>{
   const reviews=calls++===0?request.sections.map((s:{claimId:string;sentences:{index:number}[]})=>({claimId:s.claimId,sentences:s.sentences.map(x=>({i:x.index,v:"s",r:"e",refs:[1]}))})):[];
   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({reviews})}}]}));
  });
- await expect(createSermonSentenceReviewer({apiKey:"test",fetchImpl:fetchMock})!.review(input,separate)).rejects.toThrow("provider-format");expect(fetchMock).toHaveBeenCalledTimes(2);
+ await expect(createSermonSentenceReviewer({apiKey:"test",fetchImpl:fetchMock})!.review(input,separate)).rejects.toThrow("provider-format");expect(fetchMock).toHaveBeenCalledTimes(3);
 });
 
 it("independently audits sentences on Cloudflare Qwen when existing credentials are available",async()=>{

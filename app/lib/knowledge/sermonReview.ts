@@ -116,7 +116,14 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; geminiK
       // Groq output quotas need sequential calls; independent Cloudflare batches can overlap.
       const concurrency=useCloudflare?2:1;
       for(let offset=0;offset<batches.length;offset+=concurrency){
-        const checked=await Promise.allSettled(batches.slice(offset,offset+concurrency).map(batch=>reviewBatch(input,batch)));
+        const checked=await Promise.allSettled(batches.slice(offset,offset+concurrency).map(async batch=>{
+          try{return await reviewBatch(input,batch);}
+          catch(error){
+            if(useGemini||useCloudflare||!(error instanceof Error)||error.message!=="provider-format")throw error;
+            console.warn("Sermon sentence review",{code:"retry-invalid-audit"});
+            return reviewBatch(input,batch);
+          }
+        }));
         const failed=checked.find(r=>r.status==="rejected");
         if(failed?.status==="rejected")throw failed.reason;
         for(const result of checked)if(result.status==="fulfilled"){reviews.push(...result.value.reviews);sentenceAudit.push(...result.value.sentenceAudit);}
