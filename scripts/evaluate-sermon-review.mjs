@@ -57,7 +57,9 @@ if (!process.argv.includes('--live') && ![releaseMarker,'Validate complete sermo
   const input = { question: 'صبر اور نماز', locale: 'ur', evidence: passages.map((passage, i) => ({ ref: i + 1, passage })) };
   const claims = fixtures.map(f => ({ id: f.id, text: f.text, citations: [{ passageId: passages[f.ref - 1].id, quote: passages[f.ref - 1].text }] }));
   try {
-    const audit = await provider.review(input, claims);
+    let audit;
+    try { audit = await provider.review(input, claims); }
+    catch (error) { if (!(error instanceof Error) || error.message !== 'provider-unavailable') throw error; console.log('SERMON_REVIEW_EVAL',JSON.stringify({retry:'temporary-provider-unavailable'})); audit = await provider.review(input, claims); }
     const accepted = reviewedResearchClaims(audit, claims);
     if (accepted === null) throw new Error('incomplete-audit');
     for (const fixture of fixtures) {
