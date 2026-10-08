@@ -78,11 +78,7 @@ it("allows a brief closing and deduplicates valid references without accepting u
  expect(body.max_completion_tokens).toBe(5000);expect(body.max_tokens).toBeUndefined();
  expect(body.reasoning_effort).toBe("low");
  expect(body.reasoning_format).toBeUndefined();
- expect(body.response_format.json_schema.strict).toBe(true);
- const wire=body.response_format.json_schema.schema;
- expect(wire.properties.sections.minItems).toBeUndefined();
- expect(wire.properties.sections.items.properties.refs.items.minimum).toBeUndefined();
- expect(wire.properties.sections.items.properties.refs.items.enum).toBeUndefined();
+ expect(body.response_format).toEqual({type:"json_object"});
  });
 
 it("rejects foreign-script text in Urdu sermon prose before source review",async()=>{

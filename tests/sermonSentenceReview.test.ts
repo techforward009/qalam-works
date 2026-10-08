@@ -38,12 +38,10 @@ it("uses a separate source-only reasoning request and never returns model reason
   const provider = createSermonSentenceReviewer({ apiKey: "test-key", fetchImpl: fetchMock })!;
   expect(await provider.review(input, claims)).toMatchObject({ reviews: [{ claimId: "section-1", verdict: "unsupported", reason: "contradiction" }] });
   const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
-  expect(body.max_completion_tokens).toBe(200);
+  expect(body.max_completion_tokens).toBe(500);
   expect(body.reasoning_effort).toBe("low"); expect(body.model).toBe("openai/gpt-oss-120b"); expect(body.reasoning_format).toBeUndefined();
   expect(body.messages[0].content).toContain("reverses the exception");
-  expect(body.response_format.json_schema.strict).toBe(true);
-  expect(body.response_format.json_schema.schema.properties.reviews.minItems).toBeUndefined();
-  expect(body.response_format.json_schema.schema.properties.reviews.items.properties.sentences.items.properties.refs.items.enum).toBeUndefined();
+  expect(body.response_format).toEqual({type:"json_object"});
   const request = JSON.parse(body.messages[1].content);
   expect(request.evidence).toHaveLength(1);
   expect(request.sections[0].sentences).toHaveLength(2);expect(request.sections[0].refs).toEqual([1]);
@@ -129,12 +127,12 @@ it("audits all sentences on Gemini without falling back to a different configure
  expect(createSermonSentenceReviewer({preferredProvider:"gemini",apiKey:"groq-test"})).toBeNull();
 });
 
-it("keeps provider audits below the free output window while preserving every sentence",async()=>{
+it("keeps provider audits in bounded JSON batches while preserving every sentence",async()=>{
  const compactClaims=Array.from({length:3},(_,i)=>({...claims[0],id:`compact-${i+1}`,text:"نماز سے مدد لینے کی ہدایت ہے۔ ".repeat(4)}));
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
   const request=JSON.parse(JSON.parse(init!.body as string).messages[1].content);
   expect(request.sections.reduce((n:number,section:{sentences:unknown[]})=>n+section.sentences.length,0)).toBeLessThanOrEqual(8);
-  expect(JSON.parse(init!.body as string).max_completion_tokens).toBeLessThanOrEqual(400);
+  expect(JSON.parse(init!.body as string).max_completion_tokens).toBeLessThanOrEqual(900);
   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({reviews:request.sections.map((section:{claimId:string;sentences:{index:number}[]})=>({claimId:section.claimId,sentences:section.sentences.map(sentence=>({i:sentence.index,v:"s",r:"e",refs:[1]}))}))})}}]}));
  });
  const checked=await createSermonSentenceReviewer({apiKey:"test",fetchImpl:fetchMock})!.review(input,compactClaims) as {reviews:unknown[]};
