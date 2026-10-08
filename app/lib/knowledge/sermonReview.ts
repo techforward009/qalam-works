@@ -141,7 +141,7 @@ export function createSermonSentenceReviewer(options: { apiKey?: string; geminiK
       }));
       const sentenceCount=sections.reduce((n,s)=>n+s.sentences.length,0);
       // Groq has a 1k output-token minute window on this project. Keep each reservation modest; strict parsing rejects truncation.
-      const reviewBudget=Math.min(900,Math.max(500,sentenceCount*80+180));
+      const reviewBudget=useGemini||useCloudflare?Math.max(3000,sentenceCount*80+180):950;
       const schema = { type: "object", additionalProperties: false, required: ["reviews"], properties: {
         reviews: { type: "array", minItems: claims.length, maxItems: claims.length, items: {
           type: "object", additionalProperties: false, required: ["claimId", "sentences"], properties: {

@@ -38,7 +38,7 @@ it("uses a separate source-only reasoning request and never returns model reason
   const provider = createSermonSentenceReviewer({ apiKey: "test-key", fetchImpl: fetchMock })!;
   expect(await provider.review(input, claims)).toMatchObject({ reviews: [{ claimId: "section-1", verdict: "unsupported", reason: "contradiction" }] });
   const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
-  expect(body.max_completion_tokens).toBe(500);
+  expect(body.max_completion_tokens).toBe(950);
   expect(body.reasoning_effort).toBe("low"); expect(body.model).toBe("openai/gpt-oss-120b"); expect(body.reasoning_format).toBeUndefined();
   expect(body.messages[0].content).toContain("reverses the exception");
   expect(body.response_format).toEqual({type:"json_object"});
@@ -133,7 +133,7 @@ it("keeps provider audits in bounded JSON batches while preserving every sentenc
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
   const request=JSON.parse(JSON.parse(init!.body as string).messages[1].content);
   expect(request.sections.reduce((n:number,section:{sentences:unknown[]})=>n+section.sentences.length,0)).toBeLessThanOrEqual(8);
-  expect(JSON.parse(init!.body as string).max_completion_tokens).toBeLessThanOrEqual(900);
+  expect(JSON.parse(init!.body as string).max_completion_tokens).toBeLessThanOrEqual(950);
   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({reviews:request.sections.map((section:{claimId:string;sentences:{index:number}[]})=>({claimId:section.claimId,sentences:section.sentences.map(sentence=>({i:sentence.index,v:"s",r:"e",refs:[1]}))}))})}}]}));
  });
  const checked=await createSermonSentenceReviewer({apiKey:"test",fetchImpl:fetchMock})!.review(input,compactClaims) as {reviews:unknown[]};
