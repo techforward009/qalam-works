@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 vi.mock("../app/api/research/vercelResearchBlob",()=>({researchBlobClientFromEnv:vi.fn()}));
-import { retrieveSermonSources } from "../app/lib/knowledge/sermonEvidence";
+import { retrieveSermonSources, readOnlySermonCorpus } from "../app/lib/knowledge/sermonEvidence";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { completeQuranTranslationFor } from "../app/lib/knowledge/completeQuranTranslations";
 const base={scope:"quran" as const,locale:"ur" as const,candidateLimit:16,records:[],sources:[],quranSha256:ahmedgrafQuranReference.getMetadata().sourceSha256!,quran:ahmedgrafQuranReference.listAyahs().map(a=>({...a,suppliedTranslation:{text:completeQuranTranslationFor(a.surah,a.ayah,"ur")!,language:"ur" as const,translator:"علامہ شیخ محسن علی نجفی"}}))};
@@ -34,4 +34,13 @@ it("retrieves an Arabic Nahj passage with its source locator for sermon evidence
  expect(passage?.text).toBe(arabic);
  expect(passage?.recordId).toBe(id);
  expect(passage?.referenceUr).toBeTruthy();
+});
+
+it("makes sermon storage reads possible but blocks all writes",async()=>{
+ const client={getObject:vi.fn(async(path:string)=>path==="probe"?"original":null),listObjects:vi.fn(async()=>["probe"]),putObject:vi.fn(async()=>{})};
+ const readOnly=readOnlySermonCorpus(client);
+ expect(await readOnly.getObject("probe")).toBe("original");
+ expect(await readOnly.listObjects("khateeb-foundational/")).toEqual(["probe"]);
+ await expect(readOnly.putObject("probe","changed")).rejects.toThrow("sermon-read-only");
+ expect(client.putObject).not.toHaveBeenCalled();
 });
