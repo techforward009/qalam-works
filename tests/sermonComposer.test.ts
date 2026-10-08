@@ -34,6 +34,11 @@ it("rejects the entire new version when one section is unsupported",async()=>{
  const reject={...reviewer,review:async(_i:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((c,i)=>({claimId:c.id,verdict:i===2?"unsupported":"supported",reason:i===2?"not-in-evidence":"entailed"}))})};
  await expect(composeSermon(input,result,{generate,reviewer:reject,env:{}})).rejects.toThrow("unverified");
 });
+it("never returns a final sermon unless its complete review explicitly approves all five sections",async()=>{
+ const auditing={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((claim,index)=>({claimId:claim.id,verdict:index===4?"unsupported":"supported",reason:index===4?"not-in-evidence":"entailed"}))}))};
+ await expect(composeSermon(input,result,{generate,reviewer:auditing,env:{}})).rejects.toThrow("unverified");
+ expect(auditing.review).toHaveBeenCalled();
+});
 it("does not turn Arabic-only sources into invented Urdu translations",async()=>{
  await expect(composeSermon(input,{...result,passages:result.passages.map(p=>({...p,suppliedTranslation:undefined}))},{generate,reviewer,env:{}})).rejects.toThrow("missing-translation");
 });
