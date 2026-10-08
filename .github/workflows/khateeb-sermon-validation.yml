@@ -1,6 +1,7 @@
 name: Khateeb Sermon Validation
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
     branches:
       - main
   push:
@@ -53,3 +54,24 @@ jobs:
             exit 1
           fi
       - run: npm run test:sermon:flow:live
+
+  production-smoke:
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[production-smoke]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Request one real 20-minute Urdu sermon from existing production (no deployment)
+        shell: bash
+        run: |
+          http_code=$(curl --silent --show-error --max-time 330 -o response.json -w '%{http_code}' -X POST 'https://www.qalamworks.com/api/khateeb/compose' -H 'Content-Type: application/json' --data '{"title":"صبر","duration":20,"locale":"ur"}')
+          echo "SERMON_PRODUCTION_HTTP=$http_code"
+          HTTP_CODE="$http_code" node -e '
+            const fs=require("node:fs");
+            const payload=JSON.parse(fs.readFileSync("response.json","utf8"));
+            const project=payload.project;
+            const sections=project?.sections??[];
+            const words=sections.reduce((n,s)=>n+(s.userText??"").trim().split(/\s+/u).filter(Boolean).length,0);
+            const refs=project?.selectedEvidenceIds?.length??0;
+            console.log("SERMON_PRODUCTION_RESULT",JSON.stringify({status:process.env.HTTP_CODE,code:payload.code??null,sections:sections.length,words,sourceIds:refs}));
+            if(process.env.HTTP_CODE!=="200"||sections.length!==5||refs<3||words<450)process.exitCode=1;
+          '
