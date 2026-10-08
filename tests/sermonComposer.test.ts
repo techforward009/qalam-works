@@ -69,15 +69,15 @@ it("allows a brief closing and deduplicates valid references without accepting u
  expect(parseComposedSections({sections:adjusted.map(s=>({...s,refs:[0]}))},evidence)).toBeNull();
 });
 
- it("uses Qwen on Groq when a server key is configured",async()=>{
+ it("uses GPT-OSS on Groq when a server key is configured",async()=>{
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections})}}]})));
  await generateSermonSections(input,evidence,{GROQ_API_KEY:"test-secret"},fetchMock);
  expect(fetchMock.mock.calls[0][0]).toBe("https://api.groq.com/openai/v1/chat/completions");
  const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
- expect(body.model).toBe("qwen/qwen3.8-27b");
+ expect(body.model).toBe("openai/gpt-oss-120b");
  expect(body.max_completion_tokens).toBe(5000);expect(body.max_tokens).toBeUndefined();
- expect(body.reasoning_effort).toBe("none");
- expect(body.reasoning_format).toBe("hidden");
+ expect(body.reasoning_effort).toBe("low");
+ expect(body.reasoning_format).toBeUndefined();
  expect(body.response_format.json_schema.strict).toBe(true);
  });
 
@@ -147,4 +147,18 @@ it("keeps a source-review repair after a short draft without unbounded retries",
  expect((await composeSermon(input,result,{generate:draft,reviewer:check,env:{}})).sections).toHaveLength(5);
  expect(draft).toHaveBeenCalledTimes(3);expect(check.review).toHaveBeenCalledTimes(2);
  expect(draft.mock.calls[2][0].instruction).toContain('section-3');
+});
+
+it("preserves rejected-source feedback when a repair draft also needs more length",async()=>{
+ let reviewCount=0;
+ const auditor={...reviewer,review:vi.fn(async(reviewInput:AnswerInput,claims:readonly ResearchClaim[])=>{
+  const first=reviewCount++===0;
+  return {reviews:claims.map((claim,i)=>({claimId:claim.id,verdict:first&&i===0?"unsupported":"supported",reason:first&&i===0?"not-in-evidence":"entailed"})),sentenceAudit:claims.map((claim,i)=>({claimId:claim.id,sentences:sermonSentences(claim.text).map((_,n)=>({index:n+1,verdict:first&&i===0&&n===1?"unsupported":"supported",reason:first&&i===0&&n===1?"not-in-evidence":"entailed",refs:[reviewInput.evidence.find(e=>claim.citations.some(c=>c.passageId===e.passage.id))!.ref]}))}))};
+ })};
+ const generateDraft=vi.fn(async(_request:SermonRequest)=>generateDraft.mock.calls.length===2?{sections:sections.map(section=>({...section,text:section.text.slice(0,300)}))}:{sections});
+ await composeSermon(input,result,{generate:generateDraft,reviewer:auditor,env:{}});
+ expect(generateDraft).toHaveBeenCalledTimes(3);
+ expect(generateDraft.mock.calls[1][0].instruction).toContain("Source review rejected section-1");
+ expect(generateDraft.mock.calls[2][0].instruction).toContain("Source review rejected section-1");
+ expect(generateDraft.mock.calls[2][0].instruction).toContain(sermonSentences(sections[0].text)[0]);
 });

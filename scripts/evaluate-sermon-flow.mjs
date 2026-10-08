@@ -55,7 +55,7 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
       stage='composition-and-review';
       // Groq's free output-token window is shared by the previous compact audit.
       await new Promise(resolve=>setTimeout(resolve,60000));
-      const fullReviewer=createSermonSentenceReviewer({preferredProvider:process.env.QALAM_SERMON_PROVIDER||undefined,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+230000});
+      const fullReviewer=createSermonSentenceReviewer({preferredProvider:process.env.QALAM_SERMON_PROVIDER||undefined,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+285000});
       if(!fullReviewer)throw new Error('provider-unavailable');
       let reviewAttempt=0;
       const project=await composeSermon(input,evidence,{env:process.env,generate:async(...args)=>{publicDraft=await generateSermonSections(...args);await new Promise(resolve=>setTimeout(resolve,60000));return publicDraft;},reviewer:{...fullReviewer,async review(reviewInput,claims){

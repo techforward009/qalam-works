@@ -39,7 +39,7 @@ it("uses a separate source-only reasoning request and never returns model reason
   expect(await provider.review(input, claims)).toMatchObject({ reviews: [{ claimId: "section-1", verdict: "unsupported", reason: "contradiction" }] });
   const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
   expect(body.max_completion_tokens).toBe(200);
-  expect(body.reasoning_effort).toBe("low"); expect(body.reasoning_format).toBe("hidden");
+  expect(body.reasoning_effort).toBe("low"); expect(body.model).toBe("openai/gpt-oss-120b"); expect(body.reasoning_format).toBeUndefined();
   expect(body.messages[0].content).toContain("reverses the exception");
   const request = JSON.parse(body.messages[1].content);
   expect(request.evidence).toHaveLength(1);
