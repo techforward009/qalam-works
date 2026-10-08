@@ -74,7 +74,13 @@ export async function generateSermonSections(input: SermonRequest, evidence: rea
 }
 export function selectSermonEvidence(passages:readonly AnswerEvidence["passage"][]):AnswerEvidence[]{
   const selected:AnswerEvidence["passage"][]=[];let size=0;
-  for(const passage of passages){
+  // Preserve a non-Quran primary source when available: a Quran-first ranking
+  // must not fill the entire eight-source budget before source coverage is checked.
+  const candidates=[...passages];
+  const firstCore=candidates.find(p=>p.collection!=="quran" && p.text.length+(p.suppliedTranslation?.text.length??0)<=6000);
+  if(firstCore){selected.push(firstCore);size+=firstCore.text.length+(firstCore.suppliedTranslation?.text.length??0);}
+  for(const passage of candidates){
+    if(selected.includes(passage))continue;
     const chars=passage.text.length+(passage.suppliedTranslation?.text.length??0);
     if(size+chars>6000)continue;
     selected.push(passage);size+=chars;
