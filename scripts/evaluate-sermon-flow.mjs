@@ -38,7 +38,7 @@ if(process.argv.includes('--live-full')||process.argv.includes('--live-fixture')
       const serialized=serializeCustomSermonProject(project);
       const restored=parseCustomSermonProject(serialized);
       const output=buildCustomSermonText(project,'ur');
-      const words=project.sections.reduce((n,s)=>n+s.userText.split(/\\s+/u).filter(Boolean).length,0);
+      const words=project.sections.reduce((n,s)=>n+s.userText.split(/\s+/u).filter(Boolean).length,0);
       const valid=restored?.sections.length===5&&project.sections.length===5&&words>=450&&project.sections.reduce((n,s)=>n+s.minutes,0)===20&&project.evidence.every(e=>output.includes(e.arabic)&&output.includes(e.detailUr));
       console.log('SERMON_FIXTURE_EVAL',JSON.stringify({status:valid?'passed':'failed',sections:project.sections.length,words,sourceCount:project.evidence.length,elapsedMs:Date.now()-started,fixtureOnly:true}));
       if(!valid)process.exitCode=1;
