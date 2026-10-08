@@ -18,7 +18,7 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
     },
   });
   const {collectSermonEvidence}=await import('../app/lib/knowledge/sermonEvidence.ts');
-  const {composeSermon,generateSermonSections}=await import('../app/lib/knowledge/sermonComposer.ts');
+  const {composeSermon,generateSermonSections,chooseSermonReviewProvider}=await import('../app/lib/knowledge/sermonComposer.ts');
   const {createSermonSentenceReviewer,sermonRejectedSentences}=await import('../app/lib/knowledge/sermonReview.ts');
   const {reviewedResearchClaims}=await import('../app/lib/knowledge/researchAnswer.ts');
   const {buildCustomSermonText,parseCustomSermonProject,serializeCustomSermonProject}=await import('../app/tools/khateeb-studio/engine/customSermonProject.ts');
@@ -44,7 +44,8 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
         {id:'correct-asr-oath',text:'پہلی آیت میں عصر کی قسم ہے۔',passage:first,expected:true},
         {id:'wrong-asr-attached-verse',text:'پہلی آیت میں تمام انسانوں کے خسارے کا بیان ہے۔',passage:first,expected:false},
       ];
-      const reviewer=createSermonSentenceReviewer({preferredProvider:process.env.QALAM_SERMON_PROVIDER||undefined,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN});
+      const reviewProvider=chooseSermonReviewProvider(process.env);
+      const reviewer=createSermonSentenceReviewer({preferredProvider:reviewProvider,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN});
       if(!reviewer)throw new Error('provider-unavailable');
       const claims=fixtures.map(f=>({id:f.id,text:f.text,citations:[{passageId:f.passage.id,quote:f.passage.text}]}));
       const publicReviewInput={question:conditionInput.title,locale:'ur',evidence:conditionEvidence.passages.map((passage,i)=>({ref:i+1,passage}))};
@@ -58,11 +59,11 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
       const evidence=await collectSermonEvidence(input.title,input.locale,'release-grounded-sermon-evaluation');
       console.log('SERMON_FLOW_EVAL',JSON.stringify({stage:'sermon-sources',status:evidence.status,sourceCount:evidence.passages.length,collections:[...new Set(evidence.passages.map(p=>p.collection))],elapsedMs:Date.now()-started}));
       // Groq's free output-token window is shared by the previous compact audit.
-      await new Promise(resolve=>setTimeout(resolve,60000));
-      const fullReviewer=createSermonSentenceReviewer({preferredProvider:process.env.QALAM_SERMON_PROVIDER||undefined,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+285000});
+      if(reviewProvider==='groq')await new Promise(resolve=>setTimeout(resolve,60000));
+      const fullReviewer=createSermonSentenceReviewer({preferredProvider:reviewProvider,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+285000});
       if(!fullReviewer)throw new Error('provider-unavailable');
       let reviewAttempt=0;
-      const project=await composeSermon(input,evidence,{env:process.env,generate:async(...args)=>{const draft=await generateSermonSections(...args);await new Promise(resolve=>setTimeout(resolve,60000));return draft;},reviewer:{...fullReviewer,async review(reviewInput,claims){
+      const project=await composeSermon(input,evidence,{env:process.env,generate:async(...args)=>{const draft=await generateSermonSections(...args);if(reviewProvider==='groq')await new Promise(resolve=>setTimeout(resolve,60000));return draft;},reviewer:{...fullReviewer,async review(reviewInput,claims){
         let audit;
         try{audit=await fullReviewer.review(reviewInput,claims);}catch(error){if(!(error instanceof Error)||!['provider-unavailable','provider-rate-limited'].includes(error.message))throw error;console.log('SERMON_FLOW_EVAL',JSON.stringify({stage:'sermon-review-retry',reason:error.message}));if(error.message==='provider-rate-limited')await new Promise(resolve=>setTimeout(resolve,60000));audit=await fullReviewer.review(reviewInput,claims);}
         for(const rejection of sermonRejectedSentences(audit,reviewInput,claims)??[])console.log('SERMON_FLOW_REJECTION',JSON.stringify({attempt:reviewAttempt,claimId:rejection.claimId,index:rejection.index,reason:rejection.reason}));
