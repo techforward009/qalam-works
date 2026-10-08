@@ -76,12 +76,13 @@ export function selectSermonEvidence(passages:readonly AnswerEvidence["passage"]
   const selected:AnswerEvidence["passage"][]=[];let size=0;
   // Keep source ranking intact while reserving space for one non-Quran passage.
   const firstCore=passages.find(p=>p.collection!=="quran" && p.text.length+(p.suppliedTranslation?.text.length??0)<=6000);
+  const coreChars=firstCore?firstCore.text.length+(firstCore.suppliedTranslation?.text.length??0):0;
   const reserveCore=Boolean(firstCore);
   for(const passage of passages){
     if(selected.includes(passage))continue;
     const chars=passage.text.length+(passage.suppliedTranslation?.text.length??0);
     if(size+chars>6000)continue;
-    if(reserveCore && passage.collection==="quran" && selected.length===7 && !selected.some(p=>p.collection!=="quran"))continue;
+    if(reserveCore && !selected.some(p=>p.collection!=="quran") && passage!==firstCore && (selected.length===7 || size+chars+coreChars>6000))continue;
     selected.push(passage);size+=chars;
     if(selected.length===8)break;
   }
