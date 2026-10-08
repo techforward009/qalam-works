@@ -19,6 +19,14 @@ export const GROQ_SERMON_MODEL = "openai/gpt-oss-120b";
 export const CLOUDFLARE_SERMON_MODEL = "@cf/qwen/qwen3.8-27b";
 export type SermonRequest = { title: string; duration: SermonDuration; locale: "ur" | "en"; instruction?: string; previous?: string };
 export type ComposedSection = { heading: string; text: string; refs: number[] };
+const MINIMUM_SOURCES: Record<SermonDuration, number> = { 20: 3, 30: 5, 45: 8 };
+const MINIMUM_CORE_SOURCES: Record<SermonDuration, number> = { 20: 1, 30: 2, 45: 3 };
+function sourceKey(passage: AnswerEvidence["passage"]) { return passage.recordId ? `${passage.collection}:${passage.recordId}` : passage.id; }
+function sourceCoverage(passages: readonly AnswerEvidence["passage"][], duration: SermonDuration) {
+  const sources = new Set(passages.map(sourceKey));
+  const coreSources = new Set(passages.filter(passage => passage.collection !== "quran").map(sourceKey));
+  return sources.size >= MINIMUM_SOURCES[duration] && coreSources.size >= MINIMUM_CORE_SOURCES[duration];
+}
 export function parseComposedSections(raw: unknown, evidence: readonly AnswerEvidence[]): ComposedSection[] | null {
   if (!raw || typeof raw !== "object" || !Array.isArray((raw as {sections?:unknown}).sections)) return null;
   const sections = (raw as {sections:unknown[]}).sections;
@@ -69,7 +77,7 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
   if(result.status!=="evidence") throw new Error(result.status==="unsupported-fatwa"?"unsupported-fatwa":"no-evidence");
   const evidence=selectSermonEvidence(result.passages.filter(p=>(p.collection==="quran"||p.language==="ar")&&hasSuppliedAnswerText(p,input.locale)));
   if(!evidence.length) throw new Error("missing-translation");
-  if(evidence.length < 2) throw new Error("no-evidence");
+  if(!sourceCoverage(evidence.map(item=>item.passage),input.duration)) throw new Error("insufficient-evidence");
   const deadline=Date.now()+285_000;
   if(options.env.QALAM_SERMON_PROVIDER&&!['groq','cloudflare','gemini'].includes(options.env.QALAM_SERMON_PROVIDER))throw new Error("not-configured");
   const reviewer=options.reviewer===undefined?(createSermonSentenceReviewer({apiKey:options.env.GROQ_API_KEY,geminiKey:options.env.GEMINI_API_KEY,cloudflareAccountId:options.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:options.env.CLOUDFLARE_AUTH_TOKEN,preferredProvider:(options.env.QALAM_SERMON_PROVIDER||undefined) as 'groq'|'cloudflare'|'gemini'|undefined,deadline})):options.reviewer;
@@ -93,11 +101,14 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
     const minimumWordsPerSection={20:90,30:130,45:190}[input.duration];
     const sectionWordCounts=sections.map(section=>section.text.split(/\s+/u).filter(Boolean).length);
     const shortSection=sectionWordCounts.some(count=>count<minimumWordsPerSection);
-    if(foreignScript || repetitive || wordCount < minimumWords || shortSection || new Set(sections.flatMap(s=>s.refs)).size < 2){
-      const code=foreignScript?"unverified":"insufficient-draft";
+    const citedPassages=[...new Set(sections.flatMap(section=>section.refs))].map(ref=>evidence.find(item=>item.ref===ref)!.passage);
+    const insufficientSources=!sourceCoverage(citedPassages,input.duration);
+    if(foreignScript || repetitive || wordCount < minimumWords || shortSection || insufficientSources){
+      const code=foreignScript?"unverified":insufficientSources?"insufficient-evidence":"insufficient-draft";
       console.warn("Sermon composition validation",{stage:"draft",code,attempt,wordCount,minimumWords,shortSection,minimumWordsPerSection,sectionWordCounts,foreignScript,repetitive});
+      if(insufficientSources&&attempt===1)throw new Error("insufficient-evidence");
       if(++draftFailures>=2)throw new Error(code);
-      request={...request,previous:undefined,instruction:`${request.instruction??input.instruction??""} Rewrite the five sections so EACH contains at least ${minimumWordsPerSection} words (at least ${minimumWords} words total). Expand each section with distinct questions for the listeners and invitations to examine the exact supplied wording; do not answer those questions with new factual or religious claims. Use at least two supplied references across the sections. Use only the requested language's script. Do not repeat sentences or add unsupported claims.`};
+      request={...request,previous:undefined,instruction:`${request.instruction??input.instruction??""} Rewrite the five sections so EACH contains at least ${minimumWordsPerSection} words (at least ${minimumWords} words total). Cite at least ${MINIMUM_SOURCES[input.duration]} distinct supplied source records, including at least ${MINIMUM_CORE_SOURCES[input.duration]} non-Quran source records, across the five sections. Expand each section with distinct questions for the listeners and invitations to examine the exact supplied wording; do not answer those questions with new factual or religious claims. Use only the requested language's script. Do not repeat sentences or add unsupported claims.`};
       continue;
     }
     claims=sections.map((s,i)=>({id:`section-${i+1}`,text:`${s.heading}\n${s.text}`,citations:s.refs.map(ref=>{const p=evidence.find(e=>e.ref===ref)!.passage;return {passageId:p.id,quote:p.text};})}));

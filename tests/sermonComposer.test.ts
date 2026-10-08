@@ -7,8 +7,9 @@ import type { KnowledgeResult } from "../app/lib/knowledge/retrieval";
 import { buildCustomSermonText, parseCustomSermonProject, serializeCustomSermonProject } from "../app/tools/khateeb-studio/engine/customSermonProject";
 const result:KnowledgeResult={question:"صبر",status:"evidence",method:"lexical-bm25-topic-expansion",expandedTerms:[],availableCollections:["quran"],passages:[{id:"quran:test:2:153",collection:"quran",language:"ar",referenceUr:"قرآن، 2:153",referenceEn:"Quran, 2:153",text:"يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ",sourceSha256:"a".repeat(64),quranLocation:{surah:2,ayah:153},translator:null,suppliedTranslation:{language:"ur",text:"اے ایمان والو صبر اور نماز سے مدد لو۔",translator:"فراہم کردہ مترجم"}}]};
 result.passages.push({...result.passages[0],id:"quran:test:2:154",referenceUr:"قرآن، 2:154",referenceEn:"Quran, 2:154",quranLocation:{surah:2,ayah:154}});
+for(let index=1;index<=3;index++)result.passages.push({...result.passages[0],id:`nahj:test:${index}`,collection:"nahj",recordId:`nahj:${index}`,referenceUr:`نہج البلاغہ، قول ${index}`,referenceEn:`Nahj al-Balagha, saying ${index}`,text:"اَلصَّبْرُ صَبْرَانِ",quranLocation:undefined,suppliedTranslation:{language:"ur",text:"صبر کی دو صورتیں بیان ہوئی ہیں۔",translator:"فراہم کردہ مترجم"}});
 const evidence=result.passages.map((passage,i)=>({ref:i+1,passage}));
-const sections=Array.from({length:5},(_,i)=>({heading:`حصہ ${i+1}`,text:Array.from({length:14},(_,n)=>`یہ نکتہ ${i*14+n} صبر اور نماز سے مدد لینے کے بارے میں اس آیت میں بیان ہوا ہے۔`).join(" "),refs:[i===4?2:1]}));
+const sections=Array.from({length:5},(_,i)=>({heading:`حصہ ${i+1}`,text:Array.from({length:14},(_,n)=>`یہ نکتہ ${i*14+n} صبر اور نماز سے مدد لینے کے بارے میں ماخذ میں بیان ہوا ہے۔`).join(" "),refs:[i+1]}));
 const input={title:"صبر",duration:30 as const,locale:"ur" as const};
 const generate=vi.fn(async(_input:SermonRequest)=>({sections}));
 const reviewer={id:"fixture",draft:vi.fn(),review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(c=>({claimId:c.id,verdict:"supported",reason:"entailed"}))}))};
@@ -39,6 +40,22 @@ it("does not turn Arabic-only sources into invented Urdu translations",async()=>
 it("does not generate without configured review or sufficient evidence",async()=>{
  await expect(composeSermon(input,result,{generate,reviewer:null,env:{}})).rejects.toThrow("not-configured");
  await expect(composeSermon(input,{...result,status:"not-found",passages:[]},{generate,reviewer,env:{}})).rejects.toThrow("no-evidence");
+});
+it("refuses a timed Quran-only sermon even when many verses are available",async()=>{
+ const quranOnly={...result,passages:Array.from({length:8},(_,index)=>({...result.passages[0],id:`quran:only:${index+1}`,quranLocation:{surah:2,ayah:index+1}}))};
+ const provider=vi.fn();
+ await expect(composeSermon(input,quranOnly,{generate:provider,reviewer,env:{}})).rejects.toThrow("insufficient-evidence");
+ expect(provider).not.toHaveBeenCalled();
+});
+it("requires the generated sermon itself to cite enough distinct sources, not just retrieve them",async()=>{
+ const quranReferences=sections.map(section=>({...section,refs:[1]}));const provider=vi.fn(async()=>({sections:quranReferences}));const audit=vi.fn();
+ await expect(composeSermon(input,result,{generate:provider,reviewer:{...reviewer,review:audit},env:{}})).rejects.toThrow("insufficient-evidence");
+ expect(provider).toHaveBeenCalledTimes(2);expect(audit).not.toHaveBeenCalled();
+});
+it("does not reuse a 30-minute source pack as a 45-minute pack",async()=>{
+ const provider=vi.fn();
+ await expect(composeSermon({...input,duration:45},result,{generate:provider,reviewer,env:{}})).rejects.toThrow("insufficient-evidence");
+ expect(provider).not.toHaveBeenCalled();
 });
 it("uses bounded existing provider protocol without trusting previous draft as evidence",async()=>{
  const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections})}}]})));
@@ -110,7 +127,7 @@ it("sends supplied meanings to the writer without duplicated original text or me
 
 it("bounds sermon evidence with complete source units and unchanged verified translations",()=>{
  const long={...result.passages[0],id:"too-long",text:"ع".repeat(7000)};
- const chosen=selectSermonEvidence([long,...result.passages]);expect(chosen).toHaveLength(2);expect(chosen[0].passage).toBe(result.passages[0]);expect(chosen[0].ref).toBe(1);expect(chosen[1].ref).toBe(2);
+ const chosen=selectSermonEvidence([long,...result.passages]);expect(chosen).toHaveLength(5);expect(chosen[0].passage).toBe(result.passages[0]);expect(chosen[0].ref).toBe(1);expect(chosen[1].ref).toBe(2);
 });
 
 it("uses the same Qwen model on Cloudflare for long composition when both providers are configured",async()=>{

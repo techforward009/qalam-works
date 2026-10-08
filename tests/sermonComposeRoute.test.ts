@@ -23,6 +23,9 @@ it("collects sources automatically from the topic and preserves revision context
 it("never returns a rejected sermon as a completed project",async()=>{
  vi.stubEnv("CLOUDFLARE_ACCOUNT_ID","test");vi.stubEnv("CLOUDFLARE_AUTH_TOKEN","test");mocks.collect.mockResolvedValue({status:"evidence"});mocks.compose.mockRejectedValue(new Error("unverified"));const response=await POST(request(valid,"https://qalam.test","compose-rejected"));expect(response.status).toBe(503);expect(await response.json()).toEqual({code:"unverified"});
 });
+it("returns a clear client error when the selected duration lacks enough sources",async()=>{
+ vi.stubEnv("CLOUDFLARE_ACCOUNT_ID","test");vi.stubEnv("CLOUDFLARE_AUTH_TOKEN","test");mocks.collect.mockResolvedValue({status:"evidence"});mocks.compose.mockRejectedValue(new Error("insufficient-evidence"));const response=await POST(request(valid,"https://qalam.test","compose-insufficient-evidence"));expect(response.status).toBe(422);expect(await response.json()).toEqual({code:"insufficient-evidence"});
+});
 
 it("reports provider throttling as temporary busy without discarding an old draft",async()=>{
  vi.stubEnv("CLOUDFLARE_ACCOUNT_ID","test");vi.stubEnv("CLOUDFLARE_AUTH_TOKEN","test");mocks.collect.mockResolvedValue({status:"evidence"});mocks.compose.mockRejectedValue(new Error("provider-rate-limited"));const response=await POST(request(valid,"https://qalam.test","compose-provider-busy"));expect(response.status).toBe(429);expect(await response.json()).toEqual({code:"busy"});
