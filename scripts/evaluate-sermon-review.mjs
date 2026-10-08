@@ -16,6 +16,7 @@ if (!process.argv.includes('--live') && ![releaseMarker,'Validate complete sermo
   const { createSermonSentenceReviewer } = await import('../app/lib/knowledge/sermonReview.ts');
   const { reviewedResearchClaims } = await import('../app/lib/knowledge/researchAnswer.ts');
   // This diagnostic runs only for the fixed public fixtures below, never user material.
+  let diagnosed = false;
   const publicFixtureFetch = async (url, init) => {
     const response = await fetch(url, init);
     if (response.status === 400) {
@@ -29,6 +30,26 @@ if (!process.argv.includes('--live') && ![releaseMarker,'Validate complete sermo
         message = message.replace(/AIza[\w-]+/g, '[redacted]').slice(0, 1200);
         console.log('SERMON_PUBLIC_REQUEST_ERROR', JSON.stringify({status: response.status, message}));
       } catch { console.log('SERMON_PUBLIC_REQUEST_ERROR', JSON.stringify({status: response.status, message: 'non-json-error'})); }
+    }
+    if (response.status === 400 && !diagnosed && String(url).endsWith('/interactions')) {
+      diagnosed = true;
+      const original = JSON.parse(init.body);
+      const minimal = {model:original.model,store:false,input:'Reply with OK.'};
+      const probes = [
+        ['minimal', url, minimal],
+        ['stable-minimal', String(url).replace('/v1beta/', '/v1/'), minimal],
+        ['alternate-minimal', url, {...minimal,model:'gemini-3.7-flash'}],
+        ['generation-config', url, {...minimal,generation_config:original.generation_config}],
+        ['simple-schema', url, {...minimal,response_format:{type:'text',mime_type:'application/json',schema:{type:'object',properties:{ok:{type:'boolean'}},required:['ok']}}}],
+        ['review-without-config', url, {...original,generation_config:undefined}],
+      ];
+      for (const [name, endpoint, body] of probes) {
+        try {
+          const check = await fetch(endpoint,{method:'POST',headers:init.headers,body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
+          console.log('SERMON_PUBLIC_REQUEST_PROBE',JSON.stringify({name,status:check.status}));
+          await check.body?.cancel();
+        } catch { console.log('SERMON_PUBLIC_REQUEST_PROBE',JSON.stringify({name,status:'timeout-or-transport'})); }
+      }
     }
     return response;
   };
