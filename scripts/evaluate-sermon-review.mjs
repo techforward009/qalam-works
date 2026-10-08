@@ -23,11 +23,13 @@ if (!process.argv.includes('--live') && ![releaseMarker,'Validate complete sermo
         const payload = await response.clone().json();
         const error = payload?.error;
         let message = typeof error?.message === 'string' ? error.message : 'no-error-message';
+        let failedGeneration = typeof error?.failed_generation === 'string' ? error.failed_generation : undefined;
         for (const secret of [process.env.GEMINI_API_KEY, process.env.GROQ_API_KEY, process.env.CLOUDFLARE_AUTH_TOKEN]) {
-          if (secret) message = message.split(secret).join('[redacted]');
+          if (secret) { message = message.split(secret).join('[redacted]'); if (failedGeneration) failedGeneration = failedGeneration.split(secret).join('[redacted]'); }
         }
         message = message.replace(/AIza[\w-]+/g, '[redacted]').slice(0, 1200);
-        console.log('SERMON_PUBLIC_REQUEST_ERROR', JSON.stringify({status: response.status, message}));
+        if (failedGeneration) failedGeneration = failedGeneration.replace(/AIza[\w-]+/g, '[redacted]').slice(0, 1200);
+        console.log('SERMON_PUBLIC_REQUEST_ERROR', JSON.stringify({status: response.status, message, ...(failedGeneration ? {failedGeneration} : {})}));
       } catch { console.log('SERMON_PUBLIC_REQUEST_ERROR', JSON.stringify({status: response.status, message: 'non-json-error'})); }
     }
     return response;
