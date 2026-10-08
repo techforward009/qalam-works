@@ -15,6 +15,15 @@ export const SERMON_REVIEW_PROMPT = [
  "Use supplied translations; metadata references are server verified. Mark supported with reason entailed only if all factual and religious statements are supported; otherwise unsupported with its reason. Evaluate every section independently and include every supplied claimId exactly once."
 ].join(" ");
 export type SermonProviderEnv = { CLOUDFLARE_ACCOUNT_ID?: string; CLOUDFLARE_AUTH_TOKEN?: string; GROQ_API_KEY?: string; GEMINI_API_KEY?:string; QALAM_SERMON_PROVIDER?:string; QALAM_SERMON_REVIEW_PROVIDER?:string };
+export function chooseSermonReviewProvider(env: SermonProviderEnv): "groq" | "cloudflare" | "gemini" | undefined {
+  if (env.QALAM_SERMON_REVIEW_PROVIDER) {
+    return ["groq", "cloudflare", "gemini"].includes(env.QALAM_SERMON_REVIEW_PROVIDER)
+      ? env.QALAM_SERMON_REVIEW_PROVIDER as "groq" | "cloudflare" | "gemini"
+      : undefined;
+  }
+  if (env.QALAM_SERMON_PROVIDER === "groq" && env.CLOUDFLARE_ACCOUNT_ID && env.CLOUDFLARE_AUTH_TOKEN) return "cloudflare";
+  return env.QALAM_SERMON_PROVIDER as "groq" | "cloudflare" | "gemini" | undefined;
+}
 export const GROQ_SERMON_MODEL = "openai/gpt-oss-120b";
 export const CLOUDFLARE_SERMON_MODEL = "@cf/qwen/qwen3.8-27b";
 export type SermonRequest = { title: string; duration: SermonDuration; locale: "ur" | "en"; instruction?: string; previous?: string };
@@ -80,7 +89,7 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
   if(!sourceCoverage(evidence.map(item=>item.passage),input.duration)) throw new Error("insufficient-evidence");
   const deadline=Date.now()+285_000;
   if(options.env.QALAM_SERMON_PROVIDER&&!['groq','cloudflare','gemini'].includes(options.env.QALAM_SERMON_PROVIDER))throw new Error("not-configured");
-  const reviewer=options.reviewer===undefined?(createSermonSentenceReviewer({apiKey:options.env.GROQ_API_KEY,geminiKey:options.env.GEMINI_API_KEY,cloudflareAccountId:options.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:options.env.CLOUDFLARE_AUTH_TOKEN,preferredProvider:(options.env.QALAM_SERMON_REVIEW_PROVIDER || (options.env.QALAM_SERMON_PROVIDER==='groq' && options.env.CLOUDFLARE_ACCOUNT_ID && options.env.CLOUDFLARE_AUTH_TOKEN ? 'cloudflare' : options.env.QALAM_SERMON_PROVIDER) || undefined) as 'groq'|'cloudflare'|'gemini'|undefined,deadline})):options.reviewer;
+  const reviewer=options.reviewer===undefined?(createSermonSentenceReviewer({apiKey:options.env.GROQ_API_KEY,geminiKey:options.env.GEMINI_API_KEY,cloudflareAccountId:options.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:options.env.CLOUDFLARE_AUTH_TOKEN,preferredProvider:chooseSermonReviewProvider(options.env),deadline})):options.reviewer;
   if(!reviewer) throw new Error("not-configured");
   let sections:ComposedSection[] | null = null;
   let claims:ResearchClaim[] = [];
