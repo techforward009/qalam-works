@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import ts from 'typescript';
 
 const marker='Validate complete sermon composition and source review';
-if(process.argv.includes('--live-full')||process.argv.includes('--live-fixture')||process.argv.includes('--public-quran')||process.argv.includes('--check-imports')||process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim()===marker){
+if(process.argv.includes('--live-full')||process.argv.includes('--live-fixture')||process.argv.includes('--public-quran')||process.argv.includes('--audit-private')||process.argv.includes('--check-imports')||process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim()===marker){
   registerHooks({
     resolve(specifier,context,nextResolve){
       if(specifier.startsWith('.')&&!/\.[cm]?[jt]s$|\.json$/.test(specifier)&&context.parentURL){
@@ -24,6 +24,19 @@ if(process.argv.includes('--live-full')||process.argv.includes('--live-fixture')
   const {buildCustomSermonText,parseCustomSermonProject,serializeCustomSermonProject}=await import('../app/tools/khateeb-studio/engine/customSermonProject.ts');
   if(process.argv.includes('--check-imports'))console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'imports-valid'}));
   else if(process.exitCode)console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'blocked',reason:'source-review-fixtures-failed'}));
+  else if(process.argv.includes('--audit-private')){
+    // Run only within a trusted environment with store credentials; output counts, never text or tokens.
+    try {
+      const { researchBlobClientFromEnv } = await import('../app/api/research/vercelResearchBlob.ts');
+      const { auditSermonCorpus } = await import('../app/lib/knowledge/sermonCorpusAudit.ts');
+      const report = await auditSermonCorpus(await researchBlobClientFromEnv());
+      console.log('SERMON_PRIVATE_CORPUS_AUDIT',JSON.stringify(report));
+      if(report.status !== 'passed')process.exitCode=1;
+    } catch(error) {
+      console.log('SERMON_PRIVATE_CORPUS_AUDIT',JSON.stringify({status:'blocked',code:error instanceof Error&&['missing-catalog','unavailable'].includes(error.message)?error.message:'audit-failed'}));
+      process.exitCode=1;
+    }
+  }
   else if(process.argv.includes('--public-quran')){
     const started=Date.now();
     try{
