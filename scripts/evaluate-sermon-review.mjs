@@ -18,6 +18,20 @@ if (!process.argv.includes('--live') && ![releaseMarker,'Validate complete sermo
   // This diagnostic runs only for the fixed public fixtures below, never user material.
   const publicFixtureFetch = async (url, init) => {
     const response = await fetch(url, init);
+    if (response.ok && response.status === 200) {
+      try {
+        const payload = await response.clone().json();
+        const content = payload?.choices?.[0]?.message?.content;
+        if (typeof content === 'string') {
+          let safeContent = content;
+          for (const secret of [process.env.GEMINI_API_KEY, process.env.GROQ_API_KEY, process.env.CLOUDFLARE_AUTH_TOKEN]) {
+            if (secret) safeContent = safeContent.split(secret).join('[redacted]');
+          }
+          safeContent = safeContent.replace(/AIza[\w-]+/g, '[redacted]').slice(0, 5000);
+          console.log('SERMON_PUBLIC_AUDIT_RESPONSE', safeContent);
+        }
+      } catch { console.log('SERMON_PUBLIC_AUDIT_RESPONSE', '[unreadable-json-response]'); }
+    }
     if (response.status === 400) {
       try {
         const payload = await response.clone().json();
