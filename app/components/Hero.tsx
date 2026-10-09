@@ -21,10 +21,10 @@ export default function Hero(){
     </p>
     <Link href="/tools" className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-[#ffdb83] px-6 py-3 text-sm font-bold text-[#14363d] shadow-md transition-colors hover:bg-[#ffe6a6]">{ur?"تمام اوزار دیکھیں ←":"Explore the tools ↗"}</Link>
    </div>
-   <div className="rounded-3xl border border-white/20 bg-white/[.09] p-5 backdrop-blur-sm md:p-6">
+   <div className="rounded-3xl border border-[#dbe8e9] bg-[#f7fbfa] p-5 text-[#153445] shadow-lg md:p-6">
     <h2 className={`mb-5 text-lg font-bold ${ur?"font-nastaliq leading-[2.2]":""}`}>{ur?"آپ کے تمام کاموں کے لیے ایک ہی پلیٹ فارم":"One platform for all your work"}</h2>
-    <ul className="space-y-3">{items.map(({en,ur:ar,Icon},i)=><li key={en} className={`flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.08] px-4 py-3 text-sm text-white ${ur?"font-nastaliq leading-[2.2]":""}`}>
-      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#123e48] text-[#57e8b1]"><Icon size={19}/></span><span>{ur?ar:en}</span>
+    <ul className="space-y-3">{items.map(({en,ur:ar,Icon},i)=><li key={en} className={`flex items-center gap-3 rounded-xl border border-[#d9e5e7] bg-white px-4 py-3 text-sm text-[#1b3945] ${ur?"font-nastaliq leading-[2.2]":""}`}>
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#e0f4ee] text-[#087b69]"><Icon size={19}/></span><span>{ur?ar:en}</span>
     </li>)}</ul>
    </div>
   </div>
