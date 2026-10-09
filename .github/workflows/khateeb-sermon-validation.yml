@@ -19,7 +19,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vitest run tests/sermonComposer.test.ts tests/sermonReview.test.ts tests/sermonEvidenceCoverage.test.ts tests/sermonCorpusAudit.test.ts
+      - run: npx vitest run tests/sermonComposer.test.ts tests/sermonReview.test.ts tests/sermonEvidenceCoverage.test.ts tests/sermonCorpusAudit.test.ts tests/feedback.test.ts
       - name: Run repository suite with exact main-baseline comparison
         shell: bash
         run: |
