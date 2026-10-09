@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { translations } from "../lib/translations";
 import LanguageSwitch from "./LanguageSwitch";
+import { useLanguage } from "../lib/language-context";
 
 function PenNibIcon({ size = 22 }: { size?: number }) {
   return (
@@ -36,31 +37,33 @@ function PenNibIcon({ size = 22 }: { size?: number }) {
  */
 export default function Header() {
   const pathname = usePathname();
+  const {language} = useLanguage();
+  const ur = language === "ur";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
-  const t = translations.en.nav;
+  const t = translations[language].nav;
 
   const toolLinks = [
     { label: t.documentStudio, href: "/tools/document-studio" },
     { label: t.documentCleaner, href: "/tools/document-cleaner" },
     { label: t.qualityChecker, href: "/tools/quality-checker" },
     { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
-    { label: "Arabic Diacritics", href: "/tools/arabic-diacritics" },
-    { label: "Quran", href: "/quran" },
+    { label: ur ? "عربی اعراب" : "Arabic Diacritics", href: "/tools/arabic-diacritics" },
+    { label: ur ? "قرآن کریم" : "Quran Editions", href: "/quran" },
     { label: t.translationStudio, href: "/tools/translation-studio" },
     { label: t.urduWriter, href: "/tools/roman-urdu-writer" },
     { label: t.urduRomanWriter, href: "/tools/urdu-roman-writer" },
-    { label: "WhatsApp RTL", href: "/tools/whatsapp-rtl-formatter" },
+    { label: ur ? "واٹس ایپ فارمیٹر" : "WhatsApp RTL", href: "/tools/whatsapp-rtl-formatter" },
     { label: t.invoiceStudio, href: "/tools/invoice-generator" },
     { label: t.dateStudio, href: "/tools/date-converter" },
-    { label: "Crescent Visibility", href: "/tools/crescent-visibility" },
+    { label: ur ? "رؤیت ہلال" : "Crescent Visibility", href: "/tools/crescent-visibility" },
   ];
 
   const sectionLinks = [
-    { label: "How it Works", href: "/#how-it-works" },
-    { label: "Who It's For", href: "/#who-its-for" },
+    { label: ur ? "طریقۂ کار" : "How It Works", href: "/#how-it-works" },
+    { label: ur ? "کن کے لیے" : "Who Can Use It", href: "/#who-its-for" },
   ];
 
   useEffect(() => {
@@ -131,7 +134,7 @@ export default function Header() {
                 aria-haspopup="menu"
                 className="flex items-center gap-1 px-2 py-2 text-[14px] font-medium text-white hover:text-[#7DDCB8]"
               >
-                {t.tools}
+                {ur?"اوزار":"Tools"}
                 <ChevronDown size={14} className={`transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
               </button>
               {toolsOpen && (
@@ -175,7 +178,7 @@ export default function Header() {
               href="/tools/document-studio"
               className="inline-flex min-h-10 items-center rounded-lg bg-[#2FA37D] px-5 text-[14px] font-bold text-white shadow-md transition-colors hover:bg-[#248565]"
             >
-              Open Studio
+              {ur?"دستاویز اسٹوڈیو کھولیں":"Open Document Studio"}
             </Link>
           </div>
 
@@ -220,7 +223,7 @@ export default function Header() {
               aria-expanded={mobileToolsOpen}
               className="flex w-full items-center justify-between border-b border-white/5 py-3.5 text-left text-[16px] font-medium text-white"
             >
-              <span>Tools</span>
+              <span>{ur?"اوزار":"Tools"}</span>
               <ChevronDown size={16} className={`transition-transform ${mobileToolsOpen ? "rotate-180" : ""}`} />
             </button>
             {mobileToolsOpen && (
@@ -250,7 +253,7 @@ export default function Header() {
               onClick={closeAll}
               className="mx-1 my-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-[#2FA37D] px-4 text-[15px] font-semibold text-white"
             >
-              Open Studio
+              {ur?"دستاویز اسٹوڈیو کھولیں":"Open Document Studio"}
             </Link>
           </div>
         </nav>

@@ -768,7 +768,7 @@ export default function KhateebStudioContent({
             className={`mx-auto mt-5 max-w-2xl text-base md:text-lg text-gray-700 dark:text-[#d9e2db] leading-8`}
           >
             {ur
-              ? "موضوع سے یا مناسبت سے تیاری کریں، معتبر علمی سمتیں دیکھیں، اور خطبے کا قابلِ استعمال خاکہ بنائیں۔"
+              ? "موضوع یا مناسبت سے مستند مآخذ کی روشنی میں مجلس و خطبہ کی تیاری کے لیے ایک مربوط ماحول۔"
               : "Prepare by topic or occasion, review source-led directions, and build a usable sermon outline."}
           </p>
 
