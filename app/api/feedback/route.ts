@@ -24,13 +24,13 @@ export async function POST(req:NextRequest) {
   const b=data as Record<string,unknown>;
   if(Object.keys(b).some(k=>!["type","name","email","topic","message"].includes(k)))return json({error:"invalid"},400);
   if(typeof b.name!=="string"||b.name.length>80||typeof b.email!=="string"||b.email.length>180||typeof b.message!=="string"||b.message.trim().length<10||b.message.length>2000||typeof b.topic!=="string"||!["general","services","tools","other"].includes(b.topic))return json({error:"invalid"},400);
-  if(b.email.trim()&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(b.email.trim()))return json({error:"invalid"},400);
+  if(b.email.trim()&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email.trim()))return json({error:"invalid"},400);
   const record={type:"contact",name:b.name.trim(),email:b.email.trim(),topic:b.topic,message:b.message.trim(),createdAt:new Date().toISOString()};
   try{
    const client=await researchBlobClientFromEnv();
    await client.putObject(`contact-inquiries/v1/${Date.now()}-${randomUUID()}.json`,JSON.stringify(record));
    if(process.env.RESEND_API_KEY&&process.env.QALAM_FEEDBACK_FROM_EMAIL){
-    try{await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:"Bearer "+process.env.RESEND_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({from:process.env.QALAM_FEEDBACK_FROM_EMAIL,to:["info@qalamworks.com"],subject:"Qalam Works — Contact inquiry ("+record.topic+")",text:["New contact inquiry","Topic: "+record.topic,"Name: "+(record.name||"Not provided"),"Email: "+(record.email||"Not provided"),"Time: "+record.createdAt,"Message:",record.message].join("\\n")}),signal:AbortSignal.timeout(8000)});}catch{console.warn("Contact notification failed");}
+    try{await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:"Bearer "+process.env.RESEND_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({from:process.env.QALAM_FEEDBACK_FROM_EMAIL,to:["info@qalamworks.com"],subject:"Qalam Works — Contact inquiry ("+record.topic+")",text:["New contact inquiry","Topic: "+record.topic,"Name: "+(record.name||"Not provided"),"Email: "+(record.email||"Not provided"),"Time: "+record.createdAt,"Message:",record.message].join("\n")}),signal:AbortSignal.timeout(8000)});}catch{console.warn("Contact notification failed");}
    }
    return json({ok:true});
   }catch{return json({error:"unavailable"},503);}
