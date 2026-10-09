@@ -1,4 +1,4 @@
-export const FEEDBACK_TOOLS = ["translation-studio","research-studio","khateeb-studio","unicode-standardizer","publication-quality-checker","whatsapp-rtl-formatter","document-studio","document-cleaner","arabic-diacritics","roman-urdu-writer","urdu-roman-writer","other"] as const;
+export const FEEDBACK_TOOLS = ["translation-studio","research-studio","khateeb-studio","unicode-standardizer","publication-quality-checker","whatsapp-rtl-formatter","document-studio","document-cleaner","arabic-diacritics","roman-urdu-writer","urdu-roman-writer","invoice-generator","date-converter","crescent-visibility","quran-editions","services","other"] as const;
 export type FeedbackTool = typeof FEEDBACK_TOOLS[number];
 export type FeedbackRating = "helpful" | "partial" | "not-helpful";
 export type FeedbackEntry = {tool:FeedbackTool;rating:FeedbackRating;comment:string;page:string;createdAt:string};
