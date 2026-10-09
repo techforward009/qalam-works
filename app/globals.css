@@ -1368,3 +1368,80 @@ html.dark .quran-page-shell > .quran-outer-page-nav button:hover:not(:disabled) 
 .khateeb-studio-ur .font-urdu {
   font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif;
 }
+
+
+/* Qalam header and invitation refinements — 2026-10-09 */
+[role="group"][aria-label="Choose language"]{
+  height:34px;
+  padding:3px;
+  gap:2px;
+  align-items:center;
+}
+[role="group"][aria-label="Choose language"] > button{
+  height:26px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  line-height:1 !important;
+}
+[role="group"][aria-label="Choose language"] > button[lang="ur"]{
+  padding-top:0;
+  padding-bottom:3px;
+  line-height:1.65 !important;
+  font-size:12px;
+}
+
+@media(min-width:768px){
+  section[aria-label="رائے و تجاویز"] > .relative.flex{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:32px;
+    min-height:220px;
+  }
+  section[aria-label="رائے و تجاویز"] > .relative.flex > div:first-child{
+    min-width:0;
+  }
+  section[aria-label="رائے و تجاویز"] > .relative.flex > div:nth-child(2){
+    width:max-content;
+    max-width:100%;
+    align-self:center;
+    justify-self:end;
+    margin:0;
+  }
+  section[aria-label="رائے و تجاویز"][dir="rtl"] > .relative.flex{
+    direction:rtl;
+  }
+}
+section[aria-label="رائے و تجاویز"][lang="ur"] h2{
+  line-height:2.25 !important;
+  margin-top:18px;
+  margin-bottom:10px;
+}
+section[aria-label="رائے و تجاویز"][lang="ur"] p{
+  line-height:2.5 !important;
+  margin-top:10px;
+}
+section[aria-label="رائے و تجاویز"] span.rounded-full.bg-amber-200{
+  display:inline-flex;
+  align-items:center;
+  padding:10px 22px;
+  min-height:40px;
+  line-height:2;
+}
+section[aria-label="رائے و تجاویز"][lang="ur"] span.rounded-full.bg-amber-200{
+  padding:12px 24px;
+  line-height:2.2;
+}
+section[aria-label="رائے و تجاویز"][lang="ur"] button,
+section[aria-label="رائے و تجاویز"][lang="ur"] a{
+  line-height:2.0;
+}
+
+section[dir] > .site-container.grid > div:first-child > span:first-child{
+  background-color:#ffe19a !important;
+  color:#153b50 !important;
+  border:1px solid rgba(128,80,9,.12);
+  letter-spacing:.025em;
+}
