@@ -1,6 +1,6 @@
 "use client";
 import {useSearchParams} from "next/navigation";
-import {useState} from "react";
+import {Suspense,useState} from "react";
 import Link from "next/link";
 import FeedbackForm from "../components/FeedbackForm";
 import {FEEDBACK_TOOLS,type FeedbackTool} from "../lib/feedback";
@@ -14,7 +14,7 @@ const tools:{id:FeedbackTool;label:string}[]=[
  {id:"date-converter",label:"تاریخ کنورٹر"},{id:"crescent-visibility",label:"رؤیت ہلال"},
  {id:"services",label:"خدمات"},{id:"other",label:"دیگر سہولت"},
 ];
-export default function FeedbackPage(){
+function FeedbackPageInner(){
  const search=useSearchParams();
  const initial=search.get("tool");
  const [selected,setSelected]=useState<FeedbackTool>(initial&&FEEDBACK_TOOLS.includes(initial as FeedbackTool)?initial as FeedbackTool:"other");
@@ -44,3 +44,5 @@ export default function FeedbackPage(){
  <p className="site-container mt-7 text-sm text-slate-600 dark:text-slate-300">صارفین کی تحریری آرا نجی رہیں گی۔ عوامی تجاویز اور ووٹنگ کا نظام الگ منظوری اور جائزے کے بعد شامل کیا جائے گا۔</p>
  </main>;
 }
+
+export default function FeedbackPage(){return <Suspense fallback={<main className="site-container p-10">رائے و تجاویز…</main>}><FeedbackPageInner/></Suspense>;}
