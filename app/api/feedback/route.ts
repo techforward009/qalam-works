@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { parseFeedback } from "../../lib/feedback";
+import { notifyFeedback } from "../../lib/feedbackNotification";
 import { researchBlobClientFromEnv } from "../research/vercelResearchBlob";
 
 export const runtime = "nodejs";
@@ -26,6 +27,8 @@ export async function POST(req:NextRequest) {
    const client=await researchBlobClientFromEnv();
    // A separate private namespace: never overwrite or enumerate the research corpus.
    await client.putObject(`user-feedback/v1/${record.tool}/${Date.now()}-${randomUUID()}.json`,JSON.stringify(record));
+   const delivery=await notifyFeedback(record);
+   if(delivery==="failed")console.warn("Feedback notification",{status:"failed",tool:record.tool});
    return json({ok:true});
  }catch{return json({error:"unavailable"},503);}
 }
