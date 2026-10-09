@@ -4,7 +4,16 @@ import {usePathname} from "next/navigation";
 import {useEffect,useRef,useState} from "react";
 import {ChevronDown,Menu,X,FileText,Brush,CheckCircle,Languages,BookOpen,Library,Mic2,CaseSensitive,Receipt,CalendarDays,Moon,MessageSquareText,PenLine,BookMarked} from "lucide-react";
 import {useLanguage} from "../lib/language-context";
-import LanguageSwitch from "./LanguageSwitch";
+
+
+
+function CompactLanguageSwitch(){
+ const {language,setLanguage}=useLanguage();
+ return <div role="group" aria-label="Choose language" dir="ltr" className="inline-flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-[#d8e5e8] bg-[#f0f5f6] p-[3px] shadow-sm">
+  <button type="button" lang="en" aria-pressed={language==="en"} onClick={()=>setLanguage("en")} className={`flex h-[28px] min-w-[37px] items-center justify-center rounded-full px-2 text-[11px] font-semibold transition-colors ${language==="en"?"bg-white text-[#087467] shadow-sm":"text-[#71848b] hover:text-[#087467]"}`}>EN</button>
+  <button type="button" lang="ur" dir="rtl" aria-pressed={language==="ur"} onClick={()=>setLanguage("ur")} className={`flex h-[28px] min-w-[43px] items-center justify-center rounded-full px-2 font-nastaliq text-[13px] leading-[1.9] transition-colors ${language==="ur"?"bg-white text-[#087467] shadow-sm":"text-[#71848b] hover:text-[#087467]"}`}>اردو</button>
+ </div>;
+}
 
 const sections=[
  {en:"Write & Publish",ur:"تحریر و اشاعت",tools:[
@@ -34,13 +43,13 @@ export default function Header(){
  useEffect(()=>{setOpen(null);setMobile(false)},[pathname]);
  useEffect(()=>{const down=(e:MouseEvent)=>{if(!wrap.current?.contains(e.target as Node))setOpen(null)};const key=(e:KeyboardEvent)=>{if(e.key==="Escape"){setOpen(null);setMobile(false)}};document.addEventListener("mousedown",down);document.addEventListener("keydown",key);return()=>{document.removeEventListener("mousedown",down);document.removeEventListener("keydown",key)}},[]);
  return <div className="sticky top-0 z-50" ref={wrap}>
-  <div style={{backgroundColor:'#133a50',backgroundImage:'linear-gradient(95deg,#133a50,#0c766c)'}}>
-   <div className="site-container flex min-h-[44px] items-center justify-end gap-2 py-1 px-4" dir={ur?"rtl":"ltr"}>
+  <div style={{backgroundColor:"#153b62",backgroundImage:"linear-gradient(105deg,#153b62 0%,#135a79 55%,#087c7a 100%)"}}>
+   <div className="site-container flex min-h-[44px] items-center justify-end gap-2 py-1 px-4" dir="ltr">
     {([["About","تعارف","/about"],["Services","خدمات","/services"],["Contact","رابطہ","/contact"]] as const).map(([en,ar,href])=><Link key={href} href={href} className={`inline-flex min-h-8 items-center justify-center rounded-full border border-white/40 px-4 py-1 text-xs font-semibold text-white hover:bg-white/15 ${ur?"font-nastaliq leading-[2]":""}`}>{ur?ar:en}</Link>)}
    </div>
   </div>
   <header className="border-b border-[#dce6eb] bg-white shadow-[0_6px_24px_#1a405513]">
-   <div className="site-container flex min-h-[84px] items-center justify-between gap-4 px-4" dir={ur?"rtl":"ltr"}>
+   <div className="site-container flex min-h-[84px] items-center justify-between gap-4 px-4" dir="ltr">
     <Link href="/" className="flex shrink-0 items-center gap-3 font-sans" dir="ltr">
      <span className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-[#12a082] to-[#086656] text-white shadow-md"><PenLine size={25}/></span>
      <span><strong className="block text-[23px] font-extrabold leading-tight tracking-[-0.025em] text-[#152238]" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Qalam Works</strong><span className="mt-1 block text-[10px] font-semibold uppercase tracking-[.10em] text-[#607382]" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Write, Refine, Publish</span></span>
@@ -58,7 +67,7 @@ export default function Header(){
        </div>}
       </div>)}
     </nav>
-    <div className="flex items-center gap-2"><LanguageSwitch/><button className="rounded-xl border border-[#dae6e9] p-2 text-[#25394a] lg:hidden" aria-label={mobile?"Close menu":"Open menu"} aria-expanded={mobile} onClick={()=>setMobile(!mobile)}>{mobile?<X/>:<Menu/>}</button></div>
+    <div className="flex shrink-0 items-center gap-2" dir="ltr"><CompactLanguageSwitch/><button className="rounded-xl border border-[#dae6e9] p-2 text-[#25394a] lg:hidden" aria-label={mobile?"Close menu":"Open menu"} aria-expanded={mobile} onClick={()=>setMobile(!mobile)}>{mobile?<X/>:<Menu/>}</button></div>
    </div>
   </header>
   {mobile&&<nav className="max-h-[75vh] overflow-y-auto border-b bg-white p-4 shadow-xl lg:hidden" dir={ur?"rtl":"ltr"}>
