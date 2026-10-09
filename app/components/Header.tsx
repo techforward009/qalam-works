@@ -35,19 +35,19 @@ export default function Header(){
  useEffect(()=>{const down=(e:MouseEvent)=>{if(!wrap.current?.contains(e.target as Node))setOpen(null)};const key=(e:KeyboardEvent)=>{if(e.key==="Escape"){setOpen(null);setMobile(false)}};document.addEventListener("mousedown",down);document.addEventListener("keydown",key);return()=>{document.removeEventListener("mousedown",down);document.removeEventListener("keydown",key)}},[]);
  return <div className="sticky top-0 z-50" ref={wrap}>
   <div style={{backgroundColor:'#133a50',backgroundImage:'linear-gradient(95deg,#133a50,#0c766c)'}}>
-   <div className="site-container flex min-h-9 items-center justify-end gap-2 px-4" dir={ur?"rtl":"ltr"}>
-    {([["About","تعارف","/about"],["Services","خدمات","/services"],["Contact","رابطہ","/contact"]] as const).map(([en,ar,href])=><Link key={href} href={href} className={`rounded-full border border-white/30 px-3 py-1 text-xs font-semibold text-white hover:bg-white/15 ${ur?"font-nastaliq leading-[2]":""}`}>{ur?ar:en}</Link>)}
+   <div className="site-container flex min-h-[44px] items-center justify-end gap-2 py-1 px-4" dir={ur?"rtl":"ltr"}>
+    {([["About","تعارف","/about"],["Services","خدمات","/services"],["Contact","رابطہ","/contact"]] as const).map(([en,ar,href])=><Link key={href} href={href} className={`inline-flex min-h-8 items-center justify-center rounded-full border border-white/40 px-4 py-1 text-xs font-semibold text-white hover:bg-white/15 ${ur?"font-nastaliq leading-[2]":""}`}>{ur?ar:en}</Link>)}
    </div>
   </div>
   <header className="border-b border-[#dce6eb] bg-white shadow-[0_6px_24px_#1a405513]">
    <div className="site-container flex min-h-[84px] items-center justify-between gap-4 px-4" dir={ur?"rtl":"ltr"}>
-    <Link href="/" className="flex shrink-0 items-center gap-3" dir="ltr">
+    <Link href="/" className="flex shrink-0 items-center gap-3 font-sans" dir="ltr">
      <span className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-[#12a082] to-[#086656] text-white shadow-md"><PenLine size={25}/></span>
-     <span><strong className="block text-2xl font-extrabold leading-none tracking-tight text-[#152238]">Qalam Works</strong><span className="mt-1 block text-[10px] font-bold uppercase tracking-[.15em] text-[#607382]">Write, Refine, Publish</span></span>
+     <span><strong className="block text-[23px] font-extrabold leading-tight tracking-[-0.025em] text-[#152238]" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Qalam Works</strong><span className="mt-1 block text-[10px] font-semibold uppercase tracking-[.10em] text-[#607382]" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Write, Refine, Publish</span></span>
     </Link>
-    <nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex" dir={ur?"rtl":"ltr"}>
+    <nav aria-label="Primary navigation" className="hidden items-center gap-1 font-sans lg:flex" dir={ur?"rtl":"ltr"}>
      {sections.map((s,i)=><div className="relative" key={s.en}>
-       <button type="button" aria-expanded={open===i} aria-controls={`qalam-menu-${i}`} onClick={()=>setOpen(open===i?null:i)} className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-3 text-sm font-bold transition-colors ${ur?"font-nastaliq text-[15px] leading-[2.1]":""} ${open===i?"bg-[#e7f5f1] text-[#0a655c]":"text-[#25394a] hover:bg-[#e7f5f1] hover:text-[#0a655c]"}`}>
+       <button type="button" aria-expanded={open===i} aria-controls={`qalam-menu-${i}`} onClick={()=>setOpen(open===i?null:i)} className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-3 text-sm font-semibold transition-colors ${ur?"font-nastaliq text-[15px] leading-[2.1]":""} ${!ur?"font-sans tracking-[.005em]":""} ${open===i?"bg-[#e7f5f1] text-[#0a655c]":"text-[#25394a] hover:bg-[#e7f5f1] hover:text-[#0a655c]"}`}>
         {ur?s.ur:s.en}<ChevronDown size={15} className={open===i?"rotate-180 transition-transform":"transition-transform"}/>
        </button>
        {open===i&&<div id={`qalam-menu-${i}`} className={`absolute top-full z-50 mt-2 w-[290px] rounded-2xl border border-[#e0e9ed] bg-white p-2 shadow-[0_18px_45px_#162a3c26] ${ur?"right-0":"left-0"}`} dir={ur?"rtl":"ltr"}>
