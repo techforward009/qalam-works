@@ -9,11 +9,14 @@ const definitions:Record<string,FeedbackTool>={
  "document-studio":"document-studio","document-cleaner":"document-cleaner","arabic-diacritics":"arabic-diacritics",
  "roman-urdu-writer":"roman-urdu-writer","urdu-roman-writer":"urdu-roman-writer",
  "whatsapp-rtl-formatter":"whatsapp-rtl-formatter",
+ "invoice-generator":"invoice-generator","date-converter":"date-converter","crescent-visibility":"crescent-visibility",
 };
 export default function ToolFeedback(){
  const pathname=usePathname()??"";
  const tool=pathname.startsWith("/tools/") && pathname.split("/").filter(Boolean).length>=2
   ? definitions[pathname.split("/").filter(Boolean)[1]] ?? "other"
+  : pathname.startsWith("/quran") ? "quran-editions"
+  : pathname==="/services" || pathname.startsWith("/services/") ? "services"
   : undefined;
  const [open,setOpen]=useState(false),[rating,setRating]=useState<FeedbackRating|null>(null);
  const [comment,setComment]=useState(""),[state,setState]=useState<"idle"|"busy"|"saved"|"error">("idle");
