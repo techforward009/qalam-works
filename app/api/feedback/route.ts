@@ -29,10 +29,21 @@ export async function POST(req:NextRequest) {
   try{
    const client=await researchBlobClientFromEnv();
    await client.putObject(`contact-inquiries/v1/${Date.now()}-${randomUUID()}.json`,JSON.stringify(record));
+   let delivery:"sent"|"not-configured"|"failed"="not-configured";
    if(process.env.RESEND_API_KEY&&process.env.QALAM_FEEDBACK_FROM_EMAIL){
-    try{await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:"Bearer "+process.env.RESEND_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({from:process.env.QALAM_FEEDBACK_FROM_EMAIL,to:["info@qalamworks.com"],subject:"Qalam Works — Contact inquiry ("+record.topic+")",text:["New contact inquiry","Topic: "+record.topic,"Name: "+(record.name||"Not provided"),"Email: "+(record.email||"Not provided"),"Time: "+record.createdAt,"Message:",record.message].join("\n")}),signal:AbortSignal.timeout(8000)});}catch{console.warn("Contact notification failed");}
+    try{
+     const response=await fetch("https://api.resend.com/emails",{
+      method:"POST",
+      headers:{Authorization:"Bearer "+process.env.RESEND_API_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({from:process.env.QALAM_FEEDBACK_FROM_EMAIL,to:["info@qalamworks.com"],subject:"Qalam Works — Contact inquiry ("+record.topic+")",text:["New contact inquiry","Topic: "+record.topic,"Name: "+(record.name||"Not provided"),"Email: "+(record.email||"Not provided"),"Time: "+record.createdAt,"Message:",record.message].join("\\n")}),
+      signal:AbortSignal.timeout(8000)
+     });
+     delivery=response.ok?"sent":"failed";
+    }catch{delivery="failed";}
    }
-   return json({ok:true});
+   if(delivery==="failed")console.warn("Contact notification failed");
+   return json({ok:true,saved:true,emailNotification:delivery});
+
   }catch{return json({error:"unavailable"},503);}
  }
  const entry=parseFeedback(data);
@@ -44,6 +55,6 @@ export async function POST(req:NextRequest) {
    await client.putObject(`user-feedback/v1/${record.tool}/${Date.now()}-${randomUUID()}.json`,JSON.stringify(record));
    const delivery=await notifyFeedback(record);
    if(delivery==="failed")console.warn("Feedback notification",{status:"failed",tool:record.tool});
-   return json({ok:true});
+   return json({ok:true,saved:true,emailNotification:delivery});
  }catch{return json({error:"unavailable"},503);}
 }

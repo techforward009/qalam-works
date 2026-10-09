@@ -8,13 +8,16 @@ export default function ContactContent(){
  const t=translations[language].contactPage;
  const [name,setName]=useState("");const [email,setEmail]=useState("");
  const [topic,setTopic]=useState("general");const [message,setMessage]=useState("");
- const [busy,setBusy]=useState(false);const [status,setStatus]=useState<"idle"|"sent"|"error">("idle");
+ const [delivery,setDelivery]=useState<"sent"|"failed"|"not-configured"|null>(null);const [busy,setBusy]=useState(false);const [status,setStatus]=useState<"idle"|"sent"|"error">("idle");
  async function send(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(busy||!message.trim())return;
   setBusy(true);setStatus("idle");
   try{
    const r=await fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"contact",name,email,topic,message})});
    if(!r.ok)throw Error("not saved");
+   const result=await r.json() as {saved?:boolean;emailNotification?: "sent"|"failed"|"not-configured"};
+   if(!result.saved)throw Error("not saved");
+   setDelivery(result.emailNotification??null);
    setStatus("sent");setMessage("");
   }catch{setStatus("error")}finally{setBusy(false)}
  }
@@ -34,7 +37,10 @@ export default function ContactContent(){
      <label className="mt-4 block text-sm text-[#294655] dark:text-white"><span className="mb-2 block">{ur?"موضوع":"Topic"}</span><select value={topic} onChange={e=>setTopic(e.target.value)} className="w-full rounded-xl border border-[#cddde2] bg-white px-3 py-2.5 text-[#153445] dark:bg-slate-800 dark:text-white"><option value="general">{ur?"عمومی سوال":"General inquiry"}</option><option value="services">{ur?"ترجمہ و اشاعتی خدمات":"Translation & publishing services"}</option><option value="tools">{ur?"اوزاروں سے متعلق سوال":"Question about a tool"}</option><option value="other">{ur?"دیگر":"Other"}</option></select></label>
      <label className="mt-4 block text-sm text-[#294655] dark:text-white"><span className="mb-2 block">{ur?"آپ کا پیغام":"Your message"} *</span><textarea required minLength={10} maxLength={2000} rows={6} value={message} onChange={e=>setMessage(e.target.value)} placeholder={ur?"اپنا سوال یا پیغام یہاں لکھیں…":"Write your question or message here…"} className="w-full rounded-xl border border-[#cddde2] bg-white p-3 text-[#153445] dark:bg-slate-800 dark:text-white"/></label>
      <p className={`mt-2 text-xs text-[#647986] dark:text-slate-300 ${ur?"font-nastaliq leading-[2]":""}`}>{ur?"اگر جواب چاہتے ہیں تو ای میل پتہ ضرور درج کریں؛ اس کے بغیر بھی آپ کا پیغام محفوظ ہوگا۔":"Add your email if you would like a reply. Your message can be submitted without one."}</p>
-     {status==="sent"&&<p role="status" className="mt-4 text-sm font-semibold text-emerald-700 dark:text-emerald-300">{ur?"✓ آپ کا پیغام محفوظ ہوگیا۔ شکریہ!":"✓ Your message has been saved. Thank you!"}</p>}
+     {status==="sent"&&<div role="status" className="mt-4 space-y-2 text-sm font-semibold">
+      <p className="text-emerald-700 dark:text-emerald-300">{ur?"✓ آپ کا پیغام کامیابی سے موصول اور محفوظ ہوگیا۔":"✓ Your message has been received and saved."}</p>
+      <p className={delivery==="sent"?"text-emerald-700 dark:text-emerald-300":"text-[#536875] dark:text-slate-300"}>{delivery==="sent"?(ur?"✓ ای میل اطلاع بھیج دی گئی۔":"✓ Email notification sent."):(ur?"ای میل اطلاع کی تصدیق نہیں ہوئی؛ آپ کا پیغام محفوظ ہے۔":"Email notification was not confirmed; your message is saved.")}</p>
+     </div>}
      {status==="error"&&<p role="alert" className="mt-4 text-sm font-semibold text-red-700">{ur?"پیغام محفوظ نہیں ہوسکا۔ دوبارہ کوشش کریں۔":"Could not save your message. Please try again."}</p>}
      <button type="submit" disabled={busy||message.trim().length<10} className={`mt-5 rounded-xl bg-[#ffdb83] px-7 py-3 font-bold text-[#14363d] hover:bg-[#ffe6a6] disabled:opacity-50 ${ur?"font-nastaliq leading-[2]":""}`}>{busy?(ur?"بھیجا جارہا ہے…":"Sending…"):(ur?"پیغام بھیجیں":"Send message")}</button>
     </form>
