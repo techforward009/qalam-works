@@ -21,7 +21,7 @@ function FeedbackPageInner(){
  const initial=search.get("tool");
  const [selected,setSelected]=useState<FeedbackTool>(initial&&FEEDBACK_TOOLS.includes(initial as FeedbackTool)?initial as FeedbackTool:"other");
  return <main dir={dir} lang={language} className="min-h-[70vh] bg-slate-50 pb-20 dark:bg-slate-950">
- <header className="bg-gradient-to-l from-[#087c7a] via-[#135a79] to-[#123a62] px-5 py-14 text-white">
+ <header style={{backgroundColor:"#123a62",backgroundImage:"linear-gradient(105deg,#163b66 0%,#135a79 55%,#087c7a 100%)"}} className="px-5 py-14 text-white">
   <div className="site-container"><span className="rounded-full bg-amber-200 px-4 py-1 text-sm font-bold text-slate-900">{ur?"✦ آپ کی آواز، ہماری بہتری":"✦ Your voice, our progress"}</span>
   <h1 className="mt-5 text-3xl font-bold leading-loose md:text-4xl">{ur?"رائے و تجاویز":"Feedback & Suggestions"}</h1>
   <p className="max-w-3xl text-base leading-loose text-cyan-50">{ur?"قلم ورکس میں کیا اچھا لگا اور کیا بہتر ہوسکتا ہے؟ آپ کی رائے ہمارے لیے اہم ہے۔":"What worked well, and what could be better? Tell us about your experience with Qalam Works."}</p></div>
