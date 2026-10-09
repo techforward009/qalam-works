@@ -1,6 +1,6 @@
 "use client";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FeedbackRating, FeedbackTool } from "../lib/feedback";
 
 const definitions:Record<string,FeedbackTool>={
@@ -12,9 +12,12 @@ const definitions:Record<string,FeedbackTool>={
 };
 export default function ToolFeedback(){
  const pathname=usePathname()??"";
- const tool=Object.entries(definitions).find(([slug])=>pathname.includes("/"+slug))?.[1];
+ const tool=pathname.startsWith("/tools/") && pathname.split("/").filter(Boolean).length>=2
+  ? definitions[pathname.split("/")[2]] ?? "other"
+  : undefined;
  const [open,setOpen]=useState(false),[rating,setRating]=useState<FeedbackRating|null>(null);
  const [comment,setComment]=useState(""),[state,setState]=useState<"idle"|"busy"|"saved"|"error">("idle");
+ useEffect(()=>{setOpen(false);setRating(null);setComment("");setState("idle");},[pathname]);
  if(!tool)return null;
  const submit=async()=>{
    if(!rating||state==="busy")return;
