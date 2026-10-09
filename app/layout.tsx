@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import ToolFeedback from "./components/ToolFeedback";
 import { LanguageProvider } from "./lib/language-context";
 import AnalyticsProviders from "./components/AnalyticsProviders";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -114,6 +115,7 @@ export default function RootLayout({
             <ThemeToggle />
           </ThemeProvider>
           <Footer />
+          <ToolFeedback />
           <AnalyticsProviders />
         </LanguageProvider>
       </body>
