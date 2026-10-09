@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "prebuild": "node scripts/fetch-madinah-v2-pages.mjs",
+    "prebuild": "node scripts/fetch-madinah-v2-pages.mjs && node scripts/check-feedback-storage.mjs",
     "test:sermon:review:live": "node scripts/evaluate-sermon-review.mjs --live",
     "test:sermon:flow:live": "node scripts/evaluate-sermon-flow.mjs --live-full",
     "test:sermon:flow:imports": "node scripts/evaluate-sermon-flow.mjs --check-imports"
