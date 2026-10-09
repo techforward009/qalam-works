@@ -1,0 +1,46 @@
+"use client";
+import {useSearchParams} from "next/navigation";
+import {useState} from "react";
+import Link from "next/link";
+import FeedbackForm from "../components/FeedbackForm";
+import {FEEDBACK_TOOLS,type FeedbackTool} from "../lib/feedback";
+const tools:{id:FeedbackTool;label:string}[]=[
+ {id:"document-studio",label:"دستاویز اسٹوڈیو"},{id:"translation-studio",label:"ترجمہ اسٹوڈیو"},{id:"research-studio",label:"تحقیقی اسٹوڈیو"},
+ {id:"khateeb-studio",label:"خطیب اسٹوڈیو"},{id:"quran-editions",label:"قرآن ایڈیشنز"},
+ {id:"document-cleaner",label:"دستاویز صاف کریں"},{id:"publication-quality-checker",label:"اردو متن کی جانچ"},
+ {id:"unicode-standardizer",label:"یونی کوڈ کی اصلاح"},{id:"roman-urdu-writer",label:"رومن سے اردو"},
+ {id:"urdu-roman-writer",label:"اردو سے رومن"},{id:"arabic-diacritics",label:"عربی اعراب"},
+ {id:"whatsapp-rtl-formatter",label:"واٹس ایپ فارمیٹر"},{id:"invoice-generator",label:"انوائس جنریٹر"},
+ {id:"date-converter",label:"تاریخ کنورٹر"},{id:"crescent-visibility",label:"رؤیت ہلال"},
+ {id:"services",label:"خدمات"},{id:"other",label:"دیگر سہولت"},
+];
+export default function FeedbackPage(){
+ const search=useSearchParams();
+ const initial=search.get("tool");
+ const [selected,setSelected]=useState<FeedbackTool>(initial&&FEEDBACK_TOOLS.includes(initial as FeedbackTool)?initial as FeedbackTool:"other");
+ return <main dir="rtl" lang="ur" className="min-h-[70vh] bg-slate-50 pb-20 dark:bg-slate-950">
+ <header className="bg-gradient-to-l from-[#087c7a] via-[#135a79] to-[#123a62] px-5 py-14 text-white">
+  <div className="site-container"><span className="rounded-full bg-amber-200 px-4 py-1 text-sm font-bold text-slate-900">✦ آپ کی آواز، ہماری بہتری</span>
+  <h1 className="mt-5 text-3xl font-bold leading-loose md:text-4xl">رائے و تجاویز</h1>
+  <p className="max-w-3xl text-base leading-loose text-cyan-50">قلم ورکس میں کیا اچھا لگا اور کیا بہتر ہوسکتا ہے؟ آپ کی رائے ہمارے لیے اہم ہے۔</p></div>
+ </header>
+ <div className="site-container mt-9 grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,.7fr)]">
+ <section className="rounded-3xl border border-teal-200 bg-white p-6 shadow-xl dark:border-teal-900 dark:bg-slate-900 md:p-8">
+ <h2 className="text-2xl font-bold">اپنی رائے درج کریں</h2><p className="mb-6 mt-1 text-sm text-slate-600 dark:text-slate-300">ایک سہولت منتخب کریں اور ہمیں اپنی رائے بتائیں۔</p>
+ <label htmlFor="feedback-tool" className="mb-2 block font-bold">متعلقہ اوزار یا سہولت</label>
+ <select id="feedback-tool" className="mb-6 w-full rounded-xl border border-slate-300 bg-white p-3 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white" value={selected} onChange={e=>setSelected(e.target.value as FeedbackTool)}>
+ {tools.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
+ </select>
+ <FeedbackForm key={selected} tool={selected} page="/feedback"/>
+ </section>
+ <aside className="self-start rounded-3xl bg-[#123a62] p-7 text-white shadow-lg">
+ <h2 className="text-2xl font-bold">آپ بتائیں، ہم سنیں گے</h2><p className="mt-3 leading-loose text-blue-100">آپ کی رائے متعلقہ اوزار کے ساتھ محفوظ ہوتی ہے اور قلم ورکس کی ٹیم تک پہنچتی ہے۔</p>
+ <div className="mt-6 space-y-4">
+ <p>✓ ہر اوزار کی الگ رائے اور رپورٹ</p><p>✓ اصلاح کے لیے واضح تجاویز</p><p>✓ نجی معلومات کے بغیر رائے دینے کی سہولت</p>
+ </div>
+ <Link href="/tools" className="mt-6 inline-block rounded-lg border border-white/60 px-4 py-2 text-white hover:bg-white/10">اوزار دیکھیں ←</Link>
+ </aside>
+ </div>
+ <p className="site-container mt-7 text-sm text-slate-600 dark:text-slate-300">صارفین کی تحریری آرا نجی رہیں گی۔ عوامی تجاویز اور ووٹنگ کا نظام الگ منظوری اور جائزے کے بعد شامل کیا جائے گا۔</p>
+ </main>;
+}
