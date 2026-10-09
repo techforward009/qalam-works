@@ -2,7 +2,7 @@ import { sermonSentences } from "../app/lib/knowledge/sermonReview";
 import type { AnswerInput, ResearchClaim } from "../app/lib/knowledge/researchAnswer";
 import type { SermonRequest } from "../app/lib/knowledge/sermonComposer";
 import { expect, it, vi } from "vitest";
-import { composeSermon, parseComposedSections, generateSermonSections, selectSermonEvidence } from "../app/lib/knowledge/sermonComposer";
+import { composeSermon, chooseSermonReviewProvider, parseComposedSections, generateSermonSections, selectSermonEvidence } from "../app/lib/knowledge/sermonComposer";
 import type { KnowledgeResult } from "../app/lib/knowledge/retrieval";
 import { buildCustomSermonText, parseCustomSermonProject, serializeCustomSermonProject } from "../app/tools/khateeb-studio/engine/customSermonProject";
 const result:KnowledgeResult={question:"صبر",status:"evidence",method:"lexical-bm25-topic-expansion",expandedTerms:[],availableCollections:["quran"],passages:[{id:"quran:test:2:153",collection:"quran",language:"ar",referenceUr:"قرآن، 2:153",referenceEn:"Quran, 2:153",text:"يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ",sourceSha256:"a".repeat(64),quranLocation:{surah:2,ayah:153},translator:null,suppliedTranslation:{language:"ur",text:"اے ایمان والو صبر اور نماز سے مدد لو۔",translator:"فراہم کردہ مترجم"}}]};
@@ -13,9 +13,17 @@ const sections=Array.from({length:5},(_,i)=>({heading:`حصہ ${i+1}`,text:Array
 const input={title:"صبر",duration:30 as const,locale:"ur" as const};
 const generate=vi.fn(async(_input:SermonRequest)=>({sections}));
 const reviewer={id:"fixture",draft:vi.fn(),review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(c=>({claimId:c.id,verdict:"supported",reason:"entailed"}))}))};
+it("selects an independent source-review provider without changing the writing model",()=>{
+ expect(chooseSermonReviewProvider({QALAM_SERMON_PROVIDER:"groq",CLOUDFLARE_ACCOUNT_ID:"account",CLOUDFLARE_AUTH_TOKEN:"token"})).toBe("cloudflare");
+ expect(chooseSermonReviewProvider({QALAM_SERMON_PROVIDER:"groq"})).toBe("groq");
+ expect(chooseSermonReviewProvider({QALAM_SERMON_PROVIDER:"groq",QALAM_SERMON_REVIEW_PROVIDER:"groq",CLOUDFLARE_ACCOUNT_ID:"account",CLOUDFLARE_AUTH_TOKEN:"token"})).toBe("groq");
+});
 it("creates five composed sections with exact references, portable sources and correct duration",async()=>{
  const project=await composeSermon(input,result,{generate,reviewer,env:{}});
  expect(project.sections).toHaveLength(5);expect(project.sections.reduce((n,s)=>n+s.minutes,0)).toBe(30);
+ expect(project.sections[0].evidenceIds).toContain(result.passages[0].id);
+ expect(project.sections[1].evidenceIds).toContain(result.passages[1].id);
+ expect(project.sections[2].evidenceIds).toEqual([]);
  expect(project.sections[0].userText).toContain("قرآن، 2:153");
  expect(project.evidence[0].arabic).toBe(result.passages[0].text);
  expect(buildCustomSermonText(project,"ur")).toContain(result.passages[0].suppliedTranslation!.text);
@@ -33,6 +41,16 @@ it("rejects invented references, short outlines and absent sections",()=>{
 it("rejects the entire new version when one section is unsupported",async()=>{
  const reject={...reviewer,review:async(_i:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((c,i)=>({claimId:c.id,verdict:i===2?"unsupported":"supported",reason:i===2?"not-in-evidence":"entailed"}))})};
  await expect(composeSermon(input,result,{generate,reviewer:reject,env:{}})).rejects.toThrow("unverified");
+});
+it("never returns a final sermon unless its complete review explicitly approves all five sections",async()=>{
+ const auditing={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((claim,index)=>({claimId:claim.id,verdict:index===4?"unsupported":"supported",reason:index===4?"not-in-evidence":"entailed"}))}))};
+ await expect(composeSermon(input,result,{generate,reviewer:auditing,env:{}})).rejects.toThrow("unverified");
+ expect(auditing.review).toHaveBeenCalled();
+});
+it("rejects an unrecognized review provider instead of silently switching reviewers",async()=>{
+ const writer=vi.fn();
+ await expect(composeSermon(input,result,{generate:writer,reviewer,env:{QALAM_SERMON_REVIEW_PROVIDER:"unknown"}})).rejects.toThrow("not-configured");
+ expect(writer).not.toHaveBeenCalled();
 });
 it("does not turn Arabic-only sources into invented Urdu translations",async()=>{
  await expect(composeSermon(input,{...result,passages:result.passages.map(p=>({...p,suppliedTranslation:undefined}))},{generate,reviewer,env:{}})).rejects.toThrow("missing-translation");
@@ -135,6 +153,16 @@ it("rejects foreign-script text in Urdu sermon prose before source review",async
  expect(check.review).not.toHaveBeenCalled();
 });
 
+it("allows two script-only corrections but never audits contaminated Urdu",async()=>{
+ const provider=vi.fn(async(_request:SermonRequest)=>({sections:provider.mock.calls.length<3?sections.map((section,i)=>i===0?{...section,heading:"Opening"}:section):sections}));
+ const audit={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(claim=>({claimId:claim.id,verdict:"supported",reason:"entailed"}))}))};
+ const project=await composeSermon(input,result,{generate:provider,reviewer:audit,env:{}});
+ expect(project.sections).toHaveLength(5);
+ expect(provider).toHaveBeenCalledTimes(3);
+ expect(audit.review).toHaveBeenCalledTimes(1);
+ expect(provider.mock.calls[1][0].instruction).toContain("never include any Latin");
+ expect(provider.mock.calls[1][0].instruction).toContain("Opening");
+});
 it("repairs a short first draft before reviewing and preserves minimum length",async()=>{
  const repair=vi.fn(async(_request:SermonRequest)=>({sections:repair.mock.calls.length===1?sections.map(s=>({...s,text:s.text.slice(0,300)})):sections}));
  const check={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map(c=>({claimId:c.id,verdict:"supported",reason:"entailed"}))}))};
@@ -154,6 +182,22 @@ it("sends supplied meanings to the writer without duplicated original text or me
  expect(data.evidence[0].meaning).toBe(result.passages[0].suppliedTranslation!.text);expect(data.evidence[0].text).toBeUndefined();expect(data.evidence[0].suppliedTranslation).toBeUndefined();
 });
 
+it("reserves a primary non-Quran passage when ranked results begin with eight Quran entries",()=>{
+ const quran=result.passages.find(p=>p.collection==="quran")!;
+ const core=result.passages.find(p=>p.collection!=="quran")!;
+ const ranked=[...Array.from({length:8},(_,i)=>({...quran,id:`quran:ranked:${i}`,recordId:undefined})),core];
+ const chosen=selectSermonEvidence(ranked);
+ expect(chosen.some(e=>e.passage.collection!=="quran")).toBe(true);
+ expect(chosen.length).toBeLessThanOrEqual(8);
+});
+it("retains three distinct non-Quran primary sources for a 45-minute sermon",()=>{
+ const quran=result.passages.find(p=>p.collection==="quran")!;
+ const core=result.passages.filter(p=>p.collection!=="quran");
+ const ranked=[...Array.from({length:8},(_,i)=>({...quran,id:`quran:ranked:forty-five:${i}`,recordId:undefined})),...core];
+ const chosen=selectSermonEvidence(ranked,45);
+ expect(new Set(chosen.filter(item=>item.passage.collection!=="quran").map(item=>item.passage.recordId??item.passage.id)).size).toBe(3);
+ expect(chosen.length).toBeLessThanOrEqual(8);
+});
 it("bounds sermon evidence with complete source units and unchanged verified translations",()=>{
  const long={...result.passages[0],id:"too-long",text:"ع".repeat(7000)};
  const chosen=selectSermonEvidence([long,...result.passages]);expect(chosen).toHaveLength(5);expect(chosen[0].passage).toBe(result.passages[0]);expect(chosen[0].ref).toBe(1);expect(chosen[1].ref).toBe(2);
@@ -202,6 +246,14 @@ it("keeps a source-review repair after a short draft without unbounded retries",
  expect(draft.mock.calls[2][0].instruction).toContain('section-3');
 });
 
+it("retains a final length repair after a source-review rejection",async()=>{
+ let reviewCalls=0;
+ const auditor={...reviewer,review:vi.fn(async(_input:AnswerInput,claims:readonly ResearchClaim[])=>({reviews:claims.map((claim,i)=>({claimId:claim.id,verdict:reviewCalls++===0&&i===0?"unsupported":"supported",reason:"entailed"}))}))};
+ const provider=vi.fn(async(_request:SermonRequest)=>({sections:[2,3].includes(provider.mock.calls.length)?sections.map((s,i)=>i===0?{...s,text:s.text.slice(0,300)}:s):sections}));
+ const project=await composeSermon(input,result,{generate:provider,reviewer:auditor,env:{}});
+ expect(project.sections).toHaveLength(5);
+ expect(provider).toHaveBeenCalledTimes(4);
+});
 it("preserves rejected-source feedback when a repair draft also needs more length",async()=>{
  let reviewCount=0;
  const auditor={...reviewer,review:vi.fn(async(reviewInput:AnswerInput,claims:readonly ResearchClaim[])=>{

@@ -1,0 +1,184 @@
+name: Khateeb Sermon Validation
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches:
+      - main
+  push:
+    branches:
+      - khateeb-sermon-local-validation
+  workflow_dispatch:
+jobs:
+  sermon-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run tests/sermonComposer.test.ts tests/sermonReview.test.ts tests/sermonEvidenceCoverage.test.ts tests/sermonCorpusAudit.test.ts tests/feedback.test.ts tests/feedbackAdmin.test.ts tests/feedbackFlow.test.ts tests/feedbackNotification.test.ts
+      - name: Run repository suite with exact main-baseline comparison
+        shell: bash
+        run: |
+          set +e
+          NO_COLOR=1 npm test 2>&1 | tee "$RUNNER_TEMP/branch-npm-test.log"
+          branch_status=${PIPESTATUS[0]}
+          if [ "$branch_status" -eq 0 ]; then exit 0; fi
+          git worktree add --detach "$RUNNER_TEMP/qalam-main" origin/main
+          (
+            cd "$RUNNER_TEMP/qalam-main"
+            npm ci
+            NO_COLOR=1 npx vitest run tests/khateebBookPassageText.test.tsx tests/khateebStudio.test.ts tests/pdfWrapAndBreaks.test.ts
+          ) 2>&1 | tee "$RUNNER_TEMP/main-failing-files.log"
+          branch_failures=$(grep -E '^ +FAIL ' "$RUNNER_TEMP/branch-npm-test.log" | sed -E 's/^ +FAIL //' | sort -u)
+          main_failures=$(grep -E '^ +FAIL ' "$RUNNER_TEMP/main-failing-files.log" | sed -E 's/^ +FAIL //' | sort -u)
+          new_failures=$(comm -23 <(printf '%s\n' "$branch_failures") <(printf '%s\n' "$main_failures"))
+          if [ -n "$new_failures" ]; then
+            echo "New test failures versus origin/main:"
+            printf '%s\n' "$new_failures"
+            exit 1
+          fi
+          echo "::warning::Full suite has only existing origin/main failures."
+      - run: npx tsc --noEmit
+      - run: npm run test:sermon:flow:imports
+      - run: npm run build
+      - run: git diff --check
+
+  sermon-live:
+    if: (github.event_name == 'push' && github.event.head_commit.message == 'Run grounded sermon live verification') || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[branch-live]'))
+    needs: sermon-unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_AUTH_TOKEN: ${{ secrets.CLOUDFLARE_AUTH_TOKEN }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      QALAM_RESEARCH_STORE_ID: ${{ secrets.QALAM_RESEARCH_STORE_ID }}
+      QALAM_RESEARCH_READ_WRITE_TOKEN: ${{ secrets.QALAM_RESEARCH_READ_WRITE_TOKEN }}
+      QALAM_SERMON_PROVIDER: ${{ vars.QALAM_SERMON_PROVIDER }}
+      QALAM_SERMON_REVIEW_PROVIDER: ${{ vars.QALAM_SERMON_REVIEW_PROVIDER }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify prerequisites without printing credentials
+        run: |
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$CLOUDFLARE_AUTH_TOKEN" ]; then
+            echo "::error::Live test unavailable: private research credentials have not been configured in GitHub Actions."
+            exit 1
+          fi
+          if [ -z "$QALAM_RESEARCH_STORE_ID" ] || [ -z "$QALAM_RESEARCH_READ_WRITE_TOKEN" ]; then
+            echo "::error::Live test unavailable: Qalam research corpus credentials are not configured in GitHub Actions."
+            exit 1
+          fi
+          if [ -z "$GROQ_API_KEY" ] && [ -z "$GEMINI_API_KEY" ]; then
+            echo "::error::Live test unavailable: no sermon model credentials configured in GitHub Actions."
+            exit 1
+          fi
+      - run: npm run test:sermon:flow:live
+
+  production-smoke:
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[production-smoke]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Request one real 20-minute Urdu sermon from existing production (no deployment)
+        shell: bash
+        run: |
+          http_code=$(curl --silent --show-error --max-time 330 -o response.json -w '%{http_code}' -X POST 'https://www.qalamworks.com/api/khateeb/compose' -H 'Content-Type: application/json' --data '{"title":"صبر","duration":20,"locale":"ur"}')
+          echo "SERMON_PRODUCTION_HTTP=$http_code"
+          HTTP_CODE="$http_code" node -e '
+            const fs=require("node:fs");
+            const payload=JSON.parse(fs.readFileSync("response.json","utf8"));
+            const project=payload.project;
+            const sections=project?.sections??[];
+            const words=sections.reduce((n,s)=>n+(s.userText??"").trim().split(/\s+/u).filter(Boolean).length,0);
+            const refs=project?.selectedEvidenceIds?.length??0;
+            console.log("SERMON_PRODUCTION_RESULT",JSON.stringify({status:process.env.HTTP_CODE,code:payload.code??null,sections:sections.length,words,sourceIds:refs}));
+            if(process.env.HTTP_CODE!=="200"||sections.length!==5||refs<3||words<450)process.exitCode=1;
+          '
+
+  sermon-fixture-live:
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[fixture-live]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_AUTH_TOKEN: ${{ secrets.CLOUDFLARE_AUTH_TOKEN }}
+      QALAM_SERMON_PROVIDER: cloudflare
+      QALAM_SERMON_REVIEW_PROVIDER: cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify model credentials without printing values
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+          test -n "$CLOUDFLARE_AUTH_TOKEN" || { echo "::error::Missing CLOUDFLARE_AUTH_TOKEN"; exit 1; }
+      - name: Compose and independently review a 20-minute sermon from fixed excerpts
+        run: node scripts/evaluate-sermon-flow.mjs --live-fixture
+
+  quran-public-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_AUTH_TOKEN: ${{ secrets.CLOUDFLARE_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Retrieve Quran passages without private storage credentials
+        run: node scripts/evaluate-sermon-flow.mjs --public-quran
+
+  gemma-probe:
+    if: (github.event_name == 'push' && github.event.head_commit.message == 'Probe Gemma 4 safely') || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[gemma-probe]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_AUTH_TOKEN: ${{ secrets.CLOUDFLARE_AUTH_TOKEN }}
+    steps:
+      - name: Check Gemma 4 availability on our account without revealing credentials
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID" && test -n "$CLOUDFLARE_AUTH_TOKEN" || { echo "GEMMA_PROBE missing credentials"; exit 1; }
+          node - <<'NODE'
+          const model = '@cf/google/gemma-4-26b-a4b-it';
+          const endpoint = 'https://api.cloudflare.com/client/v4/accounts/'+encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID)+'/ai/run/'+model;
+          const controller = new AbortController();
+          const timeout = setTimeout(()=>controller.abort(), 90000);
+          try {
+            const response = await fetch(endpoint, {
+              method:'POST',
+              headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_AUTH_TOKEN,'Content-Type':'application/json'},
+              body:JSON.stringify({messages:[{role:'user',content:'اردو میں ایک مختصر جملہ لکھیں: صبر کیا ہے؟'}],max_tokens:1200}),
+              signal:controller.signal,
+            });
+            const payload = await response.json().catch(()=>({}));
+            const reply = payload?.result?.response ?? payload?.result?.choices?.[0]?.message?.content ?? payload?.result?.output?.map?.(x=>x?.content?.map?.(y=>y?.text).join(' ')).join(' ') ?? '';
+            const text = typeof reply === 'string' ? reply : JSON.stringify(reply);
+            const succeeded = response.ok && payload.success !== false && text.trim().length > 8;
+            console.log('GEMMA_PROBE',JSON.stringify({model,status:response.status,passed:succeeded,hasUrdu:/[\u0600-\u06FF]/u.test(text),length:text.length,topKeys:Object.keys(payload).slice(0,8),resultKeys:payload?.result&&typeof payload.result==='object'?Object.keys(payload.result).slice(0,12):[],choiceCount:payload?.result?.choices?.length??0,choiceKeys:Object.keys(payload?.result?.choices?.[0]??{}),messageKeys:Object.keys(payload?.result?.choices?.[0]?.message??{}),finishReason:payload?.result?.choices?.[0]?.finish_reason??null,errors:Array.isArray(payload.errors)?payload.errors.map(e=>e.code):[]}));
+            if(!succeeded)process.exitCode=1;
+          } catch(err) {
+            console.log('GEMMA_PROBE',JSON.stringify({model,passed:false,reason:err?.name==='AbortError'?'timeout':'network-error'}));
+            process.exitCode=1;
+          } finally {clearTimeout(timeout);}
+          NODE

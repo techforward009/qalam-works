@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 vi.mock("../app/api/research/vercelResearchBlob",()=>({researchBlobClientFromEnv:vi.fn()}));
-import { retrieveSermonSources } from "../app/lib/knowledge/sermonEvidence";
+import { retrieveSermonSources, readOnlySermonCorpus } from "../app/lib/knowledge/sermonEvidence";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { completeQuranTranslationFor } from "../app/lib/knowledge/completeQuranTranslations";
 const base={scope:"quran" as const,locale:"ur" as const,candidateLimit:16,records:[],sources:[],quranSha256:ahmedgrafQuranReference.getMetadata().sourceSha256!,quran:ahmedgrafQuranReference.listAyahs().map(a=>({...a,suppliedTranslation:{text:completeQuranTranslationFor(a.surah,a.ayah,"ur")!,language:"ur" as const,translator:"علامہ شیخ محسن علی نجفی"}}))};
@@ -21,4 +21,26 @@ it("keeps commentary in translation editions out of primary sermon retrieval",()
  const result=retrieveSermonSources({...base,scope:"all",question:"صبر",sources:[source],records:[record]});
  expect(result.passages.length).toBeGreaterThan(0);
  expect(result.passages.some(p=>p.sourceId==="sahifa-ur")).toBe(false);
+});
+
+it("retrieves an Arabic Nahj passage with its source locator for sermon evidence",()=>{
+ const source={id:"nahj-ar",book:"nahj" as const,language:"ar" as const,filename:"nahj-ar.json",sha256:"a".repeat(64),translator:null};
+ const id="nahj-ar:saying:55";
+ const arabic="الصبر صبران صبر على ما تكره وصبر عما تحب";
+ const record={id,sourceId:source.id,book:source.book,language:source.language,kind:"saying",number:55,title:"الصبر",reference:{sourceId:source.id,section:"saying",number:55,locator:"نهج البلاغة، الحكمة ٥٥",printPage:null},textSha256:"b".repeat(64),paragraphs:[{id:id+":p1",text:arabic}]};
+ const result=retrieveSermonSources({...base,scope:"all",question:"الصبر",sources:[source],records:[record]});
+ const passage=result.passages.find(p=>p.collection==="nahj");
+ expect(passage).toBeDefined();
+ expect(passage?.text).toBe(arabic);
+ expect(passage?.recordId).toBe(id);
+ expect(passage?.referenceUr).toBeTruthy();
+});
+
+it("makes sermon storage reads possible but blocks all writes",async()=>{
+ const client={getObject:vi.fn(async(path:string)=>path==="probe"?"original":null),listObjects:vi.fn(async()=>["probe"]),putObject:vi.fn(async()=>{})};
+ const readOnly=readOnlySermonCorpus(client);
+ expect(await readOnly.getObject("probe")).toBe("original");
+ expect(await readOnly.listObjects("khateeb-foundational/")).toEqual(["probe"]);
+ await expect(readOnly.putObject("probe","changed")).rejects.toThrow("sermon-read-only");
+ expect(client.putObject).not.toHaveBeenCalled();
 });

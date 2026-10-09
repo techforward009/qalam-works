@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import ts from 'typescript';
 
 const marker='Validate complete sermon composition and source review';
-if(process.argv.includes('--live-full')||process.argv.includes('--check-imports')||process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim()===marker){
+if(process.argv.includes('--live-full')||process.argv.includes('--live-fixture')||process.argv.includes('--public-quran')||process.argv.includes('--audit-private')||process.argv.includes('--check-imports')||process.env.VERCEL_GIT_COMMIT_MESSAGE?.trim()===marker){
   registerHooks({
     resolve(specifier,context,nextResolve){
       if(specifier.startsWith('.')&&!/\.[cm]?[jt]s$|\.json$/.test(specifier)&&context.parentURL){
@@ -18,12 +18,57 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
     },
   });
   const {collectSermonEvidence}=await import('../app/lib/knowledge/sermonEvidence.ts');
-  const {composeSermon,generateSermonSections}=await import('../app/lib/knowledge/sermonComposer.ts');
+  const {composeSermon,generateSermonSections,chooseSermonReviewProvider}=await import('../app/lib/knowledge/sermonComposer.ts');
   const {createSermonSentenceReviewer,sermonRejectedSentences}=await import('../app/lib/knowledge/sermonReview.ts');
   const {reviewedResearchClaims}=await import('../app/lib/knowledge/researchAnswer.ts');
   const {buildCustomSermonText,parseCustomSermonProject,serializeCustomSermonProject}=await import('../app/tools/khateeb-studio/engine/customSermonProject.ts');
   if(process.argv.includes('--check-imports'))console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'imports-valid'}));
   else if(process.exitCode)console.log('SERMON_FLOW_EVAL',JSON.stringify({status:'blocked',reason:'source-review-fixtures-failed'}));
+  else if(process.argv.includes('--audit-private')){
+    // Run only within a trusted environment with store credentials; output counts, never text or tokens.
+    try {
+      const { researchBlobClientFromEnv } = await import('../app/api/research/vercelResearchBlob.ts');
+      const { auditSermonCorpus } = await import('../app/lib/knowledge/sermonCorpusAudit.ts');
+      const report = await auditSermonCorpus(await researchBlobClientFromEnv());
+      console.log('SERMON_PRIVATE_CORPUS_AUDIT',JSON.stringify(report));
+      if(report.status !== 'passed')process.exitCode=1;
+    } catch(error) {
+      console.log('SERMON_PRIVATE_CORPUS_AUDIT',JSON.stringify({status:'blocked',code:error instanceof Error&&['missing-catalog','unavailable'].includes(error.message)?error.message:'audit-failed'}));
+      process.exitCode=1;
+    }
+  }
+  else if(process.argv.includes('--public-quran')){
+    const started=Date.now();
+    try{
+      const sources=await collectSermonEvidence('قرآن سورۃ العصر 103:1–3','ur','quran-test-no-private-store');
+      const first=sources.passages.find(p=>p.quranLocation?.surah===103&&p.quranLocation?.ayah===1);
+      const third=sources.passages.find(p=>p.quranLocation?.surah===103&&p.quranLocation?.ayah===3);
+      const valid=sources.status==='evidence'&&Boolean(first&&third)&&sources.passages.every(p=>p.collection==='quran'&&p.suppliedTranslation?.language==='ur');
+      console.log('SERMON_PUBLIC_QURAN',JSON.stringify({status:valid?'passed':'failed',sourceCount:sources.passages.length,elapsedMs:Date.now()-started,privateStoreRequired:false}));
+      if(!valid)process.exitCode=1;
+    }catch(error){console.log('SERMON_PUBLIC_QURAN',JSON.stringify({status:'failed',reason:error instanceof Error?error.message:'unknown',elapsedMs:Date.now()-started}));process.exitCode=1;}
+  }
+  else if(process.argv.includes('--live-fixture')){
+    const input={title:'صبر',duration:20,locale:'ur'};
+    const originals=[
+      {id:'quran:2:153',collection:'quran',language:'ar',referenceUr:'قرآن، البقرہ ۲:۱۵۳',referenceEn:'Quran 2:153',text:'يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ',suppliedTranslation:{language:'ur',text:'اے ایمان والو! صبر اور نماز سے مدد چاہو، بے شک اللہ صبر کرنے والوں کے ساتھ ہے۔',translator:'آزمائشی فراہم کردہ متن'},quranLocation:{surah:2,ayah:153},sourceSha256:'a'.repeat(64)},
+      {id:'nahj:fixture:1',recordId:'nahj:fixture:1',collection:'nahj',language:'ar',referenceUr:'نہج البلاغہ، حکمت ۵۵ (آزمائشی اقتباس)',referenceEn:'Nahj al-Balagha, saying 55 (test excerpt)',text:'الصَّبْرُ صَبْرَانِ: صَبْرٌ عَلَى مَا تَكْرَهُ، وَصَبْرٌ عَمَّا تُحِبُّ',suppliedTranslation:{language:'ur',text:'صبر کی دو قسمیں ہیں: ناپسندیدہ چیز پر صبر اور پسندیدہ چیز سے رکنے پر صبر۔',translator:'آزمائشی فراہم کردہ متن'}},
+      {id:'quran:103:3',collection:'quran',language:'ar',referenceUr:'قرآن، العصر ۱۰۳:۳',referenceEn:'Quran 103:3',text:'إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ',suppliedTranslation:{language:'ur',text:'سوائے ان لوگوں کے جو ایمان لائے، نیک عمل کیے، اور ایک دوسرے کو حق اور صبر کی تلقین کی۔',translator:'آزمائشی فراہم کردہ متن'},quranLocation:{surah:103,ayah:3},sourceSha256:'b'.repeat(64)}
+    ];
+    const result={question:input.title,status:'evidence',method:'fixture',passages:originals,availableCollections:['quran','nahj'],expandedTerms:[]};
+    const started=Date.now();
+    try{
+      const project=await composeSermon(input,result,{env:process.env});
+      const serialized=serializeCustomSermonProject(project);
+      const restored=parseCustomSermonProject(serialized);
+      const output=buildCustomSermonText(project,'ur');
+      const words=project.sections.reduce((n,s)=>n+s.userText.split(/\s+/u).filter(Boolean).length,0);
+      const valid=restored?.sections.length===5&&project.sections.length===5&&words>=450&&project.sections.reduce((n,s)=>n+s.minutes,0)===20&&project.evidence.every(e=>output.includes(e.arabic)&&output.includes(e.detailUr));
+      console.log('SERMON_FIXTURE_EVAL',JSON.stringify({status:valid?'passed':'failed',sections:project.sections.length,words,sourceCount:project.evidence.length,elapsedMs:Date.now()-started,fixtureOnly:true}));
+      if(!valid)process.exitCode=1;
+    }catch(error){console.log('SERMON_FIXTURE_EVAL',JSON.stringify({status:'failed',reason:error instanceof Error?error.message:'unknown',elapsedMs:Date.now()-started,fixtureOnly:true}));process.exitCode=1;}
+  }
+
   else{
     let stage='sources';const started=Date.now();
     try{
@@ -44,7 +89,8 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
         {id:'correct-asr-oath',text:'پہلی آیت میں عصر کی قسم ہے۔',passage:first,expected:true},
         {id:'wrong-asr-attached-verse',text:'پہلی آیت میں تمام انسانوں کے خسارے کا بیان ہے۔',passage:first,expected:false},
       ];
-      const reviewer=createSermonSentenceReviewer({preferredProvider:process.env.QALAM_SERMON_PROVIDER||undefined,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN});
+      const reviewProvider=chooseSermonReviewProvider(process.env);
+      const reviewer=createSermonSentenceReviewer({preferredProvider:reviewProvider,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN});
       if(!reviewer)throw new Error('provider-unavailable');
       const claims=fixtures.map(f=>({id:f.id,text:f.text,citations:[{passageId:f.passage.id,quote:f.passage.text}]}));
       const publicReviewInput={question:conditionInput.title,locale:'ur',evidence:conditionEvidence.passages.map((passage,i)=>({ref:i+1,passage}))};
@@ -58,11 +104,11 @@ if(process.argv.includes('--live-full')||process.argv.includes('--check-imports'
       const evidence=await collectSermonEvidence(input.title,input.locale,'release-grounded-sermon-evaluation');
       console.log('SERMON_FLOW_EVAL',JSON.stringify({stage:'sermon-sources',status:evidence.status,sourceCount:evidence.passages.length,collections:[...new Set(evidence.passages.map(p=>p.collection))],elapsedMs:Date.now()-started}));
       // Groq's free output-token window is shared by the previous compact audit.
-      await new Promise(resolve=>setTimeout(resolve,60000));
-      const fullReviewer=createSermonSentenceReviewer({preferredProvider:process.env.QALAM_SERMON_PROVIDER||undefined,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+285000});
+      if(reviewProvider==='groq')await new Promise(resolve=>setTimeout(resolve,60000));
+      const fullReviewer=createSermonSentenceReviewer({preferredProvider:reviewProvider,geminiKey:process.env.GEMINI_API_KEY,apiKey:process.env.GROQ_API_KEY,cloudflareAccountId:process.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:process.env.CLOUDFLARE_AUTH_TOKEN,deadline:Date.now()+285000});
       if(!fullReviewer)throw new Error('provider-unavailable');
       let reviewAttempt=0;
-      const project=await composeSermon(input,evidence,{env:process.env,generate:async(...args)=>{const draft=await generateSermonSections(...args);await new Promise(resolve=>setTimeout(resolve,60000));return draft;},reviewer:{...fullReviewer,async review(reviewInput,claims){
+      const project=await composeSermon(input,evidence,{env:process.env,generate:async(...args)=>{const draft=await generateSermonSections(...args);if(reviewProvider==='groq')await new Promise(resolve=>setTimeout(resolve,60000));return draft;},reviewer:{...fullReviewer,async review(reviewInput,claims){
         let audit;
         try{audit=await fullReviewer.review(reviewInput,claims);}catch(error){if(!(error instanceof Error)||!['provider-unavailable','provider-rate-limited'].includes(error.message))throw error;console.log('SERMON_FLOW_EVAL',JSON.stringify({stage:'sermon-review-retry',reason:error.message}));if(error.message==='provider-rate-limited')await new Promise(resolve=>setTimeout(resolve,60000));audit=await fullReviewer.review(reviewInput,claims);}
         for(const rejection of sermonRejectedSentences(audit,reviewInput,claims)??[])console.log('SERMON_FLOW_REJECTION',JSON.stringify({attempt:reviewAttempt,claimId:rejection.claimId,index:rejection.index,reason:rejection.reason}));
