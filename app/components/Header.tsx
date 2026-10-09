@@ -1,263 +1,71 @@
 "use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Menu, X } from "lucide-react";
-import { translations } from "../lib/translations";
+import {usePathname} from "next/navigation";
+import {useEffect,useRef,useState} from "react";
+import {ChevronDown,Menu,X,FileText,Brush,CheckCircle,Languages,BookOpen,Library,Mic2,CaseSensitive,Receipt,CalendarDays,Moon,MessageSquareText,PenLine,BookMarked} from "lucide-react";
+import {useLanguage} from "../lib/language-context";
 import LanguageSwitch from "./LanguageSwitch";
-import { useLanguage } from "../lib/language-context";
 
-function PenNibIcon({ size = 22 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className="text-white shrink-0"
-    >
-      <path d="M12 19l7-7 3 3-7 7-3-3z" />
-      <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-      <path d="M2 2l7.586 7.586" />
-      <circle cx="11" cy="11" r="2" />
-    </svg>
-  );
-}
-
-/**
- * Primary header: logo, one Tools menu, two section links,
- * language switch, and Open Studio. Services, About, and Contact
- * stay in the footer.
- */
-export default function Header() {
-  const pathname = usePathname();
-  const {language} = useLanguage();
-  const ur = language === "ur";
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(false);
-  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
-  const navRef = useRef<HTMLDivElement>(null);
-  const t = translations[language].nav;
-
-  const toolLinks = [
-    { label: t.documentStudio, href: "/tools/document-studio" },
-    { label: t.documentCleaner, href: "/tools/document-cleaner" },
-    { label: t.qualityChecker, href: "/tools/quality-checker" },
-    { label: t.unicodeStandardizer, href: "/tools/unicode-standardizer" },
-    { label: ur ? "عربی اعراب" : "Arabic Diacritics", href: "/tools/arabic-diacritics" },
-    { label: ur ? "قرآن کریم" : "Quran Editions", href: "/quran" },
-    { label: t.translationStudio, href: "/tools/translation-studio" },
-    { label: t.urduWriter, href: "/tools/roman-urdu-writer" },
-    { label: t.urduRomanWriter, href: "/tools/urdu-roman-writer" },
-    { label: ur ? "واٹس ایپ فارمیٹر" : "WhatsApp RTL", href: "/tools/whatsapp-rtl-formatter" },
-    { label: t.invoiceStudio, href: "/tools/invoice-generator" },
-    { label: t.dateStudio, href: "/tools/date-converter" },
-    { label: ur ? "رؤیت ہلال" : "Crescent Visibility", href: "/tools/crescent-visibility" },
-  ];
-
-  const sectionLinks = [
-    { label: ur ? "طریقۂ کار" : "How It Works", href: "/#how-it-works" },
-    { label: ur ? "کن کے لیے" : "Who Can Use It", href: "/#who-its-for" },
-  ];
-
-  useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) {
-        setToolsOpen(false);
-      }
-    }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setToolsOpen(false);
-        setMobileOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleOutside);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleOutside);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, []);
-
-  useEffect(() => {
-    setMobileOpen(false);
-    setToolsOpen(false);
-    setMobileToolsOpen(false);
-  }, [pathname]);
-
-  const linkCls =
-    "relative px-2 py-2 text-[14px] font-medium text-white/88 hover:text-[#7DDCB8] whitespace-nowrap transition-colors";
-
-  function closeAll() {
-    setToolsOpen(false);
-    setMobileOpen(false);
-    setMobileToolsOpen(false);
-  }
-
-  return (
-    <div className="sticky top-0 z-50">
-      <header className="bg-[#11182A] shadow-[0_10px_30px_rgba(14,21,36,0.28)]">
-        <div className="site-container flex h-20 items-center justify-between gap-4" dir="ltr">
-          <Link href="/" className="flex min-w-0 items-center gap-3 shrink-0" dir="ltr">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1F6C54] text-white shadow-md">
-              <PenNibIcon />
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-[18px] font-bold leading-none tracking-tight text-white">
-                Qalam Works
-              </span>
-              <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.18em] text-white/55">
-                Publishing Tools
-              </span>
-            </span>
-          </Link>
-
-          <div className="hidden items-center gap-8 lg:flex">
-          <nav
-            ref={navRef}
-            className="flex items-center gap-8"
-            dir="ltr"
-            aria-label="Primary"
-          >
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setToolsOpen((open) => !open)}
-                aria-expanded={toolsOpen}
-                aria-haspopup="menu"
-                className="flex items-center gap-1 px-2 py-2 text-[14px] font-medium text-white hover:text-[#7DDCB8]"
-              >
-                {ur?"اوزار":"Tools"}
-                <ChevronDown size={14} className={`transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
-              </button>
-              {toolsOpen && (
-                <div
-                  role="menu"
-                  className="absolute left-0 top-full z-50 mt-2 max-h-[70vh] w-64 overflow-y-auto rounded-xl border border-white/10 bg-[#1A2036] py-1.5 shadow-2xl"
-                >
-                  {toolLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      role="menuitem"
-                      onClick={closeAll}
-                      className="block px-4 py-2.5 text-[14px] text-white/85 hover:bg-white/5 hover:text-white"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                  <div className="my-1 border-t border-white/10" />
-                  <Link
-                    href="/tools"
-                    role="menuitem"
-                    onClick={closeAll}
-                    className="block px-4 py-2.5 text-[14px] font-semibold text-[#C9A46B] hover:bg-white/5 hover:text-[#E0BA85]"
-                  >
-                    {t.allTools}
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {sectionLinks.map((link) => (
-              <Link key={link.href} href={link.href} className={linkCls}>
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-            <LanguageSwitch />
-            <Link
-              href="/tools/document-studio"
-              className="inline-flex min-h-10 items-center rounded-lg bg-[#2FA37D] px-5 text-[14px] font-bold text-white shadow-md transition-colors hover:bg-[#248565]"
-            >
-              {ur?"دستاویز اسٹوڈیو کھولیں":"Open Document Studio"}
-            </Link>
-          </div>
-
-          <div className="ml-auto flex items-center gap-2 lg:hidden">
-            <LanguageSwitch />
-            <button
-              type="button"
-              onClick={() => setMobileOpen((open) => !open)}
-              className="rounded-md p-2.5 text-white hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2FA37D]"
-              aria-label={mobileOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileOpen}
-              aria-controls="mobile-nav"
-            >
-              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {mobileOpen && (
-        <nav
-          id="mobile-nav"
-          className="border-t border-white/10 bg-[#0E1524] lg:hidden"
-          dir="ltr"
-          aria-label="Mobile"
-        >
-          <div className="site-container flex max-h-[min(75vh,560px)] flex-col overflow-y-auto py-2">
-            {sectionLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={closeAll}
-                className="border-b border-white/5 py-3.5 text-[16px] font-medium text-white"
-              >
-                {link.label}
-              </Link>
-            ))}
-
-            <button
-              type="button"
-              onClick={() => setMobileToolsOpen((open) => !open)}
-              aria-expanded={mobileToolsOpen}
-              className="flex w-full items-center justify-between border-b border-white/5 py-3.5 text-left text-[16px] font-medium text-white"
-            >
-              <span>{ur?"اوزار":"Tools"}</span>
-              <ChevronDown size={16} className={`transition-transform ${mobileToolsOpen ? "rotate-180" : ""}`} />
-            </button>
-            {mobileToolsOpen && (
-              <div className="bg-white/[0.03] pb-1">
-                {toolLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={closeAll}
-                    className="block py-2.5 pl-4 pr-2 text-[15px] text-white/85 hover:text-white"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                <Link
-                  href="/tools"
-                  onClick={closeAll}
-                  className="block py-2.5 pl-4 text-[15px] font-semibold text-[#C9A46B]"
-                >
-                  {t.allTools}
-                </Link>
-              </div>
-            )}
-
-            <Link
-              href="/tools/document-studio"
-              onClick={closeAll}
-              className="mx-1 my-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-[#2FA37D] px-4 text-[15px] font-semibold text-white"
-            >
-              {ur?"دستاویز اسٹوڈیو کھولیں":"Open Document Studio"}
-            </Link>
-          </div>
-        </nav>
-      )}
-    </div>
-  );
+const sections=[
+ {en:"Write & Publish",ur:"تحریر و اشاعت",tools:[
+  ["Document Studio","دستاویز اسٹوڈیو","document-studio",FileText,"text-teal-700","bg-teal-50"],
+  ["Urdu Text Cleaner","اردو متن کی صفائی","document-cleaner",Brush,"text-blue-700","bg-blue-50"],
+  ["Urdu Text Check","اردو متن کی جانچ","quality-checker",CheckCircle,"text-violet-700","bg-violet-50"],
+  ["Urdu Unicode Fixer","یونی کوڈ کی اصلاح","unicode-standardizer",CaseSensitive,"text-rose-700","bg-rose-50"]]},
+ {en:"Research & Knowledge",ur:"تحقیق و علم",tools:[
+  ["Quran Editions","قرآن کریم","/quran",BookOpen,"text-emerald-700","bg-emerald-50"],
+  ["Research Studio","ریسرچ اسٹوڈیو","research-studio",Library,"text-amber-700","bg-amber-50"],
+  ["Khateeb Studio","خطیب اسٹوڈیو","khateeb-studio",Mic2,"text-indigo-700","bg-indigo-50"],
+  ["Arabic Diacritics","عربی اعراب","arabic-diacritics",BookMarked,"text-pink-700","bg-pink-50"]]},
+ {en:"Language Tools",ur:"زبان کے اوزار",tools:[
+  ["Translation Studio","ترجمہ اسٹوڈیو","translation-studio",Languages,"text-sky-700","bg-sky-50"],
+  ["Roman Urdu → Urdu","رومن سے اردو","roman-urdu-writer",PenLine,"text-orange-700","bg-orange-50"],
+  ["Urdu → Roman","اردو سے رومن","urdu-roman-writer",CaseSensitive,"text-purple-700","bg-purple-50"]]},
+ {en:"Utilities",ur:"دیگر سہولتیں",tools:[
+  ["Invoice Generator","انوائس جنریٹر","invoice-generator",Receipt,"text-teal-700","bg-teal-50"],
+  ["Date Converter","تاریخ کنورٹر","date-converter",CalendarDays,"text-blue-700","bg-blue-50"],
+  ["Crescent Visibility","رؤیتِ ہلال","crescent-visibility",Moon,"text-orange-700","bg-orange-50"],
+  ["WhatsApp RTL Formatter","واٹس ایپ فارمیٹر","whatsapp-rtl-formatter",MessageSquareText,"text-violet-700","bg-violet-50"]]}
+] as const;
+export default function Header(){
+ const {language}=useLanguage();const ur=language==="ur";const pathname=usePathname();
+ const [open,setOpen]=useState<number|null>(null);const [mobile,setMobile]=useState(false);
+ const wrap=useRef<HTMLDivElement>(null);
+ useEffect(()=>{setOpen(null);setMobile(false)},[pathname]);
+ useEffect(()=>{const down=(e:MouseEvent)=>{if(!wrap.current?.contains(e.target as Node))setOpen(null)};const key=(e:KeyboardEvent)=>{if(e.key==="Escape"){setOpen(null);setMobile(false)}};document.addEventListener("mousedown",down);document.addEventListener("keydown",key);return()=>{document.removeEventListener("mousedown",down);document.removeEventListener("keydown",key)}},[]);
+ return <div className="sticky top-0 z-50" ref={wrap}>
+  <div className="bg-gradient-to-r from-[#133a50] to-[#0c766c]">
+   <div className="site-container flex min-h-9 items-center justify-end gap-2 px-4" dir={ur?"rtl":"ltr"}>
+    {([["About","تعارف","/about"],["Services","خدمات","/services"],["Contact","رابطہ","/contact"]] as const).map(([en,ar,href])=><Link key={href} href={href} className="rounded-full border border-white/30 px-3 py-1 text-xs font-semibold text-white hover:bg-white/15">{ur?ar:en}</Link>)}
+   </div>
+  </div>
+  <header className="border-b border-[#dce6eb] bg-white shadow-[0_6px_24px_#1a405513]">
+   <div className="site-container flex min-h-[84px] items-center justify-between gap-4 px-4" dir={ur?"rtl":"ltr"}>
+    <Link href="/" className="flex shrink-0 items-center gap-3" dir="ltr">
+     <span className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-[#12a082] to-[#086656] text-white shadow-md"><PenLine size={25}/></span>
+     <span><strong className="block text-2xl font-extrabold leading-none tracking-tight text-[#152238]">Qalam Works</strong><span className="mt-1 block text-[10px] font-bold uppercase tracking-[.15em] text-[#607382]">Write, Refine, Publish</span></span>
+    </Link>
+    <nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex" dir={ur?"rtl":"ltr"}>
+     {sections.map((s,i)=><div className="relative" key={s.en}>
+       <button type="button" aria-expanded={open===i} aria-controls={`qalam-menu-${i}`} onClick={()=>setOpen(open===i?null:i)} className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-3 text-sm font-bold transition-colors ${open===i?"bg-[#e7f5f1] text-[#0a655c]":"text-[#25394a] hover:bg-[#e7f5f1] hover:text-[#0a655c]"}`}>
+        {ur?s.ur:s.en}<ChevronDown size={15} className={open===i?"rotate-180 transition-transform":"transition-transform"}/>
+       </button>
+       {open===i&&<div id={`qalam-menu-${i}`} className={`absolute top-full z-50 mt-2 w-[290px] rounded-2xl border border-[#e0e9ed] bg-white p-2 shadow-[0_18px_45px_#162a3c26] ${ur?"right-0":"left-0"}`} dir={ur?"rtl":"ltr"}>
+        {s.tools.map(([en,ar,path,Icon,fg,bg])=><Link key={path} href={path.startsWith("/")?path:`/tools/${path}`} onClick={()=>setOpen(null)} className="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-[#f0f8f6] focus-visible:bg-[#f0f8f6]">
+         <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${fg} ${bg}`}><Icon size={21} strokeWidth={2.1}/></span>
+         <span className="min-w-0"><strong className="block text-sm leading-relaxed text-[#1b3543]">{ur?ar:en}</strong>{!ur&&<span className="block text-xs text-[#718694]" lang="ur" dir="rtl">{ar}</span>}</span>
+        </Link>)}
+       </div>}
+      </div>)}
+    </nav>
+    <div className="flex items-center gap-2"><LanguageSwitch/><button className="rounded-xl border border-[#dae6e9] p-2 text-[#25394a] lg:hidden" aria-label={mobile?"Close menu":"Open menu"} aria-expanded={mobile} onClick={()=>setMobile(!mobile)}>{mobile?<X/>:<Menu/>}</button></div>
+   </div>
+  </header>
+  {mobile&&<nav className="max-h-[75vh] overflow-y-auto border-b bg-white p-4 shadow-xl lg:hidden" dir={ur?"rtl":"ltr"}>
+   {sections.map((s,i)=><div key={s.en} className="border-b border-slate-100">
+    <button className="flex w-full items-center justify-between py-3 font-semibold text-[#25394a]" aria-expanded={open===i} onClick={()=>setOpen(open===i?null:i)}>{ur?s.ur:s.en}<ChevronDown size={16}/></button>
+    {open===i&&<div className="pb-2">{s.tools.map(([en,ar,path,Icon,fg,bg])=><Link key={path} href={path.startsWith("/")?path:`/tools/${path}`} onClick={()=>{setOpen(null);setMobile(false)}} className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-[#f0f8f6]"><span className={`grid size-9 place-items-center rounded-lg ${fg} ${bg}`}><Icon size={19}/></span><span className="text-sm font-medium text-[#25394a]">{ur?ar:en}</span></Link>)}</div>}
+   </div>)}
+  </nav>}
+ </div>
 }
