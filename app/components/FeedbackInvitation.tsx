@@ -1,0 +1,3 @@
+"use client";
+import Link from "next/link";
+export default function FeedbackInvitation(){return <section aria-label="Feedback" className="mx-auto my-10 max-w-5xl rounded-3xl bg-gradient-to-l from-teal-800 via-cyan-900 to-blue-950 p-8 text-white shadow-xl" dir="rtl"><span className="rounded-full bg-amber-200 px-4 py-1 text-sm font-bold text-slate-900">✦ آپ کی آواز، ہماری بہتری</span><h2 className="mt-5 text-3xl font-bold">کیا یہ سہولت آپ کے کام آئی؟</h2><p className="mt-3 text-lg">اپنی رائے دیں تاکہ ہم قلم ورکس کو بہتر بنا سکیں۔</p><Link href="/feedback" className="mt-6 inline-block rounded-xl bg-amber-200 px-6 py-3 font-bold text-slate-900">اپنی رائے درج کریں ←</Link></section>}
