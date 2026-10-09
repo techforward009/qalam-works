@@ -34,7 +34,7 @@ export default function Header(){
  useEffect(()=>{setOpen(null);setMobile(false)},[pathname]);
  useEffect(()=>{const down=(e:MouseEvent)=>{if(!wrap.current?.contains(e.target as Node))setOpen(null)};const key=(e:KeyboardEvent)=>{if(e.key==="Escape"){setOpen(null);setMobile(false)}};document.addEventListener("mousedown",down);document.addEventListener("keydown",key);return()=>{document.removeEventListener("mousedown",down);document.removeEventListener("keydown",key)}},[]);
  return <div className="sticky top-0 z-50" ref={wrap}>
-  <div className="bg-gradient-to-r from-[#133a50] to-[#0c766c]">
+  <div style={{backgroundColor:'#133a50',backgroundImage:'linear-gradient(95deg,#133a50,#0c766c)'}}>
    <div className="site-container flex min-h-9 items-center justify-end gap-2 px-4" dir={ur?"rtl":"ltr"}>
     {([["About","تعارف","/about"],["Services","خدمات","/services"],["Contact","رابطہ","/contact"]] as const).map(([en,ar,href])=><Link key={href} href={href} className="rounded-full border border-white/30 px-3 py-1 text-xs font-semibold text-white hover:bg-white/15">{ur?ar:en}</Link>)}
    </div>
