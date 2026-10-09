@@ -12,7 +12,7 @@ export default function Hero(){
   {en:"Recite the Holy Qur’an & benefit from its verses",ur:"قرآن کریم کی تلاوت اور اس کی آیات سے استفادہ کریں",Icon:BookOpen}
  ];
  return <section className="bg-[#f4f7f9] px-3 py-7 md:px-6 md:py-14" dir={ur?"rtl":"ltr"}>
-  <div className="site-container grid items-center gap-8 rounded-[28px] bg-gradient-to-br from-[#102b40] via-[#103f50] to-[#125b59] px-6 py-12 text-white shadow-lg md:grid-cols-[1.3fr_.9fr] md:gap-12 md:px-12 md:py-16">
+  <div style={{backgroundColor:'#102b40',backgroundImage:'linear-gradient(112deg,#102b40 5%,#12505b 70%,#0c766c 100%)'}} className="site-container grid items-center gap-8 rounded-[28px] px-6 py-12 text-white shadow-lg md:grid-cols-[1.3fr_.9fr] md:gap-12 md:px-12 md:py-16">
    <div>
     <span className="inline-flex rounded-full bg-[#d5fbef] px-4 py-2 text-xs font-bold text-[#04584b]">{ur?"اردو اور دیگر زبانوں کے لیے مفید اوزار":"TOOLS FOR URDU & MULTILINGUAL WORK"}</span>
     <h1 className={`my-6 max-w-2xl font-bold ${ur?"font-nastaliq text-4xl leading-[2] md:text-5xl":"text-4xl leading-tight tracking-tight md:text-6xl"}`}>{ur?"لکھنے سے اشاعت تک، سب ایک جگہ":"From writing to publishing, all in one place."}</h1>
