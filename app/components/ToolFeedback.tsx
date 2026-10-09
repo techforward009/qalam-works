@@ -5,7 +5,9 @@ import type { FeedbackRating, FeedbackTool } from "../lib/feedback";
 
 const definitions:Record<string,FeedbackTool>={
  "translation-studio":"translation-studio","research-studio":"research-studio","khateeb-studio":"khateeb-studio",
- "unicode-standardizer":"unicode-standardizer","publication-quality-checker":"publication-quality-checker",
+ "unicode-standardizer":"unicode-standardizer","quality-checker":"publication-quality-checker",
+ "document-studio":"document-studio","document-cleaner":"document-cleaner","arabic-diacritics":"arabic-diacritics",
+ "roman-urdu-writer":"roman-urdu-writer","urdu-roman-writer":"urdu-roman-writer",
  "whatsapp-rtl-formatter":"whatsapp-rtl-formatter",
 };
 export default function ToolFeedback(){
