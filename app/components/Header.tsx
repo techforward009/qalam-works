@@ -253,7 +253,7 @@ export default function Header() {
               onClick={closeAll}
               className="mx-1 my-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-[#2FA37D] px-4 text-[15px] font-semibold text-white"
             >
-              Open Studio
+              {ur?"دستاویز اسٹوڈیو کھولیں":"Open Document Studio"}
             </Link>
           </div>
         </nav>
