@@ -13,7 +13,7 @@ const definitions:Record<string,FeedbackTool>={
 export default function ToolFeedback(){
  const pathname=usePathname()??"";
  const tool=pathname.startsWith("/tools/") && pathname.split("/").filter(Boolean).length>=2
-  ? definitions[pathname.split("/")[2]] ?? "other"
+  ? definitions[pathname.split("/").filter(Boolean)[1]] ?? "other"
   : undefined;
  const [open,setOpen]=useState(false),[rating,setRating]=useState<FeedbackRating|null>(null);
  const [comment,setComment]=useState(""),[state,setState]=useState<"idle"|"busy"|"saved"|"error">("idle");
