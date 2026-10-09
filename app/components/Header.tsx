@@ -36,7 +36,7 @@ export default function Header(){
  return <div className="sticky top-0 z-50" ref={wrap}>
   <div style={{backgroundColor:'#133a50',backgroundImage:'linear-gradient(95deg,#133a50,#0c766c)'}}>
    <div className="site-container flex min-h-9 items-center justify-end gap-2 px-4" dir={ur?"rtl":"ltr"}>
-    {([["About","تعارف","/about"],["Services","خدمات","/services"],["Contact","رابطہ","/contact"]] as const).map(([en,ar,href])=><Link key={href} href={href} className="rounded-full border border-white/30 px-3 py-1 text-xs font-semibold text-white hover:bg-white/15">{ur?ar:en}</Link>)}
+    {([["About","تعارف","/about"],["Services","خدمات","/services"],["Contact","رابطہ","/contact"]] as const).map(([en,ar,href])=><Link key={href} href={href} className={`rounded-full border border-white/30 px-3 py-1 text-xs font-semibold text-white hover:bg-white/15 ${ur?"font-nastaliq leading-[2]":""}`}>{ur?ar:en}</Link>)}
    </div>
   </div>
   <header className="border-b border-[#dce6eb] bg-white shadow-[0_6px_24px_#1a405513]">
@@ -47,13 +47,13 @@ export default function Header(){
     </Link>
     <nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex" dir={ur?"rtl":"ltr"}>
      {sections.map((s,i)=><div className="relative" key={s.en}>
-       <button type="button" aria-expanded={open===i} aria-controls={`qalam-menu-${i}`} onClick={()=>setOpen(open===i?null:i)} className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-3 text-sm font-bold transition-colors ${open===i?"bg-[#e7f5f1] text-[#0a655c]":"text-[#25394a] hover:bg-[#e7f5f1] hover:text-[#0a655c]"}`}>
+       <button type="button" aria-expanded={open===i} aria-controls={`qalam-menu-${i}`} onClick={()=>setOpen(open===i?null:i)} className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-3 text-sm font-bold transition-colors ${ur?"font-nastaliq text-[15px] leading-[2.1]":""} ${open===i?"bg-[#e7f5f1] text-[#0a655c]":"text-[#25394a] hover:bg-[#e7f5f1] hover:text-[#0a655c]"}`}>
         {ur?s.ur:s.en}<ChevronDown size={15} className={open===i?"rotate-180 transition-transform":"transition-transform"}/>
        </button>
        {open===i&&<div id={`qalam-menu-${i}`} className={`absolute top-full z-50 mt-2 w-[290px] rounded-2xl border border-[#e0e9ed] bg-white p-2 shadow-[0_18px_45px_#162a3c26] ${ur?"right-0":"left-0"}`} dir={ur?"rtl":"ltr"}>
         {s.tools.map(([en,ar,path,Icon,fg,bg])=><Link key={path} href={path.startsWith("/")?path:`/tools/${path}`} onClick={()=>setOpen(null)} className="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-[#f0f8f6] focus-visible:bg-[#f0f8f6]">
          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${fg} ${bg}`}><Icon size={21} strokeWidth={2.1}/></span>
-         <span className="min-w-0"><strong className="block text-sm leading-relaxed text-[#1b3543]">{ur?ar:en}</strong>{!ur&&<span className="block text-xs text-[#718694]" lang="ur" dir="rtl">{ar}</span>}</span>
+         <span className="min-w-0"><strong className={`block text-[#1b3543] ${ur?"font-nastaliq text-[16px] font-normal leading-[2.1]":"text-sm leading-relaxed"}`}>{ur?ar:en}</strong></span>
         </Link>)}
        </div>}
       </div>)}
@@ -63,8 +63,8 @@ export default function Header(){
   </header>
   {mobile&&<nav className="max-h-[75vh] overflow-y-auto border-b bg-white p-4 shadow-xl lg:hidden" dir={ur?"rtl":"ltr"}>
    {sections.map((s,i)=><div key={s.en} className="border-b border-slate-100">
-    <button className="flex w-full items-center justify-between py-3 font-semibold text-[#25394a]" aria-expanded={open===i} onClick={()=>setOpen(open===i?null:i)}>{ur?s.ur:s.en}<ChevronDown size={16}/></button>
-    {open===i&&<div className="pb-2">{s.tools.map(([en,ar,path,Icon,fg,bg])=><Link key={path} href={path.startsWith("/")?path:`/tools/${path}`} onClick={()=>{setOpen(null);setMobile(false)}} className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-[#f0f8f6]"><span className={`grid size-9 place-items-center rounded-lg ${fg} ${bg}`}><Icon size={19}/></span><span className="text-sm font-medium text-[#25394a]">{ur?ar:en}</span></Link>)}</div>}
+    <button className={`flex w-full items-center justify-between py-3 font-semibold text-[#25394a] ${ur?"font-nastaliq text-base leading-[2.1]":""}`} aria-expanded={open===i} onClick={()=>setOpen(open===i?null:i)}>{ur?s.ur:s.en}<ChevronDown size={16}/></button>
+    {open===i&&<div className="pb-2">{s.tools.map(([en,ar,path,Icon,fg,bg])=><Link key={path} href={path.startsWith("/")?path:`/tools/${path}`} onClick={()=>{setOpen(null);setMobile(false)}} className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-[#f0f8f6]"><span className={`grid size-9 place-items-center rounded-lg ${fg} ${bg}`}><Icon size={19}/></span><span className={`text-[#25394a] ${ur?"font-nastaliq text-base leading-[2.1]":"text-sm font-medium"}`}>{ur?ar:en}</span></Link>)}</div>}
    </div>)}
   </nav>}
  </div>
