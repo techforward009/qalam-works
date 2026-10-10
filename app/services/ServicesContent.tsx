@@ -34,7 +34,7 @@ export default function ServicesContent() {
   const naskh = language === "ur" ? "font-naskh" : "";
 
   return (
-    <main className="bg-white dark:bg-transparent min-h-screen" dir={dir}>
+    <main className={`bg-white dark:bg-transparent min-h-screen ${language === "ur" ? "qalam-services-urdu" : ""}`} dir={dir} lang={language}>
       <div className="site-container py-16 md:py-24">
         <div className="max-w-[900px] mx-auto">
           <h1

@@ -27,7 +27,7 @@ export default function ProblemSection() {
                     <span aria-hidden="true" className="font-sans text-base">←</span>
                     <span className="qalam-problem-jameel">ایک</span>
                   </div>
-                ) : <p dir="rtl" className="font-nastaliq text-xl text-[#11182A] dark:text-[#F7F5EF]">{point.example}</p>}
+                ) : <p dir={language === "ur" ? "rtl" : "ltr"} className="font-nastaliq text-xl text-[#11182A] dark:text-[#F7F5EF]">{point.example.split("→").length === 2 ? <span className="inline-flex items-center justify-center gap-2" dir={language === "ur" ? "rtl" : "ltr"}><bdi dir="auto">{point.example.split("→")[0].trim()}</bdi><span className="font-sans" aria-hidden="true">{language === "ur" ? "←" : "→"}</span><bdi dir="auto">{point.example.split("→")[1].trim()}</bdi></span> : point.example}</p>}
               </div>
               <p className={`text-sm leading-relaxed text-[#4d564f] dark:text-[#b7c4bb] ${naskh}`}>{point.impact}</p>
             </div>

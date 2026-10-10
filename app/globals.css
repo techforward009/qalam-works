@@ -1612,3 +1612,53 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
   word-spacing: 3px;
   letter-spacing: 0;
 }
+
+/* October typography and contrast pass, scoped to public informational UI. */
+.qalam-home section[dir="rtl"] .qalam-intent-label{color:#29423c!important;}
+.qalam-home section[dir="rtl"] .qalam-intent-description{color:#263c34!important;}
+.qalam-home section[dir="rtl"] .qalam-intent-example,
+.qalam-home section[dir="rtl"] .qalam-intent-example bdi,
+.qalam-home section[dir="rtl"] .qalam-tool-example,
+.qalam-home section[dir="rtl"] .qalam-tool-example bdi{color:#152b26!important;}
+html.dark .qalam-home section[dir="rtl"] .qalam-intent-label{color:#e4eee7!important;}
+html.dark .qalam-home section[dir="rtl"] .qalam-intent-description{color:#e2eee7!important;}
+html.dark .qalam-home section[dir="rtl"] .qalam-intent-example,
+html.dark .qalam-home section[dir="rtl"] .qalam-intent-example bdi,
+html.dark .qalam-home section[dir="rtl"] .qalam-tool-example,
+html.dark .qalam-home section[dir="rtl"] .qalam-tool-example bdi{color:#f0f6f0!important;}
+.qalam-about-urdu p,.qalam-about-urdu div.space-y-5{
+  font-size:20px!important;
+  line-height:2.45!important;
+  word-spacing:3px!important;
+}
+.qalam-services-urdu p,.qalam-services-urdu li,.qalam-services-urdu li span:last-child{
+  font-family:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif!important;
+  font-size:20px!important;
+  font-weight:400;
+  line-height:2.4!important;
+  word-spacing:3px;
+  letter-spacing:0;
+}
+.qalam-services-urdu h2{
+  font-family:var(--font-nastaliq),"Noto Nastaliq Urdu",serif!important;
+  line-height:2.15!important;
+  font-weight:400!important;
+}
+.qalam-contact-urdu label,
+.qalam-contact-urdu label > span,
+.qalam-contact-urdu select,
+.qalam-contact-urdu option,
+.qalam-contact-urdu input,
+.qalam-contact-urdu textarea{
+  font-family:"Qalam Nafees",var(--font-nastaliq),serif!important;
+  font-size:18px!important;
+  line-height:2.1!important;
+  font-weight:400;
+}
+.qalam-contact-urdu input[type="email"]{font-family:Arial,sans-serif!important;font-size:16px!important;line-height:1.5!important;}
+.qalam-contact-urdu textarea{line-height:2.3!important;}
+.qalam-home section[dir="rtl"] .qalam-tool-example{
+ font-family:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif!important;
+ font-size:18px!important;
+ line-height:2.2!important;
+}
