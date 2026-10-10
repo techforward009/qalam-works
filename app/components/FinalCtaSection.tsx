@@ -12,7 +12,7 @@ export default function FinalCtaSection() {
   return (
     <section className="bg-gradient-to-br from-[#1F6C54] to-[#115E59] py-20 md:py-24" dir={dir}>
       <div className="mx-auto max-w-3xl px-6 text-center">
-        <h2 className={`mb-6 text-4xl font-bold leading-tight text-white md:text-5xl ${language === "ur" ? "font-nastaliq font-normal leading-[1.8]" : ""}`}>
+        <h2 className={`mb-6 text-3xl font-bold leading-tight text-white md:text-[2.25rem] ${language === "ur" ? "font-nastaliq font-normal leading-[2.05] md:whitespace-nowrap" : ""}`}>
           {t.headline}
         </h2>
         <p className={`mb-10 text-lg text-[#E7F6F0] md:text-xl ${naskh}`}>{t.subline}</p>

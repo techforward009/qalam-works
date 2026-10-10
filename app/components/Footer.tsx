@@ -74,7 +74,7 @@ export default function Footer() {
             <li><Link href="/about" className={`text-white hover:text-white text-sm transition-colors`}>{t.nav.about}</Link></li>
             <li><Link href="/services" className={`text-white hover:text-white text-sm transition-colors`}>{t.nav.services}</Link></li>
             <li><Link href="/contact" className={`text-white hover:text-white text-sm transition-colors`}>{t.nav.contact}</Link></li>
-            <li><Link href="/feedback" className="text-sm font-semibold text-amber-200 transition-colors hover:text-amber-100">Feedback · رائے و تجاویز</Link></li>
+            <li><Link href="/feedback" className="text-sm font-semibold text-amber-200 transition-colors hover:text-amber-100">Feedback</Link></li>
           </ul>
         </div>
 
