@@ -1578,3 +1578,8 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
   font-synthesis:none;
   line-height:2.4;
 }
+
+/* About-page Urdu typography mirrors the homepage roles; English is untouched. */
+.qalam-about-urdu h1,.qalam-about-urdu h2{font-family:var(--font-nastaliq),"Noto Nastaliq Urdu",serif!important;font-weight:400!important;line-height:2.2!important;}
+.qalam-about-urdu p,.qalam-about-urdu div.space-y-5{font-family:"Qalam Mehr Web",var(--font-nastaliq),serif!important;font-weight:400!important;line-height:2.45!important;}
+.qalam-about-urdu a[href="/contact"]{font-family:"Qalam Nafees",var(--font-nastaliq),serif!important;font-weight:400!important;font-size:17px!important;line-height:2.1!important;letter-spacing:0!important;}

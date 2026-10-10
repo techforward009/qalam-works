@@ -7,24 +7,27 @@ import { translations } from "../lib/translations";
 export default function AboutContent() {
   const { language, dir } = useLanguage();
   const t = translations[language].about;
-  const naskh = language === "ur" ? "font-naskh" : "";
+  const ur = language === "ur";
+  const headingFont = ur ? "font-nastaliq font-normal leading-[2.15]" : "";
+  const bodyFont = ur ? "font-normal leading-[2.5]" : "";
+  const buttonFont = ur ? "font-normal leading-[2.1]" : "";
 
   return (
-    <main className="bg-white dark:bg-transparent min-h-screen" dir={dir}>
+    <main className={`bg-white dark:bg-transparent min-h-screen ${ur ? "qalam-about-urdu" : ""}`} dir={dir} lang={language}>
       <div className="site-container py-16 md:py-24">
         <div className="max-w-[820px] mx-auto">
           <h1
             className={`text-3xl md:text-4xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-4 ${
-              language === "ur" ? "font-nastaliq font-normal" : ""
+              headingFont
             }`}
           >
             {t.heading}
           </h1>
-          <p className={`text-lg md:text-xl text-[#5B5748] dark:text-[#b7c5ba] mb-10 leading-relaxed ${naskh}`}>
+          <p className={`text-lg md:text-xl text-[#5B5748] dark:text-[#b7c5ba] mb-10 leading-relaxed ${bodyFont}`}>
             {t.tagline}
           </p>
 
-          <div className={`space-y-5 text-[17px] leading-relaxed text-[#3A3530] dark:text-[#cbd5ce] ${naskh}`}>
+          <div className={`space-y-5 text-[17px] leading-relaxed text-[#3A3530] dark:text-[#cbd5ce] ${bodyFont}`}>
             <p>{t.body1}</p>
             <p>{t.body2}</p>
           </div>
@@ -32,17 +35,17 @@ export default function AboutContent() {
           <div className="mt-12 pt-10 border-t border-gray-100 dark:border-white/10">
             <h2
               className={`text-xl md:text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] mb-4 ${
-                language === "ur" ? "font-nastaliq font-normal" : ""
+                headingFont
               }`}
             >
               {t.servicesHeading}
             </h2>
-            <p className={`text-[17px] leading-relaxed text-[#3A3530] dark:text-[#cbd5ce] mb-6 ${naskh}`}>
+            <p className={`text-[17px] leading-relaxed text-[#3A3530] dark:text-[#cbd5ce] mb-6 ${bodyFont}`}>
               {t.servicesBody}
             </p>
             <Link
               href="/contact"
-              className={`inline-block bg-[#1A3A2A] hover:bg-[#244D38] text-white font-semibold px-6 py-3 rounded-lg transition-colors text-sm ${naskh}`}
+              className={`inline-block bg-[#1A3A2A] hover:bg-[#244D38] text-white font-semibold px-6 py-3 rounded-lg transition-colors text-sm ${buttonFont}`}
             >
               {t.ctaLabel}
             </Link>
