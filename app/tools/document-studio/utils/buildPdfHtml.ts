@@ -489,43 +489,51 @@ ${bodyHtml}
   };
 }
 
+function preferredPdfFamily(
+  rawFamily: string | null,
+  fontDir: Direction,
+  typography?: DocumentStudioSettings["typography"],
+): string {
+  const explicit = typeof rawFamily === "string" && rawFamily.trim().length > 0 ? rawFamily : null;
+  const fallbackFamily = typography
+    ? getFontById(fontDir === "rtl" ? typography.defaultRtlFontId : typography.defaultLtrFontId).editorFamily
+    : null;
+  return resolveEditorFontFamily(explicit ?? fallbackFamily, fontDir).pdfFamily;
+}
+
 export function requiredPdfEmbedFonts(
   doc: DocNode,
   dir: Direction,
   typography?: DocumentStudioSettings["typography"]
 ): StudioFontDefinition[] {
   const used = new Set<string>();
+  const noteText = (node: DocNode, blockDir: Direction) => {
+    if (typeof node.text !== "string" || node.text.length === 0) return;
+    const styleMark = node.marks?.find((mark) => mark.type === "textStyle");
+    const explicitFamily = typeof styleMark?.attrs?.fontFamily === "string" && styleMark.attrs.fontFamily.trim().length > 0
+      ? styleMark.attrs.fontFamily
+      : null;
+    const segments = segmentLine(node.text, blockDir);
+    const pieces = segments.length > 0 ? segments : [{ text: node.text, dir: blockDir }];
+    for (const piece of pieces) {
+      if (!piece.text) continue;
+      const choice = exportFamilyForSegment(explicitFamily, piece.dir, blockDir);
+      used.add(preferredPdfFamily(choice.family, choice.fontDir, typography));
+    }
+  };
   const walk = (nodes: DocNode[] | undefined, blockDir: Direction) => {
     if (!nodes) return;
     for (const node of nodes) {
-      if (node.type === "text") {
-        const styleMark = node.marks?.find((m) => m.type === "textStyle");
-        const rawFamily = styleMark?.attrs?.fontFamily;
-        const effectiveFamily = (() => {
-          if (typeof rawFamily === "string" && rawFamily.trim().length > 0) return rawFamily;
-          if (typography) {
-            const defaultId = blockDir === "rtl" ? typography.defaultRtlFontId : typography.defaultLtrFontId;
-            const def = getFontById(defaultId);
-            if (def?.editorFamily) return def.editorFamily;
-          }
-          return rawFamily;
-        })();
-        const res = resolveEditorFontFamily(effectiveFamily, blockDir);
-        used.add(res.pdfFamily);
+      if (node.type === "paragraph" || node.type === "heading") {
+        used.add(preferredPdfFamily(null, directionForNode(node, blockDir), typography));
       }
-      const childDir = directionForNode(node, blockDir);
-      walk(node.content, childDir);
+      if (node.type === "text") noteText(node, blockDir);
+      walk(node.content, directionForNode(node, blockDir));
     }
   };
   walk(doc.content, dir);
   if (used.size === 0) {
-    if (typography) {
-      const defaultId = dir === "rtl" ? typography.defaultRtlFontId : typography.defaultLtrFontId;
-      const def = getFontById(defaultId);
-      used.add(resolveEditorFontFamily(def?.editorFamily ?? null, dir).pdfFamily);
-    } else {
-      used.add(resolveEditorFontFamily(null, dir).pdfFamily);
-    }
+    used.add(preferredPdfFamily(null, dir, typography));
   }
   used.add(dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu");
   used.add("Noto Nastaliq Urdu");

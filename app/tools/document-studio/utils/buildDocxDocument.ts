@@ -209,7 +209,7 @@ function headingSpacingFor(
     before: beforePt !== null ? Math.round(beforePt * 20) : canonical.before,
     after: afterPt !== null ? Math.round(afterPt * 20) : canonical.after,
     // Headings use their own 1.5 line-height in the editor unless the user sets one.
-    ...wordLineSpacing(lineHeight ?? 1.5, exportedBlockFontSizePt(node, typography)),
+    ...wordLineSpacing(lineHeight ?? 1.5, lineBoxFontSizePt(node, typography, true)),
   };
 }
 
@@ -546,7 +546,7 @@ function convertNode(
           // (the quote's own established visual indent, distinct from the
           // new user-configurable indentStartMm/indentEndMm concept) —
           // preserving existing quote styling exactly.
-          const { spacing: quoteSpacing } = resolveParagraphSpacingAndIndent(child, typography, false);
+          const { spacing: quoteSpacing } = resolveParagraphSpacingAndIndent(child, typography);
           out.push(
             new Paragraph({
               bidirectional: blockDir === "rtl",

@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import { Packer } from "docx";
 import { createDocxDocument } from "../app/tools/document-studio/utils/buildDocxDocument";
 import { buildPdfHtml, type PdfFontFace } from "../app/tools/document-studio/utils/buildPdfHtml";
+import { fontsForDocument } from "../app/tools/document-studio/utils/pdfDocumentFonts";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import {
   editorFontFamilyStack,
@@ -214,4 +215,76 @@ describe("Document Studio typography 2A", () => {
     expect(urduSpan).toContain("Jameel Noori Nastaleeq");
     expect(urduSpan).not.toContain('class="qf-inter"');
   });
+
+  test("heading and blockquote line spacing follow the largest explicit run", async () => {
+    const settings = defaultDocumentSettings();
+    settings.typography.bodyFontSizePt = 13;
+    settings.typography.lineHeight = 2;
+    const xml = await documentXml(
+      {
+        type: "doc",
+        content: [
+          {
+            type: "heading",
+            attrs: { level: 2 },
+            content: [
+              { type: "text", text: "سرخی " },
+              { type: "text", text: "بڑا", marks: [{ type: "textStyle", attrs: { fontSize: "32pt" } }] },
+            ],
+          },
+          {
+            type: "blockquote",
+            content: [{
+              type: "paragraph",
+              content: [
+                { type: "text", text: "اقتباس " },
+                { type: "text", text: "بڑا", marks: [{ type: "textStyle", attrs: { fontSize: "24pt" } }] },
+              ],
+            }],
+          },
+        ],
+      },
+      "rtl",
+      settings,
+    );
+    const paragraphs = xml.match(/<w:p[ >][\s\S]*?<\/w:p>/g) ?? [];
+    const heading = paragraphs.find((paragraph) => paragraph.includes("سرخی"));
+    const quote = paragraphs.find((paragraph) => paragraph.includes("اقتباس"));
+    // H2 is 20pt, but the 32pt run wins. 32 × 1.5 × 20 = 960.
+    expect(heading).toContain('w:line="960"');
+    expect(heading).toContain('w:sz w:val="64"');
+    expect(heading).toContain('w:sz w:val="40"');
+    // Quote body is 13pt, but the 24pt run wins. 24 × 2 × 20 = 960.
+    expect(quote).toContain('w:line="960"');
+    expect(quote).toContain('w:lineRule="atLeast"');
+    expect(quote).not.toContain('w:line="520"');
+  });
+
+  test("PDF font loading requests the RTL fallback without a hand-built Jameel face", async () => {
+    const source = "(الف) اردو English (123)";
+    const settings = defaultDocumentSettings();
+    settings.typography.defaultRtlFontId = "jameel-noori-nastaleeq";
+    const doc: DocNode = {
+      type: "doc",
+      content: [{
+        type: "paragraph",
+        attrs: { dir: "rtl" },
+        content: [{ type: "text", text: source, marks: [{ type: "textStyle", attrs: { fontFamily: "Inter" } }] }],
+      }],
+    };
+    const loaded = await fontsForDocument(doc, "rtl", settings.typography);
+    expect(loaded.jameelRequested).toBe(true);
+    expect(loaded.jameelLoad).toBe("loaded-public");
+    const jameel = loaded.fonts.faces.find((item) => item.familyName === "Jameel Noori Nastaleeq");
+    expect(jameel?.complete).toBe(true);
+    const html = buildPdfHtml(doc, "rtl", loaded.fonts, settings.typography);
+    const urduSpan = html.html.split("</span>").find((part) => part.includes("الف"));
+    expect(urduSpan).toContain("Jameel Noori Nastaleeq");
+    expect(urduSpan).not.toContain('class="qf-inter"');
+    expect(html.html).toContain('dir="ltr"');
+    expect(html.fontsUsed).toContain("Inter");
+    expect(html.fontsUsed).toContain("Jameel Noori Nastaleeq");
+    const text = [...html.html.matchAll(/>([^<]*)</g)].map((match) => match[1]).join("");
+    expect(text).toContain(source);
+  }, 30000);
 });
