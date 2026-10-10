@@ -90,6 +90,26 @@ describe("Jameel font mark persistence", () => {
 });
 
 describe("toolbar font selection sync", () => {
+  it("groups font choices by Urdu, Arabic, Persian and English in both interface languages", () => {
+    const editor = createEditor();
+    const view = render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr />);
+    const select = document.querySelector("[data-studio-font-family]") as HTMLSelectElement;
+    const groups = Array.from(select.querySelectorAll("optgroup"));
+    expect(groups.map(group => group.label)).toEqual([
+      "اردو فونٹس", "عربی فونٹس", "فارسی فونٹس", "انگریزی فونٹس",
+    ]);
+    const options = Array.from(select.options).map(option => option.value);
+    expect(options).toContain("Gulzar");
+    expect(options).not.toContain("Faiz Lahori Nastaleeq");
+    expect(options).toContain("Jameel Noori Nastaleeq");
+    expect(options).toContain("Sahel");
+    view.rerender(<DocumentToolbar editor={editor as never} dir="ltr" setDir={() => {}} isUr={false} />);
+    expect(Array.from(select.querySelectorAll("optgroup")).map(group => group.label)).toEqual([
+      "Urdu fonts", "Arabic fonts", "Persian fonts", "English fonts",
+    ]);
+    editor.destroy();
+  });
+
   it("shows Jameel at the Jameel cursor and Default in unformatted text", () => {
     const editor = createEditor();
     editor.commands.setTextSelection(2);
