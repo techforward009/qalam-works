@@ -397,7 +397,7 @@ function convertInline(
     const shading = highlightFill ? { type: ShadingType.CLEAR, fill: highlightFill } : undefined;
     // Preserve bidirectional punctuation (especially parentheses) in Word.
     // Do not force pure Latin spans inside an RTL paragraph into RTL runs.
-    const rtlRun = dir === "rtl" && /[\\u0590-\\u08FF\\uFB1D-\\uFEFC]/u.test(node.text);
+    const rtlRun = dir === "rtl" && /[\u0590-\u08FF\uFB1D-\uFEFC]/u.test(node.text);
 
     if (typeof href === "string" && href.trim().length > 0) {
       runs.push(
