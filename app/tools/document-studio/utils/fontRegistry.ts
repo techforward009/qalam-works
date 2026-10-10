@@ -4,6 +4,7 @@
  */
 
 import { detectParagraphDirection } from "./paragraphDirectionDetection";
+import { PUBLIC_BLOB_FONT_FAMILIES, publicBlobFontUrl } from "./publicBlobFontCatalog";
 import type { DocNode } from "./extractPlainText";
 
 export type FontId =
@@ -14,7 +15,18 @@ export type FontId =
   | "noto-naskh-arabic"
   | "vazirmatn"
   | "sahel"
-  | "inter";
+  | "inter"
+  | "adobe-arabic"
+  | "alvi-nastaleeq"
+  | "digital-khatt-indo-pak"
+  | "faiz-lahori"
+  | "nafees-nastaleeq"
+  | "scheherazade-new"
+  | "traditional-arabic"
+  | "al-majeed-quranic"
+  | "al-qalam-quran-majeed"
+  | "asif-quranic"
+  | "muhammadi-quranic";
 
 export type Direction = "rtl" | "ltr";
 
@@ -39,7 +51,7 @@ export interface StudioFontDefinition {
     familyName?: string;
   };
   fallbackFontId?: FontId;
-  availability: "bundled" | "local-preview-only" | "fallback";
+  availability: "bundled" | "public-blob" | "local-preview-only" | "fallback";
   notes?: string;
 }
 
@@ -53,6 +65,33 @@ export interface FontResolution {
   fellBack: boolean;
   fallbackFrom?: string;
 }
+
+const EXTRA_BLOB_FONTS: StudioFontDefinition[] = PUBLIC_BLOB_FONT_FAMILIES
+  .filter((font) => !font.existingStudioId)
+  .map((font) => {
+    const family = font.label;
+    const fallbackFontId: FontId = font.script === "urdu" ? "noto-nastaliq-urdu"
+      : font.script === "persian" ? "vazirmatn" : "noto-naskh-arabic";
+    return {
+      id: font.id as FontId,
+      label: family,
+      editorFamily: family,
+      category: font.script === "quran" ? "arabic" : font.script,
+      scripts: ["arabic"],
+      cssStack: `"${family}", serif`,
+      cssClass: `qf-blob-${font.id}`,
+      pdf: {
+        supported: true,
+        embedded: true,
+        familyName: family,
+        regularFiles: [publicBlobFontUrl(font.regular)],
+        ...(font.bold ? { boldFiles: [publicBlobFontUrl(font.bold)] } : {}),
+      },
+      docx: { supported: true, embedded: false, familyName: family },
+      fallbackFontId,
+      availability: "public-blob" as const,
+    };
+  });
 
 export const STUDIO_FONTS: StudioFontDefinition[] = [
   {
@@ -79,16 +118,13 @@ export const STUDIO_FONTS: StudioFontDefinition[] = [
       supported: true,
       embedded: true,
       familyName: "Jameel Noori Nastaleeq",
-      regularFiles: [
-        "private-blob:jameel-noori-nastaleeq-400.woff2",
-      ],
+      regularFiles: [publicBlobFontUrl("jameel-noori-nastaleeq-400.woff2")],
       // No bold file — Jameel Noori Nastaleeq is distributed as Regular only.
     },
     docx: { supported: true, embedded: false, familyName: "Jameel Noori Nastaleeq" },
     fallbackFontId: "noto-nastaliq-urdu",
-    availability: "bundled",
-    notes:
-      "WOFF2 embedded at assets/fonts/jameel-noori-nastaleeq-400.woff2 (Regular 400 only; no bold variant). DOCX preserves family name for Word local install.",
+    availability: "public-blob",
+    notes: "Browser and PDF use the public Vercel Blob Regular face; Word still needs the family installed locally.",
   },
   {
     id: "noto-nastaliq-urdu",
@@ -196,11 +232,11 @@ export const STUDIO_FONTS: StudioFontDefinition[] = [
     scripts: ["arabic", "latin"],
     cssStack: 'Sahel, Tahoma, "Segoe UI", sans-serif',
     cssClass: "qf-sahel",
-    pdf: { supported: false, embedded: false },
+    pdf: { supported: true, embedded: true, familyName: "Sahel", regularFiles: [publicBlobFontUrl("Sahel.woff2")] },
     docx: { supported: true, embedded: false, familyName: "Sahel" },
     fallbackFontId: "vazirmatn",
-    availability: "local-preview-only",
-    notes: "No bundled embeddable asset; PDF falls back to Vazirmatn.",
+    availability: "public-blob",
+    notes: "Browser and PDF use the Vercel public Blob asset; DOCX references the installed font name.",
   },
   {
     id: "inter",
@@ -226,6 +262,7 @@ export const STUDIO_FONTS: StudioFontDefinition[] = [
     docx: { supported: true, embedded: false, familyName: "Inter" },
     availability: "bundled",
   },
+  ...EXTRA_BLOB_FONTS,
 ];
 
 const byEditorFamily = new Map<string, StudioFontDefinition>();
@@ -326,11 +363,11 @@ export function resolvePdfFontId(familyName: string): FontId | null {
   return null;
 }
 
-export const JAMEEL_EDITOR_FONT_URL = "/api/studio-font/jameel";
+export const JAMEEL_EDITOR_FONT_URL = publicBlobFontUrl("jameel-noori-nastaleeq-400.woff2");
 
 /** Shared @font-face for editor + browser print. Same identity as PDF embedding. */
 export function studioJameelFontFaceCss(): string {
-  return `@font-face{font-family:"Jameel Noori Nastaleeq";src:local("Jameel Noori Nastaleeq"),url("${JAMEEL_EDITOR_FONT_URL}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
+  return `@font-face{font-family:"Jameel Noori Nastaleeq";src:url("${JAMEEL_EDITOR_FONT_URL}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
 }
 
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */
