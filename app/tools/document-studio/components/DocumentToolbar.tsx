@@ -712,6 +712,7 @@ export default function DocumentToolbar({
             {isUr ? "مخلوط" : "Mixed"}
           </option>
         )}
+        <option value="" disabled hidden>{isUr ? "طے شدہ فونٹ" : "Default font"}</option>
         {STUDIO_FONT_OPTIONS.filter((opt) => opt.value).map((opt) => (
           <option key={opt.label} value={opt.value}>
             {opt.label}

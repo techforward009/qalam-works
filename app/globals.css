@@ -1846,3 +1846,25 @@ html.dark .qalam-home section[dir="rtl"] .qalam-tool-example bdi{color:#f0f6f0!i
 }
 [data-studio-settings="ur"] label:has(input[type="checkbox"]) {display:flex;flex-direction:row;align-items:center;justify-content:flex-start;}
 [data-studio-settings="ur"] label:has(input[type="checkbox"]) input {flex-shrink:0;}
+
+/* Document Studio menu and toolbar usability — retain LTR for numerical tools. */
+[data-studio-menu-language="ur"] [role="menuitem"] {
+  font-family:"Qalam Nafees",var(--font-nastaliq),serif!important;
+  font-size:16px!important;
+  line-height:2!important;
+  min-height:38px;
+  letter-spacing:0!important;
+  white-space:normal;
+  text-align:start;
+}
+[data-studio-menu-language="ur"] [role="menuitem"] [dir="ltr"]{
+  font-family:Arial,Helvetica,sans-serif!important;
+  font-size:12px!important;
+  direction:ltr;
+}
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] :is(select,option){
+  min-height:36px;
+}
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] [data-studio-style-control="true"]{
+  min-width:110px;
+}

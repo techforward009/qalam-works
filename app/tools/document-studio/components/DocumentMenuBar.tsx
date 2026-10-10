@@ -273,6 +273,7 @@ export default function DocumentMenuBar({
               role="menu"
               data-menu-dropdown={openMenu.id}
               data-menu-portaled="true"
+              data-studio-menu-language={isUr ? "ur" : "en"}
               className="rounded-md border border-[#1A3A2A]/15 bg-white py-1 shadow-md"
               style={menuStyle}
             >
@@ -296,6 +297,7 @@ export default function DocumentMenuBar({
                 role="menu"
                 data-menu-flyout={openState.submenuId}
                 data-menu-portaled="true"
+              data-studio-menu-language={isUr ? "ur" : "en"}
                 className="rounded-md border border-[#1A3A2A]/15 bg-white py-1 shadow-md"
                 style={submenuStyle}
               >
