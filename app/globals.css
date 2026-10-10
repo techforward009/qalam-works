@@ -1601,3 +1601,14 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
 .qalam-home section[dir="rtl"] p,.qalam-home section[dir="rtl"] .qalam-intent-description,.qalam-home section[dir="rtl"] li:not(:has(.qalam-intent-label)){font-family:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif!important;font-size:18px!important;font-weight:400!important;line-height:2.45!important;letter-spacing:0;}
 .qalam-home .qalam-jameel-prompt{font-family:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif!important;font-size:18px!important;line-height:2.45!important;font-style:normal!important;text-align:right!important;}
 .qalam-about-urdu p,.qalam-about-urdu div.space-y-5{font-family:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif!important;font-size:18px!important;line-height:2.45!important;font-weight:400!important;letter-spacing:0;}
+
+/* Word separation for Urdu reading text only; preserve connected Nastaliq glyphs. */
+.qalam-home section[dir="rtl"] p,
+.qalam-home section[dir="rtl"] .qalam-intent-description,
+.qalam-home section[dir="rtl"] li:not(:has(.qalam-intent-label)),
+.qalam-home .qalam-jameel-prompt,
+.qalam-about-urdu p,
+.qalam-about-urdu div.space-y-5 {
+  word-spacing: 3px;
+  letter-spacing: 0;
+}
