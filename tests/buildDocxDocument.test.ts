@@ -937,8 +937,9 @@ describe("Batch 16A — Book Manuscript preset produces real, distinct typograph
     const zip = await JSZip.loadAsync(buffer);
     const xml = await zip.file("word/document.xml")!.async("text");
 
-    // 1.8 line height × 240 = 432
-    expect(xml).toContain('w:line="432"');
+    // 1.8 line-height × 13pt × 20 = 468 twips, at least (not Word auto)
+    expect(xml).toContain('w:line="468"');
+    expect(xml).toContain('w:lineRule="atLeast"');
     // 8mm first-line indent → (8/25.4)*1440 ≈ 454 twips
     expect(xml).toMatch(/w:firstLine="45[0-9]"/);
     // 13pt body -> 26 half-points (Batch 16B — permanent assertion)
@@ -980,20 +981,23 @@ describe("Batch 16A — Book Manuscript preset produces real, distinct typograph
       expect(xml).toContain('w:ascii="Amiri"');
       expect(xml).toContain('w:sz w:val="40"'); // 20pt in half-points
     }
-    // But the document-wide line spacing genuinely DID change between presets.
-    expect(xmlBook).toContain('w:line="432"'); // 1.8 * 240
-    expect(xmlAcademic).toContain('w:line="480"'); // 2.0 * 240
+    // Document-wide line spacing follows point size × line-height, not Word's auto grid.
+    expect(xmlBook).toContain('w:line="468"'); // 13pt × 1.8 × 20
+    expect(xmlAcademic).toContain('w:line="480"'); // 12pt × 2.0 × 20
   });
 });
 
 describe("Batch 16A.1 — DOCX explicit heading spacing overrides canonical default", () => {
-  test("H2 with explicit lineHeight 2.0 uses w:line=480, not the canonical 360", async () => {
+  test("H2 with explicit lineHeight 2.0 uses the heading point size, not the canonical 1.5", async () => {
     const doc: DocNode = {
       type: "doc",
       content: [{ type: "heading", attrs: { level: 2, lineHeight: 2.0 }, content: [{ type: "text", text: "H2" }] }],
     };
     const xml = await extractDocumentXml(doc, "ltr");
-    expect(xml).toContain('w:line="480"');
+    // H2 is 20pt. 20 × 2.0 × 20 = 800. Canonical 1.5 would be 600.
+    expect(xml).toContain('w:line="800"');
+    expect(xml).toContain('w:lineRule="atLeast"');
+    expect(xml).not.toContain('w:line="600"');
   });
 
   test("H2 with explicit spaceBeforePt/spaceAfterPt overrides the canonical H2 before/after, without affecting a sibling H2 that has no override", async () => {

@@ -277,6 +277,55 @@ export function getFontById(id: FontId): StudioFontDefinition {
   return byId.get(id)!;
 }
 
+export function editorFontFamilyStack(id: FontId): string {
+  switch (id) {
+    case "noto-nastaliq-urdu":
+      return 'var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
+    case "jameel-noori-nastaleeq":
+      return '"Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
+    case "gulzar":
+      return '"Gulzar", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
+    case "alvi-nastaleeq":
+      return '"Alvi Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
+    case "amiri":
+      return 'var(--font-amiri), Amiri, serif';
+    case "noto-naskh-arabic":
+      return 'var(--font-naskh), "Noto Naskh Arabic", serif';
+    case "vazirmatn":
+      return 'var(--font-vazirmatn), Vazirmatn, sans-serif';
+    case "sahel":
+      return 'Sahel, Tahoma, "Segoe UI", sans-serif';
+    case "inter":
+      return 'var(--font-inter), Inter, system-ui, sans-serif';
+    case "scheherazade-new":
+      return '"Scheherazade New", "Noto Naskh Arabic", serif';
+    case "digital-khatt-indo-pak":
+      return '"Digital Khatt Indo-Pak", "Noto Naskh Arabic", serif';
+    default: {
+      const font = getFontById(id);
+      return font.cssStack && font.cssStack !== "inherit" ? font.cssStack : "serif";
+    }
+  }
+}
+
+/**
+ * Export-time font choice for one directional segment.
+ * Does not rewrite stored text. A Nastaliq mark keeps Urdu/Arabic glyphs,
+ * while Latin segments use the Latin face so parentheses and English stay readable.
+ */
+export function exportFamilyForSegment(
+  explicitFamily: string | null,
+  segmentDir: Direction,
+  blockDir: Direction,
+): { family: string | null; fontDir: Direction } {
+  if (!explicitFamily) return { family: null, fontDir: segmentDir };
+  const resolved = resolveEditorFontFamily(explicitFamily, blockDir);
+  if (getFontById(resolved.fontId).category === "urdu" && segmentDir === "ltr") {
+    return { family: null, fontDir: "ltr" };
+  }
+  return { family: explicitFamily, fontDir: blockDir };
+}
+
 /**
  * Hidden from new document formatting choices at the owner's request.
  * Keep these definitions in the registry for old documents, DOCX and PDF.
@@ -386,6 +435,12 @@ export const JAMEEL_EDITOR_FONT_URL = publicBlobFontUrl("jameel-noori-nastaleeq-
 /** Shared @font-face for editor + browser print. Same identity as PDF embedding. */
 export function studioJameelFontFaceCss(): string {
   return `@font-face{font-family:"Jameel Noori Nastaleeq";src:url("${JAMEEL_EDITOR_FONT_URL}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
+}
+
+/** Same public Gulzar file the PDF embedder uses, so the editor does not silently fall back. */
+export function studioGulzarFontFaceCss(): string {
+  const url = getFontById("gulzar").pdf.regularFiles?.[0] ?? "";
+  return `@font-face{font-family:"Gulzar";src:url("${url}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
 }
 
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */

@@ -4,7 +4,7 @@
  */
 import { scaleLayoutToWidth, type ResolvedPageLayout } from "./pageLayout";
 import type { RulerUnit } from "./rulerLayout";
-import { studioJameelFontFaceCss } from "./fontRegistry";
+import { studioGulzarFontFaceCss, studioJameelFontFaceCss } from "./fontRegistry";
 
 export type { RulerUnit };
 
@@ -269,7 +269,7 @@ export function mountDocumentPrintPortal(): HTMLElement | null {
   stripViewOnlyPagination(page);
   page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:0 ${rightMm}mm 0 ${leftMm}mm;background:#fff;min-height:0;`;
   const style = document.createElement("style");
-  style.textContent = `${studioJameelFontFaceCss()}\n${documentPrintCss(widthMm, heightMm, topMm, bottomMm)}`;
+  style.textContent = `${studioJameelFontFaceCss()}\n${studioGulzarFontFaceCss()}\n${documentPrintCss(widthMm, heightMm, topMm, bottomMm)}`;
   portal.append(style, page);
   document.body.appendChild(portal);
   return portal;

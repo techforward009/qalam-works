@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
-import { getFontById } from "../utils/fontRegistry";
+import { editorFontFamilyStack } from "../utils/fontRegistry";
 import { layoutNaturalSizePx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
 import type { DocumentStudioSettings } from "../utils/documentSettings";
 import { BLOCK_STYLE_EDITOR_CSS } from "../utils/documentSchema";
@@ -126,8 +126,8 @@ export default function DocumentCanvas({
   const typeVars = {
     "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
     "--qalam-line-height": documentSettings.typography.lineHeight,
-    "--qalam-rtl-font": `"${getFontById(documentSettings.typography.defaultRtlFontId).editorFamily}"`,
-    "--qalam-ltr-font": `"${getFontById(documentSettings.typography.defaultLtrFontId).editorFamily}"`,
+    "--qalam-rtl-font": editorFontFamilyStack(documentSettings.typography.defaultRtlFontId),
+    "--qalam-ltr-font": editorFontFamilyStack(documentSettings.typography.defaultLtrFontId),
     "--qalam-first-line-indent": `${documentSettings.typography.firstLineIndentMm}mm`,
     "--qalam-paragraph-before": `${documentSettings.typography.paragraphBeforePt}pt`,
     "--qalam-paragraph-after": `${documentSettings.typography.paragraphAfterPt}pt`,
@@ -300,7 +300,7 @@ export default function DocumentCanvas({
           direction: rtl;
           unicode-bidi: isolate;
           text-align: start;
-          font-family: var(--qalam-rtl-font, "Noto Nastaliq Urdu");
+          font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
         }
         .qalam-editor-content .ProseMirror p[dir="ltr"],
         .qalam-editor-content .ProseMirror h1[dir="ltr"],
@@ -310,7 +310,7 @@ export default function DocumentCanvas({
           direction: ltr;
           unicode-bidi: isolate;
           text-align: start;
-          font-family: var(--qalam-ltr-font, "Inter");
+          font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
         }
         .qalam-editor-content .ProseMirror p:not([dir]),
         .qalam-editor-content .ProseMirror h1:not([dir]),

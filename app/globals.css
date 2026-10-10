@@ -257,17 +257,30 @@ textarea {
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Gulzar";
+  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Gulzar-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ────────────────────────────────────────────────────────────────────────────
    EDITOR OVERRIDES
    ──────────────────────────────────────────────────────────────────────────── */
 
 .qalam-editor-content [style*="Jameel Noori Nastaleeq"],
 .qalam-editor-content span[style*="Jameel Noori Nastaleeq"] {
-  font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
+  font-family: var(--qalam-ltr-font, var(--font-inter), Inter), "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
+}
+
+.qalam-editor-content [style*="Gulzar"],
+.qalam-editor-content span[style*="Gulzar"] {
+  font-family: var(--qalam-ltr-font, var(--font-inter), Inter), "Gulzar", var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
 }
 
 .qalam-editor-content [style*="Noto Nastaliq Urdu"] {
-  font-family: var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
+  font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
 }
 
 .qalam-editor-content [style*="Amiri"] {

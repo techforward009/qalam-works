@@ -51,10 +51,12 @@ import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "
 import { resolvePageLayout, resolvePageDimensions, mmToTwips, ptToHalfPoints, resolvePhysicalMargins } from "./pageLayout";
 import {
   directionForNode,
+  exportFamilyForSegment,
   resolveEditorFontFamily,
   getFontById,
   type FontResolution,
 } from "./fontRegistry";
+import { segmentLine } from "../../../utils/bidi/segmentDirection";
 
 // Matches app/layout.tsx's next/font Noto_Nastaliq_Urdu (the same family
 // the editor itself uses for RTL content via the `font-nastaliq` CSS
@@ -77,13 +79,38 @@ const FONT_LTR = "Inter";
 const PAGE_SIZE_A4 = { width: 11906, height: 16838 };
 const PAGE_MARGIN = { top: 1440, bottom: 1440, left: 1440, right: 1440 };
 
-// v1.1 Phase 1 — paragraph and line spacing, applied uniformly to every
-// Paragraph this adapter creates (regular paragraphs, headings,
-// blockquote lines, list items) so spacing is consistent throughout the
-// document rather than varying by block type. `line: 360` is 1.5-line
-// spacing in docx's twentieths-of-a-point line-spacing unit (240 =
-// single, 480 = double); `before`/`after` are in twips.
-const PARAGRAPH_SPACING = { before: 120, after: 120, line: 360, lineRule: LineRuleType.AUTO };
+// v1.1 Phase 1 — paragraph and line spacing. `before`/`after` are twips.
+// Line spacing itself is computed by wordLineSpacing() from the user's
+// line-height and the block's point size. Do not switch it back to AUTO.
+
+// Word AUTO spacing multiplies the font's own line grid. Nastaliq faces
+// such as Jameel and Gulzar advertise a very tall grid, so a CSS line-height
+// of 1.5 or 2 becomes roughly double in Word. CSS line-height is a multiplier
+// of the used point size. AT_LEAST matches that box and still grows when a
+// larger glyph needs room, instead of clipping the way EXACT would.
+function wordLineSpacing(lineHeight: number, fontSizePt: number) {
+  return {
+    line: Math.max(20, Math.round(lineHeight * fontSizePt * 20)),
+    lineRule: LineRuleType.AT_LEAST,
+  };
+}
+
+function exportedBlockFontSizePt(node: DocNode, typography: DocumentStudioSettings["typography"]): number {
+  if (node.type === "heading") {
+    const level = node.attrs?.level;
+    if (typeof level === "number") {
+      const heading = BLOCK_STYLES[`heading-${level}` as keyof typeof BLOCK_STYLES];
+      if (heading?.defaultFontSizePt) return heading.defaultFontSizePt;
+    }
+  }
+  const blockStyleId = typeof node.attrs?.blockStyle === "string" && isBlockStyleId(node.attrs.blockStyle) ? node.attrs.blockStyle : null;
+  const styleDef = blockStyleId ? BLOCK_STYLES[blockStyleId] : null;
+  return styleDef?.defaultFontSizePt ?? typography.bodyFontSizePt;
+}
+
+function docxFontSlots(family: string) {
+  return { ascii: family, hAnsi: family, cs: family, eastAsia: family };
+}
 
 // Batch 16A — resolves a body PARAGRAPH's spacing/indent following
 // EXPLICIT TIPTAP FORMAT > DOCUMENT SETTINGS DEFAULT > SYSTEM FALLBACK:
@@ -115,8 +142,7 @@ function resolveParagraphSpacingAndIndent(
   const spacing = {
     before: ptToTwips(beforePt),
     after: ptToTwips(afterPt),
-    line: Math.round(lineHeight * 240),
-    lineRule: LineRuleType.AUTO,
+    ...wordLineSpacing(lineHeight, exportedBlockFontSizePt(node, typography)),
   };
 
   const indent: { start?: number; end?: number; firstLine?: number } = {};
@@ -128,10 +154,9 @@ function resolveParagraphSpacingAndIndent(
 }
 
 // v1.3 Phase — Professional Polish: heading-specific spacing, larger for
-// higher-level headings, tapering down for H3/H4, distinct from (and
-// larger than) plain PARAGRAPH_SPACING's before/after — `line`/lineRule
-// stay the same 1.5-line spacing as the rest of the document for visual
-// consistency, only before/after vary by level.
+// higher-level headings, tapering down for H3/H4, distinct from plain
+// body before/after. Line height stays the editor's heading 1.5 unless
+// the user overrides that heading.
 const HEADING_SPACING: Record<number, { before: number; after: number }> = {
   1: { before: 480, after: 240 }, // H1 — most visual separation
   2: { before: 360, after: 200 }, // H2 — medium
@@ -149,7 +174,8 @@ const HEADING_SPACING: Record<number, { before: number; after: number }> = {
 // heading is honored.
 function headingSpacingFor(
   level: unknown,
-  node: DocNode
+  node: DocNode,
+  typography: DocumentStudioSettings["typography"]
 ): { before: number; after: number; line: number; lineRule: (typeof LineRuleType)[keyof typeof LineRuleType] } {
   const canonical = typeof level === "number" && level in HEADING_SPACING ? HEADING_SPACING[level] : HEADING_SPACING[4];
   const beforePt = typeof node.attrs?.spaceBeforePt === "number" ? validateSpacingPt(node.attrs.spaceBeforePt) : null;
@@ -158,8 +184,8 @@ function headingSpacingFor(
   return {
     before: beforePt !== null ? Math.round(beforePt * 20) : canonical.before,
     after: afterPt !== null ? Math.round(afterPt * 20) : canonical.after,
-    line: lineHeight !== null ? Math.round(lineHeight * 240) : PARAGRAPH_SPACING.line,
-    lineRule: PARAGRAPH_SPACING.lineRule,
+    // Headings use their own 1.5 line-height in the editor unless the user sets one.
+    ...wordLineSpacing(lineHeight ?? 1.5, exportedBlockFontSizePt(node, typography)),
   };
 }
 
@@ -368,7 +394,7 @@ function convertInline(
 
   for (const node of nodes) {
     if (node.type === "hardBreak") {
-      runs.push(new TextRun({ text: "", break: 1, font: runFont(node, dir, typography), size: overrides?.size ?? defaultSizeHalfPoints }));
+      runs.push(new TextRun({ text: "", break: 1, font: docxFontSlots(runFont(node, dir, typography)), size: overrides?.size ?? defaultSizeHalfPoints, sizeComplexScript: overrides?.size ?? defaultSizeHalfPoints }));
       continue;
     }
     if (node.type !== "text" || typeof node.text !== "string" || node.text.length === 0) {
@@ -392,39 +418,39 @@ function convertInline(
     const highlightMark = node.marks?.find((m) => m.type === "highlight");
     const highlightFill = hexToDocxColor(highlightMark?.attrs?.color);
     const shading = highlightFill ? { type: ShadingType.CLEAR, fill: highlightFill } : undefined;
+    const explicitFont = typeof styleMark?.attrs?.fontFamily === "string" && styleMark.attrs.fontFamily.trim().length > 0
+      ? styleMark.attrs.fontFamily
+      : null;
+    // Split only for export. Saved document text is not rewritten and no
+    // bidi control characters are inserted.
+    const segments = segmentLine(node.text, dir);
+    const pieces = segments.length > 0 ? segments : [{ text: node.text, dir }];
+    const runChildren: TextRun[] = pieces.filter((piece) => piece.text.length > 0).map((piece) => {
+      const choice = exportFamilyForSegment(explicitFont, piece.dir, dir);
+      return new TextRun({
+      text: piece.text,
+      ...(piece.dir === "rtl" ? { rightToLeft: true } : {}),
+      ...(bold ? { bold: true, boldComplexScript: true } : {}),
+      ...(italics ? { italics: true, italicsComplexScript: true } : {}),
+      underline: underline ? {} : undefined,
+      ...(typeof href === "string" && href.trim().length > 0 ? { style: "Hyperlink" } : {}),
+      font: docxFontSlots(resolveEffectiveFontFamily(choice.family, choice.fontDir, typography).docxFamily),
+      size,
+      sizeComplexScript: size,
+      color: runColor,
+      shading,
+    });
+    });
 
     if (typeof href === "string" && href.trim().length > 0) {
       runs.push(
         new ExternalHyperlink({
           link: href,
-          children: [
-            new TextRun({
-              text: node.text,
-              bold,
-              italics,
-              underline: underline ? {} : undefined,
-              style: "Hyperlink",
-              font: runFont(node, dir, typography),
-              size,
-              color: runColor,
-              shading,
-            }),
-          ],
+          children: runChildren,
         })
       );
     } else {
-      runs.push(
-        new TextRun({
-          text: node.text,
-          bold,
-          italics,
-          underline: underline ? {} : undefined,
-          font: runFont(node, dir, typography),
-          size,
-          color: runColor,
-          shading,
-        })
-      );
+      runs.push(...runChildren);
     }
   }
 
@@ -475,7 +501,7 @@ function convertNode(
           heading,
           bidirectional: blockDir === "rtl",
           alignment: alignmentFor(node),
-          spacing: headingSpacingFor(level, node),
+          spacing: headingSpacingFor(level, node, typography),
           children: convertInline(node.content, blockDir, typography, undefined, {
             fontSizePt: headingStyle?.defaultFontSizePt,
             bold: headingStyle?.bold,
