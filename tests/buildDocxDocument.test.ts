@@ -1166,10 +1166,10 @@ describe("DOCX Nastaliq export regression", () => {
       ] }]),
       "rtl",
     );
-    const runs = xml.match(/<w:r>.*?<\\/w:r>/g) ?? [];
+    const runs = xml.match(/<w:r>.*?<\/w:r>/g) ?? [];
     const urdu = runs.find((run) => run.includes("الف"));
     const latin = runs.find((run) => run.includes("English (123)"));
-    expect(urdu).toMatch(/<w:rtl(?:\\s|\\/|>)/);
-    expect(latin).not.toMatch(/<w:rtl(?:\\s|\\/|>)/);
+    expect(urdu).toMatch(/<w:rtl(?:\s|\/|>)/);
+    expect(latin).not.toMatch(/<w:rtl(?:\s|\/|>)/);
   });
 });
