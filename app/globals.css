@@ -1736,3 +1736,40 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
   line-height:1.5!important;
   direction:ltr;
 }
+
+/* Studio phase 4: compact utility panels — do not restyle user content or preview. */
+[data-studio-find-ui="ur"] :is(button,label),
+[data-studio-glossary-ui="ur"] :is(button,label),
+[data-studio-ai-ui="ur"] :is(button,label) {
+  font-family:"Qalam Nafees",var(--font-nastaliq),serif;
+  font-size:15px;
+  line-height:2;
+  letter-spacing:0;
+}
+[data-studio-glossary-ui="ur"] h4,
+[data-studio-ai-ui="ur"] h2 {
+  font-family:var(--font-nastaliq),"Noto Nastaliq Urdu",serif;
+  font-weight:400;
+  font-size:18px;
+  line-height:2.1;
+}
+[data-studio-glossary-ui="ur"] p,
+[data-studio-ai-ui="ur"] p,
+[data-studio-stats-ui="ur"] {
+  font-family:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif;
+  font-size:16px;
+  line-height:2.2;
+  word-spacing:2px;
+}
+[data-studio-find-ui="ur"] input,
+[data-studio-glossary-ui="ur"] input,
+[data-studio-glossary-ui="ur"] textarea {
+  font-family:"Qalam Nafees",var(--font-nastaliq),serif;
+  font-size:16px;
+  line-height:2;
+}
+[data-studio-ai-ui="ur"] [data-qalam-ai-preview],
+[data-studio-ai-ui="ur"] [data-qalam-ai-selection] {
+  font-family:inherit;
+  word-spacing:normal;
+}

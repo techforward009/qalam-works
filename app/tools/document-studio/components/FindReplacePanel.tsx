@@ -41,7 +41,7 @@ export const FindReplacePanel: React.FC<FindReplacePanelProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="p-3 border border-slate-200 rounded-xl bg-white shadow-sm space-y-2 text-xs" dir="ltr">
+    <div className="p-3 border border-slate-200 rounded-xl bg-white shadow-sm space-y-2 text-xs" dir="ltr" data-studio-find-ui={isUr ? "ur" : "en"}>
       <div className="flex items-center gap-2">
         <input
           type="text"

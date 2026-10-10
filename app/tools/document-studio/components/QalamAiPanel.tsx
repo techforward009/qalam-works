@@ -134,7 +134,7 @@ export default function QalamAiPanel({
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-start justify-center bg-black/20 p-4" data-qalam-ai-overlay="true" onMouseDown={handleClose}>
+    <div className="fixed inset-0 z-[90] flex items-start justify-center bg-black/20 p-4" data-qalam-ai-overlay="true" data-studio-ai-ui={isUr ? "ur" : "en"} onMouseDown={handleClose}>
       <div
         role="dialog"
         aria-label={t("Qalam AI — Experimental", "قلم اے آئی — تجرباتی")}

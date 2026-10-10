@@ -68,7 +68,7 @@ export const GlossaryPanel: React.FC<GlossaryPanelProps> = ({ entries, onAdd, on
   };
 
   return (
-    <div className="p-3 border border-slate-200 rounded-xl bg-white shadow-sm space-y-3 text-xs" dir={isUr ? "rtl" : "ltr"}>
+    <div className="p-3 border border-slate-200 rounded-xl bg-white shadow-sm space-y-3 text-xs" dir={isUr ? "rtl" : "ltr"} data-studio-glossary-ui={isUr ? "ur" : "en"}>
       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
         <h4 className="text-slate-700 font-semibold">{isUr ? "اصطلاحی فہرست" : "Terminology Glossary"}</h4>
         <div className="flex gap-2" dir="ltr">

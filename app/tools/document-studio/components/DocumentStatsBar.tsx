@@ -36,7 +36,7 @@ export const DocumentStatsBar: React.FC<DocumentStatsBarProps> = ({ stats, healt
     <div
       className={`min-w-0 space-y-3 overflow-x-hidden rounded-xl border border-slate-200 bg-white p-3 text-xs ${isUr ? "text-right font-naskh" : "text-left"}`}
       dir={isUr ? "rtl" : "ltr"}
-      data-studio-stats="true"
+      data-studio-stats="true" data-studio-stats-ui={isUr ? "ur" : "en"}
     >
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
