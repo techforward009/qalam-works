@@ -138,4 +138,80 @@ describe("Document Studio typography 2A", () => {
     expect(studioGulzarFontFaceCss()).toContain("Gulzar-Regular.woff2");
     expect(studioJameelFontFaceCss()).toContain("jameel-noori-nastaleeq-400.woff2");
   });
+
+  test("paragraph line spacing uses the largest explicit run, not only the body size", async () => {
+    const settings = defaultDocumentSettings();
+    settings.typography.bodyFontSizePt = 13;
+    settings.typography.lineHeight = 2;
+    const xml = await documentXml(
+      {
+        type: "doc",
+        content: [{
+          type: "paragraph",
+          attrs: { dir: "rtl" },
+          content: [
+            { type: "text", text: "چھوٹا " },
+            { type: "text", text: "بڑا", marks: [{ type: "textStyle", attrs: { fontSize: "24pt" } }] },
+          ],
+        }],
+      },
+      "rtl",
+      settings,
+    );
+    // 24pt × 2 × 20 = 960, not 13pt × 2 × 20 = 520
+    expect(xml).toContain('w:line="960"');
+    expect(xml).toContain('w:lineRule="atLeast"');
+    expect(xml).not.toContain('w:line="520"');
+    expect(xml).toContain('w:sz w:val="48"');
+    expect(xml).toContain('w:sz w:val="26"');
+  });
+
+  test("an explicit Latin-only font does not stick to RTL text", async () => {
+    const source = "(الف) اردو English (123)";
+    const settings = defaultDocumentSettings();
+    settings.typography.defaultRtlFontId = "jameel-noori-nastaleeq";
+    const xml = await documentXml(
+      {
+        type: "doc",
+        content: [{
+          type: "paragraph",
+          attrs: { dir: "rtl" },
+          content: [{ type: "text", text: source, marks: [{ type: "textStyle", attrs: { fontFamily: "Inter" } }] }],
+        }],
+      },
+      "rtl",
+      settings,
+    );
+    const runs = xml.match(/<w:r>[\s\S]*?<\/w:r>/g) ?? [];
+    const urdu = runs.find((run) => run.includes("الف"));
+    const latin = runs.find((run) => run.includes("English"));
+    expect(urdu).toContain('w:cs="Jameel Noori Nastaleeq"');
+    expect(urdu).toMatch(/<w:rtl(?:\s|\/|>)/);
+    expect(latin).toContain('w:ascii="Inter"');
+    expect(latin).not.toMatch(/<w:rtl(?:\s|\/|>)/);
+    const text = [...xml.matchAll(/<w:t(?: [^>]*)?>([^<]*)<\/w:t>/g)].map((match) => match[1]).join("");
+    expect(text).toBe(source);
+    expect(xml).not.toMatch(BIDI_CONTROLS);
+
+    const html = buildPdfHtml(
+      {
+        type: "doc",
+        content: [{
+          type: "paragraph",
+          attrs: { dir: "rtl" },
+          content: [{ type: "text", text: source, marks: [{ type: "textStyle", attrs: { fontFamily: "Inter" } }] }],
+        }],
+      },
+      "rtl",
+      { faces: [face("Jameel Noori Nastaleeq"), face("Inter"), face("Noto Nastaliq Urdu")] },
+      settings.typography,
+    );
+    expect(html.html).toContain("Jameel Noori Nastaleeq");
+    expect(html.html).toContain('dir="ltr"');
+    expect(html.html).toContain("English (123)");
+    expect(html.html).not.toMatch(BIDI_CONTROLS);
+    const urduSpan = html.html.split("</span>").find((part) => part.includes("الف"));
+    expect(urduSpan).toContain("Jameel Noori Nastaleeq");
+    expect(urduSpan).not.toContain('class="qf-inter"');
+  });
 });

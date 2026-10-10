@@ -108,6 +108,29 @@ function exportedBlockFontSizePt(node: DocNode, typography: DocumentStudioSettin
   return styleDef?.defaultFontSizePt ?? typography.bodyFontSizePt;
 }
 
+function largestExplicitRunSizePt(node: DocNode): number | null {
+  let largest: number | null = null;
+  for (const child of node.content ?? []) {
+    if (child.type !== "text") continue;
+    const style = child.marks?.find((mark) => mark.type === "textStyle");
+    const size = resolveFontSizePt(style?.attrs?.fontSize);
+    if (size == null) continue;
+    largest = largest == null ? size : Math.max(largest, size);
+  }
+  return largest;
+}
+
+function lineBoxFontSizePt(
+  node: DocNode,
+  typography: DocumentStudioSettings["typography"],
+  includeExplicitRunSize: boolean,
+): number {
+  const base = exportedBlockFontSizePt(node, typography);
+  if (!includeExplicitRunSize) return base;
+  const run = largestExplicitRunSizePt(node);
+  return run == null ? base : Math.max(base, run);
+}
+
 function docxFontSlots(family: string) {
   return { ascii: family, hAnsi: family, cs: family, eastAsia: family };
 }
@@ -123,7 +146,8 @@ function docxFontSlots(family: string) {
 // brief's "Headings may still have canonical heading spacing."
 function resolveParagraphSpacingAndIndent(
   node: DocNode,
-  typography: DocumentStudioSettings["typography"]
+  typography: DocumentStudioSettings["typography"],
+  includeExplicitRunSize = true,
 ): {
   spacing: { before: number; after: number; line: number; lineRule: (typeof LineRuleType)[keyof typeof LineRuleType] };
   indent?: { start?: number; end?: number; firstLine?: number };
@@ -142,7 +166,7 @@ function resolveParagraphSpacingAndIndent(
   const spacing = {
     before: ptToTwips(beforePt),
     after: ptToTwips(afterPt),
-    ...wordLineSpacing(lineHeight, exportedBlockFontSizePt(node, typography)),
+    ...wordLineSpacing(lineHeight, lineBoxFontSizePt(node, typography, includeExplicitRunSize)),
   };
 
   const indent: { start?: number; end?: number; firstLine?: number } = {};
@@ -522,7 +546,7 @@ function convertNode(
           // (the quote's own established visual indent, distinct from the
           // new user-configurable indentStartMm/indentEndMm concept) —
           // preserving existing quote styling exactly.
-          const { spacing: quoteSpacing } = resolveParagraphSpacingAndIndent(child, typography);
+          const { spacing: quoteSpacing } = resolveParagraphSpacingAndIndent(child, typography, false);
           out.push(
             new Paragraph({
               bidirectional: blockDir === "rtl",

@@ -981,9 +981,9 @@ describe("Batch 16A — Book Manuscript preset produces real, distinct typograph
       expect(xml).toContain('w:ascii="Amiri"');
       expect(xml).toContain('w:sz w:val="40"'); // 20pt in half-points
     }
-    // Document-wide line spacing follows point size × line-height, not Word's auto grid.
-    expect(xmlBook).toContain('w:line="468"'); // 13pt × 1.8 × 20
-    expect(xmlAcademic).toContain('w:line="480"'); // 12pt × 2.0 × 20
+    // The 20pt run sets the line box. Preset line-height still changes it.
+    expect(xmlBook).toContain('w:line="720"'); // 20pt × 1.8 × 20
+    expect(xmlAcademic).toContain('w:line="800"'); // 20pt × 2.0 × 20
   });
 });
 
