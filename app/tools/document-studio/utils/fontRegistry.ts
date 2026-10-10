@@ -277,10 +277,25 @@ export function getFontById(id: FontId): StudioFontDefinition {
   return byId.get(id)!;
 }
 
+/**
+ * Hidden from new document formatting choices at the owner's request.
+ * Keep these definitions in the registry for old documents, DOCX and PDF.
+ * Site-wide font faces and other Qalam Works tools must remain untouched.
+ */
+const HIDDEN_EDITOR_FONT_IDS: ReadonlySet<FontId> = new Set([
+  "default",
+  "faiz-lahori",
+  "nafees-nastaleeq",
+  "adobe-arabic",
+  "traditional-arabic",
+  "al-majeed-quranic",
+  "asif-quranic",
+  "muhammadi-quranic",
+  "al-qalam-quran-majeed",
+]);
+
 export function listEditorFonts(): StudioFontDefinition[] {
-  // Faiz remains in the registry for previously saved documents, but is no
-  // longer offered for new formatting. Gulzar replaces it in the picker.
-  return STUDIO_FONTS.filter((f) => f.id !== "default" && f.id !== "faiz-lahori");
+  return STUDIO_FONTS.filter((font) => !HIDDEN_EDITOR_FONT_IDS.has(font.id));
 }
 
 export function directionForNode(
