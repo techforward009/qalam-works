@@ -78,6 +78,14 @@ describe("fontRegistry", () => {
     expect(getFontById("sahel").pdf.regularFiles?.[0]).toContain("/Sahel.woff2");
     const adobe = getFontById("adobe-arabic");
     expect(adobe.pdf.boldFiles?.[0]).toContain("/AdobeArabic-Bold.woff2");
+    expect(resolveEditorFontFamily("Gulzar", "rtl").fellBack).toBe(false);
+    expect(getFontById("gulzar").pdf.regularFiles?.[0]).toBe(
+      "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Gulzar-Regular.woff2",
+    );
+    const visible = fonts.map(font => font.editorFamily);
+    expect(visible).toContain("Gulzar");
+    expect(visible).not.toContain("Faiz Lahori Nastaleeq");
+    // Old documents must still preserve their explicitly chosen Faiz face.
     expect(resolveEditorFontFamily("Faiz Lahori Nastaleeq", "rtl").fellBack).toBe(false);
   });
 
