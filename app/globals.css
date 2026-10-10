@@ -1612,3 +1612,42 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
   word-spacing: 3px;
   letter-spacing: 0;
 }
+
+/* Document Studio UI typography: scope to application chrome, never editable pages. */
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome],
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-left-sidebar],
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-right-sidebar] {
+  font-family:"Qalam Nafees",var(--font-nastaliq),serif;
+  letter-spacing:0;
+}
+[data-studio-shell][data-studio-ui-language="ur"] :is(
+  [data-studio-chrome],
+  [data-studio-left-sidebar],
+  [data-studio-right-sidebar]
+) :is(button,label,select,option,input) {
+  font-family:"Qalam Nafees",var(--font-nastaliq),serif;
+  font-size:16px;
+  line-height:2.05;
+  letter-spacing:0;
+}
+[data-studio-shell][data-studio-ui-language="ur"] :is(
+  [data-studio-chrome],
+  [data-studio-left-sidebar],
+  [data-studio-right-sidebar]
+) :is(h2,h3) {
+  font-family:var(--font-nastaliq),"Noto Nastaliq Urdu",serif;
+  font-size:18px;
+  font-weight:400;
+  line-height:2.15;
+}
+[data-studio-shell][data-studio-ui-language="ur"] :is(
+  [data-studio-chrome],
+  [data-studio-left-sidebar],
+  [data-studio-right-sidebar]
+) p {
+  font-family:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif;
+  font-size:18px;
+  line-height:2.35;
+  word-spacing:3px;
+  letter-spacing:0;
+}

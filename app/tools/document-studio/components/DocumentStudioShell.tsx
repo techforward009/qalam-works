@@ -32,6 +32,7 @@ export default function DocumentStudioShell({
     <div
       className="flex h-[calc(100dvh-97px)] min-h-[24rem] flex-col overflow-hidden rounded-2xl border border-[#1A3A2A]/10 bg-[#F4F1EA] shadow-[0_2px_20px_rgba(26,58,42,0.06)] lg:h-[calc(100dvh-105px)] xl:h-[calc(100dvh-113px)]"
       data-studio-shell="true"
+      data-studio-ui-language={isUr ? "ur" : "en"}
       dir={isUr ? "rtl" : "ltr"}
     >
       <div
