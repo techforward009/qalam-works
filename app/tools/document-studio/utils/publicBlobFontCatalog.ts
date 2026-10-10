@@ -1,0 +1,37 @@
+/**
+ * Approved Blob filenames supplied by the owner, 2026-10-10.
+ * Public URLs are intentionally NOT guessed from filenames. Blob storage may
+ * add unique suffixes; resolve URLs from an authorized store listing.
+ * Keeping this catalogue separate prevents unavailable faces entering the UI.
+ */
+export interface PublicBlobFontFamily {
+  id: string;
+  label: string;
+  regular: string;
+  bold?: string;
+  script: "urdu" | "arabic" | "persian" | "quran";
+  existingStudioId?: string;
+}
+
+export const PUBLIC_BLOB_FONT_FAMILIES: readonly PublicBlobFontFamily[] = [
+  { id: "adobe-arabic", label: "Adobe Arabic", regular: "AdobeArabic-Regular.woff2", bold: "AdobeArabic-Bold.woff2", script: "arabic" },
+  { id: "alvi-nastaleeq", label: "Alvi Nastaleeq", regular: "Alvi_Nastaleeq.woff2", script: "urdu" },
+  { id: "digital-khatt-indo-pak", label: "Digital Khatt Indo-Pak", regular: "DigitalKhattIndoPakRegular.woff2", script: "quran" },
+  { id: "faiz-lahori", label: "Faiz Lahori Nastaleeq", regular: "Faiz-Lahori-Web.woff2", script: "urdu" },
+  { id: "nafees-nastaleeq", label: "Nafees Nastaleeq", regular: "NafeesNastaleeq.woff2", script: "urdu" },
+  { id: "sahel", label: "Sahel", regular: "Sahel.woff2", script: "persian", existingStudioId: "sahel" },
+  { id: "scheherazade-new", label: "Scheherazade New", regular: "ScheherazadeNew-Medium.woff2", script: "arabic" },
+  { id: "traditional-arabic", label: "Traditional Arabic", regular: "TraditionalArabic.woff2", bold: "TraditionalArabic-Bold.woff2", script: "arabic" },
+  { id: "al-majeed-quranic", label: "Al Majeed Quranic", regular: "al-majeed-quranic-400.woff2", script: "quran" },
+  { id: "al-qalam-quran-majeed", label: "Al Qalam Quran Majeed", regular: "al-qalam-quran-majeed-web-regular.woff2", script: "quran" },
+  { id: "asif-quranic", label: "Asif Quranic", regular: "asif-quranic-400.woff2", script: "quran" },
+  { id: "jameel-noori-nastaleeq", label: "Jameel Noori Nastaleeq", regular: "jameel-noori-nastaleeq-400.woff2", script: "urdu", existingStudioId: "jameel-noori-nastaleeq" },
+  { id: "muhammadi-quranic", label: "Muhammadi Quranic", regular: "muhammadi-quranic-400.woff2", script: "quran" },
+] as const;
+
+export const PUBLIC_BLOB_FONT_FILES: readonly string[] =
+  PUBLIC_BLOB_FONT_FAMILIES.flatMap(font => font.bold ? [font.regular, font.bold] : [font.regular]);
+
+export function getPublicBlobFontFamily(id: string): PublicBlobFontFamily | undefined {
+  return PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === id);
+}
