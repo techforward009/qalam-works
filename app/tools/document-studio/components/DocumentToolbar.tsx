@@ -645,7 +645,7 @@ export default function DocumentToolbar({
       ) : null}
       <div
       className="flex flex-wrap items-center gap-1 px-2 py-1.5"
-      dir="ltr"
+      dir={isUr ? "rtl" : "ltr"}
       data-studio-toolbar="true"
       data-studio-toolbar-leading={DOCUMENT_TOOLBAR_LEADING.join(",")}
     >
@@ -743,13 +743,13 @@ export default function DocumentToolbar({
         ))}
       </select>
       <ToolbarDivider />
-      <ToolbarButton label="Bold" active={ui.bold} onClick={() => toggleBold(editor)}>
+      <ToolbarButton label={isUr ? "موٹا" : "Bold"} active={ui.bold} onClick={() => toggleBold(editor)}>
         B
       </ToolbarButton>
-      <ToolbarButton label="Italic" active={ui.italic} onClick={() => toggleItalic(editor)}>
+      <ToolbarButton label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)}>
         I
       </ToolbarButton>
-      <ToolbarButton label="Underline" active={ui.underline} onClick={() => toggleUnderline(editor)}>
+      <ToolbarButton label={isUr ? "خط کشیدہ" : "Underline"} active={ui.underline} onClick={() => toggleUnderline(editor)}>
         U
       </ToolbarButton>
       <ColorPaletteControl
@@ -769,33 +769,33 @@ export default function DocumentToolbar({
         isUr={isUr}
       />
       <ToolbarDivider />
-      <ToolbarButton label="Align Left" active={ui.textAlign === "left"} onClick={() => setAlign(editor, "left")}>
+      <ToolbarButton label={isUr ? "بائیں سیدھ" : "Align Left"} active={ui.textAlign === "left"} onClick={() => setAlign(editor, "left")}>
         ⇤
       </ToolbarButton>
-      <ToolbarButton label="Align Center" active={ui.textAlign === "center"} onClick={() => setAlign(editor, "center")}>
+      <ToolbarButton label={isUr ? "درمیانی سیدھ" : "Align Center"} active={ui.textAlign === "center"} onClick={() => setAlign(editor, "center")}>
         ⇔
       </ToolbarButton>
-      <ToolbarButton label="Align Right" active={ui.textAlign === "right"} onClick={() => setAlign(editor, "right")}>
+      <ToolbarButton label={isUr ? "دائیں سیدھ" : "Align Right"} active={ui.textAlign === "right"} onClick={() => setAlign(editor, "right")}>
         ⇥
       </ToolbarButton>
-      <ToolbarButton label="Justify" active={ui.textAlign === "justify"} onClick={() => setAlign(editor, "justify")}>
+      <ToolbarButton label={isUr ? "برابر کریں" : "Justify"} active={ui.textAlign === "justify"} onClick={() => setAlign(editor, "justify")}>
         ☰
       </ToolbarButton>
       <ToolbarDivider />
-      <ToolbarButton label="Bullet List" active={ui.bullet} onClick={() => toggleBulletList(editor)}>
+      <ToolbarButton label={isUr ? "نقطہ دار فہرست" : "Bullet List"} active={ui.bullet} onClick={() => toggleBulletList(editor)}>
         •
       </ToolbarButton>
-      <ToolbarButton label="Numbered List" active={ui.ordered} onClick={() => toggleOrderedList(editor)}>
+      <ToolbarButton label={isUr ? "نمبر والی فہرست" : "Numbered List"} active={ui.ordered} onClick={() => toggleOrderedList(editor)}>
         1.
       </ToolbarButton>
       <ToolbarDivider />
-      <ToolbarButton label="Automatic paragraph direction" active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")}>
+      <ToolbarButton label={isUr ? "خودکار سمت" : "Automatic paragraph direction"} active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")}>
         Auto
       </ToolbarButton>
-      <ToolbarButton label="Right-to-left (Urdu/Arabic/Persian)" active={ui.directionMode === "rtl"} onClick={() => applyParagraphDirection(editor, "rtl")}>
+      <ToolbarButton label={isUr ? "دائیں سے بائیں" : "Right-to-left (Urdu/Arabic/Persian)"} active={ui.directionMode === "rtl"} onClick={() => applyParagraphDirection(editor, "rtl")}>
         RTL
       </ToolbarButton>
-      <ToolbarButton label="Left-to-right (English)" active={ui.directionMode === "ltr"} onClick={() => applyParagraphDirection(editor, "ltr")}>
+      <ToolbarButton label={isUr ? "بائیں سے دائیں" : "Left-to-right (English)"} active={ui.directionMode === "ltr"} onClick={() => applyParagraphDirection(editor, "ltr")}>
         LTR
       </ToolbarButton>
       <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />
