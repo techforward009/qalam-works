@@ -68,7 +68,7 @@ export interface FontResolution {
 
 const EXTRA_BLOB_FONTS: StudioFontDefinition[] = PUBLIC_BLOB_FONT_FAMILIES
   .filter((font) => !font.existingStudioId)
-  .map((font) => {
+  .map((font): StudioFontDefinition => {
     const family = font.label;
     const fallbackFontId: FontId = font.script === "urdu" ? "noto-nastaliq-urdu"
       : font.script === "persian" ? "vazirmatn" : "noto-naskh-arabic";
