@@ -1,9 +1,4 @@
-/**
- * Approved Blob filenames supplied by the owner, 2026-10-10.
- * Public URLs are intentionally NOT guessed from filenames. Blob storage may
- * add unique suffixes; resolve URLs from an authorized store listing.
- * Keeping this catalogue separate prevents unavailable faces entering the UI.
- */
+/** Approved public Blob font assets. The owner supplied the Blob origin and AdobeArabic-Regular URL. All filenames are exact matches to the store inventory; Mehr Nastaliq is intentionally excluded. */
 export interface PublicBlobFontFamily {
   id: string;
   label: string;
@@ -34,4 +29,27 @@ export const PUBLIC_BLOB_FONT_FILES: readonly string[] =
 
 export function getPublicBlobFontFamily(id: string): PublicBlobFontFamily | undefined {
   return PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === id);
+}
+
+/** Origin matches the public Vercel Blob URL supplied by the owner. */
+export const PUBLIC_BLOB_FONT_BASE_URL = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com";
+
+/** Resolve only catalogued filenames; never accept arbitrary paths/hosts. */
+export function publicBlobFontUrl(filename: string): string {
+  if (!PUBLIC_BLOB_FONT_FILES.includes(filename)) {
+    throw new Error("Unapproved Document Studio font asset");
+  }
+  return `${PUBLIC_BLOB_FONT_BASE_URL}/${encodeURIComponent(filename)}`;
+}
+
+export function isApprovedPublicBlobFontUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.origin === PUBLIC_BLOB_FONT_BASE_URL
+      && parsed.search === ""
+      && parsed.hash === ""
+      && PUBLIC_BLOB_FONT_FILES.includes(decodeURIComponent(parsed.pathname.slice(1)));
+  } catch {
+    return false;
+  }
 }
