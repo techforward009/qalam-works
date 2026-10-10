@@ -10,10 +10,16 @@ describe("Document Studio public Blob font catalogue", () => {
     expect(isApprovedPublicBlobFontUrl("https://evil.invalid/AdobeArabic-Regular.woff2")).toBe(false);
   });
 
-  test("contains exactly 15 approved assets organized into 13 font families", () => {
-    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(15);
-    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(13);
-    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(15);
+  test("contains 16 Blob assets including legacy Faiz, organized into 14 font families", () => {
+    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(16);
+    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(14);
+    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(16);
+  });
+
+  test("maps Gulzar to the user-supplied Vercel Blob font and retains Faiz only for legacy documents", () => {
+    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "gulzar")?.regular).toBe("Gulzar-Regular.woff2");
+    expect(publicBlobFontUrl("Gulzar-Regular.woff2")).toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Gulzar-Regular.woff2");
+    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "faiz-lahori")?.regular).toBe("Faiz-Lahori-Web.woff2");
   });
 
   test("never includes the excluded Mehr Nastaliq asset", () => {
