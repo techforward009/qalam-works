@@ -1551,3 +1551,30 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
 @font-face{font-family:"Qalam Alvi Nastaleeq";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Alvi_Nastaleeq.woff2") format("woff2");font-display:swap;}
 .qalam-home section[dir="rtl"] .qalam-intent-example bdi:first-child{font-family:"Qalam Alvi Nastaleeq",var(--font-nastaliq),serif!important;}
 .qalam-home section[dir="rtl"] .qalam-intent-example bdi:last-child{font-family:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif!important;}
+
+/* Fine tuning: Urdu homepage eyebrow must retain Nafees shaping. */
+.qalam-home section[dir="rtl"] .qalam-home-eyebrow{
+  font-family:"Qalam Nafees",var(--font-nastaliq),serif!important;
+  font-size:19px!important;
+  font-weight:400!important;
+  font-synthesis:none;
+  font-kerning:normal;
+  letter-spacing:0!important;
+  line-height:2.2!important;
+  white-space:normal;
+  text-align:center;
+  padding:11px 22px!important;
+  max-width:100%;
+}
+.qalam-home .qalam-problem-alvi{
+  font-family:"Qalam Alvi Nastaleeq",var(--font-nastaliq),serif!important;
+  font-weight:400;
+  font-synthesis:none;
+  line-height:2.4;
+}
+.qalam-home .qalam-problem-jameel{
+  font-family:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif!important;
+  font-weight:400;
+  font-synthesis:none;
+  line-height:2.4;
+}

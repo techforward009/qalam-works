@@ -21,7 +21,13 @@ export default function ProblemSection() {
             <div key={point.title} className="rounded-2xl border border-[#1A2036]/8 bg-white p-7 text-center shadow-sm dark:border-white/10 dark:bg-[#1A2036]">
               <h3 className={`mb-3 text-base font-bold text-[#1F6C54] dark:text-[#2FA37D] ${naskh}`}>{point.title}</h3>
               <div className="mb-4 rounded-lg border border-[#1A2036]/8 bg-[#F7F5EF] py-4 dark:border-white/10 dark:bg-[#0E1524]">
-                <p dir="rtl" className="font-nastaliq text-xl text-[#11182A] dark:text-[#F7F5EF]">{point.example}</p>
+                {language === "ur" && point.title === "عربی کاف" ? (
+                  <div className="flex items-center justify-center gap-3 text-2xl text-[#11182A] dark:text-[#F7F5EF]" dir="rtl" lang="ur">
+                    <span className="qalam-problem-alvi" lang="ar">ايك</span>
+                    <span aria-hidden="true" className="font-sans text-base">←</span>
+                    <span className="qalam-problem-jameel">ایک</span>
+                  </div>
+                ) : <p dir="rtl" className="font-nastaliq text-xl text-[#11182A] dark:text-[#F7F5EF]">{point.example}</p>}
               </div>
               <p className={`text-sm leading-relaxed text-[#4d564f] dark:text-[#b7c4bb] ${naskh}`}>{point.impact}</p>
             </div>
