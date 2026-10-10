@@ -37,8 +37,10 @@ export async function guardPdfUrduFonts(page: Page): Promise<{ fallbackRuns: num
         // ids returned by describeNode are not guaranteed to be frontend ids.
         const result = await session.send("CSS.getPlatformFontsForNode", { nodeId });
         const used = result.fonts.filter(font => font.glyphCount > 0);
-        const hasUrdu = used.some(font => font.isCustomFont && /Jameel|Noto Nastaliq|Noto Naskh|Amiri|Vazirmatn/i.test(font.familyName));
-        return { used, usable: hasUrdu && used.every(font => font.isCustomFont) };
+        // The selected family can be any owner-approved Blob font, not only
+        // the five legacy families. Require embedded custom glyphs for every
+        // rendered segment; system-font fallbacks still fail verification.
+        return { used, usable: used.length > 0 && used.every(font => font.isCustomFont) };
       };
       let result = await inspect();
       if (!result.usable) {
