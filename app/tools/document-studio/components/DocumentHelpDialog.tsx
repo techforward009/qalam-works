@@ -29,7 +29,7 @@ export default function DocumentHelpDialog({
             : "Voice dictation help";
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4" role="dialog" aria-modal="true" data-studio-dialog={isUr ? "ur" : "en"}>
       <div className="max-h-[80vh] w-full max-w-md overflow-auto rounded-xl border border-[#1A3A2A]/15 bg-white p-4 shadow-lg" dir={isUr ? "rtl" : "ltr"}>
         <div className="mb-3 flex items-start justify-between gap-3">
           <h2 className={`text-sm font-semibold text-[#1A3A2A] ${isUr ? "font-naskh" : ""}`}>{title}</h2>

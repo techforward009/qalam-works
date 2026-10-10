@@ -1535,7 +1535,7 @@ export default function DocumentStudioEditor() {
       ) : null}
 
       {tableInsertOpen ? (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/35 p-4" role="dialog" aria-modal="true" aria-label={isUr ? "جدول شامل کریں" : "Insert table"}>
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/35 p-4" role="dialog" aria-modal="true" data-studio-dialog={isUr ? "ur" : "en"} aria-label={isUr ? "جدول شامل کریں" : "Insert table"}>
           <form
             className={`w-full max-w-sm rounded-xl border border-[#1A3A2A]/15 bg-[#FFFCF6] p-5 shadow-xl ${isUr ? "font-naskh" : ""}`}
             dir={isUr ? "rtl" : "ltr"}

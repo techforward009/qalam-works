@@ -38,7 +38,7 @@ export default function DocumentSettingsPanel({
   setRulerUnit?: (unit: RulerUnit) => void;
 }) {
   return (
-    <div className="space-y-4 rounded-xl border border-[#1A3A2A]/10 bg-white p-3">
+    <div className="space-y-4 rounded-xl border border-[#1A3A2A]/10 bg-white p-3" data-studio-settings={isUr ? "ur" : "en"}>
       <WordRuler
         dir={dir}
         layout={pageLayout}

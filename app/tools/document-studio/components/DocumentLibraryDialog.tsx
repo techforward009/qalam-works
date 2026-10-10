@@ -25,7 +25,7 @@ export default function DocumentLibraryDialog({
   const naskh = isUr ? "font-naskh" : "";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" role="dialog" aria-modal="true" aria-labelledby="document-library-title">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" role="dialog" aria-modal="true" data-studio-dialog={isUr ? "ur" : "en"} aria-labelledby="document-library-title">
       <div className={`w-full max-w-lg overflow-hidden rounded-xl border border-[#1A3A2A]/15 bg-white shadow-lg ${naskh}`} dir={dir}>
         <div className="flex items-start justify-between gap-3 border-b border-[#1A3A2A]/10 px-4 py-3">
           <div>
