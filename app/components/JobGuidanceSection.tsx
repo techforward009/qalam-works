@@ -87,9 +87,9 @@ export default function JobGuidanceSection() {
                       {item.body}
                     </span>
                     {example && (
-                      <span className="qalam-intent-example mt-1.5 inline-flex items-center gap-1 font-mono text-[11px] bg-[#1A3A2A]/6 dark:bg-white/[0.06] text-[#1A3A2A]/70 dark:text-[#a8b9ac] px-2 py-0.5 rounded" dir="ltr">
+                      <span className="qalam-intent-example mt-1.5 inline-flex items-center gap-2 font-mono text-[11px] bg-[#1A3A2A]/6 dark:bg-white/[0.06] text-[#1A3A2A] dark:text-[#eef4ee] px-2 py-0.5 rounded" dir={isUr ? "rtl" : "ltr"}>
                         <bdi dir="auto">{example.split("→")[0]?.trim()}</bdi>
-                        <span aria-hidden="true">→</span>
+                        <span aria-hidden="true" className="font-sans">{isUr ? "←" : "→"}</span>
                         <bdi dir="auto">{example.split("→")[1]?.trim()}</bdi>
                       </span>
                     )}

@@ -77,9 +77,9 @@ export default function HowItWorksSection() {
                 <h3 className={`mb-1.5 text-[17px] font-bold text-[#11182A] dark:text-[#F7F5EF] ${naskh}`}>{tool.name}</h3>
                 <p className={`text-[14px] leading-relaxed text-[#5B5748] dark:text-[#b7c4bb] ${naskh}`}>{tool.body}</p>
                 {meta.example && (
-                  <span className="mt-3 inline-flex items-center gap-1 rounded bg-[#F3F7F2] px-2 py-0.5 font-mono text-[11px] text-[#1A2036]/70 dark:bg-white/5 dark:text-[#c9d5ce]" dir="ltr">
+                  <span className="qalam-tool-example mt-3 inline-flex items-center gap-2 rounded bg-[#F3F7F2] px-2 py-0.5 font-mono text-[11px] text-[#182b2a] dark:bg-white/10 dark:text-[#f0f5f0]" dir={language === "ur" ? "rtl" : "ltr"}>
                     <bdi dir="auto">{meta.example.split("→")[0]?.trim()}</bdi>
-                    <span aria-hidden="true">→</span>
+                    <span aria-hidden="true" className="font-sans">{language === "ur" ? "←" : "→"}</span>
                     <bdi dir="auto">{meta.example.split("→")[1]?.trim()}</bdi>
                   </span>
                 )}

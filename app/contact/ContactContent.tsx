@@ -21,7 +21,7 @@ export default function ContactContent(){
    setStatus("sent");setMessage("");
   }catch{setStatus("error")}finally{setBusy(false)}
  }
- return <main className="min-h-screen bg-[#f5f8fa] py-12 dark:bg-[#0e1524] md:py-20" dir={dir} lang={language}>
+ return <main className={`min-h-screen bg-[#f5f8fa] py-12 dark:bg-[#0e1524] md:py-20 ${ur ? "qalam-contact-urdu" : ""}`} dir={dir} lang={language}>
   <div className="site-container max-w-5xl">
    <div className="mb-9">
     <h1 className={`text-3xl font-bold text-[#153445] dark:text-white ${ur?"font-nastaliq leading-[2.1]":""}`}>{t.heading}</h1>
