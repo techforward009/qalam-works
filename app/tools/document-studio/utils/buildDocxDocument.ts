@@ -115,8 +115,11 @@ function resolveParagraphSpacingAndIndent(
   const spacing = {
     before: ptToTwips(beforePt),
     after: ptToTwips(afterPt),
-    line: Math.round(lineHeight * 240),
-    lineRule: LineRuleType.AUTO,
+    // Word's AUTO multiplier scales the font's natural line box, which can
+    // be unusually tall for Nastaliq and turn two PDF pages into three.
+    // CSS line-height is relative to the selected point size instead.
+    line: Math.round(lineHeight * typography.bodyFontSizePt * 20),
+    lineRule: LineRuleType.AT_LEAST,
   };
 
   const indent: { start?: number; end?: number; firstLine?: number } = {};
@@ -159,7 +162,7 @@ function headingSpacingFor(
     before: beforePt !== null ? Math.round(beforePt * 20) : canonical.before,
     after: afterPt !== null ? Math.round(afterPt * 20) : canonical.after,
     line: lineHeight !== null ? Math.round(lineHeight * 240) : PARAGRAPH_SPACING.line,
-    lineRule: PARAGRAPH_SPACING.lineRule,
+    lineRule: LineRuleType.AT_LEAST,
   };
 }
 
@@ -392,6 +395,9 @@ function convertInline(
     const highlightMark = node.marks?.find((m) => m.type === "highlight");
     const highlightFill = hexToDocxColor(highlightMark?.attrs?.color);
     const shading = highlightFill ? { type: ShadingType.CLEAR, fill: highlightFill } : undefined;
+    // Preserve bidirectional punctuation (especially parentheses) in Word.
+    // Do not force pure Latin spans inside an RTL paragraph into RTL runs.
+    const rtlRun = dir === "rtl" && /[\\u0590-\\u08FF\\uFB1D-\\uFEFC]/u.test(node.text);
 
     if (typeof href === "string" && href.trim().length > 0) {
       runs.push(
@@ -400,6 +406,7 @@ function convertInline(
           children: [
             new TextRun({
               text: node.text,
+              rightToLeft: rtlRun,
               bold,
               italics,
               underline: underline ? {} : undefined,
@@ -416,6 +423,7 @@ function convertInline(
       runs.push(
         new TextRun({
           text: node.text,
+          rightToLeft: rtlRun,
           bold,
           italics,
           underline: underline ? {} : undefined,
