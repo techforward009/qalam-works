@@ -1868,3 +1868,13 @@ html.dark .qalam-home section[dir="rtl"] .qalam-tool-example bdi{color:#f0f6f0!i
 [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] [data-studio-style-control="true"]{
   min-width:110px;
 }
+
+/* Document Studio Urdu toolbar: responsive spacing, with Latin numeric controls untouched. */
+[data-studio-toolbar-language="ur"]{row-gap:7px;column-gap:5px;justify-content:flex-start;}
+[data-studio-toolbar-language="ur"] button{min-height:34px;}
+[data-studio-toolbar-language="ur"] select[data-studio-zoom-control],
+[data-studio-toolbar-language="ur"] select[data-studio-font-size],
+[data-studio-toolbar-language="ur"] select[data-studio-font-family]{direction:ltr;font-family:Arial,sans-serif;font-size:13px;}
+[data-studio-toolbar-language="ur"] select[data-studio-style-control]{min-width:110px;}
+[data-studio-left-sidebar="true"] h2,[data-studio-right-sidebar="true"] h2{line-height:2;}
+@media(max-width:767px){[data-studio-toolbar-language="ur"]{justify-content:flex-start;}}
