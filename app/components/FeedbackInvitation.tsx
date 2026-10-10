@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useEffect,useState} from "react";
 import FeedbackForm from "./FeedbackForm";
@@ -35,7 +34,6 @@ export default function FeedbackInvitation(){
   </div>
   <div className={`flex flex-wrap gap-3 ${ur?"font-[family-name:var(--font-nastaliq)]":""}`}>
     <button type="button" onClick={()=>setOpen(v=>!v)} aria-expanded={open} aria-controls="qalam-feedback-inline" className="rounded-xl bg-amber-200 px-6 py-3 font-bold text-slate-900 shadow-lg transition hover:bg-amber-100">{open?(ur?"فارم بند کریں":"Close form"):(ur?"✍ اپنی رائے دیں":"✍ Share feedback")}</button>
-    <Link href={`/feedback?tool=${encodeURIComponent(tool)}`} className="rounded-xl border border-white/70 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/20">{ur?"رائے و تجاویز کا صفحہ":"Feedback page"}</Link>
   </div>
   </div>
  </section>
