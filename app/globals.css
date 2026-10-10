@@ -1548,6 +1548,6 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
 
 /* Homepage preview: readable Urdu prompt and distinct example faces */
 .qalam-home .qalam-mehr-prompt{font-family:"Qalam Mehr Web",var(--font-nastaliq),serif!important;font-style:normal!important;line-height:2.4!important;text-align:right!important;}
-@font-face{font-family:"Qalam Alvi Nastaleeq";src:local("Alvi Nastaleeq"),local("Alvi Nastaliq");font-display:swap;}
+@font-face{font-family:"Qalam Alvi Nastaleeq";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Alvi_Nastaleeq.woff2") format("woff2");font-display:swap;}
 .qalam-home section[dir="rtl"] .qalam-intent-example bdi:first-child{font-family:"Qalam Alvi Nastaleeq",var(--font-nastaliq),serif!important;}
 .qalam-home section[dir="rtl"] .qalam-intent-example bdi:last-child{font-family:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif!important;}
