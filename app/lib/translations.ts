@@ -86,7 +86,7 @@ export const translations = {
         },
         {
           title: "Arabic kaf",
-          example: "كتاب → کتاب",
+          example: "ايك → ایک",
           impact: "Arabic kaf is not the Urdu kaf. The shapes are close, but search and consistency still break.",
         },
       ],
