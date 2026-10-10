@@ -70,7 +70,7 @@ describe("fontRegistry", () => {
 
   test("all Blob families are available and Sahel resolves without PDF fallback", () => {
     const fonts = listEditorFonts();
-    expect(fonts).toHaveLength(18);
+    expect(fonts).toHaveLength(11);
     expect(fonts.some(f => /Mehr/i.test(f.label))).toBe(false);
     const sahel = resolveEditorFontFamily("Sahel", "rtl");
     expect(sahel.fellBack).toBe(false);
@@ -85,6 +85,20 @@ describe("fontRegistry", () => {
     const visible = fonts.map(font => font.editorFamily);
     expect(visible).toContain("Gulzar");
     expect(visible).not.toContain("Faiz Lahori Nastaleeq");
+    const hiddenFamilies = [
+      "Nafees Nastaleeq",
+      "Adobe Arabic",
+      "Traditional Arabic",
+      "Al Majeed Quranic",
+      "Asif Quranic",
+      "Muhammadi Quranic",
+      "Al Qalam Quran Majeed",
+    ];
+    for (const family of hiddenFamilies) {
+      expect(visible).not.toContain(family);
+      // Already-saved documents can still render/export with their original font.
+      expect(resolveEditorFontFamily(family, "rtl").fellBack).toBe(false);
+    }
     // Old documents must still preserve their explicitly chosen Faiz face.
     expect(resolveEditorFontFamily("Faiz Lahori Nastaleeq", "rtl").fellBack).toBe(false);
   });
