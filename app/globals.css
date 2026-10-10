@@ -251,7 +251,7 @@ textarea {
 
 @font-face {
   font-family: "Jameel Noori Nastaleeq";
-  src: local("Jameel Noori Nastaleeq"), url("/api/studio-font/jameel") format("woff2");
+  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -1878,3 +1878,14 @@ html.dark .qalam-home section[dir="rtl"] .qalam-tool-example bdi{color:#f0f6f0!i
 [data-studio-toolbar-language="ur"] select[data-studio-style-control]{min-width:110px;}
 [data-studio-left-sidebar="true"] h2,[data-studio-right-sidebar="true"] h2{line-height:2;}
 @media(max-width:767px){[data-studio-toolbar-language="ur"]{justify-content:flex-start;}}
+
+/* Document Studio additional public Vercel Blob font families (Mehr excluded). */
+@font-face{font-family:"Adobe Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
+@font-face{font-family:"Adobe Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap;}
+@font-face{font-family:"Alvi Nastaleeq";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Alvi_Nastaleeq.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
+@font-face{font-family:"Digital Khatt Indo-Pak";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/DigitalKhattIndoPakRegular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
+@font-face{font-family:"Faiz Lahori Nastaleeq";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Faiz-Lahori-Web.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
+@font-face{font-family:"Scheherazade New";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/ScheherazadeNew-Medium.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
+@font-face{font-family:"Traditional Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/TraditionalArabic.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
+@font-face{font-family:"Traditional Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/TraditionalArabic-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap;}
+@font-face{font-family:"Al Majeed Quranic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/al-majeed-quranic-400.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
