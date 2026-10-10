@@ -51,14 +51,14 @@ describe("fontRegistry", () => {
     expect(resolveEditorFontFamily(null, "ltr").pdfFamily).toBe("Inter");
   });
 
-  test("Jameel is bundled with PDF support (WOFF2 embedded)", () => {
+  test("Jameel uses the public Blob face for PDF and DOCX keeps the family", () => {
     const j = getFontById("jameel-noori-nastaleeq");
-    expect(j.availability).toBe("bundled");
+    expect(j.availability).toBe("public-blob");
     expect(j.pdf.supported).toBe(true);
     expect(j.pdf.embedded).toBe(true);
     expect(j.pdf.familyName).toBe("Jameel Noori Nastaleeq");
     expect(j.pdf.regularFiles).toEqual([
-      "private-blob:jameel-noori-nastaleeq-400.woff2",
+      "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2",
     ]);
     // No boldFiles — Regular 400 only
     expect(j.pdf.boldFiles ?? []).toHaveLength(0);
@@ -66,6 +66,19 @@ describe("fontRegistry", () => {
     expect(j.docx.familyName).toBe("Jameel Noori Nastaleeq");
     // fallbackFontId retained as emergency fallback
     expect(j.fallbackFontId).toBe("noto-nastaliq-urdu");
+  });
+
+  test("all Blob families are available and Sahel resolves without PDF fallback", () => {
+    const fonts = listEditorFonts();
+    expect(fonts).toHaveLength(18);
+    expect(fonts.some(f => /Mehr/i.test(f.label))).toBe(false);
+    const sahel = resolveEditorFontFamily("Sahel", "rtl");
+    expect(sahel.fellBack).toBe(false);
+    expect(sahel.pdfFamily).toBe("Sahel");
+    expect(getFontById("sahel").pdf.regularFiles?.[0]).toContain("/Sahel.woff2");
+    const adobe = getFontById("adobe-arabic");
+    expect(adobe.pdf.boldFiles?.[0]).toContain("/AdobeArabic-Bold.woff2");
+    expect(resolveEditorFontFamily("Faiz Lahori Nastaleeq", "rtl").fellBack).toBe(false);
   });
 
   test("editor list includes main fonts", () => {
