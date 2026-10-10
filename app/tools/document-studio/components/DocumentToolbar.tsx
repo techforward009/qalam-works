@@ -646,7 +646,7 @@ export default function DocumentToolbar({
       <div
       className="flex flex-wrap items-center gap-1 px-2 py-1.5"
       dir={isUr ? "rtl" : "ltr"}
-      data-studio-toolbar="true"
+      data-studio-toolbar="true" data-studio-toolbar-language={isUr ? "ur" : "en"}
       data-studio-toolbar-leading={DOCUMENT_TOOLBAR_LEADING.join(",")}
     >
       <ToolbarButton label={isUr ? "کالعدم" : "Undo"} onClick={() => undo(editor)}>
