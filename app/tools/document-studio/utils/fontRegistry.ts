@@ -20,6 +20,7 @@ export type FontId =
   | "alvi-nastaleeq"
   | "digital-khatt-indo-pak"
   | "faiz-lahori"
+  | "gulzar"
   | "nafees-nastaleeq"
   | "scheherazade-new"
   | "traditional-arabic"
@@ -277,7 +278,9 @@ export function getFontById(id: FontId): StudioFontDefinition {
 }
 
 export function listEditorFonts(): StudioFontDefinition[] {
-  return STUDIO_FONTS.filter((f) => f.id !== "default");
+  // Faiz remains in the registry for previously saved documents, but is no
+  // longer offered for new formatting. Gulzar replaces it in the picker.
+  return STUDIO_FONTS.filter((f) => f.id !== "default" && f.id !== "faiz-lahori");
 }
 
 export function directionForNode(
