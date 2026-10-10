@@ -11,6 +11,7 @@ import {
   getFontById,
   resolveEditorFontFamily,
   resolvePdfFontId,
+  STUDIO_FONTS,
   type FontResolution,
   type StudioFontDefinition,
 } from "./fontRegistry";
@@ -374,16 +375,11 @@ function fontFaceCss(faces: PdfFontFace[]): string {
 }
 
 function classRulesCss(): string {
-  return `
-  .qf-default { font-family: inherit; }
-  .qf-noto-nastaliq { font-family: "Noto Nastaliq Urdu", serif; }
-  .qf-amiri { font-family: Amiri, serif; }
-  .qf-noto-naskh { font-family: "Noto Naskh Arabic", serif; }
-  .qf-vazirmatn { font-family: Vazirmatn, sans-serif; }
-  .qf-inter { font-family: Inter, system-ui, sans-serif; }
-  .qf-jameel { font-family: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif; }
-  .qf-sahel { font-family: Vazirmatn, sans-serif; }
-`;
+  // Same registry drives editor, DOCX family names, and PDF face styling.
+  // This includes public Vercel Blob faces without hiding them behind a fallback.
+  return STUDIO_FONTS.map(font =>
+    `.${font.cssClass} { font-family: ${font.cssStack}; }`
+  ).join("\n");
 }
 
 export function buildPdfHtml(
