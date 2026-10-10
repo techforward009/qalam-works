@@ -1651,3 +1651,50 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
   word-spacing:3px;
   letter-spacing:0;
 }
+
+/* Document Studio phase 2: compact top bar, menu and toolbar.
+   Keep numeric/font/zoom controls in their functional Latin layout. */
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="top"] button,
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="menu"] button {
+  font-family:"Qalam Nafees",var(--font-nastaliq),serif!important;
+  font-size:15px!important;
+  line-height:1.95!important;
+  height:auto;
+  min-height:36px;
+  white-space:nowrap;
+  letter-spacing:0!important;
+}
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="top"] input[type="text"] {
+  font-family:"Qalam Nafees",var(--font-nastaliq),serif!important;
+  font-size:16px!important;
+  line-height:2!important;
+  min-height:38px;
+}
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] button,
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] label {
+  font-size:14px;
+  line-height:1.85;
+}
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] select {
+  min-height:34px;
+  font-size:14px;
+  line-height:1.5;
+}
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] :is(
+  [data-studio-zoom-control],
+  [data-studio-font-family],
+  [data-studio-font-size],
+  [data-studio-image-width]
+) {
+  font-family:Arial,Helvetica,sans-serif!important;
+  font-size:13px!important;
+  line-height:1.5!important;
+  direction:ltr;
+}
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] input[type="number"],
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] input[type="color"],
+[data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] input.font-mono {
+  font-family:Arial,Helvetica,sans-serif!important;
+  font-size:13px!important;
+  line-height:1.5!important;
+}
