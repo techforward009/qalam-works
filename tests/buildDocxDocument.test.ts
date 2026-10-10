@@ -1141,3 +1141,35 @@ describe("Batch 16C — DOCX header/footer OOXML", () => {
     expect(zip.file("word/footer1.xml")).toBeNull();
   });
 });
+
+
+describe("DOCX Nastaliq export regression", () => {
+  test("uses a point-size floor instead of Word double-auto spacing", async () => {
+    const settings = defaultDocumentSettings();
+    settings.typography.bodyFontSizePt = 13;
+    settings.typography.lineHeight = 2;
+    const xml = await extractDocumentXml(
+      docWith([{ type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "(الف) ایک سطر" }] }]),
+      "rtl",
+      settings,
+    );
+    expect(xml).toContain('w:line="520"');
+    expect(xml).toContain('w:lineRule="atLeast"');
+    expect(xml).not.toContain('w:lineRule="auto"');
+  });
+
+  test("marks Urdu punctuation runs RTL without forcing Latin runs RTL", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{ type: "paragraph", attrs: { dir: "rtl" }, content: [
+        { type: "text", text: "(الف) اردو" },
+        { type: "text", text: " English (123)" },
+      ] }]),
+      "rtl",
+    );
+    const runs = xml.match(/<w:r>.*?<\\/w:r>/g) ?? [];
+    const urdu = runs.find((run) => run.includes("الف"));
+    const latin = runs.find((run) => run.includes("English (123)"));
+    expect(urdu).toMatch(/<w:rtl(?:\\s|\\/|>)/);
+    expect(latin).not.toMatch(/<w:rtl(?:\\s|\\/|>)/);
+  });
+});
