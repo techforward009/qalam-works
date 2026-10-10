@@ -55,7 +55,7 @@ export default function DocumentSettingsPanel({
         }}
       />
       <div>
-        <h3 className="text-sm font-semibold text-[#1A3A2A] mb-2">Document Style</h3>
+        <h3 className="text-sm font-semibold text-[#1A3A2A] mb-2">{isUr ? "دستاویز کا انداز" : "Document Style"}</h3>
         <PublishingPresetSelector selectedId={selectedPresetId} onChange={onPresetChange} isUr={isUr} />
       </div>
       {viewMode === "pageless" && (
@@ -67,7 +67,7 @@ export default function DocumentSettingsPanel({
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-xs font-medium text-gray-600">
-          Page size
+          {isUr ? "صفحے کا سائز" : "Page size"}
           <select
             className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
             value={documentSettings.page.size}
@@ -83,7 +83,7 @@ export default function DocumentSettingsPanel({
           </select>
         </label>
         <label className="text-xs font-medium text-gray-600">
-          Orientation
+          {isUr ? "صفحے کی سمت" : "Orientation"}
           <select
             className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
             value={documentSettings.page.orientation}
@@ -110,6 +110,7 @@ export default function DocumentSettingsPanel({
           </select>
         </label>
         <label className="text-xs font-medium text-gray-600">
+          {isUr ? "حاشیوں کی ترتیب" : "Margin preset"}
           <select
             className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
             value={documentSettings.page.margins.preset}
@@ -151,7 +152,7 @@ export default function DocumentSettingsPanel({
             ))}
           </div>
         <label className="text-xs font-medium text-gray-600">
-          Body size (pt)
+          {isUr ? "متن کا سائز (pt)" : "Body size (pt)"}
           <select
             className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
             value={documentSettings.typography.bodyFontSizePt}
@@ -171,7 +172,7 @@ export default function DocumentSettingsPanel({
           </select>
         </label>
         <label className="text-xs font-medium text-gray-600">
-          Default line spacing
+          {isUr ? "پہلے سے مقررہ سطری فاصلہ" : "Default line spacing"}
           <select
             className="mt-1 w-full h-9 rounded-md border border-gray-200 px-2 text-sm"
             value={documentSettings.typography.lineHeight}
