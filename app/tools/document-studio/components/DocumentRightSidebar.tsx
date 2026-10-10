@@ -33,7 +33,7 @@ export default function DocumentRightSidebar({
         <button
           type="button"
           onClick={onClose}
-          className="h-7 w-7 rounded text-sm text-[#3D5A47] hover:bg-[#F3F7F2]"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded text-lg text-[#3D5A47] hover:bg-[#F3F7F2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B8935A]"
           aria-label={isUr ? "بند کریں" : "Close panel"}
         >
           ×

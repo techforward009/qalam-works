@@ -42,19 +42,23 @@ function ToolbarButton({
   active,
   children,
   label,
+  latin = false,
 }: {
   onClick: () => void;
   active?: boolean;
   children: React.ReactNode;
   label: string;
+  latin?: boolean;
 }) {
   return (
     <button
       type="button"
+      onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={`h-8 min-w-8 px-2 rounded text-xs font-semibold border transition-all ${
+      data-latin-control={latin ? "true" : undefined}
+      className={`inline-flex h-9 min-w-9 shrink-0 items-center justify-center rounded border px-2 text-xs font-semibold transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#B8935A] ${
         active
           ? "bg-[#1A3A2A] text-white border-[#1A3A2A]"
           : "bg-white text-gray-600 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
@@ -83,6 +87,7 @@ function ImageActionButton({
   return (
     <button
       type="button"
+      onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
       aria-pressed={active}
       data-studio-image-wrap={wrapMode}
@@ -545,7 +550,7 @@ const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
 ];
 
 const selectCls =
-  "h-8 rounded-md border border-gray-200 bg-white px-1.5 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25";
+  "h-9 shrink-0 rounded-md border border-gray-200 bg-white px-1.5 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25";
 
 export const DOCUMENT_TOOLBAR_LEADING = ["undo", "redo", "zoom", "style"] as const;
 
@@ -567,6 +572,7 @@ export default function DocumentToolbar({
   onZoomChange?: (zoom: DocumentZoom) => void;
   documentSettings?: DocumentStudioSettings;
 }) {
+  const [moreOpen, setMoreOpen] = useState(false);
   const settings = documentSettings ?? defaultDocumentSettings();
   const ui = useEditorState({
     editor,
@@ -612,7 +618,7 @@ export default function DocumentToolbar({
           aria-label={isUr ? "تصویر کے اختیارات" : "Image controls"}
         >
           <span className="text-xs font-bold text-[#1A3A2A]">{isUr ? "تصویر" : "Image"}</span>
-          <span className="rounded bg-white px-2 py-1 font-mono text-xs text-[#405647]" dir="ltr" data-studio-image-width="true">
+          <span className="rounded bg-white px-2 py-1 font-mono text-xs text-[#405647]" dir="ltr" data-latin-control="true" data-studio-image-width="true">
             {isUr ? "چوڑائی" : "Width"}: {Math.round(selectedImage.width)} px
           </span>
           <ImageActionButton label={isUr ? "چھوٹی" : "Smaller"} onClick={() => resizeSelectedImage(-80)} />
@@ -644,10 +650,13 @@ export default function DocumentToolbar({
         </div>
       ) : null}
       <div
-      className="flex flex-wrap items-center gap-1 px-2 py-1.5"
+      className="flex flex-nowrap items-center gap-1 overflow-x-auto px-2 py-1.5 md:flex-wrap md:overflow-x-visible"
       dir={isUr ? "rtl" : "ltr"}
+      role="toolbar"
+      aria-label={isUr ? "فارمیٹنگ" : "Formatting"}
       data-studio-toolbar="true" data-studio-toolbar-language={isUr ? "ur" : "en"}
       data-studio-toolbar-leading={DOCUMENT_TOOLBAR_LEADING.join(",")}
+      data-studio-toolbar-expanded={moreOpen ? "true" : "false"}
     >
       <ToolbarButton label={isUr ? "کالعدم" : "Undo"} onClick={() => undo(editor)}>
         ↶
@@ -655,6 +664,16 @@ export default function DocumentToolbar({
       <ToolbarButton label={isUr ? "دہرائیں" : "Redo"} onClick={() => redo(editor)}>
         ↷
       </ToolbarButton>
+      <button
+        type="button"
+        className="inline-flex h-9 shrink-0 items-center rounded border border-gray-200 bg-white px-2.5 text-xs font-semibold text-[#1A3A2A] md:hidden"
+        aria-expanded={moreOpen}
+        data-studio-toolbar-more="true"
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => setMoreOpen((open) => !open)}
+      >
+        {isUr ? "مزید" : "More"}
+      </button>
       {onZoomChange && (
         <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
           <span className="sr-only">{isUr ? "زوم" : "Zoom"}</span>
@@ -662,6 +681,7 @@ export default function DocumentToolbar({
             className={selectCls}
             aria-label={isUr ? "زوم" : "Zoom"}
             data-studio-zoom-control="true"
+            data-latin-control="true"
             value={String(zoom)}
             onChange={(e) => {
               const raw = e.target.value;
@@ -691,7 +711,7 @@ export default function DocumentToolbar({
       >
         {BLOCK_STYLE_IDS.map((id) => (
           <option key={id} value={id}>
-            {BLOCK_STYLES[id].label}
+            {BLOCK_STYLES[id].labelUr && isUr ? BLOCK_STYLES[id].labelUr : BLOCK_STYLES[id].label}
           </option>
         ))}
       </select>
@@ -703,7 +723,7 @@ export default function DocumentToolbar({
           if (e.target.value === MIXED_TOOLBAR_VALUE) return;
           applyFontFamily(editor, e.target.value);
         }}
-        className={`${selectCls} max-w-[9.5rem]`}
+        className={`${selectCls} max-w-[6.5rem] md:max-w-[9.5rem]`}
         title={isUr ? "فونٹ" : "Font family"}
         aria-label={isUr ? "فونٹ" : "Font"}
       >
@@ -730,6 +750,7 @@ export default function DocumentToolbar({
         className={`${selectCls} min-w-[4.25rem]`}
         title={isUr ? "سائز" : "Font size"}
         aria-label={isUr ? "سائز" : "Size"}
+        data-latin-control="true"
       >
         {ui.mixed.fontSize && (
           <option value={MIXED_TOOLBAR_VALUE} disabled>
@@ -743,31 +764,15 @@ export default function DocumentToolbar({
         ))}
       </select>
       <ToolbarDivider />
-      <ToolbarButton label={isUr ? "موٹا" : "Bold"} active={ui.bold} onClick={() => toggleBold(editor)}>
+      <ToolbarButton label={isUr ? "موٹا" : "Bold"} active={ui.bold} onClick={() => toggleBold(editor)} latin>
         B
       </ToolbarButton>
-      <ToolbarButton label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)}>
+      <ToolbarButton label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)} latin>
         I
       </ToolbarButton>
-      <ToolbarButton label={isUr ? "خط کشیدہ" : "Underline"} active={ui.underline} onClick={() => toggleUnderline(editor)}>
+      <ToolbarButton label={isUr ? "خط کشیدہ" : "Underline"} active={ui.underline} onClick={() => toggleUnderline(editor)} latin>
         U
       </ToolbarButton>
-      <ColorPaletteControl
-        editor={editor}
-        kind="text"
-        colors={STUDIO_TEXT_COLORS}
-        value={ui.color}
-        mixed={ui.mixed.color}
-        isUr={isUr}
-      />
-      <ColorPaletteControl
-        editor={editor}
-        kind="highlight"
-        colors={STUDIO_HIGHLIGHT_COLORS}
-        value={ui.highlight}
-        mixed={ui.mixed.highlight}
-        isUr={isUr}
-      />
       <ToolbarDivider />
       <ToolbarButton label={isUr ? "بائیں سیدھ" : "Align Left"} active={ui.textAlign === "left"} onClick={() => setAlign(editor, "left")}>
         ⇤
@@ -789,20 +794,62 @@ export default function DocumentToolbar({
         1.
       </ToolbarButton>
       <ToolbarDivider />
-      <ToolbarButton label={isUr ? "خودکار سمت" : "Automatic paragraph direction"} active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")}>
+      <ToolbarButton label={isUr ? "خودکار سمت" : "Automatic paragraph direction"} active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")} latin>
         Auto
       </ToolbarButton>
-      <ToolbarButton label={isUr ? "دائیں سے بائیں" : "Right-to-left (Urdu/Arabic/Persian)"} active={ui.directionMode === "rtl"} onClick={() => applyParagraphDirection(editor, "rtl")}>
+      <ToolbarButton label={isUr ? "دائیں سے بائیں" : "Right-to-left (Urdu/Arabic/Persian)"} active={ui.directionMode === "rtl"} onClick={() => applyParagraphDirection(editor, "rtl")} latin>
         RTL
       </ToolbarButton>
-      <ToolbarButton label={isUr ? "بائیں سے دائیں" : "Left-to-right (English)"} active={ui.directionMode === "ltr"} onClick={() => applyParagraphDirection(editor, "ltr")}>
+      <ToolbarButton label={isUr ? "بائیں سے دائیں" : "Left-to-right (English)"} active={ui.directionMode === "ltr"} onClick={() => applyParagraphDirection(editor, "ltr")} latin>
         LTR
       </ToolbarButton>
-      <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />
+      <div
+        className="hidden shrink-0 items-center gap-1 md:flex"
+        data-studio-toolbar-secondary="true"
+      >
+        <ColorPaletteControl
+          editor={editor}
+          kind="text"
+          colors={STUDIO_TEXT_COLORS}
+          value={ui.color}
+          mixed={ui.mixed.color}
+          isUr={isUr}
+        />
+        <ColorPaletteControl
+          editor={editor}
+          kind="highlight"
+          colors={STUDIO_HIGHLIGHT_COLORS}
+          value={ui.highlight}
+          mixed={ui.mixed.highlight}
+          isUr={isUr}
+        />
+        <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />
+      </div>
       <div className="shrink-0" data-studio-dictation="true">
         <DictationControl editor={editor} docDir={dir} isUr={isUr} />
       </div>
       </div>
+      {moreOpen ? (
+        <div className="flex flex-wrap items-center gap-1 border-t border-[#1A3A2A]/10 px-2 py-1.5 md:hidden" data-studio-toolbar-more-panel="true">
+          <ColorPaletteControl
+            editor={editor}
+            kind="text"
+            colors={STUDIO_TEXT_COLORS}
+            value={ui.color}
+            mixed={ui.mixed.color}
+            isUr={isUr}
+          />
+          <ColorPaletteControl
+            editor={editor}
+            kind="highlight"
+            colors={STUDIO_HIGHLIGHT_COLORS}
+            value={ui.highlight}
+            mixed={ui.mixed.highlight}
+            isUr={isUr}
+          />
+          <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />
+        </div>
+      ) : null}
     </>
   );
 }

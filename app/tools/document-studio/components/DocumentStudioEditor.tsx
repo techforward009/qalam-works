@@ -308,6 +308,7 @@ export default function DocumentStudioEditor() {
   const [helpOpen, setHelpOpen] = useState<HelpDialogMode | null>(null);
   const [qalamAiOpen, setQalamAiOpen] = useState(false);
   const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
+  const [pageCount, setPageCount] = useState<number | null>(null);
   const [zoom, setZoomState] = useState<DocumentZoom>(() => loadDocumentZoom());
   const [rulerVisible, setRulerVisibleState] = useState(() => loadRulerVisible());
   const [rulerUnit, setRulerUnitState] = useState<RulerUnit>(() => loadRulerUnit());
@@ -1577,6 +1578,15 @@ export default function DocumentStudioEditor() {
             onUploadClick={() => fileInputRef.current?.click()}
             onStandardize={handleStandardizeClick}
             onAudit={handleRunAudit}
+            onOpenLibrary={() => setLibraryOpen(true)}
+            onDownloadDocx={() => {
+              void handleDownloadDocx();
+            }}
+            onDownloadPdf={() => {
+              void handleDownloadPdf();
+            }}
+            onPrint={printDocumentStudio}
+            pdfBusy={isExportingPdf}
           />
         }
         menuBar={
@@ -1656,8 +1666,11 @@ export default function DocumentStudioEditor() {
             online={online}
             auditScore={auditReport?.score ?? null}
             auditStale={isAuditStale}
+            pageCount={pageCount}
           />
         }
+        onDismissLeft={() => setLeftPanel("none")}
+        onDismissRight={() => setRightPanel("none")}
       >
         <div className="p-3 sm:p-4 md:p-6">
           {uploadError && (
@@ -1700,6 +1713,7 @@ export default function DocumentStudioEditor() {
             onPhysicalMarginChange={handlePhysicalMarginChange}
             onLoadExample={handleLoadExample}
             onWrapperClick={handleWrapperClick}
+            onPageCountChange={setPageCount}
           />
 
           <div className="mt-3 space-y-3" dir={dir} ref={standardizeButtonRef}>

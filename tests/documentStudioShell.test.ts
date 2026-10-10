@@ -26,6 +26,7 @@ import {
   OMITTED_FUTURE_ACTIONS,
   placeFloatingSubmenu,
   setOpenSubmenu,
+  SUBMENU_WIDTH_PX,
 } from "../app/tools/document-studio/utils/documentMenus";
 import {
   dispatchDocumentMenuAction,
@@ -317,6 +318,6 @@ describe("document menus", () => {
       viewportHeight: 800,
       isUr: false,
     });
-    expect(flip.left).toBe(980 - 184);
+    expect(flip.left).toBe(980 - SUBMENU_WIDTH_PX);
   });
 });

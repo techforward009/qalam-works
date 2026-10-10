@@ -137,7 +137,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     items: [
       { type: "action", id: "file.new", labelEn: "New document", labelUr: "نیا مسودہ" },
       { type: "action", id: "file.open", labelEn: "Open document…", labelUr: "دستاویز کھولیں…" },
-      { type: "action", id: "file.upload", labelEn: "Upload file", labelUr: "فائل اپلوڈ" },
+      { type: "action", id: "file.upload", labelEn: "Import file", labelUr: "فائل درآمد" },
       { type: "separator" },
       {
         type: "submenu",
@@ -388,8 +388,8 @@ export function menuCatalogText(): string {
   return JSON.stringify(DOCUMENT_MENU_BAR).toLowerCase();
 }
 
-export const TOP_MENU_WIDTH_PX = 248;
-export const SUBMENU_WIDTH_PX = 184;
+export const TOP_MENU_WIDTH_PX = 280;
+export const SUBMENU_WIDTH_PX = 220;
 
 export function findSubmenuItems(nodes: MenuNode[], submenuId: string): MenuNode[] | null {
   for (const node of nodes) {

@@ -30,14 +30,16 @@ function topMenuPosition(anchor: HTMLElement | null, isUr: boolean): React.CSSPr
   const maxLeft = Math.max(pad, window.innerWidth - width - pad);
   const left = Math.min(Math.max(pad, isUr ? rect.right - width : rect.left), maxLeft);
   const top = rect.bottom + 2;
+  const maxHeight = Math.max(160, window.innerHeight - top - 12);
   return {
     position: "fixed",
     top,
     left,
     zIndex: 80,
     width,
+    maxHeight,
     overflowX: "hidden",
-    overflowY: "visible",
+    overflowY: "auto",
   };
 }
 
@@ -84,16 +86,16 @@ function MenuItems({
                 aria-haspopup="true"
                 aria-expanded={open}
                 data-menu-submenu={item.id}
-                className={`flex w-full items-center justify-between gap-4 px-3 py-[7px] text-[13px] leading-5 ${
+                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-start text-[13px] ${
                   open ? "bg-[#EAF2EB] text-[#1A3A2A]" : "text-[#1A3A2A] hover:bg-[#EAF2EB]"
-                } ${isUr ? "font-naskh" : ""}`}
+                }`}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   onToggleSubmenu(item.id);
                 }}
               >
-                <span className="min-w-0 truncate">{menuLabel(item, isUr)}</span>
+                <span className="min-w-0 whitespace-normal text-start leading-[1.85]">{menuLabel(item, isUr)}</span>
                 <span aria-hidden="true" className="shrink-0 text-[11px] text-[#3D5A47]">
                   {inlineSubmenus ? (open ? "▾" : "▸") : isUr ? "‹" : "›"}
                 </span>
@@ -127,9 +129,9 @@ function MenuItems({
             aria-disabled={disabled || undefined}
             aria-checked={checked || undefined}
             data-menu-action={item.id}
-            className={`flex w-full items-center justify-between gap-4 px-3 py-[7px] text-[13px] leading-5 ${
+            className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-start text-[13px] ${
               disabled ? "cursor-not-allowed text-gray-400" : "text-[#1A3A2A] hover:bg-[#EAF2EB]"
-            } ${isUr ? "font-naskh" : ""}`}
+            }`}
             onPointerEnter={(e) => {
               if (e.pointerType === "mouse" && openSubmenuId) onOpenSubmenu("");
             }}
@@ -142,7 +144,7 @@ function MenuItems({
               <span className={`w-3 shrink-0 text-[11px] font-semibold ${checked ? "text-[#1A3A2A]" : "text-transparent"}`} aria-hidden="true">
                 ✓
               </span>
-              <span className="truncate">{menuLabel(item, isUr)}</span>
+              <span className="whitespace-normal text-start leading-[1.85]">{menuLabel(item, isUr)}</span>
             </span>
             {item.shortcut ? (
               <span className="ms-auto shrink-0 text-[11px] tabular-nums text-gray-400" dir="ltr">
@@ -154,6 +156,17 @@ function MenuItems({
       })}
     </>
   );
+}
+
+function moveMenuFocus(container: HTMLElement | null, key: string) {
+  if (!container) return;
+  const items = [...container.querySelectorAll<HTMLElement>("[role='menuitem']:not([disabled])")];
+  if (items.length === 0) return;
+  const index = items.indexOf(document.activeElement as HTMLElement);
+  if (key === "Home") items[0]?.focus();
+  else if (key === "End") items[items.length - 1]?.focus();
+  else if (key === "ArrowDown") items[index < 0 ? 0 : (index + 1) % items.length]?.focus();
+  else if (key === "ArrowUp") items[index <= 0 ? items.length - 1 : index - 1]?.focus();
 }
 
 export default function DocumentMenuBar({
@@ -175,6 +188,7 @@ export default function DocumentMenuBar({
   const portalRef = useRef<HTMLDivElement>(null);
   const submenuPortalRef = useRef<HTMLDivElement>(null);
   const triggerRefs = useRef<Partial<Record<MenuId, HTMLButtonElement | null>>>({});
+  const focusMenuOnOpen = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
@@ -206,12 +220,17 @@ export default function DocumentMenuBar({
       left: placed.left,
       zIndex: 90,
       width: SUBMENU_WIDTH_PX,
-      overflow: "visible",
+      maxHeight: Math.max(120, window.innerHeight - placed.top - 12),
+      overflowX: "hidden",
+      overflowY: "auto",
     });
   };
 
   useLayoutEffect(() => {
     updatePosition();
+    if (!openState.menuId || !focusMenuOnOpen.current) return;
+    focusMenuOnOpen.current = false;
+    portalRef.current?.querySelector<HTMLElement>("[role='menuitem']:not([disabled])")?.focus();
   }, [openState.menuId, openState.submenuId, isUr, inlineSubmenus]);
 
   useEffect(() => {
@@ -276,6 +295,13 @@ export default function DocumentMenuBar({
               data-studio-menu-language={isUr ? "ur" : "en"}
               className="rounded-md border border-[#1A3A2A]/15 bg-white py-1 shadow-md"
               style={menuStyle}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Home" || event.key === "End") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  moveMenuFocus(portalRef.current, event.key);
+                }
+              }}
             >
               <MenuItems
                 items={openMenu.items}
@@ -300,6 +326,13 @@ export default function DocumentMenuBar({
               data-studio-menu-language={isUr ? "ur" : "en"}
                 className="rounded-md border border-[#1A3A2A]/15 bg-white py-1 shadow-md"
                 style={submenuStyle}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Home" || event.key === "End") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    moveMenuFocus(submenuPortalRef.current, event.key);
+                  }
+                }}
               >
                 <MenuItems
                   items={submenuItems}
@@ -327,6 +360,32 @@ export default function DocumentMenuBar({
       aria-label={isUr ? "دستاویز مینو" : "Document menu"}
       data-studio-menubar="true"
       data-open-menu={openState.menuId ?? ""}
+      onKeyDown={(event) => {
+        const current = (event.target as HTMLElement).getAttribute("data-menu-root") as MenuId | null;
+        if (!current) return;
+        const ids = DOCUMENT_MENU_BAR.map((menu) => menu.id);
+        const index = ids.indexOf(current);
+        if (index < 0) return;
+        const forward = isUr ? "ArrowLeft" : "ArrowRight";
+        const backward = isUr ? "ArrowRight" : "ArrowLeft";
+        if (event.key === forward || event.key === backward) {
+          event.preventDefault();
+          const delta = event.key === forward ? 1 : -1;
+          const next = ids[(index + delta + ids.length) % ids.length];
+          triggerRefs.current[next]?.focus();
+          if (openState.menuId) setOpenState({ menuId: next, submenuId: null });
+        } else if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          focusMenuOnOpen.current = true;
+          setOpenState({ menuId: current, submenuId: null });
+        } else if (event.key === "Home") {
+          event.preventDefault();
+          triggerRefs.current[ids[0]]?.focus();
+        } else if (event.key === "End") {
+          event.preventDefault();
+          triggerRefs.current[ids[ids.length - 1]]?.focus();
+        }
+      }}
     >
       {DOCUMENT_MENU_BAR.map((menu) => {
         const open = openState.menuId === menu.id;
@@ -341,9 +400,9 @@ export default function DocumentMenuBar({
               ref={(el) => {
                 triggerRefs.current[menu.id] = el;
               }}
-              className={`h-7 rounded px-2.5 text-[13px] font-medium ${
+              className={`min-h-9 rounded px-2.5 py-1 text-[13px] font-medium leading-[1.7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#B8935A] ${
                 open ? "bg-[#EAF2EB] text-[#1A3A2A]" : "text-[#1A3A2A]/80 hover:bg-[#F3F7F2]"
-              } ${isUr ? "font-naskh" : ""}`}
+              }`}
               onClick={() => setOpenState((prev) => nextOpenMenu(prev, menu.id))}
               onPointerEnter={(e) => {
                 if (e.pointerType !== "mouse") return;

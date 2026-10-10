@@ -39,6 +39,7 @@ export default function DocumentCanvas({
   onPhysicalMarginChange,
   onLoadExample,
   onWrapperClick,
+  onPageCountChange,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -53,6 +54,7 @@ export default function DocumentCanvas({
   onPhysicalMarginChange?: (edge: PhysicalMarginEdge, mm: number) => void;
   onLoadExample: () => void;
   onWrapperClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onPageCountChange?: (count: number | null) => void;
 }) {
   const isPages = viewMode === "pages";
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -110,6 +112,9 @@ export default function DocumentCanvas({
 
   const fitWidth = Math.max(0, availableWidth - 24);
   const pageCount = isPages ? Math.max(1, livePageCount) : 1;
+  useEffect(() => {
+    onPageCountChange?.(isPages ? pageCount : null);
+  }, [isPages, pageCount, onPageCountChange]);
   const stackHeight = isPages ? pageStackHeightPx(pageCount, natural.heightPx, PAGE_STACK_GAP_PX) : undefined;
   const baseWidth = isPages ? natural.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, fitWidth || PAGELESS_MAX_WIDTH_PX);
   const zoomFactor = resolveZoomFactor(zoom, baseWidth, natural.heightPx, fitWidth || baseWidth, Math.max(0, availableHeight - 32));
@@ -134,6 +139,7 @@ export default function DocumentCanvas({
     <div
       className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 py-10"
       aria-hidden={false}
+      data-studio-empty-hint="true"
     >
       <p className="mb-2 text-3xl text-[#B8935A]/80 select-none" aria-hidden>
         ✎
