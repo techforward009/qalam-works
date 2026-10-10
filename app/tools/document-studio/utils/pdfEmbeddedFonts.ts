@@ -22,7 +22,7 @@ export function verifyPdfUrduEmbedding(pdf: PDFDocument, runtimeFamilies: string
     }
   }
   const normalize = (name: string) => name.replace(/^[A-Z]{6}\+/, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
-  for (const family of runtimeFamilies.filter(name => /Jameel|Noto Nastaliq|Noto Naskh|Amiri|Vazirmatn/i.test(name))) {
+  for (const family of runtimeFamilies.filter(name => /Jameel|Noto Nastaliq|Noto Naskh|Amiri|Vazirmatn|Digital\s*Khatt|DigitalKhatt/i.test(name))) {
     const matches = fonts.filter(font => normalize(font.name).startsWith(normalize(family)));
     if (!matches.length || matches.some(font => !font.embedded || !font.unicode)) {
       throw new Error(`PDF Urdu font ${family} lacks an embedded font program or Unicode map in printed bytes; export blocked`);

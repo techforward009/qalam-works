@@ -15,6 +15,26 @@ export async function loadPdfUrduFace(family: string): Promise<boolean> {
   }
 }
 
+function attributeValue(attributes: string[] | undefined, name: string): string {
+  if (!attributes) return "";
+  for (let index = 0; index < attributes.length - 1; index += 2) {
+    if (attributes[index] === name) return attributes[index + 1] ?? "";
+  }
+  return "";
+}
+
+function compactFontName(value: string): string {
+  return value.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+function isDigitalKhattRequest(value: string): boolean {
+  return compactFontName(value).includes("digitalkhatt");
+}
+
+function isDigitalKhattPlatformFont(font: { familyName?: string; postScriptName?: string }): boolean {
+  return compactFontName(`${font.familyName ?? ""} ${font.postScriptName ?? ""}`).includes("digitalkhatt");
+}
+
 /** Verify actual font use, not the computed CSS family (which can lie about fallback). */
 export async function guardPdfUrduFonts(page: Page): Promise<{ fallbackRuns: number; actualFamilies: string[] }> {
   const count = await page.$$eval('[data-pdf-urdu="true"]', elements => elements.length);
@@ -31,15 +51,24 @@ export async function guardPdfUrduFonts(page: Page): Promise<{ fallbackRuns: num
     const actualFamilies = new Set<string>();
     let fallbackRuns = 0;
     for (const [index, nodeId] of nodeIds.entries()) {
+      const described = await session.send("DOM.getAttributes", { nodeId });
+      const requested = attributeValue(described.attributes, "data-pdf-font");
+      const digitalKhatt = isDigitalKhattRequest(requested);
       const inspect = async () => {
         // The marked span is a stable frontend node and the CDP query includes
         // fonts used by text below inline bold/link/underline wrappers. Child
         // ids returned by describeNode are not guaranteed to be frontend ids.
         const result = await session.send("CSS.getPlatformFontsForNode", { nodeId });
         const used = result.fonts.filter(font => font.glyphCount > 0);
-        // The selected family can be any owner-approved Blob font, not only
-        // the five legacy families. Require embedded custom glyphs for every
-        // rendered segment; system-font fallbacks still fail verification.
+        if (digitalKhatt) {
+          const names = used.map(font => font.familyName || font.postScriptName || "unknown").join(", ") || "none";
+          if (used.length === 0 || !used.every(isDigitalKhattPlatformFont)) {
+            throw new Error(`PDF font Digital Khatt Indo-Pak did not render the text (platform fonts: ${names}); Noto was not substituted; export blocked`);
+          }
+          return { used, usable: true };
+        }
+        // Other Urdu faces may fall back to bundled Noto. A different custom
+        // face is not proof that the requested Digital Khatt font painted.
         return { used, usable: used.length > 0 && used.every(font => font.isCustomFont) };
       };
       let result = await inspect();

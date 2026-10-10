@@ -112,6 +112,17 @@ function resolveEffectivePdfFont(
     };
   }
 
+  // Digital Khatt is a Qur'anic face. A Noto substitute is a different text,
+  // so a missing or unusable face stays requested and the export fails closed.
+  if (base.fontId === "digital-khatt-indo-pak") {
+    return {
+      family: preferred,
+      cssClass: preferredClass,
+      requestedLabel: null,
+      fellBack: false,
+    };
+  }
+
   const dirFallbackName = blockDir === "ltr" ? "Inter" : "Noto Nastaliq Urdu";
   const dirFallbackClass = blockDir === "ltr" ? "qf-inter" : "qf-noto-nastaliq";
 
@@ -204,7 +215,9 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
       if (typeof href === "string" && href.trim().length > 0) {
         inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
       }
-      const fontMarker = effective.family === "Jameel Noori Nastaleeq" ? ` data-pdf-font="${escapeAttr(effective.family)}"` : "";
+      const fontMarker = effective.family === "Jameel Noori Nastaleeq" || effective.family === "Digital Khatt Indo-Pak"
+        ? ` data-pdf-font="${escapeAttr(effective.family)}"`
+        : "";
       const urduMarker = /\p{Script=Arabic}/u.test(piece.text) ? ' data-pdf-urdu="true"' : "";
       const isolate = piece.dir !== blockDir;
       const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}`;

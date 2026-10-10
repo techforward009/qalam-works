@@ -52,6 +52,10 @@ export async function POST(request: NextRequest) {
   try {
     preflightPdfSource(doc);
     const resolved = await fontsForDocument(doc, dir, settings.typography);
+    const digitalKhatt = resolved.fonts.faces.find(face => face.familyName === "Digital Khatt Indo-Pak");
+    if (digitalKhatt && !digitalKhatt.complete) {
+      throw new Error("PDF font Digital Khatt Indo-Pak could not be loaded from DigitalKhattIndoPakRegular.woff2; export blocked");
+    }
     let { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
     const executablePath = await chromium.executablePath();
     browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true });
