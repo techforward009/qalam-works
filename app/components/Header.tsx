@@ -9,9 +9,9 @@ import {useLanguage} from "../lib/language-context";
 
 function CompactLanguageSwitch(){
  const {language,setLanguage}=useLanguage();
- return <div role="group" aria-label="Choose language" dir="ltr" className="inline-flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-[#d8e5e8] bg-[#f0f5f6] p-[3px] shadow-sm">
-  <button type="button" lang="en" aria-pressed={language==="en"} onClick={()=>setLanguage("en")} className={`flex h-[28px] min-w-[37px] items-center justify-center rounded-full px-2 text-[11px] font-semibold transition-colors ${language==="en"?"bg-white text-[#087467] shadow-sm":"text-[#71848b] hover:text-[#087467]"}`}>EN</button>
-  <button type="button" lang="ur" dir="rtl" aria-pressed={language==="ur"} onClick={()=>setLanguage("ur")} className={`flex h-[28px] min-w-[43px] items-center justify-center rounded-full px-2 font-nastaliq text-[13px] leading-[1.9] transition-colors ${language==="ur"?"bg-white text-[#087467] shadow-sm":"text-[#71848b] hover:text-[#087467]"}`}>اردو</button>
+ return <div role="group" aria-label="Choose language" dir="ltr" className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full border border-[#d8e5e8] bg-[#f0f5f6] p-[2px] shadow-sm sm:h-9 sm:p-[3px]">
+  <button type="button" lang="en" aria-pressed={language==="en"} onClick={()=>setLanguage("en")} className={`flex h-[26px] min-w-[31px] items-center justify-center rounded-full px-1 text-[11px] sm:h-[28px] sm:min-w-[37px] sm:px-2 font-semibold transition-colors ${language==="en"?"bg-white text-[#087467] shadow-sm":"text-[#71848b] hover:text-[#087467]"}`}>EN</button>
+  <button type="button" lang="ur" dir="rtl" aria-pressed={language==="ur"} onClick={()=>setLanguage("ur")} className={`flex h-[26px] min-w-[35px] items-center justify-center rounded-full px-1 font-nastaliq sm:h-[28px] sm:min-w-[43px] sm:px-2 text-[13px] leading-[1.9] transition-colors ${language==="ur"?"bg-white text-[#087467] shadow-sm":"text-[#71848b] hover:text-[#087467]"}`}>اردو</button>
  </div>;
 }
 
@@ -49,10 +49,10 @@ export default function Header(){
    </div>
   </div>
   <header className="border-b border-[#dce6eb] bg-white shadow-[0_6px_24px_#1a405513]">
-   <div className="site-container flex min-h-[84px] items-center justify-between gap-4 px-4" dir="ltr">
-    <Link href="/" className="flex shrink-0 items-center gap-3 font-sans" dir="ltr">
-     <span className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-[#12a082] to-[#086656] text-white shadow-md"><PenLine size={25}/></span>
-     <span><strong className="block text-[23px] font-extrabold leading-tight tracking-[-0.025em] text-[#152238]" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Qalam Works</strong><span className="mt-1 block text-[10px] font-semibold uppercase tracking-[.10em] text-[#607382]" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Write, Refine, Publish</span></span>
+   <div className="site-container flex min-h-[68px] items-center justify-between gap-1 !px-3 sm:min-h-[84px] sm:gap-3 sm:!px-6 lg:gap-4" dir="ltr">
+    <Link href="/" className="flex min-w-0 flex-1 items-center gap-2 font-sans sm:gap-3 lg:flex-none" dir="ltr">
+     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#12a082] to-[#086656] text-white shadow-md sm:h-12 sm:w-12 sm:rounded-xl"><PenLine className="h-5 w-5 sm:h-6 sm:w-6"/></span>
+     <span className="min-w-0"><strong className="block truncate whitespace-nowrap text-[16px] font-extrabold leading-tight tracking-[-0.025em] text-[#152238] sm:text-[23px]" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Qalam Works</strong><span className="mt-1 hidden text-[10px] font-semibold uppercase tracking-[.10em] text-[#607382] sm:block" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Write, Refine, Publish</span></span>
     </Link>
     <nav aria-label="Primary navigation" className="hidden items-center gap-1 font-sans lg:flex" dir={ur?"rtl":"ltr"}>
      {sections.map((s,i)=><div className="relative" key={s.en}>
@@ -67,10 +67,10 @@ export default function Header(){
        </div>}
       </div>)}
     </nav>
-    <div className="flex shrink-0 items-center gap-2" dir="ltr"><CompactLanguageSwitch/><button className="rounded-xl border border-[#dae6e9] p-2 text-[#25394a] lg:hidden" aria-label={mobile?"Close menu":"Open menu"} aria-expanded={mobile} onClick={()=>setMobile(!mobile)}>{mobile?<X/>:<Menu/>}</button></div>
+    <div className="flex shrink-0 items-center gap-1 sm:gap-2" dir="ltr"><CompactLanguageSwitch/><button type="button" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#cbdce0] bg-[#f0f6f6] text-[#153b50] hover:bg-[#e5f2ef] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087c7a] lg:hidden" aria-label={mobile?"Close menu":"Open menu"} aria-expanded={mobile} aria-controls="mobile-nav" onClick={()=>{setMobile(!mobile);setOpen(null)}}>{mobile?<X size={20}/>:<Menu size={20}/>}</button></div>
    </div>
   </header>
-  {mobile&&<nav className="max-h-[75vh] overflow-y-auto border-b bg-white p-4 shadow-xl lg:hidden" dir={ur?"rtl":"ltr"}>
+  {mobile&&<nav id="mobile-nav" aria-label={ur?"موبائل مینو":"Mobile menu"} className="max-h-[75vh] overflow-y-auto border-b bg-white p-4 shadow-xl lg:hidden" dir={ur?"rtl":"ltr"}>
    {sections.map((s,i)=><div key={s.en} className="border-b border-slate-100">
     <button className={`flex w-full items-center justify-between py-3 font-semibold text-[#25394a] ${ur?"font-nastaliq text-base leading-[2.1]":""}`} aria-expanded={open===i} onClick={()=>setOpen(open===i?null:i)}>{ur?s.ur:s.en}<ChevronDown size={16}/></button>
     {open===i&&<div className="pb-2">{s.tools.map(([en,ar,path,Icon,fg,bg])=><Link key={path} href={path.startsWith("/")?path:`/tools/${path}`} onClick={()=>{setOpen(null);setMobile(false)}} className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-[#f0f8f6]"><span className={`grid size-9 place-items-center rounded-lg ${fg} ${bg}`}><Icon size={19}/></span><span className={`text-[#25394a] ${ur?"font-nastaliq text-base leading-[2.1]":"text-sm font-medium"}`}>{ur?ar:en}</span></Link>)}</div>}
