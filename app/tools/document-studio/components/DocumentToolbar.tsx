@@ -541,13 +541,22 @@ function ParagraphSpacingMenu({
   );
 }
 
-const STUDIO_FONT_OPTIONS: { label: string; value: string }[] = [
-  { label: "Default", value: "" },
-  ...listEditorFonts().map((f) => ({
-    label: f.availability === "local-preview-only" ? `${f.label} — Local` : f.label,
-    value: f.editorFamily,
-  })),
-];
+// Native optgroups keep Urdu, Arabic (including Qur'anic), Persian and
+// English families separate without adding an extra click or changing values.
+const STUDIO_FONT_GROUPS = ([
+  { category: "urdu", labelUr: "اردو فونٹس", labelEn: "Urdu fonts" },
+  { category: "arabic", labelUr: "عربی فونٹس", labelEn: "Arabic fonts" },
+  { category: "persian", labelUr: "فارسی فونٹس", labelEn: "Persian fonts" },
+  { category: "latin", labelUr: "انگریزی فونٹس", labelEn: "English fonts" },
+] as const).map(group => ({
+  ...group,
+  fonts: listEditorFonts()
+    .filter(font => font.category === group.category)
+    .map(font => ({
+      label: font.availability === "local-preview-only" ? `${font.label} — Local` : font.label,
+      value: font.editorFamily,
+    })),
+}));
 
 const selectCls =
   "h-9 shrink-0 rounded-md border border-gray-200 bg-white px-1.5 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25";
@@ -732,11 +741,18 @@ export default function DocumentToolbar({
             {isUr ? "مخلوط" : "Mixed"}
           </option>
         )}
-        <option value="" disabled hidden>{isUr ? "طے شدہ فونٹ" : "Default font"}</option>
-        {STUDIO_FONT_OPTIONS.filter((opt) => opt.value).map((opt) => (
-          <option key={opt.label} value={opt.value}>
-            {opt.label}
-          </option>
+        <option value="">{isUr ? "طے شدہ فونٹ" : "Default font"}</option>
+        {STUDIO_FONT_GROUPS.map((group) => (
+          <optgroup
+            key={group.category}
+            label={isUr ? group.labelUr : group.labelEn}
+          >
+            {group.fonts.map((font) => (
+              <option key={font.value} value={font.value}>
+                {font.label}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
       <select
