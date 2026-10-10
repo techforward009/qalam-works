@@ -14,12 +14,12 @@ export default function Hero(){
  return <section className="bg-[#f4f7f9] px-3 py-7 md:px-6 md:py-14" dir={ur?"rtl":"ltr"}>
   <div style={{backgroundColor:'#102b40',backgroundImage:'linear-gradient(112deg,#102b40 5%,#12505b 70%,#0c766c 100%)'}} className="site-container grid items-center gap-8 rounded-[28px] px-6 py-12 text-white shadow-lg md:grid-cols-[1.3fr_.9fr] md:gap-12 md:px-12 md:py-16">
    <div>
-    <span className="inline-flex rounded-full bg-[#d5fbef] px-4 py-2 text-xs font-bold text-[#04584b]">{ur?"اردو اور دیگر زبانوں کے لیے مفید اوزار":"TOOLS FOR URDU & MULTILINGUAL WORK"}</span>
+    <span className="qalam-home-eyebrow inline-flex rounded-full bg-[#d5fbef] px-4 py-2 text-xs font-bold text-[#04584b]">{ur?"اردو اور دیگر زبانوں کے لیے مفید اوزار":"TOOLS FOR URDU & MULTILINGUAL WORK"}</span>
     <h1 className={`my-6 max-w-2xl font-bold ${ur?"font-nastaliq text-4xl leading-[2] md:text-5xl":"text-4xl leading-tight tracking-tight md:text-6xl"}`}>{ur?"لکھنے سے اشاعت تک، سب ایک جگہ":"From writing to publishing, all in one place."}</h1>
     <p className={`max-w-2xl text-[#d8eaf0] ${ur?"font-nastaliq text-lg leading-[2.7]":"text-base leading-8 md:text-lg"}`}>
      {ur?"اردو اور دیگر زبانوں میں تحریر، تحقیق اور اشاعت کے کام کو آسان اور سہل بنانے کے لیے خصوصی توجہ سے تیار کردہ اوزار۔":"Thoughtfully designed tools to make writing, research and publishing in Urdu and other languages simpler, easier and more accessible."}
     </p>
-    <Link href="/tools" className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-[#ffdb83] px-6 py-3 text-sm font-bold text-[#14363d] shadow-md transition-colors hover:bg-[#ffe6a6]">{ur?"تمام اوزار دیکھیں ←":"Explore the tools ↗"}</Link>
+    <Link href="/tools" className="qalam-home-cta mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-[#ffdb83] px-6 py-3 text-sm font-bold text-[#14363d] shadow-md transition-colors hover:bg-[#ffe6a6]">{ur?"تمام اوزار دیکھیں ←":"Explore the tools ↗"}</Link>
    </div>
    <div style={{backgroundColor:"rgba(255,255,255,0.09)",borderColor:"rgba(255,255,255,0.24)"}} className="rounded-3xl border p-5 text-white md:p-6">
     <h2 className={`mb-5 text-lg font-bold ${ur?"font-nastaliq leading-[2.2]":""}`}>{ur?"آپ کے تمام کاموں کے لیے ایک ہی پلیٹ فارم":"One platform for all your work"}</h2>

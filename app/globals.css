@@ -1445,3 +1445,103 @@ section[dir] > .site-container.grid > div:first-child > span:first-child{
   border:1px solid rgba(128,80,9,.12);
   letter-spacing:.025em;
 }
+
+/* Homepage Urdu typography roles. These rules must not affect editor document content. */
+@font-face {
+  font-family:"Qalam Nafees";
+  src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/NafeesNastaleeq.woff2") format("woff2");
+  font-display:swap;
+  font-weight:400;
+}
+@font-face {
+  font-family:"Qalam Mehr Web";
+  src:url("https://cdn.jsdelivr.net/gh/abbassiddiqi/mehr@master/mehr.woff") format("woff");
+  font-display:swap;
+  font-weight:400;
+}
+.qalam-home section[dir="rtl"]{
+  --qalam-ur-title:var(--font-nastaliq),"Noto Nastaliq Urdu",serif;
+  --qalam-ur-label:"Qalam Nafees",var(--font-nastaliq),serif;
+  --qalam-ur-body:"Qalam Mehr Web",var(--font-nastaliq),serif;
+  --qalam-ur-example:"Jameel Noori Nastaleeq",var(--font-nastaliq),serif;
+}
+.qalam-home section[dir="rtl"] h1,
+.qalam-home section[dir="rtl"] h2,
+.qalam-home section[dir="rtl"] h3,
+.qalam-home section[dir="rtl"] .qalam-intent-name{
+  font-family:var(--qalam-ur-title) !important;
+  font-weight:400;
+  line-height:2.25 !important;
+}
+.qalam-home section[dir="rtl"] .qalam-home-eyebrow,
+.qalam-home section[dir="rtl"] .qalam-home-cta,
+.qalam-home section[dir="rtl"] .qalam-intent-label,
+.qalam-home section[dir="rtl"] button,
+.qalam-home section[dir="rtl"] a:not(.qalam-home-intent-card){
+  font-family:var(--qalam-ur-label) !important;
+  line-height:2.05 !important;
+}
+.qalam-home section[dir="rtl"] p,
+.qalam-home section[dir="rtl"] .qalam-intent-description,
+.qalam-home section[dir="rtl"] li:not(:has(.qalam-intent-label)){
+  font-family:var(--qalam-ur-body) !important;
+  line-height:2.35 !important;
+}
+.qalam-home section[dir="rtl"] .qalam-intent-label{
+  font-size:16px !important;
+  line-height:2.0 !important;
+}
+.qalam-home section[dir="rtl"] .qalam-intent-name{
+  font-size:18px !important;
+}
+.qalam-home section[dir="rtl"] .qalam-intent-description{
+  font-size:15px !important;
+}
+.qalam-home section[dir="rtl"] .qalam-intent-example,
+.qalam-home section[dir="rtl"] .qalam-intent-example bdi,
+.qalam-home section[dir="rtl"] [class*="font-mono"]:has(bdi){
+  font-family:var(--qalam-ur-example) !important;
+  font-size:17px !important;
+  line-height:2.2 !important;
+}
+.qalam-home section[dir="rtl"] .qalam-intent-example > span[aria-hidden]{
+  font-family:Arial,sans-serif !important;
+  font-size:14px !important;
+}
+.qalam-home section[dir="rtl"] .qalam-home-eyebrow{
+  font-size:15px !important;
+  padding-block:10px !important;
+}
+.qalam-home section[dir="rtl"] .qalam-home-cta{
+  font-size:17px !important;
+}
+.qalam-home section[dir="rtl"] .qalam-home-intent-card{
+  align-items:center;
+  padding-block:18px;
+}
+.qalam-home section[dir="rtl"] .qalam-home-intent-card .min-w-0{
+  min-width:0;
+}
+html.dark [role="group"][aria-label="Choose language"]{
+  background:#059669 !important;
+  border-color:#047857 !important;
+}
+html.dark [role="group"][aria-label="Choose language"] > button[aria-pressed="true"]{
+  background:#101820 !important;
+  color:#fff !important;
+}
+html.dark [role="group"][aria-label="Choose language"] > button[aria-pressed="false"]{
+  background:transparent !important;
+  color:#fff !important;
+}
+html:not(.dark) [role="group"][aria-label="Choose language"]{
+  background:#101820 !important;
+  border-color:#111827 !important;
+}
+html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-pressed="true"]{
+  background:#059669 !important;
+  color:#fff !important;
+}
+html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-pressed="false"]{
+  color:#fff !important;
+}

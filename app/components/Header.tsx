@@ -9,9 +9,9 @@ import {useLanguage} from "../lib/language-context";
 
 function CompactLanguageSwitch(){
  const {language,setLanguage}=useLanguage();
- return <div role="group" aria-label="Choose language" dir="ltr" className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full border border-[#d8e5e8] bg-[#f0f5f6] p-[2px] shadow-sm sm:h-9 sm:p-[3px]">
-  <button type="button" lang="en" aria-pressed={language==="en"} onClick={()=>setLanguage("en")} className={`flex h-[26px] min-w-[31px] items-center justify-center rounded-full px-1 text-[11px] sm:h-[28px] sm:min-w-[37px] sm:px-2 font-semibold transition-colors ${language==="en"?"bg-white text-[#087467] shadow-sm":"text-[#71848b] hover:text-[#087467]"}`}>EN</button>
-  <button type="button" lang="ur" dir="rtl" aria-pressed={language==="ur"} onClick={()=>setLanguage("ur")} className={`flex h-[26px] min-w-[35px] items-center justify-center rounded-full px-1 font-nastaliq sm:h-[28px] sm:min-w-[43px] sm:px-2 text-[13px] leading-[1.9] transition-colors ${language==="ur"?"bg-white text-[#087467] shadow-sm":"text-[#71848b] hover:text-[#087467]"}`}>اردو</button>
+ return <div role="group" aria-label="Choose language" dir="ltr" className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full border border-[#111827] bg-[#101820] p-[2px] shadow-sm sm:h-9 sm:p-[3px]">
+  <button type="button" lang="en" aria-pressed={language==="en"} onClick={()=>setLanguage("en")} className={`flex h-[26px] min-w-[29px] items-center justify-center rounded-full px-1 text-[10px] sm:h-[28px] sm:min-w-[34px] sm:px-2 font-semibold transition-colors ${language==="en"?"bg-[#059669] text-white shadow-sm":"text-[#d1d5db] hover:text-white"}`}>EN</button>
+  <button type="button" lang="ur" dir="rtl" aria-pressed={language==="ur"} onClick={()=>setLanguage("ur")} className={`flex h-[26px] min-w-[35px] items-center justify-center rounded-full px-1 font-nastaliq sm:h-[28px] sm:min-w-[43px] sm:px-2 text-[13px] leading-[1.9] transition-colors ${language==="ur"?"bg-[#059669] text-white shadow-sm":"text-[#d1d5db] hover:text-white"}`}>اردو</button>
  </div>;
 }
 
@@ -52,7 +52,7 @@ export default function Header(){
    <div className="site-container flex min-h-[68px] items-center justify-between gap-1 !px-3 sm:min-h-[84px] sm:gap-3 sm:!px-6 lg:gap-4" dir="ltr">
     <Link href="/" className="flex min-w-0 flex-1 items-center gap-2 font-sans sm:gap-3 lg:flex-none" dir="ltr">
      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#12a082] to-[#086656] text-white shadow-md sm:h-12 sm:w-12 sm:rounded-xl"><PenLine className="h-5 w-5 sm:h-6 sm:w-6"/></span>
-     <span className="min-w-0"><strong className="block truncate whitespace-nowrap text-[16px] font-extrabold leading-tight tracking-[-0.025em] text-[#152238] sm:text-[23px]" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Qalam Works</strong><span className="mt-1 hidden text-[10px] font-semibold uppercase tracking-[.10em] text-[#607382] sm:block" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Write, Refine, Publish</span></span>
+     <span className="min-w-0"><strong className="block truncate whitespace-nowrap text-[18px] font-extrabold leading-tight tracking-[-0.035em] text-[#152238] sm:text-[24px]" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Qalam Works</strong><span className="mt-1 hidden text-[10px] font-semibold uppercase tracking-[.10em] text-[#607382] sm:block" style={{fontFamily:"var(--font-inter), Inter, Arial, sans-serif"}}>Write, Refine, Publish</span></span>
     </Link>
     <nav aria-label="Primary navigation" className="hidden items-center gap-1 font-sans lg:flex" dir={ur?"rtl":"ltr"}>
      {sections.map((s,i)=><div className="relative" key={s.en}>

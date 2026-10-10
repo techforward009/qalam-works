@@ -67,7 +67,7 @@ export default function JobGuidanceSection() {
                       nav_source: "homepage_card",
                     })
                   }
-                  className={`group flex min-h-[72px] items-center gap-3.5 rounded-2xl border border-[#1A2036]/8 bg-white px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2FA37D]/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2FA37D] dark:border-white/10 dark:bg-[#1A2036] dark:hover:border-[#2FA37D]/40 sm:gap-4 sm:px-5 ${naskh}`}
+                  className={`qalam-home-intent-card group flex min-h-[72px] items-center gap-3.5 rounded-2xl border border-[#1A2036]/8 bg-white px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2FA37D]/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2FA37D] dark:border-white/10 dark:bg-[#1A2036] dark:hover:border-[#2FA37D]/40 sm:gap-4 sm:px-5 ${naskh}`}
                 >
                   <span
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#2FA37D]/12 text-[#1F6C54] dark:bg-[#2FA37D]/15 dark:text-[#7DDCB8] sm:h-12 sm:w-12"
@@ -77,17 +77,17 @@ export default function JobGuidanceSection() {
                   </span>
 
                   <span className="min-w-0 flex-1 text-start">
-                    <span className="block text-[13px] sm:text-[14px] font-medium text-[#6B6560] dark:text-[#a8b9ac] leading-snug">
+                    <span className="qalam-intent-label block text-[13px] sm:text-[14px] font-medium text-[#6B6560] dark:text-[#a8b9ac] leading-snug">
                       {item.label}
                     </span>
-                    <span className="mt-0.5 block text-[16px] sm:text-[17px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] leading-snug">
+                    <span className="qalam-intent-name mt-0.5 block text-[16px] sm:text-[17px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] leading-snug">
                       {item.description}
                     </span>
-                    <span className="mt-1 block text-[13px] sm:text-[14px] text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed">
+                    <span className="qalam-intent-description mt-1 block text-[13px] sm:text-[14px] text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed">
                       {item.body}
                     </span>
                     {example && (
-                      <span className="mt-1.5 inline-flex items-center gap-1 font-mono text-[11px] bg-[#1A3A2A]/6 dark:bg-white/[0.06] text-[#1A3A2A]/70 dark:text-[#a8b9ac] px-2 py-0.5 rounded" dir="ltr">
+                      <span className="qalam-intent-example mt-1.5 inline-flex items-center gap-1 font-mono text-[11px] bg-[#1A3A2A]/6 dark:bg-white/[0.06] text-[#1A3A2A]/70 dark:text-[#a8b9ac] px-2 py-0.5 rounded" dir="ltr">
                         <bdi dir="auto">{example.split("→")[0]?.trim()}</bdi>
                         <span aria-hidden="true">→</span>
                         <bdi dir="auto">{example.split("→")[1]?.trim()}</bdi>

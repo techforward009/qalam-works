@@ -9,7 +9,7 @@ import DateStudioDiscoverySection from "./components/DateStudioDiscoverySection"
 
 export default function Home() {
   return (
-    <div className="bg-[#F7F5EF] font-sans text-[#11182A] dark:bg-[#0E1524] dark:text-[#F7F5EF]">
+    <div className="qalam-home bg-[#F7F5EF] font-sans text-[#11182A] dark:bg-[#0E1524] dark:text-[#F7F5EF]">
       <Hero />
       <JobGuidanceSection />
       <DateStudioDiscoverySection />
