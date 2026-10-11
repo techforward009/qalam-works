@@ -108,12 +108,14 @@ export function selectSermonEvidence(passages:readonly AnswerEvidence["passage"]
   }
   return selectAnswerEvidence(selected);
 }
-export async function composeSermon(input: SermonRequest, result: KnowledgeResult, options: { generate?: typeof generateSermonSections; reviewer?: KnowledgeSynthesisProvider | null; env: SermonProviderEnv; preferSentenceFilter?:boolean }) {
+export async function composeSermon(input: SermonRequest, result: KnowledgeResult, options: { generate?: typeof generateSermonSections; reviewer?: KnowledgeSynthesisProvider | null; env: SermonProviderEnv; preferSentenceFilter?:boolean; evaluationTimeoutMs?:number }) {
   if(result.status!=="evidence") throw new Error(result.status==="unsupported-fatwa"?"unsupported-fatwa":"no-evidence");
   const evidence=selectSermonEvidence(result.passages.filter(p=>(p.collection==="quran"||p.language==="ar")&&hasSuppliedAnswerText(p,input.locale)),input.duration);
   if(!evidence.length) throw new Error("missing-translation");
   if(!sourceCoverage(evidence.map(item=>item.passage),input.duration)) throw new Error("insufficient-evidence");
-  const deadline=Date.now()+285_000;
+  const evaluationTimeout=options.evaluationTimeoutMs;
+  if(evaluationTimeout!==undefined&&(!Number.isInteger(evaluationTimeout)||evaluationTimeout<30_000||evaluationTimeout>600_000))throw new Error("invalid-evaluation-timeout");
+  const deadline=Date.now()+(evaluationTimeout??285_000);
   if(options.env.QALAM_SERMON_PROVIDER&&!['groq','cloudflare','gemini'].includes(options.env.QALAM_SERMON_PROVIDER))throw new Error("not-configured");
   if(options.env.QALAM_SERMON_REVIEW_PROVIDER&&!["groq","cloudflare","gemini"].includes(options.env.QALAM_SERMON_REVIEW_PROVIDER))throw new Error("not-configured");
   const reviewer=options.reviewer===undefined?(createSermonSentenceReviewer({apiKey:options.env.GROQ_API_KEY,geminiKey:options.env.GEMINI_API_KEY,cloudflareAccountId:options.env.CLOUDFLARE_ACCOUNT_ID,cloudflareToken:options.env.CLOUDFLARE_AUTH_TOKEN,preferredProvider:chooseSermonReviewProvider(options.env),deadline})):options.reviewer;

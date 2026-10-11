@@ -98,7 +98,7 @@ for(const config of configurations.filter(c=>!only||c.name===only)){
       draftLog.push(output);
       return output;
     };
-    const project=await composeSermon(input,result,{env:config.env,generate,preferSentenceFilter:staged});
+    const project=await composeSermon(input,result,{env:config.env,generate,preferSentenceFilter:staged,evaluationTimeoutMs:staged?450_000:undefined});
     const text=buildCustomSermonText(project,"ur");
     const timing=assessSermonSpeakingTime(project);
     const {proseWords,arabicWords,translationWords,estimatedMinutes,sectionWords}=timing;
