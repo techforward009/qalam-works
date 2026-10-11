@@ -33,6 +33,7 @@ const { generateStagedSermonSections } = await import("../app/lib/knowledge/serm
 const staged=process.argv.includes("--staged");
 const only=process.argv.find(x=>x.startsWith("--only="))?.slice("--only=".length);
 const { buildCustomSermonText } = await import("../app/tools/khateeb-studio/engine/customSermonProject.ts");
+const { assessSermonSpeakingTime, SERMON_SPEAKING_RATES } = await import("../app/lib/knowledge/sermonSpeakingTime.ts");
 const fixture = [
   {id:"quran:2:153",collection:"quran",language:"ar",referenceUr:"قرآن، البقرہ ۲:۱۵۳",referenceEn:"Quran 2:153",text:"يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ",suppliedTranslation:{language:"ur",text:"اے ایمان والو! صبر اور نماز سے مدد چاہو، بے شک اللہ صبر کرنے والوں کے ساتھ ہے۔",translator:"آزمائشی ترجمہ"},quranLocation:{surah:2,ayah:153},sourceSha256:"a".repeat(64)},
   {id:"nahj:fixture:1",recordId:"nahj:fixture:1",collection:"nahj",language:"ar",referenceUr:"نہج البلاغہ، حکمت ۵۵ (آزمائشی متن)",referenceEn:"Nahj al-Balagha, saying 55 (fixture)",text:"الصَّبْرُ صَبْرَانِ: صَبْرٌ عَلَى مَا تَكْرَهُ، وَصَبْرٌ عَمَّا تُحِبُّ",suppliedTranslation:{language:"ur",text:"صبر کی دو قسمیں ہیں: ناپسندیدہ چیز پر صبر اور پسندیدہ چیز سے رکنے پر صبر۔",translator:"آزمائشی ترجمہ"}},
@@ -65,15 +66,12 @@ for(const config of configurations.filter(c=>!only||c.name===only)){
     };
     const project=await composeSermon(input,result,{env:config.env,generate});
     const text=buildCustomSermonText(project,"ur");
-    const prose=project.sections.map(s=>s.userText.replace(/\n\nحوالہ:[^\n]*/gu,""));
-    const proseWords=prose.reduce((sum,s)=>sum+s.split(/\s+/u).filter(Boolean).length,0);
-    const arabicWords=[...new Set(project.evidence.filter(f=>project.selectedEvidenceIds.includes(f.id)).map(f=>f.arabic?.trim()).filter(Boolean))].reduce((sum,s)=>sum+s.split(/\s+/u).filter(Boolean).length,0);
-    const translatedWords=[...new Set(project.evidence.filter(f=>project.selectedEvidenceIds.includes(f.id)).map(f=>f.detailUr?.split("\nمترجم:")[0].trim()).filter(Boolean))].reduce((sum,s)=>sum+s.split(/\s+/u).filter(Boolean).length,0);
-    const estimatedMinutes=Number((proseWords/95+arabicWords/65+translatedWords/90+project.selectedEvidenceIds.length*0.15).toFixed(1));
+    const timing=assessSermonSpeakingTime(project);
+    const {proseWords,arabicWords,translationWords,estimatedMinutes,sectionWords}=timing;
     const ids=[...new Set(project.sections.flatMap(s=>s.evidenceIds))];
     const sourceCount=ids.length,nonQuran=ids.filter(id=>fixture.some(f=>f.id===id&&f.collection!=="quran")).length;
     const nonUrdu=project.sections.some(s=>/[\p{Script=Latin}\p{Script=Devanagari}\p{Script=Bengali}]/u.test(s.headingUr+s.userText.replace(/\n\nحوالہ:[^\n]*/gu,"")));
-    const row={model:config.name,status:"passed-source-review",staged,sections:project.sections.length,sourceCount,nonQuran,proseWords,sectionWords:prose.map(s=>s.split(/\s+/u).filter(Boolean).length),estimatedMinutes,meetsTimeGoal:estimatedMinutes>=18&&estimatedMinutes<=22,nonUrdu,elapsedMs:Date.now()-started,requests:draftLog.length};
+    const row={model:config.name,status:"passed-source-review",staged,sections:project.sections.length,sourceCount,nonQuran,proseWords,sectionWords,arabicWords,translationWords,estimatedMinutes,estimatedTimeOnly:true,meetsTimeGoal:estimatedMinutes>=18&&estimatedMinutes<=22,nonUrdu,elapsedMs:Date.now()-started,requests:draftLog.length};
     stats.push(row);
     writeFileSync(outDir+"/"+config.name+".txt","آزمائشی مجلس — حقیقی کتابی ماخذ کی تصدیق کا متبادل نہیں\n\n"+text);
     console.log("SERMON_MODEL_COMPARE",JSON.stringify(row));
@@ -84,5 +82,5 @@ for(const config of configurations.filter(c=>!only||c.name===only)){
   }
   if(draftLog.length)writeFileSync(outDir+"/"+config.name+"-raw.json",JSON.stringify(draftLog,null,2));
 }
-writeFileSync(outDir+"/summary.json",JSON.stringify({fixtureOnly:true,speechRateAssumptions:{urduWordsPerMinute:95,arabicWordsPerMinute:65,translationWordsPerMinute:90,pausePerSourceMinutes:0.15},results:stats},null,2));
+writeFileSync(outDir+"/summary.json",JSON.stringify({fixtureOnly:true,speechRateAssumptions:SERMON_SPEAKING_RATES,results:stats},null,2));
 if(stats.some(s=>s.status!=="passed-source-review"||!s.meetsTimeGoal||s.nonUrdu||s.sourceCount<3||s.nonQuran<1))process.exitCode=1;
