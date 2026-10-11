@@ -61,6 +61,7 @@ export async function generateStagedSermonSections(
     }
     let accepted:ComposedSection|null=null;
     for(let attempt=0;attempt<2;attempt++){
+      const targetWords=repairSet?.has(index)?220:TARGET_WORDS[index];
       const previousSections=sections.map(s=>({heading:s.heading,ending:s.text.slice(-420),refs:s.refs}));
       // Global source diversity is checked by composeSermon. Do not demand
       // the same non-Quran reference in every middle section: that produced
@@ -70,7 +71,7 @@ export async function generateStagedSermonSections(
         ?"You MUST cite reference "+nonQuran!.ref+" and explain ONLY what its supplied text establishes.":"";
       const instruction=[
         input.instruction??"",
-        "Stage "+(index+1)+"/5. Produce ONE flowing spoken section of roughly "+TARGET_WORDS[index]+" Urdu words, not a plan or bullet points. Use distinct supported explanations and open questions rather than inventing religious facts.",
+        "Stage "+(index+1)+"/5. Produce ONE flowing spoken section of roughly "+targetWords+" Urdu words, not a plan or bullet points. Use distinct supported explanations and open questions rather than inventing religious facts. If this is a source-review repair, avoid length padding and any claims beyond the cited meaning.",
         "Connect with earlier sections without repeating arguments, citations or original quotations.",
         preferCore,
         attempt?"Last attempt was too short, lacked a required reference or had invalid format. Expand only source-entailable meaning.":""
@@ -79,15 +80,15 @@ export async function generateStagedSermonSections(
       // Restrict the model to primary texts assigned to this one stage.
       // The original global reference numbers are never renumbered.
       const scopedEvidence=stageSources[index];
-      const raw=await generateSermonSections(request,scopedEvidence,env,fetchImpl,deadline,{index:index as 0|1|2|3|4,targetWords:TARGET_WORDS[index]});
+      const raw=await generateSermonSections(request,scopedEvidence,env,fetchImpl,deadline,{index:index as 0|1|2|3|4,targetWords});
       const candidate=raw&&typeof raw==="object"&&Array.isArray((raw as {sections?:unknown}).sections)
         ? (raw as {sections:unknown[]}).sections[0] as Partial<ComposedSection>|undefined : undefined;
       const words=typeof candidate?.text==="string" ? candidate.text.split(/\s+/u).filter(Boolean).length : 0;
       const refs=Array.isArray(candidate?.refs)?candidate.refs:[];
-      const valid=validSection(raw,scopedEvidence,Math.floor(TARGET_WORDS[index]*0.8));
+      const valid=validSection(raw,scopedEvidence,Math.floor(targetWords*0.8));
       const meetsCore=!needsCore||refs.includes(nonQuran!.ref);
       console.info("SERMON_STAGED_ATTEMPT",JSON.stringify({
-        stage:index+1,attempt:attempt+1,words,minimumWords:Math.floor(TARGET_WORDS[index]*0.8),
+        stage:index+1,attempt:attempt+1,words,minimumWords:Math.floor(targetWords*0.8),
         sourceRefs:refs.filter((ref):ref is number=>typeof ref==="number").slice(0,5),
         validShape:valid,requiredCore:needsCore,meetsCore
       }));

@@ -136,3 +136,21 @@ it("never leaves a stage without a source when only five Quran verses are select
  expect(groups.every(g=>g.length>=1)).toBe(true);
  expect(groups[2].some(p=>p.passage.collection!=="quran")).toBe(true);
 });
+
+it("accepts a shorter strictly cited repair while preserving four previously approved stages",async()=>{
+ const prior=Array.from({length:5},(_,i)=>({
+  heading:"حصہ "+(i+1),
+  text:Array.from({length:115},(_,n)=>"متن "+(i+1)+" سوال "+n+" پر غور کریں۔").join(" "),
+  refs:i===2?[2]:[1,3]
+ }));
+ const fetchMock=vi.fn(async()=>{
+  const text=Array.from({length:200},(_,n)=>n%2?"پر":"غور").join(" ");
+  return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections:[{heading:"صبر کا دوسرا نکتہ",text,refs:[2]}]})}}]}));
+ });
+ const result=await generateStagedSermonSections({...input,previous:JSON.stringify({sections:prior}),repairSectionIndexes:[2]},evidence,{GROQ_API_KEY:"test"},fetchMock) as {sections:{text:string}[]};
+ expect(result.sections[2].text.trim().split(/\s+/u)).toHaveLength(200);
+ expect(fetchMock).toHaveBeenCalledTimes(1);
+ const body=JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
+ expect(body.messages[0].content).toContain("Write approximately 220 distinct spoken Urdu words");
+ for(const i of [0,1,3,4])expect(result.sections[i]).toEqual(prior[i]);
+});
