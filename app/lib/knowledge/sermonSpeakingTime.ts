@@ -10,7 +10,7 @@ export const SERMON_SPEAKING_RATES = {
   arabicWordsPerMinute: 65,
   translatedWordsPerMinute: 90,
   pausePerUniqueSourceMinutes: 0.15,
-} as const;
+};
 
 type RateOverrides = Partial<typeof SERMON_SPEAKING_RATES>;
 type TimedSermon = Pick<CustomSermonProject, "sections" | "evidence" | "selectedEvidenceIds">;
