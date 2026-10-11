@@ -15,8 +15,8 @@ export function planSermonStageEvidence(evidence:readonly AnswerEvidence[]):Answ
     [q[0],q[1]],
     [q[2],q[3]],
     [q[4],b[0]],
-    [q[5],q[6],b[1]],
-    [q[7],q[q.length-1],q[0]]
+    [q[5]??q[3],q[6]??q[4],b[1]],
+    [q[7]??q[q.length-1],q[0]]
   ];
   return candidate.map(group=>[...new Map(group.filter((x):x is AnswerEvidence=>Boolean(x)).map(e=>[e.ref,e])).values()].slice(0,3));
 }

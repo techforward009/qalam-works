@@ -128,3 +128,11 @@ it("passes each stage only the evidence assigned to it, preserving global refere
   expect(body.response_format.type).toBe("json_object");
  });
 });
+
+it("never leaves a stage without a source when only five Quran verses are selected",()=>{
+ const extra=[...Array.from({length:5},(_,i)=>({...evidence[0],ref:i+1,passage:{...evidence[0].passage,id:"q:"+i}})),{...evidence[1],ref:6}] as AnswerEvidence[];
+ const groups=planSermonStageEvidence(extra);
+ expect(groups).toHaveLength(5);
+ expect(groups.every(g=>g.length>=1)).toBe(true);
+ expect(groups[2].some(p=>p.passage.collection!=="quran")).toBe(true);
+});
