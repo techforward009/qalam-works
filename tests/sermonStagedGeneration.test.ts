@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { generateStagedSermonSections } from "../app/lib/knowledge/sermonStagedGeneration";
+import { generateStagedSermonSections, planSermonStageEvidence } from "../app/lib/knowledge/sermonStagedGeneration";
 import type { AnswerEvidence } from "../app/lib/knowledge/researchAnswer";
 
 const evidence=[
@@ -93,4 +93,38 @@ it("regenerates only source-review-rejected stages instead of paying for five fu
  expect(draft.sections[0]).toEqual(prior[0]);
  expect(draft.sections[1]).toEqual(prior[1]);
  expect(draft.sections[3]).toEqual(prior[3]);
+});
+
+it("allocates different verified sources across five stages rather than repeating one saying",()=>{
+ const more=Array.from({length:8},(_,i)=>({
+    ...evidence[0],ref:i+1,passage:{...evidence[0].passage,id:"quran:test:"+i,collection:i===5?"nahj":"quran"}
+ })) as AnswerEvidence[];
+ const groups=planSermonStageEvidence(more);
+ expect(groups).toHaveLength(5);
+ expect(groups.every(x=>x.length>0&&x.length<=3)).toBe(true);
+ expect(groups[0].map(e=>e.ref)).not.toEqual(groups[1].map(e=>e.ref));
+ expect(groups[2].some(e=>e.passage.collection!=="quran")).toBe(true);
+ expect(new Set(groups.flatMap(g=>g.map(e=>e.ref))).size).toBeGreaterThanOrEqual(6);
+});
+
+it("passes each stage only the evidence assigned to it, preserving global reference integers",async()=>{
+ const rich=Array.from({length:8},(_,i)=>({
+  ...evidence[0],ref:i+1,passage:{...evidence[0].passage,id:"quran:test:"+i,collection:i===5?"nahj":"quran"}
+ })) as AnswerEvidence[];
+ const intended=planSermonStageEvidence(rich);
+ const requests:any[]=[];
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+  const body=JSON.parse(init!.body as string);const idx=requests.length;requests.push(body);
+  const text=Array.from({length:340},(_,i)=>i%2?"سوال":"صبر").join(" ");
+  const refs=intended[idx].map(e=>e.ref).slice(0,2);
+  return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections:[{heading:"صبر کی گفتگو",text,refs}]})}}]}));
+ });
+ const result=await generateStagedSermonSections(input,rich,{GROQ_API_KEY:"test"},fetchMock) as {sections:{refs:number[]}[]};
+ expect(result.sections).toHaveLength(5);
+ expect(requests).toHaveLength(5);
+ requests.forEach((body,index)=>{
+  const refs=body.messages[1].content&&JSON.parse(body.messages[1].content).evidence.map((e:{ref:number})=>e.ref);
+  expect(refs).toEqual(intended[index].map(e=>e.ref));
+  expect(body.response_format.type).toBe("json_object");
+ });
 });
