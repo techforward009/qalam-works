@@ -62,7 +62,7 @@ it("rejects arbitrary models, bad outputs, and large contexts",async()=>{
   const session=createOpenRouterTrialSession({apiKey:"example",fetchImpl:vi.fn()});
   expect(()=>session.fetchFor(["unknown" as "qwen"])).toThrow("invalid-openrouter-model");
   await expect(session.fetchFor(["qwen"])("ignored",request(5001))).rejects.toThrow("invalid-openrouter-output-limit");
-  const huge=request();huge.body=JSON.stringify({messages:[{role:"user",content:"ا".repeat(40_000)}],max_completion_tokens:100});
+  const huge=request();huge.body=JSON.stringify({messages:[{role:"user",content:"ا".repeat(60_000)}],max_completion_tokens:100});
   await expect(session.fetchFor(["qwen"])("ignored",huge)).rejects.toThrow("openrouter-context-cap");
 });
 it("uses the maximum fallback price in conservative reservations",()=>{
