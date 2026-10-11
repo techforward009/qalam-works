@@ -12,7 +12,7 @@ jobs:
   sermon-unit:
     # The limited model experiment runs its own strict, focused check.
     # Keep the slower whole-repository comparison for ordinary changes.
-    if: github.event_name != 'push' || github.event.head_commit.message != 'Run evidence-focused Gemma retest'
+    if: github.event_name != 'push' || (github.event.head_commit.message != 'Run evidence-focused Gemma retest' && github.event.head_commit.message != 'Run quota-gated Gemma trial')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -53,7 +53,7 @@ jobs:
       - run: git diff --check
 
   sermon-fast-check:
-    if: github.event_name == 'push' && github.event.head_commit.message == 'Run evidence-focused Gemma retest'
+    if: github.event_name == 'push' && (github.event.head_commit.message == 'Run evidence-focused Gemma retest' || github.event.head_commit.message == 'Run quota-gated Gemma trial')
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -109,6 +109,30 @@ jobs:
           fi
       - run: npm run test:sermon:flow:live
 
+  sermon-quota-probe:
+    if: github.event_name == 'push' && github.event.head_commit.message == 'Run quota-gated Gemma trial'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_AUTH_TOKEN: ${{ secrets.CLOUDFLARE_AUTH_TOKEN }}
+    steps:
+      - name: Check availability at the exact composer endpoint
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID" && test -n "$CLOUDFLARE_AUTH_TOKEN" || { echo 'GEMMA_QUOTA_PROBE missing-credentials'; exit 1; }
+          node - <<'NODE'
+          const model='@cf/google/gemma-4-26b-a4b-it';
+          const url='https://api.cloudflare.com/client/v4/accounts/'+encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID)+'/ai/v1/chat/completions';
+          try {
+            const response=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_AUTH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({model,max_completion_tokens:120,temperature:0,messages:[{role:'user',content:'اردو میں ایک مختصر جملے میں صبر کی تعریف لکھیں۔'}]}),signal:AbortSignal.timeout(45000)});
+            const body=await response.json().catch(()=>({}));
+            const reply=body?.choices?.[0]?.message?.content??body?.result?.choices?.[0]?.message?.content??'';
+            const ok=response.ok && typeof reply==='string' && reply.trim().length>5;
+            console.log('GEMMA_QUOTA_PROBE',JSON.stringify({status:response.status,allowed:ok,replyPresent:Boolean(reply),reason:!response.ok?(response.status===429?'rate-limit':'provider-error'):ok?'available':'empty-response'}));
+            if(!ok)process.exitCode=1;
+          }catch(error){console.log('GEMMA_QUOTA_PROBE',JSON.stringify({allowed:false,reason:error?.name==='TimeoutError'?'timeout':'network-error'}));process.exitCode=1;}
+          NODE
   sermon-model-comparison:
     if: (github.event_name == 'push' && github.event.head_commit.message == 'Run evidence-focused Gemma retest') || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[model-compare]'))
     needs: sermon-fast-check
@@ -135,6 +159,35 @@ jobs:
         if: always()
         with:
           name: sermon-model-comparison
+          path: sermon-model-comparison/
+          retention-days: 3
+
+  sermon-quota-gated-comparison:
+    if: github.event_name == 'push' && github.event.head_commit.message == 'Run quota-gated Gemma trial'
+    needs: [sermon-fast-check, sermon-quota-probe]
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_AUTH_TOKEN: ${{ secrets.CLOUDFLARE_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # API-only validation does not need native onnxruntime/sharp postinstall binaries.
+      # Avoid intermittent upstream install-script downloads (ETIMEDOUT).
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check comparison script before spending model quota
+        run: node --check scripts/evaluate-sermon-free-models.mjs
+      - name: Compare complete 20-minute Urdu sermons without private corpus
+        run: node scripts/evaluate-sermon-free-models.mjs --compare --staged --only=gemma-4-26b-a4b
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sermon-quota-gated-comparison
           path: sermon-model-comparison/
           retention-days: 3
 
