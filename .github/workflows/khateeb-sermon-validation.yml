@@ -43,6 +43,8 @@ jobs:
           fi
           echo "::warning::Full suite has only existing origin/main failures."
       - run: npx tsc --noEmit
+      - name: Verify sourced Quran comparison fixture without API calls
+        run: node scripts/evaluate-sermon-free-models.mjs --check-fixture
       - run: npm run test:sermon:flow:imports
       - run: npm run build
       - run: git diff --check

@@ -2,7 +2,7 @@ import { registerHooks } from "node:module";
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import ts from "typescript";
 
-if (!process.argv.includes("--compare")) {
+if (!process.argv.includes("--compare") && !process.argv.includes("--check-fixture")) {
   console.log("Usage: node scripts/evaluate-sermon-free-models.mjs --compare");
   process.exit(1);
 }
@@ -72,6 +72,7 @@ console.log("SERMON_COMPARISON_FIXTURE",JSON.stringify({
   nonQuranCount:fixture.filter(p=>p.collection!=="quran").length,
   sourceIds:fixture.map(p=>p.id),privateCorpusRequired:false
 }));
+if (process.argv.includes("--check-fixture")) process.exit(0);
 const input = {title:"صبر",duration:20,locale:"ur"};
 const result = {question:input.title,status:"evidence",method:"lexical-bm25-topic-expansion",passages:fixture,availableCollections:["quran","nahj"],expandedTerms:[]};
 const outDir = "sermon-model-comparison";
