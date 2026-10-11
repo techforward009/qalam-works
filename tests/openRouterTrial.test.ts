@@ -1,5 +1,5 @@
 import {expect,it,vi} from "vitest";
-import {createOpenRouterTrialSession,estimateOpenRouterTrialCeiling,OPENROUTER_TRIAL_MODELS} from "../app/lib/knowledge/openRouterTrial";
+import {createOpenRouterTrialSession,estimateOpenRouterTrialCeiling,OPENROUTER_TRIAL_MODELS,verifyOpenRouterTrialKeyCap} from "../app/lib/knowledge/openRouterTrial";
 
 const request=(max_completion_tokens=120)=>({
   method:"POST",headers:{Authorization:"Bearer old-provider-secret","Content-Type":"application/json"},
@@ -69,4 +69,16 @@ it("uses the maximum fallback price in conservative reservations",()=>{
   const reserve=estimateOpenRouterTrialCeiling(["qwen","lite"],2000,1000);
   expect(reserve).toBeCloseTo((2000*0.25+1000*1.5)/1_000_000,8);
   expect(OPENROUTER_TRIAL_MODELS.qwen.id).toBe("qwen/qwen3.5-flash-02-23");
+});
+
+it("requires a real server-side API key spending cap before any paid experiment",async()=>{
+ const allowed=vi.fn(async()=>new Response(JSON.stringify({data:{limit:1,limit_remaining:0.88}}),{status:200}));
+ await expect(verifyOpenRouterTrialKeyCap({apiKey:"local-key",fetchImpl:allowed})).resolves.toEqual({hardLimitUsd:1,remainingUsd:0.88});
+ expect((allowed.mock.calls[0] as unknown as [string])[0]).toBe("https://openrouter.ai/api/v1/key");
+ const bad=vi.fn(async()=>new Response(JSON.stringify({data:{limit:null,limit_remaining:null}}),{status:200}));
+ await expect(verifyOpenRouterTrialKeyCap({apiKey:"key",fetchImpl:bad})).rejects.toThrow("openrouter-key-hard-limit-required");
+ const larger=vi.fn(async()=>new Response(JSON.stringify({data:{limit:20,limit_remaining:17}}),{status:200}));
+ await expect(verifyOpenRouterTrialKeyCap({apiKey:"key",maxKeyUsd:1,fetchImpl:larger})).rejects.toThrow("openrouter-key-hard-limit-required");
+ const failure=vi.fn(async()=>new Response("Unauthorized",{status:401}));
+ await expect(verifyOpenRouterTrialKeyCap({apiKey:"invalid",fetchImpl:failure})).rejects.toThrow("openrouter-key-cap-unavailable");
 });
