@@ -158,6 +158,12 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
     if(accepted?.length===claims.length){fullyReviewed=true;break;}
     console.warn("Sermon composition validation",{stage:"review",attempt,acceptedCount:accepted?.length??0,total:claims.length});
     const feedback=sermonRejectedSentences(review,{question:input.title,locale:input.locale,evidence},claims);
+    if(feedback?.length){
+      const sections=Object.fromEntries([...new Set(feedback.map(f=>f.claimId))].map(id=>[id,feedback.filter(f=>f.claimId===id).length]));
+      const reasons=Object.fromEntries([...new Set(feedback.map(f=>f.reason))].map(reason=>[reason,feedback.filter(f=>f.reason===reason).length]));
+      // Log counts and reason codes only. No private corpus or model prose.
+      console.info("SERMON_SOURCE_REVIEW",JSON.stringify({attempt,rejectedSentenceCount:feedback.length,sections,reasons}));
+    }
     if(++reviewFailures>=2){
       if(feedback?.length){
         const neutralHeadings=input.locale==="ur"?["تمہید","پہلا علمی نکتہ","دوسرا علمی نکتہ","عملی غور و فکر","اختتام"]:["Opening","First source point","Second source point","Practical reflection","Closing"];
