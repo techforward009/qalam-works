@@ -17,13 +17,27 @@ export function validatePassageRanking(value: unknown, count: number): Ranking |
   }
   return rows.map(row => ({ ref: row.ref, relevance: row.relevance }));
 }
-export function applyPassageRanking(passages: readonly KnowledgePassage[], ranking: Ranking): KnowledgePassage[] {
-  return ranking.filter(row => row.relevance >= 2).sort((a, b) => b.relevance - a.relevance || a.ref - b.ref).slice(0, 8).map(row => passages[row.ref - 1]);
+export function applyPassageRanking(passages: readonly KnowledgePassage[], ranking: Ranking, preserveNonQuran=false): KnowledgePassage[] {
+  const relevant=ranking.filter(row=>row.relevance>=2).sort((a,b)=>b.relevance-a.relevance||a.ref-b.ref);
+  const picked=relevant.slice(0,8);
+  // Sermon retrieval cannot recover a primary hadith after the reranker drops it.
+  // Reserve one relevant book passage without injecting low-relevance material.
+  if(preserveNonQuran && picked.length===8 && picked.every(row=>passages[row.ref-1].collection==="quran")){
+    const core=relevant.find(row=>passages[row.ref-1].collection!=="quran");
+    if(core){picked.pop();picked.push(core);}
+  }
+  return picked.map(row=>passages[row.ref-1]);
 }
 export async function rankKnowledgePassages(result: KnowledgeResult, options: {
-  accountId?: string; token?: string; caller: string; fetchImpl?: typeof fetch;
+  accountId?: string; token?: string; caller: string; fetchImpl?: typeof fetch; preserveNonQuran?:boolean;
 }): Promise<KnowledgeResult> {
-  const fallback = { ...result, passages: result.passages.slice(0, 8), passageRanking: "lexical" as const };
+  const fallbackPassages=result.passages.slice(0,8);
+  if(options.preserveNonQuran && fallbackPassages.length===8 && fallbackPassages.every(p=>p.collection==="quran")){
+    // The lexical candidates are already filtered for topic relevance upstream.
+    const firstCore=result.passages.slice(8).find(p=>p.collection!=="quran");
+    if(firstCore)fallbackPassages[7]=firstCore;
+  }
+  const fallback = { ...result, passages: fallbackPassages, passageRanking: "lexical" as const };
   if (!options.accountId || !options.token || result.status !== "evidence" || !result.passages.length || result.passages.length > 16 || /["“«]|[0-9۰-۹٠-٩]/u.test(result.question)) return fallback;
   const evidence = result.passages.map((p, index) => ({ ref: index + 1, reference: p.referenceUr, text: p.text }));
   const data = JSON.stringify({ question: result.question, contextQuestion: result.contextQuestion, evidence });
@@ -66,6 +80,6 @@ export async function rankKnowledgePassages(result: KnowledgeResult, options: {
     ranking = await request;
   }
   if (!ranking) return fallback;
-  const passages = applyPassageRanking(result.passages, ranking);
+  const passages = applyPassageRanking(result.passages, ranking,options.preserveNonQuran);
   return { ...result, passages, status: passages.length ? "evidence" : "not-found", passageRanking: "model" };
 }

@@ -23,8 +23,25 @@ export async function generateStagedSermonSections(
 ):Promise<unknown>{
   if(input.duration!==20||input.locale!=="ur")throw new Error("staged-duration-unsupported");
   const sections:ComposedSection[]=[];
+  // Only composeSermon can provide this trusted internal repair hint: it
+  // clears any user-supplied hint before the first review. The final output is
+  // nevertheless reviewed in full, including reused sections.
+  const requested=input.repairSectionIndexes;
+  const repairSet=Array.isArray(requested)&&requested.length>0
+    && requested.every(i=>Number.isInteger(i)&&i>=0&&i<5)
+      ? new Set<number>(requested) : null;
+  let approvedPrior:ComposedSection[]|null=null;
+  if(repairSet&&typeof input.previous==="string"){
+    try{approvedPrior=parseComposedSections(JSON.parse(input.previous),evidence);}
+    catch{approvedPrior=null;}
+  }
   const nonQuran=evidence.find(p=>p.passage.collection!=="quran");
   for(let index=0;index<5;index++){
+    if(approvedPrior && !repairSet!.has(index)){
+      sections.push(approvedPrior[index]);
+      console.info("SERMON_STAGED_STAGE",JSON.stringify({stage:index+1,status:"reused-approved",sourceRefs:approvedPrior[index].refs}));
+      continue;
+    }
     let accepted:ComposedSection|null=null;
     for(let attempt=0;attempt<2;attempt++){
       const previousSections=sections.map(s=>({heading:s.heading,ending:s.text.slice(-420),refs:s.refs}));

@@ -51,5 +51,5 @@ export async function collectSermonEvidence(title: string, locale: "ur" | "en", 
     }), quranSha256: ahmedgrafQuranReference.getMetadata().sourceSha256! });
   const baseTranslated=attachCorpusTranslations(result,records,sources,locale);
   const translated=client ? await attachBookTranslations(client,baseTranslated,locale) : baseTranslated;
-  return rankKnowledgePassages({...translated,passages:translated.passages.filter(p=>hasSuppliedAnswerText(p,locale))},options);
+  return rankKnowledgePassages({...translated,passages:translated.passages.filter(p=>hasSuppliedAnswerText(p,locale))},{...options,preserveNonQuran:true});
 }

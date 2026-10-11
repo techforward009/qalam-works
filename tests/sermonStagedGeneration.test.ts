@@ -71,3 +71,26 @@ it("accepts a source-cited 314-word middle section; final duration is still audi
  expect(draft.sections[2].text.trim().split(/\s+/u)).toHaveLength(314);
  expect(fetchMock).toHaveBeenCalledTimes(5);
 });
+
+it("regenerates only source-review-rejected stages instead of paying for five full sections again",async()=>{
+ const prior=Array.from({length:5},(_,i)=>({
+   heading:"سابقہ حصہ "+(i+1),
+   text:Array.from({length:115},(_,n)=>"اس آیت پر غور کا سوال "+(i+1)+" "+n+" ہے۔").join(" "),
+   refs:i===0?[1,2]:i===2?[2]:[3]
+ }));
+ const fetchMock=vi.fn(async()=>{
+   const text=Array.from({length:38},(_,n)=>
+     "سامعین محترم، آج صبر کے موضوع پر غور کے لیے یہ سوال سامنے رکھیں کہ کیا ہم اصل عبارت کو بغیر کسی اضافے کے سمجھتے ہیں؟ "+(n+1)
+   ).join(" ");
+   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections:[{heading:"درست کیا گیا حصہ",text,refs:[2]}]})}}]}));
+ });
+ const draft=await generateStagedSermonSections({
+   ...input,previous:JSON.stringify({sections:prior}),repairSectionIndexes:[2]
+ },evidence,{GROQ_API_KEY:"test"},fetchMock) as {sections:{heading:string;text:string;refs:number[]}[]};
+ expect(draft.sections).toHaveLength(5);
+ expect(fetchMock).toHaveBeenCalledTimes(1);
+ expect(draft.sections[2].heading).toBe("درست کیا گیا حصہ");
+ expect(draft.sections[0]).toEqual(prior[0]);
+ expect(draft.sections[1]).toEqual(prior[1]);
+ expect(draft.sections[3]).toEqual(prior[3]);
+});
