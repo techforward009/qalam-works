@@ -164,6 +164,37 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
       // Log counts and reason codes only. No private corpus or model prose.
       console.info("SERMON_SOURCE_REVIEW",JSON.stringify({attempt,rejectedSentenceCount:feedback.length,sections,reasons}));
     }
+
+    // Remove only explicitly rejected audited sentences, then independently
+    // recheck all five sections before acceptance. No unreviewed export.
+    if(feedback?.length && reviewFailures===0){
+      const neutralHeadings=input.locale==="ur"
+        ?["تمہید","پہلا علمی نکتہ","دوسرا علمی نکتہ","عملی غور و فکر","اختتام"]
+        :["Opening","First source point","Second source point","Practical reflection","Closing"];
+      const candidate=parseComposedSections({sections:sections.map((section,i)=>{
+        const claimId=claims[i].id;
+        const headingCount=sermonSentences(section.heading).length;
+        const rejected=new Set(feedback.filter(f=>f.claimId===claimId).map(f=>f.index));
+        const heading=rejected.has(1)?neutralHeadings[i]:section.heading;
+        const text=sermonSentences(section.text)
+          .filter((_,j)=>!rejected.has(headingCount+j+1)).join(" ");
+        return {...section,heading,text};
+      })},evidence);
+      if(candidate
+        && candidate.every(s=>s.text.split(/\s+/u).filter(Boolean).length>=minimumWordsPerSection)
+        && candidate.reduce((n,s)=>n+s.text.split(/\s+/u).filter(Boolean).length,0)>=minimumWords
+        && sourceCoverage([...new Set(candidate.flatMap(s=>s.refs))].map(ref=>evidence.find(item=>item.ref===ref)!.passage),input.duration)){
+        const verifiedClaims=candidate.map((s,i)=>({...claims[i],text:s.heading+"\n"+s.text}));
+        console.info("SERMON_SOURCE_FILTER",JSON.stringify({attempt,removed:feedback.length,wordCounts:candidate.map(s=>s.text.split(/\s+/u).filter(Boolean).length)}));
+        const completeSecondReview=await reviewer.review({question:input.title,locale:input.locale,evidence},verifiedClaims);
+        if(reviewedResearchClaims(completeSecondReview,verifiedClaims)?.length===verifiedClaims.length){
+          sections=candidate;claims=verifiedClaims;fullyReviewed=true;
+          console.info("SERMON_SOURCE_FILTER",JSON.stringify({attempt,status:"verified-after-complete-review"}));
+          break;
+        }
+        console.info("SERMON_SOURCE_FILTER",JSON.stringify({attempt,status:"full-review-not-passed"}));
+      }
+    }
     if(++reviewFailures>=2){
       if(feedback?.length){
         const neutralHeadings=input.locale==="ur"?["تمہید","پہلا علمی نکتہ","دوسرا علمی نکتہ","عملی غور و فکر","اختتام"]:["Opening","First source point","Second source point","Practical reflection","Closing"];

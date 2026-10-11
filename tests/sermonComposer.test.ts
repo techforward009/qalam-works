@@ -288,3 +288,29 @@ it("reports source-faithful stage length failure without mislabeling it as a net
  const insufficient=async()=>{throw new Error("staged-insufficient-draft");};
  await expect(composeSermon(input,result,{generate:insufficient,reviewer,env:{}})).rejects.toThrow("staged-insufficient-draft");
 });
+
+
+it("drops audited unsupported sentences before paid regeneration and independently rechecks all sections",async()=>{
+ let checks=0;
+ const original=sermonSentences(sections[1].text)[0];
+ const evaluator={...reviewer,review:vi.fn(async(reviewInput:AnswerInput,claims:readonly ResearchClaim[])=>{
+  const first=checks++===0;
+  return {
+    reviews:claims.map((claim,i)=>({claimId:claim.id,verdict:first&&i===1?"unsupported":"supported",reason:first&&i===1?"not-in-evidence":"entailed"})),
+    sentenceAudit:claims.map((claim,i)=>({
+      claimId:claim.id,sentences:sermonSentences(claim.text).map((_,j)=>({
+        index:j+1,verdict:first&&i===1&&j===1?"unsupported":"supported",
+        reason:first&&i===1&&j===1?"not-in-evidence":"entailed",
+        refs:[reviewInput.evidence.find(e=>claim.citations.some(c=>c.passageId===e.passage.id))!.ref]
+      }))
+    }))
+  };
+ })};
+ const generator=vi.fn(async()=>({sections}));
+ const resultProject=await composeSermon(input,result,{generate:generator,reviewer:evaluator,env:{}});
+ expect(generator).toHaveBeenCalledTimes(1);
+ expect(evaluator.review).toHaveBeenCalledTimes(2);
+ expect(evaluator.review.mock.calls[1][1]).toHaveLength(5);
+ expect(resultProject.sections[1].userText).not.toContain(original);
+ expect(evaluator.review.mock.calls[1][1][1].text).not.toContain(original);
+});
