@@ -493,6 +493,7 @@ export function buildCustomSermonText(
   ];
 
   const printedSources = new Set<string>();
+  const printedOriginals = new Set<string>();
   for (const section of project.sections) {
     lines.push(
       "",
@@ -515,11 +516,13 @@ export function buildCustomSermonText(
       if (!item) continue;
       // The original Arabic and its supplied translation are recited once.
       // Later sections may refer back to a citation without repeating the reading.
-      if (printedSources.has(id)) {
+      if (printedSources.has(id) || item.arabic && printedOriginals.has(item.arabic.trim())) {
+        printedSources.add(id);
         lines.push(`${ur ? "حوالہ" : "Reference"}: ${ur ? item.citationUr : item.citationEn}`);
         continue;
       }
       printedSources.add(id);
+      if (item.arabic) printedOriginals.add(item.arabic.trim());
       lines.push(
         "",
         ur ? item.titleUr : item.titleEn,
