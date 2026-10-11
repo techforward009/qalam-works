@@ -2,7 +2,7 @@ import { registerHooks } from "node:module";
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import ts from "typescript";
 
-if (!["--compare","--check-fixture","--openrouter-check","--openrouter-trial"].some(flag=>process.argv.includes(flag))) {
+if (!["--compare","--check-fixture","--openrouter-check","--openrouter-key-check","--openrouter-trial"].some(flag=>process.argv.includes(flag))) {
   console.log("Usage: node scripts/evaluate-sermon-free-models.mjs --compare");
   process.exit(1);
 }
@@ -32,6 +32,21 @@ const { composeSermon, generateSermonSections, selectSermonEvidence } = await im
 const { createSermonSentenceReviewer } = await import("../app/lib/knowledge/sermonReview.ts");
 const { createOpenRouterTrialSession, OPENROUTER_TRIAL_MODELS, estimateOpenRouterTrialCeiling, verifyOpenRouterTrialKeyCap } = await import("../app/lib/knowledge/openRouterTrial.ts");
 const { generateStagedSermonSections, planSermonStageEvidence } = await import("../app/lib/knowledge/sermonStagedGeneration.ts");
+// A key-readiness check makes NO paid model requests and never logs secrets.
+if(process.argv.includes("--openrouter-key-check")){
+  const key=process.env.OPENROUTER_API_KEY;
+  if(!key?.trim()){console.log("OPENROUTER_KEY_READINESS",JSON.stringify({ready:false,reason:"missing-github-secret",paidCalls:0}));process.exit(2);}
+  try {
+    const cap=await verifyOpenRouterTrialKeyCap({apiKey:key,maxKeyUsd:1});
+    const ready=cap.remainingUsd>=0.05;
+    console.log("OPENROUTER_KEY_READINESS",JSON.stringify({ready,capUsd:cap.hardLimitUsd,remainingUsd:cap.remainingUsd,paidCalls:0,reason:ready?"capped-key-ready":"insufficient-credit"}));
+    process.exit(ready?0:2);
+  }catch(e){
+    const reason=e instanceof Error && ["openrouter-key-hard-limit-required","openrouter-key-cap-unavailable"].includes(e.message)?e.message:"unavailable";
+    console.log("OPENROUTER_KEY_READINESS",JSON.stringify({ready:false,reason,paidCalls:0}));
+    process.exit(2);
+  }
+}
 const staged=process.argv.includes("--staged");
 const openrouterCheck=process.argv.includes("--openrouter-check");
 const openrouterTrial=process.argv.includes("--openrouter-trial");
