@@ -10,6 +10,9 @@ on:
   workflow_dispatch:
 jobs:
   sermon-unit:
+    # The limited model experiment runs its own strict, focused check.
+    # Keep the slower whole-repository comparison for ordinary changes.
+    if: github.event_name != 'push' || github.event.head_commit.message != 'Run evidence-focused Gemma retest'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -47,6 +50,24 @@ jobs:
         run: node scripts/evaluate-sermon-free-models.mjs --check-fixture
       - run: npm run test:sermon:flow:imports
       - run: npm run build
+      - run: git diff --check
+
+  sermon-fast-check:
+    if: github.event_name == 'push' && github.event.head_commit.message == 'Run evidence-focused Gemma retest'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run targeted source-grounded sermon regression tests
+        run: npx vitest run tests/sermonStagedGeneration.test.ts tests/sermonComposer.test.ts tests/sermonReview.test.ts tests/sermonEvidenceCoverage.test.ts tests/sermonRankingCoverage.test.ts
+      - run: npx tsc --noEmit
+      - run: node scripts/evaluate-sermon-free-models.mjs --check-fixture
+      - run: npm run test:sermon:flow:imports
       - run: git diff --check
 
   sermon-live:
@@ -87,8 +108,8 @@ jobs:
       - run: npm run test:sermon:flow:live
 
   sermon-model-comparison:
-    if: (github.event_name == 'push' && github.event.head_commit.message == 'Run source-focused Gemma comparison') || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[model-compare]'))
-    needs: sermon-unit
+    if: (github.event_name == 'push' && github.event.head_commit.message == 'Run evidence-focused Gemma retest') || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[model-compare]'))
+    needs: sermon-fast-check
     runs-on: ubuntu-latest
     timeout-minutes: 24
     env:
