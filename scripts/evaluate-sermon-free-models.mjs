@@ -34,11 +34,44 @@ const staged=process.argv.includes("--staged");
 const only=process.argv.find(x=>x.startsWith("--only="))?.slice("--only=".length);
 const { buildCustomSermonText } = await import("../app/tools/khateeb-studio/engine/customSermonProject.ts");
 const { assessSermonSpeakingTime, SERMON_SPEAKING_RATES } = await import("../app/lib/knowledge/sermonSpeakingTime.ts");
-const fixture = [
-  {id:"quran:2:153",collection:"quran",language:"ar",referenceUr:"قرآن، البقرہ ۲:۱۵۳",referenceEn:"Quran 2:153",text:"يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ",suppliedTranslation:{language:"ur",text:"اے ایمان والو! صبر اور نماز سے مدد چاہو، بے شک اللہ صبر کرنے والوں کے ساتھ ہے۔",translator:"آزمائشی ترجمہ"},quranLocation:{surah:2,ayah:153},sourceSha256:"a".repeat(64)},
-  {id:"nahj:fixture:1",recordId:"nahj:fixture:1",collection:"nahj",language:"ar",referenceUr:"نہج البلاغہ، حکمت ۵۵ (آزمائشی متن)",referenceEn:"Nahj al-Balagha, saying 55 (fixture)",text:"الصَّبْرُ صَبْرَانِ: صَبْرٌ عَلَى مَا تَكْرَهُ، وَصَبْرٌ عَمَّا تُحِبُّ",suppliedTranslation:{language:"ur",text:"صبر کی دو قسمیں ہیں: ناپسندیدہ چیز پر صبر اور پسندیدہ چیز سے رکنے پر صبر۔",translator:"آزمائشی ترجمہ"}},
-  {id:"quran:103:3",collection:"quran",language:"ar",referenceUr:"قرآن، العصر ۱۰۳:۳",referenceEn:"Quran 103:3",text:"إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ",suppliedTranslation:{language:"ur",text:"سوائے ان لوگوں کے جو ایمان لائے، نیک عمل کیے، اور ایک دوسرے کو حق اور صبر کی تلقین کی۔",translator:"آزمائشی ترجمہ"},quranLocation:{surah:103,ayah:3},sourceSha256:"b".repeat(64)}
+const { ahmedgrafQuranReference } = await import("../app/tools/arabic-diacritics/quran/ahmedgrafProvider.ts");
+const { completeQuranTranslationFor } = await import("../app/lib/knowledge/completeQuranTranslations.ts");
+const { QURAN_TRANSLATION_SOURCES } = await import("../app/tools/khateeb-studio/engine/quranTranslationProvider.ts");
+// Build the public comparison fixture from the same original Indo-Pak Quran
+// edition and Sheikh Mohsin Ali Najafi translation used in production.
+// No manufactured verse spellings or placeholder translations are accepted.
+const referenceAyahs=ahmedgrafQuranReference.listAyahs();
+const quranSha=ahmedgrafQuranReference.getMetadata().sourceSha256;
+if(!quranSha)throw new Error("missing-quran-sha");
+function verifiedQuran(surah,ayah){
+  const original=referenceAyahs.find(a=>a.surah===surah&&a.ayah===ayah);
+  const translation=completeQuranTranslationFor(surah,ayah,"ur");
+  if(!original?.text||!translation?.trim())throw new Error("missing-quran-fixture");
+  return {
+    id:"quran:"+surah+":"+ayah,collection:"quran",language:"ar",
+    referenceUr:"قرآن، "+surah+":"+ayah,referenceEn:"Quran "+surah+":"+ayah,
+    text:original.text,suppliedTranslation:{language:"ur",text:translation,translator:QURAN_TRANSLATION_SOURCES.ur.translatorUr},
+    quranLocation:{surah,ayah},sourceSha256:quranSha,translator:null
+  };
+}
+const bookFixture={
+  id:"nahj:fixture:1",recordId:"nahj:fixture:1",collection:"nahj",language:"ar",
+  referenceUr:"نہج البلاغہ، حکمت ۵۵ (آزمائشی اقتباس)",
+  referenceEn:"Nahj al-Balagha, saying 55 (test excerpt)",
+  text:"الصَّبْرُ صَبْرَانِ: صَبْرٌ عَلَى مَا تَكْرَهُ، وَصَبْرٌ عَمَّا تُحِبُّ",
+  suppliedTranslation:{language:"ur",text:"صبر کی دو قسمیں ہیں: ناپسندیدہ چیز پر صبر اور پسندیدہ چیز سے رکنے پر صبر۔",translator:"آزمائشی فراہم کردہ ترجمہ"},
+  sourceSha256:"fixture"
+};
+const fixture=[
+  verifiedQuran(2,153),verifiedQuran(2,155),bookFixture,
+  verifiedQuran(2,156),verifiedQuran(2,157),verifiedQuran(3,200),
+  verifiedQuran(16,127),verifiedQuran(103,3),verifiedQuran(39,10)
 ];
+console.log("SERMON_COMPARISON_FIXTURE",JSON.stringify({
+  status:"ready",quranCount:fixture.filter(p=>p.collection==="quran").length,
+  nonQuranCount:fixture.filter(p=>p.collection!=="quran").length,
+  sourceIds:fixture.map(p=>p.id),privateCorpusRequired:false
+}));
 const input = {title:"صبر",duration:20,locale:"ur"};
 const result = {question:input.title,status:"evidence",method:"lexical-bm25-topic-expansion",passages:fixture,availableCollections:["quran","nahj"],expandedTerms:[]};
 const outDir = "sermon-model-comparison";
