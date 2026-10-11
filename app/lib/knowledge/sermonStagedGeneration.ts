@@ -46,8 +46,9 @@ export async function generateStagedSermonSections(
       if(preferCore&&!next.refs.includes(nonQuran!.ref))continue;
       accepted=next;break;
     }
-    if(!accepted)throw new Error("staged-insufficient-draft");
+    if(!accepted){console.info("SERMON_STAGED_STAGE",JSON.stringify({stage:index+1,status:"failed",reason:"insufficient-draft"}));throw new Error("staged-insufficient-draft");}
     sections.push(accepted);
+    console.info("SERMON_STAGED_STAGE",JSON.stringify({stage:index+1,status:"draft",words:accepted.text.split(/\s+/u).filter(Boolean).length,sourceRefs:accepted.refs,nonQuran:accepted.refs.some(ref=>evidence.some(e=>e.ref===ref&&e.passage.collection!=="quran"))}));
   }
   const complete=parseComposedSections({sections},evidence);
   if(!complete)throw new Error("staged-invalid-project");
