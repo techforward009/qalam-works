@@ -29,6 +29,9 @@ registerHooks({
 });
 
 const { composeSermon, generateSermonSections } = await import("../app/lib/knowledge/sermonComposer.ts");
+const { generateStagedSermonSections } = await import("../app/lib/knowledge/sermonStagedGeneration.ts");
+const staged=process.argv.includes("--staged");
+const only=process.argv.find(x=>x.startsWith("--only="))?.slice("--only=".length);
 const { buildCustomSermonText } = await import("../app/tools/khateeb-studio/engine/customSermonProject.ts");
 const fixture = [
   {id:"quran:2:153",collection:"quran",language:"ar",referenceUr:"قرآن، البقرہ ۲:۱۵۳",referenceEn:"Quran 2:153",text:"يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ",suppliedTranslation:{language:"ur",text:"اے ایمان والو! صبر اور نماز سے مدد چاہو، بے شک اللہ صبر کرنے والوں کے ساتھ ہے۔",translator:"آزمائشی ترجمہ"},quranLocation:{surah:2,ayah:153},sourceSha256:"a".repeat(64)},
@@ -44,7 +47,7 @@ const configurations=[
   {name:"gpt-oss-120b",env:{GROQ_API_KEY:process.env.GROQ_API_KEY,CLOUDFLARE_ACCOUNT_ID:process.env.CLOUDFLARE_ACCOUNT_ID,CLOUDFLARE_AUTH_TOKEN:process.env.CLOUDFLARE_AUTH_TOKEN,QALAM_SERMON_PROVIDER:"groq",QALAM_SERMON_REVIEW_PROVIDER:"cloudflare"}},
   {name:"gemma-4-26b-a4b",env:{CLOUDFLARE_ACCOUNT_ID:process.env.CLOUDFLARE_ACCOUNT_ID,CLOUDFLARE_AUTH_TOKEN:process.env.CLOUDFLARE_AUTH_TOKEN,QALAM_SERMON_PROVIDER:"cloudflare",QALAM_SERMON_REVIEW_PROVIDER:"cloudflare"},model:"@cf/google/gemma-4-26b-a4b-it"}
 ];
-for(const config of configurations){
+for(const config of configurations.filter(c=>!only||c.name===only)){
   const started=Date.now();
   const draftLog=[];
   try {
@@ -56,7 +59,7 @@ for(const config of configurations){
         // Verify real integration with the identical structured-output contract.
         return fetch(url,{...options,body:JSON.stringify(body)});
       } : fetch;
-      const output=await generateSermonSections(req,evidence,env,replaceModel,deadline);
+      const output=await (staged?generateStagedSermonSections:generateSermonSections)(req,evidence,env,replaceModel,deadline);
       draftLog.push(output);
       return output;
     };
@@ -64,13 +67,13 @@ for(const config of configurations){
     const text=buildCustomSermonText(project,"ur");
     const prose=project.sections.map(s=>s.userText.replace(/\n\nحوالہ:[^\n]*/gu,""));
     const proseWords=prose.reduce((sum,s)=>sum+s.split(/\s+/u).filter(Boolean).length,0);
-    const arabicWords=fixture.filter(f=>project.selectedEvidenceIds.some(id=>id===f.id)).reduce((sum,f)=>sum+f.text.split(/\s+/u).filter(Boolean).length,0);
-    const translatedWords=fixture.filter(f=>project.selectedEvidenceIds.some(id=>id===f.id)).reduce((sum,f)=>sum+f.suppliedTranslation.text.split(/\s+/u).filter(Boolean).length,0);
+    const arabicWords=[...new Set(project.evidence.filter(f=>project.selectedEvidenceIds.includes(f.id)).map(f=>f.arabic?.trim()).filter(Boolean))].reduce((sum,s)=>sum+s.split(/\s+/u).filter(Boolean).length,0);
+    const translatedWords=[...new Set(project.evidence.filter(f=>project.selectedEvidenceIds.includes(f.id)).map(f=>f.detailUr?.split("\nمترجم:")[0].trim()).filter(Boolean))].reduce((sum,s)=>sum+s.split(/\s+/u).filter(Boolean).length,0);
     const estimatedMinutes=Number((proseWords/95+arabicWords/65+translatedWords/90+project.selectedEvidenceIds.length*0.15).toFixed(1));
     const ids=[...new Set(project.sections.flatMap(s=>s.evidenceIds))];
     const sourceCount=ids.length,nonQuran=ids.filter(id=>fixture.some(f=>f.id===id&&f.collection!=="quran")).length;
     const nonUrdu=project.sections.some(s=>/[\p{Script=Latin}\p{Script=Devanagari}\p{Script=Bengali}]/u.test(s.headingUr+s.userText.replace(/\n\nحوالہ:[^\n]*/gu,"")));
-    const row={model:config.name,status:"passed-source-review",sections:project.sections.length,sourceCount,nonQuran,proseWords,sectionWords:prose.map(s=>s.split(/\s+/u).filter(Boolean).length),estimatedMinutes,meetsTimeGoal:estimatedMinutes>=18&&estimatedMinutes<=22,nonUrdu,elapsedMs:Date.now()-started,requests:draftLog.length};
+    const row={model:config.name,status:"passed-source-review",staged,sections:project.sections.length,sourceCount,nonQuran,proseWords,sectionWords:prose.map(s=>s.split(/\s+/u).filter(Boolean).length),estimatedMinutes,meetsTimeGoal:estimatedMinutes>=18&&estimatedMinutes<=22,nonUrdu,elapsedMs:Date.now()-started,requests:draftLog.length};
     stats.push(row);
     writeFileSync(outDir+"/"+config.name+".txt","آزمائشی مجلس — حقیقی کتابی ماخذ کی تصدیق کا متبادل نہیں\n\n"+text);
     console.log("SERMON_MODEL_COMPARE",JSON.stringify(row));

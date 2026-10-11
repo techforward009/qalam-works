@@ -19,7 +19,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vitest run tests/sermonComposer.test.ts tests/sermonReview.test.ts tests/sermonEvidenceCoverage.test.ts tests/sermonCorpusAudit.test.ts tests/feedback.test.ts tests/feedbackAdmin.test.ts tests/feedbackFlow.test.ts tests/feedbackNotification.test.ts
+      - run: npx vitest run tests/sermonComposer.test.ts tests/sermonStagedGeneration.test.ts tests/sermonReview.test.ts tests/sermonEvidenceCoverage.test.ts tests/sermonCorpusAudit.test.ts tests/feedback.test.ts tests/feedbackAdmin.test.ts tests/feedbackFlow.test.ts tests/feedbackNotification.test.ts
       - name: Run repository suite with exact main-baseline comparison
         shell: bash
         run: |
@@ -101,7 +101,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Compare complete 20-minute Urdu sermons without private corpus
-        run: node scripts/evaluate-sermon-free-models.mjs --compare
+        run: node scripts/evaluate-sermon-free-models.mjs --compare --staged --only=gpt-oss-120b
       - uses: actions/upload-artifact@v4
         if: always()
         with:
