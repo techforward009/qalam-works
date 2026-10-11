@@ -28,8 +28,8 @@ registerHooks({
   },
 });
 
-const { composeSermon, generateSermonSections } = await import("../app/lib/knowledge/sermonComposer.ts");
-const { generateStagedSermonSections } = await import("../app/lib/knowledge/sermonStagedGeneration.ts");
+const { composeSermon, generateSermonSections, selectSermonEvidence } = await import("../app/lib/knowledge/sermonComposer.ts");
+const { generateStagedSermonSections, planSermonStageEvidence } = await import("../app/lib/knowledge/sermonStagedGeneration.ts");
 const staged=process.argv.includes("--staged");
 const only=process.argv.find(x=>x.startsWith("--only="))?.slice("--only=".length);
 const { buildCustomSermonText } = await import("../app/tools/khateeb-studio/engine/customSermonProject.ts");
@@ -91,6 +91,21 @@ console.log("SERMON_COMPARISON_FIXTURE",JSON.stringify({
   status:"ready",quranCount:fixture.filter(p=>p.collection==="quran").length,
   nonQuranCount:fixture.filter(p=>p.collection!=="quran").length,
   sourceIds:fixture.map(p=>p.id),privateCorpusRequired:false
+}));
+// This is the evidence the real composer will actually retain after its caps.
+// Counting raw fixture entries alone can conceal discarded hadith sources.
+const selectedFor20Minutes=selectSermonEvidence(fixture,20);
+const stagePlan=planSermonStageEvidence(selectedFor20Minutes);
+const retainedBookIds=selectedFor20Minutes.filter(e=>e.passage.collection!=="quran").map(e=>e.passage.id);
+const assignedBooks=new Set(stagePlan.flat().filter(e=>e.passage.collection!=="quran").map(e=>e.passage.id));
+if(selectedFor20Minutes.length>8||retainedBookIds.length<3||stagePlan.length!==5
+  ||stagePlan.some(part=>!part.length||part.length>3)
+  ||retainedBookIds.some(id=>!assignedBooks.has(id)))throw new Error("sermon-fixture-source-coverage-regression");
+console.log("SERMON_SOURCE_PLAN",JSON.stringify({
+  selected: selectedFor20Minutes.map(e=>e.passage.id),
+  retainedBooks:retainedBookIds,
+  stages:stagePlan.map((g,i)=>({stage:i+1,ids:g.map(e=>e.passage.id)})),
+  verifiedBy:"local-selection-contract",privateCorpusRequired:false
 }));
 if (process.argv.includes("--check-fixture")) process.exit(0);
 const input = {title:"صبر",duration:20,locale:"ur"};
