@@ -28,8 +28,12 @@ export async function generateStagedSermonSections(
     let accepted:ComposedSection|null=null;
     for(let attempt=0;attempt<2;attempt++){
       const previousSections=sections.map(s=>({heading:s.heading,ending:s.text.slice(-420),refs:s.refs}));
-      const preferCore=nonQuran&&(index===1||index===2||index===3)
-        ?"This section must cite source ref "+nonQuran.ref+" for its substantive meaning; only use assertions directly entailed by it.":"";
+      // Global source diversity is checked by composeSermon. Do not demand
+      // the same non-Quran reference in every middle section: that produced
+      // repetition and spurious stage failures on Gemma.
+      const needsCore=Boolean(nonQuran&&index===2&&!sections.some(s=>s.refs.includes(nonQuran.ref)));
+      const preferCore=needsCore
+        ?"You MUST cite reference "+nonQuran!.ref+" and explain ONLY what its supplied text establishes.":"";
       const instruction=[
         input.instruction??"",
         "Stage "+(index+1)+"/5. Produce ONE flowing spoken section of roughly "+TARGET_WORDS[index]+" Urdu words, not a plan or bullet points. Use distinct supported explanations and open questions rather than inventing religious facts.",
@@ -39,11 +43,21 @@ export async function generateStagedSermonSections(
       ].filter(Boolean).join("\n");
       const request={...input,instruction,previous:JSON.stringify({previousSections})};
       const raw=await generateSermonSections(request,evidence,env,fetchImpl,deadline,{index:index as 0|1|2|3|4,targetWords:TARGET_WORDS[index]});
-      if(!validSection(raw,evidence,TARGET_WORDS[index]-45))continue;
+      const candidate=raw&&typeof raw==="object"&&Array.isArray((raw as {sections?:unknown}).sections)
+        ? (raw as {sections:unknown[]}).sections[0] as Partial<ComposedSection>|undefined : undefined;
+      const words=typeof candidate?.text==="string" ? candidate.text.split(/\s+/u).filter(Boolean).length : 0;
+      const refs=Array.isArray(candidate?.refs)?candidate.refs:[];
+      const valid=validSection(raw,evidence,TARGET_WORDS[index]-45);
+      const meetsCore=!needsCore||refs.includes(nonQuran!.ref);
+      console.info("SERMON_STAGED_ATTEMPT",JSON.stringify({
+        stage:index+1,attempt:attempt+1,words,minimumWords:TARGET_WORDS[index]-45,
+        sourceRefs:refs.filter((ref):ref is number=>typeof ref==="number").slice(0,5),
+        validShape:valid,requiredCore:needsCore,meetsCore
+      }));
+      if(!valid||!meetsCore)continue;
       const next:ComposedSection={
         heading:raw.sections[0].heading.trim(),text:raw.sections[0].text.trim(),refs:[...new Set(raw.sections[0].refs)]
       };
-      if(preferCore&&!next.refs.includes(nonQuran!.ref))continue;
       accepted=next;break;
     }
     if(!accepted){console.info("SERMON_STAGED_STAGE",JSON.stringify({stage:index+1,status:"failed",reason:"insufficient-draft"}));throw new Error("staged-insufficient-draft");}

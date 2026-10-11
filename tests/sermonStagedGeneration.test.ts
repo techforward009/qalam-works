@@ -37,3 +37,22 @@ it("fails closed after two attempts when a short section pretends to be 20 minut
   await expect(generateStagedSermonSections(input,evidence,{GROQ_API_KEY:"test"},fetchMock)).rejects.toThrow("staged-insufficient-draft");
   expect(fetchMock).toHaveBeenCalledTimes(2);
 });
+
+it("allows a middle section to cite only its relevant Quran source once a primary hadith is retained elsewhere",async()=>{
+ const requests:any[]=[];
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+  const body=JSON.parse(init!.body as string);requests.push(body);
+  const idx=requests.length-1;
+  // The first stage carries the primary hadith; later stages need not
+  // repeat it merely to satisfy an artificial stage-by-stage source quota.
+  const refs=idx===0?[1,2]:idx===1?[3]:idx===2?[1]:idx===3?[3]:[2];
+  const text=Array.from({length:34},(_,n)=>
+    "سامعین کرام، اس ماخذ کی عبارت میں صبر کے موضوع پر غور کرنے کا موقع ملتا ہے۔ آئیے اس کے الفاظ کو پڑھیں اور سوال نمبر "+(idx*100+n+1)+" پر توجہ دیں۔"
+  ).join(" ");
+  return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections:[{heading:"صبر پر گفتگو",text,refs}]})}}]}));
+ });
+ const result=await generateStagedSermonSections(input,evidence,{GROQ_API_KEY:"test"},fetchMock) as {sections:{refs:number[]}[]};
+ expect(result.sections).toHaveLength(5);
+ expect(result.sections[1].refs).toEqual([3]);
+ expect(fetchMock).toHaveBeenCalledTimes(5);
+});

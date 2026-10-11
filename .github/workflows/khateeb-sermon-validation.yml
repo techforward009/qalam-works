@@ -85,7 +85,7 @@ jobs:
       - run: npm run test:sermon:flow:live
 
   sermon-model-comparison:
-    if: (github.event_name == 'push' && github.event.head_commit.message == 'Run staged Gemma 4 comparison') || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[model-compare]'))
+    if: (github.event_name == 'push' && github.event.head_commit.message == 'Run staged Gemma 4 diagnostic comparison') || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[model-compare]'))
     needs: sermon-unit
     runs-on: ubuntu-latest
     timeout-minutes: 24
