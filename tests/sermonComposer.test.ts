@@ -314,3 +314,8 @@ it("drops audited unsupported sentences before paid regeneration and independent
  expect(resultProject.sections[1].userText).not.toContain(original);
  expect(evaluator.review.mock.calls[1][1][1].text).not.toContain(original);
 });
+
+it("rejects unsafe offline comparison timeouts without altering production defaults",async()=>{
+ await expect(composeSermon(input,result,{env:{},evaluationTimeoutMs:1000})).rejects.toThrow("invalid-evaluation-timeout");
+ await expect(composeSermon(input,result,{env:{},evaluationTimeoutMs:600001})).rejects.toThrow("invalid-evaluation-timeout");
+});
