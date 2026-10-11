@@ -307,7 +307,7 @@ it("drops audited unsupported sentences before paid regeneration and independent
   };
  })};
  const generator=vi.fn(async()=>({sections}));
- const resultProject=await composeSermon(input,result,{generate:generator,reviewer:evaluator,env:{}});
+ const resultProject=await composeSermon(input,result,{generate:generator,reviewer:evaluator,env:{},preferSentenceFilter:true});
  expect(generator).toHaveBeenCalledTimes(1);
  expect(evaluator.review).toHaveBeenCalledTimes(2);
  expect(evaluator.review.mock.calls[1][1]).toHaveLength(5);

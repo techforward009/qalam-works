@@ -108,7 +108,7 @@ export function selectSermonEvidence(passages:readonly AnswerEvidence["passage"]
   }
   return selectAnswerEvidence(selected);
 }
-export async function composeSermon(input: SermonRequest, result: KnowledgeResult, options: { generate?: typeof generateSermonSections; reviewer?: KnowledgeSynthesisProvider | null; env: SermonProviderEnv }) {
+export async function composeSermon(input: SermonRequest, result: KnowledgeResult, options: { generate?: typeof generateSermonSections; reviewer?: KnowledgeSynthesisProvider | null; env: SermonProviderEnv; preferSentenceFilter?:boolean }) {
   if(result.status!=="evidence") throw new Error(result.status==="unsupported-fatwa"?"unsupported-fatwa":"no-evidence");
   const evidence=selectSermonEvidence(result.passages.filter(p=>(p.collection==="quran"||p.language==="ar")&&hasSuppliedAnswerText(p,input.locale)),input.duration);
   if(!evidence.length) throw new Error("missing-translation");
@@ -167,7 +167,7 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
 
     // Remove only explicitly rejected audited sentences, then independently
     // recheck all five sections before acceptance. No unreviewed export.
-    if(feedback?.length && reviewFailures===0){
+    if(options.preferSentenceFilter && feedback?.length && reviewFailures===0){
       const neutralHeadings=input.locale==="ur"
         ?["تمہید","پہلا علمی نکتہ","دوسرا علمی نکتہ","عملی غور و فکر","اختتام"]
         :["Opening","First source point","Second source point","Practical reflection","Closing"];
