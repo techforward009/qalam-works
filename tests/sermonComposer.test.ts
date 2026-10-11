@@ -23,7 +23,7 @@ it("creates five composed sections with exact references, portable sources and c
  expect(project.sections).toHaveLength(5);expect(project.sections.reduce((n,s)=>n+s.minutes,0)).toBe(30);
  expect(project.sections[0].evidenceIds).toContain(result.passages[0].id);
  expect(project.sections[1].evidenceIds).toContain(result.passages[1].id);
- expect(project.sections[2].evidenceIds).toEqual([]);
+ expect(project.sections[2].evidenceIds).toContain(result.passages[2].id);
  expect(project.sections[0].userText).toContain("قرآن، 2:153");
  expect(project.evidence[0].arabic).toBe(result.passages[0].text);
  expect(buildCustomSermonText(project,"ur")).toContain(result.passages[0].suppliedTranslation!.text);
@@ -266,4 +266,20 @@ it("preserves rejected-source feedback when a repair draft also needs more lengt
  expect(generateDraft.mock.calls[1][0].instruction).toContain("Source review rejected section-1");
  expect(generateDraft.mock.calls[2][0].instruction).toContain("Source review rejected section-1");
  expect(generateDraft.mock.calls[2][0].instruction).toContain(sermonSentences(sections[0].text)[0]);
+});
+
+it("includes cited Nahj and other original book sources in portable, readable sermon output",async()=>{
+  const sermon=await composeSermon(input,result,{generate,reviewer,env:{}});
+  const nahj=result.passages[2];
+  expect(sermon.selectedEvidenceIds).toContain(nahj.id);
+  expect(sermon.evidence.find(e=>e.id===nahj.id)).toMatchObject({
+    kind:"hadith",status:"verified",arabic:nahj.text,citationUr:nahj.referenceUr
+  });
+  const serialized=serializeCustomSermonProject(sermon);
+  expect(parseCustomSermonProject(serialized)).toEqual(sermon);
+  const printed=buildCustomSermonText(sermon,"ur");
+  expect(printed).toContain(nahj.text);
+  expect(printed).toContain(nahj.suppliedTranslation!.text);
+  // A recurrent citation must not recite the complete original more than once.
+  expect(printed.split(nahj.text).length-1).toBe(1);
 });

@@ -173,12 +173,35 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
   if(!fullyReviewed || !sections || claims.length!==5 || claims.some((claim,index)=>claim.id!==`section-${index+1}`))throw new Error("unverified");
   const selected=[...new Set(claims.flatMap(c=>c.citations.map(r=>r.passageId)))];
   const project=createKnowledgeDraft({...result,question:input.title,research:undefined},selected,input.locale,input.duration);
+  // A reviewed non-Quran source must travel with the saved and printed sermon.
+  // The original draft projected only Quran verses into portable evidence, silently
+  // dropping the book passages cited by the model from section evidence IDs.
+  const citedIds=new Set(selected);
+  const portableBookEvidence=evidence.map(e=>e.passage)
+    .filter(p=>citedIds.has(p.id)&&p.collection!=="quran")
+    .map(p=>({
+      id:p.id,
+      kind:(p.collection==="sahifa"?"source":"hadith") as "source"|"hadith",
+      status:"verified" as const,
+      titleUr:p.referenceUr,titleEn:p.referenceEn,
+      detailUr:p.suppliedTranslation?.language==="ur"
+        ? `${p.suppliedTranslation.text}\nمترجم: ${p.suppliedTranslation.translator}`
+        : "اصل عربی متن",
+      detailEn:p.suppliedTranslation?.language==="en"
+        ? `${p.suppliedTranslation.text}\nTranslator: ${p.suppliedTranslation.translator}`
+        : "Verified original Arabic source",
+      citationUr:p.referenceUr,citationEn:p.referenceEn,arabic:p.text,
+    }));
+  const portableEvidence=[...project.evidence,...portableBookEvidence];
+  const portableIds=portableEvidence.map(p=>p.id);
   const weights=[.12,.27,.27,.22,.12];const minutes=weights.map(w=>Math.floor(input.duration*w));minutes[4]+=input.duration-minutes.reduce((a,b)=>a+b,0);
   return {...project,objective:input.locale==="ur"?"عنوان کے مطابق مربوط مجلس؛ علمی نکات کے ساتھ اصل حوالے محفوظ ہیں۔":"Connected sermon with preserved source references.",ownMaterial:"",status:"draft" as const,
-    sections:sections.map((s,i)=>({id:`composed-${i+1}`,kind:(i===0?"opening":i===4?"closing":"scholar") as "opening"|"closing"|"scholar",headingUr:s.heading,headingEn:s.heading,minutes:minutes[i],provenance:"editorial" as const,evidenceIds:s.refs.map(ref=>evidence.find(item=>item.ref===ref)!.passage.id).filter(id=>project.selectedEvidenceIds.includes(id)),userText:[s.text,...s.refs.map(ref=>{const p=evidence.find(e=>e.ref===ref)!.passage;return `${input.locale==="ur"?"حوالہ":"Reference"}: ${input.locale==="ur"?p.referenceUr:p.referenceEn}`;})].join("\n\n")})),
-    evidence:project.evidence,bookExcerpts:project.bookExcerpts,
+    sections:sections.map((s,i)=>({id:`composed-${i+1}`,kind:(i===0?"opening":i===4?"closing":"scholar") as "opening"|"closing"|"scholar",headingUr:s.heading,headingEn:s.heading,minutes:minutes[i],provenance:"editorial" as const,evidenceIds:s.refs.map(ref=>evidence.find(item=>item.ref===ref)!.passage.id).filter(id=>portableIds.includes(id)),userText:[s.text,...s.refs.map(ref=>{const p=evidence.find(e=>e.ref===ref)!.passage;return `${input.locale==="ur"?"حوالہ":"Reference"}: ${input.locale==="ur"?p.referenceUr:p.referenceEn}`;})].join("\n\n")})),
+    // Source originals now appear inline at first use. Do not repeat every
+    // complete book excerpt at the end of an already composed sermon.
+    evidence:portableEvidence,bookExcerpts:[],
     researchQuery:input.title,
     // Sources are inserted by the server, never copied out of model output.
-    selectedEvidenceIds:project.selectedEvidenceIds,
+    selectedEvidenceIds:portableIds,
   };
 }

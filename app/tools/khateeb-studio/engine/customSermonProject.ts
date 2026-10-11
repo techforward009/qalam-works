@@ -492,6 +492,7 @@ export function buildCustomSermonText(
       : "Rule: source material, my own notes, and Qalam editorial material are kept separate.",
   ];
 
+  const printedSources = new Set<string>();
   for (const section of project.sections) {
     lines.push(
       "",
@@ -512,6 +513,13 @@ export function buildCustomSermonText(
     for (const id of section.evidenceIds) {
       const item = selected.get(id);
       if (!item) continue;
+      // The original Arabic and its supplied translation are recited once.
+      // Later sections may refer back to a citation without repeating the reading.
+      if (printedSources.has(id)) {
+        lines.push(`${ur ? "حوالہ" : "Reference"}: ${ur ? item.citationUr : item.citationEn}`);
+        continue;
+      }
+      printedSources.add(id);
       lines.push(
         "",
         ur ? item.titleUr : item.titleEn,
