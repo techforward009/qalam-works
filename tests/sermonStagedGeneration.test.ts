@@ -143,7 +143,7 @@ it("accepts a shorter strictly cited repair while preserving four previously app
   text:Array.from({length:115},(_,n)=>"متن "+(i+1)+" سوال "+n+" پر غور کریں۔").join(" "),
   refs:i===2?[2]:[1,3]
  }));
- const fetchMock=vi.fn(async()=>{
+ const fetchMock=vi.fn(async(_url:RequestInfo|URL,_init?:RequestInit)=>{
   const text=Array.from({length:200},(_,n)=>n%2?"پر":"غور").join(" ");
   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections:[{heading:"صبر کا دوسرا نکتہ",text,refs:[2]}]})}}]}));
  });
