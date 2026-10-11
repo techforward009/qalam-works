@@ -62,9 +62,29 @@ const bookFixture={
   suppliedTranslation:{language:"ur",text:"صبر کی دو قسمیں ہیں: ناپسندیدہ چیز پر صبر اور پسندیدہ چیز سے رکنے پر صبر۔",translator:"آزمائشی فراہم کردہ ترجمہ"},
   sourceSha256:"fixture"
 };
+// Additional original book texts are quoted with exact book locators.
+// Their translations are marked editorial test drafts, not a published edition.
+// Originals checked against al-Kafi 2:87 (#2) and 2:89 (#6).
+const bookPatienceHead={
+  id:"alkafi:2:87:2",recordId:"alkafi:2:87:2",collection:"alkafi",language:"ar",
+  referenceUr:"الکافی، جلد ۲، صفحہ ۸۷، باب الصبر، حدیث ۲",
+  referenceEn:"al-Kafi, vol. 2, p. 87, Bab al-Sabr, hadith 2",
+  text:"الصبر من الايمان بمنزلة الرأس من الجسد ، فإذا ذهب الرأس ذهب الجسد ، كذلك إذا ذهب الصبر ذهب الايمان",
+  suppliedTranslation:{language:"ur",text:"صبر ایمان کے لیے ایسا ہے جیسے سر جسم کے لیے ہے۔ جب سر چلا جائے تو جسم ختم ہو جاتا ہے، اسی طرح جب صبر چلا جائے تو ایمان بھی چلا جاتا ہے۔",translator:"آزمائشی ادارتی ترجمہ"},
+  sourceUrl:"https://ablibrary.net/book_content/b/3250/87?lang=ar"
+};
+const bookFreeInAdversity={
+  id:"alkafi:2:89:6",recordId:"alkafi:2:89:6",collection:"alkafi",language:"ar",
+  referenceUr:"الکافی، جلد ۲، صفحہ ۸۹، باب الصبر، حدیث ۶",
+  referenceEn:"al-Kafi, vol. 2, p. 89, Bab al-Sabr, hadith 6",
+  text:"إن الحر حر على جميع أحواله ، إن نابته نائبة صبر لها وإن تداكت عليه المصائب لم تكسره وإن أسر وقهر واستبدل باليسر عسرا كما كان يوسف الصديق الأمين ( صلوات الله عليه ) لم يضرر حريته أن استعبد وقهر واسر ولم تضرره ظلمة الجب ووحشته وما ناله أن من الله عليه فجعل الجبار العاتي له عبدا بعد إذ كان [ له ] مالكا ، فأرسله ورحم به أمة وكذلك الصبر يعقب خيرا ، فاصبروا ووطنوا أنفسكم على الصبر توجروا",
+  suppliedTranslation:{language:"ur",text:"آزاد شخص ہر حالت میں آزاد رہتا ہے۔ اگر کوئی مصیبت آ پڑے تو اس پر صبر کرتا ہے، اور اگر مصیبتیں ایک کے بعد ایک آئیں تو اسے توڑ نہیں سکتیں۔ اگر وہ گرفتار اور مغلوب ہو جائے اور آسودگی کے بجائے سختی آ جائے، تب بھی اس کی آزادی باقی رہتی ہے۔ جیسا کہ راست باز اور امین یوسف علیہ السلام کو غلام بنائے جانے، مغلوب ہونے اور قید کیے جانے سے ان کی آزادی کو نقصان نہ پہنچا۔ کنویں کی تاریکی، تنہائی اور انہیں پیش آنے والی تکلیفیں بھی انہیں نقصان نہ پہنچا سکیں، یہاں تک کہ اللہ نے ان پر احسان فرمایا؛ جو سرکش پہلے ان کا مالک تھا، ان کا تابع ہوگیا۔ اللہ نے انہیں بھیجا اور ان کے ذریعے ایک امت پر رحمت فرمائی۔ اسی طرح صبر کے بعد بھلائی آتی ہے؛ لہٰذا صبر کرو اور اپنے آپ کو صبر کے لیے آمادہ کرو تاکہ تمہیں اجر ملے۔",translator:"آزمائشی ادارتی ترجمہ"},
+  sourceUrl:"https://ablibrary.net/book_content/b/3250/89?lang=ar"
+};
 const fixture=[
   verifiedQuran(2,153),verifiedQuran(2,155),bookFixture,
-  verifiedQuran(2,156),verifiedQuran(2,157),verifiedQuran(3,200),
+  verifiedQuran(2,156),verifiedQuran(2,157),bookPatienceHead,
+  verifiedQuran(3,200),bookFreeInAdversity,
   verifiedQuran(16,127),verifiedQuran(103,3),verifiedQuran(39,10)
 ];
 console.log("SERMON_COMPARISON_FIXTURE",JSON.stringify({

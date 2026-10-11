@@ -154,3 +154,16 @@ it("accepts a shorter strictly cited repair while preserving four previously app
  expect(body.messages[0].content).toContain("Write approximately 220 distinct spoken Urdu words");
  for(const i of [0,1,3,4])expect(result.sections[i]).toEqual(prior[i]);
 });
+
+it("keeps a third distinct original book reading available for the closing stage",()=>{
+ const q=Array.from({length:5},(_,i)=>({
+  ...evidence[0],ref:i+1,passage:{...evidence[0].passage,id:"quran:distinct:"+i}
+ }));
+ const b=Array.from({length:3},(_,i)=>({
+  ...evidence[1],ref:6+i,passage:{...evidence[1].passage,id:"alkafi:distinct:"+i,collection:"alkafi"}
+ }));
+ const chosen=planSermonStageEvidence([...q,...b] as AnswerEvidence[]);
+ expect(chosen[2].some(x=>x.ref===6)).toBe(true);
+ expect(chosen[3].some(x=>x.ref===7)).toBe(true);
+ expect(chosen[4].some(x=>x.ref===8)).toBe(true);
+});
