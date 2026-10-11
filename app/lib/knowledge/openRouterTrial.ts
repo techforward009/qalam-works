@@ -25,6 +25,32 @@ export function estimateOpenRouterTrialCeiling(models:readonly OpenRouterTrialMo
   const output=Math.max(...models.map(m=>OPENROUTER_TRIAL_MODELS[m].outputPerMillion));
   return (inputBytes*input+outputTokens*output)/1_000_000;
 }
+/**
+ * Confirm a SERVER-ENFORCED spending cap for the current key before spending.
+ * A caller-provided maximum (default $1) is not a replacement for the limit
+ * returned by OpenRouter. Missing/unlimited limits always fail closed.
+ */
+export async function verifyOpenRouterTrialKeyCap(options:{
+  apiKey:string; maxKeyUsd?:number; fetchImpl?:typeof fetch
+}):Promise<{hardLimitUsd:number;remainingUsd:number}>{
+  if(!options.apiKey?.trim())throw new Error("openrouter-key-required");
+  const maxKeyUsd=options.maxKeyUsd??1;
+  if(!Number.isFinite(maxKeyUsd)||maxKeyUsd<=0||maxKeyUsd>5)
+    throw new Error("invalid-openrouter-key-cap");
+  const response=await (options.fetchImpl??fetch)("https://openrouter.ai/api/v1/key",{
+    method:"GET",headers:{Authorization:"Bearer "+options.apiKey}
+  });
+  if(!response.ok)throw new Error("openrouter-key-cap-unavailable");
+  let body:unknown;
+  try{body=await response.json();}catch{throw new Error("openrouter-key-cap-unavailable");}
+  const data=(body as {data?:{limit?:unknown;limit_remaining?:unknown}})?.data;
+  if(typeof data?.limit!=="number"||!Number.isFinite(data.limit)||data.limit<=0||data.limit>maxKeyUsd
+    ||typeof data.limit_remaining!=="number"||!Number.isFinite(data.limit_remaining)
+    ||data.limit_remaining<0||data.limit_remaining>data.limit)
+    throw new Error("openrouter-key-hard-limit-required");
+  return {hardLimitUsd:data.limit,remainingUsd:data.limit_remaining};
+}
+
 export function createOpenRouterTrialSession(options:{
   apiKey:string; maxTrialUsd?:number; fetchImpl?:typeof fetch; maxRequests?:number
 }){
