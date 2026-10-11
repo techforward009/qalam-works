@@ -56,3 +56,18 @@ it("allows a middle section to cite only its relevant Quran source once a primar
  expect(result.sections[1].refs).toEqual([3]);
  expect(fetchMock).toHaveBeenCalledTimes(5);
 });
+
+it("accepts a source-cited 314-word middle section; final duration is still audited separately",async()=>{
+ let count=0;
+ const fetchMock=vi.fn(async()=>{
+   const index=count++;
+   const refs=index===0?[1,2,3]:index===1?[1,2]:index===2?[1,2]:index===3?[3]:[2];
+   const wordCount=index===2?314:340;
+   const text=Array.from({length:wordCount},(_,i)=>i%2?"سوال":"صبر").join(" ");
+   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({sections:[{heading:"صبر کا سبق",text,refs}]})}}]}));
+ });
+ const draft=await generateStagedSermonSections(input,evidence,{GROQ_API_KEY:"test"},fetchMock) as {sections:{text:string}[]};
+ expect(draft.sections).toHaveLength(5);
+ expect(draft.sections[2].text.trim().split(/\s+/u)).toHaveLength(314);
+ expect(fetchMock).toHaveBeenCalledTimes(5);
+});

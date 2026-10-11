@@ -47,10 +47,10 @@ export async function generateStagedSermonSections(
         ? (raw as {sections:unknown[]}).sections[0] as Partial<ComposedSection>|undefined : undefined;
       const words=typeof candidate?.text==="string" ? candidate.text.split(/\s+/u).filter(Boolean).length : 0;
       const refs=Array.isArray(candidate?.refs)?candidate.refs:[];
-      const valid=validSection(raw,evidence,TARGET_WORDS[index]-45);
+      const valid=validSection(raw,evidence,Math.floor(TARGET_WORDS[index]*0.8));
       const meetsCore=!needsCore||refs.includes(nonQuran!.ref);
       console.info("SERMON_STAGED_ATTEMPT",JSON.stringify({
-        stage:index+1,attempt:attempt+1,words,minimumWords:TARGET_WORDS[index]-45,
+        stage:index+1,attempt:attempt+1,words,minimumWords:Math.floor(TARGET_WORDS[index]*0.8),
         sourceRefs:refs.filter((ref):ref is number=>typeof ref==="number").slice(0,5),
         validShape:valid,requiredCore:needsCore,meetsCore
       }));
