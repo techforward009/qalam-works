@@ -30,7 +30,7 @@ registerHooks({
 
 const { composeSermon, generateSermonSections, selectSermonEvidence } = await import("../app/lib/knowledge/sermonComposer.ts");
 const { createSermonSentenceReviewer } = await import("../app/lib/knowledge/sermonReview.ts");
-const { createOpenRouterTrialSession, OPENROUTER_TRIAL_MODELS, estimateOpenRouterTrialCeiling } = await import("../app/lib/knowledge/openRouterTrial.ts");
+const { createOpenRouterTrialSession, OPENROUTER_TRIAL_MODELS, estimateOpenRouterTrialCeiling, verifyOpenRouterTrialKeyCap } = await import("../app/lib/knowledge/openRouterTrial.ts");
 const { generateStagedSermonSections, planSermonStageEvidence } = await import("../app/lib/knowledge/sermonStagedGeneration.ts");
 const staged=process.argv.includes("--staged");
 const openrouterCheck=process.argv.includes("--openrouter-check");
@@ -124,6 +124,7 @@ if(openrouterCheck){
  }));
  process.exit(0);
 }
+if(openrouterTrial&&!staged)throw new Error("openrouter-staged-only");
 if(openrouterTrial&&(!process.argv.includes("--allow-paid-api")||!process.env.OPENROUTER_API_KEY)){
  console.error("OPENROUTER_TRIAL_BLOCKED: requires explicit --allow-paid-api and OPENROUTER_API_KEY");
  process.exit(2);
@@ -140,6 +141,10 @@ const routerConfigurations=[
 ];
 const selectedRouter=openrouterTrial?routerConfigurations.filter(c=>c.name===(only??"qwen")):[];
 if(openrouterTrial&&selectedRouter.length!==1)throw new Error("openrouter-select-one-model");
+if(openrouterTrial){
+ const cap=await verifyOpenRouterTrialKeyCap({apiKey:process.env.OPENROUTER_API_KEY,maxKeyUsd:1});
+ console.log("OPENROUTER_KEY_CAP",JSON.stringify({verified:true,limitUsd:cap.hardLimitUsd,remainingUsd:cap.remainingUsd}));
+}
 const routerPlans=selectedRouter.map(c=>({
  name:"openrouter-"+c.name,router:true,writerModels:c.writer,reviewerModels:c.reviewer,
  env:{GROQ_API_KEY:"internal-proxy-placeholder",QALAM_SERMON_PROVIDER:"groq"}
