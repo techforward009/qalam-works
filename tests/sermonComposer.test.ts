@@ -283,3 +283,8 @@ it("includes cited Nahj and other original book sources in portable, readable se
   // A recurrent citation must not recite the complete original more than once.
   expect(printed.split(nahj.text).length-1).toBe(1);
 });
+
+it("reports source-faithful stage length failure without mislabeling it as a network error",async()=>{
+ const insufficient=async()=>{throw new Error("staged-insufficient-draft");};
+ await expect(composeSermon(input,result,{generate:insufficient,reviewer,env:{}})).rejects.toThrow("staged-insufficient-draft");
+});

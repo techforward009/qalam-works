@@ -128,7 +128,7 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
   let fullyReviewed=false;
   for(let attempt=0;attempt<5;attempt++){
     let raw:unknown;
-    try{raw=await (options.generate??generateSermonSections)(request,evidence,options.env,undefined,deadline);}catch(error){console.warn("Sermon composition validation",{stage:"generation",code:"provider-unavailable",attempt});throw new Error(error instanceof Error&&error.message==="provider-rate-limited"?"provider-rate-limited":"generation-unavailable");}
+    try{raw=await (options.generate??generateSermonSections)(request,evidence,options.env,undefined,deadline);}catch(error){console.warn("Sermon composition validation",{stage:"generation",code:"provider-unavailable",attempt});throw new Error(error instanceof Error&&error.message==="provider-rate-limited"?"provider-rate-limited":error instanceof Error&&error.message==="staged-insufficient-draft"?"staged-insufficient-draft":"generation-unavailable");}
     sections=parseComposedSections(raw,evidence);
     if(!sections){console.warn("Sermon composition validation",{stage:"draft",code:"invalid-sections",attempt,sectionCount:raw&&typeof raw==="object"&&Array.isArray((raw as {sections?:unknown}).sections)?(raw as {sections:unknown[]}).sections.length:0});if(++formatFailures>=2)throw new Error("unverified");request={...request,instruction:`${request.instruction??input.instruction??""} Return exactly five full sections, each with heading, text and valid integer refs. Expand only supported explanations.`,previous:undefined};continue;}
     if(preservedSections.size)sections=sections.map((section,index)=>preservedSections.get(index)??section);
