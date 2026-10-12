@@ -2,6 +2,7 @@ import { sermonSentences } from "../app/lib/knowledge/sermonReview";
 import type { AnswerInput, ResearchClaim } from "../app/lib/knowledge/researchAnswer";
 import type { SermonRequest } from "../app/lib/knowledge/sermonComposer";
 import { expect, it, vi } from "vitest";
+import { assessSermonSpeakingTime } from "../app/lib/knowledge/sermonSpeakingTime";
 import { composeSermon, chooseSermonReviewProvider, parseComposedSections, generateSermonSections, selectSermonEvidence } from "../app/lib/knowledge/sermonComposer";
 import type { KnowledgeResult } from "../app/lib/knowledge/retrieval";
 import { buildCustomSermonText, parseCustomSermonProject, serializeCustomSermonProject } from "../app/tools/khateeb-studio/engine/customSermonProject";
@@ -318,4 +319,22 @@ it("drops audited unsupported sentences before paid regeneration and independent
 it("rejects unsafe offline comparison timeouts without altering production defaults",async()=>{
  await expect(composeSermon(input,result,{env:{},evaluationTimeoutMs:1000})).rejects.toThrow("invalid-evaluation-timeout");
  await expect(composeSermon(input,result,{env:{},evaluationTimeoutMs:600001})).rejects.toThrow("invalid-evaluation-timeout");
+});
+
+it("rejects a well-cited but too-short draft even when nominal section minutes add up to twenty",async()=>{
+ const project=composeSermon({...input,duration:20},result,{env:{},generate,reviewer,requireSpokenDuration:true});
+ await expect(project).rejects.toThrow("sermon-duration-mismatch");
+});
+it("accepts a fully independently reviewed five-section draft only when the spoken estimate meets its goal",async()=>{
+ const substantial=sections.map((section,i)=>({
+  ...section,text:"یہ "+(i+1)+" واں مستقل حصہ ہے، "+Array.from({length:365},()=>"صبر").join(" ")+"۔"
+ }));
+ const provider=vi.fn(async()=>({sections:substantial}));
+ const prepared=await composeSermon({...input,duration:20},result,{
+  env:{},generate:provider,reviewer,requireSpokenDuration:true
+ });
+ const duration=assessSermonSpeakingTime(prepared);
+ expect(duration.estimatedMinutes).toBeGreaterThanOrEqual(18);
+ expect(duration.estimatedMinutes).toBeLessThanOrEqual(22);
+ expect(prepared.sections).toHaveLength(5);
 });

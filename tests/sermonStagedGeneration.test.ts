@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { generateStagedSermonSections, planSermonStageEvidence } from "../app/lib/knowledge/sermonStagedGeneration";
+import { generateStagedSermonSections, planSermonStageEvidence, planStagedSermonWordTargets } from "../app/lib/knowledge/sermonStagedGeneration";
 import type { AnswerEvidence } from "../app/lib/knowledge/researchAnswer";
 
 const evidence=[
@@ -166,4 +166,22 @@ it("keeps a third distinct original book reading available for the closing stage
  expect(chosen[2].some(x=>x.ref===6)).toBe(true);
  expect(chosen[3].some(x=>x.ref===7)).toBe(true);
  expect(chosen[4].some(x=>x.ref===8)).toBe(true);
+});
+
+it("reserves time for source Arabic and supplied Urdu translations before planning model prose",()=>{
+ const groups=planSermonStageEvidence(evidence);
+ const ordinary=planStagedSermonWordTargets(evidence,groups);
+ expect(ordinary).toHaveLength(5);
+ expect(ordinary.every(x=>x>100&&x<550)).toBe(true);
+ expect(ordinary[1]).toBeGreaterThan(ordinary[0]);
+ const extended=evidence.map((row,index)=>index===1
+  ?{...row,passage:{...row.passage,text:Array.from({length:450},()=>"الصبر").join(" "),
+    suppliedTranslation:{...row.passage.suppliedTranslation!,text:Array.from({length:450},()=>"صبر").join(" ")}}}
+  :row) as AnswerEvidence[];
+ const lengthy=planStagedSermonWordTargets(extended,planSermonStageEvidence(extended));
+ expect(lengthy.reduce((n,m)=>n+m,0)).toBeLessThan(ordinary.reduce((n,m)=>n+m,0)-700);
+});
+it("refuses a claimed twenty-minute plan with missing Urdu source readings",()=>{
+ const incomplete=evidence.map((row,index)=>index===0?{...row,passage:{...row.passage,suppliedTranslation:undefined}}:row) as AnswerEvidence[];
+ expect(()=>planStagedSermonWordTargets(incomplete,planSermonStageEvidence(incomplete))).toThrow("incomplete-speaking-sources");
 });
