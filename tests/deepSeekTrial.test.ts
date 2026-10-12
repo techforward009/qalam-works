@@ -1,4 +1,5 @@
 import {expect,it,vi} from "vitest";
+import {createSermonSentenceReviewer} from "../app/lib/knowledge/sermonReview";
 import {checkDeepSeekTrialBalance,createDeepSeekTrialSession,DEEPSEEK_TRIAL_MODELS,estimateDeepSeekTrialCeiling} from "../app/lib/knowledge/deepSeekTrial";
 
 const payload=(max_completion_tokens=250):RequestInit=>({
@@ -84,4 +85,36 @@ it("reserves the higher peak rate rather than guessing cheaper off-peak costs",(
  const estimate=estimateDeepSeekTrialCeiling("reviewer",8000,1500);
  expect(estimate).toBeCloseTo((8000*1.32+1500*3.96)/1_000_000,9);
  expect(DEEPSEEK_TRIAL_MODELS.writer.id).toBe("deepseek-flash");
+});
+
+it("runs the real sentence reviewer through a separate DeepSeek Pro request and validates every index",async()=>{
+ const passage={
+  id:"book:test:1",recordId:"book:test:1",collection:"nahj" as const,
+  language:"ar" as const,referenceUr:"نہج البلاغہ، حکمت ۵۵",
+  referenceEn:"Nahj al-Balagha saying 55",text:"الصَّبْرُ صَبْرَانِ",
+  suppliedTranslation:{language:"ur" as const,text:"صبر کی دو قسمیں ہیں۔",translator:"Provided"}
+ };
+ const evidence=[{ref:3,passage}];
+ const claims=[{id:"section-1",text:"تمہید\nصبر کی دو قسمیں ہیں۔",citations:[{passageId:passage.id,quote:passage.text}]}];
+ const fetchImpl=vi.fn(async(_url:RequestInfo|URL,init?:RequestInit)=>{
+   const req=JSON.parse(init!.body as string);
+   expect(req.model).toBe("deepseek-v4-pro");
+   expect(req.response_format).toEqual({type:"json_object"});
+   const text=JSON.parse(req.messages[1].content);
+   const replies=text.sections.map((section:{claimId:string;refs:number[];sentences:{index:number}[]})=>({
+     claimId:section.claimId,
+     sentences:section.sentences.map(x=>({i:x.index,v:"s",r:"e",refs:[3]}))
+   }));
+   return new Response(JSON.stringify({choices:[{finish_reason:"stop",message:{content:JSON.stringify({reviews:replies})}}]}),{status:200});
+ });
+ const direct=createDeepSeekTrialSession({apiKey:"isolated",fetchImpl});
+ const reviewer=createSermonSentenceReviewer({
+  cloudflareAccountId:"not-used",cloudflareToken:"not-used",preferredProvider:"cloudflare",
+  fetchImpl:direct.fetchFor("reviewer"),deadline:Date.now()+30000
+ })!;
+ const checked=await reviewer.review({question:"صبر",locale:"ur",evidence},claims);
+ expect(checked.reviews).toHaveLength(1);
+ expect(checked.reviews[0].verdict).toBe("supported");
+ expect(direct.status().reviewerCalls).toBe(1);
+ expect(fetchImpl).toHaveBeenCalledTimes(1);
 });
