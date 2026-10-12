@@ -13,7 +13,7 @@ const cases = [
 const sample = "یہ قلم ورکس کے اردو فونٹ کی جانچ ہے۔";
 const reportDir = path.resolve("test-results/font-export-audit");
 mkdirSync(reportDir, { recursive: true });
-const compact = (v: string) => v.replace(/^[A-Z]{6}\\+/, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+const compact = (v: string) => v.replace(/^[A-Z]{6}\+/, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
 const content = async (download: { createReadStream(): Promise<NodeJS.ReadableStream | null> }) => {
   const stream = await download.createReadStream();
   if (!stream) throw new Error("Download stream was empty");
@@ -30,7 +30,7 @@ function inspectPdf(pdf: PDFDocument) {
     for (const [, ref] of resources.entries()) {
       const font = pdf.context.lookup(ref);
       if (!(font instanceof PDFDict)) continue;
-      const name = font.get(PDFName.of("BaseFont"))?.toString().replace(/^\\//, "") ?? "";
+      const name = font.get(PDFName.of("BaseFont"))?.toString().replace(/^\//, "") ?? "";
       const descend = font.lookup(PDFName.of("DescendantFonts"));
       const descendant = descend instanceof PDFArray ? descend.lookup(0) : font;
       const descriptor = descendant instanceof PDFDict ? descendant.lookup(PDFName.of("FontDescriptor")) : null;
