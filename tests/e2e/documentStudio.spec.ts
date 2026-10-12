@@ -12,6 +12,7 @@ async function openStudio(page: Page, language: "en" | "ur" = "en") {
   await page.goto(URL);
   await expect(page.getByRole("textbox", { name: language === "ur" ? "دستاویز ایڈیٹر" : "Document editor" })).toBeVisible();
   await expect(page.locator(".ProseMirror")).toBeEditable();
+  await expect(page.locator('[data-studio-save-status="saved"]')).toBeAttached({ timeout: 15_000 });
 }
 
 async function replaceEditorContent(page: Page, text: string) {

@@ -10,6 +10,7 @@ for (const family of cases) {
     await page.goto("/tools/document-studio");
     const editor = page.locator(".ProseMirror");
     await expect(editor).toBeEditable();
+    await expect(page.locator('[data-studio-save-status="saved"]')).toBeAttached({ timeout: 15_000 });
     await editor.fill(sample);
     await expect(editor).toContainText(sample);
     await editor.press("ControlOrMeta+A");
