@@ -338,3 +338,43 @@ it("accepts a fully independently reviewed five-section draft only when the spok
  expect(duration.estimatedMinutes).toBeLessThanOrEqual(22);
  expect(prepared.sections).toHaveLength(5);
 });
+
+it("keeps edition-level source identifiers and marks an editorial test translation as not publication-ready",async()=>{
+  const passages=result.passages.map((p,index)=>index===2?{
+    ...p,id:"alkafi:fixture:editorial-test",recordId:"alkafi-v2:record:17",sourceId:"kafi-v2-ar",
+    paragraphId:"kafi-v2-ar:record:17:p1",sourceSha256:"f".repeat(64),
+    suppliedTranslation:{language:"ur" as const,text:"صبر کی دو صورتیں ہیں۔",translator:"آزمائشی ادارتی ترجمہ"}
+  }:p);
+  const data={...result,passages};
+  const composed=await composeSermon({...input,duration:20},data,{generate,reviewer,env:{}});
+  const source=composed.evidence.find(e=>e.id==="alkafi:fixture:editorial-test");
+  expect(source).toMatchObject({
+    sourceId:"kafi-v2-ar",recordId:"alkafi-v2:record:17",
+    paragraphId:"kafi-v2-ar:record:17:p1",sourceSha256:"f".repeat(64),
+    sourceReviewStatus:"test-fixture",translationReviewStatus:"editorial-test"
+  });
+  const output=buildCustomSermonText(composed,"ur");
+  expect(output).toContain("اصل نسخے سے تصدیق کے بغیر شائع نہ کریں");
+  expect(output).toContain("صبر کی دو صورتیں ہیں۔");
+  expect(parseCustomSermonProject(serializeCustomSermonProject(composed))?.evidence.find(e=>e.id==="alkafi:fixture:editorial-test"))
+    .toMatchObject({sourceId:"kafi-v2-ar",translationReviewStatus:"editorial-test"});
+});
+
+it("retains a traceable original record and translation-source identity without claiming authenticity grades",async()=>{
+ const passages=result.passages.map((p,index)=>index===2?{
+   ...p,id:"alkafi:traceable:1",sourceSha256:"f".repeat(64),sourceId:"kafi-v2-ar",
+   recordId:"kafi-v2-ar:record:5",paragraphId:"kafi-v2-ar:record:5:p1",
+   suppliedTranslation:{language:"ur" as const,text:"اردو فراہم کردہ ترجمہ",
+     translator:"کتابی مترجم",source:"الکافی اردو نسخہ",sourceId:"kafi-v2-ur",
+     sourceSha256:"e".repeat(64)}
+ }:p);
+ const composed=await composeSermon({...input,duration:20},{...result,passages},{generate,reviewer,env:{}});
+ const book=composed.evidence.find(e=>e.id==="alkafi:traceable:1");
+ expect(book).toMatchObject({
+  sourceId:"kafi-v2-ar",recordId:"kafi-v2-ar:record:5",paragraphId:"kafi-v2-ar:record:5:p1",
+  sourceReviewStatus:"corpus-linked",translationSource:"الکافی اردو نسخہ",
+  translationSourceId:"kafi-v2-ur",translationSha256:"e".repeat(64),
+  translationReviewStatus:"source-linked"
+ });
+ expect(buildCustomSermonText(composed,"ur")).not.toContain("آزمائشی اقتباس یا ادارتی ترجمہ");
+});
