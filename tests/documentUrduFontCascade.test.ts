@@ -15,7 +15,7 @@ function selectedUrduFontStack(name: string): string {
   expect(index).toBeGreaterThanOrEqual(0);
   const opening = css.indexOf("{", index);
   const closing = css.indexOf("}", opening);
-  const declaration = css.slice(opening, closing).match(/font-family:\\s*([^;]+);/);
+  const declaration = css.slice(opening, closing).match(/font-family:\s*([^;]+);/);
   expect(declaration).not.toBeNull();
   return declaration![1].trim();
 }
@@ -43,8 +43,8 @@ describe("Document Studio Urdu font cascade", () => {
     expect(rtlStart).toBeGreaterThan(0);
     expect(ltrStart).toBeGreaterThan(rtlStart);
     const rtlBlock = canvas.slice(rtlStart, ltrStart);
-    expect(rtlBlock).toMatch(/font-family:\\s*var\\(--qalam-rtl-font/);
+    expect(rtlBlock).toMatch(/font-family:\s*var\(--qalam-rtl-font/);
     const ltrBlock = canvas.slice(ltrStart, canvas.indexOf('.qalam-editor-content .ProseMirror p:not([dir])', ltrStart));
-    expect(ltrBlock).toMatch(/font-family:\\s*var\\(--qalam-ltr-font/);
+    expect(ltrBlock).toMatch(/font-family:\s*var\(--qalam-ltr-font/);
   });
 });
