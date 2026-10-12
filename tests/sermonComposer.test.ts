@@ -364,7 +364,7 @@ it("retains a traceable original record and translation-source identity without 
  const passages=result.passages.map((p,index)=>index===2?{
    ...p,id:"alkafi:traceable:1",sourceSha256:"f".repeat(64),sourceId:"kafi-v2-ar",
    recordId:"kafi-v2-ar:record:5",paragraphId:"kafi-v2-ar:record:5:p1",
-   suppliedTranslation:{language:"ur" as const,text:"اردو فراہم کردہ ترجمہ",
+   suppliedTranslation:{language:"ur" as const,text:"یہ کتاب کا فراہم کردہ اردو ترجمہ ہے۔",
      translator:"کتابی مترجم",source:"الکافی اردو نسخہ",sourceId:"kafi-v2-ur",
      sourceSha256:"e".repeat(64)}
  }:p);
