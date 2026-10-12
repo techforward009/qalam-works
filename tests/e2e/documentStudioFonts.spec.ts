@@ -21,6 +21,11 @@ test("selected Urdu faces paint using their loaded web fonts", async ({ page }) 
     await editor.fill(sample);
     await editor.press("ControlOrMeta+A");
     await select.selectOption(family);
+    console.log("[font-picker-audit]", family, JSON.stringify({
+      selected: await select.inputValue(),
+      selection: await page.evaluate(() => window.getSelection()?.toString() ?? ""),
+      editorHtml: (await editor.innerHTML()).slice(0, 900),
+    }));
     const styled = editor.locator('span[style*="font-family"]').first();
     await expect(styled, family).toBeVisible();
     const audit = await styled.evaluate(async (node, chosen) => {

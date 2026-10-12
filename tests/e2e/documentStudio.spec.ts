@@ -112,7 +112,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     await expect(editor.locator("p").nth(1)).toHaveAttribute("dir", "ltr");
 
     await editor.locator("p").nth(1).click();
-    await page.getByRole("button", { name: "Left-to-right (English)" }).click();
+    await page.getByRole("button", { name: "بائیں سے دائیں" }).click();
     await expect(editor.locator("p").nth(1)).toContainText(ENGLISH);
     await expect(editor.locator("p").nth(1)).toHaveAttribute("dir", "ltr");
     await expect(editor.locator("p").nth(0)).toHaveAttribute("dir", "rtl");
