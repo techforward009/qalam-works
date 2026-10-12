@@ -96,8 +96,10 @@ jobs:
     timeout-minutes: 9
     permissions:
       contents: read
+      issues: write
     env:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -111,7 +113,23 @@ jobs:
           npx tsc --noEmit
           node scripts/probe-openrouter-free-sermon.mjs --dry-run
       - name: Write and independently audit a short public-source Urdu sample free of charge
-        run: node scripts/probe-openrouter-free-sermon.mjs --live-free
+        shell: bash
+        run: |
+          set +e
+          node scripts/probe-openrouter-free-sermon.mjs --live-free > "$RUNNER_TEMP/free-output.txt" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/free-output.txt"
+          {
+            echo "OpenRouter ZERO-COST candidate (public sources only):"
+            echo '~~~'
+            head -c 5700 "$RUNNER_TEMP/free-output.txt"
+            echo
+            echo '~~~'
+            echo "Exit code: $result. No paid models or private book texts used."
+          } > "$RUNNER_TEMP/free-outcome-comment.txt"
+          gh issue comment 34 --repo techforward009/qalam-works --body-file "$RUNNER_TEMP/free-outcome-comment.txt"
+          exit "$result"
 
   deepseek-key-readiness:
     if: github.event_name == 'push' && github.event.head_commit.message == 'Check DeepSeek key readiness'
