@@ -32,7 +32,7 @@ for (const family of cases) {
       const expectedFirst = chosen === "Noto Nastaliq Urdu"
         ? /nastaliq/i.test(firstFamily)
         : firstFamily.replaceAll('"', "") === chosen;
-      const faces = await document.fonts.load("18px " + firstFamily, sample);
+      const faces = await document.fonts.load("18px " + firstFamily, "اردو");
       return {
         inline: (node as HTMLElement).getAttribute("style") ?? "",
         cssFamily,
