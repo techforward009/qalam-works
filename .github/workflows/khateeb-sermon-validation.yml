@@ -93,7 +93,7 @@ jobs:
     # This exact opt-in trigger runs two explicit :free models; no paid fallback.
     if: github.event_name == 'push' && github.event.head_commit.message == 'Run OpenRouter free sample'
     runs-on: ubuntu-latest
-    timeout-minutes: 9
+    timeout-minutes: 6
     permissions:
       contents: read
       issues: write
@@ -106,6 +106,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Record live free test run before any API request
+        run: |
+          gh issue comment 34 --repo techforward009/qalam-works \
+            --body "FREE_MODEL_RUN_STARTED: https://github.com/techforward009/qalam-works/actions/runs/${{ github.run_id }} — no paid models. Test has a 35-second timeout per provider."
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Validate free-only safeguards without any API calls
         run: |

@@ -48,7 +48,7 @@ export async function probeFreeFallback({apiKey,fetchImpl=fetch,log=console.log}
    response=await fetchImpl(API+"/chat/completions",{
      method:"POST",headers:{Authorization:"Bearer "+apiKey,"Content-Type":"application/json"},
      body:JSON.stringify({model,messages,max_tokens,temperature:0.3,stream:false}),
-     signal:AbortSignal.timeout(105000)
+     signal:AbortSignal.timeout(35000)
    });
   }catch(error){return {ok:false,retryable:true,reason:"network-or-timeout"};}
   if(!response.ok){
