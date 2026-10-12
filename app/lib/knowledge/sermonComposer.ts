@@ -1,5 +1,6 @@
 import { geminiSermonFetch } from "./geminiSermonProvider";
 import { assessSermonSpeakingTime } from "./sermonSpeakingTime";
+import { verifyCanonicalSermonQuran } from "./sermonQuranGuard";
 import { fetchSermonProvider, sermonProviderSignal, parseSermonProviderContent } from "./sermonProviderFetch";
 import { createSermonSentenceReviewer, sermonRejectedSentences, sermonSentences } from "./sermonReview";
 import { hasSuppliedAnswerText } from "./answerLanguage";
@@ -109,11 +110,14 @@ export function selectSermonEvidence(passages:readonly AnswerEvidence["passage"]
   }
   return selectAnswerEvidence(selected);
 }
-export async function composeSermon(input: SermonRequest, result: KnowledgeResult, options: { generate?: typeof generateSermonSections; reviewer?: KnowledgeSynthesisProvider | null; env: SermonProviderEnv; preferSentenceFilter?:boolean; evaluationTimeoutMs?:number; requireSpokenDuration?:boolean }) {
+export async function composeSermon(input: SermonRequest, result: KnowledgeResult, options: { generate?: typeof generateSermonSections; reviewer?: KnowledgeSynthesisProvider | null; env: SermonProviderEnv; preferSentenceFilter?:boolean; evaluationTimeoutMs?:number; requireSpokenDuration?:boolean; requireCanonicalQuran?:boolean }) {
   if(result.status!=="evidence") throw new Error(result.status==="unsupported-fatwa"?"unsupported-fatwa":"no-evidence");
   const evidence=selectSermonEvidence(result.passages.filter(p=>(p.collection==="quran"||p.language==="ar")&&hasSuppliedAnswerText(p,input.locale)),input.duration);
   if(!evidence.length) throw new Error("missing-translation");
   if(!sourceCoverage(evidence.map(item=>item.passage),input.duration)) throw new Error("insufficient-evidence");
+  // Reject altered Indo-Pak Arabic or mismatched named translation BEFORE any
+  // paid/experimental model is contacted. Default production behavior unchanged.
+  if(options.requireCanonicalQuran)verifyCanonicalSermonQuran(evidence,input.locale);
   const evaluationTimeout=options.evaluationTimeoutMs;
   if(evaluationTimeout!==undefined&&(!Number.isInteger(evaluationTimeout)||evaluationTimeout<30_000||evaluationTimeout>600_000))throw new Error("invalid-evaluation-timeout");
   const deadline=Date.now()+(evaluationTimeout??285_000);
