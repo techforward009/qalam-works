@@ -50,8 +50,8 @@ describe("selected PDF fonts stay selected", () => {
     expect(html.fontFallbacks).toEqual([]);
     expect(html.html).toContain('data-pdf-font="Digital Khatt Indo-Pak"');
     expect(html.html).toContain('data-pdf-font="Noto Naskh Arabic"');
-    expect(html.html).toContain('font-family:"Digital Khatt Indo-Pak"');
-    expect(html.html).toContain('font-family:"Noto Naskh Arabic"');
+    expect(html.html).toContain("font-family:'Digital Khatt Indo-Pak'");
+    expect(html.html).toContain("font-family:'Noto Naskh Arabic'");
 
     const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ["--no-sandbox", "--font-render-hinting=none"] });
     try {

@@ -11,7 +11,6 @@ import { PDFDocument } from "pdf-lib";
 import { inspectPdfRuntimeFonts, jameelActuallyUsed } from "../../tools/document-studio/utils/pdfFontReady";
 import { guardPdfUrduFonts, loadPdfUrduFace } from "../../tools/document-studio/utils/pdfUrduFontGuard";
 import {
-  buildPdfHtml,
   requiredPdfEmbedFonts,
 } from "../../tools/document-studio/utils/buildPdfHtml";
 import type { DocNode, Direction } from "../../tools/document-studio/utils/extractPlainText";
@@ -19,9 +18,8 @@ import {
   parseDocumentSettings,
   type DocumentStudioSettings,
 } from "../../tools/document-studio/utils/documentSettings";
-import { resolvePageLayout, resolvePhysicalMargins } from "../../tools/document-studio/utils/pageLayout";
 import { verifyPdfUrduEmbedding } from "../../tools/document-studio/utils/pdfEmbeddedFonts";
-import { paginatePdfInk } from "../../tools/document-studio/utils/pdfInkPagination";
+import { buildPrintDocumentHtml, paintedFontMismatch, readPaintedPdfFonts } from "../../tools/document-studio/utils/printDocumentHtml";
 import { preflightPdfSource } from "../../tools/document-studio/utils/pdfSourcePreflight";
 
 interface ExportPdfRequestBody {
@@ -61,7 +59,8 @@ export async function POST(request: NextRequest) {
         throw new Error(`PDF font ${def.label} could not be loaded from ${file}; export blocked. Noto Nastaliq Urdu was not substituted.`);
       }
     }
-    let { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
+    let printed = buildPrintDocumentHtml(doc, dir, resolved.fonts, settings);
+    let { html, fontsUsed, fontFallbacks } = printed;
     const substituted = fontFallbacks.filter(item => item.requested === "Digital Khatt Indo-Pak" || item.requested === "Noto Naskh Arabic");
     if (substituted.length > 0) {
       throw new Error(substituted.map(item => `PDF font ${item.requested} was not embedded; ${item.used} was not substituted; export blocked`).join(" "));
@@ -69,6 +68,7 @@ export async function POST(request: NextRequest) {
     const executablePath = await chromium.executablePath();
     browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true });
     const page = await browser.newPage();
+    await page.emulateMediaType("print");
     await page.setRequestInterception(true);
     page.on("request", (req) => {
       if (req.url().startsWith("data:")) req.continue();
@@ -76,9 +76,10 @@ export async function POST(request: NextRequest) {
     });
     await page.setContent(html, { waitUntil: "load" });
     if (fontsUsed.includes("Jameel Noori Nastaleeq") && !await page.evaluate(loadPdfUrduFace, "Jameel Noori Nastaleeq")) {
-      ({ html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, {
+      printed = buildPrintDocumentHtml(doc, dir, {
         faces: resolved.fonts.faces.filter(face => face.familyName !== "Jameel Noori Nastaleeq"),
-      }, settings.typography));
+      }, settings);
+      ({ html, fontsUsed, fontFallbacks } = printed);
       await page.setContent(html, { waitUntil: "load" });
     }
     const runtime = await page.evaluate(inspectPdfRuntimeFonts, fontsUsed);
@@ -112,36 +113,24 @@ export async function POST(request: NextRequest) {
         `[pdf-jameel] requested=yes load=${resolved.jameelLoad} used=${jameelUsed ? "yes" : "no"} fallback=${jameelFallback ? "yes" : "no"} fontsReady=${runtime.allRequestedFontsReady ? "yes" : "no"} faces=${runtime.jameelFaceCount} loaded=${runtime.jameelLoadedFaceCount} loadResults=${runtime.jameelLoadResultCount} actual=${actualFont}`,
       );
     }
-    const layout = resolvePageLayout({
-      size: settings.page.size,
-      orientation: settings.page.orientation,
-      marginPreset: settings.page.margins.preset,
-      customMargins: settings.page.margins,
-    });
-    const physical = resolvePhysicalMargins(layout.margins, dir);
-    const inkPagination = await paginatePdfInk(
-      page,
-      layout.contentWidthMm,
-      layout.heightMm - layout.margins.topMm - layout.margins.bottomMm,
-      physical.leftMm,
-      physical.rightMm,
-      layout.margins.topMm,
-    );
+    const layout = printed.layout;
+    const painted = await readPaintedPdfFonts(page, fontsUsed);
+    const mismatch = fontsUsed.map((family) => paintedFontMismatch(family, painted[family] ?? [])).find((item) => item !== null);
+    if (mismatch) throw new Error(mismatch);
+    const headerFooter = settings.headerFooter.headerEnabled || settings.headerFooter.footerEnabled;
     const pdfUint8Array = await page.pdf({
-      width: `${layout.widthMm}mm`,
-      height: `${layout.heightMm}mm`,
+      preferCSSPageSize: true,
       scale: 1,
-      preferCSSPageSize: false,
       printBackground: true,
+      displayHeaderFooter: headerFooter,
+      headerTemplate: buildPdfHeaderTemplate(settings, doc),
+      footerTemplate: buildPdfFooterTemplate(settings),
       margin: {
         top: `${layout.margins.topMm}mm`,
         bottom: `${layout.margins.bottomMm}mm`,
-        left: `${physical.leftMm}mm`,
-        right: `${physical.rightMm}mm`,
+        left: "0mm",
+        right: "0mm",
       },
-      displayHeaderFooter: settings.headerFooter.headerEnabled || settings.headerFooter.footerEnabled,
-      headerTemplate: buildPdfHeaderTemplate(settings, doc),
-      footerTemplate: buildPdfFooterTemplate(settings),
     });
     const pdfDoc = await PDFDocument.load(pdfUint8Array);
     pdfDoc.setTitle(deriveDocumentTitle(doc));
@@ -149,7 +138,6 @@ export async function POST(request: NextRequest) {
     pdfDoc.setProducer("Qalam Works PDF Export");
     if (fontsUsed.length > 0) pdfDoc.setKeywords(fontsUsed);
     const pageCount = pdfDoc.getPageCount();
-    if (pageCount !== inkPagination.pages) throw new Error("PDF page count differs from the measured ink pagination; export blocked");
     const finalBytes = await pdfDoc.save();
     const embeddedFonts = verifyPdfUrduEmbedding(await PDFDocument.load(finalBytes), urduFonts.actualFamilies);
     const pdfBuffer = Buffer.from(finalBytes);
@@ -159,11 +147,12 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/pdf",
         "Content-Disposition": 'attachment; filename="qalam-document.pdf"',
         "X-Pdf-Page-Count": String(pageCount),
+        "X-Pdf-Layout": "print",
         "X-Pdf-Printable-Width": String(layout.contentWidthMm * 96 / 25.4),
-        "X-Pdf-Visual-Lines": String(inkPagination.lines),
-        "X-Pdf-Staging-Height": String(inkPagination.stagingHeight),
-        "X-Pdf-Measurement-Screenshots": String(inkPagination.screenshots),
-        "X-Pdf-Measurement-Ms": String(inkPagination.measurementMs),
+        "X-Pdf-Visual-Lines": "native",
+        "X-Pdf-Staging-Height": "0",
+        "X-Pdf-Measurement-Screenshots": "0",
+        "X-Pdf-Measurement-Ms": "0",
         "X-Pdf-Export-Ms": String(Date.now() - exportStarted),
         "X-Pdf-File-Size-Bytes": String(pdfBuffer.length),
         "X-Pdf-Fonts-Used": JSON.stringify(fontsUsed),
