@@ -14,7 +14,8 @@ export type LogicalTextResult =
 const TOKEN = /\/NonStruct\s*<<\s*\/MCID\s+(\d+)\s*>>\s*BDC|\/ReversedChars\s+BMC|\/Span\s*<<\s*\/ActualText\s*(?:\([^)]*\)|<[^>]*>)\s*>>\s*BDC|(?<!\w)EMC(?!\w)/g;
 
 function safeLines(doc: DocNode, dir: "rtl" | "ltr"): string[] | null {
-  if (dir !== "rtl" || !doc.content?.length || doc.content.length > 70) return null;
+  const allBlocksExplicitRtl = !!doc.content?.every(block => block.attrs?.dir === "rtl");
+  if ((dir !== "rtl" && !allBlocksExplicitRtl) || !doc.content?.length || doc.content.length > 70) return null;
   if (!doc.content.every(node =>
     node.type === "paragraph" &&
     node.attrs?.dir !== "ltr" &&

@@ -117,6 +117,7 @@ for (const [index, entry] of cases.entries()) {
         type:block.type,dir:block.attrs?.dir,children:block.content?.map(child=>({type:child.type,length:child.text?.length}))
       })),
       visualLines:response.headers()["x-pdf-visual-lines"],
+      overallDirection:sent.dir,
     }));
     expect(docxFamilyFound, "DOCX should retain the selected font in a text run").toBe(true);
     expect(response.status(), "PDF generation must succeed").toBe(200);
