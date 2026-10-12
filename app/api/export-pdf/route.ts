@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
       layout.heightMm - layout.margins.topMm - layout.margins.bottomMm,
       physical.leftMm,
       physical.rightMm,
+      layout.margins.topMm,
     );
     const pdfUint8Array = await page.pdf({
       width: `${layout.widthMm}mm`,

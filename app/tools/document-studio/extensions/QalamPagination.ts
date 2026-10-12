@@ -137,9 +137,15 @@ export function paginationCss(): string {
   padding-left: var(--qalam-margin-left);
   padding-right: var(--qalam-margin-right);
   background: #fff;
-  border: 1px solid rgba(26, 58, 42, 0.12);
+  border: 0;
+  outline: 1px solid rgba(26, 58, 42, 0.12);
+  outline-offset: -1px;
   box-shadow: 0 8px 24px rgba(26, 58, 42, 0.10);
-  outline: none;
+}
+.ProseMirror.${QALAM_PAGINATION_CLASS}:focus,
+.ProseMirror.${QALAM_PAGINATION_CLASS}:focus-visible {
+  outline: 1px solid rgba(26, 58, 42, 0.12);
+  outline-offset: -1px;
 }
 .${QALAM_PAGINATION_CLASS}-pages {
   pointer-events: none;
