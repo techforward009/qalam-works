@@ -35,9 +35,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run build && npm start",
+    // CI may build once, then reuse the production bundle across E2E commands.
+    command: process.env.QALAM_E2E_PREBUILT === "1" ? "npm start" : "npm run build && npm start",
     url: "http://localhost:3000",
     reuseExistingServer: true,
-    timeout: 120_000,
+    timeout: process.env.QALAM_E2E_PREBUILT === "1" ? 60_000 : 120_000,
   },
 });

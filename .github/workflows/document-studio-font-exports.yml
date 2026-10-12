@@ -9,7 +9,9 @@ on:
 jobs:
   verify-font-export:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      QALAM_E2E_PREBUILT: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,6 +24,8 @@ jobs:
       - run: npx vitest run tests/pdfLogicalUrduText.test.ts
       - name: Test PDF font name normalization
         run: npx vitest run tests/pdfEmbeddedFontNameNormalization.test.ts
+      - name: Build once for browser acceptance
+        run: npm run build
       - name: Audit font identity in real PDF and Word downloads
         run: npx playwright test tests/e2e/documentStudioFontExports.spec.ts --project=desktop-chrome --workers=1 --reporter=github --grep "Alvi"
       - name: Capture unmodified PDF baselines for multiple paragraphs
