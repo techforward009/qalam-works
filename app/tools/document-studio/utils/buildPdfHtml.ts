@@ -244,7 +244,7 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
         const urduMarker = /\p{Script=Arabic}/u.test(part.text) ? ' data-pdf-urdu="true"' : "";
         const isolate = piece.dir !== blockDir || (part.quranic !== (piece.dir === "rtl") && baseEffective.family === "Digital Khatt Indo-Pak");
         const forcedFamily = effective.family && effective.family !== "Noto Nastaliq Urdu" && effective.family !== "Inter"
-          ? `font-family:"${effective.family.replace(/"/g, "")}";`
+          ? `font-family:'${effective.family.replace(/'/g, "")}';`
           : "";
         const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${forcedFamily}${sizeStyle}`;
         const dirAttr = isolate ? ` dir="${part.quranic ? "rtl" : "ltr"}"` : "";

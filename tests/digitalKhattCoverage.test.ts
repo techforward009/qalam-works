@@ -18,6 +18,7 @@ describe("Digital Khatt coverage", () => {
       { text: "اَلْحَمْدُ", quranic: true },
       { text: ".", quranic: false },
     ]);
+    expect(splitQuranicRuns("ا\u200Fب")).toEqual([{ text: "ا\u200Fب", quranic: true }]);
     expect(isQuranicCodePoint(0x002e)).toBe(false);
     expect(isQuranicCodePoint(0x06d7)).toBe(true);
   });

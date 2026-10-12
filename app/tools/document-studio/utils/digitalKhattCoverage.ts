@@ -40,7 +40,8 @@ export function splitQuranicRuns(text: string): Array<{ text: string; quranic: b
   };
   for (const char of text) {
     const codePoint = char.codePointAt(0) ?? 0;
-    const glue = codePoint === 0x20 || codePoint === 0xA0 || codePoint === 0x200C || codePoint === 0x200D;
+    const glue = codePoint === 0x20 || codePoint === 0xA0 || codePoint === 0x200C || codePoint === 0x200D
+      || codePoint === 0x200E || codePoint === 0x200F;
     if (glue) {
       buffer += char;
       continue;
