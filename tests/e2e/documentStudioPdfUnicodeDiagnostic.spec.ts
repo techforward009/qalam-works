@@ -14,7 +14,7 @@ const paragraphs = [
 ];
 const urduLetters = Array.from("ابتثجحخدذرزسشصضطظعغفقکلمنوہی");
 const multiplePages = Array.from({ length: 48 }, (_, index) =>
-  "یہ ایک مختصر اردو سطر ہے " + urduLetters[index % urduLetters.length] +
+  "یہ اردو متن ہے " + urduLetters[index % urduLetters.length] +
   urduLetters[Math.floor(index / urduLetters.length)] + "۔"
 );
 
