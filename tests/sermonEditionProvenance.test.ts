@@ -4,7 +4,7 @@ import {completeQuranTranslationFor} from "../app/lib/knowledge/completeQuranTra
 import {QURAN_TRANSLATION_SOURCES} from "../app/tools/khateeb-studio/engine/quranTranslationProvider";
 import {buildCustomSermonText,parseCustomSermonProject,serializeCustomSermonProject} from "../app/tools/khateeb-studio/engine/customSermonProject";
 import type {KnowledgePassage,KnowledgeResult} from "../app/lib/knowledge/retrieval";
-function sample(text:string,translator=QURAN_TRANSLATION_SOURCES.ur.translatorUr):KnowledgeResult{
+function sample(text:string,translator:string=QURAN_TRANSLATION_SOURCES.ur.translatorUr):KnowledgeResult{
  const p:KnowledgePassage={
   id:"quran:sample:2:153",collection:"quran",language:"ar",quranLocation:{surah:2,ayah:153},
   text:"يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ",
