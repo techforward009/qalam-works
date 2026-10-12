@@ -31,18 +31,18 @@ describe("Urdu ActualText PDF postprocessing", () => {
       "/NonStruct <</MCID 0 >>BDC", "BT", "/ReversedChars BMC", "<4321> Tj", "EMC", "ET", "EMC",
       "/NonStruct <</MCID 1 >>BDC", "BT", "/ReversedChars BMC",
       "/Span<</ActualText <FEFF0646> >> BDC", "EMC", "EMC", "ET", "EMC",
-    ].join("\\n");
+    ].join("\n");
     const result = tagChromeUrduPdfStream(data, ["یہ متن ہے۔"]);
     expect(result).not.toBeNull();
     expect(result).toContain("<4321> Tj");
     expect(result).toContain("/MCID 1");
-    expect((result!.match(/\\bBDC\\b/g) ?? []).length).toBe((result!.match(/\\bEMC\\b/g) ?? []).length);
+    expect((result!.match(/\bBDC\b/g) ?? []).length).toBe((result!.match(/\bEMC\b/g) ?? []).length);
   });
   it("never skips a glyph-free group before painted content", () => {
     const data = [
       "/NonStruct <</MCID 0 >>BDC", "BT", "ET", "EMC",
       "/NonStruct <</MCID 1 >>BDC", "BT", "<abcd> Tj", "ET", "EMC",
-    ].join("\\n");
+    ].join("\n");
     expect(tagChromeUrduPdfStream(data, ["یہ متن ہے۔"])).toBeNull();
   });
 

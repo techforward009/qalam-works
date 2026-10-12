@@ -39,8 +39,8 @@ function taggedActualText(logical: string): string {
 
 export function tagChromeUrduPdfStream(stream: string, lines: readonly string[]): string | null {
   const matches = [...stream.matchAll(TOKEN)];
-  const opens = (stream.match(/\\bBDC\\b|\\bBMC\\b/g) ?? []).length;
-  const closes = (stream.match(/\\bEMC\\b/g) ?? []).length;
+  const opens = (stream.match(/\bBDC\b|\bBMC\b/g) ?? []).length;
+  const closes = (stream.match(/\bEMC\b/g) ?? []).length;
   if (opens !== closes ||
     matches.filter(m => m[0] !== "EMC").length !== opens ||
     matches.filter(m => m[0] === "EMC").length !== closes) return null;
@@ -61,7 +61,7 @@ export function tagChromeUrduPdfStream(stream: string, lines: readonly string[])
       if (!opening) return null;
       if (opening.kind === "parent") {
         const enclosed = stream.slice(opening.start!, match.index);
-        painted[opening.index!] = /\\b(?:Tj|TJ)\\b/.test(enclosed);
+        painted[opening.index!] = /\b(?:Tj|TJ)\b/.test(enclosed);
       }
     }
   }
@@ -79,7 +79,7 @@ export function tagChromeUrduPdfStream(stream: string, lines: readonly string[])
       if (Number(match[1]) !== seen) return null;
       if (painted[seen]) {
         stack.push("parent");
-        output += token + "\\n" + taggedActualText(lines[count++]);
+        output += token + "\n" + taggedActualText(lines[count++]);
       } else {
         stack.push("empty");
         output += token;
@@ -95,7 +95,7 @@ export function tagChromeUrduPdfStream(stream: string, lines: readonly string[])
     } else {
       const open = stack.pop();
       if (!open) return null;
-      if (open === "parent") output += "EMC\\nEMC";
+      if (open === "parent") output += "EMC\nEMC";
       else if (open === "empty" || open === "keep-inner") output += "EMC";
     }
     cursor = match.index! + token.length;
