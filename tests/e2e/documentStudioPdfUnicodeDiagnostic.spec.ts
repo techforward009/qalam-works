@@ -58,7 +58,7 @@ for (const scenario of scenarios) {
       expect(Number(headers["x-pdf-page-count"])).toBeGreaterThan(1);
       expect(headers["x-pdf-logical-text-lines"]).toBe(String(scenario.texts.length));
       const output = execFileSync("pdftotext", ["-raw", path.join(folder, scenario.name+".pdf"), "-"], {encoding:"utf8"});
-      const normalized = output.replace(/[\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]/g, "");
+      const normalized = output.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "");
       for (const text of scenario.texts) expect(normalized).toContain(text);
     }
     if (scenario.name === "three-plain-urdu-paragraphs") {
