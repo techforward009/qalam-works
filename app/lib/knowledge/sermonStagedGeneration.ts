@@ -9,10 +9,18 @@ export function planStagedSermonWordTargets(evidence:readonly AnswerEvidence[],s
   if(duration!==20||stages.length!==5||stages.some(stage=>!stage.length))throw new Error("invalid-speaking-plan");
   const ids=new Set(stages.flat().map(item=>item.passage.id));
   const passages=evidence.map(item=>item.passage).filter(p=>ids.has(p.id));
-  const arabic=new Set(passages.map(p=>p.text.trim()).filter(Boolean));
-  const translations=new Set(passages.map(p=>p.suppliedTranslation?.text.trim()??"").filter(Boolean));
-  if(!arabic.size||passages.some(p=>p.language!=="ar"||!p.suppliedTranslation?.text.trim()))
+  if(!passages.length||passages.some(p=>p.language!=="ar"||!p.text.trim()||!p.suppliedTranslation?.text.trim()))
     throw new Error("incomplete-speaking-sources");
+  const arabic=new Set<string>();
+  const translations=new Set<string>();
+  // The export reads each distinct Arabic original once; its translation is
+  // counted only the first time the original appears. Match that exact rule.
+  for(const passage of passages){
+    const original=passage.text.trim();
+    if(arabic.has(original))continue;
+    arabic.add(original);
+    translations.add(passage.suppliedTranslation!.text.trim());
+  }
   const count=(str:string)=>str.split(/\s+/u).filter(Boolean).length;
   const r=SERMON_SPEAKING_RATES;
   const spokenSources=[...arabic].reduce((n,t)=>n+count(t)/r.arabicWordsPerMinute,0)
