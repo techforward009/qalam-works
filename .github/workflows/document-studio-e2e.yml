@@ -7,7 +7,6 @@ on:
       - document-studio-v2-images
       - document-studio-v2-page-sections
       - document-studio-v2-image-wrapping
-      - fix/document-studio-urdu-font-cascade-20261012
 
 jobs:
   document-studio-browser-acceptance:
