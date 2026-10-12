@@ -19,6 +19,7 @@ import {
 import { normalizeSafeHex } from "./studioColors";
 import { pdfFontUnicodeRange } from "./pdfFontSubsets";
 import { imageFloatsBesideText, parseImageAlignment, parseImageWrapMode } from "./documentImages";
+import { formatCodePoint, missingQuranicCodePoints, readWoff2Cmap, splitQuranicRuns } from "./digitalKhattCoverage";
 import { segmentLine } from "../../../utils/bidi/segmentDirection";
 
 export interface PdfFontFace {
@@ -75,6 +76,7 @@ interface WalkCtx {
   fontsUsed: Set<string>;
   fallbacks: Map<string, string>;
   typography?: DocumentStudioSettings["typography"];
+  digitalKhattCmap: Set<number> | null;
 }
 
 function resolveEffectivePdfFont(
@@ -205,25 +207,49 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
 
     for (const piece of pieces) {
       if (!piece.text) continue;
-      let inner = escapeHtml(piece.text);
       const choice = exportFamilyForSegment(explicitFamily, piece.dir, blockDir);
-      const effective = resolveEffectivePdfFont(choice.family, choice.fontDir, ctx.available, ctx.typography);
-      noteEffective(ctx, effective);
-      if (bold) inner = `<strong>${inner}</strong>`;
-      if (italics) inner = `<em>${inner}</em>`;
-      if (underline) inner = `<u>${inner}</u>`;
-      if (typeof href === "string" && href.trim().length > 0) {
-        inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
+      const baseEffective = resolveEffectivePdfFont(choice.family, choice.fontDir, ctx.available, ctx.typography);
+      const parts = baseEffective.family === "Digital Khatt Indo-Pak"
+        ? splitQuranicRuns(piece.text)
+        : [{ text: piece.text, quranic: false }];
+      for (const part of parts) {
+        if (!part.text) continue;
+        const effective = part.quranic
+          ? baseEffective
+          : baseEffective.family === "Digital Khatt Indo-Pak"
+            ? resolveEffectivePdfFont(null, "ltr", ctx.available, ctx.typography)
+            : baseEffective;
+        if (part.quranic && effective.family === "Digital Khatt Indo-Pak") {
+          const source = ctx.available.get("Digital Khatt Indo-Pak")?.regularSources[0];
+          if (source) {
+            if (!ctx.digitalKhattCmap) ctx.digitalKhattCmap = readWoff2Cmap(Buffer.from(source, "base64"));
+            const missing = missingQuranicCodePoints(part.text, ctx.digitalKhattCmap);
+            if (missing.length) {
+              throw new Error(`PDF font Digital Khatt Indo-Pak did not render Quranic text ${missing.map(formatCodePoint).join(", ")} (absent from DigitalKhattIndoPakRegular); Noto was not substituted; export blocked`);
+            }
+          }
+        }
+        noteEffective(ctx, effective);
+        let inner = escapeHtml(part.text);
+        if (bold) inner = `<strong>${inner}</strong>`;
+        if (italics) inner = `<em>${inner}</em>`;
+        if (underline) inner = `<u>${inner}</u>`;
+        if (typeof href === "string" && href.trim().length > 0) {
+          inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
+        }
+        const fontMarker = effective.family === "Jameel Noori Nastaleeq" || (part.quranic && effective.family === "Digital Khatt Indo-Pak")
+          ? ` data-pdf-font="${escapeAttr(effective.family)}"`
+          : "";
+        const urduMarker = /\p{Script=Arabic}/u.test(part.text) ? ' data-pdf-urdu="true"' : "";
+        const isolate = piece.dir !== blockDir || (part.quranic !== (piece.dir === "rtl") && baseEffective.family === "Digital Khatt Indo-Pak");
+        const forcedFamily = part.quranic && effective.family === "Digital Khatt Indo-Pak"
+          ? "font-family:\"Digital Khatt Indo-Pak\";"
+          : "";
+        const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${forcedFamily}${sizeStyle}`;
+        const dirAttr = isolate ? ` dir="${part.quranic ? "rtl" : "ltr"}"` : "";
+        inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
+        html += inner;
       }
-      const fontMarker = effective.family === "Jameel Noori Nastaleeq" || effective.family === "Digital Khatt Indo-Pak"
-        ? ` data-pdf-font="${escapeAttr(effective.family)}"`
-        : "";
-      const urduMarker = /\p{Script=Arabic}/u.test(piece.text) ? ' data-pdf-urdu="true"' : "";
-      const isolate = piece.dir !== blockDir;
-      const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${sizeStyle}`;
-      const dirAttr = isolate ? ` dir="${piece.dir}"` : "";
-      inner = `<span class="${effective.cssClass}"${fontMarker}${urduMarker}${dirAttr}${pieceStyle ? ` style="${pieceStyle}"` : ""}>${inner}</span>`;
-      html += inner;
     }
   }
 
@@ -423,6 +449,7 @@ export function buildPdfHtml(
     fontsUsed: new Set(),
     fallbacks: new Map(),
     typography,
+    digitalKhattCmap: null,
   };
 
   const bodyHtml = (doc.content ?? []).map((n) => convertNode(n, ctx)).join("\n");

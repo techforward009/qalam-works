@@ -322,7 +322,7 @@ export function exportFamilyForSegment(
   const resolved = resolveEditorFontFamily(explicitFamily, blockDir);
   const font = getFontById(resolved.fontId);
   // Nastaliq has no usable Latin. Latin-only faces such as Inter have no Arabic.
-  if (font.category === "urdu" && segmentDir === "ltr") {
+  if ((font.category === "urdu" || font.id === "digital-khatt-indo-pak") && segmentDir === "ltr") {
     return { family: null, fontDir: "ltr" };
   }
   if (segmentDir === "rtl" && !font.scripts.includes("arabic")) {

@@ -300,7 +300,7 @@ export default function DocumentCanvas({
           direction: rtl;
           unicode-bidi: isolate;
           text-align: start;
-          font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
+          font-family: "Qalam Studio Latin", var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
         }
         .qalam-editor-content .ProseMirror p[dir="ltr"],
         .qalam-editor-content .ProseMirror h1[dir="ltr"],
@@ -310,7 +310,7 @@ export default function DocumentCanvas({
           direction: ltr;
           unicode-bidi: isolate;
           text-align: start;
-          font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
+          font-family: "Qalam Studio Latin", var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
         }
         .qalam-editor-content .ProseMirror p:not([dir]),
         .qalam-editor-content .ProseMirror h1:not([dir]),
