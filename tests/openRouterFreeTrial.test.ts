@@ -20,7 +20,7 @@ it("runs exactly two free requests with different models and audits outputs",asy
  +"ہم اس فرق پر غور کر سکتے ہیں اور اپنے عمل میں اسے سمجھنے کی کوشش کر سکتے ہیں [2]۔ "
  +"یہ دونوں فراہم کردہ عبارتیں صبر کی مختلف جہتوں کی طرف ہماری توجہ دلاتی ہیں [1] [2]۔ "
  +"اللہ نے صبر کرنے والوں کے ساتھ ہونے کی بات فرمائی ہے [1]۔");
- const observed=[];
+ const observed:{url:RequestInfo|URL;init:RequestInit}[]=[];
  const fetchImpl=vi.fn(async(url,init)=>{
   observed.push({url,init});
   if(String(url).endsWith("/models"))return new Response(JSON.stringify(catalog),{status:200});
@@ -28,7 +28,7 @@ it("runs exactly two free requests with different models and audits outputs",asy
   const text=p.model===FREE_WRITER?publicDraft:"تمام جملے فراہم کردہ عبارتوں تک محدود ہیں۔\nVERDICT: SUPPORTED";
   return new Response(JSON.stringify({model:p.model,choices:[{message:{content:text}}],usage:{prompt_tokens:110,completion_tokens:120,cost:0}}),{status:200});
  });
- const events=[];
+ const events:string[]=[];
  const result=await runFreeProbe({apiKey:"test-secret",fetchImpl,log:s=>events.push(s)});
  expect(result.freeCalls).toBe(2);
  expect(fetchImpl).toHaveBeenCalledTimes(3);
