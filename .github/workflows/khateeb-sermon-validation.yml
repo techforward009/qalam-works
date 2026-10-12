@@ -12,7 +12,7 @@ jobs:
   sermon-unit:
     # The limited model experiment runs its own strict, focused check.
     # Keep the slower whole-repository comparison for ordinary changes.
-    if: github.event_name != 'push' || (github.event.head_commit.message != 'Run evidence-focused Gemma retest' && github.event.head_commit.message != 'Run quota-gated Gemma trial' && github.event.head_commit.message != 'Check OpenRouter key readiness' && github.event.head_commit.message != 'Check DeepSeek key readiness' && github.event.head_commit.message != 'Run OpenRouter free sample')
+    if: github.event_name != 'push' || (github.event.head_commit.message != 'Run evidence-focused Gemma retest' && github.event.head_commit.message != 'Run quota-gated Gemma trial' && github.event.head_commit.message != 'Check OpenRouter key readiness' && github.event.head_commit.message != 'Check DeepSeek key readiness' && github.event.head_commit.message != 'Run OpenRouter free sample' && github.event.head_commit.message != 'Check OpenRouter free quota')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -51,6 +51,23 @@ jobs:
       - run: npm run test:sermon:flow:imports
       - run: npm run build
       - run: git diff --check
+
+  openrouter-free-quota:
+    # Read-only API-key metadata: no inference or charge possible.
+    if: github.event_name == 'push' && github.event.head_commit.message == 'Check OpenRouter free quota'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Query today's free-model quota (no completion calls)
+        run: node scripts/probe-openrouter-free-sermon.mjs --quota-check
 
   openrouter-free-sample:
     # This exact opt-in trigger runs two explicit :free models; no paid fallback.

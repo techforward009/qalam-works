@@ -108,7 +108,22 @@ export async function runFreeProbe({apiKey,fetchImpl=fetch,log=console.log}){
  return {ok:precheck.usable&&approved,freeCalls,writer:precheck,reviewed:!!verdict?.length,approved};
 }
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
- if(process.argv.includes("--dry-run")){
+ if(process.argv.includes("--quota-check")){
+  const apiKey=process.env.OPENROUTER_API_KEY;
+  if(!apiKey?.trim()){console.log("OPENROUTER_FREE_QUOTA "+JSON.stringify({ok:false,reason:"missing-key"}));process.exitCode=2;}
+  else try{
+   const response=await fetch(API+"/key",{headers:{Authorization:"Bearer "+apiKey},signal:AbortSignal.timeout(20000)});
+   if(!response.ok)throw new Error("read-only-key-check-failed");
+   const info=(await response.json())?.data;
+   const q=info?.free_model_daily_requests;
+   if(!q||![q.used,q.limit,q.remaining].every(x=>Number.isInteger(x)&&x>=0))
+    throw new Error("free-quota-metadata-missing");
+   console.log("OPENROUTER_FREE_QUOTA "+JSON.stringify({ok:true,used:q.used,limit:q.limit,remaining:q.remaining,paidCalls:0}));
+  }catch(error){
+   console.log("OPENROUTER_FREE_QUOTA "+JSON.stringify({ok:false,reason:error instanceof Error?error.message:"unavailable",paidCalls:0}));
+   process.exitCode=2;
+  }
+ }else if(process.argv.includes("--dry-run")){
   const catalog={data:[FREE_WRITER,FREE_REVIEWER].map(id=>({id,pricing:{prompt:"0",completion:"0"},architecture:{output_modalities:["text"]}}))};
   assertActuallyFreeCatalog(catalog);
   console.log("OPENROUTER_FREE_DRY_RUN "+JSON.stringify({ready:true,calls:0,models:[FREE_WRITER,FREE_REVIEWER],sources:SAMPLE_EVIDENCE.map(x=>x.reference)}));
