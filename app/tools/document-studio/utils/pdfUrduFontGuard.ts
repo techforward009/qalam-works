@@ -120,6 +120,15 @@ export async function guardPdfUrduFonts(page: Page): Promise<{ fallbackRuns: num
           }
           return { used: used.filter(isDigitalKhattPlatformFont), usable: true };
         }
+        if (requested) {
+          const names = used.map(font => font.familyName || font.postScriptName || "unknown").join(", ") || "none";
+          const wanted = requested.replace(/[^a-z0-9]/gi, "").toLowerCase();
+          const matched = used.filter(font => `${font.familyName ?? ""} ${font.postScriptName ?? ""}`.replace(/[^a-z0-9]/gi, "").toLowerCase().includes(wanted));
+          if (matched.length === 0) {
+            throw new Error(`PDF font ${requested} did not render the text (platform fonts: ${names}); Noto Nastaliq Urdu was not substituted; export blocked`);
+          }
+          return { used: matched, usable: true };
+        }
         // Other Urdu faces may fall back to bundled Noto. A different custom
         // face is not proof that the requested Digital Khatt font painted.
         return { used, usable: used.length > 0 && used.every(font => font.isCustomFont) };

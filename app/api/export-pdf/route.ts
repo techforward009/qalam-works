@@ -12,6 +12,7 @@ import { inspectPdfRuntimeFonts, jameelActuallyUsed } from "../../tools/document
 import { guardPdfUrduFonts, loadPdfUrduFace } from "../../tools/document-studio/utils/pdfUrduFontGuard";
 import {
   buildPdfHtml,
+  requiredPdfEmbedFonts,
 } from "../../tools/document-studio/utils/buildPdfHtml";
 import type { DocNode, Direction } from "../../tools/document-studio/utils/extractPlainText";
 import {
@@ -52,11 +53,19 @@ export async function POST(request: NextRequest) {
   try {
     preflightPdfSource(doc);
     const resolved = await fontsForDocument(doc, dir, settings.typography);
-    const digitalKhatt = resolved.fonts.faces.find(face => face.familyName === "Digital Khatt Indo-Pak");
-    if (digitalKhatt && !digitalKhatt.complete) {
-      throw new Error("PDF font Digital Khatt Indo-Pak could not be loaded from DigitalKhattIndoPakRegular.woff2; export blocked");
+    for (const def of requiredPdfEmbedFonts(doc, dir, settings.typography)) {
+      if (def.id !== "digital-khatt-indo-pak" && def.id !== "noto-naskh-arabic") continue;
+      const face = resolved.fonts.faces.find(item => item.familyName === def.pdf.familyName);
+      if (!face?.complete) {
+        const file = def.pdf.regularFiles?.[0]?.split("/").pop() ?? def.label;
+        throw new Error(`PDF font ${def.label} could not be loaded from ${file}; export blocked. Noto Nastaliq Urdu was not substituted.`);
+      }
     }
     let { html, fontsUsed, fontFallbacks } = buildPdfHtml(doc, dir, resolved.fonts, settings.typography);
+    const substituted = fontFallbacks.filter(item => item.requested === "Digital Khatt Indo-Pak" || item.requested === "Noto Naskh Arabic");
+    if (substituted.length > 0) {
+      throw new Error(substituted.map(item => `PDF font ${item.requested} was not embedded; ${item.used} was not substituted; export blocked`).join(" "));
+    }
     const executablePath = await chromium.executablePath();
     browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true });
     const page = await browser.newPage();

@@ -367,12 +367,24 @@ export function directionForNode(
   return globalDir;
 }
 
+function canonicalEditorFamily(raw: string): string {
+  const first = raw.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";
+  if (!first) return raw.trim();
+  const found = STUDIO_FONTS.find((font) =>
+    font.editorFamily === first
+    || font.label === first
+    || font.id === first
+    || font.pdf.familyName === first
+  );
+  return found?.editorFamily || first;
+}
+
 export function resolveEditorFontFamily(
   raw: unknown,
   globalDir: Direction = "rtl"
 ): FontResolution {
   const requested =
-    typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
+    typeof raw === "string" && raw.trim().length > 0 ? canonicalEditorFamily(raw) : null;
 
   if (!requested) {
     const defId: FontId = globalDir === "ltr" ? "inter" : "noto-nastaliq-urdu";

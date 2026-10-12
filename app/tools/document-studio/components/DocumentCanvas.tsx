@@ -175,6 +175,10 @@ export default function DocumentCanvas({
       data-print-margin-left-mm={printMargins.leftMm}
       data-print-margin-right-mm={printMargins.rightMm}
       data-print-dir={dir}
+      data-print-body-pt={documentSettings.typography.bodyFontSizePt}
+      data-print-line-height={documentSettings.typography.lineHeight}
+      data-print-paragraph-before-pt={documentSettings.typography.paragraphBeforePt}
+      data-print-paragraph-after-pt={documentSettings.typography.paragraphAfterPt}
       data-print-ignores-zoom="true"
       data-page-count={isPages ? pageCount : undefined}
       data-studio-zoom={String(zoom)}

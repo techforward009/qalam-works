@@ -1802,8 +1802,8 @@ export default function DocumentStudioEditor() {
                             ? "پی ڈی ایف میں جمیل نوری نستعلیق دستیاب نہ تھا، اس لیے نوٹو نستعلیق اردو استعمال ہوا۔"
                             : "Jameel Noori Nastaleeq was unavailable in PDF export; Noto Nastaliq Urdu was used.")
                           : (isUr
-                            ? `${f.requested} مقامی ایڈیٹر میں دستیاب ہے۔ PDF میں ${f.used} استعمال کیا گیا ہے۔`
-                            : `${f.requested} is available as a local editor preview. PDF export used ${f.used}.`)
+                            ? `${f.requested} PDF میں شامل نہیں ہو سکا، اس لیے ${f.used} استعمال ہوا۔`
+                            : `${f.requested} could not be embedded. PDF export used ${f.used}.`)
                       ).join(" ")}
                     </div>
                   )}

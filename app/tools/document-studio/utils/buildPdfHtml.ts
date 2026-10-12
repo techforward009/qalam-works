@@ -114,12 +114,13 @@ function resolveEffectivePdfFont(
     };
   }
 
-  // Digital Khatt is a Qur'anic face. A Noto substitute is a different text,
-  // so a missing or unusable face stays requested and the export fails closed.
-  if (base.fontId === "digital-khatt-indo-pak") {
+  // These faces have real PDF sources. A missing file must stay requested so
+  // the export can fail closed, instead of silently becoming Noto Nastaliq.
+  if (base.fontId === "digital-khatt-indo-pak" || base.fontId === "noto-naskh-arabic") {
+    const selected = getFontById(base.fontId);
     return {
-      family: preferred,
-      cssClass: preferredClass,
+      family: selected.pdf.familyName ?? preferred,
+      cssClass: selected.cssClass,
       requestedLabel: null,
       fellBack: false,
     };
@@ -237,13 +238,13 @@ function convertInline(nodes: DocNode[] | undefined, ctx: WalkCtx, blockDir: Dir
         if (typeof href === "string" && href.trim().length > 0) {
           inner = `<a href="${escapeAttr(href)}">${inner}</a>`;
         }
-        const fontMarker = effective.family === "Jameel Noori Nastaleeq" || (part.quranic && effective.family === "Digital Khatt Indo-Pak")
+        const fontMarker = effective.family && effective.family !== "Noto Nastaliq Urdu" && effective.family !== "Inter"
           ? ` data-pdf-font="${escapeAttr(effective.family)}"`
           : "";
         const urduMarker = /\p{Script=Arabic}/u.test(part.text) ? ' data-pdf-urdu="true"' : "";
         const isolate = piece.dir !== blockDir || (part.quranic !== (piece.dir === "rtl") && baseEffective.family === "Digital Khatt Indo-Pak");
-        const forcedFamily = part.quranic && effective.family === "Digital Khatt Indo-Pak"
-          ? "font-family:\"Digital Khatt Indo-Pak\";"
+        const forcedFamily = effective.family && effective.family !== "Noto Nastaliq Urdu" && effective.family !== "Inter"
+          ? `font-family:"${effective.family.replace(/"/g, "")}";`
           : "";
         const pieceStyle = `${isolate ? "unicode-bidi:isolate;" : ""}${forcedFamily}${sizeStyle}`;
         const dirAttr = isolate ? ` dir="${part.quranic ? "rtl" : "ltr"}"` : "";
