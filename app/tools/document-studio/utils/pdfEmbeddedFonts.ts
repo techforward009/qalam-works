@@ -25,7 +25,8 @@ export function verifyPdfUrduEmbedding(pdf: PDFDocument, runtimeFamilies: string
   for (const family of runtimeFamilies.filter(name => /Jameel|Noto Nastaliq|Noto Naskh|Amiri|Vazirmatn|Digital\s*Khatt|DigitalKhatt/i.test(name))) {
     const matches = fonts.filter(font => normalize(font.name).startsWith(normalize(family)));
     if (!matches.length || matches.some(font => !font.embedded || !font.unicode)) {
-      throw new Error(`PDF Urdu font ${family} lacks an embedded font program or Unicode map in printed bytes; export blocked`);
+      const observed = fonts.map(font => `${font.name} [embedded=${font.embedded}, unicode=${font.unicode}]`).join(", ");
+      throw new Error(`PDF Urdu font ${family} lacks an embedded font program or Unicode map in printed bytes; observed: ${observed}; export blocked`);
     }
   }
   return [...new Set(fonts.filter(font => font.embedded).map(font => font.name))];

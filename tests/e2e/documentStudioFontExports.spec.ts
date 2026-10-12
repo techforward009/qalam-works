@@ -13,7 +13,7 @@ const cases = [
 const sample = "یہ قلم ورکس کے اردو فونٹ کی جانچ ہے۔";
 const reportDir = path.resolve("test-results/font-export-audit");
 mkdirSync(reportDir, { recursive: true });
-const compact = (v: string) => v.replace(/^[A-Z]{6}\+/, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+const compact = (v: string) => v.replace(/^[A-Z]{6}\+/, "").replace(/#[0-9a-f]{2}/gi, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
 const content = async (download: { createReadStream(): Promise<NodeJS.ReadableStream | null> }) => {
   const stream = await download.createReadStream();
   if (!stream) throw new Error("Download stream was empty");
