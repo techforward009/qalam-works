@@ -80,8 +80,7 @@ export function tagSimpleUrduPdfLogicalText(
     const context = pdf.context;
     const page = pdf.getPage(0);
     const contents = page.node.get(PDFName.of("Contents"));
-    if (!(contents instanceof PDFRef)) return { status: "unchanged", lines: 0, reason: "content-array" };
-    const original = context.lookup(contents);
+    const original = contents instanceof PDFRef ? context.lookup(contents) : contents;
     if (!(original instanceof PDFRawStream)) return { status: "unchanged", lines: 0, reason: "unknown-stream" };
     const decoded = Buffer.from(decodePDFRawStream(original).decode()).toString("latin1");
     const tagged = tagChromeUrduPdfStream(decoded, lines);

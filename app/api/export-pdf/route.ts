@@ -160,6 +160,7 @@ export async function POST(request: NextRequest) {
         "X-Pdf-File-Size-Bytes": String(pdfBuffer.length),
         "X-Pdf-Fonts-Used": JSON.stringify(fontsUsed),
         "X-Pdf-Logical-Text-Lines": String(logicalText.lines),
+        "X-Pdf-Logical-Text-Status": logicalText.status === "tagged" ? "tagged" : logicalText.reason,
         "X-Pdf-Embedded-Fonts": JSON.stringify(embeddedFonts),
         "X-Pdf-Font-Fallbacks": JSON.stringify(fontFallbacks),
         "X-Pdf-Jameel-Requested": resolved.jameelRequested ? "yes" : "no",
