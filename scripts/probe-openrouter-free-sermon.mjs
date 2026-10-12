@@ -5,7 +5,7 @@
  * This script NEVER reads any production corpus or changes application routes.
  */
 import {pathToFileURL} from "node:url";
-export const FREE_WRITER="google/gemma-4-31b-it:free";
+export const FREE_WRITER="qwen/qwen3.8-27b:free";
 export const FREE_REVIEWER="nvidia/nemotron-3-ultra-550b-a55b:free";
 const API="https://openrouter.ai/api/v1";
 export const SAMPLE_EVIDENCE=[
@@ -67,7 +67,22 @@ export async function runFreeProbe({apiKey,fetchImpl=fetch,log=console.log}){
     body:JSON.stringify({model,messages,max_tokens:maxTokens,temperature:0.3,stream:false}),
     signal:AbortSignal.timeout(105000)
   });
-  if(!response.ok){await response.body?.cancel();throw new Error(briefError(response.status));}
+  if(!response.ok){
+    // Only read provider-generated metadata; no keys, prompts or private text in logs.
+    let errorType=null,providerCode=null;
+    try{
+     const body=await response.json();
+     const meta=body?.error?.metadata;
+     if(typeof meta?.error_type==="string"&&/^[a-z_]{1,60}$/.test(meta.error_type))errorType=meta.error_type;
+     if((typeof meta?.provider_code==="number"&&Number.isInteger(meta.provider_code))||
+        (typeof meta?.provider_code==="string"&&/^[a-zA-Z0-9_-]{1,40}$/.test(meta.provider_code)))providerCode=meta.provider_code;
+    }catch{}
+    log("FREE_REQUEST_REJECTED "+JSON.stringify({slug:model,status:response.status,errorType,providerCode,
+      retryAfter:response.headers.get("retry-after")?.slice(0,30)??null,
+      limit:response.headers.get("x-ratelimit-limit")?.slice(0,30)??null,
+      remaining:response.headers.get("x-ratelimit-remaining")?.slice(0,30)??null}));
+    throw new Error(briefError(response.status));
+  }
   const payload=await readJson(response);
   const actual=payload.model;
   // A free slug may be normalized in a response, but only a listed FREE slug
