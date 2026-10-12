@@ -300,7 +300,7 @@ export default function DocumentCanvas({
           direction: rtl;
           unicode-bidi: isolate;
           text-align: start;
-          font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
+          font-family: var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu"), var(--qalam-ltr-font, var(--font-inter), Inter);
         }
         .qalam-editor-content .ProseMirror p[dir="ltr"],
         .qalam-editor-content .ProseMirror h1[dir="ltr"],
