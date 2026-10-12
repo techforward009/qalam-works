@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 /** Diagnostic only: save real exported PDFs before attempting any stream rewrite. */
 const folder = path.resolve("test-results/font-export-audit");
@@ -14,6 +15,9 @@ const paragraphs = [
 const scenarios = [
   { name: "three-urdu-paragraphs", font: "Jameel Noori Nastaleeq", texts: paragraphs },
   { name: "three-noto-paragraphs", font: "Noto Nastaliq Urdu", texts: paragraphs },
+  { name: "three-plain-urdu-paragraphs", font: "Jameel Noori Nastaleeq", texts: [
+    paragraphs[0], paragraphs[1], "یہ تیسرا پیراگراف بھی اردو میں درست محفوظ ہوگا۔",
+  ]},
   { name: "urdu-english-mixed", font: "Gulzar", texts: [
     "پہلا عنوان — Qalam Works 2026 — اردو اور English ایک ساتھ۔",
     "دوسرا پیراگراف: 123 (Pakistan) اور مزید اردو عبارت۔",
@@ -43,5 +47,14 @@ for (const scenario of scenarios) {
     }
     expect(response.status()).toBe(200);
     expect(bytes.byteLength).toBeGreaterThan(2000);
+    if (scenario.name === "three-plain-urdu-paragraphs") {
+      expect(headers["x-pdf-logical-text-lines"]).toBe("3");
+      const output = execFileSync("pdftotext", ["-raw", path.join(folder, scenario.name+".pdf"), "-"], {encoding:"utf8"});
+      const normalized = output.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "");
+      for (const text of scenario.texts) expect(normalized).toContain(text);
+    }
+    if (scenario.name === "urdu-english-mixed") {
+      expect(headers["x-pdf-logical-text-lines"]).toBe("0");
+    }
   });
 }

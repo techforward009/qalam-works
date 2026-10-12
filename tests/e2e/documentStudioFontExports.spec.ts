@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import JSZip from "jszip";
 import { PDFArray, PDFDict, PDFDocument, PDFName, PDFRawStream } from "pdf-lib";
 
@@ -114,5 +115,10 @@ for (const [index, entry] of cases.entries()) {
     expect(pdfMatch, "Final PDF must contain the requested embedded font, not a fallback").toBeDefined();
     expect(pdfMatch?.embedded, "Selected PDF font program must be embedded").toBe(true);
     expect(pdfMatch?.unicode, "Selected PDF font must have ToUnicode mapping").toBe(true);
+    expect(response.headers()["x-pdf-logical-text-lines"]).toBe("1");
+    const file = path.join(reportDir, String(index+1)+"-"+entry.expected+"-document.pdf");
+    const extracted = execFileSync("pdftotext", ["-raw", file, "-"], {encoding:"utf8"});
+    const normalized = extracted.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "");
+    expect(normalized).toContain(sample);
   });
 }

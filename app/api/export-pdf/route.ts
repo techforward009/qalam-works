@@ -21,6 +21,7 @@ import {
 import { resolvePageLayout, resolvePhysicalMargins } from "../../tools/document-studio/utils/pageLayout";
 import { verifyPdfUrduEmbedding } from "../../tools/document-studio/utils/pdfEmbeddedFonts";
 import { paginatePdfInk } from "../../tools/document-studio/utils/pdfInkPagination";
+import { tagSimpleUrduPdfLogicalText } from "../../tools/document-studio/utils/pdfLogicalUrduText";
 import { preflightPdfSource } from "../../tools/document-studio/utils/pdfSourcePreflight";
 
 interface ExportPdfRequestBody {
@@ -140,6 +141,7 @@ export async function POST(request: NextRequest) {
     if (fontsUsed.length > 0) pdfDoc.setKeywords(fontsUsed);
     const pageCount = pdfDoc.getPageCount();
     if (pageCount !== inkPagination.pages) throw new Error("PDF page count differs from the measured ink pagination; export blocked");
+    const logicalText = tagSimpleUrduPdfLogicalText(pdfDoc, doc, dir, inkPagination);
     const finalBytes = await pdfDoc.save();
     const embeddedFonts = verifyPdfUrduEmbedding(await PDFDocument.load(finalBytes), urduFonts.actualFamilies);
     const pdfBuffer = Buffer.from(finalBytes);
@@ -157,6 +159,7 @@ export async function POST(request: NextRequest) {
         "X-Pdf-Export-Ms": String(Date.now() - exportStarted),
         "X-Pdf-File-Size-Bytes": String(pdfBuffer.length),
         "X-Pdf-Fonts-Used": JSON.stringify(fontsUsed),
+        "X-Pdf-Logical-Text-Lines": String(logicalText.lines),
         "X-Pdf-Embedded-Fonts": JSON.stringify(embeddedFonts),
         "X-Pdf-Font-Fallbacks": JSON.stringify(fontFallbacks),
         "X-Pdf-Jameel-Requested": resolved.jameelRequested ? "yes" : "no",
