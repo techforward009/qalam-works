@@ -390,7 +390,7 @@ export async function paginatePdfInk(
   heightMm: number,
   leftMarginMm = 0,
   rightMarginMm = 0,
-): Promise<{ lines: number; pages: number; stagingHeight: number; screenshots: number; measurementMs: number }> {
+): Promise<{ lines: number; pages: number; pageLineCounts: number[]; stagingHeight: number; screenshots: number; measurementMs: number }> {
   const measurementStarted = Date.now();
   const width = mmToCssPx(widthMm), height = mmToCssPx(heightMm);
   const leftMarginPx = mmToCssPx(leftMarginMm), rightMarginPx = mmToCssPx(rightMarginMm);
