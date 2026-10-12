@@ -2,7 +2,7 @@ import { registerHooks } from "node:module";
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import ts from "typescript";
 
-if (!["--compare","--check-fixture","--openrouter-check","--openrouter-key-check","--openrouter-trial"].some(flag=>process.argv.includes(flag))) {
+if (!["--compare","--check-fixture","--openrouter-check","--openrouter-key-check","--openrouter-trial","--deepseek-check","--deepseek-trial"].some(flag=>process.argv.includes(flag))) {
   console.log("Usage: node scripts/evaluate-sermon-free-models.mjs --compare");
   process.exit(1);
 }
@@ -31,6 +31,7 @@ registerHooks({
 const { composeSermon, generateSermonSections, selectSermonEvidence } = await import("../app/lib/knowledge/sermonComposer.ts");
 const { createSermonSentenceReviewer } = await import("../app/lib/knowledge/sermonReview.ts");
 const { createOpenRouterTrialSession, OPENROUTER_TRIAL_MODELS, estimateOpenRouterTrialCeiling, verifyOpenRouterTrialKeyCap } = await import("../app/lib/knowledge/openRouterTrial.ts");
+const { createDeepSeekTrialSession, checkDeepSeekTrialBalance, estimateDeepSeekTrialCeiling, DEEPSEEK_TRIAL_MODELS } = await import("../app/lib/knowledge/deepSeekTrial.ts");
 const { generateStagedSermonSections, planSermonStageEvidence } = await import("../app/lib/knowledge/sermonStagedGeneration.ts");
 // A key-readiness check makes NO paid model requests and never logs secrets.
 if(process.argv.includes("--openrouter-key-check")){
@@ -50,7 +51,14 @@ if(process.argv.includes("--openrouter-key-check")){
 const staged=process.argv.includes("--staged");
 const openrouterCheck=process.argv.includes("--openrouter-check");
 const openrouterTrial=process.argv.includes("--openrouter-trial");
-if((openrouterCheck||openrouterTrial) && process.argv.includes("--compare"))throw Error("ambiguous-trial-mode");
+const deepseekCheck=process.argv.includes("--deepseek-check");
+const deepseekTrial=process.argv.includes("--deepseek-trial");
+if((deepseekTrial||deepseekCheck)&&(openrouterTrial||openrouterCheck))throw Error("ambiguous-trial-mode");
+if(deepseekTrial&&(!process.argv.includes("--allow-paid-api")||!process.env.DEEPSEEK_API_KEY||!staged)){
+ console.error("DEEPSEEK_TRIAL_BLOCKED: requires explicit --allow-paid-api --staged and DEEPSEEK_API_KEY");
+ process.exit(2);
+}
+if((openrouterCheck||openrouterTrial||deepseekCheck||deepseekTrial) && process.argv.includes("--compare"))throw Error("ambiguous-trial-mode");
 const only=process.argv.find(x=>x.startsWith("--only="))?.slice("--only=".length);
 const { buildCustomSermonText } = await import("../app/tools/khateeb-studio/engine/customSermonProject.ts");
 const { assessSermonSpeakingTime, SERMON_SPEAKING_RATES } = await import("../app/lib/knowledge/sermonSpeakingTime.ts");
@@ -128,6 +136,14 @@ console.log("SERMON_SOURCE_PLAN",JSON.stringify({
   verifiedBy:"local-selection-contract",privateCorpusRequired:false
 }));
 if (process.argv.includes("--check-fixture")) process.exit(0);
+if(deepseekCheck){
+ console.log("DEEPSEEK_DRY_CHECK",JSON.stringify({paidCalls:0,models:DEEPSEEK_TRIAL_MODELS,
+  peakReservationExampleUsd:estimateDeepSeekTrialCeiling("reviewer",20_000,5000),
+  requiresKey:"DEEPSEEK_API_KEY",needsApproval:"--deepseek-trial --allow-paid-api --staged --only=flash",
+  balancePreflight:"GET /user/balance; no balance means no paid trial",
+  note:"This is a local reservation only, not a provider billing hard limit"}));
+ process.exit(0);
+}
 if(openrouterCheck){
  const example=5000;
  console.log("OPENROUTER_DRY_CHECK",JSON.stringify({paidCalls:0,configuredModels:OPENROUTER_TRIAL_MODELS,
@@ -149,6 +165,17 @@ const result = {question:input.title,status:"evidence",method:"lexical-bm25-topi
 const outDir = "sermon-model-comparison";
 mkdirSync(outDir, {recursive:true});
 const stats=[];
+const directConfigurations=[
+ {name:"flash",deepseek:true,env:{GROQ_API_KEY:"offline-adapter-placeholder",QALAM_SERMON_PROVIDER:"groq"}},
+];
+const directPlans=deepseekTrial?directConfigurations.filter(c=>c.name===(only??"flash")):[];
+if(deepseekTrial){
+ if(directPlans.length!==1)throw Error("deepseek-select-one-model");
+ const balance=await checkDeepSeekTrialBalance({apiKey:process.env.DEEPSEEK_API_KEY});
+ const ready=balance.available && balance.usd!==null && balance.usd>=0.35;
+ console.log("DEEPSEEK_BALANCE_PREFLIGHT",JSON.stringify({available:balance.available,usd:balance.usd,ready,paidCalls:0}));
+ if(!ready)throw Error("deepseek-prepaid-balance-required");
+}
 const routerConfigurations=[
  {name:"qwen",writer:["qwen","deepseek"],reviewer:["lite"]},
  {name:"deepseek",writer:["deepseek","qwen"],reviewer:["lite"]},
@@ -168,14 +195,15 @@ const configurations=[
   {name:"gpt-oss-120b",env:{GROQ_API_KEY:process.env.GROQ_API_KEY,CLOUDFLARE_ACCOUNT_ID:process.env.CLOUDFLARE_ACCOUNT_ID,CLOUDFLARE_AUTH_TOKEN:process.env.CLOUDFLARE_AUTH_TOKEN,QALAM_SERMON_PROVIDER:"groq",QALAM_SERMON_REVIEW_PROVIDER:"cloudflare"}},
   {name:"gemma-4-26b-a4b",env:{CLOUDFLARE_ACCOUNT_ID:process.env.CLOUDFLARE_ACCOUNT_ID,CLOUDFLARE_AUTH_TOKEN:process.env.CLOUDFLARE_AUTH_TOKEN,QALAM_SERMON_PROVIDER:"cloudflare",QALAM_SERMON_REVIEW_PROVIDER:"cloudflare"},model:"@cf/google/gemma-4-26b-a4b-it"}
 ];
-for(const config of (openrouterTrial?routerPlans:configurations.filter(c=>!only||c.name===only))){
+for(const config of (deepseekTrial?directPlans:openrouterTrial?routerPlans:configurations.filter(c=>!only||c.name===only))){
   const started=Date.now();
   const draftLog=[];
   const routerSession=config.router?createOpenRouterTrialSession({apiKey:process.env.OPENROUTER_API_KEY,maxTrialUsd:Number(process.env.QALAM_OPENROUTER_TRIAL_USD??"0.35")}):null;
+  const deepseekSession=config.deepseek?createDeepSeekTrialSession({apiKey:process.env.DEEPSEEK_API_KEY,maxTrialUsd:0.35}):null;
   try {
-    if(!config.router && (!config.env.CLOUDFLARE_ACCOUNT_ID||!config.env.CLOUDFLARE_AUTH_TOKEN||(config.name==="gpt-oss-120b"&&!config.env.GROQ_API_KEY)))throw Error("not-configured");
+    if(!config.router && !config.deepseek && (!config.env.CLOUDFLARE_ACCOUNT_ID||!config.env.CLOUDFLARE_AUTH_TOKEN||(config.name==="gpt-oss-120b"&&!config.env.GROQ_API_KEY)))throw Error("not-configured");
     const generate=async (req,evidence,env,fetchImpl,deadline) => {
-      const replaceModel = config.router ? routerSession.fetchFor(config.writerModels) : config.model ? async (url,options) => {
+      const replaceModel = config.deepseek?deepseekSession.fetchFor("writer"):config.router ? routerSession.fetchFor(config.writerModels) : config.model ? async (url,options) => {
         const body=JSON.parse(options.body);
         body.model=config.model;
         // Verify real integration with the identical structured-output contract.
@@ -185,29 +213,33 @@ for(const config of (openrouterTrial?routerPlans:configurations.filter(c=>!only|
       draftLog.push(output);
       return output;
     };
-    const independentReviewer=config.router?createSermonSentenceReviewer({
+    const independentReviewer=config.deepseek?createSermonSentenceReviewer({
+ cloudflareAccountId:"offline-direct-adapter",cloudflareToken:"offline-direct-adapter",
+ preferredProvider:"cloudflare",fetchImpl:deepseekSession.fetchFor("reviewer"),
+ deadline:Date.now()+450_000
+ }):config.router?createSermonSentenceReviewer({
      cloudflareAccountId:"offline-openrouter-adapter",cloudflareToken:"offline-openrouter-adapter",
      preferredProvider:"cloudflare",
      fetchImpl:routerSession.fetchFor(config.reviewerModels),
      deadline:Date.now()+450_000
      }):undefined;
-    const project=await composeSermon(input,result,{env:config.env,generate,reviewer:independentReviewer,preferSentenceFilter:staged||config.router,evaluationTimeoutMs:staged||config.router?450_000:undefined});
+    const project=await composeSermon(input,result,{env:config.env,generate,reviewer:independentReviewer,preferSentenceFilter:staged||config.router||config.deepseek,evaluationTimeoutMs:staged||config.router||config.deepseek?450_000:undefined});
     const text=buildCustomSermonText(project,"ur");
     const timing=assessSermonSpeakingTime(project);
     const {proseWords,arabicWords,translationWords,estimatedMinutes,sectionWords}=timing;
     const ids=[...new Set(project.sections.flatMap(s=>s.evidenceIds))];
     const sourceCount=ids.length,nonQuran=ids.filter(id=>fixture.some(f=>f.id===id&&f.collection!=="quran")).length;
     const nonUrdu=project.sections.some(s=>/[\p{Script=Latin}\p{Script=Devanagari}\p{Script=Bengali}]/u.test(s.headingUr+s.userText.replace(/\n\nحوالہ:[^\n]*/gu,"")));
-    const row={model:config.name,...(config.router?{routerUsage:routerSession.status()}:{}),status:"passed-source-review",staged,sections:project.sections.length,sourceCount,nonQuran,proseWords,sectionWords,arabicWords,translationWords,estimatedMinutes,estimatedTimeOnly:true,meetsTimeGoal:estimatedMinutes>=18&&estimatedMinutes<=22,nonUrdu,elapsedMs:Date.now()-started,requests:draftLog.length};
+    const row={model:config.name,...(config.router?{routerUsage:routerSession.status()}:{}),...(config.deepseek?{directUsage:deepseekSession.status()}:{}),status:"passed-source-review",staged,sections:project.sections.length,sourceCount,nonQuran,proseWords,sectionWords,arabicWords,translationWords,estimatedMinutes,estimatedTimeOnly:true,meetsTimeGoal:estimatedMinutes>=18&&estimatedMinutes<=22,nonUrdu,elapsedMs:Date.now()-started,requests:draftLog.length};
     stats.push(row);
     writeFileSync(outDir+"/"+config.name+".txt","آزمائشی مجلس — حقیقی کتابی ماخذ کی تصدیق کا متبادل نہیں\n\n"+text);
     console.log("SERMON_MODEL_COMPARE",JSON.stringify(row));
   }catch(err){
-    const row={model:config.name,...(config.router?{routerUsage:routerSession.status()}:{}),status:"failed",reason:err instanceof Error?err.message:"unknown",elapsedMs:Date.now()-started,requests:draftLog.length};
+    const row={model:config.name,...(config.router?{routerUsage:routerSession.status()}:{}),...(config.deepseek?{directUsage:deepseekSession.status()}:{}),status:"failed",reason:err instanceof Error?err.message:"unknown",elapsedMs:Date.now()-started,requests:draftLog.length};
     stats.push(row);
     console.log("SERMON_MODEL_COMPARE",JSON.stringify(row));
   }
   if(draftLog.length)writeFileSync(outDir+"/"+config.name+"-raw.json",JSON.stringify(draftLog,null,2));
 }
-writeFileSync(outDir+"/summary.json",JSON.stringify({fixtureOnly:true,openrouterTrial,trialWarning:openrouterTrial?"This local reservation is not a provider account spending cap":undefined,speechRateAssumptions:SERMON_SPEAKING_RATES,results:stats},null,2));
+writeFileSync(outDir+"/summary.json",JSON.stringify({fixtureOnly:true,openrouterTrial,deepseekTrial,trialWarning:openrouterTrial||deepseekTrial?"This local reservation is not a provider account spending cap":undefined,speechRateAssumptions:SERMON_SPEAKING_RATES,results:stats},null,2));
 if(stats.some(s=>s.status!=="passed-source-review"||!s.meetsTimeGoal||s.nonUrdu||s.sourceCount<3||s.nonQuran<1))process.exitCode=1;
