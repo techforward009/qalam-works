@@ -237,7 +237,7 @@ for(const config of (deepseekTrial?directPlans:openrouterTrial?routerPlans:confi
      fetchImpl:routerSession.fetchFor(config.reviewerModels),
      deadline:Date.now()+450_000
      }):undefined;
-    const project=await composeSermon(input,result,{env:config.env,generate,reviewer:independentReviewer,preferSentenceFilter:staged||config.router||config.deepseek,evaluationTimeoutMs:staged||config.router||config.deepseek?450_000:undefined});
+    const project=await composeSermon(input,result,{env:config.env,generate,reviewer:independentReviewer,preferSentenceFilter:staged||config.router||config.deepseek,requireSpokenDuration:staged,evaluationTimeoutMs:staged||config.router||config.deepseek?450_000:undefined});
     const text=buildCustomSermonText(project,"ur");
     const timing=assessSermonSpeakingTime(project);
     const {proseWords,arabicWords,translationWords,estimatedMinutes,sectionWords}=timing;

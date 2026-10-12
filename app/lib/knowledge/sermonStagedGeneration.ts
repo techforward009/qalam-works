@@ -3,7 +3,31 @@ import type { AnswerEvidence } from "./researchAnswer";
 
 // Experimental: assemble a long sermon through five bounded model calls.
 // The completed draft must still pass composeSermon's independent review.
-const TARGET_WORDS = [350, 360, 360, 360, 350] as const;
+import { SERMON_SPEAKING_RATES } from "./sermonSpeakingTime";
+// These are SPEAKING-time targets, not arbitrary output-token quotas.
+export function planStagedSermonWordTargets(evidence:readonly AnswerEvidence[],stages:readonly (readonly AnswerEvidence[])[],duration=20):number[]{
+  if(duration!==20||stages.length!==5||stages.some(stage=>!stage.length))throw new Error("invalid-speaking-plan");
+  const ids=new Set(stages.flat().map(item=>item.passage.id));
+  const passages=evidence.map(item=>item.passage).filter(p=>ids.has(p.id));
+  const arabic=new Set(passages.map(p=>p.text.trim()).filter(Boolean));
+  const translations=new Set(passages.map(p=>p.suppliedTranslation?.text.trim()??"").filter(Boolean));
+  if(!arabic.size||translations.size!==new Set(passages.map(p=>p.suppliedTranslation?.text.trim()??"")).size)
+    throw new Error("incomplete-speaking-sources");
+  const count=(str:string)=>str.split(/\\s+/u).filter(Boolean).length;
+  const r=SERMON_SPEAKING_RATES;
+  const spokenSources=[...arabic].reduce((n,t)=>n+count(t)/r.arabicWordsPerMinute,0)
+    +[...translations].reduce((n,t)=>n+count(t)/r.translatedWordsPerMinute,0)
+    +arabic.size*r.pausePerUniqueSourceMinutes;
+  // A very long recitation leaves no space for a full five-section Urdu explanation.
+  const proseMinutes=duration-spokenSources;
+  if(proseMinutes<7)throw new Error("insufficient-speaking-budget");
+  const total=Math.round(proseMinutes*r.urduWordsPerMinute);
+  const weights=[0.17,0.225,0.225,0.22,0.16];
+  const targets=weights.map(w=>Math.round(w*total));
+  // The model receives distinct per-section targets and sources are counted ONCE.
+  const delta=total-targets.reduce((a,b)=>a+b,0);targets[2]+=delta;
+  return targets;
+}
 export function planSermonStageEvidence(evidence:readonly AnswerEvidence[]):AnswerEvidence[][] {
   // The three-source smoke test remains deliberately unchanged. Longer
   // compositions get distinct primary-source material assigned per section.
@@ -53,6 +77,8 @@ export async function generateStagedSermonSections(
   }
   const nonQuran=evidence.find(p=>p.passage.collection!=="quran");
   const stageSources=planSermonStageEvidence(evidence);
+  const stageWordTargets=planStagedSermonWordTargets(evidence,stageSources);
+  console.info("SERMON_STAGED_SPEECH_BUDGET",JSON.stringify({targets:stageWordTargets}));
   for(let index=0;index<5;index++){
     if(approvedPrior && !repairSet!.has(index)){
       sections.push(approvedPrior[index]);
@@ -61,7 +87,7 @@ export async function generateStagedSermonSections(
     }
     let accepted:ComposedSection|null=null;
     for(let attempt=0;attempt<2;attempt++){
-      const targetWords=repairSet?.has(index)?220:TARGET_WORDS[index];
+      const targetWords=repairSet?.has(index)?Math.min(220,stageWordTargets[index]):stageWordTargets[index];
       const previousSections=sections.map(s=>({heading:s.heading,ending:s.text.slice(-420),refs:s.refs}));
       // Global source diversity is checked by composeSermon. Do not demand
       // the same non-Quran reference in every middle section: that produced

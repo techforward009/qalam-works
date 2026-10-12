@@ -1,4 +1,5 @@
 import { geminiSermonFetch } from "./geminiSermonProvider";
+import { assessSermonSpeakingTime } from "./sermonSpeakingTime";
 import { fetchSermonProvider, sermonProviderSignal, parseSermonProviderContent } from "./sermonProviderFetch";
 import { createSermonSentenceReviewer, sermonRejectedSentences, sermonSentences } from "./sermonReview";
 import { hasSuppliedAnswerText } from "./answerLanguage";
@@ -108,7 +109,7 @@ export function selectSermonEvidence(passages:readonly AnswerEvidence["passage"]
   }
   return selectAnswerEvidence(selected);
 }
-export async function composeSermon(input: SermonRequest, result: KnowledgeResult, options: { generate?: typeof generateSermonSections; reviewer?: KnowledgeSynthesisProvider | null; env: SermonProviderEnv; preferSentenceFilter?:boolean; evaluationTimeoutMs?:number }) {
+export async function composeSermon(input: SermonRequest, result: KnowledgeResult, options: { generate?: typeof generateSermonSections; reviewer?: KnowledgeSynthesisProvider | null; env: SermonProviderEnv; preferSentenceFilter?:boolean; evaluationTimeoutMs?:number; requireSpokenDuration?:boolean }) {
   if(result.status!=="evidence") throw new Error(result.status==="unsupported-fatwa"?"unsupported-fatwa":"no-evidence");
   const evidence=selectSermonEvidence(result.passages.filter(p=>(p.collection==="quran"||p.language==="ar")&&hasSuppliedAnswerText(p,input.locale)),input.duration);
   if(!evidence.length) throw new Error("missing-translation");
@@ -243,7 +244,7 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
   const portableEvidence=[...project.evidence,...portableBookEvidence];
   const portableIds=portableEvidence.map(p=>p.id);
   const weights=[.12,.27,.27,.22,.12];const minutes=weights.map(w=>Math.floor(input.duration*w));minutes[4]+=input.duration-minutes.reduce((a,b)=>a+b,0);
-  return {...project,objective:input.locale==="ur"?"عنوان کے مطابق مربوط مجلس؛ علمی نکات کے ساتھ اصل حوالے محفوظ ہیں۔":"Connected sermon with preserved source references.",ownMaterial:"",status:"draft" as const,
+  const prepared={...project,objective:input.locale==="ur"?"عنوان کے مطابق مربوط مجلس؛ علمی نکات کے ساتھ اصل حوالے محفوظ ہیں۔":"Connected sermon with preserved source references.",ownMaterial:"",status:"draft" as const,
     sections:sections.map((s,i)=>({id:`composed-${i+1}`,kind:(i===0?"opening":i===4?"closing":"scholar") as "opening"|"closing"|"scholar",headingUr:s.heading,headingEn:s.heading,minutes:minutes[i],provenance:"editorial" as const,evidenceIds:s.refs.map(ref=>evidence.find(item=>item.ref===ref)!.passage.id).filter(id=>portableIds.includes(id)),userText:[s.text,...s.refs.map(ref=>{const p=evidence.find(e=>e.ref===ref)!.passage;return `${input.locale==="ur"?"حوالہ":"Reference"}: ${input.locale==="ur"?p.referenceUr:p.referenceEn}`;})].join("\n\n")})),
     // Source originals now appear inline at first use. Do not repeat every
     // complete book excerpt at the end of an already composed sermon.
@@ -252,4 +253,15 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
     // Sources are inserted by the server, never copied out of model output.
     selectedEvidenceIds:portableIds,
   };
+  if(options.requireSpokenDuration){
+    const spoken=assessSermonSpeakingTime(prepared);
+    const lower=input.duration===20?18:input.duration*0.9;
+    const upper=input.duration===20?22:input.duration*1.1;
+    if(spoken.estimatedMinutes<lower||spoken.estimatedMinutes>upper){
+      console.warn("Sermon duration verification",{status:"rejected",target:input.duration,estimated:spoken.estimatedMinutes,proseWords:spoken.proseWords,sourceCount:spoken.distinctSourceRecords});
+      throw new Error("sermon-duration-mismatch");
+    }
+    console.info("Sermon duration verification",{status:"accepted",target:input.duration,estimated:spoken.estimatedMinutes,sourceCount:spoken.distinctSourceRecords});
+  }
+  return prepared;
 }
