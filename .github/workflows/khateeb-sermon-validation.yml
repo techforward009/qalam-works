@@ -56,18 +56,38 @@ jobs:
     # Read-only API-key metadata: no inference or charge possible.
     if: github.event_name == 'push' && github.event.head_commit.message == 'Check OpenRouter free quota'
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     permissions:
       contents: read
+      issues: write
     env:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Query today's free-model quota (no completion calls)
-        run: node scripts/probe-openrouter-free-sermon.mjs --quota-check
+        shell: bash
+        run: |
+          set +e
+          node scripts/probe-openrouter-free-sermon.mjs --quota-check > "$RUNNER_TEMP/free-quota.txt" 2>&1
+          result=$?
+          set -e
+          echo "OpenRouter free quota (READ-ONLY):" >> "$GITHUB_STEP_SUMMARY"
+          cat "$RUNNER_TEMP/free-quota.txt" >> "$GITHUB_STEP_SUMMARY"
+          printf '\n' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "OpenRouter free allowance check (no model calls):"
+            echo '~~~'
+            cat "$RUNNER_TEMP/free-quota.txt"
+            echo '~~~'
+            echo "Result exit code: $result"
+            echo "No paid model was called, no credits purchased."
+          } > "$RUNNER_TEMP/free-quota-issue.txt"
+          gh issue comment 34 --repo techforward009/qalam-works --body-file "$RUNNER_TEMP/free-quota-issue.txt"
+          exit "$result"
 
   openrouter-free-sample:
     # This exact opt-in trigger runs two explicit :free models; no paid fallback.
