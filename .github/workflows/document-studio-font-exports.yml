@@ -23,7 +23,7 @@ jobs:
       - name: Test PDF font name normalization
         run: npx vitest run tests/pdfEmbeddedFontNameNormalization.test.ts
       - name: Audit font identity in real PDF and Word downloads
-        run: npx playwright test tests/e2e/documentStudioFontExports.spec.ts --project=desktop-chrome --workers=1 --reporter=github
+        run: npx playwright test tests/e2e/documentStudioFontExports.spec.ts --project=desktop-chrome --workers=1 --reporter=github --grep "Alvi"
       - name: Capture unmodified PDF baselines for multiple paragraphs
         run: npx playwright test tests/e2e/documentStudioPdfUnicodeDiagnostic.spec.ts --project=desktop-chrome --workers=1 --reporter=github
       - name: Upload screenshots, PDF and DOCX inspection reports

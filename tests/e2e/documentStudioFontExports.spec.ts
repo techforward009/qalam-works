@@ -109,7 +109,15 @@ for (const [index, entry] of cases.entries()) {
       pdfActualUrduFonts: response.headers()["x-pdf-urdu-actual-fonts"] ?? null,
     };
     writeFileSync(path.join(reportDir, `${index+1}-${entry.expected}-report.json`), JSON.stringify(audit, null, 2));
-    console.log("[font-export-audit]", JSON.stringify({family:entry.family,docx:docxFamilyFound,pdfStatus:response.status(),pdfMatch,fallbacks}));
+    const sent = JSON.parse(response.request().postData() ?? "{}");
+    console.log("[font-export-audit]", JSON.stringify({
+      family:entry.family,docx:docxFamilyFound,pdfStatus:response.status(),pdfMatch,fallbacks,
+      logicalStatus:response.headers()["x-pdf-logical-text-status"],
+      shape:(sent.doc?.content ?? []).map((block: {type?:string;attrs?:Record<string,unknown>;content?:Array<{type?:string; text?:string}>})=>({
+        type:block.type,dir:block.attrs?.dir,children:block.content?.map(child=>({type:child.type,length:child.text?.length}))
+      })),
+      visualLines:response.headers()["x-pdf-visual-lines"],
+    }));
     expect(docxFamilyFound, "DOCX should retain the selected font in a text run").toBe(true);
     expect(response.status(), "PDF generation must succeed").toBe(200);
     expect(pdfMatch, "Final PDF must contain the requested embedded font, not a fallback").toBeDefined();
