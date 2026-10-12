@@ -11,9 +11,9 @@ export function planStagedSermonWordTargets(evidence:readonly AnswerEvidence[],s
   const passages=evidence.map(item=>item.passage).filter(p=>ids.has(p.id));
   const arabic=new Set(passages.map(p=>p.text.trim()).filter(Boolean));
   const translations=new Set(passages.map(p=>p.suppliedTranslation?.text.trim()??"").filter(Boolean));
-  if(!arabic.size||translations.size!==new Set(passages.map(p=>p.suppliedTranslation?.text.trim()??"")).size)
+  if(!arabic.size||passages.some(p=>p.language!=="ar"||!p.suppliedTranslation?.text.trim()))
     throw new Error("incomplete-speaking-sources");
-  const count=(str:string)=>str.split(/\\s+/u).filter(Boolean).length;
+  const count=(str:string)=>str.split(/\s+/u).filter(Boolean).length;
   const r=SERMON_SPEAKING_RATES;
   const spokenSources=[...arabic].reduce((n,t)=>n+count(t)/r.arabicWordsPerMinute,0)
     +[...translations].reduce((n,t)=>n+count(t)/r.translatedWordsPerMinute,0)
