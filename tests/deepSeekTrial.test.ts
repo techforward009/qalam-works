@@ -92,6 +92,7 @@ it("runs the real sentence reviewer through a separate DeepSeek Pro request and 
   id:"book:test:1",recordId:"book:test:1",collection:"nahj" as const,
   language:"ar" as const,referenceUr:"نہج البلاغہ، حکمت ۵۵",
   referenceEn:"Nahj al-Balagha saying 55",text:"الصَّبْرُ صَبْرَانِ",
+  sourceSha256:"b".repeat(64),translator:null,
   suppliedTranslation:{language:"ur" as const,text:"صبر کی دو قسمیں ہیں۔",translator:"Provided"}
  };
  const evidence=[{ref:3,passage}];
@@ -112,7 +113,7 @@ it("runs the real sentence reviewer through a separate DeepSeek Pro request and 
   cloudflareAccountId:"not-used",cloudflareToken:"not-used",preferredProvider:"cloudflare",
   fetchImpl:direct.fetchFor("reviewer"),deadline:Date.now()+30000
  })!;
- const checked=await reviewer.review({question:"صبر",locale:"ur",evidence},claims);
+ const checked=await reviewer.review({question:"صبر",locale:"ur",evidence},claims) as {reviews:{verdict:string}[]};
  expect(checked.reviews).toHaveLength(1);
  expect(checked.reviews[0].verdict).toBe("supported");
  expect(direct.status().reviewerCalls).toBe(1);
