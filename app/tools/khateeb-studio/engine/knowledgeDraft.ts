@@ -8,7 +8,14 @@ export function createKnowledgeDraft(result: KnowledgeResult, selected: readonly
   if (!passages.length || result.status !== "evidence") throw new Error("no-evidence");
   const ur = locale === "ur";
   const project = createCustomSermonProject({ kind: "majlis", title: result.question, objective: ur ? "منتخب اصل عبارتوں سے موضوع کی تیاری؛ تشریح اور ربط خطیب مکمل کرے" : "Prepare the topic from selected source passages; add your explanation and transitions", duration });
-  const quran = passages.filter(p => p.quranLocation).map(p => ({ id: p.id, kind: "quran" as const, status: "verified" as const, titleUr: p.referenceUr, titleEn: p.referenceEn, detailUr: p.suppliedTranslation?.language === "ur" ? `${p.suppliedTranslation.text}\nمترجم: ${p.suppliedTranslation.translator}` : "احمدگراف قرآنی مسودے کی اصل عبارت", detailEn: p.suppliedTranslation?.language === "en" ? `${p.suppliedTranslation.text}\nTranslator: ${p.suppliedTranslation.translator}` : "Original Ahmedgraf Quran corpus text", citationUr: p.referenceUr, citationEn: p.referenceEn, arabic: p.text }));
+  const quran = passages.filter(p => p.quranLocation).map(p => ({ id: p.id, kind: "quran" as const, status: "verified" as const, titleUr: p.referenceUr, titleEn: p.referenceEn, detailUr: p.suppliedTranslation?.language === "ur" ? `${p.suppliedTranslation.text}\nمترجم: ${p.suppliedTranslation.translator}` : "احمدگراف قرآنی مسودے کی اصل عبارت", detailEn: p.suppliedTranslation?.language === "en" ? `${p.suppliedTranslation.text}\nTranslator: ${p.suppliedTranslation.translator}` : "Original Ahmedgraf Quran corpus text", citationUr: p.referenceUr, citationEn: p.referenceEn, arabic: p.text,
+    sourceSha256: p.sourceSha256,
+    sourceReviewStatus: /^[a-f0-9]{64}$/u.test(p.sourceSha256) ? "corpus-linked" as const : "untraced" as const,
+    translationSource: p.suppliedTranslation?.source,
+    translationSourceId: p.suppliedTranslation?.sourceId,
+    translationSha256: p.suppliedTranslation?.sourceSha256,
+    translationReviewStatus: p.suppliedTranslation?.sourceId && /^[a-f0-9]{64}$/u.test(p.suppliedTranslation.sourceSha256??"") ? "source-linked" as const : "supplied-unreviewed" as const
+  }));
   const summary = researchSummaryText(result.research, passages, locale);
   const sections = buildCustomSermonSections("majlis", duration, quran).map(section => section.kind === "editorial-bridge" && summary ? { ...section, provenance: "editorial" as const, userText: summary } : section);
   return { ...project, sections, evidence: quran, selectedEvidenceIds: quran.map(p => p.id), bookExcerpts: passages.flatMap(p => p.excerpt ? [{ ...p.excerpt, ...(p.suppliedTranslation ? { suppliedTranslation: p.suppliedTranslation } : {}) }] : []), ownMaterial: ur ? "یہ ماخذی مواد کا مسودہ ہے۔ آیات اور کتابی اقتباسات الگ محفوظ ہیں؛ منبری تشریح ابھی مکمل کرنا باقی ہے۔" : "This is a source-material draft. Verses and book quotations are saved separately; sermon explanation remains to be written." };

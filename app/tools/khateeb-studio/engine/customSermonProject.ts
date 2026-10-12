@@ -21,6 +21,15 @@ export type CustomSermonEvidenceSnapshot = {
   arabic?: string;
   sourceUrl?: string;
   providerId?: string;
+  sourceId?: string;
+  recordId?: string;
+  paragraphId?: string;
+  sourceSha256?: string;
+  translationSource?: string;
+  translationSourceId?: string;
+  translationSha256?: string;
+  sourceReviewStatus?: "corpus-linked" | "test-fixture" | "untraced";
+  translationReviewStatus?: "source-linked" | "editorial-test" | "supplied-unreviewed";
 };
 
 export type CustomSermonSectionKind =
@@ -440,7 +449,9 @@ export function parseCustomSermonProject(
         ["quran", "hadith", "scholar", "speaker", "source"].includes(item.kind) &&
         ["verified", "source-lead", "catalog-only"].includes(item.status) &&
         [item.titleUr, item.titleEn, item.detailUr, item.detailEn, item.citationUr, item.citationEn].every(text => typeof text === "string") &&
-        [item.arabic, item.sourceUrl, item.providerId].every(text => text === undefined || typeof text === "string")) ||
+        [item.arabic, item.sourceUrl, item.providerId, item.sourceId, item.recordId, item.paragraphId, item.sourceSha256, item.translationSource, item.translationSourceId, item.translationSha256].every(text => text === undefined || typeof text === "string") &&
+        (item.sourceReviewStatus === undefined || ["corpus-linked", "test-fixture", "untraced"].includes(item.sourceReviewStatus)) &&
+        (item.translationReviewStatus === undefined || ["source-linked", "editorial-test", "supplied-unreviewed"].includes(item.translationReviewStatus))) ||
       !value.sections.every(item => item && typeof item.id === "string" && item.id &&
         ["opening", "quran", "hadith", "scholar", "own-material", "editorial-bridge", "closing", "jumuah-first", "jumuah-second"].includes(item.kind) &&
         ["source-grounded", "user", "editorial"].includes(item.provenance) &&
@@ -529,6 +540,11 @@ export function buildCustomSermonText(
       );
       if (item.arabic) lines.push(item.arabic);
       lines.push(ur ? item.detailUr : item.detailEn);
+      if (item.sourceReviewStatus === "test-fixture" || item.translationReviewStatus === "editorial-test") {
+        lines.push(ur ? "تنبیہ: یہ آزمائشی اقتباس یا ادارتی ترجمہ ہے؛ اصل نسخے سے تصدیق کے بغیر شائع نہ کریں۔" : "Warning: Test excerpt or editorial translation; verify against the primary edition before publication.");
+      } else if (item.sourceReviewStatus === "untraced" || item.translationReviewStatus === "supplied-unreviewed") {
+        lines.push(ur ? "تنبیہ: اس اقتباس یا ترجمے کی نسخہ جاتی تصدیق باقی ہے۔" : "Warning: Edition-level verification of this excerpt or translation is pending.");
+      }
       lines.push(
         `${ur ? "حوالہ" : "Reference"}: ${ur ? item.citationUr : item.citationEn}`,
       );

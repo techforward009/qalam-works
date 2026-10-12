@@ -226,6 +226,25 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
   // The original draft projected only Quran verses into portable evidence, silently
   // dropping the book passages cited by the model from section evidence IDs.
   const citedIds=new Set(selected);
+  // This records supplied-edition provenance, NOT a narration's authenticity grade.
+  const bookTrace=(p:AnswerEvidence["passage"])=>{
+    const test=/(?:آزمائشی|عارضی|test|fixture|provisional)/iu.test(
+      [p.id,p.sourceSha256,p.suppliedTranslation?.translator,p.suppliedTranslation?.source].filter(Boolean).join(" ")
+    );
+    const hasSha=/^[a-f0-9]{64}$/u.test(p.sourceSha256);
+    const supplied=p.suppliedTranslation;
+    return {
+      sourceId:p.sourceId,
+      recordId:p.recordId,
+      paragraphId:p.paragraphId,
+      sourceSha256:p.sourceSha256,
+      sourceReviewStatus:(test?"test-fixture":hasSha && !!p.sourceId && !!p.recordId && !!p.paragraphId?"corpus-linked":"untraced") as "test-fixture"|"corpus-linked"|"untraced",
+      translationSource:supplied?.source,
+      translationSourceId:supplied?.sourceId,
+      translationSha256:supplied?.sourceSha256,
+      translationReviewStatus:(test?"editorial-test":supplied?.sourceId && /^[a-f0-9]{64}$/u.test(supplied.sourceSha256??"")?"source-linked":"supplied-unreviewed") as "editorial-test"|"source-linked"|"supplied-unreviewed",
+    };
+  };
   const portableBookEvidence=evidence.map(e=>e.passage)
     .filter(p=>citedIds.has(p.id)&&p.collection!=="quran")
     .map(p=>({
@@ -240,6 +259,7 @@ export async function composeSermon(input: SermonRequest, result: KnowledgeResul
         ? `${p.suppliedTranslation.text}\nTranslator: ${p.suppliedTranslation.translator}`
         : "Verified original Arabic source",
       citationUr:p.referenceUr,citationEn:p.referenceEn,arabic:p.text,
+      ...bookTrace(p),
     }));
   const portableEvidence=[...project.evidence,...portableBookEvidence];
   const portableIds=portableEvidence.map(p=>p.id);
