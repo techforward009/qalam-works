@@ -109,14 +109,14 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Validate free-only safeguards without any API calls
         run: |
-          npx vitest run tests/openRouterFreeTrial.test.ts
+          npx vitest run tests/openRouterFreeTrial.test.ts tests/openRouterFreeFallback.test.ts
           npx tsc --noEmit
-          node scripts/probe-openrouter-free-sermon.mjs --dry-run
+          node scripts/probe-openrouter-free-fallback.mjs --dry-run
       - name: Write and independently audit a short public-source Urdu sample free of charge
         shell: bash
         run: |
           set +e
-          node scripts/probe-openrouter-free-sermon.mjs --live-free > "$RUNNER_TEMP/free-output.txt" 2>&1
+          node scripts/probe-openrouter-free-fallback.mjs --live-free > "$RUNNER_TEMP/free-output.txt" 2>&1
           result=$?
           set -e
           cat "$RUNNER_TEMP/free-output.txt"
