@@ -10,6 +10,8 @@ export type MenuActionId =
   | "file.new"
   | "file.open"
   | "file.upload"
+  | "file.saveQalam"
+  | "file.openQalam"
   | "file.downloadTxt"
   | "file.downloadDocx"
   | "file.downloadPdf"
@@ -138,6 +140,9 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
       { type: "action", id: "file.new", labelEn: "New document", labelUr: "نیا مسودہ" },
       { type: "action", id: "file.open", labelEn: "Open document…", labelUr: "دستاویز کھولیں…" },
       { type: "action", id: "file.upload", labelEn: "Import file", labelUr: "فائل درآمد" },
+      { type: "separator" },
+      { type: "action", id: "file.saveQalam", labelEn: "Save Editable Document", labelUr: "قابلِ تدوین دستاویز محفوظ کریں" },
+      { type: "action", id: "file.openQalam", labelEn: "Open Editable Document", labelUr: "قابلِ تدوین دستاویز کھولیں" },
       { type: "separator" },
       {
         type: "submenu",

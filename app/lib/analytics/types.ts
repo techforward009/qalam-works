@@ -19,7 +19,7 @@ export type ToolId =
 export type ProcessingMode = "auto" | "ur" | "en" | "ar";
 export type ResolvedMode = "ur" | "en" | "ar" | "rtl-neutral";
 export type InputMethod = "paste" | "upload" | "editor" | "example" | "unknown";
-export type ExportFormat = "txt" | "docx" | "pdf" | "copy";
+export type ExportFormat = "txt" | "docx" | "pdf" | "copy" | "qalam";
 export type NavSource =
   | "header"
   | "footer"
