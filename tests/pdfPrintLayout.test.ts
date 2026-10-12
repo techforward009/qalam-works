@@ -5,7 +5,7 @@ import { PDFDocument } from "pdf-lib";
 import { defaultDocumentSettings, type DocumentStudioSettings } from "../app/tools/document-studio/utils/documentSettings";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 import { fontsForDocument } from "../app/tools/document-studio/utils/pdfDocumentFonts";
-import { buildPrintDocumentHtml, paintedFontMismatch } from "../app/tools/document-studio/utils/printDocumentHtml";
+import { buildPrintDocumentHtml, paintedFontMismatch, readPaintedPdfFonts, requestedFontPaintMismatch } from "../app/tools/document-studio/utils/printDocumentHtml";
 
 const CHROME = [process.env.CHROME_PATH, "/opt/pw-browsers/chromium-1234/chrome-linux64/chrome"].find(
   (path): path is string => typeof path === "string" && existsSync(path),
@@ -34,11 +34,15 @@ describe("print-based PDF layout", () => {
     expect(html).not.toMatch(/body \{[^}]*overflow:\s*hidden/);
   });
 
-  it("rejects a selected face that paints as a different family", () => {
-    expect(paintedFontMismatch("Alvi Nastaleeq", ["Jameel Noori Nastaleeq"])).toMatch(/not substituted/);
-    expect(paintedFontMismatch("Alvi Nastaleeq", ["Alvi Nastaleeq"])).toBeNull();
-    expect(paintedFontMismatch("Digital Khatt Indo-Pak", ["DigitalKhattIndoPak"])).toBeNull();
-    expect(paintedFontMismatch("Gulzar", [])).toBeNull();
+  it("rejects a selected face that is missing or paints as a different family", () => {
+    expect(paintedFontMismatch("Alvi Nastaleeq", [["Jameel Noori Nastaleeq"]])).toMatch(/not substituted/);
+    expect(paintedFontMismatch("Alvi Nastaleeq", [["Alvi Nastaleeq"], ["Jameel Noori Nastaleeq"]])).toMatch(/not substituted/);
+    expect(paintedFontMismatch("Alvi Nastaleeq", [["Alvi Nastaleeq"]])).toBeNull();
+    expect(paintedFontMismatch("Digital Khatt Indo-Pak", [["DigitalKhattIndoPak"]])).toBeNull();
+    expect(paintedFontMismatch("Gulzar", [])).toMatch(/no painted text/);
+    expect(paintedFontMismatch("Alvi Nastaleeq", [[]])).toMatch(/no painted glyphs/);
+    expect(requestedFontPaintMismatch(["Inter", "Noto Nastaliq Urdu"], {})).toBeNull();
+    expect(requestedFontPaintMismatch(["Alvi Nastaleeq", "Inter"], { Inter: [] })).toMatch(/Alvi Nastaleeq/);
   });
 
   it("keeps image wrap, an explicit page break, and mixed script text", () => {
@@ -103,6 +107,10 @@ describe("print-based PDF layout", () => {
       expect(painted.alvi).toMatch(/Alvi/);
       expect(painted.khatt).toMatch(/Digital Khatt/);
       expect(painted.amiri).toMatch(/Amiri/);
+      const runs = await readPaintedPdfFonts(page, ["Gulzar", "Alvi Nastaleeq", "Amiri", "Digital Khatt Indo-Pak"]);
+      expect(requestedFontPaintMismatch(["Gulzar", "Alvi Nastaleeq", "Amiri", "Digital Khatt Indo-Pak"], runs)).toBeNull();
+      expect(runs["Alvi Nastaleeq"]?.length).toBeGreaterThan(0);
+      expect(runs["Digital Khatt Indo-Pak"]?.length).toBeGreaterThan(0);
       const bytes = await page.pdf({
         preferCSSPageSize: true,
         printBackground: true,

@@ -19,7 +19,7 @@ import {
   type DocumentStudioSettings,
 } from "../../tools/document-studio/utils/documentSettings";
 import { verifyPdfUrduEmbedding } from "../../tools/document-studio/utils/pdfEmbeddedFonts";
-import { buildPrintDocumentHtml, paintedFontMismatch, readPaintedPdfFonts } from "../../tools/document-studio/utils/printDocumentHtml";
+import { buildPrintDocumentHtml, readPaintedPdfFonts, requestedFontPaintMismatch } from "../../tools/document-studio/utils/printDocumentHtml";
 import { preflightPdfSource } from "../../tools/document-studio/utils/pdfSourcePreflight";
 
 interface ExportPdfRequestBody {
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
     const layout = printed.layout;
     const painted = await readPaintedPdfFonts(page, fontsUsed);
-    const mismatch = fontsUsed.map((family) => paintedFontMismatch(family, painted[family] ?? [])).find((item) => item !== null);
+    const mismatch = requestedFontPaintMismatch(fontsUsed, painted);
     if (mismatch) throw new Error(mismatch);
     const headerFooter = settings.headerFooter.headerEnabled || settings.headerFooter.footerEnabled;
     const pdfUint8Array = await page.pdf({
