@@ -2,7 +2,7 @@ import { registerHooks } from "node:module";
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import ts from "typescript";
 
-if (!["--compare","--check-fixture","--openrouter-check","--openrouter-key-check","--openrouter-trial","--deepseek-check","--deepseek-trial"].some(flag=>process.argv.includes(flag))) {
+if (!["--compare","--check-fixture","--openrouter-check","--openrouter-key-check","--openrouter-trial","--deepseek-check","--deepseek-key-check","--deepseek-trial"].some(flag=>process.argv.includes(flag))) {
   console.log("Usage: node scripts/evaluate-sermon-free-models.mjs --compare");
   process.exit(1);
 }
@@ -33,6 +33,20 @@ const { createSermonSentenceReviewer } = await import("../app/lib/knowledge/serm
 const { createOpenRouterTrialSession, OPENROUTER_TRIAL_MODELS, estimateOpenRouterTrialCeiling, verifyOpenRouterTrialKeyCap } = await import("../app/lib/knowledge/openRouterTrial.ts");
 const { createDeepSeekTrialSession, checkDeepSeekTrialBalance, estimateDeepSeekTrialCeiling, DEEPSEEK_TRIAL_MODELS } = await import("../app/lib/knowledge/deepSeekTrial.ts");
 const { generateStagedSermonSections, planSermonStageEvidence } = await import("../app/lib/knowledge/sermonStagedGeneration.ts");
+if(process.argv.includes("--deepseek-key-check")){
+ const key=process.env.DEEPSEEK_API_KEY;
+ if(!key){console.log("DEEPSEEK_KEY_READINESS",JSON.stringify({ready:false,reason:"missing-github-secret",paidCalls:0}));process.exit(2);}
+ try{
+  const balance=await checkDeepSeekTrialBalance({apiKey:key});
+  const ready=balance.available && balance.usd!==null && balance.usd>=0.35;
+  console.log("DEEPSEEK_KEY_READINESS",JSON.stringify({ready,available:balance.available,usd:balance.usd,paidCalls:0,reason:ready?"ready":"insufficient-balance"}));
+  process.exit(ready?0:2);
+ }catch(error){
+  const reason=error instanceof Error && ["deepseek-balance-unavailable","deepseek-balance-invalid"].includes(error.message)?error.message:"unavailable";
+  console.log("DEEPSEEK_KEY_READINESS",JSON.stringify({ready:false,reason,paidCalls:0}));process.exit(2);
+ }
+}
+
 // A key-readiness check makes NO paid model requests and never logs secrets.
 if(process.argv.includes("--openrouter-key-check")){
   const key=process.env.OPENROUTER_API_KEY;

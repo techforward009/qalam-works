@@ -12,7 +12,7 @@ jobs:
   sermon-unit:
     # The limited model experiment runs its own strict, focused check.
     # Keep the slower whole-repository comparison for ordinary changes.
-    if: github.event_name != 'push' || (github.event.head_commit.message != 'Run evidence-focused Gemma retest' && github.event.head_commit.message != 'Run quota-gated Gemma trial' && github.event.head_commit.message != 'Check OpenRouter key readiness')
+    if: github.event_name != 'push' || (github.event.head_commit.message != 'Run evidence-focused Gemma retest' && github.event.head_commit.message != 'Run quota-gated Gemma trial' && github.event.head_commit.message != 'Check OpenRouter key readiness' && github.event.head_commit.message != 'Check DeepSeek key readiness')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -51,6 +51,22 @@ jobs:
       - run: npm run test:sermon:flow:imports
       - run: npm run build
       - run: git diff --check
+
+  deepseek-key-readiness:
+    if: github.event_name == 'push' && github.event.head_commit.message == 'Check DeepSeek key readiness'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check DeepSeek balance and key only; no paid inference
+        run: node scripts/evaluate-sermon-free-models.mjs --deepseek-key-check
 
   openrouter-key-readiness:
     if: github.event_name == 'push' && github.event.head_commit.message == 'Check OpenRouter key readiness'
