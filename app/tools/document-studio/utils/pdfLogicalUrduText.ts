@@ -39,34 +39,69 @@ function taggedActualText(logical: string): string {
 
 export function tagChromeUrduPdfStream(stream: string, lines: readonly string[]): string | null {
   const matches = [...stream.matchAll(TOKEN)];
-  const opens = (stream.match(/\bBDC\b|\bBMC\b/g) ?? []).length;
-  const closes = (stream.match(/\bEMC\b/g) ?? []).length;
+  const opens = (stream.match(/\\bBDC\\b|\\bBMC\\b/g) ?? []).length;
+  const closes = (stream.match(/\\bEMC\\b/g) ?? []).length;
   if (opens !== closes ||
     matches.filter(m => m[0] !== "EMC").length !== opens ||
     matches.filter(m => m[0] === "EMC").length !== closes) return null;
 
-  const stack: ("parent" | "inner")[] = [];
-  let cursor = 0, output = "", count = 0;
+  // Chromium may emit one extra, glyph-free marked-content group at a page
+  // break. Detect it by balancing nested tags and checking painted text
+  // operators inside each parent. Only one TRAILING empty group is allowed.
+  const scan: Array<{ kind: "parent" | "inner"; index?: number; start?: number }> = [];
+  const painted: boolean[] = [];
+  let groups = 0;
+  for (const match of matches) {
+    if (match[1] !== undefined) {
+      scan.push({ kind: "parent", index: groups++, start: match.index! + match[0].length });
+    } else if (match[0] !== "EMC") {
+      scan.push({ kind: "inner" });
+    } else {
+      const opening = scan.pop();
+      if (!opening) return null;
+      if (opening.kind === "parent") {
+        const enclosed = stream.slice(opening.start!, match.index);
+        painted[opening.index!] = /\\b(?:Tj|TJ)\\b/.test(enclosed);
+      }
+    }
+  }
+  if (scan.length || painted.length !== groups) return null;
+  const empty = painted.flatMap((hasGlyphs, index) => hasGlyphs ? [] : [index]);
+  if (empty.length > 1 || (empty.length === 1 && empty[0] !== groups - 1) ||
+    painted.filter(Boolean).length !== lines.length) return null;
+
+  const stack: ("parent" | "inner" | "empty" | "keep-inner")[] = [];
+  let cursor = 0, output = "", count = 0, seen = 0;
   for (const match of matches) {
     output += stream.slice(cursor, match.index);
     const token = match[0];
     if (match[1] !== undefined) {
-      if (Number(match[1]) !== count || count >= lines.length) return null;
-      stack.push("parent");
-      output += token + "\n" + taggedActualText(lines[count]);
-      count++;
+      if (Number(match[1]) !== seen) return null;
+      if (painted[seen]) {
+        stack.push("parent");
+        output += token + "\\n" + taggedActualText(lines[count++]);
+      } else {
+        stack.push("empty");
+        output += token;
+      }
+      seen++;
     } else if (token.startsWith("/ReversedChars") || token.startsWith("/Span")) {
-      stack.push("inner");
-      // Remove only the old fragmented extraction tags, not glyph operators.
+      if (stack.includes("empty")) {
+        stack.push("keep-inner");
+        output += token;
+      } else {
+        stack.push("inner");
+      }
     } else {
       const open = stack.pop();
       if (!open) return null;
-      if (open === "parent") output += "EMC\nEMC";
+      if (open === "parent") output += "EMC\\nEMC";
+      else if (open === "empty" || open === "keep-inner") output += "EMC";
     }
     cursor = match.index! + token.length;
   }
   output += stream.slice(cursor);
-  return stack.length === 0 && count === lines.length ? output : null;
+  return stack.length === 0 && count === lines.length && seen === groups ? output : null;
 }
 
 export function tagSimpleUrduPdfLogicalText(
