@@ -185,3 +185,15 @@ it("refuses a claimed twenty-minute plan with missing Urdu source readings",()=>
  const incomplete=evidence.map((row,index)=>index===0?{...row,passage:{...row.passage,suppliedTranslation:undefined}}:row) as AnswerEvidence[];
  expect(()=>planStagedSermonWordTargets(incomplete,planSermonStageEvidence(incomplete))).toThrow("incomplete-speaking-sources");
 });
+
+it("reserves translation time for each distinct Arabic passage even if the Urdu wording repeats",()=>{
+ const sameUrdu=Array.from({length:90},()=>"صبر").join(" ");
+ const shared=evidence.map((item,i)=>i<2
+   ?{...item,passage:{...item.passage,suppliedTranslation:{...item.passage.suppliedTranslation!,text:sameUrdu}}}
+   :item) as AnswerEvidence[];
+ const shorter=shared.map((item,i)=>i===1
+   ?{...item,passage:{...item.passage,suppliedTranslation:{...item.passage.suppliedTranslation!,text:"صبر"}}}
+   :item) as AnswerEvidence[];
+ const total=(rows:AnswerEvidence[])=>planStagedSermonWordTargets(rows,planSermonStageEvidence(rows)).reduce((sum,n)=>sum+n,0);
+ expect(total(shorter)-total(shared)).toBeGreaterThan(85);
+});

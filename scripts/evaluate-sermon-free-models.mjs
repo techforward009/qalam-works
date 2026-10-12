@@ -151,12 +151,12 @@ console.log("SERMON_SOURCE_PLAN",JSON.stringify({
 }));
 if(process.argv.includes("--check-speaking-plan")){
   const targets=planStagedSermonWordTargets(selectedFor20Minutes,stagePlan);
-  const origin=new Set();const translations=new Set();
+  const origin=new Set();const translations=[];
   for(const passage of selectedFor20Minutes.map(e=>e.passage)){
     if(!stagePlan.some(stage=>stage.some(e=>e.passage.id===passage.id)))continue;
     if(origin.has(passage.text.trim()))continue;
     origin.add(passage.text.trim());
-    translations.add(passage.suppliedTranslation?.text?.trim()??"");
+    translations.push(passage.suppliedTranslation?.text?.trim()??"");
   }
   const count=text=>text.split(/\s+/u).filter(Boolean).length;
   const rates=SERMON_SPEAKING_RATES;

@@ -34,3 +34,14 @@ it("measures prose and not the nominal minutes on section labels",()=>{
 it("rejects invalid delivery speeds",()=>{
  expect(()=>assessSermonSpeakingTime(sample(),{urduWordsPerMinute:0})).toThrow("invalid-speaking-rates");
 });
+
+it("counts duplicate Urdu wording twice when two distinct Arabic sources are read separately",()=>{
+ const base=sample();
+ const material={...base,evidence:base.evidence.map(source=>source.id==="two"
+   ?{...source,arabic:"وَتَوَاصَوْا بِالصَّبْرِ"}:source)};
+ const reading=assessSermonSpeakingTime(material);
+ expect(reading.distinctSourceRecords).toBe(2);
+ expect(reading.distinctReadings).toBe(2);
+ expect(reading.arabicWords).toBe(6);
+ expect(reading.translationWords).toBe(12);
+});

@@ -12,14 +12,14 @@ export function planStagedSermonWordTargets(evidence:readonly AnswerEvidence[],s
   if(!passages.length||passages.some(p=>p.language!=="ar"||!p.text.trim()||!p.suppliedTranslation?.text.trim()))
     throw new Error("incomplete-speaking-sources");
   const arabic=new Set<string>();
-  const translations=new Set<string>();
+  const translations:string[]=[];
   // The export reads each distinct Arabic original once; its translation is
   // counted only the first time the original appears. Match that exact rule.
   for(const passage of passages){
     const original=passage.text.trim();
     if(arabic.has(original))continue;
     arabic.add(original);
-    translations.add(passage.suppliedTranslation!.text.trim());
+    translations.push(passage.suppliedTranslation!.text.trim());
   }
   const count=(str:string)=>str.split(/\s+/u).filter(Boolean).length;
   const r=SERMON_SPEAKING_RATES;

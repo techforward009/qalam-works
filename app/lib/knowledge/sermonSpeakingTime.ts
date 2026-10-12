@@ -33,13 +33,13 @@ export function assessSermonSpeakingTime(
   );
   const allSources = project.evidence.filter(source => citedIds.has(source.id));
   const originals = new Set<string>();
-  const translations = new Set<string>();
+  const translations: string[] = [];
   for (const source of allSources) {
     const original = source.arabic?.trim();
     if (!original || originals.has(original)) continue;
     originals.add(original);
     const translation = source.detailUr.split(/\nمترجم:/u)[0]?.trim();
-    if (translation) translations.add(translation);
+    if (translation) translations.push(translation);
   }
 
   const wordCounts = project.sections.map(section =>
