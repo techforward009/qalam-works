@@ -19,6 +19,7 @@ async function paintedFamilies(css: string): Promise<string[][]> {
       <p dir="rtl"><span style="font-family: Jameel Noori Nastaleeq">تحقیق قلم</span></p>
       <p dir="rtl"><span style="font-family: Gulzar">تحقیق قلم</span></p>
       <p dir="rtl"><span style="font-family: Noto Nastaliq Urdu">تحقیق قلم</span></p>
+      <p dir="rtl"><span style="font-family: Alvi Nastaleeq">تحقیق قلم</span></p>
     </body></html>`, { waitUntil: "load" });
     await page.evaluate(async () => { await document.fonts.ready; });
     const session = await page.createCDPSession();
@@ -43,6 +44,7 @@ describe("Document Studio Urdu editor fonts", () => {
     const canvas = readFileSync("app/tools/document-studio/components/DocumentCanvas.tsx", "utf8");
     expect(css).toContain('"Qalam Studio Latin", "Jameel Noori Nastaleeq"');
     expect(css).toContain('"Qalam Studio Latin", "Gulzar"');
+    expect(css).toContain('font-family:"Alvi Nastaleeq"');
     expect(css).not.toContain('var(--qalam-ltr-font, var(--font-inter), Inter), "Jameel Noori Nastaleeq"');
     expect(canvas).not.toContain("var(--qalam-ltr-font, var(--font-inter), Inter), var(--qalam-rtl-font");
     expect(canvas).toContain('"Qalam Studio Latin", var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu")');
@@ -55,6 +57,7 @@ describe("Document Studio Urdu editor fonts", () => {
       @font-face{font-family:"Jameel Noori Nastaleeq";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2") format("woff2");}
       @font-face{font-family:Gulzar;src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Gulzar-Regular.woff2") format("woff2");}
       @font-face{font-family:"Noto Nastaliq Urdu";src:url(data:font/woff2;base64,${readFileSync("public/fonts/nastaliq-400.woff2").toString("base64")}) format("woff2");}
+      @font-face{font-family:"Alvi Nastaleeq";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Alvi_Nastaleeq.woff2") format("woff2");}
       :root{--font-inter:Inter;--font-nastaliq:"Noto Nastaliq Urdu";--qalam-ltr-font:var(--font-inter), Inter, system-ui, sans-serif;}
     `;
     const broken = `${faces}
@@ -63,8 +66,10 @@ describe("Document Studio Urdu editor fonts", () => {
       .qalam-editor-content [style*="Noto Nastaliq Urdu"]{font-family:var(--qalam-ltr-font, var(--font-inter), Inter), var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;}
       p{font-size:42px}`;
     const before = await paintedFamilies(broken);
-    expect(before.every(row => row.includes("DejaVu Sans"))).toBe(true);
-    expect(before.every(row => !row.includes("Jameel Noori Nastaleeq") && !row.includes("Gulzar"))).toBe(true);
+    expect(before.slice(0, 3).every(row => row.includes("DejaVu Sans"))).toBe(true);
+    expect(before.slice(0, 3).every(row => !row.includes("Jameel Noori Nastaleeq") && !row.includes("Gulzar"))).toBe(true);
+    expect(before[3]).toContain("Alvi Nastaleeq");
+    expect(before[3]).not.toContain("DejaVu Sans");
 
     const fixed = `${faces}${latinFace()}
       .qalam-editor-content [style*="Jameel Noori Nastaleeq"]{font-family:"Qalam Studio Latin","Jameel Noori Nastaleeq",var(--font-nastaliq),"Noto Nastaliq Urdu" !important;}
@@ -78,5 +83,7 @@ describe("Document Studio Urdu editor fonts", () => {
     expect(after[1]).not.toContain("DejaVu Sans");
     expect(after[2]).toContain("Noto Nastaliq Urdu");
     expect(after[2]).not.toContain("DejaVu Sans");
-  }, 30000);
+    expect(after[3]).toContain("Alvi Nastaleeq");
+    expect(after[3]).not.toContain("DejaVu Sans");
+  }, 60000);
 });
