@@ -17,12 +17,6 @@ export const FREE_REVIEW_CANDIDATES=[
 function org(id){return id.split("/")[0];}
 export function selectFreeCandidates(catalog){
  if(!catalog||!Array.isArray(catalog.data))throw new Error("missing-model-catalog");
- const available=id=>{
-   try{assertActuallyFreeCatalog({data:[catalog.data.find(x=>x?.id===id)]?.filter(Boolean).length?catalog.data:[]},[id,FREE_REVIEW_CANDIDATES.find(r=>r!==id&&catalog.data.some(x=>x?.id===r))??id]);return true;}
-   catch{return false;}
- };
- // Use ONE extra known-free model to validate each candidate without assuming
- // anything about missing entries. Ignore unlisted or priced variants.
  const all=[...new Set([...FREE_WRITE_CANDIDATES,...FREE_REVIEW_CANDIDATES])];
  const zero=new Set(all.filter(id=>{
    const m=catalog.data.find(x=>x?.id===id);
@@ -99,7 +93,7 @@ export async function probeFreeFallback({apiKey,fetchImpl=fetch,log=console.log}
  }
  if(!writer){log("FREE_FALLBACK_RESULT "+JSON.stringify({ok:false,phase:"writer",calls,failures}));return {ok:false,phase:"writer",calls,failures};}
  let reviewer=null;
- const independence=choices.reviewers.filter(r=>org(r)!==org(writer.model));
+ const independence=choices.reviewers.filter(r=>org(r)!==org(writer.model)).slice(0,2);
  for(const model of independence){
   const prompt=[
    "Act as an INDEPENDENT religious-source auditor. Work only with these two supplied excerpts. Check every religious/historical statement in the Urdu text; identify unsupported phrases in Urdu. Do not assume general knowledge establishes a fact.",
