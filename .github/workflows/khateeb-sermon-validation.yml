@@ -85,6 +85,8 @@ jobs:
         run: npx vitest run tests/deepSeekTrial.test.ts tests/openRouterTrial.test.ts tests/sermonStagedGeneration.test.ts tests/sermonComposer.test.ts tests/sermonReview.test.ts tests/sermonEvidenceCoverage.test.ts tests/sermonRankingCoverage.test.ts
       - run: npx tsc --noEmit
       - run: node scripts/evaluate-sermon-free-models.mjs --check-fixture
+      - name: Confirm DeepSeek direct integration without any paid API call
+        run: node scripts/evaluate-sermon-free-models.mjs --deepseek-check
       - run: npm run test:sermon:flow:imports
       - run: git diff --check
 
