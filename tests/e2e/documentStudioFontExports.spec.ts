@@ -58,6 +58,7 @@ for (const [index, entry] of cases.entries()) {
     await select.selectOption(entry.family);
     await expect(editor.locator('span[style*="font-family"]').first()).toBeVisible();
     await expect(select).toHaveValue(entry.family);
+    await page.evaluate(() => window.getSelection()?.removeAllRanges());
     await page.screenshot({ path: path.join(reportDir, `${index+1}-${entry.expected}-editor.png`), fullPage: false });
 
     await page.locator('[data-menu-root="file"]').click();
@@ -67,6 +68,7 @@ for (const [index, entry] of cases.entries()) {
       page.locator('[data-menu-action="file.downloadDocx"]').click(),
     ]);
     const wordBytes = await content(wordDownload);
+    writeFileSync(path.join(reportDir, `${index+1}-${entry.expected}-document.docx`), wordBytes);
     const zip = await JSZip.loadAsync(wordBytes);
     const xml = await zip.file("word/document.xml")?.async("text");
     if (!xml) throw new Error("Missing document.xml");
@@ -76,16 +78,19 @@ for (const [index, entry] of cases.entries()) {
     await page.locator('[data-menu-root="file"]').click();
     await page.locator('[data-menu-submenu="file.download"]').hover();
     const responsePromise = page.waitForResponse(r => r.url().includes("/api/export-pdf") && r.request().method() === "POST", {timeout: 120_000});
-    const downloadPromise = page.waitForEvent("download", {timeout: 120_000});
+    const downloadPromise = page.waitForEvent("download", {timeout: 120_000}).catch(() => null);
     await page.locator('[data-menu-action="file.downloadPdf"]').click();
     const response = await responsePromise;
     let pdfFonts: ReturnType<typeof inspectPdf> = [];
     let pdfBytes = Buffer.alloc(0);
     if (response.status() === 200) {
-      pdfBytes = await content(await downloadPromise);
+      const downloaded = await downloadPromise;
+      if (!downloaded) throw new Error("Missing PDF download");
+      pdfBytes = await content(downloaded);
+      writeFileSync(path.join(reportDir, `${index+1}-${entry.expected}-document.pdf`), pdfBytes);
       pdfFonts = inspectPdf(await PDFDocument.load(pdfBytes));
     } else {
-      await downloadPromise.catch(() => undefined);
+      // An HTTP failure sends no download event; skip its timeout.
     }
     const pdfMatch = pdfFonts.find(f => compact(f.name).includes(compact(entry.expected)));
     const fallbacks = response.headers()["x-pdf-font-fallbacks"] ?? "[]";

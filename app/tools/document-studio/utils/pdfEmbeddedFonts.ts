@@ -1,5 +1,12 @@
 import { PDFArray, PDFDict, PDFDocument, PDFName, PDFRawStream } from "pdf-lib";
 
+/** Drop PDF subset prefix and #HH non-ASCII escapes for comparing font identities.
+ * Strict font program and ToUnicode checks still apply after matching.
+ */
+export function normalizeEmbeddedPdfFontFamily(name: string): string {
+  return name.replace(/^[A-Z]{6}\+/, "").replace(/#[0-9a-f]{2}/gi, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
 /** Structural check of printed bytes; this does not certify visual shaping. */
 export function verifyPdfUrduEmbedding(pdf: PDFDocument, runtimeFamilies: string[]): string[] {
   const fonts: Array<{ name: string; embedded: boolean; unicode: boolean }> = [];
@@ -21,7 +28,7 @@ export function verifyPdfUrduEmbedding(pdf: PDFDocument, runtimeFamilies: string
       fonts.push({ name, embedded, unicode: font.lookup(PDFName.of("ToUnicode")) instanceof PDFRawStream });
     }
   }
-  const normalize = (name: string) => name.replace(/^[A-Z]{6}\+/, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+  const normalize = normalizeEmbeddedPdfFontFamily;
   for (const family of runtimeFamilies.filter(name => /Jameel|Noto Nastaliq|Noto Naskh|Amiri|Vazirmatn|Digital\s*Khatt|DigitalKhatt/i.test(name))) {
     const matches = fonts.filter(font => normalize(font.name).startsWith(normalize(family)));
     if (!matches.length || matches.some(font => !font.embedded || !font.unicode)) {
