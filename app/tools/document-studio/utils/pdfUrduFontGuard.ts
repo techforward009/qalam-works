@@ -1,4 +1,5 @@
 import type { Page } from "puppeteer-core";
+import { formatCodePoint, isQuranicCodePoint } from "./digitalKhattCoverage";
 
 /** Runs inside Chromium. A successful check() alone does not prove a face exists. */
 export async function loadPdfUrduFace(family: string): Promise<boolean> {
@@ -35,6 +36,51 @@ function isDigitalKhattPlatformFont(font: { familyName?: string; postScriptName?
   return compactFontName(`${font.familyName ?? ""} ${font.postScriptName ?? ""}`).includes("digitalkhatt");
 }
 
+async function foreignQuranicCodePoints(page: Page, index: number): Promise<string[]> {
+  await page.evaluate((spanIndex) => {
+    document.getElementById("qalam-font-probe")?.remove();
+    const sample = document.querySelectorAll('[data-pdf-urdu="true"]')[spanIndex] as HTMLElement | undefined;
+    const host = document.createElement("div");
+    host.id = "qalam-font-probe";
+    host.style.cssText = "position:absolute;left:-9999px;top:0;font-size:32px;white-space:nowrap;";
+    if (sample) host.style.fontFamily = getComputedStyle(sample).fontFamily;
+    const segmenter = "Segmenter" in Intl ? new Intl.Segmenter(undefined, { granularity: "grapheme" }) : null;
+    const text = sample?.textContent ?? "";
+    const graphemes = segmenter ? [...segmenter.segment(text)].map(part => part.segment) : [...text];
+    graphemes.forEach((grapheme, graphemeIndex) => {
+      const probe = document.createElement("span");
+      probe.dataset.probe = String(graphemeIndex);
+      probe.textContent = grapheme;
+      host.appendChild(probe);
+    });
+    document.body.appendChild(host);
+  }, index);
+  const session = await page.createCDPSession();
+  try {
+    await session.send("DOM.enable");
+    await session.send("CSS.enable");
+    const { root } = await session.send("DOM.getDocument");
+    const { nodeIds } = await session.send("DOM.querySelectorAll", { nodeId: root.nodeId, selector: "#qalam-font-probe [data-probe]" });
+    const failed: string[] = [];
+    for (const probeId of nodeIds) {
+      const html = await session.send("DOM.getOuterHTML", { nodeId: probeId });
+      const text = html.outerHTML.replace(/<[^>]+>/g, "");
+      const fonts = await session.send("CSS.getPlatformFontsForNode", { nodeId: probeId });
+      const used = fonts.fonts.filter(font => font.glyphCount > 0);
+      const foreign = used.some(font => !isDigitalKhattPlatformFont(font));
+      const quranic = [...text].some(char => isQuranicCodePoint(char.codePointAt(0) ?? 0));
+      if (quranic && (foreign || used.length === 0)) {
+        const fontName = used.find(font => !isDigitalKhattPlatformFont(font))?.familyName || used[0]?.familyName || "unknown";
+        failed.push(`${[...text].filter(char => isQuranicCodePoint(char.codePointAt(0) ?? 0)).map(char => formatCodePoint(char.codePointAt(0) ?? 0)).join(" ")} via ${fontName}`);
+      }
+    }
+    return failed;
+  } finally {
+    await session.detach();
+    await page.evaluate(() => document.getElementById("qalam-font-probe")?.remove());
+  }
+}
+
 /** Verify actual font use, not the computed CSS family (which can lie about fallback). */
 export async function guardPdfUrduFonts(page: Page): Promise<{ fallbackRuns: number; actualFamilies: string[] }> {
   const count = await page.$$eval('[data-pdf-urdu="true"]', elements => elements.length);
@@ -62,10 +108,26 @@ export async function guardPdfUrduFonts(page: Page): Promise<{ fallbackRuns: num
         const used = result.fonts.filter(font => font.glyphCount > 0);
         if (digitalKhatt) {
           const names = used.map(font => font.familyName || font.postScriptName || "unknown").join(", ") || "none";
-          if (used.length === 0 || !used.every(isDigitalKhattPlatformFont)) {
+          const foreign = used.filter(font => !isDigitalKhattPlatformFont(font));
+          if (used.length === 0 || foreign.some(font => /noto/i.test(`${font.familyName ?? ""} ${font.postScriptName ?? ""}`))) {
             throw new Error(`PDF font Digital Khatt Indo-Pak did not render the text (platform fonts: ${names}); Noto was not substituted; export blocked`);
           }
-          return { used, usable: true };
+          if (foreign.length > 0) {
+            const quranic = await foreignQuranicCodePoints(page, index);
+            if (quranic.length > 0) {
+              throw new Error(`PDF font Digital Khatt Indo-Pak did not render Quranic text ${quranic.join("; ")} (platform fonts: ${names}); Noto was not substituted; export blocked`);
+            }
+          }
+          return { used: used.filter(isDigitalKhattPlatformFont), usable: true };
+        }
+        if (requested) {
+          const names = used.map(font => font.familyName || font.postScriptName || "unknown").join(", ") || "none";
+          const wanted = requested.replace(/[^a-z0-9]/gi, "").toLowerCase();
+          const matched = used.filter(font => `${font.familyName ?? ""} ${font.postScriptName ?? ""}`.replace(/[^a-z0-9]/gi, "").toLowerCase().includes(wanted));
+          if (matched.length === 0) {
+            throw new Error(`PDF font ${requested} did not render the text (platform fonts: ${names}); Noto Nastaliq Urdu was not substituted; export blocked`);
+          }
+          return { used: matched, usable: true };
         }
         // Other Urdu faces may fall back to bundled Noto. A different custom
         // face is not proof that the requested Digital Khatt font painted.

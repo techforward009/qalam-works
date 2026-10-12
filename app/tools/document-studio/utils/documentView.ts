@@ -268,6 +268,19 @@ export function mountDocumentPrintPortal(): HTMLElement | null {
   });
   stripViewOnlyPagination(page);
   page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:0 ${rightMm}mm 0 ${leftMm}mm;background:#fff;min-height:0;`;
+  const bodyPt = root.getAttribute("data-print-body-pt");
+  const lineHeight = root.getAttribute("data-print-line-height");
+  const beforePt = root.getAttribute("data-print-paragraph-before-pt");
+  const afterPt = root.getAttribute("data-print-paragraph-after-pt");
+  if (bodyPt) page.style.setProperty("--qalam-body-size", `${bodyPt}pt`);
+  if (lineHeight) page.style.setProperty("--qalam-line-height", lineHeight);
+  if (beforePt) page.style.setProperty("--qalam-paragraph-before", `${beforePt}pt`);
+  if (afterPt) page.style.setProperty("--qalam-paragraph-after", `${afterPt}pt`);
+  const sourceStyle = source instanceof HTMLElement ? source : null;
+  for (const name of ["--qalam-rtl-font", "--qalam-ltr-font", "--qalam-first-line-indent"] as const) {
+    const value = sourceStyle?.style.getPropertyValue(name);
+    if (value) page.style.setProperty(name, value);
+  }
   const style = document.createElement("style");
   style.textContent = `${studioJameelFontFaceCss()}\n${studioGulzarFontFaceCss()}\n${documentPrintCss(widthMm, heightMm, topMm, bottomMm)}`;
   portal.append(style, page);
@@ -333,6 +346,14 @@ export function documentPrintCss(widthMm: number, heightMm: number, topMm = 0, b
     width: auto !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    font-size: var(--qalam-body-size, 12pt) !important;
+    line-height: var(--qalam-line-height, 1.5) !important;
+  }
+  [data-studio-print-page] p {
+    margin-block-start: var(--qalam-paragraph-before, 0pt) !important;
+    margin-block-end: var(--qalam-paragraph-after, 6pt) !important;
   }
   [data-studio-print-page] p.qalam-image-wrap-beside,
   [data-studio-print-page] [data-wrap-beside] {
