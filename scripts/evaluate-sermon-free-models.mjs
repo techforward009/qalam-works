@@ -2,7 +2,7 @@ import { registerHooks } from "node:module";
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import ts from "typescript";
 
-if (!["--compare","--check-fixture","--openrouter-check","--openrouter-key-check","--openrouter-trial","--deepseek-check","--deepseek-key-check","--deepseek-trial"].some(flag=>process.argv.includes(flag))) {
+if (!["--compare","--check-fixture","--check-speaking-plan","--openrouter-check","--openrouter-key-check","--openrouter-trial","--deepseek-check","--deepseek-key-check","--deepseek-trial"].some(flag=>process.argv.includes(flag))) {
   console.log("Usage: node scripts/evaluate-sermon-free-models.mjs --compare");
   process.exit(1);
 }
@@ -32,7 +32,7 @@ const { composeSermon, generateSermonSections, selectSermonEvidence } = await im
 const { createSermonSentenceReviewer } = await import("../app/lib/knowledge/sermonReview.ts");
 const { createOpenRouterTrialSession, OPENROUTER_TRIAL_MODELS, estimateOpenRouterTrialCeiling, verifyOpenRouterTrialKeyCap } = await import("../app/lib/knowledge/openRouterTrial.ts");
 const { createDeepSeekTrialSession, checkDeepSeekTrialBalance, estimateDeepSeekTrialCeiling, DEEPSEEK_TRIAL_MODELS } = await import("../app/lib/knowledge/deepSeekTrial.ts");
-const { generateStagedSermonSections, planSermonStageEvidence } = await import("../app/lib/knowledge/sermonStagedGeneration.ts");
+const { generateStagedSermonSections, planSermonStageEvidence, planStagedSermonWordTargets } = await import("../app/lib/knowledge/sermonStagedGeneration.ts");
 if(process.argv.includes("--deepseek-key-check")){
  const key=process.env.DEEPSEEK_API_KEY;
  if(!key){console.log("DEEPSEEK_KEY_READINESS",JSON.stringify({ready:false,reason:"missing-github-secret",paidCalls:0}));process.exit(2);}
@@ -149,6 +149,29 @@ console.log("SERMON_SOURCE_PLAN",JSON.stringify({
   stages:stagePlan.map((g,i)=>({stage:i+1,ids:g.map(e=>e.passage.id)})),
   verifiedBy:"local-selection-contract",privateCorpusRequired:false
 }));
+if(process.argv.includes("--check-speaking-plan")){
+  const targets=planStagedSermonWordTargets(selectedFor20Minutes,stagePlan);
+  const origin=new Set();const translations=new Set();
+  for(const passage of selectedFor20Minutes.map(e=>e.passage)){
+    if(!stagePlan.some(stage=>stage.some(e=>e.passage.id===passage.id)))continue;
+    if(origin.has(passage.text.trim()))continue;
+    origin.add(passage.text.trim());
+    translations.add(passage.suppliedTranslation?.text?.trim()??"");
+  }
+  const count=text=>text.split(/\\s+/u).filter(Boolean).length;
+  const rates=SERMON_SPEAKING_RATES;
+  const sourceMinutes=[...origin].reduce((sum,t)=>sum+count(t)/rates.arabicWordsPerMinute,0)
+    +[...translations].reduce((sum,t)=>sum+count(t)/rates.translatedWordsPerMinute,0)
+    +origin.size*rates.pausePerUniqueSourceMinutes;
+  const targetUrduWords=targets.reduce((a,b)=>a+b,0);
+  const projected=Number((sourceMinutes+targetUrduWords/rates.urduWordsPerMinute).toFixed(2));
+  if(projected<19.8||projected>20.2||targets.some(n=>n<110||n>550))
+    throw Error("sermon-speaking-plan-invalid");
+  console.log("SERMON_SPEECH_PLAN",JSON.stringify({status:"source-aware-forecast",sourceReadings:origin.size,
+    sourceMinutes:Number(sourceMinutes.toFixed(2)),targetUrduWords,sectionTargets:targets,
+    predictedMinutes:projected,estimatedOnly:true,requiresFullSentenceReview:true,paidCalls:0}));
+  process.exit(0);
+}
 if (process.argv.includes("--check-fixture")) process.exit(0);
 if(deepseekCheck){
  console.log("DEEPSEEK_DRY_CHECK",JSON.stringify({paidCalls:0,models:DEEPSEEK_TRIAL_MODELS,

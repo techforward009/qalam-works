@@ -48,6 +48,8 @@ jobs:
       - run: npx tsc --noEmit
       - name: Verify sourced Quran comparison fixture without API calls
         run: node scripts/evaluate-sermon-free-models.mjs --check-fixture
+      - name: Verify real spoken duration plan without AI requests
+        run: node scripts/evaluate-sermon-free-models.mjs --check-speaking-plan
       - run: npm run test:sermon:flow:imports
       - run: npm run build
       - run: git diff --check
