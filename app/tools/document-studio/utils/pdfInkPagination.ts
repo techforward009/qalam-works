@@ -592,5 +592,9 @@ export async function paginatePdfInk(
     }
     pages.at(-1)?.style.setProperty("break-after", "auto");
   }, { lines, placements, height });
-  return { lines: lines.length, pages: (placements.at(-1)?.page ?? 0) + 1, stagingHeight: total, screenshots: screenshotCount, measurementMs: Date.now() - measurementStarted };
+  const pageLineCounts: number[] = [];
+  for (const placement of placements) {
+    pageLineCounts[placement.page] = (pageLineCounts[placement.page] ?? 0) + 1;
+  }
+  return { lines: lines.length, pages: (placements.at(-1)?.page ?? 0) + 1, pageLineCounts, stagingHeight: total, screenshots: screenshotCount, measurementMs: Date.now() - measurementStarted };
 }

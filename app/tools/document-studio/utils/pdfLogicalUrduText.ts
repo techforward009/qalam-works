@@ -71,23 +71,39 @@ export function tagChromeUrduPdfStream(stream: string, lines: readonly string[])
 
 export function tagSimpleUrduPdfLogicalText(
   pdf: PDFDocument, doc: DocNode, dir: "rtl" | "ltr",
-  geometry: { pages: number; lines: number },
+  geometry: { pages: number; lines: number; pageLineCounts?: number[] },
 ): LogicalTextResult {
   const lines = safeLines(doc, dir);
-  if (!lines || geometry.pages !== 1 || geometry.lines !== lines.length || pdf.getPageCount() !== 1) {
+  const counts = geometry.pageLineCounts;
+  if (!lines || !counts || geometry.pages < 1 ||
+    geometry.lines !== lines.length || pdf.getPageCount() !== geometry.pages ||
+    counts.length !== geometry.pages || counts.some(count => !Number.isInteger(count) || count < 1) ||
+    counts.reduce((sum, count) => sum + count, 0) !== lines.length) {
     return { status: "unchanged", lines: 0, reason: "unsupported-document" };
   }
+  // A multi-page document must be all-or-nothing: never partially retag a PDF.
   try {
     const context = pdf.context;
-    const page = pdf.getPage(0);
-    const contents = page.node.get(PDFName.of("Contents"));
-    const original = contents instanceof PDFRef ? context.lookup(contents) : contents;
-    if (!(original instanceof PDFRawStream)) return { status: "unchanged", lines: 0, reason: "unknown-stream" };
-    const decoded = Buffer.from(decodePDFRawStream(original).decode()).toString("latin1");
-    const tagged = tagChromeUrduPdfStream(decoded, lines);
-    if (!tagged) return { status: "unchanged", lines: 0, reason: "unknown-chromium-structure" };
-    const rewritten = context.flateStream(Buffer.from(tagged, "latin1"));
-    page.node.set(PDFName.of("Contents"), context.register(rewritten));
+    const staged: Array<{ page: ReturnType<typeof pdf.getPage>; tagged: string }> = [];
+    let start = 0;
+    for (const [index, count] of counts.entries()) {
+      const page = pdf.getPage(index);
+      const contents = page.node.get(PDFName.of("Contents"));
+      const original = contents instanceof PDFRef ? context.lookup(contents) : contents;
+      if (!(original instanceof PDFRawStream)) {
+        return { status: "unchanged", lines: 0, reason: "unknown-stream" };
+      }
+      const decoded = Buffer.from(decodePDFRawStream(original).decode()).toString("latin1");
+      const tagged = tagChromeUrduPdfStream(decoded, lines.slice(start, start + count));
+      if (!tagged) return { status: "unchanged", lines: 0, reason: "unknown-chromium-structure" };
+      staged.push({ page, tagged });
+      start += count;
+    }
+    if (start !== lines.length) return { status: "unchanged", lines: 0, reason: "line-mismatch" };
+    for (const item of staged) {
+      const rewritten = context.flateStream(Buffer.from(item.tagged, "latin1"));
+      item.page.node.set(PDFName.of("Contents"), context.register(rewritten));
+    }
     return { status: "tagged", lines: lines.length };
   } catch {
     return { status: "unchanged", lines: 0, reason: "postprocess-error" };
