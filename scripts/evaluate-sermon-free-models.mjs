@@ -158,7 +158,7 @@ if(process.argv.includes("--check-speaking-plan")){
     origin.add(passage.text.trim());
     translations.add(passage.suppliedTranslation?.text?.trim()??"");
   }
-  const count=text=>text.split(/\\s+/u).filter(Boolean).length;
+  const count=text=>text.split(/\s+/u).filter(Boolean).length;
   const rates=SERMON_SPEAKING_RATES;
   const sourceMinutes=[...origin].reduce((sum,t)=>sum+count(t)/rates.arabicWordsPerMinute,0)
     +[...translations].reduce((sum,t)=>sum+count(t)/rates.translatedWordsPerMinute,0)
