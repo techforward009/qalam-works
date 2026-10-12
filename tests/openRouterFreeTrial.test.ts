@@ -32,7 +32,7 @@ it("runs exactly two free requests with different models and audits outputs",asy
  const result=await runFreeProbe({apiKey:"test-secret",fetchImpl,log:s=>events.push(s)});
  expect(result.freeCalls).toBe(2);
  expect(fetchImpl).toHaveBeenCalledTimes(3);
- const models=observed.slice(1).map(x=>JSON.parse(x.init.body).model);
+ const models=observed.slice(1).map(x=>JSON.parse(x.init.body as string).model);
  expect(models).toEqual([FREE_WRITER,FREE_REVIEWER]);
  expect(events.some(x=>x.includes("test-secret"))).toBe(false);
  expect(JSON.stringify(observed[1].init)).toContain("Bearer test-secret");
