@@ -1,51 +1,48 @@
 import { test, expect } from "@playwright/test";
 
-/** Real browser check: a selected Urdu face must be visibly applied and loaded. */
-const cases = [
-  "Alvi Nastaleeq",
-  "Jameel Noori Nastaleeq",
-  "Gulzar",
-  "Noto Nastaliq Urdu",
-] as const;
+/** Verify a real selected web-font paints in Chromium, not just a dropdown label. */
+const cases = ["Alvi Nastaleeq", "Jameel Noori Nastaleeq", "Gulzar", "Noto Nastaliq Urdu"] as const;
 const sample = "یہ قلم ورکس میں اردو فونٹس کی جانچ ہے۔";
 
-test("selected Urdu faces paint using their loaded web fonts", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("qalam-site-language", "ur"));
-  await page.goto("/tools/document-studio");
-  const editor = page.locator(".ProseMirror");
-  await expect(editor).toBeEditable();
-  const select = page.locator('[data-studio-font-family="true"]');
-  await expect(select).toBeVisible();
-
-  for (const family of cases) {
+for (const family of cases) {
+  test(`Urdu font ${family} applies and loads`, async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("qalam-site-language", "ur"));
+    await page.goto("/tools/document-studio");
+    const editor = page.locator(".ProseMirror");
+    await expect(editor).toBeEditable();
     await editor.fill(sample);
+    await expect(editor).toContainText(sample);
     await editor.press("ControlOrMeta+A");
+
+    const select = page.locator('[data-studio-font-family="true"]');
+    await expect(select).toBeVisible();
     await select.selectOption(family);
-    console.log("[font-picker-audit]", family, JSON.stringify({
+    console.log("[font-audit]", family, JSON.stringify({
       selected: await select.inputValue(),
       selection: await page.evaluate(() => window.getSelection()?.toString() ?? ""),
-      editorHtml: (await editor.innerHTML()).slice(0, 900),
+      formatted: await editor.locator('span[style*="font-family"]').count(),
     }));
+
     const styled = editor.locator('span[style*="font-family"]').first();
     await expect(styled, family).toBeVisible();
     const audit = await styled.evaluate(async (node, chosen) => {
-      const style = getComputedStyle(node);
-      const cssFamily = style.fontFamily;
-      // Noto's next/font/local face is renamed during bundling.
+      const cssFamily = getComputedStyle(node).fontFamily;
       const firstFamily = cssFamily.split(",")[0]?.trim() ?? "";
+      // next/font/local exposes the Noto face as "nastaliq" in Chromium.
       const expectedFirst = chosen === "Noto Nastaliq Urdu"
-        ? firstFamily.startsWith("__") || firstFamily.startsWith('"__')
+        ? /nastaliq/i.test(firstFamily)
         : firstFamily.replaceAll('"', "") === chosen;
-      const faces = await document.fonts.load("18px " + firstFamily, "اردو");
+      const faces = await document.fonts.load("18px " + firstFamily, sample);
       return {
         inline: (node as HTMLElement).getAttribute("style") ?? "",
         cssFamily,
         expectedFirst,
-        loaded: faces.some((face) => face.status === "loaded"),
+        loaded: faces.some(face => face.status === "loaded"),
       };
     }, family);
+
     expect(audit.inline, family).toContain(family);
     expect(audit.expectedFirst, family + ": " + audit.cssFamily).toBe(true);
-    expect(audit.loaded, family + " not loaded").toBe(true);
-  }
-});
+    expect(audit.loaded, family + " web-font unavailable").toBe(true);
+  });
+}
