@@ -1,4 +1,5 @@
 import { get } from "@vercel/blob";
+import { createHash } from "node:crypto";
 import { brotliDecompressSync } from "node:zlib";
 import { NextResponse } from "next/server";
 
@@ -15,9 +16,20 @@ type Loaded = { corpus: Corpus; index: Map<string, [number | null, string]> };
 let corpusPromise: Promise<Loaded | null> | null = null;
 
 async function loadCorpus(): Promise<Loaded | null> {
-  const blob = await get("qalam/tafsir-namoona/urdu-v9.json.br", { access: "private" });
-  if (!blob || blob.statusCode !== 200 || !blob.stream) return null;
-  const compressed = Buffer.from(await new Response(blob.stream).arrayBuffer());
+  const paths = [
+    "qalam/tafsir-namoona/urdu-v9.json.br",
+    "Tafseer_Namoona_Urdu_v9_for_Vercel_Blob.br",
+  ];
+  let compressed: Buffer | null = null;
+  for (const pathname of paths) {
+    const blob = await get(pathname, { access: "private" });
+    if (blob?.statusCode === 200 && blob.stream) {
+      compressed = Buffer.from(await new Response(blob.stream).arrayBuffer());
+      break;
+    }
+  }
+  if (!compressed) return null;
+  if (createHash("sha256").update(compressed).digest("hex") !== "4645a268a658b61d691fef009c2958f8948414a7529b66cc2d23eee9317e8454") throw new Error("Tafsir corpus checksum mismatch");
   const corpus = JSON.parse(brotliDecompressSync(compressed).toString("utf8")) as Corpus;
   if (corpus.version !== 9 || corpus.verses.length !== 6236) throw new Error("Invalid tafsir corpus");
   const index = new Map<string, [number | null, string]>();
