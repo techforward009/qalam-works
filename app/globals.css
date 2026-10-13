@@ -479,19 +479,62 @@ textarea {
 }
 
 .quran-view-tabs {
-  min-height: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
 }
 
-.quran-view-tabs button[role="tab"] {
-  border: 1px solid #c5d0c2;
-  border-bottom: 0;
-  border-radius: 6px 6px 0 0;
-  background: #f4f7f2;
+.quran-reader-tab {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 7.5rem;
+  padding: 6px 12px 5px;
+  border: 1px solid #c6b48a;
+  border-radius: 12px;
+  background: linear-gradient(to bottom, #fffdf8, #f4ead2);
+  color: #31412f;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
 }
 
-.quran-view-tabs button[role="tab"][aria-selected="true"] {
+.quran-reader-tab-alt {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7a6a48;
+}
+
+.quran-reader-tab:hover {
+  border-color: #2f5a3a;
   background: #fff;
-  border-color: #8eaf98;
+}
+
+.quran-reader-tab[aria-selected="true"] {
+  border-color: #c6a35a;
+  background: linear-gradient(to bottom, #2f5a3a, #1e3f2c);
+  color: #f8f1dc;
+  box-shadow: inset 0 0 0 1px rgba(198, 163, 90, 0.85);
+}
+
+.quran-reader-tab[aria-selected="true"] .quran-reader-tab-alt {
+  color: #e7d7a4;
+}
+
+.quran-reader-tab:focus-visible {
+  outline: 2px solid #2f5a3a;
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .quran-reader-tab {
+    min-width: calc(50% - 6px);
+    flex: 1 1 calc(50% - 6px);
+  }
 }
 
 /* ────────────────────────────────────────────────────────────────────────────

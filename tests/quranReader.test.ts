@@ -75,7 +75,10 @@ describe("Quran reader", () => {
     const reader = readFileSync("app/quran/QuranReader.tsx", "utf8");
     expect(reader).toContain("qalam-quran-reader-view");
     expect(reader).toContain("QuranTranslationPage");
-    expect(reader).toContain('["translation", copy.translationTab]');
+    expect(reader).toContain("transliterationTab");
+    expect(reader).toContain("tafsirTab");
+    expect(reader).toContain("QuranTransliterationPage");
+    expect(reader).toContain("QuranTafsirPage");
   });
 
   test("uses the existing ahmedgraf corpus without a second copy", () => {
