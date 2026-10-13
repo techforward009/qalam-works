@@ -1,5 +1,7 @@
 # Muse Wonder evaluation — Qalam Works
 
+> **REGIONAL BLOCK — Pakistan (verified 2026-10-13):** Meta's [Geographic Use Policy](https://dev.meta.ai/legal/geographic-use-policy) explicitly lists Pakistan as a restricted territory. The developer page redirects to `/unavailable?reason=geo`. Do **not** execute the direct Meta Model API test from Pakistan, attempt VPN/proxy/geographic evasion, or expose a Meta-backed integration to Pakistani end users. This experiment remains offline-only and blocked for live Meta testing while these restrictions apply. Do not purchase credentials or activate billing for this path. Continue separate authorized provider comparisons without changing the production model.
+
 Date: 2026-10-13  
 Status: **isolated experiment, no production integration**
 
