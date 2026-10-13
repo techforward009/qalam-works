@@ -13,12 +13,16 @@ This PR integrates the Qalam Works Quran Reader with an Urdu Tafsir Namoona sour
 
 ## Release requirements
 
-1. Publisher/rightsholder authorization to distribute the Urdu translation on the public site must be documented. **Not yet verified.**
+1. The project owner has stated that the publisher authorized public use verbally. This is a user-reported permission, not a written license. Confirm the scope and attribution for long-term distribution.
 2. Upload the exact prepared .br file into the connected **private** Vercel Blob store at the pathname above. This tool environment cannot upload directly into an existing Blob store. Do not put the text in this public GitHub repository.
-3. Set `QALAM_TAFSIR_NAMOONA_PUBLICATION_APPROVED=true` **only after (1) and (2)** and once build and verse checks pass.
+3. Set `QALAM_TAFSIR_NAMOONA_PUBLICATION_APPROVED=true` **only after the private Blob upload is verified**, the project owner confirms publication scope, and build and verse checks pass.
 4. Validate representative requests: `1:1` (Unicode), `5:93` (missing), `56:75` (print_scan_only), `114:6` (Unicode). Check HTTP 503 and explicit placeholder before activation.
-5. Deploy from reviewed PR only; production publish must not happen while rights, blob or tests are outstanding.
+5. UI-only production release may proceed with the publication flag disabled; do not claim commentary text is live until the Blob is verified and the flag enabled.
 
 ## Boundaries
 
 The Arabic Quran corpus, Quran font, punctuation and DOCX exporter are not changed. Other tafsir titles remain unavailable until their own source is verified. The printed 56:75–82 scan was not OCR'd into invented text.
+
+## Release update (2026-10-13)
+
+The one-time authenticated import route was removed before merge after its upload attempt was blocked. The Blob has **not** been uploaded. The final app can ship with the feature flag off; content availability must not be claimed. The compressed v9 corpus is preserved in the project owner's ChatGPT Library, not committed to GitHub.
