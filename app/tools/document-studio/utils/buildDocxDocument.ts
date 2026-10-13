@@ -306,8 +306,32 @@ const ALIGNMENT_MAP: Record<string, (typeof AlignmentType)[keyof typeof Alignmen
   justify: AlignmentType.JUSTIFIED,
 };
 
+// In Word, generic "both" justification can produce extreme inter-word gaps
+// in an Arabic book face. Keep the user's explicit justify intent, but use
+// Word's low-kashida mode only when Arabic-family runs dominate the paragraph.
+// Urdu/Nastaliq and mixed paragraphs retain the existing alignment mapping.
+function hasPredominantlyArabicBookRuns(node: DocNode): boolean {
+  let arabicFontCharacters = 0;
+  let otherCharacters = 0;
+  for (const child of node.content ?? []) {
+    if (child.type !== "text" || !child.text) continue;
+    const count = child.text.replace(/\s/g, "").length;
+    const mark = child.marks?.find((m) => m.type === "textStyle");
+    const family = mark?.attrs?.fontFamily;
+    const font = typeof family === "string" && family.trim()
+      ? getFontById(resolveEditorFontFamily(family, "rtl").fontId)
+      : null;
+    if (font?.category === "arabic") arabicFontCharacters += count;
+    else otherCharacters += count;
+  }
+  return arabicFontCharacters > 0 && arabicFontCharacters >= otherCharacters * 4;
+}
+
 function alignmentFor(node: DocNode): (typeof AlignmentType)[keyof typeof AlignmentType] | undefined {
   const textAlign = node.attrs?.textAlign;
+  if (textAlign === "justify" && hasPredominantlyArabicBookRuns(node)) {
+    return AlignmentType.LOW_KASHIDA;
+  }
   return typeof textAlign === "string" ? ALIGNMENT_MAP[textAlign] : undefined;
 }
 
@@ -418,7 +442,20 @@ function convertInline(
 
   for (const node of nodes) {
     if (node.type === "hardBreak") {
-      runs.push(new TextRun({ text: "", break: 1, font: docxFontSlots(runFont(node, dir, typography)), size: overrides?.size ?? defaultSizeHalfPoints, sizeComplexScript: overrides?.size ?? defaultSizeHalfPoints }));
+      // TipTap may style a hard break itself (including a leading break).
+      // Keep its font/complex-script size and direction, rather than
+      // silently falling back to the document body's 12pt line metrics.
+      const mark = node.marks?.find((m) => m.type === "textStyle");
+      const pt = resolveFontSizePt(mark?.attrs?.fontSize);
+      const size = overrides?.size ?? (pt != null ? ptToHalfPoints(pt) : defaultSizeHalfPoints);
+      runs.push(new TextRun({
+        text: "",
+        break: 1,
+        rightToLeft: dir === "rtl",
+        font: docxFontSlots(runFont(node, dir, typography)),
+        size,
+        sizeComplexScript: size,
+      }));
       continue;
     }
     if (node.type !== "text" || typeof node.text !== "string" || node.text.length === 0) {
@@ -504,7 +541,7 @@ function convertNode(
       return [
         new Paragraph({
           bidirectional: blockDir === "rtl",
-          alignment: alignmentFor(node) ?? (styleDef?.align ? ALIGNMENT_MAP[styleDef.align] : undefined),
+          alignment: alignmentFor(node) ?? (styleDef?.align ? ALIGNMENT_MAP[styleDef.align] : (blockDir === "rtl" ? AlignmentType.RIGHT : AlignmentType.LEFT)),
           spacing,
           indent,
           numbering: listRef ? { reference: listRef.reference, level: 0 } : undefined,
@@ -524,7 +561,7 @@ function convertNode(
         new Paragraph({
           heading,
           bidirectional: blockDir === "rtl",
-          alignment: alignmentFor(node),
+          alignment: alignmentFor(node) ?? (blockDir === "rtl" ? AlignmentType.RIGHT : AlignmentType.LEFT),
           spacing: headingSpacingFor(level, node, typography),
           children: convertInline(node.content, blockDir, typography, undefined, {
             fontSizePt: headingStyle?.defaultFontSizePt,
@@ -686,7 +723,7 @@ function convertDocxTable(node: DocNode, dir: Direction, ctx: NumberingContext, 
           const { spacing, indent } = resolveParagraphSpacingAndIndent(child, typography);
           children.push(new Paragraph({
             bidirectional: blockDir === "rtl",
-            alignment: alignmentFor(child),
+            alignment: alignmentFor(child) ?? (blockDir === "rtl" ? AlignmentType.RIGHT : AlignmentType.LEFT),
             spacing,
             indent,
             children: convertInline(child.content, blockDir, typography, undefined, { bold: header }),
