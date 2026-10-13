@@ -18,7 +18,7 @@ export const TAFSIR_WORKS: readonly TafsirWork[] = [
     titleUr: "تفسیر نمونہ",
     authorEn: "Ayatollah Naser Makarem Shirazi",
     authorUr: "آیت اللہ ناصر مکارم شیرازی",
-    language: "fa",
+    language: "ur",
     direction: "rtl",
   },
   {
