@@ -116,15 +116,34 @@ export default function DocumentTopBar({
             DOCX
           </button>
         ) : null}
-        {onDownloadPdf ? (
-          <button type="button" className={primary} onClick={onDownloadPdf} disabled={pdfBusy} data-studio-export-pdf="true" data-latin-control="true" dir="ltr">
-            {pdfBusy ? "…" : "PDF"}
+        {onPrint ? (
+          <button type="button" className={`${btn} whitespace-nowrap border border-[#1A3A2A]/20`} onClick={onPrint} data-studio-print="true">
+            {isUr ? "پرنٹ / PDF محفوظ کریں" : "Print / Save as PDF"}
           </button>
         ) : null}
-        {onPrint ? (
-          <button type="button" className={btn} onClick={onPrint} data-studio-print="true">
-            {isUr ? "پرنٹ" : "Print"}
+        {onDownloadPdf ? (
+          <button
+            type="button"
+            className={`${primary} whitespace-nowrap`}
+            onClick={onDownloadPdf}
+            disabled={pdfBusy}
+            data-studio-export-pdf="true"
+            dir={isUr ? "rtl" : "ltr"}
+            {...(isUr ? {} : { "data-latin-control": "true" })}
+          >
+            {pdfBusy ? "…" : isUr ? "PDF ڈاؤن لوڈ" : "Download PDF"}
           </button>
+        ) : null}
+        {onPrint || onDownloadPdf ? (
+          <p
+            className={`basis-full max-w-3xl text-[11px] text-[#3D5A47] ${isUr ? "leading-7" : "leading-5"}`}
+            data-studio-pdf-choice="true"
+            dir={isUr ? "rtl" : "ltr"}
+          >
+            {isUr
+              ? "پرنٹ / PDF محفوظ کریں آپ کے اپنے براؤزر کا پرنٹ ڈائیلاگ کھولتا ہے۔ قریب ترین صفحے کے لیے وہاں خود Save as PDF چنیں۔ PDF ڈاؤن لوڈ ایک کلک میں فائل دیتا ہے، جو یہ ویب سائٹ بناتی ہے، اور آپ کی سرخی اور صفحہ نمبر لگاتا ہے۔ اس کی سطر کی تقسیم براؤزر والے پرنٹ سے مختلف ہو سکتی ہے۔"
+              : "Print / Save as PDF opens your own browser’s print dialog. Choose Save as PDF there for the closest match to the page. Download PDF saves a file in one click. This website makes that file and applies your header and page numbers. Its line breaks may differ from browser printing."}
+          </p>
         ) : null}
         <div
           className={`${headerMore ? "flex" : "hidden"} w-full basis-full flex-wrap items-center gap-1 sm:flex sm:w-auto sm:basis-auto`}

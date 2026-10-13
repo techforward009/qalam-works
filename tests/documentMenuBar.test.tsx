@@ -85,7 +85,7 @@ describe("DocumentMenuBar", () => {
     expect(flyout).toBeTruthy();
     expect(flyout?.getAttribute("data-menu-portaled")).toBe("true");
     expect(parent?.contains(flyout)).toBe(false);
-    fireEvent.click(screen.getByRole("menuitem", { name: "PDF" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Download PDF" }));
     expect(onAction).toHaveBeenCalledWith("file.downloadPdf");
     expect(document.querySelector('[data-menu-dropdown="file"]')).toBeNull();
   });

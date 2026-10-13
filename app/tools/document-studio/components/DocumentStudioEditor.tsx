@@ -1919,7 +1919,11 @@ export default function DocumentStudioEditor() {
                       ).join(" ")}
                     </div>
                   )}
-                  <div>{isUr ? "فارمیٹ: بصری / پرنٹ PDF" : "Format: Visual / Print PDF"}</div>
+                  <div>
+                    {isUr
+                      ? "یہ فائل ویب سائٹ نے بنائی ہے۔ سطر کی تقسیم پرنٹ / PDF محفوظ کریں سے مختلف ہو سکتی ہے۔"
+                      : "This file was made by the website. Line breaks may differ from Print / Save as PDF."}
+                  </div>
                 </div>
               </div>
             )}

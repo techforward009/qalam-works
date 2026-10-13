@@ -51,8 +51,33 @@ describe("Document Studio workspace chrome", () => {
     expect(screen.getByRole("button", { name: "ذخیرہ" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "درآمد" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "DOCX" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "PDF" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "پرنٹ" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "پرنٹ / PDF محفوظ کریں" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "PDF ڈاؤن لوڈ" })).toBeTruthy();
+    expect(screen.getByText(/آپ کے اپنے براؤزر کا پرنٹ ڈائیلاگ/)).toBeTruthy();
+    expect(screen.getByText(/یہ ویب سائٹ بناتی ہے/)).toBeTruthy();
+    cleanup();
+    render(
+      <DocumentTopBar
+        isUr={false}
+        title="Draft"
+        onTitleChange={() => undefined}
+        onTitleCommit={() => undefined}
+        saveStatus="saved"
+        storageDurability="persistent"
+        online
+        isImporting={false}
+        onNewDocument={() => undefined}
+        onUploadClick={() => undefined}
+        onStandardize={() => undefined}
+        onAudit={() => undefined}
+        onDownloadPdf={() => undefined}
+        onPrint={() => undefined}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Print / Save as PDF" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Download PDF" })).toBeTruthy();
+    expect(screen.getByText(/opens your own browser’s print dialog/)).toBeTruthy();
+    expect(screen.getByText(/This website makes that file/)).toBeTruthy();
   });
 
   it("closes a mobile panel from the backdrop without touching the canvas", () => {

@@ -152,11 +152,11 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
         items: [
           { type: "action", id: "file.downloadTxt", labelEn: "TXT", labelUr: "TXT" },
           { type: "action", id: "file.downloadDocx", labelEn: "DOCX", labelUr: "DOCX" },
-          { type: "action", id: "file.downloadPdf", labelEn: "PDF", labelUr: "PDF" },
+          { type: "action", id: "file.downloadPdf", labelEn: "Download PDF", labelUr: "PDF ڈاؤن لوڈ" },
         ],
       },
       { type: "separator" },
-      { type: "action", id: "file.print", labelEn: "Print…", labelUr: "پرنٹ…", shortcut: "Ctrl+P" },
+      { type: "action", id: "file.print", labelEn: "Print / Save as PDF", labelUr: "پرنٹ / PDF محفوظ کریں", shortcut: "Ctrl+P" },
       { type: "action", id: "file.pageSetup", labelEn: "Page setup…", labelUr: "صفحہ کی ترتیب…" },
     ],
   },
