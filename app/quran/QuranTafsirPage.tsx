@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../lib/language-context";
 import { surahTitle } from "./reader/metadata";
+import { splitTafsirTypography } from "./reader/tafsirTypography";
 import { TAFSIR_WORKS, tafsirForAyah, tafsirWorkById } from "./reader/tafsirCatalog";
 
 type Remote = {
@@ -32,6 +33,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
   }, [workId, surah, ayah]);
 
   const nemunehText = workId === "nemuneh" && remote?.status === "unicode_apk" && remote.text;
+  const typographyRuns = useMemo(() => splitTafsirTypography(nemunehText || ""), [nemunehText]);
   const message = remote?.status === "loading"
     ? (ur ? "تفسیر کھولی جا رہی ہے…" : "Loading commentary…")
     : remote?.status === "print_scan_only"
@@ -62,8 +64,36 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
           {" · "}{ur ? work.authorUr : work.authorEn}
         </p>
         {nemunehText ? <div className="mt-4" dir="rtl" lang="ur">
-          {remote?.heading ? <h2 className="mb-3 font-naskh text-lg font-semibold">{remote.heading}</h2> : null}
-          <p className="whitespace-pre-line font-naskh text-lg leading-loose">{remote?.text}</p>
+          {remote?.heading ? <h2 className="mb-3 font-urdu text-[23px] font-normal" style={{ fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif', lineHeight: 2.2 }}>{remote.heading}</h2> : null}
+          <div
+            className="whitespace-pre-wrap break-words font-urdu font-normal"
+            data-tafsir-urdu-text="true"
+            style={{
+              fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif',
+              fontSize: "21px",
+              lineHeight: 2.4,
+            }}
+          >
+            {typographyRuns.map((run, index) =>
+              run.kind === "arabic" ? (
+                <span
+                  key={index}
+                  lang="ar"
+                  dir="rtl"
+                  data-tafsir-arabic="true"
+                  className="font-arabic"
+                  style={{
+                    fontFamily: 'var(--font-amiri), "Amiri", "Noto Naskh Arabic", serif',
+                    fontSize: "1.06em",
+                    lineHeight: 1.9,
+                    unicodeBidi: "isolate",
+                  }}
+                >
+                  {run.text}
+                </span>
+              ) : run.text
+            )}
+          </div>
           <p className="mt-3 text-xs text-[#82775f]">
             {ur ? "تفسیر نمونہ، اردو برقی متن — اصل مطبوعہ نسخے سے مکمل مقابلہ باقی ہے۔" : "Tafsir Namoona, Urdu electronic text — full print collation pending."}
           </p>
