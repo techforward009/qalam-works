@@ -28,11 +28,11 @@ function textOf(pXml: string): string {
   return [...pXml.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)].map(m => m[1]).join("");
 }
 
-const fasakh = "۴۔ فسخ العزیمہ حضرت آدمؑ سے آج تک چلا آرہا ہے اورہر دور میں اس میں تبدیلی آتی رہی ہے اور اس میں لوگوں کے شبہات داخل ہوتے رہے ہیں اوراب یہ بحث طولانی ہو گئی ہے ۔";
-const theoryB = "(ب) تمام افعال انسان کے ارادے سے صادر ہوتے ہیں اور اللہ تعالیٰ کا کوئی عمل دخل نہیں ہے یہ تفویض ہے۔";
-const theoryC = "(ج) الامر بین الامرین : یعنی دونوں اللہ تعالیٰ اور انسان اس میں مؤثر ہیں ،البتہ علت تامہ کے طور پر نہیں بلکہ اقتضا ء کے طور پر ان تینوں نظریات میں سےحق یہی تیسرا نظریہ ہے ۔";
-const salam = "السلام علیک یا ابا صالح المہدی علیہ السلام";
-const hadithStart = "1- حَدَّثَنَا عَلِيُّ بْنُ إِبْرَاهِيمَ عَنْ عَلِيِّ بْنِ إِسْحَاقَ عَنِ الْحَسَنِ بْنِ حَازِمٍ الْكَلْبِيِّ ابْنِ أُخْتِ هِشَامِ بْنِ سَالِمٍ عَنْ سُلَيْمَانَ بْنِ جَعْفَرٍ عَنْ أَبِي عَبْدِ اللَّهِ ع قَالَ قَالَ رَسُولُ اللَّهِ ص‏ مَنْ لَمْ يُحْسِنْ وَصِيَّت";
+const fasakh = "۴۔ نمونہ: یہ صرف آزمائشی اردو تحریر ہے، جس میں الفاظ، اعداد ۱۲۳ اور اعراب محفوظ رہنے چاہییں۔";
+const theoryB = "(ب) یہ مصنوعی آزمائشی پیراگراف ہے جو اردو متن اور دائیں جانب ترتیب کی جانچ کرتا ہے۔";
+const theoryC = "(ج) یہ دوسرا مصنوعی نمونہ ہے؛ اس میں کاما، وقفہ، ہمزۂ اضافت اور اردو عبارت کی یکسانیت جانچی جاتی ہے۔";
+const salam = "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللّٰهِ";
+const hadithStart = "١- حَدَّثَنَا مُعَلِّمٌ عَنْ طَالِبٍ، قَالَ: هٰذَا نَصٌّ تَجْرِيبِيٌّ لِفَحْصِ التَّشْكِيلِ وَفَوَاصِلِ السُّطُورِ. ";
 const digitalMark = mark('"Digital Khatt Indo-Pak"', "16pt");
 
 function savedQalamExcerpt() {
@@ -40,7 +40,7 @@ function savedQalamExcerpt() {
     format: "qalam-document",
     content: {
       type: "doc", content: [
-        para("آیات کریمہ سے چند مستفاد نکات", "Gulzar", "24pt"),
+        para("نمونہ تحریر کے اہم نکات", "Gulzar", "24pt"),
         para("متنِ اردو", '"Jameel Noori Nastaleeq", serif', "16pt"),
         para(fasakh, '"Alvi Nastaleeq"', "15pt", { textAlign: "right" }),
         para(theoryB, '"Alvi Nastaleeq"', "15pt"),
@@ -60,7 +60,7 @@ function savedQalamExcerpt() {
   };
 }
 
-describe("DOCX source-replay regressions from supplied saved .qalam and DOCX", () => {
+describe("DOCX synthetic Urdu/Arabic formatting and editable-break regressions", () => {
   test("Alvi, Gulzar, Jameel, Amiri and long Digital Khatt retain requested w:rFonts/w:szCs", async () => {
     const ps = paragraphs(await documentXml(savedQalamExcerpt().content));
     expect(ps).toHaveLength(10);
@@ -75,7 +75,7 @@ describe("DOCX source-replay regressions from supplied saved .qalam and DOCX", (
     expect(ps[9]).toContain('w:szCs w:val="32"');
   });
 
-  test("the two actual right-aligned and the two overflowing Urdu paragraphs have w:jc right with no forced break", async () => {
+  test("the right-aligned and long Urdu paragraphs have w:jc right with no forced break", async () => {
     const xml = await documentXml(savedQalamExcerpt().content);
     const ps = paragraphs(xml);
     for (const i of [2, 3, 4, 7]) {
