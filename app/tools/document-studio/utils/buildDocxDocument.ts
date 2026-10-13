@@ -504,7 +504,7 @@ function convertNode(
       return [
         new Paragraph({
           bidirectional: blockDir === "rtl",
-          alignment: alignmentFor(node) ?? (styleDef?.align ? ALIGNMENT_MAP[styleDef.align] : undefined),
+          alignment: alignmentFor(node) ?? (styleDef?.align ? ALIGNMENT_MAP[styleDef.align] : (blockDir === "rtl" ? AlignmentType.RIGHT : AlignmentType.LEFT)),
           spacing,
           indent,
           numbering: listRef ? { reference: listRef.reference, level: 0 } : undefined,
