@@ -483,7 +483,7 @@ export default function QuranReader({
       <div className="quran-reader-container mx-auto w-full max-w-[1010px] px-3 py-4 sm:px-5 sm:py-6">
         <EditionTopBar editionId="qalam-indopak" />
         <div
-          className="quran-reader-layout grid grid-cols-1 items-start gap-4 lg:grid-cols-[175px_minmax(0,770px)]"
+          className="quran-reader-layout grid grid-cols-1 items-start gap-4 lg:grid-cols-[200px_minmax(0,770px)]"
           dir="ltr"
         >
           {/* ─────────────────────────────
@@ -491,7 +491,7 @@ export default function QuranReader({
              ───────────────────────────── */}
 
           <aside
-            className="tanzil-sidebar quran-reader-sidebar order-2 w-full lg:order-1 lg:self-start"
+            className="tanzil-sidebar quran-reader-sidebar order-2 w-full lg:order-1 lg:self-start lg:mt-[56px]"
             dir={interfaceDir}
             lang={interfaceLang}
           >
