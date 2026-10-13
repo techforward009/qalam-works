@@ -35,7 +35,7 @@ const alviMark = [{ type: "textStyle", attrs: { fontFamily: "Alvi Nastaleeq", fo
 
 describe("Document Studio DOCX Arabic/Urdu Word regression", () => {
   test("long vowelled Arabic hadith keeps low-kashida justification, Unicode, and three styled hard breaks", async () => {
-    const sentence = "حَدَّثَنَا عَلِيُّ بْنُ إِبْرَاهِيمَ عَنْ أَبِي عَبْدِ اللّٰهِ عَلَيْهِ السَّلَامُ فِي الْحَقِّ وَ الْوَصِيَّةِ. ";
+    const sentence = "هٰذَا نَصٌّ اِخْتِبَارِيٌّ مُشَكَّلٌ لِفَحْصِ الْحُرُوفِ وَعَلَامَاتِ الْوَقْفِ وَالْمَسَافَاتِ وَتَنْسِيقِ السُّطُورِ الْعَرَبِيَّةِ. ";
     const hadith = sentence.repeat(20);
     expect(hadith.length).toBeGreaterThan(1500);
     const xml = await exportXml([{
@@ -60,7 +60,7 @@ describe("Document Studio DOCX Arabic/Urdu Word regression", () => {
   });
 
   test("the saved empty paragraphs around an Amiri salam remain distinct Word paragraphs", async () => {
-    const salam = "السلام علیک یا ابا صالح المہدی علیہ السلام";
+    const salam = "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللّٰهِ";
     const xml = await exportXml([
       { type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "اردو متن", marks: alviMark }] },
       { type: "paragraph", attrs: { dir: "rtl" }, content: [] },
