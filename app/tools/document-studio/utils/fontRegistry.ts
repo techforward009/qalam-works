@@ -388,7 +388,11 @@ export function resolveEditorFontFamily(
     };
   }
 
-  const found = byEditorFamily.get(requested);
+  // TipTap persists some font-family values with surrounding quotes or
+  // a CSS fallback stack. Match their first family against the registry
+  // before applying the fallback: otherwise DOCX silently becomes Noto.
+  const normalized = normalizeEditorFontFamily(requested);
+  const found = normalized ? byEditorFamily.get(normalized) : undefined;
   if (!found) {
     const fallback = getFontById(globalDir === "ltr" ? "inter" : "noto-nastaliq-urdu");
     return {
