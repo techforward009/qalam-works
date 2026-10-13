@@ -310,19 +310,13 @@ textarea {
 .quran-reader {
   position: relative;
   min-height: 100vh;
-  background: linear-gradient(to bottom, #edf0e8 0%, #e6ebe1 48%, #dce4d9 100%);
+  overflow-x: clip;
+  background: #e7eee4;
   color: #2e342b;
 }
 
 .quran-reader::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.3) 0 1px, transparent 1.5px), radial-gradient(circle at 75% 65%, rgba(92, 111, 79, 0.06) 0 1px, transparent 1.5px);
-  background-size: 43px 43px, 57px 57px;
-  opacity: 0.75;
+  content: none;
 }
 
 .quran-reader > div {
@@ -330,22 +324,26 @@ textarea {
   z-index: 1;
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   TANZIL-LIKE SIDEBAR
-   ──────────────────────────────────────────────────────────────────────────── */
+.quran-reader > div > header {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+}
 
 .tanzil-sidebar {
   width: 100%;
-  max-width: 175px;
-  overflow: hidden;
-  background: #ffffff;
-  border: 1px solid #c4c9c0;
-  box-shadow: 0 1px 4px rgba(46, 57, 40, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.96);
-  color: #4d5549;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: #31445a;
 }
 
 .tanzil-sidebar[lang="en"] {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
 }
 
 .tanzil-sidebar[lang="ur"] {
@@ -354,26 +352,36 @@ textarea {
 
 .tanzil-sidebar-section {
   margin: 0;
-  border-bottom: 1px solid #d7dbd4;
+  overflow: hidden;
+  border: 1px solid #b9cce0;
+  border-radius: 4px;
+  background: linear-gradient(to bottom, #ffffff, #f7fbfe);
+  box-shadow: 0 1px 2px rgba(36, 72, 110, 0.08);
 }
 
 .tanzil-sidebar-section:last-child {
-  border-bottom: 0;
+  border-bottom: 1px solid #b9cce0;
 }
 
 .tanzil-sidebar-section summary {
   position: relative;
-  display: block;
-  min-height: 31px;
-  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 8px;
   cursor: pointer;
   list-style: none;
   user-select: none;
-  background: linear-gradient(to bottom, #ffffff 0%, #f7f8f6 100%);
+  background: linear-gradient(to bottom, #f8fbfe 0%, #d5e6f6 100%);
   border-bottom: 1px solid transparent;
-  font-size: 13px;
-  line-height: 1.55;
-  color: #50584b;
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.4;
+  color: #1e3f5f;
+}
+
+.tanzil-sidebar-section[open] summary {
+  border-bottom-color: #c5d7ea;
 }
 
 .tanzil-sidebar-section summary::-webkit-details-marker {
@@ -381,23 +389,26 @@ textarea {
 }
 
 .tanzil-sidebar-section summary::before {
-  content: "+";
+  content: "";
   display: inline-block;
-  width: 14px;
-  margin-inline-end: 3px;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 10px;
-  line-height: 1;
-  color: #7c8478;
+  width: 0;
+  height: 0;
+  margin-inline-end: 7px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid #2f6394;
 }
 
 .tanzil-sidebar-section[open] summary::before {
-  content: "-";
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #2f6394;
+  border-bottom: 0;
 }
 
 .tanzil-sidebar-section summary:hover {
-  background: #f1f4ef;
-  color: #3f483d;
+  background: linear-gradient(to bottom, #ffffff 0%, #c9dff3 100%);
+  color: #163552;
 }
 
 .tanzil-sidebar-section > div {
@@ -407,34 +418,35 @@ textarea {
 .tanzil-sidebar input,
 .tanzil-sidebar select,
 .tanzil-sidebar button {
-  border-radius: 0;
+  border-radius: 3px;
+  max-width: 100%;
 }
 
 .tanzil-sidebar input,
 .tanzil-sidebar select {
-  min-height: 27px;
-  border: 1px solid #c5cbc2;
+  min-height: 26px;
+  border: 1px solid #b7c6d4;
   background: #ffffff;
-  color: #4a5246;
-  box-shadow: inset 0 1px 2px rgba(62, 74, 56, 0.04);
+  color: #24384c;
+  box-shadow: inset 0 1px 1px rgba(36, 72, 110, 0.05);
   outline: none;
 }
 
 .tanzil-sidebar input:focus,
 .tanzil-sidebar select:focus {
-  border-color: #829276;
-  box-shadow: 0 0 0 1px rgba(130, 146, 118, 0.18);
+  border-color: #4d86b8;
+  box-shadow: 0 0 0 2px rgba(77, 134, 184, 0.18);
 }
 
 .tanzil-sidebar button {
-  border: 1px solid #c2c8bd;
-  background: linear-gradient(to bottom, #ffffff, #f4f6f2);
-  color: #4d5649;
+  border: 1px solid #7eabcf;
+  background: linear-gradient(to bottom, #f7fbff, #d7e8f8);
+  color: #1d4568;
   cursor: pointer;
 }
 
 .tanzil-sidebar button:hover {
-  background: linear-gradient(to bottom, #f8faf7, #edf1eb);
+  background: linear-gradient(to bottom, #ffffff, #c5dff6);
 }
 
 .tanzil-sidebar[lang="en"] summary,
@@ -442,7 +454,7 @@ textarea {
 .tanzil-sidebar[lang="en"] button,
 .tanzil-sidebar[lang="en"] input,
 .tanzil-sidebar[lang="en"] select {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
 }
 
 .tanzil-sidebar[lang="ur"] summary,
@@ -463,10 +475,23 @@ textarea {
 
 .quran-reader-sidebar {
   justify-self: start;
+  width: 100%;
 }
 
-.quran-reader-main {
-  min-width: 0;
+.quran-view-tabs {
+  min-height: 32px;
+}
+
+.quran-view-tabs button[role="tab"] {
+  border: 1px solid #c5d0c2;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: #f4f7f2;
+}
+
+.quran-view-tabs button[role="tab"][aria-selected="true"] {
+  background: #fff;
+  border-color: #8eaf98;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -601,44 +626,44 @@ textarea {
   min-height: 0 !important;
   overflow: hidden;
   color: #221d16;
-  
-  /* Updated Background: Creamy Paper */
-  background: #fffcf7;
-  
-  /* Updated Border: Tanzil Style Green & Gold Layers */
-  border: 1px solid #8b7344;
-  box-shadow: 
-    0 4px 12px rgba(60, 50, 40, 0.15),       /* Outer Shadow */
-    inset 0 0 0 2px #4a5d23,                 /* Layer 1: Dark Green */
-    inset 0 0 0 4px #d4af37,                 /* Layer 2: Gold */
-    inset 0 0 0 6px #4a5d23,                 /* Layer 3: Inner Green */
-    inset 0 0 0 8px #fffcf7;                 /* Layer 4: Inner Paper Edge */
-
+  background:
+    linear-gradient(#fbf7ea, #fbf7ea) padding-box,
+    repeating-linear-gradient(
+      90deg,
+      #1c4a34 0 6px,
+      #e7d7a4 6px 8px,
+      #f7f1dc 8px 11px,
+      #24583c 11px 13px,
+      #c6a35a 13px 15px,
+      #1c4a34 15px 18px
+    ) border-box;
+  border: 16px solid transparent;
+  box-shadow:
+    0 10px 28px rgba(42, 58, 40, 0.14),
+    inset 0 0 0 1px #f8f1dc;
   text-rendering: optimizeLegibility;
   font-kerning: normal;
   font-variant-ligatures: normal;
   font-feature-settings: "kern" 1, "liga" 1;
 }
 
-/* Updated Inner Decorative Frame */
 .quran-page::before {
   content: "";
   position: absolute;
-  inset: 12px; /* Slightly adjusted for new border thickness */
+  inset: 7px;
   z-index: 0;
   pointer-events: none;
-  border: 1px solid rgba(139, 115, 68, 0.4);
-  box-shadow: inset 0 0 0 1px rgba(74, 93, 35, 0.2);
+  border: 1px solid rgba(139, 115, 68, 0.7);
+  box-shadow: inset 0 0 0 3px rgba(255, 252, 244, 0.65), inset 0 0 0 4px rgba(36, 88, 60, 0.28);
 }
 
 .quran-page::after {
   content: "";
   position: absolute;
-  inset: 18px;
+  inset: 14px;
   z-index: 0;
   pointer-events: none;
-  border: 1px solid rgba(165, 141, 87, 0.82);
-  box-shadow: inset 0 0 14px rgba(95, 78, 40, 0.035);
+  border: 1px solid rgba(165, 141, 87, 0.55);
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -767,16 +792,18 @@ textarea {
 .quran-surah-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: baseline;
-  gap: 0.4em;
-  width: min(680px, 96%);
-  margin: 0.35em auto 0.7em;
-  padding: 0.18em 0.9em 0.42em;
-  border: 1px solid #b9ad91;
+  align-items: center;
+  gap: 0.35em;
+  width: min(640px, 94%);
+  margin: 0.15em auto 0.85em;
+  padding: 0.28em 1.1em 0.38em;
+  border: 2px solid #1f4d36;
   border-radius: 999px;
   text-align: center;
-  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6);
-  background: rgba(255, 252, 244, 0.72);
+  background:
+    linear-gradient(#f4f8f1, #f4f8f1) padding-box,
+    linear-gradient(90deg, #c6a35a, #f3e6bf, #c6a35a) border-box;
+  box-shadow: inset 0 0 0 1px #d7c48a, 0 1px 0 rgba(255, 255, 255, 0.8);
   line-height: 1.2;
 }
 
@@ -933,18 +960,25 @@ textarea {
    ──────────────────────────────────────────────────────────────────────────── */
 
 .quran-page-shell > .quran-outer-page-nav {
-  min-height: 26px;
-  color: #70786b;
+  min-height: 40px;
+  margin-top: 10px;
+  color: #3c4a3a;
   font-family: var(--font-naskh), "Noto Naskh Arabic", serif;
 }
 
-.quran-page-shell > .quran-outer-page-nav button {
-  border-radius: 0;
-  transition: background-color 0.15s ease;
+.quran-page-turn {
+  min-width: 92px;
+  border: 1px solid #b7c9b4;
+  border-radius: 999px;
+  background: linear-gradient(to bottom, #ffffff, #e7f0e4);
+  color: #243528;
+  font-size: 12px;
+  font-weight: 650;
+  box-shadow: 0 1px 2px rgba(40, 60, 40, 0.08);
 }
 
 .quran-page-shell > .quran-outer-page-nav button:hover:not(:disabled) {
-  background: #dce3d8;
+  background: #d7e6d3;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -970,7 +1004,8 @@ textarea {
     gap: 12px;
   }
 
-  .quran-reader-sidebar {
+  .quran-reader-sidebar,
+  .tanzil-sidebar {
     width: 100%;
     max-width: none;
     justify-self: stretch;
@@ -991,7 +1026,7 @@ textarea {
 
 @media (max-width: 639px) {
   .quran-reader {
-    background: linear-gradient(to bottom, #edf1e9 0%, #e4eae1 52%, #dbe3d8 100%);
+    background: #e7eee4;
   }
 
   .quran-reader-container {
@@ -1053,24 +1088,17 @@ textarea {
   }
 
   .quran-page {
-    padding: 18px 24px 20px !important;
-    /* Simplified shadow for mobile but keeping colors */
-    box-shadow: 
-      0 2px 8px rgba(40, 48, 35, 0.12),
-      inset 0 0 0 1px #fffdf9,
-      inset 0 0 0 3px #5c664a,
-      inset 0 0 0 5px #e8dec0,
-      inset 0 0 0 7px #967f4e,
-      inset 0 0 0 9px #faf3df;
+    padding: 20px 16px 16px !important;
+    border-width: 12px;
+    box-shadow: 0 4px 14px rgba(40, 48, 35, 0.12);
   }
 
   .quran-page::before {
-    inset: 10px;
-    box-shadow: inset 0 0 0 1px rgba(250, 245, 229, 0.9), inset 0 0 0 2px rgba(150, 127, 78, 0.5);
+    inset: 5px;
   }
 
   .quran-page::after {
-    inset: 14px;
+    inset: 10px;
   }
 
   .quran-corner {
@@ -1174,8 +1202,8 @@ textarea {
   }
 
   .quran-outer-page-nav {
-    min-height: 24px;
-    font-size: 11px !important;
+    min-height: 44px;
+    font-size: 13px !important;
   }
 }
 
@@ -1281,8 +1309,6 @@ html.dark .tanzil-sidebar button:hover {
 
 html.dark .quran-page {
   color: #221d16;
-  background: radial-gradient(ellipse 85% 70% at 50% 35%, #fffdf7 0%, #fbf7ea 45%, #f3ecd7 100%);
-  /* Dark mode border adjustment if needed, otherwise inherits light paper look */
 }
 
 html.dark .quran-page-meta {

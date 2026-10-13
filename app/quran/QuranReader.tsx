@@ -480,10 +480,10 @@ export default function QuranReader({
       className="quran-reader min-h-screen"
       dir="ltr"
     >
-      <div className="quran-reader-container mx-auto w-full max-w-[1010px] px-3 py-4 sm:px-5 sm:py-6">
+      <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4">
         <EditionTopBar editionId="qalam-indopak" />
         <div
-          className="quran-reader-layout grid grid-cols-1 items-start gap-4 lg:grid-cols-[200px_minmax(0,770px)]"
+          className="quran-reader-layout grid grid-cols-1 items-start gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-4"
           dir="ltr"
         >
           {/* ─────────────────────────────
@@ -491,7 +491,7 @@ export default function QuranReader({
              ───────────────────────────── */}
 
           <aside
-            className="tanzil-sidebar quran-reader-sidebar order-2 w-full lg:order-1 lg:self-start lg:mt-[56px]"
+            className="tanzil-sidebar quran-reader-sidebar order-2 w-full min-w-0 lg:order-1 lg:w-[200px] lg:self-start"
             dir={interfaceDir}
             lang={interfaceLang}
           >
@@ -499,6 +499,7 @@ export default function QuranReader({
               title={
                 copy.search
               }
+              defaultOpen
             >
               <form
                 onSubmit={(
@@ -929,7 +930,7 @@ export default function QuranReader({
 
           <section className="quran-reader-main order-1 min-w-0 lg:order-2">
             <div
-              className="mb-2 flex items-center justify-center border-b border-[#c7cec2]"
+              className="quran-view-tabs mb-2 flex items-end justify-center gap-1"
               dir={interfaceDir}
               lang={interfaceLang}
               role="tablist"
@@ -1102,7 +1103,7 @@ export default function QuranReader({
                     });
                   }
                 }}
-                className="px-2 py-1 hover:bg-[#dce3d8] disabled:opacity-25"
+                className="quran-page-turn px-3 py-1.5 disabled:opacity-25"
               >
                 {
                   copy.nextPage
@@ -1133,7 +1134,7 @@ export default function QuranReader({
                     });
                   }
                 }}
-                className="px-2 py-1 hover:bg-[#dce3d8] disabled:opacity-25"
+                className="quran-page-turn px-3 py-1.5 disabled:opacity-25"
               >
                 {
                   copy.previousPage
