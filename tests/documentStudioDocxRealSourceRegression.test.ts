@@ -110,6 +110,39 @@ describe("DOCX source-replay regressions from supplied saved .qalam and DOCX", (
     expect(ps[9]).toContain('w:line="640"');
   });
 
+
+  test("terminal long Arabic paragraph preserves three authored breaks without a phantom Word paragraph or section", async () => {
+    const source = savedQalamExcerpt().content;
+    const last = source.content?.[source.content.length - 1];
+    expect(last?.type).toBe("paragraph");
+    expect((last?.content ?? []).map(node => node.type)).toEqual([
+      "hardBreak", "text", "hardBreak", "hardBreak",
+    ]);
+
+    const xml = await documentXml(source);
+    const ps = paragraphs(xml);
+    expect(ps).toHaveLength(source.content?.length ?? 0);
+    expect(textOf(ps[ps.length - 1])).toBe(hadithStart + " " + hadithStart.repeat(7));
+    const lastParagraph = ps[ps.length - 1];
+    // These are the source's three *real* manual line breaks, not page breaks.
+    expect((lastParagraph.match(/<w:br\s*\/>/g) ?? [])).toHaveLength(3);
+    expect(lastParagraph).not.toContain('w:type="page"');
+    expect(lastParagraph).toContain('w:line="640"');
+    expect(lastParagraph).toContain('w:lineRule="atLeast"');
+    expect(lastParagraph).toContain('w:after="120"');
+    for (const forbidden of ["<w:keepNext", "<w:keepLines", "<w:pageBreakBefore"]) {
+      expect(lastParagraph).not.toContain(forbidden);
+    }
+    // The section properties are a direct child of the body. docx.js must not
+    // manufacture an additional blank paragraph after the author's final one.
+    expect(xml).toMatch(/<\/w:p><w:sectPr(?:\s|>)/);
+    expect((xml.match(/<w:sectPr(?:\s|>)/g) ?? [])).toHaveLength(1);
+    expect(xml).not.toContain('w:type="nextPage"');
+
+    // OOXML checks cannot guarantee that the two trailing author-created
+    // empty lines *fit* on the preceding Word page: that needs Word rendering.
+  });
+
   test("re-export from the same serialized .qalam snapshot preserves body XML", async () => {
     const original = savedQalamExcerpt();
     const reopened = JSON.parse(JSON.stringify(original)) as typeof original;
