@@ -84,7 +84,9 @@ describe("fontRegistry", () => {
 
   test("all Blob families are available and Sahel resolves without PDF fallback", () => {
     const fonts = listEditorFonts();
-    expect(fonts).toHaveLength(11);
+    expect(fonts).toHaveLength(10);
+    expect(fonts.some(f => f.id === "noto-nastaliq-urdu")).toBe(false);
+    expect(resolveEditorFontFamily("Noto Nastaliq Urdu", "rtl").docxFamily).toBe("Noto Nastaliq Urdu");
     expect(fonts.some(f => /Mehr/i.test(f.label))).toBe(false);
     const sahel = resolveEditorFontFamily("Sahel", "rtl");
     expect(sahel.fellBack).toBe(false);
