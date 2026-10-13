@@ -8,6 +8,8 @@ import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
 import EditionTopBar from "./reader/EditionTopBar";
 import QuranTranslationPage from "./QuranTranslationPage";
+import QuranTransliterationPage from "./QuranTransliterationPage";
+import QuranTafsirPage from "./QuranTafsirPage";
 import { translationTextForAyahs } from "./reader/translationCorpus";
 import { surahBanner } from "./indopak-digital-khatt/surahBanner";
 import {
@@ -67,6 +69,8 @@ type SidebarCopy = {
   previousPage: string;
   quranTab: string;
   translationTab: string;
+  transliterationTab: string;
+  tafsirTab: string;
 };
 
 const SIDEBAR_COPY: Record<
@@ -95,6 +99,8 @@ const SIDEBAR_COPY: Record<
     previousPage: "← Previous Page",
     quranTab: "Quran",
     translationTab: "Translation",
+    transliterationTab: "Transliteration",
+    tafsirTab: "Commentary",
   },
 
   ur: {
@@ -119,6 +125,8 @@ const SIDEBAR_COPY: Record<
     previousPage: "← پچھلا صفحہ",
     quranTab: "قرآن",
     translationTab: "ترجمہ",
+    transliterationTab: "تلفظ",
+    tafsirTab: "تفسیر",
   },
 };
 
@@ -173,13 +181,13 @@ export default function QuranReader({
     useState(false);
 
   const [scale, setScale] = useState(1);
-  const [readerView, setReaderView] = useState<"quran" | "translation">("quran");
+  const [readerView, setReaderView] = useState<"quran" | "translation" | "transliteration" | "tafsir">("quran");
 
   useLayoutEffect(() => {
     const stored = Number(window.localStorage.getItem("qalam-quran-display-scale"));
     if (stored === 0.85 || stored === 1 || stored === 1.12) setScale(stored);
     const storedView = window.localStorage.getItem("qalam-quran-reader-view");
-    if (storedView === "quran" || storedView === "translation") setReaderView(storedView);
+    if (storedView === "quran" || storedView === "translation" || storedView === "transliteration" || storedView === "tafsir") setReaderView(storedView);
   }, []);
 
   const chooseScale = (value: number) => {
@@ -187,7 +195,7 @@ export default function QuranReader({
     window.localStorage.setItem("qalam-quran-display-scale", String(value));
   };
 
-  const chooseReaderView = (value: "quran" | "translation") => {
+  const chooseReaderView = (value: "quran" | "translation" | "transliteration" | "tafsir") => {
     setReaderView(value);
     window.localStorage.setItem("qalam-quran-reader-view", value);
   };
@@ -480,10 +488,10 @@ export default function QuranReader({
       className="quran-reader min-h-screen"
       dir="ltr"
     >
-      <div className="quran-reader-container mx-auto w-full max-w-[1010px] px-3 py-4 sm:px-5 sm:py-6">
+      <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4">
         <EditionTopBar editionId="qalam-indopak" />
         <div
-          className="quran-reader-layout grid items-start gap-4 lg:grid-cols-[175px_minmax(0,770px)]"
+          className="quran-reader-layout grid grid-cols-1 items-start gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-4"
           dir="ltr"
         >
           {/* ─────────────────────────────
@@ -491,7 +499,7 @@ export default function QuranReader({
              ───────────────────────────── */}
 
           <aside
-            className="tanzil-sidebar quran-reader-sidebar"
+            className="tanzil-sidebar quran-reader-sidebar order-2 w-full min-w-0 lg:order-1 lg:w-[200px] lg:self-start"
             dir={interfaceDir}
             lang={interfaceLang}
           >
@@ -499,6 +507,7 @@ export default function QuranReader({
               title={
                 copy.search
               }
+              defaultOpen
             >
               <form
                 onSubmit={(
@@ -927,38 +936,52 @@ export default function QuranReader({
               MAIN QURAN READER
              ───────────────────────────── */}
 
-          <section className="quran-reader-main min-w-0">
+          <section className="quran-reader-main order-1 min-w-0 lg:order-2">
             <div
-              className="mb-2 flex items-center justify-center border-b border-[#c7cec2]"
+              className="quran-view-tabs mb-2"
               dir={interfaceDir}
               lang={interfaceLang}
               role="tablist"
-              aria-label={language === "ur" ? "قرآن اور ترجمہ" : "Quran and translation"}
+              aria-label={language === "ur" ? "قرآن، ترجمہ، تلفظ، تفسیر" : "Quran, translation, transliteration, and commentary"}
+              onKeyDown={(event) => {
+                const views = ["quran", "translation", "transliteration", "tafsir"] as const;
+                const index = views.indexOf(readerView);
+                const step = interfaceDir === "rtl" ? -1 : 1;
+                let next = index;
+                if (event.key === "ArrowRight") next = (index + step + views.length) % views.length;
+                else if (event.key === "ArrowLeft") next = (index - step + views.length) % views.length;
+                else if (event.key === "Home") next = 0;
+                else if (event.key === "End") next = views.length - 1;
+                else return;
+                event.preventDefault();
+                chooseReaderView(views[next]);
+                event.currentTarget.querySelectorAll<HTMLButtonElement>("[role=tab]")[next]?.focus();
+              }}
             >
               {([
-                ["quran", copy.quranTab],
-                ["translation", copy.translationTab],
-              ] as const).map(([value, label]) => (
+                ["quran", copy.quranTab, language === "ur" ? "Quran" : "قرآن"],
+                ["translation", copy.translationTab, language === "ur" ? "Translation" : "ترجمہ"],
+                ["transliteration", copy.transliterationTab, language === "ur" ? "Transliteration" : "تلفظ"],
+                ["tafsir", copy.tafsirTab, language === "ur" ? "Tafsir" : "تفسیر"],
+              ] as const).map(([value, label, other]) => (
                 <button
                   key={value}
                   type="button"
                   role="tab"
+                  id={"quran-tab-" + value}
                   aria-selected={readerView === value}
+                  aria-controls="quran-reader-panel"
+                  tabIndex={readerView === value ? 0 : -1}
                   onClick={() => chooseReaderView(value)}
-                  className={
-                    "min-w-28 border-b-2 px-5 py-2 text-sm font-semibold transition-colors " +
-                    (readerView === value
-                      ? "border-[#5f7257] text-[#31412f] dark:border-[#aabea3] dark:text-[#e4ede4]"
-                      : "border-transparent text-[#747b71] hover:text-[#465044] dark:text-[#9eaa9e]") +
-                    (language === "ur" ? " font-naskh" : "")
-                  }
+                  className={"quran-reader-tab" + (language === "ur" ? " font-naskh" : "")}
                 >
-                  {label}
+                  <span>{label}</span>
+                  <span className="quran-reader-tab-alt" lang={language === "ur" ? "en" : "ur"}>{other}</span>
                 </button>
               ))}
             </div>
 
-            <div className="quran-page-shell">
+            <div className="quran-page-shell" id="quran-reader-panel" role="tabpanel" aria-labelledby={"quran-tab-" + readerView}>
               <QuranPageMeta
                 surah={
                   surah
@@ -1056,18 +1079,27 @@ export default function QuranReader({
                     }
                   }}
                 />
-              ) : (
+              ) : readerView === "translation" ? (
                 <QuranTranslationPage
                   ayahs={ayahs}
                   selectedSurah={surah}
                   selectedAyah={ayah}
                   scale={scale}
                 />
+              ) : readerView === "transliteration" ? (
+                <QuranTransliterationPage
+                  ayahs={ayahs}
+                  selectedSurah={surah}
+                  selectedAyah={ayah}
+                  scale={scale}
+                />
+              ) : (
+                <QuranTafsirPage surah={surah} ayah={ayah} />
               )}
             </div>
 
             <div
-              className={`quran-outer-page-nav mt-2 flex items-center justify-between px-1 text-xs text-[#70776b] ${
+              className={`quran-outer-page-nav mt-2 flex items-center justify-center gap-6 px-1 text-xs text-[#70776b] ${
                 language ===
                 "ur"
                   ? "font-naskh"
@@ -1102,7 +1134,7 @@ export default function QuranReader({
                     });
                   }
                 }}
-                className="px-2 py-1 hover:bg-[#dce3d8] disabled:opacity-25"
+                className="quran-page-turn px-3 py-1.5 disabled:opacity-25"
               >
                 {
                   copy.nextPage
@@ -1133,7 +1165,7 @@ export default function QuranReader({
                     });
                   }
                 }}
-                className="px-2 py-1 hover:bg-[#dce3d8] disabled:opacity-25"
+                className="quran-page-turn px-3 py-1.5 disabled:opacity-25"
               >
                 {
                   copy.previousPage
