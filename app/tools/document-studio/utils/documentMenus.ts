@@ -10,6 +10,8 @@ export type MenuActionId =
   | "file.new"
   | "file.open"
   | "file.upload"
+  | "file.saveQalam"
+  | "file.openQalam"
   | "file.downloadTxt"
   | "file.downloadDocx"
   | "file.downloadPdf"
@@ -139,6 +141,9 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
       { type: "action", id: "file.open", labelEn: "Open document…", labelUr: "دستاویز کھولیں…" },
       { type: "action", id: "file.upload", labelEn: "Import file", labelUr: "فائل درآمد" },
       { type: "separator" },
+      { type: "action", id: "file.saveQalam", labelEn: "Save Editable Document", labelUr: "قابلِ تدوین دستاویز محفوظ کریں" },
+      { type: "action", id: "file.openQalam", labelEn: "Open Editable Document", labelUr: "قابلِ تدوین دستاویز کھولیں" },
+      { type: "separator" },
       {
         type: "submenu",
         id: "file.download",
@@ -147,11 +152,11 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
         items: [
           { type: "action", id: "file.downloadTxt", labelEn: "TXT", labelUr: "TXT" },
           { type: "action", id: "file.downloadDocx", labelEn: "DOCX", labelUr: "DOCX" },
-          { type: "action", id: "file.downloadPdf", labelEn: "PDF", labelUr: "PDF" },
+          { type: "action", id: "file.downloadPdf", labelEn: "Download PDF", labelUr: "PDF ڈاؤن لوڈ" },
         ],
       },
       { type: "separator" },
-      { type: "action", id: "file.print", labelEn: "Print…", labelUr: "پرنٹ…", shortcut: "Ctrl+P" },
+      { type: "action", id: "file.print", labelEn: "Print / Save as PDF", labelUr: "پرنٹ / PDF محفوظ کریں", shortcut: "Ctrl+P" },
       { type: "action", id: "file.pageSetup", labelEn: "Page setup…", labelUr: "صفحہ کی ترتیب…" },
     ],
   },

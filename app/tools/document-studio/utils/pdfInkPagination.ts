@@ -101,16 +101,23 @@ export function fitHorizontalInk(
 
 /** Keep baseline distances unchanged within a page; break only between whole ink extents.
  *  Body paragraphs fill the remaining page and may split. Headings stay with the next line.
- *  A trailing blank caret paragraph must not mint an extra last page. */
-export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] {
+ *  A trailing blank caret paragraph must not mint an extra last page.
+ *  Glyph ink may hang into the physical margin. The editor paints that overhang
+ *  and does not push the whole page down to pull it back into the content box. */
+export function placeInkLines(
+  lines: InkLine[],
+  height: number,
+  margins?: { topPx?: number; bottomPx?: number },
+): InkPlacement[] {
   const edgeGuard = 1;
+  const topMarginPx = Math.max(0, margins?.topPx ?? 0);
   let page = 0, shift = 0;
   return lines.map((line, index) => {
     const relativeTop = Math.min(line.inkTop, line.boxTop ?? line.inkTop);
     const relativeBottom = Math.max(line.inkBottom, line.boxBottom ?? line.inkBottom);
     const top = line.baseline + relativeTop, bottom = line.baseline + relativeBottom;
     if (relativeBottom - relativeTop > height - edgeGuard * 2) throw new Error("PDF visual line is taller than the configured printable page; export blocked");
-    if (index === 0 && top < edgeGuard) shift = edgeGuard - top;
+    if (index === 0 && top < edgeGuard - topMarginPx) shift = edgeGuard - topMarginPx - top;
     let end = index;
     if (line.heading) {
       while (end + 1 < lines.length && lines[end + 1].block === line.block) end++;
@@ -120,13 +127,16 @@ export function placeInkLines(lines: InkLine[], height: number): InkPlacement[] 
     const keepHeading = line.heading && (index === 0 || lines[index - 1].block !== line.block) && groupBottom - top <= height / 3;
     const trailingBlank = Boolean(line.blank) && !line.image && lines.slice(index).every(item => item.blank && !item.image);
     let placedBaseline = line.baseline + shift;
+    // Break when glyph ink crosses the content box. The first line may still
+    // hang into the top margin; that overhang must not shift every later line.
+    const limit = height - edgeGuard;
     if (index > 0 && line.forceBreak) {
       page++;
       shift = -top + edgeGuard;
       placedBaseline = line.baseline + shift;
     } else if (index > 0 && trailingBlank) {
-      if (bottom + shift > height - edgeGuard) placedBaseline = height - edgeGuard - relativeBottom;
-    } else if (index > 0 && (bottom + shift > height - edgeGuard || (keepHeading && groupBottom + shift > height - edgeGuard))) {
+      if (bottom + shift > limit) placedBaseline = height - edgeGuard - relativeBottom;
+    } else if (index > 0 && (bottom + shift > limit || (keepHeading && groupBottom + shift > limit))) {
       page++;
       shift = -top + edgeGuard;
       placedBaseline = line.baseline + shift;
@@ -390,6 +400,7 @@ export async function paginatePdfInk(
   heightMm: number,
   leftMarginMm = 0,
   rightMarginMm = 0,
+  topMarginMm = 0,
 ): Promise<{ lines: number; pages: number; stagingHeight: number; screenshots: number; measurementMs: number }> {
   const measurementStarted = Date.now();
   const width = mmToCssPx(widthMm), height = mmToCssPx(heightMm);
@@ -398,17 +409,18 @@ export async function paginatePdfInk(
   await page.setViewport({ width: Math.ceil(width) + horizontalOverscan * 4, height: 900, deviceScaleFactor: 2 });
   await page.emulateMediaType("print");
   await page.evaluate(({ w, overscan }) => {
-    // Fix only the CSS wrapping viewport. Glyph overhang is measured later on
-    // the wider staging surface and must not narrow unrelated blocks.
+    // The editor wraps at the full content width. Nastaliq terminal ink hangs
+    // into the physical margin; fitHorizontalInk already allows that overhang
+    // up to the page edge, and the staging surface is wider than the page.
+    // Do not pad the source block. Canvas actualBoundingBox insets are wider
+    // than the CSS advance and rewrap justified lines away from the editor.
     document.body.style.width = `${w}px`;
     document.body.style.marginLeft = "0px";
+    document.body.style.overflow = "visible";
     document.body.dataset.pdfInkHorizontalOverscan = String(overscan);
-    // Reserve only the loaded face's measured terminal overhang inside each
-    // source block. This can rewrap that block, but cannot narrow neighbors.
     const canvas = document.createElement("canvas").getContext("2d")!;
     const blockSelector = "p,h1,h2,h3,h4,li";
     for (const block of document.querySelectorAll<HTMLElement>(blockSelector)) {
-      let leftInset = 0, rightInset = 0;
       let needsEmergencyWrap = false;
       const blockWidth = block.getBoundingClientRect().width;
       const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
@@ -418,28 +430,12 @@ export async function paginatePdfInk(
         const style = getComputedStyle(parent);
         canvas.font = style.font;
         canvas.direction = style.direction as CanvasDirection;
-        canvas.textAlign = "start";
         for (const sample of text.split(/\s+/u).filter(Boolean)) {
           const metric = canvas.measureText(sample);
-          if (canvas.direction === "rtl") {
-            leftInset = Math.max(leftInset, Math.ceil(metric.actualBoundingBoxLeft - metric.width) + 1);
-            rightInset = Math.max(rightInset, Math.ceil(metric.actualBoundingBoxRight) + 1);
-          } else {
-            leftInset = Math.max(leftInset, Math.ceil(metric.actualBoundingBoxLeft) + 1);
-            rightInset = Math.max(rightInset, Math.ceil(metric.actualBoundingBoxRight - metric.width) + 1);
-          }
-          const inkSpan = canvas.direction === "rtl"
-            ? metric.actualBoundingBoxLeft + metric.actualBoundingBoxRight
-            : metric.actualBoundingBoxRight + metric.actualBoundingBoxLeft;
-          if ([...sample].length <= 64 && inkSpan > blockWidth - 2) needsEmergencyWrap = true;
+          // Advance width, not ink bounds. A Nastaliq swash is wider than the
+          // line without being an unbreakable token the editor would split.
+          if ([...sample].length <= 64 && metric.width > blockWidth - 2) needsEmergencyWrap = true;
         }
-      }
-      if (leftInset || rightInset) {
-        const style = getComputedStyle(block);
-        block.style.boxSizing = "border-box";
-        block.style.paddingLeft = `${parseFloat(style.paddingLeft) + leftInset}px`;
-        block.style.paddingRight = `${parseFloat(style.paddingRight) + rightInset}px`;
-        block.dataset.pdfLocalInkInsets = JSON.stringify({ left: leftInset, right: rightInset });
       }
       if (needsEmergencyWrap) {
         block.style.overflowWrap = "anywhere";
@@ -515,7 +511,7 @@ export async function paginatePdfInk(
       rightMarginPx,
     );
   });
-  const placements = placeInkLines(lines, height);
+  const placements = placeInkLines(lines, height, { topPx: mmToCssPx(topMarginMm) });
   await page.evaluate(({ lines, placements, height }) => {
     document.getElementById("pdf-ink-measure-style")?.remove();
     const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-pdf-ink-line]")); document.body.replaceChildren();
@@ -523,6 +519,7 @@ export async function paginatePdfInk(
     document.body.style.left = "";
     document.body.style.top = "";
     document.body.style.marginLeft = "0px";
+    document.body.style.overflow = "visible";
     const pages: HTMLElement[] = [];
     const quoteSegments = new Map<string, HTMLElement>();
     const semanticLists = new Map<string, HTMLElement>();

@@ -175,6 +175,10 @@ export default function DocumentCanvas({
       data-print-margin-left-mm={printMargins.leftMm}
       data-print-margin-right-mm={printMargins.rightMm}
       data-print-dir={dir}
+      data-print-body-pt={documentSettings.typography.bodyFontSizePt}
+      data-print-line-height={documentSettings.typography.lineHeight}
+      data-print-paragraph-before-pt={documentSettings.typography.paragraphBeforePt}
+      data-print-paragraph-after-pt={documentSettings.typography.paragraphAfterPt}
       data-print-ignores-zoom="true"
       data-page-count={isPages ? pageCount : undefined}
       data-studio-zoom={String(zoom)}
@@ -300,7 +304,7 @@ export default function DocumentCanvas({
           direction: rtl;
           unicode-bidi: isolate;
           text-align: start;
-          font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
+          font-family: "Qalam Studio Latin", var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
         }
         .qalam-editor-content .ProseMirror p[dir="ltr"],
         .qalam-editor-content .ProseMirror h1[dir="ltr"],
@@ -310,7 +314,7 @@ export default function DocumentCanvas({
           direction: ltr;
           unicode-bidi: isolate;
           text-align: start;
-          font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
+          font-family: "Qalam Studio Latin", var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
         }
         .qalam-editor-content .ProseMirror p:not([dir]),
         .qalam-editor-content .ProseMirror h1:not([dir]),

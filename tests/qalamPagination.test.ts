@@ -295,6 +295,10 @@ describe("Qalam pagination foundation", () => {
       expect((node as HTMLElement).style.pointerEvents).toBe("none");
     });
     expect(paginationCss()).toContain("pointer-events: none");
+    const pageRule = paginationCss().slice(0, paginationCss().indexOf("-pages"));
+    expect(pageRule).toContain("outline: 1px solid");
+    expect(pageRule).not.toContain("outline: none");
+    expect(pageRule).not.toContain("border: 1px");
   });
 
   it("V. old page-gap engine is not simultaneously active", () => {

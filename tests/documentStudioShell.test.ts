@@ -44,6 +44,8 @@ function mockHandlers(extra: Partial<DocumentMenuHandlers> = {}): DocumentMenuHa
     newDocument: track("new"),
     openLibrary: track("open"),
     upload: track("upload"),
+    saveQalam: track("saveQalam"),
+    openQalam: track("openQalam"),
     downloadTxt: track("txt"),
     downloadDocx: track("docx"),
     downloadPdf: track("pdf"),
@@ -168,6 +170,8 @@ describe("document menus", () => {
     dispatchDocumentMenuAction("file.new", null, h);
     dispatchDocumentMenuAction("file.open", null, h);
     dispatchDocumentMenuAction("file.upload", null, h);
+    dispatchDocumentMenuAction("file.saveQalam", null, h);
+    dispatchDocumentMenuAction("file.openQalam", null, h);
     dispatchDocumentMenuAction("file.downloadTxt", null, h);
     dispatchDocumentMenuAction("file.downloadDocx", null, h);
     dispatchDocumentMenuAction("file.downloadPdf", null, h);
@@ -190,6 +194,8 @@ describe("document menus", () => {
       "new",
       "open",
       "upload",
+      "saveQalam",
+      "openQalam",
       "txt",
       "docx",
       "pdf",

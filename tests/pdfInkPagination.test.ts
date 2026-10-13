@@ -29,6 +29,18 @@ describe("measured PDF ink pagination", () => {
       expect(item.baseline + lines[i].inkBottom).toBeLessThanOrEqual(100);
     });
   });
+  it("keeps a later line when the first glyph hangs inside the top margin", () => {
+    const first = line(29, 0, -41, 11);
+    const kept = line(912, 1, -27, 11);
+    const overflow = line(954, 1, -27, 11);
+    const height = 931;
+    expect(placeInkLines([first, kept, overflow], height).map(item => item.page)).toEqual([0, 1, 1]);
+    const placed = placeInkLines([first, kept, overflow], height, { topPx: 96 });
+    expect(placed.map(item => item.page)).toEqual([0, 0, 1]);
+    expect(placed[0].baseline).toBe(29);
+    expect(placed[1].baseline + kept.inkBottom).toBeLessThanOrEqual(height);
+    expect(placed[0].baseline + first.inkTop).toBeGreaterThanOrEqual(-96);
+  });
   it("fills the page with body text and keeps a heading with its next line", () => {
     expect(placeInkLines([line(20), line(90, 1), line(100, 1)], 100).map(item => item.page)).toEqual([0, 0, 1]);
     expect(placeInkLines([line(20), { ...line(90, 1), heading: true }, line(100, 2)], 100).map(item => item.page)).toEqual([0, 1, 1]);
