@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/document-studio-docx-fidelity-20261013
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
