@@ -125,16 +125,17 @@ describe("Document Studio typography 2A", () => {
     expect(html.fontsUsed).toContain("Inter");
   });
 
-  test("approved font groups and hidden choices stay unchanged", () => {
+  test("approved font groups retain historical Noto compatibility while hiding it from new choices", () => {
     const fonts = listEditorFonts();
-    expect(fonts).toHaveLength(11);
+    expect(fonts).toHaveLength(10);
     expect(new Set(fonts.map((font) => font.category))).toEqual(new Set(["urdu", "arabic", "persian", "latin"]));
-    expect(fonts.map((font) => font.editorFamily)).toEqual(expect.arrayContaining(["Gulzar", "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Amiri", "Inter"]));
+    expect(fonts.map((font) => font.editorFamily)).toEqual(expect.arrayContaining(["Gulzar", "Jameel Noori Nastaleeq", "Amiri", "Inter"]));
     for (const hidden of ["Nafees Nastaleeq", "Adobe Arabic", "Traditional Arabic", "Faiz Lahori Nastaleeq", "Al Majeed Quranic", "Asif Quranic", "Muhammadi Quranic"]) {
       expect(fonts.map((font) => font.editorFamily)).not.toContain(hidden);
     }
     expect(editorFontFamilyStack("gulzar")).toContain("Gulzar");
     expect(editorFontFamilyStack("jameel-noori-nastaleeq")).toContain("Jameel Noori Nastaleeq");
+    expect(fonts.map((font) => font.editorFamily)).not.toContain("Noto Nastaliq Urdu");
     expect(editorFontFamilyStack("noto-nastaliq-urdu")).toContain("var(--font-nastaliq)");
     expect(studioGulzarFontFaceCss()).toContain("Gulzar-Regular.woff2");
     expect(studioJameelFontFaceCss()).toContain("jameel-noori-nastaleeq-400.woff2");
