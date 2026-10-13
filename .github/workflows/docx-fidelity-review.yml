@@ -1,0 +1,30 @@
+name: DOCX Fidelity Review (No Deployment)
+
+on:
+  push:
+    branches:
+      - fix/document-studio-docx-fidelity-20261013
+  workflow_dispatch:
+
+jobs:
+  docx-fidelity-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: DOCX real-source and Arabic regression tests
+        run: npx vitest run tests/documentStudioDocxRealSourceRegression.test.ts tests/documentStudioDocxArabicRegression.test.ts tests/buildDocxDocument.test.ts tests/fontRegistry.test.ts tests/documentStudioTypography2a.test.ts tests/documentParagraphFormatting.test.tsx tests/documentParagraphSpacing.test.tsx
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Production build (build only, never deploy)
+        run: npm run build
+      - run: git diff --check
