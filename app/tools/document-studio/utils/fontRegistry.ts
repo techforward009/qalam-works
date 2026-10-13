@@ -338,6 +338,7 @@ export function exportFamilyForSegment(
  */
 const HIDDEN_EDITOR_FONT_IDS: ReadonlySet<FontId> = new Set([
   "default",
+  "noto-nastaliq-urdu",
   "faiz-lahori",
   "nafees-nastaleeq",
   "adobe-arabic",
