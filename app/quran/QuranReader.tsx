@@ -483,7 +483,7 @@ export default function QuranReader({
       <div className="quran-reader-container mx-auto w-full max-w-[1010px] px-3 py-4 sm:px-5 sm:py-6">
         <EditionTopBar editionId="qalam-indopak" />
         <div
-          className="quran-reader-layout grid items-start gap-4 lg:grid-cols-[175px_minmax(0,770px)]"
+          className="quran-reader-layout grid grid-cols-1 items-start gap-4"
           dir="ltr"
         >
           {/* ─────────────────────────────
@@ -491,7 +491,7 @@ export default function QuranReader({
              ───────────────────────────── */}
 
           <aside
-            className="tanzil-sidebar quran-reader-sidebar"
+            className="tanzil-sidebar quran-reader-sidebar order-2 w-full"
             dir={interfaceDir}
             lang={interfaceLang}
           >
@@ -927,7 +927,7 @@ export default function QuranReader({
               MAIN QURAN READER
              ───────────────────────────── */}
 
-          <section className="quran-reader-main min-w-0">
+          <section className="quran-reader-main order-1 min-w-0">
             <div
               className="mb-2 flex items-center justify-center border-b border-[#c7cec2]"
               dir={interfaceDir}
@@ -1067,7 +1067,7 @@ export default function QuranReader({
             </div>
 
             <div
-              className={`quran-outer-page-nav mt-2 flex items-center justify-between px-1 text-xs text-[#70776b] ${
+              className={`quran-outer-page-nav mt-2 flex items-center justify-center gap-6 px-1 text-xs text-[#70776b] ${
                 language ===
                 "ur"
                   ? "font-naskh"
