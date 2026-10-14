@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { surahBanner } from "../app/quran/indopak-digital-khatt/surahBanner";
+import { displaySurahBannerName, initialQuranDisplayScale } from "../app/quran/reader/readerPresentation";
 
 const read = (name: string) => readFileSync(name, "utf8");
 const conventional = read("app/quran/QuranReader.tsx");
@@ -62,5 +63,42 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(tafsir).toContain('var(--font-amiri), "Amiri"');
     expect(tafsir).not.toContain("Preview Urdu font:");
     expect(styles).toContain("Alvi_Nastaleeq.woff2");
+  });
+
+  it("centers Juz, page and Surah top-row items on the same vertical axis", () => {
+    expect(styles).toMatch(/\\.quran-page-meta\\s*\\{[^}]*align-items:\\s*center/s);
+    expect(styles).toMatch(/\\.quran-page-meta-item\\s*\\{[^}]*display:\\s*flex;[^}]*align-items:\\s*center/s);
+    expect(styles).toMatch(/\\.quran-page-meta-item\\s*\\{[^}]*padding-bottom:\\s*0/s);
+    expect(styles).toMatch(/\\.quran-surah-header\\s*>\\s*\\*\\s*\\{[^}]*translateY\\(0\\.12em\\)/s);
+    expect(digitalCss).toMatch(/\\.surahHeader\\s*>\\s*\\*\\s*\\{[^}]*translateY\\(0\\.12em\\)/s);
+  });
+
+  it("shows diacritic-free names for all 114 Surahs without changing metadata or Quran text", () => {
+    for (let number = 1; number <= 114; number++) {
+      const original = surahBanner(number).name;
+      const displayed = displaySurahBannerName(original);
+      expect(displayed).not.toMatch(/[\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u08D3-\\u08FF]/u);
+      expect(displayed.startsWith("سورة ")).toBe(true);
+      expect(displayed.length).toBeGreaterThan(6);
+      expect(surahBanner(number).name).toBe(original);
+    }
+    expect(displaySurahBannerName("سُوْرَةُ الْفَاتِحَةِ")).toBe("سورة الفاتحة");
+    expect(conventional).toContain("displaySurahBannerName(banner.name)");
+    expect(digital).toContain('displaySurahBannerName(banner?.name ?? "")');
+  });
+
+  it("chooses Small on mobile in all three editions unless user explicitly saved another size", () => {
+    expect(initialQuranDisplayScale(null, true)).toBe(0.85);
+    expect(initialQuranDisplayScale(null, false)).toBe(1);
+    expect(initialQuranDisplayScale("", true)).toBe(0.85);
+    expect(initialQuranDisplayScale("0.85", false)).toBe(0.85);
+    expect(initialQuranDisplayScale("1", true)).toBe(1);
+    expect(initialQuranDisplayScale("1.12", true)).toBe(1.12);
+    expect(initialQuranDisplayScale("unexpected", true)).toBe(0.85);
+    const madinah = read("app/quran/madinah/MadinahReader.tsx");
+    for (const source of [conventional, digital, madinah]) {
+      expect(source).toContain("initialQuranDisplayScale(");
+      expect(source).toContain('window.matchMedia("(max-width: 639px)").matches');
+    }
   });
 });
