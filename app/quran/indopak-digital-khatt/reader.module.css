@@ -12,6 +12,7 @@
 }
 
 .page {
+  color-scheme: light;
   height: auto;
   min-height: 0;
   border: 8px solid #eee7d5;
@@ -66,12 +67,13 @@
 
 .surahHeader {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: baseline;
-  gap: 0.4em;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.7fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.24em;
+  min-height: 2.45em;
   width: min(680px, 96%);
   margin: 0.2em auto 0.45em;
-  padding: 0.18em 0.9em 0.42em;
+  padding: 0.22em 0.75em 0.36em;
   border: 1px solid #b9ad91;
   border-radius: 999px;
   position: relative;
@@ -79,44 +81,68 @@
   box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6);
   background: rgba(255, 252, 244, 0.72);
   font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
-  line-height: 1.2;
+  line-height: 1.5;
+}
+
+.surahHeader > * {
+  min-width: 0;
+  align-self: center;
 }
 
 .surahPlace,
 .surahCount {
-  font-size: 0.6em;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.73em;
+  line-height: 1.5;
   color: #3f4a3c;
   white-space: nowrap;
 }
 
 .surahPlace {
   justify-self: start;
-  align-self: baseline;
+  align-self: center;
 }
 
 .surahCount {
   justify-self: end;
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.28em;
+  align-items: center;
+  gap: 0.22em;
 }
 
 .surahName {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
-  gap: 0.42em;
+  gap: 0.22em;
+  min-width: 0;
   font-size: 0.72em;
-  line-height: 1.2;
+  line-height: 1.55;
   color: #171914;
+  white-space: normal;
+}
+
+.surahName > span:nth-child(2) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.bannerNumber {
+  display: inline-block;
+  flex: 0 0 auto;
+  direction: ltr;
+  unicode-bidi: isolate;
   white-space: nowrap;
+  font-size: 1.22em;
+  line-height: 1.5;
 }
 
 .bannerDigit {
   display: inline-block;
-  font-size: 2.45em;
-  line-height: 1;
-  vertical-align: -0.02em;
+  font-size: 1.25em;
+  line-height: 1.5;
+  vertical-align: middle;
 }
 
 .bismillah {
@@ -253,7 +279,16 @@
   }
 
   .surahName {
-    font-size: 0.5em;
+    font-size: 0.58em;
+  }
+
+  .surahPlace,
+  .surahCount {
+    font-size: 0.63em;
+  }
+
+  .surahHeader {
+    min-height: 2.65em;
   }
 
   .pageBottom {
