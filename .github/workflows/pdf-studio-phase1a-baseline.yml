@@ -21,7 +21,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install exact lockfile
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Install Chromium and PDF inspection tools
         run: |
           npx playwright install --with-deps chromium
