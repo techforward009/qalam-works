@@ -82,6 +82,7 @@
   background: rgba(255, 252, 244, 0.72);
   font-family: "DigitalKhattIndoPak", "Noto Naskh Arabic", serif;
   line-height: 1.5;
+  color: #000;
 }
 
 .surahHeader > * {
@@ -96,7 +97,7 @@
   align-items: center;
   font-size: 0.66em;
   line-height: 1.5;
-  color: #3f4a3c;
+  color: #000;
   white-space: nowrap;
 }
 
@@ -120,7 +121,7 @@
   min-width: 0;
   font-size: 0.93em;
   line-height: 1.55;
-  color: #171914;
+  color: #000;
   white-space: normal;
 }
 
@@ -131,6 +132,7 @@
 
 .bannerNumber {
   display: inline-block;
+  color: #000;
   flex: 0 0 auto;
   direction: ltr;
   unicode-bidi: isolate;
@@ -141,6 +143,7 @@
 
 .bannerDigit {
   display: inline-block;
+  color: #000;
   font-size: 1.25em;
   line-height: 1.5;
   vertical-align: middle;
