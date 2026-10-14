@@ -40,9 +40,9 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
     ? (ur ? "اس آیت کا اصل مطبوعہ حوالہ مل گیا ہے، مگر قابلِ تلاش اردو عبارت ابھی شامل نہیں۔" : "A verified print reference exists, but searchable Urdu text is not available yet.")
     : remote?.status === "missing_unicode_and_scan"
     ? (ur ? "اس آیت کا اصل اردو ماخذ ابھی دستیاب نہیں۔" : "The original Urdu source for this verse is not available yet.")
-    : remote?.status === "publication_pending"
-    ? (ur ? "تفسیر نمونہ کی اشاعت ناشر کی اجازت کی تصدیق تک مؤخر ہے۔" : "Publication awaits verification of the publisher's permission.")
-    : (ur ? "اس ماخذ کی قابلِ اشاعت عبارت ابھی دستیاب نہیں۔ کوئی تفسیر خود سے نہیں لکھی گئی۔" : "Publishable text for this source is not available yet. No commentary has been generated.");
+    : remote?.status === "publication_pending" || remote?.status === "corpus_not_uploaded"
+    ? (ur ? "تفسیر نمونہ کا اردو متن ابھی اس سرور پر فعال نہیں ہوا۔" : "The Tafsir Namoona source has not yet been activated on this server.")
+    : (ur ? "اس آیت کی اصل تفسیری عبارت فی الحال دستیاب نہیں۔" : "The original commentary for this verse is currently unavailable.");
 
   return (
     <article className="quran-page quran-reader-paper relative flex w-full flex-col overflow-hidden px-4 py-5 sm:px-10 sm:py-8" dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}>
