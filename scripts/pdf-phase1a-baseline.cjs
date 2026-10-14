@@ -35,7 +35,12 @@ await page.evaluate(()=>{document.querySelectorAll("[data-studio-print-portal]")
 await page.evaluate(async()=>{for(const f of ["Jameel Noori Nastaleeq","Gulzar","Alvi Nastaleeq","Amiri","Digital Khatt Indo-Pak","Vazirmatn"])try{await document.fonts.load('16px "'+f+'"')}catch{};await document.fonts.ready;});
 const sourceFonts=await page.evaluate(()=>{const spans=[...document.querySelectorAll("[data-studio-print-surface] .ProseMirror span")].slice(0,20);return spans.map(x=>({font:x.style.fontFamily,text:x.textContent?.slice(0,16)}))});row.fonts.selection=sourceFonts;
 const t0=Date.now();
-const printSetup=await page.evaluate(()=>{const source=document.querySelector("[data-studio-print-surface] .qalam-editor-content"),root=document.querySelector("[data-studio-print-root]");if(!source||!root)return "MISSING";const w=210,h=297,top=25.4,bottom=25.4,left=25.4,right=25.4;const portal=document.createElement("div");portal.setAttribute("data-studio-print-portal","true");const div=document.createElement("div");div.setAttribute("data-studio-print-page","true");div.setAttribute("dir","rtl");div.className=source.className;div.innerHTML=source.innerHTML;div.style.cssText='width:'+w+'mm;box-sizing:border-box;padding:0 '+right+'mm 0 '+left+'mm;background:#fff;min-height:0';const style=document.createElement("style");style.textContent='@page{size:210mm 297mm;margin:25.4mm 0 25.4mm 0}@media print{body>*:not([data-studio-print-portal]){display:none!important}[data-studio-print-portal]{position:static!important;display:block!important;width:210mm!important;transform:none!important}[data-studio-print-page]{width:210mm!important;box-sizing:border-box!important;border:0!important;box-shadow:none!important}}';portal.append(style,div);document.body.appendChild(portal);return "mounted";});
+await page.evaluate(()=>{window.print=()=>{};});
+const printButton=page.locator('[data-studio-print="true"]');
+if(await printButton.count()!==1)throw Error("Actual Print button not available");
+await printButton.click();
+await page.locator('[data-studio-print-portal]').waitFor({state:"attached",timeout:12000});
+const printSetup="mounted";
 if(printSetup!=="mounted")throw Error(printSetup);
 await page.evaluate(()=>document.fonts.ready);
 const cdp=await page.context().newCDPSession(page);await cdp.send("DOM.enable");await cdp.send("CSS.enable");const tree=await cdp.send("DOM.getDocument",{depth:-1});const nodes=await cdp.send("DOM.querySelectorAll",{nodeId:tree.root.nodeId,selector:"[data-studio-print-page] span"});row.fonts.print=[];for(const nodeId of nodes.nodeIds.slice(0,12)){const fonts=await cdp.send("CSS.getPlatformFontsForNode",{nodeId});row.fonts.print.push(fonts.fonts);}
