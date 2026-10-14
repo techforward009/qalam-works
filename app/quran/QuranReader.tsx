@@ -1794,9 +1794,9 @@ function SurahBand({
     >
       <span className="quran-surah-place">{banner.place}</span>
       <span className="quran-banner-name">
-        <span className="quran-banner-digit">{banner.surahNumber}</span>
+        <bdi dir="ltr" className="quran-banner-number">({banner.surahNumber})</bdi>
         <span>{banner.name}</span>
-        <span className="quran-banner-digit">{banner.revealed}</span>
+        <bdi dir="ltr" className="quran-banner-number">({banner.revealed})</bdi>
       </span>
       <span className="quran-surah-count">
         <span>آیات</span>
