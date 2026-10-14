@@ -10,9 +10,9 @@ describe("Document Studio public Blob font catalogue", () => {
     expect(isApprovedPublicBlobFontUrl("https://evil.invalid/AdobeArabic-Regular.woff2")).toBe(false);
   });
 
-  test("contains 16 Blob assets including legacy Faiz, organized into 14 font families", () => {
-    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(16);
-    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(14);
+  test("contains 18 Blob assets including legacy Faiz, organized into 16 font families", () => {
+    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(18);
+    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(16);
     expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(16);
   });
 
@@ -20,6 +20,19 @@ describe("Document Studio public Blob font catalogue", () => {
     expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "gulzar")?.regular).toBe("Gulzar-Regular.woff2");
     expect(publicBlobFontUrl("Gulzar-Regular.woff2")).toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Gulzar-Regular.woff2");
     expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "faiz-lahori")?.regular).toBe("Faiz-Lahori-Web.woff2");
+  });
+
+  test("registers both original Persian WOFF2 URLs with approved catalog entries", () => {
+    for (const [id, family, filename] of [
+      ["b-nazanin", "B Nazanin", "BNazanin.woff2"],
+      ["al-fars9-badr", "AlFars9Badr", "AlFars9Badr.woff2"],
+    ] as const) {
+      const font = PUBLIC_BLOB_FONT_FAMILIES.find(item => item.id === id);
+      expect(font).toMatchObject({ id, label: family, script: "persian", regular: filename });
+      const url = publicBlobFontUrl(filename);
+      expect(url).toBe(`https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/${filename}`);
+      expect(isApprovedPublicBlobFontUrl(url)).toBe(true);
+    }
   });
 
   test("never includes the excluded Mehr Nastaliq asset", () => {
