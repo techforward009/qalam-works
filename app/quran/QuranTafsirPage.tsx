@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../lib/language-context";
 import { surahTitle } from "./reader/metadata";
+import { splitTafsirTypography } from "./reader/tafsirTypography";
 import { TAFSIR_WORKS, tafsirForAyah, tafsirWorkById } from "./reader/tafsirCatalog";
 
 type Remote = {
@@ -32,6 +33,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
   }, [workId, surah, ayah]);
 
   const nemunehText = workId === "nemuneh" && remote?.status === "unicode_apk" && remote.text;
+  const typographyRuns = useMemo(() => splitTafsirTypography(nemunehText || ""), [nemunehText]);
   const message = remote?.status === "loading"
     ? (ur ? "تفسیر کھولی جا رہی ہے…" : "Loading commentary…")
     : remote?.status === "print_scan_only"
@@ -62,10 +64,46 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
           {" · "}{ur ? work.authorUr : work.authorEn}
         </p>
         {nemunehText ? <div className="mt-4" dir="rtl" lang="ur">
-          {remote?.heading ? <h2 className="mb-3 font-naskh text-lg font-semibold">{remote.heading}</h2> : null}
-          <p className="whitespace-pre-line font-naskh text-lg leading-loose">{remote?.text}</p>
+          {remote?.heading ? <h2 className="mb-3 text-[25px] font-normal" style={{ fontFamily: '"Qalam Tafsir Mehr", "Noto Nastaliq Urdu", serif', lineHeight: 2.15 }}>{remote.heading}</h2> : null}
+          <div
+            className="whitespace-pre-wrap break-words font-normal"
+            data-tafsir-urdu-text="true"
+            style={{
+              fontFamily: '"Qalam Tafsir Mehr", "Noto Nastaliq Urdu", serif',
+              fontSize: "22px",
+              lineHeight: 2.2,
+            }}
+          >
+            {typographyRuns.map((run, index) =>
+              run.kind === "arabic" ? (
+                <span
+                  key={index}
+                  lang="ar"
+                  dir="rtl"
+                  data-tafsir-arabic="true"
+                  className="font-arabic"
+                  style={{
+                    fontFamily: 'var(--font-amiri), "Amiri", "Noto Naskh Arabic", serif',
+                    fontSize: "1.06em",
+                    lineHeight: 1.9,
+                    unicodeBidi: "isolate",
+                  }}
+                >
+                  {run.text}
+                </span>
+              ) : run.text
+            )}
+          </div>
           <p className="mt-3 text-xs text-[#82775f]">
             {ur ? "تفسیر نمونہ، اردو برقی متن — اصل مطبوعہ نسخے سے مکمل مقابلہ باقی ہے۔" : "Tafsir Namoona, Urdu electronic text — full print collation pending."}
+          </p>
+          <p className="mt-2 text-xs text-[#82775f]">
+            {ur ? "اردو فونٹ: " : "Urdu font: "}
+            <a href="https://mehrtype.com/product/mehr-nastaliq-web/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+              {ur ? "مہر نستعلیق ویب" : "Mehr Nastaliq Web"}
+            </a>
+            {" — "}
+            {ur ? "خطاط نصراللہ مہر، فونٹ ساز محمد ذیشان نثار (CC BY-SA)" : "Nasrullah Mehr / Muhammad Zeeshan Nasar (CC BY-SA)"}
           </p>
         </div> : entry ? <div className="mt-4" dir={entry.work.direction} lang={entry.work.language}>
           <p className="font-naskh whitespace-pre-line text-lg leading-loose">{entry.text}</p>

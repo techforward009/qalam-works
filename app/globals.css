@@ -1972,3 +1972,20 @@ html.dark .qalam-home section[dir="rtl"] .qalam-tool-example bdi{color:#f0f6f0!i
 @font-face{font-family:"Traditional Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/TraditionalArabic.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 @font-face{font-family:"Traditional Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/TraditionalArabic-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap;}
 @font-face{font-family:"Al Majeed Quranic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/al-majeed-quranic-400.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
+
+
+/*
+ * Tafsir Namoona preview only. Mehr Nastaliq Web designed by
+ * Muhammad Zeeshan Nasar from the calligraphy of Nasrullah Mehr.
+ * Font license: Creative Commons Attribution-ShareAlike (CC BY-SA).
+ * https://mehrtype.com/product/mehr-nastaliq-web/
+ * This face is intentionally NOT added to Document Studio's approved font catalog.
+ */
+@font-face {
+  font-family: "Qalam Tafsir Mehr";
+  src: url("/fonts/MehrNastaliqWeb.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF;
+}
