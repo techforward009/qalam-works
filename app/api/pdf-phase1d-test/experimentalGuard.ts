@@ -9,7 +9,7 @@ export async function experimentalScriptAwareGuard(page: Page) {
     const nodes=[...document.querySelectorAll<HTMLElement>('[data-pdf-font="Digital Khatt Indo-Pak"][data-pdf-urdu="true"]')];
     const records:Array<{node:number,part:number,text:string,kind:string,path:string}>=[];
     for(let n=0;n<nodes.length;n++){
-      const el=nodes[n];const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+      const el=nodes[n];const originalText=el.textContent||"";const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
       const all:Text[]=[];while(walker.nextNode())all.push(walker.currentNode as Text);
       let count=0;
       for(const node of all){
@@ -31,6 +31,7 @@ export async function experimentalScriptAwareGuard(page: Page) {
         if(cursor<content.length){const part=document.createElement("span");part.dataset.phase1dPart=String(count++);part.dataset.phase1dKind="protected";part.textContent=content.slice(cursor);fragment.append(part)}
         node.replaceWith(fragment);
       }
+      if(el.textContent!==originalText)throw Error("Phase1D Unicode preservation failed; export blocked");
       const parts=el.querySelectorAll<HTMLElement>("[data-phase1d-part]");
       parts.forEach((p,i)=>records.push({node:n,part:i,text:p.textContent||"",kind:p.dataset.phase1dKind||"",path:'[data-pdf-font="Digital Khatt Indo-Pak"][data-pdf-urdu="true"]'}));
     }
