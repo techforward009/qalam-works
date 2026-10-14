@@ -90,7 +90,7 @@ export default function QuranTranslationPage({
           {ur ? "ترجمۂ قرآن" : "Qur'an Translation"}
         </div>
         <div className="mt-1 text-sm text-[#756a50]" style={{ fontFamily: urduHeaderFont, lineHeight: ur ? 2.1 : undefined }}>
-          {ur ? "ترجمہ: " + (urduTranslator === "safdar-najfi" ? "علامہ شیخ صفدر حسین نجفی" : source.translatorUr) : "Translation: " + source.translatorEn}
+          {ur ? "ترجمہ: " + (urduTranslator === "safdar-najfi" ? "علامہ سید صفدر حسین نجفی (تفسیر نمونہ)" : source.translatorUr) : "Translation: " + source.translatorEn}
         </div>
         {ur ? (
           <QuranUrduTranslatorPicker
