@@ -149,6 +149,17 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(conventional).toContain('onClick={() => chooseReaderView(value)}');
   });
 
+  it("reads private v10 Urdu and English from the research store via OIDC without changing v9", () => {
+    const route = read("app/api/quran/tafsir-namoona/route.ts");
+    expect(route).toContain('import { getVercelOidcToken } from "@vercel/oidc"');
+    expect(route).toContain('QALAM_RESEARCH_STORE_ID');
+    expect(route).toContain('oidcToken, useCache: false');
+    expect(route).toContain('const file = await loadResearchBlob(RELEASE[language].path)');
+    expect(route).toContain('const file = await loadBlob([');
+    expect(route).toContain('"qalam/tafsir-namoona/urdu-v9.json.br"');
+    expect(route).toContain('checkHash(file, RELEASE[language].digest)');
+  });
+
   it("removes the outdated Tafsir publisher message but does not manufacture source text", () => {
     expect(tafsir).not.toContain("تفسیر نمونہ کی اشاعت ناشر کی اجازت کی تصدیق تک مؤخر ہے۔");
     expect(tafsir).toContain('remote?.status === "corpus_not_uploaded"');
