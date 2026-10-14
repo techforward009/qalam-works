@@ -34,7 +34,7 @@ function check(id,cond,detail){report.assertions.push({id,pass:!!cond,detail});i
     const response=await fetch("http://127.0.0.1:3000"+route,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({doc:f.doc,dir:"rtl",settings}),signal:AbortSignal.timeout(160000)});
     const bytes=Buffer.from(await response.arrayBuffer());
     const obj={status:response.status,ms:Date.now()-start,bytes:bytes.length,headers:Object.fromEntries([...response.headers.entries()].filter(([k])=>k.startsWith("x-pdf-")||k.startsWith("x-phase1d-"))),error:null,pages:null,sizePt:null};
-    if(response.ok()){
+    if(response.ok){
       const file=path.join(out,f.id+"-"+kind+".pdf");fs.writeFileSync(file,bytes);
       const pdf=await PDFDocument.load(bytes);obj.pages=pdf.getPageCount();obj.sizePt=pdf.getPages().map(p=>({w:p.getWidth(),h:p.getHeight()}));
     }else{obj.error=bytes.toString("utf8").slice(0,1000)}
