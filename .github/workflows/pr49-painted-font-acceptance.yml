@@ -3,6 +3,8 @@ name: PR49 Chromium Painted Font Acceptance (No Deployment)
 on:
   push:
     branches: [fix/document-studio-docx-fidelity-20261013]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
