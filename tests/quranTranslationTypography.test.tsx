@@ -71,13 +71,13 @@ test("renders a compact Alvi Nastaleeq translator chooser with a separate promin
   expect(trigger.getAttribute("aria-expanded")).toBe("true");
   const options = within(screen.getByRole("listbox")).getAllByRole("option");
   expect(options.map(option => option.textContent?.trim())).toEqual([
-    "علامہ شیخ محسن علی نجفی", "علامہ شیخ صفدر حسین نجفی",
+    "علامہ شیخ محسن علی نجفی", "علامہ سید صفدر حسین نجفی (تفسیر نمونہ)",
   ]);
   expect(options[0].getAttribute("aria-selected")).toBe("true");
   expect(options[1].getAttribute("aria-selected")).toBe("false");
   fireEvent.click(options[1]);
   expect(state.saved).toEqual(["safdar-najfi"]);
-  expect(screen.getByText("ترجمہ: علامہ شیخ صفدر حسین نجفی")).toBeTruthy();
+  expect(screen.getByText("ترجمہ: علامہ سید صفدر حسین نجفی (تفسیر نمونہ)")).toBeTruthy();
   expect(trigger.getAttribute("aria-expanded")).toBe("false");
   expect(screen.queryByRole("listbox")).toBeNull();
 });
