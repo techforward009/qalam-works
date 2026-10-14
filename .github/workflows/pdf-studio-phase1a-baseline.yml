@@ -1,0 +1,50 @@
+name: PDF Studio Phase 1A Baseline (No Deployment)
+on:
+  push:
+    branches: [audit/pdf-studio-phase1a-baseline-20261014]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install exact lockfile
+        run: npm ci
+      - name: Install Chromium and PDF inspection tools
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+      - name: Build unchanged main application code
+        run: npm run build
+      - name: Start local Next.js
+        run: |
+          (npm run start -- -H 127.0.0.1 > /tmp/qalam-pdf-phase1a.log 2>&1 &)
+          for i in $(seq 1 90); do
+            if curl --silent --fail http://127.0.0.1:3000/tools/document-studio -o /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/qalam-pdf-phase1a.log
+          exit 1
+      - name: Generate both PDF pipelines and measure
+        run: node scripts/pdf-phase1a-baseline.cjs
+      - name: Upload comparison evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-studio-phase1a-baseline
+          path: artifacts/pdf-phase1a/
+          if-no-files-found: warn
+      - name: Capture server failure log
+        if: failure()
+        run: cat /tmp/qalam-pdf-phase1a.log || true
