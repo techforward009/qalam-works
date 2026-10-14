@@ -74,8 +74,14 @@ export async function POST(request: NextRequest) {
       }, settings.typography));
       await page.setContent(html, { waitUntil: "load" });
     }
+    if (request.headers.get("x-phase1d-fault") === "arabic-css") {
+      await page.$eval('[data-pdf-font="Digital Khatt Indo-Pak"]', element => {
+        (element as HTMLElement).style.fontFamily = '"Liberation Serif"';
+      });
+    }
     const runtime = await page.evaluate(inspectPdfRuntimeFonts, fontsUsed);
     const urduFonts = await experimentalScriptAwareGuard(page);
+    console.info("[phase1d-cdp]", JSON.stringify(urduFonts.diagnostic.map(d=>({node:d.node,part:d.part,kind:d.kind,codepoints:d.codepoints,expected:d.expected,painted:d.painted,accepted:d.accepted}))));
     if (urduFonts.fallbackRuns > 0) {
       if (!fontsUsed.includes("Noto Nastaliq Urdu")) fontsUsed.push("Noto Nastaliq Urdu");
       fontFallbacks.push({ requested: "Runtime Urdu font", used: "Noto Nastaliq Urdu" });
