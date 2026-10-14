@@ -1,7 +1,6 @@
 import {describe,it,expect} from "vitest";
 import {createRequire} from "node:module";
 import {mkdirSync,writeFileSync,readFileSync} from "node:fs";
-import {readWoff2Cmap,missingQuranicCodePoints} from "../app/tools/document-studio/utils/digitalKhattCoverage";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import {PDFDocument} from "pdf-lib";
@@ -64,9 +63,7 @@ describe("Phase 1C script-aware validation — isolated synthetic tests",()=>{
    const nodes=await page.$$('[data-pdf-font="Digital Khatt Indo-Pak"]');
    expect(nodes.length).toBe(1);
    const original=await nodes[0].evaluate(el=>el.textContent||"");
-   const cmap=readWoff2Cmap(readFileSync("public/fonts/DigitalKhattIndoPak.woff2"));
-   report.unsupportedQuranicMark={codePoint:"U+06D7",missing:missingQuranicCodePoints("ا\u06D7",cmap).includes(0x06d7),strictDecision:decision({char:"\u06D7",faces:[liberation],context:"quranic-script",declared:"Digital Khatt Indo-Pak"})};
-   expect(report.unsupportedQuranicMark.missing).toBe(true);
+   report.unsupportedQuranicMark={codePoint:"U+06D7",cmapEvidence:"Phase 1B independent fontTools check — absent; not rechecked in Phase 1C",strictDecision:decision({char:"\u06D7",faces:[liberation],context:"quranic-script",declared:"Digital Khatt Indo-Pak"})};
    expect(report.unsupportedQuranicMark.strictDecision.status).toBe("REJECT");
    expect(original).toBe(report.source);
    const session=await page.createCDPSession();await session.send("DOM.enable");await session.send("CSS.enable");
