@@ -64,14 +64,14 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
           {" · "}{ur ? work.authorUr : work.authorEn}
         </p>
         {nemunehText ? <div className="mt-4" dir="rtl" lang="ur">
-          {remote?.heading ? <h2 className="mb-3 font-urdu text-[23px] font-normal" style={{ fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif', lineHeight: 2.2 }}>{remote.heading}</h2> : null}
+          {remote?.heading ? <h2 className="mb-3 text-[25px] font-normal" style={{ fontFamily: '"Qalam Tafsir Mehr", "Noto Nastaliq Urdu", serif', lineHeight: 2.15 }}>{remote.heading}</h2> : null}
           <div
-            className="whitespace-pre-wrap break-words font-urdu font-normal"
+            className="whitespace-pre-wrap break-words font-normal"
             data-tafsir-urdu-text="true"
             style={{
-              fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif',
-              fontSize: "21px",
-              lineHeight: 2.4,
+              fontFamily: '"Qalam Tafsir Mehr", "Noto Nastaliq Urdu", serif',
+              fontSize: "22px",
+              lineHeight: 2.2,
             }}
           >
             {typographyRuns.map((run, index) =>
@@ -96,6 +96,14 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
           </div>
           <p className="mt-3 text-xs text-[#82775f]">
             {ur ? "تفسیر نمونہ، اردو برقی متن — اصل مطبوعہ نسخے سے مکمل مقابلہ باقی ہے۔" : "Tafsir Namoona, Urdu electronic text — full print collation pending."}
+          </p>
+          <p className="mt-2 text-xs text-[#82775f]">
+            {ur ? "اردو فونٹ: " : "Urdu font: "}
+            <a href="https://mehrtype.com/product/mehr-nastaliq-web/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+              {ur ? "مہر نستعلیق ویب" : "Mehr Nastaliq Web"}
+            </a>
+            {" — "}
+            {ur ? "خطاط نصراللہ مہر، فونٹ ساز محمد ذیشان نثار (CC BY-SA)" : "Nasrullah Mehr / Muhammad Zeeshan Nasar (CC BY-SA)"}
           </p>
         </div> : entry ? <div className="mt-4" dir={entry.work.direction} lang={entry.work.language}>
           <p className="font-naskh whitespace-pre-line text-lg leading-loose">{entry.text}</p>
