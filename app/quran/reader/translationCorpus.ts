@@ -3,6 +3,7 @@ import type { QuranAyah } from "../../tools/arabic-diacritics/quran/types";
 
 export type QuranTranslationLocale = "ur" | "en";
 export type QuranTranslationPair = readonly [urdu: string, english: string];
+export type QuranUrduTranslator = "mohsin-najfi" | "safdar-najfi";
 
 export const QURAN_TRANSLATION_AYAH_COUNT = 6236;
 export const QURAN_TRANSLATION_CHUNK_SIZE = 256;
