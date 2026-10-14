@@ -101,4 +101,38 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
       expect(source).toContain('window.matchMedia("(max-width: 639px)").matches');
     }
   });
+
+  it("uses black for all elements in both Surah information boxes", () => {
+    for (const [css, selectors] of [
+      [styles, [".quran-surah-header", ".quran-surah-place,", ".quran-banner-name", ".quran-banner-number", ".quran-banner-digit"]],
+      [digitalCss, [".surahHeader", ".surahPlace,", ".surahName", ".bannerNumber", ".bannerDigit"]],
+    ] as const) {
+      for (const selector of selectors) {
+        const from = css.indexOf(selector);
+        expect(from, selector).toBeGreaterThanOrEqual(0);
+        expect(css.slice(from, css.indexOf("}", from))).toContain("color: #000;");
+      }
+    }
+  });
+
+  it("keeps original outer running-head positions and vertically centers page arrows and number", () => {
+    expect(styles).toMatch(/\.quran-page-meta-juz\s*\{[^}]*justify-content:\s*flex-start/s);
+    expect(styles).toMatch(/\.quran-page-meta-surah\s*\{[^}]*justify-content:\s*flex-end/s);
+    expect(styles).not.toMatch(/\.quran-page-meta-item\s*>\s*\*\s*\{\s*transform:/s);
+    expect(styles).toMatch(/\.quran-page-meta-page-number\s*\{[^}]*display:\s*inline-flex;[^}]*align-items:\s*center;[^}]*justify-content:\s*center/s);
+    expect(styles).toMatch(/\.quran-page-arrow\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*center/s);
+    expect(conventional).toContain('className="quran-page-meta-page-number"');
+    expect(digital).toContain('className="quran-page-meta-page-number"');
+  });
+
+  it("shows only the active interface language on larger accessible reader tabs", () => {
+    for (const label of ["copy.quranTab", "copy.translationTab", "copy.transliterationTab", "copy.tafsirTab"]) {
+      expect(conventional).toContain(label);
+    }
+    expect(conventional).toContain('] as const).map(([value, label]) => (');
+    expect(conventional).not.toContain('quran-reader-tab-alt');
+    expect(styles).not.toContain('.quran-reader-tab-alt');
+    expect(styles).toMatch(/\.quran-reader-tab\s*\{[^}]*font-size:\s*16px/s);
+    expect(styles).toMatch(/\.quran-view-tabs\[lang="ur"\]\s+\.quran-reader-tab\s*\{[^}]*font-size:\s*18px/s);
+  });
 });
