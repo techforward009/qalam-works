@@ -41,6 +41,8 @@ jobs:
           assert 0x06D7 not in values, "Unsupported mark unexpectedly present"
           print("PHASE1D_FONT_CMAP", json.dumps({"glyphs":len(values),"U+002E":0x002E in values,"U+06D7":0x06D7 in values}))
           PY
+      - name: Run existing repository Vitest regression suite
+        run: npm test
       - name: Build unchanged application with disabled-unless-opted-in experimental route
         run: npm run build
       - name: Start app only on runner loopback
