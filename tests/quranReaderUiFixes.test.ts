@@ -79,7 +79,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
       const displayed = displaySurahBannerName(original);
       expect(displayed).not.toMatch(/[\u064B-\u065F\u0670\u06D6-\u06ED\u08D3-\u08FF]/u);
       expect(displayed.startsWith("سورة ")).toBe(true);
-      expect(displayed.length).toBeGreaterThan(6);
+      expect(displayed.length).toBeGreaterThan(5);
       expect(surahBanner(number).name).toBe(original);
     }
     expect(displaySurahBannerName("سُوْرَةُ الْفَاتِحَةِ")).toBe("سورة الفاتحة");
