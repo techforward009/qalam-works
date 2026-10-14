@@ -44,19 +44,11 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
   const { language } = useLanguage();
   const ur = language === "ur";
   const [workId, setWorkId] = useState(TAFSIR_WORKS[0]?.id ?? "");
-  const [chosenLanguage, setChosenLanguage] = useState<TafsirLanguage>("ur");
+  const chosenLanguage: TafsirLanguage = ur ? "ur" : "en";
   const [remote, setRemote] = useState<Remote | null>(null);
   const work = tafsirWorkById(workId);
   const entry = work && work.id !== "nemuneh" ? tafsirForAyah(work.id, surah, ayah) : null;
 
-  useEffect(() => {
-    const saved = window.localStorage.getItem("qalam-tafsir-language");
-    if (saved === "ur" || saved === "en") setChosenLanguage(saved);
-  }, []);
-  const selectLanguage = (value: TafsirLanguage) => {
-    setChosenLanguage(value);
-    window.localStorage.setItem("qalam-tafsir-language", value);
-  };
   useEffect(() => {
     if (workId !== "nemuneh") return;
     let active = true;
@@ -95,17 +87,6 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
             </option>)}
           </select>
         </label>
-        {workId === "nemuneh" && (
-          <label className={"mt-3 block text-sm text-[#5c5344] dark:text-[#c6cdbd] " + (ur ? "font-naskh" : "")}>
-            {ur ? "تفسیر کی زبان" : "Commentary language"}
-            <select className="mt-1 w-full rounded-md border border-[#c6b48a] bg-white px-2 py-2 text-sm text-[#243024] dark:bg-[#202720] dark:text-[#e4eee4]"
-              value={chosenLanguage} aria-label={ur ? "تفسیر کی زبان" : "Commentary language"}
-              onChange={(event) => selectLanguage(event.target.value as TafsirLanguage)}>
-              <option value="ur">اردو — صفدر حسین نجفی</option>
-              <option value="en">English — Tafsir Namoona</option>
-            </select>
-          </label>
-        )}
       </header>
       {work && <div className="mt-4">
         <p className="text-sm text-[#6d624e] dark:text-[#c6cdbd]">
