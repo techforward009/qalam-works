@@ -11,6 +11,8 @@ vi.mock("../app/quran/reader/translationCorpus", () => ({
     ur: { translatorUr: "علامہ شیخ محسن علی نجفی" },
     en: { translatorEn: "Ali Quli Qara'i" },
   },
+  storedQuranUrduTranslator: () => "mohsin-najfi",
+  saveQuranUrduTranslator: () => {},
   translationRowsForAyahs: async (ayahs: readonly unknown[]) => [
     { ayah: ayahs[0], text: "Translation sample" },
   ],
@@ -50,4 +52,15 @@ test("scales 22px Urdu translation with reader selection without shrinking the 1
   const translation = await screen.findByText("Translation sample");
   expect(translation.parentElement!.parentElement!.parentElement!.style.fontSize).toBe("19px");
   expect(screen.getByText("سورة الفاتحة، آیت ١").className).toContain("text-[14px]");
+});
+
+test("shows Mohsin and Safdar Urdu translator options only in the Urdu view", async () => {
+  state.language = "ur";
+  const { rerender } = render(<QuranTranslationPage ayahs={[{ id: "1:1", surah: 1, ayah: 1, text: "test" }]} selectedSurah={1} selectedAyah={1} scale={1} />);
+  await screen.findByText("Translation sample");
+  const picker = screen.getByLabelText("مترجم منتخب کریں") as HTMLSelectElement;
+  expect(Array.from(picker.options).map(option => option.value)).toEqual(["mohsin-najfi", "safdar-najfi"]);
+  state.language = "en";
+  rerender(<QuranTranslationPage ayahs={[{ id: "1:1", surah: 1, ayah: 1, text: "test" }]} selectedSurah={1} selectedAyah={1} scale={1} />);
+  expect(screen.queryByLabelText("مترجم منتخب کریں")).toBeNull();
 });

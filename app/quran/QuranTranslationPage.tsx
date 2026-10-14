@@ -6,7 +6,10 @@ import { useLanguage } from "../lib/language-context";
 import { easternDigits, surahTitle } from "./reader/metadata";
 import {
   QURAN_READER_TRANSLATION_SOURCES,
+  saveQuranUrduTranslator,
+  storedQuranUrduTranslator,
   translationRowsForAyahs,
+  type QuranUrduTranslator,
 } from "./reader/translationCorpus";
 
 export default function QuranTranslationPage({
@@ -26,12 +29,17 @@ export default function QuranTranslationPage({
   const [rows, setRows] = useState<readonly { ayah: QuranAyah; text: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [urduTranslator, setUrduTranslator] = useState<QuranUrduTranslator>("mohsin-najfi");
+
+  useEffect(() => {
+    setUrduTranslator(storedQuranUrduTranslator());
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setFailed(false);
-    translationRowsForAyahs(ayahs, ur ? "ur" : "en")
+    translationRowsForAyahs(ayahs, ur ? "ur" : "en", urduTranslator)
       .then((next) => {
         if (cancelled) return;
         setRows(next);
@@ -51,7 +59,7 @@ export default function QuranTranslationPage({
     return () => {
       cancelled = true;
     };
-  }, [ayahs, selectedAyah, selectedSurah, ur]);
+  }, [ayahs, selectedAyah, selectedSurah, ur, urduTranslator]);
 
   const source = ur
     ? QURAN_READER_TRANSLATION_SOURCES.ur
@@ -81,8 +89,26 @@ export default function QuranTranslationPage({
           {ur ? "ترجمۂ قرآن" : "Qur'an Translation"}
         </div>
         <div className="mt-1 text-sm text-[#756a50]" style={{ fontFamily: urduHeaderFont, lineHeight: ur ? 2.1 : undefined }}>
-          {ur ? "ترجمہ: " + source.translatorUr : "Translation: " + source.translatorEn}
+          {ur ? "ترجمہ: " + (urduTranslator === "safdar-najfi" ? "علامہ شیخ صفدر حسین نجفی" : source.translatorUr) : "Translation: " + source.translatorEn}
         </div>
+        {ur ? (
+          <label className="mx-auto mt-3 flex w-fit items-center gap-2 text-sm text-[#32422f] dark:text-[#e5eee6]">
+            <span>مترجم منتخب کریں</span>
+            <select
+              aria-label="مترجم منتخب کریں"
+              className="max-w-full rounded border border-[#b9ae90] bg-[#fffef9] px-3 py-1.5 text-[#32422f] dark:border-[#676e60] dark:bg-[#202720] dark:text-[#e5eee6]"
+              value={urduTranslator}
+              onChange={(event) => {
+                const next = event.target.value as QuranUrduTranslator;
+                setUrduTranslator(next);
+                saveQuranUrduTranslator(next);
+              }}
+            >
+              <option value="mohsin-najfi">علامہ شیخ محسن علی نجفی</option>
+              <option value="safdar-najfi">علامہ شیخ صفدر حسین نجفی</option>
+            </select>
+          </label>
+        ) : null}
       </header>
 
       <div
