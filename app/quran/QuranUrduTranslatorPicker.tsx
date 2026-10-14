@@ -6,7 +6,7 @@ import type { QuranUrduTranslator } from "./reader/translationCorpus";
 
 const TRANSLATORS: readonly { id: QuranUrduTranslator; label: string }[] = [
   { id: "mohsin-najfi", label: "علامہ شیخ محسن علی نجفی" },
-  { id: "safdar-najfi", label: "علامہ شیخ صفدر حسین نجفی" },
+  { id: "safdar-najfi", label: "علامہ سید صفدر حسین نجفی (تفسیر نمونہ)" },
 ];
 
 const ALVI_FONT = '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif';
