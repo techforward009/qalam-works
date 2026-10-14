@@ -22,6 +22,7 @@ export default function QuranTranslationPage({
 }) {
   const { language } = useLanguage();
   const ur = language === "ur";
+  const urduHeaderFont = ur ? '"Gulzar", "Noto Nastaliq Urdu", serif' : undefined;
   const [rows, setRows] = useState<readonly { ayah: QuranAyah; text: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -76,10 +77,10 @@ export default function QuranTranslationPage({
       lang={ur ? "ur" : "en"}
     >
       <header className="border-b border-[#c9b98d]/45 pb-4 text-center">
-        <div className={"text-xl font-bold text-[#32422f] " + (ur ? "font-naskh" : "")}>
+        <div className="text-xl font-bold text-[#32422f]" style={{ fontFamily: urduHeaderFont, lineHeight: ur ? 2.1 : undefined }}>
           {ur ? "ترجمۂ قرآن" : "Qur'an Translation"}
         </div>
-        <div className={"mt-1 text-sm text-[#756a50] " + (ur ? "font-naskh" : "")}>
+        <div className="mt-1 text-sm text-[#756a50]" style={{ fontFamily: urduHeaderFont, lineHeight: ur ? 2.1 : undefined }}>
           {ur ? "ترجمہ: " + source.translatorUr : "Translation: " + source.translatorEn}
         </div>
       </header>
@@ -88,7 +89,7 @@ export default function QuranTranslationPage({
         className={"mt-4 flex-1 " + (ur ? "font-naskh" : "")}
         style={{
           fontFamily: ur ? '"Qalam Quran Jameel", "Noto Nastaliq Urdu", serif' : undefined,
-          fontSize: Math.round((ur ? 20 : 17) * scale) + "px",
+          fontSize: Math.round((ur ? 22 : 17) * scale) + "px",
           lineHeight: ur ? 2.3 : 2,
         }}
       >
@@ -109,7 +110,10 @@ export default function QuranTranslationPage({
                   id={"translation-ayah-" + ayah.surah + "-" + ayah.ayah}
                   className="quran-translation-card rounded-lg px-3 py-3 transition-colors"
                 >
-                  <div className="quran-translation-label mb-1 text-[12px] font-bold">
+                  <div
+                    className={"quran-translation-label mb-1 font-bold " + (ur ? "text-[14px]" : "text-[12px]")}
+                    style={ur ? { fontFamily: 'var(--font-amiri), "Amiri", "Noto Naskh Arabic", serif', lineHeight: 1.8 } : undefined}
+                  >
                     {ur
                       ? surahTitle(ayah.surah) + "، آیت " + easternDigits(ayah.ayah)
                       : "Surah " + ayah.surah + ", Ayah " + ayah.ayah}
