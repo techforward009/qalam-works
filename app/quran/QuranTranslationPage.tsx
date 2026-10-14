@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
 import { easternDigits, surahTitle } from "./reader/metadata";
+import QuranUrduTranslatorPicker from "./QuranUrduTranslatorPicker";
 import {
   QURAN_READER_TRANSLATION_SOURCES,
   saveQuranUrduTranslator,
@@ -84,30 +85,21 @@ export default function QuranTranslationPage({
       dir={ur ? "rtl" : "ltr"}
       lang={ur ? "ur" : "en"}
     >
-      <header className="border-b border-[#c9b98d]/45 pb-4 text-center">
+      <header className="relative z-20 border-b border-[#c9b98d]/45 pb-4 text-center">
         <div className="text-xl font-bold text-[#32422f]" style={{ fontFamily: urduHeaderFont, lineHeight: ur ? 2.1 : undefined }}>
           {ur ? "ترجمۂ قرآن" : "Qur'an Translation"}
         </div>
         <div className="mt-1 text-sm text-[#756a50]" style={{ fontFamily: urduHeaderFont, lineHeight: ur ? 2.1 : undefined }}>
-          {ur ? "ترجمہ: " + (urduTranslator === "safdar-najfi" ? "علامہ شیخ صفدر حسین نجفی" : source.translatorUr) : "Translation: " + source.translatorEn}
+          {ur ? "ترجمہ: " + (urduTranslator === "safdar-najfi" ? "علامہ سید صفدر حسین نجفی (تفسیر نمونہ)" : source.translatorUr) : "Translation: " + source.translatorEn}
         </div>
         {ur ? (
-          <label className="mx-auto mt-3 flex w-fit items-center gap-2 text-sm text-[#32422f] dark:text-[#e5eee6]">
-            <span>مترجم منتخب کریں</span>
-            <select
-              aria-label="مترجم منتخب کریں"
-              className="max-w-full rounded border border-[#b9ae90] bg-[#fffef9] px-3 py-1.5 text-[#32422f] dark:border-[#676e60] dark:bg-[#202720] dark:text-[#e5eee6]"
-              value={urduTranslator}
-              onChange={(event) => {
-                const next = event.target.value as QuranUrduTranslator;
-                setUrduTranslator(next);
-                saveQuranUrduTranslator(next);
-              }}
-            >
-              <option value="mohsin-najfi">علامہ شیخ محسن علی نجفی</option>
-              <option value="safdar-najfi">علامہ شیخ صفدر حسین نجفی</option>
-            </select>
-          </label>
+          <QuranUrduTranslatorPicker
+            value={urduTranslator}
+            onChange={(next) => {
+              setUrduTranslator(next);
+              saveQuranUrduTranslator(next);
+            }}
+          />
         ) : null}
       </header>
 
