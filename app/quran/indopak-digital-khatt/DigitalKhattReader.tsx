@@ -488,9 +488,9 @@ export default function DigitalKhattReader({
                           <span className={styles.surahHeader} dir="rtl">
                             <span className={styles.surahPlace}>{banner?.place}</span>
                             <span className={styles.surahName}>
-                              <span className={styles.bannerDigit}>{banner?.surahNumber}</span>
+                              <bdi dir="ltr" className={styles.bannerNumber}>({banner?.surahNumber})</bdi>
                               <span>{banner?.name}</span>
-                              <span className={styles.bannerDigit}>{banner?.revealed}</span>
+                              <bdi dir="ltr" className={styles.bannerNumber}>({banner?.revealed})</bdi>
                             </span>
                             <span className={styles.surahCount}>
                               <span>آیات</span>
