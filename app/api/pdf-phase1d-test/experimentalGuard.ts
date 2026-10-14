@@ -1,5 +1,5 @@
 import type { Page } from "puppeteer-core";
-import {guardPdfUrduFonts} from "../tools/document-studio/utils/pdfUrduFontGuard";
+import {guardPdfUrduFonts} from "../../tools/document-studio/utils/pdfUrduFontGuard";
 
 /** Phase 1D laboratory-only. Never import from production routes. */
 export async function experimentalScriptAwareGuard(page: Page) {
