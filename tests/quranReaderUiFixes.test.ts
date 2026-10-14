@@ -129,7 +129,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     for (const label of ["copy.quranTab", "copy.translationTab", "copy.transliterationTab", "copy.tafsirTab"]) {
       expect(conventional).toContain(label);
     }
-    expect(conventional).toContain('] as const).map(([value, label]) => (');
+    expect(conventional).toContain('] as const).filter(([value]) => language !== "ur" || value !== "transliteration").map(([value, label]) => (');
     expect(conventional).not.toContain('quran-reader-tab-alt');
     expect(styles).not.toContain('.quran-reader-tab-alt');
     expect(styles).toMatch(/\.quran-reader-tab\s*\{[^}]*font-size:\s*16px/s);
