@@ -26,3 +26,12 @@ The Arabic Quran corpus, Quran font, punctuation and DOCX exporter are not chang
 ## Release update (2026-10-13)
 
 The one-time authenticated import route was removed before merge after its upload attempt was blocked. The Blob has **not** been uploaded. The final app can ship with the feature flag off; content availability must not be claimed. The compressed v9 corpus is preserved in the project owner's ChatGPT Library, not committed to GitHub.
+
+## Preview restoration update (2026-10-14)
+
+- The local v9 asset is present in the project owner's ChatGPT Library. Integrity rechecked on 2026-10-14: 6,619,362 compressed bytes, SHA256 `4645a268a658b61d691fef009c2958f8948414a7529b66cc2d23eee9317e8454`, corpus version 9, 6,236 verse mapping rows.
+- The **private Vercel Blob has since become accessible**, superseding the 2026-10-13 upload blocker above. The existing protected preview deployment on branch `trial/tafsir-alvi-nastaleeq-20261014` returned HTTP 200 and `status: "unicode_apk"` with genuine commentary for `surah=1&ayah=1`; the API checks the exact blob SHA256 before serving its corpus.
+- `QALAM_TAFSIR_NAMOONA_PUBLICATION_APPROVED=true` was confirmed already on the dedicated Alvi preview and on production. For PR #57 only, a **branch-scoped preview** variable of the same key was added after verification to restore text in that preview. This changes neither the production flag nor production deployments.
+- The outdated publisher-permission placeholder was removed from the UI, but the API's explicit approval flag, private storage, hash validation, and unavailable-source fallbacks remain intact. The known print-collation caveat still appears below returned commentary.
+- A successful `1:1` runtime probe does not assert that all 6,236 verse links have been exhaustively inspected against print. The 2026-10-13 review notes remain as historical status.
+

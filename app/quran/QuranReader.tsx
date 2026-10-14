@@ -12,6 +12,7 @@ import QuranTransliterationPage from "./QuranTransliterationPage";
 import QuranTafsirPage from "./QuranTafsirPage";
 import { translationTextForAyahs } from "./reader/translationCorpus";
 import { surahBanner } from "./indopak-digital-khatt/surahBanner";
+import { displaySurahBannerName, initialQuranDisplayScale } from "./reader/readerPresentation";
 import {
   easternDigits,
   juzRunningHead,
@@ -182,10 +183,17 @@ export default function QuranReader({
 
   const [scale, setScale] = useState(1);
   const [readerView, setReaderView] = useState<"quran" | "translation" | "transliteration" | "tafsir">("quran");
+  // English readers retain transliteration; Urdu readers have only Quran, translation and tafsir.
+  const availableViews = (["quran", "translation", "transliteration", "tafsir"] as const)
+    .filter((view) => language !== "ur" || view !== "transliteration");
+  // An English transliteration preference must not surface a hidden Urdu panel.
+  const activeReaderView = language === "ur" && readerView === "transliteration" ? "quran" : readerView;
 
   useLayoutEffect(() => {
-    const stored = Number(window.localStorage.getItem("qalam-quran-display-scale"));
-    if (stored === 0.85 || stored === 1 || stored === 1.12) setScale(stored);
+    setScale(initialQuranDisplayScale(
+      window.localStorage.getItem("qalam-quran-display-scale"),
+      window.matchMedia("(max-width: 639px)").matches,
+    ));
     const storedView = window.localStorage.getItem("qalam-quran-reader-view");
     if (storedView === "quran" || storedView === "translation" || storedView === "transliteration" || storedView === "tafsir") setReaderView(storedView);
   }, []);
@@ -942,10 +950,10 @@ export default function QuranReader({
               dir={interfaceDir}
               lang={interfaceLang}
               role="tablist"
-              aria-label={language === "ur" ? "قرآن، ترجمہ، تلفظ، تفسیر" : "Quran, translation, transliteration, and commentary"}
+              aria-label={language === "ur" ? "قرآن، ترجمہ، تفسیر" : "Quran, translation, transliteration, and commentary"}
               onKeyDown={(event) => {
-                const views = ["quran", "translation", "transliteration", "tafsir"] as const;
-                const index = views.indexOf(readerView);
+                const views = availableViews;
+                const index = views.indexOf(activeReaderView);
                 const step = interfaceDir === "rtl" ? -1 : 1;
                 let next = index;
                 if (event.key === "ArrowRight") next = (index + step + views.length) % views.length;
@@ -959,29 +967,28 @@ export default function QuranReader({
               }}
             >
               {([
-                ["quran", copy.quranTab, language === "ur" ? "Quran" : "قرآن"],
-                ["translation", copy.translationTab, language === "ur" ? "Translation" : "ترجمہ"],
-                ["transliteration", copy.transliterationTab, language === "ur" ? "Transliteration" : "تلفظ"],
-                ["tafsir", copy.tafsirTab, language === "ur" ? "Tafsir" : "تفسیر"],
-              ] as const).map(([value, label, other]) => (
+                ["quran", copy.quranTab],
+                ["translation", copy.translationTab],
+                ["transliteration", copy.transliterationTab],
+                ["tafsir", copy.tafsirTab],
+              ] as const).filter(([value]) => language !== "ur" || value !== "transliteration").map(([value, label]) => (
                 <button
                   key={value}
                   type="button"
                   role="tab"
                   id={"quran-tab-" + value}
-                  aria-selected={readerView === value}
+                  aria-selected={activeReaderView === value}
                   aria-controls="quran-reader-panel"
-                  tabIndex={readerView === value ? 0 : -1}
+                  tabIndex={activeReaderView === value ? 0 : -1}
                   onClick={() => chooseReaderView(value)}
                   className={"quran-reader-tab" + (language === "ur" ? " font-naskh" : "")}
                 >
                   <span>{label}</span>
-                  <span className="quran-reader-tab-alt" lang={language === "ur" ? "en" : "ur"}>{other}</span>
                 </button>
               ))}
             </div>
 
-            <div className="quran-page-shell" id="quran-reader-panel" role="tabpanel" aria-labelledby={"quran-tab-" + readerView}>
+            <div className="quran-page-shell" id="quran-reader-panel" role="tabpanel" aria-labelledby={"quran-tab-" + activeReaderView}>
               <QuranPageMeta
                 surah={
                   surah
@@ -1026,7 +1033,7 @@ export default function QuranReader({
                 }}
               />
 
-              {readerView === "quran" ? (
+              {activeReaderView === "quran" ? (
                 <QuranPageSurface
                   surah={
                     surah
@@ -1079,14 +1086,14 @@ export default function QuranReader({
                     }
                   }}
                 />
-              ) : readerView === "translation" ? (
+              ) : activeReaderView === "translation" ? (
                 <QuranTranslationPage
                   ayahs={ayahs}
                   selectedSurah={surah}
                   selectedAyah={ayah}
                   scale={scale}
                 />
-              ) : readerView === "transliteration" ? (
+              ) : activeReaderView === "transliteration" ? (
                 <QuranTransliterationPage
                   ayahs={ayahs}
                   selectedSurah={surah}
@@ -1794,9 +1801,9 @@ function SurahBand({
     >
       <span className="quran-surah-place">{banner.place}</span>
       <span className="quran-banner-name">
-        <span className="quran-banner-digit">{banner.surahNumber}</span>
-        <span>{banner.name}</span>
-        <span className="quran-banner-digit">{banner.revealed}</span>
+        <bdi dir="ltr" className="quran-banner-number">({banner.surahNumber})</bdi>
+        <span>{displaySurahBannerName(banner.name)}</span>
+        <bdi dir="ltr" className="quran-banner-number">({banner.revealed})</bdi>
       </span>
       <span className="quran-surah-count">
         <span>آیات</span>

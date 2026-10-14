@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { SURAH_NAMES, JUZ_STARTS, easternDigits, juzTitle, surahTitle } from "../reader/metadata";
 import { useLanguage } from "../../lib/language-context";
 import EditionTopBar from "../reader/EditionTopBar";
+import { initialQuranDisplayScale } from "../reader/readerPresentation";
 import { QURAN_READER_COPY } from "../reader/copy";
 import { useQuranKeyboardNavigation } from "../reader/keyboard";
 import { adjacentAyah } from "../reader/model";
@@ -336,9 +337,11 @@ export default function MadinahReader({
     loadQpcHafsPage(page.page).catch(() => undefined);
   }, [page]);
 
-  useEffect(() => {
-    const stored = Number(window.localStorage.getItem("qalam-madinah-display-scale"));
-    if (stored === 0.85 || stored === 1 || stored === 1.12) setScale(stored);
+  useLayoutEffect(() => {
+    setScale(initialQuranDisplayScale(
+      window.localStorage.getItem("qalam-madinah-display-scale"),
+      window.matchMedia("(max-width: 639px)").matches,
+    ));
   }, []);
 
   useQuranKeyboardNavigation({

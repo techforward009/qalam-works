@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../lib/language-context";
 import { surahTitle } from "./reader/metadata";
+import { splitTafsirTypography } from "./reader/tafsirTypography";
 import { TAFSIR_WORKS, tafsirForAyah, tafsirWorkById } from "./reader/tafsirCatalog";
 
 type Remote = {
@@ -32,18 +33,19 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
   }, [workId, surah, ayah]);
 
   const nemunehText = workId === "nemuneh" && remote?.status === "unicode_apk" && remote.text;
+  const typographyRuns = useMemo(() => splitTafsirTypography(nemunehText || ""), [nemunehText]);
   const message = remote?.status === "loading"
     ? (ur ? "تفسیر کھولی جا رہی ہے…" : "Loading commentary…")
     : remote?.status === "print_scan_only"
     ? (ur ? "اس آیت کا اصل مطبوعہ حوالہ مل گیا ہے، مگر قابلِ تلاش اردو عبارت ابھی شامل نہیں۔" : "A verified print reference exists, but searchable Urdu text is not available yet.")
     : remote?.status === "missing_unicode_and_scan"
     ? (ur ? "اس آیت کا اصل اردو ماخذ ابھی دستیاب نہیں۔" : "The original Urdu source for this verse is not available yet.")
-    : remote?.status === "publication_pending"
-    ? (ur ? "تفسیر نمونہ کی اشاعت ناشر کی اجازت کی تصدیق تک مؤخر ہے۔" : "Publication awaits verification of the publisher's permission.")
-    : (ur ? "اس ماخذ کی قابلِ اشاعت عبارت ابھی دستیاب نہیں۔ کوئی تفسیر خود سے نہیں لکھی گئی۔" : "Publishable text for this source is not available yet. No commentary has been generated.");
+    : remote?.status === "publication_pending" || remote?.status === "corpus_not_uploaded"
+    ? (ur ? "تفسیر نمونہ کا اردو متن ابھی اس سرور پر فعال نہیں ہوا۔" : "The Tafsir Namoona source has not yet been activated on this server.")
+    : (ur ? "اس آیت کی اصل تفسیری عبارت فی الحال دستیاب نہیں۔" : "The original commentary for this verse is currently unavailable.");
 
   return (
-    <article className="quran-page relative flex w-full flex-col overflow-hidden bg-[#fffef9] px-4 py-5 sm:px-10 sm:py-8" dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}>
+    <article className="quran-page quran-reader-paper relative flex w-full flex-col overflow-hidden px-4 py-5 sm:px-10 sm:py-8" dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}>
       <header className="border-b border-[#c9b98d]/45 pb-4">
         <div className={"text-xl font-bold text-[#32422f] " + (ur ? "font-naskh" : "")}>{ur ? "تفسیر" : "Commentary"}</div>
         <label className={"mt-3 block text-sm text-[#5c5344] " + (ur ? "font-naskh" : "")}>
@@ -62,8 +64,36 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
           {" · "}{ur ? work.authorUr : work.authorEn}
         </p>
         {nemunehText ? <div className="mt-4" dir="rtl" lang="ur">
-          {remote?.heading ? <h2 className="mb-3 font-naskh text-lg font-semibold">{remote.heading}</h2> : null}
-          <p className="whitespace-pre-line font-naskh text-lg leading-loose">{remote?.text}</p>
+          {remote?.heading ? <h2 className="mb-3 text-[24px] font-normal" style={{ fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif', lineHeight: 2.2 }}>{remote.heading}</h2> : null}
+          <div
+            className="whitespace-pre-wrap break-words font-normal"
+            data-tafsir-urdu-text="true"
+            style={{
+              fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif',
+              fontSize: "22px",
+              lineHeight: 2.25,
+            }}
+          >
+            {typographyRuns.map((run, index) =>
+              run.kind === "arabic" ? (
+                <span
+                  key={index}
+                  lang="ar"
+                  dir="rtl"
+                  data-tafsir-arabic="true"
+                  className="font-arabic"
+                  style={{
+                    fontFamily: 'var(--font-amiri), "Amiri", "Noto Naskh Arabic", serif',
+                    fontSize: "1.06em",
+                    lineHeight: 1.9,
+                    unicodeBidi: "isolate",
+                  }}
+                >
+                  {run.text}
+                </span>
+              ) : run.text
+            )}
+          </div>
           <p className="mt-3 text-xs text-[#82775f]">
             {ur ? "تفسیر نمونہ، اردو برقی متن — اصل مطبوعہ نسخے سے مکمل مقابلہ باقی ہے۔" : "Tafsir Namoona, Urdu electronic text — full print collation pending."}
           </p>

@@ -24,6 +24,7 @@ import {
 } from "./data";
 import styles from "./reader.module.css";
 import { surahBanner } from "./surahBanner";
+import { displaySurahBannerName, initialQuranDisplayScale } from "../reader/readerPresentation";
 
 const BASMILLAH = "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ";
 const TRAILING_QURAN_MARKS = /[\u0614-\u0617\u06D6-\u06DC\u08D5-\u08DF]+$/u;
@@ -95,8 +96,10 @@ function splitEndingMarks(text: string): RenderText {
 
 function readDisplayScale(): number {
   if (typeof window === "undefined") return 1;
-  const stored = Number(window.localStorage.getItem(DISPLAY_SCALE_KEY));
-  return stored === 0.85 || stored === 1 || stored === 1.12 ? stored : 1;
+  return initialQuranDisplayScale(
+    window.localStorage.getItem(DISPLAY_SCALE_KEY),
+    window.matchMedia("(max-width: 639px)").matches,
+  );
 }
 
 export default function DigitalKhattReader({
@@ -488,9 +491,9 @@ export default function DigitalKhattReader({
                           <span className={styles.surahHeader} dir="rtl">
                             <span className={styles.surahPlace}>{banner?.place}</span>
                             <span className={styles.surahName}>
-                              <span className={styles.bannerDigit}>{banner?.surahNumber}</span>
-                              <span>{banner?.name}</span>
-                              <span className={styles.bannerDigit}>{banner?.revealed}</span>
+                              <bdi dir="ltr" className={styles.bannerNumber}>({banner?.surahNumber})</bdi>
+                              <span>{displaySurahBannerName(banner?.name ?? "")}</span>
+                              <bdi dir="ltr" className={styles.bannerNumber}>({banner?.revealed})</bdi>
                             </span>
                             <span className={styles.surahCount}>
                               <span>آیات</span>

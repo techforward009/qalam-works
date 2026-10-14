@@ -54,7 +54,7 @@ export default function QuranTransliterationPage({
 
   return (
     <article
-      className="quran-page relative flex w-full flex-col overflow-hidden bg-[#fffef9] px-4 py-5 sm:px-10 sm:py-8"
+      className="quran-page quran-reader-paper relative flex w-full flex-col overflow-hidden px-4 py-5 sm:px-10 sm:py-8"
       dir="ltr"
       lang="en"
     >
@@ -80,12 +80,11 @@ export default function QuranTransliterationPage({
         ) : (
           <div className="space-y-1">
             {rows.map(({ ayah, text }) => {
-              const active = ayah.surah === selectedSurah && ayah.ayah === selectedAyah;
               return (
                 <section
                   key={ayah.id}
                   id={"transliteration-ayah-" + ayah.surah + "-" + ayah.ayah}
-                  className={"rounded-lg px-3 py-3 " + (active ? "bg-[#f1ead6]" : "")}
+                  className="rounded-lg px-3 py-3"
                 >
                   <div className="mb-1 text-[11px] font-bold text-[#8a6838]" dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}>
                     {ur
