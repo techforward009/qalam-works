@@ -152,7 +152,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
   it("removes the outdated Tafsir publisher message but does not manufacture source text", () => {
     expect(tafsir).not.toContain("تفسیر نمونہ کی اشاعت ناشر کی اجازت کی تصدیق تک مؤخر ہے۔");
     expect(tafsir).toContain('remote?.status === "corpus_not_uploaded"');
-    expect(tafsir).toContain('تفسیر نمونہ کا اردو متن ابھی اس سرور پر فعال نہیں ہوا۔');
+    expect(tafsir).toContain('اس زبان کی تفسیر ابھی ویب سائٹ پر فعال نہیں ہوئی۔');
     expect(tafsir).toContain('remote?.status === "unicode_apk"');
     const route = read("app/api/quran/tafsir-namoona/route.ts");
     expect(route).toContain('QALAM_TAFSIR_NAMOONA_PUBLICATION_APPROVED');
