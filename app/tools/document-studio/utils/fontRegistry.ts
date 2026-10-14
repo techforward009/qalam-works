@@ -15,6 +15,8 @@ export type FontId =
   | "noto-naskh-arabic"
   | "vazirmatn"
   | "sahel"
+  | "b-nazanin"
+  | "al-fars9-badr"
   | "inter"
   | "adobe-arabic"
   | "alvi-nastaleeq"
@@ -451,6 +453,16 @@ export function studioJameelFontFaceCss(): string {
 export function studioGulzarFontFaceCss(): string {
   const url = getFontById("gulzar").pdf.regularFiles?.[0] ?? "";
   return `@font-face{font-family:"Gulzar";src:url("${url}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
+}
+
+/** Dedicated print portal font faces for the two approved Persian families. */
+export function studioPersianFontFaceCss(): string {
+  return (["b-nazanin", "al-fars9-badr"] as const).map((id) => {
+    const font = getFontById(id);
+    const url = font.pdf.regularFiles?.[0];
+    if (!url) throw new Error(`Missing Persian print font: ${id}`);
+    return `@font-face{font-family:"${font.editorFamily}";src:url("${url}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
+  }).join("\n");
 }
 
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */

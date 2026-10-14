@@ -114,6 +114,11 @@ describe("toolbar font selection sync", () => {
     }
     expect(options).toContain("Jameel Noori Nastaleeq");
     expect(options).toContain("Sahel");
+    const persianGroup = groups.find(group => group.label === "فارسی فونٹس");
+    expect(Array.from(persianGroup!.querySelectorAll("option")).map(option => option.value))
+      .toEqual(["Vazirmatn", "Sahel", "B Nazanin", "AlFars9Badr"]);
+    expect(options).toContain("B Nazanin");
+    expect(options).toContain("AlFars9Badr");
     view.rerender(<DocumentToolbar editor={editor as never} dir="ltr" setDir={() => {}} isUr={false} />);
     expect(Array.from(select.querySelectorAll("optgroup")).map(group => group.label)).toEqual([
       "Urdu fonts", "Arabic fonts", "Persian fonts", "English fonts",
@@ -132,7 +137,9 @@ describe("toolbar font selection sync", () => {
     expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").fontFamily).toBe("Noto Nastaliq Urdu");
     cleanup();
     render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr documentSettings={defaultDocumentSettings()} />);
-    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Noto Nastaliq Urdu");
+    // Noto Nastaliq is intentionally hidden from new choices; the native
+    // select must show the Default option rather than a non-existent option.
+    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("");
     expect((document.querySelector("[data-studio-font-size]") as HTMLSelectElement).value).toBe("12");
     expect(document.querySelector("select[data-studio-line-height]")).toBeNull();
     expect(document.querySelector("[data-studio-spacing-button]")).toBeTruthy();
@@ -162,6 +169,8 @@ describe("print portal Jameel identity", () => {
     expect(portal?.innerHTML).toContain("Jameel Noori Nastaleeq");
     expect(portal?.querySelector("style")?.textContent).toContain(JAMEEL_EDITOR_FONT_URL);
     expect(studioJameelFontFaceCss()).toContain(JAMEEL_EDITOR_FONT_URL);
+    expect(portal?.querySelector("style")?.textContent).toContain("BNazanin.woff2");
+    expect(portal?.querySelector("style")?.textContent).toContain("AlFars9Badr.woff2");
     await waitForPrintFonts(portal);
     expect(portal?.getAttribute("data-print-waited-fonts")).toBe("true");
     expect(normalizeEditorFontFamily('"Jameel Noori Nastaleeq", serif')).toBe("Jameel Noori Nastaleeq");

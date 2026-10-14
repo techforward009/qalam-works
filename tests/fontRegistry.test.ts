@@ -70,7 +70,7 @@ describe("fontRegistry", () => {
 
   test("all Blob families are available and Sahel resolves without PDF fallback", () => {
     const fonts = listEditorFonts();
-    expect(fonts).toHaveLength(10);
+    expect(fonts).toHaveLength(12);
     expect(fonts.some(f => f.id === "noto-nastaliq-urdu")).toBe(false);
     expect(resolveEditorFontFamily("Noto Nastaliq Urdu", "rtl").docxFamily).toBe("Noto Nastaliq Urdu");
     expect(fonts.some(f => /Mehr/i.test(f.label))).toBe(false);
@@ -105,6 +105,30 @@ describe("fontRegistry", () => {
     expect(resolveEditorFontFamily("Faiz Lahori Nastaleeq", "rtl").fellBack).toBe(false);
   });
 
+  test("Persian WOFF2 fonts resolve as real editor, DOCX and PDF fonts", () => {
+    for (const [id, family, filename] of [
+      ["b-nazanin", "B Nazanin", "BNazanin.woff2"],
+      ["al-fars9-badr", "AlFars9Badr", "AlFars9Badr.woff2"],
+    ] as const) {
+      const definition = getFontById(id);
+      expect(definition.category).toBe("persian");
+      expect(definition.availability).toBe("public-blob");
+      expect(definition.scripts).toContain("arabic");
+      expect(definition.pdf).toMatchObject({ supported: true, embedded: true, familyName: family });
+      expect(definition.pdf.regularFiles).toEqual([
+        `https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/${filename}`,
+      ]);
+      expect(definition.docx).toMatchObject({ supported: true, familyName: family });
+      expect(definition.fallbackFontId).toBe("vazirmatn");
+      expect(listEditorFonts().find(f => f.id === id)?.editorFamily).toBe(family);
+      const resolution = resolveEditorFontFamily(family, "rtl");
+      expect(resolution.fellBack).toBe(false);
+      expect(resolution.fontId).toBe(id);
+      expect(resolution.pdfFamily).toBe(family);
+      expect(resolution.docxFamily).toBe(family);
+    }
+  });
+
   test("editor list includes main fonts", () => {
     const labels = listEditorFonts().map((f) => f.editorFamily);
     expect(labels).not.toContain("Noto Nastaliq Urdu");
@@ -117,6 +141,34 @@ describe("fontRegistry", () => {
     expect(directionForNode({ attrs: { dir: "ltr" } }, "rtl")).toBe("ltr");
     expect(directionForNode({ attrs: {} }, "rtl")).toBe("rtl");
   });
+});
+
+describe("new Persian font PDF and DOCX fidelity", () => {
+  for (const family of ["B Nazanin", "AlFars9Badr"] as const) {
+    test(`${family} remains selected in PDF HTML and Word mapping`, () => {
+      const source: DocNode = {
+        type: "doc",
+        content: [{
+          type: "paragraph",
+          attrs: { dir: "rtl" },
+          content: [{
+            type: "text",
+            text: "این متن فارسی برای آزمایش قلم است.",
+            marks: [{ type: "textStyle", attrs: { fontFamily: family, fontSize: "16pt" } }],
+          }],
+        }],
+      };
+      expect(requiredPdfEmbedFonts(source, "rtl").map(f => f.pdf.familyName)).toContain(family);
+      const pdf = buildPdfHtml(source, "rtl", {
+        faces: [face(family), face("Noto Nastaliq Urdu"), face("Inter")],
+      });
+      expect(pdf.fontsUsed).toContain(family);
+      expect(pdf.fontFallbacks.some(f => f.requested === family)).toBe(false);
+      expect(pdf.html).toContain(`font-family:"${family}"`);
+      expect(pdf.html).toContain("این متن فارسی برای آزمایش قلم است.");
+      expect(resolveEditorFontFamily(family, "rtl").docxFamily).toBe(family);
+    });
+  }
 });
 
 describe("buildPdfHtml typography", () => {
