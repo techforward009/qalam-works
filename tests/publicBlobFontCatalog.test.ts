@@ -13,7 +13,7 @@ describe("Document Studio public Blob font catalogue", () => {
   test("contains 18 Blob assets including legacy Faiz, organized into 16 font families", () => {
     expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(18);
     expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(16);
-    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(16);
+    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(18);
   });
 
   test("maps Gulzar to the user-supplied Vercel Blob font and retains Faiz only for legacy documents", () => {
