@@ -143,6 +143,34 @@ describe("fontRegistry", () => {
   });
 });
 
+describe("new Persian font PDF and DOCX fidelity", () => {
+  for (const family of ["B Nazanin", "AlFars9Badr"] as const) {
+    test(`${family} remains selected in PDF HTML and Word mapping`, () => {
+      const source: DocNode = {
+        type: "doc",
+        content: [{
+          type: "paragraph",
+          attrs: { dir: "rtl" },
+          content: [{
+            type: "text",
+            text: "این متن فارسی برای آزمایش قلم است.",
+            marks: [{ type: "textStyle", attrs: { fontFamily: family, fontSize: "16pt" } }],
+          }],
+        }],
+      };
+      expect(requiredPdfEmbedFonts(source, "rtl").map(f => f.pdf.familyName)).toContain(family);
+      const pdf = buildPdfHtml(source, "rtl", {
+        faces: [face(family), face("Noto Nastaliq Urdu"), face("Inter")],
+      });
+      expect(pdf.fontsUsed).toContain(family);
+      expect(pdf.fontFallbacks.some(f => f.requested === family)).toBe(false);
+      expect(pdf.html).toContain(`font-family:"${family}"`);
+      expect(pdf.html).toContain("این متن فارسی برای آزمایش قلم است.");
+      expect(resolveEditorFontFamily(family, "rtl").docxFamily).toBe(family);
+    });
+  }
+});
+
 describe("buildPdfHtml typography", () => {
   const multi: DocNode = {
     type: "doc",
