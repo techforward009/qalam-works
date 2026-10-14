@@ -100,7 +100,8 @@ describe("Phase 1C script-aware validation — isolated synthetic tests",()=>{
    expect(rejected).toEqual([]);
    expect(report.classified.periodRuns).toBe(23);
    // Distinct negative control: deliberately force an Arabic glyph into Liberation Serif.
-   const arabicRun=page.locator('[data-classification="quranic-script"]').first();
+   const arabicRun=await page.$('[data-classification="quranic-script"]');
+   if(!arabicRun)throw Error("missing Arabic script run");
    await arabicRun.evaluate(el=>(el as HTMLElement).style.fontFamily='"Liberation Serif"');
    const negativeFaces=await getFont('[data-classification="quranic-script"]');
    const fallback=negativeFaces.some(f=>!/digitalkhatt/i.test(f.familyName.replace(/[^a-z0-9]/gi,""))&&f.glyphCount>0);
