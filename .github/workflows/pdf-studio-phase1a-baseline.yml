@@ -2,6 +2,8 @@ name: PDF Studio Phase 1A Baseline (No Deployment)
 on:
   push:
     branches: [audit/pdf-studio-phase1a-baseline-20261014]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
