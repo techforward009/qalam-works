@@ -1,0 +1,64 @@
+name: PDF Studio Phase 1D End-to-End (Test Only)
+on:
+  push:
+    branches: [experiment/pdf-studio-phase1d-e2e-20261014]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      PDF_PHASE1D_TEST_ONLY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked packages, skipping unrelated ONNX post-install binary
+        run: npm ci --ignore-scripts
+      - name: Install Poppler PDF diagnostics
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+      - name: Build unchanged application with disabled-unless-opted-in experimental route
+        run: npm run build
+      - name: Start app only on runner loopback
+        run: |
+          (npm run start -- -H 127.0.0.1 > /tmp/phase1d-server.log 2>&1 &)
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3000/tools/document-studio -o /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/phase1d-server.log
+          exit 1
+      - name: Baseline production versus guarded isolated experimental route
+        run: node scripts/pdf-phase1d-e2e.cjs
+      - name: Embedded fonts, PDF page raster, and text inspection
+        if: always()
+        run: |
+          for p in artifacts/pdf-phase1d/*.pdf; do
+            test -f "$p" || continue
+            pdfinfo "$p" > "$p.info.txt"
+            pdffonts "$p" > "$p.fonts.txt"
+            pdftotext -layout "$p" "$p.txt"
+            pdftoppm -f 1 -l 1 -singlefile -r 96 -png "$p" "$p-firstpage"
+          done
+      - name: Preserve raw Chromium font-diagnostic logs
+        if: always()
+        run: |
+          mkdir -p artifacts/pdf-phase1d
+          cp /tmp/phase1d-server.log artifacts/pdf-phase1d/server-log.txt || true
+      - name: Upload experimental PDF and inspection artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-studio-phase1d-e2e-evidence
+          path: artifacts/pdf-phase1d/
+          if-no-files-found: warn
