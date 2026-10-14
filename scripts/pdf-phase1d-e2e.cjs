@@ -13,6 +13,7 @@ const doc=(content)=>({type:"doc",content});
 const arabic=doc([heading("اِخْتِبَارُ الْكِتَابَةِ الْعَرَبِيَّةِ","Amiri"),para(a.repeat(35),"Amiri",{textAlign:"justify",lineHeight:1.8}),para(a.repeat(23),"Digital Khatt Indo-Pak",{textAlign:"right",lineHeight:2})]);
 const fixtures=[
  {id:"original-arabic-23-full-stops",doc:arabic,required:true,production:500,experimental:200,periods:23},
+ {id:"arabic-deliberately-substituted",doc:doc([para("هٰذَا نَصٌّ عَرَبِيٌّ. ","Digital Khatt Indo-Pak")]),required:true,experimental:500,fault:"arabic-css"},
  {id:"arabic-missing-quranic-mark",doc:doc([para("ا\u06D7 "+a,"Digital Khatt Indo-Pak")]),required:true,production:500,experimental:500},
  {id:"arabic-period-invalid-context",doc:doc([para("ا.ا "+a,"Digital Khatt Indo-Pak")]),required:true,experimental:500},
  {id:"arabic-unapproved-punctuation",doc:doc([para("ا? "+a,"Digital Khatt Indo-Pak")]),required:true,experimental:500},
@@ -31,7 +32,7 @@ function check(id,cond,detail){report.assertions.push({id,pass:!!cond,detail});i
   for(const [route,kind] of [["/api/export-pdf","production"],["/api/pdf-phase1d-test","experimental"]]){
    try{
     const start=Date.now();
-    const response=await fetch("http://127.0.0.1:3000"+route,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({doc:f.doc,dir:"rtl",settings}),signal:AbortSignal.timeout(160000)});
+    const response=await fetch("http://127.0.0.1:3000"+route,{method:"POST",headers:{"content-type":"application/json",...(kind==="experimental"&&f.fault?{"x-phase1d-fault":f.fault}:{})},body:JSON.stringify({doc:f.doc,dir:"rtl",settings}),signal:AbortSignal.timeout(160000)});
     const bytes=Buffer.from(await response.arrayBuffer());
     const obj={status:response.status,ms:Date.now()-start,bytes:bytes.length,headers:Object.fromEntries([...response.headers.entries()].filter(([k])=>k.startsWith("x-pdf-")||k.startsWith("x-phase1d-"))),error:null,pages:null,sizePt:null};
     if(response.ok){
