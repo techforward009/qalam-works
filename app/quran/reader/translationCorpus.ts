@@ -130,7 +130,7 @@ export async function translationRowsForAyahs(
       .filter((item): item is number => item !== null),
   )];
   const useSafdar = locale === "ur" && urduTranslator === "safdar-najfi";
-  await Promise.all(chunkIds.map(useSafdar ? loadSafdarChunk : loadChunk));
+  await Promise.all(chunkIds.map((chunk) => useSafdar ? loadSafdarChunk(chunk) : loadChunk(chunk)));
   const rows = await Promise.all(
     ayahs.map(async (ayah) => ({
       ayah,
