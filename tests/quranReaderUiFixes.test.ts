@@ -135,4 +135,28 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(styles).toMatch(/\.quran-reader-tab\s*\{[^}]*font-size:\s*16px/s);
     expect(styles).toMatch(/\.quran-view-tabs\[lang="ur"\]\s+\.quran-reader-tab\s*\{[^}]*font-size:\s*18px/s);
   });
+
+  it("hides the transliteration tab in Urdu but preserves it in English and keyboard navigation", () => {
+    expect(conventional).toContain('language !== "ur" || value !== "transliteration"');
+    expect(conventional).toContain('language !== "ur" || view !== "transliteration"');
+    expect(conventional).toContain('const activeReaderView = language === "ur" && readerView === "transliteration" ? "quran" : readerView');
+    expect(conventional).toContain('const index = views.indexOf(activeReaderView)');
+    expect(conventional).toContain('aria-selected={activeReaderView === value}');
+    expect(conventional).toContain('aria-labelledby={"quran-tab-" + activeReaderView}');
+    expect(conventional).toContain('["tafsir", copy.tafsirTab]');
+    expect(conventional).toContain('["transliteration", copy.transliterationTab]');
+    expect(conventional).toContain('language === "ur" ? "قرآن، ترجمہ، تفسیر"');
+    expect(conventional).toContain('onClick={() => chooseReaderView(value)}');
+  });
+
+  it("removes the outdated Tafsir publisher message but does not manufacture source text", () => {
+    expect(tafsir).not.toContain("تفسیر نمونہ کی اشاعت ناشر کی اجازت کی تصدیق تک مؤخر ہے۔");
+    expect(tafsir).toContain('remote?.status === "corpus_not_uploaded"');
+    expect(tafsir).toContain('تفسیر نمونہ کا اردو متن ابھی اس سرور پر فعال نہیں ہوا۔');
+    expect(tafsir).toContain('remote?.status === "unicode_apk"');
+    const route = read("app/api/quran/tafsir-namoona/route.ts");
+    expect(route).toContain('QALAM_TAFSIR_NAMOONA_PUBLICATION_APPROVED');
+    expect(route).toContain('status: "corpus_not_uploaded"');
+    expect(route).toContain('status: "unicode_apk"');
+  });
 });
