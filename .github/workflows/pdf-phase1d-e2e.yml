@@ -27,6 +27,20 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y poppler-utils
+      - name: Generate test-only actual Digital Khatt cmap from WOFF2
+        run: |
+          python3 -m pip install --break-system-packages fonttools brotli
+          python3 - <<'PY'
+          import json
+          from fontTools.ttLib import TTFont
+          font=TTFont("public/fonts/DigitalKhattIndoPak.woff2")
+          values=sorted(set().union(*(set(t.cmap.keys()) for t in font["cmap"].tables if t.isUnicode())))
+          with open("public/phase1d-digital-cmap.json","w") as f: json.dump(values,f)
+          assert 0x002E not in values, "U+002E unexpectedly present"
+          assert 0x064E in values and 0x0627 in values, "Arabic coverage missing"
+          assert 0x06D7 not in values, "Unsupported mark unexpectedly present"
+          print("PHASE1D_FONT_CMAP", json.dumps({"glyphs":len(values),"U+002E":0x002E in values,"U+06D7":0x06D7 in values}))
+          PY
       - name: Build unchanged application with disabled-unless-opted-in experimental route
         run: npm run build
       - name: Start app only on runner loopback
