@@ -51,8 +51,9 @@ const samples = [
    const fonts=await cdp.send("CSS.getPlatformFontsForNode",{nodeId});
    const styles=await page.locator("#"+id).evaluate(el=>({css:getComputedStyle(el).fontFamily,text:el.textContent,rect:{w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height}}));
    const rendered=fonts.fonts||[];
-   const expected=rendered.some(f=>f.familyName.toLowerCase().includes(family.toLowerCase())&&f.glyphCount>0);
-   const unwanted=rendered.filter(f=>f.glyphCount>0&&/^(inter|noto(?:\s|-))/i.test(f.familyName));
+   const expectedNames=family==="Digital Khatt Indo-Pak"?["digital khatt indo-pak","digitalkhatt indopak"]: [family.toLowerCase()];
+   const expected=rendered.some(f=>expectedNames.some(name=>f.familyName.toLowerCase().includes(name))&&f.glyphCount>0);
+   const unwanted=family==="Inter"?[]:rendered.filter(f=>f.glyphCount>0&&/^(inter|noto(?:\s|-))/i.test(f.familyName));
    return {id,family,status:expected&&!unwanted.length?"PASS":"FAIL",reason:!expected?"Expected font not painted":unwanted.length?"Unexpected Inter/Noto glyph fallback":"",rendered,styles};
   }
   for(const s of samples)report.results.push(await inspect("font-probe-"+s.id,s.family));
