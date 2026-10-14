@@ -1444,7 +1444,7 @@ html.dark .quran-page-shell > .quran-outer-page-nav button:hover:not(:disabled) 
 .quran-reader-paper {
   color-scheme: light;
   color: #221d16 !important;
-  background: #fbf7ea !important;
+  /* Preserve the original ornamental border-box background on .quran-page. */
 }
 .quran-reader-paper .quran-translation-card {
   color: #221d16;
