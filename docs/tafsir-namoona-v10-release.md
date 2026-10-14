@@ -23,7 +23,7 @@ Preserve existing `qalam/tafsir-namoona/urdu-v9.json.br` and the v9 production d
 
 1. Obtain or confirm rights for **each** Urdu and English commentary source, including public web distribution and attribution. The old Urdu publication flag does not automatically authorize English publication.
 2. Run `python tests/test_tafsir_v10_corpus.py` with the private package files in `private-corpus/`, or change the paths to the unzipped private corpus directory. Verify checksums against `manifest.json`.
-3. Upload both `.br` assets as **private** Vercel Blob objects at exactly the paths above. Confirm the private store is linked and `BLOB_READ_WRITE_TOKEN` is set for the target project. Do not print or commit the token.
+3. Upload both `.br` assets as **private** Vercel Blob objects in the project-linked **`qalam-research`** store (`QALAM_RESEARCH_STORE_ID`), at exactly the paths above. The v10 API uses Vercel OIDC to access this store. Do not place these v10 objects in the separate `qalam-private-fonts` store used by the legacy v9 API, and do not print or commit any token.
 4. Create a new GitHub feature branch (not `main`); apply the two source-file overlays. Run the repository's existing tests, typecheck, build, and Quran/Tafsir integration tests.
 5. On branch-specific **Preview** environment only: set `QALAM_TAFSIR_NAMOONA_RELEASE=v10`; maintain `QALAM_TAFSIR_NAMOONA_PUBLICATION_APPROVED=true` only with verified authorization. To preview English content also set `QALAM_TAFSIR_NAMOONA_EN_PUBLICATION_APPROVED=true` after verifying rights.
 6. Verify API calls for 1:1, 2:241, 2:255, 29:67, 47:36-38, 82:15-19 and 114:6 in both languages. `47:36-38` and `82:15-19` have unavailable English-source commentary; UI must be explicit rather than claiming full coverage.
@@ -37,3 +37,11 @@ Set `QALAM_TAFSIR_NAMOONA_RELEASE=v9` (or unset it) and redeploy the last passin
 ## Editorial and release constraints
 
 This integration resolves internal cross-references and marks gaps; it is not full print collation. The Urdu source uses two fallback entries from the existing v9 archive. Eight English verse links have no full new English text and return `source_unavailable` (47:36–38 and 82:15–19). The English source is an independent editorial corpus, not a guaranteed identical English edition of the Urdu printed book.
+## Verified private-store fix and Preview acceptance — 14 October 2026
+
+- Both objects were uploaded to **qalam-research**, not the default legacy `BLOB_READ_WRITE_TOKEN` store. The source reader was corrected on `feature/tafsir-namoona-v10` to use `QALAM_RESEARCH_STORE_ID` and Vercel OIDC for v10 only. The existing v9 lookup and checksum remain unchanged.
+- The two source files were independently checked against the pinned SHA-256 values above: 6,236 verse keys in each, 1,762 Urdu entries, 1,761 English entries.
+- Preview deployment `dpl_63JvCHaVqGnZc5oh2TMGHPcouwHr` built READY at commit `bb783867c79abbd52ae0038fc76a4d3bb47f74ec`.
+- Preview HTTP 200 and `version: 10` confirmed for Urdu and English verses 1:1, 2:241, 2:255, 29:67, 114:6. English missing-source checks 47:36 and 82:19 return `source_unavailable` without invented commentary.
+- Existing production v9 API still returns HTTP 200; no release or merge has occurred in this check.
+- **Release hold:** independent authorization/attribution for both Urdu and English tafsir texts is not recorded as verified, and browser screenshot acceptance remains open. Do not merge/publish until the owner explicitly confirms permissions for both texts and preview UI is accepted.
