@@ -12,6 +12,7 @@ import QuranTransliterationPage from "./QuranTransliterationPage";
 import QuranTafsirPage from "./QuranTafsirPage";
 import { translationTextForAyahs } from "./reader/translationCorpus";
 import { surahBanner } from "./indopak-digital-khatt/surahBanner";
+import { displaySurahBannerName, initialQuranDisplayScale } from "./reader/readerPresentation";
 import {
   easternDigits,
   juzRunningHead,
@@ -184,8 +185,10 @@ export default function QuranReader({
   const [readerView, setReaderView] = useState<"quran" | "translation" | "transliteration" | "tafsir">("quran");
 
   useLayoutEffect(() => {
-    const stored = Number(window.localStorage.getItem("qalam-quran-display-scale"));
-    if (stored === 0.85 || stored === 1 || stored === 1.12) setScale(stored);
+    setScale(initialQuranDisplayScale(
+      window.localStorage.getItem("qalam-quran-display-scale"),
+      window.matchMedia("(max-width: 639px)").matches,
+    ));
     const storedView = window.localStorage.getItem("qalam-quran-reader-view");
     if (storedView === "quran" || storedView === "translation" || storedView === "transliteration" || storedView === "tafsir") setReaderView(storedView);
   }, []);
@@ -1795,7 +1798,7 @@ function SurahBand({
       <span className="quran-surah-place">{banner.place}</span>
       <span className="quran-banner-name">
         <bdi dir="ltr" className="quran-banner-number">({banner.surahNumber})</bdi>
-        <span>{banner.name}</span>
+        <span>{displaySurahBannerName(banner.name)}</span>
         <bdi dir="ltr" className="quran-banner-number">({banner.revealed})</bdi>
       </span>
       <span className="quran-surah-count">
