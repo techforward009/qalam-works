@@ -1,4 +1,5 @@
 import { get } from "@vercel/blob";
+import { getVercelOidcToken } from "@vercel/oidc";
 import { createHash } from "node:crypto";
 import { brotliDecompressSync } from "node:zlib";
 import { NextResponse } from "next/server";
@@ -46,13 +47,26 @@ async function loadBlob(paths: readonly string[]): Promise<Buffer | null> {
   }
   return null;
 }
+/** Read v10 only from the already-linked private qalam-research store. Preserve v9's original store. */
+async function loadResearchBlob(path: string): Promise<Buffer | null> {
+  const storeId = process.env.QALAM_RESEARCH_STORE_ID?.trim();
+  if (!storeId) throw new Error("Tafsir research store is not configured");
+  let oidcToken = process.env.VERCEL_OIDC_TOKEN?.trim();
+  if (!oidcToken) oidcToken = (await getVercelOidcToken()).trim();
+  if (!oidcToken) throw new Error("Tafsir research store authorization unavailable");
+  const blob = await get(path, { access: "private", storeId, oidcToken, useCache: false });
+  if (!blob || blob.statusCode !== 200 || !blob.stream) return null;
+  if (blob.blob.pathname !== path) throw new Error("Tafsir source path mismatch");
+  return Buffer.from(await new Response(blob.stream).arrayBuffer());
+}
+
 function checkHash(bytes: Buffer, expected: string): void {
   if (createHash("sha256").update(bytes).digest("hex") !== expected) {
     throw new Error("Tafsir source integrity failure");
   }
 }
 async function loadV10(language: Language): Promise<CorpusV10 | null> {
-  const file = await loadBlob([RELEASE[language].path]);
+  const file = await loadResearchBlob(RELEASE[language].path);
   if (!file) return null;
   checkHash(file, RELEASE[language].digest);
   const corpus = JSON.parse(brotliDecompressSync(file).toString("utf8")) as CorpusV10;
