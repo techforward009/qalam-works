@@ -70,16 +70,16 @@ export default function QuranTranslationPage({
         `}</style>
       ) : null}
     <article
-      className="quran-page relative flex w-full flex-col overflow-hidden bg-[#fffef9] px-4 py-5 sm:px-10 sm:py-8 dark:bg-[#151a16]"
+      className="quran-page quran-reader-paper relative flex w-full flex-col overflow-hidden px-4 py-5 sm:px-10 sm:py-8"
       style={{ minHeight: 760 }}
       dir={ur ? "rtl" : "ltr"}
       lang={ur ? "ur" : "en"}
     >
       <header className="border-b border-[#c9b98d]/45 pb-4 text-center">
-        <div className={"text-xl font-bold text-[#32422f] dark:text-[#e5eee6] " + (ur ? "font-naskh" : "")}>
+        <div className={"text-xl font-bold text-[#32422f] " + (ur ? "font-naskh" : "")}>
           {ur ? "ترجمۂ قرآن" : "Qur'an Translation"}
         </div>
-        <div className={"mt-1 text-sm text-[#756a50] dark:text-[#c7b98f] " + (ur ? "font-naskh" : "")}>
+        <div className={"mt-1 text-sm text-[#756a50] " + (ur ? "font-naskh" : "")}>
           {ur ? "ترجمہ: " + source.translatorUr : "Translation: " + source.translatorEn}
         </div>
       </header>
@@ -103,24 +103,18 @@ export default function QuranTranslationPage({
         ) : (
           <div className="space-y-1">
             {rows.map(({ ayah, text }) => {
-              const isActive = ayah.surah === selectedSurah && ayah.ayah === selectedAyah;
               return (
                 <section
                   key={ayah.id}
                   id={"translation-ayah-" + ayah.surah + "-" + ayah.ayah}
-                  className={
-                    "rounded-lg px-3 py-3 transition-colors " +
-                    (isActive
-                      ? "bg-[#f1ead6] dark:bg-[#293126]"
-                      : "hover:bg-[#f7f3e8] dark:hover:bg-[#202720]")
-                  }
+                  className="quran-translation-card rounded-lg px-3 py-3 transition-colors"
                 >
-                  <div className="mb-1 text-[11px] font-bold text-[#8a6838] dark:text-[#d7bc8a]">
+                  <div className="quran-translation-label mb-1 text-[12px] font-bold">
                     {ur
                       ? surahTitle(ayah.surah) + "، آیت " + easternDigits(ayah.ayah)
                       : "Surah " + ayah.surah + ", Ayah " + ayah.ayah}
                   </div>
-                  <p>{text}</p>
+                  <p className="quran-translation-text">{text}</p>
                 </section>
               );
             })}
@@ -128,7 +122,7 @@ export default function QuranTranslationPage({
         )}
       </div>
 
-      <footer className="mt-5 border-t border-[#c9b98d]/40 pt-3 text-center text-[11px] text-[#82775f] dark:text-[#b9ad8e]">
+      <footer className="mt-5 border-t border-[#c9b98d]/40 pt-3 text-center text-[11px] text-[#766b54]">
         {ur
           ? "عربی متن اور ترجمہ الگ ماخذی تہوں میں محفوظ ہیں۔"
           : "Qur'anic text and translation are kept as separate source layers."}
