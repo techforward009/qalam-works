@@ -1,24 +1,26 @@
 // @vitest-environment happy-dom
 import React from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import QuranTranslationPage from "../app/quran/QuranTranslationPage";
 
-const state = vi.hoisted(() => ({ language: "ur" }));
+const state = vi.hoisted(() => ({ language: "ur", saved: [] as string[], preference: "mohsin-najfi" }));
 vi.mock("../app/lib/language-context", () => ({ useLanguage: () => state }));
 vi.mock("../app/quran/reader/translationCorpus", () => ({
   QURAN_READER_TRANSLATION_SOURCES: {
     ur: { translatorUr: "علامہ شیخ محسن علی نجفی" },
     en: { translatorEn: "Ali Quli Qara'i" },
   },
-  storedQuranUrduTranslator: () => "mohsin-najfi",
-  saveQuranUrduTranslator: () => {},
+  storedQuranUrduTranslator: () => state.preference,
+  saveQuranUrduTranslator: (value: string) => { state.saved.push(value); },
   translationRowsForAyahs: async (ayahs: readonly unknown[]) => [
     { ayah: ayahs[0], text: "Translation sample" },
   ],
 }));
 
 beforeEach(() => {
+  state.preference = "mohsin-najfi";
+  state.saved = [];
   vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
@@ -54,13 +56,47 @@ test("scales 22px Urdu translation with reader selection without shrinking the 1
   expect(screen.getByText("سورة الفاتحة، آیت ١").className).toContain("text-[14px]");
 });
 
-test("shows Mohsin and Safdar Urdu translator options only in the Urdu view", async () => {
+test("renders a compact Alvi Nastaleeq translator chooser with a separate prominent heading", async () => {
   state.language = "ur";
-  const { rerender } = render(<QuranTranslationPage ayahs={[{ id: "1:1", surah: 1, ayah: 1, text: "test" }]} selectedSurah={1} selectedAyah={1} scale={1} />);
+  render(<QuranTranslationPage ayahs={[{ id: "1:1", surah: 1, ayah: 1, text: "test" }]} selectedSurah={1} selectedAyah={1} scale={1} />);
   await screen.findByText("Translation sample");
-  const picker = screen.getByLabelText("مترجم منتخب کریں") as HTMLSelectElement;
-  expect(Array.from(picker.options).map(option => option.value)).toEqual(["mohsin-najfi", "safdar-najfi"]);
+  const picker = document.querySelector("[data-quran-translator-picker]") as HTMLDivElement;
+  expect(picker.style.fontFamily).toContain("Alvi Nastaleeq");
+  expect(picker.querySelector("select")).toBeNull(); // no oversized Android native picker
+  const heading = screen.getByText("مترجم منتخب کریں");
+  expect(heading.closest("button")).toBeNull();
+  const trigger = screen.getByRole("button", { name: /مترجم منتخب کریں/ });
+  expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  fireEvent.click(trigger);
+  expect(trigger.getAttribute("aria-expanded")).toBe("true");
+  const options = within(screen.getByRole("listbox")).getAllByRole("option");
+  expect(options.map(option => option.textContent?.trim())).toEqual([
+    "علامہ شیخ محسن علی نجفی", "علامہ شیخ صفدر حسین نجفی",
+  ]);
+  expect(options[0].getAttribute("aria-selected")).toBe("true");
+  expect(options[1].getAttribute("aria-selected")).toBe("false");
+  fireEvent.click(options[1]);
+  expect(state.saved).toEqual(["safdar-najfi"]);
+  expect(screen.getByText("ترجمہ: علامہ شیخ صفدر حسین نجفی")).toBeTruthy();
+  expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  expect(screen.queryByRole("listbox")).toBeNull();
+});
+
+test("keyboard navigation and Escape close the translator list; English has no picker", async () => {
+  state.language = "ur";
+  const ayahs = [{ id: "1:1", surah: 1, ayah: 1, text: "test" }];
+  const { rerender } = render(<QuranTranslationPage ayahs={ayahs} selectedSurah={1} selectedAyah={1} scale={1} />);
+  await screen.findByText("Translation sample");
+  const trigger = screen.getByRole("button", { name: /مترجم منتخب کریں/ });
+  fireEvent.keyDown(trigger, { key: "ArrowDown" });
+  const options = within(screen.getByRole("listbox")).getAllByRole("option");
+  expect(document.activeElement).toBe(options[0]);
+  fireEvent.keyDown(options[0], { key: "ArrowDown" });
+  expect(document.activeElement).toBe(options[1]);
+  fireEvent.keyDown(options[1], { key: "Escape" });
+  expect(screen.queryByRole("listbox")).toBeNull();
+  expect(document.activeElement).toBe(trigger);
   state.language = "en";
-  rerender(<QuranTranslationPage ayahs={[{ id: "1:1", surah: 1, ayah: 1, text: "test" }]} selectedSurah={1} selectedAyah={1} scale={1} />);
-  expect(screen.queryByLabelText("مترجم منتخب کریں")).toBeNull();
+  rerender(<QuranTranslationPage ayahs={ayahs} selectedSurah={1} selectedAyah={1} scale={1} />);
+  expect(screen.queryByRole("button", { name: /مترجم منتخب کریں/ })).toBeNull();
 });
