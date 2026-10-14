@@ -73,10 +73,16 @@ describe("PDF Studio Phase 1B evidence only",()=>{
    const pdf1=await PDFDocument.load(bytes1),pdf2=await PDFDocument.load(bytes2);
    writeFileSync(out+"/shared-html-a.pdf",Buffer.from(bytes1));writeFileSync(out+"/shared-html-b.pdf",Buffer.from(bytes2));
    report.shared={htmlIdentical:true,settingsIdentical:true,pageCounts:[pdf1.getPageCount(),pdf2.getPageCount()],dimensions:[pdf1.getPages().map(p=>[p.getWidth(),p.getHeight()]),pdf2.getPages().map(p=>[p.getWidth(),p.getHeight()])],bytes:[bytes1.length,bytes2.length],generationMs:[time1,time2]};
+   const page3=await browser.newPage();await page3.setRequestInterception(true);page3.on("request",r=>{if(["data:","about:"].some(prefix=>r.url().startsWith(prefix)))r.continue();else r.abort()});
+   await page3.setContent(html,{waitUntil:"load"});await page3.addStyleTag({content:"@page{size:210mm 297mm;margin:25.4mm;}"});await page3.evaluate(()=>document.fonts.ready);
+   const cssBytes=await page3.pdf({format:"A4",preferCSSPageSize:true,printBackground:true,margin:{top:"0",bottom:"0",left:"0",right:"0"}});
+   const cssPdf=await PDFDocument.load(cssBytes);writeFileSync(out+"/css-page-size.pdf",Buffer.from(cssBytes));
+   report.geometry.controlledComparison={explicitMmPreferCssFalse:{widthPt:pdf1.getPage(0).getWidth(),heightPt:pdf1.getPage(0).getHeight()},cssAtPagePreferCssTrue:{widthPt:cssPdf.getPage(0).getWidth(),heightPt:cssPdf.getPage(0).getHeight()},differencePt:pdf1.getPage(0).getWidth()-cssPdf.getPage(0).getWidth(),cssPageCount:cssPdf.getPageCount()};
+   await page3.close();
    await page2.close();await ses.detach();
   }catch(err){report.errors.push(String((err as Error).stack||err))}
   finally{if(browser)await browser.close();writeFileSync(out+"/diagnostics.json",JSON.stringify(report,null,2))}
-  console.log("PHASE1B_SUMMARY",JSON.stringify({runs:report.targetedRuns?.map((r:any)=>({index:r.index,painted:r.painted,textLength:r.textLength})),nonDigital:report.characters.filter((c:any)=>c.faces.some((f:any)=>!/digitalkhatt/i.test(f.familyName))),shared:report.shared,errors:report.errors}));
+  console.log("PHASE1B_SUMMARY",JSON.stringify({runs:report.targetedRuns?.map((r:any)=>({index:r.index,painted:r.painted,textLength:r.textLength})),nonDigital:report.characters.filter((c:any)=>c.faces.some((f:any)=>!/digitalkhatt/i.test(f.familyName))),shared:report.shared,geometry:report.geometry.controlledComparison,errors:report.errors}));
   expect(report.errors).toEqual([]);expect(report.shared.pageCounts?.[0]).toBe(report.shared.pageCounts?.[1]);
  },180000)
 });
