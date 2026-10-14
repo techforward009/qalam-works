@@ -24,6 +24,17 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Run font and shared-HTML diagnostic against original production PDF helpers
         run: npx vitest run tests/pdfStudioPhase1bIsolation.test.ts --reporter=verbose
+      - name: Inspect Digital Khatt WOFF2 cmap with fontTools
+        if: always()
+        run: |
+          python3 -m pip install --break-system-packages fonttools brotli
+          python3 - <<'PY' | tee artifacts/pdf-phase1b/digital-khatt-cmap.json
+          import json
+          from fontTools.ttLib import TTFont
+          font=TTFont("public/fonts/DigitalKhattIndoPak.woff2")
+          chars=set().union(*(set(t.cmap) for t in font["cmap"].tables if t.isUnicode()))
+          print(json.dumps({"font":"DigitalKhattIndoPak.woff2","U+002E":0x002e in chars,"U+0627":0x0627 in chars,"U+064E":0x064e in chars,"U+06D7":0x06d7 in chars},indent=2))
+          PY
       - name: Convert prototype to inspectable fonts and page images
         if: always()
         run: |
