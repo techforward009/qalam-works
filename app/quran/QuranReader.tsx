@@ -962,11 +962,11 @@ export default function QuranReader({
               }}
             >
               {([
-                ["quran", copy.quranTab, language === "ur" ? "Quran" : "قرآن"],
-                ["translation", copy.translationTab, language === "ur" ? "Translation" : "ترجمہ"],
-                ["transliteration", copy.transliterationTab, language === "ur" ? "Transliteration" : "تلفظ"],
-                ["tafsir", copy.tafsirTab, language === "ur" ? "Tafsir" : "تفسیر"],
-              ] as const).map(([value, label, other]) => (
+                ["quran", copy.quranTab],
+                ["translation", copy.translationTab],
+                ["transliteration", copy.transliterationTab],
+                ["tafsir", copy.tafsirTab],
+              ] as const).map(([value, label]) => (
                 <button
                   key={value}
                   type="button"
@@ -979,7 +979,6 @@ export default function QuranReader({
                   className={"quran-reader-tab" + (language === "ur" ? " font-naskh" : "")}
                 >
                   <span>{label}</span>
-                  <span className="quran-reader-tab-alt" lang={language === "ur" ? "en" : "ur"}>{other}</span>
                 </button>
               ))}
             </div>
