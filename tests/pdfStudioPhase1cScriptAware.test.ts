@@ -1,6 +1,7 @@
 import {describe,it,expect} from "vitest";
 import {createRequire} from "node:module";
 import {mkdirSync,writeFileSync,readFileSync} from "node:fs";
+import {readWoff2Cmap,missingQuranicCodePoints} from "../app/tools/document-studio/utils/digitalKhattCoverage";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import {PDFDocument} from "pdf-lib";
@@ -63,6 +64,10 @@ describe("Phase 1C script-aware validation — isolated synthetic tests",()=>{
    const nodes=await page.$$('[data-pdf-font="Digital Khatt Indo-Pak"]');
    expect(nodes.length).toBe(1);
    const original=await nodes[0].evaluate(el=>el.textContent||"");
+   const cmap=readWoff2Cmap(readFileSync("public/fonts/DigitalKhattIndoPak.woff2"));
+   report.unsupportedQuranicMark={codePoint:"U+06D7",missing:missingQuranicCodePoints("ا\u06D7",cmap).includes(0x06d7),strictDecision:decision({char:"\u06D7",faces:[liberation],context:"quranic-script",declared:"Digital Khatt Indo-Pak"})};
+   expect(report.unsupportedQuranicMark.missing).toBe(true);
+   expect(report.unsupportedQuranicMark.strictDecision.status).toBe("REJECT");
    expect(original).toBe(report.source);
    const session=await page.createCDPSession();await session.send("DOM.enable");await session.send("CSS.enable");
    const getFont=async(selector:string)=>{const tree=(await session.send("DOM.getDocument")).root;const n=await session.send("DOM.querySelector",{nodeId:tree.nodeId,selector});if(!n.nodeId)throw Error("missing "+selector);return (await session.send("CSS.getPlatformFontsForNode",{nodeId:n.nodeId})).fonts;};
@@ -117,7 +122,7 @@ describe("Phase 1C script-aware validation — isolated synthetic tests",()=>{
    await session.detach();
   } catch(e){report.errors.push(String((e as Error).stack||e))}
   finally {writeFileSync(out+"/phase1c-diagnostics.json",JSON.stringify(report,null,2));if(browser)await browser.close()}
-  console.log("PHASE1C_SUMMARY "+JSON.stringify({classified:report.classified,unsegmented:report.unsegmentedFonts,negative:report.expectedFailure,pdf:report.pdf,errors:report.errors}));
+  console.log("PHASE1C_SUMMARY "+JSON.stringify({classified:report.classified,unsegmented:report.unsegmentedFonts,negative:report.expectedFailure,unsupportedMark:report.unsupportedQuranicMark,pdf:report.pdf,errors:report.errors}));
   expect(report.errors).toEqual([]);
  },180000)
 });
