@@ -26,7 +26,7 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           sudo apt-get update -qq
-          sudo apt-get install -y poppler-utils
+          sudo apt-get install -y poppler-utils python3-pil
       - name: Build unchanged main application code
         run: npm run build
       - name: Start local Next.js
@@ -40,6 +40,9 @@ jobs:
           exit 1
       - name: Generate both PDF pipelines and measure
         run: node scripts/pdf-phase1a-baseline.cjs
+      - name: Compare PDF raster images, extracted Unicode and line locations
+        if: always()
+        run: /usr/bin/python3 scripts/pdf-phase1a-compare.py
       - name: Upload comparison evidence
         if: always()
         uses: actions/upload-artifact@v4
