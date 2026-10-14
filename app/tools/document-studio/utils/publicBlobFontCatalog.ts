@@ -16,6 +16,8 @@ export const PUBLIC_BLOB_FONT_FAMILIES: readonly PublicBlobFontFamily[] = [
   { id: "faiz-lahori", label: "Faiz Lahori Nastaleeq", regular: "Faiz-Lahori-Web.woff2", script: "urdu" },
   { id: "gulzar", label: "Gulzar", regular: "Gulzar-Regular.woff2", script: "urdu" },
   { id: "nafees-nastaleeq", label: "Nafees Nastaleeq", regular: "NafeesNastaleeq.woff2", script: "urdu" },
+  { id: "b-nazanin", label: "B Nazanin", regular: "BNazanin.woff2", script: "persian" },
+  { id: "al-fars9-badr", label: "AlFars9Badr", regular: "AlFars9Badr.woff2", script: "persian" },
   { id: "sahel", label: "Sahel", regular: "Sahel.woff2", script: "persian", existingStudioId: "sahel" },
   { id: "scheherazade-new", label: "Scheherazade New", regular: "ScheherazadeNew-Medium.woff2", script: "arabic" },
   { id: "traditional-arabic", label: "Traditional Arabic", regular: "TraditionalArabic.woff2", bold: "TraditionalArabic-Bold.woff2", script: "arabic" },
