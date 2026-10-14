@@ -45,7 +45,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
     : (ur ? "اس ماخذ کی قابلِ اشاعت عبارت ابھی دستیاب نہیں۔ کوئی تفسیر خود سے نہیں لکھی گئی۔" : "Publishable text for this source is not available yet. No commentary has been generated.");
 
   return (
-    <article className="quran-page relative flex w-full flex-col overflow-hidden bg-[#fffef9] px-4 py-5 sm:px-10 sm:py-8" dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}>
+    <article className="quran-page quran-reader-paper relative flex w-full flex-col overflow-hidden px-4 py-5 sm:px-10 sm:py-8" dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}>
       <header className="border-b border-[#c9b98d]/45 pb-4">
         <div className={"text-xl font-bold text-[#32422f] " + (ur ? "font-naskh" : "")}>{ur ? "تفسیر" : "Commentary"}</div>
         <label className={"mt-3 block text-sm text-[#5c5344] " + (ur ? "font-naskh" : "")}>
@@ -97,7 +97,6 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
           <p className="mt-3 text-xs text-[#82775f]">
             {ur ? "تفسیر نمونہ، اردو برقی متن — اصل مطبوعہ نسخے سے مکمل مقابلہ باقی ہے۔" : "Tafsir Namoona, Urdu electronic text — full print collation pending."}
           </p>
-          <p className="mt-1 text-xs text-[#82775f]">{ur ? "آزمائشی اردو فونٹ: علوی نستعلیق" : "Preview Urdu font: Alvi Nastaleeq"}</p>
         </div> : entry ? <div className="mt-4" dir={entry.work.direction} lang={entry.work.language}>
           <p className="font-naskh whitespace-pre-line text-lg leading-loose">{entry.text}</p>
           <p className="mt-3 text-xs text-[#82775f]">
