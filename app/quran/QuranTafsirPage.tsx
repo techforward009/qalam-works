@@ -64,14 +64,14 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
           {" · "}{ur ? work.authorUr : work.authorEn}
         </p>
         {nemunehText ? <div className="mt-4" dir="rtl" lang="ur">
-          {remote?.heading ? <h2 className="mb-3 font-urdu text-[23px] font-normal" style={{ fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif', lineHeight: 2.2 }}>{remote.heading}</h2> : null}
+          {remote?.heading ? <h2 className="mb-3 text-[24px] font-normal" style={{ fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif', lineHeight: 2.2 }}>{remote.heading}</h2> : null}
           <div
-            className="whitespace-pre-wrap break-words font-urdu font-normal"
+            className="whitespace-pre-wrap break-words font-normal"
             data-tafsir-urdu-text="true"
             style={{
-              fontFamily: '"Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif',
-              fontSize: "21px",
-              lineHeight: 2.4,
+              fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif',
+              fontSize: "22px",
+              lineHeight: 2.25,
             }}
           >
             {typographyRuns.map((run, index) =>
@@ -97,6 +97,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
           <p className="mt-3 text-xs text-[#82775f]">
             {ur ? "تفسیر نمونہ، اردو برقی متن — اصل مطبوعہ نسخے سے مکمل مقابلہ باقی ہے۔" : "Tafsir Namoona, Urdu electronic text — full print collation pending."}
           </p>
+          <p className="mt-1 text-xs text-[#82775f]">{ur ? "آزمائشی اردو فونٹ: علوی نستعلیق" : "Preview Urdu font: Alvi Nastaleeq"}</p>
         </div> : entry ? <div className="mt-4" dir={entry.work.direction} lang={entry.work.language}>
           <p className="font-naskh whitespace-pre-line text-lg leading-loose">{entry.text}</p>
           <p className="mt-3 text-xs text-[#82775f]">
