@@ -66,18 +66,18 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
   });
 
   it("centers Juz, page and Surah top-row items on the same vertical axis", () => {
-    expect(styles).toMatch(/\\.quran-page-meta\\s*\\{[^}]*align-items:\\s*center/s);
-    expect(styles).toMatch(/\\.quran-page-meta-item\\s*\\{[^}]*display:\\s*flex;[^}]*align-items:\\s*center/s);
-    expect(styles).toMatch(/\\.quran-page-meta-item\\s*\\{[^}]*padding-bottom:\\s*0/s);
-    expect(styles).toMatch(/\\.quran-surah-header\\s*>\\s*\\*\\s*\\{[^}]*translateY\\(0\\.12em\\)/s);
-    expect(digitalCss).toMatch(/\\.surahHeader\\s*>\\s*\\*\\s*\\{[^}]*translateY\\(0\\.12em\\)/s);
+    expect(styles).toMatch(/\.quran-page-meta\s*\{[^}]*align-items:\s*center/s);
+    expect(styles).toMatch(/\.quran-page-meta-item\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center/s);
+    expect(styles).toMatch(/\.quran-page-meta-item\s*\{[^}]*padding-bottom:\s*0/s);
+    expect(styles).toMatch(/\.quran-surah-header\s*>\s*\*\s*\{[^}]*translateY\(0\.12em\)/s);
+    expect(digitalCss).toMatch(/\.surahHeader\s*>\s*\*\s*\{[^}]*translateY\(0\.12em\)/s);
   });
 
   it("shows diacritic-free names for all 114 Surahs without changing metadata or Quran text", () => {
     for (let number = 1; number <= 114; number++) {
       const original = surahBanner(number).name;
       const displayed = displaySurahBannerName(original);
-      expect(displayed).not.toMatch(/[\\u064B-\\u065F\\u0670\\u06D6-\\u06ED\\u08D3-\\u08FF]/u);
+      expect(displayed).not.toMatch(/[\u064B-\u065F\u0670\u06D6-\u06ED\u08D3-\u08FF]/u);
       expect(displayed.startsWith("سورة ")).toBe(true);
       expect(displayed.length).toBeGreaterThan(6);
       expect(surahBanner(number).name).toBe(original);
