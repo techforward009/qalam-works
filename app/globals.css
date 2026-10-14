@@ -556,9 +556,9 @@ textarea {
   z-index: 20;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: end;
+  align-items: center;
   width: calc(100% - 22px);
-  min-height: 46px;
+  min-height: 48px;
   margin: 0 auto -1px;
   padding: 0 7px;
   font-family: var(--font-naskh), "Noto Naskh Arabic", serif;
@@ -568,19 +568,29 @@ textarea {
 }
 
 .quran-page-meta-item {
+  display: flex;
+  align-items: center;
   min-width: 0;
-  padding-bottom: 5px;
+  min-height: 38px;
+  padding-bottom: 0;
+  line-height: 1.4;
   white-space: normal;
   overflow: visible;
 }
 
+.quran-page-meta-item > * {
+  transform: translateY(0.06em);
+}
+
 .quran-page-meta-surah {
   min-width: 0;
+  justify-content: flex-start;
   text-align: left;
 }
 
 .quran-page-meta-juz {
   min-width: 0;
+  justify-content: flex-end;
   text-align: right;
 }
 
@@ -840,7 +850,7 @@ textarea {
   gap: 0.24em;
   width: min(640px, 94%);
   margin: 0.15em auto 0.85em;
-  padding: 0.28em 1.1em 0.38em;
+  padding: 0.32em 1em;
   border: 2px solid #1f4d36;
   border-radius: 999px;
   text-align: center;
@@ -854,13 +864,14 @@ textarea {
 .quran-surah-header > * {
   min-width: 0;
   align-self: center;
+  transform: translateY(0.12em);
 }
 
 .quran-surah-place,
 .quran-surah-count {
   display: inline-flex;
   align-items: center;
-  font-size: 0.73em;
+  font-size: 0.66em;
   line-height: 1.5;
   color: #3f4a3c;
   white-space: nowrap;
@@ -883,7 +894,7 @@ textarea {
   justify-content: center;
   min-width: 0;
   gap: 0.22em;
-  font-size: 0.72em;
+  font-size: 0.93em;
   line-height: 1.55;
   color: #171914;
   white-space: normal;
@@ -901,7 +912,7 @@ textarea {
   unicode-bidi: isolate;
   white-space: nowrap;
   line-height: 1.5;
-  font-size: 1.22em;
+  font-size: 1.08em;
 }
 
 .quran-banner-digit {
@@ -1122,7 +1133,8 @@ textarea {
   }
 
   .quran-page-meta-item {
-    padding-bottom: 4px;
+    min-height: 34px;
+    padding-bottom: 0;
     overflow: visible;
   }
 
@@ -1210,12 +1222,12 @@ textarea {
   }
 
   .quran-banner-name {
-    font-size: 0.58em;
+    font-size: 0.77em;
   }
 
   .quran-surah-place,
   .quran-surah-count {
-    font-size: 0.63em;
+    font-size: 0.59em;
   }
 
   .quran-band-rule {
