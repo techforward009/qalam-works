@@ -1,0 +1,58 @@
+name: PR49 Chromium Painted Font Acceptance (No Deployment)
+
+on:
+  push:
+    branches: [fix/document-studio-docx-fidelity-20261013]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  painted-fonts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify exact baseline ancestry
+        shell: bash
+        run: |
+          git cat-file -e f2993ca39556788e3fe7f4d100a9e3c1de913ea4^{commit}
+          git merge-base --is-ancestor f2993ca39556788e3fe7f4d100a9e3c1de913ea4 HEAD
+          git rev-parse HEAD
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build real app
+        run: npm run build
+      - name: Start Document Studio locally
+        run: |
+          (npm run start -- -H 127.0.0.1 > /tmp/pr49-next.log 2>&1 & echo $! > /tmp/pr49-next.pid)
+          for i in $(seq 1 80); do
+            if curl --fail --silent http://127.0.0.1:3000/tools/document-studio -o /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/pr49-next.log
+          exit 1
+      - name: Inspect actual rendered glyph font faces
+        run: node scripts/pr49-painted-font-acceptance.cjs
+      - name: Upload screenshot and raw CDP font diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr49-rendered-font-evidence
+          path: artifacts/browser-font-acceptance/
+          if-no-files-found: warn
+      - name: Log server failures
+        if: failure()
+        run: cat /tmp/pr49-next.log || true

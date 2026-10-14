@@ -271,16 +271,16 @@ textarea {
 
 .qalam-editor-content [style*="Jameel Noori Nastaleeq"],
 .qalam-editor-content span[style*="Jameel Noori Nastaleeq"] {
-  font-family: var(--qalam-ltr-font, var(--font-inter), Inter), "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
+  font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
 }
 
 .qalam-editor-content [style*="Gulzar"],
 .qalam-editor-content span[style*="Gulzar"] {
-  font-family: var(--qalam-ltr-font, var(--font-inter), Inter), "Gulzar", var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
+  font-family: "Gulzar", var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
 }
 
 .qalam-editor-content [style*="Noto Nastaliq Urdu"] {
-  font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
+  font-family: "Noto Nastaliq Urdu", var(--font-nastaliq), serif !important;
 }
 
 .qalam-editor-content [style*="Amiri"] {
