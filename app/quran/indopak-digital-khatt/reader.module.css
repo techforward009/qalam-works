@@ -73,7 +73,7 @@
   min-height: 2.45em;
   width: min(680px, 96%);
   margin: 0.2em auto 0.45em;
-  padding: 0.22em 0.75em 0.36em;
+  padding: 0.28em 0.6em;
   border: 1px solid #b9ad91;
   border-radius: 999px;
   position: relative;
@@ -87,13 +87,14 @@
 .surahHeader > * {
   min-width: 0;
   align-self: center;
+  transform: translateY(0.12em);
 }
 
 .surahPlace,
 .surahCount {
   display: inline-flex;
   align-items: center;
-  font-size: 0.73em;
+  font-size: 0.66em;
   line-height: 1.5;
   color: #3f4a3c;
   white-space: nowrap;
@@ -117,7 +118,7 @@
   justify-content: center;
   gap: 0.22em;
   min-width: 0;
-  font-size: 0.72em;
+  font-size: 0.93em;
   line-height: 1.55;
   color: #171914;
   white-space: normal;
@@ -134,7 +135,7 @@
   direction: ltr;
   unicode-bidi: isolate;
   white-space: nowrap;
-  font-size: 1.22em;
+  font-size: 1.08em;
   line-height: 1.5;
 }
 
@@ -279,12 +280,12 @@
   }
 
   .surahName {
-    font-size: 0.58em;
+    font-size: 0.77em;
   }
 
   .surahPlace,
   .surahCount {
-    font-size: 0.63em;
+    font-size: 0.59em;
   }
 
   .surahHeader {
