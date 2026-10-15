@@ -46,14 +46,14 @@ for (const locale of ['ur', 'en'] as const) {
     await expect(page.getByText('Topic preparation — patience', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Book library management — owner only', { exact: true })).toHaveCount(0);
     await expect(reader.getByRole('checkbox')).toHaveCount(0);
-    await page.screenshot({ path: testInfo.outputPath('book-arabic-light-desktop.png'), fullPage: true });
+    await reader.screenshot({ path: testInfo.outputPath('book-arabic-light-desktop.png'), animations: 'disabled' });
     await reader.getByLabel(ur ? 'مطالعے کی صورت' : 'Reading mode').selectOption('combined');
     await expect(reader.getByText('اے اللہ — آزمائشی دعا کا متن')).toBeVisible();
     await expect(reader.getByText(ur ? 'بعض پیراگراف کا اردو ترجمہ دستیاب نہیں' : 'Some paragraphs do not have an Urdu translation yet.')).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath('book-arabic-urdu-fixture-desktop.png'), fullPage: true });
+    await reader.screenshot({ path: testInfo.outputPath('book-arabic-urdu-fixture-desktop.png'), animations: 'disabled' });
     await reader.getByLabel(ur ? 'مطالعے کی صورت' : 'Reading mode').selectOption('original');
     await page.locator('html').evaluate(node => node.classList.add('dark'));
-    await page.screenshot({ path: testInfo.outputPath('book-arabic-dark-desktop.png'), fullPage: true });
+    await reader.screenshot({ path: testInfo.outputPath('book-arabic-dark-desktop.png'), animations: 'disabled' });
     await page.locator('html').evaluate(node => node.classList.remove('dark'));
     const desktopWidth = await reader.getByTestId('book-reading-page').evaluate(node => node.getBoundingClientRect().width);
     expect(desktopWidth).toBeGreaterThan(1000);
@@ -61,7 +61,7 @@ for (const locale of ['ur', 'en'] as const) {
     await expect(reader.getByRole('checkbox')).toHaveCount(0);
     await reader.getByRole('button', { name: ur ? 'عبارت منتخب کریں' : 'Select passage', exact: true }).click();
     await reader.getByRole('checkbox', { name: ur ? 'پیراگراف 1 منتخب کریں' : 'Select paragraph 1', exact: true }).check();
-    await page.screenshot({ path: testInfo.outputPath('book-selection-mode-desktop.png'), fullPage: true });
+    await reader.screenshot({ path: testInfo.outputPath('book-selection-mode-desktop.png'), animations: 'disabled' });
     await reader.getByRole('button', { name: ur ? 'میری مجلس میں شامل کریں' : 'Add to My Sermon', exact: true }).click();
     await expect(reader.getByRole('status').filter({ hasText: ur ? 'میری مجلس میں شامل اور محفوظ ہوگئی' : 'Saved in My Sermon' })).toBeVisible();
 
@@ -73,7 +73,7 @@ for (const locale of ['ur', 'en'] as const) {
     await page.goto('/tools/khateeb-studio/library');
     await expect(page.getByTestId('book-reading-page')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
-    await page.screenshot({ path: testInfo.outputPath('book-arabic-light-mobile.png'), fullPage: true });
+    await reader.screenshot({ path: testInfo.outputPath('book-arabic-light-mobile.png'), animations: 'disabled' });
     expect(errors).toEqual([]);
   });
 }
