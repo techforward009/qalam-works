@@ -1,0 +1,21 @@
+name: PDF Guided Diagnostics (Draft)
+on:
+  push:
+    branches: [feature/pdf-export-guided-repair]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx vitest run tests/pdfExportDiagnostics.test.ts
+      - run: npx tsc --noEmit
+      - run: git diff --check
