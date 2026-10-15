@@ -22,6 +22,8 @@ const fixtures=[
  {id:"late-joining-control",doc:doc([para("هٰذَا نَصٌّ. ","Digital Khatt Indo-Pak"),para("ا\u200Dب ","Digital Khatt Indo-Pak")]),experimental:500},
  {id:"quranic-combining-multi-page",doc:doc([para(("بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ وَالْحَمْدُ لِلّٰهِ رَبِّ الْعٰلَمِينَ. ").repeat(95),"Digital Khatt Indo-Pak",{lineHeight:1.9})]),experimental:200,periods:95},
  {id:"later-run-missing-quranic-mark",doc:doc([para("اَلْعِلْمُ نُورٌ. ","Digital Khatt Indo-Pak"),para("ا\u06D7 ","Digital Khatt Indo-Pak")]),experimental:500},
+ {id:"arabic-text-size-12pt",doc:doc([{type:"paragraph",attrs:{dir:"rtl"},content:[txt("هٰذَا نَصٌّ عَرَبِيٌّ. ","Digital Khatt Indo-Pak","12pt")]}]),experimental:200,periods:1},
+ {id:"arabic-text-size-20pt",doc:doc([{type:"paragraph",attrs:{dir:"rtl"},content:[txt("اَلْحَمْدُ لِلّٰهِ رَبِّ الْعَالَمِينَ. ","Digital Khatt Indo-Pak","20pt")]}]),experimental:200,periods:1},
  {id:"arabic-missing-quranic-mark",doc:doc([para("ا\u06D7 "+a,"Digital Khatt Indo-Pak")]),required:true,production:500,experimental:500},
  {id:"arabic-period-invalid-context",doc:doc([para("ا.ا "+a,"Digital Khatt Indo-Pak")]),required:true,experimental:500},
  {id:"arabic-unapproved-punctuation",doc:doc([para("ا? "+a,"Digital Khatt Indo-Pak")]),required:true,experimental:500},
