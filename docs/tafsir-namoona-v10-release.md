@@ -80,9 +80,9 @@ This integration resolves internal cross-references and marks gaps; it is not fu
 **Saved source correction (not a UI-only patch):**
 
 - Owner's original Urdu archive in ChatGPT Library `/Tafsir_Namoona_v10_Upload_Files/urdu-v10.json.br` was replaced with the corrected private archive. The pre-edit original is backed up as `urdu-v10-backup-20261015.json.br`; exact replacement audit is saved as `first_ayah_revision_audit_20261015.json`.
-- Scope: entry `1:1` only (five original topic bodies/headings; original `sourceId` 10–14 retained). 74 conservative typographical, word-spacing and bracket fixes recorded. All other 1,761 entries and the complete 6,236 verse lookup mappings are preserved. Qur'anic/Arabic quotation lines are not normalized or rewritten. Complex wording and mismatched citations requiring source comparison remain pending editorial review.
+- Scope: entry `1:1` only (five original topic bodies/headings; original `sourceId` 10–14 retained). 83 conservative typographical, word-spacing and bracket fixes recorded. All other 1,761 entries and the complete 6,236 verse lookup mappings are preserved. Qur'anic/Arabic quotation lines are not normalized or rewritten. Complex wording and mismatched citations requiring source comparison remain pending editorial review.
 - Original compressed SHA-256: `f8f0eaef81ba175d9603434a17f17f9b0abc1197859d1f1e31e294c9b782dc5b`.
-- Revised compressed SHA-256: `087786f818ca6ecf8d1e0b15c89ecb1e1f7c46cb9fe86e9a12c29fbf1de51908`.
+- Revised compressed SHA-256: `8cf7d265873f93d6987882b5c616a0267a7caa94304075c88d4dc57150c2f1e7`.
 - **IMPORTANT STORAGE HOLD:** The owner's Library source file is updated, but the **private Vercel `qalam-research` Blob at `qalam/tafsir-namoona/urdu-v10.json.br` has NOT been overwritten**; this connector does not expose private Blob object upload/overwrite. The existing API still pins the OLD SHA-256 and serves the OLD Vercel object. Do **not** change `RELEASE.ur.digest` or announce corrected text live before securely uploading the revised private file and verifying it with the new hash. Preserve the current private object as rollback or use a separate versioned private key for revised content. Never upload the entire book to the public GitHub repo.
 
 **Preview-only typography & layout:**
