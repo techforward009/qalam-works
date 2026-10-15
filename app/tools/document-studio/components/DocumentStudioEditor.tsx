@@ -1,5 +1,6 @@
 "use client";
 import type { PdfExportFailure } from "../utils/pdfExportDiagnostics";
+import { pdfRunFingerprint } from "../utils/pdfExportDiagnostics";
 
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../../lib/language-context";
@@ -1695,10 +1696,11 @@ export default function DocumentStudioEditor() {
           )}
           {pdfDiagnosis && (
             <section className="mb-3 rounded-lg border border-red-300 bg-white p-4 text-sm text-gray-800 space-y-3" dir="rtl" role="region" aria-label="PDF خرابیوں کی تفصیل">
-              <h3 className="font-semibold">PDF کی خرابیوں کی تفصیل</h3>
+              <h3 className="font-semibold">PDF کی خرابیوں کی تفصیل ({pdfDiagnosis.problems.length})</h3>
               {pdfDiagnosis.problems.map((problem, i) => (
                 <div key={i} className="rounded border border-gray-200 p-3 space-y-2">
                   <p>{problem.message}</p>
+                  {problem.source && <p className="text-xs">مقام: {problem.source.paragraphPath.join(".")} / {problem.source.path.join(".")}</p>}
                   {problem.selectedFont && <p>منتخب فونٹ: <bdi dir="ltr">{problem.selectedFont}</bdi></p>}
                   {problem.actualFont && <p>استعمال ہونے والا فونٹ: <bdi dir="ltr">{problem.actualFont}</bdi></p>}
                   {problem.unicode && <p>متعلقہ حرف: {problem.character} (<bdi dir="ltr">{problem.unicode}</bdi>)</p>}
@@ -1712,7 +1714,7 @@ export default function DocumentStudioEditor() {
                       if (!current.isText) position += current.type.name === "doc" ? 0 : 1;
                       current = current.child(index);
                     }
-                    if (!current.isText) return;
+                    if (!current.isText || (problem.source!.snapshot && pdfRunFingerprint(current.text ?? "") !== problem.source!.snapshot)) { setPdfError("عبارت بدل چکی ہے۔ دوبارہ PDF جانچ کریں۔"); return; }
                     const from = position + problem.source!.start;
                     const to = position + problem.source!.end;
                     if (from < 0 || to > editor.state.doc.content.size || from > to) return;
