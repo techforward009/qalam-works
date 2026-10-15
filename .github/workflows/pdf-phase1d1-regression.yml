@@ -47,6 +47,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phase1d1-regression-${{ github.ref_name }}
+          name: phase1d1-regression-${{ github.run_id }}
           path: artifacts/pdf-phase1d1/
           if-no-files-found: error
