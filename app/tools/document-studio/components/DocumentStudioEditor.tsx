@@ -1263,8 +1263,8 @@ export default function DocumentStudioEditor() {
       setPdfError("متعلقہ عبارت اب بدل چکی ہے؛ دوبارہ برآمد کرکے نئی نشاندہی حاصل کریں۔");
       return;
     }
-    const from = position + Math.min(location.textOffset, node.text?.length ?? 0);
-    const to = Math.min(position + node.nodeSize, from + 1);
+    const from = position + Math.max(0, Math.min(location.textOffset, node.text?.length ?? 0));
+    const to = Math.min(position + node.nodeSize, from + (location.textOffset < 0 ? Math.min(12,node.nodeSize) : 1));
     editor.chain().focus().setTextSelection({ from, to }).scrollIntoView().run();
   };
 
@@ -1724,6 +1724,11 @@ export default function DocumentStudioEditor() {
                         <li key={issue.id} className="rounded border border-red-200 bg-white p-3">
                           <p className="font-semibold">فونٹ: {issue.selectedFont ?? "نامعلوم"}{issue.actualFont ? " — اصل متبادل: " + issue.actualFont : ""}</p>
                           {issue.codePoint && <p className="mt-1 text-xs" dir="ltr">{issue.codePoint} {issue.character ?? ""}</p>}
+                          {issue.location && (
+                            <p className="mt-1 rounded bg-red-50 px-2 py-1 text-xs" dir="rtl">
+                              عبارت: {issue.location.expectedText.slice(Math.max(0, issue.location.textOffset < 0 ? 0 : issue.location.textOffset - 18), Math.max(0, issue.location.textOffset < 0 ? 0 : issue.location.textOffset - 18) + 70)}
+                            </p>
+                          )}
                           <p className="mt-1 text-xs">وجہ: {issue.reason === "missing-glyph" ? "منتخب فونٹ میں یہ حرف موجود نہیں۔" : "اصل دکھائی دینے والا فونٹ منظور شدہ نہیں۔"}</p>
                           {issue.location && (
                             <button type="button" onClick={() => navigateToPdfIssue(issue.location!)}
