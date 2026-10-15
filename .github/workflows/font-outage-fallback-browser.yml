@@ -1,0 +1,36 @@
+name: Font Outage Browser Fallback — No Deployment
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [hotfix/blob-font-browser-fallback-20261015]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-fallback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx tsc --noEmit
+      - run: npx playwright install --with-deps chromium
+      - name: Real Chromium with Vercel public Blob blocked
+        run: npx playwright test tests/e2e/fontOutageFallback.spec.ts --project desktop-chrome --reporter=line
+      - name: Screenshots and raw test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: font-outage-synthetic-chromium
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: warn
