@@ -104,7 +104,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     const page = pdf.getPage(0);
     const fonts = page.node.Resources()!.lookup(PDFName.of("Font"), PDFDict);
     const names = fonts.entries().map(([, value]) => pdf.context.lookup(value, PDFDict).get(PDFName.of("BaseFont"))?.toString());
-    expect(names.some(name => name?.includes("NotoNastaliqUrdu"))).toBe(true);
+    expect(names.some(name => name?.replace(/#[0-9a-f]{2}/gi, "").replace(/[^a-z0-9]/gi, "").includes(family.startsWith("Jameel") ? "JameelNoori" : "NotoNastaliqUrdu"))).toBe(true);
     expect(names.some(name => name?.includes("OpenSans"))).toBe(false);
     console.log(stem, { dimensions: page.getSize(), names, headers: Object.fromEntries([...response.headers].filter(([name]) => name.startsWith("x-pdf"))), output });
   }, 120000);
@@ -433,7 +433,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
       expect(Math.abs(page.getHeight() - layout.heightMm / 25.4 * 72)).toBeLessThan(1);
     }
     const names = pdf.getPages().flatMap(page => page.node.Resources()!.lookup(PDFName.of("Font"), PDFDict).entries().map(([, value]) => pdf.context.lookup(value, PDFDict).get(PDFName.of("BaseFont"))?.toString()));
-    expect(names.some(name => name?.includes("NotoNastaliqUrdu"))).toBe(true);
+    expect(names.some(name => name?.replace(/#[0-9a-f]{2}/gi, "").replace(/[^a-z0-9]/gi, "").includes(jameel ? "JameelNoori" : "NotoNastaliqUrdu"))).toBe(true);
     writeFileSync(path.join(output, `${currentCase}-fonts.json`), JSON.stringify(names));
     if (size === 72 && !jameel && process.env.QALAM_PDF_AUDIT_PYTHON && process.env.QALAM_PDF_POPPLER) {
       // Real final-byte regression: PDFium and Poppler compare the printed page
