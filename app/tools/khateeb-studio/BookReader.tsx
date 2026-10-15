@@ -4,16 +4,24 @@ import { useEffect, useRef, useState } from "react";
 import BookPassageText from "./BookPassageText";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
-import { bookSourceLabel } from "../../lib/knowledge/bookCorpus";
+import { bookSourceLabel, isBookExcerpt, type BookExcerpt } from "../../lib/knowledge/bookCorpus";
+import {
+  KHATEEB_READER_PROGRESS_KEY, EMPTY_READER_PROGRESS,
+  anchorMatchesPage, anchorForPage, parseReaderProgress,
+  rememberReaderPosition, readerSavedForSource, sameReaderAnchor,
+  toggleReaderBookmark, type ReaderAnchor, type ReaderProgress,
+} from "../../lib/knowledge/bookReaderProgress";
 import { copyReadingPage, type BookContents, type BookFindResults, type BookReadingPage } from "../../lib/knowledge/bookReaderModel";
 
 type Language = "ur" | "en";
-type ShelfSource = { id: string; book: "nahj" | "sahifa" | "kafi"; language: "ar" | Language; translator: string | null };
+type ShelfSource = { id: string; book: "nahj" | "sahifa" | "kafi"; language: "ar" | Language; translator: string | null; sha256: string };
 type Shelf = { ready: boolean; revision?: string; sources: ShelfSource[] };
 const btn = "rounded-lg border border-[#31513a]/40 px-3 py-2 text-sm font-medium hover:bg-[#31513a]/10 disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#82967f]/40 dark:hover:bg-white/10";
 const field = "w-full rounded-lg border border-[#31513a]/30 bg-white p-2 text-sm dark:border-[#82967f]/40 dark:bg-[#102017]";
 
-export default function BookReader({ locale }: { locale: Language }) {
+export default function BookReader({ locale, onAdd, addedIds = [] }: {
+  locale: Language; onAdd?: (excerpt: BookExcerpt) => boolean; addedIds?: readonly string[];
+}) {
   const ur = locale === "ur";
   const [shelf, setShelf] = useState<Shelf | null>(null);
   const [sourceId, setSourceId] = useState("");
@@ -23,6 +31,10 @@ export default function BookReader({ locale }: { locale: Language }) {
   const [findText, setFindText] = useState("");
   const [fontSize, setFontSize] = useState(22);
   const [targetParagraph, setTargetParagraph] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [progress, setProgress] = useState<ReaderProgress>(EMPTY_READER_PROGRESS);
+  const progressRef = useRef<ReaderProgress>(EMPTY_READER_PROGRESS);
+  const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const abort = useRef<AbortController | null>(null);
@@ -51,9 +63,24 @@ export default function BookReader({ locale }: { locale: Language }) {
   function args(op: string, source = sourceId, extra: Record<string, string> = {}) {
     return new URLSearchParams({ op, sourceId: source, locale, ...extra });
   }
-  async function read(source: string, recordId: string, part = 1, paragraphId = "") {
+  function saveProgress(next: ReaderProgress) {
+    progressRef.current = next;
+    setProgress(next);
+    try { localStorage.setItem(KHATEEB_READER_PROGRESS_KEY, JSON.stringify(next)); }
+    catch { setMessage(ur ? "اس براؤزر میں مطالعے کا مقام محفوظ نہیں ہوسکا۔" : "Reading location could not be saved in this browser."); }
+  }
+  async function read(source: string, recordId: string, part = 1, paragraphId = "", expected?: ReaderAnchor) {
     const result = await get(args("read", source, { id: recordId, part: String(part) }));
-    if (result?.recordId) { setReading(result as BookReadingPage); setTargetParagraph(paragraphId); }
+    if (!result?.recordId) return null;
+    const page = result as BookReadingPage;
+    if (expected && !anchorMatchesPage(expected, page)) {
+      setMessage(ur ? "محفوظ نشان پرانا ہے؛ یہ نسخہ بدل چکا ہے۔ اسے خودکار طور پر کسی دوسرے متن سے نہیں جوڑا گیا۔" : "Saved bookmark no longer matches this exact edition. It was not remapped.");
+      return null;
+    }
+    setReading(page); setTargetParagraph(paragraphId);
+    setSelectedIds([]); setMessage("");
+    saveProgress(rememberReaderPosition(progressRef.current, anchorForPage(page, paragraphId)));
+    return page;
   }
   async function contents(source: string, page = 1, autoOpen = false) {
     const result = await get(args("contents", source, { page: String(page) }));
@@ -64,6 +91,11 @@ export default function BookReader({ locale }: { locale: Language }) {
   }
   useEffect(() => {
     let active = true;
+    let stored = EMPTY_READER_PROGRESS;
+    try { stored = parseReaderProgress(localStorage.getItem(KHATEEB_READER_PROGRESS_KEY)); }
+    catch { /* Storage may be blocked; the reader still works without persistence. */ }
+    progressRef.current = stored;
+    setProgress(stored);
     const controller = new AbortController();
     fetch("/api/research/book-reader?op=catalog", {
       signal: controller.signal, credentials: "same-origin", cache: "no-store",
@@ -74,9 +106,18 @@ export default function BookReader({ locale }: { locale: Language }) {
       if (!active) return;
       setShelf(result);
       if (result.ready && result.sources.length) {
-        const first = result.sources.find(s => s.id === "kafi-v8-ar")?.id ?? result.sources[0].id;
+        const resume = stored.lastRead && result.sources.find(s =>
+          s.id === stored.lastRead?.sourceId && s.sha256 === stored.lastRead?.sourceSha256
+        ) ? stored.lastRead : null;
+        const first = resume?.sourceId ?? result.sources.find(s => s.id === "kafi-v8-ar")?.id ?? result.sources[0].id;
         setSourceId(first);
-        void contents(first, 1, true);
+        if (resume) {
+          void (async () => {
+            const page = await read(first, resume.recordId, resume.part, resume.paragraphId, resume);
+            if (page) await contents(first, Math.ceil(page.recordOrdinal / 24));
+            else await contents(first, 1, true);
+          })();
+        } else void contents(first, 1, true);
       }
     }).catch(() => {
       if (active) setError(ur ? "کتاب خانہ نہیں کھل سکا۔" : "Could not open the library.");
@@ -88,7 +129,7 @@ export default function BookReader({ locale }: { locale: Language }) {
 
   async function changeSource(next: string) {
     setSourceId(next);
-    setReading(null); setToc(null); setFind(null); setFindText(""); setTargetParagraph("");
+    setReading(null); setToc(null); setFind(null); setFindText(""); setTargetParagraph(""); setSelectedIds([]);
     await contents(next, 1, true);
   }
   async function search(page = 1) {
@@ -96,8 +137,59 @@ export default function BookReader({ locale }: { locale: Language }) {
     const data = await get(args("find", sourceId, { query: findText.trim(), page: String(page) }));
     if (data?.hits) setFind(data as BookFindResults);
   }
+  function toggleBookmark() {
+    if (!reading) return;
+    const target = selectedIds[0] ?? targetParagraph || reading.paragraphs[0]?.id;
+    if (!target) return;
+    const bookmark = anchorForPage(reading, target);
+    saveProgress(toggleReaderBookmark(progressRef.current, bookmark));
+    setMessage(ur ? "مطالعے کا نشان محفوظ ہوگیا یا ہٹا دیا گیا۔" : "Reading bookmark updated.");
+  }
+  async function addToSermon() {
+    if (!onAdd || !reading || busy || !selectedIds.length) return;
+    const current = reading;
+    const selected = current.paragraphs.filter(p => selectedIds.includes(p.id));
+    if (!selected.length || selected.length > 12) return;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const response = await fetch("/api/research/book-reader", {
+        method: "POST", credentials: "same-origin", cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceId: current.sourceId, recordId: current.recordId,
+          sourceSha256: current.sourceSha256, recordSha256: current.recordSha256,
+          part: current.page, paragraphIds: selected.map(p => p.id),
+        }),
+      });
+      if (!response.ok) throw new Error(response.status === 409 ? "stale" : "request");
+      const value = await response.json();
+      const excerpt: BookExcerpt = value.excerpt;
+      if (!isBookExcerpt(excerpt) || excerpt.sourceSha256 !== current.sourceSha256
+        || excerpt.recordSha256 !== current.recordSha256
+        || excerpt.recordId !== current.recordId
+        || excerpt.paragraphs.length !== selected.length
+        || selected.some((p, i) => excerpt.paragraphs[i].id !== p.id || excerpt.paragraphs[i].text !== p.text))
+        throw new Error("mismatch");
+      if (addedIds.includes(excerpt.id)) {
+        setMessage(ur ? "یہ اقتباس پہلے سے مجلس میں شامل ہے۔" : "This passage is already in your sermon.");
+        return;
+      }
+      const saved = onAdd(excerpt);
+      setMessage(saved
+        ? (ur ? "منتخب عبارت حوالہ سمیت میری مجلس میں شامل اور محفوظ ہوگئی۔" : "Selected source passage saved in My Sermon.")
+        : (ur ? "اقتباس مجلس میں شامل ہے، مگر اسے مستقل محفوظ کرنے میں خرابی ہے؛ مجلس کی محفوظ نقل بنائیں۔" : "Passage added but storage failed; export a sermon backup."));
+    } catch (reason) {
+      setError(reason instanceof Error && reason.message === "stale"
+        ? (ur ? "اصل کتابی نسخہ تبدیل ہوچکا ہے۔ دوبارہ عبارت کھول کر انتخاب کریں۔" : "The edition changed. Reopen the source and select again.")
+        : (ur ? "منتخب اقتباس مجلس میں شامل نہیں ہوسکا؛ دوبارہ کوشش کریں۔" : "Could not add the selected source passage."));
+    } finally { setBusy(false); }
+  }
   const selectedSource = shelf?.sources.find(s => s.id === sourceId);
   const citation = reading?.reference ?? "";
+  const currentBookmark = reading?.paragraphs.length ? anchorForPage(reading, selectedIds[0] ?? targetParagraph || reading.paragraphs[0].id) : null;
+  const isBookmarked = !!currentBookmark && progress.bookmarks.some(b => sameReaderAnchor(b, currentBookmark));
+  const visibleBookmarks = progress.bookmarks.filter(b =>
+    b.sourceId === sourceId && b.sourceSha256 === selectedSource?.sha256);
   const isArabic = selectedSource?.language === "ar";
   return <section dir={ur ? "rtl" : "ltr"} data-testid="khateeb-book-reader" className="space-y-4 rounded-2xl border border-[#31513a]/25 bg-[#fdfbf4] p-3 text-[#1A3A2A] dark:border-[#82967f]/30 dark:bg-[#102017] dark:text-white sm:p-5">
     <header className="space-y-1">
@@ -109,6 +201,7 @@ export default function BookReader({ locale }: { locale: Language }) {
     <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss}/>
     {error ? <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p> : null}
     {busy ? <p role="status" className="text-sm">{ur ? "کتاب کھولی جا رہی ہے…" : "Opening book…"}</p> : null}
+    {message ? <p role="status" className="text-sm text-emerald-800 dark:text-emerald-200">{message}</p> : null}
     {shelf && !shelf.ready ? <p role="status">{ur ? "کتابی ذخیرہ ابھی موجود نہیں۔" : "No book corpus is active."}</p> : null}
     {shelf?.ready && <>
       <label className="grid gap-1 text-sm font-medium">
@@ -117,6 +210,21 @@ export default function BookReader({ locale }: { locale: Language }) {
           {shelf.sources.map(source => <option key={source.id} value={source.id}>{bookSourceLabel(source, locale)}</option>)}
         </select>
       </label>
+      {visibleBookmarks.length > 0 ? <div className="space-y-2 rounded-xl border border-[#31513a]/20 p-3 dark:border-[#82967f]/20">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h4 className="text-sm font-semibold">{ur ? "محفوظ مقامات" : "Bookmarks"}</h4>
+          <button className={btn} type="button" onClick={() => {
+            saveProgress({ ...progressRef.current, bookmarks: progressRef.current.bookmarks.filter(b => b.sourceId !== sourceId) });
+          }}>{ur ? "اس نسخے کے نشان مٹائیں" : "Clear this edition's bookmarks"}</button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {visibleBookmarks.map((anchor, index) => <button type="button" className={btn} key={index}
+            disabled={busy}
+            onClick={() => void read(anchor.sourceId, anchor.recordId, anchor.part, anchor.paragraphId, anchor)}>
+            {ur ? "محفوظ حصہ" : "Bookmark"} {index + 1} · {anchor.part}
+          </button>)}
+        </div>
+      </div> : null}
       <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_minmax(0,2fr)]">
         <aside aria-label={ur ? "کتاب کی فہرست" : "Book contents"} className="space-y-2 rounded-xl border border-[#31513a]/20 p-3 dark:border-[#82967f]/20">
           <h4 className="font-bold">{ur ? "فہرستِ کتاب" : "Contents"}</h4>
@@ -170,12 +278,26 @@ export default function BookReader({ locale }: { locale: Language }) {
                 disabled={fontSize >= 32} onClick={() => setFontSize(size => Math.min(32, size + 2))}>+</button>
               <button type="button" className={btn} onClick={() => void feedback.copy(copyReadingPage(reading, false))}>{ur ? "اصل متن نقل کریں" : "Copy exact text"}</button>
               <button type="button" className={btn} onClick={() => void feedback.copy(copyReadingPage(reading, true))}>{ur ? "حوالہ سمیت نقل کریں" : "Copy with reference"}</button>
+              <button type="button" className={btn} aria-pressed={isBookmarked} onClick={toggleBookmark}>
+                {isBookmarked ? (ur ? "نشان ہٹائیں" : "Remove bookmark") : (ur ? "نشان لگائیں" : "Bookmark this place")}
+              </button>
+              {onAdd ? <button type="button" className={btn} disabled={busy || !selectedIds.length} onClick={() => void addToSermon()}>
+                {ur ? "منتخب عبارت میری مجلس میں شامل کریں" : "Add selection to My Sermon"}
+              </button> : null}
             </div>
             <div className="space-y-5" lang={reading.language} dir={reading.language === "en" ? "ltr" : "rtl"}
               style={{ fontSize: `${fontSize}px`, lineHeight: isArabic ? 2.1 : 2.3 }}>
               {reading.paragraphs.map(p => <div key={p.id}
                 className={targetParagraph === p.id ? "rounded-lg bg-amber-100/80 p-2 dark:bg-amber-900/20" : ""}
-                data-paragraph-id={p.id}><BookPassageText text={p.text} language={reading.language}/></div>)}
+                data-paragraph-id={p.id}>
+                {onAdd ? <label className="mb-2 flex items-center gap-2 text-xs">
+                  <input type="checkbox" aria-label={ur ? `پیراگراف منتخب کریں ${p.id.split(":p").at(-1)}` : `Select paragraph ${p.id.split(":p").at(-1)}`}
+                    checked={selectedIds.includes(p.id)} onChange={e => setSelectedIds(ids =>
+                      e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} />
+                  {ur ? "مجلس کے لیے منتخب کریں" : "Select for sermon"}
+                </label> : null}
+                <BookPassageText text={p.text} language={reading.language}/>
+              </div>)}
             </div>
             <nav aria-label={ur ? "مطالعے کی ترتیب" : "Reading navigation"} className="flex flex-wrap items-center justify-between gap-2 border-t border-[#31513a]/20 pt-4">
               <button type="button" className={btn} disabled={busy || (reading.page === 1 && !reading.previousRecordId)} onClick={() => {
