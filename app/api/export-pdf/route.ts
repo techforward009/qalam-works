@@ -1,3 +1,4 @@
+import { classifyPdfExportFailure } from "../../tools/document-studio/utils/pdfExportDiagnostics";
 import { deriveDocumentTitle } from "../../tools/document-studio/utils/extractPlainText";
 import { buildPdfHeaderTemplate, buildPdfFooterTemplate } from "../../tools/document-studio/utils/pdfHeaderFooter";
 import { fontsForDocument } from "../../tools/document-studio/utils/pdfDocumentFonts";
@@ -214,9 +215,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("PDF export failed:", err);
-    const blocked = err instanceof Error && err.message.endsWith("export blocked") ? err.message : null;
-    return NextResponse.json({ error: blocked ?? "PDF بنانے میں خرابی ہوئی / Failed to generate PDF." }, { status: 500 });
+    const report = classifyPdfExportFailure(err);
+    // Never print the exception or source text: diagnostics may refer to private documents.
+    console.warn("[pdf-export] rejected", report.diagnostics[0]?.code);
+    return NextResponse.json(report, { status: report.diagnostics[0]?.kind === "too_large" ? 413 : report.diagnostics[0]?.kind === "timeout" ? 504 : 500 });
   } finally {
     if (browser) await browser.close();
   }
