@@ -26,7 +26,7 @@ const months = [
 describe("Pakistan calendar historical lunar record — Gregorian 2022", () => {
   it("stores 13 reviewed 2022 first-of-month records and a complete archive through 2025", () => {
     expect(PAKISTAN_2022_HISTORIC_ANCHORS).toHaveLength(13);
-    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(73);
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(85);
     const allIds = PAKISTAN_OFFICIAL_HIJRI_ANCHORS.map(a => a.id);
     expect(new Set(allIds).size).toBe(allIds.length);
     for (const month of PAKISTAN_2022_HISTORIC_ANCHORS) {
