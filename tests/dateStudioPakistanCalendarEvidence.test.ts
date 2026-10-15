@@ -20,7 +20,8 @@ describe("Date Studio Pakistan calendar evidence across all views", () => {
   });
 
   it("never misrepresents unverified dates as official", () => {
-    expect(find(2026, 1, 19).hijriSource).toBe("tabular");
+    expect(find(2026, 1, 19).hijriSource).toBe("official");
+    expect(find(2026, 11, 15).hijriSource).toBe("tabular");
     expect(resolveDisplayHijriDate({ year: 2026, month: 7, day: 11 })).toMatchObject({ source: "tabular" });
   });
 
