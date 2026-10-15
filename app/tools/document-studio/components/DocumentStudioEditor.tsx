@@ -285,6 +285,7 @@ export default function DocumentStudioEditor() {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pdfDiagnosis, setPdfDiagnosis] = useState<PdfExportFailure | null>(null);
+  const pdfDiagnosticDocumentRef = useRef<string | null>(null);
   const [pdfSummary, setPdfSummary] = useState<{
     pages: number;
     fileSizeLabel: string;
@@ -1183,11 +1184,13 @@ export default function DocumentStudioEditor() {
     setPdfDiagnosis(null);
     setPdfSummary(null);
     setIsExportingPdf(true);
+    const exportDoc = editor.getJSON();
+    pdfDiagnosticDocumentRef.current = JSON.stringify(exportDoc);
     try {
       const response = await fetch("/api/export-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc: editor.getJSON(), dir, settings: documentSettings }),
+        body: JSON.stringify({ doc: exportDoc, dir, settings: documentSettings }),
       });
 
       if (!response.ok) {
@@ -1707,6 +1710,10 @@ export default function DocumentStudioEditor() {
                   {problem.unicode && <p>متعلقہ حرف: {problem.character} (<bdi dir="ltr">{problem.unicode}</bdi>)</p>}
                   {problem.source && <button type="button" className="rounded border px-3 py-1 font-medium" onClick={() => {
                     if (!editor) return;
+                    if (JSON.stringify(editor.getJSON()) !== pdfDiagnosticDocumentRef.current) {
+                      setPdfError("دستاویز بدل چکی ہے۔ تازہ جانچ کے بعد ہی متعلقہ عبارت کھولیں۔");
+                      return;
+                    }
                     let current = editor.state.doc;
                     let position = 0;
                     for (const index of problem.source!.path) {
