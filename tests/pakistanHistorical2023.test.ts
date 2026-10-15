@@ -29,7 +29,7 @@ const find=(year:number,month:number,day:number)=>
 describe("Pakistan historic lunar calendar across Gregorian 2023", () => {
   it("stores twelve 2023-context reported official months with unique identities, direct sources and real month lengths", () => {
     expect(PAKISTAN_2023_HISTORIC_ANCHORS).toHaveLength(12);
-    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(48);
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(61);
     const ids=PAKISTAN_OFFICIAL_HIJRI_ANCHORS.map(a=>a.id);
     expect(new Set(ids).size).toBe(ids.length);
     for(const anchor of PAKISTAN_2023_HISTORIC_ANCHORS){
