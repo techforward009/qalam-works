@@ -87,6 +87,26 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await page.screenshot({path:testInfo.outputPath("pk-2022-rabi-thani.png"),fullPage:true});
   });
 
+  test("Pakistan Ramadan 2021: 23 April is 10 Ramadan 1442 in day/month", async ({page},testInfo) => {
+    await page.goto("/date/2021-04-23");
+    await expect(page.getByText("Pakistan official Hijri date")).toBeVisible();
+    await expect(page.getByText("10 Ramadan 1442 AH",{exact:true})).toBeVisible();
+    await page.goto("/calendar/2021/4");
+    await expect(page.locator('[data-calendar-month="4"] a[href="/date/2021-04-23"] [data-role="hijri-day"]'))
+      .toContainText(/^10/);
+    await page.screenshot({path:testInfo.outputPath("pk-2021-ramadan-calendar.png"),fullPage:true});
+  });
+
+  test("Pakistan Shawwal 2021: official Eid on 13 May overrides old forecast", async ({page},testInfo) => {
+    await page.goto("/date/2021-05-13");
+    await expect(page.getByText("Pakistan official Hijri date")).toBeVisible();
+    await expect(page.getByText("1 Shawwal 1442 AH",{exact:true})).toBeVisible();
+    await page.goto("/calendar/2021/5");
+    await expect(page.locator('[data-calendar-month="5"] a[href="/date/2021-05-13"] [data-role="hijri-day"]'))
+      .toContainText(/^1/);
+    await page.screenshot({path:testInfo.outputPath("pk-2021-shawwal-calendar.png"),fullPage:true});
+  });
+
   test("keeps the Pakistan result visible and avoids sideways scrolling", async ({ page }) => {
     await page.goto("/calendar/2025/3");
     const visible = page.getByText("Pakistan Hijri calendar");
