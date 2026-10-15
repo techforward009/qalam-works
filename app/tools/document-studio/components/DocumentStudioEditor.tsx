@@ -1208,7 +1208,9 @@ export default function DocumentStudioEditor() {
           setPdfError(typeof payload.error === "string" ? payload.error : GENERIC_PDF_EXPORT_ERROR);
           setPdfDiagnostics(Array.isArray(payload.diagnostics) ? payload.diagnostics.filter(item => item && typeof item.messageUrdu === "string") : []);
         } catch {
-          setPdfError(GENERIC_PDF_EXPORT_ERROR);
+          setPdfError(response.status === 413 ? "دستاویز کا حجم بہت زیادہ ہے۔ تصاویر یا فائل کا حجم کم کرکے دوبارہ کوشش کریں۔" :
+            response.status === 504 ? "پی ڈی ایف بنانے میں زیادہ وقت لگ گیا۔ دوبارہ کوشش کریں۔" :
+            response.status === 503 ? "پی ڈی ایف کی سہولت عارضی طور پر دستیاب نہیں۔ بعد میں دوبارہ کوشش کریں۔" : GENERIC_PDF_EXPORT_ERROR);
         }
         return;
       }
