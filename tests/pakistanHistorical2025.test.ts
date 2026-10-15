@@ -28,7 +28,7 @@ const jdn = (date: { year:number; month:number; day:number }) =>
 describe("Pakistan full Gregorian 2025 historical month archive", () => {
   it("contains 13 published month-start anchors with distinct sources and valid boundaries", () => {
     expect(PAKISTAN_2025_HISTORIC_ANCHORS).toHaveLength(13);
-    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(73);
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(85);
     const ids = PAKISTAN_2025_HISTORIC_ANCHORS.map(a => a.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const anchor of PAKISTAN_2025_HISTORIC_ANCHORS) {
