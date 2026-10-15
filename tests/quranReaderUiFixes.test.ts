@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { surahBanner } from "../app/quran/indopak-digital-khatt/surahBanner";
 import { displaySurahBannerName, initialQuranDisplayScale } from "../app/quran/reader/readerPresentation";
@@ -9,6 +9,8 @@ const digital = read("app/quran/indopak-digital-khatt/DigitalKhattReader.tsx");
 const styles = read("app/globals.css");
 const digitalCss = read("app/quran/indopak-digital-khatt/reader.module.css");
 const translation = read("app/quran/QuranTranslationPage.tsx");
+const translatorPicker = existsSync("app/quran/QuranUrduTranslatorPicker.tsx")
+  ? read("app/quran/QuranUrduTranslatorPicker.tsx") : translation;
 const transliteration = read("app/quran/QuranTransliterationPage.tsx");
 const tafsir = read("app/quran/QuranTafsirPage.tsx");
 
@@ -57,12 +59,101 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(conventional).toContain('className="quran-ayah inline"');
   });
 
-  it("locks existing Alvi for Tafsir Urdu and Amiri for vowelled Arabic, no new asset", () => {
+  it("locks Alvi body, Gulzar headings, and Scheherazade Arabic in Tafsir only", () => {
     expect(tafsir).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
     expect(tafsir).toContain('data-tafsir-arabic="true"');
-    expect(tafsir).toContain('var(--font-amiri), "Amiri"');
+    expect(tafsir).toContain('fontFamily: \'"Qalam Tafsir Scheherazade", serif\'');
+    expect(tafsir).toContain('publicBlobFontUrl("ScheherazadeNew-Medium.woff2")');
+    expect(tafsir).not.toContain('data-tafsir-font-warning');
+    expect(tafsir).not.toContain('var(--font-amiri), "Amiri"');
+    expect(tafsir).toContain('fontFamily: \'"Gulzar", serif\'');
+    expect(tafsir).toContain('data-tafsir-topic-heading="true"');
     expect(tafsir).not.toContain("Preview Urdu font:");
     expect(styles).toContain("Alvi_Nastaleeq.woff2");
+    expect(styles).toMatch(/font-family:\s*"Digital Khatt Indo-Pak"/);
+    expect(styles).toMatch(/font-family:\s*"Gulzar"/);
+  });
+
+  it("centers the Urdu Tafsir title and keeps source label and Nastaliq source options on one row", () => {
+    expect(tafsir).toContain('data-tafsir-urdu-header="true"');
+    expect(tafsir).toContain('data-tafsir-source-row="true"');
+    expect(tafsir).toContain('mx-auto text-center');
+    expect(tafsir).toContain('sourceMenuRef');
+    expect(tafsir).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
+    expect(tafsir).toContain('fontFamily: \'"Gulzar", "Noto Nastaliq Urdu", serif\'');
+    expect(tafsir).toContain('زیرِ تکمیل');
+    expect(tafsir).toContain('disabled={!available}');
+    expect(tafsir).toContain('اس تفسیری مضمون کے موضوعات');
+    expect(tafsir).toContain('tafsir-topic-');
+    expect(tafsir).toContain('بسم اللہ الرحمن الرحیم');
+    expect(tafsir).not.toContain('font-naskh text-[0.78em]');
+  });
+
+  it("shares the first-verse topic count, list and anchors across Urdu and English Tafsir", () => {
+    expect(tafsir).toContain('data-tafsir-topics-index={chosenLanguage}');
+    expect(tafsir).toContain('remoteTopics.length > 1 ? (');
+    expect(tafsir).toContain('Topics in this commentary');
+    expect(tafsir).toContain('اس تفسیری مضمون کے موضوعات');
+    expect(tafsir).toContain('displayTafsirHeading(tafsirDisplayTopicHeading(topic.title, topic.text), chosenLanguage)');
+    expect(tafsir).toContain('href={"#tafsir-topic-" + i}');
+    expect(tafsir).toContain('id={"tafsir-topic-" + i}');
+    expect(tafsir).toContain('dir={ur ? "rtl" : "ltr"}');
+    expect(tafsir).toContain('fontSize: language === "ur" ? "20px" : "1.12em"');
+  });
+
+  it("shows original shared commentary verse scope without presenting it as a per-ayah extract", () => {
+    const route = read("app/api/quran/tafsir-namoona/route.ts");
+    expect(route).toContain('indexTafsirCoverage(corpus.verses)');
+    expect(route).toContain('tafsirCoverageForRefs(entryIndex.refs, coverageIndex)');
+    expect(route).toContain('heading: topics[0]?.title ?? "", topics, coverage,');
+    expect(tafsir).toContain('data-tafsir-verse-coverage="true"');
+    expect(tafsir).toContain('data-tafsir-source-ranges="true"');
+    expect(tafsir).toContain('اس تفسیر میں شامل آیات');
+    expect(tafsir).toContain('Verses covered by this commentary');
+    expect(tafsir).toContain('منتخب آیت: ');
+    expect(tafsir).toContain('Selected verse: ');
+    expect(tafsir).toContain('tafsirDisplayTopicBody(topic.title, topic.text)');
+    expect(tafsir).not.toContain('خودکار آیت وار خلاصہ');
+  });
+
+  it("passes every actual printed Quran-page ayah to Tafsir instead of only the selected ayah", () => {
+    expect(conventional).toContain('<QuranTafsirPage surah={surah} ayah={ayah} ayahs={ayahs} />');
+    expect(tafsir).toContain('const pageVerseKeys = ayahs?.map((item) => item.surah + ":" + item.ayah).join(",") ?? ""');
+    expect(tafsir).toContain('encodeURIComponent(pageVerseKeys)');
+    expect(tafsir).toContain('data-tafsir-page-sections="true"');
+    expect(tafsir).toContain('sections={pageSections}');
+    expect(tafsir).toContain('sourceKey: string;');
+    expect(tafsir).toContain('اس قرآنی صفحے کی تفسیریں');
+    expect(tafsir).toContain('Commentary for this Quran page');
+    expect(tafsir).toContain('data-tafsir-source-section={section.sourceKey}');
+    const route = read("app/api/quran/tafsir-namoona/route.ts");
+    expect(route).toContain('const pageVerseParam = query.get("verses")');
+    expect(route).toContain('pageVerseKeys: pageKeys');
+    expect(route).toContain('sections: [...bySource.values()]');
+    expect(route).toContain('sourceKey,');
+    expect(route).toContain('verseKeysOnPage: [verseKey]');
+    expect(route).toContain('coverage: [...(coverageIndex.get(sourceKey) ?? [])]');
+    expect(route).toContain('checkHash(file, RELEASE[language].digest)');
+  });
+
+  it("keeps Quran translation text, selector, saved translator preference, and approved fonts intact", () => {
+    const translationCorpus = read("app/quran/reader/translationCorpus.ts");
+    expect(translation).toContain("ترجمۂ قرآن");
+    expect(translation).toContain('"ترجمہ: " +');
+    expect(translatorPicker).toContain("مترجم منتخب کریں");
+    if (translatorPicker === translation) {
+      expect(translatorPicker).toContain('<option value="mohsin-najfi">علامہ شیخ محسن علی نجفی</option>');
+    } else {
+      expect(translatorPicker).toContain('id: "mohsin-najfi", label: "علامہ شیخ محسن علی نجفی"');
+      expect(translatorPicker).toContain('id: "safdar-najfi", label: "علامہ سید صفدر حسین نجفی (تفسیر نمونہ)"');
+      expect(translation).toContain("QuranUrduTranslatorPicker");
+    }
+    expect(translation).toContain("storedQuranUrduTranslator()");
+    expect(translation).toContain("saveQuranUrduTranslator(next)");
+    expect(translation).toContain('"Gulzar", "Noto Nastaliq Urdu", serif');
+    expect(translation).toContain('"Qalam Quran Jameel", "Noto Nastaliq Urdu", serif');
+    expect(translationCorpus).toContain('"mohsin-najfi"');
+    expect(translationCorpus).toContain('"safdar-najfi"');
   });
 
   it("centers Juz, page and Surah top-row items on the same vertical axis", () => {
@@ -149,14 +240,37 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(conventional).toContain('onClick={() => chooseReaderView(value)}');
   });
 
+  it("reads private v10 Urdu and English from the research store via OIDC without changing v9", () => {
+    const route = read("app/api/quran/tafsir-namoona/route.ts");
+    expect(route).toContain('import { getVercelOidcToken } from "@vercel/oidc"');
+    expect(route).toContain('QALAM_RESEARCH_STORE_ID');
+    expect(route).toContain('oidcToken, useCache: false');
+    expect(route).toContain('const file = await loadResearchBlob(RELEASE[language].path)');
+    expect(route).toContain('const file = await loadBlob([');
+    expect(route).toContain('"qalam/tafsir-namoona/urdu-v9.json.br"');
+    expect(route).toContain('checkHash(file, RELEASE[language].digest)');
+  });
+
+  it("pins the reviewed private Urdu v10 archive and matching checksum without changing English or v9 rollback", () => {
+    const route = read("app/api/quran/tafsir-namoona/route.ts");
+    expect(route).toContain('"qalam/tafsir-namoona/urdu-v10-reviewed-first20-20261015.json.br"');
+    expect(route).toContain('"119f8e96988a317df531a21ac8f271447e7c3a856f1ab11bac57cf5fb8a45c38"');
+    expect(route).toContain('"qalam/tafsir-namoona/english-v10-release-20261015.json.br"');
+    expect(route).toContain('"6e08e6952e33a452f7f644c6462cdad3d8250741ef7f1445c3ae5d37becaed59"');
+    expect(route).toContain('"qalam/tafsir-namoona/urdu-v9.json.br"');
+    expect(route).toContain('checkHash(file, RELEASE[language].digest)');
+    expect(route).toContain('const file = await loadResearchBlob(RELEASE[language].path)');
+  });
+
   it("removes the outdated Tafsir publisher message but does not manufacture source text", () => {
     expect(tafsir).not.toContain("تفسیر نمونہ کی اشاعت ناشر کی اجازت کی تصدیق تک مؤخر ہے۔");
     expect(tafsir).toContain('remote?.status === "corpus_not_uploaded"');
-    expect(tafsir).toContain('تفسیر نمونہ کا اردو متن ابھی اس سرور پر فعال نہیں ہوا۔');
+    expect(tafsir).toContain('اس زبان کی تفسیر ابھی ویب سائٹ پر فعال نہیں ہوئی۔');
     expect(tafsir).toContain('remote?.status === "unicode_apk"');
     const route = read("app/api/quran/tafsir-namoona/route.ts");
     expect(route).toContain('QALAM_TAFSIR_NAMOONA_PUBLICATION_APPROVED');
     expect(route).toContain('status: "corpus_not_uploaded"');
     expect(route).toContain('status: "unicode_apk"');
   });
+
 });
