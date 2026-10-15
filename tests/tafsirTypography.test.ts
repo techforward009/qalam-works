@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { displayTafsirHeading, splitTafsirTypography, tafsirSourceHeading } from "../app/quran/reader/tafsirTypography";
 
 const flatten = (text: string) => splitTafsirTypography(text).map((run) => run.text).join("");
@@ -14,16 +15,30 @@ describe("Tafsir source-preserving typography", () => {
     for (const sample of samples) expect(flatten(sample)).toBe(sample);
   });
 
-  it("applies Digital Khatt to a complete standalone Arabic quotation and keeps its source note separate", () => {
+  it("keeps complete standalone Arabic quotations, including U+06D2, in one Arabic run", () => {
     const text = "اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ\nوَقَالَ ارْكَبُواْ فِيهَا بِسْمِ اللّهِ مَجْرِےهَا وَمُرْسَاهَا إِنَّ رَبِّي لَغَفُورٌ رَّحِيمٌ (ہود، آیت ۴۱)۔";
     const runs = splitTafsirTypography(text);
     expect(runs.filter((run) => run.kind === "arabic").map((run) => run.text)).toEqual([
       "اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ",
-    ]);
-    expect(runs.filter((run) => run.kind === "arabic-unsupported").map((run) => run.text)).toEqual([
       "وَقَالَ ارْكَبُواْ فِيهَا بِسْمِ اللّهِ مَجْرِےهَا وَمُرْسَاهَا إِنَّ رَبِّي لَغَفُورٌ رَّحِيمٌ",
     ]);
+    expect(runs.some((run) => run.kind === "reference")).toBe(true);
     expect(runs.filter((run) => run.kind === "reference").map((run) => run.text)).toEqual([" (ہود، آیت ۴۱)۔"]);
+    expect(flatten(text)).toBe(text);
+  });
+
+  it("uses the existing approved public Scheherazade New file only for Tafsir Arabic quotations", () => {
+    const page = readFileSync("app/quran/QuranTafsirPage.tsx", "utf8");
+    const catalog = readFileSync("app/tools/document-studio/utils/publicBlobFontCatalog.ts", "utf8");
+    expect(catalog).toContain('ScheherazadeNew-Medium.woff2');
+    expect(page).toContain('publicBlobFontUrl("ScheherazadeNew-Medium.woff2")');
+    expect(page).toContain('fontFamily: \'"Qalam Tafsir Scheherazade", serif\'');
+    expect(page).toContain('data-tafsir-font="scheherazade-new"');
+    expect(page).toContain('<style>{TAFSIR_SCHEHERAZADE_CSS}</style>');
+    expect(page).not.toContain('data-tafsir-font-warning');
+    expect(page).not.toContain('Digital Khatt lacks a glyph');
+    expect(page).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
+    expect(page).toContain('fontFamily: \'"Gulzar", serif\'');
   });
 
   it("leaves ambiguous and mixed Urdu lines intact instead of switching individual words", () => {
