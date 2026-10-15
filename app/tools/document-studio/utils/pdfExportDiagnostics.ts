@@ -32,10 +32,12 @@ export function issueForPdfFailure(error: unknown, doc: DocNode): PdfFailure {
   if (blockedFont) {
     // An exact font cmap miss is independently verifiable. Gather ALL such
     // authored positions (bounded) without treating a missing glyph as painted.
+    let scannedProtectedRuns = 0;
     const scan = (node: DocNode, path: number[], blockPath: number[]) => {
       if (issues.length >= 15) return;
       if (node.type === "text" && typeof node.text === "string" &&
         node.marks?.some(mark => mark.type === "textStyle" && mark.attrs?.fontFamily === "Digital Khatt Indo-Pak")) {
+        const runIndex = scannedProtectedRuns++;
         let utf16Offset = 0;
         for (const ch of node.text) {
           const n = ch.codePointAt(0)!;
@@ -44,7 +46,7 @@ export function issueForPdfFailure(error: unknown, doc: DocNode): PdfFailure {
             issues.push({id:"unsupported-"+path.join("-")+"-"+utf16Offset,kind:"FONT_UNSUPPORTED",
               reason:"missing-glyph",selectedFont:"Digital Khatt Indo-Pak",
               codePoint:"U+"+n.toString(16).toUpperCase().padStart(4,"0"),character:ch,
-              location:{path,blockPath,runIndex:0,textOffset:utf16Offset,expectedText:node.text}});
+              location:{path,blockPath,runIndex,textOffset:utf16Offset,expectedText:node.text}});
           }
           utf16Offset += ch.length; // ProseMirror positions use UTF-16, not Unicode scalar indices.
         }
