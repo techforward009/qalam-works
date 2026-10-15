@@ -54,3 +54,23 @@ test("protected source diagnostic, navigation, approval/cancel/undo and safe ret
   await page.screenshot({path:dir+"/undo.png",fullPage:true});
   expect(await editor.innerText()).toContain("پ");
 });
+
+test("Quranic mark is never discarded or force-exported", async ({page},testInfo) => {
+  test.setTimeout(120_000);
+  await page.addInitScript(() => localStorage.setItem("qalam-site-language","ur"));
+  await page.goto("/tools/document-studio");
+  const editor = page.locator(".ProseMirror");
+  await expect(editor).toBeEditable();
+  await editor.click(); await page.keyboard.press("Control+A");
+  await page.keyboard.type("اۗ");
+  await page.keyboard.press("Control+A");
+  await page.locator('[data-studio-font-family="true"]').selectOption({label:"Digital Khatt Indo-Pak"});
+  const response = page.waitForResponse(r=>r.url().includes("/api/export-pdf") && r.request().method()==="POST");
+  await page.locator('[data-menu-root="file"]').click();
+  await page.locator('[data-menu-submenu="file.download"]').hover();
+  await page.locator('[data-menu-action="file.downloadPdf"]').click();
+  expect((await response).status()).toBe(500);
+  await expect(page.getByRole("region",{name:"PDF خرابیوں کی تفصیل"})).toBeVisible();
+  await expect(editor).toContainText("اۗ");
+  await page.screenshot({path:testInfo.outputPath("protected-quranic-failure.png"),fullPage:true});
+});
