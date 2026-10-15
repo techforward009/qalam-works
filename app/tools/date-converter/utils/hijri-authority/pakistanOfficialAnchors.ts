@@ -3,13 +3,15 @@ import { PAKISTAN_2025_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2025";
 import { PAKISTAN_2024_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2024";
 import { PAKISTAN_2023_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2023";
 import { PAKISTAN_2022_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2022";
+import { PAKISTAN_2021_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2021";
 
 /**
  * Reviewed Pakistan official/reported-official month anchors belong here.
  * Records are explicitly bounded; no historical official date is inferred.
  */
 export const PAKISTAN_OFFICIAL_HIJRI_ANCHORS: readonly OfficialHijriMonthAnchor[] = [
-  // Archived Pakistan lunar month starts span 6 December 2021 onward.
+  // Archived Pakistan lunar month starts span 16 December 2020 onward.
+  ...PAKISTAN_2021_HISTORIC_ANCHORS,
   ...PAKISTAN_2022_HISTORIC_ANCHORS,
   ...PAKISTAN_2023_HISTORIC_ANCHORS,
   ...PAKISTAN_2024_HISTORIC_ANCHORS,
