@@ -65,6 +65,14 @@ export function PakistanDateResult({
         <p className={`mt-3 text-center text-xs leading-relaxed text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`} data-testid="pakistan-hijri-status">
           {status}
         </p>
+        {reviewed?.sourceUrl && (
+          <p className="mt-2 text-center">
+            <a href={reviewed.sourceUrl} target="_blank" rel="noopener noreferrer"
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold text-[#31533d] underline underline-offset-2 dark:text-[#b8d4bc] ${naskh}`}>
+              {isUr ? "اصل پاکستانی اعلان یا تاریخی حوالہ" : "View Pakistan source"} <ExternalLink className="h-3 w-3" />
+            </a>
+          </p>
+        )}
       </div>
 
       <div className="space-y-3 px-5 py-4 sm:px-8">
