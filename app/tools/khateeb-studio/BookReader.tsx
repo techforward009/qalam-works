@@ -132,7 +132,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         const resume = stored.lastRead && result.sources.find(s =>
           s.id === stored.lastRead?.sourceId && s.sha256 === stored.lastRead?.sourceSha256
         ) ? stored.lastRead : null;
-        const first = resume?.sourceId ?? result.sources.find(s => s.id === "kafi-v8-ar")?.id ?? result.sources[0].id;
+        const first = resume?.sourceId ?? result.sources.find(s => s.id === "nahj-ar")?.id ?? result.sources.find(s => s.id === "kafi-v8-ar")?.id ?? result.sources[0].id;
         setSourceId(first);
         if (resume) {
           void (async () => {
