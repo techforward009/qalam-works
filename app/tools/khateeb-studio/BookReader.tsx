@@ -260,26 +260,30 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
             <option value="original">{ur ? "عربی" : "Arabic"}</option><option value="translation">{ur ? "اردو" : "Urdu"}</option><option value="combined">{ur ? "عربی + اردو" : "Arabic + Urdu"}</option>
           </select>
         </label> : null}
-        <button type="button" className={btn} aria-pressed={isBookmarked} disabled={!reading} onClick={toggleBookmark}>{isBookmarked ? (ur ? "نشان ہٹائیں" : "Remove bookmark") : (ur ? "نشان" : "Bookmark")}</button>
-        {onAdd ? <button type="button" className={btn} aria-pressed={selectionMode} disabled={!reading || busy} onClick={() => { setSelectionMode(mode => !mode); setSelectedIds([]); }}>{selectionMode ? (ur ? "انتخاب بند کریں" : "Done selecting") : (ur ? "عبارت منتخب کریں" : "Select passage")}</button> : null}
-        <details className={styles.menu}><summary className={btn}>{ur ? "نقل" : "Copy"}</summary><div className={styles.menuPanel}>
-          <label className={styles.menuLabel}>{ur ? "نقل کا متن" : "Copy content"}
-            <select className={field} value={copyMode} onChange={e => setCopyMode(e.target.value as BookCopyMode)}>
-              <option value="original">{ur ? "اصل عبارت" : "Original"}</option><option value="translation" disabled={!reading?.translations?.length}>{ur ? "اردو ترجمہ" : "Urdu translation"}</option><option value="combined">{ur ? "عربی اور اردو" : "Arabic and Urdu"}</option>
-            </select>
-          </label>
-          <button type="button" className={btn} disabled={!reading || (copyMode === "translation" && !reading.translations?.length)} onClick={() => reading && void feedback.copy(copyReadingPage(reading, false, copyMode))}>{ur ? "عبارت نقل کریں" : "Copy text"}</button>
-          <button type="button" className={btn} disabled={!reading || (copyMode === "translation" && !reading.translations?.length)} onClick={() => reading && void feedback.copy(copyReadingPage(reading, true, copyMode))}>{ur ? "حوالہ سمیت نقل کریں" : "Copy with reference"}</button>
-        </div></details>
-        <details className={styles.menu}><summary className={btn}>{ur ? "ترتیبات" : "Settings"}</summary><div className={styles.menuPanel}>
-          <span className={styles.menuLabel}>{ur ? "متن کا حجم" : "Text size"}</span>
-          <div className="flex items-center gap-2"><button type="button" className={btn} aria-label={ur ? "متن چھوٹا کریں" : "Smaller text"} disabled={fontSize <= 18} onClick={() => setFontSize(size => Math.max(18, size - 2))}>−</button><span>{fontSize}</span><button type="button" className={btn} aria-label={ur ? "متن بڑا کریں" : "Larger text"} disabled={fontSize >= 32} onClick={() => setFontSize(size => Math.min(32, size + 2))}>+</button></div>
-        </div></details>
-        <details className={styles.menu}><summary className={btn}>{ur ? "مزید" : "More"}</summary><div className={styles.menuPanel}>
-          <a href="/tools/khateeb-studio">{ur ? "مجلس کی تیاری" : "Sermon preparation"}</a>
-          <a href="/tools/research-studio">{ur ? "علمی تحقیق" : "Research"}</a>
-          <a href="/tools/khateeb-studio/library/admin">{ur ? "کتابوں کا انتظام" : "Book administration"}</a>
-        </div></details>
+        <details className={styles.menu}>
+          <summary className={btn}>{ur ? "مزید" : "More"}</summary>
+          <div className={styles.menuPanel}>
+            <label className={styles.menuLabel}>{ur ? "نقل کا متن" : "Copy"}
+              <select className={field} value={copyMode} onChange={e => setCopyMode(e.target.value as BookCopyMode)}>
+                <option value="original">{ur ? "اصل عبارت" : "Original"}</option><option value="translation" disabled={!reading?.translations?.length}>{ur ? "اردو ترجمہ" : "Urdu translation"}</option><option value="combined">{ur ? "عربی اور اردو" : "Arabic and Urdu"}</option>
+              </select>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className={btn} disabled={!reading || (copyMode === "translation" && !reading.translations?.length)} onClick={() => reading && void feedback.copy(copyReadingPage(reading, false, copyMode))}>{ur ? "نقل" : "Copy text"}</button>
+              <button type="button" className={btn} disabled={!reading || (copyMode === "translation" && !reading.translations?.length)} onClick={() => reading && void feedback.copy(copyReadingPage(reading, true, copyMode))}>{ur ? "حوالے سمیت" : "Copy with reference"}</button>
+            </div>
+            <div className={styles.menuDivider}/>
+            <span className={styles.menuLabel}>{ur ? "متن کا حجم" : "Text size"}</span>
+            <div className="flex items-center gap-2"><button type="button" className={btn} aria-label={ur ? "متن چھوٹا کریں" : "Smaller text"} disabled={fontSize <= 18} onClick={() => setFontSize(size => Math.max(18, size - 2))}>−</button><span>{fontSize}</span><button type="button" className={btn} aria-label={ur ? "متن بڑا کریں" : "Larger text"} disabled={fontSize >= 32} onClick={() => setFontSize(size => Math.min(32, size + 2))}>+</button></div>
+            <div className={styles.menuDivider}/>
+            <button type="button" className={btn} aria-pressed={isBookmarked} disabled={!reading} onClick={toggleBookmark}>{isBookmarked ? (ur ? "نشان ہٹائیں" : "Remove bookmark") : (ur ? "مطالعے کا نشان" : "Bookmark")}</button>
+            {onAdd ? <button type="button" className={btn} aria-pressed={selectionMode} disabled={!reading || busy} onClick={() => { setSelectionMode(mode => !mode); setSelectedIds([]); }}>{selectionMode ? (ur ? "انتخاب بند کریں" : "Done selecting") : (ur ? "عبارت منتخب کریں" : "Select passage")}</button> : null}
+            <div className={styles.menuDivider}/>
+            <a href="/tools/khateeb-studio">{ur ? "مجلس کی تیاری" : "Sermon preparation"}</a>
+            <a href="/tools/research-studio">{ur ? "علمی تحقیق" : "Research"}</a>
+            <a href="/tools/khateeb-studio/library/admin">{ur ? "کتابوں کا انتظام" : "Book administration"}</a>
+          </div>
+        </details>
       </nav>
       {visibleBookmarks.length > 0 ? <details className={styles.savedPlaces}><summary>{ur ? "محفوظ نشان (" + visibleBookmarks.length.toLocaleString("ur-PK") + ")" : "Saved places (" + visibleBookmarks.length + ")"}</summary>
         <div className={styles.bookmarkList}>
