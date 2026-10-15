@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createHash } from "node:crypto";
 import {
-  bookContents, bookReadingPage, bookFind, copyReadingPage, BOOK_TOC_PAGE_SIZE,
+  bookContents, bookReadingPage, bookFind, copyReadingPage, originalBookQuerySpan, BOOK_TOC_PAGE_SIZE,
 } from "../app/lib/knowledge/bookReaderModel";
 import type { BookRecord, BookSource } from "../app/lib/knowledge/bookCorpus";
 
@@ -28,6 +28,14 @@ const records: BookRecord[] = Array.from({length: 29}, (_, i) => {
 });
 
 describe("source-faithful book reader model", () => {
+  it("highlights exactly the original grapheme and full Arabic diacritics", () => {
+    expect(originalBookQuerySpan("وَقَالَ: صَبْرٌ جَمِيلٌ", "صبر")).toBe("صَبْرٌ");
+    expect(originalBookQuerySpan("دعا: الصَّبْرُ والإيمان", "الصبر")).toBe("الصَّبْرُ");
+    expect(originalBookQuerySpan("دعاء — صَبْرٌ", "صَبْرٌ")).toBe("صَبْرٌ");
+    expect(originalBookQuerySpan("وَقَالَ الصَّبْرُ", "غير")).toBeNull();
+    expect(originalBookQuerySpan("أَمَلٌ و عَمَلٌ", "امل")).toBe("أَمَلٌ");
+  });
+
   it("paginates contents in immutable source order without inventing Al-Kafi chapters", () => {
     const first = bookContents(records, src.id, "ur");
     const next = bookContents(records, src.id, "ur", 2);
