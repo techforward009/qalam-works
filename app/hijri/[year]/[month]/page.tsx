@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getReviewedPakistanHijriMonth } from "@/app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriMonth";
 import { DateStudioRouteNav } from "@/app/components/date-studio/DateStudioRouteNav";
 import { HijriMonthCalendar, type HijriMonthDay } from "@/app/components/date-studio/HijriMonthCalendar";
 import { HIJRI_MONTHS_EN, HIJRI_MONTHS_UR, convert, isoDate } from "@/app/tools/date-converter/utils/dateEngine";
@@ -19,7 +20,10 @@ export default async function HijriMonthPage({ params }: { params: Promise<{ yea
   const m = Number(month);
   if (!Number.isInteger(y) || y <= 0 || !Number.isInteger(m) || m < 1 || m > 12) notFound();
 
-  const days = getHijriMonthDays(y, m);
+  const reviewed = getReviewedPakistanHijriMonth(y, m);
+  const days = reviewed
+    ? reviewed.days.map(({ hijriDay, gregorian }) => ({ hijriDay, gregorian, gregorianIso: isoDate(gregorian) }))
+    : getHijriMonthDays(y, m);
   if (!days.length) notFound();
 
   const previousMonth = m === 1 ? { year: y - 1, month: 12 } : { year: y, month: m - 1 };
@@ -36,7 +40,7 @@ export default async function HijriMonthPage({ params }: { params: Promise<{ yea
         counterpartHref={`/calendar/${gregorianStart.year}/${gregorianStart.month}`}
         counterpartLabel={{ en: "Explore Gregorian month", ur: "عیسوی مہینہ دیکھیں" }}
       />
-      <HijriMonthCalendar year={y} month={m} days={days} />
+      <HijriMonthCalendar year={y} month={m} days={days} authority={reviewed ? "pakistan" : "tabular"} complete={reviewed?.complete ?? false} sourceUrl={reviewed?.sourceUrl} />
     </main>
   );
 }
