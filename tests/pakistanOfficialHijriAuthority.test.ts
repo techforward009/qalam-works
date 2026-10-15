@@ -19,13 +19,31 @@ describe("Pakistan official Hijri authority resolver", () => {
       hijri: { year: 1448, month: 3, day: 30 }, authority: "official",
     });
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 14 })).toMatchObject({ hijri: { year: 1448, month: 4, day: 1 }, authority: "official", verificationStatus: "verified" });
-    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(2);
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(3);
   });
 
   it("bounds the reviewed Rabi al-Thani anchor through day 29 without inferring day 30", () => {
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 15 })).toMatchObject({ hijri: { year: 1448, month: 4, day: 2 }, authority: "official" });
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 10, day: 12 })).toMatchObject({ hijri: { year: 1448, month: 4, day: 29 }, authority: "official" });
-    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 10, day: 13 })).toBeNull();
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 10, day: 13 })).toMatchObject({ hijri: { year: 1448, month: 5, day: 1 }, authority: "official", verificationStatus: "verified" });
+  });
+
+  it("uses the confirmed Jumada al-Awwal crescent and keeps future dates bounded", () => {
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 10, day: 15 })).toMatchObject({
+      hijri: { year: 1448, month: 5, day: 3 }, authority: "official",
+      anchorId: "pk-1448-jumada-al-awwal-2026-10-13",
+    });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 11, day: 10 })?.hijri).toEqual({ year: 1448, month: 5, day: 29 });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 11, day: 11 })).toBeNull();
+  });
+
+  it("resolves a crescent-sighted official decision only on the actual evening", async () => {
+    const { resolvePakistanOfficialSightingDecisionForEvening } = await import("../app/tools/date-converter/utils/hijri-authority/resolveOfficialSightingDecision");
+    expect(resolvePakistanOfficialSightingDecisionForEvening({ year: 2026, month: 10, day: 12 })).toMatchObject({
+      id: "pk-1448-jumada-al-awwal-2026-10-13", sightingDecision: "sighted",
+      authority: "official", verificationStatus: "verified",
+    });
+    expect(resolvePakistanOfficialSightingDecisionForEvening({ year: 2026, month: 10, day: 13 })).toBeNull();
   });
 
   it("resolves anchor day 1 and bounded derived days", () => {
