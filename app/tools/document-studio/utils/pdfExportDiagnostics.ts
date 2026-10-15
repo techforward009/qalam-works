@@ -7,7 +7,7 @@ export type PdfExportFailureCode =
 export interface PdfExportProblem {
   code: PdfExportFailureCode;
   message: string;
-  source?: { path: number[]; paragraphPath: number[]; start: number; end: number };
+  source?: { path: number[]; paragraphPath: number[]; start: number; end: number; snapshot?: string };
   selectedFont?: string;
   actualFont?: string;
   unicode?: string;
@@ -33,7 +33,7 @@ export function locatePdfFontProblem(doc: Node, font: string, unicode?: string, 
       const current = ordinal++;
       if (runIndex === undefined || current === runIndex) {
         const start = wanted ? node.text.indexOf(wanted) : 0;
-        if (start >= 0) return { path, paragraphPath: paragraph, start, end: start + (wanted?.length ?? node.text.length) };
+        if (start >= 0) return { path, paragraphPath: paragraph, start, end: start + (wanted?.length ?? node.text.length), snapshot: node.text };
       }
     }
     for (const [i, child] of (node.content ?? []).entries()) {
@@ -80,4 +80,46 @@ export function classifyPdfExportFailure(message: string, doc?: Node): PdfExport
   if (glyph) { problem.unicode = glyph[1].toUpperCase(); problem.character = String.fromCodePoint(parseInt(glyph[1].slice(2), 16)); }
   if (run) problem.reason = "حصہ " + run[1] + ":" + run[2];
   return { version: 1, error: descriptions[code], code, problems: [problem] };
+}
+
+
+/** Pre-scan source only; never weakens the Chromium fail-closed guard. */
+import digitalKhattCmap from "./digitalKhattCmap.json";
+const supportedDigital = new Set<number>(digitalKhattCmap);
+const protectedControl = new Set([0x200c, 0x200d, 0x061c, 0x200e, 0x200f]);
+const arabicCodepoint = (n: number) =>
+  (n >= 0x600 && n <= 0x6ff) || (n >= 0x750 && n <= 0x77f) ||
+  (n >= 0x8a0 && n <= 0x8ff) || (n >= 0xfb50 && n <= 0xfdff) ||
+  (n >= 0xfe70 && n <= 0xfeff) || (n >= 0x10e60 && n <= 0x10e7f) ||
+  (n >= 0x1ee00 && n <= 0x1eeff);
+export function inspectProtectedSource(doc: Node, limit = 32): PdfExportProblem[] {
+  const issues: PdfExportProblem[] = [];
+  const visit = (node: Node, path: number[], parent: number[]) => {
+    if (issues.length >= limit) return;
+    const paragraph = ["paragraph", "heading", "listItem", "tableCell", "tableHeader"].includes(node.type ?? "") ? path : parent;
+    if (node.type === "text" && typeof node.text === "string" && selected(node) === "Digital Khatt Indo-Pak") {
+      let index = 0;
+      for (const char of node.text) {
+        const n = char.codePointAt(0)!;
+        const control = protectedControl.has(n);
+        const missing = arabicCodepoint(n) && !supportedDigital.has(n);
+        if (control || missing) {
+          const code = control ? "INVALID_CONTROL" : "UNSUPPORTED_GLYPH";
+          const unicode = "U+" + n.toString(16).toUpperCase().padStart(4, "0");
+          issues.push({
+            code, unicode, character: char,
+            message: control ? "اس پوشیدہ حرف کی محفوظ طباعت ثابت نہیں ہوئی۔" : "منتخب فونٹ میں یہ عربی یا قرآنی علامت موجود نہیں۔",
+            source: { path, paragraphPath: paragraph, start: index, end: index + char.length, snapshot: node.text },
+            selectedFont: "Digital Khatt Indo-Pak",
+            reason: control ? "Unverified joining/bidi control" : "Missing from pinned font cmap"
+          });
+          if (issues.length >= limit) return;
+        }
+        index += char.length;
+      }
+    }
+    (node.content ?? []).forEach((child, i) => { if (issues.length < limit) visit(child, [...path, i], paragraph); });
+  };
+  visit(doc, [], []);
+  return issues;
 }
