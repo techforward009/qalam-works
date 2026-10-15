@@ -24,7 +24,7 @@ export interface PdfExportFailure {
 type Node = { type?: string; text?: string; marks?: { type: string; attrs?: Record<string, unknown> }[]; content?: Node[] };
 const selected = (node: Node) => node.marks?.find(m => m.type === "textStyle")?.attrs?.fontFamily;
 export function locatePdfFontProblem(doc: Node, font: string, unicode?: string, runIndex?: number): PdfExportProblem["source"] | undefined {
-  const codepoint = unicode ? Number.parseInt(unicode.replace(/^U\\+/i, ""), 16) : NaN;
+  const codepoint = unicode ? Number.parseInt(unicode.replace(/^U\+/i, ""), 16) : NaN;
   const wanted = Number.isFinite(codepoint) ? String.fromCodePoint(codepoint) : undefined;
   let ordinal = 0;
   const walk = (node: Node, path: number[], paragraphPath: number[]): PdfExportProblem["source"] | undefined => {
