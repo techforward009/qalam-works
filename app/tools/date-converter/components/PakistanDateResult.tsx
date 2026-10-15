@@ -50,7 +50,7 @@ export function PakistanDateResult({
           </p>
           <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${reviewed ? "border-emerald-600/20 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200" : "border-amber-600/20 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"} ${naskh}`}>
             {reviewed?.authority === "official"
-              ? (isUr ? "سرکاری اعلان کی بنیاد پر" : "Official announcement")
+              ? (isUr ? "پاکستان کی سرکاری ہجری تاریخ" : "Pakistan official Hijri date")
               : reviewed ? (isUr ? "تاریخی پاکستانی ریکارڈ" : "Pakistan historical record")
                 : (isUr ? "حسابی تاریخ" : "Calculated date")}
           </span>
