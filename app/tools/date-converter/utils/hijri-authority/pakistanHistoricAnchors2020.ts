@@ -41,7 +41,7 @@ export const PAKISTAN_2020_HISTORIC_ANCHORS: readonly OfficialHijriMonthAnchor[]
     officialDayOneGregorian: { year: 2020, month: 1, day: 27 },
     coverageEndGregorian: { year: 2020, month: 2, day: 25 },
     authority: "reported-official",
-    evidenceKind: "government-news-report",
+    evidenceKind: "historical-calendar",
     verificationStatus: "reported",
     // Pakistan-specific historical calendar entry. No separate committee announcement is asserted.
     providerId: "pk-published-historic-calendar",
@@ -160,7 +160,7 @@ export const PAKISTAN_2020_HISTORIC_ANCHORS: readonly OfficialHijriMonthAnchor[]
     officialDayOneGregorian: { year: 2020, month: 6, day: 23 },
     coverageEndGregorian: { year: 2020, month: 7, day: 22 },
     authority: "reported-official",
-    evidenceKind: "government-news-report",
+    evidenceKind: "historical-calendar",
     verificationStatus: "reported",
     // Pakistan-specific historical calendar entry. No separate committee announcement is asserted.
     providerId: "pk-published-historic-calendar",
@@ -231,7 +231,7 @@ export const PAKISTAN_2020_HISTORIC_ANCHORS: readonly OfficialHijriMonthAnchor[]
     officialDayOneGregorian: { year: 2020, month: 9, day: 19 },
     coverageEndGregorian: { year: 2020, month: 10, day: 18 },
     authority: "reported-official",
-    evidenceKind: "government-news-report",
+    evidenceKind: "historical-calendar",
     verificationStatus: "reported",
     // Pakistan-specific historical calendar entry. No separate committee announcement is asserted.
     providerId: "pk-published-historic-calendar",
