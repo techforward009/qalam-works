@@ -33,6 +33,24 @@ jobs:
           npx vitest run "${pdf_specs[@]}" --reporter=verbose
       - name: Build
         run: npm run build
+      - name: Launch local production build for UI acceptance
+        run: |
+          (npm run start -- -H 127.0.0.1 > /tmp/pdf-guided-server.log 2>&1 &)
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3000/tools/document-studio -o /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/pdf-guided-server.log
+          exit 1
+      - name: Chromium UI diagnostic, navigation, screenshot, retry
+        run: node scripts/pdf-guided-ui-acceptance.cjs
+      - name: Upload synthetic UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-guided-diagnostics-ui
+          path: artifacts/pdf-guided-ui/
+          if-no-files-found: warn
       - name: Verify clean diff
         run: |
           git diff --check origin/main...HEAD
