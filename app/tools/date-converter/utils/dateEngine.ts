@@ -5,8 +5,8 @@
  *   1. Gregorian (proleptic Gregorian calendar)
  *   2. Hijri / Islamic Lunar (Tabular Islamic calendar — civil calculation)
  *      The tabular calendar is used because it is deterministic and reproducible.
- *      It agrees with observational calendars within ±1 day; that ±1-day caveat
- *      is surfaced to the user in the UI.
+ *      Observational calendars can differ by more than one day, so verified
+ *      local authority dates are surfaced separately from this calculation.
  *   3. Solar Hijri / Persian (Simple arithmetic Solar Hijri calendar using a
  *      repeating 33-year leap cycle: ((year * 8) + 29) % 33 < 8.
  *      Dates near Nowruz may differ by ±1 day from astronomical calendars.)
