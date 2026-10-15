@@ -23,6 +23,7 @@ import { resolvePageLayout, resolvePhysicalMargins } from "../../tools/document-
 import { verifyPdfUrduEmbedding } from "../../tools/document-studio/utils/pdfEmbeddedFonts";
 import { paginatePdfInk } from "../../tools/document-studio/utils/pdfInkPagination";
 import { preflightPdfSource } from "../../tools/document-studio/utils/pdfSourcePreflight";
+import { classifyPdfExportFailure } from "../../tools/document-studio/utils/pdfExportDiagnostics";
 
 interface ExportPdfRequestBody {
   doc: DocNode;
@@ -214,9 +215,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("PDF export failed:", err);
-    const blocked = err instanceof Error && err.message.endsWith("export blocked") ? err.message : null;
-    return NextResponse.json({ error: blocked ?? "PDF بنانے میں خرابی ہوئی / Failed to generate PDF." }, { status: 500 });
+    const diagnostic = classifyPdfExportFailure(err instanceof Error ? err.message : "", doc);
+    console.error("[pdf-export]", diagnostic.code);
+    return NextResponse.json(diagnostic, { status: diagnostic.code === "DOCUMENT_TOO_LARGE" ? 413 : diagnostic.code === "TIMEOUT" ? 504 : 500 });
   } finally {
     if (browser) await browser.close();
   }
