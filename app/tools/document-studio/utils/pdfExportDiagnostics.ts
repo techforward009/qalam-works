@@ -36,16 +36,18 @@ export function issueForPdfFailure(error: unknown, doc: DocNode): PdfFailure {
       if (issues.length >= 15) return;
       if (node.type === "text" && typeof node.text === "string" &&
         node.marks?.some(mark => mark.type === "textStyle" && mark.attrs?.fontFamily === "Digital Khatt Indo-Pak")) {
-        Array.from(node.text).forEach((ch, index) => {
+        let utf16Offset = 0;
+        for (const ch of node.text) {
           const n = ch.codePointAt(0)!;
-          if (issues.length >= 15) return;
+          if (issues.length >= 15) break;
           if (isProtectedArabic(n) && !supportedDigitalCharacters.has(n)) {
-            issues.push({id:"unsupported-"+path.join("-")+"-"+index,kind:"FONT_UNSUPPORTED",
+            issues.push({id:"unsupported-"+path.join("-")+"-"+utf16Offset,kind:"FONT_UNSUPPORTED",
               reason:"missing-glyph",selectedFont:"Digital Khatt Indo-Pak",
               codePoint:"U+"+n.toString(16).toUpperCase().padStart(4,"0"),character:ch,
-              location:{path,blockPath,runIndex:0,textOffset:index,expectedText:node.text!}});
+              location:{path,blockPath,runIndex:0,textOffset:utf16Offset,expectedText:node.text}});
           }
-        });
+          utf16Offset += ch.length; // ProseMirror positions use UTF-16, not Unicode scalar indices.
+        }
       }
       (node.content??[]).forEach((child,i)=>scan(child,[...path,i],
         node.type==="paragraph"||node.type==="heading"?path:blockPath));
@@ -60,7 +62,7 @@ export function issueForPdfFailure(error: unknown, doc: DocNode): PdfFailure {
           const matchRun = indexed?.root === index;
           if (!issues.length && (indexed ? matchRun : false)) {
             const matchOffset = codePoint ? Array.from(node.text).findIndex(ch => "U+" + ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4,"0") === codePoint) : -1;
-            const offset = Math.max(0,matchOffset);
+            const offset = matchOffset < 0 ? -1 : Array.from(node.text).slice(0,matchOffset).join("").length;
             const cp = matchOffset>=0 ? Array.from(node.text)[matchOffset] : undefined;
             issues.push({ id:"font-"+index,kind,reason:kind==="FONT_UNSUPPORTED"?"missing-glyph":"unapproved-painted-font",
               selectedFont:selected,actualFont:actual,codePoint,character:cp,
