@@ -10,25 +10,27 @@ import type { OfficialHijriMonthAnchor } from "./types";
  */
 export const PAKISTAN_2021_HISTORIC_ANCHORS: readonly OfficialHijriMonthAnchor[] = [
   {
-    id: "pk-1442-jumada-al-awwal-2020-12-16",
+    id: "pk-1442-jumada-al-awwal-2020-12-17",
     jurisdiction: "PK",
     hijriYear: 1442,
     hijriMonth: 5,
-    officialDayOneGregorian: { year: 2020, month: 12, day: 16 },
+    officialDayOneGregorian: { year: 2020, month: 12, day: 17 },
     coverageEndGregorian: { year: 2021, month: 1, day: 14 },
-    authority: "reported-official",
-    evidenceKind: "government-news-report",
-    verificationStatus: "reported",
-    providerId: "pk-ministry-science-pak-moon-sighting",
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "not-sighted",
+    announcementGregorianDate: { year: 2020, month: 12, day: 15 },
+    providerId: "pk-central-ruet-e-hilal-committee",
     providerLabel: {
-      en: "Pakistan Ministry of Science and Technology historic lunar calendar",
-      ur: "پاکستانی وزارت سائنس و ٹیکنالوجی کی تاریخی قمری تقویم",
+      en: "Pakistan Central Ruet-e-Hilal Committee",
+      ur: "پاکستان مرکزی رؤیتِ ہلال کمیٹی",
     },
-    sourceUrl: "https://pakmoonsighting.pk/DaytoDayCalendar.aspx",
-    sourceReference: "Ministry of Science and Technology, Pakistan, archived day-to-day calendar: 1 January 2021 = 17 Jumada al-Awwal 1442, hence 1 Jumada al-Awwal = 16 December 2020.",
+    sourceUrl: "https://urdu.arynews.tv/moon-did-not-appear-mufti-munib-jamadi-ul-awal/",
+    sourceReference: "ARY News Urdu, 15 Dec 2020: Central Ruet-e-Hilal Committee chairman Mufti Muneeb declared Jumada al-Awwal crescent not sighted in Pakistan; 1 Jumada al-Awwal 1442 fell on Thursday 17 December 2020.",
     provenance: {
       verifiedAt: "2026-10-15",
-      notes: "Pakistan-specific historic date; official government historical calendar record rather than an independently dated committee announcement; bounded to 30 days by the next documented month start. Later official crescent decisions take priority over advance table projections."
+      notes: "Pakistan-specific historic date; direct Pakistan committee declaration (15 December 2020), superseding the previously stored 16 December extrapolation; 29-day month is bounded by following official 15 January 2021 start. Later official crescent decisions take priority over advance table projections."
     },
   },
   {
