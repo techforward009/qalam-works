@@ -1,0 +1,85 @@
+name: PDF Phase 1E Production Route Safety (No Deployment)
+on:
+  push:
+    branches: [feature/pdf-phase1e-script-aware-guard]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install existing lockfile
+        run: npm ci --ignore-scripts
+      - name: Verify pinned Digital Khatt cmap matches actual WOFF2
+        run: |
+          python3 -m pip install --break-system-packages fonttools brotli
+          python3 - <<'PY'
+          import json
+          from fontTools.ttLib import TTFont
+          f=TTFont("public/fonts/DigitalKhattIndoPak.woff2")
+          actual=sorted(set().union(*(set(t.cmap) for t in f["cmap"].tables if t.isUnicode())))
+          pinned=json.load(open("app/tools/document-studio/utils/digitalKhattCmap.json"))
+          assert actual == pinned, "Bundled font cmap changed or fixture incorrect"
+          assert 0x002e not in actual and 0x06d7 not in actual
+          print("Exact font cmap:", len(actual), "Unicode codepoints")
+          PY
+      - name: Resolve runner Chromium for real tests
+        run: |
+          echo "QALAM_PDF_CHROMIUM=$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')" >> "$GITHUB_ENV"
+      - name: Run real production route script-aware acceptance
+        run: npx vitest run tests/pdfPhase1eScriptAware.test.ts --reporter=verbose
+      - name: Run existing PDF regression suite
+        shell: bash
+        run: |
+          mapfile -t pdf_specs < <(find tests -type f \( -iname '*pdf*.test.ts' -o -iname '*pdf*.test.tsx' \) ! -name 'pdfPhase1eScriptAware.test.ts')
+          npx vitest run "${pdf_specs[@]}" --reporter=verbose
+      - name: TypeScript check
+        run: npx tsc --noEmit
+      - name: Production build (no deploy)
+        run: npm run build
+      - name: Review whitespace and diff
+        run: |
+          git diff --check origin/main...HEAD
+          git diff --name-only origin/main...HEAD
+      - name: Inspect embedded fonts and page images
+        if: always()
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          mkdir -p artifacts/pdf-phase1e
+          for p in /tmp/pdf-phase1e-evidence/*.pdf; do
+            test -f "$p" || continue
+            base=$(basename "$p")
+            cp "$p" "artifacts/pdf-phase1e/$base"
+            pdfinfo "$p" > "artifacts/pdf-phase1e/$base.info.txt"
+            pdffonts "$p" > "artifacts/pdf-phase1e/$base.fonts.txt"
+            pdftotext -layout "$p" "artifacts/pdf-phase1e/$base.txt"
+            if [[ "$base" == original-23-periods.pdf ]]; then
+              pdftoppm -r 240 -png "$p" artifacts/pdf-phase1e/original-page
+            else
+              pdftoppm -f 1 -l 1 -singlefile -r 96 -png "$p" "artifacts/pdf-phase1e/${base%.pdf}"
+            fi
+          done
+          cp /tmp/pdf-phase1e-evidence/original-final-dom.html artifacts/pdf-phase1e/ 2>/dev/null || true
+          cp /tmp/pdf-phase1e-evidence/original-chromium.png artifacts/pdf-phase1e/ 2>/dev/null || true
+      - name: Save review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-phase1e-real-chromium-evidence
+          path: artifacts/pdf-phase1e/
+          if-no-files-found: warn
