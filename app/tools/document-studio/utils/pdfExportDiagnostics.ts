@@ -45,7 +45,7 @@ export function identifyUnsupportedProtectedCharacters(doc: DocNode): PdfExportD
   return results;
 }
 
-export type PdfExportFailureKind = "font" | "timeout" | "too_large" | "server" | "unknown";
+export type PdfExportFailureKind = "font" | "layout" | "complexity" | "timeout" | "too_large" | "server" | "unknown";
 export interface PdfSourceLocation {
   /** Source document's ordered Digital Khatt text run (zero based). */
   runIndex: number;
@@ -75,8 +75,17 @@ export function classifyPdfExportFailure(err: unknown): PdfExportErrorResponse {
   const raw = err instanceof Error ? err.message : "";
   const protectedFont = /Digital Khatt|Quranic|Arabic|glyph|font|fallback|U\+|Unicode|protected run|joining/i.test(raw);
   const timeout = /timed?\s*out|timeout|deadline/i.test(raw);
-  const tooLarge = /too large|size limit|payload/i.test(raw);
-  const kind: PdfExportFailureKind = protectedFont ? "font" : timeout ? "timeout" : tooLarge ? "too_large" : raw ? "server" : "unknown";
+  const tooLarge = /too large|size limit|payload|98304-byte limit/i.test(raw);
+  const layout = /printable horizontal boundary|staging limit|visual-line limit/i.test(raw);
+  const complexity = /code-point single-text-node limit|2500-node limit/i.test(raw);
+  const kind: PdfExportFailureKind = layout ? "layout" : complexity ? "complexity" :
+    tooLarge ? "too_large" : protectedFont ? "font" : timeout ? "timeout" : raw ? "server" : "unknown";
+  const knownCode = /printable horizontal boundary/i.test(raw) ? "PDF_LAYOUT_OVERFLOW" :
+    /300 visual-line limit/i.test(raw) ? "PDF_LIMIT_VISUAL_LINES" :
+    /40000px staging limit/i.test(raw) ? "PDF_LIMIT_STAGING_HEIGHT" :
+    /98304-byte limit/i.test(raw) ? "PDF_LIMIT_SOURCE_BYTES" :
+    /20000 code-point single-text-node limit/i.test(raw) ? "PDF_LIMIT_NODE_CODEPOINTS" :
+    /2500-node limit/i.test(raw) ? "PDF_LIMIT_NODE_COUNT" : undefined;
   const match = marker.exec(raw);
   const cp = point.exec(raw)?.[0]?.toUpperCase();
   const fontName = /actual=([^;]+?)(?:;|\s*export blocked|$)/.exec(raw)?.[1]
@@ -89,11 +98,13 @@ export function classifyPdfExportFailure(err: unknown): PdfExportErrorResponse {
     font: "اس عبارت کے کچھ حروف منتخب فونٹ میں محفوظ طریقے سے نہیں بن رہے۔ متعلقہ عبارت اور فونٹ دیکھیں۔",
     timeout: "پی ڈی ایف بنانے میں وقت زیادہ لگ گیا۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔",
     too_large: "دستاویز کا حجم مقررہ حد سے زیادہ ہے۔ تصاویر یا فائل کا حجم دیکھیں۔",
+    layout: "اس صفحے پر عبارت یا سطریں دستیاب جگہ سے باہر جارہی ہیں۔ صفحے کی ترتیب یا متعلقہ فارمیٹنگ دیکھیں۔",
+    complexity: "دستاویز میں متن یا اجزا کی تعداد مقررہ حد سے زیادہ ہے۔ اسے چھوٹے حصوں میں تقسیم کریں۔",
     server: "پی ڈی ایف تیار نہیں ہوسکی۔ دوبارہ کوشش کریں؛ مسئلہ باقی رہے تو اطلاع دیں۔",
     unknown: "پی ڈی ایف بنانے میں ایک نامعلوم مسئلہ پیش آیا۔ دوبارہ کوشش کریں۔",
   };
   const diagnostic: PdfExportDiagnostic = {
-    code: kind === "font" ? "PDF_FONT_UNSAFE" : kind === "timeout" ? "PDF_TIMEOUT" : kind === "too_large" ? "PDF_TOO_LARGE" : "PDF_EXPORT_FAILED",
+    code: knownCode ?? (kind === "font" ? "PDF_FONT_UNSAFE" : kind === "timeout" ? "PDF_TIMEOUT" : kind === "too_large" ? "PDF_TOO_LARGE" : "PDF_EXPORT_FAILED"),
     kind, messageUrdu: messages[kind],
     ...(kind === "font" && digitalRun ? { selectedFont: "Digital Khatt Indo-Pak" } : {}),
     ...(safeFont && kind === "font" ? { actualFont: safeFont } : {}),
@@ -101,5 +112,5 @@ export function classifyPdfExportFailure(err: unknown): PdfExportErrorResponse {
     ...(match && kind === "font" ? { location: { runIndex: Number(match[1]) } } : {}),
     reason: kind === "font" ? "غیر منظور شدہ یا غیر موجود حرف/متبادل فونٹ" : kind,
   };
-  return { error: messages[kind], diagnostics: [diagnostic], retryable: kind !== "font" };
+  return { error: messages[kind], diagnostics: [diagnostic], retryable: kind === "timeout" || kind === "server" || kind === "unknown" };
 }
