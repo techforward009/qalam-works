@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
+import type { DisplayHijriPolicy } from "../date-converter/utils/hijri-authority/displayHijriDate";
 import { useLanguage } from "../../lib/language-context";
 import { BackToDateStudioLink } from "../../components/date-studio/DateStudioRouteNav";
 import { MonthCalendar } from "../../components/date-studio/MonthCalendar";
@@ -77,7 +78,10 @@ const L = {
     download: "Download PDF",
     downloading: "Preparing PDF…",
     failed: "PDF generation failed. Please try again.",
-    hijriNote: "Hijri values use the same deterministic Qalam Works engine. Adjustment changes only this calendar preview/PDF for local-sighting presentation.",
+    hijriNote: "Pakistan mode uses official dates wherever verified; an asterisk marks unverified calculated dates in preview and PDF. Calculated mode supports your own month adjustments.",
+    hijriPolicyLabel: "Hijri calendar source",
+    hijriPakistan: "Pakistan — official when verified",
+    hijriCalculated: "Calculated — with manual adjustment",
   },
   ur: {
     title: "تقویم ساز",
@@ -129,7 +133,10 @@ const L = {
     download: "PDF ڈاؤن لوڈ کریں",
     downloading: "PDF تیار ہو رہی ہے…",
     failed: "PDF تیار نہیں ہو سکی۔ دوبارہ کوشش کریں۔",
-    hijriNote: "ہجری قدریں قلم ورکس کے اسی حسابی انجن سے آتی ہیں۔ تبدیلی صرف اس تقویم کے پیش منظر اور PDF پر لاگو ہوتی ہے۔",
+    hijriNote: "پاکستانی سرکاری تاریخ دستیاب ہو تو وہ دکھائی جائے گی۔ * والی تاریخیں حسابی ہیں، جن کی سرکاری تصدیق نہیں ہوئی۔ صرف حسابی طریقے میں ماہانہ تبدیلی ممکن ہے۔",
+    hijriPolicyLabel: "ہجری تاریخ کا ماخذ",
+    hijriPakistan: "پاکستان — مصدقہ سرکاری تاریخ",
+    hijriCalculated: "حسابی — اپنی تبدیلی کے ساتھ",
   },
 } as const;
 
@@ -144,6 +151,7 @@ export default function CalendarMakerContent() {
   const initialYear = Math.min(MAX_GREGORIAN_YEAR, Math.max(MIN_GREGORIAN_YEAR, currentYear + 1));
   const [yearInput, setYearInput] = useState(String(initialYear));
   const [content, setContent] = useState<CalendarContentMode>("gregorian-hijri");
+  const [hijriPolicy, setHijriPolicy] = useState<DisplayHijriPolicy>("pakistan");
   const [calendarLanguage, setCalendarLanguage] = useState<CalendarLanguage>(uiLang);
   const [weekStart, setWeekStart] = useState<WeekStart>("monday");
   const [hijriOffsets, setHijriOffsets] = useState<number[]>(() => Array(12).fill(0));
@@ -173,6 +181,8 @@ export default function CalendarMakerContent() {
     : (calendarLanguage === "ur" ? "عیسوی" : "Gregorian");
   const previewSideText = bannerSideText.trim() || calendarMixedLabel;
 
+  const effectiveHijriOffsets = useMemo(() => hijriPolicy === "pakistan" ? Array(12).fill(0) as number[] : hijriOffsets, [hijriPolicy, hijriOffsets]);
+
   const model = useMemo(() => {
     if (validYear === null) return null;
     return buildCalendarYearModel({
@@ -182,9 +192,10 @@ export default function CalendarMakerContent() {
       weekStart: effectiveWeekStart,
       page,
       hijriOffset: 0,
-      hijriOffsets,
+      hijriOffsets: effectiveHijriOffsets,
+      hijriPolicy,
     });
-  }, [validYear, content, calendarLanguage, effectiveWeekStart, page, hijriOffsets]);
+  }, [validYear, content, calendarLanguage, effectiveWeekStart, page, effectiveHijriOffsets, hijriPolicy]);
 
   async function downloadPdf() {
     if (validYear === null || model === null) return;
@@ -201,7 +212,8 @@ export default function CalendarMakerContent() {
           weekStart: effectiveWeekStart,
           page,
           hijriOffset: 0,
-          hijriOffsets,
+          hijriOffsets: effectiveHijriOffsets,
+          hijriPolicy,
           researchNote: researchNote.trim(),
           bannerName: bannerName.trim(),
           bannerTitle: bannerTitle.trim(),
@@ -423,7 +435,9 @@ export default function CalendarMakerContent() {
           </div>
         </div>
 
-        {content === "gregorian-hijri" && (
+        {content === "gregorian-hijri" && <div className="mt-4"><label className={labelClass}>{t.hijriPolicyLabel}</label><select className={selectClass} value={hijriPolicy} onChange={e => setHijriPolicy(e.target.value as DisplayHijriPolicy)}><option value="pakistan">{t.hijriPakistan}</option><option value="tabular">{t.hijriCalculated}</option></select></div>}
+
+        {content === "gregorian-hijri" && hijriPolicy === "tabular" && (
           <div className="mt-4">
             <label className={labelClass}>{t.hijriApplyTo}</label>
             <p className={`mb-2 text-[12px] text-[#4a6a4a] dark:text-[#9fbfa8] ${naskh}`}>{t.hijriMonthHint}</p>
@@ -667,6 +681,7 @@ export default function CalendarMakerContent() {
                   weekStart={effectiveWeekStart}
                   hijriOffset={model.hijriOffsets[month.month - 1] ?? 0}
                   showHijri={content === "gregorian-hijri"}
+                  hijriPolicy={hijriPolicy}
                   interactive={false}
                   compact
                 />
