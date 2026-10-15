@@ -49,6 +49,7 @@ for (const locale of ['ur', 'en'] as const) {
     await page.screenshot({ path: testInfo.outputPath('book-arabic-light-desktop.png'), fullPage: true });
     await reader.getByLabel(ur ? 'مطالعے کی صورت' : 'Reading mode').selectOption('combined');
     await expect(reader.getByText('اے اللہ — آزمائشی دعا کا متن')).toBeVisible();
+    await expect(reader.getByText(ur ? 'بعض پیراگراف کا اردو ترجمہ دستیاب نہیں' : 'Some paragraphs do not have an Urdu translation yet.')).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('book-arabic-urdu-fixture-desktop.png'), fullPage: true });
     await reader.getByLabel(ur ? 'مطالعے کی صورت' : 'Reading mode').selectOption('original');
     await page.locator('html').evaluate(node => node.classList.add('dark'));
