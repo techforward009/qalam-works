@@ -245,8 +245,8 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
 
   it("pins the reviewed private Urdu v10 archive and matching checksum without changing English or v9 rollback", () => {
     const route = read("app/api/quran/tafsir-namoona/route.ts");
-    expect(route).toContain('"qalam/tafsir-namoona/urdu-v10-reviewed-20261015.json.br"');
-    expect(route).toContain('"8cf7d265873f93d6987882b5c616a0267a7caa94304075c88d4dc57150c2f1e7"');
+    expect(route).toContain('"qalam/tafsir-namoona/urdu-v10-reviewed-first20-20261015.json.br"');
+    expect(route).toContain('"119f8e96988a317df531a21ac8f271447e7c3a856f1ab11bac57cf5fb8a45c38"');
     expect(route).toContain('"qalam/tafsir-namoona/english-v10.json.br"');
     expect(route).toContain('"6e08e6952e33a452f7f644c6462cdad3d8250741ef7f1445c3ae5d37becaed59"');
     expect(route).toContain('"qalam/tafsir-namoona/urdu-v9.json.br"');
