@@ -2,7 +2,6 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 import { NextRequest, NextResponse } from "next/server";
-import { rejectUnauthenticatedResearch } from "../auth/requireSession";
 import { researchBlobClientFromEnv } from "../vercelResearchBlob";
 import { loadBookCatalog } from "../../../lib/knowledge/store";
 import { readBookSource } from "../../../lib/knowledge/sourceCache";
@@ -14,14 +13,8 @@ function json(value: unknown, status = 200) {
 }
 const bad = () => json({ code: "invalid" }, 400);
 
-/** Entire endpoint is owner-session gated, including even the catalog. */
+/** Public, bounded read-only library API. Never exposes Blob credentials or write actions. */
 export async function GET(req: NextRequest) {
-  const denied = rejectUnauthenticatedResearch(req);
-  if (denied) {
-    denied.headers.set("Cache-Control", "private, no-store");
-    return denied;
-  }
-
   const params = req.nextUrl.searchParams;
   const op = params.get("op") ?? "catalog";
   const sourceId = params.get("sourceId") ?? "";
@@ -65,16 +58,12 @@ export async function GET(req: NextRequest) {
 
 
 /**
- * Owner-only, read-only excerpt creation. No private text is sent in a URL,
- * no corpus mutation, and only original paragraph IDs on the displayed reader
- * part can become an existing validated BookExcerpt for "My Sermon".
+ * Public, stateless excerpt assembly for a user-selected book passage.
+ * This never uploads, activates, edits or persists a book or sermon.
+ * Selected paragraph IDs are independently validated against original source
+ * text/digests before returning an existing validated BookExcerpt.
  */
 export async function POST(req: NextRequest) {
-  const denied = rejectUnauthenticatedResearch(req);
-  if (denied) {
-    denied.headers.set("Cache-Control", "private, no-store");
-    return denied;
-  }
   const origin = req.headers.get("origin");
   if (origin && origin !== req.nextUrl.origin) return bad();
   if (req.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json") return bad();
