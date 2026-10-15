@@ -1,3 +1,4 @@
+import type { PdfExportFailure } from "../utils/pdfExportDiagnostics";
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -282,6 +283,7 @@ export default function DocumentStudioEditor() {
   const [isImporting, setIsImporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfDiagnosis, setPdfDiagnosis] = useState<PdfExportFailure | null>(null);
   const [pdfSummary, setPdfSummary] = useState<{
     pages: number;
     fileSizeLabel: string;
@@ -1177,6 +1179,7 @@ export default function DocumentStudioEditor() {
     trackEvent("tool_download", { tool: "document_studio", export_format: "pdf", mode: processingLanguage, success: true });
     if (!editor) return;
     setPdfError(null);
+    setPdfDiagnosis(null);
     setPdfSummary(null);
     setIsExportingPdf(true);
     try {
@@ -1187,7 +1190,14 @@ export default function DocumentStudioEditor() {
       });
 
       if (!response.ok) {
-        setPdfError(await readPdfExportError(response));
+        const payload: unknown = await response.clone().json().catch(() => null);
+        if (payload && typeof payload === "object" && "version" in payload && (payload as PdfExportFailure).version === 1 && Array.isArray((payload as PdfExportFailure).problems)) {
+          const diagnosis = payload as PdfExportFailure;
+          setPdfDiagnosis(diagnosis);
+          setPdfError(diagnosis.error);
+        } else {
+          setPdfError(await readPdfExportError(response));
+        }
         return;
       }
 
@@ -1682,6 +1692,36 @@ export default function DocumentStudioEditor() {
             <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
               {pdfError}
             </div>
+          )}
+          {pdfDiagnosis && (
+            <section className="mb-3 rounded-lg border border-red-300 bg-white p-4 text-sm text-gray-800 space-y-3" dir="rtl" role="region" aria-label="PDF خرابیوں کی تفصیل">
+              <h3 className="font-semibold">PDF کی خرابیوں کی تفصیل</h3>
+              {pdfDiagnosis.problems.map((problem, i) => (
+                <div key={i} className="rounded border border-gray-200 p-3 space-y-2">
+                  <p>{problem.message}</p>
+                  {problem.selectedFont && <p>منتخب فونٹ: <bdi dir="ltr">{problem.selectedFont}</bdi></p>}
+                  {problem.actualFont && <p>استعمال ہونے والا فونٹ: <bdi dir="ltr">{problem.actualFont}</bdi></p>}
+                  {problem.unicode && <p>متعلقہ حرف: {problem.character} (<bdi dir="ltr">{problem.unicode}</bdi>)</p>}
+                  {problem.source && <button type="button" className="rounded border px-3 py-1 font-medium" onClick={() => {
+                    if (!editor) return;
+                    let node: { content?: unknown[]; text?: string } = editor.getJSON() as { content?: unknown[] };
+                    for (const index of problem.source!.path) {
+                      const next = node.content?.[index] as typeof node | undefined;
+                      if (!next) return;
+                      node = next;
+                    }
+                    if (typeof node.text !== "string") return;
+                    const matchingText = editor.state.doc.textBetween(0, editor.state.doc.content.size);
+                    const offset = matchingText.indexOf(node.text);
+                    if (offset < 0) return;
+                    editor.chain().focus().setTextSelection({ from: Math.max(1, offset + problem.source!.start + 1), to: Math.min(editor.state.doc.content.size, offset + problem.source!.end + 1) }).run();
+                  }}>متعلقہ عبارت دکھائیں</button>}
+                  <details><summary className="cursor-pointer">تکنیکی تفصیل</summary><p dir="ltr">{problem.code} {problem.reason ?? ""}</p></details>
+                </div>
+              ))}
+              <p>اصل قرآنی یا عربی عبارت کو خودکار طور پر تبدیل نہیں کیا گیا۔ فونٹ یا عبارت کی تبدیلی صرف آپ کی منظوری سے ہوگی۔</p>
+              <button type="button" onClick={() => void handleDownloadPdf()} className="rounded border px-3 py-1">دوبارہ PDF بنائیں</button>
+            </section>
           )}
           {docxImportNotice && (
             <div className="mb-3 bg-amber-50 border-2 border-amber-400 text-amber-900 p-3 rounded-lg text-xs flex items-start justify-between gap-3" dir="rtl">
