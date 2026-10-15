@@ -143,6 +143,7 @@ test('measured page breaks preserve a long synthetic Arabic/Urdu passage across 
   await expect(reader.getByRole('checkbox', { name: 'Select paragraph 1' })).toBeVisible();
   await article.screenshot({ path: testInfo.outputPath('r6-synthetic-selection-mode.png') });
   await page.emulateMedia({ media: 'print' });
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
   const pdfBytes = await page.pdf({ path: testInfo.outputPath('r6-synthetic-reader.pdf'), format: 'A5', printBackground: true, preferCSSPageSize: true });
   const pdf = await PDFDocument.load(pdfBytes);
   expect(pdf.getPageCount()).toBe(1);

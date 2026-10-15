@@ -165,6 +165,18 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     }
   }, [tocOpen]);
 
+  useEffect(() => {
+    const beforePrint = () => document.body.classList.add("qalam-book-reader-print");
+    const afterPrint = () => document.body.classList.remove("qalam-book-reader-print");
+    window.addEventListener("beforeprint", beforePrint);
+    window.addEventListener("afterprint", afterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", beforePrint);
+      window.removeEventListener("afterprint", afterPrint);
+      document.body.classList.remove("qalam-book-reader-print");
+    };
+  }, []);
+
   async function get(params: URLSearchParams) {
     abort.current?.abort();
     const controller = new AbortController();
@@ -486,7 +498,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           <button className={btn} type="button" disabled={busy || toc.page * toc.pageSize >= toc.total} onClick={() => void contents(sourceId, toc.page + 1)}>{ur ? "اگلے حصے" : "Next"}</button>
         </nav>}
       </dialog>
-      {reading ? <article ref={pageArticleRef} data-testid="book-reading-page" aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
+      {reading ? <article ref={pageArticleRef} data-testid="book-reading-page" data-print-book-reader aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
         <header className={styles.pageMeta} dir="rtl">
           <div className={styles.bookIdentity}><strong>{selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}</strong>
             <details className={styles.editionDetails}><summary>{ur ? "نسخے کی معلومات" : "Edition details"}</summary><p className="qalam-source-reference">{citation}</p>{reading.translator ? <p>{ur ? "مترجم" : "Translator"}: {reading.translator}</p> : null}</details>

@@ -171,9 +171,6 @@
 :global(.dark) .chapterTitle > span, :global(.dark) .pageNumber small, :global(.dark) .editionDetails summary, :global(.dark) .translationCredit, :global(.dark) .drawerBookTitle { color: #b7c6ba; }
 @page { size: A5 portrait; margin: 0; }
 @media print {
-  :global(body) { background: white !important; }
-  :global(body *) { visibility: hidden !important; }
-  .readerShell .readingPage, .readerShell .readingPage * { visibility: visible !important; }
   .readerShell .readingPage {
     position: fixed;
     inset: 0 auto auto 0;

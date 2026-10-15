@@ -9,6 +9,7 @@ on:
       - 'app/api/research/book-reader/route.ts'
       - 'app/tools/khateeb-studio/BookReader.tsx'
       - 'app/tools/khateeb-studio/BookReader.module.css'
+      - 'app/globals.css'
       - 'app/tools/khateeb-studio/KhateebStudioContent.tsx'
       - 'app/tools/khateeb-studio/BookLibraryPanel.tsx'
       - 'app/tools/khateeb-studio/CustomSermonWorkspace.tsx'
