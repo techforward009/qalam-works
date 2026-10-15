@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import JSZip from "jszip";
-import { GET } from "../app/api/research/book-reader/route";
+import { GET, POST as READER_POST } from "../app/api/research/book-reader/route";
 import { POST } from "../app/api/khateeb/library/route";
 import { clearBookSourceCache } from "../app/lib/knowledge/sourceCache";
 import { setResearchBlobClientForTests } from "../app/api/research/vercelResearchBlob";
@@ -123,4 +123,65 @@ it("rejects path traversal and untrusted record/source combinations", async () =
   ]) expect((await GET(req(path))).status).toBe(400);
   expect((await GET(req("?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:999"))).status).toBe(404);
   expect((await GET(req("?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1&part=4"))).status).toBe(404);
+});
+
+const postReq = (body: unknown, authenticated = true, origin = "http://localhost:3000") => new NextRequest(
+  "http://localhost:3000/api/research/book-reader", {
+    method: "POST", headers: {
+      "content-type": "application/json", origin,
+      ...(authenticated ? { cookie: cookie() } : {}),
+    },
+    body: JSON.stringify(body),
+  },
+);
+const expectedReaderSelection = async () => {
+  const page = await (await GET(req("?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1&part=2"))).json();
+  return {
+    sourceId: page.sourceId, recordId: page.recordId,
+    sourceSha256: page.sourceSha256, recordSha256: page.recordSha256,
+    part: page.page,
+    paragraphIds: [page.paragraphs[8].id],
+  };
+};
+it("rejects private excerpt writes from unauthenticated, cross-origin and malformed requests without Blob reads", async () => {
+  const payload = { sourceId: "sahifa-ar", recordId: "sahifa-ar:supplication:1" };
+  for (const response of [
+    await READER_POST(postReq(payload, false)),
+    await READER_POST(postReq(payload, true, "https://evil.example")),
+  ]) {
+    expect([400, 401]).toContain(response.status);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  }
+  expect(reads).toBe(0);
+});
+it("returns the existing provenance-bound BookExcerpt only for source-identical page paragraphs", async () => {
+  await seed();
+  const selection = await expectedReaderSelection();
+  const response = await READER_POST(postReq(selection));
+  expect(response.status).toBe(200);
+  const excerpt = (await response.json()).excerpt;
+  expect(excerpt.paragraphs).toEqual([{id: selection.paragraphIds[0],text:"صَبْرٌ اصل عبارت"}]);
+  expect(excerpt.sourceSha256).toBe(selection.sourceSha256);
+  expect(excerpt.recordSha256).toBe(selection.recordSha256);
+  expect(excerpt.paragraphNumbers).toEqual([21]);
+  expect(excerpt.referenceLabelUr).toContain("صحیفہ");
+  expect(excerpt.id).toContain(":paragraphs:21");
+  expect(excerpt).not.toHaveProperty("suppliedTranslation");
+});
+it("blocks stale edition, wrong part, cross-record paragraph and unsupported selected IDs", async () => {
+  await seed();
+  const valid = await expectedReaderSelection();
+  const changed = [
+    {...valid, sourceSha256: "0".repeat(64)},
+    {...valid, recordSha256: "0".repeat(64)},
+    {...valid, part: 1},
+    {...valid, paragraphIds: ["sahifa-ar:supplication:2:p1"]},
+    {...valid, paragraphIds: [valid.paragraphIds[0],valid.paragraphIds[0]]},
+    {...valid, paragraphIds: Array.from({length:13},(_,i)=>`sahifa-ar:supplication:1:p${i+1}`)},
+  ];
+  const expected = [409,409,400,400,400,400];
+  for(let i=0;i<changed.length;i++) {
+    const response = await READER_POST(postReq(changed[i]));
+    expect(response.status).toBe(expected[i]);
+  }
 });
