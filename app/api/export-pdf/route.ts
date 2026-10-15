@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const diagnostic = classifyPdfExportFailure(err instanceof Error ? err.message : "", doc);
     console.error("[pdf-export]", diagnostic.code);
-    return NextResponse.json({ ...diagnostic, error: (err instanceof Error && err.message.endsWith("export blocked")) ? "PDF export blocked: " + diagnostic.error : diagnostic.error }, { status: diagnostic.code === "DOCUMENT_TOO_LARGE" ? 413 : diagnostic.code === "TIMEOUT" ? 504 : 500 });
+    return NextResponse.json({ ...diagnostic, error: err instanceof Error && /export blocked|printable width|source complexity|measurement/i.test(err.message) ? err.message : diagnostic.error }, { status: diagnostic.code === "DOCUMENT_TOO_LARGE" ? 413 : diagnostic.code === "TIMEOUT" ? 504 : 500 });
   } finally {
     if (browser) await browser.close();
   }
