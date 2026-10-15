@@ -26,6 +26,7 @@ on:
       - "tests/pakistanHistorical2023.test.ts"
       - "tests/pakistanHistorical2022.test.ts"
       - "tests/pakistanHistorical2021.test.ts"
+      - "tests/pakistanHistorical2020.test.ts"
   push:
     branches: [fix/date-studio-pk-ramadan-1447-crescent-context]
   workflow_dispatch:
@@ -53,7 +54,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Hijri authority, baseline calendar, date profile, and crescent dashboard regressions
-        run: npx vitest run tests/dateConverter.test.ts tests/dateProfile.test.ts tests/pakistanOfficialHijriAuthority.test.ts tests/crescentVisibilityDashboard.test.tsx tests/dateStudioProductPresentation.test.ts tests/yallopCriterion.test.ts tests/dateStudioPakistanCalendarEvidence.test.ts tests/countryCalendarMethods.test.ts tests/dateStudioPakistanFirstPresentation.test.ts tests/pakistanHistorical2025.test.ts tests/pakistanHistorical2024.test.ts tests/pakistanHistorical2023.test.ts tests/pakistanHistorical2022.test.ts tests/pakistanHistorical2021.test.ts tests/dateStudio.test.ts tests/calendarExplorer.test.ts tests/calendarVisualSpecification.test.ts tests/calendarMakerBannerHijriMonth.test.ts
+        run: npx vitest run tests/dateConverter.test.ts tests/dateProfile.test.ts tests/pakistanOfficialHijriAuthority.test.ts tests/crescentVisibilityDashboard.test.tsx tests/dateStudioProductPresentation.test.ts tests/yallopCriterion.test.ts tests/dateStudioPakistanCalendarEvidence.test.ts tests/countryCalendarMethods.test.ts tests/dateStudioPakistanFirstPresentation.test.ts tests/pakistanHistorical2025.test.ts tests/pakistanHistorical2024.test.ts tests/pakistanHistorical2023.test.ts tests/pakistanHistorical2022.test.ts tests/pakistanHistorical2021.test.ts tests/pakistanHistorical2020.test.ts tests/dateStudio.test.ts tests/calendarExplorer.test.ts tests/calendarVisualSpecification.test.ts tests/calendarMakerBannerHijriMonth.test.ts
       - name: TypeScript validation
         run: npx tsc --noEmit
       - name: Patch hygiene
