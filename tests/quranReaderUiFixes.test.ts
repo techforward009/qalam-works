@@ -81,7 +81,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(tafsir).toContain('fontFamily: \'"Gulzar", "Noto Nastaliq Urdu", serif\'');
     expect(tafsir).toContain('زیرِ تکمیل');
     expect(tafsir).toContain('disabled={!available}');
-    expect(tafsir).toContain('اس آیت کے موضوعات');
+    expect(tafsir).toContain('اس تفسیری مضمون کے موضوعات');
     expect(tafsir).toContain('tafsir-topic-');
     expect(tafsir).toContain('بسم اللہ الرحمن الرحیم');
     expect(tafsir).not.toContain('font-naskh text-[0.78em]');
@@ -90,8 +90,8 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
   it("shares the first-verse topic count, list and anchors across Urdu and English Tafsir", () => {
     expect(tafsir).toContain('data-tafsir-topics-index={chosenLanguage}');
     expect(tafsir).toContain('remoteTopics.length > 1 ? (');
-    expect(tafsir).toContain('Topics in this verse');
-    expect(tafsir).toContain('اس آیت کے موضوعات');
+    expect(tafsir).toContain('Topics in this commentary');
+    expect(tafsir).toContain('اس تفسیری مضمون کے موضوعات');
     expect(tafsir).toContain('displayTafsirHeading(tafsirDisplayTopicHeading(topic.title, topic.text), chosenLanguage)');
     expect(tafsir).toContain('href={"#tafsir-topic-" + i}');
     expect(tafsir).toContain('id={"tafsir-topic-" + i}');
