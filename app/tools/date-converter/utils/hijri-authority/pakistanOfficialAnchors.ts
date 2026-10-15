@@ -1,12 +1,14 @@
 import type { OfficialHijriMonthAnchor } from "./types";
 import { PAKISTAN_2025_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2025";
+import { PAKISTAN_2024_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2024";
 
 /**
  * Reviewed Pakistan official/reported-official month anchors belong here.
  * Records are explicitly bounded; no historical official date is inferred.
  */
 export const PAKISTAN_OFFICIAL_HIJRI_ANCHORS: readonly OfficialHijriMonthAnchor[] = [
-  // Historic reviewed month starts: 4 December 2024 through 21 December 2025.
+  // Archived Pakistan crescent decisions span 15 December 2023 onward.
+  ...PAKISTAN_2024_HISTORIC_ANCHORS,
   ...PAKISTAN_2025_HISTORIC_ANCHORS,
   {
     id: "pk-1447-rajab-2025-12-22",
