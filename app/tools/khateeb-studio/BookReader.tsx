@@ -236,8 +236,10 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const visibleBookmarks = progress.bookmarks.filter(b =>
     b.sourceId === sourceId && b.sourceSha256 === selectedSource?.sha256);
   const isArabic = selectedSource?.language === "ar";
-  const missingTranslation = !!reading && reading.language === "ar" && readingMode !== "original"
-    && reading.paragraphs.every(p => !(reading.translations ?? []).some(t => t.paragraphIds.includes(p.id)));
+  const untranslatedParagraphs = reading?.paragraphs.filter(p => !(reading.translations ?? []).some(t => t.paragraphIds.includes(p.id))).length ?? 0;
+  const missingTranslation = !!reading && reading.language === "ar" && readingMode !== "original" && untranslatedParagraphs === reading.paragraphs.length;
+  const partialTranslation = !!reading && reading.language === "ar" && readingMode !== "original"
+    && untranslatedParagraphs > 0 && untranslatedParagraphs < reading.paragraphs.length;
   return <section dir={ur ? "rtl" : "ltr"} data-testid="khateeb-book-reader" className={styles.readerShell}>
     <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss}/>
     {error ? <p role="alert" className={styles.noticeError}>{error}</p> : null}
@@ -330,8 +332,10 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           </nav>
           <div className={styles.chapterTitle}><span>{reading.kind === "front-matter" ? (ur ? "ابتدائی مواد" : "Front matter") : (ur ? "باب یا حصہ" : "Chapter or section")}</span><strong>{reading.title}</strong></div>
         </header>
-        {missingTranslation ? <p className={styles.translationStatus} role="status">
-          <span>{ur ? "اردو ترجمہ ابھی دستیاب نہیں" : "Translation is not available yet."}</span>
+        {missingTranslation || partialTranslation ? <p className={styles.translationStatus} role="status">
+          <span>{partialTranslation
+            ? (ur ? "بعض پیراگراف کا اردو ترجمہ دستیاب نہیں" : "Some paragraphs do not have an Urdu translation yet.")
+            : (ur ? "اردو ترجمہ ابھی دستیاب نہیں" : "Translation is not available yet.")}</span>
           {readingMode === "translation" ? <button type="button" className={btn} onClick={() => setReadingMode("original")}>{ur ? "عربی پر واپس جائیں" : "Return to Arabic"}</button> : null}
         </p> : null}
         <div className={styles.paragraphs} style={{ fontSize: fontSize + "px" }}>
