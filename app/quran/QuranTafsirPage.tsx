@@ -219,11 +219,11 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
         {remoteTopics.length > 0 && workId === "nemuneh" ? (
           <div className="mt-4 space-y-7" dir={chosenLanguage === "ur" ? "rtl" : "ltr"} lang={chosenLanguage}>
             {remoteTopics.length > 1 ? (
-              <nav aria-label={ur ? "اس آیت کے موضوعات" : "Topics in this verse"} className="mb-7 rounded-xl border border-[#dfd0ad] bg-[#f9f5e9] px-4 py-2" data-tafsir-topics-index={chosenLanguage}>
+              <nav aria-label={ur ? "اس تفسیری مضمون کے موضوعات" : "Topics in this commentary"} className="mb-7 rounded-xl border border-[#dfd0ad] bg-[#f9f5e9] px-4 py-2" data-tafsir-topics-index={chosenLanguage}>
                 <details className="group">
                   <summary className="cursor-pointer list-none text-center text-[#335440] marker:hidden [&::-webkit-details-marker]:hidden"
                     style={ur ? { fontFamily: '"Gulzar", "Noto Nastaliq Urdu", serif', fontSize: "19px", lineHeight: 2.1 } : { fontSize: "16px", fontWeight: 650, lineHeight: 2.1 }}>
-                    {ur ? "اس آیت کے موضوعات" : "Topics in this verse"} ({remoteTopics.length}) <span className="inline-block text-sm group-open:rotate-180" aria-hidden="true">⌄</span>
+                    {ur ? "اس تفسیری مضمون کے موضوعات" : "Topics in this commentary"} ({remoteTopics.length}) <span className="inline-block text-sm group-open:rotate-180" aria-hidden="true">⌄</span>
                   </summary>
                   <ol className="mt-2 space-y-1 border-t border-[#ded0aa] pt-2" dir={ur ? "rtl" : "ltr"}>
                     {remoteTopics.map((topic, i) => (
