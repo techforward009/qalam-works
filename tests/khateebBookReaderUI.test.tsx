@@ -74,7 +74,7 @@ it("displays original Arabic in a true RTL reader, copies exact text and navigat
   fireEvent.click(screen.getByRole("button", {name: "اصل متن نقل کریں"}));
   await waitFor(() => expect(writeText).toHaveBeenCalled());
   expect(writeText.mock.calls[0][0]).toBe(arabic);
-  fireEvent.click(screen.getByRole("button", {name: /^اگلا$/}));
+  fireEvent.click(screen.getByRole("button", {name: "اگلا مطالعہ صفحہ"}));
   await waitFor(() => expect(requests.some(url => url.searchParams.get("id") === id2)).toBe(true));
   expect(screen.getAllByText("اصل متن کا حصہ 2").length).toBeGreaterThan(0);
 });
