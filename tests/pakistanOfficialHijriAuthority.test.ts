@@ -39,7 +39,7 @@ describe("Pakistan official Hijri authority resolver", () => {
     }
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 1, day: 1 })?.hijri).toEqual({ year: 1447, month: 7, day: 11 });
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 1, day: 20 })?.hijri).toEqual({ year: 1447, month: 7, day: 30 });
-    expect(resolvePakistanOfficialHijriDate({ year: 2025, month: 12, day: 21 })).toBeNull();
+    expect(resolvePakistanOfficialHijriDate({ year: 2025, month: 12, day: 21 })?.hijri).toEqual({ year: 1447, month: 6, day: 29 });
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 11, day: 11 })).toBeNull();
   });
 
