@@ -33,6 +33,7 @@ test("Urdu PDF failure details navigate to original run without silently editing
   await expect(page.getByText("U+06D7")).toBeVisible();
   await expect(page.getByRole("list", { name: "پی ڈی ایف کی خرابیوں کی فہرست" }).locator("li")).toHaveCount(2);
   await page.screenshot({ path: "artifacts/pdf-diagnostics/urdu-guided-repair.png", fullPage: true });
+  await page.getByRole("region", { name: /پی ڈی ایف تیار نہیں ہوسکی/ }).screenshot({ path: "artifacts/pdf-diagnostics/urdu-guided-repair-panel.png" });
   expect(await editor.innerText()).toBe(initial);
   await page.getByRole("button", { name: "درستگی کے بعد دوبارہ پی ڈی ایف بنائیں" }).click();
   await expect.poll(() => calls).toBe(2);
