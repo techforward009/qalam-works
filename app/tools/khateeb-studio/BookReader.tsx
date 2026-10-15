@@ -102,12 +102,13 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   async function contents(source: string, page = 1, autoOpen = false) {
     const result = await get(args("contents", source, { page: String(page) }));
     if (result?.entries) {
-      setToc(result as BookContents);
-      if (autoOpen && result.entries.length) {
-        const firstTextEntry = result.entries.find(entry => entry.kind !== "front-matter");
+      const contentsPage = result as BookContents;
+      setToc(contentsPage);
+      if (autoOpen && contentsPage.entries.length) {
+        const firstTextEntry = contentsPage.entries.find(entry => entry.kind !== "front-matter");
         if (firstTextEntry) await read(source, firstTextEntry.id);
-        else if (result.page * result.pageSize < result.total) await contents(source, result.page + 1, true);
-        else await read(source, result.entries[0].id);
+        else if (contentsPage.page * contentsPage.pageSize < contentsPage.total) await contents(source, contentsPage.page + 1, true);
+        else await read(source, contentsPage.entries[0].id);
       }
     }
   }
