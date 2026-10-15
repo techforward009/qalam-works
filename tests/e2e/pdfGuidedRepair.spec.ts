@@ -43,6 +43,16 @@ test("protected source diagnostic, navigation, approval/cancel/undo and safe ret
   await page.screenshot({path:dir+"/approved.png",fullPage:true});
   const updated = await editor.innerText();
   expect(updated).toContain("اۗ");
+  const retry = page.waitForResponse(r=>r.url().includes("/api/export-pdf") && r.request().method()==="POST");
+  await page.locator('[data-menu-root="file"]').click();
+  await page.locator('[data-menu-submenu="file.download"]').hover();
+  const downloading = page.waitForEvent("download");
+  await page.locator('[data-menu-action="file.downloadPdf"]').click();
+  const retried = await retry;
+  expect(retried.status()).toBe(200);
+  const pdf = await downloading;
+  await pdf.saveAs(dir+"/repaired.pdf");
+  await page.screenshot({path:dir+"/success.png",fullPage:true});
   await page.getByRole("button",{name:"آخری منظور شدہ اصلاح واپس لیں"}).click();
   await page.screenshot({path:dir+"/undo.png",fullPage:true});
   expect(await editor.innerText()).toContain("اۗ");
