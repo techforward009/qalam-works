@@ -177,6 +177,7 @@ export default function KhateebStudioContent({
   const [customWorkspaceOpen, setCustomWorkspaceOpen] = useState(false);
   const [bookDraft, setBookDraft] = useState<CustomSermonProject>();
   const [publicLibraryOpen, setPublicLibraryOpen] = useState(false);
+  const [readerQuickOpen, setReaderQuickOpen] = useState(false);
   const topicResultRef = useRef<HTMLElement | null>(null);
 
   const filteredSpeakers = useMemo(() => {
@@ -771,6 +772,51 @@ export default function KhateebStudioContent({
               ? "موضوع یا مناسبت سے مستند مآخذ کی روشنی میں مجلس و خطبہ کی تیاری کے لیے ایک مربوط ماحول۔"
               : "Prepare by topic or occasion, review source-led directions, and build a usable sermon outline."}
           </p>
+
+          <div className="mx-auto mt-6 max-w-3xl text-start">
+            <button
+              type="button"
+              data-testid="khateeb-reader-direct-entry"
+              aria-controls="khateeb-direct-book-reader"
+              aria-expanded={readerQuickOpen}
+              onClick={() => {
+                setReaderQuickOpen(value => !value);
+                setPublicLibraryOpen(false);
+                setCustomWorkspaceOpen(false);
+                setNotesLibraryOpen(false);
+              }}
+              className="flex w-full items-center justify-between gap-3 rounded-2xl border-2 border-[#B8935A]/70 bg-[#fffaf0] px-4 py-4 text-start text-[#1A3A2A] shadow-sm transition hover:bg-[#fff3d5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#31513a] dark:border-[#b89558]/70 dark:bg-[#1e281b] dark:text-white dark:hover:bg-[#293321]"
+            >
+              <span className="flex items-center gap-3">
+                <BookOpen aria-hidden="true" className="h-6 w-6 shrink-0 text-[#8a6838] dark:text-[#d7bc8a]" />
+                <span className="flex flex-col gap-1">
+                  <strong className="text-base sm:text-lg">{ur ? "کتاب خانہ — مکمل کتابیں پڑھیں" : "Book Library — Read Complete Books"}</strong>
+                  <span className="text-xs font-normal leading-6 text-[#5f6f61] dark:text-[#b9cbbb]">
+                    {ur ? "جلد اور کتابی فہرست، عبارت کی تلاش، نشان لگانا اور حوالہ سمیت نقل" : "Volumes, contents, in-book search, bookmarks and exact source copying"}
+                  </span>
+                </span>
+              </span>
+              <span aria-hidden="true" className="shrink-0 text-2xl">{readerQuickOpen ? "−" : "+"}</span>
+            </button>
+            {readerQuickOpen ? (
+              <section
+                id="khateeb-direct-book-reader"
+                data-testid="khateeb-direct-book-reader"
+                aria-label={ur ? "کتاب خانہ — مکمل مطالعہ" : "Book Library Reader"}
+                className="mt-4 scroll-mt-6 rounded-2xl border border-[#31513a]/20 bg-white p-3 text-start shadow-sm dark:border-[#35513d] dark:bg-[#102017] sm:p-5"
+              >
+                <PublicBookLibrary
+                  readerInitiallyOpen
+                  locale={ur ? "ur" : "en"}
+                  onCreateDraft={project => {
+                    setBookDraft(project);
+                    setReaderQuickOpen(false);
+                    setCustomWorkspaceOpen(true);
+                  }}
+                />
+              </section>
+            ) : null}
+          </div>
 
           <div className="mx-auto mt-6 max-w-3xl text-start">
             <div className="mb-2 text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
