@@ -17,7 +17,7 @@ const LATIN_LETTER = /[A-Za-z]/u;
 const URDU_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:سورہ|سورۃ|آیت|آیات|ہود|نمل|بقرہ|حجرات|ذاریات|حشر|توبہ|لقمان|سبا|مریم|محمد|طہ|انبیاء|جاثیہ|زمر|اعراف|انعام|یونس|شعراء|احزاب|سجدہ|آل عمران|بحوالہ)[^()\n]*\)\s*[۔.؟?]?)$/u;
 const ENGLISH_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:surah|verse|ayah)[^()\n]*\)\s*[۔.؟?]?)$/iu;
 
-/** Vetted standalone source-quotation beginnings from reviewed first-ten Tafsir source topics (including all Al-Fatihah).
+/** Vetted standalone source-quotation beginnings from reviewed Tafsir source topic batches (the first twenty unique source entries).
  * This avoids treating unvowelled Urdu commentary as Arabic just because of shared letters.
  * Phrases are source markers, not text substitutions.
  */
@@ -74,7 +74,34 @@ const VERIFIED_URDU_TAFSIR_QUOTATIONS: readonly string[] = [
   "ان اکرمکم عنداللہ",
   "ان تقوی اللہ مفتاح",
   "و اذ زاغت الابصار",
-  "و ختم علی سمعہ"
+  "و ختم علی سمعہ",
+  "الریاء شجرة لا تثمر",
+  "الذین یلمزون المطوعین",
+  "لَئِنْ لَمْ یَنْتَہِ",
+  "الانداد ھو الشرک الخفی",
+  "ماشاء اللّہ ہ وشئت",
+  "انکم وما تعبدون",
+  "لا یاتون بمثلہ",
+  "فاتقوا النار التی",
+  "وانّ لہ لحلاوة",
+  "ان الذین تدعون",
+  "ثُمَّ كَانَ عَاقِبَةَ",
+  "فلما زاغوا ازاغ",
+  "الم اعھد الیکم یا بنی",
+  "فھل عسیتم ان تولیتم",
+  "الذی خلق الموت",
+  "وسخّر لکم ما فی",
+  "الم تر کیف ضرب",
+  "ثم استوی الی السماء",
+  "ولو ان ما فی الارض",
+  "انا زینا السماء",
+  "الارضین والجبال والشعاب",
+  "فاذا سویتہ ونفخت",
+  "فسجدوا الا ابلیس",
+  "انما یرید الشیطان",
+  "وکذٰلک جعلنا لکل نبی",
+  "لاتشرب الماء من ثلمة",
+  "ولا یشرب من اذن"
 ];
 
 function confidentArabicQuotation(line: string): boolean {
