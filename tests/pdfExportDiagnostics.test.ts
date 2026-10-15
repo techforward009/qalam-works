@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyPdfExportFailure } from "../app/tools/document-studio/utils/pdfExportDiagnostics";
+import { classifyPdfExportFailure, identifyUnsupportedProtectedCharacters } from "../app/tools/document-studio/utils/pdfExportDiagnostics";
 
 describe("PDF guided failure diagnostics", () => {
   it("identifies missing Quranic mark without exposing private text", () => {
@@ -24,6 +24,22 @@ describe("PDF guided failure diagnostics", () => {
     expect(classifyPdfExportFailure(new Error("Document size limit exceeded")).diagnostics[0].kind).toBe("too_large");
     expect(classifyPdfExportFailure(new Error("Service temporarily unavailable")).diagnostics[0].kind).toBe("server");
     expect(classifyPdfExportFailure(null).diagnostics[0].kind).toBe("unknown");
+  });
+
+  it("lists multiple missing Quranic marks in distinct protected source runs without changing text", () => {
+    const first = "هٰذَا";
+    const second = "ا\u06D7";
+    const third = "ب\u06D7";
+    const doc = { type: "doc", content: [first, second, third].map(value => ({
+      type: "paragraph", content: [{ type: "text", text: value, marks: [{
+        type: "textStyle", attrs: { fontFamily: "Digital Khatt Indo-Pak" },
+      }] }],
+    })) };
+    const before = JSON.stringify(doc);
+    const issues = identifyUnsupportedProtectedCharacters(doc);
+    expect(issues.filter(x => x.codepoint === "U+06D7").map(x => x.location?.runIndex)).toEqual([1, 2]);
+    expect(JSON.stringify(doc)).toBe(before);
+    expect(issues.every(x => x.kind === "font" && x.page === undefined)).toBe(true);
   });
   it("does not accept an ignore-and-export bypass", () => {
     const response = classifyPdfExportFailure(new Error("Unsupported Quranic U+06D7; export blocked"));
