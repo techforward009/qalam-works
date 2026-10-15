@@ -30,7 +30,7 @@ const fromYear = (day:number,month:number) =>
 describe("Pakistan historical Hijri calendar Gregorian 2021", () => {
   it("preserves twelve first-day source records with genuine 29/30-day lunar boundaries", () => {
     expect(PAKISTAN_2021_HISTORIC_ANCHORS).toHaveLength(12);
-    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(73);
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(85);
     const ids=PAKISTAN_OFFICIAL_HIJRI_ANCHORS.map(x=>x.id);
     expect(new Set(ids).size).toBe(ids.length);
     for(const m of PAKISTAN_2021_HISTORIC_ANCHORS){
