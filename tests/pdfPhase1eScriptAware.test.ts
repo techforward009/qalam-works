@@ -115,7 +115,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("Phase1E actual producti
      }
    } else {
      const body = await response.json() as { error?: string };
-     expect(body.error).toMatch(/blocked/i);
+     expect((body as { diagnostics?: Array<{ kind: string; code: string }> }).diagnostics?.[0]).toMatchObject({ kind: "font", code: "PDF_FONT_UNSAFE" });
    }
    fault = false;
  }, 150000);
