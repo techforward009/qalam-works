@@ -50,8 +50,8 @@ const findText=(node,indices=[])=>{
    const editor = await page.$('.ProseMirror[contenteditable="true"]');
    if(!editor)throw Error("Real editable ProseMirror surface missing");
    await editor.click();
-   await page.keyboard.type("هٰذَا نَصٌّ عَرَبِيٌّ لِاخْتِبَارِ النَّصِّ.");
-   await page.waitForFunction(()=>document.querySelector('.ProseMirror')?.textContent?.includes('هٰذَا'),{timeout:10000});
+   await page.keyboard.type("PUBLIC SYNTHETIC PDF DIAGNOSTIC SAMPLE");
+   await page.waitForFunction(()=>document.querySelector('.ProseMirror')?.textContent?.includes("SYNTHETIC"),{timeout:10000});
    await page.click('[data-studio-export-pdf="true"]');
    await page.waitForSelector('[aria-label="پی ڈی ایف برآمد کی خرابی"]',{timeout:20000});
    await page.screenshot({path:path.join(output,"urdu-guided-repair.png"),fullPage:true});
