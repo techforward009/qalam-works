@@ -139,7 +139,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   }
   function toggleBookmark() {
     if (!reading) return;
-    const target = selectedIds[0] ?? targetParagraph || reading.paragraphs[0]?.id;
+    const target = selectedIds[0] || targetParagraph || reading.paragraphs[0]?.id;
     if (!target) return;
     const bookmark = anchorForPage(reading, target);
     saveProgress(toggleReaderBookmark(progressRef.current, bookmark));
@@ -186,7 +186,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   }
   const selectedSource = shelf?.sources.find(s => s.id === sourceId);
   const citation = reading?.reference ?? "";
-  const currentBookmark = reading?.paragraphs.length ? anchorForPage(reading, selectedIds[0] ?? targetParagraph || reading.paragraphs[0].id) : null;
+  const currentBookmark = reading?.paragraphs.length ? anchorForPage(reading, selectedIds[0] || targetParagraph || reading.paragraphs[0].id) : null;
   const isBookmarked = !!currentBookmark && progress.bookmarks.some(b => sameReaderAnchor(b, currentBookmark));
   const visibleBookmarks = progress.bookmarks.filter(b =>
     b.sourceId === sourceId && b.sourceSha256 === selectedSource?.sha256);
