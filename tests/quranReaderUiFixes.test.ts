@@ -114,6 +114,26 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(tafsir).not.toContain('خودکار آیت وار خلاصہ');
   });
 
+  it("passes every actual printed Quran-page ayah to Tafsir instead of only the selected ayah", () => {
+    expect(conventional).toContain('<QuranTafsirPage surah={surah} ayah={ayah} ayahs={ayahs} />');
+    expect(tafsir).toContain('const pageVerseKeys = ayahs?.map((item) => item.surah + ":" + item.ayah).join(",") ?? ""');
+    expect(tafsir).toContain('encodeURIComponent(pageVerseKeys)');
+    expect(tafsir).toContain('data-tafsir-page-sections="true"');
+    expect(tafsir).toContain('sections={pageSections}');
+    expect(tafsir).toContain('sourceKey: string;');
+    expect(tafsir).toContain('اس قرآنی صفحے کی تفسیریں');
+    expect(tafsir).toContain('Commentary for this Quran page');
+    expect(tafsir).toContain('data-tafsir-source-section={section.sourceKey}');
+    const route = read("app/api/quran/tafsir-namoona/route.ts");
+    expect(route).toContain('const pageVerseParam = query.get("verses")');
+    expect(route).toContain('pageVerseKeys: pageKeys');
+    expect(route).toContain('sections: [...bySource.values()]');
+    expect(route).toContain('sourceKey,');
+    expect(route).toContain('verseKeysOnPage: [verseKey]');
+    expect(route).toContain('coverage: [...(coverageIndex.get(sourceKey) ?? [])]');
+    expect(route).toContain('checkHash(file, RELEASE[language].digest)');
+  });
+
   it("keeps Quran translation text, selector, saved translator preference, and approved fonts intact", () => {
     const translationCorpus = read("app/quran/reader/translationCorpus.ts");
     expect(translation).toContain("ترجمۂ قرآن");
