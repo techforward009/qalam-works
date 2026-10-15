@@ -41,7 +41,7 @@ import {
   type RegionalReference,
 } from "./utils/regionalDateEvidence";
 import { YallopIntegration, type DateStudioMethod } from "./components/YallopIntegration";
-import { resolvePakistanOfficialHijriDate } from "./utils/hijri-authority/resolveOfficialHijriDate";
+import { resolvePakistanOfficialGregorianDate, resolvePakistanOfficialHijriDate } from "./utils/hijri-authority/resolveOfficialHijriDate";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const L = {
@@ -397,9 +397,11 @@ export default function DateConverterContent({
 
   if (hasInput) {
     const parts: DateParts = { year: yearN, month: monthN, day: dayN };
-    const err = validateDate(calendar, parts);
+    // A reviewed Pakistan month can have 30 days even when the tabular month has 29.
+    const reviewedGregorian = calendar === "hijri" ? resolvePakistanOfficialGregorianDate(parts) : null;
+    const err = reviewedGregorian ? null : validateDate(calendar, parts);
     if (err) errMsg = `${t.invalidDate}: ${err.message}`;
-    else result = convert(calendar, parts);
+    else result = reviewedGregorian ? convert("gregorian", reviewedGregorian) : convert(calendar, parts);
   }
 
   const intelligence = result ? getRichDateIntelligence(result.gregorian) : null;
