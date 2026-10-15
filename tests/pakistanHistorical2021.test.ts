@@ -41,7 +41,7 @@ describe("Pakistan historical Hijri calendar Gregorian 2021", () => {
       expect(getReviewedPakistanHijriMonth(m.hijriYear,m.hijriMonth)).toMatchObject({complete:true});
     }
   });
-  
+
   it("uses committee-announced Rajab and Shawwal, where past government projection differs", () => {
     const rajab=PAKISTAN_2021_HISTORIC_ANCHORS.find(x=>x.hijriYear===1442&&x.hijriMonth===7);
     const shawwal=PAKISTAN_2021_HISTORIC_ANCHORS.find(x=>x.hijriYear===1442&&x.hijriMonth===10);
@@ -109,7 +109,7 @@ describe("Pakistan historical Hijri calendar Gregorian 2021", () => {
     expect(cells).toHaveLength(365);
     expect(cells.every(c=>["official","reported-official"].includes(c.hijriSource||""))).toBe(true);
   });
-  
+
   it("does not disturb the approved Pakistan Ramadan dates through 2026", () => {
     for(const [gYear,gMonth,gDay,hYear,hMonth,hDay] of [
       [2022,4,12,1443,9,10],
