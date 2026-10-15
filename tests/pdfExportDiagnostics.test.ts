@@ -41,6 +41,22 @@ describe("PDF guided failure diagnostics", () => {
     expect(JSON.stringify(doc)).toBe(before);
     expect(issues.every(x => x.kind === "font" && x.page === undefined)).toBe(true);
   });
+
+  it("classifies layout and complexity safety guards with stable codes", () => {
+    for (const [raw, code] of [
+      ["printable horizontal boundary", "PDF_LAYOUT_OVERFLOW"],
+      ["300 visual-line limit", "PDF_LIMIT_VISUAL_LINES"],
+      ["40000px staging limit", "PDF_LIMIT_STAGING_HEIGHT"],
+      ["98304-byte limit", "PDF_LIMIT_SOURCE_BYTES"],
+      ["20000 code-point single-text-node limit", "PDF_LIMIT_NODE_CODEPOINTS"],
+      ["2500-node limit", "PDF_LIMIT_NODE_COUNT"],
+    ]) {
+      const report = classifyPdfExportFailure(new Error(raw + "; export blocked"));
+      expect(report.diagnostics[0].code).toBe(code);
+      expect(report.diagnostics[0].kind).not.toBe("font");
+      expect(report.retryable).toBe(false);
+    }
+  });
   it("does not accept an ignore-and-export bypass", () => {
     const response = classifyPdfExportFailure(new Error("Unsupported Quranic U+06D7; export blocked"));
     expect(response.retryable).toBe(false);
