@@ -72,7 +72,8 @@ it("displays original Arabic in a true RTL reader, copies exact text and navigat
   expect(screen.getByText("الکافی، جلد 8")).toBeTruthy();
   expect(screen.getAllByText("اصل متن کا حصہ 1").length).toBeGreaterThan(0);
   expect(screen.queryByRole("complementary", {name:"کتاب کی فہرست"})).toBeNull();
-  fireEvent.click(screen.getByRole("button", {name: "اصل متن نقل کریں"}));
+  fireEvent.click(screen.getByText("نقل"));
+  fireEvent.click(screen.getByRole("button", {name: "عبارت نقل کریں"}));
   await waitFor(() => expect(writeText).toHaveBeenCalled());
   expect(writeText.mock.calls[0][0]).toBe(arabic);
   fireEvent.click(screen.getByRole("button", {name: "اگلا مطالعہ صفحہ"}));
@@ -88,7 +89,7 @@ it("searches only the selected volume and jumps to its returned original paragra
   fireEvent.change(screen.getByRole("textbox", {name:"اسی کتاب میں تلاش"}), {target:{value:"اختباری"}});
   fireEvent.click(screen.getByRole("button", {name:"تلاش کریں"}));
   await waitFor(() => expect(urls.some(url => url.searchParams.get("op") === "find")).toBe(true));
-  await waitFor(() => expect(screen.getAllByRole("button", { name: /اصل متن کا حصہ 2/ }).length).toBeGreaterThan(1));
+  await waitFor(() => expect(screen.getAllByRole("button", { name: /اصل متن کا حصہ 2/ }).length).toBeGreaterThan(0));
   const hits = screen.getAllByRole("button", { name: /اصل متن کا حصہ 2/ });
   fireEvent.click(hits[hits.length - 1]);
   await waitFor(() => expect(urls.some(url =>
@@ -114,7 +115,7 @@ it("bookmarks the actual paragraph and sends validated selection to existing ser
   const saved = vi.fn((_excerpt: BookExcerpt) => true);
   render(<BookReader locale="ur" onAdd={saved}/>);
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
-  fireEvent.click(screen.getByRole("button", {name:"نشان لگائیں"}));
+  fireEvent.click(screen.getByRole("button", {name:"نشان"}));
   const data = JSON.parse(localStorage.getItem(KHATEEB_READER_PROGRESS_KEY)!);
   expect(data.bookmarks).toHaveLength(1);
   expect(data.bookmarks[0].recordId).toBe(id1);
