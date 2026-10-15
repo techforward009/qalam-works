@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     if (request.headers.get("x-phase1d-fault") === "arabic-css" ||
         request.headers.get("x-phase1d-fault") === "arabic-css-last") {
       const last = request.headers.get("x-phase1d-fault") === "arabic-css-last";
-      await page.$eval('[data-pdf-font="Digital Khatt Indo-Pak"]', (elements, pickLast) => {
+      await page.$$eval('[data-pdf-font="Digital Khatt Indo-Pak"]', (elements, pickLast) => {
         const selected = pickLast ? elements[elements.length - 1] : elements[0];
         if (!selected) throw Error("Missing protected Digital Khatt run for fault test");
         (selected as HTMLElement).style.fontFamily = '"Liberation Serif"';
