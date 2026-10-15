@@ -11,7 +11,7 @@ import { loadCustomProjects } from '../app/tools/khateeb-studio/engine/customSer
 const source={id:'sahifa-ar',book:'sahifa',language:'ar' as const,filename:'sahifa-ar.docx',translator:null,sha256:'a'.repeat(64)};
 const id='sahifa-ar:supplication:28';
 const paragraphs=[{id:`${id}:p1`,text:'اَللّٰهُمَّ — نص تجريبي'},{id:`${id}:p2`,text:'حاشیہ — آزمائشی توضیح'}];
-const record={id,sourceId:source.id,book:'sahifa',language:'ar',kind:'supplication',number:28,title:'دعا 28 — آزمائشی عبارت',reference:{sourceId:source.id,section:'supplication',number:28,locator:'word/document.xml paragraph 100',printPage:null},paragraphs,textSha256:createHash('sha256').update(paragraphs.map(p=>p.text).join('\n')).digest('hex')};
+const record={id,sourceId:source.id,book:'sahifa',language:'ar',kind:'supplication',number:28,title:'دعا 28 — آزمائشی عبارت',reference:{sourceId:source.id,section:'supplication',number:28,locator:'word/document.xml paragraph 100',printPage:null},paragraphs,textSha256:createHash('sha256').update(paragraphs.map(p=>p.text).join('\n')).digest('hex')} satisfies BookRecord;
 vi.mock('../app/lib/language-context',()=>({useLanguage:()=>({language:'en'})}));
 function mockFetch(){vi.stubGlobal('fetch',vi.fn(async(url:string)=>new Response(JSON.stringify(url.includes('/research/auth')?{authenticated:true}:url.includes('op=record')?{record,source}:url.includes('op=search')?{total:1,page:1,pageSize:20,hits:[{id,sourceId:source.id,title:record.title,kind:record.kind,number:28,language:'ar',snippet:paragraphs[0].text}]}:{ready:true,sources:[source],recordCount:2676}),{status:200,headers:{'Content-Type':'application/json'}})))}
 afterEach(()=>{cleanup();localStorage.clear();vi.restoreAllMocks();vi.unstubAllGlobals()});
