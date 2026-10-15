@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     || (op === "find" && !query.trim())) return bad();
 
   const page = Number(pageText);
-  const part = Number(partText);
+  const part = partText === "last" ? "last" : Number(partText);
   try {
     const client = await researchBlobClientFromEnv();
     const catalog = await loadBookCatalog(client);
@@ -54,7 +54,9 @@ export async function GET(req: NextRequest) {
     const records = await readBookSource(client, catalog, sourceId);
     if (op === "contents") return json(bookContents(records, sourceId, locale as "ur" | "en", page));
     if (op === "find") return json(bookFind(records, sourceId, query, locale as "ur" | "en", page));
-    const result = bookReadingPage(records, source, id, locale as "ur" | "en", part);
+    const selected = records.find(r => r.id === id);
+    const chosenPart = part === "last" && selected ? Math.max(1, Math.ceil(selected.paragraphs.length / 12)) : part;
+    const result = typeof chosenPart === "number" ? bookReadingPage(records, source, id, locale as "ur" | "en", chosenPart) : null;
     return result ? json(result) : json({ code: "not-found" }, 404);
   } catch {
     return json({ code: "unavailable" }, 503);
