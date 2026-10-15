@@ -15,6 +15,17 @@ const TAFSIR_SCHEHERAZADE_CSS = `@font-face {
   font-display: swap;
 }`;
 
+const TAFSIR_READING_SURFACE_CSS = `
+  .qalam-tafsir-page { border-width: 10px; }
+  .qalam-tafsir-page::before { inset: 6px; }
+  .qalam-tafsir-page::after { inset: 12px; }
+  @media (max-width: 639px) {
+    .qalam-tafsir-page { border-width: 7px; }
+    .qalam-tafsir-page::before { inset: 4px; }
+    .qalam-tafsir-page::after { inset: 9px; }
+  }
+`;
+
 type TafsirLanguage = "ur" | "en";
 type Topic = { title: string; text: string; sourceId: number | null };
 type Remote = {
@@ -44,7 +55,7 @@ function TafsirText({ text, language }: { text: string; language: TafsirLanguage
         : "text-[17px] leading-8 text-[#28362b]")}
       data-tafsir-urdu-text={language === "ur" ? "true" : undefined}
       dir={language === "ur" ? "rtl" : "ltr"} lang={language}
-      style={language === "ur" ? { fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif', fontSize: "22px", lineHeight: 2.25 } : undefined}
+      style={language === "ur" ? { fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif', fontSize: "clamp(19px, 3.6vw, 22px)", lineHeight: 2.3 } : undefined}
     >
       {runs.map((run, index) => run.kind === "arabic" ? (
         <span key={index} dir="rtl" lang="ar" data-tafsir-arabic="true"
@@ -96,10 +107,10 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
     : (ur ? "اس آیت کی اصل تفسیری عبارت ابھی دستیاب نہیں۔" : "Source commentary for this verse is not available yet.");
 
   return (
-    <article className="quran-page quran-reader-paper relative flex w-full flex-col overflow-hidden bg-[#fffef9] px-4 py-5 text-[#293a2e] dark:bg-[#151a16] dark:text-[#e4eee4] sm:px-10 sm:py-8"
+    <article className="quran-page qalam-tafsir-page quran-reader-paper relative flex w-full flex-col overflow-hidden bg-[#fffef9] px-3 py-5 text-[#293a2e] dark:bg-[#151a16] dark:text-[#e4eee4] sm:px-10 sm:py-8"
       dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}
       style={ur ? { fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif' } : undefined}>
-      <style>{TAFSIR_SCHEHERAZADE_CSS}</style>
+      <style>{TAFSIR_SCHEHERAZADE_CSS + TAFSIR_READING_SURFACE_CSS}</style>
       {ur ? (
         <header className="border-b border-[#c9b98d]/45 pb-5 text-center" data-tafsir-urdu-header="true">
           <h1 className="mx-auto text-center text-[#254936]"
