@@ -53,8 +53,8 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
       return await response.json();
     } catch {
       if (!controller.signal.aborted) setError(ur
-        ? "کتاب نہیں کھل سکی۔ نجی رسائی اور محفوظ ذخیرے کی دستیابی جانچیں۔"
-        : "Unable to open the private book. Check your session and the stored corpus.");
+        ? "کتاب نہیں کھل سکی۔ براہِ کرم دوبارہ کوشش کریں۔"
+        : "Unable to open the book. Please try again.");
       return null;
     } finally {
       if (!controller.signal.aborted) setBusy(false);
@@ -122,7 +122,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         } else void contents(first, 1, true);
       }
     }).catch(() => {
-      if (active) setError(ur ? "کتاب خانہ نہیں کھل سکا۔" : "Could not open the library.");
+      if (active) setError(ur ? "کتاب خانہ نہیں کھل سکا۔" : "Could not open the library. Please retry.");
     });
     return () => { active = false; controller.abort(); abort.current?.abort(); };
     // Reinitialize on language change so source labels and reference locale refresh.
@@ -204,7 +204,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     {error ? <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p> : null}
     {busy ? <p role="status" className="text-sm">{ur ? "کتاب کھولی جا رہی ہے…" : "Opening book…"}</p> : null}
     {message ? <p role="status" className="text-sm text-emerald-800 dark:text-emerald-200">{message}</p> : null}
-    {shelf && !shelf.ready ? <p role="status">{ur ? "کتابی ذخیرہ ابھی موجود نہیں۔" : "No book corpus is active."}</p> : null}
+    {shelf && !shelf.ready ? <p role="status">{ur ? "کتابی ذخیرہ ابھی دستیاب نہیں۔" : "No book corpus is active."}</p> : null}
     {shelf?.ready && <>
       <label className="grid gap-1 text-sm font-medium">
         {ur ? "کتاب، جلد اور اصل نسخہ" : "Book, volume and edition"}
