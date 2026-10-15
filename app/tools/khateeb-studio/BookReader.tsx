@@ -306,7 +306,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         <div className={styles.contentsList}>
           {toc?.entries.map(entry => <button type="button" key={entry.id} className={styles.contentsEntry} aria-current={reading?.recordId === entry.id ? "true" : undefined}
             onClick={() => { closeContents(); void read(sourceId, entry.id); }} disabled={busy}>
-            <span>{entry.ordinal.toLocaleString(ur ? "ur-PK" : "en-US")}.</span>{entry.title}
+            <span>{entry.ordinal.toLocaleString(ur ? "ur-PK" : "en-US")}.</span>{entry.kind === "front-matter" ? <em className={styles.frontMatterLabel}>{ur ? "ابتدائی مواد" : "Front matter"}</em> : null}{entry.title}
           </button>)}
         </div>
         {toc && <nav className={styles.contentsPages} aria-label={ur ? "فہرست کے صفحات" : "Contents pages"}>
@@ -325,7 +325,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
             <span className={styles.pageNumber}><small>{ur ? "مطالعہ حصہ · صفحہ" : "Reader part · page"}</small><strong>{ur ? reading.recordOrdinal.toLocaleString("ur-PK") + " · " + reading.page.toLocaleString("ur-PK") + " / " + reading.pageCount.toLocaleString("ur-PK") : reading.recordOrdinal + " · " + reading.page + " / " + reading.pageCount}</strong></span>
             <button type="button" className={btn} disabled={busy || (reading.page === reading.pageCount && !reading.nextRecordId)} aria-label={ur ? "اگلا مطالعہ صفحہ" : "Next reader page"} onClick={nextPart}>›</button>
           </nav>
-          <div className={styles.chapterTitle}><span>{ur ? "باب یا حصہ" : "Chapter or section"}</span><strong>{reading.title}</strong></div>
+          <div className={styles.chapterTitle}><span>{reading.kind === "front-matter" ? (ur ? "ابتدائی مواد" : "Front matter") : (ur ? "باب یا حصہ" : "Chapter or section")}</span><strong>{reading.title}</strong></div>
         </header>
         {missingTranslation ? <p className={styles.translationStatus} role="status">
           <span>{ur ? "اردو ترجمہ ابھی دستیاب نہیں" : "Translation is not available yet."}</span>
