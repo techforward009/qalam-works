@@ -3,6 +3,7 @@ import React from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import BookReader from "../app/tools/khateeb-studio/BookReader";
+import type { BookExcerpt } from "../app/lib/knowledge/bookCorpus";
 import { KHATEEB_READER_PROGRESS_KEY } from "../app/lib/knowledge/bookReaderProgress";
 vi.mock("../app/lib/language-context", () => ({ useLanguage: () => ({ language: "ur" }) }));
 
@@ -107,7 +108,7 @@ it("preserves hashed last-read location and restores only the matching source ed
 });
 it("bookmarks the actual paragraph and sends validated selection to existing sermon callback", async () => {
   const urls = fakeFetch();
-  const saved = vi.fn(() => true);
+  const saved = vi.fn((_excerpt: BookExcerpt) => true);
   render(<BookReader locale="ur" onAdd={saved}/>);
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
   fireEvent.click(screen.getByRole("button", {name:"نشان لگائیں"}));
