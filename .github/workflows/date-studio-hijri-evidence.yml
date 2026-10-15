@@ -1,0 +1,48 @@
+name: Date Studio Hijri Evidence Validation (No Deployment)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/date-studio-hijri-evidence.yml"
+      - "app/tools/date-converter/**"
+      - "app/tools/crescent-visibility/**"
+      - "app/tools/date-converter/utils/dateProfile.ts"
+      - "app/components/date-studio/**"
+      - "app/date/**"
+      - "tests/dateConverter.test.ts"
+      - "tests/dateProfile.test.ts"
+      - "tests/pakistanOfficialHijriAuthority.test.ts"
+      - "tests/crescentVisibilityDashboard.test.tsx"
+  push:
+    branches: [fix/date-studio-pk-ramadan-1447-crescent-context]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: date-studio-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused-date-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Hijri authority, baseline calendar, date profile, and crescent dashboard regressions
+        run: npx vitest run tests/dateConverter.test.ts tests/dateProfile.test.ts tests/pakistanOfficialHijriAuthority.test.ts tests/crescentVisibilityDashboard.test.tsx tests/dateStudioProductPresentation.test.ts
+      - name: TypeScript validation
+        run: npx tsc --noEmit
+      - name: Patch hygiene
+        run: git diff --check
