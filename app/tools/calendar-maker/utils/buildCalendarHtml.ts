@@ -148,6 +148,9 @@ ${options.naskhFonts.nastaliqLatinBoldBase64 ? `@font-face{
   const researchNoteHtml = researchNote
     ? `<div data-research-note="true" class="research-note">${escapeHtml(researchNote)}</div>`
     : "";
+  const evidenceFootnote = model.content === "gregorian-hijri" && model.hijriPolicy === "pakistan"
+    ? (isUr ? "پاکستان: مصدقہ سرکاری تاریخیں؛ * حسابی، سرکاری تصدیق نہیں" : "Pakistan: reviewed official dates; * = calculated, not officially verified")
+    : "";
   const researchNoteFooterHtml = researchNote
     ? `<span data-research-note-footer="true" class="research-note-footer">${escapeHtml(researchNote)}</span>`
     : "";
@@ -181,7 +184,7 @@ ${options.naskhFonts.nastaliqLatinBoldBase64 ? `@font-face{
 
       const sunday = isSunday(cell.gregorian);
       const hijri = cell.hijri
-        ? `<span class="hijri-day" data-pdf-hijri-day="true" style="grid-column:2 !important;grid-row:2 !important;align-self:end !important;justify-self:end !important;color:#15803d !important;font-size:${metrics.hijriFont} !important;font-weight:bold !important;line-height:1 !important;">${escapeHtml(isUr ? toUrduDigits(cell.hijri.day) : String(cell.hijri.day))}</span>`
+        ? `<span class="hijri-day" data-pdf-hijri-day="true" style="grid-column:2 !important;grid-row:2 !important;align-self:end !important;justify-self:end !important;color:#15803d !important;font-size:${metrics.hijriFont} !important;font-weight:bold !important;line-height:1 !important;">${escapeHtml(isUr ? toUrduDigits(cell.hijri.day) : String(cell.hijri.day))}${model.hijriPolicy === "pakistan" && cell.hijriSource === "tabular" ? `<sup style="font-size:6px !important;line-height:1 !important;">*</sup>` : ""}</span>`
         : "";
 
       return `<div class="day current${sunday ? " sunday" : ""}" dir="ltr" style="position:relative !important;display:grid !important;grid-template-columns:1fr 1fr !important;grid-template-rows:1fr 1fr !important;overflow:hidden !important;"><div class="greg-day" data-pdf-gregorian-day="true" style="grid-column:1 !important;grid-row:1 !important;align-self:start !important;justify-self:start !important;font-size:${metrics.gregorianFont} !important;font-weight:900 !important;line-height:1 !important;color:${sunday ? "#EF2B2F" : "#161a17"} !important;">${cell.gregorian.day}</div>${hijri}</div>`;
@@ -482,7 +485,7 @@ body{
   </header>
   ${researchNoteHtml}
   <div class="year-grid">${monthsHtml}</div>
-  <footer class="footer"><span>qalamworks.com</span>${researchNoteFooterHtml}</footer>
+  <footer class="footer"><span>qalamworks.com</span>${evidenceFootnote ? `<span class="research-note-footer" data-hijri-source-note="true">${escapeHtml(evidenceFootnote)}</span>` : ""}${researchNoteFooterHtml}</footer>
 </main>
 </body>
 </html>`;
