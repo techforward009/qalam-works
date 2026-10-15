@@ -69,7 +69,7 @@ describe("Pakistan official Hijri authority resolver", () => {
       hijri: { year: 1448, month: 3, day: 30 }, authority: "official",
     });
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 14 })).toMatchObject({ hijri: { year: 1448, month: 4, day: 1 }, authority: "official", verificationStatus: "verified" });
-    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(73);
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(85);
   });
 
   it("bounds the reviewed Rabi al-Thani anchor through day 29 without inferring day 30", () => {
