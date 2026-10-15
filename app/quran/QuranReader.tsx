@@ -1101,7 +1101,7 @@ export default function QuranReader({
                   scale={scale}
                 />
               ) : (
-                <QuranTafsirPage surah={surah} ayah={ayah} />
+                <QuranTafsirPage surah={surah} ayah={ayah} ayahs={ayahs} />
               )}
             </div>
 
