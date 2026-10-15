@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ date: str
   return {
     title: `${formatGregorianDate(parsed)} | ${formatHijriDate(shownDate)} | Qalam Works Date Studio`,
     description: officialDate
-      ? `${formatGregorianDate(parsed)} corresponds to ${formatHijriDate(officialDate)} in the verified Pakistan official calendar (Qalam tabular calculation: ${formatHijriDate(profile.hijri)}).`
+      ? `${formatGregorianDate(parsed)} corresponds to ${formatHijriDate(officialDate)} in the Pakistan Hijri calendar.`
       : `${formatGregorianDate(parsed)} corresponds to ${formatHijriDate(profile.hijri)} in Qalam's calculated tabular calendar.`,
   };
 }
