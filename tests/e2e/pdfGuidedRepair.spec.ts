@@ -9,7 +9,7 @@ test("protected source diagnostic, navigation, approval/cancel/undo and safe ret
   await expect(editor).toBeEditable();
   await editor.click();
   await page.keyboard.press("Control+A");
-  await page.keyboard.type("اۗ");
+  await page.keyboard.type("پ");
   await page.keyboard.press("Control+A");
   await page.locator('[data-studio-font-family="true"]').selectOption({label:"Digital Khatt Indo-Pak"});
   const response = page.waitForResponse(r => r.url().includes("/api/export-pdf") && r.request().method()==="POST");
@@ -28,10 +28,7 @@ test("protected source diagnostic, navigation, approval/cancel/undo and safe ret
   expect(selected.length).toBeGreaterThan(0);
   await page.screenshot({path:dir+"/highlight.png",fullPage:true});
   const verify = page.getByRole("button",{name:"تصدیق شدہ فونٹ سے اصلاح دیکھیں"});
-  if (!(await verify.count())) {
-    await expect(page.getByText("کسی محفوظ متبادل فونٹ کی حقیقی تصدیق نہیں ہوئی۔")).toBeVisible();
-    return;
-  }
+  await expect(verify).toHaveCount(1);
   await verify.first().click();
   await expect(page.getByText("تبدیلی منظور کریں")).toBeVisible();
   await page.screenshot({path:dir+"/preview.png",fullPage:true});
@@ -42,7 +39,7 @@ test("protected source diagnostic, navigation, approval/cancel/undo and safe ret
   await expect(page.getByRole("button",{name:"آخری منظور شدہ اصلاح واپس لیں"})).toBeVisible();
   await page.screenshot({path:dir+"/approved.png",fullPage:true});
   const updated = await editor.innerText();
-  expect(updated).toContain("اۗ");
+  expect(updated).toContain("پ");
   const retry = page.waitForResponse(r=>r.url().includes("/api/export-pdf") && r.request().method()==="POST");
   await page.locator('[data-menu-root="file"]').click();
   await page.locator('[data-menu-submenu="file.download"]').hover();
@@ -55,5 +52,5 @@ test("protected source diagnostic, navigation, approval/cancel/undo and safe ret
   await page.screenshot({path:dir+"/success.png",fullPage:true});
   await page.getByRole("button",{name:"آخری منظور شدہ اصلاح واپس لیں"}).click();
   await page.screenshot({path:dir+"/undo.png",fullPage:true});
-  expect(await editor.innerText()).toContain("اۗ");
+  expect(await editor.innerText()).toContain("پ");
 });
