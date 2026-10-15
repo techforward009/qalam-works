@@ -1,0 +1,26 @@
+name: Phase1E Digital Font Cmap Fixture
+on:
+  push:
+    branches: [feature/pdf-phase1e-script-aware-guard]
+permissions:
+  contents: read
+jobs:
+  cmap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 -m pip install --break-system-packages fonttools brotli
+          mkdir -p artifacts/cmap
+          python3 - <<'PY'
+          import json
+          from fontTools.ttLib import TTFont
+          f=TTFont('public/fonts/DigitalKhattIndoPak.woff2')
+          cps=sorted(set().union(*(set(t.cmap) for t in f['cmap'].tables if t.isUnicode())))
+          open('artifacts/cmap/digital-cmap.json','w').write(json.dumps(cps))
+          print('CMAP_COUNT',len(cps))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digital-cmap-exact
+          path: artifacts/cmap/
