@@ -16,9 +16,13 @@ export async function generateMetadata({ params }: { params: Promise<{ date: str
   const parsed = parseValidDate((await params).date);
   if (!parsed) return { title: "Date Studio | Qalam Works" };
   const profile = buildDateProfile(parsed);
+  const officialDate = profile.pakistanOfficialHijri?.hijri;
+  const shownDate = officialDate ?? profile.hijri;
   return {
-    title: `${formatGregorianDate(parsed)} | ${formatHijriDate(profile.hijri)} | Qalam Works Date Studio`,
-    description: `${formatGregorianDate(parsed)} corresponds to ${formatHijriDate(profile.hijri)} in Qalam Works Date Studio.`,
+    title: `${formatGregorianDate(parsed)} | ${formatHijriDate(shownDate)} | Qalam Works Date Studio`,
+    description: officialDate
+      ? `${formatGregorianDate(parsed)} corresponds to ${formatHijriDate(officialDate)} in the verified Pakistan official calendar (Qalam tabular calculation: ${formatHijriDate(profile.hijri)}).`
+      : `${formatGregorianDate(parsed)} corresponds to ${formatHijriDate(profile.hijri)} in Qalam's calculated tabular calendar.`,
   };
 }
 
