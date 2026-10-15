@@ -34,7 +34,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const [findText, setFindText] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [fontSize, setFontSize] = useState(22);
-  const [readingMode, setReadingMode] = useState<BookCopyMode>("combined");
+  const [readingMode, setReadingMode] = useState<BookCopyMode>("original");
   const [copyMode, setCopyMode] = useState<BookCopyMode>("original");
   const [targetParagraph, setTargetParagraph] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -152,7 +152,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   async function changeSource(next: string) {
     setSourceId(next);
     setReading(null); setToc(null); setFind(null); setFindText(""); setTargetParagraph(""); setSelectedIds([]); setSelectionMode(false);
-    setReadingMode("combined"); setCopyMode("original");
+    setReadingMode("original"); setCopyMode("original");
     await contents(next, 1, true);
   }
   function closeContents() {
