@@ -1,0 +1,40 @@
+name: PDF Guided Repair Browser Acceptance (No Deployment)
+on:
+  push:
+    branches: [feature/pdf-export-guided-repair]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  repair-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: TypeScript and focused checks
+        run: |
+          npx tsc --noEmit
+          npx vitest run tests/pdfExportDiagnostics.test.ts tests/pdfSourcePreflight.test.ts
+      - name: Actual Chromium Document Studio repair
+        run: npx playwright test tests/e2e/pdfGuidedRepair.spec.ts --project desktop-chrome --reporter=line
+      - name: Preserve synthetic-only evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-guided-repair-browser-evidence
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: warn
+      - run: git diff --check

@@ -1,5 +1,5 @@
 import type { DocNode } from "./extractPlainText";
-import { documentImagePayloadBytes, MAX_DOCUMENT_IMAGE_TOTAL_BYTES } from "./documentImages";
+import { imageDataUrlByteLength, MAX_DOCUMENT_IMAGE_TOTAL_BYTES } from "./documentImages";
 
 export const PDF_SOURCE_LIMITS = {
   bytes: 96 * 1024,
@@ -132,7 +132,13 @@ export function preflightPdfSource(doc: DocNode): PdfSourceComplexity {
       for (let index = 0; index < node.content.length; index++) pending.push(node.content[index]);
     }
   }
-  const imageBytes = documentImagePayloadBytes(doc);
+  let imageBytes = 0;
+  const imagePending: DocNode[] = [doc];
+  while (imagePending.length) {
+    const node = imagePending.pop()!;
+    if (node.type === "image" && typeof node.attrs?.src === "string") imageBytes += imageDataUrlByteLength(node.attrs.src);
+    for (const child of node.content ?? []) imagePending.push(child);
+  }
   if (imageBytes > MAX_DOCUMENT_IMAGE_TOTAL_BYTES) {
     throw new Error(`PDF source exceeds the supported ${MAX_DOCUMENT_IMAGE_TOTAL_BYTES}-byte image payload; export blocked`);
   }

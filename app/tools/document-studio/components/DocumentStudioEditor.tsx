@@ -1,4 +1,6 @@
 "use client";
+import type { PdfExportFailure } from "../utils/pdfExportDiagnostics";
+import { pdfRunFingerprint } from "../utils/pdfExportDiagnostics";
 
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../../lib/language-context";
@@ -282,6 +284,10 @@ export default function DocumentStudioEditor() {
   const [isImporting, setIsImporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfDiagnosis, setPdfDiagnosis] = useState<PdfExportFailure | null>(null);
+  const [pdfRepairPreview, setPdfRepairPreview] = useState<number | null>(null);
+  const [pdfRepairUndoAvailable, setPdfRepairUndoAvailable] = useState(false);
+  const pdfDiagnosticDocumentRef = useRef<string | null>(null);
   const [pdfSummary, setPdfSummary] = useState<{
     pages: number;
     fileSizeLabel: string;
@@ -1177,17 +1183,28 @@ export default function DocumentStudioEditor() {
     trackEvent("tool_download", { tool: "document_studio", export_format: "pdf", mode: processingLanguage, success: true });
     if (!editor) return;
     setPdfError(null);
+    setPdfDiagnosis(null);
+    setPdfRepairPreview(null);
     setPdfSummary(null);
     setIsExportingPdf(true);
+    const exportDoc = editor.getJSON();
+    pdfDiagnosticDocumentRef.current = JSON.stringify(exportDoc);
     try {
       const response = await fetch("/api/export-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc: editor.getJSON(), dir, settings: documentSettings }),
+        body: JSON.stringify({ doc: exportDoc, dir, settings: documentSettings }),
       });
 
       if (!response.ok) {
-        setPdfError(await readPdfExportError(response));
+        const payload: unknown = await response.clone().json().catch(() => null);
+        if (payload && typeof payload === "object" && "version" in payload && (payload as PdfExportFailure).version === 1 && Array.isArray((payload as PdfExportFailure).problems)) {
+          const diagnosis = payload as PdfExportFailure;
+          setPdfDiagnosis(diagnosis);
+          setPdfError(diagnosis.problems[0]?.message ?? diagnosis.error);
+        } else {
+          setPdfError(await readPdfExportError(response));
+        }
         return;
       }
 
@@ -1232,6 +1249,51 @@ export default function DocumentStudioEditor() {
     } finally {
       setIsExportingPdf(false);
     }
+  };
+
+  const resolvePdfIssueRange = (problem: PdfExportFailure["problems"][number], entireRun = false): {from:number;to:number} | null => {
+    if (!editor || !problem.source || JSON.stringify(editor.getJSON()) !== pdfDiagnosticDocumentRef.current) return null;
+    let node = editor.state.doc;
+    let position = 0;
+    for (const index of problem.source.path) {
+      if (index < 0 || index >= node.childCount) return null;
+      for (let j=0; j<index; j++) position += node.child(j).nodeSize;
+      if (node.type.name !== "doc" && !node.isText) position += 1;
+      node = node.child(index);
+    }
+    if (!node.isText || (problem.source.snapshot && pdfRunFingerprint(node.text ?? "") !== problem.source.snapshot)) return null;
+    const from = position + (entireRun ? 0 : problem.source.start);
+    const to = position + (entireRun ? (node.text?.length ?? 0) : problem.source.end);
+    return from >= 0 && to <= editor.state.doc.content.size && from < to ? {from,to} : null;
+  };
+  const navigatePdfIssue = (problem: PdfExportFailure["problems"][number]) => {
+    const range = resolvePdfIssueRange(problem);
+    if (!range || !editor) { setPdfError("متن بدل چکا ہے، نئی جانچ کریں۔"); return; }
+    editor.chain().focus().setTextSelection(range).run();
+  };
+  const approvePdfRepair = (index: number) => {
+    if (!editor || !pdfDiagnosis) return;
+    const problem = pdfDiagnosis.problems[index];
+    if (!problem?.verifiedReplacement) return;
+    const range = resolvePdfIssueRange(problem, true);
+    if (!range) { setPdfError("دستاویز بدل گئی ہے، دوبارہ جانچ کریں۔"); setPdfRepairPreview(null); return; }
+    const markType = editor.state.schema.marks.textStyle;
+    if (!markType) return;
+    let original = markType.create();
+    editor.state.doc.nodesBetween(range.from,range.to,(node) => {
+      if (node.isText) {
+        const existing = node.marks.find(mark => mark.type === markType);
+        if (existing) original = existing;
+      }
+    });
+    const replacement = markType.create({...original.attrs,fontFamily:problem.verifiedReplacement});
+    const tr = editor.state.tr.addMark(range.from,range.to,replacement);
+    editor.view.dispatch(tr);
+    setPdfRepairUndoAvailable(true);
+    setPdfRepairPreview(null);
+    // The diagnostic locations belong to the previous document snapshot.
+    setPdfDiagnosis(null);
+    setPdfError("فونٹ کی منظور شدہ اصلاح ہوگئی۔ دوبارہ PDF بنا کر جانچ کریں۔");
   };
 
   useEffect(() => {
@@ -1682,6 +1744,40 @@ export default function DocumentStudioEditor() {
             <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
               {pdfError}
             </div>
+          )}
+          {pdfRepairUndoAvailable && <div className="mb-3" dir="rtl"><button type="button" className="rounded border px-3 py-2" onClick={() => {editor?.commands.undo(); setPdfRepairUndoAvailable(false); setPdfDiagnosis(null); setPdfError("اصلاح واپس لے لی گئی۔");}}>آخری منظور شدہ اصلاح واپس لیں</button></div>}
+          {pdfDiagnosis && (
+            <section className="mb-3 rounded-lg border border-red-300 bg-white p-4 text-sm text-gray-800 space-y-3" dir="rtl" role="region" aria-label="PDF خرابیوں کی تفصیل">
+              <h3 className="font-semibold">PDF کی خرابیوں کی تفصیل ({pdfDiagnosis.problems.length})</h3>
+              {pdfDiagnosis.problems.map((problem, i) => (
+                <div key={i} className="rounded border border-gray-200 p-3 space-y-2">
+                  <p>{problem.message}</p>
+                  {problem.selectedFont && <p className="text-xs">اس حرف کے لیے کسی متبادل فونٹ کی حقیقی تصدیق ابھی دستیاب نہیں۔ اصل عبارت برقرار رکھیں اور فونٹ یا حرف کو خود جانچیں۔</p>}
+                  {problem.source && <p className="text-xs">مقام: {problem.source.paragraphPath.join(".")} / {problem.source.path.join(".")}</p>}
+                  {problem.selectedFont && <p>منتخب فونٹ: <bdi dir="ltr">{problem.selectedFont}</bdi></p>}
+                  {problem.actualFont && <p>استعمال ہونے والا فونٹ: <bdi dir="ltr">{problem.actualFont}</bdi></p>}
+                  {problem.unicode && <p>متعلقہ حرف: {problem.character} (<bdi dir="ltr">{problem.unicode}</bdi>)</p>}
+                  {problem.source && <button type="button" className="rounded border px-3 py-1 font-medium" onClick={() => navigatePdfIssue(problem)}>متعلقہ عبارت دکھائیں</button>}
+                  {problem.verifiedReplacement ? (
+                    <div className="space-y-2">
+                      <button type="button" className="rounded border px-3 py-1" onClick={() => {navigatePdfIssue(problem); setPdfRepairPreview(i);}}>تصدیق شدہ فونٹ سے اصلاح دیکھیں</button>
+                      {pdfRepairPreview === i && (
+                        <div className="rounded border border-amber-300 bg-amber-50 p-3 space-y-2">
+                          <p>صرف منتخب عبارت کا فونٹ بدلے گا۔ اصل حروف اور باقی انداز محفوظ رہیں گے۔</p>
+                          <p>پرانا فونٹ: <bdi dir="ltr">{problem.selectedFont}</bdi></p>
+                          <p>نیا تصدیق شدہ فونٹ: <bdi dir="ltr">{problem.verifiedReplacement}</bdi></p>
+                          <button type="button" className="rounded border px-3 py-1" onClick={() => approvePdfRepair(i)}>تبدیلی منظور کریں</button>
+                          <button type="button" className="rounded border px-3 py-1 mx-2" onClick={() => setPdfRepairPreview(null)}>منسوخ کریں</button>
+                        </div>
+                      )}
+                    </div>
+                  ) : <p className="text-xs">کسی محفوظ متبادل فونٹ کی حقیقی تصدیق نہیں ہوئی۔ دستی جانچ کریں۔</p>}
+                  <details><summary className="cursor-pointer">تکنیکی تفصیل</summary><p dir="ltr">{problem.code} {problem.reason ?? ""}</p></details>
+                </div>
+              ))}
+              <p>اصل قرآنی یا عربی عبارت کو خودکار طور پر تبدیل نہیں کیا گیا۔ فونٹ یا عبارت کی تبدیلی صرف آپ کی منظوری سے ہوگی۔</p>
+              <button type="button" onClick={() => void handleDownloadPdf()} className="rounded border px-3 py-1">دوبارہ PDF بنائیں</button>
+            </section>
           )}
           {docxImportNotice && (
             <div className="mb-3 bg-amber-50 border-2 border-amber-400 text-amber-900 p-3 rounded-lg text-xs flex items-start justify-between gap-3" dir="rtl">

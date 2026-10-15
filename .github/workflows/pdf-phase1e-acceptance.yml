@@ -51,6 +51,17 @@ jobs:
         run: npx tsc --noEmit
       - name: Production build (no deploy)
         run: npm run build
+      - name: Install Playwright Chromium for guided repair
+        run: npx playwright install --with-deps chromium
+      - name: Actual Document Studio guided repair acceptance
+        run: npx playwright test tests/e2e/pdfGuidedRepair.spec.ts --project desktop-chrome --reporter=line
+      - name: Save guided repair UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-guided-repair-evidence
+          path: test-results/
+          if-no-files-found: warn
       - name: Review whitespace and diff
         run: |
           git diff --check origin/main...HEAD
