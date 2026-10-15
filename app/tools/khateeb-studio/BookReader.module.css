@@ -90,7 +90,8 @@
   line-height: 1.8;
 }
 .contentsEntry:hover, .contentsEntry[aria-current="true"] { background: rgb(49 81 58 / 9%); }
-.contentsEntry span { flex: 0 0 auto; color: #66766b; font-size: .75rem; }
+ .contentsEntry span, .frontMatterLabel { flex: 0 0 auto; color: #66766b; font-size: .75rem; font-style: normal; }
+.frontMatterLabel { border-inline-start: 1px solid rgb(49 81 58 / 18%); padding-inline-start: .45rem; }
 .readingPage {
   width: min(100%, 100rem);
   min-width: 0;
