@@ -106,8 +106,12 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("Phase1E actual producti
      const fontResources = pdf.getPage(0).node.Resources()?.lookup(PDFName.of("Font"), PDFDict);
      expect(fontResources).toBeTruthy();
      if (fixture.id === "original-23-periods") {
-       const names = fontResources!.entries().map(([, val]) => pdf.context.lookup(val, PDFDict).get(PDFName.of("BaseFont"))?.toString() ?? "");
-       expect(names.some(n => n.toLowerCase().includes("digitalkhatt"))).toBe(true);
+       const names = pdf.getPages().flatMap(pdfPage => {
+         const resources = pdfPage.node.Resources()?.lookup(PDFName.of("Font"), PDFDict);
+         return resources?.entries().map(([, val]) =>
+           pdf.context.lookup(val, PDFDict).get(PDFName.of("BaseFont"))?.toString() ?? "") ?? [];
+       });
+       expect(names.some(n => n.replace(/#[0-9a-f]{2}/gi, "").replace(/[^a-z0-9]/gi, "").toLowerCase().includes("digitalkhatt"))).toBe(true);
      }
    } else {
      const body = await response.json() as { error?: string };
