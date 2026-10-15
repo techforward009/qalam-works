@@ -9,7 +9,7 @@ for (const locale of ['ur', 'en'] as const) {
     page.on('pageerror', error => errors.push(error.message));
     await page.setViewportSize({ width: 1440, height: 1000 });
 
-    const source = { id: 'sahifa-ar', book: 'sahifa', language: 'ar' as const, filename: 'sahifa-ar.docx', translator: null, sha256: 'a'.repeat(64) };
+    const source = { id: 'sahifa-ar', book: 'sahifa' as const, language: 'ar' as const, filename: 'sahifa-ar.docx', translator: null, sha256: 'a'.repeat(64) };
     const id = 'sahifa-ar:supplication:28';
     const paragraphs = [{ id: id + ':p1', text: 'اَللّٰهُمَّ — عبارتِ آزمائش اوّل' }, { id: id + ':p2', text: 'حاشیہ — عبارتِ آزمائش دوم' }];
     const record = {
