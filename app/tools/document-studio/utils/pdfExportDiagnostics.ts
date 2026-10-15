@@ -23,14 +23,18 @@ export interface PdfExportFailure {
 }
 type Node = { type?: string; text?: string; marks?: { type: string; attrs?: Record<string, unknown> }[]; content?: Node[] };
 const selected = (node: Node) => node.marks?.find(m => m.type === "textStyle")?.attrs?.fontFamily;
-export function locatePdfFontProblem(doc: Node, font: string, unicode?: string): PdfExportProblem["source"] | undefined {
-  const value = unicode ? Number.parseInt(unicode.replace(/^U\+/i, ""), 16) : NaN;
-  const wanted = Number.isFinite(value) ? String.fromCodePoint(value) : undefined;
+export function locatePdfFontProblem(doc: Node, font: string, unicode?: string, runIndex?: number): PdfExportProblem["source"] | undefined {
+  const codepoint = unicode ? Number.parseInt(unicode.replace(/^U\\+/i, ""), 16) : NaN;
+  const wanted = Number.isFinite(codepoint) ? String.fromCodePoint(codepoint) : undefined;
+  let ordinal = 0;
   const walk = (node: Node, path: number[], paragraphPath: number[]): PdfExportProblem["source"] | undefined => {
     const paragraph = ["paragraph", "heading", "listItem", "tableCell", "tableHeader"].includes(node.type ?? "") ? path : paragraphPath;
     if (node.type === "text" && typeof node.text === "string" && selected(node) === font) {
-      const start = wanted ? node.text.indexOf(wanted) : 0;
-      if (start >= 0) return { path, paragraphPath: paragraph, start, end: start + (wanted?.length ?? node.text.length) };
+      const current = ordinal++;
+      if (runIndex === undefined || current === runIndex) {
+        const start = wanted ? node.text.indexOf(wanted) : 0;
+        if (start >= 0) return { path, paragraphPath: paragraph, start, end: start + (wanted?.length ?? node.text.length) };
+      }
     }
     for (const [i, child] of (node.content ?? []).entries()) {
       const hit = walk(child, [...path, i], paragraph);
@@ -68,7 +72,7 @@ export function classifyPdfExportFailure(message: string, doc?: Node): PdfExport
     SERVICE_UNAVAILABLE: "PDF کی خدمت فی الحال دستیاب نہیں۔",
     EXPORT_FAILED: "PDF نہیں بن سکی۔ خرابی کی نوعیت معلوم نہیں ہوسکی۔"
   };
-  const source = font && doc ? locatePdfFontProblem(doc, font, glyph?.[1]) : undefined;
+  const source = font && doc ? locatePdfFontProblem(doc, font, glyph?.[1], run ? Number(run[1]) : undefined) : undefined;
   const problem: PdfExportProblem = { code, message: descriptions[code] };
   if (source) problem.source = source;
   if (font) problem.selectedFont = font;
