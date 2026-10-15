@@ -29,7 +29,10 @@ async function withReviewedTranslations(
   if (page.language !== "ar") return page;
   const sources = catalog.manifest.sources;
   const candidateSources = sources.filter(s => s.book === source.book && s.language === language);
-  const translationRecords = (await Promise.all(candidateSources.map(s => readBookSource(client, catalog, s.id)))).flat();
+  const translationRecords = (await Promise.all(candidateSources.map(async s => {
+    try { return await readBookSource(client, catalog, s.id); }
+    catch { return []; }
+  }))).flat();
   const allRecords = [...records, ...translationRecords];
   const sourceRecord = records.find(r => r.id === page.recordId);
   if (!sourceRecord) return page;

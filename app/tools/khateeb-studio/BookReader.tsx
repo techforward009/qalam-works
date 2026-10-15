@@ -135,6 +135,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   async function changeSource(next: string) {
     setSourceId(next);
     setReading(null); setToc(null); setFind(null); setFindText(""); setTargetParagraph(""); setSelectedIds([]);
+    setReadingMode("combined"); setCopyMode("original");
     await contents(next, 1, true);
   }
   async function search(page = 1) {
@@ -200,6 +201,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     else if (reading.nextRecordId) void read(sourceId, reading.nextRecordId);
   }
   const selectedSource = shelf?.sources.find(s => s.id === sourceId);
+  const activeReadingMode = reading?.language === "ar" ? readingMode : "original";
   const citation = reading?.reference ?? "";
   const currentBookmark = reading?.paragraphs.length ? anchorForPage(reading, selectedIds[0] || targetParagraph || reading.paragraphs[0].id) : null;
   const isBookmarked = !!currentBookmark && progress.bookmarks.some(b => sameReaderAnchor(b, currentBookmark));
@@ -339,7 +341,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
                 {ur ? "منتخب عبارت میری مجلس میں شامل کریں" : "Add selection to My Sermon"}
               </button> : null}
             </div>
-            {reading.language === "ar" && readingMode !== "original"
+            {reading.language === "ar" && activeReadingMode !== "original"
               && reading.paragraphs.some(p => !(reading.translations ?? []).some(t => t.paragraphIds.includes(p.id)))
               ? <p className={styles.translationStatus} role="status">{ur ? "اردو ترجمہ ابھی دستیاب نہیں" : "Translation is not available yet."}</p>
               : null}
@@ -354,7 +356,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
                         e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} />
                     {ur ? "مجلس کے لیے منتخب کریں" : "Select for sermon"}
                   </label> : null}
-                  {readingMode !== "translation" ? <BookPassageText text={p.text} language={reading.language}
+                  {activeReadingMode !== "translation" ? <BookPassageText text={p.text} language={reading.language}
                     highlight={targetParagraph === p.id ? originalBookQuerySpan(p.text, findText) ?? undefined : undefined}/> : null}
                   {readingMode !== "original" ? translations.map((translation, index) => <section key={p.id + "-translation-" + index}
                     className={styles.translationBlock} lang={translation.language} dir="rtl">
