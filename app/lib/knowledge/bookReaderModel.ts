@@ -47,6 +47,8 @@ export type BookReadingPage = {
   nextRecordId: string | null;
   recordSha256: string;
   sourceSha256: string;
+  /** Exact source record type, including explicit front matter. */
+  kind: string;
   /** UI part number ONLY, not a printed book page. */
   screenPartOnly: true;
   /** Exact source-bound reviewed translations available for this reader part. */
