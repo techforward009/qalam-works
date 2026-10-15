@@ -14,6 +14,7 @@ on:
       - 'tests/khateebBookReaderRoute.test.ts'
       - 'tests/khateebBookReaderUI.test.tsx'
       - 'tests/khateebBookReaderEntry.test.ts'
+      - 'tests/bookReaderTranslationCopy.test.ts'
       - '.github/workflows/khateeb-book-reader-r1.yml'
   workflow_dispatch:
 
@@ -35,6 +36,6 @@ jobs:
       - name: Install dependencies without running lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Run focused private reader tests
-        run: npx vitest run tests/bookReaderModel.test.ts tests/bookReaderProgress.test.ts tests/khateebBookReaderRoute.test.ts tests/khateebBookReaderUI.test.tsx tests/khateebBookReaderEntry.test.ts
+        run: npx vitest run tests/bookReaderModel.test.ts tests/bookReaderProgress.test.ts tests/khateebBookReaderRoute.test.ts tests/khateebBookReaderUI.test.tsx tests/khateebBookReaderEntry.test.ts tests/bookReaderTranslationCopy.test.ts
       - name: Typecheck (repo-wide, for integration)
         run: npx tsc --noEmit --pretty false
