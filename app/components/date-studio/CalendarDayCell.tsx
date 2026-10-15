@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import type { DisplayHijriPolicy } from "@/app/tools/date-converter/utils/hijri-authority/displayHijriDate";
 import Link from "next/link";
 import type { CalendarCell, CalendarLanguage } from "@/app/tools/calendar-maker/utils/calendarModel";
 import { isSunday, toUrduDigits } from "@/app/tools/calendar-maker/utils/calendarPresentation";
@@ -9,11 +10,13 @@ export function CalendarDayCell({
   language = "en",
   interactive = true,
   compact = false,
+  hijriPolicy = "tabular",
 }: {
   cell: CalendarCell;
   language?: CalendarLanguage;
   interactive?: boolean;
   compact?: boolean;
+  hijriPolicy?: DisplayHijriPolicy;
 }) {
   const isUr = language === "ur";
   const cellSpec = compact ? CALENDAR_VISUAL_SPEC.web.compact : CALENDAR_VISUAL_SPEC.web.detail;
@@ -61,7 +64,7 @@ export function CalendarDayCell({
             dir={isUr ? "rtl" : "ltr"}
             style={{ fontSize: cellSpec.hijriFont }}
           >
-            {hijriDay}
+            {hijriDay}{hijriPolicy === "pakistan" && cell.hijriSource === "tabular" && <span aria-label={isUr ? "حسابی تاریخ" : "Calculated date"} className="ms-0.5 text-[9px] align-super opacity-70">*</span>}
           </span>
         )}
       </div>
