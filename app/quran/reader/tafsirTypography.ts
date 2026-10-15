@@ -14,7 +14,7 @@ const ARABIC_LETTER = /[\u0621-\u064A\u066E-\u06D3]/u;
 const ARABIC_DIACRITIC = /[\u064B-\u065F\u0670\u06D6-\u06ED\u08D3-\u08FF]/u;
 const URDU_EXCLUSIVE = /[پچژگٹڈڑں]/u;
 const LATIN_LETTER = /[A-Za-z]/u;
-const URDU_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:سورہ|سورۃ|ہود|نمل|آیت|آیات|بقرہ|حجرات|ذاریات|حشر|توبہ|بحوالہ)[^()\n]*\)\s*[۔.؟?]?)$/u;
+const URDU_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:سورہ|سورۃ|آیت|آیات|ہود|نمل|بقرہ|حجرات|ذاریات|حشر|توبہ|لقمان|سبا|مریم|محمد|طہ|انبیاء|جاثیہ|زمر|اعراف|انعام|یونس|شعراء|احزاب|سجدہ|آل عمران|بحوالہ)[^()\n]*\)\s*[۔.؟?]?)$/u;
 const ENGLISH_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:surah|verse|ayah)[^()\n]*\)\s*[۔.؟?]?)$/iu;
 
 /** Vetted standalone source-quotation beginnings from reviewed first-ten Tafsir source topics (including all Al-Fatihah).
