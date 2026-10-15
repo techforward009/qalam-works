@@ -83,6 +83,21 @@ class SidecarTests(unittest.TestCase):
         codes = [x["code"] for x in audit.validate(self.sidecar, self.fingerprint, self.corpus)["errors"]]
         self.assertIn("printed-number-mismatch", codes)
 
+    def test_printed_page_must_agree_with_edition_volume_page_url(self):
+        entry = self.sidecar["entries"][7]
+        self.assertEqual(entry["volume"], 8)
+        entry.update({"status": "reviewed", "printed_local_number": 1,
+                      "print_page": 101, "book_title": "كتاب الروضة",
+                      "edition": "Dar al-Kutub al-Islamiyya, volume 8 (test fixture)",
+                      "evidence_url": "https://lib.eshia.ir/11027/8/101"})
+        self.assertEqual(audit.validate(self.sidecar, self.fingerprint, self.corpus)["status"], "valid-structure")
+        entry["evidence_url"] = "https://lib.eshia.ir/11027/8/392"
+        codes = [x["code"] for x in audit.validate(self.sidecar, self.fingerprint, self.corpus)["errors"]]
+        self.assertIn("edition-url-page-mismatch", codes)
+        entry["evidence_url"] = "https://al-islam.org/unpaged-article"
+        codes = [x["code"] for x in audit.validate(self.sidecar, self.fingerprint, self.corpus)["errors"]]
+        self.assertIn("print-page-needs-page-specific-source", codes)
+
     def test_accepts_structurally_anchored_review_but_does_not_certify_edition(self):
         entry = self.sidecar["entries"][0]
         entry.update({"status": "reviewed", "printed_local_number": 1,
