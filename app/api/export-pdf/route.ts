@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
     }
     // Never print the exception or source text: diagnostics may refer to private documents.
     console.warn("[pdf-export] rejected", report.diagnostics[0]?.code);
-    return NextResponse.json(report, { status: report.diagnostics[0]?.kind === "too_large" ? 413 : report.diagnostics[0]?.kind === "timeout" ? 504 : 500 });
+    return NextResponse.json(report, { status: report.diagnostics[0]?.kind === "timeout" ? 504 : 500 });
   } finally {
     if (browser) await browser.close();
   }
