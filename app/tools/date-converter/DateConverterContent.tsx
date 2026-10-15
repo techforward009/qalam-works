@@ -293,7 +293,7 @@ export default function DateConverterContent({
   const [year,        setYear]        = useState("");
   const [copied,      setCopied]      = useState<CalendarType | null>(null);
   const [linkCopied,  setLinkCopied]  = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [selectedCountry, setSelectedCountry] = useState<string>("pk");
   const [dateStudioMethod, setDateStudioMethod] = useState<DateStudioMethod>("qalam");
   const [yallopObserverId, setYallopObserverId] = useState("karachi");
   const [findDay, setFindDay] = useState("");
@@ -398,14 +398,14 @@ export default function DateConverterContent({
   if (hasInput) {
     const parts: DateParts = { year: yearN, month: monthN, day: dayN };
     // A reviewed Pakistan month can have 30 days even when the tabular month has 29.
-    const reviewedGregorian = calendar === "hijri" ? resolvePakistanOfficialGregorianDate(parts) : null;
+    const reviewedGregorian = calendar === "hijri" && selectedCountry === "pk" ? resolvePakistanOfficialGregorianDate(parts) : null;
     const err = reviewedGregorian ? null : validateDate(calendar, parts);
     if (err) errMsg = `${t.invalidDate}: ${err.message}`;
     else result = reviewedGregorian ? convert("gregorian", reviewedGregorian) : convert(calendar, parts);
   }
 
   const intelligence = result ? getRichDateIntelligence(result.gregorian) : null;
-  const pakistanOfficialHijri = result ? resolvePakistanOfficialHijriDate(result.gregorian) : null;
+  const pakistanOfficialHijri = result && selectedCountry === "pk" ? resolvePakistanOfficialHijriDate(result.gregorian) : null;
   const weekdayName = intelligence
     ? (isUr ? WEEKDAYS_UR[intelligence.weekdayIndex] : WEEKDAYS_EN[intelligence.weekdayIndex])
     : "";
@@ -1080,6 +1080,12 @@ function RegionalContext({ selectedCountry, setSelectedCountry, calendar, result
                   {country.officialNote[lang]}
                 </p>
               </div>
+            )}
+            {country.methodSource && (
+              <a className={`inline-block text-xs underline underline-offset-2 text-[#1A3A2A] dark:text-[#b8d4bc] ${naskh}`}
+                 href={country.methodSource.url} rel="noopener noreferrer" target="_blank">
+                {country.methodSource.label[lang]}
+              </a>
             )}
           </div>
         );
