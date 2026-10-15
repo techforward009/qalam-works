@@ -64,3 +64,13 @@ This integration resolves internal cross-references and marks gaps; it is not fu
 - **Scheherazade New** covers **134/135**, with the only missing character U+2024 (ONE DOT LEADER, an unusual punctuation mark in an English line). It covers the Arabic letters, tashkeel, U+06D2, tested Quranic marks and Arabic punctuation in these recognised lines. The previously trialled Digital Khatt, Adobe Arabic and Traditional Arabic miss significantly more of these code points.
 - Old Digital Khatt glyph-gap notices are removed from the reading flow. Source characters and spaces are not normalized or changed. Browser-based rendered-font and dark/mobile visual approval is still required; the Unicode `cmap` check is evidence of codepoint coverage, not proof of error-free shaping.
 - Keep PR #65 draft and unmerged until the owner approves Preview appearance, actual Urdu spacing/printed-source collation is handled, and separate redistribution rights for Urdu and English Tafsir are confirmed.
+
+## English Tafsir unvowelled Arabic-script correction — 15 October 2026
+
+- User-provided evidence: eleven Arabic quotations in the English commentary were displaying with the English font, including unvowelled Urdu/Persian forms of Arabic letters.
+- Root cause: the old shared classifier required multiple vowelled words and generally a standalone Arabic line. Those authentic source strings need not carry diacritics.
+- In **English Tafsir only**, `splitTafsirTypography(text, "en")` now groups consecutive Arabic-script words even without diacritics and styles each complete phrase with the existing approved Scheherazade New font. It works inside English sentences. Latin text, numeric references, unrelated scripts and punctuation remain outside the Arabic font runs where appropriate.
+- The conservative Urdu mode (default or `"ur"`) remains unchanged. No source corpus, Quran translation, Quran Arabic data, translator selector or font files were modified; every character and newline is preserved.
+- Automated tests include all eleven verbatim reporter samples, mixed English/Arabic lines, punctuation and Latin/digit boundaries, and Urdu behavior isolation.
+- Validation for commit `87d75148d30b30b5eb9672812583ba845ee39676`: 22/22 focused Vitest passed and `npx tsc --noEmit` passed in a fresh repository checkout.
+- Keep PR #65 **draft/unmerged** until the owner checks visual behavior on the actual Preview and separate publication permissions for both Tafsir sources are recorded. Font-script detection does not certify hadith/Quran quotation accuracy against printed originals.
