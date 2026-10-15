@@ -8,7 +8,7 @@ import BookLibraryPageClient from '../app/tools/khateeb-studio/library/BookLibra
 import { createBookExcerpt, type BookRecord } from '../app/lib/knowledge/bookCorpus';
 import { createHash } from 'node:crypto';
 import { loadCustomProjects } from '../app/tools/khateeb-studio/engine/customSermonStorage';
-const source={id:'sahifa-ar',book:'sahifa',language:'ar' as const,filename:'sahifa-ar.docx',translator:null,sha256:'a'.repeat(64)};
+const source={id:'sahifa-ar',book:'sahifa' as const,language:'ar' as const,filename:'sahifa-ar.docx',translator:null,sha256:'a'.repeat(64)};
 const id='sahifa-ar:supplication:28';
 const paragraphs=[{id:`${id}:p1`,text:'اَللّٰهُمَّ — نص تجريبي'},{id:`${id}:p2`,text:'حاشیہ — آزمائشی توضیح'}];
 const record={id,sourceId:source.id,book:'sahifa',language:'ar',kind:'supplication',number:28,title:'دعا 28 — آزمائشی عبارت',reference:{sourceId:source.id,section:'supplication',number:28,locator:'word/document.xml paragraph 100',printPage:null},paragraphs,textSha256:createHash('sha256').update(paragraphs.map(p=>p.text).join('\n')).digest('hex')} satisfies BookRecord;
