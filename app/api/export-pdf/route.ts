@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     const diagnostic = classifyPdfExportFailure(err instanceof Error ? err.message : "", doc);
-    const detected = inspectProtectedSource(doc);
+    const detected = ["UNSUPPORTED_GLYPH", "INVALID_CONTROL", "INVALID_PUNCTUATION", "FONT_FALLBACK", "FONT_UNAVAILABLE"].includes(diagnostic.code) ? inspectProtectedSource(doc) : [];
     if (detected.length) {
       diagnostic.problems = detected;
       diagnostic.code = detected[0].code;
