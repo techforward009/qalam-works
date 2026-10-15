@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../lib/language-context";
 import { easternDigits, surahTitle } from "./reader/metadata";
-import { tafsirCoverageRanges, tafsirDisplayTopicBody, type TafsirCoverageGroup } from "./reader/tafsirVerseCoverage";
+import { tafsirCoverageRanges, tafsirDisplayTopicBody, tafsirDisplayTopicHeading, type TafsirCoverageGroup } from "./reader/tafsirVerseCoverage";
 import { publicBlobFontUrl } from "../tools/document-studio/utils/publicBlobFontCatalog";
 import { displayTafsirHeading, splitTafsirTypography, tafsirSourceHeading } from "./reader/tafsirTypography";
 import { TAFSIR_WORKS, tafsirForAyah, tafsirWorkById } from "./reader/tafsirCatalog";
@@ -232,7 +232,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
                           style={ur ? { fontFamily: '"Alvi Nastaleeq", serif', fontSize: "17px", lineHeight: 2.1 } : { fontSize: "15px", lineHeight: 1.8 }}>
                           {i + 1}{ur ? "۔ " : ". "}{ur && i === 0 && topic.title === "تفسیر بسم اللہ الرحمن الرحیم"
                             ? "بسم اللہ الرحمن الرحیم"
-                            : displayTafsirHeading(topic.title, chosenLanguage)}
+                            : displayTafsirHeading(tafsirDisplayTopicHeading(topic.title, topic.text), chosenLanguage)}
                         </a>
                       </li>
                     ))}
@@ -251,7 +251,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
                       : { fontSize: "1.25rem", lineHeight: 1.6, fontWeight: 650 }}>
                     {ur && i === 0 && topic.title === "تفسیر بسم اللہ الرحمن الرحیم"
                       ? "بسم اللہ الرحمن الرحیم"
-                      : displayTafsirHeading(topic.title, chosenLanguage)}
+                      : displayTafsirHeading(tafsirDisplayTopicHeading(topic.title, topic.text), chosenLanguage)}
                   </h2>
                 ) : null}
                 <TafsirText text={tafsirDisplayTopicBody(topic.title, topic.text)} language={chosenLanguage} />
