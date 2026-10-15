@@ -181,6 +181,18 @@ def validate(sidecar, archive_sha, corpus):
         page = e.get("print_page")
         if page is not None and (isinstance(page, bool) or not isinstance(page, int) or not 1 <= page <= 99999):
             errors.append({"row": i + 1, "code": "invalid-print-page"})
+        elif page is not None and valid_evidence(e.get("evidence_url")):
+            # An online page-number assertion must point to that same volume/page,
+            # not merely to an unrelated page on a trusted host. This is still a
+            # structural consistency check, NOT a textual/scholarly verification.
+            parsed_url = urlsplit(e["evidence_url"])
+            if parsed_url.hostname not in {"lib.eshia.ir", "ar.lib.eshia.ir"}:
+                errors.append({"row": i + 1, "code": "print-page-needs-page-specific-source"})
+            else:
+                parts = parsed_url.path.strip("/").split("/")
+                if (len(parts) != 3 or not all(part.isascii() and part.isdecimal() for part in parts)
+                        or int(parts[1]) != e["volume"] or int(parts[2]) != page):
+                    errors.append({"row": i + 1, "code": "edition-url-page-mismatch"})
         printed_num = e.get("printed_local_number")
         if printed_num is not None and (isinstance(printed_num, bool) or printed_num != number(para["text"])):
             errors.append({"row": i + 1, "code": "printed-number-mismatch"})
