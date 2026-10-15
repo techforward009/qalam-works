@@ -15,7 +15,10 @@ export function issueForPdfFailure(error: unknown, doc: DocNode): PdfFailure {
     /timeout|timed out/i.test(raw) ? "TIMEOUT" :
     /size|too large|memory|payload/i.test(raw) ? "DOCUMENT_LIMIT" : "UNKNOWN";
   if (/Unsupported protected Arabic|could not be loaded/i.test(raw)) kind = "FONT_UNSUPPORTED";
-  const m = raw.match(/run (\d+):(\d+)/i);
+  // Only script-aware errors carry a protected-root index. Ordinary Urdu run indices
+  // refer to a different DOM collection and must NEVER be mapped to this tree.
+  const m = /(?:Unexpected glyph fallback|Unsupported protected Arabic|Unsafe font at protected run)/i.test(raw)
+    ? raw.match(/run (\d+):(\d+)/i) : null;
   const indexed = m ? { root: Number(m[1]), part: Number(m[2]) } : null;
   const actual = raw.match(/(?:faces|actual|platform fonts)=?[:\s]*([A-Za-z ,]+)/i)?.[1]?.trim();
   const codePoint = raw.match(/U\+[0-9A-F]{4,6}/i)?.[0]?.toUpperCase();
@@ -27,7 +30,7 @@ export function issueForPdfFailure(error: unknown, doc: DocNode): PdfFailure {
         const selected = node.marks?.find(mark => mark.type === "textStyle")?.attrs?.fontFamily;
         if (selected === "Digital Khatt Indo-Pak") {
           const matchRun = indexed?.root === index;
-          if (!indexed || matchRun) {
+          if (indexed ? matchRun : false) {
             const matchOffset = codePoint ? Array.from(node.text).findIndex(ch => "U+" + ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4,"0") === codePoint) : -1;
             const offset = Math.max(0,matchOffset);
             const cp = matchOffset>=0 ? Array.from(node.text)[matchOffset] : undefined;
@@ -43,6 +46,8 @@ export function issueForPdfFailure(error: unknown, doc: DocNode): PdfFailure {
       }
     };
     visit(doc,[],[]);
+    if (!issues.length) issues.push({id:"font-unlocated",kind,reason:"location-unverified",
+      codePoint,actualFont:actual});
   }
   const messageUr = kind==="FONT_UNSUPPORTED"?"منتخب فونٹ میں مطلوبہ حرف دستیاب نہیں۔ متعلقہ عبارت دیکھ کر مناسب فونٹ منتخب کریں۔":
     kind==="FONT_FALLBACK"?"پی ڈی ایف میں بعض حروف منتخب فونٹ کے بجائے دوسرے فونٹ میں بن رہے ہیں۔ متعلقہ عبارت کی جانچ کریں۔":
