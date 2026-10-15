@@ -14,12 +14,46 @@ const ARABIC_LETTER = /[\u0621-\u064A\u066E-\u06D3]/u;
 const ARABIC_DIACRITIC = /[\u064B-\u065F\u0670\u06D6-\u06ED\u08D3-\u08FF]/u;
 const URDU_EXCLUSIVE = /[پچژگٹڈڑں]/u;
 const LATIN_LETTER = /[A-Za-z]/u;
-const URDU_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:سورہ|سورۃ|ہود|نمل|آیت|آیات)[^()\n]*\)\s*[۔.؟?]?)$/u;
+const URDU_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:سورہ|سورۃ|ہود|نمل|آیت|آیات|بقرہ|حجرات|ذاریات|حشر|توبہ|بحوالہ)[^()\n]*\)\s*[۔.؟?]?)$/u;
 const ENGLISH_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:surah|verse|ayah)[^()\n]*\)\s*[۔.؟?]?)$/iu;
+
+/** Vetted standalone source-quotation beginnings from the first five Al-Fatihah 1:1 topics.
+ * This avoids treating unvowelled Urdu commentary as Arabic just because of shared letters.
+ * Phrases are source markers, not text substitutions.
+ */
+const VERIFIED_URDU_TAFSIR_QUOTATIONS: readonly string[] = [
+  "کل امر ذی بال",
+  "استرق الشیطان من الناس",
+  "فان اللہ غفور رحیم",
+  "فان اللہ سمیع علیم",
+  "واللہ بصیر بما تعملون",
+  "ان اللہ ھو الرزاق",
+  "ھو اللہ الخالق",
+  "ھو اللہ الذی",
+  "واللہ الہ کل شیئی",
+  "عزیز علیہ ما عنتم",
+  "الرحمن اسم خاص",
+  "یا رحمان الدنیا",
+  "ان اللہ عزوجل",
+  "و رحمتی وسعت",
+  "ربنا وسعت",
+  "و نجنا برحمتک",
+  "فانجیناہ والذین",
+  "اللھم ربنا انزل",
+  "رب انزلنی منزلا",
+  "رب لا تذرنی فردا",
+  "یا من سبقت رحمتہ",
+  "اقْرَأْ بِاسْمِ",
+  "وَقَالَ ارْكَبُوا",
+  "قِيلَ يَا نُوحُ",
+  "إِنَّهُ مِن سُلَيْمَانَ"
+];
 
 function confidentArabicQuotation(line: string): boolean {
   const trimmed = line.trim();
-  if (!trimmed || LATIN_LETTER.test(trimmed) || URDU_EXCLUSIVE.test(trimmed)) return false;
+  if (!trimmed || LATIN_LETTER.test(trimmed)) return false;
+  if (trimmed.length <= 240 && VERIFIED_URDU_TAFSIR_QUOTATIONS.some((prefix) => trimmed.startsWith(prefix))) return true;
+  if (URDU_EXCLUSIVE.test(trimmed)) return false;
   const words = trimmed.split(/\s+/u).filter(Boolean);
   if (words.length < 2) return false;
   if (words.some((word) => !ARABIC_LETTER.test(word) && !/[ۚۖۗۙۛۜ۞،؛:؟,.()0-9٠-٩۰-۹]/u.test(word))) return false;
