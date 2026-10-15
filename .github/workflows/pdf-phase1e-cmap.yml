@@ -1,5 +1,7 @@
 name: Phase1E Digital Font Cmap Fixture
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [feature/pdf-phase1e-script-aware-guard]
 permissions:
