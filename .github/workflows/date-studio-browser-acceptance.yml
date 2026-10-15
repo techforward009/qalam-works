@@ -46,7 +46,8 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install pinned dependencies
-        run: npm ci --no-audit --no-fund
+        # Browser-only acceptance does not need onnxruntime-node postinstall binary downloads.
+        run: npm ci --no-audit --no-fund --ignore-scripts
       - name: Install browser and system libraries
         run: npx playwright install --with-deps chromium
       - name: Exercise live production-built browser output on desktop and mobile
