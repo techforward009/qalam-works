@@ -1,10 +1,199 @@
 import type { OfficialHijriMonthAnchor } from "./types";
+import { PAKISTAN_2025_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2025";
+import { PAKISTAN_2024_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2024";
+import { PAKISTAN_2023_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2023";
+import { PAKISTAN_2022_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2022";
+import { PAKISTAN_2021_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2021";
+import { PAKISTAN_2020_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2020";
 
 /**
  * Reviewed Pakistan official/reported-official month anchors belong here.
  * Records are explicitly bounded; no historical official date is inferred.
  */
 export const PAKISTAN_OFFICIAL_HIJRI_ANCHORS: readonly OfficialHijriMonthAnchor[] = [
+  // Archived Pakistan lunar month starts span 28 December 2019 onward.
+  ...PAKISTAN_2020_HISTORIC_ANCHORS,
+  ...PAKISTAN_2021_HISTORIC_ANCHORS,
+  ...PAKISTAN_2022_HISTORIC_ANCHORS,
+  ...PAKISTAN_2023_HISTORIC_ANCHORS,
+  ...PAKISTAN_2024_HISTORIC_ANCHORS,
+  ...PAKISTAN_2025_HISTORIC_ANCHORS,
+  {
+    id: "pk-1447-rajab-2025-12-22",
+    jurisdiction: "PK",
+    hijriYear: 1447,
+    hijriMonth: 7,
+    officialDayOneGregorian: { year: 2025, month: 12, day: 22 },
+    // Rajab's 30 days are confirmed by 1 Sha'ban on 21 January 2026.
+    coverageEndGregorian: { year: 2026, month: 1, day: 20 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "sighted",
+    announcementGregorianDate: { year: 2025, month: 12, day: 21 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: { en: "Pakistan Central Ruet-e-Hilal Committee", ur: "پاکستان مرکزی رویتِ ہلال کمیٹی" },
+    sourceUrl: "https://www.app.com.pk/domestic/ruet-e-hilal-committee-announces-sighting-of-rajab-al-murjab-moon/",
+    sourceReference: "APP, 21 December 2025: Rajab crescent sighted on Sunday evening; civil day 1 Rajab 1447 began Monday, 22 December 2025. Next official 1 Sha'ban was 21 January 2026.",
+    provenance: { verifiedAt: "2026-10-15", notes: "APP uses Islamic sunset-day language. Its reported 21 December evening corresponds to Gregorian daylight 22 December; confirmed by later Sha'ban announcement." },
+  },
+  {
+    id: "pk-1447-shaban-2026-01-21",
+    jurisdiction: "PK",
+    hijriYear: 1447,
+    hijriMonth: 8,
+    officialDayOneGregorian: { year: 2026, month: 1, day: 21 },
+    // The next official month's confirmed start bounds this month's duration.
+    coverageEndGregorian: { year: 2026, month: 2, day: 18 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "not-sighted",
+    announcementGregorianDate: { year: 2026, month: 1, day: 19 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: {
+      en: "Pakistan Central Ruet-e-Hilal Committee",
+      ur: "پاکستان مرکزی رویتِ ہلال کمیٹی",
+    },
+    sourceUrl: "https://www.app.com.pk/national/crescent-moon-of-shaban-not-sighted-month-to-begin-wednesday/",
+    sourceReference: "APP, 19 January 2026: Central Ruet-e-Hilal Committee declared Sha'ban crescent not sighted, 1 Sha'ban 1447 on 21 January 2026.",
+    provenance: { verifiedAt: "2026-10-15", notes: "Official crescent announcement cross-referenced against the next confirmed month boundary." },
+  },
+  {
+    id: "pk-1447-ramadan-2026-02-19",
+    jurisdiction: "PK",
+    hijriYear: 1447,
+    hijriMonth: 9,
+    officialDayOneGregorian: { year: 2026, month: 2, day: 19 },
+    // The reviewed Shawwal decision confirms that Ramadan completed 30 days.
+    coverageEndGregorian: { year: 2026, month: 3, day: 20 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "sighted",
+    announcementGregorianDate: { year: 2026, month: 2, day: 18 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: {
+      en: "Pakistan Central Ruet-e-Hilal Committee",
+      ur: "پاکستان مرکزی رویتِ ہلال کمیٹی",
+    },
+    sourceUrl: "https://www.radio.gov.pk/18-02-2026/moon-sighted-first-ramadan-on-thursday",
+    sourceReference: "Radio Pakistan, 18 February 2026: Central Ruet-e-Hilal Committee announced the Ramadan moon sighted; 1 Ramadan 1447 AH on Thursday, 19 February 2026. Completion of 30 days confirmed by the 19 March Shawwal decision.",
+    provenance: {
+      verifiedAt: "2026-10-15",
+      notes: "Corroborated by APP (https://www.app.com.pk/national/ramazan-moon-sighted-ist-fast-on-february-19-in-pakistan-khabeer-azad/) and the Shawwal decision reported by Radio Pakistan (https://www.radio.gov.pk/19-03-2026/shawwal-moon-not-sighted-eid-ul-fitr-on-saturday).",
+    },
+  },
+  {
+    id: "pk-1447-shawwal-2026-03-21",
+    jurisdiction: "PK",
+    hijriYear: 1447,
+    hijriMonth: 10,
+    officialDayOneGregorian: { year: 2026, month: 3, day: 21 },
+    // Bounded to 29 days; do not infer day 30 without next-month evidence.
+    coverageEndGregorian: { year: 2026, month: 4, day: 18 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "not-sighted",
+    announcementGregorianDate: { year: 2026, month: 3, day: 19 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: {
+      en: "Pakistan Central Ruet-e-Hilal Committee",
+      ur: "پاکستان مرکزی رویتِ ہلال کمیٹی",
+    },
+    sourceUrl: "https://www.radio.gov.pk/19-03-2026/shawwal-moon-not-sighted-eid-ul-fitr-on-saturday",
+    sourceReference: "Radio Pakistan, 19 March 2026: Shawwal crescent was not sighted; Eid al-Fitr and 1 Shawwal 1447 AH fell on Saturday, 21 March 2026.",
+    provenance: { verifiedAt: "2026-10-15", notes: "Corroborated by APP (https://www.app.com.pk/national/eid-ul-fitr-on-saturday-as-shawwal-moon-not-sighted/)." },
+  },
+  {
+    id: "pk-1447-dhu-al-qadah-2026-04-19",
+    jurisdiction: "PK",
+    hijriYear: 1447,
+    hijriMonth: 11,
+    officialDayOneGregorian: { year: 2026, month: 4, day: 19 },
+    // The next official month's confirmed start bounds this month's duration.
+    coverageEndGregorian: { year: 2026, month: 5, day: 17 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "sighted",
+    announcementGregorianDate: { year: 2026, month: 4, day: 18 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: {
+      en: "Pakistan Central Ruet-e-Hilal Committee",
+      ur: "پاکستان مرکزی رویتِ ہلال کمیٹی",
+    },
+    sourceUrl: "https://www.radio.gov.pk/18-04-2026/moon-of-ziqaad-sighted-in-pakistan",
+    sourceReference: "Radio Pakistan, 18 April 2026: Central Ruet-e-Hilal Committee confirmed Ziqad moon sighted; 1 Dhu al-Qadah 1447 on 19 April 2026.",
+    provenance: { verifiedAt: "2026-10-15", notes: "Official crescent announcement cross-referenced against the next confirmed month boundary." },
+  },
+  {
+    id: "pk-1447-dhu-al-hijjah-2026-05-18",
+    jurisdiction: "PK",
+    hijriYear: 1447,
+    hijriMonth: 12,
+    officialDayOneGregorian: { year: 2026, month: 5, day: 18 },
+    // The next official month's confirmed start bounds this month's duration.
+    coverageEndGregorian: { year: 2026, month: 6, day: 16 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "sighted",
+    announcementGregorianDate: { year: 2026, month: 5, day: 17 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: {
+      en: "Pakistan Central Ruet-e-Hilal Committee",
+      ur: "پاکستان مرکزی رویتِ ہلال کمیٹی",
+    },
+    sourceUrl: "https://radio.gov.pk/17-05-2026/moon-sighted-eid-ul-adha-to-be-celebrated-on-27-may",
+    sourceReference: "Radio Pakistan, 17 May 2026: Central Ruet-e-Hilal Committee reported Dhu al-Hijjah crescent sighted; 1 Dhu al-Hijjah 1447 on 18 May and Eid al-Adha 27 May.",
+    provenance: { verifiedAt: "2026-10-15", notes: "Official crescent announcement cross-referenced against the next confirmed month boundary." },
+  },
+  {
+    id: "pk-1448-muharram-2026-06-17",
+    jurisdiction: "PK",
+    hijriYear: 1448,
+    hijriMonth: 1,
+    officialDayOneGregorian: { year: 2026, month: 6, day: 17 },
+    // The next official month's confirmed start bounds this month's duration.
+    coverageEndGregorian: { year: 2026, month: 7, day: 15 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "not-sighted",
+    announcementGregorianDate: { year: 2026, month: 6, day: 15 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: {
+      en: "Pakistan Central Ruet-e-Hilal Committee",
+      ur: "پاکستان مرکزی رویتِ ہلال کمیٹی",
+    },
+    sourceUrl: "https://www.radio.gov.pk/15-06-2026/moon-not-sighted-1st-muharram-ul-haram-on-wednesday",
+    sourceReference: "Radio Pakistan, 15 June 2026: Central Ruet-e-Hilal Committee announced Muharram crescent not sighted; 1 Muharram 1448 on Wednesday 17 June 2026.",
+    provenance: { verifiedAt: "2026-10-15", notes: "Official crescent announcement cross-referenced against the next confirmed month boundary." },
+  },
+  {
+    id: "pk-1448-safar-2026-07-16",
+    jurisdiction: "PK",
+    hijriYear: 1448,
+    hijriMonth: 2,
+    officialDayOneGregorian: { year: 2026, month: 7, day: 16 },
+    // The next official month's confirmed start bounds this month's duration.
+    coverageEndGregorian: { year: 2026, month: 8, day: 14 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "sighted",
+    announcementGregorianDate: { year: 2026, month: 7, day: 15 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: {
+      en: "Pakistan Central Ruet-e-Hilal Committee",
+      ur: "پاکستان مرکزی رویتِ ہلال کمیٹی",
+    },
+    sourceUrl: "https://www.app.com.pk/national/safar-moon-sighted-in-pakistan/",
+    sourceReference: "APP, 15 July 2026: Central Ruet-e-Hilal Committee announced Safar moon sighted and Ministry confirmed; 1 Safar 1448 on 16 July 2026.",
+    provenance: { verifiedAt: "2026-10-15", notes: "Official crescent announcement cross-referenced against the next confirmed month boundary." },
+  },
   {
     id: "pk-1448-jumada-al-awwal-2026-10-13",
     jurisdiction: "PK",

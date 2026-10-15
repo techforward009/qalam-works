@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getReviewedPakistanHijriMonth } from "@/app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriMonth";
 import { DateStudioRouteNav } from "@/app/components/date-studio/DateStudioRouteNav";
 import { HijriYearDashboard, type HijriYearMonthSummary } from "@/app/components/date-studio/HijriYearDashboard";
 import { convert } from "@/app/tools/date-converter/utils/dateEngine";
@@ -24,12 +25,15 @@ export default async function HijriYearPage({ params }: { params: Promise<{ year
 
   const months: HijriYearMonthSummary[] = Array.from({ length: 12 }, (_, index) => {
     const month = index + 1;
-    const days = hijriMonthDays(y, month);
+    const reviewed = getReviewedPakistanHijriMonth(y, month);
+    const days = reviewed?.days.length ?? hijriMonthDays(y, month);
     return {
       month,
       days,
-      start: convert("hijri", { year: y, month, day: 1 }).gregorian,
-      end: convert("hijri", { year: y, month, day: days }).gregorian,
+      start: reviewed?.days[0].gregorian ?? convert("hijri", { year: y, month, day: 1 }).gregorian,
+      end: reviewed?.days[days - 1].gregorian ?? convert("hijri", { year: y, month, day: days }).gregorian,
+      source: reviewed ? "pakistan" as const : "tabular" as const,
+      complete: reviewed?.complete ?? false,
     };
   });
 

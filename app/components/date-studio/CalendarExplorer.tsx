@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
+import type { DisplayHijriPolicy } from "@/app/tools/date-converter/utils/hijri-authority/displayHijriDate";
 import { useLanguage } from "@/app/lib/language-context";
 import {
   CALENDAR_ANNUAL_GRID_CLASS,
@@ -15,15 +16,16 @@ import {
 import { MonthCalendar } from "./MonthCalendar";
 
 const COPY = {
-  en: { gregorian: "Gregorian", combined: "Gregorian + Hijri" },
-  ur: { gregorian: "عیسوی", combined: "عیسوی + ہجری" },
+  en: { gregorian: "Gregorian", combined: "Pakistan — Gregorian + Hijri", pakistan: "Pakistan", tabular: "Calculated only", note: "Official Pakistan dates are prioritized where verified. * identifies unverified calculated dates." },
+  ur: { gregorian: "عیسوی", combined: "پاکستانی تقویم (عیسوی + ہجری)", pakistan: "پاکستان", tabular: "صرف حسابی", note: "جہاں پاکستانی سرکاری تاریخ مصدقہ ہے، وہ دکھائی گئی ہے۔ * نشان والی تاریخیں حسابی ہیں، سرکاری طور پر تصدیق شدہ نہیں۔" },
 };
 
 export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
   const { language, dir } = useLanguage();
   const lang = language as "en" | "ur";
   const t = COPY[lang];
-  const [mode, setMode] = useState<CalendarContentMode>("gregorian");
+  const [mode, setMode] = useState<CalendarContentMode>("gregorian-hijri");
+  const [hijriPolicy, setHijriPolicy] = useState<DisplayHijriPolicy>("pakistan");
 
   const displayModel = useMemo(
     () =>
@@ -33,8 +35,9 @@ export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
         language: lang,
         weekStart: "monday",
         page: model.page,
+        hijriPolicy,
       }),
-    [model.year, model.page, mode, lang],
+    [model.year, model.page, mode, lang, hijriPolicy],
   );
 
   return (
@@ -58,6 +61,37 @@ export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
         </button>
       </div>
 
+      {mode === "gregorian-hijri" && (
+        <div className={`mb-3 space-y-2 text-sm ${lang === "ur" ? "font-naskh" : ""}`}>
+          <p className="font-semibold text-[#1A3A2A] dark:text-[#e8ede9]">
+            {hijriPolicy === "pakistan"
+              ? (lang === "ur" ? "پاکستانی ہجری تقویم" : "Pakistan Hijri calendar")
+              : (lang === "ur" ? "حسابی تقویم — تحقیقی مطالعہ" : "Calculated calendar — research view")}
+          </p>
+          <p className="text-[#4a6a4a] dark:text-[#a8c8b0]">
+            {hijriPolicy === "pakistan"
+              ? t.note
+              : (lang === "ur" ? "اس اضافی منظر میں حسابی تاریخیں دکھائی گئی ہیں۔" : "This optional view displays calculated dates.")}
+          </p>
+          <details className="rounded-lg border border-[#1A3A2A]/10 p-2 dark:border-[#35513d]">
+            <summary className="cursor-pointer text-xs text-[#4a6a4a] dark:text-[#a8c8b0]">
+              {lang === "ur" ? "اضافی حسابی طریقہ (تحقیق کے لیے)" : "Additional calculated method (research)"}
+            </summary>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button type="button" aria-pressed={hijriPolicy === "pakistan"}
+                onClick={() => setHijriPolicy("pakistan")}
+                className={`rounded-lg border px-3 py-1.5 ${hijriPolicy === "pakistan" ? "bg-[#1A3A2A] text-white" : ""}`}>
+                {t.pakistan}
+              </button>
+              <button type="button" aria-pressed={hijriPolicy === "tabular"}
+                onClick={() => setHijriPolicy("tabular")}
+                className={`rounded-lg border px-3 py-1.5 ${hijriPolicy === "tabular" ? "bg-[#1A3A2A] text-white" : ""}`}>
+                {t.tabular}
+              </button>
+            </div>
+          </details>
+        </div>
+      )}
       <section className="overflow-hidden border-[3px] border-[var(--calendar-frame)] bg-[var(--calendar-paper)]" style={calendarCssVariables() as CSSProperties}>
         <header className="grid min-h-[64px] grid-cols-[1fr_auto_1fr] items-center gap-3 border-b-2 border-[var(--calendar-gold)] bg-[var(--calendar-frame)] px-4 py-2 text-white">
           <span className="justify-self-start text-sm font-black tracking-wide" dir="ltr">Qalam Works</span>
@@ -83,6 +117,7 @@ export function CalendarExplorer({ model }: { model: CalendarYearModel }) {
               language={lang}
               weekStart="monday"
               showHijri={mode === "gregorian-hijri"}
+              hijriPolicy={hijriPolicy}
               compact
             />
           ))}

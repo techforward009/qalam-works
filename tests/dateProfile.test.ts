@@ -10,6 +10,11 @@ describe("Date Studio final profile",()=>{
   expect(p.weekday.en).toBe("Sunday");
   expect(p.leapYear).toBe(true);
  });
+ it("presents verified Pakistan dates separately from calculated tabular dates",()=> {
+  const profile = buildDateProfile({year:2026,month:2,day:28});
+  expect(profile.pakistanOfficialHijri).toMatchObject({hijri:{year:1447,month:9,day:10},authority:"official"});
+  expect(profile.hijri).toEqual({year:1447,month:9,day:12});
+ });
  it("age and future",()=>{
   expect(buildDateProfile({year:2099,month:1,day:1}).futureState).toBe("future");
  });

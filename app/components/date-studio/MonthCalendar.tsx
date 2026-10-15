@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import type { DisplayHijriPolicy } from "@/app/tools/date-converter/utils/hijri-authority/displayHijriDate";
 import Link from "next/link";
 import {
   deriveHijriMonthContexts,
@@ -77,6 +78,7 @@ export function MonthCalendar({
   showHijri = true,
   interactive = true,
   compact = false,
+  hijriPolicy = "tabular",
 }: {
   month: CalendarMonth;
   title?: string;
@@ -87,6 +89,7 @@ export function MonthCalendar({
   showHijri?: boolean;
   interactive?: boolean;
   compact?: boolean;
+  hijriPolicy?: DisplayHijriPolicy;
 }) {
   const isUr = language === "ur";
   const effectiveWeekStart: WeekStart = isUr ? "monday" : weekStart;
@@ -174,6 +177,7 @@ export function MonthCalendar({
               language={language}
               interactive={interactive}
               compact={compact}
+              hijriPolicy={hijriPolicy}
             />
           )),
         )}

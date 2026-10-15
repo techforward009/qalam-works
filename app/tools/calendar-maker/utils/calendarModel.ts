@@ -6,6 +6,7 @@ import {
   jdnToGregorian,
   type DateParts,
 } from "../../date-converter/utils/dateEngine";
+import { resolveDisplayHijriDate, type DisplayHijriPolicy } from "../../date-converter/utils/hijri-authority/displayHijriDate";
 
 function addDaysToGregorian(base: DateParts, days: number): DateParts {
   return jdnToGregorian(gregorianToJDN(base.year, base.month, base.day) + days);
@@ -37,6 +38,7 @@ export interface CalendarCell {
   inCurrentMonth: boolean;
   conversionSupported: boolean;
   hijri: DateParts | null;
+  hijriSource?: "official" | "reported-official" | "tabular" | null;
 }
 
 export interface CalendarWeek {
@@ -59,6 +61,7 @@ export interface CalendarYearModel {
   hijriOffsetMonths: number[];
   hijriOffsets: number[];
   months: CalendarMonth[];
+  hijriPolicy?: DisplayHijriPolicy;
 }
 
 export interface BuildCalendarYearOptions {
@@ -70,6 +73,7 @@ export interface BuildCalendarYearOptions {
   hijriOffset?: number;
   hijriOffsetMonths?: number[];
   hijriOffsets?: number[];
+  hijriPolicy?: DisplayHijriPolicy;
 }
 
 export function clampHijriOffset(value: unknown): number {
@@ -137,21 +141,24 @@ function cellFor(
   currentMonth: number,
   includeHijri: boolean,
   hijriOffset: number,
+  hijriPolicy: DisplayHijriPolicy = "tabular",
 ): CalendarCell {
   const conversionSupported = isSupportedGregorianDate(date);
   const shifted = hijriOffset
     ? addDaysToGregorian(date, hijriOffset)
     : date;
 
+  const resolved = includeHijri && conversionSupported && isSupportedGregorianDate(shifted)
+    ? resolveDisplayHijriDate(shifted, hijriPolicy)
+    : null;
+
   return {
     gregorian: date,
     gregorianIso: isoDate(date),
     inCurrentMonth: date.month === currentMonth,
     conversionSupported,
-    hijri:
-      includeHijri && conversionSupported && isSupportedGregorianDate(shifted)
-        ? convert("gregorian", shifted).hijri
-        : null,
+    hijri: resolved?.hijri ?? null,
+    hijriSource: resolved?.source ?? null,
   };
 }
 
@@ -161,6 +168,7 @@ export function buildCalendarMonth(
   content: CalendarContentMode,
   weekStart: WeekStart,
   hijriOffset = 0,
+  hijriPolicy: DisplayHijriPolicy = "tabular",
 ): CalendarMonth {
   if (!Number.isInteger(year) || year < MIN_GREGORIAN_YEAR || year > MAX_GREGORIAN_YEAR) {
     throw new RangeError(`Gregorian year must be between ${MIN_GREGORIAN_YEAR} and ${MAX_GREGORIAN_YEAR}.`);
@@ -169,6 +177,9 @@ export function buildCalendarMonth(
     throw new RangeError("Gregorian month must be between 1 and 12.");
   }
 
+  if (hijriPolicy === "pakistan" && hijriOffset !== 0) {
+    throw new RangeError("Official Pakistan dates cannot be manually offset. Select the calculated calendar first.");
+  }
   const includeHijri = content === "gregorian-hijri";
   const first = { year, month, day: 1 };
   const leading = calendarWeekdayColumn(first, weekStart);
@@ -179,7 +190,7 @@ export function buildCalendarMonth(
   const cells: CalendarCell[] = [];
   for (let offset = -leading; offset < daysInMonth + trailing; offset++) {
     const date = addDaysToGregorian(first, offset);
-    cells.push(cellFor(date, month, includeHijri, hijriOffset));
+    cells.push(cellFor(date, month, includeHijri, hijriOffset, hijriPolicy));
   }
 
   const weeks: CalendarWeek[] = [];
@@ -238,10 +249,15 @@ export function buildCalendarYearModel(options: BuildCalendarYearOptions): Calen
     ? [...new Set(options.hijriOffsetMonths.filter((month) => Number.isInteger(month) && month >= 1 && month <= 12))]
     : [];
 
+  if (options.hijriPolicy === "pakistan" && hijriOffsets.some(offset => offset !== 0)) {
+    throw new RangeError("Official Pakistan dates cannot be manually offset. Select the calculated calendar first.");
+  }
+
   const months = Array.from({ length: 12 }, (_, index) =>
-    buildCalendarMonth(year, index + 1, options.content, effectiveWeekStart, hijriOffsets[index] ?? 0),
+    buildCalendarMonth(year, index + 1, options.content, effectiveWeekStart, hijriOffsets[index] ?? 0, options.hijriPolicy ?? "tabular"),
   );
-  if (options.content === "gregorian-hijri") stitchHijriContinuity(months);
+  // Pakistan official anchors are immutable evidence. Never stitch them into tabular dates.
+  if (options.content === "gregorian-hijri" && (options.hijriPolicy ?? "tabular") === "tabular") stitchHijriContinuity(months);
 
   return {
     ...options,

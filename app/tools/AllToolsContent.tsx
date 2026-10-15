@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveDisplayHijriDate } from "@/app/tools/date-converter/utils/hijri-authority/displayHijriDate";
 import Link from "next/link";
 import { useState } from "react";
 import { useLanguage } from "../lib/language-context";
@@ -166,7 +167,7 @@ export default function AllToolsContent() {
   const t     = L[lang];
   const naskh = isUr ? "font-naskh" : "";
   const studioToday = todayGregorian();
-  const studioHijri = convert("gregorian", studioToday).hijri;
+  const studioHijri = resolveDisplayHijriDate(studioToday).hijri;
 
   return (
     <div className="min-h-screen bg-[#F7F5EF] dark:bg-[#0e1c15]" dir={dir}>

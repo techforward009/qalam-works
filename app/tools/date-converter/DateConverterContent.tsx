@@ -41,7 +41,8 @@ import {
   type RegionalReference,
 } from "./utils/regionalDateEvidence";
 import { YallopIntegration, type DateStudioMethod } from "./components/YallopIntegration";
-import { resolvePakistanOfficialHijriDate } from "./utils/hijri-authority/resolveOfficialHijriDate";
+import { resolvePakistanOfficialGregorianDate, resolvePakistanOfficialHijriDate } from "./utils/hijri-authority/resolveOfficialHijriDate";
+import { resolveDisplayHijriDate } from "./utils/hijri-authority/displayHijriDate";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const L = {
@@ -67,9 +68,9 @@ const L = {
     calculatedHijriDate: "Calculated Hijri date",
     qalamCalculatedHijriDate: "Qalam calculated Hijri date",
     solar:        "Solar Hijri",
-    methodHijri:  "Tabular · Civil",
+    methodHijri:  "Tabular · Thursday-epoch calculation",
     methodSolar:  "Arithmetic · 33-year cycle",
-    hijriNote:    "Hijri dates may differ by one day depending on local moon sighting.",
+    hijriNote:    "The tabular Hijri calculation may differ from verified local moon-sighting dates, sometimes by more than one day.",
     solarNote:    "Solar Hijri conversion uses an arithmetic 33-year cycle. Dates near Nowruz may differ by one day from astronomical calendars.",
     invalidDate:  "Invalid date",
     enterDate:    "Enter a date above to see conversions.",
@@ -165,7 +166,7 @@ const L = {
     solar:        "ہجری شمسی",
     methodHijri:  "حسابی قمری طریقہ",
     methodSolar:  "33 سالہ حسابی طریقہ",
-    hijriNote:    "مقامی رویتِ ہلال کے لحاظ سے ہجری تاریخ میں ایک دن کا فرق ممکن ہے۔",
+    hijriNote:    "حسابی ہجری تاریخ اور مقامی رویتِ ہلال کی مصدقہ تاریخ میں ایک دن سے زیادہ فرق بھی ہو سکتا ہے۔",
     solarNote:    "ہجری شمسی تبدیلی 33 سالہ حسابی دور پر مبنی ہے۔ نوروز کے قریب فلکیاتی تقویم سے ایک دن کا فرق ممکن ہے۔",
     invalidDate:  "غلط تاریخ",
     enterDate:    "تبدیلی دیکھنے کے لیے اوپر تاریخ درج کریں۔",
@@ -293,7 +294,6 @@ export default function DateConverterContent({
   const [year,        setYear]        = useState("");
   const [copied,      setCopied]      = useState<CalendarType | null>(null);
   const [linkCopied,  setLinkCopied]  = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [dateStudioMethod, setDateStudioMethod] = useState<DateStudioMethod>("qalam");
   const [yallopObserverId, setYallopObserverId] = useState("karachi");
   const [findDay, setFindDay] = useState("");
@@ -397,9 +397,11 @@ export default function DateConverterContent({
 
   if (hasInput) {
     const parts: DateParts = { year: yearN, month: monthN, day: dayN };
-    const err = validateDate(calendar, parts);
+    // A reviewed Pakistan month can have 30 days even when the tabular month has 29.
+    const reviewedGregorian = calendar === "hijri" ? resolvePakistanOfficialGregorianDate(parts) : null;
+    const err = reviewedGregorian ? null : validateDate(calendar, parts);
     if (err) errMsg = `${t.invalidDate}: ${err.message}`;
-    else result = convert(calendar, parts);
+    else result = reviewedGregorian ? convert("gregorian", reviewedGregorian) : convert(calendar, parts);
   }
 
   const intelligence = result ? getRichDateIntelligence(result.gregorian) : null;
@@ -464,7 +466,7 @@ export default function DateConverterContent({
   const months = monthOptions(calendar, lang);
   const inputClass = "w-full h-11 border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-xl px-3 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]";
   const studioToday = todayGregorian();
-  const studioHijri = convert("gregorian", studioToday).hijri;
+  const studioHijri = resolveDisplayHijriDate(studioToday).hijri;
 
   const actionCards: Array<{ href: string; title: string; desc: string; icon: ReactNode; accent?: boolean }> = [
     {
@@ -1078,6 +1080,12 @@ function RegionalContext({ selectedCountry, setSelectedCountry, calendar, result
                   {country.officialNote[lang]}
                 </p>
               </div>
+            )}
+            {country.methodSource && (
+              <a className={`inline-block text-xs underline underline-offset-2 text-[#1A3A2A] dark:text-[#b8d4bc] ${naskh}`}
+                 href={country.methodSource.url} rel="noopener noreferrer" target="_blank">
+                {country.methodSource.label[lang]}
+              </a>
             )}
           </div>
         );

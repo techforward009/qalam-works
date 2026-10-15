@@ -27,11 +27,12 @@ export function CalendarLinksCard({ profile }: { profile: DateProfile }) {
   const t = COPY[lang];
   const naskh = lang === "ur" ? "font-naskh" : "";
 
+  const linkedHijri = profile.pakistanOfficialHijri?.hijri ?? profile.hijri;
   const links = [
     { label: t.gregorianMonth, href: `/calendar/${profile.gregorian.year}/${profile.gregorian.month}` },
     { label: t.gregorianYear, href: `/calendar/${profile.gregorian.year}` },
-    { label: t.hijriMonth, href: `/hijri/${profile.hijri.year}/${profile.hijri.month}` },
-    { label: t.hijriYear, href: `/hijri/${profile.hijri.year}` },
+    { label: t.hijriMonth, href: `/hijri/${linkedHijri.year}/${linkedHijri.month}` },
+    { label: t.hijriYear, href: `/hijri/${linkedHijri.year}` },
   ];
 
   return (

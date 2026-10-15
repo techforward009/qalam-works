@@ -35,15 +35,15 @@ import {
 // ── Known Gregorian → Hijri fixtures ─────────────────────────────────────────
 
 describe("Gregorian → Hijri conversions", () => {
-  test("2026-08-31 → 1448-03-18 AH (tabular civil calendar)", () => {
-    // Tabular Islamic calendar, epoch JDN 1948439, civil variant.
+  test("2026-08-31 → 1448-03-18 AH (Qalam Thursday-epoch tabular calendar)", () => {
+    // Qalam Thursday-epoch tabular calendar, epoch JDN 1948439; not Friday-epoch civil.
     // Note: observational/Umm al-Qura calendars may differ.
     const r = convert("gregorian", { year: 2026, month: 8, day: 31 });
     expect(r.hijri).toEqual({ year: 1448, month: 3, day: 18 });
   });
 
   test("2024-03-10 → 1445-09-01 AH (1 Ramadan tabular)", () => {
-    // Tabular civil calendar gives 1 Ramadan 1445 on 10 March 2024.
+    // The existing Qalam Thursday-epoch calculation gives 1 Ramadan on 10 March 2024.
     const r = convert("gregorian", { year: 2024, month: 3, day: 10 });
     expect(r.hijri).toEqual({ year: 1445, month: 9, day: 1 });
   });
@@ -56,6 +56,21 @@ describe("Gregorian → Hijri conversions", () => {
   test("1900-01-01 → 1317-08-29 AH", () => {
     const r = convert("gregorian", { year: 1900, month: 1, day: 1 });
     expect(r.hijri).toEqual({ year: 1317, month: 8, day: 29 });
+  });
+});
+
+// Regression for epoch identity: keep Qalam's established tabular variant intact.
+describe("Qalam tabular epoch identity and Pakistan official-date independence", () => {
+  test("does not silently shift the established tabular baseline", () => {
+    expect(convert("gregorian", { year: 2026, month: 2, day: 28 }).hijri)
+      .toEqual({ year: 1447, month: 9, day: 12 });
+    expect(convert("hijri", { year: 1447, month: 9, day: 12 }).gregorian)
+      .toEqual({ year: 2026, month: 2, day: 28 });
+  });
+  test("preserves old fixtures outside this particular Ramadan", () => {
+    expect(convert("gregorian", { year: 1976, month: 11, day: 28 }).hijri.year).toBe(1396);
+    expect(convert("gregorian", { year: 2024, month: 3, day: 10 }).hijri)
+      .toEqual({ year: 1445, month: 9, day: 1 });
   });
 });
 
@@ -356,7 +371,7 @@ describe("Hijri year 1500 — non-leap boundary", () => {
 // NOT from the dateEngine under test.
 //
 // Benchmark: 4 Ramadan 1368 AH
-//   Qalam Works engine (tabular, Friday epoch): 29 June 1949
+//   Qalam Works engine (tabular, Thursday epoch): 29 June 1949
 //   Regional evidence varies by country (see regionalDateEvidence.ts).
 
 import {

@@ -1,103 +1,157 @@
 /**
- * Qalam Works Date Converter — Country Calendar Context
- *
- * This file provides contextual metadata about how different countries
- * determine Hijri dates. It does NOT change the conversion calculation.
- *
- * Conversion results are always produced by the deterministic tabular engine
- * in dateEngine.ts. Country selection adds regional context only.
+ * Qalam Works country method catalogue — research context, not a date authority feed.
+ * No country should inherit Pakistan's verified lunar data without its own evidence.
+ * Sources here justify METHOD descriptions only; they do not supply daily dates.
  */
-
-/** How a country determines its official Hijri date. */
-export type HijriMethod =
-  | "observational"         // actual moon sighting — date is announced after sighting
-  | "umm-al-qura"           // astronomical calculation used by Saudi Arabia officially
-  | "observational-varying" // moon sighting but differs by state/organization
-  | "solar-hijri-civil";    // Solar Hijri used as the official civil calendar; lunar Hijri for religious use
-
+export type HijriMethod = "observational" | "umm-al-qura" | "observational-varying" | "solar-hijri-civil";
 export interface CountryCalendarInfo {
   id: string;
   name: { en: string; ur: string };
   hijriMethod: HijriMethod;
-  /** Explains how/why the calculated result may differ in this country. */
-  hijriNote:    { en: string; ur: string };
-  /** Optional note about official calendar usage in this country. */
+  hijriNote: { en: string; ur: string };
   officialNote?: { en: string; ur: string };
+  methodSource?: { url: string; label: { en: string; ur: string } };
 }
 
 export const COUNTRY_CALENDARS: CountryCalendarInfo[] = [
   {
-    id: "pk",
-    name: { en: "Pakistan", ur: "پاکستان" },
-    hijriMethod: "observational",
-    hijriNote: {
-      en: "Pakistan determines Hijri dates by actual moon sighting, announced by the Ruet-e-Hilal Committee. The calculated result shown here may differ by 1 day from the officially declared date.",
-      ur: "پاکستان میں ہجری تاریخ کا تعین رویتِ ہلال کمیٹی کی چاند دیکھنے کی تصدیق سے ہوتا ہے۔ یہاں دکھایا گیا حسابی نتیجہ سرکاری اعلان سے ایک دن آگے یا پیچھے ہو سکتا ہے۔",
+    "id": "pk",
+    "name": {
+      "en": "Pakistan",
+      "ur": "پاکستان"
     },
+    "hijriMethod": "observational",
+    "hijriNote": {
+      "en": "The Central Ruet-e-Hilal Committee reviews crescent reports and announces official lunar months. Verified Pakistan dates take priority; when no official month is available the calculated result is labeled and may differ by more than one day.",
+      "ur": "مرکزی رؤیتِ ہلال کمیٹی شہادتوں کی جانچ کے بعد قمری مہینے کا اعلان کرتی ہے۔ مصدقہ پاکستانی تاریخ کو ترجیح دی جاتی ہے؛ سرکاری ثبوت نہ ہو تو حسابی نتیجہ واضح لکھا جائے گا، جس میں ایک دن سے زیادہ فرق ہوسکتا ہے۔"
+    },
+    "methodSource": {
+      "url": "https://mora.gov.pk/Detail/ZTNhOGU5YjEtZTBmMy00OWQ2LWJlNmMtNWUxNzBkNGJmY2Nl",
+      "label": {
+        "en": "Pakistan Ministry of Religious Affairs",
+        "ur": "پاکستان کی وزارتِ مذہبی امور"
+      }
+    }
   },
   {
-    id: "in",
-    name: { en: "India", ur: "بھارت" },
-    hijriMethod: "observational",
-    hijriNote: {
-      en: "India uses local moon sighting for Islamic dates. The date may differ by 1 day from this calculation, and can also vary between regions or communities.",
-      ur: "بھارت میں اسلامی تاریخ مقامی رویتِ ہلال پر منحصر ہے۔ حسابی نتیجے سے ایک دن کا فرق ممکن ہے، اور مختلف علاقوں یا جماعتوں کے درمیان بھی تفاوت ہو سکتا ہے۔",
+    "id": "in",
+    "name": {
+      "en": "India",
+      "ur": "بھارت"
     },
+    "hijriMethod": "observational-varying",
+    "hijriNote": {
+      "en": "Different regional crescent-sighting committees and community institutions declare dates. No single nationwide lunar decision applies to every community. Select a local authority; a generic calculated date is not an official Indian date.",
+      "ur": "بھارت میں مختلف علاقائی رؤیتِ ہلال کمیٹیاں اور مذہبی ادارے اعلان کرتے ہیں۔ پورے ملک کی تمام جماعتوں کے لیے ایک ہی اعلان لازم نہیں۔ متعلقہ ادارے کے بغیر حسابی تاریخ کو سرکاری تاریخ نہیں کہا جاسکتا۔"
+    },
+    "methodSource": {
+      "url": "https://timesofindia.indiatimes.com/city/hyderabad/crescent-not-sighted-eid-now-on-saturday/articleshow/129686266.cms",
+      "label": {
+        "en": "Regional moon-sighting: Telangana 2026",
+        "ur": "تلنگانہ کی علاقائی رؤیتِ ہلال، ۲۰۲۶ء"
+      }
+    }
   },
   {
-    id: "af",
-    name: { en: "Afghanistan", ur: "افغانستان" },
-    hijriMethod: "solar-hijri-civil",
-    hijriNote: {
-      en: "Afghanistan uses actual moon sighting for Hijri dates. Solar Hijri (Afghan calendar) is also widely used for civil purposes, where 1 Hamal typically falls around 21 March.",
-      ur: "افغانستان میں ہجری تاریخ کا تعین چاند نظر آنے سے ہوتا ہے۔ ہجری شمسی (افغان تقویم) بھی سرکاری مقاصد کے لیے بڑے پیمانے پر استعمال ہوتی ہے — 1 حمل عموماً 21 مارچ کے آس پاس پڑتا ہے۔",
+    "id": "af",
+    "name": {
+      "en": "Afghanistan",
+      "ur": "افغانستان"
     },
-    officialNote: {
-      en: "Afghanistan uses Solar Hijri as its civil calendar (the Afghan Solar Calendar). The Hijri lunar calendar is used for religious observances.",
-      ur: "افغانستان سرکاری تقویم کے طور پر ہجری شمسی (افغان شمسی تقویم) استعمال کرتا ہے۔ ہجری قمری تقویم مذہبی مناسبتوں کے لیے استعمال ہوتی ہے۔",
+    "hijriMethod": "observational",
+    "hijriNote": {
+      "en": "The central crescent committee led by Afghanistan's Supreme Court reviews testimony from provinces and announces monthly lunar dates; calculations alone do not constitute official recognition.",
+      "ur": "افغانستان میں سپریم کورٹ کی مرکزی رؤیتِ ہلال کمیٹی صوبوں سے موصول شہادتوں کے بعد قمری مہینے کا اعلان کرتی ہے۔ محض حسابی تاریخ سرکاری اعلان نہیں ہے۔"
     },
+    "officialNote": {
+      "en": "Current government guidance requires official correspondence to use the dates declared by the central crescent committee. Solar Hijri dating still appears in some institutions; it must not be presented as the sole current civil method.",
+      "ur": "افغان حکومت نے سرکاری مراسلات میں مرکزی رؤیتِ ہلال کمیٹی کی تاریخ اختیار کرنے کی ہدایت دی ہے۔ بعض اداروں میں شمسی تاریخ بھی مستعمل ہے؛ اسے موجودہ واحد سرکاری طریقہ کہنا درست نہیں۔"
+    },
+    "methodSource": {
+      "url": "https://www.mcit.gov.af/dr/اطلاعیه-کمیته-مرکزی-رؤیت-هلال-در-مورد-درج-تاریخ-در-امور-اداری",
+      "label": {
+        "en": "Afghanistan government: dating of official correspondence",
+        "ur": "افغان حکومت: سرکاری مراسلات میں تاریخ کی ہدایت"
+      }
+    }
   },
   {
-    id: "ir",
-    name: { en: "Iran", ur: "ایران" },
-    hijriMethod: "solar-hijri-civil",
-    hijriNote: {
-      en: "Iran's official civil calendar is Solar Hijri (Persian/Jalali). The Hijri lunar calendar is used for Islamic religious dates, determined by moon sighting. Solar Hijri dates here use an arithmetic 33-year cycle and may differ by 1 day from Iran's astronomical calculation.",
-      ur: "ایران کی سرکاری تقویم ہجری شمسی (فارسی/جلالی) ہے۔ ہجری قمری تقویم اسلامی مذہبی تاریخوں کے لیے رویتِ ہلال سے طے ہوتی ہے۔ یہاں ہجری شمسی تاریخیں 33 سالہ حسابی دور پر مبنی ہیں اور ایران کے فلکیاتی حساب سے ایک دن کا فرق ممکن ہے۔",
+    "id": "ir",
+    "name": {
+      "en": "Iran",
+      "ur": "ایران"
     },
-    officialNote: {
-      en: "Iran uses Solar Hijri as its official civil calendar. The Persian New Year (Nowruz) falls on the vernal equinox, typically 20–21 March in the Gregorian calendar.",
-      ur: "ایران ہجری شمسی کو سرکاری تقویم کے طور پر استعمال کرتا ہے۔ فارسی نئے سال (نوروز) کا آغاز بہاری اعتدال سے ہوتا ہے جو عموماً عیسوی کیلنڈر میں 20–21 مارچ کو پڑتا ہے۔",
+    "hijriMethod": "solar-hijri-civil",
+    "hijriNote": {
+      "en": "The University of Tehran Calendar Center publishes Iran's official Solar Hijri calendar. Lunar religious dates depend on crescent observation, expert assessment and relevant religious authority; Qalam's simple arithmetic lunar method is not an official Iranian lunar calendar.",
+      "ur": "ایران کی سرکاری شمسی تقویم تہران یونیورسٹی کا مرکزِ تقویم مرتب کرتا ہے۔ قمری مذہبی تاریخوں میں رؤیتِ ہلال، فلکیاتی جائزہ اور متعلقہ شرعی فیصلہ اہم ہیں۔ قلم کا سادہ قمری حساب ایران کی سرکاری قمری تاریخ نہیں۔"
     },
+    "officialNote": {
+      "en": "Iranian official civil dates are Solar Hijri, astronomically anchored to Nowruz. The Qalam Solar Hijri converter is an approximation, not the complete Iranian official calendar.",
+      "ur": "ایران کی سرکاری شہری تقویم ہجری شمسی ہے، جس کی بنیاد نوروز اور فلکیاتی حساب پر ہے۔ قلم کی موجودہ شمسی تبدیلی ایک تقریب ہے، مکمل سرکاری ایرانی تقویم نہیں۔"
+    },
+    "methodSource": {
+      "url": "https://calendar.ut.ac.ir/",
+      "label": {
+        "en": "University of Tehran Calendar Center",
+        "ur": "تہران یونیورسٹی، مرکزِ تقویم"
+      }
+    }
   },
   {
-    id: "tj",
-    name: { en: "Tajikistan", ur: "تاجکستان" },
-    hijriMethod: "observational",
-    hijriNote: {
-      en: "Tajikistan uses the Gregorian calendar officially. Solar Hijri and Hijri lunar dates are used culturally and for Islamic observances. Moon sighting determines religious Hijri dates; a 1-day variation from this calculation is common.",
-      ur: "تاجکستان سرکاری طور پر عیسوی تقویم استعمال کرتا ہے۔ ہجری شمسی اور ہجری قمری تاریخیں ثقافتی اور اسلامی مواقع کے لیے استعمال ہوتی ہیں۔ مذہبی ہجری تاریخوں کا تعین رویتِ ہلال سے ہوتا ہے اور حسابی نتیجے سے ایک دن کا فرق ممکن ہے۔",
+    "id": "iq",
+    "name": {
+      "en": "Iraq",
+      "ur": "عراق"
     },
+    "hijriMethod": "observational-varying",
+    "hijriNote": {
+      "en": "Iraqi Sunni institutions and Shia marja' offices can declare different lunar starts. For Ramadan 1447 the Sunni Endowment announced 18 February 2026, but Ayatollah Sistani's Najaf office announced 19 February. Country selection alone cannot establish everyone's religious date.",
+      "ur": "عراق میں سنی مذہبی اداروں اور شیعہ مراجع کے قمری اعلانات مختلف ہوسکتے ہیں۔ رمضان ۱۴۴۷ھ میں سنی اوقاف نے ۱۸ فروری جبکہ آیت اللہ سیستانی کے نجف دفتر نے ۱۹ فروری کو یکم رمضان قرار دیا۔ صرف ملک کے انتخاب سے ہر شخص کی شرعی تاریخ طے نہیں ہوتی۔"
+    },
+    "officialNote": {
+      "en": "A marja's religious decision is distinct from a national civil calendar. Select the relevant religious authority before treating its date as applicable.",
+      "ur": "مرجع کا شرعی اعلان اور ملکی سرکاری تقویم الگ ہیں۔ متعلقہ مرجع یا مذہبی ادارہ منتخب کیے بغیر ایک تاریخ سب پر لاگو نہ کی جائے۔"
+    },
+    "methodSource": {
+      "url": "https://www.sistani.org/english/qa/01157/",
+      "label": {
+        "en": "Sayyid Sistani: proof of lunar crescent",
+        "ur": "آیت اللہ سیستانی: ہلال کے ثبوت کا معیار"
+      }
+    }
   },
   {
-    id: "sa",
-    name: { en: "Saudi Arabia", ur: "سعودی عرب" },
-    hijriMethod: "umm-al-qura",
-    hijriNote: {
-      en: "Saudi Arabia officially uses the Umm al-Qura calendar, based on astronomical calculation of the new moon. The civil tabular method used here may differ by 1 day.",
-      ur: "سعودی عرب سرکاری طور پر ام القریٰ تقویم استعمال کرتا ہے جو ہلالِ جدید کے فلکیاتی حساب پر مبنی ہے۔ یہاں استعمال شدہ مدنی حسابی طریقے سے ایک دن کا فرق ممکن ہے۔",
+    "id": "tj",
+    "name": {
+      "en": "Tajikistan",
+      "ur": "تاجکستان"
     },
-    officialNote: {
-      en: "The Umm al-Qura calendar is Saudi Arabia's official Islamic calendar, used for civil, administrative, and religious scheduling.",
-      ur: "ام القریٰ سعودی عرب کی سرکاری اسلامی تقویم ہے جو سرکاری، انتظامی اور مذہبی شیڈولنگ کے لیے استعمال ہوتی ہے۔",
-    },
+    "hijriMethod": "observational-varying",
+    "hijriNote": {
+      "en": "Tajikistan uses the Gregorian calendar officially. Religious lunar observances require local declarations and should not be equated with the unverified Qalam tabular date.",
+      "ur": "تاجکستان میں سرکاری طور پر عیسوی تقویم استعمال ہوتی ہے۔ قمری مذہبی تاریخ کے لیے متعلقہ مقامی اعلان ضروری ہے؛ قلم کا غیر مصدقہ حساب سرکاری تاریخ نہیں۔"
+    }
   },
+  {
+    "id": "sa",
+    "name": {
+      "en": "Saudi Arabia",
+      "ur": "سعودی عرب"
+    },
+    "hijriMethod": "umm-al-qura",
+    "hijriNote": {
+      "en": "The Umm al-Qura astronomical calendar is used for scheduled Saudi civil Hijri dates. Ramadan and Eid announcements also involve the Saudi Supreme Court crescent-sighting process. The Qalam tabular calculation is neither.",
+      "ur": "سعودی عرب میں ام القریٰ کی فلکیاتی تقویم سرکاری طے شدہ تاریخوں کے لیے استعمال ہوتی ہے، جبکہ رمضان اور عید کے اعلانات میں عدالتِ عظمیٰ کا رؤیتِ ہلال سے متعلق فیصلہ بھی اہم ہوتا ہے۔ قلم کے عام حساب کو ان دونوں کی جگہ نہ سمجھیں۔"
+    },
+    "officialNote": {
+      "en": "Distinguish predicted Umm al-Qura dates from formal court decisions for observances.",
+      "ur": "ام القریٰ کی پیشگی تاریخ اور مذہبی مواقع کے لیے عدالتی اعلان میں فرق واضح رکھیں۔"
+    }
+  }
 ];
 
-/** Map from id → entry for fast lookup. */
-export const COUNTRY_MAP = new Map(
-  COUNTRY_CALENDARS.map(c => [c.id, c])
-);
+export const COUNTRY_MAP = new Map(COUNTRY_CALENDARS.map(c => [c.id, c]));
 
 /** Badge label for the Hijri method. */
 export function methodLabel(

@@ -112,6 +112,28 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getAllByText("None of Pakistan's prescribed national observation locations currently meets the scientific crescent-visibility criterion.").length).toBeGreaterThan(0);
   });
 
+  it("does not advertise day-ten waxing Moon visibility as a new crescent result", async () => {
+    const authority = await import("../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriDate");
+    vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue({
+      hijri: { year: 1447, month: 9, day: 10 }, authority: "official",
+      anchorId: "pk-1447-ramadan-2026-02-19", providerId: "pk-central-ruet-e-hilal-committee",
+      providerLabel: { en: "Pakistan Central Ruet-e-Hilal Committee", ur: "پاکستان مرکزی رویتِ ہلال کمیٹی" },
+      sourceUrl: "https://www.radio.gov.pk/18-02-2026/moon-sighted-first-ramadan-on-thursday",
+      sourceReference: "Verified", verificationStatus: "verified",
+    });
+    locations.forEach(location => { location.prediction.criterion.qualifies = true; });
+    yallopLocations.forEach(location => { location.prediction.acceptedByPolicy = true; location.prediction.criterion.visibilityClass = "A"; });
+    Object.assign(yallopClassCounts, { A: 8, B: 0, C: 0, D: 0, E: 0, F: 0 });
+    render(<CrescentVisibilityContent />);
+    fireEvent.change(screen.getByLabelText("Change date"), { target: { value: "2026-02-28" } });
+    expect(screen.getAllByText("10 Ramadan 1447 AH").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Not a new-crescent test").length).toBe(2);
+    expect(screen.queryByText("Very favorable ✓")).toBeNull();
+    expect(screen.queryByText("Meets criterion ✓")).toBeNull();
+    expect(screen.getAllByRole("status").some(node => /not a new-crescent observation evening/i.test(node.textContent ?? ""))).toBe(true);
+    vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue(null);
+  });
+
   it("shows the verified official Rabi al-Thani date without a calculated fallback", async () => {
     const authority = await import("../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriDate");
     vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue({ hijri: { year: 1448, month: 4, day: 1 }, authority: "official", anchorId: "pk-1448-rabi-al-thani-2026-09-14", providerId: "pk-ministry-religious-affairs-central-ruet-e-hilal", providerLabel: { en: "Pakistan Ministry of Religious Affairs / Central Ruet-e-Hilal Committee", ur: "وزارتِ مذہبی امور پاکستان / مرکزی رویتِ ہلال کمیٹی" }, sourceUrl: "https://example.invalid", sourceReference: "Test", verificationStatus: "verified" });

@@ -21,10 +21,16 @@ export function HijriMonthCalendar({
   year,
   month,
   days,
+  authority = "tabular",
+  complete = false,
+  sourceUrl,
 }: {
   year: number;
   month: number;
   days: HijriMonthDay[];
+  authority?: "pakistan" | "tabular";
+  complete?: boolean;
+  sourceUrl?: string;
 }) {
   const { language, dir } = useLanguage();
   const lang = language as "en" | "ur";
@@ -46,6 +52,13 @@ export function HijriMonthCalendar({
     <section className="overflow-hidden rounded-2xl border border-[#1A3A2A]/10 bg-white shadow-sm dark:border-[#2a3d30] dark:bg-[#162a1e]" dir={dir}>
       <div className="border-b-2 border-[#B8935A] bg-[#1A3A2A] px-5 py-4 text-white">
         <h2 className={`text-center text-xl font-bold sm:text-2xl ${isUr ? "font-naskh" : ""}`}>{hijriMonths[month - 1]} {year}</h2>
+      </div>
+      <div className={`border-b p-3 text-sm leading-6 ${isUr ? "font-naskh" : ""}`}>
+        {authority === "pakistan"
+          ? (isUr ? "پاکستان کی مصدقہ سرکاری ہجری تاریخیں" : "Reviewed Pakistan official Hijri dates")
+          : (isUr ? "یہ حسابی تقویم ہے، پاکستان کی سرکاری تاریخ نہیں۔" : "Calculated Hijri calendar; not a Pakistan official declaration.")}
+        {authority === "pakistan" && !complete && <p className="mt-1 text-amber-700 dark:text-amber-300">{isUr ? "اس مہینے کی باقی تاریخوں کا سرکاری ثبوت ابھی دستیاب نہیں، اس لیے انہیں اندازے سے شامل نہیں کیا گیا۔" : "The remaining days are not yet verified and have not been filled using guesses."}</p>}
+        {sourceUrl && <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="ms-2 underline underline-offset-2">{isUr ? "سرکاری اعلان کا حوالہ" : "Source of official announcement"}</a>}
       </div>
       <div className="grid grid-cols-7 bg-[#E7EFE8] dark:bg-[#0e1c15]" dir={isUr ? "rtl" : "ltr"}>
         {labels.map((label) => (

@@ -1,5 +1,7 @@
 
 import { convert, type DateParts } from "./dateEngine";
+import { resolvePakistanOfficialHijriDate } from "./hijri-authority/resolveOfficialHijriDate";
+import type { ResolvedHijriDate } from "./hijri-authority/types";
 import { getRichDateIntelligence } from "./dateIntelligence";
 import { resolveRegionalHijriReference, type RegionalReference } from "./regionalDateEvidence";
 
@@ -20,6 +22,7 @@ const solarMonths = ["Farvardin","Ordibehesht","Khordad","Tir","Mordad","Shahriv
 export interface DateProfile {
   gregorian: DateParts;
   hijri: DateParts;
+  pakistanOfficialHijri?: ResolvedHijriDate | null;
   solar: DateParts | null;
   weekday: { en:string; ur:string };
   leapYear:boolean;
@@ -49,6 +52,7 @@ export function buildDateProfile(gregorian:DateParts,countryId?:string):DateProf
  return {
   gregorian,
   hijri:converted.hijri,
+  pakistanOfficialHijri:resolvePakistanOfficialHijriDate(gregorian),
   solar:converted.solar ?? null,
   weekday:weekdays[(intelligence.weekdayIndex + 1) % 7] ?? weekdays[0],
   leapYear:intelligence.leapYear,

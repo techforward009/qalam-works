@@ -28,6 +28,7 @@ interface CalendarPdfRequest {
   hijriOffset?: number;
   hijriOffsetMonths?: number[];
   hijriOffsets?: number[];
+  hijriPolicy?: "pakistan" | "tabular";
   researchNote?: string;
   bannerName?: string;
   bannerTitle?: string;
@@ -80,6 +81,11 @@ function isCalendarPdfRequest(value: unknown): value is CalendarPdfRequest {
       (Number.isInteger(body.hijriOffset) && Number(body.hijriOffset) >= -2 && Number(body.hijriOffset) <= 2)) &&
     (body.hijriOffsetMonths === undefined || isMonthList(body.hijriOffsetMonths)) &&
     (body.hijriOffsets === undefined || isOffsetList(body.hijriOffsets)) &&
+    (body.hijriPolicy === undefined || body.hijriPolicy === "pakistan" || body.hijriPolicy === "tabular") &&
+    (body.hijriPolicy !== "pakistan" || (
+      (body.hijriOffset === undefined || body.hijriOffset === 0) &&
+      (body.hijriOffsets === undefined || (Array.isArray(body.hijriOffsets) && body.hijriOffsets.every(offset => offset === 0)))
+    )) &&
     (body.researchNote === undefined ||
       (typeof body.researchNote === "string" && body.researchNote.length <= 240)) &&
     isBannerText(body.bannerName) &&

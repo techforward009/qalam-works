@@ -1,0 +1,62 @@
+name: Pakistan Date Studio Browser Acceptance (No Deployment)
+
+on:
+  push:
+    branches: [fix/date-studio-pk-ramadan-1447-crescent-context]
+    paths:
+      - ".github/workflows/date-studio-browser-acceptance.yml"
+      - "app/components/date-studio/**"
+      - "app/tools/date-converter/**"
+      - "app/tools/calendar-maker/**"
+      - "app/date/**"
+      - "app/calendar/**"
+      - "app/hijri/**"
+      - "tests/e2e/dateStudioPakistanCalendar.spec.ts"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/date-studio-browser-acceptance.yml"
+      - "app/components/date-studio/**"
+      - "app/tools/date-converter/**"
+      - "app/tools/calendar-maker/**"
+      - "app/date/**"
+      - "app/calendar/**"
+      - "app/hijri/**"
+      - "tests/e2e/dateStudioPakistanCalendar.spec.ts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: date-studio-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pakistan-date-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install pinned dependencies
+        # Browser-only acceptance does not need onnxruntime-node postinstall binary downloads.
+        run: npm ci --no-audit --no-fund --ignore-scripts
+      - name: Install browser and system libraries
+        run: npx playwright install --with-deps chromium
+      - name: Exercise live production-built browser output on desktop and mobile
+        run: npx playwright test tests/e2e/dateStudioPakistanCalendar.spec.ts --project=desktop-chrome --project=mobile-android --reporter=line
+      - name: Save visual review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pakistan-date-studio-browser-screenshots
+          path: test-results/**/*
+          if-no-files-found: ignore
+          retention-days: 7

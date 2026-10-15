@@ -15,11 +15,13 @@ export interface HijriYearMonthSummary {
   days: number;
   start: DateParts;
   end: DateParts;
+  source?: "pakistan" | "tabular";
+  complete?: boolean;
 }
 
 const COPY = {
-  en: { days: "days", explore: "Explore month", ah: "AH" },
-  ur: { days: "دن", explore: "مہینہ دیکھیں", ah: "ھ" },
+  en: { days: "days", explore: "Explore month", ah: "AH", official: "Pakistan official", calculated: "Calculated, not official", partial: "Verified portion only" },
+  ur: { days: "دن", explore: "مہینہ دیکھیں", ah: "ھ", official: "پاکستان کی سرکاری تاریخ", calculated: "حسابی، سرکاری نہیں", partial: "صرف مصدقہ دن" },
 };
 
 function formatGregorian(date: DateParts, lang: "en" | "ur") {
@@ -54,6 +56,7 @@ export function HijriYearDashboard({
               <p className="my-1 text-[#B8935A]" aria-hidden="true">↓</p>
               <p className="font-semibold text-[#1A3A2A] dark:text-[#e8ede9]">{formatGregorian(month.end, lang)}</p>
             </div>
+            <p className="text-xs font-semibold text-[#6F4E25] dark:text-[#D3B274]">{month.source === "pakistan" ? (month.complete ? t.official : t.partial) : t.calculated}</p>
             <div className="inline-flex rounded-full bg-[#F1ECE0] px-3 py-1 text-xs font-bold text-[#6F4E25] dark:bg-[#2b2419] dark:text-[#D3B274]">
               {month.days} {t.days}
             </div>
