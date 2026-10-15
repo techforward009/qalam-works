@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../lib/language-context";
+import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { easternDigits, surahTitle } from "./reader/metadata";
 import { tafsirCoverageRanges, tafsirDisplayTopicBody, tafsirDisplayTopicHeading, type TafsirCoverageGroup } from "./reader/tafsirVerseCoverage";
 import { publicBlobFontUrl } from "../tools/document-studio/utils/publicBlobFontCatalog";
@@ -29,6 +30,12 @@ const TAFSIR_READING_SURFACE_CSS = `
 
 type TafsirLanguage = "ur" | "en";
 type Topic = { title: string; text: string; sourceId: number | null };
+type TafsirPageSection = {
+  sourceKey: string;
+  verseKeysOnPage: string[];
+  coverage: string[];
+  topics: Topic[];
+};
 type Remote = {
   status: string;
   version?: number;
@@ -36,6 +43,8 @@ type Remote = {
   text?: string | null;
   heading?: string;
   topics?: Topic[];
+  sections?: TafsirPageSection[];
+  pageVerseKeys?: string[];
   coverage?: TafsirCoverageGroup[];
   referenceAyah?: string;
 };
@@ -88,12 +97,17 @@ function TafsirText({ text, language }: { text: string; language: TafsirLanguage
   );
 }
 
-export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: number }) {
+export default function QuranTafsirPage({ surah, ayah, ayahs }: {
+  surah: number;
+  ayah: number;
+  ayahs?: readonly QuranAyah[];
+}) {
   const { language } = useLanguage();
   const ur = language === "ur";
   const sourceMenuRef = useRef<HTMLDetailsElement>(null);
   const [workId, setWorkId] = useState(TAFSIR_WORKS[0]?.id ?? "");
   const chosenLanguage: TafsirLanguage = ur ? "ur" : "en";
+  const pageVerseKeys = ayahs?.map((item) => item.surah + ":" + item.ayah).join(",") ?? "";
   const [remote, setRemote] = useState<Remote | null>(null);
   const work = tafsirWorkById(workId);
   const entry = work && work.id !== "nemuneh" ? tafsirForAyah(work.id, surah, ayah) : null;
@@ -102,13 +116,14 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
     if (workId !== "nemuneh") return;
     let active = true;
     setRemote({ status: "loading" });
-    fetch(`/api/quran/tafsir-namoona?surah=${surah}&ayah=${ayah}&lang=${chosenLanguage}`)
+    fetch(`/api/quran/tafsir-namoona?surah=${surah}&ayah=${ayah}&lang=${chosenLanguage}${pageVerseKeys ? "&verses=" + encodeURIComponent(pageVerseKeys) : ""}`)
       .then(async (response) => (await response.json()) as Remote)
       .then((result) => { if (active) setRemote(result); })
       .catch(() => { if (active) setRemote({ status: "source_unavailable" }); });
     return () => { active = false; };
-  }, [workId, chosenLanguage, surah, ayah]);
+  }, [workId, chosenLanguage, surah, ayah, pageVerseKeys]);
 
+  const pageSections = remote?.status === "unicode_apk" ? remote.sections ?? [] : [];
   const coverageGroups = remote?.status === "unicode_apk" ? remote.coverage ?? [] : [];
   const remoteTopics = remote?.status === "unicode_apk"
     ? (remote.topics?.length
@@ -216,7 +231,9 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
         {!ur ? <p className="text-sm text-[#6d624e]">
           {"Surah " + surah + ", Ayah " + ayah + " · " + work.authorEn}
         </p> : null}
-        {remoteTopics.length > 0 && workId === "nemuneh" ? (
+        {workId === "nemuneh" && pageVerseKeys && pageSections.length > 0 ? (
+          <TafsirPageSections sections={pageSections} surah={surah} ayah={ayah} language={chosenLanguage} />
+        ) : remoteTopics.length > 0 && workId === "nemuneh" ? (
           <div className="mt-4 space-y-7" dir={chosenLanguage === "ur" ? "rtl" : "ltr"} lang={chosenLanguage}>
             {remoteTopics.length > 1 ? (
               <nav aria-label={ur ? "اس تفسیری مضمون کے موضوعات" : "Topics in this commentary"} className="mb-7 rounded-xl border border-[#dfd0ad] bg-[#f9f5e9] px-4 py-2" data-tafsir-topics-index={chosenLanguage}>
