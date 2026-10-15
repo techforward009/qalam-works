@@ -1,5 +1,7 @@
 name: PDF Phase 1D.1 Main vs PR64 Regression Triage
 on:
+  pull_request:
+    branches: [main]
   push:
     branches:
       - audit/pdf-phase1d1-main-baseline-20261015
