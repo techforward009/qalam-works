@@ -97,6 +97,118 @@ function TafsirText({ text, language }: { text: string; language: TafsirLanguage
   );
 }
 
+/** Full Quran-page mode: show every source article linked to any ayah on the printed Quran page.
+ * Source articles and their topic text remain complete and unmodified.
+ */
+function TafsirPageSections({ sections, surah, ayah, language }: {
+  sections: readonly TafsirPageSection[];
+  surah: number;
+  ayah: number;
+  language: TafsirLanguage;
+}) {
+  const ur = language === "ur";
+  const selectedKey = surah + ":" + ayah;
+  return (
+    <div className="mt-4 space-y-7" data-tafsir-page-sections="true"
+      dir={ur ? "rtl" : "ltr"} lang={language}>
+      <header className="rounded-xl border border-[#dbc99f] bg-[#f9f5ea] px-4 py-3 text-center">
+        <h2 className="text-[#31503c]" style={ur
+          ? { fontFamily: '"Gulzar", "Noto Nastaliq Urdu", serif', fontSize: "22px", lineHeight: 2.1 }
+          : { fontSize: "18px", fontWeight: 650 }}>
+          {ur ? "اس قرآنی صفحے کی تفسیریں" : "Commentary for this Quran page"}
+        </h2>
+        <p className="text-[#645d4d]" style={ur
+          ? { fontFamily: '"Alvi Nastaleeq", serif', fontSize: "16px", lineHeight: 1.95 }
+          : { fontSize: "14px", lineHeight: 1.8 }}>
+          {ur ? "مکمل تفسیری مضامین: " + easternDigits(sections.length) : sections.length + " complete commentary sections"}
+        </p>
+        {sections.length > 1 && (
+          <details className="group mt-2 border-t border-[#ddcda9] pt-1">
+            <summary className="cursor-pointer list-none text-[#30513e] [&::-webkit-details-marker]:hidden"
+              style={ur ? { fontFamily: '"Alvi Nastaleeq", serif', fontSize: "17px", lineHeight: 2 } : { fontSize: "14px" }}>
+              {ur ? "تمام تفسیری مضامین کی فہرست" : "Browse all commentaries"} <span aria-hidden="true">⌄</span>
+            </summary>
+            <ol className="space-y-1 pt-2" dir={ur ? "rtl" : "ltr"}>
+              {sections.map((section, index) => (
+                <li key={section.sourceKey}>
+                  <a href={"#tafsir-page-source-" + index} className="block rounded px-2 py-1 text-[#315541] hover:bg-[#eae6d8]"
+                    style={ur ? { fontFamily: '"Alvi Nastaleeq", serif', fontSize: "16px", lineHeight: 2 } : { fontSize: "14px", lineHeight: 1.8 }}>
+                    {ur ? easternDigits(index + 1) + "۔ " : index + 1 + ". "}
+                    {commentaryScopeLabel({ sourceKey: section.sourceKey, verses: section.coverage }, language)}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
+      </header>
+      {sections.map((section, index) => (
+        <section key={section.sourceKey} id={"tafsir-page-source-" + index}
+          data-tafsir-source-section={section.sourceKey} className="scroll-mt-20 border-b border-[#decda7] pb-6 last:border-b-0">
+          <header className="mb-5 rounded-lg border border-[#e1d4b7] bg-[#fdfaf2] px-3 py-3 text-center">
+            <h3 className="text-[#31523e]" style={ur
+              ? { fontFamily: '"Gulzar", "Noto Nastaliq Urdu", serif', fontSize: "21px", lineHeight: 2.1 }
+              : { fontSize: "17px", fontWeight: 650 }}>
+              {commentaryScopeLabel({ sourceKey: section.sourceKey, verses: section.coverage }, language)}
+            </h3>
+            {section.verseKeysOnPage.includes(selectedKey) && (
+              <p className="mt-1 text-[#8a7347]" style={ur
+                ? { fontFamily: '"Alvi Nastaleeq", serif', fontSize: "15px", lineHeight: 1.9 }
+                : { fontSize: "12px" }}>
+                {ur ? "منتخب آیت اس تفسیری مضمون میں شامل ہے" : "Includes the selected verse"}
+              </p>
+            )}
+          </header>
+          {section.topics.length > 1 && (
+            <nav aria-label={ur ? "اس تفسیری مضمون کے موضوعات" : "Topics in this commentary"}
+              className="mb-5 rounded-lg bg-[#f7f3e8] px-3 py-2">
+              <details className="group">
+                <summary className="cursor-pointer list-none text-center text-[#36523f] [&::-webkit-details-marker]:hidden"
+                  style={ur ? { fontFamily: '"Gulzar", serif', fontSize: "18px", lineHeight: 2 } : { fontSize: "15px", fontWeight: 600 }}>
+                  {ur ? "اس تفسیری مضمون کے موضوعات" : "Topics in this commentary"} ({section.topics.length}) <span aria-hidden="true">⌄</span>
+                </summary>
+                <ol className="mt-2 space-y-1" dir={ur ? "rtl" : "ltr"}>
+                  {section.topics.map((topic, i) => (
+                    <li key={i}>
+                      <a href={"#tafsir-source-topic-" + index + "-" + i}
+                        className="block rounded px-2 py-1 text-[#315541] hover:bg-[#eae6d8]"
+                        style={ur ? { fontFamily: '"Alvi Nastaleeq", serif', fontSize: "16px", lineHeight: 2 } : { fontSize: "14px" }}>
+                        {ur ? easternDigits(i + 1) + "۔ " : i + 1 + ". "}
+                        {displayTafsirHeading(tafsirDisplayTopicHeading(topic.title, topic.text), language)}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            </nav>
+          )}
+          <div className="space-y-7">
+            {section.topics.map((topic, i) => {
+              const heading = tafsirDisplayTopicHeading(topic.title, topic.text);
+              const visibleHeading = heading && heading !== "تفسیر" && heading !== "Tafseer" &&
+                heading !== "Commentary (Tafseer)";
+              return (
+                <section key={i + "-" + (topic.sourceId ?? "unknown")}
+                  id={"tafsir-source-topic-" + index + "-" + i} className="scroll-mt-20">
+                  {visibleHeading && (
+                    <h4 data-tafsir-topic-heading="true" className="mb-3 text-center text-[#304631]"
+                      style={ur
+                        ? { fontFamily: '"Gulzar", "Noto Nastaliq Urdu", serif', fontSize: "clamp(23px, 4vw, 27px)", lineHeight: 2.05 }
+                        : { fontSize: "19px", fontWeight: 650, lineHeight: 1.6 }}>
+                      {displayTafsirHeading(heading, language)}
+                    </h4>
+                  )}
+                  <TafsirText text={tafsirDisplayTopicBody(topic.title, topic.text)} language={language} />
+                </section>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 export default function QuranTafsirPage({ surah, ayah, ayahs }: {
   surah: number;
   ayah: number;
