@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { surahBanner } from "../app/quran/indopak-digital-khatt/surahBanner";
 import { displaySurahBannerName, initialQuranDisplayScale } from "../app/quran/reader/readerPresentation";
@@ -9,6 +9,8 @@ const digital = read("app/quran/indopak-digital-khatt/DigitalKhattReader.tsx");
 const styles = read("app/globals.css");
 const digitalCss = read("app/quran/indopak-digital-khatt/reader.module.css");
 const translation = read("app/quran/QuranTranslationPage.tsx");
+const translatorPicker = existsSync("app/quran/QuranUrduTranslatorPicker.tsx")
+  ? read("app/quran/QuranUrduTranslatorPicker.tsx") : translation;
 const transliteration = read("app/quran/QuranTransliterationPage.tsx");
 const tafsir = read("app/quran/QuranTafsirPage.tsx");
 
@@ -138,8 +140,14 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     const translationCorpus = read("app/quran/reader/translationCorpus.ts");
     expect(translation).toContain("ترجمۂ قرآن");
     expect(translation).toContain('"ترجمہ: " +');
-    expect(translation).toContain("مترجم منتخب کریں");
-    expect(translation).toContain('<option value="mohsin-najfi">علامہ شیخ محسن علی نجفی</option>');
+    expect(translatorPicker).toContain("مترجم منتخب کریں");
+    if (translatorPicker === translation) {
+      expect(translatorPicker).toContain('<option value="mohsin-najfi">علامہ شیخ محسن علی نجفی</option>');
+    } else {
+      expect(translatorPicker).toContain('id: "mohsin-najfi", label: "علامہ شیخ محسن علی نجفی"');
+      expect(translatorPicker).toContain('id: "safdar-najfi", label: "علامہ سید صفدر حسین نجفی (تفسیر نمونہ)"');
+      expect(translation).toContain("QuranUrduTranslatorPicker");
+    }
     expect(translation).toContain("storedQuranUrduTranslator()");
     expect(translation).toContain("saveQuranUrduTranslator(next)");
     expect(translation).toContain('"Gulzar", "Noto Nastaliq Urdu", serif');
