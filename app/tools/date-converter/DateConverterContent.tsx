@@ -293,7 +293,6 @@ export default function DateConverterContent({
   const [year,        setYear]        = useState("");
   const [copied,      setCopied]      = useState<CalendarType | null>(null);
   const [linkCopied,  setLinkCopied]  = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<string>("pk");
   const [dateStudioMethod, setDateStudioMethod] = useState<DateStudioMethod>("qalam");
   const [yallopObserverId, setYallopObserverId] = useState("karachi");
   const [findDay, setFindDay] = useState("");
