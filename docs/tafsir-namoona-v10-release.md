@@ -135,3 +135,21 @@ Owner-directed next step: refine the first ten **unique source commentary entrie
 - Subsequent ten-entry batches should start strictly after `2:7` and build cumulatively from the latest private reviewed corpus; avoid starting each batch from an uncorrected archive.
 
 **Editorial caveat:** This round deliberately addresses source-observable typographical issues, not unverified rewrites of narration/Qur'an or theological interpretation. Further primary-print comparison may identify more matters; report uncertain readings rather than guessing. Keep the PR draft and do not deploy production.
+
+## Source commentary verse-group visibility and accurate heading — 15 Oct 2026
+
+**Why:** A printed Tafsir Namoona commentary section frequently covers several Quranic verses at once. The Quran Reader's displayed page boundary is not the author's tafsir-unit boundary. A user navigating from one ayah needs to see the range of *all* linked verses before reading its original full exposition.
+
+**Implementation (Preview only):**
+
+- `app/quran/reader/tafsirVerseCoverage.ts` indexes the existing v10 private `verses[ayah].refs` links in a stable server-side per-corpus cache. `GET /api/quran/tafsir-namoona` now returns `coverage: [{sourceKey, verses}]` for each returned source entry; this is derived metadata rather than a new or edited commentary corpus.
+- UI displays a clear, centered Urdu/English coverage header for *each source unit*, including distinct and non-contiguous source ranges when required, and a separate “selected verse” indicator. Urdu uses Gulzar and Alvi; no font or Quran/translation corpus was altered.
+- Proven group boundaries from current private verse mapping: `2:1,2:2 → 2:2`; `2:3–5 → 2:5`; `2:6–7 → 2:7`; `2:8–16 → 2:16`. Some verses have two associated source units, or individual source units span discontinuous links; implementation preserves all groups rather than inventing continuous coverage.
+- The reading-view-only deduplication now renders the article heading in Gulzar *once*: if its first source text line equals its title, the duplicate line is suppressed **in the reading UI only**. The currently deployed earlier private corpus had `قرآن کے جروف مقطعات کے متعلق تحقیق` in the heading while the first body line correctly said `قرآن کے حروف مقطعات کے متعلق تحقیق`. A narrowly verified fallback displays the correct first source line as its heading and omits its duplicated body line without mutating the original corpus. The newer private Library ten-entry batch already has the corrected actual source title.
+- The topic-list label now says **“اس تفسیری مضمون کے موضوعات”** / **“Topics in this commentary”**, rather than falsely claiming every section specifically treats the selected individual verse. Existing 20px Urdu Arabic, the English commentary topic list, and all approved Quran translation UI remain unchanged.
+
+**Single-ayah notes design (not shipped as fabricated source text):**
+
+Provide two distinct reading modes once the source editorial annotations exist: **Full Original Tafsir** and **Notes for this Ayah**. For the second, create a privately reviewed structured map `{ayahKey, commentarySourceKey, topicSourceId, paragraphRange, verification}`, connecting only verified passage segments to the *selected* ayah. Both modes carry permanent links to the original full exposition. Until such source-to-paragraph links are reviewed, the UI continues to show the original full source group; it must not automatically assume a shared whole essay belongs individually to each verse, nor ask an AI to invent verse-specific notes. Add the verse-level annotations progressively during the ongoing ten-entry editorial review batches.
+
+**Safety/acceptance:** Focused unit tests cover contiguous links, non-contiguous links, multiple source references, typed boundaries and exact-only title suppression. No private book text, publication flag, language corpus, edition or production deployment is touched. PR #65 remains draft, owner/browser visual review and both language rights approvals still required.
