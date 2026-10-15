@@ -6,6 +6,25 @@ import type { OfficialHijriMonthAnchor } from "./types";
  */
 export const PAKISTAN_2025_HISTORIC_ANCHORS: readonly OfficialHijriMonthAnchor[] = [
   {
+    id: "pk-1446-jumada-al-thani-2024-12-04",
+    jurisdiction: "PK",
+    hijriYear: 1446,
+    hijriMonth: 6,
+    officialDayOneGregorian: { year: 2024, month: 12, day: 4 },
+    coverageEndGregorian: { year: 2025, month: 1, day: 1 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "not-sighted",
+    announcementGregorianDate: { year: 2024, month: 12, day: 2 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: { en: "Pakistan Central Ruet-e-Hilal Committee", ur: "پاکستان مرکزی رؤیتِ ہلال کمیٹی" },
+    sourceUrl: "https://www.app.com.pk/national/moon-of-jamadi-us-sani-not-sighted-first-day-to-begin-on-wednesday/",
+    sourceReference: "APP, 2 December 2024: ministry announced 1 Jumada al-Thani 1446 on Wednesday 4 December 2024, followed by official 1 Rajab on 2 January 2025.",
+    provenance: { verifiedAt: "2026-10-15", notes: "The subsequent verified Rajab start confirms the 29-day month and covers New Year's Day 2025." }
+  },
+
+  {
     id: "pk-1446-rajab-2025-01-02",
     jurisdiction: "PK",
     hijriYear: 1446,
