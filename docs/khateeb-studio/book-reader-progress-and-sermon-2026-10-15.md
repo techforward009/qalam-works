@@ -28,3 +28,11 @@
 کتابی ترتیب، متن کی نقل، تلاش، نجی اجازت، غلط درخواست، نسخے میں تبدیلی، پرانے نشانات، متن کے بغیر مقامی حفاظت اور «میری مجلس» میں صحیح اقتباس شامل کرنے کی خودکار آزمائشیں۔
 
 **بقیہ:** اصلی آٹھ جلدوں کے محفوظ سرور کے ساتھ مکمل پیش نظارہ، موبائل پر حقیقی تحریری جانچ، مخصوص لفظ کا صفحے پر نمایاں نشان، منتخب متن کی علیحدہ نقل، مکمل کتاب کی اشاعت کی اجازت، اور پیراگراف سے رواں مطالعے کی مزید صفائی۔ یہ کام اصل ویب سائٹ کی منظوری سے پہلے رہیں گے۔
+
+## Public reading decision — 15 October 2026
+
+At the owner's explicit request the **book reader must be open to everyone without a Khateeb/Research owner password**. Remove both the `ResearchStudioGate` wrapper and the owner-session gate on the bounded, read-only `GET /api/research/book-reader` endpoint. The stateless `POST /api/research/book-reader` endpoint assembles a validated `BookExcerpt` and does not persist or import any book or sermon; it is public too, with same-origin/body size/source hash/record hash/paragraph selection checks preserved. Public book reading includes exact copying, searching, bookmarking in one's own browser and use in one's own sermon draft.
+
+**Still protected:** the existing `POST /api/khateeb/library` upload/activation and the owner Research Studio administration routes. This change must not expose storage credentials or enable corpus mutations. Responses are still `no-store` and paragraph/TOC bounds remain. Vercel's **Preview Deployment Protection/SSO is a separate platform-level control**: the test Preview URL may still require Vercel access while the application reader itself no longer requires the owner password. Changing deployment-wide Preview SSO is *not* part of this change.
+
+Publicly released books must have their distribution permissions accounted for in the editorial book catalog; the legacy library GET is already public, so this new public reader follows the existing public-read access model for the same active corpus. This draft branch remains separate from production until review.
