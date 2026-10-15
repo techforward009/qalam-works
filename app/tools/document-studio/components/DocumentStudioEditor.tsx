@@ -1700,6 +1700,7 @@ export default function DocumentStudioEditor() {
               {pdfDiagnosis.problems.map((problem, i) => (
                 <div key={i} className="rounded border border-gray-200 p-3 space-y-2">
                   <p>{problem.message}</p>
+                  {problem.selectedFont && <p className="text-xs">اس حرف کے لیے کسی متبادل فونٹ کی حقیقی تصدیق ابھی دستیاب نہیں۔ اصل عبارت برقرار رکھیں اور فونٹ یا حرف کو خود جانچیں۔</p>}
                   {problem.source && <p className="text-xs">مقام: {problem.source.paragraphPath.join(".")} / {problem.source.path.join(".")}</p>}
                   {problem.selectedFont && <p>منتخب فونٹ: <bdi dir="ltr">{problem.selectedFont}</bdi></p>}
                   {problem.actualFont && <p>استعمال ہونے والا فونٹ: <bdi dir="ltr">{problem.actualFont}</bdi></p>}
