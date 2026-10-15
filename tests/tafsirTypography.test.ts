@@ -60,6 +60,7 @@ describe("Tafsir source-preserving typography", () => {
     expect(page).toContain('publicBlobFontUrl("ScheherazadeNew-Medium.woff2")');
     expect(page).toContain('fontFamily: \'"Qalam Tafsir Scheherazade", serif\'');
     expect(page).toContain('data-tafsir-font="scheherazade-new"');
+    expect(page).toContain('fontSize: language === "ur" ? "21px" : "1.12em"');
     expect(page).toContain('<style>{TAFSIR_SCHEHERAZADE_CSS + TAFSIR_READING_SURFACE_CSS}</style>');
     expect(page).not.toContain('data-tafsir-font-warning');
     expect(page).not.toContain('Digital Khatt lacks a glyph');
