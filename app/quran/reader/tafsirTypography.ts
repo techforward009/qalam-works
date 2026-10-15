@@ -57,8 +57,32 @@ function lineRuns(line: string): TafsirTypographyRun[] {
   return [{ kind: "urdu", text: line }];
 }
 
-export function splitTafsirTypography(text: string): TafsirTypographyRun[] {
+/**
+ * In the English commentary the script boundary itself is reliable evidence:
+ * every Arabic-script word or consecutive phrase receives the Arabic font,
+ * including unvowelled Urdu/Persian spelling forms used in cited Arabic text.
+ * This never changes the characters, spaces, or punctuation from the corpus.
+ * Other non-Latin scripts are not automatically classified as Arabic.
+ */
+const ENGLISH_ARABIC_PHRASE =
+  /\p{Script=Arabic}[\p{Script=Arabic}\p{Mark}\u200C\u200D]*(?:(?:[ \t\u00A0\u202F]+|[،؛؟۔,:.!?]+[ \t\u00A0\u202F]*)\p{Script=Arabic}[\p{Script=Arabic}\p{Mark}\u200C\u200D]*)*[،؛؟۔]*/gu;
+
+function splitEnglishArabicScript(text: string): TafsirTypographyRun[] {
+  const runs: TafsirTypographyRun[] = [];
+  let cursor = 0;
+  for (const match of text.matchAll(ENGLISH_ARABIC_PHRASE)) {
+    const start = match.index;
+    appendRun(runs, "urdu", text.slice(cursor, start));
+    appendRun(runs, "arabic", match[0]);
+    cursor = start + match[0].length;
+  }
+  appendRun(runs, "urdu", text.slice(cursor));
+  return runs;
+}
+
+export function splitTafsirTypography(text: string, language: "ur" | "en" = "ur"): TafsirTypographyRun[] {
   if (!text) return [];
+  if (language === "en") return splitEnglishArabicScript(text);
   const runs: TafsirTypographyRun[] = [];
   const lines = text.split(/(\n)/u);
   for (const line of lines) {
