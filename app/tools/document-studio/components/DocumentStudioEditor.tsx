@@ -285,6 +285,8 @@ export default function DocumentStudioEditor() {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pdfDiagnosis, setPdfDiagnosis] = useState<PdfExportFailure | null>(null);
+  const [pdfRepairPreview, setPdfRepairPreview] = useState<number | null>(null);
+  const [pdfRepairUndoAvailable, setPdfRepairUndoAvailable] = useState(false);
   const pdfDiagnosticDocumentRef = useRef<string | null>(null);
   const [pdfSummary, setPdfSummary] = useState<{
     pages: number;
@@ -1182,6 +1184,7 @@ export default function DocumentStudioEditor() {
     if (!editor) return;
     setPdfError(null);
     setPdfDiagnosis(null);
+    setPdfRepairPreview(null);
     setPdfSummary(null);
     setIsExportingPdf(true);
     const exportDoc = editor.getJSON();
@@ -1246,6 +1249,51 @@ export default function DocumentStudioEditor() {
     } finally {
       setIsExportingPdf(false);
     }
+  };
+
+  const resolvePdfIssueRange = (problem: PdfExportFailure["problems"][number]): {from:number;to:number} | null => {
+    if (!editor || !problem.source || JSON.stringify(editor.getJSON()) !== pdfDiagnosticDocumentRef.current) return null;
+    let node = editor.state.doc;
+    let position = 0;
+    for (const index of problem.source.path) {
+      if (index < 0 || index >= node.childCount) return null;
+      for (let j=0; j<index; j++) position += node.child(j).nodeSize;
+      if (node.type.name !== "doc" && !node.isText) position += 1;
+      node = node.child(index);
+    }
+    if (!node.isText || (problem.source.snapshot && pdfRunFingerprint(node.text ?? "") !== problem.source.snapshot)) return null;
+    const from = position + problem.source.start;
+    const to = position + problem.source.end;
+    return from >= 0 && to <= editor.state.doc.content.size && from < to ? {from,to} : null;
+  };
+  const navigatePdfIssue = (problem: PdfExportFailure["problems"][number]) => {
+    const range = resolvePdfIssueRange(problem);
+    if (!range || !editor) { setPdfError("متن بدل چکا ہے، نئی جانچ کریں۔"); return; }
+    editor.chain().focus().setTextSelection(range).run();
+  };
+  const approvePdfRepair = (index: number) => {
+    if (!editor || !pdfDiagnosis) return;
+    const problem = pdfDiagnosis.problems[index];
+    if (!problem?.verifiedReplacement) return;
+    const range = resolvePdfIssueRange(problem);
+    if (!range) { setPdfError("دستاویز بدل گئی ہے، دوبارہ جانچ کریں۔"); setPdfRepairPreview(null); return; }
+    const markType = editor.state.schema.marks.textStyle;
+    if (!markType) return;
+    let original = markType.create();
+    editor.state.doc.nodesBetween(range.from,range.to,(node) => {
+      if (node.isText) {
+        const existing = node.marks.find(mark => mark.type === markType);
+        if (existing) original = existing;
+      }
+    });
+    const replacement = markType.create({...original.attrs,fontFamily:problem.verifiedReplacement});
+    const tr = editor.state.tr.addMark(range.from,range.to,replacement);
+    editor.view.dispatch(tr);
+    setPdfRepairUndoAvailable(true);
+    setPdfRepairPreview(null);
+    // The diagnostic locations belong to the previous document snapshot.
+    setPdfDiagnosis(null);
+    setPdfError("فونٹ کی منظور شدہ اصلاح ہوگئی۔ دوبارہ PDF بنا کر جانچ کریں۔");
   };
 
   useEffect(() => {
@@ -1697,6 +1745,7 @@ export default function DocumentStudioEditor() {
               {pdfError}
             </div>
           )}
+          {pdfRepairUndoAvailable && <div className="mb-3" dir="rtl"><button type="button" className="rounded border px-3 py-2" onClick={() => {editor?.commands.undo(); setPdfRepairUndoAvailable(false); setPdfDiagnosis(null); setPdfError("اصلاح واپس لے لی گئی۔");}}>آخری منظور شدہ اصلاح واپس لیں</button></div>}
           {pdfDiagnosis && (
             <section className="mb-3 rounded-lg border border-red-300 bg-white p-4 text-sm text-gray-800 space-y-3" dir="rtl" role="region" aria-label="PDF خرابیوں کی تفصیل">
               <h3 className="font-semibold">PDF کی خرابیوں کی تفصیل ({pdfDiagnosis.problems.length})</h3>
@@ -1708,26 +1757,21 @@ export default function DocumentStudioEditor() {
                   {problem.selectedFont && <p>منتخب فونٹ: <bdi dir="ltr">{problem.selectedFont}</bdi></p>}
                   {problem.actualFont && <p>استعمال ہونے والا فونٹ: <bdi dir="ltr">{problem.actualFont}</bdi></p>}
                   {problem.unicode && <p>متعلقہ حرف: {problem.character} (<bdi dir="ltr">{problem.unicode}</bdi>)</p>}
-                  {problem.source && <button type="button" className="rounded border px-3 py-1 font-medium" onClick={() => {
-                    if (!editor) return;
-                    if (JSON.stringify(editor.getJSON()) !== pdfDiagnosticDocumentRef.current) {
-                      setPdfError("دستاویز بدل چکی ہے۔ تازہ جانچ کے بعد ہی متعلقہ عبارت کھولیں۔");
-                      return;
-                    }
-                    let current = editor.state.doc;
-                    let position = 0;
-                    for (const index of problem.source!.path) {
-                      if (index < 0 || index >= current.childCount) return;
-                      for (let j = 0; j < index; j++) position += current.child(j).nodeSize;
-                      if (!current.isText) position += current.type.name === "doc" ? 0 : 1;
-                      current = current.child(index);
-                    }
-                    if (!current.isText || (problem.source!.snapshot && pdfRunFingerprint(current.text ?? "") !== problem.source!.snapshot)) { setPdfError("عبارت بدل چکی ہے۔ دوبارہ PDF جانچ کریں۔"); return; }
-                    const from = position + problem.source!.start;
-                    const to = position + problem.source!.end;
-                    if (from < 0 || to > editor.state.doc.content.size || from > to) return;
-                    editor.chain().focus().setTextSelection({ from, to }).run();
-                  }}>متعلقہ عبارت دکھائیں</button>}
+                  {problem.source && <button type="button" className="rounded border px-3 py-1 font-medium" onClick={() => navigatePdfIssue(problem)}>متعلقہ عبارت دکھائیں</button>}
+                  {problem.verifiedReplacement ? (
+                    <div className="space-y-2">
+                      <button type="button" className="rounded border px-3 py-1" onClick={() => {navigatePdfIssue(problem); setPdfRepairPreview(i);}}>تصدیق شدہ فونٹ سے اصلاح دیکھیں</button>
+                      {pdfRepairPreview === i && (
+                        <div className="rounded border border-amber-300 bg-amber-50 p-3 space-y-2">
+                          <p>صرف منتخب عبارت کا فونٹ بدلے گا۔ اصل حروف اور باقی انداز محفوظ رہیں گے۔</p>
+                          <p>پرانا فونٹ: <bdi dir="ltr">{problem.selectedFont}</bdi></p>
+                          <p>نیا تصدیق شدہ فونٹ: <bdi dir="ltr">{problem.verifiedReplacement}</bdi></p>
+                          <button type="button" className="rounded border px-3 py-1" onClick={() => approvePdfRepair(i)}>تبدیلی منظور کریں</button>
+                          <button type="button" className="rounded border px-3 py-1 mx-2" onClick={() => setPdfRepairPreview(null)}>منسوخ کریں</button>
+                        </div>
+                      )}
+                    </div>
+                  ) : <p className="text-xs">کسی محفوظ متبادل فونٹ کی حقیقی تصدیق نہیں ہوئی۔ دستی جانچ کریں۔</p>}
                   <details><summary className="cursor-pointer">تکنیکی تفصیل</summary><p dir="ltr">{problem.code} {problem.reason ?? ""}</p></details>
                 </div>
               ))}
