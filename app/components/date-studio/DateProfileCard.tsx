@@ -78,7 +78,6 @@ export function DateProfileCard({
   const naskh = isUr ? "font-naskh" : "";
   const official = profile.pakistanOfficialHijri;
   const primaryHijri = official?.hijri ?? profile.hijri;
-  const calculatedDiffers = !!official && (official.hijri.day !== profile.hijri.day || official.hijri.month !== profile.hijri.month || official.hijri.year !== profile.hijri.year);
 
   let status: string;
   if (profile.futureState === "today") {
@@ -115,7 +114,6 @@ export function DateProfileCard({
               <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
                 <p className={`text-xs font-bold text-[#D9BE8F] ${naskh}`}>{official ? t.pakistanOfficial : t.hijri}</p>
                 <p className={`mt-1 text-lg font-bold ${naskh}`}>{formatHijri(primaryHijri, lang)}</p>
-                {calculatedDiffers && <p className={`mt-2 text-xs text-white/75 ${naskh}`}>{t.calculatedReference}: {formatHijri(profile.hijri, lang)}</p>}
                 {official && <a className={`mt-2 inline-block text-xs text-[#F1DEC0] underline underline-offset-2 ${naskh}`} href={official.sourceUrl} target="_blank" rel="noopener noreferrer">{t.officialSource}</a>}
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
