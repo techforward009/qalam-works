@@ -51,6 +51,7 @@
 }
 :global(.dark) .menuPanel { background: #102017; }
 .menuLabel { display: grid; gap: .3rem; font-size: .78rem; }
+.menuDivider { height: 1px; margin-block: .1rem; background: rgb(49 81 58 / 12%); }
 .savedPlaces { margin: 0 0 .75rem; font-size: .85rem; }
 .savedPlaces summary { cursor: pointer; }
 .bookmarkList { display: flex; flex-wrap: wrap; gap: .5rem; padding: .65rem 0; }
