@@ -19,7 +19,10 @@ import { RegionalContextCard } from "./RegionalContextCard";
 
 const COPY = {
   en: {
-    hijri: "Hijri",
+    hijri: "Calculated Hijri",
+    pakistanOfficial: "Pakistan official Hijri date",
+    calculatedReference: "Qalam tabular calculation",
+    officialSource: "Official announcement",
     solar: "Solar Hijri",
     status: "Date status",
     today: "Today",
@@ -30,7 +33,10 @@ const COPY = {
     days: "days",
   },
   ur: {
-    hijri: "ہجری",
+    hijri: "حسابی ہجری تاریخ",
+    pakistanOfficial: "پاکستان کی سرکاری ہجری تاریخ",
+    calculatedReference: "قلم کا حسابی نتیجہ",
+    officialSource: "سرکاری اعلان کا حوالہ",
     solar: "ہجری شمسی",
     status: "تاریخ کی کیفیت",
     today: "آج",
@@ -70,6 +76,9 @@ export function DateProfileCard({
   const t = COPY[lang];
   const isUr = lang === "ur";
   const naskh = isUr ? "font-naskh" : "";
+  const official = profile.pakistanOfficialHijri;
+  const primaryHijri = official?.hijri ?? profile.hijri;
+  const calculatedDiffers = !!official && (official.hijri.day !== profile.hijri.day || official.hijri.month !== profile.hijri.month || official.hijri.year !== profile.hijri.year);
 
   let status: string;
   if (profile.futureState === "today") {
@@ -104,8 +113,10 @@ export function DateProfileCard({
 
             <div className="grid min-w-[240px] gap-2 sm:min-w-[310px]">
               <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-                <p className={`text-xs font-bold text-[#D9BE8F] ${naskh}`}>{t.hijri}</p>
-                <p className={`mt-1 text-lg font-bold ${naskh}`}>{formatHijri(profile.hijri, lang)}</p>
+                <p className={`text-xs font-bold text-[#D9BE8F] ${naskh}`}>{official ? t.pakistanOfficial : t.hijri}</p>
+                <p className={`mt-1 text-lg font-bold ${naskh}`}>{formatHijri(primaryHijri, lang)}</p>
+                {calculatedDiffers && <p className={`mt-2 text-xs text-white/75 ${naskh}`}>{t.calculatedReference}: {formatHijri(profile.hijri, lang)}</p>}
+                {official && <a className={`mt-2 inline-block text-xs text-[#F1DEC0] underline underline-offset-2 ${naskh}`} href={official.sourceUrl} target="_blank" rel="noopener noreferrer">{t.officialSource}</a>}
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                 <p className={`text-xs font-bold text-[#D9BE8F] ${naskh}`}>{t.solar}</p>
