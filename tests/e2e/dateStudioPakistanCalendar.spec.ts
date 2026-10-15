@@ -47,6 +47,26 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await page.screenshot({path:testInfo.outputPath("pk-2024-leap-february.png"),fullPage:true});
   });
 
+  test("shows 10 Ramadan 1444 on 1 April 2023 on day and month views", async ({page}, testInfo) => {
+    await page.goto("/date/2023-04-01");
+    await expect(page.getByText("Pakistan official Hijri date")).toBeVisible();
+    await expect(page.getByText("10 Ramadan 1444 AH", {exact:true})).toBeVisible();
+    await page.goto("/calendar/2023/4");
+    await expect(page.locator('[data-calendar-month="4"] a[href="/date/2023-04-01"] [data-role="hijri-day"]'))
+      .toContainText(/^10/);
+    await page.screenshot({path:testInfo.outputPath("pk-2023-ramadan-calendar.png"),fullPage:true});
+  });
+
+  test("respects the official Pakistan 1 Safar on 19 August 2023", async ({page}, testInfo) => {
+    await page.goto("/date/2023-08-19");
+    await expect(page.getByText("Pakistan official Hijri date")).toBeVisible();
+    await expect(page.getByText("1 Safar 1445 AH", {exact:true})).toBeVisible();
+    await page.goto("/calendar/2023/8");
+    await expect(page.locator('[data-calendar-month="8"] a[href="/date/2023-08-19"] [data-role="hijri-day"]'))
+      .toContainText(/^1/);
+    await page.screenshot({path:testInfo.outputPath("pk-2023-safar-calendar.png"),fullPage:true});
+  });
+
   test("keeps the Pakistan result visible and avoids sideways scrolling", async ({ page }) => {
     await page.goto("/calendar/2025/3");
     const visible = page.getByText("Pakistan Hijri calendar");
