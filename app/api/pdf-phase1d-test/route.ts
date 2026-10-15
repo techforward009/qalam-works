@@ -79,8 +79,42 @@ export async function POST(request: NextRequest) {
         (element as HTMLElement).style.fontFamily = '"Liberation Serif"';
       });
     }
+    const expectedDigitalText: string[] = [];
+    const collectOriginal = (node: DocNode) => {
+      if (node.type === "text" && typeof node.text === "string" && node.marks?.some(mark =>
+        mark.type === "textStyle" && mark.attrs?.fontFamily === "Digital Khatt Indo-Pak")) {
+        expectedDigitalText.push(node.text);
+      }
+      for (const child of node.content ?? []) collectOriginal(child);
+    };
+    collectOriginal(doc);
+    const expectedCodepoints = expectedDigitalText.flatMap(value => Array.from(value, char => char.codePointAt(0)));
+    const htmlCodepoints = await page.evaluate((sourceHtml) => {
+      const parsed = new DOMParser().parseFromString(sourceHtml, "text/html");
+      return Array.from(parsed.querySelectorAll('[data-pdf-font="Digital Khatt Indo-Pak"]'))
+        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0)));
+    }, html);
+    const chromiumBefore = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('[data-pdf-font="Digital Khatt Indo-Pak"]'))
+        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0))));
+    const equalCodepoints = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => v === b[i]);
+    if (expectedCodepoints.length && (!equalCodepoints(expectedCodepoints, htmlCodepoints)
+      || !equalCodepoints(expectedCodepoints, chromiumBefore))) {
+      throw new Error("Phase1D Unicode input vs HTML vs Chromium mismatch; export blocked");
+    }
     const runtime = await page.evaluate(inspectPdfRuntimeFonts, fontsUsed);
     const urduFonts = await experimentalScriptAwareGuard(page);
+    const chromiumAfter = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('[data-pdf-font="Digital Khatt Indo-Pak"]'))
+        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0))));
+    if (expectedCodepoints.length && !equalCodepoints(expectedCodepoints, chromiumAfter)) {
+      throw new Error("Phase1D Unicode segmentation changed original text; export blocked");
+    }
+    if (expectedCodepoints.length) console.info("[phase1d-unicode]", JSON.stringify({
+      sourceCodepoints: expectedCodepoints, htmlCodepoints, chromiumBefore, chromiumAfter,
+      u002eCount: expectedCodepoints.filter(cp => cp === 0x2e).length,
+      allStagesIdentical: true
+    }));
     console.info("[phase1d-cdp]", JSON.stringify(urduFonts.diagnostic.map(d=>({node:d.node,part:d.part,kind:d.kind,codepoints:d.codepoints,expected:d.expected,painted:d.painted,accepted:d.accepted}))));
     if (urduFonts.fallbackRuns > 0) {
       if (!fontsUsed.includes("Noto Nastaliq Urdu")) fontsUsed.push("Noto Nastaliq Urdu");
