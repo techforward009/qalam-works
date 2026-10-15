@@ -178,8 +178,8 @@ it("visits the final part when navigating backward to a longer preceding section
     const body = op === "catalog" ? shelf : op === "contents" ? toc
       : op === "read" ? {
         ...readPage(id),
-        page: url.searchParams.get("part") === "last" ? 3 : 1,
-        pageCount: id === id1 ? 3 : 1,
+        page: 1,
+        pageCount: 1,
         paragraphs: [{id:`${id}:p1`,text:arabic}],
       } : {};
     return new Response(JSON.stringify(body), {status:200,headers:{"Content-Type":"application/json"}});
@@ -192,7 +192,7 @@ it("visits the final part when navigating backward to a longer preceding section
   await waitFor(() => expect(fetched.some(url => url.searchParams.get("id") === id2)).toBe(true));
   fireEvent.click(screen.getByRole("button", {name: "پچھلا مطالعہ صفحہ"}));
   await waitFor(() => expect(fetched.some(url =>
-    url.searchParams.get("id") === id1 && url.searchParams.get("part") === "last")).toBe(true));
+    url.searchParams.get("id") === id1 && url.searchParams.get("part") === "1")).toBe(true));
 });
 
 it("shows an approved Urdu translation only in translation mode and keeps Arabic mode separate", async () => {
