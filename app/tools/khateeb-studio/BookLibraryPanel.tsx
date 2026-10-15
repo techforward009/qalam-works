@@ -5,7 +5,6 @@ import BookTopicGuide from "./BookTopicGuide";
 import BookReader from "./BookReader";
 import KnowledgeAssistant from "../../components/knowledge/KnowledgeAssistant";
 import type { CustomSermonProject } from "./engine/customSermonProject";
-import ResearchStudioGate from "../research-studio/components/ResearchStudioGate";
 import { renderKhateebSalawat } from "./KhateebScriptText";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { uploadBookArchive } from "../../lib/knowledge/uploadBookArchive";
@@ -109,8 +108,8 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [], 
   return <div data-testid="book-library" className="space-y-4" dir={ur ? "rtl" : "ltr"}>
     <details open={readerOpen} className="rounded-xl border border-[#31513a]/30 bg-[#fdfbf4] p-3 dark:border-[#82967f]/30 dark:bg-[#102017]" onToggle={event => setReaderOpen(event.currentTarget.open)}>
       <summary className="cursor-pointer text-lg font-semibold">{ur ? "کتاب خانہ — مکمل کتابیں پڑھیں" : "Book library — read complete books"}</summary>
-      <p className="my-2 text-sm leading-7">{ur ? "جلد، فہرست، اصل عبارت، کتاب کے اندر تلاش اور حوالہ سمیت نقل۔ نجی مطالعے کے لیے مالک کی رسائی ضروری ہے۔" : "Open volumes, browse sections, search within a book and copy exact source text. Private reader access requires owner sign-in."}</p>
-      {readerOpen ? <ResearchStudioGate language={locale} dir={ur ? "rtl" : "ltr"}><BookReader locale={locale} onAdd={onAdd} addedIds={addedIds}/></ResearchStudioGate> : null}
+      <p className="my-2 text-sm leading-7">{ur ? "جلد، فہرست، اصل عبارت، کتاب کے اندر تلاش اور حوالہ سمیت نقل۔ کتاب خانہ ہر قاری کے لیے کھلا ہے، کسی پاس ورڈ کی ضرورت نہیں۔" : "Open volumes, browse sections, search within a book and copy exact source text. Read books freely without an account or password."}</p>
+      {readerOpen ? <BookReader locale={locale} onAdd={onAdd} addedIds={addedIds}/> : null}
     </details>
     <KnowledgeAssistant locale={locale} onCreateDraft={onCreateDraft} />
     <p className="text-sm leading-7">{ur ? "نہج البلاغہ، صحیفہ سجادیہ اور شامل شدہ الکافی کے نسخوں میں تلاش کریں۔ الکافی میں جلد اور اصل باب ساتھ دیکھیں؛ حدیث نمبر ہر باب میں دوبارہ شروع ہوتا ہے۔ ترجمہ اور موجودہ حواشی کو ماخذ کی نسبت کے ساتھ پڑھیں۔" : "Search the supplied editions of Nahj al-Balagha, Sahifa Sajjadiyya and imported Al-Kafi volumes. For Al-Kafi, check the volume and original chapter; hadith numbers restart in each chapter. Read translations and existing commentary with their source attribution."}</p>
