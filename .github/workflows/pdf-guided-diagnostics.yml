@@ -1,0 +1,39 @@
+name: PDF Guided Diagnostics Acceptance (No Deployment)
+on:
+  push:
+    branches: [feature/pdf-guided-export-diagnostics]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked packages
+        run: npm ci --ignore-scripts
+      - name: Unit and structural diagnostic tests
+        run: npx vitest run tests/pdfExportDiagnostics.test.ts --reporter=verbose
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Existing PDF regression and Chromium font tests
+        shell: bash
+        run: |
+          export QALAM_PDF_CHROMIUM="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')"
+          mapfile -t pdf_specs < <(find tests -type f \( -iname '*pdf*.test.ts' -o -iname '*pdf*.test.tsx' \))
+          npx vitest run "${pdf_specs[@]}" --reporter=verbose
+      - name: Build
+        run: npm run build
+      - name: Verify clean diff
+        run: |
+          git diff --check origin/main...HEAD
+          git diff --name-only origin/main...HEAD
