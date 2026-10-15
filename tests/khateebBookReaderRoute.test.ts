@@ -105,6 +105,9 @@ it("shows private shelf, source-ordered 24-item contents, unchanged reading page
   expect(first.nextRecordId).toBe("sahifa-ar:supplication:2");
   expect(first.screenPartOnly).toBe(true);
   expect(first.reference).not.toContain("صفحہ");
+  const lastPart = await (await GET(req("?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1&part=last"))).json();
+  expect(lastPart.page).toBe(3);
+  expect(lastPart.paragraphs).toHaveLength(2);
   const secondPart = await (await GET(req("?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1&part=2"))).json();
   expect(secondPart.paragraphs[8].text).toBe("صَبْرٌ اصل عبارت");
 
