@@ -126,3 +126,22 @@ A new private **46-row** JSON sidecar is stored in the owner's Library as \`Kafi
 **Additional code defense:** on the draft branch, \`scripts/kafi-reference-sidecar.py\` now refuses claiming a \`print_page\` that does not match the cited \`lib.eshia.ir/{edition}/{volume}/{page}\` URL. An unpaginated secondary webpage is insufficient for a printed page-number assertion. This checks internal **consistency**, not that a site actually contains the quoted source; a scholarly editor must perform that comparison. Synthetic tests exercise valid and rejected links, and no private source prose is committed.
 
 **Next narrowly scoped gate:** compare more *specific local numbered starts* from the other 15 divisions to edition 11027, and identify whether online Arabic page references consistently align with the supplied DOCX. Never auto-fill unverified print pages or chapters, and do not modify production sources.
+
+## 7. Rawda VIII extension — eight source-opening checks and a variant to resolve
+
+The same original-owner private ZIP was compared with **eight distinct opening narration numbers** in the actual online edition `11027`. Checks were deliberately restricted to the first narrator chain, the printed local number and the cited web page. The three initial anchors above are included in these eight, not additional claims.
+
+| Printed number | Owner source group | Original online edition page |
+| ---: | --- | --- |
+| 1 | `kafi-v8-ar:section:2` | https://lib.eshia.ir/11027/8/2 |
+| 36 | `kafi-v8-ar:section:5` | https://lib.eshia.ir/11027/8/80 |
+| 71 | `kafi-v8-ar:section:6` | https://lib.eshia.ir/11027/8/101 |
+| 129 | `kafi-v8-ar:section:8` | https://lib.eshia.ir/11027/8/148 |
+| 276 | `kafi-v8-ar:section:11` | https://lib.eshia.ir/11027/8/221 |
+| 385 | `kafi-v8-ar:section:13` | https://lib.eshia.ir/11027/8/265 |
+| 541 | `kafi-v8-ar:section:17` | https://lib.eshia.ir/11027/8/343 |
+| 589 | `kafi-v8-ar:section:19` | https://lib.eshia.ir/11027/8/392 |
+
+**Discrepancy still unresolved:** printed **no. 574** at [edition page 379](https://lib.eshia.ir/11027/8/379) has a different opening narrator separator in the supplied file versus the webpage: owner file includes `عن` between `علي بن محمد` and `علي بن العباس`, while the cited webpage apparently omits it. This difference may arise from edition, punctuation or textual handling; it has **not** been corrected or explained away, and the queue record stays **pending**. **Do not attach this page as verified until further edition comparison.** This is not an authenticity or isnād verdict.
+
+The private, owner Library sidecar `Kafi_Rawda_Vol8_Eight_Anchors_20261015.json` records 8 narrowly reviewed openings, **38 pending**, and the one explicitly flagged discrepancy. The source identities and chapter title/pagination uncertainties remain unchanged. No source prose, private ZIP, or reviewed owner sidecar is included in GitHub. No runtime change; no live import or deployment.
