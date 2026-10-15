@@ -107,6 +107,26 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await page.screenshot({path:testInfo.outputPath("pk-2021-shawwal-calendar.png"),fullPage:true});
   });
 
+  test("Pakistan 2020 Ramadan: 4 May is 10 Ramadan 1441 in daily and monthly views", async ({page},testInfo) => {
+    await page.goto("/date/2020-05-04");
+    await expect(page.getByText("Pakistan official Hijri date")).toBeVisible();
+    await expect(page.getByText("10 Ramadan 1441 AH",{exact:true})).toBeVisible();
+    await page.goto("/calendar/2020/5");
+    await expect(page.locator('[data-calendar-month="5"] a[href="/date/2020-05-04"] [data-role="hijri-day"]'))
+      .toContainText(/^10/);
+    await page.screenshot({path:testInfo.outputPath("pk-2020-ramadan.png"),fullPage:true});
+  });
+
+  test("2020 Pakistan corrected December boundary follows official crescent decision", async ({page},testInfo) => {
+    await page.goto("/date/2020-12-17");
+    await expect(page.getByText("Pakistan official Hijri date")).toBeVisible();
+    await expect(page.getByText("1 Jumada al-Awwal 1442 AH",{exact:true})).toBeVisible();
+    await page.goto("/calendar/2020/12");
+    await expect(page.locator('[data-calendar-month="12"] a[href="/date/2020-12-17"] [data-role="hijri-day"]'))
+      .toContainText(/^1/);
+    await page.screenshot({path:testInfo.outputPath("pk-2020-jumada-corrected.png"),fullPage:true});
+  });
+
   test("keeps the Pakistan result visible and avoids sideways scrolling", async ({ page }) => {
     await page.goto("/calendar/2025/3");
     const visible = page.getByText("Pakistan Hijri calendar");
