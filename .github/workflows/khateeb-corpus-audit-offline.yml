@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - 'scripts/audit-khateeb-corpus.py'
+      - 'scripts/kafi-reference-sidecar.py'
       - 'tests/test_audit_khateeb_corpus.py'
+      - 'tests/test_kafi_reference_sidecar.py'
       - '.github/workflows/khateeb-corpus-audit-offline.yml'
   workflow_dispatch:
 
@@ -23,6 +25,8 @@ jobs:
         with:
           python-version: '3.11'
       - name: Validate audit script syntax
-        run: python -m py_compile scripts/audit-khateeb-corpus.py
+        run: python -m py_compile scripts/audit-khateeb-corpus.py scripts/kafi-reference-sidecar.py
       - name: Run safe synthetic test cases
+        run: python -m unittest discover -s tests -p 'test_*kafi*.py' -v
+      - name: Run general corpus audit synthetic tests
         run: python -m unittest discover -s tests -p 'test_audit_khateeb_corpus.py' -v
