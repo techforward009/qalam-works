@@ -123,3 +123,28 @@ it("bookmarks the actual paragraph and sends validated selection to existing ser
   expect(urls.some(url => url.pathname === "/api/research/book-reader")).toBe(true);
   expect(screen.getByText(/میری مجلس میں شامل اور محفوظ/)).toBeTruthy();
 });
+
+it("visits the final part when navigating backward to a longer preceding section", async () => {
+  const fetched: URL[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (value: string) => {
+    const url = new URL(value, "http://localhost");
+    fetched.push(url);
+    const op = url.searchParams.get("op");
+    const id = url.searchParams.get("id") ?? id1;
+    const body = op === "catalog" ? shelf : op === "contents" ? toc
+      : op === "read" ? {
+        ...readPage(id),
+        page: url.searchParams.get("part") === "last" ? 3 : 1,
+        pageCount: id === id1 ? 3 : 1,
+        paragraphs: [{id:`${id}:p1`,text:arabic}],
+      } : {};
+    return new Response(JSON.stringify(body), {status:200,headers:{"Content-Type":"application/json"}});
+  }));
+  render(<BookReader locale="ur" />);
+  await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
+  fireEvent.click(screen.getByRole("button", {name:"2. اصل متن کا حصہ 2"}));
+  await waitFor(() => expect(fetched.some(url => url.searchParams.get("id") === id2)).toBe(true));
+  fireEvent.click(screen.getByRole("button", {name: /^پچھلا$/}));
+  await waitFor(() => expect(fetched.some(url =>
+    url.searchParams.get("id") === id1 && url.searchParams.get("part") === "last")).toBe(true));
+});
