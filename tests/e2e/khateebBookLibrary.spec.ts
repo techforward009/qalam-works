@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { createBookExcerpt } from '../../app/lib/knowledge/bookCorpus';
+import { createBookExcerpt, type BookRecord } from '../../app/lib/knowledge/bookCorpus';
 
 for (const locale of ['ur', 'en'] as const) {
   const ur = locale === 'ur';
