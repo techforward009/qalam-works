@@ -14,6 +14,7 @@ export type BookContentsEntry = {
   title: string;
   ordinal: number;
   headingStatus: "source-title" | "source-division";
+  kind: string;
   paragraphCount: number;
 };
 export type BookContents = {
@@ -86,7 +87,7 @@ export function bookContents(records: readonly BookRecord[], sourceId: string, l
     const label = safeTitle(record, ordinal - 1, locale);
     return {
       id: record.id, sourceId, title: label.text, ordinal,
-      headingStatus: label.status, paragraphCount: record.paragraphs.length,
+      headingStatus: label.status, kind: record.kind, paragraphCount: record.paragraphs.length,
     };
   });
   return { entries, total: ordered.length, page, pageSize: BOOK_TOC_PAGE_SIZE };
