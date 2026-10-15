@@ -76,17 +76,33 @@ async function seed() {
   expect(response.status).toBe(200);
 }
 
-it("blocks private catalog and reading before touching Blob for unauthenticated users", async () => {
-  for (const path of ["", "?op=contents&sourceId=sahifa-ar", "?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1", "?op=find&sourceId=sahifa-ar&query=صبر"]) {
+it("lets any reader browse, search and copy sources without a session", async () => {
+  await seed();
+  const cases = [
+    ["", "sources"],
+    ["?op=contents&sourceId=sahifa-ar", "entries"],
+    ["?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1", "paragraphs"],
+    ["?op=find&sourceId=sahifa-ar&query=صبر", "hits"],
+  ] as const;
+  for (const [path, key] of cases) {
     const response = await GET(req(path, false));
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
+    const body = await response.json();
+    expect(body[key]).toBeDefined();
   }
+});
+it("keeps corpus-upload administrative POST protected without a session", async () => {
+  const response = await POST(new NextRequest("http://localhost:3000/api/khateeb/library", {
+    method: "POST", headers: { "content-type": "application/json" }, body: "{}",
+  }));
+  expect(response.status).toBe(401);
+  expect(response.headers.get("cache-control")).toBe("private, no-store");
   expect(reads).toBe(0);
 });
-it("shows private shelf, source-ordered 24-item contents, unchanged reading pages and search", async () => {
+it("shows public shelf, source-ordered 24-item contents, unchanged reading pages and search", async () => {
   await seed();
-  const shelfResponse = await GET(req());
+  const shelfResponse = await GET(req("", false));
   expect(shelfResponse.headers.get("cache-control")).toBe("private, no-store");
   const shelf = await shelfResponse.json();
   expect(shelf.ready).toBe(true);
@@ -146,13 +162,13 @@ const expectedReaderSelection = async () => {
     paragraphIds: [page.paragraphs[8].id],
   };
 };
-it("rejects private excerpt writes from unauthenticated, cross-origin and malformed requests without Blob reads", async () => {
+it("rejects invalid or cross-origin excerpt selections even with no session", async () => {
   const payload = { sourceId: "sahifa-ar", recordId: "sahifa-ar:supplication:1" };
   for (const response of [
     await READER_POST(postReq(payload, false)),
-    await READER_POST(postReq(payload, true, "https://evil.example")),
+    await READER_POST(postReq(payload, false, "https://evil.example")),
   ]) {
-    expect([400, 401]).toContain(response.status);
+    expect(response.status).toBe(400);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   }
   expect(reads).toBe(0);
@@ -160,7 +176,7 @@ it("rejects private excerpt writes from unauthenticated, cross-origin and malfor
 it("returns the existing provenance-bound BookExcerpt only for source-identical page paragraphs", async () => {
   await seed();
   const selection = await expectedReaderSelection();
-  const response = await READER_POST(postReq(selection));
+  const response = await READER_POST(postReq(selection, false));
   expect(response.status).toBe(200);
   const excerpt = (await response.json()).excerpt;
   expect(excerpt.paragraphs).toEqual([{id: selection.paragraphIds[0],text:"صَبْرٌ اصل عبارت"}]);
