@@ -27,6 +27,32 @@ describe("Tafsir source-preserving typography", () => {
     expect(flatten(text)).toBe(text);
   });
 
+  it("recognizes verified unvowelled Arabic quotations in Urdu first-page topics without rewriting text", () => {
+    const examples = [
+      "کل امر ذی بال لم یذکر فیہ اسم اللہ فھو ابتر",
+      "استرق الشیطان من الناس اعظم آیة من القرآن بسم اللہ الرحمن الرحیم ۔",
+      "فان اللہ غفور رحیم (بقرہ، ۲۲۶)۔",
+      "ھو اللہ الذی لا الہ الا ھو الملک القدوس السلام المومن المھیمن العزیز الجبار المتکبر۔",
+      "واللہ الہ کل شیئی الرحمان بجمیع خلقہ الرحیم بالمومنین خاصة۔ (بحوالہ: المیزان بسند کافی، توحید صدوق اور معانی الاخبار۔)",
+      "و رحمتی وسعت کل شئی",
+      "ربنا وسعت کل شئی رحمة۔",
+      "و نجنا برحمتک ۔",
+      "فانجیناہ والذین معہ برحمة منا۔",
+      "اللھم ربنا انزل علینا مائدة من السماء و ارزقنا و انت خیر الرازقین۔",
+      "رب انزلنی منزلا مبارکا و انت خیرالمنزلین۔",
+      "رب لا تذرنی فردا و انت خیر الوارثین۔",
+      "یا من سبقت رحمتہ غضبہ۔",
+    ];
+    for (const text of examples) {
+      const runs = splitTafsirTypography(text, "ur");
+      expect(runs.some((r) => r.kind === "arabic"), text).toBe(true);
+      expect(runs.map((r) => r.text).join(""), text).toBe(text);
+    }
+    for (const ordinaryUrdu of ["خدا کی رحمت عام اور رحمت خاص", "اس گفتگو سے معلوم ہوا کہ بسم اللہ سورت کا جزء ہے۔"]) {
+      expect(splitTafsirTypography(ordinaryUrdu, "ur")).toEqual([{ kind: "urdu", text: ordinaryUrdu }]);
+    }
+  });
+
   it("uses the existing approved public Scheherazade New file only for Tafsir Arabic quotations", () => {
     const page = readFileSync("app/quran/QuranTafsirPage.tsx", "utf8");
     const catalog = readFileSync("app/tools/document-studio/utils/publicBlobFontCatalog.ts", "utf8");
