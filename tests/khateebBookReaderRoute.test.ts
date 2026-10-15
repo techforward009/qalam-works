@@ -66,7 +66,10 @@ async function makeArchive() {
 }
 async function seed() {
   const form = new FormData();
-  form.set("archive", new File([await makeArchive()], "test.zip", { type: "application/zip" }));
+  const sourceBytes = await makeArchive();
+  const safeBytes = new Uint8Array(sourceBytes.length);
+  safeBytes.set(sourceBytes);
+  form.set("archive", new File([safeBytes], "test.zip", { type: "application/zip" }));
   const response = await POST(new NextRequest("http://localhost:3000/api/khateeb/library", {
     method: "POST", headers: { cookie: cookie() }, body: form,
   }));
