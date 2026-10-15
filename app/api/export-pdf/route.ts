@@ -9,7 +9,8 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { PDFDocument } from "pdf-lib";
 import { inspectPdfRuntimeFonts, jameelActuallyUsed } from "../../tools/document-studio/utils/pdfFontReady";
-import { guardPdfUrduFonts, loadPdfUrduFace } from "../../tools/document-studio/utils/pdfUrduFontGuard";
+import { loadPdfUrduFace } from "../../tools/document-studio/utils/pdfUrduFontGuard";
+import { guardScriptAwarePdfFonts } from "../../tools/document-studio/utils/pdfScriptAwareFontGuard";
 import {
   buildPdfHtml,
 } from "../../tools/document-studio/utils/buildPdfHtml";
@@ -72,8 +73,47 @@ export async function POST(request: NextRequest) {
       }, settings.typography));
       await page.setContent(html, { waitUntil: "load" });
     }
+    // Preserve the author-supplied Unicode through HTML construction and Chromium.
+    // Only explicitly selected Digital Khatt spans participate in this guard.
+    const originalRuns: string[] = [];
+    const collectProtected = (node: DocNode) => {
+      if (node.type === "text" && typeof node.text === "string" && node.marks?.some(mark =>
+        mark.type === "textStyle" && mark.attrs?.fontFamily === "Digital Khatt Indo-Pak")) {
+        originalRuns.push(node.text);
+      }
+      for (const child of node.content ?? []) collectProtected(child);
+    };
+    collectProtected(doc);
+    const sourceCodepoints = originalRuns.flatMap(text => Array.from(text, char => char.codePointAt(0)!));
+    const htmlCodepoints = await page.evaluate(sourceHtml => {
+      const parsed = new DOMParser().parseFromString(sourceHtml, "text/html");
+      return Array.from(parsed.querySelectorAll('[data-pdf-font="Digital Khatt Indo-Pak"]'))
+        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0)!));
+    }, html);
+    const chromiumCodepoints = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('[data-pdf-font="Digital Khatt Indo-Pak"]'))
+        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0)!)));
+    const identical = (a: number[], b: number[]) =>
+      a.length === b.length && a.every((value, index) => value === b[index]);
+    if (!identical(sourceCodepoints, htmlCodepoints) ||
+        !identical(sourceCodepoints, chromiumCodepoints)) {
+      throw new Error("PDF protected source/HTML/Chromium Unicode mismatch; export blocked");
+    }
     const runtime = await page.evaluate(inspectPdfRuntimeFonts, fontsUsed);
-    const urduFonts = await guardPdfUrduFonts(page);
+    const urduFonts = await guardScriptAwarePdfFonts(page, originalRuns);
+    const afterCodepoints = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('[data-pdf-font="Digital Khatt Indo-Pak"]'))
+        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0)!)));
+    if (!identical(sourceCodepoints, afterCodepoints)) {
+      throw new Error("PDF font segmentation modified source Unicode; export blocked");
+    }
+    if (originalRuns.length) console.info("[pdf-script-safe]", JSON.stringify({
+      runs: originalRuns.length,
+      unicodeCodepoints: sourceCodepoints.length,
+      verifiedPeriods: urduFonts.diagnostics.filter(run => run.kind === "verified-period").length,
+      actualFaces: [...new Set(urduFonts.diagnostics.flatMap(run => run.actualFaces.map(face => face.familyName)))],
+      sourceHtmlChromiumExact: true,
+    }));
     if (urduFonts.fallbackRuns > 0) {
       if (!fontsUsed.includes("Noto Nastaliq Urdu")) fontsUsed.push("Noto Nastaliq Urdu");
       fontFallbacks.push({ requested: "Runtime Urdu font", used: "Noto Nastaliq Urdu" });
@@ -164,6 +204,8 @@ export async function POST(request: NextRequest) {
         "X-Pdf-Jameel-Used": jameelUsed ? "yes" : "no",
         "X-Pdf-Fonts-Ready": runtime.allRequestedFontsReady ? "yes" : "no",
         "X-Pdf-Urdu-Fallback-Runs": String(urduFonts.fallbackRuns),
+        "X-Pdf-Protected-Runs": String(originalRuns.length),
+        "X-Pdf-Verified-Periods": String(urduFonts.diagnostics.filter(run => run.kind === "verified-period").length),
         "X-Pdf-Urdu-Actual-Fonts": JSON.stringify(urduFonts.actualFamilies),
         "X-Pdf-Jameel-Face-Count": String(runtime.jameelFaceCount),
         "X-Pdf-Jameel-Loaded-Faces": String(runtime.jameelLoadedFaceCount),
