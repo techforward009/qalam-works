@@ -6,6 +6,53 @@ import type { OfficialHijriMonthAnchor } from "./types";
  */
 export const PAKISTAN_OFFICIAL_HIJRI_ANCHORS: readonly OfficialHijriMonthAnchor[] = [
   {
+    id: "pk-1447-ramadan-2026-02-19",
+    jurisdiction: "PK",
+    hijriYear: 1447,
+    hijriMonth: 9,
+    officialDayOneGregorian: { year: 2026, month: 2, day: 19 },
+    // The reviewed Shawwal decision confirms that Ramadan completed 30 days.
+    coverageEndGregorian: { year: 2026, month: 3, day: 20 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "sighted",
+    announcementGregorianDate: { year: 2026, month: 2, day: 18 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: {
+      en: "Pakistan Central Ruet-e-Hilal Committee",
+      ur: "پاکستان مرکزی رویتِ ہلال کمیٹی",
+    },
+    sourceUrl: "https://www.radio.gov.pk/18-02-2026/moon-sighted-first-ramadan-on-thursday",
+    sourceReference: "Radio Pakistan, 18 February 2026: Central Ruet-e-Hilal Committee announced the Ramadan moon sighted; 1 Ramadan 1447 AH on Thursday, 19 February 2026. Completion of 30 days confirmed by the 19 March Shawwal decision.",
+    provenance: {
+      verifiedAt: "2026-10-15",
+      notes: "Corroborated by APP (https://www.app.com.pk/national/ramazan-moon-sighted-ist-fast-on-february-19-in-pakistan-khabeer-azad/) and the Shawwal decision reported by Radio Pakistan (https://www.radio.gov.pk/19-03-2026/shawwal-moon-not-sighted-eid-ul-fitr-on-saturday).",
+    },
+  },
+  {
+    id: "pk-1447-shawwal-2026-03-21",
+    jurisdiction: "PK",
+    hijriYear: 1447,
+    hijriMonth: 10,
+    officialDayOneGregorian: { year: 2026, month: 3, day: 21 },
+    // Bounded to 29 days; do not infer day 30 without next-month evidence.
+    coverageEndGregorian: { year: 2026, month: 4, day: 18 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "not-sighted",
+    announcementGregorianDate: { year: 2026, month: 3, day: 19 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: {
+      en: "Pakistan Central Ruet-e-Hilal Committee",
+      ur: "پاکستان مرکزی رویتِ ہلال کمیٹی",
+    },
+    sourceUrl: "https://www.radio.gov.pk/19-03-2026/shawwal-moon-not-sighted-eid-ul-fitr-on-saturday",
+    sourceReference: "Radio Pakistan, 19 March 2026: Shawwal crescent was not sighted; Eid al-Fitr and 1 Shawwal 1447 AH fell on Saturday, 21 March 2026.",
+    provenance: { verifiedAt: "2026-10-15", notes: "Corroborated by APP (https://www.app.com.pk/national/eid-ul-fitr-on-saturday-as-shawwal-moon-not-sighted/)." },
+  },
+  {
     id: "pk-1448-jumada-al-awwal-2026-10-13",
     jurisdiction: "PK",
     hijriYear: 1448,
