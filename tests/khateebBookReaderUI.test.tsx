@@ -94,6 +94,28 @@ it("keeps sermon checkboxes out of normal reading and exposes them only in selec
   expect(screen.queryByRole("checkbox")).toBeNull();
 });
 
+
+it("starts at the first source-marked text after explicit front matter", async () => {
+  const requested: string[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (value: string) => {
+    const url = new URL(value, "http://localhost");
+    const op = url.searchParams.get("op");
+    if (op === "catalog") return new Response(JSON.stringify(shelf), {status:200,headers:{"Content-Type":"application/json"}});
+    if (op === "contents") return new Response(JSON.stringify({...toc, entries:[
+      {...toc.entries[0], kind:"front-matter", title:"ادارتی تعارف"},
+      {...toc.entries[1], kind:"sermon"},
+    ]}), {status:200,headers:{"Content-Type":"application/json"}});
+    if (op === "read") {
+      requested.push(url.searchParams.get("id") ?? "");
+      return new Response(JSON.stringify(readPage(url.searchParams.get("id") ?? id1)), {status:200,headers:{"Content-Type":"application/json"}});
+    }
+    return new Response("{}", {status:200,headers:{"Content-Type":"application/json"}});
+  }));
+  render(<BookReader locale="ur"/>);
+  await waitFor(() => expect(requested).toContain(id2));
+  expect(requested).not.toContain(id1);
+});
+
 it("searches only the selected volume and jumps to its returned original paragraph", async () => {
   const urls = fakeFetch();
   render(<BookReader locale="ur"/>);
