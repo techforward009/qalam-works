@@ -1,3 +1,50 @@
+
+import cmap from "./digitalKhattCmap.json";
+import type { DocNode } from "./extractPlainText";
+
+const supported = new Set<number>(cmap);
+const arabicPoint = (n: number) =>
+  (n >= 0x0600 && n <= 0x06ff) || (n >= 0x0750 && n <= 0x077f) ||
+  (n >= 0x08a0 && n <= 0x08ff) || (n >= 0xfb50 && n <= 0xfdff) ||
+  (n >= 0xfe70 && n <= 0xfeff) || (n >= 0x10e60 && n <= 0x10e7f) ||
+  (n >= 0x1ee00 && n <= 0x1eeff);
+
+/** Additional source-only diagnostics, not a substitute for CDP painted-font guard. */
+export function identifyUnsupportedProtectedCharacters(doc: DocNode): PdfExportDiagnostic[] {
+  const results: PdfExportDiagnostic[] = [];
+  let runIndex = 0;
+  const walk = (node: DocNode) => {
+    if (node.type === "text" && typeof node.text === "string" &&
+        node.marks?.some(mark => mark.type === "textStyle" && mark.attrs?.fontFamily === "Digital Khatt Indo-Pak")) {
+      const seen = new Set<number>();
+      for (const ch of node.text) {
+        const cp = ch.codePointAt(0)!;
+        const joining = cp === 0x200c || cp === 0x200d || cp === 0x061c || cp === 0x200e || cp === 0x200f;
+        if (((arabicPoint(cp) && !supported.has(cp)) || joining) && !seen.has(cp)) {
+          seen.add(cp);
+          const codepoint = "U+" + cp.toString(16).toUpperCase().padStart(4, "0");
+          results.push({
+            code: "PDF_FONT_UNSAFE",
+            kind: "font",
+            messageUrdu: "منتخب فونٹ میں یہ عربی یا قرآنی علامت محفوظ طور پر دستیاب نہیں۔",
+            selectedFont: "Digital Khatt Indo-Pak",
+            codepoint, character: ch,
+            reason: joining ? "غیر تصدیق شدہ جوڑنے یا سمت کی علامت" : "اصل فونٹ کے حروفی نقشے میں موجود نہیں",
+            location: { runIndex },
+          });
+          if (results.length >= 20) return;
+        }
+      }
+      runIndex += 1;
+    }
+    for (const child of node.content ?? []) {
+      if (results.length < 20) walk(child);
+    }
+  };
+  walk(doc);
+  return results;
+}
+
 export type PdfExportFailureKind = "font" | "timeout" | "too_large" | "server" | "unknown";
 export interface PdfSourceLocation {
   /** Source document's ordered Digital Khatt text run (zero based). */
