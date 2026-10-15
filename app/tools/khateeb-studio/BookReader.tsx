@@ -32,7 +32,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const [findText, setFindText] = useState("");
   const [fontSize, setFontSize] = useState(22);
   const [readingMode, setReadingMode] = useState<BookCopyMode>("combined");
-  const [copyMode, setCopyMode] = useState<BookCopyMode>("combined");
+  const [copyMode, setCopyMode] = useState<BookCopyMode>("original");
   const [targetParagraph, setTargetParagraph] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [progress, setProgress] = useState<ReaderProgress>(EMPTY_READER_PROGRESS);
@@ -329,7 +329,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
                 </select>
               </label>
               <button type="button" className={btn} disabled={copyMode === "translation" && !reading.translations?.length}
-                onClick={() => void feedback.copy(copyReadingPage(reading, false, copyMode))}>{ur ? "نقل کریں" : "Copy"}</button>
+                onClick={() => void feedback.copy(copyReadingPage(reading, false, copyMode))}>{ur ? (copyMode === "original" ? "اصل متن نقل کریں" : copyMode === "translation" ? "صرف ترجمہ نقل کریں" : "عربی اور اردو نقل کریں") : (copyMode === "original" ? "Copy exact text" : copyMode === "translation" ? "Copy translation" : "Copy Arabic and translation")}</button>
               <button type="button" className={btn} disabled={copyMode === "translation" && !reading.translations?.length}
                 onClick={() => void feedback.copy(copyReadingPage(reading, true, copyMode))}>{ur ? "حوالہ سمیت نقل کریں" : "Copy with reference"}</button>
               <button type="button" className={btn} aria-pressed={isBookmarked} onClick={toggleBookmark}>

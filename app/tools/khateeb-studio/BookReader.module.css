@@ -1,12 +1,18 @@
 .pageMeta {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: "chapter navigation book";
   align-items: center;
   gap: 1rem;
   min-height: 5.25rem;
   padding: .75rem 0 1rem;
   border-bottom: 1px solid rgb(49 81 58 / 20%);
+  direction: ltr;
+}
+.bookIdentity {
+  grid-area: book;
   direction: rtl;
+  text-align: right;
 }
 .bookIdentity,
 .chapterTitle {
@@ -23,7 +29,8 @@
   font-size: 1rem;
   line-height: 1.9;
 }
-.chapterTitle { text-align: end; }
+.chapterTitle { grid-area: chapter; direction: rtl; text-align: left; }
+.pageNavigation { grid-area: navigation; }
 .chapterTitle > span,
 .pageNumber small {
   color: #607264;
@@ -72,7 +79,8 @@
 :global(.dark) .translationCredit { color: #b7c6ba; }
 @media (max-width: 639px) {
   .pageMeta {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "book chapter" "navigation navigation";
     gap: .45rem;
     min-height: 0;
   }

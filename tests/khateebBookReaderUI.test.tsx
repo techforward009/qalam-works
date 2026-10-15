@@ -25,6 +25,7 @@ function readPage(id: string) {
     paragraphCount: 1, page: 1, pageCount: 1, nextRecordId: id === id1 ? id2 : null,
     previousRecordId: id === id1 ? null : id1, recordSha256: "b".repeat(64),
     sourceSha256: "a".repeat(64), screenPartOnly: true,
+    translations: [{ paragraphIds: [`${id}:p1`], text: "یہ منظور شدہ اردو ترجمہ ہے", language: "ur", translator: "مترجم آزمائشی", source: "مخصوص اردو نسخہ" }],
   };
 }
 function fakeFetch() {
@@ -147,4 +148,16 @@ it("visits the final part when navigating backward to a longer preceding section
   fireEvent.click(screen.getByRole("button", {name: /^پچھلا$/}));
   await waitFor(() => expect(fetched.some(url =>
     url.searchParams.get("id") === id1 && url.searchParams.get("part") === "last")).toBe(true));
+});
+
+it("shows an approved Urdu translation only in translation mode and keeps Arabic mode separate", async () => {
+  fakeFetch();
+  render(<BookReader locale="ur"/>);
+  await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
+  fireEvent.change(screen.getByLabelText("مطالعے کی صورت"), {target:{value:"translation"}});
+  await waitFor(() => expect(screen.getByText("یہ منظور شدہ اردو ترجمہ ہے")).toBeTruthy());
+  expect(screen.queryByText(arabic)).toBeNull();
+  fireEvent.change(screen.getByLabelText("مطالعے کی صورت"), {target:{value:"original"}});
+  await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
+  expect(screen.queryByText("یہ منظور شدہ اردو ترجمہ ہے")).toBeNull();
 });
