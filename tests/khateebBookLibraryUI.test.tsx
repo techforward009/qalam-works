@@ -43,6 +43,8 @@ it('sends a verified reader passage into the active My Sermon draft',async()=>{
  }));
  render(<BookLibraryPageClient/>);
  await waitFor(()=>expect(screen.getByText(readerParagraphs[0].text)).toBeTruthy());
+ expect(screen.queryByRole('checkbox')).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'Select passage'}));
  fireEvent.click(screen.getByRole('checkbox',{name:'Select paragraph 1'}));
  fireEvent.click(screen.getByRole('button',{name:'Add to My Sermon'}));
  await waitFor(()=>expect(loadCustomProjects(localStorage).projects[0].bookExcerpts?.[0].paragraphs).toEqual(readerParagraphs));
