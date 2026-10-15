@@ -102,3 +102,23 @@ This integration resolves internal cross-references and marks gaps; it is not fu
 - Focused Vitest on pinned reviewed source commit: **25/25 passed**, TypeScript `npx tsc --noEmit` passed.
 - The source corpus remains private. Any delegation/signature query parameters are transient and must never be committed to GitHub or release documents.
 - PR #65 remains **draft, open, unmerged**; **no production deployment**. Final publication still requires owner's mobile/desktop appearance approval, review of remaining source-text anomalies and separate confirmed rights to publicly redistribute both Urdu and English Tafsir commentary.
+
+## 20px Arabic / bilingual topics / punctuation source audit — 15 Oct 2026
+
+### UI Preview changes (no production)
+
+- Owner requested the **Urdu Tafsir Arabic quotations at 20px** instead of 21px. Only `language === "ur"` uses `20px` for Scheherazade New; English keeps `1.12em`.
+- Reused the Urdu five-topic `<details>`/anchor navigation for English with `Topics in this verse (N)`, real English corrected display headings, LTR layout, and the same in-page anchors. Urdu Gulzar/Alvi styling remains intact.
+- Code commit with both layout changes: `262d4c0df520ec0712c32b5b56925dbcfe3dc3c8`. Tests pinned to 20px plus bilingual topic navigation.
+- Vercel Preview: https://qalam-works-r8ko-9cgfzsy5k-qalam-works.vercel.app/quran/1/1 ; deployment `dpl_7bnGAFErkSY6pPzw89jaxFuTQLYL`, **READY**. Latest UI test commit `1f645c869d2024a333e1311dde30e0711be171f9`: **26/26** focused Vitest and TypeScript passed.
+
+### Permanently reviewed book source — next version, pending private Blob upload
+
+- A new **private user-Library** file exists under `/Tafsir_Namoona_v10_Upload_Files/urdu-v10-reviewed-20261015b.json.br`. It is a derivative of the already reviewed `urdu-v10.json.br`, which is preserved unchanged as rollback. Do NOT commit this copyrighted private book archive into GitHub.
+- Corrected **28 punctuation-preceding spaces** on all five topic bodies of Al-Fatihah 1:1. All **other entries (1,761)**, verse mappings (6,236) and their source identifiers were preserved. The five topic `sourceId` values remain 10–14.
+- Replaced just the quoted Arabic line of Surah Hud 11:41 with the **approved unchanged Indo-Pak Quran verse** from the repository's Ahmedgraf Quran corpus `quranSimpleSource.ts`; its source diacritics and verse marks are copied precisely. This does not modify the Quran corpus and does not alter Urdu translated commentary. The owner's sample is substantially similar; the approved official app corpus controls final diacritics and marks.
+- Original reviewed `*.br` SHA256: `8cf7d265873f93d6987882b5c616a0267a7caa94304075c88d4dc57150c2f1e7`. **New revision-b `*.br` SHA256: `dcae52c68fde3cfd938866f04e9f8f8a2e73b86edda1a85cd0060800567f2591`. Revision audit saved as `urdu-v10-punctuation-audit-20261015b.json` in the same Library folder.
+- Full private corpus audit flagged **7,838 other** Urdu spaces before Urdu/comma/colon/full-stop punctuation **after** correcting the 28 first-verse cases, and 38 such positions in the English corpus. These are **audit candidates**, not verified editorial changes: do not mass-rewrite other entries or alter religious quotations without source review.
+- **NOT YET SYNCED TO VERCEL:** The v10 route continues to correctly pin the *previously reviewed* live private Blob `urdu-v10-reviewed-20261015.json.br` with its earlier SHA256. When the owner uploads `urdu-v10-reviewed-20261015b.json.br` **under the same relative directory in private `qalam-research`**, update the `RELEASE.ur.path` and `RELEASE.ur.digest` **together** in the feature branch and verify source hash, verse wording, first-page spacing and v10 API before owner acceptance. Never overwrite the previous private Blob or change the digest while the revised object is absent.
+
+PR #65 stays draft and unmerged. Publication rights and owner/mobile visual acceptance are still outstanding. Do not deploy Production until expressly authorized.
