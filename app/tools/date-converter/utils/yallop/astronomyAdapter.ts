@@ -54,6 +54,12 @@ function separationDeg(a: { raHours: number; decDeg: number }, b: { raHours: num
   return degrees(Math.acos(clampUnit(Math.sin(d1) * Math.sin(d2) + Math.cos(d1) * Math.cos(d2) * Math.cos(da))));
 }
 
+/** The negative search window finds the nearest *preceding* conjunction, not an older lunation. */
+export function lastNewMoonConjunctionDate(before: Date): Date | null {
+  const found = SearchMoonPhase(0, before, -35);
+  return found && found.date.getTime() <= before.getTime() ? found.date : null;
+}
+
 export function evaluateYallopAstronomy(input: YallopAstronomyInput, policy: MonthStartPolicy = QALAM_YALLOP_NAKED_EYE_AB_V1): YallopEvaluation {
   validateYallopObserver(input.observer);
   if (Math.abs(input.observer.latitudeDeg) >= 66.5) return { status: "unsupported-latitude", observer: input.observer, detail: "Phase 1 supports observers between the polar circles" };
@@ -67,11 +73,11 @@ export function evaluateYallopAstronomy(input: YallopAstronomyInput, policy: Mon
   if (!moonset) return { status: "no-moonset", observer: input.observer, detail: "No moonset after sunset in the search window" };
   const bestTimeUtc = calculateBestTimeUtc(sunset.date.toISOString(), moonset.date.toISOString());
   if (!bestTimeUtc) return { status: "moonset-before-or-at-sunset", observer: input.observer, detail: "Moonset is before or at sunset" };
-  const conjunction = SearchMoonPhase(0, new Date(sunset.date.getTime() - 35 * 86400000), 36);
-  if (!conjunction || conjunction.date > new Date(bestTimeUtc)) return { status: "conjunction-after-evaluation-window", observer: input.observer, detail: "No preceding conjunction was found before best time" };
+  const conjunction = lastNewMoonConjunctionDate(new Date(bestTimeUtc));
+  if (!conjunction) return { status: "conjunction-after-evaluation-window", observer: input.observer, detail: "No preceding conjunction was found before best time" };
   const time = new Date(bestTimeUtc), moon = geocentricPosition(Body.Moon, time, input.observer), sun = geocentricPosition(Body.Sun, time, input.observer);
   const snapshot: YallopAstronomySnapshot = {
-    observer: input.observer, conjunctionUtc: conjunction.date.toISOString(), sunsetUtc: sunset.date.toISOString(), moonsetUtc: moonset.date.toISOString(), bestTimeUtc,
+    observer: input.observer, conjunctionUtc: conjunction.toISOString(), sunsetUtc: sunset.date.toISOString(), moonsetUtc: moonset.date.toISOString(), bestTimeUtc,
     arclDeg: separationDeg(moon, sun), arcvDeg: moon.altitudeDeg - sun.altitudeDeg,
     dazDeg: Math.abs(signedAngle(moon.azimuthDeg - sun.azimuthDeg)), moonGeocentricAltitudeDeg: moon.altitudeDeg,
     horizontalParallaxDeg: degrees(Math.asin(clampUnit(EARTH_EQUATORIAL_RADIUS_KM / (moon.distanceAu * KM_PER_AU)))),
