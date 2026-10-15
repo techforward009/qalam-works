@@ -3,6 +3,7 @@ import { getVercelOidcToken } from "@vercel/oidc";
 import { createHash } from "node:crypto";
 import { brotliDecompressSync } from "node:zlib";
 import { NextResponse } from "next/server";
+import { indexTafsirCoverage, tafsirCoverageForRefs } from "../../../quran/reader/tafsirVerseCoverage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,6 +37,7 @@ const RELEASE: Record<Language, { path: string; digest: string }> = {
 };
 const V9_DIGEST = "4645a268a658b61d691fef009c2958f8948414a7529b66cc2d23eee9317e8454";
 const v10Cache = new Map<Language, Promise<CorpusV10 | null>>();
+const coverageCache = new WeakMap<CorpusV10, Map<string, string[]>>();
 let v9Cache: Promise<{ corpus: CorpusV9; index: Map<string, [number | null, string]> } | null> | null = null;
 
 async function loadBlob(paths: readonly string[]): Promise<Buffer | null> {
@@ -129,6 +131,12 @@ export async function GET(request: Request) {
       const entryIndex = corpus.verses[key];
       if (!entryIndex) return NextResponse.json({ error: "Unknown verse" }, { status: 404 });
       const topics = entryIndex.refs.flatMap((id) => corpus.entries[id]?.topics ?? []);
+      let coverageIndex = coverageCache.get(corpus);
+      if (!coverageIndex) {
+        coverageIndex = indexTafsirCoverage(corpus.verses);
+        coverageCache.set(corpus, coverageIndex);
+      }
+      const coverage = tafsirCoverageForRefs(entryIndex.refs, coverageIndex);
       if (topics.length === 0) {
         return NextResponse.json({ status: "source_unavailable", language, surah, ayah, topics: [], text: null },
           { headers: { "Cache-Control": "public, max-age=60, s-maxage=600" } });
@@ -136,7 +144,7 @@ export async function GET(request: Request) {
       const first = entryIndex.refs[0];
       return NextResponse.json({
         status: "unicode_apk", version: 10, language, surah, ayah,
-        heading: topics[0]?.title ?? "", topics,
+        heading: topics[0]?.title ?? "", topics, coverage,
         text: topics.map((topic) => topic.text).join("\n\n"),
         referenceAyah: first?.startsWith("legacy:") ? first.slice(7) : first,
         provenance: "Tafsir Namoona — separated commentary source, with recorded verse links",
