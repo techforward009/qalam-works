@@ -8,7 +8,7 @@ import type { BookReadingPage } from "../app/lib/knowledge/bookReaderModel";
 
 const page = {
   recordId: "kafi-v8-ar:section:4", sourceId: "kafi-v8-ar", recordOrdinal: 4,
-  language: "ar", title: "اصل متن کا حصہ 4", reference: "الکافی، جلد 8", translator: null,
+  language: "ar", kind: "section", title: "اصل متن کا حصہ 4", reference: "الکافی، جلد 8", translator: null,
   paragraphCount: 14, paragraphs: [{id:"kafi-v8-ar:section:4:p13", text: "نص تجريبي مُشكَّل"}],
   page: 2, pageCount: 2, previousRecordId: null, nextRecordId: null,
   sourceSha256: "a".repeat(64), recordSha256: "b".repeat(64), screenPartOnly: true,
