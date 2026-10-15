@@ -75,7 +75,7 @@ describe("Pakistan full Gregorian 2025 historical month archive", () => {
       }
       previous=resolved!.hijri;
     }
-    expect(changes).toBe(12);
+    expect(changes).toBe(13);
   });
 
   it("presents all reviewed days without fallback labels in 2025 monthly calendars", () => {
