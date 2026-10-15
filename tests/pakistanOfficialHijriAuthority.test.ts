@@ -27,7 +27,7 @@ describe("Pakistan official Hijri authority resolver", () => {
 
   it("uses a continuous reviewed official Pakistan timeline from Sha'ban to Jumada al-Awwal 1448", () => {
     const starts = [
-      [2026, 1, 21, 1447, 8, 1], [2026, 2, 19, 1447, 9, 1],
+      [2025, 12, 22, 1447, 7, 1], [2026, 1, 21, 1447, 8, 1], [2026, 2, 19, 1447, 9, 1],
       [2026, 3, 21, 1447, 10, 1], [2026, 4, 19, 1447, 11, 1],
       [2026, 5, 18, 1447, 12, 1], [2026, 6, 17, 1448, 1, 1],
       [2026, 7, 16, 1448, 2, 1], [2026, 8, 15, 1448, 3, 1],
@@ -37,7 +37,9 @@ describe("Pakistan official Hijri authority resolver", () => {
       expect(resolvePakistanOfficialHijriDate({ year, month, day })?.hijri)
         .toEqual({ year: hijriYear, month: hijriMonth, day: hijriDay });
     }
-    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 1, day: 20 })).toBeNull();
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 1, day: 1 })?.hijri).toEqual({ year: 1447, month: 7, day: 11 });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 1, day: 20 })?.hijri).toEqual({ year: 1447, month: 7, day: 30 });
+    expect(resolvePakistanOfficialHijriDate({ year: 2025, month: 12, day: 21 })).toBeNull();
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 11, day: 11 })).toBeNull();
   });
 
@@ -67,7 +69,7 @@ describe("Pakistan official Hijri authority resolver", () => {
       hijri: { year: 1448, month: 3, day: 30 }, authority: "official",
     });
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 14 })).toMatchObject({ hijri: { year: 1448, month: 4, day: 1 }, authority: "official", verificationStatus: "verified" });
-    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(10);
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(11);
   });
 
   it("bounds the reviewed Rabi al-Thani anchor through day 29 without inferring day 30", () => {
