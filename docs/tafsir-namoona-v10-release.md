@@ -171,3 +171,20 @@ Provide two distinct reading modes once the source editorial annotations exist: 
 **Validation:** 45/45 focused Vitest across Tafsir typography, source verse grouping, Quran Reader UI and Quran Reader metadata/data passed; `npx tsc --noEmit` passed for commit `ba23c6c7d0d5f7b3b30531f156295d7cb4efa67d`.
 
 **Scope:** PR #65 still draft, preview only; do NOT merge or deploy production without approval. The separate cumulative first-ten-source-entry private Library revision still awaits owner upload to Vercel Blob; this page-completeness fix works already with the verified previously uploaded version.
+
+## Arabic quotations in Urdu Tafsir: source-aware first-ten typography pass — 15 Oct 2026
+
+**Owner observation:** After full Al-Fatihah page visibility was fixed, multiple Arabic Quran/Hadith passages in its 7 separate commentaries still painted with Alvi Nastaleeq. The old Urdu classifier had been trained mainly against five topics under 1:1 and required diacritics for other standalone lines, causing false Urdu runs.
+
+**Implementation, Preview only:**
+
+- `app/quran/reader/tafsirTypography.ts`: expanded a **reviewed Arabic quotation beginning list by 28** from the seven distinct Al-Fatihah entries (1:1 through 1:7) and the three further first-ten reviewed source entries (2:2, 2:5, 2:7), retaining the 25 earlier beginnings. Recognition now checks for Urdu-only letters before accepting a reviewed beginning, avoiding whole mixed Urdu lines being styled Arabic.
+- Added **13 vetted exact in-paragraph Arabic phrases** (such as `لاموٴثر فی الوجود الّا اللہ`, `رب زدنی علما`, mixed Qur'anic quotation followed by Urdu explanation, and common Arabic salawat). The splitter isolates just the phrase, preserving source bytes, spacing, Urdu context and all line breaks. This avoids the unsafe proposal “treat every Urdu-script word as Arabic” in a mixed Urdu prose paragraph.
+- Extended the Urdu printed-verse citation suffix detection to cover first-ten referenced Surah names such as Luqman, Saba', Maryam, Muhammad, Ta-Ha, Anbiya', Zumar and Jathiya; the actual Arabic quotation receives **Scheherazade New at 20px**, its Urdu metadata/citation remains Alvi Nastaleeq.
+- Existing English commentary script splitter, the original private v10 corpora, Quran Arabic source and translator selector were **not modified**. All source topic links, the new complete-page seven-article grouping, font size and original verse coverage preserved.
+- Independent test cases exercise **28 unvowelled passage examples** and 6 mixed-Arabic-and-Urdu phrases, explicit citations and ordinary Urdu negative cases; all require exact character/space round-trips.
+- Validation on commit `a75e823497db486420f7010d8fb2df14c7d59ddc`: **49/49 targeted Vitest passed**, `npx tsc --noEmit` succeeded in a clean Vercel sandbox. Preview `dpl_AxUHFMzPno5GtXsCoENxYKf9tonV` READY: https://qalam-works-r8ko-nu250z27o-qalam-works.vercel.app/quran/1/1 . New Preview API retains 7 original source articles and 19 topics in **both** Urdu and English.
+- **Review boundaries:** The private Urdu v10 book currently contains **1,762 distinct entries / 4,514 topics / ~60,854 nonempty source lines**. This change manually covers the 7 distinct Al-Fatihah entries and high-confidence patterns from the first-ten editorial batch; general recurring inline patterns can apply throughout the book. A heuristic full-book scan also finds approximately 1,682 line-start *candidates* and 407 lines containing the same Arabic salawat, but those candidates are **not a verified list of Arabic quotations** and must not trigger global auto-replacements. Continue per ten entries and include Arabic-run review with the existing source-edit audit.
+- Real browser font-paint verification, further unreconciled excerpts outside the reviewed batch and source-faithfulness comparison remain future checks. Do **not** claim the entire 1,762-entry corpus has been visually corrected.
+
+**Release:** PR #65 stays **draft/unmerged**; production unchanged. No new private Blob upload is required for this purely presentational correction.
