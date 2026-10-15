@@ -1,92 +1,92 @@
 /**
- * Conservative, presentation-only detection of vowelled Arabic passages.
- * Urdu and Arabic share a script, so unmarked or ambiguous words stay Urdu.
- * Source characters are never normalized, deleted, or replaced.
+ * Conservative, presentation-only Arabic quotation detection for Tafsir text.
+ * Source structure is the boundary: only a complete standalone line (or the
+ * text before a recognized trailing verse reference) can become Arabic.
+ * Ambiguous mixed Arabic-script lines remain Urdu. Source characters and
+ * whitespace are never normalized, removed, or replaced.
  */
 export type TafsirTypographyRun = Readonly<{
-  kind: "urdu" | "arabic";
+  kind: "urdu" | "arabic" | "arabic-unsupported" | "reference";
   text: string;
 }>;
 
-const ARABIC_DIACRITIC = /[\u064B-\u065F\u0670\u06D6-\u06ED\u08D3-\u08FF]/u;
 const ARABIC_LETTER = /[\u0621-\u064A\u066E-\u06D3]/u;
-const URDU_EXCLUSIVE = /[پچژگٹڈڑںے]/u;
+const ARABIC_DIACRITIC = /[\u064B-\u065F\u0670\u06D6-\u06ED\u08D3-\u08FF]/u;
+const URDU_EXCLUSIVE = /[پچژگٹڈڑں]/u;
 const LATIN_LETTER = /[A-Za-z]/u;
+const URDU_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:سورہ|سورۃ|ہود|نمل|آیت|آیات)[^()\n]*\)\s*[۔.؟?]?)$/u;
+const ENGLISH_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:surah|verse|ayah)[^()\n]*\)\s*[۔.؟?]?)$/iu;
+// Coverage was extracted from the already-approved DigitalKhatt IndoPak
+// WOFF2 served by the production font face (SHA-256 recorded in the release
+// evidence). U+06D2 is absent; Chromium would otherwise fall back for it.
+const DIGITAL_KHATT_UNSUPPORTED_ARABIC_GLYPHS = new Set([0x06d2]);
 
-function isMarkedArabicWord(word: string): boolean {
-  return ARABIC_LETTER.test(word) && ARABIC_DIACRITIC.test(word) && !URDU_EXCLUSIVE.test(word);
+function confidentArabicQuotation(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed || LATIN_LETTER.test(trimmed) || URDU_EXCLUSIVE.test(trimmed)) return false;
+  const words = trimmed.split(/\s+/u).filter(Boolean);
+  if (words.length < 2) return false;
+  if (words.some((word) => !ARABIC_LETTER.test(word) && !/[ۚۖۗۙۛۜ۞،؛:؟,.()0-9٠-٩۰-۹]/u.test(word))) return false;
+
+  const letters = [...trimmed].filter((char) => ARABIC_LETTER.test(char));
+  const markedWords = words.filter((word) => ARABIC_LETTER.test(word) && ARABIC_DIACRITIC.test(word));
+  const markedWordRatio = markedWords.length / Math.max(1, words.filter((word) => ARABIC_LETTER.test(word)).length);
+  // Require both the standalone source-line boundary and Arabic orthographic
+  // evidence. Diacritics alone never classify a mixed commentary sentence.
+  return letters.length >= 8 && markedWords.length >= 2 && markedWordRatio >= 0.55;
 }
 
-function splitLine(line: string): TafsirTypographyRun[] {
+function appendRun(runs: TafsirTypographyRun[], kind: TafsirTypographyRun["kind"], text: string) {
+  if (!text) return;
+  const last = runs[runs.length - 1];
+  if (last?.kind === kind) runs[runs.length - 1] = { kind, text: last.text + text };
+  else runs.push({ kind, text });
+}
+
+function lineRuns(line: string): TafsirTypographyRun[] {
   if (!line) return [];
-  const pieces = line.split(/(\s+)/u);
-  const wordPositions: number[] = [];
-  const markedPositions: number[] = [];
-  for (let i = 0; i < pieces.length; i += 1) {
-    if (/^\s+$/u.test(pieces[i]) || !ARABIC_LETTER.test(pieces[i])) continue;
-    wordPositions.push(i);
-    if (isMarkedArabicWord(pieces[i])) markedPositions.push(i);
-  }
-  if (markedPositions.length === 0) return [{ kind: "urdu", text: line }];
 
-  // Style whole Quran/quotation lines only when their first Arabic word
-  // is vowelled. Never style an introductory Urdu heading as Arabic.
-  const firstWordIsMarked = markedPositions.includes(wordPositions[0]);
-  const entireLineArabic =
-    firstWordIsMarked &&
-    !URDU_EXCLUSIVE.test(line) &&
-    !LATIN_LETTER.test(line) &&
-    ((markedPositions.length >= 2 && markedPositions.length * 3 >= wordPositions.length) ||
-      (markedPositions.length === 1 && wordPositions.length <= 2 &&
-        [...line].filter((ch) => ARABIC_DIACRITIC.test(ch)).length >= 2));
-  if (entireLineArabic) return [{ kind: "arabic", text: line }];
-
-  const marked = new Set(markedPositions);
-  // A connector may be unvowelled, but only join it BETWEEN vowelled words.
-  // Do not extend an Arabic span into surrounding Urdu prose.
-  for (let index = 1; index < wordPositions.length - 1; index += 1) {
-    const current = wordPositions[index];
-    if (marked.has(current) || URDU_EXCLUSIVE.test(pieces[current]) || LATIN_LETTER.test(pieces[current])) continue;
-    if (marked.has(wordPositions[index - 1]) && marked.has(wordPositions[index + 1])) {
-      marked.add(current);
-    }
+  // A trailing printed source note is metadata, not part of the quotation.
+  // The exact source slice (including its leading whitespace and punctuation)
+  // is retained verbatim in the following run.
+  const suffix = line.match(URDU_REFERENCE_SUFFIX) ?? line.match(ENGLISH_REFERENCE_SUFFIX);
+  const quoteText = suffix ? line.slice(0, suffix.index) : line;
+  const referenceText = suffix?.[0] ?? "";
+  if (confidentArabicQuotation(quoteText)) {
+    const hasGlyphGap = [...quoteText].some((char) => DIGITAL_KHATT_UNSUPPORTED_ARABIC_GLYPHS.has(char.codePointAt(0)!));
+    return [
+      { kind: hasGlyphGap ? "arabic-unsupported" : "arabic", text: quoteText },
+      ...(referenceText ? [{ kind: "reference" as const, text: referenceText }] : []),
+    ];
   }
-
-  const runs: TafsirTypographyRun[] = [];
-  for (let i = 0; i < pieces.length; i += 1) {
-    const part = pieces[i];
-    if (!part) continue;
-    const whitespace = /^\s+$/u.test(part);
-    const kind: TafsirTypographyRun["kind"] =
-      marked.has(i) ||
-      (whitespace && marked.has(i - 1) && marked.has(i + 1))
-        ? "arabic"
-        : "urdu";
-    const previous = runs[runs.length - 1];
-    if (previous?.kind === kind) {
-      runs[runs.length - 1] = { kind, text: previous.text + part };
-    } else {
-      runs.push({ kind, text: part });
-    }
-  }
-  return runs;
+  return [{ kind: "urdu", text: line }];
 }
 
 export function splitTafsirTypography(text: string): TafsirTypographyRun[] {
   if (!text) return [];
+  const runs: TafsirTypographyRun[] = [];
   const lines = text.split(/(\n)/u);
-  const all: TafsirTypographyRun[] = [];
-  for (const item of lines) {
-    if (!item) continue;
-    const next = item === "\n" ? [{ kind: "urdu" as const, text: item }] : splitLine(item);
-    for (const run of next) {
-      const last = all[all.length - 1];
-      if (last?.kind === run.kind) {
-        all[all.length - 1] = { kind: run.kind, text: last.text + run.text };
-      } else {
-        all.push(run);
-      }
-    }
+  for (const line of lines) {
+    if (line === "\n") appendRun(runs, "urdu", line);
+    else for (const run of lineRuns(line)) appendRun(runs, run.kind, run.text);
   }
-  return all;
+  return runs;
+}
+
+/** Verified display-only heading repairs; raw source titles remain unchanged. */
+const VERIFIED_ENGLISH_HEADING_DISPLAY: Readonly<Record<string, string>> = {
+  "Tafsir Bismillah-your-Rahman al-Rahim": "Tafsir of Bismillah al-Rahman al-Rahim",
+  "Allah is the most comprehensive of the names of Allah": "Allah: the most comprehensive of God's names",
+  "He doesn't sleep, he doesn't sleep.": "Neither drowsiness nor sleep overtakes Him",
+  "What do you mean by the Throne and the Throne?": "What is meant by the Throne and the Kursi?",
+  "The background of the revelation of Ayat": "Occasion of Revelation",
+  "Commentary\nI seek refuge in the Lord of mankind.": "I seek refuge in the Lord of mankind",
+};
+
+export function displayTafsirHeading(title: string, language: "ur" | "en"): string {
+  return language === "en" ? VERIFIED_ENGLISH_HEADING_DISPLAY[title] ?? title : title;
+}
+
+export function tafsirSourceHeading(title: string, language: "ur" | "en"): string {
+  return displayTafsirHeading(title, language) === title ? "" : title;
 }

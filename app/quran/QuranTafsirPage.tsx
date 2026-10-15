@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "../lib/language-context";
 import { surahTitle } from "./reader/metadata";
-import { splitTafsirTypography } from "./reader/tafsirTypography";
+import { displayTafsirHeading, splitTafsirTypography, tafsirSourceHeading } from "./reader/tafsirTypography";
 import { TAFSIR_WORKS, tafsirForAyah, tafsirWorkById } from "./reader/tafsirCatalog";
 
 type TafsirLanguage = "ur" | "en";
@@ -20,22 +20,43 @@ type Remote = {
 
 function TafsirText({ text, language }: { text: string; language: TafsirLanguage }) {
   const runs = splitTafsirTypography(text);
-  if (language === "en") {
-    return <div className="whitespace-pre-wrap break-words text-[17px] leading-8 text-[#28362b] dark:text-[#e4eee4]" dir="ltr" lang="en">{text}</div>;
-  }
+  const arabicStyle = {
+    fontFamily: '"Digital Khatt Indo-Pak"',
+    fontSize: "1.06em",
+    lineHeight: 1.9,
+    unicodeBidi: "isolate" as const,
+  };
   return (
     <div
-      className="whitespace-pre-wrap break-words font-normal text-[#26372c] dark:text-[#e4eee4]"
-      data-tafsir-urdu-text="true"
-      dir="rtl" lang="ur"
-      style={{ fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif', fontSize: "22px", lineHeight: 2.25 }}
+      className={"whitespace-pre-wrap break-words font-normal " + (language === "ur"
+        ? "text-[#26372c]"
+        : "text-[17px] leading-8 text-[#28362b]")}
+      data-tafsir-urdu-text={language === "ur" ? "true" : undefined}
+      dir={language === "ur" ? "rtl" : "ltr"} lang={language}
+      style={language === "ur" ? { fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif', fontSize: "22px", lineHeight: 2.25 } : undefined}
     >
       {runs.map((run, index) => run.kind === "arabic" ? (
-        <span key={index} dir="rtl" lang="ar" data-tafsir-arabic="true" className="font-arabic"
-          style={{ fontFamily: 'var(--font-amiri), "Amiri", "Noto Naskh Arabic", serif', fontSize: "1.06em", lineHeight: 1.9, unicodeBidi: "isolate" }}>
+        <span key={index} dir="rtl" lang="ar" data-tafsir-arabic="true"
+          style={arabicStyle}>
           {run.text}
         </span>
-      ) : run.text)}
+      ) : run.kind === "arabic-unsupported" ? (
+        <span key={index} className="contents">
+          <span dir="rtl" lang="ar" data-tafsir-arabic-unsupported="true">{run.text}</span>
+          <span role="note" data-tafsir-font-warning="digital-khatt-coverage"
+            className={"mx-1 inline-block rounded bg-amber-100 px-1 text-[0.68em] text-amber-900 dark:bg-amber-950 dark:text-amber-200 " + (language === "ur" ? "font-naskh" : "")}
+            dir={language === "ur" ? "rtl" : "ltr"} lang={language}>
+            {language === "ur"
+              ? "　ایک حرف Digital Khatt میں موجود نہیں؛ اصل عربی متن جوں کا توں ہے۔　"
+              : " · Digital Khatt lacks a glyph here; the Arabic source text is unchanged. · "}
+          </span>
+        </span>
+      ) : run.kind === "reference" ? (
+        <span key={index} dir={language === "ur" ? "rtl" : "ltr"} lang={language} data-tafsir-reference="true"
+          className={language === "ur" ? "font-naskh text-[0.78em]" : "text-[0.76em] text-[#6d624e]"}>
+          {run.text}
+        </span>
+      ) : <span key={index}>{run.text}</span>)}
     </div>
   );
 }
@@ -77,10 +98,13 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
     <article className="quran-page quran-reader-paper relative flex w-full flex-col overflow-hidden bg-[#fffef9] px-4 py-5 text-[#293a2e] dark:bg-[#151a16] dark:text-[#e4eee4] sm:px-10 sm:py-8"
       dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}>
       <header className="border-b border-[#c9b98d]/45 pb-4">
-        <div className={"text-xl font-bold text-[#32422f] dark:text-[#e5eee6] " + (ur ? "font-naskh" : "")}>{ur ? "تفسیر" : "Commentary"}</div>
-        <label className={"mt-3 block text-sm text-[#5c5344] dark:text-[#c6cdbd] " + (ur ? "font-naskh" : "")}>
+        <div className="text-xl font-bold text-[#32422f]"
+          style={ur ? { fontFamily: '"Gulzar", serif', fontSize: "27px", lineHeight: 2.15, fontWeight: 400 } : undefined}>
+          {ur ? "تفسیر" : "Commentary"}
+        </div>
+        <label className={"mt-3 block text-sm text-[#5c5344] " + (ur ? "font-naskh" : "")}>
           {ur ? "ماخذ" : "Source"}
-          <select className="mt-1 w-full rounded-md border border-[#c6b48a] bg-white px-2 py-2 text-sm text-[#243024] dark:bg-[#202720] dark:text-[#e4eee4]"
+          <select className="mt-1 w-full rounded-md border border-[#c6b48a] bg-white px-2 py-2 text-sm text-[#243024]"
             value={workId} aria-label={ur ? "تفسیر کا ماخذ" : "Tafsir source"} onChange={(event) => setWorkId(event.target.value)}>
             {TAFSIR_WORKS.map((item) => <option key={item.id} value={item.id}>
               {(ur ? item.titleUr : item.titleEn) + " — " + (ur ? item.authorUr : item.authorEn)}
@@ -89,7 +113,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
         </label>
       </header>
       {work && <div className="mt-4">
-        <p className="text-sm text-[#6d624e] dark:text-[#c6cdbd]">
+        <p className="text-sm text-[#6d624e]">
           {ur ? surahTitle(surah) + "، آیت " + ayah : "Surah " + surah + ", Ayah " + ayah}
           {" · "}{ur ? work.authorUr : work.authorEn}
         </p>
@@ -99,12 +123,19 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
               <section key={`${i}-${topic.sourceId ?? "x"}`}>
                 {topic.title && topic.title !== "تفسیر" && topic.title !== "Tafseer" && topic.title !== "Commentary (Tafseer)" &&
                   !topic.text.trimStart().startsWith(topic.title) ? (
-                  <h2 className="mb-2 text-lg font-semibold text-[#32422f] dark:text-[#e5eee6]">{topic.title}</h2>
+                  <h2 data-tafsir-topic-heading="true"
+                    data-tafsir-source-heading={tafsirSourceHeading(topic.title, chosenLanguage) || undefined}
+                    className="mb-3 text-[#32422f]"
+                    style={chosenLanguage === "ur"
+                      ? { fontFamily: '"Gulzar", serif', fontSize: "27px", lineHeight: 2.15, fontWeight: 400, marginBlockEnd: "0.75rem" }
+                      : { fontSize: "1.25rem", lineHeight: 1.6, fontWeight: 650 }}>
+                    {displayTafsirHeading(topic.title, chosenLanguage)}
+                  </h2>
                 ) : null}
                 <TafsirText text={topic.text} language={chosenLanguage} />
               </section>
             ))}
-            <p className="mt-4 border-t border-[#c9b98d]/30 pt-2 text-xs text-[#82775f] dark:text-[#b9ad8e]">
+            <p className="mt-4 border-t border-[#c9b98d]/30 pt-2 text-xs text-[#82775f]">
               {ur ? "تفسیر نمونہ — اصل موضوعاتی متن، مطبوعہ نسخے سے مکمل مقابلہ ابھی باقی ہے۔" : "Tafsir Namoona — source text; full print collation remains pending."}
             </p>
           </div>

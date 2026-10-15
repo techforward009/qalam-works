@@ -57,12 +57,31 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(conventional).toContain('className="quran-ayah inline"');
   });
 
-  it("locks existing Alvi for Tafsir Urdu and Amiri for vowelled Arabic, no new asset", () => {
+  it("locks Alvi for Urdu body text, Gulzar headings, and Digital Khatt for Arabic", () => {
     expect(tafsir).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
     expect(tafsir).toContain('data-tafsir-arabic="true"');
-    expect(tafsir).toContain('var(--font-amiri), "Amiri"');
+    expect(tafsir).toContain('fontFamily: \'"Digital Khatt Indo-Pak"\'');
+    expect(tafsir).not.toContain('var(--font-amiri), "Amiri"');
+    expect(tafsir).toContain('fontFamily: \'"Gulzar", serif\'');
+    expect(tafsir).toContain('data-tafsir-topic-heading="true"');
     expect(tafsir).not.toContain("Preview Urdu font:");
     expect(styles).toContain("Alvi_Nastaleeq.woff2");
+    expect(styles).toMatch(/font-family:\s*"Digital Khatt Indo-Pak"/);
+    expect(styles).toMatch(/font-family:\s*"Gulzar"/);
+  });
+
+  it("keeps Quran translation text, selector, saved translator preference, and approved fonts intact", () => {
+    const translationCorpus = read("app/quran/reader/translationCorpus.ts");
+    expect(translation).toContain("ترجمۂ قرآن");
+    expect(translation).toContain('"ترجمہ: " +');
+    expect(translation).toContain("مترجم منتخب کریں");
+    expect(translation).toContain('<option value="mohsin-najfi">علامہ شیخ محسن علی نجفی</option>');
+    expect(translation).toContain("storedQuranUrduTranslator()");
+    expect(translation).toContain("saveQuranUrduTranslator(next)");
+    expect(translation).toContain('"Gulzar", "Noto Nastaliq Urdu", serif');
+    expect(translation).toContain('"Qalam Quran Jameel", "Noto Nastaliq Urdu", serif');
+    expect(translationCorpus).toContain('"mohsin-najfi"');
+    expect(translationCorpus).toContain('"safdar-najfi"');
   });
 
   it("centers Juz, page and Surah top-row items on the same vertical axis", () => {
@@ -170,4 +189,5 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(route).toContain('status: "corpus_not_uploaded"');
     expect(route).toContain('status: "unicode_apk"');
   });
+
 });
