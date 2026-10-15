@@ -55,7 +55,9 @@ for (const locale of ['ur', 'en'] as const) {
     const desktopWidth = await reader.getByTestId('book-reading-page').evaluate(node => node.getBoundingClientRect().width);
     expect(desktopWidth).toBeGreaterThan(1000);
 
-    await reader.getByRole('checkbox', { name: ur ? 'پیراگراف منتخب کریں 1' : 'Select paragraph 1', exact: true }).check();
+    await expect(reader.getByRole('checkbox')).toHaveCount(0);
+    await reader.getByRole('button', { name: ur ? 'عبارت منتخب کریں' : 'Select passage', exact: true }).click();
+    await reader.getByRole('checkbox', { name: ur ? 'پیراگراف 1 منتخب کریں' : 'Select paragraph 1', exact: true }).check();
     await reader.getByRole('button', { name: ur ? 'میری مجلس میں شامل کریں' : 'Add to My Sermon', exact: true }).click();
     await expect(reader.getByRole('status').filter({ hasText: ur ? 'میری مجلس میں شامل اور محفوظ ہوگئی' : 'Saved in My Sermon' })).toBeVisible();
 
