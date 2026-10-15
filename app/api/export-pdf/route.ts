@@ -23,6 +23,7 @@ import { resolvePageLayout, resolvePhysicalMargins } from "../../tools/document-
 import { verifyPdfUrduEmbedding } from "../../tools/document-studio/utils/pdfEmbeddedFonts";
 import { paginatePdfInk } from "../../tools/document-studio/utils/pdfInkPagination";
 import { preflightPdfSource } from "../../tools/document-studio/utils/pdfSourcePreflight";
+import { issueForPdfFailure } from "../../tools/document-studio/utils/pdfExportDiagnostics";
 
 interface ExportPdfRequestBody {
   doc: DocNode;
@@ -214,9 +215,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("PDF export failed:", err);
-    const blocked = err instanceof Error && err.message.endsWith("export blocked") ? err.message : null;
-    return NextResponse.json({ error: blocked ?? "PDF بنانے میں خرابی ہوئی / Failed to generate PDF." }, { status: 500 });
+    // Never log user-authored text or font snippets. Diagnostics stay in the direct response.
+    const failure = issueForPdfFailure(err, doc);
+    return NextResponse.json({ error: failure.messageUr, diagnostic: failure }, { status: 500 });
   } finally {
     if (browser) await browser.close();
   }
