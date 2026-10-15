@@ -24,6 +24,7 @@ import { verifyPdfUrduEmbedding } from "../../tools/document-studio/utils/pdfEmb
 import { paginatePdfInk } from "../../tools/document-studio/utils/pdfInkPagination";
 import { preflightPdfSource } from "../../tools/document-studio/utils/pdfSourcePreflight";
 import { classifyPdfExportFailure, inspectProtectedSource } from "../../tools/document-studio/utils/pdfExportDiagnostics";
+import { verifyPdfRepairCandidates } from "../../tools/document-studio/utils/pdfVerifiedRepair";
 
 interface ExportPdfRequestBody {
   doc: DocNode;
@@ -222,6 +223,7 @@ export async function POST(request: NextRequest) {
       diagnostic.code = detected[0].code;
       diagnostic.error = "دستاویز میں محفوظ طباعت کے مسائل ملے ہیں۔";
     }
+    if (browser && detected.length) await verifyPdfRepairCandidates(browser, doc, detected, dir, settings.typography);
     console.error("[pdf-export]", diagnostic.code);
     return NextResponse.json({ ...diagnostic, error: err instanceof Error && /export blocked|printable width|source complexity|measurement/i.test(err.message) ? err.message : diagnostic.error }, { status: diagnostic.code === "DOCUMENT_TOO_LARGE" ? 413 : diagnostic.code === "TIMEOUT" ? 504 : 500 });
   } finally {
