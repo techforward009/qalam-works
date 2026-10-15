@@ -60,16 +60,16 @@ for (const locale of ['ur', 'en'] as const) {
     expect(desktopWidth).toBeLessThan(1000);
 
     await expect(reader.getByRole('checkbox')).toHaveCount(0);
-    await reader.getByRole('button', { name: ur ? 'مزید' : 'More', exact: true }).click();
+    await reader.locator('nav').first().locator('summary').click();
     await reader.getByRole('button', { name: ur ? 'عبارت منتخب کریں' : 'Select passage', exact: true }).click();
-    await reader.getByRole('button', { name: ur ? 'مزید' : 'More', exact: true }).click();
+    await reader.locator('nav').first().locator('summary').click();
     await reader.getByRole('checkbox', { name: ur ? 'پیراگراف 1 منتخب کریں' : 'Select paragraph 1', exact: true }).check();
     await reader.screenshot({ path: testInfo.outputPath('book-selection-mode-desktop.png'), animations: 'disabled' });
     await reader.getByRole('button', { name: ur ? 'میری مجلس میں شامل کریں' : 'Add to My Sermon', exact: true }).click();
     await expect(reader.getByRole('status').filter({ hasText: ur ? 'میری مجلس میں شامل اور محفوظ ہوگئی' : 'Saved in My Sermon' })).toBeVisible();
 
     await expect(reader.getByRole('checkbox')).toHaveCount(0);
-    await reader.getByRole('button', { name: ur ? 'مزید' : 'More', exact: true }).click();
+    await reader.locator('nav').first().locator('summary').click();
     await expect(reader.getByRole('button', { name: ur ? 'عبارت منتخب کریں' : 'Select passage', exact: true })).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 844 });
