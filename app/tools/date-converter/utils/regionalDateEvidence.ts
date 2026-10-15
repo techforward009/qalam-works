@@ -67,7 +67,7 @@ export interface RegionalEvidenceRecord {
 // ── Evidence records ─────────────────────────────────────────────────────────
 //
 // Benchmark under review: 4 Ramadan 1368 AH
-//   Qalam Works engine (Friday-epoch civil tabular): 29 June 1949
+//   Qalam Works engine (Thursday-epoch tabular): 29 June 1949
 //
 // Note on an additional separate historical source (not assigned to any country):
 //   A separate historical regional source gives 4 Ramadan 1368 = 1 July 1949.
