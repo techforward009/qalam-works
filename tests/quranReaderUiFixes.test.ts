@@ -72,6 +72,21 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(styles).toMatch(/font-family:\s*"Gulzar"/);
   });
 
+  it("centers the Urdu Tafsir title and keeps source label and Nastaliq source options on one row", () => {
+    expect(tafsir).toContain('data-tafsir-urdu-header="true"');
+    expect(tafsir).toContain('data-tafsir-source-row="true"');
+    expect(tafsir).toContain('mx-auto text-center');
+    expect(tafsir).toContain('sourceMenuRef');
+    expect(tafsir).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
+    expect(tafsir).toContain('fontFamily: \'"Gulzar", "Noto Nastaliq Urdu", serif\'');
+    expect(tafsir).toContain('زیرِ تکمیل');
+    expect(tafsir).toContain('disabled={!available}');
+    expect(tafsir).toContain('اس آیت کے موضوعات');
+    expect(tafsir).toContain('tafsir-topic-');
+    expect(tafsir).toContain('بسم اللہ الرحمن الرحیم');
+    expect(tafsir).not.toContain('font-naskh text-[0.78em]');
+  });
+
   it("keeps Quran translation text, selector, saved translator preference, and approved fonts intact", () => {
     const translationCorpus = read("app/quran/reader/translationCorpus.ts");
     expect(translation).toContain("ترجمۂ قرآن");
