@@ -88,3 +88,20 @@ Test five real topics: `صبر`, `تربیت اولاد`, `موت و آخرت`, 
 The new CLI prints **only structural aggregates, source IDs and categorical errors**. It does not print private prose or connect to any external service. Tests use **synthetic** text only; the private archive is NOT included in repository or CI.
 
 **Do not merge this draft until review, and do not deploy or import sources without separate owner approval.**
+
+## 5. Reference sidecar prototype — 15 October continuation
+
+- Added `scripts/kafi-reference-sidecar.py` (Python standard library): `--queue private.json` selects at most four initial non-front-matter source groups per Kafi volume and **all eighteen non-front-matter groups of volume 8**, generating a 46-entry **pending-only, no-prose** review queue against the exact archive SHA-256.
+- Every row is anchored to its source digest, record digest, source/record/paragraph identifiers, and volume. Unresolved book/chapter titles and printed pages remain explicitly null; source Arabic is never edited or serialized to the queue.
+- `--check private.json` rejects stale package/source anchors, missing/duplicated passage identifiers, invented local numbers, unsupported evidence domains, unreviewed metadata assertions and conflicts with non-empty original headings. Editors must supply a specific edition and evidence URL to mark a row reviewed.
+- Passing these tests certifies **structural consistency only**: a cited web page does not prove a particular print-page or title without direct human comparison. The validator deliberately does not overwrite `reference.kafi`, `printPage`, the archive or the active Blob catalog.
+- Five new synthetic sidecar test cases and the earlier three audit test cases pass using GitHub Actions offline. No Model API keys, Vercel production changes, source texts or new dependencies are involved.
+
+### Private review workflow (not committed)
+
+```bash
+python3 scripts/kafi-reference-sidecar.py "/path/to/Qalam-Foundational-Corpus-With-Kafi.zip" --queue private-kafi-reference-review.json
+python3 scripts/kafi-reference-sidecar.py "/path/to/Qalam-Foundational-Corpus-With-Kafi.zip" --check private-kafi-reference-review.json
+```
+
+The owner Library has a local reviewer queue based on the exact archive: **46 rows**, 28 initial selections across volumes 1–7 and 18 in volume 8. No row is falsely pre-approved, and the machine cannot verify historical or editorial attribution by itself. A separate independently inspected edition is needed before adding actual reference data. A source-specific human comparison of the source paragraph and the cited edition is the next gate.
