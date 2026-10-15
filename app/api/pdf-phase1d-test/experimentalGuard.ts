@@ -15,7 +15,7 @@ export async function experimentalScriptAwareGuard(page: Page) {
     const nodes=[...document.querySelectorAll<HTMLElement>('[data-pdf-font="Digital Khatt Indo-Pak"][data-pdf-urdu="true"]')];
     const records:Array<{node:number,part:number,text:string,kind:string,path:string}>=[];
     for(let n=0;n<nodes.length;n++){
-      const el=nodes[n];const originalText=el.textContent||"";const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+      const el=nodes[n];el.dataset.phase1dRoot=String(n);const originalText=el.textContent||"";const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
       const all:Text[]=[];while(walker.nextNode())all.push(walker.currentNode as Text);
       let count=0;
       for(const node of all){
@@ -56,7 +56,7 @@ export async function experimentalScriptAwareGuard(page: Page) {
     await session.send("DOM.enable");await session.send("CSS.enable");
     const root=(await session.send("DOM.getDocument")).root;
     for(const r of segmentation.records){
-      const selector='[data-pdf-font="Digital Khatt Indo-Pak"][data-pdf-urdu="true"] [data-phase1d-part="'+r.part+'"]';
+      const selector='[data-phase1d-root="'+r.node+'"] [data-phase1d-part="'+r.part+'"]';
       const {nodeId}=await session.send("DOM.querySelector",{nodeId:root.nodeId,selector});
       if(!nodeId)throw Error("Phase1D font validation: missing node; export blocked");
       const {fonts}=await session.send("CSS.getPlatformFontsForNode",{nodeId});
@@ -66,7 +66,7 @@ export async function experimentalScriptAwareGuard(page: Page) {
       const accepted=r.kind==="verified-period"&&r.text==="."
         ?painted.length===1&&painted[0].familyName==="Liberation Serif"
         :r.kind==="protected"&&(!painted.length&&!r.text.trim()?true:painted.length>0&&painted.every(f=>isDigital(f.familyName)));
-      diagnostic.push({node:r.node,part:r.part,kind:r.kind,text:r.text.slice(0,40),codepoints:[...new Set([...r.text].map(c=>"U+"+c.codePointAt(0)!.toString(16).toUpperCase().padStart(4,"0")))],expected:"Digital Khatt Indo-Pak",painted,protectedScript,accepted});
+      diagnostic.push({node:r.node,part:r.part,selector,kind:r.kind,text:r.text.slice(0,40),codepoints:[...new Set([...r.text].map(c=>"U+"+c.codePointAt(0)!.toString(16).toUpperCase().padStart(4,"0")))],expected:"Digital Khatt Indo-Pak",painted,protectedScript,accepted});
       if(!accepted)throw Error("Phase1D font validation: "+r.kind+" unexpected fallback at "+selector+"; export blocked");
     }
   }finally{await session.detach()}
