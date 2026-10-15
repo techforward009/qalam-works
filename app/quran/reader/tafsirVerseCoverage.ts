@@ -46,10 +46,22 @@ export function tafsirCoverageRanges(keys: readonly string[]): TafsirVerseRange[
   return ranges;
 }
 
+const VERIFIED_QURAN_LETTERS_HEADING = "قرآن کے حروف مقطعات کے متعلق تحقیق";
+const LEGACY_MISSPELLED_LETTERS_HEADING = "قرآن کے جروف مقطعات کے متعلق تحقیق";
+
+/** The old private source title has a documented typo; its first original body line is correct. */
+export function tafsirDisplayTopicHeading(title: string, body: string): string {
+  return title === LEGACY_MISSPELLED_LETTERS_HEADING &&
+    body.startsWith(VERIFIED_QURAN_LETTERS_HEADING + "\n")
+    ? VERIFIED_QURAN_LETTERS_HEADING
+    : title;
+}
+
+/** Suppress identical printed first line in the *view* only. Raw text is not edited. */
 export function tafsirDisplayTopicBody(title: string, body: string): string {
-  const trimmed = title.trim();
-  if (trimmed && body.startsWith(trimmed) && body.slice(trimmed.length).startsWith("\n")) {
-    return body.slice(trimmed.length + 1);
+  const heading = tafsirDisplayTopicHeading(title, body).trim();
+  if (heading && body.startsWith(heading + "\n")) {
+    return body.slice(heading.length + 1);
   }
   return body;
 }
