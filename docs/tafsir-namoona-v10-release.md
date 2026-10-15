@@ -83,7 +83,7 @@ This integration resolves internal cross-references and marks gaps; it is not fu
 - Scope: entry `1:1` only (five original topic bodies/headings; original `sourceId` 10–14 retained). 83 conservative typographical, word-spacing and bracket fixes recorded. All other 1,761 entries and the complete 6,236 verse lookup mappings are preserved. Qur'anic/Arabic quotation lines are not normalized or rewritten. Complex wording and mismatched citations requiring source comparison remain pending editorial review.
 - Original compressed SHA-256: `f8f0eaef81ba175d9603434a17f17f9b0abc1197859d1f1e31e294c9b782dc5b`.
 - Revised compressed SHA-256: `8cf7d265873f93d6987882b5c616a0267a7caa94304075c88d4dc57150c2f1e7`.
-- **IMPORTANT STORAGE HOLD:** The owner's Library source file is updated, but the **private Vercel `qalam-research` Blob at `qalam/tafsir-namoona/urdu-v10.json.br` has NOT been overwritten**; this connector does not expose private Blob object upload/overwrite. The existing API still pins the OLD SHA-256 and serves the OLD Vercel object. Do **not** change `RELEASE.ur.digest` or announce corrected text live before securely uploading the revised private file and verifying it with the new hash. Preserve the current private object as rollback or use a separate versioned private key for revised content. Never upload the entire book to the public GitHub repo.
+- **PRIVATE BLOB SYNC VERIFIED — 15 Oct 2026:** Owner uploaded `qalam/tafsir-namoona/urdu-v10-reviewed-20261015.json.br` into the existing private `qalam-research` Blob store, **without overwriting** the original `urdu-v10.json.br`. The feature branch now pins **both** the revised key and SHA-256 `8cf7d265873f93d6987882b5c616a0267a7caa94304075c88d4dc57150c2f1e7` (GitHub commit `dc7b23fd82dcb33f09c60e6d72b2a9f8fa37f599`). The deployed Preview loader's strict SHA-256 verification passed: Urdu API returns HTTP 200, `version:10`, all five first-verse topics, corrected `حضرت عیسی (علیہ السلام)` and `پروگرام کو دوام`; legacy reversed brackets and joined words absent. English 1:1 still returns v10 and unavailable English 82:19 correctly reports `source_unavailable`. V9 and original private Urdu v10 objects remain available for rollback. The book was **not** added to GitHub.
 
 **Preview-only typography & layout:**
 
@@ -93,4 +93,12 @@ This integration resolves internal cross-references and marks gaps; it is not fu
 - The visual border is modestly narrower on Tafsir pages only; all Quran Reader editions and previously approved translator UI stay unchanged.
 - Standalone, vetted Qur'anic/hadith Arabic quotations in the 1:1 topics are classified as a single Arabic font run, even when unvowelled. This is presentation-only detection; it does not edit source quotations or assert their exact canonical authenticity.
 
-**Remaining release checks:** independent rendered-browser screenshots on actual mobile/desktop in Urdu/dark mode, direct Vercel Blob synchronization of corrected source, reference/quotation collation with a reliable printed book, separate redistribution rights for both Tafsir corpora and explicit owner Preview acceptance. **Keep PR draft/unmerged and production untouched.**
+**Remaining release checks:** independent rendered-browser screenshots on actual mobile/desktop in Urdu/dark mode, reference/quotation collation with a reliable printed book, separate redistribution rights for both Tafsir corpora and explicit owner Preview acceptance. **Keep PR draft/unmerged and production untouched.**
+
+
+## Verified private-source Preview deployment — 15 Oct 2026
+
+- Deployment: `dpl_EkpxnPtvSuRpZZwUunCgt7rEX6FN` at `https://qalam-works-r8ko-oqdwqvyrl-qalam-works.vercel.app/quran/1/1` — Vercel **READY**.
+- Focused Vitest on pinned reviewed source commit: **25/25 passed**, TypeScript `npx tsc --noEmit` passed.
+- The source corpus remains private. Any delegation/signature query parameters are transient and must never be committed to GitHub or release documents.
+- PR #65 remains **draft, open, unmerged**; **no production deployment**. Final publication still requires owner's mobile/desktop appearance approval, review of remaining source-text anomalies and separate confirmed rights to publicly redistribute both Urdu and English Tafsir commentary.
