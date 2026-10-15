@@ -19,7 +19,7 @@ import { RegionalContextCard } from "./RegionalContextCard";
 
 const COPY = {
   en: {
-    hijri: "Calculated Hijri",
+    hijri: "Pakistan — calculated Hijri date",
     pakistanOfficial: "Pakistan official Hijri date",
     calculatedReference: "Qalam tabular calculation",
     officialSource: "Official announcement",
@@ -33,7 +33,7 @@ const COPY = {
     days: "days",
   },
   ur: {
-    hijri: "حسابی ہجری تاریخ",
+    hijri: "پاکستان — حسابی ہجری تاریخ",
     pakistanOfficial: "پاکستان کی سرکاری ہجری تاریخ",
     calculatedReference: "قلم کا حسابی نتیجہ",
     officialSource: "سرکاری اعلان کا حوالہ",
