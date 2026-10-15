@@ -11,7 +11,6 @@ import {
   Globe,
   Moon,
   Search,
-  Sun,
 } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
 import { trackEvent, trackToolOpenOnce } from "../../lib/analytics";
@@ -41,6 +40,7 @@ import {
   type RegionalReference,
 } from "./utils/regionalDateEvidence";
 import { YallopIntegration, type DateStudioMethod } from "./components/YallopIntegration";
+import { PakistanDateResult } from "./components/PakistanDateResult";
 import { resolvePakistanOfficialGregorianDate, resolvePakistanOfficialHijriDate } from "./utils/hijri-authority/resolveOfficialHijriDate";
 import { resolveDisplayHijriDate } from "./utils/hijri-authority/displayHijriDate";
 
@@ -126,9 +126,11 @@ const L = {
     findHint: "Find a date across calendars",
     enterDateLabel: "Enter Date",
     convertAction: "Convert Date",
-    resultsTitle: "Conversion Results",
+    resultsTitle: "Pakistan Hijri Date",
+    extraCalculations: "Additional calendar equivalents (optional)",
+    researchMethods: "Astronomical and calculation methods (research)",
     resultsLive: "Calculated instantly",
-    resultsApprox: "Dates are approximate and may vary by region.",
+    resultsApprox: "Pakistan declaration is preferred where recorded.",
     exploreMoreTitle: "Explore More About This Date",
     exploreMoreDesc: "Discover historical events, Islamic significance, and interesting facts about this date across different calendars.",
     viewIntelligence: "View Date Intelligence",
@@ -222,9 +224,11 @@ const L = {
     findHint: "تقویموں میں تاریخ تلاش کریں",
     enterDateLabel: "تاریخ درج کریں",
     convertAction: "تاریخ تبدیل کریں",
-    resultsTitle: "نتائجِ تبدیلی",
+    resultsTitle: "پاکستانی ہجری تاریخ",
+    extraCalculations: "اضافی تقاویم کی تاریخیں (اختیاری)",
+    researchMethods: "فلکیاتی اور حسابی طریقے (تحقیق کے لیے)",
     resultsLive: "فوری حساب",
-    resultsApprox: "تاریخیں تخمینی ہیں اور علاقے کے لحاظ سے بدل سکتی ہیں۔",
+    resultsApprox: "جہاں پاکستانی اعلان موجود ہو وہی تاریخ دکھائی جاتی ہے۔",
     exploreMoreTitle: "اس تاریخ کے بارے میں مزید",
     exploreMoreDesc: "تاریخی واقعات، اسلامی اہمیت اور مختلف تقویموں میں اس تاریخ کی تفصیل۔",
     viewIntelligence: "تاریخ کی تفصیل دیکھیں",
@@ -292,7 +296,6 @@ export default function DateConverterContent({
   const [day,         setDay]         = useState("");
   const [month,       setMonth]       = useState("");
   const [year,        setYear]        = useState("");
-  const [copied,      setCopied]      = useState<CalendarType | null>(null);
   const [linkCopied,  setLinkCopied]  = useState(false);
   const [dateStudioMethod, setDateStudioMethod] = useState<DateStudioMethod>("qalam");
   const [yallopObserverId, setYallopObserverId] = useState("karachi");
@@ -445,16 +448,9 @@ export default function DateConverterContent({
 
   const handleClear = useCallback(() => {
     setDay(""); setMonth(""); setYear("");
-    setCopied(null); setLinkCopied(false);
+    setLinkCopied(false);
     pushURL("gregorian", "", "", "");
   }, [calendar, mode]);
-
-  const handleCopy = useCallback((cal: CalendarType, text: string) => {
-    navigator.clipboard.writeText(text).catch(() => {});
-    setCopied(cal);
-    setTimeout(() => setCopied(null), 1800);
-    trackEvent("tool_copy", { tool: "date_converter" });
-  }, []);
 
   const handleCopyLink = useCallback(() => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -588,7 +584,7 @@ export default function DateConverterContent({
           {mode === "convert" ? (
             <>
               <div className="mt-6 grid gap-6 lg:grid-cols-12 lg:gap-5">
-                <div className="lg:col-span-3">
+                <div className="lg:col-span-4">
                   <p className={`mb-2 text-[11px] font-bold uppercase tracking-wide text-[#3a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
                     {t.sourceLabel}
                   </p>
@@ -612,11 +608,7 @@ export default function DateConverterContent({
                   </div>
                 </div>
 
-                <div className="lg:col-span-4 min-w-0">
-                  <YallopIntegration lang={lang} method={dateStudioMethod} onMethodChange={setDateStudioMethod} observerId={yallopObserverId} onObserverChange={setYallopObserverId} gregorian={result?.gregorian ?? null} hijriDay={pakistanOfficialHijri?.hijri.day ?? result?.hijri.day ?? null} hijriDayAuthority={pakistanOfficialHijri?.authority ?? "qalam-tabular"} authorityContext={pakistanOfficialHijri} embedded />
-                </div>
-
-                <div className="lg:col-span-5">
+                <div className="lg:col-span-8">
                   <p className={`mb-2 text-[11px] font-bold uppercase tracking-wide text-[#3a6a4a] dark:text-[#b8d4bc] ${naskh}`}>
                     {t.enterDateLabel}
                   </p>
@@ -681,6 +673,12 @@ export default function DateConverterContent({
                   </div>
                 </div>
               </div>
+              <details className="mt-4 rounded-xl border border-[#1A3A2A]/10 bg-[#F7F5EF]/70 px-4 py-3 dark:border-[#35513d] dark:bg-[#162a1e]">
+                <summary className={`cursor-pointer text-sm font-semibold text-[#31533d] dark:text-[#c8e1cf] ${naskh}`}>{t.researchMethods}</summary>
+                <div className="mt-4">
+                  <YallopIntegration lang={lang} method={dateStudioMethod} onMethodChange={setDateStudioMethod} observerId={yallopObserverId} onObserverChange={setYallopObserverId} gregorian={result?.gregorian ?? null} hijriDay={pakistanOfficialHijri?.hijri.day ?? result?.hijri.day ?? null} hijriDayAuthority={pakistanOfficialHijri?.authority ?? "qalam-tabular"} authorityContext={pakistanOfficialHijri} embedded />
+                </div>
+              </details>
             </>
           ) : (
             <div className="mt-6">
@@ -768,91 +766,29 @@ export default function DateConverterContent({
               )}
 
               {result && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3" dir="ltr">
-                  {CAL_ORDER.map(cal => {
-                    const authorityHijri = cal === "hijri" ? pakistanOfficialHijri : null;
-                    const isAuthoritativeHijri = authorityHijri !== null;
-                    const parts    = authorityHijri?.hijri ?? result![cal];
-                    const long     = formatDate(parts, cal, lang);
-                    const iso      = isoDate(parts);
-                    const copyText = `${weekdayName}  ${long}\n${iso}`;
-                    const isCopied = copied === cal;
-                    const resultLabel = authorityHijri
-                      ? (authorityHijri.authority === "reported-official" ? t.reportedOfficialHijriDate : t.officialHijriDate)
-                      : cal === "hijri" ? t.calculatedHijriDate : calLabel(cal, lang);
-                    const methodBadge = cal === "hijri" && !isAuthoritativeHijri ? t.methodHijri
-                                      : cal === "solar" ? t.methodSolar
-                                      : null;
-                    const category = cal === "gregorian" ? t.gregorianWestern : cal === "hijri" ? t.hijriIslamic : t.solarJalali;
-                    const icon = cal === "gregorian"
-                      ? <CalendarDays className="h-5 w-5" />
-                      : cal === "hijri"
-                        ? <MosqueIcon className="h-5 w-5" />
-                        : <Sun className="h-5 w-5" />;
-                    const meta = cal === "gregorian" && intelligence
-                      ? (isUr
-                          ? `${t.dayOfYear} ${intelligence.dayOfYear} · ${t.weekNumber} ${intelligence.isoWeek}`
-                          : `Day ${intelligence.dayOfYear} of ${parts.year} · Week ${intelligence.isoWeek}`)
-                      : cal === "hijri"
-                        ? (isUr ? `مہینہ ${parts.month} از 12 · ${parts.year} ھ` : `Month ${parts.month} of 12 · ${parts.year} AH`)
-                        : (isUr ? `مہینہ ${parts.month} از 12 · ${parts.year}` : `Month ${parts.month} of 12 · ${parts.year}`);
-                    return (
-                      <div
-                        key={cal}
-                        dir={dir}
-                        className={`rounded-2xl border px-4 py-4 text-start ${
-                          cal === "hijri"
-                            ? "border-[#B8935A]/35 bg-[#FBF6EA] dark:border-[#B8935A]/30 dark:bg-[#1b2418]"
-                            : "border-[#1A3A2A]/10 bg-[#F3F7F3] dark:border-[#2a3d30] dark:bg-[#162a1e]"
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                            cal === "hijri" ? "bg-[#B8935A]/18 text-[#8A6A32] dark:text-[#E0C18D]" : "bg-[#1A3A2A]/8 text-[#1A3A2A] dark:bg-white/10 dark:text-[#e8ede9]"
-                          }`}>
-                            {icon}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className={`text-[13px] font-semibold text-[#3a6a4a] dark:text-[#a8c8b0] ${naskh}`}>{category}</p>
-                                {isUr ? (
-                                  <p className={`text-[13px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{resultLabel}</p>
-                                ) : (
-                                  <p className="text-[11px] font-black uppercase tracking-widest text-[#3a6a4a] dark:text-[#a8c8b0]">{resultLabel}</p>
-                                )}
-                                {methodBadge && (
-                                  <p className={`text-[11px] font-medium text-[#4a7a5a] dark:text-[#8faa93] ${naskh}`}>{methodBadge}</p>
-                                )}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleCopy(cal, copyText)}
-                                className={`shrink-0 rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-all ${naskh}
-                                  ${isCopied
-                                    ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
-                                    : "border-[#1A3A2A]/15 dark:border-[#2a3d30] text-[#3a6a4a] dark:text-[#a8c8b0]"}`}
-                              >
-                                {isCopied ? t.copied : t.copy}
-                              </button>
-                            </div>
-                            <p className={`mt-2 text-lg font-bold leading-snug text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{long}</p>
-                            <p className={`text-sm font-semibold text-[#6F4E25] dark:text-[#E0C18D] ${naskh}`}>{weekdayName}</p>
-                            <p className={`mt-1 text-[12px] text-[#5a7a62] dark:text-[#9fbfa8] ${naskh}`}>{meta}</p>
-                            <p className="mt-0.5 text-[11px] font-mono text-[#4a7a5a] dark:text-[#9fbfa8]">
-                              <span dir="ltr" className="inline-block">{iso}</span>
-                            </p>
-                          </div>
-                        </div>
-                        {cal === "hijri" && !isAuthoritativeHijri && (
-                          <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-3 ${naskh}`}>{t.hijriNote}</p>
-                        )}
-                        {cal === "solar" && (
-                          <p className={`text-[11px] text-[#3a6a4a] dark:text-[#9fbfa8] mt-3 ${naskh}`}>{t.solarNote}</p>
-                        )}
+                <div className="space-y-4">
+                  <PakistanDateResult
+                    key={isoDate(result.gregorian)}
+                    gregorian={result.gregorian}
+                    hijri={pakistanOfficialHijri?.hijri ?? result.hijri}
+                    reviewed={pakistanOfficialHijri}
+                    weekday={weekdayName}
+                    lang={lang}
+                  />
+                  <details className="rounded-2xl border border-[#1A3A2A]/10 bg-white px-4 py-4 dark:border-[#35513d] dark:bg-[#162a1e]">
+                    <summary className={`cursor-pointer text-sm font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{t.extraCalculations}</summary>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl bg-[#F3F7F3] p-4 dark:bg-[#1b2c20]">
+                        <p className={`text-xs text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>{t.gregorianWestern}</p>
+                        <p className={`mt-2 text-base font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{formatDate(result.gregorian, "gregorian", lang)}</p>
                       </div>
-                    );
-                  })}
+                      <div className="rounded-xl bg-[#F3F7F3] p-4 dark:bg-[#1b2c20]">
+                        <p className={`text-xs text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>{t.solarJalali}</p>
+                        <p className={`mt-2 text-base font-semibold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{formatDate(result.solar, "solar", lang)}</p>
+                        <p className={`mt-2 text-xs text-[#4a6a4a] dark:text-[#b8d4bc] ${naskh}`}>{t.solarNote}</p>
+                      </div>
+                    </div>
+                  </details>
                 </div>
               )}
             </section>

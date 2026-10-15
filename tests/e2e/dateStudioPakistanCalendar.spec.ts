@@ -137,4 +137,40 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     }));
     expect(dims.documentWidth).toBeLessThanOrEqual(dims.viewportWidth + 6);
   });
+  test("date converter shows one primary Pakistan result and a complete sourced copy", async ({page}, testInfo) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: { writeText: async (value: string) => {
+          (window as typeof window & { __dateCopied?: string }).__dateCopied = value;
+        } },
+      });
+    });
+    await page.goto("/tools/date-converter?calendar=gregorian&day=4&month=11&year=2026");
+    await expect(page.getByTestId("pakistan-primary-result")).toBeVisible();
+    await expect(page.getByTestId("pakistan-hijri-date")).toContainText("23");
+    await expect(page.getByTestId("pakistan-hijri-date")).toContainText("Jumada");
+    await expect(page.getByTestId("pakistan-hijri-status")).toContainText("Pakistan");
+    await expect(page.getByText("Additional calendar equivalents (optional)")).toBeVisible();
+    await expect(page.getByText("Astronomical and calculation methods (research)")).toBeVisible();
+    const sourceDetails = page.locator('[data-testid="pakistan-primary-result"] details');
+    await sourceDetails.locator("summary").click();
+    await expect(page.getByTestId("pakistan-source-link")).toHaveAttribute("href", /app\.com\.pk|radio\.gov\.pk/);
+    await page.getByTestId("copy-pakistan-date").click();
+    const copied = await page.evaluate(() => (window as typeof window & { __dateCopied?: string }).__dateCopied);
+    expect(copied).toContain("4 November 2026");
+    expect(copied).toContain("23 Jumada");
+    expect(copied).toContain("Source: https://");
+    expect(copied).toContain("https://www.qalamworks.com/date/2026-11-04");
+    await page.screenshot({path:testInfo.outputPath("pk-2026-shareable-primary-result.png"),fullPage:true});
+  });
+
+  test("unknown Pakistan lunar month is explicitly calculated and has no fabricated citation", async ({page}) => {
+    await page.goto("/tools/date-converter?calendar=gregorian&day=4&month=11&year=2027");
+    await expect(page.getByTestId("pakistan-primary-result")).toBeVisible();
+    await expect(page.getByTestId("pakistan-hijri-status")).toContainText("Calculated");
+    await page.locator('[data-testid="pakistan-primary-result"] details summary').click();
+    await expect(page.getByTestId("pakistan-source-link")).toHaveCount(0);
+  });
+
 });
