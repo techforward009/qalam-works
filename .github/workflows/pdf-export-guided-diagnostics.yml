@@ -24,6 +24,12 @@ jobs:
         run: |
           export QALAM_PDF_CHROMIUM="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium";process.stdout.write(await chromium.executablePath())')"
           npx vitest run tests/pdfExportDiagnostics.test.ts tests/pdfPhase1eScriptAware.test.ts --reporter=verbose
+      - name: Existing PDF regression suite
+        shell: bash
+        run: |
+          export QALAM_PDF_CHROMIUM="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')"
+          mapfile -t pdf_specs < <(find tests -type f \( -iname '*pdf*.test.ts' -o -iname '*pdf*.test.tsx' \))
+          npx vitest run "${pdf_specs[@]}" --reporter=verbose
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Production build without deployment
