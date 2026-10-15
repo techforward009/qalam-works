@@ -22,6 +22,7 @@ export interface PdfExportFailure {
   problems: PdfExportProblem[];
 }
 type Node = { type?: string; text?: string; marks?: { type: string; attrs?: Record<string, unknown> }[]; content?: Node[] };
+export const pdfRunFingerprint = (text: string): string => { let h = 2166136261; for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619); return (h >>> 0).toString(16); };
 const selected = (node: Node) => node.marks?.find(m => m.type === "textStyle")?.attrs?.fontFamily;
 export function locatePdfFontProblem(doc: Node, font: string, unicode?: string, runIndex?: number): PdfExportProblem["source"] | undefined {
   const codepoint = unicode ? Number.parseInt(unicode.replace(/^U\+/i, ""), 16) : NaN;
@@ -33,7 +34,7 @@ export function locatePdfFontProblem(doc: Node, font: string, unicode?: string, 
       const current = ordinal++;
       if (runIndex === undefined || current === runIndex) {
         const start = wanted ? node.text.indexOf(wanted) : 0;
-        if (start >= 0) return { path, paragraphPath: paragraph, start, end: start + (wanted?.length ?? node.text.length), snapshot: node.text };
+        if (start >= 0) return { path, paragraphPath: paragraph, start, end: start + (wanted?.length ?? node.text.length), snapshot: pdfRunFingerprint(node.text) };
       }
     }
     for (const [i, child] of (node.content ?? []).entries()) {
@@ -109,7 +110,7 @@ export function inspectProtectedSource(doc: Node, limit = 32): PdfExportProblem[
           issues.push({
             code, unicode, character: char,
             message: control ? "اس پوشیدہ حرف کی محفوظ طباعت ثابت نہیں ہوئی۔" : "منتخب فونٹ میں یہ عربی یا قرآنی علامت موجود نہیں۔",
-            source: { path, paragraphPath: paragraph, start: index, end: index + char.length, snapshot: node.text },
+            source: { path, paragraphPath: paragraph, start: index, end: index + char.length, snapshot: pdfRunFingerprint(node.text) },
             selectedFont: "Digital Khatt Indo-Pak",
             reason: control ? "Unverified joining/bidi control" : "Missing from pinned font cmap"
           });
