@@ -72,8 +72,8 @@ it("displays original Arabic in a true RTL reader, copies exact text and navigat
   expect(screen.getByText("الکافی، جلد 8")).toBeTruthy();
   expect(screen.getAllByText("اصل متن کا حصہ 1").length).toBeGreaterThan(0);
   expect(screen.queryByRole("complementary", {name:"کتاب کی فہرست"})).toBeNull();
-  fireEvent.click(screen.getByText("نقل"));
-  fireEvent.click(screen.getByRole("button", {name: "عبارت نقل کریں"}));
+  fireEvent.click(screen.getByText("مزید"));
+  fireEvent.click(screen.getByRole("button", {name: "نقل"}));
   await waitFor(() => expect(writeText).toHaveBeenCalled());
   expect(writeText.mock.calls[0][0]).toBe(arabic);
   fireEvent.click(screen.getByRole("button", {name: "اگلا مطالعہ صفحہ"}));
@@ -88,6 +88,7 @@ it("keeps sermon checkboxes out of normal reading and exposes them only in selec
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
   expect(screen.queryByRole("checkbox")).toBeNull();
   expect(screen.queryByText("Select for sermon")).toBeNull();
+  fireEvent.click(screen.getByText("مزید"));
   fireEvent.click(screen.getByRole("button", {name:"عبارت منتخب کریں"}));
   expect(screen.getByRole("checkbox", {name:"پیراگراف 1 منتخب کریں"})).toBeTruthy();
   fireEvent.click(screen.getByRole("button", {name:"انتخاب بند کریں"}));
@@ -150,7 +151,8 @@ it("bookmarks the actual paragraph and sends validated selection to existing ser
   const saved = vi.fn((_excerpt: BookExcerpt) => true);
   render(<BookReader locale="ur" onAdd={saved}/>);
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
-  fireEvent.click(screen.getByRole("button", {name:"نشان"}));
+  fireEvent.click(screen.getByText("مزید"));
+  fireEvent.click(screen.getByRole("button", {name:"مطالعے کا نشان"}));
   const data = JSON.parse(localStorage.getItem(KHATEEB_READER_PROGRESS_KEY)!);
   expect(data.bookmarks).toHaveLength(1);
   expect(data.bookmarks[0].recordId).toBe(id1);
