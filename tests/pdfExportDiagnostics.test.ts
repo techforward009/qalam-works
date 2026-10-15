@@ -15,4 +15,14 @@ describe("PDF diagnostics safe classification", () => {
  it("separates unknown errors from font errors",()=>expect(classifyPdfExportFailure("ECONNRESET").code).toBe("EXPORT_FAILED"));
  it("does not misclassify timeout",()=>expect(classifyPdfExportFailure("Operation timed out").code).toBe("TIMEOUT"));
  it("reports painted fallback without permitting bypass",()=>expect(classifyPdfExportFailure("Unexpected glyph fallback at run 0:1; faces=DejaVu Sans; export blocked",doc).problems[0].actualFont).toBe("DejaVu Sans"));
+ it("locates second identical protected run by ordinal, not substring", () => {
+  const repeated = { type: "doc", content: [
+    { type: "paragraph", content: [{ type: "text", text: "اَلْحَمْدُ", marks:[{type:"textStyle",attrs:{fontFamily:"Digital Khatt Indo-Pak"}}] }] },
+    { type: "paragraph", content: [{ type: "text", text: "اَلْحَمْدُ", marks:[{type:"textStyle",attrs:{fontFamily:"Digital Khatt Indo-Pak"}}] }] }
+  ] };
+  const hit = classifyPdfExportFailure("Unsupported protected Arabic/Quranic U+0644 at run 1:0; export blocked", repeated);
+  expect(hit.problems[0].source?.path).toEqual([1,0]);
+  expect(hit.problems[0].source?.start).toBe(2);
+ });
+
 });
