@@ -233,7 +233,7 @@ export const PAKISTAN_2022_HISTORIC_ANCHORS: readonly OfficialHijriMonthAnchor[]
     evidenceKind: "official-declaration",
     verificationStatus: "verified",
     sightingDecision: "sighted",
-    announcementGregorianDate: { year: 2022, month: 11, day: 26 },
+    // Report published 26 November identifies that day as 1 Jumada I; exact announcement evening is not separately dated.
     providerId: "pk-central-ruet-e-hilal-committee",
     providerLabel: { en: "Pakistan Central Ruet-e-Hilal Committee", ur: "پاکستان مرکزی رؤیتِ ہلال کمیٹی" },
     sourceUrl: "https://www.radio.gov.pk/26-11-2022/crescent-of-jamad-ul-awwal-1444-ah-sighted",
