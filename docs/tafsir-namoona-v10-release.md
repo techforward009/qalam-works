@@ -74,3 +74,23 @@ This integration resolves internal cross-references and marks gaps; it is not fu
 - Automated tests include all eleven verbatim reporter samples, mixed English/Arabic lines, punctuation and Latin/digit boundaries, and Urdu behavior isolation.
 - Validation for commit `87d75148d30b30b5eb9672812583ba845ee39676`: 22/22 focused Vitest passed and `npx tsc --noEmit` passed in a fresh repository checkout.
 - Keep PR #65 **draft/unmerged** until the owner checks visual behavior on the actual Preview and separate publication permissions for both Tafsir sources are recorded. Font-script detection does not certify hadith/Quran quotation accuracy against printed originals.
+
+## Urdu Al-Fatihah first-page source revision & visual pass — 15 Oct 2026
+
+**Saved source correction (not a UI-only patch):**
+
+- Owner's original Urdu archive in ChatGPT Library `/Tafsir_Namoona_v10_Upload_Files/urdu-v10.json.br` was replaced with the corrected private archive. The pre-edit original is backed up as `urdu-v10-backup-20261015.json.br`; exact replacement audit is saved as `first_ayah_revision_audit_20261015.json`.
+- Scope: entry `1:1` only (five original topic bodies/headings; original `sourceId` 10–14 retained). 74 conservative typographical, word-spacing and bracket fixes recorded. All other 1,761 entries and the complete 6,236 verse lookup mappings are preserved. Qur'anic/Arabic quotation lines are not normalized or rewritten. Complex wording and mismatched citations requiring source comparison remain pending editorial review.
+- Original compressed SHA-256: `f8f0eaef81ba175d9603434a17f17f9b0abc1197859d1f1e31e294c9b782dc5b`.
+- Revised compressed SHA-256: `087786f818ca6ecf8d1e0b15c89ecb1e1f7c46cb9fe86e9a12c29fbf1de51908`.
+- **IMPORTANT STORAGE HOLD:** The owner's Library source file is updated, but the **private Vercel `qalam-research` Blob at `qalam/tafsir-namoona/urdu-v10.json.br` has NOT been overwritten**; this connector does not expose private Blob object upload/overwrite. The existing API still pins the OLD SHA-256 and serves the OLD Vercel object. Do **not** change `RELEASE.ur.digest` or announce corrected text live before securely uploading the revised private file and verifying it with the new hash. Preserve the current private object as rollback or use a separate versioned private key for revised content. Never upload the entire book to the public GitHub repo.
+
+**Preview-only typography & layout:**
+
+- Center the main Urdu Tafsir title and Al-Fatihah ayah context; display `ماخذ` and its selection on the same responsive row. Custom accessible source menu renders all names and statuses in genuine Alvi Nastaleeq rather than OS-controlled native select options. Unavailable Tafsir sources remain visibly disabled.
+- Use Gulzar Nastaliq for centered Urdu headings, Alvi Nastaleeq for all Urdu controls, body, references and metadata; retain the already approved Scheherazade New for Arabic passages.
+- Five-topic mini index uses in-page anchors. The first article heading displays `بسم اللہ الرحمن الرحیم` rather than repeating the global `تفسیر`; **source topic title stays unchanged**.
+- The visual border is modestly narrower on Tafsir pages only; all Quran Reader editions and previously approved translator UI stay unchanged.
+- Standalone, vetted Qur'anic/hadith Arabic quotations in the 1:1 topics are classified as a single Arabic font run, even when unvowelled. This is presentation-only detection; it does not edit source quotations or assert their exact canonical authenticity.
+
+**Remaining release checks:** independent rendered-browser screenshots on actual mobile/desktop in Urdu/dark mode, direct Vercel Blob synchronization of corrected source, reference/quotation collation with a reliable printed book, separate redistribution rights for both Tafsir corpora and explicit owner Preview acceptance. **Keep PR draft/unmerged and production untouched.**
