@@ -45,6 +45,13 @@ const findText=(node,indices=[])=>{
  try{
    await page.goto("http://127.0.0.1:3000/tools/document-studio",{waitUntil:"domcontentloaded",timeout:90000});
    await page.waitForSelector('[data-studio-export-pdf="true"]',{timeout:90000});
+   // A fresh Document Studio starts empty. Author a public synthetic sentence
+   // before requesting a diagnosis so source navigation can actually be proven.
+   const editor = await page.$('.ProseMirror[contenteditable="true"]');
+   if(!editor)throw Error("Real editable ProseMirror surface missing");
+   await editor.click();
+   await page.keyboard.insertText("هٰذَا نَصٌّ عَرَبِيٌّ لِاخْتِبَارِ النَّصِّ.");
+   await page.waitForFunction(()=>document.querySelector('.ProseMirror')?.textContent?.includes('هٰذَا'),{timeout:10000});
    await page.click('[data-studio-export-pdf="true"]');
    await page.waitForSelector('[aria-label="پی ڈی ایف برآمد کی خرابی"]',{timeout:20000});
    await page.screenshot({path:path.join(output,"urdu-guided-repair.png"),fullPage:true});
