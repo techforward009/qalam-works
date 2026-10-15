@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Body, GeoVector, HelioVector, SiderealTime } from "astronomy-engine";
 import { convert } from "../app/tools/date-converter/utils/dateEngine";
-import { calculateBestTimeUtc, evaluateYallopAstronomy, geometricGeocentricVector, geocentricHorizontalFromRaDec } from "../app/tools/date-converter/utils/yallop/astronomyAdapter";
+import { calculateBestTimeUtc, evaluateYallopAstronomy, geometricGeocentricVector, geocentricHorizontalFromRaDec, lastNewMoonConjunctionDate } from "../app/tools/date-converter/utils/yallop/astronomyAdapter";
 import { PAKISTAN_YALLOP_OBSERVERS, validateYallopObserver, yallopObserver } from "../app/tools/date-converter/utils/yallop/observerLocations";
 import { QALAM_YALLOP_NAKED_EYE_AB_V1 } from "../app/tools/date-converter/utils/yallop/monthStartPolicy";
 import { classifyYallop, evaluateYallopCriterion } from "../app/tools/date-converter/utils/yallop/yallopCriterion";
@@ -96,6 +96,15 @@ describe("Yallop observers and astronomy adapter", () => {
       if (previous === undefined) delete process.env.TZ;
       else process.env.TZ = previous;
     }
+  });
+
+  it("picks the nearest previous conjunction across the February/March 2026 lunar boundary", () => {
+    const feb = lastNewMoonConjunctionDate(new Date("2026-02-28T13:00:00.000Z"));
+    const mar = lastNewMoonConjunctionDate(new Date("2026-03-20T13:00:00.000Z"));
+    expect(feb?.toISOString()).toMatch(/^2026-02-17T/);
+    expect(mar?.toISOString()).toMatch(/^2026-03-19T/);
+    expect((mar!.getTime() - feb!.getTime()) / 86400000).toBeGreaterThan(29);
+    expect((mar!.getTime() - feb!.getTime()) / 86400000).toBeLessThan(30);
   });
 
   it("returns a normalized astronomical prediction without changing tabular conversion", () => {
