@@ -145,3 +145,34 @@ The same original-owner private ZIP was compared with **eight distinct opening n
 **Discrepancy still unresolved:** printed **no. 574** at [edition page 379](https://lib.eshia.ir/11027/8/379) has a different opening narrator separator in the supplied file versus the webpage: owner file includes `عن` between `علي بن محمد` and `علي بن العباس`, while the cited webpage apparently omits it. This difference may arise from edition, punctuation or textual handling; it has **not** been corrected or explained away, and the queue record stays **pending**. **Do not attach this page as verified until further edition comparison.** This is not an authenticity or isnād verdict.
 
 The private, owner Library sidecar `Kafi_Rawda_Vol8_Eight_Anchors_20261015.json` records 8 narrowly reviewed openings, **38 pending**, and the one explicitly flagged discrepancy. The source identities and chapter title/pagination uncertainties remain unchanged. No source prose, private ZIP, or reviewed owner sidecar is included in GitHub. No runtime change; no live import or deployment.
+
+
+## 7. Accelerated Rawda original-page review — 14/18 (15 October)
+
+The owner-private 46-entry queue now has **14 page/start-number spot checks in volume eight** and **32 pending rows** (four volume-eight starts and 28 earlier-volume samples). All new matches were checked against the exact owner ZIP's anchored original Arabic paragraph and independently displayed original online edition **11027**; full body collation is NOT implied.
+
+| Local number | Page in edition 11027 | Primary original URL |
+| ---: | ---: | --- |
+| 1 | 2 | https://lib.eshia.ir/11027/8/2 |
+| 7 | 36 | https://lib.eshia.ir/11027/8/36 |
+| 18 | 57 | https://lib.eshia.ir/11027/8/57 |
+| 36 | 80 | https://lib.eshia.ir/11027/8/80 |
+| 71 | 101 | https://lib.eshia.ir/11027/8/101 |
+| 100 | 129 | https://lib.eshia.ir/11027/8/129 |
+| 129 | 148 | https://lib.eshia.ir/11027/8/148 |
+| 219 | 190 | https://lib.eshia.ir/11027/8/190 |
+| 276 | 221 | https://lib.eshia.ir/11027/8/221 |
+| 329 | 240 | https://lib.eshia.ir/11027/8/240 |
+| 385 | 265 | https://lib.eshia.ir/11027/8/265 |
+| 505 | 327 | https://lib.eshia.ir/11027/8/327 |
+| 541 | 343 | https://lib.eshia.ir/11027/8/343 |
+| 589 | 392 | https://lib.eshia.ir/11027/8/392 |
+
+This table is public **bibliographic metadata only**, not extracted private text or permission to republish any book.
+
+The four **not established** opening anchors are **193, 429, 464 and 574**. For 574 the owner-supplied beginning includes a conjunction **عن** between two transmitters, whereas the page 379 online edition omits it; this **variant must not be silently erased or accepted as an identical witness**. Preserve both edition witnesses and mark exact-chain collation pending: https://ar.lib.eshia.ir/11027/8/379 .
+
+The updated owner-private `Kafi_Rawda_Vol8_Fourteen_Anchors_20261015.json` contains source/record/paragraph SHA anchors and 14 scoped page assertions, without verbatim source prose. It is saved to the user's Library, not GitHub. **No inference for missing chapter headings**, no automatic authenticity judgement or complete isnad comparison, and no production import.
+
+### Proposed Khateeb presentation gate
+A source-page annotation is **supplementary** to the original immutable source quotation/reference, never a replacement. Only show it after checking source and record SHA, paragraph ID, local printed number, and URL volume/page. When no exact verified annotation is present, keep original book citation unchanged and optionally show `صفحہ کی تصدیق زیرِ تحقیق` in owner-only research UI. Do not automatically publish or merge this experimental data.
