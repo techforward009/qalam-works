@@ -37,6 +37,11 @@ describe("PDF diagnostics: source paths, safe errors and unknown failures", () =
     expect(result.issues.map(issue => issue.location?.path)).toEqual([[0,0],[0,0],[1,0]]);
     expect(result.issues.map(issue => issue.codePoint)).toEqual(["U+06D7","U+06D7","U+06D7"]);
   });
+  it("uses UTF-16 offsets for supplementary Arabic code points", () => {
+    const source = { type: "doc", content: [{type:"paragraph",content:[text("𞸀ۗ")]}] };
+    const diagnostic = issueForPdfFailure(new Error("Unsupported protected Arabic/Quranic U+06D7 at run 0:0; export blocked"),source);
+    expect(diagnostic.issues.map(issue=>issue.location?.textOffset)).toEqual([0,2]);
+  });
   it("does not invent a font problem or source location for unrelated failures", () => {
     const failure = issueForPdfFailure(new Error("unknown upstream exception"), doc);
     expect(failure.code).toBe("UNKNOWN");
