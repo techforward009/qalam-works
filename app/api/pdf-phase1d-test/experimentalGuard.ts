@@ -59,7 +59,21 @@ export async function experimentalScriptAwareGuard(page: Page) {
       const selector='[data-phase1d-root="'+r.node+'"] [data-phase1d-part="'+r.part+'"]';
       const {nodeId}=await session.send("DOM.querySelector",{nodeId:root.nodeId,selector});
       if(!nodeId)throw Error("Phase1D font validation: missing node; export blocked");
-      const {fonts}=await session.send("CSS.getPlatformFontsForNode",{nodeId});
+      let {fonts}=await session.send("CSS.getPlatformFontsForNode",{nodeId});
+      if (!fonts.some(font => font.glyphCount > 0) && r.text.trim()) {
+        // Chromium sometimes defers glyph painting in later or offscreen
+        // paragraphs. Force a real layout/paint opportunity, then re-read
+        // CDP. Still fail closed if no glyph evidence exists.
+        await page.evaluate(async selector => {
+          const el=document.querySelector<HTMLElement>(selector);
+          if (!el) throw Error("Phase1D missing font probe");
+          el.scrollIntoView({block:"center",inline:"nearest"});
+          el.getBoundingClientRect();
+          await document.fonts.ready;
+          await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+        }, selector);
+        ({fonts}=await session.send("CSS.getPlatformFontsForNode",{nodeId}));
+      }
       const painted=fonts.filter(f=>f.glyphCount>0);
       const isDigital=(name:string)=>/digitalkhatt/i.test(name.replace(/[^a-z0-9]/gi,""));
       const protectedScript=[...r.text].some(char=>{const n=char.codePointAt(0)!;return n>=0x600&&n<=0x6ff||n>=0x750&&n<=0x77f||n>=0x8a0&&n<=0x8ff||n>=0xfb50&&n<=0xfdff||n>=0xfe70&&n<=0xfeff||n===0x200c||n===0x200d||n===0x61c;});
