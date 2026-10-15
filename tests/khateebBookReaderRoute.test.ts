@@ -116,16 +116,16 @@ it("shows public shelf, source-ordered 24-item contents, unchanged reading pages
   expect(second.entries).toHaveLength(3);
 
   const first = await (await GET(req("?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1"))).json();
-  expect(first.paragraphs).toHaveLength(12);
-  expect(first.pageCount).toBe(3);
+  expect(first.paragraphs).toHaveLength(26);
+  expect(first.pageCount).toBe(1);
   expect(first.nextRecordId).toBe("sahifa-ar:supplication:2");
   expect(first.screenPartOnly).toBe(true);
   expect(first.reference).not.toContain("صفحہ");
   const lastPart = await (await GET(req("?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1&part=last"))).json();
-  expect(lastPart.page).toBe(3);
-  expect(lastPart.paragraphs).toHaveLength(2);
+  expect(lastPart.page).toBe(1);
+  expect(lastPart.paragraphs).toHaveLength(26);
   const secondPart = await (await GET(req("?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1&part=2"))).json();
-  expect(secondPart.paragraphs[8].text).toBe("صَبْرٌ اصل عبارت");
+  expect(secondPart.code).toBe("not-found");
 
   const hits = await (await GET(req("?op=find&sourceId=sahifa-ar&query=صبر"))).json();
   expect(hits.total).toBe(1);
@@ -154,12 +154,12 @@ const postReq = (body: unknown, authenticated = true, origin = "http://localhost
   },
 );
 const expectedReaderSelection = async () => {
-  const page = await (await GET(req("?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1&part=2"))).json();
+  const page = await (await GET(req("?op=read&sourceId=sahifa-ar&id=sahifa-ar:supplication:1&part=1"))).json();
   return {
     sourceId: page.sourceId, recordId: page.recordId,
     sourceSha256: page.sourceSha256, recordSha256: page.recordSha256,
-    part: page.page,
-    paragraphIds: [page.paragraphs[8].id],
+    part: 1,
+    paragraphIds: [page.paragraphs[20].id],
   };
 };
 it("rejects invalid or cross-origin excerpt selections even with no session", async () => {
@@ -193,7 +193,7 @@ it("blocks stale edition, wrong part, cross-record paragraph and unsupported sel
   const changed = [
     {...valid, sourceSha256: "0".repeat(64)},
     {...valid, recordSha256: "0".repeat(64)},
-    {...valid, part: 1},
+    {...valid, part: 2},
     {...valid, paragraphIds: ["sahifa-ar:supplication:2:p1"]},
     {...valid, paragraphIds: [valid.paragraphIds[0],valid.paragraphIds[0]]},
     {...valid, paragraphIds: Array.from({length:13},(_,i)=>`sahifa-ar:supplication:1:p${i+1}`)},

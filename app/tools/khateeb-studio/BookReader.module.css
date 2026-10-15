@@ -108,10 +108,15 @@
 .readingPage {
   box-sizing: border-box;
   width: min(100%, 62rem);
+  aspect-ratio: 0.8;
+  max-height: 78rem;
+  min-height: 38rem;
   min-width: 0;
   margin: .35rem auto 2.5rem;
   padding: clamp(1.5rem, 5.2vw, 4.25rem);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
   border: 1px solid #e8e4d9;
   border-radius: .25rem;
   background: #fffefa;
@@ -146,9 +151,13 @@
 .editionDetails { margin-top: .15rem; font-size: .76rem; }
 .editionDetails summary { cursor: pointer; color: #607264; }
 .editionDetails p { margin-top: .2rem; overflow-wrap: anywhere; }
-.paragraphs { display: grid; gap: clamp(.8rem, 1.6vw, 1.15rem); width: min(100%, 47rem); margin-inline: auto; }
+.paragraphs { display: grid; align-content: start; gap: clamp(.8rem, 1.6vw, 1.15rem); flex: 1 1 auto; min-height: 0; width: min(100%, 47rem); margin-inline: auto; }
 .paragraph { min-width: 0; overflow-wrap: anywhere; }
 .paragraphs :global(.khateeb-book-text) { line-height: 2.05; }
+.paragraphs :global(.khateeb-book-ur) { font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif; font-size: 1em; line-height: 2.25; }
+.paragraphs :global(.khateeb-book-ar) { font-family: var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif; font-size: 1em; line-height: 2.05; }
+.paragraphs :global(.khateeb-book-en) { font-family: var(--font-inter), Arial, sans-serif; font-size: 1em; }
+.paragraphs :global(.qalam-book-arabic) { font-family: "Digital Khatt IndoPak Book", "Muhammadi Quranic", var(--font-amiri), var(--font-naskh), serif; }
 .targetParagraph { border-radius: .65rem; background: #fff2cf; padding: .5rem; }
 :global(.dark) .targetParagraph { background: rgb(120 53 15 / 25%); }
  .paragraphSelect { display: flex; align-items: center; width: max-content; min-height: 2rem; margin-block: .1rem .15rem; }
@@ -160,6 +169,37 @@
 :global(.dark) .translationStatus { border-color: rgb(183 198 186 / 35%); color: #b7c6ba; }
 .selectionActions { display: flex; justify-content: flex-start; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgb(49 81 58 / 15%); }
 :global(.dark) .chapterTitle > span, :global(.dark) .pageNumber small, :global(.dark) .editionDetails summary, :global(.dark) .translationCredit, :global(.dark) .drawerBookTitle { color: #b7c6ba; }
+@page { size: A5 portrait; margin: 0; }
+@media print {
+  :global(body) { background: white !important; }
+  :global(body *) { visibility: hidden !important; }
+  .readerShell .readingPage, .readerShell .readingPage * { visibility: visible !important; }
+  .readerShell .readingPage {
+    position: fixed;
+    inset: 0 auto auto 0;
+    box-sizing: border-box;
+    width: 148mm;
+    height: 210mm;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: auto;
+    margin: 0;
+    padding: 12mm;
+    border: 0;
+    border-radius: 0;
+    background: white;
+    color: #111;
+    box-shadow: none;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  .readerShell .paragraphs { overflow: visible !important; }
+  .readerShell .pageNavigation button,
+  .readerShell .selectionActions,
+  .readerShell .paragraphSelect,
+  .readerShell .editionDetails { display: none !important; }
+  .readerShell .pageMeta { min-height: 0; margin-bottom: 8mm; }
+}
 @media (max-width: 760px) {
   .toolbar { align-items: end; justify-content: flex-start; }
 }
@@ -171,7 +211,7 @@
   .pageNavigation { grid-row: 2; justify-self: center; width: 100%; padding-top: .3rem; }
   .searchForm { align-items: stretch; flex-direction: column; }
   .searchField { min-width: 0; }
-  .readingPage { width: min(100%, 38rem); margin-top: .2rem; padding: 1.4rem 1rem 2rem; border-radius: .2rem; }
+  .readingPage { width: min(100%, 38rem); min-height: 34rem; max-height: none; margin-top: .2rem; padding: 1.4rem 1rem 2rem; border-radius: .2rem; }
   .paragraphs { gap: .85rem; }
   .pageMeta { margin-bottom: 1.6rem; padding-bottom: .75rem; }
   .bookSelect { flex: 1 1 100%; max-width: none; }

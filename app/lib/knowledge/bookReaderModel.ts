@@ -5,7 +5,6 @@ import {
 
 /** Book reading always uses source order, not a guessed printed pagination. */
 export const BOOK_TOC_PAGE_SIZE = 24;
-export const BOOK_READER_PARAGRAPHS = 12;
 export const BOOK_FIND_PAGE_SIZE = 20;
 
 export type BookContentsEntry = {
@@ -57,6 +56,8 @@ export type BookReadingPage = {
 export type BookFindHit = {
   recordId: string;
   paragraphId: string;
+  /** Exact half-open JavaScript UTF-16 match range start in the source paragraph. */
+  offsetUtf16: number;
   title: string;
   snippet: string;
 };
@@ -101,15 +102,16 @@ export function bookReadingPage(records: readonly BookRecord[], source: BookSour
   const index = ordered.findIndex(record => record.id === id);
   if (index < 0) return null;
   const record = ordered[index];
-  const pageCount = Math.max(1, Math.ceil(record.paragraphs.length / BOOK_READER_PARAGRAPHS));
-  if (!Number.isInteger(part) || part < 1 || part > pageCount) return null;
+  // The API returns one complete, bounded source record. Visual page breaks
+  // are measured in the browser; this compatibility argument is never a page size.
+  if (part !== 1) return null;
   return {
     recordId: record.id, sourceId: source.id, recordOrdinal: index + 1, language: record.language,
     kind: record.kind, title: safeTitle(record, index, locale).text,
     reference: bookRecordReference(record, locale),
     translator: source.translator, paragraphCount: record.paragraphs.length,
-    paragraphs: record.paragraphs.slice((part - 1) * BOOK_READER_PARAGRAPHS, part * BOOK_READER_PARAGRAPHS),
-    page: part, pageCount,
+    paragraphs: record.paragraphs,
+    page: 1, pageCount: 1,
     previousRecordId: index > 0 ? ordered[index - 1].id : null,
     nextRecordId: index + 1 < ordered.length ? ordered[index + 1].id : null,
     recordSha256: record.textSha256, sourceSha256: source.sha256,
@@ -126,8 +128,10 @@ export function bookFind(records: readonly BookRecord[], sourceId: string, quest
   for (const [index, record] of ordered.entries()) {
     for (const paragraph of record.paragraphs) {
       if (!normalizeBookSearch(paragraph.text).includes(term)) continue;
+      const match = originalBookQueryRange(paragraph.text, question);
       hits.push({
         recordId: record.id, paragraphId: paragraph.id,
+        offsetUtf16: match?.startOffset ?? 0,
         title: safeTitle(record, index, locale).text,
         snippet: paragraph.text.slice(0, 250),
       });
@@ -163,6 +167,10 @@ export function copyReadingPage(page: BookReadingPage, withReference: boolean, m
  * returned here is ALWAYS a slice of the original, not normalized output.
  */
 export function originalBookQuerySpan(text: string, question: string): string | null {
+  return originalBookQueryRange(text, question)?.text ?? null;
+}
+
+export function originalBookQueryRange(text: string, question: string): { text: string; startOffset: number; endOffset: number } | null {
   const needle = normalizeBookSearch(question);
   if (!needle || needle.length > 120 || text.length > 50000) return null;
   const graphemes = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)];
@@ -189,5 +197,7 @@ export function originalBookQuerySpan(text: string, question: string): string | 
   const start = searchable.indexOf(needle);
   if (start < 0) return null;
   const end = start + needle.length - 1;
-  return text.slice(origins[start].start, origins[end].end);
+  const startOffset = origins[start].start;
+  const endOffset = origins[end].end;
+  return { text: text.slice(startOffset, endOffset), startOffset, endOffset };
 }

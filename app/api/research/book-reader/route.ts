@@ -113,6 +113,7 @@ export async function GET(req: NextRequest) {
 
   const page = Number(pageText);
   const part = partText === "last" ? "last" : Number(partText);
+  if (op === "read" && part !== 1 && part !== "last") return json({ code: "not-found" }, 404);
   try {
     const client = await researchBlobClientFromEnv();
     const catalog = await loadBookCatalog(client);
@@ -126,10 +127,10 @@ export async function GET(req: NextRequest) {
     const records = await readBookSource(client, catalog, sourceId);
     if (op === "contents") return json(bookContents(records, sourceId, locale as "ur" | "en", page));
     if (op === "find") return json(bookFind(records, sourceId, query, locale as "ur" | "en", page));
-    const selected = records.find(r => r.id === id);
-    const chosenPart = part === "last" && selected ? Math.max(1, Math.ceil(selected.paragraphs.length / 12)) : part;
-    const result = typeof chosenPart === "number" ? bookReadingPage(records, source, id, locale as "ur" | "en", chosenPart) : null;
+    const result = bookReadingPage(records, source, id, locale as "ur" | "en", 1);
     if (!result) return json({ code: "not-found" }, 404);
+    const sourceBytes = result.paragraphs.reduce((sum, paragraph) => sum + Buffer.byteLength(paragraph.text, "utf8"), 0);
+    if (sourceBytes > 1_000_000) return json({ code: "record-too-large" }, 413);
     return json(await withReviewedTranslations(client, catalog, source, records, result, locale as "ur" | "en"));
   } catch {
     return json({ code: "unavailable" }, 503);
@@ -169,7 +170,7 @@ export async function POST(req: NextRequest) {
   const sourceId = x.sourceId, id = x.recordId, selected = x.paragraphIds, part = x.part;
   if (typeof sourceId !== "string" || !ALL_BOOK_SOURCE_IDS.includes(sourceId as typeof ALL_BOOK_SOURCE_IDS[number])
     || typeof id !== "string" || id.length > 300 || !id.startsWith(sourceId + ":")
-    || !Number.isInteger(part) || (part as number) < 1 || (part as number) > 10000
+    || !Number.isInteger(part) || part !== 1
     || typeof x.sourceSha256 !== "string" || !/^[a-f0-9]{64}$/.test(x.sourceSha256)
     || typeof x.recordSha256 !== "string" || !/^[a-f0-9]{64}$/.test(x.recordSha256)
     || !Array.isArray(selected) || selected.length < 1 || selected.length > 12
@@ -186,8 +187,8 @@ export async function POST(req: NextRequest) {
     const record = records.find(r => r.id === id);
     if (!record) return json({ code: "not-found" }, 404);
     if (record.textSha256 !== x.recordSha256) return json({ code: "stale-record" }, 409);
-    const readerPage = bookReadingPage(records, source, id, "ur", part as number);
-    if (!readerPage || !selected.every(p => readerPage.paragraphs.some(q => q.id === p)))
+    const readerRecord = bookReadingPage(records, source, id, "ur", 1);
+    if (!readerRecord || !selected.every(p => readerRecord.paragraphs.some(q => q.id === p)))
       return bad();
     const excerpt = createBookExcerpt(record, source, selected as string[]);
     return json({ excerpt });

@@ -48,27 +48,29 @@ describe("source-faithful book reader model", () => {
     expect(first.entries[0].title).toContain("اصل متن کا حصہ");
     expect(first.entries[0].title).not.toContain("القسم");
   });
-  it("reads complete unchanged paragraphs in 12-paragraph screen parts, not fake printed pages", () => {
+  it("returns one complete source record for browser-measured visual pagination", () => {
     const p1 = bookReadingPage(records, src, records[0].id, "ur", 1)!;
-    const p2 = bookReadingPage(records, src, records[0].id, "ur", 2)!;
-    const p3 = bookReadingPage(records, src, records[0].id, "ur", 3)!;
-    expect([p1.paragraphs.length, p2.paragraphs.length, p3.paragraphs.length]).toEqual([12, 12, 2]);
-    expect(p2.paragraphs[8].text).toBe(records[0].paragraphs[20].text);
+    expect(p1.paragraphs).toEqual(records[0].paragraphs);
+    expect(p1.paragraphs).toHaveLength(26);
+    expect(p1.paragraphs[20].text).toBe(records[0].paragraphs[20].text);
+    expect(p1.page).toBe(1);
+    expect(p1.pageCount).toBe(1);
     expect(p1.nextRecordId).toBe(records[1].id);
     expect(p1.previousRecordId).toBeNull();
     expect(p1.screenPartOnly).toBe(true);
     expect(p1.reference).not.toMatch(/صفحہ/);
-    expect(bookReadingPage(records, src, records[0].id, "ur", 4)).toBeNull();
+    expect(bookReadingPage(records, src, records[0].id, "ur", 2)).toBeNull();
   });
   it("finds vowel-insensitive text within same edition and returns a paragraph anchor", () => {
     const hits = bookFind(records, src.id, "صبر", "ur");
     expect(hits.total).toBe(1);
     expect(hits.hits[0].paragraphId).toBe(records[0].paragraphs[20].id);
+    expect(hits.hits[0].offsetUtf16).toBe(0);
     expect(hits.hits[0].recordId).toBe(records[0].id);
     expect(bookFind(records, "nahj-ar", "صبر", "ur").total).toBe(0);
   });
   it("copies original diacritics unchanged, optionally adding only existing source reference", () => {
-    const page = bookReadingPage(records, src, records[0].id, "ur", 2)!;
+    const page = bookReadingPage(records, src, records[0].id, "ur", 1)!;
     const only = copyReadingPage(page, false);
     expect(only).toContain("صَبْرٌ ى اَلسَّلَام");
     expect(only).not.toContain(page.reference);

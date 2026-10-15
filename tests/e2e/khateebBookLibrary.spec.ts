@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createHash } from 'node:crypto';
+import { PDFDocument } from 'pdf-lib';
 import { createBookExcerpt, type BookRecord } from '../../app/lib/knowledge/bookCorpus';
 
 for (const locale of ['ur', 'en'] as const) {
@@ -81,3 +82,68 @@ for (const locale of ['ur', 'en'] as const) {
     expect(errors).toEqual([]);
   });
 }
+
+test('measured page breaks preserve a long synthetic Arabic/Urdu passage across pages and print', async ({ page }, testInfo) => {
+  const source = { id: 'nahj-ar', book: 'nahj' as const, language: 'ar' as const, filename: 'fixture.json', translator: null, sha256: 'a'.repeat(64) };
+  const recordId = 'nahj-ar:sermon:fixture-r6';
+  const arabic = ('وَقَالَ أَمِيرُ الْمُؤْمِنِينَ عَلَيْهِ السَّلَامُ: إِنَّ الصَّبْرَ مِفْتَاحُ الْفَرَجِ، وَالْعِلْمَ نُورٌ۔ ').repeat(52);
+  const urdu = ('یہ مصنوعی طویل اردو عبارت آزمائش کے لیے ہے، یہ کسی مستند کتابی ترجمے کی نمائندگی نہیں کرتی، اور صفحہ بندی میں اصل حروف کی ترتیب برقرار رہنی چاہیے۔ ').repeat(44);
+  const paragraph = { id: `${recordId}:p1`, text: arabic };
+  const translation = { paragraphIds: [paragraph.id], text: urdu, language: 'ur', translator: 'Synthetic fixture', source: 'Not a verified translation' };
+  const hash = 'b'.repeat(64);
+  await page.route('**/api/research/book-reader**', async route => {
+    const url = new URL(route.request().url());
+    const op = url.searchParams.get('op');
+    const body = op === 'catalog' ? { ready: true, revision: 'synthetic-r6', sources: [source] }
+      : op === 'contents' ? { entries: [{ id: recordId, sourceId: source.id, title: 'Synthetic long passage', ordinal: 1, headingStatus: 'source-title', paragraphCount: 1 }], total: 1, page: 1, pageSize: 24 }
+      : op === 'read' ? { recordId, sourceId: source.id, recordOrdinal: 1, language: 'ar', title: 'Synthetic long passage', reference: 'Synthetic test reference', translator: null, paragraphCount: 1, paragraphs: [paragraph], page: 1, pageCount: 1, previousRecordId: null, nextRecordId: null, recordSha256: hash, sourceSha256: source.sha256, screenPartOnly: true, translations: [translation] }
+      : op === 'find' ? { hits: [], total: 0, page: 1, pageSize: 20 } : {};
+    return route.fulfill({ json: body });
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/tools/khateeb-studio/library');
+  const reader = page.getByTestId('khateeb-book-reader');
+  const article = reader.getByTestId('book-reading-page');
+  await expect(article).toBeVisible();
+  await expect.poll(() => article.getByTestId('reader-page-text-area').evaluate(node => node.clientHeight)).toBeGreaterThan(0);
+  const area = article.getByTestId('reader-page-text-area');
+  const pageTexts: string[] = [];
+  for (let index = 0; index < 3; index++) {
+    await expect.poll(() => area.locator('[data-source-kind="original"]').count()).toBeGreaterThan(0);
+    const fits = await area.evaluate(node => node.scrollHeight <= node.clientHeight + 1);
+    expect(fits, `synthetic Arabic visual page ${index + 1} fits its actual text area`).toBe(true);
+    const current = await area.locator('[data-source-kind="original"]').allTextContents();
+    pageTexts.push(current.join(''));
+    await article.screenshot({ path: testInfo.outputPath(`r6-synthetic-arabic-page-${index + 1}.png`) });
+    if (index < 2) await reader.getByRole('button', { name: 'Next reader page' }).click();
+  }
+  expect(pageTexts.join('')).toBe(arabic);
+  await reader.getByLabel('Reading mode').selectOption('translation');
+  await expect.poll(() => area.locator('[data-source-kind="translation"]').count()).toBeGreaterThan(0);
+  const urduPages: string[] = [];
+  while (true) {
+    expect(await area.evaluate(node => node.scrollHeight <= node.clientHeight + 1)).toBe(true);
+    urduPages.push((await area.locator('[data-source-kind="translation"]').allTextContents()).join(''));
+    const next = reader.getByRole('button', { name: 'Next reader page' });
+    if (await next.isDisabled()) break;
+    await next.click();
+  }
+  await article.screenshot({ path: testInfo.outputPath('r6-synthetic-urdu-page.png') });
+  expect(urduPages.join('')).toBe(urdu);
+  await reader.getByLabel('Reading mode').selectOption('combined');
+  await expect.poll(() => area.locator('[data-source-kind="original"]').count()).toBeGreaterThan(0);
+  await expect.poll(() => area.locator('[data-source-kind="translation"]').count()).toBeGreaterThan(0);
+  await article.screenshot({ path: testInfo.outputPath('r6-synthetic-combined-page.png') });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => area.evaluate(node => node.clientHeight)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  await article.screenshot({ path: testInfo.outputPath('r6-synthetic-mobile.png') });
+  await reader.locator('nav').first().locator('summary').click();
+  await reader.getByRole('button', { name: 'Select passage' }).click();
+  await expect(reader.getByRole('checkbox', { name: 'Select paragraph 1' })).toBeVisible();
+  await article.screenshot({ path: testInfo.outputPath('r6-synthetic-selection-mode.png') });
+  await page.emulateMedia({ media: 'print' });
+  const pdfBytes = await page.pdf({ path: testInfo.outputPath('r6-synthetic-reader.pdf'), format: 'A5', printBackground: true, preferCSSPageSize: true });
+  const pdf = await PDFDocument.load(pdfBytes);
+  expect(pdf.getPageCount()).toBe(1);
+});

@@ -11,7 +11,8 @@ import {
   rememberReaderPosition, readerSavedForSource, sameReaderAnchor,
   toggleReaderBookmark, type ReaderAnchor, type ReaderProgress,
 } from "../../lib/knowledge/bookReaderProgress";
-import { copyReadingPage, originalBookQuerySpan, type BookCopyMode, type BookContents, type BookFindResults, type BookReadingPage } from "../../lib/knowledge/bookReaderModel";
+import { originalBookQuerySpan, type BookCopyMode, type BookContents, type BookFindResults, type BookReadingPage } from "../../lib/knowledge/bookReaderModel";
+import { paginateMeasuredFlow, readingFlowUnits, type ReaderTextFragment, type ReaderVisualPage } from "../../lib/knowledge/bookReaderPagination";
 import styles from "./BookReader.module.css";
 
 type Language = "ur" | "en";
@@ -30,6 +31,14 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const [tocOpen, setTocOpen] = useState(false);
   const tocDialog = useRef<HTMLDialogElement>(null);
   const [reading, setReading] = useState<BookReadingPage | null>(null);
+  const [visualPages, setVisualPages] = useState<ReaderVisualPage[]>([]);
+  const [visualPageIndex, setVisualPageIndex] = useState(0);
+  const [isPaginating, setIsPaginating] = useState(false);
+  const [layoutSize, setLayoutSize] = useState("");
+  const pageArticleRef = useRef<HTMLElement>(null);
+  const requestedPosition = useRef<{ recordId: string; paragraphId: string; offsetUtf16: number; last: boolean } | null>(null);
+  const visiblePosition = useRef<ReaderAnchor | null>(null);
+  const paginating = useRef(false);
   const [find, setFind] = useState<BookFindResults | null>(null);
   const [findText, setFindText] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -46,6 +55,107 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const [error, setError] = useState("");
   const abort = useRef<AbortController | null>(null);
   const feedback = useCopyFeedback();
+
+  useEffect(() => {
+    const article = pageArticleRef.current;
+    if (!article) return;
+    if (typeof ResizeObserver === "undefined") { setLayoutSize("test-dom"); return; }
+    const observer = new ResizeObserver(entries => {
+      const box = entries[0]?.contentRect;
+      if (box) setLayoutSize(`${Math.round(box.width)}x${Math.round(box.height)}`);
+    });
+    observer.observe(article);
+    const initial = article.getBoundingClientRect();
+    setLayoutSize(`${Math.round(initial.width)}x${Math.round(initial.height)}`);
+    return () => observer.disconnect();
+  }, [reading?.recordId]);
+
+  useEffect(() => {
+    const article = pageArticleRef.current;
+    if (!reading || !article || !layoutSize) return;
+    let cancelled = false;
+    paginating.current = true;
+    setIsPaginating(true);
+    const run = async () => {
+      if (document.fonts?.ready) await document.fonts.ready;
+      if (cancelled || !pageArticleRef.current) return;
+      const probe = pageArticleRef.current.cloneNode(true) as HTMLElement;
+      probe.removeAttribute("data-testid");
+      probe.setAttribute("aria-hidden", "true");
+      Object.assign(probe.style, { position: "fixed", insetInlineStart: "-200vw", top: "0", visibility: "hidden", pointerEvents: "none", zIndex: "-1" });
+      const body = probe.querySelector<HTMLElement>(`.${styles.paragraphs}`);
+      if (!body) { setIsPaginating(false); paginating.current = false; return; }
+      body.replaceChildren();
+      body.style.fontSize = `${fontSize}px`;
+      document.body.append(probe);
+      const addFragment = (fragment: ReaderTextFragment) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = styles.paragraph + (targetParagraph === fragment.paragraphId ? ` ${styles.targetParagraph}` : "");
+        wrapper.dataset.paragraphId = fragment.paragraphId;
+        if (onAdd && selectionMode && fragment.kind === "original" && fragment.unitStart) {
+          const checkbox = document.createElement("div");
+          checkbox.className = styles.paragraphSelect;
+          checkbox.textContent = "□";
+          wrapper.append(checkbox);
+        }
+        const text = document.createElement("div");
+        text.className = `khateeb-book-text khateeb-book-${fragment.language} whitespace-pre-wrap break-words leading-9`;
+        text.lang = fragment.language;
+        text.dir = fragment.language === "en" ? "ltr" : "rtl";
+        if (fragment.language === "ar") text.classList.add("qalam-book-arabic");
+        text.textContent = fragment.text;
+        if (fragment.kind === "translation") {
+          const block = document.createElement("section");
+          block.className = styles.translationBlock;
+          block.lang = fragment.language;
+          block.dir = "rtl";
+          block.append(text);
+          if (fragment.unitEnd) {
+            const credit = document.createElement("p");
+            credit.className = styles.translationCredit;
+            credit.textContent = `${fragment.translator ?? ""} · ${fragment.source ?? ""}`;
+            block.append(credit);
+          }
+          wrapper.append(block);
+        } else wrapper.append(text);
+        return wrapper;
+      };
+      const pages = await paginateMeasuredFlow(readingFlowUnits(reading, activeReadingMode), (fragments) => {
+        body.replaceChildren(...fragments.map(addFragment));
+        return body.scrollHeight <= body.clientHeight + 1;
+      });
+      probe.remove();
+      if (cancelled) return;
+      setVisualPages(pages);
+      const requested = requestedPosition.current;
+      const saved = visiblePosition.current ?? requested;
+      let index = requested?.last ? pages.length - 1 : 0;
+      if (saved?.paragraphId) {
+        const found = pages.findIndex(page => page.some(fragment => fragment.kind === "original"
+          ? fragment.paragraphId === saved.paragraphId
+            && (saved.offsetUtf16 ?? requested?.offsetUtf16 ?? 0) >= fragment.startOffset
+            && (saved.offsetUtf16 ?? requested?.offsetUtf16 ?? 0) < fragment.endOffset
+          : fragment.paragraphId === saved.paragraphId && fragment.unitStart));
+        if (found >= 0) index = found;
+      }
+      setVisualPageIndex(Math.max(0, index));
+      const fragment = firstSourceFragment(pages[index]);
+      if (fragment) {
+        const anchor = anchorForPage(reading, fragment.paragraphId, fragment.kind === "original" ? fragment.startOffset : 0);
+        visiblePosition.current = anchor;
+        saveProgress(rememberReaderPosition(progressRef.current, anchor));
+      }
+      requestedPosition.current = null;
+      paginating.current = false;
+      setIsPaginating(false);
+    };
+    void run().catch(() => {
+      paginating.current = false;
+      setIsPaginating(false);
+      setError(ur ? "صفحہ بندی نہیں ہوسکی؛ عبارت کا اصل متن محفوظ ہے۔" : "The page layout could not be measured. Source text remains unchanged.");
+    });
+    return () => { cancelled = true; paginating.current = false; setIsPaginating(false); };
+  }, [reading, readingMode, fontSize, layoutSize, selectionMode, selectedIds.length, targetParagraph]);
 
   useEffect(() => {
     const dialog = tocDialog.current;
@@ -84,21 +194,54 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     try { localStorage.setItem(KHATEEB_READER_PROGRESS_KEY, JSON.stringify(next)); }
     catch { setMessage(ur ? "اس براؤزر میں مطالعے کا مقام محفوظ نہیں ہوسکا۔" : "Reading location could not be saved in this browser."); }
   }
-  async function read(source: string, recordId: string, part: number | "last" = 1, paragraphId = "", expected?: ReaderAnchor) {
-    const result = await get(args("read", source, { id: recordId, part: String(part) }));
+  async function read(source: string, recordId: string, part: number | "last" = 1, paragraphId = "", expected?: ReaderAnchor, matchOffsetUtf16 = 0) {
+    const result = await get(args("read", source, { id: recordId, part: "1" }));
     if (!result?.recordId) return null;
     const page = result as BookReadingPage;
     if (expected && !anchorMatchesPage(expected, page)) {
       setMessage(ur ? "محفوظ نشان پرانا ہے؛ یہ نسخہ بدل چکا ہے۔ اسے خودکار طور پر کسی دوسرے متن سے نہیں جوڑا گیا۔" : "Saved bookmark no longer matches this exact edition. It was not remapped.");
       return null;
     }
-    setReading(page); setTargetParagraph(paragraphId);
+    const offsetUtf16 = expected?.offsetUtf16 ?? matchOffsetUtf16;
+    requestedPosition.current = { recordId, paragraphId: expected?.paragraphId ?? paragraphId, offsetUtf16, last: part === "last" };
+    visiblePosition.current = expected ?? null;
+    setReading(page); setVisualPages([]); setVisualPageIndex(0); setTargetParagraph(paragraphId);
     setSelectedIds([]); setSelectionMode(false); setMessage("");
-    saveProgress(rememberReaderPosition(progressRef.current, anchorForPage(page, paragraphId)));
     const correctContentsPage = Math.ceil(page.recordOrdinal / 24);
     if (toc && toc.page !== correctContentsPage) await contents(source, correctContentsPage);
     return page;
   }
+
+  function rememberVisiblePosition() {
+    const fragment = visualPages[visualPageIndex]?.find(item => item.kind === "original") ?? visualPages[visualPageIndex]?.[0];
+    if (!reading || !fragment) return;
+    const offset = fragment.kind === "original" ? fragment.startOffset : 0;
+    visiblePosition.current = anchorForPage(reading, fragment.paragraphId, offset);
+  }
+  function changeReadingMode(mode: BookCopyMode) {
+    rememberVisiblePosition();
+    setReadingMode(mode);
+  }
+  function firstSourceFragment(page: ReaderVisualPage | undefined) {
+    return page?.find(item => item.kind === "original") ?? page?.[0];
+  }
+  function copyVisiblePage(withReference: boolean, mode: BookCopyMode) {
+    if (!reading) return "";
+    const visible = visualPages[visualPageIndex] ?? [];
+    const fragments = visible.filter(fragment => mode === "combined"
+      || (mode === "original" && fragment.kind === "original")
+      || (mode === "translation" && fragment.kind === "translation"));
+    const text = fragments.map((fragment, index) => {
+      const previous = fragments[index - 1];
+      return previous && previous.paragraphId === fragment.paragraphId && previous.kind === fragment.kind
+        ? fragment.text : `${index ? "\n\n" : ""}${fragment.text}`;
+    }).join("");
+    if (!withReference) return text;
+    const credits = [...new Set(fragments.filter(f => f.kind === "translation")
+      .map(f => [f.translator, f.source].filter(Boolean).join(" — ")).filter(Boolean))];
+    return [reading.reference, ...credits, text].filter(Boolean).join("\n\n");
+  }
+
   async function contents(source: string, page = 1, autoOpen = false) {
     const result = await get(args("contents", source, { page: String(page) }));
     if (result?.entries) {
@@ -152,7 +295,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
 
   async function changeSource(next: string) {
     setSourceId(next);
-    setReading(null); setToc(null); setFind(null); setFindText(""); setTargetParagraph(""); setSelectedIds([]); setSelectionMode(false);
+    setReading(null); setVisualPages([]); setVisualPageIndex(0); requestedPosition.current = null; visiblePosition.current = null; setToc(null); setFind(null); setFindText(""); setTargetParagraph(""); setSelectedIds([]); setSelectionMode(false);
     setReadingMode("original"); setCopyMode("original");
     await contents(next, 1, true);
   }
@@ -171,9 +314,9 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   }
   function toggleBookmark() {
     if (!reading) return;
-    const target = selectedIds[0] || targetParagraph || reading.paragraphs[0]?.id;
+    const target = selectedIds[0] || visiblePosition.current?.paragraphId || targetParagraph || reading.paragraphs[0]?.id;
     if (!target) return;
-    const bookmark = anchorForPage(reading, target);
+    const bookmark = anchorForPage(reading, target, visiblePosition.current?.offsetUtf16 ?? 0);
     saveProgress(toggleReaderBookmark(progressRef.current, bookmark));
     setMessage(ur ? "مطالعے کا نشان محفوظ ہوگیا یا ہٹا دیا گیا۔" : "Reading bookmark updated.");
   }
@@ -190,7 +333,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         body: JSON.stringify({
           sourceId: current.sourceId, recordId: current.recordId,
           sourceSha256: current.sourceSha256, recordSha256: current.recordSha256,
-          part: current.page, paragraphIds: selected.map(p => p.id),
+          part: 1, paragraphIds: selected.map(p => p.id),
         }),
       });
       if (!response.ok) throw new Error(response.status === 409 ? "stale" : "request");
@@ -220,18 +363,36 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   }
   function previousPart() {
     if (!reading) return;
-    if (reading.page > 1) void read(sourceId, reading.recordId, reading.page - 1);
-    else if (reading.previousRecordId) void read(sourceId, reading.previousRecordId, "last");
+    if (visualPageIndex > 0) {
+      const nextIndex = visualPageIndex - 1;
+      setVisualPageIndex(nextIndex);
+      const fragment = firstSourceFragment(visualPages[nextIndex]);
+      if (fragment) {
+        const anchor = anchorForPage(reading, fragment.paragraphId, fragment.kind === "original" ? fragment.startOffset : 0);
+        visiblePosition.current = anchor;
+        saveProgress(rememberReaderPosition(progressRef.current, anchor));
+      }
+    } else if (reading.previousRecordId) void read(sourceId, reading.previousRecordId, "last");
   }
   function nextPart() {
     if (!reading) return;
-    if (reading.page < reading.pageCount) void read(sourceId, reading.recordId, reading.page + 1);
-    else if (reading.nextRecordId) void read(sourceId, reading.nextRecordId);
+    if (visualPageIndex + 1 < visualPages.length) {
+      const nextIndex = visualPageIndex + 1;
+      setVisualPageIndex(nextIndex);
+      const fragment = firstSourceFragment(visualPages[nextIndex]);
+      if (fragment) {
+        const anchor = anchorForPage(reading, fragment.paragraphId, fragment.kind === "original" ? fragment.startOffset : 0);
+        visiblePosition.current = anchor;
+        saveProgress(rememberReaderPosition(progressRef.current, anchor));
+      }
+    } else if (reading.nextRecordId) void read(sourceId, reading.nextRecordId);
   }
   const selectedSource = shelf?.sources.find(s => s.id === sourceId);
   const activeReadingMode = reading?.language === "ar" ? readingMode : "original";
   const citation = reading?.reference ?? "";
-  const currentBookmark = reading?.paragraphs.length ? anchorForPage(reading, selectedIds[0] || targetParagraph || reading.paragraphs[0].id) : null;
+  const currentBookmark = reading?.paragraphs.length ? anchorForPage(reading,
+    selectedIds[0] || visiblePosition.current?.paragraphId || targetParagraph || reading.paragraphs[0].id,
+    visiblePosition.current?.offsetUtf16 ?? 0) : null;
   const isBookmarked = !!currentBookmark && progress.bookmarks.some(b => sameReaderAnchor(b, currentBookmark));
   const visibleBookmarks = progress.bookmarks.filter(b =>
     b.sourceId === sourceId && b.sourceSha256 === selectedSource?.sha256);
@@ -256,7 +417,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         <button type="button" className={btn} onClick={() => { setTocOpen(true); if (!toc) void contents(sourceId); }}>{ur ? "فہرست" : "Contents"}</button>
         <button type="button" className={btn} aria-expanded={searchOpen} aria-controls="book-search-panel" onClick={() => setSearchOpen(open => !open)}>{ur ? "تلاش" : "Search"}</button>
         {isArabic ? <label className={styles.languageSelect}><span>{ur ? "مطالعہ" : "Read"}</span>
-          <select className={field} aria-label={ur ? "مطالعے کی صورت" : "Reading mode"} value={readingMode} onChange={e => setReadingMode(e.target.value as BookCopyMode)}>
+          <select className={field} aria-label={ur ? "مطالعے کی صورت" : "Reading mode"} value={readingMode} onChange={e => changeReadingMode(e.target.value as BookCopyMode)}>
             <option value="original">{ur ? "عربی" : "Arabic"}</option><option value="translation">{ur ? "اردو" : "Urdu"}</option><option value="combined">{ur ? "عربی + اردو" : "Arabic + Urdu"}</option>
           </select>
         </label> : null}
@@ -269,12 +430,14 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
               </select>
             </label>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className={btn} disabled={!reading || (copyMode === "translation" && !reading.translations?.length)} onClick={() => reading && void feedback.copy(copyReadingPage(reading, false, copyMode))}>{ur ? "نقل" : "Copy text"}</button>
-              <button type="button" className={btn} disabled={!reading || (copyMode === "translation" && !reading.translations?.length)} onClick={() => reading && void feedback.copy(copyReadingPage(reading, true, copyMode))}>{ur ? "حوالے سمیت" : "Copy with reference"}</button>
+              <button type="button" className={btn} disabled={!reading || (copyMode === "translation" && !reading.translations?.length)} onClick={() => void feedback.copy(copyVisiblePage(false, copyMode))}>{ur ? "نقل" : "Copy text"}</button>
+              <button type="button" className={btn} disabled={!reading || (copyMode === "translation" && !reading.translations?.length)} onClick={() => void feedback.copy(copyVisiblePage(true, copyMode))}>{ur ? "حوالے سمیت" : "Copy with reference"}</button>
             </div>
             <div className={styles.menuDivider}/>
             <span className={styles.menuLabel}>{ur ? "متن کا حجم" : "Text size"}</span>
             <div className="flex items-center gap-2"><button type="button" className={btn} aria-label={ur ? "متن چھوٹا کریں" : "Smaller text"} disabled={fontSize <= 18} onClick={() => setFontSize(size => Math.max(18, size - 2))}>−</button><span>{fontSize}</span><button type="button" className={btn} aria-label={ur ? "متن بڑا کریں" : "Larger text"} disabled={fontSize >= 32} onClick={() => setFontSize(size => Math.min(32, size + 2))}>+</button></div>
+            <div className={styles.menuDivider}/>
+            <button type="button" className={btn} disabled={!reading} onClick={() => window.print()}>{ur ? "صفحہ پرنٹ کریں" : "Print this page"}</button>
             <div className={styles.menuDivider}/>
             <button type="button" className={btn} aria-pressed={isBookmarked} disabled={!reading} onClick={toggleBookmark}>{isBookmarked ? (ur ? "نشان ہٹائیں" : "Remove bookmark") : (ur ? "مطالعے کا نشان" : "Bookmark")}</button>
             {onAdd ? <button type="button" className={btn} aria-pressed={selectionMode} disabled={!reading || busy} onClick={() => { setSelectionMode(mode => !mode); setSelectedIds([]); }}>{selectionMode ? (ur ? "انتخاب بند کریں" : "Done selecting") : (ur ? "عبارت منتخب کریں" : "Select passage")}</button> : null}
@@ -301,8 +464,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         </form>
         {find ? <div className={styles.searchResults} aria-live="polite"><p>{find.total} {ur ? "نتائج" : "results"}</p>
           {find.hits.map(hit => <button key={hit.paragraphId} type="button" className={styles.searchHit} onClick={() => {
-            const paraNumber = Number(hit.paragraphId.match(/:p(\d+)$/)?.[1] ?? 1);
-            void read(sourceId, hit.recordId, Math.ceil(paraNumber / 12), hit.paragraphId); setSearchOpen(false);
+            void read(sourceId, hit.recordId, 1, hit.paragraphId, undefined, hit.offsetUtf16); setSearchOpen(false);
           }}><strong>{hit.title}</strong><span dir="auto">{hit.snippet}</span></button>)}
           <nav className={styles.resultPages} aria-label={ur ? "تلاش کے صفحات" : "Search result pages"}>
             <button className={btn} type="button" disabled={busy || find.page === 1} onClick={() => void search(find.page - 1)}>{ur ? "پچھلے نتائج" : "Previous matches"}</button><span>{find.page} / {Math.max(1, Math.ceil(find.total / find.pageSize))}</span><button className={btn} type="button" disabled={busy || find.page * find.pageSize >= find.total} onClick={() => void search(find.page + 1)}>{ur ? "اگلے نتائج" : "Next matches"}</button>
@@ -324,15 +486,15 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           <button className={btn} type="button" disabled={busy || toc.page * toc.pageSize >= toc.total} onClick={() => void contents(sourceId, toc.page + 1)}>{ur ? "اگلے حصے" : "Next"}</button>
         </nav>}
       </dialog>
-      {reading ? <article data-testid="book-reading-page" aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
+      {reading ? <article ref={pageArticleRef} data-testid="book-reading-page" aria-label={ur ? "کتاب کی عبارت" : "Book text"} className={styles.readingPage}>
         <header className={styles.pageMeta} dir="rtl">
           <div className={styles.bookIdentity}><strong>{selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}</strong>
             <details className={styles.editionDetails}><summary>{ur ? "نسخے کی معلومات" : "Edition details"}</summary><p className="qalam-source-reference">{citation}</p>{reading.translator ? <p>{ur ? "مترجم" : "Translator"}: {reading.translator}</p> : null}</details>
           </div>
           <nav className={styles.pageNavigation} aria-label={ur ? "مطالعے کے صفحے" : "Reader page navigation"} dir="rtl">
-            <button type="button" className={btn} disabled={busy || (reading.page === 1 && !reading.previousRecordId)} aria-label={ur ? "پچھلا مطالعہ صفحہ" : "Previous reader page"} onClick={previousPart}>‹</button>
-            <span className={styles.pageNumber}><small>{ur ? "مطالعہ حصہ · صفحہ" : "Reader part · page"}</small><strong>{ur ? reading.recordOrdinal.toLocaleString("ur-PK") + " · " + reading.page.toLocaleString("ur-PK") + " / " + reading.pageCount.toLocaleString("ur-PK") : reading.recordOrdinal + " · " + reading.page + " / " + reading.pageCount}</strong></span>
-            <button type="button" className={btn} disabled={busy || (reading.page === reading.pageCount && !reading.nextRecordId)} aria-label={ur ? "اگلا مطالعہ صفحہ" : "Next reader page"} onClick={nextPart}>›</button>
+            <button type="button" className={btn} disabled={busy || isPaginating || (visualPageIndex === 0 && !reading.previousRecordId)} aria-label={ur ? "پچھلا مطالعہ صفحہ" : "Previous reader page"} onClick={previousPart}>‹</button>
+            <span className={styles.pageNumber}><small>{ur ? "مطالعہ صفحہ" : "Reader page"}</small><strong>{ur ? reading.recordOrdinal.toLocaleString("ur-PK") + " · " + (visualPageIndex + 1).toLocaleString("ur-PK") + " / " + visualPages.length.toLocaleString("ur-PK") : reading.recordOrdinal + " · " + (visualPageIndex + 1) + " / " + visualPages.length}</strong></span>
+            <button type="button" className={btn} disabled={busy || isPaginating || (visualPageIndex + 1 >= visualPages.length && !reading.nextRecordId)} aria-label={ur ? "اگلا مطالعہ صفحہ" : "Next reader page"} onClick={nextPart}>›</button>
           </nav>
           <div className={styles.chapterTitle}><span>{reading.kind === "front-matter" ? (ur ? "ابتدائی مواد" : "Front matter") : (ur ? "باب یا حصہ" : "Chapter or section")}</span><strong>{reading.title}</strong></div>
         </header>
@@ -342,19 +504,14 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
             : (ur ? "اردو ترجمہ ابھی دستیاب نہیں" : "Translation is not available yet.")}</span>
           {readingMode === "translation" ? <button type="button" className={btn} onClick={() => setReadingMode("original")}>{ur ? "عربی پر واپس جائیں" : "Return to Arabic"}</button> : null}
         </p> : null}
-        <div className={styles.paragraphs} style={{ fontSize: fontSize + "px" }}>
-          {reading.paragraphs.map(p => {
-            const translations = (reading.translations ?? []).filter(t => t.paragraphIds.at(-1) === p.id);
-            return <div key={p.id} className={styles.paragraph + (targetParagraph === p.id ? " " + styles.targetParagraph : "")} data-paragraph-id={p.id}>
-              {onAdd && selectionMode ? <label className={styles.paragraphSelect}>
-                <input type="checkbox" aria-label={ur ? "پیراگراف " + p.id.split(":p").at(-1) + " منتخب کریں" : "Select paragraph " + p.id.split(":p").at(-1)} checked={selectedIds.includes(p.id)} onChange={e => setSelectedIds(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))}/>
-              </label> : null}
-              {activeReadingMode !== "translation" ? <BookPassageText text={p.text} language={reading.language} highlight={targetParagraph === p.id ? originalBookQuerySpan(p.text, findText) ?? undefined : undefined}/> : null}
-              {readingMode !== "original" ? translations.map((translation, index) => <section key={p.id + "-translation-" + index} className={styles.translationBlock} lang={translation.language} dir="rtl">
-                <BookPassageText text={translation.text} language={translation.language}/><p className={styles.translationCredit}>{translation.translator} · {translation.source}</p>
-              </section>) : null}
-            </div>;
-          })}
+        <div className={styles.paragraphs} style={{ fontSize: fontSize + "px" }} data-testid="reader-page-text-area">
+          {(visualPages[visualPageIndex] ?? []).map((fragment, index) => <div key={`${fragment.key}:${fragment.startOffset}`} className={styles.paragraph + (targetParagraph === fragment.paragraphId ? " " + styles.targetParagraph : "")} data-paragraph-id={fragment.paragraphId} data-source-kind={fragment.kind} data-start-offset={fragment.startOffset} data-end-offset={fragment.endOffset}>
+            {onAdd && selectionMode && fragment.kind === "original" && fragment.unitStart ? <label className={styles.paragraphSelect}>
+              <input type="checkbox" aria-label={ur ? "پیراگراف " + fragment.paragraphId.split(":p").at(-1) + " منتخب کریں" : "Select paragraph " + fragment.paragraphId.split(":p").at(-1)} checked={selectedIds.includes(fragment.paragraphId)} onChange={e => setSelectedIds(ids => e.target.checked ? [...ids, fragment.paragraphId] : ids.filter(id => id !== fragment.paragraphId))}/>
+            </label> : null}
+            {fragment.kind === "translation" ? <section className={styles.translationBlock} lang={fragment.language} dir="rtl"><BookPassageText text={fragment.text} language={fragment.language}/>{fragment.unitEnd ? <p className={styles.translationCredit}>{fragment.translator} · {fragment.source}</p> : null}</section>
+              : <BookPassageText text={fragment.text} language={fragment.language} highlight={targetParagraph === fragment.paragraphId ? originalBookQuerySpan(fragment.text, findText) ?? undefined : undefined}/>}
+          </div>)}
         </div>
         {onAdd && selectedIds.length ? <div className={styles.selectionActions}><button type="button" className={btn} disabled={busy} onClick={() => void addToSermon()}>{ur ? "میری مجلس میں شامل کریں" : "Add to My Sermon"}</button></div> : null}
       </article> : null}
