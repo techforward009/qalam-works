@@ -31,7 +31,7 @@ const find = (year:number, month:number, day:number) =>
 describe("Pakistan Gregorian 2024 — reviewed lunar history", () => {
   it("keeps each of the twelve historic month announcements and preserves 2025 and 2026", () => {
     expect(PAKISTAN_2024_HISTORIC_ANCHORS).toHaveLength(12);
-    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(61);
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(73);
     const ids=PAKISTAN_OFFICIAL_HIJRI_ANCHORS.map(anchor=>anchor.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const a of PAKISTAN_2024_HISTORIC_ANCHORS) {
