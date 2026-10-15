@@ -1697,7 +1697,7 @@ export default function DocumentStudioEditor() {
             </div>
           )}
           {pdfError && (
-            <section className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-red-900" dir="rtl" aria-live="polite">
+            <section className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-red-900" dir="rtl" aria-live="polite" aria-label="پی ڈی ایف تیار نہیں ہوسکی">
               <p className="text-sm font-semibold">پی ڈی ایف تیار نہیں ہوسکی</p>
               <p className="mt-1 text-xs">{pdfError}</p>
               {pdfDiagnostics.length > 0 && (
