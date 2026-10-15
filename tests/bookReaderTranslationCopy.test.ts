@@ -3,7 +3,7 @@ import { copyReadingPage, type BookReadingPage } from "../app/lib/knowledge/book
 
 const page: BookReadingPage = {
   recordId: "nahj-ar:saying:1", sourceId: "nahj-ar", recordOrdinal: 1,
-  language: "ar", title: "اصل متن کا حصہ 1", reference: "نہج البلاغہ، حکمت 1",
+  language: "ar", kind: "saying", title: "اصل متن کا حصہ 1", reference: "نہج البلاغہ، حکمت 1",
   translator: null, paragraphCount: 1,
   paragraphs: [{ id: "nahj-ar:saying:1:p1", text: "عَرَبِيٌّ محفوظ" }],
   page: 1, pageCount: 1, previousRecordId: null, nextRecordId: null,
