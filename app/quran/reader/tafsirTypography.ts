@@ -6,7 +6,7 @@
  * whitespace are never normalized, removed, or replaced.
  */
 export type TafsirTypographyRun = Readonly<{
-  kind: "urdu" | "arabic" | "arabic-unsupported" | "reference";
+  kind: "urdu" | "arabic" | "reference";
   text: string;
 }>;
 
@@ -16,10 +16,6 @@ const URDU_EXCLUSIVE = /[پچژگٹڈڑں]/u;
 const LATIN_LETTER = /[A-Za-z]/u;
 const URDU_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:سورہ|سورۃ|ہود|نمل|آیت|آیات)[^()\n]*\)\s*[۔.؟?]?)$/u;
 const ENGLISH_REFERENCE_SUFFIX = /(\s*\(\s*[^()\n]*(?:surah|verse|ayah)[^()\n]*\)\s*[۔.؟?]?)$/iu;
-// Coverage was extracted from the already-approved DigitalKhatt IndoPak
-// WOFF2 served by the production font face (SHA-256 recorded in the release
-// evidence). U+06D2 is absent; Chromium would otherwise fall back for it.
-const DIGITAL_KHATT_UNSUPPORTED_ARABIC_GLYPHS = new Set([0x06d2]);
 
 function confidentArabicQuotation(line: string): boolean {
   const trimmed = line.trim();
@@ -53,9 +49,8 @@ function lineRuns(line: string): TafsirTypographyRun[] {
   const quoteText = suffix ? line.slice(0, suffix.index) : line;
   const referenceText = suffix?.[0] ?? "";
   if (confidentArabicQuotation(quoteText)) {
-    const hasGlyphGap = [...quoteText].some((char) => DIGITAL_KHATT_UNSUPPORTED_ARABIC_GLYPHS.has(char.codePointAt(0)!));
     return [
-      { kind: hasGlyphGap ? "arabic-unsupported" : "arabic", text: quoteText },
+      { kind: "arabic", text: quoteText },
       ...(referenceText ? [{ kind: "reference" as const, text: referenceText }] : []),
     ];
   }
