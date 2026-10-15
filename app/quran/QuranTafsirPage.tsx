@@ -126,6 +126,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
                   const available = item.id === "nemuneh";
                   return (
                     <button key={item.id} type="button" disabled={!available}
+                      onClick={() => { setWorkId(item.id); if (sourceMenuRef.current) sourceMenuRef.current.open = false; }}
                       aria-current={item.id === workId ? "true" : undefined}
                       className={"flex w-full items-center justify-between gap-2 rounded-lg px-3 py-3 text-right " +
                         (item.id === workId ? "bg-[#eaf0e4] text-[#254b34] " : "text-[#3a4a3d] ") +
