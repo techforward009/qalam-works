@@ -3,8 +3,17 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "../lib/language-context";
 import { surahTitle } from "./reader/metadata";
+import { publicBlobFontUrl } from "../tools/document-studio/utils/publicBlobFontCatalog";
 import { displayTafsirHeading, splitTafsirTypography, tafsirSourceHeading } from "./reader/tafsirTypography";
 import { TAFSIR_WORKS, tafsirForAyah, tafsirWorkById } from "./reader/tafsirCatalog";
+
+const TAFSIR_SCHEHERAZADE_CSS = `@font-face {
+  font-family: "Qalam Tafsir Scheherazade";
+  src: url("${publicBlobFontUrl("ScheherazadeNew-Medium.woff2")}") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}`;
 
 type TafsirLanguage = "ur" | "en";
 type Topic = { title: string; text: string; sourceId: number | null };
@@ -21,9 +30,11 @@ type Remote = {
 function TafsirText({ text, language }: { text: string; language: TafsirLanguage }) {
   const runs = splitTafsirTypography(text);
   const arabicStyle = {
-    fontFamily: '"Digital Khatt Indo-Pak"',
-    fontSize: "1.06em",
-    lineHeight: 1.9,
+    fontFamily: '"Qalam Tafsir Scheherazade", serif',
+    fontSize: "1.12em",
+    fontWeight: 500,
+    fontSynthesis: "none" as const,
+    lineHeight: 2.05,
     unicodeBidi: "isolate" as const,
   };
   return (
@@ -37,19 +48,8 @@ function TafsirText({ text, language }: { text: string; language: TafsirLanguage
     >
       {runs.map((run, index) => run.kind === "arabic" ? (
         <span key={index} dir="rtl" lang="ar" data-tafsir-arabic="true"
-          style={arabicStyle}>
+          data-tafsir-font="scheherazade-new" style={arabicStyle}>
           {run.text}
-        </span>
-      ) : run.kind === "arabic-unsupported" ? (
-        <span key={index} className="contents">
-          <span dir="rtl" lang="ar" data-tafsir-arabic-unsupported="true">{run.text}</span>
-          <span role="note" data-tafsir-font-warning="digital-khatt-coverage"
-            className={"mx-1 inline-block rounded bg-amber-100 px-1 text-[0.68em] text-amber-900 dark:bg-amber-950 dark:text-amber-200 " + (language === "ur" ? "font-naskh" : "")}
-            dir={language === "ur" ? "rtl" : "ltr"} lang={language}>
-            {language === "ur"
-              ? "　ایک حرف Digital Khatt میں موجود نہیں؛ اصل عربی متن جوں کا توں ہے۔　"
-              : " · Digital Khatt lacks a glyph here; the Arabic source text is unchanged. · "}
-          </span>
         </span>
       ) : run.kind === "reference" ? (
         <span key={index} dir={language === "ur" ? "rtl" : "ltr"} lang={language} data-tafsir-reference="true"
@@ -97,6 +97,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
   return (
     <article className="quran-page quran-reader-paper relative flex w-full flex-col overflow-hidden bg-[#fffef9] px-4 py-5 text-[#293a2e] dark:bg-[#151a16] dark:text-[#e4eee4] sm:px-10 sm:py-8"
       dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}>
+      <style>{TAFSIR_SCHEHERAZADE_CSS}</style>
       <header className="border-b border-[#c9b98d]/45 pb-4">
         <div className="text-xl font-bold text-[#32422f]"
           style={ur ? { fontFamily: '"Gulzar", serif', fontSize: "27px", lineHeight: 2.15, fontWeight: 400 } : undefined}>
