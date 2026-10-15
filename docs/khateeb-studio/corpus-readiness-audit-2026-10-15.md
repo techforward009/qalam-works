@@ -105,3 +105,24 @@ python3 scripts/kafi-reference-sidecar.py "/path/to/Qalam-Foundational-Corpus-Wi
 ```
 
 The owner Library has a local reviewer queue based on the exact archive: **46 rows**, 28 initial selections across volumes 1–7 and 18 in volume 8. No row is falsely pre-approved, and the machine cannot verify historical or editorial attribution by itself. A separate independently inspected edition is needed before adding actual reference data. A source-specific human comparison of the source paragraph and the cited edition is the next gate.
+
+
+## 6. Rāwḍat al-Kāfī, volume VIII — first external source spot-check (15 October 2026)
+
+**Primary edition:** [Maktabat Madrasat al-Fiqahah, volume 8, bibliographic record](https://ar.lib.eshia.ir/11027) identifies Shaykh al-Kulaynī, editor **ʿAlī Akbar al-Ghaffārī** and publisher **Dār al-Kutub al-Islāmiyyah, Tehran**. The site's catalog describes the *fourth* printing (1362 Sh), while [its volume opening](https://lib.eshia.ir/11027/8/1) mentions the *second* printing (1389 AH). Do not silently reconcile these conflicting printing statements. The page references below mean precisely **online edition ID 11027**, not all printed editions.
+
+**Verified source opening, printed local number and web page** in the owner-provided Arabic archive against independently opened online edition pages, using normalized Arabic for the opening-chain comparison **without modifying the original Arabic**:
+
+| Private record | Printed narration number | Edition URL | Page | Checked |
+| --- | ---: | --- | ---: | --- |
+| \`kafi-v8-ar:section:2\` | 1 | https://lib.eshia.ir/11027/8/2 | 2 | Opening narrator chain and numeric start |
+| \`kafi-v8-ar:section:6\` | 71 | https://lib.eshia.ir/11027/8/101 | 101 | Opening narrator chain and numeric start |
+| \`kafi-v8-ar:section:19\` | 589 | https://lib.eshia.ir/11027/8/392 | 392 | Opening narrator chain and numeric start |
+
+**Crucial distinction:** the source DOCX's \`القسم الأول\` through \`القسم الثامن عشر\` are *18 intake divisions*, not established authorial chapter titles. The publisher's body begins \`كتاب الروضة\`. Do not promote division ordinals into certified book chapters. The three spot-check sidecar entries record the book title \`كتاب الروضة\`, leave \`chapter_title\` null, and attach the independently opened page and local number. **No full-isnād verification, complete narration collation, canonical hadith authenticity judgement, or blanket certification of volume 8** has been performed.
+
+A new private **46-row** JSON sidecar is stored in the owner's Library as \`Kafi_Rawda_Vol8_Verified_Anchors_20261015.json\`: exactly **3 source openings reviewed**, **43 remain pending** (15 further volume-8 divisions, 28 samples in volumes 1–7). A local recheck against the exact ZIP confirmed archive/source/record/paragraph identities and all three local numbers/page-URL alignments; no original book bytes are changed or published.
+
+**Additional code defense:** on the draft branch, \`scripts/kafi-reference-sidecar.py\` now refuses claiming a \`print_page\` that does not match the cited \`lib.eshia.ir/{edition}/{volume}/{page}\` URL. An unpaginated secondary webpage is insufficient for a printed page-number assertion. This checks internal **consistency**, not that a site actually contains the quoted source; a scholarly editor must perform that comparison. Synthetic tests exercise valid and rejected links, and no private source prose is committed.
+
+**Next narrowly scoped gate:** compare more *specific local numbered starts* from the other 15 divisions to edition 11027, and identify whether online Arabic page references consistently align with the supplied DOCX. Never auto-fill unverified print pages or chapters, and do not modify production sources.
