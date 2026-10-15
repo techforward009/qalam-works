@@ -64,7 +64,8 @@ for (const locale of ['ur', 'en'] as const) {
     await reader.getByRole('button', { name: ur ? 'میری مجلس میں شامل کریں' : 'Add to My Sermon', exact: true }).click();
     await expect(reader.getByRole('status').filter({ hasText: ur ? 'میری مجلس میں شامل اور محفوظ ہوگئی' : 'Saved in My Sermon' })).toBeVisible();
 
-    await expect(reader.getByRole('button', { name: ur ? 'انتخاب بند کریں' : 'Done selecting' })).toBeDisabled();
+    await expect(reader.getByRole('checkbox')).toHaveCount(0);
+    await expect(reader.getByRole('button', { name: ur ? 'عبارت منتخب کریں' : 'Select passage', exact: true })).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/tools/khateeb-studio/library');
