@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ayahsOnPage } from "../app/quran/reader/model";
 import {
   indexTafsirCoverage,
   tafsirCoverageForRefs,
@@ -23,6 +24,15 @@ const verses = {
 };
 
 describe("Tafsir commentary source verse coverage", () => {
+  it("uses the actual Quran page map: first page has seven Al-Fatihah verses, second has five Al-Baqarah verses", () => {
+    expect(ayahsOnPage(1).map((item) => item.surah + ":" + item.ayah)).toEqual([
+      "1:1", "1:2", "1:3", "1:4", "1:5", "1:6", "1:7",
+    ]);
+    expect(ayahsOnPage(2).map((item) => item.surah + ":" + item.ayah)).toEqual([
+      "2:1", "2:2", "2:3", "2:4", "2:5",
+    ]);
+  });
+
   const index = indexTafsirCoverage(verses);
   it("reports the actual original group, not an arbitrary Quran page boundary", () => {
     expect(tafsirCoverageForRefs(["2:2"], index)).toEqual([{ sourceKey: "2:2", verses: ["2:1", "2:2"] }]);
