@@ -6,6 +6,32 @@ import type { OfficialHijriMonthAnchor } from "./types";
  */
 export const PAKISTAN_OFFICIAL_HIJRI_ANCHORS: readonly OfficialHijriMonthAnchor[] = [
   {
+    id: "pk-1448-jumada-al-awwal-2026-10-13",
+    jurisdiction: "PK",
+    hijriYear: 1448,
+    hijriMonth: 5,
+    officialDayOneGregorian: { year: 2026, month: 10, day: 13 },
+    // Only the first 29 days are covered until the next monthly sighting is confirmed.
+    coverageEndGregorian: { year: 2026, month: 11, day: 10 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "sighted",
+    announcementGregorianDate: { year: 2026, month: 10, day: 12 },
+    providerId: "pk-ministry-religious-affairs-central-ruet-e-hilal",
+    providerLabel: {
+      en: "Pakistan Ministry of Religious Affairs / Central Ruet-e-Hilal Committee",
+      ur: "وزارتِ مذہبی امور پاکستان / مرکزی رویتِ ہلال کمیٹی",
+    },
+    // APP reports the official Ministry notification; do not invent a Ministry URL.
+    sourceUrl: "https://www.app.com.pk/national/jamadi-ul-awwal-moon-sighted-in-pakistan-first-day-to-fall-on-october-13/",
+    sourceReference: "APP, 12 October 2026: Ministry notification confirms Jamadi-ul-Awwal crescent sighted and 1 Jumada al-Awwal 1448 AH on Tuesday, 13 October 2026.",
+    provenance: {
+      verifiedAt: "2026-10-15",
+      notes: "APP reports the 12 October Central Ruet-e-Hilal Committee decision and Ministry notification; corroborated by Daily Pakistan (https://en.dailypakistan.com.pk/12-Oct-2026/jumadi-ul-awwal-1448-ah-moon-sighted-in-pakistan-first-day-on-oct-13).",
+    },
+  },
+  {
     id: "pk-1448-rabi-al-thani-2026-09-14",
     jurisdiction: "PK",
     hijriYear: 1448,
