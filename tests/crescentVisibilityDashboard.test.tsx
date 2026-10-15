@@ -130,7 +130,7 @@ describe("crescent visibility dashboard", () => {
     expect(screen.getAllByText("Not a new-crescent test").length).toBe(2);
     expect(screen.queryByText("Very favorable ✓")).toBeNull();
     expect(screen.queryByText("Meets criterion ✓")).toBeNull();
-    expect(screen.getByRole("status").textContent).toMatch(/not a new-crescent observation evening/i);
+    expect(screen.getAllByRole("status").some(node => /not a new-crescent observation evening/i.test(node.textContent ?? ""))).toBe(true);
     vi.mocked(authority.resolvePakistanOfficialHijriDate).mockReturnValue(null);
   });
 
