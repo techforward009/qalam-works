@@ -92,11 +92,26 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(tafsir).toContain('remoteTopics.length > 1 ? (');
     expect(tafsir).toContain('Topics in this verse');
     expect(tafsir).toContain('اس آیت کے موضوعات');
-    expect(tafsir).toContain('displayTafsirHeading(topic.title, chosenLanguage)');
+    expect(tafsir).toContain('displayTafsirHeading(tafsirDisplayTopicHeading(topic.title, topic.text), chosenLanguage)');
     expect(tafsir).toContain('href={"#tafsir-topic-" + i}');
     expect(tafsir).toContain('id={"tafsir-topic-" + i}');
     expect(tafsir).toContain('dir={ur ? "rtl" : "ltr"}');
     expect(tafsir).toContain('fontSize: language === "ur" ? "20px" : "1.12em"');
+  });
+
+  it("shows original shared commentary verse scope without presenting it as a per-ayah extract", () => {
+    const route = read("app/api/quran/tafsir-namoona/route.ts");
+    expect(route).toContain('indexTafsirCoverage(corpus.verses)');
+    expect(route).toContain('tafsirCoverageForRefs(entryIndex.refs, coverageIndex)');
+    expect(route).toContain('heading: topics[0]?.title ?? "", topics, coverage,');
+    expect(tafsir).toContain('data-tafsir-verse-coverage="true"');
+    expect(tafsir).toContain('data-tafsir-source-ranges="true"');
+    expect(tafsir).toContain('اس تفسیر میں شامل آیات');
+    expect(tafsir).toContain('Verses covered by this commentary');
+    expect(tafsir).toContain('منتخب آیت: ');
+    expect(tafsir).toContain('Selected verse: ');
+    expect(tafsir).toContain('tafsirDisplayTopicBody(topic.title, topic.text)');
+    expect(tafsir).not.toContain('خودکار آیت وار خلاصہ');
   });
 
   it("keeps Quran translation text, selector, saved translator preference, and approved fonts intact", () => {
