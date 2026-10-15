@@ -5,8 +5,8 @@ const doc = { type: "doc", content: [{ type:"paragraph", content: [{type:"text",
 describe("PDF diagnostics safe classification", () => {
  it("rejects deeply nested synthetic source without stack exhaustion", () => {
   let node: {type:string; content?: any[]} = {type:"paragraph"};
-  for(let i=0;i<1000;i++) node={type:"blockquote",content:[node]};
-  expect(() => preflightPdfSource({type:"doc",content:[node]} as any)).toThrow(/nesting depth/);
+  for(let i=0;i<3000;i++) node={type:"blockquote",content:[node]};
+  expect(() => preflightPdfSource({type:"doc",content:[node]} as any)).toThrow(/node limit/);
  });
  it("finds exact source path without replacing text", () => {
   const before=JSON.stringify(doc);
