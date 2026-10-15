@@ -27,6 +27,16 @@ describe("PDF diagnostics: source paths, safe errors and unknown failures", () =
     expect(result.code).toBe("FONT_UNSUPPORTED");
     expect(result.issues[0].codePoint).toBe("U+06D7");
   });
+  it("reports multiple unsupported Quranic marks with exact source paths", () => {
+    const multiple = { type: "doc", content: [
+      { type: "paragraph", content: [text("ا\\u06D7 ب\\u06D7")] },
+      { type: "paragraph", content: [text("ر\\u06D7")] }
+    ] };
+    const result = issueForPdfFailure(new Error("Unsupported protected Arabic/Quranic U+06D7 at run 0:0; export blocked"), multiple);
+    expect(result.issues).toHaveLength(3);
+    expect(result.issues.map(issue => issue.location?.path)).toEqual([[0,0],[0,0],[1,0]]);
+    expect(result.issues.map(issue => issue.codePoint)).toEqual(["U+06D7","U+06D7","U+06D7"]);
+  });
   it("does not invent a font problem or source location for unrelated failures", () => {
     const failure = issueForPdfFailure(new Error("unknown upstream exception"), doc);
     expect(failure.code).toBe("UNKNOWN");
