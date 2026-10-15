@@ -68,6 +68,7 @@ for (const locale of ['ur', 'en'] as const) {
     await expect(reader.getByRole('button', { name: ur ? 'عبارت منتخب کریں' : 'Select passage', exact: true })).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => localStorage.removeItem('qalam-khateeb-book-reader-progress-v1'));
     await page.goto('/tools/khateeb-studio/library');
     await expect(page.getByTestId('book-reading-page')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
