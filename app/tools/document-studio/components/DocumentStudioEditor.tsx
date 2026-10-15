@@ -284,6 +284,7 @@ export default function DocumentStudioEditor() {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pdfDiagnostics, setPdfDiagnostics] = useState<PdfExportDiagnostic[]>([]);
+  const [pdfRunPreviews, setPdfRunPreviews] = useState<string[]>([]);
   const pdfAttemptRef = useRef<{ snapshot: string; ranges: Array<{ from: number; to: number }> } | null>(null);
   const [pdfSummary, setPdfSummary] = useState<{
     pages: number;
@@ -1184,12 +1185,15 @@ export default function DocumentStudioEditor() {
     setPdfSummary(null);
     const snapshot = JSON.stringify(editor.getJSON());
     const ranges: Array<{ from: number; to: number }> = [];
+    const previews: string[] = [];
     editor.state.doc.descendants((node, pos) => {
       if (node.isText && node.marks.some(mark => mark.type.name === "textStyle" && mark.attrs.fontFamily === "Digital Khatt Indo-Pak")) {
         ranges.push({ from: pos, to: pos + node.nodeSize });
+        previews.push((node.text ?? "").slice(0, 90));
       }
     });
     pdfAttemptRef.current = { snapshot, ranges };
+    setPdfRunPreviews(previews);
     setIsExportingPdf(true);
     try {
       const response = await fetch("/api/export-pdf", {
@@ -1709,6 +1713,9 @@ export default function DocumentStudioEditor() {
                       {problem.selectedFont && <p>منتخب فونٹ: {problem.selectedFont}</p>}
                       {problem.actualFont && <p>استعمال ہونے والا فونٹ: {problem.actualFont}</p>}
                       {problem.location && <p>متاثرہ حصہ: {problem.location.runIndex + 1}</p>}
+                      {problem.location && pdfRunPreviews[problem.location.runIndex] && (
+                        <p className="mt-1 rounded bg-red-50 p-1" dir="auto">عبارت: {pdfRunPreviews[problem.location.runIndex]}</p>
+                      )}
                       {problem.location && (
                         <button type="button" className="mt-2 rounded border border-red-300 px-3 py-1 font-semibold hover:bg-red-100" onClick={() => {
                           if (!editor || !pdfAttemptRef.current) return;
