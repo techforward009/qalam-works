@@ -7,6 +7,8 @@ on:
       - 'scripts/kafi-reference-sidecar.py'
       - 'tests/test_audit_khateeb_corpus.py'
       - 'tests/test_kafi_reference_sidecar.py'
+      - 'app/lib/knowledge/kafiCitationPreview.ts'
+      - 'tests/kafiCitationPreview.test.ts'
       - '.github/workflows/khateeb-corpus-audit-offline.yml'
   workflow_dispatch:
 
@@ -30,3 +32,19 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_*kafi*.py' -v
       - name: Run general corpus audit synthetic tests
         run: python -m unittest discover -s tests -p 'test_audit_khateeb_corpus.py' -v
+
+  citation-preview-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install offline-fixture test dependencies (no project lifecycle scripts)
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Test pure citation-preview metadata safeguards
+        run: npx vitest run tests/kafiCitationPreview.test.ts
