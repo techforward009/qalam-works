@@ -1,4 +1,4 @@
-import { classifyPdfExportFailure } from "../../tools/document-studio/utils/pdfExportDiagnostics";
+import { classifyPdfExportFailure, identifyUnsupportedProtectedCharacters } from "../../tools/document-studio/utils/pdfExportDiagnostics";
 import { deriveDocumentTitle } from "../../tools/document-studio/utils/extractPlainText";
 import { buildPdfHeaderTemplate, buildPdfFooterTemplate } from "../../tools/document-studio/utils/pdfHeaderFooter";
 import { fontsForDocument } from "../../tools/document-studio/utils/pdfDocumentFonts";
@@ -216,6 +216,15 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     const report = classifyPdfExportFailure(err);
+    if (report.diagnostics[0]?.kind === "font" && isValidRequestBody(body)) {
+      const additional = identifyUnsupportedProtectedCharacters(body.doc);
+      for (const issue of additional) {
+        if (!report.diagnostics.some(existing =>
+          existing.location?.runIndex === issue.location?.runIndex && existing.codepoint === issue.codepoint)) {
+          report.diagnostics.push(issue);
+        }
+      }
+    }
     // Never print the exception or source text: diagnostics may refer to private documents.
     console.warn("[pdf-export] rejected", report.diagnostics[0]?.code);
     return NextResponse.json(report, { status: report.diagnostics[0]?.kind === "too_large" ? 413 : report.diagnostics[0]?.kind === "timeout" ? 504 : 500 });
