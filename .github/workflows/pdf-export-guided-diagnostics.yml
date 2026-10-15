@@ -28,6 +28,11 @@ jobs:
         run: npx tsc --noEmit
       - name: Production build without deployment
         run: npm run build
+      - name: Guided repair browser screenshots and retry
+        run: |
+          npx playwright install --with-deps chromium
+          mkdir -p artifacts/pdf-diagnostics
+          npx playwright test tests/e2e/pdfGuidedRepair.spec.ts --project=desktop-chrome --reporter=line
       - name: Diff checks
         run: git diff --check
       - name: Evidence note
