@@ -1251,7 +1251,7 @@ export default function DocumentStudioEditor() {
     }
   };
 
-  const resolvePdfIssueRange = (problem: PdfExportFailure["problems"][number]): {from:number;to:number} | null => {
+  const resolvePdfIssueRange = (problem: PdfExportFailure["problems"][number], entireRun = false): {from:number;to:number} | null => {
     if (!editor || !problem.source || JSON.stringify(editor.getJSON()) !== pdfDiagnosticDocumentRef.current) return null;
     let node = editor.state.doc;
     let position = 0;
@@ -1262,8 +1262,8 @@ export default function DocumentStudioEditor() {
       node = node.child(index);
     }
     if (!node.isText || (problem.source.snapshot && pdfRunFingerprint(node.text ?? "") !== problem.source.snapshot)) return null;
-    const from = position + problem.source.start;
-    const to = position + problem.source.end;
+    const from = position + (entireRun ? 0 : problem.source.start);
+    const to = position + (entireRun ? (node.text?.length ?? 0) : problem.source.end);
     return from >= 0 && to <= editor.state.doc.content.size && from < to ? {from,to} : null;
   };
   const navigatePdfIssue = (problem: PdfExportFailure["problems"][number]) => {
@@ -1275,7 +1275,7 @@ export default function DocumentStudioEditor() {
     if (!editor || !pdfDiagnosis) return;
     const problem = pdfDiagnosis.problems[index];
     if (!problem?.verifiedReplacement) return;
-    const range = resolvePdfIssueRange(problem);
+    const range = resolvePdfIssueRange(problem, true);
     if (!range) { setPdfError("دستاویز بدل گئی ہے، دوبارہ جانچ کریں۔"); setPdfRepairPreview(null); return; }
     const markType = editor.state.schema.marks.textStyle;
     if (!markType) return;
