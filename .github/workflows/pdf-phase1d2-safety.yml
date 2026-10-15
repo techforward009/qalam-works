@@ -27,6 +27,14 @@ jobs:
           export QALAM_PDF_CHROMIUM="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')"
           echo "$QALAM_PDF_CHROMIUM" > artifacts/phase1d2/chromium-path.txt
           npx vitest run tests/pdfRealPipeline.test.ts --reporter=json --outputFile=artifacts/phase1d2/vitest.json
+      - name: Capture embedded Jameel fonts from actual test output
+        if: always()
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          for p in /tmp/qalam-real-pdf-validation/jameel-fallback.pdf /tmp/qalam-real-pdf-validation/matrix-8-fallback.pdf; do
+            if test -f "$p"; then echo "$p"; pdffonts "$p"; fi
+          done
       - name: TypeScript
         run: npx tsc --noEmit
       - name: Production build only; no deployment
