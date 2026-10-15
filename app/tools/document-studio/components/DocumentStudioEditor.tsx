@@ -1704,17 +1704,19 @@ export default function DocumentStudioEditor() {
                   {problem.unicode && <p>متعلقہ حرف: {problem.character} (<bdi dir="ltr">{problem.unicode}</bdi>)</p>}
                   {problem.source && <button type="button" className="rounded border px-3 py-1 font-medium" onClick={() => {
                     if (!editor) return;
-                    let node: { content?: unknown[]; text?: string } = editor.getJSON() as { content?: unknown[] };
+                    let current = editor.state.doc;
+                    let position = 0;
                     for (const index of problem.source!.path) {
-                      const next = node.content?.[index] as typeof node | undefined;
-                      if (!next) return;
-                      node = next;
+                      if (index < 0 || index >= current.childCount) return;
+                      for (let j = 0; j < index; j++) position += current.child(j).nodeSize;
+                      if (!current.isText) position += current.type.name === "doc" ? 0 : 1;
+                      current = current.child(index);
                     }
-                    if (typeof node.text !== "string") return;
-                    const matchingText = editor.state.doc.textBetween(0, editor.state.doc.content.size);
-                    const offset = matchingText.indexOf(node.text);
-                    if (offset < 0) return;
-                    editor.chain().focus().setTextSelection({ from: Math.max(1, offset + problem.source!.start + 1), to: Math.min(editor.state.doc.content.size, offset + problem.source!.end + 1) }).run();
+                    if (!current.isText) return;
+                    const from = position + problem.source!.start;
+                    const to = position + problem.source!.end;
+                    if (from < 0 || to > editor.state.doc.content.size || from > to) return;
+                    editor.chain().focus().setTextSelection({ from, to }).run();
                   }}>متعلقہ عبارت دکھائیں</button>}
                   <details><summary className="cursor-pointer">تکنیکی تفصیل</summary><p dir="ltr">{problem.code} {problem.reason ?? ""}</p></details>
                 </div>
