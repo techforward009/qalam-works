@@ -2,6 +2,8 @@ name: PDF Guided Repair Browser Acceptance (No Deployment)
 on:
   push:
     branches: [feature/pdf-export-guided-repair]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
