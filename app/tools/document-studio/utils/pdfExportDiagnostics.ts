@@ -1,4 +1,10 @@
 import type { DocNode } from "./extractPlainText";
+import digitalKhattCmap from "./digitalKhattCmap.json";
+const supportedDigitalCharacters = new Set<number>(digitalKhattCmap);
+const isProtectedArabic = (n: number) =>
+  (n>=0x600&&n<=0x6ff)||(n>=0x750&&n<=0x77f)||(n>=0x8a0&&n<=0x8ff)||
+  (n>=0xfb50&&n<=0xfdff)||(n>=0xfe70&&n<=0xfeff)||(n>=0x10e60&&n<=0x10e7f)||
+  (n>=0x1ee00&&n<=0x1eeff);
 
 export type PdfFailureKind = "FONT_UNSUPPORTED" | "FONT_FALLBACK" | "PDF_LAYOUT" | "TIMEOUT" | "DOCUMENT_LIMIT" | "SERVICE_ERROR" | "UNKNOWN";
 export type PdfSourceLocation = { path: number[]; blockPath: number[]; runIndex: number; textOffset: number; expectedText: string };
@@ -24,13 +30,35 @@ export function issueForPdfFailure(error: unknown, doc: DocNode): PdfFailure {
   const codePoint = raw.match(/U\+[0-9A-F]{4,6}/i)?.[0]?.toUpperCase();
   const issues: PdfIssue[] = [];
   if (blockedFont) {
+    // An exact font cmap miss is independently verifiable. Gather ALL such
+    // authored positions (bounded) without treating a missing glyph as painted.
+    const scan = (node: DocNode, path: number[], blockPath: number[]) => {
+      if (issues.length >= 15) return;
+      if (node.type === "text" && typeof node.text === "string" &&
+        node.marks?.some(mark => mark.type === "textStyle" && mark.attrs?.fontFamily === "Digital Khatt Indo-Pak")) {
+        Array.from(node.text).forEach((ch, index) => {
+          const n = ch.codePointAt(0)!;
+          if (issues.length >= 15) return;
+          if (isProtectedArabic(n) && !supportedDigitalCharacters.has(n)) {
+            issues.push({id:"unsupported-"+path.join("-")+"-"+index,kind:"FONT_UNSUPPORTED",
+              reason:"missing-glyph",selectedFont:"Digital Khatt Indo-Pak",
+              codePoint:"U+"+n.toString(16).toUpperCase().padStart(4,"0"),character:ch,
+              location:{path,blockPath,runIndex:0,textOffset:index,expectedText:node.text!}});
+          }
+        });
+      }
+      (node.content??[]).forEach((child,i)=>scan(child,[...path,i],
+        node.type==="paragraph"||node.type==="heading"?path:blockPath));
+    };
+    scan(doc,[],[]);
+    if (issues.length) kind = "FONT_UNSUPPORTED";
     let index = 0;
     const visit = (node: DocNode, path: number[], blockPath: number[]) => {
       if (node.type === "text" && typeof node.text === "string") {
         const selected = node.marks?.find(mark => mark.type === "textStyle")?.attrs?.fontFamily;
         if (selected === "Digital Khatt Indo-Pak") {
           const matchRun = indexed?.root === index;
-          if (indexed ? matchRun : false) {
+          if (!issues.length && (indexed ? matchRun : false)) {
             const matchOffset = codePoint ? Array.from(node.text).findIndex(ch => "U+" + ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4,"0") === codePoint) : -1;
             const offset = Math.max(0,matchOffset);
             const cp = matchOffset>=0 ? Array.from(node.text)[matchOffset] : undefined;
