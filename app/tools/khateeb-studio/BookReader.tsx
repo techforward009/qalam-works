@@ -38,6 +38,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const [copyMode, setCopyMode] = useState<BookCopyMode>("original");
   const [targetParagraph, setTargetParagraph] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
   const [progress, setProgress] = useState<ReaderProgress>(EMPTY_READER_PROGRESS);
   const progressRef = useRef<ReaderProgress>(EMPTY_READER_PROGRESS);
   const [message, setMessage] = useState("");
@@ -92,7 +93,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
       return null;
     }
     setReading(page); setTargetParagraph(paragraphId);
-    setSelectedIds([]); setMessage("");
+    setSelectedIds([]); setSelectionMode(false); setMessage("");
     saveProgress(rememberReaderPosition(progressRef.current, anchorForPage(page, paragraphId)));
     const correctContentsPage = Math.ceil(page.recordOrdinal / 24);
     if (toc && toc.page !== correctContentsPage) await contents(source, correctContentsPage);
@@ -102,7 +103,12 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     const result = await get(args("contents", source, { page: String(page) }));
     if (result?.entries) {
       setToc(result as BookContents);
-      if (autoOpen && result.entries.length) await read(source, result.entries[0].id);
+      if (autoOpen && result.entries.length) {
+        const firstTextEntry = result.entries.find(entry => entry.kind !== "front-matter");
+        if (firstTextEntry) await read(source, firstTextEntry.id);
+        else if (result.page * result.pageSize < result.total) await contents(source, result.page + 1, true);
+        else await read(source, result.entries[0].id);
+      }
     }
   }
   useEffect(() => {
@@ -145,7 +151,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
 
   async function changeSource(next: string) {
     setSourceId(next);
-    setReading(null); setToc(null); setFind(null); setFindText(""); setTargetParagraph(""); setSelectedIds([]);
+    setReading(null); setToc(null); setFind(null); setFindText(""); setTargetParagraph(""); setSelectedIds([]); setSelectionMode(false);
     setReadingMode("combined"); setCopyMode("original");
     await contents(next, 1, true);
   }
@@ -230,14 +236,6 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const missingTranslation = !!reading && reading.language === "ar" && readingMode !== "original"
     && reading.paragraphs.some(p => !(reading.translations ?? []).some(t => t.paragraphIds.includes(p.id)));
   return <section dir={ur ? "rtl" : "ltr"} data-testid="khateeb-book-reader" className={styles.readerShell}>
-    <header className={styles.workspaceHeader}>
-      <div><p className={styles.eyebrow}>{ur ? "کتاب خانہ" : "BOOK LIBRARY"}</p><h1>{ur ? "کتاب خانہ" : "Book Library"}</h1></div>
-      <nav aria-label={ur ? "دوسرے کام کے حصے" : "Other workspaces"} className={styles.workspaceLinks}>
-        <a href="/tools/khateeb-studio">{ur ? "مجلس کی تیاری" : "Sermon preparation"}</a>
-        <a href="/tools/research-studio">{ur ? "علمی تحقیق" : "Research"}</a>
-        <a href="/tools/khateeb-studio/library/admin">{ur ? "کتابوں کا انتظام" : "Book administration"}</a>
-      </nav>
-    </header>
     <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss}/>
     {error ? <p role="alert" className={styles.noticeError}>{error}</p> : null}
     {busy ? <p role="status" className={styles.notice}>{ur ? "کتاب کھولی جا رہی ہے…" : "Opening book…"}</p> : null}
@@ -258,6 +256,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           </select>
         </label> : null}
         <button type="button" className={btn} aria-pressed={isBookmarked} disabled={!reading} onClick={toggleBookmark}>{isBookmarked ? (ur ? "نشان ہٹائیں" : "Remove bookmark") : (ur ? "نشان" : "Bookmark")}</button>
+        {onAdd ? <button type="button" className={btn} aria-pressed={selectionMode} disabled={!reading || busy} onClick={() => { setSelectionMode(mode => !mode); setSelectedIds([]); }}>{selectionMode ? (ur ? "انتخاب بند کریں" : "Done selecting") : (ur ? "عبارت منتخب کریں" : "Select passage")}</button> : null}
         <details className={styles.menu}><summary className={btn}>{ur ? "نقل" : "Copy"}</summary><div className={styles.menuPanel}>
           <label className={styles.menuLabel}>{ur ? "نقل کا متن" : "Copy content"}
             <select className={field} value={copyMode} onChange={e => setCopyMode(e.target.value as BookCopyMode)}>
@@ -270,6 +269,11 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         <details className={styles.menu}><summary className={btn}>{ur ? "ترتیبات" : "Settings"}</summary><div className={styles.menuPanel}>
           <span className={styles.menuLabel}>{ur ? "متن کا حجم" : "Text size"}</span>
           <div className="flex items-center gap-2"><button type="button" className={btn} aria-label={ur ? "متن چھوٹا کریں" : "Smaller text"} disabled={fontSize <= 18} onClick={() => setFontSize(size => Math.max(18, size - 2))}>−</button><span>{fontSize}</span><button type="button" className={btn} aria-label={ur ? "متن بڑا کریں" : "Larger text"} disabled={fontSize >= 32} onClick={() => setFontSize(size => Math.min(32, size + 2))}>+</button></div>
+        </div></details>
+        <details className={styles.menu}><summary className={btn}>{ur ? "مزید" : "More"}</summary><div className={styles.menuPanel}>
+          <a href="/tools/khateeb-studio">{ur ? "مجلس کی تیاری" : "Sermon preparation"}</a>
+          <a href="/tools/research-studio">{ur ? "علمی تحقیق" : "Research"}</a>
+          <a href="/tools/khateeb-studio/library/admin">{ur ? "کتابوں کا انتظام" : "Book administration"}</a>
         </div></details>
       </nav>
       {visibleBookmarks.length > 0 ? <details className={styles.savedPlaces}><summary>{ur ? "محفوظ نشان (" + visibleBookmarks.length.toLocaleString("ur-PK") + ")" : "Saved places (" + visibleBookmarks.length + ")"}</summary>
@@ -331,9 +335,8 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
           {reading.paragraphs.map(p => {
             const translations = (reading.translations ?? []).filter(t => t.paragraphIds.at(-1) === p.id);
             return <div key={p.id} className={styles.paragraph + (targetParagraph === p.id ? " " + styles.targetParagraph : "")} data-paragraph-id={p.id}>
-              {onAdd ? <label className={styles.paragraphSelect}>
-                <input type="checkbox" aria-label={ur ? "پیراگراف منتخب کریں " + p.id.split(":p").at(-1) : "Select paragraph " + p.id.split(":p").at(-1)} checked={selectedIds.includes(p.id)} onChange={e => setSelectedIds(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))}/>
-                {ur ? "مجلس کے لیے منتخب کریں" : "Select for sermon"}
+              {onAdd && selectionMode ? <label className={styles.paragraphSelect}>
+                <input type="checkbox" aria-label={ur ? "پیراگراف " + p.id.split(":p").at(-1) + " منتخب کریں" : "Select paragraph " + p.id.split(":p").at(-1)} checked={selectedIds.includes(p.id)} onChange={e => setSelectedIds(ids => e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))}/>
               </label> : null}
               {activeReadingMode !== "translation" ? <BookPassageText text={p.text} language={reading.language} highlight={targetParagraph === p.id ? originalBookQuerySpan(p.text, findText) ?? undefined : undefined}/> : null}
               {readingMode !== "original" ? translations.map((translation, index) => <section key={p.id + "-translation-" + index} className={styles.translationBlock} lang={translation.language} dir="rtl">
