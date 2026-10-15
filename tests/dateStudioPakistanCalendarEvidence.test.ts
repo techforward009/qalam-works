@@ -19,7 +19,7 @@ describe("Date Studio Pakistan calendar evidence across all views", () => {
   });
 
   it("never misrepresents unverified dates as official", () => {
-    expect(find(2026, 2, 17).hijriSource).toBe("tabular");
+    expect(find(2026, 1, 19).hijriSource).toBe("tabular");
     expect(resolveDisplayHijriDate({ year: 2026, month: 7, day: 11 })).toMatchObject({ source: "tabular" });
   });
 
@@ -30,6 +30,10 @@ describe("Date Studio Pakistan calendar evidence across all views", () => {
     expect(cell(2, 28)).toMatchObject({ hijri: { year: 1447, month: 9, day: 10 }, hijriSource: "official" });
     expect(cell(3, 20)).toMatchObject({ hijri: { year: 1447, month: 9, day: 30 }, hijriSource: "official" });
     expect(cell(3, 21)).toMatchObject({ hijri: { year: 1447, month: 10, day: 1 }, hijriSource: "official" });
+    expect(cell(4, 19)).toMatchObject({ hijri: { year: 1447, month: 11, day: 1 }, hijriSource: "official" });
+    expect(cell(5, 18)).toMatchObject({ hijri: { year: 1447, month: 12, day: 1 }, hijriSource: "official" });
+    expect(cell(6, 17)).toMatchObject({ hijri: { year: 1448, month: 1, day: 1 }, hijriSource: "official" });
+    expect(cell(7, 16)).toMatchObject({ hijri: { year: 1448, month: 2, day: 1 }, hijriSource: "official" });
     expect(cell(8, 15)).toMatchObject({ hijri: { year: 1448, month: 3, day: 1 }, hijriSource: "official" });
     expect(cell(9, 14)).toMatchObject({ hijri: { year: 1448, month: 4, day: 1 }, hijriSource: "official" });
     expect(cell(10, 13)).toMatchObject({ hijri: { year: 1448, month: 5, day: 1 }, hijriSource: "official" });
