@@ -28,6 +28,25 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await page.screenshot({ path: testInfo.outputPath("pk-2025-annual-calendar.png"), fullPage: true });
   });
 
+  test("presents historical 10 Ramadan 1445 on 21 March 2024", async ({ page }, testInfo) => {
+    await page.goto("/date/2024-03-21");
+    await expect(page.getByText("Pakistan official Hijri date")).toBeVisible();
+    await expect(page.getByText("10 Ramadan 1445 AH", {exact:true})).toBeVisible();
+    await page.goto("/calendar/2024/3");
+    await expect(page.locator('[data-calendar-month="3"] a[href="/date/2024-03-21"] [data-role="hijri-day"]'))
+      .toContainText(/^10/);
+    await page.screenshot({path:testInfo.outputPath("pk-2024-march-calendar.png"),fullPage:true});
+  });
+
+  test("renders Pakistan Hijri dates for leap day 29 February 2024", async ({page},testInfo) => {
+    await page.goto("/date/2024-02-29");
+    await expect(page.getByText("18 Sha'ban 1445 AH", {exact:true})).toBeVisible();
+    await page.goto("/calendar/2024/2");
+    await expect(page.locator('[data-calendar-month="2"] a[href="/date/2024-02-29"] [data-role="hijri-day"]'))
+      .toContainText(/^18/);
+    await page.screenshot({path:testInfo.outputPath("pk-2024-leap-february.png"),fullPage:true});
+  });
+
   test("keeps the Pakistan result visible and avoids sideways scrolling", async ({ page }) => {
     await page.goto("/calendar/2025/3");
     const visible = page.getByText("Pakistan Hijri calendar");
