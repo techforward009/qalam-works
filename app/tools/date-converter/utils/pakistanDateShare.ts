@@ -40,28 +40,13 @@ export function buildPakistanDateShareText(args: {
   const { gregorian, hijri, weekday, reviewed, lang } = args;
   const lunar = dateDigits(formatDate(hijri, "hijri", lang), lang);
   const civil = dateDigits(formatDate(gregorian, "gregorian", lang), lang);
-  const firstDay = reviewedMonthStart(gregorian, hijri, reviewed);
-  const source = reviewed?.sourceUrl;
-  const status = pakistanDateStatus(reviewed, lang);
   const permalink = pakistanDatePermalink(gregorian);
-  if (lang === "ur") {
-    return [
-      "پاکستانی ہجری تاریخ",
-      `عیسوی: ${weekday}، ${civil}`,
-      `اسلامی: ${lunar}`,
-      `حیثیت: ${status}`,
-      ...(firstDay ? [`یکم قمری مہینہ: ${dateDigits(formatDate(firstDay, "gregorian", "ur"), "ur")}`] : []),
-      ...(source ? [`اصل حوالہ: ${source}`] : []),
-      `قلم ورکس: ${permalink}`,
-    ].join("\n");
-  }
-  return [
-    "Pakistan Hijri Date",
-    `Gregorian: ${weekday}, ${civil}`,
-    `Hijri: ${lunar}`,
-    `Status: ${status}`,
-    ...(firstDay ? [`Lunar month began: ${formatDate(firstDay, "gregorian", "en")}`] : []),
-    ...(source ? [`Source: ${source}`] : []),
-    `Qalam Works: ${permalink}`,
-  ].join("\n");
+  const provenance = reviewed?.authority === "official"
+    ? (lang === "ur" ? "بمطابق: مرکزی رؤیتِ ہلال کمیٹی پاکستان" : "According to: Pakistan Central Ruet-e-Hilal Committee")
+    : reviewed
+      ? (lang === "ur" ? "بمطابق: پاکستان کا شائع شدہ تاریخی قمری ریکارڈ" : "According to: Published Pakistan historical lunar calendar")
+      : (lang === "ur" ? "حسابی تاریخ؛ پاکستان کا مصدقہ اعلان دستیاب نہیں" : "Calculated date; no verified Pakistan announcement available");
+  return lang === "ur"
+    ? ["پاکستانی ہجری تاریخ", lunar, `${weekday}، ${civil}`, provenance, "مزید تفصیلات:", permalink].join("\n")
+    : ["Pakistan Hijri Date", lunar, `${weekday}, ${civil}`, provenance, "More details:", permalink].join("\n");
 }

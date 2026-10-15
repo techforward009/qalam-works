@@ -160,7 +160,9 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     const copied = await page.evaluate(() => (window as typeof window & { __dateCopied?: string }).__dateCopied);
     expect(copied).toContain("4 November 2026");
     expect(copied).toContain("23 Jumada");
-    expect(copied).toContain("Source: https://");
+    expect(copied).toContain("More details:");
+    expect(copied).not.toContain("app.com.pk");
+    expect(copied).not.toContain("radio.gov.pk");
     expect(copied).toContain("https://www.qalamworks.com/date/2026-11-04");
     await page.screenshot({path:testInfo.outputPath("pk-2026-shareable-primary-result.png"),fullPage:true});
   });

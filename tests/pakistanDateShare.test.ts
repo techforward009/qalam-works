@@ -19,10 +19,10 @@ describe("Forwardable Pakistan Hijri date results", () => {
     expect(message).toContain("نومبر");
     expect(message).toContain("جمادی الاول");
     expect(message).toContain("۱۴۴۸");
-    expect(message).toContain("حیثیت:");
-    expect(message).toContain("یکم قمری مہینہ:");
-    expect(message).toContain("اصل حوالہ: " + reviewed!.sourceUrl);
-    expect(message).toContain("قلم ورکس: https://www.qalamworks.com/date/2026-11-04");
+    expect(message).toContain("بمطابق: مرکزی رؤیتِ ہلال کمیٹی پاکستان");
+    expect(message).toContain("مزید تفصیلات:");
+    expect(message).not.toContain(reviewed!.sourceUrl);
+    expect(message).toContain("https://www.qalamworks.com/date/2026-11-04");
     expect(message).not.toContain("1448-05-23");
   });
 
@@ -33,7 +33,7 @@ describe("Forwardable Pakistan Hijri date results", () => {
     expect(message).toContain("Pakistan Hijri Date");
     expect(message).toContain("Wednesday, 4 November 2026");
     expect(message).toContain("23 Jumada al-Awwal 1448");
-    expect(message).toContain("Source: " + reviewed!.sourceUrl);
+    expect(message).not.toContain(reviewed!.sourceUrl);
     expect(message).toContain(pakistanDatePermalink(gregorian));
   });
 
@@ -48,7 +48,7 @@ describe("Forwardable Pakistan Hijri date results", () => {
       lang:"ur",
     });
     expect(message).toContain("حسابی");
-    expect(message).toContain("پاکستان میں اس ماہ کا مصدقہ اعلان دستیاب نہیں");
+    expect(message).toContain("پاکستان کا مصدقہ اعلان دستیاب نہیں");
     expect(message).not.toContain("اصل حوالہ:");
     expect(message).not.toContain("یکم قمری مہینہ:");
     expect(message).toContain("https://www.qalamworks.com/date/2027-11-04");
@@ -62,7 +62,7 @@ describe("Forwardable Pakistan Hijri date results", () => {
       gregorian:past, hijri:historic!.hijri, reviewed:historic, weekday:"منگل", lang:"ur",
     });
     expect(message).toContain("تاریخی قمری ریکارڈ");
-    expect(message).toContain(historic!.sourceUrl);
-    expect(message).not.toContain("مرکزی رؤیتِ ہلال کمیٹی کے اعلان کی بنیاد پر");
+    expect(message).not.toContain(historic!.sourceUrl);
+    expect(message).not.toContain("بمطابق: مرکزی رؤیتِ ہلال کمیٹی پاکستان");
   });
 });
