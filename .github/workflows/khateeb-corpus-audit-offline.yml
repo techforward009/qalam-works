@@ -1,0 +1,28 @@
+name: Khateeb corpus offline audit
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/audit-khateeb-corpus.py'
+      - 'tests/test_audit_khateeb_corpus.py'
+      - '.github/workflows/khateeb-corpus-audit-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-fixture-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate audit script syntax
+        run: python -m py_compile scripts/audit-khateeb-corpus.py
+      - name: Run safe synthetic test cases
+        run: python -m unittest discover -s tests -p 'test_audit_khateeb_corpus.py' -v
