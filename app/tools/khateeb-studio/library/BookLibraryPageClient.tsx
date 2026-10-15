@@ -7,9 +7,9 @@ import {
   createCustomSermonProject,
   customSermonProjectKey,
   serializeCustomSermonProject,
-} from "../../engine/customSermonProject";
-import { CUSTOM_SERMON_ACTIVE_KEY, loadCustomProjects } from "../../engine/customSermonStorage";
-import type { BookExcerpt } from "../../engine/bookLibrary";
+} from "../engine/customSermonProject";
+import { CUSTOM_SERMON_ACTIVE_KEY, loadCustomProjects } from "../engine/customSermonStorage";
+import type { BookExcerpt } from "../engine/bookLibrary";
 
 export default function BookLibraryPageClient() {
   const { language, dir } = useLanguage();
