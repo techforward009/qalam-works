@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   if (!["catalog", "contents", "read", "find"].includes(op)
     || !["ur", "en"].includes(locale)
     || !/^[1-9]\d{0,3}$/.test(pageText)
-    || !/^[1-9]\d{0,3}$/.test(partText)
+    || !(partText === "last" || /^[1-9]\d{0,3}$/.test(partText))
     || query.length > 120 || id.length > 300
     || (op !== "catalog" && !ALL_BOOK_SOURCE_IDS.includes(sourceId as typeof ALL_BOOK_SOURCE_IDS[number]))
     || (op === "read" && (!id || !id.startsWith(sourceId + ":")))
