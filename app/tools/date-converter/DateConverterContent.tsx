@@ -768,6 +768,7 @@ export default function DateConverterContent({
               {result && (
                 <div className="space-y-4">
                   <PakistanDateResult
+                    key={isoDate(result.gregorian)}
                     gregorian={result.gregorian}
                     hijri={pakistanOfficialHijri?.hijri ?? result.hijri}
                     reviewed={pakistanOfficialHijri}
