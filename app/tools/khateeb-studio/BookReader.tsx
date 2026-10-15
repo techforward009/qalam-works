@@ -204,12 +204,14 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         throw new Error("mismatch");
       if (addedIds.includes(excerpt.id)) {
         setMessage(ur ? "یہ اقتباس پہلے سے مجلس میں شامل ہے۔" : "This passage is already in your sermon.");
+        setSelectedIds([]); setSelectionMode(false);
         return;
       }
       const saved = onAdd(excerpt);
       setMessage(saved
         ? (ur ? "منتخب عبارت حوالہ سمیت میری مجلس میں شامل اور محفوظ ہوگئی۔" : "Selected source passage saved in My Sermon.")
         : (ur ? "اقتباس مجلس میں شامل ہے، مگر اسے مستقل محفوظ کرنے میں خرابی ہے؛ مجلس کی محفوظ نقل بنائیں۔" : "Passage added but storage failed; export a sermon backup."));
+      if (saved) { setSelectedIds([]); setSelectionMode(false); }
     } catch (reason) {
       setError(reason instanceof Error && reason.message === "stale"
         ? (ur ? "اصل کتابی نسخہ تبدیل ہوچکا ہے۔ دوبارہ عبارت کھول کر انتخاب کریں۔" : "The edition changed. Reopen the source and select again.")
