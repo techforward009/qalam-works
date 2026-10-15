@@ -2,7 +2,7 @@ import type { DateParts } from "../dateEngine";
 
 export type HijriDateAuthority = "official" | "reported-official" | "official-scientific" | "observed" | "qalam-tabular";
 export type OfficialAnchorAuthority = Extract<HijriDateAuthority, "official" | "reported-official">;
-export type OfficialAnchorEvidenceKind = "official-declaration" | "government-news-report";
+export type OfficialAnchorEvidenceKind = "official-declaration" | "government-news-report" | "historical-calendar";
 export type VerificationStatus = "verified" | "reported" | "superseded" | "retracted";
 
 export interface OfficialHijriMonthAnchor {
