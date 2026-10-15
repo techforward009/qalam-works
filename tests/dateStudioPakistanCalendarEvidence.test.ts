@@ -3,6 +3,7 @@ import { buildCalendarMonth, buildCalendarYearModel } from "../app/tools/calenda
 import { resolveDisplayHijriDate } from "../app/tools/date-converter/utils/hijri-authority/displayHijriDate";
 import { getReviewedPakistanHijriMonth } from "../app/tools/date-converter/utils/hijri-authority/resolveOfficialHijriMonth";
 import { convert } from "../app/tools/date-converter/utils/dateEngine";
+import { buildCalendarHtml } from "../app/tools/calendar-maker/utils/buildCalendarHtml";
 
 const find = (year: number, month: number, day: number, policy: "pakistan" | "tabular" = "pakistan") =>
   buildCalendarMonth(year, month, "gregorian-hijri", "monday", 0, policy)
@@ -37,6 +38,19 @@ describe("Date Studio Pakistan calendar evidence across all views", () => {
     expect(cell(8, 15)).toMatchObject({ hijri: { year: 1448, month: 3, day: 1 }, hijriSource: "official" });
     expect(cell(9, 14)).toMatchObject({ hijri: { year: 1448, month: 4, day: 1 }, hijriSource: "official" });
     expect(cell(10, 13)).toMatchObject({ hijri: { year: 1448, month: 5, day: 1 }, hijriSource: "official" });
+  });
+
+  it("prints Pakistan's verified 10 Ramadan and visibly marks calculated dates in PDF", () => {
+    const model = buildCalendarYearModel({ year: 2026, content: "gregorian-hijri", language: "en", weekStart: "monday", page: "a4-portrait", hijriPolicy: "pakistan" });
+    const html = buildCalendarHtml(model);
+    expect(html).toContain('data-hijri-source-note="true"');
+    expect(html).toContain('Pakistan: reviewed official dates');
+    expect(html).toContain('font-size:6px !important;line-height:1 !important;">*</sup>');
+    expect(html).toContain('data-pdf-hijri-day="true"');
+  });
+  it("refuses to apply a manual offset to verified Pakistan dates", () => {
+    expect(() => buildCalendarMonth(2026, 2, "gregorian-hijri", "monday", 2, "pakistan")).toThrow(/cannot be manually offset/);
+    expect(() => buildCalendarYearModel({ year: 2026, content: "gregorian-hijri", language: "ur", weekStart: "monday", page: "a4-portrait", hijriPolicy: "pakistan", hijriOffsets: Array.from({length:12},(_,i)=>i===1?2:0) })).toThrow(/cannot be manually offset/);
   });
 
   it("builds reviewed Ramadan month directly from evidence and refuses to invent next month days", () => {
