@@ -11,7 +11,8 @@ import {
   rememberReaderPosition, readerSavedForSource, sameReaderAnchor,
   toggleReaderBookmark, type ReaderAnchor, type ReaderProgress,
 } from "../../lib/knowledge/bookReaderProgress";
-import { copyReadingPage, originalBookQuerySpan, type BookContents, type BookFindResults, type BookReadingPage } from "../../lib/knowledge/bookReaderModel";
+import { copyReadingPage, originalBookQuerySpan, type BookCopyMode, type BookContents, type BookFindResults, type BookReadingPage } from "../../lib/knowledge/bookReaderModel";
+import styles from "./BookReader.module.css";
 
 type Language = "ur" | "en";
 type ShelfSource = { id: string; book: "nahj" | "sahifa" | "kafi"; language: "ar" | Language; translator: string | null; sha256: string };
@@ -30,6 +31,8 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
   const [find, setFind] = useState<BookFindResults | null>(null);
   const [findText, setFindText] = useState("");
   const [fontSize, setFontSize] = useState(22);
+  const [readingMode, setReadingMode] = useState<BookCopyMode>("combined");
+  const [copyMode, setCopyMode] = useState<BookCopyMode>("combined");
   const [targetParagraph, setTargetParagraph] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [progress, setProgress] = useState<ReaderProgress>(EMPTY_READER_PROGRESS);
@@ -186,6 +189,16 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
         : (ur ? "منتخب اقتباس مجلس میں شامل نہیں ہوسکا؛ دوبارہ کوشش کریں۔" : "Could not add the selected source passage."));
     } finally { setBusy(false); }
   }
+  function previousPart() {
+    if (!reading) return;
+    if (reading.page > 1) void read(sourceId, reading.recordId, reading.page - 1);
+    else if (reading.previousRecordId) void read(sourceId, reading.previousRecordId, "last");
+  }
+  function nextPart() {
+    if (!reading) return;
+    if (reading.page < reading.pageCount) void read(sourceId, reading.recordId, reading.page + 1);
+    else if (reading.nextRecordId) void read(sourceId, reading.nextRecordId);
+  }
   const selectedSource = shelf?.sources.find(s => s.id === sourceId);
   const citation = reading?.reference ?? "";
   const currentBookmark = reading?.paragraphs.length ? anchorForPage(reading, selectedIds[0] || targetParagraph || reading.paragraphs[0].id) : null;
@@ -268,9 +281,30 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
             </nav>
           </div>}
           {reading ? <article aria-label={ur ? "کتاب کی عبارت" : "Book text"} className="space-y-4 rounded-xl border border-[#31513a]/15 bg-white px-4 py-6 shadow-sm dark:border-white/15 dark:bg-[#162a1e] sm:px-8">
-            <h4 className="text-center text-xl font-bold">{reading.title}</h4>
-            <p className="qalam-source-reference text-center text-sm leading-7">{citation}</p>
-            {reading.translator ? <p className="text-center text-xs opacity-70">{ur ? "مترجم" : "Translator"}: {reading.translator}</p> : null}
+            <header className={styles.pageMeta} dir="rtl">
+              <div className={styles.bookIdentity}>
+                <strong>{selectedSource ? bookSourceLabel(selectedSource, locale) : (ur ? "کتاب" : "Book")}</strong>
+                <details className={styles.editionDetails}>
+                  <summary>{ur ? "نسخے کی معلومات" : "Edition details"}</summary>
+                  <p className="qalam-source-reference">{citation}</p>
+                  {reading.translator ? <p>{ur ? "مترجم" : "Translator"}: {reading.translator}</p> : null}
+                </details>
+              </div>
+              <nav className={styles.pageNavigation} aria-label={ur ? "مطالعے کے صفحے" : "Reader page navigation"} dir="rtl">
+                <button type="button" className={btn} disabled={busy || (reading.page === 1 && !reading.previousRecordId)}
+                  aria-label={ur ? "پچھلا مطالعہ صفحہ" : "Previous reader page"} onClick={previousPart}>‹</button>
+                <span className={styles.pageNumber}>
+                  <small>{ur ? "مطالعہ صفحہ" : "Reader page"}</small>
+                  <strong>{ur ? reading.page.toLocaleString("ur-PK") : reading.page} / {ur ? reading.pageCount.toLocaleString("ur-PK") : reading.pageCount}</strong>
+                </span>
+                <button type="button" className={btn} disabled={busy || (reading.page === reading.pageCount && !reading.nextRecordId)}
+                  aria-label={ur ? "اگلا مطالعہ صفحہ" : "Next reader page"} onClick={nextPart}>›</button>
+              </nav>
+              <div className={styles.chapterTitle}>
+                <span>{ur ? "باب یا حصہ" : "Chapter or section"}</span>
+                <strong>{reading.title}</strong>
+              </div>
+            </header>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs">{ur ? "حروف کا حجم" : "Text size"}</span>
               <button type="button" className={btn} aria-label={ur ? "متن چھوٹا کریں" : "Smaller text"}
@@ -278,8 +312,26 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
               <span className="text-xs">{fontSize}</span>
               <button type="button" className={btn} aria-label={ur ? "متن بڑا کریں" : "Larger text"}
                 disabled={fontSize >= 32} onClick={() => setFontSize(size => Math.min(32, size + 2))}>+</button>
-              <button type="button" className={btn} onClick={() => void feedback.copy(copyReadingPage(reading, false))}>{ur ? "اصل متن نقل کریں" : "Copy exact text"}</button>
-              <button type="button" className={btn} onClick={() => void feedback.copy(copyReadingPage(reading, true))}>{ur ? "حوالہ سمیت نقل کریں" : "Copy with reference"}</button>
+              {reading.language === "ar" ? <label className="flex items-center gap-2 text-xs">
+                {ur ? "مطالعے کی صورت" : "Reading mode"}
+                <select className={field + " max-w-[190px]"} value={readingMode} onChange={e => setReadingMode(e.target.value as BookCopyMode)}>
+                  <option value="combined">{ur ? "عربی اور اردو" : "Arabic + translation"}</option>
+                  <option value="original">{ur ? "صرف عربی" : "Arabic only"}</option>
+                  <option value="translation">{ur ? "صرف اردو ترجمہ" : "Translation only"}</option>
+                </select>
+              </label> : null}
+              <label className="flex items-center gap-2 text-xs">
+                {ur ? "نقل کا متن" : "Copy text"}
+                <select className={field + " max-w-[190px]"} value={copyMode} onChange={e => setCopyMode(e.target.value as BookCopyMode)}>
+                  <option value="original">{ur ? "صرف اصل عبارت" : "Original only"}</option>
+                  <option value="translation" disabled={!reading.translations?.length}>{ur ? "صرف اردو ترجمہ" : "Translation only"}</option>
+                  <option value="combined">{ur ? "عربی اور اردو" : "Arabic + translation"}</option>
+                </select>
+              </label>
+              <button type="button" className={btn} disabled={copyMode === "translation" && !reading.translations?.length}
+                onClick={() => void feedback.copy(copyReadingPage(reading, false, copyMode))}>{ur ? "نقل کریں" : "Copy"}</button>
+              <button type="button" className={btn} disabled={copyMode === "translation" && !reading.translations?.length}
+                onClick={() => void feedback.copy(copyReadingPage(reading, true, copyMode))}>{ur ? "حوالہ سمیت نقل کریں" : "Copy with reference"}</button>
               <button type="button" className={btn} aria-pressed={isBookmarked} onClick={toggleBookmark}>
                 {isBookmarked ? (ur ? "نشان ہٹائیں" : "Remove bookmark") : (ur ? "نشان لگائیں" : "Bookmark this place")}
               </button>
@@ -287,32 +339,32 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
                 {ur ? "منتخب عبارت میری مجلس میں شامل کریں" : "Add selection to My Sermon"}
               </button> : null}
             </div>
-            <div className="space-y-5" lang={reading.language} dir={reading.language === "en" ? "ltr" : "rtl"}
-              style={{ fontSize: `${fontSize}px`, lineHeight: isArabic ? 2.1 : 2.3 }}>
-              {reading.paragraphs.map(p => <div key={p.id}
-                className={targetParagraph === p.id ? "rounded-lg bg-amber-100/80 p-2 dark:bg-amber-900/20" : ""}
-                data-paragraph-id={p.id}>
-                {onAdd ? <label className="mb-2 flex items-center gap-2 text-xs">
-                  <input type="checkbox" aria-label={ur ? `پیراگراف منتخب کریں ${p.id.split(":p").at(-1)}` : `Select paragraph ${p.id.split(":p").at(-1)}`}
-                    checked={selectedIds.includes(p.id)} onChange={e => setSelectedIds(ids =>
-                      e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} />
-                  {ur ? "مجلس کے لیے منتخب کریں" : "Select for sermon"}
-                </label> : null}
-                <BookPassageText text={p.text} language={reading.language}
-                  highlight={targetParagraph === p.id ? originalBookQuerySpan(p.text, findText) ?? undefined : undefined}/>
-              </div>)}
+            {reading.language === "ar" && readingMode !== "original"
+              && reading.paragraphs.some(p => !(reading.translations ?? []).some(t => t.paragraphIds.includes(p.id)))
+              ? <p className={styles.translationStatus} role="status">{ur ? "اردو ترجمہ ابھی دستیاب نہیں" : "Translation is not available yet."}</p>
+              : null}
+            <div className="space-y-5" style={{ fontSize: `${fontSize}px` }}>
+              {reading.paragraphs.map(p => {
+                const translations = (reading.translations ?? []).filter(t => t.paragraphIds.at(-1) === p.id);
+                return <div key={p.id} className={targetParagraph === p.id ? "rounded-lg bg-amber-100/80 p-2 dark:bg-amber-900/20" : ""}
+                  data-paragraph-id={p.id}>
+                  {onAdd ? <label className="mb-2 flex items-center gap-2 text-xs">
+                    <input type="checkbox" aria-label={ur ? `پیراگراف منتخب کریں ${p.id.split(":p").at(-1)}` : `Select paragraph ${p.id.split(":p").at(-1)}`}
+                      checked={selectedIds.includes(p.id)} onChange={e => setSelectedIds(ids =>
+                        e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} />
+                    {ur ? "مجلس کے لیے منتخب کریں" : "Select for sermon"}
+                  </label> : null}
+                  {readingMode !== "translation" ? <BookPassageText text={p.text} language={reading.language}
+                    highlight={targetParagraph === p.id ? originalBookQuerySpan(p.text, findText) ?? undefined : undefined}/> : null}
+                  {readingMode !== "original" ? translations.map((translation, index) => <section key={p.id + "-translation-" + index}
+                    className={styles.translationBlock} lang={translation.language} dir="rtl">
+                    <BookPassageText text={translation.text} language={translation.language}/>
+                    <p className={styles.translationCredit}>{translation.translator} · {translation.source}</p>
+                  </section>) : null}
+                </div>;
+              })}
             </div>
-            <nav aria-label={ur ? "مطالعے کی ترتیب" : "Reading navigation"} className="flex flex-wrap items-center justify-between gap-2 border-t border-[#31513a]/20 pt-4">
-              <button type="button" className={btn} disabled={busy || (reading.page === 1 && !reading.previousRecordId)} onClick={() => {
-                if (reading.page > 1) void read(sourceId, reading.recordId, reading.page - 1);
-                else if (reading.previousRecordId) void read(sourceId, reading.previousRecordId, "last");
-              }}>{ur ? "پچھلا" : "Previous"}</button>
-              <span className="text-xs">{ur ? "مطالعے کا حصہ" : "Reader part"} {reading.page} / {reading.pageCount}</span>
-              <button type="button" className={btn} disabled={busy || (reading.page === reading.pageCount && !reading.nextRecordId)} onClick={() => {
-                if (reading.page < reading.pageCount) void read(sourceId, reading.recordId, reading.page + 1);
-                else if (reading.nextRecordId) void read(sourceId, reading.nextRecordId);
-              }}>{ur ? "اگلا" : "Next"}</button>
-            </nav>
+
           </article> : <p className="text-sm">{ur ? "فہرست سے کوئی حصہ منتخب کریں۔" : "Select a section to read."}</p>}
         </div>
       </div>

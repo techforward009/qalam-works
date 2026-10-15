@@ -22,6 +22,14 @@ export type BookContents = {
   page: number;
   pageSize: number;
 };
+export type BookReaderTranslation = {
+  paragraphIds: string[];
+  text: string;
+  language: "ur" | "en";
+  translator: string;
+  source: string;
+};
+
 export type BookReadingPage = {
   recordId: string;
   sourceId: string;
@@ -40,6 +48,8 @@ export type BookReadingPage = {
   sourceSha256: string;
   /** UI part number ONLY, not a printed book page. */
   screenPartOnly: true;
+  /** Exact source-bound reviewed translations available for this reader part. */
+  translations?: BookReaderTranslation[];
 };
 export type BookFindHit = {
   recordId: string;
@@ -127,10 +137,21 @@ export function bookFind(records: readonly BookRecord[], sourceId: string, quest
 }
 
 /** Copied text must retain all source characters and an honest unpaginated reference. */
-export function copyReadingPage(page: BookReadingPage, withReference: boolean): string {
-  const prose = page.paragraphs.map(p => p.text).join("\n\n");
+export type BookCopyMode = "original" | "translation" | "combined";
+
+/** Copies only source-bound text; translation attribution remains distinct from the Arabic source. */
+export function copyReadingPage(page: BookReadingPage, withReference: boolean, mode: BookCopyMode = "original"): string {
+  const original = page.paragraphs.map(p => p.text).join("\n\n");
+  const translated = (page.translations ?? []).map(t => t.text).join("\n\n");
+  const prose = mode === "translation" ? translated
+    : mode === "combined" ? [original, translated].filter(Boolean).join("\n\n")
+    : original;
   if (!withReference) return prose;
-  return [page.reference, page.translator ? `مترجم: ${page.translator}` : null, prose].filter(Boolean).join("\n\n");
+  const translationAttribution = mode !== "original" && (page.translations?.length ?? 0) > 0
+    ? [...new Set(page.translations!.map(t => [t.translator, t.source].filter(Boolean).join(" — ")))].join("\n")
+    : null;
+  const originalAttribution = mode !== "translation" && page.translator ? `مترجم: ${page.translator}` : null;
+  return [page.reference, originalAttribution, translationAttribution, prose].filter(Boolean).join("\n\n");
 }
 
 /**

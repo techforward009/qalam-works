@@ -5,13 +5,84 @@ import { NextRequest, NextResponse } from "next/server";
 import { researchBlobClientFromEnv } from "../vercelResearchBlob";
 import { loadBookCatalog } from "../../../lib/knowledge/store";
 import { readBookSource } from "../../../lib/knowledge/sourceCache";
-import { ALL_BOOK_SOURCE_IDS, createBookExcerpt } from "../../../lib/knowledge/bookCorpus";
-import { bookContents, bookFind, bookReadingPage } from "../../../lib/knowledge/bookReaderModel";
+import { ALL_BOOK_SOURCE_IDS, bookRecordReference, createBookExcerpt, type BookRecord, type BookSource } from "../../../lib/knowledge/bookCorpus";
+import { bookContents, bookFind, bookReadingPage, type BookReadingPage } from "../../../lib/knowledge/bookReaderModel";
+import { attachCorpusTranslations } from "../../../lib/knowledge/suppliedTranslations";
+import { attachBookTranslations } from "../../../lib/knowledge/bookTranslations";
+import { bookSearchUnits } from "../../../lib/knowledge/sourceUnits";
+import type { KnowledgePassage, KnowledgeResult } from "../../../lib/knowledge/retrieval";
 
 function json(value: unknown, status = 200) {
   return NextResponse.json(value, { status, headers: { "Cache-Control": "private, no-store" } });
 }
 const bad = () => json({ code: "invalid" }, 400);
+
+/** Attach only reviewed translations whose edition, record and paragraph anchors match exactly. */
+async function withReviewedTranslations(
+  client: Awaited<ReturnType<typeof researchBlobClientFromEnv>>,
+  catalog: Awaited<ReturnType<typeof loadBookCatalog>> & {},
+  source: BookSource,
+  records: readonly BookRecord[],
+  page: BookReadingPage,
+  language: "ur" | "en",
+): Promise<BookReadingPage> {
+  if (page.language !== "ar") return page;
+  const sources = catalog.manifest.sources;
+  const candidateSources = sources.filter(s => s.book === source.book && s.language === language);
+  const translationRecords = (await Promise.all(candidateSources.map(s => readBookSource(client, catalog, s.id)))).flat();
+  const allRecords = [...records, ...translationRecords];
+  const sourceRecord = records.find(r => r.id === page.recordId);
+  if (!sourceRecord) return page;
+
+  const passage = (paragraphIds: string[], text: string): KnowledgePassage => ({
+    id: paragraphIds.join("|"), collection: source.book, language: "ar",
+    referenceUr: bookRecordReference(sourceRecord, "ur", paragraphIds[0]),
+    referenceEn: bookRecordReference(sourceRecord, "en", paragraphIds[0]),
+    text, sourceSha256: source.sha256, recordId: sourceRecord.id, sourceId: source.id,
+    paragraphId: paragraphIds[0],
+    excerpt: createBookExcerpt(sourceRecord, source, paragraphIds),
+    translator: source.translator,
+  });
+  const onPage = new Set(page.paragraphs.map(p => p.id));
+  const corpusPassages = page.paragraphs.map(p => passage([p.id], p.text));
+  let result: KnowledgeResult = {
+    question: "", status: "evidence", method: "lexical-topic-expansion",
+    passages: corpusPassages, expandedTerms: [], availableCollections: [],
+  };
+  result = attachCorpusTranslations(result, allRecords, sources, language);
+  const translated = new Map<string, NonNullable<KnowledgePassage["suppliedTranslation"]>>();
+  for (const p of result.passages) if (p.suppliedTranslation && p.paragraphId) translated.set(p.paragraphId, p.suppliedTranslation);
+
+  // Reviewed user translations may cover a verified multi-paragraph unit. Load only units fully present on this part.
+  const units = bookSearchUnits(sourceRecord).filter(u => {
+    const ids = u.paragraphs.map(p => p.id);
+    return ids.length > 0 && ids.every(id => onPage.has(id));
+  });
+  const dynamicPassages = units.map(u => passage(u.paragraphs.map(p => p.id), u.text));
+  if (dynamicPassages.length) {
+    const dynamicResult = await attachBookTranslations(client, {
+      ...result, passages: dynamicPassages,
+    }, language);
+    for (const p of dynamicResult.passages) {
+      if (p.suppliedTranslation) {
+        const ids = p.excerpt?.paragraphs.map(x => x.id) ?? [];
+        if (ids.length) {
+          for (const id of ids) translated.delete(id);
+          translated.set(ids[ids.length - 1], p.suppliedTranslation);
+        }
+      }
+    }
+  }
+
+  const translations = [...translated.entries()].map(([lastParagraphId, value]) => ({
+    paragraphIds: value.paragraphIds?.length
+      ? value.paragraphIds
+      : [lastParagraphId],
+    text: value.text, language: value.language, translator: value.translator,
+    source: value.source ?? "",
+  }));
+  return { ...page, translations };
+}
 
 /** Public, bounded read-only library API. Never exposes Blob credentials or write actions. */
 export async function GET(req: NextRequest) {
@@ -50,7 +121,8 @@ export async function GET(req: NextRequest) {
     const selected = records.find(r => r.id === id);
     const chosenPart = part === "last" && selected ? Math.max(1, Math.ceil(selected.paragraphs.length / 12)) : part;
     const result = typeof chosenPart === "number" ? bookReadingPage(records, source, id, locale as "ur" | "en", chosenPart) : null;
-    return result ? json(result) : json({ code: "not-found" }, 404);
+    if (!result) return json({ code: "not-found" }, 404);
+    return json(await withReviewedTranslations(client, catalog, source, records, result, locale as "ur" | "en"));
   } catch {
     return json({ code: "unavailable" }, 503);
   }
