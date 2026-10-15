@@ -26,7 +26,9 @@ describe("discoverable Khateeb reader entry", () => {
     expect(library).toContain("useState(readerInitiallyOpen)");
     expect(library).toContain("<details open={readerOpen}");
     expect(library).toContain('<BookReader locale={locale}');
-    expect(library).toContain("<ResearchStudioGate");
+    expect(library).not.toContain("<ResearchStudioGate");
+    expect(library).toContain("کتاب خانہ ہر قاری کے لیے کھلا ہے");
+    expect(library).not.toContain("نجی مطالعے کے لیے مالک کی رسائی ضروری ہے");
   });
   it("keeps existing sermon and source-search workflows available", () => {
     expect(main).toContain('id="khateeb-public-book-library"');
