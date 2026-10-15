@@ -1744,6 +1744,7 @@ export default function DocumentStudioEditor() {
               )}
               <p className="mt-2 text-xs">محفوظ اصلاح: عبارت کو دیکھیں، مناسب فونٹ منتخب کرکے اس کے اصل حروف کی جانچ کریں۔ کوئی حرف خودکار طور پر تبدیل نہیں کیا جائے گا۔ ترمیم کے بعد واپس لانے کے لیے ایڈیٹر کا Undo استعمال کریں۔</p>
               <button type="button" disabled={isExportingPdf} onClick={() => void handleDownloadPdf()} className="mt-2 rounded-md bg-red-800 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">درستگی کے بعد دوبارہ پی ڈی ایف بنائیں</button>
+              <button type="button" onClick={() => editor?.chain().focus().undo().run()} className="mr-2 mt-2 rounded-md border border-red-400 px-3 py-1.5 text-xs font-semibold">آخری ترمیم واپس لیں (Undo)</button>
             </section>
           )}
           {docxImportNotice && (
