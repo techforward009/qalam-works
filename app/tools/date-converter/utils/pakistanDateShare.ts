@@ -21,7 +21,7 @@ export function reviewedMonthStart(
 
 export function pakistanDateStatus(reviewed: ResolvedHijriDate | null, lang: ShareLanguage): string {
   if (!reviewed) return lang === "ur"
-    ? "پاکستانی مصدقہ اعلان دستیاب نہیں؛ حسابی ہجری تاریخ"
+    ? "پاکستان میں اس ماہ کا مصدقہ اعلان دستیاب نہیں؛ حسابی ہجری تاریخ"
     : "Calculated Hijri date — no reviewed Pakistan declaration for this month";
   if (reviewed.authority === "reported-official") return lang === "ur"
     ? "پاکستان کے شائع شدہ تاریخی قمری ریکارڈ کی بنیاد پر"
