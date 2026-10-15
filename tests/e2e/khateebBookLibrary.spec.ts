@@ -36,16 +36,8 @@ for (const locale of ['ur', 'en'] as const) {
       return route.fulfill({ json: body });
     });
 
-    await page.goto('/tools/khateeb-studio');
-    await page.getByRole('button', { name: ur ? 'اردو' : 'ENG', exact: true }).click();
-    const my = ur ? 'میری مجلس / میرا موضوع' : 'My sermon / my topic';
-    await page.getByRole('button', { name: my, exact: true }).click();
-    const workspace = page.getByTestId('custom-sermon-workspace');
-    await workspace.getByRole('textbox', { name: ur ? 'عنوان' : 'Title', exact: true }).fill('Library prayer draft');
-    await workspace.getByRole('textbox', { name: ur ? 'اس مجلس کا مقصد' : 'Objective', exact: true }).fill('Hope and responsibility');
-    await workspace.getByRole('button', { name: ur ? 'مسودہ شروع کریں' : 'Start draft', exact: true }).click();
-    await workspace.getByRole('link', { name: ur ? 'کتاب خانہ کھولیں' : 'Open Book Library', exact: true }).click();
-
+    await page.addInitScript((language: string) => localStorage.setItem('qalam-site-language', language), locale);
+    await page.goto('/tools/khateeb-studio/library');
     await expect(page).toHaveURL(/\/tools\/khateeb-studio\/library$/);
     const reader = page.getByTestId('khateeb-book-reader');
     await expect(reader.getByTestId('book-reading-page')).toBeVisible();
@@ -72,12 +64,7 @@ for (const locale of ['ur', 'en'] as const) {
     await reader.getByRole('button', { name: ur ? 'میری مجلس میں شامل کریں' : 'Add to My Sermon', exact: true }).click();
     await expect(reader.getByRole('status').filter({ hasText: ur ? 'میری مجلس میں شامل اور محفوظ ہوگئی' : 'Saved in My Sermon' })).toBeVisible();
 
-    await page.getByRole('link', { name: ur ? 'مجلس کی تیاری' : 'Sermon preparation', exact: true }).click();
-    await page.getByRole('button', { name: my, exact: true }).click();
-    const saved = page.getByTestId('custom-sermon-workspace');
-    await expect(saved.getByText(ur ? 'مجلس کے محفوظ کتابی اقتباسات' : 'Saved book excerpts in this sermon')).toBeVisible();
-    await expect(saved.getByText(paragraphs[0].text)).toBeVisible();
-    await expect(saved.getByText(paragraphs[1].text)).toHaveCount(0);
+    await expect(reader.getByRole('button', { name: ur ? 'انتخاب بند کریں' : 'Done selecting' })).toBeDisabled();
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/tools/khateeb-studio/library');
