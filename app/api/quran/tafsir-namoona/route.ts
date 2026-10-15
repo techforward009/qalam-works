@@ -31,7 +31,7 @@ const RELEASE: Record<Language, { path: string; digest: string }> = {
     digest: "119f8e96988a317df531a21ac8f271447e7c3a856f1ab11bac57cf5fb8a45c38",
   },
   en: {
-    path: "qalam/tafsir-namoona/english-v10.json.br",
+    path: "qalam/tafsir-namoona/english-v10-release-20261015.json.br",
     digest: "6e08e6952e33a452f7f644c6462cdad3d8250741ef7f1445c3ae5d37becaed59",
   },
 };
