@@ -27,8 +27,8 @@ type CorpusV9 = {
 
 const RELEASE: Record<Language, { path: string; digest: string }> = {
   ur: {
-    path: "qalam/tafsir-namoona/urdu-v10-reviewed-20261015.json.br",
-    digest: "8cf7d265873f93d6987882b5c616a0267a7caa94304075c88d4dc57150c2f1e7",
+    path: "qalam/tafsir-namoona/urdu-v10-reviewed-first20-20261015.json.br",
+    digest: "119f8e96988a317df531a21ac8f271447e7c3a856f1ab11bac57cf5fb8a45c38",
   },
   en: {
     path: "qalam/tafsir-namoona/english-v10.json.br",
