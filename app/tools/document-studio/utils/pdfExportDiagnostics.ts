@@ -14,6 +14,7 @@ export interface PdfExportProblem {
   character?: string;
   reason?: string;
   page?: number;
+  verifiedReplacement?: string;
 }
 export interface PdfExportFailure {
   version: 1;
@@ -22,6 +23,7 @@ export interface PdfExportFailure {
   problems: PdfExportProblem[];
 }
 type Node = { type?: string; text?: string; marks?: { type: string; attrs?: Record<string, unknown> }[]; content?: Node[] };
+export const pdfSourceIdentity = (path: number[], snapshot: string) => path.join("/") + ":" + snapshot;
 export const pdfRunFingerprint = (text: string): string => { let h = 2166136261; for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619); return (h >>> 0).toString(16); };
 const selected = (node: Node) => node.marks?.find(m => m.type === "textStyle")?.attrs?.fontFamily;
 export function locatePdfFontProblem(doc: Node, font: string, unicode?: string, runIndex?: number): PdfExportProblem["source"] | undefined {
