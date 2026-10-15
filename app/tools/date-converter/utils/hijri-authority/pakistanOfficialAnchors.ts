@@ -1,13 +1,15 @@
 import type { OfficialHijriMonthAnchor } from "./types";
 import { PAKISTAN_2025_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2025";
 import { PAKISTAN_2024_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2024";
+import { PAKISTAN_2023_HISTORIC_ANCHORS } from "./pakistanHistoricAnchors2023";
 
 /**
  * Reviewed Pakistan official/reported-official month anchors belong here.
  * Records are explicitly bounded; no historical official date is inferred.
  */
 export const PAKISTAN_OFFICIAL_HIJRI_ANCHORS: readonly OfficialHijriMonthAnchor[] = [
-  // Archived Pakistan crescent decisions span 15 December 2023 onward.
+  // Archived Pakistan crescent decisions span 25 December 2022 onward.
+  ...PAKISTAN_2023_HISTORIC_ANCHORS,
   ...PAKISTAN_2024_HISTORIC_ANCHORS,
   ...PAKISTAN_2025_HISTORIC_ANCHORS,
   {
