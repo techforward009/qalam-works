@@ -42,7 +42,7 @@ function TafsirText({ text, language }: { text: string; language: TafsirLanguage
   const runs = splitTafsirTypography(text, language);
   const arabicStyle = {
     fontFamily: '"Qalam Tafsir Scheherazade", serif',
-    fontSize: "1.12em",
+    fontSize: language === "ur" ? "21px" : "1.12em",
     fontWeight: 500,
     fontSynthesis: "none" as const,
     lineHeight: 2.05,
