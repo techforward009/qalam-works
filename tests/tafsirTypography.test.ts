@@ -41,6 +41,48 @@ describe("Tafsir source-preserving typography", () => {
     expect(page).toContain('fontFamily: \'"Gulzar", serif\'');
   });
 
+  it("styles all eleven reported unvowelled quotations in English Tafsir as complete Arabic-script runs", () => {
+    const quotations = [
+          "کل امر ذی بال لم یذکر فیہ اسم اللہ فھو ابتر",
+          "استرق الشیطان من الناس اعظم آیة من القرآن بسم اللہ الرحمن الرحیم .",
+          "ھو اللہ الذی لا الہ الا ھو الملک القدوس السلام المومن المھیمن العزیز الجبار المتکبر۔",
+          "و رحمتی وسعت کل شئی",
+          "ربنا وسعت کل شئی رحمة۔",
+          "و نجنا برحمتک ۔",
+          "فانجیناہ والذین معہ برحمة منا۔",
+          "اللھم ربنا انزل علینا مائدة من السماء و ارزقنا و انت خیر الرازقین۔",
+          "رب انزلنی منزلا مبارکا و انت خیرالمنزلین۔",
+          "رب لا تذرنی فردا و انت خیر الوارثین۔",
+          "یا من سبقت رحمتہ غضبہ۔"
+    ];
+    for (const quote of quotations) {
+      const runs = splitTafsirTypography(quote, "en");
+      const arabic = runs.filter((run) => run.kind === "arabic");
+      expect(arabic, quote).toHaveLength(1);
+      expect(arabic[0].text.startsWith(quote.trim().split(" ")[0]), quote).toBe(true);
+      expect(runs.map((run) => run.text).join(""), quote).toBe(quote);
+    }
+  });
+
+  it("recognizes Arabic words mid-sentence, while retaining English letters, numbers, punctuation, and line breaks", () => {
+    const input = "The hadith says: کل امر ذی بال لم یذکر فیہ اسم اللہ فھو ابتر. Next: و رحمتی وسعت کل شئی (2:255).\\nThe name اللّٰهُ is Arabic.\\nNot Arabic: नमस्ते, Αβραχαμ, 2026!";
+    const runs = splitTafsirTypography(input, "en");
+    expect(runs.map((run) => run.text).join("")).toBe(input);
+    expect(runs.filter((run) => run.kind === "arabic").map((run) => run.text)).toEqual([
+      "کل امر ذی بال لم یذکر فیہ اسم اللہ فھو ابتر",
+      "و رحمتی وسعت کل شئی",
+      "اللّٰهُ",
+    ]);
+    expect(runs.filter((run) => run.kind !== "arabic").map((run) => run.text).join("")).toContain("Not Arabic: नमस्ते, Αβραχαμ, 2026!");
+  });
+
+  it("does not change conservative Urdu segmentation when Arabic detection is enabled for English", () => {
+    const sample = "یہ عبارت اِنَّا لِلّٰهِ کو مثال کے طور پر پیش کرتی ہے۔";
+    expect(splitTafsirTypography(sample, "ur")).toEqual(splitTafsirTypography(sample));
+    expect(splitTafsirTypography(sample, "ur")).toEqual([{ kind: "urdu", text: sample }]);
+    expect(splitTafsirTypography(sample, "en").some((run) => run.kind === "arabic")).toBe(true);
+  });
+
   it("leaves ambiguous and mixed Urdu lines intact instead of switching individual words", () => {
     const mixed = "یہ عبارت اِنَّا لِلّٰهِ کو مثال کے طور پر پیش کرتی ہے۔";
     const unvowelled = "بسم اللہ کے نام سے ہر کام شروع کریں۔";
