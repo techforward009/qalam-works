@@ -237,7 +237,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     b.sourceId === sourceId && b.sourceSha256 === selectedSource?.sha256);
   const isArabic = selectedSource?.language === "ar";
   const missingTranslation = !!reading && reading.language === "ar" && readingMode !== "original"
-    && reading.paragraphs.some(p => !(reading.translations ?? []).some(t => t.paragraphIds.includes(p.id)));
+    && reading.paragraphs.every(p => !(reading.translations ?? []).some(t => t.paragraphIds.includes(p.id)));
   return <section dir={ur ? "rtl" : "ltr"} data-testid="khateeb-book-reader" className={styles.readerShell}>
     <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss}/>
     {error ? <p role="alert" className={styles.noticeError}>{error}</p> : null}
