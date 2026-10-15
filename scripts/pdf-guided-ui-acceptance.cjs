@@ -50,7 +50,7 @@ const findText=(node,indices=[])=>{
    const editor = await page.$('.ProseMirror[contenteditable="true"]');
    if(!editor)throw Error("Real editable ProseMirror surface missing");
    await editor.click();
-   await page.keyboard.insertText("هٰذَا نَصٌّ عَرَبِيٌّ لِاخْتِبَارِ النَّصِّ.");
+   await page.keyboard.type("هٰذَا نَصٌّ عَرَبِيٌّ لِاخْتِبَارِ النَّصِّ.");
    await page.waitForFunction(()=>document.querySelector('.ProseMirror')?.textContent?.includes('هٰذَا'),{timeout:10000});
    await page.click('[data-studio-export-pdf="true"]');
    await page.waitForSelector('[aria-label="پی ڈی ایف برآمد کی خرابی"]',{timeout:20000});
@@ -63,7 +63,7 @@ const findText=(node,indices=[])=>{
    if(!selected)throw Error("Click did not navigate/select editor text");
    const originalText=await page.$eval('.ProseMirror',el=>el.textContent||"");
    // Explicit synthetic user edit, then undo: no editor changes are automatic.
-   await page.keyboard.insertText("ب");
+   await page.keyboard.type("ب");
    await page.waitForFunction(before=>document.querySelector('.ProseMirror')?.textContent!==before,{timeout:8000},originalText);
    await page.keyboard.down("Control");
    await page.keyboard.press("z");
