@@ -67,6 +67,26 @@ test.describe("Pakistan Hijri public-facing date acceptance", () => {
     await page.screenshot({path:testInfo.outputPath("pk-2023-safar-calendar.png"),fullPage:true});
   });
 
+  test("Pakistan 2022 Ramadan: 12 April is 10 Ramadan 1443 in both day and month", async ({ page }, testInfo) => {
+    await page.goto("/date/2022-04-12");
+    await expect(page.getByText("Pakistan official Hijri date")).toBeVisible();
+    await expect(page.getByText("10 Ramadan 1443 AH",{exact:true})).toBeVisible();
+    await page.goto("/calendar/2022/4");
+    await expect(page.locator('[data-calendar-month="4"] a[href="/date/2022-04-12"] [data-role="hijri-day"]'))
+      .toContainText(/^10/);
+    await page.screenshot({path:testInfo.outputPath("pk-2022-ramadan.png"),fullPage:true});
+  });
+
+  test("Pakistan 2022 Rabi al-Thani: committee-announced 28 October is first day", async ({ page }, testInfo) => {
+    await page.goto("/date/2022-10-28");
+    await expect(page.getByText("Pakistan official Hijri date")).toBeVisible();
+    await expect(page.getByText("1 Rabi al-Thani 1444 AH",{exact:true})).toBeVisible();
+    await page.goto("/calendar/2022/10");
+    await expect(page.locator('[data-calendar-month="10"] a[href="/date/2022-10-28"] [data-role="hijri-day"]'))
+      .toContainText(/^1/);
+    await page.screenshot({path:testInfo.outputPath("pk-2022-rabi-thani.png"),fullPage:true});
+  });
+
   test("keeps the Pakistan result visible and avoids sideways scrolling", async ({ page }) => {
     await page.goto("/calendar/2025/3");
     const visible = page.getByText("Pakistan Hijri calendar");
