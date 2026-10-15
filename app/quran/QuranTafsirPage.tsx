@@ -28,7 +28,7 @@ type Remote = {
 };
 
 function TafsirText({ text, language }: { text: string; language: TafsirLanguage }) {
-  const runs = splitTafsirTypography(text);
+  const runs = splitTafsirTypography(text, language);
   const arabicStyle = {
     fontFamily: '"Qalam Tafsir Scheherazade", serif',
     fontSize: "1.12em",
