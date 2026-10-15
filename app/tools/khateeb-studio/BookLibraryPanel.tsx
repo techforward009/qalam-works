@@ -5,6 +5,7 @@ import BookTopicGuide from "./BookTopicGuide";
 import BookReader from "./BookReader";
 import KnowledgeAssistant from "../../components/knowledge/KnowledgeAssistant";
 import type { CustomSermonProject } from "./engine/customSermonProject";
+import ResearchStudioGate from "../research-studio/components/ResearchStudioGate";
 import { renderKhateebSalawat } from "./KhateebScriptText";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { uploadBookArchive } from "../../lib/knowledge/uploadBookArchive";
