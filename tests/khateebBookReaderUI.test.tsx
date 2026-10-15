@@ -68,7 +68,7 @@ it("displays original Arabic in a true RTL reader, copies exact text and navigat
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
   render(<BookReader locale="ur"/>);
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
-  expect(screen.getByRole("heading", {name:"کتاب خانہ"})).toBeTruthy();
+  expect(screen.queryByRole("heading", {name:"کتاب خانہ"})).toBeNull();
   expect(screen.getByText("الکافی، جلد 8")).toBeTruthy();
   expect(screen.getAllByText("اصل متن کا حصہ 1").length).toBeGreaterThan(0);
   expect(screen.queryByRole("complementary", {name:"کتاب کی فہرست"})).toBeNull();
@@ -79,6 +79,19 @@ it("displays original Arabic in a true RTL reader, copies exact text and navigat
   fireEvent.click(screen.getByRole("button", {name: "اگلا مطالعہ صفحہ"}));
   await waitFor(() => expect(requests.some(url => url.searchParams.get("id") === id2)).toBe(true));
   expect(screen.getAllByText("اصل متن کا حصہ 2").length).toBeGreaterThan(0);
+});
+
+
+it("keeps sermon checkboxes out of normal reading and exposes them only in selection mode", async () => {
+  fakeFetch();
+  render(<BookReader locale="ur" onAdd={() => true}/>);
+  await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
+  expect(screen.queryByRole("checkbox")).toBeNull();
+  expect(screen.queryByText("Select for sermon")).toBeNull();
+  fireEvent.click(screen.getByRole("button", {name:"عبارت منتخب کریں"}));
+  expect(screen.getByRole("checkbox", {name:"پیراگراف 1 منتخب کریں"})).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", {name:"انتخاب بند کریں"}));
+  expect(screen.queryByRole("checkbox")).toBeNull();
 });
 
 it("searches only the selected volume and jumps to its returned original paragraph", async () => {
@@ -120,7 +133,10 @@ it("bookmarks the actual paragraph and sends validated selection to existing ser
   expect(data.bookmarks).toHaveLength(1);
   expect(data.bookmarks[0].recordId).toBe(id1);
   expect(JSON.stringify(data)).not.toContain(arabic);
-  fireEvent.click(screen.getByRole("checkbox", {name:"پیراگراف منتخب کریں 1"}));
+  expect(screen.queryByRole("checkbox")).toBeNull();
+  expect(screen.queryByText("مجلس کے لیے منتخب کریں")).toBeNull();
+  fireEvent.click(screen.getByRole("button", {name:"عبارت منتخب کریں"}));
+  fireEvent.click(screen.getByRole("checkbox", {name:"پیراگراف 1 منتخب کریں"}));
   fireEvent.click(screen.getByRole("button", {name:"میری مجلس میں شامل کریں"}));
   await waitFor(() => expect(saved).toHaveBeenCalledOnce());
   expect(saved.mock.calls[0][0].paragraphs).toEqual([{id:`${id1}:p1`,text:arabic}]);
@@ -167,6 +183,18 @@ it("shows an approved Urdu translation only in translation mode and keeps Arabic
   expect(screen.queryByText("یہ منظور شدہ اردو ترجمہ ہے")).toBeNull();
 });
 
+
+
+it("shows the source-matched Urdu translation after its Arabic passage in combined mode", async () => {
+  fakeFetch();
+  render(<BookReader locale="ur"/>);
+  await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
+  fireEvent.change(screen.getByLabelText("مطالعے کی صورت"), {target:{value:"combined"}});
+  const article = screen.getByTestId("book-reading-page");
+  await waitFor(() => expect(screen.getByText("یہ منظور شدہ اردو ترجمہ ہے")).toBeTruthy());
+  const articleText = article.textContent ?? "";
+  expect(articleText.indexOf(arabic)).toBeLessThan(articleText.indexOf("یہ منظور شدہ اردو ترجمہ ہے"));
+});
 
 it("opens contents only in a temporary drawer and closes after choosing a section", async () => {
   fakeFetch();
