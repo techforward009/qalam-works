@@ -132,3 +132,38 @@ export function copyReadingPage(page: BookReadingPage, withReference: boolean): 
   if (!withReference) return prose;
   return [page.reference, page.translator ? `مترجم: ${page.translator}` : null, prose].filter(Boolean).join("\n\n");
 }
+
+/**
+ * Locate the first matching span in the unmodified source string.
+ * Grapheme boundaries keep Arabic harakat bound to their letters. The text
+ * returned here is ALWAYS a slice of the original, not normalized output.
+ */
+export function originalBookQuerySpan(text: string, question: string): string | null {
+  const needle = normalizeBookSearch(question);
+  if (!needle || needle.length > 120 || text.length > 50000) return null;
+  const graphemes = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)];
+  let searchable = "";
+  const origins: { start: number; end: number }[] = [];
+  for (const segment of graphemes) {
+    const original = segment.segment;
+    const normalized = normalizeBookSearch(original);
+    if (!normalized) {
+      // Punctuation/whitespace separate tokens; combining marks are part of
+      // their grapheme and never become artificial separators.
+      if (/[\s\p{P}\p{S}]/u.test(original) && searchable && !searchable.endsWith(" ")) {
+        searchable += " ";
+        origins.push({ start: segment.index, end: segment.index + original.length });
+      }
+      continue;
+    }
+    const value = normalized.replace(/\s+/g, " ");
+    for (const char of value) {
+      searchable += char;
+      origins.push({ start: segment.index, end: segment.index + original.length });
+    }
+  }
+  const start = searchable.indexOf(needle);
+  if (start < 0) return null;
+  const end = start + needle.length - 1;
+  return text.slice(origins[start].start, origins[end].end);
+}
