@@ -42,6 +42,7 @@ import {
 } from "./utils/regionalDateEvidence";
 import { YallopIntegration, type DateStudioMethod } from "./components/YallopIntegration";
 import { resolvePakistanOfficialGregorianDate, resolvePakistanOfficialHijriDate } from "./utils/hijri-authority/resolveOfficialHijriDate";
+import { resolveDisplayHijriDate } from "./utils/hijri-authority/displayHijriDate";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 const L = {
@@ -465,7 +466,7 @@ export default function DateConverterContent({
   const months = monthOptions(calendar, lang);
   const inputClass = "w-full h-11 border border-[#1A3A2A]/15 dark:border-[#2a3d30] dark:bg-[#0e1c15] dark:text-[#e8ede9] rounded-xl px-3 text-sm focus:outline-none focus:border-[#1A3A2A]/50 dark:focus:border-[#4a7a5a]";
   const studioToday = todayGregorian();
-  const studioHijri = convert("gregorian", studioToday).hijri;
+  const studioHijri = resolveDisplayHijriDate(studioToday).hijri;
 
   const actionCards: Array<{ href: string; title: string; desc: string; icon: ReactNode; accent?: boolean }> = [
     {
