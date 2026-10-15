@@ -105,7 +105,7 @@ export function bookReadingPage(records: readonly BookRecord[], source: BookSour
   if (!Number.isInteger(part) || part < 1 || part > pageCount) return null;
   return {
     recordId: record.id, sourceId: source.id, recordOrdinal: index + 1, language: record.language,
-    title: safeTitle(record, index, locale).text,
+    kind: record.kind, title: safeTitle(record, index, locale).text,
     reference: bookRecordReference(record, locale),
     translator: source.translator, paragraphCount: record.paragraphs.length,
     paragraphs: record.paragraphs.slice((part - 1) * BOOK_READER_PARAGRAPHS, part * BOOK_READER_PARAGRAPHS),
