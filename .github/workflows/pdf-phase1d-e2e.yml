@@ -91,6 +91,30 @@ jobs:
           (root/'unchanged-render-regression.json').write_text(json.dumps(checks,indent=2))
           print('UNCHANGED_PDF_REGRESSION',json.dumps(checks))
           PY
+      - name: Inspect all Arabic PDF pages at 240 dpi and page-edge glyph bounds
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET, json, subprocess
+          root=Path("artifacts/pdf-phase1d"); out={}
+          for p in root.glob("*arabic*experimental.pdf"):
+            name=p.stem
+            folder=root/(name+"-240dpi");folder.mkdir(exist_ok=True)
+            subprocess.run(["pdftoppm","-r","240","-png",str(p),str(folder/"page")],check=True)
+            xml=subprocess.check_output(["pdftotext","-bbox-layout",str(p),"-"],text=True)
+            tree=ET.fromstring(xml);pages=[]
+            for page in [e for e in tree.iter() if e.tag.endswith("page")]:
+              w=float(page.attrib["width"]); h=float(page.attrib["height"]);violations=[];words=0
+              for word in [e for e in page.iter() if e.tag.endswith("word")]:
+                words+=1; x0=float(word.attrib["xMin"]);y0=float(word.attrib["yMin"]);x1=float(word.attrib["xMax"]);y1=float(word.attrib["yMax"])
+                if x0 < -0.1 or y0 < -0.1 or x1 > w+0.1 or y1 > h+0.1:violations.append({"text":word.text,"bbox":[x0,y0,x1,y1]})
+              pages.append({"widthPt":w,"heightPt":h,"extractedWordBoxes":words,"pageEdgeViolations":violations})
+            out[name]=pages
+          (root/"arabic-page-edges.json").write_text(json.dumps(out,ensure_ascii=False,indent=2))
+          print("ARABIC_PAGE_EDGES",json.dumps({k:[{"words":v["extractedWordBoxes"],"out":len(v["pageEdgeViolations"])} for v in vals] for k,vals in out.items()}))
+          if any(v["pageEdgeViolations"] for vals in out.values() for v in vals):raise SystemExit("PDF glyph word boxes exceed paper boundaries")
+          PY
       - name: Preserve raw Chromium font-diagnostic logs
         if: always()
         run: |
