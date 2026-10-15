@@ -69,7 +69,7 @@ const findText=(node,indices=[])=>{
    await page.keyboard.press("z");
    await page.keyboard.up("Control");
    await page.waitForFunction(before=>document.querySelector('.ProseMirror')?.textContent===before,{timeout:8000},originalText);
-   const retry=await page.$('[aria-label="پی ڈی ایف برآمد کی خرابی"] button:last-child');
+   const retry=await page.$('[aria-label="پی ڈی ایف برآمد کی خرابی"] > button:last-child');
    if(!retry)throw Error("Retry button missing");
    await retry.click();
    await page.waitForFunction(()=>!document.querySelector('[aria-label="پی ڈی ایف برآمد کی خرابی"]'),{timeout:10000});
