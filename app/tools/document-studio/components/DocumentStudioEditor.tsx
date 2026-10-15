@@ -5,6 +5,7 @@ import { useLanguage } from "../../../lib/language-context";
 import { useEditor } from "@tiptap/react";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
+import { isPdfFailure, type PdfFailure, type PdfSourceLocation } from "../utils/pdfExportDiagnostics";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
 import type { ProcessingLanguage, ResolvedLanguage } from "../../../utils/processing/types";
 import { trackEvent, trackToolOpenOnce } from "../../../lib/analytics";
@@ -282,6 +283,7 @@ export default function DocumentStudioEditor() {
   const [isImporting, setIsImporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfDiagnostic, setPdfDiagnostic] = useState<PdfFailure | null>(null);
   const [pdfSummary, setPdfSummary] = useState<{
     pages: number;
     fileSizeLabel: string;
@@ -1177,6 +1179,7 @@ export default function DocumentStudioEditor() {
     trackEvent("tool_download", { tool: "document_studio", export_format: "pdf", mode: processingLanguage, success: true });
     if (!editor) return;
     setPdfError(null);
+    setPdfDiagnostic(null);
     setPdfSummary(null);
     setIsExportingPdf(true);
     try {
@@ -1187,7 +1190,15 @@ export default function DocumentStudioEditor() {
       });
 
       if (!response.ok) {
-        setPdfError(await readPdfExportError(response));
+        const payload: unknown = await response.clone().json().catch(() => null);
+        const diagnostic = payload && typeof payload === "object" && "diagnostic" in payload
+          ? (payload as { diagnostic: unknown }).diagnostic : null;
+        if (isPdfFailure(diagnostic)) {
+          setPdfDiagnostic(diagnostic);
+          setPdfError(diagnostic.messageUr);
+        } else {
+          setPdfError(await readPdfExportError(response));
+        }
         return;
       }
 
@@ -1232,6 +1243,29 @@ export default function DocumentStudioEditor() {
     } finally {
       setIsExportingPdf(false);
     }
+  };
+
+  const navigateToPdfIssue = (location: PdfSourceLocation) => {
+    if (!editor) return;
+    let node = editor.state.doc;
+    let position = 0;
+    for (let depth = 0; depth < location.path.length; depth++) {
+      const index = location.path[depth];
+      if (index < 0 || index >= node.childCount) {
+        setPdfError("دستاویز بدل چکی ہے؛ دوبارہ برآمد کرکے نئی نشاندہی حاصل کریں۔");
+        return;
+      }
+      for (let i = 0; i < index; i++) position += node.child(i).nodeSize;
+      node = node.child(index);
+      if (depth < location.path.length - 1) position++;
+    }
+    if (!node.isText || node.text !== location.expectedText) {
+      setPdfError("متعلقہ عبارت اب بدل چکی ہے؛ دوبارہ برآمد کرکے نئی نشاندہی حاصل کریں۔");
+      return;
+    }
+    const from = position + Math.min(location.textOffset, node.text?.length ?? 0);
+    const to = Math.min(position + node.nodeSize, from + 1);
+    editor.chain().focus().setTextSelection({ from, to }).scrollIntoView().run();
   };
 
   useEffect(() => {
@@ -1679,9 +1713,36 @@ export default function DocumentStudioEditor() {
             </div>
           )}
           {pdfError && (
-            <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
-              {pdfError}
-            </div>
+            <section className="mb-3 rounded-lg border border-red-300 bg-red-50 p-4 text-red-900 text-sm" dir="rtl" role="alert" aria-label="پی ڈی ایف برآمد کی خرابی">
+              <p className="font-semibold">{pdfError}</p>
+              {pdfDiagnostic && (
+                <>
+                  <p className="mt-2 text-xs">اصل عبارت محفوظ ہے۔ قرآنی حروف کے لیے غیر محفوظ فونٹ نظرانداز نہیں کیا جاسکتا۔</p>
+                  {pdfDiagnostic.issues.length > 0 && (
+                    <ol className="mt-3 space-y-3">
+                      {pdfDiagnostic.issues.map(issue => (
+                        <li key={issue.id} className="rounded border border-red-200 bg-white p-3">
+                          <p className="font-semibold">فونٹ: {issue.selectedFont ?? "نامعلوم"}{issue.actualFont ? " — اصل متبادل: " + issue.actualFont : ""}</p>
+                          {issue.codePoint && <p className="mt-1 text-xs" dir="ltr">{issue.codePoint} {issue.character ?? ""}</p>}
+                          <p className="mt-1 text-xs">وجہ: {issue.reason === "missing-glyph" ? "منتخب فونٹ میں یہ حرف موجود نہیں۔" : "اصل دکھائی دینے والا فونٹ منظور شدہ نہیں۔"}</p>
+                          {issue.location && (
+                            <button type="button" onClick={() => navigateToPdfIssue(issue.location!)}
+                              className="mt-2 rounded border border-red-500 px-3 py-1.5 font-semibold hover:bg-red-100">
+                              متاثرہ عبارت پر جائیں
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                  <p className="mt-3 text-xs">متعلقہ متن منتخب کرکے فونٹ یا اس حصے کی فارمیٹنگ دیکھیں۔ تبدیلی صرف آپ خود کریں گے؛ واپسی کے لیے Ctrl+Z استعمال کریں۔ غیر ضروری علامت ملے تو پہلے اصل ماخذ سے تصدیق کریں۔</p>
+                </>
+              )}
+              <button type="button" onClick={() => void handleDownloadPdf()} disabled={isExportingPdf}
+                className="mt-3 rounded bg-red-800 px-3 py-2 text-white disabled:opacity-50">
+                اصلاح کے بعد دوبارہ PDF بنائیں
+              </button>
+            </section>
           )}
           {docxImportNotice && (
             <div className="mb-3 bg-amber-50 border-2 border-amber-400 text-amber-900 p-3 rounded-lg text-xs flex items-start justify-between gap-3" dir="rtl">
