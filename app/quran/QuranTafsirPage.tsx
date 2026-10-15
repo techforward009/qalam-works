@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../lib/language-context";
-import { surahTitle } from "./reader/metadata";
+import { easternDigits, surahTitle } from "./reader/metadata";
+import { tafsirCoverageRanges, tafsirDisplayTopicBody, type TafsirCoverageGroup } from "./reader/tafsirVerseCoverage";
 import { publicBlobFontUrl } from "../tools/document-studio/utils/publicBlobFontCatalog";
 import { displayTafsirHeading, splitTafsirTypography, tafsirSourceHeading } from "./reader/tafsirTypography";
 import { TAFSIR_WORKS, tafsirForAyah, tafsirWorkById } from "./reader/tafsirCatalog";
@@ -35,8 +36,23 @@ type Remote = {
   text?: string | null;
   heading?: string;
   topics?: Topic[];
+  coverage?: TafsirCoverageGroup[];
   referenceAyah?: string;
 };
+
+function commentaryScopeLabel(group: TafsirCoverageGroup, lang: TafsirLanguage): string {
+  const ranges = tafsirCoverageRanges(group.verses);
+  return ranges.map(({ surah, first, last }) => {
+    if (lang === "ur") {
+      const verses = first === last
+        ? "آیت " + easternDigits(first)
+        : "آیات " + easternDigits(first) + " تا " + easternDigits(last);
+      return surahTitle(surah) + "، " + verses;
+    }
+    return "Surah " + surah + ", " + (first === last ? "verse " : "verses ") +
+      first + (first === last ? "" : "–" + last);
+  }).join(lang === "ur" ? "؛ " : "; ");
+}
 
 function TafsirText({ text, language }: { text: string; language: TafsirLanguage }) {
   const runs = splitTafsirTypography(text, language);
@@ -93,6 +109,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
     return () => { active = false; };
   }, [workId, chosenLanguage, surah, ayah]);
 
+  const coverageGroups = remote?.status === "unicode_apk" ? remote.coverage ?? [] : [];
   const remoteTopics = remote?.status === "unicode_apk"
     ? (remote.topics?.length
       ? remote.topics
@@ -199,8 +216,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
             ) : null}
             {remoteTopics.map((topic, i) => (
               <section key={`${i}-${topic.sourceId ?? "x"}`} id={"tafsir-topic-" + i} className="scroll-mt-20">
-                {topic.title && topic.title !== "تفسیر" && topic.title !== "Tafseer" && topic.title !== "Commentary (Tafseer)" &&
-                  !topic.text.trimStart().startsWith(topic.title) ? (
+                {topic.title && topic.title !== "تفسیر" && topic.title !== "Tafseer" && topic.title !== "Commentary (Tafseer)" ? (
                   <h2 data-tafsir-topic-heading="true"
                     data-tafsir-source-heading={tafsirSourceHeading(topic.title, chosenLanguage) || undefined}
                     className={"mb-4 text-[#32422f] " + (ur ? "text-center" : "")}
@@ -212,7 +228,7 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
                       : displayTafsirHeading(topic.title, chosenLanguage)}
                   </h2>
                 ) : null}
-                <TafsirText text={topic.text} language={chosenLanguage} />
+                <TafsirText text={tafsirDisplayTopicBody(topic.title, topic.text)} language={chosenLanguage} />
               </section>
             ))}
             <p className="mt-7 border-t border-[#c9b98d]/30 pt-3 text-center text-xs text-[#82775f]">
