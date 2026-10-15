@@ -29,8 +29,8 @@ describe("PDF diagnostics: source paths, safe errors and unknown failures", () =
   });
   it("reports multiple unsupported Quranic marks with exact source paths", () => {
     const multiple = { type: "doc", content: [
-      { type: "paragraph", content: [text("ا\\u06D7 ب\\u06D7")] },
-      { type: "paragraph", content: [text("ر\\u06D7")] }
+      { type: "paragraph", content: [text("اۗ بۗ")] },
+      { type: "paragraph", content: [text("رۗ")] }
     ] };
     const result = issueForPdfFailure(new Error("Unsupported protected Arabic/Quranic U+06D7 at run 0:0; export blocked"), multiple);
     expect(result.issues).toHaveLength(3);
