@@ -42,7 +42,7 @@ function TafsirText({ text, language }: { text: string; language: TafsirLanguage
   const runs = splitTafsirTypography(text, language);
   const arabicStyle = {
     fontFamily: '"Qalam Tafsir Scheherazade", serif',
-    fontSize: language === "ur" ? "21px" : "1.12em",
+    fontSize: language === "ur" ? "20px" : "1.12em",
     fontWeight: 500,
     fontSynthesis: "none" as const,
     lineHeight: 2.05,
@@ -175,19 +175,21 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
         </p> : null}
         {remoteTopics.length > 0 && workId === "nemuneh" ? (
           <div className="mt-4 space-y-7" dir={chosenLanguage === "ur" ? "rtl" : "ltr"} lang={chosenLanguage}>
-            {ur && remoteTopics.length > 1 ? (
-              <nav aria-label="اس آیت کے موضوعات" className="mb-7 rounded-xl border border-[#dfd0ad] bg-[#f9f5e9] px-4 py-2">
+            {remoteTopics.length > 1 ? (
+              <nav aria-label={ur ? "اس آیت کے موضوعات" : "Topics in this verse"} className="mb-7 rounded-xl border border-[#dfd0ad] bg-[#f9f5e9] px-4 py-2" data-tafsir-topics-index={chosenLanguage}>
                 <details className="group">
                   <summary className="cursor-pointer list-none text-center text-[#335440] marker:hidden [&::-webkit-details-marker]:hidden"
-                    style={{ fontFamily: '"Gulzar", "Noto Nastaliq Urdu", serif', fontSize: "19px", lineHeight: 2.1 }}>
-                    اس آیت کے موضوعات ({remoteTopics.length}) <span className="inline-block text-sm group-open:rotate-180" aria-hidden="true">⌄</span>
+                    style={ur ? { fontFamily: '"Gulzar", "Noto Nastaliq Urdu", serif', fontSize: "19px", lineHeight: 2.1 } : { fontSize: "16px", fontWeight: 650, lineHeight: 2.1 }}>
+                    {ur ? "اس آیت کے موضوعات" : "Topics in this verse"} ({remoteTopics.length}) <span className="inline-block text-sm group-open:rotate-180" aria-hidden="true">⌄</span>
                   </summary>
-                  <ol className="mt-2 space-y-1 border-t border-[#ded0aa] pt-2">
+                  <ol className="mt-2 space-y-1 border-t border-[#ded0aa] pt-2" dir={ur ? "rtl" : "ltr"}>
                     {remoteTopics.map((topic, i) => (
                       <li key={i}>
-                        <a href={"#tafsir-topic-" + i} className="block rounded-md px-2 py-1.5 text-right text-[#32533e] hover:bg-[#ece9d9] focus-visible:outline-2 focus-visible:outline-[#577f60]"
-                          style={{ fontFamily: '"Alvi Nastaleeq", serif', fontSize: "17px", lineHeight: 2.1 }}>
-                          {i + 1}۔ {i === 0 && topic.title === "تفسیر بسم اللہ الرحمن الرحیم" ? "بسم اللہ الرحمن الرحیم" : topic.title}
+                        <a href={"#tafsir-topic-" + i} className={"block rounded-md px-2 py-1.5 text-[#32533e] hover:bg-[#ece9d9] focus-visible:outline-2 focus-visible:outline-[#577f60] " + (ur ? "text-right" : "text-left")}
+                          style={ur ? { fontFamily: '"Alvi Nastaleeq", serif', fontSize: "17px", lineHeight: 2.1 } : { fontSize: "15px", lineHeight: 1.8 }}>
+                          {i + 1}{ur ? "۔ " : ". "}{ur && i === 0 && topic.title === "تفسیر بسم اللہ الرحمن الرحیم"
+                            ? "بسم اللہ الرحمن الرحیم"
+                            : displayTafsirHeading(topic.title, chosenLanguage)}
                         </a>
                       </li>
                     ))}
