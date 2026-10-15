@@ -57,10 +57,12 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(conventional).toContain('className="quran-ayah inline"');
   });
 
-  it("locks Alvi for Urdu body text, Gulzar headings, and Digital Khatt for Arabic", () => {
+  it("locks Alvi body, Gulzar headings, and Scheherazade Arabic in Tafsir only", () => {
     expect(tafsir).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
     expect(tafsir).toContain('data-tafsir-arabic="true"');
-    expect(tafsir).toContain('fontFamily: \'"Digital Khatt Indo-Pak"\'');
+    expect(tafsir).toContain('fontFamily: \'"Qalam Tafsir Scheherazade", serif\'');
+    expect(tafsir).toContain('publicBlobFontUrl("ScheherazadeNew-Medium.woff2")');
+    expect(tafsir).not.toContain('data-tafsir-font-warning');
     expect(tafsir).not.toContain('var(--font-amiri), "Amiri"');
     expect(tafsir).toContain('fontFamily: \'"Gulzar", serif\'');
     expect(tafsir).toContain('data-tafsir-topic-heading="true"');
