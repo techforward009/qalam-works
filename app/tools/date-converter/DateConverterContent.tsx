@@ -67,7 +67,7 @@ const L = {
     calculatedHijriDate: "Calculated Hijri date",
     qalamCalculatedHijriDate: "Qalam calculated Hijri date",
     solar:        "Solar Hijri",
-    methodHijri:  "Tabular · Civil",
+    methodHijri:  "Tabular · Thursday-epoch calculation",
     methodSolar:  "Arithmetic · 33-year cycle",
     hijriNote:    "The tabular Hijri calculation may differ from verified local moon-sighting dates, sometimes by more than one day.",
     solarNote:    "Solar Hijri conversion uses an arithmetic 33-year cycle. Dates near Nowruz may differ by one day from astronomical calendars.",
