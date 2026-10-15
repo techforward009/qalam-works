@@ -1201,7 +1201,7 @@ export default function DocumentStudioEditor() {
         if (payload && typeof payload === "object" && "version" in payload && (payload as PdfExportFailure).version === 1 && Array.isArray((payload as PdfExportFailure).problems)) {
           const diagnosis = payload as PdfExportFailure;
           setPdfDiagnosis(diagnosis);
-          setPdfError(diagnosis.error);
+          setPdfError(diagnosis.problems[0]?.message ?? diagnosis.error);
         } else {
           setPdfError(await readPdfExportError(response));
         }
