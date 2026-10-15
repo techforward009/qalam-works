@@ -56,7 +56,7 @@ it("displays original Arabic in a true RTL reader, copies exact text and navigat
   fireEvent.click(screen.getByRole("button", {name: "اصل متن نقل کریں"}));
   await waitFor(() => expect(writeText).toHaveBeenCalled());
   expect(writeText.mock.calls[0][0]).toBe(arabic);
-  fireEvent.click(screen.getByRole("button", {name: "اگلا", exact: true}));
+  fireEvent.click(screen.getByRole("button", {name: /^اگلا$/}));
   await waitFor(() => expect(requests.some(url => url.searchParams.get("id") === id2)).toBe(true));
   expect(screen.getAllByText("اصل متن کا حصہ 2").length).toBeGreaterThan(0);
 });
@@ -66,7 +66,7 @@ it("searches only the selected volume and jumps to its returned original paragra
   render(<BookReader locale="ur"/>);
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
   fireEvent.change(screen.getByRole("textbox", {name:"اسی کتاب میں تلاش"}), {target:{value:"اختباری"}});
-  fireEvent.click(screen.getByRole("button", {name:"تلاش", exact:true}));
+  fireEvent.click(screen.getByRole("button", {name:/^تلاش$/}));
   await waitFor(() => expect(urls.some(url => url.searchParams.get("op") === "find")).toBe(true));
   await waitFor(() => expect(screen.getAllByRole("button", { name: /اصل متن کا حصہ 2/ }).length).toBeGreaterThan(1));
   const hits = screen.getAllByRole("button", { name: /اصل متن کا حصہ 2/ });
