@@ -4,10 +4,12 @@ on:
   pull_request:
     paths:
       - 'app/lib/knowledge/bookReaderModel.ts'
+      - 'app/lib/knowledge/bookReaderProgress.ts'
       - 'app/api/research/book-reader/route.ts'
       - 'app/tools/khateeb-studio/BookReader.tsx'
       - 'app/tools/khateeb-studio/BookLibraryPanel.tsx'
       - 'tests/bookReaderModel.test.ts'
+      - 'tests/bookReaderProgress.test.ts'
       - 'tests/khateebBookReaderRoute.test.ts'
       - 'tests/khateebBookReaderUI.test.tsx'
       - '.github/workflows/khateeb-book-reader-r1.yml'
@@ -31,6 +33,6 @@ jobs:
       - name: Install dependencies without running lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Run focused private reader tests
-        run: npx vitest run tests/bookReaderModel.test.ts tests/khateebBookReaderRoute.test.ts tests/khateebBookReaderUI.test.tsx
+        run: npx vitest run tests/bookReaderModel.test.ts tests/bookReaderProgress.test.ts tests/khateebBookReaderRoute.test.ts tests/khateebBookReaderUI.test.tsx
       - name: Typecheck (repo-wide, for integration)
         run: npx tsc --noEmit --pretty false
