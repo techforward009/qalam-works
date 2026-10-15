@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { preflightPdfSource } from "../app/tools/document-studio/utils/pdfSourcePreflight";
 import { classifyPdfExportFailure, locatePdfFontProblem, inspectProtectedSource } from "../app/tools/document-studio/utils/pdfExportDiagnostics";
 const doc = { type: "doc", content: [{ type:"paragraph", content: [{type:"text",text:"اَلْحَمْدُ",marks:[{type:"textStyle",attrs:{fontFamily:"Digital Khatt Indo-Pak"}}]}] }] };
 describe("PDF diagnostics safe classification", () => {
+ it("rejects deeply nested synthetic source without stack exhaustion", () => {
+  let node: {type:string; content?: any[]} = {type:"paragraph"};
+  for(let i=0;i<1000;i++) node={type:"blockquote",content:[node]};
+  expect(() => preflightPdfSource({type:"doc",content:[node]} as any)).toThrow(/nesting depth/);
+ });
  it("finds exact source path without replacing text", () => {
   const before=JSON.stringify(doc);
   expect(locatePdfFontProblem(doc,"Digital Khatt Indo-Pak","U+0644")).toMatchObject({path:[0,0],paragraphPath:[0],start:2,end:3});
