@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../../lib/language-context";
 import { useEditor } from "@tiptap/react";
+import type { PdfExportDiagnostic, PdfExportErrorResponse } from "../utils/pdfExportDiagnostics";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
@@ -282,6 +283,8 @@ export default function DocumentStudioEditor() {
   const [isImporting, setIsImporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfDiagnostics, setPdfDiagnostics] = useState<PdfExportDiagnostic[]>([]);
+  const pdfAttemptRef = useRef<{ snapshot: string; ranges: Array<{ from: number; to: number }> } | null>(null);
   const [pdfSummary, setPdfSummary] = useState<{
     pages: number;
     fileSizeLabel: string;
@@ -1177,7 +1180,16 @@ export default function DocumentStudioEditor() {
     trackEvent("tool_download", { tool: "document_studio", export_format: "pdf", mode: processingLanguage, success: true });
     if (!editor) return;
     setPdfError(null);
+    setPdfDiagnostics([]);
     setPdfSummary(null);
+    const snapshot = JSON.stringify(editor.getJSON());
+    const ranges: Array<{ from: number; to: number }> = [];
+    editor.state.doc.descendants((node, pos) => {
+      if (node.isText && node.marks.some(mark => mark.type.name === "textStyle" && mark.attrs.fontFamily === "Digital Khatt Indo-Pak")) {
+        ranges.push({ from: pos, to: pos + node.nodeSize });
+      }
+    });
+    pdfAttemptRef.current = { snapshot, ranges };
     setIsExportingPdf(true);
     try {
       const response = await fetch("/api/export-pdf", {
@@ -1187,7 +1199,13 @@ export default function DocumentStudioEditor() {
       });
 
       if (!response.ok) {
-        setPdfError(await readPdfExportError(response));
+        try {
+          const payload = await response.json() as Partial<PdfExportErrorResponse>;
+          setPdfError(typeof payload.error === "string" ? payload.error : GENERIC_PDF_EXPORT_ERROR);
+          setPdfDiagnostics(Array.isArray(payload.diagnostics) ? payload.diagnostics.filter(item => item && typeof item.messageUrdu === "string") : []);
+        } catch {
+          setPdfError(GENERIC_PDF_EXPORT_ERROR);
+        }
         return;
       }
 
@@ -1679,9 +1697,45 @@ export default function DocumentStudioEditor() {
             </div>
           )}
           {pdfError && (
-            <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
-              {pdfError}
-            </div>
+            <section className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-red-900" dir="rtl" aria-live="polite">
+              <p className="text-sm font-semibold">پی ڈی ایف تیار نہیں ہوسکی</p>
+              <p className="mt-1 text-xs">{pdfError}</p>
+              {pdfDiagnostics.length > 0 && (
+                <ol className="mt-2 space-y-2" aria-label="پی ڈی ایف کی خرابیوں کی فہرست">
+                  {pdfDiagnostics.map((problem, index) => (
+                    <li key={index} className="rounded-md border border-red-100 bg-white p-2 text-xs">
+                      <p className="font-medium">{problem.messageUrdu}</p>
+                      {problem.codepoint && <p className="mt-1">حرف: <b>{problem.character}</b> ({problem.codepoint})</p>}
+                      {problem.selectedFont && <p>منتخب فونٹ: {problem.selectedFont}</p>}
+                      {problem.actualFont && <p>استعمال ہونے والا فونٹ: {problem.actualFont}</p>}
+                      {problem.location && <p>متاثرہ حصہ: {problem.location.runIndex + 1}</p>}
+                      {problem.location && (
+                        <button type="button" className="mt-2 rounded border border-red-300 px-3 py-1 font-semibold hover:bg-red-100" onClick={() => {
+                          if (!editor || !pdfAttemptRef.current) return;
+                          const attempt = pdfAttemptRef.current;
+                          if (JSON.stringify(editor.getJSON()) !== attempt.snapshot) {
+                            setPdfError("دستاویز تبدیل ہوچکی ہے۔ درست مقام معلوم کرنے کے لیے دوبارہ برآمد کی کوشش کریں۔");
+                            return;
+                          }
+                          const range = attempt.ranges[problem.location!.runIndex];
+                          if (!range) {
+                            setPdfError("اس حصے کا درست مقام دستیاب نہیں۔ براہ کرم متن خود دیکھیں۔");
+                            return;
+                          }
+                          editor.chain().focus().setTextSelection(range).scrollIntoView().run();
+                        }}>متاثرہ عبارت دکھائیں اور منتخب کریں</button>
+                      )}
+                      <details className="mt-2">
+                        <summary className="cursor-pointer">تکنیکی تفصیل</summary>
+                        <p>شناخت: {problem.code} — {problem.reason || "وجہ کی مزید تصدیق ضروری ہے"}</p>
+                      </details>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              <p className="mt-2 text-xs">محفوظ اصلاح: عبارت کو دیکھیں، مناسب فونٹ منتخب کرکے اس کے اصل حروف کی جانچ کریں۔ کوئی حرف خودکار طور پر تبدیل نہیں کیا جائے گا۔ ترمیم کے بعد واپس لانے کے لیے ایڈیٹر کا Undo استعمال کریں۔</p>
+              <button type="button" disabled={isExportingPdf} onClick={() => void handleDownloadPdf()} className="mt-2 rounded-md bg-red-800 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">درستگی کے بعد دوبارہ پی ڈی ایف بنائیں</button>
+            </section>
           )}
           {docxImportNotice && (
             <div className="mb-3 bg-amber-50 border-2 border-amber-400 text-amber-900 p-3 rounded-lg text-xs flex items-start justify-between gap-3" dir="rtl">
