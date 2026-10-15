@@ -6,6 +6,25 @@ import type { OfficialHijriMonthAnchor } from "./types";
  */
 export const PAKISTAN_OFFICIAL_HIJRI_ANCHORS: readonly OfficialHijriMonthAnchor[] = [
   {
+    id: "pk-1447-rajab-2025-12-22",
+    jurisdiction: "PK",
+    hijriYear: 1447,
+    hijriMonth: 7,
+    officialDayOneGregorian: { year: 2025, month: 12, day: 22 },
+    // Rajab's 30 days are confirmed by 1 Sha'ban on 21 January 2026.
+    coverageEndGregorian: { year: 2026, month: 1, day: 20 },
+    authority: "official",
+    evidenceKind: "official-declaration",
+    verificationStatus: "verified",
+    sightingDecision: "sighted",
+    announcementGregorianDate: { year: 2025, month: 12, day: 21 },
+    providerId: "pk-central-ruet-e-hilal-committee",
+    providerLabel: { en: "Pakistan Central Ruet-e-Hilal Committee", ur: "پاکستان مرکزی رویتِ ہلال کمیٹی" },
+    sourceUrl: "https://www.app.com.pk/domestic/ruet-e-hilal-committee-announces-sighting-of-rajab-al-murjab-moon/",
+    sourceReference: "APP, 21 December 2025: Rajab crescent sighted on Sunday evening; civil day 1 Rajab 1447 began Monday, 22 December 2025. Next official 1 Sha'ban was 21 January 2026.",
+    provenance: { verifiedAt: "2026-10-15", notes: "APP uses Islamic sunset-day language. Its reported 21 December evening corresponds to Gregorian daylight 22 December; confirmed by later Sha'ban announcement." },
+  },
+  {
     id: "pk-1447-shaban-2026-01-21",
     jurisdiction: "PK",
     hijriYear: 1447,
