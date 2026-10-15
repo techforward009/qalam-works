@@ -11,6 +11,27 @@ const anchor = (overrides: Partial<OfficialHijriMonthAnchor> = {}): OfficialHijr
 });
 
 describe("Pakistan official Hijri authority resolver", () => {
+  it("uses the declared Pakistan Ramadan 1447 dates, not the tabular result", () => {
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 2, day: 18 })).toBeNull();
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 2, day: 19 })?.hijri).toEqual({ year: 1447, month: 9, day: 1 });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 2, day: 28 })).toMatchObject({
+      hijri: { year: 1447, month: 9, day: 10 }, authority: "official",
+      anchorId: "pk-1447-ramadan-2026-02-19", verificationStatus: "verified",
+    });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 3, day: 19 })?.hijri).toEqual({ year: 1447, month: 9, day: 29 });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 3, day: 20 })?.hijri).toEqual({ year: 1447, month: 9, day: 30 });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 3, day: 21 })?.hijri).toEqual({ year: 1447, month: 10, day: 1 });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 4, day: 18 })?.hijri).toEqual({ year: 1447, month: 10, day: 29 });
+    expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 4, day: 19 })).toBeNull();
+  });
+
+  it("records both actual Ramadan and Shawwal sighting decisions on announcement evenings only", async () => {
+    const { resolvePakistanOfficialSightingDecisionForEvening } = await import("../app/tools/date-converter/utils/hijri-authority/resolveOfficialSightingDecision");
+    expect(resolvePakistanOfficialSightingDecisionForEvening({ year: 2026, month: 2, day: 18 })).toMatchObject({ sightingDecision: "sighted", hijriMonth: 9 });
+    expect(resolvePakistanOfficialSightingDecisionForEvening({ year: 2026, month: 3, day: 19 })).toMatchObject({ sightingDecision: "not-sighted", hijriMonth: 10 });
+    expect(resolvePakistanOfficialSightingDecisionForEvening({ year: 2026, month: 2, day: 28 })).toBeNull();
+  });
+
   it("resolves reviewed production anchors only through their explicit coverage", () => {
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 8, day: 15 })).toMatchObject({
       hijri: { year: 1448, month: 3, day: 1 }, authority: "official", verificationStatus: "verified",
@@ -19,7 +40,7 @@ describe("Pakistan official Hijri authority resolver", () => {
       hijri: { year: 1448, month: 3, day: 30 }, authority: "official",
     });
     expect(resolvePakistanOfficialHijriDate({ year: 2026, month: 9, day: 14 })).toMatchObject({ hijri: { year: 1448, month: 4, day: 1 }, authority: "official", verificationStatus: "verified" });
-    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(3);
+    expect(PAKISTAN_OFFICIAL_HIJRI_ANCHORS).toHaveLength(5);
   });
 
   it("bounds the reviewed Rabi al-Thani anchor through day 29 without inferring day 30", () => {
