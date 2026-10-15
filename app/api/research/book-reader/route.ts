@@ -50,8 +50,15 @@ async function withReviewedTranslations(
     passages: corpusPassages, expandedTerms: [], availableCollections: [],
   };
   result = attachCorpusTranslations(result, allRecords, sources, language);
-  const translated = new Map<string, NonNullable<KnowledgePassage["suppliedTranslation"]>>();
-  for (const p of result.passages) if (p.suppliedTranslation && p.paragraphId) translated.set(p.paragraphId, p.suppliedTranslation);
+  const translated = new Map<string, {
+    value: NonNullable<KnowledgePassage["suppliedTranslation"]>;
+    sourceParagraphIds: string[];
+  }>();
+  for (const p of result.passages) {
+    if (p.suppliedTranslation && p.paragraphId) {
+      translated.set(p.paragraphId, { value: p.suppliedTranslation, sourceParagraphIds: [p.paragraphId] });
+    }
+  }
 
   // Reviewed user translations may cover a verified multi-paragraph unit. Load only units fully present on this part.
   const units = bookSearchUnits(sourceRecord).filter(u => {
@@ -68,16 +75,14 @@ async function withReviewedTranslations(
         const ids = p.excerpt?.paragraphs.map(x => x.id) ?? [];
         if (ids.length) {
           for (const id of ids) translated.delete(id);
-          translated.set(ids[ids.length - 1], p.suppliedTranslation);
+          translated.set(ids[ids.length - 1], { value: p.suppliedTranslation, sourceParagraphIds: ids });
         }
       }
     }
   }
 
-  const translations = [...translated.entries()].map(([lastParagraphId, value]) => ({
-    paragraphIds: value.paragraphIds?.length
-      ? value.paragraphIds
-      : [lastParagraphId],
+  const translations = [...translated.values()].map(({ value, sourceParagraphIds }) => ({
+    paragraphIds: sourceParagraphIds,
     text: value.text, language: value.language, translator: value.translator,
     source: value.source ?? "",
   }));
