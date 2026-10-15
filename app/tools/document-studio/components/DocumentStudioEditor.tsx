@@ -1,5 +1,5 @@
-import type { PdfExportFailure } from "../utils/pdfExportDiagnostics";
 "use client";
+import type { PdfExportFailure } from "../utils/pdfExportDiagnostics";
 
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../../lib/language-context";
