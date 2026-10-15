@@ -220,6 +220,19 @@ export default function QuranTafsirPage({ surah, ayah, ayahs }: {
   const [workId, setWorkId] = useState(TAFSIR_WORKS[0]?.id ?? "");
   const chosenLanguage: TafsirLanguage = ur ? "ur" : "en";
   const pageVerseKeys = ayahs?.map((item) => item.surah + ":" + item.ayah).join(",") ?? "";
+  const pageFirst = ayahs?.[0];
+  const pageLast = ayahs?.[ayahs.length - 1];
+  const pageRangeLabel = pageFirst && pageLast && ayahs && ayahs.length > 1
+    ? pageFirst.surah === pageLast.surah
+      ? surahTitle(pageFirst.surah) + "، آیات " + easternDigits(pageFirst.ayah) + " تا " + easternDigits(pageLast.ayah)
+      : surahTitle(pageFirst.surah) + "، آیت " + easternDigits(pageFirst.ayah) + " — " +
+        surahTitle(pageLast.surah) + "، آیت " + easternDigits(pageLast.ayah)
+    : surahTitle(surah) + "، آیت " + easternDigits(ayah);
+  const englishPageRangeLabel = pageFirst && pageLast && ayahs && ayahs.length > 1
+    ? pageFirst.surah === pageLast.surah
+      ? "Surah " + pageFirst.surah + ", verses " + pageFirst.ayah + "–" + pageLast.ayah
+      : "Surah " + pageFirst.surah + ":" + pageFirst.ayah + " – " + pageLast.surah + ":" + pageLast.ayah
+    : "Surah " + surah + ", verse " + ayah;
   const [remote, setRemote] = useState<Remote | null>(null);
   const work = tafsirWorkById(workId);
   const entry = work && work.id !== "nemuneh" ? tafsirForAyah(work.id, surah, ayah) : null;
@@ -263,7 +276,7 @@ export default function QuranTafsirPage({ surah, ayah, ayahs }: {
           </h1>
           <div className="mx-auto mb-3 h-[2px] w-20 rounded-full bg-[#bfa168]/75" aria-hidden="true" />
           <p className="text-center text-[#665e49]" style={{ fontSize: "17px", lineHeight: 2 }}>
-            {surahTitle(surah)}، آیت {ayah}
+            {pageRangeLabel}
           </p>
           <div className="mx-auto mt-4 flex w-full max-w-xl items-center gap-3 text-right" dir="rtl" data-tafsir-source-row="true">
             <span className="shrink-0 text-[#35523d]"
@@ -341,7 +354,7 @@ export default function QuranTafsirPage({ surah, ayah, ayahs }: {
           </section>
         ) : null}
         {!ur ? <p className="text-sm text-[#6d624e]">
-          {"Surah " + surah + ", Ayah " + ayah + " · " + work.authorEn}
+          {englishPageRangeLabel + " · " + work.authorEn}
         </p> : null}
         {workId === "nemuneh" && pageVerseKeys && pageSections.length > 0 ? (
           <TafsirPageSections sections={pageSections} surah={surah} ayah={ayah} language={chosenLanguage} />
