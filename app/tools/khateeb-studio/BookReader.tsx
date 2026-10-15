@@ -11,7 +11,7 @@ import {
   rememberReaderPosition, readerSavedForSource, sameReaderAnchor,
   toggleReaderBookmark, type ReaderAnchor, type ReaderProgress,
 } from "../../lib/knowledge/bookReaderProgress";
-import { copyReadingPage, type BookContents, type BookFindResults, type BookReadingPage } from "../../lib/knowledge/bookReaderModel";
+import { copyReadingPage, originalBookQuerySpan, type BookContents, type BookFindResults, type BookReadingPage } from "../../lib/knowledge/bookReaderModel";
 
 type Language = "ur" | "en";
 type ShelfSource = { id: string; book: "nahj" | "sahifa" | "kafi"; language: "ar" | Language; translator: string | null; sha256: string };
@@ -69,7 +69,7 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     try { localStorage.setItem(KHATEEB_READER_PROGRESS_KEY, JSON.stringify(next)); }
     catch { setMessage(ur ? "اس براؤزر میں مطالعے کا مقام محفوظ نہیں ہوسکا۔" : "Reading location could not be saved in this browser."); }
   }
-  async function read(source: string, recordId: string, part = 1, paragraphId = "", expected?: ReaderAnchor) {
+  async function read(source: string, recordId: string, part: number | "last" = 1, paragraphId = "", expected?: ReaderAnchor) {
     const result = await get(args("read", source, { id: recordId, part: String(part) }));
     if (!result?.recordId) return null;
     const page = result as BookReadingPage;
@@ -80,6 +80,8 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
     setReading(page); setTargetParagraph(paragraphId);
     setSelectedIds([]); setMessage("");
     saveProgress(rememberReaderPosition(progressRef.current, anchorForPage(page, paragraphId)));
+    const correctContentsPage = Math.ceil(page.recordOrdinal / 24);
+    if (toc && toc.page !== correctContentsPage) await contents(source, correctContentsPage);
     return page;
   }
   async function contents(source: string, page = 1, autoOpen = false) {
@@ -296,13 +298,14 @@ export default function BookReader({ locale, onAdd, addedIds = [] }: {
                       e.target.checked ? [...ids, p.id] : ids.filter(id => id !== p.id))} />
                   {ur ? "مجلس کے لیے منتخب کریں" : "Select for sermon"}
                 </label> : null}
-                <BookPassageText text={p.text} language={reading.language}/>
+                <BookPassageText text={p.text} language={reading.language}
+                  highlight={targetParagraph === p.id ? originalBookQuerySpan(p.text, findText) ?? undefined : undefined}/>
               </div>)}
             </div>
             <nav aria-label={ur ? "مطالعے کی ترتیب" : "Reading navigation"} className="flex flex-wrap items-center justify-between gap-2 border-t border-[#31513a]/20 pt-4">
               <button type="button" className={btn} disabled={busy || (reading.page === 1 && !reading.previousRecordId)} onClick={() => {
                 if (reading.page > 1) void read(sourceId, reading.recordId, reading.page - 1);
-                else if (reading.previousRecordId) void read(sourceId, reading.previousRecordId, 1);
+                else if (reading.previousRecordId) void read(sourceId, reading.previousRecordId, "last");
               }}>{ur ? "پچھلا" : "Previous"}</button>
               <span className="text-xs">{ur ? "مطالعے کا حصہ" : "Reader part"} {reading.page} / {reading.pageCount}</span>
               <button type="button" className={btn} disabled={busy || (reading.page === reading.pageCount && !reading.nextRecordId)} onClick={() => {
