@@ -19,10 +19,10 @@ describe("Forwardable Pakistan Hijri date results", () => {
     expect(message).toContain("نومبر");
     expect(message).toContain("جمادی الاول");
     expect(message).toContain("۱۴۴۸");
-    expect(message).toContain("حیثیت:");
-    expect(message).toContain("یکم قمری مہینہ:");
-    expect(message).toContain("اصل حوالہ: " + reviewed!.sourceUrl);
-    expect(message).toContain("قلم ورکس: https://www.qalamworks.com/date/2026-11-04");
+    expect(message).toContain("بمطابق: مرکزی رؤیتِ ہلال کمیٹی پاکستان");
+    expect(message).toContain("مزید تفصیلات:");
+    expect(message).not.toContain(reviewed!.sourceUrl);
+    expect(message).toContain("https://www.qalamworks.com/date/2026-11-04");
     expect(message).not.toContain("1448-05-23");
   });
 
