@@ -398,14 +398,14 @@ export default function DateConverterContent({
   if (hasInput) {
     const parts: DateParts = { year: yearN, month: monthN, day: dayN };
     // A reviewed Pakistan month can have 30 days even when the tabular month has 29.
-    const reviewedGregorian = calendar === "hijri" && selectedCountry === "pk" ? resolvePakistanOfficialGregorianDate(parts) : null;
+    const reviewedGregorian = calendar === "hijri" ? resolvePakistanOfficialGregorianDate(parts) : null;
     const err = reviewedGregorian ? null : validateDate(calendar, parts);
     if (err) errMsg = `${t.invalidDate}: ${err.message}`;
     else result = reviewedGregorian ? convert("gregorian", reviewedGregorian) : convert(calendar, parts);
   }
 
   const intelligence = result ? getRichDateIntelligence(result.gregorian) : null;
-  const pakistanOfficialHijri = result && selectedCountry === "pk" ? resolvePakistanOfficialHijriDate(result.gregorian) : null;
+  const pakistanOfficialHijri = result ? resolvePakistanOfficialHijriDate(result.gregorian) : null;
   const weekdayName = intelligence
     ? (isUr ? WEEKDAYS_UR[intelligence.weekdayIndex] : WEEKDAYS_EN[intelligence.weekdayIndex])
     : "";
