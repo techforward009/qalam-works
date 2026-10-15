@@ -108,6 +108,22 @@ describe("Tafsir source-preserving typography", () => {
     }
   });
 
+  it("keeps printed Urdu Quran verse citations in Alvi rather than the Arabic quotation font", () => {
+    const cases = [
+      ["ولئن سالتھم من خلق السموات و الارض لیقولن اللہ۔ (لقمان، ۲۵)", "(لقمان، ۲۵)"],
+      ["و قال الذین کفروا ہل ندلکم علی رجل ینبئکم اذا مزقتم کل ممزق انکم لفی خلق جدید افتری علی اللہ کذبا ام بہ جنة۔ (سبا، ۸، ۷)", "(سبا، ۸، ۷)"],
+      ["قل یا عبادی الذین اسرفوا علی انفسہم لا تقنطوا من رحمة اللہ ان اللہ یغفرالذنوب جمیعا۔ (زمر، ۵۳)", "(زمر، ۵۳)"],
+      ["و ختم علی سمعہ و قلبہ و جعل علی بصرہ غشاوة۔ (جاثیہ، ۲۳)", "(جاثیہ، ۲۳)"],
+    ] as const;
+    for (const [text, reference] of cases) {
+      const runs = splitTafsirTypography(text, "ur");
+      expect(runs.map((run) => run.text).join("")).toBe(text);
+      expect(runs.find((run) => run.kind === "reference")?.text).toContain(reference);
+      expect(runs.some((run) => run.kind === "arabic")).toBe(true);
+      expect(runs.find((run) => run.kind === "arabic")?.text).not.toContain(reference);
+    }
+  });
+
   it("never switches an ordinary Urdu sentence to Arabic just for mentioning Allah, Rahman or Arabic words", () => {
     for (const urdu of [
       "ساری دنیا اللہ کی رحمت میں ڈوبی ہوئی ہے۔",
