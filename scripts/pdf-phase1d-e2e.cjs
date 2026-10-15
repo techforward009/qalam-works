@@ -14,6 +14,10 @@ const arabic=doc([heading("اِخْتِبَارُ الْكِتَابَةِ ال�
 const fixtures=[
  {id:"original-arabic-23-full-stops",doc:arabic,required:true,production:500,experimental:200,periods:23},
  {id:"arabic-deliberately-substituted",doc:doc([para("هٰذَا نَصٌّ عَرَبِيٌّ. ","Digital Khatt Indo-Pak")]),required:true,experimental:500,fault:"arabic-css"},
+ {id:"multiple-digital-paragraphs",doc:doc([para("اَلْعِلْمُ نُورٌ. ","Digital Khatt Indo-Pak"),para("هٰذَا نَصٌّ عَرَبِيٌّ. ","Digital Khatt Indo-Pak"),para("وَالْحَمْدُ لِلّٰهِ. ","Digital Khatt Indo-Pak")]),experimental:200,periods:3},
+ {id:"multiple-run-last-substitution",doc:doc([para("اَلْعِلْمُ نُورٌ. ","Digital Khatt Indo-Pak"),para("هٰذَا نَصٌّ عَرَبِيٌّ. ","Digital Khatt Indo-Pak")]),experimental:500,fault:"arabic-css-last"},
+ {id:"alternating-format-and-language",doc:doc([{type:"paragraph",attrs:{dir:"rtl"},content:[txt("هٰذَا نَصٌّ. ","Digital Khatt Indo-Pak"),txt("اردو مثال ","Gulzar"),txt("اَلْعِلْمُ نُورٌ. ","Digital Khatt Indo-Pak"),txt("English text ","Inter","12pt"),txt("وَالْحَمْدُ لِلّٰهِ. ","Digital Khatt Indo-Pak")]}]),experimental:200,periods:3},
+ {id:"later-run-missing-quranic-mark",doc:doc([para("اَلْعِلْمُ نُورٌ. ","Digital Khatt Indo-Pak"),para("ا\u06D7 ","Digital Khatt Indo-Pak")]),experimental:500},
  {id:"arabic-missing-quranic-mark",doc:doc([para("ا\u06D7 "+a,"Digital Khatt Indo-Pak")]),required:true,production:500,experimental:500},
  {id:"arabic-period-invalid-context",doc:doc([para("ا.ا "+a,"Digital Khatt Indo-Pak")]),required:true,experimental:500},
  {id:"arabic-unapproved-punctuation",doc:doc([para("ا? "+a,"Digital Khatt Indo-Pak")]),required:true,experimental:500},
