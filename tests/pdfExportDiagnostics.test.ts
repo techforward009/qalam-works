@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { classifyPdfExportFailure, locatePdfFontProblem } from "../app/tools/document-studio/utils/pdfExportDiagnostics";
+import { classifyPdfExportFailure, locatePdfFontProblem, inspectProtectedSource } from "../app/tools/document-studio/utils/pdfExportDiagnostics";
 const doc = { type: "doc", content: [{ type:"paragraph", content: [{type:"text",text:"اَلْحَمْدُ",marks:[{type:"textStyle",attrs:{fontFamily:"Digital Khatt Indo-Pak"}}]}] }] };
 describe("PDF diagnostics safe classification", () => {
  it("finds exact source path without replacing text", () => {
   const before=JSON.stringify(doc);
-  expect(locatePdfFontProblem(doc,"Digital Khatt Indo-Pak","U+0644")).toEqual({path:[0,0],paragraphPath:[0],start:2,end:3});
+  expect(locatePdfFontProblem(doc,"Digital Khatt Indo-Pak","U+0644")).toMatchObject({path:[0,0],paragraphPath:[0],start:2,end:3});
   expect(JSON.stringify(doc)).toBe(before);
  });
  it("reports missing Quranic mark and location", () => {
@@ -25,4 +25,11 @@ describe("PDF diagnostics safe classification", () => {
   expect(hit.problems[0].source?.start).toBe(2);
  });
 
+ it("collects two separate unsupported protected marks in order", () => {
+  const d={type:"doc",content:[{type:"paragraph",content:[{type:"text",text:"ا\u06D7",marks:[{type:"textStyle",attrs:{fontFamily:"Digital Khatt Indo-Pak"}}]}]},{type:"paragraph",content:[{type:"text",text:"ب\u200D",marks:[{type:"textStyle",attrs:{fontFamily:"Digital Khatt Indo-Pak"}}]}]}]};
+  const out=inspectProtectedSource(d);
+  expect(out).toHaveLength(2);
+  expect(out.map(x=>x.code)).toEqual(["UNSUPPORTED_GLYPH","INVALID_CONTROL"]);
+  expect(out.map(x=>x.source?.path)).toEqual([[0,0],[1,0]]);
+ });
 });
