@@ -88,15 +88,15 @@ export async function POST(request: NextRequest) {
       for (const child of node.content ?? []) collectOriginal(child);
     };
     collectOriginal(doc);
-    const expectedCodepoints = expectedDigitalText.flatMap(value => Array.from(value, char => char.codePointAt(0)));
+    const expectedCodepoints = expectedDigitalText.flatMap(value => Array.from(value, char => char.codePointAt(0)!));
     const htmlCodepoints = await page.evaluate((sourceHtml) => {
       const parsed = new DOMParser().parseFromString(sourceHtml, "text/html");
       return Array.from(parsed.querySelectorAll('[data-pdf-font="Digital Khatt Indo-Pak"]'))
-        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0)));
+        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0)!));
     }, html);
     const chromiumBefore = await page.evaluate(() =>
       Array.from(document.querySelectorAll('[data-pdf-font="Digital Khatt Indo-Pak"]'))
-        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0))));
+        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0)!)));
     const equalCodepoints = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => v === b[i]);
     if (expectedCodepoints.length && (!equalCodepoints(expectedCodepoints, htmlCodepoints)
       || !equalCodepoints(expectedCodepoints, chromiumBefore))) {
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     const urduFonts = await experimentalScriptAwareGuard(page);
     const chromiumAfter = await page.evaluate(() =>
       Array.from(document.querySelectorAll('[data-pdf-font="Digital Khatt Indo-Pak"]'))
-        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0))));
+        .flatMap(el => Array.from(el.textContent ?? "", char => char.codePointAt(0)!)));
     if (expectedCodepoints.length && !equalCodepoints(expectedCodepoints, chromiumAfter)) {
       throw new Error("Phase1D Unicode segmentation changed original text; export blocked");
     }
