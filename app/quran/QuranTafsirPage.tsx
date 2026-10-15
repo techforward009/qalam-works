@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../lib/language-context";
 import { surahTitle } from "./reader/metadata";
 import { publicBlobFontUrl } from "../tools/document-studio/utils/publicBlobFontCatalog";
@@ -53,7 +53,7 @@ function TafsirText({ text, language }: { text: string; language: TafsirLanguage
         </span>
       ) : run.kind === "reference" ? (
         <span key={index} dir={language === "ur" ? "rtl" : "ltr"} lang={language} data-tafsir-reference="true"
-          className={language === "ur" ? "font-naskh text-[0.78em]" : "text-[0.76em] text-[#6d624e]"}>
+          className={language === "ur" ? "text-[0.78em] text-[#756b56]" : "text-[0.76em] text-[#6d624e]"}>
           {run.text}
         </span>
       ) : <span key={index}>{run.text}</span>)}
@@ -64,6 +64,7 @@ function TafsirText({ text, language }: { text: string; language: TafsirLanguage
 export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: number }) {
   const { language } = useLanguage();
   const ur = language === "ur";
+  const sourceMenuRef = useRef<HTMLDetailsElement>(null);
   const [workId, setWorkId] = useState(TAFSIR_WORKS[0]?.id ?? "");
   const chosenLanguage: TafsirLanguage = ur ? "ur" : "en";
   const [remote, setRemote] = useState<Remote | null>(null);
@@ -96,47 +97,111 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
 
   return (
     <article className="quran-page quran-reader-paper relative flex w-full flex-col overflow-hidden bg-[#fffef9] px-4 py-5 text-[#293a2e] dark:bg-[#151a16] dark:text-[#e4eee4] sm:px-10 sm:py-8"
-      dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}>
+      dir={ur ? "rtl" : "ltr"} lang={ur ? "ur" : "en"}
+      style={ur ? { fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif' } : undefined}>
       <style>{TAFSIR_SCHEHERAZADE_CSS}</style>
-      <header className="border-b border-[#c9b98d]/45 pb-4">
-        <div className="text-xl font-bold text-[#32422f]"
-          style={ur ? { fontFamily: '"Gulzar", serif', fontSize: "27px", lineHeight: 2.15, fontWeight: 400 } : undefined}>
-          {ur ? "تفسیر" : "Commentary"}
-        </div>
-        <label className={"mt-3 block text-sm text-[#5c5344] " + (ur ? "font-naskh" : "")}>
-          {ur ? "ماخذ" : "Source"}
-          <select className="mt-1 w-full rounded-md border border-[#c6b48a] bg-white px-2 py-2 text-sm text-[#243024]"
-            value={workId} aria-label={ur ? "تفسیر کا ماخذ" : "Tafsir source"} onChange={(event) => setWorkId(event.target.value)}>
-            {TAFSIR_WORKS.map((item) => <option key={item.id} value={item.id}>
-              {(ur ? item.titleUr : item.titleEn) + " — " + (ur ? item.authorUr : item.authorEn)}
-            </option>)}
-          </select>
-        </label>
-      </header>
+      {ur ? (
+        <header className="border-b border-[#c9b98d]/45 pb-5 text-center" data-tafsir-urdu-header="true">
+          <h1 className="mx-auto text-center text-[#254936]"
+            style={{ fontFamily: '"Gulzar", "Noto Nastaliq Urdu", serif', fontSize: "clamp(28px, 5vw, 34px)", lineHeight: 2.1 }}>
+            تفسیر
+          </h1>
+          <div className="mx-auto mb-3 h-[2px] w-20 rounded-full bg-[#bfa168]/75" aria-hidden="true" />
+          <p className="text-center text-[#665e49]" style={{ fontSize: "17px", lineHeight: 2 }}>
+            {surahTitle(surah)}، آیت {ayah}
+          </p>
+          <div className="mx-auto mt-4 flex w-full max-w-xl items-center gap-3 text-right" dir="rtl" data-tafsir-source-row="true">
+            <span className="shrink-0 text-[#35523d]"
+              style={{ fontFamily: '"Gulzar", serif', fontSize: "19px", lineHeight: 1.9 }}>ماخذ</span>
+            <details ref={sourceMenuRef} className="group relative min-w-0 flex-1" dir="rtl">
+              <summary className="flex min-h-[54px] cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-[#c2ac78] bg-[#fffdf6] px-3 text-[#254634] shadow-sm marker:hidden focus-visible:outline-2 focus-visible:outline-[#577f60] [&::-webkit-details-marker]:hidden"
+                style={{ fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif', fontSize: "18px", lineHeight: 2.1 }}
+                aria-label="تفسیر کا ماخذ منتخب کریں">
+                <span className="min-w-0 truncate">{work?.titleUr ?? "تفسیر منتخب کریں"}</span>
+                <span aria-hidden="true" className="shrink-0 text-[#927b45] group-open:rotate-180">⌄</span>
+              </summary>
+              <div className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-[#cab994] bg-[#fffdf5] p-1.5 text-right shadow-xl"
+                role="group" aria-label="دستیاب تفاسیر">
+                {TAFSIR_WORKS.map((item) => {
+                  const available = item.id === "nemuneh";
+                  return (
+                    <button key={item.id} type="button" disabled={!available}
+                      aria-current={item.id === workId ? "true" : undefined}
+                      className={"flex w-full items-center justify-between gap-2 rounded-lg px-3 py-3 text-right " +
+                        (item.id === workId ? "bg-[#eaf0e4] text-[#254b34] " : "text-[#3a4a3d] ") +
+                        (available ? "hover:bg-[#f0eee4] focus-visible:outline-2 focus-visible:outline-[#577f60]" : "cursor-not-allowed opacity-60")}
+                      style={{ fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif', fontSize: "17px", lineHeight: 2 }}>
+                      <span>{item.titleUr}</span>
+                      <span className="shrink-0 text-[0.75em] text-[#7b765e]">{available ? (item.id === workId ? "منتخب" : "") : "زیرِ تکمیل"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </details>
+          </div>
+          <p className="mt-3 text-center text-[#655f4c]" style={{ fontSize: "17px", lineHeight: 2 }}>
+            {work?.authorUr}
+          </p>
+        </header>
+      ) : (
+        <header className="border-b border-[#c9b98d]/45 pb-4">
+          <div className="text-xl font-bold text-[#32422f]">Commentary</div>
+          <label className="mt-3 block text-sm text-[#5c5344]">
+            Source
+            <select className="mt-1 w-full rounded-md border border-[#c6b48a] bg-white px-2 py-2 text-sm text-[#243024]"
+              value={workId} aria-label="Tafsir source" onChange={(event) => setWorkId(event.target.value)}>
+              {TAFSIR_WORKS.map((item) => <option key={item.id} value={item.id}>
+                {item.titleEn + " — " + item.authorEn}
+              </option>)}
+            </select>
+          </label>
+        </header>
+      )}
       {work && <div className="mt-4">
-        <p className="text-sm text-[#6d624e]">
-          {ur ? surahTitle(surah) + "، آیت " + ayah : "Surah " + surah + ", Ayah " + ayah}
-          {" · "}{ur ? work.authorUr : work.authorEn}
-        </p>
+        {!ur ? <p className="text-sm text-[#6d624e]">
+          {"Surah " + surah + ", Ayah " + ayah + " · " + work.authorEn}
+        </p> : null}
         {remoteTopics.length > 0 && workId === "nemuneh" ? (
           <div className="mt-4 space-y-7" dir={chosenLanguage === "ur" ? "rtl" : "ltr"} lang={chosenLanguage}>
+            {ur && remoteTopics.length > 1 ? (
+              <nav aria-label="اس آیت کے موضوعات" className="mb-7 rounded-xl border border-[#dfd0ad] bg-[#f9f5e9] px-4 py-2">
+                <details className="group">
+                  <summary className="cursor-pointer list-none text-center text-[#335440] marker:hidden [&::-webkit-details-marker]:hidden"
+                    style={{ fontFamily: '"Gulzar", "Noto Nastaliq Urdu", serif', fontSize: "19px", lineHeight: 2.1 }}>
+                    اس آیت کے موضوعات ({remoteTopics.length}) <span className="inline-block text-sm group-open:rotate-180" aria-hidden="true">⌄</span>
+                  </summary>
+                  <ol className="mt-2 space-y-1 border-t border-[#ded0aa] pt-2">
+                    {remoteTopics.map((topic, i) => (
+                      <li key={i}>
+                        <a href={"#tafsir-topic-" + i} className="block rounded-md px-2 py-1.5 text-right text-[#32533e] hover:bg-[#ece9d9] focus-visible:outline-2 focus-visible:outline-[#577f60]"
+                          style={{ fontFamily: '"Alvi Nastaleeq", serif', fontSize: "17px", lineHeight: 2.1 }}>
+                          {i + 1}۔ {i === 0 && topic.title === "تفسیر بسم اللہ الرحمن الرحیم" ? "بسم اللہ الرحمن الرحیم" : topic.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              </nav>
+            ) : null}
             {remoteTopics.map((topic, i) => (
-              <section key={`${i}-${topic.sourceId ?? "x"}`}>
+              <section key={`${i}-${topic.sourceId ?? "x"}`} id={"tafsir-topic-" + i} className="scroll-mt-20">
                 {topic.title && topic.title !== "تفسیر" && topic.title !== "Tafseer" && topic.title !== "Commentary (Tafseer)" &&
                   !topic.text.trimStart().startsWith(topic.title) ? (
                   <h2 data-tafsir-topic-heading="true"
                     data-tafsir-source-heading={tafsirSourceHeading(topic.title, chosenLanguage) || undefined}
-                    className="mb-3 text-[#32422f]"
+                    className={"mb-4 text-[#32422f] " + (ur ? "text-center" : "")}
                     style={chosenLanguage === "ur"
-                      ? { fontFamily: '"Gulzar", serif', fontSize: "27px", lineHeight: 2.15, fontWeight: 400, marginBlockEnd: "0.75rem" }
+                      ? { fontFamily: '"Gulzar", "Noto Nastaliq Urdu", serif', fontSize: "clamp(24px, 4.4vw, 29px)", lineHeight: 2.05, fontWeight: 400, marginBlockEnd: "0.8rem" }
                       : { fontSize: "1.25rem", lineHeight: 1.6, fontWeight: 650 }}>
-                    {displayTafsirHeading(topic.title, chosenLanguage)}
+                    {ur && i === 0 && topic.title === "تفسیر بسم اللہ الرحمن الرحیم"
+                      ? "بسم اللہ الرحمن الرحیم"
+                      : displayTafsirHeading(topic.title, chosenLanguage)}
                   </h2>
                 ) : null}
                 <TafsirText text={topic.text} language={chosenLanguage} />
               </section>
             ))}
-            <p className="mt-4 border-t border-[#c9b98d]/30 pt-2 text-xs text-[#82775f]">
+            <p className="mt-7 border-t border-[#c9b98d]/30 pt-3 text-center text-xs text-[#82775f]">
               {ur ? "تفسیر نمونہ — اصل موضوعاتی متن، مطبوعہ نسخے سے مکمل مقابلہ ابھی باقی ہے۔" : "Tafsir Namoona — source text; full print collation remains pending."}
             </p>
           </div>
