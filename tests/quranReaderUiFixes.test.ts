@@ -87,6 +87,18 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(tafsir).not.toContain('font-naskh text-[0.78em]');
   });
 
+  it("shares the first-verse topic count, list and anchors across Urdu and English Tafsir", () => {
+    expect(tafsir).toContain('data-tafsir-topics-index={chosenLanguage}');
+    expect(tafsir).toContain('remoteTopics.length > 1 ? (');
+    expect(tafsir).toContain('Topics in this verse');
+    expect(tafsir).toContain('اس آیت کے موضوعات');
+    expect(tafsir).toContain('displayTafsirHeading(topic.title, chosenLanguage)');
+    expect(tafsir).toContain('href={"#tafsir-topic-" + i}');
+    expect(tafsir).toContain('id={"tafsir-topic-" + i}');
+    expect(tafsir).toContain('dir={ur ? "rtl" : "ltr"}');
+    expect(tafsir).toContain('fontSize: language === "ur" ? "20px" : "1.12em"');
+  });
+
   it("keeps Quran translation text, selector, saved translator preference, and approved fonts intact", () => {
     const translationCorpus = read("app/quran/reader/translationCorpus.ts");
     expect(translation).toContain("ترجمۂ قرآن");
