@@ -16,7 +16,7 @@ for (const locale of ['ur', 'en'] as const) {
       id, sourceId: source.id, book: 'sahifa', language: 'ar' as const, kind: 'supplication', number: 28,
       title: 'دعا 28 — آزمائشی عبارت', reference: { sourceId: source.id, section: 'supplication', number: 28, locator: 'source paragraph', printPage: null },
       paragraphs, textSha256: createHash('sha256').update(paragraphs.map(p => p.text).join('\n')).digest('hex'),
-    };
+    } satisfies BookRecord;
 
     await page.route('**/api/research/book-reader**', async route => {
       const request = route.request();
