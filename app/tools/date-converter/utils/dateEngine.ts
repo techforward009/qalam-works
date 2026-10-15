@@ -3,7 +3,7 @@
  *
  * Converts between three calendar systems:
  *   1. Gregorian (proleptic Gregorian calendar)
- *   2. Hijri / Islamic Lunar (Tabular Islamic calendar — civil calculation)
+ *   2. Hijri / Islamic Lunar (Tabular Islamic calendar — Thursday epoch)
  *      The tabular calendar is used because it is deterministic and reproducible.
  *      Observational calendars can differ by more than one day, so verified
  *      local authority dates are surfaced separately from this calculation.
@@ -70,10 +70,14 @@ export function jdnToGregorian(jdn: number): DateParts {
   return { year, month, day };
 }
 
-// ── Hijri (Tabular Islamic calendar) ─────────────────────────────────────────
-// Epoch: 1 Muharram 1 AH = JDN 1948439
-//   Julian calendar:          Friday, 15 July 622 CE
-//   Proleptic Gregorian:      Friday, 18 July 622 CE
+// ── Hijri (Tabular Islamic calendar; Thursday-epoch variant) ─────────────────
+// 1 Muharram 1 AH = JDN 1948439 in this established Qalam calculation.
+//   Julian calendar:          Thursday, 15 July 622 CE
+//   Proleptic Gregorian:      Thursday, 18 July 622 CE
+// The conventional Friday-epoch civil tabular variant uses JDN 1948440.
+// IMPORTANT: Do not silently move the epoch: this would change every previously
+// generated calculated date, reverse conversion, calendar fixture and permalink.
+// Reviewed local authority records must be layered on top of this stable engine.
 const HIJRI_EPOCH_JDN = 1948439;
 
 /**
