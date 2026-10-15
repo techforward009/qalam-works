@@ -22,7 +22,7 @@ describe("Date Studio Pakistan calendar evidence across all views", () => {
   it("never misrepresents unverified dates as official", () => {
     expect(find(2026, 1, 19).hijriSource).toBe("official");
     expect(find(2026, 11, 15).hijriSource).toBe("tabular");
-    expect(resolveDisplayHijriDate({ year: 2026, month: 7, day: 11 })).toMatchObject({ source: "tabular" });
+    expect(resolveDisplayHijriDate({ year: 2026, month: 11, day: 15 })).toMatchObject({ source: "tabular" });
   });
 
   it("does not silently stitch or overwrite official month boundaries in annual view", () => {
@@ -61,7 +61,7 @@ describe("Date Studio Pakistan calendar evidence across all views", () => {
     expect(ramadan.days[0]).toMatchObject({ hijriDay: 1, gregorian: { year: 2026, month: 2, day: 19 } });
     expect(ramadan.days[9]).toMatchObject({ hijriDay: 10, gregorian: { year: 2026, month: 2, day: 28 } });
     expect(ramadan.days[29]).toMatchObject({ hijriDay: 30, gregorian: { year: 2026, month: 3, day: 20 } });
-    expect(getReviewedPakistanHijriMonth(1447, 10)).toMatchObject({ complete: false });
-    expect(getReviewedPakistanHijriMonth(1447, 8)).toBeNull();
+    expect(getReviewedPakistanHijriMonth(1448, 5)).toMatchObject({ complete: false });
+    expect(getReviewedPakistanHijriMonth(1448, 6)).toBeNull();
   });
 });
