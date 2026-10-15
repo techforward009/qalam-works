@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
       || !equalCodepoints(expectedCodepoints, chromiumBefore))) {
       throw new Error("Phase1D Unicode input vs HTML vs Chromium mismatch; export blocked");
     }
+    await page.evaluate(() => document.fonts.ready);
     const runtime = await page.evaluate(inspectPdfRuntimeFonts, fontsUsed);
     const urduFonts = await experimentalScriptAwareGuard(page);
     const chromiumAfter = await page.evaluate(() =>
