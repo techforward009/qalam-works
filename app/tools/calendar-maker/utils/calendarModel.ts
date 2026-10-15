@@ -61,6 +61,7 @@ export interface CalendarYearModel {
   hijriOffsetMonths: number[];
   hijriOffsets: number[];
   months: CalendarMonth[];
+  hijriPolicy?: DisplayHijriPolicy;
 }
 
 export interface BuildCalendarYearOptions {
@@ -176,6 +177,9 @@ export function buildCalendarMonth(
     throw new RangeError("Gregorian month must be between 1 and 12.");
   }
 
+  if (hijriPolicy === "pakistan" && hijriOffset !== 0) {
+    throw new RangeError("Official Pakistan dates cannot be manually offset. Select the calculated calendar first.");
+  }
   const includeHijri = content === "gregorian-hijri";
   const first = { year, month, day: 1 };
   const leading = calendarWeekdayColumn(first, weekStart);
@@ -244,6 +248,10 @@ export function buildCalendarYearModel(options: BuildCalendarYearOptions): Calen
   const hijriOffsetMonths = Array.isArray(options.hijriOffsetMonths)
     ? [...new Set(options.hijriOffsetMonths.filter((month) => Number.isInteger(month) && month >= 1 && month <= 12))]
     : [];
+
+  if (options.hijriPolicy === "pakistan" && hijriOffsets.some(offset => offset !== 0)) {
+    throw new RangeError("Official Pakistan dates cannot be manually offset. Select the calculated calendar first.");
+  }
 
   const months = Array.from({ length: 12 }, (_, index) =>
     buildCalendarMonth(year, index + 1, options.content, effectiveWeekStart, hijriOffsets[index] ?? 0, options.hijriPolicy ?? "tabular"),
