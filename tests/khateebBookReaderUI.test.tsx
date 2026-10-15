@@ -3,6 +3,7 @@ import React from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import BookReader from "../app/tools/khateeb-studio/BookReader";
+vi.mock("../app/lib/language-context", () => ({ useLanguage: () => ({ language: "ur" }) }));
 
 const sid = "kafi-v8-ar";
 const id1 = `${sid}:section:1`;
@@ -51,13 +52,13 @@ it("displays original Arabic in a true RTL reader, copies exact text and navigat
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
   expect(screen.getByText("کتاب خانہ — مطالعہ")).toBeTruthy();
   expect(screen.getByText("الکافی، جلد 8")).toBeTruthy();
-  expect(screen.getByText("اصل متن کا حصہ 1")).toBeTruthy();
+  expect(screen.getAllByText("اصل متن کا حصہ 1").length).toBeGreaterThan(0);
   fireEvent.click(screen.getByRole("button", {name: "اصل متن نقل کریں"}));
   await waitFor(() => expect(writeText).toHaveBeenCalled());
   expect(writeText.mock.calls[0][0]).toBe(arabic);
   fireEvent.click(screen.getByRole("button", {name: "اگلا", exact: true}));
   await waitFor(() => expect(requests.some(url => url.searchParams.get("id") === id2)).toBe(true));
-  expect(screen.getByText("اصل متن کا حصہ 2")).toBeTruthy();
+  expect(screen.getAllByText("اصل متن کا حصہ 2").length).toBeGreaterThan(0);
 });
 
 it("searches only the selected volume and jumps to its returned original paragraph", async () => {
@@ -67,8 +68,9 @@ it("searches only the selected volume and jumps to its returned original paragra
   fireEvent.change(screen.getByRole("textbox", {name:"اسی کتاب میں تلاش"}), {target:{value:"اختباری"}});
   fireEvent.click(screen.getByRole("button", {name:"تلاش", exact:true}));
   await waitFor(() => expect(urls.some(url => url.searchParams.get("op") === "find")).toBe(true));
-  const hit = await screen.findByRole("button", {name:/اصل متن کا حصہ 2/});
-  fireEvent.click(hit);
+  await waitFor(() => expect(screen.getAllByRole("button", { name: /اصل متن کا حصہ 2/ }).length).toBeGreaterThan(1));
+  const hits = screen.getAllByRole("button", { name: /اصل متن کا حصہ 2/ });
+  fireEvent.click(hits[hits.length - 1]);
   await waitFor(() => expect(urls.some(url =>
     url.searchParams.get("op") === "read" && url.searchParams.get("id") === id2
   )).toBe(true));
