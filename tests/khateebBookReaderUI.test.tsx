@@ -145,7 +145,7 @@ it("visits the final part when navigating backward to a longer preceding section
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
   fireEvent.click(screen.getByRole("button", {name:"2. اصل متن کا حصہ 2"}));
   await waitFor(() => expect(fetched.some(url => url.searchParams.get("id") === id2)).toBe(true));
-  fireEvent.click(screen.getByRole("button", {name: /^پچھلا$/}));
+  fireEvent.click(screen.getByRole("button", {name: "پچھلا مطالعہ صفحہ"}));
   await waitFor(() => expect(fetched.some(url =>
     url.searchParams.get("id") === id1 && url.searchParams.get("part") === "last")).toBe(true));
 });
