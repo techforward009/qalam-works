@@ -1,6 +1,6 @@
 import { PAKISTAN_OFFICIAL_HIJRI_ANCHORS } from "./pakistanOfficialAnchors";
 import type { OfficialHijriMonthAnchor, ResolvedHijriDate } from "./types";
-import type { DateParts } from "../dateEngine";
+import { jdnToGregorian, type DateParts } from "../dateEngine";
 
 const jdn = ({ year, month, day }: DateParts): number => {
   let y = year, m = month;
@@ -48,4 +48,20 @@ export function resolvePakistanOfficialHijriDate(
     anchorId: anchor.id, providerId: anchor.providerId, providerLabel: anchor.providerLabel,
     sourceUrl: anchor.sourceUrl, sourceReference: anchor.sourceReference, verificationStatus: anchor.verificationStatus,
   };
+}
+
+/** Reverse lookup must agree exactly with the reviewed Gregorian-to-Hijri record. */
+export function resolvePakistanOfficialGregorianDate(hijri: DateParts): DateParts | null {
+  if (!Number.isInteger(hijri.year) || !Number.isInteger(hijri.month) || !Number.isInteger(hijri.day)
+      || hijri.month < 1 || hijri.month > 12 || hijri.day < 1 || hijri.day > 30) return null;
+  const candidates = PAKISTAN_OFFICIAL_HIJRI_ANCHORS.filter(anchor =>
+    eligible(anchor) && anchor.hijriYear === hijri.year && anchor.hijriMonth === hijri.month &&
+    jdn(anchor.officialDayOneGregorian) + hijri.day - 1 <= jdn(anchor.coverageEndGregorian),
+  );
+  if (candidates.length !== 1) return null;
+  const anchor = candidates[0];
+  const civilDate = jdnToGregorian(jdn(anchor.officialDayOneGregorian) + hijri.day - 1);
+  const confirmed = resolvePakistanOfficialHijriDate(civilDate);
+  return confirmed?.anchorId === anchor.id && confirmed.hijri.year === hijri.year
+    && confirmed.hijri.month === hijri.month && confirmed.hijri.day === hijri.day ? civilDate : null;
 }
