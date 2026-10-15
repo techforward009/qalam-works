@@ -29,7 +29,7 @@ import {
 
 const L = {
   en: {
-    title: "Calendar Maker",
+    title: "Pakistan Calendar Maker",
     desc: "Create a professionally typeset annual Gregorian calendar with optional Hijri day numbers and local-sighting adjustment.",
     year: "Gregorian year",
     yearInvalid: "Enter a Gregorian year from 1900 to 2100.",
@@ -84,7 +84,7 @@ const L = {
     hijriCalculated: "Calculated — with manual adjustment",
   },
   ur: {
-    title: "تقویم ساز",
+    title: "پاکستانی تقویم ساز",
     desc: "پیشہ ورانہ انداز کی سالانہ عیسوی تقویم بنائیں، ہجری دن اور مقامی رویت کے مطابق اختیاری تبدیلی کے ساتھ۔",
     year: "عیسوی سال",
     yearInvalid: "1900 سے 2100 تک درست عیسوی سال درج کریں۔",
