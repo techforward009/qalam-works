@@ -7,7 +7,7 @@ import { gregorianToJDN, jdnToGregorian } from "../app/tools/date-converter/util
 import { buildCalendarMonth, buildCalendarYearModel } from "../app/tools/calendar-maker/utils/calendarModel";
 
 const starts = [
-  [1442, 5, 2020, 12, 16, 30],
+  [1442, 5, 2020, 12, 17, 29],
   [1442, 6, 2021, 1, 15, 30],
   [1442, 7, 2021, 2, 14, 30],
   [1442, 8, 2021, 3, 16, 29],
@@ -53,8 +53,20 @@ describe("Pakistan historical Hijri calendar Gregorian 2021", () => {
       .toEqual({year:1442,month:10,day:1});
   });
 
+  it("anchors 2021 January to the final 15 December 2020 Pakistan committee decision", () => {
+    const m=PAKISTAN_2021_HISTORIC_ANCHORS.find(x=>x.hijriYear===1442&&x.hijriMonth===5);
+    expect(m).toMatchObject({
+      authority:"official", sightingDecision:"not-sighted",
+      officialDayOneGregorian:{year:2020,month:12,day:17},
+      announcementGregorianDate:{year:2020,month:12,day:15},
+      coverageEndGregorian:{year:2021,month:1,day:14},
+    });
+    expect(resolvePakistanOfficialHijriDate({year:2021,month:1,day:1})?.hijri)
+      .toEqual({year:1442,month:5,day:16});
+  });
+
   it("keeps archive-only dates labelled as historic reported dates, not fabricated sighting decisions", () => {
-    for(const hMonth of [5,6,11]){
+    for(const hMonth of [6,11]){
       const anchor=PAKISTAN_2021_HISTORIC_ANCHORS.find(x=>x.hijriYear===1442&&x.hijriMonth===hMonth);
       expect(anchor).toMatchObject({authority:"reported-official",verificationStatus:"reported"});
       expect(anchor?.sightingDecision).toBeUndefined();
@@ -94,7 +106,7 @@ describe("Pakistan historical Hijri calendar Gregorian 2021", () => {
   });
 
   it("shows Pakistan first Ramadan, Eid and Ashura dates on monthly and annual views", () => {
-    expect(fromYear(1,1)).toMatchObject({hijri:{year:1442,month:5,day:17},hijriSource:"reported-official"});
+    expect(fromYear(1,1)).toMatchObject({hijri:{year:1442,month:5,day:16},hijriSource:"official"});
     expect(fromYear(14,4)).toMatchObject({hijri:{year:1442,month:9,day:1},hijriSource:"official"});
     expect(fromYear(23,4)).toMatchObject({hijri:{year:1442,month:9,day:10},hijriSource:"official"});
     expect(fromYear(13,5)).toMatchObject({hijri:{year:1442,month:10,day:1},hijriSource:"official"});
