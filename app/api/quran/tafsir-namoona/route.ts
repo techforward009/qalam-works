@@ -128,6 +128,53 @@ export async function GET(request: Request) {
         v10Cache.delete(language);
         return NextResponse.json({ status: "corpus_not_uploaded" }, { status: 503 });
       }
+      // Quran page mode: retrieve every distinct tafsir source unit for the
+      // actual page ayahs, not just the ayah used to navigate to that page.
+      // The book remains private and is read using the same verified corpus.
+      const pageVerseParam = query.get("verses");
+      if (pageVerseParam !== null) {
+        const pageKeys = pageVerseParam.split(",").map((value) => value.trim());
+        if (!pageKeys.length || pageKeys.length > 80 || new Set(pageKeys).size !== pageKeys.length ||
+          !pageKeys.includes(key) ||
+          pageKeys.some((verseKey) => !/^[0-9]{1,3}:[0-9]{1,3}$/.test(verseKey) || !corpus.verses[verseKey])) {
+          return NextResponse.json({ error: "Invalid Quran page ayah selection" }, { status: 400 });
+        }
+        let coverageIndex = coverageCache.get(corpus);
+        if (!coverageIndex) {
+          coverageIndex = indexTafsirCoverage(corpus.verses);
+          coverageCache.set(corpus, coverageIndex);
+        }
+        const bySource = new Map<string, {
+          sourceKey: string;
+          verseKeysOnPage: string[];
+          coverage: string[];
+          topics: Topic[];
+        }>();
+        for (const verseKey of pageKeys) {
+          for (const sourceKey of corpus.verses[verseKey].refs) {
+            const source = corpus.entries[sourceKey];
+            if (!source?.topics.length) continue;
+            const prior = bySource.get(sourceKey);
+            if (prior) {
+              if (!prior.verseKeysOnPage.includes(verseKey)) prior.verseKeysOnPage.push(verseKey);
+            } else {
+              bySource.set(sourceKey, {
+                sourceKey,
+                verseKeysOnPage: [verseKey],
+                coverage: [...(coverageIndex.get(sourceKey) ?? [])],
+                topics: source.topics,
+              });
+            }
+          }
+        }
+        return NextResponse.json({
+          status: bySource.size ? "unicode_apk" : "source_unavailable",
+          version: 10, language, surah, ayah,
+          pageVerseKeys: pageKeys,
+          sections: [...bySource.values()],
+          provenance: "Tafsir Namoona — original distinct commentary source sections for the Quran page",
+        }, { headers: { "Cache-Control": "private, max-age=60" } });
+      }
       const entryIndex = corpus.verses[key];
       if (!entryIndex) return NextResponse.json({ error: "Unknown verse" }, { status: 404 });
       const topics = entryIndex.refs.flatMap((id) => corpus.entries[id]?.topics ?? []);
