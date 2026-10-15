@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 /** No live Blob reads. Prove an explicitly different checked-in screen face paints. */
 test("screen-only Digital Khatt fallback paints when every public Blob font fails", async ({page}, info) => {
   const localFonts: Array<{url: string; status: number}> = [];
-  await page.route(/\\.public\\.blob\\.vercel-storage\\.com\\//, route => route.abort("failed"));
+  await page.route("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/**", route => route.abort("failed"));
   page.on("response", res => {
     if (res.url().includes("/fonts/DigitalKhattIndoPak.woff2")) {
       localFonts.push({url: res.url(), status: res.status()});
