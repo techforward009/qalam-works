@@ -153,3 +153,21 @@ Owner-directed next step: refine the first ten **unique source commentary entrie
 Provide two distinct reading modes once the source editorial annotations exist: **Full Original Tafsir** and **Notes for this Ayah**. For the second, create a privately reviewed structured map `{ayahKey, commentarySourceKey, topicSourceId, paragraphRange, verification}`, connecting only verified passage segments to the *selected* ayah. Both modes carry permanent links to the original full exposition. Until such source-to-paragraph links are reviewed, the UI continues to show the original full source group; it must not automatically assume a shared whole essay belongs individually to each verse, nor ask an AI to invent verse-specific notes. Add the verse-level annotations progressively during the ongoing ten-entry editorial review batches.
 
 **Safety/acceptance:** Focused unit tests cover contiguous links, non-contiguous links, multiple source references, typed boundaries and exact-only title suppression. No private book text, publication flag, language corpus, edition or production deployment is touched. PR #65 remains draft, owner/browser visual review and both language rights approvals still required.
+
+## Critical Quran-page Tafsir completeness fix — 15 October 2026
+
+**User regression report:** The Quran Reader's first printed page displays all seven Al-Fatihah ayahs, but its Tafsir tab previously forwarded *only selected* `surah=1&ayah=1`. This exposed just the first 1:1 commentary, and subsequent Quran page navigation jumped to Al-Baqarah. The remaining Al-Fatihah interpretations were not missing from the private book—both Urdu and English v10 already contain individual 1:2 through 1:7 source entries.
+
+**Repair:** The existing `QuranReader` now passes its exact authoritative `ayahsOnPage(page.page)` array to `QuranTafsirPage`. In Quran-page mode the client sends one validated `verses=1:1,1:2,...,1:7` query (max 80 distinct known ayahs) to the already approved/private v10 API. The server returns *each unique original source article* encountered on those Quran-page ayahs once, in first-occurrence order, including each full original topic, its full source-linked coverage and corresponding actual verses shown on the page. No book text is rewritten, guessed, merged or trimmed. The existing single-ayah API remains backward compatible.
+
+**Actual Preview API verification, bilingual (200, v10):**
+
+- Quran page 1, Al-Fatihah 1:1–7 → **7 distinct source units**, each of the 7 original entries included in Urdu and English; 19 subtopics per language (5+3+1+1+4+2+3).
+- Quran page 2, Al-Baqarah 2:1–5 → **2 distinct original source units**, one for 2:1–2 and one for 2:3–5, in both Urdu and English; duplicates avoided.
+- Existing individual verse 1:1 API still returns its 5 original topics as before.
+- Reader heading now names **the actual full Quran-page ayah range** instead of erroneously implying the whole page is a commentary only for verse 1.
+- Arabic/Urdu fonts and 20px Quran quotation styling remain unchanged; the parent Quran, translation and metadata structure remains unchanged.
+
+**Validation:** 45/45 focused Vitest across Tafsir typography, source verse grouping, Quran Reader UI and Quran Reader metadata/data passed; `npx tsc --noEmit` passed for commit `ba23c6c7d0d5f7b3b30531f156295d7cb4efa67d`.
+
+**Scope:** PR #65 still draft, preview only; do NOT merge or deploy production without approval. The separate cumulative first-ten-source-entry private Library revision still awaits owner upload to Vercel Blob; this page-completeness fix works already with the verified previously uploaded version.
