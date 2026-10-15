@@ -1,53 +1,75 @@
 import { test, expect } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-for(const locale of ['ur','en'] as const){
- const ur=locale==='ur';
- test(`${locale}: book selection persists with source, backup, copy, print and mobile layout`,async({page},testInfo)=>{
-  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
-  const source={id:'sahifa-ar',book:'sahifa',language:'ar',filename:'sahifa-ar.docx',translator:null,sha256:'a'.repeat(64)};
-  const id='sahifa-ar:supplication:28';const paragraphs=[{id:`${id}:p1`,text:'اَللّٰهُمَّ — عبارتِ آزمائش اوّل'},{id:`${id}:p2`,text:'حاشیہ — عبارتِ آزمائش دوم'}];
-  const record={id,sourceId:source.id,book:'sahifa',language:'ar',kind:'supplication',number:28,title:'دعا 28 — آزمائشی عبارت',reference:{sourceId:source.id,section:'supplication',number:28,locator:'word/document.xml paragraph 100',printPage:null},paragraphs,textSha256:createHash('sha256').update(paragraphs.map(p=>p.text).join('\n')).digest('hex')};
-  await page.route('**/api/research/auth',route=>route.fulfill({json:{authenticated:true}}));
-  await page.route('**/api/khateeb/library**',route=>{
-   const url=new URL(route.request().url());
-   const body=url.searchParams.get('op')==='record'?{record,source}:url.searchParams.get('op')==='search'?{total:1,page:1,pageSize:20,hits:[{id,sourceId:source.id,title:record.title,kind:'supplication',number:28,language:'ar',snippet:paragraphs[0].text}]}:{ready:true,sources:[source],recordCount:2676};
-   return route.fulfill({json:body});
+import { createBookExcerpt } from '../../app/lib/knowledge/bookCorpus';
+
+for (const locale of ['ur', 'en'] as const) {
+  const ur = locale === 'ur';
+  test(locale + ': focused reader stays separate and sends verified excerpts to My Sermon', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.setViewportSize({ width: 1440, height: 1000 });
+
+    const source = { id: 'sahifa-ar', book: 'sahifa', language: 'ar' as const, filename: 'sahifa-ar.docx', translator: null, sha256: 'a'.repeat(64) };
+    const id = 'sahifa-ar:supplication:28';
+    const paragraphs = [{ id: id + ':p1', text: 'اَللّٰهُمَّ — عبارتِ آزمائش اوّل' }, { id: id + ':p2', text: 'حاشیہ — عبارتِ آزمائش دوم' }];
+    const record = {
+      id, sourceId: source.id, book: 'sahifa', language: 'ar' as const, kind: 'supplication', number: 28,
+      title: 'دعا 28 — آزمائشی عبارت', reference: { sourceId: source.id, section: 'supplication', number: 28, locator: 'source paragraph', printPage: null },
+      paragraphs, textSha256: createHash('sha256').update(paragraphs.map(p => p.text).join('\n')).digest('hex'),
+    };
+
+    await page.route('**/api/research/book-reader**', async route => {
+      const request = route.request();
+      const url = new URL(request.url());
+      if (request.method() === 'POST') {
+        const body = request.postDataJSON();
+        return route.fulfill({ json: { excerpt: createBookExcerpt(record, source, body.paragraphIds) } });
+      }
+      const op = url.searchParams.get('op');
+      const body = op === 'catalog' ? { ready: true, revision: 'synthetic', sources: [source] }
+        : op === 'contents' ? { entries: [{ id, sourceId: source.id, title: record.title, ordinal: 1, headingStatus: 'source-title', paragraphCount: 2 }], total: 1, page: 1, pageSize: 24 }
+        : op === 'read' ? { recordId: id, sourceId: source.id, recordOrdinal: 1, language: 'ar', title: record.title, reference: 'صحیفہ سجادیہ، دعا 28', translator: null,
+          paragraphCount: 2, paragraphs, page: Number(url.searchParams.get('part') ?? 1), pageCount: 1, previousRecordId: null, nextRecordId: null,
+          recordSha256: record.textSha256, sourceSha256: source.sha256, screenPartOnly: true, translations: [] }
+        : op === 'find' ? { hits: [], total: 0, page: 1, pageSize: 20 } : {};
+      return route.fulfill({ json: body });
+    });
+
+    await page.goto('/tools/khateeb-studio');
+    await page.getByRole('button', { name: ur ? 'اردو' : 'ENG', exact: true }).click();
+    const my = ur ? 'میری مجلس / میرا موضوع' : 'My sermon / my topic';
+    await page.getByRole('button', { name: my, exact: true }).click();
+    const workspace = page.getByTestId('custom-sermon-workspace');
+    await workspace.getByRole('textbox', { name: ur ? 'عنوان' : 'Title', exact: true }).fill('Library prayer draft');
+    await workspace.getByRole('textbox', { name: ur ? 'اس مجلس کا مقصد' : 'Objective', exact: true }).fill('Hope and responsibility');
+    await workspace.getByRole('button', { name: ur ? 'مسودہ شروع کریں' : 'Start draft', exact: true }).click();
+    await workspace.getByRole('link', { name: ur ? 'کتاب خانہ کھولیں' : 'Open Book Library', exact: true }).click();
+
+    await expect(page).toHaveURL(/\/tools\/khateeb-studio\/library$/);
+    const reader = page.getByTestId('khateeb-book-reader');
+    await expect(reader.getByTestId('book-reading-page')).toBeVisible();
+    await expect(reader.getByText(paragraphs[0].text)).toBeVisible();
+    await expect(page.getByText('Qalam Knowledge Assistant — ask the sources', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Topic preparation — patience', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Book library management — owner only', { exact: true })).toHaveCount(0);
+    const desktopWidth = await reader.getByTestId('book-reading-page').evaluate(node => node.getBoundingClientRect().width);
+    expect(desktopWidth).toBeGreaterThan(1000);
+
+    await reader.getByRole('checkbox', { name: ur ? 'پیراگراف منتخب کریں 1' : 'Select paragraph 1', exact: true }).check();
+    await reader.getByRole('button', { name: ur ? 'میری مجلس میں شامل کریں' : 'Add to My Sermon', exact: true }).click();
+    await expect(reader.getByRole('status').filter({ hasText: ur ? 'میری مجلس میں شامل اور محفوظ ہوگئی' : 'Saved in My Sermon' })).toBeVisible();
+
+    await page.getByRole('link', { name: ur ? 'مجلس کی تیاری' : 'Sermon preparation', exact: true }).click();
+    await page.getByRole('button', { name: my, exact: true }).click();
+    const saved = page.getByTestId('custom-sermon-workspace');
+    await expect(saved.getByText(ur ? 'مجلس کے محفوظ کتابی اقتباسات' : 'Saved book excerpts in this sermon')).toBeVisible();
+    await expect(saved.getByText(paragraphs[0].text)).toBeVisible();
+    await expect(saved.getByText(paragraphs[1].text)).toHaveCount(0);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/tools/khateeb-studio/library');
+    await expect(page.getByTestId('book-reading-page')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)).toBe(false);
+    expect(errors).toEqual([]);
   });
-  await page.goto('/tools/khateeb-studio');await page.getByRole('button',{name:ur?'اردو':'ENG',exact:true}).click();
-  const my=ur?'میری مجلس / میرا موضوع':'My sermon / my topic';await page.getByRole('button',{name:my,exact:true}).click();
-  const workspace=page.getByTestId('custom-sermon-workspace');
-  await workspace.getByRole('textbox',{name:ur?'عنوان':'Title',exact:true}).fill('Library prayer draft');
-  await workspace.getByRole('textbox',{name:ur?'اس مجلس کا مقصد':'Objective',exact:true}).fill('Hope and responsibility');
-  await workspace.getByRole('button',{name:ur?'مسودہ شروع کریں':'Start draft',exact:true}).click();
-  await workspace.getByRole('button',{name:ur?'کتابی ذخیرہ — تلاش اور اقتباس':'Book library — search and quote',exact:true}).click();
-  const library=page.getByTestId('book-library');await expect(library.getByRole('button',{name:ur?'کتاب میں تلاش کریں':'Search books',exact:true})).toBeVisible();
-  await library.getByRole('combobox',{name:ur?'زبان':'Language',exact:true}).selectOption('ar');
-  await library.getByLabel(ur?'خطبہ، حکمت یا دعا کا نمبر':'Sermon, saying or prayer number',{exact:true}).fill('۲۸');
-  await library.getByRole('button',{name:ur?'کتاب میں تلاش کریں':'Search books',exact:true}).click();
-  await expect(library.locator('.khateeb-book-ar .khateeb-muhammadi-quranic').first()).toHaveCSS('font-family',/Muhammadi Quranic/);
-  await library.getByRole('button',{name:ur?'مکمل عبارت اور انتخاب':'Read full passage and select',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:ur?'مکمل کتابی عبارت':'Full book passage'});await expect(dialog).toBeVisible();
-  const checkbox = dialog.getByRole('checkbox',{name:ur?'پیراگراف 1':'Paragraph 1',exact:true});
-  await checkbox.locator('..').click();
-  await expect(checkbox).toBeChecked();
-  await dialog.getByRole('button',{name:ur?'منتخب عبارت مجلس میں شامل کریں':'Add selected passage to sermon',exact:true}).click();
-  await expect(dialog.getByText(ur?'منتخب اقتباس مجلس میں شامل اور محفوظ ہوگیا۔':'Selected excerpt added and saved to your sermon.',{exact:true})).toBeVisible();
-  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('denied')}}}));
-  await dialog.getByRole('button',{name:ur?'انتخاب اور حوالہ نقل کریں':'Copy selection and reference',exact:true}).click();
-  const fallback=page.getByRole('textbox',{name:ur?'نقل کے لیے مکمل متن':'Full text for copying'});await expect(fallback).toBeVisible();const copied=await fallback.inputValue();expect(copied).toContain(paragraphs[0].text);expect(copied).toContain(ur?'دعا 28':'Supplication 28');expect(copied).not.toContain(paragraphs[1].text);expect(await fallback.evaluate((el:HTMLTextAreaElement)=>el.selectionEnd-el.selectionStart)).toBe(copied.length);
-  await fallback.press('Escape');await dialog.getByRole('button',{name:ur?'بند کریں':'Close',exact:true}).click();
-  await page.reload();await page.getByRole('button',{name:my,exact:true}).click();await expect(workspace.getByText(ur?'مجلس کے محفوظ کتابی اقتباسات':'Saved book excerpts in this sermon')).toBeVisible();
-  await workspace.getByRole('button',{name:ur?'45 منٹ':'45 min',exact:true}).last().click();
-  const downloadPromise=page.waitForEvent('download');await workspace.getByRole('button',{name:ur?'محفوظ فائل بنائیں':'Export',exact:true}).click();const download=await downloadPromise;const backup=await readFile((await download.path())!);
-  await workspace.getByRole('button',{name:ur?'اقتباس ہٹائیں':'Remove excerpt',exact:true}).click();
-  await workspace.locator('input[type=file]').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:backup});
-  await expect(workspace.getByText(ur?'مجلس کے محفوظ کتابی اقتباسات':'Saved book excerpts in this sermon')).toBeVisible();
-  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async(text:string)=>{(window as any).copyBookText=text;}}}));
-  await workspace.getByRole('button',{name:ur?'مکمل مسودہ نقل کریں':'Copy full draft',exact:true}).click();expect(await page.evaluate(()=>(window as any).copyBookText)).toContain(ur?'دعا 28':'Supplication 28');
-  await page.evaluate(()=>{window.print=()=>{};});await workspace.getByRole('button',{name:ur?'مسودہ پرنٹ کریں / PDF محفوظ کریں':'Print draft / Save PDF',exact:true}).click();
-  await page.emulateMedia({media:'print'});const print=page.locator('#khateeb-custom-print-area');await expect(print).toBeVisible();expect(await print.innerText()).toContain(paragraphs[0].text);expect(await print.innerText()).not.toContain(paragraphs[1].text);expect(await print.innerText()).toContain(ur?'دعا 28':'Supplication 28');await expect(page.locator('#khateeb-print-area')).not.toBeVisible();
-  const pdf=await page.pdf({path:testInfo.outputPath(`book-${locale}.pdf`),format:'A4',printBackground:true});expect(pdf.length).toBeGreaterThan(5000);await page.emulateMedia({media:'screen'});
-  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);expect(overflow).toBe(false);expect(errors).toEqual([]);
- });
 }

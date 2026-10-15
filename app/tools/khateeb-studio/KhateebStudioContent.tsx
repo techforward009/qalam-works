@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import PreparedSeriesSession from "./PreparedSeriesSession";
 import { buildPreparedSeriesText } from "./engine/preparedSeries";
 import TopicSpeakingGuide from "./TopicSpeakingGuide";
@@ -61,10 +62,7 @@ import { checkSeriesOriginality } from "./engine/originalityGuard";
 import SessionNotesEditor from "./SessionNotesEditor";
 import AllKhateebNotesPanel from "./AllKhateebNotesPanel";
 import SessionDeliveryHistory from "./SessionDeliveryHistory";
-import type { CustomSermonProject } from "./engine/customSermonProject";
 import CustomSermonWorkspace from "./CustomSermonWorkspace";
-import dynamic from "next/dynamic";
-const PublicBookLibrary = dynamic(() => import("./BookLibraryPanel"), { ssr: false });
 import KhateebScriptText from "./KhateebScriptText";
 import KhateebPrimaryArabic from "./KhateebPrimaryArabic";
 import KhateebQuranTranslation from "./KhateebQuranTranslation";
@@ -175,9 +173,6 @@ export default function KhateebStudioContent({
   const [liveTopicError, setLiveTopicError] = useState("");
   const [notesLibraryOpen, setNotesLibraryOpen] = useState(false);
   const [customWorkspaceOpen, setCustomWorkspaceOpen] = useState(false);
-  const [bookDraft, setBookDraft] = useState<CustomSermonProject>();
-  const [publicLibraryOpen, setPublicLibraryOpen] = useState(false);
-  const [readerQuickOpen, setReaderQuickOpen] = useState(false);
   const topicResultRef = useRef<HTMLElement | null>(null);
 
   const filteredSpeakers = useMemo(() => {
@@ -773,49 +768,15 @@ export default function KhateebStudioContent({
               : "Prepare by topic or occasion, review source-led directions, and build a usable sermon outline."}
           </p>
 
-          <div className="mx-auto mt-6 max-w-3xl text-start">
-            <button
-              type="button"
-              data-testid="khateeb-reader-direct-entry"
-              aria-controls="khateeb-direct-book-reader"
-              aria-expanded={readerQuickOpen}
-              onClick={() => {
-                setReaderQuickOpen(value => !value);
-                setPublicLibraryOpen(false);
-                setCustomWorkspaceOpen(false);
-                setNotesLibraryOpen(false);
-              }}
-              className="flex w-full items-center justify-between gap-3 rounded-2xl border-2 border-[#B8935A]/70 bg-[#fffaf0] px-4 py-4 text-start text-[#1A3A2A] shadow-sm transition hover:bg-[#fff3d5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#31513a] dark:border-[#b89558]/70 dark:bg-[#1e281b] dark:text-white dark:hover:bg-[#293321]"
-            >
-              <span className="flex items-center gap-3">
-                <BookOpen aria-hidden="true" className="h-6 w-6 shrink-0 text-[#8a6838] dark:text-[#d7bc8a]" />
-                <span className="flex flex-col gap-1">
-                  <strong className="text-base sm:text-lg">{ur ? "کتاب خانہ — مکمل کتابیں پڑھیں" : "Book Library — Read Complete Books"}</strong>
-                  <span className="text-xs font-normal leading-6 text-[#5f6f61] dark:text-[#b9cbbb]">
-                    {ur ? "جلد اور کتابی فہرست، عبارت کی تلاش، نشان لگانا اور حوالہ سمیت نقل" : "Volumes, contents, in-book search, bookmarks and exact source copying"}
-                  </span>
+          <div className="mx-auto mt-6 max-w-5xl text-start">
+            <Link href="/tools/khateeb-studio/library" data-testid="khateeb-reader-direct-entry"
+              className="flex w-full items-center justify-between gap-3 rounded-2xl border-2 border-[#B8935A]/70 bg-[#fffaf0] px-4 py-4 text-start text-[#1A3A2A] shadow-sm transition hover:bg-[#fff3d5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#31513a] dark:border-[#b89558]/70 dark:bg-[#1e281b] dark:text-white dark:hover:bg-[#293321]">
+              <span className="flex items-center gap-3"><BookOpen aria-hidden="true" className="h-6 w-6 shrink-0 text-[#8a6838] dark:text-[#d7bc8a]" />
+                <span className="flex flex-col gap-1"><strong className="text-base sm:text-lg">{ur ? "کتاب خانہ — مکمل کتابیں پڑھیں" : "Book Library — Read Complete Books"}</strong>
+                  <span className="text-xs font-normal leading-6 text-[#5f6f61] dark:text-[#b9cbbb]">{ur ? "کھلا مطالعہ، فہرست، تلاش اور حوالہ سمیت نقل" : "Open reading, contents, search and exact source copying"}</span>
                 </span>
-              </span>
-              <span aria-hidden="true" className="shrink-0 text-2xl">{readerQuickOpen ? "−" : "+"}</span>
-            </button>
-            {readerQuickOpen ? (
-              <section
-                id="khateeb-direct-book-reader"
-                data-testid="khateeb-direct-book-reader"
-                aria-label={ur ? "کتاب خانہ — مکمل مطالعہ" : "Book Library Reader"}
-                className="mt-4 scroll-mt-6 rounded-2xl border border-[#31513a]/20 bg-white p-3 text-start shadow-sm dark:border-[#35513d] dark:bg-[#102017] sm:p-5"
-              >
-                <PublicBookLibrary
-                  readerInitiallyOpen
-                  locale={ur ? "ur" : "en"}
-                  onCreateDraft={project => {
-                    setBookDraft(project);
-                    setReaderQuickOpen(false);
-                    setCustomWorkspaceOpen(true);
-                  }}
-                />
-              </section>
-            ) : null}
+              </span><span aria-hidden="true" className="shrink-0 text-2xl">›</span>
+            </Link>
           </div>
 
           <div className="mx-auto mt-6 max-w-3xl text-start">
@@ -1258,7 +1219,6 @@ export default function KhateebStudioContent({
               aria-controls="khateeb-custom-workspace"
               onClick={() => {
                 setCustomWorkspaceOpen((value) => !value);
-                setPublicLibraryOpen(false);
                 setNotesLibraryOpen(false);
               }}
               className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold ${customWorkspaceOpen ? "border-[#31513a] bg-[#31513a] text-white shadow-sm" : "border-[#31513a]/30 bg-white text-[#31513a] dark:bg-[#162a1e] dark:text-[#b9d4bf]"}`}
@@ -1266,14 +1226,12 @@ export default function KhateebStudioContent({
               <PenLine className="h-4 w-4" />
               {ur ? "میری مجلس / میرا موضوع" : "My sermon / my topic"}
             </button>
-            <button type="button" aria-pressed={publicLibraryOpen} aria-controls="khateeb-public-book-library" aria-expanded={publicLibraryOpen} onClick={() => { setPublicLibraryOpen(value => !value); setCustomWorkspaceOpen(false); setNotesLibraryOpen(false); }} className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold ${publicLibraryOpen ? "border-[#31513a] bg-[#31513a] text-white shadow-sm" : "border-[#31513a]/30 bg-white text-[#31513a] dark:bg-[#162a1e] dark:text-[#b9d4bf]"}`}>
-              <BookOpen className="h-4 w-4" />{ur ? "کتابی ذخیرہ" : "Book library"}
-            </button>
+
             <button
               type="button"
               onClick={() => {
                 setNotesLibraryOpen((value) => !value);
-                setPublicLibraryOpen(false);
+
                 setCustomWorkspaceOpen(false);
               }}
               className="inline-flex items-center rounded-xl border border-[#B8935A]/35 bg-white px-4 py-2 text-sm font-semibold text-[#6f5730] shadow-sm hover:bg-[#fbf7ee] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#e2c895]"
@@ -1290,14 +1248,9 @@ export default function KhateebStudioContent({
           />
         ) : null}
 
-        {publicLibraryOpen ? <section id="khateeb-public-book-library" className="mb-8 rounded-2xl border border-[#31513a]/20 bg-white p-5 dark:bg-[#102017]">
-          <h2 className="mb-4 text-xl font-bold">{ur ? "کتابی ذخیرہ — تلاش، حوالہ اور موضوعاتی تیاری" : "Book library — search, sources and topic preparation"}</h2>
-          <PublicBookLibrary locale={ur ? "ur" : "en"} onCreateDraft={project => { setBookDraft(project); setPublicLibraryOpen(false); setCustomWorkspaceOpen(true); }} />
-        </section> : null}
-
         {customWorkspaceOpen ? (
           <div id="khateeb-custom-workspace" className="mb-8">
-            <CustomSermonWorkspace locale={ur ? "ur" : "en"} initialProject={bookDraft} onInitialProjectApplied={() => setBookDraft(undefined)} />
+            <CustomSermonWorkspace locale={ur ? "ur" : "en"} />
           </div>
         ) : null}
 

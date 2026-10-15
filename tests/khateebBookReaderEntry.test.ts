@@ -2,39 +2,48 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-/**
- * Wiring regression guard: public Khateeb Studio landing view must expose a
- * single-click first-class reader above the long sermon-topic form.
- * Visual/mobile confirmation is performed on the protected Vercel preview.
- */
 const main = readFileSync(resolve("app/tools/khateeb-studio/KhateebStudioContent.tsx"), "utf-8");
-const library = readFileSync(resolve("app/tools/khateeb-studio/BookLibraryPanel.tsx"), "utf-8");
+const reader = readFileSync(resolve("app/tools/khateeb-studio/BookReader.tsx"), "utf-8");
+const libraryPage = readFileSync(resolve("app/tools/khateeb-studio/library/BookLibraryPageClient.tsx"), "utf-8");
+const admin = readFileSync(resolve("app/tools/khateeb-studio/library/admin/BookAdministrationPageClient.tsx"), "utf-8");
+const sermon = readFileSync(resolve("app/tools/khateeb-studio/CustomSermonWorkspace.tsx"), "utf-8");
 
-describe("discoverable Khateeb reader entry", () => {
-  it("shows the direct reader button above the long topic search", () => {
-    const buttonIndex = main.indexOf('data-testid="khateeb-reader-direct-entry"');
-    const topicIndex = main.indexOf('مجلس کا موضوع تلاش کریں');
-    expect(buttonIndex).toBeGreaterThan(0);
-    expect(topicIndex).toBeGreaterThan(buttonIndex);
-    expect(main).toContain('کتاب خانہ — مکمل کتابیں پڑھیں');
-    expect(main).toMatch(/aria-expanded=\{readerQuickOpen\}/);
+describe("focused Book Library workspace", () => {
+  it("links directly from Khateeb Studio to the standalone reader before sermon search", () => {
+    const entryIndex = main.indexOf('href="/tools/khateeb-studio/library"');
+    const topicIndex = main.indexOf("مجلس کا موضوع تلاش کریں");
+    expect(entryIndex).toBeGreaterThan(0);
+    expect(topicIndex).toBeGreaterThan(entryIndex);
+    expect(main).toContain("کتاب خانہ — مکمل کتابیں پڑھیں");
+    expect(main).not.toContain("readerQuickOpen");
+    expect(main).not.toContain("PublicBookLibrary");
+    expect(main).toContain("<CustomSermonWorkspace locale={ur ? \"ur\" : \"en\"} />");
   });
-  it("opens the reading interface directly, without two nested manual clicks", () => {
-    expect(main).toContain('id="khateeb-direct-book-reader"');
-    expect(main).toContain('<PublicBookLibrary\n                  readerInitiallyOpen');
-    expect(library).toContain("readerInitiallyOpen = false");
-    expect(library).toContain("useState(readerInitiallyOpen)");
-    expect(library).toContain("<details open={readerOpen}");
-    expect(library).toContain('<BookReader locale={locale}');
-    expect(library).not.toContain('<ResearchStudioGate language={locale} dir={ur ? "rtl" : "ltr"}><BookReader');
-    expect(library).toContain('{adminOpen ? <ResearchStudioGate');
-    expect(library).toContain("کتاب خانہ ہر قاری کے لیے کھلا ہے");
-    expect(library).not.toContain("نجی مطالعے کے لیے مالک کی رسائی ضروری ہے");
+
+  it("keeps the reading route separate from research, preparation and administration panels", () => {
+    expect(libraryPage).toContain("<BookReader locale={ur ? \"ur\" : \"en\"} onAdd={addToMySermon}/>");
+    expect(reader).not.toContain("<KnowledgeAssistant");
+    expect(reader).not.toContain("<BookTopicGuide");
+    expect(reader).not.toContain("Book library management — owner only");
+    expect(reader).not.toContain("حصے کی نوعیت");
+    expect(reader).not.toContain("Topic preparation");
+    expect(reader).not.toContain("Qalam Knowledge Assistant");
+    expect(sermon).not.toContain("<BookLibraryPanel");
+    expect(sermon).toContain('href="/tools/khateeb-studio/library"');
   });
-  it("keeps existing sermon and source-search workflows available", () => {
-    expect(main).toContain('id="khateeb-public-book-library"');
-    expect(main).toContain("<CustomSermonWorkspace");
-    expect(main).toContain("setBookDraft(project)");
-    expect(main).toContain("setCustomWorkspaceOpen(true)");
+
+  it("uses a temporary contents drawer and keeps its page controls inside that drawer", () => {
+    expect(reader).toContain("<dialog ref={tocDialog}");
+    expect(reader).toContain("className={styles.contentsDrawer}");
+    expect(reader).toContain("aria-modal=\"true\"");
+    expect(reader).toContain("className={styles.contentsPages}");
+    expect(reader).not.toContain('aria-label={ur ? "کتاب کی فہرست" : "Book contents"}');
+    expect(reader).toContain("className={styles.readingPage}");
+  });
+
+  it("keeps corpus administration behind the existing owner gate", () => {
+    expect(admin).toContain("<ResearchStudioGate");
+    expect(admin).toContain("uploadBookArchive(file, abort.signal");
+    expect(admin).toContain("/tools/khateeb-studio/library");
   });
 });

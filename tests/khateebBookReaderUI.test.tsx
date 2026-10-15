@@ -18,17 +18,17 @@ const toc = { total: 2, page: 1, pageSize: 24, entries: [
   { id: id1, sourceId: sid, title: "اصل متن کا حصہ 1", ordinal: 1, headingStatus: "source-division", paragraphCount: 1 },
   { id: id2, sourceId: sid, title: "اصل متن کا حصہ 2", ordinal: 2, headingStatus: "source-division", paragraphCount: 1 },
 ] };
-function readPage(id: string) {
+function readPage(id: string, withTranslation = true) {
   return {
     recordId: id, sourceId: sid, recordOrdinal: id === id1 ? 1 : 2, language: "ar", title: id === id1 ? toc.entries[0].title : toc.entries[1].title,
     reference: "الکافی، جلد 8", translator: null, paragraphs: [{ id: `${id}:p1`, text: arabic }],
     paragraphCount: 1, page: 1, pageCount: 1, nextRecordId: id === id1 ? id2 : null,
     previousRecordId: id === id1 ? null : id1, recordSha256: "b".repeat(64),
     sourceSha256: "a".repeat(64), screenPartOnly: true,
-    translations: [{ paragraphIds: [`${id}:p1`], text: "یہ منظور شدہ اردو ترجمہ ہے", language: "ur", translator: "مترجم آزمائشی", source: "مخصوص اردو نسخہ" }],
+    translations: withTranslation ? [{ paragraphIds: [`${id}:p1`], text: "یہ منظور شدہ اردو ترجمہ ہے", language: "ur", translator: "مترجم آزمائشی", source: "مخصوص اردو نسخہ" }] : [],
   };
 }
-function fakeFetch() {
+function fakeFetch(noTranslations = false) {
   const requests: URL[] = [];
   vi.stubGlobal("fetch", vi.fn(async (value: string, options?: RequestInit) => {
     const url = new URL(value, "http://localhost");
@@ -51,7 +51,7 @@ function fakeFetch() {
     }
     const body = op === "catalog" ? shelf
       : op === "contents" ? toc
-      : op === "read" ? readPage(url.searchParams.get("id") || id1)
+      : op === "read" ? readPage(url.searchParams.get("id") || id1, !noTranslations)
       : op === "find" ? { hits: [{
         recordId: id2, paragraphId: `${id2}:p1`, title: toc.entries[1].title, snippet: arabic,
       }], total: 1, page: 1, pageSize: 20 }
@@ -68,9 +68,10 @@ it("displays original Arabic in a true RTL reader, copies exact text and navigat
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
   render(<BookReader locale="ur"/>);
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
-  expect(screen.getByText("کتاب خانہ — مطالعہ")).toBeTruthy();
+  expect(screen.getByRole("heading", {name:"کتاب خانہ"})).toBeTruthy();
   expect(screen.getByText("الکافی، جلد 8")).toBeTruthy();
   expect(screen.getAllByText("اصل متن کا حصہ 1").length).toBeGreaterThan(0);
+  expect(screen.queryByRole("complementary", {name:"کتاب کی فہرست"})).toBeNull();
   fireEvent.click(screen.getByRole("button", {name: "اصل متن نقل کریں"}));
   await waitFor(() => expect(writeText).toHaveBeenCalled());
   expect(writeText.mock.calls[0][0]).toBe(arabic);
@@ -83,8 +84,9 @@ it("searches only the selected volume and jumps to its returned original paragra
   const urls = fakeFetch();
   render(<BookReader locale="ur"/>);
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
+  fireEvent.click(screen.getByRole("button", {name:"تلاش"}));
   fireEvent.change(screen.getByRole("textbox", {name:"اسی کتاب میں تلاش"}), {target:{value:"اختباری"}});
-  fireEvent.click(screen.getByRole("button", {name:/^تلاش$/}));
+  fireEvent.click(screen.getByRole("button", {name:"تلاش کریں"}));
   await waitFor(() => expect(urls.some(url => url.searchParams.get("op") === "find")).toBe(true));
   await waitFor(() => expect(screen.getAllByRole("button", { name: /اصل متن کا حصہ 2/ }).length).toBeGreaterThan(1));
   const hits = screen.getAllByRole("button", { name: /اصل متن کا حصہ 2/ });
@@ -118,7 +120,7 @@ it("bookmarks the actual paragraph and sends validated selection to existing ser
   expect(data.bookmarks[0].recordId).toBe(id1);
   expect(JSON.stringify(data)).not.toContain(arabic);
   fireEvent.click(screen.getByRole("checkbox", {name:"پیراگراف منتخب کریں 1"}));
-  fireEvent.click(screen.getByRole("button", {name:"منتخب عبارت میری مجلس میں شامل کریں"}));
+  fireEvent.click(screen.getByRole("button", {name:"میری مجلس میں شامل کریں"}));
   await waitFor(() => expect(saved).toHaveBeenCalledOnce());
   expect(saved.mock.calls[0][0].paragraphs).toEqual([{id:`${id1}:p1`,text:arabic}]);
   expect(urls.some(url => url.pathname === "/api/research/book-reader")).toBe(true);
@@ -143,6 +145,8 @@ it("visits the final part when navigating backward to a longer preceding section
   }));
   render(<BookReader locale="ur" />);
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
+  fireEvent.click(screen.getByRole("button", {name:"فہرست"}));
+  await waitFor(() => expect(screen.getByRole("dialog")).toBeTruthy());
   fireEvent.click(screen.getByRole("button", {name:"2. اصل متن کا حصہ 2"}));
   await waitFor(() => expect(fetched.some(url => url.searchParams.get("id") === id2)).toBe(true));
   fireEvent.click(screen.getByRole("button", {name: "پچھلا مطالعہ صفحہ"}));
@@ -160,4 +164,31 @@ it("shows an approved Urdu translation only in translation mode and keeps Arabic
   fireEvent.change(screen.getByLabelText("مطالعے کی صورت"), {target:{value:"original"}});
   await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
   expect(screen.queryByText("یہ منظور شدہ اردو ترجمہ ہے")).toBeNull();
+});
+
+
+it("opens contents only in a temporary drawer and closes after choosing a section", async () => {
+  fakeFetch();
+  render(<BookReader locale="ur"/>);
+  await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByRole("complementary", {name:"کتاب کی فہرست"})).toBeNull();
+  fireEvent.click(screen.getByRole("button", {name:"فہرست"}));
+  const drawer = await screen.findByRole("dialog");
+  expect(drawer).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", {name:"2. اصل متن کا حصہ 2"}));
+  await waitFor(() => expect(screen.getAllByText("اصل متن کا حصہ 2").length).toBeGreaterThan(0));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+});
+
+
+it("shows the missing-translation notice and a direct return to Arabic", async () => {
+  fakeFetch(true);
+  render(<BookReader locale="ur"/>);
+  await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
+  fireEvent.change(screen.getByLabelText("مطالعے کی صورت"), {target:{value:"translation"}});
+  await waitFor(() => expect(screen.getByText("اردو ترجمہ ابھی دستیاب نہیں")).toBeTruthy());
+  fireEvent.click(screen.getByRole("button", {name:"عربی پر واپس جائیں"}));
+  await waitFor(() => expect(screen.getByText(arabic)).toBeTruthy());
+  expect(screen.queryByText("اردو ترجمہ ابھی دستیاب نہیں")).toBeNull();
 });
