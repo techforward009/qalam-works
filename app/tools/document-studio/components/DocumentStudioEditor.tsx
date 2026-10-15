@@ -1717,19 +1717,25 @@ export default function DocumentStudioEditor() {
               <p className="font-semibold">{pdfError}</p>
               {pdfDiagnostic && (
                 <>
-                  <p className="mt-2 text-xs">اصل عبارت محفوظ ہے۔ قرآنی حروف کے لیے غیر محفوظ فونٹ نظرانداز نہیں کیا جاسکتا۔</p>
+                  <p className="mt-2 text-xs">{pdfDiagnostic.code.startsWith("FONT_") ? "اصل عبارت محفوظ ہے۔ قرآنی حروف کے لیے غیر محفوظ فونٹ نظرانداز نہیں کیا جاسکتا۔" : "یہ خرابی فونٹ کی وجہ سے ہونا ثابت نہیں؛ ضرورت ہو تو کچھ دیر بعد دوبارہ کوشش کریں۔"}</p>
                   {pdfDiagnostic.issues.length > 0 && (
                     <ol className="mt-3 space-y-3">
                       {pdfDiagnostic.issues.map(issue => (
                         <li key={issue.id} className="rounded border border-red-200 bg-white p-3">
-                          <p className="font-semibold">فونٹ: {issue.selectedFont ?? "نامعلوم"}{issue.actualFont ? " — اصل متبادل: " + issue.actualFont : ""}</p>
-                          {issue.codePoint && <p className="mt-1 text-xs" dir="ltr">{issue.codePoint} {issue.character ?? ""}</p>}
+                          <p className="font-semibold">منتخب فونٹ: {issue.selectedFont ?? "تصدیق نہیں ہوسکی"}</p>
+                          {issue.actualFont && <p className="mt-1 text-xs">اصل دکھائی دینے والا فونٹ: {issue.actualFont}</p>}
+                          <details className="mt-2 text-xs">
+                            <summary className="cursor-pointer font-semibold">فنی تفصیل دیکھیں</summary>
+                            {issue.codePoint && <p className="mt-1" dir="ltr">{issue.codePoint} {issue.character ?? ""}</p>}
+                            {issue.location && <p className="mt-1">عبارت کی شناخت: {issue.location.blockPath.join(".") || "0"}، حصہ {issue.location.runIndex + 1}</p>}
+                            <p className="mt-1" dir="ltr">{issue.kind}: {issue.reason}</p>
+                          </details>
                           {issue.location && (
                             <p className="mt-1 rounded bg-red-50 px-2 py-1 text-xs" dir="rtl">
                               عبارت: {issue.location.expectedText.slice(Math.max(0, issue.location.textOffset < 0 ? 0 : issue.location.textOffset - 18), Math.max(0, issue.location.textOffset < 0 ? 0 : issue.location.textOffset - 18) + 70)}
                             </p>
                           )}
-                          <p className="mt-1 text-xs">وجہ: {issue.reason === "missing-glyph" ? "منتخب فونٹ میں یہ حرف موجود نہیں۔" : "اصل دکھائی دینے والا فونٹ منظور شدہ نہیں۔"}</p>
+                          <p className="mt-1 text-xs">وجہ: {issue.reason === "missing-glyph" ? "منتخب فونٹ میں یہ حرف موجود نہیں۔" : issue.reason === "location-unverified" ? "اس مسئلے کا صحیح مقام ابھی ثابت نہیں ہوسکا۔" : "اصل دکھائی دینے والا فونٹ منظور شدہ نہیں۔"}</p>
                           {issue.location && (
                             <button type="button" onClick={() => navigateToPdfIssue(issue.location!)}
                               className="mt-2 rounded border border-red-500 px-3 py-1.5 font-semibold hover:bg-red-100">
