@@ -25,6 +25,7 @@ export type BookContents = {
 export type BookReadingPage = {
   recordId: string;
   sourceId: string;
+  recordOrdinal: number;
   language: BookSource["language"];
   title: string;
   reference: string;
@@ -90,7 +91,7 @@ export function bookReadingPage(records: readonly BookRecord[], source: BookSour
   const pageCount = Math.max(1, Math.ceil(record.paragraphs.length / BOOK_READER_PARAGRAPHS));
   if (!Number.isInteger(part) || part < 1 || part > pageCount) return null;
   return {
-    recordId: record.id, sourceId: source.id, language: record.language,
+    recordId: record.id, sourceId: source.id, recordOrdinal: index + 1, language: record.language,
     title: safeTitle(record, index, locale).text,
     reference: bookRecordReference(record, locale),
     translator: source.translator, paragraphCount: record.paragraphs.length,
