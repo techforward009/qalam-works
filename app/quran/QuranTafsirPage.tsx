@@ -187,6 +187,32 @@ export default function QuranTafsirPage({ surah, ayah }: { surah: number; ayah: 
         </header>
       )}
       {work && <div className="mt-4">
+        {workId === "nemuneh" && remoteTopics.length > 0 && coverageGroups.some(group => group.verses.length > 0) ? (
+          <section aria-label={ur ? "تفسیری آیات کا مجموعہ" : "Verses covered by this commentary"}
+            data-tafsir-verse-coverage="true"
+            className="rounded-xl border border-[#d6c5a0] bg-[#f8f4e8] px-4 py-3 text-[#304d37]">
+            <p className="text-center" style={ur
+              ? { fontFamily: '"Gulzar", "Noto Nastaliq Urdu", serif', fontSize: "20px", lineHeight: 2.1 }
+              : { fontSize: "16px", fontWeight: 650 }}>
+              {ur ? "اس تفسیر میں شامل آیات" : "Verses covered by this commentary"}
+            </p>
+            <div className="mt-1 space-y-1 text-center" data-tafsir-source-ranges="true">
+              {coverageGroups.filter(group => group.verses.length > 0).map(group => (
+                <p key={group.sourceKey} style={ur
+                  ? { fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif', fontSize: "18px", lineHeight: 2.1 }
+                  : { fontSize: "15px", lineHeight: 1.8 }}>
+                  {commentaryScopeLabel(group, chosenLanguage)}
+                </p>
+              ))}
+            </div>
+            <p className="mt-1 text-center text-[#766950]" style={ur
+              ? { fontFamily: '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif', fontSize: "15px", lineHeight: 2 }
+              : { fontSize: "12px", lineHeight: 1.8 }}>
+              {ur ? "منتخب آیت: " + surahTitle(surah) + "، " + easternDigits(ayah)
+                : "Selected verse: " + surah + ":" + ayah}
+            </p>
+          </section>
+        ) : null}
         {!ur ? <p className="text-sm text-[#6d624e]">
           {"Surah " + surah + ", Ayah " + ayah + " · " + work.authorEn}
         </p> : null}
