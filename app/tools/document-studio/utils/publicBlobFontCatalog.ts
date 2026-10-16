@@ -33,26 +33,25 @@ export function getPublicBlobFontFamily(id: string): PublicBlobFontFamily | unde
   return PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === id);
 }
 
-/**
- * The three owner-uploaded SIL OFL fonts move to Cloudflare after the independent
- * Worker is deployed with the private FONT_BUCKET binding and the required
- * license notices. Other fonts remain on their original URLs pending rights
- * review and the missing original corpus recovery; do not silently substitute.
- */
+/** Owner-authorized originals uploaded to private R2, exposed only through the independent Worker. Unavailable original assets remain on legacy URLs, never substituted. */
 export const PUBLIC_BLOB_FONT_BASE_URL = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com";
 export const QALAM_OFL_FONT_MIRROR_BASE_URL =
   "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts";
-const OFL_MIRRORED_FONT_FILES = new Set([
+const R2_MIRRORED_FONT_FILES = new Set([
+  "Alvi_Nastaleeq.woff2",
   "Gulzar-Regular.woff2",
+  "NafeesNastaleeq.woff2",
   "Sahel.woff2",
   "ScheherazadeNew-Medium.woff2",
+  "jameel-noori-nastaleeq-400.woff2",
+  "muhammadi-quranic-400.woff2",
 ]);
 /** Resolve only catalogued filenames; never accept arbitrary paths/hosts. */
 export function publicBlobFontUrl(filename: string): string {
   if (!PUBLIC_BLOB_FONT_FILES.includes(filename)) {
     throw new Error("Unapproved Document Studio font asset");
   }
-  const origin = OFL_MIRRORED_FONT_FILES.has(filename)
+  const origin = R2_MIRRORED_FONT_FILES.has(filename)
     ? QALAM_OFL_FONT_MIRROR_BASE_URL
     : PUBLIC_BLOB_FONT_BASE_URL;
   return `${origin}/${encodeURIComponent(filename)}`;
