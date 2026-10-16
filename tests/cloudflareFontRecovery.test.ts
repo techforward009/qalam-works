@@ -48,6 +48,43 @@ describe("Cloudflare owner-authorized original font Worker", () => {
     ])expect((await worker.fetch(req(path),context)).status).toBe(404);
     expect(context.FONT_BUCKET.get).not.toHaveBeenCalled();
   });
+  it("reuses edge-cached originals instead of rereading R2", async () => {
+    const stored = new Map<string, Response>();
+    const cache = {
+      match: vi.fn(async (request: Request) => stored.get(request.url)?.clone()),
+      put: vi.fn(async (request: Request, response: Response) => {
+        stored.set(request.url, response.clone());
+      }),
+    };
+    vi.stubGlobal("caches", { default: cache });
+    try {
+      const context = env();
+      const first = await worker.fetch(req("/fonts/Gulzar-Regular.woff2"), context);
+      const second = await worker.fetch(req("/fonts/Gulzar-Regular.woff2"), context);
+      const head = await worker.fetch(req("/fonts/Gulzar-Regular.woff2", "HEAD"), context);
+      expect(first.status).toBe(200);
+      expect(second.status).toBe(200);
+      expect(head.status).toBe(200);
+      expect(head.body).toBeNull();
+      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(1);
+      expect(cache.put).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+  it("still serves verified originals if edge cache throws", async () => {
+    vi.stubGlobal("caches", { default: {
+      match: vi.fn(async () => { throw Error("cache unavailable"); }),
+      put: vi.fn(async () => { throw Error("cache unavailable"); }),
+    } });
+    try {
+      const context = env();
+      expect((await worker.fetch(req("/fonts/Gulzar-Regular.woff2"), context)).status).toBe(200);
+      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it("disallows POST and lets HEAD report metadata without bytes",async()=>{
     const context=env();
     expect((await worker.fetch(req("/fonts/Gulzar-Regular.woff2","POST"),context)).status).toBe(405);
