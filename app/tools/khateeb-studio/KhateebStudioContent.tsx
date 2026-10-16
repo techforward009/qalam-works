@@ -563,7 +563,7 @@ export default function KhateebStudioContent({
       <style>{`
         @font-face {
           font-family: "Nafees Nastaleeq";
-          src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/NafeesNastaleeq.woff2") format("woff2");
+          src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq.woff2") format("woff2");
           font-style: normal;
           font-weight: 400;
           font-display: swap;

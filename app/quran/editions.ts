@@ -46,7 +46,7 @@ export const QURAN_EDITIONS: readonly QuranEdition[] = [
       textSource: "AhmedGraf · Indo-Pak Quran Text v1.0",
       textSourceUrl: "http://ahmedgraf.com",
       fontSource: "Muhammadi Quranic · Qalam Works Vercel Blob",
-      fontSourceUrl: "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/muhammadi-quranic-400.woff2",
+      fontSourceUrl: "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/muhammadi-quranic-400.woff2",
     },
   },
   {

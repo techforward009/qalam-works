@@ -33,24 +33,35 @@ export function getPublicBlobFontFamily(id: string): PublicBlobFontFamily | unde
   return PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === id);
 }
 
-/** Origin matches the public Vercel Blob URL supplied by the owner. */
+/** Owner-authorized originals uploaded to private R2, exposed only through the independent Worker. Unavailable original assets remain on legacy URLs, never substituted. */
 export const PUBLIC_BLOB_FONT_BASE_URL = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com";
-
+export const QALAM_OFL_FONT_MIRROR_BASE_URL =
+  "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts";
+const R2_MIRRORED_FONT_FILES = new Set([
+  "Alvi_Nastaleeq.woff2",
+  "Gulzar-Regular.woff2",
+  "NafeesNastaleeq.woff2",
+  "Sahel.woff2",
+  "ScheherazadeNew-Medium.woff2",
+  "jameel-noori-nastaleeq-400.woff2",
+  "muhammadi-quranic-400.woff2",
+]);
 /** Resolve only catalogued filenames; never accept arbitrary paths/hosts. */
 export function publicBlobFontUrl(filename: string): string {
   if (!PUBLIC_BLOB_FONT_FILES.includes(filename)) {
     throw new Error("Unapproved Document Studio font asset");
   }
-  return `${PUBLIC_BLOB_FONT_BASE_URL}/${encodeURIComponent(filename)}`;
+  const origin = R2_MIRRORED_FONT_FILES.has(filename)
+    ? QALAM_OFL_FONT_MIRROR_BASE_URL
+    : PUBLIC_BLOB_FONT_BASE_URL;
+  return `${origin}/${encodeURIComponent(filename)}`;
 }
-
 export function isApprovedPublicBlobFontUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.origin === PUBLIC_BLOB_FONT_BASE_URL
-      && parsed.search === ""
-      && parsed.hash === ""
-      && PUBLIC_BLOB_FONT_FILES.includes(decodeURIComponent(parsed.pathname.slice(1)));
+    if (parsed.search !== "" || parsed.hash !== "" || parsed.username || parsed.password) return false;
+    const filename = decodeURIComponent(parsed.pathname.split("/").pop() ?? "");
+    return PUBLIC_BLOB_FONT_FILES.includes(filename) && parsed.href === publicBlobFontUrl(filename);
   } catch {
     return false;
   }

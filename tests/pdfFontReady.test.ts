@@ -70,6 +70,6 @@ describe("shared Jameel source", () => {
     expect(isAllowedJameelBlobHost("abc.blob.vercel-storage.com")).toBe(true);
     expect(isAllowedJameelBlobHost("evil.example.com")).toBe(false);
     expect(studioJameelFontFaceCss()).toContain("Jameel Noori Nastaleeq");
-    expect(studioJameelFontFaceCss()).toContain("p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2");
+    expect(studioJameelFontFaceCss()).toContain("qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2");
   });
 });

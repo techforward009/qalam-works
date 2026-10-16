@@ -1,0 +1,36 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const MIRROR = "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/";
+const OLD = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/";
+const sources = {
+  "app/globals.css": [
+    "muhammadi-quranic-400.woff2",
+    "jameel-noori-nastaleeq-400.woff2",
+    "NafeesNastaleeq.woff2",
+    "Alvi_Nastaleeq.woff2",
+    "Gulzar-Regular.woff2",
+    "Sahel.woff2",
+    "ScheherazadeNew-Medium.woff2",
+  ],
+  "app/quran/QuranTranslationPage.tsx": ["jameel-noori-nastaleeq-400.woff2"],
+  "app/quran/editions.ts": ["muhammadi-quranic-400.woff2"],
+  "app/tools/khateeb-studio/KhateebStudioContent.tsx": ["NafeesNastaleeq.woff2"],
+  "app/components/knowledge/KnowledgeAssistant.tsx": ["NafeesNastaleeq.woff2"],
+};
+describe("owner-authorized originals use new independent font gateway",()=>{
+  for (const [source,fonts] of Object.entries(sources)) {
+    it(source+" references only Cloudflare for recovered files",()=>{
+      const text=readFileSync(source,"utf8");
+      for(const font of fonts) {
+        expect(text,source+" "+font).toContain(MIRROR+font);
+        expect(text,source+" "+font).not.toContain(OLD+font);
+      }
+    });
+  }
+  it("does not pretend locked DigitalKhattIndoPakRegular was recovered",()=>{
+    const css=readFileSync("app/globals.css","utf8");
+    expect(css).toContain(OLD+"DigitalKhattIndoPakRegular.woff2");
+    expect(css).not.toContain(MIRROR+"DigitalKhattIndoPakRegular.woff2");
+  });
+});

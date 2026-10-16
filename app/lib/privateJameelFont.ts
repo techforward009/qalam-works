@@ -26,6 +26,7 @@ export type JameelFontLoadReason =
   | "loaded-blob-oidc"
   | "loaded-blob-token"
   | "loaded-public"
+  | "loaded-cloudflare"
   | "missing-url"
   | "missing-auth"
   | "blob-401"
@@ -37,14 +38,15 @@ export type JameelFontLoadReason =
   | "unavailable";
 
 export type JameelFontLoadResult =
-  | { ok: true; buffer: Buffer; reason: "loaded-local" | "loaded-blob-oidc" | "loaded-blob-token" | "loaded-public" }
-  | { ok: false; reason: Exclude<JameelFontLoadReason, "loaded-local" | "loaded-blob-oidc" | "loaded-blob-token" | "loaded-public"> };
+  | { ok: true; buffer: Buffer; reason: "loaded-local" | "loaded-blob-oidc" | "loaded-blob-token" | "loaded-public" | "loaded-cloudflare" }
+  | { ok: false; reason: Exclude<JameelFontLoadReason, "loaded-local" | "loaded-blob-oidc" | "loaded-blob-token" | "loaded-public" | "loaded-cloudflare"> };
 
 export interface JameelBlobFetchConfig {
   blobUrl?: string;
   oidcToken?: string;
   blobToken?: string;
   fetchImpl?: typeof fetch;
+  cloudflareUrl?: string;
 }
 
 function sha256hex(buf: Buffer): string {
@@ -65,7 +67,7 @@ type AuthAttempt =
 
 function bufferFromDownload(
   buf: Buffer,
-  successReason: "loaded-blob-oidc" | "loaded-blob-token" | "loaded-public",
+  successReason: "loaded-blob-oidc" | "loaded-blob-token" | "loaded-public" | "loaded-cloudflare",
 ): JameelFontLoadResult {
   if (buf.byteLength > PRIVATE_BLOB_MAX_BYTES) return { ok: false, reason: "unavailable" };
   if (sha256hex(buf) !== JAMEEL_APPROVED_SHA256) return { ok: false, reason: "integrity-failed" };
@@ -121,6 +123,32 @@ export async function loadJameelFromBlob(config: JameelBlobFetchConfig): Promise
   }
 }
 
+/**
+ * Optional Cloudflare mirror. No private Vercel Blob token or OIDC bearer
+ * header is ever sent to this public font Worker. Existing integrity SHA-256
+ * remains mandatory for every returned font byte.
+ */
+export async function loadJameelFromCloudflare(
+  urlValue: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<JameelFontLoadResult> {
+  let url: URL;
+  try { url = new URL(urlValue); } catch { return {ok:false,reason:"unavailable"}; }
+  if (url.href !== "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/"+JAMEEL_FILENAME) {
+    return {ok:false,reason:"unavailable"};
+  }
+  try {
+    const response = await fetchImpl(url.href, {
+      method:"GET", redirect:"error",cache:"no-store",signal:AbortSignal.timeout(20_000),
+    });
+    if (!response.ok) return {ok:false,reason:reasonFromHttpStatus(response.status)};
+    const len = response.headers.get("content-length");
+    if (len && Number(len) > PRIVATE_BLOB_MAX_BYTES) return {ok:false,reason:"unavailable"};
+    const bytes = Buffer.from(await response.arrayBuffer());
+    return bufferFromDownload(bytes, "loaded-cloudflare");
+  } catch {return {ok:false,reason:"network-failed"};}
+}
+
 /** Load approved Jameel bytes. Never returns URLs, tokens, or font diagnostics beyond a reason code. */
 export async function loadPrivateJameelWoff2(
   config?: JameelBlobFetchConfig,
@@ -134,6 +162,12 @@ export async function loadPrivateJameelWoff2(
     return { ok: true, buffer: buf, reason: "loaded-local" };
   }
 
+  const cloudflareUrl=config?.cloudflareUrl ?? process.env.QALAM_JAMEEL_FONT_MIRROR_URL ?? "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2";
+  if (cloudflareUrl) {
+    const mirrored=await loadJameelFromCloudflare(cloudflareUrl,config?.fetchImpl);
+    // Do not silently swap identity after an integrity failure.
+    if (mirrored.ok || (!mirrored.ok && mirrored.reason === "integrity-failed")) return mirrored;
+  }
   return loadJameelFromBlob({
     blobUrl: config?.blobUrl ?? process.env.JAMEEL_FONT_BLOB_URL,
     oidcToken: config?.oidcToken ?? process.env.VERCEL_OIDC_TOKEN,
