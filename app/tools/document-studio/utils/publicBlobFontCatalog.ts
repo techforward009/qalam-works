@@ -60,12 +60,12 @@ export function publicBlobFontUrl(filename: string): string {
 }
 export function isApprovedPublicBlobFontUrl(url: string): boolean {
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(url, "https://qalam.local");
     if (parsed.search !== "" || parsed.hash !== "" || parsed.username || parsed.password) return false;
     const filename = decodeURIComponent(parsed.pathname.split("/").pop() ?? "");
     const expected = publicBlobFontUrl(filename);
     return PUBLIC_BLOB_FONT_FILES.includes(filename) &&
-      (expected.startsWith("/") ? parsed.pathname === expected && parsed.origin === new URL(url).origin : parsed.href === expected);
+      (expected.startsWith("/") ? url === expected : parsed.href === expected);
   } catch {
     return false;
   }
