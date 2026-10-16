@@ -28,9 +28,11 @@ describe("owner-authorized originals use new independent font gateway",()=>{
       }
     });
   }
-  it("does not pretend locked DigitalKhattIndoPakRegular was recovered",()=>{
+  it("serves the owner-provided original DigitalKhatt locally, not from Blob",()=>{
     const css=readFileSync("app/globals.css","utf8");
-    expect(css).toContain(OLD+"DigitalKhattIndoPakRegular.woff2");
-    expect(css).not.toContain(MIRROR+"DigitalKhattIndoPakRegular.woff2");
+    expect(css).toContain("/fonts/DigitalKhattIndoPakRegular.woff2");
+    expect(css).not.toContain(OLD+"DigitalKhattIndoPakRegular.woff2");
+    const font=readFileSync("public/fonts/DigitalKhattIndoPakRegular.woff2");
+    expect(font.subarray(0,4).toString("ascii")).toBe("wOF2");
   });
 });
