@@ -34,10 +34,26 @@ export default {
     const filename = url.pathname.slice("/fonts/".length);
     if (!Object.prototype.hasOwnProperty.call(FONT_FILES, filename)) return denied(404);
     try {
+      // Edge cache avoids repeated R2 reads for frequently requested original fonts.
+      // Cache API may be unavailable in local tests or non-Cloudflare runtimes.
+      const edgeCache = globalThis.caches?.default;
+      const cacheKey = new Request(url.origin + url.pathname, { method: "GET" });
+      if (edgeCache) {
+        try {
+          const hit = await edgeCache.match(cacheKey);
+          if (hit) {
+            return request.method === "HEAD"
+              ? new Response(null, { status: 200, headers: hit.headers })
+              : hit;
+          }
+        } catch {
+          // A cache outage must not prevent serving the verified original.
+        }
+      }
       const font = await env.FONT_BUCKET.get(filename);
       if (!font) return denied(404);
       if (font.size !== FONT_FILES[filename]) return denied(502);
-      return new Response(request.method === "HEAD" ? null : font.body, {
+      const response = new Response(request.method === "HEAD" ? null : font.body, {
         status: 200,
         headers: {
           ...BASE_HEADERS,
@@ -49,6 +65,10 @@ export default {
           ...(font.httpEtag ? {"ETag": font.httpEtag} : {}),
         },
       });
+      if (edgeCache && request.method === "GET") {
+        try { await edgeCache.put(cacheKey, response.clone()); } catch { /* serve without cache */ }
+      }
+      return response;
     } catch {
       return denied(503);
     }
