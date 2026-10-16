@@ -60,7 +60,29 @@ const samples = [
   report.mixed={rtl:await inspect("font-probe-mixed-rtl","Gulzar"),arabic:await inspect("font-probe-mixed-arabic","Amiri"),latin:await inspect("font-probe-mixed-latin","Inter")};
   // Inter is intentional only for the explicitly Latin run.
   const all=[...report.results,report.mixed.rtl,report.mixed.arabic,report.mixed.latin];
-  report.overall=all.every(x=>x.status==="PASS")?"PASS":"FAIL";
+
+  // Verify the Digital Khatt Quran's mobile layout in a real narrow viewport:
+  // the original font must paint, RTL lines remain justified, and content fits.
+  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+  mobile.on("pageerror",e=>report.errors.push("mobile: "+e.message));
+  await mobile.goto("http://127.0.0.1:3000/quran/indopak-digital-khatt/1/1",{waitUntil:"domcontentloaded",timeout:90000});
+  const mobileQuran=mobile.locator("article > div").first();
+  await mobileQuran.waitFor({state:"visible",timeout:30000});
+  await mobile.evaluate(async()=>{await document.fonts.load('25px "DigitalKhattIndoPak"');await document.fonts.ready});
+  await mobile.screenshot({path:path.join(out,"digital-khatt-mobile.png"),fullPage:true});
+  const mobileMetrics=await mobileQuran.evaluate(el=>{
+   const style=getComputedStyle(el),rect=el.getBoundingClientRect();
+   return {align:style.textAlign,direction:style.direction,fontFamily:style.fontFamily,viewportWidth:innerWidth,documentWidth:document.documentElement.scrollWidth,left:rect.left,right:rect.right,width:rect.width};
+  });
+  const mobileCdp=await mobile.context().newCDPSession(mobile);
+  await mobileCdp.send("DOM.enable");
+  const mobileDocument=await mobileCdp.send("DOM.getDocument",{depth:-1,pierce:true});
+  const mobileNode=await mobileCdp.send("DOM.querySelector",{nodeId:mobileDocument.root.nodeId,selector:"article > div"});
+  const mobileFonts=mobileNode.nodeId?(await mobileCdp.send("CSS.getPlatformFontsForNode",{nodeId:mobileNode.nodeId})).fonts||[]:[];
+  const digitalPainted=mobileFonts.some(f=>/digital.?khatt/i.test(f.familyName)&&f.glyphCount>0);
+  report.mobileDigitalKhatt={status:mobileMetrics.align==="justify"&&mobileMetrics.direction==="rtl"&&mobileMetrics.documentWidth<=mobileMetrics.viewportWidth&&mobileMetrics.left>=0&&mobileMetrics.right<=mobileMetrics.viewportWidth&&digitalPainted?"PASS":"FAIL",metrics:mobileMetrics,renderedFonts:mobileFonts};
+  await mobile.close();
+  report.overall=all.every(x=>x.status==="PASS")&&report.mobileDigitalKhatt.status==="PASS"?"PASS":"FAIL";
  }catch(e){report.overall="FAIL";report.errors.push(String(e.stack||e));}
  finally{fs.writeFileSync(path.join(out,"font-rendering-report.json"),JSON.stringify(report,null,2));if(browser)await browser.close();}
  console.log(JSON.stringify({overall:report.overall,results:report.results.map(x=>({font:x.family,status:x.status,rendered:x.rendered,reason:x.reason})),mixed:report.mixed,errors:report.errors},null,2));
