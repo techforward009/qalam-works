@@ -76,6 +76,7 @@ const samples = [
   });
   const mobileCdp=await mobile.context().newCDPSession(mobile);
   await mobileCdp.send("DOM.enable");
+  await mobileCdp.send("CSS.enable");
   const mobileDocument=await mobileCdp.send("DOM.getDocument",{depth:-1,pierce:true});
   const mobileNode=await mobileCdp.send("DOM.querySelector",{nodeId:mobileDocument.root.nodeId,selector:"article > div"});
   const mobileFonts=mobileNode.nodeId?(await mobileCdp.send("CSS.getPlatformFontsForNode",{nodeId:mobileNode.nodeId})).fonts||[]:[];
