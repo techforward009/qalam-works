@@ -212,6 +212,14 @@ describe("Quran reader", () => {
     expect(source).toContain("router.prefetch");
   });
 
+  test("justifies Digital Khatt Quran lines on mobile instead of right-aligning them", () => {
+    const css = readFileSync("app/quran/indopak-digital-khatt/reader.module.css", "utf8");
+    const mobile = css.split("@media (max-width: 640px)")[1];
+    expect(mobile).toBeDefined();
+    expect(mobile).toMatch(/\.quran\s*\{[^}]*text-align:\s*justify;/);
+    expect(mobile).not.toMatch(/\.quran\s*\{[^}]*text-align:\s*right;/);
+  });
+
   test("preloads adjacent Madinah pages and their QCF fonts", () => {
     const source = readFileSync("app/quran/madinah/MadinahReader.tsx", "utf8");
     expect(source).toContain("PAGE_CACHE");

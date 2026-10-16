@@ -273,7 +273,8 @@
     padding: 16px 2px 8px;
     font-size: calc(25px * var(--quran-scale, 1));
     line-height: 2.15;
-    text-align: right;
+    text-align: justify;
+    text-justify: inter-word;
   }
 
   .surahHeader {
