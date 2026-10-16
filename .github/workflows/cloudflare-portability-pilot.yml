@@ -1,0 +1,44 @@
+name: Cloudflare Portability Pilot — No Deployment
+on:
+  push:
+    branches: [feature/cloudflare-portability-pilot-20261016]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Font R2 access, license gate and migration manifest
+        run: npx vitest run tests/cloudflareFontMirror.test.ts
+      - name: Validate offline recovery verifier syntax
+        run: node --check scripts/verify-cloudflare-recovery-assets.mjs
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+      - name: Cloudflare Next.js compatibility scan (non-blocking evidence, no deployment)
+        continue-on-error: true
+        timeout-minutes: 7
+        run: |
+          npx --yes vinext@1.2.0 check > vinext-readiness-log.txt 2>&1
+          code=$?
+          cat vinext-readiness-log.txt
+          echo "vinext check exit=$code"
+          exit "$code"
+      - name: Store compatibility scan evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-vinext-readiness-only
+          path: vinext-readiness-log.txt
+          if-no-files-found: ignore
