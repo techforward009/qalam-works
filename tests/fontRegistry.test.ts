@@ -58,7 +58,7 @@ describe("fontRegistry", () => {
     expect(j.pdf.embedded).toBe(true);
     expect(j.pdf.familyName).toBe("Jameel Noori Nastaleeq");
     expect(j.pdf.regularFiles).toEqual([
-      "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2",
+      "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2",
     ]);
     // No boldFiles — Regular 400 only
     expect(j.pdf.boldFiles ?? []).toHaveLength(0);
@@ -82,7 +82,7 @@ describe("fontRegistry", () => {
     expect(adobe.pdf.boldFiles?.[0]).toContain("/AdobeArabic-Bold.woff2");
     expect(resolveEditorFontFamily("Gulzar", "rtl").fellBack).toBe(false);
     expect(getFontById("gulzar").pdf.regularFiles?.[0]).toBe(
-      "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Gulzar-Regular.woff2",
+      "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Gulzar-Regular.woff2",
     );
     const visible = fonts.map(font => font.editorFamily);
     expect(visible).toContain("Gulzar");
