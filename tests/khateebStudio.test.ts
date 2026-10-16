@@ -371,7 +371,8 @@ describe("Khateeb Studio typography", () => {
   test("keeps Jameel on the studio body and Noto Nastaliq on headings only", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     const globals = readFileSync("app/globals.css", "utf8");
-    expect(studio).toContain("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2");
+    expect(globals).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2");
+    expect(studio).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq.woff2");
     expect(studio).toContain("khateeb-studio-ur");
     expect(studio).toContain(".khateeb-studio-ur h1");
     expect(studio).toContain("var(--font-nastaliq), var(--font-nastaliq-latin)");
