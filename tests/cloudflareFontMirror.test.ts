@@ -3,7 +3,7 @@ import worker from "../infra/cloudflare/public-font-mirror/src/index";
 import manifest from "../infra/cloudflare/migration-source-manifest.json";
 
 const hostname = "https://qalam-font-test.workers.dev";
-const fontKey = "fonts/Gulzar-Regular.woff2";
+const fontKey = "Gulzar-Regular.woff2";
 const validBytes = new Uint8Array([0x77,0x4f,0x46,0x32]);
 const env = () => {
   const get = vi.fn(async (_key:string) => ({
