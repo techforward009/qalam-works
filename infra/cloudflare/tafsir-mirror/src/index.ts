@@ -48,11 +48,28 @@ export default {
     if (!await authorized(request.headers.get("authorization"), env.AUTH_TOKEN)) return reply(401);
     const url = new URL(request.url);
     if (url.search || url.hash) return reply(404);
-    const key = ALLOWED_ARCHIVES[url.pathname];
+    // The private shard upload layout is: manifest-v1.json, ur/001.json.br,
+    // ... ur/114.json.br, en/001.json.br ... en/114.json.br.
+    // Keep the legacy two-archive endpoints solely for compatibility.
+    let key = ALLOWED_ARCHIVES[url.pathname];
+    let maxBytes = MAX_BYTES;
+    if (url.pathname === "/shards/manifest-v1.json") {
+      key = "manifest-v1.json";
+      maxBytes = 256 * 1024;
+    } else {
+      const matched = /^\\/shards\\/(ur|en)\\/([0-9]{3})\\.json\\.br$/.exec(url.pathname);
+      if (matched) {
+        const surah = Number(matched[2]);
+        if (surah >= 1 && surah <= 114) {
+          key = matched[1] + "/" + matched[2] + ".json.br";
+          maxBytes = 4 * 1024 * 1024;
+        }
+      }
+    }
     if (!key) return reply(404);
     const object = await env.TAFSIR_BUCKET.get(key);
     if (!object) return reply(404);
-    if (object.size > MAX_BYTES) return reply(502);
+    if (object.size > maxBytes) return reply(502);
     return new Response(object.body, {
       status: 200,
       headers: {
