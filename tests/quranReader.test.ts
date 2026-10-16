@@ -196,7 +196,7 @@ describe("Quran reader", () => {
     const source = readFileSync("app/quran/QuranTranslationPage.tsx", "utf8");
     expect(source).toContain("Qalam Quran Jameel");
     expect(source).toContain(
-      "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2",
+      "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2",
     );
     expect(source).toContain("lineHeight: ur ? 2.3 : 2");
   });
