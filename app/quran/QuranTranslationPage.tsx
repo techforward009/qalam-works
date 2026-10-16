@@ -72,7 +72,7 @@ export default function QuranTranslationPage({
         <style jsx global>{`
           @font-face {
             font-family: "Qalam Quran Jameel";
-            src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/jameel-noori-nastaleeq-400.woff2") format("woff2");
+            src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2") format("woff2");
             font-weight: 400;
             font-style: normal;
             font-display: swap;
