@@ -4,6 +4,7 @@ import {
   isPrivateJameelBlobHost,
   jameelLoadToPdfFace,
   loadJameelFromBlob,
+  loadJameelFromCloudflare,
   type JameelFontLoadResult,
 } from "../app/lib/privateJameelFont";
 import { buildPdfHtml, type PdfFontFace } from "../app/tools/document-studio/utils/buildPdfHtml";
@@ -185,5 +186,30 @@ describe("host classification", () => {
   it("distinguishes private and public blob hosts", () => {
     expect(isPrivateJameelBlobHost("abc.private.blob.vercel-storage.com")).toBe(true);
     expect(isPrivateJameelBlobHost("abc.blob.vercel-storage.com")).toBe(false);
+  });
+});
+
+describe("Cloudflare original Jameel PDF recovery", () => {
+  const safe = "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2";
+  it("does not forward Vercel Blob authorization to public Cloudflare Worker", async () => {
+    const request = vi.fn(async (_url: string, init?: RequestInit) => {
+      expect(init?.method).toBe("GET");
+      expect(init?.headers).toBeUndefined();
+      expect(init?.redirect).toBe("error");
+      return response(200);
+    });
+    const result = await loadJameelFromCloudflare(safe, request as unknown as typeof fetch);
+    expect(result.reason).toBe("integrity-failed");
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+  it("refuses lookalike hosts or changed filenames without network calls", async () => {
+    const request = vi.fn(async () => response(200));
+    for (const url of [
+      "https://evil.example.com/fonts/jameel-noori-nastaleeq-400.woff2",
+      safe+"?download=1",
+      "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq.woff2",
+      "http://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2",
+    ])expect((await loadJameelFromCloudflare(url,request as unknown as typeof fetch)).ok).toBe(false);
+    expect(request).not.toHaveBeenCalled();
   });
 });
