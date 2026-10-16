@@ -18,9 +18,9 @@ interface MirrorEnv {
 
 const ALLOWED_ARCHIVES: Record<string, string> = {
   "/archives/urdu-v10-reviewed-first20-20261015.json.br":
-    "archives/urdu-v10-reviewed-first20-20261015.json.br",
+    "urdu-v10-reviewed-first20-20261015.json.br",
   "/archives/english-v10-release-20261015.json.br":
-    "archives/english-v10-release-20261015.json.br",
+    "english-v10-release-20261015.json.br",
 };
 const MAX_BYTES = 16 * 1024 * 1024;
 const BASE_HEADERS = {
