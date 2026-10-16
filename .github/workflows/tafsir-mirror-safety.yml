@@ -19,6 +19,6 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Tafsir mirror auth and safety (no live blob)
-        run: npx vitest run tests/tafsirMirror.test.ts tests/tafsirR2Worker.test.ts tests/quranReaderUiFixes.test.ts
+        run: npx vitest run tests/tafsirMirror.test.ts tests/tafsirR2Worker.test.ts tests/tafsirShardsR2.test.ts tests/quranReaderUiFixes.test.ts
       - name: TypeScript
         run: npx tsc --noEmit
