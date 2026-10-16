@@ -41,7 +41,7 @@ jobs:
             grep -qiE '^access-control-allow-origin: *\\*' "$work/headers"
             test "$(stat -c '%s' "$work/$name")" -eq "$bytes"
             test "$(head -c 4 "$work/$name" | od -An -tx1 | tr -d ' \\n')" = "774f4632"
-            (cd "$work" && printf '%s  %s\\n' "$sha" "$name" | sha256sum --check --status)
+            (cd "$work" && printf '%s  %s\n' "$sha" "$name" | sha256sum --check --status)
             echo "PASS $name"
           done <<'FONT_SHA256'
             ddcce6d3bd7dd026f6a0035040e71da3ddac669a470336459dc08045a43dd7fe muhammadi-quranic-400.woff2 220136
