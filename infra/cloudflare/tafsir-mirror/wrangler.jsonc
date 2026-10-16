@@ -1,0 +1,12 @@
+{
+  "name": "qalam-tafsir-private-mirror",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "r2_buckets": [
+    {
+      "binding": "TAFSIR_BUCKET",
+      "bucket_name": "qalam-tafsir-private"
+    }
+  ]
+}
