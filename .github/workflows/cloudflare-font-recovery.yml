@@ -22,6 +22,8 @@ jobs:
         run: npx vitest run tests/cloudflareFontRecovery.test.ts tests/publicBlobFontCatalog.test.ts tests/jameelBlobAuth.test.ts tests/pdfFontReady.test.ts tests/fontRegistry.test.ts tests/quranReader.test.ts tests/cloudflareFontSourceRoutes.test.ts
       - name: TypeScript safety
         run: npx tsc --noEmit
+      - name: Confirm ten original remote fonts actually load in fresh Google Chrome
+        run: node scripts/verify-cloudflare-fonts-browser.mjs
   live-font-proof:
     runs-on: ubuntu-latest
     timeout-minutes: 8
