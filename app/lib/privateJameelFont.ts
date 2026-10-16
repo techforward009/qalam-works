@@ -162,7 +162,7 @@ export async function loadPrivateJameelWoff2(
     return { ok: true, buffer: buf, reason: "loaded-local" };
   }
 
-  const cloudflareUrl=config?.cloudflareUrl ?? process.env.QALAM_JAMEEL_FONT_MIRROR_URL;
+  const cloudflareUrl=config?.cloudflareUrl ?? process.env.QALAM_JAMEEL_FONT_MIRROR_URL ?? "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2";
   if (cloudflareUrl) {
     const mirrored=await loadJameelFromCloudflare(cloudflareUrl,config?.fetchImpl);
     // Do not silently swap identity after an integrity failure.
