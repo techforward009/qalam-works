@@ -26,7 +26,7 @@ describe("Tafsir V10 independent mirror (no real network)", () => {
   });
 
   it("separately selects English without requesting Urdu", async () => {
-    const mock = vi.fn(async () => new Response(new Uint8Array([5])));
+    const mock = vi.fn(async (_url: RequestInfo | URL) => new Response(new Uint8Array([5])));
     expect(await readTafsirMirror("en", {urUrl,enUrl}, mock as typeof fetch)).toEqual(Buffer.from([5]));
     expect(mock.mock.calls[0][0]).toBe(enUrl);
   });
