@@ -78,7 +78,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
   }
   return <section data-testid="knowledge-assistant" className="knowledge-assistant rounded-xl border border-emerald-900/20 bg-[#f7f5ef] p-4 text-gray-800 dark:bg-[#0e1c15] dark:text-white sm:p-6" dir={ur ? "rtl" : "ltr"}>
     <style>{`
-      @font-face { font-family: "Nafees Nastaleeq"; src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/NafeesNastaleeq.woff2") format("woff2"); font-display: swap; }
+      @font-face { font-family: "Nafees Nastaleeq"; src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq.woff2") format("woff2"); font-display: swap; }
       .knowledge-assistant[dir="rtl"] { font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif; }
       .knowledge-assistant button, .knowledge-assistant input, .knowledge-assistant textarea, .knowledge-assistant select { font-family: inherit; }
       .knowledge-assistant .khateeb-book-ur { font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif !important; font-size: 1.16rem; line-height: 2.25; }
