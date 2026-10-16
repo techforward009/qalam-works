@@ -72,6 +72,27 @@ describe("Cloudflare owner-authorized original font Worker", () => {
       vi.unstubAllGlobals();
     }
   });
+  it("ignores malformed edge-cache metadata and reloads approved R2 font", async () => {
+    const cache = {
+      match: vi.fn(async () => new Response("wrong", {
+        status: 200,
+        headers: { "Content-Type": "text/html", "Content-Length": "5" },
+      })),
+      put: vi.fn(async () => {}),
+    };
+    vi.stubGlobal("caches", { default: cache });
+    try {
+      const context = env();
+      const response = await worker.fetch(req("/fonts/Gulzar-Regular.woff2"), context);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Content-Type")).toBe("font/woff2");
+      expect(response.headers.get("Content-Length")).toBe(String(ALL_TEN["Gulzar-Regular.woff2"]));
+      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(1);
+      expect(cache.put).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it("still serves verified originals if edge cache throws", async () => {
     vi.stubGlobal("caches", { default: {
       match: vi.fn(async () => { throw Error("cache unavailable"); }),
