@@ -19,6 +19,6 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Test original font serving and license gates
-        run: npx vitest run tests/cloudflareFontRecovery.test.ts tests/publicBlobFontCatalog.test.ts tests/jameelBlobAuth.test.ts tests/pdfFontReady.test.ts tests/fontRegistry.test.ts tests/quranReader.test.ts
+        run: npx vitest run tests/cloudflareFontRecovery.test.ts tests/publicBlobFontCatalog.test.ts tests/jameelBlobAuth.test.ts tests/pdfFontReady.test.ts tests/fontRegistry.test.ts tests/quranReader.test.ts tests/khateebStudio.test.ts
       - name: TypeScript safety
         run: npx tsc --noEmit
