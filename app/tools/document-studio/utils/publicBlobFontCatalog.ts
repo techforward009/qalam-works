@@ -37,7 +37,7 @@ export function getPublicBlobFontFamily(id: string): PublicBlobFontFamily | unde
 export const PUBLIC_BLOB_FONT_BASE_URL = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com";
 export const QALAM_OFL_FONT_MIRROR_BASE_URL =
   "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts";
-const LOCALLY_HOSTED_FONT_FILES = new Set(["DigitalKhattIndoPakRegular.woff2"]); 
+const LOCALLY_HOSTED_FONT_FILES = new Set(["DigitalKhattIndoPakRegular.woff2"]);
 const R2_MIRRORED_FONT_FILES = new Set([
   "Alvi_Nastaleeq.woff2",
   "Gulzar-Regular.woff2",
