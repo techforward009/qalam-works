@@ -1,51 +1,60 @@
-# Cloudflare font recovery — owner handoff
+# Qalam Works — Cloudflare original font recovery
 
-**Separate from the working Tafsir service. Never edit the Tafsir Worker.**
-No production deployment, Cloudflare Worker publication, or paid-tier change has
-been performed by these source changes.
+The owner confirms authorization to distribute the **unmodified original font
+binaries** uploaded to the private R2 bucket. This file records that owner
+attestation; it does not independently determine the scope of external licenses.
+No font has been renamed, substituted, or committed to the public repository.
 
-## Required existing R2 source
-- Private bucket: `qalam-fonts-private` (the owner uploaded 10 original WOFF2 files).
-- Bucket public access must remain **disabled**.
-- R2 object names are exact, at the root of the private bucket.
-- Do not commit the binaries to Git, rename the files or silently substitute.
-- The old DigitalKhattIndoPakRegular and several other missing Blob fonts are
-  NOT in these ten uploads. Do not claim full PDF font recovery.
+## One-time setup
 
-## Minimal owner Cloudflare steps (only after verifying redistribution permissions)
+- Existing R2 bucket: `qalam-fonts-private`, with Public Access **disabled**.
+- Create a **separate** Cloudflare Worker with exact name
+  `qalam-fonts-private-mirror`. Do not edit `qalam-tafsir-private-mirror`.
+- Worker Settings -> Bindings -> R2 bucket:
+  `FONT_BUCKET` -> `qalam-fonts-private`.
+- Worker Edit Code: paste the entire `index.js` from this directory,
+  replacing Hello World; Deploy.
+- No authorization header, payment plan change, release flags, environment
+  secrets or R2 public bucket toggle are needed for this browser-font gateway.
+- Confirm exact original names, MIME type and browser cross-origin permission.
 
-1. Workers & Pages → Create → Worker → Hello World. Set name to
-   `qalam-fonts-private-mirror` and deploy initial empty Worker.
-2. Settings → Bindings → Add → R2 bucket: variable name `FONT_BUCKET`,
-   bucket name `qalam-fonts-private`. Save/deploy.
-3. Edit code, replace Hello World with `infra/cloudflare/font-mirror/index.js`,
-   deploy. Without publication flags, it responds **403** to known filenames.
-4. Settings → Variables → add **Text** `OFL_PUBLICATION_APPROVED=true`
-   after OFL copyright and license notices are available to users. Do NOT
-   enable `RESTRICTED_DISTRIBUTION_APPROVED` unless the owner confirms the
-   required redistribution rights for each named font (Alvi and Nafees have
-   restrictive licenses; Muhammadi/Jameel are not clearly redistribution-licensed).
-5. Worker public GET checks (no secrets required):
-   `/fonts/Gulzar-Regular.woff2` (200 and font/woff2)
-   `/fonts/Sahel.woff2` (200 and font/woff2)
-   `/fonts/ScheherazadeNew-Medium.woff2` (200 and font/woff2)
-   `/fonts/Alvi_Nastaleeq.woff2` (403 pending verified rights)
-   Missing names (404).
-6. Validate correct CORS, fresh browser fonts and rendering in a protected
-   Qalam Preview. Only after explicit owner sign-off merge/deploy to Production.
+## Exact verified owner-uploaded names
 
-## Three redistributable font notices
-Gulzar: Copyright 2021 The Gulzar Project Authors
-(http://github.com/googlefonts/gulzar/).
-Sahel: Copyright 2016 Saber Rastikerdar, based on DejaVu, Open Sans portions
-under Apache License 2.0.
-Scheherazade New: Copyright (c) 1994-2026 SIL Global, Reserved Font Names
-"Scheherazade" and "SIL".
+```
+AlFars9Badr.woff2
+Alvi_Nastaleeq.woff2
+BNazanin.woff2
+Gulzar-Regular.woff2
+NafeesNastaleeq-Web.woff2
+NafeesNastaleeq.woff2
+Sahel.woff2
+ScheherazadeNew-Medium.woff2
+jameel-noori-nastaleeq-400.woff2
+muhammadi-quranic-400.woff2
+```
 
-All three have embedded SIL Open Font License version 1.1 references. Keep
-the full license alongside the distributed files:
-https://openfontlicense.org/open-font-license-official-text/
+Their verified original sizes are pinned in `index.js`; the identity hashes
+were verified against the owner's recovery archive in the prior preparation
+stage. The Worker reads the exact original bytes from R2 and never edits them.
 
-## Exact future source identities
-Refer to the owner-verified `Qalam_Cloudflare_R2_Upload_Ready_Verified_20261016.zip`
-(private Library archive), and never use newer similar-named fonts as substitutes.
+## Test before releasing Qalam Works
+
+1. `https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/muhammadi-quranic-400.woff2` — should return 200 font/woff2.
+2. `.../fonts/jameel-noori-nastaleeq-400.woff2` — same.
+3. `.../fonts/NafeesNastaleeq.woff2` — same.
+4. `.../fonts/Alvi_Nastaleeq.woff2` — same.
+5. `.../fonts/Gulzar-Regular.woff2` — same.
+6. `.../shards/ur/001.json.br` — must return 404, NOT tafsir bytes.
+
+Then test protected Qalam Preview in a fresh browser, verify actual fonts are
+painted rather than fallbacks, and verify Urdu, English, Arabic and Quran
+typography. PDF must still independently validate requested font identity,
+Unicode and glyph embedding; missing locked DigitalKhattIndoPakRegular is not
+in the ten uploaded originals and must not be silently replaced.
+
+## Staging status
+
+Source code prepared in a **draft review** only. No Cloudflare Worker for
+fonts created by the assistant, no actual R2 web-serving endpoint verified,
+no main merge, no production deployment. Owner approval for production
+deployment is separate.
