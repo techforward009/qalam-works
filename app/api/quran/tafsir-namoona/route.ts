@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { brotliDecompressSync } from "node:zlib";
 import { NextResponse } from "next/server";
 import { indexTafsirCoverage, tafsirCoverageForRefs } from "../../../quran/reader/tafsirVerseCoverage";
+import { readTafsirMirror, tafsirMirrorConfig } from "./tafsirMirror";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,7 +69,14 @@ function checkHash(bytes: Buffer, expected: string): void {
   }
 }
 async function loadV10(language: Language): Promise<CorpusV10 | null> {
-  const file = await loadResearchBlob(RELEASE[language].path);
+  // A configured independent mirror takes precedence. The existing private Blob
+  // store remains the default until the owner explicitly configures a mirror.
+  // In both cases the same SHA-256 check below protects source fidelity.
+  const mirror = tafsirMirrorConfig();
+  const mirrorConfigured = Boolean(language === "ur" ? mirror.urUrl : mirror.enUrl);
+  const file = mirrorConfigured
+    ? await readTafsirMirror(language, mirror)
+    : await loadResearchBlob(RELEASE[language].path);
   if (!file) return null;
   checkHash(file, RELEASE[language].digest);
   const corpus = JSON.parse(brotliDecompressSync(file).toString("utf8")) as CorpusV10;
