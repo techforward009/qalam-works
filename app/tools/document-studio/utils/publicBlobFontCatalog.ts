@@ -37,6 +37,7 @@ export function getPublicBlobFontFamily(id: string): PublicBlobFontFamily | unde
 export const PUBLIC_BLOB_FONT_BASE_URL = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com";
 export const QALAM_OFL_FONT_MIRROR_BASE_URL =
   "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts";
+const LOCALLY_HOSTED_FONT_FILES = new Set(["DigitalKhattIndoPakRegular.woff2"]); 
 const R2_MIRRORED_FONT_FILES = new Set([
   "Alvi_Nastaleeq.woff2",
   "Gulzar-Regular.woff2",
@@ -51,6 +52,7 @@ export function publicBlobFontUrl(filename: string): string {
   if (!PUBLIC_BLOB_FONT_FILES.includes(filename)) {
     throw new Error("Unapproved Document Studio font asset");
   }
+  if (LOCALLY_HOSTED_FONT_FILES.has(filename)) return `/fonts/${encodeURIComponent(filename)}`;
   const origin = R2_MIRRORED_FONT_FILES.has(filename)
     ? QALAM_OFL_FONT_MIRROR_BASE_URL
     : PUBLIC_BLOB_FONT_BASE_URL;
@@ -61,7 +63,9 @@ export function isApprovedPublicBlobFontUrl(url: string): boolean {
     const parsed = new URL(url);
     if (parsed.search !== "" || parsed.hash !== "" || parsed.username || parsed.password) return false;
     const filename = decodeURIComponent(parsed.pathname.split("/").pop() ?? "");
-    return PUBLIC_BLOB_FONT_FILES.includes(filename) && parsed.href === publicBlobFontUrl(filename);
+    const expected = publicBlobFontUrl(filename);
+    return PUBLIC_BLOB_FONT_FILES.includes(filename) &&
+      (expected.startsWith("/") ? parsed.pathname === expected && parsed.origin === new URL(url).origin : parsed.href === expected);
   } catch {
     return false;
   }
