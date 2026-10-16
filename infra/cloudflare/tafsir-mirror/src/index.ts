@@ -57,7 +57,7 @@ export default {
       key = "manifest-v1.json";
       maxBytes = 256 * 1024;
     } else {
-      const matched = /^\\/shards\\/(ur|en)\\/([0-9]{3})\\.json\\.br$/.exec(url.pathname);
+      const matched = /^\/shards\/(ur|en)\/([0-9]{3})\.json\.br$/.exec(url.pathname);
       if (matched) {
         const surah = Number(matched[2]);
         if (surah >= 1 && surah <= 114) {
