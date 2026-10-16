@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { brotliDecompressSync } from "node:zlib";
 import { NextResponse } from "next/server";
 import { indexTafsirCoverage, tafsirCoverageForRefs } from "../../../quran/reader/tafsirVerseCoverage";
+import { readTafsirMirror, tafsirMirrorConfig } from "./tafsirMirror";
+import { loadTafsirSurahShards } from "./tafsirShardLoader";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,7 +70,14 @@ function checkHash(bytes: Buffer, expected: string): void {
   }
 }
 async function loadV10(language: Language): Promise<CorpusV10 | null> {
-  const file = await loadResearchBlob(RELEASE[language].path);
+  // A configured independent mirror takes precedence. The existing private Blob
+  // store remains the default until the owner explicitly configures a mirror.
+  // In both cases the same SHA-256 check below protects source fidelity.
+  const mirror = tafsirMirrorConfig();
+  const mirrorConfigured = Boolean(language === "ur" ? mirror.urUrl : mirror.enUrl);
+  const file = mirrorConfigured
+    ? await readTafsirMirror(language, mirror)
+    : await loadResearchBlob(RELEASE[language].path);
   if (!file) return null;
   checkHash(file, RELEASE[language].digest);
   const corpus = JSON.parse(brotliDecompressSync(file).toString("utf8")) as CorpusV10;
@@ -122,8 +131,32 @@ export async function GET(request: Request) {
   try {
     const key = `${surah}:${ayah}`;
     if (useV10) {
-      if (!v10Cache.has(language)) v10Cache.set(language, loadV10(language));
-      const corpus = await v10Cache.get(language)!;
+      const pageVerseParam = query.get("verses");
+      const shardBase = process.env.QALAM_TAFSIR_V10_SHARDS_BASE_URL?.trim();
+      // In shard mode, validate page request BEFORE R2 download. A Quran page
+      // can cross two surahs; both source units must remain available.
+      const requestedPageKeys = pageVerseParam?.split(",").map((value) => value.trim()) ?? [key];
+      if (shardBase && (requestedPageKeys.length > 80 || requestedPageKeys.length === 0 ||
+          new Set(requestedPageKeys).size !== requestedPageKeys.length ||
+          !requestedPageKeys.includes(key) ||
+          requestedPageKeys.some(v=> !/^[0-9]{1,3}:[0-9]{1,3}$/.test(v)))) {
+        return NextResponse.json({ error: "Invalid Quran page ayah selection" }, { status: 400 });
+      }
+      const requiredSurahs = [...new Set(requestedPageKeys.map(v=>Number(v.split(":")[0])))];
+      if (shardBase && (requiredSurahs.length > 3 ||
+        requiredSurahs.some(n=>!Number.isInteger(n)||n<1||n>114))) {
+        return NextResponse.json({ error: "Invalid Quran page ayah selection" }, { status: 400 });
+      }
+      let corpus: CorpusV10 | null;
+      if (shardBase) {
+        corpus = await loadTafsirSurahShards(language, requiredSurahs, {
+          baseUrl:shardBase,
+          bearerToken:process.env.QALAM_TAFSIR_V10_MIRROR_BEARER_TOKEN?.trim(),
+        });
+      } else {
+        if (!v10Cache.has(language)) v10Cache.set(language, loadV10(language));
+        corpus = await v10Cache.get(language)!;
+      }
       if (!corpus) {
         v10Cache.delete(language);
         return NextResponse.json({ status: "corpus_not_uploaded" }, { status: 503 });
@@ -131,7 +164,6 @@ export async function GET(request: Request) {
       // Quran page mode: retrieve every distinct tafsir source unit for the
       // actual page ayahs, not just the ayah used to navigate to that page.
       // The book remains private and is read using the same verified corpus.
-      const pageVerseParam = query.get("verses");
       if (pageVerseParam !== null) {
         const pageKeys = pageVerseParam.split(",").map((value) => value.trim());
         if (!pageKeys.length || pageKeys.length > 80 || new Set(pageKeys).size !== pageKeys.length ||

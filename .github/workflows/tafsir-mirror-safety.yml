@@ -1,0 +1,24 @@
+name: Tafsir Independent Mirror Safety — No Deployment
+on:
+  push:
+    branches: [hotfix/tafsir-independent-mirror-20261016]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-mirror-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Tafsir mirror auth and safety (no live blob)
+        run: npx vitest run tests/tafsirMirror.test.ts tests/tafsirR2Worker.test.ts tests/tafsirShardsR2.test.ts tests/quranReaderUiFixes.test.ts
+      - name: TypeScript
+        run: npx tsc --noEmit

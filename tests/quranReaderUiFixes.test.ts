@@ -245,7 +245,9 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(route).toContain('import { getVercelOidcToken } from "@vercel/oidc"');
     expect(route).toContain('QALAM_RESEARCH_STORE_ID');
     expect(route).toContain('oidcToken, useCache: false');
-    expect(route).toContain('const file = await loadResearchBlob(RELEASE[language].path)');
+    expect(route).toContain('const mirrorConfigured = Boolean(language === "ur" ? mirror.urUrl : mirror.enUrl)');
+    expect(route).toContain('? await readTafsirMirror(language, mirror)');
+    expect(route).toContain(': await loadResearchBlob(RELEASE[language].path)');
     expect(route).toContain('const file = await loadBlob([');
     expect(route).toContain('"qalam/tafsir-namoona/urdu-v9.json.br"');
     expect(route).toContain('checkHash(file, RELEASE[language].digest)');
@@ -259,7 +261,9 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(route).toContain('"6e08e6952e33a452f7f644c6462cdad3d8250741ef7f1445c3ae5d37becaed59"');
     expect(route).toContain('"qalam/tafsir-namoona/urdu-v9.json.br"');
     expect(route).toContain('checkHash(file, RELEASE[language].digest)');
-    expect(route).toContain('const file = await loadResearchBlob(RELEASE[language].path)');
+    expect(route).toContain('const mirrorConfigured = Boolean(language === "ur" ? mirror.urUrl : mirror.enUrl)');
+    expect(route).toContain('? await readTafsirMirror(language, mirror)');
+    expect(route).toContain(': await loadResearchBlob(RELEASE[language].path)');
   });
 
   it("removes the outdated Tafsir publisher message but does not manufacture source text", () => {
