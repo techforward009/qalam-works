@@ -17,15 +17,16 @@ jobs:
     env:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
+      ACCEPTANCE_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Verify exact baseline ancestry
+      - name: Verify acceptance base ancestry
         shell: bash
         run: |
-          git cat-file -e f2993ca39556788e3fe7f4d100a9e3c1de913ea4^{commit}
-          git merge-base --is-ancestor f2993ca39556788e3fe7f4d100a9e3c1de913ea4 HEAD
+          git cat-file -e "${ACCEPTANCE_BASE_SHA}^{commit}"
+          git merge-base --is-ancestor "$ACCEPTANCE_BASE_SHA" HEAD
           git rev-parse HEAD
       - uses: actions/setup-node@v4
         with:
