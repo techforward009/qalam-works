@@ -6,7 +6,7 @@
  * Distribution must also include the applicable OFL copyright/license notices.
  * Restricted or unverified Muhammadi, Jameel, Nafees and Alvi are NOT served.
  *
- * Upload exact verified assets to a PRIVATE R2 bucket at fonts/<filename>.
+ * Upload exact verified assets to the ROOT of the PRIVATE R2 bucket, as <filename>.
  * Bind the private bucket to this Worker; do not enable r2.dev.
  */
 type R2FontObject = {
@@ -19,9 +19,9 @@ interface Env {
   PUBLICATION_APPROVED?: string;
 }
 const FONTS: Record<string, {key: string; size: number}> = {
-  "Gulzar-Regular.woff2": {key: "fonts/Gulzar-Regular.woff2", size:237008},
-  "Sahel.woff2": {key: "fonts/Sahel.woff2", size:35460},
-  "ScheherazadeNew-Medium.woff2": {key: "fonts/ScheherazadeNew-Medium.woff2", size:147916},
+  "Gulzar-Regular.woff2": {key: "Gulzar-Regular.woff2", size:237008},
+  "Sahel.woff2": {key: "Sahel.woff2", size:35460},
+  "ScheherazadeNew-Medium.woff2": {key: "ScheherazadeNew-Medium.woff2", size:147916},
 };
 const HEADERS: Record<string,string> = {
   "X-Content-Type-Options": "nosniff",
