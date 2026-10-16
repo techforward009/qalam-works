@@ -16,9 +16,13 @@ describe("Document Studio public Blob font catalogue", () => {
     expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(16);
   });
 
-  test("maps Gulzar to the user-supplied Vercel Blob font and retains Faiz only for legacy documents", () => {
+  test("maps rights-cleared OFL fonts to Cloudflare and retains legacy families", () => {
     expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "gulzar")?.regular).toBe("Gulzar-Regular.woff2");
-    expect(publicBlobFontUrl("Gulzar-Regular.woff2")).toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Gulzar-Regular.woff2");
+    expect(publicBlobFontUrl("Gulzar-Regular.woff2")).toBe("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Gulzar-Regular.woff2");
+    expect(publicBlobFontUrl("Sahel.woff2")).toContain(".workers.dev/fonts/Sahel.woff2");
+    expect(publicBlobFontUrl("ScheherazadeNew-Medium.woff2")).toContain(".workers.dev/fonts/ScheherazadeNew-Medium.woff2");
+    expect(publicBlobFontUrl("NafeesNastaleeq.woff2")).toContain(".blob.vercel-storage.com/");
+    expect(isApprovedPublicBlobFontUrl("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Gulzar-Regular.woff2")).toBe(false);
     expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "faiz-lahori")?.regular).toBe("Faiz-Lahori-Web.woff2");
   });
 
