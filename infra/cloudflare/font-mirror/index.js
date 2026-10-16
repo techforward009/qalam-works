@@ -41,7 +41,10 @@ export default {
       if (edgeCache) {
         try {
           const hit = await edgeCache.match(cacheKey);
-          if (hit) {
+          // Do not trust a stale or malformed edge-cache entry.
+          if (hit && hit.status === 200 &&
+              hit.headers.get("Content-Type") === "font/woff2" &&
+              Number(hit.headers.get("Content-Length")) === FONT_FILES[filename]) {
             return request.method === "HEAD"
               ? new Response(null, { status: 200, headers: hit.headers })
               : hit;
