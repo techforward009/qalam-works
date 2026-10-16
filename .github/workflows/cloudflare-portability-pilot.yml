@@ -30,8 +30,10 @@ jobs:
         continue-on-error: true
         timeout-minutes: 7
         run: |
+          set +e
           npx --yes vinext@1.2.0 check > vinext-readiness-log.txt 2>&1
           code=$?
+          set -e
           cat vinext-readiness-log.txt
           echo "vinext check exit=$code"
           exit "$code"
