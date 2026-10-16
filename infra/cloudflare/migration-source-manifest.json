@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "purpose": "Disaster recovery source inventory only. This does not grant redistribution rights or deploy anything.",
+  "tafsir": [
+    {
+      "path": "urdu-v10-reviewed-first20-20261015.json.br",
+      "size": 6079488,
+      "sha256": "119f8e96988a317df531a21ac8f271447e7c3a856f1ab11bac57cf5fb8a45c38",
+      "visibility": "private"
+    },
+    {
+      "path": "english-v10-release-20261015.json.br",
+      "size": 4595680,
+      "sha256": "6e08e6952e33a452f7f644c6462cdad3d8250741ef7f1445c3ae5d37becaed59",
+      "visibility": "private"
+    }
+  ],
+  "fonts": [
+    {
+      "path": "muhammadi-quranic-400.woff2",
+      "size": 220136,
+      "sha256": "ddcce6d3bd7dd026f6a0035040e71da3ddac669a470336459dc08045a43dd7fe",
+      "publication": "rights-review"
+    },
+    {
+      "path": "jameel-noori-nastaleeq-400.woff2",
+      "size": 5554728,
+      "sha256": "d12978f4398f1f788d65fa7ccb872cf0e1c43aef89166816243e94487d9cee27",
+      "publication": "rights-review"
+    },
+    {
+      "path": "NafeesNastaleeq.woff2",
+      "size": 129624,
+      "sha256": "7e83325ff08842b011d6d70060ea055a992318e1cc5997bd66ccf1e13e35aac0",
+      "publication": "rights-review"
+    },
+    {
+      "path": "NafeesNastaleeq-Web.woff2",
+      "size": 23692,
+      "sha256": "3b2219947cbd4704b4534198005f8e3818182ded24cac774c1fa0f625a955f82",
+      "publication": "rights-review"
+    },
+    {
+      "path": "Alvi_Nastaleeq.woff2",
+      "size": 5228460,
+      "sha256": "0e60d92fbf7a86dad972b7e75dfbb85dd94ffe3ee8fbba0c14115fc977efb466",
+      "publication": "rights-review"
+    },
+    {
+      "path": "Gulzar-Regular.woff2",
+      "localFilename": "Gulzar-Regular(1).woff2",
+      "size": 237008,
+      "sha256": "cf6b33bd971d65eef3eedafcae62ee8e88bdfe30ef6a23f9ab627a2f24e376d6",
+      "publication": "ofl-license-review"
+    },
+    {
+      "path": "Sahel.woff2",
+      "size": 35460,
+      "sha256": "25e4a066c637948e01e12b7c8bf9e13afa188fad6949affedc6ddf2d307b31b0",
+      "publication": "ofl-license-review"
+    },
+    {
+      "path": "ScheherazadeNew-Medium.woff2",
+      "size": 147916,
+      "sha256": "67c5c24a178e7e3e1c1c6ca7095448e70da6f882bf7f41783a8085e7ba87269e",
+      "publication": "ofl-license-review"
+    },
+    {
+      "path": "BNazanin.woff2",
+      "size": 20076,
+      "sha256": "2e9bfe82c0e631244e5729408fee76778b04edc716bed9da054c7c286de6f368",
+      "publication": "rights-review"
+    },
+    {
+      "path": "AlFars9Badr.woff2",
+      "size": 30340,
+      "sha256": "c9e108d6c962ef2f18b7b939f7a5ebf74ce65192a85249cb571554c18f3e9ab8",
+      "publication": "rights-review"
+    }
+  ]
+}
