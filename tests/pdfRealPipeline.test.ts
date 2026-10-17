@@ -197,7 +197,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     const doc = { type: "doc", content: [{ type: "paragraph", attrs: { dir: "ltr" }, content: [{ type: "text", text: "W".repeat(500) }] }] };
     const response = await POST(new NextRequest("http://localhost/api/export-pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc, dir: "ltr", settings }) }));
     expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toMatchObject({ error: expect.stringContaining("printable horizontal boundary") });
+    await expect(response.json()).resolves.toMatchObject({ diagnostics: [expect.objectContaining({ code: "PDF_LAYOUT_OVERFLOW" })] });
   }, 120000);
 
   it("uses the same translation for final paint and diagnostics across alignment and direction", async () => {
@@ -300,10 +300,10 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     await supported.response.arrayBuffer();
     const tooMany = await request("performance-line-guard", 301);
     expect(tooMany.response.status).toBe(500);
-    await expect(tooMany.response.json()).resolves.toMatchObject({ error: expect.stringContaining("300 visual-line limit") });
+    await expect(tooMany.response.json()).resolves.toMatchObject({ diagnostics: [expect.objectContaining({ code: "PDF_LIMIT_VISUAL_LINES" })] });
     const tooTall = await request("performance-height-guard", 300, 72);
     expect(tooTall.response.status).toBe(500);
-    await expect(tooTall.response.json()).resolves.toMatchObject({ error: expect.stringContaining("40000px staging limit") });
+    await expect(tooTall.response.json()).resolves.toMatchObject({ diagnostics: [expect.objectContaining({ code: "PDF_LIMIT_STAGING_HEIGHT" })] });
   }, 240000);
 
   it("rejects pathological source complexity before browser or screenshot work", async () => {
@@ -325,11 +325,11 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc: byteHeavyDoc, dir: "rtl", settings: defaultDocumentSettings() }),
     }));
     expect(byteResponse.status).toBe(500);
-    await expect(byteResponse.json()).resolves.toMatchObject({ error: expect.stringContaining("98304-byte limit") });
+    await expect(byteResponse.json()).resolves.toMatchObject({ diagnostics: [expect.objectContaining({ code: "PDF_LIMIT_SOURCE_BYTES" })] });
     expect(browserLaunchCount).toBe(byteLaunchesBefore);
     expect(screenshotCount).toBe(byteScreenshotsBefore);
     await expect((await request("source-single-node-guard", "x".repeat(20_001))).json())
-      .resolves.toMatchObject({ error: expect.stringContaining("20000 code-point single-text-node limit") });
+      .resolves.toMatchObject({ diagnostics: [expect.objectContaining({ code: "PDF_LIMIT_NODE_CODEPOINTS" })] });
     const depth = 3_000;
     const nestedDoc = `${'{"type":"container","content":['.repeat(depth)}{"type":"text","text":"x"}${']}'.repeat(depth)}`;
     const launchesBefore = browserLaunchCount, screenshotsBefore = screenshotCount;
@@ -338,7 +338,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
       body: `{"doc":${nestedDoc},"dir":"ltr"}`,
     }));
     expect(nestedResponse.status).toBe(500);
-    await expect(nestedResponse.json()).resolves.toMatchObject({ error: expect.stringContaining("2500-node limit") });
+    await expect(nestedResponse.json()).resolves.toMatchObject({ diagnostics: [expect.objectContaining({ code: "PDF_LIMIT_NODE_COUNT" })] });
     expect(browserLaunchCount).toBe(launchesBefore);
     expect(screenshotCount).toBe(screenshotsBefore);
     currentCase = "source-wide-node-guard";
@@ -349,7 +349,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
       body: JSON.stringify({ doc: wideDoc, dir: "ltr" }),
     }));
     expect(wideResponse.status).toBe(500);
-    await expect(wideResponse.json()).resolves.toMatchObject({ error: expect.stringContaining("2500-node limit") });
+    await expect(wideResponse.json()).resolves.toMatchObject({ diagnostics: [expect.objectContaining({ code: "PDF_LIMIT_NODE_COUNT" })] });
     expect(browserLaunchCount).toBe(wideLaunchesBefore);
     expect(screenshotCount).toBe(wideScreenshotsBefore);
   });

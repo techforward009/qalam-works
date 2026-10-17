@@ -1,0 +1,53 @@
+name: Document Studio PDF Diagnostics (No Deployment)
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/pdf-export-guided-diagnostics]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Diagnostic and PDF safety tests
+        run: |
+          export QALAM_PDF_CHROMIUM="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium";process.stdout.write(await chromium.executablePath())')"
+          npx vitest run tests/pdfExportDiagnostics.test.ts tests/pdfPhase1eScriptAware.test.ts --reporter=verbose
+      - name: Existing PDF regression suite
+        shell: bash
+        run: |
+          export QALAM_PDF_CHROMIUM="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')"
+          mapfile -t pdf_specs < <(find tests -type f \( -iname '*pdf*.test.ts' -o -iname '*pdf*.test.tsx' \))
+          npx vitest run "${pdf_specs[@]}" --reporter=verbose
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Production build without deployment
+        run: npm run build
+      - name: Guided repair browser screenshots and retry
+        run: |
+          npx playwright install --with-deps chromium
+          mkdir -p artifacts/pdf-diagnostics
+          npx playwright test tests/e2e/pdfGuidedRepair.spec.ts --project=desktop-chrome --reporter=line
+      - name: Diff checks
+        run: git diff --check
+      - name: Evidence note
+        if: always()
+        run: |
+          mkdir -p artifacts/pdf-diagnostics
+          echo "Draft diagnostics implementation; do not merge or deploy without review." > artifacts/pdf-diagnostics/README.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pdf-export-diagnostics-review
+          path: artifacts/pdf-diagnostics/
