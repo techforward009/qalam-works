@@ -485,10 +485,17 @@ function buildSession(spec: Spec, index: number): MajlisSeriesSession {
     blocks,
     quran: spec.quran.map(([surah, ayah]) => ({surah, ayah})),
     hadithId: spec.hadith,
-    scholarSources: spec.sources.map(source => ({
+    additionalHadithIds: index===2 ? ["ghaflah-baqir-salat"] : index===3 ? ["ghaflah-ali-taghaful"] : [],
+    scholarSources: [
+      ...spec.sources.map(source => ({
       label: { ur: source.labelUr, en: source.labelEn },
       url: source.url,
-    })),
+      })),
+      ...(index===2 || index===3 ? [{
+        label: { ur: index===2 ? "میزان الحکمہ — نماز اور غفلت" : "میزان الحکمہ — اخلاقی تغافل", en: "Mizan al-Hikmah — Negligence" },
+        url: "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence"
+      }] : []),
+    ],
     question: {ur: spec.question, en: EN_QUESTIONS[index]},
     example: {ur: spec.example, en: EN_EXAMPLES[index]},
     action: {ur: spec.action, en: EN_ACTIONS[index]},

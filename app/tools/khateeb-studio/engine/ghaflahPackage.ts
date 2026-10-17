@@ -362,6 +362,30 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
       "explanationUr": "اختتام خوف اور امید کے توازن کے ساتھ: آج ایک قابلِ عمل تبدیلی طے کرو۔",
       "explanationEn": "Awaken, slow your haste, prepare yourself, remain alert and remember the grave toward which you travel.",
       "sourceUrl": "https://al-islam.org/ghurar-al-hikam-wa-durar-al-kalim-exalted-aphorisms-and-pearls-speech/negligence"
+    },
+    {
+      "id": "ghaflah-baqir-salat",
+      "kind": "hadith",
+      "refUr": "امام محمد باقرؑ — وقت پر نماز",
+      "refEn": "Imam al-Baqir — timely prayer",
+      "sourceArabicMarked": "أيّما مُؤمِنٍ حافَظَ علَى الصَّلواتِ المَفروضَةِ فَصَلاّها لِوَقتِها فَلَيسَ هذا مِن الغافِلينَ.",
+      "sourceRefUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۰؛ اس میں الکافی، جلد ۳، صفحہ ۲۷۰، حدیث ۱۴ کا حوالہ درج ہے۔",
+      "sourceRefEn": "Mizan al-Hikmah, Negligence, entry 10; cites al-Kafi, vol. 3, p. 270, no. 14.",
+      "explanationUr": "یہ بیان نماز کے وقت اور فرض کی پابندی کو غفلت کے مقابلے میں ایک عملی معیار بناتا ہے۔ شرعی صحت اور حضورِ قلب کے تمام احکام اس مختصر عبارت سے اخذ نہ کیے جائیں۔",
+      "explanationEn": "Prayer at its appointed time is a practical sign of care; distinguish it from separate questions of legal validity and inward devotion.",
+      "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence"
+    },
+    {
+      "id": "ghaflah-ali-taghaful",
+      "kind": "hadith",
+      "refUr": "امیرالمؤمنین علیؑ — تغافل اور درگزر",
+      "refEn": "Imam Ali — ethical overlooking",
+      "sourceArabicMarked": "إنَّ العاقِلَ نِصفُهُ احتِمالٌ، ونِصفُهُ تَغافُلٌ.",
+      "sourceRefUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۷؛ غرر الحکم، حدیث ۲۳۷۸ کا حوالہ۔",
+      "sourceRefEn": "Mizan al-Hikmah, Negligence, entry 17; cites Ghurar al-Hikam no. 2378.",
+      "explanationUr": "«تغافل» کسی کی معمولی خطا سے دانستہ چشم پوشی ہے۔ اسے ظلم، استحصال، بدعنوانی یا کسی کے حق کو دبانے کی اجازت نہ سمجھا جائے۔",
+      "explanationEn": "Ethical discretion about minor faults is different from neglecting injustice, harm or a violated right.",
+      "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence"
     }
   ],
   "perspectives": [
@@ -1504,6 +1528,98 @@ export const GHAF_LAH_VERIFIED_HADITHS: readonly VerifiedHadithRecord[] = [
         "exactArabic": "فَأفِقْ أيُّهَا السّامِعُ مِنْ غَفْلَتِكَ، واخْتَصِرْ مِنْ عَجَلَتِكَ، وأشْدُدْ أزْرَكَ، وخُذْ حِذْرَكَ، واذْكُرْ قَبْرَكَ، فَإنَّ عَلَيْهِ مَمَرَّكَ.",
         "textVerified": true,
         "note": "Compared to numbered original-Arabic entry on the linked page; no independent manuscript collation or sanad grading asserted."
+      }
+    ]
+  },
+  {
+    "id": "ghaflah-mizan-baqir-salat-10",
+    "topicIds": [
+      "ghaflah"
+    ],
+    "dossierPrimaryTextId": "ghaflah-baqir-salat",
+    "attributedToUr": "امام محمد باقرؑ",
+    "attributedToEn": "Imam al-Baqir",
+    "sourceTitleUr": "میزان الحکمہ — باب الغفلة",
+    "sourceTitleEn": "Mizan al-Hikmah — Negligence",
+    "citedReferenceUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۰؛ اس میں الکافی، جلد ۳، صفحہ ۲۷۰، حدیث ۱۴ کا حوالہ درج ہے۔",
+    "citedReferenceEn": "Mizan al-Hikmah, Negligence, entry 10; cites al-Kafi, vol. 3, p. 270, no. 14.",
+    "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+    "candidateArabic": "أيّما مُؤمِنٍ حافَظَ علَى الصَّلواتِ المَفروضَةِ فَصَلاّها لِوَقتِها فَلَيسَ هذا مِن الغافِلينَ.",
+    "status": "verified",
+    "exactArabic": "أيّما مُؤمِنٍ حافَظَ علَى الصَّلواتِ المَفروضَةِ فَصَلاّها لِوَقتِها فَلَيسَ هذا مِن الغافِلينَ.",
+    "translationUr": "جو مومن فرض نمازوں کی پابندی کرتا ہے اور انہیں وقت پر ادا کرتا ہے، وہ غافلین میں سے نہیں ہے۔",
+    "translationEn": "A believer who guards the obligatory prayers and offers them at their prescribed times is not among the negligent.",
+    "translationStatus": "editorial",
+    "translationArabic": "أيّما مُؤمِنٍ حافَظَ علَى الصَّلواتِ المَفروضَةِ فَصَلاّها لِوَقتِها فَلَيسَ هذا مِن الغافِلينَ.",
+    "translationSourceLabelUr": "قلم ورکس — میزان الحکمہ کے عربی متن سے تدوینی ترجمہ",
+    "translationSourceLabelEn": "Qalam Works — editorial translation from Mizan al-Hikmah's Arabic",
+    "verifiedReferenceUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۰؛ اس میں الکافی، جلد ۳، صفحہ ۲۷۰، حدیث ۱۴ کا حوالہ درج ہے۔",
+    "verifiedReferenceEn": "Mizan al-Hikmah, Negligence, entry 10; cites al-Kafi, vol. 3, p. 270, no. 14.",
+    "verifiedSourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+    "verificationWitnessId": "mizan-ghaflah-10",
+    "witnesses": [
+      {
+        "id": "mizan-ghaflah-10",
+        "role": "verification-source",
+        "sourceTitleUr": "میزان الحکمہ — Al-Islam.org میں نقل شدہ عربی متن",
+        "sourceTitleEn": "Mizan al-Hikmah Arabic at Al-Islam.org",
+        "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+        "citation": {
+          "bookUr": "میزان الحکمہ",
+          "bookEn": "Mizan al-Hikmah",
+          "chapterUr": "الغفلة",
+          "chapterEn": "Negligence",
+          "hadithNumber": "10"
+        },
+        "exactArabic": "أيّما مُؤمِنٍ حافَظَ علَى الصَّلواتِ المَفروضَةِ فَصَلاّها لِوَقتِها فَلَيسَ هذا مِن الغافِلينَ.",
+        "textVerified": true,
+        "note": "Exact Arabic confirmed against Mizan al-Hikmah entry. Mizan's cited older work has not independently been collated."
+      }
+    ]
+  },
+  {
+    "id": "ghaflah-mizan-ali-taghaful-17",
+    "topicIds": [
+      "ghaflah"
+    ],
+    "dossierPrimaryTextId": "ghaflah-ali-taghaful",
+    "attributedToUr": "امیرالمؤمنین علیؑ",
+    "attributedToEn": "Imam Ali",
+    "sourceTitleUr": "میزان الحکمہ — باب الغفلة",
+    "sourceTitleEn": "Mizan al-Hikmah — Negligence",
+    "citedReferenceUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۷؛ غرر الحکم، حدیث ۲۳۷۸ کا حوالہ۔",
+    "citedReferenceEn": "Mizan al-Hikmah, Negligence, entry 17; cites Ghurar al-Hikam no. 2378.",
+    "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+    "candidateArabic": "إنَّ العاقِلَ نِصفُهُ احتِمالٌ، ونِصفُهُ تَغافُلٌ.",
+    "status": "verified",
+    "exactArabic": "إنَّ العاقِلَ نِصفُهُ احتِمالٌ، ونِصفُهُ تَغافُلٌ.",
+    "translationUr": "عقل مند انسان کے رویّے میں ایک حصہ برداشت اور دوسرا دانستہ درگزر ہوتا ہے۔",
+    "translationEn": "A person of reason combines patience with deliberately overlooking minor faults.",
+    "translationStatus": "editorial",
+    "translationArabic": "إنَّ العاقِلَ نِصفُهُ احتِمالٌ، ونِصفُهُ تَغافُلٌ.",
+    "translationSourceLabelUr": "قلم ورکس — میزان الحکمہ کے عربی متن سے تدوینی ترجمہ",
+    "translationSourceLabelEn": "Qalam Works — editorial translation from Mizan al-Hikmah's Arabic",
+    "verifiedReferenceUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۷؛ غرر الحکم، حدیث ۲۳۷۸ کا حوالہ۔",
+    "verifiedReferenceEn": "Mizan al-Hikmah, Negligence, entry 17; cites Ghurar al-Hikam no. 2378.",
+    "verifiedSourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+    "verificationWitnessId": "mizan-ghaflah-17",
+    "witnesses": [
+      {
+        "id": "mizan-ghaflah-17",
+        "role": "verification-source",
+        "sourceTitleUr": "میزان الحکمہ — Al-Islam.org میں نقل شدہ عربی متن",
+        "sourceTitleEn": "Mizan al-Hikmah Arabic at Al-Islam.org",
+        "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+        "citation": {
+          "bookUr": "میزان الحکمہ",
+          "bookEn": "Mizan al-Hikmah",
+          "chapterUr": "الغفلة",
+          "chapterEn": "Negligence",
+          "hadithNumber": "17"
+        },
+        "exactArabic": "إنَّ العاقِلَ نِصفُهُ احتِمالٌ، ونِصفُهُ تَغافُلٌ.",
+        "textVerified": true,
+        "note": "Exact Arabic confirmed against Mizan al-Hikmah entry. Mizan's cited older work has not independently been collated."
       }
     ]
   }

@@ -14,6 +14,7 @@ export type PreparedSessionMaterial = {
  quranGroups?: readonly PreparedQuranGroup[];
  primaryExcerpts?: readonly PreparedPrimaryExcerpt[];
  hadithId?: string;
+ additionalHadithIds?: readonly string[];
  scholarSources?: readonly { label: SeriesBilingual; url: string }[];
  question: SeriesBilingual; example: SeriesBilingual; action: SeriesBilingual;
 };
@@ -38,9 +39,10 @@ export function preparedSourceLines(preparation: PreparedSessionMaterial, locale
  for (const excerpt of preparation.primaryExcerpts ?? []) {
   lines.push(excerpt.attribution[locale], excerpt.reference[locale], excerpt.arabic, excerpt.translation[locale], ur?'قلم ورکس — اصل عربی سے تدوینی ترجمہ':'Qalam Works — editorial translation from the Arabic', excerpt.sourceUrl);
  }
- if(preparation.hadithId) {
-  const hadith=verifiedHadithForDossierText(preparation.hadithId);
-  if(!hadith?.exactArabic)throw Error('Missing verified series hadith');
+ for (const hadithId of [preparation.hadithId, ...(preparation.additionalHadithIds ?? [])]) {
+  if (!hadithId) continue;
+  const hadith=verifiedHadithForDossierText(hadithId);
+  if (!hadith?.exactArabic)throw Error(`Missing verified series hadith ${hadithId}`);
   lines.push(ur?hadith.attributedToUr:hadith.attributedToEn,hadith.exactArabic, (ur?hadith.translationUr:hadith.translationEn)??'', (ur?hadith.translationSourceLabelUr:hadith.translationSourceLabelEn)??'', (ur?hadith.verifiedReferenceUr:hadith.verifiedReferenceEn)!,hadith.verifiedSourceUrl??hadith.sourceUrl);
  }
  return lines;
@@ -53,7 +55,9 @@ export function preparedQuranSourceTexts(preparation: PreparedSessionMaterial): 
 export function preparedArabicSourceTexts(preparation: PreparedSessionMaterial): Set<string | undefined> {
  const texts = preparedQuranSourceTexts(preparation);
  for (const excerpt of preparation.primaryExcerpts ?? []) texts.add(excerpt.arabic);
- if (preparation.hadithId) texts.add(verifiedHadithForDossierText(preparation.hadithId)?.exactArabic);
+ for (const hadithId of [preparation.hadithId, ...(preparation.additionalHadithIds ?? [])]) {
+  if (hadithId) texts.add(verifiedHadithForDossierText(hadithId)?.exactArabic);
+ }
  return texts;
 }
 export function buildPreparedSessionWorkbench(session: MajlisSeriesSession, duration: SermonDuration): MajlisSessionWorkbench {
