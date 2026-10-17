@@ -1,0 +1,7 @@
+name = "qalam-book-library-mirror"
+main = "src/index.ts"
+compatibility_date = "2026-10-17"
+
+[[r2_buckets]]
+binding = "BOOK_LIBRARY_BUCKET"
+bucket_name = "qalam-book-library-private"
