@@ -32,7 +32,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  --qalam-urdu-primary: "Alvi Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", "Urdu Typesetting", serif;
+  --qalam-urdu-primary: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", "Urdu Typesetting", serif;
 }
 
 body {
