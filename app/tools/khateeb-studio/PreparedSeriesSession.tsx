@@ -1,6 +1,6 @@
 "use client";
 import type { MajlisSeriesSession } from './engine/seriesPlanner';
-import { preparedArabicSourceTexts, preparedQuranSourceTexts } from './engine/preparedSeries';
+import { preparedArabicSourceTexts, preparedQuranSourceTexts, estimatePreparedSpeech } from './engine/preparedSeries';
 import type { SermonDuration } from './engine/sermonPrep';
 import { buildSessionWorkbench, buildSessionWorkbenchText } from './engine/sessionWorkbench';
 import KhateebScriptText from './KhateebScriptText';
@@ -11,17 +11,15 @@ export default function PreparedSeriesSession({session,duration,locale,onCopy}:{
  const quranTexts=preparedQuranSourceTexts(session.preparation!);
  const arabicTexts=preparedArabicSourceTexts(session.preparation!);
  const sourceLinks=session.preparation?.scholarSources??[];
- const manuscript=buildSessionWorkbenchText(w,locale);
- const wordCount=manuscript.trim().split(/\s+/u).filter(Boolean).length;
- const lowMinutes=Math.max(1,Math.floor(wordCount/(ur?110:145)));
- const highMinutes=Math.max(lowMinutes,Math.ceil(wordCount/(ur?75:105)));
+ const estimate=estimatePreparedSpeech(session.preparation!,locale);
+ const {words:wordCount,lowMinutes,highMinutes}=estimate;
  const shortfall=duration>highMinutes;
  return <section data-testid={`prepared-session-${session.number}`} className="mt-5 space-y-5" dir={ur?'rtl':'ltr'}>
   <div className="rounded-xl border border-[#B8935A]/30 bg-[#faf6eb] p-4 dark:border-[#6f5b35] dark:bg-[#241f14]">
    <p className="font-semibold leading-8 text-[#59452c] dark:text-[#e2c895]">{ur?'قرآن و روایت کے اصل نصوص، ترجمے اور منبری گفتگو الگ رکھی گئی ہے۔ یہ علمی مسودہ ہے؛ درج شدہ منٹ تیاری کی تقسیم ہیں، ناپی ہوئی مدت نہیں۔':'Qur’anic and hadith sources, translations and editorial speaking passages are separated. Timing is a preparation guide, not a certified duration.'}</p>
    {sourceLinks.length>0?<p data-testid="ghaflah-reading-estimate" className="mt-3 border-t border-[#B8935A]/20 pt-3 text-sm leading-8 text-[#6a5436] dark:text-[#d7bc8a]">
-     {ur?`اس مسودے میں تقریباً ${wordCount.toLocaleString("ur-PK")} الفاظ ہیں؛ مسلسل قرأت کا محتاط اندازہ ${lowMinutes}–${highMinutes} منٹ ہے۔ ${shortfall ? `منتخب ${duration} منٹ کی مجلس کے لیے مزید مکمل قابلِ بیان مواد اور مستند مصائب درکار ہیں۔` : "اصل ادائیگی کی مدت خطیب کے انداز اور وقفوں سے بدلے گی۔"}`:
-     `About ${wordCount.toLocaleString("en")} words, roughly ${lowMinutes}–${highMinutes} minutes of continuous delivery. ${shortfall ? `The requested ${duration}-minute sermon needs further fully written content and separately sourced masaib.` : "Actual duration varies with recitation and pauses."}`}
+     {ur?`اصل قابلِ بیان متن، مصائب اور نصوص میں تقریباً ${wordCount.toLocaleString("ur-PK")} الفاظ ہیں؛ مسلسل قرأت کا محتاط اندازہ ${lowMinutes}–${highMinutes} منٹ ہے۔ ${shortfall ? `منتخب ${duration} منٹ کی مجلس کے لیے مزید مکمل قابلِ بیان مواد اور مستند مصائب درکار ہیں۔` : "اصل ادائیگی کی مدت خطیب کے انداز اور وقفوں سے بدلے گی۔"}`:
+     `About ${wordCount.toLocaleString("en")} words of actual speaking text and sources, roughly ${lowMinutes}–${highMinutes} minutes of continuous delivery. ${shortfall ? `The requested ${duration}-minute sermon needs further fully written content and separately sourced masaib.` : "Actual duration varies with recitation and pauses."}`}
    </p>:null}
   </div>
   {w.blocks.map((block,index)=><section key={index} className="rounded-xl border border-[#1A3A2A]/15 bg-white px-4 py-5 shadow-sm dark:border-[#35513d] dark:bg-[#162a1e] sm:px-7">

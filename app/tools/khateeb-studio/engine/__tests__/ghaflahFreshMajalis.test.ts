@@ -4,7 +4,30 @@ import { buildFreshMajlisSeries } from "../freshPulpitSeries";
 import { getTopicDossier } from "../topicDossier";
 import { buildSessionWorkbench, buildSessionWorkbenchText } from "../sessionWorkbench";
 import { verifiedHadithForDossierText } from "../verifiedHadithCorpus";
+import { estimatePreparedSpeech } from "../preparedSeries";
 describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
+ it("includes five separately sourced historical passages without fabricated Arabic claims",()=>{
+   for(const session of GHAF_LAH_FRESH_FIVE.sessions){
+     const m=session.preparation?.masaib;
+     expect(m).toBeDefined();
+     expect(m?.sourceUrl.startsWith("https://al-islam.org/")).toBe(true);
+     expect(m?.originalArabicVerified).toBe(false);
+     expect(m?.sourceType).toBe("historical-summary-of-translated-source");
+     expect(m?.history.ur.length).toBeGreaterThan(400);
+     expect(buildSessionWorkbenchText(buildSessionWorkbench(session,30),"ur")).toContain(m!.sourceUrl);
+   }
+ });
+ it("calculates spoken-word duration without counting bibliography links or editor headings",()=>{
+   for(const session of GHAF_LAH_FRESH_FIVE.sessions){
+     const a=estimatePreparedSpeech(session.preparation!,"ur");
+     expect(a.words).toBe(a.categories.prose+a.categories.masaib+a.categories.verses+a.categories.hadiths);
+     expect(a.categories.masaib).toBeGreaterThan(150);
+     expect(a.words).toBeGreaterThan(1150);
+     expect(a.highMinutes).toBeGreaterThanOrEqual(a.lowMinutes);
+     expect(a.words).toBeLessThan(buildSessionWorkbenchText(buildSessionWorkbench(session,30),"ur").split(/\\s+/u).length);
+   }
+ });
+
  it("routes five sessions to their own authored material instead of generic scaffold",()=>{
   const dossier=getTopicDossier("ghaflah");
   expect(dossier).not.toBeNull();

@@ -94,3 +94,25 @@ export function buildPreparedSessionWorkbench(session: MajlisSeriesSession, dura
 export function buildPreparedSeriesText(plan: MajlisSeriesPlan,locale:'ur'|'en',duration:SermonDuration) {
  const ur=locale==='ur';return [ur?plan.titleUr:plan.titleEn,ur?plan.aimUr:plan.aimEn,ur?'ہر مجلس کی مجوزہ مدت؛ اصل آیات، تراجم اور تدوینی عبارتیں الگ درج ہیں۔':'Suggested duration per session; source texts, translations, and editorial material are identified separately.',...plan.sessions.map(session=>buildSessionWorkbenchText(buildPreparedSessionWorkbench(session,duration),locale)),ur?plan.finalUr:plan.finalEn].join('\n\n');
 }
+
+/** Counts deliverable speech, not URLs, editorial instructions, or citation labels. */
+export function estimatePreparedSpeech(preparation: PreparedSessionMaterial, locale:'ur'|'en') {
+ const count=(s:string)=>s.trim().split(/\s+/u).filter(Boolean).length;
+ const prose=preparation.blocks.reduce((sum,b)=>sum+count(b.delivery[locale]),0);
+ const masaib=preparation.masaib ? count(preparation.masaib.history[locale])+count(preparation.masaib.editorialReflection[locale]) : 0;
+ const verses=preparation.quran.reduce((sum,{surah,ayah})=>{
+   const arabic=ahmedgrafQuranReference.getAyah(surah,ayah)?.text??'';
+   const translation=quranTranslationFor(surah,ayah,locale)??'';
+   return sum+count(arabic)+count(translation);
+ },0);
+ const hadiths=[preparation.hadithId,...(preparation.additionalHadithIds??[])].reduce((sum,id)=>{
+   if(!id)return sum;
+   const row=verifiedHadithForDossierText(id);
+   return sum+count(row?.exactArabic??'')+count((locale==='ur'?row?.translationUr:row?.translationEn)??'');
+ },0);
+ const words=prose+masaib+verses+hadiths;
+ // Conservative *planning* band, never an empirically measured delivery duration.
+ const low=Math.max(1,Math.floor(words/(locale==='ur'?110:145)));
+ const high=Math.max(low,Math.ceil(words/(locale==='ur'?75:105)));
+ return {words, lowMinutes:low, highMinutes:high, categories:{prose,masaib,verses,hadiths}};
+}
