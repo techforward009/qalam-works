@@ -1,0 +1,50 @@
+name: Khateeb corpus offline audit
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/audit-khateeb-corpus.py'
+      - 'scripts/kafi-reference-sidecar.py'
+      - 'tests/test_audit_khateeb_corpus.py'
+      - 'tests/test_kafi_reference_sidecar.py'
+      - 'app/lib/knowledge/kafiCitationPreview.ts'
+      - 'tests/kafiCitationPreview.test.ts'
+      - '.github/workflows/khateeb-corpus-audit-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-fixture-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate audit script syntax
+        run: python -m py_compile scripts/audit-khateeb-corpus.py scripts/kafi-reference-sidecar.py
+      - name: Run safe synthetic test cases
+        run: python -m unittest discover -s tests -p 'test_*kafi*.py' -v
+      - name: Run general corpus audit synthetic tests
+        run: python -m unittest discover -s tests -p 'test_audit_khateeb_corpus.py' -v
+
+  citation-preview-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install offline-fixture test dependencies (no project lifecycle scripts)
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Test pure citation-preview metadata safeguards
+        run: npx vitest run tests/kafiCitationPreview.test.ts
