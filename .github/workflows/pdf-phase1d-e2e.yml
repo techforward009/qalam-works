@@ -1,0 +1,129 @@
+name: PDF Studio Phase 1D End-to-End (Test Only)
+on:
+  push:
+    branches: [experiment/pdf-studio-phase1d-e2e-20261014]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      PDF_PHASE1D_TEST_ONLY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked packages, skipping unrelated ONNX post-install binary
+        run: npm ci --ignore-scripts
+      - name: Install Poppler PDF diagnostics
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+      - name: Generate test-only actual Digital Khatt cmap from WOFF2
+        run: |
+          python3 -m pip install --break-system-packages fonttools brotli
+          python3 - <<'PY'
+          import json
+          from fontTools.ttLib import TTFont
+          font=TTFont("public/fonts/DigitalKhattIndoPak.woff2")
+          values=sorted(set().union(*(set(t.cmap.keys()) for t in font["cmap"].tables if t.isUnicode())))
+          with open("public/phase1d-digital-cmap.json","w") as f: json.dump(values,f)
+          assert 0x002E not in values, "U+002E unexpectedly present"
+          assert 0x064E in values and 0x0627 in values, "Arabic coverage missing"
+          assert 0x06D7 not in values, "Unsupported mark unexpectedly present"
+          print("PHASE1D_FONT_CMAP", json.dumps({"glyphs":len(values),"U+002E":0x002E in values,"U+06D7":0x06D7 in values}))
+          PY
+      - name: Run all existing PDF-named regression tests with available Chromium
+        shell: bash
+        run: |
+          export QALAM_PDF_CHROMIUM="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')"
+          test -x "$QALAM_PDF_CHROMIUM"
+          mapfile -t pdf_specs < <(find tests -type f \( -iname '*pdf*.test.ts' -o -iname '*pdf*.test.tsx' \))
+          printf 'PDF regression files:\n%s\n' "${pdf_specs[@]}"
+          if test "${#pdf_specs[@]}" -eq 0; then exit 1; fi
+          npx vitest run "${pdf_specs[@]}" --reporter=verbose
+      - name: Build unchanged application with disabled-unless-opted-in experimental route
+        run: npm run build
+      - name: Start app only on runner loopback
+        run: |
+          (npm run start -- -H 127.0.0.1 > /tmp/phase1d-server.log 2>&1 &)
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3000/tools/document-studio -o /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/phase1d-server.log
+          exit 1
+      - name: Baseline production versus guarded isolated experimental route
+        run: node scripts/pdf-phase1d-e2e.cjs
+      - name: Embedded fonts, PDF page raster, and text inspection
+        if: always()
+        run: |
+          for p in artifacts/pdf-phase1d/*.pdf; do
+            test -f "$p" || continue
+            pdfinfo "$p" > "$p.info.txt"
+            pdffonts "$p" > "$p.fonts.txt"
+            pdftotext -layout "$p" "$p.txt"
+            pdftoppm -f 1 -l 1 -singlefile -r 96 -png "$p" "$p-firstpage"
+          done
+      - name: Compare unchanged PDF first-page raster and extracted text
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, pathlib
+          root=pathlib.Path('artifacts/pdf-phase1d')
+          checks={}
+          for name in ('urdu-nastaliq','persian','arabic-amiri'):
+              checks[name]={}
+              for suffix in ('.pdf-firstpage.png','.pdf.txt'):
+                  p=root/(name+'-production'+suffix)
+                  q=root/(name+'-experimental'+suffix)
+                  if not (p.exists() and q.exists()): raise SystemExit('Missing comparison artifacts: '+name+suffix)
+                  checks[name][suffix]={'identical':p.read_bytes()==q.read_bytes(),'production_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'experimental_sha256':hashlib.sha256(q.read_bytes()).hexdigest()}
+                  if not checks[name][suffix]['identical']: raise SystemExit('Baseline difference: '+name+suffix)
+          (root/'unchanged-render-regression.json').write_text(json.dumps(checks,indent=2))
+          print('UNCHANGED_PDF_REGRESSION',json.dumps(checks))
+          PY
+      - name: Inspect all Arabic PDF pages at 240 dpi and page-edge glyph bounds
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET, json, subprocess
+          root=Path("artifacts/pdf-phase1d"); out={}
+          for p in root.glob("*arabic*experimental.pdf"):
+            name=p.stem
+            folder=root/(name+"-240dpi");folder.mkdir(exist_ok=True)
+            subprocess.run(["pdftoppm","-r","240","-png",str(p),str(folder/"page")],check=True)
+            xml=subprocess.check_output(["pdftotext","-bbox-layout",str(p),"-"],text=True)
+            tree=ET.fromstring(xml);pages=[]
+            for page in [e for e in tree.iter() if e.tag.endswith("page")]:
+              w=float(page.attrib["width"]); h=float(page.attrib["height"]);violations=[];words=0
+              for word in [e for e in page.iter() if e.tag.endswith("word")]:
+                words+=1; x0=float(word.attrib["xMin"]);y0=float(word.attrib["yMin"]);x1=float(word.attrib["xMax"]);y1=float(word.attrib["yMax"])
+                if x0 < -0.1 or y0 < -0.1 or x1 > w+0.1 or y1 > h+0.1:violations.append({"text":word.text,"bbox":[x0,y0,x1,y1]})
+              pages.append({"widthPt":w,"heightPt":h,"extractedWordBoxes":words,"pageEdgeViolations":violations})
+            out[name]=pages
+          (root/"arabic-page-edges.json").write_text(json.dumps(out,ensure_ascii=False,indent=2))
+          print("ARABIC_PAGE_EDGES",json.dumps({k:[{"words":v["extractedWordBoxes"],"out":len(v["pageEdgeViolations"])} for v in vals] for k,vals in out.items()}))
+          if any(v["pageEdgeViolations"] for vals in out.values() for v in vals):raise SystemExit("PDF glyph word boxes exceed paper boundaries")
+          PY
+      - name: Preserve raw Chromium font-diagnostic logs
+        if: always()
+        run: |
+          mkdir -p artifacts/pdf-phase1d
+          cp /tmp/phase1d-server.log artifacts/pdf-phase1d/server-log.txt || true
+      - name: Upload experimental PDF and inspection artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf-studio-phase1d-e2e-evidence
+          path: artifacts/pdf-phase1d/
+          if-no-files-found: warn
