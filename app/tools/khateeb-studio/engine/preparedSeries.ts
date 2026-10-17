@@ -14,6 +14,7 @@ export type PreparedSessionMaterial = {
  quranGroups?: readonly PreparedQuranGroup[];
  primaryExcerpts?: readonly PreparedPrimaryExcerpt[];
  hadithId?: string;
+ scholarSources?: readonly { label: SeriesBilingual; url: string }[];
  question: SeriesBilingual; example: SeriesBilingual; action: SeriesBilingual;
 };
 export function preparedSourceLines(preparation: PreparedSessionMaterial, locale: 'ur'|'en') {
