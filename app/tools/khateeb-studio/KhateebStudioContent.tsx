@@ -1558,7 +1558,7 @@ export default function KhateebStudioContent({
                     </p>
                   </section>
 
-                  
+
                   {topic.id === "ghaflah" ? <GhaflahScholarCoverage ur={ur} /> : null}
 
                   {seriesLayer === "fresh" && originalityReport ? (
