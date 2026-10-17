@@ -62,6 +62,7 @@ export function buildPreparedSessionWorkbench(session: MajlisSeriesSession, dura
  const body=(index: number,locale:'ur'|'en')=>[
   ...(index===0 && session.previousBridgeUr?[locale==='ur'?session.previousBridgeUr:session.previousBridgeEn!]:[]),
   ...(index===1?preparedSourceLines(p,locale):[]),
+  ...(index===1?(p.scholarSources ?? []).flatMap(source => [source.label[locale], source.url]):[]),
   locale==='ur'?'قابلِ بیان عبارت — قلم ورکس کی تدوین':'Ready-to-deliver paragraph — Qalam Works editorial material',p.blocks[index].delivery[locale],
   locale==='ur'?'وضاحت اور ربط — قلم ورکس کی تدوین':'Explanation and connection — Qalam Works editorial material',p.blocks[index].explanation[locale],
   ...(index===3?[`${locale==='ur'?'فرضی روزمرہ مثال':'Hypothetical everyday example'}: ${p.example[locale]}`]:[]),
