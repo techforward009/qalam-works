@@ -24,6 +24,29 @@ describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
    expect(s.preparation!.blocks.map(x=>x.delivery.ur).join(" ").length).toBeGreaterThan(2600);
   }
  });
+ it("uses independently labelled Arabic witnesses for additional preaching texts",()=>{
+  const p=GHAF_LAH_FRESH_FIVE.sessions[2].preparation!;
+  const f=GHAF_LAH_FRESH_FIVE.sessions[3].preparation!;
+  expect(p.additionalHadithIds).toEqual(["ghaflah-baqir-salat"]);
+  expect(f.additionalHadithIds).toEqual(["ghaflah-ali-taghaful"]);
+  for(const preparation of [p,f]){
+    for(const id of preparation.additionalHadithIds??[]){
+      const record=verifiedHadithForDossierText(id);
+      expect(record?.verifiedSourceUrl).toContain("mizan-al-hikmah");
+      expect(record?.exactArabic).toBeTruthy();
+    }
+  }
+  const third=buildSessionWorkbenchText(buildSessionWorkbench(GHAF_LAH_FRESH_FIVE.sessions[2],30),"ur");
+  expect(third).toContain("الکافی");
+  const fourth=buildSessionWorkbenchText(buildSessionWorkbench(GHAF_LAH_FRESH_FIVE.sessions[3],30),"ur");
+  expect(fourth).toContain("تَغافُل");
+ });
+ it("delivers independently authored deep passages for every session",()=>{
+  for(const session of GHAF_LAH_FRESH_FIVE.sessions){
+    const count=session.preparation!.blocks.map(row=>row.delivery.ur).join(" ").trim().split(/\s+/u).length;
+    expect(count).toBeGreaterThan(450);
+  }
+ });
  it.each([20,30,45] as const)("includes authentic textual sources and source URLs in %i-minute draft",duration=>{
   const session=GHAF_LAH_FRESH_FIVE.sessions[0];
   const workbench=buildSessionWorkbench(session,duration);
