@@ -1,4 +1,5 @@
 import { hadithTranslationFields, validateHadithTranslation } from "./hadithTranslation";
+import { GHAF_LAH_VERIFIED_HADITHS } from "./ghaflahPackage";
 
 export type HadithVerificationStatus =
   | "pending-verification"
@@ -77,6 +78,7 @@ const MISHKAT_PAGE_484 =
   "https://shiaonlinelibrary.com/%D8%A7%D9%84%D9%83%D8%AA%D8%A8/1383_%D9%85%D8%B4%D9%83%D8%A7%D8%A9-%D8%A7%D9%84%D8%A3%D9%86%D9%88%D8%A7%D8%B1-%D8%B9%D9%84%D9%8A-%D8%A7%D9%84%D8%B7%D8%A8%D8%B1%D8%B3%D9%8A/%D8%A7%D9%84%D8%B5%D9%81%D8%AD%D8%A9_430";
 
 export const VERIFIED_HADITH_CORPUS: readonly VerifiedHadithRecord[] = [
+  ...GHAF_LAH_VERIFIED_HADITHS,
   {
     id: "sabr-mishkat-1622",
     topicIds: ["sabr"],
