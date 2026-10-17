@@ -176,7 +176,7 @@ export function buildSessionWorkbenchText(
      ...workbench.blocks.flatMap(block=>[
        ur?block.headingUr:block.headingEn,
        ...(ur?block.bodyUr:block.bodyEn),
-     ])].join("\\n\\n");
+     ])].join("\n\n");
   }
   const lines: string[] = [
     ur ? workbench.titleUr : workbench.titleEn,

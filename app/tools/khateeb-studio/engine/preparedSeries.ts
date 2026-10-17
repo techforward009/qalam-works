@@ -26,12 +26,18 @@ export type PreparedSessionMaterial = {
 /** On-reader and copy-ready primary texts. URLs remain internal for editorial audits only. */
 export function preparedSourceLines(preparation: PreparedSessionMaterial, locale: 'ur'|'en') {
  const ur=locale==='ur';const lines:string[]=[];const used=new Set<string>();
- for(const {surah,ayah} of preparation.quran){
-  const key=`${surah}:${ayah}`; if(used.has(key))continue;used.add(key);
-  const arabic=ahmedgrafQuranReference.getAyah(surah,ayah)?.text;
-  const translation=quranTranslationFor(surah,ayah,locale);
-  if(!arabic||!translation)throw Error(`Missing prepared series verse ${key}`);
-  lines.push(`${ur?'قرآن مجید':'Holy Qur’an'} — ${key}`,arabic,translation,
+ for(const location of preparation.quran){
+  const key=`${location.surah}:${location.ayah}`; if(used.has(key))continue;
+  const group=preparation.quranGroups?.find(g=>g.locations.some(loc=>loc.surah===location.surah&&loc.ayah===location.ayah));
+  const locations=group?.locations??[location];
+  const verses=locations.map(({surah,ayah})=>{
+   const ref=`${surah}:${ayah}`, arabic=ahmedgrafQuranReference.getAyah(surah,ayah)?.text;
+   const translation=quranTranslationFor(surah,ayah,locale);
+   if(!arabic||!translation)throw Error(`Missing prepared series verse ${ref}`);
+   used.add(ref);return {ref,arabic,translation};
+  });
+  lines.push(`${group?group.heading[locale]:(ur?'قرآن مجید':'Holy Qur’an')} — ${verses.map(v=>v.ref).join('، ')}`,
+   verses.map(v=>v.arabic).join(' '),verses.map(v=>v.translation).join(' '),
    QURAN_TRANSLATION_SOURCES[locale][ur?'sourceLabelUr':'sourceLabelEn']);
  }
  for(const row of preparation.primaryExcerpts??[]){

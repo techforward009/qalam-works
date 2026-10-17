@@ -108,5 +108,8 @@ describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
   expect(manuscript).toContain("غرر الحکم");
   expect(manuscript).not.toMatch(/https?:\\/\\//i);
   expect(manuscript).not.toContain("قابلِ بیان عبارت");
+  expect(manuscript).not.toContain("sourceUrl");
+  expect(manuscript).not.toContain("اصل ماخذ کھولیں");
+  expect(manuscript).not.toContain("اپنی مثال کی جگہ");
  });
 });
