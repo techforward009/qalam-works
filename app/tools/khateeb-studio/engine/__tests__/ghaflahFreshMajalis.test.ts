@@ -106,7 +106,7 @@ describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
   const manuscript=buildSessionWorkbenchText(workbench,"ur");
   expect(manuscript).toContain("7:179");
   expect(manuscript).toContain("غرر الحکم");
-  expect(manuscript).not.toMatch(/https?:\\/\\//i);
+  expect(manuscript).not.toContain("https://");
   expect(manuscript).not.toContain("قابلِ بیان عبارت");
   expect(manuscript).not.toContain("sourceUrl");
   expect(manuscript).not.toContain("اصل ماخذ کھولیں");
