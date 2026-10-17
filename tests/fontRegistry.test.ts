@@ -40,6 +40,20 @@ describe("fontRegistry", () => {
     expect(r.cssClass).toBe("qf-amiri");
   });
 
+  test("DOCX preserves selected fonts with CSS quotes and fallback stacks", () => {
+    for (const [value, family] of [
+      ['"Alvi Nastaleeq"', "Alvi Nastaleeq"],
+      ["'Alvi Nastaleeq', serif", "Alvi Nastaleeq"],
+      ['"Digital Khatt Indo-Pak"', "Digital Khatt Indo-Pak"],
+      ['"Jameel Noori Nastaleeq", serif', "Jameel Noori Nastaleeq"],
+      ['"Gulzar"', "Gulzar"],
+    ]) {
+      const result = resolveEditorFontFamily(value, "rtl");
+      expect(result.docxFamily).toBe(family);
+      expect(result.fellBack).toBe(false);
+    }
+  });
+
   test("unknown font falls back safely", () => {
     const r = resolveEditorFontFamily("Comic Sans MS", "rtl");
     expect(r.fellBack).toBe(true);

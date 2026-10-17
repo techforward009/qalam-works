@@ -89,6 +89,18 @@ describe("createDocxDocument — paragraphs, headings, direction, alignment", ()
     expect(xml).not.toContain("<w:bidi/>");
   });
 
+  test("implicit RTL alignment remains right and authored alignment remains authoritative", async () => {
+    const xml = await extractDocumentXml(docWith([
+      { type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "فسخ العزیمہ" }] },
+      { type: "paragraph", attrs: { dir: "rtl", textAlign: "right" }, content: [{ type: "text", text: "السلام علیک" }] },
+      { type: "paragraph", attrs: { dir: "rtl", textAlign: "left" }, content: [{ type: "text", text: "Explicit left" }] },
+    ]), "rtl");
+    const ps = [...xml.matchAll(/<w:p(?:\\s[^>]*)?>([\\s\\S]*?)<\\/w:p>/g)].map(m => m[1]);
+    expect(ps[0]).toContain('w:jc w:val="right"');
+    expect(ps[1]).toContain('w:jc w:val="right"');
+    expect(ps[2]).toContain('w:jc w:val="left"');
+  });
+
   test("textAlign attrs map to the correct <w:jc> value", async () => {
     const xml = await extractDocumentXml(
       docWith([
