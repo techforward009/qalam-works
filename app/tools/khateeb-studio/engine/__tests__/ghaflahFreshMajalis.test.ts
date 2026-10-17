@@ -99,6 +99,19 @@ describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
      .toBeGreaterThan(buildSessionWorkbenchText(buildSessionWorkbench(session,20),"ur").length+500);
   }
  });
+ it("keeps all five Urdu delivery manuscripts free of external URLs and editorial assignments",()=>{
+   for(const session of GHAF_LAH_FRESH_FIVE.sessions){
+     for(const minutes of [20,30,45] as const){
+       const manuscript=buildSessionWorkbenchText(buildSessionWorkbench(session,minutes),"ur");
+       expect(manuscript).not.toContain("https://");
+       expect(manuscript).not.toContain("http://");
+       expect(manuscript).not.toContain("سامع سے کہیے");
+       expect(manuscript).not.toContain("خطیب اپنے معتبر");
+       expect(manuscript).toContain("قرآن مجید");
+       expect(manuscript).toContain("حوالہ:");
+     }
+   }
+ });
  it.each([20,30,45] as const)("includes Quran, Arabic hadith and plain-text references but no external URLs in %i-minute manuscript",duration=>{
   const session=GHAF_LAH_FRESH_FIVE.sessions[0];
   const workbench=buildSessionWorkbench(session,duration);

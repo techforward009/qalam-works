@@ -21,7 +21,7 @@ export const GHAF_LAH_MASAIB: readonly SourcedMasaib[] = [
       "en": "Al-Muqarram records Imam Husayn offering his companions and family leave on the night of Ashura. Abbas and other members of the family, with companions such as Muslim ibn Awsaja and Zuhayr ibn al-Qayn, resolved to remain. Consult the linked source for exact wording rather than recreating dialogue."
     },
     "editorialReflection": {
-      "ur": "یہ واقعہ پہلی مجلس کے سوال کو زندہ کرتا ہے: جب انسان کو اپنی زندگی کی سمت دکھائی دے جائے، تو کیا وہ اس روشنی کے مطابق فیصلہ کرتا ہے؟ وہ شب کتنی گراں ہوگی جب رسولِ خدا ﷺ کے نواسے اپنے جاں نثاروں کو رخصت کی اجازت دے رہے تھے، اور وفادار دل حق کے ساتھ ٹھہرنے کا عہد کر رہے تھے۔ غم کے اس مقام پر غیر ثابت شدہ مکالمہ، مخصوص آواز یا منظر نہ بڑھائیے؛ اصل واقعے کی سچائی ہی دل کو کافی ہے۔",
+      "ur": "یہ واقعہ پہلی مجلس کے سوال کو زندہ کرتا ہے: جب انسان کو اپنی زندگی کی سمت دکھائی دے جائے، تو کیا وہ اس روشنی کے مطابق فیصلہ کرتا ہے؟ وہ شب کتنی گراں ہوگی جب رسولِ خدا ﷺ کے نواسے اپنے جاں نثاروں کو رخصت کی اجازت دے رہے تھے، اور وفادار دل حق کے ساتھ ٹھہرنے کا عہد کر رہے تھے۔ اے اہلِ عزا! اس واقعے کی سچائی ہی دل کو بھر دینے کے لیے کافی ہے؛ شبِ عاشورا کی وفاداری کو یاد کرکے اپنے دل میں بھی حق کے ساتھ رہنے کا عہد تازہ کیجیے۔",
       "en": "The account frames awareness as a choice with a cost. Grief does not require inventing private conversations or theatrically reconstructed details."
     },
     "sourceType": "historical-summary-of-translated-source",
@@ -84,7 +84,7 @@ export const GHAF_LAH_MASAIB: readonly SourcedMasaib[] = [
       "en": "A study of Ibn Nama al-Hilli's Muthir al-Ahzan recounts Ali al-Akbar asking his father for permission, Husayn describing his resemblance to the Prophet, his later thirst, martyrdom and Zaynab emerging in grief. The study itself discusses differences among historical accounts."
     },
     "editorialReflection": {
-      "ur": "ایسا باپ جو اپنے پیارے بیٹے کو دیکھتا ہے اور اسے اپنے نانا رسول اللہ ﷺ کی یاد تازہ ہوتی ہے؛ ایسا بیٹا جو وفاداری کے راستے پر جا رہا ہے؛ اور ایسی بہن جو اپنے بھائی کے غم میں اس جوان کی شہادت کا منظر دیکھتی ہے۔ ان تین رشتوں کی تکلیف سمجھنے کے لیے کسی بناوٹی جملے کی ضرورت نہیں۔ خطیب جب کسی والد یا والدہ کے سامنے یہ واقعہ بیان کرے تو احساسِ ذمہ داری، اولاد سے محبت اور امامؑ کے صبر کو دل کے قریب لائے، مگر تاریخی بیان میں اپنی طرف سے مکالمے نہ ملائے۔",
+      "ur": "ایسا باپ جو اپنے پیارے بیٹے کو دیکھتا ہے اور اسے اپنے نانا رسول اللہ ﷺ کی یاد تازہ ہوتی ہے؛ ایسا بیٹا جو وفاداری کے راستے پر جا رہا ہے؛ اور ایسی بہن جو اپنے بھائی کے غم میں اس جوان کی شہادت کا منظر دیکھتی ہے۔ ان تین رشتوں کی تکلیف سمجھنے کے لیے کسی بناوٹی جملے کی ضرورت نہیں۔ اے اہلِ مجلس! کسی باپ یا ماں کے دل سے پوچھئے کہ جوان بیٹے کی جدائی کیا ہوتی ہے؛ پھر اس صابر امامؑ کا غم محسوس کیجیے جو ایسے سخت امتحان سے گزرے۔",
       "en": "The father-son farewell is already painful without invented wording. Preserve the distinction between sourced description and editorial elegiac reflection."
     },
     "sourceType": "historical-summary-of-translated-source",
