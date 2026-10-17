@@ -1,0 +1,115 @@
+{
+  "format": "qalam-book-library-verified-inventory-v1",
+  "verifiedAt": "2026-10-17",
+  "sourceArchive": {
+    "filename": "Qalam-Foundational-Corpus-With-Kafi.zip",
+    "bytes": 6073247,
+    "sha256": "7a3e6cdab484777c05b161b7e3cfaf7dd9ee08e9e357d6a63bf43f6215ad403e"
+  },
+  "normalizedSources": {
+    "count": 15,
+    "records": 4978,
+    "originalFilesBytes": 6386349,
+    "sources": [
+      {
+        "id": "nahj-ar",
+        "filename": "nahj-al-balagha-arabic.docx",
+        "bytes": 409626,
+        "sha256": "ee18dac9861a2698664973b714fd3fa3d5b64a5d6754e0150e2fdf528700d3b0"
+      },
+      {
+        "id": "nahj-ur",
+        "filename": "nahj-al-balagha-urdu.docx",
+        "bytes": 772339,
+        "sha256": "a3a6bdf97805036f2620335909ba38c5afc4fd01c563b08c3f36085e35b364ce"
+      },
+      {
+        "id": "sahifa-ar",
+        "filename": "sahifa-kamila-arabic (1).docx",
+        "bytes": 143010,
+        "sha256": "3967d8fca0995bc0f519cfacb211c74c1e3f2600403a42debed8323355970f7c"
+      },
+      {
+        "id": "sahifa-ur",
+        "filename": "sahifa-kamila-urdu (1).docx",
+        "bytes": 402358,
+        "sha256": "799c3a88407d942864f0fb0b42f4631f70ce373a638ebe8abe64f48d684878d7"
+      },
+      {
+        "id": "sahifa-en",
+        "filename": "As-Sahifa Al-Kamilah Al-Sajjadiyya .epub",
+        "bytes": 360163,
+        "sha256": "7a49e0eb1042e06bc69104e501e9587dae6f1663c37a4b3c0ab1020964c64184"
+      },
+      {
+        "id": "nahj-sermons-en",
+        "filename": "Nahjul Balagha Part 1 - The Sermons.epub",
+        "bytes": 711948,
+        "sha256": "93656f0e788765b394082ec135ea4068e3c868b7bc911db47c3e23b20b1051b5"
+      },
+      {
+        "id": "nahj-letters-sayings-en",
+        "filename": "Nahjul Balagha Part 2, Letters and Sayings.epub",
+        "bytes": 368995,
+        "sha256": "756edad7433ae2f919d3907f2a763ce43248205bee8f580ad87efaa125dd3e2d"
+      },
+      {
+        "id": "kafi-v1-ar",
+        "filename": "al-kafi-vol1-arabic.docx",
+        "bytes": 488910,
+        "sha256": "584a57a2a5a4bdb044e25fe6b1106456664cced51a9ffbb2499b8d72b37a06d1"
+      },
+      {
+        "id": "kafi-v2-ar",
+        "filename": "al-kafi-vol2-arabic.docx",
+        "bytes": 447131,
+        "sha256": "1b31b7cfff1d82bc4884f30494a903fbdf454066350ca6b5502f098c54e20a30"
+      },
+      {
+        "id": "kafi-v3-ar",
+        "filename": "al-kafi-vol3-arabic.docx",
+        "bytes": 385272,
+        "sha256": "5459d0c5038a88c23b57f18ddeb45b636f7465a45b6630fea0b03528893f1423"
+      },
+      {
+        "id": "kafi-v4-ar",
+        "filename": "al-kafi-vol4-arabic.docx",
+        "bytes": 395923,
+        "sha256": "6914cad75d8452f23afd26d2b0046d1964425f592527b54dba32b7fa6d61b286"
+      },
+      {
+        "id": "kafi-v5-ar",
+        "filename": "al-kafi-vol5-arabic.docx",
+        "bytes": 419007,
+        "sha256": "8ca84d85d4cf1e2915a852ea81683134aa2b8d9b0dc1d1b859353d6d0ba6a830"
+      },
+      {
+        "id": "kafi-v6-ar",
+        "filename": "al-kafi-vol6-arabic.docx",
+        "bytes": 395566,
+        "sha256": "158595d63aa2f1cc10c3551ef8f36179b8af3a66cb6fa6d48e769118e946f2c8"
+      },
+      {
+        "id": "kafi-v7-ar",
+        "filename": "al-kafi-vol7-arabic.docx",
+        "bytes": 349019,
+        "sha256": "dca36773fbe58404e4da6db4f6a0dbb6dde8c555e33182030f00968ed1b2425e"
+      },
+      {
+        "id": "kafi-v8-ar",
+        "filename": "al-kafi-vol8-arabic.docx",
+        "bytes": 337082,
+        "sha256": "0e2c9238a13af53c27a2a33b6f2e5aea299aba8fc9f679aad78cc79fe1dc934a"
+      }
+    ]
+  },
+  "preparedMirror": {
+    "revision": "7a3e6cdab484777c05b161b7e3cfaf7dd9ee08e9e357d6a63bf43f6215ad403e",
+    "immutableObjects": 5040,
+    "objectBytes": 32544534,
+    "currentPointerUploadedLast": true,
+    "locallyPreparedAndChecksummed": true,
+    "cloudflareAccessVerified": false
+  },
+  "note": "Hashes are from the original source files matching the source archive manifest; the archive contains normalized corpus records, not the original document files."
+}
