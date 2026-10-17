@@ -23,6 +23,7 @@ import { resolvePageLayout, resolvePhysicalMargins } from "../../tools/document-
 import { verifyPdfUrduEmbedding } from "../../tools/document-studio/utils/pdfEmbeddedFonts";
 import { paginatePdfInk } from "../../tools/document-studio/utils/pdfInkPagination";
 import { preflightPdfSource } from "../../tools/document-studio/utils/pdfSourcePreflight";
+import { issueForPdfFailure } from "../../tools/document-studio/utils/pdfExportDiagnostics";
 
 interface ExportPdfRequestBody {
   doc: DocNode;
@@ -214,9 +215,20 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("PDF export failed:", err);
-    const blocked = err instanceof Error && err.message.endsWith("export blocked") ? err.message : null;
-    return NextResponse.json({ error: blocked ?? "PDF بنانے میں خرابی ہوئی / Failed to generate PDF." }, { status: 500 });
+    // Never log user-authored text or font snippets. Diagnostics stay in the direct response.
+    const failure = issueForPdfFailure(err, doc);
+    // Preserve the established safe error contract for legacy consumers.
+    // Never echo arbitrary error text: it could contain user-authored content.
+    const safeReasons = [
+      "printable horizontal boundary", "300 visual-line limit",
+      "40000px staging limit", "98304-byte limit",
+      "20000 code-point single-text-node limit", "2500-node limit",
+    ];
+    const reason = err instanceof Error
+      ? safeReasons.find(known => err.message.includes(known)) : undefined;
+    const error = reason ?? (failure.code.startsWith("FONT_")
+      ? "PDF font safety validation export blocked" : failure.messageUr);
+    return NextResponse.json({ error, diagnostic: failure }, { status: 500 });
   } finally {
     if (browser) await browser.close();
   }
