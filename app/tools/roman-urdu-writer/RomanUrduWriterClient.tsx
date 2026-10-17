@@ -1231,7 +1231,7 @@ export default function RomanUrduWriterClient({ hideHeading = false }: { hideHea
                   rows={10}
                   placeholder="آج کا دن کافی اچھا تھا، میں خوش ہوں"
                   className="w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-lg font-nastaliq leading-loose text-right text-[#1A1A2E] shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/40 focus:border-[#C9A84C]"
-                  style={{ fontFamily: "var(--font-nastaliq), 'Noto Nastaliq Urdu', serif" }}
+                  style={{ fontFamily: '"Alvi Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif' }}
                   aria-label="Urdu script input"
                 />
                 {urduRomanInput && (

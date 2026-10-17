@@ -445,8 +445,8 @@ describe("createDocxDocument — v1.1 Phase 1: heading hierarchy fix", () => {
   });
 });
 
-describe("createDocxDocument — v1.1 Phase 1: fonts unchanged (explicit regression guard)", () => {
-  test("RTL still uses Noto Nastaliq Urdu, LTR uses Inter", async () => {
+describe("createDocxDocument — Urdu default is Alvi; explicit Jameel is preserved", () => {
+  test("unmarked RTL uses Alvi Nastaleeq and LTR uses Inter", async () => {
     const rtlXml = await extractDocumentXml(
       docWith([{ type: "paragraph", content: [{ type: "text", text: "متن" }] }]),
       "rtl"
@@ -455,8 +455,24 @@ describe("createDocxDocument — v1.1 Phase 1: fonts unchanged (explicit regress
       docWith([{ type: "paragraph", content: [{ type: "text", text: "text" }] }]),
       "ltr"
     );
-    expect(rtlXml).toContain("Noto Nastaliq Urdu");
+    expect(rtlXml).toContain('w:cs="Alvi Nastaleeq"');
+    expect(rtlXml).not.toContain("Noto Nastaliq Urdu");
     expect(ltrXml).toContain("Inter");
+  });
+
+  test("an explicit Jameel mark is not rewritten to Alvi", async () => {
+    const xml = await extractDocumentXml(
+      docWith([{
+        type: "paragraph",
+        content: [{
+          type: "text",
+          text: "جمیل",
+          marks: [{ type: "textStyle", attrs: { fontFamily: "Jameel Noori Nastaleeq" } }],
+        }],
+      }]),
+      "rtl"
+    );
+    expect(xml).toContain('w:cs="Jameel Noori Nastaleeq"');
   });
 });
 

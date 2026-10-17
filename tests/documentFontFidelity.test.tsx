@@ -112,6 +112,7 @@ describe("toolbar font selection sync", () => {
     ]) {
       expect(options).not.toContain(hidden);
     }
+    expect(options).toContain("Alvi Nastaleeq");
     expect(options).toContain("Jameel Noori Nastaleeq");
     expect(options).toContain("Sahel");
     view.rerender(<DocumentToolbar editor={editor as never} dir="ltr" setDir={() => {}} isUr={false} />);
@@ -129,10 +130,10 @@ describe("toolbar font selection sync", () => {
     expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Jameel Noori Nastaleeq");
     editor.commands.setTextSelection(editor.state.doc.content.size - 2);
     expect(activeToolbarFontFamily(editor)).toBe("");
-    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").fontFamily).toBe("Noto Nastaliq Urdu");
+    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").fontFamily).toBe("Alvi Nastaleeq");
     cleanup();
     render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr documentSettings={defaultDocumentSettings()} />);
-    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Noto Nastaliq Urdu");
+    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Alvi Nastaleeq");
     expect((document.querySelector("[data-studio-font-size]") as HTMLSelectElement).value).toBe("12");
     expect(document.querySelector("select[data-studio-line-height]")).toBeNull();
     expect(document.querySelector("[data-studio-spacing-button]")).toBeTruthy();

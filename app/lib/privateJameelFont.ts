@@ -163,17 +163,9 @@ export async function loadPrivateJameelWoff2(
   }
 
   const cloudflareUrl=config?.cloudflareUrl ?? process.env.QALAM_JAMEEL_FONT_MIRROR_URL ?? "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2";
-  if (cloudflareUrl) {
-    const mirrored=await loadJameelFromCloudflare(cloudflareUrl,config?.fetchImpl);
-    // Do not silently swap identity after an integrity failure.
-    if (mirrored.ok || (!mirrored.ok && mirrored.reason === "integrity-failed")) return mirrored;
-  }
-  return loadJameelFromBlob({
-    blobUrl: config?.blobUrl ?? process.env.JAMEEL_FONT_BLOB_URL,
-    oidcToken: config?.oidcToken ?? process.env.VERCEL_OIDC_TOKEN,
-    blobToken: config?.blobToken ?? process.env.BLOB_READ_WRITE_TOKEN,
-    fetchImpl: config?.fetchImpl,
-  });
+  if (!cloudflareUrl) return { ok: false, reason: "unavailable" };
+  // Vercel Blob is paused. Jameel is served only from the existing Cloudflare mirror.
+  return loadJameelFromCloudflare(cloudflareUrl, config?.fetchImpl);
 }
 
 export async function loadPrivateJameelWoff2Base64(): Promise<string | null> {

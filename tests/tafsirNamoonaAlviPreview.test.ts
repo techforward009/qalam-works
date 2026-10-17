@@ -15,10 +15,12 @@ describe("Tafsir Namoona Alvi Nastaleeq font trial", () => {
     expect(source).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
   });
 
-  it("preserves Amiri for Arabic runs and scopes Alvi to Tafsir Urdu", () => {
-    expect(source).toContain('data-tafsir-urdu-text="true"');
+  it("scopes Alvi to Tafsir Urdu and keeps Scheherazade on Arabic quotations", () => {
+    // Urdu is conditional, so the attribute is an expression rather than a hardcoded "true".
+    expect(source).toContain("data-tafsir-urdu-text={language === \"ur\" ? \"true\" : undefined}");
     expect(source).toContain('data-tafsir-arabic="true"');
-    expect(source).toContain('fontFamily: \'var(--font-amiri), "Amiri"');
+    expect(source).toContain('fontFamily: \'"Qalam Tafsir Scheherazade", serif\'');
+    expect(source).not.toContain('fontFamily: \'var(--font-amiri), "Amiri"');
   });
 
   it("preserves every source character through Urdu/Arabic display segmentation", () => {

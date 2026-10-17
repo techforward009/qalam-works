@@ -40,7 +40,7 @@ export const PUBLISHING_PRESETS: Record<PresetId, PublishingPreset> = {
     lineHeight: 1.5,
     firstLineIndentMm: 0,
     paragraphAfterPt: 6,
-    defaultRtlFontId: "noto-nastaliq-urdu",
+    defaultRtlFontId: "alvi-nastaleeq",
     defaultLtrFontId: "inter",
   },
   "book-manuscript": {
@@ -54,7 +54,7 @@ export const PUBLISHING_PRESETS: Record<PresetId, PublishingPreset> = {
     lineHeight: 1.8,
     firstLineIndentMm: 8,
     paragraphAfterPt: 4,
-    defaultRtlFontId: "noto-nastaliq-urdu",
+    defaultRtlFontId: "alvi-nastaleeq",
     defaultLtrFontId: "inter",
   },
   "newspaper-article": {
@@ -68,7 +68,7 @@ export const PUBLISHING_PRESETS: Record<PresetId, PublishingPreset> = {
     lineHeight: 1.15,
     firstLineIndentMm: 0,
     paragraphAfterPt: 4,
-    defaultRtlFontId: "noto-nastaliq-urdu",
+    defaultRtlFontId: "alvi-nastaleeq",
     defaultLtrFontId: "inter",
   },
   "academic-paper": {
@@ -82,7 +82,7 @@ export const PUBLISHING_PRESETS: Record<PresetId, PublishingPreset> = {
     lineHeight: 2,
     firstLineIndentMm: 0,
     paragraphAfterPt: 0,
-    defaultRtlFontId: "noto-nastaliq-urdu",
+    defaultRtlFontId: "alvi-nastaleeq",
     defaultLtrFontId: "inter",
   },
   "web-article": {
@@ -96,7 +96,7 @@ export const PUBLISHING_PRESETS: Record<PresetId, PublishingPreset> = {
     lineHeight: 1.6,
     firstLineIndentMm: 0,
     paragraphAfterPt: 8,
-    defaultRtlFontId: "noto-nastaliq-urdu",
+    defaultRtlFontId: "alvi-nastaleeq",
     defaultLtrFontId: "inter",
   },
 };

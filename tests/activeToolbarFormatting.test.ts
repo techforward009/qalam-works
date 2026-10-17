@@ -26,7 +26,7 @@ describe("effective toolbar formatting", () => {
     });
     ed.commands.setTextSelection(2);
     const ui = resolveActiveToolbarFormatting(ed, settings, "rtl");
-    expect(ui.fontFamily).toBe("Noto Nastaliq Urdu");
+    expect(ui.fontFamily).toBe("Alvi Nastaleeq");
     expect(ui.fontSizePt).toBe(12);
     expect(ui.lineHeight).toBe(1.5);
     expect(ui.blockStyle).toBe("normal");

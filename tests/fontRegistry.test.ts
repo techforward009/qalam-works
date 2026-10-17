@@ -47,7 +47,7 @@ describe("fontRegistry", () => {
   });
 
   test("default font depends on document direction", () => {
-    expect(resolveEditorFontFamily(null, "rtl").pdfFamily).toBe("Noto Nastaliq Urdu");
+    expect(resolveEditorFontFamily(null, "rtl").pdfFamily).toBe("Alvi Nastaleeq");
     expect(resolveEditorFontFamily(null, "ltr").pdfFamily).toBe("Inter");
   });
 
@@ -110,6 +110,7 @@ describe("fontRegistry", () => {
     expect(labels).not.toContain("Noto Nastaliq Urdu");
     expect(labels).toContain("Amiri");
     expect(labels).toContain("Inter");
+    expect(labels).toContain("Alvi Nastaleeq");
     expect(labels).toContain("Jameel Noori Nastaleeq");
   });
 
