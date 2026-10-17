@@ -1,8 +1,6 @@
-import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import PreparedSeriesSession from "../../PreparedSeriesSession";
-import { ahmedgrafQuranReference } from "../../../arabic-diacritics/quran/ahmedgrafProvider";
 import { preparedQuranSourceTexts, preparedArabicSourceTexts } from "../preparedSeries";
 import { readFileSync } from "node:fs";
 import { HAFS_AYAH_COUNTS } from "../../../arabic-diacritics/quran/hafsCounts";
