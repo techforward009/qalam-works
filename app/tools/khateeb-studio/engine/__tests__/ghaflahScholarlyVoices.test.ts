@@ -31,7 +31,7 @@ describe("Ghaflah source-grounded scholarly voices",()=>{
     expect(sources).toContain(voice.sourceUrl);
     expect(sources).toContain(voice.sourceNote.ur);
    }
-   expect(buildPreparedSessionWorkbench(session,20).blocks[1].bodyUr.join(" ")).toContain("مصباح");
+   expect(buildPreparedSessionWorkbench(session,20).blocks[1].bodyUr.join(" ")).toContain(prep.scholarlyExcerpts![0].scholar.ur);
   }
  });
 });

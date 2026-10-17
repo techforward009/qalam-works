@@ -397,108 +397,6 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
   ],
   "perspectives": [
     {
-      "id": "jawad-naqvi-ghaflah",
-      "speakerId": "jawad-naqvi",
-      "nameUr": "علامہ سید جواد نقوی",
-      "nameEn": "Syed Jawad Naqvi",
-      "sourceTitleUr": "سنن الٰہی اور آدابِ اسلامی — اصل مکتوب دروس",
-      "sourceTitleEn": "Divine Laws and Islamic Manners — published lecture transcripts",
-      "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1",
-      "coreUr": "بے خبری سے پیدا ہونے والا اطمینان اور یقین سے حاصل ہونے والا اطمینان ایک نہیں؛ دینی کیفیت کی قدر اس کے بعد رہ جانے والی عملی اصلاح سے ناپیں۔",
-      "coreEn": "Ignorance can create a deceptively reassuring calm; true spiritual growth is judged by lasting change after a devotional experience.",
-      "explanationUr": [
-        "سنن الٰہی، درس ۶ میں غفلت کے سرابی سکون کو پائیدار اطمینان سے الگ کیا گیا ہے۔",
-        "آداب اسلامی، درس ۲۸ میں مجلس اور دعا سے متاثر ہونے کے باوجود دوبارہ پرانی عادات میں پلٹنے کا مسئلہ سامنے آتا ہے۔",
-        "آداب اسلامی، درس ۳۱ میں نماز کی ظاہری ادائیگی کے ساتھ قلبی غفلت پر تنبیہ کی گئی ہے۔"
-      ],
-      "explanationEn": [
-        "Lesson 6 separates deceptive calm from conviction-grounded tranquility.",
-        "Lesson 28 asks why devotional motivation fades as soon as ordinary routines return.",
-        "Lesson 31 criticises heedless and rushed performance of prayer."
-      ],
-      "styleUr": "اصل دروس کی الگ الگ نسبت قائم رکھی جائے، تین بیانات کو ایک مسلسل اقتباس نہ بنایا جائے۔",
-      "styleEn": "Keep the three lecture sources distinct and do not present editorial synthesis as direct quotation.",
-      "useUr": "غفلت کی تشخیص، عبادت میں حضور اور مجلس کے بعد اصلاح کو مسلسل تین مراحل بنائیں۔",
-      "useEn": "Connect diagnosis, attentive worship, and sustained moral reform.",
-      "sourceGroundedUr": [
-        {
-          "heading": "سرابی اطمینان",
-          "explanation": "اس درس میں سید جواد نقوی دو قسم کے اطمینان میں فرق کرتے ہیں: ایک غفلت کا پیدا کردہ سرابی سکون اور دوسرا یقین سے حاصل ہونے والا پائیدار اطمینان۔ پہلی حالت میں انسان خطرے سے لاعلمی کے باعث مطمئن ہوتا ہے، نہ کہ خطرے کے ختم ہوجانے سے۔",
-          "exactRef": "سنن الٰہی — درس ۶: غفلت سے پیدا شدہ اطمینان",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1"
-        },
-        {
-          "heading": "وقتی اثر سے مستقل اصلاح",
-          "explanation": "درس میں یہ مسئلہ اٹھایا گیا ہے کہ دعا، مجلس یا دینی اجتماع انسان پر گہرا اثر ڈال سکتا ہے، مگر ماحول سے نکلنے کے بعد پرانی عادتیں واپس آجاتی ہیں۔ وقتی کیفیت اور مستقل تربیت کے درمیان فرق پر گفتگو کی گئی ہے۔",
-          "exactRef": "آدابِ اسلامی — درس ۲۸: مجلس کے اثر کی حفاظت",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf2aa4f8fbdf012b7ea4"
-        },
-        {
-          "heading": "نماز میں قلبی توجہ",
-          "explanation": "درس میں اس بات پر تنبیہ کی گئی ہے کہ نماز صرف ادا کرلینا کافی نہیں؛ جلدبازی، بے توجہی اور لاپروائی عبادت کے ادب کو متاثر کرتی ہے۔",
-          "exactRef": "آدابِ اسلامی — درس ۳۱: نماز میں غفلت",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf34a4f8fbdf012b7eb6"
-        }
-      ],
-      "sourceGroundedEn": [
-        {
-          "heading": "سرابی اطمینان",
-          "explanation": "Jawad Naqvi distinguishes illusory comfort produced by ignorance from stable tranquility grounded in certainty. The absence of alarm is not proof of safety.",
-          "exactRef": "Divine Laws — lesson 6: false comfort born of heedlessness",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1"
-        },
-        {
-          "heading": "وقتی اثر سے مستقل اصلاح",
-          "explanation": "This lesson addresses the gap between a moving devotional experience and sustained moral reform after returning to ordinary life.",
-          "exactRef": "Islamic Manners — lesson 28: preserving an awakened state",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf2aa4f8fbdf012b7ea4"
-        },
-        {
-          "heading": "نماز میں قلبی توجہ",
-          "explanation": "The lesson treats rushed, inattentive prayer as a problem of the etiquette and meaning of worship, not merely of external performance.",
-          "exactRef": "Islamic Manners — lesson 31: negligence in prayer",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf34a4f8fbdf012b7eb6"
-        }
-      ]
-    },
-    {
-      "id": "jawad-naqvi-prevention-of-fitan",
-      "speakerId": "jawad-naqvi",
-      "nameUr": "علامہ سید جواد نقوی",
-      "nameEn": "Syed Jawad Naqvi",
-      "sourceTitleUr": "حکمتِ علیؑ — حصہ ۵",
-      "sourceTitleEn": "Wisdom of Ali — part 5",
-      "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali",
-      "coreUr": "اجتماعی فتنوں میں غفلت اور جلد بازی باہم مل کر نقصان بڑھاتی ہیں۔",
-      "coreEn": "Heedlessness and haste together can fuel collective conflict.",
-      "explanationUr": [
-        "دینی اور معاشرتی تنازعات میں بے خبری اور جلدبازی کے کردار کو الگ الگ سمجھائیں۔"
-      ],
-      "explanationEn": [
-        "Separate the contributions of inattentiveness and hasty action to social conflict."
-      ],
-      "styleUr": "مخالف گروہوں پر الزام کے بجائے اپنے رویے کے محاسبے پر زور دیں۔",
-      "styleEn": "Focus on personal discernment rather than polemics.",
-      "useUr": "غفلت کے سماجی نتائج اور خبر کی تحقیق کے ضمن میں استعمال کریں۔",
-      "useEn": "Apply to self-examination and responsible response to disputes.",
-      "sourceGroundedUr": [
-        {
-          "heading": "غفلت اور جلد بازی",
-          "explanation": "مصنف کے مکتوب مضمون میں غفلت اور جلد بازی کو فتنوں کے عوامل میں بیان کیا گیا ہے؛ اسے موجودہ تنازعات میں سنجیدہ تحقیق اور تحمل کی ضرورت سے جوڑیں۔",
-          "exactRef": "سید جواد نقوی، حکمتِ علیؑ، حصہ ۵، «غفلت اور جلد بازی»",
-          "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali"
-        }
-      ],
-      "sourceGroundedEn": [
-        {
-          "heading": "غفلت اور جلد بازی",
-          "explanation": "The published essay treats heedlessness and haste as contributors to social disorder; draw a cautious connection to verification and restraint.",
-          "exactRef": "Syed Jawad Naqvi, Wisdom of Ali, part 5",
-          "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali"
-        }
-      ]
-    },
-    {
       "id": "hamed-kashani-danger-ghaflah",
       "speakerId": "hamed-kashani",
       "nameUr": "حجت الاسلام حامد کاشانی",
@@ -613,6 +511,108 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
           "explanation": "It discusses Qur'an 7:179: faculties of hearing, sight and understanding must be exercised rather than merely possessed.",
           "exactRef": "Naser Rafiei, Heedlessness and letter 69; Qur'an 7:179",
           "sourceUrl": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
+        }
+      ]
+    },
+    {
+      "id": "jawad-naqvi-ghaflah",
+      "speakerId": "jawad-naqvi",
+      "nameUr": "علامہ سید جواد نقوی",
+      "nameEn": "Syed Jawad Naqvi",
+      "sourceTitleUr": "سنن الٰہی اور آدابِ اسلامی — اصل مکتوب دروس",
+      "sourceTitleEn": "Divine Laws and Islamic Manners — published lecture transcripts",
+      "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1",
+      "coreUr": "بے خبری سے پیدا ہونے والا اطمینان اور یقین سے حاصل ہونے والا اطمینان ایک نہیں؛ دینی کیفیت کی قدر اس کے بعد رہ جانے والی عملی اصلاح سے ناپیں۔",
+      "coreEn": "Ignorance can create a deceptively reassuring calm; true spiritual growth is judged by lasting change after a devotional experience.",
+      "explanationUr": [
+        "سنن الٰہی، درس ۶ میں غفلت کے سرابی سکون کو پائیدار اطمینان سے الگ کیا گیا ہے۔",
+        "آداب اسلامی، درس ۲۸ میں مجلس اور دعا سے متاثر ہونے کے باوجود دوبارہ پرانی عادات میں پلٹنے کا مسئلہ سامنے آتا ہے۔",
+        "آداب اسلامی، درس ۳۱ میں نماز کی ظاہری ادائیگی کے ساتھ قلبی غفلت پر تنبیہ کی گئی ہے۔"
+      ],
+      "explanationEn": [
+        "Lesson 6 separates deceptive calm from conviction-grounded tranquility.",
+        "Lesson 28 asks why devotional motivation fades as soon as ordinary routines return.",
+        "Lesson 31 criticises heedless and rushed performance of prayer."
+      ],
+      "styleUr": "اصل دروس کی الگ الگ نسبت قائم رکھی جائے، تین بیانات کو ایک مسلسل اقتباس نہ بنایا جائے۔",
+      "styleEn": "Keep the three lecture sources distinct and do not present editorial synthesis as direct quotation.",
+      "useUr": "غفلت کی تشخیص، عبادت میں حضور اور مجلس کے بعد اصلاح کو مسلسل تین مراحل بنائیں۔",
+      "useEn": "Connect diagnosis, attentive worship, and sustained moral reform.",
+      "sourceGroundedUr": [
+        {
+          "heading": "سرابی اطمینان",
+          "explanation": "اس درس میں سید جواد نقوی دو قسم کے اطمینان میں فرق کرتے ہیں: ایک غفلت کا پیدا کردہ سرابی سکون اور دوسرا یقین سے حاصل ہونے والا پائیدار اطمینان۔ پہلی حالت میں انسان خطرے سے لاعلمی کے باعث مطمئن ہوتا ہے، نہ کہ خطرے کے ختم ہوجانے سے۔",
+          "exactRef": "سنن الٰہی — درس ۶: غفلت سے پیدا شدہ اطمینان",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1"
+        },
+        {
+          "heading": "وقتی اثر سے مستقل اصلاح",
+          "explanation": "درس میں یہ مسئلہ اٹھایا گیا ہے کہ دعا، مجلس یا دینی اجتماع انسان پر گہرا اثر ڈال سکتا ہے، مگر ماحول سے نکلنے کے بعد پرانی عادتیں واپس آجاتی ہیں۔ وقتی کیفیت اور مستقل تربیت کے درمیان فرق پر گفتگو کی گئی ہے۔",
+          "exactRef": "آدابِ اسلامی — درس ۲۸: مجلس کے اثر کی حفاظت",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf2aa4f8fbdf012b7ea4"
+        },
+        {
+          "heading": "نماز میں قلبی توجہ",
+          "explanation": "درس میں اس بات پر تنبیہ کی گئی ہے کہ نماز صرف ادا کرلینا کافی نہیں؛ جلدبازی، بے توجہی اور لاپروائی عبادت کے ادب کو متاثر کرتی ہے۔",
+          "exactRef": "آدابِ اسلامی — درس ۳۱: نماز میں غفلت",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf34a4f8fbdf012b7eb6"
+        }
+      ],
+      "sourceGroundedEn": [
+        {
+          "heading": "سرابی اطمینان",
+          "explanation": "Jawad Naqvi distinguishes illusory comfort produced by ignorance from stable tranquility grounded in certainty. The absence of alarm is not proof of safety.",
+          "exactRef": "Divine Laws — lesson 6: false comfort born of heedlessness",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1"
+        },
+        {
+          "heading": "وقتی اثر سے مستقل اصلاح",
+          "explanation": "This lesson addresses the gap between a moving devotional experience and sustained moral reform after returning to ordinary life.",
+          "exactRef": "Islamic Manners — lesson 28: preserving an awakened state",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf2aa4f8fbdf012b7ea4"
+        },
+        {
+          "heading": "نماز میں قلبی توجہ",
+          "explanation": "The lesson treats rushed, inattentive prayer as a problem of the etiquette and meaning of worship, not merely of external performance.",
+          "exactRef": "Islamic Manners — lesson 31: negligence in prayer",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf34a4f8fbdf012b7eb6"
+        }
+      ]
+    },
+    {
+      "id": "jawad-naqvi-prevention-of-fitan",
+      "speakerId": "jawad-naqvi",
+      "nameUr": "علامہ سید جواد نقوی",
+      "nameEn": "Syed Jawad Naqvi",
+      "sourceTitleUr": "حکمتِ علیؑ — حصہ ۵",
+      "sourceTitleEn": "Wisdom of Ali — part 5",
+      "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali",
+      "coreUr": "اجتماعی فتنوں میں غفلت اور جلد بازی باہم مل کر نقصان بڑھاتی ہیں۔",
+      "coreEn": "Heedlessness and haste together can fuel collective conflict.",
+      "explanationUr": [
+        "دینی اور معاشرتی تنازعات میں بے خبری اور جلدبازی کے کردار کو الگ الگ سمجھائیں۔"
+      ],
+      "explanationEn": [
+        "Separate the contributions of inattentiveness and hasty action to social conflict."
+      ],
+      "styleUr": "مخالف گروہوں پر الزام کے بجائے اپنے رویے کے محاسبے پر زور دیں۔",
+      "styleEn": "Focus on personal discernment rather than polemics.",
+      "useUr": "غفلت کے سماجی نتائج اور خبر کی تحقیق کے ضمن میں استعمال کریں۔",
+      "useEn": "Apply to self-examination and responsible response to disputes.",
+      "sourceGroundedUr": [
+        {
+          "heading": "غفلت اور جلد بازی",
+          "explanation": "مصنف کے مکتوب مضمون میں غفلت اور جلد بازی کو فتنوں کے عوامل میں بیان کیا گیا ہے؛ اسے موجودہ تنازعات میں سنجیدہ تحقیق اور تحمل کی ضرورت سے جوڑیں۔",
+          "exactRef": "سید جواد نقوی، حکمتِ علیؑ، حصہ ۵، «غفلت اور جلد بازی»",
+          "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali"
+        }
+      ],
+      "sourceGroundedEn": [
+        {
+          "heading": "غفلت اور جلد بازی",
+          "explanation": "The published essay treats heedlessness and haste as contributors to social disorder; draw a cautious connection to verification and restraint.",
+          "exactRef": "Syed Jawad Naqvi, Wisdom of Ali, part 5",
+          "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali"
         }
       ]
     }
@@ -1355,6 +1355,54 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "sourceLabelUr": "حوزۂ قم کے اساتذہ کی رپورٹ — مکمل مکتوب خطاب نہیں",
     "sourceLabelEn": "Qom seminary teachers' report — not a complete transcript",
     "sourceUrl": "https://www.neshasteasatid.com/node/3540"
+  },
+  {
+    "id": "qaraati-signed-letter-ghaflah",
+    "speakerId": "qaraati",
+    "topicIds": [
+      "ghaflah"
+    ],
+    "kind": "transcript",
+    "status": "ready",
+    "titleUr": "محسن قرائتی — غفلت کے خطرے اور انسانی ذمہ داریوں پر شائع شدہ خط",
+    "titleEn": "Mohsen Qaraati — published letter on heedlessness and human responsibilities",
+    "topicsUr": [
+      "غفلت",
+      "ذکر",
+      "حقوق",
+      "آخرت"
+    ],
+    "topicsEn": [
+      "heedlessness",
+      "remembrance",
+      "rights",
+      "hereafter"
+    ],
+    "summaryUr": "محسن قرائتی کے نام سے شائع شدہ اور ان کے دستخط پر ختم ہونے والے خط میں غفلت کو انسان کا بڑا خطرہ بتایا گیا ہے۔ خدا و آخرت، عمر و صلاحیت اور محروم انسانوں سے بے خبری کی الگ جہات بیان ہوئی ہیں۔",
+    "summaryEn": "A signed published letter describes heedlessness as a major human danger and addresses forgetting God, the afterlife, human abilities and the deprived.",
+    "materialUr": [
+      "خط کے آغاز میں غفلت کے خطرے پر واضح تنبیہ موجود ہے؛ اسے مخاطب کے مخصوص سیاق کے ساتھ پیش کیجیے۔",
+      "خدا و قیامت سے غفلت کے ساتھ انسانی عمر، جوانی اور صلاحیتوں کی قدر کا مسئلہ الگ کیا گیا ہے۔",
+      "خط میں محروم افراد اور معاشرے کے حقوق سے بے خبری کا پہلو بھی موجود ہے؛ اسے اخلاقی ذمہ داری تک لے جائیے۔",
+      "یہ ایک شائع شدہ خط ہے؛ اسے مکمل مجلس یا خطیب کی لفظی تقریر کے طور پر پیش نہ کیجیے۔"
+    ],
+    "materialEn": [
+      "The signed letter opens with a warning on heedlessness and addresses a particular audience.",
+      "It distinguishes forgetting God and accountability from neglecting human gifts and youth.",
+      "Concern for the underprivileged is included as a social dimension.",
+      "This is a published letter, not a full transcribed pulpit sermon."
+    ],
+    "takeawaysUr": [
+      "غفلت صرف عبادت میں بے توجہی نہیں، انسانی ذمہ داریوں سے بے خبری بھی ہے۔",
+      "اصل خط کے مخاطب اور تمام متنازع دعووں کا سیاق برقرار رکھا جائے۔"
+    ],
+    "takeawaysEn": [
+      "Heedlessness includes responsibilities beyond ritual.",
+      "Keep the original letter's audience and context explicit."
+    ],
+    "sourceLabelUr": "محسن قرائتی — اصل فارسی شائع شدہ خط، ہدانا",
+    "sourceLabelEn": "Mohsen Qaraati — published signed Persian letter (Hadana)",
+    "sourceUrl": "https://hadana.ir/%D9%86%D8%A7%D9%85%D9%87-%D8%A7%D8%B3%D8%AA%D8%A7%D8%AF-%D9%82%D8%B1%D8%A7%D8%A6%D8%AA%DB%8C-%D8%A8%D9%87-%D8%AF%D8%AE%D8%AA%D8%B1%D8%A7%D9%86-%D8%A7%DB%8C%D8%B1%D8%A7%D9%86%DB%8C-%D8%AE%D8%A7%D9%86%D9%85-%D9%87%D8%A7-%D8%A7%DB%8C%D9%86-%D9%86%D8%A7%D9%85%D9%87-%D8%B1%D8%A7-%D8%A8%D8%AE%D9%88%D8%A7%D9%86%D9%86%D8%AF/"
   }
 ];
 export const GHAF_LAH_VERIFIED_HADITHS: readonly VerifiedHadithRecord[] = [

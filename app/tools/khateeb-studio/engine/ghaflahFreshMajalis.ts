@@ -212,9 +212,9 @@ const SPECS: readonly Spec[] = [
         "url": "https://al-islam.org/ghurar-al-hikam-wa-durar-al-kalim-exalted-aphorisms-and-pearls-speech/negligence"
       },
       {
-        "labelUr": "سید جواد نقوی — آدابِ اسلامی، درس ۳۱",
-        "labelEn": "Syed Jawad Naqvi — Islamic Manners, lesson 31",
-        "url": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf34a4f8fbdf012b7eb6"
+        "labelUr": "آیت اللہ العظمیٰ حسین مظاہری — رذیلت سوم: غفلت",
+        "labelEn": "Grand Ayatollah Mazaheri — The Third Vice: Heedlessness",
+        "url": "https://www.neshasteasatid.com/node/7110"
       }
     ],
     "heads": [
@@ -238,8 +238,8 @@ const SPECS: readonly Spec[] = [
         "یہ قول اصل عربی اور حوالہ کے ساتھ دکھایا جاتا ہے؛ اگلے چھوٹے اعمال اس کی تدوینی تطبیق ہیں۔"
       ],
       [
-        "سید جواد نقوی کے «آدابِ اسلامی» کے درس ۳۱ میں نماز کی بے توجہی اور جلدبازی کو اخلاقی مسئلہ بنایا گیا ہے۔ ان کے ایک دوسرے مکتوب درس، نمبر ۲۸ میں، دعا یا مجلس کے اثر کے بعد پرانی عادتوں کی طرف واپس پلٹنے کی بات اٹھتی ہے۔ یہ سوال ہمارے تمام دینی اجتماعات پر لاگو ہوتا ہے: کیا ہم مجلس سے صرف ایک کیفیت لے کر نکلتے ہیں یا کوئی نیا فیصلہ بھی؟ اگر گھر میں وہی تلخ لہجہ، کاروبار میں وہی بے احتیاطی اور دوسروں کے لیے وہی بے حسی باقی ہے تو ہمیں اپنی عبادت کی روح کی حفاظت پر مزید کام کرنا ہوگا۔ یہاں دوسروں پر طعن نہیں، اپنے اندر کے خلا کو پہچاننا مقصود ہے۔",
-        "اصل مکتوب دروس سے اخذ کردہ نکات کو الگ رکھیں؛ جذباتی کیفیت کی نفی نہ کریں، اسے کردار کی طرف لے جائیں۔"
+        "آیت اللہ العظمیٰ حسین مظاہری نے «رذیلت سوم: غفلت» میں نماز کی اہمیت، قرآن سے انس اور ذکر کی پابندی کو غفلت کے علاج میں شمار کیا ہے۔ ملا نراقیؒ کے اخلاقی بیان میں بھی بیداری کا بنیادی تقاضا یہ ہے کہ آدمی اپنی توجہ کو مقصدِ زندگی کے تابع کرے۔ یہ سوال ہمارے تمام دینی اجتماعات پر لاگو ہوتا ہے: کیا ہم مجلس سے صرف ایک کیفیت لے کر نکلتے ہیں یا کوئی نیا فیصلہ بھی؟ اگر گھر میں وہی تلخ لہجہ، کاروبار میں وہی بے احتیاطی اور دوسروں کے لیے وہی بے حسی باقی ہے تو ہمیں اپنی عبادت کی روح کی حفاظت پر مزید کام کرنا ہوگا۔ یہاں دوسروں پر طعن نہیں، اپنے اندر کے خلا کو پہچاننا مقصود ہے۔",
+        "آیت اللہ مظاہری کے شائع شدہ فارسی درس اور نراقی کی اخلاقی بحث سے ماخذی نکتے الگ اور واضح رکھیں؛ روزمرہ مثالیں ہماری تدوین ہیں۔"
       ],
       [
         "آج سامع سے یہ وعدہ لیجیے کہ وہ اپنی روزانہ کی نمازوں میں سے ایک نماز کے لیے کچھ اضافی توجہ مخصوص کرے گا۔ نماز سے قبل موبائل الگ رکھے، جس آیت یا ذکر کو پڑھتا ہے اس کے معنی یاد کرے، اور نماز کے بعد خود سے پوچھے کہ میرے مزاج میں آج کیا بہتری آئی؟ کوئی صرف ایک نماز سے کامل نہیں ہوجاتا، مگر ایک نماز سے سفر شروع ہوسکتا ہے۔ اور اگر کسی مجلس میں دل نرم ہوا تو اس نرمی کو کسی انسان کے لیے فائدہ بنا دیجیے۔ کل ہم یہ سوال کھولیں گے کہ غفلت کا ایک خطرناک رخ ہمارے گھر، والدین، اولاد اور معاشرے کے حقوق میں کیوں نظر آتا ہے۔",
@@ -264,8 +264,8 @@ const SPECS: readonly Spec[] = [
       ],
       [
         "When the majlis ends",
-        "Syed Jawad Naqvi's published lessons 31 and 28 discuss inattentive prayer and the disappearance of devotional influence after returning to routine. A touching gathering must become a better choice in ordinary life.",
-        "Do not treat emotional response as worthless; build on it."
+        "Grand Ayatollah Mazaheri's published ethics lesson recommends Qur'an, attentive prayer, and remembrance as means to counter heedlessness. Naraqi's classical ethical treatment likewise stresses conscious attention to the aims of life. Devotional emotion should be cultivated into changed conduct.",
+        "The original Mazaheri lecture and an English summary of Naraqi's ethics are distinct source types; illustrations are editorial."
       ],
       [
         "Start with one prayer",
