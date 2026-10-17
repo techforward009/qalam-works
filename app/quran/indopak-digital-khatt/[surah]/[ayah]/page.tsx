@@ -7,7 +7,7 @@ export async function generateMetadata({
   params: Promise<{ surah: string; ayah: string }>;
 }): Promise<Metadata> {
   const { surah, ayah } = await params;
-  return { title: "IndoPak Digital Khatt " + surah + ":" + ayah + " — Qalam Works" };
+  return { title: "IndoPak Digital Khatt " + surah + ":" + ayah + " — Qalam Works", alternates: { canonical: `/quran/indopak-digital-khatt/${surah}/${ayah}` } };
 }
 
 export default async function DigitalKhattAyahPage({

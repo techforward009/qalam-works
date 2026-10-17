@@ -8,7 +8,7 @@ export async function generateMetadata({ params }: { params: Promise<{ surah: st
   const { surah, ayah } = await params;
   const found = getReaderAyah(Number(surah), Number(ayah));
   if (!found) return { title: "Quran" };
-  return { title: `${surahTitle(found.surah)} ${found.ayah} — Qalam Works` };
+  return { title: `${surahTitle(found.surah)} ${found.ayah} — Qalam Works`, alternates: { canonical: `/quran/${surah}/${ayah}` } };
 }
 
 export default async function QuranAyahPage({ params }: { params: Promise<{ surah: string; ayah: string }> }) {
