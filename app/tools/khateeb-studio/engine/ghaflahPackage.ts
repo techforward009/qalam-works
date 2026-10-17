@@ -113,6 +113,13 @@ export const GHAF_LAH_TOPIC: TopicPrep = {
       "detailUr": "مکتوب خطاب: غفلت کے مقامات سے اجتناب، قلب و عقل کی توجہ، قرآن میں غفلت کی علامتیں۔",
       "detailEn": "Published transcript on places of heedlessness, attentive use of understanding and Qur'anic symptoms.",
       "url": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
+    },
+    {
+      "labelUr": "آیت اللہ سید محمدمہدی میرباقری — ذکر اور غفلت",
+      "labelEn": "Ayatollah Muhammad Mahdi Mirbaqeri — Remembrance and heedlessness",
+      "detailUr": "حوزۂ قم کی رپورٹ میں غفلت اور ذکر کے موضوع پر ان کی تقریر کا خلاصہ شائع ہوا ہے۔ مکمل اصل تقریر کی ماخذی جانچ باقی ہے؛ اس رپورٹ کو براہِ راست مکتوب تقریر نہ سمجھا جائے۔",
+      "detailEn": "A seminary report summarizes a talk on remembrance and heedlessness; the full transcript has not been independently verified.",
+      "url": "https://www.neshasteasatid.com/node/3540"
     }
   ],
   "anglesUr": [
@@ -710,26 +717,38 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
   "closingEn": "Invite three commitments: five minutes of daily examination, one deliberately attentive prayer, and repair of one neglected right. Any transition to Imam Husayn's suffering must use separately verified historical sources and turn grief toward moral fidelity."
 };
 export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
-
   {
     "id": "shojaei-ghaflah-identity-summary",
     "speakerId": "shojaei",
-    "topicIds": ["ghaflah"],
+    "topicIds": [
+      "ghaflah"
+    ],
     "kind": "compiled-majalis",
     "status": "catalog-only",
     "titleUr": "استاد محمد شجاعی — صحیفہ سجادیہ سے انسان شناسی",
     "titleEn": "Mohammad Shojaei — Anthropology through Sahifa Sajjadiyya",
-    "topicsUr": ["غفلت", "خود شناسی", "صحیفہ سجادیہ"],
-    "topicsEn": ["heedlessness", "self-knowledge", "Sahifa Sajjadiyya"],
+    "topicsUr": [
+      "غفلت",
+      "خود شناسی",
+      "صحیفہ سجادیہ"
+    ],
+    "topicsEn": [
+      "heedlessness",
+      "self-knowledge",
+      "Sahifa Sajjadiyya"
+    ],
     "summaryUr": "سرکاری ویب سائٹ کے شائع شدہ خلاصے میں اپنی حقیقی شناخت سے غفلت کو موضوع بنایا گیا ہے۔ ابھی مکمل مکتوب خطاب کا جائزہ باقی ہے۔",
     "summaryEn": "An official summary discusses neglect of true identity, but the complete transcript has not been reviewed.",
-    "takeawaysUr": ["اصل بیان کا مکمل متن پڑھنے کے بعد ہی مخصوص مفصل دعوے منسوب کیے جائیں۔"],
-    "takeawaysEn": ["Specific detailed claims require reviewing the full talk."],
+    "takeawaysUr": [
+      "اصل بیان کا مکمل متن پڑھنے کے بعد ہی مخصوص مفصل دعوے منسوب کیے جائیں۔"
+    ],
+    "takeawaysEn": [
+      "Specific detailed claims require reviewing the full talk."
+    ],
     "sourceLabelUr": "رسانۂ رسمی استاد شجاعی — بیان کے نکات",
     "sourceLabelEn": "Official Shojaei media — published speaking outline",
     "sourceUrl": "https://media.montazer.ir/47690-2/"
   },
-
   {
     "id": "jawad-ghaflat-false-calm",
     "speakerId": "jawad-naqvi",
@@ -1252,6 +1271,38 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "sourceLabelUr": "ناصر رفیعی — غفلت / نامہ ۶۹، مکتوب خطاب",
     "sourceLabelEn": "Naser Rafiei — Heedlessness / letter 69, published transcript",
     "sourceUrl": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
+  },
+  {
+    "id": "mirbaqeri-ghaflah-remembrance-lead",
+    "speakerId": "mirbaqeri",
+    "topicIds": [
+      "ghaflah"
+    ],
+    "kind": "compiled-majalis",
+    "status": "catalog-only",
+    "titleUr": "آیت اللہ میرباقری — ذکر سے دوری اور غفلت کا خطرہ",
+    "titleEn": "Ayatollah Mirbaqeri — absence of remembrance and heedlessness",
+    "topicsUr": [
+      "غفلت",
+      "ذکر",
+      "سیرت"
+    ],
+    "topicsEn": [
+      "heedlessness",
+      "remembrance",
+      "spiritual formation"
+    ],
+    "summaryUr": "مقامی حوزوی مرکز کی شائع شدہ رپورٹ میں ذکر اور غفلت کے فرق کے حوالے سے ان کا بیان نقل ہوا ہے؛ مکمل لفظی تقریر کا جائزہ ابھی باقی ہے۔",
+    "summaryEn": "A seminary account reports his remarks on distraction and remembrance, but the full talk has not been reviewed.",
+    "takeawaysUr": [
+      "اصل مکتوب خطاب کے بغیر جزئیات یا مخصوص قول منسوب نہ کیا جائے۔"
+    ],
+    "takeawaysEn": [
+      "Avoid unverified direct quotation until the complete text is reviewed."
+    ],
+    "sourceLabelUr": "حوزۂ قم کے اساتذہ کی رپورٹ — مکمل مکتوب خطاب نہیں",
+    "sourceLabelEn": "Qom seminary teachers' report — not a complete transcript",
+    "sourceUrl": "https://www.neshasteasatid.com/node/3540"
   }
 ];
 export const GHAF_LAH_VERIFIED_HADITHS: readonly VerifiedHadithRecord[] = [

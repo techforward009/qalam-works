@@ -299,6 +299,11 @@ const SPECS: readonly Spec[] = [
         "labelUr": "حامد کاشانی — خطر غفلت، مجلس پنجم",
         "labelEn": "Hamed Kashani — Danger of Heedlessness, session 5",
         "url": "https://www.hkashani.com/?p=23605"
+      },
+      {
+        "labelUr": "نہج البلاغہ — نامہ ۶۹، حارث ہمدانی کے نام",
+        "labelEn": "Nahj al-Balagha, letter 69 to al-Harith al-Hamdani",
+        "url": "https://al-islam.org/es/node/20897"
       }
     ],
     "heads": [
@@ -386,6 +391,11 @@ const SPECS: readonly Spec[] = [
         "labelUr": "حامد کاشانی — خطر غفلت، مجلس دہم",
         "labelEn": "Hamed Kashani — Danger of Heedlessness, session 10",
         "url": "https://www.hkashani.com/?p=23978"
+      },
+      {
+        "labelUr": "آیت اللہ میرباقری — ذکر و غفلت پر حوزوی رپورٹ، اصل خطاب کی جانچ باقی",
+        "labelEn": "Ayatollah Mirbaqeri — seminary report on remembrance, full speech not reviewed",
+        "url": "https://www.neshasteasatid.com/node/3540"
       }
     ],
     "heads": [
