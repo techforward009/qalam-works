@@ -5,6 +5,8 @@ on:
   pull_request:
     paths:
       - 'app/tools/khateeb-studio/**'
+      - 'app/globals.css'
+      - 'tests/bookPassageFont.test.tsx'
       - '.github/workflows/khateeb-ghaflah-acceptance.yml'
   workflow_dispatch:
 permissions:
@@ -25,6 +27,6 @@ jobs:
       - name: Install pinned dependencies without scripts
         run: npm ci --ignore-scripts
       - name: Focused Ghaflah source, series and duration tests
-        run: npx vitest run app/tools/khateeb-studio/engine/__tests__/ghaflahFreshMajalis.test.ts app/tools/khateeb-studio/engine/__tests__/ghaflahPackage.test.ts app/tools/khateeb-studio/engine/__tests__/ghaflahScholarlyVoices.test.ts tests/khateebStudio.test.ts --reporter=verbose
+        run: npx vitest run app/tools/khateeb-studio/engine/__tests__/ghaflahFreshMajalis.test.ts app/tools/khateeb-studio/engine/__tests__/ghaflahPackage.test.ts app/tools/khateeb-studio/engine/__tests__/ghaflahScholarlyVoices.test.ts tests/khateebStudio.test.ts tests/bookPassageFont.test.tsx --reporter=verbose
       - name: Verify type safety
         run: npx tsc --noEmit
