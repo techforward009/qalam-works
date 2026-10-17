@@ -177,9 +177,4 @@ export const GHAF_LAH_SCHOLARLY_VOICES: readonly GhaflahScholarlyVoice[] = [
       5
     ]
   }
-]
-      1,
-      5
-    ]
-  }
 ];
