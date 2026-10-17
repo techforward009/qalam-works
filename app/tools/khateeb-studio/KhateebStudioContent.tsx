@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PreparedSeriesSession from "./PreparedSeriesSession";
 import GhaflahScholarCoverage from "./GhaflahScholarCoverage";
-import GhaflahScholarlyVoices from "./GhaflahScholarlyVoices";
+
 import { buildPreparedSeriesText } from "./engine/preparedSeries";
 import TopicSpeakingGuide from "./TopicSpeakingGuide";
 import { buildTopicSpeakingGuideText } from "./engine/topicSpeakingGuide";
@@ -1558,7 +1558,7 @@ export default function KhateebStudioContent({
                     </p>
                   </section>
 
-                  {topic.id === "ghaflah" ? <GhaflahScholarlyVoices ur={ur} /> : null}
+
                   {topic.id === "ghaflah" ? <GhaflahScholarCoverage ur={ur} /> : null}
 
                   {seriesLayer === "fresh" && originalityReport ? (
@@ -1613,7 +1613,7 @@ export default function KhateebStudioContent({
 
                   {isGhaflahFreshSeries ? (
                     <nav data-testid="ghaflah-session-selector" aria-label={ur ? "مجالس کا انتخاب" : "Select a majlis"} className="khateeb-no-print rounded-2xl border border-[#B8935A]/30 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
-                      <div className="mb-3 text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">{ur ? "ایک مجلس منتخب کریں — مکمل مطالعہ" : "Choose one majlis — focused reading"}</div>
+                      <div className="mb-3 text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">{ur ? "ایک مجلس منتخب کریں — پڑھنے کے لیے تیار متن" : "Choose one majlis — focused reading"}</div>
                       <div role="tablist" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
                         {topicSeries.sessions.map((item) => (
                           <button key={item.number} type="button" role="tab"
@@ -1627,7 +1627,7 @@ export default function KhateebStudioContent({
                           </button>
                         ))}
                       </div>
-                      <p className="mt-3 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">{ur ? "ہر مجلس میں اصل آیات و تراجم، ماخذ سے ثابت روایت، مربوط منبری عبارت اور مطالعے کے روابط الگ ہیں۔" : "Each session separates original verses and translations, a cited narration, editorial speaking text and linked sources."}</p>
+                      <p className="mt-3 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">{ur ? "ہر مجلس میں تلاوت، اردو ترجمہ، علما کی گفتگو، منبری عبارت اور کتابی حوالے ایک ہی جگہ موجود ہیں؛ کسی بیرونی صفحے پر جانے کی ضرورت نہیں۔" : "Every session contains the verses, translation, attributed insights, complete speaking text, and book citations without external links."}</p>
                     </nav>
                   ) : null}
                   <section className="space-y-4">

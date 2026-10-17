@@ -14,6 +14,7 @@ export type MajlisSessionWorkbench = {
   titleUr: string;
   titleEn: string;
   duration: SermonDuration;
+  readyToDeliver?:boolean;
   openingUr: string;
   openingEn: string;
   centralUr: string;
@@ -170,6 +171,13 @@ export function buildSessionWorkbenchText(
   locale: "ur" | "en",
 ): string {
   const ur = locale === "ur";
+  if(workbench.readyToDeliver){
+   return [ur?workbench.titleUr:workbench.titleEn,
+     ...workbench.blocks.flatMap(block=>[
+       ur?block.headingUr:block.headingEn,
+       ...(ur?block.bodyUr:block.bodyEn),
+     ])].join("\n\n");
+  }
   const lines: string[] = [
     ur ? workbench.titleUr : workbench.titleEn,
     `${ur ? "مدت" : "Duration"}: ${workbench.duration} ${ur ? "منٹ" : "minutes"}`,

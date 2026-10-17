@@ -31,13 +31,13 @@ describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
      expect(m?.originalArabicVerified).toBe(false);
      expect(m?.sourceType).toBe("historical-summary-of-translated-source");
      expect(m?.history.ur.length).toBeGreaterThan(400);
-     expect(buildSessionWorkbenchText(buildSessionWorkbench(session,30),"ur")).toContain(m!.sourceUrl);
+     expect(buildSessionWorkbenchText(buildSessionWorkbench(session,30),"ur")).toContain(m!.source.ur);
    }
  });
  it("calculates spoken-word duration without counting bibliography links or editor headings",()=>{
    for(const session of GHAF_LAH_FRESH_FIVE.sessions){
      const a=estimatePreparedSpeech(session.preparation!,"ur");
-     expect(a.words).toBe(a.categories.prose+a.categories.masaib+a.categories.verses+a.categories.hadiths+a.categories.expansions);
+     expect(a.words).toBe(a.categories.prose+a.categories.masaib+a.categories.verses+a.categories.hadiths+a.categories.expansions+a.categories.scholars);
      expect(a.categories.masaib).toBeGreaterThan(150);
      expect(a.words).toBeGreaterThan(1150);
      expect(a.highMinutes).toBeGreaterThanOrEqual(a.lowMinutes);
@@ -99,13 +99,30 @@ describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
      .toBeGreaterThan(buildSessionWorkbenchText(buildSessionWorkbench(session,20),"ur").length+500);
   }
  });
- it.each([20,30,45] as const)("includes authentic textual sources and source URLs in %i-minute draft",duration=>{
+ it("keeps all five Urdu delivery manuscripts free of external URLs and editorial assignments",()=>{
+   for(const session of GHAF_LAH_FRESH_FIVE.sessions){
+     for(const minutes of [20,30,45] as const){
+       const manuscript=buildSessionWorkbenchText(buildSessionWorkbench(session,minutes),"ur");
+       expect(manuscript).not.toContain("https://");
+       expect(manuscript).not.toContain("http://");
+       expect(manuscript).not.toContain("سامع سے کہیے");
+       expect(manuscript).not.toContain("خطیب اپنے معتبر");
+       expect(manuscript).toContain("قرآن مجید");
+       expect(manuscript).toContain("حوالہ:");
+     }
+   }
+ });
+ it.each([20,30,45] as const)("includes Quran, Arabic hadith and plain-text references but no external URLs in %i-minute manuscript",duration=>{
   const session=GHAF_LAH_FRESH_FIVE.sessions[0];
   const workbench=buildSessionWorkbench(session,duration);
   expect(workbench.blocks.reduce((total,b)=>total+b.minutes,0)).toBe(duration);
   const manuscript=buildSessionWorkbenchText(workbench,"ur");
   expect(manuscript).toContain("7:179");
-  expect(manuscript).toContain("ghurar-al-hikam");
-  expect(manuscript).toContain("قابلِ بیان");
+  expect(manuscript).toContain("غرر الحکم");
+  expect(manuscript).not.toContain("https://");
+  expect(manuscript).not.toContain("قابلِ بیان عبارت");
+  expect(manuscript).not.toContain("sourceUrl");
+  expect(manuscript).not.toContain("اصل ماخذ کھولیں");
+  expect(manuscript).not.toContain("اپنی مثال کی جگہ");
  });
 });

@@ -17,15 +17,12 @@ export default function GhaflahScholarlyVoices({ur}:{ur:boolean}){
       <p className="text-xs leading-6 text-[#69776d] dark:text-[#a8c8b0]">{ur?item.workUr:item.workEn}</p>
       <blockquote lang={item.language} dir={item.language==="fa"?"rtl":"ltr"}
         className="mt-3 border-s-4 border-[#B8935A] bg-[#f8f3e8] px-4 py-3 text-base leading-9 text-[#293d30] dark:bg-[#29271c] dark:text-[#e5dfcf]">
-        {item.quote}
+        {ur?(item.language==="en" ? item.ur : item.quote):item.quote}
       </blockquote>
       <p className="mt-3 leading-8 text-[#263d2f] dark:text-[#d7e1d9]">{ur?item.ur:item.en}</p>
       <p className="mt-2 text-sm leading-7 text-[#4a6053] dark:text-[#b4c9b9]">{ur?item.whyUr:item.whyEn}</p>
       <p className="mt-2 text-xs leading-6 text-[#765e3b] dark:text-[#d3b88e]">{ur?item.noteUr:item.noteEn}</p>
-      <a href={item.url} target="_blank" rel="noopener noreferrer"
-       className="mt-3 inline-block text-sm font-semibold text-[#276448] underline underline-offset-4 dark:text-[#a3d7b4]">
-       {ur?"اصل عبارت اور مکمل ماخذ کھولیں":"Open published source"}
-      </a>
+      <p className="mt-3 text-xs leading-7 text-[#725e41] dark:text-[#d1b88e]">{ur?`حوالہ: ${item.scholarUr}، ${item.workUr}`:`Citation: ${item.scholarEn}, ${item.workEn}`}</p>
     </article>)}
    </div>
  </section>;
