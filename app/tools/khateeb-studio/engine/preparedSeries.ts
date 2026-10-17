@@ -1,4 +1,5 @@
 import type { MajlisSeriesPlan, MajlisSeriesSession } from './seriesPlanner';
+import type { SourcedMasaib } from './ghaflahMasaib';
 import type { MajlisSessionWorkbench } from './sessionWorkbench';
 import type { SermonDuration } from './sermonPrep';
 import { buildSessionWorkbenchText } from './sessionWorkbench';
@@ -14,6 +15,7 @@ export type PreparedSessionMaterial = {
  quranGroups?: readonly PreparedQuranGroup[];
  primaryExcerpts?: readonly PreparedPrimaryExcerpt[];
  hadithId?: string;
+ masaib?: SourcedMasaib;
  additionalHadithIds?: readonly string[];
  scholarSources?: readonly { label: SeriesBilingual; url: string }[];
  question: SeriesBilingual; example: SeriesBilingual; action: SeriesBilingual;
@@ -70,6 +72,15 @@ export function buildPreparedSessionWorkbench(session: MajlisSeriesSession, dura
   locale==='ur'?'قابلِ بیان عبارت — قلم ورکس کی تدوین':'Ready-to-deliver paragraph — Qalam Works editorial material',p.blocks[index].delivery[locale],
   locale==='ur'?'وضاحت اور ربط — قلم ورکس کی تدوین':'Explanation and connection — Qalam Works editorial material',p.blocks[index].explanation[locale],
   ...(index===3?[`${locale==='ur'?'فرضی روزمرہ مثال':'Hypothetical everyday example'}: ${p.example[locale]}`]:[]),
+  ...(index===4 && p.masaib ? [
+   locale==='ur'?'مصائبِ اہلِ بیتؑ — تاریخی واقعے کا محتاط خلاصہ (اصل عربی کی مستقل تصدیق ابھی باقی)':'Masaib — careful summary of a translated historical account (original Arabic not independently collated)',
+   p.masaib.title[locale],
+   p.masaib.history[locale],
+   locale==='ur'?'تدوینی منبری ربط، تاریخ کے لفظی اقتباس کے طور پر پیش نہ کریں':'Editorial pulpit transition, not a direct historical quotation',
+   p.masaib.editorialReflection[locale],
+   p.masaib.source[locale],
+   p.masaib.sourceUrl,
+  ] : []),
   ...(index===4?[`${locale==='ur'?'عملی قدم':'Practical step'}: ${p.action[locale]}`]:[]),
  ];
  return {
