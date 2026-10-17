@@ -60,7 +60,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
   });
 
   it("locks Alvi body, Gulzar headings, and Scheherazade Arabic in Tafsir only", () => {
-    expect(tafsir).toContain('fontFamily: \'"Qalam Quran Jameel", "Noto Nastaliq Urdu", serif\'');
+    expect(tafsir).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
     expect(tafsir).toContain('data-tafsir-arabic="true"');
     expect(tafsir).toContain('fontFamily: \'"Qalam Tafsir Scheherazade", serif\'');
     expect(tafsir).toContain('publicBlobFontUrl("ScheherazadeNew-Medium.woff2")');
@@ -79,7 +79,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(tafsir).toContain('data-tafsir-source-row="true"');
     expect(tafsir).toContain('mx-auto text-center');
     expect(tafsir).toContain('sourceMenuRef');
-    expect(tafsir).toContain('fontFamily: \'"Qalam Quran Jameel", "Noto Nastaliq Urdu", serif\'');
+    expect(tafsir).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
     expect(tafsir).toContain('fontFamily: \'"Gulzar", "Noto Nastaliq Urdu", serif\'');
     expect(tafsir).toContain('زیرِ تکمیل');
     expect(tafsir).toContain('disabled={!available}');
@@ -151,7 +151,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(translation).toContain("storedQuranUrduTranslator()");
     expect(translation).toContain("saveQuranUrduTranslator(next)");
     expect(translation).toContain('"Gulzar", "Noto Nastaliq Urdu", serif');
-    expect(translation).toContain('"Qalam Quran Jameel", "Noto Nastaliq Urdu", serif');
+    expect(translation).toContain('"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif');
     expect(translationCorpus).toContain('"mohsin-najfi"');
     expect(translationCorpus).toContain('"safdar-najfi"');
   });
