@@ -101,11 +101,18 @@ export const GHAF_LAH_TOPIC: TopicPrep = {
       "url": "https://www.hkashani.com/?cat=5794"
     },
     {
+      "labelUr": "استاد محمد شجاعی — انسان شناسی در آئینۂ صحیفہ سجادیہ",
+      "labelEn": "Mohammad Shojaei — Anthropology through Sahifa Sajjadiyya, published session summary",
+      "detailUr": "اصل ادارے کی ویب سائٹ پر مجلس کے اہم نکات موجود ہیں: انسان کا اپنی اصل شناخت سے غافل ہو جانا۔ مکمل تقریر کا لفظ بہ لفظ مطالعہ باقی ہے۔",
+      "detailEn": "Official summary mentions neglecting one's higher identity; full transcript has not been ingested.",
+      "url": "https://media.montazer.ir/47690-2/"
+    },
+    {
       "labelUr": "ناصر رفیعی — غفلت اور نہج البلاغہ، نامہ ۶۹",
       "labelEn": "Naser Rafiei — Heedlessness and Nahj al-Balagha, letter 69",
       "detailUr": "مکتوب خطاب: غفلت کے مقامات سے اجتناب، قلب و عقل کی توجہ، قرآن میں غفلت کی علامتیں۔",
       "detailEn": "Published transcript on places of heedlessness, attentive use of understanding and Qur'anic symptoms.",
-      "url": "https://shiaquest.net/olama/rafei/10661-69-6.html"
+      "url": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
     }
   ],
   "anglesUr": [
@@ -532,7 +539,7 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
       "nameEn": "Naser Rafiei",
       "sourceTitleUr": "غفلت — نہج البلاغہ، نامہ ۶۹ پر مکتوب خطاب",
       "sourceTitleEn": "Heedlessness — published speech on Nahj al-Balagha, letter 69",
-      "sourceUrl": "https://shiaquest.net/olama/rafei/10661-69-6.html",
+      "sourceUrl": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html",
       "coreUr": "امیرالمؤمنینؑ کے نامہ ۶۹ میں غفلت کے ماحول سے اجتناب کی تنبیہ انسان کی سوچ، سماجی صحبت اور دینی عمل پر اثر ڈالتی ہے۔",
       "coreEn": "Imam Ali's counsel to avoid environments of heedlessness has practical implications for understanding, company and religious action.",
       "explanationUr": [
@@ -554,13 +561,13 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
           "heading": "غفلت کے ماحول سے بچنا",
           "explanation": "نامہ ۶۹ کی وصیت کے تحت غفلت کے مقامات اور ایسی صحبتوں سے اجتناب کا مضمون کھولا گیا ہے جو اطاعتِ خدا میں مدد نہ کریں۔",
           "exactRef": "شرح نہج البلاغہ، نامہ ۶۹ — مکتوب خطاب ناصر رفیعی",
-          "sourceUrl": "https://shiaquest.net/olama/rafei/10661-69-6.html"
+          "sourceUrl": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
         },
         {
           "heading": "دل، آنکھ اور کان کی غفلت",
           "explanation": "قرآن ۷:۱۷۹ میں ادراک، بصارت اور سماعت کی نعمتیں ہونے کے باوجود درست استعمال نہ کرنے کو غفلت کی علامت بیان کیا گیا ہے۔",
           "exactRef": "ناصر رفیعی، غفلت — نامہ ۶۹؛ الاعراف ۷:۱۷۹",
-          "sourceUrl": "https://shiaquest.net/olama/rafei/10661-69-6.html"
+          "sourceUrl": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
         }
       ],
       "sourceGroundedEn": [
@@ -568,13 +575,13 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
           "heading": "غفلت کے ماحول سے بچنا",
           "explanation": "The transcript examines letter 69's caution against settings that fail to encourage obedience and moral attention.",
           "exactRef": "Naser Rafiei, published talk on letter 69 of Nahj al-Balagha",
-          "sourceUrl": "https://shiaquest.net/olama/rafei/10661-69-6.html"
+          "sourceUrl": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
         },
         {
           "heading": "دل، آنکھ اور کان کی غفلت",
           "explanation": "It discusses Qur'an 7:179: faculties of hearing, sight and understanding must be exercised rather than merely possessed.",
           "exactRef": "Naser Rafiei, Heedlessness and letter 69; Qur'an 7:179",
-          "sourceUrl": "https://shiaquest.net/olama/rafei/10661-69-6.html"
+          "sourceUrl": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
         }
       ]
     }
@@ -679,6 +686,26 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
   "closingEn": "Invite three commitments: five minutes of daily examination, one deliberately attentive prayer, and repair of one neglected right. Any transition to Imam Husayn's suffering must use separately verified historical sources and turn grief toward moral fidelity."
 };
 export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
+
+  {
+    "id": "shojaei-ghaflah-identity-summary",
+    "speakerId": "shojaei",
+    "topicIds": ["ghaflah"],
+    "kind": "compiled-majalis",
+    "status": "catalog-only",
+    "titleUr": "استاد محمد شجاعی — صحیفہ سجادیہ سے انسان شناسی",
+    "titleEn": "Mohammad Shojaei — Anthropology through Sahifa Sajjadiyya",
+    "topicsUr": ["غفلت", "خود شناسی", "صحیفہ سجادیہ"],
+    "topicsEn": ["heedlessness", "self-knowledge", "Sahifa Sajjadiyya"],
+    "summaryUr": "سرکاری ویب سائٹ کے شائع شدہ خلاصے میں اپنی حقیقی شناخت سے غفلت کو موضوع بنایا گیا ہے۔ ابھی مکمل مکتوب خطاب کا جائزہ باقی ہے۔",
+    "summaryEn": "An official summary discusses neglect of true identity, but the complete transcript has not been reviewed.",
+    "takeawaysUr": ["اصل بیان کا مکمل متن پڑھنے کے بعد ہی مخصوص مفصل دعوے منسوب کیے جائیں۔"],
+    "takeawaysEn": ["Specific detailed claims require reviewing the full talk."],
+    "sourceLabelUr": "رسانۂ رسمی استاد شجاعی — بیان کے نکات",
+    "sourceLabelEn": "Official Shojaei media — published speaking outline",
+    "sourceUrl": "https://media.montazer.ir/47690-2/"
+  },
+
   {
     "id": "jawad-ghaflat-false-calm",
     "speakerId": "jawad-naqvi",
@@ -1200,7 +1227,7 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     ],
     "sourceLabelUr": "ناصر رفیعی — غفلت / نامہ ۶۹، مکتوب خطاب",
     "sourceLabelEn": "Naser Rafiei — Heedlessness / letter 69, published transcript",
-    "sourceUrl": "https://shiaquest.net/olama/rafei/10661-69-6.html"
+    "sourceUrl": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
   }
 ];
 export const GHAF_LAH_VERIFIED_HADITHS: readonly VerifiedHadithRecord[] = [
