@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import BookPassageText from '../app/tools/khateeb-studio/BookPassageText';
@@ -35,4 +36,16 @@ it('keeps Urdu commentary out of Persian even when forced by an old caller', () 
 it('retains explicitly identified Persian source text', () => {
   const html = renderToStaticMarkup(<KhateebScriptText text="پژوهش در اخلاق" forcePersian />);
   expect(html).toContain('font-vazirmatn');
+});
+
+
+it('never applies Digital Khatt to Muhammadi Quran text even inside book-Arabic containers',()=>{
+ const css=readFileSync('app/globals.css','utf8');
+ expect(css).toContain('.qalam-book-arabic {');
+ expect(css).not.toMatch(/\.qalam-book-arabic\s+\.khateeb-muhammadi-quranic/);
+ const book=renderToStaticMarkup(<BookPassageText text="«العِلْمُ نُورٌ»" language="ar"/>);
+ expect(book).toContain('qalam-book-arabic');
+ const quran=renderToStaticMarkup(<BookPassageText text="بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ" language="ar" quran/>);
+ expect(quran).toContain('khateeb-muhammadi-quranic');
+ expect(quran).not.toContain('qalam-book-arabic');
 });
