@@ -368,7 +368,7 @@ describe("Rabi al-Thani calendar seed", () => {
 });
 
 describe("Khateeb Studio typography", () => {
-  test("keeps Jameel on the studio body and Noto Nastaliq on headings only", () => {
+  test("retains shared Jameel while keeping the studio Urdu font scoped to Nafees", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     const globals = readFileSync("app/globals.css", "utf8");
     expect(globals).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2");
@@ -378,7 +378,7 @@ describe("Khateeb Studio typography", () => {
     expect(studio).toContain("var(--font-nastaliq), var(--font-nastaliq-latin)");
     expect(studio).toContain("Visible occasions");
     expect(globals).toContain(".khateeb-studio-ur .font-urdu");
-    expect(globals).not.toContain("jameel-noori-nastaleeq-400.woff2");
+    expect(globals).toContain('font-family: "Jameel Noori Nastaleeq"');
     expect(studio).not.toContain("max-h-[560px]");
   });
 
