@@ -29,7 +29,7 @@ describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
   const workbench=buildSessionWorkbench(session,duration);
   expect(workbench.blocks.reduce((total,b)=>total+b.minutes,0)).toBe(duration);
   const manuscript=buildSessionWorkbenchText(workbench,"ur");
-  expect(manuscript).toContain("الأعراف");
+  expect(manuscript).toContain("7:179");
   expect(manuscript).toContain("ghurar-al-hikam");
   expect(manuscript).toContain("قابلِ بیان");
  });
