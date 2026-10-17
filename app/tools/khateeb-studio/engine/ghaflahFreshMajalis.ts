@@ -1,5 +1,6 @@
 import type { MajlisSeriesPlan, MajlisSeriesSession } from "./seriesPlanner";
 import type { PreparedSessionMaterial } from "./preparedSeries";
+import { GHAF_LAH_DEEPER } from "./ghaflahDepth";
 
 type SourceLink = { labelUr: string; labelEn: string; url: string };
 type Spec = {
@@ -474,7 +475,10 @@ const EN_EXAMPLES = [
 function buildSession(spec: Spec, index: number): MajlisSeriesSession {
   const blocks = spec.heads.map((heading, blockIndex) => ({
     heading: { ur: heading, en: spec.english[blockIndex][0] },
-    delivery: { ur: spec.paras[blockIndex][0], en: spec.english[blockIndex][1] },
+    delivery: {
+      ur: [spec.paras[blockIndex][0], ...GHAF_LAH_DEEPER[index].filter(row => row.at===blockIndex).map(row => row.ur)].join("\n\n"),
+      en: [spec.english[blockIndex][1], ...GHAF_LAH_DEEPER[index].filter(row => row.at===blockIndex).map(row => row.en)].join("\n\n"),
+    },
     explanation: { ur: spec.paras[blockIndex][1], en: spec.english[blockIndex][2] },
   }));
   const preparation: PreparedSessionMaterial = {
