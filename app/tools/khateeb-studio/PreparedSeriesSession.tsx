@@ -11,7 +11,7 @@ export default function PreparedSeriesSession({session,duration,locale,onCopy}:{
  const quranTexts=preparedQuranSourceTexts(session.preparation!);
  const arabicTexts=preparedArabicSourceTexts(session.preparation!);
  const sourceLinks=session.preparation?.scholarSources??[];
- const estimate=estimatePreparedSpeech(session.preparation!,locale);
+ const estimate=estimatePreparedSpeech(session.preparation!,locale,duration);
  const {words:wordCount,lowMinutes,highMinutes}=estimate;
  const shortfall=duration>highMinutes;
  return <section data-testid={`prepared-session-${session.number}`} className="mt-5 space-y-5" dir={ur?'rtl':'ltr'}>

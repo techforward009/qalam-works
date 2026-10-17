@@ -16,6 +16,7 @@ export type PreparedSessionMaterial = {
  primaryExcerpts?: readonly PreparedPrimaryExcerpt[];
  hadithId?: string;
  masaib?: SourcedMasaib;
+ durationExtra?: {extra30:readonly SeriesBilingual[];extra45:readonly SeriesBilingual[]};
  additionalHadithIds?: readonly string[];
  scholarSources?: readonly { label: SeriesBilingual; url: string }[];
  question: SeriesBilingual; example: SeriesBilingual; action: SeriesBilingual;
@@ -71,6 +72,9 @@ export function buildPreparedSessionWorkbench(session: MajlisSeriesSession, dura
   ...(index===1?(p.scholarSources ?? []).flatMap(source => [source.label[locale], source.url]):[]),
   locale==='ur'?'قابلِ بیان عبارت — قلم ورکس کی تدوین':'Ready-to-deliver paragraph — Qalam Works editorial material',p.blocks[index].delivery[locale],
   locale==='ur'?'وضاحت اور ربط — قلم ورکس کی تدوین':'Explanation and connection — Qalam Works editorial material',p.blocks[index].explanation[locale],
+
+  ...(index===2 && duration>=30 ? (p.durationExtra?.extra30??[]).map(row=>row[locale]) : []),
+  ...(index===3 && duration===45 ? (p.durationExtra?.extra45??[]).map(row=>row[locale]) : []),
   ...(index===3?[`${locale==='ur'?'فرضی روزمرہ مثال':'Hypothetical everyday example'}: ${p.example[locale]}`]:[]),
   ...(index===4 && p.masaib ? [
    locale==='ur'?'مصائبِ اہلِ بیتؑ — تاریخی واقعے کا محتاط خلاصہ (اصل عربی کی مستقل تصدیق ابھی باقی)':'Masaib — careful summary of a translated historical account (original Arabic not independently collated)',
@@ -96,10 +100,12 @@ export function buildPreparedSeriesText(plan: MajlisSeriesPlan,locale:'ur'|'en',
 }
 
 /** Counts deliverable speech, not URLs, editorial instructions, or citation labels. */
-export function estimatePreparedSpeech(preparation: PreparedSessionMaterial, locale:'ur'|'en') {
+export function estimatePreparedSpeech(preparation: PreparedSessionMaterial, locale:'ur'|'en', duration:SermonDuration=20) {
  const count=(s:string)=>s.trim().split(/\s+/u).filter(Boolean).length;
  const prose=preparation.blocks.reduce((sum,b)=>sum+count(b.delivery[locale]),0);
  const masaib=preparation.masaib ? count(preparation.masaib.history[locale])+count(preparation.masaib.editorialReflection[locale]) : 0;
+ const expansions=(duration>=30 ? (preparation.durationExtra?.extra30??[]).reduce((sum,row)=>sum+count(row[locale]),0) : 0)
+  +(duration===45 ? (preparation.durationExtra?.extra45??[]).reduce((sum,row)=>sum+count(row[locale]),0) : 0);
  const verses=preparation.quran.reduce((sum,{surah,ayah})=>{
    const arabic=ahmedgrafQuranReference.getAyah(surah,ayah)?.text??'';
    const translation=quranTranslationFor(surah,ayah,locale)??'';
@@ -110,9 +116,9 @@ export function estimatePreparedSpeech(preparation: PreparedSessionMaterial, loc
    const row=verifiedHadithForDossierText(id);
    return sum+count(row?.exactArabic??'')+count((locale==='ur'?row?.translationUr:row?.translationEn)??'');
  },0);
- const words=prose+masaib+verses+hadiths;
+ const words=prose+masaib+verses+hadiths+expansions;
  // Conservative *planning* band, never an empirically measured delivery duration.
  const low=Math.max(1,Math.floor(words/(locale==='ur'?110:145)));
  const high=Math.max(low,Math.ceil(words/(locale==='ur'?75:105)));
- return {words, lowMinutes:low, highMinutes:high, categories:{prose,masaib,verses,hadiths}};
+ return {words, lowMinutes:low, highMinutes:high, categories:{prose,masaib,verses,hadiths,expansions}};
 }

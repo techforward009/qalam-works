@@ -2,6 +2,7 @@ import type { MajlisSeriesPlan, MajlisSeriesSession } from "./seriesPlanner";
 import type { PreparedSessionMaterial } from "./preparedSeries";
 import { GHAF_LAH_DEEPER } from "./ghaflahDepth";
 import { GHAF_LAH_MASAIB } from "./ghaflahMasaib";
+import { GHAF_LAH_DURATION_EXTRA } from "./ghaflahDurationExtra";
 
 type SourceLink = { labelUr: string; labelEn: string; url: string };
 type Spec = {
@@ -497,6 +498,7 @@ function buildSession(spec: Spec, index: number): MajlisSeriesSession {
     quran: spec.quran.map(([surah, ayah]) => ({surah, ayah})),
     hadithId: spec.hadith,
     masaib: GHAF_LAH_MASAIB[index],
+    durationExtra: GHAF_LAH_DURATION_EXTRA[index],
     additionalHadithIds: index===2 ? ["ghaflah-baqir-salat"] : index===3 ? ["ghaflah-ali-taghaful"] : [],
     scholarSources: [
       ...spec.sources.map(source => ({

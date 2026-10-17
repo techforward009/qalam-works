@@ -20,7 +20,7 @@ describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
  it("calculates spoken-word duration without counting bibliography links or editor headings",()=>{
    for(const session of GHAF_LAH_FRESH_FIVE.sessions){
      const a=estimatePreparedSpeech(session.preparation!,"ur");
-     expect(a.words).toBe(a.categories.prose+a.categories.masaib+a.categories.verses+a.categories.hadiths);
+     expect(a.words).toBe(a.categories.prose+a.categories.masaib+a.categories.verses+a.categories.hadiths+a.categories.expansions);
      expect(a.categories.masaib).toBeGreaterThan(150);
      expect(a.words).toBeGreaterThan(1150);
      expect(a.highMinutes).toBeGreaterThanOrEqual(a.lowMinutes);
@@ -68,6 +68,18 @@ describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
   for(const session of GHAF_LAH_FRESH_FIVE.sessions){
     const count=session.preparation!.blocks.map(row=>row.delivery.ur).join(" ").trim().split(/\s+/u).length;
     expect(count).toBeGreaterThan(450);
+  }
+ });
+ it("offers genuinely additional text at each longer duration",()=>{
+  for(const session of GHAF_LAH_FRESH_FIVE.sessions){
+    const m=session.preparation!;
+    const a=estimatePreparedSpeech(m,"ur",20);
+    const b=estimatePreparedSpeech(m,"ur",30);
+    const c=estimatePreparedSpeech(m,"ur",45);
+    expect(b.words).toBeGreaterThan(a.words+100);
+    expect(c.words).toBeGreaterThan(b.words+150);
+    expect(buildSessionWorkbenchText(buildSessionWorkbench(session,45),"ur").length)
+     .toBeGreaterThan(buildSessionWorkbenchText(buildSessionWorkbench(session,20),"ur").length+500);
   }
  });
  it.each([20,30,45] as const)("includes authentic textual sources and source URLs in %i-minute draft",duration=>{
