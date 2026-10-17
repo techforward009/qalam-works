@@ -1,0 +1,42 @@
+name: Phase 1D.2 Controlled PDF Regression and Safety
+on:
+  push:
+    branches: [audit/pdf-phase1d2-main-test-alignment-20261015, audit/pdf-phase1d2-pr64-safety-20261015]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Run aligned PDF pipeline tests using real Chromium
+        shell: bash
+        run: |
+          mkdir -p artifacts/phase1d2
+          export QALAM_PDF_CHROMIUM="$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')"
+          echo "$QALAM_PDF_CHROMIUM" > artifacts/phase1d2/chromium-path.txt
+          npx vitest run tests/pdfRealPipeline.test.ts --reporter=json --outputFile=artifacts/phase1d2/vitest.json
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Production build only; no deployment
+        run: npm run build
+      - name: Check patch hygiene
+        run: git diff --check
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1d2-evidence
+          path: artifacts/phase1d2/
+          if-no-files-found: warn
