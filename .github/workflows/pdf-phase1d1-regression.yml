@@ -1,0 +1,52 @@
+name: PDF Phase 1D.1 Main vs PR64 Regression Triage
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - audit/pdf-phase1d1-main-baseline-20261015
+      - audit/pdf-phase1d1-pr64-compare-20261015
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Resolve identical runner Chromium
+        run: |
+          echo "QALAM_PDF_CHROMIUM=$(node --input-type=module -e 'import chromium from "@sparticuz/chromium"; process.stdout.write(await chromium.executablePath())')" >> "$GITHUB_ENV"
+          node -v
+          sha256sum package-lock.json
+      - name: Run exactly pdfRealPipeline.test.ts and persist complete outcomes
+        shell: bash
+        run: |
+          mkdir -p artifacts/pdf-phase1d1
+          set +e
+          npx vitest run tests/pdfRealPipeline.test.ts --reporter=json --outputFile=artifacts/pdf-phase1d1/vitest.json > artifacts/pdf-phase1d1/vitest.stdout.txt 2>&1
+          result=$?
+          set -e
+          echo "$result" > artifacts/pdf-phase1d1/exit-code.txt
+          echo "Branch: $(git branch --show-current)" > artifacts/pdf-phase1d1/provenance.txt
+          echo "HEAD: $(git rev-parse HEAD)" >> artifacts/pdf-phase1d1/provenance.txt
+          echo "Source package lock: $(sha256sum package-lock.json)" >> artifacts/pdf-phase1d1/provenance.txt
+          echo "Chromium: $QALAM_PDF_CHROMIUM" >> artifacts/pdf-phase1d1/provenance.txt
+          test -f artifacts/pdf-phase1d1/vitest.json
+          node -e 'const j=require("./artifacts/pdf-phase1d1/vitest.json");console.log(JSON.stringify({passed:j.numPassedTests,failed:j.numFailedTests,pending:j.numPendingTests,total:j.numTotalTests,errors:j.testResults.flatMap(r=>r.assertionResults.filter(t=>t.status==="failed").map(t=>({name:t.fullName,message:t.failureMessages[0]?.slice(0,700)})))},null,2))'
+      - name: Upload triage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1d1-regression-${{ github.run_id }}
+          path: artifacts/pdf-phase1d1/
+          if-no-files-found: error
