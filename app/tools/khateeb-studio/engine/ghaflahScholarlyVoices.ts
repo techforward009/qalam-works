@@ -12,7 +12,7 @@ export type GhaflahScholarlyVoice = {
  workEn: string;
  quote: string;
  language: "fa" | "en";
- kind: "published-persian-lecture" | "published-english-translation" | "published-signed-letter" | "official-published-outline";
+ kind: "published-persian-lecture" | "published-english-translation" | "published-signed-letter" | "official-published-outline" | "official-published-quote";
  ur: string; en: string;
  whyUr: string; whyEn: string;
  url: string;
@@ -20,6 +20,28 @@ export type GhaflahScholarlyVoice = {
  sessionNumbers: readonly number[];
 };
 export const GHAF_LAH_SCHOLARLY_VOICES: readonly GhaflahScholarlyVoice[] = [
+  {
+    "id": "javadi-amoli",
+    "speakerId": null,
+    "scholarUr": "آیت اللہ العظمیٰ عبداللہ جوادی آملی",
+    "scholarEn": "Grand Ayatollah Abdollah Javadi Amoli",
+    "workUr": "بنیادِ اسراء کے سرکاری ابلاغی صفحے پر منتشر درسِ اخلاق کا اقتباس",
+    "workEn": "Official Esra Foundation media channel — published ethics excerpt",
+    "quote": "هر لحظه ‌ای كه انسان غافل شد فوراً باید آن غفلت را جبران كند؛",
+    "language": "fa",
+    "kind": "official-published-quote",
+    "ur": "انسان جب بھی غفلت میں پڑ جائے، اسے فوراً اس غفلت کی تلافی اور اصلاح کرنی چاہیے۔",
+    "en": "When a person lapses into heedlessness, they should correct that lapse without delay.",
+    "whyUr": "غفلت کے بعد فوری تذکر، رجوع اور عملی اصلاح؛ عبادت اور توبہ کی مجالس میں نہایت مفید زاویہ۔",
+    "whyEn": "Immediate remembrance and correction after a lapse; suited to sermons on prayer and repentance.",
+    "url": "https://telegram.me/s/a_javadiamoli_esra?q=%23%D8%AE%D8%B6%D9%88%D8%B9",
+    "noteUr": "بنیادِ اسراء کے سرکاری ابلاغی صفحے کی شائع کردہ مختصر عبارت؛ مکمل مجلس کے متن کی جانچ نہیں ہوئی۔",
+    "noteEn": "An excerpt published on the official Esra media channel, not a fully reviewed speech.",
+    "sessionNumbers": [
+      3,
+      5
+    ]
+  },
   {
     "id": "mazaheri",
     "speakerId": null,
@@ -151,6 +173,11 @@ export const GHAF_LAH_SCHOLARLY_VOICES: readonly GhaflahScholarlyVoice[] = [
     "noteUr": "یہ الفاظ ان کے ادارے کے شائع کردہ نکات سے ہیں؛ انہیں براہِ راست بولی گئی عبارت کا یقینی ثبوت نہ سمجھیں۔",
     "noteEn": "Text from the official published outline; not certified verbatim spoken words.",
     "sessionNumbers": [
+      1,
+      5
+    ]
+  }
+]
       1,
       5
     ]

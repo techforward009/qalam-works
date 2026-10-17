@@ -8,7 +8,7 @@ describe("Ghaflah source-grounded scholarly voices",()=>{
   const ids=GHAF_LAH_SCHOLARLY_VOICES.map(x=>x.id);
   expect(new Set(ids).size).toBe(ids.length);
   expect(ids).not.toContain("jawad-naqvi");
-  expect(ids.slice(0,2)).toEqual(["mazaheri","misbah"]);
+  expect(ids.slice(0,3)).toEqual(["javadi-amoli","mazaheri","misbah"]);
   expect(GHAF_LAH_SCHOLARLY_VOICES.some(x=>x.kind==="published-english-translation")).toBe(true);
   expect(GHAF_LAH_SCHOLARLY_VOICES.some(x=>x.kind==="official-published-outline")).toBe(true);
   expect(GHAF_LAH_SCHOLARLY_VOICES.every(x=>x.url.startsWith("https://"))).toBe(true);
