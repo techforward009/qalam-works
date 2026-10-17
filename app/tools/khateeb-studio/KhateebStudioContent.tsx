@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import PreparedSeriesSession from "./PreparedSeriesSession";
-import GhaflahScholarCoverage from "./GhaflahScholarCoverage";
 
 import { buildPreparedSeriesText } from "./engine/preparedSeries";
 import TopicSpeakingGuide from "./TopicSpeakingGuide";
@@ -1559,7 +1558,6 @@ export default function KhateebStudioContent({
                   </section>
 
 
-                  {topic.id === "ghaflah" ? <GhaflahScholarCoverage ur={ur} /> : null}
 
                   {seriesLayer === "fresh" && originalityReport ? (
                     <section className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
