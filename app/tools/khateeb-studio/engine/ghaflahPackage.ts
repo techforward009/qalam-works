@@ -740,10 +740,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "سرکاری ویب سائٹ کے شائع شدہ خلاصے میں اپنی حقیقی شناخت سے غفلت کو موضوع بنایا گیا ہے۔ ابھی مکمل مکتوب خطاب کا جائزہ باقی ہے۔",
     "summaryEn": "An official summary discusses neglect of true identity, but the complete transcript has not been reviewed.",
     "takeawaysUr": [
-      "اصل بیان کا مکمل متن پڑھنے کے بعد ہی مخصوص مفصل دعوے منسوب کیے جائیں۔"
+      "اصل بیان کا مکمل متن پڑھنے کے بعد ہی مخصوص مفصل دعوے منسوب کیے جائیں۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "Specific detailed claims require reviewing the full talk."
+      "Specific detailed claims require reviewing the full talk.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "رسانۂ رسمی استاد شجاعی — بیان کے نکات",
     "sourceLabelEn": "Official Shojaei media — published speaking outline",
@@ -779,10 +781,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
       "Jawad Naqvi distinguishes illusory comfort produced by ignorance from stable tranquility grounded in certainty. The absence of alarm is not proof of safety."
     ],
     "takeawaysUr": [
-      "غفلت کا سکون حقیقت سے بے خبری ہو سکتا ہے؛ ایمان کا اطمینان حقیقت سے باخبر ہو کر قائم رہتا ہے۔"
+      "غفلت کا سکون حقیقت سے بے خبری ہو سکتا ہے؛ ایمان کا اطمینان حقیقت سے باخبر ہو کر قائم رہتا ہے۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "Jawad Naqvi distinguishes illusory comfort produced by ignorance from stable tranquility grounded in certainty. The absence of alarm is not proof of safety."
+      "Jawad Naqvi distinguishes illusory comfort produced by ignorance from stable tranquility grounded in certainty. The absence of alarm is not proof of safety.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "سید جواد نقوی — سنن الٰہی — درس ۶: غفلت سے پیدا شدہ اطمینان",
     "sourceLabelEn": "Syed Jawad Naqvi — Divine Laws — lesson 6: false comfort born of heedlessness",
@@ -818,10 +822,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
       "This lesson addresses the gap between a moving devotional experience and sustained moral reform after returning to ordinary life."
     ],
     "takeawaysUr": [
-      "مجلس میں آنکھ بھرنا کافی نہیں؛ مجلس کے بعد رویہ بدلنا بیداری کی علامت ہے۔"
+      "مجلس میں آنکھ بھرنا کافی نہیں؛ مجلس کے بعد رویہ بدلنا بیداری کی علامت ہے۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "This lesson addresses the gap between a moving devotional experience and sustained moral reform after returning to ordinary life."
+      "This lesson addresses the gap between a moving devotional experience and sustained moral reform after returning to ordinary life.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "سید جواد نقوی — آدابِ اسلامی — درس ۲۸: مجلس کے اثر کی حفاظت",
     "sourceLabelEn": "Syed Jawad Naqvi — Islamic Manners — lesson 28: preserving an awakened state",
@@ -857,10 +863,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
       "The lesson treats rushed, inattentive prayer as a problem of the etiquette and meaning of worship, not merely of external performance."
     ],
     "takeawaysUr": [
-      "عبادت کا ظاہر برقرار ہو مگر دل غیر حاضر ہو تو اصلاح کی ضرورت باقی رہتی ہے۔"
+      "عبادت کا ظاہر برقرار ہو مگر دل غیر حاضر ہو تو اصلاح کی ضرورت باقی رہتی ہے۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "The lesson treats rushed, inattentive prayer as a problem of the etiquette and meaning of worship, not merely of external performance."
+      "The lesson treats rushed, inattentive prayer as a problem of the etiquette and meaning of worship, not merely of external performance.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "سید جواد نقوی — آدابِ اسلامی — درس ۳۱: نماز میں غفلت",
     "sourceLabelEn": "Syed Jawad Naqvi — Islamic Manners — lesson 31: negligence in prayer",
@@ -885,10 +893,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "صرف ۱۳۶۹ کے پروگراموں کی فہرست میں «حقیقتِ غفلت» کے عنوان اور ۴۵:۰۸ دورانیے کا ریکارڈ ملا؛ مکمل تقریر یا مصدقہ متن دستیاب نہیں۔",
     "summaryEn": "An archive index lists a 45:08 lecture titled Reality of Heedlessness; its transcript has not been checked.",
     "takeawaysUr": [
-      "متن دستیاب ہونے تک اس تقریر سے کوئی مخصوص قول منسوب نہ کیا جائے۔"
+      "متن دستیاب ہونے تک اس تقریر سے کوئی مخصوص قول منسوب نہ کیا جائے۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "Do not attribute any substantive thesis before reviewing the recording or transcript."
+      "Do not attribute any substantive thesis before reviewing the recording or transcript.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "محسن قرائتی — ۱۳۶۹ کے دروس کی فہرست",
     "sourceLabelEn": "Mohsen Qaraati — 1369 lecture index",
@@ -917,16 +927,24 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "توجہ اور غفلت کا مسئلہ؛ یادِ خدا اور موت کے ذریعے بیداری۔",
     "summaryEn": "Lecture 1 examines the problem of attention and discusses remembrance of God and death.",
     "materialUr": [
-      "توجہ اور غفلت کا مسئلہ؛ یادِ خدا اور موت کے ذریعے بیداری۔"
+      "توجہ اور غفلت کا مسئلہ؛ یادِ خدا اور موت کے ذریعے بیداری۔",
+      "اصل خطاب میں توجہ، یادِ خدا اور دینی ذمہ داری کے ربط کو سمجھیں؛ دوسرے موضوعات یا غیر موجود تفصیلات کا اضافہ نہ کریں۔",
+      "منبر پر زندگی کے مختلف حقوق کے درمیان درست توازن کی ایک نئی مثال پیش کریں؛ اسے عالم کے اصل بیان کی مثال نہ کہیں۔",
+      "خطیب اصل ماخذ کھول کر مطالعہ کرے اور اس خلاصے کو باقاعدہ مکمل فارسی تقریر کا اردو ترجمہ نہ سمجھائے۔"
     ],
     "materialEn": [
-      "Lecture 1 examines the problem of attention and discusses remembrance of God and death."
+      "Lecture 1 examines the problem of attention and discusses remembrance of God and death.",
+      "Discuss the documented relationship between attention, remembrance and responsibility without importing unverified details.",
+      "Develop an original illustration about the balance between duties, clearly separate from the original scholar's examples.",
+      "Consult the linked source; these notes are not a complete English translation of the Persian talk."
     ],
     "takeawaysUr": [
-      "توجہ اور غفلت کا مسئلہ؛ یادِ خدا اور موت کے ذریعے بیداری۔"
+      "توجہ اور غفلت کا مسئلہ؛ یادِ خدا اور موت کے ذریعے بیداری۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "Lecture 1 examines the problem of attention and discusses remembrance of God and death."
+      "Lecture 1 examines the problem of attention and discusses remembrance of God and death.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل مکتوب خطاب",
     "sourceLabelEn": "Hamed Kashani — published transcript",
@@ -955,10 +973,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -987,10 +1007,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1019,10 +1041,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1051,16 +1075,24 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "زندگی کے ایک پہلو میں اس طرح کھو جانا کہ دیگر ذمہ داریاں نگاہ سے اوجھل ہوجائیں۔",
     "summaryEn": "Lecture 5 discusses preoccupation with one concern while other duties are neglected.",
     "materialUr": [
-      "زندگی کے ایک پہلو میں اس طرح کھو جانا کہ دیگر ذمہ داریاں نگاہ سے اوجھل ہوجائیں۔"
+      "زندگی کے ایک پہلو میں اس طرح کھو جانا کہ دیگر ذمہ داریاں نگاہ سے اوجھل ہوجائیں۔",
+      "اصل خطاب میں توجہ، یادِ خدا اور دینی ذمہ داری کے ربط کو سمجھیں؛ دوسرے موضوعات یا غیر موجود تفصیلات کا اضافہ نہ کریں۔",
+      "منبر پر زندگی کے مختلف حقوق کے درمیان درست توازن کی ایک نئی مثال پیش کریں؛ اسے عالم کے اصل بیان کی مثال نہ کہیں۔",
+      "خطیب اصل ماخذ کھول کر مطالعہ کرے اور اس خلاصے کو باقاعدہ مکمل فارسی تقریر کا اردو ترجمہ نہ سمجھائے۔"
     ],
     "materialEn": [
-      "Lecture 5 discusses preoccupation with one concern while other duties are neglected."
+      "Lecture 5 discusses preoccupation with one concern while other duties are neglected.",
+      "Discuss the documented relationship between attention, remembrance and responsibility without importing unverified details.",
+      "Develop an original illustration about the balance between duties, clearly separate from the original scholar's examples.",
+      "Consult the linked source; these notes are not a complete English translation of the Persian talk."
     ],
     "takeawaysUr": [
-      "زندگی کے ایک پہلو میں اس طرح کھو جانا کہ دیگر ذمہ داریاں نگاہ سے اوجھل ہوجائیں۔"
+      "زندگی کے ایک پہلو میں اس طرح کھو جانا کہ دیگر ذمہ داریاں نگاہ سے اوجھل ہوجائیں۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "Lecture 5 discusses preoccupation with one concern while other duties are neglected."
+      "Lecture 5 discusses preoccupation with one concern while other duties are neglected.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل مکتوب خطاب",
     "sourceLabelEn": "Hamed Kashani — published transcript",
@@ -1089,10 +1121,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1121,10 +1155,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1153,10 +1189,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1185,10 +1223,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1217,16 +1257,24 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "غفلت کے مقابل ذکر، تقویٰ اور بیداری کے اخلاقی نتائج۔",
     "summaryEn": "Lecture 10 discusses remembrance, vigilance and God-consciousness.",
     "materialUr": [
-      "غفلت کے مقابل ذکر، تقویٰ اور بیداری کے اخلاقی نتائج۔"
+      "غفلت کے مقابل ذکر، تقویٰ اور بیداری کے اخلاقی نتائج۔",
+      "اصل خطاب میں توجہ، یادِ خدا اور دینی ذمہ داری کے ربط کو سمجھیں؛ دوسرے موضوعات یا غیر موجود تفصیلات کا اضافہ نہ کریں۔",
+      "منبر پر زندگی کے مختلف حقوق کے درمیان درست توازن کی ایک نئی مثال پیش کریں؛ اسے عالم کے اصل بیان کی مثال نہ کہیں۔",
+      "خطیب اصل ماخذ کھول کر مطالعہ کرے اور اس خلاصے کو باقاعدہ مکمل فارسی تقریر کا اردو ترجمہ نہ سمجھائے۔"
     ],
     "materialEn": [
-      "Lecture 10 discusses remembrance, vigilance and God-consciousness."
+      "Lecture 10 discusses remembrance, vigilance and God-consciousness.",
+      "Discuss the documented relationship between attention, remembrance and responsibility without importing unverified details.",
+      "Develop an original illustration about the balance between duties, clearly separate from the original scholar's examples.",
+      "Consult the linked source; these notes are not a complete English translation of the Persian talk."
     ],
     "takeawaysUr": [
-      "غفلت کے مقابل ذکر، تقویٰ اور بیداری کے اخلاقی نتائج۔"
+      "غفلت کے مقابل ذکر، تقویٰ اور بیداری کے اخلاقی نتائج۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "Lecture 10 discusses remembrance, vigilance and God-consciousness."
+      "Lecture 10 discusses remembrance, vigilance and God-consciousness.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل مکتوب خطاب",
     "sourceLabelEn": "Hamed Kashani — published transcript",
@@ -1263,10 +1311,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
       "Use Qur'an 7:179 to distinguish having faculties from exercising them responsibly."
     ],
     "takeawaysUr": [
-      "غفلت کے ماحول اور صحبت سے بچنا دینی بیداری کا حصہ ہے۔"
+      "غفلت کے ماحول اور صحبت سے بچنا دینی بیداری کا حصہ ہے۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "Moral environment and companionship influence spiritual attentiveness."
+      "Moral environment and companionship influence spiritual attentiveness.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "ناصر رفیعی — غفلت / نامہ ۶۹، مکتوب خطاب",
     "sourceLabelEn": "Naser Rafiei — Heedlessness / letter 69, published transcript",
@@ -1295,10 +1345,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مقامی حوزوی مرکز کی شائع شدہ رپورٹ میں ذکر اور غفلت کے فرق کے حوالے سے ان کا بیان نقل ہوا ہے؛ مکمل لفظی تقریر کا جائزہ ابھی باقی ہے۔",
     "summaryEn": "A seminary account reports his remarks on distraction and remembrance, but the full talk has not been reviewed.",
     "takeawaysUr": [
-      "اصل مکتوب خطاب کے بغیر جزئیات یا مخصوص قول منسوب نہ کیا جائے۔"
+      "اصل مکتوب خطاب کے بغیر جزئیات یا مخصوص قول منسوب نہ کیا جائے۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "Avoid unverified direct quotation until the complete text is reviewed."
+      "Avoid unverified direct quotation until the complete text is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حوزۂ قم کے اساتذہ کی رپورٹ — مکمل مکتوب خطاب نہیں",
     "sourceLabelEn": "Qom seminary teachers' report — not a complete transcript",

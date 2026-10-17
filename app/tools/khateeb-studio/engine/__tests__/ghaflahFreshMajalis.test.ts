@@ -41,7 +41,7 @@ describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
      expect(a.categories.masaib).toBeGreaterThan(150);
      expect(a.words).toBeGreaterThan(1150);
      expect(a.highMinutes).toBeGreaterThanOrEqual(a.lowMinutes);
-     expect(a.words).toBeLessThan(buildSessionWorkbenchText(buildSessionWorkbench(session,30),"ur").split(/\\s+/u).length);
+     expect(a.words).toBeLessThan(buildSessionWorkbenchText(buildSessionWorkbench(session,30),"ur").split(/\s+/u).length);
    }
  });
 

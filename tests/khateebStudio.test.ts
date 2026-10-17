@@ -269,7 +269,7 @@ describe("Khateeb Studio scholar corpus foundation", () => {
       "talib-aalmi-07-knowledge-power-reform",
     ]));
     expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[6]?.sourceLabelUr).toContain("صفحات 94 تا 108");
-    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[6]?.sourceLabelUr).toContain("ابتدائی صفحات scan میں موجود نہیں");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[6]?.sourceLabelUr).toContain("ابتدائی صفحات عکس میں موجود نہیں");
     expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[6]?.sourceLabelUr).toContain("صفحات 123 تا 129");
   });
 
@@ -377,7 +377,7 @@ describe("Khateeb Studio typography", () => {
     expect(studio).toContain(".khateeb-studio-ur h1");
     expect(studio).toContain("var(--font-nastaliq), var(--font-nastaliq-latin)");
     expect(studio).toContain("Visible occasions");
-    expect(globals).not.toContain("khateeb-studio");
+    expect(globals).toContain(".khateeb-studio-ur .font-urdu");
     expect(globals).not.toContain("jameel-noori-nastaleeq-400.woff2");
     expect(studio).not.toContain("max-h-[560px]");
   });
@@ -970,7 +970,7 @@ describe("Khateeb Studio guided workflow", () => {
   test("offers a direct print / PDF action for topic and occasion preparation", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).toContain("window.print()");
-    expect(studio).toContain("مجلس پرنٹ کریں / PDF محفوظ کریں");
+    expect(studio).toContain("مجلس چھاپیں / پی ڈی ایف محفوظ کریں");
     expect(studio).toContain("@media print");
     expect(studio).toContain('id="khateeb-print-area"');
     expect(studio).toContain("khateeb-no-print");
