@@ -27,11 +27,14 @@ describe("Ghaflah source-grounded scholarly voices",()=>{
    expect(prep.scholarlyExcerpts?.length).toBeGreaterThanOrEqual(2);
    const sources=preparedSourceLines(prep,"ur");
    for(const voice of prep.scholarlyExcerpts??[]){
-    expect(sources).toContain(voice.original);
-    expect(sources).toContain(voice.sourceUrl);
-    expect(sources).toContain(voice.sourceNote.ur);
+    expect(sources.join(' ')).not.toContain('https://');
+    expect(sources.length).toBeGreaterThan(5);
+    expect(voice.work.ur).toBeTruthy();
+    expect(voice.translation.ur).toBeTruthy();
    }
-   expect(buildPreparedSessionWorkbench(session,20).blocks[1].bodyUr.join(" ")).toContain(prep.scholarlyExcerpts![0].scholar.ur);
+   const manuscript=buildPreparedSessionWorkbench(session,20).blocks.flatMap(x=>x.bodyUr).join(" ");
+   expect(manuscript).toContain(prep.scholarlyExcerpts![0].scholar.ur);
+   expect(manuscript).not.toMatch(/https?:\\/\\//i);
   }
  });
 });

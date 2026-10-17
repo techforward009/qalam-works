@@ -21,11 +21,10 @@ export default function GhaflahScholarCoverage({ ur }: { ur: boolean }) {
    {entries.map(item => {
     const status=ur ? item.status==="source-analysed" ? "متعلقہ متن کا جائزہ" : item.status==="catalog-only" ? "صرف ماخذ کی نشاندہی" : "اس موضوع پر تحقیق باقی"
        : item.status==="source-analysed" ? "Reviewed source" : item.status==="catalog-only" ? "Source indexed only" : "Research pending";
-    const source=item.records.find(record=>record.status==="ready")??item.records[0];
+
     return <li key={item.scholarId} className="rounded-lg border border-[#1A3A2A]/10 bg-white p-3 dark:border-[#35513d] dark:bg-[#162a1e]">
      <span className="block text-sm font-bold leading-7 text-[#263d2f] dark:text-[#d7e1d9]">{item.scholarName}</span>
      <span className="block text-xs leading-6 text-[#69776d] dark:text-[#a8c8b0]">{status}{item.records.length>0 ? ` · ${item.records.length} ${ur?"ماخذ":"records"}` : ""}</span>
-     {source?.sourceUrl ? <a className="mt-1 block text-xs leading-6 text-[#276448] underline underline-offset-4 dark:text-[#a3d7b4]" target="_blank" rel="noopener noreferrer" href={source.sourceUrl}>{ur?"اصل ماخذ دیکھیں":"Open sourced record"}</a> : null}
     </li>;
    })}
   </ul>

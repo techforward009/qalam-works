@@ -498,6 +498,7 @@ function buildSession(spec: Spec, index: number): MajlisSeriesSession {
     blocks,
     quran: spec.quran.map(([surah, ayah]) => ({surah, ayah})),
     hadithId: spec.hadith,
+    speakerReady: true,
     masaib: GHAF_LAH_MASAIB[index],
     durationExtra: GHAF_LAH_DURATION_EXTRA[index],
     additionalHadithIds: index===2 ? ["ghaflah-baqir-salat"] : index===3 ? ["ghaflah-ali-taghaful"] : [],
@@ -506,6 +507,8 @@ function buildSession(spec: Spec, index: number): MajlisSeriesSession {
       .map(item => ({
         scholar: {ur:item.scholarUr,en:item.scholarEn},
         original:item.quote,
+        work:{ur:item.workUr,en:item.workEn},
+        perspective:{ur:item.whyUr,en:item.whyEn},
         originalLanguage:item.language,
         translation:{ur:item.ur,en:item.en},
         sourceUrl:item.url,
