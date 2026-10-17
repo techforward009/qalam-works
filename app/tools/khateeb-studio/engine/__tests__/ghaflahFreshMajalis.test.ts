@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { HAFS_AYAH_COUNTS } from "../../../arabic-diacritics/quran/hafsCounts";
+import { ahmedgrafQuranReference } from "../../../arabic-diacritics/quran/ahmedgrafProvider";
+import { quranTranslationFor } from "../quranTranslationProvider";
 import { describe, it, expect } from "vitest";
 import { GHAF_LAH_FRESH_FIVE } from "../ghaflahFreshMajalis";
 import { buildFreshMajlisSeries } from "../freshPulpitSeries";
@@ -6,6 +10,19 @@ import { buildSessionWorkbench, buildSessionWorkbenchText } from "../sessionWork
 import { verifiedHadithForDossierText } from "../verifiedHadithCorpus";
 import { estimatePreparedSpeech } from "../preparedSeries";
 describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
+ it("matches each new Najafi/Qara'i pair to the exact canonical reader translation, no paraphrases",()=>{
+  const verses=[[7,179],[21,1],[59,19],[102,1],[57,16],[24,37],[63,9],[17,23],[50,22],[7,201]] as const;
+  for(const [surah,ayah] of verses){
+    const i=HAFS_AYAH_COUNTS.slice(0,surah-1).reduce((a,b)=>a+b,0)+ayah-1;
+    const chunk=String(Math.floor(i/256)).padStart(2,"0");
+    const published=JSON.parse(readFileSync(`public/quran/translations/${chunk}.json`,"utf8")) as [string,string][];
+    const row=published[i%256];
+    expect(ahmedgrafQuranReference.getAyah(surah,ayah)?.text).toBeTruthy();
+    expect(quranTranslationFor(surah,ayah,"ur")).toBe(row[0]);
+    expect(quranTranslationFor(surah,ayah,"en")).toBe(row[1]);
+  }
+ });
+
  it("includes five separately sourced historical passages without fabricated Arabic claims",()=>{
    for(const session of GHAF_LAH_FRESH_FIVE.sessions){
      const m=session.preparation?.masaib;
