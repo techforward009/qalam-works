@@ -1,4 +1,5 @@
 import { DUA_FIVE_DAY_SERIES } from "./duaFiveDaySeries";
+import { GHAF_LAH_FRESH_FIVE } from "./ghaflahFreshMajalis";
 import { SABR_THREE_DAY_SERIES } from "./sabrThreeDaySeries";
 import type { SermonDossier } from "./topicDossier";
 import type { MajlisSeriesLength, MajlisSeriesPlan, MajlisSeriesSession } from "./seriesPlanner";
@@ -499,6 +500,7 @@ export function buildFreshMajlisSeries(
   dossier: SermonDossier,
   length: MajlisSeriesLength,
 ): MajlisSeriesPlan | null {
+  if (dossier.topicId === "ghaflah" && length === 5) return GHAF_LAH_FRESH_FIVE;
   if (dossier.topicId === "dua" && length === 5) return DUA_FIVE_DAY_SERIES;
   if (dossier.topicId === "sabr" && length === 3) return SABR_THREE_DAY_SERIES;
   if (dossier.topicId === "quran-hidayat" && length === 5) return QURAN_HIDAYAT_FRESH_5;
