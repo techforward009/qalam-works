@@ -71,8 +71,8 @@ export default function QuranTranslationPage({
       {ur ? (
         <style jsx global>{`
           @font-face {
-            font-family: "Qalam Quran Jameel";
-            src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2") format("woff2");
+            font-family: "Alvi Nastaleeq";
+            src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Alvi_Nastaleeq.woff2") format("woff2");
             font-weight: 400;
             font-style: normal;
             font-display: swap;
@@ -106,7 +106,7 @@ export default function QuranTranslationPage({
       <div
         className={"mt-4 flex-1 " + (ur ? "font-naskh" : "")}
         style={{
-          fontFamily: ur ? '"Qalam Quran Jameel", "Noto Nastaliq Urdu", serif' : undefined,
+          fontFamily: ur ? '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif' : undefined,
           fontSize: Math.round((ur ? 22 : 17) * scale) + "px",
           lineHeight: ur ? 2.3 : 2,
         }}
