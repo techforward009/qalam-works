@@ -376,7 +376,7 @@ export function resolveEditorFontFamily(
     typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
 
   if (!requested) {
-    const defId: FontId = globalDir === "ltr" ? "inter" : "alvi-nastaleeq";
+    const defId: FontId = globalDir === "ltr" ? "inter" : "jameel-noori-nastaleeq";
     const def = getFontById(defId);
     return {
       requested: null,
