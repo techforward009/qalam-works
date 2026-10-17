@@ -25,6 +25,6 @@ jobs:
       - name: Install pinned dependencies without scripts
         run: npm ci --ignore-scripts
       - name: Focused Ghaflah source, series and duration tests
-        run: npx vitest run app/tools/khateeb-studio/engine/__tests__/ghaflahFreshMajalis.test.ts app/tools/khateeb-studio/engine/__tests__/ghaflahPackage.test.ts --reporter=verbose
+        run: npx vitest run app/tools/khateeb-studio/engine/__tests__/ghaflahFreshMajalis.test.ts app/tools/khateeb-studio/engine/__tests__/ghaflahPackage.test.ts tests/khateebStudio.test.ts --reporter=verbose
       - name: Verify type safety
         run: npx tsc --noEmit
