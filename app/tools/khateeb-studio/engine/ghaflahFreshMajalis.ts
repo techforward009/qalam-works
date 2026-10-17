@@ -2,6 +2,7 @@ import type { MajlisSeriesPlan, MajlisSeriesSession } from "./seriesPlanner";
 import type { PreparedSessionMaterial } from "./preparedSeries";
 import { GHAF_LAH_DEEPER } from "./ghaflahDepth";
 import { GHAF_LAH_MASAIB } from "./ghaflahMasaib";
+import { GHAF_LAH_SCHOLARLY_VOICES } from "./ghaflahScholarlyVoices";
 import { GHAF_LAH_DURATION_EXTRA } from "./ghaflahDurationExtra";
 
 type SourceLink = { labelUr: string; labelEn: string; url: string };
@@ -500,7 +501,19 @@ function buildSession(spec: Spec, index: number): MajlisSeriesSession {
     masaib: GHAF_LAH_MASAIB[index],
     durationExtra: GHAF_LAH_DURATION_EXTRA[index],
     additionalHadithIds: index===2 ? ["ghaflah-baqir-salat"] : index===3 ? ["ghaflah-ali-taghaful"] : [],
+    scholarlyExcerpts: GHAF_LAH_SCHOLARLY_VOICES
+      .filter(item => item.sessionNumbers.includes(index+1))
+      .map(item => ({
+        scholar: {ur:item.scholarUr,en:item.scholarEn},
+        original:item.quote,
+        originalLanguage:item.language,
+        translation:{ur:item.ur,en:item.en},
+        sourceUrl:item.url,
+        sourceKind:item.kind,
+        sourceNote:{ur:item.noteUr,en:item.noteEn},
+      })),
     scholarSources: [
+      ...GHAF_LAH_SCHOLARLY_VOICES.filter(item=>item.sessionNumbers.includes(index+1)).map(item=>({label:{ur:item.scholarUr+" — "+item.workUr,en:item.scholarEn+" — "+item.workEn},url:item.url})),
       ...spec.sources.map(source => ({
       label: { ur: source.labelUr, en: source.labelEn },
       url: source.url,

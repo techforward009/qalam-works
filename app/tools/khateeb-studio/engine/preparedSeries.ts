@@ -19,6 +19,7 @@ export type PreparedSessionMaterial = {
  durationExtra?: {extra30:readonly SeriesBilingual[];extra45:readonly SeriesBilingual[]};
  additionalHadithIds?: readonly string[];
  scholarSources?: readonly { label: SeriesBilingual; url: string }[];
+ scholarlyExcerpts?: readonly {scholar:SeriesBilingual;original:string;originalLanguage:"fa"|"en";translation:SeriesBilingual;sourceUrl:string;sourceKind:string;sourceNote:SeriesBilingual}[];
  question: SeriesBilingual; example: SeriesBilingual; action: SeriesBilingual;
 };
 export function preparedSourceLines(preparation: PreparedSessionMaterial, locale: 'ur'|'en') {
@@ -38,6 +39,9 @@ export function preparedSourceLines(preparation: PreparedSessionMaterial, locale
   });
   const reference = locations.map(({surah, ayah}) => `${surah}:${ayah}`).join(', ');
   lines.push(group ? `${group.heading[locale]} — ${reference}` : `${ur?'اصل قرآنی آیت':'Qur’anic source verse'} — ${reference}`, verses.map(verse => verse.arabic).join(' '), verses.map(verse => verse.translation).join(' '), QURAN_TRANSLATION_SOURCES[locale][ur?'sourceLabelUr':'sourceLabelEn']);
+ }
+ for(const voice of preparation.scholarlyExcerpts??[]){
+  lines.push(voice.scholar[locale],voice.original,voice.translation[locale],voice.sourceNote[locale],voice.sourceUrl);
  }
  for (const excerpt of preparation.primaryExcerpts ?? []) {
   lines.push(excerpt.attribution[locale], excerpt.reference[locale], excerpt.arabic, excerpt.translation[locale], ur?'قلم ورکس — اصل عربی سے تدوینی ترجمہ':'Qalam Works — editorial translation from the Arabic', excerpt.sourceUrl);

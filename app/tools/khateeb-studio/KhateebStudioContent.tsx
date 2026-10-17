@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PreparedSeriesSession from "./PreparedSeriesSession";
 import GhaflahScholarCoverage from "./GhaflahScholarCoverage";
+import GhaflahScholarlyVoices from "./GhaflahScholarlyVoices";
 import { buildPreparedSeriesText } from "./engine/preparedSeries";
 import TopicSpeakingGuide from "./TopicSpeakingGuide";
 import { buildTopicSpeakingGuideText } from "./engine/topicSpeakingGuide";
@@ -1557,6 +1558,7 @@ export default function KhateebStudioContent({
                     </p>
                   </section>
 
+                  {topic.id === "ghaflah" ? <GhaflahScholarlyVoices ur={ur} /> : null}
                   {topic.id === "ghaflah" ? <GhaflahScholarCoverage ur={ur} /> : null}
 
                   {seriesLayer === "fresh" && originalityReport ? (
