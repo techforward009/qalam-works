@@ -5,6 +5,7 @@ import { TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE } from "./talibJohariAsasEvidence";
 import { TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE } from "./talibJohariAalmiMuashraEvidence";
 import { TALIB_JOHARI_OCCASION_EVIDENCE } from "./talibJohariOccasionEvidence";
 import { pureKhateebUrdu } from "./urduPurity";
+import { GHAF_LAH_SPEAKER_EVIDENCE } from "./ghaflahPackage";
 
 export type SpeakerEvidenceKind = "transcript" | "compiled-majalis";
 export type SpeakerEvidenceStatus = "ready" | "catalog-only";
@@ -49,6 +50,7 @@ export type SpeakerEvidence = {
  * pretend we have extracted claims from the full book until its text is ingested.
  */
 export const SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
+  ...GHAF_LAH_SPEAKER_EVIDENCE,
   ...NAQQAN_ASHRA_EVIDENCE,
   ...TALIB_JOHARI_MANSAB_HIDAYAT_EVIDENCE,
   ...TALIB_JOHARI_INSANIYAT_EVIDENCE,

@@ -7,6 +7,7 @@ import {
   verifiedHadithForDossierText,
 } from "./verifiedHadithCorpus";
 import { PARENTS_BARSI_DOSSIER } from "./parentsBarsiDossier";
+import { GHAF_LAH_DOSSIER } from "./ghaflahPackage";
 
 export type ScholarPerspective = {
   id: string;
@@ -1560,6 +1561,7 @@ const QURAN_HIDAYAT: SermonDossier = {
 };
 
 const DOSSIERS: readonly SermonDossier[] = [
+  GHAF_LAH_DOSSIER,
   SABR,
   IMAMATE,
   DUA,

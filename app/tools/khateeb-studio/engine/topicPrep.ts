@@ -1,5 +1,6 @@
 import type { SermonPrep, SermonLocale } from "./sermonPrep";
 import { pureKhateebUrdu } from "./urduPurity";
+import { GHAF_LAH_TOPIC } from "./ghaflahPackage";
 
 export type TopicCategory =
   | "belief"
@@ -16,6 +17,7 @@ export type TopicPrep = SermonPrep & {
 };
 
 const TOPICS: readonly TopicPrep[] = [
+  GHAF_LAH_TOPIC,
   {
     id: "parents-barsi",
     category: "family",

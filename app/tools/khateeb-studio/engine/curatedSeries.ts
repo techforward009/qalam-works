@@ -1,4 +1,5 @@
 import type { MajlisSeriesLength, MajlisSeriesPlan } from "./seriesPlanner";
+import { ghaflahMajlisSeries } from "./ghaflahPackage";
 
 const IMAMATE_ASHRA: MajlisSeriesPlan = {
   length: 10,
@@ -1004,6 +1005,7 @@ export function getCuratedMajlisSeries(
   topicId: string,
   length: MajlisSeriesLength,
 ): MajlisSeriesPlan | null {
+  if (topicId === "ghaflah") return ghaflahMajlisSeries(length);
   if (topicId === "imamate" && length === 10) return IMAMATE_ASHRA;
   if (topicId === "quran-hidayat" && length === 5) return QURAN_HIDAYAT_KHAMSA;
   if (topicId === "quran-hidayat" && length === 10) return QURAN_HIDAYAT_ASHRA;
