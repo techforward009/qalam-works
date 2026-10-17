@@ -13,8 +13,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-import dynamic from "next/dynamic";
-const BookLibraryPanel = dynamic(() => import("./BookLibraryPanel"), { ssr: false });
+import Link from "next/link";
 import { PATIENCE_QURAN } from "./engine/patienceBookGuide";
 import BookPassageText from "./BookPassageText";
 import { bookExcerptText, bookExcerptReference, cleanBookTitle, type BookExcerpt } from "./engine/bookLibrary";
@@ -24,7 +23,6 @@ import ClipboardFeedback from "./ClipboardFeedback";
 import { useCopyFeedback } from "./useCopyFeedback";
 import { CUSTOM_SERMON_ACTIVE_KEY, loadCustomProjects, buildCustomBackup, prepareCustomRestore, persistRestoredProjects, sortCustomProjects } from "./engine/customSermonStorage";
 import {
-  addCustomBookExcerpt,
   removeCustomBookExcerpt,
   applyResearchToCustomProject,
   buildCustomSermonText,
@@ -58,7 +56,6 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
   const [objective, setObjective] = useState("");
   const [ownMaterial, setOwnMaterial] = useState("");
   const [duration, setDuration] = useState<SermonDuration>(30);
-  const [libraryOpen, setLibraryOpen] = useState(false);
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchError, setResearchError] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
@@ -228,12 +225,6 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
       ? active.selectedEvidenceIds.filter((item) => item !== id)
       : [...active.selectedEvidenceIds, id];
     replaceProject(selectCustomEvidence(active, selected));
-  };
-
-  const addBookExcerpt = (excerpt: BookExcerpt) => {
-    const latest = projectsRef.current.find(project => project.id === activeId);
-    if (!latest) throw new Error("missing-project");
-    return replaceProject(addCustomBookExcerpt(latest, excerpt), false);
   };
 
   const updateSectionText = (sectionId: string, value: string) => {
@@ -686,14 +677,11 @@ export default function CustomSermonWorkspace({ locale, initialProject, onInitia
               </div>
 
               <div className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
-                <button type="button" aria-expanded={libraryOpen} aria-controls="custom-book-library" onClick={() => setLibraryOpen(value => !value)} className="flex w-full items-center justify-between gap-3 text-start font-bold text-[#1A3A2A] dark:text-white">
-                  <span>{ur ? "کتابی ذخیرہ — تلاش اور اقتباس" : "Book library — search and quote"}</span>
-                  <span aria-hidden="true">{libraryOpen ? "−" : "+"}</span>
-                </button>
-                <p className="mt-2 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">{ur ? "نہج البلاغہ اور صحیفہ سجادیہ سے منتخب عبارت، اصل نسخے اور حوالہ کے ساتھ شامل کریں۔" : "Add selected passages from Nahj al-Balagha and Sahifa Sajjadiyya with their edition and reference."}</p>
-                <div id="custom-book-library" className="mt-4" hidden={!libraryOpen}>
-                  {libraryOpen ? <BookLibraryPanel key={active.id} locale={locale} onCreateDraft={replaceProject} onAdd={addBookExcerpt} addedIds={(active.bookExcerpts ?? []).map(x => x.id)} /> : null}
+                <div className="flex items-center justify-between gap-3 font-bold text-[#1A3A2A] dark:text-white">
+                  <span>{ur ? "کتابی ذخیرہ — مطالعہ اور اقتباس" : "Book Library — read and quote"}</span>
+                  <Link href="/tools/khateeb-studio/library" className="rounded-lg bg-[#31513a] px-3 py-2 text-xs font-semibold text-white">{ur ? "کتاب خانہ کھولیں" : "Open Book Library"}</Link>
                 </div>
+                <p className="mt-2 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">{ur ? "کتاب خانے سے عبارت منتخب کرکے میری مجلس میں شامل کریں؛ محفوظ اقتباس یہاں ظاہر ہوگا۔" : "Select a passage in the Book Library and add it to this active sermon. Saved excerpts appear here."}</p>
                 {active.bookExcerpts?.length ? <div className="mt-4 space-y-3">
                   <h5 className="font-semibold">{ur ? "مجلس کے محفوظ کتابی اقتباسات" : "Saved book excerpts in this sermon"}</h5>
                   {active.bookExcerpts.map(excerpt => <article key={excerpt.id} className="rounded-lg border border-[#31513a]/20 p-3">

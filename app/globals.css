@@ -2036,3 +2036,10 @@ html.dark .qalam-home section[dir="rtl"] .qalam-tool-example bdi{color:#f0f6f0!i
 @font-face{font-family:"Traditional Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/TraditionalArabic.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 @font-face{font-family:"Traditional Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/TraditionalArabic-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap;}
 @font-face{font-family:"Al Majeed Quranic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/al-majeed-quranic-400.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
+
+/* Print only the currently displayed, fully measured Book Library page. */
+@media print{
+  body.qalam-book-reader-print *{visibility:hidden!important;}
+  body.qalam-book-reader-print [data-print-book-reader],
+  body.qalam-book-reader-print [data-print-book-reader] *{visibility:visible!important;}
+}
