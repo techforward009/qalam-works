@@ -192,11 +192,11 @@ describe("Quran reader", () => {
     }
   });
 
-  test("uses the public Jameel font for Urdu Quran translation", () => {
+  test("uses the approved Alvi font for Urdu Quran translation", () => {
     const source = readFileSync("app/quran/QuranTranslationPage.tsx", "utf8");
-    expect(source).toContain("Qalam Quran Jameel");
+    expect(source).toContain("Alvi Nastaleeq");
     expect(source).toContain(
-      "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2",
+      "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Alvi_Nastaleeq.woff2",
     );
     expect(source).toContain("lineHeight: ur ? 2.3 : 2");
   });

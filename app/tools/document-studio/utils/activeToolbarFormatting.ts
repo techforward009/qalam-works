@@ -116,7 +116,7 @@ function effectiveFamily(
 ): string {
   if (explicit) return explicit;
   const id = dir === "ltr" ? settings.typography.defaultLtrFontId : settings.typography.defaultRtlFontId;
-  return getFontById(id).editorFamily || (dir === "ltr" ? "Inter" : "Noto Nastaliq Urdu");
+  return getFontById(id).editorFamily || (dir === "ltr" ? "Inter" : "Alvi Nastaleeq");
 }
 
 function effectiveSize(explicit: number | null, blockStyle: BlockStyleId, settings: DocumentStudioSettings): number {

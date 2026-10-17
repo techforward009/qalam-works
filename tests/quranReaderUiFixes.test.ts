@@ -151,7 +151,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(translation).toContain("storedQuranUrduTranslator()");
     expect(translation).toContain("saveQuranUrduTranslator(next)");
     expect(translation).toContain('"Gulzar", "Noto Nastaliq Urdu", serif');
-    expect(translation).toContain('"Qalam Quran Jameel", "Noto Nastaliq Urdu", serif');
+    expect(translation).toContain('"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif');
     expect(translationCorpus).toContain('"mohsin-najfi"');
     expect(translationCorpus).toContain('"safdar-najfi"');
   });

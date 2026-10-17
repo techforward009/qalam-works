@@ -125,7 +125,7 @@ export const STUDIO_FONTS: StudioFontDefinition[] = [
     docx: { supported: true, embedded: false, familyName: "Jameel Noori Nastaleeq" },
     fallbackFontId: "noto-nastaliq-urdu",
     availability: "public-blob",
-    notes: "Browser and PDF use the public Vercel Blob Regular face; Word still needs the family installed locally.",
+    notes: "Optional Document Studio Nastaleeq. Browser and PDF use the Cloudflare mirror; an explicit Jameel selection is never rewritten to Alvi.",
   },
   {
     id: "noto-nastaliq-urdu",
@@ -376,7 +376,7 @@ export function resolveEditorFontFamily(
     typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
 
   if (!requested) {
-    const defId: FontId = globalDir === "ltr" ? "inter" : "noto-nastaliq-urdu";
+    const defId: FontId = globalDir === "ltr" ? "inter" : "alvi-nastaleeq";
     const def = getFontById(defId);
     return {
       requested: null,

@@ -13,7 +13,7 @@ const sources = {
     "Sahel.woff2",
     "ScheherazadeNew-Medium.woff2",
   ],
-  "app/quran/QuranTranslationPage.tsx": ["jameel-noori-nastaleeq-400.woff2"],
+  "app/quran/QuranTranslationPage.tsx": ["Alvi_Nastaleeq.woff2"],
   "app/quran/editions.ts": ["muhammadi-quranic-400.woff2"],
   "app/tools/khateeb-studio/KhateebStudioContent.tsx": ["NafeesNastaleeq.woff2"],
   "app/components/knowledge/KnowledgeAssistant.tsx": ["NafeesNastaleeq.woff2"],

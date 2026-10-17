@@ -82,7 +82,7 @@ export function defaultDocumentSettings(): DocumentStudioSettings {
       paragraphBeforePt: 0,
       paragraphAfterPt: 6,
       firstLineIndentMm: 0,
-      defaultRtlFontId: "noto-nastaliq-urdu",
+      defaultRtlFontId: "alvi-nastaleeq",
       defaultLtrFontId: "inter",
     },
     headerFooter: {
