@@ -16,7 +16,7 @@ describe("Ghaflah research and all formats", () => {
     expect(coverage).toHaveLength(29);
     expect(new Set(coverage.map(x=>x.scholarId)).size).toBe(coverage.length);
     expect(coverage.find(x=>x.scholarId==="jawad-naqvi")?.status).toBe("source-analysed");
-    expect(coverage.find(x=>x.scholarId==="qaraati")?.status).toBe("catalog-only");
+    expect(coverage.find(x=>x.scholarId==="qaraati")?.status).toBe("source-analysed");
     expect(coverage.filter(x=>x.status==="not-researched").length).toBeGreaterThan(0);
   });
   it("links every exact hadith to the dossier and a verified source witness", () => {
