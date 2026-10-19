@@ -2,9 +2,9 @@ import { describe, expect, test } from "vitest";
 import { PUBLIC_BLOB_FONT_FAMILIES, PUBLIC_BLOB_FONT_FILES, publicBlobFontUrl, isApprovedPublicBlobFontUrl } from "../app/tools/document-studio/utils/publicBlobFontCatalog";
 
 describe("Document Studio public Blob font catalogue", () => {
-  test("resolves the owner-supplied Blob URL and rejects non-approved names", () => {
+  test("routes approved font assets away from Vercel Blob and rejects non-approved names", () => {
     const url = publicBlobFontUrl("AdobeArabic-Regular.woff2");
-    expect(url).toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Regular.woff2");
+    expect(url).toBe("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/AdobeArabic-Regular.woff2");
     expect(isApprovedPublicBlobFontUrl(url)).toBe(true);
     expect(() => publicBlobFontUrl("MehrNastaliqWeb.woff2")).toThrow();
     expect(isApprovedPublicBlobFontUrl("https://evil.invalid/AdobeArabic-Regular.woff2")).toBe(false);
@@ -16,7 +16,7 @@ describe("Document Studio public Blob font catalogue", () => {
     expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(16);
   });
 
-  test("maps all seven uploaded catalogued originals and keeps missing fonts on legacy names", () => {
+  test("maps all approved URLs through the independent font mirror (missing assets fail closed)", () => {
     const recovered=[
       "Alvi_Nastaleeq.woff2","Gulzar-Regular.woff2",
       "NafeesNastaleeq.woff2","Sahel.woff2",
@@ -30,7 +30,7 @@ describe("Document Studio public Blob font catalogue", () => {
       expect(isApprovedPublicBlobFontUrl("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/"+name)).toBe(false);
     }
     expect(publicBlobFontUrl("AdobeArabic-Regular.woff2"))
-      .toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Regular.woff2");
+      .toBe("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/AdobeArabic-Regular.woff2");
     expect(PUBLIC_BLOB_FONT_FAMILIES.find(font=>font.id==="faiz-lahori")?.regular)
       .toBe("Faiz-Lahori-Web.woff2");
   });
