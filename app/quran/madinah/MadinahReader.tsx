@@ -431,7 +431,7 @@ export default function MadinahReader({
               {copy.juz} <strong>{pageJuz}</strong>
             </div>
 
-            <label className={styles.labelBlock}>
+            <label className={styles.labelBlock} style={language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined}>
               {copy.display}
               <select
                 value={scale}
@@ -445,7 +445,7 @@ export default function MadinahReader({
               </select>
             </label>
 
-            <button type="button" className={styles.secondary} style={{ width: "100%", marginTop: 11 }} onClick={() => void copyCurrentPage()}>
+            <button type="button" className={styles.secondary} style={{ width: "100%", marginTop: 11, ...(language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : {}) }} onClick={() => void copyCurrentPage()}>
               {copied ? copy.copyDone : copy.copy}
             </button>
           </aside>

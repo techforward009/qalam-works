@@ -1,16 +1,22 @@
 /**
  * Qalam Works — original-font gateway for the owner's private Cloudflare R2.
- * All ten original uploaded WOFF2 files were expressly authorized by the owner.
+ * Nine files remain on this allowlist. Alvi Nastaleeq was removed.
+ * Mehr Nastaliq Web is an additional CC BY-SA 4.0 file on the same allowlist.
+ * Nafees Nastaleeq v1.02 is allowlisted. NafeesNastaleeq.woff2 (v1.00) and
+ * NafeesNastaleeq-Web.woff2 are not; requests for those names return 404.
+ * B Nazanin and Al Fars 9 Badr stay allowlisted. Document Studio requests
+ * them only after a user picks that face. Normal pages do not.
+ * Adobe Arabic, Traditional Arabic, Al Majeed Quranic, Faiz Lahori, Asif Quranic,
+ * and Al Qalam Quran Majeed are not licensed and are not on this allowlist.
  * No public R2 bucket, credentials, renaming or source-text alteration.
  * Isolated from the private Tafsir Worker and its secret.
  */
 const FONT_FILES = Object.freeze({
   "AlFars9Badr.woff2": { size: 30340, sha256: "c9e108d6c962ef2f18b7b939f7a5ebf74ce65192a85249cb571554c18f3e9ab8" },
-  "Alvi_Nastaleeq.woff2": { size: 5228460, sha256: "0e60d92fbf7a86dad972b7e75dfbb85dd94ffe3ee8fbba0c14115fc977efb466" },
   "BNazanin.woff2": { size: 20076, sha256: "2e9bfe82c0e631244e5729408fee76778b04edc716bed9da054c7c286de6f368" },
   "Gulzar-Regular.woff2": { size: 237008, sha256: "cf6b33bd971d65eef3eedafcae62ee8e88bdfe30ef6a23f9ab627a2f24e376d6" },
-  "NafeesNastaleeq-Web.woff2": { size: 23692, sha256: "3b2219947cbd4704b4534198005f8e3818182ded24cac774c1fa0f625a955f82" },
-  "NafeesNastaleeq.woff2": { size: 129624, sha256: "7e83325ff08842b011d6d70060ea055a992318e1cc5997bd66ccf1e13e35aac0" },
+  "MehrNastaliqWeb.woff2": { size: 55884, sha256: "a3c651455e754cb1e20e8bba05e449dfd12fa778870a79f11bca3108dbe41457" },
+  "NafeesNastaleeq-v1.02.woff2": { size: 147664, sha256: "0ded94076db53a8be209e5f2745a58eb244ead9a79ebc0e98a15750b2ca1feaf" },
   "Sahel.woff2": { size: 35460, sha256: "25e4a066c637948e01e12b7c8bf9e13afa188fad6949affedc6ddf2d307b31b0" },
   "ScheherazadeNew-Medium.woff2": { size: 147916, sha256: "67c5c24a178e7e3e1c1c6ca7095448e70da6f882bf7f41783a8085e7ba87269e" },
   "jameel-noori-nastaleeq-400.woff2": { size: 5554728, sha256: "d12978f4398f1f788d65fa7ccb872cf0e1c43aef89166816243e94487d9cee27" },

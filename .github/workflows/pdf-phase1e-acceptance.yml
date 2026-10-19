@@ -68,7 +68,7 @@ jobs:
             pdfinfo "$p" > "artifacts/pdf-phase1e/$base.info.txt"
             pdffonts "$p" > "artifacts/pdf-phase1e/$base.fonts.txt"
             if [[ "$base" == invoice-urdu.pdf ]]; then
-              grep -iq "Noto" "artifacts/pdf-phase1e/$base.fonts.txt" || { echo "Invoice Urdu font was not embedded"; exit 1; }
+              grep -iq "Mehr" "artifacts/pdf-phase1e/$base.fonts.txt" || { echo "Invoice Urdu Mehr font was not embedded"; exit 1; }
               grep -iq "yes" "artifacts/pdf-phase1e/$base.fonts.txt" || { echo "Invoice font embedding not confirmed"; exit 1; }
             fi
             pdftotext -layout "$p" "artifacts/pdf-phase1e/$base.txt"

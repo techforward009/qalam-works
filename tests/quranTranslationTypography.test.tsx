@@ -32,13 +32,13 @@ test.each(["ur", "en"])("applies readable translation typography and direction i
   const area = text.parentElement!.parentElement!.parentElement!;
   expect(area.style.fontSize).toBe(language === "ur" ? "22px" : "17px");
   expect(area.style.lineHeight).toBe(language === "ur" ? "2.3" : "2");
-  expect(area.style.fontFamily.includes("Alvi Nastaleeq")).toBe(language === "ur");
+  expect(area.style.fontFamily.includes("Mehr Nastaliq Web")).toBe(language === "ur");
   expect(text.closest("article")?.getAttribute("dir")).toBe(language === "ur" ? "rtl" : "ltr");
   const label = screen.getByText(language === "ur" ? "سورة الفاتحة، آیت ١" : "Surah 1, Ayah 1");
   if (language === "ur") {
     expect(label.className).toContain("text-[14px]");
     expect(label.style.fontFamily).toContain("Amiri");
-    expect(label.style.fontFamily).not.toContain("Alvi Nastaleeq");
+    expect(label.style.fontFamily).not.toContain("Mehr Nastaliq Web");
     expect(screen.getByText("ترجمۂ قرآن").style.fontFamily).toContain("Gulzar");
     expect(screen.getByText("ترجمہ: علامہ شیخ محسن علی نجفی").style.fontFamily).toContain("Gulzar");
   } else {
@@ -56,12 +56,12 @@ test("scales 22px Urdu translation with reader selection without shrinking the 1
   expect(screen.getByText("سورة الفاتحة، آیت ١").className).toContain("text-[14px]");
 });
 
-test("renders a compact Alvi Nastaleeq translator chooser with a separate prominent heading", async () => {
+test("renders a compact Mehr Nastaliq Web translator chooser with a separate prominent heading", async () => {
   state.language = "ur";
   render(<QuranTranslationPage ayahs={[{ id: "1:1", surah: 1, ayah: 1, text: "test" }]} selectedSurah={1} selectedAyah={1} scale={1} />);
   await screen.findByText("Translation sample");
   const picker = document.querySelector("[data-quran-translator-picker]") as HTMLDivElement;
-  expect(picker.style.fontFamily).toContain("Alvi Nastaleeq");
+  expect(picker.style.fontFamily).toContain("Mehr Nastaliq Web");
   expect(picker.querySelector("select")).toBeNull(); // no oversized Android native picker
   const heading = screen.getByText("مترجم منتخب کریں");
   expect(heading.closest("button")).toBeNull();

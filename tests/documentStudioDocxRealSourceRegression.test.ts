@@ -61,10 +61,10 @@ function savedQalamExcerpt() {
 }
 
 describe("DOCX synthetic Urdu/Arabic formatting and editable-break regressions", () => {
-  test("Alvi, Gulzar, Jameel, Amiri and long Digital Khatt retain requested w:rFonts/w:szCs", async () => {
+  test("retired Alvi exports as Mehr; Gulzar, Jameel, Amiri and long Digital Khatt stay", async () => {
     const ps = paragraphs(await documentXml(savedQalamExcerpt().content));
     expect(ps).toHaveLength(10);
-    const faces = ["Gulzar", "Jameel Noori Nastaleeq", "Alvi Nastaleeq", "Alvi Nastaleeq", "Alvi Nastaleeq", "", "", "Amiri", "", "Digital Khatt Indo-Pak"];
+    const faces = ["Gulzar", "Jameel Noori Nastaleeq", "Mehr Nastaliq Web", "Mehr Nastaliq Web", "Mehr Nastaliq Web", "", "", "Amiri", "", "Digital Khatt Indo-Pak"];
     faces.forEach((family, i) => {
       if (family) expect(ps[i]).toContain('w:cs="' + family + '"');
       else expect(textOf(ps[i])).toBe("");
@@ -165,7 +165,7 @@ describe("DOCX synthetic Urdu/Arabic formatting and editable-break regressions",
     expect(ps[0]).toContain('w:jc w:val="center"');
     expect(ps[0]).toContain('w:pStyle w:val="Heading2"');
     expect(textOf(ps[1])).toBe("یہ حدیث ہے: عَلَيْهِ السَّلَامُ");
-    expect(ps[1]).toContain('w:cs="Alvi Nastaleeq"');
+    expect(ps[1]).toContain('w:cs="Mehr Nastaliq Web"');
     expect(ps[1]).toContain('w:cs="Amiri"');
     expect((xml.match(/<w:br w:type="page"\s*\/>/g) ?? [])).toHaveLength(1);
   });
@@ -174,7 +174,7 @@ describe("DOCX synthetic Urdu/Arabic formatting and editable-break regressions",
     expect(listEditorFonts().some(f => f.id === "noto-nastaliq-urdu")).toBe(false);
     expect(resolveEditorFontFamily('"Noto Nastaliq Urdu"', "rtl").docxFamily).toBe("Noto Nastaliq Urdu");
     for (const [input, expected] of [
-      ['"Alvi Nastaleeq"', "Alvi Nastaleeq"],
+      ['"Alvi Nastaleeq"', "Mehr Nastaliq Web"],
       ['"Jameel Noori Nastaleeq", serif', "Jameel Noori Nastaleeq"],
       ['"Gulzar"', "Gulzar"],
       ['"Digital Khatt Indo-Pak"', "Digital Khatt Indo-Pak"],

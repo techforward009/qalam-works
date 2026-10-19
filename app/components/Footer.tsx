@@ -39,7 +39,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-0 border-t border-white/10 bg-[#11182A]" dir={dir}>
+    <footer className="mt-0 border-t border-white/10 bg-[#11182A]" dir={dir} data-site-footer={language}>
       <div className="site-container py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Brand */}
         <div className="sm:col-span-2 lg:col-span-1">
@@ -53,7 +53,7 @@ export default function Footer() {
 
         {/* Tools */}
         <div>
-          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3`}>
+          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3`} data-footer-heading="true">
             {t.footer.toolsHeading}
           </div>
           <ul className="space-y-2">
@@ -69,7 +69,7 @@ export default function Footer() {
 
         {/* Company */}
         <div>
-          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3`}>
+          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3`} data-footer-heading="true">
             {t.footer.companyHeading}
           </div>
           <ul className="space-y-2">
@@ -82,14 +82,14 @@ export default function Footer() {
 
         {/* Legal + Contact */}
         <div>
-          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3`}>
+          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3`} data-footer-heading="true">
             {t.footer.legalHeading}
           </div>
           <ul className="space-y-2 mb-5">
             <li><Link href="/privacy" className="text-sm text-white transition-colors hover:text-white">{language === "ur" ? "رازداری" : "Privacy"}</Link></li>
             <li><Link href="/terms" className="text-sm text-white transition-colors hover:text-white">{language === "ur" ? "شرائط" : "Terms"}</Link></li>
           </ul>
-          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-2`}>
+          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-2`} data-footer-heading="true">
             {t.footer.contactHeading}
           </div>
           {/* Contact block composition (2026-08-12) — the block as a whole
@@ -115,7 +115,24 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-white/5 py-4 text-center text-sm text-white" dir="ltr">
+      <div className="border-t border-white/5 px-4 py-4 text-center text-white">
+        <p dir="rtl" lang="ur" className="font-nastaliq text-sm leading-8">
+          فونٹ: <a href="https://mehrtype.com/product/mehr-nastaliq-web/" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مہر نستعلیق ویب</a>
+          {" — "}
+          <a href="https://mehrtype.com/free-fonts" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مہر ٹائپ</a>
+          {"، "}
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">CC BY-SA 4.0</a>
+        </p>
+        <p className="mt-1 text-xs leading-6 text-white/90">
+          Gulzar — <a href="https://scripts.sil.org/OFL" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">SIL Open Font License 1.1</a>
+        </p>
+        <p dir="rtl" lang="ur" className="mt-1 font-nastaliq text-sm leading-8">
+          نفیس نستعلیق v1.02 — <a href="https://cle.org.pk/software/localization/Fonts/nafeesNastaleeq.html" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مرکز تحقیق برائے اردو زبان (CRULP)</a>
+          {"، "}
+          <a href="https://cle.org.pk/software/license/Nafees_Nastaleeq_License.html" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">لائسنس</a>
+        </p>
+      </div>
+      <div className="border-t border-white/5 py-4 text-center text-sm text-white" dir="ltr" data-footer-copy="true">
         © {year} Qalam Works. {t.footer.rights}
       </div>
     </footer>

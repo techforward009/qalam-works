@@ -1,7 +1,10 @@
-/** Approved public Blob font assets. The owner supplied the Blob origin and AdobeArabic-Regular URL. All filenames are exact matches to the store inventory; Mehr Nastaliq is intentionally excluded. */
+/** Approved public font assets. Mehr and Nafees v1.02 are same-origin until they are uploaded to the font Worker. */
+
 export interface PublicBlobFontFamily {
   id: string;
   label: string;
+  /** CSS/PDF/DOCX family when it differs from the menu label. */
+  editorFamily?: string;
   regular: string;
   bold?: string;
   script: "urdu" | "arabic" | "persian" | "quran";
@@ -9,20 +12,15 @@ export interface PublicBlobFontFamily {
 }
 
 export const PUBLIC_BLOB_FONT_FAMILIES: readonly PublicBlobFontFamily[] = [
-  { id: "adobe-arabic", label: "Adobe Arabic", regular: "AdobeArabic-Regular.woff2", bold: "AdobeArabic-Bold.woff2", script: "arabic" },
-  { id: "alvi-nastaleeq", label: "Alvi Nastaleeq", regular: "Alvi_Nastaleeq.woff2", script: "urdu" },
   { id: "digital-khatt-indo-pak", label: "Digital Khatt Indo-Pak", regular: "DigitalKhattIndoPakRegular.woff2", script: "quran" },
-  // Keep the legacy file available for documents saved with Faiz; hide it from the picker.
-  { id: "faiz-lahori", label: "Faiz Lahori Nastaleeq", regular: "Faiz-Lahori-Web.woff2", script: "urdu" },
   { id: "gulzar", label: "Gulzar", regular: "Gulzar-Regular.woff2", script: "urdu" },
-  { id: "nafees-nastaleeq", label: "Nafees Nastaleeq", regular: "NafeesNastaleeq.woff2", script: "urdu" },
+  { id: "nafees-nastaleeq", label: "Nafees Nastaleeq", regular: "NafeesNastaleeq-v1.02.woff2", script: "urdu" },
   { id: "sahel", label: "Sahel", regular: "Sahel.woff2", script: "persian", existingStudioId: "sahel" },
+  { id: "al-fars-9-badr", label: "Al Fars 9 Badr", editorFamily: "AlFars 9 Badr", regular: "AlFars9Badr.woff2", script: "persian" },
+  { id: "b-nazanin", label: "B Nazanin", regular: "BNazanin.woff2", script: "persian" },
   { id: "scheherazade-new", label: "Scheherazade New", regular: "ScheherazadeNew-Medium.woff2", script: "arabic" },
-  { id: "traditional-arabic", label: "Traditional Arabic", regular: "TraditionalArabic.woff2", bold: "TraditionalArabic-Bold.woff2", script: "arabic" },
-  { id: "al-majeed-quranic", label: "Al Majeed Quranic", regular: "al-majeed-quranic-400.woff2", script: "quran" },
-  { id: "al-qalam-quran-majeed", label: "Al Qalam Quran Majeed", regular: "al-qalam-quran-majeed-web-regular.woff2", script: "quran" },
-  { id: "asif-quranic", label: "Asif Quranic", regular: "asif-quranic-400.woff2", script: "quran" },
   { id: "jameel-noori-nastaleeq", label: "Jameel Noori Nastaleeq", regular: "jameel-noori-nastaleeq-400.woff2", script: "urdu", existingStudioId: "jameel-noori-nastaleeq" },
+  { id: "mehr-nastaliq-web", label: "Mehr Nastaliq Web", regular: "MehrNastaliqWeb.woff2", script: "urdu" },
   { id: "muhammadi-quranic", label: "Muhammadi Quranic", regular: "muhammadi-quranic-400.woff2", script: "quran" },
 ] as const;
 
@@ -37,7 +35,12 @@ export function getPublicBlobFontFamily(id: string): PublicBlobFontFamily | unde
 export const PUBLIC_BLOB_FONT_BASE_URL = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com";
 export const QALAM_OFL_FONT_MIRROR_BASE_URL =
   "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts";
-const LOCALLY_HOSTED_FONT_FILES = new Set(["DigitalKhattIndoPakRegular.woff2"]);
+const LOCALLY_HOSTED_FONT_FILES = new Set([
+  "DigitalKhattIndoPakRegular.woff2",
+  // Not on the font Worker yet. Pages must not request these from the Worker.
+  "MehrNastaliqWeb.woff2",
+  "NafeesNastaleeq-v1.02.woff2",
+]);
 /** Resolve only catalogued filenames; never accept arbitrary paths/hosts. */
 export function publicBlobFontUrl(filename: string): string {
   if (!PUBLIC_BLOB_FONT_FILES.includes(filename)) {

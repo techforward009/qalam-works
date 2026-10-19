@@ -8,7 +8,7 @@ import JSZip from "jszip";
 import { Packer } from "docx";
 import { createDocxDocument, buildDocxBlob } from "../app/tools/document-studio/utils/buildDocxDocument";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
-import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
+import { defaultDocumentSettings, parseDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 
 async function extractDocumentXml(
   doc: DocNode,
@@ -445,8 +445,8 @@ describe("createDocxDocument — v1.1 Phase 1: heading hierarchy fix", () => {
   });
 });
 
-describe("createDocxDocument — Urdu default is Alvi; explicit Jameel is preserved", () => {
-  test("unmarked RTL uses Alvi Nastaleeq and LTR uses Inter", async () => {
+describe("createDocxDocument — new Urdu default is Mehr; a saved Alvi value exports as Mehr", () => {
+  test("unmarked RTL uses Mehr Nastaliq Web and LTR uses Inter", async () => {
     const rtlXml = await extractDocumentXml(
       docWith([{ type: "paragraph", content: [{ type: "text", text: "متن" }] }]),
       "rtl"
@@ -455,9 +455,36 @@ describe("createDocxDocument — Urdu default is Alvi; explicit Jameel is preser
       docWith([{ type: "paragraph", content: [{ type: "text", text: "text" }] }]),
       "ltr"
     );
-    expect(rtlXml).toContain('w:cs="Alvi Nastaleeq"');
+    expect(rtlXml).toContain('w:cs="Mehr Nastaliq Web"');
     expect(rtlXml).not.toContain("Noto Nastaliq Urdu");
     expect(ltrXml).toContain("Inter");
+  });
+
+  test("a saved Alvi default and an Alvi mark both export as Mehr", async () => {
+    const settings = parseDocumentSettings({
+      typography: { defaultRtlFontId: "alvi-nastaleeq" },
+    });
+    expect(settings.typography.defaultRtlFontId).toBe("mehr-nastaliq-web");
+    const xml = await extractDocumentXml(
+      docWith([{ type: "paragraph", content: [{ type: "text", text: "متن" }] }]),
+      "rtl",
+      settings
+    );
+    expect(xml).toContain('w:cs="Mehr Nastaliq Web"');
+    expect(xml).not.toContain('w:cs="Alvi Nastaleeq"');
+    const marked = await extractDocumentXml(
+      docWith([{
+        type: "paragraph",
+        content: [{
+          type: "text",
+          text: "متن",
+          marks: [{ type: "textStyle", attrs: { fontFamily: "Alvi Nastaleeq" } }],
+        }],
+      }]),
+      "rtl"
+    );
+    expect(marked).toContain('w:cs="Mehr Nastaliq Web"');
+    expect(marked).not.toContain('w:cs="Alvi Nastaleeq"');
   });
 
   test("an explicit Jameel mark is not rewritten to Alvi", async () => {

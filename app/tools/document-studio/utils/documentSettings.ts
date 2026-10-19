@@ -3,7 +3,7 @@
  * Explicit TipTap marks/attrs always override these.
  */
 
-import { STUDIO_FONTS, type FontId } from "./fontRegistry";
+import { STUDIO_FONTS, isRemovedQuranFont, isRemovedUnlicensedFont, isRetiredAlviFont, type FontId } from "./fontRegistry";
 import type { MarginPresetId, PageOrientation, PageSizeId, PageMarginsMm } from "./pageLayout";
 import { clampMarginMm, resolveMargins } from "./pageLayout";
 import type { PresetId } from "./publishingPresets";
@@ -82,7 +82,7 @@ export function defaultDocumentSettings(): DocumentStudioSettings {
       paragraphBeforePt: 0,
       paragraphAfterPt: 6,
       firstLineIndentMm: 0,
-      defaultRtlFontId: "alvi-nastaleeq",
+      defaultRtlFontId: "mehr-nastaliq-web",
       defaultLtrFontId: "inter",
     },
     headerFooter: {
@@ -178,6 +178,8 @@ export function sanitizeLineHeight(raw: unknown): number | null {
 }
 
 function sanitizeFontId(raw: unknown, fallback: FontId): FontId {
+  if (isRetiredAlviFont(raw)) return "mehr-nastaliq-web";
+  if (isRemovedUnlicensedFont(raw) || isRemovedQuranFont(raw)) return "scheherazade-new";
   // Keep settings validation in sync with the canonical font registry.
   return typeof raw === "string" && STUDIO_FONTS.some(font => font.id === raw)
     ? raw as FontId

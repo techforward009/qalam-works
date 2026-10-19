@@ -88,8 +88,18 @@ const nextConfig: NextConfig = {
       "./node_modules/@fontsource/inter/files/inter-latin-ext-400-normal.woff2",
       "./node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2",
       "./node_modules/@fontsource/inter/files/inter-latin-ext-700-normal.woff2",
+      // Mehr is read from public/fonts when a document uses it. Noto remains the fallback.
+      "./public/fonts/MehrNastaliqWeb.woff2",
       // Note: Jameel Noori Nastaleeq is NOT traced here.
       // It is loaded at runtime from private Vercel Blob via JAMEEL_FONT_BLOB_URL.
+    ],
+    "/api/export-invoice-pdf": [
+      "./node_modules/@sparticuz/chromium/bin/**/*",
+      "./public/fonts/MehrNastaliqWeb.woff2",
+      "./node_modules/@fontsource/noto-nastaliq-urdu/files/noto-nastaliq-urdu-arabic-400-normal.woff2",
+      "./node_modules/@fontsource/noto-nastaliq-urdu/files/noto-nastaliq-urdu-latin-400-normal.woff2",
+      "./node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2",
+      "./node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2",
     ],
   },
 };

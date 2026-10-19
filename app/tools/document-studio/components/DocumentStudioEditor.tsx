@@ -118,6 +118,7 @@ import {
   type DocumentZoom,
   type RulerUnit,
 } from "../utils/documentView";
+import { studioJameelFontFaceCss, studioOnDemandFontFaceCss } from "../utils/fontRegistry";
 import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
 import DocumentCanvas from "./DocumentCanvas";
@@ -1494,8 +1495,62 @@ export default function DocumentStudioEditor() {
     setRulerUnit,
   };
 
+  const [jameelFace, setJameelFace] = useState(false);
+  useEffect(() => {
+    if (!editor) return;
+    const sync = () => {
+      const current = editor.getAttributes("textStyle").fontFamily;
+      if (typeof current === "string" && current.includes("Jameel Noori Nastaleeq")) {
+        setJameelFace(true);
+        return;
+      }
+      let found = false;
+      editor.state.doc.descendants((node) => {
+        if (found) return false;
+        for (const mark of node.marks) {
+          const family = mark.attrs?.fontFamily;
+          if (typeof family === "string" && family.includes("Jameel Noori Nastaleeq")) {
+            found = true;
+            return false;
+          }
+        }
+      });
+      setJameelFace(found);
+    };
+    sync();
+    editor.on("transaction", sync);
+    return () => {
+      editor.off("transaction", sync);
+    };
+  }, [editor]);
+
+  const [onDemandFaces, setOnDemandFaces] = useState("");
+  useEffect(() => {
+    if (!editor) return;
+    const sync = () => {
+      const names: string[] = [];
+      const current = editor.getAttributes("textStyle").fontFamily;
+      if (typeof current === "string") names.push(current);
+      editor.state.doc.descendants((node) => {
+        for (const mark of node.marks) {
+          const family = mark.attrs?.fontFamily;
+          if (typeof family === "string") names.push(family);
+        }
+      });
+      const css = studioOnDemandFontFaceCss(names.join("\n"));
+      setOnDemandFaces((prev) => prev === css ? prev : css);
+    };
+    sync();
+    editor.on("transaction", sync);
+    return () => {
+      editor.off("transaction", sync);
+    };
+  }, [editor]);
+
   return (
     <div className="mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4">
+      {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
+      {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
       <input
         ref={fileInputRef}
         type="file"

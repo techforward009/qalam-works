@@ -93,7 +93,7 @@ describe("Document Studio DOCX Arabic/Urdu Word regression", () => {
     const p = paragraphs(xml)[0];
     expect(p).toContain('w:jc w:val="both"');
     expect(p).not.toContain("lowKashida");
-    expect(p).toContain('w:cs="Alvi Nastaleeq"');
+    expect(p).toContain('w:cs="Mehr Nastaliq Web"');
     expect(p).toContain('w:cs="Amiri"');
     expect(textInParagraph(p)).toBe(urdu.repeat(6) + arabic);
   });

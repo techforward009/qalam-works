@@ -19,7 +19,8 @@ describe("Document Studio workspace chrome", () => {
   it("assigns Urdu interface fonts without restyling editor content", () => {
     expect(shellSource).toContain('"Noto Nastaliq Urdu"');
     expect(shellSource).toContain('"Nafees Nastaleeq"');
-    expect(shellSource).toContain('"Jameel Noori Nastaleeq"');
+    expect(shellSource).toContain('"Mehr Nastaliq Web"');
+    expect(shellSource).toContain("studioJameelFontFaceCss");
     expect(shellSource).not.toContain(".qalam-editor-content");
     expect(shellSource).toContain("data-latin-control");
     expect(shellSource).toContain("[data-studio-dialog=\"ur\"]");

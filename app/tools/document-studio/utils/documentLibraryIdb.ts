@@ -6,12 +6,17 @@
 import {
   createDocumentRecord,
   normalizeDocumentRecord,
+  openedDocumentRecord,
+  replaceRetiredAlviContent,
   sortDocumentsNewestFirst,
+  withRemovedQuranDefaults,
   type DocumentLibrary,
   type DocumentRecord,
   type DocumentWriteInput,
 } from "./documentLibrary";
+import { parseDocumentSettings } from "./documentSettings";
 import { sanitizeDocumentTitle } from "./documentTitle";
+import { storedRecordUsesAlvi } from "./fontRegistry";
 
 const DB_NAME = "qalam-document-studio";
 const DB_VERSION = 1;
@@ -70,7 +75,11 @@ export async function createIndexedDBDocumentLibrary(): Promise<DocumentLibrary>
     },
     async getDocument(id) {
       const row = await withStore("readonly", (store) => store.get(id));
-      return normalizeDocumentRecord(row);
+      const { record, persist } = openedDocumentRecord(row);
+      if (record && persist) {
+        await withStore("readwrite", (store) => store.put(record));
+      }
+      return record;
     },
     async createDocument(input: DocumentWriteInput = {}) {
       const record = createDocumentRecord(input);
@@ -80,11 +89,17 @@ export async function createIndexedDBDocumentLibrary(): Promise<DocumentLibrary>
     async updateDocument(id, patch) {
       const current = normalizeDocumentRecord(await withStore("readonly", (store) => store.get(id)));
       if (!current) throw new Error(`Document not found: ${id}`);
+      const content = patch.content !== undefined ? replaceRetiredAlviContent(patch.content, current.content) : current.content;
+      const documentSettings = patch.documentSettings
+        ? (storedRecordUsesAlvi({ documentSettings: patch.documentSettings, content })
+          ? withRemovedQuranDefaults(parseDocumentSettings(patch.documentSettings), content, patch.documentSettings)
+          : patch.documentSettings)
+        : current.documentSettings;
       const next: DocumentRecord = {
         ...current,
         title: patch.title !== undefined ? sanitizeDocumentTitle(patch.title) || current.title : current.title,
-        content: patch.content ?? current.content,
-        documentSettings: patch.documentSettings ?? current.documentSettings,
+        content,
+        documentSettings,
         updatedAt: Date.now(),
         schemaVersion: 1,
       };

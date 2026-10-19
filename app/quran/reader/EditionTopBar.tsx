@@ -8,16 +8,18 @@ export default function EditionTopBar({ editionId }: { editionId: QuranEditionId
   const { language, dir } = useLanguage();
   const edition = getQuranEdition(editionId);
 
+  const mehr = language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined;
+
   return (
     <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#d9d2c2] pb-3" dir="ltr">
       <div dir={dir} lang={language}>
-        <div className="text-sm font-semibold tracking-wide text-[#2f8f68]">
+        <div className="text-sm font-semibold tracking-wide text-[#2f8f68]" style={mehr}>
           {edition.name[language]}
         </div>
-        <div className="mt-1 text-xs text-[#756f62]">
+        <div className="mt-1 text-xs text-[#756f62]" style={mehr}>
           {edition.description[language]}
         </div>
-        <div className="mt-0.5 text-xs text-[#8a8478]">
+        <div className="mt-0.5 text-xs text-[#8a8478]" style={mehr}>
           {edition.detail[language]} · {edition.rendering[language]}
         </div>
       </div>
@@ -26,6 +28,7 @@ export default function EditionTopBar({ editionId }: { editionId: QuranEditionId
         className="text-sm text-[#2f8f68] hover:underline"
         dir={dir}
         lang={language}
+        style={mehr}
       >
         {language === "ur" ? "قرآن کے تمام ایڈیشنز" : "All Quran Editions"}
       </Link>
