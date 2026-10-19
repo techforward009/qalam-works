@@ -4,7 +4,7 @@ import { PUBLIC_BLOB_FONT_FAMILIES, PUBLIC_BLOB_FONT_FILES, publicBlobFontUrl, i
 describe("Document Studio public Blob font catalogue", () => {
   test("unverified legacy fonts are not offered to new Document Studio users", async () => {
     const { listEditorFonts } = await import("../app/tools/document-studio/utils/fontRegistry");
-    const names = new Set(listEditorFonts().map(font => font.id));
+    const names = new Set<string>(listEditorFonts().map(font => font.id));
     for (const id of ["adobe-arabic", "traditional-arabic", "al-majeed-quranic", "faiz-lahori"]) {
       expect(names.has(id)).toBe(false);
     }
