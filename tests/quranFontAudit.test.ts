@@ -25,7 +25,6 @@ describe("Quran font audit", () => {
       "Attari_Quran_Shipped.ttf",
       "Noor_e_Quran.ttf",
       "noorehira.ttf",
-      "Al Majeed Quranic Font_shiped.ttf",
     ]);
     expect(new Set(FONT_CANDIDATES.map((item) => item.id)).size).toBe(FONT_CANDIDATES.length);
     for (const font of FONT_CANDIDATES) {

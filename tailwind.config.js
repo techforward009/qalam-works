@@ -15,7 +15,7 @@ module.exports = {
         nastaliq: ["var(--font-nastaliq)", "var(--font-nastaliq-latin)", "Noto Nastaliq Urdu", "Urdu Typesetting", "serif"],
         // next/font populates --font-naskh at runtime (Noto Naskh Arabic from Google Fonts).
         // Named fallbacks give a readable Urdu/Arabic Naskh face on any system that has one.
-        naskh: ["var(--font-naskh)", "Noto Naskh Arabic", "Scheherazade New", "Traditional Arabic", "serif"],
+        naskh: ["var(--font-naskh)", "Noto Naskh Arabic", "Scheherazade New", "Amiri", "serif"],
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
     },

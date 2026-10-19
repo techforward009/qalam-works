@@ -16,15 +16,11 @@ export type FontId =
   | "vazirmatn"
   | "sahel"
   | "inter"
-  | "adobe-arabic"
   | "mehr-nastaliq-web"
   | "digital-khatt-indo-pak"
-  | "faiz-lahori"
   | "gulzar"
   | "nafees-nastaleeq"
   | "scheherazade-new"
-  | "traditional-arabic"
-  | "al-majeed-quranic"
   | "al-qalam-quran-majeed"
   | "asif-quranic"
   | "muhammadi-quranic";
@@ -339,11 +335,7 @@ export function exportFamilyForSegment(
 const HIDDEN_EDITOR_FONT_IDS: ReadonlySet<FontId> = new Set([
   "default",
   "noto-nastaliq-urdu",
-  "faiz-lahori",
   "nafees-nastaleeq",
-  "adobe-arabic",
-  "traditional-arabic",
-  "al-majeed-quranic",
   "asif-quranic",
   "muhammadi-quranic",
   "al-qalam-quran-majeed",
@@ -375,12 +367,44 @@ export function isRetiredAlviFont(raw: unknown): boolean {
   return first === "Alvi Nastaleeq" || first === "alvi-nastaleeq";
 }
 
-/** Replace a stored Alvi mark with Mehr. Does not alter any other mark. */
+/** Adobe Arabic, Traditional Arabic, Al Majeed Quranic, and Faiz Lahori are not licensed. */
+const REMOVED_UNLICENSED_FONT_IDS = new Set([
+  "adobe-arabic",
+  "traditional-arabic",
+  "al-majeed-quranic",
+  "faiz-lahori",
+]);
+const REMOVED_UNLICENSED_FONT_FAMILIES = new Set([
+  "Adobe Arabic",
+  "Traditional Arabic",
+  "Al Majeed Quranic",
+  "Al Majeed Quranic Font",
+  "Faiz Lahori Nastaleeq",
+  "Faiz Lahori",
+]);
+export const REMOVED_FONT_FALLBACK_FAMILY = "Scheherazade New";
+
+export function isRemovedUnlicensedFont(raw: unknown): boolean {
+  if (typeof raw !== "string") return false;
+  const trimmed = raw.trim();
+  if (REMOVED_UNLICENSED_FONT_IDS.has(trimmed)) return true;
+  const first = trimmed.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";
+  return REMOVED_UNLICENSED_FONT_FAMILIES.has(first);
+}
+
+function retiredFontReplacement(raw: unknown): string | null {
+  if (isRetiredAlviFont(raw)) return "Mehr Nastaliq Web";
+  if (isRemovedUnlicensedFont(raw)) return REMOVED_FONT_FALLBACK_FAMILY;
+  return null;
+}
+
+/** Replace a stored Alvi mark with Mehr, and an unlicensed face with Scheherazade New. */
 export function migrateAlviDocumentContent<T extends DocNode>(doc: T): T {
   const walk = (node: DocNode): DocNode => {
     const marks = node.marks?.map((mark) => {
-      if (!isRetiredAlviFont(mark.attrs?.fontFamily)) return mark;
-      return { ...mark, attrs: { ...mark.attrs, fontFamily: "Mehr Nastaliq Web" } };
+      const replacement = retiredFontReplacement(mark.attrs?.fontFamily);
+      if (!replacement) return mark;
+      return { ...mark, attrs: { ...mark.attrs, fontFamily: replacement } };
     });
     const content = node.content?.map(walk);
     const marksChanged = marks !== undefined && marks.some((mark, index) => mark !== node.marks?.[index]);
@@ -396,7 +420,7 @@ export function migrateAlviDocumentContent<T extends DocNode>(doc: T): T {
 }
 
 export function storedRecordUsesAlvi(raw: unknown): boolean {
-  if (isRetiredAlviFont(raw)) return true;
+  if (isRetiredAlviFont(raw) || isRemovedUnlicensedFont(raw)) return true;
   if (!raw || typeof raw !== "object") return false;
   const record = raw as {
     content?: DocNode;
@@ -406,9 +430,12 @@ export function storedRecordUsesAlvi(raw: unknown): boolean {
   if (isRetiredAlviFont(typography?.defaultRtlFontId) || isRetiredAlviFont(typography?.defaultLtrFontId)) {
     return true;
   }
+  if (isRemovedUnlicensedFont(typography?.defaultRtlFontId) || isRemovedUnlicensedFont(typography?.defaultLtrFontId)) {
+    return true;
+  }
   const walk = (node: DocNode | undefined): boolean => {
     if (!node) return false;
-    if (node.marks?.some((mark) => isRetiredAlviFont(mark.attrs?.fontFamily))) return true;
+    if (node.marks?.some((mark) => retiredFontReplacement(mark.attrs?.fontFamily))) return true;
     return node.content?.some((child) => walk(child)) ?? false;
   };
   return walk(record.content);
@@ -423,6 +450,9 @@ export function resolveEditorFontFamily(
 
   if (isRetiredAlviFont(requested)) {
     return resolveEditorFontFamily("Mehr Nastaliq Web", globalDir);
+  }
+  if (isRemovedUnlicensedFont(requested)) {
+    return resolveEditorFontFamily(REMOVED_FONT_FALLBACK_FAMILY, globalDir);
   }
 
   if (!requested) {
@@ -512,6 +542,7 @@ export function studioMehrFontFaceCss(): string {
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */
 export function normalizeEditorFontFamily(raw: unknown): string {
   if (isRetiredAlviFont(raw)) return "Mehr Nastaliq Web";
+  if (isRemovedUnlicensedFont(raw)) return REMOVED_FONT_FALLBACK_FAMILY;
   if (typeof raw !== "string") return "";
   const first = raw.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";
   if (!first) return "";

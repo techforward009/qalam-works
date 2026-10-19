@@ -65,7 +65,7 @@ textarea {
 }
 
 .font-arabic {
-  font-family: "Amiri", "Traditional Arabic", "Scheherazade New", serif;
+  font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", serif;
   line-height: 1.8;
 }
 
@@ -75,7 +75,7 @@ textarea {
 }
 
 .font-naskh {
-  font-family: var(--font-naskh), "Noto Naskh Arabic", "Scheherazade New", "Traditional Arabic", serif;
+  font-family: var(--font-naskh), "Noto Naskh Arabic", "Scheherazade New", "Amiri", serif;
   line-height: 1.9;
 }
 
@@ -356,7 +356,7 @@ textarea {
 }
 
 .tanzil-sidebar[lang="ur"] {
-  font-family: var(--font-naskh), "Noto Naskh Arabic", "Traditional Arabic", serif;
+  font-family: var(--font-naskh), "Noto Naskh Arabic", "Scheherazade New", serif;
 }
 
 .tanzil-sidebar-section {
@@ -471,7 +471,7 @@ textarea {
 .tanzil-sidebar[lang="ur"] button,
 .tanzil-sidebar[lang="ur"] input,
 .tanzil-sidebar[lang="ur"] select {
-  font-family: var(--font-naskh), "Noto Naskh Arabic", "Traditional Arabic", serif;
+  font-family: var(--font-naskh), "Noto Naskh Arabic", "Scheherazade New", serif;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -2035,16 +2035,10 @@ html.dark .qalam-home section[dir="rtl"] .qalam-tool-example bdi{color:#f0f6f0!i
 [data-studio-left-sidebar="true"] h2,[data-studio-right-sidebar="true"] h2{line-height:2;}
 @media(max-width:767px){[data-studio-toolbar-language="ur"]{justify-content:flex-start;}}
 
-/* Document Studio additional public Vercel Blob font families (Mehr excluded). */
-@font-face{font-family:"Adobe Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
-@font-face{font-family:"Adobe Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap;}
+/* Document Studio public font families. Unlicensed Adobe Arabic, Traditional Arabic, Faiz Lahori, and Al Majeed Quranic are not loaded. */
 @font-face{font-family:"Digital Khatt Indo-Pak";src:url("/fonts/DigitalKhattIndoPakRegular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
-@font-face{font-family:"Faiz Lahori Nastaleeq";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Faiz-Lahori-Web.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 @font-face{font-family:"Gulzar";src:url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Gulzar-Regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 @font-face{font-family:"Scheherazade New";src:url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/ScheherazadeNew-Medium.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
-@font-face{font-family:"Traditional Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/TraditionalArabic.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
-@font-face{font-family:"Traditional Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/TraditionalArabic-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap;}
-@font-face{font-family:"Al Majeed Quranic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/al-majeed-quranic-400.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 
 /* Urdu headings use Gulzar. Document text, Quran pages, and Arabic faces are excluded. */
 html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(

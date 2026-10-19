@@ -63,14 +63,6 @@ export const FONT_CANDIDATES: readonly FontCandidate[] = [
     licenseStatus: "unconfirmed",
     productionEnabled: false,
   },
-  {
-    id: "al-majeed",
-    filename: "Al Majeed Quranic Font_shiped.ttf",
-    family: "Al Majeed Quranic Font",
-    version: "Version 1.00 March 24, 2009",
-    licenseStatus: "restricted",
-    productionEnabled: false,
-  },
 ];
 
 export type WebEmbedding = "confirmed" | "conditional" | "restricted" | "unknown" | "not-permitted";

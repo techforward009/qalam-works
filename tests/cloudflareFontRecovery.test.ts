@@ -67,7 +67,10 @@ describe("Cloudflare owner-authorized original font Worker", () => {
       const context = env();
       for (const path of [
         "/shards/ur/001.json.br", "/fonts/DigitalKhattIndoPakRegular.woff2",
-        "/fonts/AdobeArabic-Regular.woff2", "/fonts/../private.json",
+        "/fonts/AdobeArabic-Regular.woff2", "/fonts/AdobeArabic-Bold.woff2",
+        "/fonts/TraditionalArabic.woff2", "/fonts/TraditionalArabic-Bold.woff2",
+        "/fonts/Faiz-Lahori-Web.woff2", "/fonts/al-majeed-quranic-400.woff2",
+        "/fonts/../private.json",
         "/fonts/Alvi_Nastaleeq.woff2?download=1", "/fonts/jameel-noori-nastaleeq-400.woff2/anything",
       ]) expect((await worker.fetch(req(path), context)).status).toBe(404);
       expect(context.FONT_BUCKET.get).not.toHaveBeenCalled();

@@ -4,6 +4,8 @@
  * Mehr Nastaliq Web is an additional CC BY-SA 4.0 file on the same allowlist.
  * Nafees Nastaleeq v1.02 is an additional allowlisted name. The v1.00 object stays
  * so the existing live check of NafeesNastaleeq.woff2 still matches.
+ * Adobe Arabic, Traditional Arabic, Al Majeed Quranic, and Faiz Lahori are
+ * not licensed and are not on this allowlist.
  * No public R2 bucket, credentials, renaming or source-text alteration.
  * Isolated from the private Tafsir Worker and its secret.
  */

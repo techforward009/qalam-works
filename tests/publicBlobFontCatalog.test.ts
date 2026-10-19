@@ -3,20 +3,34 @@ import { PUBLIC_BLOB_FONT_FAMILIES, PUBLIC_BLOB_FONT_FILES, publicBlobFontUrl, i
 
 describe("Document Studio public Blob font catalogue", () => {
   test("resolves the owner-supplied Blob URL and rejects non-approved names", () => {
-    const url = publicBlobFontUrl("AdobeArabic-Regular.woff2");
-    expect(url).toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Regular.woff2");
+    const url = publicBlobFontUrl("asif-quranic-400.woff2");
+    expect(url).toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/asif-quranic-400.woff2");
     expect(isApprovedPublicBlobFontUrl(url)).toBe(true);
     expect(publicBlobFontUrl("MehrNastaliqWeb.woff2")).toBe(
       "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2",
     );
     expect(isApprovedPublicBlobFontUrl("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/MehrNastaliqWeb.woff2")).toBe(false);
-    expect(isApprovedPublicBlobFontUrl("https://evil.invalid/AdobeArabic-Regular.woff2")).toBe(false);
+    expect(isApprovedPublicBlobFontUrl("https://evil.invalid/asif-quranic-400.woff2")).toBe(false);
+    expect(() => publicBlobFontUrl("AdobeArabic-Regular.woff2")).toThrow("Unapproved Document Studio font asset");
+    expect(() => publicBlobFontUrl("Faiz-Lahori-Web.woff2")).toThrow("Unapproved Document Studio font asset");
+    expect(() => publicBlobFontUrl("TraditionalArabic.woff2")).toThrow("Unapproved Document Studio font asset");
+    expect(() => publicBlobFontUrl("al-majeed-quranic-400.woff2")).toThrow("Unapproved Document Studio font asset");
   });
 
-  test("contains 16 catalogued assets including Mehr and legacy Faiz, organized into 14 font families", () => {
-    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(16);
-    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(14);
-    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(16);
+  test("contains 10 catalogued assets including Mehr, organized into 10 font families", () => {
+    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(10);
+    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(10);
+    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(10);
+    for (const removed of [
+      "AdobeArabic-Regular.woff2",
+      "AdobeArabic-Bold.woff2",
+      "TraditionalArabic.woff2",
+      "TraditionalArabic-Bold.woff2",
+      "Faiz-Lahori-Web.woff2",
+      "al-majeed-quranic-400.woff2",
+    ]) {
+      expect(PUBLIC_BLOB_FONT_FILES).not.toContain(removed);
+    }
   });
 
   test("maps all six uploaded catalogued originals and keeps missing fonts on legacy names", () => {
@@ -32,12 +46,11 @@ describe("Document Studio public Blob font catalogue", () => {
       expect(isApprovedPublicBlobFontUrl(url)).toBe(true);
       expect(isApprovedPublicBlobFontUrl("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/"+name)).toBe(false);
     }
-    expect(publicBlobFontUrl("AdobeArabic-Regular.woff2"))
-      .toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Regular.woff2");
+    expect(publicBlobFontUrl("asif-quranic-400.woff2"))
+      .toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/asif-quranic-400.woff2");
     expect(PUBLIC_BLOB_FONT_FILES).toContain("NafeesNastaleeq-v1.02.woff2");
     expect(PUBLIC_BLOB_FONT_FILES).not.toContain("NafeesNastaleeq.woff2");
-    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font=>font.id==="faiz-lahori")?.regular)
-      .toBe("Faiz-Lahori-Web.woff2");
+    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "faiz-lahori")).toBeUndefined();
   });
 
   test("serves Mehr Nastaliq Web from the Cloudflare Worker, not Vercel Blob", () => {
@@ -53,8 +66,9 @@ describe("Document Studio public Blob font catalogue", () => {
     expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "sahel")?.existingStudioId).toBe("sahel");
   });
 
-  test("preserves regular and bold assets for both Arabic families", () => {
-    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "adobe-arabic")?.bold).toBe("AdobeArabic-Bold.woff2");
-    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "traditional-arabic")?.bold).toBe("TraditionalArabic-Bold.woff2");
+  test("does not catalogue the unlicensed Arabic or Faiz files", () => {
+    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "adobe-arabic")).toBeUndefined();
+    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "traditional-arabic")).toBeUndefined();
+    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "al-majeed-quranic")).toBeUndefined();
   });
 });

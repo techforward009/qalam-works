@@ -9,16 +9,11 @@ export interface PublicBlobFontFamily {
 }
 
 export const PUBLIC_BLOB_FONT_FAMILIES: readonly PublicBlobFontFamily[] = [
-  { id: "adobe-arabic", label: "Adobe Arabic", regular: "AdobeArabic-Regular.woff2", bold: "AdobeArabic-Bold.woff2", script: "arabic" },
   { id: "digital-khatt-indo-pak", label: "Digital Khatt Indo-Pak", regular: "DigitalKhattIndoPakRegular.woff2", script: "quran" },
-  // Keep the legacy file available for documents saved with Faiz; hide it from the picker.
-  { id: "faiz-lahori", label: "Faiz Lahori Nastaleeq", regular: "Faiz-Lahori-Web.woff2", script: "urdu" },
   { id: "gulzar", label: "Gulzar", regular: "Gulzar-Regular.woff2", script: "urdu" },
   { id: "nafees-nastaleeq", label: "Nafees Nastaleeq", regular: "NafeesNastaleeq-v1.02.woff2", script: "urdu" },
   { id: "sahel", label: "Sahel", regular: "Sahel.woff2", script: "persian", existingStudioId: "sahel" },
   { id: "scheherazade-new", label: "Scheherazade New", regular: "ScheherazadeNew-Medium.woff2", script: "arabic" },
-  { id: "traditional-arabic", label: "Traditional Arabic", regular: "TraditionalArabic.woff2", bold: "TraditionalArabic-Bold.woff2", script: "arabic" },
-  { id: "al-majeed-quranic", label: "Al Majeed Quranic", regular: "al-majeed-quranic-400.woff2", script: "quran" },
   { id: "al-qalam-quran-majeed", label: "Al Qalam Quran Majeed", regular: "al-qalam-quran-majeed-web-regular.woff2", script: "quran" },
   { id: "asif-quranic", label: "Asif Quranic", regular: "asif-quranic-400.woff2", script: "quran" },
   { id: "jameel-noori-nastaleeq", label: "Jameel Noori Nastaleeq", regular: "jameel-noori-nastaleeq-400.woff2", script: "urdu", existingStudioId: "jameel-noori-nastaleeq" },
