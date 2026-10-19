@@ -3,6 +3,7 @@
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Monitor, Sun, Moon } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 const CYCLE: Array<"system" | "light" | "dark"> = ["system", "light", "dark"];
 
@@ -20,6 +21,8 @@ const NEXT_LABEL: Record<string, string> = {
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const pathname = usePathname() ?? "";
+  const quranPage = pathname === "/quran" || pathname.startsWith("/quran/");
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch — render nothing until client is ready
@@ -38,7 +41,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={cycleTheme}
-      className="fixed bottom-5 right-5 z-40 flex items-center justify-center w-10 h-10 rounded-full bg-[#1A3A2A]/90 text-white shadow-lg ring-1 ring-white/10 backdrop-blur-sm hover:bg-[#1A3A2A] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A]"
+      className={`fixed bottom-5 right-5 z-40 items-center justify-center w-10 h-10 rounded-full ${quranPage ? "hidden sm:flex" : "flex"}` + " bg-[#1A3A2A]/90 text-white shadow-lg ring-1 ring-white/10 backdrop-blur-sm hover:bg-[#1A3A2A] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A]"}
       aria-label={NEXT_LABEL[current]}
       title={LABELS[current]}
     >

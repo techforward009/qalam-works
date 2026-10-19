@@ -11,6 +11,7 @@ import { useCopyFeedback } from "./useCopyFeedback";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Printer, Search, Sparkles } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
+import { resolveDisplayHijriDate } from "../date-converter/utils/hijri-authority/displayHijriDate";
 import {
   CALENDAR_MONTHS_1448,
   SHIA_CALENDAR_1448_EVENTS,
@@ -158,6 +159,19 @@ export default function KhateebStudioContent({
     useState<ShiaCalendarRegion>(initialView.region);
   const [selectedMonth, setSelectedMonth] =
     useState<IslamicMonthId>(initialView.month);
+  // Respect an explicitly shared month. Otherwise open at Pakistan's current
+  // Hijri month, using the same authority-first policy as Date Studio.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("month")) return;
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Karachi", year: "numeric", month: "numeric", day: "numeric",
+    }).formatToParts(new Date());
+    const value = (type: string) => Number(parts.find(item => item.type === type)?.value);
+    const gregorian = { year: value("year"), month: value("month"), day: value("day") };
+    const monthNumber = resolveDisplayHijriDate(gregorian, "pakistan").hijri.month;
+    const current = CALENDAR_MONTHS_1448[monthNumber - 1];
+    if (current) { setSelectedMonth(current.id); setSelectedEvent(""); }
+  }, []);
   const [selectedEvent, setSelectedEvent] = useState(initialView.event);
   const [selectedSpeaker, setSelectedSpeaker] = useState(
     PUBLIC_KHATEEB_CORPUS.some((item) => item.id === initialView.speaker)

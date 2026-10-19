@@ -355,10 +355,12 @@ export default function DocumentMenuBar({
   return (
     <div
       ref={rootRef}
-      className="flex items-center gap-0.5 overflow-x-auto px-2 py-1"
+      className="flex w-full max-w-full min-w-0 items-center gap-0.5 overflow-x-auto overscroll-x-contain whitespace-nowrap px-2 py-1 [scrollbar-width:thin] touch-pan-x"
       role="menubar"
       aria-label={isUr ? "دستاویز مینو" : "Document menu"}
       data-studio-menubar="true"
+      tabIndex={0}
+      title={isUr ? "باقی مینو دیکھنے کے لیے دائیں بائیں سرکائیں" : "Swipe or scroll sideways for more menus"}
       data-open-menu={openState.menuId ?? ""}
       onKeyDown={(event) => {
         const current = (event.target as HTMLElement).getAttribute("data-menu-root") as MenuId | null;

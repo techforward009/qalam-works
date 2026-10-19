@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { translations } from "../lib/translations";
+import { useLanguage } from "../lib/language-context";
 
 function PenNibIcon() {
   return (
@@ -33,11 +34,12 @@ const TOOL_ROUTES = [
 ];
 
 export default function Footer() {
-  const t = translations.en;
+  const { language, dir } = useLanguage();
+  const t = translations[language];
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-0 border-t border-white/10 bg-[#11182A]" dir="ltr">
+    <footer className="mt-0 border-t border-white/10 bg-[#11182A]" dir={dir}>
       <div className="site-container py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Brand */}
         <div className="sm:col-span-2 lg:col-span-1">
@@ -58,7 +60,7 @@ export default function Footer() {
             {TOOL_ROUTES.map((tool) => (
               <li key={tool.href}>
                 <Link href={tool.href} className={`text-white hover:text-white text-sm transition-colors`}>
-                  {tool.labelEn ?? t.nav[tool.key as keyof typeof t.nav]}
+                  {(language === "ur" ? tool.labelUr : tool.labelEn) ?? t.nav[tool.key as keyof typeof t.nav]}
                 </Link>
               </li>
             ))}
@@ -74,7 +76,7 @@ export default function Footer() {
             <li><Link href="/about" className={`text-white hover:text-white text-sm transition-colors`}>{t.nav.about}</Link></li>
             <li><Link href="/services" className={`text-white hover:text-white text-sm transition-colors`}>{t.nav.services}</Link></li>
             <li><Link href="/contact" className={`text-white hover:text-white text-sm transition-colors`}>{t.nav.contact}</Link></li>
-            <li><Link href="/feedback" className="text-sm font-semibold text-amber-200 transition-colors hover:text-amber-100">Feedback</Link></li>
+            <li><Link href="/feedback" className="text-sm font-semibold text-amber-200 transition-colors hover:text-amber-100">{language === "ur" ? "رائے دیں" : "Feedback"}</Link></li>
           </ul>
         </div>
 
@@ -84,8 +86,8 @@ export default function Footer() {
             {t.footer.legalHeading}
           </div>
           <ul className="space-y-2 mb-5">
-            <li><Link href="/privacy" className="text-sm text-white transition-colors hover:text-white">Privacy</Link></li>
-            <li><Link href="/terms" className="text-sm text-white transition-colors hover:text-white">Terms</Link></li>
+            <li><Link href="/privacy" className="text-sm text-white transition-colors hover:text-white">{language === "ur" ? "رازداری" : "Privacy"}</Link></li>
+            <li><Link href="/terms" className="text-sm text-white transition-colors hover:text-white">{language === "ur" ? "شرائط" : "Terms"}</Link></li>
           </ul>
           <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-2`}>
             {t.footer.contactHeading}
@@ -105,7 +107,7 @@ export default function Footer() {
               info@qalamworks.com
             </a>
             <p
-              className="max-w-[220px] text-left text-xs leading-relaxed text-white"
+              className="max-w-[220px] text-start text-xs leading-relaxed text-white"
             >
               {t.contactPage.responseNote}
             </p>

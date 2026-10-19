@@ -61,7 +61,8 @@ export async function POST(req: NextRequest) {
     await browser.close();
     browser = null;
 
-    const invoiceNumber = (payload.invoice.number || "invoice").replace(/[^a-zA-Z0-9\-_]/g, "-");
+    const cleanedNumber = (payload.invoice.number || "").replace(/[^a-zA-Z0-9\-_]/g, "-").replace(/^-+|-+$/g, "");
+    const invoiceNumber = cleanedNumber || `invoice-${new Date().toISOString().slice(0, 10)}`;
 
     return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
