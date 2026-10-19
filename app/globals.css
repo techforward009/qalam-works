@@ -2026,13 +2026,7 @@ html.dark .qalam-home section[dir="rtl"] .qalam-tool-example bdi{color:#f0f6f0!i
 @media(max-width:767px){[data-studio-toolbar-language="ur"]{justify-content:flex-start;}}
 
 /* Document Studio additional public Vercel Blob font families (Mehr excluded). */
-@font-face{font-family:"Adobe Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
-@font-face{font-family:"Adobe Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap;}
 @font-face{font-family:"Alvi Nastaleeq";src:url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Alvi_Nastaleeq.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 @font-face{font-family:"Digital Khatt Indo-Pak";src:url("/fonts/DigitalKhattIndoPakRegular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
-@font-face{font-family:"Faiz Lahori Nastaleeq";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/Faiz-Lahori-Web.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 @font-face{font-family:"Gulzar";src:url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Gulzar-Regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
 @font-face{font-family:"Scheherazade New";src:url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/ScheherazadeNew-Medium.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
-@font-face{font-family:"Traditional Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/TraditionalArabic.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
-@font-face{font-family:"Traditional Arabic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/TraditionalArabic-Bold.woff2") format("woff2");font-style:normal;font-weight:700;font-display:swap;}
-@font-face{font-family:"Al Majeed Quranic";src:url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/al-majeed-quranic-400.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap;}
