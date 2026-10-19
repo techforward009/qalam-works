@@ -255,6 +255,31 @@ textarea {
   font-display: swap;
 }
 
+/* Site footer. English stays on the body font. Urdu body is Mehr; column titles are Gulzar. */
+footer[data-site-footer="ur"] :is(p, li, a, span) {
+  font-family: var(--qalam-urdu-primary);
+  line-height: 2.15;
+}
+footer[data-site-footer="ur"] [data-footer-heading] {
+  font-family: var(--qalam-urdu-heading);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 2.15;
+}
+footer[data-site-footer="ur"] [dir="ltr"]:not([data-footer-copy]),
+footer[data-site-footer="ur"] [dir="ltr"]:not([data-footer-copy]) :is(p, span, a) {
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+}
+footer[data-site-footer="ur"] [data-footer-copy],
+footer[data-site-footer="ur"] [data-footer-copy] span {
+  font-family: var(--qalam-urdu-primary);
+  line-height: 2.15;
+}
+
 /* ────────────────────────────────────────────────────────────────────────────
    EDITOR OVERRIDES
    ──────────────────────────────────────────────────────────────────────────── */
@@ -262,6 +287,17 @@ textarea {
 .qalam-editor-content [style*="Jameel Noori Nastaleeq"],
 .qalam-editor-content span[style*="Jameel Noori Nastaleeq"] {
   font-family: "Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif !important;
+}
+
+/* The digit makes an unquoted Al Fars family invalid, so the editor style is dropped. */
+.qalam-editor-content [style*="AlFars 9 Badr"],
+.qalam-editor-content span[style*="AlFars 9 Badr"] {
+  font-family: "AlFars 9 Badr", Sahel, var(--font-vazirmatn), Vazirmatn, sans-serif !important;
+}
+
+.qalam-editor-content [style*="B Nazanin"],
+.qalam-editor-content span[style*="B Nazanin"] {
+  font-family: "B Nazanin", Sahel, var(--font-vazirmatn), Vazirmatn, sans-serif !important;
 }
 
 .qalam-editor-content [style*="Gulzar"],

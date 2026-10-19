@@ -1,5 +1,6 @@
 /** @vitest-environment happy-dom */
 
+import { readFileSync } from "node:fs";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Editor } from "@tiptap/core";
@@ -227,6 +228,9 @@ describe("picked Document Studio faces", () => {
     expect(css).toContain(`font-family:"${family}"`);
     expect(css).toContain(file);
     expect(css).toContain("workers.dev/fonts/" + file);
+    const globals = readFileSync("app/globals.css", "utf8");
+    expect(globals).toContain(`[style*="${family}"]`);
+    expect(globals).toContain(`font-family: "${family}"`);
     document.body.innerHTML = `
       <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-dir="rtl">
         <div data-studio-print-surface>

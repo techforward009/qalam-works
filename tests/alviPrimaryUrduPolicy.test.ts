@@ -74,6 +74,7 @@ describe("Mehr Nastaliq Web body preview", () => {
     const view = readFileSync("app/tools/document-studio/utils/documentView.ts", "utf8");
     const footer = readFileSync("app/components/Footer.tsx", "utf8");
     const layout = readFileSync("app/layout.tsx", "utf8");
+    const homeCss = readFileSync("app/globals.css", "utf8");
     expect(editor).toContain('data-studio-jameel-face="true"');
     expect(editor).toContain("studioJameelFontFaceCss()");
     expect(editor).toContain('data-studio-on-demand-faces="true"');
@@ -84,11 +85,15 @@ describe("Mehr Nastaliq Web body preview", () => {
     expect(footer).toContain("نفیس نستعلیق v1.02");
     expect(footer).toContain("https://cle.org.pk/software/license/Nafees_Nastaleeq_License.html");
     expect(footer).toContain("font-nastaliq text-sm leading-8");
+    expect(footer).toContain('data-site-footer={language}');
+    expect(footer).toContain('data-footer-heading="true"');
+    expect(footer).toContain('data-footer-copy="true"');
+    expect(homeCss).toContain('footer[data-site-footer="ur"] [data-footer-heading]');
+    expect(homeCss).toContain('font-family: var(--qalam-urdu-heading)');
     expect(footer).toContain("لائسنس");
     expect(footer).toContain("https://mehrtype.com/product/mehr-nastaliq-web/");
     expect(footer).toContain("https://scripts.sil.org/OFL");
     const beforeAfter = readFileSync("app/components/BeforeAfterSection.tsx", "utf8");
-    const homeCss = readFileSync("app/globals.css", "utf8");
     expect(beforeAfter).toContain('const BROKEN_TEXT = "يہ  ,  ايك  غلط  كلمات  والا  متن  ہے"');
     expect(beforeAfter).toContain("qalam-before-sample");
     expect(beforeAfter).toContain("font-nastaliq font-normal normal-case tracking-normal");
