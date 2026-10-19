@@ -236,7 +236,7 @@ export function combinedDiscount(result: InvoiceResult): number {
   return Math.max(0, (result.lineDiscountTotal || 0) + (result.discount || 0));
 }
 
-export function lineDiscountLabel(item: LineItem, currency = "USD", lang: "en" | "ur" = "en"): string {
+export function lineDiscountLabel(item: LineItem, currency = "PKR", lang: "en" | "ur" = "en"): string {
   const percent = Number(item.discountPercent || 0);
   const fixed = Number(item.discountFixed || 0);
   if (percent <= 0 && fixed <= 0) return "—";
