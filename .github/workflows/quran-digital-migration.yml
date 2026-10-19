@@ -19,6 +19,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Verify DigitalKhatt source and aligned Fatiha before full suite
+        run: npx vitest run tests/quranDigitalMigrationAudit.test.ts tests/quranReader.test.ts tests/quranEditions.test.ts
       - name: Full Vitest suite
         run: npm test
       - name: Static TypeScript check

@@ -1,12 +1,14 @@
 import raw from "../../../../public/quran/indopak-digital-khatt.json";
 import { HAFS_AYAH_COUNTS } from "./hafsCounts";
+import { alignDigitalKhattToTranslation, type DigitalKhattCorpus } from "../../../quran/indopak-digital-khatt/data";
 import { createQuranReference, quranReferenceHash } from "./reference";
 import type { QuranAyah } from "./types";
 
 /**
  * Public Quran source: risan/quran-json data/digitalkhatt/quran.json,
  * from DigitalKhatt/digitalkhatt-js (MIT), distribution packaged by
- * risan/quran-json (CC BY-SA 4.0). The source strings are immutable.
+ * risan/quran-json (CC BY-SA 4.0). The source snapshot remains immutable.
+ * Presentation realigns only Fatiha to existing Urdu translation verse numbers.
  */
 export const DIGITAL_KHATT_TEXT_SOURCE = {
   repository: "https://github.com/risan/quran-json",
@@ -17,7 +19,7 @@ export const DIGITAL_KHATT_TEXT_SOURCE = {
   fontLicense: "SIL OFL-1.1",
 } as const;
 
-const source = raw as Record<string, {chapter: number; verse: number; text: string}[]>;
+const source = alignDigitalKhattToTranslation(raw as DigitalKhattCorpus);
 const ayahs: QuranAyah[] = [];
 for (let surah = 1; surah <= 114; surah++) {
   const rows = source[String(surah)] ?? [];

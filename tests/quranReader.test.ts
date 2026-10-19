@@ -148,6 +148,8 @@ describe("Quran reader", () => {
     const tawbah = provider.getAyah(9, 1);
     const pause = provider.getAyah(2, 2);
     expect(fatiha && displayPieces(fatiha).map((piece) => piece.text).join("")).toBe(fatiha?.text);
+    expect(fatiha?.text).toBe("بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ");
+    expect(provider.getAyah(1, 2)?.text.startsWith("اَلْحَمْدُ")).toBe(true);
     expect(displayPieces(fatiha!).some((piece) => piece.kind === "bismillah")).toBe(false);
     expect(baqarah && displayPieces(baqarah)[0]?.kind).toBe("body");
     expect(baqarah && displayPieces(baqarah).map((piece) => piece.text).join("")).toBe(baqarah?.text);

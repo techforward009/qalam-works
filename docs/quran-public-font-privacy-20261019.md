@@ -10,7 +10,14 @@ Draft only. No production authorization.
 - These rights are independent of the AhmedGraf source and Muhammadi license.
 
 ## Material differences
-- All 114 surah verse totals are identical: 6,236.
+- Owner decision: use existing Urdu translation verse numbering and order, including Fatiha 1:1 = Bismillah.
+- All 114 surah verse totals are identical: 6,236. Only Al-Fatiha requires boundary realignment:
+  - Displayed 1:1 = DigitalKhatt reader basmala;
+  - Displayed 1:2..6 = original DigitalKhatt 1:1..5 respectively;
+  - Displayed 1:7 = original DigitalKhatt 1:6 + 1:7, separated by a single space, preserving both waqf-mark sequences.
+  - Remaining 113 surahs: no verse boundary changes. Every verse stays identical to the original DigitalKhatt text.
+  - Original DigitalKhatt JSON snapshot is not changed.
+- Non-boundary text differences exist (e.g. 4:12 has an initial conjunction difference; 75:34 contains a word difference). These are not silently modified. All 114 surahs checked for source verse counts and matching verse identifiers.
 - All 6,236 verse Unicode strings differ; waqf-mark sequences differ in 3,758 verse comparisons.
 - Al-Fatiha has a changed verse segmentation: DigitalKhatt 1:1 is al-hamd; AhmedGraf 1:1 is Bismillah. The final Fatiha segment likewise differs. Existing 1:1..7 translations require a separately verified alignment and should not be blindly relabeled.
 - DigitalKhatt symbols include U+0614, U+0615, U+0617, U+06D6, U+06D8, U+06D9, U+06DA, U+06DB, U+06DC, U+08D5, U+08D6, U+08D7, U+08D9, U+08DB, U+08DD, U+08DE, U+08DF. Additional composing signs U+08E2 etc. Exact glyph coverage must be checked against actual WOFF2 cmap, not inferred from CSS success.

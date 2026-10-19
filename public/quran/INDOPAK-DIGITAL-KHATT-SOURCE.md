@@ -13,7 +13,8 @@ This is a separate Quran edition. It does not replace, normalize, or rewrite the
 - Host repository licence: CC BY-SA 4.0 (`LICENSE.txt` in risan/quran-json)
 - Stored bytes are the upstream file, unchanged
 - Shape: an object with keys `"1"` … `"114"`. Each value is an array of `{ "chapter", "verse", "text" }`
-- 114 surahs, 6,236 numbered ayahs
+- 114 surahs, 6,236 numbered ayahs in the unchanged upstream snapshot
+- Qalam public presentation follows the existing Urdu translation's verse numbering. Only Fatiha is realigned: Bismillah = verse 1, upstream 1:1..5 = displayed 1:2..6, upstream 1:6+1:7 = displayed 1:7. Original source data and waqf signs are preserved.
 - Al-Fatiha keeps the DigitalKhatt numbering: the basmala is not a numbered ayah, so 1:1 is `اَلْحَمْدُ لِلّٰهِ…` and the surah still has seven numbered ayahs
 - No stored verse begins with the basmala. The reader may draw it as chapter furniture. That line is not written back into the corpus
 - This is not Taj Company text, not AhmedGraf text, and not a Madani/Uthmani edition

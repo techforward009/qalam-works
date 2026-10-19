@@ -1352,9 +1352,8 @@ function QuranPageSurface({
                     }
                     className="quran-bismillah shrink-0"
                   >
-                    {
-                      block.text
-                    }
+                    {block.text}
+                    {block.anchor ? <span aria-label="آیت 1" className="mx-1 inline-block text-[0.65em]">۝{easternDigits(1)}</span> : null}
                   </p>
                 );
               }
@@ -1548,11 +1547,9 @@ function blocksFor(
       });
 
       blocks.push({
-        kind: "bismillah", id: "opening-basmalah", surah: 1,
-        ayah: 1, text: "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ", anchor: false,
+        kind: "bismillah", id: ayah.id, surah: 1,
+        ayah: 1, text: ayah.text, anchor: true,
       });
-      flow.push({ id: ayah.id, surah: ayah.surah, ayah: ayah.ayah,
-        text: ayah.text, anchor: true });
       continue;
     }
 

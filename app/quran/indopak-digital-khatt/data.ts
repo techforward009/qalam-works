@@ -20,6 +20,33 @@ export type DigitalKhattPage = {
   endVerse: number;
 };
 
+/** DigitalKhatt's own displayed basmala, independent from AhmedGraf. */
+export const DIGITAL_KHATT_BASMILLAH = "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ";
+
+/**
+ * Use the exact verse boundaries of Qalam Works' existing Urdu translation.
+ * Only Al-Fatiha requires redivision; all source characters and waqf signs
+ * remain unchanged, and the original JSON snapshot is never modified.
+ */
+export function alignDigitalKhattToTranslation(corpus: DigitalKhattCorpus): DigitalKhattCorpus {
+  const fatiha = corpus["1"];
+  if (!fatiha || fatiha.length !== 7 ||
+      fatiha.some((row, index) => row.chapter !== 1 || row.verse !== index + 1) ||
+      !fatiha[0].text.startsWith("اَلْحَمْدُ") ||
+      !fatiha[5].text.startsWith("صِرَاطَ") ||
+      !fatiha[6].text.startsWith("غَيْرِ")) {
+    throw new Error("DigitalKhatt Fatiha changed: verse boundaries require review");
+  }
+  return {
+    ...corpus,
+    "1": [
+      {chapter: 1, verse: 1, text: DIGITAL_KHATT_BASMILLAH},
+      ...fatiha.slice(0, 5).map((row) => ({ ...row, verse: row.verse + 1 })),
+      {chapter: 1, verse: 7, text: fatiha[5].text + " " + fatiha[6].text},
+    ],
+  };
+}
+
 export const DIGITAL_KHATT_EDITION = {
   id: "qalam-indopak-digitalkhatt-v1",
   name: "IndoPak — Digital Khatt",
