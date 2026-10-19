@@ -33,6 +33,15 @@ jameel-noori-nastaleeq-400.woff2
 muhammadi-quranic-400.woff2
 ```
 
+Mehr Nastaliq Web is a separate CC BY-SA 4.0 preview file, not one of those ten
+owner-uploaded originals. The Worker allowlist name is `MehrNastaliqWeb.woff2`
+(55,884 bytes, sha256 `a3c651455e754cb1e20e8bba05e449dfd12fa778870a79f11bca3108dbe41457`).
+The original TrueType file is Mehr Nastaliq Web Version 2.00, 132,816 bytes,
+sha256 `1339f7fbf3531908048a0b2965d3c79deb7d41a98614c77ac1d2f691cd6aa373`.
+This environment has no Cloudflare credentials, so the R2 object was not uploaded
+and the live Worker was not redeployed. Until that upload, browsers use the
+same-origin `/fonts/MehrNastaliqWeb.woff2` fallback. Do not put this file on Vercel Blob.
+
 Their verified original sizes are pinned in `index.js`; the identity hashes
 were verified against the owner's recovery archive in the prior preparation
 stage. The Worker reads the exact original bytes from R2 and never edits them.

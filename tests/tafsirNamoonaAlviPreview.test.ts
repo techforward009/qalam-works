@@ -6,13 +6,16 @@ import { splitTafsirTypography } from "../app/quran/reader/tafsirTypography";
 const source = readFileSync("app/quran/QuranTafsirPage.tsx", "utf8");
 const css = readFileSync("app/globals.css", "utf8");
 
-describe("Tafsir Namoona Alvi Nastaleeq font trial", () => {
-  it("uses the already-approved Alvi Nastaleeq font without adding another asset", () => {
+describe("Tafsir Urdu body uses Mehr and keeps the Alvi face available", () => {
+  it("renders Tafsir Urdu in Mehr Nastaliq Web without removing Alvi", () => {
     expect(PUBLIC_BLOB_FONT_FAMILIES.some((font) => font.id === "alvi-nastaleeq")).toBe(true);
+    expect(PUBLIC_BLOB_FONT_FAMILIES.some((font) => font.id === "mehr-nastaliq-web")).toBe(true);
     expect(publicBlobFontUrl("Alvi_Nastaleeq.woff2")).toContain("/Alvi_Nastaleeq.woff2");
+    expect(publicBlobFontUrl("MehrNastaliqWeb.woff2")).toContain("workers.dev/fonts/MehrNastaliqWeb.woff2");
     expect(css).toContain('font-family:"Alvi Nastaleeq"');
-    expect(css).toContain("Alvi_Nastaleeq.woff2");
-    expect(source).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
+    expect(css).toContain("MehrNastaliqWeb.woff2");
+    expect(source).toContain('fontFamily: \'"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif\'');
+    expect(source).not.toContain("Alvi Nastaleeq");
   });
 
   it("scopes Alvi to Tafsir Urdu and keeps Scheherazade on Arabic quotations", () => {

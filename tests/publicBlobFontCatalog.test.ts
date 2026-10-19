@@ -6,14 +6,17 @@ describe("Document Studio public Blob font catalogue", () => {
     const url = publicBlobFontUrl("AdobeArabic-Regular.woff2");
     expect(url).toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Regular.woff2");
     expect(isApprovedPublicBlobFontUrl(url)).toBe(true);
-    expect(() => publicBlobFontUrl("MehrNastaliqWeb.woff2")).toThrow();
+    expect(publicBlobFontUrl("MehrNastaliqWeb.woff2")).toBe(
+      "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2",
+    );
+    expect(isApprovedPublicBlobFontUrl("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/MehrNastaliqWeb.woff2")).toBe(false);
     expect(isApprovedPublicBlobFontUrl("https://evil.invalid/AdobeArabic-Regular.woff2")).toBe(false);
   });
 
-  test("contains 16 Blob assets including legacy Faiz, organized into 14 font families", () => {
-    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(16);
-    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(14);
-    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(16);
+  test("contains 17 catalogued assets including Mehr and legacy Faiz, organized into 15 font families", () => {
+    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(17);
+    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(15);
+    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(17);
   });
 
   test("maps all seven uploaded catalogued originals and keeps missing fonts on legacy names", () => {
@@ -35,9 +38,12 @@ describe("Document Studio public Blob font catalogue", () => {
       .toBe("Faiz-Lahori-Web.woff2");
   });
 
-  test("never includes the excluded Mehr Nastaliq asset", () => {
-    expect(PUBLIC_BLOB_FONT_FILES.some(file => /mehr/i.test(file))).toBe(false);
-    expect(PUBLIC_BLOB_FONT_FAMILIES.some(font => /mehr/i.test(font.id))).toBe(false);
+  test("serves Mehr Nastaliq Web from the Cloudflare Worker, not Vercel Blob", () => {
+    expect(PUBLIC_BLOB_FONT_FILES).toContain("MehrNastaliqWeb.woff2");
+    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "mehr-nastaliq-web")?.label).toBe("Mehr Nastaliq Web");
+    const url = publicBlobFontUrl("MehrNastaliqWeb.woff2");
+    expect(url).toContain("qalam-fonts-private-mirror.techforward009.workers.dev");
+    expect(url).not.toContain("blob.vercel-storage.com");
   });
 
   test("maps existing Jameel and Sahel faces rather than duplicating families", () => {

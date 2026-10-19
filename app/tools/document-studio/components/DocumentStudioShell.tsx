@@ -128,23 +128,22 @@ export default function DocumentStudioShell({
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-statusbar],
         [data-studio-dialog="ur"],
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-empty-hint] {
-          font-family: "Alvi Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
+          font-family: "Mehr Nastaliq Web", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
         }
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome] .font-naskh:not(h1):not(h2):not(h3):not(h4):not(button),
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-left-sidebar] .font-naskh:not(h1):not(h2):not(h3):not(h4):not(button),
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-right-sidebar] .font-naskh:not(h1):not(h2):not(h3):not(h4):not(button),
         [data-studio-dialog="ur"] .font-naskh:not(h1):not(h2):not(h3):not(h4):not(button),
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-empty-hint] .font-naskh:not(button) {
-          font-family: "Alvi Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
+          font-family: "Mehr Nastaliq Web", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
           line-height: 2.15;
         }
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome] :is(h1, h2),
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-left-sidebar] :is(h2, h4),
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-right-sidebar] :is(h2, h3, h4),
-        [data-studio-shell][data-studio-ui-language="ur"] [data-studio-topbar] input,
         [data-studio-dialog="ur"] :is(h2) {
-          font-family: "Alvi Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
-          line-height: 1.95;
+          font-family: "Gulzar", "Noto Nastaliq Urdu", serif;
+          line-height: 2.05;
           overflow: visible;
         }
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome] button,
@@ -166,7 +165,7 @@ export default function DocumentStudioShell({
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-left-sidebar] li,
         [data-studio-dialog="ur"] p,
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-empty-hint] p {
-          font-family: "Alvi Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
+          font-family: "Mehr Nastaliq Web", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
           line-height: 2.15;
         }
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-statusbar] {

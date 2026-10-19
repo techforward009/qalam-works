@@ -8,6 +8,7 @@ const ALL_TEN: Record<string, { size: number; sha256: string }> = {
   "Alvi_Nastaleeq.woff2": { size: 5228460, sha256: "0e60d92fbf7a86dad972b7e75dfbb85dd94ffe3ee8fbba0c14115fc977efb466" },
   "BNazanin.woff2": { size: 20076, sha256: "2e9bfe82c0e631244e5729408fee76778b04edc716bed9da054c7c286de6f368" },
   "Gulzar-Regular.woff2": { size: 237008, sha256: "cf6b33bd971d65eef3eedafcae62ee8e88bdfe30ef6a23f9ab627a2f24e376d6" },
+  "MehrNastaliqWeb.woff2": { size: 55884, sha256: "a3c651455e754cb1e20e8bba05e449dfd12fa778870a79f11bca3108dbe41457" },
   "NafeesNastaleeq-Web.woff2": { size: 23692, sha256: "3b2219947cbd4704b4534198005f8e3818182ded24cac774c1fa0f625a955f82" },
   "NafeesNastaleeq.woff2": { size: 129624, sha256: "7e83325ff08842b011d6d70060ea055a992318e1cc5997bd66ccf1e13e35aac0" },
   "Sahel.woff2": { size: 35460, sha256: "25e4a066c637948e01e12b7c8bf9e13afa188fad6949affedc6ddf2d307b31b0" },
@@ -40,7 +41,7 @@ function env() {
 }
 
 describe("Cloudflare owner-authorized original font Worker", () => {
-  it("maps each of ten exact uploaded object names, with proper font CORS", async () => {
+  it("maps each allowlisted font, including Mehr Nastaliq Web, with proper font CORS", async () => {
     stubDigest();
     try {
       const context = env();
@@ -54,7 +55,7 @@ describe("Cloudflare owner-authorized original font Worker", () => {
         expect(response.headers.get("X-Qalam-Font-SHA256")).toBe(file.sha256);
         expect(context.FONT_BUCKET.get).toHaveBeenLastCalledWith(name);
       }
-      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(10);
+      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(11);
     } finally {
       vi.unstubAllGlobals();
     }

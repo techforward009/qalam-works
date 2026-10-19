@@ -23,7 +23,7 @@ for(const locale of ['ur','en'] as const) test(`${locale}: public topic to saved
  await expect(guide.getByText(ur?'اصل عربی عبارت':'Original Arabic',{exact:true})).toHaveCount(6);
  expect(authRequests).toBe(0);
  const arabic=guide.locator('.khateeb-book-ar .khateeb-muhammadi-quranic').first();await expect(arabic).toHaveCSS('font-family',/Muhammadi Quranic/);
- if(ur){await expect(guide.locator('.khateeb-book-ur').first()).toHaveCSS('font-family',/Jameel Noori Nastaleeq/);expect(await guide.locator('.font-vazirmatn').count()).toBe(0);}
+ if(ur){await expect(guide.locator('.khateeb-book-ur').first()).toHaveCSS('font-family',/Mehr Nastaliq Web/);expect(await guide.locator('.font-vazirmatn').count()).toBe(0);}
  expect(await page.getByRole('combobox',{name:ur?/اصل نسخہ/:/Source edition/}).innerText()).not.toMatch(/\.docx|\.epub|\(1\)/);
  await expect(guide).not.toContainText('word/document.xml');await expect(guide).not.toContainText('file entry');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);

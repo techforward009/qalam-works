@@ -18,6 +18,7 @@ export type FontId =
   | "inter"
   | "adobe-arabic"
   | "alvi-nastaleeq"
+  | "mehr-nastaliq-web"
   | "digital-khatt-indo-pak"
   | "faiz-lahori"
   | "gulzar"
@@ -287,6 +288,8 @@ export function editorFontFamilyStack(id: FontId): string {
       return '"Gulzar", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
     case "alvi-nastaleeq":
       return '"Alvi Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
+    case "mehr-nastaliq-web":
+      return '"Mehr Nastaliq Web", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
     case "amiri":
       return 'var(--font-amiri), Amiri, serif';
     case "noto-naskh-arabic":
@@ -451,6 +454,12 @@ export function studioJameelFontFaceCss(): string {
 export function studioGulzarFontFaceCss(): string {
   const url = getFontById("gulzar").pdf.regularFiles?.[0] ?? "";
   return `@font-face{font-family:"Gulzar";src:url("${url}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
+}
+
+/** Same Mehr file the PDF embedder uses. Does not rewrite a stored font mark. */
+export function studioMehrFontFaceCss(): string {
+  const url = getFontById("mehr-nastaliq-web").pdf.regularFiles?.[0] ?? "";
+  return `@font-face{font-family:"Mehr Nastaliq Web";src:url("${url}") format("woff2"),url("/fonts/MehrNastaliqWeb.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
 }
 
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */

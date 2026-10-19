@@ -568,6 +568,21 @@ export default function KhateebStudioContent({
           font-weight: 400;
           font-display: swap;
         }
+        @font-face {
+          font-family: "Mehr Nastaliq Web";
+          src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2") format("woff2"),
+               url("/fonts/MehrNastaliqWeb.woff2") format("woff2");
+          font-style: normal;
+          font-weight: 400;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: "Gulzar";
+          src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Gulzar-Regular.woff2") format("woff2");
+          font-style: normal;
+          font-weight: 400;
+          font-display: swap;
+        }
 
         .khateeb-muhammadi-quranic {
           font-family: "Muhammadi Quranic", "Al Qalam Quran Majeed", var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif !important;
@@ -577,7 +592,7 @@ export default function KhateebStudioContent({
         }
 
         .khateeb-book-ur {
-          font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif !important;
+          font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important;
           font-size: 1.16rem;
           line-height: 2.25;
         }
@@ -594,7 +609,7 @@ export default function KhateebStudioContent({
         }
 
         .khateeb-studio-ur {
-          font-family: "Nafees Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
+          font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif;
           font-size: 1.22rem;
           line-height: 2.18;
         }
@@ -605,8 +620,8 @@ export default function KhateebStudioContent({
         .khateeb-studio-ur h4,
         .khateeb-studio-ur h5,
         .khateeb-studio-ur h6 {
-          font-family: var(--font-nastaliq), var(--font-nastaliq-latin), "Noto Nastaliq Urdu", serif !important;
-          line-height: 1.62;
+          font-family: "Gulzar", "Noto Nastaliq Urdu", serif !important;
+          line-height: 2.05;
         }
 
         .khateeb-studio-ur h1 {

@@ -113,6 +113,18 @@ export default function Footer() {
         </div>
       </div>
 
+      <div className="border-t border-white/5 px-4 py-4 text-center text-white">
+        <p dir="rtl" lang="ur" className="text-sm leading-8">
+          فونٹ: <a href="https://mehrtype.com/product/mehr-nastaliq-web/" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مہر نستعلیق ویب</a>
+          {" — "}
+          <a href="https://mehrtype.com/free-fonts" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مہر ٹائپ</a>
+          {"، "}
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">CC BY-SA 4.0</a>
+        </p>
+        <p className="mt-1 text-xs leading-6 text-white/90">
+          Gulzar — <a href="https://scripts.sil.org/OFL" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">SIL Open Font License 1.1</a>
+        </p>
+      </div>
       <div className="border-t border-white/5 py-4 text-center text-sm text-white" dir="ltr">
         © {year} Qalam Works. {t.footer.rights}
       </div>

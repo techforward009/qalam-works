@@ -1,4 +1,4 @@
-/** Approved public Blob font assets. The owner supplied the Blob origin and AdobeArabic-Regular URL. All filenames are exact matches to the store inventory; Mehr Nastaliq is intentionally excluded. */
+/** Approved public font assets. Mehr Nastaliq Web is served by the Cloudflare font Worker, never Vercel Blob. */
 export interface PublicBlobFontFamily {
   id: string;
   label: string;
@@ -23,6 +23,7 @@ export const PUBLIC_BLOB_FONT_FAMILIES: readonly PublicBlobFontFamily[] = [
   { id: "al-qalam-quran-majeed", label: "Al Qalam Quran Majeed", regular: "al-qalam-quran-majeed-web-regular.woff2", script: "quran" },
   { id: "asif-quranic", label: "Asif Quranic", regular: "asif-quranic-400.woff2", script: "quran" },
   { id: "jameel-noori-nastaleeq", label: "Jameel Noori Nastaleeq", regular: "jameel-noori-nastaleeq-400.woff2", script: "urdu", existingStudioId: "jameel-noori-nastaleeq" },
+  { id: "mehr-nastaliq-web", label: "Mehr Nastaliq Web", regular: "MehrNastaliqWeb.woff2", script: "urdu" },
   { id: "muhammadi-quranic", label: "Muhammadi Quranic", regular: "muhammadi-quranic-400.woff2", script: "quran" },
 ] as const;
 
@@ -45,6 +46,7 @@ const R2_MIRRORED_FONT_FILES = new Set([
   "Sahel.woff2",
   "ScheherazadeNew-Medium.woff2",
   "jameel-noori-nastaleeq-400.woff2",
+  "MehrNastaliqWeb.woff2",
   "muhammadi-quranic-400.woff2",
 ]);
 /** Resolve only catalogued filenames; never accept arbitrary paths/hosts. */
