@@ -127,7 +127,7 @@ describe("Document Studio typography 2A", () => {
 
   test("approved font groups retain historical Noto compatibility while hiding it from new choices", () => {
     const fonts = listEditorFonts();
-    expect(fonts).toHaveLength(11);
+    expect(fonts).toHaveLength(10);
     expect(new Set(fonts.map((font) => font.category))).toEqual(new Set(["urdu", "arabic", "persian", "latin"]));
     expect(fonts.map((font) => font.editorFamily)).toEqual(expect.arrayContaining(["Gulzar", "Jameel Noori Nastaleeq", "Mehr Nastaliq Web", "Amiri", "Inter"]));
     for (const hidden of ["Nafees Nastaleeq", "Adobe Arabic", "Traditional Arabic", "Faiz Lahori Nastaleeq", "Al Majeed Quranic", "Asif Quranic", "Muhammadi Quranic"]) {

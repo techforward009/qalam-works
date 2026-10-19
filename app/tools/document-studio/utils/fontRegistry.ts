@@ -17,7 +17,6 @@ export type FontId =
   | "sahel"
   | "inter"
   | "adobe-arabic"
-  | "alvi-nastaleeq"
   | "mehr-nastaliq-web"
   | "digital-khatt-indo-pak"
   | "faiz-lahori"
@@ -286,8 +285,6 @@ export function editorFontFamilyStack(id: FontId): string {
       return '"Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
     case "gulzar":
       return '"Gulzar", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
-    case "alvi-nastaleeq":
-      return '"Alvi Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
     case "mehr-nastaliq-web":
       return '"Mehr Nastaliq Web", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
     case "amiri":
@@ -371,12 +368,62 @@ export function directionForNode(
   return globalDir;
 }
 
+export function isRetiredAlviFont(raw: unknown): boolean {
+  if (raw === "alvi-nastaleeq") return true;
+  if (typeof raw !== "string") return false;
+  const first = raw.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";
+  return first === "Alvi Nastaleeq" || first === "alvi-nastaleeq";
+}
+
+/** Replace a stored Alvi mark with Mehr. Does not alter any other mark. */
+export function migrateAlviDocumentContent<T extends DocNode>(doc: T): T {
+  const walk = (node: DocNode): DocNode => {
+    const marks = node.marks?.map((mark) => {
+      if (!isRetiredAlviFont(mark.attrs?.fontFamily)) return mark;
+      return { ...mark, attrs: { ...mark.attrs, fontFamily: "Mehr Nastaliq Web" } };
+    });
+    const content = node.content?.map(walk);
+    const marksChanged = marks !== undefined && marks.some((mark, index) => mark !== node.marks?.[index]);
+    const contentChanged = content !== undefined && content.some((child, index) => child !== node.content?.[index]);
+    if (!marksChanged && !contentChanged) return node;
+    return {
+      ...node,
+      ...(marksChanged ? { marks } : {}),
+      ...(contentChanged ? { content } : {}),
+    };
+  };
+  return walk(doc) as T;
+}
+
+export function storedRecordUsesAlvi(raw: unknown): boolean {
+  if (isRetiredAlviFont(raw)) return true;
+  if (!raw || typeof raw !== "object") return false;
+  const record = raw as {
+    content?: DocNode;
+    documentSettings?: { typography?: { defaultRtlFontId?: unknown; defaultLtrFontId?: unknown } };
+  };
+  const typography = record.documentSettings?.typography;
+  if (isRetiredAlviFont(typography?.defaultRtlFontId) || isRetiredAlviFont(typography?.defaultLtrFontId)) {
+    return true;
+  }
+  const walk = (node: DocNode | undefined): boolean => {
+    if (!node) return false;
+    if (node.marks?.some((mark) => isRetiredAlviFont(mark.attrs?.fontFamily))) return true;
+    return node.content?.some((child) => walk(child)) ?? false;
+  };
+  return walk(record.content);
+}
+
 export function resolveEditorFontFamily(
   raw: unknown,
   globalDir: Direction = "rtl"
 ): FontResolution {
   const requested =
     typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
+
+  if (isRetiredAlviFont(requested)) {
+    return resolveEditorFontFamily("Mehr Nastaliq Web", globalDir);
+  }
 
   if (!requested) {
     const defId: FontId = globalDir === "ltr" ? "inter" : "mehr-nastaliq-web";
@@ -464,6 +511,7 @@ export function studioMehrFontFaceCss(): string {
 
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */
 export function normalizeEditorFontFamily(raw: unknown): string {
+  if (isRetiredAlviFont(raw)) return "Mehr Nastaliq Web";
   if (typeof raw !== "string") return "";
   const first = raw.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";
   if (!first) return "";

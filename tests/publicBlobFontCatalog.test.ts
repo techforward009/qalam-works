@@ -13,15 +13,15 @@ describe("Document Studio public Blob font catalogue", () => {
     expect(isApprovedPublicBlobFontUrl("https://evil.invalid/AdobeArabic-Regular.woff2")).toBe(false);
   });
 
-  test("contains 17 catalogued assets including Mehr and legacy Faiz, organized into 15 font families", () => {
-    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(17);
-    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(15);
-    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(17);
+  test("contains 16 catalogued assets including Mehr and legacy Faiz, organized into 14 font families", () => {
+    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(16);
+    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(14);
+    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(16);
   });
 
-  test("maps all seven uploaded catalogued originals and keeps missing fonts on legacy names", () => {
+  test("maps all six uploaded catalogued originals and keeps missing fonts on legacy names", () => {
     const recovered=[
-      "Alvi_Nastaleeq.woff2","Gulzar-Regular.woff2",
+      "Gulzar-Regular.woff2",
       "NafeesNastaleeq-v1.02.woff2","Sahel.woff2",
       "ScheherazadeNew-Medium.woff2","jameel-noori-nastaleeq-400.woff2",
       "muhammadi-quranic-400.woff2",

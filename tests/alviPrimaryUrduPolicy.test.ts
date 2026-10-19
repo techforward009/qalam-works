@@ -9,15 +9,15 @@ import {
 import { PUBLISHING_PRESETS } from "../app/tools/document-studio/utils/publishingPresets";
 
 describe("Mehr Nastaliq Web body preview", () => {
-  test("uses Mehr for ordinary Urdu body and keeps Alvi, Jameel, and Muhammadi", () => {
+  test("uses Mehr for ordinary Urdu body and no longer loads Alvi", () => {
     const css = readFileSync("app/globals.css", "utf8");
     expect(css).toContain('--qalam-urdu-primary: "Mehr Nastaliq Web"');
     expect(css).toContain('--qalam-urdu-heading: "Gulzar"');
-    expect(css.match(/Alvi_Nastaleeq\.woff2/g)).toHaveLength(1);
+    expect(css).not.toContain("Alvi_Nastaleeq.woff2");
+    expect(css).not.toContain('font-family:"Alvi Nastaleeq"');
     expect(css).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2");
     expect(css).not.toContain("blob.vercel-storage.com/Mehr");
     expect(css).not.toContain("Qalam Alvi Nastaleeq");
-    expect(css).toContain('font-family:"Alvi Nastaleeq"');
     expect(css).toContain('font-family: "Jameel Noori Nastaleeq"');
     expect(css).toContain(".qalam-editor-content [style*=\"Jameel Noori Nastaleeq\"]");
     expect(css).not.toContain("jameel-noori-nastaleeq-400.woff2");
@@ -27,7 +27,7 @@ describe("Mehr Nastaliq Web body preview", () => {
     expect(css).toContain('font-family: "Muhammadi Quranic"');
   });
 
-  test("new Urdu documents use Mehr, and a saved Alvi document still opens as Alvi", () => {
+  test("new Urdu documents use Mehr, and a saved Alvi value opens as Mehr", () => {
     expect(defaultDocumentSettings().typography.defaultRtlFontId).toBe("mehr-nastaliq-web");
     for (const preset of Object.values(PUBLISHING_PRESETS)) {
       expect(preset.defaultRtlFontId).toBe("mehr-nastaliq-web");
@@ -35,9 +35,9 @@ describe("Mehr Nastaliq Web body preview", () => {
     const saved = parseDocumentSettings({
       typography: { defaultRtlFontId: "alvi-nastaleeq", defaultLtrFontId: "inter" },
     });
-    expect(saved.typography.defaultRtlFontId).toBe("alvi-nastaleeq");
+    expect(saved.typography.defaultRtlFontId).toBe("mehr-nastaliq-web");
     const visible = listEditorFonts().map((font) => font.id);
-    expect(visible).toContain("alvi-nastaleeq");
+    expect(visible).not.toContain("alvi-nastaleeq");
     expect(visible).toContain("jameel-noori-nastaleeq");
     expect(visible).toContain("mehr-nastaliq-web");
     expect(visible).not.toContain("faiz-lahori");
@@ -53,13 +53,12 @@ describe("Mehr Nastaliq Web body preview", () => {
       pdfFamily: "Mehr Nastaliq Web",
     });
     expect(resolveEditorFontFamily("Alvi Nastaleeq", "rtl")).toMatchObject({
-      fontId: "alvi-nastaleeq",
+      fontId: "mehr-nastaliq-web",
       fellBack: false,
-      pdfFamily: "Alvi Nastaleeq",
+      pdfFamily: "Mehr Nastaliq Web",
+      docxFamily: "Mehr Nastaliq Web",
     });
-    expect(getFontById("alvi-nastaleeq").pdf.regularFiles?.[0]).toBe(
-      "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Alvi_Nastaleeq.woff2",
-    );
+    expect(resolveEditorFontFamily('"Alvi Nastaleeq"', "rtl").docxFamily).toBe("Mehr Nastaliq Web");
     expect(getFontById("mehr-nastaliq-web").pdf.regularFiles?.[0]).toBe(
       "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2",
     );

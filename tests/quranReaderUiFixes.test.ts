@@ -69,7 +69,7 @@ describe("Quran Reader typography and layout acceptance contracts", () => {
     expect(tafsir).toContain('fontFamily: \'"Gulzar", serif\'');
     expect(tafsir).toContain('data-tafsir-topic-heading="true"');
     expect(tafsir).not.toContain("Preview Urdu font:");
-    expect(styles).toContain("Alvi_Nastaleeq.woff2");
+    expect(styles).not.toContain("Alvi_Nastaleeq.woff2");
     expect(styles).toMatch(/font-family:\s*"Digital Khatt Indo-Pak"/);
     expect(styles).toMatch(/font-family:\s*"Gulzar"/);
   });

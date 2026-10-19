@@ -7,7 +7,6 @@ const sources = {
   "app/globals.css": [
     "muhammadi-quranic-400.woff2",
     "NafeesNastaleeq-v1.02.woff2",
-    "Alvi_Nastaleeq.woff2",
     "Gulzar-Regular.woff2",
     "MehrNastaliqWeb.woff2",
     "Sahel.woff2",
@@ -39,6 +38,8 @@ describe("owner-authorized originals use new independent font gateway",()=>{
     const css=readFileSync("app/globals.css","utf8");
     const tailwind=readFileSync("tailwind.config.js","utf8");
     expect(css).not.toContain("jameel-noori-nastaleeq-400.woff2");
+    expect(css).not.toContain("Alvi_Nastaleeq.woff2");
+    expect(css).not.toContain('font-family:"Alvi Nastaleeq"');
     expect(css).not.toContain(MIRROR+"NafeesNastaleeq.woff2");
     expect(tailwind).not.toContain("Jameel");
   });

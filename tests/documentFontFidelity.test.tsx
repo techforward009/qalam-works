@@ -112,7 +112,7 @@ describe("toolbar font selection sync", () => {
     ]) {
       expect(options).not.toContain(hidden);
     }
-    expect(options).toContain("Alvi Nastaleeq");
+    expect(options).not.toContain("Alvi Nastaleeq");
     expect(options).toContain("Jameel Noori Nastaleeq");
     expect(options).toContain("Sahel");
     view.rerender(<DocumentToolbar editor={editor as never} dir="ltr" setDir={() => {}} isUr={false} />);

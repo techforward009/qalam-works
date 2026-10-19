@@ -1,6 +1,6 @@
 /**
  * Qalam Works — original-font gateway for the owner's private Cloudflare R2.
- * Ten original WOFF2 files were expressly authorized by the owner.
+ * Nine original WOFF2 files remain on this allowlist. Alvi Nastaleeq was removed.
  * Mehr Nastaliq Web is an additional CC BY-SA 4.0 file on the same allowlist.
  * Nafees Nastaleeq v1.02 is an additional allowlisted name. The v1.00 object stays
  * so the existing live check of NafeesNastaleeq.woff2 still matches.
@@ -9,7 +9,6 @@
  */
 const FONT_FILES = Object.freeze({
   "AlFars9Badr.woff2": { size: 30340, sha256: "c9e108d6c962ef2f18b7b939f7a5ebf74ce65192a85249cb571554c18f3e9ab8" },
-  "Alvi_Nastaleeq.woff2": { size: 5228460, sha256: "0e60d92fbf7a86dad972b7e75dfbb85dd94ffe3ee8fbba0c14115fc977efb466" },
   "BNazanin.woff2": { size: 20076, sha256: "2e9bfe82c0e631244e5729408fee76778b04edc716bed9da054c7c286de6f368" },
   "Gulzar-Regular.woff2": { size: 237008, sha256: "cf6b33bd971d65eef3eedafcae62ee8e88bdfe30ef6a23f9ab627a2f24e376d6" },
   "MehrNastaliqWeb.woff2": { size: 55884, sha256: "a3c651455e754cb1e20e8bba05e449dfd12fa778870a79f11bca3108dbe41457" },

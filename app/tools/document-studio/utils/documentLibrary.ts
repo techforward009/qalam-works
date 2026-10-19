@@ -1,7 +1,8 @@
 /**
  * Local Document Library — storage-agnostic API.
  * IndexedDB is persistent; the in-memory backend is a temporary fallback.
- * Document JSON is stored as-is (no schema transform).
+ * Retired Alvi Nastaleeq marks and font ids are rewritten to Mehr Nastaliq Web.
+ * Opening a stored Alvi document writes that rewrite back without changing updatedAt.
  */
 
 import type { DocNode } from "./extractPlainText";
@@ -11,6 +12,7 @@ import {
   type DocumentStudioSettings,
 } from "./documentSettings";
 import { defaultDocumentTitle, sanitizeDocumentTitle } from "./documentTitle";
+import { migrateAlviDocumentContent, storedRecordUsesAlvi } from "./fontRegistry";
 
 export const DOCUMENT_LIBRARY_SCHEMA_VERSION = 1 as const;
 export const LEGACY_DRAFT_STORAGE_KEY = "qalam-document-studio-draft";
@@ -70,11 +72,21 @@ function isDocNode(value: unknown): value is DocNode {
   return Boolean(value) && typeof value === "object" && (value as DocNode).type === "doc";
 }
 
+export function replaceRetiredAlviContent(content: unknown, fallback: DocNode): DocNode {
+  return isDocNode(content) ? migrateAlviDocumentContent(content) : fallback;
+}
+
+/** Normalize a stored row. `persist` is true only when the raw row still names Alvi. */
+export function openedDocumentRecord(raw: unknown): { record: DocumentRecord | null; persist: boolean } {
+  const record = normalizeDocumentRecord(raw);
+  return { record, persist: Boolean(record && storedRecordUsesAlvi(raw)) };
+}
+
 export function normalizeDocumentRecord(raw: unknown, now = Date.now()): DocumentRecord | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   if (typeof o.id !== "string" || !o.id) return null;
-  const content = isDocNode(o.content) ? o.content : emptyDocumentContent();
+  const content = replaceRetiredAlviContent(o.content, emptyDocumentContent());
   const title = sanitizeDocumentTitle(o.title) || defaultDocumentTitle(false);
   const createdAt = typeof o.createdAt === "number" ? o.createdAt : now;
   const updatedAt = typeof o.updatedAt === "number" ? o.updatedAt : createdAt;
@@ -93,7 +105,7 @@ export function createDocumentRecord(input: DocumentWriteInput = {}, now = Date.
   return {
     id: createDocumentId(),
     title: sanitizeDocumentTitle(input.title) || defaultDocumentTitle(false),
-    content: isDocNode(input.content) ? input.content : emptyDocumentContent(),
+    content: replaceRetiredAlviContent(input.content, emptyDocumentContent()),
     documentSettings: input.documentSettings ? parseDocumentSettings(input.documentSettings) : defaultDocumentSettings(),
     createdAt: now,
     updatedAt: now,
@@ -119,7 +131,11 @@ export function createMemoryDocumentLibrary(seed: DocumentRecord[] = []): Docume
       }));
     },
     async getDocument(id) {
-      return records.get(id) ?? null;
+      const current = records.get(id) ?? null;
+      if (!current || !storedRecordUsesAlvi(current)) return current;
+      const migrated = normalizeDocumentRecord(current);
+      if (migrated) records.set(id, migrated);
+      return migrated;
     },
     async createDocument(input = {}) {
       const record = createDocumentRecord(input);
@@ -132,7 +148,7 @@ export function createMemoryDocumentLibrary(seed: DocumentRecord[] = []): Docume
       const next: DocumentRecord = {
         ...current,
         title: patch.title !== undefined ? sanitizeDocumentTitle(patch.title) || current.title : current.title,
-        content: patch.content !== undefined && isDocNode(patch.content) ? patch.content : current.content,
+        content: patch.content !== undefined ? replaceRetiredAlviContent(patch.content, current.content) : current.content,
         documentSettings: patch.documentSettings
           ? parseDocumentSettings(patch.documentSettings)
           : current.documentSettings,

@@ -167,6 +167,65 @@ describe("document library storage", () => {
     expect(await library.getDocument(drop.id)).toBeNull();
     expect((await library.getDocument(keep.id))?.title).toBe("Keep");
   });
+
+  it("rewrites a stored Alvi document to Mehr on open without moving it", async () => {
+    const updatedAt = 1_700_000_100_000;
+    const createdAt = updatedAt - 1000;
+    const legacy = {
+      id: "old-alvi",
+      title: "Old Alvi",
+      content: {
+        type: "doc",
+        content: [{
+          type: "paragraph",
+          content: [
+            { type: "text", text: "سلام", marks: [{ type: "textStyle", attrs: { fontFamily: "Alvi Nastaleeq" } }] },
+            { type: "text", text: "جمیل", marks: [{ type: "textStyle", attrs: { fontFamily: '"Jameel Noori Nastaleeq"' } }] },
+          ],
+        }],
+      },
+      documentSettings: {
+        ...defaultDocumentSettings(),
+        typography: { ...defaultDocumentSettings().typography, defaultRtlFontId: "alvi-nastaleeq" },
+      },
+      createdAt,
+      updatedAt,
+      schemaVersion: 1 as const,
+    };
+    const memory = createMemoryDocumentLibrary([legacy as unknown as DocumentRecord]);
+    const fromMemory = await memory.getDocument("old-alvi");
+    expect(fromMemory?.documentSettings.typography.defaultRtlFontId).toBe("mehr-nastaliq-web");
+    expect(fromMemory?.updatedAt).toBe(updatedAt);
+    expect(fromMemory?.content.content?.[0].content?.[0].text).toBe("سلام");
+    expect(fromMemory?.content.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Mehr Nastaliq Web");
+    expect(fromMemory?.content.content?.[0].content?.[1].marks?.[0].attrs?.fontFamily).toBe('"Jameel Noori Nastaleeq"');
+
+    const { records } = installIndexedDB();
+    records.set("old-alvi", legacy as unknown as DocumentRecord);
+    const persistent = await getDocumentLibrary();
+    const opened = await persistent.getDocument("old-alvi");
+    expect(opened?.documentSettings.typography.defaultRtlFontId).toBe("mehr-nastaliq-web");
+    expect(opened?.content.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Mehr Nastaliq Web");
+    expect(opened?.content.content?.[0].content?.[1].marks?.[0].attrs?.fontFamily).toBe('"Jameel Noori Nastaleeq"');
+    expect(opened?.updatedAt).toBe(updatedAt);
+    expect(opened?.createdAt).toBe(createdAt);
+    const stored = records.get("old-alvi");
+    expect(stored?.documentSettings.typography.defaultRtlFontId).toBe("mehr-nastaliq-web");
+    expect(stored?.content.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Mehr Nastaliq Web");
+    expect(stored?.updatedAt).toBe(updatedAt);
+    const again = await persistent.getDocument("old-alvi");
+    expect(again?.updatedAt).toBe(updatedAt);
+  });
+
+  it("does not rewrite prose that merely mentions Alvi Nastaleeq", async () => {
+    const library = createMemoryDocumentLibrary();
+    const created = await library.createDocument({
+      content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Alvi Nastaleeq" }] }] },
+    });
+    const loaded = await library.getDocument(created.id);
+    expect(loaded?.content.content?.[0].content?.[0].text).toBe("Alvi Nastaleeq");
+    expect(loaded?.content.content?.[0].content?.[0].marks).toBeUndefined();
+  });
 });
 
 describe("active document id persistence", () => {

@@ -10,7 +10,6 @@ export interface PublicBlobFontFamily {
 
 export const PUBLIC_BLOB_FONT_FAMILIES: readonly PublicBlobFontFamily[] = [
   { id: "adobe-arabic", label: "Adobe Arabic", regular: "AdobeArabic-Regular.woff2", bold: "AdobeArabic-Bold.woff2", script: "arabic" },
-  { id: "alvi-nastaleeq", label: "Alvi Nastaleeq", regular: "Alvi_Nastaleeq.woff2", script: "urdu" },
   { id: "digital-khatt-indo-pak", label: "Digital Khatt Indo-Pak", regular: "DigitalKhattIndoPakRegular.woff2", script: "quran" },
   // Keep the legacy file available for documents saved with Faiz; hide it from the picker.
   { id: "faiz-lahori", label: "Faiz Lahori Nastaleeq", regular: "Faiz-Lahori-Web.woff2", script: "urdu" },
@@ -40,7 +39,6 @@ export const QALAM_OFL_FONT_MIRROR_BASE_URL =
   "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts";
 const LOCALLY_HOSTED_FONT_FILES = new Set(["DigitalKhattIndoPakRegular.woff2"]);
 const R2_MIRRORED_FONT_FILES = new Set([
-  "Alvi_Nastaleeq.woff2",
   "Gulzar-Regular.woff2",
   "NafeesNastaleeq-v1.02.woff2",
   "Sahel.woff2",

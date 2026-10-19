@@ -22,13 +22,13 @@ jobs:
         run: npx vitest run tests/cloudflareFontRecovery.test.ts tests/publicBlobFontCatalog.test.ts tests/jameelBlobAuth.test.ts tests/pdfFontReady.test.ts tests/fontRegistry.test.ts tests/quranReader.test.ts tests/cloudflareFontSourceRoutes.test.ts
       - name: TypeScript safety
         run: npx tsc --noEmit
-      - name: Confirm ten original remote fonts actually load in fresh Google Chrome
+      - name: Confirm nine original remote fonts actually load in fresh Google Chrome
         run: node scripts/verify-cloudflare-fonts-browser.mjs
   live-font-proof:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Download and validate exact ten original WOFF2 assets from live Cloudflare Worker
+      - name: Download and validate exact nine original WOFF2 assets from live Cloudflare Worker
         shell: bash
         run: |
           set -euo pipefail
@@ -50,11 +50,10 @@ jobs:
             d12978f4398f1f788d65fa7ccb872cf0e1c43aef89166816243e94487d9cee27 jameel-noori-nastaleeq-400.woff2 5554728
             7e83325ff08842b011d6d70060ea055a992318e1cc5997bd66ccf1e13e35aac0 NafeesNastaleeq.woff2 129624
             3b2219947cbd4704b4534198005f8e3818182ded24cac774c1fa0f625a955f82 NafeesNastaleeq-Web.woff2 23692
-            0e60d92fbf7a86dad972b7e75dfbb85dd94ffe3ee8fbba0c14115fc977efb466 Alvi_Nastaleeq.woff2 5228460
             cf6b33bd971d65eef3eedafcae62ee8e88bdfe30ef6a23f9ab627a2f24e376d6 Gulzar-Regular.woff2 237008
             25e4a066c637948e01e12b7c8bf9e13afa188fad6949affedc6ddf2d307b31b0 Sahel.woff2 35460
             67c5c24a178e7e3e1c1c6ca7095448e70da6f882bf7f41783a8085e7ba87269e ScheherazadeNew-Medium.woff2 147916
             2e9bfe82c0e631244e5729408fee76778b04edc716bed9da054c7c286de6f368 BNazanin.woff2 20076
             c9e108d6c962ef2f18b7b939f7a5ebf74ce65192a85249cb571554c18f3e9ab8 AlFars9Badr.woff2 30340
           FONT_SHA256
-          echo "All ten Cloudflare-delivered original fonts passed SHA-256, size, WOFF2, CORS, and MIME verification."
+          echo "All nine Cloudflare-delivered original fonts passed SHA-256, size, WOFF2, CORS, and MIME verification."
