@@ -2,6 +2,8 @@
 export interface PublicBlobFontFamily {
   id: string;
   label: string;
+  /** CSS/PDF/DOCX family when it differs from the menu label. */
+  editorFamily?: string;
   regular: string;
   bold?: string;
   script: "urdu" | "arabic" | "persian" | "quran";
@@ -13,6 +15,8 @@ export const PUBLIC_BLOB_FONT_FAMILIES: readonly PublicBlobFontFamily[] = [
   { id: "gulzar", label: "Gulzar", regular: "Gulzar-Regular.woff2", script: "urdu" },
   { id: "nafees-nastaleeq", label: "Nafees Nastaleeq", regular: "NafeesNastaleeq-v1.02.woff2", script: "urdu" },
   { id: "sahel", label: "Sahel", regular: "Sahel.woff2", script: "persian", existingStudioId: "sahel" },
+  { id: "al-fars-9-badr", label: "Al Fars 9 Badr", editorFamily: "AlFars 9 Badr", regular: "AlFars9Badr.woff2", script: "persian" },
+  { id: "b-nazanin", label: "B Nazanin", regular: "BNazanin.woff2", script: "persian" },
   { id: "scheherazade-new", label: "Scheherazade New", regular: "ScheherazadeNew-Medium.woff2", script: "arabic" },
   { id: "jameel-noori-nastaleeq", label: "Jameel Noori Nastaleeq", regular: "jameel-noori-nastaleeq-400.woff2", script: "urdu", existingStudioId: "jameel-noori-nastaleeq" },
   { id: "mehr-nastaliq-web", label: "Mehr Nastaliq Web", regular: "MehrNastaliqWeb.woff2", script: "urdu" },
@@ -35,6 +39,8 @@ const R2_MIRRORED_FONT_FILES = new Set([
   "Gulzar-Regular.woff2",
   "NafeesNastaleeq-v1.02.woff2",
   "Sahel.woff2",
+  "AlFars9Badr.woff2",
+  "BNazanin.woff2",
   "ScheherazadeNew-Medium.woff2",
   "jameel-noori-nastaleeq-400.woff2",
   "MehrNastaliqWeb.woff2",

@@ -16,10 +16,10 @@ describe("Document Studio public Blob font catalogue", () => {
     expect(() => publicBlobFontUrl("al-majeed-quranic-400.woff2")).toThrow("Unapproved Document Studio font asset");
   });
 
-  test("contains 8 catalogued assets including Mehr, organized into 8 font families", () => {
-    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(8);
-    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(8);
-    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(8);
+  test("contains 10 catalogued assets including Mehr, organized into 10 font families", () => {
+    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(10);
+    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(10);
+    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(10);
     for (const removed of [
       "AdobeArabic-Regular.woff2",
       "AdobeArabic-Bold.woff2",
@@ -40,6 +40,8 @@ describe("Document Studio public Blob font catalogue", () => {
       "NafeesNastaleeq-v1.02.woff2","Sahel.woff2",
       "ScheherazadeNew-Medium.woff2","jameel-noori-nastaleeq-400.woff2",
       "muhammadi-quranic-400.woff2",
+      "AlFars9Badr.woff2",
+      "BNazanin.woff2",
     ];
     for (const name of recovered) {
       const url=publicBlobFontUrl(name);

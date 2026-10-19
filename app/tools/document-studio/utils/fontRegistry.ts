@@ -15,6 +15,8 @@ export type FontId =
   | "noto-naskh-arabic"
   | "vazirmatn"
   | "sahel"
+  | "al-fars-9-badr"
+  | "b-nazanin"
   | "inter"
   | "mehr-nastaliq-web"
   | "digital-khatt-indo-pak"
@@ -64,12 +66,12 @@ export interface FontResolution {
 const EXTRA_BLOB_FONTS: StudioFontDefinition[] = PUBLIC_BLOB_FONT_FAMILIES
   .filter((font) => !font.existingStudioId)
   .map((font): StudioFontDefinition => {
-    const family = font.label;
+    const family = font.editorFamily ?? font.label;
     const fallbackFontId: FontId = font.script === "urdu" ? "noto-nastaliq-urdu"
       : font.script === "persian" ? "vazirmatn" : "noto-naskh-arabic";
     return {
       id: font.id as FontId,
-      label: family,
+      label: font.label,
       editorFamily: family,
       category: font.script === "quran" ? "arabic" : font.script,
       scripts: ["arabic"],
@@ -289,6 +291,10 @@ export function editorFontFamilyStack(id: FontId): string {
       return 'var(--font-vazirmatn), Vazirmatn, sans-serif';
     case "sahel":
       return 'Sahel, Tahoma, "Segoe UI", sans-serif';
+    case "al-fars-9-badr":
+      return '"AlFars 9 Badr", Sahel, var(--font-vazirmatn), Vazirmatn, sans-serif';
+    case "b-nazanin":
+      return '"B Nazanin", Sahel, var(--font-vazirmatn), Vazirmatn, sans-serif';
     case "inter":
       return 'var(--font-inter), Inter, system-ui, sans-serif';
     case "scheherazade-new":
@@ -559,6 +565,19 @@ export function studioGulzarFontFaceCss(): string {
 export function studioMehrFontFaceCss(): string {
   const url = getFontById("mehr-nastaliq-web").pdf.regularFiles?.[0] ?? "";
   return `@font-face{font-family:"Mehr Nastaliq Web";src:url("${url}") format("woff2"),url("/fonts/MehrNastaliqWeb.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
+}
+
+/** Persian faces requested only after a Document Studio document uses them. */
+const ON_DEMAND_STUDIO_FACES = [
+  { family: "AlFars 9 Badr", file: "AlFars9Badr.woff2" },
+  { family: "B Nazanin", file: "BNazanin.woff2" },
+] as const;
+
+export function studioOnDemandFontFaceCss(source: string): string {
+  return ON_DEMAND_STUDIO_FACES
+    .filter((face) => source.includes(face.family))
+    .map((face) => `@font-face{font-family:"${face.family}";src:url("${publicBlobFontUrl(face.file)}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`)
+    .join("\n");
 }
 
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */

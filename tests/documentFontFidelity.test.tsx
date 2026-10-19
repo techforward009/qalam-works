@@ -115,6 +115,12 @@ describe("toolbar font selection sync", () => {
     expect(options).not.toContain("Alvi Nastaleeq");
     expect(options).toContain("Jameel Noori Nastaleeq");
     expect(options).toContain("Sahel");
+    expect(options).toContain("Vazirmatn");
+    expect(options).toContain("AlFars 9 Badr");
+    expect(options).toContain("B Nazanin");
+    expect(options.indexOf("AlFars 9 Badr")).toBeLessThan(options.indexOf("Vazirmatn"));
+    expect(options.indexOf("Vazirmatn")).toBeLessThan(options.indexOf("Sahel"));
+    expect(options.indexOf("Sahel")).toBeLessThan(options.indexOf("B Nazanin"));
     view.rerender(<DocumentToolbar editor={editor as never} dir="ltr" setDir={() => {}} isUr={false} />);
     expect(Array.from(select.querySelectorAll("optgroup")).map(group => group.label)).toEqual([
       "Urdu fonts", "Arabic fonts", "Persian fonts", "English fonts",

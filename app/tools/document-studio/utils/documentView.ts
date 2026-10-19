@@ -4,7 +4,7 @@
  */
 import { scaleLayoutToWidth, type ResolvedPageLayout } from "./pageLayout";
 import type { RulerUnit } from "./rulerLayout";
-import { studioGulzarFontFaceCss, studioJameelFontFaceCss, studioMehrFontFaceCss } from "./fontRegistry";
+import { studioGulzarFontFaceCss, studioJameelFontFaceCss, studioMehrFontFaceCss, studioOnDemandFontFaceCss } from "./fontRegistry";
 
 export type { RulerUnit };
 
@@ -179,6 +179,16 @@ export async function waitForPrintFonts(portal: HTMLElement | null): Promise<boo
     }
   }
   const jameelReady = needsJameel ? Boolean(fonts?.check?.('16px "Jameel Noori Nastaleeq"')) : true;
+  if (fonts?.load && portal) {
+    for (const family of ["AlFars 9 Badr", "B Nazanin"]) {
+      if (!portal.innerHTML.includes(family)) continue;
+      try {
+        await fonts.load(`16px "${family}"`);
+      } catch {
+        /* the editor stack falls through to Sahel */
+      }
+    }
+  }
   portal?.setAttribute("data-print-waited-fonts", "true");
   portal?.setAttribute("data-print-jameel-ready", jameelReady ? "true" : "false");
   return jameelReady;
@@ -269,8 +279,9 @@ export function mountDocumentPrintPortal(): HTMLElement | null {
   stripViewOnlyPagination(page);
   page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:0 ${rightMm}mm 0 ${leftMm}mm;background:#fff;min-height:0;`;
   const needsJameel = source.innerHTML.includes("Jameel Noori Nastaleeq");
+  const onDemandFaces = studioOnDemandFontFaceCss(source.innerHTML);
   const style = document.createElement("style");
-  style.textContent = `${needsJameel ? studioJameelFontFaceCss() + "\n" : ""}${studioGulzarFontFaceCss()}\n${studioMehrFontFaceCss()}\n${documentPrintCss(widthMm, heightMm, topMm, bottomMm)}`;
+  style.textContent = `${needsJameel ? studioJameelFontFaceCss() + "\n" : ""}${onDemandFaces ? onDemandFaces + "\n" : ""}${studioGulzarFontFaceCss()}\n${studioMehrFontFaceCss()}\n${documentPrintCss(widthMm, heightMm, topMm, bottomMm)}`;
   portal.append(style, page);
   document.body.appendChild(portal);
   return portal;

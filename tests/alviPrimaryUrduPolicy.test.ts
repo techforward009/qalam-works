@@ -12,6 +12,10 @@ describe("Mehr Nastaliq Web body preview", () => {
   test("uses Mehr for ordinary Urdu body and no longer loads Alvi", () => {
     const css = readFileSync("app/globals.css", "utf8");
     expect(css).toContain('--qalam-urdu-primary: "Mehr Nastaliq Web"');
+    expect(css).toContain('--font-nastaliq: "Mehr Nastaliq Web"');
+    expect(css).not.toContain("nastaliq-400.woff2");
+    expect(css).not.toContain("BNazanin.woff2");
+    expect(css).not.toContain("AlFars9Badr.woff2");
     expect(css).toContain('--qalam-urdu-heading: "Gulzar"');
     expect(css).not.toContain("Alvi_Nastaleeq.woff2");
     expect(css).not.toContain('font-family:"Alvi Nastaleeq"');
@@ -67,9 +71,14 @@ describe("Mehr Nastaliq Web body preview", () => {
     const editor = readFileSync("app/tools/document-studio/components/DocumentStudioEditor.tsx", "utf8");
     const view = readFileSync("app/tools/document-studio/utils/documentView.ts", "utf8");
     const footer = readFileSync("app/components/Footer.tsx", "utf8");
+    const layout = readFileSync("app/layout.tsx", "utf8");
     expect(editor).toContain('data-studio-jameel-face="true"');
     expect(editor).toContain("studioJameelFontFaceCss()");
+    expect(editor).toContain('data-studio-on-demand-faces="true"');
     expect(view).toContain('source.innerHTML.includes("Jameel Noori Nastaleeq")');
+    expect(view).toContain("studioOnDemandFontFaceCss(source.innerHTML)");
+    expect(layout).not.toContain("nastaliq-400.woff2");
+    expect(layout).not.toContain("nastaliq-latin");
     expect(footer).toContain("نفیس نستعلیق v1.02");
     expect(footer).toContain("https://cle.org.pk/software/license/Nafees_Nastaleeq_License.html");
     expect(footer).toContain("https://mehrtype.com/product/mehr-nastaliq-web/");

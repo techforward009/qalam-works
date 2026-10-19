@@ -7,6 +7,9 @@
    ──────────────────────────────────────────────────────────────────────────── */
 
 :root {
+  /* Page Urdu is Mehr. Noto Nastaliq Urdu is not a page face; PDF and DOCX load it separately. */
+  --font-nastaliq: "Mehr Nastaliq Web";
+  --font-nastaliq-latin: "Mehr Nastaliq Web";
   --background: #faf9f6;
   --foreground: #0f172a;
   --surface: #ffffff;

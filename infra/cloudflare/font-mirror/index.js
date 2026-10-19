@@ -4,7 +4,8 @@
  * Mehr Nastaliq Web is an additional CC BY-SA 4.0 file on the same allowlist.
  * Nafees Nastaleeq v1.02 is allowlisted. NafeesNastaleeq.woff2 (v1.00) and
  * NafeesNastaleeq-Web.woff2 are not; requests for those names return 404.
- * B Nazanin and Al Fars 9 Badr stay allowlisted. Page CSS does not request them.
+ * B Nazanin and Al Fars 9 Badr stay allowlisted. Document Studio requests
+ * them only after a user picks that face. Normal pages do not.
  * Adobe Arabic, Traditional Arabic, Al Majeed Quranic, Faiz Lahori, Asif Quranic,
  * and Al Qalam Quran Majeed are not licensed and are not on this allowlist.
  * No public R2 bucket, credentials, renaming or source-text alteration.

@@ -22,22 +22,6 @@ const inter = localFont({
   variable: "--font-inter",
 });
 
-const nastaliq = localFont({
-  src: [
-    { path: "../public/fonts/nastaliq-400.woff2", weight: "400" },
-    { path: "../public/fonts/nastaliq-700.woff2", weight: "700" },
-  ],
-  variable: "--font-nastaliq",
-});
-
-const nastaliqLatin = localFont({
-  src: [
-    { path: "../public/fonts/nastaliq-latin-400.woff2", weight: "400" },
-    { path: "../public/fonts/nastaliq-latin-700.woff2", weight: "700" },
-  ],
-  variable: "--font-nastaliq-latin",
-});
-
 const naskh = localFont({
   src: [
     { path: "../public/fonts/naskh-400.woff2", weight: "400" },
@@ -99,7 +83,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
-      <body className={`${inter.variable} ${nastaliq.variable} ${nastaliqLatin.variable} ${naskh.variable} ${amiri.variable} ${vazirmatn.variable} antialiased min-h-screen flex flex-col`}>
+      <body className={`${inter.variable} ${naskh.variable} ${amiri.variable} ${vazirmatn.variable} antialiased min-h-screen flex flex-col`}>
         <LanguageProvider>
           <Header />
           <ThemeProvider
