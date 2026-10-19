@@ -53,10 +53,9 @@ export function publicBlobFontUrl(filename: string): string {
     throw new Error("Unapproved Document Studio font asset");
   }
   if (LOCALLY_HOSTED_FONT_FILES.has(filename)) return `/fonts/${encodeURIComponent(filename)}`;
-  const origin = R2_MIRRORED_FONT_FILES.has(filename)
-    ? QALAM_OFL_FONT_MIRROR_BASE_URL
-    : PUBLIC_BLOB_FONT_BASE_URL;
-  return `${origin}/${encodeURIComponent(filename)}`;
+  // Never issue a runtime request to Vercel Blob. Catalogued assets not yet
+  // present in R2 may fail closed; they must never silently fall back to Blob.
+  return `${QALAM_OFL_FONT_MIRROR_BASE_URL}/${encodeURIComponent(filename)}`;
 }
 export function isApprovedPublicBlobFontUrl(url: string): boolean {
   try {
