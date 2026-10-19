@@ -2,6 +2,14 @@ import { describe, expect, test } from "vitest";
 import { PUBLIC_BLOB_FONT_FAMILIES, PUBLIC_BLOB_FONT_FILES, publicBlobFontUrl, isApprovedPublicBlobFontUrl } from "../app/tools/document-studio/utils/publicBlobFontCatalog";
 
 describe("Document Studio public Blob font catalogue", () => {
+  test("unverified legacy fonts are not offered to new Document Studio users", async () => {
+    const { listEditorFonts } = await import("../app/tools/document-studio/utils/fontRegistry");
+    const names = new Set(listEditorFonts().map(font => font.id));
+    for (const id of ["adobe-arabic", "traditional-arabic", "al-majeed-quranic", "faiz-lahori"]) {
+      expect(names.has(id)).toBe(false);
+    }
+  });
+
   test("routes approved font assets away from Vercel Blob and rejects non-approved names", () => {
     const url = publicBlobFontUrl("AdobeArabic-Regular.woff2");
     expect(url).toBe("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/AdobeArabic-Regular.woff2");
