@@ -78,12 +78,12 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
   }
   return <section data-testid="knowledge-assistant" className="knowledge-assistant rounded-xl border border-emerald-900/20 bg-[#f7f5ef] p-4 text-gray-800 dark:bg-[#0e1c15] dark:text-white sm:p-6" dir={ur ? "rtl" : "ltr"}>
     <style>{`
-      @font-face { font-family: "Nafees Nastaleeq"; src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq.woff2") format("woff2"); font-display: swap; }
+      @font-face { font-family: "Nafees Nastaleeq"; src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2"), url("/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2"); font-display: swap; }
       @font-face { font-family: "Mehr Nastaliq Web"; src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2") format("woff2"), url("/fonts/MehrNastaliqWeb.woff2") format("woff2"); font-display: swap; }
       @font-face { font-family: "Gulzar"; src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Gulzar-Regular.woff2") format("woff2"); font-display: swap; }
       .knowledge-assistant[dir="rtl"] { font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif; }
       .knowledge-assistant[dir="rtl"] :is(h1, h2, h3) { font-family: "Gulzar", "Noto Nastaliq Urdu", serif; line-height: 2.05; }
-      .knowledge-assistant button, .knowledge-assistant input, .knowledge-assistant textarea, .knowledge-assistant select { font-family: inherit; }
+      .knowledge-assistant button, .knowledge-assistant input, .knowledge-assistant textarea, .knowledge-assistant select { font-family: "Nafees Nastaleeq", serif; }
       .knowledge-assistant .khateeb-book-ur { font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important; font-size: 1.16rem; line-height: 2.25; }
       .knowledge-assistant .khateeb-muhammadi-quranic { font-family: "Muhammadi Quranic", var(--font-amiri), serif !important; font-size: 1.15em; line-height: 1.85; }
       .knowledge-assistant .khateeb-book-text { unicode-bidi: isolate; }

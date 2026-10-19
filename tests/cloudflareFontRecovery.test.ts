@@ -10,6 +10,7 @@ const ALL_TEN: Record<string, { size: number; sha256: string }> = {
   "Gulzar-Regular.woff2": { size: 237008, sha256: "cf6b33bd971d65eef3eedafcae62ee8e88bdfe30ef6a23f9ab627a2f24e376d6" },
   "MehrNastaliqWeb.woff2": { size: 55884, sha256: "a3c651455e754cb1e20e8bba05e449dfd12fa778870a79f11bca3108dbe41457" },
   "NafeesNastaleeq-Web.woff2": { size: 23692, sha256: "3b2219947cbd4704b4534198005f8e3818182ded24cac774c1fa0f625a955f82" },
+  "NafeesNastaleeq-v1.02.woff2": { size: 147664, sha256: "0ded94076db53a8be209e5f2745a58eb244ead9a79ebc0e98a15750b2ca1feaf" },
   "NafeesNastaleeq.woff2": { size: 129624, sha256: "7e83325ff08842b011d6d70060ea055a992318e1cc5997bd66ccf1e13e35aac0" },
   "Sahel.woff2": { size: 35460, sha256: "25e4a066c637948e01e12b7c8bf9e13afa188fad6949affedc6ddf2d307b31b0" },
   "ScheherazadeNew-Medium.woff2": { size: 147916, sha256: "67c5c24a178e7e3e1c1c6ca7095448e70da6f882bf7f41783a8085e7ba87269e" },
@@ -55,7 +56,7 @@ describe("Cloudflare owner-authorized original font Worker", () => {
         expect(response.headers.get("X-Qalam-Font-SHA256")).toBe(file.sha256);
         expect(context.FONT_BUCKET.get).toHaveBeenLastCalledWith(name);
       }
-      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(11);
+      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(12);
     } finally {
       vi.unstubAllGlobals();
     }

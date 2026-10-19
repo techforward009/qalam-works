@@ -371,8 +371,9 @@ describe("Khateeb Studio typography", () => {
   test("uses Mehr for Urdu book text, Gulzar for headings, and Muhammadi for Arabic", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     const globals = readFileSync("app/globals.css", "utf8");
-    expect(globals).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2");
-    expect(studio).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq.woff2");
+    expect(globals).not.toContain("jameel-noori-nastaleeq-400.woff2");
+    expect(studio).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq-v1.02.woff2");
+    expect(studio).toContain('font-family: "Nafees Nastaleeq", serif');
     expect(studio).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2");
     expect(studio).toContain(".khateeb-book-ur");
     expect(studio).toContain('"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important');

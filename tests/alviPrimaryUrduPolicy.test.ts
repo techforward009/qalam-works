@@ -20,6 +20,10 @@ describe("Mehr Nastaliq Web body preview", () => {
     expect(css).toContain('font-family:"Alvi Nastaleeq"');
     expect(css).toContain('font-family: "Jameel Noori Nastaleeq"');
     expect(css).toContain(".qalam-editor-content [style*=\"Jameel Noori Nastaleeq\"]");
+    expect(css).not.toContain("jameel-noori-nastaleeq-400.woff2");
+    expect(css).toContain("NafeesNastaleeq-v1.02.woff2");
+    expect(css).not.toContain("fonts/NafeesNastaleeq.woff2\"");
+    expect(readFileSync("tailwind.config.js", "utf8")).not.toContain("Jameel");
     expect(css).toContain('font-family: "Muhammadi Quranic"');
   });
 
@@ -53,5 +57,15 @@ describe("Mehr Nastaliq Web body preview", () => {
     );
     expect(getFontById("jameel-noori-nastaleeq").pdf.regularFiles?.[0]).not.toContain("blob.vercel-storage.com");
     expect(getFontById("mehr-nastaliq-web").pdf.regularFiles?.[0]).not.toContain("blob.vercel-storage.com");
+    const editor = readFileSync("app/tools/document-studio/components/DocumentStudioEditor.tsx", "utf8");
+    const view = readFileSync("app/tools/document-studio/utils/documentView.ts", "utf8");
+    const footer = readFileSync("app/components/Footer.tsx", "utf8");
+    expect(editor).toContain('data-studio-jameel-face="true"');
+    expect(editor).toContain("studioJameelFontFaceCss()");
+    expect(view).toContain('source.innerHTML.includes("Jameel Noori Nastaleeq")');
+    expect(footer).toContain("نفیس نستعلیق v1.02");
+    expect(footer).toContain("https://cle.org.pk/software/license/Nafees_Nastaleeq_License.html");
+    expect(footer).toContain("https://mehrtype.com/product/mehr-nastaliq-web/");
+    expect(footer).toContain("https://scripts.sil.org/OFL");
   });
 });

@@ -22,7 +22,7 @@ describe("Document Studio public Blob font catalogue", () => {
   test("maps all seven uploaded catalogued originals and keeps missing fonts on legacy names", () => {
     const recovered=[
       "Alvi_Nastaleeq.woff2","Gulzar-Regular.woff2",
-      "NafeesNastaleeq.woff2","Sahel.woff2",
+      "NafeesNastaleeq-v1.02.woff2","Sahel.woff2",
       "ScheherazadeNew-Medium.woff2","jameel-noori-nastaleeq-400.woff2",
       "muhammadi-quranic-400.woff2",
     ];
@@ -34,6 +34,8 @@ describe("Document Studio public Blob font catalogue", () => {
     }
     expect(publicBlobFontUrl("AdobeArabic-Regular.woff2"))
       .toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/AdobeArabic-Regular.woff2");
+    expect(PUBLIC_BLOB_FONT_FILES).toContain("NafeesNastaleeq-v1.02.woff2");
+    expect(PUBLIC_BLOB_FONT_FILES).not.toContain("NafeesNastaleeq.woff2");
     expect(PUBLIC_BLOB_FONT_FAMILIES.find(font=>font.id==="faiz-lahori")?.regular)
       .toBe("Faiz-Lahori-Web.woff2");
   });

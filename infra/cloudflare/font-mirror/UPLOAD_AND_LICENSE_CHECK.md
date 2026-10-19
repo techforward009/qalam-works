@@ -42,6 +42,19 @@ This environment has no Cloudflare credentials, so the R2 object was not uploade
 and the live Worker was not redeployed. Until that upload, browsers use the
 same-origin `/fonts/MehrNastaliqWeb.woff2` fallback. Do not put this file on Vercel Blob.
 
+Nafees Nastaleeq v1.02 replaces the site's button/UI copy of v1.00. The official
+TrueType from cle.org.pk is `Nafees Nastaleeq v1.02.ttf`, 396,948 bytes, name-table
+Version 1.02, manufacturer CRULP, designer Mr. Jamil-ur-Rehman, licence name ID 13
+kept, licence URL `http://crulp.org/software/license/Nafees_Nastaleeq_License.html`.
+The generated WOFF2 is `NafeesNastaleeq-v1.02.woff2`, 147,664 bytes, sha256
+`0ded94076db53a8be209e5f2745a58eb244ead9a79ebc0e98a15750b2ca1feaf`. Conversion
+did not subset or rename glyphs. The old `NafeesNastaleeq.woff2` allowlist entry
+(129,624 bytes) is unchanged so the live ten-font check still passes. This
+environment did not upload the v1.02 object to R2 and did not redeploy the Worker.
+Until that upload, browsers use `/fonts/NafeesNastaleeq-v1.02.woff2`. Jameel
+Noori Nastaleeq was not rewritten; its "Free Of Charge For Urdu Lovers" name-table
+note is untouched because the binary was not opened or re-encoded.
+
 Their verified original sizes are pinned in `index.js`; the identity hashes
 were verified against the owner's recovery archive in the prior preparation
 stage. The Worker reads the exact original bytes from R2 and never edits them.

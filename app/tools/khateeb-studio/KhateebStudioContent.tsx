@@ -563,7 +563,8 @@ export default function KhateebStudioContent({
       <style>{`
         @font-face {
           font-family: "Nafees Nastaleeq";
-          src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq.woff2") format("woff2");
+          src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2"),
+               url("/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2");
           font-style: normal;
           font-weight: 400;
           font-display: swap;
@@ -595,6 +596,9 @@ export default function KhateebStudioContent({
           font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important;
           font-size: 1.16rem;
           line-height: 2.25;
+        }
+        .khateeb-book-ur a {
+          font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important;
         }
         .khateeb-book-en { font-family: var(--font-inter), Arial, sans-serif; }
         .khateeb-book-ar { font-size: 1.15rem; }
@@ -653,7 +657,10 @@ export default function KhateebStudioContent({
         .khateeb-studio-ur button,
         .khateeb-studio-ur input,
         .khateeb-studio-ur a,
-        .khateeb-studio-ur label,
+        .khateeb-studio-ur label {
+          font-family: "Nafees Nastaleeq", serif;
+        }
+
         .khateeb-studio-ur pre {
           font-family: inherit;
         }

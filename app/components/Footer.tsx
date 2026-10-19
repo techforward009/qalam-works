@@ -124,6 +124,11 @@ export default function Footer() {
         <p className="mt-1 text-xs leading-6 text-white/90">
           Gulzar — <a href="https://scripts.sil.org/OFL" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">SIL Open Font License 1.1</a>
         </p>
+        <p dir="rtl" lang="ur" className="mt-1 text-sm leading-8">
+          نفیس نستعلیق v1.02 — <a href="https://cle.org.pk/software/localization/Fonts/nafeesNastaleeq.html" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مرکز تحقیق برائے اردو زبان (CRULP)</a>
+          {"، "}
+          <a href="https://cle.org.pk/software/license/Nafees_Nastaleeq_License.html" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">لائسنس</a>
+        </p>
       </div>
       <div className="border-t border-white/5 py-4 text-center text-sm text-white" dir="ltr">
         © {year} Qalam Works. {t.footer.rights}

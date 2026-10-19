@@ -167,6 +167,18 @@ describe("print portal Jameel identity", () => {
     expect(portal?.getAttribute("data-print-waited-fonts")).toBe("true");
     expect(normalizeEditorFontFamily('"Jameel Noori Nastaleeq", serif')).toBe("Jameel Noori Nastaleeq");
   });
+
+  it("does not request the Jameel file when the printed document does not use it", () => {
+    document.body.innerHTML = `
+      <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-dir="rtl">
+        <div data-studio-print-surface>
+          <div class="qalam-editor-content"><span>ڈیفالٹ</span></div>
+        </div>
+      </div>
+    `;
+    const portal = mountDocumentPrintPortal();
+    expect(portal?.querySelector("style")?.textContent ?? "").not.toContain("jameel-noori-nastaleeq-400.woff2");
+  });
 });
 
 describe("Download PDF Jameel contract", () => {

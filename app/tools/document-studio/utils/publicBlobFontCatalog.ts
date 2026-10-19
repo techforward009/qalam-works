@@ -15,7 +15,7 @@ export const PUBLIC_BLOB_FONT_FAMILIES: readonly PublicBlobFontFamily[] = [
   // Keep the legacy file available for documents saved with Faiz; hide it from the picker.
   { id: "faiz-lahori", label: "Faiz Lahori Nastaleeq", regular: "Faiz-Lahori-Web.woff2", script: "urdu" },
   { id: "gulzar", label: "Gulzar", regular: "Gulzar-Regular.woff2", script: "urdu" },
-  { id: "nafees-nastaleeq", label: "Nafees Nastaleeq", regular: "NafeesNastaleeq.woff2", script: "urdu" },
+  { id: "nafees-nastaleeq", label: "Nafees Nastaleeq", regular: "NafeesNastaleeq-v1.02.woff2", script: "urdu" },
   { id: "sahel", label: "Sahel", regular: "Sahel.woff2", script: "persian", existingStudioId: "sahel" },
   { id: "scheherazade-new", label: "Scheherazade New", regular: "ScheherazadeNew-Medium.woff2", script: "arabic" },
   { id: "traditional-arabic", label: "Traditional Arabic", regular: "TraditionalArabic.woff2", bold: "TraditionalArabic-Bold.woff2", script: "arabic" },
@@ -42,7 +42,7 @@ const LOCALLY_HOSTED_FONT_FILES = new Set(["DigitalKhattIndoPakRegular.woff2"]);
 const R2_MIRRORED_FONT_FILES = new Set([
   "Alvi_Nastaleeq.woff2",
   "Gulzar-Regular.woff2",
-  "NafeesNastaleeq.woff2",
+  "NafeesNastaleeq-v1.02.woff2",
   "Sahel.woff2",
   "ScheherazadeNew-Medium.woff2",
   "jameel-noori-nastaleeq-400.woff2",

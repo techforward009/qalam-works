@@ -268,8 +268,9 @@ export function mountDocumentPrintPortal(): HTMLElement | null {
   });
   stripViewOnlyPagination(page);
   page.style.cssText = `width:${widthMm}mm;box-sizing:border-box;padding:0 ${rightMm}mm 0 ${leftMm}mm;background:#fff;min-height:0;`;
+  const needsJameel = source.innerHTML.includes("Jameel Noori Nastaleeq");
   const style = document.createElement("style");
-  style.textContent = `${studioJameelFontFaceCss()}\n${studioGulzarFontFaceCss()}\n${studioMehrFontFaceCss()}\n${documentPrintCss(widthMm, heightMm, topMm, bottomMm)}`;
+  style.textContent = `${needsJameel ? studioJameelFontFaceCss() + "\n" : ""}${studioGulzarFontFaceCss()}\n${studioMehrFontFaceCss()}\n${documentPrintCss(widthMm, heightMm, topMm, bottomMm)}`;
   portal.append(style, page);
   document.body.appendChild(portal);
   return portal;
