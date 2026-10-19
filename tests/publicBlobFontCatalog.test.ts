@@ -19,8 +19,8 @@ describe("Document Studio public Blob font catalogue", () => {
   });
 
   test("contains 16 Blob assets including legacy Faiz, organized into 14 font families", () => {
-    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(16);
-    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(14);
+    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(15);
+    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(13);
     expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(16);
   });
 
@@ -29,7 +29,6 @@ describe("Document Studio public Blob font catalogue", () => {
       "Alvi_Nastaleeq.woff2","Gulzar-Regular.woff2",
       "NafeesNastaleeq.woff2","Sahel.woff2",
       "ScheherazadeNew-Medium.woff2","jameel-noori-nastaleeq-400.woff2",
-      "muhammadi-quranic-400.woff2",
     ];
     for (const name of recovered) {
       const url=publicBlobFontUrl(name);

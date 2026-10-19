@@ -13,7 +13,6 @@ const ALL_TEN: Record<string, { size: number; sha256: string }> = {
   "Sahel.woff2": { size: 35460, sha256: "25e4a066c637948e01e12b7c8bf9e13afa188fad6949affedc6ddf2d307b31b0" },
   "ScheherazadeNew-Medium.woff2": { size: 147916, sha256: "67c5c24a178e7e3e1c1c6ca7095448e70da6f882bf7f41783a8085e7ba87269e" },
   "jameel-noori-nastaleeq-400.woff2": { size: 5554728, sha256: "d12978f4398f1f788d65fa7ccb872cf0e1c43aef89166816243e94487d9cee27" },
-  "muhammadi-quranic-400.woff2": { size: 220136, sha256: "ddcce6d3bd7dd026f6a0035040e71da3ddac669a470336459dc08045a43dd7fe" },
 };
 const BY_SIZE = new Map(Object.values(ALL_TEN).map(file => [file.size, file.sha256]));
 
@@ -40,7 +39,7 @@ function env() {
 }
 
 describe("Cloudflare owner-authorized original font Worker", () => {
-  it("maps each of ten exact uploaded object names, with proper font CORS", async () => {
+  it("maps each of nine public font objects, with proper font CORS", async () => {
     stubDigest();
     try {
       const context = env();
@@ -54,7 +53,7 @@ describe("Cloudflare owner-authorized original font Worker", () => {
         expect(response.headers.get("X-Qalam-Font-SHA256")).toBe(file.sha256);
         expect(context.FONT_BUCKET.get).toHaveBeenLastCalledWith(name);
       }
-      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(10);
+      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(9);
     } finally {
       vi.unstubAllGlobals();
     }
@@ -65,6 +64,8 @@ describe("Cloudflare owner-authorized original font Worker", () => {
       expect((await worker.fetch(req("/fonts/Gulzar-Regular.woff2"), {})).status).toBe(503);
       const context = env();
       for (const path of [
+        "/fonts/muhammadi-quranic-400.woff2",
+        "/owner-font/muhammadi-quranic-400.woff2",
         "/shards/ur/001.json.br", "/fonts/DigitalKhattIndoPakRegular.woff2",
         "/fonts/AdobeArabic-Regular.woff2", "/fonts/../private.json",
         "/fonts/Alvi_Nastaleeq.woff2?download=1", "/fonts/jameel-noori-nastaleeq-400.woff2/anything",

@@ -1,11 +1,9 @@
-import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import { quranMatchKey } from "../../tools/arabic-diacritics/quran/normalizeQuran";
 import type { QuranAyah } from "../../tools/arabic-diacritics/quran/types";
 import { JUZ_STARTS } from "./metadata";
 import { TANZIL_PAGE_STARTS } from "./tanzilPageMap";
 import { QURAN_LAYOUT_PROFILE } from "./profile";
-
-const END_SIGN = "\u06dd";
 
 const ZERO_WIDTH =
   /[\u0640\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/u;
@@ -31,7 +29,7 @@ export type SearchHit = {
   id: string;
 };
 
-const ayahs = ahmedgrafQuranReference.listAyahs();
+const ayahs = publicDigitalKhattQuranReference.listAyahs();
 
 const byIndex = ayahs;
 
@@ -49,65 +47,9 @@ const indexByAyah = new Map(
   ]),
 );
 
-/**
- * Extract the Bismillah prefix from the first Quran record.
- *
- * This is used only for visual splitting.
- * The source Quran text itself is never rewritten.
- */
-function bismillahPrefix(): string {
-  const first =
-    byIndex[0]?.text ?? "";
-
-  const at =
-    first.indexOf(
-      END_SIGN,
-    );
-
-  return (
-    at >= 0
-      ? first.slice(
-          0,
-          at,
-        )
-      : first
-  ).trim();
-}
-
-const BISMILLAH_PREFIX =
-  bismillahPrefix();
-
-export function displayPieces(
-  ayah: QuranAyah,
-): DisplayPiece[] {
-  if (
-    ayah.surah !== 1 &&
-    ayah.surah !== 9 &&
-    ayah.ayah === 1 &&
-    ayah.text.startsWith(
-      `${BISMILLAH_PREFIX} `,
-    )
-  ) {
-    return [
-      {
-        kind: "bismillah",
-        text: BISMILLAH_PREFIX,
-      },
-      {
-        kind: "body",
-        text: ayah.text.slice(
-          BISMILLAH_PREFIX.length,
-        ),
-      },
-    ];
-  }
-
-  return [
-    {
-      kind: "body",
-      text: ayah.text,
-    },
-  ];
+/** DigitalKhatt source verses have no embedded basmala prefix or ayah number. */
+export function displayPieces(ayah: QuranAyah): DisplayPiece[] {
+  return [{kind: "body", text: ayah.text}];
 }
 
 /**
@@ -195,7 +137,7 @@ function indexForPageStart(
  *
  * The page boundaries come from Tanzil metadata.
  *
- * The source Quran corpus remains ahmedgrafQuranReference.
+ * The source Quran corpus remains publicDigitalKhattQuranReference.
  * This file only maps existing ayahs into fixed page ranges.
  */
 function buildPages(): QuranPageRef[] {
@@ -382,7 +324,7 @@ function requireAyah(
   index: number;
 } | null {
   const found =
-    ahmedgrafQuranReference.getAyah(
+    publicDigitalKhattQuranReference.getAyah(
       surah,
       ayah,
     );

@@ -5,7 +5,6 @@ const MIRROR = "https://qalam-fonts-private-mirror.techforward009.workers.dev/fo
 const OLD = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/";
 const sources = {
   "app/globals.css": [
-    "muhammadi-quranic-400.woff2",
     "jameel-noori-nastaleeq-400.woff2",
     "NafeesNastaleeq.woff2",
     "Alvi_Nastaleeq.woff2",
@@ -14,7 +13,7 @@ const sources = {
     "ScheherazadeNew-Medium.woff2",
   ],
   "app/quran/QuranTranslationPage.tsx": ["Alvi_Nastaleeq.woff2"],
-  "app/quran/editions.ts": ["muhammadi-quranic-400.woff2"],
+  "app/quran/editions.ts": ["https://github.com/DigitalKhatt/indopakfont"],
   "app/tools/khateeb-studio/KhateebStudioContent.tsx": ["NafeesNastaleeq.woff2"],
   "app/components/knowledge/KnowledgeAssistant.tsx": ["NafeesNastaleeq.woff2"],
 };

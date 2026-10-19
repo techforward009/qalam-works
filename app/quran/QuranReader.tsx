@@ -1405,10 +1405,9 @@ function QuranPageSurface({
                               "clone",
                           }}
                         >
-                          {
-                            item.text
-                          }
+                          {item.text}
                         </span>
+                        <span aria-label={"آیت " + item.ayah} className="inline-block text-[0.68em] align-baseline mx-1" dir="rtl">۝{easternDigits(item.ayah)}</span>
                       </span>
                     ),
                   )}
@@ -1549,17 +1548,11 @@ function blocksFor(
       });
 
       blocks.push({
-        kind: "bismillah",
-        id: ayah.id,
-        surah:
-          ayah.surah,
-        ayah:
-          ayah.ayah,
-        text:
-          ayah.text,
-        anchor: true,
+        kind: "bismillah", id: "opening-basmalah", surah: 1,
+        ayah: 1, text: "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ", anchor: false,
       });
-
+      flow.push({ id: ayah.id, surah: ayah.surah, ayah: ayah.ayah,
+        text: ayah.text, anchor: true });
       continue;
     }
 
@@ -1570,9 +1563,13 @@ function blocksFor(
 
       blocks.push({
         kind: "surah",
-        surah:
-          ayah.surah,
+        surah: ayah.surah,
       });
+      if (ayah.surah !== 9) {
+        blocks.push({kind: "bismillah", id: "opening-" + ayah.id,
+          surah: ayah.surah, ayah: 1,
+          text: "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ", anchor: false});
+      }
     }
 
     if (

@@ -11,7 +11,7 @@ import { QURAN_READER_COPY } from "../reader/copy";
 import { useQuranKeyboardNavigation } from "../reader/keyboard";
 import { adjacentAyah } from "../reader/model";
 import { TANZIL_PAGE_STARTS } from "../reader/tanzilPageMap";
-import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import {
   cachedQpcHafsPage,
   loadQpcHafsPage,
@@ -253,7 +253,7 @@ export default function MadinahReader({
     }
 
     const result: Hit[] = [];
-    for (const item of ahmedgrafQuranReference.listAyahs()) {
+    for (const item of publicDigitalKhattQuranReference.listAyahs()) {
       const words = item.text.split(/\s+/).map(quranMatchKey).filter(Boolean);
       const matched = needles.length <= words.length && Array.from({ length: words.length - needles.length + 1 }, (_, i) => i)
         .some((i) => needles.every((needle, offset) => words[i + offset] === needle));

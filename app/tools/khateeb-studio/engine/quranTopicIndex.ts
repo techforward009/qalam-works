@@ -361,7 +361,7 @@ export function quranEvidenceForTopic(
         detailEn: row.noteEn,
         citationUr: row.refUr,
         citationEn: row.refEn,
-        providerId: "ahmedgraf-quran",
+        providerId: "digital-khatt-quran",
         arabic: ayah.text,
         quranLocation: { surah: row.surah, ayah: row.ayah },
         themesUr: [entry.aliases[0] ?? entry.id],

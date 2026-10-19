@@ -1,0 +1,15 @@
+@font-face {
+  font-family: "Owner Muhammadi Quranic";
+  src: url("/api/my/quran/font") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+.verses { direction: rtl; text-align: right; }
+.ayah {
+  font-family: "Owner Muhammadi Quranic", "Noto Naskh Arabic", serif;
+  font-size: clamp(1.55rem, 3vw, 2.2rem);
+  line-height: 2.6;
+  white-space: pre-wrap;
+  unicode-bidi: plaintext;
+}

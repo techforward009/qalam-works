@@ -345,7 +345,6 @@ const HIDDEN_EDITOR_FONT_IDS: ReadonlySet<FontId> = new Set([
   "traditional-arabic",
   "al-majeed-quranic",
   "asif-quranic",
-  "muhammadi-quranic",
   "al-qalam-quran-majeed",
 ]);
 

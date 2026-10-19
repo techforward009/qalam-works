@@ -1,5 +1,5 @@
 import { hadithTranslationFields, type HadithTranslationFields } from "./hadithTranslation";
-import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../arabic-diacritics/quran/publicDigitalKhattProvider";
 import { SPEAKER_EVIDENCE } from "./speakerEvidence";
 import {
   preferredIslamicDiscoveryProviders,
@@ -144,7 +144,7 @@ export function researchKhateebTopic(
 
       if (row.kind === "quran" && row.quranLocation) {
         arabic =
-          ahmedgrafQuranReference.getAyah(
+          publicDigitalKhattQuranReference.getAyah(
             row.quranLocation.surah,
             row.quranLocation.ayah,
           )?.text ?? "";

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { HAFS_AYAH_COUNTS } from "../app/tools/arabic-diacritics/quran/hafsCounts";
-import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../app/tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import { QURAN_SIMPLE_SHA256 } from "../app/tools/arabic-diacritics/quran/corpusIntegrity";
 import {
   adjacentAyah,
@@ -32,7 +32,7 @@ import {
   translationGlobalIndex,
 } from "../app/quran/reader/translationCorpus";
 
-const provider = ahmedgrafQuranReference;
+const provider = publicDigitalKhattQuranReference;
 
 describe("Quran reader", () => {
   test("ships the complete bilingual translation corpus behind a lazy translation tab", () => {
@@ -81,8 +81,8 @@ describe("Quran reader", () => {
     expect(reader).toContain("QuranTafsirPage");
   });
 
-  test("uses the existing ahmedgraf corpus without a second copy", () => {
-    expect(provider.getMetadata().sourceSha256).toBe(QURAN_SIMPLE_SHA256);
+  test("uses DigitalKhatt IndoPak corpus without normalizing its verses", () => {
+    expect(provider.getMetadata().referenceSource).toContain("risan/quran-json");
     expect(provider.listAyahs()).toHaveLength(6236);
     expect(SURAH_NAMES).toHaveLength(114);
     expect(HAFS_AYAH_COUNTS).toHaveLength(114);
@@ -149,7 +149,7 @@ describe("Quran reader", () => {
     const pause = provider.getAyah(2, 2);
     expect(fatiha && displayPieces(fatiha).map((piece) => piece.text).join("")).toBe(fatiha?.text);
     expect(displayPieces(fatiha!).some((piece) => piece.kind === "bismillah")).toBe(false);
-    expect(baqarah && displayPieces(baqarah)[0]?.kind).toBe("bismillah");
+    expect(baqarah && displayPieces(baqarah)[0]?.kind).toBe("body");
     expect(baqarah && displayPieces(baqarah).map((piece) => piece.text).join("")).toBe(baqarah?.text);
     expect(tawbah && displayPieces(tawbah).some((piece) => piece.kind === "bismillah")).toBe(false);
     expect(tawbah?.text.startsWith("بِسْمِ")).toBe(false);
@@ -180,7 +180,7 @@ describe("Quran reader", () => {
 
   test("PDMS Saleem is a local reference and is not bundled", () => {
     expect(QURAN_LAYOUT_PROFILE.pdmsBundled).toBe(false);
-    expect(selectQuranFont(false)).toEqual({ family: "Muhammadi Quranic", bundled: false, profile: "qalam-indopak-v1" });
+    expect(selectQuranFont(false)).toEqual({ family: "DigitalKhatt IndoPak", bundled: false, profile: "qalam-indopak-v1" });
     expect(selectQuranFont(true).bundled).toBe(false);
     expect(selectQuranFont(true).family).toBe("PDMS Saleem Quran");
     const files = readdirSync("app/quran", { recursive: true }).map(String);

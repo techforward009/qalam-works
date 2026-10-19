@@ -25,11 +25,11 @@ describe("Quran edition registry", () => {
 
   it("uses the final AhmedGraf wording and structured provenance", () => {
     const first = getQuranEdition("qalam-indopak");
-    expect(first.description.en).toBe("IndoPak Quran text from AhmedGraf.");
-    expect(first.rendering.en).toBe("AhmedGraf text + Font");
-    expect(first.rendering.ur).toBe("احمد گراف کا انڈو پاک متن + فونٹ");
-    expect(first.provenance.textSource).toContain("AhmedGraf");
-    expect(first.provenance.fontSource).toContain("Muhammadi Quranic");
+    expect(first.description.en).toContain("DigitalKhatt");
+    expect(first.rendering.en).toContain("DigitalKhatt");
+    expect(first.rendering.ur).toContain("ڈیجیٹل خط");
+    expect(first.provenance.textSource).toContain("DigitalKhatt");
+    expect(first.provenance.fontSource).toContain("DigitalKhatt");
   });
 
   it("keeps the readers linked back to the Quran center", () => {

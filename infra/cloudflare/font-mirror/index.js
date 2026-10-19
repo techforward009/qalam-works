@@ -14,7 +14,6 @@ const FONT_FILES = Object.freeze({
   "Sahel.woff2": { size: 35460, sha256: "25e4a066c637948e01e12b7c8bf9e13afa188fad6949affedc6ddf2d307b31b0" },
   "ScheherazadeNew-Medium.woff2": { size: 147916, sha256: "67c5c24a178e7e3e1c1c6ca7095448e70da6f882bf7f41783a8085e7ba87269e" },
   "jameel-noori-nastaleeq-400.woff2": { size: 5554728, sha256: "d12978f4398f1f788d65fa7ccb872cf0e1c43aef89166816243e94487d9cee27" },
-  "muhammadi-quranic-400.woff2": { size: 220136, sha256: "ddcce6d3bd7dd026f6a0035040e71da3ddac669a470336459dc08045a43dd7fe" },
 });
 const BASE_HEADERS = Object.freeze({
   "X-Content-Type-Options": "nosniff",
@@ -45,6 +44,20 @@ export default {
     if (request.method !== "GET" && request.method !== "HEAD") return denied(405);
     if (!env?.FONT_BUCKET) return denied(503);
     const url = new URL(request.url);
+    // Reject legacy public font URL before consulting the edge cache.
+    if (url.pathname === "/fonts/muhammadi-quranic-400.woff2") return denied(404);
+    if (url.pathname === "/owner-font/muhammadi-quranic-400.woff2") {
+      if (url.search || url.hash || !env.PRIVATE_FONT_ACCESS_SECRET ||
+          request.headers.get("Authorization") !== "Bearer " + env.PRIVATE_FONT_ACCESS_SECRET) return denied(404);
+      try {
+        const font = await env.FONT_BUCKET.get("muhammadi-quranic-400.woff2");
+        if (!font || font.size !== 220136) return denied(404);
+        const bytes = await new Response(font.body).arrayBuffer();
+        if (bytes.byteLength !== 220136 || !(await hasExpectedDigest(bytes, "ddcce6d3bd7dd026f6a0035040e71da3ddac669a470336459dc08045a43dd7fe"))) return denied(404);
+        return new Response(request.method === "HEAD" ? null : bytes, {status:200,
+          headers: {...BASE_HEADERS, "Content-Type":"font/woff2", "Cache-Control":"private, no-store", "X-Robots-Tag":"noindex"}});
+      } catch { return denied(404); }
+    }
     if (url.search || url.hash || !url.pathname.startsWith("/fonts/")) return denied(404);
     const filename = url.pathname.slice("/fonts/".length);
     if (!Object.prototype.hasOwnProperty.call(FONT_FILES, filename)) return denied(404);

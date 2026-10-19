@@ -1,0 +1,25 @@
+name: DigitalKhatt Quran Migration — No Deployment
+on:
+  push:
+    branches:
+      - feature/digital-khatt-public-owner-quran-20261019
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  tests:
+    if: github.head_ref == 'feature/digital-khatt-public-owner-quran-20261019' || github.ref_name == 'feature/digital-khatt-public-owner-quran-20261019'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Full Vitest suite
+        run: npm test
+      - name: Static TypeScript check
+        run: npx tsc --noEmit

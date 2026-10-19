@@ -12,7 +12,7 @@
  * It does not alter Quran text, normalization, search keys, or the source
  * Quran corpus.
  *
- * CURRENT FONT SELECTION: Muhammadi Quranic
+ * CURRENT FONT SELECTION: DigitalKhatt IndoPak
  * Selected for superior web rendering and mark positioning compared to Asif.
  */
 
@@ -24,10 +24,10 @@ export const QURAN_LAYOUT_PROFILE = {
 
   /**
    * Production Quran font.
-   * UPDATED: Muhammadi Quranic (Primary Choice)
-   * Reason: Better OpenType support for web browsers compared to Asif.
+   * UPDATED: DigitalKhatt IndoPak (OFL-1.1)
+   * Uses the DigitalKhatt IndoPak script's matching open font.
    */
-  productionFont: "Muhammadi Quranic",
+  productionFont: "DigitalKhattIndoPak",
 
   /**
    * Reference-only font placeholder.
@@ -60,7 +60,7 @@ export const QURAN_LAYOUT_PROFILE = {
 
   /**
    * Quran line rhythm.
-   * Optimized for Muhammadi/Al Qalam fonts.
+   * DigitalKhatt IndoPak typography.
    */
   lineHeight: 2.2,
 
@@ -81,12 +81,9 @@ export const QURAN_LAYOUT_PROFILE = {
  * Quran Font Stack
  *
  * Priority Order (UPDATED):
- * 1. Muhammadi Quranic (Primary - Best Web Rendering)
- * 2. Al Qalam Quran Majeed (Fallback 1 - Excellent Alternative)
- * 3. Asif Quranic (Fallback 2 - Desktop preferred)
- * 4. System Fonts
- *
- * The fallback order ensures readability even if the primary font fails to load.
+ * 1. DigitalKhatt IndoPak (local OFL-1.1 font)
+ * 2. Local Digital Khatt regular and standard Naskh fallbacks.
+ * Never load a restricted public Muhammadi asset.
  */
 export const QURAN_FONT_STACK =
-  '"Muhammadi Quranic", "Al Qalam Quran Majeed", "Asif Quranic", var(--font-naskh), "Noto Naskh Arabic", var(--font-amiri), Amiri, serif';
+  '"DigitalKhatt Indo-Pak", "Digital Khatt IndoPak Book", "Noto Naskh Arabic", serif';

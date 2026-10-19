@@ -1,5 +1,5 @@
 import { quranTranslationFor, QURAN_TRANSLATION_SOURCES } from "./quranTranslationProvider";
-import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../arabic-diacritics/quran/publicDigitalKhattProvider";
 import type { SermonLocale } from "./sermonPrep";
 import { pureKhateebUrdu } from "./urduPurity";
 import {
@@ -1677,7 +1677,7 @@ export function buildDossierText(
           "",
           ur ? item.refUr : item.refEn,
           item.quranLocation
-            ? ahmedgrafQuranReference.getAyah(item.quranLocation.surah, item.quranLocation.ayah)?.text ?? ""
+            ? publicDigitalKhattQuranReference.getAyah(item.quranLocation.surah, item.quranLocation.ayah)?.text ?? ""
             : "",
           ...(item.quranLocation && quranTranslationFor(item.quranLocation.surah, item.quranLocation.ayah, locale)
             ? [

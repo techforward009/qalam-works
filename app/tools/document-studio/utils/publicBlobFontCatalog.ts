@@ -23,7 +23,6 @@ export const PUBLIC_BLOB_FONT_FAMILIES: readonly PublicBlobFontFamily[] = [
   { id: "al-qalam-quran-majeed", label: "Al Qalam Quran Majeed", regular: "al-qalam-quran-majeed-web-regular.woff2", script: "quran" },
   { id: "asif-quranic", label: "Asif Quranic", regular: "asif-quranic-400.woff2", script: "quran" },
   { id: "jameel-noori-nastaleeq", label: "Jameel Noori Nastaleeq", regular: "jameel-noori-nastaleeq-400.woff2", script: "urdu", existingStudioId: "jameel-noori-nastaleeq" },
-  { id: "muhammadi-quranic", label: "Muhammadi Quranic", regular: "muhammadi-quranic-400.woff2", script: "quran" },
 ] as const;
 
 export const PUBLIC_BLOB_FONT_FILES: readonly string[] =
