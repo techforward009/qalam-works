@@ -12,7 +12,7 @@ import {
   type DocumentStudioSettings,
 } from "./documentSettings";
 import { defaultDocumentTitle, sanitizeDocumentTitle } from "./documentTitle";
-import { migrateAlviDocumentContent, storedRecordUsesAlvi } from "./fontRegistry";
+import { migrateAlviDocumentContent, QURAN_FONT_FALLBACK_FAMILY, isRemovedQuranFont, removedQuranFontReplacement, storedRecordUsesAlvi } from "./fontRegistry";
 
 export const DOCUMENT_LIBRARY_SCHEMA_VERSION = 1 as const;
 export const LEGACY_DRAFT_STORAGE_KEY = "qalam-document-studio-draft";
@@ -82,6 +82,35 @@ export function openedDocumentRecord(raw: unknown): { record: DocumentRecord | n
   return { record, persist: Boolean(record && storedRecordUsesAlvi(raw)) };
 }
 
+function plainText(node: DocNode | undefined): string {
+  if (!node) return "";
+  return (node.text ?? "") + (node.content ?? []).map(plainText).join("");
+}
+
+export function withRemovedQuranDefaults(
+  settings: DocumentStudioSettings,
+  content: DocNode,
+  rawSettings: unknown,
+): DocumentStudioSettings {
+  const typography = rawSettings && typeof rawSettings === "object"
+    ? (rawSettings as { typography?: { defaultRtlFontId?: unknown; defaultLtrFontId?: unknown } }).typography
+    : undefined;
+  const rtl = isRemovedQuranFont(typography?.defaultRtlFontId);
+  const ltr = isRemovedQuranFont(typography?.defaultLtrFontId);
+  if (!rtl && !ltr) return settings;
+  const fontId = removedQuranFontReplacement(plainText(content)) === QURAN_FONT_FALLBACK_FAMILY
+    ? "muhammadi-quranic"
+    : "scheherazade-new";
+  return {
+    ...settings,
+    typography: {
+      ...settings.typography,
+      ...(rtl ? { defaultRtlFontId: fontId } : {}),
+      ...(ltr ? { defaultLtrFontId: fontId } : {}),
+    },
+  };
+}
+
 export function normalizeDocumentRecord(raw: unknown, now = Date.now()): DocumentRecord | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
@@ -94,7 +123,7 @@ export function normalizeDocumentRecord(raw: unknown, now = Date.now()): Documen
     id: o.id,
     title,
     content,
-    documentSettings: parseDocumentSettings(o.documentSettings),
+    documentSettings: withRemovedQuranDefaults(parseDocumentSettings(o.documentSettings), content, o.documentSettings),
     createdAt,
     updatedAt,
     schemaVersion: 1,
@@ -102,11 +131,15 @@ export function normalizeDocumentRecord(raw: unknown, now = Date.now()): Documen
 }
 
 export function createDocumentRecord(input: DocumentWriteInput = {}, now = Date.now()): DocumentRecord {
+  const content = replaceRetiredAlviContent(input.content, emptyDocumentContent());
+  const documentSettings = input.documentSettings
+    ? withRemovedQuranDefaults(parseDocumentSettings(input.documentSettings), content, input.documentSettings)
+    : defaultDocumentSettings();
   return {
     id: createDocumentId(),
     title: sanitizeDocumentTitle(input.title) || defaultDocumentTitle(false),
-    content: replaceRetiredAlviContent(input.content, emptyDocumentContent()),
-    documentSettings: input.documentSettings ? parseDocumentSettings(input.documentSettings) : defaultDocumentSettings(),
+    content,
+    documentSettings,
     createdAt: now,
     updatedAt: now,
     schemaVersion: 1,
@@ -145,12 +178,13 @@ export function createMemoryDocumentLibrary(seed: DocumentRecord[] = []): Docume
     async updateDocument(id, patch) {
       const current = records.get(id);
       if (!current) throw new Error(`Document not found: ${id}`);
+      const content = patch.content !== undefined ? replaceRetiredAlviContent(patch.content, current.content) : current.content;
       const next: DocumentRecord = {
         ...current,
         title: patch.title !== undefined ? sanitizeDocumentTitle(patch.title) || current.title : current.title,
-        content: patch.content !== undefined ? replaceRetiredAlviContent(patch.content, current.content) : current.content,
+        content,
         documentSettings: patch.documentSettings
-          ? parseDocumentSettings(patch.documentSettings)
+          ? withRemovedQuranDefaults(parseDocumentSettings(patch.documentSettings), content, patch.documentSettings)
           : current.documentSettings,
         updatedAt: Date.now(),
         schemaVersion: 1,
@@ -231,15 +265,14 @@ export async function migrateLegacyDraftIfNeeded(
     content = parsed;
   }
 
-  let settings = options?.settings ?? defaultDocumentSettings();
-  if (settingsRaw) {
-    settings = parseDocumentSettings(JSON.parse(settingsRaw));
-  }
+  const rawSettings = settingsRaw
+    ? JSON.parse(settingsRaw) as DocumentStudioSettings
+    : options?.settings;
 
   const record = await library.createDocument({
     title: sanitizeDocumentTitle(titleRaw) || options?.defaultTitle || defaultDocumentTitle(false),
     content,
-    documentSettings: settings,
+    ...(rawSettings ? { documentSettings: rawSettings } : {}),
   });
 
   if (library.durability === "memory") return record;

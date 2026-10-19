@@ -217,6 +217,57 @@ describe("document library storage", () => {
     expect(again?.updatedAt).toBe(updatedAt);
   });
 
+  it("opens saved Asif and Al Qalam text as Muhammadi only when the text is Quran", async () => {
+    const updatedAt = 1_700_000_200_000;
+    const quran = {
+      id: "old-asif",
+      title: "Quran",
+      content: {
+        type: "doc",
+        content: [{
+          type: "paragraph",
+          content: [
+            { type: "text", text: "بِسْمِ\u06D6", marks: [{ type: "textStyle", attrs: { fontFamily: "Asif Quranic" } }] },
+            { type: "text", text: "جمیل", marks: [{ type: "textStyle", attrs: { fontFamily: "Jameel Noori Nastaleeq" } }] },
+          ],
+        }],
+      },
+      documentSettings: {
+        ...defaultDocumentSettings(),
+        typography: { ...defaultDocumentSettings().typography, defaultRtlFontId: "asif-quranic" },
+      },
+      createdAt: updatedAt - 1000,
+      updatedAt,
+      schemaVersion: 1 as const,
+    };
+    const opened = await createMemoryDocumentLibrary([quran as unknown as DocumentRecord]).getDocument("old-asif");
+    expect(opened?.content.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Muhammadi Quranic");
+    expect(opened?.content.content?.[0].content?.[1].marks?.[0].attrs?.fontFamily).toBe("Jameel Noori Nastaleeq");
+    expect(opened?.documentSettings.typography.defaultRtlFontId).toBe("muhammadi-quranic");
+    expect(opened?.updatedAt).toBe(updatedAt);
+
+    const prose = {
+      ...quran,
+      id: "old-qalam",
+      content: {
+        type: "doc",
+        content: [{
+          type: "paragraph",
+          content: [
+            { type: "text", text: "عادی عربی", marks: [{ type: "textStyle", attrs: { fontFamily: "Al Qalam Quran Majeed" } }] },
+          ],
+        }],
+      },
+      documentSettings: {
+        ...defaultDocumentSettings(),
+        typography: { ...defaultDocumentSettings().typography, defaultRtlFontId: "al-qalam-quran-majeed" },
+      },
+    };
+    const loaded = await createMemoryDocumentLibrary([prose as unknown as DocumentRecord]).getDocument("old-qalam");
+    expect(loaded?.content.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Scheherazade New");
+    expect(loaded?.documentSettings.typography.defaultRtlFontId).toBe("scheherazade-new");
+  });
+
   it("does not rewrite prose that merely mentions Alvi Nastaleeq", async () => {
     const library = createMemoryDocumentLibrary();
     const created = await library.createDocument({

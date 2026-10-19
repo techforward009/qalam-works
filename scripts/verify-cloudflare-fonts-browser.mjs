@@ -1,5 +1,6 @@
 /**
- * Browser validation for the owner's nine Cloudflare R2 font files.
+ * Browser validation for the allowlisted Cloudflare R2 font files.
+ * NafeesNastaleeq.woff2 and NafeesNastaleeq-Web.woff2 are intentionally absent.
  * Does not rely on browser cache, Vercel Preview sign-in or a public R2 bucket.
  * Requires Google Chrome from the GitHub Ubuntu runner and @playwright/test.
  */
@@ -8,8 +9,7 @@ import { chromium } from "@playwright/test";
 const fonts = [
   ["muhammadi-quranic-400.woff2","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"],
   ["jameel-noori-nastaleeq-400.woff2","قلم ورکس اردو ترجمہ"],
-  ["NafeesNastaleeq.woff2","اردو کتاب"],
-  ["NafeesNastaleeq-Web.woff2","اردو کتاب"],
+  ["NafeesNastaleeq-v1.02.woff2","اردو کتاب"],
   ["Gulzar-Regular.woff2","عنوان گلزار"],
   ["Sahel.woff2","کتاب فارسی"],
   ["ScheherazadeNew-Medium.woff2","الْقُرْآنُ الْكَرِيمُ"],
@@ -34,7 +34,7 @@ try {
     },{filename,text,index});
     console.log("PAINT-READY "+result.filename+": "+result.status+" ("+result.matched+" matched)");
   }
-  console.log("All nine owner-uploaded original Cloudflare fonts loaded into Chromium FontFaceSet.");
+  console.log("Allowlisted Cloudflare fonts loaded into Chromium FontFaceSet: "+fonts.length);
 } finally {
   await browser.close();
 }

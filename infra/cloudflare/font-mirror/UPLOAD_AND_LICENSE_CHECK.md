@@ -48,10 +48,13 @@ Version 1.02, manufacturer CRULP, designer Mr. Jamil-ur-Rehman, licence name ID 
 kept, licence URL `http://crulp.org/software/license/Nafees_Nastaleeq_License.html`.
 The generated WOFF2 is `NafeesNastaleeq-v1.02.woff2`, 147,664 bytes, sha256
 `0ded94076db53a8be209e5f2745a58eb244ead9a79ebc0e98a15750b2ca1feaf`. Conversion
-did not subset or rename glyphs. The old `NafeesNastaleeq.woff2` allowlist entry
-(129,624 bytes) is unchanged so the live ten-font check still passes. This
-environment did not upload the v1.02 object to R2 and did not redeploy the Worker.
-Until that upload, browsers use `/fonts/NafeesNastaleeq-v1.02.woff2`. Jameel
+did not subset or rename glyphs. `NafeesNastaleeq.woff2` (v1.00, 129,624 bytes) and
+`NafeesNastaleeq-Web.woff2` (23,692 bytes) are no longer on the Worker allowlist.
+The Worker returns 404 for those names. Delete these R2 objects separately:
+`NafeesNastaleeq.woff2` and `NafeesNastaleeq-Web.woff2`. Delete these Vercel Blob
+objects separately: `asif-quranic-400.woff2` and
+`al-qalam-quran-majeed-web-regular.woff2`. This environment did not delete
+remote objects. Jameel
 Noori Nastaleeq was not rewritten; its "Free Of Charge For Urdu Lovers" name-table
 note is untouched because the binary was not opened or re-encoded.
 
@@ -63,7 +66,7 @@ stage. The Worker reads the exact original bytes from R2 and never edits them.
 
 1. `https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/muhammadi-quranic-400.woff2` — should return 200 font/woff2.
 2. `.../fonts/jameel-noori-nastaleeq-400.woff2` — same.
-3. `.../fonts/NafeesNastaleeq.woff2` — same.
+3. `.../fonts/NafeesNastaleeq-v1.02.woff2` — same. `.../fonts/NafeesNastaleeq.woff2` and `.../fonts/NafeesNastaleeq-Web.woff2` must return 404.
 4. `.../fonts/Alvi_Nastaleeq.woff2` — same.
 5. `.../fonts/Gulzar-Regular.woff2` — same.
 6. `.../shards/ur/001.json.br` — must return 404, NOT tafsir bytes.

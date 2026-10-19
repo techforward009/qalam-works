@@ -2,10 +2,9 @@ import { describe, expect, test } from "vitest";
 import { PUBLIC_BLOB_FONT_FAMILIES, PUBLIC_BLOB_FONT_FILES, publicBlobFontUrl, isApprovedPublicBlobFontUrl } from "../app/tools/document-studio/utils/publicBlobFontCatalog";
 
 describe("Document Studio public Blob font catalogue", () => {
-  test("resolves the owner-supplied Blob URL and rejects non-approved names", () => {
-    const url = publicBlobFontUrl("asif-quranic-400.woff2");
-    expect(url).toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/asif-quranic-400.woff2");
-    expect(isApprovedPublicBlobFontUrl(url)).toBe(true);
+  test("resolves the owner-supplied Worker URL and rejects removed names", () => {
+    expect(() => publicBlobFontUrl("asif-quranic-400.woff2")).toThrow("Unapproved Document Studio font asset");
+    expect(() => publicBlobFontUrl("al-qalam-quran-majeed-web-regular.woff2")).toThrow("Unapproved Document Studio font asset");
     expect(publicBlobFontUrl("MehrNastaliqWeb.woff2")).toBe(
       "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2",
     );
@@ -17,10 +16,10 @@ describe("Document Studio public Blob font catalogue", () => {
     expect(() => publicBlobFontUrl("al-majeed-quranic-400.woff2")).toThrow("Unapproved Document Studio font asset");
   });
 
-  test("contains 10 catalogued assets including Mehr, organized into 10 font families", () => {
-    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(10);
-    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(10);
-    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(10);
+  test("contains 8 catalogued assets including Mehr, organized into 8 font families", () => {
+    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(8);
+    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(8);
+    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(8);
     for (const removed of [
       "AdobeArabic-Regular.woff2",
       "AdobeArabic-Bold.woff2",
@@ -28,6 +27,8 @@ describe("Document Studio public Blob font catalogue", () => {
       "TraditionalArabic-Bold.woff2",
       "Faiz-Lahori-Web.woff2",
       "al-majeed-quranic-400.woff2",
+      "asif-quranic-400.woff2",
+      "al-qalam-quran-majeed-web-regular.woff2",
     ]) {
       expect(PUBLIC_BLOB_FONT_FILES).not.toContain(removed);
     }
@@ -46,11 +47,12 @@ describe("Document Studio public Blob font catalogue", () => {
       expect(isApprovedPublicBlobFontUrl(url)).toBe(true);
       expect(isApprovedPublicBlobFontUrl("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/"+name)).toBe(false);
     }
-    expect(publicBlobFontUrl("asif-quranic-400.woff2"))
-      .toBe("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/asif-quranic-400.woff2");
     expect(PUBLIC_BLOB_FONT_FILES).toContain("NafeesNastaleeq-v1.02.woff2");
     expect(PUBLIC_BLOB_FONT_FILES).not.toContain("NafeesNastaleeq.woff2");
+    expect(PUBLIC_BLOB_FONT_FILES).not.toContain("asif-quranic-400.woff2");
     expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "faiz-lahori")).toBeUndefined();
+    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "asif-quranic")).toBeUndefined();
+    expect(PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === "al-qalam-quran-majeed")).toBeUndefined();
   });
 
   test("serves Mehr Nastaliq Web from the Cloudflare Worker, not Vercel Blob", () => {

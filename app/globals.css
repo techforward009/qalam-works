@@ -228,24 +228,8 @@ textarea {
 }
 
 @font-face {
-  font-family: "Al Qalam Quran Majeed";
-  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/al-qalam-quran-majeed-web-regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
   font-family: "Muhammadi Quranic";
   src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/muhammadi-quranic-400.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Asif Quranic";
-  src: url("https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/asif-quranic-400.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;

@@ -586,7 +586,7 @@ export default function KhateebStudioContent({
         }
 
         .khateeb-muhammadi-quranic {
-          font-family: "Muhammadi Quranic", "Al Qalam Quran Majeed", var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif !important;
+          font-family: "Muhammadi Quranic", var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif !important;
           font-size: 1.08em;
           line-height: 1.85;
           unicode-bidi: isolate;

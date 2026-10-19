@@ -21,8 +21,6 @@ export type FontId =
   | "gulzar"
   | "nafees-nastaleeq"
   | "scheherazade-new"
-  | "al-qalam-quran-majeed"
-  | "asif-quranic"
   | "muhammadi-quranic";
 
 export type Direction = "rtl" | "ltr";
@@ -336,9 +334,7 @@ const HIDDEN_EDITOR_FONT_IDS: ReadonlySet<FontId> = new Set([
   "default",
   "noto-nastaliq-urdu",
   "nafees-nastaleeq",
-  "asif-quranic",
   "muhammadi-quranic",
-  "al-qalam-quran-majeed",
 ]);
 
 export function listEditorFonts(): StudioFontDefinition[] {
@@ -383,6 +379,25 @@ const REMOVED_UNLICENSED_FONT_FAMILIES = new Set([
   "Faiz Lahori",
 ]);
 export const REMOVED_FONT_FALLBACK_FAMILY = "Scheherazade New";
+export const QURAN_FONT_FALLBACK_FAMILY = "Muhammadi Quranic";
+
+/** Asif Quranic and Al Qalam Quran Majeed are not licensed for this site. */
+const REMOVED_QURAN_FONT_IDS = new Set(["asif-quranic", "al-qalam-quran-majeed"]);
+const REMOVED_QURAN_FONT_FAMILIES = new Set(["Asif Quranic", "Al Qalam Quran Majeed"]);
+const QURAN_TEXT_SIGNS = /[\u0615-\u0617\u06D6-\u06ED\u08D3-\u08FF]/u;
+
+export function isRemovedQuranFont(raw: unknown): boolean {
+  if (typeof raw !== "string") return false;
+  const trimmed = raw.trim();
+  if (REMOVED_QURAN_FONT_IDS.has(trimmed)) return true;
+  const first = trimmed.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";
+  return REMOVED_QURAN_FONT_FAMILIES.has(first);
+}
+
+/** Quranic annotation signs keep Muhammadi Quranic. Other saved text uses Scheherazade New. */
+export function removedQuranFontReplacement(text: string): string {
+  return QURAN_TEXT_SIGNS.test(text) ? QURAN_FONT_FALLBACK_FAMILY : REMOVED_FONT_FALLBACK_FAMILY;
+}
 
 export function isRemovedUnlicensedFont(raw: unknown): boolean {
   if (typeof raw !== "string") return false;
@@ -392,8 +407,9 @@ export function isRemovedUnlicensedFont(raw: unknown): boolean {
   return REMOVED_UNLICENSED_FONT_FAMILIES.has(first);
 }
 
-function retiredFontReplacement(raw: unknown): string | null {
+function retiredFontReplacement(raw: unknown, text = ""): string | null {
   if (isRetiredAlviFont(raw)) return "Mehr Nastaliq Web";
+  if (isRemovedQuranFont(raw)) return removedQuranFontReplacement(text);
   if (isRemovedUnlicensedFont(raw)) return REMOVED_FONT_FALLBACK_FAMILY;
   return null;
 }
@@ -402,7 +418,7 @@ function retiredFontReplacement(raw: unknown): string | null {
 export function migrateAlviDocumentContent<T extends DocNode>(doc: T): T {
   const walk = (node: DocNode): DocNode => {
     const marks = node.marks?.map((mark) => {
-      const replacement = retiredFontReplacement(mark.attrs?.fontFamily);
+      const replacement = retiredFontReplacement(mark.attrs?.fontFamily, node.text ?? "");
       if (!replacement) return mark;
       return { ...mark, attrs: { ...mark.attrs, fontFamily: replacement } };
     });
@@ -420,7 +436,7 @@ export function migrateAlviDocumentContent<T extends DocNode>(doc: T): T {
 }
 
 export function storedRecordUsesAlvi(raw: unknown): boolean {
-  if (isRetiredAlviFont(raw) || isRemovedUnlicensedFont(raw)) return true;
+  if (isRetiredAlviFont(raw) || isRemovedUnlicensedFont(raw) || isRemovedQuranFont(raw)) return true;
   if (!raw || typeof raw !== "object") return false;
   const record = raw as {
     content?: DocNode;
@@ -431,6 +447,9 @@ export function storedRecordUsesAlvi(raw: unknown): boolean {
     return true;
   }
   if (isRemovedUnlicensedFont(typography?.defaultRtlFontId) || isRemovedUnlicensedFont(typography?.defaultLtrFontId)) {
+    return true;
+  }
+  if (isRemovedQuranFont(typography?.defaultRtlFontId) || isRemovedQuranFont(typography?.defaultLtrFontId)) {
     return true;
   }
   const walk = (node: DocNode | undefined): boolean => {
@@ -450,6 +469,9 @@ export function resolveEditorFontFamily(
 
   if (isRetiredAlviFont(requested)) {
     return resolveEditorFontFamily("Mehr Nastaliq Web", globalDir);
+  }
+  if (isRemovedQuranFont(requested)) {
+    return resolveEditorFontFamily(REMOVED_FONT_FALLBACK_FAMILY, globalDir);
   }
   if (isRemovedUnlicensedFont(requested)) {
     return resolveEditorFontFamily(REMOVED_FONT_FALLBACK_FAMILY, globalDir);
@@ -542,6 +564,7 @@ export function studioMehrFontFaceCss(): string {
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */
 export function normalizeEditorFontFamily(raw: unknown): string {
   if (isRetiredAlviFont(raw)) return "Mehr Nastaliq Web";
+  if (isRemovedQuranFont(raw)) return REMOVED_FONT_FALLBACK_FAMILY;
   if (isRemovedUnlicensedFont(raw)) return REMOVED_FONT_FALLBACK_FAMILY;
   if (typeof raw !== "string") return "";
   const first = raw.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";

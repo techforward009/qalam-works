@@ -9,6 +9,7 @@ import {
   openedDocumentRecord,
   replaceRetiredAlviContent,
   sortDocumentsNewestFirst,
+  withRemovedQuranDefaults,
   type DocumentLibrary,
   type DocumentRecord,
   type DocumentWriteInput,
@@ -88,15 +89,17 @@ export async function createIndexedDBDocumentLibrary(): Promise<DocumentLibrary>
     async updateDocument(id, patch) {
       const current = normalizeDocumentRecord(await withStore("readonly", (store) => store.get(id)));
       if (!current) throw new Error(`Document not found: ${id}`);
+      const content = patch.content !== undefined ? replaceRetiredAlviContent(patch.content, current.content) : current.content;
+      const documentSettings = patch.documentSettings
+        ? (storedRecordUsesAlvi({ documentSettings: patch.documentSettings, content })
+          ? withRemovedQuranDefaults(parseDocumentSettings(patch.documentSettings), content, patch.documentSettings)
+          : patch.documentSettings)
+        : current.documentSettings;
       const next: DocumentRecord = {
         ...current,
         title: patch.title !== undefined ? sanitizeDocumentTitle(patch.title) || current.title : current.title,
-        content: patch.content !== undefined ? replaceRetiredAlviContent(patch.content, current.content) : current.content,
-        documentSettings: patch.documentSettings
-          ? (storedRecordUsesAlvi({ documentSettings: patch.documentSettings })
-            ? parseDocumentSettings(patch.documentSettings)
-            : patch.documentSettings)
-          : current.documentSettings,
+        content,
+        documentSettings,
         updatedAt: Date.now(),
         schemaVersion: 1,
       };
