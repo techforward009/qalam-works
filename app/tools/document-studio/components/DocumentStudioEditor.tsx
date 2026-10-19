@@ -107,6 +107,7 @@ import {
   saveDocumentViewMode,
   loadDocumentZoom,
   saveDocumentZoom,
+  ZOOM_STORAGE_KEY,
   loadRulerVisible,
   saveRulerVisible,
   loadRulerUnit,
@@ -311,6 +312,15 @@ export default function DocumentStudioEditor() {
   const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [zoom, setZoomState] = useState<DocumentZoom>(() => loadDocumentZoom());
+  // On first visit, make a full page readable on narrow screens without
+  // overwriting an explicit zoom saved by the reader.
+  useEffect(() => {
+    if (window.innerWidth >= 820) return;
+    try {
+      if (window.localStorage.getItem(ZOOM_STORAGE_KEY) !== null) return;
+    } catch { /* Continue with an appropriate responsive default. */ }
+    setZoomState("fit-width");
+  }, []);
   const [rulerVisible, setRulerVisibleState] = useState(() => loadRulerVisible());
   const [rulerUnit, setRulerUnitState] = useState<RulerUnit>(() => loadRulerUnit());
   const [findQuery, setFindQuery] = useState("");

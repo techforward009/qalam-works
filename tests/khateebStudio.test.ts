@@ -88,7 +88,7 @@ describe("Khateeb Studio hadith translation separation", () => {
 
 describe("Khateeb Studio Qur'an translations", () => {
   test("uses the user-supplied Najafi and Qara'i translations separately from commentary", () => {
-    expect(quranTranslationCoverageCount()).toBe(71);
+    expect(quranTranslationCoverageCount()).toBe(80); // 9 additional distinct Ghaflah verses, sourced from canonical published chunks
     expect(quranTranslationFor(17, 23, "ur")).toContain("والدین کے ساتھ نیکی");
     expect(quranTranslationFor(17, 23, "en")).toContain("kindness to parents");
     expect(QURAN_TRANSLATION_SOURCES.ur.translatorUr).toContain("محسن علی نجفی");
@@ -269,7 +269,7 @@ describe("Khateeb Studio scholar corpus foundation", () => {
       "talib-aalmi-07-knowledge-power-reform",
     ]));
     expect(TALIB_JOHARI_INSANIYAT_EVIDENCE[6]?.sourceLabelUr).toContain("صفحات 94 تا 108");
-    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[6]?.sourceLabelUr).toContain("ابتدائی صفحات scan میں موجود نہیں");
+    expect(TALIB_JOHARI_ASAS_ADAMIYAT_EVIDENCE[6]?.sourceLabelUr).toContain("ابتدائی صفحات عکس میں موجود نہیں");
     expect(TALIB_JOHARI_AALMI_MUASHRA_EVIDENCE[6]?.sourceLabelUr).toContain("صفحات 123 تا 129");
   });
 
@@ -975,7 +975,7 @@ describe("Khateeb Studio guided workflow", () => {
   test("offers a direct print / PDF action for topic and occasion preparation", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     expect(studio).toContain("window.print()");
-    expect(studio).toContain("مجلس پرنٹ کریں / PDF محفوظ کریں");
+    expect(studio).toContain("مجلس چھاپیں / پی ڈی ایف محفوظ کریں");
     expect(studio).toContain("@media print");
     expect(studio).toContain('id="khateeb-print-area"');
     expect(studio).toContain("khateeb-no-print");

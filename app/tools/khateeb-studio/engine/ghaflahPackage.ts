@@ -113,6 +113,13 @@ export const GHAF_LAH_TOPIC: TopicPrep = {
       "detailUr": "مکتوب خطاب: غفلت کے مقامات سے اجتناب، قلب و عقل کی توجہ، قرآن میں غفلت کی علامتیں۔",
       "detailEn": "Published transcript on places of heedlessness, attentive use of understanding and Qur'anic symptoms.",
       "url": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
+    },
+    {
+      "labelUr": "آیت اللہ سید محمدمہدی میرباقری — ذکر اور غفلت",
+      "labelEn": "Ayatollah Muhammad Mahdi Mirbaqeri — Remembrance and heedlessness",
+      "detailUr": "حوزۂ قم کی رپورٹ میں غفلت اور ذکر کے موضوع پر ان کی تقریر کا خلاصہ شائع ہوا ہے۔ مکمل اصل تقریر کی ماخذی جانچ باقی ہے؛ اس رپورٹ کو براہِ راست مکتوب تقریر نہ سمجھا جائے۔",
+      "detailEn": "A seminary report summarizes a talk on remembrance and heedlessness; the full transcript has not been independently verified.",
+      "url": "https://www.neshasteasatid.com/node/3540"
     }
   ],
   "anglesUr": [
@@ -362,111 +369,33 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
       "explanationUr": "اختتام خوف اور امید کے توازن کے ساتھ: آج ایک قابلِ عمل تبدیلی طے کرو۔",
       "explanationEn": "Awaken, slow your haste, prepare yourself, remain alert and remember the grave toward which you travel.",
       "sourceUrl": "https://al-islam.org/ghurar-al-hikam-wa-durar-al-kalim-exalted-aphorisms-and-pearls-speech/negligence"
+    },
+    {
+      "id": "ghaflah-baqir-salat",
+      "kind": "hadith",
+      "refUr": "امام محمد باقرؑ — وقت پر نماز",
+      "refEn": "Imam al-Baqir — timely prayer",
+      "sourceArabicMarked": "أيّما مُؤمِنٍ حافَظَ علَى الصَّلواتِ المَفروضَةِ فَصَلاّها لِوَقتِها فَلَيسَ هذا مِن الغافِلينَ.",
+      "sourceRefUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۰؛ اس میں الکافی، جلد ۳، صفحہ ۲۷۰، حدیث ۱۴ کا حوالہ درج ہے۔",
+      "sourceRefEn": "Mizan al-Hikmah, Negligence, entry 10; cites al-Kafi, vol. 3, p. 270, no. 14.",
+      "explanationUr": "یہ بیان نماز کے وقت اور فرض کی پابندی کو غفلت کے مقابلے میں ایک عملی معیار بناتا ہے۔ شرعی صحت اور حضورِ قلب کے تمام احکام اس مختصر عبارت سے اخذ نہ کیے جائیں۔",
+      "explanationEn": "Prayer at its appointed time is a practical sign of care; distinguish it from separate questions of legal validity and inward devotion.",
+      "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence"
+    },
+    {
+      "id": "ghaflah-ali-taghaful",
+      "kind": "hadith",
+      "refUr": "امیرالمؤمنین علیؑ — تغافل اور درگزر",
+      "refEn": "Imam Ali — ethical overlooking",
+      "sourceArabicMarked": "إنَّ العاقِلَ نِصفُهُ احتِمالٌ، ونِصفُهُ تَغافُلٌ.",
+      "sourceRefUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۷؛ غرر الحکم، حدیث ۲۳۷۸ کا حوالہ۔",
+      "sourceRefEn": "Mizan al-Hikmah, Negligence, entry 17; cites Ghurar al-Hikam no. 2378.",
+      "explanationUr": "«تغافل» کسی کی معمولی خطا سے دانستہ چشم پوشی ہے۔ اسے ظلم، استحصال، بدعنوانی یا کسی کے حق کو دبانے کی اجازت نہ سمجھا جائے۔",
+      "explanationEn": "Ethical discretion about minor faults is different from neglecting injustice, harm or a violated right.",
+      "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence"
     }
   ],
   "perspectives": [
-    {
-      "id": "jawad-naqvi-ghaflah",
-      "speakerId": "jawad-naqvi",
-      "nameUr": "علامہ سید جواد نقوی",
-      "nameEn": "Syed Jawad Naqvi",
-      "sourceTitleUr": "سنن الٰہی اور آدابِ اسلامی — اصل مکتوب دروس",
-      "sourceTitleEn": "Divine Laws and Islamic Manners — published lecture transcripts",
-      "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1",
-      "coreUr": "بے خبری سے پیدا ہونے والا اطمینان اور یقین سے حاصل ہونے والا اطمینان ایک نہیں؛ دینی کیفیت کی قدر اس کے بعد رہ جانے والی عملی اصلاح سے ناپیں۔",
-      "coreEn": "Ignorance can create a deceptively reassuring calm; true spiritual growth is judged by lasting change after a devotional experience.",
-      "explanationUr": [
-        "سنن الٰہی، درس ۶ میں غفلت کے سرابی سکون کو پائیدار اطمینان سے الگ کیا گیا ہے۔",
-        "آداب اسلامی، درس ۲۸ میں مجلس اور دعا سے متاثر ہونے کے باوجود دوبارہ پرانی عادات میں پلٹنے کا مسئلہ سامنے آتا ہے۔",
-        "آداب اسلامی، درس ۳۱ میں نماز کی ظاہری ادائیگی کے ساتھ قلبی غفلت پر تنبیہ کی گئی ہے۔"
-      ],
-      "explanationEn": [
-        "Lesson 6 separates deceptive calm from conviction-grounded tranquility.",
-        "Lesson 28 asks why devotional motivation fades as soon as ordinary routines return.",
-        "Lesson 31 criticises heedless and rushed performance of prayer."
-      ],
-      "styleUr": "اصل دروس کی الگ الگ نسبت قائم رکھی جائے، تین بیانات کو ایک مسلسل اقتباس نہ بنایا جائے۔",
-      "styleEn": "Keep the three lecture sources distinct and do not present editorial synthesis as direct quotation.",
-      "useUr": "غفلت کی تشخیص، عبادت میں حضور اور مجلس کے بعد اصلاح کو مسلسل تین مراحل بنائیں۔",
-      "useEn": "Connect diagnosis, attentive worship, and sustained moral reform.",
-      "sourceGroundedUr": [
-        {
-          "heading": "سرابی اطمینان",
-          "explanation": "اس درس میں سید جواد نقوی دو قسم کے اطمینان میں فرق کرتے ہیں: ایک غفلت کا پیدا کردہ سرابی سکون اور دوسرا یقین سے حاصل ہونے والا پائیدار اطمینان۔ پہلی حالت میں انسان خطرے سے لاعلمی کے باعث مطمئن ہوتا ہے، نہ کہ خطرے کے ختم ہوجانے سے۔",
-          "exactRef": "سنن الٰہی — درس ۶: غفلت سے پیدا شدہ اطمینان",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1"
-        },
-        {
-          "heading": "وقتی اثر سے مستقل اصلاح",
-          "explanation": "درس میں یہ مسئلہ اٹھایا گیا ہے کہ دعا، مجلس یا دینی اجتماع انسان پر گہرا اثر ڈال سکتا ہے، مگر ماحول سے نکلنے کے بعد پرانی عادتیں واپس آجاتی ہیں۔ وقتی کیفیت اور مستقل تربیت کے درمیان فرق پر گفتگو کی گئی ہے۔",
-          "exactRef": "آدابِ اسلامی — درس ۲۸: مجلس کے اثر کی حفاظت",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf2aa4f8fbdf012b7ea4"
-        },
-        {
-          "heading": "نماز میں قلبی توجہ",
-          "explanation": "درس میں اس بات پر تنبیہ کی گئی ہے کہ نماز صرف ادا کرلینا کافی نہیں؛ جلدبازی، بے توجہی اور لاپروائی عبادت کے ادب کو متاثر کرتی ہے۔",
-          "exactRef": "آدابِ اسلامی — درس ۳۱: نماز میں غفلت",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf34a4f8fbdf012b7eb6"
-        }
-      ],
-      "sourceGroundedEn": [
-        {
-          "heading": "سرابی اطمینان",
-          "explanation": "Jawad Naqvi distinguishes illusory comfort produced by ignorance from stable tranquility grounded in certainty. The absence of alarm is not proof of safety.",
-          "exactRef": "Divine Laws — lesson 6: false comfort born of heedlessness",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1"
-        },
-        {
-          "heading": "وقتی اثر سے مستقل اصلاح",
-          "explanation": "This lesson addresses the gap between a moving devotional experience and sustained moral reform after returning to ordinary life.",
-          "exactRef": "Islamic Manners — lesson 28: preserving an awakened state",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf2aa4f8fbdf012b7ea4"
-        },
-        {
-          "heading": "نماز میں قلبی توجہ",
-          "explanation": "The lesson treats rushed, inattentive prayer as a problem of the etiquette and meaning of worship, not merely of external performance.",
-          "exactRef": "Islamic Manners — lesson 31: negligence in prayer",
-          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf34a4f8fbdf012b7eb6"
-        }
-      ]
-    },
-    {
-      "id": "jawad-naqvi-prevention-of-fitan",
-      "speakerId": "jawad-naqvi",
-      "nameUr": "علامہ سید جواد نقوی",
-      "nameEn": "Syed Jawad Naqvi",
-      "sourceTitleUr": "حکمتِ علیؑ — حصہ ۵",
-      "sourceTitleEn": "Wisdom of Ali — part 5",
-      "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali",
-      "coreUr": "اجتماعی فتنوں میں غفلت اور جلد بازی باہم مل کر نقصان بڑھاتی ہیں۔",
-      "coreEn": "Heedlessness and haste together can fuel collective conflict.",
-      "explanationUr": [
-        "دینی اور معاشرتی تنازعات میں بے خبری اور جلدبازی کے کردار کو الگ الگ سمجھائیں۔"
-      ],
-      "explanationEn": [
-        "Separate the contributions of inattentiveness and hasty action to social conflict."
-      ],
-      "styleUr": "مخالف گروہوں پر الزام کے بجائے اپنے رویے کے محاسبے پر زور دیں۔",
-      "styleEn": "Focus on personal discernment rather than polemics.",
-      "useUr": "غفلت کے سماجی نتائج اور خبر کی تحقیق کے ضمن میں استعمال کریں۔",
-      "useEn": "Apply to self-examination and responsible response to disputes.",
-      "sourceGroundedUr": [
-        {
-          "heading": "غفلت اور جلد بازی",
-          "explanation": "مصنف کے مکتوب مضمون میں غفلت اور جلد بازی کو فتنوں کے عوامل میں بیان کیا گیا ہے؛ اسے موجودہ تنازعات میں سنجیدہ تحقیق اور تحمل کی ضرورت سے جوڑیں۔",
-          "exactRef": "سید جواد نقوی، حکمتِ علیؑ، حصہ ۵، «غفلت اور جلد بازی»",
-          "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali"
-        }
-      ],
-      "sourceGroundedEn": [
-        {
-          "heading": "غفلت اور جلد بازی",
-          "explanation": "The published essay treats heedlessness and haste as contributors to social disorder; draw a cautious connection to verification and restraint.",
-          "exactRef": "Syed Jawad Naqvi, Wisdom of Ali, part 5",
-          "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali"
-        }
-      ]
-    },
     {
       "id": "hamed-kashani-danger-ghaflah",
       "speakerId": "hamed-kashani",
@@ -584,6 +513,108 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
           "sourceUrl": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
         }
       ]
+    },
+    {
+      "id": "jawad-naqvi-ghaflah",
+      "speakerId": "jawad-naqvi",
+      "nameUr": "علامہ سید جواد نقوی",
+      "nameEn": "Syed Jawad Naqvi",
+      "sourceTitleUr": "سنن الٰہی اور آدابِ اسلامی — اصل مکتوب دروس",
+      "sourceTitleEn": "Divine Laws and Islamic Manners — published lecture transcripts",
+      "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1",
+      "coreUr": "بے خبری سے پیدا ہونے والا اطمینان اور یقین سے حاصل ہونے والا اطمینان ایک نہیں؛ دینی کیفیت کی قدر اس کے بعد رہ جانے والی عملی اصلاح سے ناپیں۔",
+      "coreEn": "Ignorance can create a deceptively reassuring calm; true spiritual growth is judged by lasting change after a devotional experience.",
+      "explanationUr": [
+        "سنن الٰہی، درس ۶ میں غفلت کے سرابی سکون کو پائیدار اطمینان سے الگ کیا گیا ہے۔",
+        "آداب اسلامی، درس ۲۸ میں مجلس اور دعا سے متاثر ہونے کے باوجود دوبارہ پرانی عادات میں پلٹنے کا مسئلہ سامنے آتا ہے۔",
+        "آداب اسلامی، درس ۳۱ میں نماز کی ظاہری ادائیگی کے ساتھ قلبی غفلت پر تنبیہ کی گئی ہے۔"
+      ],
+      "explanationEn": [
+        "Lesson 6 separates deceptive calm from conviction-grounded tranquility.",
+        "Lesson 28 asks why devotional motivation fades as soon as ordinary routines return.",
+        "Lesson 31 criticises heedless and rushed performance of prayer."
+      ],
+      "styleUr": "اصل دروس کی الگ الگ نسبت قائم رکھی جائے، تین بیانات کو ایک مسلسل اقتباس نہ بنایا جائے۔",
+      "styleEn": "Keep the three lecture sources distinct and do not present editorial synthesis as direct quotation.",
+      "useUr": "غفلت کی تشخیص، عبادت میں حضور اور مجلس کے بعد اصلاح کو مسلسل تین مراحل بنائیں۔",
+      "useEn": "Connect diagnosis, attentive worship, and sustained moral reform.",
+      "sourceGroundedUr": [
+        {
+          "heading": "سرابی اطمینان",
+          "explanation": "اس درس میں سید جواد نقوی دو قسم کے اطمینان میں فرق کرتے ہیں: ایک غفلت کا پیدا کردہ سرابی سکون اور دوسرا یقین سے حاصل ہونے والا پائیدار اطمینان۔ پہلی حالت میں انسان خطرے سے لاعلمی کے باعث مطمئن ہوتا ہے، نہ کہ خطرے کے ختم ہوجانے سے۔",
+          "exactRef": "سنن الٰہی — درس ۶: غفلت سے پیدا شدہ اطمینان",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1"
+        },
+        {
+          "heading": "وقتی اثر سے مستقل اصلاح",
+          "explanation": "درس میں یہ مسئلہ اٹھایا گیا ہے کہ دعا، مجلس یا دینی اجتماع انسان پر گہرا اثر ڈال سکتا ہے، مگر ماحول سے نکلنے کے بعد پرانی عادتیں واپس آجاتی ہیں۔ وقتی کیفیت اور مستقل تربیت کے درمیان فرق پر گفتگو کی گئی ہے۔",
+          "exactRef": "آدابِ اسلامی — درس ۲۸: مجلس کے اثر کی حفاظت",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf2aa4f8fbdf012b7ea4"
+        },
+        {
+          "heading": "نماز میں قلبی توجہ",
+          "explanation": "درس میں اس بات پر تنبیہ کی گئی ہے کہ نماز صرف ادا کرلینا کافی نہیں؛ جلدبازی، بے توجہی اور لاپروائی عبادت کے ادب کو متاثر کرتی ہے۔",
+          "exactRef": "آدابِ اسلامی — درس ۳۱: نماز میں غفلت",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf34a4f8fbdf012b7eb6"
+        }
+      ],
+      "sourceGroundedEn": [
+        {
+          "heading": "سرابی اطمینان",
+          "explanation": "Jawad Naqvi distinguishes illusory comfort produced by ignorance from stable tranquility grounded in certainty. The absence of alarm is not proof of safety.",
+          "exactRef": "Divine Laws — lesson 6: false comfort born of heedlessness",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/snn-ilhi/67ccb65da4f8fbdf012b8bf1"
+        },
+        {
+          "heading": "وقتی اثر سے مستقل اصلاح",
+          "explanation": "This lesson addresses the gap between a moving devotional experience and sustained moral reform after returning to ordinary life.",
+          "exactRef": "Islamic Manners — lesson 28: preserving an awakened state",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf2aa4f8fbdf012b7ea4"
+        },
+        {
+          "heading": "نماز میں قلبی توجہ",
+          "explanation": "The lesson treats rushed, inattentive prayer as a problem of the etiquette and meaning of worship, not merely of external performance.",
+          "exactRef": "Islamic Manners — lesson 31: negligence in prayer",
+          "sourceUrl": "https://www.syedjawadnaqvi.com/duroos/adabe-islami/67ccaf34a4f8fbdf012b7eb6"
+        }
+      ]
+    },
+    {
+      "id": "jawad-naqvi-prevention-of-fitan",
+      "speakerId": "jawad-naqvi",
+      "nameUr": "علامہ سید جواد نقوی",
+      "nameEn": "Syed Jawad Naqvi",
+      "sourceTitleUr": "حکمتِ علیؑ — حصہ ۵",
+      "sourceTitleEn": "Wisdom of Ali — part 5",
+      "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali",
+      "coreUr": "اجتماعی فتنوں میں غفلت اور جلد بازی باہم مل کر نقصان بڑھاتی ہیں۔",
+      "coreEn": "Heedlessness and haste together can fuel collective conflict.",
+      "explanationUr": [
+        "دینی اور معاشرتی تنازعات میں بے خبری اور جلدبازی کے کردار کو الگ الگ سمجھائیں۔"
+      ],
+      "explanationEn": [
+        "Separate the contributions of inattentiveness and hasty action to social conflict."
+      ],
+      "styleUr": "مخالف گروہوں پر الزام کے بجائے اپنے رویے کے محاسبے پر زور دیں۔",
+      "styleEn": "Focus on personal discernment rather than polemics.",
+      "useUr": "غفلت کے سماجی نتائج اور خبر کی تحقیق کے ضمن میں استعمال کریں۔",
+      "useEn": "Apply to self-examination and responsible response to disputes.",
+      "sourceGroundedUr": [
+        {
+          "heading": "غفلت اور جلد بازی",
+          "explanation": "مصنف کے مکتوب مضمون میں غفلت اور جلد بازی کو فتنوں کے عوامل میں بیان کیا گیا ہے؛ اسے موجودہ تنازعات میں سنجیدہ تحقیق اور تحمل کی ضرورت سے جوڑیں۔",
+          "exactRef": "سید جواد نقوی، حکمتِ علیؑ، حصہ ۵، «غفلت اور جلد بازی»",
+          "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali"
+        }
+      ],
+      "sourceGroundedEn": [
+        {
+          "heading": "غفلت اور جلد بازی",
+          "explanation": "The published essay treats heedlessness and haste as contributors to social disorder; draw a cautious connection to verification and restraint.",
+          "exactRef": "Syed Jawad Naqvi, Wisdom of Ali, part 5",
+          "sourceUrl": "https://syedjawadnaqvi.com/magazines/magazine-details/article?id=67cca892a4f8fbdf012b75d3&title=hkmte-ali"
+        }
+      ]
     }
   ],
   "synthesisUr": [
@@ -686,26 +717,40 @@ export const GHAF_LAH_DOSSIER: SermonDossier = {
   "closingEn": "Invite three commitments: five minutes of daily examination, one deliberately attentive prayer, and repair of one neglected right. Any transition to Imam Husayn's suffering must use separately verified historical sources and turn grief toward moral fidelity."
 };
 export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
-
   {
     "id": "shojaei-ghaflah-identity-summary",
     "speakerId": "shojaei",
-    "topicIds": ["ghaflah"],
+    "topicIds": [
+      "ghaflah"
+    ],
     "kind": "compiled-majalis",
     "status": "catalog-only",
     "titleUr": "استاد محمد شجاعی — صحیفہ سجادیہ سے انسان شناسی",
     "titleEn": "Mohammad Shojaei — Anthropology through Sahifa Sajjadiyya",
-    "topicsUr": ["غفلت", "خود شناسی", "صحیفہ سجادیہ"],
-    "topicsEn": ["heedlessness", "self-knowledge", "Sahifa Sajjadiyya"],
+    "topicsUr": [
+      "غفلت",
+      "خود شناسی",
+      "صحیفہ سجادیہ"
+    ],
+    "topicsEn": [
+      "heedlessness",
+      "self-knowledge",
+      "Sahifa Sajjadiyya"
+    ],
     "summaryUr": "سرکاری ویب سائٹ کے شائع شدہ خلاصے میں اپنی حقیقی شناخت سے غفلت کو موضوع بنایا گیا ہے۔ ابھی مکمل مکتوب خطاب کا جائزہ باقی ہے۔",
     "summaryEn": "An official summary discusses neglect of true identity, but the complete transcript has not been reviewed.",
-    "takeawaysUr": ["اصل بیان کا مکمل متن پڑھنے کے بعد ہی مخصوص مفصل دعوے منسوب کیے جائیں۔"],
-    "takeawaysEn": ["Specific detailed claims require reviewing the full talk."],
+    "takeawaysUr": [
+      "اصل بیان کا مکمل متن پڑھنے کے بعد ہی مخصوص مفصل دعوے منسوب کیے جائیں۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
+    ],
+    "takeawaysEn": [
+      "Specific detailed claims require reviewing the full talk.",
+      "Source indexed only; full lecture requires review."
+    ],
     "sourceLabelUr": "رسانۂ رسمی استاد شجاعی — بیان کے نکات",
     "sourceLabelEn": "Official Shojaei media — published speaking outline",
     "sourceUrl": "https://media.montazer.ir/47690-2/"
   },
-
   {
     "id": "jawad-ghaflat-false-calm",
     "speakerId": "jawad-naqvi",
@@ -736,10 +781,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
       "Jawad Naqvi distinguishes illusory comfort produced by ignorance from stable tranquility grounded in certainty. The absence of alarm is not proof of safety."
     ],
     "takeawaysUr": [
-      "غفلت کا سکون حقیقت سے بے خبری ہو سکتا ہے؛ ایمان کا اطمینان حقیقت سے باخبر ہو کر قائم رہتا ہے۔"
+      "غفلت کا سکون حقیقت سے بے خبری ہو سکتا ہے؛ ایمان کا اطمینان حقیقت سے باخبر ہو کر قائم رہتا ہے۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "Jawad Naqvi distinguishes illusory comfort produced by ignorance from stable tranquility grounded in certainty. The absence of alarm is not proof of safety."
+      "Jawad Naqvi distinguishes illusory comfort produced by ignorance from stable tranquility grounded in certainty. The absence of alarm is not proof of safety.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "سید جواد نقوی — سنن الٰہی — درس ۶: غفلت سے پیدا شدہ اطمینان",
     "sourceLabelEn": "Syed Jawad Naqvi — Divine Laws — lesson 6: false comfort born of heedlessness",
@@ -775,10 +822,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
       "This lesson addresses the gap between a moving devotional experience and sustained moral reform after returning to ordinary life."
     ],
     "takeawaysUr": [
-      "مجلس میں آنکھ بھرنا کافی نہیں؛ مجلس کے بعد رویہ بدلنا بیداری کی علامت ہے۔"
+      "مجلس میں آنکھ بھرنا کافی نہیں؛ مجلس کے بعد رویہ بدلنا بیداری کی علامت ہے۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "This lesson addresses the gap between a moving devotional experience and sustained moral reform after returning to ordinary life."
+      "This lesson addresses the gap between a moving devotional experience and sustained moral reform after returning to ordinary life.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "سید جواد نقوی — آدابِ اسلامی — درس ۲۸: مجلس کے اثر کی حفاظت",
     "sourceLabelEn": "Syed Jawad Naqvi — Islamic Manners — lesson 28: preserving an awakened state",
@@ -814,10 +863,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
       "The lesson treats rushed, inattentive prayer as a problem of the etiquette and meaning of worship, not merely of external performance."
     ],
     "takeawaysUr": [
-      "عبادت کا ظاہر برقرار ہو مگر دل غیر حاضر ہو تو اصلاح کی ضرورت باقی رہتی ہے۔"
+      "عبادت کا ظاہر برقرار ہو مگر دل غیر حاضر ہو تو اصلاح کی ضرورت باقی رہتی ہے۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "The lesson treats rushed, inattentive prayer as a problem of the etiquette and meaning of worship, not merely of external performance."
+      "The lesson treats rushed, inattentive prayer as a problem of the etiquette and meaning of worship, not merely of external performance.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "سید جواد نقوی — آدابِ اسلامی — درس ۳۱: نماز میں غفلت",
     "sourceLabelEn": "Syed Jawad Naqvi — Islamic Manners — lesson 31: negligence in prayer",
@@ -842,10 +893,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "صرف ۱۳۶۹ کے پروگراموں کی فہرست میں «حقیقتِ غفلت» کے عنوان اور ۴۵:۰۸ دورانیے کا ریکارڈ ملا؛ مکمل تقریر یا مصدقہ متن دستیاب نہیں۔",
     "summaryEn": "An archive index lists a 45:08 lecture titled Reality of Heedlessness; its transcript has not been checked.",
     "takeawaysUr": [
-      "متن دستیاب ہونے تک اس تقریر سے کوئی مخصوص قول منسوب نہ کیا جائے۔"
+      "متن دستیاب ہونے تک اس تقریر سے کوئی مخصوص قول منسوب نہ کیا جائے۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "Do not attribute any substantive thesis before reviewing the recording or transcript."
+      "Do not attribute any substantive thesis before reviewing the recording or transcript.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "محسن قرائتی — ۱۳۶۹ کے دروس کی فہرست",
     "sourceLabelEn": "Mohsen Qaraati — 1369 lecture index",
@@ -874,16 +927,24 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "توجہ اور غفلت کا مسئلہ؛ یادِ خدا اور موت کے ذریعے بیداری۔",
     "summaryEn": "Lecture 1 examines the problem of attention and discusses remembrance of God and death.",
     "materialUr": [
-      "توجہ اور غفلت کا مسئلہ؛ یادِ خدا اور موت کے ذریعے بیداری۔"
+      "توجہ اور غفلت کا مسئلہ؛ یادِ خدا اور موت کے ذریعے بیداری۔",
+      "اصل خطاب میں توجہ، یادِ خدا اور دینی ذمہ داری کے ربط کو سمجھیں؛ دوسرے موضوعات یا غیر موجود تفصیلات کا اضافہ نہ کریں۔",
+      "منبر پر زندگی کے مختلف حقوق کے درمیان درست توازن کی ایک نئی مثال پیش کریں؛ اسے عالم کے اصل بیان کی مثال نہ کہیں۔",
+      "خطیب اصل ماخذ کھول کر مطالعہ کرے اور اس خلاصے کو باقاعدہ مکمل فارسی تقریر کا اردو ترجمہ نہ سمجھائے۔"
     ],
     "materialEn": [
-      "Lecture 1 examines the problem of attention and discusses remembrance of God and death."
+      "Lecture 1 examines the problem of attention and discusses remembrance of God and death.",
+      "Discuss the documented relationship between attention, remembrance and responsibility without importing unverified details.",
+      "Develop an original illustration about the balance between duties, clearly separate from the original scholar's examples.",
+      "Consult the linked source; these notes are not a complete English translation of the Persian talk."
     ],
     "takeawaysUr": [
-      "توجہ اور غفلت کا مسئلہ؛ یادِ خدا اور موت کے ذریعے بیداری۔"
+      "توجہ اور غفلت کا مسئلہ؛ یادِ خدا اور موت کے ذریعے بیداری۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "Lecture 1 examines the problem of attention and discusses remembrance of God and death."
+      "Lecture 1 examines the problem of attention and discusses remembrance of God and death.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل مکتوب خطاب",
     "sourceLabelEn": "Hamed Kashani — published transcript",
@@ -912,10 +973,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -944,10 +1007,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -976,10 +1041,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1008,16 +1075,24 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "زندگی کے ایک پہلو میں اس طرح کھو جانا کہ دیگر ذمہ داریاں نگاہ سے اوجھل ہوجائیں۔",
     "summaryEn": "Lecture 5 discusses preoccupation with one concern while other duties are neglected.",
     "materialUr": [
-      "زندگی کے ایک پہلو میں اس طرح کھو جانا کہ دیگر ذمہ داریاں نگاہ سے اوجھل ہوجائیں۔"
+      "زندگی کے ایک پہلو میں اس طرح کھو جانا کہ دیگر ذمہ داریاں نگاہ سے اوجھل ہوجائیں۔",
+      "اصل خطاب میں توجہ، یادِ خدا اور دینی ذمہ داری کے ربط کو سمجھیں؛ دوسرے موضوعات یا غیر موجود تفصیلات کا اضافہ نہ کریں۔",
+      "منبر پر زندگی کے مختلف حقوق کے درمیان درست توازن کی ایک نئی مثال پیش کریں؛ اسے عالم کے اصل بیان کی مثال نہ کہیں۔",
+      "خطیب اصل ماخذ کھول کر مطالعہ کرے اور اس خلاصے کو باقاعدہ مکمل فارسی تقریر کا اردو ترجمہ نہ سمجھائے۔"
     ],
     "materialEn": [
-      "Lecture 5 discusses preoccupation with one concern while other duties are neglected."
+      "Lecture 5 discusses preoccupation with one concern while other duties are neglected.",
+      "Discuss the documented relationship between attention, remembrance and responsibility without importing unverified details.",
+      "Develop an original illustration about the balance between duties, clearly separate from the original scholar's examples.",
+      "Consult the linked source; these notes are not a complete English translation of the Persian talk."
     ],
     "takeawaysUr": [
-      "زندگی کے ایک پہلو میں اس طرح کھو جانا کہ دیگر ذمہ داریاں نگاہ سے اوجھل ہوجائیں۔"
+      "زندگی کے ایک پہلو میں اس طرح کھو جانا کہ دیگر ذمہ داریاں نگاہ سے اوجھل ہوجائیں۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "Lecture 5 discusses preoccupation with one concern while other duties are neglected."
+      "Lecture 5 discusses preoccupation with one concern while other duties are neglected.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل مکتوب خطاب",
     "sourceLabelEn": "Hamed Kashani — published transcript",
@@ -1046,10 +1121,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1078,10 +1155,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1110,10 +1189,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1142,10 +1223,12 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "مکتوب خطاب کی شناخت اور اصل صفحہ موجود ہے؛ موضوعی نکات کا تفصیلی جائزہ ابھی باقی ہے۔",
     "summaryEn": "A transcript page is located; the full scholarly analysis of this session is pending.",
     "takeawaysUr": [
-      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔"
+      "بغیر متن کے جائزے کے مخصوص علمی دعویٰ منسوب نہیں ہوگا۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
     ],
     "takeawaysEn": [
-      "No substantive claims should be attributed until the speech is reviewed."
+      "No substantive claims should be attributed until the speech is reviewed.",
+      "Source indexed only; full lecture requires review."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل تقریر کا صفحہ؛ تحقیق باقی",
     "sourceLabelEn": "Hamed Kashani — indexed transcript, analysis pending",
@@ -1174,16 +1257,24 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
     "summaryUr": "غفلت کے مقابل ذکر، تقویٰ اور بیداری کے اخلاقی نتائج۔",
     "summaryEn": "Lecture 10 discusses remembrance, vigilance and God-consciousness.",
     "materialUr": [
-      "غفلت کے مقابل ذکر، تقویٰ اور بیداری کے اخلاقی نتائج۔"
+      "غفلت کے مقابل ذکر، تقویٰ اور بیداری کے اخلاقی نتائج۔",
+      "اصل خطاب میں توجہ، یادِ خدا اور دینی ذمہ داری کے ربط کو سمجھیں؛ دوسرے موضوعات یا غیر موجود تفصیلات کا اضافہ نہ کریں۔",
+      "منبر پر زندگی کے مختلف حقوق کے درمیان درست توازن کی ایک نئی مثال پیش کریں؛ اسے عالم کے اصل بیان کی مثال نہ کہیں۔",
+      "خطیب اصل ماخذ کھول کر مطالعہ کرے اور اس خلاصے کو باقاعدہ مکمل فارسی تقریر کا اردو ترجمہ نہ سمجھائے۔"
     ],
     "materialEn": [
-      "Lecture 10 discusses remembrance, vigilance and God-consciousness."
+      "Lecture 10 discusses remembrance, vigilance and God-consciousness.",
+      "Discuss the documented relationship between attention, remembrance and responsibility without importing unverified details.",
+      "Develop an original illustration about the balance between duties, clearly separate from the original scholar's examples.",
+      "Consult the linked source; these notes are not a complete English translation of the Persian talk."
     ],
     "takeawaysUr": [
-      "غفلت کے مقابل ذکر، تقویٰ اور بیداری کے اخلاقی نتائج۔"
+      "غفلت کے مقابل ذکر، تقویٰ اور بیداری کے اخلاقی نتائج۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "Lecture 10 discusses remembrance, vigilance and God-consciousness."
+      "Lecture 10 discusses remembrance, vigilance and God-consciousness.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "حامد کاشانی — اصل مکتوب خطاب",
     "sourceLabelEn": "Hamed Kashani — published transcript",
@@ -1220,14 +1311,98 @@ export const GHAF_LAH_SPEAKER_EVIDENCE: readonly SpeakerEvidence[] = [
       "Use Qur'an 7:179 to distinguish having faculties from exercising them responsibly."
     ],
     "takeawaysUr": [
-      "غفلت کے ماحول اور صحبت سے بچنا دینی بیداری کا حصہ ہے۔"
+      "غفلت کے ماحول اور صحبت سے بچنا دینی بیداری کا حصہ ہے۔",
+      "یہ قلم ورکس کی تدوینی رہنمائی ہے؛ اسے عالم کی لفظی عبارت قرار نہ دیں۔"
     ],
     "takeawaysEn": [
-      "Moral environment and companionship influence spiritual attentiveness."
+      "Moral environment and companionship influence spiritual attentiveness.",
+      "Qalam Works editorial application; not a direct quotation."
     ],
     "sourceLabelUr": "ناصر رفیعی — غفلت / نامہ ۶۹، مکتوب خطاب",
     "sourceLabelEn": "Naser Rafiei — Heedlessness / letter 69, published transcript",
     "sourceUrl": "https://shiaquest.net/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C-%D9%85%DA%A9%D8%AA%D9%88%D8%A8-%D9%88%DB%8C%DA%98%D9%87-%D9%85%D8%A7%D9%87-%D8%B1%D9%85%D8%B6%D8%A7%D9%86/%D8%B3%D8%AE%D9%86%D8%B1%D8%A7%D9%86%DB%8C%D9%87%D8%A7/10666-69-6.html"
+  },
+  {
+    "id": "mirbaqeri-ghaflah-remembrance-lead",
+    "speakerId": "mirbaqeri",
+    "topicIds": [
+      "ghaflah"
+    ],
+    "kind": "compiled-majalis",
+    "status": "catalog-only",
+    "titleUr": "آیت اللہ میرباقری — ذکر سے دوری اور غفلت کا خطرہ",
+    "titleEn": "Ayatollah Mirbaqeri — absence of remembrance and heedlessness",
+    "topicsUr": [
+      "غفلت",
+      "ذکر",
+      "سیرت"
+    ],
+    "topicsEn": [
+      "heedlessness",
+      "remembrance",
+      "spiritual formation"
+    ],
+    "summaryUr": "مقامی حوزوی مرکز کی شائع شدہ رپورٹ میں ذکر اور غفلت کے فرق کے حوالے سے ان کا بیان نقل ہوا ہے؛ مکمل لفظی تقریر کا جائزہ ابھی باقی ہے۔",
+    "summaryEn": "A seminary account reports his remarks on distraction and remembrance, but the full talk has not been reviewed.",
+    "takeawaysUr": [
+      "اصل مکتوب خطاب کے بغیر جزئیات یا مخصوص قول منسوب نہ کیا جائے۔",
+      "صرف اصل ماخذ کی نشاندہی ہوئی ہے؛ تفصیلی علمی نسبت کے لیے پورا متن پڑھنا باقی ہے۔"
+    ],
+    "takeawaysEn": [
+      "Avoid unverified direct quotation until the complete text is reviewed.",
+      "Source indexed only; full lecture requires review."
+    ],
+    "sourceLabelUr": "حوزۂ قم کے اساتذہ کی رپورٹ — مکمل مکتوب خطاب نہیں",
+    "sourceLabelEn": "Qom seminary teachers' report — not a complete transcript",
+    "sourceUrl": "https://www.neshasteasatid.com/node/3540"
+  },
+  {
+    "id": "qaraati-signed-letter-ghaflah",
+    "speakerId": "qaraati",
+    "topicIds": [
+      "ghaflah"
+    ],
+    "kind": "transcript",
+    "status": "ready",
+    "titleUr": "محسن قرائتی — غفلت کے خطرے اور انسانی ذمہ داریوں پر شائع شدہ خط",
+    "titleEn": "Mohsen Qaraati — published letter on heedlessness and human responsibilities",
+    "topicsUr": [
+      "غفلت",
+      "ذکر",
+      "حقوق",
+      "آخرت"
+    ],
+    "topicsEn": [
+      "heedlessness",
+      "remembrance",
+      "rights",
+      "hereafter"
+    ],
+    "summaryUr": "محسن قرائتی کے نام سے شائع شدہ اور ان کے دستخط پر ختم ہونے والے خط میں غفلت کو انسان کا بڑا خطرہ بتایا گیا ہے۔ خدا و آخرت، عمر و صلاحیت اور محروم انسانوں سے بے خبری کی الگ جہات بیان ہوئی ہیں۔",
+    "summaryEn": "A signed published letter describes heedlessness as a major human danger and addresses forgetting God, the afterlife, human abilities and the deprived.",
+    "materialUr": [
+      "خط کے آغاز میں غفلت کے خطرے پر واضح تنبیہ موجود ہے؛ اسے مخاطب کے مخصوص سیاق کے ساتھ پیش کیجیے۔",
+      "خدا و قیامت سے غفلت کے ساتھ انسانی عمر، جوانی اور صلاحیتوں کی قدر کا مسئلہ الگ کیا گیا ہے۔",
+      "خط میں محروم افراد اور معاشرے کے حقوق سے بے خبری کا پہلو بھی موجود ہے؛ اسے اخلاقی ذمہ داری تک لے جائیے۔",
+      "یہ ایک شائع شدہ خط ہے؛ اسے مکمل مجلس یا خطیب کی لفظی تقریر کے طور پر پیش نہ کیجیے۔"
+    ],
+    "materialEn": [
+      "The signed letter opens with a warning on heedlessness and addresses a particular audience.",
+      "It distinguishes forgetting God and accountability from neglecting human gifts and youth.",
+      "Concern for the underprivileged is included as a social dimension.",
+      "This is a published letter, not a full transcribed pulpit sermon."
+    ],
+    "takeawaysUr": [
+      "غفلت صرف عبادت میں بے توجہی نہیں، انسانی ذمہ داریوں سے بے خبری بھی ہے۔",
+      "اصل خط کے مخاطب اور تمام متنازع دعووں کا سیاق برقرار رکھا جائے۔"
+    ],
+    "takeawaysEn": [
+      "Heedlessness includes responsibilities beyond ritual.",
+      "Keep the original letter's audience and context explicit."
+    ],
+    "sourceLabelUr": "محسن قرائتی — اصل فارسی شائع شدہ خط، ہدانا",
+    "sourceLabelEn": "Mohsen Qaraati — published signed Persian letter (Hadana)",
+    "sourceUrl": "https://hadana.ir/%D9%86%D8%A7%D9%85%D9%87-%D8%A7%D8%B3%D8%AA%D8%A7%D8%AF-%D9%82%D8%B1%D8%A7%D8%A6%D8%AA%DB%8C-%D8%A8%D9%87-%D8%AF%D8%AE%D8%AA%D8%B1%D8%A7%D9%86-%D8%A7%DB%8C%D8%B1%D8%A7%D9%86%DB%8C-%D8%AE%D8%A7%D9%86%D9%85-%D9%87%D8%A7-%D8%A7%DB%8C%D9%86-%D9%86%D8%A7%D9%85%D9%87-%D8%B1%D8%A7-%D8%A8%D8%AE%D9%88%D8%A7%D9%86%D9%86%D8%AF/"
   }
 ];
 export const GHAF_LAH_VERIFIED_HADITHS: readonly VerifiedHadithRecord[] = [
@@ -1504,6 +1679,98 @@ export const GHAF_LAH_VERIFIED_HADITHS: readonly VerifiedHadithRecord[] = [
         "exactArabic": "فَأفِقْ أيُّهَا السّامِعُ مِنْ غَفْلَتِكَ، واخْتَصِرْ مِنْ عَجَلَتِكَ، وأشْدُدْ أزْرَكَ، وخُذْ حِذْرَكَ، واذْكُرْ قَبْرَكَ، فَإنَّ عَلَيْهِ مَمَرَّكَ.",
         "textVerified": true,
         "note": "Compared to numbered original-Arabic entry on the linked page; no independent manuscript collation or sanad grading asserted."
+      }
+    ]
+  },
+  {
+    "id": "ghaflah-mizan-baqir-salat-10",
+    "topicIds": [
+      "ghaflah"
+    ],
+    "dossierPrimaryTextId": "ghaflah-baqir-salat",
+    "attributedToUr": "امام محمد باقرؑ",
+    "attributedToEn": "Imam al-Baqir",
+    "sourceTitleUr": "میزان الحکمہ — باب الغفلة",
+    "sourceTitleEn": "Mizan al-Hikmah — Negligence",
+    "citedReferenceUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۰؛ اس میں الکافی، جلد ۳، صفحہ ۲۷۰، حدیث ۱۴ کا حوالہ درج ہے۔",
+    "citedReferenceEn": "Mizan al-Hikmah, Negligence, entry 10; cites al-Kafi, vol. 3, p. 270, no. 14.",
+    "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+    "candidateArabic": "أيّما مُؤمِنٍ حافَظَ علَى الصَّلواتِ المَفروضَةِ فَصَلاّها لِوَقتِها فَلَيسَ هذا مِن الغافِلينَ.",
+    "status": "verified",
+    "exactArabic": "أيّما مُؤمِنٍ حافَظَ علَى الصَّلواتِ المَفروضَةِ فَصَلاّها لِوَقتِها فَلَيسَ هذا مِن الغافِلينَ.",
+    "translationUr": "جو مومن فرض نمازوں کی پابندی کرتا ہے اور انہیں وقت پر ادا کرتا ہے، وہ غافلین میں سے نہیں ہے۔",
+    "translationEn": "A believer who guards the obligatory prayers and offers them at their prescribed times is not among the negligent.",
+    "translationStatus": "editorial",
+    "translationArabic": "أيّما مُؤمِنٍ حافَظَ علَى الصَّلواتِ المَفروضَةِ فَصَلاّها لِوَقتِها فَلَيسَ هذا مِن الغافِلينَ.",
+    "translationSourceLabelUr": "قلم ورکس — میزان الحکمہ کے عربی متن سے تدوینی ترجمہ",
+    "translationSourceLabelEn": "Qalam Works — editorial translation from Mizan al-Hikmah's Arabic",
+    "verifiedReferenceUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۰؛ اس میں الکافی، جلد ۳، صفحہ ۲۷۰، حدیث ۱۴ کا حوالہ درج ہے۔",
+    "verifiedReferenceEn": "Mizan al-Hikmah, Negligence, entry 10; cites al-Kafi, vol. 3, p. 270, no. 14.",
+    "verifiedSourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+    "verificationWitnessId": "mizan-ghaflah-10",
+    "witnesses": [
+      {
+        "id": "mizan-ghaflah-10",
+        "role": "verification-source",
+        "sourceTitleUr": "میزان الحکمہ — Al-Islam.org میں نقل شدہ عربی متن",
+        "sourceTitleEn": "Mizan al-Hikmah Arabic at Al-Islam.org",
+        "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+        "citation": {
+          "bookUr": "میزان الحکمہ",
+          "bookEn": "Mizan al-Hikmah",
+          "chapterUr": "الغفلة",
+          "chapterEn": "Negligence",
+          "hadithNumber": "10"
+        },
+        "exactArabic": "أيّما مُؤمِنٍ حافَظَ علَى الصَّلواتِ المَفروضَةِ فَصَلاّها لِوَقتِها فَلَيسَ هذا مِن الغافِلينَ.",
+        "textVerified": true,
+        "note": "Exact Arabic confirmed against Mizan al-Hikmah entry. Mizan's cited older work has not independently been collated."
+      }
+    ]
+  },
+  {
+    "id": "ghaflah-mizan-ali-taghaful-17",
+    "topicIds": [
+      "ghaflah"
+    ],
+    "dossierPrimaryTextId": "ghaflah-ali-taghaful",
+    "attributedToUr": "امیرالمؤمنین علیؑ",
+    "attributedToEn": "Imam Ali",
+    "sourceTitleUr": "میزان الحکمہ — باب الغفلة",
+    "sourceTitleEn": "Mizan al-Hikmah — Negligence",
+    "citedReferenceUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۷؛ غرر الحکم، حدیث ۲۳۷۸ کا حوالہ۔",
+    "citedReferenceEn": "Mizan al-Hikmah, Negligence, entry 17; cites Ghurar al-Hikam no. 2378.",
+    "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+    "candidateArabic": "إنَّ العاقِلَ نِصفُهُ احتِمالٌ، ونِصفُهُ تَغافُلٌ.",
+    "status": "verified",
+    "exactArabic": "إنَّ العاقِلَ نِصفُهُ احتِمالٌ، ونِصفُهُ تَغافُلٌ.",
+    "translationUr": "عقل مند انسان کے رویّے میں ایک حصہ برداشت اور دوسرا دانستہ درگزر ہوتا ہے۔",
+    "translationEn": "A person of reason combines patience with deliberately overlooking minor faults.",
+    "translationStatus": "editorial",
+    "translationArabic": "إنَّ العاقِلَ نِصفُهُ احتِمالٌ، ونِصفُهُ تَغافُلٌ.",
+    "translationSourceLabelUr": "قلم ورکس — میزان الحکمہ کے عربی متن سے تدوینی ترجمہ",
+    "translationSourceLabelEn": "Qalam Works — editorial translation from Mizan al-Hikmah's Arabic",
+    "verifiedReferenceUr": "میزان الحکمہ، باب الغفلة، اندراج ۱۷؛ غرر الحکم، حدیث ۲۳۷۸ کا حوالہ۔",
+    "verifiedReferenceEn": "Mizan al-Hikmah, Negligence, entry 17; cites Ghurar al-Hikam no. 2378.",
+    "verifiedSourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+    "verificationWitnessId": "mizan-ghaflah-17",
+    "witnesses": [
+      {
+        "id": "mizan-ghaflah-17",
+        "role": "verification-source",
+        "sourceTitleUr": "میزان الحکمہ — Al-Islam.org میں نقل شدہ عربی متن",
+        "sourceTitleEn": "Mizan al-Hikmah Arabic at Al-Islam.org",
+        "sourceUrl": "https://al-islam.org/mizan-al-hikmah-scale-wisdom/negligence",
+        "citation": {
+          "bookUr": "میزان الحکمہ",
+          "bookEn": "Mizan al-Hikmah",
+          "chapterUr": "الغفلة",
+          "chapterEn": "Negligence",
+          "hadithNumber": "17"
+        },
+        "exactArabic": "إنَّ العاقِلَ نِصفُهُ احتِمالٌ، ونِصفُهُ تَغافُلٌ.",
+        "textVerified": true,
+        "note": "Exact Arabic confirmed against Mizan al-Hikmah entry. Mizan's cited older work has not independently been collated."
       }
     ]
   }

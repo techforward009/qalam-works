@@ -1,21 +1,41 @@
 "use client";
 import type { MajlisSeriesSession } from './engine/seriesPlanner';
-import { preparedArabicSourceTexts, preparedQuranSourceTexts } from './engine/preparedSeries';
+import { preparedArabicSourceTexts, preparedQuranSourceTexts, estimatePreparedSpeech } from './engine/preparedSeries';
 import type { SermonDuration } from './engine/sermonPrep';
 import { buildSessionWorkbench, buildSessionWorkbenchText } from './engine/sessionWorkbench';
 import KhateebScriptText from './KhateebScriptText';
+
 export default function PreparedSeriesSession({session,duration,locale,onCopy}:{session:MajlisSeriesSession;duration:SermonDuration;locale:'ur'|'en';onCopy:(text:string)=>Promise<void>}) {
- const w=buildSessionWorkbench(session,duration);const ur=locale==='ur';
+ const w=buildSessionWorkbench(session,duration);
+ const ur=locale==='ur';
  const quranTexts=preparedQuranSourceTexts(session.preparation!);
  const arabicTexts=preparedArabicSourceTexts(session.preparation!);
- return <section data-testid={`prepared-session-${session.number}`} className="mt-5 space-y-4" dir={ur?'rtl':'ltr'}>
-  <p className="text-xs leading-7">{ur?'یہ مکمل مجوزہ تیاری ہے۔ اصل آیات، تراجم، روایت اور قلم ورکس کی عبارتیں الگ درج ہیں۔':'This is a complete suggested preparation. Verses, translations, the narration, and Qalam Works wording are identified separately.'}</p>
-  {w.blocks.map((block,index)=><section key={index} className="rounded-lg border border-[#1A3A2A]/15 p-4 dark:border-[#35513d]">
-   <h5 className="font-bold">{ur?block.headingUr:block.headingEn} — {block.minutes} {ur?'منٹ':'min'}</h5>
-   {(ur?block.bodyUr:block.bodyEn).map((point,n)=>arabicTexts.has(point)?<div key={n} className="mt-3 break-inside-avoid"><KhateebScriptText text={point} forceArabic nonQuran={!quranTexts.has(point)}/></div>:<p key={n} className="mt-3 break-words text-sm leading-8">{point}</p>)}
+ const ready=session.preparation?.speakerReady===true;
+ const estimate=estimatePreparedSpeech(session.preparation!,locale,duration);
+ const {words:wordCount,lowMinutes,highMinutes}=estimate;
+ const shortfall=duration>highMinutes;
+ return <section data-testid={`prepared-session-${session.number}`} className="mt-5 space-y-5" dir={ur?'rtl':'ltr'}>
+  <div className="rounded-xl border border-[#B8935A]/30 bg-[#faf6eb] p-4 dark:border-[#6f5b35] dark:bg-[#241f14]">
+   <p className="font-semibold leading-8 text-[#59452c] dark:text-[#e2c895]">{ur?'یہ مجلس پڑھنے کے لیے مرتب کی گئی ہے۔ قرآنی آیات، روایات اور کتابی حوالے اسی متن میں ہیں۔ منتخب منٹ تقریری وقت کی ضمانت نہیں۔':'Qur’anic and hadith sources, translations and editorial speaking passages are separated. Timing is a preparation guide, not a certified duration.'}</p>
+   {ready?<p data-testid="ghaflah-reading-estimate" className="mt-3 border-t border-[#B8935A]/20 pt-3 text-sm leading-8 text-[#6a5436] dark:text-[#d7bc8a]">
+     {ur?`اصل قابلِ بیان متن، مصائب اور نصوص میں تقریباً ${wordCount.toLocaleString("ur-PK")} الفاظ ہیں؛ مسلسل قرأت کا محتاط اندازہ ${lowMinutes}–${highMinutes} منٹ ہے۔ ${shortfall ? `منتخب ${duration} منٹ کی مجلس کے لیے مزید مکمل قابلِ بیان مواد اور مستند مصائب درکار ہیں۔` : "اصل ادائیگی کی مدت خطیب کے انداز اور وقفوں سے بدلے گی۔"}`:
+     `About ${wordCount.toLocaleString("en")} words of actual speaking text and sources, roughly ${lowMinutes}–${highMinutes} minutes of continuous delivery. ${shortfall ? `The requested ${duration}-minute sermon needs further fully written content and separately sourced masaib.` : "Actual duration varies with recitation and pauses."}`}
+   </p>:null}
+  </div>
+  {w.blocks.map((block,index)=><section key={index} className="rounded-xl border border-[#1A3A2A]/15 bg-white px-4 py-5 shadow-sm dark:border-[#35513d] dark:bg-[#162a1e] sm:px-7">
+   <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3 border-b border-[#B8935A]/25 pb-3">
+    <h5 className="text-lg font-bold leading-9 text-[#1A3A2A] dark:text-[#e7eee9]">{ur?block.headingUr:block.headingEn}</h5>
+    <span className="text-xs font-medium text-[#836436] dark:text-[#d7bc8a]">{block.minutes} {ur?'منٹ کا مجوزہ حصہ':'min suggested'}</span>
+   </div>
+   <div className="space-y-4">{(ur?block.bodyUr:block.bodyEn).map((point,n)=>arabicTexts.has(point)?
+      <div key={n} className="break-inside-avoid rounded-lg border border-[#B8935A]/25 bg-[#fbf7ee] px-4 py-5 text-center dark:border-[#6f5b35] dark:bg-[#241f14]"><KhateebScriptText text={point} forceArabic nonQuran={!quranTexts.has(point)}/></div>:
+      <p key={n} className={`whitespace-pre-line break-words leading-9 ${point.includes('قابلِ بیان عبارت') || point.includes('Ready-to-deliver paragraph') || point.includes('وضاحت اور ربط') || point.includes('Explanation and connection') ? 'text-xs font-bold text-[#8a6838] dark:text-[#d7bc8a]' : 'text-base text-[#303830] dark:text-[#d7e1d9]'}`}>{point}</p>
+    )}</div>
   </section>)}
-  <p className="text-sm leading-8"><strong>{ur?'سامعین سے سوال: ':'Audience question: '}</strong>{ur?w.audienceQuestionUr:w.audienceQuestionEn}</p>
-  <p className="text-sm leading-8"><strong>{ur?'عملی قدم: ':'Practical step: '}</strong>{session.preparation!.action[locale]}</p>
-  <button type="button" onClick={()=>onCopy(buildSessionWorkbenchText(w,locale))} className="khateeb-no-print rounded-lg bg-[#1A3A2A] px-4 py-2 text-sm text-white">{ur?'اس مجلس کی مکمل تیاری نقل کریں':'Copy full session preparation'}</button>
+  <div className="rounded-xl border border-[#B8935A]/30 bg-[#fbf7ee] p-5 leading-9 dark:border-[#6f5b35] dark:bg-[#241f14]">
+   <p><strong>{ur?'سامعین سے سوال: ':'Audience question: '}</strong>{ur?w.audienceQuestionUr:w.audienceQuestionEn}</p>
+   <p className="mt-3"><strong>{ur?'عملی قدم: ':'Action: '}</strong>{session.preparation!.action[locale]}</p>
+  </div>
+  <button type="button" onClick={()=>onCopy(buildSessionWorkbenchText(w,locale))} className="khateeb-no-print rounded-lg bg-[#1A3A2A] px-5 py-3 text-sm font-bold text-white hover:bg-[#244E38]">{ur?'مکمل مجلس نقل کریں':'Copy complete majlis'}</button>
  </section>;
 }

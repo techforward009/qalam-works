@@ -67,6 +67,10 @@ jobs:
             cp "$p" "artifacts/pdf-phase1e/$base"
             pdfinfo "$p" > "artifacts/pdf-phase1e/$base.info.txt"
             pdffonts "$p" > "artifacts/pdf-phase1e/$base.fonts.txt"
+            if [[ "$base" == invoice-urdu.pdf ]]; then
+              grep -iq "Noto" "artifacts/pdf-phase1e/$base.fonts.txt" || { echo "Invoice Urdu font was not embedded"; exit 1; }
+              grep -iq "yes" "artifacts/pdf-phase1e/$base.fonts.txt" || { echo "Invoice font embedding not confirmed"; exit 1; }
+            fi
             pdftotext -layout "$p" "artifacts/pdf-phase1e/$base.txt"
             if [[ "$base" == original-23-periods.pdf ]]; then
               pdftoppm -r 240 -png "$p" artifacts/pdf-phase1e/original-page

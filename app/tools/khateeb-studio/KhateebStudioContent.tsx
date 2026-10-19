@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import PreparedSeriesSession from "./PreparedSeriesSession";
+
 import { buildPreparedSeriesText } from "./engine/preparedSeries";
 import TopicSpeakingGuide from "./TopicSpeakingGuide";
 import { buildTopicSpeakingGuideText } from "./engine/topicSpeakingGuide";
@@ -10,6 +11,7 @@ import { useCopyFeedback } from "./useCopyFeedback";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Printer, Search, Sparkles } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
+import { resolveDisplayHijriDate } from "../date-converter/utils/hijri-authority/displayHijriDate";
 import {
   CALENDAR_MONTHS_1448,
   SHIA_CALENDAR_1448_EVENTS,
@@ -157,6 +159,19 @@ export default function KhateebStudioContent({
     useState<ShiaCalendarRegion>(initialView.region);
   const [selectedMonth, setSelectedMonth] =
     useState<IslamicMonthId>(initialView.month);
+  // Respect an explicitly shared month. Otherwise open at Pakistan's current
+  // Hijri month, using the same authority-first policy as Date Studio.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("month")) return;
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Karachi", year: "numeric", month: "numeric", day: "numeric",
+    }).formatToParts(new Date());
+    const value = (type: string) => Number(parts.find(item => item.type === type)?.value);
+    const gregorian = { year: value("year"), month: value("month"), day: value("day") };
+    const monthNumber = resolveDisplayHijriDate(gregorian, "pakistan").hijri.month;
+    const current = CALENDAR_MONTHS_1448[monthNumber - 1];
+    if (current) { setSelectedMonth(current.id); setSelectedEvent(""); }
+  }, []);
   const [selectedEvent, setSelectedEvent] = useState(initialView.event);
   const [selectedSpeaker, setSelectedSpeaker] = useState(
     PUBLIC_KHATEEB_CORPUS.some((item) => item.id === initialView.speaker)
@@ -166,6 +181,7 @@ export default function KhateebStudioContent({
   const [duration, setDuration] = useState<SermonDuration>(initialView.duration);
   const [seriesLength, setSeriesLength] = useState<MajlisSeriesLength>(initialView.series);
   const [seriesLayer, setSeriesLayer] = useState<"fresh" | "research">("fresh");
+  const [activeGhaflahSession, setActiveGhaflahSession] = useState(1);
   const [topicQuery, setTopicQuery] = useState("");
   const [guideMode, setGuideMode] = useSpeakingGuideMode();
   const clipboardFeedback = useCopyFeedback();
@@ -370,6 +386,7 @@ export default function KhateebStudioContent({
         })),
       }
     : null;
+  const isGhaflahFreshSeries = topic?.id === "ghaflah" && seriesLength === 5 && seriesLayer === "fresh";
   const topicSeriesText = topicSeries?.sessions.every(session => session.preparation)
     ? buildPreparedSeriesText(topicSeries, ur ? "ur" : "en", duration)
     : displaySeries
@@ -1581,6 +1598,8 @@ export default function KhateebStudioContent({
                     </p>
                   </section>
 
+
+
                   {seriesLayer === "fresh" && originalityReport ? (
                     <section className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]">
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1631,8 +1650,27 @@ export default function KhateebStudioContent({
                     </section>
                   ) : null}
 
+                  {isGhaflahFreshSeries ? (
+                    <nav data-testid="ghaflah-session-selector" aria-label={ur ? "مجالس کا انتخاب" : "Select a majlis"} className="khateeb-no-print rounded-2xl border border-[#B8935A]/30 bg-[#fffdf8] p-4 dark:border-[#6f5b35] dark:bg-[#201d15]">
+                      <div className="mb-3 text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">{ur ? "ایک مجلس منتخب کریں — پڑھنے کے لیے تیار متن" : "Choose one majlis — focused reading"}</div>
+                      <div role="tablist" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                        {topicSeries.sessions.map((item) => (
+                          <button key={item.number} type="button" role="tab"
+                            aria-selected={activeGhaflahSession === item.number}
+                            onClick={() => setActiveGhaflahSession(item.number)}
+                            className={`rounded-xl border px-3 py-3 text-start transition ${activeGhaflahSession === item.number
+                              ? "border-[#1A3A2A] bg-[#1A3A2A] text-white shadow-md dark:border-[#8faa93] dark:bg-[#35513d]"
+                              : "border-[#B8935A]/25 bg-white text-[#425247] hover:border-[#B8935A] dark:border-[#6f5b35] dark:bg-[#162a1e] dark:text-[#b7c8bb]"}`}>
+                            <span className="block text-xs opacity-80">{ur ? `مجلس ${item.number}` : `Session ${item.number}`}</span>
+                            <span className="mt-1 block text-sm font-bold leading-7">{ur ? item.titleUr : item.titleEn}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-xs leading-6 text-[#687469] dark:text-[#9fb0a2]">{ur ? "ہر مجلس میں تلاوت، اردو ترجمہ، علما کی گفتگو، منبری عبارت اور کتابی حوالے ایک ہی جگہ موجود ہیں؛ کسی بیرونی صفحے پر جانے کی ضرورت نہیں۔" : "Every session contains the verses, translation, attributed insights, complete speaking text, and book citations without external links."}</p>
+                    </nav>
+                  ) : null}
                   <section className="space-y-4">
-                    {(displaySeries ?? topicSeries).sessions.map((session) => (
+                    {(displaySeries ?? topicSeries).sessions.filter((session) => !isGhaflahFreshSeries || session.number === activeGhaflahSession).map((session) => (
                       <article
                         key={session.number}
                         className="rounded-xl border border-[#1A3A2A]/10 bg-white p-4 dark:border-[#35513d] dark:bg-[#162a1e]"
@@ -1810,6 +1848,19 @@ export default function KhateebStudioContent({
                               : undefined
                           }
                         />
+                        {isGhaflahFreshSeries ? (
+                          <div className="khateeb-no-print mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-[#B8935A]/20 pt-4">
+                            <button type="button" disabled={session.number===1} onClick={() => setActiveGhaflahSession(session.number-1)}
+                              className="rounded-lg border border-[#B8935A]/30 px-4 py-2 text-sm font-bold disabled:opacity-40 dark:border-[#6f5b35]">
+                              {ur ? "پچھلی مجلس" : "Previous session"}
+                            </button>
+                            <span className="text-sm text-[#6d765f] dark:text-[#a8c8b0]">{session.number} / {seriesLength}</span>
+                            <button type="button" disabled={session.number===seriesLength} onClick={() => setActiveGhaflahSession(session.number+1)}
+                              className="rounded-lg border border-[#B8935A]/30 px-4 py-2 text-sm font-bold disabled:opacity-40 dark:border-[#6f5b35]">
+                              {ur ? "اگلی مجلس" : "Next session"}
+                            </button>
+                          </div>
+                        ) : null}
                       </article>
                     ))}
                   </section>

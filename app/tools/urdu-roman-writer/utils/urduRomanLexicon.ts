@@ -66,6 +66,11 @@ export const PHRASE_LEXICON: [string, string][] = [
 // ── Single-word dictionary ────────────────────────────────────────────────────
 
 export const WORD_LEXICON: Record<string, string> = {
+  "اردو": "urdu",
+  "ٹول": "tool",
+  "ورکس": "works",
+  "جملہ": "jumla",
+  "ٹیسٹ": "test",
   // ── Special symbols ────────────────────────────────────────────────────────
   "ﷲ": "Allah",
   "ﷺ": "SAWW",

@@ -49,7 +49,7 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
 
   const baseFontFamily = urFont
     ? "'Noto Nastaliq Urdu', serif"
-    : "Inter, system-ui, sans-serif";
+    : "'Inter', 'Noto Nastaliq Urdu', system-ui, sans-serif";
 
   return `<!DOCTYPE html>
 <html lang="${doc.dir === "rtl" ? "ur" : "en"}" dir="${doc.dir}">
