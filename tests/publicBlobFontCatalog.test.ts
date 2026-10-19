@@ -18,10 +18,10 @@ describe("Document Studio public Blob font catalogue", () => {
     expect(isApprovedPublicBlobFontUrl("https://evil.invalid/AdobeArabic-Regular.woff2")).toBe(false);
   });
 
-  test("contains 16 Blob assets including legacy Faiz, organized into 14 font families", () => {
+  test("contains 15 public font assets in 13 families", () => {
     expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(15);
     expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(13);
-    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(16);
+    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(15);
   });
 
   test("maps all approved URLs through the independent font mirror (missing assets fail closed)", () => {

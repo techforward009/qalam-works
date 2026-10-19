@@ -93,7 +93,6 @@ describe("fontRegistry", () => {
       "Traditional Arabic",
       "Al Majeed Quranic",
       "Asif Quranic",
-      "Muhammadi Quranic",
       "Al Qalam Quran Majeed",
     ];
     for (const family of hiddenFamilies) {
@@ -101,6 +100,7 @@ describe("fontRegistry", () => {
       // Already-saved documents can still render/export with their original font.
       expect(resolveEditorFontFamily(family, "rtl").fellBack).toBe(false);
     }
+    expect(resolveEditorFontFamily("Muhammadi Quranic", "rtl").fellBack).toBe(true);
     // Old documents must still preserve their explicitly chosen Faiz face.
     expect(resolveEditorFontFamily("Faiz Lahori Nastaleeq", "rtl").fellBack).toBe(false);
   });

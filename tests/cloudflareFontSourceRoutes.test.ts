@@ -13,7 +13,6 @@ const sources = {
     "ScheherazadeNew-Medium.woff2",
   ],
   "app/quran/QuranTranslationPage.tsx": ["Alvi_Nastaleeq.woff2"],
-  "app/quran/editions.ts": ["https://github.com/DigitalKhatt/indopakfont"],
   "app/tools/khateeb-studio/KhateebStudioContent.tsx": ["NafeesNastaleeq.woff2"],
   "app/components/knowledge/KnowledgeAssistant.tsx": ["NafeesNastaleeq.woff2"],
 };
@@ -27,7 +26,7 @@ describe("owner-authorized originals use new independent font gateway",()=>{
       }
     });
   }
-  it("serves the owner-provided original DigitalKhatt locally, not from Blob",()=>{
+  it("keeps the public Quran font separate from the restricted Muhammadi asset",()=>{
     const css=readFileSync("app/globals.css","utf8");
     expect(css).toContain("/fonts/DigitalKhattIndoPakRegular.woff2");
     expect(css).not.toContain(OLD+"DigitalKhattIndoPakRegular.woff2");

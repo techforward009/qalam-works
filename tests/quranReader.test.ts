@@ -180,7 +180,7 @@ describe("Quran reader", () => {
 
   test("PDMS Saleem is a local reference and is not bundled", () => {
     expect(QURAN_LAYOUT_PROFILE.pdmsBundled).toBe(false);
-    expect(selectQuranFont(false)).toEqual({ family: "DigitalKhatt IndoPak", bundled: false, profile: "qalam-indopak-v1" });
+    expect(selectQuranFont(false)).toEqual({ family: "DigitalKhattIndoPak", bundled: false, profile: "qalam-indopak-v1" });
     expect(selectQuranFont(true).bundled).toBe(false);
     expect(selectQuranFont(true).family).toBe("PDMS Saleem Quran");
     const files = readdirSync("app/quran", { recursive: true }).map(String);
