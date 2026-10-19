@@ -33,20 +33,11 @@ export function getPublicBlobFontFamily(id: string): PublicBlobFontFamily | unde
   return PUBLIC_BLOB_FONT_FAMILIES.find(font => font.id === id);
 }
 
-/** Owner-authorized originals uploaded to private R2, exposed only through the independent Worker. Unavailable original assets remain on legacy URLs, never substituted. */
+/** Legacy font catalogue: runtime URLs must never route to Vercel Blob. */
 export const PUBLIC_BLOB_FONT_BASE_URL = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com";
 export const QALAM_OFL_FONT_MIRROR_BASE_URL =
   "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts";
 const LOCALLY_HOSTED_FONT_FILES = new Set(["DigitalKhattIndoPakRegular.woff2"]);
-const R2_MIRRORED_FONT_FILES = new Set([
-  "Alvi_Nastaleeq.woff2",
-  "Gulzar-Regular.woff2",
-  "NafeesNastaleeq.woff2",
-  "Sahel.woff2",
-  "ScheherazadeNew-Medium.woff2",
-  "jameel-noori-nastaleeq-400.woff2",
-  "muhammadi-quranic-400.woff2",
-]);
 /** Resolve only catalogued filenames; never accept arbitrary paths/hosts. */
 export function publicBlobFontUrl(filename: string): string {
   if (!PUBLIC_BLOB_FONT_FILES.includes(filename)) {
