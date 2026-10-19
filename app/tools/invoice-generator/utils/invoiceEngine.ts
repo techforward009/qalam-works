@@ -114,7 +114,7 @@ export function formatInvoiceMinor(minor: number, currency: string, lang: "en" |
   const digits = fractionDigitOpts(currency, lang);
   try {
     return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", {
-      style: "currency", currency: currency || "USD",
+      style: "currency", currency: currency || "PKR",
       ...digits,
     }).format(major);
   } catch {
@@ -124,7 +124,7 @@ export function formatInvoiceMinor(minor: number, currency: string, lang: "en" |
 }
 
 export function calculateInvoice(inv: Invoice): InvoiceResult {
-  const precision = precisionForCurrency(inv.currency || "USD");
+  const precision = precisionForCurrency(inv.currency || "PKR");
 
   const lineTotals: number[] = [];
   const lineDiscounts: number[] = [];
