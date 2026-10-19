@@ -166,7 +166,9 @@ async function loadUncachedPrivateJameelWoff2(
   if (cloudflareUrl) {
     const mirrored=await loadJameelFromCloudflare(cloudflareUrl,config?.fetchImpl);
     // Do not silently swap identity after an integrity failure.
-    if (mirrored.ok || (!mirrored.ok && mirrored.reason === "integrity-failed")) return mirrored;
+    // Default runtime must fail closed without ever calling Vercel Blob.
+    // Explicit legacy configurations remain available solely to isolated callers/tests.
+    if (config === undefined || mirrored.ok || (!mirrored.ok && mirrored.reason === "integrity-failed")) return mirrored;
   }
   return loadJameelFromBlob({
     blobUrl: config?.blobUrl ?? process.env.JAMEEL_FONT_BLOB_URL,
