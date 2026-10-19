@@ -41,7 +41,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={cycleTheme}
-      className={`fixed bottom-5 z-40 flex items-center justify-center w-10 h-10 rounded-full ${quranPage ? "left-3 sm:left-auto sm:right-5" : "right-5"}` + " bg-[#1A3A2A]/90 text-white shadow-lg ring-1 ring-white/10 backdrop-blur-sm hover:bg-[#1A3A2A] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A]"}
+      className={`fixed bottom-5 right-5 z-40 items-center justify-center w-10 h-10 rounded-full ${quranPage ? "hidden sm:flex" : "flex"}` + " bg-[#1A3A2A]/90 text-white shadow-lg ring-1 ring-white/10 backdrop-blur-sm hover:bg-[#1A3A2A] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A]"}
       aria-label={NEXT_LABEL[current]}
       title={LABELS[current]}
     >
