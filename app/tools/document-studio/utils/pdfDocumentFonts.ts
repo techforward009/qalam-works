@@ -14,8 +14,13 @@ const PUBLIC_FONT_MAX_BYTES = 21 * 1024 * 1024;
 /** Fetch only selected public fonts, never the full 29 MB font catalogue. */
 async function loadPublicFontSource(url: string): Promise<string | null> {
   if (!isApprovedPublicBlobFontUrl(url)) return null;
-  if (url === "/fonts/DigitalKhattIndoPakRegular.woff2") {
-    const local = path.join(process.cwd(), "public", "fonts", "DigitalKhattIndoPakRegular.woff2");
+  if (url.startsWith("/fonts/")) {
+    let filename = url.slice("/fonts/".length);
+    try { filename = decodeURIComponent(filename); } catch { return null; }
+    if (!filename || filename.includes("/") || filename.includes("\\") || filename.includes("..")) return null;
+    const root = path.join(process.cwd(), "public", "fonts");
+    const local = path.join(root, filename);
+    if (local !== root && !local.startsWith(root + path.sep)) return null;
     return existsSync(local) ? readFileSync(local).toString("base64") : null;
   }
   const cached = cachedPublicFonts.get(url);

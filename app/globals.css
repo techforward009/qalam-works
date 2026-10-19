@@ -246,11 +246,10 @@ textarea {
   font-display: swap;
 }
 
-/* Mehr Nastaliq Web (CC BY-SA 4.0). Worker first; same-origin file is only a preview fallback. */
+/* Mehr Nastaliq Web (CC BY-SA 4.0). Same-origin until the file is uploaded to the font Worker. */
 @font-face {
   font-family: "Mehr Nastaliq Web";
-  src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2") format("woff2"),
-       url("/fonts/MehrNastaliqWeb.woff2") format("woff2");
+  src: url("/fonts/MehrNastaliqWeb.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -1502,8 +1501,7 @@ html.dark .quran-page-shell > .quran-outer-page-nav button:hover:not(:disabled) 
 
 @font-face {
   font-family: "Nafees Nastaleeq";
-  src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2"),
-       url("/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2");
+  src: url("/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2");
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -1592,8 +1590,7 @@ section[dir] > .site-container.grid > div:first-child > span:first-child{
 /* Homepage Urdu typography roles. These rules must not affect editor document content. */
 @font-face {
   font-family:"Qalam Nafees";
-  src:url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2"),
-       url("/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2");
+  src:url("/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2");
   font-display:swap;
   font-weight:400;
 }

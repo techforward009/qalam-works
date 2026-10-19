@@ -116,7 +116,7 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-white/5 px-4 py-4 text-center text-white">
-        <p dir="rtl" lang="ur" className="text-sm leading-8">
+        <p dir="rtl" lang="ur" className="font-nastaliq text-sm leading-8">
           فونٹ: <a href="https://mehrtype.com/product/mehr-nastaliq-web/" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مہر نستعلیق ویب</a>
           {" — "}
           <a href="https://mehrtype.com/free-fonts" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مہر ٹائپ</a>
@@ -126,7 +126,7 @@ export default function Footer() {
         <p className="mt-1 text-xs leading-6 text-white/90">
           Gulzar — <a href="https://scripts.sil.org/OFL" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">SIL Open Font License 1.1</a>
         </p>
-        <p dir="rtl" lang="ur" className="mt-1 text-sm leading-8">
+        <p dir="rtl" lang="ur" className="mt-1 font-nastaliq text-sm leading-8">
           نفیس نستعلیق v1.02 — <a href="https://cle.org.pk/software/localization/Fonts/nafeesNastaleeq.html" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مرکز تحقیق برائے اردو زبان (CRULP)</a>
           {"، "}
           <a href="https://cle.org.pk/software/license/Nafees_Nastaleeq_License.html" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">لائسنس</a>

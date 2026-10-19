@@ -1,4 +1,5 @@
-/** Approved public font assets. Mehr Nastaliq Web is served by the Cloudflare font Worker, never Vercel Blob. */
+/** Approved public font assets. Mehr and Nafees v1.02 are same-origin until they are uploaded to the font Worker. */
+
 export interface PublicBlobFontFamily {
   id: string;
   label: string;
@@ -34,7 +35,12 @@ export function getPublicBlobFontFamily(id: string): PublicBlobFontFamily | unde
 export const PUBLIC_BLOB_FONT_BASE_URL = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com";
 export const QALAM_OFL_FONT_MIRROR_BASE_URL =
   "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts";
-const LOCALLY_HOSTED_FONT_FILES = new Set(["DigitalKhattIndoPakRegular.woff2"]);
+const LOCALLY_HOSTED_FONT_FILES = new Set([
+  "DigitalKhattIndoPakRegular.woff2",
+  // Not on the font Worker yet. Pages must not request these from the Worker.
+  "MehrNastaliqWeb.woff2",
+  "NafeesNastaleeq-v1.02.woff2",
+]);
 /** Resolve only catalogued filenames; never accept arbitrary paths/hosts. */
 export function publicBlobFontUrl(filename: string): string {
   if (!PUBLIC_BLOB_FONT_FILES.includes(filename)) {

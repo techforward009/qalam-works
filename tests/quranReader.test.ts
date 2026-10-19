@@ -195,9 +195,8 @@ describe("Quran reader", () => {
   test("uses Mehr Nastaliq Web for Urdu Quran translation", () => {
     const source = readFileSync("app/quran/QuranTranslationPage.tsx", "utf8");
     expect(source).toContain("Mehr Nastaliq Web");
-    expect(source).toContain(
-      "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2",
-    );
+    expect(source).toContain('url("/fonts/MehrNastaliqWeb.woff2")');
+    expect(source).not.toContain("workers.dev/fonts/MehrNastaliqWeb.woff2");
     expect(source).toContain("lineHeight: ur ? 2.3 : 2");
   });
 

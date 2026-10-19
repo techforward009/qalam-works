@@ -723,7 +723,7 @@ export default function InvoiceGeneratorTool() {
             <div className="px-4 py-2 border-b flex items-center justify-between"
               style={{ borderColor: "#FEF3C7", background: "#FFFBEB" }}>
               <span className={`text-[11px] font-bold text-gray-400 uppercase tracking-widest ${naskh}`}>{L.preview}</span>
-              <span className="text-[11px] text-gray-400" dir="ltr">
+              <span className="text-[11px] text-gray-400" dir="ltr" style={isUr ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined}>
                 {invoiceLang === "ur" ? "اردو" : "English"}
                 {" · "}
                 {print.style === "pakistani" ? (isUr ? "پاکستانی" : "Pakistani") : (isUr ? WESTERN_SKINS[print.skin].labelUr : WESTERN_SKINS[print.skin].label)}

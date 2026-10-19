@@ -19,13 +19,15 @@ describe("Mehr Nastaliq Web body preview", () => {
     expect(css).toContain('--qalam-urdu-heading: "Gulzar"');
     expect(css).not.toContain("Alvi_Nastaleeq.woff2");
     expect(css).not.toContain('font-family:"Alvi Nastaleeq"');
-    expect(css).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2");
+    expect(css).toContain('url("/fonts/MehrNastaliqWeb.woff2")');
+    expect(css).not.toContain("workers.dev/fonts/MehrNastaliqWeb.woff2");
     expect(css).not.toContain("blob.vercel-storage.com/Mehr");
     expect(css).not.toContain("Qalam Alvi Nastaleeq");
     expect(css).toContain('font-family: "Jameel Noori Nastaleeq"');
     expect(css).toContain(".qalam-editor-content [style*=\"Jameel Noori Nastaleeq\"]");
     expect(css).not.toContain("jameel-noori-nastaleeq-400.woff2");
-    expect(css).toContain("NafeesNastaleeq-v1.02.woff2");
+    expect(css).toContain("/fonts/NafeesNastaleeq-v1.02.woff2");
+    expect(css).not.toContain("workers.dev/fonts/NafeesNastaleeq-v1.02.woff2");
     expect(css).not.toContain("fonts/NafeesNastaleeq.woff2\"");
     expect(readFileSync("tailwind.config.js", "utf8")).not.toContain("Jameel");
     expect(css).toContain('font-family: "Muhammadi Quranic"');
@@ -64,7 +66,7 @@ describe("Mehr Nastaliq Web body preview", () => {
     });
     expect(resolveEditorFontFamily('"Alvi Nastaleeq"', "rtl").docxFamily).toBe("Mehr Nastaliq Web");
     expect(getFontById("mehr-nastaliq-web").pdf.regularFiles?.[0]).toBe(
-      "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2",
+      "/fonts/MehrNastaliqWeb.woff2",
     );
     expect(getFontById("jameel-noori-nastaleeq").pdf.regularFiles?.[0]).not.toContain("blob.vercel-storage.com");
     expect(getFontById("mehr-nastaliq-web").pdf.regularFiles?.[0]).not.toContain("blob.vercel-storage.com");
@@ -81,13 +83,15 @@ describe("Mehr Nastaliq Web body preview", () => {
     expect(layout).not.toContain("nastaliq-latin");
     expect(footer).toContain("نفیس نستعلیق v1.02");
     expect(footer).toContain("https://cle.org.pk/software/license/Nafees_Nastaleeq_License.html");
+    expect(footer).toContain("font-nastaliq text-sm leading-8");
+    expect(footer).toContain("لائسنس");
     expect(footer).toContain("https://mehrtype.com/product/mehr-nastaliq-web/");
     expect(footer).toContain("https://scripts.sil.org/OFL");
     const beforeAfter = readFileSync("app/components/BeforeAfterSection.tsx", "utf8");
     const homeCss = readFileSync("app/globals.css", "utf8");
     expect(beforeAfter).toContain('const BROKEN_TEXT = "يہ  ,  ايك  غلط  كلمات  والا  متن  ہے"');
     expect(beforeAfter).toContain("qalam-before-sample");
-    expect(beforeAfter).toContain("qalam-before-error-tag");
+    expect(beforeAfter).toContain("font-nastaliq font-normal normal-case tracking-normal");
     expect(homeCss).toContain(".qalam-home section[dir=\"rtl\"] p.qalam-before-sample{font-size:1.5rem!important;");
     expect(homeCss).toContain(".qalam-home section[dir=\"rtl\"] .qalam-before-error-tag{font-family:var(--qalam-urdu-primary)!important;");
   });

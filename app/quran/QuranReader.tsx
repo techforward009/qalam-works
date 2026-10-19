@@ -833,10 +833,20 @@ export default function QuranReader({
               title={
                 copy.copy
               }
+              titleStyle={
+                language === "ur"
+                  ? { fontFamily: '"Mehr Nastaliq Web", serif' }
+                  : undefined
+              }
             >
               <button
                 type="button"
                 className="w-full border border-[#b5bbb1] bg-white px-2 py-1.5 text-xs text-[#465046] hover:bg-[#f3f5f1]"
+                style={
+                  language === "ur"
+                    ? { fontFamily: '"Mehr Nastaliq Web", serif' }
+                    : undefined
+                }
                 onClick={
                   copyPage
                 }
@@ -854,6 +864,11 @@ export default function QuranReader({
             >
               <label
                 className="block text-xs text-[#697067]"
+                style={
+                  language === "ur"
+                    ? { fontFamily: '"Mehr Nastaliq Web", serif' }
+                    : undefined
+                }
                 dir={
                   interfaceDir
                 }
@@ -1675,10 +1690,12 @@ function SidebarSection({
   title,
   children,
   defaultOpen = false,
+  titleStyle,
 }: {
   title: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  titleStyle?: { fontFamily: string };
 }) {
   return (
     <details
@@ -1687,7 +1704,7 @@ function SidebarSection({
         defaultOpen
       }
     >
-      <summary>
+      <summary style={titleStyle}>
         {title}
       </summary>
 

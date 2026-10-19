@@ -6,16 +6,17 @@ const OLD = "https://p7rvwadnelbqgqlm.public.blob.vercel-storage.com/";
 const sources = {
   "app/globals.css": [
     "muhammadi-quranic-400.woff2",
-    "NafeesNastaleeq-v1.02.woff2",
     "Gulzar-Regular.woff2",
-    "MehrNastaliqWeb.woff2",
     "Sahel.woff2",
     "ScheherazadeNew-Medium.woff2",
   ],
-  "app/quran/QuranTranslationPage.tsx": ["MehrNastaliqWeb.woff2"],
   "app/quran/editions.ts": ["muhammadi-quranic-400.woff2"],
-  "app/tools/khateeb-studio/KhateebStudioContent.tsx": ["NafeesNastaleeq-v1.02.woff2"],
-  "app/components/knowledge/KnowledgeAssistant.tsx": ["NafeesNastaleeq-v1.02.woff2"],
+};
+const localUntilUploaded = {
+  "app/globals.css": ["MehrNastaliqWeb.woff2", "NafeesNastaleeq-v1.02.woff2"],
+  "app/quran/QuranTranslationPage.tsx": ["MehrNastaliqWeb.woff2"],
+  "app/tools/khateeb-studio/KhateebStudioContent.tsx": ["NafeesNastaleeq-v1.02.woff2", "MehrNastaliqWeb.woff2"],
+  "app/components/knowledge/KnowledgeAssistant.tsx": ["NafeesNastaleeq-v1.02.woff2", "MehrNastaliqWeb.woff2"],
 };
 describe("owner-authorized originals use new independent font gateway",()=>{
   for (const [source,fonts] of Object.entries(sources)) {
@@ -23,6 +24,16 @@ describe("owner-authorized originals use new independent font gateway",()=>{
       const text=readFileSync(source,"utf8");
       for(const font of fonts) {
         expect(text,source+" "+font).toContain(MIRROR+font);
+        expect(text,source+" "+font).not.toContain(OLD+font);
+      }
+    });
+  }
+  for (const [source,fonts] of Object.entries(localUntilUploaded)) {
+    it(source+" loads Mehr and Nafees v1.02 from the site, not the font Worker",()=>{
+      const text=readFileSync(source,"utf8");
+      for(const font of fonts) {
+        expect(text,source+" "+font).toContain("/fonts/"+font);
+        expect(text,source+" "+font).not.toContain(MIRROR+font);
         expect(text,source+" "+font).not.toContain(OLD+font);
       }
     });

@@ -11,7 +11,7 @@ describe("Tafsir Urdu body uses Mehr and does not load Alvi", () => {
     expect(PUBLIC_BLOB_FONT_FAMILIES.some((font) => font.id === "alvi-nastaleeq")).toBe(false);
     expect(PUBLIC_BLOB_FONT_FAMILIES.some((font) => font.id === "mehr-nastaliq-web")).toBe(true);
     expect(() => publicBlobFontUrl("Alvi_Nastaleeq.woff2")).toThrow(/Unapproved/);
-    expect(publicBlobFontUrl("MehrNastaliqWeb.woff2")).toContain("workers.dev/fonts/MehrNastaliqWeb.woff2");
+    expect(publicBlobFontUrl("MehrNastaliqWeb.woff2")).toBe("/fonts/MehrNastaliqWeb.woff2");
     expect(css).not.toContain('font-family:"Alvi Nastaleeq"');
     expect(css).not.toContain("Alvi_Nastaleeq.woff2");
     expect(css).toContain("MehrNastaliqWeb.woff2");

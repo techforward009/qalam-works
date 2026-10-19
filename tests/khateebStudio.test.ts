@@ -372,13 +372,15 @@ describe("Khateeb Studio typography", () => {
     const studio = readFileSync("app/tools/khateeb-studio/KhateebStudioContent.tsx", "utf8");
     const globals = readFileSync("app/globals.css", "utf8");
     expect(globals).not.toContain("jameel-noori-nastaleeq-400.woff2");
-    expect(studio).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq-v1.02.woff2");
+    expect(studio).toContain('url("/fonts/NafeesNastaleeq-v1.02.woff2")');
+    expect(studio).not.toContain("workers.dev/fonts/NafeesNastaleeq-v1.02.woff2");
     expect(studio).toContain('font-family: "Nafees Nastaleeq", serif');
     expect(studio).toContain("button.khateeb-mehr-card");
     expect(studio).toContain(".khateeb-studio-ur textarea");
     expect(studio).toContain('label:has(input[type="checkbox"])');
     expect(studio).not.toContain(".khateeb-studio-ur input,");
-    expect(studio).toContain("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2");
+    expect(studio).toContain('url("/fonts/MehrNastaliqWeb.woff2")');
+    expect(studio).not.toContain("workers.dev/fonts/MehrNastaliqWeb.woff2");
     expect(studio).toContain(".khateeb-book-ur");
     expect(studio).toContain('"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important');
     expect(studio).toContain('"Gulzar", "Noto Nastaliq Urdu", serif !important');

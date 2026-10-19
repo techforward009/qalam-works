@@ -580,16 +580,14 @@ export default function KhateebStudioContent({
       <style>{`
         @font-face {
           font-family: "Nafees Nastaleeq";
-          src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2"),
-               url("/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2");
+          src: url("/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2");
           font-style: normal;
           font-weight: 400;
           font-display: swap;
         }
         @font-face {
           font-family: "Mehr Nastaliq Web";
-          src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/MehrNastaliqWeb.woff2") format("woff2"),
-               url("/fonts/MehrNastaliqWeb.woff2") format("woff2");
+          src: url("/fonts/MehrNastaliqWeb.woff2") format("woff2");
           font-style: normal;
           font-weight: 400;
           font-display: swap;

@@ -75,7 +75,9 @@ const EXTRA_BLOB_FONTS: StudioFontDefinition[] = PUBLIC_BLOB_FONT_FAMILIES
       editorFamily: family,
       category: font.script === "quran" ? "arabic" : font.script,
       scripts: ["arabic"],
-      cssStack: `"${family}", serif`,
+      cssStack: font.id === "mehr-nastaliq-web"
+        ? '"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif'
+        : `"${family}", serif`,
       cssClass: `qf-blob-${font.id}`,
       pdf: {
         supported: true,
@@ -561,10 +563,10 @@ export function studioGulzarFontFaceCss(): string {
   return `@font-face{font-family:"Gulzar";src:url("${url}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
 }
 
-/** Same Mehr file the PDF embedder uses. Does not rewrite a stored font mark. */
+/** Same Mehr file the PDF embedder uses. Same-origin until it is uploaded to the font Worker. */
 export function studioMehrFontFaceCss(): string {
-  const url = getFontById("mehr-nastaliq-web").pdf.regularFiles?.[0] ?? "";
-  return `@font-face{font-family:"Mehr Nastaliq Web";src:url("${url}") format("woff2"),url("/fonts/MehrNastaliqWeb.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
+  const url = getFontById("mehr-nastaliq-web").pdf.regularFiles?.[0] ?? "/fonts/MehrNastaliqWeb.woff2";
+  return `@font-face{font-family:"Mehr Nastaliq Web";src:url("${url}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
 }
 
 /** Persian faces requested only after a Document Studio document uses them. */

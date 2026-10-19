@@ -54,9 +54,9 @@ export default function QuranIndexPage() {
               <div className={styles.band} />
               <div className={styles.body}>
                 <div className={styles.number}>{copy.edition} {index + 1}</div>
-                <h2 className={styles.name}>{edition.name[language]}</h2>
+                <h2 className={styles.name} style={language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined}>{edition.name[language]}</h2>
                 <p className={language === "ur" ? styles.description + " font-naskh" : styles.description}>{edition.description[language]}</p>
-                <div className={styles.detail}>{edition.detail[language]}</div>
+                <div className={styles.detail} style={language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined}>{edition.detail[language]}</div>
                 <div className={styles.rendering}>{edition.rendering[language]}</div>
                 <Link href={edition.route} className={styles.open} dir={language === "ur" ? "rtl" : "ltr"} lang={language}>
                   {copy.open}

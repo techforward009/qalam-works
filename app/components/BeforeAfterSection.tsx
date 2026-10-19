@@ -26,7 +26,7 @@ export default function BeforeAfterSection() {
 
         <div className="grid items-stretch gap-6 md:grid-cols-[1fr_auto_1fr]" dir="ltr">
           <div className="relative overflow-hidden rounded-2xl border-2 border-[#1A2036]/10 bg-[#F7F5EF] p-8 shadow-inner dark:border-white/10 dark:bg-[#0E1524]">
-            <div className="absolute left-0 top-0 rounded-br-lg bg-[#1A2036] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white dark:bg-[#243049]" dir="ltr">
+            <div className={`absolute left-0 top-0 rounded-br-lg bg-[#1A2036] px-3 py-1 text-[11px] font-bold text-white dark:bg-[#243049] ${language === "ur" ? "font-nastaliq font-normal normal-case tracking-normal" : "uppercase tracking-wider"}`} dir={language === "ur" ? "rtl" : "ltr"} lang={language === "ur" ? "ur" : "en"}>
               {t.inputLabel}
             </div>
             <p dir="rtl" lang="ur" className="qalam-before-sample mt-6 break-words text-center font-nastaliq text-2xl leading-[2.4] text-[#263742] dark:text-[#e3e8e5]">
@@ -50,7 +50,7 @@ export default function BeforeAfterSection() {
           </div>
 
           <div className="relative overflow-hidden rounded-2xl border-2 border-[#2FA37D]/40 bg-white p-8 shadow-xl dark:border-[#2FA37D]/35 dark:bg-[#1A2036]">
-            <div className="absolute left-0 top-0 rounded-br-lg bg-[#2FA37D] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white" dir="ltr">
+            <div className={`absolute left-0 top-0 rounded-br-lg bg-[#2FA37D] px-3 py-1 text-[11px] font-bold text-white ${language === "ur" ? "font-nastaliq font-normal normal-case tracking-normal" : "uppercase tracking-wider"}`} dir={language === "ur" ? "rtl" : "ltr"} lang={language === "ur" ? "ur" : "en"}>
               {t.outputLabel}
             </div>
             <div className="mt-6 flex min-h-[120px] flex-col justify-center">
