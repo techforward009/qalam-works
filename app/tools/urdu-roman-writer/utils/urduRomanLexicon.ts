@@ -66,7 +66,6 @@ export const PHRASE_LEXICON: [string, string][] = [
 // ── Single-word dictionary ────────────────────────────────────────────────────
 
 export const WORD_LEXICON: Record<string, string> = {
-  "قلم": "qalam",
   "اردو": "urdu",
   "ٹول": "tool",
   "ورکس": "works",
