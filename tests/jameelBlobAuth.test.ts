@@ -5,6 +5,7 @@ import {
   jameelLoadToPdfFace,
   loadJameelFromBlob,
   loadJameelFromCloudflare,
+  loadPrivateJameelWoff2,
   type JameelFontLoadResult,
 } from "../app/lib/privateJameelFont";
 import { buildPdfHtml, type PdfFontFace } from "../app/tools/document-studio/utils/buildPdfHtml";
@@ -211,5 +212,25 @@ describe("Cloudflare original Jameel PDF recovery", () => {
       "http://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/jameel-noori-nastaleeq-400.woff2",
     ])expect((await loadJameelFromCloudflare(url,request as unknown as typeof fetch)).ok).toBe(false);
     expect(request).not.toHaveBeenCalled();
+  });
+});
+
+describe("bounded Jameel default loading", () => {
+  it("deduplicates concurrent requests and retries unsuccessful downloads", async () => {
+    const request = vi.fn(async () => response(503));
+    vi.stubGlobal("fetch", request);
+    try {
+      const [a, b] = await Promise.all([
+        loadPrivateJameelWoff2(),
+        loadPrivateJameelWoff2(),
+      ]);
+      expect(a.ok).toBe(false);
+      expect(b.ok).toBe(false);
+      expect(request).toHaveBeenCalledTimes(1);
+      await loadPrivateJameelWoff2();
+      expect(request).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
