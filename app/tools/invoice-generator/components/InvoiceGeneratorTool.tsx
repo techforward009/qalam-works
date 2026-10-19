@@ -63,7 +63,7 @@ const DEFAULT_INVOICE: Invoice = {
   seller: { name: "", email: "", phone: "", address: "", website: "", taxNumber: "" },
   client: { name: "", email: "", phone: "", address: "" },
   items:    [newItem()],
-  currency: "USD",
+  currency: "PKR",
   notes:    "",
   terms:    "",
   footer:   "",
