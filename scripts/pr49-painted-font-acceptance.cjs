@@ -7,7 +7,7 @@ fs.mkdirSync(out,{recursive:true});
 const samples = [
   {id:"jameel",family:"Jameel Noori Nastaleeq",text:"اردو تحریر کا خوب صورت نمونہ، پڑھنے میں آسان۔",dir:"rtl"},
   {id:"gulzar",family:"Gulzar",text:"یہ گلزار فونٹ کے حروف اور نقطوں کی جانچ ہے۔",dir:"rtl"},
-  {id:"alvi",family:"Alvi Nastaleeq",text:"آج ہم علوی نستعلیق میں لکھنے کی آزمائش کریں گے۔",dir:"rtl"},
+  {id:"mehr",family:"Mehr Nastaliq Web",text:"آج ہم مہر نستعلیق ویب میں لکھنے کی آزمائش کریں گے۔",dir:"rtl"},
   {id:"amiri",family:"Amiri",text:"بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ وَالْحَمْدُ لِلّٰهِ",dir:"rtl"},
   {id:"digital",family:"Digital Khatt Indo-Pak",text:"اَلْحَمْدُ لِلّٰهِ رَبِّ الْعٰلَمِيْنَ",dir:"rtl"},
 ];
@@ -58,6 +58,8 @@ const samples = [
   }
   for(const s of samples)report.results.push(await inspect("font-probe-"+s.id,s.family));
   report.mixed={rtl:await inspect("font-probe-mixed-rtl","Gulzar"),arabic:await inspect("font-probe-mixed-arabic","Amiri"),latin:await inspect("font-probe-mixed-latin","Inter")};
+  const alviRequest=report.requests.find(item=>/alvi/i.test(item.url||""));
+  if(alviRequest) report.results.push({id:"alvi",family:"Alvi Nastaleeq",status:"FAIL",reason:"Removed Alvi font was requested: "+alviRequest.url,rendered:[]});
   // Inter is intentional only for the explicitly Latin run.
   const all=[...report.results,report.mixed.rtl,report.mixed.arabic,report.mixed.latin];
 

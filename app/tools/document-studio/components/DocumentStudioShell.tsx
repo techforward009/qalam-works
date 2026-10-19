@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { studioJameelFontFaceCss } from "../utils/fontRegistry";
 
 /**
  * Google-Docs-style application chrome around the existing canvas.
@@ -103,6 +104,7 @@ export default function DocumentStudioShell({
       </div>
 
       <div className="studio-no-print shrink-0 border-t border-[#1A3A2A]/10 bg-white" data-studio-chrome="status">{statusBar}</div>
+      <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style>
       <style jsx global>{`
         @media print {
           .studio-no-print,
