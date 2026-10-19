@@ -29,12 +29,12 @@ export default function BeforeAfterSection() {
             <div className="absolute left-0 top-0 rounded-br-lg bg-[#1A2036] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white dark:bg-[#243049]" dir="ltr">
               {t.inputLabel}
             </div>
-            <p dir="rtl" lang="ur" className="mt-6 break-words text-center font-nastaliq text-2xl leading-[2.4] text-[#263742] dark:text-[#e3e8e5]">
+            <p dir="rtl" lang="ur" className="qalam-before-sample mt-6 break-words text-center font-nastaliq text-2xl leading-[2.4] text-[#263742] dark:text-[#e3e8e5]">
               {BROKEN_TEXT}
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2" dir={language === "ur" ? "rtl" : "ltr"}>
               {[t.tagYeh, t.tagComma, t.tagSpacing].map((tag) => (
-                <span key={tag} className="rounded bg-red-100 px-2 py-1 text-xs font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                <span key={tag} className="qalam-before-error-tag rounded bg-red-100 px-2 py-1 text-xs font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300">
                   {tag}
                 </span>
               ))}

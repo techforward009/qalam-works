@@ -74,5 +74,12 @@ describe("Mehr Nastaliq Web body preview", () => {
     expect(footer).toContain("https://cle.org.pk/software/license/Nafees_Nastaleeq_License.html");
     expect(footer).toContain("https://mehrtype.com/product/mehr-nastaliq-web/");
     expect(footer).toContain("https://scripts.sil.org/OFL");
+    const beforeAfter = readFileSync("app/components/BeforeAfterSection.tsx", "utf8");
+    const homeCss = readFileSync("app/globals.css", "utf8");
+    expect(beforeAfter).toContain('const BROKEN_TEXT = "يہ  ,  ايك  غلط  كلمات  والا  متن  ہے"');
+    expect(beforeAfter).toContain("qalam-before-sample");
+    expect(beforeAfter).toContain("qalam-before-error-tag");
+    expect(homeCss).toContain(".qalam-home section[dir=\"rtl\"] p.qalam-before-sample{font-size:1.5rem!important;");
+    expect(homeCss).toContain(".qalam-home section[dir=\"rtl\"] .qalam-before-error-tag{font-family:var(--qalam-urdu-primary)!important;");
   });
 });

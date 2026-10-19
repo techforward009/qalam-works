@@ -1755,6 +1755,9 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
 
 /* Consistent readable Urdu body copy in Mehr Nastaliq Web. Headings use Gulzar. */
 .qalam-home section[dir="rtl"] p,.qalam-home section[dir="rtl"] .qalam-intent-description,.qalam-home section[dir="rtl"] li:not(:has(.qalam-intent-label)){font-family:var(--qalam-urdu-primary)!important;font-size:18px!important;font-weight:400!important;line-height:2.45!important;letter-spacing:0;}
+/* The broken-sample line is a size demo, not body copy. Keep the English text-2xl size (1.5rem / 24px). */
+.qalam-home section[dir="rtl"] p.qalam-before-sample{font-size:1.5rem!important;line-height:2.2!important;font-weight:400!important;}
+.qalam-home section[dir="rtl"] .qalam-before-error-tag{font-family:var(--qalam-urdu-primary)!important;font-weight:400!important;font-size:16px!important;line-height:2.2!important;letter-spacing:0!important;}
 .qalam-home .qalam-jameel-prompt{font-family:var(--qalam-urdu-primary)!important;font-size:18px!important;line-height:2.45!important;font-style:normal!important;text-align:right!important;}
 .qalam-about-urdu p,.qalam-about-urdu div.space-y-5{font-family:var(--qalam-urdu-primary)!important;font-size:18px!important;line-height:2.45!important;font-weight:400!important;letter-spacing:0;}
 
