@@ -1,19 +1,20 @@
 /** @vitest-environment happy-dom */
 
-import { readFileSync } from "node:fs";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Editor } from "@tiptap/core";
 import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
 import { applyFontFamily, activeToolbarFontFamily } from "../app/tools/document-studio/utils/documentCommands";
 import { createMemoryDocumentLibrary } from "../app/tools/document-studio/utils/documentLibrary";
-import { normalizeEditorFontFamily, studioJameelFontFaceCss, studioOnDemandFontFaceCss, JAMEEL_EDITOR_FONT_URL } from "../app/tools/document-studio/utils/fontRegistry";
+import { normalizeEditorFontFamily, studioJameelFontFaceCss, studioOnDemandFontFaceCss, JAMEEL_EDITOR_FONT_URL, migrateAlviDocumentContent, resolveEditorFontFamily } from "../app/tools/document-studio/utils/fontRegistry";
 import { fontsForDocument } from "../app/tools/document-studio/utils/pdfDocumentFonts";
 import { requiredPdfEmbedFonts, buildPdfHtml, type PdfFontFace } from "../app/tools/document-studio/utils/buildPdfHtml";
 import { mountDocumentPrintPortal, unmountDocumentPrintPortal, waitForPrintFonts } from "../app/tools/document-studio/utils/documentView";
 import DocumentToolbar from "../app/tools/document-studio/components/DocumentToolbar";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import { resolveActiveToolbarFormatting } from "../app/tools/document-studio/utils/activeToolbarFormatting";
+import { buildDocxBlob } from "../app/tools/document-studio/utils/buildDocxDocument";
+import JSZip from "jszip";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
 afterEach(() => {
@@ -214,7 +215,7 @@ describe("picked Document Studio faces", () => {
   it.each([
     ["AlFars 9 Badr", "AlFars9Badr.woff2"],
     ["B Nazanin", "BNazanin.woff2"],
-  ] as const)("loads %s only after it is picked on selected text", (family, file) => {
+  ] as const)("quotes %s on the selected span and requests its font file", async (family, file) => {
     const editor = createEditor({
       type: "doc",
       content: [{ type: "paragraph", content: [{ type: "text", text: "فارسی متن" }] }],
@@ -222,25 +223,41 @@ describe("picked Document Studio faces", () => {
     expect(studioOnDemandFontFaceCss("فارسی متن")).toBe("");
     editor.commands.selectAll();
     applyFontFamily(editor, family);
+    const quoted = `"${family}"`;
     const json = editor.getJSON() as DocNode;
-    expect(json.content?.[0]?.content?.[0]?.marks?.find((mark) => mark.type === "textStyle")?.attrs?.fontFamily).toBe(family);
-    const css = studioOnDemandFontFaceCss(JSON.stringify(json));
+    expect(json.content?.[0]?.content?.[0]?.marks?.find((mark) => mark.type === "textStyle")?.attrs?.fontFamily).toBe(quoted);
+    expect(normalizeEditorFontFamily(quoted)).toBe(family);
+    const html = editor.getHTML();
+    const encodedQuotes = "font-family: &" + "quot;" + family + "&" + "quot;";
+    expect(html.includes(encodedQuotes) || html.includes(`font-family: ${quoted}`)).toBe(true);
+    const span = document.createElement("div");
+    span.innerHTML = html;
+    const styled = span.querySelector("span");
+    expect(styled?.getAttribute("style") ?? "").toContain(`font-family: ${quoted}`);
+    const probe = document.createElement("span");
+    probe.style.cssText = styled?.getAttribute("style") ?? "";
+    expect(probe.style.fontFamily.replace(/["']/g, "")).toContain(family);
+    const css = studioOnDemandFontFaceCss(html);
     expect(css).toContain(`font-family:"${family}"`);
     expect(css).toContain(file);
     expect(css).toContain("workers.dev/fonts/" + file);
-    const globals = readFileSync("app/globals.css", "utf8");
-    expect(globals).toContain(`[style*="${family}"]`);
-    expect(globals).toContain(`font-family: "${family}"`);
-    document.body.innerHTML = `
-      <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-dir="rtl">
-        <div data-studio-print-surface>
-          <div class="qalam-editor-content"><span data-picked-font="true">فارسی متن</span></div>
-        </div>
-      </div>`;
-    document.querySelector("[data-picked-font]")?.setAttribute("style", `font-family: "${family}"`);
-    const portal = mountDocumentPrintPortal();
-    expect(portal?.querySelector("style")?.textContent).toContain(file);
-    expect(portal?.innerHTML).toContain(family);
+    const loaded = migrateAlviDocumentContent({
+      type: "doc",
+      content: [{
+        type: "paragraph",
+        content: [{ type: "text", text: "فارسی متن", marks: [{ type: "textStyle", attrs: { fontFamily: family } }] }],
+      }],
+    });
+    expect(loaded.content?.[0]?.content?.[0]?.marks?.[0]?.attrs?.fontFamily).toBe(quoted);
+    const pdf = buildPdfHtml(json, "rtl", { faces: [face(family), face("Noto Nastaliq Urdu")] });
+    expect(pdf.fontsUsed).toContain(family);
+    expect(pdf.html).toContain(`font-family: "${family}", serif`);
+    expect(resolveEditorFontFamily(quoted, "rtl").docxFamily).toBe(family);
+    const docx = await JSZip.loadAsync(await buildDocxBlob(json, "rtl"));
+    const documentXml = await docx.file("word/document.xml")?.async("string");
+    expect(documentXml).toContain(`w:ascii="${family}"`);
+    expect(documentXml).toContain(`w:cs="${family}"`);
+    expect(activeToolbarFontFamily(editor)).toBe(family);
     editor.destroy();
   });
 

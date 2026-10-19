@@ -427,8 +427,11 @@ export function migrateAlviDocumentContent<T extends DocNode>(doc: T): T {
   const walk = (node: DocNode): DocNode => {
     const marks = node.marks?.map((mark) => {
       const replacement = retiredFontReplacement(mark.attrs?.fontFamily, node.text ?? "");
-      if (!replacement) return mark;
-      return { ...mark, attrs: { ...mark.attrs, fontFamily: replacement } };
+      const current = replacement ?? mark.attrs?.fontFamily;
+      if (typeof current !== "string") return mark;
+      const quoted = quoteEditorFontFamily(current);
+      if (!replacement && quoted === mark.attrs?.fontFamily) return mark;
+      return { ...mark, attrs: { ...mark.attrs, fontFamily: quoted || current } };
     });
     const content = node.content?.map(walk);
     const marksChanged = marks !== undefined && marks.some((mark, index) => mark !== node.marks?.[index]);
@@ -580,6 +583,22 @@ export function studioOnDemandFontFaceCss(source: string): string {
     .filter((face) => source.includes(face.family))
     .map((face) => `@font-face{font-family:"${face.family}";src:url("${publicBlobFontUrl(face.file)}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`)
     .join("\n");
+}
+
+/** CSS font-family tokens that may appear unquoted. A digit-leading token is not one of these. */
+const CSS_FONT_IDENT = /^-?[A-Za-z_][A-Za-z0-9_-]*$/;
+/** These names are quoted in the editor, saved JSON, and PDF CSS. Al Fars is invalid unquoted. */
+const QUOTED_EDITOR_FAMILIES = new Set(["AlFars 9 Badr", "B Nazanin"]);
+
+/** A CSS font-family value TipTap can assign with element.style.cssText. */
+export function quoteEditorFontFamily(raw: string): string {
+  const first = raw.trim().split(",")[0]?.trim() ?? "";
+  const bare = first.replace(/^["']+|["']+$/g, "");
+  if (!bare) return "";
+  const tokens = bare.split(/\s+/).filter(Boolean);
+  const safe = tokens.every((token) => CSS_FONT_IDENT.test(token));
+  if (safe && !QUOTED_EDITOR_FAMILIES.has(bare)) return bare;
+  return `"${bare.replace(/"/g, "")}"`;
 }
 
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */

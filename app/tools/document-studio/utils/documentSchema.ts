@@ -12,11 +12,12 @@ import { TextStyle, FontFamily, FontSize, Color } from "@tiptap/extension-text-s
 import Highlight from "@tiptap/extension-highlight";
 import { TableKit } from "@tiptap/extension-table";
 import Image from "@tiptap/extension-image";
-import { Node, type Editor } from "@tiptap/core";
+import { Node, getStyleProperty, type Editor } from "@tiptap/core";
 import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyles";
 import { validateLineHeight, validateIndentMm, validateSpacingPt } from "./documentSettings";
+import { quoteEditorFontFamily } from "./fontRegistry";
 import { ParagraphAutoDirection } from "./paragraphDirection";
 import { applyImageFloatDataset, imageFloatsBesideText, imageWrapSize, parseImageAlignment } from "./documentImages";
 
@@ -428,6 +429,30 @@ export const DocumentSectionBreak = Node.create({
   },
 });
 
+const QuotedFontFamily = FontFamily.extend({
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontFamily: {
+            default: null,
+            parseHTML: (element: HTMLElement) => {
+              const raw = getStyleProperty(element, "font-family") ?? element.style.fontFamily;
+              return raw ? quoteEditorFontFamily(raw) : null;
+            },
+            renderHTML: (attributes: { fontFamily?: string | null }) => {
+              if (!attributes.fontFamily) return {};
+              const quoted = quoteEditorFontFamily(attributes.fontFamily);
+              return quoted ? { style: `font-family: ${quoted}` } : {};
+            },
+          },
+        },
+      },
+    ];
+  },
+});
+
 export function createDocumentStudioExtensions() {
   return [
     StarterKit.configure({
@@ -440,7 +465,7 @@ export function createDocumentStudioExtensions() {
     Link.configure({ openOnClick: false }),
     TextAlign.configure({ types: ["heading", "paragraph"] }),
     TextStyle,
-    FontFamily,
+    QuotedFontFamily,
     FontSize.configure({ types: ["textStyle"] }),
     Color,
     Highlight.configure({ multicolor: true }),
