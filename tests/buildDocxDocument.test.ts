@@ -445,8 +445,8 @@ describe("createDocxDocument — v1.1 Phase 1: heading hierarchy fix", () => {
   });
 });
 
-describe("createDocxDocument — Urdu default is Alvi; explicit Jameel is preserved", () => {
-  test("unmarked RTL uses Alvi Nastaleeq and LTR uses Inter", async () => {
+describe("createDocxDocument — new Urdu default is Mehr; a saved Alvi default is kept", () => {
+  test("unmarked RTL uses Mehr Nastaliq Web and LTR uses Inter", async () => {
     const rtlXml = await extractDocumentXml(
       docWith([{ type: "paragraph", content: [{ type: "text", text: "متن" }] }]),
       "rtl"
@@ -455,9 +455,21 @@ describe("createDocxDocument — Urdu default is Alvi; explicit Jameel is preser
       docWith([{ type: "paragraph", content: [{ type: "text", text: "text" }] }]),
       "ltr"
     );
-    expect(rtlXml).toContain('w:cs="Alvi Nastaleeq"');
+    expect(rtlXml).toContain('w:cs="Mehr Nastaliq Web"');
     expect(rtlXml).not.toContain("Noto Nastaliq Urdu");
     expect(ltrXml).toContain("Inter");
+  });
+
+  test("settings saved with Alvi are not rewritten to Mehr", async () => {
+    const settings = defaultDocumentSettings();
+    settings.typography.defaultRtlFontId = "alvi-nastaleeq";
+    const xml = await extractDocumentXml(
+      docWith([{ type: "paragraph", content: [{ type: "text", text: "متن" }] }]),
+      "rtl",
+      settings
+    );
+    expect(xml).toContain('w:cs="Alvi Nastaleeq"');
+    expect(xml).not.toContain("Mehr Nastaliq Web");
   });
 
   test("an explicit Jameel mark is not rewritten to Alvi", async () => {

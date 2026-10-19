@@ -220,7 +220,7 @@ describe("Batch 16A.1 — editor default RTL/LTR font resolution (through fontRe
     const settings = defaultDocumentSettings();
     const rtlFamily = getFontById(settings.typography.defaultRtlFontId).editorFamily;
     const ltrFamily = getFontById(settings.typography.defaultLtrFontId).editorFamily;
-    expect(rtlFamily).toBe("Alvi Nastaleeq");
+    expect(rtlFamily).toBe("Mehr Nastaliq Web");
     expect(ltrFamily).toBe("Inter");
     expect(rtlFamily).not.toBe(ltrFamily);
   });

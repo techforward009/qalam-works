@@ -130,10 +130,10 @@ describe("toolbar font selection sync", () => {
     expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Jameel Noori Nastaleeq");
     editor.commands.setTextSelection(editor.state.doc.content.size - 2);
     expect(activeToolbarFontFamily(editor)).toBe("");
-    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").fontFamily).toBe("Alvi Nastaleeq");
+    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").fontFamily).toBe("Mehr Nastaliq Web");
     cleanup();
     render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr documentSettings={defaultDocumentSettings()} />);
-    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Alvi Nastaleeq");
+    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Mehr Nastaliq Web");
     expect((document.querySelector("[data-studio-font-size]") as HTMLSelectElement).value).toBe("12");
     expect(document.querySelector("select[data-studio-line-height]")).toBeNull();
     expect(document.querySelector("[data-studio-spacing-button]")).toBeTruthy();

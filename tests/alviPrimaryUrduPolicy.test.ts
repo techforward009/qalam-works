@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
-import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
+import { defaultDocumentSettings, parseDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import {
   getFontById,
   listEditorFonts,
@@ -27,17 +27,21 @@ describe("Mehr Nastaliq Web body preview", () => {
     expect(css).toContain('font-family: "Muhammadi Quranic"');
   });
 
-  test("saved Urdu documents still default to Alvi, while Mehr is a new choice", () => {
-    expect(defaultDocumentSettings().typography.defaultRtlFontId).toBe("alvi-nastaleeq");
+  test("new Urdu documents use Mehr, and a saved Alvi document still opens as Alvi", () => {
+    expect(defaultDocumentSettings().typography.defaultRtlFontId).toBe("mehr-nastaliq-web");
     for (const preset of Object.values(PUBLISHING_PRESETS)) {
-      expect(preset.defaultRtlFontId).toBe("alvi-nastaleeq");
+      expect(preset.defaultRtlFontId).toBe("mehr-nastaliq-web");
     }
+    const saved = parseDocumentSettings({
+      typography: { defaultRtlFontId: "alvi-nastaleeq", defaultLtrFontId: "inter" },
+    });
+    expect(saved.typography.defaultRtlFontId).toBe("alvi-nastaleeq");
     const visible = listEditorFonts().map((font) => font.id);
     expect(visible).toContain("alvi-nastaleeq");
     expect(visible).toContain("jameel-noori-nastaleeq");
     expect(visible).toContain("mehr-nastaliq-web");
     expect(visible).not.toContain("faiz-lahori");
-    expect(resolveEditorFontFamily(null, "rtl").pdfFamily).toBe("Alvi Nastaleeq");
+    expect(resolveEditorFontFamily(null, "rtl").pdfFamily).toBe("Mehr Nastaliq Web");
     expect(resolveEditorFontFamily("Jameel Noori Nastaleeq", "rtl")).toMatchObject({
       fontId: "jameel-noori-nastaleeq",
       fellBack: false,
@@ -48,7 +52,11 @@ describe("Mehr Nastaliq Web body preview", () => {
       fellBack: false,
       pdfFamily: "Mehr Nastaliq Web",
     });
-    expect(resolveEditorFontFamily("Alvi Nastaleeq", "rtl").fellBack).toBe(false);
+    expect(resolveEditorFontFamily("Alvi Nastaleeq", "rtl")).toMatchObject({
+      fontId: "alvi-nastaleeq",
+      fellBack: false,
+      pdfFamily: "Alvi Nastaleeq",
+    });
     expect(getFontById("alvi-nastaleeq").pdf.regularFiles?.[0]).toBe(
       "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Alvi_Nastaleeq.woff2",
     );

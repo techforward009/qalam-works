@@ -47,7 +47,7 @@ describe("fontRegistry", () => {
   });
 
   test("default font depends on document direction", () => {
-    expect(resolveEditorFontFamily(null, "rtl").pdfFamily).toBe("Alvi Nastaleeq");
+    expect(resolveEditorFontFamily(null, "rtl").pdfFamily).toBe("Mehr Nastaliq Web");
     expect(resolveEditorFontFamily(null, "ltr").pdfFamily).toBe("Inter");
   });
 

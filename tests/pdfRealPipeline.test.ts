@@ -112,6 +112,7 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
   it.each([28, 29, 30, 40])("measures pagination of %i single-line mixed paragraphs", async count => {
     currentCase = `geometry-${count}`;
     const settings = defaultDocumentSettings();
+    settings.typography.defaultRtlFontId = "alvi-nastaleeq";
     settings.headerFooter.headerEnabled = false;
     settings.headerFooter.footerEnabled = false;
     const doc = { type: "doc", content: Array.from({ length: count }, (_, i) => ({
@@ -126,8 +127,9 @@ describe.runIf(Boolean(process.env.QALAM_PDF_CHROMIUM))("actual Document Studio 
     const bytes = new Uint8Array(await response.arrayBuffer());
     writeFileSync(path.join(output, `${currentCase}.pdf`), bytes);
     const pdf = await PDFDocument.load(bytes);
-    // Alvi Nastaleeq is the Urdu default. Its line boxes fit 29 of these
-    // single lines on one page; 30 crosses onto a second page.
+    // This case pins Alvi Nastaleeq, the face these line boxes were measured
+    // with. Its boxes fit 29 of these single lines on one page; 30 crosses
+    // onto a second page. New documents now default to Mehr.
     expect(pdf.getPageCount()).toBe(count <= 29 ? 1 : 2);
     // Chromium quantizes physical paper dimensions to device pixels (< 1 pt).
     expect(Math.abs(pdf.getPage(0).getWidth() - 210 / 25.4 * 72)).toBeLessThan(1);
