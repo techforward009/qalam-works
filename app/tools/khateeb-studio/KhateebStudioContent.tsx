@@ -170,7 +170,7 @@ export default function KhateebStudioContent({
     const gregorian = { year: value("year"), month: value("month"), day: value("day") };
     const monthNumber = resolveDisplayHijriDate(gregorian, "pakistan").hijri.month;
     const current = CALENDAR_MONTHS_1448[monthNumber - 1];
-    if (current) setSelectedMonth(current.id);
+    if (current) { setSelectedMonth(current.id); setSelectedEvent(""); }
   }, []);
   const [selectedEvent, setSelectedEvent] = useState(initialView.event);
   const [selectedSpeaker, setSelectedSpeaker] = useState(
