@@ -22,9 +22,9 @@ export default function ProblemSection() {
               <h3 className={`mb-3 text-base font-bold text-[#1F6C54] dark:text-[#2FA37D] ${naskh}`}>{point.title}</h3>
               <div className="mb-4 rounded-lg border border-[#1A2036]/8 bg-[#F7F5EF] py-4 dark:border-white/10 dark:bg-[#0E1524]">
                 {(point.title === "عربی کاف" || point.title === "Arabic kaf") ? (
-                  <div className="flex items-center justify-center gap-3 text-2xl text-[#11182A] dark:text-[#F7F5EF]" dir="rtl" lang="ur">
+                  <div className="flex items-center justify-center gap-3 text-2xl text-[#11182A] dark:text-[#F7F5EF]" dir={dir} lang="ur">
                     <span className="qalam-problem-alvi" lang="ar">ايك</span>
-                    <span aria-hidden="true" className="font-sans text-base">←</span>
+                    <span aria-hidden="true" className="font-sans text-base">{language === "ur" ? "←" : "→"}</span>
                     <span className="qalam-problem-jameel">ایک</span>
                   </div>
                 ) : <p dir={language === "ur" ? "rtl" : "ltr"} className="font-nastaliq text-xl text-[#11182A] dark:text-[#F7F5EF]">{point.example.split("→").length === 2 ? <span className="inline-flex items-center justify-center gap-2" dir={language === "ur" ? "rtl" : "ltr"}><bdi dir="auto">{point.example.split("→")[0].trim()}</bdi><span className="font-sans" aria-hidden="true">{language === "ur" ? "←" : "→"}</span><bdi dir="auto">{point.example.split("→")[1].trim()}</bdi></span> : point.example}</p>}

@@ -78,9 +78,9 @@ test("4-6. homepage How It Works card links correctly in English", async () => {
 test("7. Urdu How It Works card copy", async () => {
   mockLanguage = "ur";
   await renderHowItWorks();
-  const card = screen.getByRole("link", { name: /رومن اردو سے اردو/ });
+  const card = screen.getByRole("link", { name: /رومن سے اردو ٹائپنگ/ });
   expect(writerHref(card)).toBe("/tools/roman-urdu-writer");
-  expect(card.textContent).toMatch(/رومن اردو/);
+  expect(card.textContent).toMatch(/رومن لکھیں، اردو فوراً حاصل کریں/);
 });
 
 test("job guidance discovers Urdu Writer", async () => {

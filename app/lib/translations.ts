@@ -7,7 +7,7 @@
 // hunting through components for inline literals.
 //
 // POSITIONING CORRECTION (2026-08-10): copy below intentionally frames
-// the PRODUCT (Document Studio, Quality Audit, Unicode Standardizer) as
+// the PRODUCT (Document Studio, Urdu Text Check, Urdu Unicode Fixer) as
 // Urdu-first — no "Arabic script" or "Urdu/Arabic/Persian publishing
 // intelligence" claims. Arabic and Persian appear ONLY under Services
 // (professional translation), never as product-capability claims.
@@ -113,7 +113,7 @@ export const translations = {
           body: "Full publishing environment for Urdu documents with real-time preview.",
         },
         {
-          name: "Document Cleaner",
+          name: "Urdu Text Cleaner",
           body: "Fix spacing, punctuation, and encoding errors instantly.",
         },
         {
@@ -125,7 +125,7 @@ export const translations = {
           body: "Specialized translation for Urdu, English, Arabic, and Persian.",
         },
         {
-          name: "Roman Urdu Writer",
+          name: "Roman Urdu Typing",
           body: "Type Roman, receive Urdu instantly.",
         },
         {
@@ -137,7 +137,7 @@ export const translations = {
           body: "Accurate Gregorian, Hijri, and Solar Hijri date conversion.",
         },
         {
-          name: "WhatsApp RTL",
+          name: "WhatsApp Urdu Formatter",
           body: "Format right-to-left text perfectly for WhatsApp messages.",
         },
         {
@@ -245,7 +245,7 @@ export const translations = {
       lastUpdated: "Last updated: August 2026",
       sections: [
         { title: "Overview", body: "Qalam Works is committed to respecting your privacy. This page describes how our tools and website handle your data." },
-        { title: "Document and Text Processing", body: "Most cleanup and editing runs in your browser. Document Cleaner, Quality Audit, Unicode Standardizer, and Document Studio editing process text on your device. We do not store your documents. Document Studio PDF export sends content only to generate the requested PDF file; that content is not retained after the file is produced." },
+        { title: "Document and Text Processing", body: "Most cleanup and editing runs in your browser. Urdu Text Cleaner, Urdu Text Check, Urdu Unicode Fixer, and Document Studio editing process text on your device. We do not store your documents. Document Studio PDF export sends content only to generate the requested PDF file; that content is not retained after the file is produced." },
         { title: "Local Storage", body: "Document Studio may save a draft in your browser's localStorage so you can continue later. This draft stays on your device. You can clear it anytime by clearing browser data or using Clear Draft in the Studio." },
         { title: "Contact", body: "If you contact us by email, your message and email address will be used only to respond to your inquiry." },
         { title: "Cookies and Analytics", body: "We use Vercel Analytics and Vercel Speed Insights to understand product usage and performance. These measure privacy-oriented events such as which tool was opened or whether an export succeeded. We do not collect document text, filenames, clipboard contents, invoice details, or other user content. We do not use session replay or advertising trackers. Hosting logs may record basic request metadata (such as IP address and page visited)." },
@@ -328,8 +328,8 @@ export const translations = {
       faqHeading: "Frequently Asked Questions",
       faqs: [
         { question: "What does this tool do?", answer: "It audits text for spacing, punctuation, repeated words, and script observations. It never changes your text automatically." },
-        { question: "Does it fix the text automatically?", answer: "No — this is inspection only. Use Document Cleaner or Document Studio to apply language-aware cleanup." },
-        { question: "Is my text stored anywhere?", answer: "No. Quality Audit runs in your browser — your text is not uploaded for analysis." },
+        { question: "Does it fix the text automatically?", answer: "No — this is inspection only. Use Urdu Text Cleaner or Document Studio to apply language-aware cleanup." },
+        { question: "Is my text stored anywhere?", answer: "No. Urdu Text Check runs in your browser — your text is not uploaded for analysis." },
       ],
     },
     unicodeTool: {
@@ -341,7 +341,7 @@ export const translations = {
       faqs: [
         { question: "What does this tool do?", answer: "It normalizes mixed Unicode variants in your Urdu text (like ي instead of ی, ك instead of ک), removes extra spaces, and corrects punctuation to match Urdu conventions." },
         { question: "Is my text stored anywhere?", answer: "No. Processing happens entirely in your browser — your text is never sent to a server." },
-        { question: "What file formats does it support?", answer: "Currently plain text only. For DOCX files, use our Document Cleaner tool." },
+        { question: "What file formats does it support?", answer: "Currently plain text only. For DOCX files, use our Urdu Text Cleaner tool." },
       ],
       examples: [
         { label: "Arabic yeh (ي) → Urdu yeh (ی)", before: "يہ", after: "یہ" },
@@ -475,11 +475,11 @@ export const translations = {
           body: "اردو دستاویزات کے لیے مکمل اشاعتی ماحول، براہِ راست پیش منظر کے ساتھ۔",
         },
         {
-          name: "ڈاکومنٹ کلینر",
+          name: "اردو ٹیکسٹ کلینر",
           body: "فاصلہ، رموزِ اوقاف اور انکوڈنگ فوراً درست کرتا ہے۔",
         },
         {
-          name: "اردو حروف کی اصلاح",
+          name: "اردو یونیکوڈ فکسر",
           body: "اردو حروف (ی، ک، ہ) منبع پر درست کرتا ہے۔",
         },
         {
@@ -487,11 +487,11 @@ export const translations = {
           body: "اردو، انگریزی، عربی اور فارسی کا مخصوص ترجمہ۔",
         },
         {
-          name: "رومن اردو سے اردو",
+          name: "رومن سے اردو ٹائپنگ",
           body: "رومن لکھیں، اردو فوراً حاصل کریں۔",
         },
         {
-          name: "کوالٹی چیکر",
+          name: "اردو متن کی جانچ",
           body: "اشاعت سے پہلے یونیکوڈ کی غلطیاں اور بے ترتیبی پکڑتا ہے۔",
         },
         {
@@ -499,7 +499,7 @@ export const translations = {
           body: "عیسوی، ہجری قمری اور ہجری شمسی تاریخوں کا درست تبادلہ۔",
         },
         {
-          name: "واٹس ایپ آر ٹی ایل",
+          name: "واٹس ایپ اردو فارمیٹر",
           body: "دائیں سے بائیں متن کو واٹس ایپ کے لیے مستحکم سمت میں رکھتا ہے۔",
         },
         {
@@ -607,7 +607,7 @@ export const translations = {
       lastUpdated: "آخری تازہ کاری: اگست ۲۰۲۶",
       sections: [
         { title: "جائزہ", body: "قلم ورکس آپ کی رازداری کا احترام کرتا ہے۔ یہ صفحہ بتاتا ہے کہ ہمارے ٹولز اور ویب سائٹ آپ کا ڈیٹا کیسے ہینڈل کرتے ہیں۔" },
-        { title: "دستاویز اور متن کی پروسیسنگ", body: "زیادہ تر صفائی اور تدوین آپ کے براؤزر میں ہوتی ہے۔ ڈاکومنٹ کلینر، کوالٹی آڈٹ، یونیکوڈ اسٹینڈرڈائزر، اور ڈاکومنٹ اسٹوڈیو کی تدوین آپ کے آلے پر چلتی ہے۔ ہم آپ کی دستاویزات محفوظ نہیں کرتے۔ ڈاکومنٹ اسٹوڈیو کا PDF ایکسپورٹ صرف فائل بنانے کے لیے سرور پر بھیجتا ہے؛ فائل بننے کے بعد مواد محفوظ نہیں رکھا جاتا۔" },
+        { title: "دستاویز اور متن کی پروسیسنگ", body: "زیادہ تر صفائی اور تدوین آپ کے براؤزر میں ہوتی ہے۔ اردو ٹیکسٹ کلینر، اردو متن کی جانچ، یونیکوڈ فکسر، اور ڈاکومنٹ اسٹوڈیو کی تدوین آپ کے آلے پر چلتی ہے۔ ہم آپ کی دستاویزات محفوظ نہیں کرتے۔ ڈاکومنٹ اسٹوڈیو کا PDF ایکسپورٹ صرف فائل بنانے کے لیے سرور پر بھیجتا ہے؛ فائل بننے کے بعد مواد محفوظ نہیں رکھا جاتا۔" },
         { title: "لوکل اسٹوریج", body: "ڈاکومنٹ اسٹوڈیو آپ کا مسودہ براؤزر کے لوکل اسٹوریج میں رکھ سکتا ہے تاکہ بعد میں جاری رکھ سکیں۔ یہ مسودہ آپ کے آلے پر رہتا ہے۔ آپ اسے براؤزر ڈیٹا صاف کر کے یا اسٹوڈیو میں ڈرافٹ صاف کریں سے مٹا سکتے ہیں۔" },
         { title: "رابطہ", body: "اگر آپ ای میل کے ذریعے رابطہ کریں تو آپ کا پیغام اور ای میل پتہ صرف جواب دینے کے لیے استعمال کیا جائے گا۔" },
         { title: "کوکیز اور اینالیٹکس", body: "ہم Vercel Analytics اور Vercel Speed Insights استعمال کرتے ہیں تاکہ پروڈکٹ کے استعمال اور کارکردگی کو سمجھا جا سکے۔ یہ رازداری پر مبنی ایونٹس ناپتے ہیں جیسے کون سا ٹول کھلا یا ایکسپورٹ کامیاب ہوئی۔ ہم دستاویز کا متن، فائل نام، کلپ بورڈ، انوائس کی تفصیلات یا صارف کا مواد جمع نہیں کرتے۔ سیشن ری پلے یا اشتہاری ٹریکرز استعمال نہیں کرتے۔ ہوسٹنگ لاگز بنیادی درخواست میٹا ڈیٹا (جیسے IP اور صفحہ) ریکارڈ کر سکتے ہیں۔" },
@@ -630,8 +630,8 @@ export const translations = {
       title: "اردو ٹیکسٹ کلینر",
       description: "اردو متن میں اضافی فاصلوں، غلط رموزِ اوقاف اور عام یونیکوڈ مسائل کو محفوظ طریقے سے درست کریں۔ متن پیسٹ کریں یا فائل اپلوڈ کریں۔",
       languageLabel: "متن کی زبان",
-      languageHint: "Auto mode مخلوط زبان کے متن کو محفوظ طریقے سے process کرتا ہے اور زبان کے مطابق مناسب handling منتخب کرتا ہے۔ مخصوص اصلاح کے لیے اردو یا عربی منتخب کریں۔ انگریزی موڈ رموز اوقاف کو عربی شکل میں نہیں بدلتا۔",
-      langAuto: "آٹو",
+      languageHint: "خودکار طریقہ مخلوط زبان کے متن کو محفوظ طریقے سے صاف کرتا ہے اور ہر زبان کے مطابق مناسب اصلاح منتخب کرتا ہے۔ مخصوص اصلاح کے لیے اردو یا عربی منتخب کریں۔ انگریزی موڈ رموز اوقاف کو عربی شکل میں نہیں بدلتا۔",
+      langAuto: "خودکار",
       langUrdu: "اردو",
       langEnglish: "انگریزی",
       langArabic: "عربی",
@@ -658,7 +658,7 @@ export const translations = {
       remainingHeading: "باقی مشاہدات",
       emptyPasteError: "براہ کرم پہلے کچھ متن پیسٹ کریں یا لکھیں۔",
       tryExample: "مثال دیکھیں",
-      autoModeHint: "Auto mode مخلوط زبان کے متن کو محفوظ طریقے سے process کرتا ہے اور زبان کے مطابق مناسب handling منتخب کرتا ہے۔",
+      autoModeHint: "خودکار طریقہ مخلوط زبان کے متن کو محفوظ طریقے سے صاف کرتا ہے اور ہر زبان کے مطابق مناسب اصلاح منتخب کرتا ہے۔",
       exampleNextHint: "مثال دیکھیں، پھر «متن صاف کریں» دبائیں۔ اضافی خالی جگہیں ہٹتی ہیں اور رموزِ اوقاف کی spacing درست ہوتی ہے۔",
       studioCalloutTitle: "مکمل تدوین کے لیے:",
       studioCalloutLink: "ڈاکومنٹ اسٹوڈیو کھولیں",
@@ -690,20 +690,20 @@ export const translations = {
       faqHeading: "اکثر پوچھے گئے سوالات",
       faqs: [
         { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ متن کے فاصلہ، رموز اوقاف، دہرائے الفاظ اور رسم الخط کے مشاہدات چیک کرتا ہے۔ متن خود بخود تبدیل نہیں ہوتا۔" },
-        { question: "کیا یہ خود متن درست کر دیتا ہے؟", answer: "نہیں — یہ صرف معائنہ ہے۔ صفائی کے لیے ڈاکومنٹ کلینر یا ڈاکومنٹ اسٹوڈیو استعمال کریں۔" },
-        { question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟", answer: "نہیں۔ کوالٹی آڈٹ آپ کے براؤزر میں چلتا ہے — تجزیے کے لیے متن اپلوڈ نہیں ہوتا۔" },
+        { question: "کیا یہ خود متن درست کر دیتا ہے؟", answer: "نہیں — یہ صرف معائنہ ہے۔ صفائی کے لیے اردو ٹیکسٹ کلینر یا ڈاکومنٹ اسٹوڈیو استعمال کریں۔" },
+        { question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟", answer: "نہیں۔ اردو متن کی جانچ آپ کے براؤزر میں چلتا ہے — تجزیے کے لیے متن اپلوڈ نہیں ہوتا۔" },
       ],
     },
     unicodeTool: {
       difference: "حروف کی اصلاح پیسٹ شدہ اردو حروف کی مخلوط شکلیں درست کرتی ہے؛ کلینر فائلیں بھی لیتا ہے، جبکہ متن کی جانچ صرف مسائل دکھاتی ہے۔",
-      title: "اردو حروف کی اصلاح",
+      title: "اردو یونیکوڈ فکسر",
       description: "اردو یونیکوڈ اصلاح: حروف کی شکلیں، فاصلہ اور رموزِ اوقاف درست کریں۔ مخلوط شکلیں معیاری بنائیں — مفت، مکمل طور پر آپ کے براؤزر میں۔",
       examplesHeading: "مثالیں",
       faqHeading: "اکثر پوچھے گئے سوالات",
       faqs: [
         { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ آپ کے اردو متن میں مختلف Unicode شکلوں (جیسے ي بجائے ی، ك بجائے ک) کو معیاری بناتا ہے، اضافی خالی جگہیں ہٹاتا ہے، اور رموزِ اوقاف کو اردو کے مطابق درست کرتا ہے۔" },
         { question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟", answer: "نہیں۔ یہ عمل مکمل طور پر آپ کے براؤزر میں ہوتا ہے — متن کبھی کسی سرور پر نہیں بھیجا جاتا۔" },
-        { question: "کن فائل فارمیٹس کے ساتھ کام کرتا ہے؟", answer: "فی الحال صرف plain text۔ DOCX فائلوں کے لیے ہمارا ڈاکومنٹ کلینر ٹول استعمال کریں۔" },
+        { question: "کن فائل فارمیٹس کے ساتھ کام کرتا ہے؟", answer: "فی الحال صرف سادہ متن۔ DOCX فائلوں کے لیے ہمارا اردو ٹیکسٹ کلینر ٹول استعمال کریں۔" },
       ],
       examples: [
         { label: "عربی یے (ي) ← اردو یے (ی)", before: "يہ", after: "یہ" },

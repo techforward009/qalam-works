@@ -27,8 +27,8 @@ for (const language of ["ur", "en"] as const) {
     if (await menu.isVisible()) await menu.click();
     const nav = (await page.locator("#mobile-nav").isVisible()) ? page.locator("#mobile-nav") : page.getByRole("navigation", { name: "Primary navigation" });
     const groups = language === "ur"
-      ? ["تحریر و اشاعت", "ٹائپنگ و تبدیلی", "اصلاح و نظرثانی", "فونٹس و ڈیزائن", "تاریخیں و تقاویم", "قرآن و اسلامی مطالعہ"]
-      : ["Write & Publish", "Type & Convert", "Fix & Proofread", "Fonts & Design", "Dates & Calendars", "Quran & Islamic Studies"];
+      ? ["تحریر و اشاعت", "ٹائپنگ و تبدیلی", "اصلاح و نظرثانی", "صفحہ بندی و پی ڈی ایف", "تاریخیں و تقاویم", "قرآن و اسلامی مطالعہ"]
+      : ["Write & Publish", "Type & Convert", "Fix & Proofread", "Page Design & PDF", "Dates & Calendars", "Quran & Islamic Studies"];
     for (const name of groups) {
       await nav.getByRole("button", { name, exact: true }).click();
       await expect(nav.locator("a").first()).toBeVisible();
@@ -67,8 +67,43 @@ test("Research Studio keeps its owner gate and fails closed without credentials"
   const auth = await page.request.get("/api/research/auth");
   expect([401, 503]).toContain(auth.status());
   if (auth.status() === 401) await expect(page.locator('input[type="password"]')).toBeVisible();
-  else await expect(page.getByText("ریسرچ رسائی ترتیب نہیں دی گئی۔", { exact: true })).toBeVisible();
+  else await expect(page.getByText("ریسرچ اسٹوڈیو مقفل ہے۔ رسائی ترتیب نہیں دی گئی۔", { exact: true })).toBeVisible();
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  if (auth.status() === 503) await expect(page.locator("main form")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Ask|سوال/ })).toHaveCount(0);
   const response = await page.request.post("/api/research/documents", { multipart: { file: { name: "private-access-check.txt", mimeType: "text/plain", buffer: Buffer.from("Access check") } } });
   expect(response.status()).toBe(auth.status());
 });
+
+
+test("unconfigured research preview refuses every data endpoint without exposing sources", async ({ page }) => {
+  for (const [method, path] of [
+    ["POST", "/api/research/ask"], ["POST", "/api/research/documents"],
+    ["GET", "/api/research/documents/missing/pages/1"],
+    ["GET", "/api/research/book-library"], ["POST", "/api/research/book-library"],
+  ]) {
+    const response = await page.request.fetch(path, { method });
+    expect(response.status()).toBe(503);
+    expect(await response.json()).toEqual({ error: "Research access is not configured.", code: "auth_not_configured" });
+  }
+});
+
+for (const language of ["ur", "en"] as const) {
+  test(`feedback catalog, translated credits and the original single header row (${language})`, async ({ page }) => {
+    await page.addInitScript(l => localStorage.setItem("qalam-site-language", l), language);
+    await page.goto("/feedback");
+    await expect(page.locator("html")).toHaveAttribute("lang", language);
+    const options = page.locator("#feedback-tool option");
+    expect(await options.evaluateAll(es => es.map(e => (e as HTMLOptionElement).value))).not.toContain("research-studio");
+    expect(await options.last().getAttribute("value")).toBe("khateeb-studio");
+    for (const id of ["calendar-maker", "urdu-text-to-pdf", "roman-urdu-to-urdu", "hijri-to-gregorian"]) await expect(page.locator(`#feedback-tool option[value="${id}"]`)).toHaveCount(1);
+    const height = await page.locator("[data-site-header]").evaluate(e => e.getBoundingClientRect().height);
+    expect(height).toBeLessThanOrEqual(page.viewportSize()!.width >= 640 ? 130 : 114);
+    if (language === "en") await expect(page.locator("footer")).not.toContainText("فونٹ:");
+    else {
+      await expect(page.locator("[data-site-header]")).toContainText("لکھیں — سنواریں — شائع کریں");
+      const fontSize = await page.locator('[data-site-header] a[href="/about"]').evaluate(e => parseFloat(getComputedStyle(e).fontSize));
+      expect(fontSize).toBeGreaterThanOrEqual(15);
+    }
+  });
+}

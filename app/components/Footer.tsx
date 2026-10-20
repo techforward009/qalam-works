@@ -98,20 +98,20 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-white/5 px-4 py-4 text-center text-white">
-        <p dir="rtl" lang="ur" className="font-nastaliq text-sm leading-8">
-          فونٹ: <a href="https://mehrtype.com/product/mehr-nastaliq-web/" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مہر نستعلیق ویب</a>
+        <p dir={dir} lang={language} className="font-nastaliq text-sm leading-8">
+          {language === "ur" ? "فونٹ: " : "Font: "}<a href="https://mehrtype.com/product/mehr-nastaliq-web/" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">{language === "ur" ? "مہر نستعلیق ویب" : "Mehr Nastaliq Web"}</a>
           {" — "}
-          <a href="https://mehrtype.com/free-fonts" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مہر ٹائپ</a>
-          {"، "}
+          <a href="https://mehrtype.com/free-fonts" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">{language === "ur" ? "مہر ٹائپ" : "Mehr Type"}</a>
+          {language === "ur" ? "، " : ", "}
           <a href="https://creativecommons.org/licenses/by-sa/4.0/" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">CC BY-SA 4.0</a>
         </p>
         <p className="mt-1 text-xs leading-6 text-white/90">
           Gulzar — <a href="https://scripts.sil.org/OFL" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">SIL Open Font License 1.1</a>
         </p>
-        <p dir="rtl" lang="ur" className="mt-1 font-nastaliq text-sm leading-8">
-          نفیس نستعلیق v1.02 — <a href="https://cle.org.pk/software/localization/Fonts/nafeesNastaleeq.html" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">مرکز تحقیق برائے اردو زبان (CRULP)</a>
-          {"، "}
-          <a href="https://cle.org.pk/software/license/Nafees_Nastaleeq_License.html" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">لائسنس</a>
+        <p dir={dir} lang={language} className="mt-1 font-nastaliq text-sm leading-8">
+          {language === "ur" ? "نفیس نستعلیق v1.02" : "Nafees Nastaleeq v1.02"} — <a href="https://cle.org.pk/software/localization/Fonts/nafeesNastaleeq.html" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">{language === "ur" ? "مرکز تحقیق برائے اردو زبان (CRULP)" : "Center for Research in Urdu Language Processing (CRULP)"}</a>
+          {language === "ur" ? "، " : ", "}
+          <a href="https://cle.org.pk/software/license/Nafees_Nastaleeq_License.html" className="underline decoration-white/40 underline-offset-4 hover:text-amber-100">{language === "ur" ? "لائسنس" : "License"}</a>
         </p>
       </div>
       <div className="border-t border-white/5 py-4 text-center text-sm text-white" dir="ltr" data-footer-copy="true">

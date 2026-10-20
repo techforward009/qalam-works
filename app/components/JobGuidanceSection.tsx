@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TOOL_CATALOG } from "../lib/toolCatalog";
 import { Eraser, Type, FilePenLine, MessageCircle, SearchCheck, Languages, PenLine, CalendarDays, Receipt, ChevronRight } from "lucide-react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
@@ -83,7 +84,7 @@ export default function JobGuidanceSection() {
                       {item.label}
                     </span>
                     <span className="qalam-intent-name mt-0.5 block text-[16px] sm:text-[17px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] leading-snug">
-                      {item.description}
+                      {TOOL_CATALOG.find(entry => entry.route === item.href)!.name[language]}
                     </span>
                     <span className="qalam-intent-description mt-1 block text-[13px] sm:text-[14px] text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed">
                       {item.body}

@@ -15,7 +15,7 @@ const COPY = {
     signingIn: "Signing in…",
     invalid: "That password was not accepted.",
     failed: "The request could not be completed.",
-    unconfigured: "Research access is not configured.",
+    unconfigured: "Research Studio is locked. Access is not configured.",
     logout: "Log out",
   },
   ur: {
@@ -25,7 +25,7 @@ const COPY = {
     signingIn: "داخل ہو رہے ہیں…",
     invalid: "یہ پاس ورڈ قبول نہیں ہوا۔",
     failed: "درخواست مکمل نہیں ہو سکی۔",
-    unconfigured: "ریسرچ رسائی ترتیب نہیں دی گئی۔",
+    unconfigured: "ریسرچ اسٹوڈیو مقفل ہے۔ رسائی ترتیب نہیں دی گئی۔",
     logout: "خارج ہوں",
   },
 } as const;

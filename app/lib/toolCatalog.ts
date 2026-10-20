@@ -444,7 +444,7 @@ export const TOOL_GROUPS = [
   { id: "write", name: { en: "Write & Publish", ur: "تحریر و اشاعت" }, ids: ["document_studio", "translation_studio"] },
   { id: "type", name: { en: "Type & Convert", ur: "ٹائپنگ و تبدیلی" }, ids: ["urdu_writer", "roman_converter", "urdu_roman_writer"] },
   { id: "fix", name: { en: "Fix & Proofread", ur: "اصلاح و نظرثانی" }, ids: ["document_cleaner", "urdu_unicode_standardizer", "quality_audit", "whatsapp_rtl_formatter", "arabic_diacritics"] },
-  { id: "design", name: { en: "Fonts & Design", ur: "فونٹس و ڈیزائن" }, ids: ["invoice_generator", "urdu_pdf"] },
+  { id: "design", name: { en: "Page Design & PDF", ur: "صفحہ بندی و پی ڈی ایف" }, ids: ["invoice_generator", "urdu_pdf"] },
   { id: "dates", name: { en: "Dates & Calendars", ur: "تاریخیں و تقاویم" }, ids: ["date_converter", "date_finder", "calendar_maker", "hijri_converter", "gregorian_calendar", "hijri_calendar"] },
   { id: "islamic", name: { en: "Quran & Islamic Studies", ur: "قرآن و اسلامی مطالعہ" }, ids: ["quran_reader", "crescent_visibility"] },
 ];
