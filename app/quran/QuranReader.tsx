@@ -1385,8 +1385,7 @@ function QuranPageSurface({
                     {
                       block.text
                     }
-                    {block.anchor && editionId === "digital-khatt" && <span className="mx-1 text-[0.58em]">۝{easternDigits(1)}</span>}
-                    {block.anchor && <button type="button" className="mx-2 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" onClick={() => void navigator.clipboard.writeText(block.text)} aria-label="Copy verse 1"><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button>}
+                    {block.anchor && <span className="inline-flex items-center whitespace-nowrap">{editionId === "digital-khatt" && <DigitalKhattAyahMarker ayah={1} />}<button type="button" className="mx-2 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" onClick={() => void navigator.clipboard.writeText(block.text)} aria-label="Copy verse 1"><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button></span>}
                   </p>
                 );
               }
@@ -1441,10 +1440,10 @@ function QuranPageSurface({
                             item.text
                           }
                         </span>
-                        {editionId === "digital-khatt" && <span className="mx-1 inline-flex items-center justify-center rounded-full border px-1.5 align-middle" style={{borderColor:"#9a884f",fontFamily:'"Amiri","Noto Naskh Arabic",serif',fontSize:"0.84em",minWidth:"1.8em",minHeight:"1.8em",lineHeight:1.2,color:"#3c472c"}} aria-label={`Ayah ${item.ayah}`}><span aria-hidden="true">۝{easternDigits(item.ayah)}</span></span>}
+                        <span className="inline-flex items-center whitespace-nowrap">{editionId === "digital-khatt" && <DigitalKhattAyahMarker ayah={item.ayah} />}
                         <button type="button" className="mx-1 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(
                             (editionId === "digital-khatt" ? digitalReaderModel.getReaderAyah(item.surah,item.ayah) : ahmedReaderModel.getReaderAyah(item.surah,item.ayah))?.text ?? item.text
-                          )}><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button>
+                          )}><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button></span>
                       </span>
                     ),
                   )}
@@ -1769,6 +1768,10 @@ function Select({
   );
 }
 
+function DigitalKhattAyahMarker({ayah}:{ayah:number}) {
+  return <span className="mx-1 inline-flex items-center justify-center rounded-full border px-1.5 align-middle" style={{borderColor:"#9a884f",fontFamily:'"Amiri","Noto Naskh Arabic",serif',fontSize:"0.84em",minWidth:"1.8em",minHeight:"1.8em",lineHeight:1.2,color:"#3c472c"}} aria-label={`Ayah ${ayah}`}><span aria-hidden="true">۝{easternDigits(ayah)}</span></span>;
+}
+
 function SurahBand({
   surah,
 }: {
@@ -1784,13 +1787,13 @@ function SurahBand({
     >
       <span className="quran-surah-place">{banner.place}</span>
       <span className="quran-banner-name">
-        <bdi dir="ltr" className="quran-banner-number" style={{fontFamily:'"Amiri","Noto Naskh Arabic",serif'}}>({banner.surahNumber})</bdi>
+        <bdi dir="ltr" className="quran-banner-number">({banner.surahNumber})</bdi>
         <span>{displaySurahBannerName(banner.name)}</span>
-        <bdi dir="ltr" className="quran-banner-number" style={{fontFamily:'"Amiri","Noto Naskh Arabic",serif'}}>({banner.revealed})</bdi>
+        <bdi dir="ltr" className="quran-banner-number">({banner.revealed})</bdi>
       </span>
       <span className="quran-surah-count">
         <span>آیات</span>
-        <span className="quran-banner-digit" style={{fontFamily:'"Amiri","Noto Naskh Arabic",serif'}}>{banner.ayatCount}</span>
+        <span className="quran-banner-digit">{banner.ayatCount}</span>
       </span>
     </div>
   );
