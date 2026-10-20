@@ -225,8 +225,9 @@ textarea {
   font-display: swap;
 }
 
-.qalam-book-arabic,
-.qalam-book-arabic .khateeb-muhammadi-quranic {
+/* Only non-Qur'anic Arabic uses Digital Khatt. Ahmedgraf Qur'an remains
+   Muhammadi Quranic even when nested inside a book or studio passage. */
+.qalam-book-arabic {
   font-family: "Digital Khatt IndoPak Book", "Muhammadi Quranic", serif !important;
 }
 

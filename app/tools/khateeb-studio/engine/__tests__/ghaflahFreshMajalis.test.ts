@@ -1,3 +1,7 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import PreparedSeriesSession from "../../PreparedSeriesSession";
+import { preparedQuranSourceTexts, preparedArabicSourceTexts } from "../preparedSeries";
 import { readFileSync } from "node:fs";
 import { HAFS_AYAH_COUNTS } from "../../../arabic-diacritics/quran/hafsCounts";
 import { ahmedgrafQuranReference } from "../../../arabic-diacritics/quran/ahmedgrafProvider";
@@ -10,6 +14,34 @@ import { buildSessionWorkbench, buildSessionWorkbenchText } from "../sessionWork
 import { verifiedHadithForDossierText } from "../verifiedHadithCorpus";
 import { estimatePreparedSpeech } from "../preparedSeries";
 describe("Ghaflah fresh five ready-to-deliver manuscript",()=>{
+ it("preserves Ahmedgraf Qur'an with Muhammadi font in the five ready majalis",()=>{
+   const css=readFileSync("app/globals.css","utf8");
+   expect(css).toContain('.qalam-book-arabic {');
+   expect(css).not.toContain(".qalam-book-arabic .khateeb-muhammadi-quranic");
+   for(const session of GHAF_LAH_FRESH_FIVE.sessions){
+     const prep=session.preparation!;
+     const canonical=preparedQuranSourceTexts(prep);
+     const arabic=preparedArabicSourceTexts(prep);
+     expect(canonical.size).toBeGreaterThanOrEqual(2);
+     for(const location of prep.quran){
+       const ayah=ahmedgrafQuranReference.getAyah(location.surah,location.ayah)?.text;
+       expect(ayah).toBeTruthy();
+       expect(canonical.has(ayah)).toBe(true);
+       expect(arabic.has(ayah)).toBe(true);
+     }
+     const html=renderToStaticMarkup(createElement(PreparedSeriesSession,{
+       session,duration:20,locale:"ur",onCopy:async()=>{},
+     }));
+     for(const location of prep.quran){
+       const ayah=ahmedgrafQuranReference.getAyah(location.surah,location.ayah)!.text;
+       const offset=html.indexOf(ayah);
+       expect(offset).toBeGreaterThan(0);
+       const preceding=html.slice(Math.max(0,offset-200),offset);
+       expect(preceding).toMatch(/<span dir="rtl" lang="ar" class="khateeb-muhammadi-quranic">$/);
+     }
+   }
+ });
+
  it("matches each new Najafi/Qara'i pair to the exact canonical reader translation, no paraphrases",()=>{
   const verses=[[7,179],[21,1],[59,19],[102,1],[57,16],[24,37],[63,9],[17,23],[50,22],[7,201]] as const;
   for(const [surah,ayah] of verses){
