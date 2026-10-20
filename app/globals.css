@@ -2075,3 +2075,9 @@ html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(
 )) {
   font-family: var(--qalam-urdu-heading);
 }
+
+/* Digital Khatt banner numerals: preserve shared SurahBand markup. */
+[data-quran-edition="digital-khatt"] .quran-banner-number,
+[data-quran-edition="digital-khatt"] .quran-banner-digit {
+  font-family: "Amiri","Noto Naskh Arabic",serif;
+}
