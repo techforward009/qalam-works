@@ -43,7 +43,7 @@ describe("new Quran edition rules",()=>{
    const file=readFileSync("app/tools/arabic-diacritics/quran/data/quran-simple.txt","utf8");
    expect(file).toContain("ahmedgraf.com");
    expect(ahmed.getMetadata().referenceLicense.length).toBeGreaterThan(0);
-   expect(readFileSync("app/quran/QuranReader.tsx","utf8")).toContain("navigator.clipboard.writeText(item.text)");
+   expect(readFileSync("app/quran/QuranReader.tsx","utf8")).toContain("ahmedReaderModel.getReaderAyah(item.surah,item.ayah)");
    expect(readFileSync("app/quran/QuranReader.tsx","utf8")).toContain("https://ahmedgraf.com");
  });
  it("public pages never request Muhammadi; legacy saved docs map to licensed Digital Khatt",()=>{

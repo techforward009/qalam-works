@@ -1437,7 +1437,9 @@ function QuranPageSurface({
                             item.text
                           }
                         </span>
-                        <button type="button" className="mx-1 align-middle text-[0.43em] underline" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(item.text)}>⧉</button>
+                        <button type="button" className="mx-1 align-middle text-[0.43em] underline" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(
+                            (editionId === "digital-khatt" ? digitalReaderModel.getReaderAyah(item.surah,item.ayah) : ahmedReaderModel.getReaderAyah(item.surah,item.ayah))?.text ?? item.text
+                          )}>⧉</button>
                       </span>
                     ),
                   )}
