@@ -11,7 +11,7 @@ import { QURAN_READER_COPY } from "../reader/copy";
 import { useQuranKeyboardNavigation } from "../reader/keyboard";
 import { adjacentAyah } from "../reader/model";
 import { TANZIL_PAGE_STARTS } from "../reader/tanzilPageMap";
-import { ahmedgrafQuranReference } from "../../tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import {
   cachedQpcHafsPage,
   loadQpcHafsPage,
@@ -253,7 +253,7 @@ export default function MadinahReader({
     }
 
     const result: Hit[] = [];
-    for (const item of ahmedgrafQuranReference.listAyahs()) {
+    for (const item of publicDigitalKhattQuranReference.listAyahs()) {
       const words = item.text.split(/\s+/).map(quranMatchKey).filter(Boolean);
       const matched = needles.length <= words.length && Array.from({ length: words.length - needles.length + 1 }, (_, i) => i)
         .some((i) => needles.every((needle, offset) => words[i + offset] === needle));
@@ -330,6 +330,38 @@ export default function MadinahReader({
     } catch {
       setCopied(false);
     }
+  };
+
+  const copySelectedVerse = async () => {
+    try {
+      const qpc = await loadQpcHafsPage(resolveMadinahPageForAyah(surah, ayah));
+      const text = qpcHafsTextForVerseKeys(qpc, new Set([surah + ":" + ayah]));
+      if (!text) throw new Error("Madinah verse text unavailable");
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch { setCopied(false); }
+  };
+
+  const copyWholeSurah = async () => {
+    // Use the Madinah QPC Unicode source, not AhmedGraf / DigitalKhatt.
+    const start = resolveMadinahPageForAyah(surah, 1);
+    const last = surah < 114 ? resolveMadinahPageForAyah(surah + 1, 1) : 604;
+    const seen = new Set<string>();
+    const result: string[] = [];
+    try {
+      for (let pageNo = start; pageNo <= last; pageNo++) {
+        const verses = await loadQpcHafsPage(pageNo);
+        for (const verse of verses) {
+          if (!verse.verse_key.startsWith(surah + ":") || seen.has(verse.verse_key)) continue;
+          if (typeof verse.text_qpc_hafs !== "string" || !verse.text_qpc_hafs.trim()) continue;
+          seen.add(verse.verse_key);
+          result.push(verse.text_qpc_hafs.trim());
+        }
+      }
+      if (!result.length) throw new Error("Madinah surah text unavailable");
+      await navigator.clipboard.writeText(result.join("\n"));
+      setCopied(true);
+    } catch { setCopied(false); }
   };
 
   useEffect(() => {
@@ -447,6 +479,14 @@ export default function MadinahReader({
 
             <button type="button" className={styles.secondary} style={{ width: "100%", marginTop: 11, ...(language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : {}) }} onClick={() => void copyCurrentPage()}>
               {copied ? copy.copyDone : copy.copy}
+            </button>
+            <button type="button" className={styles.secondary} style={{width:"100%",marginTop:8}}
+              onClick={() => void copySelectedVerse()}>
+              {language === "ur" ? "یہ آیت نقل کریں" : "Copy verse"}
+            </button>
+            <button type="button" className={styles.secondary} style={{width:"100%",marginTop:8}}
+              onClick={() => void copyWholeSurah()}>
+              {language === "ur" ? "پوری سورت نقل کریں" : "Copy whole surah"}
             </button>
           </aside>
 
