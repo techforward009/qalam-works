@@ -8,7 +8,7 @@ import { getTopicDossier } from '../app/tools/khateeb-studio/engine/topicDossier
 import { buildFreshMajlisSeries } from '../app/tools/khateeb-studio/engine/freshPulpitSeries';
 import { buildSessionWorkbench, buildSessionWorkbenchText } from '../app/tools/khateeb-studio/engine/sessionWorkbench';
 import { buildPreparedSeriesText } from '../app/tools/khateeb-studio/engine/preparedSeries';
-import { ahmedgrafQuranReference } from '../app/tools/arabic-diacritics/quran/ahmedgrafProvider';
+import { publicDigitalKhattQuranReference } from '../app/tools/arabic-diacritics/quran/publicDigitalKhattProvider';
 import { quranTranslationFor } from '../app/tools/khateeb-studio/engine/quranTranslationProvider';
 import { verifiedHadithForDossierText } from '../app/tools/khateeb-studio/engine/verifiedHadithCorpus';
 import PreparedSeriesSession from '../app/tools/khateeb-studio/PreparedSeriesSession';
@@ -19,7 +19,7 @@ test('three distinct sessions have connected bridges and separate actionable out
  expect(plan.sessions[0].previousBridgeUr).toBeUndefined();expect(plan.sessions[2].nextBridgeUr).toBeUndefined();for(const s of plan.sessions){expect(s.preparation?.blocks).toHaveLength(5);for(const b of s.preparation!.blocks)for(const locale of ['ur','en'] as const){expect(b.delivery[locale].split(/\s+/).length).toBeGreaterThan(25);expect(b.explanation[locale].length).toBeGreaterThan(100);}}
 });
 test.each([20,30,45] as const)('all %s-minute workbenches include full editorial material and unchanged source text',duration=>{
- for(const locale of ['ur','en'] as const){const whole=buildPreparedSeriesText(plan,locale,duration);for(const s of plan.sessions){const w=buildSessionWorkbench(s,duration);expect(w.blocks.reduce((n,b)=>n+b.minutes,0)).toBe(duration);const text=buildSessionWorkbenchText(w,locale);expect(whole).toContain(text);for(const block of s.preparation!.blocks){expect(text).toContain(block.delivery[locale]);expect(text).toContain(block.explanation[locale]);}for(const location of s.preparation!.quran){expect(text).toContain(ahmedgrafQuranReference.getAyah(location.surah,location.ayah)!.text);expect(text).toContain(quranTranslationFor(location.surah,location.ayah,locale)!);}expect(text).toContain(s.preparation!.example[locale]);expect(text).toContain(s.preparation!.action[locale]);}}
+ for(const locale of ['ur','en'] as const){const whole=buildPreparedSeriesText(plan,locale,duration);for(const s of plan.sessions){const w=buildSessionWorkbench(s,duration);expect(w.blocks.reduce((n,b)=>n+b.minutes,0)).toBe(duration);const text=buildSessionWorkbenchText(w,locale);expect(whole).toContain(text);for(const block of s.preparation!.blocks){expect(text).toContain(block.delivery[locale]);expect(text).toContain(block.explanation[locale]);}for(const location of s.preparation!.quran){expect(text).toContain(publicDigitalKhattQuranReference.getAyah(location.surah,location.ayah)!.text);expect(text).toContain(quranTranslationFor(location.surah,location.ayah,locale)!);}expect(text).toContain(s.preparation!.example[locale]);expect(text).toContain(s.preparation!.action[locale]);}}
  const narration=verifiedHadithForDossierText('sabr-head-of-faith')!;expect(buildPreparedSeriesText(plan,'ur',duration)).toContain(narration.exactArabic);expect(buildPreparedSeriesText(plan,'en',duration)).toContain(narration.translationEn);
 });
 test.each(['ur','en'] as const)('each visible %s session copies the complete preparation',locale=>{
@@ -36,7 +36,7 @@ test('supplementary translations exactly match the complete reader corpus',()=>{
 
 test.each(['ur','en'] as const)('al-Asr is one complete recitation passage in the %s screen and copied text',locale=>{
  const session=plan.sessions[2];
- const arabic=[1,2,3].map(ayah=>ahmedgrafQuranReference.getAyah(103,ayah)!.text).join(' ');
+ const arabic=[1,2,3].map(ayah=>publicDigitalKhattQuranReference.getAyah(103,ayah)!.text).join(' ');
  const view=render(<PreparedSeriesSession session={session} duration={20} locale={locale} onCopy={vi.fn()}/>);
  const passage=screen.getByText(arabic);
  expect(passage.closest('[lang="ar"]')).toBeTruthy();

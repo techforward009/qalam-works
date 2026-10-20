@@ -6,21 +6,21 @@ describe("Quran edition registry", () => {
   it("registers exactly the three current Quran editions", () => {
     expect(QURAN_EDITIONS).toHaveLength(3);
     expect(QURAN_EDITIONS.map((edition) => edition.id)).toEqual([
-      "qalam-indopak",
-      "digital-khatt",
       "madinah-v2",
+      "digital-khatt",
+      "qalam-indopak",
     ]);
   });
 
   it("keeps each edition's route and page model distinct", () => {
     const routes = QURAN_EDITIONS.map((edition) => edition.route);
     expect(new Set(routes).size).toBe(3);
-    expect(routes).toContain("/quran/1/1");
+    expect(routes).toContain("/quran/ahmedgraf/1/1");
     expect(routes).toContain("/quran/indopak-digital-khatt/1/1");
     expect(routes).toContain("/quran/madinah/1/1");
-    expect(QURAN_EDITIONS[0]?.lineCount).toBeNull();
+    expect(QURAN_EDITIONS[0]?.lineCount).toBe(15);
     expect(QURAN_EDITIONS[1]?.lineCount).toBeNull();
-    expect(QURAN_EDITIONS[2]?.lineCount).toBe(15);
+    expect(QURAN_EDITIONS[2]?.lineCount).toBeNull();
   });
 
   it("uses the final AhmedGraf wording and structured provenance", () => {
@@ -29,7 +29,7 @@ describe("Quran edition registry", () => {
     expect(first.rendering.en).toBe("AhmedGraf text + Font");
     expect(first.rendering.ur).toBe("احمد گراف کا انڈو پاک متن + فونٹ");
     expect(first.provenance.textSource).toContain("AhmedGraf");
-    expect(first.provenance.fontSource).toContain("Muhammadi Quranic");
+    expect(first.provenance.fontSource).toContain("Digital Khatt");
   });
 
   it("keeps the readers linked back to the Quran center", () => {
@@ -43,7 +43,7 @@ describe("Quran edition registry", () => {
     }
     const topBar = readFileSync("app/quran/reader/EditionTopBar.tsx", "utf8");
     expect(topBar).toContain('href="/quran"');
-    expect(topBar).toContain("قرآن کے تمام ایڈیشنز");
-    expect(topBar).toContain("All Quran Editions");
+    expect(topBar).toContain("QURAN_EDITIONS");
+    expect(topBar).toContain("Select Quran edition");
   });
 });

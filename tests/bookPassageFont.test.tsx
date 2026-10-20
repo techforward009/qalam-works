@@ -3,11 +3,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import BookPassageText from '../app/tools/khateeb-studio/BookPassageText';
 it('renders book Arabic without the Muhammadi font class, including highlights', () => {
   const html = renderToStaticMarkup(<BookPassageText text="الولد الصالح ريحانة" language="ar" highlight="الصالح" />);
-  expect(html).toContain('qalam-book-arabic'); expect(html).not.toContain('khateeb-muhammadi-quranic');
+  expect(html).toContain('qalam-book-arabic'); expect(html).not.toContain('khateeb-digital-khatt-quranic');
 });
 it('keeps Quran Arabic in the original Quran font', () => {
   const html = renderToStaticMarkup(<BookPassageText text="بسم الله الرحمن الرحيم" language="ar" quran />);
-  expect(html).toContain('khateeb-muhammadi-quranic'); expect(html).not.toContain('qalam-book-arabic');
+  expect(html).toContain('khateeb-digital-khatt-quranic'); expect(html).not.toContain('qalam-book-arabic');
 });
 
 import KhateebScriptText from '../app/tools/khateeb-studio/KhateebScriptText';
@@ -15,12 +15,12 @@ it('uses the book font in prepared narration cards and quoted fragments', () => 
   for (const forceArabic of [true, false]) {
     const html = renderToStaticMarkup(<KhateebScriptText text="«الصَّبْرُ مِنَ الإِيمَانِ»" forceArabic={forceArabic} nonQuran />);
     expect(html).toContain('qalam-book-arabic');
-    expect(html).not.toContain('khateeb-muhammadi-quranic');
+    expect(html).not.toContain('khateeb-digital-khatt-quranic');
   }
 });
 it('preserves the Quran font in the shared renderer', () => {
   const html = renderToStaticMarkup(<KhateebScriptText text="بسم الله الرحمن الرحيم" forceArabic />);
-  expect(html).toContain('khateeb-muhammadi-quranic');
+  expect(html).toContain('khateeb-digital-khatt-quranic');
 });
 
 it('does not infer Persian from shared Urdu letters in commentary', () => {

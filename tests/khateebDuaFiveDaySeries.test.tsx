@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { HAFS_AYAH_COUNTS } from '../app/tools/arabic-diacritics/quran/hafsCounts';
-import { ahmedgrafQuranReference } from '../app/tools/arabic-diacritics/quran/ahmedgrafProvider';
+import { publicDigitalKhattQuranReference } from '../app/tools/arabic-diacritics/quran/publicDigitalKhattProvider';
 import { getTopicDossier } from '../app/tools/khateeb-studio/engine/topicDossier';
 import { buildFreshMajlisSeries } from '../app/tools/khateeb-studio/engine/freshPulpitSeries';
 import { buildPreparedSeriesText, preparedSourceLines } from '../app/tools/khateeb-studio/engine/preparedSeries';
@@ -50,7 +50,7 @@ test.each([20, 30, 45] as const)('%s-minute preparations copy all five complete 
         expect(text).toContain(block.explanation[locale]);
       }
       for (const {surah, ayah} of session.preparation!.quran) {
-        expect(text).toContain(ahmedgrafQuranReference.getAyah(surah, ayah)!.text);
+        expect(text).toContain(publicDigitalKhattQuranReference.getAyah(surah, ayah)!.text);
         expect(text).toContain(quranTranslationFor(surah, ayah, locale)!);
       }
       expect(text).toContain(session.preparation!.question[locale]);
@@ -100,7 +100,7 @@ test('grouped sources have consecutive verses and do not duplicate or omit any s
     const p = session.preparation!;
     const lines = preparedSourceLines(p, 'en');
     for (const group of p.quranGroups ?? []) {
-      const arabic = group.locations.map(({surah, ayah}) => ahmedgrafQuranReference.getAyah(surah, ayah)!.text).join(' ');
+      const arabic = group.locations.map(({surah, ayah}) => publicDigitalKhattQuranReference.getAyah(surah, ayah)!.text).join(' ');
       expect(lines).toContain(arabic);
       group.locations.forEach((location, index) => {
         expect(p.quran).toContainEqual(location);
@@ -108,7 +108,7 @@ test('grouped sources have consecutive verses and do not duplicate or omit any s
           expect(location.surah).toBe(group.locations[index - 1].surah);
           expect(location.ayah).toBe(group.locations[index - 1].ayah + 1);
         }
-        expect(lines.join('\n').split(ahmedgrafQuranReference.getAyah(location.surah, location.ayah)!.text)).toHaveLength(2);
+        expect(lines.join('\n').split(publicDigitalKhattQuranReference.getAyah(location.surah, location.ayah)!.text)).toHaveLength(2);
       });
     }
   }

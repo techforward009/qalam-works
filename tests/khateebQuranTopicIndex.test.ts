@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../app/tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import { buildLiveResearchPack } from "../app/tools/khateeb-studio/engine/liveResearchPack";
 import {
   quranEvidenceForTopic,
@@ -8,7 +8,7 @@ import {
 import { researchKhateebTopic } from "../app/tools/khateeb-studio/engine/researchEngine";
 
 describe("Khateeb Quran topical index", () => {
-  test("maps unknown sermon topics to internal AhmedGraf ayahs", () => {
+  test("maps unknown sermon topics to internal DigitalKhatt ayahs", () => {
     const rows = quranEvidenceForTopic("رزق میں برکت کے اسباب");
     expect(rows).toHaveLength(8);
     expect(rows.map((row) => row.citationUr)).toEqual([
@@ -22,14 +22,14 @@ describe("Khateeb Quran topical index", () => {
       "سورۂ بقرہ 2:267",
     ]);
     expect(rows.every((row) => row.kind === "quran" && row.status === "verified")).toBe(true);
-    expect(rows.every((row) => row.providerId === "ahmedgraf-quran")).toBe(true);
+    expect(rows.every((row) => row.providerId === "digital-khatt-quran")).toBe(true);
   });
 
-  test("always renders the unchanged AhmedGraf source line", () => {
+  test("always renders the unchanged DigitalKhatt source line", () => {
     const row = quranEvidenceForTopic("غصے پر قابو پانے کے اسلامی طریقے")[0];
     expect(row).toBeTruthy();
     expect(row?.citationUr).toBe("سورۂ آل عمران 3:134");
-    expect(row?.arabic).toBe(ahmedgrafQuranReference.getAyah(3, 134)?.text);
+    expect(row?.arabic).toBe(publicDigitalKhattQuranReference.getAyah(3, 134)?.text);
   });
 
   test("returns no guessed ayah for an unmapped topic", () => {
@@ -38,7 +38,7 @@ describe("Khateeb Quran topical index", () => {
 
   test("keeps the thematic index separate from the Quran corpus", () => {
     expect(quranTopicIndexSize()).toBeGreaterThanOrEqual(25);
-    expect(ahmedgrafQuranReference.listAyahs()).toHaveLength(6236);
+    expect(publicDigitalKhattQuranReference.listAyahs()).toHaveLength(6236);
   });
 
   test("live research combines reviewed Quran mappings with the verified Rizq corpus", () => {

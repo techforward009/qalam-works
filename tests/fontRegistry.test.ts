@@ -72,7 +72,7 @@ describe("fontRegistry", () => {
 
   test("all Blob families are available and Sahel resolves without PDF fallback", () => {
     const fonts = listEditorFonts();
-    expect(fonts).toHaveLength(12);
+    expect(fonts).toHaveLength(11);
     expect(fonts.some(f => f.id === "noto-nastaliq-urdu")).toBe(false);
     expect(resolveEditorFontFamily("Noto Nastaliq Urdu", "rtl").docxFamily).toBe("Noto Nastaliq Urdu");
     expect(fonts.some(f => f.label === "Mehr Nastaliq Web")).toBe(true);
@@ -101,7 +101,6 @@ describe("fontRegistry", () => {
     expect(visible).not.toContain("Faiz Lahori Nastaleeq");
     const hiddenFamilies = [
       "Nafees Nastaleeq",
-      "Muhammadi Quranic",
     ];
     for (const family of hiddenFamilies) {
       expect(visible).not.toContain(family);
@@ -143,8 +142,8 @@ describe("fontRegistry", () => {
     expect(migrated.content?.[0].content?.[1].marks?.[0].attrs?.fontFamily).toBe("Jameel Noori Nastaleeq");
     expect(resolveEditorFontFamily("Faiz Lahori", "rtl").docxFamily).toBe("Scheherazade New");
     expect(resolveEditorFontFamily('"Al Majeed Quranic Font"', "rtl").pdfFamily).toBe("Scheherazade New");
-    expect(resolveEditorFontFamily("Asif Quranic", "rtl").docxFamily).toBe("Scheherazade New");
-    expect(resolveEditorFontFamily("Al Qalam Quran Majeed", "rtl").pdfFamily).toBe("Scheherazade New");
+    expect(resolveEditorFontFamily("Asif Quranic", "rtl").docxFamily).toBe("Digital Khatt Indo-Pak");
+    expect(resolveEditorFontFamily("Al Qalam Quran Majeed", "rtl").pdfFamily).toBe("Digital Khatt Indo-Pak");
     const quran = migrateAlviDocumentContent({
       type: "doc",
       content: [{
@@ -156,7 +155,7 @@ describe("fontRegistry", () => {
         ],
       }],
     });
-    expect(quran.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Muhammadi Quranic");
+    expect(quran.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Digital Khatt Indo-Pak");
     expect(quran.content?.[0].content?.[1].marks?.[0].attrs?.fontFamily).toBe("Scheherazade New");
     expect(quran.content?.[0].content?.[2].marks?.[0].attrs?.fontFamily).toBe("Jameel Noori Nastaleeq");
   });

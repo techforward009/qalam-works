@@ -13,7 +13,8 @@ describe("Qalam Digital Khatt IndoPak edition", () => {
     expect(DIGITAL_KHATT_EDITION.id).toBe("qalam-indopak-digitalkhatt-v1");
     expect(DIGITAL_KHATT_EDITION.verseCount).toBe(6236);
     expect(DIGITAL_KHATT_EDITION.pageCount).toBe(604);
-    expect(DIGITAL_KHATT_EDITION.license).toBe("MIT");
+    expect(DIGITAL_KHATT_EDITION.license).toContain("MIT");
+    expect(DIGITAL_KHATT_EDITION.license).toContain("CC BY-SA 4.0");
     expect(DIGITAL_KHATT_EDITION.fontLicense).toBe("OFL-1.1");
   });
 

@@ -7,7 +7,7 @@ import { TOPIC_PREPS, type TopicPrep } from "../app/tools/khateeb-studio/engine/
 import { buildTopicSpeakingGuideText, topicGuideMinutes, topicGuideSections, topicGuideSourceLeads, speakingGuideCoverage } from "../app/tools/khateeb-studio/engine/topicSpeakingGuide";
 import { evidenceForTopic } from "../app/tools/khateeb-studio/engine/speakerTopicIndex";
 import { quranLocationsFromReference, quranTranslationFor } from "../app/tools/khateeb-studio/engine/quranTranslationProvider";
-import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../app/tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import type { SpeakingGuideMode } from "../app/tools/khateeb-studio/engine/deathSpeakingGuide";
 const languageState = vi.hoisted(() => ({ language: "ur" }));
 vi.mock("../app/lib/language-context", () => ({ useLanguage: () => languageState }));
@@ -56,7 +56,7 @@ for (const topic of TOPIC_PREPS) describe(topic.id, () => {
       expect(full).toContain(section.action[locale]); expect(brief).toContain(section.action[locale]);
     }
     for (const anchor of topic.quran) for (const location of quranLocationsFromReference(anchor.ref)) {
-      const arabic = ahmedgrafQuranReference.getAyah(location.surah, location.ayah)?.text;
+      const arabic = publicDigitalKhattQuranReference.getAyah(location.surah, location.ayah)?.text;
       const translation = quranTranslationFor(location.surah, location.ayah, locale);
       expect(arabic).toBeTruthy(); expect(translation).toBeTruthy();
       expect(full).toContain(arabic!); expect(brief).toContain(arabic!);
