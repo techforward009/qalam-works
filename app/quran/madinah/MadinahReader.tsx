@@ -30,6 +30,7 @@ import {
   type MadinahPage,
 } from "./data";
 import styles from "./reader.module.css";
+import {HAFS_AYAH_COUNTS} from "../../tools/arabic-diacritics/quran/hafsCounts";
 
 type Hit = { surah: number; ayah: number; page: number };
 
@@ -417,79 +418,17 @@ export default function MadinahReader({
         <EditionTopBar editionId="madinah-v2" surah={surah} ayah={ayah} />
 
         <div className={`${styles.grid} quran-reader-layout`}>
-          <aside className={`${styles.sidebar} tanzil-sidebar`}>
-            <QuranSidebarSection title={copy.search} defaultOpen><form onSubmit={(event) => { event.preventDefault(); runSearch(); }}>
-              <label className={styles.label}>
-                {copy.search}
-                <input value={query} onChange={(event) => setQuery(event.target.value)} className={styles.input} dir="rtl" lang="ar" />
-              </label>
-              <button type="submit" className={styles.primary}>{copy.search}</button>
-            </form>
-
-            {searched && (
-              <div className={styles.results}>
-                {hits.length ? hits.map((hit) => (
-                  <button key={`${hit.surah}:${hit.ayah}`} type="button" className={styles.result} onClick={() => navigate(hit.surah, hit.ayah)}>
-                    {SURAH_NAMES[hit.surah - 1] ?? hit.surah} — {easternDigits(hit.ayah)}
-                  </button>
-                )) : <div className={styles.subtle}>{copy.noResults}</div>}
-              </div>
-            )}
-
-            </QuranSidebarSection><QuranSidebarSection title={copy.browse} defaultOpen><label className={styles.labelBlock}>
-              {copy.surah}
-              <select value={surah} onChange={(event) => navigate(Number(event.target.value), 1)} className={styles.input}>
-                {SURAH_NAMES.map((name, index) => <option key={name} value={index + 1}>{index + 1}. {name}</option>)}
-              </select>
-            </label>
-
-            <label className={styles.labelBlock}>
-              {copy.ayah}
-              <input type="number" min={1} max={6236} value={ayah} onChange={(event) => navigate(surah, Number(event.target.value) || 1)} className={styles.input} />
-            </label>
-
-            <form className={styles.labelBlock} onSubmit={submitPage}>
-              <label className={styles.label}>
-                {copy.page}
-                <div className={styles.pageInputRow}>
-                  <input type="number" min={1} max={604} value={pageInput} onChange={(event) => setPageInput(event.target.value)} className={styles.input} />
-                  <span className={styles.subtle}>/ 604</span>
-                </div>
-              </label>
-              <button type="submit" className={styles.secondary}>{copy.goToPage}</button>
-            </form>
-
-            <div className={styles.metaBlock}>
-              {copy.surah} <strong>{SURAH_NAMES[pageSurah - 1] ?? pageSurah}</strong><br />
-              {copy.juz} <strong>{pageJuz}</strong>
-            </div>
-
-            </QuranSidebarSection><QuranSidebarSection title={copy.display} defaultOpen><label className={styles.labelBlock} style={language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined}>
-              {copy.display}
-              <select
-                value={scale}
-                aria-label={copy.size}
-                onChange={(event) => chooseScale(Number(event.target.value))}
-                className={styles.input}
-              >
-                <option value={0.85}>{copy.small}</option>
-                <option value={1}>{copy.medium}</option>
-                <option value={1.12}>{copy.large}</option>
-              </select>
-            </label>
-
-            </QuranSidebarSection><QuranSidebarSection title={copy.copy} defaultOpen><button type="button" className={styles.secondary} style={{ width: "100%", marginTop: 11, ...(language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : {}) }} onClick={() => void copyCurrentPage()}>
-              {copied ? copy.copyDone : copy.copy}
-            </button>
-            <button type="button" className={styles.secondary} style={{width:"100%",marginTop:8}}
-              onClick={() => void copySelectedVerse()}>
-              {language === "ur" ? "یہ آیت نقل کریں" : "Copy verse"}
-            </button>
-            <button type="button" className={styles.secondary} style={{width:"100%",marginTop:8}}
-              onClick={() => void copyWholeSurah()}>
-              {language === "ur" ? "پوری سورت نقل کریں" : "Copy whole surah"}
-            </button>
-            </QuranSidebarSection>
+          <aside className={`${styles.sidebar} tanzil-sidebar quran-reader-sidebar order-2 w-full min-w-0 lg:order-1 lg:w-[200px] lg:self-start`} lang={language} dir={language === "ur" ? "rtl" : "ltr"}>
+            <QuranSidebarSection title={copy.search} defaultOpen><form onSubmit={event => {event.preventDefault();runSearch();}}><div className="flex gap-1"><input className="min-w-0 flex-1 border px-2 py-1 text-xs" aria-label={copy.search} value={query} onChange={event => setQuery(event.target.value)} /><button type="submit" className="border bg-white px-2 py-1 text-xs">{copy.search}</button></div>{searched && <div className={styles.results}>{hits.length ? hits.map(hit => <button key={`${hit.surah}:${hit.ayah}`} type="button" className={styles.result} onClick={() => navigate(hit.surah,hit.ayah)}>{SURAH_NAMES[hit.surah-1]} — {easternDigits(hit.ayah)}</button>) : copy.noResults}</div>}</form></QuranSidebarSection>
+            <QuranSidebarSection title={copy.browse} defaultOpen><div className="space-y-2">
+              <label className={styles.label}>{copy.surah}<select className={styles.input} value={surah} onChange={e => navigate(Number(e.target.value),1)}>{SURAH_NAMES.map((name,i)=><option key={i} value={i+1}>{i+1}. {name}</option>)}</select></label>
+              <label className={styles.label}>{copy.ayah}<select className={styles.input} value={ayah} onChange={e => navigate(surah,Number(e.target.value))}>{Array.from({length:HAFS_AYAH_COUNTS[surah-1] ?? 7},(_,i)=><option key={i} value={i+1}>{i+1}</option>)}</select></label>
+              <label className={styles.label}>{copy.juz}<select className={styles.input} value={pageJuz} onChange={e => {const ref=JUZ_STARTS[Number(e.target.value)-1];if(ref)navigate(ref.surah,ref.ayah);}}>{Array.from({length:30},(_,i)=><option key={i} value={i+1}>{i+1}</option>)}</select></label>
+              <label className={styles.label}>{copy.page}<select className={styles.input} value={pageNumber} onChange={e => navigatePage(Number(e.target.value))}>{Array.from({length:604},(_,i)=><option key={i} value={i+1}>{i+1}</option>)}</select></label>
+            </div></QuranSidebarSection>
+            <QuranSidebarSection title={copy.copy}><button type="button" className={styles.secondary} onClick={() => void copyCurrentPage()}>{copied ? copy.copyDone : copy.copy}</button></QuranSidebarSection>
+            <QuranSidebarSection title={copy.display}><label className={styles.label}>{copy.size}<select className={styles.input} aria-label={copy.size} value={scale} onChange={e => chooseScale(Number(e.target.value))}><option value={0.85}>{copy.small}</option><option value={1}>{copy.medium}</option><option value={1.12}>{copy.large}</option></select></label></QuranSidebarSection>
+            <div className="border-t border-[#d0d4cc] bg-white px-2 py-2 text-xs">{language === "ur" ? "صفحہ بدلنے کے لیے دائیں اور بائیں تیر استعمال کریں۔" : "Use left and right arrow keys to turn pages."}</div>
           </aside>
 
           <section>
