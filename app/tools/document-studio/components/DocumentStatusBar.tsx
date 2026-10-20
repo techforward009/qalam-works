@@ -48,11 +48,12 @@ export default function DocumentStatusBar({
 
   return (
     <div
-      className="flex w-full items-center px-2"
+      className="relative flex w-full items-center"
       data-studio-statusbar="true"
       dir="ltr"
       style={{
         height: 19,
+        paddingLeft: 33,
         background: "#f0f0f0",
         color: "#000",
         fontFamily: "Tahoma, 'Segoe UI', sans-serif",
@@ -62,16 +63,11 @@ export default function DocumentStatusBar({
       }}
     >
       <span>{isUr ? "مدد کے لیے F1 دبائیں" : "For Help, press F1"}</span>
-      <span
-        data-studio-num-lock="true"
-        className="ms-auto grid h-[15px] min-w-[34px] place-items-center px-1"
-        style={{
-          boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff",
-          background: "#f0f0f0",
-        }}
-      >
-        NUM
-      </span>
+      <div className="absolute right-[2px] flex gap-[2px]" style={{ height: 15 }}>
+        <span aria-hidden="true" data-studio-status-panel="left" style={{ width: 30, boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff" }} />
+        <span data-studio-num-lock="true" className="grid place-items-center" style={{ width: 34, boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff" }}><span style={{ width: 26, fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, letterSpacing: 1 }}>NUM</span></span>
+        <span aria-hidden="true" data-studio-status-panel="right" style={{ width: 32, boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff" }} />
+      </div>
     </div>
   );
 }

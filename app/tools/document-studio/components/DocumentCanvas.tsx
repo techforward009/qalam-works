@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { ClassicScrollbar } from "./ClassicScrollbar";
 import { EditorContent } from "@tiptap/react";
 import { editorFontFamilyStack } from "../utils/fontRegistry";
 import { layoutNaturalSizePx, mmToPx, resolvePhysicalMargins, type PhysicalMarginEdge, type ResolvedPageLayout } from "../utils/pageLayout";
@@ -36,6 +37,9 @@ import {
   PASTEBOARD_TOP_PX,
 } from "../utils/windowRuler";
 
+const navButton = { width: 16, height: 16, padding: 0, border: "none", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", color: "#000", background: "#f0f0f0", boxShadow: "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969, inset -2px -2px 0 #a0a0a0" } as const;
+const navField = { display: "inline-block", height: 16, textAlign: "center", background: "#fff", boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff", fontSize: 11, lineHeight: "16px" } as const;
+
 export default function DocumentCanvas({
   editor,
   dir,
@@ -58,6 +62,7 @@ export default function DocumentCanvas({
   frames = [],
   onFramesChange,
   tool: toolProp,
+  englishFont = "Arial Unicode MS",
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -82,6 +87,7 @@ export default function DocumentCanvas({
   frames?: StudioFrame[];
   onFramesChange?: (frames: StudioFrame[]) => void;
   tool?: StudioToolId;
+  englishFont?: string;
 }) {
   const isPages = viewMode === "pages";
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -186,7 +192,7 @@ export default function DocumentCanvas({
   const guideOutset = Math.round(PASTEBOARD_GUIDE_PX * zoomFactor);
   const contentWidth = Math.max(scrollerWidth, Math.ceil(visualWidth));
   const contentHeight = Math.max(scrollerHeight, Math.ceil((isPages ? PASTEBOARD_TOP_PX : 0) + (visualHeight ?? visualPageHeight) + bottomPad));
-  const pageLeft = Math.max(0, (contentWidth - visualWidth) / 2);
+  const pageLeft = Math.max(0, Math.floor((contentWidth - visualWidth) / 2) - 2);
   const pageTop = isPages ? PASTEBOARD_TOP_PX : 0;
   const pxPerMmX = pageLayout.widthMm > 0 ? visualWidth / pageLayout.widthMm : 0;
   const pxPerMmY = pageLayout.heightMm > 0 ? visualPageHeight / pageLayout.heightMm : 0;
@@ -225,7 +231,7 @@ export default function DocumentCanvas({
     "--qalam-body-size": `${documentSettings.typography.bodyFontSizePt / 12}rem`,
     "--qalam-line-height": documentSettings.typography.lineHeight,
     "--qalam-rtl-font": editorFontFamilyStack(documentSettings.typography.defaultRtlFontId),
-    "--qalam-ltr-font": editorFontFamilyStack(documentSettings.typography.defaultLtrFontId),
+    "--qalam-ltr-font": englishFont === "Inter" ? `${editorFontFamilyStack("inter")}, Arial` : `"${englishFont}", Arial, sans-serif`,
     "--qalam-first-line-indent": `${documentSettings.typography.firstLineIndentMm}mm`,
     "--qalam-paragraph-before": `${documentSettings.typography.paragraphBeforePt}pt`,
     "--qalam-paragraph-after": `${documentSettings.typography.paragraphAfterPt}pt`,
@@ -263,7 +269,7 @@ export default function DocumentCanvas({
   return (
     <div
       ref={workspaceRef}
-      className="flex h-full min-h-0 overflow-hidden"
+      className="relative flex h-full min-h-0 overflow-hidden"
       style={{ background: "#FFFFFF" }}
       data-studio-view={viewMode}
       data-studio-pasteboard="true"
@@ -388,8 +394,8 @@ export default function DocumentCanvas({
                         top: -PASTEBOARD_TOP_PX,
                         bottom: -bottomPad,
                         width: 1,
-                        backgroundImage: "repeating-linear-gradient(to bottom, #000 0 1px, transparent 1px 2px)",
-                        backgroundPosition: "0 1px",
+                        backgroundImage: "repeating-linear-gradient(to bottom, transparent 0 1px, #000 1px 2px)",
+                        backgroundPosition: "0 0",
                       }}
                       aria-hidden
                     />
@@ -402,8 +408,8 @@ export default function DocumentCanvas({
                         top: -PASTEBOARD_TOP_PX,
                         bottom: -bottomPad,
                         width: 1,
-                        backgroundImage: "repeating-linear-gradient(to bottom, #000 0 1px, transparent 1px 2px)",
-                        backgroundPosition: "0 1px",
+                        backgroundImage: "repeating-linear-gradient(to bottom, transparent 0 1px, #000 1px 2px)",
+                        backgroundPosition: "0 0",
                       }}
                       aria-hidden
                     />
@@ -437,7 +443,7 @@ export default function DocumentCanvas({
                               style={{
                                 top: index * (natural.heightPx + PAGE_STACK_GAP_PX),
                                 left: 0,
-                                width: natural.widthPx,
+                                width: Math.ceil(natural.widthPx) + 1,
                                 height: natural.heightPx,
                                 borderRadius: 0,
                                 border: "1px solid #000000",
@@ -454,7 +460,7 @@ export default function DocumentCanvas({
                             style={{
                               top: index * (natural.heightPx + PAGE_STACK_GAP_PX),
                               left: 0,
-                              width: natural.widthPx,
+                              width: Math.ceil(natural.widthPx) + 1,
                               height: natural.heightPx,
                             }}
                             aria-hidden
@@ -547,32 +553,7 @@ export default function DocumentCanvas({
               </div>
             </div>
           </div>
-          {isPages ? (
-            <div
-              data-studio-vscroll="true"
-              className="studio-no-print relative shrink-0"
-              style={{ width: INPAGE_VSCROLL_PX, background: "#f0f0f0", boxShadow: "inset 1px 0 0 #fff, inset -1px 0 0 #696969" }}
-              onPointerDown={(event) => {
-                const el = scrollerRef.current;
-                if (!el) return;
-                const rect = event.currentTarget.getBoundingClientRect();
-                const ratio = (event.clientY - rect.top) / Math.max(1, rect.height);
-                el.scrollTop = ratio * Math.max(0, el.scrollHeight - el.clientHeight);
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  left: 1,
-                  right: 1,
-                  top: Math.max(0, (scrollBox.sh > scrollBox.ch ? scrollBox.top / Math.max(1, scrollBox.sh - scrollBox.ch) : 0) * Math.max(0, scrollBox.ch - Math.max(14, (scrollBox.ch / Math.max(1, scrollBox.sh)) * scrollBox.ch))),
-                  height: Math.max(14, Math.min(scrollBox.ch || 14, ((scrollBox.ch || 1) / Math.max(1, scrollBox.sh)) * (scrollBox.ch || 1))),
-                  background: "#e4e4e4",
-                  boxShadow: "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969",
-                }}
-              />
-            </div>
-          ) : null}
+          {isPages ? <div className="shrink-0" style={{ width: INPAGE_VSCROLL_PX }} /> : null}
         </div>
         {isPages ? (
           <div
@@ -580,41 +561,22 @@ export default function DocumentCanvas({
             className="studio-no-print flex shrink-0 items-center"
             style={{ height: INPAGE_HSCROLL_PX, background: "#f0f0f0", boxShadow: "inset 0 1px 0 #fff, inset 0 -1px 0 #696969" }}
           >
-            <div className="flex h-full shrink-0 items-center gap-0.5 px-1" data-studio-page-nav="true" data-latin-control="true">
-              <button type="button" aria-label="Master pages" className="h-[14px] w-[16px] bg-[#f0f0f0] text-[10px] leading-none" style={{ boxShadow: "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969" }}>M</button>
-              <button type="button" aria-label={isUr ? "پچھلا صفحہ" : "Previous page"} className="h-[14px] w-[16px] text-[12px] leading-none" onClick={() => stepPage(-1)}>‹</button>
-              <span className="min-w-6 text-center text-[11px] tabular-nums" data-studio-page-label="true">
-                {Math.min(pageCount, Math.max(1, Math.floor(scrollBox.top / Math.max(1, pageStride) + 0.35) + 1))}/{pageCount}
-              </span>
-              <button type="button" aria-label={isUr ? "اگلا صفحہ" : "Next page"} className="h-[14px] w-[16px] text-[12px] leading-none" onClick={() => stepPage(1)}>›</button>
-              <span className="min-w-8 text-[11px] tabular-nums" data-studio-zoom-label="true">{percentLabel}</span>
+            <div className="flex h-full shrink-0 items-center gap-px px-px" data-studio-page-nav="true" data-latin-control="true" style={{ color: "#000", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11 }}>
+              <button type="button" aria-label="Master pages" style={{ ...navButton, width: 11 }}>M</button>
+              <button type="button" aria-label={isUr ? "پچھلا صفحہ" : "Previous page"} style={navButton} onClick={() => stepPage(-1)}>{"<"}</button>
+              <span style={{ ...navField, width: 78 }} data-studio-page-label="true">{Math.min(pageCount, Math.max(1, Math.floor(scrollBox.top / Math.max(1, pageStride) + 0.35) + 1))}/{pageCount}</span>
+              <button type="button" aria-label={isUr ? "اگلا صفحہ" : "Next page"} style={navButton} onClick={() => stepPage(1)}>{">"}</button>
+              <span style={{ ...navField, width: 46 }} data-studio-zoom-label="true">{percentLabel}</span>
               <span className="sr-only" data-studio-page-count={pageCount}>Pages {pageCount}</span>
             </div>
-            <div
-              className="relative h-full min-w-0 flex-1"
-              onPointerDown={(event) => {
-                const el = scrollerRef.current;
-                if (!el) return;
-                const rect = event.currentTarget.getBoundingClientRect();
-                const ratio = (event.clientX - rect.left) / Math.max(1, rect.width);
-                el.scrollLeft = ratio * Math.max(0, el.scrollWidth - el.clientWidth);
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 1,
-                  bottom: 1,
-                  left: Math.max(0, (scrollBox.sw > scrollBox.cw ? scrollBox.left / Math.max(1, scrollBox.sw - scrollBox.cw) : 0) * Math.max(0, scrollBox.cw - Math.max(18, (scrollBox.cw / Math.max(1, scrollBox.sw)) * scrollBox.cw))),
-                  width: Math.max(18, Math.min(scrollBox.cw || 18, ((scrollBox.cw || 1) / Math.max(1, scrollBox.sw)) * (scrollBox.cw || 1))),
-                  background: "#e4e4e4",
-                  boxShadow: "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969",
-                }}
-              />
-            </div>
+            <ClassicScrollbar viewport={scrollBox.cw} extent={scrollBox.sw} offset={scrollBox.left} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollLeft = value; }} />
+            <div className="shrink-0" style={{ width: INPAGE_VSCROLL_PX }} />
           </div>
         ) : null}
       </div>
+      {isPages ? <div data-studio-vscroll="true" className="studio-no-print absolute right-0 top-0" style={{ width: INPAGE_VSCROLL_PX, bottom: INPAGE_HSCROLL_PX }}>
+        <ClassicScrollbar vertical viewport={scrollBox.ch} extent={scrollBox.sh} offset={scrollBox.top} onScroll={(value) => { if (scrollerRef.current) scrollerRef.current.scrollTop = value; }} />
+      </div> : null}
       <style jsx global>{`
         .qalam-editor-content.qalam-doc-page .ProseMirror,
         .qalam-editor-content.qalam-view-pageless .ProseMirror {
@@ -661,7 +623,7 @@ export default function DocumentCanvas({
           direction: rtl;
           unicode-bidi: isolate;
           text-align: start;
-          font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
+          font-family: var(--qalam-rtl-font, "Jameel Noori Nastaleeq"), var(--qalam-ltr-font, Arial);
         }
         .qalam-editor-content .ProseMirror p[dir="ltr"],
         .qalam-editor-content .ProseMirror h1[dir="ltr"],
@@ -671,7 +633,7 @@ export default function DocumentCanvas({
           direction: ltr;
           unicode-bidi: isolate;
           text-align: start;
-          font-family: var(--qalam-ltr-font, var(--font-inter), Inter), var(--qalam-rtl-font, var(--font-nastaliq), "Noto Nastaliq Urdu");
+          font-family: var(--qalam-ltr-font, Arial), var(--qalam-rtl-font, "Jameel Noori Nastaleeq");
         }
         .qalam-editor-content .ProseMirror p:not([dir]),
         .qalam-editor-content .ProseMirror h1:not([dir]),

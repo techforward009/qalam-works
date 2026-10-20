@@ -110,17 +110,19 @@ function StudioLanguageSwitch() {
   return (
     <div
       role="group"
-      aria-label="Choose language"
+      aria-label="Document language"
       dir="ltr"
       data-studio-language-switch="true"
-      className="me-1 inline-flex h-[22px] shrink-0 items-center rounded-none border border-[#1A3A2A]/25 bg-white p-px"
+      className="me-1 inline-flex h-[18px] shrink-0 items-center rounded-none border border-[#808080] bg-[#f0f0f0]"
+      style={{ height: 18, maxHeight: 18 }}
     >
       <button
         type="button"
         lang="en"
         aria-pressed={language === "en"}
+        style={{ height: 16, minHeight: 16, maxHeight: 16 }}
         onClick={() => setLanguage("en")}
-        className={`grid h-[18px] min-w-7 place-items-center rounded-none px-1 text-[11px] font-semibold leading-none ${language === "en" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] hover:bg-[#F3F7F2]"}`}
+        className={`grid h-[16px] min-w-7 place-items-center rounded-none px-1 text-[11px] font-semibold leading-none ${language === "en" ? "bg-[#d9d9d9] text-black" : "text-black hover:bg-[#e5e5e5]"}`}
       >
         EN
       </button>
@@ -129,8 +131,9 @@ function StudioLanguageSwitch() {
         lang="ur"
         dir="rtl"
         aria-pressed={language === "ur"}
+        style={{ height: 16, minHeight: 16, maxHeight: 16 }}
         onClick={() => setLanguage("ur")}
-        className={`grid h-[18px] min-w-9 place-items-center rounded-none px-1 text-[12px] font-semibold leading-none ${language === "ur" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] hover:bg-[#F3F7F2]"}`}
+        className={`grid h-[16px] min-w-9 place-items-center rounded-none px-1 text-[12px] font-semibold leading-none ${language === "ur" ? "bg-[#d9d9d9] text-black" : "text-black hover:bg-[#e5e5e5]"}`}
       >
         اردو
       </button>
@@ -351,6 +354,11 @@ export default function DocumentMenuBar({
   return (
     <div data-studio-caption="true" style={{ background: "#f0f0f0", fontFamily: "Segoe UI, Tahoma, sans-serif", color: "#000" }}>
       <style>{`
+        [data-studio-language-switch] button {
+          font-family: Tahoma, Arial, sans-serif !important;
+          font-size: 11px !important;
+          line-height: 16px !important;
+        }
         [data-menu-portaled="true"][data-studio-menu-language] [role="menuitem"],
         [data-menu-portaled="true"][data-studio-menu-language] [role="menuitem"] * {
           font-family: "Segoe UI", Tahoma, sans-serif !important;
@@ -397,7 +405,7 @@ export default function DocumentMenuBar({
           flexWrap: pinMenus ? "nowrap" : "wrap",
           overflow: pinMenus ? "hidden" : "visible",
           whiteSpace: pinMenus ? "nowrap" : "normal",
-          background: "linear-gradient(#fefeff, #e1e6f6)",
+          background: "linear-gradient(to bottom, #fefeff 0, #e5eaf5 7px, #d4dbed 7px, #e1e6f6 100%)",
           borderBottom: "1px solid #b6bccc",
           fontFamily: "Segoe UI, Tahoma, sans-serif",
           fontSize: 12,

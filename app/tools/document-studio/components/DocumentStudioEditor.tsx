@@ -322,6 +322,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle" | "error">("idle");
   const [online, setOnline] = useState(true);
   const [storageDurability, setStorageDurability] = useState<DocumentLibrary["durability"] | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [englishFont, setEnglishFont] = useState("Arial Unicode MS");
   const [documentTitle, setDocumentTitle] = useState(() => defaultDocumentTitle(isUr));
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const [libraryItems, setLibraryItems] = useState<DocumentListItem[]>([]);
@@ -1953,18 +1955,18 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
                       : "Browser storage is unavailable. Changes are temporary in this session. Keep this tab open and download/export your document."}
                   </span>
                 ) : null}
-                <input
+                {editingTitle ? <input autoFocus
                   type="text"
                   value={documentTitle}
                   onChange={(e) => setDocumentTitle(e.target.value)}
-                  onBlur={commitDocumentTitle}
+                  onBlur={() => { commitDocumentTitle(); setEditingTitle(false); }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") e.currentTarget.blur();
                   }}
                   aria-label={isUr ? "دستاویز کا عنوان" : "Document title"}
                   data-studio-document-title="true"
                   className="h-[20px] w-36 min-w-0 rounded-none border border-transparent bg-transparent px-1 text-[12px] leading-none text-[#1c1c1c] hover:border-[#c8c8c8] focus:border-[#1A3A2A] focus:outline-none"
-                />
+                /> : <button type="button" data-studio-document-title="true" aria-label={isUr ? "دستاویز کا عنوان" : "Document title"} onClick={() => setEditingTitle(true)} style={{ height: 18, padding: 0, border: "none", background: "transparent", color: "#000", fontSize: 12, whiteSpace: "nowrap" }}>[{documentTitle}]</button>}
                 {titleSave.label ? (
                   <span
                     className={`max-w-[9rem] truncate text-[11px] leading-none ${
@@ -1999,6 +2001,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             zoom={zoom}
             onZoomChange={setZoom}
             documentSettings={documentSettings}
+            englishFont={englishFont}
+            onEnglishFontChange={setEnglishFont}
           />
         }
         findBar={
@@ -2131,6 +2135,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             minimumPages={minimumPages}
             frames={frames}
             onFramesChange={changeFrames}
+            englishFont={englishFont}
             tool={canvasTool}
             onToolAction={onCanvasTool}
           />

@@ -648,6 +648,8 @@ export default function DocumentToolbar({
   zoom = 100,
   onZoomChange,
   documentSettings,
+  englishFont = "Arial Unicode MS",
+  onEnglishFontChange,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -658,6 +660,8 @@ export default function DocumentToolbar({
   zoom?: DocumentZoom;
   onZoomChange?: (zoom: DocumentZoom) => void;
   documentSettings?: DocumentStudioSettings;
+  englishFont?: string;
+  onEnglishFontChange?: (family: string) => void;
 }) {
   const leadingRef = useRef<HTMLSelectElement>(null);
   const kerningRef = useRef<HTMLSelectElement>(null);
@@ -668,6 +672,11 @@ export default function DocumentToolbar({
     selector: ({ editor: current }) =>
       current ? resolveActiveToolbarFormatting(current, settings, dir) : null,
   });
+  useEffect(() => {
+    if (!editor || !ui) return;
+    const family = String(editor.getAttributes("textStyle").fontFamily ?? "").replace(/["']/g, "").split(",")[0].trim();
+    if (family === "Arial Unicode MS" || STUDIO_FONT_GROUPS.some((group) => group.category === "latin" && group.fonts.some((font) => font.value === family))) onEnglishFontChange?.(family);
+  }, [editor, ui, onEnglishFontChange]);
   if (!editor || !ui) return null;
 
   const currentFont = ui.mixed.fontFamily ? MIXED_TOOLBAR_VALUE : ui.fontFamily;
@@ -676,9 +685,8 @@ export default function DocumentToolbar({
     ? FONT_SIZE_OPTIONS_PT
     : [...FONT_SIZE_OPTIONS_PT, ui.fontSizePt as number].filter((n): n is number => typeof n === "number").sort((a, b) => a - b);
   const latinFonts = STUDIO_FONT_GROUPS.find((group) => group.category === "latin")?.fonts ?? [];
-  const englishValue = currentFont === "Arial Unicode MS" || latinFonts.some((font) => font.value === currentFont)
-    ? currentFont
-    : "Arial Unicode MS";
+  const explicitLatin = String(editor.getAttributes("textStyle").fontFamily ?? "").replace(/["']/g, "").split(",")[0].trim();
+  const englishValue = explicitLatin === "Arial Unicode MS" || latinFonts.some((font) => font.value === explicitLatin) ? explicitLatin : englishFont;
   const spacingValue = ui.lineHeight == null || ui.lineHeight === settings.typography.lineHeight ? "auto" : String(ui.lineHeight);
   const colourValue = !ui.color || ui.color === "#000000" || ui.color === "#111111" ? "#000000" : ui.color;
 
@@ -737,7 +745,10 @@ export default function DocumentToolbar({
             data-latin-control="true"
             className={selectCls} width={202} gap={2}
             value={englishValue}
-            onChange={(event) => applyFontFamily(editor, event.target.value)}
+            onChange={(event) => {
+              onEnglishFontChange?.(event.target.value);
+              if (editor.state.selection.$from.parent.attrs.dir !== "rtl") applyFontFamily(editor, event.target.value === "Arial Unicode MS" ? "" : event.target.value);
+            }}
           >
             <option value="Arial Unicode MS">Arial Unicode MS</option>
             {latinFonts.map((font) => (
