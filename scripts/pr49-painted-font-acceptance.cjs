@@ -80,7 +80,7 @@ const samples = [
   await mobileCdp.send("DOM.enable");
   await mobileCdp.send("CSS.enable");
   const mobileDocument=await mobileCdp.send("DOM.getDocument",{depth:-1,pierce:true});
-  const mobileNode=await mobileCdp.send("DOM.querySelector",{nodeId:mobileDocument.root.nodeId,selector:"article > div"});
+  const mobileNode=await mobileCdp.send("DOM.querySelector",{nodeId:mobileDocument.root.nodeId,selector:"[data-quran-edition=\"digital-khatt\"] .quran-page .quran-content"});
   const mobileFonts=mobileNode.nodeId?(await mobileCdp.send("CSS.getPlatformFontsForNode",{nodeId:mobileNode.nodeId})).fonts||[]:[];
   const digitalPainted=mobileFonts.some(f=>/digital.?khatt/i.test(f.familyName)&&f.glyphCount>0);
   report.mobileDigitalKhatt={status:mobileMetrics.align==="justify"&&mobileMetrics.direction==="rtl"&&mobileMetrics.documentWidth<=mobileMetrics.viewportWidth&&mobileMetrics.left>=0&&mobileMetrics.right<=mobileMetrics.viewportWidth&&digitalPainted?"PASS":"FAIL",metrics:mobileMetrics,renderedFonts:mobileFonts};
