@@ -494,24 +494,6 @@ export default function MadinahReader({
 
           <section>
             <div className="quran-page-meta" dir="ltr" aria-label="Mushaf running headers"><div className="quran-page-meta-item quran-page-meta-juz">{displayJuzTitle}</div><div className="quran-page-meta-item flex items-center justify-center" dir="ltr"><QuranPageArrow direction="previous" label="Previous page" disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} /><span className="quran-page-meta-page-number">{easternDigits(pageNumber)}</span><QuranPageArrow direction="next" label="Next page" disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)} /></div><div className="quran-page-meta-item quran-page-meta-surah">{displaySurahTitle}</div></div><article className={`${styles.page} quran-page`} onCopyCapture={handlePageCopy}>
-              <div className={styles.mushafHeader} dir="ltr" aria-hidden="true" style={{display:"none"}}>
-                <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderLeft}`} dir="rtl">{displaySurahTitle}</div>
-                <div className={styles.mushafHeaderPage} aria-label={`Page ${pageNumber}`}>
-                  <button type="button" className={`${styles.pageArrow} quran-page-arrow`} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} aria-label="Previous page">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}>
-                      <path d="M14.8 5.2 8 12l6.8 6.8" />
-                    </svg>
-                  </button>
-                  <span className={styles.mushafHeaderNumber}>{easternDigits(pageNumber)}</span>
-                  <button type="button" className={styles.pageArrow} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)} aria-label="Next page">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}>
-                      <path d="M9.2 5.2 16 12l-6.8 6.8" />
-                    </svg>
-                  </button>
-                </div>
-                <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderRight}`} dir="rtl">{displayJuzTitle}</div>
-              </div>
-
               <div className={styles.pageLines} style={{ ["--mushaf-scale" as string]: String(scale) }}>
                 {page ? page.lines.map((line) => {
                   if (line.type === "blank") return null;
@@ -539,8 +521,8 @@ export default function MadinahReader({
                 }) : <div className={styles.loading}>Loading page…</div>}
               </div>
 
-              <QuranPageButtons previous={copy.previousPage} next={copy.nextPage} disablePrevious={pageNumber <= 1} disableNext={pageNumber >= 604} onPrevious={() => navigatePage(pageNumber - 1)} onNext={() => navigatePage(pageNumber + 1)} />
             </article>
+              <QuranPageButtons previous={copy.previousPage} next={copy.nextPage} disablePrevious={pageNumber <= 1} disableNext={pageNumber >= 604} onPrevious={() => navigatePage(pageNumber - 1)} onNext={() => navigatePage(pageNumber + 1)} />
 
             <div className={styles.credit}>
               {copy.madinahCredit}
