@@ -1017,6 +1017,8 @@ export default function QuranReader({
 
             <div className="quran-page-shell" id="quran-reader-panel" role="tabpanel" aria-labelledby={"quran-tab-" + activeReaderView}>
               <QuranPageMeta
+                previousDisabled={!adjacentPage(page.page,-1)}
+                nextDisabled={!adjacentPage(page.page,1)}
                 surah={
                   surah
                 }
