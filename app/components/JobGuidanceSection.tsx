@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Eraser, Type, FilePenLine, MessageCircle, SearchCheck, Languages, PenLine, CalendarDays, ChevronRight } from "lucide-react";
+import { TOOL_CATALOG } from "../lib/toolCatalog";
+import { Eraser, Type, FilePenLine, MessageCircle, SearchCheck, Languages, PenLine, CalendarDays, Receipt, ChevronRight } from "lucide-react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
 import { trackEvent, type ToolId } from "../lib/analytics";
@@ -21,6 +22,7 @@ const HREF_TO_TOOL: Record<string, ToolId> = {
   "/tools/whatsapp-rtl-formatter": "whatsapp_rtl_formatter",
   "/tools/quality-checker": "quality_audit",
   "/tools/date-converter":  "date_converter",
+  "/tools/invoice-generator": "invoice_generator",
 };
 
 const CARD_ICONS: Record<string, typeof Eraser> = {
@@ -32,6 +34,7 @@ const CARD_ICONS: Record<string, typeof Eraser> = {
   "/tools/whatsapp-rtl-formatter": MessageCircle,
   "/tools/quality-checker": SearchCheck,
   "/tools/date-converter": CalendarDays,
+  "/tools/invoice-generator": Receipt,
 };
 
 export default function JobGuidanceSection() {
@@ -42,7 +45,7 @@ export default function JobGuidanceSection() {
 
   return (
     <section className="bg-[#F7F5EF] py-14 dark:bg-[#0E1524] md:py-16" dir={dir}>
-      <div className="site-container mx-auto max-w-3xl">
+      <div className="site-container mx-auto max-w-6xl">
         <h2
           className={`mb-6 text-center text-xl font-bold text-[#11182A] dark:text-[#F7F5EF] md:text-2xl ${
             isUr ? "font-nastaliq font-normal" : ""
@@ -51,7 +54,7 @@ export default function JobGuidanceSection() {
           {t.headline}
         </h2>
 
-        <ul className="space-y-3.5">
+        <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {t.items.map((item) => {
             const Icon = CARD_ICONS[item.href] ?? Eraser;
             const example = CARD_EXAMPLE[item.href];
@@ -67,7 +70,7 @@ export default function JobGuidanceSection() {
                       nav_source: "homepage_card",
                     })
                   }
-                  className={`qalam-home-intent-card group flex min-h-[72px] items-center gap-3.5 rounded-2xl border border-[#1A2036]/8 bg-white px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2FA37D]/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2FA37D] dark:border-white/10 dark:bg-[#1A2036] dark:hover:border-[#2FA37D]/40 sm:gap-4 sm:px-5 ${naskh}`}
+                  className={`qalam-home-intent-card group flex h-full min-h-[160px] items-center gap-3.5 rounded-2xl border border-[#1A2036]/8 bg-white px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2FA37D]/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2FA37D] dark:border-white/10 dark:bg-[#1A2036] dark:hover:border-[#2FA37D]/40 sm:gap-4 sm:px-5 ${naskh}`}
                 >
                   <span
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#2FA37D]/12 text-[#1F6C54] dark:bg-[#2FA37D]/15 dark:text-[#7DDCB8] sm:h-12 sm:w-12"
@@ -81,7 +84,7 @@ export default function JobGuidanceSection() {
                       {item.label}
                     </span>
                     <span className="qalam-intent-name mt-0.5 block text-[16px] sm:text-[17px] font-bold text-[#1A3A2A] dark:text-[#e8ede9] leading-snug">
-                      {item.description}
+                      {TOOL_CATALOG.find(entry => entry.route === item.href)!.name[language]}
                     </span>
                     <span className="qalam-intent-description mt-1 block text-[13px] sm:text-[14px] text-[#5B5748] dark:text-[#a8b9ac] leading-relaxed">
                       {item.body}

@@ -19,6 +19,7 @@ export default function UnicodeStandardizerContent() {
           {t.title}
         </h1>
         <p className={`text-base md:text-lg text-gray-600 dark:text-white max-w-xl mx-auto ${naskh}`}>{t.description}</p>
+        <p className={`mt-3 text-sm leading-relaxed text-gray-600 dark:text-white max-w-2xl mx-auto ${naskh}`}>{t.difference}</p>
 
         {/* Secondary routing callout — noticeable but not competing with primary tool */}
         <div
@@ -35,7 +36,7 @@ export default function UnicodeStandardizerContent() {
                   href="/tools/document-cleaner" onClick={() => trackEvent("nav_click", { tool: "urdu_unicode_standardizer", target_tool: "document_cleaner", nav_source: "cross_link" })}
                   className="font-semibold text-[#1A3A2A] underline decoration-[#B8935A]/70 underline-offset-2 hover:text-[#B8935A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 rounded-sm"
                 >
-                  ڈاکومنٹ کلینر
+                  اردو ٹیکسٹ کلینر
                 </Link>{" "}
                 استعمال کریں
               </>
@@ -46,7 +47,7 @@ export default function UnicodeStandardizerContent() {
                   href="/tools/document-cleaner" onClick={() => trackEvent("nav_click", { tool: "urdu_unicode_standardizer", target_tool: "document_cleaner", nav_source: "cross_link" })}
                   className="font-semibold text-[#1A3A2A] underline decoration-[#B8935A]/70 underline-offset-2 hover:text-[#B8935A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8935A] focus-visible:ring-offset-2 rounded-sm"
                 >
-                  Document Cleaner
+                  Urdu Text Cleaner
                 </Link>
                 <span aria-hidden="true"> →</span>
               </>

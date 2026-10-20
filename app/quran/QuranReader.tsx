@@ -7,7 +7,7 @@ import * as ahmedReaderModel from "./reader/model";
 import { ahmedgrafQuranReference } from "../tools/arabic-diacritics/quran/ahmedgrafProvider";
 import { DIGITAL_KHATT_BASMILLAH } from "./indopak-digital-khatt/data";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
@@ -233,7 +233,13 @@ export default function QuranReader({
 
   const pages = pageCount();
 
+  const initialReaderScroll = useRef(true);
   useEffect(() => {
+    if (initialReaderScroll.current) {
+      initialReaderScroll.current = false;
+      document.querySelector(".quran-reader-container")?.scrollIntoView({ block: "start", behavior: "instant" });
+      return;
+    }
     document
       .getElementById(
         `ayah-${surah}-${ayah}`,
@@ -502,7 +508,7 @@ export default function QuranReader({
       data-quran-edition={editionId}
       dir="ltr"
     >
-      <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4">
+      <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4" style={{scrollMarginTop:"var(--site-header-height, 128px)"}}>
         <EditionTopBar editionId={editionId} surah={surah} ayah={ayah} />
         {editionId === "qalam-indopak" && <div className="my-2 text-center text-sm text-[#416448]"><p>{language === "ur" ? "قرآنی متن: احمد گرافکس" : "Quran text: Ahmed Grafics"} · <a href="https://ahmedgraf.com" rel="noopener noreferrer" target="_blank" className="underline">ahmedgraf.com</a></p><details className="mx-auto max-w-2xl text-xs"><summary className="cursor-pointer underline">{language === "ur" ? "ماخذ اور اجازت نامہ" : "Source licence notice"}</summary><span>{ahmedgrafQuranReference.getMetadata().referenceLicense}</span></details></div>}
         <div

@@ -1,5 +1,5 @@
 /**
- * Document Studio menu catalog.
+ * Qalam Page: Urdu Editor menu catalog.
  * Only real, already-implemented actions. Future features are omitted —
  * never shown as working items.
  */
@@ -345,7 +345,7 @@ export const DOCUMENT_MENU_BAR: MenuDefinition[] = [
     labelEn: "Help",
     labelUr: "مدد",
     items: [
-      { type: "action", id: "help.about", labelEn: "Document Studio help", labelUr: "ڈاکومنٹ اسٹوڈیو مدد" },
+      { type: "action", id: "help.about", labelEn: "Qalam Page: Urdu Editor help", labelUr: "قلم پیج: اردو ایڈیٹر مدد" },
       { type: "action", id: "help.shortcuts", labelEn: "Keyboard shortcuts", labelUr: "کی بورڈ شارٹ کٹس" },
       { type: "action", id: "help.rtl", labelEn: "Urdu / RTL help", labelUr: "اردو / دائیں-بائیں مدد" },
       { type: "action", id: "help.voice", labelEn: "Voice dictation help", labelUr: "آواز سے لکھنے کی مدد" },

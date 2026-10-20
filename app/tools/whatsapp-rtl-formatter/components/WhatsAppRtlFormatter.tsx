@@ -15,7 +15,7 @@ export interface WhatsAppRtlFormatterProps {
 
 const LABELS = {
   en: {
-    title: "WhatsApp RTL Formatter",
+    title: "Urdu for WhatsApp",
     description:
       "Prepare Urdu and mixed RTL/LTR plain text for more stable display when pasted into WhatsApp.",
     inputLabel: "Paste Text",
@@ -36,7 +36,7 @@ const LABELS = {
       "Wording is not translated or rewritten. Visible text is preserved. Invisible Unicode direction controls are inserted only where needed. Processing happens entirely in your browser — nothing is uploaded.",
   },
   ur: {
-    title: "واٹس ایپ آر ٹی ایل فارمیٹر",
+    title: "واٹس ایپ کے لیے اردو",
     description:
       "اردو اور مخلوط متن کو واٹس ایپ میں بہتر اور درست سمت میں دکھانے کے لیے تیار کریں۔",
     inputLabel: "متن پیسٹ کریں",

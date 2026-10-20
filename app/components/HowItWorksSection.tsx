@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TOOL_CATALOG } from "../lib/toolCatalog";
 import { BookOpen, PenLine, Languages, Eraser, SearchCheck, Type, MessageCircle, FilePenLine, CalendarDays } from "lucide-react";
 import { useLanguage } from "../lib/language-context";
 import { translations } from "../lib/translations";
@@ -60,7 +61,7 @@ export default function HowItWorksSection() {
             const { Icon } = meta;
             return (
               <Link
-                key={tool.name}
+                key={TOOL_CATALOG.find(entry => entry.route === TOOL_HREFS[i])!.name[language]}
                 href={TOOL_HREFS[i]}
                 onClick={() =>
                   trackEvent("nav_click", {
@@ -74,7 +75,7 @@ export default function HowItWorksSection() {
                 <span className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${meta.icon}`}>
                   <Icon className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden="true" />
                 </span>
-                <h3 className={`mb-1.5 text-[17px] font-bold text-[#11182A] dark:text-[#F7F5EF] ${naskh}`}>{tool.name}</h3>
+                <h3 className={`mb-1.5 text-[17px] font-bold text-[#11182A] dark:text-[#F7F5EF] ${naskh}`}>{TOOL_CATALOG.find(entry => entry.route === TOOL_HREFS[i])!.name[language]}</h3>
                 <p className={`text-[14px] leading-relaxed text-[#5B5748] dark:text-[#b7c4bb] ${naskh}`}>{tool.body}</p>
                 {meta.example && (
                   <span className="qalam-tool-example mt-3 inline-flex items-center gap-2 rounded bg-[#F3F7F2] px-2 py-0.5 font-mono text-[11px] text-[#182b2a] dark:bg-white/10 dark:text-[#f0f5f0]" dir={language === "ur" ? "rtl" : "ltr"}>

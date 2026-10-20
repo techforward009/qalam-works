@@ -23,21 +23,21 @@ const LanguageContext = createContext<LanguageContextValue | undefined>(undefine
 const LANGUAGE_STORAGE_KEY = "qalam-site-language";
 
 function loadStoredLanguage(): Language {
-  // SSR / first paint: English default so first-time visitors and
-  // hydration match (avoids Urdu flash). Saved preference still wins.
-  if (typeof window === "undefined") return "en";
+  // Urdu on the server and first client render keeps hydration consistent.
+  // A returning visitor’s saved preference still wins after hydration.
+  if (typeof window === "undefined") return "ur";
   try {
     const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
     if (saved === "en" || saved === "ur") return saved;
   } catch (err) {
     console.error("Failed to load language preference:", err);
   }
-  return "en";
+  return "ur";
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   // Match the server on the first render, then restore the browser preference.
-  const [language, setLanguageState] = useState<Language>("en");
+  const [language, setLanguageState] = useState<Language>("ur");
   useEffect(() => {
     setLanguageState(loadStoredLanguage());
   }, []);

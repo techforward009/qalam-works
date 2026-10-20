@@ -61,7 +61,7 @@ export default function BeforeAfterSection() {
                   </p>
                 </>
               ) : (
-                <p className={`text-right text-sm not-italic text-[#6b645c] dark:text-[#b7c4bb] ${language === "ur" ? "qalam-jameel-prompt" : ""}`} dir={language === "ur" ? "rtl" : "ltr"}>{t.prompt}</p>
+                <p className={`w-full text-center text-sm not-italic text-[#6b645c] dark:text-[#b7c4bb] ${language === "ur" ? "qalam-jameel-prompt" : ""}`} dir={language === "ur" ? "rtl" : "ltr"}>{t.prompt}</p>
               )}
             </div>
             <button

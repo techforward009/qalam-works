@@ -4,7 +4,7 @@
  */
 /// <reference types="vitest/globals" />
 import React from "react";
-import { render, screen, cleanup, fireEvent, act } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, act, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -48,30 +48,23 @@ function writerHref(el: HTMLElement) {
   return (el as HTMLAnchorElement).getAttribute("href") ?? "";
 }
 
-test("1-2. Header Tools menu contains Urdu Writer once with canonical route", async () => {
+test("Header Write discovers the two script directions", async () => {
   await renderHeader();
-  const toolsBtn = screen.getByRole("button", { name: /^tools$/i });
-  await act(async () => { fireEvent.click(toolsBtn); });
-  const items = screen.getAllByRole("menuitem").filter((a) =>
-    writerHref(a).includes("/tools/roman-urdu-writer")
-  );
-  expect(items).toHaveLength(1);
-  expect(items[0].textContent).toMatch(/Roman Urdu/);
+  fireEvent.click(screen.getByRole("button", { name: "Write" }));
+  expect(screen.getByRole("link", { name: "Roman Urdu to Urdu" }).getAttribute("href")).toBe("/tools/roman-urdu-writer");
+  expect(screen.queryByRole("link", { name: "Roman Urdu Converter" })).toBeNull();
+  expect(screen.getByRole("link", { name: "Urdu to Roman Urdu" }).getAttribute("href")).toBe("/tools/urdu-roman-writer");
 });
 
-test("3. mobile nav exposes Urdu Writer", async () => {
+test("mobile Write exposes Urdu Writer and closes on navigation", async () => {
   await renderHeader();
-  const menuBtn = screen.getByRole("button", { name: /open menu/i });
-  await act(async () => { fireEvent.click(menuBtn); });
-  const groupBtn = screen.getAllByRole("button", { name: /^tools$/i }).find(
-    (el) => !el.getAttribute("aria-haspopup")
-  );
-  expect(groupBtn).toBeTruthy();
-  await act(async () => { fireEvent.click(groupBtn!); });
-  const links = screen.getAllByRole("link").filter((a) =>
-    writerHref(a).includes("/tools/roman-urdu-writer")
-  );
-  expect(links.length).toBeGreaterThanOrEqual(1);
+  fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+  const mobile = document.getElementById("mobile-nav")!;
+  fireEvent.click(within(mobile).getByRole("button", { name: "Write" }));
+  const link = within(mobile).getByRole("link", { name: "Roman Urdu to Urdu" });
+  expect(writerHref(link)).toBe("/tools/roman-urdu-writer");
+  fireEvent.click(link);
+  expect(document.getElementById("mobile-nav")).toBeNull();
 });
 
 test("4-6. homepage How It Works card links correctly in English", async () => {
@@ -87,7 +80,7 @@ test("7. Urdu How It Works card copy", async () => {
   await renderHowItWorks();
   const card = screen.getByRole("link", { name: /رومن اردو سے اردو/ });
   expect(writerHref(card)).toBe("/tools/roman-urdu-writer");
-  expect(card.textContent).toMatch(/رومن اردو/);
+  expect(card.textContent).toMatch(/رومن لکھیں، اردو فوراً حاصل کریں/);
 });
 
 test("job guidance discovers Urdu Writer", async () => {
@@ -108,58 +101,37 @@ test("8-9. footer contains Urdu Writer once with canonical route", async () => {
   expect(links[0].textContent).toMatch(/Roman Urdu|رومن اردو/);
 });
 
-test("10-11. no alternate routes or duplicates in source", () => {
-  const files = [
-    "app/components/Header.tsx",
-    "app/components/Footer.tsx",
-    "app/components/HowItWorksSection.tsx",
-    "app/components/JobGuidanceSection.tsx",
-  ];
-  for (const f of files) {
+test("navigation reuses one shared catalog and preserves canonical routes", () => {
+  for (const f of ["app/components/Header.tsx", "app/components/Footer.tsx", "app/tools/AllToolsContent.tsx"]) {
     const src = readFileSync(join(__dirname, "../../", f), "utf8");
-    const matches = src.match(/\/tools\/roman-urdu-writer/g) ?? [];
-    expect(matches.length).toBeGreaterThanOrEqual(1);
+    expect(src).toContain("toolsInGroup");
     expect(src).not.toMatch(/\/tools\/urdu-writer(?!-)/);
   }
 });
 
-test("12. Header primary nav does not include Urdu Writer", async () => {
+test("Header Write preserves Qalam Page and translation", async () => {
   await renderHeader();
-  const primaryStudio = screen.getByRole("link", { name: /^Open Studio$/i });
-  expect(primaryStudio.getAttribute("href")).toBe("/tools/document-studio");
-  const primaryWriter = screen.queryAllByRole("link", { name: /^(Urdu Writer|Roman Urdu → Urdu)$/i });
-  expect(primaryWriter.length).toBe(0);
-  const toolsBtn = screen.getByRole("button", { name: /^tools$/i });
-  await act(async () => { fireEvent.click(toolsBtn); });
-  const items = screen.getAllByRole("menuitem").filter((el) =>
-    writerHref(el).includes("/tools/roman-urdu-writer")
-  );
-  expect(items).toHaveLength(1);
+  fireEvent.click(screen.getByRole("button", { name: "Write" }));
+  expect(writerHref(screen.getByRole("link", { name: "Qalam Page: Urdu Editor" }))).toBe("/tools/document-studio");
+  expect(writerHref(screen.getByRole("link", { name: "Translation Studio" }))).toBe("/tools/translation-studio");
 });
 
-test("13-15. existing major tool links unchanged", async () => {
+test("Header Tools preserves WhatsApp formatting", async () => {
   await renderHeader();
-  const toolsBtn = screen.getByRole("button", { name: /^tools$/i });
-  await act(async () => { fireEvent.click(toolsBtn); });
-  expect(screen.getByRole("menuitem", { name: /Document Studio/i }).getAttribute("href")).toBe("/tools/document-studio");
-  expect(screen.getByRole("menuitem", { name: /WhatsApp RTL/i }).getAttribute("href")).toBe("/tools/whatsapp-rtl-formatter");
-  const translation = screen.getAllByRole("menuitem").find((el) =>
-    writerHref(el).includes("/tools/translation-studio")
-  );
-  expect(translation).toBeTruthy();
-  expect(writerHref(translation!)).toBe("/tools/translation-studio");
+  fireEvent.click(screen.getByRole("button", { name: "Fix Text" }));
+  expect(writerHref(screen.getByRole("link", { name: /WhatsApp/ }))).toBe("/tools/whatsapp-rtl-formatter");
 });
 
-test("16-17. Urdu footer localization", async () => {
+test("Urdu footer uses localized typing and converter names", async () => {
   mockLanguage = "ur";
   await renderFooter();
-  const link = screen.getByRole("link", { name: /Roman Urdu/i });
-  expect(writerHref(link)).toBe("/tools/roman-urdu-writer");
+  expect(writerHref(screen.getByRole("link", { name: "رومن اردو سے اردو" }))).toBe("/tools/roman-urdu-writer");
+  expect(screen.queryByRole("link", { name: "رومن اردو سے اردو کنورٹر" })).toBeNull();
 });
 
 test("18-19. no accuracy or research terminology in discovery copy", () => {
   const src = readFileSync(join(__dirname, "../../app/lib/translations.ts"), "utf8");
-  expect(src).toMatch(/Roman Urdu → Urdu/);
+  expect(src).toMatch(/Roman Urdu to Urdu/);
   expect(src).not.toMatch(/Perfect Urdu|100% accuracy|AI Urdu Converter/);
 });
 

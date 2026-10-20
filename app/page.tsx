@@ -1,3 +1,4 @@
+import AlsoOnQalamSection from "./components/AlsoOnQalamSection";
 import Hero from "./components/Hero";
 import ProblemSection from "./components/ProblemSection";
 import BeforeAfterSection from "./components/BeforeAfterSection";
@@ -12,11 +13,12 @@ export default function Home() {
     <div className="qalam-home bg-[#F7F5EF] font-sans text-[#11182A] dark:bg-[#0E1524] dark:text-[#F7F5EF]">
       <Hero />
       <JobGuidanceSection />
+      <WhoItsForSection />
       <DateStudioDiscoverySection />
       <ProblemSection />
       <BeforeAfterSection />
       <HowItWorksSection />
-      <WhoItsForSection />
+      <AlsoOnQalamSection />
       <FinalCtaSection />
     </div>
   );
