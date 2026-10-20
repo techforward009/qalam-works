@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { SURAH_NAMES, JUZ_STARTS, easternDigits, juzTitle, surahTitle } from "../reader/metadata";
 import { useLanguage } from "../../lib/language-context";
 import EditionTopBar from "../reader/EditionTopBar";
+import {QuranSidebarSection,QuranPageArrow,QuranPageButtons} from "../reader/SharedReaderControls";
 import { initialQuranDisplayScale } from "../reader/readerPresentation";
 import { QURAN_READER_COPY } from "../reader/copy";
 import { useQuranKeyboardNavigation } from "../reader/keyboard";
@@ -417,7 +418,7 @@ export default function MadinahReader({
 
         <div className={`${styles.grid} quran-reader-layout`}>
           <aside className={`${styles.sidebar} tanzil-sidebar`}>
-            <form onSubmit={(event) => { event.preventDefault(); runSearch(); }}>
+            <QuranSidebarSection title={copy.search} defaultOpen><form onSubmit={(event) => { event.preventDefault(); runSearch(); }}>
               <label className={styles.label}>
                 {copy.search}
                 <input value={query} onChange={(event) => setQuery(event.target.value)} className={styles.input} dir="rtl" lang="ar" />
@@ -435,7 +436,7 @@ export default function MadinahReader({
               </div>
             )}
 
-            <label className={styles.labelBlock}>
+            </QuranSidebarSection><QuranSidebarSection title={copy.browse} defaultOpen><label className={styles.labelBlock}>
               {copy.surah}
               <select value={surah} onChange={(event) => navigate(Number(event.target.value), 1)} className={styles.input}>
                 {SURAH_NAMES.map((name, index) => <option key={name} value={index + 1}>{index + 1}. {name}</option>)}
@@ -463,7 +464,7 @@ export default function MadinahReader({
               {copy.juz} <strong>{pageJuz}</strong>
             </div>
 
-            <label className={styles.labelBlock} style={language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined}>
+            </QuranSidebarSection><QuranSidebarSection title={copy.display} defaultOpen><label className={styles.labelBlock} style={language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined}>
               {copy.display}
               <select
                 value={scale}
@@ -477,7 +478,7 @@ export default function MadinahReader({
               </select>
             </label>
 
-            <button type="button" className={styles.secondary} style={{ width: "100%", marginTop: 11, ...(language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : {}) }} onClick={() => void copyCurrentPage()}>
+            </QuranSidebarSection><QuranSidebarSection title={copy.copy} defaultOpen><button type="button" className={styles.secondary} style={{ width: "100%", marginTop: 11, ...(language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : {}) }} onClick={() => void copyCurrentPage()}>
               {copied ? copy.copyDone : copy.copy}
             </button>
             <button type="button" className={styles.secondary} style={{width:"100%",marginTop:8}}
@@ -488,10 +489,11 @@ export default function MadinahReader({
               onClick={() => void copyWholeSurah()}>
               {language === "ur" ? "پوری سورت نقل کریں" : "Copy whole surah"}
             </button>
+            </QuranSidebarSection>
           </aside>
 
           <section>
-            <div className="quran-page-meta" dir="ltr" aria-label="Mushaf running headers"><div className="quran-page-meta-item quran-page-meta-juz">{displayJuzTitle}</div><div className="quran-page-meta-item flex items-center justify-center" dir="ltr"><button type="button" className="quran-page-arrow" disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} aria-label="Previous page">◄</button><span className="quran-page-meta-page-number">{easternDigits(pageNumber)}</span><button type="button" className="quran-page-arrow" disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)} aria-label="Next page">►</button></div><div className="quran-page-meta-item quran-page-meta-surah">{displaySurahTitle}</div></div><article className={`${styles.page} quran-page`} onCopyCapture={handlePageCopy}>
+            <div className="quran-page-meta" dir="ltr" aria-label="Mushaf running headers"><div className="quran-page-meta-item quran-page-meta-juz">{displayJuzTitle}</div><div className="quran-page-meta-item flex items-center justify-center" dir="ltr"><QuranPageArrow direction="previous" label="Previous page" disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} /><span className="quran-page-meta-page-number">{easternDigits(pageNumber)}</span><QuranPageArrow direction="next" label="Next page" disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)} /></div><div className="quran-page-meta-item quran-page-meta-surah">{displaySurahTitle}</div></div><article className={`${styles.page} quran-page`} onCopyCapture={handlePageCopy}>
               <div className={styles.mushafHeader} dir="ltr" aria-hidden="true" style={{display:"none"}}>
                 <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderLeft}`} dir="rtl">{displaySurahTitle}</div>
                 <div className={styles.mushafHeaderPage} aria-label={`Page ${pageNumber}`}>
@@ -515,7 +517,7 @@ export default function MadinahReader({
                   if (line.type === "blank") return null;
                   if (line.type === "surah_name") {
                     const name = line.decor?.surah ? surahTitle(line.decor.surah) : "";
-                    return <div key={line.line} className={`${styles.line} ${styles.surahLine}`} dir="rtl">{name}</div>;
+                    return <div key={line.line} className={`${styles.line} ${styles.surahLine} quran-surah-header`} dir="rtl"><span className="quran-banner-name">{name}</span></div>;
                   }
                   if (line.type === "basmallah") {
                     return <div key={line.line} className={`${styles.line} ${styles.centeredLine}`} dir="rtl"><span className={styles.basmala}>{MADINAH_BASMALA_GLYPH}</span></div>;
@@ -537,10 +539,7 @@ export default function MadinahReader({
                 }) : <div className={styles.loading}>Loading page…</div>}
               </div>
 
-              <div className={`${styles.navRow} quran-outer-page-nav`} style={{justifyContent:"center",gap:14}}>
-                <button type="button" className={styles.secondary} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)}>{copy.previousPage}</button>
-                <button type="button" className={styles.secondary} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)}>{copy.nextPage}</button>
-              </div>
+              <QuranPageButtons previous={copy.previousPage} next={copy.nextPage} disablePrevious={pageNumber <= 1} disableNext={pageNumber >= 604} onPrevious={() => navigatePage(pageNumber - 1)} onNext={() => navigatePage(pageNumber + 1)} />
             </article>
 
             <div className={styles.credit}>
