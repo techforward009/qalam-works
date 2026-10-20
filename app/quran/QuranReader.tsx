@@ -12,7 +12,7 @@ import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
 import EditionTopBar from "./reader/EditionTopBar";
-import {QuranSidebarSection as SidebarSection,QuranPageMeta,QuranCorner,SurahBand} from "./reader/SharedReaderControls";
+import {QuranSidebarSection as SidebarSection,QuranPageMeta,QuranPageArrow,QuranCorner,SurahBand} from "./reader/SharedReaderControls";
 import QuranTranslationPage from "./QuranTranslationPage";
 import QuranTransliterationPage from "./QuranTransliterationPage";
 import QuranTafsirPage from "./QuranTafsirPage";
@@ -1382,7 +1382,7 @@ function QuranPageSurface({
             className="flex items-center justify-center"
             dir="ltr"
           >
-            <PageArrow
+            <QuranPageArrow
               direction="previous"
               label="Previous page"
               disabled={
@@ -1404,7 +1404,7 @@ function QuranPageSurface({
               }
             </span>
 
-            <PageArrow
+            <QuranPageArrow
               direction="next"
               label="Next page"
               disabled={
