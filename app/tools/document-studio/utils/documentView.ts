@@ -22,6 +22,12 @@ export const EDITOR_SPELLCHECK_ATTR = "true";
 export type DocumentZoom = 50 | 75 | 100 | 125 | 150 | "fit-width" | "fit-page";
 export const DOCUMENT_ZOOM_PRESETS = [50, 75, 100, 125, 150] as const;
 export const DEFAULT_DOCUMENT_ZOOM: DocumentZoom = 100;
+/** Below this width a new document opens at fit-width so the whole page can be reached. */
+export const NARROW_STUDIO_PX = 900;
+
+export function openingDocumentZoom(viewportWidth: number): DocumentZoom {
+  return viewportWidth < NARROW_STUDIO_PX ? "fit-width" : 100;
+}
 export const ZOOM_STORAGE_KEY = "qalam-document-studio-zoom-v1";
 export const RULER_STORAGE_KEY = "qalam-document-studio-ruler-v1";
 export const RULER_UNIT_STORAGE_KEY = "qalam-document-studio-ruler-unit-v1";

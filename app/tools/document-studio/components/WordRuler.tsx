@@ -16,7 +16,7 @@ interface WordRulerProps {
   onPhysicalMarginChange?: (edge: PhysicalMarginEdge, mm: number) => void;
 }
 
-const TICK_SIZE = { major: 9, minor: 6, micro: 3 };
+const TICK_SIZE = { major: 8, minor: 4, micro: 2 };
 
 /** Compact InPage-style bar. DocumentCanvas uses the same thickness for the corner box. */
 export const RULER_BAR_PX = 18;
@@ -196,8 +196,18 @@ export const WordRuler: React.FC<WordRulerProps> = ({
         >
           {tick.label ? (
             <span
-              className="absolute text-[8px] leading-none text-[#1c1c1c]"
-              style={vertical ? { right: 10, top: 0 } : fromRight ? { right: 2, top: 0 } : { left: 2, top: 0 }}
+              className="absolute whitespace-nowrap text-[8px] leading-[8px] text-[#1c1c1c]"
+              data-ruler-label={tick.label}
+              style={
+                vertical
+                  ? { right: 10, top: -8 }
+                  : {
+                      bottom: TICK_SIZE.major + 3,
+                      lineHeight: "8px",
+                      ...(fromRight ? { right: 0 } : { left: 0 }),
+                      transform: fromRight ? "translateX(50%)" : "translateX(-50%)",
+                    }
+              }
             >
               {tick.label}
             </span>

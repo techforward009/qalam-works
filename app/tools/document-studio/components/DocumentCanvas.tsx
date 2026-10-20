@@ -130,18 +130,29 @@ export default function DocumentCanvas({
   const baseWidth = isPages ? natural.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, fitWidth || PAGELESS_MAX_WIDTH_PX);
   const showRuler = isPages && rulerVisible;
   const rulerChrome = showRuler ? RULER_BAR_PX + RULER_PAGE_GUTTER_PX : 0;
-  const guideOutset = availableWidth > 0 && availableWidth < 700 ? 40 : 72;
-  const pasteboardPad = guideOutset + (availableWidth > 0 && availableWidth < 700 ? 16 : 36);
-  const fittedWidth = Math.max(0, (fitWidth || baseWidth) - pasteboardPad * 2);
-  const fittedHeight = Math.max(0, availableHeight - pasteboardPad * 2);
-  const zoomFactor = resolveZoomFactor(
+  const sidePad = 8;
+  const bottomPad = 8;
+  const guideOutset = availableWidth > 0 && availableWidth < 700 ? 40 : 48;
+  const fittedWidth = Math.max(0, (fitWidth || baseWidth) - sidePad * 2);
+  const fittedHeight = Math.max(0, availableHeight - bottomPad);
+  let zoomFactor = resolveZoomFactor(
     zoom,
     baseWidth + rulerChrome,
     natural.heightPx + rulerChrome,
     fittedWidth || baseWidth,
     fittedHeight,
   );
+  if ((zoom === "fit-width" || zoom === "fit-page") && baseWidth > 0) {
+    const widthFactor = fittedWidth > rulerChrome ? (fittedWidth - rulerChrome) / baseWidth : zoomFactor;
+    if (zoom === "fit-width") zoomFactor = widthFactor;
+    else {
+      const heightFactor = fittedHeight > rulerChrome ? (fittedHeight - rulerChrome) / natural.heightPx : widthFactor;
+      zoomFactor = Math.min(widthFactor, heightFactor);
+    }
+  }
   const visualWidth = baseWidth * zoomFactor;
+  const columnWidth = visualWidth + rulerChrome;
+  const columnFits = !(availableWidth > 0) || columnWidth + sidePad * 2 <= availableWidth + 1;
   const visualHeight = stackHeight ? stackHeight * zoomFactor : undefined;
   const visualPageHeight = natural.heightPx * zoomFactor;
   const pageStride = visualPageHeight + PAGE_STACK_GAP_PX * zoomFactor;
@@ -201,13 +212,13 @@ export default function DocumentCanvas({
       data-qalam-pagination-owner={isPages ? "extension" : undefined}
     >
       <div
-        className="flex min-h-full justify-center"
-        style={{ padding: pasteboardPad }}
-        data-studio-pasteboard-pad={String(pasteboardPad)}
+        className="flex min-h-full items-start justify-start"
+        style={{ padding: `0px ${sidePad}px ${bottomPad}px` }}
+        data-studio-pasteboard-pad={String(sidePad)}
       >
       <div
-        className={`relative my-auto ${showRuler ? "flex flex-col" : ""}`}
-        style={{ width: visualWidth + rulerChrome, flexShrink: 0 }}
+        className={`relative ${showRuler ? "flex flex-col" : ""}`}
+        style={{ width: columnWidth, flexShrink: 0, marginInline: columnFits ? "auto" : 0 }}
         dir="ltr"
         data-ruler-gutter={showRuler ? String(RULER_PAGE_GUTTER_PX) : undefined}
         data-studio-page-column="true"
@@ -218,20 +229,20 @@ export default function DocumentCanvas({
               className="studio-no-print pointer-events-none absolute z-0"
               data-studio-pasteboard-guide="left"
               data-guide-outset={String(guideOutset)}
-              style={{ left: -guideOutset, top: -40, width: 0, bottom: -40, borderLeft: "1px dashed #6a7076" }}
+              style={{ left: -guideOutset, top: 0, width: 0, bottom: 0, borderLeft: "1px dashed #6a7076" }}
               aria-hidden
             />
             <div
               className="studio-no-print pointer-events-none absolute z-0"
               data-studio-pasteboard-guide="right"
               data-guide-outset={String(guideOutset)}
-              style={{ right: -guideOutset, top: -40, width: 0, bottom: -40, borderLeft: "1px dashed #6a7076" }}
+              style={{ right: -guideOutset, top: 0, width: 0, bottom: 0, borderLeft: "1px dashed #6a7076" }}
               aria-hidden
             />
           </>
         )}
         {showRuler && (
-          <div className="relative z-20 flex bg-white studio-no-print" data-studio-ruler-frame="true">
+          <div className="sticky top-0 z-30 flex bg-white studio-no-print" data-studio-ruler-frame="true">
             <div className="h-[18px] w-[18px] shrink-0 border-b border-r border-[#c8c8c8] bg-white" data-ruler-corner="true" />
             <div className="shrink-0 studio-no-print" style={{ width: RULER_PAGE_GUTTER_PX }} aria-hidden />
             <div className="min-w-0 flex-1">

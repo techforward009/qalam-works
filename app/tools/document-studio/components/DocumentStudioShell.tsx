@@ -68,7 +68,7 @@ export default function DocumentStudioShell({
         className="studio-no-print sticky top-0 z-30 shrink-0 bg-white shadow-[0_1px_0_rgba(26,58,42,0.12)]"
         data-studio-sticky-chrome="true"
       >
-        <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="top">{topBar}</div>
+        {topBar ? <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="top">{topBar}</div> : null}
         <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="menu">{menuBar}</div>
         <div className="border-b border-[#1A3A2A]/10 bg-[#FAF8F3]" data-studio-chrome="toolbar">{toolbar}</div>
         {findBar ? <div className="border-b border-[#1A3A2A]/10 bg-white px-3 py-2">{findBar}</div> : null}
@@ -170,6 +170,13 @@ export default function DocumentStudioShell({
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-empty-hint] button {
           font-family: "Nafees Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
           line-height: 1.85;
+        }
+        [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="menu"] button,
+        [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] button,
+        [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome="toolbar"] select,
+        [data-studio-shell][data-studio-ui-language="ur"] [data-studio-language-switch] button {
+          line-height: 1.15 !important;
+          max-height: 22px;
         }
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-chrome] p,
         [data-studio-shell][data-studio-ui-language="ur"] [data-studio-statusbar],

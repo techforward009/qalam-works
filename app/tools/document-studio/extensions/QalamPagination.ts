@@ -345,18 +345,17 @@ export function measureUnscaledPageCount(dom: HTMLElement, geometry: QalamPagina
   if (overflow > 1) {
     return atLeast(existing + extraPagesFromOverflow(overflow, contentH));
   }
-  let extra = 0;
-  for (let i = existing - 1; i >= 1; i--) {
-    const breaker = breakers[i];
-    const top = offsetTopIn(breaker, dom) ?? breaker.offsetTop;
-    if (top > contentBottom + 1) extra += 1;
+  // A breaker sits at the end of its sheet, so it is below the text even when
+  // that sheet still has words. The previous sheet's breaker is the start of
+  // the next one: if the text never reaches it, that sheet is empty and goes.
+  let count = existing;
+  while (count > 1) {
+    const boundary = breakers[count - 2];
+    const top = offsetTopIn(boundary, dom) ?? boundary.offsetTop;
+    if (top > contentBottom + 8) count -= 1;
     else break;
   }
-  // Require two extra sheets before shrinking so zoom/layout jitter cannot
-  // drop a real page. Same stickiness as the MIT source's removePage > 1.
-  // minimumPages still keeps a File → New sheet that has no text yet.
-  if (extra > 1) return atLeast(Math.max(1, existing - extra));
-  return atLeast(existing);
+  return atLeast(count);
 }
 
 function geometryEqual(a: QalamPaginationGeometry, b: QalamPaginationGeometry): boolean {

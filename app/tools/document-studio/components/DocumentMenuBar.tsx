@@ -168,14 +168,14 @@ function StudioLanguageSwitch() {
       aria-label="Choose language"
       dir="ltr"
       data-studio-language-switch="true"
-      className="me-1 inline-flex h-8 shrink-0 items-center rounded border border-[#1A3A2A]/25 bg-white p-0.5"
+      className="me-1 inline-flex h-[22px] shrink-0 items-center rounded-none border border-[#1A3A2A]/25 bg-white p-px"
     >
       <button
         type="button"
         lang="en"
         aria-pressed={language === "en"}
         onClick={() => setLanguage("en")}
-        className={`grid h-7 min-w-8 place-items-center rounded px-1.5 text-[11px] font-semibold leading-none ${language === "en" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] hover:bg-[#F3F7F2]"}`}
+        className={`grid h-[18px] min-w-7 place-items-center rounded-none px-1 text-[11px] font-semibold leading-none ${language === "en" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] hover:bg-[#F3F7F2]"}`}
       >
         EN
       </button>
@@ -185,7 +185,7 @@ function StudioLanguageSwitch() {
         dir="rtl"
         aria-pressed={language === "ur"}
         onClick={() => setLanguage("ur")}
-        className={`grid h-7 min-w-11 place-items-center rounded px-1.5 text-[13px] font-semibold leading-none ${language === "ur" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] hover:bg-[#F3F7F2]"}`}
+        className={`grid h-[18px] min-w-9 place-items-center rounded-none px-1 text-[12px] font-semibold leading-none ${language === "ur" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] hover:bg-[#F3F7F2]"}`}
       >
         اردو
       </button>
@@ -210,12 +210,14 @@ export default function DocumentMenuBar({
   disabledIds,
   checkedIds,
   showHome = false,
+  endSlot,
 }: {
   isUr: boolean;
   onAction: (id: MenuActionId) => void;
   disabledIds?: ReadonlySet<MenuActionId>;
   checkedIds?: ReadonlySet<MenuActionId>;
   showHome?: boolean;
+  endSlot?: React.ReactNode;
 }) {
   const [openState, setOpenState] = useState<MenuOpenState>(CLOSED_MENU_STATE);
   const [inlineSubmenus, setInlineSubmenus] = useState(false);
@@ -392,7 +394,7 @@ export default function DocumentMenuBar({
   return (
     <div
       ref={rootRef}
-      className="flex w-full max-w-full min-w-0 items-center gap-0.5 overflow-x-auto overscroll-x-contain whitespace-nowrap px-2 py-1 [scrollbar-width:thin] touch-pan-x"
+      className="flex h-[22px] w-full max-w-full min-w-0 items-center gap-0 overflow-x-auto overscroll-x-contain whitespace-nowrap px-1 [scrollbar-width:thin] touch-pan-x"
       role="menubar"
       aria-label={isUr ? "دستاویز مینو" : "Document menu"}
       data-studio-menubar="true"
@@ -431,9 +433,9 @@ export default function DocumentMenuBar({
           href="/"
           data-studio-home="true"
           data-latin-control="true"
-          className="me-1 inline-flex h-9 shrink-0 items-center gap-1.5 rounded px-1.5 text-[13px] font-semibold text-[#1A3A2A] hover:bg-[#F3F7F2]"
+          className="me-1 inline-flex h-[22px] shrink-0 items-center gap-1 rounded-none px-1 text-[12px] font-semibold leading-none text-[#1A3A2A] hover:bg-[#F3F7F2]"
         >
-          <span className="grid h-5 w-5 place-items-center rounded bg-[#1A3A2A] text-[10px] font-bold text-white" aria-hidden>
+          <span className="grid h-4 w-4 place-items-center rounded-none bg-[#1A3A2A] text-[9px] font-bold leading-none text-white" aria-hidden>
             Q
           </span>
           <span className="hidden sm:inline">Qalam Works</span>
@@ -454,7 +456,7 @@ export default function DocumentMenuBar({
               ref={(el) => {
                 triggerRefs.current[menu.id] = el;
               }}
-              className={`min-h-9 rounded px-2.5 py-1 text-[13px] font-medium leading-[1.7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#B8935A] ${
+              className={`inline-flex h-[22px] items-center rounded-none px-2 text-[12px] font-medium leading-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#B8935A] ${
                 open ? "bg-[#EAF2EB] text-[#1A3A2A]" : "text-[#1A3A2A]/80 hover:bg-[#F3F7F2]"
               }`}
               onClick={() => setOpenState((prev) => nextOpenMenu(prev, menu.id))}
@@ -469,6 +471,7 @@ export default function DocumentMenuBar({
         );
       })}
       {dropdown}
+      {endSlot}
     </div>
   );
 }

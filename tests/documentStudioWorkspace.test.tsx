@@ -114,17 +114,21 @@ describe("Document Studio workspace chrome", () => {
     expect(screen.queryByText("صفحات")).toBeNull();
   });
 
-  it("scrolls the formatting toolbar instead of widening the page and keeps editor selection", () => {
+  it("scrolls each formatting row instead of wrapping and keeps editor selection", () => {
     const editor = new Editor({
       extensions: createDocumentStudioExtensions(),
       content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "سلام" }] }] },
     });
     render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => undefined} isUr zoom={100} onZoomChange={() => undefined} />);
-    const bar = document.querySelector("[data-studio-toolbar]");
-    expect(bar?.className).toContain("overflow-x-auto");
-    expect(bar?.className).toContain("flex-nowrap");
-    expect(document.querySelector("[data-studio-toolbar-more]")).toBeTruthy();
+    const rows = document.querySelectorAll("[data-studio-toolbar-row]");
+    expect(rows.length).toBe(2);
+    rows.forEach((row) => {
+      expect(row.className).toContain("overflow-x-auto");
+      expect(row.className).toContain("flex-nowrap");
+      expect(row.className).not.toContain("flex-wrap");
+    });
     expect(document.querySelector("[data-studio-toolbar-secondary]")).toBeTruthy();
+    expect(document.querySelector("[data-studio-toolbar-more]")).toBeNull();
     const undo = screen.getByRole("button", { name: "کالعدم" });
     const event = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
     undo.dispatchEvent(event);

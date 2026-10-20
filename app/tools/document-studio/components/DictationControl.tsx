@@ -647,7 +647,7 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
           onChange={e => setDictLang(e.target.value as DictationLanguage)}
           aria-label={t.langLabel}
           title={t.langLabel}
-          className={`h-[38px] rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25 ${naskh}`}
+          className={`h-[22px] max-w-[7.5rem] rounded-none border border-[#b5b5b5] bg-white px-1 text-[11px] leading-none text-[#1c1c1c] focus:outline-none focus:border-[#1A3A2A] ${naskh}`}
         >
           <option value="mixed">{t.langMixed}</option>
           <option value="ur">{t.langUr}</option>
@@ -663,16 +663,16 @@ export function DictationControl({ editor, docDir, isUr }: DictationControlProps
         title={tooltipText}
         aria-label={isRecording ? t.stop : t.dictate}
         data-studio-dictation="true"
-        className={`h-[38px] px-3 rounded-md text-sm font-semibold border transition-all flex items-center gap-1.5 ${
+        className={`inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-none border px-1 text-[11px] leading-none ${
           isRecording
-            ? "bg-red-50 text-red-700 border-red-300 hover:border-red-400 animate-pulse"
+            ? "bg-red-50 text-red-700 border-red-300 animate-pulse"
             : state === "error"
             ? "bg-red-50 text-red-600 border-red-200"
-            : "bg-white text-gray-700 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
+            : "bg-white text-[#1c1c1c] border-[#b5b5b5] hover:bg-[#f3f3f3]"
         } ${naskh}`}
       >
         <span aria-hidden="true">{isRecording ? "⏹" : "🎙"}</span>
-        <span>{isRecording ? t.stop : t.dictate}</span>
+        <span className="sr-only">{isRecording ? t.stop : t.dictate}</span>
       </button>
 
       {/* Permission-denied error — with recovery path */}

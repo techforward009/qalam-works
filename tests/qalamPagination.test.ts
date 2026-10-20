@@ -93,6 +93,30 @@ describe("Qalam pagination foundation", () => {
     editor.destroy();
   });
 
+  it("drops a trailing empty sheet when the text ends on the previous page", () => {
+    const host = document.createElement("div");
+    const paragraph = document.createElement("p");
+    const pagination = document.createElement("div");
+    pagination.setAttribute("data-qalam-pagination", "true");
+    const first = document.createElement("div");
+    const second = document.createElement("div");
+    first.className = "qalam-pagination-breaker";
+    second.className = "qalam-pagination-breaker";
+    pagination.append(first, second);
+    host.append(paragraph, pagination);
+    const stub = (el: HTMLElement, top: number, height: number) => {
+      Object.defineProperty(el, "offsetTop", { configurable: true, get: () => top });
+      Object.defineProperty(el, "offsetHeight", { configurable: true, get: () => height });
+      Object.defineProperty(el, "offsetParent", { configurable: true, get: () => host });
+    };
+    stub(paragraph, 20, 30);
+    stub(first, 800, 12);
+    stub(second, 1700, 12);
+    const { layout } = a4Geometry("rtl");
+    expect(measureUnscaledPageCount(host, paginationGeometryFromLayout(layout, "rtl", true, 1), 2)).toBe(1);
+    expect(measureUnscaledPageCount(host, paginationGeometryFromLayout(layout, "rtl", true, 2), 2)).toBe(2);
+  });
+
   it("B. one-page Urdu stays a single sheet", () => {
     const { editor } = makeEditor({
       type: "doc",

@@ -91,6 +91,7 @@ import {
   sanitizeDocumentTitle,
 } from "../utils/documentTitle";
 import {
+  describeSaveStatus,
   isFindOpenShortcut,
   toggleLeftPanel,
   toggleRightPanel,
@@ -109,6 +110,8 @@ import {
   loadDocumentViewMode,
   saveDocumentViewMode,
   saveDocumentZoom,
+  openingDocumentZoom,
+  NARROW_STUDIO_PX,
   loadRulerVisible,
   saveRulerVisible,
   loadRulerUnit,
@@ -125,7 +128,6 @@ import DocumentToolbar from "./DocumentToolbar";
 import DocumentCanvas from "./DocumentCanvas";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
-import DocumentTopBar from "./DocumentTopBar";
 import DocumentMenuBar from "./DocumentMenuBar";
 import DocumentStatusBar from "./DocumentStatusBar";
 import DocumentLeftSidebar from "./DocumentLeftSidebar";
@@ -196,6 +198,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [columnCount, setColumnCount] = useState(1);
   const [columnGutterMm, setColumnGutterMm] = useState(STUDIO_DEFAULT_GUTTER_MM);
   const [minimumPages, setMinimumPages] = useState(1);
+  const minimumPagesRef = useRef(1);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [tableRows, setTableRows] = useState(3);
   const [tableColumns, setTableColumns] = useState(3);
@@ -319,6 +322,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [zoom, setZoomState] = useState<DocumentZoom>(100);
+  const zoomTouchedRef = useRef(false);
   const [rulerVisible, setRulerVisibleState] = useState(() => loadRulerVisible());
   const [rulerUnit, setRulerUnitState] = useState<RulerUnit>(() => loadRulerUnit());
   const [findQuery, setFindQuery] = useState("");
@@ -377,7 +381,18 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       },
       transformPasted: (slice) => transformPastedSlice(slice, dir),
     },
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor, transaction }) => {
+      if (
+        transaction.docChanged &&
+        transaction.getMeta("addToHistory") !== false &&
+        transaction.doc.content.size < transaction.before.content.size &&
+        minimumPagesRef.current > 1
+      ) {
+        minimumPagesRef.current = 1;
+        setMinimumPages(1);
+        const id = activeDocumentIdRef.current;
+        if (id) writeStoredMinimumPages(id, 1);
+      }
       if (hasAuditReportRef.current) {
         setIsAuditStale(true);
       }
@@ -547,8 +562,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setProcessingLanguage(draft.direction === "ltr" ? "en" : "ur");
     setColumnCount(Math.max(1, Math.min(4, Math.floor(draft.columns) || 1)));
     setColumnGutterMm(Math.max(0, Number(draft.gutter) || 0));
+    minimumPagesRef.current = pages;
     setMinimumPages(pages);
-    setZoom(100);
+    setZoom(openingDocumentZoom(window.innerWidth));
     setVisiblePage(1);
     setNewDocOpen(false);
     void createAndOpenDocument({
@@ -561,6 +577,10 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const handleClearDraft = () => {
     if (window.confirm(isUr ? "کیا آپ موجودہ دستاویز کو خالی کرنا چاہتے ہیں؟" : "Clear the current document text?")) {
       if (!editor) return;
+      minimumPagesRef.current = 1;
+      setMinimumPages(1);
+      const id = activeDocumentIdRef.current;
+      if (id) writeStoredMinimumPages(id, 1);
       setEditorContent(editor, emptyDocumentContent(dir), "user");
     }
   };
@@ -582,8 +602,12 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       setEditorContent(editor, record.content, "load");
     }
     const pages = options?.minimumPages ?? readStoredMinimumPages(record.id);
+    minimumPagesRef.current = pages;
     setMinimumPages(pages);
     writeStoredMinimumPages(record.id, pages);
+    if (typeof window !== "undefined" && window.innerWidth < NARROW_STUDIO_PX && !zoomTouchedRef.current) {
+      setZoomState("fit-width");
+    }
     setSaveStatus("saved");
     setPreview(null);
     setAlreadyClean(false);
@@ -593,6 +617,17 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     hasAuditReportRef.current = false;
     setIsAuditStale(false);
     setVisiblePage(1);
+    if (editor) {
+      const place = () => {
+        try {
+          editor.commands.focus("start");
+        } catch {
+          /* view not mounted yet */
+        }
+      };
+      if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => requestAnimationFrame(place));
+      else place();
+    }
   };
 
   const persistActiveNow = async () => {
@@ -1325,9 +1360,34 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const setZoom = (next: DocumentZoom) => {
+    zoomTouchedRef.current = true;
     setZoomState(next);
     saveDocumentZoom(next);
   };
+
+  useEffect(() => {
+    if (zoomTouchedRef.current || typeof window === "undefined") return;
+    const next = openingDocumentZoom(window.innerWidth);
+    if (next !== 100) setZoomState(next);
+  }, []);
+
+  useEffect(() => {
+    if (!editor) return;
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        try {
+          editor.commands.focus("start");
+        } catch {
+          /* view not mounted yet */
+        }
+      });
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner) cancelAnimationFrame(inner);
+    };
+  }, [editor]);
 
   const toggleRuler = () => {
     setRulerVisibleState((visible) => {
@@ -1603,6 +1663,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     };
   }, [editor]);
 
+  const titleSave = describeSaveStatus({ saveStatus, online, isUr, storageDurability });
+
   return (
     <div className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
@@ -1686,31 +1748,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       <DocumentStudioShell
         isUr={isUr}
         fillWindow={fillWindow}
-        topBar={
-          <DocumentTopBar
-            isUr={isUr}
-            title={documentTitle}
-            onTitleChange={setDocumentTitle}
-            onTitleCommit={commitDocumentTitle}
-            saveStatus={saveStatus}
-            storageDurability={storageDurability}
-            online={online}
-            isImporting={isImporting}
-            onNewDocument={handleNewDocument}
-            onUploadClick={() => fileInputRef.current?.click()}
-            onStandardize={handleStandardizeClick}
-            onAudit={handleRunAudit}
-            onOpenLibrary={() => setLibraryOpen(true)}
-            onDownloadDocx={() => {
-              void handleDownloadDocx();
-            }}
-            onDownloadPdf={() => {
-              void handleDownloadPdf();
-            }}
-            onPrint={printDocumentStudio}
-            pdfBusy={isExportingPdf}
-          />
-        }
+        topBar={null}
         menuBar={
           <DocumentMenuBar
             isUr={isUr}
@@ -1718,6 +1756,48 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
+            endSlot={
+              <div className="ms-auto flex h-[22px] min-w-0 shrink-0 items-center gap-1 ps-2" data-studio-title-slot="true">
+                {storageDurability === "memory" ? (
+                  <span className="sr-only" role="status">
+                    {isUr
+                      ? "براؤزر اسٹوریج دستیاب نہیں۔ اس سیشن کی تبدیلیاں عارضی ہیں۔ یہ ٹیب کھلا رکھیں اور اپنی دستاویز ڈاؤن لوڈ یا ایکسپورٹ کر لیں۔"
+                      : "Browser storage is unavailable. Changes are temporary in this session. Keep this tab open and download/export your document."}
+                  </span>
+                ) : null}
+                <input
+                  type="text"
+                  value={documentTitle}
+                  onChange={(e) => setDocumentTitle(e.target.value)}
+                  onBlur={commitDocumentTitle}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                  }}
+                  aria-label={isUr ? "دستاویز کا عنوان" : "Document title"}
+                  data-studio-document-title="true"
+                  className="h-[20px] w-36 min-w-0 rounded-none border border-transparent bg-transparent px-1 text-[12px] leading-none text-[#1c1c1c] hover:border-[#c8c8c8] focus:border-[#1A3A2A] focus:outline-none"
+                />
+                {titleSave.label ? (
+                  <span
+                    className={`max-w-[9rem] truncate text-[11px] leading-none ${
+                      titleSave.tone === "error"
+                        ? "text-red-700"
+                        : titleSave.tone === "offline"
+                          ? "text-amber-800"
+                          : "text-[#3D5A47]"
+                    }`}
+                    data-studio-save-status={titleSave.tone}
+                    title={storageDurability === "memory"
+                      ? (isUr
+                        ? "براؤزر اسٹوریج دستیاب نہیں۔ اس سیشن کی تبدیلیاں عارضی ہیں۔"
+                        : "Browser storage is unavailable. Changes are temporary in this session.")
+                      : undefined}
+                  >
+                    {titleSave.label}
+                  </span>
+                ) : null}
+              </div>
+            }
           />
         }
         toolbar={

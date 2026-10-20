@@ -58,10 +58,10 @@ function ToolbarButton({
       title={label}
       aria-label={label}
       data-latin-control={latin ? "true" : undefined}
-      className={`inline-flex h-9 min-w-9 shrink-0 items-center justify-center rounded border px-2 text-xs font-semibold transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#B8935A] ${
+      className={`inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-none border px-1 text-[11px] font-semibold leading-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#B8935A] ${
         active
           ? "bg-[#1A3A2A] text-white border-[#1A3A2A]"
-          : "bg-white text-gray-600 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
+          : "bg-white text-[#1c1c1c] border-[#b5b5b5] hover:bg-[#f3f3f3]"
       }`}
     >
       {children}
@@ -70,7 +70,7 @@ function ToolbarButton({
 }
 
 function ToolbarDivider() {
-  return <div className="w-px h-5 bg-gray-200 mx-0.5 self-center" />;
+  return <div className="mx-0.5 h-4 w-px self-center bg-[#c8c8c8]" />;
 }
 
 function ImageActionButton({
@@ -91,7 +91,7 @@ function ImageActionButton({
       onClick={onClick}
       aria-pressed={active}
       data-studio-image-wrap={wrapMode}
-      className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#B8935A]/50 ${
+      className={`inline-flex h-[22px] items-center rounded-none border px-1.5 text-[11px] font-semibold leading-none focus:outline-none ${
         active
           ? "border-[#1A3A2A] bg-[#1A3A2A] text-white"
           : "border-[#1A3A2A]/15 bg-white text-[#1A3A2A] hover:border-[#B8935A] hover:bg-[#FBF6EC]"
@@ -185,7 +185,7 @@ function ColorPaletteControl({
         data-studio-highlight-button={kind === "highlight" ? "true" : undefined}
         onMouseDown={keepFocus}
         onClick={() => setOpen((next) => !next)}
-        className="h-8 min-w-8 px-1.5 rounded border bg-white text-gray-700 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
+        className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-none border border-[#b5b5b5] bg-white px-1 leading-none text-[#1c1c1c] hover:bg-[#f3f3f3]"
       >
         {kind === "text" ? (
           <span className="flex flex-col items-center leading-none">
@@ -399,7 +399,7 @@ function ParagraphSpacingMenu({
           setCustomOpen(false);
           setOpen((next) => !next);
         }}
-        className="h-8 min-w-8 px-1.5 rounded border bg-white text-gray-700 border-gray-200 hover:border-[#B8935A] hover:text-[#1A3A2A]"
+        className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-none border border-[#b5b5b5] bg-white px-1 leading-none text-[#1c1c1c] hover:bg-[#f3f3f3]"
       >
         <span className="flex flex-col items-center leading-none">
           <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
@@ -568,7 +568,7 @@ function persianMenuRank(id: string): number {
 }
 
 const selectCls =
-  "h-9 shrink-0 rounded-md border border-gray-200 bg-white px-1.5 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25";
+  "h-[22px] shrink-0 rounded-none border border-[#b5b5b5] bg-white px-1 text-[12px] leading-none text-[#1c1c1c] focus:outline-none focus:border-[#1A3A2A]";
 
 export const DOCUMENT_TOOLBAR_LEADING = ["undo", "redo", "zoom", "style"] as const;
 
@@ -593,7 +593,6 @@ export default function DocumentToolbar({
   onZoomChange?: (zoom: DocumentZoom) => void;
   documentSettings?: DocumentStudioSettings;
 }) {
-  const [moreOpen, setMoreOpen] = useState(false);
   const settings = documentSettings ?? defaultDocumentSettings();
   const ui = useEditorState({
     editor,
@@ -633,7 +632,7 @@ export default function DocumentToolbar({
     <>
       {selectedImage ? (
         <div
-          className="flex flex-wrap items-center gap-2 border-b border-[#1A3A2A]/10 bg-[#F7F3E9] px-3 py-2"
+          className="flex h-[22px] flex-nowrap items-center gap-1 overflow-x-auto border-b border-[#1A3A2A]/10 bg-[#F7F3E9] px-1"
           data-studio-image-controls="true"
           role="group"
           aria-label={isUr ? "تصویر کے اختیارات" : "Image controls"}
@@ -671,212 +670,110 @@ export default function DocumentToolbar({
         </div>
       ) : null}
       <div
-      className="flex flex-nowrap items-center gap-1 overflow-x-auto px-2 py-1.5 md:flex-wrap md:overflow-x-visible"
-      dir={isUr ? "rtl" : "ltr"}
-      role="toolbar"
-      aria-label={isUr ? "فارمیٹنگ" : "Formatting"}
-      data-studio-toolbar="true" data-studio-toolbar-language={isUr ? "ur" : "en"}
-      data-studio-toolbar-leading={DOCUMENT_TOOLBAR_LEADING.join(",")}
-      data-studio-toolbar-expanded={moreOpen ? "true" : "false"}
-    >
-      <ToolbarButton label={isUr ? "کالعدم" : "Undo"} onClick={() => undo(editor)}>
-        ↶
-      </ToolbarButton>
-      <ToolbarButton label={isUr ? "دہرائیں" : "Redo"} onClick={() => redo(editor)}>
-        ↷
-      </ToolbarButton>
-      <button
-        type="button"
-        className="inline-flex h-9 shrink-0 items-center rounded border border-gray-200 bg-white px-2.5 text-xs font-semibold text-[#1A3A2A] md:hidden"
-        aria-expanded={moreOpen}
-        data-studio-toolbar-more="true"
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={() => setMoreOpen((open) => !open)}
+        className="flex flex-col"
+        dir={isUr ? "rtl" : "ltr"}
+        role="toolbar"
+        aria-label={isUr ? "فارمیٹنگ" : "Formatting"}
+        data-studio-toolbar="true"
+        data-studio-toolbar-language={isUr ? "ur" : "en"}
+        data-studio-toolbar-leading={DOCUMENT_TOOLBAR_LEADING.join(",")}
       >
-        {isUr ? "مزید" : "More"}
-      </button>
-      {onZoomChange && (
-        <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
-          <span className="sr-only">{isUr ? "زوم" : "Zoom"}</span>
+        <div
+          className="flex h-[22px] flex-nowrap items-center gap-0.5 overflow-x-auto px-1"
+          data-studio-toolbar-row="format"
+        >
           <select
-            className={selectCls}
-            aria-label={isUr ? "زوم" : "Zoom"}
-            data-studio-zoom-control="true"
-            data-latin-control="true"
-            value={String(zoom)}
+            id="studio-block-style"
+            value={ui.blockStyle}
+            onChange={(e) => applyBlockStyle(editor, e.target.value as BlockStyleId)}
+            className={`${selectCls} max-w-[7.25rem]`}
+            title={isUr ? "انداز" : "Paragraph style"}
+            aria-label={isUr ? "انداز" : "Style"}
+            data-studio-style-control="true"
+          >
+            {BLOCK_STYLE_IDS.map((id) => (
+              <option key={id} value={id}>
+                {BLOCK_STYLES[id].labelUr && isUr ? BLOCK_STYLES[id].labelUr : BLOCK_STYLES[id].label}
+              </option>
+            ))}
+          </select>
+          <select
+            id="studio-font-family"
+            data-studio-font-family="true"
+            value={currentFont}
             onChange={(e) => {
-              const raw = e.target.value;
-              if (raw === "fit-width" || raw === "fit-page") onZoomChange(raw);
-              else onZoomChange(Number(raw) as DocumentZoom);
+              if (e.target.value === MIXED_TOOLBAR_VALUE) return;
+              applyFontFamily(editor, e.target.value);
             }}
+            className={`${selectCls} max-w-[6.5rem] md:max-w-[9.5rem]`}
+            title={isUr ? "فونٹ" : "Font family"}
+            aria-label={isUr ? "فونٹ" : "Font"}
           >
-            {DOCUMENT_ZOOM_PRESETS.map((value) => (
-              <option key={value} value={value}>
-                {value}%
+            {ui.mixed.fontFamily && (
+              <option value={MIXED_TOOLBAR_VALUE} disabled>
+                {isUr ? "مخلوط" : "Mixed"}
               </option>
+            )}
+            <option value="">{isUr ? "طے شدہ فونٹ" : "Default font"}</option>
+            {STUDIO_FONT_GROUPS.map((group) => (
+              <optgroup key={group.category} label={isUr ? group.labelUr : group.labelEn}>
+                {group.fonts.map((font) => (
+                  <option key={font.value} value={font.value}>
+                    {font.label}
+                  </option>
+                ))}
+              </optgroup>
             ))}
-            <option value="fit-width">{isUr ? "چوڑائی" : "Fit width"}</option>
-            <option value="fit-page">{isUr ? "صفحہ" : "Fit page"}</option>
           </select>
-        </label>
-      )}
-      {setProcessingLanguage ? (
-        <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
-          <span className="sr-only">{isUr ? "متن کی زبان" : "Document language"}</span>
           <select
-            className={selectCls}
-            aria-label={isUr ? "متن کی زبان" : "Document language"}
-            data-studio-document-language="true"
+            id="studio-font-size"
+            data-studio-font-size="true"
+            value={currentSize}
+            onChange={(e) => {
+              if (e.target.value === MIXED_TOOLBAR_VALUE) return;
+              applyFontSize(editor, e.target.value);
+            }}
+            className={`${selectCls} min-w-[3.25rem]`}
+            title={isUr ? "سائز" : "Font size"}
+            aria-label={isUr ? "سائز" : "Size"}
             data-latin-control="true"
-            value={processingLanguage ?? "ur"}
-            onChange={(event) => setProcessingLanguage(event.target.value as ProcessingLanguage)}
           >
-            <option value="ur">Urdu</option>
-            <option value="ar">Arabic</option>
-            <option value="en">English</option>
-            <option value="auto">Auto</option>
-          </select>
-        </label>
-      ) : null}
-      <ToolbarDivider />
-      <select
-        id="studio-block-style"
-        value={ui.blockStyle}
-        onChange={(e) => applyBlockStyle(editor, e.target.value as BlockStyleId)}
-        className={`${selectCls} max-w-[7.25rem]`}
-        title={isUr ? "انداز" : "Paragraph style"}
-        aria-label={isUr ? "انداز" : "Style"}
-        data-studio-style-control="true"
-      >
-        {BLOCK_STYLE_IDS.map((id) => (
-          <option key={id} value={id}>
-            {BLOCK_STYLES[id].labelUr && isUr ? BLOCK_STYLES[id].labelUr : BLOCK_STYLES[id].label}
-          </option>
-        ))}
-      </select>
-      <select
-        id="studio-font-family"
-        data-studio-font-family="true"
-        value={currentFont}
-        onChange={(e) => {
-          if (e.target.value === MIXED_TOOLBAR_VALUE) return;
-          applyFontFamily(editor, e.target.value);
-        }}
-        className={`${selectCls} max-w-[6.5rem] md:max-w-[9.5rem]`}
-        title={isUr ? "فونٹ" : "Font family"}
-        aria-label={isUr ? "فونٹ" : "Font"}
-      >
-        {ui.mixed.fontFamily && (
-          <option value={MIXED_TOOLBAR_VALUE} disabled>
-            {isUr ? "مخلوط" : "Mixed"}
-          </option>
-        )}
-        <option value="">{isUr ? "طے شدہ فونٹ" : "Default font"}</option>
-        {STUDIO_FONT_GROUPS.map((group) => (
-          <optgroup
-            key={group.category}
-            label={isUr ? group.labelUr : group.labelEn}
-          >
-            {group.fonts.map((font) => (
-              <option key={font.value} value={font.value}>
-                {font.label}
+            {ui.mixed.fontSize && (
+              <option value={MIXED_TOOLBAR_VALUE} disabled>
+                {isUr ? "مخلوط" : "Mixed"}
+              </option>
+            )}
+            {sizeOptions.map((pt) => (
+              <option key={pt} value={pt}>
+                {pt}
               </option>
             ))}
-          </optgroup>
-        ))}
-      </select>
-      <select
-        id="studio-font-size"
-        data-studio-font-size="true"
-        value={currentSize}
-        onChange={(e) => {
-          if (e.target.value === MIXED_TOOLBAR_VALUE) return;
-          applyFontSize(editor, e.target.value);
-        }}
-        className={`${selectCls} min-w-[4.25rem]`}
-        title={isUr ? "سائز" : "Font size"}
-        aria-label={isUr ? "سائز" : "Size"}
-        data-latin-control="true"
-      >
-        {ui.mixed.fontSize && (
-          <option value={MIXED_TOOLBAR_VALUE} disabled>
-            {isUr ? "مخلوط" : "Mixed"}
-          </option>
-        )}
-        {sizeOptions.map((pt) => (
-          <option key={pt} value={pt}>
-            {pt}
-          </option>
-        ))}
-      </select>
-      <ToolbarDivider />
-      <ToolbarButton label={isUr ? "موٹا" : "Bold"} active={ui.bold} onClick={() => toggleBold(editor)} latin>
-        B
-      </ToolbarButton>
-      <ToolbarButton label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)} latin>
-        I
-      </ToolbarButton>
-      <ToolbarButton label={isUr ? "خط کشیدہ" : "Underline"} active={ui.underline} onClick={() => toggleUnderline(editor)} latin>
-        U
-      </ToolbarButton>
-      <ToolbarDivider />
-      <ToolbarButton label={isUr ? "بائیں سیدھ" : "Align Left"} active={ui.textAlign === "left"} onClick={() => setAlign(editor, "left")}>
-        ⇤
-      </ToolbarButton>
-      <ToolbarButton label={isUr ? "درمیانی سیدھ" : "Align Center"} active={ui.textAlign === "center"} onClick={() => setAlign(editor, "center")}>
-        ⇔
-      </ToolbarButton>
-      <ToolbarButton label={isUr ? "دائیں سیدھ" : "Align Right"} active={ui.textAlign === "right"} onClick={() => setAlign(editor, "right")}>
-        ⇥
-      </ToolbarButton>
-      <ToolbarButton label={isUr ? "برابر کریں" : "Justify"} active={ui.textAlign === "justify"} onClick={() => setAlign(editor, "justify")}>
-        ☰
-      </ToolbarButton>
-      <ToolbarDivider />
-      <ToolbarButton label={isUr ? "نقطہ دار فہرست" : "Bullet List"} active={ui.bullet} onClick={() => toggleBulletList(editor)}>
-        •
-      </ToolbarButton>
-      <ToolbarButton label={isUr ? "نمبر والی فہرست" : "Numbered List"} active={ui.ordered} onClick={() => toggleOrderedList(editor)}>
-        1.
-      </ToolbarButton>
-      <ToolbarDivider />
-      <ToolbarButton label={isUr ? "خودکار سمت" : "Automatic paragraph direction"} active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")} latin>
-        Auto
-      </ToolbarButton>
-      <ToolbarButton label={isUr ? "دائیں سے بائیں" : "Right-to-left (Urdu/Arabic/Persian)"} active={ui.directionMode === "rtl"} onClick={() => { setDir("rtl"); applyParagraphDirection(editor, "rtl"); }} latin>
-        RTL
-      </ToolbarButton>
-      <ToolbarButton label={isUr ? "بائیں سے دائیں" : "Left-to-right (English)"} active={ui.directionMode === "ltr"} onClick={() => { setDir("ltr"); applyParagraphDirection(editor, "ltr"); }} latin>
-        LTR
-      </ToolbarButton>
-      <div
-        className="hidden shrink-0 items-center gap-1 md:flex"
-        data-studio-toolbar-secondary="true"
-      >
-        <ColorPaletteControl
-          editor={editor}
-          kind="text"
-          colors={STUDIO_TEXT_COLORS}
-          value={ui.color}
-          mixed={ui.mixed.color}
-          isUr={isUr}
-        />
-        <ColorPaletteControl
-          editor={editor}
-          kind="highlight"
-          colors={STUDIO_HIGHLIGHT_COLORS}
-          value={ui.highlight}
-          mixed={ui.mixed.highlight}
-          isUr={isUr}
-        />
-        <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />
-      </div>
-      <div className="shrink-0" data-studio-dictation="true">
-        <DictationControl editor={editor} docDir={dir} isUr={isUr} />
-      </div>
-      </div>
-      {moreOpen ? (
-        <div className="flex flex-wrap items-center gap-1 border-t border-[#1A3A2A]/10 px-2 py-1.5 md:hidden" data-studio-toolbar-more-panel="true">
+          </select>
+          <ToolbarDivider />
+          <ToolbarButton label={isUr ? "موٹا" : "Bold"} active={ui.bold} onClick={() => toggleBold(editor)} latin>
+            B
+          </ToolbarButton>
+          <ToolbarButton label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)} latin>
+            I
+          </ToolbarButton>
+          <ToolbarButton label={isUr ? "خط کشیدہ" : "Underline"} active={ui.underline} onClick={() => toggleUnderline(editor)} latin>
+            U
+          </ToolbarButton>
+          <ToolbarDivider />
+          <ToolbarButton label={isUr ? "بائیں سیدھ" : "Align Left"} active={ui.textAlign === "left"} onClick={() => setAlign(editor, "left")}>
+            ⇤
+          </ToolbarButton>
+          <ToolbarButton label={isUr ? "درمیانی سیدھ" : "Align Center"} active={ui.textAlign === "center"} onClick={() => setAlign(editor, "center")}>
+            ⇔
+          </ToolbarButton>
+          <ToolbarButton label={isUr ? "دائیں سیدھ" : "Align Right"} active={ui.textAlign === "right"} onClick={() => setAlign(editor, "right")}>
+            ⇥
+          </ToolbarButton>
+          <ToolbarButton label={isUr ? "برابر کریں" : "Justify"} active={ui.textAlign === "justify"} onClick={() => setAlign(editor, "justify")}>
+            ☰
+          </ToolbarButton>
+          <ToolbarDivider />
+          <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />
           <ColorPaletteControl
             editor={editor}
             kind="text"
@@ -893,9 +790,75 @@ export default function DocumentToolbar({
             mixed={ui.mixed.highlight}
             isUr={isUr}
           />
-          <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />
         </div>
-      ) : null}
+        <div
+          className="flex h-[22px] flex-nowrap items-center gap-0.5 overflow-x-auto border-t border-[#d8d8d8] px-1"
+          data-studio-toolbar-row="document"
+          data-studio-toolbar-secondary="true"
+        >
+          {setProcessingLanguage ? (
+            <select
+              className={`${selectCls} max-w-[5.5rem]`}
+              aria-label={isUr ? "متن کی زبان" : "Document language"}
+              data-studio-document-language="true"
+              data-latin-control="true"
+              value={processingLanguage ?? "ur"}
+              onChange={(event) => setProcessingLanguage(event.target.value as ProcessingLanguage)}
+            >
+              <option value="ur">Urdu</option>
+              <option value="ar">Arabic</option>
+              <option value="en">English</option>
+              <option value="auto">Auto</option>
+            </select>
+          ) : null}
+          <ToolbarButton label={isUr ? "نقطہ دار فہرست" : "Bullet List"} active={ui.bullet} onClick={() => toggleBulletList(editor)}>
+            •
+          </ToolbarButton>
+          <ToolbarButton label={isUr ? "نمبر والی فہرست" : "Numbered List"} active={ui.ordered} onClick={() => toggleOrderedList(editor)}>
+            1.
+          </ToolbarButton>
+          <ToolbarDivider />
+          <ToolbarButton label={isUr ? "خودکار سمت" : "Automatic paragraph direction"} active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")} latin>
+            Auto
+          </ToolbarButton>
+          <ToolbarButton label={isUr ? "دائیں سے بائیں" : "Right-to-left (Urdu/Arabic/Persian)"} active={ui.directionMode === "rtl"} onClick={() => { setDir("rtl"); applyParagraphDirection(editor, "rtl"); }} latin>
+            RTL
+          </ToolbarButton>
+          <ToolbarButton label={isUr ? "بائیں سے دائیں" : "Left-to-right (English)"} active={ui.directionMode === "ltr"} onClick={() => { setDir("ltr"); applyParagraphDirection(editor, "ltr"); }} latin>
+            LTR
+          </ToolbarButton>
+          <ToolbarDivider />
+          <ToolbarButton label={isUr ? "کالعدم" : "Undo"} onClick={() => undo(editor)}>
+            ↶
+          </ToolbarButton>
+          <ToolbarButton label={isUr ? "دہرائیں" : "Redo"} onClick={() => redo(editor)}>
+            ↷
+          </ToolbarButton>
+          {onZoomChange && (
+            <select
+              className={`${selectCls} max-w-[5.75rem]`}
+              aria-label={isUr ? "زوم" : "Zoom"}
+              data-studio-zoom-control="true"
+              data-latin-control="true"
+              value={String(zoom)}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === "fit-width" || raw === "fit-page") onZoomChange(raw);
+                else onZoomChange(Number(raw) as DocumentZoom);
+              }}
+            >
+              {DOCUMENT_ZOOM_PRESETS.map((value) => (
+                <option key={value} value={value}>
+                  {value}%
+                </option>
+              ))}
+              <option value="fit-width">{isUr ? "چوڑائی" : "Fit width"}</option>
+              <option value="fit-page">{isUr ? "صفحہ" : "Fit page"}</option>
+            </select>
+          )}
+          <DictationControl editor={editor} docDir={dir} isUr={isUr} />
+        </div>
+      </div>
     </>
   );
 }
