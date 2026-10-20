@@ -431,7 +431,7 @@ export default function MadinahReader({
             <div className="border-t border-[#d0d4cc] bg-white px-2 py-2 text-xs">{language === "ur" ? "صفحہ بدلنے کے لیے دائیں اور بائیں تیر استعمال کریں۔" : "Use left and right arrow keys to turn pages."}</div>
           </aside>
 
-          <section>
+          <section className="quran-reader-main order-1 min-w-0 lg:order-2">
             <div className="quran-page-shell">
               <QuranPageMeta surah={pageSurah} juz={pageJuz} pageNumber={pageNumber}
                 previousDisabled={pageNumber <= 1} nextDisabled={pageNumber >= 604}
