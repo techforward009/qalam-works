@@ -48,7 +48,7 @@ export function QuranPageMeta({
         dir="ltr"
         lang={language === "ur" ? "ur" : "en"}
       >
-        <PageArrow
+        <QuranPageArrow
           direction="previous"
           label="Previous page"
           disabled={previousDisabled}
@@ -61,7 +61,7 @@ export function QuranPageMeta({
           {pageLabel}
         </span>
 
-        <PageArrow
+        <QuranPageArrow
           direction="next"
           label="Next page"
           disabled={nextDisabled}
