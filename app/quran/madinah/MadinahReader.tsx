@@ -428,7 +428,11 @@ export default function MadinahReader({
             </div></QuranSidebarSection>
             <QuranSidebarSection title={copy.copy}><button type="button" className={styles.secondary} onClick={() => void copyCurrentPage()}>{copied ? copy.copyDone : copy.copy}</button></QuranSidebarSection>
             <QuranSidebarSection title={copy.display}><label className={styles.label}>{copy.size}<select className={styles.input} aria-label={copy.size} value={scale} onChange={e => chooseScale(Number(e.target.value))}><option value={0.85}>{copy.small}</option><option value={1}>{copy.medium}</option><option value={1.12}>{copy.large}</option></select></label></QuranSidebarSection>
-            <div className="border-t border-[#d0d4cc] bg-white px-2 py-2 text-xs">{language === "ur" ? "صفحہ بدلنے کے لیے دائیں اور بائیں تیر استعمال کریں۔" : "Use left and right arrow keys to turn pages."}</div>
+            <div className="border-t border-[#d0d4cc] bg-white px-2 py-2" dir={language === "ur" ? "rtl" : "ltr"} lang={language}>
+              <p className="text-[10px] leading-5">{language === "ur" ? "↑ ↓ آیات" : "↑ ↓ Ayahs"}</p>
+              <p className="text-[10px] leading-5">{language === "ur" ? "← → صفحات" : "← → Pages"}</p>
+              <p className="text-[10px] leading-5">{language === "ur" ? "Ctrl + ← → سورت" : "Ctrl + ← → Surah"}</p>
+            </div>
           </aside>
 
           <section className="quran-reader-main order-1 min-w-0 lg:order-2">
