@@ -1,6 +1,6 @@
-import {redirect,notFound} from "next/navigation";
+import {permanentRedirect,notFound} from "next/navigation";
 export default async function LegacyQuranSurah({params}:{params:Promise<{surah:string}>}){
  const {surah}=await params;const s=Number(surah);
  if(!/^\d{1,3}$/.test(surah)||s<1||s>114)notFound();
- redirect("/quran/indopak-digital-khatt/"+s+"/1");
+ permanentRedirect("/quran/indopak-digital-khatt/"+s+"/1");
 }
