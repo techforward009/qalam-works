@@ -25,10 +25,13 @@ import type { RulerUnit } from "../utils/rulerLayout";
 import { MarginGuides } from "./MarginGuides";
 import { InPageToolPalette, type StudioToolId } from "./InPageToolPalette";
 import { WindowRuler } from "./WindowRuler";
+import { StudioObjectLayer, type StudioFrame } from "./StudioObjectLayer";
 import {
+  INPAGE_HSCROLL_PX,
   INPAGE_RULER_BAR_PX,
   INPAGE_TOOLBOX_PX,
   INPAGE_VRULER_PX,
+  INPAGE_VSCROLL_PX,
   PASTEBOARD_GUIDE_PX,
   PASTEBOARD_TOP_PX,
 } from "../utils/windowRuler";
@@ -52,6 +55,9 @@ export default function DocumentCanvas({
   columnCount = 1,
   columnGutterMm = 0,
   minimumPages = 1,
+  frames = [],
+  onFramesChange,
+  tool: toolProp,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -73,6 +79,9 @@ export default function DocumentCanvas({
   columnCount?: number;
   columnGutterMm?: number;
   minimumPages?: number;
+  frames?: StudioFrame[];
+  onFramesChange?: (frames: StudioFrame[]) => void;
+  tool?: StudioToolId;
 }) {
   const isPages = viewMode === "pages";
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -82,8 +91,11 @@ export default function DocumentCanvas({
   const panRef = useRef<{ id: number; x: number; y: number; sl: number; st: number } | null>(null);
   const [availableWidth, setAvailableWidth] = useState(0);
   const [availableHeight, setAvailableHeight] = useState(0);
+  const [scrollerBox, setScrollerBox] = useState({ w: 0, h: 0 });
   const [livePageCount, setLivePageCount] = useState(1);
-  const [tool, setTool] = useState<StudioToolId>("select");
+  const [toolState, setToolState] = useState<StudioToolId>("select");
+  const tool = toolProp ?? toolState;
+  const [scrollBox, setScrollBox] = useState({ left: 0, top: 0, sw: 1, sh: 1, cw: 1, ch: 1 });
 
   useEffect(() => {
     const el = workspaceRef.current;
@@ -99,6 +111,16 @@ export default function DocumentCanvas({
     setAvailableHeight(el.clientHeight);
     return () => ro.disconnect();
   }, []);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const read = () => setScrollerBox({ w: el.clientWidth, h: el.clientHeight });
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    read();
+    return () => ro.disconnect();
+  }, [isPages]);
 
   const natural = layoutNaturalSizePx(pageLayout);
   const geometry = paginationGeometryFromLayout(pageLayout, dir, isPages, minimumPages);
@@ -139,8 +161,10 @@ export default function DocumentCanvas({
   const toolboxPx = isPages ? INPAGE_TOOLBOX_PX : 0;
   const vRulerPx = showRuler ? INPAGE_VRULER_PX : 0;
   const hRulerPx = showRuler ? INPAGE_RULER_BAR_PX : 0;
-  const scrollerWidth = Math.max(0, availableWidth - toolboxPx - vRulerPx);
-  const scrollerHeight = Math.max(0, availableHeight - hRulerPx);
+  const vScrollPx = isPages ? INPAGE_VSCROLL_PX : 0;
+  const hScrollPx = isPages ? INPAGE_HSCROLL_PX : 0;
+  const scrollerWidth = scrollerBox.w > 0 ? scrollerBox.w : Math.max(0, availableWidth - toolboxPx - vRulerPx - vScrollPx);
+  const scrollerHeight = scrollerBox.h > 0 ? scrollerBox.h : Math.max(0, availableHeight - hRulerPx - hScrollPx);
   const pageCount = isPages ? Math.max(1, livePageCount) : 1;
   useEffect(() => {
     onPageCountChange?.(isPages ? pageCount : null);
@@ -160,7 +184,7 @@ export default function DocumentCanvas({
   const visualHeight = stackHeight ? stackHeight * zoomFactor : undefined;
   const pageStride = visualPageHeight + PAGE_STACK_GAP_PX * zoomFactor;
   const guideOutset = Math.round(PASTEBOARD_GUIDE_PX * zoomFactor);
-  const contentWidth = Math.max(scrollerWidth, Math.ceil(visualWidth + (isPages ? guideOutset * 2 : 0)));
+  const contentWidth = Math.max(scrollerWidth, Math.ceil(visualWidth));
   const contentHeight = Math.max(scrollerHeight, Math.ceil((isPages ? PASTEBOARD_TOP_PX : 0) + (visualHeight ?? visualPageHeight) + bottomPad));
   const pageLeft = Math.max(0, (contentWidth - visualWidth) / 2);
   const pageTop = isPages ? PASTEBOARD_TOP_PX : 0;
@@ -168,6 +192,7 @@ export default function DocumentCanvas({
   const pxPerMmY = pageLayout.heightMm > 0 ? visualPageHeight / pageLayout.heightMm : 0;
   const hOrigin = dir === "rtl" ? pageLeft + visualWidth : pageLeft;
   const hDirection: 1 | -1 = dir === "rtl" ? -1 : 1;
+  const rulerLength = Math.max(contentWidth, Math.ceil(hOrigin + 80));
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -177,6 +202,14 @@ export default function DocumentCanvas({
       if (vShiftRef.current) vShiftRef.current.style.transform = `translateY(${-el.scrollTop}px)`;
       const page = Math.min(pageCount, Math.max(1, Math.floor(el.scrollTop / pageStride + 0.35) + 1));
       onVisiblePageChange?.(page);
+      setScrollBox({
+        left: el.scrollLeft,
+        top: el.scrollTop,
+        sw: el.scrollWidth,
+        sh: el.scrollHeight,
+        cw: el.clientWidth,
+        ch: el.clientHeight,
+      });
     };
     sync();
     el.addEventListener("scroll", sync, { passive: true });
@@ -214,9 +247,18 @@ export default function DocumentCanvas({
     : [];
 
   const chooseTool = (id: StudioToolId) => {
-    setTool(id);
+    setToolState(id);
     onToolAction?.(id);
   };
+
+  const stepPage = (delta: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const next = Math.min(pageCount, Math.max(1, Math.floor(el.scrollTop / pageStride + 0.35) + 1 + delta));
+    el.scrollTo({ top: (next - 1) * pageStride });
+  };
+
+  const percentLabel = zoom === "fit-width" ? "Width" : zoom === "fit-page" ? "Page" : `${Math.round(zoomFactor * 100)}%`;
 
   return (
     <div
@@ -249,13 +291,22 @@ export default function DocumentCanvas({
           <div className="studio-no-print flex shrink-0 bg-white" data-studio-ruler-frame="true">
             <div
               data-ruler-corner="true"
-              style={{ width: INPAGE_VRULER_PX, height: INPAGE_RULER_BAR_PX, boxSizing: "border-box", borderRight: "2px solid #000", borderBottom: "2px solid #000", background: "#fff" }}
-            />
+              data-ruler-origin-mark="true"
+              style={{ position: "relative", width: INPAGE_VRULER_PX, height: INPAGE_RULER_BAR_PX, boxSizing: "border-box", borderRight: "2px solid #000", borderBottom: "2px solid #000", background: "#fff" }}
+            >
+              <svg width="16" height="16" aria-hidden="true" style={{ position: "absolute", right: 0, bottom: 0 }}>
+                <circle cx="13" cy="13" r="0.7" fill="#000" />
+                <circle cx="10" cy="13" r="0.7" fill="#000" />
+                <circle cx="7" cy="13" r="0.7" fill="#000" />
+                <circle cx="13" cy="10" r="0.7" fill="#000" />
+                <circle cx="13" cy="7" r="0.7" fill="#000" />
+              </svg>
+            </div>
             <div className="min-w-0 flex-1 overflow-hidden">
-              <div ref={hShiftRef} style={{ width: Math.max(1, contentWidth) }}>
+              <div ref={hShiftRef} style={{ width: Math.max(1, rulerLength) }}>
                 <WindowRuler
                   axis="horizontal"
-                  lengthPx={Math.max(1, contentWidth)}
+                  lengthPx={Math.max(1, rulerLength)}
                   originPx={hOrigin}
                   pageStartPx={pageLeft}
                   pxPerMm={pxPerMmX}
@@ -297,7 +348,8 @@ export default function DocumentCanvas({
           <div
             ref={scrollerRef}
             className="min-h-0 min-w-0 flex-1 overflow-auto"
-            style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : undefined }}
+            data-studio-scroller="true"
+            style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : undefined, scrollbarWidth: "none" }}
             onPointerDown={(event) => {
               if (tool !== "hand") return;
               const el = scrollerRef.current;
@@ -340,6 +392,7 @@ export default function DocumentCanvas({
                         bottom: -bottomPad,
                         width: 1,
                         backgroundImage: "repeating-linear-gradient(to bottom, #000 0 1px, transparent 1px 2px)",
+                        backgroundPosition: "0 1px",
                       }}
                       aria-hidden
                     />
@@ -353,6 +406,7 @@ export default function DocumentCanvas({
                         bottom: -bottomPad,
                         width: 1,
                         backgroundImage: "repeating-linear-gradient(to bottom, #000 0 1px, transparent 1px 2px)",
+                        backgroundPosition: "0 1px",
                       }}
                       aria-hidden
                     />
@@ -475,6 +529,20 @@ export default function DocumentCanvas({
                           }`}
                           style={typeVars}
                         />
+                        {isPages ? (
+                          <StudioObjectLayer
+                            editor={editor}
+                            tool={tool}
+                            frames={frames}
+                            onFramesChange={onFramesChange ?? (() => undefined)}
+                            pageCount={pageCount}
+                            pageWidthPx={natural.widthPx}
+                            pageHeightPx={natural.heightPx}
+                            gapPx={PAGE_STACK_GAP_PX}
+                            marginTopPx={geometry.marginTopPx}
+                            marginRightPx={geometry.marginRightPx}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -482,7 +550,73 @@ export default function DocumentCanvas({
               </div>
             </div>
           </div>
+          {isPages ? (
+            <div
+              data-studio-vscroll="true"
+              className="studio-no-print relative shrink-0"
+              style={{ width: INPAGE_VSCROLL_PX, background: "#f0f0f0", boxShadow: "inset 1px 0 0 #fff, inset -1px 0 0 #696969" }}
+              onPointerDown={(event) => {
+                const el = scrollerRef.current;
+                if (!el) return;
+                const rect = event.currentTarget.getBoundingClientRect();
+                const ratio = (event.clientY - rect.top) / Math.max(1, rect.height);
+                el.scrollTop = ratio * Math.max(0, el.scrollHeight - el.clientHeight);
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  left: 1,
+                  right: 1,
+                  top: Math.max(0, (scrollBox.sh > scrollBox.ch ? scrollBox.top / Math.max(1, scrollBox.sh - scrollBox.ch) : 0) * Math.max(0, scrollBox.ch - Math.max(14, (scrollBox.ch / Math.max(1, scrollBox.sh)) * scrollBox.ch))),
+                  height: Math.max(14, Math.min(scrollBox.ch || 14, ((scrollBox.ch || 1) / Math.max(1, scrollBox.sh)) * (scrollBox.ch || 1))),
+                  background: "#e4e4e4",
+                  boxShadow: "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969",
+                }}
+              />
+            </div>
+          ) : null}
         </div>
+        {isPages ? (
+          <div
+            data-studio-hscroll="true"
+            className="studio-no-print flex shrink-0 items-center"
+            style={{ height: INPAGE_HSCROLL_PX, background: "#f0f0f0", boxShadow: "inset 0 1px 0 #fff, inset 0 -1px 0 #696969" }}
+          >
+            <div className="flex h-full shrink-0 items-center gap-0.5 px-1" data-studio-page-nav="true" data-latin-control="true">
+              <button type="button" aria-label="Master pages" className="h-[14px] w-[16px] bg-[#f0f0f0] text-[10px] leading-none" style={{ boxShadow: "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969" }}>M</button>
+              <button type="button" aria-label={isUr ? "پچھلا صفحہ" : "Previous page"} className="h-[14px] w-[16px] text-[12px] leading-none" onClick={() => stepPage(-1)}>‹</button>
+              <span className="min-w-6 text-center text-[11px] tabular-nums" data-studio-page-label="true">
+                {Math.min(pageCount, Math.max(1, Math.floor(scrollBox.top / Math.max(1, pageStride) + 0.35) + 1))}/{pageCount}
+              </span>
+              <button type="button" aria-label={isUr ? "اگلا صفحہ" : "Next page"} className="h-[14px] w-[16px] text-[12px] leading-none" onClick={() => stepPage(1)}>›</button>
+              <span className="min-w-8 text-[11px] tabular-nums" data-studio-zoom-label="true">{percentLabel}</span>
+              <span className="sr-only" data-studio-page-count={pageCount}>Pages {pageCount}</span>
+            </div>
+            <div
+              className="relative h-full min-w-0 flex-1"
+              onPointerDown={(event) => {
+                const el = scrollerRef.current;
+                if (!el) return;
+                const rect = event.currentTarget.getBoundingClientRect();
+                const ratio = (event.clientX - rect.left) / Math.max(1, rect.width);
+                el.scrollLeft = ratio * Math.max(0, el.scrollWidth - el.clientWidth);
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: 1,
+                  bottom: 1,
+                  left: Math.max(0, (scrollBox.sw > scrollBox.cw ? scrollBox.left / Math.max(1, scrollBox.sw - scrollBox.cw) : 0) * Math.max(0, scrollBox.cw - Math.max(18, (scrollBox.cw / Math.max(1, scrollBox.sw)) * scrollBox.cw))),
+                  width: Math.max(18, Math.min(scrollBox.cw || 18, ((scrollBox.cw || 1) / Math.max(1, scrollBox.sw)) * (scrollBox.cw || 1))),
+                  background: "#e4e4e4",
+                  boxShadow: "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969",
+                }}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
       <style jsx global>{`
         .qalam-editor-content.qalam-doc-page .ProseMirror,
@@ -496,7 +630,9 @@ export default function DocumentCanvas({
           color: #1a1a1a;
           background: transparent;
           display: flow-root;
+          caret-color: transparent;
         }
+        [data-studio-scroller]::-webkit-scrollbar { width: 0; height: 0; display: none; }
         .qalam-editor-content.qalam-view-pages .ProseMirror.qalam-pagination {
           padding: var(--qalam-margin-top) var(--qalam-margin-right) 0 var(--qalam-margin-left);
           min-height: var(--qalam-page-height);

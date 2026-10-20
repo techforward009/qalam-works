@@ -14,7 +14,7 @@ import {
   loadDocumentSettings,
   saveDocumentSettings,
   defaultDocumentSettings,
-  withStudioOpeningMargins,
+  withStudioUrduFont,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
 import { resolvePageLayout, commitPhysicalMarginDrag, type PhysicalMarginEdge } from "../utils/pageLayout";
@@ -127,6 +127,7 @@ import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
 import DocumentCanvas from "./DocumentCanvas";
 import type { StudioToolId } from "./InPageToolPalette";
+import { readStoredFrames, writeStoredFrames, type StudioFrame } from "./StudioObjectLayer";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
@@ -255,11 +256,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [columnGutterMm, setColumnGutterMm] = useState(STUDIO_DEFAULT_GUTTER_MM);
   const [minimumPages, setMinimumPages] = useState(1);
   const minimumPagesRef = useRef(1);
+  const [frames, setFrames] = useState<StudioFrame[]>([]);
+  const [canvasTool, setCanvasTool] = useState<StudioToolId>("select");
+  const [imageMenu, setImageMenu] = useState<{ x: number; y: number } | null>(null);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [tableRows, setTableRows] = useState(3);
   const [tableColumns, setTableColumns] = useState(3);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => withStudioOpeningMargins(loadDocumentSettings()));
+  const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => withStudioUrduFont(loadDocumentSettings()));
   // Batch 16B — computed once per render, shared by the page preview and
   // the ruler so their boundaries always agree (single geometry source).
   const pageLayout = resolvePageLayout({
@@ -427,6 +431,8 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const dirRef = useRef(dir);
   dirRef.current = dir;
   const restoringEmptyRef = useRef(false);
+  const textLenRef = useRef(0);
+  const fullDeleteRef = useRef(false);
 
   const editor = useEditor({
     extensions: [...createDocumentStudioExtensions(), QalamPagination],
@@ -439,8 +445,28 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         spellcheck: EDITOR_SPELLCHECK_ATTR,
       },
       transformPasted: (slice) => transformPastedSlice(slice, dir),
+      handleKeyDown: (_view, event) => {
+        if (event.key !== "Backspace" && event.key !== "Delete") return false;
+        const { from, to } = _view.state.selection;
+        const size = _view.state.doc.content.size;
+        if (from <= 1 && to >= Math.max(1, size - 1)) fullDeleteRef.current = true;
+        return false;
+      },
     },
     onUpdate: ({ editor, transaction }) => {
+      if (transaction.docChanged) {
+        const nextLen = editor.getText().length;
+        const userEdit = transaction.getMeta("addToHistory") !== false;
+        const emptied = textLenRef.current > 0 && nextLen === 0;
+        if (userEdit && (emptied || fullDeleteRef.current)) {
+          minimumPagesRef.current = 1;
+          setMinimumPages(1);
+          const id = activeDocumentIdRef.current;
+          if (id) writeStoredMinimumPages(id, 1);
+        }
+        fullDeleteRef.current = false;
+        textLenRef.current = nextLen;
+      }
       if (transaction.docChanged && editor.state.doc.childCount === 0 && !restoringEmptyRef.current) {
         restoringEmptyRef.current = true;
         const direction = dirRef.current;
@@ -652,7 +678,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     saveActiveDocumentId(record.id);
     setDocumentTitle(record.title);
     documentTitleRef.current = record.title;
-    const settings = withStudioOpeningMargins(record.documentSettings);
+    const settings = withStudioUrduFont(record.documentSettings);
     setDocumentSettings(settings);
     documentSettingsRef.current = settings;
     if (!options?.skipContent && editor) {
@@ -662,6 +688,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     minimumPagesRef.current = pages;
     setMinimumPages(pages);
     writeStoredMinimumPages(record.id, pages);
+    setFrames(readStoredFrames(record.id));
     if (typeof window !== "undefined" && window.innerWidth < NARROW_STUDIO_PX && !zoomTouchedRef.current) {
       setZoomState("fit-width");
     }
@@ -708,7 +735,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       const record = await library.createDocument({
         title: input?.title ?? defaultDocumentTitle(isUrRef.current),
         content: input?.content ?? emptyDocumentContent(dir),
-        documentSettings: withStudioOpeningMargins(input?.documentSettings ?? defaultDocumentSettings()),
+        documentSettings: withStudioUrduFont(input?.documentSettings ?? defaultDocumentSettings()),
       });
       applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages });
       await refreshLibraryList(library);
@@ -1388,7 +1415,40 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   useEffect(() => {
+    const onContext = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest("img.qalam-document-image")) {
+        setImageMenu(null);
+        return;
+      }
+      event.preventDefault();
+      const img = target.closest("img");
+      if (editor && img) {
+        try {
+          const pos = editor.view.posAtDOM(img, 0);
+          editor.chain().setNodeSelection(pos).run();
+        } catch {
+          /* image not in the document view */
+        }
+      }
+      setImageMenu({ x: event.clientX, y: event.clientY });
+    };
+    const onPointer = () => setImageMenu(null);
+    window.addEventListener("contextmenu", onContext);
+    window.addEventListener("pointerdown", onPointer);
+    return () => {
+      window.removeEventListener("contextmenu", onContext);
+      window.removeEventListener("pointerdown", onPointer);
+    };
+  }, [editor]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "F1") {
+        e.preventDefault();
+        setHelpOpen("about");
+        return;
+      }
       if (!isFindOpenShortcut(e)) return;
       e.preventDefault();
       setFindOpen(true);
@@ -1519,23 +1579,20 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const onCanvasTool = (id: StudioToolId) => {
+    setCanvasTool(id);
     if (id === "image") {
       imageInputRef.current?.click();
       return;
     }
-    if (id === "zoom") {
-      const steps = [100, 125, 150, "fit-width", "fit-page"] as const;
-      const index = steps.findIndex((step) => step === zoom);
-      setZoom(steps[(index + 1) % steps.length]);
-      return;
-    }
-    if (id === "rect" || id === "ellipse" || id === "round-rect" || id === "line") {
-      insertStudioShape(editor, id);
-      return;
-    }
-    if ((id === "select" || id === "text") && editor) {
+    if (id === "select" && editor) {
       editor.commands.focus(editor.isEmpty ? "start" : "end");
     }
+  };
+
+  const changeFrames = (next: StudioFrame[]) => {
+    setFrames(next);
+    const id = activeDocumentIdRef.current;
+    if (id) writeStoredFrames(id, next);
   };
 
   const insertTable = () => {
@@ -1598,6 +1655,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       startDictation: focusExistingDictationControl,
       openQalamAi: () => setQalamAiOpen(true),
       openHelp: setHelpOpen,
+      setCanvasTool,
     });
   };
 
@@ -1772,6 +1830,59 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
         }}
       />
       {imageError ? <p role="alert" className="mx-2 mt-2 text-sm text-red-700">{imageError}</p> : null}
+      {imageMenu && editor ? (
+        <div
+          role="menu"
+          data-studio-image-menu="true"
+          className="fixed z-[90] border border-[#808080] bg-[#f0f0f0] py-1 text-[11px] text-black shadow-md"
+          style={{ left: imageMenu.x, top: imageMenu.y, fontFamily: "Tahoma, 'Segoe UI', sans-serif" }}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          {([
+            ["Left", { alignment: "left" }],
+            ["Center", { alignment: "center", wrapMode: "break" }],
+            ["Right", { alignment: "right" }],
+            ["Wrap text", { wrapMode: "wrap", alignment: "left" }],
+            ["Break text", { wrapMode: "break" }],
+          ] as const).map(([label, attrs]) => (
+            <button
+              key={label}
+              type="button"
+              role="menuitem"
+              className="block w-full px-3 py-1 text-left hover:bg-[#d6dff2]"
+              onClick={() => {
+                editor.chain().focus().updateAttributes("image", attrs).run();
+                setImageMenu(null);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full px-3 py-1 text-left hover:bg-[#d6dff2]"
+            onClick={() => {
+              const alt = window.prompt("Alternative text", String(editor.getAttributes("image").alt ?? ""));
+              if (alt !== null) editor.chain().focus().updateAttributes("image", { alt }).run();
+              setImageMenu(null);
+            }}
+          >
+            Alt text
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full px-3 py-1 text-left hover:bg-[#d6dff2]"
+            onClick={() => {
+              editor.chain().focus().deleteSelection().run();
+              setImageMenu(null);
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      ) : null}
 
       {libraryOpen ? (
         <DocumentLibraryDialog
@@ -1834,7 +1945,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             disabledIds={disabledIds}
             checkedIds={checkedIds}
             endSlot={
-              <div className="ms-auto flex h-[22px] min-w-0 shrink-0 items-center gap-1 ps-2" data-studio-title-slot="true">
+              <div className="flex h-[20px] min-w-0 items-center gap-1" data-studio-title-slot="true">
                 {storageDurability === "memory" ? (
                   <span className="sr-only" role="status">
                     {isUr
@@ -2018,6 +2129,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             columnCount={columnCount}
             columnGutterMm={columnGutterMm}
             minimumPages={minimumPages}
+            frames={frames}
+            onFramesChange={changeFrames}
+            tool={canvasTool}
             onToolAction={onCanvasTool}
           />
             </div>

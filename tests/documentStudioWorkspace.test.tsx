@@ -108,8 +108,9 @@ describe("Document Studio workspace chrome", () => {
       online: true,
     };
     const { rerender } = render(<DocumentStatusBar {...shared} pageCount={4} />);
-    expect(screen.getByText("صفحات")).toBeTruthy();
-    expect(document.querySelector("[data-studio-page-count]")?.getAttribute("data-studio-page-count")).toBe("4");
+    expect(screen.getByText("مدد کے لیے F1 دبائیں")).toBeTruthy();
+    expect(screen.getByText("NUM")).toBeTruthy();
+    expect(screen.queryByText("صفحات")).toBeNull();
     rerender(<DocumentStatusBar {...shared} pageCount={null} />);
     expect(screen.queryByText("صفحات")).toBeNull();
   });
@@ -129,7 +130,7 @@ describe("Document Studio workspace chrome", () => {
     });
     expect(document.querySelector("[data-studio-toolbar-secondary]")).toBeTruthy();
     expect(document.querySelector("[data-studio-toolbar-more]")).toBeNull();
-    const undo = screen.getByRole("button", { name: "کالعدم" });
+    const undo = screen.getByRole("button", { name: "موٹا" });
     const event = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
     undo.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);

@@ -31,7 +31,7 @@ type ToolSpec = {
 
 function Icon({ children }: { children: ReactNode }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="#111" strokeWidth="1.2">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.35">
       {children}
     </svg>
   );
@@ -44,7 +44,7 @@ const TOOLS: ToolSpec[] = [
     enabled: true,
     icon: (
       <Icon>
-        <path d="M3 2 L3 13 L6.2 10.2 L8.4 14 L10.2 13.2 L8 9.4 L12 9.2 Z" fill="#111" stroke="none" />
+        <path d="M3 2 L3 13 L6.2 10.2 L8.4 14 L10.2 13.2 L8 9.4 L12 9.2 Z" fill="currentColor" stroke="none" />
       </Icon>
     ),
   },
@@ -54,7 +54,9 @@ const TOOLS: ToolSpec[] = [
     enabled: true,
     icon: (
       <Icon>
-        <path d="M4 3 H12 M8 3 V13 M5.5 13 H10.5" strokeWidth="1.3" />
+        <path d="M8.2 2.2 V7.2 M6.6 2.2 H9.8 M6.8 7.2 H9.6" strokeWidth="1.4" />
+        <path d="M6.2 8.4 C4.6 8.6 4 10 4.2 11.4 V13.2 H11.4 V10.4 C11.4 9.2 10.6 8.6 10 8.6" />
+        <path d="M6.2 8.6 V6.4 M10 8.6 V7" />
       </Icon>
     ),
   },
@@ -75,8 +77,7 @@ const TOOLS: ToolSpec[] = [
     enabled: false,
     icon: (
       <Icon>
-        <path d="M4 8c0-2 1.2-3.2 3-3.2 1.2 0 2 .5 2.6 1.4" />
-        <path d="M12 8c0 2-1.2 3.2-3 3.2-1.2 0-2-.5-2.6-1.4" />
+        <path d="M2.2 8 C2.2 5.6 4 4.2 6.2 4.2 C7.6 4.2 8.6 5 9.2 6.2 C9.8 5 10.8 4.2 12.2 4.2 C14.4 4.2 15.8 5.6 15.8 8 C15.8 10.4 14.4 11.8 12.2 11.8 C10.8 11.8 9.8 11 9.2 9.8 C8.6 11 7.6 11.8 6.2 11.8 C4 11.8 2.2 10.4 2.2 8 Z" strokeWidth="1.6" />
       </Icon>
     ),
   },
@@ -86,9 +87,9 @@ const TOOLS: ToolSpec[] = [
     enabled: false,
     icon: (
       <Icon>
-        <path d="M4 8c0-2 1.2-3.2 3-3.2" />
-        <path d="M12 8c0 2-1.2 3.2-3 3.2" />
-        <path d="M6 6 L10 10 M10 6 L6 10" />
+        <path d="M2 6.2 H5.2 A1.8 1.8 0 1 1 5.2 9.8 H2" />
+        <path d="M14 6.2 H10.8 A1.8 1.8 0 1 0 10.8 9.8 H14" />
+        <path d="M7.2 8 H8.8" strokeDasharray="0.8 0.8" />
       </Icon>
     ),
   },
@@ -98,8 +99,8 @@ const TOOLS: ToolSpec[] = [
     enabled: true,
     icon: (
       <Icon>
-        <rect x="2.5" y="3" width="11" height="10" />
-        <path d="M3 11 L6.5 7.5 L9 10 L11 8 L13 11" />
+        <rect x="2.2" y="2.2" width="11.6" height="11.6" />
+        <text x="8" y="11.2" textAnchor="middle" fontSize="8" stroke="none" fill="currentColor" fontFamily="Tahoma, sans-serif">ع</text>
       </Icon>
     ),
   },
@@ -109,8 +110,8 @@ const TOOLS: ToolSpec[] = [
     enabled: false,
     icon: (
       <Icon>
-        <rect x="2.5" y="3" width="11" height="10" strokeDasharray="1.4 1.2" />
-        <path d="M5 8 H11 M8 5 V11" />
+        <rect x="2.2" y="2.2" width="11.6" height="11.6" strokeDasharray="1.2 1.1" />
+        <text x="8" y="11.2" textAnchor="middle" fontSize="8" stroke="none" fill="currentColor" fontFamily="Tahoma, sans-serif">ع</text>
       </Icon>
     ),
   },
@@ -193,28 +194,8 @@ const TOOLS: ToolSpec[] = [
     enabled: false,
     icon: (
       <Icon>
-        <path d="M3 4 L13 12 M13 4 L3 12" />
-      </Icon>
-    ),
-  },
-  {
-    id: "zoom",
-    label: "Zoom",
-    enabled: true,
-    icon: (
-      <Icon>
-        <circle cx="7" cy="7" r="3.4" />
-        <path d="M9.6 9.6 L13 13" />
-      </Icon>
-    ),
-  },
-  {
-    id: "hand",
-    label: "Hand",
-    enabled: true,
-    icon: (
-      <Icon>
-        <path d="M6 8 V4.5 M8.2 8 V3.6 M10.4 8.2 V5 M6 8 C5 8 4 9 4 11.2 V12.2 H11.5 V9.2 C11.5 8.2 10.8 7.6 10.4 7.6" />
+        <path d="M4 2.2 H12 L8.2 8 L12 13.8 H4 L7.8 8 Z" />
+        <path d="M6.2 8 H9.8" />
       </Icon>
     ),
   },
@@ -241,8 +222,9 @@ export function InPageToolPalette({
       role="toolbar"
       aria-label="Tools"
     >
-      {TOOLS.map((item) => {
+      {TOOLS.map((item, index) => {
         const active = item.enabled && tool === item.id;
+        const gapAfter = index === 4 || index === 6 || index === 9 || index === 12;
         return (
           <button
             key={item.id}
@@ -254,19 +236,22 @@ export function InPageToolPalette({
             data-studio-tool-button={item.id}
             data-studio-tool-enabled={item.enabled ? "true" : "false"}
             onClick={() => onTool(item.id)}
-            className="grid shrink-0 place-items-center p-0 disabled:opacity-100"
+            className="grid shrink-0 place-items-center p-0"
             style={{
-              width: 24,
+              width: 27,
               height: 22,
-              marginTop: 1,
-              background: active ? "#d4d0c8" : "#f0f0f0",
-              borderStyle: "solid",
-              borderWidth: 1,
-              borderColor: active ? "#808080 #ffffff #ffffff #808080" : "#ffffff #808080 #808080 #ffffff",
-              boxShadow: active ? "inset 1px 1px 0 #808080" : "none",
+              marginLeft: 2,
+              marginBottom: gapAfter ? 2 : 0,
+              color: item.enabled ? "#111" : "#555",
+              opacity: item.enabled ? 1 : 0.75,
+              background: active ? "#d6d6d6" : "#f0f0f0",
+              border: "none",
+              boxShadow: active
+                ? "inset 1px 1px 0 #646464, inset 2px 2px 0 #a0a0a0, inset -1px -1px 0 #fff"
+                : "inset 1px 1px 0 #fff, inset -1px -1px 0 #646464, inset -2px -2px 0 #a0a0a0",
             }}
           >
-            <span style={{ opacity: item.enabled ? 1 : 0.45, lineHeight: 0 }}>{item.icon}</span>
+            <span style={{ lineHeight: 0 }}>{item.icon}</span>
           </button>
         );
       })}

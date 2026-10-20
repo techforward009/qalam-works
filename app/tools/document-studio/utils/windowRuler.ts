@@ -13,19 +13,18 @@ export interface WindowRulerTick {
 export const INPAGE_TOOLBOX_PX = 32;
 export const INPAGE_RULER_BAR_PX = 16;
 export const INPAGE_VRULER_PX = 16;
+/** Classic scrollbar reserved so Fit width keeps the page edge on screen. */
+export const INPAGE_VSCROLL_PX = 17;
+export const INPAGE_HSCROLL_PX = 18;
 /** White between the horizontal ruler and the page top. Measured at 4px on the InPage screenshot. */
 export const PASTEBOARD_TOP_PX = 4;
 /** Dashed guides sit 119px outside the page at 100% (measured on the 1920px screenshot). */
 export const PASTEBOARD_GUIDE_PX = 119;
 
-const TICK_MAJOR_MM = 10;
-const TICK_MINOR_MM = 5;
-const LABEL_EVERY_MM = 20;
-
 /**
  * Ticks across a ruler longer than the page.
- * `originPx` is where 0 lies. `positiveDirection` -1 means millimetres increase
- * toward the left (InPage RTL: 0 on the page's right edge).
+ * Every 2mm is 2px, every 10mm is 4px, every 20mm is 9px and labelled.
+ * `positiveDirection` -1 means millimetres increase toward the left.
  */
 export function calculateWindowRulerTicks(args: {
   lengthPx: number;
@@ -36,21 +35,20 @@ export function calculateWindowRulerTicks(args: {
   const { lengthPx, originPx, pxPerMm, positiveDirection } = args;
   if (!(lengthPx > 0) || !(pxPerMm > 0.25)) return [];
   const mmAt = (x: number) => ((x - originPx) / pxPerMm) * positiveDirection;
-  const startMm = Math.floor(Math.min(mmAt(0), mmAt(lengthPx)) - 1);
-  const endMm = Math.ceil(Math.max(mmAt(0), mmAt(lengthPx)) + 1);
+  const lo = Math.min(mmAt(0), mmAt(lengthPx)) - 1;
+  const hi = Math.max(mmAt(0), mmAt(lengthPx)) + 1;
   const ticks: WindowRulerTick[] = [];
-  const micro = pxPerMm >= 2.2;
-  for (let mm = startMm; mm <= endMm; mm++) {
+  const start = Math.floor(lo / 2) * 2;
+  const end = Math.ceil(hi / 2) * 2;
+  for (let mm = start; mm <= end; mm += 2) {
     const offsetPx = originPx + (mm / positiveDirection) * pxPerMm;
     if (offsetPx < -0.5 || offsetPx > lengthPx + 0.5) continue;
-    const major = mm % TICK_MAJOR_MM === 0;
-    const minor = mm % TICK_MINOR_MM === 0;
-    if (!major && !minor && !micro) continue;
-    const labelled = mm % LABEL_EVERY_MM === 0;
+    const labelled = mm % 20 === 0;
+    const ten = mm % 10 === 0;
     ticks.push({
       offsetPx,
       mm,
-      kind: major ? "major" : minor ? "minor" : "micro",
+      kind: labelled ? "major" : ten ? "minor" : "micro",
       label: labelled ? String(mm) : undefined,
     });
   }

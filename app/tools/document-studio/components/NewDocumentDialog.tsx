@@ -48,6 +48,7 @@ export function settingsFromNewDocument(draft: NewDocumentDraft): DocumentStudio
   const rtl = draft.direction === "rtl";
   return {
     ...base,
+    typography: { ...base.typography, defaultRtlFontId: "jameel-noori-nastaleeq" },
     page: {
       size: draft.size,
       orientation: draft.orientation,
@@ -145,9 +146,41 @@ function saveDefaultDraft(draft: NewDocumentDraft) {
   }
 }
 
-const fieldCls = "h-[18px] w-[62px] shrink-0 border border-[#7a7a7a] bg-white px-0.5 text-[11px] leading-none text-black";
-const labelCls = "text-[11px] leading-none text-black";
-const btnCls = "h-[20px] min-w-[52px] border border-[#6a6a6a] bg-[#efefef] px-1 text-[11px] leading-none text-black shadow-[inset_1px_1px_0_#fff,inset_-1px_-1px_0_#8a8a8a] hover:bg-[#e4e4e4]";
+const fieldCls = "box-border h-[18px] w-[62px] shrink-0 border-0 bg-white px-0.5 text-[11px] leading-[16px] text-black";
+const fieldStyle = { boxShadow: "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff", fontFamily: "inherit" } as const;
+const labelCls = "whitespace-nowrap text-[11px] leading-none text-black";
+const groupCls = "min-w-0 border border-[#808080] px-0.5 pb-0.5 pt-0";
+const groupStyle = { boxShadow: "inset 1px 1px 0 #fff", margin: 0 } as const;
+const selectStyle = {
+  ...fieldStyle,
+  appearance: "none" as const,
+  backgroundColor: "#fff",
+  backgroundImage: "linear-gradient(45deg, transparent 50%, #000 50%), linear-gradient(135deg, #000 50%, transparent 50%)",
+  backgroundPosition: "calc(100% - 8px) 7px, calc(100% - 4px) 7px",
+  backgroundSize: "4px 4px, 4px 4px",
+  backgroundRepeat: "no-repeat",
+  padding: "0 12px 0 2px",
+};
+const btnStyle = {
+  width: 59,
+  height: 20,
+  border: "1px solid #003c74",
+  background: "#f0f0f0",
+  boxShadow: "inset 1px 1px 0 #fff, inset -1px -1px 0 #696969",
+  fontSize: 11,
+  lineHeight: "18px",
+  color: "#000",
+  padding: 0,
+} as const;
+const checkStyle = { width: 13, height: 13, margin: 0, accentColor: "#000" } as const;
+const radioStyle = { width: 12, height: 12, margin: 0, accentColor: "#000" } as const;
+
+function nudge(value: string, delta: number, min: number, max: number): string {
+  const current = Number(String(value).replace(/mm/gi, "").trim());
+  const base = Number.isFinite(current) ? current : min;
+  const next = Math.min(max, Math.max(min, Math.round((base + delta) * 100) / 100));
+  return String(next);
+}
 
 export default function NewDocumentDialog({
   onCancel,
@@ -166,16 +199,20 @@ export default function NewDocumentDialog({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/20 p-3" data-studio-new-document="true">
+    <div className="fixed inset-0 z-[80] grid place-items-center" style={{ background: "#ababab" }} data-studio-new-document="true">
       <form
         className="text-black"
         dir="ltr"
         style={{
-          width: "max-content",
+          width: 420,
+          height: 218,
+          boxSizing: "border-box",
           background: "#f0f0f0",
-          border: "1px solid #6d6d6d",
-          boxShadow: "3px 3px 0 rgba(0,0,0,0.35)",
-          fontFamily: "Tahoma, 'Segoe UI', sans-serif",
+          border: "1px solid #003c74",
+          boxShadow: "1px 1px 0 #003c74",
+          fontFamily: '"Liberation Sans", "Segoe UI", Tahoma, sans-serif',
+          display: "flex",
+          flexDirection: "column",
         }}
         onSubmit={(event) => {
           event.preventDefault();
@@ -183,17 +220,26 @@ export default function NewDocumentDialog({
         }}
       >
         <div
-          className="flex h-[22px] items-center px-2 text-[11px] font-bold text-black"
-          style={{ background: "linear-gradient(180deg, #e7eef6 0%, #b7c9db 42%, #8ea6bd 100%)" }}
+          className="flex items-center px-2"
+          style={{ height: 28, flex: "0 0 28px", background: "linear-gradient(#f3f7fc, #c5d6ee)", fontSize: 12, fontWeight: 400, color: "#000" }}
           data-studio-new-document-title="true"
         >
           New Document
         </div>
-        <div className="flex items-start gap-1 p-1.5">
-          <fieldset className="w-[150px] border border-[#b5b5b5] px-1.5 pb-1.5 pt-1" style={{ boxShadow: "inset 1px 1px 0 #fff" }}>
+        <div
+          className="grid min-h-0 flex-1"
+          style={{
+            gridTemplateColumns: "112px 118px minmax(0, 1fr) 59px",
+            columnGap: 2,
+            padding: "2px 3px 3px",
+            alignItems: "start",
+          }}
+        >
+          <fieldset className={groupCls} style={{ ...groupStyle, gridColumn: 1, gridRow: "1 / span 2" }}>
             <legend className={labelCls}>Page</legend>
             <select
-              className="mb-1 h-[18px] w-full border border-[#7a7a7a] bg-white text-[11px]"
+              className="mb-0.5 box-border h-[18px] w-full text-[11px]"
+              style={selectStyle}
               aria-label="Page size"
               value={draft.size}
               onChange={(event) => set({ size: event.target.value as PageSizeId })}
@@ -204,90 +250,83 @@ export default function NewDocumentDialog({
             </select>
             <label className="mb-0.5 flex items-center justify-between gap-1">
               <span className={labelCls}>Width:</span>
-              <input className={fieldCls} value={`${dims.widthMm}mm`} readOnly aria-label="Width in millimetres" />
+              <input className={fieldCls} style={fieldStyle} value={`${dims.widthMm}mm`} readOnly aria-label="Width in millimetres" />
             </label>
-            <label className="mb-1 flex items-center justify-between gap-1">
+            <label className="mb-0.5 flex items-center justify-between gap-1">
               <span className={labelCls}>Height:</span>
-              <input className={fieldCls} value={`${dims.heightMm}mm`} readOnly aria-label="Height in millimetres" />
+              <input className={fieldCls} style={fieldStyle} value={`${dims.heightMm}mm`} readOnly aria-label="Height in millimetres" />
             </label>
-            <fieldset className="mb-1 border border-[#c8c8c8] px-1.5 py-1">
+            <fieldset className="mb-0.5 min-w-0 border border-[#b0b0b0] px-1 py-0.5" style={{ margin: 0 }}>
               <legend className={labelCls}>Orientation</legend>
               <label className={`flex items-center gap-1 ${labelCls}`}>
-                <input type="radio" name="orientation" checked={draft.orientation === "portrait"} onChange={() => set({ orientation: "portrait" })} />
+                <input style={radioStyle} type="radio" name="orientation" checked={draft.orientation === "portrait"} onChange={() => set({ orientation: "portrait" })} />
                 Portrait
               </label>
-              <label className={`flex items-center gap-1 ${labelCls}`}>
-                <input type="radio" name="orientation" checked={draft.orientation === "landscape"} onChange={() => set({ orientation: "landscape" })} />
+              <label className={`mt-0.5 flex items-center gap-1 ${labelCls}`}>
+                <input style={radioStyle} type="radio" name="orientation" checked={draft.orientation === "landscape"} onChange={() => set({ orientation: "landscape" })} />
                 Landscape
               </label>
             </fieldset>
             <label className="flex items-center justify-between gap-1">
               <span className={labelCls}>Pages:</span>
-              <input
-                className={fieldCls}
-                type="number"
-                min={1}
-                max={40}
-                aria-label="Pages"
-                value={draft.pages}
-                onChange={(event) => set({ pages: Number(event.target.value) })}
-              />
+              <span className="inline-flex">
+                <input className={fieldCls} style={{ ...fieldStyle, width: 40 }} type="number" min={1} max={40} aria-label="Pages" value={draft.pages} onChange={(event) => set({ pages: Number(event.target.value) })} />
+              </span>
             </label>
           </fieldset>
-
-          <div className="flex w-[132px] flex-col gap-1">
-            <fieldset className="border border-[#b5b5b5] px-1.5 pb-1.5 pt-1" style={{ boxShadow: "inset 1px 1px 0 #fff" }}>
-              <legend className={labelCls}>Margins</legend>
-              {([
-                ["left", "Left:"],
-                ["right", "Right:"],
-                ["top", "Top:"],
-                ["bottom", "Bottom:"],
-              ] as const).map(([key, caption]) => (
-                <label key={key} className="mb-0.5 flex items-center justify-between gap-1">
-                  <span className={labelCls}>{caption}</span>
+          <fieldset className={groupCls} style={{ ...groupStyle, gridColumn: 2, gridRow: 1 }}>
+            <legend className={labelCls}>Margins</legend>
+            {([
+              ["left", "Left:"],
+              ["right", "Right:"],
+              ["top", "Top:"],
+              ["bottom", "Bottom:"],
+            ] as const).map(([key, caption]) => (
+              <label key={key} className="mb-0.5 flex items-center justify-between gap-1">
+                <span className={labelCls}>{caption}</span>
+                <input
+                  className={fieldCls}
+                  style={fieldStyle}
+                  aria-label={`${key} margin`}
+                  value={`${draft[key]}mm`}
+                  onChange={(event) => {
+                    const next = Number(String(event.target.value).replace(/mm/gi, "").trim());
+                    if (Number.isFinite(next)) set({ [key]: next });
+                  }}
+                />
+              </label>
+            ))}
+          </fieldset>
+          <fieldset className={groupCls} style={{ ...groupStyle, gridColumn: 2, gridRow: 2 }} data-studio-direction="true">
+            <legend className={labelCls}>Direction</legend>
+            <label className={`flex items-center gap-1 ${labelCls}`}>
+              <input style={radioStyle} type="radio" name="direction" checked={draft.direction === "ltr"} onChange={() => set({ direction: "ltr" })} />
+              Left To Right
+            </label>
+            <label className={`mt-0.5 flex items-center gap-1 ${labelCls}`}>
+              <input style={radioStyle} type="radio" name="direction" checked={draft.direction === "rtl"} onChange={() => set({ direction: "rtl" })} />
+              Right To Left
+            </label>
+          </fieldset>
+          <div className="min-w-0" style={{ gridColumn: 3, gridRow: "1 / span 2" }}>
+            <fieldset className={groupCls} style={groupStyle}>
+              <legend className={labelCls}>Columns</legend>
+              <input
+                className="mb-0.5 box-border h-[18px] w-full bg-white px-1 text-[11px]"
+                style={fieldStyle}
+                type="number"
+                min={1}
+                max={4}
+                aria-label="Columns"
+                value={draft.columns}
+                onChange={(event) => set({ columns: Number(event.target.value) })}
+              />
+              <label className="flex items-center justify-between gap-1">
+                <span className={labelCls}>Gutter:</span>
+                <span className="inline-flex items-stretch">
                   <input
                     className={fieldCls}
-                    aria-label={`${key} margin`}
-                    value={`${draft[key]}mm`}
-                    onChange={(event) => {
-                      const next = Number(String(event.target.value).replace(/mm/gi, "").trim());
-                      if (Number.isFinite(next)) set({ [key]: next });
-                    }}
-                  />
-                </label>
-              ))}
-            </fieldset>
-            <fieldset className="border border-[#b5b5b5] px-1.5 pb-1 pt-1" style={{ boxShadow: "inset 1px 1px 0 #fff" }} data-studio-direction="true">
-              <legend className={labelCls}>Direction</legend>
-              <label className={`flex items-center gap-1 ${labelCls}`}>
-                <input type="radio" name="direction" checked={draft.direction === "ltr"} onChange={() => set({ direction: "ltr" })} />
-                Left To Right
-              </label>
-              <label className={`flex items-center gap-1 ${labelCls}`}>
-                <input type="radio" name="direction" checked={draft.direction === "rtl"} onChange={() => set({ direction: "rtl" })} />
-                Right To Left
-              </label>
-            </fieldset>
-          </div>
-
-          <div className="flex w-[168px] flex-col">
-            <div className="flex gap-1">
-              <fieldset className="w-[96px] shrink-0 border border-[#b5b5b5] px-1.5 pb-1.5 pt-1" style={{ boxShadow: "inset 1px 1px 0 #fff" }}>
-                <legend className={labelCls}>Columns</legend>
-                <input
-                  className="mb-0.5 h-[18px] w-full border border-[#7a7a7a] bg-white px-1 text-[11px]"
-                  type="number"
-                  min={1}
-                  max={4}
-                  aria-label="Columns"
-                  value={draft.columns}
-                  onChange={(event) => set({ columns: Number(event.target.value) })}
-                />
-                <label className="flex items-center justify-between gap-1">
-                  <span className={labelCls}>Gutter:</span>
-                  <input
-                    className="h-[18px] w-[58px] shrink-0 border border-[#7a7a7a] bg-white px-0.5 text-[11px]"
+                    style={{ ...fieldStyle, width: 58 }}
                     aria-label="Gutter"
                     value={`${draft.gutter}mm`}
                     onChange={(event) => {
@@ -295,48 +334,44 @@ export default function NewDocumentDialog({
                       if (Number.isFinite(next)) set({ gutter: next });
                     }}
                   />
-                </label>
-              </fieldset>
-              <div className="flex flex-col gap-1 pt-2">
-                <button type="submit" className={btnCls}>OK</button>
-                <button type="button" className={btnCls} onClick={onCancel}>Cancel</button>
-                <button
-                  type="button"
-                  className={btnCls}
-                  onClick={() => setHelpNote("A4, 12.7 mm margins, one column, gutter 4.23 mm, right to left. Saved only in this browser.")}
-                >
-                  Help
-                </button>
-              </div>
-            </div>
+                  <span className="flex w-[11px] shrink-0 flex-col">
+                    <button type="button" className="h-[9px] border border-[#808080] bg-[#f0f0f0] p-0 text-[7px] leading-none" aria-label="Increase gutter" onClick={() => set({ gutter: Number(nudge(String(draft.gutter), 0.01, 0, 50)) })}>▴</button>
+                    <button type="button" className="h-[9px] border border-[#808080] bg-[#f0f0f0] p-0 text-[7px] leading-none" aria-label="Decrease gutter" onClick={() => set({ gutter: Number(nudge(String(draft.gutter), -0.01, 0, 50)) })}>▾</button>
+                  </span>
+                </span>
+              </label>
+            </fieldset>
             <label className={`mt-1 flex items-center gap-1 ${labelCls}`}>
-              <input type="checkbox" checked={draft.automaticTextBox} onChange={(event) => set({ automaticTextBox: event.target.checked })} />
+              <input style={checkStyle} type="checkbox" checked={draft.automaticTextBox} onChange={(event) => set({ automaticTextBox: event.target.checked })} />
               Automatic Text Box
             </label>
-            <label className={`flex items-center gap-1 ${labelCls}`}>
-              <input
-                type="checkbox"
-                checked={draft.doubleSided}
-                onChange={(event) => set({ doubleSided: event.target.checked, facingPages: event.target.checked ? draft.facingPages : false })}
-              />
+            <label className={`mt-0.5 flex items-center gap-1 ${labelCls}`}>
+              <input style={checkStyle} type="checkbox" checked={draft.doubleSided} onChange={(event) => set({ doubleSided: event.target.checked, facingPages: event.target.checked ? draft.facingPages : false })} />
               Double Sided
             </label>
-            <label className={`flex items-center gap-1 ${labelCls} ${draft.doubleSided ? "" : "text-[#8a8a8a]"}`}>
-              <input
-                type="checkbox"
-                checked={draft.facingPages}
-                disabled={!draft.doubleSided}
-                onChange={(event) => set({ facingPages: event.target.checked })}
-              />
+            <label className={`mt-0.5 flex items-center gap-1 ${labelCls} ${draft.doubleSided ? "" : "text-[#808080]"}`}>
+              <input style={checkStyle} type="checkbox" checked={draft.facingPages} disabled={!draft.doubleSided} onChange={(event) => set({ facingPages: event.target.checked })} />
               Facing Pages
             </label>
-            <button type="button" className={`${btnCls} mt-1 self-end`} onClick={() => saveDefaultDraft(draft)}>
+            <button
+              type="button"
+              className="mt-1"
+              style={{ ...btnStyle, width: "auto", padding: "0 6px", whiteSpace: "nowrap" }}
+              onClick={() => saveDefaultDraft(draft)}
+            >
               Save as Default
             </button>
           </div>
+          <div className="flex flex-col gap-1 pt-2" style={{ gridColumn: 4, gridRow: 1 }}>
+            <button type="submit" style={{ ...btnStyle, outline: "1px dotted #000", outlineOffset: -3 }} data-studio-default-button="true">OK</button>
+            <button type="button" style={btnStyle} onClick={onCancel}>Cancel</button>
+            <button type="button" style={btnStyle} onClick={() => setHelpNote("A4, 12.7 mm margins, one column, gutter 4.23 mm, right to left. Saved only in this browser.")}>Help</button>
+          </div>
         </div>
-        {helpNote ? <p className="px-2 pb-2 text-[11px] leading-snug text-[#333]" data-studio-new-document-help="true">{helpNote}</p> : null}
       </form>
+      {helpNote ? (
+        <p className="absolute bottom-4 left-1/2 max-w-md -translate-x-1/2 bg-[#ffffe1] px-2 py-1 text-[11px] text-black shadow" data-studio-new-document-help="true">{helpNote}</p>
+      ) : null}
     </div>
   );
 }

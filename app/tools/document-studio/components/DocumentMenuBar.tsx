@@ -221,6 +221,7 @@ export default function DocumentMenuBar({
 }) {
   const [openState, setOpenState] = useState<MenuOpenState>(CLOSED_MENU_STATE);
   const [inlineSubmenus, setInlineSubmenus] = useState(false);
+  const [pinMenus, setPinMenus] = useState(false);
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const [submenuStyle, setSubmenuStyle] = useState<React.CSSProperties>({});
   const rootRef = useRef<HTMLDivElement>(null);
@@ -237,6 +238,15 @@ export default function DocumentMenuBar({
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(min-width: 721px)");
+    const apply = () => setPinMenus(mq.matches && !isUr);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [isUr]);
 
   const updatePosition = () => {
     const id = openState.menuId;
@@ -391,87 +401,122 @@ export default function DocumentMenuBar({
         )
       : null;
 
+  const menuLeft = [31, 63, 96, 136, 187, 231, 283, 342];
+
   return (
-    <div
-      ref={rootRef}
-      className="flex h-[22px] w-full max-w-full min-w-0 items-center gap-0 overflow-x-auto overscroll-x-contain whitespace-nowrap px-1 [scrollbar-width:thin] touch-pan-x"
-      role="menubar"
-      aria-label={isUr ? "دستاویز مینو" : "Document menu"}
-      data-studio-menubar="true"
-      tabIndex={0}
-      title={isUr ? "باقی مینو دیکھنے کے لیے دائیں بائیں سرکائیں" : "Swipe or scroll sideways for more menus"}
-      data-open-menu={openState.menuId ?? ""}
-      onKeyDown={(event) => {
-        const current = (event.target as HTMLElement).getAttribute("data-menu-root") as MenuId | null;
-        if (!current) return;
-        const ids = DOCUMENT_MENU_BAR.map((menu) => menu.id);
-        const index = ids.indexOf(current);
-        if (index < 0) return;
-        const forward = isUr ? "ArrowLeft" : "ArrowRight";
-        const backward = isUr ? "ArrowRight" : "ArrowLeft";
-        if (event.key === forward || event.key === backward) {
-          event.preventDefault();
-          const delta = event.key === forward ? 1 : -1;
-          const next = ids[(index + delta + ids.length) % ids.length];
-          triggerRefs.current[next]?.focus();
-          if (openState.menuId) setOpenState({ menuId: next, submenuId: null });
-        } else if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          focusMenuOnOpen.current = true;
-          setOpenState({ menuId: current, submenuId: null });
-        } else if (event.key === "Home") {
-          event.preventDefault();
-          triggerRefs.current[ids[0]]?.focus();
-        } else if (event.key === "End") {
-          event.preventDefault();
-          triggerRefs.current[ids[ids.length - 1]]?.focus();
-        }
-      }}
-    >
-      {showHome ? (
-        <Link
-          href="/"
-          data-studio-home="true"
-          data-latin-control="true"
-          className="me-1 inline-flex h-[22px] shrink-0 items-center gap-1 rounded-none px-1 text-[12px] font-semibold leading-none text-[#1A3A2A] hover:bg-[#F3F7F2]"
-        >
-          <span className="grid h-4 w-4 place-items-center rounded-none bg-[#1A3A2A] text-[9px] font-bold leading-none text-white" aria-hidden>
-            Q
-          </span>
-          <span className="hidden sm:inline">Qalam Works</span>
-          <span className="sm:hidden">{isUr ? "واپس" : "Back"}</span>
-        </Link>
-      ) : null}
-      {showHome ? <StudioLanguageSwitch /> : null}
-      {DOCUMENT_MENU_BAR.map((menu) => {
-        const open = openState.menuId === menu.id;
-        return (
-          <div key={menu.id} className="relative shrink-0">
-            <button
-              type="button"
-              role="menuitem"
-              aria-haspopup="true"
-              aria-expanded={open}
-              data-menu-root={menu.id}
-              ref={(el) => {
-                triggerRefs.current[menu.id] = el;
-              }}
-              className={`inline-flex h-[22px] items-center rounded-none px-2 text-[12px] font-medium leading-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#B8935A] ${
-                open ? "bg-[#EAF2EB] text-[#1A3A2A]" : "text-[#1A3A2A]/80 hover:bg-[#F3F7F2]"
-              }`}
-              onClick={() => setOpenState((prev) => nextOpenMenu(prev, menu.id))}
-              onPointerEnter={(e) => {
-                if (e.pointerType !== "mouse") return;
-                if (openState.menuId) setOpenState({ menuId: menu.id, submenuId: null });
-              }}
-            >
-              {menuLabel(menu, isUr)}
-            </button>
-          </div>
-        );
-      })}
-      {dropdown}
-      {endSlot}
+    <div data-studio-caption="true" style={{ background: "#f0f0f0", fontFamily: "Segoe UI, Tahoma, sans-serif", color: "#000" }}>
+      <div
+        data-studio-titlebar="true"
+        className="flex items-center"
+        style={{ height: 22, padding: "0 6px", fontSize: 12, lineHeight: "22px", borderBottom: "1px solid #d0d0d0" }}
+      >
+        {showHome ? (
+          <Link
+            href="/"
+            data-studio-home="true"
+            data-latin-control="true"
+            aria-label="Qalam Works"
+            className="me-1 inline-flex h-4 w-4 shrink-0 items-center justify-center text-[#000]"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+              <path d="M2 7 H12 M7 2 V12" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+          </Link>
+        ) : null}
+        <span className="shrink-0" data-latin-control="true">Qalam Page - </span>
+        <div className="flex min-w-0 flex-1 items-center">{endSlot}</div>
+        {showHome ? <StudioLanguageSwitch /> : null}
+      </div>
+      <div
+        ref={rootRef}
+        className="relative flex w-full max-w-full min-w-0 items-center gap-0 overflow-x-auto overscroll-x-contain whitespace-nowrap [scrollbar-width:thin] touch-pan-x"
+        role="menubar"
+        aria-label={isUr ? "دستاویز مینو" : "Document menu"}
+        data-studio-menubar="true"
+        data-studio-menu-pinned={pinMenus ? "true" : "false"}
+        tabIndex={0}
+        title={isUr ? "باقی مینو دیکھنے کے لیے دائیں بائیں سرکائیں" : "Swipe or scroll sideways for more menus"}
+        data-open-menu={openState.menuId ?? ""}
+        style={{
+          height: pinMenus ? 19 : "auto",
+          boxSizing: "border-box",
+          flexWrap: pinMenus ? "nowrap" : "wrap",
+          overflow: pinMenus ? "hidden" : "visible",
+          whiteSpace: pinMenus ? "nowrap" : "normal",
+          background: "linear-gradient(#fefeff, #e1e6f6)",
+          borderBottom: "1px solid #b6bccc",
+          fontFamily: "Segoe UI, Tahoma, sans-serif",
+          fontSize: 12,
+          color: "#000",
+        }}
+        onKeyDown={(event) => {
+          const current = (event.target as HTMLElement).getAttribute("data-menu-root") as MenuId | null;
+          if (!current) return;
+          const ids = DOCUMENT_MENU_BAR.map((menu) => menu.id);
+          const index = ids.indexOf(current);
+          if (index < 0) return;
+          const forward = isUr ? "ArrowLeft" : "ArrowRight";
+          const backward = isUr ? "ArrowRight" : "ArrowLeft";
+          if (event.key === forward || event.key === backward) {
+            event.preventDefault();
+            const delta = event.key === forward ? 1 : -1;
+            const next = ids[(index + delta + ids.length) % ids.length];
+            triggerRefs.current[next]?.focus();
+            if (openState.menuId) setOpenState({ menuId: next, submenuId: null });
+          } else if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            focusMenuOnOpen.current = true;
+            setOpenState({ menuId: current, submenuId: null });
+          } else if (event.key === "Home") {
+            event.preventDefault();
+            triggerRefs.current[ids[0]]?.focus();
+          } else if (event.key === "End") {
+            event.preventDefault();
+            triggerRefs.current[ids[ids.length - 1]]?.focus();
+          }
+        }}
+      >
+        <span aria-hidden="true" data-studio-menu-doc-icon="true" style={{ position: pinMenus ? "absolute" : "relative", left: pinMenus ? 7 : 4, top: pinMenus ? 1 : undefined, width: 16, height: 16, display: "inline-block" }}>
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <rect x="3" y="1" width="9" height="13" fill="#fff" stroke="#000" />
+            <path d="M5 5 H10 M5 8 H10 M5 11 H8" stroke="#000" />
+          </svg>
+        </span>
+        {DOCUMENT_MENU_BAR.map((menu, index) => {
+          const open = openState.menuId === menu.id;
+          return (
+            <div key={menu.id} className={pinMenus ? "" : "relative shrink-0"} style={pinMenus ? { position: "absolute", left: menuLeft[index] ?? 0, top: 0 } : undefined}>
+              <button
+                type="button"
+                role="menuitem"
+                aria-haspopup="true"
+                aria-expanded={open}
+                data-menu-root={menu.id}
+                ref={(el) => {
+                  triggerRefs.current[menu.id] = el;
+                }}
+                className="inline-flex items-center rounded-none px-0 leading-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#000]"
+                style={{
+                  height: 19,
+                  padding: pinMenus ? 0 : "0 8px",
+                  fontSize: 12,
+                  fontWeight: 400,
+                  color: "#000",
+                  background: open ? "#d6dff2" : "transparent",
+                }}
+                onClick={() => setOpenState((prev) => nextOpenMenu(prev, menu.id))}
+                onPointerEnter={(e) => {
+                  if (e.pointerType !== "mouse") return;
+                  if (openState.menuId) setOpenState({ menuId: menu.id, submenuId: null });
+                }}
+              >
+                {menuLabel(menu, isUr)}
+              </button>
+            </div>
+          );
+        })}
+        {dropdown}
+      </div>
     </div>
   );
 }

@@ -126,14 +126,15 @@ describe("document shell helpers", () => {
 });
 
 describe("document menus", () => {
-  it("exposes File Edit View Insert Format Tools Help", () => {
+  it("exposes File Edit View Format Insert Utilities Window Help", () => {
     expect(DOCUMENT_MENU_BAR.map((m) => m.id)).toEqual([
       "file",
       "edit",
       "view",
-      "insert",
       "format",
+      "insert",
       "tools",
+      "window",
       "help",
     ]);
   });
@@ -299,7 +300,7 @@ describe("document menus", () => {
     const subIds = (format?.items ?? [])
       .filter((item) => item.type === "submenu")
       .map((item) => item.id);
-    expect(subIds).toEqual(["format.text", "format.style", "format.align", "format.lists", "format.spacing"]);
+    expect(subIds).toEqual(["format.text", "format.style", "format.align", "format.lists", "format.spacing", "format.image"]);
   });
 
   it("places nested submenus beside the parent and flips when space is tight", () => {

@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import type { PhysicalMarginEdge } from "../utils/pageLayout";
 import { calculateWindowRulerTicks, INPAGE_RULER_BAR_PX, type WindowTickKind } from "../utils/windowRuler";
 
-const TICK_PX: Record<WindowTickKind, number> = { major: 8, minor: 4, micro: 2 };
+const TICK_PX: Record<WindowTickKind, number> = { major: 9, minor: 4, micro: 2 };
 
 /**
  * InPage window ruler. Numbers are millimetres and continue past the page.
@@ -84,6 +84,9 @@ export function WindowRuler({
         height: vertical ? Math.max(1, lengthPx) : INPAGE_RULER_BAR_PX,
         borderBottom: vertical ? undefined : "2px solid #000",
         borderRight: vertical ? "2px solid #000" : undefined,
+        background: vertical
+          ? "#fff"
+          : "linear-gradient(#a0a0a0 0 1px, #696969 1px 2px, #fff 2px)",
         fontFamily: "Tahoma, 'Segoe UI', sans-serif",
       }}
       data-studio-ruler={vertical ? undefined : "true"}
@@ -118,20 +121,26 @@ export function WindowRuler({
       ))}
       {ticks.map((tick, index) => {
         if (!tick.label) return null;
-        const inward = tick.label === "0" ? (originName === "right" ? -2 : 2) : 0;
         return (
           <span
             key={`label-${tick.mm}-${index}`}
             className="pointer-events-none absolute whitespace-nowrap text-black"
             style={
               vertical
-                ? { top: tick.offsetPx - 4, left: 0, width: 12, fontSize: 7, lineHeight: "8px", textAlign: "right" }
+                ? {
+                    top: tick.offsetPx,
+                    right: 3,
+                    fontSize: 7,
+                    lineHeight: "8px",
+                    transform: "rotate(-90deg)",
+                    transformOrigin: "right top",
+                  }
                 : {
-                    left: tick.offsetPx,
-                    bottom: TICK_PX.major,
-                    fontSize: 9,
-                    lineHeight: "9px",
-                    transform: `translateX(calc(-50% + ${inward}px))`,
+                    left: tick.offsetPx - 2,
+                    top: 1,
+                    fontSize: 7,
+                    lineHeight: "8px",
+                    transform: "translateX(-100%)",
                   }
             }
           >

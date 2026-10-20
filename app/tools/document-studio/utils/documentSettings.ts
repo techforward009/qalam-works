@@ -125,6 +125,19 @@ export function withStudioOpeningMargins(settings: DocumentStudioSettings): Docu
   };
 }
 
+/**
+ * Studio documents open on Jameel Noori Nastaleeq (InPage's Urdu face).
+ * Publishing presets keep their own face. Mehr stays in the font menu.
+ */
+export function withStudioUrduFont(settings: DocumentStudioSettings): DocumentStudioSettings {
+  const opened = withStudioOpeningMargins(settings);
+  if (opened.presetId !== "default" || opened.typography.defaultRtlFontId !== "mehr-nastaliq-web") return opened;
+  return {
+    ...opened,
+    typography: { ...opened.typography, defaultRtlFontId: "jameel-noori-nastaleeq" },
+  };
+}
+
 // Batch 16A correction (item 6) — canonical validators for the new
 // paragraph/heading schema attrs, reused both in the TipTap schema's
 // parseHTML (so a corrupted/imported document can't inject an extreme

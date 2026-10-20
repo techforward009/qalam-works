@@ -69,8 +69,8 @@ export default function DocumentStudioShell({
         data-studio-sticky-chrome="true"
       >
         {topBar ? <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="top">{topBar}</div> : null}
-        <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="menu">{menuBar}</div>
-        <div className="border-b border-[#1A3A2A]/10 bg-[#FAF8F3]" data-studio-chrome="toolbar">{toolbar}</div>
+        <div data-studio-chrome="menu">{menuBar}</div>
+        <div data-studio-chrome="toolbar" style={{ background: "#f0f0f0", boxShadow: "inset 0 -1px 0 #696969, inset 0 -2px 0 #a0a0a0" }}>{toolbar}</div>
         {findBar ? <div className="border-b border-[#1A3A2A]/10 bg-white px-3 py-2">{findBar}</div> : null}
       </div>
 
@@ -110,7 +110,7 @@ export default function DocumentStudioShell({
         )}
       </div>
 
-      <div className="studio-no-print shrink-0 border-t border-[#1A3A2A]/10 bg-white" data-studio-chrome="status">{statusBar}</div>
+      <div className="studio-no-print shrink-0" data-studio-chrome="status" style={{ background: "#f0f0f0" }}>{statusBar}</div>
       <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style>
       <style jsx global>{`
         @media print {
