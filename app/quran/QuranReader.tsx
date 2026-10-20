@@ -1116,6 +1116,8 @@ export default function QuranReader({
                   selectedSurah={surah}
                   selectedAyah={ayah}
                   scale={scale}
+                  quranFontFamily={editionId === "digital-khatt"
+                    ? QURAN_FONT_STACK : '"Digital Khatt IndoPak Book", "Noto Naskh Arabic", serif'}
                 />
               ) : activeReaderView === "transliteration" ? (
                 <QuranTransliterationPage

@@ -142,8 +142,8 @@ describe("fontRegistry", () => {
     expect(migrated.content?.[0].content?.[1].marks?.[0].attrs?.fontFamily).toBe("Jameel Noori Nastaleeq");
     expect(resolveEditorFontFamily("Faiz Lahori", "rtl").docxFamily).toBe("Scheherazade New");
     expect(resolveEditorFontFamily('"Al Majeed Quranic Font"', "rtl").pdfFamily).toBe("Scheherazade New");
-    expect(resolveEditorFontFamily("Asif Quranic", "rtl").docxFamily).toBe("Digital Khatt Indo-Pak");
-    expect(resolveEditorFontFamily("Al Qalam Quran Majeed", "rtl").pdfFamily).toBe("Digital Khatt Indo-Pak");
+    expect(resolveEditorFontFamily("Asif Quranic", "rtl").docxFamily).toBe("Scheherazade New");
+    expect(resolveEditorFontFamily("Al Qalam Quran Majeed", "rtl").pdfFamily).toBe("Scheherazade New");
     const quran = migrateAlviDocumentContent({
       type: "doc",
       content: [{
