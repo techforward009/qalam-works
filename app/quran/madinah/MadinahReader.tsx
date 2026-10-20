@@ -469,9 +469,8 @@ export default function MadinahReader({
               </div>
 
             </article>
-              <QuranPageButtons previous={copy.previousPage} next={copy.nextPage} disablePrevious={pageNumber <= 1} disableNext={pageNumber >= 604} onPrevious={() => navigatePage(pageNumber - 1)} onNext={() => navigatePage(pageNumber + 1)} />
-
             </div>
+              <QuranPageButtons previous={copy.previousPage} next={copy.nextPage} disablePrevious={pageNumber <= 1} disableNext={pageNumber >= 604} onPrevious={() => navigatePage(pageNumber - 1)} onNext={() => navigatePage(pageNumber + 1)} />
             <div className={styles.credit}>
               {copy.madinahCredit}
             </div>
