@@ -57,9 +57,9 @@
 /* Keep the shared Tanzil sidebar and Ahmed ornamental page readable. */
 .reader .page {padding:36px 58px;border-radius:0}
 .reader .pageLines {padding-bottom:12px}
-.reader .line {font-size:calc((100cqi / 16) * var(--mushaf-scale,1));min-height:1.5em}
+.reader .line {font-size:calc((100cqi / 21) * var(--mushaf-scale,1));min-height:1.5em}
 .reader .surahLine {font-size:1.35rem;justify-content:center;min-height:55px}
 .reader .sidebar {gap:8px}
 .reader .credit {margin-top:2px}
 .reader .page :global(.quran-outer-page-nav) {margin-top:10px}
-@media(max-width:600px){.reader .page{border-radius:0;padding:24px 20px}.reader .line{font-size:calc((100cqi / 10.8) * var(--mushaf-scale,1));min-height:1.65em}.reader .surahLine{font-size:1.18rem}}
+@media(max-width:600px){.reader .page{border-radius:0;padding:24px 20px}.reader .line{font-size:calc((100cqi / 12.5) * var(--mushaf-scale,1));min-height:1.65em}.reader .surahLine{font-size:1.18rem}}
