@@ -4,7 +4,7 @@
 .eyebrow { font-weight:700; color:var(--green); font-size:15px; }
 .subtle { font-size:12px; color:#746e62; }
 .link { color:var(--green); font-size:13px; text-decoration:none; }
-.grid { display:grid; grid-template-columns:200px minmax(0,1fr); gap:18px; align-items:start; }
+.grid { display:grid; grid-template-columns:200px minmax(0,1fr); gap:16px; align-items:start; }
 .sidebar { background:transparent; border:0; border-radius:0; padding:0; position:sticky; top:12px; }
 .label { display:block; font-size:11px; color:#625d53; }
 .labelBlock { display:block; margin-top:11px; padding-top:11px; border-top:1px solid #ebe5d8; font-size:11px; color:#625d53; }
@@ -67,8 +67,6 @@
 /* Align sidebar with the Ahmed Grafics master, including Latin UI fonts. */
 .reader .sidebar[lang="en"] {font-family:"Segoe UI",Tahoma,Arial,sans-serif}
 .reader .sidebar[lang="ur"] {font-family:var(--font-naskh),"Noto Naskh Arabic",serif}
-.reader .sidebar .input {min-height:26px;border-radius:3px;padding:3px 6px;margin-top:3px;font-family:inherit}
-.reader .sidebar .label {font-size:12px;line-height:1.35}
 .reader .sidebar :global(.tanzil-sidebar-section) {margin:0}
 
 /* Ahmed Grafics master Surah band typography. */
