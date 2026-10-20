@@ -200,12 +200,14 @@ export const WordRuler: React.FC<WordRulerProps> = ({
               data-ruler-label={tick.label}
               style={
                 vertical
-                  ? { right: 10, top: -8 }
+                  ? { right: 10, top: tick.label === "0" ? -6 : -8 }
                   : {
                       bottom: TICK_SIZE.major + 3,
                       lineHeight: "8px",
                       ...(fromRight ? { right: 0 } : { left: 0 }),
-                      transform: fromRight ? "translateX(50%)" : "translateX(-50%)",
+                      transform: tick.label === "0"
+                        ? (fromRight ? "translateX(calc(50% - 2px))" : "translateX(calc(-50% + 2px))")
+                        : (fromRight ? "translateX(50%)" : "translateX(-50%)"),
                     }
               }
             >

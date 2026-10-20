@@ -10,7 +10,6 @@ import { BLOCK_STYLE_EDITOR_CSS } from "../utils/documentSchema";
 import {
   PAGE_STACK_GAP_PX,
   PAGELESS_MAX_WIDTH_PX,
-  RULER_PAGE_GUTTER_PX,
   resolveZoomFactor,
   documentPrintCss,
   type DocumentViewMode,
@@ -23,8 +22,16 @@ import {
   paginationGeometryFromLayout,
 } from "../extensions/QalamPagination";
 import type { RulerUnit } from "../utils/rulerLayout";
-import { WordRuler, RULER_BAR_PX } from "./WordRuler";
 import { MarginGuides } from "./MarginGuides";
+import { InPageToolPalette, type StudioToolId } from "./InPageToolPalette";
+import { WindowRuler } from "./WindowRuler";
+import {
+  INPAGE_RULER_BAR_PX,
+  INPAGE_TOOLBOX_PX,
+  INPAGE_VRULER_PX,
+  PASTEBOARD_GUIDE_PX,
+  PASTEBOARD_TOP_PX,
+} from "../utils/windowRuler";
 
 export default function DocumentCanvas({
   editor,
@@ -41,6 +48,7 @@ export default function DocumentCanvas({
   onPageCountChange,
   onVisiblePageChange,
   onZoomPercentChange,
+  onToolAction,
   columnCount = 1,
   columnGutterMm = 0,
   minimumPages = 1,
@@ -61,15 +69,21 @@ export default function DocumentCanvas({
   onPageCountChange?: (count: number | null) => void;
   onVisiblePageChange?: (page: number) => void;
   onZoomPercentChange?: (percent: number) => void;
+  onToolAction?: (id: StudioToolId) => void;
   columnCount?: number;
   columnGutterMm?: number;
   minimumPages?: number;
 }) {
   const isPages = viewMode === "pages";
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const hShiftRef = useRef<HTMLDivElement>(null);
+  const vShiftRef = useRef<HTMLDivElement>(null);
+  const panRef = useRef<{ id: number; x: number; y: number; sl: number; st: number } | null>(null);
   const [availableWidth, setAvailableWidth] = useState(0);
   const [availableHeight, setAvailableHeight] = useState(0);
   const [livePageCount, setLivePageCount] = useState(1);
+  const [tool, setTool] = useState<StudioToolId>("select");
 
   useEffect(() => {
     const el = workspaceRef.current;
@@ -121,53 +135,53 @@ export default function DocumentCanvas({
     };
   }, [editor, isPages]);
 
-  const fitWidth = Math.max(0, availableWidth);
+  const showRuler = isPages && rulerVisible;
+  const toolboxPx = isPages ? INPAGE_TOOLBOX_PX : 0;
+  const vRulerPx = showRuler ? INPAGE_VRULER_PX : 0;
+  const hRulerPx = showRuler ? INPAGE_RULER_BAR_PX : 0;
+  const scrollerWidth = Math.max(0, availableWidth - toolboxPx - vRulerPx);
+  const scrollerHeight = Math.max(0, availableHeight - hRulerPx);
   const pageCount = isPages ? Math.max(1, livePageCount) : 1;
   useEffect(() => {
     onPageCountChange?.(isPages ? pageCount : null);
   }, [isPages, pageCount, onPageCountChange]);
   const stackHeight = isPages ? pageStackHeightPx(pageCount, natural.heightPx, PAGE_STACK_GAP_PX) : undefined;
-  const baseWidth = isPages ? natural.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, fitWidth || PAGELESS_MAX_WIDTH_PX);
-  const showRuler = isPages && rulerVisible;
-  const rulerChrome = showRuler ? RULER_BAR_PX + RULER_PAGE_GUTTER_PX : 0;
-  const sidePad = 8;
-  const bottomPad = 8;
-  const guideOutset = availableWidth > 0 && availableWidth < 700 ? 40 : 48;
-  const fittedWidth = Math.max(0, (fitWidth || baseWidth) - sidePad * 2);
-  const fittedHeight = Math.max(0, availableHeight - bottomPad);
-  let zoomFactor = resolveZoomFactor(
+  const baseWidth = isPages ? natural.widthPx : Math.min(PAGELESS_MAX_WIDTH_PX, scrollerWidth || PAGELESS_MAX_WIDTH_PX);
+  const bottomPad = 24;
+  const zoomFactor = resolveZoomFactor(
     zoom,
-    baseWidth + rulerChrome,
-    natural.heightPx + rulerChrome,
-    fittedWidth || baseWidth,
-    fittedHeight,
+    baseWidth,
+    natural.heightPx,
+    scrollerWidth,
+    Math.max(0, scrollerHeight - PASTEBOARD_TOP_PX - bottomPad),
   );
-  if ((zoom === "fit-width" || zoom === "fit-page") && baseWidth > 0) {
-    const widthFactor = fittedWidth > rulerChrome ? (fittedWidth - rulerChrome) / baseWidth : zoomFactor;
-    if (zoom === "fit-width") zoomFactor = widthFactor;
-    else {
-      const heightFactor = fittedHeight > rulerChrome ? (fittedHeight - rulerChrome) / natural.heightPx : widthFactor;
-      zoomFactor = Math.min(widthFactor, heightFactor);
-    }
-  }
   const visualWidth = baseWidth * zoomFactor;
-  const columnWidth = visualWidth + rulerChrome;
-  const columnFits = !(availableWidth > 0) || columnWidth + sidePad * 2 <= availableWidth + 1;
-  const visualHeight = stackHeight ? stackHeight * zoomFactor : undefined;
   const visualPageHeight = natural.heightPx * zoomFactor;
+  const visualHeight = stackHeight ? stackHeight * zoomFactor : undefined;
   const pageStride = visualPageHeight + PAGE_STACK_GAP_PX * zoomFactor;
+  const guideOutset = Math.round(PASTEBOARD_GUIDE_PX * zoomFactor);
+  const contentWidth = Math.max(scrollerWidth, Math.ceil(visualWidth + (isPages ? guideOutset * 2 : 0)));
+  const contentHeight = Math.max(scrollerHeight, Math.ceil((isPages ? PASTEBOARD_TOP_PX : 0) + (visualHeight ?? visualPageHeight) + bottomPad));
+  const pageLeft = Math.max(0, (contentWidth - visualWidth) / 2);
+  const pageTop = isPages ? PASTEBOARD_TOP_PX : 0;
+  const pxPerMmX = pageLayout.widthMm > 0 ? visualWidth / pageLayout.widthMm : 0;
+  const pxPerMmY = pageLayout.heightMm > 0 ? visualPageHeight / pageLayout.heightMm : 0;
+  const hOrigin = dir === "rtl" ? pageLeft + visualWidth : pageLeft;
+  const hDirection: 1 | -1 = dir === "rtl" ? -1 : 1;
 
   useEffect(() => {
-    const el = workspaceRef.current;
+    const el = scrollerRef.current;
     if (!el || !isPages) return;
     const sync = () => {
+      if (hShiftRef.current) hShiftRef.current.style.transform = `translateX(${-el.scrollLeft}px)`;
+      if (vShiftRef.current) vShiftRef.current.style.transform = `translateY(${-el.scrollTop}px)`;
       const page = Math.min(pageCount, Math.max(1, Math.floor(el.scrollTop / pageStride + 0.35) + 1));
       onVisiblePageChange?.(page);
     };
     sync();
     el.addEventListener("scroll", sync, { passive: true });
     return () => el.removeEventListener("scroll", sync);
-  }, [isPages, pageCount, pageStride, onVisiblePageChange]);
+  }, [isPages, pageCount, pageStride, onVisiblePageChange, contentWidth, contentHeight]);
 
   useEffect(() => {
     if (!(zoomFactor > 0)) return;
@@ -186,11 +200,28 @@ export default function DocumentCanvas({
   } as React.CSSProperties;
 
   const printMargins = resolvePhysicalMargins(pageLayout.margins, dir);
+  const marginHandlesX = onPhysicalMarginChange
+    ? [
+        { edge: "left" as const, offsetPx: pageLeft + mmToPx(printMargins.leftMm) * zoomFactor },
+        { edge: "right" as const, offsetPx: pageLeft + visualWidth - mmToPx(printMargins.rightMm) * zoomFactor },
+      ]
+    : [];
+  const marginHandlesY = onPhysicalMarginChange
+    ? [
+        { edge: "top" as const, offsetPx: pageTop + mmToPx(printMargins.topMm) * zoomFactor },
+        { edge: "bottom" as const, offsetPx: pageTop + visualPageHeight - mmToPx(printMargins.bottomMm) * zoomFactor },
+      ]
+    : [];
+
+  const chooseTool = (id: StudioToolId) => {
+    setTool(id);
+    onToolAction?.(id);
+  };
 
   return (
     <div
       ref={workspaceRef}
-      className="h-full min-h-0 overflow-auto"
+      className="flex h-full min-h-0 overflow-hidden"
       style={{ background: "#FFFFFF" }}
       data-studio-view={viewMode}
       data-studio-pasteboard="true"
@@ -209,184 +240,249 @@ export default function DocumentCanvas({
       data-page-stride-px={isPages ? String(Math.round(pageStride)) : undefined}
       data-studio-zoom={String(zoom)}
       data-studio-zoom-factor={String(zoomFactor)}
+      data-ruler-preferred-unit={rulerUnit}
       data-qalam-pagination-owner={isPages ? "extension" : undefined}
     >
-      <div
-        className="flex min-h-full items-start justify-start"
-        style={{ padding: `0px ${sidePad}px ${bottomPad}px` }}
-        data-studio-pasteboard-pad={String(sidePad)}
-      >
-      <div
-        className={`relative ${showRuler ? "flex flex-col" : ""}`}
-        style={{ width: columnWidth, flexShrink: 0, marginInline: columnFits ? "auto" : 0 }}
-        dir="ltr"
-        data-ruler-gutter={showRuler ? String(RULER_PAGE_GUTTER_PX) : undefined}
-        data-studio-page-column="true"
-      >
-        {isPages && (
-          <>
+      {isPages ? <InPageToolPalette tool={tool} onTool={chooseTool} /> : null}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {showRuler ? (
+          <div className="studio-no-print flex shrink-0 bg-white" data-studio-ruler-frame="true">
             <div
-              className="studio-no-print pointer-events-none absolute z-0"
-              data-studio-pasteboard-guide="left"
-              data-guide-outset={String(guideOutset)}
-              style={{ left: -guideOutset, top: 0, width: 0, bottom: 0, borderLeft: "1px dashed #6a7076" }}
-              aria-hidden
+              data-ruler-corner="true"
+              style={{ width: INPAGE_VRULER_PX, height: INPAGE_RULER_BAR_PX, boxSizing: "border-box", borderRight: "2px solid #000", borderBottom: "2px solid #000", background: "#fff" }}
             />
-            <div
-              className="studio-no-print pointer-events-none absolute z-0"
-              data-studio-pasteboard-guide="right"
-              data-guide-outset={String(guideOutset)}
-              style={{ right: -guideOutset, top: 0, width: 0, bottom: 0, borderLeft: "1px dashed #6a7076" }}
-              aria-hidden
-            />
-          </>
-        )}
-        {showRuler && (
-          <div className="sticky top-0 z-30 flex bg-white studio-no-print" data-studio-ruler-frame="true">
-            <div className="h-[18px] w-[18px] shrink-0 border-b border-r border-[#c8c8c8] bg-white" data-ruler-corner="true" />
-            <div className="shrink-0 studio-no-print" style={{ width: RULER_PAGE_GUTTER_PX }} aria-hidden />
-            <div className="min-w-0 flex-1">
-              <WordRuler dir={dir} layout={pageLayout} axis="horizontal" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
-            </div>
-          </div>
-        )}
-        {showRuler && <div className="studio-no-print" style={{ height: RULER_PAGE_GUTTER_PX }} data-ruler-page-gap="horizontal" aria-hidden />}
-        <div className={showRuler ? "flex" : undefined}>
-          {showRuler && (
-            <div className="studio-no-print relative z-20 flex w-[18px] shrink-0 flex-col bg-white">
-              {Array.from({ length: pageCount }, (_, index) => (
-                <div
-                  key={index}
-                  className="shrink-0"
-                  style={{ height: visualPageHeight, marginBottom: index < pageCount - 1 ? PAGE_STACK_GAP_PX * zoomFactor : 0 }}
-                  data-ruler-page-bound={index + 1}
-                >
-                  <WordRuler dir={dir} layout={pageLayout} axis="vertical" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
-                </div>
-              ))}
-            </div>
-          )}
-          {showRuler && <div className="studio-no-print shrink-0" style={{ width: RULER_PAGE_GUTTER_PX }} data-ruler-page-gap="vertical" aria-hidden />}
-      <div
-        className={`relative min-w-0 flex-1 ${isPages ? "" : "rounded-lg bg-white shadow-[0_4px_18px_rgba(26,58,42,0.06)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"}`}
-        style={{ width: showRuler ? undefined : "100%", maxWidth: showRuler ? undefined : `${visualWidth}px`, height: visualHeight }}
-        data-studio-pages-stack={isPages ? "true" : undefined}
-        data-studio-pageless={isPages ? undefined : "true"}
-        data-studio-print-surface="true"
-      >
-        <div
-          data-studio-zoom-surface="true"
-          style={{
-            width: baseWidth,
-            height: stackHeight,
-            transform: `scale(${zoomFactor})`,
-            transformOrigin: "top left",
-          }}
-        >
-        {isPages && (
-          <>
-            <div className="studio-no-print pointer-events-none absolute inset-0 z-[3]" data-studio-page-frames="true" aria-hidden>
-              {Array.from({ length: pageCount }, (_, index) => (
-                <div
-                  key={index}
-                  data-studio-page-sheet={index + 1}
-                  data-print-sheet-last={index === pageCount - 1 ? "true" : undefined}
-                  className="absolute bg-transparent"
-                  style={{
-                    top: index * (natural.heightPx + PAGE_STACK_GAP_PX),
-                    left: 0,
-                    width: natural.widthPx,
-                    height: natural.heightPx,
-                    borderRadius: 0,
-                    border: "1px solid #3c3c3c",
-                    boxShadow: "2px 2px 0 0 #737373",
-                  }}
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <div ref={hShiftRef} style={{ width: Math.max(1, contentWidth) }}>
+                <WindowRuler
+                  axis="horizontal"
+                  lengthPx={Math.max(1, contentWidth)}
+                  originPx={hOrigin}
+                  pageStartPx={pageLeft}
+                  pxPerMm={pxPerMmX}
+                  positiveDirection={hDirection}
+                  originName={dir === "rtl" ? "right" : "left"}
+                  pageWidthMm={pageLayout.widthMm}
+                  pageHeightMm={pageLayout.heightMm}
+                  pageSize={pageLayout.size}
+                  orientation={pageLayout.orientation}
+                  handles={marginHandlesX}
+                  onPhysicalMarginChange={onPhysicalMarginChange}
                 />
-              ))}
+              </div>
             </div>
-            {Array.from({ length: pageCount }, (_, index) => (
+          </div>
+        ) : null}
+        <div className="flex min-h-0 flex-1">
+          {showRuler ? (
+            <div className="studio-no-print shrink-0 overflow-hidden bg-white" style={{ width: INPAGE_VRULER_PX }} data-ruler-page-gap="vertical">
+              <div ref={vShiftRef} style={{ height: Math.max(1, contentHeight) }}>
+                <WindowRuler
+                  axis="vertical"
+                  lengthPx={Math.max(1, contentHeight)}
+                  originPx={pageTop}
+                  pageStartPx={pageTop}
+                  pxPerMm={pxPerMmY}
+                  positiveDirection={1}
+                  originName="top"
+                  pageWidthMm={pageLayout.widthMm}
+                  pageHeightMm={pageLayout.heightMm}
+                  pageSize={pageLayout.size}
+                  orientation={pageLayout.orientation}
+                  handles={marginHandlesY}
+                  onPhysicalMarginChange={onPhysicalMarginChange}
+                />
+              </div>
+            </div>
+          ) : null}
+          <div
+            ref={scrollerRef}
+            className="min-h-0 min-w-0 flex-1 overflow-auto"
+            style={{ background: "#FFFFFF", cursor: tool === "hand" ? "grab" : undefined }}
+            onPointerDown={(event) => {
+              if (tool !== "hand") return;
+              const el = scrollerRef.current;
+              if (!el) return;
+              panRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, sl: el.scrollLeft, st: el.scrollTop };
+              el.setPointerCapture(event.pointerId);
+            }}
+            onPointerMove={(event) => {
+              const pan = panRef.current;
+              const el = scrollerRef.current;
+              if (!pan || !el || pan.id !== event.pointerId) return;
+              el.scrollLeft = pan.sl - (event.clientX - pan.x);
+              el.scrollTop = pan.st - (event.clientY - pan.y);
+            }}
+            onPointerUp={() => {
+              panRef.current = null;
+            }}
+          >
+            <div
+              style={{ width: Math.max(contentWidth, 1), minHeight: contentHeight, position: "relative" }}
+              data-ruler-gutter={showRuler ? String(PASTEBOARD_TOP_PX) : undefined}
+              data-studio-pasteboard-pad={String(PASTEBOARD_TOP_PX)}
+            >
+              {showRuler ? <div data-ruler-page-gap="horizontal" style={{ height: PASTEBOARD_TOP_PX }} /> : null}
               <div
-                key={`paper-${index}`}
-                className="pointer-events-none absolute z-0 bg-white"
-                data-studio-page-paper={index + 1}
-                style={{
-                  top: index * (natural.heightPx + PAGE_STACK_GAP_PX),
-                  left: 0,
-                  width: natural.widthPx,
-                  height: natural.heightPx,
-                }}
-                aria-hidden
-              />
-            ))}
-            <MarginGuides
-              pageCount={pageCount}
-              pageWidthPx={natural.widthPx}
-              pageHeightPx={natural.heightPx}
-              gapPx={PAGE_STACK_GAP_PX}
-              margins={printMargins}
-            />
-            {columnCount > 1
-              ? Array.from({ length: pageCount }, (_, page) => {
-                  const left = mmToPx(printMargins.leftMm);
-                  const right = mmToPx(printMargins.rightMm);
-                  const top = mmToPx(printMargins.topMm);
-                  const bottom = mmToPx(printMargins.bottomMm);
-                  const gutter = mmToPx(Math.max(0, columnGutterMm));
-                  const content = Math.max(0, natural.widthPx - left - right);
-                  const count = Math.max(2, Math.min(4, Math.floor(columnCount)));
-                  const width = (content - gutter * (count - 1)) / count;
-                  const origin = page * (natural.heightPx + PAGE_STACK_GAP_PX);
-                  return (
-                    <div key={`cols-${page}`} className="studio-no-print pointer-events-none absolute z-[4]" data-studio-columns={count} aria-hidden>
-                      {Array.from({ length: count - 1 }, (_, index) => {
-                        const x = left + (index + 1) * width + index * gutter + gutter / 2;
-                        return (
+                className="relative"
+                style={{ marginLeft: pageLeft, width: visualWidth, height: visualHeight }}
+                dir="ltr"
+                data-studio-page-column="true"
+              >
+                {isPages ? (
+                  <>
+                    <div
+                      className="studio-no-print pointer-events-none absolute z-0"
+                      data-studio-pasteboard-guide="left"
+                      data-guide-outset={String(guideOutset)}
+                      style={{
+                        left: -guideOutset,
+                        top: -PASTEBOARD_TOP_PX,
+                        bottom: -bottomPad,
+                        width: 1,
+                        backgroundImage: "repeating-linear-gradient(to bottom, #000 0 1px, transparent 1px 2px)",
+                      }}
+                      aria-hidden
+                    />
+                    <div
+                      className="studio-no-print pointer-events-none absolute z-0"
+                      data-studio-pasteboard-guide="right"
+                      data-guide-outset={String(guideOutset)}
+                      style={{
+                        right: -guideOutset,
+                        top: -PASTEBOARD_TOP_PX,
+                        bottom: -bottomPad,
+                        width: 1,
+                        backgroundImage: "repeating-linear-gradient(to bottom, #000 0 1px, transparent 1px 2px)",
+                      }}
+                      aria-hidden
+                    />
+                  </>
+                ) : null}
+                <div
+                  className={`relative min-w-0 ${isPages ? "" : "rounded-lg bg-white shadow-[0_4px_18px_rgba(26,58,42,0.06)] focus-within:ring-2 focus-within:ring-[#B8935A]/40"}`}
+                  style={{ width: visualWidth, height: visualHeight }}
+                  data-studio-pages-stack={isPages ? "true" : undefined}
+                  data-studio-pageless={isPages ? undefined : "true"}
+                  data-studio-print-surface="true"
+                >
+                  <div
+                    data-studio-zoom-surface="true"
+                    style={{
+                      width: baseWidth,
+                      height: stackHeight,
+                      transform: `scale(${zoomFactor})`,
+                      transformOrigin: "top left",
+                    }}
+                  >
+                    {isPages && (
+                      <>
+                        <div className="studio-no-print pointer-events-none absolute inset-0 z-[3]" data-studio-page-frames="true" aria-hidden>
+                          {Array.from({ length: pageCount }, (_, index) => (
+                            <div
+                              key={index}
+                              data-studio-page-sheet={index + 1}
+                              data-print-sheet-last={index === pageCount - 1 ? "true" : undefined}
+                              className="absolute bg-transparent"
+                              style={{
+                                top: index * (natural.heightPx + PAGE_STACK_GAP_PX),
+                                left: 0,
+                                width: natural.widthPx,
+                                height: natural.heightPx,
+                                borderRadius: 0,
+                                border: "1px solid #000000",
+                                boxShadow: "-3px 0 0 #404040",
+                              }}
+                            />
+                          ))}
+                        </div>
+                        {Array.from({ length: pageCount }, (_, index) => (
                           <div
-                            key={index}
-                            data-studio-column-guide={index + 1}
-                            className="absolute"
+                            key={`paper-${index}`}
+                            className="pointer-events-none absolute z-0 bg-white"
+                            data-studio-page-paper={index + 1}
                             style={{
-                              left: x,
-                              top: origin + top,
-                              height: Math.max(0, natural.heightPx - top - bottom),
-                              width: 0,
-                              borderLeft: "1px dashed #8a9096",
+                              top: index * (natural.heightPx + PAGE_STACK_GAP_PX),
+                              left: 0,
+                              width: natural.widthPx,
+                              height: natural.heightPx,
                             }}
+                            aria-hidden
                           />
-                        );
-                      })}
+                        ))}
+                        <MarginGuides
+                          pageCount={pageCount}
+                          pageWidthPx={natural.widthPx}
+                          pageHeightPx={natural.heightPx}
+                          gapPx={PAGE_STACK_GAP_PX}
+                          margins={printMargins}
+                        />
+                        {columnCount > 1
+                          ? Array.from({ length: pageCount }, (_, page) => {
+                              const left = mmToPx(printMargins.leftMm);
+                              const right = mmToPx(printMargins.rightMm);
+                              const top = mmToPx(printMargins.topMm);
+                              const bottom = mmToPx(printMargins.bottomMm);
+                              const gutter = mmToPx(Math.max(0, columnGutterMm));
+                              const content = Math.max(0, natural.widthPx - left - right);
+                              const count = Math.max(2, Math.min(4, Math.floor(columnCount)));
+                              const width = (content - gutter * (count - 1)) / count;
+                              const origin = page * (natural.heightPx + PAGE_STACK_GAP_PX);
+                              return (
+                                <div key={`cols-${page}`} className="studio-no-print pointer-events-none absolute z-[4]" data-studio-columns={count} aria-hidden>
+                                  {Array.from({ length: count - 1 }, (_, index) => {
+                                    const x = left + (index + 1) * width + index * gutter + gutter / 2;
+                                    return (
+                                      <div
+                                        key={index}
+                                        data-studio-column-guide={index + 1}
+                                        className="absolute"
+                                        style={{
+                                          left: x,
+                                          top: origin + top,
+                                          height: Math.max(0, natural.heightPx - top - bottom),
+                                          width: 0,
+                                          borderLeft: "1px dashed #8a9096",
+                                        }}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })
+                          : null}
+                      </>
+                    )}
+                    <div
+                      className="relative z-[1] cursor-text"
+                      style={
+                        isPages
+                          ? { width: "100%", minHeight: stackHeight, cursor: tool === "hand" ? "grab" : tool === "select" ? "default" : "text" }
+                          : { width: "100%", minHeight: "60vh" }
+                      }
+                      dir={dir}
+                      onClick={(event) => {
+                        if (tool === "hand") return;
+                        onWrapperClick(event);
+                      }}
+                      role="textbox"
+                      aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
+                    >
+                      <div className={isPages ? undefined : "px-5 py-6 sm:px-8 sm:py-8"}>
+                        <EditorContent
+                          editor={editor}
+                          className={`qalam-editor-content focus:outline-none ${isPages ? "qalam-doc-page qalam-view-pages" : "qalam-view-pageless"} ${
+                            dir === "rtl" ? "font-nastaliq" : ""
+                          }`}
+                          style={typeVars}
+                        />
+                      </div>
                     </div>
-                  );
-                })
-              : null}
-          </>
-        )}
-        <div
-          className="relative z-[1] cursor-text"
-          style={
-            isPages
-              ? { width: "100%", minHeight: stackHeight }
-              : { width: "100%", minHeight: "60vh" }
-          }
-          dir={dir}
-          onClick={onWrapperClick}
-          role="textbox"
-          aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
-        >
-          <div className={isPages ? undefined : "px-5 py-6 sm:px-8 sm:py-8"}>
-            <EditorContent
-              editor={editor}
-              className={`qalam-editor-content focus:outline-none ${isPages ? "qalam-doc-page qalam-view-pages" : "qalam-view-pageless"} ${
-                dir === "rtl" ? "font-nastaliq" : ""
-              }`}
-              style={typeVars}
-            />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        </div>
-      </div>
-        </div>
-      </div>
       </div>
       <style jsx global>{`
         .qalam-editor-content.qalam-doc-page .ProseMirror,

@@ -199,6 +199,16 @@ export default function DocumentStudioShell({
           font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
           line-height: 1.35;
         }
+        @media (max-width: 720px) {
+          [data-studio-menubar],
+          [data-studio-toolbar-row] {
+            height: auto !important;
+            max-height: none !important;
+            flex-wrap: wrap !important;
+            overflow: visible !important;
+            white-space: normal !important;
+          }
+        }
       `}</style>
     </div>
   );

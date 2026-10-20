@@ -58,24 +58,29 @@ describe("DocumentCanvas view modes", () => {
     expect(root?.getAttribute("data-print-page-width-mm")).toBe(String(layout.widthMm));
     expect(document.querySelector("[data-print-sheet-last='true']")).toBeTruthy();
     expect(root?.getAttribute("data-studio-zoom")).toBe("100");
-    expect(root?.querySelector("[data-ruler-gutter]")?.getAttribute("data-ruler-gutter")).toBe("8");
+    expect(root?.querySelector("[data-ruler-gutter]")?.getAttribute("data-ruler-gutter")).toBe("4");
     expect(document.querySelector("[data-ruler-page-gap='horizontal']")).toBeTruthy();
     expect(document.querySelector("[data-ruler-page-gap='vertical']")).toBeTruthy();
     expect(root?.getAttribute("data-print-dir")).toBe("ltr");
+    expect(document.querySelector("[data-studio-tool-palette]")).toBeTruthy();
+    expect(document.querySelector("[data-studio-ruler]")?.getAttribute("data-ruler-unit")).toBe("mm");
     expect(document.querySelector("[data-studio-pasteboard-guide='left']")).toBeTruthy();
     expect(document.querySelector("[data-studio-pasteboard-guide='right']")).toBeTruthy();
     const leftGuide = document.querySelector("[data-studio-pasteboard-guide='left']") as HTMLElement;
-    expect(Number(leftGuide.getAttribute("data-guide-outset"))).toBeGreaterThanOrEqual(36);
+    expect(Number(leftGuide.getAttribute("data-guide-outset"))).toBeGreaterThanOrEqual(100);
     expect(Number.parseFloat(leftGuide.style.left)).toBeLessThanOrEqual(-36);
     expect(document.querySelector("[data-studio-zoom-surface]")?.querySelector("[data-studio-pasteboard-guide]")).toBeNull();
     expect(document.querySelector("[data-studio-page-column]")?.getAttribute("dir")).toBe("ltr");
     expect(document.querySelector("[data-studio-margin-guides]")?.className).toContain("studio-no-print");
-    expect(document.querySelectorAll("[data-studio-margin-corner]").length).toBe(4);
+    expect(document.querySelectorAll("[data-studio-margin-corner]").length).toBe(0);
+    expect(document.querySelector("[data-margin-cross='page']")).toBeTruthy();
+    const marginLine = document.querySelector("[data-studio-margin-line='left']") as HTMLElement;
+    expect(marginLine.style.borderLeft.toLowerCase()).toMatch(/#000|rgb\(0,\s*0,\s*0\)|black/);
     const sheet = document.querySelector("[data-studio-page-sheet]") as HTMLElement;
     expect(sheet.className).not.toContain("rounded");
     expect(sheet.style.borderRadius).toBe("0px");
-    expect(sheet.style.border).toContain("3c3c3c");
-    expect(sheet.style.boxShadow.replace(/\s/g, "")).toContain("2px2px0");
+    expect(sheet.style.border.toLowerCase()).toMatch(/#000|rgb\(0,\s*0,\s*0\)|black/);
+    expect(sheet.style.boxShadow.toLowerCase()).toMatch(/404040|64,\s*64,\s*64/);
   });
 
   it("margin guides follow custom physical margins and stay out of the print clone", () => {
@@ -103,6 +108,9 @@ describe("DocumentCanvas view modes", () => {
     expect(guide.getAttribute("data-margin-left-px")).toBe("151");
     expect(guide.getAttribute("data-margin-right-px")).toBe("57");
     expect(document.querySelector("[data-studio-ruler]")?.getAttribute("data-ruler-origin")).toBe("right");
+    const labels = [...document.querySelectorAll("[data-studio-ruler] [data-ruler-label]")].map((node) => node.getAttribute("data-ruler-label"));
+    expect(labels).toContain("0");
+    expect(labels.some((label) => label?.startsWith("-"))).toBe(true);
     expect(document.querySelector(".qalam-editor-content")?.querySelector("[data-studio-margin-guides]")).toBeNull();
   });
 

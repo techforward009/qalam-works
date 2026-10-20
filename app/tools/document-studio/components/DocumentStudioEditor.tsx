@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLanguage } from "../../../lib/language-context";
 import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
 import NewDocumentDialog, { contentFromNewDocument, pageCountFromNewDocument, readStoredMinimumPages, settingsFromNewDocument, STUDIO_DEFAULT_GUTTER_MM, writeStoredMinimumPages, type NewDocumentDraft } from "./NewDocumentDialog";
-import { useEditor } from "@tiptap/react";
+import { useEditor, type Editor } from "@tiptap/react";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
 import { normalizeDocumentNodes, type NormalizeReport } from "../utils/normalizeDocumentNodes";
@@ -126,6 +126,7 @@ import { studioJameelFontFaceCss, studioOnDemandFontFaceCss } from "../utils/fon
 import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
 import DocumentCanvas from "./DocumentCanvas";
+import type { StudioToolId } from "./InPageToolPalette";
 import DocumentStudioPanels from "./DocumentStudioPanels";
 import DocumentStudioShell from "./DocumentStudioShell";
 import DocumentMenuBar from "./DocumentMenuBar";
@@ -152,6 +153,61 @@ export { ParagraphWithDir, HeadingWithDir, BLOCK_STYLE_EDITOR_CSS };
 export { buildDocumentStudioExample, buildReplaceAllTransaction };
 
 export const GENERIC_PDF_EXPORT_ERROR = "PDF بنانے میں خرابی ہوئی / Failed to generate PDF.";
+
+function shapePngDataUrl(kind: "rect" | "ellipse" | "round-rect" | "line"): string | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 180;
+  canvas.height = kind === "line" ? 80 : 110;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.strokeStyle = "#111111";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  if (kind === "rect") {
+    ctx.strokeRect(2, 2, 176, 106);
+  } else if (kind === "ellipse") {
+    ctx.ellipse(90, 55, 84, 48, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (kind === "round-rect") {
+    const x = 2;
+    const y = 2;
+    const w = 176;
+    const h = 106;
+    const r = 16;
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    ctx.stroke();
+  } else {
+    ctx.moveTo(6, 74);
+    ctx.lineTo(174, 6);
+    ctx.stroke();
+  }
+  return canvas.toDataURL("image/png");
+}
+
+function insertStudioShape(editor: Editor | null, kind: "rect" | "ellipse" | "round-rect" | "line") {
+  if (!editor) return;
+  const src = shapePngDataUrl(kind);
+  if (!src) return;
+  editor.chain().focus().insertContent({
+    type: "image",
+    attrs: {
+      src,
+      alt: kind,
+      title: kind,
+      width: 180,
+      height: kind === "line" ? 80 : 110,
+      alignment: "center",
+      wrapMode: "break",
+    },
+  }).run();
+  placeCaretAfterAtom(editor);
+}
 
 export async function readPdfExportError(response: Response): Promise<string> {
   try {
@@ -368,6 +424,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   // autosave timer above, which has its own longer interval and purpose).
   const analysisTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [initialContent] = useState(() => getInitialDraftContent());
+  const dirRef = useRef(dir);
+  dirRef.current = dir;
+  const restoringEmptyRef = useRef(false);
 
   const editor = useEditor({
     extensions: [...createDocumentStudioExtensions(), QalamPagination],
@@ -382,16 +441,14 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       transformPasted: (slice) => transformPastedSlice(slice, dir),
     },
     onUpdate: ({ editor, transaction }) => {
-      if (
-        transaction.docChanged &&
-        transaction.getMeta("addToHistory") !== false &&
-        transaction.doc.content.size < transaction.before.content.size &&
-        minimumPagesRef.current > 1
-      ) {
-        minimumPagesRef.current = 1;
-        setMinimumPages(1);
-        const id = activeDocumentIdRef.current;
-        if (id) writeStoredMinimumPages(id, 1);
+      if (transaction.docChanged && editor.state.doc.childCount === 0 && !restoringEmptyRef.current) {
+        restoringEmptyRef.current = true;
+        const direction = dirRef.current;
+        queueMicrotask(() => {
+          restoringEmptyRef.current = false;
+          if (editor.isDestroyed || editor.state.doc.childCount > 0) return;
+          editor.commands.setContent(emptyDocumentContent(direction));
+        });
       }
       if (hasAuditReportRef.current) {
         setIsAuditStale(true);
@@ -1461,6 +1518,26 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     }
   };
 
+  const onCanvasTool = (id: StudioToolId) => {
+    if (id === "image") {
+      imageInputRef.current?.click();
+      return;
+    }
+    if (id === "zoom") {
+      const steps = [100, 125, 150, "fit-width", "fit-page"] as const;
+      const index = steps.findIndex((step) => step === zoom);
+      setZoom(steps[(index + 1) % steps.length]);
+      return;
+    }
+    if (id === "rect" || id === "ellipse" || id === "round-rect" || id === "line") {
+      insertStudioShape(editor, id);
+      return;
+    }
+    if ((id === "select" || id === "text") && editor) {
+      editor.commands.focus(editor.isEmpty ? "start" : "end");
+    }
+  };
+
   const insertTable = () => {
     if (!editor) return;
     editor.chain().focus().insertTable({
@@ -1941,6 +2018,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             columnCount={columnCount}
             columnGutterMm={columnGutterMm}
             minimumPages={minimumPages}
+            onToolAction={onCanvasTool}
           />
             </div>
           </div>
