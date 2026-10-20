@@ -1551,7 +1551,7 @@ function Select({
 }
 
 function splitLastWord(text:string):{prefix:string;last:string}{
-  const match=/^(.*?)([^\\s]+)$/su.exec(text);
+  const match=/^(.*?)([^\s]+)$/su.exec(text);
   return match ? {prefix:match[1],last:match[2]} : {prefix:"",last:text};
 }
 
