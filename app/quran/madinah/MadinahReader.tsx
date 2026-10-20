@@ -344,28 +344,6 @@ export default function MadinahReader({
     } catch { setCopied(false); }
   };
 
-  const copyWholeSurah = async () => {
-    // Use the Madinah QPC Unicode source, not AhmedGraf / DigitalKhatt.
-    const start = resolveMadinahPageForAyah(surah, 1);
-    const last = surah < 114 ? resolveMadinahPageForAyah(surah + 1, 1) : 604;
-    const seen = new Set<string>();
-    const result: string[] = [];
-    try {
-      for (let pageNo = start; pageNo <= last; pageNo++) {
-        const verses = await loadQpcHafsPage(pageNo);
-        for (const verse of verses) {
-          if (!verse.verse_key.startsWith(surah + ":") || seen.has(verse.verse_key)) continue;
-          if (typeof verse.text_qpc_hafs !== "string" || !verse.text_qpc_hafs.trim()) continue;
-          seen.add(verse.verse_key);
-          result.push(verse.text_qpc_hafs.trim());
-        }
-      }
-      if (!result.length) throw new Error("Madinah surah text unavailable");
-      await navigator.clipboard.writeText(result.join("\n"));
-      setCopied(true);
-    } catch { setCopied(false); }
-  };
-
   useEffect(() => {
     if (!page) return;
     loadQpcHafsPage(page.page).catch(() => undefined);
@@ -426,7 +404,7 @@ export default function MadinahReader({
               <label className="block text-xs text-[#687066]" dir="ltr">{copy.juz}<select aria-label={copy.juz} className="mt-1 w-full border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#3f463c] outline-none focus:border-[#718067]" value={pageJuz} onChange={e => {const ref=JUZ_STARTS[Number(e.target.value)-1];if(ref)navigate(ref.surah,ref.ayah);}}>{Array.from({length:30},(_,i)=><option key={i} value={i+1}>{i+1}</option>)}</select></label>
               <label className="block text-xs text-[#687066]" dir="ltr">{copy.page}<select aria-label={copy.page} className="mt-1 w-full border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#3f463c] outline-none focus:border-[#718067]" value={pageNumber} onChange={e => navigatePage(Number(e.target.value))}>{Array.from({length:604},(_,i)=><option key={i} value={i+1}>{i+1}</option>)}</select></label>
             </div></QuranSidebarSection>
-            <QuranSidebarSection title={copy.copy}><button type="button" className={styles.secondary} onClick={() => void copyCurrentPage()}>{copied ? copy.copyDone : copy.copy}</button></QuranSidebarSection>
+            <QuranSidebarSection title={copy.copy}><button type="button" className="w-full border border-[#b5bbb1] bg-white px-2 py-1.5 text-xs text-[#465046] hover:bg-[#f3f5f1]" onClick={() => void copyCurrentPage()}>{copied ? copy.copyDone : copy.copy}</button></QuranSidebarSection>
             <QuranSidebarSection title={copy.display}><label className="block text-xs text-[#687066]" dir="ltr">{copy.size}<select className="mt-1 w-full border border-[#b8bdb3] bg-white px-2 py-1 text-xs text-[#3f463c] outline-none focus:border-[#718067]" aria-label={copy.size} value={scale} onChange={e => chooseScale(Number(e.target.value))}><option value={0.85}>{copy.small}</option><option value={1}>{copy.medium}</option><option value={1.12}>{copy.large}</option></select></label></QuranSidebarSection>
             <div className="border-t border-[#d0d4cc] bg-white px-2 py-2" dir={language === "ur" ? "rtl" : "ltr"} lang={language}>
               <p className="text-[10px] leading-5">{language === "ur" ? "↑ ↓ آیات" : "↑ ↓ Ayahs"}</p>
