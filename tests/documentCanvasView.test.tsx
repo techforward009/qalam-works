@@ -64,6 +64,11 @@ describe("DocumentCanvas view modes", () => {
     expect(root?.getAttribute("data-print-dir")).toBe("ltr");
     expect(document.querySelector("[data-studio-pasteboard-guide='left']")).toBeTruthy();
     expect(document.querySelector("[data-studio-pasteboard-guide='right']")).toBeTruthy();
+    const leftGuide = document.querySelector("[data-studio-pasteboard-guide='left']") as HTMLElement;
+    expect(Number(leftGuide.getAttribute("data-guide-outset"))).toBeGreaterThanOrEqual(36);
+    expect(Number.parseFloat(leftGuide.style.left)).toBeLessThanOrEqual(-36);
+    expect(document.querySelector("[data-studio-zoom-surface]")?.querySelector("[data-studio-pasteboard-guide]")).toBeNull();
+    expect(document.querySelector("[data-studio-page-column]")?.getAttribute("dir")).toBe("ltr");
     expect(document.querySelector("[data-studio-margin-guides]")?.className).toContain("studio-no-print");
     expect(document.querySelectorAll("[data-studio-margin-corner]").length).toBe(4);
     const sheet = document.querySelector("[data-studio-page-sheet]") as HTMLElement;
@@ -97,6 +102,7 @@ describe("DocumentCanvas view modes", () => {
     expect(guide.getAttribute("data-margin-top-px")).toBe("76");
     expect(guide.getAttribute("data-margin-left-px")).toBe("151");
     expect(guide.getAttribute("data-margin-right-px")).toBe("57");
+    expect(document.querySelector("[data-studio-ruler]")?.getAttribute("data-ruler-origin")).toBe("right");
     expect(document.querySelector(".qalam-editor-content")?.querySelector("[data-studio-margin-guides]")).toBeNull();
   });
 

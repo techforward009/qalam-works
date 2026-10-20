@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLanguage } from "../../../lib/language-context";
+import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
+import NewDocumentDialog, { contentFromNewDocument, settingsFromNewDocument, type NewDocumentDraft } from "./NewDocumentDialog";
 import { useEditor } from "@tiptap/react";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
@@ -105,9 +107,7 @@ import { validateLineHeight } from "../utils/documentSettings";
 import {
   loadDocumentViewMode,
   saveDocumentViewMode,
-  loadDocumentZoom,
   saveDocumentZoom,
-  ZOOM_STORAGE_KEY,
   loadRulerVisible,
   saveRulerVisible,
   loadRulerUnit,
@@ -185,10 +185,15 @@ function getInitialDraftContent(): DocNode | string {
   return "<p></p>";
 }
 
-export default function DocumentStudioEditor() {
+export default function DocumentStudioEditor({ fillWindow = false }: { fillWindow?: boolean } = {}) {
   const { language: uiLanguage } = useLanguage();
   const isUr = uiLanguage === "ur";
-  const [dir, setDir] = useState<"rtl" | "ltr">(isUr ? "rtl" : "ltr");
+  const [dir, setDir] = useState<"rtl" | "ltr">("rtl");
+  const [newDocOpen, setNewDocOpen] = useState(false);
+  const [visiblePage, setVisiblePage] = useState(1);
+  const [zoomPercent, setZoomPercent] = useState<number | null>(null);
+  const [columnCount, setColumnCount] = useState(1);
+  const [columnGutterMm, setColumnGutterMm] = useState(0);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [tableRows, setTableRows] = useState(3);
   const [tableColumns, setTableColumns] = useState(3);
@@ -216,7 +221,7 @@ export default function DocumentStudioEditor() {
   }, [documentSettings]);
 
 
-  const [processingLanguage, setProcessingLanguage] = useState<ProcessingLanguage>("auto");
+  const [processingLanguage, setProcessingLanguage] = useState<ProcessingLanguage>("ur");
   const processingLanguageRef = useRef<ProcessingLanguage>(processingLanguage);
   useEffect(() => {
     processingLanguageRef.current = processingLanguage;
@@ -311,16 +316,7 @@ export default function DocumentStudioEditor() {
   const [qalamAiOpen, setQalamAiOpen] = useState(false);
   const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
   const [pageCount, setPageCount] = useState<number | null>(null);
-  const [zoom, setZoomState] = useState<DocumentZoom>(() => loadDocumentZoom());
-  // On first visit, make a full page readable on narrow screens without
-  // overwriting an explicit zoom saved by the reader.
-  useEffect(() => {
-    if (window.innerWidth >= 820) return;
-    try {
-      if (window.localStorage.getItem(ZOOM_STORAGE_KEY) !== null) return;
-    } catch { /* Continue with an appropriate responsive default. */ }
-    setZoomState("fit-width");
-  }, []);
+  const [zoom, setZoomState] = useState<DocumentZoom>("fit-page");
   const [rulerVisible, setRulerVisibleState] = useState(() => loadRulerVisible());
   const [rulerUnit, setRulerUnitState] = useState<RulerUnit>(() => loadRulerUnit());
   const [findQuery, setFindQuery] = useState("");
@@ -540,7 +536,21 @@ export default function DocumentStudioEditor() {
   };
 
   const handleNewDocument = () => {
-    void createAndOpenDocument();
+    setNewDocOpen(true);
+  };
+
+  const confirmNewDocument = (draft: NewDocumentDraft) => {
+    setDir(draft.direction);
+    setProcessingLanguage(draft.direction === "ltr" ? "en" : "ur");
+    setColumnCount(Math.max(1, Math.min(4, Math.floor(draft.columns) || 1)));
+    setColumnGutterMm(Math.max(0, Number(draft.gutter) || 0));
+    setZoom("fit-page");
+    setVisiblePage(1);
+    setNewDocOpen(false);
+    void createAndOpenDocument({
+      content: contentFromNewDocument(draft),
+      documentSettings: settingsFromNewDocument(draft),
+    });
   };
 
   const handleClearDraft = () => {
@@ -573,6 +583,8 @@ export default function DocumentStudioEditor() {
     setAuditReport(null);
     hasAuditReportRef.current = false;
     setIsAuditStale(false);
+    setZoomState("fit-page");
+    setVisiblePage(1);
   };
 
   const persistActiveNow = async () => {
@@ -586,7 +598,7 @@ export default function DocumentStudioEditor() {
     });
   };
 
-  const createAndOpenDocument = async (input?: { title?: string; content?: DocNode; skipContent?: boolean }) => {
+  const createAndOpenDocument = async (input?: { title?: string; content?: DocNode; skipContent?: boolean; documentSettings?: DocumentStudioSettings }) => {
     const library = libraryRef.current;
     if (!library) return;
     try {
@@ -596,7 +608,7 @@ export default function DocumentStudioEditor() {
       const record = await library.createDocument({
         title: input?.title ?? defaultDocumentTitle(isUrRef.current),
         content: input?.content ?? emptyDocumentContent(dir),
-        documentSettings: defaultDocumentSettings(),
+        documentSettings: input?.documentSettings ?? defaultDocumentSettings(),
       });
       applyRecordToEditor(record, { skipContent: input?.skipContent });
       await refreshLibraryList(library);
@@ -811,15 +823,45 @@ export default function DocumentStudioEditor() {
   };
 
 
-  // Mode change: never present a preview generated under a different language
+  // Mode change: never present a preview generated under a different language.
+  // Direction is not tied to this mode; the ruler follows the document.
   useEffect(() => {
     setPreview(null);
     setAlreadyClean(false);
     setLastResolved(null);
-    if (processingLanguage === "en") setDir("ltr");
-    else if (processingLanguage === "ur" || processingLanguage === "ar") setDir("rtl");
-    // Auto: display dir stays user-controlled until process runs
   }, [processingLanguage]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const sync = () => {
+      const { $from } = editor.state.selection;
+      const nodes = [];
+      for (let depth = 1; depth <= $from.depth; depth += 1) {
+        const node = $from.node(depth);
+        nodes.push({ typeName: node.type.name, directionMode: node.attrs.directionMode, dir: node.attrs.dir });
+      }
+      setDir(rulerDirectionAtSelection(nodes));
+    };
+    sync();
+    editor.on("selectionUpdate", sync);
+    editor.on("transaction", sync);
+    return () => {
+      editor.off("selectionUpdate", sync);
+      editor.off("transaction", sync);
+    };
+  }, [editor]);
+
+  const languageWas = useRef<string | null>(null);
+  const urduDirPending = useRef(false);
+  useEffect(() => {
+    const previous = languageWas.current;
+    languageWas.current = uiLanguage;
+    if (previous !== null && previous !== uiLanguage && uiLanguage === "ur") urduDirPending.current = true;
+    if (!urduDirPending.current || !editor) return;
+    urduDirPending.current = false;
+    setDir("rtl");
+    applyParagraphDirection(editor, "rtl");
+  }, [uiLanguage, editor]);
 
   /** Write normalized TipTap JSON into the live editor (with undo history). */
   const applyNormalizedDocument = (normalized: DocNode): boolean => {
@@ -1401,7 +1443,10 @@ export default function DocumentStudioEditor() {
       openImageInsert: () => imageInputRef.current?.click(),
       insertPageBreak,
       insertSectionBreak,
-      setDir: (direction) => { if (editor) applyParagraphDirection(editor, direction); },
+      setDir: (direction) => {
+        setDir(direction);
+        if (editor) applyParagraphDirection(editor, direction);
+      },
       standardize: handleStandardizeClick,
       audit: handleRunAudit,
       showStats: () => setRightPanel("quality"),
@@ -1524,6 +1569,9 @@ export default function DocumentStudioEditor() {
     };
   }, [editor]);
 
+  const onZoomPercentChange = useCallback((percent: number) => {
+    setZoomPercent((prev) => (prev === percent ? prev : percent));
+  }, []);
   const [onDemandFaces, setOnDemandFaces] = useState("");
   useEffect(() => {
     if (!editor) return;
@@ -1548,7 +1596,7 @@ export default function DocumentStudioEditor() {
   }, [editor]);
 
   return (
-    <div className="mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4">
+    <div className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
       {jameelFace ? <style data-studio-jameel-face="true">{studioJameelFontFaceCss()}</style> : null}
       {onDemandFaces ? <style data-studio-on-demand-faces="true">{onDemandFaces}</style> : null}
       <input
@@ -1588,7 +1636,7 @@ export default function DocumentStudioEditor() {
           }}
           onNew={() => {
             setLibraryOpen(false);
-            void createAndOpenDocument();
+            setNewDocOpen(true);
           }}
           onRename={(id) => {
             void renameLibraryDocument(id);
@@ -1629,6 +1677,7 @@ export default function DocumentStudioEditor() {
 
       <DocumentStudioShell
         isUr={isUr}
+        fillWindow={fillWindow}
         topBar={
           <DocumentTopBar
             isUr={isUr}
@@ -1657,6 +1706,7 @@ export default function DocumentStudioEditor() {
         menuBar={
           <DocumentMenuBar
             isUr={isUr}
+            showHome={fillWindow}
             onAction={handleMenuAction}
             disabledIds={disabledIds}
             checkedIds={checkedIds}
@@ -1732,12 +1782,29 @@ export default function DocumentStudioEditor() {
             auditScore={auditReport?.score ?? null}
             auditStale={isAuditStale}
             pageCount={pageCount}
+            visiblePage={visiblePage}
+            zoom={zoom}
+            zoomPercent={zoomPercent}
+            onPageStep={(delta) => {
+              const root = document.querySelector("[data-studio-print-root]") as HTMLElement | null;
+              const stride = Number(root?.getAttribute("data-page-stride-px") || 0);
+              const total = pageCount ?? 1;
+              const next = Math.min(total, Math.max(1, visiblePage + delta));
+              if (root && stride > 0) root.scrollTo({ top: (next - 1) * stride });
+              setVisiblePage(next);
+            }}
           />
         }
         onDismissLeft={() => setLeftPanel("none")}
         onDismissRight={() => setRightPanel("none")}
       >
-        <div className="p-3 sm:p-4 md:p-6">
+        <div className="flex min-h-0 flex-1 flex-col">
+          {newDocOpen ? (
+            <NewDocumentDialog
+              onCancel={() => setNewDocOpen(false)}
+              onConfirm={confirmNewDocument}
+            />
+          ) : null}
           {uploadError && (
             <div className="mb-3 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs font-medium" dir="rtl">
               {uploadError}
@@ -1764,6 +1831,8 @@ export default function DocumentStudioEditor() {
             </div>
           )}
 
+          <div className="relative min-h-0 flex-1">
+            <div className="absolute inset-0">
           <DocumentCanvas
             editor={editor}
             dir={dir}
@@ -1779,9 +1848,15 @@ export default function DocumentStudioEditor() {
             onLoadExample={handleLoadExample}
             onWrapperClick={handleWrapperClick}
             onPageCountChange={setPageCount}
+            onVisiblePageChange={setVisiblePage}
+            onZoomPercentChange={onZoomPercentChange}
+            columnCount={columnCount}
+            columnGutterMm={columnGutterMm}
           />
+            </div>
+          </div>
 
-          <div className="mt-3 space-y-3" dir={dir} ref={standardizeButtonRef}>
+          <div className="max-h-48 shrink-0 overflow-auto" dir={dir} ref={standardizeButtonRef}>
             {exampleJustLoaded && (
               <p
                 className={`rounded-lg border border-[#1A3A2A]/15 bg-[#F3F7F2] px-3 py-2.5 text-sm font-medium text-[#1A3A2A] ${isUr ? "font-naskh" : ""}`}

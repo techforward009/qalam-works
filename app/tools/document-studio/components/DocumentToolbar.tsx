@@ -575,6 +575,9 @@ export const DOCUMENT_TOOLBAR_LEADING = ["undo", "redo", "zoom", "style"] as con
 export default function DocumentToolbar({
   editor,
   dir,
+  setDir,
+  processingLanguage,
+  setProcessingLanguage,
   isUr,
   zoom = 100,
   onZoomChange,
@@ -717,6 +720,24 @@ export default function DocumentToolbar({
           </select>
         </label>
       )}
+      {setProcessingLanguage ? (
+        <label className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
+          <span className="sr-only">{isUr ? "متن کی زبان" : "Document language"}</span>
+          <select
+            className={selectCls}
+            aria-label={isUr ? "متن کی زبان" : "Document language"}
+            data-studio-document-language="true"
+            data-latin-control="true"
+            value={processingLanguage ?? "ur"}
+            onChange={(event) => setProcessingLanguage(event.target.value as ProcessingLanguage)}
+          >
+            <option value="ur">Urdu</option>
+            <option value="ar">Arabic</option>
+            <option value="en">English</option>
+            <option value="auto">Auto</option>
+          </select>
+        </label>
+      ) : null}
       <ToolbarDivider />
       <select
         id="studio-block-style"
@@ -822,10 +843,10 @@ export default function DocumentToolbar({
       <ToolbarButton label={isUr ? "خودکار سمت" : "Automatic paragraph direction"} active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")} latin>
         Auto
       </ToolbarButton>
-      <ToolbarButton label={isUr ? "دائیں سے بائیں" : "Right-to-left (Urdu/Arabic/Persian)"} active={ui.directionMode === "rtl"} onClick={() => applyParagraphDirection(editor, "rtl")} latin>
+      <ToolbarButton label={isUr ? "دائیں سے بائیں" : "Right-to-left (Urdu/Arabic/Persian)"} active={ui.directionMode === "rtl"} onClick={() => { setDir("rtl"); applyParagraphDirection(editor, "rtl"); }} latin>
         RTL
       </ToolbarButton>
-      <ToolbarButton label={isUr ? "بائیں سے دائیں" : "Left-to-right (English)"} active={ui.directionMode === "ltr"} onClick={() => applyParagraphDirection(editor, "ltr")} latin>
+      <ToolbarButton label={isUr ? "بائیں سے دائیں" : "Left-to-right (English)"} active={ui.directionMode === "ltr"} onClick={() => { setDir("ltr"); applyParagraphDirection(editor, "ltr"); }} latin>
         LTR
       </ToolbarButton>
       <div

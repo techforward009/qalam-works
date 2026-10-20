@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function DocumentStudioPage() {
-  return <DocumentStudioContent />;
+  return <DocumentStudioContent fillWindow />;
 }

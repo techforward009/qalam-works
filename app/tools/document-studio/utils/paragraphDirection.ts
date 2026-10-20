@@ -5,6 +5,28 @@ export { detectParagraphDirection } from "./paragraphDirectionDetection";
 
 export type ParagraphDirectionMode = "auto" | "rtl" | "ltr";
 
+/** Ruler origin follows an explicit mode, then the paragraph dir, then the document default. */
+export function resolveRulerDirection(
+  directionMode: unknown,
+  paragraphDir: unknown,
+  documentDir: "rtl" | "ltr" = "rtl",
+): "rtl" | "ltr" {
+  if (directionMode === "rtl" || directionMode === "ltr") return directionMode;
+  if (paragraphDir === "rtl" || paragraphDir === "ltr") return paragraphDir;
+  return documentDir;
+}
+
+export function rulerDirectionAtSelection(
+  nodes: Array<{ typeName: string; directionMode: unknown; dir: unknown }>,
+): "rtl" | "ltr" {
+  for (let index = nodes.length - 1; index >= 0; index -= 1) {
+    const node = nodes[index];
+    if (node.typeName !== "paragraph" && node.typeName !== "heading") continue;
+    return resolveRulerDirection(node.directionMode, node.dir, "rtl");
+  }
+  return "rtl";
+}
+
 export const ParagraphAutoDirection = Extension.create({
   name: "paragraphAutoDirection",
   onCreate() {

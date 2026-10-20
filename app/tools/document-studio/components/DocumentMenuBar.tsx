@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import {
   applyMenuEscape,
   CLOSED_MENU_STATE,
@@ -174,11 +175,13 @@ export default function DocumentMenuBar({
   onAction,
   disabledIds,
   checkedIds,
+  showHome = false,
 }: {
   isUr: boolean;
   onAction: (id: MenuActionId) => void;
   disabledIds?: ReadonlySet<MenuActionId>;
   checkedIds?: ReadonlySet<MenuActionId>;
+  showHome?: boolean;
 }) {
   const [openState, setOpenState] = useState<MenuOpenState>(CLOSED_MENU_STATE);
   const [inlineSubmenus, setInlineSubmenus] = useState(false);
@@ -389,6 +392,20 @@ export default function DocumentMenuBar({
         }
       }}
     >
+      {showHome ? (
+        <Link
+          href="/"
+          data-studio-home="true"
+          data-latin-control="true"
+          className="me-1 inline-flex h-9 shrink-0 items-center gap-1.5 rounded px-1.5 text-[13px] font-semibold text-[#1A3A2A] hover:bg-[#F3F7F2]"
+        >
+          <span className="grid h-5 w-5 place-items-center rounded bg-[#1A3A2A] text-[10px] font-bold text-white" aria-hidden>
+            Q
+          </span>
+          <span className="hidden sm:inline">Qalam Works</span>
+          <span className="sm:hidden">{isUr ? "واپس" : "Back"}</span>
+        </Link>
+      ) : null}
       {DOCUMENT_MENU_BAR.map((menu) => {
         const open = openState.menuId === menu.id;
         return (

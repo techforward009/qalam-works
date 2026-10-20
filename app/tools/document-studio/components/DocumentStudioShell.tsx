@@ -18,6 +18,7 @@ export default function DocumentStudioShell({
   statusBar,
   onDismissLeft,
   onDismissRight,
+  fillWindow = false,
   children,
 }: {
   isUr: boolean;
@@ -30,6 +31,7 @@ export default function DocumentStudioShell({
   statusBar: React.ReactNode;
   onDismissLeft?: () => void;
   onDismissRight?: () => void;
+  fillWindow?: boolean;
   children: React.ReactNode;
 }) {
   const leftOpen = Boolean(leftSidebar);
@@ -37,22 +39,27 @@ export default function DocumentStudioShell({
   const shellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (fillWindow) return;
     const el = shellRef.current;
     if (!el) return;
     const fit = () => {
       const top = el.getBoundingClientRect().top;
-      const next = Math.max(320, window.innerHeight - Math.max(0, top) - 16);
+      const next = Math.max(320, window.innerHeight - Math.max(0, top));
       el.style.height = `${Math.round(next)}px`;
     };
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
-  }, []);
+  }, [fillWindow]);
 
   return (
     <div
       ref={shellRef}
-      className="flex min-h-80 max-w-full flex-col overflow-hidden rounded-2xl border border-[#1A3A2A]/10 bg-[#F4F1EA] shadow-[0_2px_20px_rgba(26,58,42,0.06)]"
+      className={
+        fillWindow
+          ? "flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-[#f7f6f3]"
+          : "flex min-h-80 max-w-full flex-col overflow-hidden rounded-2xl border border-[#1A3A2A]/10 bg-[#F4F1EA] shadow-[0_2px_20px_rgba(26,58,42,0.06)]"
+      }
       data-studio-shell="true"
       data-studio-ui-language={isUr ? "ur" : "en"}
       dir={isUr ? "rtl" : "ltr"}
@@ -90,7 +97,7 @@ export default function DocumentStudioShell({
           </div>
         )}
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#F3F4F6]" data-studio-canvas-slot="true">{children}</div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#f7f6f3]" data-studio-canvas-slot="true">{children}</div>
 
         {rightOpen && (
           <div
