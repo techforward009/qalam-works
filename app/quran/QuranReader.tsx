@@ -1440,6 +1440,7 @@ function QuranPageSurface({
                             item.text
                           }
                         </span>
+                        {editionId === "digital-khatt" && <span className="mx-1 inline-flex items-center rounded-full border border-[#9a884f] px-1.5 text-[0.55em] leading-[1.5] text-[#3c472c]" aria-label={`Ayah ${item.ayah}`}><span aria-hidden="true">۝{easternDigits(item.ayah)}</span></span>}
                         <button type="button" className="mx-1 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(
                             (editionId === "digital-khatt" ? digitalReaderModel.getReaderAyah(item.surah,item.ayah) : ahmedReaderModel.getReaderAyah(item.surah,item.ayah))?.text ?? item.text
                           )}><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button>
