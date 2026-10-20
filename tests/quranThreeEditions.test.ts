@@ -16,7 +16,8 @@ describe("new Quran edition rules",()=>{
    expect(readFileSync("app/quran/layout.tsx","utf8")).not.toContain("QuranThemeControl");
  });
  it("aligns precisely all 114 surahs to existing Urdu translation verse numbering",()=>{
-   const aligned=alignDigitalKhattToTranslation(raw);
+   const originalRaw=raw as Record<string,{chapter:number;verse:number;text:string}[]>;
+   const aligned=alignDigitalKhattToTranslation(originalRaw);
    let offset=0;
    const original=raw["1"].map(row=>row.text);
    expect(aligned["1"].map(row=>row.text)).toEqual([
@@ -25,7 +26,7 @@ describe("new Quran edition rules",()=>{
    expect((aligned["1"].slice(1).map(v=>v.text).join("").match(waqf)??[]).join(""))
      .toBe((original.join("").match(waqf)??[]).join(""));
    for(let s=1;s<=114;s++){
-     const source=raw[String(s)],shown=aligned[String(s)];
+     const source=originalRaw[String(s)],shown=aligned[String(s)];
      expect(shown).toHaveLength(HAFS_AYAH_COUNTS[s-1]);
      for(let a=1;a<=shown.length;a++){
        expect(digital.getAyah(s,a)?.text).toBe(shown[a-1].text);
