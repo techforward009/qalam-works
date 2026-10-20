@@ -1,20 +1,7 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import QuranReader from "../../QuranReader";
-import { surahTitle } from "../../reader/metadata";
-import { getReaderAyah } from "../../reader/model";
-
-export async function generateMetadata({ params }: { params: Promise<{ surah: string; ayah: string }> }): Promise<Metadata> {
-  const { surah, ayah } = await params;
-  const found = getReaderAyah(Number(surah), Number(ayah));
-  if (!found) return { title: "Quran" };
-  return { title: `${surahTitle(found.surah)} ${found.ayah} — Qalam Works` };
-}
-
-export default async function QuranAyahPage({ params }: { params: Promise<{ surah: string; ayah: string }> }) {
-  const { surah, ayah } = await params;
-  const surahNumber = Number(surah);
-  const ayahNumber = Number(ayah);
-  if (!Number.isInteger(surahNumber) || !Number.isInteger(ayahNumber) || !getReaderAyah(surahNumber, ayahNumber)) notFound();
-  return <QuranReader surah={surahNumber} ayah={ayahNumber} />;
+import {redirect,notFound} from "next/navigation";
+import {HAFS_AYAH_COUNTS} from "../../../tools/arabic-diacritics/quran/hafsCounts";
+export default async function LegacyQuranAyah({params}:{params:Promise<{surah:string;ayah:string}>}){
+ const {surah,ayah}=await params;const s=Number(surah),a=Number(ayah);
+ if(!/^\d{1,3}$/.test(surah)||!/^\d{1,3}$/.test(ayah)||s<1||s>114||a<1||a>(HAFS_AYAH_COUNTS[s-1]??0))notFound();
+ redirect("/quran/indopak-digital-khatt/"+s+"/"+a);
 }

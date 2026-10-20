@@ -226,17 +226,11 @@ textarea {
 }
 
 .qalam-book-arabic,
-.qalam-book-arabic .khateeb-muhammadi-quranic {
-  font-family: "Digital Khatt IndoPak Book", "Muhammadi Quranic", serif !important;
+.qalam-book-arabic .khateeb-digital-khatt-quranic {
+  font-family: "Digital Khatt IndoPak Book", serif !important;
 }
 
-@font-face {
-  font-family: "Muhammadi Quranic";
-  src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/muhammadi-quranic-400.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+
 
 @font-face {
   font-family: "Gulzar";
@@ -2068,7 +2062,7 @@ html[lang="ur"] :is(h1, h2, h3, h4, h5, h6):not(:where(
   .ProseMirror *, .tiptap *, [contenteditable="true"] *,
   .qalam-editor-content *, .quran-page *, .quran-flow *,
   .quran-ayah *, .document-canvas *, .qalam-book-arabic, .qalam-book-arabic *,
-  .khateeb-muhammadi-quranic, .khateeb-muhammadi-quranic *
+  .khateeb-digital-khatt-quranic, .khateeb-digital-khatt-quranic *
 )) {
   font-family: var(--qalam-urdu-heading);
 }

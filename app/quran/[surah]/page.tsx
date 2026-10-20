@@ -1,15 +1,6 @@
-import { notFound, redirect } from "next/navigation";
-import { getReaderAyah } from "../reader/model";
-
-export default async function QuranSurahPage({
-  params,
-}: {
-  params: Promise<{ surah: string }>;
-}) {
-  const { surah } = await params;
-  const number = Number(surah);
-  if (!/^(?:[1-9]|[1-9][0-9]|1[01][0-9]|11[0-4])$/.test(surah) || !Number.isInteger(number) || !getReaderAyah(number, 1)) {
-    notFound();
-  }
-  redirect(`/quran/${number}/1`);
+import {redirect,notFound} from "next/navigation";
+export default async function LegacyQuranSurah({params}:{params:Promise<{surah:string}>}){
+ const {surah}=await params;const s=Number(surah);
+ if(!/^\d{1,3}$/.test(surah)||s<1||s>114)notFound();
+ redirect("/quran/indopak-digital-khatt/"+s+"/1");
 }

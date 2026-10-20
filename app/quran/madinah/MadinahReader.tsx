@@ -381,7 +381,7 @@ export default function MadinahReader({
   return (
     <main className={styles.reader} dir="ltr">
       <div className={styles.container}>
-        <EditionTopBar editionId="madinah-v2" />
+        <EditionTopBar editionId="madinah-v2" surah={surah} ayah={ayah} />
 
         <div className={styles.grid}>
           <aside className={styles.sidebar}>

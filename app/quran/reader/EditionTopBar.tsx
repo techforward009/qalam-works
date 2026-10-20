@@ -1,37 +1,23 @@
 "use client";
-
 import Link from "next/link";
-import { useLanguage } from "../../lib/language-context";
-import { getQuranEdition, type QuranEditionId } from "../editions";
-
-export default function EditionTopBar({ editionId }: { editionId: QuranEditionId }) {
-  const { language, dir } = useLanguage();
-  const edition = getQuranEdition(editionId);
-
-  const mehr = language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined;
-
-  return (
-    <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#d9d2c2] pb-3" dir="ltr">
-      <div dir={dir} lang={language}>
-        <div className="text-sm font-semibold tracking-wide text-[#2f8f68]" style={mehr}>
-          {edition.name[language]}
-        </div>
-        <div className="mt-1 text-xs text-[#756f62]" style={mehr}>
-          {edition.description[language]}
-        </div>
-        <div className="mt-0.5 text-xs text-[#8a8478]" style={mehr}>
-          {edition.detail[language]} · {edition.rendering[language]}
-        </div>
-      </div>
-      <Link
-        href="/quran"
-        className="text-sm text-[#2f8f68] hover:underline"
-        dir={dir}
-        lang={language}
-        style={mehr}
-      >
-        {language === "ur" ? "قرآن کے تمام ایڈیشنز" : "All Quran Editions"}
-      </Link>
-    </header>
-  );
+import {useLanguage} from "../../lib/language-context";
+import {QURAN_EDITIONS,type QuranEditionId,getQuranEdition} from "../editions";
+export default function EditionTopBar({editionId,surah=1,ayah=1}:{editionId:QuranEditionId;surah?:number;ayah?:number}){
+ const {language,dir}=useLanguage();
+ const edition=getQuranEdition(editionId);
+ const prefix=(id:QuranEditionId)=>id==="madinah-v2"?"/quran/madinah":id==="digital-khatt"?"/quran/indopak-digital-khatt":"/quran/ahmedgraf";
+ return <header data-quran-edition-picker className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#d9d2c2] pb-3" dir={dir}>
+   <div lang={language} className="min-w-0 flex-1">
+     <p className="text-sm font-semibold text-[#2f8f68]">{edition.name[language]}</p>
+     <p className="mt-1 text-xs text-[#756f62]">{edition.description[language]}</p>
+   </div>
+   <label className="flex items-center gap-2 text-xs font-medium text-[#354a3d]">
+    <span>{language==="ur"?"قرآنی ایڈیشن":"Quran edition"}</span>
+    <select aria-label={language==="ur"?"قرآنی ایڈیشن منتخب کریں":"Select Quran edition"} className="max-w-[190px] rounded-lg border border-[#a4b3a1] bg-white px-3 py-2 text-[#1b332a] dark:bg-slate-900 dark:text-white"
+      value={editionId} onChange={e=>{window.location.assign(prefix(e.target.value as QuranEditionId)+"/"+surah+"/"+ayah)}}>
+      {QURAN_EDITIONS.map(v=><option key={v.id} value={v.id}>{v.name[language]}</option>)}
+    </select>
+   </label>
+   <Link href="/quran" className="text-xs text-[#2f8f68] underline">{language==="ur"?"مدینہ سے آغاز":"Open default"}</Link>
+ </header>;
 }

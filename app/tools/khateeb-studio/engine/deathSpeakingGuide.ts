@@ -1,4 +1,4 @@
-import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../arabic-diacritics/quran/publicDigitalKhattProvider";
 import { quranTranslationFor, QURAN_TRANSLATION_SOURCES } from "./quranTranslationProvider";
 import type { SermonDuration, SermonLocale } from "./sermonPrep";
 import type { SpeakerEvidence } from "./speakerEvidence";
@@ -124,7 +124,7 @@ export function buildDeathSpeakingGuideText(locale: SermonLocale, duration: Serm
   DEATH_SPEAKING_GUIDE.forEach((section, index) => {
     lines.push("", `${section.heading[locale]} — ${minutes[index + 1]} ${ur ? "منٹ" : "min"}`, section.point[locale]);
     for (const location of section.verses) {
-      const arabic = ahmedgrafQuranReference.getAyah(location.surah, location.ayah)?.text;
+      const arabic = publicDigitalKhattQuranReference.getAyah(location.surah, location.ayah)?.text;
       const translation = quranTranslationFor(location.surah, location.ayah, locale);
       lines.push(`${ur ? "قرآن" : "Qur'an"} ${location.surah}:${location.ayah}`);
       if (arabic) lines.push(arabic);

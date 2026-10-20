@@ -23,7 +23,7 @@ export type FontId =
   | "gulzar"
   | "nafees-nastaleeq"
   | "scheherazade-new"
-  | "muhammadi-quranic";
+;
 
 export type Direction = "rtl" | "ltr";
 
@@ -342,7 +342,6 @@ const HIDDEN_EDITOR_FONT_IDS: ReadonlySet<FontId> = new Set([
   "default",
   "noto-nastaliq-urdu",
   "nafees-nastaleeq",
-  "muhammadi-quranic",
 ]);
 
 export function listEditorFonts(): StudioFontDefinition[] {
@@ -387,11 +386,11 @@ const REMOVED_UNLICENSED_FONT_FAMILIES = new Set([
   "Faiz Lahori",
 ]);
 export const REMOVED_FONT_FALLBACK_FAMILY = "Scheherazade New";
-export const QURAN_FONT_FALLBACK_FAMILY = "Muhammadi Quranic";
+export const QURAN_FONT_FALLBACK_FAMILY = "Digital Khatt Indo-Pak";
 
 /** Asif Quranic and Al Qalam Quran Majeed are not licensed for this site. */
-const REMOVED_QURAN_FONT_IDS = new Set(["asif-quranic", "al-qalam-quran-majeed"]);
-const REMOVED_QURAN_FONT_FAMILIES = new Set(["Asif Quranic", "Al Qalam Quran Majeed"]);
+const REMOVED_QURAN_FONT_IDS = new Set(["asif-quranic", "al-qalam-quran-majeed", "muhammadi-quranic"]);
+const REMOVED_QURAN_FONT_FAMILIES = new Set(["Asif Quranic", "Al Qalam Quran Majeed", "Muhammadi Quranic"]);
 const QURAN_TEXT_SIGNS = /[\u0615-\u0617\u06D6-\u06ED\u08D3-\u08FF]/u;
 
 export function isRemovedQuranFont(raw: unknown): boolean {
@@ -402,7 +401,7 @@ export function isRemovedQuranFont(raw: unknown): boolean {
   return REMOVED_QURAN_FONT_FAMILIES.has(first);
 }
 
-/** Quranic annotation signs keep Muhammadi Quranic. Other saved text uses Scheherazade New. */
+/** Legacy Quranic annotations use OFL Digital Khatt, not a restricted font. */
 export function removedQuranFontReplacement(text: string): string {
   return QURAN_TEXT_SIGNS.test(text) ? QURAN_FONT_FALLBACK_FAMILY : REMOVED_FONT_FALLBACK_FAMILY;
 }
@@ -482,7 +481,7 @@ export function resolveEditorFontFamily(
     return resolveEditorFontFamily("Mehr Nastaliq Web", globalDir);
   }
   if (isRemovedQuranFont(requested)) {
-    return resolveEditorFontFamily(REMOVED_FONT_FALLBACK_FAMILY, globalDir);
+    return resolveEditorFontFamily(QURAN_FONT_FALLBACK_FAMILY, globalDir);
   }
   if (isRemovedUnlicensedFont(requested)) {
     return resolveEditorFontFamily(REMOVED_FONT_FALLBACK_FAMILY, globalDir);

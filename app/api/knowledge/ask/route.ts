@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { researchBlobClientFromEnv } from "../../research/vercelResearchBlob";
 import { loadBookCatalog } from "../../../lib/knowledge/store";
 import { readBookSource } from "../../../lib/knowledge/sourceCache";
-import { ahmedgrafQuranReference } from "../../../tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../../tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import type { BookSource, BookRecord } from "../../../lib/knowledge/bookCorpus";
 import { retrieveKnowledgeWithContext, type KnowledgeScope } from "../../../lib/knowledge/retrieval";
 import { QURAN_TRANSLATION_SOURCES } from "../../../tools/khateeb-studio/engine/quranTranslationProvider";
@@ -41,10 +41,10 @@ export async function POST(req: NextRequest) {
       if (catalog) { sources = catalog.manifest.sources.filter(s => (scope === "all" || s.book === scope) && (s.language === "ar" || s.language === locale)); records = (await Promise.all(sources.map(s => readBookSource(client, catalog, s.id)))).flat(); }
     }
     const inferredTopicIds = await interpretation;
-    let result = retrieveKnowledgeWithContext({ candidateLimit: mode === "research" ? 16 : 8, inferredTopicIds, question: question.trim(), ...(typeof contextQuestion === "string" ? { contextQuestion: contextQuestion.trim() } : {}), scope: scope as KnowledgeScope, locale: locale as "ur" | "en", records, sources, quran: ahmedgrafQuranReference.listAyahs().map(ayah => {
+    let result = retrieveKnowledgeWithContext({ candidateLimit: mode === "research" ? 16 : 8, inferredTopicIds, question: question.trim(), ...(typeof contextQuestion === "string" ? { contextQuestion: contextQuestion.trim() } : {}), scope: scope as KnowledgeScope, locale: locale as "ur" | "en", records, sources, quran: publicDigitalKhattQuranReference.listAyahs().map(ayah => {
       const text = completeQuranTranslationFor(ayah.surah, ayah.ayah, locale as "ur" | "en");
       return { ...ayah, ...(text ? { suppliedTranslation: { text, language: locale as "ur" | "en", translator: locale === "ur" ? QURAN_TRANSLATION_SOURCES.ur.translatorUr : QURAN_TRANSLATION_SOURCES.en.translatorEn } } : {}) };
-    }), quranSha256: ahmedgrafQuranReference.getMetadata().sourceSha256! });
+    }), quranSha256: publicDigitalKhattQuranReference.getMetadata().referenceHash });
     result.questionUnderstanding = inferredTopicIds.length ? "model" : "lexical";
     if (mode === "research") result = await rankKnowledgePassages(result, { accountId: process.env.CLOUDFLARE_ACCOUNT_ID, token: process.env.CLOUDFLARE_AUTH_TOKEN, caller });
     result = attachCorpusTranslations(result, records, sources, locale as "ur" | "en");

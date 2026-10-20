@@ -1,6 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import * as digitalReaderModel from "./reader/digitalModel";
+import * as ahmedReaderModel from "./reader/model";
+import { ahmedgrafQuranReference } from "../tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { DIGITAL_KHATT_BASMILLAH } from "./indopak-digital-khatt/data";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
@@ -38,13 +42,6 @@ import {
   QURAN_FONT_STACK,
   QURAN_LAYOUT_PROFILE,
 } from "./reader/profile";
-
-function href(
-  surah: number,
-  ayah: number,
-): string {
-  return `/quran/${surah}/${ayah}`;
-}
 
 type ReaderLanguage = "en" | "ur";
 
@@ -134,12 +131,18 @@ const SIDEBAR_COPY: Record<
 export default function QuranReader({
   surah,
   ayah,
+  editionId = "qalam-indopak",
 }: {
   surah: number;
   ayah: number;
+  editionId?: "digital-khatt" | "qalam-indopak";
 }) {
   const router = useRouter();
   const { language } = useLanguage();
+  const model = editionId === "digital-khatt" ? digitalReaderModel : ahmedReaderModel;
+  const {adjacentAyah,adjacentPage,ayahsOnPage,copyPageText,getReaderAyah,juzOf,juzStart,pageByNumber,pageCount,pageOf,searchQuran} = model;
+  const href = (s: number,a: number) => editionId === "digital-khatt"
+    ? `/quran/indopak-digital-khatt/${s}/${a}` : `/quran/ahmedgraf/${s}/${a}`;
 
   const current = getReaderAyah(
     surah,
@@ -494,10 +497,12 @@ export default function QuranReader({
   return (
     <main
       className="quran-reader min-h-screen"
+      data-quran-edition={editionId}
       dir="ltr"
     >
       <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4">
-        <EditionTopBar editionId="qalam-indopak" />
+        <EditionTopBar editionId={editionId} surah={surah} ayah={ayah} />
+        {editionId === "qalam-indopak" && <p className="my-2 text-center text-sm text-[#416448]">{language === "ur" ? "قرآنی متن: احمد گرافکس" : "Quran text: Ahmed Grafics"} · <a href="https://ahmedgraf.com" rel="noopener noreferrer" target="_blank" className="underline">ahmedgraf.com</a><details className="mx-auto max-w-2xl text-xs"><summary className="cursor-pointer underline">{language === "ur" ? "ماخذ اور اجازت نامہ" : "Source licence notice"}</summary><span>{ahmedgrafQuranReference.getMetadata().referenceLicense}</span></details></p>}
         <div
           className="quran-reader-layout grid grid-cols-1 items-start gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-4"
           dir="ltr"
@@ -855,6 +860,11 @@ export default function QuranReader({
                   ? copy.copyDone
                   : copy.copy}
               </button>
+              <button type="button" aria-label={language === "ur" ? "پوری سورت نقل کریں" : "Copy whole surah"}
+                  className="mt-2 w-full border border-[#b5bbb1] bg-white px-2 py-1.5 text-xs text-[#465046]"
+                  onClick={() => void navigator.clipboard.writeText(
+                    Array.from({length:HAFS_AYAH_COUNTS[surah-1]??0},(_,i)=>getReaderAyah(surah,i+1)?.text??"").join("\n")
+                  )}>{language === "ur" ? "پوری سورت نقل کریں" : "Copy whole surah"}</button>
             </SidebarSection>
 
             <SidebarSection
@@ -1062,9 +1072,8 @@ export default function QuranReader({
                   ayahs={
                     ayahs
                   }
-                  fontFamily={
-                    QURAN_FONT_STACK
-                  }
+                  fontFamily={editionId === "digital-khatt" ? QURAN_FONT_STACK : '"Digital Khatt IndoPak Book", "Noto Naskh Arabic", serif'}
+                  editionId={editionId}
                   scale={
                     scale
                   }
@@ -1288,6 +1297,7 @@ function QuranPageSurface({
   scale,
   idPrefix = "",
   faceLabel,
+  editionId = "qalam-indopak",
   onPreviousPage,
   onNextPage,
 }: {
@@ -1299,12 +1309,13 @@ function QuranPageSurface({
   scale: number;
   idPrefix?: string;
   faceLabel?: string;
+  editionId?: "digital-khatt" | "qalam-indopak";
   onPreviousPage: () => void;
   onNextPage: () => void;
 }) {
   const blocks =
     blocksFor(
-      ayahs,
+      ayahs, editionId,
     );
 
   return (
@@ -1370,6 +1381,8 @@ function QuranPageSurface({
                     {
                       block.text
                     }
+                    {block.anchor && editionId === "digital-khatt" && <span className="mx-1 text-[0.58em]">۝{easternDigits(1)}</span>}
+                    {block.anchor && <button type="button" className="mx-2 text-[0.48em] underline" onClick={() => void navigator.clipboard.writeText(block.text)} aria-label="Copy verse 1">⧉</button>}
                   </p>
                 );
               }
@@ -1424,6 +1437,7 @@ function QuranPageSurface({
                             item.text
                           }
                         </span>
+                        <button type="button" className="mx-1 align-middle text-[0.43em] underline" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(item.text)}>⧉</button>
                       </span>
                     ),
                   )}
@@ -1486,6 +1500,7 @@ export {
 
 function blocksFor(
   ayahs: readonly QuranAyah[],
+  editionId: "digital-khatt" | "qalam-indopak" = "qalam-indopak",
 ) {
   const blocks: Array<
     | {
@@ -1548,9 +1563,7 @@ function blocksFor(
     const ayah of ayahs
   ) {
     const pieces =
-      displayPieces(
-        ayah,
-      );
+      (editionId === "digital-khatt" ? digitalReaderModel : ahmedReaderModel).displayPieces(ayah);
 
     if (
       ayah.surah === 1 &&
@@ -1588,6 +1601,10 @@ function blocksFor(
         surah:
           ayah.surah,
       });
+      if (editionId === "digital-khatt" && ayah.surah !== 9) {
+        blocks.push({kind:"bismillah",id:"opening-"+ayah.id,surah:ayah.surah,ayah:1,
+          text:DIGITAL_KHATT_BASMILLAH,anchor:false});
+      }
     }
 
     if (

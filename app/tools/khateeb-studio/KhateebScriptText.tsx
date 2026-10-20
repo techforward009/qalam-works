@@ -45,7 +45,7 @@ function ArabicSpan({ children, nonQuran = false }: { children: string; nonQuran
     <span
       dir="rtl"
       lang="ar"
-      className={nonQuran ? "qalam-book-arabic" : "khateeb-muhammadi-quranic"}
+      className={nonQuran ? "qalam-book-arabic" : "khateeb-digital-khatt-quranic"}
     >
       {renderKhateebSalawat(children)}
     </span>

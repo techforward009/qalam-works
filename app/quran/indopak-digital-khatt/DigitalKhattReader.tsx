@@ -11,6 +11,8 @@ import { useQuranKeyboardNavigation } from "../reader/keyboard";
 import { easternDigits, juzRunningHead, surahRunningHead, SURAH_NAMES } from "../reader/metadata";
 import {
   DIGITAL_KHATT_EDITION,
+  alignDigitalKhattToTranslation,
+  DIGITAL_KHATT_BASMILLAH,
   buildDigitalKhattPages,
   chapterVerses,
   digitalKhattJuzOf,
@@ -26,7 +28,7 @@ import styles from "./reader.module.css";
 import { surahBanner } from "./surahBanner";
 import { displaySurahBannerName, initialQuranDisplayScale } from "../reader/readerPresentation";
 
-const BASMILLAH = "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ";
+const BASMILLAH = DIGITAL_KHATT_BASMILLAH;
 const TRAILING_QURAN_MARKS = /[\u0614-\u0617\u06D6-\u06DC\u08D5-\u08DF]+$/u;
 const DISPLAY_SCALE_KEY = "qalam-digital-khatt-display-scale";
 let DIGITAL_KHATT_CORPUS_CACHE: DigitalKhattCorpus | null = null;
@@ -44,7 +46,7 @@ function loadDigitalKhattCorpus(): Promise<DigitalKhattCorpus> {
       return response.json() as Promise<unknown>;
     })
     .then((value) => {
-      const corpus = isDigitalKhattCorpus(value) ? value : {};
+      const corpus = isDigitalKhattCorpus(value) ? alignDigitalKhattToTranslation(value) : {};
       DIGITAL_KHATT_CORPUS_CACHE = corpus;
       return corpus;
     })
@@ -502,7 +504,7 @@ export default function DigitalKhattReader({
                             </span>
                           </span>
 
-                          {item.chapter !== 9 && (
+                          {item.chapter !== 9 && item.chapter !== 1 && (
                             <span className={styles.bismillah}>{BASMILLAH}</span>
                           )}
                         </>
