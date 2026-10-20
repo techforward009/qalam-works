@@ -4,7 +4,7 @@ const base="http://127.0.0.1:3000";
 await mkdir("artifacts/quran-three-editions",{recursive:true});
 const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
 const editions=[["madinah","/quran/madinah"],["digital","/quran/indopak-digital-khatt"],["ahmed","/quran/ahmedgraf"]];
-const pages=[["1","1/1"],["2","2/1"],["50","2/253"]];
+const pages=[["1","1/1"],["2","2/1"],["50","3/1"]];
 try{
  for(const [edition,prefix] of editions){
   for(const [pageNumber,ayahPath] of pages){
