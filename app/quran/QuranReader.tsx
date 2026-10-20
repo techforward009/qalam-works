@@ -1650,4 +1650,3 @@ function Select({
 function DigitalKhattAyahMarker({ayah}:{ayah:number}) {
   return <span className="mx-1 inline-flex items-center justify-center rounded-full border px-1.5 align-middle" style={{borderColor:"#9a884f",fontFamily:'"Amiri","Noto Naskh Arabic",serif',fontSize:"0.84em",minWidth:"1.8em",minHeight:"1.8em",lineHeight:1.2,color:"#3c472c"}} aria-label={`Ayah ${ayah}`}><span aria-hidden="true">۝{easternDigits(ayah)}</span></span>;
 }
-
