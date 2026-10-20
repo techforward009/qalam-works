@@ -86,9 +86,9 @@ describe("Date Studio discovery surfaces", () => {
     expect(source).toMatch(/value\.ur \?\? value\.en/);
   });
 
-  it("exposes one bilingual date converter in Dates & Calendars", () => {
+  it("exposes one bilingual date converter in Dates", () => {
     const group = TOOL_GROUPS.find(group => group.id === "dates")!;
-    expect(group.name).toEqual({ en: "Dates & Calendars", ur: "تاریخیں و تقاویم" });
+    expect(group.name).toEqual({ en: "Dates", ur: "تاریخیں" });
     expect(toolsInGroup(group).filter(tool => tool.route === "/tools/date-converter")).toHaveLength(1);
   });
 

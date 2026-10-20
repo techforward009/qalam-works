@@ -48,19 +48,19 @@ function writerHref(el: HTMLElement) {
   return (el as HTMLAnchorElement).getAttribute("href") ?? "";
 }
 
-test("Header Type & Convert discovers distinct conversion pages", async () => {
+test("Header Tools discovers distinct conversion pages", async () => {
   await renderHeader();
-  fireEvent.click(screen.getByRole("button", { name: "Type & Convert" }));
+  fireEvent.click(screen.getByRole("button", { name: "Tools" }));
   expect(screen.getByRole("link", { name: "Roman Urdu Typing" }).getAttribute("href")).toBe("/tools/roman-urdu-writer");
   expect(screen.getByRole("link", { name: "Roman Urdu Converter" }).getAttribute("href")).toBe("/tools/roman-urdu-to-urdu");
   expect(screen.getByRole("link", { name: "Urdu to Roman Urdu" }).getAttribute("href")).toBe("/tools/urdu-roman-writer");
 });
 
-test("mobile Type & Convert exposes Urdu Writer and closes on navigation", async () => {
+test("mobile Tools exposes Urdu Writer and closes on navigation", async () => {
   await renderHeader();
   fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
   const mobile = document.getElementById("mobile-nav")!;
-  fireEvent.click(within(mobile).getByRole("button", { name: "Type & Convert" }));
+  fireEvent.click(within(mobile).getByRole("button", { name: "Tools" }));
   const link = within(mobile).getByRole("link", { name: "Roman Urdu Typing" });
   expect(writerHref(link)).toBe("/tools/roman-urdu-writer");
   fireEvent.click(link);
@@ -109,16 +109,17 @@ test("navigation reuses one shared catalog and preserves canonical routes", () =
   }
 });
 
-test("Header Write & Publish preserves the studio and translation routes", async () => {
+test("Header Write preserves Studio and Tools preserves translation", async () => {
   await renderHeader();
-  fireEvent.click(screen.getByRole("button", { name: "Write & Publish" }));
+  fireEvent.click(screen.getByRole("button", { name: "Write" }));
   expect(writerHref(screen.getByRole("link", { name: "Document Studio" }))).toBe("/tools/document-studio");
+  fireEvent.click(screen.getByRole("button", { name: "Tools" }));
   expect(writerHref(screen.getByRole("link", { name: "Translation Studio" }))).toBe("/tools/translation-studio");
 });
 
-test("Header Fix & Proofread preserves WhatsApp formatting", async () => {
+test("Header Tools preserves WhatsApp formatting", async () => {
   await renderHeader();
-  fireEvent.click(screen.getByRole("button", { name: "Fix & Proofread" }));
+  fireEvent.click(screen.getByRole("button", { name: "Tools" }));
   expect(writerHref(screen.getByRole("link", { name: /WhatsApp/ }))).toBe("/tools/whatsapp-rtl-formatter");
 });
 

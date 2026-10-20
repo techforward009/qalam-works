@@ -3,11 +3,11 @@ import { FEEDBACK_OPTIONS, PUBLIC_FEEDBACK_TOOLS } from "../app/lib/feedbackCata
 import { FEEDBACK_TOOLS, parseFeedback } from "../app/lib/feedback";
 import { TOOL_GROUPS, toolsInGroup } from "../app/lib/toolCatalog";
 
-it("uses catalog names and order, excludes Research Studio and puts Khateeb last", () => {
-  const catalog = TOOL_GROUPS.flatMap(toolsInGroup).filter(tool => tool.id !== "date_finder");
+it("uses catalog names and order, excludes Research Studio and footer-only Khateeb", () => {
+  const catalog = TOOL_GROUPS.flatMap(toolsInGroup).filter(tool => tool.id !== "date_finder" && tool.id !== "book_layout");
   expect(PUBLIC_FEEDBACK_TOOLS.map(tool => tool.name)).toEqual(catalog.map(tool => tool.name));
   expect(FEEDBACK_OPTIONS.some(tool => String(tool.id) === "research-studio")).toBe(false);
-  expect(FEEDBACK_OPTIONS.at(-1)?.id).toBe("khateeb-studio");
+  expect(FEEDBACK_OPTIONS.some(tool => String(tool.id) === "khateeb-studio")).toBe(false);
   for (const id of ["calendar-maker", "urdu-text-to-pdf", "roman-urdu-to-urdu", "hijri-to-gregorian"]) {
     expect(FEEDBACK_OPTIONS.some(tool => tool.id === id)).toBe(true);
   }

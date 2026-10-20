@@ -29,7 +29,7 @@ describe("Urdu-first public discovery", () => {
     expect(grouped.map(tool => tool.route)).not.toContain(privateRoute);
     expect(grouped.map(tool => tool.route)).not.toContain(footerOnly);
     expect(TOOL_GROUPS.map(group => group.name.en)).toEqual([
-      "Write & Publish", "Type & Convert", "Fix & Proofread", "Page Design & PDF", "Dates & Calendars", "Quran & Islamic Studies",
+      "Write", "Tools", "Dates", "Quran",
     ]);
     expect(sitemap().map(entry => entry.url)).not.toContain(`https://www.qalamworks.com${privateRoute}`);
     expect(sitemap().map(entry => entry.url)).not.toContain(`https://www.qalamworks.com${footerOnly}`);

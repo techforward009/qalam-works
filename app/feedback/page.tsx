@@ -4,7 +4,7 @@ import {Suspense,useState} from "react";
 import Link from "next/link";
 import FeedbackForm from "../components/FeedbackForm";
 import {useLanguage} from "../lib/language-context";
-import {FEEDBACK_OPTIONS} from "../lib/feedbackCatalog";
+import {FEEDBACK_OPTIONS,PUBLIC_FEEDBACK_GROUPS} from "../lib/feedbackCatalog";
 import {type FeedbackTool} from "../lib/feedback";
 function FeedbackPageInner(){
  const {language,dir}=useLanguage(); const ur=language==="ur";
@@ -22,7 +22,8 @@ function FeedbackPageInner(){
  <h2 className="text-2xl font-bold">{ur?"اپنی رائے درج کریں":"Share your feedback"}</h2><p className="mb-6 mt-1 text-sm text-slate-600 dark:text-slate-300">{ur?"ایک سہولت منتخب کریں اور ہمیں اپنی رائے بتائیں۔":"Choose a tool or service and share your thoughts."}</p>
  <label htmlFor="feedback-tool" className="mb-2 block font-bold">{ur?"متعلقہ اوزار یا سہولت":"Tool or service"}</label>
  <select id="feedback-tool" className="mb-6 w-full rounded-xl border border-slate-300 bg-white p-3 text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white" value={selected} onChange={e=>setSelected(e.target.value as FeedbackTool)}>
- {FEEDBACK_OPTIONS.map(t=><option key={t.id} value={t.id}>{t.name[language]}</option>)}
+ {PUBLIC_FEEDBACK_GROUPS.map(group=><optgroup key={group.name.en} label={group.name[language]}>{group.tools.map(t=><option key={t.id} value={t.id}>{t.name[language]}</option>)}</optgroup>)}
+ {FEEDBACK_OPTIONS.filter(t=>t.id==="services"||t.id==="other").map(t=><option key={t.id} value={t.id}>{t.name[language]}</option>)}
  </select>
  <FeedbackForm key={selected} tool={selected} page="/feedback"/>
  </section>

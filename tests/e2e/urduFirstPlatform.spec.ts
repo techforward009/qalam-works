@@ -27,8 +27,8 @@ for (const language of ["ur", "en"] as const) {
     if (await menu.isVisible()) await menu.click();
     const nav = (await page.locator("#mobile-nav").isVisible()) ? page.locator("#mobile-nav") : page.getByRole("navigation", { name: "Primary navigation" });
     const groups = language === "ur"
-      ? ["تحریر و اشاعت", "ٹائپنگ و تبدیلی", "اصلاح و نظرثانی", "صفحہ بندی و پی ڈی ایف", "تاریخیں و تقاویم", "قرآن و اسلامی مطالعہ"]
-      : ["Write & Publish", "Type & Convert", "Fix & Proofread", "Page Design & PDF", "Dates & Calendars", "Quran & Islamic Studies"];
+      ? ["لکھیں", "اوزار", "تاریخیں", "قرآن"]
+      : ["Write", "Tools", "Dates", "Quran"];
     for (const name of groups) {
       await nav.getByRole("button", { name, exact: true }).click();
       await expect(nav.locator("a").first()).toBeVisible();
@@ -95,7 +95,8 @@ for (const language of ["ur", "en"] as const) {
     await expect(page.locator("html")).toHaveAttribute("lang", language);
     const options = page.locator("#feedback-tool option");
     expect(await options.evaluateAll(es => es.map(e => (e as HTMLOptionElement).value))).not.toContain("research-studio");
-    expect(await options.last().getAttribute("value")).toBe("khateeb-studio");
+    expect(await options.evaluateAll(es => es.map(e => (e as HTMLOptionElement).value))).not.toContain("khateeb-studio");
+    expect(await page.locator("#feedback-tool optgroup").evaluateAll(es=>es.map(e=>(e as HTMLOptGroupElement).label))).toEqual(language === "ur" ? ["لکھیں", "اوزار", "تاریخیں", "قرآن"] : ["Write", "Tools", "Dates", "Quran"]);
     for (const id of ["calendar-maker", "urdu-text-to-pdf", "roman-urdu-to-urdu", "hijri-to-gregorian"]) await expect(page.locator(`#feedback-tool option[value="${id}"]`)).toHaveCount(1);
     const height = await page.locator("[data-site-header]").evaluate(e => e.getBoundingClientRect().height);
     expect(height).toBeLessThanOrEqual(page.viewportSize()!.width >= 640 ? 130 : 114);
@@ -105,5 +106,31 @@ for (const language of ["ur", "en"] as const) {
       const fontSize = await page.locator('[data-site-header] a[href="/about"]').evaluate(e => parseFloat(getComputedStyle(e).fontSize));
       expect(fontSize).toBeGreaterThanOrEqual(15);
     }
+  });
+}
+
+
+for (const width of [1024, 1280, 1366]) for (const language of ["en", "ur"] as const) {
+  test(`four single-line header groups at ${width}px (${language})`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 768 });
+    await page.addInitScript(l => localStorage.setItem("qalam-site-language", l), language);
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("lang", language);
+    await page.evaluate(()=>document.fonts.ready);
+    const nav = page.getByRole("navigation", { name: "Primary navigation" });
+    await expect(nav).toBeVisible();
+    await expect(nav.getByRole("button")).toHaveCount(4);
+    const metrics = await nav.getByRole("button").evaluateAll(buttons => buttons.map(button => {
+      const range=document.createRange(); range.selectNodeContents(button.querySelector("span")!);
+      return { size: parseFloat(getComputedStyle(button).fontSize), lines: range.getClientRects().length };
+    }));
+    expect(metrics).toEqual(Array(4).fill({ size: 16, lines: 1 }));
+    expect(await page.locator("[data-site-header]").evaluate(e=>e.getBoundingClientRect().height)).toBe(129);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBe(0);
+    await page.goto("/quran/1/1");
+    await page.waitForTimeout(1000);
+    const link=page.locator('main a[href="/quran"]').first();
+    await expect(link).toBeInViewport();
+    expect(await link.evaluate(e=>e.getBoundingClientRect().top-document.querySelector('[data-site-header]')!.getBoundingClientRect().bottom)).toBeGreaterThanOrEqual(0);
   });
 }
