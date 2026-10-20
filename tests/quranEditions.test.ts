@@ -29,7 +29,8 @@ describe("Quran edition registry", () => {
     expect(first.rendering.en).toBe("AhmedGraf text + Font");
     expect(first.rendering.ur).toBe("احمد گراف کا انڈو پاک متن + فونٹ");
     expect(first.provenance.textSource).toContain("AhmedGraf");
-    expect(first.provenance.fontSource).toContain("Digital Khatt");
+    expect(first.provenance.fontSource).toContain("Amiri");
+    expect(first.provenance.fontSourceUrl).toContain("aliftype/amiri");
   });
 
   it("keeps the readers linked back to the Quran center", () => {
