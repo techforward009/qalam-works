@@ -503,7 +503,7 @@ export default function QuranReader({
     >
       <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4">
         <EditionTopBar editionId={editionId} surah={surah} ayah={ayah} />
-        {editionId === "qalam-indopak" && <p className="my-2 text-center text-sm text-[#416448]">{language === "ur" ? "قرآنی متن: احمد گرافکس" : "Quran text: Ahmed Grafics"} · <a href="https://ahmedgraf.com" rel="noopener noreferrer" target="_blank" className="underline">ahmedgraf.com</a><details className="mx-auto max-w-2xl text-xs"><summary className="cursor-pointer underline">{language === "ur" ? "ماخذ اور اجازت نامہ" : "Source licence notice"}</summary><span>{ahmedgrafQuranReference.getMetadata().referenceLicense}</span></details></p>}
+        {editionId === "qalam-indopak" && <div className="my-2 text-center text-sm text-[#416448]"><p>{language === "ur" ? "قرآنی متن: احمد گرافکس" : "Quran text: Ahmed Grafics"} · <a href="https://ahmedgraf.com" rel="noopener noreferrer" target="_blank" className="underline">ahmedgraf.com</a></p><details className="mx-auto max-w-2xl text-xs"><summary className="cursor-pointer underline">{language === "ur" ? "ماخذ اور اجازت نامہ" : "Source licence notice"}</summary><span>{ahmedgrafQuranReference.getMetadata().referenceLicense}</span></details></div>}
         <div
           className="quran-reader-layout grid grid-cols-1 items-start gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-4"
           dir="ltr"
@@ -1385,7 +1385,7 @@ function QuranPageSurface({
                       block.text
                     }
                     {block.anchor && editionId === "digital-khatt" && <span className="mx-1 text-[0.58em]">۝{easternDigits(1)}</span>}
-                    {block.anchor && <button type="button" className="mx-2 text-[0.48em] underline" onClick={() => void navigator.clipboard.writeText(block.text)} aria-label="Copy verse 1"><CopyIcon size={12} aria-hidden="true" /></button>}
+                    {block.anchor && <button type="button" className="mx-2 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" onClick={() => void navigator.clipboard.writeText(block.text)} aria-label="Copy verse 1"><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button>}
                   </p>
                 );
               }
@@ -1440,9 +1440,9 @@ function QuranPageSurface({
                             item.text
                           }
                         </span>
-                        <button type="button" className="mx-1 align-middle text-[0.43em] underline" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(
+                        <button type="button" className="mx-1 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(
                             (editionId === "digital-khatt" ? digitalReaderModel.getReaderAyah(item.surah,item.ayah) : ahmedReaderModel.getReaderAyah(item.surah,item.ayah))?.text ?? item.text
-                          )}><CopyIcon size={12} aria-hidden="true" /></button>
+                          )}><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button>
                       </span>
                     ),
                   )}
