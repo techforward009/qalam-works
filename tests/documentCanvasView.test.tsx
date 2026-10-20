@@ -62,6 +62,42 @@ describe("DocumentCanvas view modes", () => {
     expect(document.querySelector("[data-ruler-page-gap='horizontal']")).toBeTruthy();
     expect(document.querySelector("[data-ruler-page-gap='vertical']")).toBeTruthy();
     expect(root?.getAttribute("data-print-dir")).toBe("ltr");
+    expect(document.querySelector("[data-studio-pasteboard-guide='left']")).toBeTruthy();
+    expect(document.querySelector("[data-studio-pasteboard-guide='right']")).toBeTruthy();
+    expect(document.querySelector("[data-studio-margin-guides]")?.className).toContain("studio-no-print");
+    expect(document.querySelectorAll("[data-studio-margin-corner]").length).toBe(4);
+    const sheet = document.querySelector("[data-studio-page-sheet]") as HTMLElement;
+    expect(sheet.className).not.toContain("rounded");
+    expect(sheet.style.borderRadius).toBe("0px");
+    expect(sheet.style.border).toContain("3c3c3c");
+    expect(sheet.style.boxShadow.replace(/\s/g, "")).toContain("2px2px0");
+  });
+
+  it("margin guides follow custom physical margins and stay out of the print clone", () => {
+    const custom = resolvePageLayout({
+      size: "a4",
+      orientation: "portrait",
+      marginPreset: "custom",
+      customMargins: { topMm: 20, bottomMm: 30, startMm: 15, endMm: 40 },
+    });
+    render(
+      <DocumentCanvas
+        editor={null}
+        dir="rtl"
+        isUr={false}
+        isEditorEmpty={false}
+        documentSettings={settings}
+        pageLayout={custom}
+        viewMode="pages"
+        onLoadExample={vi.fn()}
+        onWrapperClick={vi.fn()}
+      />,
+    );
+    const guide = document.querySelector("[data-studio-margin-guide='1']") as HTMLElement;
+    expect(guide.getAttribute("data-margin-top-px")).toBe("76");
+    expect(guide.getAttribute("data-margin-left-px")).toBe("151");
+    expect(guide.getAttribute("data-margin-right-px")).toBe("57");
+    expect(document.querySelector(".qalam-editor-content")?.querySelector("[data-studio-margin-guides]")).toBeNull();
   });
 
   it("renders Pageless without fixed page sheets", () => {
@@ -70,6 +106,7 @@ describe("DocumentCanvas view modes", () => {
     expect(document.querySelector("[data-studio-pageless]")).toBeTruthy();
     expect(document.querySelector("[data-studio-pages-stack]")).toBeNull();
     expect(document.querySelector("[data-studio-page-sheet]")).toBeNull();
+    expect(document.querySelector("[data-studio-margin-guides]")).toBeNull();
     expect(document.querySelector("[data-studio-ruler]")).toBeNull();
     expect(document.querySelector("[data-studio-vertical-ruler]")).toBeNull();
   });

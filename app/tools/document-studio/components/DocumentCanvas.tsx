@@ -23,7 +23,8 @@ import {
   paginationGeometryFromLayout,
 } from "../extensions/QalamPagination";
 import type { RulerUnit } from "../utils/rulerLayout";
-import { WordRuler } from "./WordRuler";
+import { WordRuler, RULER_BAR_PX } from "./WordRuler";
+import { MarginGuides } from "./MarginGuides";
 
 export default function DocumentCanvas({
   editor,
@@ -163,7 +164,7 @@ export default function DocumentCanvas({
   return (
     <div
       ref={workspaceRef}
-      className="rounded-xl bg-[#E8E4DB] px-2 py-4 sm:px-3 sm:py-5 lg:px-6 lg:py-6 overflow-auto"
+      className="bg-[#F3F4F6] px-2 py-4 sm:px-3 sm:py-5 lg:px-6 lg:py-6 overflow-auto"
       data-studio-view={viewMode}
       data-studio-print-root="true"
       data-page-width-mm={pageLayout.widthMm}
@@ -183,12 +184,12 @@ export default function DocumentCanvas({
     >
       <div
         className={`relative mx-auto ${showRuler ? "flex flex-col" : ""}`}
-        style={{ width: "100%", maxWidth: `${visualWidth + (showRuler ? 24 + RULER_PAGE_GUTTER_PX : 0)}px` }}
+        style={{ width: "100%", maxWidth: `${visualWidth + (showRuler ? RULER_BAR_PX + RULER_PAGE_GUTTER_PX : 0)}px` }}
         data-ruler-gutter={showRuler ? String(RULER_PAGE_GUTTER_PX) : undefined}
       >
         {showRuler && (
           <div className="flex studio-no-print" data-studio-ruler-frame="true">
-            <div className="h-6 w-6 shrink-0 border-b border-r border-slate-300 bg-[#dfe4dc]" data-ruler-corner="true" />
+            <div className="h-[18px] w-[18px] shrink-0 border-b border-r border-[#c8c8c8] bg-white" data-ruler-corner="true" />
             <div className="shrink-0 studio-no-print" style={{ width: RULER_PAGE_GUTTER_PX }} aria-hidden />
             <div className="min-w-0 flex-1">
               <WordRuler dir={dir} layout={pageLayout} axis="horizontal" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
@@ -198,7 +199,7 @@ export default function DocumentCanvas({
         {showRuler && <div className="studio-no-print" style={{ height: RULER_PAGE_GUTTER_PX }} data-ruler-page-gap="horizontal" aria-hidden />}
         <div className={showRuler ? "flex" : undefined}>
           {showRuler && (
-            <div className="studio-no-print w-6 shrink-0" style={{ height: visualPageHeight }} data-ruler-page-bound="1">
+            <div className="studio-no-print w-[18px] shrink-0" style={{ height: visualPageHeight }} data-ruler-page-bound="1">
               <WordRuler dir={dir} layout={pageLayout} axis="vertical" unit={rulerUnit} onPhysicalMarginChange={onPhysicalMarginChange} />
             </div>
           )}
@@ -219,15 +220,55 @@ export default function DocumentCanvas({
             transformOrigin: "top left",
           }}
         >
-        {isPages && !editor && (
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-0" style={{ height: stackHeight }} aria-hidden>
+        {isPages && (
+          <>
             <div
-              data-studio-page-sheet={1}
-              data-print-sheet-last="true"
-              className="absolute inset-x-0 rounded-sm border border-[#1A3A2A]/12 bg-white shadow-[0_8px_24px_rgba(26,58,42,0.10)]"
-              style={{ top: 0, height: natural.heightPx }}
+              className="studio-no-print pointer-events-none absolute z-[3]"
+              data-studio-pasteboard-guide="left"
+              style={{ left: -14, top: -24, width: 0, height: (stackHeight ?? natural.heightPx) + 48, borderLeft: "1px dashed #7d838a" }}
+              aria-hidden
             />
-          </div>
+            <div
+              className="studio-no-print pointer-events-none absolute z-[3]"
+              data-studio-pasteboard-guide="right"
+              style={{ left: natural.widthPx + 14, top: -24, width: 0, height: (stackHeight ?? natural.heightPx) + 48, borderLeft: "1px dashed #7d838a" }}
+              aria-hidden
+            />
+            <div className="studio-no-print pointer-events-none absolute inset-0 z-[3]" data-studio-page-frames="true" aria-hidden>
+              {Array.from({ length: pageCount }, (_, index) => (
+                <div
+                  key={index}
+                  data-studio-page-sheet={index + 1}
+                  data-print-sheet-last={index === pageCount - 1 ? "true" : undefined}
+                  className="absolute bg-transparent"
+                  style={{
+                    top: index * (natural.heightPx + PAGE_STACK_GAP_PX),
+                    left: 0,
+                    width: natural.widthPx,
+                    height: natural.heightPx,
+                    borderRadius: 0,
+                    border: "1px solid #3c3c3c",
+                    boxShadow: "2px 2px 0 0 #737373",
+                  }}
+                />
+              ))}
+            </div>
+            {!editor && (
+              <div
+                className="pointer-events-none absolute z-0 bg-white"
+                data-studio-page-paper="true"
+                style={{ top: 0, left: 0, width: natural.widthPx, height: natural.heightPx }}
+                aria-hidden
+              />
+            )}
+            <MarginGuides
+              pageCount={pageCount}
+              pageWidthPx={natural.widthPx}
+              pageHeightPx={natural.heightPx}
+              gapPx={PAGE_STACK_GAP_PX}
+              margins={printMargins}
+            />
+          </>
         )}
         <div
           className="relative z-[1] cursor-text"

@@ -32,7 +32,7 @@ export const QALAM_PAGINATION_COUNT_META = "qalamPaginationPageCount";
 export const QALAM_PAGINATION_ATTR = "data-qalam-pagination";
 export const QALAM_PAGINATION_CLASS = "qalam-pagination";
 export const QALAM_PAGE_UNIT_ATTR = "data-studio-page-sheet";
-export const QALAM_CANVAS_COLOR = "#E8E4DB";
+export const QALAM_CANVAS_COLOR = "#F3F4F6";
 export const qalamPaginationKey = new PluginKey<QalamPaginationPluginState>(QALAM_PAGINATION_PLUGIN);
 
 export type QalamPaginationGeometry = {
@@ -137,8 +137,9 @@ export function paginationCss(): string {
   padding-left: var(--qalam-margin-left);
   padding-right: var(--qalam-margin-right);
   background: #fff;
-  border: 1px solid rgba(26, 58, 42, 0.12);
-  box-shadow: 0 8px 24px rgba(26, 58, 42, 0.10);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   outline: none;
 }
 .${QALAM_PAGINATION_CLASS}-pages {
@@ -182,11 +183,11 @@ export function paginationCss(): string {
 }
 .${QALAM_PAGINATION_CLASS}-sheet-end {
   height: var(--qalam-margin-bottom);
-  border-bottom: 1px solid rgba(26, 58, 42, 0.12);
+  border: 0;
 }
 .${QALAM_PAGINATION_CLASS}-sheet-start {
   height: var(--qalam-margin-top);
-  border-top: 1px solid rgba(26, 58, 42, 0.12);
+  border: 0;
 }
 .${QALAM_PAGINATION_CLASS}-gutter {
   height: var(--qalam-page-gap);

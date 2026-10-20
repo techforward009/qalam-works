@@ -90,7 +90,7 @@ export default function DocumentStudioShell({
           </div>
         )}
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#E8E4DB]" data-studio-canvas-slot="true">{children}</div>
+        <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#F3F4F6]" data-studio-canvas-slot="true">{children}</div>
 
         {rightOpen && (
           <div
@@ -114,7 +114,10 @@ export default function DocumentStudioShell({
           [data-studio-chrome],
           [data-studio-ruler-frame],
           [data-studio-ruler],
-          [data-studio-vertical-ruler] { display: none !important; }
+          [data-studio-vertical-ruler],
+          [data-studio-margin-guides],
+          [data-studio-page-frames],
+          [data-studio-pasteboard-guide] { display: none !important; }
         }
         [data-studio-shell] button:focus-visible,
         [data-studio-shell] select:focus-visible,
