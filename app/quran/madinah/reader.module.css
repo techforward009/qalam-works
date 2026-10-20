@@ -63,3 +63,5 @@
 .reader .credit {margin-top:2px}
 .reader .page :global(.quran-outer-page-nav) {margin-top:10px}
 @media(max-width:600px){.reader .page{border-radius:0;padding:24px 20px}.reader .line{font-size:calc((100cqi / 12.5) * var(--mushaf-scale,1));min-height:1.65em}.reader .surahLine{font-size:1.18rem}}
+
+@media(max-width:600px){.reader{color:rgb(46,52,43)}.container{padding-left:16px;padding-right:16px}.reader .page{box-shadow:0 4px 14px rgba(40,48,35,.12)}}
