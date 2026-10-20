@@ -68,7 +68,7 @@ const samples = [
   const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
   mobile.on("pageerror",e=>report.errors.push("mobile: "+e.message));
   await mobile.goto("http://127.0.0.1:3000/quran/indopak-digital-khatt/1/1",{waitUntil:"domcontentloaded",timeout:90000});
-  const mobileQuran=mobile.locator("article > div").first();
+  const mobileQuran=mobile.locator("[data-quran-edition=\"digital-khatt\"] .quran-page .quran-content").first();
   await mobileQuran.waitFor({state:"visible",timeout:30000});
   await mobile.evaluate(async()=>{await document.fonts.load('25px "DigitalKhattIndoPak"');await document.fonts.ready});
   await mobile.screenshot({path:path.join(out,"digital-khatt-mobile.png"),fullPage:true});
