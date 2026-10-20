@@ -491,8 +491,8 @@ export default function MadinahReader({
           </aside>
 
           <section>
-            <article className={`${styles.page} quran-page`} onCopyCapture={handlePageCopy}>
-              <div className={`${styles.mushafHeader} quran-page-meta`} dir="ltr" aria-label="Mushaf running headers">
+            <div className="quran-page-meta" dir="ltr" aria-label="Mushaf running headers"><div className="quran-page-meta-item quran-page-meta-juz">{displayJuzTitle}</div><div className="quran-page-meta-item flex items-center justify-center" dir="ltr"><button type="button" className="quran-page-arrow" disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} aria-label="Previous page">◄</button><span className="quran-page-meta-page-number">{easternDigits(pageNumber)}</span><button type="button" className="quran-page-arrow" disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)} aria-label="Next page">►</button></div><div className="quran-page-meta-item quran-page-meta-surah">{displaySurahTitle}</div></div><article className={`${styles.page} quran-page`} onCopyCapture={handlePageCopy}>
+              <div className={styles.mushafHeader} dir="ltr" aria-hidden="true" style={{display:"none"}}>
                 <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderLeft}`} dir="rtl">{displaySurahTitle}</div>
                 <div className={styles.mushafHeaderPage} aria-label={`Page ${pageNumber}`}>
                   <button type="button" className={`${styles.pageArrow} quran-page-arrow`} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} aria-label="Previous page">
@@ -512,7 +512,7 @@ export default function MadinahReader({
 
               <div className={styles.pageLines} style={{ ["--mushaf-scale" as string]: String(scale) }}>
                 {page ? page.lines.map((line) => {
-                  if (line.type === "blank") return <div key={line.line} className={styles.line} aria-hidden="true" />;
+                  if (line.type === "blank") return null;
                   if (line.type === "surah_name") {
                     const name = line.decor?.surah ? surahTitle(line.decor.surah) : "";
                     return <div key={line.line} className={`${styles.line} ${styles.surahLine}`} dir="rtl">{name}</div>;
@@ -537,7 +537,7 @@ export default function MadinahReader({
                 }) : <div className={styles.loading}>Loading page…</div>}
               </div>
 
-              <div className={`${styles.navRow} quran-outer-page-nav`}>
+              <div className={`${styles.navRow} quran-outer-page-nav`} style={{justifyContent:"center",gap:14}}>
                 <button type="button" className={styles.secondary} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)}>{copy.previousPage}</button>
                 <button type="button" className={styles.secondary} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)}>{copy.nextPage}</button>
               </div>
