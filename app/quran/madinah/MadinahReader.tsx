@@ -411,12 +411,12 @@ export default function MadinahReader({
   }
 
   return (
-    <main className={styles.reader} dir="ltr">
-      <div className={styles.container}>
+    <main className={`${styles.reader} quran-reader`} dir="ltr">
+      <div className={`${styles.container} quran-reader-container`}>
         <EditionTopBar editionId="madinah-v2" surah={surah} ayah={ayah} />
 
-        <div className={styles.grid}>
-          <aside className={styles.sidebar}>
+        <div className={`${styles.grid} quran-reader-layout`}>
+          <aside className={`${styles.sidebar} tanzil-sidebar`}>
             <form onSubmit={(event) => { event.preventDefault(); runSearch(); }}>
               <label className={styles.label}>
                 {copy.search}
@@ -491,11 +491,11 @@ export default function MadinahReader({
           </aside>
 
           <section>
-            <article className={styles.page} onCopyCapture={handlePageCopy}>
-              <div className={styles.mushafHeader} dir="ltr" aria-label="Mushaf running headers">
+            <article className={`${styles.page} quran-page`} onCopyCapture={handlePageCopy}>
+              <div className={`${styles.mushafHeader} quran-page-meta`} dir="ltr" aria-label="Mushaf running headers">
                 <div className={`${styles.mushafHeaderSide} ${styles.mushafHeaderLeft}`} dir="rtl">{displaySurahTitle}</div>
                 <div className={styles.mushafHeaderPage} aria-label={`Page ${pageNumber}`}>
-                  <button type="button" className={styles.pageArrow} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} aria-label="Previous page">
+                  <button type="button" className={`${styles.pageArrow} quran-page-arrow`} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)} aria-label="Previous page">
                     <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.pageArrowIcon}>
                       <path d="M14.8 5.2 8 12l6.8 6.8" />
                     </svg>
@@ -537,7 +537,7 @@ export default function MadinahReader({
                 }) : <div className={styles.loading}>Loading page…</div>}
               </div>
 
-              <div className={styles.navRow}>
+              <div className={`${styles.navRow} quran-outer-page-nav`}>
                 <button type="button" className={styles.secondary} disabled={pageNumber <= 1} onClick={() => navigatePage(pageNumber - 1)}>{copy.previousPage}</button>
                 <button type="button" className={styles.secondary} disabled={pageNumber >= 604} onClick={() => navigatePage(pageNumber + 1)}>{copy.nextPage}</button>
               </div>
