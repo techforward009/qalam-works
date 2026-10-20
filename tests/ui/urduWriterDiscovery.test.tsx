@@ -48,20 +48,20 @@ function writerHref(el: HTMLElement) {
   return (el as HTMLAnchorElement).getAttribute("href") ?? "";
 }
 
-test("Header Tools discovers distinct conversion pages", async () => {
+test("Header Write discovers the two script directions", async () => {
   await renderHeader();
-  fireEvent.click(screen.getByRole("button", { name: "Tools" }));
-  expect(screen.getByRole("link", { name: "Roman Urdu Typing" }).getAttribute("href")).toBe("/tools/roman-urdu-writer");
-  expect(screen.getByRole("link", { name: "Roman Urdu Converter" }).getAttribute("href")).toBe("/tools/roman-urdu-to-urdu");
+  fireEvent.click(screen.getByRole("button", { name: "Write" }));
+  expect(screen.getByRole("link", { name: "Roman Urdu to Urdu" }).getAttribute("href")).toBe("/tools/roman-urdu-writer");
+  expect(screen.queryByRole("link", { name: "Roman Urdu Converter" })).toBeNull();
   expect(screen.getByRole("link", { name: "Urdu to Roman Urdu" }).getAttribute("href")).toBe("/tools/urdu-roman-writer");
 });
 
-test("mobile Tools exposes Urdu Writer and closes on navigation", async () => {
+test("mobile Write exposes Urdu Writer and closes on navigation", async () => {
   await renderHeader();
   fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
   const mobile = document.getElementById("mobile-nav")!;
-  fireEvent.click(within(mobile).getByRole("button", { name: "Tools" }));
-  const link = within(mobile).getByRole("link", { name: "Roman Urdu Typing" });
+  fireEvent.click(within(mobile).getByRole("button", { name: "Write" }));
+  const link = within(mobile).getByRole("link", { name: "Roman Urdu to Urdu" });
   expect(writerHref(link)).toBe("/tools/roman-urdu-writer");
   fireEvent.click(link);
   expect(document.getElementById("mobile-nav")).toBeNull();
@@ -78,7 +78,7 @@ test("4-6. homepage How It Works card links correctly in English", async () => {
 test("7. Urdu How It Works card copy", async () => {
   mockLanguage = "ur";
   await renderHowItWorks();
-  const card = screen.getByRole("link", { name: /رومن سے اردو ٹائپنگ/ });
+  const card = screen.getByRole("link", { name: /رومن اردو سے اردو/ });
   expect(writerHref(card)).toBe("/tools/roman-urdu-writer");
   expect(card.textContent).toMatch(/رومن لکھیں، اردو فوراً حاصل کریں/);
 });
@@ -109,25 +109,24 @@ test("navigation reuses one shared catalog and preserves canonical routes", () =
   }
 });
 
-test("Header Write preserves Studio and Tools preserves translation", async () => {
+test("Header Write preserves Qalam Page and translation", async () => {
   await renderHeader();
   fireEvent.click(screen.getByRole("button", { name: "Write" }));
-  expect(writerHref(screen.getByRole("link", { name: "Document Studio" }))).toBe("/tools/document-studio");
-  fireEvent.click(screen.getByRole("button", { name: "Tools" }));
+  expect(writerHref(screen.getByRole("link", { name: "Qalam Page: Urdu Editor" }))).toBe("/tools/document-studio");
   expect(writerHref(screen.getByRole("link", { name: "Translation Studio" }))).toBe("/tools/translation-studio");
 });
 
 test("Header Tools preserves WhatsApp formatting", async () => {
   await renderHeader();
-  fireEvent.click(screen.getByRole("button", { name: "Tools" }));
+  fireEvent.click(screen.getByRole("button", { name: "Fix Text" }));
   expect(writerHref(screen.getByRole("link", { name: /WhatsApp/ }))).toBe("/tools/whatsapp-rtl-formatter");
 });
 
 test("Urdu footer uses localized typing and converter names", async () => {
   mockLanguage = "ur";
   await renderFooter();
-  expect(writerHref(screen.getByRole("link", { name: "رومن سے اردو ٹائپنگ" }))).toBe("/tools/roman-urdu-writer");
-  expect(writerHref(screen.getByRole("link", { name: "رومن اردو سے اردو کنورٹر" }))).toBe("/tools/roman-urdu-to-urdu");
+  expect(writerHref(screen.getByRole("link", { name: "رومن اردو سے اردو" }))).toBe("/tools/roman-urdu-writer");
+  expect(screen.queryByRole("link", { name: "رومن اردو سے اردو کنورٹر" })).toBeNull();
 });
 
 test("18-19. no accuracy or research terminology in discovery copy", () => {

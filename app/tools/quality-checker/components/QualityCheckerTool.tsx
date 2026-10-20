@@ -95,8 +95,8 @@ export default function QualityCheckerTool() {
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-amber-200/80 shadow-md">
         <p className={`text-sm text-gray-600 mb-4 ${isUr ? "font-naskh" : ""}`} dir={isUr ? "rtl" : "ltr"}>
           {isUr
-            ? "یہ ٹول متن کو تبدیل نہیں کرتا — صرف معیار کے مسائل اور مشاہدات دکھاتا ہے۔ صفائی کے لیے اردو ٹیکسٹ کلینر یا ڈاکومنٹ اسٹوڈیو استعمال کریں۔"
-            : "This tool does not change your text — it only reports issues and observations. To clean text, use Urdu Text Cleaner or Document Studio."}
+            ? "یہ ٹول متن کو تبدیل نہیں کرتا — صرف معیار کے مسائل اور مشاہدات دکھاتا ہے۔ صفائی کے لیے اردو ٹیکسٹ کلینر یا قلم پیج: اردو ایڈیٹر استعمال کریں۔"
+            : "This tool does not change your text — it only reports issues and observations. To clean text, use Urdu Text Cleaner or Qalam Page: Urdu Editor."}
         </p>
 
         <div className={`mb-4 ${isUr ? "font-naskh" : ""}`} dir={isUr ? "rtl" : "ltr"}>
@@ -231,7 +231,7 @@ export default function QualityCheckerTool() {
                   </Link>
                   ؛ حتمی دستاویز تیار کرنے کے لیے{" "}
                   <Link href="/tools/document-studio" onClick={() => trackEvent("nav_click", { tool: "quality_audit", target_tool: "document_studio", nav_source: "cross_link" })} className="text-amber-800 font-semibold underline">
-                    ڈاکومنٹ اسٹوڈیو
+                    قلم پیج: اردو ایڈیٹر
                   </Link>{" "}
                   استعمال کریں۔
                 </>
@@ -243,7 +243,7 @@ export default function QualityCheckerTool() {
                   </Link>{" "}
                   to fix formatting, or{" "}
                   <Link href="/tools/document-studio" onClick={() => trackEvent("nav_click", { tool: "quality_audit", target_tool: "document_studio", nav_source: "cross_link" })} className="text-amber-800 font-semibold underline">
-                    Document Studio
+                    Qalam Page: Urdu Editor
                   </Link>{" "}
                   to prepare the final document.
                 </>

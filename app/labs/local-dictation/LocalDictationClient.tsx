@@ -25,7 +25,7 @@ import {
 const COPY = {
   en: {
     title: "Local Whisper Dictation (Labs)",
-    intro: "Internal feasibility spike. Not a production Document Studio feature.",
+    intro: "Internal feasibility spike. Not a production Qalam Page: Urdu Editor feature.",
     privacy: "Audio is processed locally in your browser and is not uploaded by Qalam Works.",
     load: "Load model",
     record: "Record",
@@ -53,7 +53,7 @@ const COPY = {
   },
   ur: {
     title: "مقامی وسپر ڈکٹیشن (لیبز)",
-    intro: "داخلی تجربہ۔ یہ Document Studio کی پروڈکشن فیچر نہیں ہے۔",
+    intro: "داخلی تجربہ۔ یہ Qalam Page: Urdu Editor کی پروڈکشن فیچر نہیں ہے۔",
     privacy: "آڈیو آپ کے براؤزر میں مقامی طور پر پروسیس ہوتی ہے اور قلم ورکس اسے اپ لوڈ نہیں کرتا۔",
     load: "ماڈل لوڈ کریں",
     record: "ریکارڈ",

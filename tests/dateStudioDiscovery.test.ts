@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TOOL_GROUPS, toolsInGroup } from "../app/lib/toolCatalog";
+import { TOOL_GROUPS, ALL_TOOLS_GROUPS, toolsInGroup } from "../app/lib/toolCatalog";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -39,15 +39,15 @@ describe("Date Studio discovery surfaces", () => {
   it("groups date and calendar tools on All Tools", () => {
     const tools = toolsInGroup(TOOL_GROUPS.find(group => group.id === "dates")!);
     expect(tools.map(tool => tool.route)).toEqual(expect.arrayContaining([
-      "/tools/date-converter", "/tools/calendar-maker", "/tools/hijri-to-gregorian",
+      "/tools/date-converter", "/tools/calendar-maker", "/today",
     ]));
     expect(tools.some(tool => tool.route.startsWith("/calendar/"))).toBe(true);
     expect(tools.some(tool => tool.route.startsWith("/hijri/"))).toBe(true);
     expect(read("app/tools/AllToolsContent.tsx")).toContain("toolsInGroup(group)");
   });
 
-  it("Find Date discovery opens Date Converter in Find mode", () => {
-    const tools = toolsInGroup(TOOL_GROUPS.find(group => group.id === "dates")!);
+  it("Find Date discovery opens the Find Date task page on All Tools", () => {
+    const tools = toolsInGroup(ALL_TOOLS_GROUPS.find(group => group.id === "dates")!);
     expect(tools.some(tool => tool.route === "/tools/date-converter?mode=find#date-studio")).toBe(true);
   });
 
@@ -92,9 +92,9 @@ describe("Date Studio discovery surfaces", () => {
     expect(toolsInGroup(group).filter(tool => tool.route === "/tools/date-converter")).toHaveLength(1);
   });
 
-  it("keeps Crescent Visibility in the last group and sitemap", () => {
-    const group = TOOL_GROUPS.at(-1)!;
-    expect(group.id).toBe("islamic");
+  it("keeps Moon Sighting last in Dates and in the sitemap", () => {
+    const group = TOOL_GROUPS.find(group=>group.id==="dates")!;
+    expect(group.ids.at(-1)).toBe("crescent_visibility");
     expect(toolsInGroup(group).map(tool => tool.route)).toContain("/tools/crescent-visibility");
     expect(read("app/sitemap.ts")).toContain("${BASE}/tools/crescent-visibility");
   });

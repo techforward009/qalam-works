@@ -2,6 +2,8 @@ import { TOOL_GROUPS, toolsInGroup } from "./toolCatalog";
 import type { FeedbackTool } from "./feedback";
 
 const legacyIds: Record<string, FeedbackTool> = {
+  today: "today",
+  all_tools: "other",
   book_layout: "document-studio",
   quality_audit: "publication-quality-checker",
   quran_reader: "quran-editions",
@@ -15,7 +17,7 @@ const feedbackId = (id: string, route: string): FeedbackTool =>
 // Deduplicate Find a Date and Date Converter, which share a feedback category.
 export const PUBLIC_FEEDBACK_GROUPS = TOOL_GROUPS.map(group => ({
   name: group.name,
-  tools: toolsInGroup(group)
+  tools: toolsInGroup(group).filter(tool => tool.id !== "all_tools")
     .map(tool => ({ id: feedbackId(tool.id, tool.route), name: tool.name }))
     .filter((tool, index, all) => all.findIndex(other => other.id === tool.id) === index),
 }));

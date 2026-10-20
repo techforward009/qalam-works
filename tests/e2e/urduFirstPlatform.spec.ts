@@ -27,8 +27,8 @@ for (const language of ["ur", "en"] as const) {
     if (await menu.isVisible()) await menu.click();
     const nav = (await page.locator("#mobile-nav").isVisible()) ? page.locator("#mobile-nav") : page.getByRole("navigation", { name: "Primary navigation" });
     const groups = language === "ur"
-      ? ["لکھیں", "اوزار", "تاریخیں", "قرآن"]
-      : ["Write", "Tools", "Dates", "Quran"];
+      ? ["لکھیں", "متن درست کریں", "تاریخیں", "دیگر سہولتیں"]
+      : ["Write", "Fix Text", "Dates", "More"];
     for (const name of groups) {
       await nav.getByRole("button", { name, exact: true }).click();
       await expect(nav.locator("a").first()).toBeVisible();
@@ -96,8 +96,8 @@ for (const language of ["ur", "en"] as const) {
     const options = page.locator("#feedback-tool option");
     expect(await options.evaluateAll(es => es.map(e => (e as HTMLOptionElement).value))).not.toContain("research-studio");
     expect(await options.evaluateAll(es => es.map(e => (e as HTMLOptionElement).value))).not.toContain("khateeb-studio");
-    expect(await page.locator("#feedback-tool optgroup").evaluateAll(es=>es.map(e=>(e as HTMLOptGroupElement).label))).toEqual(language === "ur" ? ["لکھیں", "اوزار", "تاریخیں", "قرآن"] : ["Write", "Tools", "Dates", "Quran"]);
-    for (const id of ["calendar-maker", "urdu-text-to-pdf", "roman-urdu-to-urdu", "hijri-to-gregorian"]) await expect(page.locator(`#feedback-tool option[value="${id}"]`)).toHaveCount(1);
+    expect(await page.locator("#feedback-tool optgroup").evaluateAll(es=>es.map(e=>(e as HTMLOptGroupElement).label))).toEqual(language === "ur" ? ["لکھیں", "متن درست کریں", "تاریخیں", "دیگر سہولتیں"] : ["Write", "Fix Text", "Dates", "More"]);
+    for (const id of ["calendar-maker", "urdu-text-to-pdf", "today", "roman-urdu-writer"]) await expect(page.locator(`#feedback-tool option[value="${id}"]`)).toHaveCount(1);
     const height = await page.locator("[data-site-header]").evaluate(e => e.getBoundingClientRect().height);
     expect(height).toBeLessThanOrEqual(page.viewportSize()!.width >= 640 ? 130 : 114);
     if (language === "en") await expect(page.locator("footer")).not.toContainText("فونٹ:");
@@ -134,3 +134,17 @@ for (const width of [1024, 1280, 1366]) for (const language of ["en", "ur"] as c
     expect(await link.evaluate(e=>e.getBoundingClientRect().top-document.querySelector('[data-site-header]')!.getBoundingClientRect().bottom)).toBeGreaterThanOrEqual(0);
   });
 }
+
+
+test("today resolves Pakistan's current civil date and extra task pages stay discoverable", async ({ page }) => {
+  const now=new Date();
+  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Karachi",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(now);
+  const part=(type:string)=>parts.find(p=>p.type===type)!.value;
+  const response=await page.request.get("/today",{maxRedirects:0});
+  expect(response.status()).toBe(307);
+  expect(response.headers().location).toBe(`/date/${part("year")}-${part("month")}-${part("day")}`);
+  await page.goto("/tools");
+  for(const route of ["/tools/roman-urdu-to-urdu","/tools/hijri-to-gregorian","/tools/unicode-standardizer"]){
+    await expect(page.locator(`a[href="${route}"]`).first()).toBeVisible();
+  }
+});

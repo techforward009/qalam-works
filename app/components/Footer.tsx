@@ -27,8 +27,8 @@ export default function Footer() {
     <footer className="mt-0 border-t border-white/10 bg-[#11182A]" dir={dir} data-site-footer={language}>
       <div className="site-container py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Brand */}
-        <div className="sm:col-span-2 lg:col-span-1">
-          <div className="mb-3 flex items-center gap-2.5" dir="ltr">
+        <div className="sm:col-span-2 lg:col-span-1 text-right" dir="rtl">
+          <div className="mb-3 flex items-center gap-2.5" dir="rtl">
             <PenNibIcon />
             <span className="font-bold text-white">Qalam Works</span>
           </div>
@@ -43,7 +43,7 @@ export default function Footer() {
               <h2 className="mb-3 text-sm font-semibold text-white" data-footer-heading="true">{group.name[language]}</h2>
               <ul className="space-y-2">
                 {toolsInGroup(group).map(tool => <li key={tool.id}><Link href={tool.route} className="text-sm text-white/90 hover:text-amber-200">{tool.name[language]}</Link></li>)}
-                {group.id === "islamic" && <li><Link href="/tools/khateeb-studio" className="text-sm text-white/90 hover:text-amber-200">{language === "ur" ? "خطیب اسٹوڈیو" : "Khateeb Studio"}</Link></li>}
+                {group.id === "more" && <li><Link href="/tools/khateeb-studio" className="text-sm text-white/90 hover:text-amber-200">{language === "ur" ? "خطیب اسٹوڈیو" : "Khateeb Studio"}</Link></li>}
               </ul>
             </div>
           ))}

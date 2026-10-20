@@ -11,7 +11,7 @@ export default function DocumentStudioContent({ hideHeading = false }: { hideHea
     <Root className="py-3 md:py-4" dir={dir}>
       {!hideHeading && (
         <h1 className="sr-only">
-          {language === "ur" ? "ڈاکومنٹ اسٹوڈیو" : "Document Studio"}
+          {language === "ur" ? "قلم پیج: اردو ایڈیٹر" : "Qalam Page: Urdu Editor"}
         </h1>
       )}
       <DocumentStudioEditor />

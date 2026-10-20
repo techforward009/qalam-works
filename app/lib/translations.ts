@@ -7,7 +7,7 @@
 // hunting through components for inline literals.
 //
 // POSITIONING CORRECTION (2026-08-10): copy below intentionally frames
-// the PRODUCT (Document Studio, Urdu Text Check, Urdu Unicode Fixer) as
+// the PRODUCT (Qalam Page: Urdu Editor, Urdu Text Check, Urdu Unicode Fixer) as
 // Urdu-first — no "Arabic script" or "Urdu/Arabic/Persian publishing
 // intelligence" claims. Arabic and Persian appear ONLY under Services
 // (professional translation), never as product-capability claims.
@@ -16,7 +16,7 @@ export const translations = {
   en: {
     nav: {
       home: "Home",
-      documentStudio: "Document Studio",
+      documentStudio: "Qalam Page: Urdu Editor",
       translationStudio: "Translation Studio",
       documentCleaner: "Urdu Text Cleaner",
       qualityChecker: "Urdu Text Check",
@@ -42,14 +42,14 @@ export const translations = {
       headline: "Urdu writing deserves better tools.",
       subheadline:
         "Write, refine, and prepare professional Urdu documents — without fighting software built primarily for English.",
-      ctaPrimary: "Open Document Studio",
+      ctaPrimary: "Open Qalam Page: Urdu Editor",
       ctaSecondary: "See Fixes",
       quickCleanupPrompt: "Need quick cleanup?",
       quickCleanupLink: "Open Urdu text cleaner",
       trustLine: "Researchers · Translators · Publishers · Academia",
       multilingualLine:
         "Language-aware text processing for Urdu, Arabic, English, and mixed-language content.",
-      mockupLabel: "Document Studio",
+      mockupLabel: "Qalam Page: Urdu Editor",
       mockupIssue1: "Extra spaces between words",
       mockupIssue1Detail: "cleaned",
       mockupIssue2: "Repeated punctuation cleaned",
@@ -109,7 +109,7 @@ export const translations = {
       headline: "One workspace for every stage of Urdu publishing.",
       tools: [
         {
-          name: "Document Studio",
+          name: "Qalam Page: Urdu Editor",
           body: "Full publishing environment for Urdu documents with real-time preview.",
         },
         {
@@ -149,7 +149,7 @@ export const translations = {
     jobGuidance: {
       headline: "What would you like to do today?",
       items: [
-        { label: "I want to write a story, poem or article", href: "/tools/document-studio", description: "Document Studio", body: "Write, format and prepare your work for sharing or publication." },
+        { label: "I want to write a story, poem or article", href: "/tools/document-studio", description: "Qalam Page: Urdu Editor", body: "Write, format and prepare your work for sharing or publication." },
         { label: "I type Urdu using English letters", href: "/tools/roman-urdu-writer", description: "Roman Urdu Typing", body: "Type in Roman Urdu, then review and copy the Urdu script." },
         { label: "My copied text needs cleaning", href: "/tools/document-cleaner", description: "Urdu Text Cleaner", body: "Clean spacing and punctuation in pasted text or a document file." },
         { label: "I want to check a draft before sharing", href: "/tools/quality-checker", description: "Urdu Text Check", body: "Spot spacing, punctuation and repeated-word issues without changing text." },
@@ -174,7 +174,7 @@ export const translations = {
     finalCta: {
       headline: "Bring your text. Leave with publication-ready text.",
       subline: "No account. No download. No friction. Free to use.",
-      cta: "Open Document Studio",
+      cta: "Open Qalam Page: Urdu Editor",
       exploreTools: "Explore All Tools",
     },
     footer: {
@@ -196,7 +196,7 @@ export const translations = {
       heading: "About Qalam Works",
       tagline: "A professional digital workspace for Urdu writing, editing, and publication preparation.",
       body1: "Qalam Works is built to serve writers, translators, researchers, publishers, and academic institutions who work seriously with Urdu documents. Our tools focus on accuracy, Unicode consistency, clean typography, and publication-quality output.",
-      body2: "Most tools process your text in the browser, and we do not store your documents. Document Studio PDF export uses a server route only to generate the file you request. We believe professional Urdu publishing deserves software built specifically for it, not adapted from tools designed primarily for English.",
+      body2: "Most tools process your text in the browser, and we do not store your documents. Qalam Page: Urdu Editor PDF export uses a server route only to generate the file you request. We believe professional Urdu publishing deserves software built specifically for it, not adapted from tools designed primarily for English.",
       servicesHeading: "Language Services",
       servicesBody: "In addition to our self-service tools, Qalam Works offers professional language services including translation (Urdu, English, Arabic, Persian), Urdu proofreading and editing, and document formatting for publication.",
       ctaLabel: "Contact us",
@@ -245,8 +245,8 @@ export const translations = {
       lastUpdated: "Last updated: August 2026",
       sections: [
         { title: "Overview", body: "Qalam Works is committed to respecting your privacy. This page describes how our tools and website handle your data." },
-        { title: "Document and Text Processing", body: "Most cleanup and editing runs in your browser. Urdu Text Cleaner, Urdu Text Check, Urdu Unicode Fixer, and Document Studio editing process text on your device. We do not store your documents. Document Studio PDF export sends content only to generate the requested PDF file; that content is not retained after the file is produced." },
-        { title: "Local Storage", body: "Document Studio may save a draft in your browser's localStorage so you can continue later. This draft stays on your device. You can clear it anytime by clearing browser data or using Clear Draft in the Studio." },
+        { title: "Document and Text Processing", body: "Most cleanup and editing runs in your browser. Urdu Text Cleaner, Urdu Text Check, Urdu Unicode Fixer, and Qalam Page: Urdu Editor editing process text on your device. We do not store your documents. Qalam Page: Urdu Editor PDF export sends content only to generate the requested PDF file; that content is not retained after the file is produced." },
+        { title: "Local Storage", body: "Qalam Page: Urdu Editor may save a draft in your browser's localStorage so you can continue later. This draft stays on your device. You can clear it anytime by clearing browser data or using Clear Draft in the Studio." },
         { title: "Contact", body: "If you contact us by email, your message and email address will be used only to respond to your inquiry." },
         { title: "Cookies and Analytics", body: "We use Vercel Analytics and Vercel Speed Insights to understand product usage and performance. These measure privacy-oriented events such as which tool was opened or whether an export succeeded. We do not collect document text, filenames, clipboard contents, invoice details, or other user content. We do not use session replay or advertising trackers. Hosting logs may record basic request metadata (such as IP address and page visited)." },
         { title: "Updates", body: "This policy may be updated as the product develops. Material changes will be noted on this page." },
@@ -299,7 +299,7 @@ export const translations = {
       autoModeHint: "Auto processes mixed-language text safely and chooses appropriate handling for each language.",
       exampleNextHint: "Review the example, then click Clean Text. Extra spaces are removed and punctuation spacing is fixed.",
       studioCalloutTitle: "Need a full editing workspace?",
-      studioCalloutLink: "Open Document Studio",
+      studioCalloutLink: "Open Qalam Page: Urdu Editor",
       reportTab: "Unified Qalam Report",
       previewTab: "Extracted Text Preview",
       downloadTxt: "Download TXT File",
@@ -328,7 +328,7 @@ export const translations = {
       faqHeading: "Frequently Asked Questions",
       faqs: [
         { question: "What does this tool do?", answer: "It audits text for spacing, punctuation, repeated words, and script observations. It never changes your text automatically." },
-        { question: "Does it fix the text automatically?", answer: "No — this is inspection only. Use Urdu Text Cleaner or Document Studio to apply language-aware cleanup." },
+        { question: "Does it fix the text automatically?", answer: "No — this is inspection only. Use Urdu Text Cleaner or Qalam Page: Urdu Editor to apply language-aware cleanup." },
         { question: "Is my text stored anywhere?", answer: "No. Urdu Text Check runs in your browser — your text is not uploaded for analysis." },
       ],
     },
@@ -378,7 +378,7 @@ export const translations = {
   ur: {
     nav: {
       home: "ہوم",
-      documentStudio: "ڈاکومنٹ اسٹوڈیو",
+      documentStudio: "قلم پیج: اردو ایڈیٹر",
       translationStudio: "ترجمہ اسٹوڈیو",
       documentCleaner: "اردو ٹیکسٹ کلینر",
       qualityChecker: "اردو متن کی جانچ",
@@ -404,14 +404,14 @@ export const translations = {
       headline: "اردو تحریر بہتر اوزار کی مستحق ہے۔",
       subheadline:
         "لکھنے سے لے کر متن کی اصلاح اور اشاعت تک — اردو کے لیے بنایا گیا ایک جدید، پیشہ ورانہ ماحول۔",
-      ctaPrimary: "ڈاکومنٹ اسٹوڈیو کھولیں",
+      ctaPrimary: "قلم پیج: اردو ایڈیٹر کھولیں",
       ctaSecondary: "اصلاحات دیکھیں",
       quickCleanupPrompt: "فوری صفائی چاہیے؟",
       quickCleanupLink: "اردو متن صاف کریں",
       trustLine: "محققین · مترجمین · ناشرین · تعلیمی ادارے",
       multilingualLine:
         "اردو، عربی، انگریزی اور مخلوط متن کے لیے زبان کے مطابق صفائی اور اشاعتی اوزار۔",
-      mockupLabel: "ڈاکومنٹ اسٹوڈیو",
+      mockupLabel: "قلم پیج: اردو ایڈیٹر",
       mockupIssue1: "الفاظ کے درمیان اضافی خالی جگہیں",
       mockupIssue1Detail: "صاف",
       mockupIssue2: "بار بار آنے والے رموز صاف",
@@ -471,7 +471,7 @@ export const translations = {
       headline: "اردو اشاعت کے ہر مرحلے کے لیے ایک ہی ماحول۔",
       tools: [
         {
-          name: "ڈاکومنٹ اسٹوڈیو",
+          name: "قلم پیج: اردو ایڈیٹر",
           body: "اردو دستاویزات کے لیے مکمل اشاعتی ماحول، براہِ راست پیش منظر کے ساتھ۔",
         },
         {
@@ -511,7 +511,7 @@ export const translations = {
     jobGuidance: {
       headline: "آج آپ کیا کرنا چاہتے ہیں؟",
       items: [
-        { label: "میں کہانی، نظم یا مضمون لکھنا چاہتا ہوں", href: "/tools/document-studio", description: "دستاویز اسٹوڈیو", body: "لکھیں، صفحہ ترتیب دیں اور اپنی تحریر اشتراک یا اشاعت کے لیے تیار کریں۔" },
+        { label: "میں کہانی، نظم یا مضمون لکھنا چاہتا ہوں", href: "/tools/document-studio", description: "قلم پیج: اردو ایڈیٹر", body: "لکھیں، صفحہ ترتیب دیں اور اپنی تحریر اشتراک یا اشاعت کے لیے تیار کریں۔" },
         { label: "میں انگریزی حروف سے اردو ٹائپ کرتا ہوں", href: "/tools/roman-urdu-writer", description: "رومن سے اردو ٹائپنگ", body: "رومن اردو ٹائپ کریں، پھر اردو رسم الخط دیکھیں اور نقل کریں۔" },
         { label: "نقل شدہ متن صاف کرنا ہے", href: "/tools/document-cleaner", description: "اردو متن کی صفائی", body: "پیسٹ شدہ متن یا دستاویز کے فاصلے اور رموزِ اوقاف درست کریں۔" },
         { label: "تحریر بھیجنے سے پہلے جانچنا ہے", href: "/tools/quality-checker", description: "اردو متن کی جانچ", body: "متن بدلے بغیر فاصلوں، رموزِ اوقاف اور دہرائے گئے الفاظ کے مسائل دیکھیں۔" },
@@ -536,7 +536,7 @@ export const translations = {
     finalCta: {
       headline: "متن لائیے۔ اشاعت کے قابل متن لے کر جائیے۔",
       subline: "نہ اکاؤنٹ۔ نہ ڈاؤن لوڈ۔ نہ رکاوٹ۔ مفت استعمال۔",
-      cta: "ڈاکومنٹ اسٹوڈیو کھولیں",
+      cta: "قلم پیج: اردو ایڈیٹر کھولیں",
       exploreTools: "تمام ٹولز دیکھیں",
     },
     footer: {
@@ -558,7 +558,7 @@ export const translations = {
       heading: "قلم ورکس کے بارے میں",
       tagline: "اردو لکھائی، تدوین، اور اشاعتی تیاری کے لیے ایک پیشہ ورانہ ڈیجیٹل ماحول۔",
       body1: "قلم ورکس ان لکھاریوں، مترجمین، محققین، ناشرین، اور تعلیمی اداروں کے لیے بنایا گیا ہے جو اردو دستاویزات کے ساتھ سنجیدگی سے کام کرتے ہیں۔ ہمارے ٹولز درستگی، یونیکوڈ یکسانیت، صاف ٹائپوگرافی، اور اشاعت کے معیار کے آؤٹ پٹ پر توجہ دیتے ہیں۔",
-      body2: "زیادہ تر ٹولز آپ کا متن براؤزر میں پروسیس کرتے ہیں، اور ہم آپ کی دستاویزات محفوظ نہیں کرتے۔ ڈاکومنٹ اسٹوڈیو کا PDF ایکسپورٹ صرف فائل بنانے کے لیے سرور استعمال کرتا ہے۔",
+      body2: "زیادہ تر ٹولز آپ کا متن براؤزر میں پروسیس کرتے ہیں، اور ہم آپ کی دستاویزات محفوظ نہیں کرتے۔ قلم پیج: اردو ایڈیٹر کا PDF ایکسپورٹ صرف فائل بنانے کے لیے سرور استعمال کرتا ہے۔",
       servicesHeading: "لسانی خدمات",
       servicesBody: "خود کار ٹولز کے علاوہ، قلم ورکس پیشہ ورانہ لسانی خدمات بھی فراہم کرتا ہے، جن میں ترجمہ (اردو، انگریزی، عربی، فارسی)، اردو پروف ریڈنگ، اور اشاعت کے لیے دستاویز فارمیٹنگ شامل ہیں۔",
       ctaLabel: "رابطہ کریں",
@@ -607,8 +607,8 @@ export const translations = {
       lastUpdated: "آخری تازہ کاری: اگست ۲۰۲۶",
       sections: [
         { title: "جائزہ", body: "قلم ورکس آپ کی رازداری کا احترام کرتا ہے۔ یہ صفحہ بتاتا ہے کہ ہمارے ٹولز اور ویب سائٹ آپ کا ڈیٹا کیسے ہینڈل کرتے ہیں۔" },
-        { title: "دستاویز اور متن کی پروسیسنگ", body: "زیادہ تر صفائی اور تدوین آپ کے براؤزر میں ہوتی ہے۔ اردو ٹیکسٹ کلینر، اردو متن کی جانچ، یونیکوڈ فکسر، اور ڈاکومنٹ اسٹوڈیو کی تدوین آپ کے آلے پر چلتی ہے۔ ہم آپ کی دستاویزات محفوظ نہیں کرتے۔ ڈاکومنٹ اسٹوڈیو کا PDF ایکسپورٹ صرف فائل بنانے کے لیے سرور پر بھیجتا ہے؛ فائل بننے کے بعد مواد محفوظ نہیں رکھا جاتا۔" },
-        { title: "لوکل اسٹوریج", body: "ڈاکومنٹ اسٹوڈیو آپ کا مسودہ براؤزر کے لوکل اسٹوریج میں رکھ سکتا ہے تاکہ بعد میں جاری رکھ سکیں۔ یہ مسودہ آپ کے آلے پر رہتا ہے۔ آپ اسے براؤزر ڈیٹا صاف کر کے یا اسٹوڈیو میں ڈرافٹ صاف کریں سے مٹا سکتے ہیں۔" },
+        { title: "دستاویز اور متن کی پروسیسنگ", body: "زیادہ تر صفائی اور تدوین آپ کے براؤزر میں ہوتی ہے۔ اردو ٹیکسٹ کلینر، اردو متن کی جانچ، یونیکوڈ فکسر، اور قلم پیج: اردو ایڈیٹر کی تدوین آپ کے آلے پر چلتی ہے۔ ہم آپ کی دستاویزات محفوظ نہیں کرتے۔ قلم پیج: اردو ایڈیٹر کا PDF ایکسپورٹ صرف فائل بنانے کے لیے سرور پر بھیجتا ہے؛ فائل بننے کے بعد مواد محفوظ نہیں رکھا جاتا۔" },
+        { title: "لوکل اسٹوریج", body: "قلم پیج: اردو ایڈیٹر آپ کا مسودہ براؤزر کے لوکل اسٹوریج میں رکھ سکتا ہے تاکہ بعد میں جاری رکھ سکیں۔ یہ مسودہ آپ کے آلے پر رہتا ہے۔ آپ اسے براؤزر ڈیٹا صاف کر کے یا اسٹوڈیو میں ڈرافٹ صاف کریں سے مٹا سکتے ہیں۔" },
         { title: "رابطہ", body: "اگر آپ ای میل کے ذریعے رابطہ کریں تو آپ کا پیغام اور ای میل پتہ صرف جواب دینے کے لیے استعمال کیا جائے گا۔" },
         { title: "کوکیز اور اینالیٹکس", body: "ہم Vercel Analytics اور Vercel Speed Insights استعمال کرتے ہیں تاکہ پروڈکٹ کے استعمال اور کارکردگی کو سمجھا جا سکے۔ یہ رازداری پر مبنی ایونٹس ناپتے ہیں جیسے کون سا ٹول کھلا یا ایکسپورٹ کامیاب ہوئی۔ ہم دستاویز کا متن، فائل نام، کلپ بورڈ، انوائس کی تفصیلات یا صارف کا مواد جمع نہیں کرتے۔ سیشن ری پلے یا اشتہاری ٹریکرز استعمال نہیں کرتے۔ ہوسٹنگ لاگز بنیادی درخواست میٹا ڈیٹا (جیسے IP اور صفحہ) ریکارڈ کر سکتے ہیں۔" },
         { title: "تازہ کاری", body: "یہ پالیسی پروڈکٹ کی ترقی کے ساتھ تبدیل ہو سکتی ہے۔ اہم تبدیلیاں اس صفحے پر نوٹ کی جائیں گی۔" },
@@ -661,7 +661,7 @@ export const translations = {
       autoModeHint: "خودکار طریقہ مخلوط زبان کے متن کو محفوظ طریقے سے صاف کرتا ہے اور ہر زبان کے مطابق مناسب اصلاح منتخب کرتا ہے۔",
       exampleNextHint: "مثال دیکھیں، پھر «متن صاف کریں» دبائیں۔ اضافی خالی جگہیں ہٹتی ہیں اور رموزِ اوقاف کی spacing درست ہوتی ہے۔",
       studioCalloutTitle: "مکمل تدوین کے لیے:",
-      studioCalloutLink: "ڈاکومنٹ اسٹوڈیو کھولیں",
+      studioCalloutLink: "قلم پیج: اردو ایڈیٹر کھولیں",
       reportTab: "قلم رپورٹ",
       previewTab: "متن کا جائزہ",
       downloadTxt: "TXT فائل ڈاؤن لوڈ کریں",
@@ -690,7 +690,7 @@ export const translations = {
       faqHeading: "اکثر پوچھے گئے سوالات",
       faqs: [
         { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ متن کے فاصلہ، رموز اوقاف، دہرائے الفاظ اور رسم الخط کے مشاہدات چیک کرتا ہے۔ متن خود بخود تبدیل نہیں ہوتا۔" },
-        { question: "کیا یہ خود متن درست کر دیتا ہے؟", answer: "نہیں — یہ صرف معائنہ ہے۔ صفائی کے لیے اردو ٹیکسٹ کلینر یا ڈاکومنٹ اسٹوڈیو استعمال کریں۔" },
+        { question: "کیا یہ خود متن درست کر دیتا ہے؟", answer: "نہیں — یہ صرف معائنہ ہے۔ صفائی کے لیے اردو ٹیکسٹ کلینر یا قلم پیج: اردو ایڈیٹر استعمال کریں۔" },
         { question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟", answer: "نہیں۔ اردو متن کی جانچ آپ کے براؤزر میں چلتا ہے — تجزیے کے لیے متن اپلوڈ نہیں ہوتا۔" },
       ],
     },

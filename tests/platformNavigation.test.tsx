@@ -7,7 +7,7 @@ import AllToolsContent from "../app/tools/AllToolsContent";
 import Home from "../app/page";
 import sitemap from "../app/sitemap";
 import robots from "../app/robots";
-import { TOOL_CATALOG, TOOL_GROUPS, toolsInGroup } from "../app/lib/toolCatalog";
+import { TOOL_CATALOG, TOOL_GROUPS, ALL_TOOLS_GROUPS, toolsInGroup } from "../app/lib/toolCatalog";
 
 const locale = vi.hoisted(() => ({ language: "en" as "en" | "ur" }));
 vi.mock("../app/lib/language-context", () => ({
@@ -23,16 +23,23 @@ const footerOnly = "/tools/khateeb-studio";
 
 describe("Urdu-first public discovery", () => {
   it("groups every public catalog entry once, with private tools excluded", () => {
-    const grouped = TOOL_GROUPS.flatMap(toolsInGroup);
-    expect(new Set(grouped.map(tool => tool.id)).size).toBe(TOOL_CATALOG.length);
-    expect(grouped).toHaveLength(TOOL_CATALOG.length);
+    const grouped = ALL_TOOLS_GROUPS.flatMap(toolsInGroup);
+    expect(new Set(grouped.map(tool => tool.id)).size).toBe(TOOL_CATALOG.length - 1);
+    expect(grouped).toHaveLength(TOOL_CATALOG.length - 1);
     expect(grouped.map(tool => tool.route)).not.toContain(privateRoute);
     expect(grouped.map(tool => tool.route)).not.toContain(footerOnly);
     expect(TOOL_GROUPS.map(group => group.name.en)).toEqual([
-      "Write", "Tools", "Dates", "Quran",
+      "Write", "Fix Text", "Dates", "More",
     ]);
     expect(sitemap().map(entry => entry.url)).not.toContain(`https://www.qalamworks.com${privateRoute}`);
     expect(sitemap().map(entry => entry.url)).not.toContain(`https://www.qalamworks.com${footerOnly}`);
+    const menu = TOOL_GROUPS.flatMap(toolsInGroup);
+    expect(new Set(menu.map(tool => tool.route)).size).toBe(menu.length);
+    expect(menu.filter(tool=>tool.route==="/tools")).toHaveLength(1);
+    for (const id of ["book_layout", "roman_converter", "date_finder", "hijri_converter", "urdu_unicode_standardizer"]) {
+      expect(menu.some(tool=>tool.id===id)).toBe(false);
+      expect(grouped.some(tool=>tool.id===id)).toBe(true);
+    }
     expect(robots().rules).toMatchObject({ disallow: privateRoute });
   });
 
@@ -59,7 +66,7 @@ describe("Urdu-first public discovery", () => {
 
     const tools = render(<AllToolsContent />);
     expect(screen.getAllByRole("heading", { level: 2 }).map(heading => heading.textContent)).toEqual(TOOL_GROUPS.map(group => group.name[language]));
-    for (const tool of TOOL_CATALOG) expect(routes(tools.container)).toContain(tool.route);
+    for (const tool of TOOL_CATALOG.filter(tool => tool.id !== "all_tools")) expect(routes(tools.container)).toContain(tool.route);
     expect(routes(tools.container)).not.toContain(footerOnly);
     expect(routes(tools.container)).not.toContain(privateRoute);
   });

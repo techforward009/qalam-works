@@ -49,7 +49,7 @@ export default function Header(){
         <span className="whitespace-nowrap text-center">{s.name[language]}</span><ChevronDown size={15} className={open===i?"rotate-180 transition-transform":"transition-transform"}/>
        </button>
        {open===i&&<div id={`qalam-menu-${i}`} className={`absolute top-full z-50 mt-2 max-h-[calc(100dvh-150px)] w-[290px] overflow-y-auto rounded-2xl border border-[#e0e9ed] bg-white p-2 shadow-[0_18px_45px_#162a3c26] ${i===TOOL_GROUPS.length-1?"end-0": "start-0"}`} dir={ur?"rtl":"ltr"}>
-        {toolsInGroup(s).map(({route,Icon,iconColor:fg,iconBg:bg,name})=><Link key={route} href={route} onClick={()=>setOpen(null)} className="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-[#f0f8f6] focus-visible:bg-[#f0f8f6]">
+        {toolsInGroup(s).map(({id,route,Icon,iconColor:fg,iconBg:bg,name})=><Link key={id} href={route} onClick={()=>setOpen(null)} className="flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-[#f0f8f6] focus-visible:bg-[#f0f8f6]">
          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${fg} ${bg}`}><Icon size={21} strokeWidth={2.1}/></span>
          <span className="min-w-0"><strong className={`block text-[#1b3543] ${ur?"font-nastaliq text-[16px] font-normal leading-[2.1]":"text-sm leading-relaxed"}`}>{name[language]}</strong></span>
         </Link>)}
@@ -63,7 +63,7 @@ export default function Header(){
   {mobile&&<nav id="mobile-nav" aria-label={ur?"موبائل مینو":"Mobile menu"} className="max-h-[calc(100dvh-112px)] overflow-y-auto border-b bg-white p-4 shadow-xl lg:hidden" dir={ur?"rtl":"ltr"}>
    {TOOL_GROUPS.map((s,i)=><div key={s.id} className="border-b border-slate-100">
     <button className={`flex w-full items-center justify-between py-3 font-semibold text-[#25394a] ${ur?"font-nastaliq text-base leading-[2.1]":""}`} aria-expanded={open===i} onClick={()=>setOpen(open===i?null:i)}>{s.name[language]}<ChevronDown size={16}/></button>
-    {open===i&&<div className="pb-2">{toolsInGroup(s).map(({route,Icon,iconColor:fg,iconBg:bg,name})=><Link key={route} href={route} onClick={()=>{setOpen(null);setMobile(false)}} className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-[#f0f8f6]"><span className={`grid size-9 place-items-center rounded-lg ${fg} ${bg}`}><Icon size={19}/></span><span className={`text-[#25394a] ${ur?"font-nastaliq text-base leading-[2.1]":"text-sm font-medium"}`}>{name[language]}</span></Link>)}</div>}
+    {open===i&&<div className="pb-2">{toolsInGroup(s).map(({id,route,Icon,iconColor:fg,iconBg:bg,name})=><Link key={id} href={route} onClick={()=>{setOpen(null);setMobile(false)}} className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-[#f0f8f6]"><span className={`grid size-9 place-items-center rounded-lg ${fg} ${bg}`}><Icon size={19}/></span><span className={`text-[#25394a] ${ur?"font-nastaliq text-base leading-[2.1]":"text-sm font-medium"}`}>{name[language]}</span></Link>)}</div>}
    </div>)}
   </nav>}
  </div>

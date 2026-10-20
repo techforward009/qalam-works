@@ -1,9 +1,14 @@
 import type { MetadataRoute } from "next";
 
+import { calendarYear, hijriYear } from "./lib/toolCatalog";
+
 const BASE = "https://www.qalamworks.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
+    { url: `${BASE}/today`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE}/calendar/${calendarYear}`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/hijri/${hijriYear}`, changeFrequency: "monthly", priority: 0.7 },
     { url: BASE, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/about`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/services`, changeFrequency: "monthly", priority: 0.8 },

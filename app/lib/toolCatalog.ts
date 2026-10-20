@@ -11,6 +11,8 @@
  *   - Quality Checker: rules-based, not spell/grammar/semantic
  */
 
+import { pakistanDate } from "./pakistanDate";
+
 import {
   BookOpen,
   PenLine,
@@ -56,14 +58,14 @@ export interface ToolEntry {
 }
 
 const CORE_TOOLS: ToolEntry[] = [
-  // ── 1. Document Studio ──────────────────────────────────────────────────────
+  // ── 1. Qalam Page: Urdu Editor ──────────────────────────────────────────────────────
   {
     id: "document_studio",
     route: "/tools/document-studio",
     Icon: BookOpen,
     iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50",
     iconColor: "text-[#1A3A2A] dark:text-[#8faa93]",
-    name:  { en: "Document Studio", ur: "ڈاکومنٹ اسٹوڈیو" },
+    name:  { en: "Qalam Page: Urdu Editor", ur: "قلم پیج: اردو ایڈیٹر" },
     short: {
       en: "Write, standardize, review, and export Urdu documents — one complete workspace.",
       ur: "اردو دستاویزات لکھیں، معیاری کریں، جائزہ لیں اور ایکسپورٹ کریں — ایک مکمل ماحول۔",
@@ -91,7 +93,7 @@ const CORE_TOOLS: ToolEntry[] = [
     Icon: PenLine,
     iconBg: "bg-amber-50 dark:bg-amber-950/30",
     iconColor: "text-amber-700 dark:text-amber-400",
-    name:  { en: "Roman Urdu Typing", ur: "رومن سے اردو ٹائپنگ" },
+    name:  { en: "Roman Urdu to Urdu", ur: "رومن اردو سے اردو" },
     short: {
       en: "Type in Roman Urdu and get Urdu script — uncertain words stay Roman so you stay in control.",
       ur: "رومن اردو لکھیں اور اردو رسم الخط حاصل کریں — مشکوک الفاظ رومن رہتے ہیں۔",
@@ -101,7 +103,7 @@ const CORE_TOOLS: ToolEntry[] = [
       ur: "رومن اردو کو الفاظ کی فہرست اور صوتی قواعد کے ذریعے اردو رسم الخط میں تبدیل کرتا ہے۔ مشکوک الفاظ رومن رہتے ہیں اور آپ ان کا جائزہ لے کر متبادل منتخب کر سکتے ہیں۔",
     },
     input:  { en: "Roman Urdu text typed in the editor.", ur: "ایڈیٹر میں رومن اردو متن۔" },
-    output: { en: "Urdu script output with uncertain tokens flagged for review. Copy, export TXT, or continue in Document Studio.", ur: "اردو رسم الخط کا نتیجہ — مشکوک الفاظ نشان زد۔ نقل کریں، TXT ایکسپورٹ کریں، یا ڈاکومنٹ اسٹوڈیو میں جاری رکھیں۔" },
+    output: { en: "Urdu script output with uncertain tokens flagged for review. Copy, export TXT, or continue in Qalam Page: Urdu Editor.", ur: "اردو رسم الخط کا نتیجہ — مشکوک الفاظ نشان زد۔ نقل کریں، TXT ایکسپورٹ کریں، یا قلم پیج: اردو ایڈیٹر میں جاری رکھیں۔" },
     doesNotDo: {
       en: "Not a translator. Does not produce semantic meaning, correct spelling of ambiguous words, or handle Urdu → Roman (use the separate Urdu → Roman tool for that).",
       ur: "ترجمہ نہیں کرتا۔ مبہم الفاظ کی خودکار درست اردو ہجّے نہیں دیتا۔ اردو سے رومن کے لیے الگ ٹول استعمال کریں۔",
@@ -159,7 +161,7 @@ const CORE_TOOLS: ToolEntry[] = [
       ur: "ماخذ دستاویز کو حصوں میں منظم کرتا ہے — ہر غیر خالی سطر ترجمے کا ایک الگ حصہ بنتی ہے۔ آپ ہدفی ترجمہ خود لکھتے ہیں۔ اسٹوڈیو مدد کرتا ہے: اصطلاحاتی فہرست (منظور شدہ اصطلاح نہ ملنے پر اطلاع)، یکساں ماخذ پر سابقہ ترجمے کی تجویز، جانچ، جائزہ، اور ایکسپورٹ۔",
     },
     input:  { en: "Paste or type source text, then translate each segment in the target field.", ur: "ماخذ متن پیسٹ یا ٹائپ کریں، پھر ہر حصے کا ترجمہ ہدف خانے میں لکھیں۔" },
-    output: { en: "Your completed translation — copy, download as TXT or DOCX, or continue in Document Studio.", ur: "آپ کا مکمل ترجمہ — نقل کریں، TXT یا DOCX میں ڈاؤن لوڈ کریں، یا ڈاکومنٹ اسٹوڈیو میں جاری رکھیں۔" },
+    output: { en: "Your completed translation — copy, download as TXT or DOCX, or continue in Qalam Page: Urdu Editor.", ur: "آپ کا مکمل ترجمہ — نقل کریں، TXT یا DOCX میں ڈاؤن لوڈ کریں، یا قلم پیج: اردو ایڈیٹر میں جاری رکھیں۔" },
     doesNotDo: {
       en: "Does not translate automatically. No machine translation. No AI-generated text. Translation memory shows exact matches only — not suggestions for similar (fuzzy) segments. Glossary flags missing terms but does not auto-insert them.",
       ur: "خودکار ترجمہ نہیں کرتا۔ مشین ترجمہ یا AI نہیں۔ ترجمہ یادداشت صرف بالکل یکساں حصوں کی تجویز دیتی ہے۔ اصطلاحاتی فہرست صرف اطلاع دیتی ہے، خودکار شامل نہیں کرتی۔",
@@ -181,7 +183,7 @@ const CORE_TOOLS: ToolEntry[] = [
     Icon: Eraser,
     iconBg: "bg-emerald-50 dark:bg-emerald-950/30",
     iconColor: "text-emerald-700 dark:text-emerald-400",
-    name:  { en: "Urdu Text Cleaner", ur: "اردو ٹیکسٹ کلینر" },
+    name:  { en: "Fix Copied Urdu Text", ur: "کاپی شدہ اردو درست کریں" },
     short: {
       en: "Fix common Unicode forms, spacing, and punctuation in Urdu text — words unchanged.",
       ur: "اردو متن میں یونیکوڈ حروف، فاصلے اور رموزِ اوقاف درست کریں — الفاظ نہیں بدلتے۔",
@@ -210,7 +212,7 @@ const CORE_TOOLS: ToolEntry[] = [
     Icon: SearchCheck,
     iconBg: "bg-amber-50 dark:bg-amber-950/30",
     iconColor: "text-amber-700 dark:text-amber-400",
-    name:  { en: "Urdu Text Check", ur: "اردو متن کی جانچ" },
+    name:  { en: "Find Mistakes in Urdu Text", ur: "اردو متن میں غلطیاں دیکھیں" },
     short: {
       en: "Inspect Urdu text for spacing, punctuation, and script issues — nothing is changed.",
       ur: "اردو متن میں فاصلہ، رموزِ اوقاف اور رسم الخط کے مسائل جانچیں — کچھ تبدیل نہیں ہوتا۔",
@@ -271,7 +273,7 @@ const CORE_TOOLS: ToolEntry[] = [
     Icon: MessageCircle,
     iconBg: "bg-green-50 dark:bg-green-950/30",
     iconColor: "text-green-700 dark:text-green-400",
-    name:  { en: "WhatsApp Urdu Formatter", ur: "واٹس ایپ اردو فارمیٹر" },
+    name:  { en: "Urdu for WhatsApp", ur: "واٹس ایپ کے لیے اردو" },
     short: {
       en: "Prepare mixed Urdu/English text for more stable direction in WhatsApp — copy and paste directly.",
       ur: "مخلوط اردو/انگریزی متن کو واٹس ایپ میں بہتر سمت کے لیے تیار کریں — سیدھا کاپی پیسٹ کریں۔",
@@ -299,7 +301,7 @@ const CORE_TOOLS: ToolEntry[] = [
     Icon: FilePenLine,
     iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50",
     iconColor: "text-[#1A3A2A] dark:text-[#8faa93]",
-    name:  { en: "Invoice Generator", ur: "انوائس جنریٹر" },
+    name:  { en: "Invoice Maker", ur: "انوائس بنائیں" },
     short: {
       en: "Build professional invoices with itemized costs and taxes, then download a clean PDF.",
       ur: "اشیاء، ٹیکس اور رعایت کے ساتھ پیشہ ورانہ انوائس بنائیں اور صاف PDF ڈاؤن لوڈ کریں۔",
@@ -425,28 +427,40 @@ function taskPage(id: string, route: string, name: ToolEntry["name"], short: Too
   };
 }
 
-const calendarYear = new Date().getUTCFullYear();
-const hijriYear = new Intl.DateTimeFormat("en-u-ca-islamic-civil", { year: "numeric", timeZone: "Asia/Karachi" }).format(new Date()).replace(/[^0-9]/g, "");
+export const calendarYear = pakistanDate().year;
+export const hijriYear = new Intl.DateTimeFormat("en-u-ca-islamic-civil", { year: "numeric", timeZone: "Asia/Karachi" }).format(new Date()).replace(/[^0-9]/g, "");
 export const TOOL_CATALOG: ToolEntry[] = [...CORE_TOOLS,
-  taskPage("book_layout", "/tools/document-studio", { en: "Book & Page Layout", ur: "کتاب و صفحہ بندی" }, { en: "Prepare book pages and document layouts in Document Studio.", ur: "ڈاکومنٹ اسٹوڈیو میں کتاب کے صفحات اور دستاویز کی ترتیب تیار کریں۔" }, BookOpen),
+  taskPage("today", "/today", { en: "Today's Islamic Date", ur: "آج کی اسلامی تاریخ" }, { en: "Open today's date details using the date in Pakistan.", ur: "پاکستان کے وقت کے مطابق آج کی تاریخ کی تفصیل دیکھیں۔" }, CalendarDays),
+  taskPage("all_tools", "/tools", { en: "All Tools", ur: "تمام اوزار" }, { en: "Browse every public Qalam Works tool.", ur: "قلم ورکس کے تمام عوامی اوزار دیکھیں۔" }, BookOpen),
+  taskPage("book_layout", "/tools/document-studio", { en: "Book & Page Layout", ur: "کتاب و صفحہ بندی" }, { en: "Prepare book pages and document layouts in Qalam Page: Urdu Editor.", ur: "قلم پیج: اردو ایڈیٹر میں کتاب کے صفحات اور دستاویز کی ترتیب تیار کریں۔" }, BookOpen),
   taskPage("roman_converter", "/tools/roman-urdu-to-urdu", { en: "Roman Urdu Converter", ur: "رومن اردو سے اردو کنورٹر" }, { en: "Convert a passage from Roman Urdu and review the Urdu result.", ur: "رومن اردو عبارت کو اردو میں بدلیں اور نتیجے کا جائزہ لیں۔" }, PenLine),
   taskPage("urdu_pdf", "/tools/urdu-text-to-pdf", { en: "Urdu Text to PDF", ur: "اردو متن سے PDF" }, { en: "Format Urdu text on a page and download a PDF for sharing or print.", ur: "اردو متن کی صفحہ بندی کریں اور اشتراک یا طباعت کے لیے PDF حاصل کریں۔" }, FilePenLine),
   taskPage("date_finder", "/tools/date-converter?mode=find#date-studio", { en: "Find a Date", ur: "تاریخ تلاش کریں" }, { en: "Find a date and explore its calendar details.", ur: "تاریخ تلاش کریں اور اس کی تقویمی تفصیل دیکھیں۔" }, CalendarDays),
   taskPage("hijri_converter", "/tools/hijri-to-gregorian", { en: "Hijri to Gregorian", ur: "ہجری سے عیسوی تاریخ" }, { en: "Find the Gregorian equivalent of a Hijri date.", ur: "ہجری تاریخ کی عیسوی تاریخ معلوم کریں۔" }, CalendarDays),
-  taskPage("gregorian_calendar", `/calendar/${calendarYear}`, { en: "Gregorian Calendar", ur: "عیسوی تقویم" }, { en: "Browse the year and open any month or day.", ur: "سال دیکھیں اور مطلوبہ مہینہ یا دن کھولیں۔" }, CalendarDays),
-  taskPage("hijri_calendar", `/hijri/${hijriYear}`, { en: "Hijri Calendar", ur: "ہجری تقویم" }, { en: "Browse Hijri years, months and their date details.", ur: "ہجری سال، مہینے اور تاریخوں کی تفصیل دیکھیں۔" }, CalendarDays),
-  taskPage("crescent_visibility", "/tools/crescent-visibility", { en: "Crescent Visibility", ur: "رؤیتِ ہلال" }, { en: "Explore crescent visibility estimates and their limits.", ur: "رؤیتِ ہلال کے تخمینے اور ان کی حدود دیکھیں۔" }, CalendarDays),
-  taskPage("quran_reader", "/quran", { en: "Quran Reader", ur: "قرآن ریڈر" }, { en: "Read the Quran with the available translations and commentary.", ur: "دستیاب تراجم اور تفسیر کے ساتھ قرآن پڑھیں۔" }, BookOpen),
+  taskPage("gregorian_calendar", `/calendar/${calendarYear}`, { en: `Calendar ${calendarYear}`, ur: `تقویم ${calendarYear}` }, { en: "Browse the year and open any month or day.", ur: "سال دیکھیں اور مطلوبہ مہینہ یا دن کھولیں۔" }, CalendarDays),
+  taskPage("hijri_calendar", `/hijri/${hijriYear}`, { en: "Islamic Calendar", ur: "اسلامی تقویم" }, { en: "Browse Hijri years, months and their date details.", ur: "ہجری سال، مہینے اور تاریخوں کی تفصیل دیکھیں۔" }, CalendarDays),
+  taskPage("crescent_visibility", "/tools/crescent-visibility", { en: "Moon Sighting", ur: "رؤیتِ ہلال" }, { en: "Explore crescent visibility estimates and their limits.", ur: "رؤیتِ ہلال کے تخمینے اور ان کی حدود دیکھیں۔" }, CalendarDays),
+  taskPage("quran_reader", "/quran", { en: "Quran", ur: "قرآن کریم" }, { en: "Read the Quran with the available translations and commentary.", ur: "دستیاب تراجم اور تفسیر کے ساتھ قرآن پڑھیں۔" }, BookOpen),
 ];
 
 // One ordered grouping for the header, footer, and All Tools. Private Research
 // Studio and footer-only Khateeb Studio must never enter this public catalog.
 export const TOOL_GROUPS = [
-  { id: "write", name: { en: "Write", ur: "لکھیں" }, ids: ["document_studio", "book_layout", "urdu_pdf", "invoice_generator"] },
-  { id: "tools", name: { en: "Tools", ur: "اوزار" }, ids: ["urdu_writer", "roman_converter", "urdu_roman_writer", "translation_studio", "document_cleaner", "urdu_unicode_standardizer", "quality_audit", "whatsapp_rtl_formatter", "arabic_diacritics"] },
-  { id: "dates", name: { en: "Dates", ur: "تاریخیں" }, ids: ["date_converter", "date_finder", "hijri_calendar", "calendar_maker", "hijri_converter", "gregorian_calendar"] },
-  { id: "islamic", name: { en: "Quran", ur: "قرآن" }, ids: ["quran_reader", "crescent_visibility"] },
+  { id: "write", name: { en: "Write", ur: "لکھیں" }, ids: ["document_studio", "urdu_writer", "urdu_pdf", "urdu_roman_writer", "translation_studio"] },
+  // Future Poetry Image Maker belongs in Write; keep it hidden until available.
+  { id: "tools", name: { en: "Fix Text", ur: "متن درست کریں" }, ids: ["document_cleaner", "quality_audit", "whatsapp_rtl_formatter"] },
+  { id: "dates", name: { en: "Dates", ur: "تاریخیں" }, ids: ["today", "date_converter", "gregorian_calendar", "hijri_calendar", "calendar_maker", "crescent_visibility"] },
+  { id: "more", name: { en: "More", ur: "دیگر سہولتیں" }, ids: ["invoice_generator", "arabic_diacritics", "quran_reader", "all_tools"] },
 ];
+
+// Extra task pages remain discoverable on /tools without cluttering navigation.
+export const ALL_TOOLS_GROUPS = TOOL_GROUPS.map(group => ({
+  ...group,
+  ids: [...group.ids.filter(id => id !== "all_tools"), ...({
+    write: ["book_layout"], tools: ["roman_converter", "urdu_unicode_standardizer"],
+    dates: ["date_finder", "hijri_converter"], more: [],
+  }[group.id] ?? [])],
+}));
 
 export function toolsInGroup(group: (typeof TOOL_GROUPS)[number]): ToolEntry[] {
   return group.ids.map(id => {

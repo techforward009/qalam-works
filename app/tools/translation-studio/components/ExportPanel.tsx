@@ -113,7 +113,7 @@ export default function ExportPanel({ project, onImportProject, isUr }: ExportPa
     if (isEmpty) { showFeedback(isUr ? "کھولنے کے لیے کوئی ترجمہ موجود نہیں۔" : "Nothing to open — no translated segments."); return; }
     const handoff = buildHandoff(model);
     const ok = writeHandoff(handoff);
-    if (!ok) { showFeedback(isUr ? "ڈاکومنٹ اسٹوڈیو نہیں کھل سکا — دوبارہ کوشش کریں۔" : "Could not open Document Studio — please try again."); return; }
+    if (!ok) { showFeedback(isUr ? "قلم پیج: اردو ایڈیٹر نہیں کھل سکا — دوبارہ کوشش کریں۔" : "Could not open Qalam Page: Urdu Editor — please try again."); return; }
     window.location.href = "/tools/document-studio";
   };
 
@@ -133,7 +133,7 @@ export default function ExportPanel({ project, onImportProject, isUr }: ExportPa
         {isUr ? "DOCX ڈاؤن لوڈ کریں" : "Download DOCX"}
       </button>
       <button type="button" data-testid="export-handoff" onClick={handleContinueInDocumentStudio} disabled={isEmpty} className={`${secondaryCls} disabled:opacity-40`}>
-        {isUr ? "ڈاکومنٹ اسٹوڈیو میں جاری رکھیں ←" : "Continue in Document Studio →"}
+        {isUr ? "قلم پیج: اردو ایڈیٹر میں جاری رکھیں ←" : "Continue in Qalam Page: Urdu Editor →"}
       </button>
       {feedback && (
         <span className="text-xs text-gray-600 ml-1">{feedback}</span>

@@ -129,9 +129,9 @@ const UI = {
     copyWhatsAppLabel: "Copy WhatsApp-ready text",
     hidePreview: "Hide",
     hidePreviewLabel: "Hide WhatsApp-ready preview",
-    continueStudio: "Continue in Document Studio",
-    continueStudioLabel: "Open current Urdu text in Document Studio",
-    continueStudioFailed: "Could not open Document Studio.",
+    continueStudio: "Continue in Qalam Page: Urdu Editor",
+    continueStudioLabel: "Open current Urdu text in Qalam Page: Urdu Editor",
+    continueStudioFailed: "Could not open Qalam Page: Urdu Editor.",
     undo: "Undo",
     redo: "Redo",
     undoLabel: "Undo last edit",
@@ -192,9 +192,9 @@ const UI = {
     copyWhatsAppLabel: "واٹس ایپ کے لیے تیار متن کاپی کریں",
     hidePreview: "چھپائیں",
     hidePreviewLabel: "واٹس ایپ پیش نظارہ چھپائیں",
-    continueStudio: "ڈاکومنٹ اسٹوڈیو میں جاری رکھیں",
-    continueStudioLabel: "موجودہ اردو متن ڈاکومنٹ اسٹوڈیو میں کھولیں",
-    continueStudioFailed: "ڈاکومنٹ اسٹوڈیو نہیں کھولا جا سکا۔",
+    continueStudio: "قلم پیج: اردو ایڈیٹر میں جاری رکھیں",
+    continueStudioLabel: "موجودہ اردو متن قلم پیج: اردو ایڈیٹر میں کھولیں",
+    continueStudioFailed: "قلم پیج: اردو ایڈیٹر نہیں کھولا جا سکا۔",
     undo: "واپس کریں",
     redo: "دوبارہ کریں",
     undoLabel: "آخری ترمیم واپس کریں",
@@ -587,7 +587,7 @@ export default function RomanUrduWriterClient({ hideHeading = false }: { hideHea
 
   /**
    * Unified action area (19A.4c):
-   * Group A — writing continuation (Continue editing / Document Studio)
+   * Group A — writing continuation (Continue editing / Qalam Page: Urdu Editor)
    * Group B — export/share (Copy / TXT / WhatsApp)
    * Max two intentional rows on desktop via flex-wrap; related actions cluster.
    */

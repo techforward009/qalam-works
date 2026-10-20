@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useLanguage } from "../lib/language-context";
 import { trackEvent } from "../lib/analytics";
-import { TOOL_GROUPS, toolsInGroup, type ToolEntry } from "../lib/toolCatalog";
+import { ALL_TOOLS_GROUPS, toolsInGroup, type ToolEntry } from "../lib/toolCatalog";
 import { ChevronDown, ChevronUp, ExternalLink, AlertTriangle } from "lucide-react";
 
 // ── Labels ────────────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ export default function AllToolsContent() {
         </div>
 
         <div className="space-y-12">
-          {TOOL_GROUPS.map(group => (
+          {ALL_TOOLS_GROUPS.map(group => (
             <section key={group.id} aria-labelledby={`tools-${group.id}`}>
               <h2 id={`tools-${group.id}`} className={`mb-5 text-2xl font-bold text-[#1A3A2A] dark:text-[#e8ede9] ${naskh}`}>{group.name[lang]}</h2>
               <div className="space-y-4">
