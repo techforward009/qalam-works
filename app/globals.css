@@ -1722,7 +1722,7 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
 }
 
 /* Homepage preview: readable Urdu prompt and distinct example faces */
-.qalam-home .qalam-jameel-prompt{font-family:var(--qalam-urdu-primary)!important;font-style:normal!important;line-height:2.4!important;text-align:right!important;}
+.qalam-home .qalam-jameel-prompt{font-family:var(--qalam-urdu-primary)!important;font-style:normal!important;line-height:2.4!important;text-align:center!important;}
 .qalam-home section[dir="rtl"] .qalam-intent-example bdi:first-child{font-family:var(--qalam-urdu-primary)!important;}
 .qalam-home section[dir="rtl"] .qalam-intent-example bdi:last-child{font-family:var(--qalam-urdu-primary)!important;}
 
@@ -1782,7 +1782,7 @@ html:not(.dark) [role="group"][aria-label="Choose language"] > button[aria-press
 /* The broken-sample line is a size demo, not body copy. Keep the English text-2xl size (1.5rem / 24px). */
 .qalam-home section[dir="rtl"] p.qalam-before-sample{font-size:1.5rem!important;line-height:2.2!important;font-weight:400!important;}
 .qalam-home section[dir="rtl"] .qalam-before-error-tag{font-family:var(--qalam-urdu-primary)!important;font-weight:400!important;font-size:16px!important;line-height:2.2!important;letter-spacing:0!important;}
-.qalam-home .qalam-jameel-prompt{font-family:var(--qalam-urdu-primary)!important;font-size:18px!important;line-height:2.45!important;font-style:normal!important;text-align:right!important;}
+.qalam-home .qalam-jameel-prompt{font-family:var(--qalam-urdu-primary)!important;font-size:18px!important;line-height:2.45!important;font-style:normal!important;text-align:center!important;}
 .qalam-about-urdu p,.qalam-about-urdu div.space-y-5{font-family:var(--qalam-urdu-primary)!important;font-size:18px!important;line-height:2.45!important;font-weight:400!important;letter-spacing:0;}
 
 /* Word separation for Urdu reading text only; preserve connected Nastaliq glyphs. */

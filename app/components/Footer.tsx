@@ -22,6 +22,7 @@ export default function Footer() {
   const { language, dir } = useLanguage();
   const t = translations[language];
   const year = new Date().getFullYear();
+  const linkListClass = "space-y-1 [&_a]:flex [&_a]:min-h-8 [&_a]:items-center sm:[&_a]:min-h-0";
 
   return (
     <footer className="mt-0 border-t border-white/10 bg-[#11182A]" dir={dir} data-site-footer={language}>
@@ -41,7 +42,7 @@ export default function Footer() {
           {TOOL_GROUPS.map(group => (
             <div key={group.id}>
               <h2 className="mb-3 text-sm font-semibold text-white" data-footer-heading="true">{group.name[language]}</h2>
-              <ul className="space-y-2">
+              <ul className={linkListClass}>
                 {toolsInGroup(group).map(tool => <li key={tool.id}><Link href={tool.route} className="text-sm text-white/90 hover:text-amber-200">{tool.name[language]}</Link></li>)}
                 {group.id === "more" && <li><Link href="/tools/khateeb-studio" className="text-sm text-white/90 hover:text-amber-200">{language === "ur" ? "خطیب اسٹوڈیو" : "Khateeb Studio"}</Link></li>}
               </ul>
@@ -54,7 +55,7 @@ export default function Footer() {
           <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3`} data-footer-heading="true">
             {t.footer.companyHeading}
           </div>
-          <ul className="space-y-2">
+          <ul className={linkListClass}>
             <li><Link href="/about" className={`text-white hover:text-white text-sm transition-colors`}>{t.nav.about}</Link></li>
             <li><Link href="/services" className={`text-white hover:text-white text-sm transition-colors`}>{t.nav.services}</Link></li>
             <li><Link href="/contact" className={`text-white hover:text-white text-sm transition-colors`}>{t.nav.contact}</Link></li>
@@ -67,7 +68,7 @@ export default function Footer() {
           <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3`} data-footer-heading="true">
             {t.footer.legalHeading}
           </div>
-          <ul className="space-y-2 mb-5">
+          <ul className={`${linkListClass} mb-5`}>
             <li><Link href="/privacy" className="text-sm text-white transition-colors hover:text-white">{language === "ur" ? "رازداری" : "Privacy"}</Link></li>
             <li><Link href="/terms" className="text-sm text-white transition-colors hover:text-white">{language === "ur" ? "شرائط" : "Terms"}</Link></li>
           </ul>
