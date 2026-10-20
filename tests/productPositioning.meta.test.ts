@@ -8,13 +8,13 @@ function read(rel: string) {
 }
 
 describe("Product positioning metadata", () => {
-  it("Quality Audit title is clear", () => {
+  it("Text Check title uses the plain public name", () => {
     const p = read("app/tools/quality-checker/page.tsx");
-    expect(p).toMatch(/Quality Audit/);
+    expect(p).toMatch(/Urdu Text Check/);
     expect(p).not.toMatch(/Publication Quality Checker for Urdu/);
   });
 
-  it("Unicode Standardizer title includes Urdu", () => {
+  it("Unicode Fixer title includes Urdu", () => {
     expect(read("app/tools/unicode-standardizer/page.tsx")).toMatch(/Urdu Unicode Fixer/);
   });
 
