@@ -45,16 +45,11 @@ function topMenuPosition(anchor: HTMLElement | null, isUr: boolean): React.CSSPr
   };
 }
 
+const dropdownItemStyle = { position: "relative", height: 22, minHeight: 22, maxHeight: 22, padding: "0 12px 0 28px", fontFamily: "Segoe UI, Tahoma, sans-serif", fontSize: 12, lineHeight: "22px", color: "#000", direction: "ltr" } as const;
+
 function MenuItems({
-  items,
-  isUr,
-  disabledIds,
-  checkedIds,
-  openSubmenuId,
-  inlineSubmenus,
-  onOpenSubmenu,
-  onToggleSubmenu,
-  onAction,
+  items, isUr, disabledIds, checkedIds, openSubmenuId, inlineSubmenus,
+  onOpenSubmenu, onToggleSubmenu, onAction,
 }: {
   items: MenuNode[];
   isUr: boolean;
@@ -66,98 +61,48 @@ function MenuItems({
   onToggleSubmenu: (id: string) => void;
   onAction: (id: MenuActionId) => void;
 }) {
-  return (
-    <>
-      {items.map((item, index) => {
-        if (item.type === "separator") {
-          return <div key={`sep-${index}`} role="separator" className="my-1 border-t border-[#1A3A2A]/10" />;
-        }
-        if (item.type === "submenu") {
-          const open = openSubmenuId === item.id;
-          return (
-            <div
-              key={item.id}
-              className="relative"
-              onPointerEnter={(e) => {
-                if (e.pointerType === "mouse") onOpenSubmenu(item.id);
-              }}
-            >
-              <button
-                type="button"
-                role="menuitem"
-                aria-haspopup="true"
-                aria-expanded={open}
-                data-menu-submenu={item.id}
-                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-start text-[13px] ${
-                  open ? "bg-[#EAF2EB] text-[#1A3A2A]" : "text-[#1A3A2A] hover:bg-[#EAF2EB]"
-                }`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onToggleSubmenu(item.id);
-                }}
-              >
-                <span className="min-w-0 whitespace-normal text-start leading-[1.85]">{menuLabel(item, isUr)}</span>
-                <span aria-hidden="true" className="shrink-0 text-[11px] text-[#3D5A47]">
-                  {inlineSubmenus ? (open ? "▾" : "▸") : isUr ? "‹" : "›"}
-                </span>
-              </button>
-              {open && inlineSubmenus && (
-                <div role="menu" data-menu-flyout={item.id} className="border-y border-[#1A3A2A]/10 bg-[#FAF8F3] py-1">
-                  <MenuItems
-                    items={item.items}
-                    isUr={isUr}
-                    disabledIds={disabledIds}
-                    checkedIds={checkedIds}
-                    openSubmenuId={null}
-                    inlineSubmenus={inlineSubmenus}
-                    onOpenSubmenu={onOpenSubmenu}
-                    onToggleSubmenu={onToggleSubmenu}
-                    onAction={onAction}
-                  />
-                </div>
-              )}
-            </div>
-          );
-        }
-        const disabled = disabledIds?.has(item.id) ?? false;
-        const checked = checkedIds?.has(item.id) ?? false;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            role="menuitem"
-            disabled={disabled}
-            aria-disabled={disabled || undefined}
-            aria-checked={checked || undefined}
-            data-menu-action={item.id}
-            className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-start text-[13px] ${
-              disabled ? "cursor-not-allowed text-gray-400" : "text-[#1A3A2A] hover:bg-[#EAF2EB]"
-            }`}
-            onPointerEnter={(e) => {
-              if (e.pointerType === "mouse" && openSubmenuId) onOpenSubmenu("");
-            }}
-            onClick={() => {
-              if (disabled) return;
-              onAction(item.id);
-            }}
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <span className={`w-3 shrink-0 text-[11px] font-semibold ${checked ? "text-[#1A3A2A]" : "text-transparent"}`} aria-hidden="true">
-                ✓
-              </span>
-              <span className="whitespace-normal text-start leading-[1.85]">{menuLabel(item, isUr)}</span>
-            </span>
-            {item.shortcut ? (
-              <span className="ms-auto shrink-0 text-[11px] tabular-nums text-gray-400" dir="ltr">
-                {item.shortcut}
-              </span>
-            ) : null}
-          </button>
-        );
-      })}
-    </>
-  );
+  return <>{items.map((item, index) => {
+    if (item.type === "separator") {
+      return <div key={`sep-${index}`} role="separator" className="my-1 border-t border-[#a0a0a0] shadow-[0_1px_0_#fff]" />;
+    }
+    if (item.type === "submenu") {
+      const open = openSubmenuId === item.id;
+      return <div key={item.id} className="relative" onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") onOpenSubmenu(item.id);
+      }}>
+        <button type="button" role="menuitem" aria-haspopup="true" aria-expanded={open}
+          data-menu-submenu={item.id} style={dropdownItemStyle}
+          className={`flex w-full items-center text-left ${open ? "bg-[#d6dff2]" : "hover:bg-[#d6dff2]"}`}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            // Mouse hover may already have opened it before the click arrives.
+            if (inlineSubmenus && item.id !== "file.download") onToggleSubmenu(item.id);
+            else onOpenSubmenu(item.id);
+          }}>
+          <span className="min-w-0 whitespace-nowrap text-left">{menuLabel(item, isUr)}</span>
+          <span aria-hidden="true" className="ms-auto shrink-0">{inlineSubmenus && open ? "▾" : isUr ? "◂" : "▸"}</span>
+        </button>
+        {open && inlineSubmenus ? <div role="menu" data-menu-flyout={item.id} className="border-y border-[#a0a0a0] bg-[#f0f0f0] py-0.5">
+          <MenuItems items={item.items} isUr={isUr} disabledIds={disabledIds} checkedIds={checkedIds}
+            openSubmenuId={null} inlineSubmenus={inlineSubmenus} onOpenSubmenu={onOpenSubmenu}
+            onToggleSubmenu={onToggleSubmenu} onAction={onAction} />
+        </div> : null}
+      </div>;
+    }
+    const disabled = disabledIds?.has(item.id) ?? false;
+    const checked = checkedIds?.has(item.id) ?? false;
+    return <button key={item.id} type="button" role="menuitem" disabled={disabled}
+      aria-disabled={disabled || undefined} aria-checked={checked || undefined}
+      data-menu-action={item.id} style={dropdownItemStyle}
+      className={`flex w-full items-center text-left ${disabled ? "cursor-not-allowed" : "hover:bg-[#d6dff2]"}`}
+      onPointerEnter={(event) => { if (event.pointerType === "mouse" && openSubmenuId) onOpenSubmenu(""); }}
+      onClick={() => { if (!disabled) onAction(item.id); }}>
+      <span aria-hidden="true" className="absolute left-[8px] top-0">{checked ? "✓" : null}</span>
+      <span className="min-w-0 whitespace-nowrap text-left">{menuLabel(item, isUr)}</span>
+      {item.shortcut ? <span className="absolute right-[12px] top-0 tabular-nums" dir="ltr">{item.shortcut}</span> : null}
+    </button>;
+  })}</>;
 }
 
 function StudioLanguageSwitch() {
@@ -342,7 +287,7 @@ export default function DocumentMenuBar({
               data-menu-dropdown={openMenu.id}
               data-menu-portaled="true"
               data-studio-menu-language={isUr ? "ur" : "en"}
-              className="rounded-md border border-[#1A3A2A]/15 bg-white py-1 shadow-md"
+              className="border border-[#808080] bg-[#f0f0f0] py-0.5 shadow-md"
               style={menuStyle}
               onKeyDown={(event) => {
                 if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Home" || event.key === "End") {
@@ -373,7 +318,7 @@ export default function DocumentMenuBar({
                 data-menu-flyout={openState.submenuId}
                 data-menu-portaled="true"
               data-studio-menu-language={isUr ? "ur" : "en"}
-                className="rounded-md border border-[#1A3A2A]/15 bg-white py-1 shadow-md"
+                className="border border-[#808080] bg-[#f0f0f0] py-0.5 shadow-md"
                 style={submenuStyle}
                 onKeyDown={(event) => {
                   if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Home" || event.key === "End") {
@@ -405,6 +350,15 @@ export default function DocumentMenuBar({
 
   return (
     <div data-studio-caption="true" style={{ background: "#f0f0f0", fontFamily: "Segoe UI, Tahoma, sans-serif", color: "#000" }}>
+      <style>{`
+        [data-menu-portaled="true"][data-studio-menu-language] [role="menuitem"],
+        [data-menu-portaled="true"][data-studio-menu-language] [role="menuitem"] * {
+          font-family: "Segoe UI", Tahoma, sans-serif !important;
+          font-size: 12px !important;
+          line-height: 22px !important;
+          color: #000 !important;
+        }
+      `}</style>
       <div
         data-studio-titlebar="true"
         className="flex items-center"

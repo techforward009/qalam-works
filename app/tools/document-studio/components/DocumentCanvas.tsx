@@ -294,12 +294,9 @@ export default function DocumentCanvas({
               data-ruler-origin-mark="true"
               style={{ position: "relative", width: INPAGE_VRULER_PX, height: INPAGE_RULER_BAR_PX, boxSizing: "border-box", borderRight: "2px solid #000", borderBottom: "2px solid #000", background: "#fff" }}
             >
-              <svg width="16" height="16" aria-hidden="true" style={{ position: "absolute", right: 0, bottom: 0 }}>
-                <circle cx="13" cy="13" r="0.7" fill="#000" />
-                <circle cx="10" cy="13" r="0.7" fill="#000" />
-                <circle cx="7" cy="13" r="0.7" fill="#000" />
-                <circle cx="13" cy="10" r="0.7" fill="#000" />
-                <circle cx="13" cy="7" r="0.7" fill="#000" />
+              <svg width="16" height="16" shapeRendering="crispEdges" aria-hidden="true" style={{ position: "absolute", right: 0, bottom: 0 }}>
+                {[3, 5, 7, 9, 11, 13].map((pixel) => <rect key={`h-${pixel}`} x={pixel} y="13" width="1" height="1" fill="#000" />)}
+                {[3, 5, 7, 9, 11].map((pixel) => <rect key={`v-${pixel}`} x="13" y={pixel} width="1" height="1" fill="#000" />)}
               </svg>
             </div>
             <div className="min-w-0 flex-1 overflow-hidden">

@@ -13,7 +13,7 @@ describe("InPage window ruler", () => {
     expect(at("0")?.offsetPx).toBe(700);
     expect(at("20")?.offsetPx).toBe(620);
     expect(at("-20")?.offsetPx).toBe(780);
-    expect(PASTEBOARD_TOP_PX).toBe(4);
+    expect(PASTEBOARD_TOP_PX).toBe(2);
     expect(PASTEBOARD_GUIDE_PX).toBe(119);
   });
 });

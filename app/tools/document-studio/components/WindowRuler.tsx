@@ -2,9 +2,30 @@
 
 import { useEffect, useRef } from "react";
 import type { PhysicalMarginEdge } from "../utils/pageLayout";
-import { calculateWindowRulerTicks, INPAGE_RULER_BAR_PX, type WindowTickKind } from "../utils/windowRuler";
+import { calculateWindowRulerTicks, INPAGE_RULER_BAR_PX, INPAGE_VRULER_PX, type WindowTickKind } from "../utils/windowRuler";
 
 const TICK_PX: Record<WindowTickKind, number> = { major: 9, minor: 4, micro: 2 };
+
+// Fixed 5x7 bitmap glyphs: integer rectangles have no font rasterisation or antialiasing.
+const DIGITS: Record<string, string[]> = {
+  "0": ["01110","10001","10011","10101","11001","10001","01110"],
+  "1": ["00100","01100","00100","00100","00100","00100","01110"],
+  "2": ["01110","10001","00001","00010","00100","01000","11111"],
+  "3": ["11110","00001","00001","01110","00001","00001","11110"],
+  "4": ["00010","00110","01010","10010","11111","00010","00010"],
+  "5": ["11111","10000","10000","11110","00001","00001","11110"],
+  "6": ["01110","10000","10000","11110","10001","10001","01110"],
+  "7": ["11111","00001","00010","00100","01000","01000","01000"],
+  "8": ["01110","10001","10001","01110","10001","10001","01110"],
+  "9": ["01110","10001","10001","01111","00001","00001","01110"],
+  "-": ["00000","00000","00000","11111","00000","00000","00000"],
+};
+
+function BitmapDigits({ text }: { text: string }) {
+  const pixels = [...text].flatMap((digit, index) => (DIGITS[digit] ?? []).flatMap((row, y) =>
+    [...row].flatMap((pixel, x) => pixel === "1" ? [`M${index * 6 + x} ${y}h1v1h-1z`] : [])));
+  return <svg width={text.length * 6 - 1} height="7" viewBox={`0 0 ${text.length * 6 - 1} 7`} shapeRendering="crispEdges" style={{ display: "block" }} aria-hidden="true" data-ruler-digits={text}><path d={pixels.join("")} fill="#000" /></svg>;
+}
 
 /**
  * InPage window ruler. Numbers are millimetres and continue past the page.
@@ -80,7 +101,7 @@ export function WindowRuler({
       className="relative select-none overflow-hidden bg-white"
       style={{
         boxSizing: "border-box",
-        width: vertical ? INPAGE_RULER_BAR_PX : Math.max(1, lengthPx),
+        width: vertical ? INPAGE_VRULER_PX : Math.max(1, lengthPx),
         height: vertical ? Math.max(1, lengthPx) : INPAGE_RULER_BAR_PX,
         borderBottom: vertical ? undefined : "2px solid #000",
         borderRight: vertical ? "2px solid #000" : undefined,
@@ -94,7 +115,7 @@ export function WindowRuler({
       data-ruler-axis={axis}
       data-ruler-unit="mm"
       data-ruler-origin={originName}
-      data-ruler-bar-px={String(INPAGE_RULER_BAR_PX)}
+      data-ruler-bar-px={String(vertical ? INPAGE_VRULER_PX : INPAGE_RULER_BAR_PX)}
       data-ruler-page-width-mm={pageWidthMm}
       data-ruler-page-height-mm={pageHeightMm}
       data-ruler-page-size={pageSize}
@@ -114,8 +135,8 @@ export function WindowRuler({
             className="pointer-events-none absolute bg-black"
             style={
               vertical
-                ? { top: tick.offsetPx, right: 0, width: TICK_PX[tick.kind], height: 1 }
-                : { left: tick.offsetPx, bottom: 0, width: 1, height: TICK_PX[tick.kind] }
+                ? { top: Math.round(tick.offsetPx), right: 0, width: TICK_PX[tick.kind], height: 1 }
+                : { left: Math.round(tick.offsetPx), bottom: 0, width: 1, height: TICK_PX[tick.kind] }
             }
           />
       ))}
@@ -125,26 +146,11 @@ export function WindowRuler({
           <span
             key={`label-${tick.mm}-${index}`}
             className="pointer-events-none absolute whitespace-nowrap text-black"
-            style={
-              vertical
-                ? {
-                    top: tick.offsetPx,
-                    right: 3,
-                    fontSize: 7,
-                    lineHeight: "8px",
-                    transform: "rotate(-90deg)",
-                    transformOrigin: "right top",
-                  }
-                : {
-                    left: tick.offsetPx - 2,
-                    top: 1,
-                    fontSize: 7,
-                    lineHeight: "8px",
-                    transform: "translateX(-100%)",
-                  }
-            }
+            style={vertical
+              ? { top: Math.round(tick.offsetPx) - 2, left: 1, width: tick.label.length * 6 - 1, height: 7, transform: "rotate(-90deg)", transformOrigin: "left top" }
+              : { left: Math.round(tick.offsetPx) - 2 - (tick.label.length * 6 - 1), top: 3, width: tick.label.length * 6 - 1, height: 7 }}
           >
-            {tick.label}
+            <BitmapDigits text={tick.label} />
           </span>
         );
       })}

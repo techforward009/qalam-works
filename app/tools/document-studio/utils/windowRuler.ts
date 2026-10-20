@@ -11,13 +11,13 @@ export interface WindowRulerTick {
 }
 
 export const INPAGE_TOOLBOX_PX = 32;
-export const INPAGE_RULER_BAR_PX = 16;
+export const INPAGE_RULER_BAR_PX = 18;
 export const INPAGE_VRULER_PX = 16;
 /** Classic scrollbar reserved so Fit width keeps the page edge on screen. */
 export const INPAGE_VSCROLL_PX = 17;
 export const INPAGE_HSCROLL_PX = 18;
-/** White between the horizontal ruler and the page top. Measured at 4px on the InPage screenshot. */
-export const PASTEBOARD_TOP_PX = 4;
+/** Two pixels of pasteboard below the 18px horizontal ruler keep the page at y=108. */
+export const PASTEBOARD_TOP_PX = 2;
 /** Dashed guides sit 119px outside the page at 100% (measured on the 1920px screenshot). */
 export const PASTEBOARD_GUIDE_PX = 119;
 
