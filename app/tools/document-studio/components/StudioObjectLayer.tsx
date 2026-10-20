@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { Editor } from "@tiptap/react";
 import type { StudioToolId } from "./InPageToolPalette";
 
@@ -81,6 +81,7 @@ export function StudioObjectLayer({
   marginRightPx: number;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const pendingTextFocus = useRef<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number; flip: boolean } | null>(null);
   const dragRef = useRef<
@@ -90,6 +91,17 @@ export function StudioObjectLayer({
     | null
   >(null);
   const drawing = DRAW_TOOLS.has(tool);
+
+  // Focus after React mounts the new textarea, before the next keystroke.
+  useLayoutEffect(() => {
+    const id = pendingTextFocus.current;
+    if (!id) return;
+    const input = rootRef.current?.querySelector<HTMLTextAreaElement>(`[data-studio-frame-id="${id}"] textarea`);
+    if (input) {
+      input.focus({ preventScroll: true });
+      pendingTextFocus.current = null;
+    }
+  }, [frames]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -158,13 +170,9 @@ export function StudioObjectLayer({
       flip,
       text: "",
     };
+    if (kind === "text") pendingTextFocus.current = frame.id;
     onChangeRef.current([...framesRef.current, frame]);
     setSelected(frame.id);
-    if (kind === "text") {
-      requestAnimationFrame(() => {
-        rootRef.current?.querySelector<HTMLTextAreaElement>(`[data-studio-frame-id="${frame.id}"] textarea`)?.focus();
-      });
-    }
   };
 
   return (
@@ -173,8 +181,11 @@ export function StudioObjectLayer({
       className="studio-no-print absolute inset-0 z-[6]"
       data-studio-objects="true"
       style={{ pointerEvents: drawing ? "auto" : "none", cursor: drawing ? "crosshair" : undefined }}
+      onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => {
         if (!drawing) return;
+        event.preventDefault();
+        event.stopPropagation();
         const point = localPoint(event);
         dragRef.current = { mode: "draw", x: point.x, y: point.y, pointer: event.pointerId };
         setDraft({ x: point.x, y: point.y, w: 0, h: 0, flip: false });
@@ -240,10 +251,14 @@ export function StudioObjectLayer({
     >
       {frames.map((frame) => {
         const stride = pageHeightPx + gapPx;
-        const left = frame.xMm * PX_PER_MM;
-        const top = (frame.page - 1) * stride + frame.yMm * PX_PER_MM;
-        const width = Math.max(1, frame.wMm * PX_PER_MM);
-        const height = Math.max(1, frame.hMm * PX_PER_MM);
+        // Snap the frame to screen pixels, including a fractional page origin.
+        const rootBox = rootRef.current?.getBoundingClientRect();
+        const scale = rootBox && rootBox.width > 0 ? rootBox.width / pageWidthPx : 1;
+        const snap = (value: number, origin = 0) => (Math.round(origin + value * scale) - origin) / scale;
+        const left = snap(frame.xMm * PX_PER_MM, rootBox?.left);
+        const top = snap((frame.page - 1) * stride + frame.yMm * PX_PER_MM, rootBox?.top);
+        const width = Math.max(1, snap(frame.wMm * PX_PER_MM));
+        const height = Math.max(1, snap(frame.hMm * PX_PER_MM));
         const active = selected === frame.id;
         return (
           <div
@@ -260,6 +275,12 @@ export function StudioObjectLayer({
               cursor: tool === "select" || active ? "move" : "crosshair",
             }}
             onPointerDown={(event) => {
+              if (frame.kind === "text" && (tool === "text" || tool === "select")) {
+                event.stopPropagation();
+                setSelected(frame.id);
+                event.currentTarget.querySelector("textarea")?.focus({ preventScroll: true });
+                return;
+              }
               if (DRAW_TOOLS.has(tool)) return;
               event.stopPropagation();
               setSelected(frame.id);
@@ -276,7 +297,7 @@ export function StudioObjectLayer({
               (event.currentTarget.closest("[data-studio-objects]") as HTMLElement | null)?.setPointerCapture(event.pointerId);
             }}
           >
-            <FrameShape frame={frame} active={active} onText={(text) => updateFrame(frame.id, { text })} />
+            <FrameShape frame={frame} width={width} height={height} active={active} onTextFocus={() => setSelected(frame.id)} onText={(text) => updateFrame(frame.id, { text })} />
             {active
               ? (["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const).map((edge) => (
                   <div
@@ -335,10 +356,16 @@ function handlePos(edge: string): CSSProperties {
 function FrameShape({
   frame,
   active,
+  width,
+  height,
+  onTextFocus,
   onText,
 }: {
   frame: StudioFrame;
   active: boolean;
+  width: number;
+  height: number;
+  onTextFocus: () => void;
   onText: (text: string) => void;
 }) {
   if (frame.kind === "text") {
@@ -348,6 +375,7 @@ function FrameShape({
         dir="rtl"
         aria-label="Text box"
         onChange={(event) => onText(event.target.value)}
+        onFocus={onTextFocus}
         onPointerDown={(event) => event.stopPropagation()}
         style={{
           width: "100%",
@@ -365,30 +393,21 @@ function FrameShape({
       />
     );
   }
-  const stroke = "#111";
+  // Pixel-space geometry: the 1px stroke is centred on half-pixel edges.
+  const inset = 0.5;
+  const innerWidth = Math.max(0, width - 1);
+  const innerHeight = Math.max(0, height - 1);
+  const stroke = { fill: "none", stroke: "#000", strokeWidth: 1, vectorEffect: "non-scaling-stroke" } as const;
   return (
-    <svg width="100%" height="100%" viewBox={`0 0 ${Math.max(1, frame.wMm)} ${Math.max(1, frame.hMm)}`} preserveAspectRatio="none" aria-hidden>
-      {frame.kind === "ellipse" ? (
-        <ellipse cx={frame.wMm / 2} cy={frame.hMm / 2} rx={Math.max(0.2, frame.wMm / 2 - 0.2)} ry={Math.max(0.2, frame.hMm / 2 - 0.2)} fill="none" stroke={stroke} strokeWidth={0.4} vectorEffect="non-scaling-stroke" />
-      ) : null}
-      {frame.kind === "rect" ? (
-        <rect x={0.2} y={0.2} width={Math.max(0.4, frame.wMm - 0.4)} height={Math.max(0.4, frame.hMm - 0.4)} fill="none" stroke={stroke} strokeWidth={0.4} vectorEffect="non-scaling-stroke" />
-      ) : null}
-      {frame.kind === "round-rect" ? (
-        <rect x={0.2} y={0.2} width={Math.max(0.4, frame.wMm - 0.4)} height={Math.max(0.4, frame.hMm - 0.4)} rx={1.6} fill="none" stroke={stroke} strokeWidth={0.4} vectorEffect="non-scaling-stroke" />
+    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden>
+      {frame.kind === "ellipse" ? <ellipse cx={width / 2} cy={height / 2} rx={innerWidth / 2} ry={innerHeight / 2} {...stroke} /> : null}
+      {frame.kind === "rect" || frame.kind === "round-rect" ? (
+        <rect x={inset} y={inset} width={innerWidth} height={innerHeight} rx={frame.kind === "round-rect" ? 1.6 * PX_PER_MM : undefined} {...stroke} />
       ) : null}
       {frame.kind === "line" ? (
-        <line
-          x1={frame.flip ? frame.wMm : 0}
-          y1={0}
-          x2={frame.flip ? 0 : frame.wMm}
-          y2={frame.hMm}
-          stroke={stroke}
-          strokeWidth={0.45}
-          vectorEffect="non-scaling-stroke"
-        />
+        <line x1={frame.flip ? width - inset : inset} y1={inset} x2={frame.flip ? inset : width - inset} y2={height - inset} {...stroke} />
       ) : null}
-      {active ? <rect x={0} y={0} width={frame.wMm} height={frame.hMm} fill="none" stroke="#1a4fbf" strokeWidth={0.3} vectorEffect="non-scaling-stroke" /> : null}
+      {active ? <rect x={0} y={0} width={width} height={height} fill="none" stroke="#1a4fbf" strokeWidth={0.3} vectorEffect="non-scaling-stroke" /> : null}
     </svg>
   );
 }

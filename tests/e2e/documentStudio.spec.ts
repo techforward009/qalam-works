@@ -14,6 +14,11 @@ async function openStudio(page: Page, language: "en" | "ur" = "en") {
   await expect(page.locator(".ProseMirror")).toBeEditable();
 }
 
+async function imageAction(page: Page, label: string) {
+  await page.locator(".ProseMirror img.qalam-document-image").click({ button: "right" });
+  await page.locator('[data-studio-image-menu="true"]').getByRole("menuitem", { name: label, exact: true }).click();
+}
+
 async function replaceEditorContent(page: Page, text: string) {
   const editor = page.locator(".ProseMirror");
   await editor.click();
@@ -188,13 +193,9 @@ test.describe("Document Studio v1 browser smoke", () => {
     await editor.press("End");
     await page.keyboard.type(" Text after the image.");
     await image.click();
-    const imageControls = page.locator('[data-studio-image-controls="true"]');
-    await expect(imageControls).toBeVisible();
     await expect(page.locator('[data-resize-handle]')).toHaveCount(4);
-    await expect(imageControls.locator('[data-studio-image-width="true"]')).toContainText("80 px");
-
-    await page.getByRole("button", { name: "Larger", exact: true }).click();
-    await expect(image).toHaveAttribute("data-width", "160");
+    await expect(page.locator('[data-studio-image-controls="true"]')).toHaveCount(0);
+    const initialWidth = Number(await image.getAttribute("data-width"));
     if (testInfo.project.name !== "mobile-android") {
       const resizeHandle = page.locator('[data-resize-handle="bottom-right"]');
       const handleBox = await resizeHandle.boundingBox();
@@ -203,26 +204,27 @@ test.describe("Document Studio v1 browser smoke", () => {
       await page.mouse.down();
       await page.mouse.move(handleBox.x + 60, handleBox.y + 60);
       await page.mouse.up();
-      await expect.poll(async () => Number(await image.getAttribute("data-width"))).toBeGreaterThan(160);
+      await expect.poll(async () => Number(await image.getAttribute("data-width"))).toBeGreaterThan(initialWidth);
     }
 
-    await page.getByRole("button", { name: "Left", exact: true }).click();
+    const resizedWidth = await image.getAttribute("data-width");
+    await imageAction(page, "Left");
     const leftPosition = await image.boundingBox();
-    await page.getByRole("button", { name: "Center", exact: true }).click();
+    await imageAction(page, "Center");
     const centerPosition = await image.boundingBox();
-    await page.getByRole("button", { name: "Right", exact: true }).click();
+    await imageAction(page, "Right");
     const rightPosition = await image.boundingBox();
     expect(leftPosition?.x).toBeLessThan(centerPosition?.x ?? 0);
     expect(centerPosition?.x).toBeLessThan(rightPosition?.x ?? 0);
     page.once("dialog", (dialog) => dialog.accept("Qalam mark"));
-    await page.getByRole("button", { name: "Alt Text", exact: true }).click();
+    await imageAction(page, "Alt text");
     await expect(image).toHaveAttribute("alt", "Qalam mark");
     await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
     await page.reload();
     const restoredImage = page.locator(".ProseMirror img.qalam-document-image");
     await expect(restoredImage).toHaveAttribute("alt", "Qalam mark");
     await expect(restoredImage).toHaveAttribute("data-alignment", "right");
-    await expect.poll(async () => Number(await restoredImage.getAttribute("data-width"))).toBeGreaterThanOrEqual(160);
+    await expect(restoredImage).toHaveAttribute("data-width", resizedWidth!);
     await expect(page.locator(".ProseMirror")).toContainText("Text before the image.");
     await expect(page.locator(".ProseMirror")).toContainText("Text after the image.");
     const docx = await downloadAction(page, "file.downloadDocx");
@@ -245,17 +247,13 @@ test.describe("Document Studio v1 browser smoke", () => {
     const image = page.locator(".ProseMirror img.qalam-document-image");
     await expect(image).toBeVisible();
     await image.click();
-    const imageControls = page.locator('[data-studio-image-controls="true"]');
-    await expect(imageControls).toBeVisible();
     await expect(image).toHaveAttribute("data-wrap-mode", "break");
-    await expect(page.getByRole("button", { name: "Break text", exact: true })).toHaveAttribute("aria-pressed", "true");
 
-    await page.getByRole("button", { name: "Wrap text", exact: true }).click();
-    await page.getByRole("button", { name: "Left", exact: true }).click();
+    await imageAction(page, "Wrap text");
+    await imageAction(page, "Left");
     await expect(image).toHaveAttribute("data-wrap-mode", "wrap");
     await expect(image).toHaveAttribute("data-alignment", "left");
     await expect(page.locator("[data-resize-container]")).toHaveAttribute("data-image-float", "left");
-    await expect(page.getByRole("button", { name: "Wrap text", exact: true })).toHaveAttribute("aria-pressed", "true");
     await page.locator(".ProseMirror p").last().click();
     await page.keyboard.type(WRAP_PARAGRAPH);
     await expect(page.locator(".ProseMirror")).toContainText("wraps this paragraph beside the picture");
@@ -265,8 +263,7 @@ test.describe("Document Studio v1 browser smoke", () => {
     expect(wrapLeft.line.bottom).toBeGreaterThan(wrapLeft.image.y);
 
     await image.click();
-    await expect(imageControls).toBeVisible();
-    await page.getByRole("button", { name: "Right", exact: true }).click();
+    await imageAction(page, "Right");
     await expect(image).toHaveAttribute("data-alignment", "right");
     await expect(page.locator("[data-resize-container]")).toHaveAttribute("data-image-float", "right");
     const wrapRight = await imageAndFirstLine(page);
@@ -275,15 +272,14 @@ test.describe("Document Studio v1 browser smoke", () => {
     expect(wrapRight.line.bottom).toBeGreaterThan(wrapRight.image.y);
     expect(wrapRight.image.x).toBeGreaterThan(wrapLeft.image.x);
 
-    await page.getByRole("button", { name: "Break text", exact: true }).click();
+    await imageAction(page, "Break text");
     await expect(image).toHaveAttribute("data-wrap-mode", "break");
     await expect(page.locator("[data-resize-container]")).not.toHaveAttribute("data-image-float");
-    await expect(page.getByRole("button", { name: "Break text", exact: true })).toHaveAttribute("aria-pressed", "true");
     const broken = await imageAndFirstLine(page);
     expect(broken.line.y).toBeGreaterThan(broken.image.bottom - 8);
 
-    await page.getByRole("button", { name: "Wrap text", exact: true }).click();
-    await page.getByRole("button", { name: "Left", exact: true }).click();
+    await imageAction(page, "Wrap text");
+    await imageAction(page, "Left");
     await expect(page.locator('[data-studio-save-status="saved"]')).toBeVisible({ timeout: 6_000 });
     await page.reload();
     const restoredImage = page.locator(".ProseMirror img.qalam-document-image");
