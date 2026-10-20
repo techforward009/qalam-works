@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ComponentProps } from "react";
 import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
 import { NodeSelection } from "@tiptap/pm/state";
@@ -43,12 +43,14 @@ function ToolbarButton({
   children,
   label,
   latin = false,
+  raised = false,
 }: {
   onClick: () => void;
   active?: boolean;
   children: React.ReactNode;
   label: string;
   latin?: boolean;
+  raised?: boolean;
 }) {
   return (
     <button
@@ -57,15 +59,10 @@ function ToolbarButton({
       onClick={onClick}
       title={label}
       aria-label={label}
+      aria-pressed={active}
       data-latin-control={latin ? "true" : undefined}
-      className={`inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center px-1 text-[11px] font-bold leading-none text-black focus-visible:outline focus-visible:outline-1 focus-visible:outline-black ${
-        active ? "bg-[#d0d0d0]" : "bg-[#f0f0f0] hover:bg-[#e6e6e6]"
-      }`}
-      style={{
-        boxShadow: active
-          ? "inset 1px 1px 0 #696969, inset -1px -1px 0 #fff"
-          : "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff, inset -2px -2px 0 #e3e3e3",
-      }}
+      className="inline-flex h-[20px] min-w-[20px] shrink-0 items-center justify-center bg-[#f0f0f0] px-1 text-[11px] font-bold leading-none text-black focus-visible:outline focus-visible:outline-1 focus-visible:outline-black"
+      style={{ minHeight: 20, boxShadow: active && !raised ? CLASSIC_SUNKEN : CLASSIC_RAISED }}
     >
       {children}
     </button>
@@ -419,8 +416,8 @@ function ParagraphSpacingMenu({
           setCustomOpen(false);
           setOpen((next) => !next);
         }}
-        className="inline-flex h-[18px] min-w-[36px] items-center justify-center bg-[#f0f0f0] px-1 text-[11px] leading-none text-black"
-        style={{ boxShadow: "inset 1px 1px 0 #a0a0a0, inset -1px -1px 0 #fff" }}
+        className="inline-flex h-[20px] min-w-[36px] items-center justify-center bg-[#f0f0f0] px-1 text-[11px] leading-none text-black"
+        style={{ minHeight: 20, boxShadow: "inset 1px 1px 0 #a0a0a0, inset -1px -1px 0 #fff" }}
       >
         <span className="px-0.5" data-latin-control="true">0pt</span>
       </button>
@@ -584,12 +581,25 @@ function persianMenuRank(id: string): number {
   return 4;
 }
 
-const selectCls =
-  "h-[18px] shrink-0 bg-[#f0f0f0] px-1 text-[11px] leading-none text-black focus:outline-none";
-const selectStyle: CSSProperties = {
-  boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff, inset -2px -2px 0 #e3e3e3",
-  border: "none",
-};
+const CLASSIC_RAISED = "inset 1px 1px 0 #ffffff, inset -1px -1px 0 #696969, inset -2px -2px 0 #a0a0a0";
+const CLASSIC_SUNKEN = "inset 1px 1px 0 #696969, inset 2px 2px 0 #a0a0a0, inset -1px -1px 0 #ffffff";
+const selectCls = "shrink-0";
+
+/** Keep native keyboard/option handling behind a classic field and arrow face. */
+function ClassicCombo({ className, style, ...props }: ComponentProps<"select">) {
+  return (
+    <span className={`relative inline-grid h-[20px] shrink-0 ${className ?? ""}`} data-studio-combo="true" dir="ltr">
+      <select
+        {...props}
+        className="h-[20px] min-w-0 w-full appearance-none rounded-none bg-white text-left text-[11px] text-black focus:outline-none"
+        style={{ ...style, border: "none", padding: "2px 23px 2px 4px", fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", color: "#000", backgroundColor: "#fff", textAlign: "left", direction: "ltr", minHeight: 20, maxHeight: 20, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff, inset -2px -2px 0 #f0f0f0" }}
+      />
+      <span aria-hidden="true" className="pointer-events-none absolute right-[2px] top-[2px] grid h-[16px] w-[17px] place-items-center bg-[#f0f0f0]" style={{ boxShadow: CLASSIC_RAISED }}>
+        <svg width="7" height="4" viewBox="0 0 7 4" fill="#000"><path d="M0 0H7L3.5 4Z" /></svg>
+      </span>
+    </span>
+  );
+}
 
 export const DOCUMENT_TOOLBAR_LEADING = ["style", "spacing", "latin-font", "bold"] as const;
 
@@ -644,18 +654,18 @@ export default function DocumentToolbar({
         data-studio-toolbar="true"
         data-studio-toolbar-language={isUr ? "ur" : "en"}
         data-studio-toolbar-leading={DOCUMENT_TOOLBAR_LEADING.join(",")}
-        style={{ background: "#f0f0f0", color: "#000", fontSize: 11 }}
+        style={{ background: "#f0f0f0", color: "#000", fontSize: 11, rowGap: 0 }}
       >
+        <div aria-hidden="true" data-studio-toolbar-etched="true" className="h-[3px] shrink-0" style={{ background: "linear-gradient(to bottom, #f0f0f0 0 1px, #a0a0a0 1px 2px, #ffffff 2px 3px)" }} />
         <div
-          className="flex h-5 flex-nowrap items-center gap-0.5 overflow-x-auto px-1"
+          className="flex h-[21px] shrink-0 flex-nowrap items-start gap-0.5 overflow-x-auto px-1"
           data-studio-toolbar-row="format"
         >
-          <select
+          <ClassicCombo
             id="studio-block-style"
             value={ui.blockStyle}
             onChange={(e) => applyBlockStyle(editor, e.target.value as BlockStyleId)}
             className={`${selectCls} max-w-[7.25rem]`}
-            style={selectStyle}
             title={isUr ? "انداز" : "Style"}
             aria-label={isUr ? "انداز" : "Style"}
             data-studio-style-control="true"
@@ -665,12 +675,11 @@ export default function DocumentToolbar({
                 {BLOCK_STYLES[id].labelUr && isUr ? BLOCK_STYLES[id].labelUr : BLOCK_STYLES[id].label}
               </option>
             ))}
-          </select>
-          <select
+          </ClassicCombo>
+          <ClassicCombo
             aria-label={isUr ? "سطری فاصلہ" : "Line spacing"}
             data-studio-leading="true"
             className={`${selectCls} max-w-[4.5rem]`}
-            style={selectStyle}
             value={spacingValue}
             onChange={(event) => {
               const raw = event.target.value;
@@ -681,13 +690,12 @@ export default function DocumentToolbar({
             {LINE_SPACING_PRESETS.map((preset) => (
               <option key={preset.id} value={preset.value}>{preset.value}</option>
             ))}
-          </select>
-          <select
+          </ClassicCombo>
+          <ClassicCombo
             aria-label={isUr ? "انگریزی فونٹ" : "English font"}
             data-studio-latin-font="true"
             data-latin-control="true"
             className={`${selectCls} max-w-[9rem]`}
-            style={selectStyle}
             value={englishValue}
             onChange={(event) => applyFontFamily(editor, event.target.value)}
           >
@@ -695,14 +703,14 @@ export default function DocumentToolbar({
             {latinFonts.map((font) => (
               <option key={font.value} value={font.value}>{font.label}</option>
             ))}
-          </select>
-          <ToolbarButton label={isUr ? "موٹا" : "Bold"} active={ui.bold} onClick={() => toggleBold(editor)} latin>
-            B
+          </ClassicCombo>
+          <ToolbarButton label={isUr ? "موٹا" : "Bold"} active={ui.bold} onClick={() => toggleBold(editor)} latin raised>
+            <span style={{ fontFamily: "Times New Roman, serif", fontWeight: 700 }}>B</span>
           </ToolbarButton>
-          <ToolbarButton label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)} latin>
-            I
+          <ToolbarButton label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)} latin raised>
+            <span style={{ fontFamily: "Times New Roman, serif", fontStyle: "italic" }}>I</span>
           </ToolbarButton>
-          <select
+          <ClassicCombo
             id="studio-font-size"
             data-studio-font-size="true"
             value={currentSize}
@@ -711,7 +719,6 @@ export default function DocumentToolbar({
               applyFontSize(editor, e.target.value);
             }}
             className={`${selectCls} min-w-[3.4rem]`}
-            style={selectStyle}
             title={isUr ? "سائز" : "Font size"}
             aria-label={isUr ? "سائز" : "Size"}
             data-latin-control="true"
@@ -724,11 +731,11 @@ export default function DocumentToolbar({
             {sizeOptions.map((pt) => (
               <option key={pt} value={pt}>{pt}pt</option>
             ))}
-          </select>
-          <select aria-label={isUr ? "کرننگ" : "Kerning"} data-latin-control="true" className={`${selectCls} max-w-[3.2rem]`} style={selectStyle} defaultValue="0">
+          </ClassicCombo>
+          <ClassicCombo aria-label={isUr ? "کرننگ" : "Kerning"} data-latin-control="true" className={`${selectCls} max-w-[3.2rem]`} defaultValue="0">
             <option value="0">0%</option>
             <option value="5">5%</option>
-          </select>
+          </ClassicCombo>
           <ToolbarButton
             label={isUr ? "متن کی سمت" : "Text direction"}
             active={ui.directionMode !== "auto"}
@@ -738,9 +745,8 @@ export default function DocumentToolbar({
             ↔
           </ToolbarButton>
           {setProcessingLanguage ? (
-            <select
+            <ClassicCombo
               className={`${selectCls} max-w-[4.5rem]`}
-              style={selectStyle}
               aria-label={isUr ? "متن کی زبان" : "Language"}
               data-studio-document-language="true"
               data-latin-control="true"
@@ -751,11 +757,11 @@ export default function DocumentToolbar({
               <option value="ar">Arabic</option>
               <option value="en">English</option>
               <option value="auto">Auto</option>
-            </select>
+            </ClassicCombo>
           ) : null}
         </div>
         <div
-          className="flex h-5 flex-nowrap items-center gap-0.5 overflow-x-auto px-1"
+          className="flex h-[21px] shrink-0 flex-nowrap items-start gap-0.5 overflow-x-auto px-1"
           data-studio-toolbar-row="document"
           data-studio-toolbar-secondary="true"
         >
@@ -765,7 +771,7 @@ export default function DocumentToolbar({
           <ToolbarButton label={isUr ? "برابر کریں" : "Justify"} active={ui.textAlign === "justify"} onClick={() => setAlign(editor, "justify")}><AlignIcon kind="justify" /></ToolbarButton>
           <ToolbarButton label={isUr ? "تقسیم" : "Distribute"} onClick={() => setAlign(editor, "justify")}><AlignIcon kind="distribute" /></ToolbarButton>
           <ParagraphSpacingMenu editor={editor} ui={ui} settings={settings} isUr={isUr} />
-          <select
+          <ClassicCombo
             id="studio-font-family"
             data-studio-font-family="true"
             value={currentFont}
@@ -774,7 +780,6 @@ export default function DocumentToolbar({
               applyFontFamily(editor, e.target.value);
             }}
             className={`${selectCls} max-w-[11rem]`}
-            style={selectStyle}
             title={isUr ? "اردو فونٹ" : "Urdu font"}
             aria-label={isUr ? "اردو فونٹ" : "Urdu font"}
           >
@@ -791,14 +796,13 @@ export default function DocumentToolbar({
                 ))}
               </optgroup>
             ))}
-          </select>
+          </ClassicCombo>
           <ToolbarButton label={isUr ? "بائیں سے دائیں" : "Left to right"} active={dir === "ltr"} onClick={() => { setDir("ltr"); applyParagraphDirection(editor, "ltr"); }} latin>LTR</ToolbarButton>
           <ToolbarButton label={isUr ? "دائیں سے بائیں" : "Right to left"} active={dir === "rtl"} onClick={() => { setDir("rtl"); applyParagraphDirection(editor, "rtl"); }} latin>RTL</ToolbarButton>
-          <select
+          <ClassicCombo
             aria-label={isUr ? "رنگ" : "Colour"}
             data-latin-control="true"
             className={`${selectCls} max-w-[4.5rem]`}
-            style={selectStyle}
             value={colourValue}
             onChange={(event) => applyTextColor(editor, event.target.value)}
           >
@@ -806,17 +810,16 @@ export default function DocumentToolbar({
             <option value="#1A3A2A">Green</option>
             <option value="#7F1D1D">Maroon</option>
             <option value="#1D4ED8">Blue</option>
-          </select>
-          <select aria-label={isUr ? "افقی پیمانہ" : "Horizontal scale"} data-latin-control="true" className={`${selectCls} max-w-[4rem]`} style={selectStyle} defaultValue="100">
+          </ClassicCombo>
+          <ClassicCombo aria-label={isUr ? "افقی پیمانہ" : "Horizontal scale"} data-latin-control="true" className={`${selectCls} max-w-[4rem]`} defaultValue="100">
             <option value="100">100%</option>
             <option value="90">90%</option>
             <option value="110">110%</option>
-          </select>
-          <select
+          </ClassicCombo>
+          <ClassicCombo
             aria-label={isUr ? "شیڈ" : "Shade"}
             data-studio-shade="true"
             className={`${selectCls} max-w-[4.2rem]`}
-            style={selectStyle}
             defaultValue=""
             onChange={(event) => {
               if (event.target.value) applyHighlight(editor, event.target.value);
@@ -826,15 +829,22 @@ export default function DocumentToolbar({
             <option value="#fff2a8">Yellow</option>
             <option value="#d9f2d9">Green</option>
             <option value="#d6e6ff">Blue</option>
-          </select>
-          <select aria-label="None" data-latin-control="true" className={`${selectCls} max-w-[4rem]`} style={selectStyle} defaultValue="none">
+          </ClassicCombo>
+          <ClassicCombo aria-label="None" data-latin-control="true" className={`${selectCls} max-w-[4rem]`} defaultValue="none">
             <option value="none">None</option>
-          </select>
-          <select aria-label="K-None" data-latin-control="true" className={`${selectCls} max-w-[4.5rem]`} style={selectStyle} defaultValue="k">
+          </ClassicCombo>
+          <ClassicCombo aria-label="K-None" data-latin-control="true" className={`${selectCls} max-w-[4.5rem]`} defaultValue="k">
             <option value="k">K-None</option>
-          </select>
+          </ClassicCombo>
         </div>
+        <div aria-hidden="true" data-studio-toolbar-edge="true" className="h-[2px] shrink-0" style={{ background: "linear-gradient(to bottom, #a0a0a0 0 1px, #696969 1px 2px)" }} />
       </div>
+      <style>{`
+        [data-studio-shell] [data-studio-chrome="toolbar"] [data-studio-toolbar] [data-studio-combo] > select {
+          font-size: 11px !important;
+          line-height: 16px !important;
+        }
+      `}</style>
       <div className="sr-only">
         <ToolbarButton label={isUr ? "خودکار سمت" : "Automatic paragraph direction"} active={ui.directionMode === "auto"} onClick={() => applyParagraphDirection(editor, "auto")} latin>
           Auto
