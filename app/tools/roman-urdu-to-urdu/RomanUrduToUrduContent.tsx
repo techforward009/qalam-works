@@ -66,7 +66,7 @@ export default function RomanUrduToUrduContent() {
         },
       ]}
       related={[
-        { href: "/tools/roman-urdu-writer", label: { en: "Roman Urdu Typing", ur: "رومن سے اردو ٹائپنگ" } },
+        { href: "/tools/roman-urdu-writer", label: { en: "Roman Urdu to Urdu", ur: "رومن اردو سے اردو" } },
         { href: "/tools/document-studio", label: { en: "Continue in Qalam Page: Urdu Editor", ur: "قلم پیج: اردو ایڈیٹر میں جاری رکھیں" } },
         { href: "/tools/urdu-roman-writer", label: { en: "Urdu to Roman", ur: "اردو سے رومن" } },
         { href: "/tools/urdu-text-to-pdf", label: { en: "Urdu text to PDF", ur: "اردو متن سے PDF" } },

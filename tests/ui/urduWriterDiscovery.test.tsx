@@ -131,7 +131,7 @@ test("Urdu footer uses localized typing and converter names", async () => {
 
 test("18-19. no accuracy or research terminology in discovery copy", () => {
   const src = readFileSync(join(__dirname, "../../app/lib/translations.ts"), "utf8");
-  expect(src).toMatch(/Roman Urdu Typing/);
+  expect(src).toMatch(/Roman Urdu to Urdu/);
   expect(src).not.toMatch(/Perfect Urdu|100% accuracy|AI Urdu Converter/);
 });
 

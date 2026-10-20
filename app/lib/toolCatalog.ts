@@ -432,7 +432,6 @@ export const hijriYear = new Intl.DateTimeFormat("en-u-ca-islamic-civil", { year
 export const TOOL_CATALOG: ToolEntry[] = [...CORE_TOOLS,
   taskPage("today", "/today", { en: "Today's Islamic Date", ur: "آج کی اسلامی تاریخ" }, { en: "Open today's date details using the date in Pakistan.", ur: "پاکستان کے وقت کے مطابق آج کی تاریخ کی تفصیل دیکھیں۔" }, CalendarDays),
   taskPage("all_tools", "/tools", { en: "All Tools", ur: "تمام اوزار" }, { en: "Browse every public Qalam Works tool.", ur: "قلم ورکس کے تمام عوامی اوزار دیکھیں۔" }, BookOpen),
-  taskPage("book_layout", "/tools/document-studio", { en: "Book & Page Layout", ur: "کتاب و صفحہ بندی" }, { en: "Prepare book pages and document layouts in Qalam Page: Urdu Editor.", ur: "قلم پیج: اردو ایڈیٹر میں کتاب کے صفحات اور دستاویز کی ترتیب تیار کریں۔" }, BookOpen),
   taskPage("roman_converter", "/tools/roman-urdu-to-urdu", { en: "Roman Urdu Converter", ur: "رومن اردو سے اردو کنورٹر" }, { en: "Convert a passage from Roman Urdu and review the Urdu result.", ur: "رومن اردو عبارت کو اردو میں بدلیں اور نتیجے کا جائزہ لیں۔" }, PenLine),
   taskPage("urdu_pdf", "/tools/urdu-text-to-pdf", { en: "Urdu Text to PDF", ur: "اردو متن سے PDF" }, { en: "Format Urdu text on a page and download a PDF for sharing or print.", ur: "اردو متن کی صفحہ بندی کریں اور اشتراک یا طباعت کے لیے PDF حاصل کریں۔" }, FilePenLine),
   taskPage("date_finder", "/tools/date-converter?mode=find#date-studio", { en: "Find a Date", ur: "تاریخ تلاش کریں" }, { en: "Find a date and explore its calendar details.", ur: "تاریخ تلاش کریں اور اس کی تقویمی تفصیل دیکھیں۔" }, CalendarDays),
@@ -457,7 +456,7 @@ export const TOOL_GROUPS = [
 export const ALL_TOOLS_GROUPS = TOOL_GROUPS.map(group => ({
   ...group,
   ids: [...group.ids.filter(id => id !== "all_tools"), ...({
-    write: ["book_layout"], tools: ["roman_converter", "urdu_unicode_standardizer"],
+    write: ["roman_converter"], tools: ["urdu_unicode_standardizer"],
     dates: ["date_finder", "hijri_converter"], more: [],
   }[group.id] ?? [])],
 }));

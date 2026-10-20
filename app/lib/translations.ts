@@ -7,7 +7,7 @@
 // hunting through components for inline literals.
 //
 // POSITIONING CORRECTION (2026-08-10): copy below intentionally frames
-// the PRODUCT (Qalam Page: Urdu Editor, Urdu Text Check, Urdu Unicode Fixer) as
+// the PRODUCT (Qalam Page: Urdu Editor, Find Mistakes in Urdu Text, Urdu Unicode Fixer) as
 // Urdu-first — no "Arabic script" or "Urdu/Arabic/Persian publishing
 // intelligence" claims. Arabic and Persian appear ONLY under Services
 // (professional translation), never as product-capability claims.
@@ -18,15 +18,15 @@ export const translations = {
       home: "Home",
       documentStudio: "Qalam Page: Urdu Editor",
       translationStudio: "Translation Studio",
-      documentCleaner: "Urdu Text Cleaner",
-      qualityChecker: "Urdu Text Check",
+      documentCleaner: "Fix Copied Urdu Text",
+      qualityChecker: "Find Mistakes in Urdu Text",
       unicodeStandardizer: "Urdu Unicode Fixer",
       invoiceStudio: "Invoice Generator",
       dateConverter: "Date Converter",
       dateStudio: "Date Studio",
       allTools:      "All Tools",
-      whatsappRtlFormatter: "WhatsApp Urdu Formatter",
-      urduWriter: "Roman Urdu Typing",
+      whatsappRtlFormatter: "Urdu for WhatsApp",
+      urduWriter: "Roman Urdu to Urdu",
       urduRomanWriter: "Urdu → Roman",
       moreTools: "More Tools",
       services: "Services",
@@ -113,7 +113,7 @@ export const translations = {
           body: "Full publishing environment for Urdu documents with real-time preview.",
         },
         {
-          name: "Urdu Text Cleaner",
+          name: "Fix Copied Urdu Text",
           body: "Fix spacing, punctuation, and encoding errors instantly.",
         },
         {
@@ -125,11 +125,11 @@ export const translations = {
           body: "Specialized translation for Urdu, English, Arabic, and Persian.",
         },
         {
-          name: "Roman Urdu Typing",
+          name: "Roman Urdu to Urdu",
           body: "Type Roman, receive Urdu instantly.",
         },
         {
-          name: "Urdu Text Check",
+          name: "Find Mistakes in Urdu Text",
           body: "Catch Unicode errors and inconsistencies before you publish.",
         },
         {
@@ -137,7 +137,7 @@ export const translations = {
           body: "Accurate Gregorian, Hijri, and Solar Hijri date conversion.",
         },
         {
-          name: "WhatsApp Urdu Formatter",
+          name: "Urdu for WhatsApp",
           body: "Format right-to-left text perfectly for WhatsApp messages.",
         },
         {
@@ -150,9 +150,9 @@ export const translations = {
       headline: "What would you like to do today?",
       items: [
         { label: "I want to write a story, poem or article", href: "/tools/document-studio", description: "Qalam Page: Urdu Editor", body: "Write, format and prepare your work for sharing or publication." },
-        { label: "I type Urdu using English letters", href: "/tools/roman-urdu-writer", description: "Roman Urdu Typing", body: "Type in Roman Urdu, then review and copy the Urdu script." },
-        { label: "My copied text needs cleaning", href: "/tools/document-cleaner", description: "Urdu Text Cleaner", body: "Clean spacing and punctuation in pasted text or a document file." },
-        { label: "I want to check a draft before sharing", href: "/tools/quality-checker", description: "Urdu Text Check", body: "Spot spacing, punctuation and repeated-word issues without changing text." },
+        { label: "I type Urdu using English letters", href: "/tools/roman-urdu-writer", description: "Roman Urdu to Urdu", body: "Type in Roman Urdu, then review and copy the Urdu script." },
+        { label: "My copied text needs cleaning", href: "/tools/document-cleaner", description: "Fix Copied Urdu Text", body: "Clean spacing and punctuation in pasted text or a document file." },
+        { label: "I want to check a draft before sharing", href: "/tools/quality-checker", description: "Find Mistakes in Urdu Text", body: "Spot spacing, punctuation and repeated-word issues without changing text." },
         { label: "I am translating a document", href: "/tools/translation-studio", description: "Translation Studio", body: "Keep source and translation together, then review and export." },
         { label: "I need an invoice for my business", href: "/tools/invoice-generator", description: "Invoice Generator", body: "Prepare a clear invoice for customers and keep it ready to print." },
       ],
@@ -245,7 +245,7 @@ export const translations = {
       lastUpdated: "Last updated: August 2026",
       sections: [
         { title: "Overview", body: "Qalam Works is committed to respecting your privacy. This page describes how our tools and website handle your data." },
-        { title: "Document and Text Processing", body: "Most cleanup and editing runs in your browser. Urdu Text Cleaner, Urdu Text Check, Urdu Unicode Fixer, and Qalam Page: Urdu Editor editing process text on your device. We do not store your documents. Qalam Page: Urdu Editor PDF export sends content only to generate the requested PDF file; that content is not retained after the file is produced." },
+        { title: "Document and Text Processing", body: "Most cleanup and editing runs in your browser. Fix Copied Urdu Text, Find Mistakes in Urdu Text, Urdu Unicode Fixer, and Qalam Page: Urdu Editor editing process text on your device. We do not store your documents. Qalam Page: Urdu Editor PDF export sends content only to generate the requested PDF file; that content is not retained after the file is produced." },
         { title: "Local Storage", body: "Qalam Page: Urdu Editor may save a draft in your browser's localStorage so you can continue later. This draft stays on your device. You can clear it anytime by clearing browser data or using Clear Draft in the Studio." },
         { title: "Contact", body: "If you contact us by email, your message and email address will be used only to respond to your inquiry." },
         { title: "Cookies and Analytics", body: "We use Vercel Analytics and Vercel Speed Insights to understand product usage and performance. These measure privacy-oriented events such as which tool was opened or whether an export succeeded. We do not collect document text, filenames, clipboard contents, invoice details, or other user content. We do not use session replay or advertising trackers. Hosting logs may record basic request metadata (such as IP address and page visited)." },
@@ -265,7 +265,7 @@ export const translations = {
     },
     cleanerTool: {
       difference: "Cleaner handles pasted text and uploaded files; Unicode Fixer focuses on pasted letter forms, while Text Check reports issues without changing text.",
-      title: "Urdu Text Cleaner",
+      title: "Fix Copied Urdu Text",
       description: "An Urdu text cleaner for safe cleanup, normalization, and formatting. Language-aware spacing and punctuation, English-safe cleanup, and Arabic preservation. Paste or upload .txt/.docx — processing stays in your browser.",
       languageLabel: "Text language",
       languageHint: "Auto processes mixed-language text safely and chooses appropriate handling for each language. Choose Urdu or Arabic for language-specific letter fixes. English mode never converts punctuation to Arabic forms.",
@@ -323,13 +323,13 @@ export const translations = {
     },
     qualityTool: {
       difference: "Text Check reports issues without changing your words; Cleaner and Unicode Fixer apply corrections.",
-      title: "Urdu Text Check",
+      title: "Find Mistakes in Urdu Text",
       description: "Check spacing, punctuation, and script issues without changing your text. Works in Urdu, English, Arabic, and mixed-language content. Inspection only — does not fix text automatically.",
       faqHeading: "Frequently Asked Questions",
       faqs: [
         { question: "What does this tool do?", answer: "It audits text for spacing, punctuation, repeated words, and script observations. It never changes your text automatically." },
-        { question: "Does it fix the text automatically?", answer: "No — this is inspection only. Use Urdu Text Cleaner or Qalam Page: Urdu Editor to apply language-aware cleanup." },
-        { question: "Is my text stored anywhere?", answer: "No. Urdu Text Check runs in your browser — your text is not uploaded for analysis." },
+        { question: "Does it fix the text automatically?", answer: "No — this is inspection only. Use Fix Copied Urdu Text or Qalam Page: Urdu Editor to apply language-aware cleanup." },
+        { question: "Is my text stored anywhere?", answer: "No. Find Mistakes in Urdu Text runs in your browser — your text is not uploaded for analysis." },
       ],
     },
     unicodeTool: {
@@ -341,7 +341,7 @@ export const translations = {
       faqs: [
         { question: "What does this tool do?", answer: "It normalizes mixed Unicode variants in your Urdu text (like ي instead of ی, ك instead of ک), removes extra spaces, and corrects punctuation to match Urdu conventions." },
         { question: "Is my text stored anywhere?", answer: "No. Processing happens entirely in your browser — your text is never sent to a server." },
-        { question: "What file formats does it support?", answer: "Currently plain text only. For DOCX files, use our Urdu Text Cleaner tool." },
+        { question: "What file formats does it support?", answer: "Currently plain text only. For DOCX files, use our Fix Copied Urdu Text tool." },
       ],
       examples: [
         { label: "Arabic yeh (ي) → Urdu yeh (ی)", before: "يہ", after: "یہ" },
@@ -350,9 +350,9 @@ export const translations = {
       ],
     },
     invoiceTool: {
-      title: "Free Invoice Generator for Pakistan",
+      title: "Invoice Maker",
       description: "Create professional invoices in PKR or other currencies. Add business and client details, tax, discounts and your logo, then download a PDF in Urdu or English. No sign-up required.",
-      introHeading: "Free Invoice Generator for Pakistan",
+      introHeading: "Invoice Maker",
       intro: "For freelancers, consultants, agencies, contractors, shops and small businesses: prepare an invoice for your work, goods or services in Pakistani rupees (PKR) or another currency such as USD. Choose a Pakistani or Western invoice style to suit your client.",
       featuresHeading: "What you can include",
       features: [
@@ -380,15 +380,15 @@ export const translations = {
       home: "ہوم",
       documentStudio: "قلم پیج: اردو ایڈیٹر",
       translationStudio: "ترجمہ اسٹوڈیو",
-      documentCleaner: "اردو ٹیکسٹ کلینر",
-      qualityChecker: "اردو متن کی جانچ",
+      documentCleaner: "کاپی شدہ اردو درست کریں",
+      qualityChecker: "اردو متن میں غلطیاں دیکھیں",
       unicodeStandardizer: "اردو یونیکوڈ فکسر",
       invoiceStudio: "انوائس جنریٹر",
       dateConverter: "تاریخ کنورٹر",
       dateStudio: "ڈیٹ اسٹوڈیو",
       allTools:      "تمام ٹولز",
-      whatsappRtlFormatter: "واٹس ایپ اردو فارمیٹر",
-      urduWriter: "رومن سے اردو ٹائپنگ",
+      whatsappRtlFormatter: "واٹس ایپ کے لیے اردو",
+      urduWriter: "رومن اردو سے اردو",
       urduRomanWriter: "اردو → رومن",
       moreTools: "مزید ٹولز",
       services: "خدمات",
@@ -475,7 +475,7 @@ export const translations = {
           body: "اردو دستاویزات کے لیے مکمل اشاعتی ماحول، براہِ راست پیش منظر کے ساتھ۔",
         },
         {
-          name: "اردو ٹیکسٹ کلینر",
+          name: "کاپی شدہ اردو درست کریں",
           body: "فاصلہ، رموزِ اوقاف اور انکوڈنگ فوراً درست کرتا ہے۔",
         },
         {
@@ -487,11 +487,11 @@ export const translations = {
           body: "اردو، انگریزی، عربی اور فارسی کا مخصوص ترجمہ۔",
         },
         {
-          name: "رومن سے اردو ٹائپنگ",
+          name: "رومن اردو سے اردو",
           body: "رومن لکھیں، اردو فوراً حاصل کریں۔",
         },
         {
-          name: "اردو متن کی جانچ",
+          name: "اردو متن میں غلطیاں دیکھیں",
           body: "اشاعت سے پہلے یونیکوڈ کی غلطیاں اور بے ترتیبی پکڑتا ہے۔",
         },
         {
@@ -499,7 +499,7 @@ export const translations = {
           body: "عیسوی، ہجری قمری اور ہجری شمسی تاریخوں کا درست تبادلہ۔",
         },
         {
-          name: "واٹس ایپ اردو فارمیٹر",
+          name: "واٹس ایپ کے لیے اردو",
           body: "دائیں سے بائیں متن کو واٹس ایپ کے لیے مستحکم سمت میں رکھتا ہے۔",
         },
         {
@@ -512,9 +512,9 @@ export const translations = {
       headline: "آج آپ کیا کرنا چاہتے ہیں؟",
       items: [
         { label: "میں کہانی، نظم یا مضمون لکھنا چاہتا ہوں", href: "/tools/document-studio", description: "قلم پیج: اردو ایڈیٹر", body: "لکھیں، صفحہ ترتیب دیں اور اپنی تحریر اشتراک یا اشاعت کے لیے تیار کریں۔" },
-        { label: "میں انگریزی حروف سے اردو ٹائپ کرتا ہوں", href: "/tools/roman-urdu-writer", description: "رومن سے اردو ٹائپنگ", body: "رومن اردو ٹائپ کریں، پھر اردو رسم الخط دیکھیں اور نقل کریں۔" },
+        { label: "میں انگریزی حروف سے اردو ٹائپ کرتا ہوں", href: "/tools/roman-urdu-writer", description: "رومن اردو سے اردو", body: "رومن اردو ٹائپ کریں، پھر اردو رسم الخط دیکھیں اور نقل کریں۔" },
         { label: "نقل شدہ متن صاف کرنا ہے", href: "/tools/document-cleaner", description: "اردو متن کی صفائی", body: "پیسٹ شدہ متن یا دستاویز کے فاصلے اور رموزِ اوقاف درست کریں۔" },
-        { label: "تحریر بھیجنے سے پہلے جانچنا ہے", href: "/tools/quality-checker", description: "اردو متن کی جانچ", body: "متن بدلے بغیر فاصلوں، رموزِ اوقاف اور دہرائے گئے الفاظ کے مسائل دیکھیں۔" },
+        { label: "تحریر بھیجنے سے پہلے جانچنا ہے", href: "/tools/quality-checker", description: "اردو متن میں غلطیاں دیکھیں", body: "متن بدلے بغیر فاصلوں، رموزِ اوقاف اور دہرائے گئے الفاظ کے مسائل دیکھیں۔" },
         { label: "میں دستاویز کا ترجمہ کر رہا ہوں", href: "/tools/translation-studio", description: "ترجمہ اسٹوڈیو", body: "اصل متن اور ترجمہ ساتھ رکھیں، پھر جائزہ لیں اور فائل حاصل کریں۔" },
         { label: "کاروبار کے لیے انوائس چاہیے", href: "/tools/invoice-generator", description: "انوائس بنائیں", body: "گاہکوں کے لیے واضح انوائس بنائیں اور طباعت کے لیے تیار رکھیں۔" },
       ],
@@ -607,7 +607,7 @@ export const translations = {
       lastUpdated: "آخری تازہ کاری: اگست ۲۰۲۶",
       sections: [
         { title: "جائزہ", body: "قلم ورکس آپ کی رازداری کا احترام کرتا ہے۔ یہ صفحہ بتاتا ہے کہ ہمارے ٹولز اور ویب سائٹ آپ کا ڈیٹا کیسے ہینڈل کرتے ہیں۔" },
-        { title: "دستاویز اور متن کی پروسیسنگ", body: "زیادہ تر صفائی اور تدوین آپ کے براؤزر میں ہوتی ہے۔ اردو ٹیکسٹ کلینر، اردو متن کی جانچ، یونیکوڈ فکسر، اور قلم پیج: اردو ایڈیٹر کی تدوین آپ کے آلے پر چلتی ہے۔ ہم آپ کی دستاویزات محفوظ نہیں کرتے۔ قلم پیج: اردو ایڈیٹر کا PDF ایکسپورٹ صرف فائل بنانے کے لیے سرور پر بھیجتا ہے؛ فائل بننے کے بعد مواد محفوظ نہیں رکھا جاتا۔" },
+        { title: "دستاویز اور متن کی پروسیسنگ", body: "زیادہ تر صفائی اور تدوین آپ کے براؤزر میں ہوتی ہے۔ کاپی شدہ اردو درست کریں، اردو متن میں غلطیاں دیکھیں، یونیکوڈ فکسر، اور قلم پیج: اردو ایڈیٹر کی تدوین آپ کے آلے پر چلتی ہے۔ ہم آپ کی دستاویزات محفوظ نہیں کرتے۔ قلم پیج: اردو ایڈیٹر کا PDF ایکسپورٹ صرف فائل بنانے کے لیے سرور پر بھیجتا ہے؛ فائل بننے کے بعد مواد محفوظ نہیں رکھا جاتا۔" },
         { title: "لوکل اسٹوریج", body: "قلم پیج: اردو ایڈیٹر آپ کا مسودہ براؤزر کے لوکل اسٹوریج میں رکھ سکتا ہے تاکہ بعد میں جاری رکھ سکیں۔ یہ مسودہ آپ کے آلے پر رہتا ہے۔ آپ اسے براؤزر ڈیٹا صاف کر کے یا اسٹوڈیو میں ڈرافٹ صاف کریں سے مٹا سکتے ہیں۔" },
         { title: "رابطہ", body: "اگر آپ ای میل کے ذریعے رابطہ کریں تو آپ کا پیغام اور ای میل پتہ صرف جواب دینے کے لیے استعمال کیا جائے گا۔" },
         { title: "کوکیز اور اینالیٹکس", body: "ہم Vercel Analytics اور Vercel Speed Insights استعمال کرتے ہیں تاکہ پروڈکٹ کے استعمال اور کارکردگی کو سمجھا جا سکے۔ یہ رازداری پر مبنی ایونٹس ناپتے ہیں جیسے کون سا ٹول کھلا یا ایکسپورٹ کامیاب ہوئی۔ ہم دستاویز کا متن، فائل نام، کلپ بورڈ، انوائس کی تفصیلات یا صارف کا مواد جمع نہیں کرتے۔ سیشن ری پلے یا اشتہاری ٹریکرز استعمال نہیں کرتے۔ ہوسٹنگ لاگز بنیادی درخواست میٹا ڈیٹا (جیسے IP اور صفحہ) ریکارڈ کر سکتے ہیں۔" },
@@ -627,7 +627,7 @@ export const translations = {
     },
     cleanerTool: {
       difference: "کلینر پیسٹ شدہ متن اور فائلیں صاف کرتا ہے؛ اردو یونیکوڈ فکسر پیسٹ شدہ حروف کے لیے ہے، جبکہ متن کی جانچ صرف مسائل دکھاتی ہے۔",
-      title: "اردو ٹیکسٹ کلینر",
+      title: "کاپی شدہ اردو درست کریں",
       description: "اردو متن میں اضافی فاصلوں، غلط رموزِ اوقاف اور عام یونیکوڈ مسائل کو محفوظ طریقے سے درست کریں۔ متن پیسٹ کریں یا فائل اپلوڈ کریں۔",
       languageLabel: "متن کی زبان",
       languageHint: "خودکار طریقہ مخلوط زبان کے متن کو محفوظ طریقے سے صاف کرتا ہے اور ہر زبان کے مطابق مناسب اصلاح منتخب کرتا ہے۔ مخصوص اصلاح کے لیے اردو یا عربی منتخب کریں۔ انگریزی موڈ رموز اوقاف کو عربی شکل میں نہیں بدلتا۔",
@@ -685,13 +685,13 @@ export const translations = {
     },
     qualityTool: {
       difference: "متن کی جانچ الفاظ بدلے بغیر مسائل دکھاتی ہے؛ کلینر اور اردو یونیکوڈ فکسر متن درست کرتے ہیں۔",
-      title: "اردو متن کی جانچ",
+      title: "اردو متن میں غلطیاں دیکھیں",
       description: "فاصلہ، رموزِ اوقاف اور رسم الخط کے مسائل متن بدلے بغیر چیک کریں۔ اردو، انگریزی، عربی اور مخلوط متن کے لیے۔",
       faqHeading: "اکثر پوچھے گئے سوالات",
       faqs: [
         { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ متن کے فاصلہ، رموز اوقاف، دہرائے الفاظ اور رسم الخط کے مشاہدات چیک کرتا ہے۔ متن خود بخود تبدیل نہیں ہوتا۔" },
-        { question: "کیا یہ خود متن درست کر دیتا ہے؟", answer: "نہیں — یہ صرف معائنہ ہے۔ صفائی کے لیے اردو ٹیکسٹ کلینر یا قلم پیج: اردو ایڈیٹر استعمال کریں۔" },
-        { question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟", answer: "نہیں۔ اردو متن کی جانچ آپ کے براؤزر میں چلتا ہے — تجزیے کے لیے متن اپلوڈ نہیں ہوتا۔" },
+        { question: "کیا یہ خود متن درست کر دیتا ہے؟", answer: "نہیں — یہ صرف معائنہ ہے۔ صفائی کے لیے کاپی شدہ اردو درست کریں یا قلم پیج: اردو ایڈیٹر استعمال کریں۔" },
+        { question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟", answer: "نہیں۔ اردو متن میں غلطیاں دیکھیں آپ کے براؤزر میں چلتا ہے — تجزیے کے لیے متن اپلوڈ نہیں ہوتا۔" },
       ],
     },
     unicodeTool: {
@@ -703,7 +703,7 @@ export const translations = {
       faqs: [
         { question: "یہ ٹول کیا کرتا ہے؟", answer: "یہ آپ کے اردو متن میں مختلف Unicode شکلوں (جیسے ي بجائے ی، ك بجائے ک) کو معیاری بناتا ہے، اضافی خالی جگہیں ہٹاتا ہے، اور رموزِ اوقاف کو اردو کے مطابق درست کرتا ہے۔" },
         { question: "کیا میرا متن کہیں محفوظ ہوتا ہے؟", answer: "نہیں۔ یہ عمل مکمل طور پر آپ کے براؤزر میں ہوتا ہے — متن کبھی کسی سرور پر نہیں بھیجا جاتا۔" },
-        { question: "کن فائل فارمیٹس کے ساتھ کام کرتا ہے؟", answer: "فی الحال صرف سادہ متن۔ DOCX فائلوں کے لیے ہمارا اردو ٹیکسٹ کلینر ٹول استعمال کریں۔" },
+        { question: "کن فائل فارمیٹس کے ساتھ کام کرتا ہے؟", answer: "فی الحال صرف سادہ متن۔ DOCX فائلوں کے لیے ہمارا کاپی شدہ اردو درست کریں ٹول استعمال کریں۔" },
       ],
       examples: [
         { label: "عربی یے (ي) ← اردو یے (ی)", before: "يہ", after: "یہ" },
@@ -712,7 +712,7 @@ export const translations = {
       ],
     },
     invoiceTool: {
-      title: "مفت انوائس جنریٹر — پاکستان",
+      title: "انوائس بنائیں",
       description: "پاکستانی روپے (PKR) یا دوسری کرنسی میں صاف اور پیشہ ورانہ انوائس بنائیں۔ اپنے کاروبار اور گاہک کی تفصیلات، ٹیکس، رعایت اور لوگو شامل کریں، پھر اردو یا انگریزی میں PDF ڈاؤن لوڈ کریں۔ اکاؤنٹ بنانے کی ضرورت نہیں۔",
       introHeading: "پاکستان میں کاروبار کے لیے مفت انوائس جنریٹر",
       intro: "فری لانسر، مشیر، ایجنسیاں، ٹھیکیدار، دکان دار اور چھوٹے کاروبار اپنی خدمات یا سامان کی انوائس تیار کر سکتے ہیں۔ پاکستانی روپے (PKR) یا USD جیسی دوسری کرنسی درج کریں اور گاہک کی ضرورت کے مطابق پاکستانی یا مغربی طرز منتخب کریں۔",

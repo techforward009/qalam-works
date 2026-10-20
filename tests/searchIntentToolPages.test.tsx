@@ -192,7 +192,7 @@ describe("search-intent tool pages — rendered headings and calendar defaults",
 
     const existing = render(<DateConverterContent />);
     expect(screen.getByPlaceholderText("2026")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Date Studio");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Date Converter");
     existing.unmount();
 
     render(<HijriToGregorianContent />);

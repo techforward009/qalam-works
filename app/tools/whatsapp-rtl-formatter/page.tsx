@@ -2,16 +2,14 @@ import type { Metadata } from "next";
 import WhatsAppRtlFormatterContent from "./WhatsAppRtlFormatterContent";
 
 export const metadata: Metadata = {
-  title: "WhatsApp Urdu Formatter | Qalam Works",
-  description:
-    "Format Urdu and mixed RTL/LTR text for cleaner WhatsApp copy-paste, including numbered lists, bullets, English words, numbers and links.",
+  title: "Urdu for WhatsApp | واٹس ایپ کے لیے اردو | Qalam Works",
+  description: "Urdu for WhatsApp: format Urdu and mixed text, numbered lists, links and English words for cleaner copy-paste. واٹس ایپ کے لیے اردو: اردو اور مخلوط متن، فہرستوں اور روابط کی ترتیب بہتر بنائیں اور نقل کریں۔",
   alternates: {
     canonical: "/tools/whatsapp-rtl-formatter",
   },
   openGraph: {
-    title: "WhatsApp Urdu Formatter | Qalam Works",
-    description:
-      "Format Urdu and mixed RTL/LTR text for cleaner WhatsApp copy-paste, including numbered lists, bullets, English words, numbers and links.",
+    title: "Urdu for WhatsApp | واٹس ایپ کے لیے اردو | Qalam Works",
+    description: "Urdu for WhatsApp: format Urdu and mixed text, numbered lists, links and English words for cleaner copy-paste. واٹس ایپ کے لیے اردو: اردو اور مخلوط متن، فہرستوں اور روابط کی ترتیب بہتر بنائیں اور نقل کریں۔",
     url: "/tools/whatsapp-rtl-formatter",
     type: "website",
   },

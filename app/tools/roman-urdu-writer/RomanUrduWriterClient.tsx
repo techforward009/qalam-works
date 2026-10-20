@@ -82,7 +82,7 @@ function isReviewable(tok: WriterToken): boolean {
 
 const UI = {
   en: {
-    heading:    "Roman Urdu Typing",
+    heading:    "Roman Urdu to Urdu",
     sub:        "Write Urdu easily from Roman Urdu, with control over uncertain words.",
     modeRoman:  "Roman Urdu → اردو",
     modeUrdu:   "اردو → Roman Urdu",
@@ -145,7 +145,7 @@ const UI = {
     draftSaveFailed: "Draft could not be saved locally.",
   },
   ur: {
-    heading:    "رومن سے اردو ٹائپنگ",
+    heading:    "رومن اردو سے اردو",
     sub:        "رومن اردو سے آسانی سے اردو لکھیں، اور جہاں ضرورت ہو لفظ خود منتخب کریں۔",
     modeRoman:  "رومن اردو → اردو",
     modeUrdu:   "اردو → رومن اردو",

@@ -27,8 +27,8 @@ export default function Footer() {
     <footer className="mt-0 border-t border-white/10 bg-[#11182A]" dir={dir} data-site-footer={language}>
       <div className="site-container py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Brand */}
-        <div className="sm:col-span-2 lg:col-span-1 text-right" dir="rtl">
-          <div className="mb-3 flex items-center gap-2.5" dir="rtl">
+        <div className="sm:col-span-2 lg:col-span-1 text-start" dir={dir}>
+          <div className="mb-3 flex items-center gap-2.5">
             <PenNibIcon />
             <span className="font-bold text-white">Qalam Works</span>
           </div>
@@ -37,7 +37,7 @@ export default function Footer() {
         </div>
 
         {/* The same public groups and order as the header and All Tools. */}
-        <div className="grid gap-6 sm:col-span-2 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-3">
+        <div className="grid gap-6 sm:col-span-2 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-4">
           {TOOL_GROUPS.map(group => (
             <div key={group.id}>
               <h2 className="mb-3 text-sm font-semibold text-white" data-footer-heading="true">{group.name[language]}</h2>

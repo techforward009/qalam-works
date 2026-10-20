@@ -9,7 +9,7 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 describe("Date Studio discovery surfaces", () => {
   it("surfaces Date Studio actions on Date Converter", () => {
     const source = read("app/tools/date-converter/DateConverterContent.tsx");
-    expect(source).toMatch(/Date Studio/);
+    expect(source).toMatch(/studioTitle: "Date Converter"/);
     expect(source).toMatch(/id="date-studio"/);
     expect(source).toMatch(/\/tools\/calendar-maker/);
     expect(source).toMatch(/\/calendar\//);

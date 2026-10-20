@@ -36,10 +36,13 @@ describe("Urdu-first public discovery", () => {
     const menu = TOOL_GROUPS.flatMap(toolsInGroup);
     expect(new Set(menu.map(tool => tool.route)).size).toBe(menu.length);
     expect(menu.filter(tool=>tool.route==="/tools")).toHaveLength(1);
-    for (const id of ["book_layout", "roman_converter", "date_finder", "hijri_converter", "urdu_unicode_standardizer"]) {
+    for (const id of ["roman_converter", "date_finder", "hijri_converter", "urdu_unicode_standardizer"]) {
       expect(menu.some(tool=>tool.id===id)).toBe(false);
       expect(grouped.some(tool=>tool.id===id)).toBe(true);
     }
+    expect(toolsInGroup(ALL_TOOLS_GROUPS.find(group => group.id === "write")!).map(tool => tool.id)).toContain("roman_converter");
+    expect(toolsInGroup(ALL_TOOLS_GROUPS.find(group => group.id === "tools")!).map(tool => tool.id)).not.toContain("roman_converter");
+    expect(grouped.filter(tool => tool.route === "/tools/document-studio")).toHaveLength(1);
     expect(robots().rules).toMatchObject({ disallow: privateRoute });
   });
 
@@ -62,6 +65,9 @@ describe("Urdu-first public discovery", () => {
     expect(screen.getAllByRole("heading").map(heading => heading.textContent)).toEqual(TOOL_GROUPS.map(group => group.name[language]));
     expect(routes(footer.container).filter(route => route === footerOnly)).toHaveLength(1);
     expect(routes(footer.container)).not.toContain(privateRoute);
+    const brand = footer.container.querySelector("footer > div > div")!;
+    expect(brand.getAttribute("dir")).toBe(language === "ur" ? "rtl" : "ltr");
+    expect(brand.classList.contains("text-start")).toBe(true);
     footer.unmount();
 
     const tools = render(<AllToolsContent />);
