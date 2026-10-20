@@ -510,6 +510,10 @@ footer[data-site-footer="ur"] [data-footer-copy] span {
 }
 
 .quran-view-tabs {
+  position: sticky;
+  top: var(--site-header-height, 128px);
+  z-index: 30;
+  background: #edf0e9;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;

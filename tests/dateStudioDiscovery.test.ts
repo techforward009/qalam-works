@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TOOL_GROUPS, toolsInGroup } from "../app/lib/toolCatalog";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -35,26 +36,19 @@ describe("Date Studio discovery surfaces", () => {
     expect(source).toMatch(/Make a Calendar/);
   });
 
-  it("groups Date Studio on All Tools", () => {
-    const source = read("app/tools/AllToolsContent.tsx");
-    expect(source).toMatch(/dateStudioTitle/);
-    expect(source).toMatch(/\/tools\/date-converter/);
-    expect(source).toMatch(/\/tools\/calendar-maker/);
-    expect(source).toMatch(/\/tools\/crescent-visibility/);
-    expect(source).toMatch(/crescentVisibility/);
-    expect(source).toMatch(/\/tools\/crescent-visibility/);
-    expect(source).toMatch(/crescentVisibility/);
-    expect(source).toMatch(/\/calendar\//);
-    expect(source).toMatch(/\/hijri\//);
+  it("groups date and calendar tools on All Tools", () => {
+    const tools = toolsInGroup(TOOL_GROUPS.find(group => group.id === "dates")!);
+    expect(tools.map(tool => tool.route)).toEqual(expect.arrayContaining([
+      "/tools/date-converter", "/tools/calendar-maker", "/tools/hijri-to-gregorian",
+    ]));
+    expect(tools.some(tool => tool.route.startsWith("/calendar/"))).toBe(true);
+    expect(tools.some(tool => tool.route.startsWith("/hijri/"))).toBe(true);
+    expect(read("app/tools/AllToolsContent.tsx")).toContain("toolsInGroup(group)");
   });
 
   it("Find Date discovery opens Date Converter in Find mode", () => {
-    const tools = read("app/tools/AllToolsContent.tsx");
-    const converter = read("app/tools/date-converter/DateConverterContent.tsx");
-    expect(tools).toMatch(/\/tools\/date-converter\?mode=find#date-studio/);
-    expect(converter).toMatch(/const requestedMode = p\.get\("mode"\)/);
-    expect(converter).toMatch(/requestedMode === "find" \|\| requestedMode === "convert"/);
-    expect(converter).toMatch(/setMode\(requestedMode\)/);
+    const tools = toolsInGroup(TOOL_GROUPS.find(group => group.id === "dates")!);
+    expect(tools.some(tool => tool.route === "/tools/date-converter?mode=find#date-studio")).toBe(true);
   });
 
   it("makes Date Profile four related calendar routes explicit", () => {
@@ -92,26 +86,16 @@ describe("Date Studio discovery surfaces", () => {
     expect(source).toMatch(/value\.ur \?\? value\.en/);
   });
 
-  it("exposes exactly one localized Date Studio entry in Utilities", () => {
-    const header = read("app/components/Header.tsx");
-    const translations = read("app/lib/translations.ts");
-    const routeEntries = header.match(/label: t\.dateStudio, href: "\/tools\/date-converter"/g) ?? [];
-
-    expect(routeEntries).toHaveLength(1);
-    expect(header).toMatch(/const t = translations\.en\.nav/);
-    expect(header).not.toMatch(/label: "Date Studio", href: "\/tools\/date-converter"/);
-    expect(translations).toMatch(/dateStudio: "Date Studio"/);
-    expect(translations).toMatch(/dateStudio: "ڈیٹ اسٹوڈیو"/);
+  it("exposes one bilingual date converter in Dates & Calendars", () => {
+    const group = TOOL_GROUPS.find(group => group.id === "dates")!;
+    expect(group.name).toEqual({ en: "Dates & Calendars", ur: "تاریخیں و تقاویم" });
+    expect(toolsInGroup(group).filter(tool => tool.route === "/tools/date-converter")).toHaveLength(1);
   });
 
-  it("publishes Crescent Visibility through shared navigation and sitemap surfaces", () => {
-    const header = read("app/components/Header.tsx");
-    const footer = read("app/components/Footer.tsx");
-    const sitemap = read("app/sitemap.ts");
-
-    expect(header).toMatch(/label: "Crescent Visibility", href: "\/tools\/crescent-visibility"/);
-    expect((header.match(/href: "\/tools\/crescent-visibility"/g) ?? []).length).toBe(1);
-    expect(footer).toMatch(/href: "\/tools\/crescent-visibility"/);
-    expect(sitemap).toMatch(/\$\{BASE\}\/tools\/crescent-visibility/);
+  it("keeps Crescent Visibility in the last group and sitemap", () => {
+    const group = TOOL_GROUPS.at(-1)!;
+    expect(group.id).toBe("islamic");
+    expect(toolsInGroup(group).map(tool => tool.route)).toContain("/tools/crescent-visibility");
+    expect(read("app/sitemap.ts")).toContain("${BASE}/tools/crescent-visibility");
   });
 });

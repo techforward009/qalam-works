@@ -16,8 +16,8 @@ afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); });
 test.each(["ur", "en"])("restores %s after hydration without mismatching server text", async language => {
   localStorage.setItem("qalam-site-language", language);
   const markup = renderToString(<App />);
-  expect(markup).toContain('dir="ltr"');
-  expect(markup).toContain(">en</button>");
+  expect(markup).toContain('dir="rtl"');
+  expect(markup).toContain(">ur</button>");
   const container = document.createElement("div");
   container.innerHTML = markup;
   document.body.append(container);
@@ -35,18 +35,18 @@ test.each(["ur", "en"])("restores %s after hydration without mismatching server 
 
 test("switching language updates the document and survives remount", () => {
   const view = render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: "en" }));
-  expect(localStorage.getItem("qalam-site-language")).toBe("ur");
-  expect(document.documentElement.dir).toBe("rtl");
+  fireEvent.click(screen.getByRole("button", { name: "ur" }));
+  expect(localStorage.getItem("qalam-site-language")).toBe("en");
+  expect(document.documentElement.dir).toBe("ltr");
   view.unmount();
   render(<App />);
-  expect(screen.getByRole("button", { name: "ur" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "en" })).toBeTruthy();
 });
 
-test("invalid stored language falls back to English", () => {
+test("first-time and invalid preferences default to Urdu", () => {
   localStorage.setItem("qalam-site-language", "invalid");
   render(<App />);
-  expect(screen.getByRole("button", { name: "en" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "ur" })).toBeTruthy();
 });
 
 test("language remains usable when reading and writing storage fails", () => {
@@ -54,7 +54,14 @@ test("language remains usable when reading and writing storage fails", () => {
   vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw Error("blocked"); });
   vi.spyOn(console, "error").mockImplementation(() => {});
   render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: "en" }));
+  fireEvent.click(screen.getByRole("button", { name: "ur" }));
+  expect(screen.getByRole("button", { name: "en" })).toBeTruthy();
+  expect(document.documentElement.dir).toBe("ltr");
+});
+
+test("a first visit uses Urdu without writing a preference", () => {
+  render(<App />);
   expect(screen.getByRole("button", { name: "ur" })).toBeTruthy();
-  expect(document.documentElement.dir).toBe("rtl");
+  expect(document.documentElement.lang).toBe("ur");
+  expect(localStorage.getItem("qalam-site-language")).toBeNull();
 });

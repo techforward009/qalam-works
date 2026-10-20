@@ -19,6 +19,7 @@ export default function UnicodeStandardizerContent() {
           {t.title}
         </h1>
         <p className={`text-base md:text-lg text-gray-600 dark:text-white max-w-xl mx-auto ${naskh}`}>{t.description}</p>
+        <p className={`mt-3 text-sm leading-relaxed text-gray-600 dark:text-white max-w-2xl mx-auto ${naskh}`}>{t.difference}</p>
 
         {/* Secondary routing callout — noticeable but not competing with primary tool */}
         <div

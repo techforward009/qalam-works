@@ -82,7 +82,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
+    <html lang="ur" dir="rtl" suppressHydrationWarning>
       <body className={`${inter.variable} ${naskh.variable} ${amiri.variable} ${vazirmatn.variable} antialiased min-h-screen flex flex-col`}>
         <LanguageProvider>
           <Header />

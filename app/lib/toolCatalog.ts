@@ -55,7 +55,7 @@ export interface ToolEntry {
   example?:    string;                          // always LTR; shown as monospace pill
 }
 
-export const TOOL_CATALOG: ToolEntry[] = [
+const CORE_TOOLS: ToolEntry[] = [
   // ── 1. Document Studio ──────────────────────────────────────────────────────
   {
     id: "document_studio",
@@ -91,7 +91,7 @@ export const TOOL_CATALOG: ToolEntry[] = [
     Icon: PenLine,
     iconBg: "bg-amber-50 dark:bg-amber-950/30",
     iconColor: "text-amber-700 dark:text-amber-400",
-    name:  { en: "Roman Urdu → Urdu", ur: "رومن اردو سے اردو" },
+    name:  { en: "Roman Urdu Typing", ur: "رومن سے اردو ٹائپنگ" },
     short: {
       en: "Type in Roman Urdu and get Urdu script — uncertain words stay Roman so you stay in control.",
       ur: "رومن اردو لکھیں اور اردو رسم الخط حاصل کریں — مشکوک الفاظ رومن رہتے ہیں۔",
@@ -120,7 +120,7 @@ export const TOOL_CATALOG: ToolEntry[] = [
     Icon: ArrowLeftRight,
     iconBg: "bg-sky-50 dark:bg-sky-950/30",
     iconColor: "text-sky-700 dark:text-sky-400",
-    name:  { en: "Urdu → Roman", ur: "اردو → رومن" },
+    name:  { en: "Urdu to Roman Urdu", ur: "اردو سے رومن اردو" },
     short: {
       en: "Transliterate Urdu script to Roman Urdu — character by character, no translation.",
       ur: "اردو رسم الخط کو رومن اردو میں نقل حرفی کریں — کوئی ترجمہ نہیں۔",
@@ -381,37 +381,6 @@ export const TOOL_CATALOG: ToolEntry[] = [
   },
 
   {
-    id: "research_studio",
-    route: "/tools/research-studio",
-    Icon: Library,
-    iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50",
-    iconColor: "text-[#1A3A2A] dark:text-[#8faa93]",
-    name: { en: "Research Studio", ur: "ریسرچ اسٹوڈیو" },
-    short: {
-      en: "Ask your own documents and read the answer next to the original page.",
-      ur: "اپنی دستاویزات سے سوال کریں اور جواب اصل صفحے کے ساتھ پڑھیں۔",
-    },
-    whatItDoes: {
-      en: "Uploads a PDF, DOCX, TXT, or MD file, then answers only from those documents. A refusal is shown when the material is not strong enough. Each citation can open the stored page.",
-      ur: "PDF، DOCX، TXT یا MD اپلوڈ کریں، پھر جواب صرف انہی دستاویزات سے آتا ہے۔ مواد کمزور ہو تو صاف انکار دکھایا جاتا ہے۔ ہر حوالہ اصل صفحہ کھول سکتا ہے۔",
-    },
-    input: { en: "Upload a document and type a question. Choose which uploaded documents are in scope.", ur: "دستاویز اپلوڈ کریں اور سوال لکھیں۔ منتخب کریں کہ کون سی دستاویزات شامل ہوں۔" },
-    output: { en: "An answer with page and original quotation, or a clear refusal.", ur: "صفحے اور اصل اقتباس کے ساتھ جواب، یا واضح انکار۔" },
-    doesNotDo: {
-      en: "Does not chat without sources, search the web, or publish document links.",
-      ur: "بغیر مآخذ کے گفتگو نہیں کرتا، ویب نہیں کھنگالتا، اور دستاویز کا عوامی لنک نہیں دیتا۔",
-    },
-    bestFor: {
-      en: "Reading a specific uploaded document with a quotation you can check.",
-      ur: "اپنی اپلوڈ شدہ دستاویز کو اس اقتباس کے ساتھ پڑھنا جسے آپ خود دیکھ سکیں۔",
-    },
-    importantNote: {
-      en: "Uploaded documents are stored privately for Research Studio and are not returned as public links.",
-      ur: "اپلوڈ شدہ دستاویزات ریسرچ اسٹوڈیو کے لیے نجی ذخیرے میں رہتی ہیں اور عوامی لنک کے طور پر نہیں دکھائی جاتیں۔",
-    },
-  },
-
-  {
     id: "arabic_diacritics",
     route: "/tools/arabic-diacritics",
     Icon: Languages,
@@ -442,31 +411,48 @@ export const TOOL_CATALOG: ToolEntry[] = [
     },
     example: "الی → اِلٰى",
   },
-
-  {
-    id: "khateeb_studio",
-    route: "/tools/khateeb-studio",
-    Icon: Library,
-    iconBg: "bg-[#1A3A2A]/8 dark:bg-[#2a5a3a]/50",
-    iconColor: "text-[#1A3A2A] dark:text-[#8faa93]",
-    name: { en: "Khateeb Studio", ur: "خطیب اسٹوڈیو" },
-    short: {
-      en: "Explore Shi'a calendar occasions and a curated khateeb source index for sermon research.",
-      ur: "شیعی مناسبتیں دیکھیں اور خطبے کی تحقیق کے لیے منتخب خطیبانہ ماخذ تلاش کریں۔",
-    },
-    whatItDoes: {
-      en: "Lets you choose a calendar occasion, browse a source-index of Pakistani, Indian, and Iranian speakers and scholars, and prepare a compact research brief.",
-      ur: "کسی تقویمی مناسبت کو منتخب کریں، پاکستانی، ہندوستانی اور ایرانی خطباء و اہل علم کے ماخذ دیکھیں، اور تحقیق کا مختصر خاکہ تیار کریں۔",
-    },
-    input: { en: "A calendar occasion and optional speaker/source selection.", ur: "تقویمی مناسبت اور اختیاری خطیب یا ماخذ کا انتخاب۔" },
-    output: { en: "A source-aware research brief and links to selected public sources.", ur: "ماخذ کے ساتھ تحقیقی brief اور منتخب عوامی ذرائع کے روابط۔" },
-    doesNotDo: {
-      en: "It does not yet answer from a fully indexed speaker corpus or generate a sermon.",
-      ur: "یہ ابھی مکمل indexed خطیبانہ corpus سے براہِ راست جواب یا مکمل خطبہ تیار نہیں کرتا۔",
-    },
-    bestFor: {
-      en: "Starting sermon research from a Shi'a calendar occasion and a known speaker or source.",
-      ur: "شیعی تقویمی مناسبت اور معروف خطیب یا علمی ماخذ سے خطبے کی تحقیق شروع کرنے کے لیے۔",
-    },
-  },
 ];
+
+
+function taskPage(id: string, route: string, name: ToolEntry["name"], short: ToolEntry["short"], Icon: ToolIcon): ToolEntry {
+  return { id, route, name, short, Icon,
+    iconBg: "bg-teal-50 dark:bg-teal-950/30", iconColor: "text-teal-700 dark:text-teal-400",
+    whatItDoes: short,
+    input: { en: "Open the tool and choose the text, date or page options you need.", ur: "ٹول کھول کر مطلوبہ متن، تاریخ یا صفحے کے اختیارات منتخب کریں۔" },
+    output: { en: "Review the result before copying, downloading or printing.", ur: "نقل، ڈاؤن لوڈ یا طباعت سے پہلے نتیجہ دیکھیں۔" },
+    doesNotDo: { en: "Does not publish your work automatically.", ur: "آپ کا کام خودکار طور پر شائع نہیں کرتا۔" },
+    bestFor: { en: "Everyday Urdu writing, sharing and planning.", ur: "روزمرہ اردو تحریر، اشتراک اور منصوبہ بندی۔" },
+  };
+}
+
+const calendarYear = new Date().getUTCFullYear();
+const hijriYear = new Intl.DateTimeFormat("en-u-ca-islamic-civil", { year: "numeric", timeZone: "Asia/Karachi" }).format(new Date()).replace(/[^0-9]/g, "");
+export const TOOL_CATALOG: ToolEntry[] = [...CORE_TOOLS,
+  taskPage("roman_converter", "/tools/roman-urdu-to-urdu", { en: "Roman Urdu Converter", ur: "رومن اردو سے اردو کنورٹر" }, { en: "Convert a passage from Roman Urdu and review the Urdu result.", ur: "رومن اردو عبارت کو اردو میں بدلیں اور نتیجے کا جائزہ لیں۔" }, PenLine),
+  taskPage("urdu_pdf", "/tools/urdu-text-to-pdf", { en: "Urdu Text to PDF", ur: "اردو متن سے PDF" }, { en: "Format Urdu text on a page and download a PDF for sharing or print.", ur: "اردو متن کی صفحہ بندی کریں اور اشتراک یا طباعت کے لیے PDF حاصل کریں۔" }, FilePenLine),
+  taskPage("date_finder", "/tools/date-converter?mode=find#date-studio", { en: "Find a Date", ur: "تاریخ تلاش کریں" }, { en: "Find a date and explore its calendar details.", ur: "تاریخ تلاش کریں اور اس کی تقویمی تفصیل دیکھیں۔" }, CalendarDays),
+  taskPage("hijri_converter", "/tools/hijri-to-gregorian", { en: "Hijri to Gregorian", ur: "ہجری سے عیسوی تاریخ" }, { en: "Find the Gregorian equivalent of a Hijri date.", ur: "ہجری تاریخ کی عیسوی تاریخ معلوم کریں۔" }, CalendarDays),
+  taskPage("gregorian_calendar", `/calendar/${calendarYear}`, { en: "Gregorian Calendar", ur: "عیسوی تقویم" }, { en: "Browse the year and open any month or day.", ur: "سال دیکھیں اور مطلوبہ مہینہ یا دن کھولیں۔" }, CalendarDays),
+  taskPage("hijri_calendar", `/hijri/${hijriYear}`, { en: "Hijri Calendar", ur: "ہجری تقویم" }, { en: "Browse Hijri years, months and their date details.", ur: "ہجری سال، مہینے اور تاریخوں کی تفصیل دیکھیں۔" }, CalendarDays),
+  taskPage("crescent_visibility", "/tools/crescent-visibility", { en: "Crescent Visibility", ur: "رؤیتِ ہلال" }, { en: "Explore crescent visibility estimates and their limits.", ur: "رؤیتِ ہلال کے تخمینے اور ان کی حدود دیکھیں۔" }, CalendarDays),
+  taskPage("quran_reader", "/quran", { en: "Quran Reader", ur: "قرآن ریڈر" }, { en: "Read the Quran with the available translations and commentary.", ur: "دستیاب تراجم اور تفسیر کے ساتھ قرآن پڑھیں۔" }, BookOpen),
+];
+
+// One ordered grouping for the header, footer, and All Tools. Private Research
+// Studio and footer-only Khateeb Studio must never enter this public catalog.
+export const TOOL_GROUPS = [
+  { id: "write", name: { en: "Write & Publish", ur: "تحریر و اشاعت" }, ids: ["document_studio", "translation_studio"] },
+  { id: "type", name: { en: "Type & Convert", ur: "ٹائپنگ و تبدیلی" }, ids: ["urdu_writer", "roman_converter", "urdu_roman_writer"] },
+  { id: "fix", name: { en: "Fix & Proofread", ur: "اصلاح و نظرثانی" }, ids: ["document_cleaner", "urdu_unicode_standardizer", "quality_audit", "whatsapp_rtl_formatter", "arabic_diacritics"] },
+  { id: "design", name: { en: "Fonts & Design", ur: "فونٹس و ڈیزائن" }, ids: ["invoice_generator", "urdu_pdf"] },
+  { id: "dates", name: { en: "Dates & Calendars", ur: "تاریخیں و تقاویم" }, ids: ["date_converter", "date_finder", "calendar_maker", "hijri_converter", "gregorian_calendar", "hijri_calendar"] },
+  { id: "islamic", name: { en: "Quran & Islamic Studies", ur: "قرآن و اسلامی مطالعہ" }, ids: ["quran_reader", "crescent_visibility"] },
+];
+
+export function toolsInGroup(group: (typeof TOOL_GROUPS)[number]): ToolEntry[] {
+  return group.ids.map(id => {
+    const tool = TOOL_CATALOG.find(entry => entry.id === id);
+    if (!tool) throw new Error(`Missing public tool: ${id}`);
+    return tool;
+  });
+}

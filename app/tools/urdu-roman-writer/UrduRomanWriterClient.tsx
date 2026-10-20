@@ -11,7 +11,7 @@ import { loadUrDraft, saveUrDraft, clearUrDraft } from "./utils/urDraft";
 
 const UI = {
   en: {
-    heading:       "Qalam Urdu Writer",
+    heading:       "Urdu to Roman Urdu",
     sub:           "Convert Urdu script to readable Roman Urdu — transliteration, not translation.",
     tabRoman:      "Roman Urdu → Urdu",
     tabUrduRoman:  "Urdu → Roman",
@@ -30,7 +30,7 @@ const UI = {
     footerNote:    "This tool provides transliteration (script conversion) only — not translation. English words, numbers, URLs, and filenames pass through unchanged.",
   },
   ur: {
-    heading:       "قلم اردو رائٹر",
+    heading:       "اردو سے رومن اردو",
     sub:           "اردو رسم الخط کو رومن اردو میں تبدیل کریں — نقل حرفی، ترجمہ نہیں۔",
     tabRoman:      "رومن اردو → اردو",
     tabUrduRoman:  "اردو → رومن اردو",

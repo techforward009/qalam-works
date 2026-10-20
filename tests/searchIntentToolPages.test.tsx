@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import sitemap from "../app/sitemap";
+import { TOOL_CATALOG } from "../app/lib/toolCatalog";
 
 const locale = vi.hoisted(() => ({ language: "en" as "en" | "ur" }));
 
@@ -131,17 +132,12 @@ describe("search-intent tool pages — metadata and discovery", () => {
     expect((layout.match(/<h1/g) ?? []).length).toBe(1);
   });
 
-  it("is reachable from /tools and is not cloned into Header, Footer, or TOOL_CATALOG", () => {
-    const tools = read("app/tools/AllToolsContent.tsx");
-    const header = read("app/components/Header.tsx");
-    const footer = read("app/components/Footer.tsx");
-    const catalog = read("app/lib/toolCatalog.ts");
-
+  it("discovers the task pages through the shared public catalog", () => {
     for (const page of PAGES) {
-      expect(tools).toContain(`/tools/${page.slug}`);
-      expect(header).not.toContain(`/tools/${page.slug}`);
-      expect(footer).not.toContain(`/tools/${page.slug}`);
-      expect(catalog).not.toContain(`/tools/${page.slug}`);
+      expect(TOOL_CATALOG.some(tool => tool.route === `/tools/${page.slug}`)).toBe(true);
+    }
+    for (const file of ["app/components/Header.tsx", "app/components/Footer.tsx", "app/tools/AllToolsContent.tsx"]) {
+      expect(read(file)).toContain("toolsInGroup");
     }
   });
 

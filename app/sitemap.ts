@@ -17,7 +17,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/tools/quality-checker`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/unicode-standardizer`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/arabic-diacritics`, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/tools/khateeb-studio`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/quran`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/quran/1/1`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/quran/indopak-digital-khatt/1/1`, changeFrequency: "monthly", priority: 0.6 },

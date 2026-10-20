@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TOOL_GROUPS, toolsInGroup } from "../lib/toolCatalog";
 import { translations } from "../lib/translations";
 import { useLanguage } from "../lib/language-context";
 
@@ -16,22 +17,6 @@ function PenNibIcon() {
     </svg>
   );
 }
-
-const TOOL_ROUTES = [
-  { key: "documentStudio", href: "/tools/document-studio" },
-  { key: "urduWriter", href: "/tools/roman-urdu-writer" },
-  { key: "urduRomanWriter", href: "/tools/urdu-roman-writer", labelEn: "Urdu → Roman", labelUr: "اردو → رومن" },
-  { key: "translationStudio", href: "/tools/translation-studio" },
-  { key: "documentCleaner", href: "/tools/document-cleaner", labelEn: "Document Cleaner", labelUr: "ڈاکومنٹ کلینر" },
-  { key: "qualityChecker", href: "/tools/quality-checker" },
-  { key: "unicodeStandardizer", href: "/tools/unicode-standardizer" },
-  { key: "quran", href: "/quran", labelEn: "Quran Editions", labelUr: "قرآن کریم" },
-  { key: "arabicDiacritics", href: "/tools/arabic-diacritics", labelEn: "Arabic Diacritics", labelUr: "عربی اعراب" },
-  { key: "invoiceStudio", href: "/tools/invoice-generator", labelEn: "Invoice Generator", labelUr: "انوائس جنریٹر" },
-  { key: "dateConverter", href: "/tools/date-converter",    labelEn: "Date Converter",    labelUr: "تاریخ کنورٹر"    },
-  { key: "crescentVisibility", href: "/tools/crescent-visibility", labelEn: "Crescent Visibility", labelUr: "رؤیتِ ہلال" },
-  { key: "whatsappRtlFormatter", href: "/tools/whatsapp-rtl-formatter", labelEn: "WhatsApp RTL Formatter", labelUr: "واٹس ایپ آر ٹی ایل فارمیٹر" },
-];
 
 export default function Footer() {
   const { language, dir } = useLanguage();
@@ -51,20 +36,17 @@ export default function Footer() {
           <p className="mt-2 text-sm leading-relaxed text-white">{t.footer.servicesNote}</p>
         </div>
 
-        {/* Tools */}
-        <div>
-          <div className={`text-white font-semibold text-sm uppercase tracking-wide mb-3`} data-footer-heading="true">
-            {t.footer.toolsHeading}
-          </div>
-          <ul className="space-y-2">
-            {TOOL_ROUTES.map((tool) => (
-              <li key={tool.href}>
-                <Link href={tool.href} className={`text-white hover:text-white text-sm transition-colors`}>
-                  {(language === "ur" ? tool.labelUr : tool.labelEn) ?? t.nav[tool.key as keyof typeof t.nav]}
-                </Link>
-              </li>
-            ))}
-          </ul>
+        {/* The same public groups and order as the header and All Tools. */}
+        <div className="grid gap-6 sm:col-span-2 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-3">
+          {TOOL_GROUPS.map(group => (
+            <div key={group.id}>
+              <h2 className="mb-3 text-sm font-semibold text-white" data-footer-heading="true">{group.name[language]}</h2>
+              <ul className="space-y-2">
+                {toolsInGroup(group).map(tool => <li key={tool.id}><Link href={tool.route} className="text-sm text-white/90 hover:text-amber-200">{tool.name[language]}</Link></li>)}
+                {group.id === "islamic" && <li><Link href="/tools/khateeb-studio" className="text-sm text-white/90 hover:text-amber-200">{language === "ur" ? "خطیب اسٹوڈیو" : "Khateeb Studio"}</Link></li>}
+              </ul>
+            </div>
+          ))}
         </div>
 
         {/* Company */}

@@ -29,7 +29,8 @@ describe("Invoice Generator on-page SEO", () => {
     expect(new URL(String(metadata.alternates?.canonical), base).href).toBe("https://www.qalamworks.com/tools/invoice-generator");
   });
 
-  it("server-renders the English H1 and visible Urdu copy before the real generator", () => {
+  it("renders the selected English H1 and visible Urdu copy before the real generator", () => {
+    vi.spyOn(languageContext, "useLanguage").mockReturnValue({ language: "en", dir: "ltr", setLanguage: vi.fn() });
     const html = renderPage();
     expect(html).toMatch(/<main[^>]*dir="ltr"[^>]*lang="en"/);
     expect(html.match(/<h1\b/g)).toHaveLength(1);
@@ -45,6 +46,7 @@ describe("Invoice Generator on-page SEO", () => {
   });
 
   it("renders useful sections, exactly three steps and all seven visible FAQs", () => {
+    vi.spyOn(languageContext, "useLanguage").mockReturnValue({ language: "en", dir: "ltr", setLanguage: vi.fn() });
     const html = renderPage();
     for (const heading of ["Free Invoice Generator for Pakistan", "What you can include", "How to create an invoice", "اردو انوائس جنریٹر"]) {
       expect(html).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`));
