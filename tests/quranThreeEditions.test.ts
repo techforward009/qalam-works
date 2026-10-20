@@ -52,6 +52,8 @@ describe("new Quran edition rules",()=>{
    const editions=readFileSync("app/quran/editions.ts","utf8");
    const catalog=readFileSync("app/tools/document-studio/utils/publicBlobFontCatalog.ts","utf8");
    expect(css).not.toContain("muhammadi-quranic-400.woff2");
+   expect(css).toContain('font-family: "DigitalKhattIndoPak"');
+   expect(css).toContain('/fonts/DigitalKhattIndoPak.woff2');
    expect(editions).not.toContain("Muhammadi Quranic");
    expect(catalog).not.toContain("muhammadi-quranic");
    expect(readFileSync("app/tools/document-studio/utils/fontRegistry.ts","utf8")).toContain('QURAN_FONT_FALLBACK_FAMILY = "Digital Khatt Indo-Pak"');

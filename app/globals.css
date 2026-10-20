@@ -217,6 +217,15 @@ textarea {
   font-family: "Sahel", Tahoma, "Segoe UI", sans-serif !important;
 }
 
+/* The shared Quran reader uses the official matching DigitalKhatt font. */
+@font-face {
+  font-family: "DigitalKhattIndoPak";
+  src: url("/fonts/DigitalKhattIndoPak.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 @font-face {
   font-family: "Digital Khatt IndoPak Book";
   src: url("/fonts/DigitalKhattIndoPakRegular.woff2") format("woff2");
