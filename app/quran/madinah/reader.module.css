@@ -1,5 +1,5 @@
-.reader { --paper:#fcfaf4; --ink:#171717; --line:#d8cfbc; --green:#2f8f68; min-height:100vh; background:#e7eee4; color:var(--ink); }
-.container { width:100%; max-width:1080px; margin:0 auto; padding:18px 16px 40px; }
+.reader { --paper:#fcfaf4; --ink:#171717; --line:#d8cfbc; --green:#2f8f68; min-height:100vh; background:#e7eee4; color:rgb(46,52,43); }
+.container { width:100%; max-width:1080px; margin:0 auto; padding:16px; }
 .toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:16px; }
 .eyebrow { font-weight:700; color:var(--green); font-size:15px; }
 .subtle { font-size:12px; color:#746e62; }
@@ -33,7 +33,6 @@
 .line { min-width:0; min-height:1.6em; height:auto; width:100%; display:flex; align-items:center; justify-content:space-between; direction:rtl; white-space:nowrap; font-size:calc((100cqi / 18.6) * var(--mushaf-scale, 1)); line-height:1; letter-spacing:0; }
 .centeredLine { justify-content:center; gap:0.4em; }
 .word { display:inline-block; }
-.surahLine { justify-content:center; font-family:"Noto Naskh Arabic","Scheherazade New","Amiri",serif; font-size:calc((100cqi / 28) * var(--mushaf-scale, 1)); color:#171717; font-weight:600; }
 .basmala { font-family:"QalamMadinahBasmala", serif; font-size:1.23em; line-height:1; }
 .loading,.error { padding:50px; text-align:center; color:#756f63; }
 .error { color:#8b3c32; }
@@ -58,13 +57,12 @@
 .reader .page {padding:36px 58px;border-radius:0}
 .reader .pageLines {padding-bottom:12px}
 .reader .line {font-size:calc((100cqi / 21) * var(--mushaf-scale,1));min-height:1.5em}
-.reader .surahLine {font-size:1.35rem;justify-content:center;min-height:55px}
 .reader .sidebar {gap:8px}
 .reader .credit {margin-top:2px}
 
-@media(max-width:600px){.reader .page{border-radius:0;padding:24px 20px}.reader .line{font-size:calc((100cqi / 12.5) * var(--mushaf-scale,1));min-height:1.65em}.reader .surahLine{font-size:1.18rem}}
+@media(max-width:600px){.reader .page{border-radius:0;padding:24px 20px}.reader .line{font-size:calc((100cqi / 12.5) * var(--mushaf-scale,1));min-height:1.65em}}
 
-@media(max-width:600px){.reader{color:rgb(46,52,43)}.container{padding-left:16px;padding-right:16px}.reader .page{box-shadow:0 4px 14px rgba(40,48,35,.12)}}
+@media(max-width:600px){.container{padding-left:16px;padding-right:16px}.reader .page{box-shadow:0 4px 14px rgba(40,48,35,.12)}}
 
 /* Align sidebar with the Ahmed Grafics master, including Latin UI fonts. */
 .reader .sidebar[lang="en"] {font-family:"Segoe UI",Tahoma,Arial,sans-serif}
@@ -72,3 +70,7 @@
 .reader .sidebar .input {min-height:26px;border-radius:3px;padding:3px 6px;margin-top:3px;font-family:inherit}
 .reader .sidebar .label {font-size:12px;line-height:1.35}
 .reader .sidebar :global(.tanzil-sidebar-section) {margin:0}
+
+/* Ahmed Grafics master Surah band typography. */
+.reader .page :global(.quran-surah-header){font-family:var(--font-amiri),Amiri,"Noto Naskh Arabic",serif;font-size:28px}
+@media(max-width:600px){.reader .page :global(.quran-surah-header){font-size:24px}}
