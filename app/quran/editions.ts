@@ -91,8 +91,8 @@ export const QURAN_EDITIONS: readonly QuranEdition[] = [
     provenance: {
       textSource: "AhmedGraf · Indo-Pak Quran Text v1.0",
       textSourceUrl: "https://ahmedgraf.com",
-      fontSource: "Digital Khatt IndoPak Book · approved regular Arabic font",
-      fontSourceUrl: "/fonts/DigitalKhattIndoPakRegular.woff2",
+      fontSource: "Amiri · approved regular Arabic font",
+      fontSourceUrl: "https://github.com/aliftype/amiri",
     },
   },
 ] as const;

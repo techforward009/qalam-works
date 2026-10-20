@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Copy as CopyIcon } from "lucide-react";
 import * as digitalReaderModel from "./reader/digitalModel";
 import * as ahmedReaderModel from "./reader/model";
 import { ahmedgrafQuranReference } from "../tools/arabic-diacritics/quran/ahmedgrafProvider";
@@ -1072,7 +1073,7 @@ export default function QuranReader({
                   ayahs={
                     ayahs
                   }
-                  fontFamily={editionId === "digital-khatt" ? QURAN_FONT_STACK : '"Digital Khatt IndoPak Book", "Noto Naskh Arabic", serif'}
+                  fontFamily={editionId === "digital-khatt" ? QURAN_FONT_STACK : 'var(--font-amiri), "Amiri", "Noto Naskh Arabic", serif'}
                   editionId={editionId}
                   scale={
                     scale
@@ -1117,7 +1118,7 @@ export default function QuranReader({
                   selectedAyah={ayah}
                   scale={scale}
                   quranFontFamily={editionId === "digital-khatt"
-                    ? QURAN_FONT_STACK : '"Digital Khatt IndoPak Book", "Noto Naskh Arabic", serif'}
+                    ? QURAN_FONT_STACK : 'var(--font-amiri), "Amiri", "Noto Naskh Arabic", serif'}
                 />
               ) : activeReaderView === "transliteration" ? (
                 <QuranTransliterationPage
@@ -1384,7 +1385,7 @@ function QuranPageSurface({
                       block.text
                     }
                     {block.anchor && editionId === "digital-khatt" && <span className="mx-1 text-[0.58em]">۝{easternDigits(1)}</span>}
-                    {block.anchor && <button type="button" className="mx-2 text-[0.48em] underline" onClick={() => void navigator.clipboard.writeText(block.text)} aria-label="Copy verse 1">⧉</button>}
+                    {block.anchor && <button type="button" className="mx-2 text-[0.48em] underline" onClick={() => void navigator.clipboard.writeText(block.text)} aria-label="Copy verse 1"><CopyIcon size={12} aria-hidden="true" /></button>}
                   </p>
                 );
               }
@@ -1441,7 +1442,7 @@ function QuranPageSurface({
                         </span>
                         <button type="button" className="mx-1 align-middle text-[0.43em] underline" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(
                             (editionId === "digital-khatt" ? digitalReaderModel.getReaderAyah(item.surah,item.ayah) : ahmedReaderModel.getReaderAyah(item.surah,item.ayah))?.text ?? item.text
-                          )}>⧉</button>
+                          )}><CopyIcon size={12} aria-hidden="true" /></button>
                       </span>
                     ),
                   )}

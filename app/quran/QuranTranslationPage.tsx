@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Copy as CopyIcon } from "lucide-react";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
 import { easternDigits, surahTitle } from "./reader/metadata";
@@ -144,7 +145,7 @@ export default function QuranTranslationPage({
                       {ayah.text}
                       <button type="button" className="mx-2 align-middle text-[0.55em] underline"
                          aria-label={"Copy exact Unicode verse " + ayah.surah + ":" + ayah.ayah}
-                         onClick={() => void navigator.clipboard.writeText(ayah.text)}>⧉</button>
+                         onClick={() => void navigator.clipboard.writeText(ayah.text)}><CopyIcon size={12} aria-hidden="true" /></button>
                     </p>
                   ) : null}
                   <p className="quran-translation-text">{text}</p>

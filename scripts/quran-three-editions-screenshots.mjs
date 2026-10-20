@@ -26,7 +26,8 @@ try {
     const selector=page.locator("[data-quran-edition-picker] select");
     if(await selector.count())await selector.focus();
    }
-   await page.evaluate(async()=>{await document.fonts.ready});
+   await page.evaluate(async()=>{await document.fonts.ready;window.scrollTo(0,0)});
+   await page.waitForTimeout(350);
    await page.screenshot({path:`artifacts/quran-three-editions/${name}-${width}x${height}.png`,fullPage:true,animations:"disabled"});
    if(name==="madinah-default" && !(page.url().includes("/quran/madinah/")))throw new Error("Default was not Madinah");
    if(name==="ahmed-ikhlas-credit" && !(await page.getByRole("link",{name:"ahmedgraf.com"}).count()))throw new Error("Ahmed attribution absent");
