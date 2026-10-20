@@ -12,7 +12,7 @@ function CompactLanguageSwitch(){
  const {language,setLanguage}=useLanguage();
  return <div role="group" aria-label={language==="ur"?"سائٹ کی زبان":"Site language"} dir="ltr" className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full border border-[#111827] bg-[#101820] p-[2px] shadow-sm sm:h-9 sm:p-[3px]">
   <button type="button" lang="en" aria-pressed={language==="en"} onClick={()=>setLanguage("en")} className={`flex h-[26px] min-w-[44px] sm:h-[28px] items-center justify-center rounded-full px-1 text-[13px] sm:min-w-[54px] sm:px-2 font-semibold transition-colors ${language==="en"?"bg-[#059669] text-white shadow-sm":"text-[#d1d5db] hover:text-white"}`}>English</button>
-  <button type="button" lang="ur" dir="rtl" style={{fontSize:"26px",lineHeight:1}} aria-pressed={language==="ur"} onClick={()=>setLanguage("ur")} className={`flex h-[26px] min-w-[44px] sm:h-[28px] items-center justify-center rounded-full px-1 font-nastaliq sm:min-w-[48px] sm:px-2 text-[24px] leading-[1.9] transition-colors ${language==="ur"?"bg-[#059669] text-white shadow-sm":"text-[#d1d5db] hover:text-white"}`}><span className="block -translate-y-[3px]">اردو</span></button>
+  <button type="button" lang="ur" dir="rtl" style={{fontSize:"26px",lineHeight:1}} aria-pressed={language==="ur"} onClick={()=>setLanguage("ur")} className={`flex h-[26px] min-w-[44px] sm:h-[28px] items-center justify-center rounded-full px-1 font-nastaliq sm:min-w-[48px] sm:px-2 text-[24px] leading-[1.9] transition-colors ${language==="ur"?"bg-[#059669] text-white shadow-sm":"text-[#d1d5db] hover:text-white"}`}><span className="block translate-y-[2.5px]">اردو</span></button>
  </div>;
 }
 
