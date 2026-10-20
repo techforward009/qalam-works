@@ -7,6 +7,7 @@ import {ahmedgrafQuranReference as ahmed} from "../app/tools/arabic-diacritics/q
 import {DIGITAL_KHATT_BASMILLAH,alignDigitalKhattToTranslation} from "../app/quran/indopak-digital-khatt/data";
 import {translationGlobalIndex} from "../app/quran/reader/translationCorpus";
 import {QURAN_EDITIONS} from "../app/quran/editions";
+import {resolveEditorFontFamily} from "../app/tools/document-studio/utils/fontRegistry";
 
 describe("new Quran edition rules",()=>{
  it("starts on Madinah; Digital follows and Ahmed Grafics stays third",()=>{
@@ -57,5 +58,7 @@ describe("new Quran edition rules",()=>{
    expect(readFileSync("app/tools/document-studio/utils/documentLibrary.ts","utf8")).toContain('"digital-khatt-indo-pak"');
    expect(readFileSync("app/quran/madinah/MadinahReader.tsx","utf8")).not.toContain("QuranTranslationPage");
    expect(readFileSync("app/quran/madinah/MadinahReader.tsx","utf8")).not.toContain("QuranTafsirPage");
+   expect(resolveEditorFontFamily("Muhammadi Quranic","rtl").docxFamily).toBe("Digital Khatt Indo-Pak");
+   expect(resolveEditorFontFamily("Asif Quranic","rtl").docxFamily).toBe("Scheherazade New");
  });
 });

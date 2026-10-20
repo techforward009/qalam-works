@@ -481,7 +481,13 @@ export function resolveEditorFontFamily(
     return resolveEditorFontFamily("Mehr Nastaliq Web", globalDir);
   }
   if (isRemovedQuranFont(requested)) {
-    return resolveEditorFontFamily(QURAN_FONT_FALLBACK_FAMILY, globalDir);
+    // Only legacy saved Muhammadi documents are mandated to move to Digital Khatt.
+    // Preserve the existing Scheherazade fallback for separately retired Asif/Al Qalam.
+    const first = requested?.split(",")[0]?.trim().replace(/^[\x22\x27]+|[\x22\x27]+$/g, "") ?? "";
+    return resolveEditorFontFamily(
+      first === "Muhammadi Quranic" || first === "muhammadi-quranic"
+        ? QURAN_FONT_FALLBACK_FAMILY : REMOVED_FONT_FALLBACK_FAMILY, globalDir
+    );
   }
   if (isRemovedUnlicensedFont(requested)) {
     return resolveEditorFontFamily(REMOVED_FONT_FALLBACK_FAMILY, globalDir);
