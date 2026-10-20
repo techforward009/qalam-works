@@ -862,11 +862,7 @@ export default function QuranReader({
                   ? copy.copyDone
                   : copy.copy}
               </button>
-              <button type="button" aria-label={language === "ur" ? "پوری سورت نقل کریں" : "Copy whole surah"}
-                  className="mt-2 w-full border border-[#b5bbb1] bg-white px-2 py-1.5 text-xs text-[#465046]"
-                  onClick={() => void navigator.clipboard.writeText(
-                    Array.from({length:HAFS_AYAH_COUNTS[surah-1]??0},(_,i)=>getReaderAyah(surah,i+1)?.text??"").join("\n")
-                  )}>{language === "ur" ? "پوری سورت نقل کریں" : "Copy whole surah"}</button>
+
             </SidebarSection>
 
             <SidebarSection
