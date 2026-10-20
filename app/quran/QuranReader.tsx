@@ -1135,80 +1135,10 @@ export default function QuranReader({
               )}
             </div>
 
-            <div
-              className={`quran-outer-page-nav mt-2 flex items-center justify-center gap-6 px-1 text-xs text-[#70776b] ${
-                language ===
-                "ur"
-                  ? "font-naskh"
-                  : ""
-              }`}
-              dir="rtl"
-              lang={
-                interfaceLang
-              }
-            >
-              <button
-                type="button"
-                disabled={
-                  !adjacentPage(
-                    page.page,
-                    1,
-                  )
-                }
-                onClick={() => {
-                  const next =
-                    adjacentPage(
-                      page.page,
-                      1,
-                    );
-
-                  if (next) {
-                    go({
-                      surah:
-                        next.surahStart,
-                      ayah:
-                        next.ayahStart,
-                    });
-                  }
-                }}
-                className="quran-page-turn px-3 py-1.5 disabled:opacity-25"
-              >
-                {
-                  copy.nextPage
-                }
-              </button>
-
-              <button
-                type="button"
-                disabled={
-                  !adjacentPage(
-                    page.page,
-                    -1,
-                  )
-                }
-                onClick={() => {
-                  const previous =
-                    adjacentPage(
-                      page.page,
-                      -1,
-                    );
-
-                  if (previous) {
-                    go({
-                      surah:
-                        previous.surahStart,
-                      ayah:
-                        previous.ayahStart,
-                    });
-                  }
-                }}
-                className="quran-page-turn px-3 py-1.5 disabled:opacity-25"
-              >
-                {
-                  copy.previousPage
-                }
-              </button>
-            </div>
+            <QuranPageButtons previous={copy.previousPage} next={copy.nextPage}
+              disablePrevious={!adjacentPage(page.page,-1)} disableNext={!adjacentPage(page.page,1)}
+              onPrevious={() => {const previous=adjacentPage(page.page,-1);if(previous)go({surah:previous.surahStart,ayah:previous.ayahStart});}}
+              onNext={() => {const next=adjacentPage(page.page,1);if(next)go({surah:next.surahStart,ayah:next.ayahStart});}} />
           </section>
         </div>
       </div>
