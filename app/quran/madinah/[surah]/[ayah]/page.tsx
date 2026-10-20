@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import MadinahReader from "../../MadinahReader";
+import {surahTitle} from "../../../reader/metadata";
 
 export async function generateMetadata({ params }: { params: Promise<{ surah: string; ayah: string }> }): Promise<Metadata> {
   const { surah, ayah } = await params;
-  return { title: `Madinah Mushaf ${surah}:${ayah} — Qalam Works` };
+  return { title: `${surahTitle(Number(surah))} ${ayah} — Madinah Mushaf Quran | Qalam Works` };
 }
 
 export default async function MadinahAyahPage({ params }: { params: Promise<{ surah: string; ayah: string }> }) {
