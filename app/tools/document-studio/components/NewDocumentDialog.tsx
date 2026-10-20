@@ -18,11 +18,21 @@ export type NewDocumentDraft = {
   direction: "rtl" | "ltr";
 };
 
+const MARGIN_LABELS = {
+  top: "Top margin (mm)",
+  bottom: "Bottom margin (mm)",
+  left: "Left margin (mm)",
+  right: "Right margin (mm)",
+} as const;
+
 const SIZES: { id: PageSizeId; label: string }[] = [
   { id: "a4", label: "A4" },
   { id: "a5", label: "A5" },
   { id: "letter", label: "Letter" },
 ];
+
+export const STUDIO_DEFAULT_GUTTER_MM = 4.23;
+const MIN_PAGES_KEY = "qalam-studio-minimum-pages-v1";
 
 export function defaultNewDocumentDraft(): NewDocumentDraft {
   return {
@@ -34,7 +44,7 @@ export function defaultNewDocumentDraft(): NewDocumentDraft {
     left: 12.7,
     right: 12.7,
     columns: 1,
-    gutter: 0,
+    gutter: STUDIO_DEFAULT_GUTTER_MM,
     direction: "rtl",
   };
 }
@@ -58,14 +68,40 @@ export function settingsFromNewDocument(draft: NewDocumentDraft): DocumentStudio
   };
 }
 
-export function contentFromNewDocument(draft: NewDocumentDraft): DocNode {
-  const pages = Math.max(1, Math.min(40, Math.floor(draft.pages) || 1));
-  const content: DocNode[] = [];
-  for (let i = 0; i < pages; i += 1) {
-    if (i > 0) content.push({ type: "pageBreak" });
-    content.push({ type: "paragraph", attrs: { dir: draft.direction, directionMode: draft.direction } });
+export function pageCountFromNewDocument(draft: Pick<NewDocumentDraft, "pages">): number {
+  const pages = Math.floor(Number(draft.pages));
+  if (!Number.isFinite(pages)) return 1;
+  return Math.max(1, Math.min(40, pages));
+}
+
+export function readStoredMinimumPages(id: string): number {
+  if (typeof window === "undefined" || !id) return 1;
+  try {
+    const map = JSON.parse(window.localStorage.getItem(MIN_PAGES_KEY) || "{}") as Record<string, unknown>;
+    return pageCountFromNewDocument({ pages: Number(map[id]) });
+  } catch {
+    return 1;
   }
-  return { type: "doc", content };
+}
+
+export function writeStoredMinimumPages(id: string, pages: number): void {
+  if (typeof window === "undefined" || !id) return;
+  try {
+    const raw = window.localStorage.getItem(MIN_PAGES_KEY);
+    const map = raw ? JSON.parse(raw) as Record<string, unknown> : {};
+    map[id] = pageCountFromNewDocument({ pages });
+    window.localStorage.setItem(MIN_PAGES_KEY, JSON.stringify(map));
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+/** One empty paragraph. Extra sheets are a pagination floor, not page-break nodes. */
+export function contentFromNewDocument(draft: NewDocumentDraft): DocNode {
+  return {
+    type: "doc",
+    content: [{ type: "paragraph", attrs: { dir: draft.direction, directionMode: draft.direction } }],
+  };
 }
 
 export default function NewDocumentDialog({
@@ -121,7 +157,7 @@ export default function NewDocumentDialog({
           </label>
           {(["top", "bottom", "left", "right"] as const).map((edge) => (
             <label key={edge}>
-              <span className="mb-1 block text-xs capitalize">{edge} margin (mm)</span>
+              <span className="mb-1 block text-xs">{MARGIN_LABELS[edge]}</span>
               <input className={field} type="number" min={5} max={50} step={0.1} value={draft[edge]} onChange={(event) => set({ [edge]: Number(event.target.value) })} />
             </label>
           ))}
@@ -131,7 +167,7 @@ export default function NewDocumentDialog({
           </label>
           <label>
             <span className="mb-1 block text-xs">Gutter (mm)</span>
-            <input className={field} type="number" min={0} max={40} step={0.1} value={draft.gutter} onChange={(event) => set({ gutter: Number(event.target.value) })} />
+            <input className={field} type="number" min={0} max={40} step="any" value={draft.gutter} onChange={(event) => set({ gutter: Number(event.target.value) })} />
           </label>
           <label className="col-span-2">
             <span className="mb-1 block text-xs">Direction</span>

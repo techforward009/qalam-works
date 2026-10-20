@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLanguage } from "../../../lib/language-context";
 import { rulerDirectionAtSelection } from "../utils/paragraphDirection";
-import NewDocumentDialog, { contentFromNewDocument, settingsFromNewDocument, type NewDocumentDraft } from "./NewDocumentDialog";
+import NewDocumentDialog, { contentFromNewDocument, pageCountFromNewDocument, readStoredMinimumPages, settingsFromNewDocument, STUDIO_DEFAULT_GUTTER_MM, writeStoredMinimumPages, type NewDocumentDraft } from "./NewDocumentDialog";
 import { useEditor } from "@tiptap/react";
 import { consumeHandoff } from "../../translation-studio/utils/translationHandoff";
 import { extractPlainText, createDocumentAnalysisContext, type DocNode } from "../utils/extractPlainText";
@@ -14,6 +14,7 @@ import {
   loadDocumentSettings,
   saveDocumentSettings,
   defaultDocumentSettings,
+  withStudioOpeningMargins,
   type DocumentStudioSettings,
 } from "../utils/documentSettings";
 import { resolvePageLayout, commitPhysicalMarginDrag, type PhysicalMarginEdge } from "../utils/pageLayout";
@@ -193,12 +194,13 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [visiblePage, setVisiblePage] = useState(1);
   const [zoomPercent, setZoomPercent] = useState<number | null>(null);
   const [columnCount, setColumnCount] = useState(1);
-  const [columnGutterMm, setColumnGutterMm] = useState(0);
+  const [columnGutterMm, setColumnGutterMm] = useState(STUDIO_DEFAULT_GUTTER_MM);
+  const [minimumPages, setMinimumPages] = useState(1);
   const [tableInsertOpen, setTableInsertOpen] = useState(false);
   const [tableRows, setTableRows] = useState(3);
   const [tableColumns, setTableColumns] = useState(3);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => loadDocumentSettings());
+  const [documentSettings, setDocumentSettings] = useState<DocumentStudioSettings>(() => withStudioOpeningMargins(loadDocumentSettings()));
   // Batch 16B — computed once per render, shared by the page preview and
   // the ruler so their boundaries always agree (single geometry source).
   const pageLayout = resolvePageLayout({
@@ -316,7 +318,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const [qalamAiOpen, setQalamAiOpen] = useState(false);
   const [viewMode, setViewModeState] = useState<DocumentViewMode>(() => loadDocumentViewMode());
   const [pageCount, setPageCount] = useState<number | null>(null);
-  const [zoom, setZoomState] = useState<DocumentZoom>("fit-page");
+  const [zoom, setZoomState] = useState<DocumentZoom>(100);
   const [rulerVisible, setRulerVisibleState] = useState(() => loadRulerVisible());
   const [rulerUnit, setRulerUnitState] = useState<RulerUnit>(() => loadRulerUnit());
   const [findQuery, setFindQuery] = useState("");
@@ -540,16 +542,19 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   };
 
   const confirmNewDocument = (draft: NewDocumentDraft) => {
+    const pages = pageCountFromNewDocument(draft);
     setDir(draft.direction);
     setProcessingLanguage(draft.direction === "ltr" ? "en" : "ur");
     setColumnCount(Math.max(1, Math.min(4, Math.floor(draft.columns) || 1)));
     setColumnGutterMm(Math.max(0, Number(draft.gutter) || 0));
-    setZoom("fit-page");
+    setMinimumPages(pages);
+    setZoom(100);
     setVisiblePage(1);
     setNewDocOpen(false);
     void createAndOpenDocument({
       content: contentFromNewDocument(draft),
       documentSettings: settingsFromNewDocument(draft),
+      minimumPages: pages,
     });
   };
 
@@ -564,17 +569,21 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setLibraryItems(await library.listDocuments());
   };
 
-  const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean }) => {
+  const applyRecordToEditor = (record: DocumentRecord, options?: { skipContent?: boolean; minimumPages?: number }) => {
     activeDocumentIdRef.current = record.id;
     setActiveDocumentId(record.id);
     saveActiveDocumentId(record.id);
     setDocumentTitle(record.title);
     documentTitleRef.current = record.title;
-    setDocumentSettings(record.documentSettings);
-    documentSettingsRef.current = record.documentSettings;
+    const settings = withStudioOpeningMargins(record.documentSettings);
+    setDocumentSettings(settings);
+    documentSettingsRef.current = settings;
     if (!options?.skipContent && editor) {
       setEditorContent(editor, record.content, "load");
     }
+    const pages = options?.minimumPages ?? readStoredMinimumPages(record.id);
+    setMinimumPages(pages);
+    writeStoredMinimumPages(record.id, pages);
     setSaveStatus("saved");
     setPreview(null);
     setAlreadyClean(false);
@@ -583,7 +592,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     setAuditReport(null);
     hasAuditReportRef.current = false;
     setIsAuditStale(false);
-    setZoomState("fit-page");
     setVisiblePage(1);
   };
 
@@ -598,7 +606,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     });
   };
 
-  const createAndOpenDocument = async (input?: { title?: string; content?: DocNode; skipContent?: boolean; documentSettings?: DocumentStudioSettings }) => {
+  const createAndOpenDocument = async (input?: { title?: string; content?: DocNode; skipContent?: boolean; documentSettings?: DocumentStudioSettings; minimumPages?: number }) => {
     const library = libraryRef.current;
     if (!library) return;
     try {
@@ -608,9 +616,9 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
       const record = await library.createDocument({
         title: input?.title ?? defaultDocumentTitle(isUrRef.current),
         content: input?.content ?? emptyDocumentContent(dir),
-        documentSettings: input?.documentSettings ?? defaultDocumentSettings(),
+        documentSettings: withStudioOpeningMargins(input?.documentSettings ?? defaultDocumentSettings()),
       });
-      applyRecordToEditor(record, { skipContent: input?.skipContent });
+      applyRecordToEditor(record, { skipContent: input?.skipContent, minimumPages: input?.minimumPages });
       await refreshLibraryList(library);
     } catch (err) {
       console.error("Failed to create document:", err);
@@ -1852,6 +1860,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
             onZoomPercentChange={onZoomPercentChange}
             columnCount={columnCount}
             columnGutterMm={columnGutterMm}
+            minimumPages={minimumPages}
           />
             </div>
           </div>

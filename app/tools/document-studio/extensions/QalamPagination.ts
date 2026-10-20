@@ -32,7 +32,7 @@ export const QALAM_PAGINATION_COUNT_META = "qalamPaginationPageCount";
 export const QALAM_PAGINATION_ATTR = "data-qalam-pagination";
 export const QALAM_PAGINATION_CLASS = "qalam-pagination";
 export const QALAM_PAGE_UNIT_ATTR = "data-studio-page-sheet";
-export const QALAM_CANVAS_COLOR = "#F3F4F6";
+export const QALAM_CANVAS_COLOR = "#FFFFFF";
 export const qalamPaginationKey = new PluginKey<QalamPaginationPluginState>(QALAM_PAGINATION_PLUGIN);
 
 export type QalamPaginationGeometry = {
@@ -45,6 +45,8 @@ export type QalamPaginationGeometry = {
   marginRightPx: number;
   gapPx: number;
   canvasColor: string;
+  /** Blank sheets to keep even when the text has not filled them yet. */
+  minimumPages: number;
 };
 
 export type QalamPaginationPluginState = {
@@ -63,6 +65,7 @@ const DISABLED: QalamPaginationGeometry = {
   marginRightPx: 0,
   gapPx: PAGE_STACK_GAP_PX,
   canvasColor: QALAM_CANVAS_COLOR,
+  minimumPages: 1,
 };
 
 const STYLE_ATTR = "data-qalam-pagination-style";
@@ -85,9 +88,11 @@ export function paginationGeometryFromLayout(
   layout: ResolvedPageLayout,
   dir: "rtl" | "ltr",
   enabled: boolean,
+  minimumPages = 1,
 ): QalamPaginationGeometry {
   const physical = resolvePhysicalMargins(layout.margins, dir);
   const size = layoutNaturalSizePx(layout);
+  const pages = Math.max(1, Math.min(80, Math.floor(minimumPages) || 1));
   return {
     enabled,
     pageWidthPx: size.widthPx,
@@ -98,6 +103,7 @@ export function paginationGeometryFromLayout(
     marginRightPx: mmToPx(physical.rightMm),
     gapPx: PAGE_STACK_GAP_PX,
     canvasColor: QALAM_CANVAS_COLOR,
+    minimumPages: pages,
   };
 }
 
@@ -320,6 +326,8 @@ const MAX_PAGES = 80;
  * transform-affected getBoundingClientRect.
  */
 export function measureUnscaledPageCount(dom: HTMLElement, geometry: QalamPaginationGeometry, _currentCount: number): number {
+  const floor = Math.max(1, Math.min(MAX_PAGES, Math.floor(geometry.minimumPages) || 1));
+  const atLeast = (count: number) => Math.min(MAX_PAGES, Math.max(floor, count));
   if (!geometry.enabled || !(geometry.pageHeightPx > 0)) return 1;
   const contentH = contentAreaHeightPx(geometry);
   const contentBottom = lastContentBottom(dom);
@@ -327,7 +335,7 @@ export function measureUnscaledPageCount(dom: HTMLElement, geometry: QalamPagina
   const breakers = pagination?.querySelectorAll<HTMLElement>(`.${QALAM_PAGINATION_CLASS}-breaker`);
   if (!breakers || breakers.length === 0) {
     const pages = Math.max(1, Math.ceil(Math.max(contentBottom, 1) / contentH));
-    return Math.min(MAX_PAGES, pages);
+    return atLeast(pages);
   }
   const lastBreaker = breakers[breakers.length - 1];
   const breakerTop = offsetTopIn(lastBreaker, dom) ?? lastBreaker.offsetTop;
@@ -335,7 +343,7 @@ export function measureUnscaledPageCount(dom: HTMLElement, geometry: QalamPagina
   const overflow = contentBottom - breakerBottom;
   const existing = breakers.length;
   if (overflow > 1) {
-    return Math.min(MAX_PAGES, existing + extraPagesFromOverflow(overflow, contentH));
+    return atLeast(existing + extraPagesFromOverflow(overflow, contentH));
   }
   let extra = 0;
   for (let i = existing - 1; i >= 1; i--) {
@@ -346,8 +354,9 @@ export function measureUnscaledPageCount(dom: HTMLElement, geometry: QalamPagina
   }
   // Require two extra sheets before shrinking so zoom/layout jitter cannot
   // drop a real page. Same stickiness as the MIT source's removePage > 1.
-  if (extra > 1) return Math.max(1, existing - extra);
-  return existing;
+  // minimumPages still keeps a File → New sheet that has no text yet.
+  if (extra > 1) return atLeast(Math.max(1, existing - extra));
+  return atLeast(existing);
 }
 
 function geometryEqual(a: QalamPaginationGeometry, b: QalamPaginationGeometry): boolean {
@@ -360,7 +369,8 @@ function geometryEqual(a: QalamPaginationGeometry, b: QalamPaginationGeometry): 
     a.marginLeftPx === b.marginLeftPx &&
     a.marginRightPx === b.marginRightPx &&
     a.gapPx === b.gapPx &&
-    a.canvasColor === b.canvasColor
+    a.canvasColor === b.canvasColor &&
+    (a.minimumPages ?? 1) === (b.minimumPages ?? 1)
   );
 }
 

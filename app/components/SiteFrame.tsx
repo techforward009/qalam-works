@@ -13,7 +13,7 @@ export default function SiteFrame({ children }: { children: React.ReactNode }) {
 
   if (studio) {
     return (
-      <div data-studio-fullscreen="true" className="fixed inset-0 z-[60] flex min-h-0 flex-col bg-[#f7f6f3]">
+      <div data-studio-fullscreen="true" className="fixed inset-0 z-[60] flex min-h-0 flex-col bg-white">
         <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       </div>
     );

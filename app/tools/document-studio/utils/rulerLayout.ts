@@ -118,6 +118,14 @@ export function formatMarginDisplay(mm: number, unit: RulerUnit): string {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
+/** Drop labels, never ticks, when a major mark would be too narrow to read. */
+export function rulerLabelStride(pxPerMajor: number): number {
+  if (pxPerMajor >= 26) return 1;
+  if (pxPerMajor >= 14) return 2;
+  if (pxPerMajor >= 8) return 5;
+  return 10;
+}
+
 /** Physical ticks from the page origin (left/top). Never mirrored for RTL. */
 export function calculateRulerTicks(lengthPx: number, lengthMm: number, unit: RulerUnit): RulerTick[] {
   if (!(lengthPx > 0) || !(lengthMm > 0)) return [];
@@ -125,26 +133,31 @@ export function calculateRulerTicks(lengthPx: number, lengthMm: number, unit: Ru
   const ticks: RulerTick[] = [];
   if (unit === "in") {
     const pxPerInch = pxPerMm * MM_PER_INCH;
+    const stride = rulerLabelStride(pxPerInch);
     const eighths = Math.floor((lengthMm / MM_PER_INCH) * 8 + 0.01);
     for (let i = 0; i <= eighths; i++) {
       const offsetPx = (i / 8) * pxPerInch;
       if (offsetPx > lengthPx + 0.5) break;
       const major = i % 8 === 0;
       const half = i % 4 === 0;
+      const inches = i / 8;
       ticks.push({
         offsetPx,
         kind: major ? "major" : half ? "minor" : "micro",
-        label: major ? String(i / 8) : undefined,
+        label: major && inches % stride === 0 ? String(inches) : undefined,
       });
     }
     return ticks;
   }
+  const pxPerCm = pxPerMm * 10;
+  const stride = rulerLabelStride(pxPerCm);
   const steps = Math.floor(lengthMm + 0.01);
   for (let mm = 0; mm <= steps; mm++) {
     const offsetPx = mm * pxPerMm;
     if (offsetPx > lengthPx + 0.5) break;
     if (mm % 10 === 0) {
-      ticks.push({ offsetPx, kind: "major", label: String(mm / 10) });
+      const cm = mm / 10;
+      ticks.push({ offsetPx, kind: "major", label: cm % stride === 0 ? String(cm) : undefined });
     } else if (mm % 5 === 0) {
       ticks.push({ offsetPx, kind: "minor" });
     } else if (pxPerMm >= 2.4) {

@@ -96,6 +96,35 @@ export function defaultDocumentSettings(): DocumentStudioSettings {
   };
 }
 
+/**
+ * Studio opening margins match File → New (12.7 mm). The factory
+ * defaultDocumentSettings() stays 25.4 mm "normal" for PDF and tests.
+ * Only an untouched normal preset is upgraded.
+ */
+export function withStudioOpeningMargins(settings: DocumentStudioSettings): DocumentStudioSettings {
+  const margins = settings.page.margins;
+  const untouchedNormal =
+    margins.preset === "normal" &&
+    margins.topMm === 25.4 &&
+    margins.bottomMm === 25.4 &&
+    margins.startMm === 25.4 &&
+    margins.endMm === 25.4;
+  if (!untouchedNormal) return settings;
+  return {
+    ...settings,
+    page: {
+      ...settings.page,
+      margins: {
+        preset: "custom",
+        topMm: 12.7,
+        bottomMm: 12.7,
+        startMm: 12.7,
+        endMm: 12.7,
+      },
+    },
+  };
+}
+
 // Batch 16A correction (item 6) — canonical validators for the new
 // paragraph/heading schema attrs, reused both in the TipTap schema's
 // parseHTML (so a corrupted/imported document can't inject an extreme

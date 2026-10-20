@@ -113,7 +113,12 @@ describe("professional metric/inch ticks and vertical geometry", () => {
     expect(majors.length).toBeGreaterThan(2);
     expect(minors.length).toBeGreaterThan(2);
     expect(ticks[0]?.offsetPx).toBe(0);
-    expect(majors.some((tick) => tick.label === "1")).toBe(true);
+    expect(ticks[0]?.label).toBe("0");
+    expect(majors.some((tick) => tick.label === "1")).toBe(false);
+    expect(majors.some((tick) => tick.label === "5")).toBe(true);
+    const comfortable = calculateRulerTicks(1000, a4Normal.widthMm, "cm");
+    expect(comfortable.some((tick) => tick.label === "1")).toBe(true);
+    expect(comfortable.filter((tick) => tick.kind === "major").length).toBe(majors.length);
   });
 
   test("inch ticks have 1 inch majors and fractional minors", () => {

@@ -57,7 +57,7 @@ export default function DocumentStudioShell({
       ref={shellRef}
       className={
         fillWindow
-          ? "flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-[#f7f6f3]"
+          ? "flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white"
           : "flex min-h-80 max-w-full flex-col overflow-hidden rounded-2xl border border-[#1A3A2A]/10 bg-[#F4F1EA] shadow-[0_2px_20px_rgba(26,58,42,0.06)]"
       }
       data-studio-shell="true"
@@ -97,7 +97,7 @@ export default function DocumentStudioShell({
           </div>
         )}
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#f7f6f3]" data-studio-canvas-slot="true">{children}</div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white" data-studio-canvas-slot="true">{children}</div>
 
         {rightOpen && (
           <div

@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useLanguage } from "../../../lib/language-context";
 import {
   applyMenuEscape,
   CLOSED_MENU_STATE,
@@ -156,6 +157,39 @@ function MenuItems({
         );
       })}
     </>
+  );
+}
+
+function StudioLanguageSwitch() {
+  const { language, setLanguage } = useLanguage();
+  return (
+    <div
+      role="group"
+      aria-label="Choose language"
+      dir="ltr"
+      data-studio-language-switch="true"
+      className="me-1 inline-flex h-8 shrink-0 items-center rounded border border-[#1A3A2A]/25 bg-white p-0.5"
+    >
+      <button
+        type="button"
+        lang="en"
+        aria-pressed={language === "en"}
+        onClick={() => setLanguage("en")}
+        className={`grid h-7 min-w-8 place-items-center rounded px-1.5 text-[11px] font-semibold leading-none ${language === "en" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] hover:bg-[#F3F7F2]"}`}
+      >
+        EN
+      </button>
+      <button
+        type="button"
+        lang="ur"
+        dir="rtl"
+        aria-pressed={language === "ur"}
+        onClick={() => setLanguage("ur")}
+        className={`grid h-7 min-w-11 place-items-center rounded px-1.5 text-[13px] font-semibold leading-none ${language === "ur" ? "bg-[#1A3A2A] text-white" : "text-[#1A3A2A] hover:bg-[#F3F7F2]"}`}
+      >
+        اردو
+      </button>
+    </div>
   );
 }
 
@@ -406,6 +440,7 @@ export default function DocumentMenuBar({
           <span className="sm:hidden">{isUr ? "واپس" : "Back"}</span>
         </Link>
       ) : null}
+      {showHome ? <StudioLanguageSwitch /> : null}
       {DOCUMENT_MENU_BAR.map((menu) => {
         const open = openState.menuId === menu.id;
         return (

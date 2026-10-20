@@ -30,7 +30,6 @@ export default function DocumentCanvas({
   editor,
   dir,
   isUr,
-  isEditorEmpty,
   documentSettings,
   pageLayout,
   viewMode,
@@ -38,13 +37,13 @@ export default function DocumentCanvas({
   rulerVisible = true,
   rulerUnit = "cm",
   onPhysicalMarginChange,
-  onLoadExample,
   onWrapperClick,
   onPageCountChange,
   onVisiblePageChange,
   onZoomPercentChange,
   columnCount = 1,
   columnGutterMm = 0,
+  minimumPages = 1,
 }: {
   editor: Editor | null;
   dir: "rtl" | "ltr";
@@ -64,6 +63,7 @@ export default function DocumentCanvas({
   onZoomPercentChange?: (percent: number) => void;
   columnCount?: number;
   columnGutterMm?: number;
+  minimumPages?: number;
 }) {
   const isPages = viewMode === "pages";
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -87,7 +87,7 @@ export default function DocumentCanvas({
   }, []);
 
   const natural = layoutNaturalSizePx(pageLayout);
-  const geometry = paginationGeometryFromLayout(pageLayout, dir, isPages);
+  const geometry = paginationGeometryFromLayout(pageLayout, dir, isPages, minimumPages);
 
   useEffect(() => {
     applyQalamPagination(editor, geometry);
@@ -101,6 +101,7 @@ export default function DocumentCanvas({
     geometry.marginLeftPx,
     geometry.marginRightPx,
     geometry.gapPx,
+    geometry.minimumPages,
   ]);
 
   useEffect(() => {
@@ -110,13 +111,8 @@ export default function DocumentCanvas({
     }
     const sync = () => {
       const st = getQalamPaginationState(editor);
-      let breaks = 0;
-      editor.state.doc.descendants((node) => {
-        if (node.type.name === "pageBreak") breaks += 1;
-        if (node.type.name === "sectionBreak" && node.attrs?.type === "nextPage") breaks += 1;
-      });
       const flow = st?.geometry.enabled ? st.pageCount : 1;
-      setLivePageCount(Math.max(flow, breaks + 1));
+      setLivePageCount(Math.max(1, flow));
     };
     sync();
     editor.on("transaction", sync);
@@ -179,36 +175,12 @@ export default function DocumentCanvas({
   } as React.CSSProperties;
 
   const printMargins = resolvePhysicalMargins(pageLayout.margins, dir);
-  const emptyState = isEditorEmpty && editor && (
-    <div
-      className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 py-10"
-      aria-hidden={false}
-      data-studio-empty-hint="true"
-    >
-      <p className="mb-2 text-3xl text-[#B8935A]/80 select-none" aria-hidden>
-        ✎
-      </p>
-      <p className={`mb-5 text-sm sm:text-base text-gray-500 ${isUr ? "font-naskh" : ""}`} dir={dir}>
-        {isUr ? "یہاں لکھنا شروع کریں…" : "Start writing here…"}
-      </p>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onLoadExample();
-        }}
-        className={`pointer-events-auto h-10 px-5 rounded-lg text-sm font-semibold border border-[#1A3A2A]/20 bg-white text-[#1A3A2A] hover:bg-[#F7F5EF] shadow-sm ${isUr ? "font-naskh" : ""}`}
-      >
-        {isUr ? "مثال لوڈ کریں" : "Load Example"}
-      </button>
-    </div>
-  );
 
   return (
     <div
       ref={workspaceRef}
       className="h-full min-h-0 overflow-auto"
-      style={{ background: "#f7f6f3" }}
+      style={{ background: "#FFFFFF" }}
       data-studio-view={viewMode}
       data-studio-pasteboard="true"
       data-studio-print-root="true"
@@ -235,7 +207,7 @@ export default function DocumentCanvas({
       >
       <div
         className={`relative my-auto ${showRuler ? "flex flex-col" : ""}`}
-        style={{ width: "100%", maxWidth: `${visualWidth + rulerChrome}px` }}
+        style={{ width: visualWidth + rulerChrome, flexShrink: 0 }}
         dir="ltr"
         data-ruler-gutter={showRuler ? String(RULER_PAGE_GUTTER_PX) : undefined}
         data-studio-page-column="true"
@@ -390,7 +362,6 @@ export default function DocumentCanvas({
           role="textbox"
           aria-label={isUr ? "دستاویز ایڈیٹر" : "Document editor"}
         >
-          {emptyState}
           <div className={isPages ? undefined : "px-5 py-6 sm:px-8 sm:py-8"}>
             <EditorContent
               editor={editor}

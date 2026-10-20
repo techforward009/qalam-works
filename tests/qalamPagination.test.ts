@@ -17,6 +17,7 @@ import {
   contentAreaHeightPx,
   extraPagesFromOverflow,
   getQalamPaginationState,
+  measureUnscaledPageCount,
   pageStackHeightPx,
   paginationCss,
   paginationGeometryFromLayout,
@@ -76,6 +77,19 @@ describe("Qalam pagination foundation", () => {
     );
     expect(JSON.stringify(editor.getJSON())).toBe(before);
     expect(JSON.stringify(editor.getJSON())).not.toMatch(/pageBreak|qalamPagination|hardBreak/);
+    editor.destroy();
+  });
+
+  it("keeps a requested minimum page count when the document is empty", () => {
+    const { editor } = makeEditor();
+    const { layout } = a4Geometry("rtl");
+    const geometry = paginationGeometryFromLayout(layout, "rtl", true, 2);
+    expect(geometry.minimumPages).toBe(2);
+    const host = document.createElement("div");
+    expect(measureUnscaledPageCount(host, geometry, 1)).toBe(2);
+    applyQalamPagination(editor, geometry);
+    expect(JSON.stringify(editor.getJSON())).not.toMatch(/pageBreak/);
+    expect(editor.getText()).toBe("");
     editor.destroy();
   });
 
