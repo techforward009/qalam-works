@@ -30,8 +30,8 @@ export default function RomanUrduToUrduContent() {
             ur: "رومن اردو کو اردو رسم الخط میں کیسے تبدیل کروں؟",
           },
           a: {
-            en: "Type Roman Urdu in the editor on this page and convert it. Review any highlighted words, pick an alternative if needed, then copy the Urdu or continue in Document Studio.",
-            ur: "اس صفحے کے ایڈیٹر میں رومن اردو لکھیں اور تبدیل کریں۔ نشان زد الفاظ دیکھیں، ضرورت ہو تو متبادل چنیں، پھر اردو نقل کریں یا ڈاکومنٹ اسٹوڈیو میں جاری رکھیں۔",
+            en: "Type Roman Urdu in the editor on this page and convert it. Review any highlighted words, pick an alternative if needed, then copy the Urdu or continue in Qalam Page: Urdu Editor.",
+            ur: "اس صفحے کے ایڈیٹر میں رومن اردو لکھیں اور تبدیل کریں۔ نشان زد الفاظ دیکھیں، ضرورت ہو تو متبادل چنیں، پھر اردو نقل کریں یا قلم پیج: اردو ایڈیٹر میں جاری رکھیں۔",
           },
         },
         {
@@ -56,18 +56,18 @@ export default function RomanUrduToUrduContent() {
         },
         {
           q: {
-            en: "Can I keep editing the Urdu in Document Studio?",
-            ur: "کیا اردو کو ڈاکومنٹ اسٹوڈیو میں آگے ایڈٹ کر سکتا ہوں؟",
+            en: "Can I keep editing the Urdu in Qalam Page: Urdu Editor?",
+            ur: "کیا اردو کو قلم پیج: اردو ایڈیٹر میں آگے ایڈٹ کر سکتا ہوں؟",
           },
           a: {
-            en: "Yes. After you are satisfied with the conversion, continue in Document Studio to format the page, mix in English, and export PDF or DOCX.",
-            ur: "ہاں۔ تبدیلی مطمئن کن ہونے کے بعد ڈاکومنٹ اسٹوڈیو میں صفحہ ترتیب دیں، انگریزی ملائیں، اور PDF یا DOCX نکالیں۔",
+            en: "Yes. After you are satisfied with the conversion, continue in Qalam Page: Urdu Editor to format the page, mix in English, and export PDF or DOCX.",
+            ur: "ہاں۔ تبدیلی مطمئن کن ہونے کے بعد قلم پیج: اردو ایڈیٹر میں صفحہ ترتیب دیں، انگریزی ملائیں، اور PDF یا DOCX نکالیں۔",
           },
         },
       ]}
       related={[
-        { href: "/tools/roman-urdu-writer", label: { en: "Qalam Urdu Writer", ur: "قلم اردو رائٹر" } },
-        { href: "/tools/document-studio", label: { en: "Continue in Document Studio", ur: "ڈاکومنٹ اسٹوڈیو میں جاری رکھیں" } },
+        { href: "/tools/roman-urdu-writer", label: { en: "Roman Urdu to Urdu", ur: "رومن اردو سے اردو" } },
+        { href: "/tools/document-studio", label: { en: "Continue in Qalam Page: Urdu Editor", ur: "قلم پیج: اردو ایڈیٹر میں جاری رکھیں" } },
         { href: "/tools/urdu-roman-writer", label: { en: "Urdu to Roman", ur: "اردو سے رومن" } },
         { href: "/tools/urdu-text-to-pdf", label: { en: "Urdu text to PDF", ur: "اردو متن سے PDF" } },
       ]}

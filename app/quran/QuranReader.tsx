@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
@@ -228,7 +228,13 @@ export default function QuranReader({
 
   const pages = pageCount();
 
+  const initialReaderScroll = useRef(true);
   useEffect(() => {
+    if (initialReaderScroll.current) {
+      initialReaderScroll.current = false;
+      document.querySelector(".quran-reader-container")?.scrollIntoView({ block: "start", behavior: "instant" });
+      return;
+    }
     document
       .getElementById(
         `ayah-${surah}-${ayah}`,
@@ -496,7 +502,7 @@ export default function QuranReader({
       className="quran-reader min-h-screen"
       dir="ltr"
     >
-      <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4">
+      <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4" style={{scrollMarginTop:"var(--site-header-height, 128px)"}}>
         <EditionTopBar editionId="qalam-indopak" />
         <div
           className="quran-reader-layout grid grid-cols-1 items-start gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-4"

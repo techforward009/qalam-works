@@ -1,9 +1,14 @@
 import type { MetadataRoute } from "next";
 
+import { calendarYear, hijriYear } from "./lib/toolCatalog";
+
 const BASE = "https://www.qalamworks.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
+    { url: `${BASE}/today`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE}/calendar/${calendarYear}`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/hijri/${hijriYear}`, changeFrequency: "monthly", priority: 0.7 },
     { url: BASE, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/about`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/services`, changeFrequency: "monthly", priority: 0.8 },
@@ -17,7 +22,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/tools/quality-checker`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/unicode-standardizer`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/arabic-diacritics`, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/tools/khateeb-studio`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/quran`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/quran/1/1`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/quran/indopak-digital-khatt/1/1`, changeFrequency: "monthly", priority: 0.6 },

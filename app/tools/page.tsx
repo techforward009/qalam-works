@@ -4,7 +4,7 @@ import AllToolsContent from "./AllToolsContent";
 export const metadata: Metadata = {
   title: "All Tools — Qalam Works | تمام ٹولز",
   description:
-    "Every Qalam Works tool in one place: Document Studio, Translation Studio, Urdu Text Cleaner, Roman Urdu converter, Unicode Fixer, Quality Check, WhatsApp Formatter, Invoice Generator, Date Converter, and Calendar Maker.",
+    "Explore Qalam Page: Urdu Editor, Roman Urdu to Urdu, Fix Copied Urdu Text, Find Mistakes in Urdu Text, Urdu for WhatsApp, Invoice Maker, Date Converter, Moon Sighting and more. لکھنے، اردو متن درست کرنے، تاریخوں اور دیگر سہولتوں کے تمام اوزار ایک جگہ۔",
   alternates: { canonical: "/tools" },
 };
 

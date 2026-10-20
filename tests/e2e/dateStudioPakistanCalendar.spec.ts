@@ -5,6 +5,10 @@ import { test, expect } from "@playwright/test";
  * Runs in production-built Next.js on both desktop and mobile Chromium.
  */
 test.describe("Pakistan Hijri public-facing date acceptance", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("qalam-site-language", "en"));
+  });
+
   test("uses the official 10 Ramadan 1447 date on daily and monthly views", async ({ page }, testInfo) => {
     await page.goto("/date/2026-02-28");
     await expect(page.getByText("Pakistan official Hijri date")).toBeVisible();

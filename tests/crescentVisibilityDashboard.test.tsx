@@ -21,8 +21,8 @@ describe("crescent visibility dashboard", () => {
   afterEach(() => { locale.language = "en"; locations.forEach((location, index) => { location.prediction.criterion.qualifies = index === 0; }); yallopLocations.forEach((location, index) => { location.prediction.criterion.visibilityClass = index === 0 ? "A" : "C"; location.prediction.acceptedByPolicy = index === 0; }); Object.assign(yallopClassCounts, { A: 1, B: 0, C: 7, D: 0, E: 0, F: 0 }); });
   it("presents national science without a public city selector", () => {
     render(<CrescentVisibilityContent />);
-    expect(screen.getByRole("heading", { name: "Pakistan Crescent Visibility" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Back to Date Studio/i }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
+    expect(screen.getByRole("heading", { name: "Moon Sighting" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Back to Date Converter/i }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
     expect(screen.getByText("National scientific and official outlook")).toBeTruthy();
     expect(screen.getAllByText("1 of 8 prescribed national observation locations meet the scientific crescent-visibility criterion.").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "Pakistan national scientific criterion" }).length).toBeGreaterThan(0);
@@ -43,8 +43,8 @@ describe("crescent visibility dashboard", () => {
   it("keeps diagnostics in scientific details and national Urdu wording", () => {
     locale.language = "ur";
     render(<CrescentVisibilityContent />);
-    expect(screen.getByRole("heading", { name: "پاکستان میں رؤیتِ ہلال" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /ڈیٹ اسٹوڈیو پر واپس/ }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
+    expect(screen.getByRole("heading", { name: "رؤیتِ ہلال" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /تاریخ کنورٹر پر واپس/ }).getAttribute("href")).toBe("/tools/date-converter#date-studio");
     expect(screen.getByText("قومی سائنسی اور سرکاری جائزہ")).toBeTruthy();
     expect(screen.getAllByText("8 میں سے 1 مقررہ قومی مشاہداتی مقامات رؤیتِ ہلال کے سائنسی معیار پر پورا اترتے ہیں۔").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { name: "پاکستانی قومی سائنسی معیار" }).length).toBeGreaterThan(0);

@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import InvoiceGeneratorContent from "./InvoiceGeneratorContent";
 
 export const metadata: Metadata = {
-  title: "Free Invoice Generator Pakistan | انوائس جنریٹر | Qalam Works",
-  description:
-    "Create invoices for Pakistan in PKR or other currencies, in Urdu or English. Download a clean PDF with this free invoice generator. No sign-up required.",
+  title: "Invoice Maker | انوائس بنائیں | Qalam Works",
+  description: "Invoice Maker: create free invoices for Pakistan in Urdu or English, in PKR or other currencies, and download a PDF. No sign-up required. انوائس بنائیں: اردو یا انگریزی میں پاکستانی روپے یا دوسری کرنسی کی انوائس تیار کریں اور پی ڈی ایف حاصل کریں۔",
   alternates: {
     canonical: "/tools/invoice-generator",
   },
@@ -14,7 +13,7 @@ export default function InvoiceGeneratorPage() {
   const application = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "Qalam Works Invoice Generator",
+    name: "Qalam Works Invoice Maker",
     url: "https://www.qalamworks.com/tools/invoice-generator",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Any",

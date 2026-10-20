@@ -22,7 +22,7 @@ export default function FeedbackInvitation(){
  const tool:FeedbackTool|undefined=pathname.startsWith("/tools/")?mapping[slug]??"other":
    (pathname==="/quran"||pathname.startsWith("/quran/"))?"quran-editions":
    (pathname==="/services"||pathname.startsWith("/services/"))?"services":undefined;
- if(!tool)return null;
+ if(!tool || pathname === "/tools/research-studio")return null;
  return <div className="site-container py-10">
  <section aria-label="رائے و تجاویز" className="relative isolate rounded-3xl border-2 border-teal-300 bg-gradient-to-l from-[#087c7a] via-[#135a79] to-[#123a62] px-6 py-9 text-white shadow-[0_18px_42px_rgba(12,68,97,0.24)] md:px-10" dir={dir} lang={language}>
 

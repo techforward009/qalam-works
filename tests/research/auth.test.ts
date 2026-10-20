@@ -4,6 +4,7 @@ import { DELETE, GET, POST } from "../../app/api/research/auth/route";
 import { POST as upload } from "../../app/api/research/documents/route";
 import { POST as ask } from "../../app/api/research/ask/route";
 import { GET as page } from "../../app/api/research/documents/[id]/pages/[page]/route";
+import { GET as libraryGET, POST as libraryPOST } from "../../app/api/research/book-library/route";
 import { setResearchBlobClientForTests } from "../../app/api/research/vercelResearchBlob";
 import {
   RESEARCH_SESSION_COOKIE,
@@ -296,9 +297,9 @@ describe("research owner authentication", () => {
     });
   });
 
-  test("missing configuration does not open the document routes", async () => {
-    delete process.env.QALAM_RESEARCH_ACCESS_PASSWORD;
-    delete process.env.QALAM_RESEARCH_SESSION_SECRET;
+  test.each(["both", "password", "secret"])("missing %s configuration refuses every research data route", async missing => {
+    if (missing !== "secret") delete process.env.QALAM_RESEARCH_ACCESS_PASSWORD;
+    if (missing !== "password") delete process.env.QALAM_RESEARCH_SESSION_SECRET;
     const blob = callsBlob();
     setResearchBlobClientForTests(blob.client);
     const cookie = `${RESEARCH_SESSION_COOKIE}=${createSessionToken(TEST_RESEARCH_SECRET)}`;
@@ -332,6 +333,11 @@ describe("research owner authentication", () => {
       { params: Promise.resolve({ id: "doc_missing", page: "1" }) },
     );
     expect(opened.status).toBe(503);
+    for (const [method, handler] of [["GET", libraryGET], ["POST", libraryPOST]] as const) {
+      const response = await handler(new NextRequest("http://localhost/api/research/book-library", { method, headers: { cookie } }));
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ error: "Research access is not configured.", code: "auth_not_configured" });
+    }
     expect(blob.calls()).toBe(0);
   });
 });

@@ -299,7 +299,7 @@ export function buildDocumentAuditReport(doc: DocNode, context?: DocumentAnalysi
       descriptionUrdu:
         "متن میں عربی رسم الخط کے حروف (ي، ى، ك، أ، إ) اردو تحریر میں شامل ہیں۔ یونیکوڈ اسٹینڈرڈائزر سے درست کریں۔",
       descriptionEnglish:
-        "Text contains Arabic-form letters (ي، ى، ك، أ، إ) in an Urdu document. Fix with the Unicode Standardizer.",
+        "Text contains Arabic-form letters (ي، ى، ك، أ، إ) in an Urdu document. Fix with the Urdu Unicode Fixer.",
     });
   }
 

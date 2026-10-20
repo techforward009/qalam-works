@@ -46,7 +46,7 @@ describe("Research Studio auth gate", () => {
       code: "auth_not_configured",
     }, 503)));
     renderGate();
-    expect(await screen.findByRole("alert")).toHaveProperty("textContent", "Research access is not configured.");
+    expect(await screen.findByRole("alert")).toHaveProperty("textContent", "Research Studio is locked. Access is not configured.");
     expect(screen.queryByLabelText("Password")).toBeNull();
     expect(screen.queryByRole("button", { name: "Ask" })).toBeNull();
   });
