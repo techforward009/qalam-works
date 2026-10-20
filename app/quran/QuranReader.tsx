@@ -935,35 +935,10 @@ export default function QuranReader({
               </label>
             </SidebarSection>
 
-            <div
-              className="border-t border-[#d0d4cc] bg-white px-2 py-2"
-              dir={
-                interfaceDir
-              }
-              lang={
-                interfaceLang
-              }
-            >
-              <p
-                className={`text-[10px] leading-5 text-[#777d74] ${
-                  language ===
-                  "ur"
-                    ? "font-naskh"
-                    : ""
-                }`}
-              >
-                {
-                  copy.keysAyah
-                }
-                <br />
-                {
-                  copy.keysPage
-                }
-                <br />
-                {
-                  copy.keysSura
-                }
-              </p>
+            <div className="border-t border-[#d0d4cc] bg-white px-2 py-2" dir={interfaceDir} lang={interfaceLang}>
+              <p className="text-[10px] leading-5">{copy.keysAyah}</p>
+              <p className="text-[10px] leading-5">{copy.keysPage}</p>
+              <p className="text-[10px] leading-5">{copy.keysSura}</p>
             </div>
           </aside>
 
@@ -1290,11 +1265,9 @@ function QuranPageSurface({
                               "clone",
                           }}
                         >
-                          {
-                            item.text
-                          }
+                          {editionId === "digital-khatt" ? splitLastWord(item.text).prefix : item.text}
                         </span>
-                        <span className="inline-flex items-center whitespace-nowrap">{editionId === "digital-khatt" && <DigitalKhattAyahMarker ayah={item.ayah} />}
+                        <span className="inline-flex items-center whitespace-nowrap">{editionId === "digital-khatt" && <><span className="quran-ayah inline">{splitLastWord(item.text).last}</span><DigitalKhattAyahMarker ayah={item.ayah} /></>}
                         <button type="button" className="mx-1 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(
                             (editionId === "digital-khatt" ? digitalReaderModel.getReaderAyah(item.surah,item.ayah) : ahmedReaderModel.getReaderAyah(item.surah,item.ayah))?.text ?? item.text
                           )}><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button></span>
@@ -1575,6 +1548,11 @@ function Select({
       </select>
     </label>
   );
+}
+
+function splitLastWord(text:string):{prefix:string;last:string}{
+  const match=/^(.*?)([^\\s]+)$/su.exec(text);
+  return match ? {prefix:match[1],last:match[2]} : {prefix:"",last:text};
 }
 
 function DigitalKhattAyahMarker({ayah}:{ayah:number}) {
