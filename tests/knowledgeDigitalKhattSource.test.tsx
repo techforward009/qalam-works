@@ -7,12 +7,22 @@ import corpus from "../public/quran/indopak-digital-khatt.json";
 import manifest from "../public/quran/indopak-digital-khatt-manifest.json";
 import { digitalKhattKnowledgeAyahs, DIGITAL_KHATT_KNOWLEDGE_SHA256 } from "../app/lib/knowledge/digitalKhattKnowledge";
 import { completeQuranTranslationFor } from "../app/lib/knowledge/completeQuranTranslations";
+import { quranTranslationFor as khateebTranslationFor } from "../app/tools/khateeb-studio/engine/quranTranslationProvider";
 import { retrieveKnowledge } from "../app/lib/knowledge/retrieval";
 import BookPassageText from "../app/tools/khateeb-studio/BookPassageText";
 
 afterEach(cleanup);
 
 describe("Ask the books Quran — Digital Khatt source and matching script", () => {
+ it("preserves the published translator's childhood meaning and exact typography in both source stores", () => {
+   const reader = completeQuranTranslationFor(17, 24, "ur");
+   const khateeb = khateebTranslationFor(17, 24, "ur");
+   expect(reader).toBe(khateeb);
+   expect(reader).toContain("ان پر رحم فرما جس طرح انہوں نے مجھے بچپن میں");
+   expect(reader).not.toContain("پچپن");
+   expect(reader).not.toContain("فرماجس");
+   expect(completeQuranTranslationFor(17, 24, "en")).toContain("small [child]");
+ });
  it("uses precisely the unchanged shipped Digital Khatt corpus and its verified SHA-256", () => {
    const actual = createHash("sha256").update(readFileSync("public/quran/indopak-digital-khatt.json")).digest("hex");
    expect(actual).toBe(manifest.textSha256);

@@ -141,8 +141,10 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
           {p.quranEdition === "digital-khatt" ? <p className="my-2 text-xs text-gray-600 dark:text-gray-300">{ur ? "قرآنی نسخہ: ڈیجیٹل خط (انڈو پاک)" : "Quran edition: Digital Khatt IndoPak"}</p> : null}
           <BookPassageText text={p.text} language={p.language} quran={p.collection === "quran"} digitalKhatt={p.quranEdition === "digital-khatt"} />
           {p.suppliedTranslation ? <div className="mt-3 border-t border-emerald-900/15 pt-3"><p className="mb-2 text-xs">{ur ? "تصدیق شدہ فراہم کردہ ترجمہ" : "Verified supplied translation"} — {p.suppliedTranslation.translator}{p.suppliedTranslation.source ? ` — ${p.suppliedTranslation.source}` : ""}</p><BookPassageText text={p.suppliedTranslation.text} language={p.suppliedTranslation.language} /></div> : null}
-          <button type="button" className="mt-3 text-sm text-emerald-800 underline dark:text-emerald-200" onClick={() => void openSource(p)}>{ur ? "اصل ماخذ اور سیاق دیکھیں" : "Open original source and context"}</button>
-          {p.quranEdition === "digital-khatt" && p.quranLocation ? <a className="ms-3 mt-3 inline-block text-sm text-emerald-800 underline dark:text-emerald-200" href={`/quran/indopak-digital-khatt/${p.quranLocation.surah}/${p.quranLocation.ayah}`}>{ur ? "ڈیجیٹل خط میں آیت کھولیں" : "Open verse in Digital Khatt reader"}</a> : null}
+          <div data-testid="knowledge-source-actions" className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <button type="button" className="text-sm text-emerald-800 underline dark:text-emerald-200" onClick={() => void openSource(p)}>{ur ? "اصل ماخذ اور سیاق دیکھیں" : "Open original source and context"}</button>
+            {p.quranEdition === "digital-khatt" && p.quranLocation ? <a className="text-sm text-emerald-800 underline dark:text-emerald-200" href={`/quran/indopak-digital-khatt/${p.quranLocation.surah}/${p.quranLocation.ayah}`}>{ur ? "ڈیجیٹل خط میں آیت کھولیں" : "Open verse in Digital Khatt reader"}</a> : null}
+          </div>
         </div>)}
       </article>)}
       {result.passages.length ? <div className="flex flex-wrap items-end gap-3">
