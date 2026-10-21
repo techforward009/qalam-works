@@ -1,0 +1,32 @@
+name: Khateeb Book Reader R2 — Review Only
+
+on:
+  push:
+    branches:
+      - feature/khateeb-book-reader-r2-revival-20261021
+  pull_request:
+    paths:
+      - "app/api/khateeb/book-reader/**"
+      - "app/lib/knowledge/bookReader*"
+      - "app/tools/khateeb-studio/BookReader*"
+      - "app/tools/khateeb-studio/library/**"
+      - "tests/bookReader*"
+      - "tests/khateebBookReaderR2Entry.test.ts"
+
+permissions:
+  contents: read
+
+jobs:
+  reader-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verified source and measured pagination tests
+        run: npx vitest run tests/bookReaderR2Route.test.ts tests/bookReaderModel.test.ts tests/bookReaderPagination.test.ts tests/bookReaderProgress.test.ts tests/bookReaderTranslationCopy.test.ts tests/khateebBookReaderR2Entry.test.ts
+      - name: Full TypeScript integrity
+        run: npx tsc --noEmit

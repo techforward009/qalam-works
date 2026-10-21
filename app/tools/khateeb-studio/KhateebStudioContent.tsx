@@ -66,6 +66,7 @@ import SessionDeliveryHistory from "./SessionDeliveryHistory";
 import type { CustomSermonProject } from "./engine/customSermonProject";
 import CustomSermonWorkspace from "./CustomSermonWorkspace";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 const PublicBookLibrary = dynamic(() => import("./BookLibraryPanel"), { ssr: false });
 import KhateebScriptText from "./KhateebScriptText";
 import KhateebPrimaryArabic from "./KhateebPrimaryArabic";
@@ -600,8 +601,8 @@ export default function KhateebStudioContent({
           font-display: swap;
         }
 
-        .khateeb-muhammadi-quranic {
-          font-family: "Muhammadi Quranic", var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif !important;
+        .khateeb-digital-khatt-quranic {
+          font-family: "Digital Khatt IndoPak Book", var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif !important;
           font-size: 1.08em;
           line-height: 1.85;
           unicode-bidi: isolate;
@@ -793,7 +794,7 @@ export default function KhateebStudioContent({
             text-decoration: none !important;
           }
 
-          .khateeb-muhammadi-quranic {
+          .khateeb-digital-khatt-quranic {
             color: black !important;
           }
         }
@@ -813,6 +814,13 @@ export default function KhateebStudioContent({
               ? "موضوع یا مناسبت سے مستند مآخذ کی روشنی میں مجلس و خطبہ کی تیاری کے لیے ایک مربوط ماحول۔"
               : "Prepare by topic or occasion, review source-led directions, and build a usable sermon outline."}
           </p>
+
+          <div className="mx-auto mt-5 flex justify-center">
+            <Link href="/tools/khateeb-studio/library" className="inline-flex items-center gap-2 rounded-xl border border-[#31513a]/40 bg-[#f5f2e9] px-5 py-3 font-semibold text-[#1A3A2A] shadow-sm hover:bg-[#e9e8d9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:bg-[#1b3323] dark:text-white">
+              <BookOpen className="h-5 w-5" />
+              {ur ? "کتاب خانہ — مکمل کتابیں پڑھیں" : "Book library — read full books"}
+            </Link>
+          </div>
 
           <div className="mx-auto mt-6 max-w-3xl text-start">
             <div className="mb-2 text-sm font-bold text-[#1A3A2A] dark:text-[#e7eee9]">
