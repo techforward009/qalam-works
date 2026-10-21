@@ -29,7 +29,7 @@ export function isBookLocator(record: BookRecord, unit: BookSearchUnit, index: n
  const normalized = normalizeBookSearch(text);
  if (!normalized || text.length < 5) return true;
  // Translator's notes are metadata, not sayings, sermons or prayers.
- if (/^(?:[0-9۰-۹٠-٩]+؂|\\[[0-9۰-۹٠-٩]+\\](?:[۔.]|\\s)|[؂٭]+|[–—-]*[٭*]{2,})/u.test(text)) return true;
+ if (/^(?:[0-9۰-۹٠-٩]+؂|\[[0-9۰-۹٠-٩]+\](?:[۔.]|\s)|[؂٭]+|[–—-]*[٭*]{2,})/u.test(text)) return true;
  if (record.paragraphs.length > 1 && index === 0 && text.length < 150 && /^[(（][0-9۰-۹٠-٩]+[)）]/u.test(text)) return true;
  if (record.paragraphs.length > 1 && text.length < 140 &&
      normalized === normalizeBookSearch(cleanBookTitle(record.title))) return true;
