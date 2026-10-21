@@ -34,7 +34,7 @@ type SourceManifest = {
   searchIndex: { key: string; bytes: number; sha256: string };
   records: RecordEntry[];
 };
-type SearchRow = Omit<BookRecord, "paragraphs"> & { paragraphs: { id: string; text: string }[] };
+type SearchRow = Omit<BookRecord, "paragraphs" | "sourceId"> & { sourceId?: string; paragraphs: { id: string; text: string }[] };
 
 export class BookLibraryR2Unavailable extends Error {
   constructor() { super("book-library-source-unavailable"); }
@@ -187,6 +187,68 @@ async function sourceManifest(root: RootManifest, sourceId: string): Promise<Sou
   return manifest;
 }
 
+/**
+ * The immutable R2 search indexes intentionally omit sourceId to avoid repeating
+ * the enclosing source identity in every record. Restore it from the verified
+ * source manifest and reject any contradictory inline value.
+ */
+export function hydrateBookSearchRows(rows: SearchRow[], source: BookSource): BookRecord[] {
+  if (rows.some(row => row.sourceId !== undefined && row.sourceId !== source.id)) {
+    throw new BookLibraryR2Unavailable();
+  }
+  const records: BookRecord[] = rows.map(row => ({
+    id: row.id,
+    sourceId: source.id,
+    book: row.book,
+    language: row.language,
+    kind: row.kind,
+    number: row.number,
+    title: row.title,
+    reference: row.reference,
+    paragraphs: row.paragraphs,
+    textSha256: row.textSha256,
+  }));
+  try { validateBookRecords(records, source); }
+  catch { throw new BookLibraryR2Unavailable(); }
+  return records;
+}
+
+/**
+ * Kafi's full-source validator checks paragraph numbering and book headings
+ * across consecutive records. A random-access record begins at an arbitrary
+ * paragraph, so validate all record-local invariants without assuming that
+ * the selected record is the first record of the volume.
+ */
+export function validateStandaloneRecord(record: BookRecord, source: BookSource): void {
+  if (source.book !== "kafi") {
+    validateBookRecords([record], source);
+    return;
+  }
+  const reference = record.reference;
+  const kafi = reference?.kafi;
+  const paragraphs = record.paragraphs;
+  const offsets = kafi?.sourceParagraphs;
+  const volume = Number(source.id.match(/^kafi-v([1-8])-ar$/)?.[1]);
+  if (!record.id.startsWith(source.id + ":") ||
+      record.sourceId !== source.id || record.book !== source.book || record.language !== source.language ||
+      typeof record.title !== "string" || !["chapter", "section", "front-matter"].includes(record.kind) ||
+      !Number.isInteger(record.number) || Number(record.number) < 0 ||
+      reference?.sourceId !== source.id || reference.section !== record.kind || reference.number !== record.number ||
+      typeof reference.locator !== "string" ||
+      (reference.printPage !== null && (!Number.isInteger(reference.printPage) || reference.printPage < 1)) ||
+      kafi?.volume !== volume ||
+      ![kafi?.bookTitle, kafi?.chapterTitle, kafi?.sectionTitle].every(
+        title => title === null || typeof title === "string" && title.length > 0 && title.length <= 300
+      ) ||
+      !Array.isArray(paragraphs) || !paragraphs.length || paragraphs.length > 5000 ||
+      !Array.isArray(offsets) || offsets.length !== paragraphs.length ||
+      offsets.some((n, i) => !Number.isInteger(n) || n < 1 || i > 0 && n !== offsets[i - 1] + 1) ||
+      paragraphs.some((p, i) => p?.id !== `${record.id}:p${i + 1}` || typeof p.text !== "string") ||
+      record.textSha256 !== digest(Buffer.from(paragraphs.map(p => p.text).join("\n"), "utf8"))) {
+    throw new BookLibraryR2Unavailable();
+  }
+}
+
 export async function bookLibraryR2IsSelected(): Promise<boolean> {
   return (process.env.QALAM_BOOK_LIBRARY_READ_BACKEND ?? "").trim() === "cloudflare-r2";
 }
@@ -207,7 +269,7 @@ export async function readBookRecordFromR2(sourceId: string, recordId: string): 
   }
   const bytes = await getVerified(`/v1/${root.revision}/sources/${sourceId}/records/${expectedIdHash}.json.br`, row, MAX_RECORD_COMPRESSED_BYTES);
   const record = decompressJson<BookRecord>(bytes, MAX_SOURCE_RAW_BYTES);
-  try { validateBookRecords([record], sourceInfo.source); }
+  try { validateStandaloneRecord(record, sourceInfo.source); }
   catch { throw new BookLibraryR2Unavailable(); }
   if (record.id !== row.id || record.paragraphs.length !== row.paragraphIds.length ||
       record.paragraphs.some((paragraph, index) => paragraph.id !== row.paragraphIds[index])) throw new BookLibraryR2Unavailable();
@@ -220,20 +282,7 @@ export async function readBookSourceFromR2(sourceId: string): Promise<{ records:
   const bytes = await getVerified(`/v1/${root.revision}/sources/${sourceId}/search-index.json.br`, sourceInfo.searchIndex, MAX_SOURCE_COMPRESSED_BYTES);
   const rows = decompressJson<SearchRow[]>(bytes, MAX_SOURCE_RAW_BYTES);
   if (!Array.isArray(rows) || rows.length !== sourceInfo.recordCount) throw new BookLibraryR2Unavailable();
-  const records: BookRecord[] = rows.map(row => ({
-    id: row.id,
-    sourceId: row.sourceId,
-    book: row.book,
-    language: row.language,
-    kind: row.kind,
-    number: row.number,
-    title: row.title,
-    reference: row.reference,
-    paragraphs: row.paragraphs,
-    textSha256: row.textSha256,
-  }));
-  try { validateBookRecords(records, sourceInfo.source); }
-  catch { throw new BookLibraryR2Unavailable(); }
+  const records = hydrateBookSearchRows(rows, sourceInfo.source);
   return { records, source: sourceInfo.source };
 }
 
