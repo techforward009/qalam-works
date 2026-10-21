@@ -20,5 +20,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Tafsir mirror auth and safety (no live blob)
         run: npx vitest run tests/tafsirMirror.test.ts tests/tafsirR2Worker.test.ts tests/tafsirShardsR2.test.ts tests/quranReaderUiFixes.test.ts
+      - name: Ask Books R2 backend, source integrity and UI safety
+        run: npx vitest run tests/knowledgeR2Backend.test.ts tests/knowledgeLongSourceUi.test.tsx tests/research/failClosed.test.tsx
       - name: TypeScript
         run: npx tsc --noEmit
