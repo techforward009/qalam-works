@@ -68,7 +68,7 @@ const samples = [
   const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
   mobile.on("pageerror",e=>report.errors.push("mobile: "+e.message));
   await mobile.goto("http://127.0.0.1:3000/quran/indopak-digital-khatt/1/1",{waitUntil:"domcontentloaded",timeout:90000});
-  const mobileQuran=mobile.locator("article > div").first();
+  const mobileQuran=mobile.locator("[data-quran-edition=\"digital-khatt\"] .quran-page .quran-content").first();
   await mobileQuran.waitFor({state:"visible",timeout:30000});
   await mobile.evaluate(async()=>{await document.fonts.load('25px "DigitalKhattIndoPak"');await document.fonts.ready});
   await mobile.screenshot({path:path.join(out,"digital-khatt-mobile.png"),fullPage:true});
@@ -80,10 +80,10 @@ const samples = [
   await mobileCdp.send("DOM.enable");
   await mobileCdp.send("CSS.enable");
   const mobileDocument=await mobileCdp.send("DOM.getDocument",{depth:-1,pierce:true});
-  const mobileNode=await mobileCdp.send("DOM.querySelector",{nodeId:mobileDocument.root.nodeId,selector:"article > div"});
+  const mobileNode=await mobileCdp.send("DOM.querySelector",{nodeId:mobileDocument.root.nodeId,selector:"[data-quran-edition=\"digital-khatt\"] .quran-page .quran-content"});
   const mobileFonts=mobileNode.nodeId?(await mobileCdp.send("CSS.getPlatformFontsForNode",{nodeId:mobileNode.nodeId})).fonts||[]:[];
   const digitalPainted=mobileFonts.some(f=>/digital.?khatt/i.test(f.familyName)&&f.glyphCount>0);
-  report.mobileDigitalKhatt={status:mobileMetrics.align==="justify"&&mobileMetrics.direction==="rtl"&&mobileMetrics.documentWidth<=mobileMetrics.viewportWidth&&mobileMetrics.left>=0&&mobileMetrics.right<=mobileMetrics.viewportWidth&&digitalPainted?"PASS":"FAIL",metrics:mobileMetrics,renderedFonts:mobileFonts};
+  report.mobileDigitalKhatt={status:await mobile.locator("[data-quran-edition=\"digital-khatt\"] .quran-page .quran-flow").first().evaluate(el=>getComputedStyle(el).textAlign==="justify")&&mobileMetrics.direction==="rtl"&&mobileMetrics.documentWidth<=mobileMetrics.viewportWidth&&mobileMetrics.left>=0&&mobileMetrics.right<=mobileMetrics.viewportWidth&&digitalPainted?"PASS":"FAIL",metrics:mobileMetrics,renderedFonts:mobileFonts};
   await mobile.close();
   report.overall=all.every(x=>x.status==="PASS")&&report.mobileDigitalKhatt.status==="PASS"?"PASS":"FAIL";
  }catch(e){report.overall="FAIL";report.errors.push(String(e.stack||e));}

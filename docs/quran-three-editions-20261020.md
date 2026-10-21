@@ -1,0 +1,13 @@
+# Quran three public editions — draft migration audit
+- Base: latest main, not PR #102, #103 or #104.
+- Default route: /quran -> Madinah; legacy /quran/:surah/:ayah -> DigitalKhatt same location.
+- Surah anchor hash /quran#surah:ayah also redirects to DigitalKhatt.
+- Order: Madinah (QCF V2 / QUL, Arabic-only), DigitalKhatt (IndoPak Unicode + its OFL font, translation and tafsir), Ahmed Grafics (original unchanged Indo-Pak source and visible credit, approved Digital Khatt Book regular Arabic font).
+- DigitalKhatt source: existing public/quran/indopak-digital-khatt.json, risan/quran-json data/digitalkhatt/quran.json, original DigitalKhatt MIT, quran-json CC BY-SA 4.0. Font DigitalKhatt IndoPak SIL OFL-1.1.
+- Ahmed Grafics source: existing app/tools/arabic-diacritics/quran/data/quran-simple.txt, original source/notice retained exactly. UI uses the source provider byte-for-byte per verse and new explicit copy controls, never a reformatter.
+- Approved Fatiha alignment: public verse 1 Bismillah from DigitalKhatt presentation, verses 2-6 = upstream DigitalKhatt 1:1..5, verse 7 = upstream 1:6 and 1:7 joined with a single space. Both original waqf-sign sequences retained. The upstream JSON is not edited.
+- **All 114 surahs checked**: verse counts 6236 unchanged and source boundaries 2..114 unmodified. Only Al-Fatiha (1:1..7) is redivided to match existing Urdu translation. Differences in glyph style/orthography or actual textual variants (e.g. 4:12, 75:34) were not silently changed; audit independently before any textual revision.
+- Copy: exact source strings for Ahmed Grafics and DigitalKhatt; added per-verse and whole-surah controls. No normalization or conversion.
+- No owner page/OAuth/session/secrets; private font files and Cloudflare Worker untouched.
+- Existing saved Muhammadi documents migrate by explicit retired-font lookup to DigitalKhatt; no Muhammadi font file is served by the public UI. Cloudflare Worker access must be disabled separately by owner after authorized live release.
+- Do not merge or promote this draft without code review and full tests, screenshots, and owner's approval.

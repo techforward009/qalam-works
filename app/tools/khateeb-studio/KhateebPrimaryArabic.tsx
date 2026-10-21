@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ahmedgrafQuranReference } from "../arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../arabic-diacritics/quran/publicDigitalKhattProvider";
 import KhateebScriptText from "./KhateebScriptText";
 import KhateebQuranTranslation from "./KhateebQuranTranslation";
 import { toQalamArabicPresentation } from "./qalamArabicPresentation";
@@ -22,7 +22,7 @@ export default function KhateebPrimaryArabic({
   const quranText = useMemo(() => {
     if (kind !== "quran" || !quranLocation) return "";
     return (
-      ahmedgrafQuranReference.getAyah(
+      publicDigitalKhattQuranReference.getAyah(
         quranLocation.surah,
         quranLocation.ayah,
       )?.text ?? ""
@@ -38,7 +38,7 @@ export default function KhateebPrimaryArabic({
 
   return (
     <>
-      <div className={`${kind === "quran" ? "khateeb-muhammadi-quranic" : "qalam-book-arabic"} text-lg leading-[2.1] text-[#1A3A2A] dark:text-[#e7eee9]`}>
+      <div className={`${kind === "quran" ? "khateeb-digital-khatt-quranic" : "qalam-book-arabic"} text-lg leading-[2.1] text-[#1A3A2A] dark:text-[#e7eee9]`}>
         <KhateebScriptText text={text} forceArabic nonQuran={kind !== "quran"} />
       </div>
       {kind === "quran" && quranLocation ? (

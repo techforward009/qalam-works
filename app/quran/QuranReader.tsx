@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { Copy as CopyIcon } from "lucide-react";
+import * as digitalReaderModel from "./reader/digitalModel";
+import * as ahmedReaderModel from "./reader/model";
+import { ahmedgrafQuranReference } from "../tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { DIGITAL_KHATT_BASMILLAH } from "./indopak-digital-khatt/data";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
 import EditionTopBar from "./reader/EditionTopBar";
+import {QuranSidebarSection as SidebarSection,QuranPageMeta,QuranPageArrow,QuranPageButtons,QuranCorner,SurahBand} from "./reader/SharedReaderControls";
 import QuranTranslationPage from "./QuranTranslationPage";
 import QuranTransliterationPage from "./QuranTransliterationPage";
 import QuranTafsirPage from "./QuranTafsirPage";
@@ -38,13 +44,6 @@ import {
   QURAN_FONT_STACK,
   QURAN_LAYOUT_PROFILE,
 } from "./reader/profile";
-
-function href(
-  surah: number,
-  ayah: number,
-): string {
-  return `/quran/${surah}/${ayah}`;
-}
 
 type ReaderLanguage = "en" | "ur";
 
@@ -134,12 +133,18 @@ const SIDEBAR_COPY: Record<
 export default function QuranReader({
   surah,
   ayah,
+  editionId = "qalam-indopak",
 }: {
   surah: number;
   ayah: number;
+  editionId?: "digital-khatt" | "qalam-indopak";
 }) {
   const router = useRouter();
   const { language } = useLanguage();
+  const model = editionId === "digital-khatt" ? digitalReaderModel : ahmedReaderModel;
+  const {adjacentAyah,adjacentPage,ayahsOnPage,copyPageText,getReaderAyah,juzOf,juzStart,pageByNumber,pageCount,pageOf,searchQuran} = model;
+  const href = (s: number,a: number) => editionId === "digital-khatt"
+    ? `/quran/indopak-digital-khatt/${s}/${a}` : `/quran/ahmedgraf/${s}/${a}`;
 
   const current = getReaderAyah(
     surah,
@@ -500,10 +505,12 @@ export default function QuranReader({
   return (
     <main
       className="quran-reader min-h-screen"
+      data-quran-edition={editionId}
       dir="ltr"
     >
       <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4" style={{scrollMarginTop:"var(--site-header-height, 128px)"}}>
-        <EditionTopBar editionId="qalam-indopak" />
+        <EditionTopBar editionId={editionId} surah={surah} ayah={ayah} />
+        {editionId === "qalam-indopak" && <div className="my-2 text-center text-sm text-[#416448]"><p>{language === "ur" ? "قرآنی متن: احمد گرافکس" : "Quran text: Ahmed Grafics"} · <a href="https://ahmedgraf.com" rel="noopener noreferrer" target="_blank" className="underline">ahmedgraf.com</a></p><details className="mx-auto max-w-2xl text-xs"><summary className="cursor-pointer underline">{language === "ur" ? "ماخذ اور اجازت نامہ" : "Source licence notice"}</summary><span>{ahmedgrafQuranReference.getMetadata().referenceLicense}</span></details></div>}
         <div
           className="quran-reader-layout grid grid-cols-1 items-start gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-4"
           dir="ltr"
@@ -861,6 +868,7 @@ export default function QuranReader({
                   ? copy.copyDone
                   : copy.copy}
               </button>
+
             </SidebarSection>
 
             <SidebarSection
@@ -929,35 +937,10 @@ export default function QuranReader({
               </label>
             </SidebarSection>
 
-            <div
-              className="border-t border-[#d0d4cc] bg-white px-2 py-2"
-              dir={
-                interfaceDir
-              }
-              lang={
-                interfaceLang
-              }
-            >
-              <p
-                className={`text-[10px] leading-5 text-[#777d74] ${
-                  language ===
-                  "ur"
-                    ? "font-naskh"
-                    : ""
-                }`}
-              >
-                {
-                  copy.keysAyah
-                }
-                <br />
-                {
-                  copy.keysPage
-                }
-                <br />
-                {
-                  copy.keysSura
-                }
-              </p>
+            <div className="border-t border-[#d0d4cc] bg-white px-2 py-2" dir={interfaceDir} lang={interfaceLang}>
+              <p className="text-[10px] leading-5">{copy.keysAyah}</p>
+              <p className="text-[10px] leading-5">{copy.keysPage}</p>
+              <p className="text-[10px] leading-5">{copy.keysSura}</p>
             </div>
           </aside>
 
@@ -1011,6 +994,8 @@ export default function QuranReader({
 
             <div className="quran-page-shell" id="quran-reader-panel" role="tabpanel" aria-labelledby={"quran-tab-" + activeReaderView}>
               <QuranPageMeta
+                previousDisabled={!adjacentPage(page.page,-1)}
+                nextDisabled={!adjacentPage(page.page,1)}
                 surah={
                   surah
                 }
@@ -1068,9 +1053,8 @@ export default function QuranReader({
                   ayahs={
                     ayahs
                   }
-                  fontFamily={
-                    QURAN_FONT_STACK
-                  }
+                  fontFamily={editionId === "digital-khatt" ? QURAN_FONT_STACK : 'var(--font-amiri), "Amiri", "Noto Naskh Arabic", serif'}
+                  editionId={editionId}
                   scale={
                     scale
                   }
@@ -1113,6 +1097,8 @@ export default function QuranReader({
                   selectedSurah={surah}
                   selectedAyah={ayah}
                   scale={scale}
+                  quranFontFamily={editionId === "digital-khatt"
+                    ? QURAN_FONT_STACK : 'var(--font-amiri), "Amiri", "Noto Naskh Arabic", serif'}
                 />
               ) : activeReaderView === "transliteration" ? (
                 <QuranTransliterationPage
@@ -1126,162 +1112,14 @@ export default function QuranReader({
               )}
             </div>
 
-            <div
-              className={`quran-outer-page-nav mt-2 flex items-center justify-center gap-6 px-1 text-xs text-[#70776b] ${
-                language ===
-                "ur"
-                  ? "font-naskh"
-                  : ""
-              }`}
-              dir="rtl"
-              lang={
-                interfaceLang
-              }
-            >
-              <button
-                type="button"
-                disabled={
-                  !adjacentPage(
-                    page.page,
-                    1,
-                  )
-                }
-                onClick={() => {
-                  const next =
-                    adjacentPage(
-                      page.page,
-                      1,
-                    );
-
-                  if (next) {
-                    go({
-                      surah:
-                        next.surahStart,
-                      ayah:
-                        next.ayahStart,
-                    });
-                  }
-                }}
-                className="quran-page-turn px-3 py-1.5 disabled:opacity-25"
-              >
-                {
-                  copy.nextPage
-                }
-              </button>
-
-              <button
-                type="button"
-                disabled={
-                  !adjacentPage(
-                    page.page,
-                    -1,
-                  )
-                }
-                onClick={() => {
-                  const previous =
-                    adjacentPage(
-                      page.page,
-                      -1,
-                    );
-
-                  if (previous) {
-                    go({
-                      surah:
-                        previous.surahStart,
-                      ayah:
-                        previous.ayahStart,
-                    });
-                  }
-                }}
-                className="quran-page-turn px-3 py-1.5 disabled:opacity-25"
-              >
-                {
-                  copy.previousPage
-                }
-              </button>
-            </div>
+            <QuranPageButtons previous={copy.previousPage} next={copy.nextPage}
+              disablePrevious={!adjacentPage(page.page,-1)} disableNext={!adjacentPage(page.page,1)}
+              onPrevious={() => {const previous=adjacentPage(page.page,-1);if(previous)go({surah:previous.surahStart,ayah:previous.ayahStart});}}
+              onNext={() => {const next=adjacentPage(page.page,1);if(next)go({surah:next.surahStart,ayah:next.ayahStart});}} />
           </section>
         </div>
       </div>
     </main>
-  );
-}
-
-function QuranPageMeta({
-  surah,
-  pageNumber,
-  juz,
-  onPreviousPage,
-  onNextPage,
-}: {
-  surah: number;
-  pageNumber: number;
-  juz: number;
-  onPreviousPage: () => void;
-  onNextPage: () => void;
-}) {
-  const { language } = useLanguage();
-  const pageLabel =
-    language === "ur"
-      ? pageNumber.toLocaleString("ur-PK")
-      : String(pageNumber);
-
-  return (
-    <div
-      className="quran-page-meta"
-      dir="rtl"
-      lang="ar"
-    >
-      <div className="quran-page-meta-item quran-page-meta-juz">
-        <span className="quran-page-meta-juz-name">
-          {juzRunningHead(juz)}
-        </span>
-      </div>
-
-      <div
-        className="quran-page-meta-item flex items-center justify-center overflow-visible"
-        dir="ltr"
-        lang={language === "ur" ? "ur" : "en"}
-      >
-        <PageArrow
-          direction="previous"
-          label="Previous page"
-          disabled={
-            !adjacentPage(
-              pageNumber,
-              -1,
-            )
-          }
-          onClick={
-            onPreviousPage
-          }
-        />
-
-        <span className="quran-page-meta-page-number">
-          {pageLabel}
-        </span>
-
-        <PageArrow
-          direction="next"
-          label="Next page"
-          disabled={
-            !adjacentPage(
-              pageNumber,
-              1,
-            )
-          }
-          onClick={
-            onNextPage
-          }
-        />
-      </div>
-
-      <div className="quran-page-meta-item quran-page-meta-surah">
-        <span className="quran-page-meta-surah-name">
-          {surahRunningHead(surah)}
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -1294,6 +1132,7 @@ function QuranPageSurface({
   scale,
   idPrefix = "",
   faceLabel,
+  editionId = "qalam-indopak",
   onPreviousPage,
   onNextPage,
 }: {
@@ -1305,12 +1144,13 @@ function QuranPageSurface({
   scale: number;
   idPrefix?: string;
   faceLabel?: string;
+  editionId?: "digital-khatt" | "qalam-indopak";
   onPreviousPage: () => void;
   onNextPage: () => void;
 }) {
   const blocks =
     blocksFor(
-      ayahs,
+      ayahs, editionId,
     );
 
   return (
@@ -1376,6 +1216,7 @@ function QuranPageSurface({
                     {
                       block.text
                     }
+                    {block.anchor && <span className="inline-flex items-center whitespace-nowrap">{editionId === "digital-khatt" && <DigitalKhattAyahMarker ayah={1} />}<button type="button" className="mx-2 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" onClick={() => void navigator.clipboard.writeText(block.text)} aria-label="Copy verse 1"><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button></span>}
                   </p>
                 );
               }
@@ -1426,10 +1267,12 @@ function QuranPageSurface({
                               "clone",
                           }}
                         >
-                          {
-                            item.text
-                          }
+                          {editionId === "digital-khatt" ? splitLastWord(item.text).prefix : item.text}
                         </span>
+                        <span className="inline-flex items-center whitespace-nowrap">{editionId === "digital-khatt" && <><span className="quran-ayah inline">{splitLastWord(item.text).last}</span><DigitalKhattAyahMarker ayah={item.ayah} /></>}
+                        <button type="button" className="mx-1 inline-flex min-h-7 min-w-7 items-center justify-center rounded border border-current/30 align-middle" title="Copy exact Unicode verse" aria-label={`Copy verse ${item.surah}:${item.ayah}`} onClick={() => void navigator.clipboard.writeText(
+                            (editionId === "digital-khatt" ? digitalReaderModel.getReaderAyah(item.surah,item.ayah) : ahmedReaderModel.getReaderAyah(item.surah,item.ayah))?.text ?? item.text
+                          )}><CopyIcon size={17} strokeWidth={2.2} aria-hidden="true" /></button></span>
                       </span>
                     ),
                   )}
@@ -1444,7 +1287,7 @@ function QuranPageSurface({
             className="flex items-center justify-center"
             dir="ltr"
           >
-            <PageArrow
+            <QuranPageArrow
               direction="previous"
               label="Previous page"
               disabled={
@@ -1466,7 +1309,7 @@ function QuranPageSurface({
               }
             </span>
 
-            <PageArrow
+            <QuranPageArrow
               direction="next"
               label="Next page"
               disabled={
@@ -1492,6 +1335,7 @@ export {
 
 function blocksFor(
   ayahs: readonly QuranAyah[],
+  editionId: "digital-khatt" | "qalam-indopak" = "qalam-indopak",
 ) {
   const blocks: Array<
     | {
@@ -1554,9 +1398,7 @@ function blocksFor(
     const ayah of ayahs
   ) {
     const pieces =
-      displayPieces(
-        ayah,
-      );
+      (editionId === "digital-khatt" ? digitalReaderModel : ahmedReaderModel).displayPieces(ayah);
 
     if (
       ayah.surah === 1 &&
@@ -1594,6 +1436,10 @@ function blocksFor(
         surah:
           ayah.surah,
       });
+      if (editionId === "digital-khatt" && ayah.surah !== 9) {
+        blocks.push({kind:"bismillah",id:"opening-"+ayah.id,surah:ayah.surah,ayah:1,
+          text:DIGITAL_KHATT_BASMILLAH,anchor:false});
+      }
     }
 
     if (
@@ -1645,80 +1491,6 @@ function blocksFor(
   flush();
 
   return blocks;
-}
-
-function QuranCorner({
-  position,
-}: {
-  position:
-    | "top-left"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-right";
-}) {
-  return (
-    <svg
-      className={`quran-corner quran-corner-${position}`}
-      viewBox="0 0 72 72"
-      aria-hidden="true"
-    >
-      <path
-        d="M7 7H65V12H12V65H7Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.2"
-      />
-
-      <path
-        d="M15 15H57V18H18V57H15Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="0.9"
-      />
-
-      <path
-        d="M22 15C22 27 27 32 39 32C27 32 22 37 22 49C22 37 17 32 5 32C17 32 22 27 22 15Z"
-        fill="currentColor"
-        opacity="0.72"
-      />
-
-      <circle
-        cx="51"
-        cy="51"
-        r="2.5"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function SidebarSection({
-  title,
-  children,
-  defaultOpen = false,
-  titleStyle,
-}: {
-  title: string;
-  children: ReactNode;
-  defaultOpen?: boolean;
-  titleStyle?: { fontFamily: string };
-}) {
-  return (
-    <details
-      className="tanzil-sidebar-section"
-      open={
-        defaultOpen
-      }
-    >
-      <summary style={titleStyle}>
-        {title}
-      </summary>
-
-      <div className="px-2 pb-2 pt-1">
-        {children}
-      </div>
-    </details>
-  );
 }
 
 function Select({
@@ -1780,58 +1552,11 @@ function Select({
   );
 }
 
-function PageArrow({
-  direction,
-  label,
-  disabled,
-  onClick,
-}: {
-  direction:
-    | "previous"
-    | "next";
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className="quran-page-arrow"
-    >
-      {direction ===
-      "previous"
-        ? "◄"
-        : "►"}
-    </button>
-  );
+function splitLastWord(text:string):{prefix:string;last:string}{
+  const match=/^(.*?)([^\s]+)$/su.exec(text);
+  return match ? {prefix:match[1],last:match[2]} : {prefix:"",last:text};
 }
 
-function SurahBand({
-  surah,
-}: {
-  surah: number;
-}) {
-  const banner = surahBanner(surah);
-
-  return (
-    <div
-      className="quran-surah-header shrink-0"
-      dir="rtl"
-      lang="ar"
-    >
-      <span className="quran-surah-place">{banner.place}</span>
-      <span className="quran-banner-name">
-        <bdi dir="ltr" className="quran-banner-number">({banner.surahNumber})</bdi>
-        <span>{displaySurahBannerName(banner.name)}</span>
-        <bdi dir="ltr" className="quran-banner-number">({banner.revealed})</bdi>
-      </span>
-      <span className="quran-surah-count">
-        <span>آیات</span>
-        <span className="quran-banner-digit">{banner.ayatCount}</span>
-      </span>
-    </div>
-  );
+function DigitalKhattAyahMarker({ayah}:{ayah:number}) {
+  return <span className="mx-1 inline-flex items-center justify-center rounded-full border px-1.5 align-middle" style={{borderColor:"#9a884f",fontFamily:'"Amiri","Noto Naskh Arabic",serif',fontSize:"0.84em",minWidth:"1.8em",minHeight:"1.8em",lineHeight:1.2,color:"#3c472c"}} aria-label={`Ayah ${ayah}`}><span aria-hidden="true">۝{easternDigits(ayah)}</span></span>;
 }

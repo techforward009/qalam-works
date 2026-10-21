@@ -12,7 +12,7 @@ import justice from "./speakingGuides/justice.json";
 import rizq from "./speakingGuides/rizq.json";
 import { DEATH_SPEAKING_GUIDE, buildDeathSpeakingGuideText, deathGuideMinutes, type SpeakingGuideMode } from "./deathSpeakingGuide";
 import { TOPIC_PREPS, topicTitle, type TopicPrep } from "./topicPrep";
-import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../arabic-diacritics/quran/publicDigitalKhattProvider";
 import { quranLocationsFromReference, quranTranslationFor, QURAN_TRANSLATION_SOURCES } from "./quranTranslationProvider";
 import type { SermonDuration, SermonLocale } from "./sermonPrep";
 import type { SpeakerEvidence } from "./speakerEvidence";
@@ -86,7 +86,7 @@ export function buildTopicSpeakingGuideText(topic: TopicPrep, locale: SermonLoca
     const key = `${location.surah}:${location.ayah}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const arabic = ahmedgrafQuranReference.getAyah(location.surah, location.ayah)?.text;
+    const arabic = publicDigitalKhattQuranReference.getAyah(location.surah, location.ayah)?.text;
     const translation = quranTranslationFor(location.surah, location.ayah, locale);
     lines.push(key);
     if (arabic) lines.push(arabic);

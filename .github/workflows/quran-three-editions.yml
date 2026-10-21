@@ -1,0 +1,67 @@
+name: Quran 3 Editions — Full Checks and Screenshots (No Production)
+on:
+  push:
+    branches: [feature/quran-three-editions-20261020]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  feature:
+    if: github.head_ref == 'feature/quran-three-editions-20261020' || github.ref_name == 'feature/quran-three-editions-20261020'
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci --ignore-scripts
+      - name: TypeScript (no emit)
+        run: npx tsc --noEmit
+      - name: Full Vitest suite (no test exclusions)
+        if: always()
+        run: npm test
+      - name: Next.js production build (validation only, not deployment)
+        if: always()
+        run: npm run build
+  baseline-main:
+    if: github.head_ref == 'feature/quran-three-editions-20261020' || github.ref_name == 'feature/quran-three-editions-20261020'
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: 4df6a576e222063ceb7557716bf6bd0e3810a275}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci --ignore-scripts
+      - name: Baseline TypeScript
+        run: npx tsc --noEmit
+      - name: Baseline full Vitest
+        if: always()
+        run: npm test
+      - name: Baseline Next build
+        if: always()
+        run: npm run build
+  screenshots:
+    if: github.head_ref == 'feature/quran-three-editions-20261020' || github.ref_name == 'feature/quran-three-editions-20261020'
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Build for local screenshots
+        run: npm run build
+      - name: Capture desktop and mobile screenshots
+        run: |
+          npm start -- -p 3000 > /tmp/qalam-serve.log 2>&1 &
+          for i in $(seq 1 100); do if curl -fsSL http://127.0.0.1:3000/quran/madinah/1/1 -o /dev/null; then break; fi; sleep 2; done
+          node scripts/quran-three-editions-screenshots.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quran-three-editions-1366-and-390
+          path: artifacts/quran-three-editions/
+          if-no-files-found: warn

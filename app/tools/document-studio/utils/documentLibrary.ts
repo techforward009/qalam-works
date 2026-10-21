@@ -99,7 +99,7 @@ export function withRemovedQuranDefaults(
   const ltr = isRemovedQuranFont(typography?.defaultLtrFontId);
   if (!rtl && !ltr) return settings;
   const fontId = removedQuranFontReplacement(plainText(content)) === QURAN_FONT_FALLBACK_FAMILY
-    ? "muhammadi-quranic"
+    ? "digital-khatt-indo-pak"
     : "scheherazade-new";
   return {
     ...settings,

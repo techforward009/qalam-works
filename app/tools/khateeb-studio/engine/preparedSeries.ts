@@ -3,7 +3,7 @@ import type { SourcedMasaib } from './ghaflahMasaib';
 import type { MajlisSessionWorkbench } from './sessionWorkbench';
 import type { SermonDuration } from './sermonPrep';
 import { buildSessionWorkbenchText } from './sessionWorkbench';
-import { ahmedgrafQuranReference } from '../../arabic-diacritics/quran/ahmedgrafProvider';
+import { publicDigitalKhattQuranReference } from '../../arabic-diacritics/quran/publicDigitalKhattProvider';
 import { quranTranslationFor, QURAN_TRANSLATION_SOURCES } from './quranTranslationProvider';
 import { verifiedHadithForDossierText } from './verifiedHadithCorpus';
 export type SeriesBilingual = { ur: string; en: string };
@@ -31,7 +31,7 @@ export function preparedSourceLines(preparation: PreparedSessionMaterial, locale
   const group=preparation.quranGroups?.find(g=>g.locations.some(loc=>loc.surah===location.surah&&loc.ayah===location.ayah));
   const locations=group?.locations??[location];
   const verses=locations.map(({surah,ayah})=>{
-   const ref=`${surah}:${ayah}`, arabic=ahmedgrafQuranReference.getAyah(surah,ayah)?.text;
+   const ref=`${surah}:${ayah}`, arabic=publicDigitalKhattQuranReference.getAyah(surah,ayah)?.text;
    const translation=quranTranslationFor(surah,ayah,locale);
    if(!arabic||!translation)throw Error(`Missing prepared series verse ${ref}`);
    used.add(ref);return {ref,arabic,translation};
@@ -68,8 +68,8 @@ export function preparedScholarNarration(preparation:PreparedSessionMaterial,loc
  });
 }
 export function preparedQuranSourceTexts(preparation: PreparedSessionMaterial): Set<string | undefined> {
- const texts = new Set(preparation.quran.map(({surah, ayah}) => ahmedgrafQuranReference.getAyah(surah, ayah)?.text));
- for (const group of preparation.quranGroups ?? []) texts.add(group.locations.map(({surah, ayah}) => ahmedgrafQuranReference.getAyah(surah, ayah)?.text).join(' '));
+ const texts = new Set(preparation.quran.map(({surah, ayah}) => publicDigitalKhattQuranReference.getAyah(surah, ayah)?.text));
+ for (const group of preparation.quranGroups ?? []) texts.add(group.locations.map(({surah, ayah}) => publicDigitalKhattQuranReference.getAyah(surah, ayah)?.text).join(' '));
  return texts;
 }
 export function preparedArabicSourceTexts(preparation: PreparedSessionMaterial): Set<string | undefined> {
@@ -135,7 +135,7 @@ export function estimatePreparedSpeech(preparation: PreparedSessionMaterial, loc
  const expansions=(duration>=30 ? (preparation.durationExtra?.extra30??[]).reduce((sum,row)=>sum+count(row[locale]),0) : 0)
   +(duration===45 ? (preparation.durationExtra?.extra45??[]).reduce((sum,row)=>sum+count(row[locale]),0) : 0);
  const verses=preparation.quran.reduce((sum,{surah,ayah})=>{
-   const arabic=ahmedgrafQuranReference.getAyah(surah,ayah)?.text??'';
+   const arabic=publicDigitalKhattQuranReference.getAyah(surah,ayah)?.text??'';
    const translation=quranTranslationFor(surah,ayah,locale)??'';
    return sum+count(arabic)+count(translation);
  },0);

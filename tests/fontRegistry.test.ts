@@ -101,7 +101,6 @@ describe("fontRegistry", () => {
     expect(visible).not.toContain("Faiz Lahori Nastaleeq");
     const hiddenFamilies = [
       "Nafees Nastaleeq",
-      "Muhammadi Quranic",
     ];
     for (const family of hiddenFamilies) {
       expect(visible).not.toContain(family);
@@ -156,7 +155,7 @@ describe("fontRegistry", () => {
         ],
       }],
     });
-    expect(quran.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Muhammadi Quranic");
+    expect(quran.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Digital Khatt Indo-Pak");
     expect(quran.content?.[0].content?.[1].marks?.[0].attrs?.fontFamily).toBe("Scheherazade New");
     expect(quran.content?.[0].content?.[2].marks?.[0].attrs?.fontFamily).toBe("Jameel Noori Nastaleeq");
   });

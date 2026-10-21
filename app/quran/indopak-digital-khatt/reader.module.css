@@ -305,3 +305,6 @@
     font-size: 0.95em;
   }
 }
+
+/* Ahmed Grafics master page proportions */
+.page{max-width:770px;margin-inline:auto;width:100%;border-radius:10px}

@@ -85,7 +85,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
       .knowledge-assistant[dir="rtl"] :is(h1, h2, h3) { font-family: "Gulzar", "Noto Nastaliq Urdu", serif; line-height: 2.05; }
       .knowledge-assistant button, .knowledge-assistant input, .knowledge-assistant textarea, .knowledge-assistant select { font-family: "Nafees Nastaleeq", serif; }
       .knowledge-assistant .khateeb-book-ur { font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important; font-size: 1.16rem; line-height: 2.25; }
-      .knowledge-assistant .khateeb-muhammadi-quranic { font-family: "Muhammadi Quranic", var(--font-amiri), serif !important; font-size: 1.15em; line-height: 1.85; }
+      .knowledge-assistant .khateeb-digital-khatt-quranic { font-family: "Digital Khatt IndoPak Book", var(--font-amiri), serif !important; font-size: 1.15em; line-height: 1.85; }
       .knowledge-assistant .khateeb-book-text { unicode-bidi: isolate; }
       .knowledge-assistant .khateeb-book-en { font-family: var(--font-inter), Arial, sans-serif; }
       .knowledge-assistant .khateeb-salawat { display: inline-block; font-size: .7em; line-height: 1; }

@@ -6,10 +6,10 @@ import { GOLDEN_INPUT } from "./engine/goldenPassage";
 import { diacritizeArabic } from "./engine/diacritizeArabic";
 import { restoreQuran } from "./quran/matchQuran";
 import { quranReferenceLabel } from "./quran/reference";
-import { ahmedgrafQuranReference } from "./quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "./quran/publicDigitalKhattProvider";
 
 export function sampleInput(mode: "general" | "quran"): string {
-  if (mode === "quran") return ahmedgrafQuranReference.getAyah(1, 1)?.text ?? "";
+  if (mode === "quran") return publicDigitalKhattQuranReference.getAyah(1, 1)?.text ?? "";
   return GOLDEN_INPUT;
 }
 
@@ -21,7 +21,7 @@ export default function ArabicDiacriticsTool() {
   const [modelState, setModelState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [modelError, setModelError] = useState("");
   const deterministic = useMemo(() => diacritizeArabic(input), [input]);
-  const quran = useMemo(() => restoreQuran(input, ahmedgrafQuranReference), [input]);
+  const quran = useMemo(() => restoreQuran(input, publicDigitalKhattQuranReference), [input]);
   const output = mode === "general" ? modelOutput : quran.output;
   const vocalized = deterministic.reviews.filter((item) => item.status !== "unchanged");
   const unchanged = deterministic.reviews.filter((item) => item.status === "unchanged");
@@ -117,8 +117,8 @@ export default function ArabicDiacriticsTool() {
         {mode === "quran" && (
           <p className="mb-4 text-sm text-[#4a6a4a]" data-quran-reference>
             {quranReferenceLabel(quran.metadata)}{" "}
-            <a href="http://ahmedgraf.com" className="underline">
-              ahmedgraf.com
+            <a href="http://github.com/risan/quran-json" className="underline">
+              github.com/risan/quran-json
             </a>
           </p>
         )}

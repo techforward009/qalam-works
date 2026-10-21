@@ -600,8 +600,8 @@ export default function KhateebStudioContent({
           font-display: swap;
         }
 
-        .khateeb-muhammadi-quranic {
-          font-family: "Muhammadi Quranic", var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif !important;
+        .khateeb-digital-khatt-quranic {
+          font-family: "Digital Khatt IndoPak Book", var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif !important;
           font-size: 1.08em;
           line-height: 1.85;
           unicode-bidi: isolate;
@@ -793,7 +793,7 @@ export default function KhateebStudioContent({
             text-decoration: none !important;
           }
 
-          .khateeb-muhammadi-quranic {
+          .khateeb-digital-khatt-quranic {
             color: black !important;
           }
         }

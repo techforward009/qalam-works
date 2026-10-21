@@ -5,6 +5,7 @@ import { sampleInput } from "../app/tools/arabic-diacritics/ArabicDiacriticsTool
 import { diacritizeArabic } from "../app/tools/arabic-diacritics/engine/diacritizeArabic";
 import { CREATION_INPUT, CREATION_OUTPUT, GOLDEN_INPUT, GOLDEN_OUTPUT } from "../app/tools/arabic-diacritics/engine/goldenPassage";
 import { ahmedgrafQuranReference } from "../app/tools/arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../app/tools/arabic-diacritics/quran/publicDigitalKhattProvider";
 import { QURAN_SIMPLE_SHA256 } from "../app/tools/arabic-diacritics/quran/corpusIntegrity";
 import { HAFS_AYAH_COUNTS } from "../app/tools/arabic-diacritics/quran/hafsCounts";
 import { restoreQuran } from "../app/tools/arabic-diacritics/quran/matchQuran";
@@ -172,9 +173,9 @@ describe("ahmedgraf Indo-Pak corpus", () => {
     const quranSample = sampleInput("quran");
     expect(quranSample).not.toBe(GOLDEN_INPUT);
     expect(quranSample).not.toContain("القائل بالجبر");
-    const stored = provider.listAyahs().find((ayah) => ayah.text === quranSample);
+    const stored = publicDigitalKhattQuranReference.listAyahs().find((ayah) => ayah.text === quranSample);
     expect(stored?.id).toBe("1:1");
-    const verified = restoreQuran(quranSample, provider);
+    const verified = restoreQuran(quranSample, publicDigitalKhattQuranReference);
     expect(verified.output).toBe(quranSample);
     expect(verified.segments[0]?.status).toBe("verified");
     expect(verified.segments[0]?.category).toBe("verified_exact");

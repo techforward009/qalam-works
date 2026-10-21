@@ -1,5 +1,5 @@
 import { quranTranslationFor, QURAN_TRANSLATION_SOURCES } from "./quranTranslationProvider";
-import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../arabic-diacritics/quran/publicDigitalKhattProvider";
 import type { SermonDuration, SermonLocale } from "./sermonPrep";
 import { getTopicDossier, type SermonDossier } from "./topicDossier";
 import {
@@ -123,7 +123,7 @@ function quranBlocks(dossier: SermonDossier, limit: number): SermonCompositionBl
     .slice(0, limit)
     .flatMap((item) => {
       const location = item.quranLocation!;
-      const ayah = ahmedgrafQuranReference.getAyah(location.surah, location.ayah);
+      const ayah = publicDigitalKhattQuranReference.getAyah(location.surah, location.ayah);
       if (!ayah) return [];
       return [
         {

@@ -30,7 +30,8 @@ describe("Mehr Nastaliq Web body preview", () => {
     expect(css).not.toContain("workers.dev/fonts/NafeesNastaleeq-v1.02.woff2");
     expect(css).not.toContain("fonts/NafeesNastaleeq.woff2\"");
     expect(readFileSync("tailwind.config.js", "utf8")).not.toContain("Jameel");
-    expect(css).toContain('font-family: "Muhammadi Quranic"');
+    expect(css).not.toContain('font-family: "Muhammadi Quranic"');
+    expect(css).toContain('font-family: "Digital Khatt IndoPak Book"');
   });
 
   test("new Urdu documents use Mehr, and a saved Alvi value opens as Mehr", () => {

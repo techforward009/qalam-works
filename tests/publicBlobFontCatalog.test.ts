@@ -17,9 +17,9 @@ describe("Document Studio public Blob font catalogue", () => {
   });
 
   test("contains 10 catalogued assets including Mehr, organized into 10 font families", () => {
-    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(10);
-    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(10);
-    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(10);
+    expect(PUBLIC_BLOB_FONT_FILES).toHaveLength(9);
+    expect(PUBLIC_BLOB_FONT_FAMILIES).toHaveLength(9);
+    expect(new Set(PUBLIC_BLOB_FONT_FILES).size).toBe(9);
     for (const removed of [
       "AdobeArabic-Regular.woff2",
       "AdobeArabic-Bold.woff2",
@@ -39,7 +39,6 @@ describe("Document Studio public Blob font catalogue", () => {
       "Gulzar-Regular.woff2",
       "Sahel.woff2",
       "ScheherazadeNew-Medium.woff2","jameel-noori-nastaleeq-400.woff2",
-      "muhammadi-quranic-400.woff2",
       "AlFars9Badr.woff2",
       "BNazanin.woff2",
     ];

@@ -1,11 +1,11 @@
-.reader { --paper:#fcfaf4; --ink:#171717; --line:#d8cfbc; --green:#2f8f68; min-height:100vh; background:#f5f2ea; color:var(--ink); }
-.container { width:100%; max-width:1280px; margin:0 auto; padding:18px 16px 40px; }
+.reader { --paper:#fcfaf4; --ink:#171717; --line:#d8cfbc; --green:#2f8f68; min-height:100vh; background:#e7eee4; color:rgb(46,52,43); }
+.container { width:100%; max-width:1080px; margin:0 auto; padding:16px; }
 .toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:16px; }
 .eyebrow { font-weight:700; color:var(--green); font-size:15px; }
 .subtle { font-size:12px; color:#746e62; }
 .link { color:var(--green); font-size:13px; text-decoration:none; }
-.grid { display:grid; grid-template-columns:160px minmax(0,1fr); gap:18px; align-items:start; }
-.sidebar { background:#fffdf8; border:1px solid #ded7c8; border-radius:14px; padding:12px; position:sticky; top:12px; }
+.grid { display:grid; grid-template-columns:200px minmax(0,1fr); gap:16px; align-items:start; }
+.sidebar { background:transparent; border:0; border-radius:0; padding:0; position:sticky; top:12px; }
 .label { display:block; font-size:11px; color:#625d53; }
 .labelBlock { display:block; margin-top:11px; padding-top:11px; border-top:1px solid #ebe5d8; font-size:11px; color:#625d53; }
 .input { box-sizing:border-box; width:100%; margin-top:5px; border:1px solid #cfc7b7; border-radius:7px; padding:7px 8px; background:#fff; color:#222; font-size:11px; }
@@ -18,7 +18,7 @@
 .result:hover { background:#f3efe6; }
 .pageInputRow { display:flex; align-items:center; gap:6px; }
 .metaBlock { margin-top:11px; padding-top:11px; border-top:1px solid #ebe5d8; font-size:11px; line-height:1.8; color:#676156; }
-.page { width:min(100%, 720px); margin-inline:auto; aspect-ratio:1 / 1.42; background:var(--paper); border:1px solid #c4b48a; box-shadow:inset 0 0 0 5px #fcfaf4, inset 0 0 0 6px #d9cba8, 0 12px 32px rgba(65,55,37,.1); border-radius:10px; padding:16px 40px 12px; min-height:0; display:flex; flex-direction:column; }
+.page { width:min(100%, 770px); margin-inline:auto; background:#fbf7ea; border:16px solid transparent; border-radius:0; padding:16px 40px 12px; min-height:0; display:flex; flex-direction:column; }
 .mushafHeader { flex:0 0 auto; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px; min-height:36px; padding:0 2px 8px; border-bottom:1px solid #cfc6b1; }
 .mushafHeaderSide { min-width:0; color:#202018; font-family:"Noto Naskh Arabic","Scheherazade New","Amiri",serif; font-size:20px; line-height:1.1; white-space:nowrap; }
 .mushafHeaderLeft { text-align:left; }
@@ -29,16 +29,46 @@
 .pageArrow:disabled { opacity:.35; cursor:not-allowed; }
 .pageArrowIcon { width:16px; height:16px; display:block; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
 .mushafHeaderNumber { min-width:22px; text-align:center; font-family:"Noto Naskh Arabic","Scheherazade New","Amiri",serif; font-size:16px; line-height:1; }
-.pageLines { flex:1 1 auto; min-height:0; width:100%; padding:calc(8px + 3mm) 0 2px; box-sizing:border-box; display:grid; grid-template-rows:repeat(15, minmax(0, 1fr)); align-items:center; row-gap:calc(8px + 2mm); container-type:inline-size; }
-.line { min-width:0; min-height:0; height:100%; width:100%; display:flex; align-items:center; justify-content:space-between; direction:rtl; white-space:nowrap; font-size:calc((100cqi / 18.6) * var(--mushaf-scale, 1)); line-height:1; letter-spacing:0; }
+.pageLines { flex:0 0 auto; min-height:0; width:100%; padding:calc(8px + 3mm) 0 2px; box-sizing:border-box; display:flex; flex-direction:column; align-items:stretch; gap:calc(5px + 1mm); container-type:inline-size; }
+.line { min-width:0; min-height:1.6em; height:auto; width:100%; display:flex; align-items:center; justify-content:space-between; direction:rtl; white-space:nowrap; font-size:calc((100cqi / 18.6) * var(--mushaf-scale, 1)); line-height:1; letter-spacing:0; }
 .centeredLine { justify-content:center; gap:0.4em; }
 .word { display:inline-block; }
-.surahLine { justify-content:center; font-family:"Noto Naskh Arabic","Scheherazade New","Amiri",serif; font-size:calc((100cqi / 28) * var(--mushaf-scale, 1)); color:#171717; font-weight:600; }
 .basmala { font-family:"QalamMadinahBasmala", serif; font-size:1.23em; line-height:1; }
 .loading,.error { padding:50px; text-align:center; color:#756f63; }
 .error { color:#8b3c32; }
 .navRow { display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--line); margin-top:10px; padding-top:12px; }
 .credit { margin-top:8px; text-align:center; font-size:10px; line-height:1.5; color:#8a8478; }
-@media (max-width:1100px){ .grid{grid-template-columns:150px minmax(0,1fr)} .page{padding-inline:32px} }
-@media (max-width:900px){ .grid{grid-template-columns:1fr}.sidebar{position:static}.page{padding:16px 28px 12px}.mushafHeaderSide{font-size:18px}.mushafHeaderPage{min-width:72px;gap:4px}.mushafHeaderNumber{font-size:14px}.pageArrow{width:26px;height:26px} }
+@media (max-width:1100px){ .grid{grid-template-columns:200px minmax(0,1fr)} .page{padding-inline:32px} }
+@media (max-width:900px){ .grid{grid-template-columns:1fr}.sidebar{position:static;order:2}.page{padding:16px 28px 12px}.mushafHeaderSide{font-size:18px}.mushafHeaderPage{min-width:72px;gap:4px}.mushafHeaderNumber{font-size:14px}.pageArrow{width:26px;height:26px} }
 @media (max-width:600px){ .container{padding-inline:8px}.toolbar{align-items:flex-start;flex-direction:column}.page{border-radius:8px;padding:12px 16px 10px}.mushafHeader{min-height:30px;gap:5px;padding-inline:0}.mushafHeaderSide{font-size:14px}.mushafHeaderPage{min-width:50px;gap:2px}.mushafHeaderNumber{font-size:12px}.pageArrow{width:24px;height:24px}.pageArrowIcon{width:14px;height:14px}.navRow{justify-content:center;flex-wrap:wrap} }
+
+/* Match the Ahmed Grafics master reader frame without altering 15-line QCF glyph layout. */
+@media(max-width:900px){.grid{display:flex;flex-direction:column}.grid>section{width:100%;order:1}.sidebar{width:100%;order:2}.page{width:100%;max-width:770px}}
+
+/* Shared Ahmed Grafics master frame and matching navigation. */
+.reader .page { background:linear-gradient(#fbf7ea,#fbf7ea) padding-box,repeating-linear-gradient(90deg,#1c4a34 0 6px,#e7d7a4 6px 8px,#f7f1dc 8px 11px,#24583c 11px 13px,#c6a35a 13px 15px,#1c4a34 15px 18px) border-box; box-shadow:0 10px 28px rgba(42,58,40,.14),inset 0 0 0 1px #f8f1dc; }
+.reader .pageLines { height:auto; flex:none; }
+.reader .mushafHeader { margin:0 auto 4px; width:calc(100% - 22px); border-bottom:1px solid #c6a35a; }
+.reader .pageArrow { border:0; box-shadow:none; border-radius:0; background:transparent; }
+.reader .navRow { border-top:1px solid #d8cfbc; }
+@media(max-width:600px){.reader .page{padding-inline:12px;border-width:12px}.reader .pageLines{gap:3px}}
+
+/* Keep the shared Tanzil sidebar and Ahmed ornamental page readable. */
+.reader .page {padding:36px 58px;border-radius:0}
+.reader .pageLines {padding-bottom:12px}
+.reader .line {font-size:calc((100cqi / 21) * var(--mushaf-scale,1));min-height:1.5em}
+.reader .sidebar {gap:8px}
+.reader .credit {margin-top:2px}
+
+@media(max-width:600px){.reader .page{border-radius:0;padding:24px 20px}.reader .line{font-size:calc((100cqi / 12.5) * var(--mushaf-scale,1));min-height:1.65em}}
+
+@media(max-width:600px){.container{padding-left:16px;padding-right:16px}.reader .page{box-shadow:0 4px 14px rgba(40,48,35,.12)}}
+
+/* Align sidebar with the Ahmed Grafics master, including Latin UI fonts. */
+.reader .sidebar[lang="en"] {font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+.reader .sidebar[lang="ur"] {font-family:var(--font-naskh),"Noto Naskh Arabic",serif}
+.reader .sidebar :global(.tanzil-sidebar-section) {margin:0}
+
+/* Ahmed Grafics master Surah band typography. */
+.reader .page :global(.quran-surah-header){font-family:var(--font-amiri),Amiri,"Noto Naskh Arabic",serif;font-size:28px}
+@media(max-width:600px){.reader .page :global(.quran-surah-header){font-size:24px}}

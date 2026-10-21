@@ -217,7 +217,7 @@ describe("document library storage", () => {
     expect(again?.updatedAt).toBe(updatedAt);
   });
 
-  it("opens saved Asif and Al Qalam text as Muhammadi only when the text is Quran", async () => {
+  it("opens retired Quran fonts using the approved Digital Khatt fallback", async () => {
     const updatedAt = 1_700_000_200_000;
     const quran = {
       id: "old-asif",
@@ -241,9 +241,9 @@ describe("document library storage", () => {
       schemaVersion: 1 as const,
     };
     const opened = await createMemoryDocumentLibrary([quran as unknown as DocumentRecord]).getDocument("old-asif");
-    expect(opened?.content.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Muhammadi Quranic");
+    expect(opened?.content.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Digital Khatt Indo-Pak");
     expect(opened?.content.content?.[0].content?.[1].marks?.[0].attrs?.fontFamily).toBe("Jameel Noori Nastaleeq");
-    expect(opened?.documentSettings.typography.defaultRtlFontId).toBe("muhammadi-quranic");
+    expect(opened?.documentSettings.typography.defaultRtlFontId).toBe("digital-khatt-indo-pak");
     expect(opened?.updatedAt).toBe(updatedAt);
 
     const prose = {

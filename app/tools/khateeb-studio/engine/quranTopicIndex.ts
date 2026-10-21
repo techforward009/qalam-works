@@ -1,4 +1,4 @@
-import { ahmedgrafQuranReference } from "../../arabic-diacritics/quran/ahmedgrafProvider";
+import { publicDigitalKhattQuranReference } from "../../arabic-diacritics/quran/publicDigitalKhattProvider";
 import type { KhateebResearchEvidence } from "./researchTypes";
 
 type QuranTopicEntry = {
@@ -347,7 +347,7 @@ export function quranEvidenceForTopic(
     for (const row of entry.ayahs) {
       const key = `${row.surah}:${row.ayah}`;
       if (seen.has(key)) continue;
-      const ayah = ahmedgrafQuranReference.getAyah(row.surah, row.ayah);
+      const ayah = publicDigitalKhattQuranReference.getAyah(row.surah, row.ayah);
       if (!ayah) continue;
       seen.add(key);
       evidence.push({
@@ -361,7 +361,7 @@ export function quranEvidenceForTopic(
         detailEn: row.noteEn,
         citationUr: row.refUr,
         citationEn: row.refEn,
-        providerId: "ahmedgraf-quran",
+        providerId: "digital-khatt-quran",
         arabic: ayah.text,
         quranLocation: { surah: row.surah, ayah: row.ayah },
         themesUr: [entry.aliases[0] ?? entry.id],
