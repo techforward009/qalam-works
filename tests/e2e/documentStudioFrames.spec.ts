@@ -61,3 +61,47 @@ test("shapes use black non-scaling 1px strokes on a snapped pixel grid", async (
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: test.info().outputPath("qalam-frames-1920x1080.png") });
 });
+
+test("Select deselects frames with Escape and empty page or pasteboard clicks", async ({ page }) => {
+  await openCanvas(page);
+  await draw(page, "rect", 100, 120);
+  await page.locator('[data-studio-tool-button="select"]').click();
+  const handles = page.locator("[data-studio-frame-handle]");
+  const frame = page.locator('[data-studio-frame="rect"]');
+  const layer = (await page.locator("[data-studio-objects]").boundingBox())!;
+  for (const action of ["escape", "page", "pasteboard"]) {
+    await frame.click({ position: { x: 30, y: 30 } });
+    await expect(handles).toHaveCount(8);
+    if (action === "escape") await page.keyboard.press("Escape");
+    else await page.mouse.click(layer.x + (action === "page" ? 450 : -100), layer.y + 300);
+    await expect(handles).toHaveCount(0);
+    await expect(frame).toHaveCount(1);
+  }
+  await draw(page, "text", 100, 350);
+  await page.keyboard.insertText("Frame text");
+  await page.locator('[data-studio-tool-button="select"]').click();
+  await page.getByRole("textbox", { name: "Text box", exact: true }).click();
+  await expect(handles).toHaveCount(8);
+  await page.keyboard.press("Escape");
+  await expect(handles).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Text box", exact: true })).toHaveValue("Frame text");
+});
+
+test("Latin runs in Urdu paragraphs follow the English font without changing Urdu", async ({ page }) => {
+  await openCanvas(page);
+  const editor = page.locator(".ProseMirror");
+  await editor.click();
+  await page.keyboard.insertText("یہ اردو عبارت ہے Hello Qalam 2026 اور پھر اردو۔");
+  const paragraph = editor.locator('p[dir="rtl"]').first();
+  const latin = paragraph.locator('[data-studio-latin-run]').first();
+  await expect(latin).toContainText("Hello Qalam 2026");
+  await expect(latin).toHaveCSS("font-family", /Arial/);
+  await expect(paragraph).toHaveCSS("font-family", /^"Jameel Noori Nastaleeq"/);
+  await page.locator('[data-studio-latin-font]').selectOption("Inter");
+  await expect(latin).toHaveCSS("font-family", /Inter/);
+  await expect(paragraph).toHaveCSS("font-family", /^"Jameel Noori Nastaleeq"/);
+  await page.locator('[data-studio-latin-font]').selectOption("Arial Unicode MS");
+  await expect(latin).toHaveCSS("font-family", /Arial/);
+  await expect(latin).not.toHaveCSS("font-family", /Jameel/);
+  await expect(paragraph).toHaveText("یہ اردو عبارت ہے Hello Qalam 2026 اور پھر اردو۔");
+});

@@ -122,6 +122,7 @@ import {
   type RulerUnit,
 } from "../utils/documentView";
 import { studioJameelFontFaceCss, studioOnDemandFontFaceCss } from "../utils/fontRegistry";
+import { LatinScriptRuns } from "../extensions/LatinScriptRuns";
 import { QalamPagination } from "../extensions/QalamPagination";
 import DocumentToolbar from "./DocumentToolbar";
 import DocumentCanvas from "./DocumentCanvas";
@@ -436,7 +437,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
   const fullDeleteRef = useRef(false);
 
   const editor = useEditor({
-    extensions: [...createDocumentStudioExtensions(), QalamPagination],
+    extensions: [...createDocumentStudioExtensions(), QalamPagination, LatinScriptRuns],
     content: initialContent,
     immediatelyRender: false,
     editorProps: {

@@ -92,6 +92,23 @@ export function StudioObjectLayer({
   >(null);
   const drawing = DRAW_TOOLS.has(tool);
 
+  useEffect(() => {
+    const clearOnEmpty = (event: PointerEvent) => {
+      if (tool !== "select") return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("[data-studio-scroller]") && !target.closest("[data-studio-frame]")) setSelected(null);
+    };
+    const clearOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelected(null);
+    };
+    document.addEventListener("pointerdown", clearOnEmpty, true);
+    document.addEventListener("keydown", clearOnEscape, true);
+    return () => {
+      document.removeEventListener("pointerdown", clearOnEmpty, true);
+      document.removeEventListener("keydown", clearOnEscape, true);
+    };
+  }, [tool]);
+
   // Focus after React mounts the new textarea, before the next keystroke.
   useLayoutEffect(() => {
     const id = pendingTextFocus.current;
