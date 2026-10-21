@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import BookLibraryPanel from "../app/tools/khateeb-studio/BookLibraryPanel";
 
 vi.mock("../app/tools/khateeb-studio/BookTopicGuide", () => ({ default: () => null }));
+vi.mock("../app/tools/khateeb-studio/ClipboardFeedback", () => ({ default: () => null }));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 for (const locale of ["ur", "en"] as const) {
