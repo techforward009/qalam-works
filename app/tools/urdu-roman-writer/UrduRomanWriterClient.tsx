@@ -11,7 +11,7 @@ import { loadUrDraft, saveUrDraft, clearUrDraft } from "./utils/urDraft";
 
 const UI = {
   en: {
-    heading:       "Qalam Urdu Writer",
+    heading:       "Urdu to Roman Urdu",
     sub:           "Convert Urdu script to readable Roman Urdu — transliteration, not translation.",
     tabRoman:      "Roman Urdu → Urdu",
     tabUrduRoman:  "Urdu → Roman",
@@ -30,7 +30,7 @@ const UI = {
     footerNote:    "This tool provides transliteration (script conversion) only — not translation. English words, numbers, URLs, and filenames pass through unchanged.",
   },
   ur: {
-    heading:       "قلم اردو رائٹر",
+    heading:       "اردو سے رومن اردو",
     sub:           "اردو رسم الخط کو رومن اردو میں تبدیل کریں — نقل حرفی، ترجمہ نہیں۔",
     tabRoman:      "رومن اردو → اردو",
     tabUrduRoman:  "اردو → رومن اردو",
@@ -183,7 +183,7 @@ export default function UrduRomanWriterClient() {
                 rows={10}
                 autoFocus
                 className="w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-lg font-nastaliq leading-loose text-right text-[#1A1A2E] shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/40 focus:border-[#C9A84C]"
-                style={{ fontFamily: "var(--font-nastaliq), 'Noto Nastaliq Urdu', serif" }}
+                style={{ fontFamily: '"Mehr Nastaliq Web", var(--font-nastaliq), "Noto Nastaliq Urdu", serif' }}
                 aria-label={ui.inputLabel}
               />
               <p className="mt-1 text-right text-xs text-[#9CA3AF]">
@@ -272,10 +272,10 @@ export default function UrduRomanWriterClient() {
             <div className="flex flex-wrap gap-2">
               {[
                 "السلام علیکم",
-                "الحمد للہ",
-                "ان شاء اللہ",
-                "ماشاء اللہ",
-                "جزاک اللہ خیر",
+                "آج موسم بہت اچھا ہے",
+                "کل کتاب واپس کر دوں گا",
+                "مجھے یہ کہانی پسند آئی",
+                "براہ کرم رسید بھیج دیں",
                 "کیا حال ہے؟",
                 "پاکستان زندہ باد",
                 "بہت شکریہ",

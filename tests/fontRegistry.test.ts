@@ -2,8 +2,10 @@ import { describe, expect, test } from "vitest";
 import {
   directionForNode,
   listEditorFonts,
+  migrateAlviDocumentContent,
   resolveEditorFontFamily,
   getFontById,
+  studioOnDemandFontFaceCss,
 } from "../app/tools/document-studio/utils/fontRegistry";
 import {
   buildPdfHtml,
@@ -47,7 +49,7 @@ describe("fontRegistry", () => {
   });
 
   test("default font depends on document direction", () => {
-    expect(resolveEditorFontFamily(null, "rtl").pdfFamily).toBe("Noto Nastaliq Urdu");
+    expect(resolveEditorFontFamily(null, "rtl").pdfFamily).toBe("Mehr Nastaliq Web");
     expect(resolveEditorFontFamily(null, "ltr").pdfFamily).toBe("Inter");
   });
 
@@ -70,39 +72,50 @@ describe("fontRegistry", () => {
 
   test("all Blob families are available and Sahel resolves without PDF fallback", () => {
     const fonts = listEditorFonts();
-    expect(fonts).toHaveLength(10);
+    expect(fonts).toHaveLength(12);
     expect(fonts.some(f => f.id === "noto-nastaliq-urdu")).toBe(false);
     expect(resolveEditorFontFamily("Noto Nastaliq Urdu", "rtl").docxFamily).toBe("Noto Nastaliq Urdu");
-    expect(fonts.some(f => /Mehr/i.test(f.label))).toBe(false);
+    expect(fonts.some(f => f.label === "Mehr Nastaliq Web")).toBe(true);
+    expect(fonts.map(font => font.label)).toEqual(expect.arrayContaining(["Vazirmatn", "Sahel", "Al Fars 9 Badr", "B Nazanin"]));
     const sahel = resolveEditorFontFamily("Sahel", "rtl");
     expect(sahel.fellBack).toBe(false);
     expect(sahel.pdfFamily).toBe("Sahel");
     expect(getFontById("sahel").pdf.regularFiles?.[0]).toContain("/Sahel.woff2");
-    const adobe = getFontById("adobe-arabic");
-    expect(adobe.pdf.boldFiles?.[0]).toContain("/AdobeArabic-Bold.woff2");
     expect(resolveEditorFontFamily("Gulzar", "rtl").fellBack).toBe(false);
     expect(getFontById("gulzar").pdf.regularFiles?.[0]).toBe(
       "https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Gulzar-Regular.woff2",
     );
+    for (const picked of ["AlFars 9 Badr", "B Nazanin"] as const) {
+      const resolved = resolveEditorFontFamily(picked, "rtl");
+      expect(resolved.fellBack).toBe(false);
+      expect(resolved.pdfFamily).toBe(picked);
+      expect(resolved.docxFamily).toBe(picked);
+      expect(getFontById(resolved.fontId).pdf.regularFiles?.[0]).toContain(picked === "B Nazanin" ? "BNazanin.woff2" : "AlFars9Badr.woff2");
+    }
+    expect(studioOnDemandFontFaceCss("عادی")).toBe("");
+    expect(studioOnDemandFontFaceCss('font-family: "AlFars 9 Badr"')).toContain("AlFars9Badr.woff2");
+    expect(studioOnDemandFontFaceCss("B Nazanin")).toContain("BNazanin.woff2");
+    expect(studioOnDemandFontFaceCss("B Nazanin")).not.toContain("AlFars9Badr.woff2");
     const visible = fonts.map(font => font.editorFamily);
     expect(visible).toContain("Gulzar");
     expect(visible).not.toContain("Faiz Lahori Nastaleeq");
     const hiddenFamilies = [
       "Nafees Nastaleeq",
-      "Adobe Arabic",
-      "Traditional Arabic",
-      "Al Majeed Quranic",
-      "Asif Quranic",
       "Muhammadi Quranic",
-      "Al Qalam Quran Majeed",
     ];
     for (const family of hiddenFamilies) {
       expect(visible).not.toContain(family);
       // Already-saved documents can still render/export with their original font.
       expect(resolveEditorFontFamily(family, "rtl").fellBack).toBe(false);
     }
-    // Old documents must still preserve their explicitly chosen Faiz face.
-    expect(resolveEditorFontFamily("Faiz Lahori Nastaleeq", "rtl").fellBack).toBe(false);
+    for (const removed of ["Adobe Arabic", "Traditional Arabic", "Al Majeed Quranic", "Faiz Lahori Nastaleeq", "Asif Quranic", "Al Qalam Quran Majeed"]) {
+      expect(visible).not.toContain(removed);
+      expect(resolveEditorFontFamily(removed, "rtl")).toMatchObject({
+        fontId: "scheherazade-new",
+        pdfFamily: "Scheherazade New",
+        docxFamily: "Scheherazade New",
+      });
+    }
   });
 
   test("editor list includes main fonts", () => {
@@ -110,7 +123,42 @@ describe("fontRegistry", () => {
     expect(labels).not.toContain("Noto Nastaliq Urdu");
     expect(labels).toContain("Amiri");
     expect(labels).toContain("Inter");
+    expect(labels).not.toContain("Alvi Nastaleeq");
     expect(labels).toContain("Jameel Noori Nastaleeq");
+    expect(labels).toContain("Mehr Nastaliq Web");
+  });
+
+  test("saved unlicensed faces export as Scheherazade New and do not keep their names", () => {
+    const migrated = migrateAlviDocumentContent({
+      type: "doc",
+      content: [{
+        type: "paragraph",
+        content: [
+          { type: "text", text: "عربي", marks: [{ type: "textStyle", attrs: { fontFamily: "Adobe Arabic" } }] },
+          { type: "text", text: "جمیل", marks: [{ type: "textStyle", attrs: { fontFamily: "Jameel Noori Nastaleeq" } }] },
+        ],
+      }],
+    });
+    expect(migrated.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Scheherazade New");
+    expect(migrated.content?.[0].content?.[1].marks?.[0].attrs?.fontFamily).toBe("Jameel Noori Nastaleeq");
+    expect(resolveEditorFontFamily("Faiz Lahori", "rtl").docxFamily).toBe("Scheherazade New");
+    expect(resolveEditorFontFamily('"Al Majeed Quranic Font"', "rtl").pdfFamily).toBe("Scheherazade New");
+    expect(resolveEditorFontFamily("Asif Quranic", "rtl").docxFamily).toBe("Scheherazade New");
+    expect(resolveEditorFontFamily("Al Qalam Quran Majeed", "rtl").pdfFamily).toBe("Scheherazade New");
+    const quran = migrateAlviDocumentContent({
+      type: "doc",
+      content: [{
+        type: "paragraph",
+        content: [
+          { type: "text", text: "بِسْمِ\u06D6", marks: [{ type: "textStyle", attrs: { fontFamily: "Asif Quranic" } }] },
+          { type: "text", text: "عادی عربی", marks: [{ type: "textStyle", attrs: { fontFamily: "Al Qalam Quran Majeed" } }] },
+          { type: "text", text: "جمیل", marks: [{ type: "textStyle", attrs: { fontFamily: "Jameel Noori Nastaleeq" } }] },
+        ],
+      }],
+    });
+    expect(quran.content?.[0].content?.[0].marks?.[0].attrs?.fontFamily).toBe("Muhammadi Quranic");
+    expect(quran.content?.[0].content?.[1].marks?.[0].attrs?.fontFamily).toBe("Scheherazade New");
+    expect(quran.content?.[0].content?.[2].marks?.[0].attrs?.fontFamily).toBe("Jameel Noori Nastaleeq");
   });
 
   test("directionForNode prefers node attrs", () => {

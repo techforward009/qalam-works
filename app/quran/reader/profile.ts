@@ -13,7 +13,7 @@
  * Quran corpus.
  *
  * CURRENT FONT SELECTION: Muhammadi Quranic
- * Selected for superior web rendering and mark positioning compared to Asif.
+ * Asif Quranic and Al Qalam Quran Majeed are not loaded.
  */
 
 export const QURAN_LAYOUT_PROFILE = {
@@ -23,9 +23,8 @@ export const QURAN_LAYOUT_PROFILE = {
   id: "qalam-indopak-v1",
 
   /**
-   * Production Quran font.
-   * UPDATED: Muhammadi Quranic (Primary Choice)
-   * Reason: Better OpenType support for web browsers compared to Asif.
+   * Production Quran font: Muhammadi Quranic.
+   * Asif Quranic and Al Qalam Quran Majeed are not used.
    */
   productionFont: "Muhammadi Quranic",
 
@@ -60,7 +59,7 @@ export const QURAN_LAYOUT_PROFILE = {
 
   /**
    * Quran line rhythm.
-   * Optimized for Muhammadi/Al Qalam fonts.
+   * Optimized for Muhammadi Quranic.
    */
   lineHeight: 2.2,
 
@@ -80,13 +79,7 @@ export const QURAN_LAYOUT_PROFILE = {
 /**
  * Quran Font Stack
  *
- * Priority Order (UPDATED):
- * 1. Muhammadi Quranic (Primary - Best Web Rendering)
- * 2. Al Qalam Quran Majeed (Fallback 1 - Excellent Alternative)
- * 3. Asif Quranic (Fallback 2 - Desktop preferred)
- * 4. System Fonts
- *
- * The fallback order ensures readability even if the primary font fails to load.
+ * Quran text uses Muhammadi Quranic, then the bundled Naskh and Amiri faces.
  */
 export const QURAN_FONT_STACK =
-  '"Muhammadi Quranic", "Al Qalam Quran Majeed", "Asif Quranic", var(--font-naskh), "Noto Naskh Arabic", var(--font-amiri), Amiri, serif';
+  '"Muhammadi Quranic", var(--font-naskh), "Noto Naskh Arabic", var(--font-amiri), Amiri, serif';

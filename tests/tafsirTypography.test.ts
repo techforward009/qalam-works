@@ -180,7 +180,7 @@ describe("Tafsir source-preserving typography", () => {
     expect(page).toContain('<style>{TAFSIR_SCHEHERAZADE_CSS + TAFSIR_READING_SURFACE_CSS}</style>');
     expect(page).not.toContain('data-tafsir-font-warning');
     expect(page).not.toContain('Digital Khatt lacks a glyph');
-    expect(page).toContain('fontFamily: \'"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif\'');
+    expect(page).toContain('fontFamily: \'"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif\'');
     expect(page).toContain('fontFamily: \'"Gulzar", serif\'');
   });
 

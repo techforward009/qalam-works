@@ -15,18 +15,14 @@ export type FontId =
   | "noto-naskh-arabic"
   | "vazirmatn"
   | "sahel"
+  | "al-fars-9-badr"
+  | "b-nazanin"
   | "inter"
-  | "adobe-arabic"
-  | "alvi-nastaleeq"
+  | "mehr-nastaliq-web"
   | "digital-khatt-indo-pak"
-  | "faiz-lahori"
   | "gulzar"
   | "nafees-nastaleeq"
   | "scheherazade-new"
-  | "traditional-arabic"
-  | "al-majeed-quranic"
-  | "al-qalam-quran-majeed"
-  | "asif-quranic"
   | "muhammadi-quranic";
 
 export type Direction = "rtl" | "ltr";
@@ -70,16 +66,18 @@ export interface FontResolution {
 const EXTRA_BLOB_FONTS: StudioFontDefinition[] = PUBLIC_BLOB_FONT_FAMILIES
   .filter((font) => !font.existingStudioId)
   .map((font): StudioFontDefinition => {
-    const family = font.label;
+    const family = font.editorFamily ?? font.label;
     const fallbackFontId: FontId = font.script === "urdu" ? "noto-nastaliq-urdu"
       : font.script === "persian" ? "vazirmatn" : "noto-naskh-arabic";
     return {
       id: font.id as FontId,
-      label: family,
+      label: font.label,
       editorFamily: family,
       category: font.script === "quran" ? "arabic" : font.script,
       scripts: ["arabic"],
-      cssStack: `"${family}", serif`,
+      cssStack: font.id === "mehr-nastaliq-web"
+        ? '"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif'
+        : `"${family}", serif`,
       cssClass: `qf-blob-${font.id}`,
       pdf: {
         supported: true,
@@ -125,7 +123,7 @@ export const STUDIO_FONTS: StudioFontDefinition[] = [
     docx: { supported: true, embedded: false, familyName: "Jameel Noori Nastaleeq" },
     fallbackFontId: "noto-nastaliq-urdu",
     availability: "public-blob",
-    notes: "Browser and PDF use the public Vercel Blob Regular face; Word still needs the family installed locally.",
+    notes: "Optional Document Studio Nastaleeq. Browser and PDF use the Cloudflare mirror; an explicit Jameel selection is never rewritten to Alvi.",
   },
   {
     id: "noto-nastaliq-urdu",
@@ -285,8 +283,8 @@ export function editorFontFamilyStack(id: FontId): string {
       return '"Jameel Noori Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
     case "gulzar":
       return '"Gulzar", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
-    case "alvi-nastaleeq":
-      return '"Alvi Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
+    case "mehr-nastaliq-web":
+      return '"Mehr Nastaliq Web", var(--font-nastaliq), "Noto Nastaliq Urdu", serif';
     case "amiri":
       return 'var(--font-amiri), Amiri, serif';
     case "noto-naskh-arabic":
@@ -295,6 +293,10 @@ export function editorFontFamilyStack(id: FontId): string {
       return 'var(--font-vazirmatn), Vazirmatn, sans-serif';
     case "sahel":
       return 'Sahel, Tahoma, "Segoe UI", sans-serif';
+    case "al-fars-9-badr":
+      return '"AlFars 9 Badr", Sahel, var(--font-vazirmatn), Vazirmatn, sans-serif';
+    case "b-nazanin":
+      return '"B Nazanin", Sahel, var(--font-vazirmatn), Vazirmatn, sans-serif';
     case "inter":
       return 'var(--font-inter), Inter, system-ui, sans-serif';
     case "scheherazade-new":
@@ -339,14 +341,8 @@ export function exportFamilyForSegment(
 const HIDDEN_EDITOR_FONT_IDS: ReadonlySet<FontId> = new Set([
   "default",
   "noto-nastaliq-urdu",
-  "faiz-lahori",
   "nafees-nastaleeq",
-  "adobe-arabic",
-  "traditional-arabic",
-  "al-majeed-quranic",
-  "asif-quranic",
   "muhammadi-quranic",
-  "al-qalam-quran-majeed",
 ]);
 
 export function listEditorFonts(): StudioFontDefinition[] {
@@ -368,6 +364,113 @@ export function directionForNode(
   return globalDir;
 }
 
+export function isRetiredAlviFont(raw: unknown): boolean {
+  if (raw === "alvi-nastaleeq") return true;
+  if (typeof raw !== "string") return false;
+  const first = raw.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";
+  return first === "Alvi Nastaleeq" || first === "alvi-nastaleeq";
+}
+
+/** Adobe Arabic, Traditional Arabic, Al Majeed Quranic, and Faiz Lahori are not licensed. */
+const REMOVED_UNLICENSED_FONT_IDS = new Set([
+  "adobe-arabic",
+  "traditional-arabic",
+  "al-majeed-quranic",
+  "faiz-lahori",
+]);
+const REMOVED_UNLICENSED_FONT_FAMILIES = new Set([
+  "Adobe Arabic",
+  "Traditional Arabic",
+  "Al Majeed Quranic",
+  "Al Majeed Quranic Font",
+  "Faiz Lahori Nastaleeq",
+  "Faiz Lahori",
+]);
+export const REMOVED_FONT_FALLBACK_FAMILY = "Scheherazade New";
+export const QURAN_FONT_FALLBACK_FAMILY = "Muhammadi Quranic";
+
+/** Asif Quranic and Al Qalam Quran Majeed are not licensed for this site. */
+const REMOVED_QURAN_FONT_IDS = new Set(["asif-quranic", "al-qalam-quran-majeed"]);
+const REMOVED_QURAN_FONT_FAMILIES = new Set(["Asif Quranic", "Al Qalam Quran Majeed"]);
+const QURAN_TEXT_SIGNS = /[\u0615-\u0617\u06D6-\u06ED\u08D3-\u08FF]/u;
+
+export function isRemovedQuranFont(raw: unknown): boolean {
+  if (typeof raw !== "string") return false;
+  const trimmed = raw.trim();
+  if (REMOVED_QURAN_FONT_IDS.has(trimmed)) return true;
+  const first = trimmed.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";
+  return REMOVED_QURAN_FONT_FAMILIES.has(first);
+}
+
+/** Quranic annotation signs keep Muhammadi Quranic. Other saved text uses Scheherazade New. */
+export function removedQuranFontReplacement(text: string): string {
+  return QURAN_TEXT_SIGNS.test(text) ? QURAN_FONT_FALLBACK_FAMILY : REMOVED_FONT_FALLBACK_FAMILY;
+}
+
+export function isRemovedUnlicensedFont(raw: unknown): boolean {
+  if (typeof raw !== "string") return false;
+  const trimmed = raw.trim();
+  if (REMOVED_UNLICENSED_FONT_IDS.has(trimmed)) return true;
+  const first = trimmed.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";
+  return REMOVED_UNLICENSED_FONT_FAMILIES.has(first);
+}
+
+function retiredFontReplacement(raw: unknown, text = ""): string | null {
+  if (isRetiredAlviFont(raw)) return "Mehr Nastaliq Web";
+  if (isRemovedQuranFont(raw)) return removedQuranFontReplacement(text);
+  if (isRemovedUnlicensedFont(raw)) return REMOVED_FONT_FALLBACK_FAMILY;
+  return null;
+}
+
+/** Replace a stored Alvi mark with Mehr, and an unlicensed face with Scheherazade New. */
+export function migrateAlviDocumentContent<T extends DocNode>(doc: T): T {
+  const walk = (node: DocNode): DocNode => {
+    const marks = node.marks?.map((mark) => {
+      const replacement = retiredFontReplacement(mark.attrs?.fontFamily, node.text ?? "");
+      const current = replacement ?? mark.attrs?.fontFamily;
+      if (typeof current !== "string") return mark;
+      const quoted = quoteEditorFontFamily(current);
+      if (!replacement && quoted === mark.attrs?.fontFamily) return mark;
+      return { ...mark, attrs: { ...mark.attrs, fontFamily: quoted || current } };
+    });
+    const content = node.content?.map(walk);
+    const marksChanged = marks !== undefined && marks.some((mark, index) => mark !== node.marks?.[index]);
+    const contentChanged = content !== undefined && content.some((child, index) => child !== node.content?.[index]);
+    if (!marksChanged && !contentChanged) return node;
+    return {
+      ...node,
+      ...(marksChanged ? { marks } : {}),
+      ...(contentChanged ? { content } : {}),
+    };
+  };
+  return walk(doc) as T;
+}
+
+export function storedRecordUsesAlvi(raw: unknown): boolean {
+  if (isRetiredAlviFont(raw) || isRemovedUnlicensedFont(raw) || isRemovedQuranFont(raw)) return true;
+  if (!raw || typeof raw !== "object") return false;
+  const record = raw as {
+    content?: DocNode;
+    documentSettings?: { typography?: { defaultRtlFontId?: unknown; defaultLtrFontId?: unknown } };
+  };
+  const typography = record.documentSettings?.typography;
+  if (isRetiredAlviFont(typography?.defaultRtlFontId) || isRetiredAlviFont(typography?.defaultLtrFontId)) {
+    return true;
+  }
+  if (isRemovedUnlicensedFont(typography?.defaultRtlFontId) || isRemovedUnlicensedFont(typography?.defaultLtrFontId)) {
+    return true;
+  }
+  if (isRemovedQuranFont(typography?.defaultRtlFontId) || isRemovedQuranFont(typography?.defaultLtrFontId)) {
+    return true;
+  }
+  const walk = (node: DocNode | undefined): boolean => {
+    if (!node) return false;
+    if (node.marks?.some((mark) => retiredFontReplacement(mark.attrs?.fontFamily))) return true;
+    return node.content?.some((child) => walk(child)) ?? false;
+  };
+  return walk(record.content);
+}
+
 export function resolveEditorFontFamily(
   raw: unknown,
   globalDir: Direction = "rtl"
@@ -375,8 +478,18 @@ export function resolveEditorFontFamily(
   const requested =
     typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
 
+  if (isRetiredAlviFont(requested)) {
+    return resolveEditorFontFamily("Mehr Nastaliq Web", globalDir);
+  }
+  if (isRemovedQuranFont(requested)) {
+    return resolveEditorFontFamily(REMOVED_FONT_FALLBACK_FAMILY, globalDir);
+  }
+  if (isRemovedUnlicensedFont(requested)) {
+    return resolveEditorFontFamily(REMOVED_FONT_FALLBACK_FAMILY, globalDir);
+  }
+
   if (!requested) {
-    const defId: FontId = globalDir === "ltr" ? "inter" : "noto-nastaliq-urdu";
+    const defId: FontId = globalDir === "ltr" ? "inter" : "mehr-nastaliq-web";
     const def = getFontById(defId);
     return {
       requested: null,
@@ -453,8 +566,46 @@ export function studioGulzarFontFaceCss(): string {
   return `@font-face{font-family:"Gulzar";src:url("${url}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
 }
 
+/** Same Mehr file the PDF embedder uses. Same-origin until it is uploaded to the font Worker. */
+export function studioMehrFontFaceCss(): string {
+  const url = getFontById("mehr-nastaliq-web").pdf.regularFiles?.[0] ?? "/fonts/MehrNastaliqWeb.woff2";
+  return `@font-face{font-family:"Mehr Nastaliq Web";src:url("${url}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`;
+}
+
+/** Persian faces requested only after a Document Studio document uses them. */
+const ON_DEMAND_STUDIO_FACES = [
+  { family: "AlFars 9 Badr", file: "AlFars9Badr.woff2" },
+  { family: "B Nazanin", file: "BNazanin.woff2" },
+] as const;
+
+export function studioOnDemandFontFaceCss(source: string): string {
+  return ON_DEMAND_STUDIO_FACES
+    .filter((face) => source.includes(face.family))
+    .map((face) => `@font-face{font-family:"${face.family}";src:url("${publicBlobFontUrl(face.file)}") format("woff2");font-weight:400;font-style:normal;font-display:swap;}`)
+    .join("\n");
+}
+
+/** CSS font-family tokens that may appear unquoted. A digit-leading token is not one of these. */
+const CSS_FONT_IDENT = /^-?[A-Za-z_][A-Za-z0-9_-]*$/;
+/** These names are quoted in the editor, saved JSON, and PDF CSS. Al Fars is invalid unquoted. */
+const QUOTED_EDITOR_FAMILIES = new Set(["AlFars 9 Badr", "B Nazanin"]);
+
+/** A CSS font-family value TipTap can assign with element.style.cssText. */
+export function quoteEditorFontFamily(raw: string): string {
+  const first = raw.trim().split(",")[0]?.trim() ?? "";
+  const bare = first.replace(/^["']+|["']+$/g, "");
+  if (!bare) return "";
+  const tokens = bare.split(/\s+/).filter(Boolean);
+  const safe = tokens.every((token) => CSS_FONT_IDENT.test(token));
+  if (safe && !QUOTED_EDITOR_FAMILIES.has(bare)) return bare;
+  return `"${bare.replace(/"/g, "")}"`;
+}
+
 /** Map a TipTap/CSS fontFamily value onto a registry editorFamily, or "". */
 export function normalizeEditorFontFamily(raw: unknown): string {
+  if (isRetiredAlviFont(raw)) return "Mehr Nastaliq Web";
+  if (isRemovedQuranFont(raw)) return REMOVED_FONT_FALLBACK_FAMILY;
+  if (isRemovedUnlicensedFont(raw)) return REMOVED_FONT_FALLBACK_FAMILY;
   if (typeof raw !== "string") return "";
   const first = raw.split(",")[0]?.trim().replace(/^["']+|["']+$/g, "") ?? "";
   if (!first) return "";

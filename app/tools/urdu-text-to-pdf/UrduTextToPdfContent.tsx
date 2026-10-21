@@ -32,8 +32,8 @@ export default function UrduTextToPdfContent() {
         {
           title: { en: "PDF vs DOCX", ur: "PDF اور DOCX" },
           body: {
-            en: "Use PDF when you need a fixed page you can send or print. Use DOCX when someone else still needs to edit the file in Word. Both exports come from the same Document Studio draft, so you can format once and choose the file type at the end.",
-            ur: "جب ایک مقرر صفحہ بھیجنا یا چھاپنا ہو تو PDF استعمال کریں۔ جب دوسرا شخص ابھی فائل میں ترمیم کرے گا تو DOCX لیں۔ دونوں ایکسپورٹ ایک ہی ڈاکومنٹ اسٹوڈیو مسودے سے بنتے ہیں، اس لیے ایک بار ترتیب دیں اور آخر میں فائل کی قسم چنیں۔",
+            en: "Use PDF when you need a fixed page you can send or print. Use DOCX when someone else still needs to edit the file in Word. Both exports come from the same Qalam Page: Urdu Editor draft, so you can format once and choose the file type at the end.",
+            ur: "جب ایک مقرر صفحہ بھیجنا یا چھاپنا ہو تو PDF استعمال کریں۔ جب دوسرا شخص ابھی فائل میں ترمیم کرے گا تو DOCX لیں۔ دونوں ایکسپورٹ ایک ہی قلم پیج: اردو ایڈیٹر مسودے سے بنتے ہیں، اس لیے ایک بار ترتیب دیں اور آخر میں فائل کی قسم چنیں۔",
           },
         },
       ]}
@@ -44,8 +44,8 @@ export default function UrduTextToPdfContent() {
             ur: "کیا براؤزر میں اردو متن کو PDF بنایا جا سکتا ہے؟",
           },
           a: {
-            en: "Yes. Type or paste Urdu in the editor on this page, check RTL and fonts, then use Document Studio’s PDF download. The file is generated from the document you see — there is no separate upload form.",
-            ur: "ہاں۔ اس صفحے کے ایڈیٹر میں اردو لکھیں یا پیسٹ کریں، دائیں سے بائیں سمت اور فونٹ چیک کریں، پھر ڈاکومنٹ اسٹوڈیو سے PDF ڈاؤن لوڈ کریں۔ فائل اسی دستاویز سے بنتی ہے جو آپ دیکھ رہے ہیں — الگ اپلوڈ فارم نہیں۔",
+            en: "Yes. Type or paste Urdu in the editor on this page, check RTL and fonts, then use Qalam Page: Urdu Editor’s PDF download. The file is generated from the document you see — there is no separate upload form.",
+            ur: "ہاں۔ اس صفحے کے ایڈیٹر میں اردو لکھیں یا پیسٹ کریں، دائیں سے بائیں سمت اور فونٹ چیک کریں، پھر قلم پیج: اردو ایڈیٹر سے PDF ڈاؤن لوڈ کریں۔ فائل اسی دستاویز سے بنتی ہے جو آپ دیکھ رہے ہیں — الگ اپلوڈ فارم نہیں۔",
           },
         },
         {
@@ -64,8 +64,8 @@ export default function UrduTextToPdfContent() {
             ur: "کیا ایک ہی PDF میں اردو اور انگریزی ملا سکتا ہوں؟",
           },
           a: {
-            en: "Yes. Document Studio is a multilingual editor. Keep Urdu paragraphs RTL and leave English runs as they are; the PDF follows the editor layout rather than forcing a single direction on the whole file.",
-            ur: "ہاں۔ ڈاکومنٹ اسٹوڈیو کثیر لسانی ایڈیٹر ہے۔ اردو پیراگراف RTL رکھیں اور انگریزی جوں کی توں رہنے دیں؛ PDF پوری فائل پر ایک سمت مسلط کرنے کے بجائے ایڈیٹر کی ترتیب پر چلتا ہے۔",
+            en: "Yes. Qalam Page: Urdu Editor is a multilingual editor. Keep Urdu paragraphs RTL and leave English runs as they are; the PDF follows the editor layout rather than forcing a single direction on the whole file.",
+            ur: "ہاں۔ قلم پیج: اردو ایڈیٹر کثیر لسانی ایڈیٹر ہے۔ اردو پیراگراف RTL رکھیں اور انگریزی جوں کی توں رہنے دیں؛ PDF پوری فائل پر ایک سمت مسلط کرنے کے بجائے ایڈیٹر کی ترتیب پر چلتا ہے۔",
           },
         },
         {
@@ -80,7 +80,7 @@ export default function UrduTextToPdfContent() {
         },
       ]}
       related={[
-        { href: "/tools/document-studio", label: { en: "Document Studio", ur: "ڈاکومنٹ اسٹوڈیو" } },
+        { href: "/tools/document-studio", label: { en: "Qalam Page: Urdu Editor", ur: "قلم پیج: اردو ایڈیٹر" } },
         { href: "/tools/unicode-standardizer", label: { en: "Urdu Unicode Fixer", ur: "اردو یونیکوڈ فکسر" } },
         { href: "/tools/roman-urdu-to-urdu", label: { en: "Roman Urdu to Urdu", ur: "رومن اردو سے اردو" } },
         { href: "/services", label: { en: "Professional document formatting", ur: "پیشہ ورانہ دستاویز کی ترتیب" } },

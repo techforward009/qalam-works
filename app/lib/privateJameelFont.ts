@@ -150,7 +150,7 @@ export async function loadJameelFromCloudflare(
 }
 
 /** Load approved Jameel bytes. Never returns URLs, tokens, or font diagnostics beyond a reason code. */
-export async function loadPrivateJameelWoff2(
+async function loadUncachedPrivateJameelWoff2(
   config?: JameelBlobFetchConfig,
 ): Promise<JameelFontLoadResult> {
   const localPath = path.join(process.cwd(), "assets", "fonts", JAMEEL_FILENAME);
@@ -166,7 +166,9 @@ export async function loadPrivateJameelWoff2(
   if (cloudflareUrl) {
     const mirrored=await loadJameelFromCloudflare(cloudflareUrl,config?.fetchImpl);
     // Do not silently swap identity after an integrity failure.
-    if (mirrored.ok || (!mirrored.ok && mirrored.reason === "integrity-failed")) return mirrored;
+    // Default runtime must fail closed without ever calling Vercel Blob.
+    // Explicit legacy configurations remain available solely to isolated callers/tests.
+    if (config === undefined || mirrored.ok || (!mirrored.ok && mirrored.reason === "integrity-failed")) return mirrored;
   }
   return loadJameelFromBlob({
     blobUrl: config?.blobUrl ?? process.env.JAMEEL_FONT_BLOB_URL,
@@ -174,6 +176,21 @@ export async function loadPrivateJameelWoff2(
     blobToken: config?.blobToken ?? process.env.BLOB_READ_WRITE_TOKEN,
     fetchImpl: config?.fetchImpl,
   });
+}
+
+// Share a single verified font read across concurrent PDF requests in a warm instance.
+// Never cache failed loads or custom-config test calls; failures can recover naturally.
+let cachedDefaultJameel: Promise<JameelFontLoadResult> | null = null;
+export function loadPrivateJameelWoff2(config?: JameelBlobFetchConfig): Promise<JameelFontLoadResult> {
+  if (config !== undefined) return loadUncachedPrivateJameelWoff2(config);
+  if (cachedDefaultJameel) return cachedDefaultJameel;
+  const pending = loadUncachedPrivateJameelWoff2();
+  cachedDefaultJameel = pending;
+  void pending.then(
+    result => { if (!result.ok && cachedDefaultJameel === pending) cachedDefaultJameel = null; },
+    () => { if (cachedDefaultJameel === pending) cachedDefaultJameel = null; },
+  );
+  return pending;
 }
 
 export async function loadPrivateJameelWoff2Base64(): Promise<string | null> {

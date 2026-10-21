@@ -26,6 +26,13 @@ function loadFontBase64(relPath: string): string | null {
   return readFileSync(full).toString("base64");
 }
 
+function loadPublicFontBase64(filename: string): string | null {
+  if (!filename || filename.includes("/") || filename.includes("\\") || filename.includes("..")) return null;
+  const full = path.join(process.cwd(), "public", "fonts", filename);
+  if (!existsSync(full)) return null;
+  return readFileSync(full).toString("base64");
+}
+
 function fontFaceBlock(familyName: string, weight: number, b64: string | null): string {
   if (!b64) return "";
   return `@font-face{font-family:"${familyName}";src:url(data:font/woff2;base64,${b64}) format("woff2");font-weight:${weight};font-display:block;}`;
@@ -37,19 +44,21 @@ export function buildInvoiceHtml(payload: InvoiceExportPayload): string {
 
   const interReg    = loadFontBase64("@fontsource/inter/files/inter-latin-400-normal.woff2");
   const interBold   = loadFontBase64("@fontsource/inter/files/inter-latin-700-normal.woff2");
+  const mehr        = loadPublicFontBase64("MehrNastaliqWeb.woff2");
   const nastaliqReg = loadFontBase64("@fontsource/noto-nastaliq-urdu/files/noto-nastaliq-urdu-arabic-400-normal.woff2");
   const nastaliqLat = loadFontBase64("@fontsource/noto-nastaliq-urdu/files/noto-nastaliq-urdu-latin-400-normal.woff2");
 
   const fontFaces = [
     fontFaceBlock("Inter", 400, interReg),
     fontFaceBlock("Inter", 700, interBold),
+    fontFaceBlock("Mehr Nastaliq Web", 400, mehr),
     fontFaceBlock("Noto Nastaliq Urdu", 400, nastaliqReg),
     fontFaceBlock("Noto Nastaliq Urdu", 400, nastaliqLat),
   ].join("\n");
 
   const baseFontFamily = urFont
-    ? "'Noto Nastaliq Urdu', serif"
-    : "Inter, system-ui, sans-serif";
+    ? "'Mehr Nastaliq Web', 'Noto Nastaliq Urdu', serif"
+    : "'Inter', 'Mehr Nastaliq Web', 'Noto Nastaliq Urdu', system-ui, sans-serif";
 
   return `<!DOCTYPE html>
 <html lang="${doc.dir === "rtl" ? "ur" : "en"}" dir="${doc.dir}">

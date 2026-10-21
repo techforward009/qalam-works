@@ -114,7 +114,7 @@ export function formatInvoiceMinor(minor: number, currency: string, lang: "en" |
   const digits = fractionDigitOpts(currency, lang);
   try {
     return new Intl.NumberFormat(lang === "ur" ? "ur-PK" : "en-US", {
-      style: "currency", currency: currency || "USD",
+      style: "currency", currency: currency || "PKR",
       ...digits,
     }).format(major);
   } catch {
@@ -124,7 +124,7 @@ export function formatInvoiceMinor(minor: number, currency: string, lang: "en" |
 }
 
 export function calculateInvoice(inv: Invoice): InvoiceResult {
-  const precision = precisionForCurrency(inv.currency || "USD");
+  const precision = precisionForCurrency(inv.currency || "PKR");
 
   const lineTotals: number[] = [];
   const lineDiscounts: number[] = [];
@@ -236,7 +236,7 @@ export function combinedDiscount(result: InvoiceResult): number {
   return Math.max(0, (result.lineDiscountTotal || 0) + (result.discount || 0));
 }
 
-export function lineDiscountLabel(item: LineItem, currency = "USD", lang: "en" | "ur" = "en"): string {
+export function lineDiscountLabel(item: LineItem, currency = "PKR", lang: "en" | "ur" = "en"): string {
   const percent = Number(item.discountPercent || 0);
   const fixed = Number(item.discountFixed || 0);
   if (percent <= 0 && fixed <= 0) return "—";

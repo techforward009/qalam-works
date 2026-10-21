@@ -9,11 +9,11 @@ const TRANSLATORS: readonly { id: QuranUrduTranslator; label: string }[] = [
   { id: "safdar-najfi", label: "علامہ سید صفدر حسین نجفی (تفسیر نمونہ)" },
 ];
 
-const ALVI_FONT = '"Alvi Nastaleeq", "Noto Nastaliq Urdu", serif';
+const MEHR_FONT = '"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif';
 
 /**
  * In-page selection avoids Android's oversized native select dialog and
- * ensures the approved Alvi Nastaleeq font renders on mobile and desktop.
+ * renders the Mehr Nastaliq Web body face on mobile and desktop.
  */
 export default function QuranUrduTranslatorPicker({
   value,
@@ -60,7 +60,7 @@ export default function QuranUrduTranslatorPicker({
       className="relative z-30 mx-auto mt-4 w-full max-w-[370px] text-center"
       dir="rtl"
       lang="ur"
-      style={{ fontFamily: ALVI_FONT, fontSynthesis: "none" }}
+      style={{ fontFamily: MEHR_FONT, fontSynthesis: "none" }}
       data-quran-translator-picker
     >
       <div className="rounded-2xl border border-[#c9ba90] bg-gradient-to-b from-[#f9f6ec] to-[#efe9d8] px-3 py-3 shadow-[0_3px_12px_rgba(52,65,41,0.09)] sm:px-4">

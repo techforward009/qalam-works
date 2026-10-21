@@ -3,19 +3,18 @@ import worker from "../infra/cloudflare/font-mirror/index.js";
 
 const origin = "https://qalam-fonts-private-mirror.example.workers.dev";
 const req = (path: string, method = "GET") => new Request(origin + path, { method });
-const ALL_TEN: Record<string, { size: number; sha256: string }> = {
+const ALL_NINE: Record<string, { size: number; sha256: string }> = {
   "AlFars9Badr.woff2": { size: 30340, sha256: "c9e108d6c962ef2f18b7b939f7a5ebf74ce65192a85249cb571554c18f3e9ab8" },
-  "Alvi_Nastaleeq.woff2": { size: 5228460, sha256: "0e60d92fbf7a86dad972b7e75dfbb85dd94ffe3ee8fbba0c14115fc977efb466" },
   "BNazanin.woff2": { size: 20076, sha256: "2e9bfe82c0e631244e5729408fee76778b04edc716bed9da054c7c286de6f368" },
   "Gulzar-Regular.woff2": { size: 237008, sha256: "cf6b33bd971d65eef3eedafcae62ee8e88bdfe30ef6a23f9ab627a2f24e376d6" },
-  "NafeesNastaleeq-Web.woff2": { size: 23692, sha256: "3b2219947cbd4704b4534198005f8e3818182ded24cac774c1fa0f625a955f82" },
-  "NafeesNastaleeq.woff2": { size: 129624, sha256: "7e83325ff08842b011d6d70060ea055a992318e1cc5997bd66ccf1e13e35aac0" },
+  "MehrNastaliqWeb.woff2": { size: 55884, sha256: "a3c651455e754cb1e20e8bba05e449dfd12fa778870a79f11bca3108dbe41457" },
+  "NafeesNastaleeq-v1.02.woff2": { size: 147664, sha256: "0ded94076db53a8be209e5f2745a58eb244ead9a79ebc0e98a15750b2ca1feaf" },
   "Sahel.woff2": { size: 35460, sha256: "25e4a066c637948e01e12b7c8bf9e13afa188fad6949affedc6ddf2d307b31b0" },
   "ScheherazadeNew-Medium.woff2": { size: 147916, sha256: "67c5c24a178e7e3e1c1c6ca7095448e70da6f882bf7f41783a8085e7ba87269e" },
   "jameel-noori-nastaleeq-400.woff2": { size: 5554728, sha256: "d12978f4398f1f788d65fa7ccb872cf0e1c43aef89166816243e94487d9cee27" },
   "muhammadi-quranic-400.woff2": { size: 220136, sha256: "ddcce6d3bd7dd026f6a0035040e71da3ddac669a470336459dc08045a43dd7fe" },
 };
-const BY_SIZE = new Map(Object.values(ALL_TEN).map(file => [file.size, file.sha256]));
+const BY_SIZE = new Map(Object.values(ALL_NINE).map(file => [file.size, file.sha256]));
 
 function stubDigest(override?: (size: number) => string) {
   const digest = vi.fn(async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
@@ -29,7 +28,7 @@ function stubDigest(override?: (size: number) => string) {
 }
 function env() {
   const get = vi.fn(async (key: string) => {
-    const file = ALL_TEN[key];
+    const file = ALL_NINE[key];
     return {
       size: file?.size ?? 0,
       body: new Response(new Uint8Array(file?.size ?? 0)).body!,
@@ -40,11 +39,11 @@ function env() {
 }
 
 describe("Cloudflare owner-authorized original font Worker", () => {
-  it("maps each of ten exact uploaded object names, with proper font CORS", async () => {
+  it("maps each allowlisted font, including Mehr Nastaliq Web, with proper font CORS", async () => {
     stubDigest();
     try {
       const context = env();
-      for (const [name, file] of Object.entries(ALL_TEN)) {
+      for (const [name, file] of Object.entries(ALL_NINE)) {
         const response = await worker.fetch(req("/fonts/" + name), context);
         expect(response.status, name).toBe(200);
         expect(response.headers.get("Content-Length"), name).toBe(String(file.size));
@@ -54,7 +53,7 @@ describe("Cloudflare owner-authorized original font Worker", () => {
         expect(response.headers.get("X-Qalam-Font-SHA256")).toBe(file.sha256);
         expect(context.FONT_BUCKET.get).toHaveBeenLastCalledWith(name);
       }
-      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(10);
+      expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(9);
     } finally {
       vi.unstubAllGlobals();
     }
@@ -66,7 +65,12 @@ describe("Cloudflare owner-authorized original font Worker", () => {
       const context = env();
       for (const path of [
         "/shards/ur/001.json.br", "/fonts/DigitalKhattIndoPakRegular.woff2",
-        "/fonts/AdobeArabic-Regular.woff2", "/fonts/../private.json",
+        "/fonts/AdobeArabic-Regular.woff2", "/fonts/AdobeArabic-Bold.woff2",
+        "/fonts/TraditionalArabic.woff2", "/fonts/TraditionalArabic-Bold.woff2",
+        "/fonts/Faiz-Lahori-Web.woff2", "/fonts/al-majeed-quranic-400.woff2",
+        "/fonts/asif-quranic-400.woff2", "/fonts/al-qalam-quran-majeed-web-regular.woff2",
+        "/fonts/NafeesNastaleeq.woff2", "/fonts/NafeesNastaleeq-Web.woff2",
+        "/fonts/../private.json",
         "/fonts/Alvi_Nastaleeq.woff2?download=1", "/fonts/jameel-noori-nastaleeq-400.woff2/anything",
       ]) expect((await worker.fetch(req(path), context)).status).toBe(404);
       expect(context.FONT_BUCKET.get).not.toHaveBeenCalled();
@@ -109,7 +113,7 @@ describe("Cloudflare owner-authorized original font Worker", () => {
       const response = await worker.fetch(req("/fonts/Gulzar-Regular.woff2"), context);
       expect(response.status).toBe(200);
       expect(response.headers.get("Content-Type")).toBe("font/woff2");
-      expect(response.headers.get("Content-Length")).toBe(String(ALL_TEN["Gulzar-Regular.woff2"].size));
+      expect(response.headers.get("Content-Length")).toBe(String(ALL_NINE["Gulzar-Regular.woff2"].size));
       expect(context.FONT_BUCKET.get).toHaveBeenCalledTimes(1);
       expect(cache.put).toHaveBeenCalledTimes(1);
     } finally {

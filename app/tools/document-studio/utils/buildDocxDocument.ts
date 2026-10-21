@@ -847,7 +847,7 @@ export function createDocxDocument(doc: DocNode, dir: Direction, settings: Docum
     // Keywords reflects the language direction actually used.
     title,
     creator: "Qalam Works",
-    subject: "Document exported from Qalam Works Document Studio",
+    subject: "Document exported from Qalam Works Qalam Page: Urdu Editor",
     keywords: dir === "rtl" ? "Urdu, Arabic, Persian, RTL" : "English, LTR",
     numbering: ctx.configs.length > 0 ? { config: ctx.configs } : undefined,
     sections: chunks.map((chunk) => ({

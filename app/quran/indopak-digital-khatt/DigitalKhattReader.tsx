@@ -422,11 +422,12 @@ export default function DigitalKhattReader({
                 type="button"
                 onClick={() => void copyCurrentPage()}
                 className="mt-3 w-full rounded-md border border-[#cfc7b7] px-3 py-2 text-sm text-[#575247] hover:bg-[#f4f2ec]"
+                style={language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined}
               >
                 {copied ? copy.copyDone : copy.copy}
               </button>
 
-              <label className="mt-3 block border-t border-[#e2dccd] pt-3 text-xs text-[#625d53]">
+              <label className="mt-3 block border-t border-[#e2dccd] pt-3 text-xs text-[#625d53]" style={language === "ur" ? { fontFamily: '"Mehr Nastaliq Web", serif' } : undefined}>
                 {copy.display}
                 <select
                   value={scale}

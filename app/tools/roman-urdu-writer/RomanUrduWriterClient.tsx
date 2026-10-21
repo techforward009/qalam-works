@@ -82,7 +82,7 @@ function isReviewable(tok: WriterToken): boolean {
 
 const UI = {
   en: {
-    heading:    "Qalam Urdu Writer",
+    heading:    "Roman Urdu to Urdu",
     sub:        "Write Urdu easily from Roman Urdu, with control over uncertain words.",
     modeRoman:  "Roman Urdu → اردو",
     modeUrdu:   "اردو → Roman Urdu",
@@ -129,9 +129,9 @@ const UI = {
     copyWhatsAppLabel: "Copy WhatsApp-ready text",
     hidePreview: "Hide",
     hidePreviewLabel: "Hide WhatsApp-ready preview",
-    continueStudio: "Continue in Document Studio",
-    continueStudioLabel: "Open current Urdu text in Document Studio",
-    continueStudioFailed: "Could not open Document Studio.",
+    continueStudio: "Continue in Qalam Page: Urdu Editor",
+    continueStudioLabel: "Open current Urdu text in Qalam Page: Urdu Editor",
+    continueStudioFailed: "Could not open Qalam Page: Urdu Editor.",
     undo: "Undo",
     redo: "Redo",
     undoLabel: "Undo last edit",
@@ -145,7 +145,7 @@ const UI = {
     draftSaveFailed: "Draft could not be saved locally.",
   },
   ur: {
-    heading:    "قلم اردو رائٹر",
+    heading:    "رومن اردو سے اردو",
     sub:        "رومن اردو سے آسانی سے اردو لکھیں، اور جہاں ضرورت ہو لفظ خود منتخب کریں۔",
     modeRoman:  "رومن اردو → اردو",
     modeUrdu:   "اردو → رومن اردو",
@@ -192,9 +192,9 @@ const UI = {
     copyWhatsAppLabel: "واٹس ایپ کے لیے تیار متن کاپی کریں",
     hidePreview: "چھپائیں",
     hidePreviewLabel: "واٹس ایپ پیش نظارہ چھپائیں",
-    continueStudio: "ڈاکومنٹ اسٹوڈیو میں جاری رکھیں",
-    continueStudioLabel: "موجودہ اردو متن ڈاکومنٹ اسٹوڈیو میں کھولیں",
-    continueStudioFailed: "ڈاکومنٹ اسٹوڈیو نہیں کھولا جا سکا۔",
+    continueStudio: "قلم پیج: اردو ایڈیٹر میں جاری رکھیں",
+    continueStudioLabel: "موجودہ اردو متن قلم پیج: اردو ایڈیٹر میں کھولیں",
+    continueStudioFailed: "قلم پیج: اردو ایڈیٹر نہیں کھولا جا سکا۔",
     undo: "واپس کریں",
     redo: "دوبارہ کریں",
     undoLabel: "آخری ترمیم واپس کریں",
@@ -587,7 +587,7 @@ export default function RomanUrduWriterClient({ hideHeading = false }: { hideHea
 
   /**
    * Unified action area (19A.4c):
-   * Group A — writing continuation (Continue editing / Document Studio)
+   * Group A — writing continuation (Continue editing / Qalam Page: Urdu Editor)
    * Group B — export/share (Copy / TXT / WhatsApp)
    * Max two intentional rows on desktop via flex-wrap; related actions cluster.
    */
@@ -1231,7 +1231,7 @@ export default function RomanUrduWriterClient({ hideHeading = false }: { hideHea
                   rows={10}
                   placeholder="آج کا دن کافی اچھا تھا، میں خوش ہوں"
                   className="w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-lg font-nastaliq leading-loose text-right text-[#1A1A2E] shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/40 focus:border-[#C9A84C]"
-                  style={{ fontFamily: "var(--font-nastaliq), 'Noto Nastaliq Urdu', serif" }}
+                  style={{ fontFamily: '"Mehr Nastaliq Web", var(--font-nastaliq), "Noto Nastaliq Urdu", serif' }}
                   aria-label="Urdu script input"
                 />
                 {urduRomanInput && (

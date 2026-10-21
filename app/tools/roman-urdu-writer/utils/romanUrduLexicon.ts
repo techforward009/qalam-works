@@ -7,6 +7,14 @@
  */
 
 const LEXICON: Record<string, string> = {
+  qalam: "قلم",
+  urdu: "اردو",
+  tool: "ٹول",
+  tools: "ٹولز",
+  works: "ورکس",
+  jumla: "جملہ",
+  jumlah: "جملہ",
+  test: "ٹیسٹ",
   mulaazmeen: "ملازمین",
   mulazmeen: "ملازمین",
   mulaazmin: "ملازمین",

@@ -552,11 +552,20 @@ const STUDIO_FONT_GROUPS = ([
   ...group,
   fonts: listEditorFonts()
     .filter(font => font.category === group.category)
+    .sort((a, b) => group.category === "persian" ? persianMenuRank(a.id) - persianMenuRank(b.id) : 0)
     .map(font => ({
       label: font.availability === "local-preview-only" ? `${font.label} — Local` : font.label,
       value: font.editorFamily,
     })),
 }));
+
+function persianMenuRank(id: string): number {
+  if (id === "al-fars-9-badr") return 0;
+  if (id === "vazirmatn") return 1;
+  if (id === "sahel") return 2;
+  if (id === "b-nazanin") return 3;
+  return 4;
+}
 
 const selectCls =
   "h-9 shrink-0 rounded-md border border-gray-200 bg-white px-1.5 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1A3A2A]/25";

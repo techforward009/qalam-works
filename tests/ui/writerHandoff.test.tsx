@@ -1,5 +1,5 @@
 /**
- * Urdu Writer — Document Studio handoff UI (Phase 19A.3c)
+ * Urdu Writer — Qalam Page: Urdu Editor handoff UI (Phase 19A.3c)
  *
  * @vitest-environment happy-dom
  */
@@ -164,10 +164,10 @@ test("17-19. storage failure prevents navigation and keeps Writer text", async (
   expect(window.location.href).toBe(hrefBefore);
   expect(output().textContent).toBe(visible);
   expect(romanInput().value).toBe("aaj theek hai");
-  expect(screen.getByTestId("writer-handoff-feedback").textContent).toMatch(/Could not open Document Studio/);
+  expect(screen.getByTestId("writer-handoff-feedback").textContent).toMatch(/Could not open Qalam Page: Urdu Editor/);
 });
 
-test("20. payload consumed once by Document Studio consumeHandoff", async () => {
+test("20. payload consumed once by Qalam Page: Urdu Editor consumeHandoff", async () => {
   await renderWriter();
   await typeRoman("aaj theek hai");
   await act(async () => { fireEvent.click(studioBtn()!); });
@@ -184,7 +184,7 @@ test("21. stale handoff does not remain after consume", async () => {
   expect(sessionStorage.getItem(WRITER_HANDOFF_STORAGE_KEY)).toBeNull();
 });
 
-test("22. WhatsApp preview is not the Document Studio payload", async () => {
+test("22. WhatsApp preview is not the Qalam Page: Urdu Editor payload", async () => {
   await renderWriter();
   await typeRoman("aaj theek hai");
   const visible = output().textContent ?? "";
@@ -208,7 +208,7 @@ test("23-25. Copy unformatted, WhatsApp formatted remain distinct from handoff",
   expect(handoffBlocksToText(readHandoff())).toBe(visible);
 });
 
-test("26. Continue editing then Document Studio sends manual Urdu", async () => {
+test("26. Continue editing then Qalam Page: Urdu Editor sends manual Urdu", async () => {
   await renderWriter();
   await typeRoman("aaj theek hai");
   await act(async () => { fireEvent.click(screen.getByTestId("writer-continue-editing")); });
@@ -229,14 +229,14 @@ test("27. mode switching alone does not trigger handoff", async () => {
 test("28. English label localized", async () => {
   await renderWriter();
   await typeRoman("aaj theek hai");
-  expect(studioBtn()!.textContent).toBe("Continue in Document Studio");
+  expect(studioBtn()!.textContent).toBe("Continue in Qalam Page: Urdu Editor");
 });
 
 test("29. Urdu label localized", async () => {
   mockLanguage = "ur";
   await renderWriter();
   await typeRoman("aaj theek hai");
-  expect(studioBtn()!.textContent).toContain("ڈاکومنٹ اسٹوڈیو میں جاری رکھیں");
+  expect(studioBtn()!.textContent).toContain("قلم پیج: اردو ایڈیٹر میں جاری رکھیں");
 });
 
 test("30. keyboard-focusable", async () => {

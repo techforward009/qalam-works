@@ -11,6 +11,7 @@ import { useCopyFeedback } from "./useCopyFeedback";
 import ClipboardFeedback from "./ClipboardFeedback";
 import { BookOpen, CalendarDays, Clock3, Copy, ExternalLink, PenLine, Printer, Search, Sparkles } from "lucide-react";
 import { useLanguage } from "../../lib/language-context";
+import { resolveDisplayHijriDate } from "../date-converter/utils/hijri-authority/displayHijriDate";
 import {
   CALENDAR_MONTHS_1448,
   SHIA_CALENDAR_1448_EVENTS,
@@ -158,6 +159,19 @@ export default function KhateebStudioContent({
     useState<ShiaCalendarRegion>(initialView.region);
   const [selectedMonth, setSelectedMonth] =
     useState<IslamicMonthId>(initialView.month);
+  // Respect an explicitly shared month. Otherwise open at Pakistan's current
+  // Hijri month, using the same authority-first policy as Date Studio.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("month")) return;
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Karachi", year: "numeric", month: "numeric", day: "numeric",
+    }).formatToParts(new Date());
+    const value = (type: string) => Number(parts.find(item => item.type === type)?.value);
+    const gregorian = { year: value("year"), month: value("month"), day: value("day") };
+    const monthNumber = resolveDisplayHijriDate(gregorian, "pakistan").hijri.month;
+    const current = CALENDAR_MONTHS_1448[monthNumber - 1];
+    if (current) { setSelectedMonth(current.id); setSelectedEvent(""); }
+  }, []);
   const [selectedEvent, setSelectedEvent] = useState(initialView.event);
   const [selectedSpeaker, setSelectedSpeaker] = useState(
     PUBLIC_KHATEEB_CORPUS.some((item) => item.id === initialView.speaker)
@@ -566,23 +580,40 @@ export default function KhateebStudioContent({
       <style>{`
         @font-face {
           font-family: "Nafees Nastaleeq";
-          src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/NafeesNastaleeq.woff2") format("woff2");
+          src: url("/fonts/NafeesNastaleeq-v1.02.woff2") format("woff2");
+          font-style: normal;
+          font-weight: 400;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: "Mehr Nastaliq Web";
+          src: url("/fonts/MehrNastaliqWeb.woff2") format("woff2");
+          font-style: normal;
+          font-weight: 400;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: "Gulzar";
+          src: url("https://qalam-fonts-private-mirror.techforward009.workers.dev/fonts/Gulzar-Regular.woff2") format("woff2");
           font-style: normal;
           font-weight: 400;
           font-display: swap;
         }
 
         .khateeb-muhammadi-quranic {
-          font-family: "Muhammadi Quranic", "Al Qalam Quran Majeed", var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif !important;
+          font-family: "Muhammadi Quranic", var(--font-amiri), var(--font-naskh), "Noto Naskh Arabic", serif !important;
           font-size: 1.08em;
           line-height: 1.85;
           unicode-bidi: isolate;
         }
 
         .khateeb-book-ur {
-          font-family: "Nafees Nastaleeq", var(--font-nastaliq), serif !important;
+          font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important;
           font-size: 1.16rem;
           line-height: 2.25;
+        }
+        .khateeb-book-ur a {
+          font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif !important;
         }
         .khateeb-book-en { font-family: var(--font-inter), Arial, sans-serif; }
         .khateeb-book-ar { font-size: 1.15rem; }
@@ -597,7 +628,7 @@ export default function KhateebStudioContent({
         }
 
         .khateeb-studio-ur {
-          font-family: "Nafees Nastaleeq", var(--font-nastaliq), "Noto Nastaliq Urdu", serif;
+          font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif;
           font-size: 1.22rem;
           line-height: 2.18;
         }
@@ -608,8 +639,8 @@ export default function KhateebStudioContent({
         .khateeb-studio-ur h4,
         .khateeb-studio-ur h5,
         .khateeb-studio-ur h6 {
-          font-family: var(--font-nastaliq), var(--font-nastaliq-latin), "Noto Nastaliq Urdu", serif !important;
-          line-height: 1.62;
+          font-family: "Gulzar", "Noto Nastaliq Urdu", serif !important;
+          line-height: 2.05;
         }
 
         .khateeb-studio-ur h1 {
@@ -639,9 +670,17 @@ export default function KhateebStudioContent({
         }
 
         .khateeb-studio-ur button,
-        .khateeb-studio-ur input,
-        .khateeb-studio-ur a,
-        .khateeb-studio-ur label,
+        .khateeb-studio-ur a {
+          font-family: "Nafees Nastaleeq", serif;
+        }
+
+        .khateeb-studio-ur textarea,
+        .khateeb-studio-ur input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="hidden"]),
+        .khateeb-studio-ur button.khateeb-mehr-card,
+        .khateeb-studio-ur label:has(input[type="checkbox"]) {
+          font-family: "Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif;
+        }
+
         .khateeb-studio-ur pre {
           font-family: inherit;
         }
@@ -808,7 +847,7 @@ export default function KhateebStudioContent({
                       key={item.id}
                       type="button"
                       onClick={() => chooseTopic(item.id)}
-                      className="group flex items-center gap-2 rounded-xl border border-[#B8935A]/35 bg-[#fbf7ee] px-4 py-2 text-sm text-[#6f5730] shadow-sm transition hover:border-[#B8935A] hover:bg-[#f7efdf] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#e2c895]"
+                      className="khateeb-mehr-card group flex items-center gap-2 rounded-xl border border-[#B8935A]/35 bg-[#fbf7ee] px-4 py-2 text-sm text-[#6f5730] shadow-sm transition hover:border-[#B8935A] hover:bg-[#f7efdf] dark:border-[#6f5b35] dark:bg-[#241f14] dark:text-[#e2c895]"
                     >
                       <span>{topicTitle(item, ur ? "ur" : "en")}</span>
                       <span className="text-xs font-bold opacity-70 group-hover:opacity-100">
@@ -1299,7 +1338,7 @@ export default function KhateebStudioContent({
               <button
                 type="button"
                 onClick={() => changeMode("topic")}
-                className={`rounded-xl border p-4 text-start ${
+                className={`khateeb-mehr-card rounded-xl border p-4 text-start ${
                   preparationMode === "topic"
                     ? "border-[#B8935A] bg-[#fbf7ee] dark:bg-[#241f14]"
                     : "border-[#1A3A2A]/10 dark:border-[#35513d]"
@@ -1318,7 +1357,7 @@ export default function KhateebStudioContent({
               <button
                 type="button"
                 onClick={() => changeMode("occasion")}
-                className={`rounded-xl border p-4 text-start ${
+                className={`khateeb-mehr-card rounded-xl border p-4 text-start ${
                   preparationMode === "occasion"
                     ? "border-[#B8935A] bg-[#fbf7ee] dark:bg-[#241f14]"
                     : "border-[#1A3A2A]/10 dark:border-[#35513d]"
@@ -2622,7 +2661,7 @@ export default function KhateebStudioContent({
                     key={group.key}
                     type="button"
                     onClick={() => selectGroup(group.key)}
-                    className={`w-full rounded-xl border px-4 py-3 text-start transition-colors ${
+                    className={`khateeb-mehr-card w-full rounded-xl border px-4 py-3 text-start transition-colors ${
                       selectedGroup?.key === group.key
                         ? "border-[#B8935A]/70 bg-[#fbf7ee] dark:bg-[#241f14]"
                         : "border-[#1A3A2A]/10 dark:border-[#35513d] hover:bg-[#f7f7f2] dark:hover:bg-[#1b3022]"
@@ -2776,7 +2815,7 @@ export default function KhateebStudioContent({
                           key={item.id}
                           type="button"
                           onClick={() => chooseSpeaker(item.id)}
-                          className={`w-full rounded-xl border px-3.5 py-3 text-start ${
+                          className={`khateeb-mehr-card w-full rounded-xl border px-3.5 py-3 text-start ${
                             selectedSpeaker === item.id
                               ? "border-[#B8935A]/70 bg-[#fbf7ee] dark:bg-[#241f14]"
                               : "border-[#1A3A2A]/10 dark:border-[#35513d]"

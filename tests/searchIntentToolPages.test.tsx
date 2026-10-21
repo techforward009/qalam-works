@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import sitemap from "../app/sitemap";
+import { TOOL_CATALOG } from "../app/lib/toolCatalog";
 
 const locale = vi.hoisted(() => ({ language: "en" as "en" | "ur" }));
 
@@ -116,7 +117,7 @@ describe("search-intent tool pages — metadata and discovery", () => {
     expect(src).toContain('initialCalendar="hijri"');
   });
 
-  it("keeps the existing Document Studio route heading and does not add a second H1 on the PDF SEO page", () => {
+  it("keeps the existing Qalam Page: Urdu Editor route heading and does not add a second H1 on the PDF SEO page", () => {
     const studioPage = read("app/tools/document-studio/page.tsx");
     const studio = read("app/tools/document-studio/DocumentStudioContent.tsx");
     const pdf = read("app/tools/urdu-text-to-pdf/UrduTextToPdfContent.tsx");
@@ -125,23 +126,18 @@ describe("search-intent tool pages — metadata and discovery", () => {
     expect(studioPage).toContain("<DocumentStudioContent />");
     expect(studioPage).not.toMatch(/hideHeading/);
     expect(studio).toMatch(/<h1 className="sr-only">/);
-    expect(studio).toContain("Document Studio");
+    expect(studio).toContain("Qalam Page: Urdu Editor");
     expect(pdf).toContain("<DocumentStudioContent hideHeading />");
     expect(pdf).not.toMatch(/<h1/);
     expect((layout.match(/<h1/g) ?? []).length).toBe(1);
   });
 
-  it("is reachable from /tools and is not cloned into Header, Footer, or TOOL_CATALOG", () => {
-    const tools = read("app/tools/AllToolsContent.tsx");
-    const header = read("app/components/Header.tsx");
-    const footer = read("app/components/Footer.tsx");
-    const catalog = read("app/lib/toolCatalog.ts");
-
+  it("discovers the task pages through the shared public catalog", () => {
     for (const page of PAGES) {
-      expect(tools).toContain(`/tools/${page.slug}`);
-      expect(header).not.toContain(`/tools/${page.slug}`);
-      expect(footer).not.toContain(`/tools/${page.slug}`);
-      expect(catalog).not.toContain(`/tools/${page.slug}`);
+      expect(TOOL_CATALOG.some(tool => tool.route === `/tools/${page.slug}`)).toBe(true);
+    }
+    for (const file of ["app/components/Header.tsx", "app/components/Footer.tsx", "app/tools/AllToolsContent.tsx"]) {
+      expect(read(file)).toContain("toolsInGroup");
     }
   });
 
@@ -153,16 +149,16 @@ describe("search-intent tool pages — metadata and discovery", () => {
 });
 
 describe("search-intent tool pages — rendered headings and calendar defaults", () => {
-  it("existing Document Studio route still exposes the sr-only Document Studio H1", async () => {
+  it("existing Qalam Page: Urdu Editor route still exposes the sr-only Qalam Page: Urdu Editor H1", async () => {
     const DocumentStudioContent = (await import("../app/tools/document-studio/DocumentStudioContent")).default;
     render(<DocumentStudioContent />);
     const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading.textContent).toBe("Document Studio");
+    expect(heading.textContent).toBe("Qalam Page: Urdu Editor");
     expect(heading.className).toContain("sr-only");
     expect(screen.getByTestId("document-studio-editor")).toBeTruthy();
   });
 
-  it("Urdu text to PDF page reuses Document Studio with exactly one visible search-intent H1", async () => {
+  it("Urdu text to PDF page reuses Qalam Page: Urdu Editor with exactly one visible search-intent H1", async () => {
     const UrduTextToPdfContent = (await import("../app/tools/urdu-text-to-pdf/UrduTextToPdfContent")).default;
     render(<UrduTextToPdfContent />);
     const headings = screen.getAllByRole("heading", { level: 1 });
@@ -187,7 +183,7 @@ describe("search-intent tool pages — rendered headings and calendar defaults",
     expect(headings).toHaveLength(1);
     expect(headings[0].textContent).toBe("Roman Urdu to Urdu Converter");
     expect(screen.getByRole("textbox")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /continue in document studio/i }).getAttribute("href")).toBe("/tools/document-studio");
+    expect(screen.getByRole("link", { name: /continue in qalam page: urdu editor/i }).getAttribute("href")).toBe("/tools/document-studio");
   });
 
   it("DateConverterContent remains Gregorian on the existing page and Hijri on the SEO page", async () => {
@@ -196,7 +192,7 @@ describe("search-intent tool pages — rendered headings and calendar defaults",
 
     const existing = render(<DateConverterContent />);
     expect(screen.getByPlaceholderText("2026")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Date Studio");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Date Converter");
     existing.unmount();
 
     render(<HijriToGregorianContent />);

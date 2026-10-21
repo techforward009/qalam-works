@@ -14,8 +14,8 @@ export default function DocumentHelpDialog({
   const title =
     mode === "about"
       ? isUr
-        ? "ڈاکومنٹ اسٹوڈیو مدد"
-        : "Document Studio help"
+        ? "قلم پیج: اردو ایڈیٹر مدد"
+        : "Qalam Page: Urdu Editor help"
       : mode === "shortcuts"
         ? isUr
           ? "کی بورڈ شارٹ کٹس"

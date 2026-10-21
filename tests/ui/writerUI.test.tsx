@@ -395,7 +395,7 @@ test("20. Urdu review wording — exact strings present", async () => {
   const Writer = await importWriter();
   render(React.createElement(Writer));
   // Heading and subtitle in Urdu on mount
-  expect(document.body.textContent).toContain("قلم اردو رائٹر");
+  expect(document.body.textContent).toContain("رومن اردو سے اردو");
   expect(document.body.textContent).toContain("رومن اردو سے آسانی سے اردو لکھیں");
   // Type high-confidence input → reviewCount should be 0 → "no review" Urdu message
   await act(async () => { fireEvent.change(romanInput(), { target: { value: "aaj theek hai" } }); });

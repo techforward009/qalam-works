@@ -1,16 +1,25 @@
 /**
- * Browser validation for the owner's exact ten Cloudflare R2 font files.
+ * Browser validation for fonts the live Cloudflare Worker actually serves.
+ * Mehr Nastaliq Web and Nafees Nastaleeq v1.02 are same-origin files until
+ * those objects are uploaded to R2, so this script must not request them.
+ * NafeesNastaleeq.woff2 and NafeesNastaleeq-Web.woff2 are intentionally absent.
  * Does not rely on browser cache, Vercel Preview sign-in or a public R2 bucket.
  * Requires Google Chrome from the GitHub Ubuntu runner and @playwright/test.
  */
+import { readFileSync } from "node:fs";
 import { chromium } from "@playwright/test";
+
+for (const local of ["public/fonts/MehrNastaliqWeb.woff2", "public/fonts/NafeesNastaleeq-v1.02.woff2"]) {
+  const bytes = readFileSync(local);
+  if (bytes.subarray(0, 4).toString("ascii") !== "wOF2") {
+    throw new Error(local + " is not a WOFF2 file");
+  }
+  console.log("LOCAL " + local + ": " + bytes.length + " bytes");
+}
 
 const fonts = [
   ["muhammadi-quranic-400.woff2","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"],
   ["jameel-noori-nastaleeq-400.woff2","قلم ورکس اردو ترجمہ"],
-  ["NafeesNastaleeq.woff2","اردو کتاب"],
-  ["NafeesNastaleeq-Web.woff2","اردو کتاب"],
-  ["Alvi_Nastaleeq.woff2","تفسیر نمونہ"],
   ["Gulzar-Regular.woff2","عنوان گلزار"],
   ["Sahel.woff2","کتاب فارسی"],
   ["ScheherazadeNew-Medium.woff2","الْقُرْآنُ الْكَرِيمُ"],
@@ -35,7 +44,7 @@ try {
     },{filename,text,index});
     console.log("PAINT-READY "+result.filename+": "+result.status+" ("+result.matched+" matched)");
   }
-  console.log("All ten owner-uploaded original Cloudflare fonts loaded into Chromium FontFaceSet.");
+  console.log("Allowlisted Cloudflare fonts loaded into Chromium FontFaceSet: "+fonts.length);
 } finally {
   await browser.close();
 }

@@ -8,13 +8,29 @@ function read(rel: string) {
 }
 
 describe("Product positioning metadata", () => {
-  it("Quality Audit title is clear", () => {
+  it.each([
+    ["document-cleaner", "Fix Copied Urdu Text", "کاپی شدہ اردو درست کریں"],
+    ["quality-checker", "Find Mistakes in Urdu Text", "اردو متن میں غلطیاں دیکھیں"],
+    ["whatsapp-rtl-formatter", "Urdu for WhatsApp", "واٹس ایپ کے لیے اردو"],
+    ["roman-urdu-writer", "Roman Urdu to Urdu", "رومن اردو سے اردو"],
+    ["crescent-visibility", "Moon Sighting", "رؤیتِ ہلال"],
+    ["invoice-generator", "Invoice Maker", "انوائس بنائیں"],
+    ["date-converter", "Date Converter", "تاریخ کنورٹر"],
+  ])("uses both public names in the %s title", (route, en, ur) => {
+    expect(read(`app/tools/${route}/page.tsx`)).toContain(`title: "${en} | ${ur} | Qalam Works"`);
+  });
+
+  it("gives Qalam Page its own Open Graph title", () => {
+    expect(read("app/tools/document-studio/page.tsx")).toContain('openGraph: { title: "Qalam Page: Urdu Editor" }');
+  });
+
+  it("Text Check title uses the plain public name", () => {
     const p = read("app/tools/quality-checker/page.tsx");
-    expect(p).toMatch(/Quality Audit/);
+    expect(p).toMatch(/Find Mistakes in Urdu Text/);
     expect(p).not.toMatch(/Publication Quality Checker for Urdu/);
   });
 
-  it("Unicode Standardizer title includes Urdu", () => {
+  it("Unicode Fixer title includes Urdu", () => {
     expect(read("app/tools/unicode-standardizer/page.tsx")).toMatch(/Urdu Unicode Fixer/);
   });
 

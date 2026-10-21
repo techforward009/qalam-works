@@ -26,7 +26,7 @@ for (const locale of ["ur", "en"] as const) for (const studio of ["khateeb", "re
   await expect(assistant.locator("article").first()).toBeVisible();
   const count = await assistant.locator("article").count(); expect(count).toBeGreaterThan(0);
   await expect(assistant.locator(".khateeb-book-ar .khateeb-muhammadi-quranic").first()).toHaveCSS("font-family", /Muhammadi Quranic/);
-  if (ur) await expect(assistant.locator(".khateeb-book-ur").first()).toHaveCSS("font-family", /Jameel Noori Nastaleeq/);
+  if (ur) await expect(assistant.locator(".khateeb-book-ur").first()).toHaveCSS("font-family", /Mehr Nastaliq Web/);
   await expect(assistant).not.toContainText(".docx"); await expect(assistant).not.toContainText("word/document.xml");
   await assistant.locator("article").filter({ has: page.locator(".khateeb-book-ur, .khateeb-book-en") }).first().getByRole("button").click();
   const dialog = assistant.getByRole("dialog"); await expect(dialog).toBeVisible();

@@ -14,7 +14,7 @@ import { BLOCK_STYLES, isBlockStyleId, type BlockStyleId } from "./documentStyle
 import { findAllTextMatches } from "./findReplace";
 import { extractPlainText, type DocNode } from "./extractPlainText";
 import { detectBlockDirection } from "./plainTextToDocNode";
-import { normalizeEditorFontFamily } from "./fontRegistry";
+import { normalizeEditorFontFamily, quoteEditorFontFamily } from "./fontRegistry";
 import { normalizeSafeHex } from "./studioColors";
 import {
   defaultDocumentSettings,
@@ -179,7 +179,7 @@ export function applyFontFamily(editor: Editor, family: string): void {
   if (!family) {
     editor.chain().focus().unsetFontFamily().run();
   } else {
-    editor.chain().focus().setFontFamily(family).run();
+    editor.chain().focus().setFontFamily(quoteEditorFontFamily(family)).run();
   }
 }
 

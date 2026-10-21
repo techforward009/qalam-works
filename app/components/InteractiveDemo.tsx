@@ -93,7 +93,7 @@ export default function InteractiveDemo() {
             href="/tools/unicode-standardizer"
             className="text-xs md:text-sm font-semibold text-amber-700 hover:text-amber-900 underline"
           >
-            Open full Unicode Standardizer tool →
+            Open full Urdu Unicode Fixer tool →
           </a>
         </div>
       </div>

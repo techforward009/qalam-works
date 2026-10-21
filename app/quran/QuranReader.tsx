@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { HAFS_AYAH_COUNTS } from "../tools/arabic-diacritics/quran/hafsCounts";
 import type { QuranAyah } from "../tools/arabic-diacritics/quran/types";
 import { useLanguage } from "../lib/language-context";
@@ -228,7 +228,13 @@ export default function QuranReader({
 
   const pages = pageCount();
 
+  const initialReaderScroll = useRef(true);
   useEffect(() => {
+    if (initialReaderScroll.current) {
+      initialReaderScroll.current = false;
+      document.querySelector(".quran-reader-container")?.scrollIntoView({ block: "start", behavior: "instant" });
+      return;
+    }
     document
       .getElementById(
         `ayah-${surah}-${ayah}`,
@@ -496,7 +502,7 @@ export default function QuranReader({
       className="quran-reader min-h-screen"
       dir="ltr"
     >
-      <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4">
+      <div className="quran-reader-container mx-auto w-full max-w-[1080px] px-3 py-3 sm:px-4 sm:py-4" style={{scrollMarginTop:"var(--site-header-height, 128px)"}}>
         <EditionTopBar editionId="qalam-indopak" />
         <div
           className="quran-reader-layout grid grid-cols-1 items-start gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-4"
@@ -833,10 +839,20 @@ export default function QuranReader({
               title={
                 copy.copy
               }
+              titleStyle={
+                language === "ur"
+                  ? { fontFamily: '"Mehr Nastaliq Web", serif' }
+                  : undefined
+              }
             >
               <button
                 type="button"
                 className="w-full border border-[#b5bbb1] bg-white px-2 py-1.5 text-xs text-[#465046] hover:bg-[#f3f5f1]"
+                style={
+                  language === "ur"
+                    ? { fontFamily: '"Mehr Nastaliq Web", serif' }
+                    : undefined
+                }
                 onClick={
                   copyPage
                 }
@@ -854,6 +870,11 @@ export default function QuranReader({
             >
               <label
                 className="block text-xs text-[#697067]"
+                style={
+                  language === "ur"
+                    ? { fontFamily: '"Mehr Nastaliq Web", serif' }
+                    : undefined
+                }
                 dir={
                   interfaceDir
                 }
@@ -1675,10 +1696,12 @@ function SidebarSection({
   title,
   children,
   defaultOpen = false,
+  titleStyle,
 }: {
   title: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  titleStyle?: { fontFamily: string };
 }) {
   return (
     <details
@@ -1687,7 +1710,7 @@ function SidebarSection({
         defaultOpen
       }
     >
-      <summary>
+      <summary style={titleStyle}>
         {title}
       </summary>
 

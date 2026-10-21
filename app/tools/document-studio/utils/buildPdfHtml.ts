@@ -432,14 +432,19 @@ export function buildPdfHtml(
     noteEffective(ctx, effective);
   }
 
-  // A CSS fallback must be embedded even when no run selects it as primary.
+  // Noto stays embedded as the Urdu fallback. Mehr is the body face when that document font loaded.
   const embeddedNames = [...new Set([...ctx.fontsUsed, "Noto Nastaliq Urdu", "Inter"])].filter((n) => available.has(n));
   const faces = fonts.faces.filter(
     (f) => f.complete && embeddedNames.includes(f.familyName)
   );
 
+  const mehrReady = available.has("Mehr Nastaliq Web");
   const defaultFamily =
-    dir === "ltr" ? "Inter, system-ui, sans-serif" : '"Noto Nastaliq Urdu", serif';
+    dir === "ltr"
+      ? "Inter, system-ui, sans-serif"
+      : mehrReady
+        ? '"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif'
+        : '"Noto Nastaliq Urdu", serif';
   const bodyFontSize = typography ? `${typography.bodyFontSizePt}pt` : "12pt";
   const bodyLineHeight = typography ? typography.lineHeight : 2;
 

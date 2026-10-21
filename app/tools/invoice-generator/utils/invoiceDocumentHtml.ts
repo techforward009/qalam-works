@@ -98,7 +98,7 @@ function pageFontPx(lang: InvoiceLanguage, pageSize: InvoicePageSize): number {
 function naskhStyle(lang: InvoiceLanguage, pageSize: InvoicePageSize = "a4"): string {
   if (lang !== "ur") return "";
   const lh = pageSize === "a5" ? "1.65" : "1.85";
-  return `font-family:'Noto Nastaliq Urdu',serif;line-height:${lh};`;
+  return `font-family:'Mehr Nastaliq Web','Noto Nastaliq Urdu',serif;line-height:${lh};`;
 }
 
 function ltrStart(text: string, style: string): string {
@@ -260,8 +260,8 @@ function westernInner(
   const dir = invoiceLang === "ur" ? "rtl" : "ltr";
   const pageSize = print.pageSize;
   const naskh = naskhStyle(invoiceLang, pageSize);
-  const naskhHead = invoiceLang === "ur" ? "font-family:'Noto Nastaliq Urdu',serif;line-height:1.45;white-space:nowrap;" : "white-space:nowrap;";
-  const naskhTight = invoiceLang === "ur" ? "font-family:'Noto Nastaliq Urdu',serif;line-height:1.4;" : "";
+  const naskhHead = invoiceLang === "ur" ? "font-family:'Mehr Nastaliq Web','Noto Nastaliq Urdu',serif;line-height:1.45;white-space:nowrap;" : "white-space:nowrap;";
+  const naskhTight = invoiceLang === "ur" ? "font-family:'Mehr Nastaliq Web','Noto Nastaliq Urdu',serif;line-height:1.4;" : "";
   const V = invoiceVocab(invoiceLang);
   const shownDiscount = combinedDiscount(result);
   const hasDiscount = shownDiscount > 0;

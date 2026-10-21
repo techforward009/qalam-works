@@ -22,22 +22,6 @@ const inter = localFont({
   variable: "--font-inter",
 });
 
-const nastaliq = localFont({
-  src: [
-    { path: "../public/fonts/nastaliq-400.woff2", weight: "400" },
-    { path: "../public/fonts/nastaliq-700.woff2", weight: "700" },
-  ],
-  variable: "--font-nastaliq",
-});
-
-const nastaliqLatin = localFont({
-  src: [
-    { path: "../public/fonts/nastaliq-latin-400.woff2", weight: "400" },
-    { path: "../public/fonts/nastaliq-latin-700.woff2", weight: "700" },
-  ],
-  variable: "--font-nastaliq-latin",
-});
-
 const naskh = localFont({
   src: [
     { path: "../public/fonts/naskh-400.woff2", weight: "400" },
@@ -70,7 +54,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.qalamworks.com"),
   title: "Qalam Works — Professional Urdu Writing & Publishing Tools",
   description:
-    "Professional Urdu writing tools: an Urdu text cleaner, Urdu proofreading support, a Roman Urdu converter, and an Urdu Unicode fixer with punctuation correction — plus Document Studio for publication-ready work.",
+    "Professional Urdu writing tools: an Urdu text cleaner, Urdu proofreading support, a Roman Urdu converter, and an Urdu Unicode fixer with punctuation correction — plus Qalam Page: Urdu Editor for publication-ready work.",
   openGraph: {
     type: "website",
     url: "https://www.qalamworks.com",
@@ -98,8 +82,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
-      <body className={`${inter.variable} ${nastaliq.variable} ${nastaliqLatin.variable} ${naskh.variable} ${amiri.variable} ${vazirmatn.variable} antialiased min-h-screen flex flex-col`}>
+    <html lang="ur" dir="rtl" suppressHydrationWarning>
+      <body className={`${inter.variable} ${naskh.variable} ${amiri.variable} ${vazirmatn.variable} antialiased min-h-screen flex flex-col`}>
         <LanguageProvider>
           <Header />
           <ThemeProvider

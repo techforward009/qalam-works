@@ -6,12 +6,15 @@ import { Editor } from "@tiptap/core";
 import { createDocumentStudioExtensions } from "../app/tools/document-studio/utils/documentSchema";
 import { applyFontFamily, activeToolbarFontFamily } from "../app/tools/document-studio/utils/documentCommands";
 import { createMemoryDocumentLibrary } from "../app/tools/document-studio/utils/documentLibrary";
-import { normalizeEditorFontFamily, studioJameelFontFaceCss, JAMEEL_EDITOR_FONT_URL } from "../app/tools/document-studio/utils/fontRegistry";
+import { normalizeEditorFontFamily, studioJameelFontFaceCss, studioOnDemandFontFaceCss, JAMEEL_EDITOR_FONT_URL, migrateAlviDocumentContent, resolveEditorFontFamily } from "../app/tools/document-studio/utils/fontRegistry";
+import { fontsForDocument } from "../app/tools/document-studio/utils/pdfDocumentFonts";
 import { requiredPdfEmbedFonts, buildPdfHtml, type PdfFontFace } from "../app/tools/document-studio/utils/buildPdfHtml";
 import { mountDocumentPrintPortal, unmountDocumentPrintPortal, waitForPrintFonts } from "../app/tools/document-studio/utils/documentView";
 import DocumentToolbar from "../app/tools/document-studio/components/DocumentToolbar";
 import { defaultDocumentSettings } from "../app/tools/document-studio/utils/documentSettings";
 import { resolveActiveToolbarFormatting } from "../app/tools/document-studio/utils/activeToolbarFormatting";
+import { buildDocxBlob } from "../app/tools/document-studio/utils/buildDocxDocument";
+import JSZip from "jszip";
 import type { DocNode } from "../app/tools/document-studio/utils/extractPlainText";
 
 afterEach(() => {
@@ -112,8 +115,15 @@ describe("toolbar font selection sync", () => {
     ]) {
       expect(options).not.toContain(hidden);
     }
+    expect(options).not.toContain("Alvi Nastaleeq");
     expect(options).toContain("Jameel Noori Nastaleeq");
     expect(options).toContain("Sahel");
+    expect(options).toContain("Vazirmatn");
+    expect(options).toContain("AlFars 9 Badr");
+    expect(options).toContain("B Nazanin");
+    expect(options.indexOf("AlFars 9 Badr")).toBeLessThan(options.indexOf("Vazirmatn"));
+    expect(options.indexOf("Vazirmatn")).toBeLessThan(options.indexOf("Sahel"));
+    expect(options.indexOf("Sahel")).toBeLessThan(options.indexOf("B Nazanin"));
     view.rerender(<DocumentToolbar editor={editor as never} dir="ltr" setDir={() => {}} isUr={false} />);
     expect(Array.from(select.querySelectorAll("optgroup")).map(group => group.label)).toEqual([
       "Urdu fonts", "Arabic fonts", "Persian fonts", "English fonts",
@@ -129,10 +139,10 @@ describe("toolbar font selection sync", () => {
     expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Jameel Noori Nastaleeq");
     editor.commands.setTextSelection(editor.state.doc.content.size - 2);
     expect(activeToolbarFontFamily(editor)).toBe("");
-    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").fontFamily).toBe("Noto Nastaliq Urdu");
+    expect(resolveActiveToolbarFormatting(editor, defaultDocumentSettings(), "rtl").fontFamily).toBe("Mehr Nastaliq Web");
     cleanup();
     render(<DocumentToolbar editor={editor as never} dir="rtl" setDir={() => {}} isUr documentSettings={defaultDocumentSettings()} />);
-    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Noto Nastaliq Urdu");
+    expect((document.querySelector("[data-studio-font-family]") as HTMLSelectElement).value).toBe("Mehr Nastaliq Web");
     expect((document.querySelector("[data-studio-font-size]") as HTMLSelectElement).value).toBe("12");
     expect(document.querySelector("select[data-studio-line-height]")).toBeNull();
     expect(document.querySelector("[data-studio-spacing-button]")).toBeTruthy();
@@ -166,6 +176,18 @@ describe("print portal Jameel identity", () => {
     expect(portal?.getAttribute("data-print-waited-fonts")).toBe("true");
     expect(normalizeEditorFontFamily('"Jameel Noori Nastaleeq", serif')).toBe("Jameel Noori Nastaleeq");
   });
+
+  it("does not request the Jameel file when the printed document does not use it", () => {
+    document.body.innerHTML = `
+      <div data-studio-print-root data-print-page-width-mm="210" data-print-page-height-mm="297" data-print-dir="rtl">
+        <div data-studio-print-surface>
+          <div class="qalam-editor-content"><span>ڈیفالٹ</span></div>
+        </div>
+      </div>
+    `;
+    const portal = mountDocumentPrintPortal();
+    expect(portal?.querySelector("style")?.textContent ?? "").not.toContain("jameel-noori-nastaleeq-400.woff2");
+  });
 });
 
 describe("Download PDF Jameel contract", () => {
@@ -186,5 +208,92 @@ describe("Download PDF Jameel contract", () => {
       requested: "Jameel Noori Nastaleeq",
       used: "Noto Nastaliq Urdu",
     });
+  });
+});
+
+describe("picked Document Studio faces", () => {
+  it.each([
+    ["AlFars 9 Badr", "AlFars9Badr.woff2"],
+    ["B Nazanin", "BNazanin.woff2"],
+  ] as const)("quotes %s on the selected span and requests its font file", async (family, file) => {
+    const editor = createEditor({
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: "فارسی متن" }] }],
+    });
+    expect(studioOnDemandFontFaceCss("فارسی متن")).toBe("");
+    editor.commands.selectAll();
+    applyFontFamily(editor, family);
+    const quoted = `"${family}"`;
+    const json = editor.getJSON() as DocNode;
+    expect(json.content?.[0]?.content?.[0]?.marks?.find((mark) => mark.type === "textStyle")?.attrs?.fontFamily).toBe(quoted);
+    expect(normalizeEditorFontFamily(quoted)).toBe(family);
+    const html = editor.getHTML();
+    const encodedQuotes = "font-family: &" + "quot;" + family + "&" + "quot;";
+    expect(html.includes(encodedQuotes) || html.includes(`font-family: ${quoted}`)).toBe(true);
+    const span = document.createElement("div");
+    span.innerHTML = html;
+    const styled = span.querySelector("span");
+    expect(styled?.getAttribute("style") ?? "").toContain(`font-family: ${quoted}`);
+    const probe = document.createElement("span");
+    probe.style.cssText = styled?.getAttribute("style") ?? "";
+    expect(probe.style.fontFamily.replace(/["']/g, "")).toContain(family);
+    const css = studioOnDemandFontFaceCss(html);
+    expect(css).toContain(`font-family:"${family}"`);
+    expect(css).toContain(file);
+    expect(css).toContain("workers.dev/fonts/" + file);
+    const loaded = migrateAlviDocumentContent({
+      type: "doc",
+      content: [{
+        type: "paragraph",
+        content: [{ type: "text", text: "فارسی متن", marks: [{ type: "textStyle", attrs: { fontFamily: family } }] }],
+      }],
+    });
+    expect(loaded.content?.[0]?.content?.[0]?.marks?.[0]?.attrs?.fontFamily).toBe(quoted);
+    const pdf = buildPdfHtml(json, "rtl", { faces: [face(family), face("Noto Nastaliq Urdu")] });
+    expect(pdf.fontsUsed).toContain(family);
+    expect(pdf.html).toContain(`font-family: "${family}", serif`);
+    expect(resolveEditorFontFamily(quoted, "rtl").docxFamily).toBe(family);
+    const docx = await JSZip.loadAsync(await buildDocxBlob(json, "rtl"));
+    const documentXml = await docx.file("word/document.xml")?.async("string");
+    expect(documentXml).toContain(`w:ascii="${family}"`);
+    expect(documentXml).toContain(`w:cs="${family}"`);
+    expect(activeToolbarFontFamily(editor)).toBe(family);
+    editor.destroy();
+  });
+
+  it("loads Jameel only after it is picked, and does not load the Persian faces", () => {
+    const editor = createEditor({
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: "اردو متن" }] }],
+    });
+    editor.commands.selectAll();
+    applyFontFamily(editor, "Jameel Noori Nastaleeq");
+    const json = editor.getJSON() as DocNode;
+    expect(json.content?.[0]?.content?.[0]?.marks?.find((mark) => mark.type === "textStyle")?.attrs?.fontFamily).toBe("Jameel Noori Nastaleeq");
+    expect(studioOnDemandFontFaceCss(JSON.stringify(json))).toBe("");
+    expect(studioJameelFontFaceCss()).toContain("jameel-noori-nastaleeq-400.woff2");
+    expect(JAMEEL_EDITOR_FONT_URL).toContain("jameel-noori-nastaleeq-400.woff2");
+    editor.destroy();
+  });
+});
+
+describe("Mehr document PDF", () => {
+  it("embeds Mehr Nastaliq Web and keeps Noto Nastaliq Urdu as the fallback", async () => {
+    const doc: DocNode = {
+      type: "doc",
+      content: [{ type: "paragraph", attrs: { dir: "rtl" }, content: [{ type: "text", text: "قلم ورکس" }] }],
+    };
+    const settings = defaultDocumentSettings();
+    const loaded = await fontsForDocument(doc, "rtl", settings.typography);
+    const mehr = loaded.fonts.faces.find((item) => item.familyName === "Mehr Nastaliq Web");
+    expect(mehr?.complete).toBe(true);
+    expect(Buffer.from(mehr?.regularSources[0] ?? "", "base64").subarray(0, 4).toString("ascii")).toBe("wOF2");
+    const html = buildPdfHtml(doc, "rtl", loaded.fonts, settings.typography);
+    expect(html.fontsUsed).toContain("Mehr Nastaliq Web");
+    expect(html.fontsUsed).toContain("Noto Nastaliq Urdu");
+    expect(html.fontFallbacks.some((item) => item.requested === "Mehr Nastaliq Web")).toBe(false);
+    expect(html.html).toContain('font-family:"Mehr Nastaliq Web"');
+    expect(html.html).toContain('"Mehr Nastaliq Web", "Noto Nastaliq Urdu", serif');
+    expect(html.html).not.toContain("workers.dev/fonts/MehrNastaliqWeb.woff2");
   });
 });

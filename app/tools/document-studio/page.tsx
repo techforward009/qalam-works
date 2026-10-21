@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import DocumentStudioContent from "./DocumentStudioContent";
 
 export const metadata: Metadata = {
-  title: "Document Studio — Multilingual Text Editing | Qalam Works",
+  title: "Qalam Page: Urdu Editor — Multilingual Text Editing | Qalam Works",
   description:
     "Write, edit, clean, and review documents with Urdu, English, Arabic, or safe Auto processing. Quality checks and DOCX/PDF export. Rules-based editing workspace — not a translator.",
+  openGraph: { title: "Qalam Page: Urdu Editor" },
   alternates: { canonical: "/tools/document-studio" },
 };
 
