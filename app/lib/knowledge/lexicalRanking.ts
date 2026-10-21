@@ -30,13 +30,20 @@ export function rankLexicalDocuments(documents: readonly LexicalDocument[], grou
   const normalized = documents.map(d => normalizeBookSearch(d.text));
   const tokens = normalized.map(text => text.split(" ").filter(Boolean));
   const average = Math.max(1, tokens.reduce((sum, t) => sum + t.length, 0) / tokens.length);
-  const frequencies = tokens.map((words, doc) => uniqueGroups.map(group => groupFrequency(words, normalized[doc], group)));
+  const headings = documents.map(document => normalizeBookSearch(document.heading ?? ""));
+  const headingTokens = headings.map(value => value.split(" ").filter(Boolean));
+  // A source chapter heading is authoritative topic context for its source units.
+  // Let it help discover narrations whose text uses pronouns (e.g. "them" for
+  // parents), without fabricating evidence or returning a heading as a hadith.
+  const bodyFrequencies = tokens.map((words, doc) => uniqueGroups.map(group => groupFrequency(words, normalized[doc], group)));
+  const headingFrequencies = headingTokens.map((words, doc) => uniqueGroups.map(group => groupFrequency(words, headings[doc], group)));
+  const frequencies = bodyFrequencies.map((row, doc) => row.map((value, group) => value + Math.min(2, headingFrequencies[doc][group]) * 1.5));
   const documentFrequencies = uniqueGroups.map((_, i) => frequencies.filter(f => f[i] > 0).length);
   return tokens.map((words, doc) => {
     const hits = frequencies[doc].filter(n => n > 0).length;
     if (!hits || uniqueGroups.length > 1 && hits / uniqueGroups.length < .5) return 0;
-    const normalizedHeading = normalizeBookSearch(documents[doc].heading ?? "");
-    const headingWords = normalizedHeading.split(" ");
+    const normalizedHeading = headings[doc];
+    const headingWords = headingTokens[doc];
     if (required.length > 1) {
       const covered = required.filter(g => groupFrequency(words, normalized[doc], g) > 0 || groupFrequency(headingWords, normalizedHeading, g) > 0).length;
       if (covered < Math.ceil(required.length * 2 / 3)) return 0;
@@ -51,6 +58,6 @@ export function rankLexicalDocuments(documents: readonly LexicalDocument[], grou
     });
     const headingHits = uniqueGroups.filter(g => groupFrequency(headingWords, normalizedHeading, g) > 0).length;
     const directHits = direct.filter(term => words.some(word => termMatches(word, term))).length;
-    return score * (1 + .1 * directHits + .05 * headingHits);
+    return score * (1 + .1 * directHits + .2 * headingHits);
   });
 }
