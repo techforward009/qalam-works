@@ -20,6 +20,28 @@ async function archive(corrupt = false) {
  return new Uint8Array(await zip.generateAsync({type:"nodebuffer"}));
 }
 describe("source-preserving book search and sermon snapshots",()=>{
+ it("previews the actual Urdu Sahifa prayer instead of its introductory caption", () => {
+  const source = sourceFor("sahifa-ur");
+  const r = recordFor(source,24);
+  r.title = "24. دُعَآؤُهٗ لِاَبَوَیْهِ";
+  r.paragraphs = [
+    {id:`${r.id}:p1`,text:"اپنے والدین کے حق میں حضرتؑ کی دُعا:"},
+    {id:`${r.id}:p2`,text:"اے اللہ! میرے ماں باپ کو بھی اپنے نزدیک عزت و کرامت اور رحمت سے مخصوص فرما۔"},
+    {id:`${r.id}:p3`,text:"اے اللہ! والدین کے حقوق کی ادائیگی کی توفیق دے۔"}
+  ];
+  const before = JSON.stringify(r);
+  for (const options of [{query:"والدین",language:"ur"},{number:"24",book:"sahifa"},{query:"دعا",number:"24"}]) {
+    const result=searchBookRecords([r],options);
+    expect(result.total).toBe(1);
+    expect(result.hits[0].snippet).toMatch(/^اے اللہ!/u);
+    expect(result.hits[0].snippet).not.toContain("حضرتؑ کی دُعا:");
+    expect(result.hits[0].referenceLabelUr).toBe("صحیفہ کاملہ سجادیہ، دعا 24");
+  }
+  // If a later real passage matches, prefer it to a mere fallback.
+  expect(searchBookRecords([r],{query:"حقوق"}).hits[0].snippet).toContain("والدین کے حقوق");
+  expect(JSON.stringify(r)).toBe(before);
+ });
+
  it("normalizes marks, Urdu/Arabic variants and numerals only for search",()=>{
   const r=recordFor(); const before=JSON.stringify(r);
   expect(normalizeBookSearch("صَبْرٌ ۲۸ ک ی")).toBe("صبر 28 ك ي");
