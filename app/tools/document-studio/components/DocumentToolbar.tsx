@@ -615,23 +615,23 @@ function persianMenuRank(id: string): number {
   return 4;
 }
 
-const CLASSIC_RAISED = "inset 1px 1px 0 #ffffff, inset -1px -1px 0 #696969, inset -2px -2px 0 #a0a0a0";
+const CLASSIC_RAISED = "inset 1px 1px 0 #000000, inset 2px 2px 0 #ffffff, inset -1px -1px 0 #696969, inset -2px -2px 0 #a0a0a0";
 const CLASSIC_SUNKEN = "inset 1px 1px 0 #696969, inset 2px 2px 0 #a0a0a0, inset -1px -1px 0 #ffffff";
 const selectCls = "shrink-0";
 
 /** Keep native keyboard/option handling behind a classic field and arrow face. */
-function ClassicCombo({ className, style, width, gap = 0, leadingIcon, ...props }: ComponentProps<"select"> & { width?: number; gap?: number; leadingIcon?: React.ReactNode }) {
+function ClassicCombo({ className, style, width, gap = 0, leadingIcon, entryField = false, ...props }: ComponentProps<"select"> & { width?: number; gap?: number; leadingIcon?: React.ReactNode; entryField?: boolean }) {
   return (
     <span className={`relative inline-grid h-[20px] shrink-0 ${className ?? ""}`} data-studio-combo="true" dir="ltr" style={{ width, marginInlineStart: gap }}>
       <select
         {...props}
         className="h-[20px] min-w-0 w-full appearance-none rounded-none bg-white text-left text-[11px] text-black focus:outline-none"
-        style={{ ...style, border: "none", padding: `2px 23px 2px ${leadingIcon ? 24 : 4}px`, fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", color: "#000", backgroundColor: "#fff", textAlign: "left", direction: "ltr", minWidth: 0, minHeight: 20, maxHeight: 20, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff, inset -2px -2px 0 #f0f0f0" }}
+        style={{ ...style, border: "none", padding: `2px ${entryField ? 4 : 23}px 2px ${leadingIcon ? 24 : 4}px`, fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", color: "#000", backgroundColor: "#fff", textAlign: "left", direction: "ltr", minWidth: 0, minHeight: 20, maxHeight: 20, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff, inset -2px -2px 0 #f0f0f0" }}
       />
       {leadingIcon ? <span aria-hidden="true" className="pointer-events-none absolute left-[4px] top-[2px] flex h-[16px] w-[18px] items-center justify-center text-black">{leadingIcon}</span> : null}
-      <span aria-hidden="true" className="pointer-events-none absolute right-[2px] top-[2px] grid h-[16px] w-[17px] place-items-center bg-[#f0f0f0]" style={{ boxShadow: CLASSIC_RAISED }}>
+      {!entryField ? <span aria-hidden="true" className="pointer-events-none absolute right-[2px] top-[2px] grid h-[16px] w-[17px] place-items-center bg-[#f0f0f0]" style={{ boxShadow: CLASSIC_RAISED }}>
         <svg width="7" height="4" viewBox="0 0 7 4" fill="#000"><path d="M0 0H7L3.5 4Z" /></svg>
-      </span>
+      </span> : null}
     </span>
   );
 }
@@ -723,7 +723,7 @@ export default function DocumentToolbar({
             ))}
           </ClassicCombo>
           <ToolbarButton width={18} gap={1} label={isUr ? "سطری فاصلے کے اختیارات" : "Line spacing options"} onClick={() => openToolbarCombo(leadingRef.current)} raised><MetricIcon kind="line" /></ToolbarButton>
-          <ClassicCombo ref={leadingRef}
+          <ClassicCombo entryField ref={leadingRef}
             aria-label={isUr ? "سطری فاصلہ" : "Line spacing"}
             data-studio-leading="true"
             className={selectCls} width={61}
@@ -756,10 +756,10 @@ export default function DocumentToolbar({
             ))}
           </ClassicCombo>
           <ToolbarButton width={20} gap={2} label={isUr ? "موٹا" : "Bold"} active={ui.bold} onClick={() => toggleBold(editor)} latin raised>
-            <span style={{ fontFamily: "Times New Roman, serif", fontWeight: 700 }}>B</span>
+            <span style={{ fontFamily: "Times New Roman, serif", fontSize: 13, fontWeight: 700, lineHeight: 1, color: "#000", WebkitFontSmoothing: "none" }}>B</span>
           </ToolbarButton>
           <ToolbarButton width={19} gap={1} label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)} latin raised>
-            <span style={{ fontFamily: "Times New Roman, serif", fontStyle: "italic" }}>I</span>
+            <span style={{ fontFamily: "Times New Roman, serif", fontSize: 13, fontWeight: 700, fontStyle: "italic", lineHeight: 1, color: "#000", WebkitFontSmoothing: "none" }}>I</span>
           </ToolbarButton>
           <ClassicCombo
             id="studio-font-size"
@@ -784,7 +784,7 @@ export default function DocumentToolbar({
             ))}
           </ClassicCombo>
           <ToolbarButton width={18} gap={2} label={isUr ? "کرننگ کے اختیارات" : "Kerning options"} onClick={() => openToolbarCombo(kerningRef.current)} raised><MetricIcon kind="kerning" /></ToolbarButton>
-          <ClassicCombo ref={kerningRef} aria-label={isUr ? "کرننگ" : "Kerning"} data-latin-control="true" className={selectCls} width={61} defaultValue="0">
+          <ClassicCombo entryField ref={kerningRef} aria-label={isUr ? "کرننگ" : "Kerning"} data-latin-control="true" className={selectCls} width={61} defaultValue="0">
             <option value="0">0%</option>
             <option value="5">5%</option>
           </ClassicCombo>
@@ -867,7 +867,7 @@ export default function DocumentToolbar({
             <option value="#1D4ED8">Blue</option>
           </ClassicCombo>
           <ToolbarButton width={18} gap={2} label={isUr ? "افقی پیمانے کے اختیارات" : "Horizontal scale options"} onClick={() => openToolbarCombo(scaleRef.current)} raised><MetricIcon kind="scale" /></ToolbarButton>
-          <ClassicCombo ref={scaleRef} aria-label={isUr ? "افقی پیمانہ" : "Horizontal scale"} data-latin-control="true" className={selectCls} width={61} defaultValue="100">
+          <ClassicCombo entryField ref={scaleRef} aria-label={isUr ? "افقی پیمانہ" : "Horizontal scale"} data-latin-control="true" className={selectCls} width={61} defaultValue="100">
             <option value="100">100%</option>
             <option value="90">90%</option>
             <option value="110">110%</option>
