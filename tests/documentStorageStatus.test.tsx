@@ -21,24 +21,24 @@ function renderStatus(storageDurability: DocumentLibrary["durability"], saveStat
 describe("Document Studio storage status", () => {
   it.each(["idle", "saving", "saved"] as const)("shows temporary storage in both indicators for memory %s", (status) => {
     renderStatus("memory", status);
-    expect(screen.getAllByText("Temporary · This session only")).toHaveLength(1);
+    expect(screen.getAllByText("Temporary · This session only")).toHaveLength(2);
     expect(screen.queryByText("Saved")).toBeNull();
     expect(document.querySelector('[data-studio-save-status="saved"]')).toBeNull();
-    expect(screen.getByRole("status").textContent).toContain("Keep this tab open and download/export your document.");
+    expect(screen.getAllByRole("status").map((node) => node.textContent).join(" ")).toContain("Keep this tab open and download/export your document.");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("shows natural Urdu warning and temporary status even while offline", () => {
     renderStatus("memory", "saved", true, false);
-    expect(screen.getAllByText("عارضی · صرف اس سیشن میں")).toHaveLength(1);
-    expect(screen.getByRole("status").textContent).toContain("یہ ٹیب کھلا رکھیں");
+    expect(screen.getAllByText("عارضی · صرف اس سیشن میں")).toHaveLength(2);
+    expect(screen.getAllByRole("status").map((node) => node.textContent).join(" ")).toContain("یہ ٹیب کھلا رکھیں");
     expect(screen.queryByText("محفوظ")).toBeNull();
   });
 
   it("keeps storage errors visible alongside the fallback warning", () => {
     renderStatus("memory", "error");
-    expect(screen.getAllByText("Couldn’t save locally")).toHaveLength(1);
-    expect(screen.getByRole("status").textContent).toContain("Browser storage is unavailable.");
+    expect(screen.getAllByText("Couldn’t save locally")).toHaveLength(2);
+    expect(screen.getAllByRole("status").map((node) => node.textContent).join(" ")).toContain("Browser storage is unavailable.");
   });
 
   it.each([
@@ -49,7 +49,12 @@ describe("Document Studio storage status", () => {
     ["error", true, false, "Couldn’t save locally"],
   ] as const)("preserves persistent %s status (online=%s, Urdu=%s)", (status, online, isUr, label) => {
     renderStatus("persistent", status, isUr, online);
-    expect(screen.getAllByText(label)).toHaveLength(1);
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getAllByText(label)).toHaveLength(2);
+    const panel = screen.getByRole("status");
+    expect(panel.textContent).toBe(label);
+    expect(panel.getAttribute("data-studio-status-panel")).toBe("left");
+    expect(panel.style.color).toBe("#000");
+    expect(panel.style.fontSize).toBe("11px");
+    expect(panel.style.fontFamily).toContain("Tahoma");
   });
 });

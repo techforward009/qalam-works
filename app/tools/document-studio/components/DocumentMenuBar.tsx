@@ -385,7 +385,7 @@ export default function DocumentMenuBar({
             </svg>
           </Link>
         ) : null}
-        <span className="shrink-0" data-latin-control="true">Qalam Page - </span>
+        <span className="shrink-0 whitespace-pre" data-latin-control="true">Qalam Page - </span>
         <div className="flex min-w-0 flex-1 items-center">{endSlot}</div>
         {showHome ? <StudioLanguageSwitch /> : null}
       </div>

@@ -91,7 +91,6 @@ import {
   sanitizeDocumentTitle,
 } from "../utils/documentTitle";
 import {
-  describeSaveStatus,
   isFindOpenShortcut,
   toggleLeftPanel,
   toggleRightPanel,
@@ -1800,7 +1799,6 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
     };
   }, [editor]);
 
-  const titleSave = describeSaveStatus({ saveStatus, online, isUr, storageDurability });
 
   return (
     <div className={fillWindow ? "flex h-full min-h-0 w-full flex-1 flex-col" : "mx-auto w-full max-w-[1680px] px-2 sm:px-3 lg:px-4"}>
@@ -1967,25 +1965,7 @@ export default function DocumentStudioEditor({ fillWindow = false }: { fillWindo
                   data-studio-document-title="true"
                   className="h-[20px] w-36 min-w-0 rounded-none border border-transparent bg-transparent px-1 text-[12px] leading-none text-[#1c1c1c] hover:border-[#c8c8c8] focus:border-[#1A3A2A] focus:outline-none"
                 /> : <button type="button" data-studio-document-title="true" aria-label={isUr ? "دستاویز کا عنوان" : "Document title"} onClick={() => setEditingTitle(true)} style={{ height: 18, padding: 0, border: "none", background: "transparent", color: "#000", fontSize: 12, whiteSpace: "nowrap" }}>[{documentTitle}]</button>}
-                {titleSave.label ? (
-                  <span
-                    className={`max-w-[9rem] truncate text-[11px] leading-none ${
-                      titleSave.tone === "error"
-                        ? "text-red-700"
-                        : titleSave.tone === "offline"
-                          ? "text-amber-800"
-                          : "text-[#3D5A47]"
-                    }`}
-                    data-studio-save-status={titleSave.tone}
-                    title={storageDurability === "memory"
-                      ? (isUr
-                        ? "براؤزر اسٹوریج دستیاب نہیں۔ اس سیشن کی تبدیلیاں عارضی ہیں۔"
-                        : "Browser storage is unavailable. Changes are temporary in this session.")
-                      : undefined}
-                  >
-                    {titleSave.label}
-                  </span>
-                ) : null}
+
               </div>
             }
           />
