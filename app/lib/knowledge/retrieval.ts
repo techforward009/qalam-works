@@ -1,4 +1,5 @@
 import { planKnowledgeQuery, type SearchTopic } from "./searchConcepts";
+import { asksAboutRespectForParents, isRespectForParentsEvidence } from "./knowledgeRelevance";
 import { bookSearchUnits, isBookLocator } from "./sourceUnits";
 import { rankLexicalDocuments } from "./lexicalRanking";
 import { researchSummaryText, type KnowledgeResearchAnswer } from "./researchAnswer";
@@ -33,6 +34,7 @@ function explicitReference(question: string) {
 export function retrieveKnowledge(input: { question: string; inferredTopicIds?: readonly string[]; candidateLimit?: number; scope: KnowledgeScope; locale: "ur" | "en"; records: readonly BookRecord[]; sources: readonly BookSource[]; quran: readonly QuranInput[]; quranSha256: string }): KnowledgeResult {
   const { question, scope, locale } = input;
   const { direct, groups, topics } = planKnowledgeQuery(question, input.inferredTopicIds);
+  const parentRespect = asksAboutRespectForParents(question);
   const base = { question, method: "lexical-bm25-topic-expansion" as const, expandedTerms: [...new Set(groups.flat())], searchTopics: topics, availableCollections: [...new Set([...(input.quran.length ? ["quran"] : []), ...input.sources.map(s => s.book)])] };
   if (/(?:فتوي|فتوا|fatwa|مرجع|مراجع|marja)/iu.test(normalizeBookSearch(question))) return { ...base, status: "unsupported-fatwa", passages: [] };
   const reference = explicitReference(question);
@@ -78,6 +80,7 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
       if (matchingChapters.has(record.id) && kafiHadithNumber(paragraph.text) === null) return;
       if (reference?.kind === "hadith" && kafiHadithNumber(paragraph.text) !== reference.number) return;
       if (!exact && isBookLocator(record, unit, index)) return;
+      if (parentRespect && !isRespectForParentsEvidence(unit.text, record.title)) return;
       // Preserve the full paragraph within the existing portable excerpt limit.
       if (unit.text.length > 150_000 || unit.text.trim().length < 15) return;
       const value = reference ? 100 + (focusedScores.get(unit.text) ?? 0) + score(unit.text) : matchingChapters.has(record.id) ? 100 : score(unit.text, record.title);
@@ -93,11 +96,14 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
   }
   if (scope === "all" || scope === "quran") for (const ayah of input.quran) {
     const value = quranRef ? ayah.surah === Number(normalizeBookSearch(quranRef[1])) && ayah.ayah >= Number(normalizeBookSearch(quranRef[2])) && ayah.ayah <= Math.min(Number(normalizeBookSearch(quranRef[3] ?? quranRef[2])), Number(normalizeBookSearch(quranRef[2])) + 7) ? 100 : 0 : reference ? 0 : score(ayah.text);
-    if (value) candidates.push({ score: value, section: `quran:${ayah.surah}:${ayah.ayah}`, passage: { id: `quran:${input.quranSha256}:${ayah.surah}:${ayah.ayah}`, collection: "quran", language: "ar", referenceUr: `قرآن، ${ayah.surah}:${ayah.ayah}`, referenceEn: `Quran, ${ayah.surah}:${ayah.ayah}`, text: ayah.text, sourceSha256: input.quranSha256, quranLocation: { surah: ayah.surah, ayah: ayah.ayah }, translator: null, ...(ayah.suppliedTranslation ? { suppliedTranslation: ayah.suppliedTranslation } : {}) } });
+    if (value && (!parentRespect || isRespectForParentsEvidence(ayah.text))) candidates.push({ score: value, section: `quran:${ayah.surah}:${ayah.ayah}`, passage: { id: `quran:${input.quranSha256}:${ayah.surah}:${ayah.ayah}`, collection: "quran", language: "ar", referenceUr: `قرآن، ${ayah.surah}:${ayah.ayah}`, referenceEn: `Quran, ${ayah.surah}:${ayah.ayah}`, text: ayah.text, sourceSha256: input.quranSha256, quranLocation: { surah: ayah.surah, ayah: ayah.ayah }, translator: null, ...(ayah.suppliedTranslation ? { suppliedTranslation: ayah.suppliedTranslation } : {}) } });
   }
   candidates.sort((a, b) => b.score - a.score || (quranRef && a.passage.quranLocation && b.passage.quranLocation ? a.passage.quranLocation.ayah - b.passage.quranLocation.ayah : a.passage.id.localeCompare(b.passage.id, undefined, { numeric: true })));
   // Rerank for source coverage without letting unrelated low-scoring passages in.
-  const eligible = candidates.filter(c => c.score >= (candidates[0]?.score ?? 0) * .55);
+  // A semantically verified parent-respect passage can have different BM25
+  // weights in Urdu, Arabic and Quran. Keep it eligible without rescuing
+  // incidental parent mentions (filtered before this point).
+  const eligible = candidates.filter(c => c.score >= (candidates[0]?.score ?? 0) * (parentRespect ? .2 : .55));
   const chosen: typeof candidates = [];
   const sections = new Set<string>();
   const limit = Math.min(16, Math.max(1, input.candidateLimit ?? 8));
