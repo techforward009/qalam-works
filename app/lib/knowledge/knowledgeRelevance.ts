@@ -17,7 +17,7 @@ function hasDirectParentReference(value: string): boolean {
   return /(?:والد|والدين|والديه|ابويه|ابوين|ابويك|ابوه|امها|والدہ|ماں|باپ|پدر|فرزند|parents?|mother|father|(?:^| )الاب(?: |$)|(?:^| )الام(?: |$))/u.test(value);
 }
 function hasEthicalConduct(value: string): boolean {
-  return /(?:البر(?: |$)|(?:^| )بر(?: |$)|العقوق|عقوق|احسان|احسن|حسن صحب|اطاع|الطاع|اطع|تطع|شكر|اشكر|وصينا|خفض|اخفض|ارفق|رفيق|شفيق|ارحم|اكرم|كرامه|تنهر|(?:^| )اف(?: |$)|قول كريم|قولا كريما|حسن سلو|احترام|عزت|نیکی|نيكي|خدمت|ادب|فرمانبردار|شفقت|نرمی|نرمى|آہستہ|عزت|مہربان|respect|honou?r|kindness|dutiful|obedien)/u.test(value);
+  return /(?:البر(?: |$)|(?:^| )(?:بر|وبر|ببر|فبر|بالبر)(?: |$)|العقوق|عقوق|احسان|احسن|حسن صحب|اطاع|الطاع|اطع|تطع|شكر|اشكر|وصينا|خفض|اخفض|ارفق|رفيق|شفيق|ارحم|اكرم|كرامه|تنهر|(?:^| )اف(?: |$)|قول كريم|قولا كريما|حسن سلو|احترام|عزت|نیکی|نيكي|خدمت|ادب|فرمانبردار|شفقت|نرمی|نرمى|آہستہ|عزت|مہربان|respect|honou?r|kindness|dutiful|obedien)/u.test(value);
 }
 /** Bare 'حق' is ambiguous in legal and inheritance records. */
 function teachesParentRights(body: string): boolean {
