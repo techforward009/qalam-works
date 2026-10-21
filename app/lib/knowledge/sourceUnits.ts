@@ -1,5 +1,5 @@
 import type { BookRecord } from './bookCorpus';
-import { kafiHadithNumber, normalizeBookSearch, cleanBookTitle } from './bookCorpus';
+import { kafiHadithNumber, normalizeBookSearch, cleanBookTitle, bookSearchableParagraphs } from './bookCorpus';
 export type BookSearchUnit = { paragraph: BookRecord['paragraphs'][number]; paragraphs: BookRecord['paragraphs']; text: string };
 /** A numbered narration and its continuation are one source unit in every search mode. */
 export function bookSearchUnits(record: BookRecord): BookSearchUnit[] {
@@ -14,9 +14,7 @@ export function bookSearchUnits(record: BookRecord): BookSearchUnit[] {
   // The supplied Urdu edition of prayer 24 appends the translator's
   // editorial explanation and an embedded Quran quotation AFTER the prayer.
   // Detect the verified boundary without modifying or shortening prayer text.
-  const boundary = record.paragraphs.findIndex((p, index) =>
-    index > 1 && normalizeBookSearch(p.text).startsWith(normalizeBookSearch("خداوند عالم کے عظیم احسانات کے بعد")));
-  const prayerBody = boundary >= 0 ? record.paragraphs.slice(0, boundary) : record.paragraphs;
+  const prayerBody = bookSearchableParagraphs(record);
   return prayerBody.map(p => ({ paragraph: p, paragraphs: [p], text: p.text }));
  }
  if(record.book!=='kafi')return record.paragraphs.map(p=>({paragraph:p,paragraphs:[p],text:p.text}));

@@ -27,7 +27,9 @@ describe("source-preserving book search and sermon snapshots",()=>{
   r.paragraphs = [
     {id:`${r.id}:p1`,text:"اپنے والدین کے حق میں حضرتؑ کی دُعا:"},
     {id:`${r.id}:p2`,text:"اے اللہ! میرے ماں باپ کو بھی اپنے نزدیک عزت و کرامت اور رحمت سے مخصوص فرما۔"},
-    {id:`${r.id}:p3`,text:"اے اللہ! والدین کے حقوق کی ادائیگی کی توفیق دے۔"}
+    {id:`${r.id}:p3`,text:"اے اللہ! والدین کے حقوق کی ادائیگی کی توفیق دے۔"},
+    {id:`${r.id}:p4`,text:"خداوند عالم کے عظیم احسانات کے بعد ماں باپ کی عظمت کا ذکر ہے۔"},
+    {id:`${r.id}:p5`,text:"﴿وَقَضٰى رَبُّكَ أَلَّا تَعْبُدُوا إِلَّا إِيَّاهُ وَبِالْوَالِدَيْنِ إِحْسَانًا﴾"}
   ];
   const before = JSON.stringify(r);
   for (const options of [{query:"والدین",language:"ur"},{number:"24",book:"sahifa"},{query:"دعا",number:"24"}]) {
@@ -39,6 +41,10 @@ describe("source-preserving book search and sermon snapshots",()=>{
   }
   // If a later real passage matches, prefer it to a mere fallback.
   expect(searchBookRecords([r],{query:"حقوق"}).hits[0].snippet).toContain("والدین کے حقوق");
+  // Editorial Quran citations are kept in the immutable full source, but are
+  // not searched or attributed as the text of Imam Sajjad's original prayer.
+  expect(searchBookRecords([r],{query:"وَقَضٰى"}).total).toBe(0);
+  expect(searchBookRecords([r],{query:"والدین"}).hits[0].snippet).not.toContain("وَقَضٰى");
   expect(JSON.stringify(r)).toBe(before);
  });
 
