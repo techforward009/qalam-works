@@ -90,9 +90,12 @@ function MenuItems({
         </div> : null}
       </div>;
     }
-    const disabled = disabledIds?.has(item.id) ?? false;
+    const comingSoon = item.id === "tools.dictation";
+    const disabled = comingSoon || (disabledIds?.has(item.id) ?? false);
     const checked = checkedIds?.has(item.id) ?? false;
     return <button key={item.id} type="button" role="menuitem" disabled={disabled}
+      title={comingSoon ? (isUr ? "جلد آ رہا ہے" : "Coming soon") : undefined}
+      data-coming-soon={comingSoon ? "true" : undefined}
       aria-disabled={disabled || undefined} aria-checked={checked || undefined}
       data-menu-action={item.id} style={dropdownItemStyle}
       className={`flex w-full items-center text-left ${disabled ? "cursor-not-allowed" : "hover:bg-[#d6dff2]"}`}
@@ -365,6 +368,10 @@ export default function DocumentMenuBar({
           font-size: 12px !important;
           line-height: 22px !important;
           color: #000 !important;
+        }
+        [data-menu-portaled="true"][data-studio-menu-language] [data-coming-soon="true"],
+        [data-menu-portaled="true"][data-studio-menu-language] [data-coming-soon="true"] * {
+          color: #808080 !important;
         }
       `}</style>
       <div

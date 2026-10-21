@@ -171,8 +171,10 @@ const TOOLS: ToolSpec[] = [
 export function InPageToolPalette({
   tool,
   onTool,
+  isUr = false,
 }: {
   tool: StudioToolId;
+  isUr?: boolean;
   onTool: (id: StudioToolId) => void;
 }) {
   return (
@@ -191,6 +193,11 @@ export function InPageToolPalette({
       role="toolbar"
       aria-label="Tools"
     >
+      <style>{`
+        [data-studio-tool-enabled="false"] svg[stroke],
+        [data-studio-tool-enabled="false"] svg [stroke] { stroke: #808080; }
+        [data-studio-tool-enabled="false"] svg [fill]:not([fill="none"]) { fill: #808080; }
+      `}</style>
       {TOOLS.map((item, index) => {
         const active = item.enabled && tool === item.id;
         const gapAfter = index === 4 || index === 6 || index === 9 || index === 12;
@@ -198,7 +205,7 @@ export function InPageToolPalette({
           <button
             key={item.id}
             type="button"
-            title={item.enabled ? item.label : `${item.label} (not available yet)`}
+            title={item.enabled ? item.label : (isUr ? "جلد آ رہا ہے" : "Coming soon")}
             aria-label={item.label}
             aria-pressed={active}
             disabled={!item.enabled}
@@ -211,7 +218,7 @@ export function InPageToolPalette({
               height: 22,
               marginLeft: 2,
               marginBottom: gapAfter ? 2 : 0,
-              color: "#000",
+              color: item.enabled ? "#000" : "#808080",
               opacity: 1,
               background: "#f0f0f0",
               outline: active ? "1px solid #000" : undefined,

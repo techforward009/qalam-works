@@ -46,6 +46,7 @@ function ToolbarButton({
   raised = false,
   width,
   gap = 0,
+  disabledTip,
 }: {
   onClick: () => void;
   active?: boolean;
@@ -55,18 +56,21 @@ function ToolbarButton({
   raised?: boolean;
   width?: number;
   gap?: number;
+  disabledTip?: string;
 }) {
   return (
     <button
       type="button"
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
-      title={label}
+      title={disabledTip ?? label}
+      disabled={Boolean(disabledTip)}
+      data-studio-coming-soon={disabledTip ? "true" : undefined}
       aria-label={label}
       aria-pressed={active}
       data-latin-control={latin ? "true" : undefined}
       className="inline-flex h-[18px] min-w-[20px] shrink-0 items-center justify-center bg-[#f0f0f0] px-1 text-[11px] font-bold leading-none text-black focus-visible:outline focus-visible:outline-1 focus-visible:outline-black"
-      style={{ width, minWidth: width ?? 20, paddingInline: width ? 0 : undefined, marginInlineStart: gap, height: 18, minHeight: 18, position: "relative", boxShadow: active && !raised ? CLASSIC_SUNKEN : BUTTON_RAISED }}
+      style={{ color: disabledTip ? "#808080" : "#000", width, minWidth: width ?? 20, paddingInline: width ? 0 : undefined, marginInlineStart: gap, height: 18, minHeight: 18, position: "relative", boxShadow: active && !raised ? CLASSIC_SUNKEN : BUTTON_RAISED }}
     >
       {children}
     </button>
@@ -91,7 +95,7 @@ function AlignIcon({ kind }: { kind: "left" | "center" | "right" | "justify" | "
 }
 
 function MetricIcon({ kind }: { kind: "line" | "paragraph" | "kerning" | "scale" }) {
-  return <svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="#000" strokeWidth="1" aria-hidden="true">
+  return <svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
     {kind === "line" || kind === "paragraph" ? <>
       <path d="M3 3V13M1 5L3 3L5 5M1 11L3 13L5 11" />
       <path d={kind === "line" ? "M7 3H13M7 8H13M7 13H13" : "M7 3H13M10 3V13M7 13H13"} />
@@ -631,15 +635,15 @@ const selectCls = "shrink-0";
 /** Keep native keyboard/option handling behind a classic field and arrow face. */
 function ClassicCombo({ className, style, width, gap = 0, leadingIcon, entryField = false, ...props }: ComponentProps<"select"> & { width?: number; gap?: number; leadingIcon?: React.ReactNode; entryField?: boolean }) {
   return (
-    <span className={`relative inline-grid h-[20px] shrink-0 ${className ?? ""}`} data-studio-combo="true" dir="ltr" style={{ width, marginInlineStart: gap }}>
+    <span className={`relative inline-grid h-[20px] shrink-0 ${className ?? ""}`} data-studio-combo="true" title={props.title} dir="ltr" style={{ width, marginInlineStart: gap }}>
       <select
         {...props}
         className="h-[20px] min-w-0 w-full appearance-none rounded-none bg-white text-left text-[11px] text-black focus:outline-none"
-        style={{ ...style, border: "none", padding: `2px ${entryField ? 4 : 23}px 2px ${leadingIcon ? 24 : 4}px`, fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", color: "#000", backgroundColor: "#fff", textAlign: "left", direction: "ltr", minWidth: 0, minHeight: 20, maxHeight: 20, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff, inset -2px -2px 0 #f0f0f0" }}
+        style={{ ...style, border: "none", padding: `2px ${entryField ? 4 : 23}px 2px ${leadingIcon ? 24 : 4}px`, fontFamily: "Tahoma, Arial, sans-serif", fontSize: 11, lineHeight: "16px", color: props.disabled ? "#808080" : "#000", backgroundColor: "#fff", textAlign: "left", direction: "ltr", minWidth: 0, minHeight: 20, maxHeight: 20, boxShadow: "inset 1px 1px 0 #a0a0a0, inset 2px 2px 0 #696969, inset -1px -1px 0 #fff, inset -2px -2px 0 #f0f0f0" }}
       />
       {leadingIcon ? <span aria-hidden="true" className="pointer-events-none absolute left-[4px] top-[2px] flex h-[16px] w-[18px] items-center justify-center text-black">{leadingIcon}</span> : null}
       {!entryField ? <span aria-hidden="true" className="pointer-events-none absolute right-[2px] top-[2px] grid h-[16px] w-[17px] place-items-center bg-[#f0f0f0]" style={{ boxShadow: CLASSIC_RAISED }}>
-        <svg width="7" height="4" viewBox="0 0 7 4" fill="#000"><path d="M0 0H7L3.5 4Z" /></svg>
+        <svg width="7" height="4" viewBox="0 0 7 4" fill={props.disabled ? "#808080" : "#000"}><path d="M0 0H7L3.5 4Z" /></svg>
       </span> : null}
     </span>
   );
@@ -792,8 +796,8 @@ export default function DocumentToolbar({
               <option key={pt} value={pt}>{pt}pt</option>
             ))}
           </ClassicCombo>
-          <ToolbarButton width={18} gap={2} label={isUr ? "کرننگ کے اختیارات" : "Kerning options"} onClick={() => openToolbarCombo(kerningRef.current)} raised><MetricIcon kind="kerning" /></ToolbarButton>
-          <ClassicCombo entryField ref={kerningRef} aria-label={isUr ? "کرننگ" : "Kerning"} data-latin-control="true" className={selectCls} width={61} defaultValue="0">
+          <ToolbarButton disabledTip={isUr ? "جلد آ رہا ہے" : "Coming soon"} width={18} gap={2} label={isUr ? "کرننگ کے اختیارات" : "Kerning options"} onClick={() => openToolbarCombo(kerningRef.current)} raised><MetricIcon kind="kerning" /></ToolbarButton>
+          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} entryField ref={kerningRef} aria-label={isUr ? "کرننگ" : "Kerning"} data-latin-control="true" className={selectCls} width={61} defaultValue="0">
             <option value="0">0%</option>
             <option value="5">5%</option>
           </ClassicCombo>
@@ -875,17 +879,17 @@ export default function DocumentToolbar({
             <option value="#7F1D1D">Maroon</option>
             <option value="#1D4ED8">Blue</option>
           </ClassicCombo>
-          <ToolbarButton width={18} gap={2} label={isUr ? "افقی پیمانے کے اختیارات" : "Horizontal scale options"} onClick={() => openToolbarCombo(scaleRef.current)} raised><MetricIcon kind="scale" /></ToolbarButton>
-          <ClassicCombo entryField ref={scaleRef} aria-label={isUr ? "افقی پیمانہ" : "Horizontal scale"} data-latin-control="true" className={selectCls} width={61} defaultValue="100">
+          <ToolbarButton disabledTip={isUr ? "جلد آ رہا ہے" : "Coming soon"} width={18} gap={2} label={isUr ? "افقی پیمانے کے اختیارات" : "Horizontal scale options"} onClick={() => openToolbarCombo(scaleRef.current)} raised><MetricIcon kind="scale" /></ToolbarButton>
+          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} entryField ref={scaleRef} aria-label={isUr ? "افقی پیمانہ" : "Horizontal scale"} data-latin-control="true" className={selectCls} width={61} defaultValue="100">
             <option value="100">100%</option>
             <option value="90">90%</option>
             <option value="110">110%</option>
           </ClassicCombo>
           <ColorPaletteControl editor={editor} kind="highlight" colors={STUDIO_HIGHLIGHT_COLORS} value={ui.highlight} mixed={ui.mixed.highlight} isUr={isUr} compact />
-          <ClassicCombo aria-label="None" data-latin-control="true" className={selectCls} width={100} gap={4} defaultValue="none">
+          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} aria-label="None" data-latin-control="true" className={selectCls} width={100} gap={4} defaultValue="none">
             <option value="none">None</option>
           </ClassicCombo>
-          <ClassicCombo aria-label="K-None" data-latin-control="true" className={selectCls} width={80} gap={3} defaultValue="k">
+          <ClassicCombo disabled title={isUr ? "جلد آ رہا ہے" : "Coming soon"} aria-label="K-None" data-latin-control="true" className={selectCls} width={80} gap={3} defaultValue="k">
             <option value="k">K-None</option>
           </ClassicCombo>
         </div>

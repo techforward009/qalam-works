@@ -291,7 +291,7 @@ export default function DocumentCanvas({
       data-ruler-preferred-unit={rulerUnit}
       data-qalam-pagination-owner={isPages ? "extension" : undefined}
     >
-      {isPages ? <InPageToolPalette tool={tool} onTool={chooseTool} /> : null}
+      {isPages ? <InPageToolPalette tool={tool} onTool={chooseTool} isUr={isUr} /> : null}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {showRuler ? (
           <div className="studio-no-print flex shrink-0 bg-white" data-studio-ruler-frame="true" style={{ height: INPAGE_RULER_BAR_PX }}>
