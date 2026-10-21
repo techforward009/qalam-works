@@ -3,10 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import BookPassageText from "./BookPassageText";
 import BookTopicGuide from "./BookTopicGuide";
 import type { CustomSermonProject } from "./engine/customSermonProject";
-import ResearchStudioGate from "../research-studio/components/ResearchStudioGate";
 import { renderKhateebSalawat } from "./KhateebScriptText";
 import ClipboardFeedback from "./ClipboardFeedback";
-import { uploadBookArchive } from "../../lib/knowledge/uploadBookArchive";
 import { useCopyFeedback } from "./useCopyFeedback";
 import { bookExcerptText, bookKindLabel, bookSourceLabel, bookRecordReference, cleanBookTitle, createBookExcerpt, type BookExcerpt, type BookRecord, type BookSearchResult, type BookSource } from "./engine/bookLibrary";
 
@@ -19,7 +17,6 @@ export default function BookLibraryPanel(props: Props) {
 }
 export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }: Props) {
   const ur = locale === "ur";
-  const [adminOpen, setAdminOpen] = useState(false);
   const [catalog, setCatalog] = useState<{ ready: boolean; sources: BookSource[]; recordCount: number } | null>(null);
   const [query, setQuery] = useState("");
   const [book, setBook] = useState("");
@@ -37,7 +34,7 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
   const dialog = useRef<HTMLDialogElement>(null);
   const feedback = useCopyFeedback();
   const failure = ur ? "کتابی ذخیرہ عارضی طور پر بند ہے۔ باقی حصے استعمال کر سکتے ہیں۔" : "The book library is temporarily offline. Other sections remain available.";
-  const invalid = ur ? "یہ درست کتابی ذخیرے کی زِپ فائل نہیں، یا اس کا حجم ۸ میگابائٹ سے زیادہ ہے۔" : "This is not a valid book corpus ZIP, or it exceeds 8 MB.";
+  const invalid = ur ? "تلاش کی درخواست درست نہیں۔ الفاظ یا انتخاب دوبارہ دیکھیں۔" : "Invalid search request. Review the query or filters.";
 
   useEffect(() => {
     const abort = new AbortController();
@@ -68,21 +65,6 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
     } finally {
       if (!abort.signal.aborted) setBusy(false);
     }
-  }
-  async function importArchive(file: File | null) {
-    if (!file) return;
-    if (file.size > 8 * 1024 * 1024) { setError(invalid); return; }
-    controller.current?.abort();
-    const abort = new AbortController(); controller.current = abort;
-    setBusy(true); setError(""); setMessage("");
-    try {
-      const value = await uploadBookArchive(file, abort.signal, (done, total) => {
-        if (!abort.signal.aborted) setMessage(ur ? `کتابی نسخے محفوظ ہو رہے ہیں: ${done} / ${total}` : `Saving source editions: ${done} / ${total}`);
-      });
-      if (!abort.signal.aborted) { setCatalog(value); setResults(null); setMessage(ur ? "کتابی ذخیرہ نجی طور پر محفوظ ہوگیا۔" : "The book corpus was saved privately."); }
-    } catch (err) {
-      if (!abort.signal.aborted) { setMessage(""); setError(err instanceof Error && err.message === "invalid" ? invalid : failure); }
-    } finally { if (!abort.signal.aborted) setBusy(false); }
   }
   async function search(page = 1) {
     const params = new URLSearchParams({ op: "search", query, book, language, sourceId, kind, number, page: String(page) });
@@ -140,13 +122,6 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
     </> : null}
     {busy ? <p role="status">{ur ? "کام جاری ہے…" : "Working…"}</p> : null}
     {catalog && !catalog.ready ? <p role="status">{ur ? "کتابی ذخیرہ ابھی تیار نہیں ہے۔" : "The book library is not ready yet."}</p> : null}
-    <details className="rounded-lg border border-[#31513a]/20 p-3" onToggle={event => setAdminOpen(event.currentTarget.open)}>
-      <summary className="cursor-pointer text-sm font-semibold">{ur ? "کتابی ذخیرے کا انتظام — مالک کے لیے" : "Book library management — owner only"}</summary>
-      {adminOpen ? <ResearchStudioGate language={locale} dir={ur ? "rtl" : "ltr"}>
-        <p className="my-3 text-sm leading-7">{ur ? "تیار کردہ کتابی ذخیرے کی زِپ فائل منتخب کریں۔ کامیاب جانچ اور حفاظت کے بعد ہی نیا نسخہ فعال ہوگا۔" : "Choose a prepared book corpus ZIP. A replacement becomes active only after validation and successful storage."}</p>
-        <label className="grid gap-2 text-sm">{ur ? "کتابی ذخیرے کی زِپ فائل" : "Book corpus ZIP"}<input aria-label={ur ? "کتابی ذخیرے کی زِپ فائل" : "Book corpus ZIP"} type="file" accept=".zip,application/zip" disabled={busy} onChange={event => { void importArchive(event.target.files?.[0] ?? null); event.target.value = ""; }} /></label>
-      </ResearchStudioGate> : null}
-    </details>
     <dialog ref={dialog} onClose={() => { setOpened(null); setSelectedIds([]); setMessage(""); }} className="m-auto max-h-[90dvh] w-[min(95vw,850px)] overflow-y-auto rounded-2xl bg-white p-5 text-[#1A3A2A] backdrop:bg-black/40 dark:bg-[#102017] dark:text-white" aria-label={ur ? "مکمل کتابی عبارت" : "Full book passage"}>
       {opened ? <>
         <div className="flex flex-wrap gap-3 bg-white pb-4 dark:bg-[#102017]">
