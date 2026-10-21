@@ -90,7 +90,7 @@ export default function KnowledgeAssistant({ locale, onCreateDraft }: { locale: 
       .knowledge-assistant .khateeb-book-en { font-family: var(--font-inter), Arial, sans-serif; }
       .knowledge-assistant .khateeb-salawat { display: inline-block; font-size: .7em; line-height: 1; }
     `}</style>
-    <h2 className={`text-xl text-[#1A3A2A] dark:text-white ${ur ? "font-nastaliq leading-loose" : "font-bold"}`}>{ur ? "قلم علمی معاون — کتاب سے پوچھیں" : "Qalam Knowledge Assistant — ask the sources"}</h2>
+    <h2 className={`text-xl text-[#1A3A2A] dark:text-white ${ur ? "font-nastaliq leading-loose" : "font-bold"}`}>{ur ? "کتاب سے سوال کریں" : "Ask the books"}</h2>
     <p className="my-3 text-sm leading-7">{ur ? "مصادر میں سوال تلاش کریں، اصل عبارتیں پڑھیں اور انہی پر مبنی حوالہ دار تحقیقی خلاصہ حاصل کریں۔ اصل عربی، فراہم کردہ ترجمہ اور تحقیقی تشریح الگ رہتے ہیں۔" : "Search the sources, read original passages and request a cited research summary grounded in them. Arabic source text, supplied translations and research commentary remain separate."}</p>
     {contextQuestion ? <div className="my-3 rounded-lg border border-emerald-900/20 p-3 text-sm leading-7"><p>{ur ? "پچھلے موضوع سے متعلق سوال" : "Follow-up on this topic"}: {contextQuestion}</p><button type="button" className="underline" onClick={() => { setContextQuestion(null); setQuestion(""); setResult(null); setSelected([]); }}>{ur ? "نیا موضوع شروع کریں" : "Start a new topic"}</button></div> : null}
     <form className="space-y-3" onSubmit={e => { e.preventDefault(); void ask(); }}>

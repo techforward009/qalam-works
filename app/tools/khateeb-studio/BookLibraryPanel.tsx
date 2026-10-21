@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import BookPassageText from "./BookPassageText";
 import BookTopicGuide from "./BookTopicGuide";
-import KnowledgeAssistant from "../../components/knowledge/KnowledgeAssistant";
 import type { CustomSermonProject } from "./engine/customSermonProject";
 import ResearchStudioGate from "../research-studio/components/ResearchStudioGate";
 import { renderKhateebSalawat } from "./KhateebScriptText";
@@ -105,7 +104,6 @@ export function LibraryWorkspace({ locale, onAdd, onCreateDraft, addedIds = [] }
     } catch { setError(ur ? "اقتباس شامل نہیں ہوسکا؛ مختصر انتخاب کریں یا محفوظ اقتباسات کی تعداد کم کریں۔" : "The excerpt could not be added. Select fewer paragraphs or remove some saved excerpts."); }
   }
   return <div data-testid="book-library" className="space-y-4" dir={ur ? "rtl" : "ltr"}>
-    {catalog?.ready ? <KnowledgeAssistant locale={locale} onCreateDraft={onCreateDraft} /> : null}
     <p className="text-sm leading-7">{ur ? "نہج البلاغہ، صحیفہ سجادیہ اور شامل شدہ الکافی کے نسخوں میں تلاش کریں۔ الکافی میں جلد اور اصل باب ساتھ دیکھیں؛ حدیث نمبر ہر باب میں دوبارہ شروع ہوتا ہے۔ ترجمہ اور موجودہ حواشی کو ماخذ کی نسبت کے ساتھ پڑھیں۔" : "Search the supplied editions of Nahj al-Balagha, Sahifa Sajjadiyya and imported Al-Kafi volumes. For Al-Kafi, check the volume and original chapter; hadith numbers restart in each chapter. Read translations and existing commentary with their source attribution."}</p>
     <ClipboardFeedback state={feedback.state} onDismiss={feedback.dismiss} />
     {error ? <div role="alert" className="rounded-lg border border-amber-400/40 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100"><p lang="ur" dir="rtl">کتابی ذخیرہ عارضی طور پر بند ہے۔ باقی حصے استعمال کر سکتے ہیں۔</p><p lang="en" dir="ltr">Temporarily offline: the book library is unavailable. You can use the other sections.</p></div> : null}

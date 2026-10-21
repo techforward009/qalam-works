@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useLanguage } from "../../lib/language-context";
-import KnowledgeAssistant from "../../components/knowledge/KnowledgeAssistant";
 import ResearchStudioGate from "./components/ResearchStudioGate";
 
 const ResearchStudioWorkspace = dynamic(() => import("./components/ResearchStudioWorkspace"));
@@ -25,7 +24,6 @@ export default function ResearchStudioContent() {
       <div className="site-container">
         <ResearchStudioGate language={language} dir={dir}>
           <p className={`mb-8 max-w-2xl text-gray-700 dark:text-white ${language === "ur" ? "font-naskh" : ""}`}>{INTRO[language]}</p>
-          <div className="mb-8"><KnowledgeAssistant locale={language} /></div>
           <ResearchStudioWorkspace language={language} dir={dir} />
         </ResearchStudioGate>
       </div>
