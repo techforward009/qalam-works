@@ -38,3 +38,41 @@ export function isRespectForParentsEvidence(text: string, heading = ""): boolean
   if (!hasEthicalConduct(body) && !teachesParentRights(body)) return false;
   return hasDirectParentReference(body) || explicitlyAboutParents(title);
 }
+
+/**
+ * Rank parent-respect Quran evidence by *explicit instructions within the
+ * original ayah*, not by repeated occurrences of a parent word. This score
+ * only orders already grounded/source-verified verses; it is not a fatwa or
+ * a generated explanation.
+ */
+export function parentRespectQuranGuidanceStrength(text: string): number {
+  const body = normalizeBookSearch(text);
+  let weight = 0;
+  for (const [phrase, value] of [
+    ["بالوالدين احسانا", 5],
+    ["فلا تقل لهما اف", 4],
+    ["تنهرهما", 4],
+    ["قولا كريما", 4],
+    ["اخفض لهما", 5],
+    ["ارحمهما", 4],
+    ["صاحبهما في الدنيا معروفا", 4],
+    ["فلا تطعهما", 3],
+    ["اشكر لي ولوالديك", 2],
+    ["وصينا الانسان بوالديه", 2],
+    ["بر الوالدين", 3],
+    ["عقوق الوالدين", 3],
+  ] as const) if (body.includes(phrase)) weight += value;
+  return weight;
+}
+
+/** Scripture may continue a parent-specific command using "them" (17:24).
+ * Allow that verse only when its immediately preceding original ayah gives
+ * explicit parent guidance and the continuation gives an ethical command.
+ */
+export function isParentRespectVerseContinuation(text: string, preceding: string | undefined): boolean {
+  if (!preceding || !isRespectForParentsEvidence(preceding) ||
+      parentRespectQuranGuidanceStrength(preceding) < 2) return false;
+  const body = normalizeBookSearch(text);
+  return /(?:^| )لهما(?: |$)|(?:^| )تطعهما(?: |$)|(?:^| )ارحمهما(?: |$)/u.test(body)
+    && parentRespectQuranGuidanceStrength(text) >= 3;
+}

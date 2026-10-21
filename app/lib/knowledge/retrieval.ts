@@ -1,5 +1,5 @@
 import { planKnowledgeQuery, type SearchTopic } from "./searchConcepts";
-import { asksAboutRespectForParents, isRespectForParentsEvidence } from "./knowledgeRelevance";
+import { asksAboutRespectForParents, isRespectForParentsEvidence, parentRespectQuranGuidanceStrength, isParentRespectVerseContinuation } from "./knowledgeRelevance";
 import { bookSearchUnits, isBookLocator } from "./sourceUnits";
 import { rankLexicalDocuments } from "./lexicalRanking";
 import { researchSummaryText, type KnowledgeResearchAnswer } from "./researchAnswer";
@@ -43,6 +43,8 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
   const quoted = question.match(/["“«]([^"”»]+)["”»]/u)?.[1];
   const exact = quoted ? normalizeBookSearch(quoted) : null;
   const quranRef = question.match(/([0-9۰-۹٠-٩]{1,3})\s*[:：]\s*([0-9۰-۹٠-٩]{1,3})(?:\s*[–—-]\s*([0-9۰-۹٠-٩]{1,3}))?/u);
+  const rankParentsQuran = parentRespect && !exact && !reference && !quranRef;
+  const ayahsByReference = new Map(input.quran.map(ayah => [`${ayah.surah}:${ayah.ayah}`, ayah.text]));
   const eligibleRecords = input.records.filter(record => (scope === "all" || record.book === scope) && (record.language === "ar" || record.language === locale));
   const chapterQuery = exact ?? direct.filter(t => !["باب", "جلد", "volume", "الکافي", "الكافي", "kafi"].includes(t)).join(" ");
   const matchingChapters = !reference && chapterQuery.split(" ").length >= 2 ? new Set(eligibleRecords.filter(record => record.book === "kafi"
@@ -60,7 +62,7 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
   const lexicalScores = !exact && !reference && !quranRef ? rankLexicalDocuments(lexicalDocuments, groups, direct, input.inferredTopicIds?.length && (input.candidateLimit ?? 8) > 8 ? [] : groups.slice(0, topics.length)) : [];
   const rankedScores = new Map<string, number>();
   lexicalDocuments.forEach((doc, i) => { if ((lexicalScores[i] ?? 0) > (rankedScores.get(doc.text) ?? 0)) rankedScores.set(doc.text, lexicalScores[i]); });
-  const candidates: { passage: KnowledgePassage; score: number; section: string }[] = [];
+  const candidates: { passage: KnowledgePassage; score: number; section: string; parentAdvice?: number }[] = [];
   function score(text: string, heading = "") {
     const body = normalizeBookSearch(text);
     if (exact) return body.includes(exact) ? 100 : 0;
@@ -96,20 +98,38 @@ export function retrieveKnowledge(input: { question: string; inferredTopicIds?: 
     });
   }
   if (scope === "all" || scope === "quran") for (const ayah of input.quran) {
-    const value = quranRef ? ayah.surah === Number(normalizeBookSearch(quranRef[1])) && ayah.ayah >= Number(normalizeBookSearch(quranRef[2])) && ayah.ayah <= Math.min(Number(normalizeBookSearch(quranRef[3] ?? quranRef[2])), Number(normalizeBookSearch(quranRef[2])) + 7) ? 100 : 0 : reference ? 0 : score(ayah.text);
-    if (value && (!parentRespect || isRespectForParentsEvidence(ayah.text))) candidates.push({ score: value, section: `quran:${ayah.surah}:${ayah.ayah}`, passage: { id: `quran:${input.quranSha256}:${ayah.surah}:${ayah.ayah}`, collection: "quran", language: "ar", referenceUr: `قرآن، ${ayah.surah}:${ayah.ayah}`, referenceEn: `Quran, ${ayah.surah}:${ayah.ayah}`, text: ayah.text, sourceSha256: input.quranSha256, quranLocation: { surah: ayah.surah, ayah: ayah.ayah }, ...(ayah.edition ? { quranEdition: ayah.edition } : {}), translator: null, ...(ayah.suppliedTranslation ? { suppliedTranslation: ayah.suppliedTranslation } : {}) } });
+    const originalScore = quranRef ? ayah.surah === Number(normalizeBookSearch(quranRef[1])) && ayah.ayah >= Number(normalizeBookSearch(quranRef[2])) && ayah.ayah <= Math.min(Number(normalizeBookSearch(quranRef[3] ?? quranRef[2])), Number(normalizeBookSearch(quranRef[2])) + 7) ? 100 : 0 : reference ? 0 : score(ayah.text);
+    const advice = rankParentsQuran ? parentRespectQuranGuidanceStrength(ayah.text) : 0;
+    const context = rankParentsQuran && isParentRespectVerseContinuation(ayah.text,
+      ayahsByReference.get(`${ayah.surah}:${ayah.ayah - 1}`));
+    // The direct instruction test is checked before scoring. An adjacent,
+    // verified continuation may lack the original subject name ("parents").
+    const relevant = !parentRespect || isRespectForParentsEvidence(ayah.text) || context;
+    const value = context && !originalScore ? 0.001 : originalScore;
+    if (value && relevant) candidates.push({ score: value, parentAdvice: advice, section: `quran:${ayah.surah}:${ayah.ayah}`, passage: { id: `quran:${input.quranSha256}:${ayah.surah}:${ayah.ayah}`, collection: "quran", language: "ar", referenceUr: `قرآن، ${ayah.surah}:${ayah.ayah}`, referenceEn: `Quran, ${ayah.surah}:${ayah.ayah}`, text: ayah.text, sourceSha256: input.quranSha256, quranLocation: { surah: ayah.surah, ayah: ayah.ayah }, ...(ayah.edition ? { quranEdition: ayah.edition } : {}), translator: null, ...(ayah.suppliedTranslation ? { suppliedTranslation: ayah.suppliedTranslation } : {}) } });
   }
+  // Keep cross-collection BM25 ordering stable. Parent-specific Quran
+  // priority is handled when reserving Quran slots immediately below.
   candidates.sort((a, b) => b.score - a.score || (quranRef && a.passage.quranLocation && b.passage.quranLocation ? a.passage.quranLocation.ayah - b.passage.quranLocation.ayah : a.passage.id.localeCompare(b.passage.id, undefined, { numeric: true })));
   // Rerank for source coverage without letting unrelated low-scoring passages in.
   // A semantically verified parent-respect passage can have different BM25
   // weights in Urdu, Arabic and Quran. Keep it eligible without rescuing
   // incidental parent mentions (filtered before this point).
-  const eligible = candidates.filter(c => c.score >= (candidates[0]?.score ?? 0) * (parentRespect ? .2 : .55));
+  const maxScore = candidates.reduce((max, c) => Math.max(max, c.score), 0);
+  const eligible = candidates.filter(c => c.score >= maxScore * (parentRespect ? .2 : .55) ||
+    rankParentsQuran && c.passage.collection === "quran" && (c.parentAdvice ?? 0) >= 3);
   const chosen: typeof candidates = [];
   const sections = new Set<string>();
   const limit = Math.min(16, Math.max(1, input.candidateLimit ?? 8));
   const add = (c: typeof candidates[number]) => { if (!sections.has(c.section) && chosen.length < limit) { chosen.push(c); sections.add(c.section); } };
+  // Reserve two source-grounded Quran passages for a substantive parental
+  // ethics question before balancing Nahj, Sahifa and Kafi. In other topics
+  // the existing source-coverage policy remains unchanged.
+  if (rankParentsQuran) eligible.filter(c => c.passage.collection === "quran")
+    .sort((a,b) => (b.parentAdvice ?? 0) - (a.parentAdvice ?? 0) || b.score - a.score)
+    .slice(0, 2).forEach(add);
   for (const collection of ["quran", "nahj", "sahifa", "kafi"]) for (const lang of ["ar", locale]) {
+    if (rankParentsQuran && collection === "quran") continue;
     const first = eligible.find(c => c.passage.collection === collection && c.passage.language === lang);
     if (first) add(first);
   }
