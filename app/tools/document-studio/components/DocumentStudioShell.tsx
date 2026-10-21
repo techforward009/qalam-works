@@ -66,6 +66,7 @@ export default function DocumentStudioShell({
     >
       <div
         className="studio-no-print sticky top-0 z-30 shrink-0 bg-white shadow-[0_1px_0_rgba(26,58,42,0.12)]"
+        style={fillWindow ? { boxShadow: "none" } : undefined}
         data-studio-sticky-chrome="true"
       >
         {topBar ? <div className="border-b border-[#1A3A2A]/10 bg-white" data-studio-chrome="top">{topBar}</div> : null}

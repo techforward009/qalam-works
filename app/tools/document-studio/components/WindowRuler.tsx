@@ -21,10 +21,12 @@ const DIGITS: Record<string, string[]> = {
   "-": ["00000","00000","00000","11111","00000","00000","00000"],
 };
 
-function BitmapDigits({ text }: { text: string }) {
-  const pixels = [...text].flatMap((digit, index) => (DIGITS[digit] ?? []).flatMap((row, y) =>
-    [...row].flatMap((pixel, x) => pixel === "1" ? [`M${index * 6 + x} ${y}h1v1h-1z`] : [])));
-  return <svg width={text.length * 6 - 1} height="7" viewBox={`0 0 ${text.length * 6 - 1} 7`} shapeRendering="crispEdges" style={{ display: "block" }} aria-hidden="true" data-ruler-digits={text}><path d={pixels.join("")} fill="#000" /></svg>;
+// Vertical labels use adjoining five-pixel digits; the small origin zero is four pixels wide.
+const digitWidth = (text: string, vertical: boolean) => vertical ? (text === "0" ? 4 : text.length * 5) : text.length * 6 - 1;
+function BitmapDigits({ text, vertical = false }: { text: string; vertical?: boolean }) {
+  const pixels = [...text].flatMap((digit, index) => (vertical && text === "0" ? ["0110", "1001", "1001", "1001", "1001", "1001", "0110"] : DIGITS[digit] ?? []).flatMap((row, y) =>
+    [...row].flatMap((pixel, x) => pixel === "1" ? [`M${index * (vertical ? 5 : 6) + x} ${y}h1v1h-1z`] : [])));
+  return <svg width={digitWidth(text, vertical)} height="7" viewBox={`0 0 ${digitWidth(text, vertical)} 7`} shapeRendering="crispEdges" style={{ display: "block" }} aria-hidden="true" data-ruler-digits={text}><path d={pixels.join("")} fill="#000" /></svg>;
 }
 
 /**
@@ -102,12 +104,10 @@ export function WindowRuler({
       style={{
         boxSizing: "border-box",
         width: vertical ? INPAGE_VRULER_PX : Math.max(1, lengthPx),
-        height: vertical ? Math.max(1, lengthPx) : INPAGE_RULER_BAR_PX,
+        height: vertical ? Math.max(1, lengthPx) : INPAGE_RULER_BAR_PX - 2,
         borderBottom: vertical ? undefined : "2px solid #000",
         borderRight: vertical ? "2px solid #000" : undefined,
-        background: vertical
-          ? "#fff"
-          : "linear-gradient(#a0a0a0 0 1px, #696969 1px 2px, #fff 2px)",
+        background: "#fff",
         fontFamily: "Tahoma, 'Segoe UI', sans-serif",
       }}
       data-studio-ruler={vertical ? undefined : "true"}
@@ -147,10 +147,10 @@ export function WindowRuler({
             key={`label-${tick.mm}-${index}`}
             className="pointer-events-none absolute whitespace-nowrap text-black"
             style={vertical
-              ? { top: Math.round(tick.offsetPx) - 2, left: 1, width: tick.label.length * 6 - 1, height: 7, transform: "rotate(-90deg)", transformOrigin: "left top" }
-              : { left: Math.round(tick.offsetPx) - 2 - (tick.label.length * 6 - 1), top: 3, width: tick.label.length * 6 - 1, height: 7 }}
+              ? { top: Math.round(tick.offsetPx) + (tick.label === "0" ? 5 : 4) + digitWidth(tick.label, true), left: 1, width: digitWidth(tick.label, true), height: 7, transform: "rotate(-90deg)", transformOrigin: "left top" }
+              : { left: Math.round(tick.offsetPx) - 2 - (tick.label.length * 6 - 1), top: 1, width: tick.label.length * 6 - 1, height: 7 }}
           >
-            <BitmapDigits text={tick.label} />
+            <BitmapDigits text={tick.label} vertical={vertical} />
           </span>
         );
       })}

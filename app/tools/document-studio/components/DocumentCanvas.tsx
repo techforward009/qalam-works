@@ -294,11 +294,11 @@ export default function DocumentCanvas({
       {isPages ? <InPageToolPalette tool={tool} onTool={chooseTool} /> : null}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {showRuler ? (
-          <div className="studio-no-print flex shrink-0 bg-white" data-studio-ruler-frame="true">
+          <div className="studio-no-print flex shrink-0 bg-white" data-studio-ruler-frame="true" style={{ height: INPAGE_RULER_BAR_PX }}>
             <div
               data-ruler-corner="true"
               data-ruler-origin-mark="true"
-              style={{ position: "relative", width: INPAGE_VRULER_PX, height: INPAGE_RULER_BAR_PX, boxSizing: "border-box", borderRight: "2px solid #000", borderBottom: "2px solid #000", background: "#fff" }}
+              style={{ position: "relative", width: INPAGE_VRULER_PX, height: INPAGE_RULER_BAR_PX - 2, boxSizing: "border-box", borderRight: "2px solid #000", borderBottom: "2px solid #000", background: "#fff" }}
             >
               <svg width="16" height="16" shapeRendering="crispEdges" aria-hidden="true" style={{ position: "absolute", right: 0, bottom: 0 }}>
                 {[3, 5, 7, 9, 11, 13].map((pixel) => <rect key={`h-${pixel}`} x={pixel} y="13" width="1" height="1" fill="#000" />)}
