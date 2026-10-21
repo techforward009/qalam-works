@@ -19,6 +19,7 @@ import { handleResearchPage } from "../../app/api/research/documents/handlePage"
 import { handleResearchUpload } from "../../app/api/research/documents/handleUpload";
 import {
   createVercelResearchBlobClient,
+  isImmutableBookObject,
   researchBlobAuth,
   researchBlobClientFromEnv,
   type ResearchBlobSdk,
@@ -58,6 +59,37 @@ async function corpus(id: string, text: string, filename = `${id}.txt`): Promise
   const { chunks } = createChunks(ingested.pages);
   return makeStoredCorpus(ingested.document, ingested.pages, chunks);
 }
+
+describe("Blob transfer containment — immutable book sources only", () => {
+  test("permits provider cache only for SHA-versioned book records", () => {
+    const sha = "a".repeat(64);
+    expect(isImmutableBookObject(`khateeb-foundational/v1/${sha}/kafi-v1-ar.json`)).toBe(true);
+    expect(isImmutableBookObject(`khateeb-foundational/v1/${sha}/sahifa-ur.json`)).toBe(true);
+    expect(isImmutableBookObject("khateeb-foundational/v1/current.json")).toBe(false);
+    expect(isImmutableBookObject("research/v1/documents/doc_a.json")).toBe(false);
+    expect(isImmutableBookObject("khateeb-foundational/v1/unknown/kafi-v1-ar.json")).toBe(false);
+    expect(isImmutableBookObject(`khateeb-foundational/v1/${sha}/../current.json`)).toBe(false);
+  });
+
+  test("uses provider cache for immutable books, not live pointer or research documents", async () => {
+    const gets: Array<{ pathname: string; options: Record<string, unknown> }> = [];
+    const sdk: ResearchBlobSdk = {
+      put: async () => ({}),
+      list: async () => ({ blobs: [], hasMore: false }),
+      get: async (pathname, options) => {
+        gets.push({ pathname, options });
+        return { statusCode: 200, stream: new Response("ok").body!, blob: { pathname } };
+      },
+    };
+    const client = createVercelResearchBlobClient({ storeId: "store_research", oidcToken: "test-token" }, sdk);
+    const sha = "b".repeat(64);
+    await client.getObject(`khateeb-foundational/v1/${sha}/kafi-v2-ar.json`);
+    await client.getObject("khateeb-foundational/v1/current.json");
+    await client.getObject("research/v1/documents/doc_a.json");
+    expect(gets.map(x => x.options.useCache)).toEqual([true, false, false]);
+    expect(gets.every(x => x.options.access === "private" && x.options.storeId === "store_research")).toBe(true);
+  });
+});
 
 describe("durable research blob storage", () => {
   test("persists a corpus and reloads it into a fresh store", async () => {
