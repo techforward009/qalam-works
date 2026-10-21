@@ -65,8 +65,8 @@ function ToolbarButton({
       aria-label={label}
       aria-pressed={active}
       data-latin-control={latin ? "true" : undefined}
-      className="inline-flex h-[20px] min-w-[20px] shrink-0 items-center justify-center bg-[#f0f0f0] px-1 text-[11px] font-bold leading-none text-black focus-visible:outline focus-visible:outline-1 focus-visible:outline-black"
-      style={{ width, minWidth: width ?? 20, paddingInline: width ? 0 : undefined, marginInlineStart: gap, minHeight: 20, boxShadow: active && !raised ? CLASSIC_SUNKEN : CLASSIC_RAISED }}
+      className="inline-flex h-[18px] min-w-[20px] shrink-0 items-center justify-center bg-[#f0f0f0] px-1 text-[11px] font-bold leading-none text-black focus-visible:outline focus-visible:outline-1 focus-visible:outline-black"
+      style={{ width, minWidth: width ?? 20, paddingInline: width ? 0 : undefined, marginInlineStart: gap, height: 18, minHeight: 18, position: "relative", boxShadow: active && !raised ? CLASSIC_SUNKEN : BUTTON_RAISED }}
     >
       {children}
     </button>
@@ -102,8 +102,16 @@ function MetricIcon({ kind }: { kind: "line" | "paragraph" | "kerning" | "scale"
   </svg>;
 }
 
+function BitmapEmphasis({ italic = false }: { italic?: boolean }) {
+  const rows = italic
+    ? ["001111", "000110", "000110", "001100", "001100", "001100", "011000", "011000", "111100"]
+    : ["11111100", "01100110", "01100011", "01100110", "01111100", "01100110", "01100011", "01100110", "11111100"];
+  const pixels = rows.flatMap((row, y) => [...row].flatMap((pixel, x) => pixel === "1" ? [`M${x} ${y}h1v1h-1z`] : []));
+  return <svg data-studio-emphasis={italic ? "italic" : "bold"} width={italic ? 6 : 8} height="9" shapeRendering="crispEdges" aria-hidden="true" style={{ position: "absolute", left: italic ? 6 : 5, top: 4 }}><path d={pixels.join("")} fill="#000" /></svg>;
+}
+
 function DirectionArrow({ left = false }: { left?: boolean }) {
-  return <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true" style={{ transform: left ? "scaleX(-1)" : undefined }}><path d="M0 3H9V0L16 6L9 12V9H0Z" fill="#000" /></svg>;
+  return <svg width="12" height="6" viewBox="0 0 12 6" aria-hidden="true" style={{ transform: left ? "scaleX(-1)" : undefined }}><path d="M0 2H8V0L12 3L8 6V4H0Z" fill="#000" /></svg>;
 }
 
 function openToolbarCombo(input: HTMLSelectElement | null) {
@@ -231,7 +239,7 @@ function ColorPaletteControl({
         data-studio-highlight-button={kind === "highlight" ? "true" : undefined}
         onMouseDown={keepFocus}
         onClick={() => setOpen((next) => !next)}
-        style={compact ? { width: 20, minWidth: 20, height: 20, minHeight: 20, padding: 0, border: "none", background: "#f0f0f0", boxShadow: CLASSIC_RAISED } : undefined}
+        style={compact ? { width: 20, minWidth: 20, height: 18, minHeight: 18, padding: 0, border: "none", background: "#f0f0f0", boxShadow: BUTTON_RAISED } : undefined}
         className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-none border border-[#b5b5b5] bg-white px-1 leading-none text-[#1c1c1c] hover:bg-[#f3f3f3]"
       >
         {compact ? <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="#000" strokeWidth="1.5" /></svg> : kind === "text" ? (
@@ -615,6 +623,7 @@ function persianMenuRank(id: string): number {
   return 4;
 }
 
+const BUTTON_RAISED = "inset 1px 1px 0 #000, inset 2px 2px 0 #fff, inset -1px -1px 0 #646464, inset -2px -2px 0 #a0a0a0, inset -3px -3px 0 #a0a0a0";
 const CLASSIC_RAISED = "inset 1px 1px 0 #000000, inset 2px 2px 0 #ffffff, inset -1px -1px 0 #696969, inset -2px -2px 0 #a0a0a0";
 const CLASSIC_SUNKEN = "inset 1px 1px 0 #696969, inset 2px 2px 0 #a0a0a0, inset -1px -1px 0 #ffffff";
 const selectCls = "shrink-0";
@@ -756,10 +765,10 @@ export default function DocumentToolbar({
             ))}
           </ClassicCombo>
           <ToolbarButton width={20} gap={2} label={isUr ? "موٹا" : "Bold"} active={ui.bold} onClick={() => toggleBold(editor)} latin raised>
-            <span style={{ fontFamily: "Times New Roman, serif", fontSize: 13, fontWeight: 700, lineHeight: 1, color: "#000", WebkitFontSmoothing: "none" }}>B</span>
+            <BitmapEmphasis />
           </ToolbarButton>
           <ToolbarButton width={19} gap={1} label={isUr ? "ترچھا" : "Italic"} active={ui.italic} onClick={() => toggleItalic(editor)} latin raised>
-            <span style={{ fontFamily: "Times New Roman, serif", fontSize: 13, fontWeight: 700, fontStyle: "italic", lineHeight: 1, color: "#000", WebkitFontSmoothing: "none" }}>I</span>
+            <BitmapEmphasis italic />
           </ToolbarButton>
           <ClassicCombo
             id="studio-font-size"

@@ -158,7 +158,7 @@ const TOOLS: ToolSpec[] = [
     id: "line",
     label: "Line",
     enabled: true,
-    icon: (<OutlineIcon><path d="M7 19L20 6" /></OutlineIcon>),
+    icon: (<OutlineIcon><path d="M7 6L20 19" /></OutlineIcon>),
   },
   {
     id: "polygon",
